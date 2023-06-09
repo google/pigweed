@@ -29,13 +29,18 @@ namespace {
 using ::pw::digital_io::InterruptTrigger;
 using ::pw::digital_io::State;
 
+// PINT API doesn't allow context on callback API, so store globally.
 std::array<pw::digital_io::InterruptHandler,
            FSL_FEATURE_PINT_NUMBER_OF_CONNECTED_OUTPUTS>
     interrupt_handlers;
+std::array<PINT_Type*, FSL_FEATURE_PINT_NUMBER_OF_CONNECTED_OUTPUTS> bases;
 
 void PintCallback(pint_pin_int_t pin, uint32_t) {
   PW_CHECK(pin < interrupt_handlers.size());
-  interrupt_handlers[pin](State::kActive);
+  State state = PINT_PinInterruptGetStatus(bases[pin], pin) == 1
+                    ? State::kActive
+                    : State::kInactive;
+  interrupt_handlers[pin](state);
   SDK_ISR_EXIT_BARRIER;
 }
 
@@ -58,6 +63,7 @@ pw::Status McuxpressoInterruptController::Config(
     return pw::Status::InvalidArgument();
   }
   interrupt_handlers[pin] = std::move(handler);
+  bases[pin] = base_;
   switch (trigger) {
     case InterruptTrigger::kActivatingEdge:
       PINT_PinInterruptConfig(

@@ -15,6 +15,7 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
+    "pw_cc_test",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -40,4 +41,13 @@ pw_cc_library(
         "//pw_digital_io:facade",
         "//pw_preprocessor",
     ],
+)
+
+pw_cc_test(
+    name = "mimxrt595_test",
+    srcs = ["mimxrt595_test.cc"],
+    target_compatible_with = [
+        "//pw_build/constraints/board:mimxrt595_evk",
+    ],
+    deps = [":pw_digital_io_mcuxpresso"],
 )

@@ -8,7 +8,7 @@ the NXP MCUXpresso SDK.
 
 Setup
 =====
-Use of this module requires setting up the MCUXpresso SDK for use with pigweed. Follow
+Use of this module requires setting up the MCUXpresso SDK for use with Pigweed. Follow
 the steps in :ref:`module-pw_build_mcuxpresso` to create a ``pw_source_set`` for an
 MCUXpresso SDK. Include the GPIO and PINT driver components in this SDK definition.
 
@@ -42,8 +42,8 @@ Then, depend on this module in your BUILD.gn to use.
 
    deps = [ dir_pw_digital_io_mcuxpresso ]
 
-Use
-===
+Examples
+========
 Use ``pw::digital_io::McuxpressoDigitalIn`` and ``pw::digital_io::McuxpressoDigitalOut``
 classes to control GPIO pins.
 

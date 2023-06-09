@@ -20,7 +20,7 @@
 #include "fsl_gpio.h"
 #include "fsl_reset.h"
 #include "pw_assert/check.h"
-#include "pw_digital_io_mcuxpresso/digital_io_mcuxpresso.h"
+#include "pw_digital_io_mcuxpresso/digital_io.h"
 #include "pw_status/status.h"
 
 namespace pw::digital_io {
@@ -47,7 +47,7 @@ McuxpressoDigitalOut::McuxpressoDigitalOut(GPIO_Type* base,
 pw::Status McuxpressoDigitalOut::DoEnable(bool enable) {
   if (enable) {
     if (is_enabled()) {
-      return pw::Status::FailedPrecondition();
+      return pw::OkStatus();
     }
 
     CLOCK_EnableClock(kGpioClocks[port_]);

@@ -17,6 +17,7 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_third_party/mcuxpresso/mcuxpresso.gni")
+import("$dir_pw_toolchain/generate_toolchain.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("default_config") {
@@ -47,7 +48,21 @@ if (pw_third_party_mcuxpresso_SDK != "") {
   }
 }
 
+pw_test("mimxrt595_test") {
+  enable_if =
+      pw_third_party_mcuxpresso_SDK == "//targets/mimxrt595_evk:sample_sdk" &&
+      (pw_toolchain_SCOPE.name == "mimxrt595_evk_debug" ||
+       pw_toolchain_SCOPE.name == "mimxrt595_evk_size_optimized" ||
+       pw_toolchain_SCOPE.name == "mimxrt595_evk_speed_optimized")
+  sources = [ "mimxrt595_test.cc" ]
+  deps = [
+    ":pw_digital_io_mcuxpresso",
+    "//targets/mimxrt595_evk:sample_sdk",
+  ]
+}
+
 pw_test_group("tests") {
+  tests = [ ":mimxrt595_test" ]
 }
 
 pw_doc_group("docs") {
