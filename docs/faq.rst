@@ -51,14 +51,17 @@ the Pigweed integrated environment and build, or just use individual modules?
 
 A la carte: Individual modules only
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-This is the best option if you have an existing project, with pre-existing build
-in place.
+This option can work for small projects with a pre-existing build system in place.
+Large projects will probably need a more maintainable and scalable solution.
 
 To use the libraries, submodule or copy the relevant Pigweed modules into your
-project, and use them like any other C++ library. You can reference the
-existing GN files or CMake files when doing this. In the case of CMake, you can
+project, and use them like any other C++ library. You'll need to also copy over the
+`transitive dependencies`_ of any module you use. You can find a module's transitive
+dependencies by inspecting its build files. If your project uses CMake, you can
 directly import Pigweed's build from your project with CMake's external project
 system, or just use a CMake include statement.
+
+.. _transitive dependencies: https://en.wikipedia.org/wiki/Transitive_dependency#Computer_programs
 
 Monolith: Using the integrated system
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
