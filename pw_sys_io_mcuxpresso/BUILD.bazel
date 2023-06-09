@@ -25,10 +25,12 @@ pw_cc_library(
     name = "pw_sys_io_mcuxpresso",
     srcs = ["sys_io.cc"],
     hdrs = ["public/pw_sys_io_mcuxpresso/init.h"],
+    includes = ["public"],
     # TODO(b/259150983): Get this to build, requires SDK
     tags = ["manual"],
     deps = [
         "//pw_preprocessor",
+        "//pw_sys_io:default_putget_bytes",
         "//pw_sys_io:facade",
     ],
 )
