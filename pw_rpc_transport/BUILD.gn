@@ -32,24 +32,14 @@ pw_doc_group("docs") {
 
 pw_test_group("tests") {
   tests = [
+    ":egress_ingress_test",
     ":hdlc_framing_test",
+    ":local_rpc_egress_test",
     ":packet_buffer_queue_test",
+    ":rpc_integration_test",
     ":simple_framing_test",
+    ":socket_rpc_transport_test",
   ]
-
-  if (pw_thread_THREAD_BACKEND != "") {
-    tests += [
-      ":egress_ingress_test",
-      ":local_rpc_egress_test",
-    ]
-
-    if (host_os != "win") {
-      tests += [
-        ":rpc_integration_test",
-        ":socket_rpc_transport_test",
-      ]
-    }
-  }
 }
 
 pw_source_set("rpc_transport") {
@@ -121,6 +111,7 @@ pw_source_set("local_rpc_egress") {
 
 pw_test("local_rpc_egress_test") {
   sources = [ "local_rpc_egress_test.cc" ]
+  enable_if = pw_thread_THREAD_BACKEND != ""
   deps = [
     ":local_rpc_egress",
     ":rpc_transport",
@@ -200,6 +191,7 @@ pw_source_set("egress_ingress") {
 
 pw_test("egress_ingress_test") {
   sources = [ "egress_ingress_test.cc" ]
+  enable_if = pw_thread_THREAD_BACKEND != ""
   deps = [
     ":egress_ingress",
     ":service_registry",
@@ -233,6 +225,7 @@ pw_source_set("socket_rpc_transport") {
 
 pw_test("socket_rpc_transport_test") {
   sources = [ "socket_rpc_transport_test.cc" ]
+  enable_if = pw_thread_THREAD_BACKEND != "" && host_os != "win"
   deps = [
     ":socket_rpc_transport",
     "$dir_pw_bytes",
@@ -246,6 +239,7 @@ pw_test("socket_rpc_transport_test") {
 
 pw_test("rpc_integration_test") {
   sources = [ "rpc_integration_test.cc" ]
+  enable_if = pw_thread_THREAD_BACKEND != "" && host_os != "win"
   deps = [
     ":egress_ingress",
     ":local_rpc_egress",
