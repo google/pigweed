@@ -1,4 +1,4 @@
-# Copyright 2021 The Pigweed Authors
+# Copyright 2023 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -22,17 +22,8 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
-    name = "pw_sys_io_mcuxpresso",
-    srcs = ["sys_io.cc"],
-    hdrs = ["public/pw_sys_io_mcuxpresso/init.h"],
-    includes = ["public"],
-    target_compatible_with = [
-        "//pw_build/constraints/board:mimxrt595_evk",
-    ],
-    deps = [
-        "//pw_preprocessor",
-        "//pw_sys_io:default_putget_bytes",
-        "//pw_sys_io:facade",
-        "@pigweed_config//:mcuxpresso_sdk",
-    ],
+    name = "default_mcuxpresso_sdk",
+    # The "default" config is not compatible with any configuration: you can't
+    # build MCUXpresso targets without choosing an SDK.
+    target_compatible_with = ["@platforms//:incompatible"],
 )

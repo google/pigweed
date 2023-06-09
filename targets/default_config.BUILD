@@ -29,6 +29,11 @@ label_flag(
 )
 
 label_flag(
+    name = "mcuxpresso_sdk",
+    build_setting_default = "@pigweed//third_party/mcuxpresso:default_mcuxpresso_sdk",
+)
+
+label_flag(
     name = "pw_assert_backend",
     build_setting_default = "@pigweed//pw_assert:backend_multiplexer",
 )
