@@ -15,6 +15,7 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <limits>
 
 #include "pw_assert/assert.h"

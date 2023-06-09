@@ -14,6 +14,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <limits>
 
 #include "pw_containers/intrusive_list.h"
