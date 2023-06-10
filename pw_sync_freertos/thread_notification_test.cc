@@ -15,6 +15,7 @@
 #include "pw_sync/thread_notification.h"
 
 #include <chrono>
+#include <optional>
 
 #include "FreeRTOS.h"
 #include "gtest/gtest.h"

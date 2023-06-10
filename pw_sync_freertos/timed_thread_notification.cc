@@ -15,6 +15,7 @@
 #include "pw_sync/timed_thread_notification.h"
 
 #include <algorithm>
+#include <optional>
 
 #include "FreeRTOS.h"
 #include "pw_assert/check.h"
