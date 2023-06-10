@@ -111,7 +111,7 @@ pw_source_set("local_rpc_egress") {
 
 pw_test("local_rpc_egress_test") {
   sources = [ "local_rpc_egress_test.cc" ]
-  enable_if = pw_thread_THREAD_BACKEND != ""
+  enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread"
   deps = [
     ":local_rpc_egress",
     ":rpc_transport",
