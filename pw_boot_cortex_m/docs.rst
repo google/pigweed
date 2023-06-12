@@ -32,6 +32,7 @@ pseudo-code invocation of the user-implemented functions:
 .. code:: cpp
 
    void pw_boot_Entry() {  // Boot entry point.
+     // Set VTOR.
      // Interrupts disabled.
      pw_boot_PreStaticMemoryInit();  // User-implemented function.
      // Static memory initialization.
@@ -131,9 +132,10 @@ section, and properly configuring ``PW_BOOT_VECTOR_TABLE_*`` preprocessor
 defines to cover the address region your SoC expects the vector table to be
 located at (often the beginning of the flash region). If using a bootloader,
 ensure VTOR (Vector Table Offset Register) is configured to point to the vector
-table. Otherwise, refer to the hardware vendor's documentation to determine
-where the vector table should be located such that it resides where VTOR is
-initialized to by default.
+table, otherwise ensure that execution begins at ``pw_boot_Entry`` which will
+set VTOR as its first operation. If in doubt, refer to the hardware vendor's
+documentation to determine where the vector table and reset handler should be
+located.
 
 Example vector table:
 

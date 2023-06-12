@@ -122,6 +122,15 @@ void pw_boot_Entry(void) {
   asm volatile("cpsid i");
 
 #if _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
+  // Set VTOR to the location of the vector table.
+  //
+  // Devices with a bootloader will often set VTOR after parsing the loaded
+  // binary and prior to launching it. When no bootloader is present, or if
+  // launched directly from memory after a reset, VTOR will be zero and must
+  // be assigned the correct value.
+  volatile uint32_t* vtor = (volatile uint32_t*)0xE000ED08u;
+  *vtor = (uintptr_t)&pw_boot_vector_table_addr;
+
   // Configure MSP and MSPLIM.
   asm volatile(
       "msr msp, %0    \n"
