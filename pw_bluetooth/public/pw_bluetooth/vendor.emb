@@ -22,7 +22,7 @@
 import "hci.emb" as hci
 
 [$default byte_order: "LittleEndian"]
-[(cpp) namespace: "pw::bluetooth::emboss"]
+[(cpp) namespace: "pw::bluetooth::vendor::android_hci"]
 # ========================= HCI packet headers ==========================
 
 
