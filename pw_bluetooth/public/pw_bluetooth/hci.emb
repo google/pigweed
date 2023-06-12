@@ -2239,9 +2239,12 @@ struct WriteLEHostSupportCommand:
 # TODO: b/265052417 - Definition needs to be added
 
 
-# 7.3.92 Write Secure Connections Host Support command
-# HCI_Write_Secure_Connections_Host_Support
-# TODO: b/265052417 - Definition needs to be added
+struct WriteSecureConnectionsHostSupportCommand:
+  -- 7.3.92 Write Secure Connections Host Support command
+  -- HCI_Write_Secure_Connections_Host_Support
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader       header
+  $next [+1]         GenericEnableParam  secure_connections_host_support
 
 
 struct ReadAuthenticatedPayloadTimeoutCommand:
