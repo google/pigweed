@@ -18,6 +18,7 @@ import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
+import("$dir_pw_sync/backend.gni")
 import("$dir_pw_thread/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -225,7 +226,8 @@ pw_source_set("socket_rpc_transport") {
 
 pw_test("socket_rpc_transport_test") {
   sources = [ "socket_rpc_transport_test.cc" ]
-  enable_if = pw_thread_THREAD_BACKEND != "" && host_os != "win"
+  enable_if = pw_thread_THREAD_BACKEND != "" && host_os != "win" &&
+              pw_sync_CONDITION_VARIABLE_BACKEND != ""
   deps = [
     ":socket_rpc_transport",
     "$dir_pw_bytes",
@@ -239,7 +241,8 @@ pw_test("socket_rpc_transport_test") {
 
 pw_test("rpc_integration_test") {
   sources = [ "rpc_integration_test.cc" ]
-  enable_if = pw_thread_THREAD_BACKEND != "" && host_os != "win"
+  enable_if = pw_thread_THREAD_BACKEND != "" && host_os != "win" &&
+              pw_sync_CONDITION_VARIABLE_BACKEND != ""
   deps = [
     ":egress_ingress",
     ":local_rpc_egress",
