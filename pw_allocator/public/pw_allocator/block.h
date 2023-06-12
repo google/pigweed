@@ -92,12 +92,13 @@ class Block final {
   Block(Block&& other) = delete;
   Block& operator=(Block&& other) = delete;
 
-  // Create the first block for a given memory region.
-  // Note that the start of the given memory region must be aligned to an
-  // alignof(Block) boundary.
-  // Returns:
-  //   INVALID_ARGUMENT if the given region is unaligned to too small, or
-  //   OK otherwise.
+  /// @brief Creates the first block for a given memory region.
+  ///
+  /// @pre The start of the given memory region must be aligned to an
+  /// `alignof(Block)` boundary.
+  ///
+  /// @returns `INVALID_ARGUMENT` if the given region is unaligned to too small,
+  /// or `OK` otherwise.
   static Status Init(const span<std::byte> region, Block** block);
 
   /// @returns A pointer to a `Block`, given a pointer to the start of the
