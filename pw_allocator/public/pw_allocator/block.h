@@ -33,51 +33,57 @@ namespace pw::allocator {
 #define PW_ALLOCATOR_POISON_OFFSET static_cast<size_t>(0)
 #endif  // PW_ALLOCATOR_POISON_ENABLE
 
-// The "Block" type is intended to be a building block component for
-// allocators. In the this design, there is an explicit pointer to next and
-// prev from the block header; the size is not encoded. The below diagram shows
-// what this would look like for two blocks.
-//
-//   .------+---------------------------------.-----------------------------
-//   |            Block A (first)             |       Block B (second)
-//
-//   +------+------+--------------------------+------+------+---------------
-//   | Next | Prev |   usable space           | Next | Prev | usable space..
-//   +------+------+--------------------------+------+--+---+---------------
-//   ^  |                                     ^         |
-//   |  '-------------------------------------'         |
-//   |                                                  |
-//   '----------- Block B's prev points to Block A -----'
-//
-// One use for these blocks is to use them as allocations, where each block
-// represents an allocation handed out by malloc(). These blocks could also be
-// used as part of a slab or buddy allocator.
-//
-// Each block also contains flags for whether it is the last block (i.e. whether
-// the "next" pointer points to a valid block, or just denotes the end of this
-// block), and whether the block is in use. These are encoded into the last two
-// bits of the "next" pointer, as follows:
-//
-//  .-----------------------------------------------------------------------.
-//  |                            Block                                      |
-//  +-----------------------------------------------------------------------+
-//  |              Next            | Prev |         usable space            |
-//  +----------------+------+------+      +                                 |
-//  |   Ptr[N..2]    | Last | Used |      |                                 |
-//  +----------------+------+------+------+---------------------------------+
-//  ^
-//  |
-//  '----------- Next() = Next & ~0x3 --------------------------------->
-//
-// The first block in a chain is denoted by a nullptr "prev" field, and the last
-// block is denoted by the "Last" bit being set.
-//
-// Note, This block class requires that the given block is aligned to a
-// alignof(Block*) boundary. Because of this alignment requirement, each
-// returned block will also be aligned to a alignof(Block*) boundary, and the
-// size will always be rounded up to a multiple of alignof(Block*).
-//
-// This class must be constructed using the static Init call.
+/// @brief The `Block` type is intended to be a building block component for
+/// allocators.
+///
+/// In this design, there is an explicit pointer to `Next` and
+/// `Prev` from the block header; the size is not encoded. The below diagram
+/// shows what this would look like for two blocks.
+///
+/// @code{.unparsed}
+///   .------+---------------------------------.-----------------------------
+///   |            Block A (first)             |       Block B (second)
+///
+///   +------+------+--------------------------+------+------+---------------
+///   | Next | Prev |   usable space           | Next | Prev | usable space..
+///   +------+------+--------------------------+------+--+---+---------------
+///   ^  |                                     ^         |
+///   |  '-------------------------------------'         |
+///   |                                                  |
+///   '----------- Block B's prev points to Block A -----'
+/// @endcode
+///
+/// One use for these blocks is to use them as allocations, where each block
+/// represents an allocation handed out by `malloc()`. These blocks could also
+/// be used as part of a slab or buddy allocator.
+///
+/// Each block also contains flags for whether it is the last block (i.e.
+/// whether the `Next` pointer points to a valid block, or just denotes the end
+/// of this block), and whether the block is in use. These are encoded into the
+/// last two bits of the `Next` pointer, as follows:
+///
+/// @code{.unparsed}
+///  .-----------------------------------------------------------------------.
+///  |                            Block                                      |
+///  +-----------------------------------------------------------------------+
+///  |              Next            | Prev |         usable space            |
+///  +----------------+------+------+      +                                 |
+///  |   Ptr[N..2]    | Last | Used |      |                                 |
+///  +----------------+------+------+------+---------------------------------+
+///  ^
+///  |
+///  '----------- Next() = Next & ~0x3 --------------------------------->
+/// @endcode
+///
+/// The first block in a chain is denoted by a nullptr `Prev` field, and the
+/// last block is denoted by the `Last` bit being set.
+///
+/// Note, this block class requires that the given block is aligned to an
+/// `alignof(Block*)` boundary. Because of this alignment requirement, each
+/// returned block will also be aligned to an `alignof(Block*)` boundary, and
+/// the size will always be rounded up to a multiple of `alignof(Block*)`.
+///
+/// This class must be constructed using the static `Init` call.
 class Block final {
  public:
   // No copy/move
