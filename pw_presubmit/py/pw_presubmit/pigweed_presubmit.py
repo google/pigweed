@@ -1041,7 +1041,6 @@ OTHER_CHECKS = (
     gn_clang_build,
     gn_combined_build_check,
     gn_docs_build,
-    gn_mimxrt595_build,
     module_owners.presubmit_check(),
     npm_presubmit.npm_test,
     pw_transfer_integration_test,
@@ -1059,6 +1058,8 @@ ARDUINO_PICO = (
     gn_pico_build,
     gn_pw_system_demo_build,
 )
+
+INTERNAL = (gn_mimxrt595_build,)
 
 # The misc program differs from other_checks in that checks in the misc
 # program block CQ on Linux.
@@ -1142,6 +1143,7 @@ PROGRAMS = Programs(
     # keep-sorted: start
     arduino_pico=ARDUINO_PICO,
     full=FULL,
+    internal=INTERNAL,
     lintformat=LINTFORMAT,
     misc=MISC,
     other_checks=OTHER_CHECKS,
