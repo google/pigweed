@@ -100,13 +100,14 @@ class Block final {
   //   OK otherwise.
   static Status Init(const span<std::byte> region, Block** block);
 
-  // Returns a pointer to a Block, given a pointer to the start of the usable
-  // space inside the block (i.e. the opposite operation to UsableSpace()). In
-  // reality, this method just subtracts the appropriate amount from
-  // usable_space to point to the start of the owning block.
-  //
-  // Be aware that this method does not do any checking; passing a random
-  // pointer will return a non-null pointer.
+  /// @returns A pointer to a `Block`, given a pointer to the start of the
+  /// usable space inside the block. In other words, this operation is the
+  /// opposite of `UsableSpace()`. In reality, this method just subtracts the
+  /// appropriate amount from `usable_space` to point to the start of the owning
+  /// block.
+  ///
+  /// @warning This method does not do any checking; passing a random
+  /// pointer will return a non-null pointer.
   static Block* FromUsableSpace(std::byte* usable_space) {
     return reinterpret_cast<Block*>(usable_space - sizeof(Block) -
                                     PW_ALLOCATOR_POISON_OFFSET);
