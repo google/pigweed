@@ -25,24 +25,26 @@ group("host_executable") {
   ]
 }
 
-hello_sources = [
-  "main.rs",
-  "other.rs",
-]
-
-hello_deps = [
-  ":a",
-  ":c",
-]
-
 pw_rust_executable("hello") {
-  sources = hello_sources
-  deps = hello_deps
+  sources = [
+    "main.rs",
+    "other.rs",
+  ]
+  deps = [
+    ":a",
+    ":c",
+  ]
 }
 
 pw_rust_test("test_hello") {
-  sources = hello_sources
-  deps = hello_deps
+  sources = [
+    "main.rs",
+    "other.rs",
+  ]
+  deps = [
+    ":a",
+    ":c",
+  ]
 }
 
 # The dep chain hello->a->b will exercise the functionality of both direct and
