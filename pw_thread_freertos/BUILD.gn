@@ -271,7 +271,8 @@ pw_test_group("tests") {
 
 if (pw_thread_freertos_FREERTOS_TSKTCB_BACKEND != "") {
   pw_test("thread_iteration_test") {
-    enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_freertos:thread"
+    enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_freertos:thread" &&
+                pw_thread_THREAD_ITERATION_BACKEND != ""
     sources = [
       "pw_thread_freertos_private/thread_iteration.h",
       "thread_iteration_test.cc",
