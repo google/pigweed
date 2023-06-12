@@ -22,7 +22,6 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 pw_doc_group("docs") {
-  inputs = [ "doc_resources/pw_env_setup_output.png" ]
   sources = [ "docs.rst" ]
 }
 

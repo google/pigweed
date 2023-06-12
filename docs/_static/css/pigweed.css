@@ -196,3 +196,7 @@ li.pw-module-section-nav-link p a {
 li.pw-module-section-nav-link p a:hover {
   color: var(--color-section-button-hover) !important;
 }
+
+div.font-monospace {
+  font-family: var(--font-stack--monospace);
+}

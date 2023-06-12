@@ -576,9 +576,115 @@ the future when running ``activate.sh`` instead of ``bootstrap.sh``. In the
 future these could be extended to C shell and PowerShell. A logical mapping of
 high-level commands to system-specific initialization files is shown below.
 
-.. image:: doc_resources/pw_env_setup_output.png
-   :alt: Mapping of high-level commands to system-specific commands.
-   :align: left
+.. grid:: 1
+   :padding: 0
+
+   .. grid-item-card::
+      :columns: 12
+      :class-header: font-monospace
+
+      SET $PW_ROOT /home/$USER/pigweed
+      ^^^
+
+      .. grid:: 2
+         :margin: 0
+         :padding: 0
+
+         .. grid-item:: **Windows**
+
+         .. grid-item:: **Linux & Mac (sh-compatible shells)**
+
+      .. grid:: 2
+         :margin: 0
+         :padding: 0
+
+         .. grid-item::
+
+            .. code-block:: dosbatch
+
+               set PW_ROOT /home/%USER%/pigweed
+
+         .. grid-item::
+
+            .. code-block:: shell
+
+               PW_ROOT="/home/$USER/pigweed"
+               export PW_ROOT
+
+.. grid:: 1
+   :padding: 0
+
+   .. grid-item-card::
+      :columns: 12
+      :class-header: font-monospace
+
+      PREPEND $PATH $PW_ROOT/.env/bin
+      ^^^
+      .. grid:: 2
+         :margin: 0
+         :padding: 0
+
+         .. grid-item:: **Windows**
+
+         .. grid-item:: **Linux & Mac (sh-compatible shells)**
+
+      .. grid:: 2
+         :margin: 0
+         :padding: 0
+
+         .. grid-item::
+
+            .. code-block:: dosbatch
+
+               set PATH=%PW_ROOT%/.env/bin;%PATH%
+
+         .. grid-item::
+
+            .. code-block:: shell
+
+               PATH="$(\
+                 echo "$PATH" | \
+                 sed "s|:$PW_ROOT/.env/bin:|:|g;" | \
+                 sed "s|^$PW_ROOT/.env/bin:||g;" | \
+                 sed "s|:$PW_ROOT/.env/bin$||g;")"
+               PATH="$PW_ROOT/.env/bin;$PATH"
+               export PATH
+
+.. grid:: 1
+   :padding: 0
+
+   .. grid-item-card::
+      :columns: 12
+      :class-header: font-monospace
+
+      ECHO "Setup Complete!"
+      ^^^
+
+      .. grid:: 2
+         :margin: 0
+         :padding: 0
+
+         .. grid-item:: **Windows**
+
+         .. grid-item:: **Linux & Mac (sh-compatible shells)**
+
+
+      .. grid:: 2
+         :margin: 0
+         :padding: 0
+
+         .. grid-item::
+
+            .. code-block:: dosbatch
+
+               echo Setup Complete!
+
+         .. grid-item::
+
+            .. code-block:: shell
+
+               echo "Setup Complete!"
+
 
 .. _Requirements Files documentation: https://pip.pypa.io/en/stable/user_guide/#requirements-files
 .. _Constraints Files documentation: https://pip.pypa.io/en/stable/user_guide/#constraints-files
