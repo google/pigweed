@@ -36,6 +36,7 @@ fuchsia_repo_files = [
     "sdk/lib/stdcompat/include/lib/stdcompat/internal/bit.h",
     "sdk/lib/stdcompat/include/lib/stdcompat/internal/constructors.h",
     "sdk/lib/stdcompat/include/lib/stdcompat/internal/exception.h",
+    "sdk/lib/stdcompat/include/lib/stdcompat/internal/functional.h",
     "sdk/lib/stdcompat/include/lib/stdcompat/internal/storage.h",
     "sdk/lib/stdcompat/include/lib/stdcompat/internal/type_traits.h",
     "sdk/lib/stdcompat/include/lib/stdcompat/internal/utility.h",
@@ -70,7 +71,7 @@ core.workflow(
         core.replace("#include <zxtest/zxtest.h>", "#include \"gtest/gtest.h\""),
         # Show all commits but exclude the author to reduce line length.
         metadata.squash_notes(
-            "third_party/fuchsia: Copybara import of the fit library\n\n",
+            "third_party/fuchsia: Copybara import\n\n",
             show_author = False,
         ),
     ],
