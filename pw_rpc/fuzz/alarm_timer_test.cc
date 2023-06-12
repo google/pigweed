@@ -37,7 +37,7 @@ TEST(AlarmTimerTest, Restart) {
   timer.Start(50ms);
   for (size_t i = 0; i < 10; ++i) {
     timer.Restart();
-    EXPECT_FALSE(sem.try_acquire_for(10us));
+    EXPECT_FALSE(sem.try_acquire_for(chrono::SystemClock::for_at_least(10us)));
   }
   sem.acquire();
 }
@@ -47,7 +47,7 @@ TEST(AlarmTimerTest, Cancel) {
   AlarmTimer timer([&sem](chrono::SystemClock::time_point) { sem.release(); });
   timer.Start(50ms);
   timer.Cancel();
-  EXPECT_FALSE(sem.try_acquire_for(100us));
+  EXPECT_FALSE(sem.try_acquire_for(chrono::SystemClock::for_at_least(100us)));
 }
 
 TEST(AlarmTimerTest, Destroy) {
@@ -57,7 +57,7 @@ TEST(AlarmTimerTest, Destroy) {
         [&sem](chrono::SystemClock::time_point) { sem.release(); });
     timer.Start(50ms);
   }
-  EXPECT_FALSE(sem.try_acquire_for(100us));
+  EXPECT_FALSE(sem.try_acquire_for(chrono::SystemClock::for_at_least(100us)));
 }
 
 }  // namespace
