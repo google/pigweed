@@ -333,7 +333,8 @@ class OwnersFile:
         # all file: rules:
         for file_rule in self.sections.get(LineType.FILE_RULE, []):
             file_str = file_rule.content[len("file:") :]
-            if ":" in file_str:
+            path = self.__complete_path(file_str)
+            if ":" in file_str and not path.is_file():
                 _LOG.warning(
                     "TODO(b/254322931): This check does not yet support "
                     "<project> or <branch> in a file: rule"
@@ -344,7 +345,8 @@ class OwnersFile:
                     self.path,
                 )
 
-            dependencies.append(self.__complete_path(file_str))
+            else:
+                dependencies.append(path)
 
         # all the per-file rule includes
         for per_file in self.sections.get(LineType.PER_FILE, []):
