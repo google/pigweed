@@ -321,6 +321,7 @@ pw_test("stub_generation_test") {
 pw_test("synchronous_call_test") {
   deps = [
     ":test_method_context",
+    "$dir_pw_thread:thread",
     "$dir_pw_work_queue:pw_work_queue",
     "$dir_pw_work_queue:stl_test_thread",
     "$dir_pw_work_queue:test_thread",

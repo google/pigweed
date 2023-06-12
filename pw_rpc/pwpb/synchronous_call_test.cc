@@ -49,7 +49,11 @@ class SynchronousCallTest : public ::testing::Test {
 
   void TearDown() override {
     work_queue_.RequestStop();
+#if PW_THREAD_JOINING_ENABLED
     work_thread_.join();
+#else
+    work_thread_.detach();
+#endif  // PW_THREAD_JOINING_ENABLED
   }
 
  protected:
