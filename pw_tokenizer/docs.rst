@@ -3,12 +3,16 @@
 ============
 pw_tokenizer
 ============
-:bdg-primary:`host`
-:bdg-primary:`device`
-:bdg-secondary:`Python`
-:bdg-secondary:`C++`
-:bdg-secondary:`TypeScript`
-:bdg-success:`stable`
+.. pigweed-module::
+   :name: pw_tokenizer
+   :tagline: Cut your log sizes in half
+   :status: stable
+   :languages: C11, C++14, Python, TypeScript
+   :code-size-impact: 50% reduction in binary log size
+   :nav:
+      getting started: module-pw_tokenizer-get-started
+      design: module-pw_tokenizer-design
+      api: module-pw_tokenizer-api
 
 Logging is critical, but developers are often forced to choose between
 additional logging or saving crucial flash space. The ``pw_tokenizer`` module
@@ -33,6 +37,8 @@ without printf-style arguments.
   instead of strings. We've seen over 50% reduction in encoded log contents.
 * Reduce CPU usage by replacing snprintf calls with simple tokenization code.
 * Remove potentially sensitive log, assert, and other strings from binaries.
+
+.. _module-pw_tokenizer-design:
 
 --------------
 Basic overview
@@ -113,6 +119,8 @@ size (49 → 15 bytes).
 | When viewed      | ``"Battery state: CHARGING; battery voltage: 3989 mV"``   |         |
 +------------------+-----------------------------------------------------------+---------+
 
+.. _module-pw_tokenizer-get-started:
+
 ---------------
 Getting started
 ---------------
@@ -158,6 +166,8 @@ Once enabled, the tokenizer headers can be included like any Zephyr headers:
   Zephyr handles the additional linker sections via
   ``pw_tokenizer_zephyr.ld`` which is added to the end of the linker file
   via a call to ``zephyr_linker_sources(SECTIONS ...)``.
+
+.. _module-pw_tokenizer-api:
 
 ------------
 Tokenization
