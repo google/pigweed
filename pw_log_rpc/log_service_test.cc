@@ -112,14 +112,13 @@ class LogServiceTest : public ::testing::Test {
   }
 
  protected:
-  std::array<std::byte, kMultiSinkBufferSize> multisink_buffer_;
+  std::array<std::byte, kMultiSinkBufferSize> multisink_buffer_ = {};
   multisink::MultiSink multisink_;
-  RpcLogDrainMap drain_map_;
-  std::array<std::byte, kMaxLogEntrySize> entry_encode_buffer_;
+  std::array<std::byte, kMaxLogEntrySize> entry_encode_buffer_ = {};
   static constexpr size_t kMaxFilterRules = 4;
-  std::array<Filter::Rule, kMaxFilterRules> rules1_;
-  std::array<Filter::Rule, kMaxFilterRules> rules2_;
-  std::array<Filter::Rule, kMaxFilterRules> rules3_;
+  std::array<Filter::Rule, kMaxFilterRules> rules1_ = {};
+  std::array<Filter::Rule, kMaxFilterRules> rules2_ = {};
+  std::array<Filter::Rule, kMaxFilterRules> rules3_ = {};
   static constexpr std::array<std::byte, cfg::kMaxFilterIdBytes> filter_id1_{
       std::byte(65), std::byte(66), std::byte(67), std::byte(0)};
   static constexpr std::array<std::byte, cfg::kMaxFilterIdBytes> filter_id2_{
@@ -133,9 +132,9 @@ class LogServiceTest : public ::testing::Test {
   };
 
   // Drain Buffers
-  std::array<std::byte, kMaxLogEntrySize> drain_buffer1_;
-  std::array<std::byte, kMaxLogEntrySize> drain_buffer2_;
-  std::array<std::byte, RpcLogDrain::kMinEntryBufferSize> small_buffer_;
+  std::array<std::byte, kMaxLogEntrySize> drain_buffer1_ = {};
+  std::array<std::byte, kMaxLogEntrySize> drain_buffer2_ = {};
+  std::array<std::byte, RpcLogDrain::kMinEntryBufferSize> small_buffer_ = {};
   static constexpr uint32_t kIgnoreWriterErrorsDrainId = 1;
   static constexpr uint32_t kCloseWriterOnErrorDrainId = 2;
   static constexpr uint32_t kSmallBufferDrainId = 3;
@@ -157,6 +156,7 @@ class LogServiceTest : public ::testing::Test {
                   RpcLogDrain::LogDrainErrorHandling::kIgnoreWriterErrors,
                   &filters_[2]),
   };
+  RpcLogDrainMap drain_map_;
 
   std::array<std::byte, 128> encoding_buffer_ = {};
 };
