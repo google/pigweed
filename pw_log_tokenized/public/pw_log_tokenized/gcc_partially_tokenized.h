@@ -15,12 +15,12 @@
 
 #include "pw_log_tokenized/log_tokenized.h"
 
-#if !defined(__cplusplus) || !defined(__GNUC__)
+#if !defined(__cplusplus) || !defined(__GNUC__) || defined(__clang__)
 
 // If we're not compiling C++ or we're not using GCC, then tokenize the log.
 #define PW_HANDLE_LOG PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD
 
-#else  // defined(__plusplus) && defined(__GNUC__)
+#else  // defined(__cplusplus) && defined(__GNUC__) && !defined(__clang__)
 
 #include <string_view>
 
@@ -45,4 +45,4 @@
     }                                                                    \
   } while (0)
 
-#endif  // !defined(__cplusplus) || !defined(__GNUC__)
+#endif  // !defined(__cplusplus) || !defined(__GNUC__) || defined(__clang__)
