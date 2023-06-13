@@ -215,14 +215,19 @@ def deduplicate_packages(packages):
         if package['path'] in deduped:
             del deduped[package['path']]
         deduped[package['path']] = package
-    return reversed(list(deduped.values()))
+    return list(reversed(list(deduped.values())))
 
 
 def write_ensure_file(
     package_files, ensure_file, platform
 ):  # pylint: disable=redefined-outer-name
+    logdir = os.path.dirname(ensure_file)
     packages = all_packages(package_files)
+    with open(os.path.join(logdir, 'all-packages.json'), 'w') as outs:
+        json.dump(packages, outs, indent=4)
     deduped_packages = deduplicate_packages(packages)
+    with open(os.path.join(logdir, 'deduped-packages.json'), 'w') as outs:
+        json.dump(deduped_packages, outs, indent=4)
 
     with open(ensure_file, 'w') as outs:
         outs.write(
