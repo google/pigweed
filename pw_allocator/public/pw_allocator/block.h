@@ -150,27 +150,29 @@ class Block final {
   //                       would not be large enough to store a block header.
   Status Split(size_t head_block_inner_size, Block** new_block);
 
-  // Merge this block with the one that comes after it.
-  // This function will not merge blocks if either are in use.
-  //
-  // This may return the following:
-  //   OK: Merge was successful.
-  //   OUT_OF_RANGE: Attempting to merge the "last" block.
-  //   FAILED_PRECONDITION: The blocks could not be merged because one of them
-  //                        was in use.
+  /// Merges this block with the one that comes after it.
+  ///
+  /// @pre The blocks must not be in use.
+  ///
+  /// @returns One of the following:
+  /// * `OK`: The merge was successful.
+  /// * `OUT_OF_RANGE`: Attempting to merge the last block failed.
+  /// * `FAILED_PRECONDITION`: The blocks could not be merged
+  ///   because one of them was in use.
   Status MergeNext();
 
-  // Merge this block with the one that comes before it.
-  // This function will not merge blocks if either are in use.
-  //
-  // Warning: merging with a previous block will invalidate this block instance.
-  // do not perform any operations on this instance after merging.
-  //
-  // This may return the following:
-  //   OK: Merge was successful.
-  //   OUT_OF_RANGE: Attempting to merge the "first" block.
-  //   FAILED_PRECONDITION: The blocks could not be merged because one of them
-  //                        was in use.
+  /// Merges this block with the one that comes before it.
+  ///
+  /// @pre The blocks must not be in use.
+  ///
+  /// @warning Merging with a previous block invalidates this block instance.
+  /// Do not perform any operations on this instance after merging.
+  ///
+  /// @returns One of the following:
+  /// * `OK`: The merge was successful.
+  /// * `OUT_OF_RANGE`: Attempting to merge the first block failed.
+  /// * `FAILED_PRECONDITION`: The blocks could not be merged because
+  ///   one of them was in use.
   Status MergePrev();
 
   // Returns whether this block is in-use or not
