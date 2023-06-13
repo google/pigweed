@@ -131,23 +131,24 @@ class Block final {
            PW_ALLOCATOR_POISON_OFFSET;
   }
 
-  // Split this block, such that this block has an inner size of
-  // `head_block_inner_size`, and return a new block in the remainder of the
-  // space in `new_block`.
-  //
-  // The "remainder" block will be aligned to a alignof(Block*) boundary (and
-  // `head_block_inner_size` will be rounded up). If the remaining space is not
-  // large enough to store a new `Block` after rounding, no splitting will
-  // occur.
-  //
-  // This may return the following:
-  //   OK: The split completed successfully.
-  //   INVALID_ARGUMENT: new_block is null
-  //   FAILED_PRECONDITION: This block is in use and cannot be split.
-  //   OUT_OF_RANGE: The requested size for "this" block is greater than the
-  //                 current inner_size.
-  //   RESOURCE_EXHAUSTED: The split cannot occur because the "remainder" block
-  //                       would not be large enough to store a block header.
+  /// Split this block, such that this block has an inner size of
+  /// `head_block_inner_size`, and return a new block in the remainder of the
+  /// space in `new_block`.
+  ///
+  /// The `remainder` block will be aligned to an `alignof(Block*)` boundary
+  /// (and `head_block_inner_size` will be rounded up). If the remaining space
+  /// is not large enough to store a new `Block` after rounding, no splitting
+  /// will occur.
+  ///
+  /// @returns One of the the following:
+  /// * `OK`: The split completed successfully.
+  /// * `INVALID_ARGUMENT`: `new_block` is `null`.
+  /// * `FAILED_PRECONDITION`: This block is in use and cannot be split.
+  /// * `OUT_OF_RANGE`: The requested size for this block is greater than the
+  ///   current `inner_size`.
+  /// * `RESOURCE_EXHAUSTED`: The split cannot occur because the `remainder`
+  /// block
+  ///   would not be large enough to store a block header.
   Status Split(size_t head_block_inner_size, Block** new_block);
 
   /// Merges this block with the one that comes after it.
