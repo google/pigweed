@@ -79,14 +79,10 @@ from pw_package import package_manager
 
 from pw_presubmit import git_repo, tools
 from pw_presubmit.tools import plural
-
-# TODO(mohrr) Disabling unused-import for LuciTrigger which some downstream
-# projects import from this file for now.
-from pw_presubmit.presubmit_context import (  # pylint: disable=unused-import
+from pw_presubmit.presubmit_context import (
     FormatContext,
     FormatOptions,
     LuciContext,
-    LuciTrigger,
     PRESUBMIT_CONTEXT,
     PresubmitContext,
     PresubmitFailure,
