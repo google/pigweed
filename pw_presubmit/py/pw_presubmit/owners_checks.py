@@ -37,7 +37,7 @@ from typing import (
 )
 
 from pw_presubmit import git_repo
-from pw_presubmit.presubmit import PresubmitFailure
+from pw_presubmit.presubmit_context import PresubmitFailure
 
 _LOG = logging.getLogger(__name__)
 

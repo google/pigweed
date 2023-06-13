@@ -48,12 +48,14 @@ from pw_presubmit import (
 )
 from pw_presubmit.presubmit import (
     FileFilter,
-    FormatOptions,
-    PresubmitContext,
-    PresubmitFailure,
     Programs,
     call,
     filter_paths,
+)
+from pw_presubmit.presubmit_context import (
+    FormatOptions,
+    PresubmitContext,
+    PresubmitFailure,
 )
 from pw_presubmit.tools import log_run, plural
 

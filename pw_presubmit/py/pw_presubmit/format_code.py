@@ -49,11 +49,13 @@ import pw_cli.env
 import pw_env_setup.config_file
 from pw_presubmit.presubmit import (
     FileFilter,
+    filter_paths,
+)
+from pw_presubmit.presubmit_context import (
     FormatContext,
     FormatOptions,
     PresubmitContext,
     PresubmitFailure,
-    filter_paths,
 )
 from pw_presubmit import (
     cli,

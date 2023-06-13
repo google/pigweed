@@ -20,6 +20,8 @@ from pw_presubmit import build, format_code, git_repo
 from pw_presubmit.presubmit import (
     Check,
     FileFilter,
+)
+from pw_presubmit.presubmit_context import (
     PresubmitContext,
     PresubmitFailure,
 )

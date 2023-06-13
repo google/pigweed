@@ -18,7 +18,7 @@ import dataclasses
 import re
 import unittest
 
-from pw_presubmit import presubmit
+from pw_presubmit import presubmit, presubmit_context
 
 
 class TestFileFilter(unittest.TestCase):
@@ -157,13 +157,13 @@ class ProgramsTest(unittest.TestCase):
 
 class ContextTest(unittest.TestCase):
     def test_presubmitcontext(self):  # pylint: disable=no-self-use
-        _ = presubmit.PresubmitContext.create_for_testing()
+        _ = presubmit_context.PresubmitContext.create_for_testing()
 
     def test_lucicontext(self):  # pylint: disable=no-self-use
-        _ = presubmit.LuciContext.create_for_testing()
+        _ = presubmit_context.LuciContext.create_for_testing()
 
     def test_lucitrigger(self):  # pylint: disable=no-self-use
-        _ = presubmit.LuciTrigger.create_for_testing()
+        _ = presubmit_context.LuciTrigger.create_for_testing()
 
 
 if __name__ == '__main__':

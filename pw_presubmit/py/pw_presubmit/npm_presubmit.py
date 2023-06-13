@@ -13,7 +13,8 @@
 # the License.
 """Presubmit to npm install and run tests"""
 
-from pw_presubmit.presubmit import call, PresubmitContext
+from pw_presubmit.presubmit import call
+from pw_presubmit.presubmit_context import PresubmitContext
 
 
 def npm_test(ctx: PresubmitContext) -> None:

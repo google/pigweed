@@ -19,10 +19,10 @@ from pathlib import Path
 from typing import Callable, Dict, Optional, Sequence
 import urllib.parse
 
-from pw_presubmit.presubmit import (
+from pw_presubmit.presubmit import filter_paths
+from pw_presubmit.presubmit_context import (
     PresubmitContext,
     PresubmitFailure,
-    filter_paths,
 )
 from pw_presubmit import git_repo, plural
 

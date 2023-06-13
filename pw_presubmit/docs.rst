@@ -477,10 +477,8 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
        inclusive_language,
        python_checks,
    )
-   from pw_presubmit.presubmit import (
-       PresubmitContext,
-       filter_paths,
-   )
+   from pw_presubmit.presubmit import filter_paths
+   from pw_presubmit.presubmit_context import PresubmitContext
    from pw_presubmit.install_hook import install_git_hook
 
    # Set up variables for key project paths.

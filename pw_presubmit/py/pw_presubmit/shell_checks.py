@@ -17,8 +17,10 @@ import logging
 
 from pw_presubmit.presubmit import (
     Check,
-    PresubmitContext,
     filter_paths,
+)
+from pw_presubmit.presubmit_context import (
+    PresubmitContext,
     PresubmitFailure,
 )
 from pw_presubmit.tools import log_run

@@ -18,7 +18,7 @@ from pathlib import Path
 import re
 from typing import Dict, List, Union
 
-from . import presubmit
+from . import presubmit, presubmit_context
 
 # List borrowed from Android:
 # https://source.android.com/setup/contribute/respectful-code
@@ -107,7 +107,7 @@ class LineMatch:
 
 @presubmit.check(name='inclusive_language')
 def presubmit_check(
-    ctx: presubmit.PresubmitContext,
+    ctx: presubmit_context.PresubmitContext,
     words_regex=NON_INCLUSIVE_WORDS_REGEX,
 ):
     """Presubmit check that ensures files do not contain banned words."""
@@ -179,7 +179,7 @@ ignored with "inclusive-language: disable" and reenabled with
         )
         # Re-enable just in case: inclusive-language: enable.
 
-        raise presubmit.PresubmitFailure
+        raise presubmit_context.PresubmitFailure
 
 
 def inclusive_language_checker(*words):
@@ -188,7 +188,7 @@ def inclusive_language_checker(*words):
     regex = _process_inclusive_language(*words)
 
     def inclusive_language(  # pylint: disable=redefined-outer-name
-        ctx: presubmit.PresubmitContext,
+        ctx: presubmit_context.PresubmitContext,
     ):
         globals()['inclusive_language'](ctx, regex)
 

@@ -17,9 +17,9 @@ import logging
 
 from pw_presubmit.presubmit import (
     Check,
-    PresubmitContext,
     filter_paths,
 )
+from pw_presubmit.presubmit_context import PresubmitContext
 from pw_presubmit import (
     build,
     format_code,

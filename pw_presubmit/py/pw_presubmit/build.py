@@ -49,10 +49,12 @@ from pw_presubmit.presubmit import (
     FileFilter,
     filter_paths,
     install_package,
-    PresubmitContext,
-    PresubmitFailure,
     PresubmitResult,
     SubStep,
+)
+from pw_presubmit.presubmit_context import (
+    PresubmitContext,
+    PresubmitFailure,
 )
 from pw_presubmit import (
     bazel_parser,

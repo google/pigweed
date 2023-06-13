@@ -17,7 +17,7 @@ import logging
 from pathlib import Path
 from typing import Callable, Optional, Tuple
 
-from pw_presubmit.presubmit import (
+from pw_presubmit.presubmit_context import (
     PresubmitContext,
     PresubmitFailure,
 )
