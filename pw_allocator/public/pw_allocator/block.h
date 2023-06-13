@@ -175,45 +175,50 @@ class Block final {
   ///   one of them was in use.
   Status MergePrev();
 
-  // Returns whether this block is in-use or not
+  /// Indicates whether the block is in use.
+  ///
+  /// @returns `true` if the block is in use or `false` if not.
   bool Used() const { return (NextAsUIntPtr() & kInUseFlag) == kInUseFlag; }
 
-  // Returns whether this block is the last block or
-  // not (i.e. whether NextBlock points to a valid block or not).
-  // This is needed because NextBlock points to the end of this block,
-  // whether there is a valid block there or not.
+  /// Indicates whether this block is the last block or not (i.e. whether
+  /// `NextBlock()` points to a valid block or not). This is needed because
+  /// `NextBlock()` points to the end of this block, whether there is a valid
+  /// block there or not.
+  ///
+  /// @returns `true` is this is the last block or `false` if not.
   bool Last() const { return (NextAsUIntPtr() & kLastFlag) == kLastFlag; }
 
-  // Mark this block as in-use
+  /// Marks this block as in use.
   void MarkUsed() {
     next_ = reinterpret_cast<Block*>((NextAsUIntPtr() | kInUseFlag));
   }
 
-  // Mark this block as free
+  /// Marks this block as free.
   void MarkFree() {
     next_ = reinterpret_cast<Block*>((NextAsUIntPtr() & ~kInUseFlag));
   }
 
-  // Mark this block as the last one in the chain.
+  /// Marks this block as the last one in the chain.
   void MarkLast() {
     next_ = reinterpret_cast<Block*>((NextAsUIntPtr() | kLastFlag));
   }
 
-  // Clear the "last" bit from this block.
+  /// Clears the last bit from this block.
   void ClearLast() {
     next_ = reinterpret_cast<Block*>((NextAsUIntPtr() & ~kLastFlag));
   }
 
-  // Fetch the block immediately after this one.
-  // Note: you should also check Last(); this function may return a valid
-  // block, even if one does not exist.
+  /// Fetches the block immediately after this one.
+  ///
+  /// @note You should also check `Last()`. `Next()` may return a valid
+  /// block, even if one does not exist.
   Block* Next() const {
     return reinterpret_cast<Block*>(
         (NextAsUIntPtr() & ~(kInUseFlag | kLastFlag)));
   }
 
-  // Return the block immediately before this one. This will return nullptr
-  // if this is the "first" block.
+  /// @returns The block immediately before this one. Returns a null pointer
+  /// if this is the first block.
   Block* Prev() const { return prev_; }
 
   /// @brief Checks if a block is valid.
