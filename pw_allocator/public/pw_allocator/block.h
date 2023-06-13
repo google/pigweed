@@ -114,18 +114,18 @@ class Block final {
                                     PW_ALLOCATOR_POISON_OFFSET);
   }
 
-  // Size including the header.
+  /// @returns The total size of the block in bytes, including the header.
   size_t OuterSize() const {
     return reinterpret_cast<intptr_t>(Next()) -
            reinterpret_cast<intptr_t>(this);
   }
 
-  // Usable bytes inside the block.
+  /// @returns The number of usable bytes inside the block.
   size_t InnerSize() const {
     return OuterSize() - sizeof(*this) - 2 * PW_ALLOCATOR_POISON_OFFSET;
   }
 
-  // Return the usable space inside this block.
+  /// @returns A pointer to the usable space inside this block.
   std::byte* UsableSpace() {
     return reinterpret_cast<std::byte*>(this) + sizeof(*this) +
            PW_ALLOCATOR_POISON_OFFSET;
