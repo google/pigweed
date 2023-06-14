@@ -29,9 +29,34 @@ export const styles = css`
         display: flex;
     }
 
-    p {
-        flex: 1 0;
-        white-space: nowrap;
+    button {
+        color: white;
+    }
+
+    .button-toggle {
+        background-color: rgb(45, 49, 52);
+    }
+
+    .field-menu {
+        background-color: rgb(72, 70, 76);
+        border-radius: 4px;
+        padding: 0.5rem 0.75rem;
+        margin: 0;
+        position: absolute;
+        right: 0;
+        z-index: 2;
+    }
+
+    .field-menu-item {
+        align-items: center;
+        display: flex;
+        height: 3rem;
+        width: max-content;
+    }
+
+    .field-toggle {
+        position: relative;
+        border-radius: 1.5rem;
     }
 
     .input-container {
@@ -51,7 +76,17 @@ export const styles = css`
         /* border: 1px solid rgba(255, 255, 255, 0.87); */
     }
 
-    button {
-        color: white;
+    input[type=checkbox] {
+        height: 1.125rem;
+        width: 1.125rem;
+    }
+
+    label {
+        font-color: var(--md-sys-color-on-surface-variant);
+        padding-left: 0.75rem;
+
+    p {
+        flex: 1 0;
+        white-space: nowrap;
     }
 `;

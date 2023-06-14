@@ -13,7 +13,7 @@
 // the License.
 
 import { LitElement, html } from "lit";
-import { customElement } from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 import { styles } from "./controls.styles";
 
 /**
@@ -23,8 +23,12 @@ import { styles } from "./controls.styles";
 export class LogViewControls extends LitElement {
     static styles = styles;
 
+    @property({ type: Array })
+    fieldKeys: string[];
+
     constructor() {
         super();
+        this.fieldKeys = [];
     }
 
     render() {
@@ -32,8 +36,8 @@ export class LogViewControls extends LitElement {
             <p class="host-name">Host name</p>
             
             <div class="input-container">
-                <input placeholder="Search" type="text"></input>        
-            </div>      
+                <input placeholder="Search" type="text"></input>
+            </div>
 
             <div class="actions-container">
                 <md-standard-icon-button>
@@ -48,14 +52,46 @@ export class LogViewControls extends LitElement {
                     <md-icon>delete_sweep</md-icon>
                 </md-standard-icon-button>
 
-                <md-standard-icon-button>
-                    <md-icon>view_column</md-icon>
-                </md-standard-icon-button>
+                <div class='field-toggle'>
+                    <md-standard-icon-button @click=${this.toggleFieldsDropdown}>
+                        <md-icon>view_column</md-icon>
+                    </md-standard-icon-button>
+                    <menu class='field-menu' hidden>
+                        ${Array.from(this.fieldKeys).map((field) => html`
+                        <li class='field-menu-item'>
+                        <input class='fields' @click=${this.handleFieldToggle} checked type='checkbox' value=${field}>
+                            <label for=${field}>${field}</label>
+                        </li>
+                        `)}
+                    </menu>
+                </div>
 
                 <md-standard-icon-button>
                     <md-icon>more_horiz</md-icon>
                 </md-standard-icon-button>
             </div>
         `;
+    }
+
+    handleFieldToggle(e: Event) {
+        // TODO(b/283505711): Handle select all/none condition
+        const inputEl = e.target as HTMLInputElement;
+        let fieldToggle = new CustomEvent('field-toggle', {
+            detail: {
+                bubbles: true,
+                composed: true,
+                message: 'visible fields have changed',
+                field: inputEl.value,
+                isChecked: inputEl.checked,
+            }
+        });
+        this.dispatchEvent(fieldToggle);
+    }
+
+    toggleFieldsDropdown() {
+        const dropdownElement = this.renderRoot.querySelector('.field-menu') as HTMLElement;
+        const dropdownButton = this.renderRoot.querySelector('.field-toggle') as HTMLElement;
+        dropdownElement.hidden = (dropdownElement!.hidden == true) ? false : true;
+        dropdownButton.classList.toggle('button-toggle');
     }
 }

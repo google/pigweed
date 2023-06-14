@@ -17,6 +17,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { styles } from "./log-view.styles";
 import { LogEntry } from "../../shared/interfaces";
 
+
 // Import subcomponents
 import "./log-list/log-list";
 import "./controls/controls";
@@ -32,13 +33,25 @@ export class LogView extends LitElement {
      * Description of logs.
      */
     @property({ type: Array })
-    logs: LogEntry[];
+    logs: LogEntry[] = [];
+
+    /**
+     * Logs filtered based on the user filter
+     */
+    @property({ type: Array })
+    _filteredLogs: LogEntry[] = [];
+
+    /**
+     * Fields from some log source
+     */
+    @property({ type: Array, reflect: true })
+    _fields: String[] = [];
 
     /**
      * Description of selectedHostId.
      */
     @state()
-    private _selectedHostId: string;
+    private _selectedHostId: string = 'example-host';
 
     /**
      * Description of filter.
@@ -48,15 +61,73 @@ export class LogView extends LitElement {
 
     constructor() {
         super();
-        this.logs = [];
-        this._selectedHostId = "example-host";
         this._filter = (logEntry) => logEntry.hostId === this._selectedHostId;
     }
 
     render() {
-        const filteredLogs = this.logs.filter(this._filter);
+        this._filteredLogs = JSON.parse(JSON.stringify(this.logs.filter(this._filter)));
+        this._fields = this.getFields(this.logs);
+        return html`<log-view-controls .fieldKeys=${this._fields} 
+        @field-toggle="${this.handleFieldToggleEvent}"role="toolbar"></log-view-controls>
+                <log-list .logs=${this._filteredLogs}></log-list>`;
+    }
 
-        return html` <log-view-controls role="toolbar"></log-view-controls>
-            <log-list .logs=${filteredLogs}></log-list>`;
+    /**
+     * Assigns logFields based on the log source
+     * @param logs the source logs to extract fields from
+     * @return     an array of log fields
+     */
+    private getFields(logs: LogEntry[]): String[] {
+        const log = logs[0];
+        const logFields = [] as String[];
+        if (log != undefined) {
+            log.fields.forEach((field) => {
+                logFields.push(field.key);
+            });
+        }
+        return logFields;
+    }
+
+    /**
+     * Handles the fieldToggle event for field visibility
+     * @param e click event from the toggled field
+     */
+    handleFieldToggleEvent(e: CustomEvent) {
+        // should be index to show/hide element
+        let index = -1;
+
+        // TODO(b/287285444): surface table element as property of LogList
+        const logListEl = this.renderRoot.querySelector('log-list') as HTMLElement;
+        const tableBodyEl = logListEl?.shadowRoot?.querySelector('tbody') as HTMLElement;
+        const table = Array.from(tableBodyEl?.children) as HTMLElement[];
+
+        // Get index from the source logs to show field back into view
+        if (e.detail.isChecked) {
+            this._fields.forEach((_, i: number) => {
+                if (this.logs[0].fields[i].key == e.detail.field) {
+                    index = i;
+                }
+            });
+
+            table.forEach((_, i: number) => {
+                let tableCellEl = table[i].children[index] as HTMLElement;
+                tableCellEl.hidden = false;
+            });
+        }
+
+        // Get index from dropdown and hide field from view
+        else {
+            this._fields.forEach((_, i: number) => {
+                if (this._filteredLogs[0].fields[i].key === e.detail.field) {
+                    index = i;
+                }
+            });
+
+            table.forEach((_, i: number) => {
+                let tableCellEl = table[i].children[index] as HTMLElement;
+                tableCellEl.hidden = true;
+            });
+        }
     }
 }
+
