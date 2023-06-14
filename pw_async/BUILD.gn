@@ -68,7 +68,10 @@ pw_source_set("types") {
     dir_pw_function,
     dir_pw_status,
   ]
-  public = [ "public/pw_async/internal/types.h" ]
+  public = [
+    "public/pw_async/context.h",
+    "public/pw_async/task_function.h",
+  ]
   visibility = [
                  ":*",
                  "$dir_pw_async_basic:*",

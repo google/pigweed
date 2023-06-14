@@ -13,7 +13,8 @@
 // the License.
 #pragma once
 
-#include "pw_async/internal/types.h"
+#include "pw_async/context.h"
+#include "pw_async/task_function.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_containers/intrusive_list.h"
 

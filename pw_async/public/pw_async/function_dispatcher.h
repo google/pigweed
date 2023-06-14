@@ -16,7 +16,7 @@
 #include <utility>
 
 #include "pw_async/dispatcher.h"
-#include "pw_async/internal/types.h"
+#include "pw_async/task_function.h"
 #include "pw_status/status.h"
 
 namespace pw::async {

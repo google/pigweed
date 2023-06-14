@@ -21,25 +21,12 @@ namespace pw::async {
 class Dispatcher;
 class Task;
 
+/// Contextual information provided by a `Dispatcher` to a running task.
 struct Context {
+  /// The `Dispatcher` running the current `Task`.
   Dispatcher* dispatcher;
+  /// The current ``Task`` being executed.
   Task* task;
 };
-
-// A TaskFunction is a unit of work that is wrapped by a Task and executed on a
-// Dispatcher.
-//
-// TaskFunctions take a `Context` as their first argument. Before executing a
-// Task, the Dispatcher sets the pointer to itself and to the Task in `Context`.
-//
-// TaskFunctions take a `Status` as their second argument. When a Task is
-// running as normal, |status| == PW_STATUS_OK. If a Task will not be able to
-// run as scheduled, the Dispatcher will still invoke the TaskFunction with
-// |status| == PW_STATUS_CANCELLED. This provides an opportunity to reclaim
-// resources held by the Task.
-//
-// A Task will not run as scheduled if, for example, it is still waiting when
-// the Dispatcher shuts down.
-using TaskFunction = Function<void(Context&, Status)>;
 
 }  // namespace pw::async

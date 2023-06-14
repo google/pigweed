@@ -116,11 +116,13 @@ group("third_party_docs") {
 _doxygen_input_files = [
   # All sources with doxygen comment blocks.
   "$dir_pw_allocator/public/pw_allocator/block.h",
+  "$dir_pw_async/public/pw_async/context.h",
   "$dir_pw_async/public/pw_async/dispatcher.h",
   "$dir_pw_async/public/pw_async/heap_dispatcher.h",
   "$dir_pw_async/public/pw_async/fake_dispatcher_fixture.h",
   "$dir_pw_async/public/pw_async/function_dispatcher.h",
   "$dir_pw_async/public/pw_async/task.h",
+  "$dir_pw_async/public/pw_async/task_function.h",
   "$dir_pw_async_basic/public/pw_async_basic/dispatcher.h",
   "$dir_pw_base64/public/pw_base64/base64.h",
   "$dir_pw_bluetooth/public/pw_bluetooth/gatt/client.h",

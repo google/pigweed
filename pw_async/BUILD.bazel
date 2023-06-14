@@ -17,12 +17,13 @@ filegroup(
     srcs = [
         "fake_dispatcher_test.cc",
         "heap_dispatcher.cc",
+        "public/pw_async/context.h",
         "public/pw_async/dispatcher.h",
         "public/pw_async/fake_dispatcher.h",
         "public/pw_async/fake_dispatcher_fixture.h",
         "public/pw_async/function_dispatcher.h",
         "public/pw_async/heap_dispatcher.h",
-        "public/pw_async/internal/types.h",
         "public/pw_async/task.h",
+        "public/pw_async/task_function.h",
     ],
 )

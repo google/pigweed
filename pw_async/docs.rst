@@ -33,6 +33,11 @@ Dispatcher API
 
 Task API
 ==============
+.. doxygenstruct:: pw::async::Context
+   :members:
+
+.. doxygentypedef:: pw::async::TaskFunction
+
 .. doxygenclass:: pw::async::Task
    :members:
 
@@ -41,8 +46,17 @@ Facade API
 
 Task
 ----
-The Task type represents a work item that is submitted to a Dispatcher. The Task
-facade enables Dispatcher backends to specify custom state and methods.
+The ``Task`` type represents a work item that can be submitted to and executed
+by a ``Dispatcher``.
+
+To run work on a ``Dispatcher`` event loop, a ``Task`` can be constructed from
+a function or lambda (see ``pw::async::TaskFunction``) and submitted to run
+using the ``pw::async::Dispatcher::Post`` method (and its siblings, ``PostAt``
+etc.).
+
+The ``Task`` facade enables backends to provide custom storage containers for
+``Task`` s, as well as to keep per- ``Task`` data alongside the ``TaskFunction``
+(such as ``next`` pointers for intrusive linked-lists of ``Task``).
 
 The active Task backend is configured with the GN variable
 ``pw_async_TASK_BACKEND``. The specified target must define a class
