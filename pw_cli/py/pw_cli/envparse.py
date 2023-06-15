@@ -173,7 +173,10 @@ class EnvironmentParser:
                     and var not in self._variables
                     and not var.endswith(allowed_suffixes)
                 ):
-                    raise ValueError(f'Unrecognized environment variable {var}')
+                    raise ValueError(
+                        f'Unrecognized environment variable {var}, please '
+                        'remove it from your environment'
+                    )
 
         return namespace
 
