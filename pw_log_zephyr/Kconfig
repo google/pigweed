@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+menu "pw_log"
+
 choice PIGWEED_LOG
     prompt "Logging backend used"
     help
@@ -65,12 +67,45 @@ endchoice
 
 if PIGWEED_LOG_ZEPHYR || PIGWEED_LOG_TOKENIZED || PIGWEED_LOG_TOKENIZED_RPC
 
-module = PIGWEED
-module-str = "pigweed"
-source "subsys/logging/Kconfig.template.log_config"
+choice "PIGWEED_LOG_LEVEL_CHOICE"
+	prompt "Max compiled-in log level for pigweed"
+	default PIGWEED_LOG_LEVEL_DEFAULT
+	depends on LOG
 
-endif # PIGWEED_LOG_ZEPHYR || PIGWEED_LOG_TOKENIZED
+config PIGWEED_LOG_LEVEL_OFF
+	bool "Off"
+
+config PIGWEED_LOG_LEVEL_ERR
+	bool "Error"
+
+config PIGWEED_LOG_LEVEL_WRN
+	bool "Warning"
+
+config PIGWEED_LOG_LEVEL_INF
+	bool "Info"
+
+config PIGWEED_LOG_LEVEL_DBG
+	bool "Debug"
+
+config PIGWEED_LOG_LEVEL_DEFAULT
+	bool "Default"
+
+endchoice
+
+config PIGWEED_LOG_LEVEL
+	int
+	depends on LOG
+	default 0 if PIGWEED_LOG_LEVEL_OFF
+	default 1 if PIGWEED_LOG_LEVEL_ERR
+	default 2 if PIGWEED_LOG_LEVEL_WRN
+	default 3 if PIGWEED_LOG_LEVEL_INF
+	default 4 if PIGWEED_LOG_LEVEL_DBG
+	default LOG_DEFAULT_LEVEL if PIGWEED_LOG_LEVEL_DEFAULT
+
+endif # PIGWEED_LOG_ZEPHYR || PIGWEED_LOG_TOKENIZED || PIGWEED_LOG_TOKENIZED_RPC
 
 if PIGWEED_LOG_TOKENIZED
 rsource "Kconfig.tokenized"
 endif # PIGWEED_LOG_TOKENIZED
+
+endmenu

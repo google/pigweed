@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+menu "pw_thread"
+
 config PIGWEED_THREAD_SLEEP
     bool "Enabled the Zephyr pw_thread.sleep backend"
     select PIGWEED_CHRONO_SYSTEM_CLOCK
@@ -43,3 +45,5 @@ config PIGWEED_THREAD_NUM_PREEMPT_PRIORITIES
   range 0 NUM_PREEMPT_PRIORITIES
 
 endif # PIGWEED_THREAD
+
+endmenu

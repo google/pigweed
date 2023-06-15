@@ -12,6 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+menu "pw_assert"
+
 config PIGWEED_ASSERT
     bool "Enable Pigweed assert library (pw_assert)"
     select PIGWEED_PREPROCESSOR
+
+endmenu

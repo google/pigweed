@@ -12,10 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-menuconfig PIGWEED_RPC_NANOPB
-    bool "Pigweed RPC nanobp"
-
-if PIGWEED_RPC_NANOPB
+menu "nanopb"
 
 config PIGWEED_RPC_NANOPB_DIR
     string "Optional 3rd party directory for nanopb"
@@ -50,4 +47,4 @@ config PIGWEED_RPC_NANOPB_COMMON
 config PIGWEED_RPC_NANOPB_ECHO_SERVICE
     bool "Enable Pigweed RPC/Nanopb echo service library (pw_rpc.nanopb.echo_service)"
 
-endif # PIGWEED_RPC_NANOPB
+endmenu

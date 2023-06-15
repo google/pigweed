@@ -12,9 +12,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+menu "pw_polyfill"
+
 config PIGWEED_POLYFILL
     bool "Enable the Pigweed polyfill library (pw_polyfill)"
 
 config PIGWEED_POLYFILL_OVERRIDES
     bool "Enable the Pigweed polyfill overrides library (pw_polyfill.overrides)"
     depends on PIGWEED_POLYFILL
+
+endmenu

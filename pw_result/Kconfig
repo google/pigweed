@@ -12,7 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+menu "pw_result"
+
 config PIGWEED_RESULT
     bool "Enable Pigweed result library (pw_result)"
     select PIGWEED_ASSERT
     select PIGWEED_STATUS
+
+endmenu

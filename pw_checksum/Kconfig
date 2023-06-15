@@ -12,7 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+menu "pw_checksum"
+
 config PIGWEED_CHECKSUM
     bool "Enable Pigweed checksum library (pw_checksum)"
     select PIGWEED_SPAN
     select PIGWEED_BYTES
+
+endmenu

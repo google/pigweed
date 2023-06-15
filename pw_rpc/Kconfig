@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+menu "pw_rpc"
+
 rsource "nanopb/Kconfig"
 
 config PIGWEED_RPC_SERVER
@@ -40,3 +42,5 @@ config PIGWEED_RPC_COMMON
     select PIGWEED_STATUS
     select PIGWEED_LOG
     select PIGWEED_SYNC_MUTEX
+
+endmenu

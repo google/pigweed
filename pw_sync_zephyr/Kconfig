@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+menu "pw_sync"
+
 config PIGWEED_SYNC
     bool
     select PIGWEED_CHRONO_SYSTEM_CLOCK
@@ -37,3 +39,5 @@ config PIGWEED_SYNC_THREAD_NOTIFICATION
 config PIGWEED_SYNC_TIMED_THREAD_NOTIFICATION
     bool "Link pw_sync.timed_thread_notification and set the Zephyr backend"
     select PIGWEED_SYNC_BINARY_SEMAPHORE
+
+endmenu

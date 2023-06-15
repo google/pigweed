@@ -12,5 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+menu "pw_status"
+
 config PIGWEED_STATUS
     bool "Enable the Pigweed status library (pw_status)"
+
+endmenu

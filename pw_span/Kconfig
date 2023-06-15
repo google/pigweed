@@ -12,6 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+menu "pw_span"
+
 config PIGWEED_SPAN
     bool "Enable the Pigweed span library (pw_span)"
     select PIGWEED_POLYFILL
+
+endmenu

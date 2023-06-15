@@ -15,8 +15,12 @@
 # Do not rely on the PW_ROOT environment variable being set through bootstrap.
 # Regardless of whether it's set or not the following include will ensure it is.
 
+menu "pw_base64"
+
 config PIGWEED_BASE64
     bool "Pigweed base64 library"
     help
       Link the pw_base64 library into Zephyr so it may be used in any Zephyr
       library.
+
+endmenu

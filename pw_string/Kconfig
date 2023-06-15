@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+menu "pw_string"
+
 config PIGWEED_STRING
     bool "Enable Pigweed string library (pw_string)"
     select PIGWEED_ASSERT
@@ -19,3 +21,5 @@ config PIGWEED_STRING
     select PIGWEED_RESULT
     select PIGWEED_SPAN
     select PIGWEED_STATUS
+
+endmenu

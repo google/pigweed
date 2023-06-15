@@ -12,7 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+menu "pw_varint"
+
 config PIGWEED_VARINT
     bool "Enable Pigweed variable length int library (pw_varint)"
     select PIGWEED_PREPROCESSOR
     select PIGWEED_SPAN
+
+endmenu

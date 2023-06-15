@@ -12,9 +12,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+menu "pw_bytes"
+
 config PIGWEED_BYTES
     bool "Enable the Pigweed bytes library (pw_bytes)"
     select PIGWEED_POLYFILL_OVERRIDES
     select PIGWEED_PREPROCESSOR
     select PIGWEED_SPAN
     select PIGWEED_STATUS
+
+endmenu

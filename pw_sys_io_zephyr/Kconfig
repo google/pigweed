@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+menu "pw_sys_io"
+
 config PIGWEED_SYS_IO
     bool "Enable the Zephyr system IO module"
     select PIGWEED_SPAN
@@ -33,3 +35,5 @@ config PIGWEED_SYS_IO_USB
     bool "Use the USB for I/O"
 
 endif # PIGWEED_SYS_IO
+
+endmenu

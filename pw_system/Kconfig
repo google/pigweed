@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+menu "pw_system"
+
 config PIGWEED_SYSTEM_LOG_BACKEND
     bool "Enables pw_system.log_backend backend"
 config PIGWEED_SYSTEM_TARGET_HOOKS
@@ -30,3 +32,5 @@ config PIGWEED_SYSTEM_TARGET_HOOKS_WORK_QUEUE_STACK_SIZE
     int "Work Queue thread stack size"
     default 4096
 endif # PIGWEED_SYSTEM_TARGET_HOOKS
+
+endmenu

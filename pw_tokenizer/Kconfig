@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+menu "pw_tokenizer"
+
 config PIGWEED_TOKENIZER
   bool "Enable the pw_tokenizer library"
   select PIGWEED_CONTAINERS
@@ -31,3 +33,5 @@ config PIGWEED_DETOKENIZER
   select PIGWEED_SPAN
   select PIGWEED_BYTES
   select PIGWEED_VARINT
+
+endmenu

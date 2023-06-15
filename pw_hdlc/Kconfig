@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+menu "pw_hdlc"
+
 config PIGWEED_HDLC
     bool "Enable Pigweed HDLC library (pw_hdlc)"
     select DEPRECATED
@@ -30,3 +32,4 @@ config PIGWEED_HDLC_RPC
     select PIGWEED_SYS_IO
     select PIGWEED_LOG
 
+endmenu

@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+menu "pw_multisink"
+
 config PIGWEED_MULTISINK
     bool "Multisink module used for forwarding multiple attached sinks"
 
@@ -28,3 +30,5 @@ config PIGWEED_MULTISINK_UTIL
     bool "Utility library for the multisink module"
 
 endif # PIGWEED_MULTISINK
+
+endmenu

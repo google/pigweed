@@ -12,5 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+menu "pw_preprocessor"
+
 config PIGWEED_PREPROCESSOR
     bool "Enable Pigweed preprocessor library (pw_preprocessor)"
+
+endmenu
