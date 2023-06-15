@@ -371,32 +371,66 @@ last topologically takes priority. For example, with the file contents below,
 ``d.json``'s entries will appear in ``PATH`` before ``c.json``'s, which will
 appear before ``b.json``'s, which will appear before ``a.json``'s.
 
-``pigweed.json``
-  .. code-block:: json
+.. code-block:: json
+   :caption: :octicon:`file;1em` pigweed.json
 
-     {
-       "pw": {
-         "pw_env_setup": {
-           "cipd_package_files": [
-             "a.json",
-             "b.json",
-             "d.json"
-           ]
-         }
+   {
+     "pw": {
+       "pw_env_setup": {
+         "cipd_package_files": [
+           "a.json",
+           "b.json",
+           "d.json"
+         ]
        }
      }
+   }
 
-``a.json``
-  ``{"package_files": [...]}``
+.. code-block:: json
+   :caption: :octicon:`file;1em` a.json
 
-``b.json``
-  ``{"included_files": ["c.json"], "package_files": [...]}``
+   {
+     "package_files": [
+       // ...
+     ]
+   }
 
-``c.json``
-  ``{"package_files": [...]}``
+.. code-block:: json
+   :caption: :octicon:`file;1em` b.json
 
-``d.json``
-  ``{"package_files": [...]}``
+   {
+     "included_files": ["c.json"],
+     "package_files": [
+       // ...
+     ]
+   }
+
+.. code-block:: json
+   :caption: :octicon:`file;1em` c.json
+
+   {
+     "package_files": [
+       // ...
+     ]
+   }
+
+.. code-block:: json
+   :caption: :octicon:`file;1em` d.json
+
+   {
+     "package_files": [
+       // ...
+     ]
+   }
+
+.. code-block::
+   :caption: Effective File Loading Order
+
+   pigweed.json
+   a.json
+   b.json
+   c.json
+   d.json
 
 Pinning Python Packages
 ***********************
