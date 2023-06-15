@@ -16,11 +16,8 @@ import commonjs from '@rollup/plugin-commonjs';
 import resolve from '@rollup/plugin-node-resolve';
 import pluginTypescript from '@rollup/plugin-typescript';
 import path from 'path';
-import dts from 'rollup-plugin-dts';
 import nodePolyfills from 'rollup-plugin-node-polyfills';
 import sourceMaps from 'rollup-plugin-sourcemaps';
-
-import tsConfig from './tsconfig.json';
 
 export default [
   // Bundle proto collection script
@@ -77,14 +74,6 @@ export default [
       // Resolve source maps to the original source
       sourceMaps()
     ]
-  },
-  // Types for proto collection
-  {
-    input: path.join(
-        'dist', 'protos', 'types', 'dist', 'protos', 'collection.d.ts'),
-    output:
-        [{file: path.join('dist', 'protos', 'collection.d.ts'), format: 'es'}],
-    plugins: [dts({compilerOptions: tsConfig.compilerOptions})]
   },
   // Bundle Pigweed log component and modules
   {
