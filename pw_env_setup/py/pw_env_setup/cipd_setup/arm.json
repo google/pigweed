@@ -12,6 +12,20 @@
         "version:2@12.2.mpacbti-rel1.1"
       ],
       "version_file": ".versions/gcc-arm-none-eabi.version"
+    },
+    {
+      "path": "infra/3pp/tools/cpython3/${platform}",
+      "platforms": [
+        "linux-amd64",
+        "linux-arm64",
+        "mac-amd64",
+        "mac-arm64",
+        "windows-amd64"
+      ],
+      "tags": [
+        "version:2@3.8.10.chromium.24"
+      ],
+      "subdir": "python"
     }
   ]
 }
