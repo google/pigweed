@@ -49,3 +49,7 @@ MEMORY
     LENGTH = PW_BOOT_RAM_SIZE
 }
 
+/* Define a symbol used in the test source to verify that this linker script is
+ * actually used
+ */
+_linker_defined_symbol = 0xDEADBEEF;

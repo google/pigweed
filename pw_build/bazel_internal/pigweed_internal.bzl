@@ -125,7 +125,18 @@ def _preprocess_linker_script_impl(ctx):
         ] + action_flags + ctx.attr.copts,
         env = env,
     )
-    return [DefaultInfo(files = depset([output_script]))]
+    linker_input = cc_common.create_linker_input(
+        owner = ctx.label,
+        user_link_flags = ["-T", output_script.path],
+        additional_inputs = depset(direct = [output_script]),
+    )
+    linking_context = cc_common.create_linking_context(
+        linker_inputs = depset(direct = [linker_input]),
+    )
+    return [
+        DefaultInfo(files = depset([output_script])),
+        CcInfo(linking_context = linking_context),
+    ]
 
 pw_linker_script = rule(
     _preprocess_linker_script_impl,

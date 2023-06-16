@@ -34,6 +34,26 @@ pw_linker_script(
 cc_binary(
     name = "test_linker_script",
     srcs = ["test.cc"],
+    deps = [":linker_script_test"],
+)
+
+# Use cc_library to depend on the linker script, and then use cc_binary to build
+# the test, verifying that linker scripts can be included via transitive deps.
+cc_library(
+    name = "lib_linker_script",
+    deps = [":linker_script_test"],
+)
+
+cc_binary(
+    name = "test_transitive_linker_script",
+    srcs = ["test.cc"],
+    deps = [":lib_linker_script"],
+)
+
+# Verify that the linker script can also be specified directly.
+cc_binary(
+    name = "test_direct_linker_script",
+    srcs = ["test.cc"],
     additional_linker_inputs = [":linker_script_test"],
     linkopts = ["-T $(location :linker_script_test)"],
 )

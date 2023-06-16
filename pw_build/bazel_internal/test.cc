@@ -12,6 +12,13 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+// This symbol is defined by the linker script. If the linker script is not
+// correctly used, this will be missing.
+extern int _linker_defined_symbol;
+
 // This file is intentionally very simple and is used only to test that the
 // linker script generator works as expected.
-int main() { return 0; }
+int main() {
+  volatile int linker_defined_pointer = _linker_defined_symbol;
+  return 0;
+}
