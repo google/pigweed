@@ -52,6 +52,11 @@ constraint_value(
     constraint_setting = ":port",
 )
 
+constraint_value(
+    name = "port_Xtensa",
+    constraint_setting = ":port",
+)
+
 pw_cc_library(
     name = "freertos",
     srcs = [
@@ -68,14 +73,23 @@ pw_cc_library(
         ],
         ":port_ARM_CM4F": ["portable/GCC/ARM_CM4F/port.c"],
         ":port_ARM_CM7": ["portable/GCC/ARM_CM7/r0p1/port.c"],
+        ":port_Xtensa": [
+            "portable/ThirdParty/XCC/Xtensa/mpu.S",
+            "portable/ThirdParty/XCC/Xtensa/port.c",
+            "portable/ThirdParty/XCC/Xtensa/portasm.S",
+            "portable/ThirdParty/XCC/Xtensa/portclib.c",
+            "portable/ThirdParty/XCC/Xtensa/portmpu.c",
+            "portable/ThirdParty/XCC/Xtensa/xtensa_context.S",
+            "portable/ThirdParty/XCC/Xtensa/xtensa_coproc_handler.S",
+            "portable/ThirdParty/XCC/Xtensa/xtensa_intr.c",
+            "portable/ThirdParty/XCC/Xtensa/xtensa_intr_asm.S",
+            "portable/ThirdParty/XCC/Xtensa/xtensa_intr_wrapper.c",
+            "portable/ThirdParty/XCC/Xtensa/xtensa_overlay_os_hook.c",
+            "portable/ThirdParty/XCC/Xtensa/xtensa_vectors.S",
+        ],
         "//conditions:default": [],
     }),
-    includes = ["include/"] + select({
-        ":port_ARM_CM33_NTZ": ["portable/GCC/ARM_CM33_NTZ/non_secure"],
-        ":port_ARM_CM4F": ["portable/GCC/ARM_CM4F"],
-        ":port_ARM_CM7": ["portable/GCC/ARM_CM7/r0p1"],
-        "//conditions:default": [],
-    }),
+    includes = ["include/"],
     textual_hdrs = [
         "include/FreeRTOS.h",
         "include/StackMacros.h",
@@ -93,17 +107,10 @@ pw_cc_library(
         "include/stream_buffer.h",
         "include/task.h",
         "include/timers.h",
-    ] + select({
-        ":port_ARM_CM33_NTZ": [
-            "portable/GCC/ARM_CM33_NTZ/non_secure/portasm.h",
-            "portable/GCC/ARM_CM33_NTZ/non_secure/portmacro.h",
-        ],
-        ":port_ARM_CM4F": ["portable/GCC/ARM_CM4F/portmacro.h"],
-        ":port_ARM_CM7": ["portable/GCC/ARM_CM7/r0p1/portmacro.h"],
-        "//conditions:default": [],
-    }),
+    ],
     deps = [
         ":freertos_malloc",
+        ":freertos_port_headers",
         ":pigweed_tasks_c",
         "@pigweed_config//:freertos_config",
     ],
@@ -111,6 +118,36 @@ pw_cc_library(
     # the libraries not being quite correct: to link pigweed_tasks_c you
     # actually need a bunch of the source files from here (e.g., list.c).
     alwayslink = 1,
+)
+
+pw_cc_library(
+    name = "freertos_port_headers",
+    hdrs = select({
+        ":port_ARM_CM33_NTZ": [
+            "portable/GCC/ARM_CM33_NTZ/non_secure/portasm.h",
+            "portable/GCC/ARM_CM33_NTZ/non_secure/portmacro.h",
+        ],
+        ":port_ARM_CM4F": ["portable/GCC/ARM_CM4F/portmacro.h"],
+        ":port_ARM_CM7": ["portable/GCC/ARM_CM7/r0p1/portmacro.h"],
+        ":port_Xtensa": [
+            "portable/ThirdParty/XCC/Xtensa/portbenchmark.h",
+            "portable/ThirdParty/XCC/Xtensa/portmacro.h",
+            "portable/ThirdParty/XCC/Xtensa/porttrace.h",
+            "portable/ThirdParty/XCC/Xtensa/xtensa_api.h",
+            "portable/ThirdParty/XCC/Xtensa/xtensa_config.h",
+            "portable/ThirdParty/XCC/Xtensa/xtensa_context.h",
+            "portable/ThirdParty/XCC/Xtensa/xtensa_rtos.h",
+            "portable/ThirdParty/XCC/Xtensa/xtensa_timer.h",
+        ],
+        "//conditions:default": [],
+    }),
+    includes = select({
+        ":port_ARM_CM33_NTZ": ["portable/GCC/ARM_CM33_NTZ/non_secure"],
+        ":port_ARM_CM4F": ["portable/GCC/ARM_CM4F/"],
+        ":port_ARM_CM7": ["portable/GCC/ARM_CM7/r0p1/"],
+        ":port_Xtensa": ["portable/ThirdParty/XCC/Xtensa"],
+        "//conditions:default": [],
+    }),
 )
 
 # Headers transitively included by using "FreeRTOS.h"
@@ -126,22 +163,15 @@ pw_cc_library(
         "include/stack_macros.h",
         "include/task.h",
         "include/timers.h",
-    ] + select({
-        ":port_ARM_CM33_NTZ": ["portable/GCC/ARM_CM33_NTZ/non_secure/portmacro.h"],
-        ":port_ARM_CM4F": ["portable/GCC/ARM_CM4F/portmacro.h"],
-        ":port_ARM_CM7": ["portable/GCC/ARM_CM7/r0p1/portmacro.h"],
-        "//conditions:default": [],
-    }),
+    ],
     includes = [
         "include/",
-    ] + select({
-        ":port_ARM_CM33_NTZ": ["portable/GCC/ARM_CM33_NTZ/non_secure"],
-        ":port_ARM_CM4F": ["portable/GCC/ARM_CM4F/"],
-        ":port_ARM_CM7": ["portable/GCC/ARM_CM7/r0p1/"],
-        "//conditions:default": [],
-    }),
+    ],
     visibility = ["//visibility:private"],
-    deps = ["@pigweed_config//:freertos_config"],
+    deps = [
+        ":freertos_port_headers",
+        "@pigweed_config//:freertos_config",
+    ],
 )
 
 # Constraint setting used to determine if task statics should be disabled.
