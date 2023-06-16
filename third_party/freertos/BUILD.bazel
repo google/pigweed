@@ -103,6 +103,7 @@ pw_cc_library(
         "//conditions:default": [],
     }),
     deps = [
+        ":freertos_malloc",
         ":pigweed_tasks_c",
         "@pigweed_config//:freertos_config",
     ],
@@ -110,6 +111,37 @@ pw_cc_library(
     # the libraries not being quite correct: to link pigweed_tasks_c you
     # actually need a bunch of the source files from here (e.g., list.c).
     alwayslink = 1,
+)
+
+# Headers transitively included by using "FreeRTOS.h"
+pw_cc_library(
+    name = "freertos_headers",
+    hdrs = [
+        "include/FreeRTOS.h",
+        "include/deprecated_definitions.h",
+        "include/list.h",
+        "include/mpu_wrappers.h",
+        "include/portable.h",
+        "include/projdefs.h",
+        "include/stack_macros.h",
+        "include/task.h",
+        "include/timers.h",
+    ] + select({
+        ":port_ARM_CM33_NTZ": ["portable/GCC/ARM_CM33_NTZ/non_secure/portmacro.h"],
+        ":port_ARM_CM4F": ["portable/GCC/ARM_CM4F/portmacro.h"],
+        ":port_ARM_CM7": ["portable/GCC/ARM_CM7/r0p1/portmacro.h"],
+        "//conditions:default": [],
+    }),
+    includes = [
+        "include/",
+    ] + select({
+        ":port_ARM_CM33_NTZ": ["portable/GCC/ARM_CM33_NTZ/non_secure"],
+        ":port_ARM_CM4F": ["portable/GCC/ARM_CM4F/"],
+        ":port_ARM_CM7": ["portable/GCC/ARM_CM7/r0p1/"],
+        "//conditions:default": [],
+    }),
+    visibility = ["//visibility:private"],
+    deps = ["@pigweed_config//:freertos_config"],
 )
 
 # Constraint setting used to determine if task statics should be disabled.
@@ -137,38 +169,13 @@ pw_cc_library(
         ],
         "//conditions:default": [],
     }),
-    includes = [
-        "include/",
-    ] + select({
-        ":port_ARM_CM33_NTZ": ["portable/GCC/ARM_CM33_NTZ/non_secure"],
-        ":port_ARM_CM4F": ["portable/GCC/ARM_CM4F/"],
-        ":port_ARM_CM7": ["portable/GCC/ARM_CM7/r0p1/"],
-        "//conditions:default": [],
-    }),
     local_defines = select({
         ":disable_task_statics": [
             "static=",
         ],
         "//conditions:default": [],
     }),
-    # tasks.c transitively includes all these headers :/
-    textual_hdrs = [
-        "include/FreeRTOS.h",
-        "include/portable.h",
-        "include/projdefs.h",
-        "include/list.h",
-        "include/deprecated_definitions.h",
-        "include/mpu_wrappers.h",
-        "include/stack_macros.h",
-        "include/task.h",
-        "include/timers.h",
-    ] + select({
-        ":port_ARM_CM33_NTZ": ["portable/GCC/ARM_CM33_NTZ/non_secure/portmacro.h"],
-        ":port_ARM_CM4F": ["portable/GCC/ARM_CM4F/portmacro.h"],
-        ":port_ARM_CM7": ["portable/GCC/ARM_CM7/r0p1/portmacro.h"],
-        "//conditions:default": [],
-    }),
-    deps = ["@pigweed_config//:freertos_config"],
+    deps = [":freertos_headers"],
 )
 
 # Constraint setting used to select the FreeRTOSConfig version.
@@ -189,6 +196,50 @@ pw_cc_library(
     # The "default" config is not compatible with any configuration: you can't
     # build FreeRTOS without choosing a config.
     target_compatible_with = ["@platforms//:incompatible"],
+)
+
+# Constraint setting for malloc implementation.
+constraint_setting(
+    name = "malloc",
+    default_constraint_value = ":no_malloc",
+)
+
+constraint_value(
+    name = "no_malloc",
+    constraint_setting = ":malloc",
+)
+
+constraint_value(
+    name = "malloc_heap_1",
+    constraint_setting = ":malloc",
+)
+
+constraint_value(
+    name = "malloc_heap_2",
+    constraint_setting = ":malloc",
+)
+
+constraint_value(
+    name = "malloc_heap_3",
+    constraint_setting = ":malloc",
+)
+
+constraint_value(
+    name = "malloc_heap_4",
+    constraint_setting = ":malloc",
+)
+
+pw_cc_library(
+    name = "freertos_malloc",
+    srcs = select({
+        ":malloc_heap_1": ["portable/MemMang/heap_1.c"],
+        ":malloc_heap_2": ["portable/MemMang/heap_2.c"],
+        ":malloc_heap_3": ["portable/MemMang/heap_3.c"],
+        ":malloc_heap_4": ["portable/MemMang/heap_4.c"],
+        ":no_malloc": [],
+    }),
+    visibility = ["//visibility:private"],
+    deps = [":freertos_headers"],
 )
 
 # Exported for

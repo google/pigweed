@@ -48,6 +48,9 @@ values for the following settings:
 
 *   ``//third_party/freertos:port``, to set which FreeRTOS port to use. You can
     select a value from those defined in ``third_party/freertos/BUILD.bazel``.
+*   ``//third_party/freertos:malloc``, to set which FreeRTOS malloc
+    implementation to use. You can select a value from those defined in
+    ``third_party/freertos/BUILD.bazel``.
 *   ``//third_party/freertos:disable_task_statics_setting``, to determine
     whether statics should be disabled during compilation of the tasks.c source
     file (see next section). This setting has only two possible values, also
