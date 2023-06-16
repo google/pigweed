@@ -272,6 +272,14 @@ Backend Implemention Notes
 * Calling ``Enable()`` on a line that is already enabled should be a no-op. In
   particular, the state of an already-enabled output line should not change.
 
+-------------
+API reference
+-------------
+.. note::
+   This API reference is incomplete.
+
+.. doxygenclass:: pw::digital_io::DigitalIoOptional
+
 ------------
 Dependencies
 ------------

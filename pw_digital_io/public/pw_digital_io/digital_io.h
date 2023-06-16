@@ -42,29 +42,30 @@ enum class InterruptTrigger : int {
 // the line. It is backend-specific if, when, and how this state is updated.
 using InterruptHandler = ::pw::Function<void(State sampled_state)>;
 
-// A digital I/O line that may support input, output, and interrupts, but makes
-// no guarantees about whether any operations are supported. You must check the
-// various provides_* flags before calling optional methods. Unsupported methods
-// invoke PW_CRASH.
-//
-// All methods are potentially blocking. Unless otherwise specified, access from
-// multiple threads to a single line must be externally synchronized - for
-// example using pw::Borrowable. Unless otherwise specified, none of the methods
-// are safe to call from an interrupt handler. Therefore, this abstraction may
-// not be suitable for bitbanging and other low-level uses of GPIO.
-//
-// Note that the initial state of a line is not guaranteed to be consistent with
-// either the "enabled" or "disabled" state. Users of the API who need to ensure
-// the line is disabled (ex. output not driving the line) should call Disable.
-//
-// This class should almost never be used in APIs directly. Instead, use one of
-// the derived classes that explicitly supports the functionality that your
-// API needs.
-//
-// This class cannot be extended directly. Instead, extend one of the
-// derived classes that explicitly support the functionality that you want to
-// implement.
-//
+/// A digital I/O line that may support input, output, and interrupts, but makes
+/// no guarantees about whether any operations are supported. You must check the
+/// various `provides_*` flags before calling optional methods. Unsupported
+/// methods invoke `PW_CRASH`.
+///
+/// All methods are potentially blocking. Unless otherwise specified, access
+/// from multiple threads to a single line must be externally synchronized - for
+/// example using `pw::Borrowable`. Unless otherwise specified, none of the
+/// methods are safe to call from an interrupt handler. Therefore, this
+/// abstraction may not be suitable for bitbanging and other low-level uses of
+/// GPIO.
+///
+/// Note that the initial state of a line is not guaranteed to be consistent
+/// with either the "enabled" or "disabled" state. Users of the API who need to
+/// ensure the line is disabled (ex. output not driving the line) should call
+/// `Disable()`.
+///
+/// This class should almost never be used in APIs directly. Instead, use one of
+/// the derived classes that explicitly supports the functionality that your
+/// API needs.
+///
+/// This class cannot be extended directly. Instead, extend one of the
+/// derived classes that explicitly support the functionality that you want to
+/// implement.
 class DigitalIoOptional {
  public:
   virtual ~DigitalIoOptional() = default;

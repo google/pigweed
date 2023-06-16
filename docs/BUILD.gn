@@ -135,6 +135,7 @@ _doxygen_input_files = [
   "$dir_pw_containers/public/pw_containers/inline_queue.h",
   "$dir_pw_chrono/public/pw_chrono/system_clock.h",
   "$dir_pw_chrono/public/pw_chrono/system_timer.h",
+  "$dir_pw_digital_io/public/pw_digital_io/digital_io.h",
   "$dir_pw_function/public/pw_function/scope_guard.h",
   "$dir_pw_hdlc/public/pw_hdlc/decoder.h",
   "$dir_pw_hdlc/public/pw_hdlc/encoder.h",
