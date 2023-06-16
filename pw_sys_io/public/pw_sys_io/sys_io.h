@@ -45,14 +45,17 @@
 
 namespace pw::sys_io {
 
-// Read a single byte from the sys io backend.
-// Implemented by: Backend
-//
-// This function will block until it either succeeds or fails to read a byte
-// from the pw_sys_io backend.
-//
-// Returns OkStatus() - A byte was successfully read.
-//         Status::ResourceExhausted() - if the underlying source vanished.
+/// Reads a single byte from the `pw_sys_io` backend.
+/// This function blocks until it either succeeds or fails to read a
+/// byte.
+///
+/// @pre This function must be implemented by the `pw_sys_io` backend.
+///
+/// @warning Do not build production projects on top of `pw_sys_io`.
+///
+/// @returns
+/// * @pw_status{OK} - A byte was successfully read.
+/// * @pw_status{RESOURCE_EXHAUSTED} - The underlying source vanished.
 Status ReadByte(std::byte* dest);
 
 // Read a single byte from the sys io backend, if available.

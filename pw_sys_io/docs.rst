@@ -39,6 +39,10 @@ Module usage
 See backend docs for how to interact with the underlying system I/O
 implementation.
 
+API reference
+=============
+.. doxygenfunction:: pw::sys_io::ReadByte(std::byte* dest)
+
 Dependencies
 ============
   * pw_sys_io_backend
