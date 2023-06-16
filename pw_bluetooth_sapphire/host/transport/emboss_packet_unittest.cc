@@ -10,7 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/vendor_protocol.h"
 
 #include <pw_bluetooth/hci.emb.h>
-#include <pw_bluetooth/vendor2.emb.h>
+#include <pw_bluetooth/vendor.emb.h>
 #include <src/connectivity/bluetooth/core/bt-host/transport/test_packets.emb.h>
 
 namespace bt::hci {
@@ -82,7 +82,8 @@ TEST(EmbossEventPacketTest, EmbossEventPacketDeathTest) {
 
 TEST(EmbossEventPacketTest, StatusCode) {
   // Confirm status can be read from vendor subevent.
-  auto packet = EmbossEventPacket::New<pw::bluetooth::emboss::LEMultiAdvtStateChangeSubeventWriter>(
+  auto packet = EmbossEventPacket::New<
+      pw::bluetooth::vendor::android_hci::LEMultiAdvtStateChangeSubeventWriter>(
       hci_spec::kVendorDebugEventCode);
   auto view = packet.view_t();
   view.status().Write(hci_spec::StatusCode::OPERATION_CANCELLED_BY_HOST);

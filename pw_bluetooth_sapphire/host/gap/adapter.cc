@@ -729,7 +729,8 @@ void AdapterImpl::InitializeStep1() {
           pw::bluetooth::Controller::FeaturesBits::kAndroidVendorExtensions)) {
     bt_log(INFO, "gap", "controller supports android hci extensions, querying exact feature set");
     init_seq_runner_->QueueCommand(
-        hci::EmbossCommandPacket::New<pw::bluetooth::emboss::LEGetVendorCapabilitiesCommandView>(
+        hci::EmbossCommandPacket::New<
+            pw::bluetooth::vendor::android_hci::LEGetVendorCapabilitiesCommandView>(
             hci_android::kLEGetVendorCapabilities),
         [this](const hci::EmbossEventPacket& event) {
           if (hci_is_error(event, WARN, "gap",
@@ -737,8 +738,8 @@ void AdapterImpl::InitializeStep1() {
             return;
           }
 
-          auto params =
-              event.view<pw::bluetooth::emboss::LEGetVendorCapabilitiesCommandCompleteEventView>();
+          auto params = event.view<pw::bluetooth::vendor::android_hci::
+                                       LEGetVendorCapabilitiesCommandCompleteEventView>();
           state_.android_vendor_capabilities.Initialize(params);
         });
   }

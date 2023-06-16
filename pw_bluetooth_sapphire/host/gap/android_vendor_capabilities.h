@@ -13,7 +13,8 @@ namespace hci_android = hci_spec::vendor::android;
 
 class AndroidVendorCapabilities final {
  public:
-  void Initialize(const pw::bluetooth::emboss::LEGetVendorCapabilitiesCommandCompleteEventView& c);
+  void Initialize(
+      const pw::bluetooth::vendor::android_hci::LEGetVendorCapabilitiesCommandCompleteEventView& c);
   bool IsInitialized() const { return initialized_; }
 
   // Number of advertisement instances supported.

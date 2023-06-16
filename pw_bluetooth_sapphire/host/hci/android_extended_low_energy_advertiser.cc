@@ -7,7 +7,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/vendor_protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
-#include <pw_bluetooth/vendor2.emb.h>
+#include <pw_bluetooth/vendor.emb.h>
 
 namespace bt::hci {
 
@@ -51,7 +51,7 @@ std::optional<EmbossCommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildEnab
   BT_ASSERT(handle);
 
   auto packet =
-      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::LEMultiAdvtEnableCommandWriter>(
+      hci::EmbossCommandPacket::New<pw::bluetooth::vendor::android_hci::LEMultiAdvtEnableCommandWriter>(
           hci_android::kLEMultiAdvt);
   auto packet_view = packet.view_t();
   packet_view.vendor_command().sub_opcode().Write(hci_android::kLEMultiAdvtEnableSubopcode);
@@ -170,7 +170,7 @@ std::optional<EmbossCommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildRemo
   BT_ASSERT(handle);
 
   auto packet =
-      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::LEMultiAdvtEnableCommandWriter>(
+      hci::EmbossCommandPacket::New<pw::bluetooth::vendor::android_hci::LEMultiAdvtEnableCommandWriter>(
           hci_android::kLEMultiAdvt);
   auto packet_view = packet.view_t();
   packet_view.vendor_command().sub_opcode().Write(hci_android::kLEMultiAdvtEnableSubopcode);
@@ -269,7 +269,7 @@ AndroidExtendedLowEnergyAdvertiser::OnAdvertisingStateChangedSubevent(
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  auto view = event.view<pw::bluetooth::emboss::LEMultiAdvtStateChangeSubeventView>();
+  auto view = event.view<pw::bluetooth::vendor::android_hci::LEMultiAdvtStateChangeSubeventView>();
 
   hci_spec::ConnectionHandle connection_handle = view.connection_handle().Read();
   auto staged_parameters_node = staged_connections_map_.extract(connection_handle);

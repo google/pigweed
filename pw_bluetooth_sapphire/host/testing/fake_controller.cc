@@ -19,7 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
-#include <pw_bluetooth/vendor2.emb.h>
+#include <pw_bluetooth/vendor.emb.h>
 
 namespace bt::testing {
 namespace {
@@ -2255,9 +2255,9 @@ void FakeController::SendLEAdvertisingSetTerminatedEvent(hci_spec::ConnectionHan
 
 void FakeController::SendAndroidLEMultipleAdvertisingStateChangeSubevent(
     hci_spec::ConnectionHandle conn_handle, hci_spec::AdvertisingHandle adv_handle) {
-  auto packet =
-      hci::EmbossEventPacket::New<pw::bluetooth::emboss::LEMultiAdvtStateChangeSubeventWriter>(
-          hci_spec::kVendorDebugEventCode);
+  auto packet = hci::EmbossEventPacket::New<
+      pw::bluetooth::vendor::android_hci::LEMultiAdvtStateChangeSubeventWriter>(
+      hci_spec::kVendorDebugEventCode);
   auto view = packet.view_t();
   view.vendor_event().subevent_code().Write(hci_android::kLEMultiAdvtStateChangeSubeventCode);
   view.advertising_handle().Write(adv_handle);
@@ -2292,7 +2292,7 @@ void FakeController::OnAndroidLEGetVendorCapabilities() {
 }
 
 void FakeController::OnAndroidStartA2dpOffload(
-    const pw::bluetooth::emboss::StartA2dpOffloadCommandView& params) {
+    const pw::bluetooth::vendor::android_hci::StartA2dpOffloadCommandView& params) {
   hci_android::StartA2dpOffloadCommandReturnParams ret;
   ret.opcode = hci_android::kStartA2dpOffloadCommandSubopcode;
 
@@ -2413,9 +2413,9 @@ void FakeController::OnAndroidA2dpOffloadCommand(
   uint8_t subopcode = payload.To<uint8_t>();
   switch (subopcode) {
     case hci_android::kStartA2dpOffloadCommandSubopcode: {
-      auto view = pw::bluetooth::emboss::MakeStartA2dpOffloadCommandView(
+      auto view = pw::bluetooth::vendor::android_hci::MakeStartA2dpOffloadCommandView(
           command_packet.data().data(),
-          pw::bluetooth::emboss::StartA2dpOffloadCommand::MaxSizeInBytes());
+          pw::bluetooth::vendor::android_hci::StartA2dpOffloadCommand::MaxSizeInBytes());
       OnAndroidStartA2dpOffload(view);
       break;
     }
@@ -2697,7 +2697,7 @@ void FakeController::OnAndroidLEMultiAdvtSetRandomAddr(
 }
 
 void FakeController::OnAndroidLEMultiAdvtEnable(
-    const pw::bluetooth::emboss::LEMultiAdvtEnableCommandView& params) {
+    const pw::bluetooth::vendor::android_hci::LEMultiAdvtEnableCommandView& params) {
   hci_spec::AdvertisingHandle handle = params.advertising_handle().Read();
 
   if (!IsValidAdvertisingHandle(handle)) {
@@ -2751,9 +2751,9 @@ void FakeController::OnAndroidLEMultiAdvt(
       break;
     }
     case hci_android::kLEMultiAdvtEnableSubopcode: {
-      auto view = pw::bluetooth::emboss::MakeLEMultiAdvtEnableCommandView(
+      auto view = pw::bluetooth::vendor::android_hci::MakeLEMultiAdvtEnableCommandView(
           command_packet.data().data(),
-          pw::bluetooth::emboss::LEMultiAdvtEnableCommand::MaxSizeInBytes());
+          pw::bluetooth::vendor::android_hci::LEMultiAdvtEnableCommand::MaxSizeInBytes());
       OnAndroidLEMultiAdvtEnable(view);
       break;
     }

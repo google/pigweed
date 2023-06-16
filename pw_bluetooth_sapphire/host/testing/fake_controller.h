@@ -81,7 +81,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
     uint8_t total_num_synchronous_data_packets = 0;
 
     // Vendor extensions
-    StaticPacket<pw::bluetooth::emboss::LEGetVendorCapabilitiesCommandCompleteEventWriter>
+    StaticPacket<
+        pw::bluetooth::vendor::android_hci::LEGetVendorCapabilitiesCommandCompleteEventWriter>
         android_extension_settings;
   };
 
@@ -705,7 +706,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
 
   void OnAndroidA2dpOffloadCommand(const PacketView<hci_spec::CommandHeader>& command_packet);
 
-  void OnAndroidStartA2dpOffload(const pw::bluetooth::emboss::StartA2dpOffloadCommandView& params);
+  void OnAndroidStartA2dpOffload(
+      const pw::bluetooth::vendor::android_hci::StartA2dpOffloadCommandView& params);
 
   void OnAndroidStopA2dpOffload();
 
@@ -724,7 +726,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
       const hci_android::LEMultiAdvtSetRandomAddrCommandParams& params);
 
   void OnAndroidLEMultiAdvtEnable(
-      const pw::bluetooth::emboss::LEMultiAdvtEnableCommandView& params);
+      const pw::bluetooth::vendor::android_hci::LEMultiAdvtEnableCommandView& params);
 
   // Called when a command with an OGF of hci_spec::kVendorOGF is received.
   void OnVendorCommand(const PacketView<hci_spec::CommandHeader>& command_packet);

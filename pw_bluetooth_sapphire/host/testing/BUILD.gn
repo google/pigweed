@@ -142,7 +142,6 @@ source_set("fake_controller") {
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/connectivity/bluetooth/core/bt-host/sdp",
     "//third_party/pigweed/src/pw_bluetooth:emboss_vendor",
-    "//third_party/pigweed/src/pw_bluetooth:emboss_vendor2",
     "//zircon/system/ulib/async:async-cpp",
     "//zircon/system/ulib/async-default",
   ]

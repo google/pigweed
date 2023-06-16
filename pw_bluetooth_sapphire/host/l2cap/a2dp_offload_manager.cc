@@ -16,7 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/emboss_control_packets.h"
 
-#include <pw_bluetooth/vendor2.emb.h>
+#include <pw_bluetooth/vendor.emb.h>
 
 namespace bt::l2cap {
 namespace hci_android = bt::hci_spec::vendor::android;
@@ -58,24 +58,24 @@ void A2dpOffloadManager::StartA2dpOffload(const Configuration& config, ChannelId
   offloaded_channel_id_ = local_id;
   a2dp_offload_status_ = A2dpOffloadStatus::kStarting;
 
-  constexpr size_t kPacketSize = pw::bluetooth::emboss::StartA2dpOffloadCommand::MaxSizeInBytes();
-  auto packet = hci::EmbossCommandPacket::New<pw::bluetooth::emboss::StartA2dpOffloadCommandWriter>(
+  constexpr size_t kPacketSize = pw::bluetooth::vendor::android_hci::StartA2dpOffloadCommand::MaxSizeInBytes();
+  auto packet = hci::EmbossCommandPacket::New<pw::bluetooth::vendor::android_hci::StartA2dpOffloadCommandWriter>(
       hci_android::kA2dpOffloadCommand, kPacketSize);
   auto packet_view = packet.view_t();
 
   packet_view.vendor_command().sub_opcode().Write(hci_android::kStartA2dpOffloadCommandSubopcode);
-  packet_view.codec_type().Write(static_cast<pw::bluetooth::emboss::A2dpCodecType>(config.codec));
+  packet_view.codec_type().Write(static_cast<pw::bluetooth::vendor::android_hci::A2dpCodecType>(config.codec));
   packet_view.max_latency().Write(config.max_latency);
 
   packet_view.scms_t_enable().enabled().Write(config.scms_t_enable.enabled);
   packet_view.scms_t_enable().header().Write(config.scms_t_enable.header);
 
   packet_view.sampling_frequency().Write(
-      static_cast<pw::bluetooth::emboss::A2dpSamplingFrequency>(config.sampling_frequency));
+      static_cast<pw::bluetooth::vendor::android_hci::A2dpSamplingFrequency>(config.sampling_frequency));
   packet_view.bits_per_sample().Write(
-      static_cast<pw::bluetooth::emboss::A2dpBitsPerSample>(config.bits_per_sample));
+      static_cast<pw::bluetooth::vendor::android_hci::A2dpBitsPerSample>(config.bits_per_sample));
   packet_view.channel_mode().Write(
-      static_cast<pw::bluetooth::emboss::A2dpChannelMode>(config.channel_mode));
+      static_cast<pw::bluetooth::vendor::android_hci::A2dpChannelMode>(config.channel_mode));
   packet_view.encoded_audio_bitrate().Write(config.encoded_audio_bit_rate);
   packet_view.connection_handle().Write(link_handle);
   packet_view.l2cap_channel_id().Write(remote_id);
@@ -167,7 +167,7 @@ void A2dpOffloadManager::RequestStopA2dpOffload(ChannelId local_id,
 
   a2dp_offload_status_ = A2dpOffloadStatus::kStopping;
 
-  auto packet = hci::EmbossCommandPacket::New<pw::bluetooth::emboss::StopA2dpOffloadCommandWriter>(
+  auto packet = hci::EmbossCommandPacket::New<pw::bluetooth::vendor::android_hci::StopA2dpOffloadCommandWriter>(
       hci_android::kA2dpOffloadCommand);
   auto packet_view = packet.view_t();
 

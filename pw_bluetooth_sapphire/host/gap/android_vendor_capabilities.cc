@@ -10,7 +10,7 @@
 namespace bt::gap {
 
 void AndroidVendorCapabilities::Initialize(
-    const pw::bluetooth::emboss::LEGetVendorCapabilitiesCommandCompleteEventView& c) {
+    const pw::bluetooth::vendor::android_hci::LEGetVendorCapabilitiesCommandCompleteEventView& c) {
   initialized_ = false;
 
   if (c.status().Read() != pw::bluetooth::emboss::StatusCode::SUCCESS) {

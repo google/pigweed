@@ -7,7 +7,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/vendor_protocol.h"
 
-#include <pw_bluetooth/vendor2.emb.h>
+#include <pw_bluetooth/vendor.emb.h>
 
 namespace bt::hci {
 
@@ -69,7 +69,8 @@ std::optional<pw::bluetooth::emboss::StatusCode> EmbossEventPacket::StatusCode()
 
       switch (subevent_code) {
         case hci_spec::vendor::android::kLEMultiAdvtStateChangeSubeventCode: {
-          return StatusCodeFromView<pw::bluetooth::emboss::LEMultiAdvtStateChangeSubeventView>();
+          return StatusCodeFromView<
+              pw::bluetooth::vendor::android_hci::LEMultiAdvtStateChangeSubeventView>();
         }
 
         default: {

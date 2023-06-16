@@ -16,7 +16,8 @@ namespace {
 class AndroidVendorCapabilitiesTest : public ::testing::Test {
  public:
   void SetUp() override {
-    bt::StaticPacket<pw::bluetooth::emboss::LEGetVendorCapabilitiesCommandCompleteEventWriter>
+    bt::StaticPacket<
+        pw::bluetooth::vendor::android_hci::LEGetVendorCapabilitiesCommandCompleteEventWriter>
         params;
     params.SetToZeros();
     params.view().status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
@@ -24,22 +25,26 @@ class AndroidVendorCapabilitiesTest : public ::testing::Test {
     // select values other than the zero value to ensure the results of std::memset don't propagate
     params.view().max_advt_instances().Write(1);
     params.view().offloaded_resolution_of_private_address().Write(
-        pw::bluetooth::emboss::Capability::CAPABLE);
+        pw::bluetooth::vendor::android_hci::Capability::CAPABLE);
     params.view().total_scan_results_storage().Write(2);
     params.view().max_irk_list_sz().Write(3);
-    params.view().filtering_support().Write(pw::bluetooth::emboss::Capability::CAPABLE);
+    params.view().filtering_support().Write(
+        pw::bluetooth::vendor::android_hci::Capability::CAPABLE);
     params.view().max_filter().Write(4);
-    params.view().activity_energy_info_support().Write(pw::bluetooth::emboss::Capability::CAPABLE);
+    params.view().activity_energy_info_support().Write(
+        pw::bluetooth::vendor::android_hci::Capability::CAPABLE);
     params.view().version_supported().major_number().Write(5);
     params.view().version_supported().minor_number().Write(6);
     params.view().total_num_of_advt_tracked().Write(7);
-    params.view().extended_scan_support().Write(pw::bluetooth::emboss::Capability::CAPABLE);
-    params.view().debug_logging_supported().Write(pw::bluetooth::emboss::Capability::CAPABLE);
+    params.view().extended_scan_support().Write(
+        pw::bluetooth::vendor::android_hci::Capability::CAPABLE);
+    params.view().debug_logging_supported().Write(
+        pw::bluetooth::vendor::android_hci::Capability::CAPABLE);
     params.view().le_address_generation_offloading_support().Write(
-        pw::bluetooth::emboss::Capability::CAPABLE);
+        pw::bluetooth::vendor::android_hci::Capability::CAPABLE);
     params.view().a2dp_source_offload_capability_mask().BackingStorage().WriteUInt(8);
     params.view().bluetooth_quality_report_support().Write(
-        pw::bluetooth::emboss::Capability::CAPABLE);
+        pw::bluetooth::vendor::android_hci::Capability::CAPABLE);
     params.view().dynamic_audio_buffer_support().sbc().Write(true);
     params.view().dynamic_audio_buffer_support().aptx_hd().Write(true);
 
@@ -77,7 +82,9 @@ TEST_F(AndroidVendorCapabilitiesTest, CorrectExtraction) {
 TEST_F(AndroidVendorCapabilitiesTest, InitializeFailure) {
   EXPECT_TRUE(vendor_capabilities().IsInitialized());
 
-  bt::StaticPacket<pw::bluetooth::emboss::LEGetVendorCapabilitiesCommandCompleteEventWriter> params;
+  bt::StaticPacket<
+      pw::bluetooth::vendor::android_hci::LEGetVendorCapabilitiesCommandCompleteEventWriter>
+      params;
   params.SetToZeros();
   params.view().status().Write(pw::bluetooth::emboss::StatusCode::UNKNOWN_COMMAND);
   vendor_capabilities().Initialize(params.view());

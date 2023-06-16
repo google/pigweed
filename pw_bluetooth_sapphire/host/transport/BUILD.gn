@@ -39,7 +39,6 @@ static_library("transport") {
     "//src/connectivity/bluetooth/core/bt-host/hci-spec",
     "//third_party/pigweed:pw_bluetooth",
     "//third_party/pigweed/src/pw_bluetooth:emboss_vendor",
-    "//third_party/pigweed/src/pw_bluetooth:emboss_vendor2",
     "//zircon/system/ulib/async-loop:async-loop-cpp",
     "//zircon/system/ulib/async-loop:async-loop-default",
     "//zircon/system/ulib/trace",
