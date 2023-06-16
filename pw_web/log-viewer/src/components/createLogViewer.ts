@@ -33,7 +33,7 @@ export function createLogViewer(logSource: LogSource, root: HTMLElement) {
 
   // Define an event listener for the 'logEntry' event
   const logEntryListener = (logEntry: LogEntry) => {
-    logs.unshift(logEntry);
+    logs.push(logEntry);
     logViewer.logs = logs;
     logViewer.requestUpdate("logs", []);
   };

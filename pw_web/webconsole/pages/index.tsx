@@ -21,12 +21,20 @@ import Connect from "../components/connect";
 import BtnUploadDB from '../components/uploadDb';
 
 import {WebSerial, Device} from "pigweedjs";
-import {useState} from 'react';
-type WebSerialTransport = WebSerial.WebSerialTransport
+import {useState, useEffect} from 'react';
 
 const Home: NextPage = () => {
   const [device, setDevice] = useState<Device | undefined>(undefined);
   const [tokenDB, setTokenDB] = useState("");
+  useEffect(() => {
+    if (!device || !tokenDB) return;
+    // Dynamically load logging component
+    import('pigweedjs/logging')
+      .then(({createLogViewer, PigweedRPCLogSource}) => {
+        const source = new PigweedRPCLogSource(device, tokenDB);
+        createLogViewer(source, document.querySelector('.log-container')!);
+      });
+  }, [device, tokenDB]);
   return (
     <div className={styles.container}>
       <Head>
@@ -47,8 +55,7 @@ const Home: NextPage = () => {
         </div>
 
         <div className={styles.grid}>
-          <div>
-            <Log device={device} tokenDB={tokenDB}></Log>
+          <div className={'log-container ' + styles.logsContainer}>
           </div>
           <div>
             <Repl device={device}></Repl>

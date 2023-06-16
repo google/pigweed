@@ -67,6 +67,10 @@
   }
 }
 
+.logsContainer{
+  height: calc(100vh - 78px);
+}
+
 @media (max-width: 600px) {
   .grid {
     width: 100%;

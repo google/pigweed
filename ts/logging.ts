@@ -17,3 +17,4 @@ export {MockLogSource} from "../pw_web/log-viewer/src/custom/mock-log-source";
 export {LogViewer} from "../pw_web/log-viewer/src/components/log-viewer";
 export {createLogViewer} from "../pw_web/log-viewer/src/components/createLogViewer";
 export {LogEntry, FieldData} from "../pw_web/log-viewer/src/shared/interfaces";
+export {PigweedRPCLogSource} from "./logging_source_rpc";
