@@ -42,6 +42,7 @@ pw_add_library(pw_log_zephyr.tokenized_handler STATIC
   PUBLIC_DEPS
     pw_log_tokenized.handler
     pw_span
+    pw_sync.interrupt_spin_lock
     pw_tokenizer
     pw_tokenizer.base64
 )

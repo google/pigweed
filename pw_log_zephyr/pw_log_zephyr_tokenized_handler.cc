@@ -15,10 +15,14 @@
 #include <pw_log_tokenized/handler.h>
 #include <pw_log_tokenized/metadata.h>
 #include <pw_span/span.h>
+#include <pw_sync/interrupt_spin_lock.h>
 #include <pw_tokenizer/base64.h>
 #include <zephyr/logging/log_core.h>
 
 namespace pw::log_tokenized {
+namespace {
+sync::InterruptSpinLock log_encode_lock;
+}
 
 extern "C" void pw_log_tokenized_HandleLog(uint32_t metadata,
                                            const uint8_t log_buffer[],
@@ -35,9 +39,14 @@ extern "C" void pw_log_tokenized_HandleLog(uint32_t metadata,
     return;
   }
 
+  // TODO(asemjonovs): https://github.com/zephyrproject-rtos/zephyr/issues/59454
+  // Zephyr frontend should protect messages from getting corrupted
+  // from multiple threads.
+  log_encode_lock.lock();
   // _is_raw is set to 0 here because the print string is required to be a
   // string literal if _is_raw is set to 1.
   Z_LOG_PRINTK(/*_is_raw=*/0, "%s", base64_buffer);
+  log_encode_lock.unlock();
 }
 
 }  // namespace pw::log_tokenized

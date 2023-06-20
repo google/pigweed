@@ -35,6 +35,7 @@ config PIGWEED_LOG_ZEPHYR
 menuconfig PIGWEED_LOG_TOKENIZED
     bool "Maps all Zephyr log macros to tokenized PW_LOG_* macros"
     select PIGWEED_PREPROCESSOR
+    select PIGWEED_SYNC_INTERRUPT_SPIN_LOCK
     select PIGWEED_SYS_IO
     select PIGWEED_TOKENIZER
     select LOG_CUSTOM_HEADER
