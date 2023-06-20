@@ -215,7 +215,11 @@ def gn_check(ctx: PresubmitContext) -> PresubmitResult:
 
 
 def ninja(
-    ctx: PresubmitContext, *args, save_compdb=True, save_graph=True, **kwargs
+    ctx: PresubmitContext,
+    *args,
+    save_compdb: bool = True,
+    save_graph: bool = True,
+    **kwargs,
 ) -> None:
     """Runs ninja in the specified directory."""
 
