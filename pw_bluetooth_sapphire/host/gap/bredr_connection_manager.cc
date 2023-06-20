@@ -375,8 +375,8 @@ std::optional<BrEdrConnectionManager::ScoRequestHandle> BrEdrConnectionManager::
 }
 
 bool BrEdrConnectionManager::Disconnect(PeerId peer_id, DisconnectReason reason) {
-  bt_log(INFO, "gap-bredr", "Disconnect Requested (reason %hhu - %s) (peer: %s)", reason,
-         ReasonAsString(reason).c_str(), bt_str(peer_id));
+  bt_log(INFO, "gap-bredr", "Disconnect Requested (reason %hhu - %s) (peer: %s)",
+         static_cast<unsigned char>(reason), ReasonAsString(reason).c_str(), bt_str(peer_id));
 
   // TODO(fxbug.dev/65157) - If a disconnect request is received when we have a pending connection,
   // we should instead abort the connection, by either:

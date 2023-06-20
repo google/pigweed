@@ -39,14 +39,14 @@ void A2dpOffloadManager::StartA2dpOffload(const Configuration& config, ChannelId
     }
     case A2dpOffloadStatus::kStarting: {
       bt_log(WARN, "l2cap", "A2DP offload is currently starting (status: %hhu)",
-             a2dp_offload_status_);
+             static_cast<unsigned char>(a2dp_offload_status_));
       callback(ToResult(HostError::kInProgress));
       return;
     }
     case A2dpOffloadStatus::kStopping: {
       bt_log(WARN, "l2cap",
              "A2DP offload is stopping... wait until stopped before starting (status: %hhu)",
-             a2dp_offload_status_);
+             static_cast<unsigned char>(a2dp_offload_status_));
       callback(ToResult(HostError::kInProgress));
       return;
     }
@@ -58,20 +58,24 @@ void A2dpOffloadManager::StartA2dpOffload(const Configuration& config, ChannelId
   offloaded_channel_id_ = local_id;
   a2dp_offload_status_ = A2dpOffloadStatus::kStarting;
 
-  constexpr size_t kPacketSize = pw::bluetooth::vendor::android_hci::StartA2dpOffloadCommand::MaxSizeInBytes();
-  auto packet = hci::EmbossCommandPacket::New<pw::bluetooth::vendor::android_hci::StartA2dpOffloadCommandWriter>(
+  constexpr size_t kPacketSize =
+      pw::bluetooth::vendor::android_hci::StartA2dpOffloadCommand::MaxSizeInBytes();
+  auto packet = hci::EmbossCommandPacket::New<
+      pw::bluetooth::vendor::android_hci::StartA2dpOffloadCommandWriter>(
       hci_android::kA2dpOffloadCommand, kPacketSize);
   auto packet_view = packet.view_t();
 
   packet_view.vendor_command().sub_opcode().Write(hci_android::kStartA2dpOffloadCommandSubopcode);
-  packet_view.codec_type().Write(static_cast<pw::bluetooth::vendor::android_hci::A2dpCodecType>(config.codec));
+  packet_view.codec_type().Write(
+      static_cast<pw::bluetooth::vendor::android_hci::A2dpCodecType>(config.codec));
   packet_view.max_latency().Write(config.max_latency);
 
   packet_view.scms_t_enable().enabled().Write(config.scms_t_enable.enabled);
   packet_view.scms_t_enable().header().Write(config.scms_t_enable.header);
 
   packet_view.sampling_frequency().Write(
-      static_cast<pw::bluetooth::vendor::android_hci::A2dpSamplingFrequency>(config.sampling_frequency));
+      static_cast<pw::bluetooth::vendor::android_hci::A2dpSamplingFrequency>(
+          config.sampling_frequency));
   packet_view.bits_per_sample().Write(
       static_cast<pw::bluetooth::vendor::android_hci::A2dpBitsPerSample>(config.bits_per_sample));
   packet_view.channel_mode().Write(
@@ -139,13 +143,13 @@ void A2dpOffloadManager::RequestStopA2dpOffload(ChannelId local_id,
   switch (a2dp_offload_status_) {
     case A2dpOffloadStatus::kStopped: {
       bt_log(DEBUG, "l2cap", "No channels are offloading A2DP (status: %hhu)",
-             a2dp_offload_status_);
+             static_cast<unsigned char>(a2dp_offload_status_));
       callback(ToResult(HostError::kFailed));
       return;
     }
     case A2dpOffloadStatus::kStopping: {
       bt_log(WARN, "l2cap", "A2DP offload is currently stopping (status: %hhu)",
-             a2dp_offload_status_);
+             static_cast<unsigned char>(a2dp_offload_status_));
       callback(ToResult(HostError::kInProgress));
       return;
     }
@@ -167,7 +171,8 @@ void A2dpOffloadManager::RequestStopA2dpOffload(ChannelId local_id,
 
   a2dp_offload_status_ = A2dpOffloadStatus::kStopping;
 
-  auto packet = hci::EmbossCommandPacket::New<pw::bluetooth::vendor::android_hci::StopA2dpOffloadCommandWriter>(
+  auto packet = hci::EmbossCommandPacket::New<
+      pw::bluetooth::vendor::android_hci::StopA2dpOffloadCommandWriter>(
       hci_android::kA2dpOffloadCommand);
   auto packet_view = packet.view_t();
 

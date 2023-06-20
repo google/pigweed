@@ -223,7 +223,8 @@ bool ChannelConfiguration::UnknownOption::IsHint() const {
 }
 
 std::string ChannelConfiguration::UnknownOption::ToString() const {
-  return bt_lib_cpp_string::StringPrintf("[type: %#.2hhx, length: %zu]", type_, payload_.size());
+  return bt_lib_cpp_string::StringPrintf("[type: %#.2hhx, length: %zu]",
+                                         static_cast<unsigned char>(type_), payload_.size());
 }
 
 // ChannelConfiguration implementation

@@ -514,7 +514,8 @@ CommandChannel::EventCallbackResult AclDataChannelImpl::DataBufferOverflowCallba
   const auto& params = event.params<hci_spec::DataBufferOverflowEventParams>();
 
   // Internal buffer state must be invalid and no further transmissions are possible.
-  BT_PANIC("controller data buffer overflow event received (link type: %hhu)", params.ll_type);
+  BT_PANIC("controller data buffer overflow event received (link type: %hhu)",
+           static_cast<unsigned char>(params.ll_type));
 
   return CommandChannel::EventCallbackResult::kContinue;
 }

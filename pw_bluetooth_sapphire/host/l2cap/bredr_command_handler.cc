@@ -61,12 +61,12 @@ bool BrEdrCommandHandler::InformationResponse::Decode(const ByteBuffer& payload_
     default:
       bt_log(DEBUG, "l2cap-bredr",
              "cmd: passing Information Response with unknown type %#.4hx with %zu data bytes",
-             type_, info_rsp.payload_size());
+             static_cast<unsigned short>(type_), info_rsp.payload_size());
   }
   if (info_rsp.payload_size() < expected_size) {
     bt_log(DEBUG, "l2cap-bredr",
-           "cmd: ignoring malformed Information Response, type %#.4hx with %zu data bytes", type_,
-           info_rsp.payload_size());
+           "cmd: ignoring malformed Information Response, type %#.4hx with %zu data bytes",
+           static_cast<unsigned short>(type_), info_rsp.payload_size());
     return false;
   }
   data_ = info_rsp.payload_data();

@@ -1322,7 +1322,8 @@ ServiceDefinitionToServiceRecord(const fuchsia::bluetooth::bredr::ServiceDefinit
 
   if (definition.has_profile_descriptors()) {
     for (const auto& profile : definition.profile_descriptors()) {
-      bt_log(TRACE, "fidl", "Adding Profile %#hx v%d.%d", profile.profile_id, profile.major_version,
+      bt_log(TRACE, "fidl", "Adding Profile %#hx v%d.%d",
+             static_cast<unsigned short>(profile.profile_id), profile.major_version,
              profile.minor_version);
       rec.AddProfile(bt::UUID(static_cast<uint16_t>(profile.profile_id)), profile.major_version,
                      profile.minor_version);

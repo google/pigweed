@@ -82,7 +82,8 @@ CommandChannel::CommandPacketVariant ExtendedLowEnergyAdvertiser::BuildSetAdvert
   // advertising event properties
   std::optional<hci_spec::AdvertisingEventBits> bits = hci_spec::AdvertisingTypeToEventBits(type);
   if (!bits) {
-    bt_log(WARN, "hci-le", "could not generate event bits for type: %hhu", type);
+    bt_log(WARN, "hci-le", "could not generate event bits for type: %hhu",
+           static_cast<unsigned char>(type));
     return std::unique_ptr<CommandPacket>();
   }
   uint16_t properties = bits.value();

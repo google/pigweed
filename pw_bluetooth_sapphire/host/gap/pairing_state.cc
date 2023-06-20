@@ -223,7 +223,7 @@ void PairingState::OnUserConfirmationRequest(uint32_t numeric_value, UserConfirm
     pairing_delegate()->ConfirmPairing(peer_id(), std::move(confirm_cb));
   } else {
     BT_PANIC("%#.4x (id: %s): unexpected action %d", handle(), bt_str(peer_id()),
-             current_pairing_->action);
+             static_cast<int>(current_pairing_->action));
   }
 }
 
@@ -241,7 +241,7 @@ void PairingState::OnUserPasskeyRequest(UserPasskeyCallback cb) {
 
   BT_ASSERT_MSG(current_pairing_->action == PairingAction::kRequestPasskey,
                 "%#.4x (id: %s): unexpected action %d", handle(), bt_str(peer_id()),
-                current_pairing_->action);
+                static_cast<int>(current_pairing_->action));
   auto pairing = current_pairing_->GetWeakPtr();
   auto passkey_cb = [this, cb = std::move(cb), pairing](int64_t passkey) mutable {
     if (!pairing.is_alive()) {
@@ -398,7 +398,7 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::Link
   // Link keys resulting from legacy pairing are assigned lowest security level and we reject them.
   if (sec_props.level() == sm::SecurityLevel::kNoSecurity) {
     bt_log(WARN, "gap-bredr", "Link key (type %hhu) for %#.4x (id: %s) has insufficient security",
-           key_type, handle(), bt_str(peer_id()));
+           static_cast<unsigned char>(key_type), handle(), bt_str(peer_id()));
     state_ = State::kFailed;
     SignalStatus(ToResult(HostError::kInsufficientSecurity),
                  "OnLinkKeyNotification with insufficient security");
@@ -411,7 +411,8 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::Link
   // may provide a false high expectation of security to the user or application.
   if (sec_props.authenticated() != current_pairing_->authenticated) {
     bt_log(WARN, "gap-bredr", "Expected %sauthenticated link key for %#.4x (id: %s), got %hhu",
-           current_pairing_->authenticated ? "" : "un", handle(), bt_str(peer_id()), key_type);
+           current_pairing_->authenticated ? "" : "un", handle(), bt_str(peer_id()),
+           static_cast<unsigned char>(key_type));
     state_ = State::kFailed;
     SignalStatus(ToResult(HostError::kInsufficientSecurity),
                  "OnLinkKeyNotification with incorrect link authorization");
@@ -532,8 +533,10 @@ void PairingState::Pairing::ComputePairingData() {
   bt_log(DEBUG, "gap-bredr",
          "As %s with local %hhu/peer %hhu capabilities, expecting an %sauthenticated %u pairing "
          "using %#x%s",
-         initiator ? "initiator" : "responder", local_iocap, peer_iocap, authenticated ? "" : "un",
-         action, expected_event, allow_automatic ? "" : " (auto not allowed)");
+         initiator ? "initiator" : "responder", static_cast<unsigned char>(local_iocap),
+         static_cast<unsigned char>(peer_iocap), authenticated ? "" : "un",
+         static_cast<unsigned int>(action), expected_event,
+         allow_automatic ? "" : " (auto not allowed)");
 }
 
 const char* PairingState::ToString(PairingState::State state) {

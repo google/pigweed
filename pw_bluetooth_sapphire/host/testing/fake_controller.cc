@@ -500,7 +500,7 @@ bool FakeController::MaybeRespondWithDefaultStatus(hci_spec::OpCode opcode) {
     return false;
 
   bt_log(INFO, "fake-hci", "responding with error (command: %#.4x, status: %#.2hhx)", opcode,
-         iter->second);
+         static_cast<unsigned char>(iter->second));
   RespondWithCommandComplete(opcode, iter->second);
   return true;
 }
@@ -1331,7 +1331,7 @@ void FakeController::OnLESetAdvertisingParameters(
   legacy_advertising_state_.own_address_type = params.own_address_type().Read();
 
   bt_log(INFO, "fake-hci", "start advertising using address type: %hhd",
-         legacy_advertising_state_.own_address_type);
+         static_cast<char>(legacy_advertising_state_.own_address_type));
 
   RespondWithCommandComplete(hci_spec::kLESetAdvertisingParameters,
                              pw::bluetooth::emboss::StatusCode::SUCCESS);

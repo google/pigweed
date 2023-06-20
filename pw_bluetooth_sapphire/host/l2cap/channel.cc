@@ -86,7 +86,7 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, internal::LogicalLin
   BT_ASSERT(link_.is_alive());
   BT_ASSERT_MSG(
       info_.mode == ChannelMode::kBasic || info_.mode == ChannelMode::kEnhancedRetransmission,
-      "Channel constructed with unsupported mode: %hhu\n", info.mode);
+      "Channel constructed with unsupported mode: %hhu\n", static_cast<unsigned char>(info.mode));
 
   if (info_.mode == ChannelMode::kBasic) {
     rx_engine_ = std::make_unique<BasicModeRxEngine>();

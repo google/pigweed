@@ -683,7 +683,8 @@ std::string DataElement::ToString() const {
       return bt_lib_cpp_string::StringPrintf("Alternatives { %s}", str.c_str());
     }
     default:
-      bt_log(TRACE, "sdp", "unhandled type (%hhu) in ToString()", type_);
+      bt_log(TRACE, "sdp", "unhandled type (%hhu) in ToString()",
+             static_cast<unsigned char>(type_));
       // Fallthrough to unknown.
   }
 

@@ -465,7 +465,7 @@ void LowEnergyConnection::OnLEConnectionUpdateComplete(const hci::EmbossEventPac
     bt_log(WARN, "gap-le",
            "HCI LE Connection Update Complete event with error "
            "(peer: %s, status: %#.2hhx, handle: %#.4x)",
-           bt_str(peer_id()), payload.status().Read(), handle);
+           bt_str(peer_id()), static_cast<unsigned char>(payload.status().Read()), handle);
 
     return;
   }

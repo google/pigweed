@@ -133,7 +133,8 @@ void BrEdrDynamicChannelRegistry::OnRxDisconReq(
 
 void BrEdrDynamicChannelRegistry::OnRxInfoReq(
     InformationType type, BrEdrCommandHandler::InformationResponder* responder) {
-  bt_log(TRACE, "l2cap-bredr", "Got Information Request for type %#.4hx", type);
+  bt_log(TRACE, "l2cap-bredr", "Got Information Request for type %#.4hx",
+         static_cast<unsigned short>(type));
 
   // TODO(fxbug.dev/933): The responses here will likely remain hardcoded magics, but
   // maybe they should live elsewhere.
@@ -163,7 +164,8 @@ void BrEdrDynamicChannelRegistry::OnRxInfoReq(
 
     default:
       responder->RejectNotUnderstood();
-      bt_log(DEBUG, "l2cap-bredr", "Rejecting Information Request type %#.4hx", type);
+      bt_log(DEBUG, "l2cap-bredr", "Rejecting Information Request type %#.4hx",
+             static_cast<unsigned short>(type));
   }
 }
 
@@ -172,7 +174,7 @@ void BrEdrDynamicChannelRegistry::OnRxExtendedFeaturesInfoRsp(
   if (rsp.status() == BrEdrCommandHandler::Status::kReject) {
     bt_log(ERROR, "l2cap-bredr",
            "Extended Features Information Request rejected, reason %#.4hx, disconnecting",
-           rsp.reject_reason());
+           static_cast<unsigned short>(rsp.reject_reason()));
     return;
   }
 
@@ -190,7 +192,8 @@ void BrEdrDynamicChannelRegistry::OnRxExtendedFeaturesInfoRsp(
 
   if (rsp.type() != InformationType::kExtendedFeaturesSupported) {
     bt_log(ERROR, "l2cap-bredr",
-           "Incorrect extended features information response type (type: %#.4hx)", rsp.type());
+           "Incorrect extended features information response type (type: %#.4hx)",
+           static_cast<unsigned short>(rsp.type()));
     return;
   }
 
@@ -900,7 +903,7 @@ BrEdrDynamicChannel::ResponseHandlerAction BrEdrDynamicChannel::OnRxConnRsp(
     const BrEdrCommandHandler::ConnectionResponse& rsp) {
   if (rsp.status() == BrEdrCommandHandler::Status::kReject) {
     bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: Connection Request rejected reason %#.4hx",
-           local_cid(), rsp.reject_reason());
+           local_cid(), static_cast<unsigned short>(rsp.reject_reason()));
     PassOpenError();
     return ResponseHandlerAction::kCompleteOutboundTransaction;
   }
@@ -922,7 +925,7 @@ BrEdrDynamicChannel::ResponseHandlerAction BrEdrDynamicChannel::OnRxConnRsp(
 
   if (rsp.result() == ConnectionResult::kPending) {
     bt_log(TRACE, "l2cap-bredr", "Channel %#.4x: Remote is pending open, status %#.4hx",
-           local_cid(), rsp.conn_status());
+           local_cid(), static_cast<unsigned short>(rsp.conn_status()));
 
     if (rsp.remote_cid() == kInvalidChannelId) {
       return ResponseHandlerAction::kExpectAdditionalResponse;
@@ -946,7 +949,8 @@ BrEdrDynamicChannel::ResponseHandlerAction BrEdrDynamicChannel::OnRxConnRsp(
     bt_log(ERROR, "l2cap-bredr",
            "Channel %#.4x: Unsuccessful Connection Response result %#.4hx, "
            "status %#.4x",
-           local_cid(), rsp.result(), rsp.status());
+           local_cid(), static_cast<unsigned short>(rsp.result()),
+           static_cast<unsigned int>(rsp.status()));
     PassOpenError();
     return ResponseHandlerAction::kCompleteOutboundTransaction;
   }
@@ -998,7 +1002,7 @@ BrEdrDynamicChannel::ResponseHandlerAction BrEdrDynamicChannel::OnRxConfigRsp(
     bt_log(ERROR, "l2cap-bredr",
            "Channel %#.4x: Configuration Request rejected, reason %#.4hx, "
            "disconnecting",
-           local_cid(), rsp.reject_reason());
+           local_cid(), static_cast<unsigned short>(rsp.reject_reason()));
 
     // Configuration Request being rejected is fatal because the remote is not
     // trying to negotiate parameters (any more).
@@ -1031,7 +1035,7 @@ BrEdrDynamicChannel::ResponseHandlerAction BrEdrDynamicChannel::OnRxConfigRsp(
 
   if (rsp.result() != ConfigurationResult::kSuccess) {
     bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: unsuccessful config (result: %#.4hx, options: %s)",
-           local_cid(), rsp.result(), bt_str(rsp.config()));
+           local_cid(), static_cast<unsigned short>(rsp.result()), bt_str(rsp.config()));
     PassOpenError();
     return ResponseHandlerAction::kCompleteOutboundTransaction;
   }

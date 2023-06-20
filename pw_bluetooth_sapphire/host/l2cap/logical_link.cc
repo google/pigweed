@@ -533,7 +533,7 @@ void LogicalLink::OnRxFixedChannelsSupportedInfoRsp(
     const BrEdrCommandHandler::InformationResponse& rsp) {
   if (rsp.status() == BrEdrCommandHandler::Status::kReject) {
     bt_log(TRACE, "l2cap", "Fixed Channels Supported Information Request rejected (reason %#.4hx)",
-           rsp.reject_reason());
+           static_cast<unsigned short>(rsp.reject_reason()));
     return;
   }
 
@@ -552,7 +552,7 @@ void LogicalLink::OnRxFixedChannelsSupportedInfoRsp(
   if (rsp.type() != InformationType::kFixedChannelsSupported) {
     bt_log(TRACE, "l2cap",
            "Incorrect Fixed Channels Supported Information Response type (type: %#.4hx)",
-           rsp.type());
+           static_cast<unsigned short>(rsp.type()));
     return;
   }
 
@@ -577,7 +577,7 @@ void LogicalLink::SendConnectionParameterUpdateRequest(
 
         if (rsp.status() != LowEnergyCommandHandler::Status::kSuccess) {
           bt_log(TRACE, "l2cap", "LE Connection Parameter Update Request rejected (reason: %#.4hx)",
-                 rsp.reject_reason());
+                 static_cast<unsigned short>(rsp.reject_reason()));
         } else {
           accepted = rsp.result() == ConnectionParameterUpdateResult::kAccepted;
         }

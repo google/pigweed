@@ -253,8 +253,8 @@ void LowEnergyConnectionManager::Pair(PeerId peer_id, sm::SecurityLevel pairing_
     cb(bt::ToResult(bt::HostError::kNotFound));
     return;
   }
-  bt_log(INFO, "gap-le", "pairing with security level: %d (peer: %s)", pairing_level,
-         bt_str(peer_id));
+  bt_log(INFO, "gap-le", "pairing with security level: %d (peer: %s)",
+         static_cast<int>(pairing_level), bt_str(peer_id));
   iter->second->UpgradeSecurity(pairing_level, bondable_mode, std::move(cb));
 }
 

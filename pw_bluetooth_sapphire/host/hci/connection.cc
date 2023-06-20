@@ -72,7 +72,7 @@ CommandChannel::EventCallbackResult Connection::OnDisconnectionComplete(
   }
 
   bt_log(INFO, "hci", "disconnection complete - %s, handle: %#.4x, reason: %#.2hhx (%s)",
-         bt_str(event.ToResult()), handle, view.reason().Read(),
+         bt_str(event.ToResult()), handle, static_cast<unsigned char>(view.reason().Read()),
          hci_spec::StatusCodeToString(view.reason().Read()).c_str());
 
   if (self.is_alive()) {
@@ -111,7 +111,7 @@ void Connection::Disconnect(pw::bluetooth::emboss::StatusCode reason) {
   params.reason().Write(reason);
 
   bt_log(DEBUG, "hci", "disconnecting connection (handle: %#.4x, reason: %#.2hhx)", handle(),
-         reason);
+         static_cast<unsigned char>(reason));
 
   // Send HCI Disconnect.
   hci_->command_channel()->SendCommand(std::move(disconn), std::move(status_cb),
