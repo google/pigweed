@@ -29,6 +29,10 @@ export const styles = css`
         display: flex;
     }
 
+    p {
+        white-space: nowrap;
+    }
+
     button {
         color: white;
     }

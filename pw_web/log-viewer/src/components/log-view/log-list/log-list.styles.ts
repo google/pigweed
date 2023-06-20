@@ -12,121 +12,136 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { css } from "lit";
+import { css } from 'lit';
 
 export const styles = css`
-    :host {
-        display: block;
-        font-family: "Roboto Mono", monospace;
-        overflow: scroll;
-        height: 100%;
-        position: relative;
-    }
-
     * {
         box-sizing: border-box;
     }
 
+    :host {
+        position: relative;
+        display: block;
+        height: 100%;
+        font-family: 'Roboto Mono', monospace;
+    }
+
     .table-container {
-        overflow: auto;
         width: 100%;
         height: 100%;
+        overflow: auto;
+        padding-bottom: 3rem;
+        scroll-behavior: auto;
     }
 
     table {
-        min-width: 100%;
         width: auto;
+        height: 100%;
+        min-width: 100vw;
         table-layout: fixed;
         border-collapse: collapse;
     }
 
-    tr:hover {
+    thead,
+    th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+    thead {
+        background: #2d3134;
+    }
+
+    tr {
+        display: grid;
+        width: 100%;
+        justify-content: flex-start;
+        border-bottom: 1px solid #4b5054;
+    }
+
+    tr:hover > td {
         background: rgb(47 47 47);
     }
 
     th,
     td {
-        width: auto;
         padding: 0.5rem 1rem;
         text-align: left;
-        border-bottom: 1px solid #4b5054;
-        text-align: left;
-        position: relative;
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        grid-row: 1;
+    }
+
+    th[hidden],
+    td[hidden] {
+        display: none;
     }
 
     th {
-        position: sticky;
-        top: 0;
-        z-index: 1;
-        background: #2d3134;
+        grid-row: 1;
         white-space: nowrap;
     }
 
     td {
+        position: relative;
         vertical-align: top;
-        max-width: 96ch;
     }
 
     .resize-handle {
-        content: "";
+        content: '';
         position: absolute;
         top: 0;
         right: 0;
         bottom: 0;
         left: 0;
+        z-index: 1;
         width: 1px;
         height: 100%;
-        cursor: col-resize;
-        z-index: 1;
         opacity: 1;
         background-color: #4b5054;
-        transition: opacity 0.3s ease;
+        cursor: col-resize;
         pointer-events: auto;
+        transition: opacity 300ms ease;
     }
 
     .resize-handle:hover {
-        background-color: #4cdada;
-        outline: 1px solid #4cdada;
+        background-color: var(--md-sys-color-primary);
+        outline: 1px solid var(--md-sys-color-primary);
     }
 
     .resize-handle::before {
-        content: "";
-        display: block;
+        content: '';
         position: absolute;
-        top: 0px;
-        bottom: 0px;
-        right: -8px;
+        top: 0;
+        right: -0.5rem;
+        bottom: 0;
         width: 1rem;
-        /* background: pink; */
-    }
-
-    .cell-content {
         display: block;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
     }
 
     .overflow-indicator {
         position: absolute;
-        width: 10px;
-        height: 10px;
+        top: 0;
+        width: 4rem;
+        height: 100%;
         pointer-events: none;
     }
 
     .right-indicator {
-        height: 100%;
-        width: 4rem;
-        top: 0;
         right: 0;
         background: linear-gradient(to right, transparent, rgb(47 47 47));
     }
 
     .left-indicator {
-        height: 100%;
-        width: 4rem;
-        top: 0;
         left: 0;
         background: linear-gradient(to left, transparent, rgb(47 47 47));
+    }
+
+    mark {
+        background-color: var(--md-sys-color-primary);
+        outline: 1px solid var(--md-sys-color-primary);
+        border-radius: 2px;
     }
 `;

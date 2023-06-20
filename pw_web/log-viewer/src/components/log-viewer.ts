@@ -12,16 +12,16 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { LitElement, html } from "lit";
-import { customElement, property } from "lit/decorators.js";
-import { styles } from "./log-viewer.styles";
-import { LogView } from "./log-view/log-view";
-import { LogEntry } from "../shared/interfaces";
+import { LitElement, html } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
+import { styles } from './log-viewer.styles';
+import { LogView } from './log-view/log-view';
+import { LogEntry } from '../shared/interfaces';
 
 /**
  * Description of LogViewer.
  */
-@customElement("log-viewer")
+@customElement('log-viewer')
 export class LogViewer extends LitElement {
     static styles = styles;
 
@@ -43,17 +43,39 @@ export class LogViewer extends LitElement {
         this.logViews = [new LogView()];
     }
 
+    connectedCallback(): void {
+        super.connectedCallback();
+        this.addEventListener('close-view', this.handleCloseView);
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.removeEventListener('close-view', this.handleCloseView);
+    }
+
     render() {
         const logsCopy = [...this.logs]; // Trigger an update in <log-view>
+        const hideCloseButton = this.logViews.length <= 1;
 
         return html`
-            <md-outlined-button class="add-button" @click="${this.addLogView}">
+            <md-outlined-button
+                class="add-button"
+                @click="${this.addLogView}"
+                title="Add a view"
+            >
                 Add View
             </md-outlined-button>
 
             <div class="grid-container">
                 ${this.logViews.map(
-                    () => html` <log-view .logs=${logsCopy}></log-view> `
+                    (view) =>
+                        html`
+                            <log-view
+                                id=${view.id}
+                                .logs=${logsCopy}
+                                .hideCloseButton=${hideCloseButton}
+                            ></log-view>
+                        `
                 )}
             </div>
         `;
@@ -62,10 +84,15 @@ export class LogViewer extends LitElement {
     addLogView() {
         this.logViews = [...this.logViews, new LogView()];
     }
+
+    handleCloseView(event: Event) {
+        const viewId = (event as CustomEvent).detail.viewId;
+        this.logViews = this.logViews.filter((view) => view.id !== viewId);
+    }
 }
 
 declare global {
     interface HTMLElementTagNameMap {
-        "log-viewer": LogViewer;
+        'log-viewer': LogViewer;
     }
 }

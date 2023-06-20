@@ -12,166 +12,312 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { LitElement, html, PropertyValues } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
-import { LogEntry } from "../../../shared/interfaces";
-import { styles } from "./log-list.styles";
+import { LitElement, html, PropertyValues, TemplateResult } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import { FieldData, LogEntry } from '../../../shared/interfaces';
+import { styles } from './log-list.styles';
+import '@lit-labs/virtualizer';
+import { virtualize } from '@lit-labs/virtualizer/virtualize.js';
 
 /**
  * Description of LogList.
  */
-@customElement("log-list")
+@customElement('log-list')
 export class LogList extends LitElement {
     static styles = styles;
+
+    /**
+     * Description of viewId.
+     */
+    @property()
+    viewId = '';
 
     /**
      * Description of logs.
      */
     @property({ type: Array })
-    logs: LogEntry[];
+    logs: LogEntry[] = [];
 
     /**
-     * Description of filter.
+     * Description of filterValue.
+     */
+    @property({ type: String })
+    filterValue = '';
+
+    /**
+     * Description of _maxEntries.
      */
     @state()
-    private _maxEntries: number;
+    private _maxEntries = 100_000;
 
+    /**
+     * Description of _fieldNames.
+     */
     @state()
-    private _fieldKeys = new Set<string>();
+    private _fieldNames = new Set<string>();
 
+    /**
+     * Description of _isOverflowingToRight.
+     */
     @state()
-    private _isOverflowingToRight: boolean;
+    private _isOverflowingToRight = false;
 
+    /**
+     * Description of _scrollPercentageHorizontal.
+     */
     @state()
-    private scrollPercentageHorizontal: number;
+    private _scrollPercentageHorizontal = 0;
 
+    /**
+     * Description of _autoscrollIsEnabled.
+     */
+    @state()
+    private _autoscrollIsEnabled = true;
+
+    /**
+     * Description of columnResizeData.
+     */
     private columnResizeData: {
         columnIndex: number;
         startX: number;
         startWidth: number;
     } | null = null;
 
+    @property({ type: Array })
+    colsHidden: boolean[] = [];
+
     constructor() {
         super();
-        this.logs = [];
-        this._maxEntries = 32;
-        this._isOverflowingToRight = false;
-        this.scrollPercentageHorizontal = 0;
+    }
+
+    firstUpdated() {
+        window.addEventListener('scroll', this.handleTableScroll);
+        this.renderRoot
+            .querySelector('tbody')
+            ?.addEventListener('rangeChanged', this.updateGridTemplateColumns);
+
+        if (this.logs.length > 0) {
+            this.performUpdate();
+        }
     }
 
     updated(changedProperties: PropertyValues) {
         super.updated(changedProperties);
         setInterval(() => this.updateOverflowIndicators(), 1000);
 
-        window.addEventListener("scroll", this.handleScroll);
-        // this.addResizeListeners();
-
         if (
-            changedProperties.has("offsetWidth") ||
-            changedProperties.has("scrollWidth")
+            changedProperties.has('offsetWidth') ||
+            changedProperties.has('scrollWidth')
         ) {
             this.updateOverflowIndicators();
         }
+
+        if (changedProperties.has('logs')) {
+            this.updateTableView();
+        }
     }
 
-    firstUpdated() {
-        this.updateWidth();
+    private updateTableView() {
+        const container = this.renderRoot.querySelector(
+            '.table-container'
+        ) as HTMLElement;
+
+        if (container && this._autoscrollIsEnabled) {
+            container.scrollTop = container.scrollHeight;
+        }
     }
+
+    clearGridTemplateColumns() {
+        const table = this.renderRoot.querySelector(
+            'table'
+        ) as HTMLTableElement;
+        const rows = Array.from(table.querySelectorAll('tr'));
+
+        rows.forEach((row) => {
+            row.style.gridTemplateColumns = '';
+        });
+    }
+
+    updateGridTemplateColumns = () => {
+        const table = this.renderRoot.querySelector(
+            'table'
+        ) as HTMLTableElement;
+        const rows = Array.from(table.querySelectorAll('tr'));
+
+        // TODO(b/287277404): move this logic into a separate function
+        // Set column visibility based on `colsHidden` array
+        rows.forEach((row) => {
+            const cells = Array.from(row.querySelectorAll('td, th'));
+            cells.forEach((cell, index: number) => {
+                const colHidden = this.colsHidden[index];
+
+                const cellEl = cell as HTMLElement;
+                cellEl.hidden = colHidden;
+            });
+        });
+
+        // Get the number of visible columns
+        const columnCount =
+            Array.from(rows[0]?.children || []).filter(
+                (child) => !child.hasAttribute('hidden')
+            ).length || 0;
+
+        // Initialize an array to store the maximum width of each column
+        const columnWidths: number[] = new Array(columnCount).fill(0);
+
+        // Iterate through each row to find the maximum width in each column
+        rows.forEach((row) => {
+            const cells = Array.from(row.children).filter(
+                (cell) => !cell.hasAttribute('hidden')
+            ) as HTMLTableCellElement[];
+
+            cells.forEach((cell, columnIndex) => {
+                const cellWidth = cell.getBoundingClientRect().width;
+                columnWidths[columnIndex] = Math.max(
+                    columnWidths[columnIndex],
+                    cellWidth
+                );
+            });
+        });
+
+        // Generate the gridTemplateColumns value for each row
+        rows.forEach((row) => {
+            const gridTemplateColumns = columnWidths
+                .map((width, index) => {
+                    if (index === columnWidths.length - 1) {
+                        return '1fr';
+                    } else {
+                        return `${width}px`;
+                    }
+                })
+                .join(' ');
+            row.style.gridTemplateColumns = gridTemplateColumns;
+        });
+    };
 
     disconnectedCallback() {
         super.disconnectedCallback();
 
-        const table = this.renderRoot.querySelector(".table-container");
-        table?.removeEventListener("scroll", this.handleScroll);
+        const container = this.renderRoot.querySelector('.table-container');
+        container?.removeEventListener('scroll', this.handleTableScroll);
+    }
+
+    highlightMatchedText(text: string): TemplateResult[] {
+        if (!this.filterValue) {
+            return [html`${text}`];
+        }
+
+        const escapedFilterValue = this.filterValue.replace(
+            /[.*+?^${}()|[\]\\]/g,
+            '\\$&'
+        );
+        const regex = new RegExp(`(${escapedFilterValue})`, 'gi');
+        const parts = text.split(regex);
+        return parts.map((part) =>
+            regex.test(part) ? html`<mark>${part}</mark>` : html`${part}`
+        );
     }
 
     render() {
-        const logsDisplayed = this.logs.slice(0, this._maxEntries);
-
-        logsDisplayed.forEach((logEntry) => {
-            logEntry.fields.forEach((fieldData) => {
-                this._fieldKeys.add(fieldData.key);
-            });
-        });
+        const logsDisplayed: LogEntry[] = this.logs.slice(0, this._maxEntries);
+        this.setFieldNames(logsDisplayed);
 
         return html`
-            <div class="table-container" role="region" tabindex="0">
-                <table @wheel="${this.handleScroll}">
-                    <tr>
-                        ${Array.from(this._fieldKeys).map(
-                            (fieldKey, columnIndex) => html`
-                                <th>
-                                    <span class="cell-content"
-                                        >${fieldKey}</span
-                                    >
-                                    ${columnIndex > 0
-                                        ? html`
-                                              <div
-                                                  class="resize-handle"
-                                                  @mousedown="${(
-                                                      event: MouseEvent
-                                                  ) =>
-                                                      this.handleColumnResizeStart(
-                                                          event,
-                                                          columnIndex - 1
-                                                      )}"
-                                              ></div>
-                                          `
-                                        : html``}
-                                </th>
-                            `
-                        )}
-                    </tr>
+            <div
+                class="table-container"
+                role="log"
+                @wheel="${this.handleTableScroll}"
+            >
+                <table>
+                    <thead>
+                        ${this.tableHeaderRow()}
+                    </thead>
 
-                    ${logsDisplayed.map(
-                        (log: LogEntry) => html` <tr>
-                            ${log.fields.map(
-                                (field, columnIndex) =>
-                                    html`
-                                        <td>
-                                            <span class="cell-content"
-                                                >${field.value}</span
-                                            >
-
-                                            ${columnIndex > 0
-                                                ? html`
-                                                      <div
-                                                          class="resize-handle"
-                                                          @mousedown="${(
-                                                              event: MouseEvent
-                                                          ) =>
-                                                              this.handleColumnResizeStart(
-                                                                  event,
-                                                                  columnIndex -
-                                                                      1
-                                                              )}"
-                                                      ></div>
-                                                  `
-                                                : html``}
-                                        </td>
-                                    `
-                            )}
-                        </tr>`
-                    )}
+                    <tbody>
+                        ${virtualize({
+                            items: logsDisplayed,
+                            renderItem: (log) =>
+                                html`${this.tableDataRow(log)}`,
+                        })}
+                    </tbody>
                 </table>
 
-                <div
-                    class="overflow-indicator right-indicator"
-                    style="opacity: ${1 - this.scrollPercentageHorizontal}"
-                    ?hidden="${!this._isOverflowingToRight}"
-                ></div>
-                <div
-                    class="overflow-indicator left-indicator"
-                    style="opacity: ${this.scrollPercentageHorizontal}"
-                    ?hidden="${!this._isOverflowingToRight}"
-                ></div>
+                ${this.overflowIndicators()}
             </div>
         `;
     }
 
-    handleScroll = () => {
+    setFieldNames(logs: LogEntry[]) {
+        logs.forEach((logEntry) => {
+            logEntry.fields.forEach((fieldData) => {
+                this._fieldNames.add(fieldData.key);
+            });
+        });
+    }
+
+    tableHeaderRow() {
+        return html`
+            <tr>
+                ${Array.from(this._fieldNames).map((fieldKey, columnIndex) =>
+                    this.tableHeaderCell(fieldKey, columnIndex)
+                )}
+            </tr>
+        `;
+    }
+
+    tableHeaderCell(fieldKey: string, columnIndex: number) {
+        return html`
+            <th>
+                ${fieldKey}
+                ${columnIndex > 0 ? this.resizeHandle(columnIndex - 1) : html``}
+            </th>
+        `;
+    }
+
+    resizeHandle(columnIndex: number) {
+        return html`
+            <span
+                class="resize-handle"
+                @mousedown="${(event: MouseEvent) =>
+                    this.handleColumnResizeStart(event, columnIndex)}"
+            ></span>
+        `;
+    }
+
+    tableDataRow(log: LogEntry) {
+        return html`
+            <tr>
+                ${log.fields.map((field, columnIndex) =>
+                    this.tableDataCell(field, columnIndex)
+                )}
+            </tr>
+        `;
+    }
+
+    tableDataCell = (field: FieldData, columnIndex: number) => html`
+        <td>
+            ${this.highlightMatchedText(field.value.toString())}
+            ${columnIndex > 0 ? this.resizeHandle(columnIndex - 1) : html``}
+        </td>
+    `;
+
+    overflowIndicators = () => html`
+        <div
+            class="overflow-indicator left-indicator"
+            style="opacity: ${this._scrollPercentageHorizontal}"
+            ?hidden="${!this._isOverflowingToRight}"
+        ></div>
+
+        <div
+            class="overflow-indicator right-indicator"
+            style="opacity: ${1 - this._scrollPercentageHorizontal}"
+            ?hidden="${!this._isOverflowingToRight}"
+        ></div>
+    `;
+
+    handleTableScroll = () => {
         const container = this.renderRoot.querySelector(
-            ".table-container"
+            '.table-container'
         ) as HTMLElement;
 
         if (!container) {
@@ -179,55 +325,47 @@ export class LogList extends LitElement {
         }
 
         const containerWidth = container.offsetWidth;
-        const containerHeight = container.offsetHeight;
         const scrollLeft = container.scrollLeft;
-        const scrollTop = container.scrollTop;
         const maxScrollLeft = container.scrollWidth - containerWidth;
-        const maxScrollTop = container.scrollHeight - containerHeight;
+        const threshold = 128;
 
-        this.scrollPercentageHorizontal = scrollLeft / maxScrollLeft || 0;
-        // this.scrollPercentageVertical = scrollTop / maxScrollTop || 0;
+        this._scrollPercentageHorizontal = scrollLeft / maxScrollLeft || 0;
+
+        if (
+            container.scrollHeight - container.scrollTop <=
+            container.offsetHeight + threshold
+        ) {
+            this._autoscrollIsEnabled = true;
+        } else {
+            this._autoscrollIsEnabled = false;
+        }
 
         this.requestUpdate();
     };
 
     updateOverflowIndicators() {
-        const table = this.renderRoot.querySelector(".table-container");
+        const container = this.renderRoot.querySelector('.table-container');
 
-        if (!table) {
+        if (!container) {
             return;
         }
 
         const containerWidth = this.offsetWidth;
-        const tableWidth = table!.scrollWidth;
-        const containerHeight = this.offsetHeight;
-        const tableHeight = table!.scrollHeight;
+        const tableWidth = container?.scrollWidth;
 
         this._isOverflowingToRight = tableWidth > containerWidth;
-    }
-
-    updateWidth() {
-        const table = this.shadowRoot?.querySelector("table");
-
-        if (table) {
-            // Calculate the width of the table
-            const tableWidth = table.offsetWidth;
-
-            // Apply the calculated width as fixed value
-            table.style.width = `${tableWidth}px`;
-        }
     }
 
     handleColumnResizeStart(event: MouseEvent, columnIndex: number) {
         event.preventDefault();
         const startX = event.clientX;
         const table = this.renderRoot.querySelector(
-            "table"
+            'table'
         ) as HTMLTableElement;
 
         const th = table.querySelector(
             `th:nth-child(${columnIndex + 1})`
-        ) as HTMLTableHeaderCellElement;
+        ) as HTMLTableCellElement;
         const startWidth = th.offsetWidth;
 
         this.columnResizeData = {
@@ -242,33 +380,49 @@ export class LogList extends LitElement {
 
         const handleColumnResizeEnd = () => {
             this.columnResizeData = null;
-            document.removeEventListener("mousemove", handleColumnResize);
-            document.removeEventListener("mouseup", handleColumnResizeEnd);
+            document.removeEventListener('mousemove', handleColumnResize);
+            document.removeEventListener('mouseup', handleColumnResizeEnd);
         };
 
-        document.addEventListener("mousemove", handleColumnResize);
-        document.addEventListener("mouseup", handleColumnResizeEnd);
+        document.addEventListener('mousemove', handleColumnResize);
+        document.addEventListener('mouseup', handleColumnResizeEnd);
     }
 
     handleColumnResize(event: MouseEvent) {
         if (!this.columnResizeData) return;
         const { columnIndex, startX, startWidth } = this.columnResizeData;
         const table = this.renderRoot.querySelector(
-            "table"
+            'table'
         ) as HTMLTableElement;
+
         const th = table.querySelector(
             `th:nth-child(${columnIndex + 1})`
-        ) as HTMLTableHeaderCellElement;
-        const tds = table.querySelectorAll(
-            `td:nth-child(${columnIndex + 1})`
-        ) as NodeListOf<HTMLTableDataCellElement>;
+        ) as HTMLTableCellElement;
 
         const offsetX = event.clientX - startX;
-        const newWidth = Math.max(startWidth + offsetX, 20); // Minimum width
+        const newWidth = Math.max(startWidth + offsetX, 48); // Minimum width
 
         th.style.width = `${newWidth}px`;
-        for (let i = 0; i < tds.length; i++) {
-            tds[i].style.width = `${newWidth}px`;
+
+        const totalColumns = table.querySelectorAll('th').length;
+        let gridTemplateColumns = '';
+
+        for (let i = 0; i < totalColumns; i++) {
+            if (i === columnIndex) {
+                gridTemplateColumns += `${newWidth}px `;
+            } else {
+                const tableEl = table.querySelector(
+                    `th:nth-child(${i + 1})`
+                ) as HTMLElement;
+                const otherColumnWidth = tableEl?.offsetWidth;
+
+                gridTemplateColumns += `${otherColumnWidth}px `;
+            }
         }
+
+        const rows = table.querySelectorAll('tr');
+        rows.forEach((row) => {
+            row.style.gridTemplateColumns = gridTemplateColumns;
+        });
     }
 }

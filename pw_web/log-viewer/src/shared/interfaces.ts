@@ -12,12 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 export interface LogEntry {
-    hostId: string;
-    timestamp: string;
+    timestamp: Date;
     fields: FieldData[];
 }
 
 export interface FieldData {
     key: string;
-    value: any;
+    value: string | boolean | number | object;
 }

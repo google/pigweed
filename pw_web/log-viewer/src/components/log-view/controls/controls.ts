@@ -12,19 +12,31 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { LitElement, html } from "lit";
-import { customElement, property } from "lit/decorators.js";
-import { styles } from "./controls.styles";
+import { LitElement, html } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
+import { styles } from './controls.styles';
 
 /**
  * Description of LogViewControls.
  */
-@customElement("log-view-controls")
+@customElement('log-view-controls')
 export class LogViewControls extends LitElement {
     static styles = styles;
 
+    /**
+     * Description of viewId.
+     */
+    @property()
+    viewId = '';
+
     @property({ type: Array })
     fieldKeys: string[];
+
+    @property()
+    hideCloseButton = false;
+
+    private _inputDebounceTimer: number | null = null;
+    private readonly _inputDebounceDelay = 50; // ms
 
     constructor() {
         super();
@@ -33,65 +45,141 @@ export class LogViewControls extends LitElement {
 
     render() {
         return html`
-            <p class="host-name">Host name</p>
-            
+            <p class="host-name">Log View</p>
+
             <div class="input-container">
-                <input placeholder="Search" type="text"></input>
+                <input placeholder="Search" type="text" @input=${
+                    this.handleInput
+                }></input>
             </div>
 
             <div class="actions-container">
-                <md-standard-icon-button>
-                    <md-icon>pause_circle</md-icon>
-                </md-standard-icon-button>
+                <span class="action-button" hidden>
+                    <md-standard-icon-button>
+                        <md-icon>pause_circle</md-icon>
+                    </md-standard-icon-button>
+                </span>
 
-                <md-standard-icon-button>
-                    <md-icon>wrap_text</md-icon>
-                </md-standard-icon-button>
+                <span class="action-button" hidden>
+                    <md-standard-icon-button>
+                        <md-icon>wrap_text</md-icon>
+                    </md-standard-icon-button>
+                </span>
 
-                <md-standard-icon-button>
-                    <md-icon>delete_sweep</md-icon>
-                </md-standard-icon-button>
+                <span class="action-button" title="Clear logs">
+                    <md-standard-icon-button @click=${
+                        this.handleClearLogsClick
+                    }>
+                        <md-icon>delete_sweep</md-icon>
+                    </md-standard-icon-button>
+                </span>
 
-                <div class='field-toggle'>
-                    <md-standard-icon-button @click=${this.toggleFieldsDropdown}>
+                <div class='field-toggle' title="Toggle fields">
+                    <md-standard-icon-button @click=${
+                        this.toggleFieldsDropdown
+                    }>
                         <md-icon>view_column</md-icon>
                     </md-standard-icon-button>
                     <menu class='field-menu' hidden>
-                        ${Array.from(this.fieldKeys).map((field) => html`
-                        <li class='field-menu-item'>
-                        <input class='fields' @click=${this.handleFieldToggle} checked type='checkbox' value=${field}>
-                            <label for=${field}>${field}</label>
-                        </li>
-                        `)}
+                        ${Array.from(this.fieldKeys).map(
+                            (field) => html`
+                                <li class="field-menu-item">
+                                    <input
+                                        class="fields"
+                                        @click=${this.handleFieldToggle}
+                                        checked
+                                        type="checkbox"
+                                        value=${field}
+                                    />
+                                    <label for=${field}>${field}</label>
+                                </li>
+                            `
+                        )}
                     </menu>
                 </div>
 
-                <md-standard-icon-button>
-                    <md-icon>more_horiz</md-icon>
-                </md-standard-icon-button>
+                <span class="action-button" title="Close view" ?hidden=${
+                    this.hideCloseButton
+                }>
+                    <md-standard-icon-button  @click=${
+                        this.handleCloseViewClick
+                    }>
+                        <md-icon>close</md-icon>
+                    </md-standard-icon-button>
+                </span>
+
+                <span class="action-button" hidden>
+                    <md-standard-icon-button>
+                        <md-icon>more_horiz</md-icon>
+                    </md-standard-icon-button>
+                </span>
             </div>
         `;
+    }
+
+    handleInput = (event: Event) => {
+        if (this._inputDebounceTimer) {
+            clearTimeout(this._inputDebounceTimer);
+        }
+
+        const inputElement = event.target as HTMLInputElement;
+        const filterValue = inputElement.value;
+
+        this._inputDebounceTimer = window.setTimeout(() => {
+            const customEvent = new CustomEvent('filter-change', {
+                detail: { filterValue },
+                bubbles: true,
+                composed: true,
+            });
+
+            this.dispatchEvent(customEvent);
+        }, this._inputDebounceDelay);
+    };
+
+    handleClearLogsClick() {
+        const event = new CustomEvent('clear-logs', {
+            bubbles: true,
+            composed: true,
+        });
+
+        this.dispatchEvent(event);
+    }
+
+    handleCloseViewClick() {
+        const event = new CustomEvent('close-view', {
+            bubbles: true,
+            composed: true,
+            detail: {
+                viewId: this.viewId,
+            },
+        });
+
+        this.dispatchEvent(event);
     }
 
     handleFieldToggle(e: Event) {
         // TODO(b/283505711): Handle select all/none condition
         const inputEl = e.target as HTMLInputElement;
-        let fieldToggle = new CustomEvent('field-toggle', {
+        const fieldToggle = new CustomEvent('field-toggle', {
             detail: {
                 bubbles: true,
                 composed: true,
                 message: 'visible fields have changed',
                 field: inputEl.value,
                 isChecked: inputEl.checked,
-            }
+            },
         });
         this.dispatchEvent(fieldToggle);
     }
 
     toggleFieldsDropdown() {
-        const dropdownElement = this.renderRoot.querySelector('.field-menu') as HTMLElement;
-        const dropdownButton = this.renderRoot.querySelector('.field-toggle') as HTMLElement;
-        dropdownElement.hidden = (dropdownElement!.hidden == true) ? false : true;
+        const dropdownElement = this.renderRoot.querySelector(
+            '.field-menu'
+        ) as HTMLElement;
+        const dropdownButton = this.renderRoot.querySelector(
+            '.field-toggle'
+        ) as HTMLElement;
+        dropdownElement.hidden = dropdownElement.hidden == true ? false : true;
         dropdownButton.classList.toggle('button-toggle');
     }
 }

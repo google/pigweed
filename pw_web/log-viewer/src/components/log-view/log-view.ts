@@ -12,22 +12,42 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { LitElement, html } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
-import { styles } from "./log-view.styles";
-import { LogEntry } from "../../shared/interfaces";
-
+import { LitElement, html } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import { styles } from './log-view.styles';
+import { LogEntry } from '../../shared/interfaces';
 
 // Import subcomponents
-import "./log-list/log-list";
-import "./controls/controls";
+import './log-list/log-list';
+import './controls/controls';
+import { LogList } from './log-list/log-list';
+
+interface FilterChangeEvent extends Event {
+    detail: {
+        filterValue: string;
+    };
+}
+
+declare global {
+    interface HTMLElementEventMap {
+        'filter-change': FilterChangeEvent;
+    }
+}
+
+let viewCount = 0;
 
 /**
  * Description of LogView.
  */
-@customElement("log-view")
+@customElement('log-view')
 export class LogView extends LitElement {
     static styles = styles;
+
+    /**
+     * Description of id.
+     */
+    @property({ type: String })
+    id: string;
 
     /**
      * Description of logs.
@@ -44,32 +64,62 @@ export class LogView extends LitElement {
     /**
      * Fields from some log source
      */
-    @property({ type: Array, reflect: true })
-    _fields: String[] = [];
-
-    /**
-     * Description of selectedHostId.
-     */
-    @state()
-    private _selectedHostId: string = 'example-host';
+    @property({ type: Array })
+    _fields: string[] = [];
 
     /**
      * Description of filter.
      */
     @state()
-    private _filter: (logEntry: LogEntry) => boolean;
+    private _filter: (logEntry: LogEntry) => boolean = () => true;
+
+    /**
+     * Description of filterValue.
+     */
+    @state()
+    private _filterValue = '';
+
+    /**
+     * Description of hideCloseButton.
+     */
+    @property({ type: Boolean })
+    hideCloseButton = false;
 
     constructor() {
         super();
-        this._filter = (logEntry) => logEntry.hostId === this._selectedHostId;
+        this.id = `log-view-${viewCount}`;
     }
 
-    render() {
-        this._filteredLogs = JSON.parse(JSON.stringify(this.logs.filter(this._filter)));
-        this._fields = this.getFields(this.logs);
-        return html`<log-view-controls .fieldKeys=${this._fields} 
-        @field-toggle="${this.handleFieldToggleEvent}"role="toolbar"></log-view-controls>
-                <log-list .logs=${this._filteredLogs}></log-list>`;
+    connectedCallback() {
+        super.connectedCallback();
+        viewCount++;
+        this.addEventListener('filter-change', this.handleFilterChange);
+        this.addEventListener('clear-logs', this.handleClearLogs);
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.removeEventListener('filter-change', this.handleFilterChange);
+        this.removeEventListener('clear-logs', this.handleClearLogs);
+    }
+
+    handleFilterChange(event: FilterChangeEvent) {
+        this._filterValue = event.detail.filterValue;
+        const regex = new RegExp(this._filterValue, 'i');
+
+        this._filter = (logEntry) =>
+            logEntry.fields.some((field) => regex.test(field.value.toString()));
+        this.requestUpdate();
+    }
+
+    handleClearLogs() {
+        const timeThreshold = new Date();
+        const existingFilter = this._filter;
+        this._filter = (logEntry) => {
+            return (
+                existingFilter(logEntry) && logEntry.timestamp > timeThreshold
+            );
+        };
     }
 
     /**
@@ -77,9 +127,9 @@ export class LogView extends LitElement {
      * @param logs the source logs to extract fields from
      * @return     an array of log fields
      */
-    private getFields(logs: LogEntry[]): String[] {
+    private getFields(logs: LogEntry[]): string[] {
         const log = logs[0];
-        const logFields = [] as String[];
+        const logFields = [] as string[];
         if (log != undefined) {
             log.fields.forEach((field) => {
                 logFields.push(field.key);
@@ -96,38 +146,43 @@ export class LogView extends LitElement {
         // should be index to show/hide element
         let index = -1;
 
-        // TODO(b/287285444): surface table element as property of LogList
-        const logListEl = this.renderRoot.querySelector('log-list') as HTMLElement;
-        const tableBodyEl = logListEl?.shadowRoot?.querySelector('tbody') as HTMLElement;
-        const table = Array.from(tableBodyEl?.children) as HTMLElement[];
+        const logList = this.renderRoot.querySelector('log-list') as LogList;
+        const colsHidden = logList.colsHidden;
 
-        // Get index from the source logs to show field back into view
-        if (e.detail.isChecked) {
-            this._fields.forEach((_, i: number) => {
-                if (this.logs[0].fields[i].key == e.detail.field) {
-                    index = i;
-                }
-            });
+        this._fields.forEach((_, i: number) => {
+            if (this.logs[0].fields[i].key == e.detail.field) {
+                index = i;
+            }
+        });
 
-            table.forEach((_, i: number) => {
-                let tableCellEl = table[i].children[index] as HTMLElement;
-                tableCellEl.hidden = false;
-            });
-        }
+        colsHidden[index] = !e.detail.isChecked;
 
-        // Get index from dropdown and hide field from view
-        else {
-            this._fields.forEach((_, i: number) => {
-                if (this._filteredLogs[0].fields[i].key === e.detail.field) {
-                    index = i;
-                }
-            });
+        logList.colsHidden = colsHidden;
+        logList.clearGridTemplateColumns();
+        logList.updateGridTemplateColumns();
+    }
 
-            table.forEach((_, i: number) => {
-                let tableCellEl = table[i].children[index] as HTMLElement;
-                tableCellEl.hidden = true;
-            });
-        }
+    render() {
+        this._filteredLogs = JSON.parse(
+            JSON.stringify(this.logs.filter(this._filter))
+        );
+        this._fields = this.getFields(this.logs);
+
+        const passedFilterValue = this._filterValue;
+
+        return html` <log-view-controls
+                .viewId=${this.id}
+                .fieldKeys=${this._fields}
+                .hideCloseButton=${this.hideCloseButton}
+                @field-toggle="${this.handleFieldToggleEvent}"
+                role="toolbar"
+            >
+            </log-view-controls>
+
+            <log-list
+                .viewId=${this.id}
+                .logs=${this._filteredLogs}
+                .filterValue=${passedFilterValue}
+            ></log-list>`;
     }
 }
-
