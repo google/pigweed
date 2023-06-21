@@ -64,6 +64,9 @@ typedef enum {
 // Returns a null-terminated string representation of the pw_Status.
 const char* pw_StatusString(pw_Status status);
 
+// Indicates the status code with the highest valid value.
+#define PW_STATUS_LAST PW_STATUS_UNAUTHENTICATED
+
 #ifdef __cplusplus
 
 }  // extern "C"

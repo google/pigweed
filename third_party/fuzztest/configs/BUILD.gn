@@ -17,12 +17,7 @@ config("disabled_warnings") {
   cflags = [
     "-Wno-sign-compare",
     "-Wno-unused-parameter",
+    "-Wno-missing-field-initializers",
   ]
   cflags_cc = [ "-Wno-extra-semi" ]
-}
-
-# This config should only be used to build the FuzzTest library itself.
-config("internal_disabled_warnings") {
-  cflags = [ "-Wno-missing-field-initializers" ]
-  configs = [ ":disabled_warnings" ]
 }

@@ -59,15 +59,13 @@ namespace internal {
 
 /// Stub for a FuzzTest domain that produces values.
 ///
-/// @rst
 /// In FuzzTest, domains are used to provide values of specific types when
 /// fuzzing. However, FuzzTest is only optionally supported on host with Clang.
 /// For other build configurations, this struct provides a FuzzTest-compatible
 /// stub that can be used to perform limited type-checking at build time.
 ///
 /// Fuzzer authors must not invoke this type directly. Instead, use the factory
-/// methods for domains such as ``Arbitrary``, ``VectorOf``, ``Map``, etc.
-/// @endrst
+/// methods for domains such as `Arbitrary`, `VectorOf`, `Map`, etc.
 template <typename T>
 struct Domain {
   using value_type = T;
@@ -75,38 +73,44 @@ struct Domain {
 
 /// Stub for a FuzzTest domain that produces containers of values.
 ///
-/// @rst
-/// This struct is an extension of ``Domain`` that add stubs for the methods
-/// that control container size.
-/// @endrst
+/// This struct is an extension of `Domain` that add stubs for the methods that
+/// control container size.
 template <typename T>
-struct AggregateDomain : public Domain<T> {
+struct ContainerDomain : public Domain<T> {
   template <typename U, typename = std::enable_if_t<std::is_integral_v<U>>>
-  Domain<T>& WithSize(U) {
+  ContainerDomain<T>& WithSize(U) {
     return *this;
   }
 
   template <typename U, typename = std::enable_if_t<std::is_integral_v<U>>>
-  Domain<T>& WithMinSize(U) {
+  ContainerDomain<T>& WithMinSize(U) {
     return *this;
   }
 
   template <typename U, typename = std::enable_if_t<std::is_integral_v<U>>>
-  Domain<T>& WithMaxSize(U) {
+  ContainerDomain<T>& WithMaxSize(U) {
     return *this;
   }
 };
 
+/// Stub for a FuzzTest domain that produces optional values.
+///
+/// This struct is an extension of `Domain` that add stubs for the methods that
+/// control nullability.
+template <typename T>
+struct OptionalDomain : public Domain<T> {
+  OptionalDomain<T>& SetAlwaysNull() { return *this; }
+  OptionalDomain<T>& SetWithoutNull() { return *this; }
+};
+
 /// Register a FuzzTest stub.
 ///
-/// @rst
 /// FuzzTest is only optionally supported on host with Clang. For other build
 /// configurations, this struct provides a FuzzTest-compatible stub of a test
 /// registration that only performs limited type-checking at build time.
 ///
 /// Fuzzer authors must not invoke this type directly. Instead, use the
-/// ``FUZZ_TEST`` and/or ``FUZZ_TEST_F`` macros.
-/// @endrst
+/// `FUZZ_TEST` and/or `FUZZ_TEST_F` macros.
 template <typename TargetFunction>
 struct TypeCheckFuzzTest {
   TypeCheckFuzzTest(TargetFunction) {}
@@ -139,41 +143,70 @@ struct TypeCheckFuzzTest {
 // lookup). Names should be used from the fuzztest:: namespace.
 namespace internal_no_adl {
 
+////////////////////////////////////////////////////////////////
+// Arbitrary domains
+// https://github.com/google/fuzztest/blob/main/doc/domains-reference.md#arbitrary-domains
+
 template <typename T>
 auto Arbitrary() {
   return internal::Domain<T>{};
 }
 
-template <typename T>
-auto ElementOf(std::initializer_list<T>) {
-  return internal::Domain<T>{};
-}
+////////////////////////////////////////////////////////////////
+// Other miscellaneous domains
+// These typically appear later in docs and tests. They are placed early in this
+// file to allow other domains to be defined using them.
 
-template <typename T>
-auto Just(T) {
-  return internal::Domain<T>{};
-}
-
+// https://github.com/google/fuzztest/blob/main/doc/domains-reference.md#oneof
 template <int&... ExplicitArgumentBarrier, typename T, typename... Domains>
 auto OneOf(internal::Domain<T>, Domains...) {
   return internal::Domain<T>{};
 }
 
+// https://github.com/google/fuzztest/blob/main/doc/domains-reference.md#oneof
+template <typename T>
+auto Just(T) {
+  return internal::Domain<T>{};
+}
+
+// https://github.com/google/fuzztest/blob/main/doc/domains-reference.md#map
+template <int&... ExplicitArgumentBarrier, typename Mapper, typename... Inner>
+auto Map(Mapper, Inner...) {
+  return internal::Domain<std::decay_t<
+      std::invoke_result_t<Mapper, typename Inner::value_type&...>>>{};
+}
+
+// https://github.com/google/fuzztest/blob/main/doc/domains-reference.md#flatmap
+template <typename FlatMapper, typename... Inner>
+using FlatMapOutputDomain = std::decay_t<
+    std::invoke_result_t<FlatMapper, typename Inner::value_type&...>>;
+template <int&... ExplicitArgumentBarrier,
+          typename FlatMapper,
+          typename... Inner>
+auto FlatMap(FlatMapper, Inner...) {
+  return internal::Domain<
+      typename FlatMapOutputDomain<FlatMapper, Inner...>::value_type>{};
+}
+
+// https://github.com/google/fuzztest/blob/main/doc/domains-reference.md#filter
 template <int&... ExplicitArgumentBarrier, typename T, typename Pred>
 auto Filter(Pred, internal::Domain<T>) {
   return internal::Domain<T>{};
 }
 
+////////////////////////////////////////////////////////////////
+// Numerical domains
+// https://github.com/google/fuzztest/blob/main/doc/domains-reference.md#numerical-domains
+
 template <typename T>
-auto InRange(T, T) {
-  return internal::Domain<T>{};
+auto InRange(T min, T max) {
+  return Filter([min, max](T t) { return min <= t && t <= max; },
+                Arbitrary<T>());
 }
 
 template <typename T>
-auto Finite() {
-  static_assert(std::is_floating_point_v<T>,
-                "Finite<T>() can only be used with floating point types!");
-  return Filter([](T f) { return std::isfinite(f); }, Arbitrary<T>());
+auto NonZero() {
+  return Filter([](T t) { return t != 0; }, Arbitrary<T>());
 }
 
 template <typename T>
@@ -213,12 +246,41 @@ auto NonPositive() {
 }
 
 template <typename T>
-auto NonZero() {
-  if constexpr (std::is_signed_v<T>) {
-    return OneOf(Negative<T>(), Positive<T>());
-  } else {
-    return Positive<T>();
-  }
+auto Finite() {
+  static_assert(std::is_floating_point_v<T>,
+                "Finite<T>() can only be used with floating point types!");
+  return Filter([](T f) { return std::isfinite(f); }, Arbitrary<T>());
+}
+
+////////////////////////////////////////////////////////////////
+// Character domains
+// https://github.com/google/fuzztest/blob/main/doc/domains-reference.md#character-domains
+
+inline auto NonZeroChar() { return Positive<char>(); }
+inline auto NumericChar() { return InRange<char>('0', '9'); }
+inline auto LowerChar() { return InRange<char>('a', 'z'); }
+inline auto UpperChar() { return InRange<char>('A', 'Z'); }
+inline auto AlphaChar() { return OneOf(LowerChar(), UpperChar()); }
+inline auto AlphaNumericChar() { return OneOf(AlphaChar(), NumericChar()); }
+inline auto AsciiChar() { return InRange<char>(0, 127); }
+inline auto PrintableAsciiChar() { return InRange<char>(32, 126); }
+
+////////////////////////////////////////////////////////////////
+// Regular expression domains
+
+// TODO: b/285775246 - Add support for `fuzztest::InRegexp`.
+// https://github.com/google/fuzztest/blob/main/doc/domains-reference.md#inregexp-domains
+// inline auto InRegexp(std::string_view) {
+//   return internal::Domain<std::string_view>{};
+// }
+
+////////////////////////////////////////////////////////////////
+// Enumerated domains
+// https://github.com/google/fuzztest/blob/main/doc/domains-reference.md#elementof-domains
+
+template <typename T>
+auto ElementOf(std::initializer_list<T>) {
+  return internal::Domain<T>{};
 }
 
 template <typename T>
@@ -226,30 +288,62 @@ auto BitFlagCombinationOf(std::initializer_list<T>) {
   return internal::Domain<T>{};
 }
 
+////////////////////////////////////////////////////////////////
+// Container domains
+// https://github.com/google/fuzztest/blob/main/doc/domains-reference.md#container-combinators
+
 template <typename T, int&... ExplicitArgumentBarrier, typename U>
 auto ContainerOf(internal::Domain<U>) {
-  return internal::AggregateDomain<T>{};
+  return internal::ContainerDomain<T>{};
 }
 
 template <template <typename, typename...> class T,
           int&... ExplicitArgumentBarrier,
           typename U>
 auto ContainerOf(internal::Domain<U>) {
-  return internal::AggregateDomain<T<U>>{};
+  return internal::ContainerDomain<T<U>>{};
 }
 
-inline auto NonZeroChar() { return Positive<char>(); }
-inline auto AsciiChar() { return InRange<char>(0, 127); }
-inline auto PrintableAsciiChar() { return InRange<char>(32, 126); }
-inline auto NumericChar() { return InRange<char>('0', '9'); }
-inline auto LowerChar() { return InRange<char>('a', 'z'); }
-inline auto UpperChar() { return InRange<char>('A', 'Z'); }
-inline auto AlphaChar() { return OneOf(LowerChar(), UpperChar()); }
-inline auto AlphaNumericChar() { return OneOf(AlphaChar(), NumericChar()); }
+template <typename T, int&... ExplicitArgumentBarrier, typename U>
+auto UniqueElementsContainerOf(internal::Domain<U>) {
+  return internal::ContainerDomain<T>{};
+}
+
+template <int&... ExplicitArgumentBarrier, typename T>
+auto NonEmpty(internal::ContainerDomain<T> inner) {
+  return inner.WithMinSize(1);
+}
+
+////////////////////////////////////////////////////////////////
+// Aggregate domains
+// https://github.com/google/fuzztest/blob/main/doc/domains-reference.md#container-combinators
+
+template <int&... ExplicitArgumentBarrier, typename T, typename... Domains>
+auto ArrayOf(internal::Domain<T>, Domains... others) {
+  return internal::Domain<std::array<T, 1 + sizeof...(others)>>{};
+}
+
+template <int N, int&... ExplicitArgumentBarrier, typename T>
+auto ArrayOf(const internal::Domain<T>&) {
+  return internal::Domain<std::array<T, N>>{};
+}
 
 template <typename T, int&... ExplicitArgumentBarrier, typename... Inner>
 auto StructOf(Inner...) {
   return internal::Domain<T>{};
+}
+
+template <typename T, int&... ExplicitArgumentBarrier>
+auto ConstructorOf() {
+  return internal::Domain<T>{};
+}
+
+template <typename T,
+          int&... ExplicitArgumentBarrier,
+          typename U,
+          typename... Inner>
+auto ConstructorOf(internal::Domain<U>, Inner... inner) {
+  return ConstructorOf<T>(inner...);
 }
 
 template <int&... ExplicitArgumentBarrier, typename T1, typename T2>
@@ -276,7 +370,7 @@ template <template <typename> class Optional,
           int&... ExplicitArgumentBarrier,
           typename T>
 auto OptionalOf(internal::Domain<T>) {
-  return internal::Domain<Optional<T>>{};
+  return internal::OptionalDomain<Optional<T>>{};
 }
 
 template <int&... ExplicitArgumentBarrier, typename T>
@@ -286,63 +380,12 @@ auto OptionalOf(internal::Domain<T> inner) {
 
 template <typename T>
 auto NullOpt() {
-  return internal::Domain<std::optional<T>>{}.SetAlwaysNull();
+  return internal::OptionalDomain<std::optional<T>>{}.SetAlwaysNull();
 }
 
 template <int&... ExplicitArgumentBarrier, typename T>
-auto NonNull(internal::Domain<T> inner) {
+auto NonNull(internal::OptionalDomain<T> inner) {
   return inner.SetWithoutNull();
-}
-
-template <int&... ExplicitArgumentBarrier, typename Mapper, typename... Inner>
-auto Map(Mapper, Inner...) {
-  return internal::Domain<std::decay_t<
-      std::invoke_result_t<Mapper, const typename Inner::value_type&...>>>{};
-}
-
-template <typename FlatMapper, typename... Inner>
-using FlatMapOutputDomain = std::decay_t<
-    std::invoke_result_t<FlatMapper, const typename Inner::value_type&...>>;
-
-template <int&... ExplicitArgumentBarrier,
-          typename FlatMapper,
-          typename... Inner>
-auto FlatMap(FlatMapper, Inner...) {
-  return internal::Domain<
-      typename FlatMapOutputDomain<FlatMapper, Inner...>::value_type>{};
-}
-
-template <int&... ExplicitArgumentBarrier, typename T, typename... Domains>
-auto ArrayOf(internal::Domain<T>, Domains... others) {
-  return internal::Domain<std::array<T, 1 + sizeof...(others)>>{};
-}
-
-template <int N, int&... ExplicitArgumentBarrier, typename T>
-auto ArrayOf(const internal::Domain<T>&) {
-  return internal::Domain<std::array<T, N>>{};
-}
-
-template <typename T, int&... ExplicitArgumentBarrier, typename U>
-auto UniqueElementsContainerOf(internal::Domain<U>) {
-  return internal::AggregateDomain<T>{};
-}
-
-template <typename T, int&... ExplicitArgumentBarrier>
-auto ConstructorOf() {
-  return internal::Domain<T>{};
-}
-
-template <typename T,
-          int&... ExplicitArgumentBarrier,
-          typename U,
-          typename... Inner>
-auto ConstructorOf(internal::Domain<U>, Inner... inner) {
-  return ConstructorOf<T>(inner...);
-}
-
-template <int&... ExplicitArgumentBarrier, typename T>
-auto NonEmpty(internal::Domain<T> inner) {
-  return inner.WithMinSize(1);
 }
 
 }  // namespace internal_no_adl

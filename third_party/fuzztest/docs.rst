@@ -96,8 +96,10 @@ the ``-w`` option, e.g.
   python pw_build/py/pw_build/generate_3p_gn.py \
     -w third_party/fuzztest/src
 
+.. DO NOT EDIT BELOW THIS LINE. Generated section.
+
 Version
 =======
-The update script was last run for revision `3c77f97`_.
+The update script was last run for revision `3c77f971`_.
 
-.. _3c77f97: https://github.com/google/fuzztest/tree/3c77f97183a1270796d25db1a8956706a25af238
+.. _3c77f971: https://github.com/google/fuzztes/tree/3c77f97183a1270796d25db1a8956706a25af238

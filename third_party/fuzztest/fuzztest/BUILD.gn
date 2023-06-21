@@ -34,7 +34,7 @@ pw_source_set("absl_helpers") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -57,7 +57,7 @@ pw_source_set("any") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -83,7 +83,7 @@ pw_source_set("compatibility_mode") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -112,7 +112,7 @@ pw_source_set("coverage") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -164,7 +164,7 @@ pw_source_set("domain") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -209,7 +209,7 @@ pw_source_set("fixture_driver") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -239,7 +239,7 @@ pw_source_set("fuzztest") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -266,7 +266,7 @@ pw_source_set("fuzztest_gtest_main") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -294,7 +294,7 @@ pw_source_set("googletest_adaptor") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -319,7 +319,7 @@ pw_source_set("googletest_fixture_adapter") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -343,7 +343,7 @@ pw_source_set("io") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -368,7 +368,7 @@ pw_source_set("logging") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -388,7 +388,7 @@ pw_source_set("meta") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -412,7 +412,7 @@ pw_source_set("regexp_dfa") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -438,7 +438,7 @@ pw_source_set("registration") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -466,7 +466,7 @@ pw_source_set("registry") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -494,7 +494,7 @@ pw_source_set("runtime") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -535,7 +535,7 @@ pw_source_set("seed_seq") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -562,7 +562,7 @@ pw_source_set("serialization") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -589,7 +589,7 @@ pw_source_set("subprocess") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -616,7 +616,7 @@ pw_source_set("table_of_recent_compares") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -642,7 +642,7 @@ pw_source_set("type_support") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",

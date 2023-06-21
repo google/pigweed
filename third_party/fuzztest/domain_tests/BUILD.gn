@@ -33,7 +33,7 @@ pw_source_set("domain_testing") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",

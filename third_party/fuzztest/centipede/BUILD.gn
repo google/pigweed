@@ -43,7 +43,7 @@ pw_source_set("analyze_corpora") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -70,7 +70,7 @@ pw_source_set("binary_info") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -94,7 +94,7 @@ pw_source_set("blob_file") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -122,7 +122,7 @@ pw_source_set("byte_array_mutator") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -146,7 +146,7 @@ pw_source_set("call_graph") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -171,7 +171,7 @@ pw_source_set("callstack") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -192,7 +192,7 @@ pw_source_set("centipede_callbacks") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -231,7 +231,7 @@ pw_source_set("centipede_default_callbacks") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -258,7 +258,7 @@ pw_source_set("centipede_interface") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -299,7 +299,7 @@ pw_source_set("centipede_lib") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -377,7 +377,7 @@ pw_source_set("centipede_runner") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
     ":centipede_config1",
     ":centipede_config2",
   ]
@@ -435,7 +435,7 @@ pw_source_set("centipede_runner") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
     ":centipede_config1",
     ":centipede_config2",
   ]
@@ -493,7 +493,7 @@ pw_source_set("centipede_runner") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
     ":centipede_config1",
     ":centipede_config2",
   ]
@@ -551,7 +551,7 @@ pw_source_set("centipede_runner") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
     ":centipede_config1",
     ":centipede_config2",
   ]
@@ -608,7 +608,7 @@ pw_source_set("centipede_runner_no_main") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
     ":centipede_config1",
     ":centipede_config2",
   ]
@@ -634,7 +634,7 @@ pw_source_set("command") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -663,7 +663,7 @@ pw_source_set("config_file") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -694,7 +694,7 @@ pw_source_set("config_util") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -724,7 +724,7 @@ pw_source_set("control_flow") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -754,7 +754,7 @@ pw_source_set("corpus") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -790,7 +790,7 @@ pw_source_set("coverage") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -822,7 +822,7 @@ pw_source_set("defs") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -843,7 +843,7 @@ pw_source_set("environment") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -874,7 +874,7 @@ pw_source_set("execution_request") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -898,7 +898,7 @@ pw_source_set("execution_result") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -928,7 +928,7 @@ pw_source_set("feature") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -952,7 +952,7 @@ pw_source_set("feature_set") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -978,7 +978,7 @@ pw_source_set("int_utils") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -998,7 +998,7 @@ pw_source_set("knobs") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -1022,7 +1022,7 @@ pw_source_set("logging") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -1047,7 +1047,7 @@ pw_source_set("minimize_crash") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -1074,7 +1074,7 @@ pw_source_set("pc_info") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -1094,7 +1094,7 @@ pw_source_set("remote_file") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -1118,7 +1118,7 @@ pw_source_set("reverse_pc_table") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -1141,7 +1141,7 @@ pw_source_set("runner_cmp_trace") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -1160,7 +1160,7 @@ pw_source_set("runner_fork_server") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -1180,7 +1180,7 @@ pw_source_set("rusage_profiler") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -1209,7 +1209,7 @@ pw_source_set("rusage_stats") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -1236,7 +1236,7 @@ pw_source_set("shard_reader") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -1266,7 +1266,7 @@ pw_source_set("shared_memory_blob_sequence") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
     ":centipede_config1",
   ]
   remove_configs = [
@@ -1287,7 +1287,7 @@ pw_source_set("stats") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -1313,7 +1313,7 @@ pw_source_set("test_util") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -1344,7 +1344,7 @@ pw_source_set("util") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",
@@ -1373,7 +1373,7 @@ pw_source_set("weak_sancov_stubs") {
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
     "../../re2/configs:disabled_warnings",
-    "../configs:internal_disabled_warnings",
+    "../configs:disabled_warnings",
   ]
   remove_configs = [
     "$dir_pw_fuzzer:instrumentation",

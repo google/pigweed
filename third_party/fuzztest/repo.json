@@ -10,7 +10,7 @@
         "$dir_pw_third_party/googletest:gtest": "$dir_pw_third_party/googletest"
     },
     "add": [
-        "$dir_pw_third_party/fuzztest/configs:internal_disabled_warnings",
+        "$dir_pw_third_party/fuzztest/configs:disabled_warnings",
         "$dir_pw_third_party/abseil-cpp/configs:disabled_warnings",
         "$dir_pw_third_party/re2/configs:disabled_warnings"
     ],

@@ -65,6 +65,7 @@ pw_doc_group("docs") {
 
 pw_test_group("tests") {
   group_deps = [
+    ":fuzztest_tests",
     "examples/fuzztest:tests",
     "examples/libfuzzer:tests",
   ]
@@ -107,6 +108,11 @@ pw_source_set("fuzztest") {
     ]
     public_configs += [ ":overrides_include_path" ]
   }
+}
+
+pw_test("fuzztest_tests") {
+  sources = [ "domain_test.cc" ]
+  deps = [ ":fuzztest" ]
 }
 
 # This target should only be when defining a fuzzing toolchain, e.g. to set

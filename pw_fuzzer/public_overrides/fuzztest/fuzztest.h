@@ -67,16 +67,12 @@ inline auto String() { return Arbitrary<std::string>(); }
 
 template <int&... ExplicitArgumentBarrier, typename T>
 inline auto StringOf(internal::Domain<T> inner) {
-  return ContainerOf<std::string>(inner);
+  return ContainerOf<std::string>(std::move(inner));
 }
 
 inline auto AsciiString() { return StringOf(AsciiChar()); }
 
 inline auto PrintableAsciiString() { return StringOf(PrintableAsciiChar()); }
-
-inline auto InRegexp(std::string_view) {
-  return internal::Domain<std::string>{};
-}
 
 template <template <typename> class Ptr,
           int&... ExplicitArgumentBarrier,
@@ -97,42 +93,44 @@ auto SharedPtrOf(internal::Domain<T>) {
 
 template <int&... ExplicitArgumentBarrier, typename T>
 auto VectorOf(internal::Domain<T> inner) {
-  return ContainerOf<std::vector<T>>(inner);
+  return ContainerOf<std::vector<T>>(std::move(inner));
 }
 
 template <int&... ExplicitArgumentBarrier, typename T>
 auto DequeOf(internal::Domain<T> inner) {
-  return ContainerOf<std::deque<T>>(inner);
+  return ContainerOf<std::deque<T>>(std::move(inner));
 }
 
 template <int&... ExplicitArgumentBarrier, typename T>
 auto ListOf(internal::Domain<T> inner) {
-  return ContainerOf<std::list<T>>(inner);
+  return ContainerOf<std::list<T>>(std::move(inner));
 }
 
 template <int&... ExplicitArgumentBarrier, typename T>
 auto SetOf(internal::Domain<T> inner) {
-  return ContainerOf<std::set<T>>(inner);
+  return ContainerOf<std::set<T>>(std::move(inner));
 }
 
 template <int&... ExplicitArgumentBarrier, typename K, typename V>
 auto MapOf(internal::Domain<K> keys, internal::Domain<V> values) {
-  return ContainerOf<std::map<K, V>>(PairOf(keys, values));
+  return ContainerOf<std::map<K, V>>(
+      PairOf(std::move(keys), std::move(values)));
 }
 
 template <int&... ExplicitArgumentBarrier, typename T>
 auto UnorderedSetOf(internal::Domain<T> inner) {
-  return ContainerOf<std::unordered_set<T>>(inner);
+  return ContainerOf<std::unordered_set<T>>(std::move(inner));
 }
 
 template <int&... ExplicitArgumentBarrier, typename K, typename V>
 auto UnorderedMapOf(internal::Domain<K> keys, internal::Domain<V> values) {
-  return ContainerOf<std::unordered_map<K, V>>(PairOf(keys, values));
+  return ContainerOf<std::unordered_map<K, V>>(
+      PairOf(std::move(keys), std::move(values)));
 }
 
 template <typename T>
-auto UniqueElementsVectorOf(internal::Domain<T>) {
-  return internal::AggregateDomain<std::vector<T>>{};
+auto UniqueElementsVectorOf(internal::Domain<T> inner) {
+  return VectorOf(std::move(inner));
 }
 
 template <typename P,
