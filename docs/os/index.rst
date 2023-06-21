@@ -7,7 +7,7 @@ OS Support
 .. toctree::
    :hidden:
 
-   zephyr
+   zephyr/index
 
 Pigweed’s operating system abstraction layers are portable and configurable
 building blocks, giving users full control while maintaining high performance

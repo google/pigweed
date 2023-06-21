@@ -50,7 +50,7 @@ pw_doc_group("core_docs") {
     "getting_started.rst",
     "module_structure.rst",
     "os/index.rst",
-    "os/zephyr.rst",
+    "os/zephyr/index.rst",
     "size_optimizations.rst",
     "style_guide.rst",
   ]
