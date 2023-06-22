@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_assert/check.h"
 #include "src/crypto/fipsmodule/rand/internal.h"
 
 extern "C" {
@@ -36,7 +37,7 @@ int open(const char* file, int, ...) {
 
 ssize_t read(int fd, void*, size_t len) {
   if (fd == URANDOM_FILE_FD) {
-    // TODO(zyecheng): Add code to generate random bytes.
+    PW_CRASH("No TRNG. Contact the Pigweed team.");
   }
   return static_cast<ssize_t>(len);
 }
@@ -45,7 +46,7 @@ ssize_t read(int fd, void*, size_t len) {
 // When OPENSSL_URANDOM is not defined, BoringSSL expects an implementation of
 // the following function for generating random bytes.
 void CRYPTO_sysrand(uint8_t*, size_t) {
-  // TODO(zyecheng): Add code to generate random bytes.
+  PW_CRASH("No TRNG. Contact the Pigweed team.");
 }
 #endif
 }

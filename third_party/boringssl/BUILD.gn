@@ -88,7 +88,16 @@ if (pw_third_party_boringssl_ALIAS != "") {
     # Can be removed once posix socket layer in Pigweed is supported.
     include_dirs = [ "sysdeps" ]
 
-    public_deps = [ "$dir_pw_tls_client:time" ]
+    public_deps = [
+      "$dir_pw_assert",
+      "$dir_pw_tls_client:time",
+    ]
+
+    # Consume //third_party/boringssl via a Pigweed module only.
+    visibility = [
+      "$dir_pw_tls_client:*",
+      "$dir_pw_tls_client_boringssl:*",
+    ]
   }
 } else {
   group("boringssl") {

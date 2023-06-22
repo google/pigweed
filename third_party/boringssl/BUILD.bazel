@@ -24,5 +24,8 @@ pw_cc_library(
     hdrs = ["sysdeps/sys/socket.h"],
     copts = ["-Wno-unused-parameter"],
     includes = ["sysdeps"],
-    deps = ["@boringssl//:bssl"],
+    deps = [
+        "//pw_assert",
+        "@boringssl//:bssl",
+    ],
 )
