@@ -15,6 +15,8 @@
 menu "pw_status"
 
 config PIGWEED_STATUS
-    bool "Enable the Pigweed status library (pw_status)"
+    bool "Link pw_status library"
+    help
+      See :ref:`module-pw_status` for module details.
 
 endmenu

@@ -15,15 +15,39 @@
 config PIGWEED_LOG_TOKENIZED_LEVEL_BITS
     int "Number of bits required to present the log level"
     default 3
+    help
+      The total representation size of the metadata is the sum of
+      - ``CONFIG_PIGWEED_LOG_TOKENIZED_LEVEL_BITS``
+      - ``CONFIG_PIGWEED_LOG_TOKENIZED_LINE_BITS``
+      - ``CONFIG_PIGWEED_LOG_TOKENIZED_FLAG_BITS``
+      - ``CONFIG_PIGWEED_LOG_TOKENIZED_MODULE_BITS``
 
 config PIGWEED_LOG_TOKENIZED_LINE_BITS
     int "Number of bits required to present the log line number"
     default 11
+    help
+      The total representation size of the metadata is the sum of
+      - ``CONFIG_PIGWEED_LOG_TOKENIZED_LEVEL_BITS``
+      - ``CONFIG_PIGWEED_LOG_TOKENIZED_LINE_BITS``
+      - ``CONFIG_PIGWEED_LOG_TOKENIZED_FLAG_BITS``
+      - ``CONFIG_PIGWEED_LOG_TOKENIZED_MODULE_BITS``
 
 config PIGWEED_LOG_TOKENIZED_FLAG_BITS
     int "Number of bits required for implementation-defined flags"
     default 2
+    help
+      The total representation size of the metadata is the sum of
+      - ``CONFIG_PIGWEED_LOG_TOKENIZED_LEVEL_BITS``
+      - ``CONFIG_PIGWEED_LOG_TOKENIZED_LINE_BITS``
+      - ``CONFIG_PIGWEED_LOG_TOKENIZED_FLAG_BITS``
+      - ``CONFIG_PIGWEED_LOG_TOKENIZED_MODULE_BITS``
 
 config PIGWEED_LOG_TOKENIZED_MODULE_BITS
     int "Number of bits required for logging the PW_LOG_MODULE_NAME"
     default 16
+    help
+      The total representation size of the metadata is the sum of
+      - ``CONFIG_PIGWEED_LOG_TOKENIZED_LEVEL_BITS``
+      - ``CONFIG_PIGWEED_LOG_TOKENIZED_LINE_BITS``
+      - ``CONFIG_PIGWEED_LOG_TOKENIZED_FLAG_BITS``
+      - ``CONFIG_PIGWEED_LOG_TOKENIZED_MODULE_BITS``

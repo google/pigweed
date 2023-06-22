@@ -15,22 +15,38 @@
 menu "pw_system"
 
 config PIGWEED_SYSTEM_LOG_BACKEND
-    bool "Enables pw_system.log_backend backend"
+    bool "Use pw_system.log_backend as the logging backend"
+    help
+      See :ref:`module-pw_log` for logging module details.
+
 config PIGWEED_SYSTEM_TARGET_HOOKS
-    bool "Enables the Zephyr pw_system.target_hooks backend"
+    bool "Use the backend for the pw_system.target_hooks library"
+    help
+      Configure the system's:
+      - log thread
+      - RPC thread
+      - Work queue thread
+
 config PIGWEED_SYSTEM_HDLC_RPC_SERVER
-    bool "Enables the Zephyr pw_system.hdlc_rpc_server backend"
+    bool "Link pw_system.hdlc_rpc_server library and set backend"
+    help
+      Automatically include an HDLC (:ref:`module-pw_hdlc`) RPC server
+      (:ref:`module-pw_rpc`) in the system.
 
 if PIGWEED_SYSTEM_TARGET_HOOKS
+
 config PIGWEED_SYSTEM_TARGET_HOOKS_LOG_STACK_SIZE
     int "Log thread stack size"
     default 4096
+
 config PIGWEED_SYSTEM_TARGET_HOOKS_RPC_STACK_SIZE
     int "RPC thread stack size"
     default 4096
+
 config PIGWEED_SYSTEM_TARGET_HOOKS_WORK_QUEUE_STACK_SIZE
     int "Work Queue thread stack size"
     default 4096
+
 endif # PIGWEED_SYSTEM_TARGET_HOOKS
 
 endmenu

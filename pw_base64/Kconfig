@@ -18,9 +18,8 @@
 menu "pw_base64"
 
 config PIGWEED_BASE64
-    bool "Pigweed base64 library"
+    bool "Link pw_base64 library"
     help
-      Link the pw_base64 library into Zephyr so it may be used in any Zephyr
-      library.
+      See :ref:`module-pw_base64` for module details.
 
 endmenu

@@ -15,10 +15,8 @@
 menu "pw_polyfill"
 
 config PIGWEED_POLYFILL
-    bool "Enable the Pigweed polyfill library (pw_polyfill)"
-
-config PIGWEED_POLYFILL_OVERRIDES
-    bool "Enable the Pigweed polyfill overrides library (pw_polyfill.overrides)"
-    depends on PIGWEED_POLYFILL
+    bool "Link pw_polyfill library"
+    help
+      See :ref:`module-pw_polyfill` for module details.
 
 endmenu

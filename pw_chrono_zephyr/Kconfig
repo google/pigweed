@@ -15,8 +15,10 @@
 menu "pw_chrono"
 
 config PIGWEED_CHRONO_SYSTEM_CLOCK
-    bool "Enabled the Pigweed chrono system clock library (pw_chrono.system_clock)"
+    bool "Link pw_chrono.system_clock library"
     select PIGWEED_PREPROCESSOR
     select PIGWEED_FUNCTION
+    help
+      See :ref:`module-pw_checksum` for module details.
 
 endmenu

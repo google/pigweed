@@ -17,7 +17,8 @@ menu "pw_log"
 choice PIGWEED_LOG
     prompt "Logging backend used"
     help
-      The type of Zephyr pw_log backend to use.
+      The type of Zephyr pw_log backend to use. See :ref:`module-pw_log` for
+      module details
 
 config PIGWEED_LOG_ZEPHYR
     bool "Zephyr logging for PW_LOG_* statements"
@@ -25,12 +26,12 @@ config PIGWEED_LOG_ZEPHYR
     help
       Once the Pigweed logging is enabled, all Pigweed logs via PW_LOG_*() will
       be routed to the Zephyr logging system. This means that:
-      - PW_LOG_LEVEL_DEBUG maps to Zephyr's LOG_LEVEL_DBG
-      - PW_LOG_LEVEL_INFO maps to Zephyr's LOG_LEVEL_INF
-      - PW_LOG_LEVEL_WARN maps to Zephyr's LOG_LEVEL_WRN
-      - PW_LOG_LEVEL_ERROR maps to Zephyr's LOG_LEVEL_ERR
-      - PW_LOG_LEVEL_CRITICAL maps to Zephyr's LOG_LEVEL_ERR
-      - PW_LOG_LEVEL_FATAL maps to Zephyr's LOG_LEVEL_ERR
+      - :c:macro:`PW_LOG_LEVEL_DEBUG` maps to Zephyr's LOG_LEVEL_DBG
+      - :c:macro:`PW_LOG_LEVEL_INFO` maps to Zephyr's LOG_LEVEL_INF
+      - :c:macro:`PW_LOG_LEVEL_WARN` maps to Zephyr's LOG_LEVEL_WRN
+      - :c:macro:`PW_LOG_LEVEL_ERROR` maps to Zephyr's LOG_LEVEL_ERR
+      - :c:macro:`PW_LOG_LEVEL_CRITICAL` maps to Zephyr's LOG_LEVEL_ERR
+      - :c:macro:`PW_LOG_LEVEL_FATAL` maps to Zephyr's LOG_LEVEL_ERR
 
 menuconfig PIGWEED_LOG_TOKENIZED
     bool "Maps all Zephyr log macros to tokenized PW_LOG_* macros"
@@ -41,12 +42,15 @@ menuconfig PIGWEED_LOG_TOKENIZED
     select LOG_CUSTOM_HEADER
     help
       Map all the Zephyr log macros to use Pigweed's then use the
-      'pw_log_tokenized' target as the logging backend in order to
+      :ref:`module-pw_log_tokenized` target as the logging backend in order to
       automatically tokenize all the logging strings. This means that Pigweed
       will also tokenize all of Zephyr's logging statements.
 
 config PIGWEED_LOG_NONE
     bool "Do not use pigweed logging"
+    help
+      Pigweed log macros will not work unless the application manually
+      configures the logging backend.
 
 menuconfig PIGWEED_LOG_TOKENIZED_RPC
     bool "Enables RPC tokenized logging"
@@ -62,7 +66,7 @@ menuconfig PIGWEED_LOG_TOKENIZED_RPC
     select LOG_CUSTOM_HEADER
     depends on CONSOLE_GETCHAR
     help
-      Enable tokenized logging over RPC
+      Enable tokenized logging over RPC by using the system log backend.
 
 endchoice
 
@@ -75,21 +79,33 @@ choice "PIGWEED_LOG_LEVEL_CHOICE"
 
 config PIGWEED_LOG_LEVEL_OFF
 	bool "Off"
+	help
+	  Turn off all Pigweed logging.
 
 config PIGWEED_LOG_LEVEL_ERR
 	bool "Error"
+	help
+	  Only print error level log statements.
 
 config PIGWEED_LOG_LEVEL_WRN
 	bool "Warning"
+	help
+	  Only print warning level log statements and above.
 
 config PIGWEED_LOG_LEVEL_INF
 	bool "Info"
+	help
+	  Only print info level log statements and above.
 
 config PIGWEED_LOG_LEVEL_DBG
 	bool "Debug"
+	help
+	  Print all log statements.
 
 config PIGWEED_LOG_LEVEL_DEFAULT
 	bool "Default"
+	help
+	  Use Zephyr's ``LOG_DEFAULT_LEVEL`` as the log level.
 
 endchoice
 

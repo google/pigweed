@@ -15,10 +15,12 @@
 menu "pw_bytes"
 
 config PIGWEED_BYTES
-    bool "Enable the Pigweed bytes library (pw_bytes)"
+    bool "Link pw_bytes library"
     select PIGWEED_POLYFILL_OVERRIDES
     select PIGWEED_PREPROCESSOR
     select PIGWEED_SPAN
     select PIGWEED_STATUS
+    help
+      See :ref:`module-pw_bytes` for module details.
 
 endmenu

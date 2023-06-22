@@ -15,8 +15,10 @@
 menu "pw_checksum"
 
 config PIGWEED_CHECKSUM
-    bool "Enable Pigweed checksum library (pw_checksum)"
+    bool "Link pw_checksum library"
     select PIGWEED_SPAN
     select PIGWEED_BYTES
+    help
+      See :ref:`module-pw_checksum` for module details.
 
 endmenu

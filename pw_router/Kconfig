@@ -15,23 +15,31 @@
 menu "pw_router"
 
 config PIGWEED_ROUTER_STATIC_ROUTER
-    bool "Enable the Pigweed static router library (pw_router.static_router)"
+    bool "Link pw_router.static_router library"
     select PIGWEED_METRIC
     select PIGWEED_ROUTER_EGRESS
     select PIGWEED_ROUTER_PACKET_PARSER
     select PIGWEED_SYNC_MUTEX
     select PIGWEED_LOG
+    help
+      See :ref:`module-pw_router-static_router` for library details.
 
 config PIGWEED_ROUTER_EGRESS
-    bool "Enable the Pigweed router egress library (pw_router.egress)"
+    bool "Link pw_router.egress library"
     select PIGWEED_BYTES
+    help
+      See :ref:`module-pw_router-egress` for library details.
 
 config PIGWEED_ROUTER_PACKET_PARSER
-    bool "Enable the Pigweed router packet parser library (pw_router.packet_parser)"
+    bool "Link pw_router.packet_parser library"
     select PIGWEED_BYTES
+    help
+      See :ref:`module-pw_router-packet_parser` for library details.
 
 config PIGWEED_ROUTER_EGRESS_FUNCTION
-    bool "Enable the Pigweed router egress function library (pw_router.egress_function)"
+    bool "Link pw_router.egress_function library"
     select PIGWEED_RPC_EGRESS
+    help
+      See :ref:`module-pw_router-egress` for library details.
 
 endmenu

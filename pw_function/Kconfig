@@ -15,8 +15,10 @@
 menu "pw_function"
 
 config PIGWEED_FUNCTION
-    bool "Enable the Pigweed function library (pw_function)"
+    bool "Link pw_function library"
     select PIGWEED_ASSERT
     select PIGWEED_PREPROCESSOR
+    help
+      See :ref:`module-pw_function` for module details.
 
 endmenu

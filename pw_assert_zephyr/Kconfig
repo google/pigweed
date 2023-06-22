@@ -15,7 +15,9 @@
 menu "pw_assert"
 
 config PIGWEED_ASSERT
-    bool "Enable Pigweed assert library (pw_assert)"
+    bool "Link pw_assert library"
     select PIGWEED_PREPROCESSOR
+    help
+      See :ref:`module-pw_assert` for module details.
 
 endmenu

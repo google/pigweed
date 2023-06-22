@@ -15,8 +15,10 @@
 menu "pw_result"
 
 config PIGWEED_RESULT
-    bool "Enable Pigweed result library (pw_result)"
+    bool "Link pw_result library"
     select PIGWEED_ASSERT
     select PIGWEED_STATUS
+    help
+      See :ref:`module-pw_result` for module details.
 
 endmenu

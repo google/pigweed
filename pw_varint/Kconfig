@@ -15,8 +15,10 @@
 menu "pw_varint"
 
 config PIGWEED_VARINT
-    bool "Enable Pigweed variable length int library (pw_varint)"
+    bool "Link pw_varint library"
     select PIGWEED_PREPROCESSOR
     select PIGWEED_SPAN
+    help
+      See :ref:`module-pw_varint` for module details.
 
 endmenu

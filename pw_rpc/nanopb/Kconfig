@@ -14,37 +14,42 @@
 
 menu "nanopb"
 
-config PIGWEED_RPC_NANOPB_DIR
-    string "Optional 3rd party directory for nanopb"
-    help
-      The directory for the custom nanopb build rules to integrate with pigweed.
-
 config PIGWEED_RPC_NANOPB_METHOD
-    bool "Enable Pigweed RPC/Nanopb method library (pw_rpc.nanopb.method)"
+    bool "Link pw_rpc.nanopb.method library"
     select PIGWEED_RPC_NANOPB_COMMON
     select PIGWEED_RPC_SERVER
     select PIGWEED_LOG
+    help
+      See :ref:`module-pw_rpc_nanopb` for module details.
 
 config PIGWEED_RPC_NANOPB_METHOD_UNION
-    bool "Enable Pigweed RPC/Nanopb method union library (pw_rpc.nanopb.method_union)"
+    bool "Link pw_rpc.nanopb.method_union library"
     select PIGWEED_RPC_NANOPB_METHOD
     select PIGWEED_RPC_RAW
     select PIGWEED_RPC_SERVER
     select PIGWEED_LOG
+    help
+      See :ref:`module-pw_rpc_nanopb` for module details.
 
 config PIGWEED_RPC_NANOPB_CLIENT
-    bool "Enable Pigweed RPC/Nanopb client library (pw_rpc.nanopb.client)"
+    bool "Link pw_rpc.nanopb.client library"
     select PIGWEED_FUNCTION
     select PIGWEED_RPC_NANOPB_COMMON
     select PIGWEED_RPC_COMMON
+    help
+      See :ref:`module-pw_rpc_nanopb` for module details.
 
 config PIGWEED_RPC_NANOPB_COMMON
-    bool "Enable Pigweed RPC/Nanopb common library (pw_rpc.nanopb.common)"
+    bool "Link pw_rpc.nanopb.common library"
     select PIGWEED_BYTES
     select PIGWEED_LOG
     select PIGWEED_RPC_COMMON
+    help
+      See :ref:`module-pw_rpc_nanopb` for module details.
 
 config PIGWEED_RPC_NANOPB_ECHO_SERVICE
-    bool "Enable Pigweed RPC/Nanopb echo service library (pw_rpc.nanopb.echo_service)"
+    bool "Link pw_rpc.nanopb.echo_service library"
+    help
+      See :ref:`module-pw_rpc_nanopb` for module details.
 
 endmenu

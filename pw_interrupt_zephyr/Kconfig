@@ -15,6 +15,8 @@
 menu "pw_interrupt"
 
 config PIGWEED_INTERRUPT_CONTEXT
-    bool "Enable the Pigweed interrupt library (pw_interrupt.context)"
+    bool "Link pw_interrupt.context library"
+    help
+      See :ref:`module-pw_interrupt` for module details.
 
 endmenu

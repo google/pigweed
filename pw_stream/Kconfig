@@ -15,12 +15,14 @@
 menu "pw_stream"
 
 config PIGWEED_STREAM
-    bool "Enable Pigweed stream library (pw_stream)"
+    bool "Link pw_stream library"
     select PIGWEED_ASSERT
     select PIGWEED_BYTES
     select PIGWEED_RESULT
     select PIGWEED_SPAN
     select PIGWEED_STATUS
     select PIGWEED_SYS_IO
+    help
+      See :ref:`module-pw_stream` for module details.
 
 endmenu

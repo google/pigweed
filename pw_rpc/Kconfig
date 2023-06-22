@@ -17,23 +17,29 @@ menu "pw_rpc"
 rsource "nanopb/Kconfig"
 
 config PIGWEED_RPC_SERVER
-    bool "Enable Pigweed RPC server library (pw_rpc.server)"
+    bool "Link pw_rpc.server library"
     select PIGWEED_RPC_COMMON
     select PIGWEED_LOG
+    help
+      See :ref:`module-pw_rpc` for module details.
 
 config PIGWEED_RPC_CLIENT
-    bool "Enable Pigweed RPC client library (pw_rpc.client)"
+    bool "Link pw_rpc.client library"
     select PIGWEED_RPC_COMMON
     select PIGWEED_RESULT
     select PIGWEED_LOG
+    help
+      See :ref:`module-pw_rpc` for module details.
 
 config PIGWEED_RPC_CLIENT_SERVER
-    bool "Enable Pigweed RPC client-server library (pw_rpc.client_server)"
+    bool "Link pw_rpc.client_server library"
     select PIGWEED_RPC_CLIENT
     select PIGWEED_RPC_SERVER
+    help
+      See :ref:`module-pw_rpc` for module details.
 
 config PIGWEED_RPC_COMMON
-    bool "Enable Pigweed RPC common library (pw_rpc.common)"
+    bool "Link pw_rpc.common library"
     select PIGWEED_ASSERT
     select PIGWEED_BYTES
     select PIGWEED_CONTAINERS
@@ -42,5 +48,7 @@ config PIGWEED_RPC_COMMON
     select PIGWEED_STATUS
     select PIGWEED_LOG
     select PIGWEED_SYNC_MUTEX
+    help
+      See :ref:`module-pw_rpc` for module details.
 
 endmenu

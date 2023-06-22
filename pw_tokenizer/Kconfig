@@ -15,23 +15,29 @@
 menu "pw_tokenizer"
 
 config PIGWEED_TOKENIZER
-  bool "Enable the pw_tokenizer library"
-  select PIGWEED_CONTAINERS
-  select PIGWEED_PREPROCESSOR
-  select PIGWEED_SPAN
-  select PIGWEED_VARINT
+    bool "Link pw_tokenizer library"
+    select PIGWEED_CONTAINERS
+    select PIGWEED_PREPROCESSOR
+    select PIGWEED_SPAN
+    select PIGWEED_VARINT
+    help
+      See :ref:`module-pw_tokenizer` for module details.
 
 config PIGWEED_TOKENIZER_BASE64
-  bool "Enable the pw_tokenizer.base64 library"
-  select PIGWEED_TOKENIZER
-  select PIGWEED_BASE64
-  select PIGWEED_SPAN
+    bool "Link pw_tokenizer.base64 library"
+    select PIGWEED_TOKENIZER
+    select PIGWEED_BASE64
+    select PIGWEED_SPAN
+    help
+      See :ref:`module-pw_tokenizer` for module details.
 
 config PIGWEED_DETOKENIZER
-  bool "Enable the pw_tokenizer.decoder library"
-  select PIGWEED_TOKENIZER
-  select PIGWEED_SPAN
-  select PIGWEED_BYTES
-  select PIGWEED_VARINT
+    bool "Link pw_tokenizer.decoder library"
+    select PIGWEED_TOKENIZER
+    select PIGWEED_SPAN
+    select PIGWEED_BYTES
+    select PIGWEED_VARINT
+    help
+      See :ref:`module-pw_tokenizer` for module details.
 
 endmenu

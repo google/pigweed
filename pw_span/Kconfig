@@ -15,7 +15,9 @@
 menu "pw_span"
 
 config PIGWEED_SPAN
-    bool "Enable the Pigweed span library (pw_span)"
+    bool "Link pw_span library"
     select PIGWEED_POLYFILL
+    help
+      See :ref:`module-pw_span` for module details.
 
 endmenu

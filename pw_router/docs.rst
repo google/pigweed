@@ -9,12 +9,16 @@ over network links.
 Common router interfaces
 ========================
 
+.. _module-pw_router-packet_parser:
+
 PacketParser
 ------------
 To work with arbitrary packet formats, routers require a common interface for
 extracting relevant packet data, such as the destination. This interface is
 ``pw::router::PacketParser``, defined in ``pw_router/packet_parser.h``, which
 must be implemented for the packet framing format used by the network.
+
+.. _module-pw_router-egress:
 
 Egress
 ------
@@ -46,6 +50,8 @@ under heavy load.
   }
 
 Some common egress implementations are provided upstream in Pigweed.
+
+.. _module-pw_router-static_router:
 
 StaticRouter
 ============

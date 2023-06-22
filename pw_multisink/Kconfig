@@ -16,6 +16,8 @@ menu "pw_multisink"
 
 config PIGWEED_MULTISINK
     bool "Multisink module used for forwarding multiple attached sinks"
+    help
+      See :ref:`module-pw_multisink` for module details.
 
 if PIGWEED_MULTISINK
 
@@ -27,7 +29,9 @@ config PIGWEED_MULTISINK_LOCK_INTERRUPT_SAFE
       module will use an interrupt safe lock instead of a mutex.
 
 config PIGWEED_MULTISINK_UTIL
-    bool "Utility library for the multisink module"
+    bool "Link pw_multisink.util library"
+    help
+      Include the Pigweed provided utility functions for multisink operations.
 
 endif # PIGWEED_MULTISINK
 

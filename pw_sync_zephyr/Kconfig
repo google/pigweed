@@ -21,23 +21,33 @@ config PIGWEED_SYNC
     select PIGWEED_INTERRUPT_CONTEXT
 
 config PIGWEED_SYNC_MUTEX
-    bool "Enable Pigweed mutex library (pw_sync.mutex)"
+    bool "Link pw_sync.mutex library"
     select PIGWEED_SYNC
     select PIGWEED_POLYFILL
+    help
+      See :ref:`module-pw_sync` for module details.
 
 config PIGWEED_SYNC_BINARY_SEMAPHORE
-    bool "Enable Pigweed binary semaphore library (pw_sync.binary_semaphore)"
+    bool "Link pw_sync.binary_semaphore library"
     select PIGWEED_SYNC
+    help
+      See :ref:`module-pw_sync` for module details.
 
 config PIGWEED_SYNC_INTERRUPT_SPIN_LOCK
-    bool "Link pw_sync.interrupt_spin_lock and set the Zephyr backend"
+    bool "Link pw_sync.interrupt_spin_lock library"
+    help
+      See :ref:`module-pw_sync` for module details.
 
 config PIGWEED_SYNC_THREAD_NOTIFICATION
-    bool "Link pw_sync.thread_notification and set the Zephyr backend"
+    bool "Link pw_sync.thread_notification library"
     select PIGWEED_SYNC_BINARY_SEMAPHORE
+    help
+      See :ref:`module-pw_sync` for module details.
 
 config PIGWEED_SYNC_TIMED_THREAD_NOTIFICATION
-    bool "Link pw_sync.timed_thread_notification and set the Zephyr backend"
+    bool "Link pw_sync.timed_thread_notification library"
     select PIGWEED_SYNC_BINARY_SEMAPHORE
+    help
+      See :ref:`module-pw_sync` for module details.
 
 endmenu

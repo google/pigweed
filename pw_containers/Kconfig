@@ -15,8 +15,10 @@
 menu "pw_containers"
 
 config PIGWEED_CONTAINERS
-    bool "Enable the Pigweed containers library (pw_containers)"
+    bool "Link pw_containers library"
     select PIGWEED_ASSERT
     select PIGWEED_STATUS
+    help
+      See :ref:`module-pw_containers` for module details.
 
 endmenu
