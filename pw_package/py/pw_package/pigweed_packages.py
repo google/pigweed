@@ -36,6 +36,7 @@ from pw_package.packages import protobuf
 from pw_package.packages import re2
 from pw_package.packages import smartfusion_mss
 from pw_package.packages import stm32cube
+from pw_package.packages import zephyr
 
 # pylint: enable=unused-import
 

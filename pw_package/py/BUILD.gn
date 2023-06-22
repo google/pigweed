@@ -45,6 +45,7 @@ pw_python_package("py") {
     "pw_package/packages/re2.py",
     "pw_package/packages/smartfusion_mss.py",
     "pw_package/packages/stm32cube.py",
+    "pw_package/packages/zephyr.py",
     "pw_package/pigweed_packages.py",
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
