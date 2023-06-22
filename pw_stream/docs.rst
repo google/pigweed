@@ -668,3 +668,11 @@ Zephyr
 ======
 To enable ``pw_stream`` for Zephyr add ``CONFIG_PIGWEED_STREAM=y`` to the
 project's configuration.
+
+----
+Rust
+----
+Pigweed centric analogs to Rust ``std``'s ``Read``, ``Write``, ``Seek`` traits
+as well as a basic ``Cursor`` implementation are provided by the
+`pw_stream crate
+<https://cs.pigweed.dev/pigweed/+/main:pw_stream/rust>`_.
