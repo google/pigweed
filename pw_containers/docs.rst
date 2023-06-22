@@ -136,12 +136,19 @@ As a result iterating over a list does not incur an additional penalty.
 
 pw::containers::FlatMap
 =======================
-FlatMap provides a simple, fixed-size associative array with lookup by key or
-value. ``pw::containers::FlatMap`` contains the same methods and features for
-looking up data as std::map. However, there are no methods that modify the
-underlying data.  The underlying array in ``pw::containers::FlatMap`` does not
-need to be sorted. During construction, ``pw::containers::FlatMap`` will
-perform a constexpr insertion sort.
+``FlatMap`` provides a simple, fixed-size associative array with `O`\ (log `n`)
+lookup by key.
+
+``pw::containers::FlatMap`` contains the same methods and features for looking
+up data as ``std::map``. However, modification of the underlying data is limited
+to the mapped values, via ``.at()`` (key must exist) and ``mapped_iterator``
+objects returned by ``.mapped_begin()`` and ``.mapped_end()``.
+``mapped_iterator`` objects are bidirectional iterators that can be dereferenced
+to access and mutate the mapped value objects.
+
+The underlying array in ``pw::containers::FlatMap`` does not need to be sorted.
+During construction, ``pw::containers::FlatMap`` will perform a constexpr
+insertion sort.
 
 pw::containers::FilteredView
 ============================

@@ -115,6 +115,7 @@ pw_cc_library(
     name = "flat_map",
     hdrs = ["public/pw_containers/flat_map.h"],
     includes = ["public"],
+    deps = ["//pw_assert"],
 )
 
 pw_cc_library(

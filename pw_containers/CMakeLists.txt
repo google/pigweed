@@ -47,6 +47,8 @@ pw_add_library(pw_containers.flat_map INTERFACE
     public/pw_containers/flat_map.h
   PUBLIC_INCLUDES
     public
+  PUBLIC_DEPS
+    pw_assert.assert
 )
 
 pw_add_library(pw_containers.inline_deque INTERFACE
