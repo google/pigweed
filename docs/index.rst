@@ -47,6 +47,7 @@ STM32L452 or the Nordic nRF52832.
    in our `chat room <https://discord.gg/M9NSeTA>`_ or on the `mailing list
    <https://groups.google.com/forum/#!forum/pigweed>`_.
 
+---------------
 Getting Started
 ---------------
 Check out `Pigweed Sample Project <https://pigweed.googlesource.com/pigweed/sample_project/+/main/README.md>`_
@@ -56,6 +57,11 @@ Visit the :ref:`docs-getting-started` guide to learn how to bootstrap and
 activate a Pigweed environment, build Pigweed for a specific host or device,
 run tests, and more.
 
+Zephyr
+======
+See :ref:`docs-os-zephyr-get-started`.
+
+------------------------
 What does Pigweed offer?
 ------------------------
 There are many modules in Pigweed; this section showcases a selection that
@@ -63,7 +69,7 @@ produce visual output. For more information about the different Pigweed module
 offerings, refer to :ref:`docs-module-guides` section.
 
 ``pw_watch`` - Build, flash, run, & test on save
-------------------------------------------------
+================================================
 In the web development space, file system watchers are prevalent. These
 watchers trigger a web server reload on source change, making development much
 faster. In the embedded space, file system watchers are less prevalent;
@@ -83,7 +89,7 @@ takes to run tests.
   :alt: pw watch running on-device tests
 
 ``pw_presubmit`` - Vacuum lint on every commit
-----------------------------------------------
+==============================================
 Presubmit checks are essential tools, but they take work to set up, and
 projects don’t always get around to it. The :ref:`module-pw_presubmit` module
 provides tools for setting up high quality presubmit checks for any project. We
@@ -101,7 +107,7 @@ like ``clang-format``, and it’s simple to add support for new languages.
   :alt: pw presubmit demo
 
 ``pw_env_setup`` - Cross platform embedded compiler setup
----------------------------------------------------------
+=========================================================
 A classic problem in the embedded space is reducing the **time from git clone
 to having a binary executing on a device**. An entire suite of tools is needed
 for building non-trivial production embedded projects, and need to be
@@ -132,7 +138,7 @@ reused by any project.
    :alt: pw environment setup demo
 
 ``pw_unit_test`` - Embedded testing for MCUs
---------------------------------------------
+============================================
 Unit testing is important, and Pigweed offers a portable library that’s broadly
 compatible with `Google Test <https://github.com/google/googletest>`_. Unlike
 Google Test, :ref:`module-pw_unit_test` is built on top of embedded friendly
@@ -152,7 +158,7 @@ on-device.
    :alt: pw_status test run natively on host
 
 And more!
----------
+=========
 Here is a selection of interesting modules:
 
 - :ref:`module-pw_cpu_exception_cortex_m` - Robust low level hardware fault

@@ -14,6 +14,15 @@ See the docs for these modules for more information:
 - :ref:`pw_sys_io_zephyr <module-pw_sys_io_zephyr>`
 - :ref:`pw_thread_zephyr <module-pw_thread_zephyr>`
 
+.. _docs-os-zephyr-get-started:
+
+-----------------------------------
+Get started with Zephyr and Pigweed
+-----------------------------------
+1. Complete the `Zephyr Getting Started Guide`_.
+2. Check out the `zds2023`_ repository for an example of a Zephyr starter
+   project that has been set up to use Pigweed.
+
 -------
 Testing
 -------
@@ -28,3 +37,4 @@ Once set up, simply invoke:
 .. attention:: Testing has only been verified with `-p native_posix`. Proceed with caution.
 
 .. _Zephyr Getting Started Guide: https://docs.zephyrproject.org/latest/develop/getting_started/index.html#getting-started-guide
+.. _zds2023: https://github.com/yperess/zds2023
