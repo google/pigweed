@@ -80,6 +80,7 @@ pw_python_package("py") {
     "$dir_pw_env_setup/py",
     "$dir_pw_presubmit/py",
   ]
+  python_test_deps = [ "gn_tests:test_dist1" ]
   pylintrc = "$dir_pigweed/.pylintrc"
   mypy_ini = "$dir_pigweed/.mypy.ini"
 }

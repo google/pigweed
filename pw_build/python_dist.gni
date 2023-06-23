@@ -160,9 +160,23 @@ template("pw_python_zip_with_setup") {
 #   generate_setup_cfg: A scope containing either common_config_file or 'name'
 #     and 'version' If included this creates a merged setup.cfg for all python
 #     Packages using either a common_config_file as a base or name and version
-#     strings. This scope can optionally include: 'append_git_sha_to_version' or
-#     'append_date_to_version' whic append the current git SHA or date to the
-#     package version string after a + sign.
+#     strings. This scope can optionally include:
+#
+#     include_default_pyproject_file: Include a standard pyproject.toml file
+#       that uses setuptools.
+#
+#     append_git_sha_to_version: Append the current git SHA to the package
+#       version string after a + sign.
+#
+#     append_date_to_version: Append the current date to the package version
+#       string after a + sign.
+#
+#     include_extra_files_in_package_data: Add any extra_files to the setup.cfg
+#       file under the [options.package_data] section.
+#
+#     auto_create_package_data_init_py_files: Default: true
+#       Create __init__.py files as needed in all subdirs of extra_files when
+#       including in [options.package_data].
 #
 template("pw_python_distribution") {
   _metadata_path_list_suffix = "_pw_python_distribution_metadata_path_list.txt"
@@ -334,6 +348,17 @@ template("pw_python_distribution") {
       if (defined(generate_setup_cfg.include_default_pyproject_file) &&
           generate_setup_cfg.include_default_pyproject_file == true) {
         args += [ "--create-default-pyproject-toml" ]
+      }
+      if (defined(generate_setup_cfg.include_extra_files_in_package_data)) {
+        args += [ "--setupcfg-extra-files-in-package-data" ]
+      }
+      _auto_create_package_data_init_py_files = true
+      if (defined(generate_setup_cfg.auto_create_package_data_init_py_files)) {
+        _auto_create_package_data_init_py_files =
+            generate_setup_cfg.auto_create_package_data_init_py_files
+      }
+      if (_auto_create_package_data_init_py_files) {
+        args += [ "--auto-create-package-data-init-py-files" ]
       }
     }
 

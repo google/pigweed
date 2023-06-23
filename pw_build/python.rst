@@ -430,10 +430,25 @@ Arguments
   and ``version`` strings. The ``common_config_file`` should contain the
   required fields in the ``metadata`` and ``options`` sections as shown in
   `Configuring setup() using setup.cfg files <https://setuptools.pypa.io/en/latest/userguide/declarative_config.html>`_.
-  ``append_git_sha_to_version = true`` and ``append_date_to_version = true``
-  will optionally append the current git SHA or date to the package version
-  string after a ``+`` sign. You can also opt to include a generated
-  ``pyproject.toml`` file by setting ``include_default_pyproject_file = true``.
+
+  This scope can optionally include:
+
+  - ``append_git_sha_to_version = true``: Append the current git SHA to the
+    package version string after a ``+`` sign.
+
+  - ``append_date_to_version = true``: Append the current date to the package
+    version string after a ``+`` sign.
+
+  - ``include_default_pyproject_file = true``: Include a standard
+    ``pyproject.toml`` file in the output.
+
+  - ``include_extra_files_in_package_data = true``: Add any ``extra_files``
+    entries to the generated ``setup.cfg`` file under the
+    ``[options.package_data]`` section.
+
+  - ``auto_create_package_data_init_py_files = true``: (Default: true) Create
+    ``__init__.py`` files as needed in all subdirs of ``extra_files`` when
+    including in ``[options.package_data]``.
 
   .. code-block::
      :caption: :octicon:`file;1em` Example using a common setup.cfg and
