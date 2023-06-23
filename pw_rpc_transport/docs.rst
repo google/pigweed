@@ -82,6 +82,18 @@ size of that MTU.
     }
   };
 
+--------------------------
+Integration with pw_stream
+--------------------------
+An RpcFrameSender implementaion that wraps a ``pw::stream::Writer`` is provided
+by ``pw::rpc::StreamRpcFrameSender``. As the stream interface doesn't know
+about MTU's, it's up to the user to select one.
+
+.. code-block:: cpp
+
+  stream::SysIoWriter writer;
+  StreamRpcFrameSender<kMtu> sender(writer);
+
 -------------------------------------------
 Using transports: a sample three-node setup
 -------------------------------------------

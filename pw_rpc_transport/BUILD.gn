@@ -224,6 +224,15 @@ pw_source_set("socket_rpc_transport") {
   deps = [ "$dir_pw_log" ]
 }
 
+pw_source_set("stream_rpc_frame_sender") {
+  public = [ "public/pw_rpc_transport/stream_rpc_frame_sender.h" ]
+  public_deps = [
+    ":rpc_transport",
+    "$dir_pw_status",
+    "$dir_pw_stream:pw_stream",
+  ]
+}
+
 pw_test("socket_rpc_transport_test") {
   sources = [ "socket_rpc_transport_test.cc" ]
   enable_if = pw_thread_THREAD_BACKEND != "" && host_os != "win" &&

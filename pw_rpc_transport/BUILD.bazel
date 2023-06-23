@@ -231,6 +231,16 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "stream_rpc_frame_sender",
+    hdrs = ["public/pw_rpc_transport/stream_rpc_frame_sender.h"],
+    deps = [
+        ":rpc_transport",
+        "//pw_status",
+        "//pw_stream",
+    ],
+)
+
 pw_cc_test(
     name = "socket_rpc_transport_test",
     srcs = ["socket_rpc_transport_test.cc"],
