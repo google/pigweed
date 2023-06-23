@@ -22,12 +22,6 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
-    name = "config",
-    hdrs = ["public/pw_function/config.h"],
-    includes = ["public"],
-)
-
-pw_cc_library(
     name = "fit",
     srcs = [
         "repo/sdk/lib/fit/include/lib/fit/internal/compiler.h",
