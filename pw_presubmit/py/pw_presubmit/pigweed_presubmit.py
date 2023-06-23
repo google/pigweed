@@ -458,6 +458,39 @@ gn_fuzz_build = build.GnGenNinja(
     ),
 )
 
+
+def _env_with_zephyr_vars(ctx: PresubmitContext) -> dict:
+    """Returns the environment variables with ... set for Zephyr."""
+    env = os.environ.copy()
+    # Set some variables here.
+    env['ZEPHYR_BASE'] = str(ctx.package_root / 'zephyr')
+    return env
+
+
+def zephyr_build(ctx: PresubmitContext) -> None:
+    """Run Zephyr compatible tests"""
+    # Install the Zephyr package
+    build.install_package(ctx, 'zephyr')
+    # Configure the environment
+    env = _env_with_zephyr_vars(ctx)
+    # Get the python twister runner
+    twister = ctx.package_root / 'zephyr' / 'scripts' / 'twister'
+    # Run twister
+    call(
+        sys.executable,
+        twister,
+        '--ninja',
+        '--integration',
+        '--clobber-output',
+        '--inline-logs',
+        '--verbose',
+        '--testsuite-root',
+        ctx.root / 'pw_unit_test_zephyr',
+        env=env,
+    )
+    # Produces reports at (ctx.root / 'twister_out' / 'twister*.xml')
+
+
 gn_docs_build = build.GnGenNinja(
     name='gn_docs_build', packages=('nanopb',), ninja_targets=('docs',)
 )
@@ -1052,6 +1085,7 @@ OTHER_CHECKS = (
     static_analysis,
     stm32f429i,
     todo_check.create(todo_check.BUGS_OR_USERNAMES),
+    zephyr_build,
     # keep-sorted: end
 )
 
