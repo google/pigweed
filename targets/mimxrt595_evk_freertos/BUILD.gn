@@ -1,0 +1,209 @@
+# Copyright 2021 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/linker_script.gni")
+import("$dir_pw_build/target_types.gni")
+import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_malloc/backend.gni")
+import("$dir_pw_third_party/freertos/freertos.gni")
+import("$dir_pw_third_party/mcuxpresso/mcuxpresso.gni")
+import("$dir_pw_toolchain/generate_toolchain.gni")
+import("target_toolchains.gni")
+
+generate_toolchains("target_toolchains") {
+  toolchains = pw_target_toolchain_mimxrt595_evk_freertos_list
+}
+
+declare_args() {
+  # When compiling with an MCUXpresso SDK, this variable is set to the path of
+  # the manifest file within the SDK installation. When set, a pw_source_set
+  # for a sample project SDK is created at
+  # "//targets/mimxrt595_evk_freertos:sdk".
+  pw_target_mimxrt595_evk_freertos_MANIFEST = ""
+
+  # This list should contain the necessary defines for setting linker script
+  # memory regions. While we don't directly use the pw_boot_cortex_m linker
+  # script, these are deliberately matching to make being able to later easier.
+  pw_target_mimxrt595_evk_freertos_LINK_CONFIG_DEFINES = []
+}
+
+config("pw_malloc_active") {
+  if (pw_malloc_BACKEND != "") {
+    defines = [ "PW_MALLOC_ACTIVE=1" ]
+  }
+}
+
+config("disable_warnings") {
+  cflags = [
+    "-Wno-cast-qual",
+    "-Wno-redundant-decls",
+    "-Wno-undef",
+    "-Wno-unused-parameter",
+    "-Wno-unused-variable",
+  ]
+  visibility = [ ":*" ]
+}
+
+config("freestanding") {
+  cflags = [
+    "-ffreestanding",
+    "-fno-builtin",
+  ]
+  asmflags = cflags
+  ldflags = cflags
+  visibility = [ ":*" ]
+}
+
+config("sdk_defines") {
+  defines = [
+    "CPU_MIMXRT595SFFOC_cm33",
+    "DEBUG_CONSOLE_TRANSFER_NON_BLOCKING",
+    "SDK_DEBUGCONSOLE=1",
+  ]
+  visibility = [ ":*" ]
+}
+
+if (current_toolchain != default_toolchain) {
+  pw_linker_script("flash_linker_script") {
+    defines = pw_target_mimxrt595_evk_freertos_LINK_CONFIG_DEFINES
+    linker_script = "mimxrt595_flash.ld"
+  }
+}
+
+if (pw_third_party_mcuxpresso_SDK != "") {
+  # Startup and vector table for NXP MIMXRT595-EVK.
+  pw_source_set("boot") {
+    public_configs = [ ":pw_malloc_active" ]
+    deps = [
+      "$dir_pw_boot",
+      "$dir_pw_boot_cortex_m:armv8m",
+      "$dir_pw_malloc",
+      "$dir_pw_preprocessor",
+      "$dir_pw_sys_io_mcuxpresso",
+      pw_third_party_mcuxpresso_SDK,
+    ]
+    if (pw_malloc_BACKEND != "") {
+      deps += [ "$dir_pw_malloc" ]
+    }
+    sources = [
+      "boot.cc",
+      "vector_table.c",
+    ]
+  }
+}
+
+if (pw_third_party_mcuxpresso_SDK == "//targets/mimxrt595_evk_freertos:sdk") {
+  pw_mcuxpresso_sdk("sdk") {
+    manifest = pw_target_mimxrt595_evk_freertos_MANIFEST
+    include = [
+      "project_template.evkmimxrt595.MIMXRT595S",
+      "component.serial_manager_uart.MIMXRT595S",
+      "platform.drivers.power.MIMXRT595S",
+      "platform.drivers.lpc_gpio.MIMXRT595S",
+      "platform.drivers.pint.MIMXRT595S",
+      "utility.debug_console.MIMXRT595S",
+    ]
+    exclude = [ "device.MIMXRT595S_startup.MIMXRT595S" ]
+
+    public_configs = [
+      ":disable_warnings",
+      ":freestanding",
+      ":sdk_defines",
+    ]
+
+    public_deps = [
+      ":mimxrt595_config",
+      "$dir_pw_third_party/freertos",
+    ]
+  }
+
+  config("config_public_includes") {
+    include_dirs = [ "board" ]
+    visibility = [ ":*" ]
+  }
+
+  config("config_public_defines") {
+    defines = [
+      "CPU_MIMXRT595SFFOC_cm33",
+      "DEBUG_CONSOLE_DISABLE_RTOS_SYNCHRONIZATION",
+      "FSL_RTOS_FREE_RTOS",
+      "FSL_SDK_DRIVER_QUICK_ACCESS_ENABLE=1",
+      "SDK_DEBUGCONSOLE=1",
+      "SDK_OS_FREE_RTOS",
+    ]
+    visibility = [ ":*" ]
+  }
+
+  # Project-specific board configuration.
+  pw_source_set("mimxrt595_config") {
+    public_configs = [
+      ":config_public_defines",
+      ":config_public_includes",
+      ":disable_warnings",
+      ":sdk__defines",
+      ":sdk__includes",
+    ]
+  }
+
+  # Project-specific FreeRTOS configurations.
+  config("freertos_config_public_includes") {
+    include_dirs = [ "." ]
+    visibility = [ ":*" ]
+  }
+
+  pw_source_set("freertos_config") {
+    public_configs = [
+      ":config_public_defines",
+      ":config_public_includes",
+      ":disable_warnings",
+      ":sdk__defines",
+      ":sdk__includes",
+      ":freertos_config_public_includes",
+    ]
+    public = [ "FreeRTOSConfig.h" ]
+  }
+
+  # Project-specific FreeRTOS port.
+  _freertos_port_dir =
+      "$dir_pw_third_party_freertos/portable/GCC/ARM_CM33_NTZ/non_secure"
+  config("freertos_port_public_includes") {
+    include_dirs = [
+      "$_freertos_port_dir",
+      "$dir_pw_third_party_freertos/include",
+    ]
+    visibility = [ ":*" ]
+  }
+
+  pw_source_set("freertos_port") {
+    public_configs = [ ":freertos_port_public_includes" ]
+    public = [
+      "$_freertos_port_dir/portasm.h",
+      "$_freertos_port_dir/portmacro.h",
+    ]
+    configs = [ ":disable_warnings" ]
+    sources = [
+      "$_freertos_port_dir/port.c",
+      "$_freertos_port_dir/portasm.c",
+      "$dir_pw_third_party_freertos/portable/MemMang/heap_4.c",
+      "tasks.c",
+    ]
+    deps = [ ":freertos_config" ]
+  }
+}
+
+pw_doc_group("target_docs") {
+  sources = [ "target_docs.rst" ]
+}

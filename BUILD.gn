@@ -224,6 +224,11 @@ if (pw_third_party_mcuxpresso_SDK != "") {
   _build_pigweed_default_at_all_optimization_levels("mimxrt595") {
     toolchain_prefix = "$dir_pigweed/targets/mimxrt595_evk:mimxrt595_evk_"
   }
+
+  _build_pigweed_default_at_all_optimization_levels("mimxrt595_freertos") {
+    toolchain_prefix =
+        "$dir_pigweed/targets/mimxrt595_evk_freertos:mimxrt595_evk_freertos_"
+  }
 }
 
 _build_pigweed_default_at_all_optimization_levels("stm32f429i") {

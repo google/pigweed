@@ -355,7 +355,27 @@ gn_mimxrt595_build = build.GnGenNinja(
         'pw_third_party_mcuxpresso_SDK': '//targets/mimxrt595_evk:sample_sdk',
         'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,
     },
-    ninja_targets=('mimxrt595',),
+    ninja_targets=('mimxrt595'),
+)
+
+gn_mimxrt595_freertos_build = build.GnGenNinja(
+    name='gn_mimxrt595_freertos_build',
+    path_filter=_BUILD_FILE_FILTER,
+    packages=('freertos', 'mcuxpresso'),
+    gn_args={
+        'dir_pw_third_party_freertos': lambda ctx: '"{}"'.format(
+            str(ctx.package_root / 'freertos')
+        ),
+        'dir_pw_third_party_mcuxpresso': lambda ctx: '"{}"'.format(
+            str(ctx.package_root / 'mcuxpresso')
+        ),
+        'pw_target_mimxrt595_evk_freertos_MANIFEST': '{}/{}'.format(
+            "$dir_pw_third_party_mcuxpresso", "EVK-MIMXRT595_manifest_v3_8.xml"
+        ),
+        'pw_third_party_mcuxpresso_SDK': '//targets/mimxrt595_evk_freertos:sdk',
+        'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,
+    },
+    ninja_targets=('mimxrt595_freertos'),
 )
 
 gn_software_update_build = build.GnGenNinja(
