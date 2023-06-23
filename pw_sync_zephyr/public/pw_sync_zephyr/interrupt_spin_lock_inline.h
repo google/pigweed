@@ -18,7 +18,7 @@
 namespace pw::sync {
 
 constexpr InterruptSpinLock::InterruptSpinLock()
-    : native_type_{.lock = {0}, .locked = false, .key = {0}} {}
+    : native_type_{.lock = {}, .locked = false, .key = {0}} {}
 
 inline bool InterruptSpinLock::try_lock() {
   // This backend will spin the current processor until the deadlock is
