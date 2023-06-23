@@ -1453,6 +1453,25 @@ with Doxygen using standard Sphinx cross references, such as ``:cpp:class:`` and
 
 .. inclusive-language: enable
 
+Status codes in Doxygen comments
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Use the following syntax when referring to ``pw_status`` codes in Doxygen
+comments:
+
+.. code-block::
+
+   @pw_status{YOUR_STATUS_CODE_HERE}
+
+Replace ``YOUR_STATUS_CODE_HERE`` with a valid ``pw_status`` code.
+
+This syntax ensures that Doxygen links back to the status code's
+reference documentation in :ref:`module-pw_status`.
+
+.. note::
+
+   The guidance in this section only applies to Doxygen comments in C++ header
+   files.
+
 .. _commit-style:
 
 --------------
