@@ -20,6 +20,7 @@ sphinx-copybutton==0.5.1
 sphinx-tabs==3.4.1
 myst-parser==0.18.1
 breathe==4.34.0
+kconfiglib==14.1.0
 # Renode requirements
 psutil==5.9.4
 robotframework==6.0.2

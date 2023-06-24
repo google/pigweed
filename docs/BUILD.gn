@@ -51,6 +51,7 @@ pw_doc_group("core_docs") {
     "module_structure.rst",
     "os/index.rst",
     "os/zephyr/index.rst",
+    "os/zephyr/kconfig.rst",
     "size_optimizations.rst",
     "style_guide.rst",
   ]

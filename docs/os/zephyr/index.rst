@@ -22,6 +22,8 @@ Get started with Zephyr and Pigweed
 1. Complete the `Zephyr Getting Started Guide`_.
 2. Check out the `zds2023`_ repository for an example of a Zephyr starter
    project that has been set up to use Pigweed.
+3. See :ref:`docs-os-zephyr-kconfig` to find the Kconfig options for
+   enabling individual Pigweed modules and features.
 
 -------
 Testing
@@ -38,3 +40,8 @@ Once set up, simply invoke:
 
 .. _Zephyr Getting Started Guide: https://docs.zephyrproject.org/latest/develop/getting_started/index.html#getting-started-guide
 .. _zds2023: https://github.com/yperess/zds2023
+
+.. toctree::
+   :hidden:
+
+   kconfig
