@@ -257,21 +257,15 @@ http_archive(
         # https://github.com/bazelbuild/rules_rust/pull/1952
         "//pw_rust/bazel_patches:0001-rustdoc_test-Apply-prefix-stripping-to-proc_macro-de.patch",
     ],
-    sha256 = "dc8d79fe9a5beb79d93e482eb807266a0e066e97a7b8c48d43ecf91f32a3a8f3",
-    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.19.0/rules_rust-v0.19.0.tar.gz"],
+    sha256 = "190b5aeba104210f8ed9b1ff595d1f459297fe32db70f0a04f5c537a13ee0602",
+    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.24.1/rules_rust-v0.24.1.tar.gz"],
 )
 
 load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_analyzer_toolchain_repository", "rust_repository_set")
 
 rules_rust_dependencies()
 
-# Here we pull in a specific toolchain.  Unfortunately `rust_repository_set`
-# does not provide a way to add `target_compatible_with` options which are
-# needed to be compatible with `@bazel_embedded` (specifically
-# `@bazel_embedded//constraints/fpu:none` which is specified in
-# `//platforms`)
-#
-# See `//toolchain:rust_linux_x86_64` for how this is used.
+# Here we register a specific set of toolchains.
 #
 # Note: This statement creates name mangled remotes of the form:
 # `@{name}__{triplet}_tools`
@@ -280,17 +274,21 @@ rust_repository_set(
     name = "rust_linux_x86_64",
     edition = "2021",
     exec_triple = "x86_64-unknown-linux-gnu",
-    extra_target_triples = [
-        "thumbv7m-none-eabi",
-        "thumbv6m-none-eabi",
-    ],
+    extra_target_triples = {
+        "thumbv8m.main-none-eabihf": [
+            "@platforms//cpu:armv8-m",
+            "@bazel_embedded//constraints/fpu:fpv5-d16",
+        ],
+        "thumbv7m-none-eabi": [
+            "@platforms//cpu:armv7-m",
+            "@bazel_embedded//constraints/fpu:none",
+        ],
+        "thumbv6m-none-eabi": [
+            "@platforms//cpu:armv6-m",
+            "@bazel_embedded//constraints/fpu:none",
+        ],
+    },
     versions = ["1.67.0"],
-)
-
-# Registers our Rust toolchains that are compatable with `@bazel_embedded`.
-register_toolchains(
-    "//pw_toolchain:thumbv7m_rust_linux_x86_64",
-    "//pw_toolchain:thumbv6m_rust_linux_x86_64",
 )
 
 # Allows creation of a `rust-project.json` file to allow rust analyzer to work.
