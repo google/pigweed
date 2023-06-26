@@ -54,16 +54,20 @@ namespace pw::sys_io {
 /// @warning Do not build production projects on top of `pw_sys_io`.
 ///
 /// @returns
-/// * @pw_status{OK} - A byte was successfully read.
+/// * @pw_status{OK} - A byte was successfully read and is in `dest`.
 /// * @pw_status{RESOURCE_EXHAUSTED} - The underlying source vanished.
 Status ReadByte(std::byte* dest);
 
-// Read a single byte from the sys io backend, if available.
-// Implemented by: Backend
-//
-// Returns OkStatus() - A byte was successfully read, and is in dest.
-//         Status::Unavailable() - No byte is available to read; try later.
-//         Status::Unimplemented() - Not supported on this target.
+/// Reads a single byte from the `pw_sys_io` backend, if available.
+///
+/// @pre This function must be implemented by the `pw_sys_io` backend.
+///
+/// @warning Do not build production projects on top of `pw_sys_io`.
+///
+/// @returns
+/// * @pw_status{OK} - A byte was successfully read and is in `dest`.
+/// * @pw_status{UNAVAILABLE} - No byte is available to read; try later.
+/// * @pw_status{UNIMPLEMENTED} - The function is not supported on this target.
 Status TryReadByte(std::byte* dest);
 
 // Write a single byte out the sys io backend.
