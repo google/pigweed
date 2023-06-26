@@ -258,13 +258,12 @@ struct storage_type<storage_class_e::non_trivial, E, T> {
     return *this;
   }
 
-  constexpr storage_type(storage_type&& other) noexcept(
-      std::is_nothrow_move_constructible<E>::value &&
-      std::is_nothrow_move_constructible<T>::value) {
+  constexpr storage_type(storage_type&& other) noexcept(std::is_nothrow_move_constructible_v<E> &&
+                                                        std::is_nothrow_move_constructible_v<T>) {
     move_from(std::move(other));
   }
   constexpr storage_type& operator=(storage_type&& other) noexcept(
-      std::is_nothrow_move_assignable<E>::value && std::is_nothrow_move_assignable<T>::value) {
+      std::is_nothrow_move_assignable_v<E> && std::is_nothrow_move_assignable_v<T>) {
     destroy();
     move_from(std::move(other));
     return *this;
@@ -376,12 +375,11 @@ struct storage_type<storage_class_e::non_trivial, E> {
     return *this;
   }
 
-  constexpr storage_type(storage_type&& other) noexcept(
-      std::is_nothrow_move_constructible<E>::value) {
+  constexpr storage_type(storage_type&& other) noexcept(std::is_nothrow_move_constructible_v<E>) {
     move_from(std::move(other));
   }
   constexpr storage_type& operator=(storage_type&& other) noexcept(
-      std::is_nothrow_move_assignable<E>::value) {
+      std::is_nothrow_move_assignable_v<E>) {
     destroy();
     move_from(std::move(other));
     return *this;

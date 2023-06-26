@@ -226,9 +226,15 @@ constexpr success<> ok() { return success<>{}; }
 template <typename E, typename... Ts>
 class result;
 
+// This suppresses the '-Wctad-maybe-unsupported' compiler warning when CTAD is used.
+//
+// See https://github.com/llvm/llvm-project/blob/42874f6/libcxx/include/__config#L1259-L1261.
+template <class... Tag>
+result(typename Tag::__allow_ctad...) -> result<Tag...>;
+
 // Specialization of result for one value type.
 template <typename E, typename T>
-class LIB_FIT_NODISCARD result<E, T> {
+class [[nodiscard]] result<E, T> {
   static_assert(!::fit::internal::is_success_v<E>,
                 "fit::success may not be used as the error type of fit::result!");
   static_assert(!cpp17::is_same_v<failed, std::decay_t<T>>,
@@ -473,7 +479,7 @@ class LIB_FIT_NODISCARD result<E, T> {
 
 // Specialization of the result type for zero values.
 template <typename E>
-class LIB_FIT_NODISCARD result<E> {
+class [[nodiscard]] result<E> {
   static_assert(!::fit::internal::is_success_v<E>,
                 "fit::success may not be used as the error type of fit::result!");
 
