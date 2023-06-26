@@ -91,13 +91,6 @@ if (dir_pw_third_party_emboss != "") {
     imports = [ "public/pw_bluetooth/hci.emb" ]
     deps = [ ":emboss_hci" ]
   }
-
-  emboss_cc_library("emboss_vendor2") {
-    public_configs = [ ":emboss_include_path" ]
-    source = "public/pw_bluetooth/vendor2.emb"
-    imports = [ "public/pw_bluetooth/hci.emb" ]
-    deps = [ ":emboss_hci" ]
-  }
 } else {
   group("emboss_hci") {
   }
