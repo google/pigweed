@@ -84,11 +84,13 @@ export default [
         format: 'umd',
         sourcemap: true,
         name: 'PigweedLogging',
+        inlineDynamicImports: true
       },
       {
         file: path.join('dist', 'logging.mjs'),
         format: 'esm',
         sourcemap: true,
+        inlineDynamicImports: true
       }
     ],
     plugins: [
