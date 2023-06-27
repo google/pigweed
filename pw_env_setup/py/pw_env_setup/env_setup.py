@@ -213,6 +213,7 @@ class EnvSetup(object):
             self._pw_root = self._pw_root.decode()
 
         self._cipd_package_file = []
+        self._project_actions = []
         self._virtualenv_requirements = []
         self._virtualenv_constraints = []
         self._virtualenv_gn_targets = []
@@ -277,6 +278,7 @@ class EnvSetup(object):
         return files, warnings
 
     def _parse_config_file(self, config_file):
+        # This should use pw_env_setup.config_file instead.
         with open(config_file, 'r') as ins:
             config = json.load(ins)
 
@@ -316,6 +318,13 @@ class EnvSetup(object):
             os.path.join(self._project_root, x)
             for x in _assert_sequence(config.pop('cipd_package_files', ()))
         )
+
+        for action in config.pop('project_actions', {}):
+            # We can add a 'phase' option in the future if we end up needing to
+            # support project actions at more than one point in the setup flow.
+            self._project_actions.append(
+                (action['import_path'], action['module_name'])
+            )
 
         for pkg in _assert_sequence(config.pop('pw_packages', ())):
             self._pw_packages.append(pkg)
@@ -459,6 +468,7 @@ class EnvSetup(object):
 
         steps = [
             ('CIPD package manager', self.cipd),
+            ('Project actions', self.project_actions),
             ('Python environment', self.virtualenv),
             ('pw packages', self.pw_package),
             ('Host tools', self.host_tools),
@@ -644,6 +654,35 @@ Then use `set +x` to go back to normal.
             trust_hash=self._trust_cipd_hash,
         ):
             return result(_Result.Status.FAILED)
+
+        return result(_Result.Status.DONE)
+
+    def project_actions(self, unused_spin):
+        """Perform project install actions.
+
+        This is effectively a limited plugin system for performing
+        project-specific actions (e.g. fetching tools) after CIPD but before
+        virtualenv setup.
+        """
+        result = result_func()
+
+        if not self._project_actions:
+            return result(_Result.Status.SKIPPED)
+
+        if sys.version_info[0] < 3:
+            raise ValueError(
+                'Project Actions require Python 3 or higher. '
+                'The current python version is %s' % sys.version_info
+            )
+
+        # Once Keir okays removing 2.7 support for env_setup, move this import
+        # to the main list of imports at the top of the file.
+        import importlib  # pylint: disable=import-outside-toplevel
+
+        for import_path, module_name in self._project_actions:
+            sys.path.append(import_path)
+            mod = importlib.import_module(module_name)
+            mod.run_action(env=self._env)
 
         return result(_Result.Status.DONE)
 

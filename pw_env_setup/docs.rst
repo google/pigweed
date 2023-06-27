@@ -250,6 +250,45 @@ here.
      ]
    }
 
+``pw.pw_env_setup.project_actions``
+  A list of plugins to load and run after CIPD setup, but prior to virtualenv
+  setup, for e.g. downloading project-specific tools or artifacts needed by
+  later steps. Particularly useful for downstream projects with limited CIPD
+  access.
+
+  A plugin is specified as a dictionary with two keys: "import_path" and
+  "module_name"
+
+  The specified module must provide a "run_actions" method which takes a single
+  argument, "env_vars", which is a pw_env_setup.Environment instance.
+
+  NB: This feature is not supported when using a python2.7 system python.
+
+  Sample plugin and pigweed.json blob:
+
+.. code-block:: python
+
+   """Sample pw_env_setup project action plugin.
+
+   A sample/starter project action plugin template for pw_env_setup.
+   """
+   def run_action(**kwargs):
+       """Sample project action."""
+       if "env" not in kwargs:
+           raise ValueError(f"Missing required kwarg 'env', got %{kwargs}")
+
+       kwargs["env"].prepend("PATH", "PATH_TO_NEW_TOOLS")
+       raise NotImplementedError("Sample project action running!")
+
+.. code-block:: json
+
+   "project_actions" : [
+      {
+       "import_path": "pw_env_setup",
+       "module_name": "sample_project_action"
+      }
+   ],
+
 ``pw.pw_env_setup.virtualenv.gn_args``
   Any necessary GN args to be used when installing Python packages.
 
