@@ -111,6 +111,8 @@ if (pw_third_party_mcuxpresso_SDK == "//targets/mimxrt595_evk_freertos:sdk") {
     include = [
       "project_template.evkmimxrt595.MIMXRT595S",
       "component.serial_manager_uart.MIMXRT595S",
+      "platform.drivers.flexcomm_spi.MIMXRT595S",
+      "platform.drivers.flexio_spi.MIMXRT595S",
       "platform.drivers.power.MIMXRT595S",
       "platform.drivers.lpc_gpio.MIMXRT595S",
       "platform.drivers.pint.MIMXRT595S",
