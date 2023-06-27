@@ -40,7 +40,7 @@
 //! assert_eq!(div(4, 0), Err(Error::FailedPrecondition));
 //! ```
 
-#![cfg_attr(feature = "std", no_std)]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 /// Status code for no error.
 pub const OK: u32 = 0;

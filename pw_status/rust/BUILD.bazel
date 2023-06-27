@@ -27,6 +27,10 @@ rust_library(
 rust_test(
     name = "pw_status_test",
     crate = ":pw_status",
+    crate_features = select({
+        "@rust_crates//:std": ["std"],
+        "//conditions:default": [""],
+    }),
 )
 
 rust_doc_test(

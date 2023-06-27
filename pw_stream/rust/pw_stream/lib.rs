@@ -19,7 +19,7 @@
 //! encapsulation.
 #![deny(missing_docs)]
 // Allows docs to reference `std`
-#![cfg_attr(feature = "std", no_std)]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 use core::cmp::min;
 
