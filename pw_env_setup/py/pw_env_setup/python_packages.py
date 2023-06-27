@@ -33,7 +33,7 @@ def _installed_packages() -> Iterator[str]:
         if isinstance(pkg, pkg_resources.DistInfoDistribution)  # type: ignore
         # This will skip packages with local versions.
         #   For example text after a plus sign: 1.2.3+dev456
-        and not pkg.parsed_version.local
+        and not pkg.parsed_version.local  # type: ignore
         # These are always installed by default in:
         #   pw_env_setup/py/pw_env_setup/virtualenv_setup/install.py
         and pkg.key not in ['pip', 'setuptools', 'wheel']

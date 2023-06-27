@@ -221,7 +221,7 @@ class ProjectBuilderContext:  # pylint: disable=too-many-instance-attributes,too
     def clear_progress_scrollback(self) -> None:
         if not self.progress_bar:
             return
-        self.progress_bar._app_loop.call_soon_threadsafe(  # pylint: disable=protected-access
+        self.progress_bar._app_loop.call_soon_threadsafe(  # type: ignore # pylint: disable=all
             self.progress_bar.app.renderer.clear
         )
 
