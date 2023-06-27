@@ -163,6 +163,8 @@ class RpcClient:
           read: Function that reads bytes; e.g serial_device.read.
           paths_or_modules: paths to .proto files or proto modules.
           channels: RPC channels to use for output.
+          client_impl: The RPC Client implementation. Defaults to the callback
+            client implementation if not provided.
         """
         if isinstance(paths_or_modules, python_protos.Library):
             self.protos = paths_or_modules
@@ -200,7 +202,11 @@ class RpcClient:
 
 
 class HdlcRpcClient(RpcClient):
-    """An RPC client configured to run over HDLC."""
+    """An RPC client configured to run over HDLC.
+
+    Expects HDLC frames to have addresses that dictate how to parse the HDLC
+    payloads.
+    """
 
     def __init__(
         self,
@@ -213,6 +219,9 @@ class HdlcRpcClient(RpcClient):
         _incoming_packet_filter_for_testing: Optional[
             pw_rpc.ChannelManipulator
         ] = None,
+        rpc_frames_address: int = DEFAULT_ADDRESS,
+        log_frames_address: int = STDOUT_ADDRESS,
+        extra_frame_handlers: Optional[FrameHandlers] = None,
     ):
         """Creates an RPC client configured to communicate using HDLC.
 
@@ -221,6 +230,14 @@ class HdlcRpcClient(RpcClient):
           paths_or_modules: paths to .proto files or proto modules.
           channels: RPC channels to use for output.
           output: where to write "stdout" output from the device.
+          client_impl: The RPC Client implementation. Defaults to the callback
+            client implementation if not provided.
+          rpc_frames_address: the address used in the HDLC frames for RPC
+            packets. This can be the channel ID, or any custom address.
+          log_frames_address: the address used in the HDLC frames for "stdout"
+            output from the device.
+          extra_fram_handlers: Optional mapping of HDLC frame addresses to their
+            callbacks.
         """
         # Set up frame handling.
         rpc_output: Callable[[bytes], Any] = self.handle_rpc_packet
@@ -229,9 +246,11 @@ class HdlcRpcClient(RpcClient):
             rpc_output = _incoming_packet_filter_for_testing
 
         frame_handlers: FrameHandlers = {
-            DEFAULT_ADDRESS: lambda frame: rpc_output(frame.data),
-            STDOUT_ADDRESS: lambda frame: output(frame.data),
+            rpc_frames_address: lambda frame: rpc_output(frame.data),
+            log_frames_address: lambda frame: output(frame.data),
         }
+        if extra_frame_handlers:
+            frame_handlers.update(extra_frame_handlers)
 
         def handle_frame(frame: Frame) -> None:
             # Suppress raising any frame errors to avoid crashes on data
@@ -279,6 +298,8 @@ class NoEncodingSingleChannelRpcClient(RpcClient):
           read: Function that reads bytes; e.g serial_device.read.
           paths_or_modules: paths to .proto files or proto modules.
           channel: RPC channel to use for output.
+          client_impl: The RPC Client implementation. Defaults to the callback
+            client implementation if not provided.
         """
 
         def process_data(data: bytes):
