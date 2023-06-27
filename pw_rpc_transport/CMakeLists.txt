@@ -119,6 +119,7 @@ pw_add_library(pw_rpc_transport.hdlc_framing INTERFACE
     pw_bytes
     pw_hdlc.decoder
     pw_hdlc.encoder
+    pw_hdlc.pw_rpc
     pw_result
     pw_status
     pw_stream

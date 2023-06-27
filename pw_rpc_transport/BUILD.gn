@@ -137,6 +137,7 @@ pw_source_set("hdlc_framing") {
     "$dir_pw_bytes",
     "$dir_pw_hdlc:decoder",
     "$dir_pw_hdlc:encoder",
+    "$dir_pw_hdlc:pw_rpc",
     "$dir_pw_result",
     "$dir_pw_status",
     "$dir_pw_stream:pw_stream",

@@ -18,6 +18,7 @@
 #include "pw_bytes/span.h"
 #include "pw_hdlc/decoder.h"
 #include "pw_hdlc/encoder.h"
+#include "pw_hdlc/rpc_packets.h"
 #include "pw_result/result.h"
 #include "pw_rpc_transport/rpc_transport.h"
 #include "pw_status/status.h"
@@ -44,7 +45,8 @@ class HdlcRpcPacketEncoder
   //
   Status Encode(ConstByteSpan packet,
                 size_t max_frame_size,
-                OnRpcFrameEncodedCallback&& callback) {
+                OnRpcFrameEncodedCallback&& callback,
+                unsigned rpc_address = hdlc::kDefaultRpcAddress) {
     if (packet.size() > kMaxPacketSize) {
       return Status::FailedPrecondition();
     }
@@ -52,9 +54,7 @@ class HdlcRpcPacketEncoder
       return Status::FailedPrecondition();
     }
     stream::MemoryWriter writer(buffer_);
-    // HDLC addresses are not directly used by the transport. Addressing is done
-    // by the RPC routing layer using pw_rpc channel ids.
-    PW_TRY(hdlc::WriteUIFrame(/*address=*/0, packet, writer));
+    PW_TRY(hdlc::WriteUIFrame(rpc_address, packet, writer));
 
     auto remaining = writer.WrittenData();
     while (!remaining.empty()) {
