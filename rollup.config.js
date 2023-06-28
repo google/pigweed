@@ -17,6 +17,7 @@ import resolve from '@rollup/plugin-node-resolve';
 import pluginTypescript from '@rollup/plugin-typescript';
 import path from 'path';
 import nodePolyfills from 'rollup-plugin-node-polyfills';
+import postcss from 'rollup-plugin-postcss'
 import sourceMaps from 'rollup-plugin-sourcemaps';
 
 export default [
@@ -94,6 +95,7 @@ export default [
       }
     ],
     plugins: [
+      postcss({plugins: []}),
       pluginTypescript(
           {tsconfig: './tsconfig.json', exclude: ['**/*_test.ts']}),
       nodePolyfills(),

@@ -1,6 +1,6 @@
 {
   "name": "pigweedjs",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "An open source collection of embedded-targeted libraries",
   "author": "The Pigweed Authors",
   "license": "Apache-2.0",
@@ -77,6 +77,8 @@
     "google-protobuf": "^3.17.3",
     "long": "^5.2.1",
     "object-path": "^0.11.8",
+    "postcss": "^8.4.24",
+    "rollup-plugin-postcss": "^4.0.2",
     "ts-protoc-gen": "^0.15.0"
   },
   "config": {
