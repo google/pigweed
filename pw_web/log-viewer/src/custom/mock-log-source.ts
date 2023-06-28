@@ -13,7 +13,7 @@
 // the License.
 
 import { LogSource } from '../log-source';
-import { LogEntry } from '../shared/interfaces';
+import { LogEntry, SeverityLevel } from '../shared/interfaces';
 
 export class MockLogSource extends LogSource {
     private intervalId: NodeJS.Timeout | null = null;
@@ -47,7 +47,6 @@ export class MockLogSource extends LogSource {
 
     readLogEntryFromHost(): LogEntry {
         // Emulate reading log data from a host device
-        const severities = ['INFO', 'WARNING', 'ERROR', 'DEBUG'];
         const sources = ['application', 'server', 'database', 'network'];
         const messages = [
             'Request processed successfully!',
@@ -67,17 +66,17 @@ export class MockLogSource extends LogSource {
             const randomIndex = Math.floor(Math.random() * values.length);
             return values[randomIndex];
         };
-
+        const severity = getRandomValue(Object.keys(SeverityLevel));
         const logEntry = {
+            severity: severity as SeverityLevel,
             timestamp: timestamp,
             fields: [
                 { key: 'timestamp', value: timestamp.toISOString() },
-                { key: 'severity', value: getRandomValue(severities) },
+                { key: 'severity', value: severity },
                 { key: 'source', value: getRandomValue(sources) },
                 { key: 'message', value: getRandomValue(messages) },
             ],
         };
-
         return logEntry;
     }
 }

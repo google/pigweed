@@ -61,7 +61,7 @@ export const styles = css`
     }
 
     tr:hover > td {
-        background: rgb(47 47 47);
+        background: rgba(58, 58, 58, .5);
     }
 
     th,
@@ -85,6 +85,7 @@ export const styles = css`
     }
 
     td {
+        display: inline-flex;
         position: relative;
         vertical-align: top;
     }
@@ -119,6 +120,12 @@ export const styles = css`
         bottom: 0;
         width: 1rem;
         display: block;
+    }
+
+    .cell-icon {
+        font-size: 1rem;
+        font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 200, 'opsz' 58;
+        padding: 0.25rem 0.25rem 0.25rem 0;
     }
 
     .overflow-indicator {

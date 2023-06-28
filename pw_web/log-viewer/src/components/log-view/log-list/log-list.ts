@@ -289,8 +289,23 @@ export class LogList extends LitElement {
     }
 
     tableDataRow(log: LogEntry) {
+        let bgColor = '';
+        let textColor = '';
+
+        switch (log.severity) {
+            case 'WARNING':
+                bgColor = 'var(--sys-color-yellow-container)';
+                textColor = 'var(--sys-color-on-yellow-container)';
+                break;
+            case 'ERROR':
+            case 'CRITICAL':
+                bgColor = 'var(--sys-color-error-container)';
+                textColor = 'var(--sys-color-on-error-container)';
+                break;
+        }
+
         return html`
-            <tr>
+            <tr style="color:${textColor}; background-color:${bgColor};" >
                 ${log.fields.map((field, columnIndex) =>
                     this.tableDataCell(field, columnIndex)
                 )}
@@ -298,12 +313,43 @@ export class LogList extends LitElement {
         `;
     }
 
-    tableDataCell = (field: FieldData, columnIndex: number) => html`
-        <td>
-            ${this.highlightMatchedText(field.value.toString())}
-            ${columnIndex > 0 ? this.resizeHandle(columnIndex - 1) : html``}
-        </td>
-    `;
+    tableDataCell(field: FieldData, columnIndex: number) {
+        let icon = html``;
+        let iconColor = '';
+
+        if (field.key == 'severity') {
+            switch (field.value) {
+                case 'WARNING':
+                    iconColor = 'var(--sys-color-orange-bright)';
+                    icon = html`
+                        <md-icon style="color:${iconColor}" class="cell-icon">
+                            warning
+                        </md-icon>`;
+                    break;
+                case 'ERROR':
+                    iconColor = 'var(--sys-color-error-bright)';
+                    icon = html`
+                        <md-icon style="color:${iconColor}" class="cell-icon">
+                            cancel
+                        </md-icon>`;
+                    break;
+                case 'CRITICAL':
+                    iconColor = 'var(--sys-color-error-bright)';
+                    icon = html`
+                        <md-icon style="color:${iconColor}" class="cell-icon">
+                            priority_high
+                        </md-icon>`;
+                    break;
+            }
+        }
+        return html`
+            <td>
+                ${icon}
+                ${this.highlightMatchedText(field.value.toString())}
+                ${columnIndex > 0 ? this.resizeHandle(columnIndex - 1) : html``}
+            </td>
+        `;
+    }
 
     overflowIndicators = () => html`
         <div

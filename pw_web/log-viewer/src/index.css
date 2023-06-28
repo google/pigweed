@@ -14,7 +14,7 @@
  * the License.
  */
 
- @import url('https://fonts.googleapis.com/css2?family=Google+Sans&family=Roboto+Mono:wght@400;500&family=Material+Symbols+Outlined');
+ @import url('https://fonts.googleapis.com/css2?family=Google+Sans&family=Roboto+Mono:wght@400;500&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
 
 :root {
     font-family: "Google Sans", Arial, sans-serif;
@@ -74,7 +74,7 @@
 }
 
 button {
-     font-family: "Google Sans";
+    font-family: "Google Sans";
 }
 
 main {
@@ -87,6 +87,7 @@ a {
     color: #646cff;
     text-decoration: inherit;
 }
+
 a:hover {
     color: #535bf2;
 }
@@ -129,6 +130,14 @@ body {
         --md-sys-color-surface-tint: #4cdada;
         --md-sys-color-outline-variant: #3f4948;
         --md-sys-color-scrim: #000000;
+
+        /** These colors are used to show errors + warnings in dark mode */
+        --sys-color-error-bright: #E46962;
+        --sys-color-error-container: #601410;
+        --sys-color-on-error-container: #F9DEDC;
+        --sys-color-orange-bright: #EE9836;
+        --sys-color-yellow-container: #402D00;
+        --sys-color-on-yellow-container: #FFDFA0;
     }
 }
 

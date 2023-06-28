@@ -11,8 +11,17 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+export enum SeverityLevel {
+    INFO = "INFO",
+    WARNING = "WARNING",
+    DEBUG = "DEBUG",
+    CRITICAL = "CRITICAL",
+    ERROR = "ERROR",
+};
+
 export interface LogEntry {
     timestamp: Date;
+    severity?: SeverityLevel;
     fields: FieldData[];
 }
 
