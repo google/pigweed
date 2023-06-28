@@ -14,6 +14,8 @@
  * the License.
  */
 
+ @import url('https://fonts.googleapis.com/css2?family=Google+Sans&family=Roboto+Mono:wght@400;500&family=Material+Symbols+Outlined');
+
 :root {
     font-family: "Google Sans", Arial, sans-serif;
     line-height: 1.5;

@@ -17,6 +17,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { styles } from './log-viewer.styles';
 import { LogView } from './log-view/log-view';
 import { LogEntry } from '../shared/interfaces';
+import { repeat } from 'lit/directives/repeat.js';
 
 /**
  * Description of LogViewer.
@@ -54,9 +55,6 @@ export class LogViewer extends LitElement {
     }
 
     render() {
-        const logsCopy = [...this.logs]; // Trigger an update in <log-view>
-        const hideCloseButton = this.logViews.length <= 1;
-
         return html`
             <md-outlined-button
                 class="add-button"
@@ -67,15 +65,16 @@ export class LogViewer extends LitElement {
             </md-outlined-button>
 
             <div class="grid-container">
-                ${this.logViews.map(
-                    (view) =>
-                        html`
-                            <log-view
-                                id=${view.id}
-                                .logs=${logsCopy}
-                                .hideCloseButton=${hideCloseButton}
-                            ></log-view>
-                        `
+                ${repeat(
+                    this.logViews,
+                    (view) => view.id,
+                    (view) => html`
+                        <log-view
+                            id=${view.id}
+                            .logs=${[...this.logs]}
+                            .hideCloseButton=${this.logViews.length <= 1}
+                        ></log-view>
+                    `
                 )}
             </div>
         `;

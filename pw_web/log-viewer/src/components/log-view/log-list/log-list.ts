@@ -94,7 +94,7 @@ export class LogList extends LitElement {
         window.addEventListener('scroll', this.handleTableScroll);
         this.renderRoot
             .querySelector('tbody')
-            ?.addEventListener('rangeChanged', this.updateGridTemplateColumns);
+            ?.addEventListener('rangeChanged', this.onRangeChanged);
 
         if (this.logs.length > 0) {
             this.performUpdate();
@@ -111,11 +111,12 @@ export class LogList extends LitElement {
         ) {
             this.updateOverflowIndicators();
         }
-
-        if (changedProperties.has('logs')) {
-            this.updateTableView();
-        }
     }
+
+    private onRangeChanged = () => {
+        this.updateGridTemplateColumns();
+        this.updateTableView();
+    };
 
     private updateTableView() {
         const container = this.renderRoot.querySelector(
@@ -123,7 +124,10 @@ export class LogList extends LitElement {
         ) as HTMLElement;
 
         if (container && this._autoscrollIsEnabled) {
-            container.scrollTop = container.scrollHeight;
+            // TODO(b/289101398): Refactor `setTimeout` usage
+            setTimeout(() => {
+                container.scrollTop = container.scrollHeight;
+            }, 0); // Complete any rendering tasks before scrolling
         }
     }
 
@@ -226,7 +230,7 @@ export class LogList extends LitElement {
             <div
                 class="table-container"
                 role="log"
-                @wheel="${this.handleTableScroll}"
+                @scroll="${this.handleTableScroll}"
             >
                 <table>
                     <thead>
@@ -327,13 +331,12 @@ export class LogList extends LitElement {
         const containerWidth = container.offsetWidth;
         const scrollLeft = container.scrollLeft;
         const maxScrollLeft = container.scrollWidth - containerWidth;
-        const threshold = 128;
 
         this._scrollPercentageHorizontal = scrollLeft / maxScrollLeft || 0;
 
         if (
             container.scrollHeight - container.scrollTop <=
-            container.offsetHeight + threshold
+            container.offsetHeight
         ) {
             this._autoscrollIsEnabled = true;
         } else {
