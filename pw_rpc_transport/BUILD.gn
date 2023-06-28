@@ -40,6 +40,7 @@ pw_test_group("tests") {
     ":rpc_integration_test",
     ":simple_framing_test",
     ":socket_rpc_transport_test",
+    ":stream_rpc_dispatcher_test",
   ]
 }
 
@@ -234,6 +235,15 @@ pw_source_set("stream_rpc_frame_sender") {
   ]
 }
 
+pw_source_set("stream_rpc_dispatcher") {
+  public = [ "public/pw_rpc_transport/stream_rpc_dispatcher.h" ]
+  public_deps = [
+    ":egress_ingress",
+    "$dir_pw_status",
+    "$dir_pw_stream:pw_stream",
+  ]
+}
+
 pw_test("socket_rpc_transport_test") {
   sources = [ "socket_rpc_transport_test.cc" ]
   enable_if = pw_thread_THREAD_BACKEND != "" && host_os != "win" &&
@@ -245,6 +255,20 @@ pw_test("socket_rpc_transport_test") {
     "$dir_pw_status",
     "$dir_pw_sync:thread_notification",
     "$dir_pw_thread:sleep",
+    "$dir_pw_thread:thread",
+  ]
+}
+
+pw_test("stream_rpc_dispatcher_test") {
+  sources = [ "stream_rpc_dispatcher_test.cc" ]
+  enable_if = pw_thread_THREAD_BACKEND != ""
+  deps = [
+    ":stream_rpc_dispatcher",
+    "$dir_pw_bytes",
+    "$dir_pw_log",
+    "$dir_pw_status",
+    "$dir_pw_sync:mutex",
+    "$dir_pw_sync:thread_notification",
     "$dir_pw_thread:thread",
   ]
 }

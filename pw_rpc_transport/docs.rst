@@ -94,6 +94,21 @@ about MTU's, it's up to the user to select one.
   stream::SysIoWriter writer;
   StreamRpcFrameSender<kMtu> sender(writer);
 
+A thread to feed data to a ``pw::rpc::RpcIngressHandler`` from a
+``pw::stream::Reader`` is provided by ``pw::rpc::StreamRpcDispatcher``.
+
+.. code-block:: cpp
+
+  rpc::HdlcRpcIngress<kMaxRpcPacketSize> hdlc_ingress(...);
+  stream::SysIoReader reader;
+
+  // Feed Hdlc ingress with bytes from sysio.
+  rpc::StreamRpcDispatcher<kMaxSysioRead> sysio_dispatcher(reader,
+                                                           hdlc_ingress);
+
+  thread::DetachedThread(SysioDispatcherThreadOptions(),
+                         sysio_dispatcher);
+
 -------------------------------------------
 Using transports: a sample three-node setup
 -------------------------------------------

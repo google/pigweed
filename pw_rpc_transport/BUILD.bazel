@@ -242,6 +242,17 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "stream_rpc_dispatcher",
+    hdrs = ["public/pw_rpc_transport/stream_rpc_dispatcher.h"],
+    deps = [
+        ":egress_ingress",
+        "//pw_metric:metric",
+        "//pw_status",
+        "//pw_stream",
+    ],
+)
+
 pw_cc_test(
     name = "socket_rpc_transport_test",
     srcs = ["socket_rpc_transport_test.cc"],
@@ -251,8 +262,23 @@ pw_cc_test(
         "//pw_bytes",
         "//pw_log",
         "//pw_status",
+        "//pw_sync:mutex",
         "//pw_sync:thread_notification",
         "//pw_thread:sleep",
+        "//pw_thread:thread",
+    ],
+)
+
+pw_cc_test(
+    name = "stream_rpc_dispatcher_test",
+    srcs = ["stream_rpc_dispatcher_test.cc"],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    deps = [
+        ":stream_rpc_dispatcher",
+        "//pw_bytes",
+        "//pw_log",
+        "//pw_status",
+        "//pw_sync:thread_notification",
         "//pw_thread:thread",
     ],
 )
