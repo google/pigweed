@@ -10,6 +10,7 @@ API reference
       getting started: module-pw_tokenizer-get-started
       design: module-pw_tokenizer-design
       api: module-pw_tokenizer-api
+      cli: module-pw_tokenizer-cli
 
 .. _module-pw_tokenizer-api-tokenization:
 

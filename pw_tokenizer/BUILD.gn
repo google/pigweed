@@ -315,6 +315,7 @@ pw_shared_library("detokenizer_jni") {
 pw_doc_group("docs") {
   sources = [
     "api.rst",
+    "cli.rst",
     "design.rst",
     "docs.rst",
     "proto.rst",

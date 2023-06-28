@@ -10,6 +10,7 @@ Design
       getting started: module-pw_tokenizer-get-started
       design: module-pw_tokenizer-design
       api: module-pw_tokenizer-api
+      cli: module-pw_tokenizer-cli
 
 There are two sides to ``pw_tokenizer``, which we call tokenization and
 detokenization.
