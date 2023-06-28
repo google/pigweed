@@ -61,6 +61,7 @@ from pw_presubmit import (
     cli,
     git_repo,
     owners_checks,
+    presubmit_context,
 )
 from pw_presubmit.tools import exclude_paths, file_summary, log_run, plural
 
@@ -632,7 +633,7 @@ def presubmit_check(
 
     @filter_paths(file_filter=file_filter)
     def check_code_format(ctx: PresubmitContext):
-        ctx.paths = _filter_paths(ctx.paths, ctx.format_options.exclude)
+        ctx.paths = presubmit_context.apply_exclusions(ctx)
         errors = code_format.check(ctx)
         print_format_check(
             errors,

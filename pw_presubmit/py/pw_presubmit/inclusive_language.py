@@ -119,6 +119,8 @@ def presubmit_check(
 
     found_words: Dict[Path, List[Union[PathMatch, LineMatch]]] = {}
 
+    ctx.paths = presubmit_context.apply_exclusions(ctx)
+
     for path in ctx.paths:
         match = words_regex.search(str(path.relative_to(ctx.root)))
         if match:

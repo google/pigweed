@@ -34,7 +34,7 @@ from typing import (
 )
 
 import pw_cli
-from . import cli, format_code, git_repo, presubmit, tools
+from . import cli, format_code, git_repo, presubmit, presubmit_context, tools
 
 DEFAULT_PATH = Path('out', 'presubmit', 'keep_sorted')
 
@@ -399,6 +399,7 @@ def _process_files(
 def presubmit_check(ctx: presubmit.PresubmitContext) -> None:
     """Presubmit check that ensures specified lists remain sorted."""
 
+    ctx.paths = presubmit_context.apply_exclusions(ctx)
     errors = _process_files(ctx)
 
     if errors:

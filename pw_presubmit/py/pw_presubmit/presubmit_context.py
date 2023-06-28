@@ -536,3 +536,15 @@ def log_check_traces(ctx: 'PresubmitContext') -> None:
                 _COLOR.blue('Run ==>'),
                 quoted_command_args,
             )
+
+
+def apply_exclusions(
+    ctx: PresubmitContext,
+    paths: Optional[Sequence[Path]] = None,
+) -> Tuple[Path, ...]:
+    root = Path(pw_cli.env.pigweed_environment().PW_PROJECT_ROOT)
+    relpaths = [x.relative_to(root) for x in paths or ctx.paths]
+
+    for filt in ctx.format_options.exclude:
+        relpaths = [x for x in relpaths if not filt.search(str(x))]
+    return tuple(root / x for x in relpaths)

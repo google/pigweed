@@ -24,7 +24,7 @@ from pw_presubmit.presubmit_context import (
     PresubmitContext,
     PresubmitFailure,
 )
-from pw_presubmit import git_repo, plural
+from pw_presubmit import git_repo, plural, presubmit_context
 
 
 _LOG: logging.Logger = logging.getLogger(__name__)
@@ -196,6 +196,8 @@ def create(config: Config = Config()):
     @filter_paths(endswith='.gitmodules')
     def gitmodules(ctx: PresubmitContext):
         """Check various rules for .gitmodules files."""
+        ctx.paths = presubmit_context.apply_exclusions(ctx)
+
         for path in ctx.paths:
             process_gitmodules(ctx, config, path)
 

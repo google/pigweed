@@ -23,6 +23,7 @@ from pw_presubmit.presubmit_context import PresubmitContext
 from pw_presubmit import (
     build,
     format_code,
+    presubmit_context,
 )
 
 _LOG: logging.Logger = logging.getLogger(__name__)
@@ -31,6 +32,8 @@ _LOG: logging.Logger = logging.getLogger(__name__)
 @filter_paths(endswith=format_code.CPP_HEADER_EXTS, exclude=(r'\.pb\.h$',))
 def pragma_once(ctx: PresubmitContext) -> None:
     """Presubmit check that ensures all header files contain '#pragma once'."""
+
+    ctx.paths = presubmit_context.apply_exclusions(ctx)
 
     for path in ctx.paths:
         _LOG.debug('Checking %s', path)

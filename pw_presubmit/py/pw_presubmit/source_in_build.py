@@ -16,7 +16,7 @@
 import logging
 from typing import Callable, Sequence
 
-from pw_presubmit import build, format_code, git_repo
+from pw_presubmit import build, format_code, git_repo, presubmit_context
 from pw_presubmit.presubmit import (
     Check,
     FileFilter,
@@ -56,6 +56,7 @@ def bazel(
         """Checks that source files are in the Bazel build."""
 
         paths = source_filter.filter(ctx.all_paths)
+        paths = presubmit_context.apply_exclusions(ctx, paths)
 
         missing = build.check_bazel_build_for_files(
             files_and_extensions_to_check,
@@ -102,6 +103,7 @@ def gn(  # pylint: disable=invalid-name
         """Checks that source files are in the GN build."""
 
         paths = source_filter.filter(ctx.all_paths)
+        paths = presubmit_context.apply_exclusions(ctx, paths)
 
         missing = build.check_gn_build_for_files(
             files_and_extensions_to_check,
@@ -148,6 +150,7 @@ def cmake(
         """Checks that source files are in the CMake build."""
 
         paths = source_filter.filter(ctx.all_paths)
+        paths = presubmit_context.apply_exclusions(ctx, paths)
 
         run_cmake(ctx)
         missing = build.check_compile_commands_for_files(
