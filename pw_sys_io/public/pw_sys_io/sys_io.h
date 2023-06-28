@@ -70,13 +70,13 @@ Status ReadByte(std::byte* dest);
 /// * @pw_status{UNIMPLEMENTED} - The function is not supported on this target.
 Status TryReadByte(std::byte* dest);
 
-// Write a single byte out the sys io backend.
-// Implemented by: Backend
-//
-// This function will block until it either succeeds or fails to write a byte
-// out the pw_sys_io backend.
-//
-// Returns OkStatus() if a byte was successfully read.
+/// Writes a single byte out the `pw_sys_io` backend. The function blocks until
+/// it either succeeds or fails to write the byte.
+///
+/// @pre This function must be implemented by the `pw_sys_io` backend.
+///
+/// @returns
+/// * @pw_status{OK} - A byte was successfully written.
 Status WriteByte(std::byte b);
 
 // Write a string out the sys io backend.

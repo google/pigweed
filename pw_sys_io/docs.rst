@@ -43,6 +43,7 @@ API reference
 =============
 .. doxygenfunction:: pw::sys_io::ReadByte(std::byte* dest)
 .. doxygenfunction:: pw::sys_io::TryReadByte(std::byte* dest)
+.. doxygenfunction:: pw::sys_io::WriteByte(std::byte b)
 
 Dependencies
 ============
