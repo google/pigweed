@@ -77,79 +77,77 @@ class DigitalIoOptional {
   /// @returns `true` if interrupt handlers can be registered.
   constexpr bool provides_interrupt() const { return config_.interrupt; }
 
-  // Get the state of the line.
-  //
-  // This method is not thread-safe and cannot be used in interrupt handlers.
-  //
-  // Returns:
-  //
-  //   OK - an active or inactive state.
-  //   FAILED_PRECONDITION - The line has not been enabled.
-  //   Other status codes as defined by the backend.
-  //
+  /// Gets the state of the line.
+  ///
+  /// @warning This method is not thread-safe and cannot be used in interrupt
+  /// handlers.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - An active or inactive state.
+  /// * @pw_status{FAILED_PRECONDITION} - The line has not been enabled.
+  /// * Other status codes as defined by the backend.
   Result<State> GetState() { return DoGetState(); }
 
-  // Set the state of the line.
-  //
-  // Callers are responsible to wait for the voltage level to settle after this
-  // call returns.
-  //
-  // This method is not thread-safe and cannot be used in interrupt handlers.
-  //
-  // Returns:
-  //
-  //   OK - the state has been set.
-  //   FAILED_PRECONDITION - The line has not been enabled.
-  //   Other status codes as defined by the backend.
-  //
+  /// Sets the state of the line.
+  ///
+  /// Callers are responsible to wait for the voltage level to settle after this
+  /// call returns.
+  ///
+  /// @warning This method is not thread-safe and cannot be used in interrupt
+  /// handlers.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - The state has been set.
+  /// * @pw_status{FAILED_PRECONDITION} - The line has not been enabled.
+  /// * Other status codes as defined by the backend.
   Status SetState(State state) { return DoSetState(state); }
 
-  // Check if the line is in the active state.
-  //
-  // The line is in the active state when GetState() returns State::kActive.
-  //
-  // This method is not thread-safe and cannot be used in interrupt handlers.
-  //
-  // Returns:
-  //
-  //   OK - true if the line is in the active state, otherwise false.
-  //   FAILED_PRECONDITION - The line has not been enabled.
-  //   Other status codes as defined by the backend.
-  //
+  /// Checks if the line is in the active state.
+  ///
+  /// The line is in the active state when `GetState()` returns
+  /// `State::kActive`.
+  ///
+  /// @warning This method is not thread-safe and cannot be used in interrupt
+  /// handlers.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - `true` if the line is in the active state, otherwise
+  ///   `false`.
+  /// * @pw_status{FAILED_PRECONDITION} - The line has not been enabled.
+  /// * Other status codes as defined by the backend.
   Result<bool> IsStateActive() {
     PW_TRY_ASSIGN(const State state, GetState());
     return state == State::kActive;
   }
 
-  // Sets the line to the active state. Equivalent to SetState(State::kActive).
-  //
-  // Callers are responsible to wait for the voltage level to settle after this
-  // call returns.
-  //
-  // This method is not thread-safe and cannot be used in interrupt handlers.
-  //
-  // Returns:
-  //
-  //   OK - the state has been set.
-  //   FAILED_PRECONDITION - The line has not been enabled.
-  //   Other status codes as defined by the backend.
-  //
+  /// Sets the line to the active state. Equivalent to
+  /// `SetState(State::kActive)`.
+  ///
+  /// Callers are responsible to wait for the voltage level to settle after this
+  /// call returns.
+  ///
+  /// @warning This method is not thread-safe and cannot be used in interrupt
+  /// handlers.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - The state has been set.
+  /// * @pw_status{FAILED_PRECONDITION} - The line has not been enabled.
+  /// * Other status codes as defined by the backend.
   Status SetStateActive() { return SetState(State::kActive); }
 
-  // Sets the line to the inactive state. Equivalent to
-  // SetState(State::kInactive).
-  //
-  // Callers are responsible to wait for the voltage level to settle after this
-  // call returns.
-  //
-  // This method is not thread-safe and cannot be used in interrupt handlers.
-  //
-  // Returns:
-  //
-  //   OK - the state has been set.
-  //   FAILED_PRECONDITION - The line has not been enabled.
-  //   Other status codes as defined by the backend.
-  //
+  /// Sets the line to the inactive state. Equivalent to
+  /// `SetState(State::kInactive)`.
+  ///
+  /// Callers are responsible to wait for the voltage level to settle after
+  /// this call returns.
+  ///
+  /// @warning This method is not thread-safe and cannot be used in interrupt
+  /// handlers.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - The state has been set.
+  /// * @pw_status{FAILED_PRECONDITION} - The line has not been enabled.
+  /// * Other status codes as defined by the backend.
   Status SetStateInactive() { return SetState(State::kInactive); }
 
   // Set an interrupt handler to execute when an interrupt is triggered, and
