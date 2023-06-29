@@ -157,9 +157,8 @@ class Device:
         return metrics
 
     def snapshot_peak_stack_usage(self, thread_name: Optional[str] = None):
-        _, rsp = self.rpcs.pw.thread.ThreadSnapshotService.GetPeakStackUsage(
-            name=thread_name
-        )
+        snapshot_service = self.rpcs.pw.thread.proto.ThreadSnapshotService
+        _, rsp = snapshot_service.GetPeakStackUsage(name=thread_name)
 
         thread_info = thread_pb2.SnapshotThreadInfo()
         for thread_info_block in rsp:
