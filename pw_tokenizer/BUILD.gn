@@ -318,6 +318,7 @@ pw_doc_group("docs") {
     "cli.rst",
     "design.rst",
     "docs.rst",
+    "guides.rst",
     "proto.rst",
   ]
   inputs = [ "py/pw_tokenizer/encode.py" ]
