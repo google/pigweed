@@ -279,6 +279,7 @@ API reference
    This API reference is incomplete.
 
 .. doxygenclass:: pw::digital_io::DigitalIoOptional
+   :members:
 
 ------------
 Dependencies

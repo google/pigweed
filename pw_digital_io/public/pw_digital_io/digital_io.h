@@ -70,11 +70,11 @@ class DigitalIoOptional {
  public:
   virtual ~DigitalIoOptional() = default;
 
-  // True if input (getting state) is supported.
+  /// @returns `true` if input (getting state) is supported.
   constexpr bool provides_input() const { return config_.input; }
-  // True if output (setting state) is supported.
+  /// @returns `true` if output (setting state) is supported.
   constexpr bool provides_output() const { return config_.output; }
-  // True if interrupt handlers can be registered.
+  /// @returns `true` if interrupt handlers can be registered.
   constexpr bool provides_interrupt() const { return config_.interrupt; }
 
   // Get the state of the line.
