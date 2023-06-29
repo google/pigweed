@@ -269,6 +269,7 @@ template("generate_toolchain") {
         _link_flags += [
           # Output a map file that shows symbols and their location.
           "-Wl,-Map,$_link_mapfile",
+          "-Wl,--cref",
         ]
       }
 
