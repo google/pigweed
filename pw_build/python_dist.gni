@@ -276,6 +276,14 @@ template("pw_python_distribution") {
     metadata = {
       pw_python_package_metadata_json = [ _package_metadata_json_file ]
     }
+
+    # Forward the package_metadata subtarget for all packages bundled in this
+    # distribution.
+    public_deps = []
+    foreach(dep, invoker.packages) {
+      public_deps += [ get_label_info(dep, "label_no_toolchain") +
+                       "._package_metadata($pw_build_PYTHON_TOOLCHAIN)" ]
+    }
   }
 
   _package_metadata_targets = []
