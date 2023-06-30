@@ -75,20 +75,26 @@ Status TryReadByte(std::byte* dest);
 ///
 /// @pre This function must be implemented by the `pw_sys_io` backend.
 ///
+/// @warning Do not build production projects on top of `pw_sys_io`.
+///
 /// @returns
 /// * @pw_status{OK} - A byte was successfully written.
 Status WriteByte(std::byte b);
 
-// Write a string out the sys io backend.
-// Implemented by: Backend
-//
-// This function takes a null-terminated string and writes it out the sys io
-// backend, adding any platform-specific newline character(s) (these are
-// accounted for in the returned StatusWithSize).
-//
-// Return status is OkStatus() if all the bytes from the source string were
-// successfully written. In all cases, the number of bytes successfully written
-// are returned as part of the StatusWithSize.
+/// Writes a string out the `pw_sys_io` backend.
+///
+/// This function takes a null-terminated string and writes it out the
+/// `pw_sys_io` backend, adding any platform-specific newline character(s)
+/// (these are accounted for in the returned `StatusWithSize`).
+///
+/// @pre This function must be implemented by the `pw_sys_io` backend.
+///
+/// @warning Do not build production projects on top of `pw_sys_io`.
+///
+/// @returns
+/// * @pw_status{OK} if all the bytes from the source string were successfully
+///   written. In all cases, the number of bytes successfully written are
+///   returned as part of the `StatusWithSize`.
 StatusWithSize WriteLine(const std::string_view& s);
 
 // Fill a byte span from the sys io backend using ReadByte().
