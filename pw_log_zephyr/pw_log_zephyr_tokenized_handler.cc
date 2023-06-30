@@ -31,7 +31,7 @@ extern "C" void pw_log_tokenized_HandleLog(uint32_t metadata,
 
   // Encode the tokenized message as Base64.
   char base64_buffer[tokenizer::kDefaultBase64EncodedBufferSize];
-
+  const char EOT = '#';
   const size_t bytes = tokenizer::PrefixedBase64Encode(
       span(log_buffer, size_bytes), base64_buffer);
 
@@ -45,7 +45,7 @@ extern "C" void pw_log_tokenized_HandleLog(uint32_t metadata,
   log_encode_lock.lock();
   // _is_raw is set to 0 here because the print string is required to be a
   // string literal if _is_raw is set to 1.
-  Z_LOG_PRINTK(/*_is_raw=*/0, "%s", base64_buffer);
+  Z_LOG_PRINTK(/*_is_raw=*/0, "%s%c", base64_buffer, EOT);
   log_encode_lock.unlock();
 }
 
