@@ -287,12 +287,6 @@ PwProtoOptionsInfo = provider(
     },
 )
 
-def _get_short_path(source):
-    return source.short_path
-
-def _get_path(file):
-    return file.path
-
 def _proto_compiler_aspect_impl(target, ctx):
     # List the files we will generate for this proto_library target.
     genfiles = []
@@ -323,18 +317,14 @@ def _proto_compiler_aspect_impl(target, ctx):
         args.add("--pwpb_opt=-I{}".format(options_file_include_path))
     args.add("--pwpb_opt=--no-legacy-namespace")
     args.add("--pwpb_out={}".format(ctx.bin_dir.path))
-    args.add_joined(
-        "--descriptor_set_in",
-        target[ProtoInfo].transitive_descriptor_sets,
-        join_with = ctx.configuration.host_path_separator,
-        map_each = _get_path,
-    )
 
-    args.add_all(target[ProtoInfo].direct_sources, map_each = _get_short_path)
+    args.add_all(target[ProtoInfo].direct_sources)
 
     ctx.actions.run(
         inputs = depset(
-            target[ProtoInfo].transitive_sources.to_list() + options_files,
+            direct = target[ProtoInfo].direct_sources +
+                     target[ProtoInfo].transitive_sources.to_list() +
+                     options_files,
             transitive = [target[ProtoInfo].transitive_descriptor_sets],
         ),
         progress_message = "Generating %s C++ files for %s" % (ctx.attr._extension, ctx.label.name),
