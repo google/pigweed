@@ -32,10 +32,7 @@ if (current_toolchain != default_toolchain) {
 pw_system_target("host_device_simulator") {
   cpu = PW_SYSTEM_CPU.NATIVE
   scheduler = PW_SYSTEM_SCHEDULER.NATIVE
-  link_deps = [
-    "$dir_pigweed/pw_toolchain/arm_gcc:arm_none_eabi_gcc_support",
-    "$dir_pigweed/targets/host_device_simulator:boot",
-  ]
+  link_deps = [ "$dir_pigweed/targets/host_device_simulator:boot" ]
 }
 
 pw_doc_group("target_docs") {
