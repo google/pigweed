@@ -16,6 +16,7 @@
 import os
 from pathlib import Path
 import shutil
+import signal
 import sys
 import subprocess
 
@@ -47,6 +48,8 @@ def main() -> None:
         env['PYTHONHOME'] = str(python_home)
         env['PYTHONPATH'] = str(python_path)
 
+    # Ignore Ctrl-C to allow gdb to handle normally
+    signal.signal(signal.SIGINT, lambda sig, frame: None)
     subprocess.run([str(arm_gdb_path)] + sys.argv[1:], env=env, check=False)
 
 
