@@ -127,6 +127,7 @@ pw_test("local_rpc_egress_test") {
     "$dir_pw_sync:thread_notification",
     "$dir_pw_thread:sleep",
     "$dir_pw_thread:thread",
+    "$dir_pw_thread_stl:thread",
   ]
 }
 
@@ -246,8 +247,8 @@ pw_source_set("stream_rpc_dispatcher") {
 
 pw_test("socket_rpc_transport_test") {
   sources = [ "socket_rpc_transport_test.cc" ]
-  enable_if = pw_thread_THREAD_BACKEND != "" && host_os != "win" &&
-              pw_sync_CONDITION_VARIABLE_BACKEND != ""
+  enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread" &&
+              host_os != "win" && pw_sync_CONDITION_VARIABLE_BACKEND != ""
   deps = [
     ":socket_rpc_transport",
     "$dir_pw_bytes",
@@ -256,12 +257,13 @@ pw_test("socket_rpc_transport_test") {
     "$dir_pw_sync:thread_notification",
     "$dir_pw_thread:sleep",
     "$dir_pw_thread:thread",
+    "$dir_pw_thread_stl:thread",
   ]
 }
 
 pw_test("stream_rpc_dispatcher_test") {
   sources = [ "stream_rpc_dispatcher_test.cc" ]
-  enable_if = pw_thread_THREAD_BACKEND != ""
+  enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread"
   deps = [
     ":stream_rpc_dispatcher",
     "$dir_pw_bytes",
@@ -270,13 +272,14 @@ pw_test("stream_rpc_dispatcher_test") {
     "$dir_pw_sync:mutex",
     "$dir_pw_sync:thread_notification",
     "$dir_pw_thread:thread",
+    "$dir_pw_thread_stl:thread",
   ]
 }
 
 pw_test("rpc_integration_test") {
   sources = [ "rpc_integration_test.cc" ]
-  enable_if = pw_thread_THREAD_BACKEND != "" && host_os != "win" &&
-              pw_sync_CONDITION_VARIABLE_BACKEND != ""
+  enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread" &&
+              host_os != "win" && pw_sync_CONDITION_VARIABLE_BACKEND != ""
   deps = [
     ":egress_ingress",
     ":local_rpc_egress",
@@ -289,6 +292,7 @@ pw_test("rpc_integration_test") {
     "$dir_pw_rpc:synchronous_client_api",
     "$dir_pw_string",
     "$dir_pw_thread:thread",
+    "$dir_pw_thread_stl:thread",
   ]
 }
 
