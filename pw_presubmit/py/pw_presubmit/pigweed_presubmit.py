@@ -189,7 +189,6 @@ gn_combined_build_check = build.GnGenNinja(
     ninja_targets=_gn_combined_build_check_targets(),
 )
 
-
 coverage = build.GnGenNinja(
     name='coverage',
     doc='Run coverage for the host build.',
@@ -221,7 +220,6 @@ stm32f429i = build.GnGenNinja(
     ),
     ninja_targets=_at_all_optimization_levels('stm32f429i'),
 )
-
 
 gn_emboss_build = build.GnGenNinja(
     name='gn_emboss_build',
@@ -1079,7 +1077,6 @@ SOURCE_FILES_FILTER = FileFilter(
     ),
 )
 
-
 #
 # Presubmit check programs
 #
@@ -1115,7 +1112,7 @@ ARDUINO_PICO = (
     gn_pw_system_demo_build,
 )
 
-INTERNAL = (gn_mimxrt595_build,)
+INTERNAL = (gn_mimxrt595_build, gn_mimxrt595_freertos_build)
 
 # The misc program differs from other_checks in that checks in the misc
 # program block CQ on Linux.
