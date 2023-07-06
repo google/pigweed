@@ -30,6 +30,13 @@ if (current_toolchain != default_toolchain) {
     ]
     sources = [ "pico_logging_test_main.cc" ]
   }
+
+  # We don't want this linked into the boot_stage2 binary, so make the printf
+  # float config a source set added to pw_build_LINK_DEPS (which is dropped on
+  # the boot_stage2 binary) rather than as a default_config.
+  pw_source_set("float_printf_adapter") {
+    all_dependent_configs = [ "$dir_pw_toolchain/arm_gcc:enable_float_printf" ]
+  }
 }
 
 generate_toolchain("rp2040") {
@@ -63,6 +70,7 @@ generate_toolchain("rp2040") {
     pw_build_LINK_DEPS = [
       "$dir_pw_assert:impl",
       "$dir_pw_log:impl",
+      get_path_info(":float_printf_adapter", "abspath"),
     ]
 
     current_cpu = "arm"
