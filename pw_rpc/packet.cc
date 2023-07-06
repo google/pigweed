@@ -14,6 +14,7 @@
 
 #include "pw_rpc/internal/packet.h"
 
+#include "pw_log/log.h"
 #include "pw_protobuf/decoder.h"
 
 namespace pw::rpc::internal {
@@ -129,6 +130,27 @@ size_t Packet::MinEncodedSizeBytes() const {
   reserved_size += 2;
 
   return reserved_size;
+}
+
+void Packet::DebugLog() const {
+  PW_LOG_INFO(
+      "Packet {\n"
+      "  Type   : %s (%d)\n"
+      "  Channel: %u\n"
+      "  Service: %08x\n"
+      "  Method : %08x\n"
+      "  ID     : %08x\n"
+      "  Payload: %u B\n"
+      "  Status : %s\n"
+      "}",
+      PacketTypeToString(type_),
+      static_cast<int>(type_),
+      static_cast<unsigned>(channel_id_),
+      static_cast<unsigned>(service_id_),
+      static_cast<unsigned>(method_id_),
+      static_cast<unsigned>(call_id_),
+      static_cast<unsigned>(payload_.size()),
+      status_.str());
 }
 
 }  // namespace pw::rpc::internal

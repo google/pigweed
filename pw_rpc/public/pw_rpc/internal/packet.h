@@ -141,6 +141,9 @@ class Packet {
   constexpr void set_payload(ConstByteSpan payload) { payload_ = payload; }
   constexpr void set_status(Status status) { status_ = status; }
 
+  // Logs detailed info about this packet at INFO level. NOT for production use!
+  void DebugLog() const;
+
  private:
   pwpb::PacketType type_;
   uint32_t channel_id_;

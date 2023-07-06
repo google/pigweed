@@ -302,4 +302,36 @@ void Call::UnregisterAndMarkClosed() {
   }
 }
 
+void Call::DebugLog() const PW_NO_LOCK_SAFETY_ANALYSIS {
+  PW_LOG_INFO(
+      "Call %p\n"
+      "\tEndpoint: %p\n"
+      "\tCall ID:  %8u\n"
+      "\tChannel:  %8u\n"
+      "\tService:  %08x\n"
+      "\tMethod:   %08x\n"
+      "\tState:    %8x\n"
+      "\tCleanup:  %8s\n"
+      "\tBusy CBs: %8x\n"
+      "\tType:     %8d\n"
+      "\tClient:   %8d\n"
+      "\tWrapped:  %8d\n"
+      "\ton_error: %8d\n"
+      "\ton_next:  %8d\n",
+      static_cast<const void*>(this),
+      static_cast<const void*>(endpoint_),
+      static_cast<unsigned>(id_),
+      static_cast<unsigned>(channel_id_),
+      static_cast<unsigned>(service_id_),
+      static_cast<unsigned>(method_id_),
+      static_cast<int>(state_),
+      Status(static_cast<Status::Code>(awaiting_cleanup_)).str(),
+      static_cast<int>(callbacks_executing_),
+      static_cast<int>(properties_.method_type()),
+      static_cast<int>(properties_.call_type()),
+      static_cast<int>(hold_lock_while_invoking_callback_with_payload()),
+      static_cast<int>(on_error_ == nullptr),
+      static_cast<int>(on_next_ == nullptr));
+}
+
 }  // namespace pw::rpc::internal

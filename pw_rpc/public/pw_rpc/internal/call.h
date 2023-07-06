@@ -294,6 +294,9 @@ class Call : public IntrusiveList<Call>::Item {
     endpoint_ = nullptr;
   }
 
+  // Logs detailed info about this call at INFO level. NOT for production use!
+  void DebugLog() const;
+
  protected:
   // Creates an inactive Call.
   constexpr Call()
