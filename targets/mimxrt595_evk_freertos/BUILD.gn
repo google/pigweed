@@ -53,6 +53,7 @@ config("disable_warnings") {
     "-Wno-undef",
     "-Wno-unused-parameter",
     "-Wno-unused-variable",
+    "-Wno-error=strict-prototypes",
   ]
   visibility = [ ":*" ]
 }
@@ -112,13 +113,19 @@ if (pw_third_party_mcuxpresso_SDK == "//targets/mimxrt595_evk_freertos:sdk") {
       "project_template.evkmimxrt595.MIMXRT595S",
       "component.serial_manager_uart.MIMXRT595S",
       "platform.drivers.flexcomm_spi.MIMXRT595S",
+      "platform.drivers.flexcomm_usart_freertos.MIMXRT595S",
       "platform.drivers.flexio_spi.MIMXRT595S",
       "platform.drivers.power.MIMXRT595S",
       "platform.drivers.lpc_gpio.MIMXRT595S",
       "platform.drivers.pint.MIMXRT595S",
       "utility.debug_console.MIMXRT595S",
     ]
-    exclude = [ "device.MIMXRT595S_startup.MIMXRT595S" ]
+    exclude = [
+      "device.MIMXRT595S_startup.MIMXRT595S",
+
+      # Don't need to generate build rules for freertos, we use pigweed's.
+      "middleware.freertos-kernel.MIMXRT595S",
+    ]
 
     public_configs = [
       ":disable_warnings",
@@ -171,8 +178,6 @@ if (pw_third_party_mcuxpresso_SDK == "//targets/mimxrt595_evk_freertos:sdk") {
       ":config_public_defines",
       ":config_public_includes",
       ":disable_warnings",
-      ":sdk__defines",
-      ":sdk__includes",
       ":freertos_config_public_includes",
     ]
     public = [ "FreeRTOSConfig.h" ]

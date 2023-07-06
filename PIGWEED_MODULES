@@ -94,6 +94,7 @@ pw_spi_mcuxpresso
 pw_status
 pw_stm32cube_build
 pw_stream
+pw_stream_uart_mcuxpresso
 pw_string
 pw_symbolizer
 pw_sync
