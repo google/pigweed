@@ -35,8 +35,12 @@ pw_cc_facade(
 
 pw_cc_library(
     name = "pw_boot",
+    hdrs = [
+        "public/pw_boot/boot.h",
+    ],
+    includes = ["public"],
     deps = [
-        ":facade",
+        "//pw_preprocessor",
         "@pigweed_config//:pw_boot_backend",
     ],
 )

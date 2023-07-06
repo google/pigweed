@@ -43,8 +43,17 @@ pw_cc_facade(
 
 pw_cc_library(
     name = "pw_log",
+    hdrs = [
+        "public/pw_log/config.h",
+        "public/pw_log/levels.h",
+        "public/pw_log/log.h",
+        "public/pw_log/options.h",
+        "public/pw_log/short.h",
+        "public/pw_log/shorter.h",
+    ],
+    includes = ["public"],
     deps = [
-        ":facade",
+        "//pw_preprocessor",
         "@pigweed_config//:pw_log_backend",
     ],
 )

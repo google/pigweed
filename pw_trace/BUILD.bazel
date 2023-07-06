@@ -38,8 +38,13 @@ pw_cc_facade(
 
 pw_cc_library(
     name = "pw_trace",
+    hdrs = [
+        "public/pw_trace/internal/trace_internal.h",
+        "public/pw_trace/trace.h",
+    ],
+    includes = ["public"],
     deps = [
-        ":facade",
+        "//pw_preprocessor",
         "@pigweed_config//:pw_trace_backend",
     ],
 )

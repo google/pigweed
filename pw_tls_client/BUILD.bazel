@@ -42,7 +42,19 @@ pw_cc_facade(
 
 pw_cc_library(
     name = "pw_tls_client",
-    deps = [":pw_tls_client_facade"],
+    hdrs = [
+        "public/pw_tls_client/options.h",
+        "public/pw_tls_client/session.h",
+        "public/pw_tls_client/status.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_result",
+        "//pw_status",
+        "//pw_stream",
+    ],
 )
 
 # TODO(zyecheng): Add a "backend_multiplexer" target once BoringSSL/MbedTLS is
@@ -63,9 +75,14 @@ pw_cc_facade(
 pw_cc_library(
     name = "fake_entropy",
     srcs = ["fake_entropy.cc"],
+    hdrs = [
+        "public/pw_tls_client/entropy.h",
+    ],
+    includes = ["public"],
     deps = [
-        ":entropy_facade",
+        "//pw_bytes",
         "//pw_log",
+        "//pw_status",
     ],
 )
 

@@ -49,8 +49,14 @@ pw_cc_facade(
 pw_cc_library(
     name = "handler",
     srcs = ["handler.cc"],
+    hdrs = [
+        "public/pw_log_string/config.h",
+        "public/pw_log_string/handler.h",
+    ],
+    includes = ["public"],
     deps = [
         ":handler_facade",
+        "//pw_preprocessor",
         "@pigweed_config//:pw_log_string_handler_backend",
     ],
 )

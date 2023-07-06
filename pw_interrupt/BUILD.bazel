@@ -32,8 +32,11 @@ pw_cc_facade(
 
 pw_cc_library(
     name = "context",
+    hdrs = [
+        "public/pw_interrupt/context.h",
+    ],
+    includes = ["public"],
     deps = [
-        ":context_facade",
         "@pigweed_config//:pw_interrupt_backend",
     ],
 )

@@ -35,8 +35,11 @@ pw_cc_facade(
 
 pw_cc_library(
     name = "id",
+    hdrs = [
+        "public/pw_thread/id.h",
+    ],
+    includes = ["public"],
     deps = [
-        ":id_facade",
         "@pigweed_config//:pw_thread_id_backend",
     ],
 )
@@ -80,8 +83,14 @@ pw_cc_facade(
 
 pw_cc_library(
     name = "thread_iteration",
+    hdrs = [
+        "public/pw_thread/thread_iteration.h",
+    ],
+    includes = ["public"],
     deps = [
-        ":thread_iteration_facade",
+        ":thread_info",
+        "//pw_function",
+        "//pw_status",
         "@pigweed_config//:pw_thread_iteration_backend",
     ],
 )
@@ -114,9 +123,14 @@ pw_cc_library(
     srcs = [
         "sleep.cc",
     ],
+    hdrs = [
+        "public/pw_thread/sleep.h",
+    ],
+    includes = ["public"],
     deps = [
         ":id",
-        ":sleep_facade",
+        "//pw_chrono:system_clock",
+        "//pw_preprocessor",
         "@pigweed_config//:pw_thread_sleep_backend",
     ],
 )
@@ -150,12 +164,15 @@ pw_cc_library(
     srcs = [
         "thread.cc",
     ],
-    hdrs = ["public/pw_thread/config.h"],
+    hdrs = [
+        "public/pw_thread/config.h",
+        "public/pw_thread/detached_thread.h",
+        "public/pw_thread/thread.h",
+    ],
     includes = ["public"],
     deps = [
         ":id",
         ":thread_core",
-        ":thread_facade",
         "@pigweed_config//:pw_thread_thread_backend",
     ],
 )
@@ -225,8 +242,11 @@ pw_cc_facade(
 
 pw_cc_library(
     name = "test_thread_context",
+    hdrs = [
+        "public/pw_thread/test_thread_context.h",
+    ],
+    includes = ["public"],
     deps = [
-        ":test_thread_context_facade",
         "@pigweed_config//:pw_thread_test_thread_context_backend",
     ],
 )
@@ -247,9 +267,13 @@ pw_cc_library(
     srcs = [
         "yield.cc",
     ],
+    hdrs = [
+        "public/pw_thread/yield.h",
+    ],
+    includes = ["public"],
     deps = [
         ":id",
-        ":yield_facade",
+        "//pw_preprocessor",
         "@pigweed_config//:pw_thread_yield_backend",
     ],
 )

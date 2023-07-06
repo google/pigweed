@@ -44,8 +44,12 @@ pw_cc_library(
     srcs = [
         "binary_semaphore.cc",
     ],
+    hdrs = [
+        "public/pw_sync/binary_semaphore.h",
+    ],
     deps = [
-        ":binary_semaphore_facade",
+        "//pw_chrono:system_clock",
+        "//pw_preprocessor",
         "@pigweed_config//:pw_sync_binary_semaphore_backend",
     ],
 )
@@ -78,8 +82,12 @@ pw_cc_library(
     srcs = [
         "counting_semaphore.cc",
     ],
+    hdrs = [
+        "public/pw_sync/counting_semaphore.h",
+    ],
     deps = [
-        ":counting_semaphore_facade",
+        "//pw_chrono:system_clock",
+        "//pw_preprocessor",
         "@pigweed_config//:pw_sync_counting_semaphore_backend",
     ],
 )
@@ -163,8 +171,13 @@ pw_cc_library(
     srcs = [
         "mutex.cc",
     ],
+    hdrs = [
+        "public/pw_sync/mutex.h",
+    ],
     deps = [
-        ":mutex_facade",
+        ":lock_annotations",
+        ":virtual_basic_lockable",
+        "//pw_preprocessor",
         "@pigweed_config//:pw_sync_mutex_backend",
     ],
 )
@@ -200,10 +213,15 @@ pw_cc_library(
     srcs = [
         "timed_mutex.cc",
     ],
+    hdrs = [
+        "public/pw_sync/timed_mutex.h",
+    ],
     deps = [
+        ":lock_annotations",
         ":mutex",
-        ":timed_mutex_facade",
         ":virtual_basic_lockable",
+        "//pw_chrono:system_clock",
+        "//pw_preprocessor",
         "@pigweed_config//:pw_sync_timed_mutex_backend",
     ],
 )
@@ -266,8 +284,13 @@ pw_cc_library(
     srcs = [
         "interrupt_spin_lock.cc",
     ],
+    hdrs = [
+        "public/pw_sync/interrupt_spin_lock.h",
+    ],
     deps = [
-        ":interrupt_spin_lock_facade",
+        ":lock_annotations",
+        ":virtual_basic_lockable",
+        "//pw_preprocessor",
         "@pigweed_config//:pw_sync_interrupt_spin_lock_backend",
     ],
 )
@@ -293,8 +316,10 @@ pw_cc_facade(
 
 pw_cc_library(
     name = "thread_notification",
+    hdrs = [
+        "public/pw_sync/thread_notification.h",
+    ],
     deps = [
-        ":thread_notification_facade",
         "@pigweed_config//:pw_sync_thread_notification_backend",
     ],
 )
@@ -322,9 +347,12 @@ pw_cc_facade(
 
 pw_cc_library(
     name = "timed_thread_notification",
+    hdrs = [
+        "public/pw_sync/timed_thread_notification.h",
+    ],
     deps = [
         ":thread_notification",
-        ":timed_thread_notification_facade",
+        "//pw_chrono:system_clock",
         "@pigweed_config//:pw_sync_timed_thread_notification_backend",
     ],
 )

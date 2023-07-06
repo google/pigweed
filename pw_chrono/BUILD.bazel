@@ -51,8 +51,14 @@ pw_cc_library(
     srcs = [
         "system_clock.cc",
     ],
+    hdrs = [
+        "public/pw_chrono/internal/system_clock_macros.h",
+        "public/pw_chrono/system_clock.h",
+    ],
+    includes = ["public"],
     deps = [
-        ":system_clock_facade",
+        ":epoch",
+        "//pw_preprocessor",
         "@pigweed_config//:pw_chrono_system_clock_backend",
     ],
 )

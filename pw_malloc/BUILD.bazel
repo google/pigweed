@@ -32,8 +32,11 @@ pw_cc_facade(
 
 pw_cc_library(
     name = "pw_malloc",
+    hdrs = [
+        "public/pw_malloc/malloc.h",
+    ],
+    includes = ["public"],
     deps = [
-        ":facade",
         "@pigweed_config//:pw_malloc_backend",
     ],
 )

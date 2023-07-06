@@ -51,8 +51,12 @@ pw_cc_facade(
 
 pw_cc_library(
     name = "timer",
+    hdrs = [
+        "public/pw_perf_test/internal/timer.h",
+    ],
+    includes = ["public"],
     deps = [
-        ":timer_interface_facade",
+        ":duration_unit",
         "@pigweed_config//:pw_perf_test_timer_backend",
     ],
 )

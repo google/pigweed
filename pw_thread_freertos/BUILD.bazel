@@ -313,11 +313,12 @@ pw_cc_facade(
 pw_cc_library(
     name = "freertos_tasktcb",
     hdrs = [
+        "public/pw_thread_freertos/freertos_tsktcb.h",
         ":generate_freertos_tsktcb",
     ],
-    includes = ["thread_public_overrides"],
-    deps = [
-        ":freertos_tasktcb_facade",
+    includes = [
+        "public",
+        "thread_public_overrides",
     ],
 )
 
