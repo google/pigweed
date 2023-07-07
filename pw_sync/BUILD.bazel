@@ -367,7 +367,7 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "binary_semaphore_thread_notification_backend_headers",
+    name = "binary_semaphore_thread_notification_backend",
     hdrs = [
         "public/pw_sync/backends/binary_semaphore_thread_notification_inline.h",
         "public/pw_sync/backends/binary_semaphore_thread_notification_native.h",
@@ -379,21 +379,14 @@ pw_cc_library(
         "public_overrides",
     ],
     target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
-    deps = [":binary_semaphore"],
-)
-
-pw_cc_library(
-    name = "binary_semaphore_thread_notification_backend",
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
-        ":binary_semaphore_facade",
-        ":binary_semaphore_thread_notification_backend_headers",
+        ":binary_semaphore",
         ":thread_notification_facade",
     ],
 )
 
 pw_cc_library(
-    name = "binary_semaphore_timed_thread_notification_backend_headers",
+    name = "binary_semaphore_timed_thread_notification_backend",
     hdrs = [
         "public/pw_sync/backends/binary_semaphore_timed_thread_notification_inline.h",
         "public_overrides/pw_sync_backend/timed_thread_notification_inline.h",
@@ -404,17 +397,8 @@ pw_cc_library(
     ],
     target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
-        ":binary_semaphore_thread_notification_backend_headers",
-        "//pw_chrono:system_clock",
-    ],
-)
-
-pw_cc_library(
-    name = "binary_semaphore_timed_thread_notification_backend",
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
-    deps = [
         ":binary_semaphore_thread_notification_backend",
-        ":binary_semaphore_timed_thread_notification_backend_headers",
+        "//pw_chrono:system_clock",
         "//pw_sync:timed_thread_notification_facade",
     ],
 )

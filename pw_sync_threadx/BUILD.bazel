@@ -22,7 +22,10 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
-    name = "binary_semaphore_headers",
+    name = "binary_semaphore",
+    srcs = [
+        "binary_semaphore.cc",
+    ],
     hdrs = [
         "public/pw_sync_threadx/binary_semaphore_inline.h",
         "public/pw_sync_threadx/binary_semaphore_native.h",
@@ -36,31 +39,19 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:threadx",
     ],
+    # TODO(b/290364219): Add threadx as a dependency.
     deps = [
-        # TODO(b/234876414): This should depend on ThreadX but our third parties
-        # currently do not have Bazel support.
         "//pw_chrono:system_clock",
-    ],
-)
-
-pw_cc_library(
-    name = "binary_semaphore",
-    srcs = [
-        "binary_semaphore.cc",
-    ],
-    target_compatible_with = [
-        "//pw_build/constraints/rtos:threadx",
-    ],
-    deps = [
-        ":binary_semaphore_headers",
-        "//pw_chrono_threadx:system_clock_headers",
         "//pw_interrupt:context",
         "//pw_sync:binary_semaphore_facade",
     ],
 )
 
 pw_cc_library(
-    name = "counting_semaphore_headers",
+    name = "counting_semaphore",
+    srcs = [
+        "counting_semaphore.cc",
+    ],
     hdrs = [
         "public/pw_sync_threadx/counting_semaphore_inline.h",
         "public/pw_sync_threadx/counting_semaphore_native.h",
@@ -74,32 +65,16 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:threadx",
     ],
+    # TODO(b/290364219): Add threadx as a dependency.
     deps = [
-        # TODO(b/234876414): This should depend on ThreadX but our third parties
-        # currently do not have Bazel support.
-        # do not have Bazel support.
         "//pw_chrono:system_clock",
-    ],
-)
-
-pw_cc_library(
-    name = "counting_semaphore",
-    srcs = [
-        "counting_semaphore.cc",
-    ],
-    target_compatible_with = [
-        "//pw_build/constraints/rtos:threadx",
-    ],
-    deps = [
-        ":counting_semaphore_headers",
-        "//pw_chrono_threadx:system_clock_headers",
         "//pw_interrupt:context",
         "//pw_sync:counting_semaphore_facade",
     ],
 )
 
 pw_cc_library(
-    name = "mutex_headers",
+    name = "mutex",
     hdrs = [
         "public/pw_sync_threadx/mutex_inline.h",
         "public/pw_sync_threadx/mutex_native.h",
@@ -113,26 +88,17 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:threadx",
     ],
+    # TODO(b/290364219): Add threadx as a dependency.
     deps = [
-        # TODO(b/234876414): This should depend on ThreadX but our third parties currently
-        # do not have Bazel support.
         "//pw_sync:mutex_facade",
     ],
 )
 
 pw_cc_library(
-    name = "mutex",
-    target_compatible_with = [
-        "//pw_build/constraints/rtos:threadx",
+    name = "timed_mutex",
+    srcs = [
+        "timed_mutex.cc",
     ],
-    deps = [
-        ":mutex_headers",
-        "//pw_sync:mutex_facade",
-    ],
-)
-
-pw_cc_library(
-    name = "timed_mutex_headers",
     hdrs = [
         "public/pw_sync_threadx/timed_mutex_inline.h",
         "public_overrides/pw_sync_backend/timed_mutex_inline.h",
@@ -144,32 +110,19 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:threadx",
     ],
+    # TODO(b/290364219): Add threadx as a dependency.
     deps = [
-        # TODO(b/234876414): This should depend on ThreadX but our third parties currently
-        # do not have Bazel support.
         "//pw_chrono:system_clock",
-        "//pw_sync:timed_mutex_facade",
-    ],
-)
-
-pw_cc_library(
-    name = "timed_mutex",
-    srcs = [
-        "timed_mutex.cc",
-    ],
-    target_compatible_with = [
-        "//pw_build/constraints/rtos:threadx",
-    ],
-    deps = [
-        ":timed_mutex_headers",
-        "//pw_chrono_threadx:system_clock_headers",
         "//pw_interrupt:context",
         "//pw_sync:timed_mutex_facade",
     ],
 )
 
 pw_cc_library(
-    name = "interrupt_spin_lock_headers",
+    name = "interrupt_spin_lock",
+    srcs = [
+        "interrupt_spin_lock.cc",
+    ],
     hdrs = [
         "public/pw_sync_threadx/interrupt_spin_lock_inline.h",
         "public/pw_sync_threadx/interrupt_spin_lock_native.h",
@@ -180,23 +133,11 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
-    # TODO(b/234876414): This should depend on ThreadX but our third parties currently
-    # do not have Bazel support.
     target_compatible_with = [
         "//pw_build/constraints/rtos:threadx",
     ],
-)
-
-pw_cc_library(
-    name = "interrupt_spin_lock",
-    srcs = [
-        "interrupt_spin_lock.cc",
-    ],
-    target_compatible_with = [
-        "//pw_build/constraints/rtos:threadx",
-    ],
+    # TODO(b/290364219): Add threadx as a dependency.
     deps = [
-        ":interrupt_spin_lock_headers",
         "//pw_sync:interrupt_spin_lock_facade",
     ],
 )

@@ -22,7 +22,7 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
-    name = "interrupt_spin_lock_headers",
+    name = "interrupt_spin_lock",
     hdrs = [
         "public/pw_sync_baremetal/interrupt_spin_lock_inline.h",
         "public/pw_sync_baremetal/interrupt_spin_lock_native.h",
@@ -34,13 +34,7 @@ pw_cc_library(
         "public_overrides",
     ],
     target_compatible_with = ["@platforms//os:none"],
-)
-
-pw_cc_library(
-    name = "interrupt_spin_lock",
-    target_compatible_with = ["@platforms//os:none"],
     deps = [
-        ":interrupt_spin_lock_headers",
         "//pw_assert",
         "//pw_sync:interrupt_spin_lock_facade",
         "//pw_sync:yield_core",
@@ -48,7 +42,7 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "mutex_headers",
+    name = "mutex",
     hdrs = [
         "public/pw_sync_baremetal/mutex_inline.h",
         "public/pw_sync_baremetal/mutex_native.h",
@@ -60,13 +54,7 @@ pw_cc_library(
         "public_overrides",
     ],
     target_compatible_with = ["@platforms//os:none"],
-)
-
-pw_cc_library(
-    name = "mutex",
-    target_compatible_with = ["@platforms//os:none"],
     deps = [
-        ":mutex_headers",
         "//pw_assert",
         "//pw_sync:mutex_facade",
     ],

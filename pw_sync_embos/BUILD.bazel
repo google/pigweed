@@ -22,7 +22,10 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
-    name = "binary_semaphore_headers",
+    name = "binary_semaphore",
+    srcs = [
+        "binary_semaphore.cc",
+    ],
     hdrs = [
         "public/pw_sync_embos/binary_semaphore_inline.h",
         "public/pw_sync_embos/binary_semaphore_native.h",
@@ -36,31 +39,20 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:embos",
     ],
+    # TODO(b/234876414): This should depend on embOS but our third parties
+    # currently do not have Bazel support.
     deps = [
-        # TODO(b/234876414): This should depend on embOS but our third parties
-        # currently do not have Bazel support.
         "//pw_chrono:system_clock",
-        "//pw_chrono_embos:system_clock_headers",
-    ],
-)
-
-pw_cc_library(
-    name = "binary_semaphore",
-    srcs = [
-        "binary_semaphore.cc",
-    ],
-    target_compatible_with = [
-        "//pw_build/constraints/rtos:embos",
-    ],
-    deps = [
-        ":binary_semaphore_headers",
         "//pw_interrupt:context",
         "//pw_sync:binary_semaphore_facade",
     ],
 )
 
 pw_cc_library(
-    name = "counting_semaphore_headers",
+    name = "counting_semaphore",
+    srcs = [
+        "counting_semaphore.cc",
+    ],
     hdrs = [
         "public/pw_sync_embos/counting_semaphore_inline.h",
         "public/pw_sync_embos/counting_semaphore_native.h",
@@ -74,31 +66,17 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:embos",
     ],
+    # TODO(b/234876414): This should depend on embOS but our third parties
+    # currently do not have Bazel support.
     deps = [
-        # TODO(b/234876414): This should depend on embOS but our third parties
-        # currently do not have Bazel support.
         "//pw_chrono:system_clock",
-        "//pw_chrono_embos:system_clock_headers",
-    ],
-)
-
-pw_cc_library(
-    name = "counting_semaphore",
-    srcs = [
-        "counting_semaphore.cc",
-    ],
-    target_compatible_with = [
-        "//pw_build/constraints/rtos:embos",
-    ],
-    deps = [
-        ":counting_semaphore_headers",
         "//pw_interrupt:context",
         "//pw_sync:counting_semaphore_facade",
     ],
 )
 
 pw_cc_library(
-    name = "mutex_headers",
+    name = "mutex",
     hdrs = [
         "public/pw_sync_embos/mutex_inline.h",
         "public/pw_sync_embos/mutex_native.h",
@@ -112,18 +90,8 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:embos",
     ],
-    deps = [
-        # TODO(b/234876414): This should depend on embOS but our third parties
-        # currently do not have Bazel support.
-        "//pw_sync:mutex_facade",
-    ],
-)
-
-pw_cc_library(
-    name = "mutex",
-    target_compatible_with = [
-        "//pw_build/constraints/rtos:embos",
-    ],
+    # TODO(b/234876414): This should depend on embOS but our third parties
+    # currently do not have Bazel support.
     deps = [
         ":mutex_headers",
         "//pw_sync:mutex_facade",
@@ -131,7 +99,10 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "timed_mutex_headers",
+    name = "timed_mutex",
+    srcs = [
+        "timed_mutex.cc",
+    ],
     hdrs = [
         "public/pw_sync_embos/timed_mutex_inline.h",
         "public_overrides/pw_sync_backend/timed_mutex_inline.h",
@@ -143,25 +114,10 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:embos",
     ],
+    # TODO(b/234876414): This should depend on embOS but our third parties
+    # currently do not have Bazel support.
     deps = [
-        # TODO(b/234876414): This should depend on embOS but our third parties
-        # currently do not have Bazel support.
         "//pw_chrono:system_clock",
-        "//pw_sync:timed_mutex_facade",
-    ],
-)
-
-pw_cc_library(
-    name = "timed_mutex",
-    srcs = [
-        "timed_mutex.cc",
-    ],
-    target_compatible_with = [
-        "//pw_build/constraints/rtos:embos",
-    ],
-    deps = [
-        ":timed_mutex_headers",
-        "//pw_chrono_embos:system_clock_headers",
         "//pw_interrupt:context",
         "//pw_sync:timed_mutex_facade",
     ],
@@ -169,6 +125,16 @@ pw_cc_library(
 
 pw_cc_library(
     name = "interrupt_spin_lock_headers",
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:embos",
+    ],
+)
+
+pw_cc_library(
+    name = "interrupt_spin_lock",
+    srcs = [
+        "interrupt_spin_lock.cc",
+    ],
     hdrs = [
         "public/pw_sync_embos/interrupt_spin_lock_inline.h",
         "public/pw_sync_embos/interrupt_spin_lock_native.h",
@@ -184,18 +150,7 @@ pw_cc_library(
     ],
     # TODO(b/234876414): This should depend on embOS but our third parties
     # currently do not have Bazel support.
-)
-
-pw_cc_library(
-    name = "interrupt_spin_lock",
-    srcs = [
-        "interrupt_spin_lock.cc",
-    ],
-    target_compatible_with = [
-        "//pw_build/constraints/rtos:embos",
-    ],
     deps = [
-        ":interrupt_spin_lock_headers",
         "//pw_sync:interrupt_spin_lock_facade",
     ],
 )
