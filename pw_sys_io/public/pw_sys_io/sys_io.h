@@ -97,18 +97,20 @@ Status WriteByte(std::byte b);
 ///   returned as part of the `StatusWithSize`.
 StatusWithSize WriteLine(const std::string_view& s);
 
-// Fill a byte span from the sys io backend using ReadByte().
-// Implemented by: Facade
-//
-// This function is implemented by this facade and simply uses ReadByte() to
-// read enough bytes to fill the destination span. If there's an error reading a
-// byte, the read is aborted and the contents of the destination span are
-// undefined. This function blocks until either an error occurs, or all bytes
-// are successfully read from the backend's ReadByte() implementation.
-//
-// Return status is OkStatus() if the destination span was successfully
-// filled. In all cases, the number of bytes successuflly read to the
-// destination span are returned as part of the StatusWithSize.
+/// Fills a byte span from the `pw_sys_io` backend using `ReadByte()`.
+///
+/// @pre This function must be implemented by the `pw_sys_io` facade.
+///
+/// This function is implemented by the facade and simply uses `ReadByte()` to
+/// read enough bytes to fill the destination span. If there's an error reading
+/// a byte, the read is aborted and the contents of the destination span are
+/// undefined. This function blocks until either an error occurs or all bytes
+/// are successfully read from the backend's `ReadByte()` implementation.
+///
+/// @returns
+/// * @pw_status{OK} if the destination span was successfully filled. In all
+///   cases, the number of bytes successuflly read to the destination span are
+///   returned as part of the `StatusWithSize`.
 StatusWithSize ReadBytes(ByteSpan dest);
 
 // Write span of bytes out the sys io backend using WriteByte().
