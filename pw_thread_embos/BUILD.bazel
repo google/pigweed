@@ -22,7 +22,7 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
-    name = "id_headers",
+    name = "id",
     hdrs = [
         "id_public_overrides/pw_thread_backend/id_inline.h",
         "id_public_overrides/pw_thread_backend/id_native.h",
@@ -36,12 +36,7 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:embos",
     ],
-)
-
-pw_cc_library(
-    name = "id",
     deps = [
-        ":id_headers",
         "//pw_thread:id_facade",
     ],
     # TODO(b/234876414): This should depend on embOS but our third parties
@@ -49,7 +44,10 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "sleep_headers",
+    name = "sleep",
+    srcs = [
+        "sleep.cc",
+    ],
     hdrs = [
         "public/pw_thread_embos/sleep_inline.h",
         "sleep_public_overrides/pw_thread_backend/sleep_inline.h",
@@ -58,30 +56,23 @@ pw_cc_library(
         "public",
         "sleep_public_overrides",
     ],
-    deps = [
-        "//pw_chrono:system_clock",
-    ],
-)
-
-pw_cc_library(
-    name = "sleep",
-    srcs = [
-        "sleep.cc",
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:embos",
     ],
     deps = [
-        ":sleep_headers",
         "//pw_assert",
         "//pw_chrono:system_clock",
-        "//pw_chrono_embos:system_clock_headers",
         "//pw_thread:sleep_facade",
     ],
     # TODO(b/234876414): This should depend on embOS but our third parties
     # currently do not have Bazel support.
 )
 
-# This target provides the embOS specific headers needs for thread creation.
 pw_cc_library(
-    name = "thread_headers",
+    name = "thread",
+    srcs = [
+        "thread.cc",
+    ],
     hdrs = [
         "public/pw_thread_embos/config.h",
         "public/pw_thread_embos/context.h",
@@ -106,20 +97,6 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "thread",
-    srcs = [
-        "thread.cc",
-    ],
-    deps = [
-        ":id",
-        ":thread_headers",
-        "//pw_assert",
-    ],
-    # TODO(b/234876414): This should depend on embOS but our third parties
-    # currently do not have Bazel support.
-)
-
-pw_cc_library(
     name = "test_threads",
     srcs = [
         "test_threads.cc",
@@ -136,7 +113,7 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "yield_headers",
+    name = "yield",
     hdrs = [
         "public/pw_thread_embos/yield_inline.h",
         "yield_public_overrides/pw_thread_backend/yield_inline.h",
@@ -145,16 +122,11 @@ pw_cc_library(
         "public",
         "yield_public_overrides",
     ],
-    # TODO(b/234876414): This should depend on embOS but our third parties
-    # currently do not have Bazel support.
-)
-
-pw_cc_library(
-    name = "yield",
     deps = [
-        ":yield_headers",
         "//pw_thread:yield_facade",
     ],
+    # TODO(b/234876414): This should depend on embOS but our third parties
+    # currently do not have Bazel support.
 )
 
 pw_cc_library(

@@ -23,7 +23,7 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
-    name = "id_headers",
+    name = "id",
     hdrs = [
         "id_public_overrides/pw_thread_backend/id_inline.h",
         "id_public_overrides/pw_thread_backend/id_native.h",
@@ -34,21 +34,17 @@ pw_cc_library(
         "id_public_overrides",
         "public",
     ],
-)
-
-pw_cc_library(
-    name = "id",
+    # TODO(b/257321712): Add ThreadX dependency.
     deps = [
-        ":id_headers",
         "//pw_thread:id_facade",
     ],
-    # TODO(b/234876414): This should depend on ThreadX but our third parties
-    # currently do not have Bazel support.
 )
 
-# This target provides the ThreadX specific headers needs for thread creation.
 pw_cc_library(
-    name = "thread_headers",
+    name = "thread",
+    srcs = [
+        "thread.cc",
+    ],
     hdrs = [
         "public/pw_thread_threadx/config.h",
         "public/pw_thread_threadx/context.h",
@@ -62,29 +58,13 @@ pw_cc_library(
         "public",
         "thread_public_overrides",
     ],
-    # TODO(b/257321712): This target doesn't build.
+    # TODO(b/257321712): Add ThreadX dependency.
     tags = ["manual"],
     deps = [
         ":id",
         "//pw_assert",
         "//pw_string",
         "//pw_thread:thread_facade",
-    ],
-    # TODO(b/234876414): This should depend on ThreadX but our third parties
-    # currently do not have Bazel support.
-)
-
-pw_cc_library(
-    name = "thread",
-    srcs = [
-        "thread.cc",
-    ],
-    # TODO(b/257321712): This target doesn't build.
-    tags = ["manual"],
-    deps = [
-        ":id",
-        ":thread_headers",
-        "//pw_assert",
     ],
 )
 
@@ -114,7 +94,10 @@ pw_cc_test(
 )
 
 pw_cc_library(
-    name = "sleep_headers",
+    name = "sleep",
+    srcs = [
+        "sleep.cc",
+    ],
     hdrs = [
         "public/pw_thread_threadx/sleep_inline.h",
         "sleep_public_overrides/pw_thread_backend/sleep_inline.h",
@@ -122,16 +105,6 @@ pw_cc_library(
     includes = [
         "public",
         "sleep_public_overrides",
-    ],
-    deps = [
-        "//pw_chrono:system_clock",
-    ],
-)
-
-pw_cc_library(
-    name = "sleep",
-    srcs = [
-        "sleep.cc",
     ],
     # TODO(b/257321712): This target doesn't build.
     tags = ["manual"],
@@ -145,7 +118,7 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "yield_headers",
+    name = "yield",
     hdrs = [
         "public/pw_thread_threadx/yield_inline.h",
         "yield_public_overrides/pw_thread_backend/yield_inline.h",
@@ -156,12 +129,7 @@ pw_cc_library(
     ],
     # TODO(b/257321712): This target doesn't build.
     tags = ["manual"],
-)
-
-pw_cc_library(
-    name = "yield",
     deps = [
-        ":yield_headers",
         "//pw_thread:yield_facade",
     ],
 )

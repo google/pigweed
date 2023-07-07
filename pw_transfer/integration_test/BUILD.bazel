@@ -28,7 +28,6 @@ pw_cc_binary(
         "//pw_stream",
         "//pw_stream:std_file_stream",
         "//pw_thread:thread",
-        "//pw_thread_stl:thread_headers",
         "//pw_transfer",
         "@com_google_protobuf//:protobuf",
     ],

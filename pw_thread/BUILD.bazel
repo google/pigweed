@@ -320,7 +320,7 @@ pw_cc_library(
 
 # To instantiate this as a pw_cc_test, depend on this pw_cc_library and the
 # pw_cc_library which implements the backend for test_threads_header. See
-# //pw_thread:thread_backend_test as an example.
+# //pw_thread_stl:thread_backend_test as an example.
 pw_cc_library(
     name = "thread_facade_test",
     srcs = [
