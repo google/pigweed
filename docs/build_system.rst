@@ -639,6 +639,23 @@ Bazel's '--run_under' flag. To make this work create a Bazel target
 
     bazel test //your:test --platforms=//your/platform --run_under=//your_handler
 
+Test tag conventions
+~~~~~~~~~~~~~~~~~~~~
+Pigweed observes the standard Bazel test `tag conventions
+<https://bazel.build/reference/test-encyclopedia#tag-conventions>`_. We also
+use the following additional tags:
+
+*  ``integration``: large, slow integration tests in upstream Pigweed are given
+   the ``integration`` tag.  You can skip running these tests using
+   `--test_tag_filters
+   <https://bazel.build/docs/user-manual#test-tag-filters>`_. For example,
+
+   .. code:: sh
+
+     bazel test --test_tag_filters=-integration //...
+
+   will run all tests *except* for these integration tests.
+
 Code Coverage
 ^^^^^^^^^^^^^
 Making use of the code coverage functionality in Bazel is straightforward.
