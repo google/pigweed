@@ -1305,9 +1305,9 @@ Start a Doxygen comment block using ``///`` (three forward slashes).
    /// @param[in]  src  The memory area to copy from.
    /// @param[in]  n    The number of bytes to copy
    ///
-   /// @retval OK         KVS successfully initialized.
-   /// @retval DATA_LOSS  KVS initialized and is usable, but contains corrupt data.
-   /// @retval UNKNOWN    Unknown error. KVS is not initialized.
+   /// @retval OK KVS successfully initialized.
+   /// @retval DATA_LOSS KVS initialized and is usable, but contains corrupt data.
+   /// @retval UNKNOWN Unknown error. KVS is not initialized.
    ///
    /// @rst
    /// The ``@rst`` and ``@endrst`` commands form a block block of
