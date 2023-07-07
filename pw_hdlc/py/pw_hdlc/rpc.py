@@ -133,7 +133,14 @@ class DataReaderAndExecutor:
                     executor.submit(self._frame_handler, frame)
 
 
-def write_to_file(data: bytes, output: BinaryIO = sys.stdout.buffer):
+# Writes to stdout by default, but sys.stdout.buffer is not guaranteed to exist
+# (see https://docs.python.org/3/library/io.html#io.TextIOBase.buffer). Defer
+# to sys.__stdout__.buffer if sys.stdout is wrapped with something that does not
+# offer it.
+def write_to_file(
+    data: bytes,
+    output: BinaryIO = getattr(sys.stdout, 'buffer', sys.__stdout__.buffer),
+) -> None:
     output.write(data + b'\n')
     output.flush()
 
