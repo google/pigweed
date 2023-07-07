@@ -22,7 +22,10 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
-    name = "system_clock_headers",
+    name = "system_clock",
+    srcs = [
+        "system_clock.cc",
+    ],
     hdrs = [
         "public/pw_chrono_embos/config.h",
         "public/pw_chrono_embos/system_clock_config.h",
@@ -36,27 +39,18 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:embos",
     ],
+    # TODO(b/290366523): This should depend on embOS.
     deps = [
         "//pw_chrono:epoch",
-    ],
-)
-
-pw_cc_library(
-    name = "system_clock",
-    srcs = [
-        "system_clock.cc",
-    ],
-    target_compatible_with = [
-        "//pw_build/constraints/rtos:embos",
-    ],
-    deps = [
-        ":system_clock_headers",
         "//pw_chrono:system_clock_facade",
     ],
 )
 
 pw_cc_library(
-    name = "system_timer_headers",
+    name = "system_timer",
+    srcs = [
+        "system_timer.cc",
+    ],
     hdrs = [
         "public/pw_chrono_embos/system_timer_inline.h",
         "public/pw_chrono_embos/system_timer_native.h",
@@ -67,27 +61,15 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
-    deps = [
-        "//pw_chrono:system_clock",
-        "//pw_function",
-        "//pw_chrono:system_timer_facade",
-        # TODO(b/234876414): This should depend on embOS but our third parties
-        # currently do not have Bazel support.
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:embos",
     ],
-)
-
-pw_cc_library(
-    name = "system_timer",
-    srcs = [
-        "system_timer.cc",
-    ],
+    # TODO(b/290366523): This should depend on embOS.
     deps = [
-        ":system_timer_headers",
-        "//pw_chrono:system_timer_facade",
-        ":system_clock",
         "//pw_assert",
+        "//pw_chrono:system_clock",
+        "//pw_chrono:system_timer_facade",
+        "//pw_function",
         "//pw_interrupt:context",
-        # TODO(b/234876414): This should depend on embOS but our third parties
-        # currently do not have Bazel support.
     ],
 )

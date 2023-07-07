@@ -22,7 +22,10 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
-    name = "system_clock_headers",
+    name = "system_clock",
+    srcs = [
+        "system_clock.cc",
+    ],
     hdrs = [
         "public/pw_chrono_freertos/config.h",
         "public/pw_chrono_freertos/system_clock_config.h",
@@ -38,20 +41,6 @@ pw_cc_library(
     ],
     deps = [
         "//pw_chrono:epoch",
-        "@freertos",
-    ],
-)
-
-pw_cc_library(
-    name = "system_clock",
-    srcs = [
-        "system_clock.cc",
-    ],
-    target_compatible_with = [
-        "//pw_build/constraints/rtos:freertos",
-    ],
-    deps = [
-        ":system_clock_headers",
         "//pw_chrono:system_clock_facade",
         "//pw_interrupt:context",
         "//pw_sync:interrupt_spin_lock",
@@ -60,7 +49,10 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "system_timer_headers",
+    name = "system_timer",
+    srcs = [
+        "system_timer.cc",
+    ],
     hdrs = [
         "public/pw_chrono_freertos/system_timer_inline.h",
         "public/pw_chrono_freertos/system_timer_native.h",
@@ -72,25 +64,10 @@ pw_cc_library(
         "public_overrides",
     ],
     deps = [
-        "//pw_chrono:system_clock",
-        "//pw_function",
-        "//pw_chrono:system_timer_facade",
-        # TODO(b/234876414): This should depend on FreeRTOS but our third parties
-        # currently do not have Bazel support.
-    ],
-)
-
-pw_cc_library(
-    name = "system_timer",
-    srcs = [
-        "system_timer.cc",
-    ],
-    deps = [
-        ":system_timer_headers",
-        "//pw_chrono:system_timer_facade",
-        ":system_clock",
         "//pw_assert",
-        # TODO(b/234876414): This should depend on FreeRTOS but our third parties
-        # currently do not have Bazel support.
+        "//pw_chrono:system_clock",
+        "//pw_chrono:system_timer_facade",
+        "//pw_function",
+        "@freertos",
     ],
 )

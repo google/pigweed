@@ -22,7 +22,10 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
-    name = "system_clock_headers",
+    name = "system_clock",
+    srcs = [
+        "system_clock.cc",
+    ],
     hdrs = [
         "public/pw_chrono_threadx/config.h",
         "public/pw_chrono_threadx/system_clock_config.h",
@@ -36,23 +39,9 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:threadx",
     ],
+    # TODO(b/290362542): This should depend on ThreadX.
     deps = [
         "//pw_chrono:epoch",
-    ],
-)
-
-pw_cc_library(
-    name = "system_clock",
-    srcs = [
-        "system_clock.cc",
-    ],
-    target_compatible_with = [
-        "//pw_build/constraints/rtos:threadx",
-    ],
-    deps = [
-        ":system_clock_headers",
         "//pw_chrono:system_clock_facade",
-        # TODO(ewout): This should depend on ThreadX but our third parties
-        # currently do not have Bazel support.
     ],
 )
