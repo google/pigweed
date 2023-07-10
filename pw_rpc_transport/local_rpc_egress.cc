@@ -14,6 +14,8 @@
 
 #define PW_LOG_MODULE_NAME "PW_RPC"
 
+#include <cstddef>
+
 #include "pw_log/log.h"
 #include "pw_status/status.h"
 
