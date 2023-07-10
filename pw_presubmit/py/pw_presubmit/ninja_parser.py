@@ -20,22 +20,18 @@ import argparse
 import logging
 from pathlib import Path
 import re
-from typing import IO
+from typing import List, IO
 import sys
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 # Assume any of these lines could be prefixed with ANSI color codes.
-_PREFIX = r'^(?:\x1b)?(?:\[\d+m\s*)?'
-_RULE_RE = re.compile(_PREFIX + r'\[\d+/\d+\] (\S+)')
-_FAILED_RE = re.compile(_PREFIX + r'FAILED: (.*)$')
-_FAILED_END_RE = re.compile(_PREFIX + r'ninja: build stopped:.*')
+_COLOR_CODES_PREFIX = r'^(?:\x1b)?(?:\[\d+m\s*)?'
 
 
 def _parse_ninja(ins: IO) -> str:
-    failure_begins = False
-    failure_lines = []
-    last_line = ''
+    failure_lines: List[str] = []
+    last_line: str = ''
 
     for line in ins:
         _LOG.debug('processing %r', line)
@@ -43,20 +39,22 @@ def _parse_ninja(ins: IO) -> str:
         # way the line shows up in the logs. However, leading whitespace may
         # be significant, especially for compiler error messages.
         line = line.rstrip()
-        if failure_begins:
+
+        if failure_lines:
             _LOG.debug('inside failure block')
-            if not _RULE_RE.match(line) and not _FAILED_END_RE.match(line):
-                failure_lines.append(line)
-            else:
-                # Output of failed step ends, save its info.
-                _LOG.debug('ending failure block')
-                failure_begins = False
+
+            if re.match(_COLOR_CODES_PREFIX + r'\[\d+/\d+\] (\S+)', line):
+                _LOG.debug('next rule started, ending failure block')
+                break
+
+            if re.match(_COLOR_CODES_PREFIX + r'ninja: build stopped:.*', line):
+                _LOG.debug('ninja build stopped, ending failure block')
+                break
+            failure_lines.append(line)
+
         else:
-            failed_nodes_match = _FAILED_RE.match(line)
-            failure_begins = False
-            if failed_nodes_match:
+            if re.match(_COLOR_CODES_PREFIX + r'FAILED: (.*)$', line):
                 _LOG.debug('starting failure block')
-                failure_begins = True
                 failure_lines.extend([last_line, line])
         last_line = line
 
@@ -69,7 +67,7 @@ def _parse_ninja(ins: IO) -> str:
         if not x.lstrip().startswith('Requirement already satisfied:')
     ]
 
-    result = '\n'.join(failure_lines)
+    result: str = '\n'.join(failure_lines)
     return re.sub(r'\n+', '\n', result)
 
 
