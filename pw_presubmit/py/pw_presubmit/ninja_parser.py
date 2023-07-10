@@ -28,6 +28,33 @@ _LOG: logging.Logger = logging.getLogger(__name__)
 # Assume any of these lines could be prefixed with ANSI color codes.
 _COLOR_CODES_PREFIX = r'^(?:\x1b)?(?:\[\d+m\s*)?'
 
+_GOOGLETEST_FAILED, _GOOGLETEST_RUN, _GOOGLETEST_OK = (
+    '[  FAILED  ]',
+    '[ RUN      ]',
+    '[       OK ]',
+)
+
+
+def _remove_passing_tests(failure_lines: List[str]) -> List[str]:
+    test_lines: List[str] = []
+    result = []
+    for line in failure_lines:
+        if test_lines:
+            if _GOOGLETEST_OK in line:
+                test_lines = []
+            elif _GOOGLETEST_FAILED in line:
+                result.extend(test_lines)
+                test_lines = []
+                result.append(line)
+            else:
+                test_lines.append(line)
+        elif _GOOGLETEST_RUN in line:
+            test_lines.append(line)
+        else:
+            result.append(line)
+    result.extend(test_lines)
+    return result
+
 
 def _parse_ninja(ins: IO) -> str:
     failure_lines: List[str] = []
@@ -56,7 +83,11 @@ def _parse_ninja(ins: IO) -> str:
             if re.match(_COLOR_CODES_PREFIX + r'FAILED: (.*)$', line):
                 _LOG.debug('starting failure block')
                 failure_lines.extend([last_line, line])
+            elif 'FAILED' in line:
+                _LOG.debug('not a match')
         last_line = line
+
+    failure_lines = _remove_passing_tests(failure_lines)
 
     # Remove "Requirement already satisfied:" lines since many of those might
     # be printed during Python installation, and they usually have no relevance
