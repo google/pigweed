@@ -34,9 +34,9 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+alias(
     name = "pw_unit_test",
-    deps = ["@pigweed_config//:pw_unit_test_googletest_backend"],
+    actual = "@pigweed_config//:pw_unit_test_googletest_backend",
 )
 
 pw_cc_library(
