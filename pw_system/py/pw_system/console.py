@@ -503,7 +503,7 @@ def console(
         read,
         write,
         protos,
-        detokenizer,
+        detokenizer=detokenizer,
         timestamp_decoder=timestamp_decoder,
         rpc_timeout_s=5,
         use_rpc_logging=rpc_logging,
