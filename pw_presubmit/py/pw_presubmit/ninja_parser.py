@@ -28,10 +28,11 @@ _LOG: logging.Logger = logging.getLogger(__name__)
 # Assume any of these lines could be prefixed with ANSI color codes.
 _COLOR_CODES_PREFIX = r'^(?:\x1b)?(?:\[\d+m\s*)?'
 
-_GOOGLETEST_FAILED, _GOOGLETEST_RUN, _GOOGLETEST_OK = (
+_GOOGLETEST_FAILED, _GOOGLETEST_RUN, _GOOGLETEST_OK, _GOOGLETEST_DISABLED = (
     '[  FAILED  ]',
     '[ RUN      ]',
     '[       OK ]',
+    '[ DISABLED ]',
 )
 
 
@@ -50,6 +51,8 @@ def _remove_passing_tests(failure_lines: List[str]) -> List[str]:
                 test_lines.append(line)
         elif _GOOGLETEST_RUN in line:
             test_lines.append(line)
+        elif _GOOGLETEST_DISABLED in line:
+            pass
         else:
             result.append(line)
     result.extend(test_lines)
