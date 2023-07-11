@@ -60,6 +60,10 @@ class UnknownPythonPackageName(Exception):
     """Exception thrown when a Python package_name cannot be determined."""
 
 
+class UnknownPythonPackageVersion(Exception):
+    """Exception thrown when a Python package version cannot be determined."""
+
+
 class MissingSetupSources(Exception):
     """Exception thrown when a Python package is missing setup source files.
 
@@ -175,13 +179,30 @@ class PythonPackage:
         return actual_gn_target_name[-1]
 
     @property
+    def package_version(self) -> str:
+        version = ''
+        if self.config:
+            try:
+                version = self.config['metadata']['version']
+            except KeyError:
+                raise UnknownPythonPackageVersion(
+                    'Unknown Python package version for: '
+                    + _pretty_format(self.as_dict())
+                )
+        return version
+
+    @property
     def package_dir(self) -> Path:
         if self.setup_cfg and self.setup_cfg.is_file():
             return self.setup_cfg.parent / self.package_name
         root_source_dir = self.top_level_source_dir
         if root_source_dir:
             return root_source_dir
-        return self.sources[0].parent
+        if self.sources:
+            return self.sources[0].parent
+        # If no sources available, assume the setup file root is the
+        # package_dir. This may be the case in a package with data files only.
+        return self.setup_sources[0].parent
 
     @property
     def top_level_source_dir(self) -> Optional[Path]:

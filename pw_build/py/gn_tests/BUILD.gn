@@ -30,3 +30,7 @@ pw_python_distribution("test_dist1") {
     "package_data/empty.csv > test_dist1_data/subdir/empty.csv",
   ]
 }
+
+group("python_package_integration_tests") {
+  public_deps = [ ":test_dist1._build_wheel($pw_build_PYTHON_TOOLCHAIN)" ]
+}

@@ -388,16 +388,20 @@ template("pw_python_distribution") {
 
   # Template to build a bundled Python package wheel.
   pw_python_action("$target_name._build_wheel") {
+    _wheel_out_dir = "$target_out_dir/$target_name"
+    _wheel_requirement = "$_wheel_out_dir/requirements.txt"
     metadata = {
-      pw_python_package_wheels = [ "$target_out_dir/$target_name" ]
+      pw_python_package_wheels = [ _wheel_out_dir ]
     }
-    module = "build"
+
+    script = "$dir_pw_build/py/pw_build/generate_python_wheel.py"
+
     args = [
-             rebase_path(_output_dir, root_build_dir),
-             "--wheel",
-             "--no-isolation",
-             "--outdir",
-           ] + rebase_path(metadata.pw_python_package_wheels, root_build_dir)
+      "--package-dir",
+      rebase_path(_output_dir, root_build_dir),
+      "--out-dir",
+      rebase_path(_wheel_out_dir, root_build_dir),
+    ]
 
     public_deps = []
     if (defined(invoker.public_deps)) {
@@ -405,7 +409,7 @@ template("pw_python_distribution") {
     }
     public_deps += [ ":${invoker.target_name}" ]
 
-    stamp = true
+    outputs = [ _wheel_requirement ]
   }
   group("$target_name.wheel") {
     public_deps = [ ":${invoker.target_name}._build_wheel" ]

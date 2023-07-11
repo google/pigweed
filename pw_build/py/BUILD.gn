@@ -39,6 +39,7 @@ pw_python_package("py") {
     "pw_build/generate_python_package.py",
     "pw_build/generate_python_package_gn.py",
     "pw_build/generate_python_requirements.py",
+    "pw_build/generate_python_wheel.py",
     "pw_build/generate_report.py",
     "pw_build/generated_tests.py",
     "pw_build/gn_config.py",

@@ -48,7 +48,6 @@ pw_python_package_subtargets = [
   "wheel",
 
   # Internal targets that directly depend on one another.
-  "_run_pip_install",
   "_build_wheel",
 ]
 
@@ -525,38 +524,33 @@ template("pw_python_package") {
     }
 
     if (_is_package) {
-      # Stubs for non-package targets.
-      group("$target_name._run_pip_install") {
-      }
-
       # Builds a Python wheel for this package. Records the output directory
       # in the pw_python_package_wheels metadata key.
       pw_python_action("$target_name._build_wheel") {
+        _wheel_out_dir = "$target_out_dir/$target_name"
+        _wheel_requirement = "$_wheel_out_dir/requirements.txt"
         metadata = {
-          pw_python_package_wheels = [ "$target_out_dir/$target_name" ]
+          pw_python_package_wheels = [ _wheel_out_dir ]
         }
 
-        module = "build"
+        script = "$dir_pw_build/py/pw_build/generate_python_wheel.py"
 
-        args =
-            [
-              rebase_path(_setup_dir, root_build_dir),
-              "--wheel",
-              "--no-isolation",
-              "--outdir",
-            ] + rebase_path(metadata.pw_python_package_wheels, root_build_dir)
+        args = [
+          "--package-dir",
+          rebase_path(_setup_dir, root_build_dir),
+          "--out-dir",
+          rebase_path(_wheel_out_dir, root_build_dir),
+        ]
 
         deps = [ ":${invoker.target_name}" ]
         foreach(dep, _python_deps) {
           deps += [ string_replace(dep, "(", ".wheel(") ]
         }
 
-        stamp = true
+        outputs = [ _wheel_requirement ]
       }
     } else {
-      # Stubs for non-package targets.
-      group("$target_name._run_pip_install") {
-      }
+      # Stub for non-package targets.
       group("$target_name._build_wheel") {
       }
     }
@@ -569,10 +563,6 @@ template("pw_python_package") {
     # These targets just represent the source files if this isn't a package.
     group("$target_name.install") {
       public_deps = [ ":${invoker.target_name}" ]
-
-      if (_is_package) {
-        public_deps += [ ":${invoker.target_name}._run_pip_install" ]
-      }
 
       foreach(dep, _python_deps) {
         public_deps += [ string_replace(dep, "(", ".install(") ]

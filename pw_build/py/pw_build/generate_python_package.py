@@ -11,7 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Generates a setup.cfg file for a Python package."""
+"""Generates a setup.cfg file for a pw_python_package target."""
 
 import argparse
 from collections import defaultdict
