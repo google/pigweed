@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { LogEntry } from "./shared/interfaces";
+import { LogEntry } from './shared/interfaces';
 
 export abstract class LogSource {
     private eventListeners: {

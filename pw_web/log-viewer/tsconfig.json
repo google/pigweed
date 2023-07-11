@@ -17,6 +17,5 @@
         "noFallthroughCasesInSwitch": true,
         "incremental": true
     },
-    "include": ["src/**/*"],
-    "exclude": ["src/legacy/**/*"]
+    "include": ["src/**/*", "src/createLogViewer.ts"]
 }

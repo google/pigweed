@@ -13,38 +13,32 @@
 // the License.
 
 import { LitElement, html } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { styles } from './log-viewer.styles';
 import { LogView } from './log-view/log-view';
 import { LogEntry } from '../shared/interfaces';
+import CloseViewEvent from '../events/close-view';
 import { repeat } from 'lit/directives/repeat.js';
 
 /**
- * Description of LogViewer.
+ * The root component which renders one or more log views for displaying
+ * structured log entries.
+ *
+ * @element log-viewer
  */
 @customElement('log-viewer')
 export class LogViewer extends LitElement {
     static styles = styles;
 
-    /**
-     * Description of logs.
-     */
+    /** An array of log entries to be displayed. */
     @property({ type: Array })
-    logs: LogEntry[];
+    logs: LogEntry[] = [];
 
-    /**
-     * Description of logViews.
-     */
-    @property({ type: Array })
-    logViews: LogView[];
+    /** An array of rendered log view instances. */
+    @state()
+    _logViews: LogView[] = [new LogView()];
 
-    constructor() {
-        super();
-        this.logs = [];
-        this.logViews = [new LogView()];
-    }
-
-    connectedCallback(): void {
+    connectedCallback() {
         super.connectedCallback();
         this.addEventListener('close-view', this.handleCloseView);
     }
@@ -52,6 +46,21 @@ export class LogViewer extends LitElement {
     disconnectedCallback() {
         super.disconnectedCallback();
         this.removeEventListener('close-view', this.handleCloseView);
+    }
+
+    /** Creates a new log view in the `_logViews` arrray. */
+    private addLogView() {
+        this._logViews = [...this._logViews, new LogView()];
+    }
+
+    /**
+     * Removes a log view when its Close button is clicked.
+     *
+     * @param event The event object dispatched by the log view controls.
+     */
+    private handleCloseView(event: CloseViewEvent) {
+        const viewId = event.detail.viewId;
+        this._logViews = this._logViews.filter((view) => view.id !== viewId);
     }
 
     render() {
@@ -66,27 +75,18 @@ export class LogViewer extends LitElement {
 
             <div class="grid-container">
                 ${repeat(
-                    this.logViews,
+                    this._logViews,
                     (view) => view.id,
                     (view) => html`
                         <log-view
                             id=${view.id}
                             .logs=${[...this.logs]}
-                            .hideCloseButton=${this.logViews.length <= 1}
+                            .isOneOfMany=${this._logViews.length > 1}
                         ></log-view>
                     `
                 )}
             </div>
         `;
-    }
-
-    addLogView() {
-        this.logViews = [...this.logViews, new LogView()];
-    }
-
-    handleCloseView(event: Event) {
-        const viewId = (event as CustomEvent).detail.viewId;
-        this.logViews = this.logViews.filter((view) => view.id !== viewId);
     }
 }
 

@@ -12,169 +12,189 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { LitElement, html } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { LitElement, PropertyValues, html } from 'lit';
+import { customElement, property, query, state } from 'lit/decorators.js';
 import { styles } from './log-view.styles';
-import { LogEntry } from '../../shared/interfaces';
+import { LogList } from '../log-list/log-list';
+import { FieldData, LogEntry } from '../../shared/interfaces';
+import '../log-list/log-list';
+import '../log-view-controls/log-view-controls';
 
-// Import subcomponents
-import './log-list/log-list';
-import './controls/controls';
-import { LogList } from './log-list/log-list';
-
-interface FilterChangeEvent extends Event {
-    detail: {
-        filterValue: string;
-    };
-}
-
-declare global {
-    interface HTMLElementEventMap {
-        'filter-change': FilterChangeEvent;
-    }
-}
-
+/** Used for generating a unique id for the view. */
 let viewCount = 0;
 
+type LogFilter = (logEntry: LogEntry) => boolean;
+
 /**
- * Description of LogView.
+ * A component that filters and displays incoming log entries in an encapsulated
+ * instance. Each `LogView` contains a log list and a set of log view controls
+ * for configurable viewing of filtered logs.
+ *
+ * @element log-view
  */
 @customElement('log-view')
 export class LogView extends LitElement {
     static styles = styles;
 
     /**
-     * Description of id.
+     * The component's global `id` attribute. This unique value is set whenever
+     * a view is created in a log viewer instance.
      */
     @property({ type: String })
-    id: string;
+    id = `${this.localName}-${viewCount}`;
 
-    /**
-     * Description of logs.
-     */
+    /** An array of log entries to be displayed. */
     @property({ type: Array })
     logs: LogEntry[] = [];
 
-    /**
-     * Logs filtered based on the user filter
-     */
-    @property({ type: Array })
-    _filteredLogs: LogEntry[] = [];
-
-    /**
-     * Fields from some log source
-     */
-    @property({ type: Array })
-    _fields: string[] = [];
-
-    /**
-     * Description of filter.
-     */
-    @state()
-    private _filter: (logEntry: LogEntry) => boolean = () => true;
-
-    /**
-     * Description of filterValue.
-     */
-    @state()
-    private _filterValue = '';
-
-    /**
-     * Description of hideCloseButton.
-     */
+    /** Indicates whether this view is one of multiple instances. */
     @property({ type: Boolean })
-    hideCloseButton = false;
+    isOneOfMany = false;
 
-    constructor() {
-        super();
-        this.id = `log-view-${viewCount}`;
-    }
+    /**
+     * An array containing the logs that remain after the current filter has
+     * been applied.
+     */
+    @state()
+    private _filteredLogs: LogEntry[] = [];
+
+    /** The field keys (column values) for the incoming log entries. */
+    @state()
+    private _fieldKeys: string[] = [];
+
+    /** A function used for filtering rows that contain a certain substring. */
+    @state()
+    private _stringFilter: LogFilter = () => true;
+
+    /**
+     * A function used for filtering rows that contain a timestamp within a
+     * certain window.
+     */
+    @state()
+    private _timeFilter: LogFilter = () => true;
+
+    /** A string representing the value contained in the search field. */
+    @state()
+    private _searchText = '';
+
+    @query('log-list') _logList!: LogList;
 
     connectedCallback() {
         super.connectedCallback();
         viewCount++;
-        this.addEventListener('filter-change', this.handleFilterChange);
-        this.addEventListener('clear-logs', this.handleClearLogs);
     }
 
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        this.removeEventListener('filter-change', this.handleFilterChange);
-        this.removeEventListener('clear-logs', this.handleClearLogs);
+    updated(changedProperties: PropertyValues) {
+        super.updated(changedProperties);
+
+        if (changedProperties.has('logs')) {
+            this._fieldKeys = this.getFieldsFromLogs(this.logs);
+            this.filterLogs();
+        }
     }
 
-    handleFilterChange(event: FilterChangeEvent) {
-        this._filterValue = event.detail.filterValue;
-        const regex = new RegExp(this._filterValue, 'i');
+    /**
+     * Updates the log filter based on the provided event type.
+     *
+     * @param {CustomEvent} event - The custom event containing the information
+     *   to update the filter.
+     */
+    private updateFilter(event: CustomEvent) {
+        switch (event.type) {
+            case 'input-change':
+                this._searchText = event.detail.inputValue;
 
-        this._filter = (logEntry) =>
-            logEntry.fields.some((field) => regex.test(field.value.toString()));
+                if (this._searchText) {
+                    this._stringFilter = (logEntry: LogEntry) =>
+                        logEntry.fields
+                            .filter(
+                                // Exclude severity field, since its text is omitted from the table
+                                (field: FieldData) => field.key !== 'severity'
+                            )
+                            .some((field: FieldData) =>
+                                new RegExp(this._searchText, 'i').test(
+                                    field.value.toString()
+                                )
+                            );
+                } else {
+                    this._stringFilter = () => true;
+                }
+                break;
+            case 'clear-logs':
+                this._timeFilter = (logEntry) =>
+                    logEntry.timestamp > event.detail.timestamp;
+                break;
+            default:
+                break;
+        }
+
+        this.filterLogs();
         this.requestUpdate();
     }
 
-    handleClearLogs() {
-        const timeThreshold = new Date();
-        const existingFilter = this._filter;
-        this._filter = (logEntry) => {
-            return (
-                existingFilter(logEntry) && logEntry.timestamp > timeThreshold
-            );
-        };
-    }
-
     /**
-     * Assigns logFields based on the log source
-     * @param logs the source logs to extract fields from
-     * @return     an array of log fields
+     * Retrieves the field keys from the first entry in the log array.
+     *
+     * @param {LogEntry[]} logs - The array of log entries from which to
+     *   retrieve the field keys.
+     * @returns {string[]} An array containing the field keys from the log
+     *   entries.
      */
-    private getFields(logs: LogEntry[]): string[] {
-        const log = logs[0];
+    private getFieldsFromLogs(logs: LogEntry[]): string[] {
+        const logEntry = logs[0];
         const logFields = [] as string[];
-        if (log != undefined) {
-            log.fields.forEach((field) => {
+
+        if (logEntry != undefined) {
+            logEntry.fields.forEach((field) => {
                 logFields.push(field.key);
             });
         }
-        return logFields;
+
+        return logFields.filter((field) => field !== 'severity');
     }
 
     /**
-     * Handles the fieldToggle event for field visibility
-     * @param e click event from the toggled field
+     * Toggles the visibility of columns in the log list based on the provided
+     * event.
+     *
+     * @param {CustomEvent} event - The click event containing the field being
+     *   toggled.
      */
-    handleFieldToggleEvent(e: CustomEvent) {
-        // should be index to show/hide element
+    private toggleColumns(event: CustomEvent) {
+        const colsHidden = this._logList.colsHidden;
         let index = -1;
 
-        const logList = this.renderRoot.querySelector('log-list') as LogList;
-        const colsHidden = logList.colsHidden;
-
-        this._fields.forEach((_, i: number) => {
-            if (this.logs[0].fields[i].key == e.detail.field) {
+        this._fieldKeys.forEach((field: string, i: number) => {
+            if (field == event.detail.field) {
                 index = i;
             }
         });
 
-        colsHidden[index] = !e.detail.isChecked;
+        colsHidden[index + 1] = !event.detail.isChecked; // Exclude first column (severity)
+        this._logList.colsHidden = [...colsHidden];
+    }
 
-        logList.colsHidden = colsHidden;
-        logList.clearGridTemplateColumns();
-        logList.updateGridTemplateColumns();
+    /**
+     * Combines constituent filter expressions and filters the logs. The
+     * filtered logs are stored in the `_filteredLogs` state property.
+     */
+    private filterLogs() {
+        const combinedFilter = (logEntry: LogEntry) =>
+            this._timeFilter(logEntry) && this._stringFilter(logEntry);
+
+        this._filteredLogs = JSON.parse(
+            JSON.stringify(this.logs.filter(combinedFilter))
+        );
     }
 
     render() {
-        this._filteredLogs = JSON.parse(
-            JSON.stringify(this.logs.filter(this._filter))
-        );
-        this._fields = this.getFields(this.logs);
-
-        const passedFilterValue = this._filterValue;
-
         return html` <log-view-controls
                 .viewId=${this.id}
-                .fieldKeys=${this._fields}
-                .hideCloseButton=${this.hideCloseButton}
-                @field-toggle="${this.handleFieldToggleEvent}"
+                .fieldKeys=${this._fieldKeys}
+                .hideCloseButton=${!this.isOneOfMany}
+                @input-change="${this.updateFilter}"
+                @clear-logs="${this.updateFilter}"
+                @column-toggle="${this.toggleColumns}"
                 role="toolbar"
             >
             </log-view-controls>
@@ -182,7 +202,7 @@ export class LogView extends LitElement {
             <log-list
                 .viewId=${this.id}
                 .logs=${this._filteredLogs}
-                .filterValue=${passedFilterValue}
+                .searchText=${this._searchText}
             ></log-list>`;
     }
 }

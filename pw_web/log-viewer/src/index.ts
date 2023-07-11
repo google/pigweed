@@ -13,7 +13,7 @@
 // the License.
 
 import { MockLogSource } from './custom/mock-log-source';
-import { createLogViewer } from './components/createLogViewer';
+import { createLogViewer } from './createLogViewer';
 
 const logSource = new MockLogSource();
 const containerEl = document.querySelector(
@@ -26,7 +26,7 @@ if (containerEl) {
     unsubscribe = createLogViewer(logSource, containerEl);
 }
 
-const TIMEOUT_DURATION = 30_000; // ms
+const TIMEOUT_DURATION = 60_000; // ms
 // Start reading log data
 logSource.start();
 

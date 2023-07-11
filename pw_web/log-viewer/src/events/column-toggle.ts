@@ -12,21 +12,17 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-export enum Severity {
-    DEBUG = 'DEBUG',
-    INFO = 'INFO',
-    WARNING = 'WARNING',
-    ERROR = 'ERROR',
-    CRITICAL = 'CRITICAL',
+interface ColumnToggleEvent extends CustomEvent {
+    detail: {
+        field: string;
+        isChecked: boolean;
+    };
 }
 
-export interface LogEntry {
-    severity?: Severity;
-    timestamp: Date;
-    fields: FieldData[];
+declare global {
+    interface GlobalEventHandlersEventMap {
+        'column-toggle': ColumnToggleEvent;
+    }
 }
 
-export interface FieldData {
-    key: string;
-    value: string | boolean | number | object;
-}
+export default ColumnToggleEvent;

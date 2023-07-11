@@ -14,7 +14,7 @@
  * the License.
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Google+Sans&family=Roboto+Mono:wght@400;500&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
+ @import url('https://fonts.googleapis.com/css2?family=Google+Sans&family=Roboto+Mono:wght@400;500&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block');
 
 :root {
     background-color: var(--md-sys-color-surface);
@@ -31,6 +31,8 @@
 
 /* Material component properties */
 :root {
+    --md-icon-font: 'Material Symbols Rounded';
+    --md-icon-size: 1.25rem;
     --md-filled-button-label-text-type: "Google Sans", Arial, sans-serif;
     --md-outlined-button-label-text-type: "Google Sans", Arial, sans-serif;
 }
@@ -45,7 +47,7 @@ button {
 
 main {
     height: 100vh;
-    width: 100vw;
+    padding: 2rem;
 }
 
 a {
@@ -88,7 +90,7 @@ body {
         --md-sys-surface-container-high: #282A2C;
         --md-sys-surface-container-highest: #333537;
         --md-sys-color-on-surface: #E3E3E3;
-        --md-sys-color-on-surface-variant: #444746;
+        --md-sys-color-on-surface-variant: #C4C7C5;
         --md-sys-color-inverse-surface: #E3E3E3;
         --md-sys-color-inverse-on-surface: #303030;
         --md-sys-color-outline: #8E918F;
@@ -106,6 +108,7 @@ body {
         --sys-color-orange-bright: #EE9836;
         --sys-color-surface-yellow: #402D00;
         --sys-color-on-surface-yellow: #FFDFA0;
+        --sys-color-debug: var(--md-sys-color-primary);
     }
 }
 
@@ -133,7 +136,7 @@ body {
         --md-sys-surface-container-high: #E9EEF6;
         --md-sys-surface-container-highest: #DDE3EA;
         --md-sys-color-on-surface: #1F1F1F;
-        --md-sys-color-on-surface-variant: #C4C7C5;
+        --md-sys-color-on-surface-variant: #444746;
         --md-sys-color-inverse-surface: #303030;
         --md-sys-color-inverse-on-surface: #F2F2F2;
         --md-sys-color-outline: #747775;
@@ -148,8 +151,9 @@ body {
         --sys-color-error-bright: #DC362E;
         --sys-color-surface-error: #FCEFEE;
         --sys-color-on-surface-error: #8C1D18;
-        --sys-color-orange-bright: #E88F21;
-        --sys-color-surface-yellow: #FBF6E5;
-        --sys-color-on-surface-yellow: #5C4300;
+        --sys-color-orange-bright: #F49F2A;
+        --sys-color-surface-yellow: #FEF9EB;
+        --sys-color-on-surface-yellow: #783616;
+        --sys-color-debug: var(--md-sys-color-primary);
     }
 }

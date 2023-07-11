@@ -12,8 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { LogViewer as RootComponent } from './log-viewer';
-import { LogEntry } from '../shared/interfaces';
+import { LogViewer as RootComponent } from './components/log-viewer';
+import { LogEntry } from '../src/shared/interfaces';
+import { LogSource } from '../src/log-source';
 
 import '@material/web/button/filled-button.js';
 import '@material/web/button/outlined-button.js';
@@ -23,7 +24,6 @@ import '@material/web/textfield/outlined-text-field.js';
 import '@material/web/textfield/filled-text-field.js';
 import '@material/web/iconbutton/standard-icon-button.js';
 import '@material/web/icon/icon.js';
-import { LogSource } from '../log-source';
 
 export function createLogViewer(logSource: LogSource, root: HTMLElement) {
     const logViewer = new RootComponent();

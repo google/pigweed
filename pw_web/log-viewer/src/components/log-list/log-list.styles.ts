@@ -23,6 +23,7 @@ export const styles = css`
         background-color: var(--md-sys-color-surface);
         display: block;
         font-family: 'Roboto Mono', monospace;
+        font-size: 1rem;
         height: 100%;
         position: relative;
     }
@@ -90,6 +91,7 @@ export const styles = css`
         display: inline-flex;
         position: relative;
         vertical-align: top;
+        align-items: flex-start;
     }
 
     .resize-handle {
@@ -124,10 +126,14 @@ export const styles = css`
         width: 1rem;
     }
 
+    .cell-content--with-icon {
+        padding-top: 0.125rem;
+    }
+
     .cell-icon {
-        font-size: 1rem;
+        display: block;
         font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 200, 'opsz' 58;
-        padding: 0.25rem 0.25rem 0.25rem 0;
+        user-select: none;
     }
 
     .overflow-indicator {
@@ -135,16 +141,24 @@ export const styles = css`
         pointer-events: none;
         position: absolute;
         top: 0;
-        width: 4rem;
+        width: 8rem;
     }
 
     .right-indicator {
-        background: linear-gradient(to right, transparent, var(--md-sys-color-surface));
+        background: linear-gradient(
+            to right,
+            transparent,
+            var(--md-sys-color-surface)
+        );
         right: 0;
     }
 
     .left-indicator {
-        background: linear-gradient(to left, transparent, var(--md-sys-color-surface));
+        background: linear-gradient(
+            to left,
+            transparent,
+            var(--md-sys-color-surface)
+        );
         left: 0;
     }
 

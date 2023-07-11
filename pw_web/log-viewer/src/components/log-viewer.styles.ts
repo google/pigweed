@@ -12,23 +12,22 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { css } from "lit";
+import { css } from 'lit';
 
 export const styles = css`
     * {
         box-sizing: border-box;
     }
 
-    button {
-        font-family: "Google Sans";
-    }
-
     :host {
         display: flex;
         flex-direction: column;
         gap: 2rem;
-        padding: 2rem;
         height: 100%;
+    }
+
+    button {
+        font-family: 'Google Sans';
     }
 
     .grid-container {

@@ -12,21 +12,16 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-export enum Severity {
-    DEBUG = 'DEBUG',
-    INFO = 'INFO',
-    WARNING = 'WARNING',
-    ERROR = 'ERROR',
-    CRITICAL = 'CRITICAL',
+interface CloseViewEvent extends CustomEvent {
+    detail: {
+        viewId: string;
+    };
 }
 
-export interface LogEntry {
-    severity?: Severity;
-    timestamp: Date;
-    fields: FieldData[];
+declare global {
+    interface GlobalEventHandlersEventMap {
+        'close-view': CloseViewEvent;
+    }
 }
 
-export interface FieldData {
-    key: string;
-    value: string | boolean | number | object;
-}
+export default CloseViewEvent;

@@ -5,27 +5,29 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "peggy src/assets/filters.pegjs --format es && tsc && vite build",
+        "build": "peggy src/assets/filters.pegjs --format es && tsc && vite build --base=/asset/5b095937-1e59-52cf-9255-eb8577d1ff83/",
         "preview": "vite preview",
         "lint": "eslint --max-warnings=0 src"
     },
     "dependencies": {
         "@lit-labs/virtualizer": "^2.0.3",
         "@material/web": "^1.0.0-pre.8",
+        "date-fns": "^2.30.0",
         "lit": "^3.0.0-pre.0",
-        "peggy": "^3.0.2"
+        "peggy": "^3.0.2",
+        "prettier-plugin-jsdoc": "^0.4.2"
     },
     "devDependencies": {
         "@typescript-eslint/eslint-plugin": "^5.59.7",
         "eslint": "^8.41.0",
         "eslint-config-prettier": "^8.8.0",
         "eslint-config-standard-with-typescript": "^34.0.1",
-        "eslint-plugin-import": "^2.27.5",
+        "eslint-plugin-import": "^2.26.0",
         "eslint-plugin-lit": "^1.8.3",
         "eslint-plugin-lit-a11y": "^1.1.0-next.1",
         "eslint-plugin-n": "^15.7.0",
         "eslint-plugin-promise": "^6.1.1",
-        "prettier": "2.8.8",
+        "prettier": "^2.8.8",
         "typescript": "^5.0.4",
         "vite": "^4.3.2"
     }

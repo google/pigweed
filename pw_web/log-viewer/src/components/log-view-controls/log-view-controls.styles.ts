@@ -12,14 +12,16 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { css } from "lit";
+import { css } from 'lit';
 
 export const styles = css`
     :host {
         align-items: center;
         background: var(--md-sys-surface-container-high);
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
         display: flex;
-        gap: 2rem;
+        flex-shrink: 0;
+        gap: 1rem;
         height: 3rem;
         justify-content: space-between;
         padding: 0 1rem;
@@ -33,12 +35,9 @@ export const styles = css`
         white-space: nowrap;
     }
 
-    button {
-        color: white;
-    }
-
     .button-toggle {
         background-color: var(--md-sys-surface-container-high);
+        border-radius: 100%;
     }
 
     .field-menu {
@@ -71,27 +70,27 @@ export const styles = css`
         background: var(--md-sys-surface-container);
         border: none;
         border-radius: 1.5rem;
-        font-family: "Google Sans";
+        font-family: 'Google Sans';
         height: 2rem;
         max-width: 20rem;
         padding: 0 1rem;
         width: 100%;
-        /* border: 1px solid rgba(255, 255, 255, 0.87); */
+        border: 1px solid var(--md-sys-color-outline-variant);
     }
 
     input::placeholder {
         color: var(--md-sys-color-on-surface-variant);
     }
 
-    input[type=checkbox] {
+    input[type='checkbox'] {
         accent-color: var(--md-sys-color-primary);
         height: 1.125rem;
         width: 1.125rem;
     }
 
     label {
-        font-color: var(--md-sys-color-on-surface-variant);
         padding-left: 0.75rem;
+    }
 
     p {
         flex: 1 0;
