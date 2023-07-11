@@ -1042,41 +1042,13 @@ constraint_setting's that meet our requirements we are going to have to;
       }),
     )
 
-4. Copy and paste across the target/default_config.BUILD across from the
-   Pigweed repository and modifying the build_setting_default for the target
-   'pw_chrono_system_clock_backend' to point to your new system_clock_backend_multiplexer
-   target. For example;
-
-   This;
+4. Add a build setting override for the ``pw_chrono_system_clock_backend`` label
+   flag to your ``.bazelrc`` file that points to your new target multiplexer.
 
   .. code:: py
 
-    # @pigweed//target:default_config.BUILD
-    label_flag(
-        name = "pw_chrono_system_clock_backend",
-        build_setting_default = "@pigweed//pw_chrono:system_clock_backend_multiplexer",
-    )
-
-  Becomes this;
-
-  .. code:: py
-
-    # @your_workspace//target:your_config.BUILD
-    label_flag(
-      name = "pw_chrono_system_clock_backend",
-      build_setting_default =
-        "@your_workspace//pw_chrono:system_clock_backend_multiplexer",
-    )
-
-5. Switch your workspace 'pigweed_config' rule over to use your custom config.
-
-  .. code:: py
-
-    # WORKSPACE
-    pigweed_config(
-      name = "pigweed_config",
-      build_file = "//target/your_config.BUILD",
-    )
+    # //.bazelrc
+    build --@pigweed_config//:pw_chrono_system_clock_backend=@your_workspace//pw_chrono:system_clock_backend_multiplexer
 
 Building your target now will result in slightly different build graph. For
 example, running;
