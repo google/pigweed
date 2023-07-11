@@ -256,6 +256,9 @@ http_archive(
         # Fix rustdoc test w/ proc macros
         # https://github.com/bazelbuild/rules_rust/pull/1952
         "//pw_rust/bazel_patches:0001-rustdoc_test-Apply-prefix-stripping-to-proc_macro-de.patch",
+        # Allow `rust_repository_set` to specify `opt_level`
+        # https://github.com/bazelbuild/rules_rust/pull/2036
+        "//pw_rust/bazel_patches:0002-Add-opt_level-argument-to-rust_repository_set.patch",
     ],
     sha256 = "190b5aeba104210f8ed9b1ff595d1f459297fe32db70f0a04f5c537a13ee0602",
     urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.24.1/rules_rust-v0.24.1.tar.gz"],
@@ -287,6 +290,23 @@ rust_repository_set(
             "@platforms//cpu:armv6-m",
             "@bazel_embedded//constraints/fpu:none",
         ],
+    },
+    opt_level = {
+        "thumbv8m.main-none-eabihf": {
+            "dbg": "0",
+            "fastbuild": "0",
+            "opt": "z",
+        },
+        "thumbv7m-none-eabi": {
+            "dbg": "0",
+            "fastbuild": "0",
+            "opt": "z",
+        },
+        "thumbv6m-none-eabi": {
+            "dbg": "0",
+            "fastbuild": "0",
+            "opt": "z",
+        },
     },
     versions = ["1.67.0"],
 )
