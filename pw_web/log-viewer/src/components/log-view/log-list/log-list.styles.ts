@@ -20,26 +20,27 @@ export const styles = css`
     }
 
     :host {
-        position: relative;
+        background-color: var(--md-sys-color-surface);
         display: block;
-        height: 100%;
         font-family: 'Roboto Mono', monospace;
+        height: 100%;
+        position: relative;
     }
 
     .table-container {
-        width: 100%;
         height: 100%;
         overflow: auto;
         padding-bottom: 3rem;
         scroll-behavior: auto;
+        width: 100%;
     }
 
     table {
-        width: auto;
+        border-collapse: collapse;
         height: 100%;
         min-width: 100vw;
         table-layout: fixed;
-        border-collapse: collapse;
+        width: auto;
     }
 
     thead,
@@ -50,28 +51,29 @@ export const styles = css`
     }
 
     thead {
-        background: #2d3134;
+        background: var(--md-sys-surface-container);
     }
 
     tr {
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
         display: grid;
-        width: 100%;
         justify-content: flex-start;
-        border-bottom: 1px solid #4b5054;
+        width: 100%;
     }
 
     tr:hover > td {
-        background: rgba(58, 58, 58, .5);
+        background-color: rgba(var(--md-sys-inverse-surface-rgb), 0.1);
+        color: var(--sys-on-inverse-surface);
     }
 
     th,
     td {
+        display: block;
+        grid-row: 1;
+        overflow: hidden;
         padding: 0.5rem 1rem;
         text-align: left;
-        display: block;
-        overflow: hidden;
         text-overflow: ellipsis;
-        grid-row: 1;
     }
 
     th[hidden],
@@ -91,20 +93,20 @@ export const styles = css`
     }
 
     .resize-handle {
-        content: '';
-        position: absolute;
-        top: 0;
-        right: 0;
+        background-color: var(--md-sys-color-outline-variant);
         bottom: 0;
-        left: 0;
-        z-index: 1;
-        width: 1px;
-        height: 100%;
-        opacity: 1;
-        background-color: #4b5054;
+        content: '';
         cursor: col-resize;
+        height: 100%;
+        left: 0;
+        opacity: 1;
         pointer-events: auto;
+        position: absolute;
+        right: 0;
+        top: 0;
         transition: opacity 300ms ease;
+        width: 1px;
+        z-index: 1;
     }
 
     .resize-handle:hover {
@@ -113,13 +115,13 @@ export const styles = css`
     }
 
     .resize-handle::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        right: -0.5rem;
         bottom: 0;
-        width: 1rem;
+        content: '';
         display: block;
+        position: absolute;
+        right: -0.5rem;
+        top: 0;
+        width: 1rem;
     }
 
     .cell-icon {
@@ -129,26 +131,27 @@ export const styles = css`
     }
 
     .overflow-indicator {
+        height: 100%;
+        pointer-events: none;
         position: absolute;
         top: 0;
         width: 4rem;
-        height: 100%;
-        pointer-events: none;
     }
 
     .right-indicator {
+        background: linear-gradient(to right, transparent, var(--md-sys-color-surface));
         right: 0;
-        background: linear-gradient(to right, transparent, rgb(47 47 47));
     }
 
     .left-indicator {
+        background: linear-gradient(to left, transparent, var(--md-sys-color-surface));
         left: 0;
-        background: linear-gradient(to left, transparent, rgb(47 47 47));
     }
 
     mark {
-        background-color: var(--md-sys-color-primary);
-        outline: 1px solid var(--md-sys-color-primary);
+        background-color: var(--md-sys-color-primary-container);
         border-radius: 2px;
+        color: var(--md-sys-color-on-primary-container);
+        outline: 1px solid var(--md-sys-color-outline-variant);
     }
 `;

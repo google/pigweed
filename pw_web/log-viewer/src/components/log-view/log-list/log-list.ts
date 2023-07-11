@@ -294,13 +294,13 @@ export class LogList extends LitElement {
 
         switch (log.severity) {
             case 'WARNING':
-                bgColor = 'var(--sys-color-yellow-container)';
-                textColor = 'var(--sys-color-on-yellow-container)';
+                bgColor = 'var(--sys-color-surface-yellow)';
+                textColor = 'var(--sys-color-on-surface-yellow)';
                 break;
             case 'ERROR':
             case 'CRITICAL':
-                bgColor = 'var(--sys-color-error-container)';
-                textColor = 'var(--sys-color-on-error-container)';
+                bgColor = 'var(--sys-color-surface-error)';
+                textColor = 'var(--sys-color-on-surface-error)';
                 break;
         }
 

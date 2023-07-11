@@ -16,10 +16,11 @@ import { css } from "lit";
 
 export const styles = css`
     :host {
+        border: 1px solid var(--md-sys-color-outline-variant);
+        border-radius: 0.5rem;
+        color: var(--md-sys-color-on-surface);
         display: flex;
         flex-direction: column;
-        border: 1px solid #4b5054;
-        border-radius: 0.5rem;
         overflow: hidden;
     }
 `;

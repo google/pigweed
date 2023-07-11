@@ -16,12 +16,12 @@ import { css } from "lit";
 
 export const styles = css`
     :host {
-        display: flex;
         align-items: center;
-        justify-content: space-between;
-        height: 3rem;
-        background: #3c4043;
+        background: var(--md-sys-surface-container-high);
+        display: flex;
         gap: 2rem;
+        height: 3rem;
+        justify-content: space-between;
         padding: 0 1rem;
     }
 
@@ -38,14 +38,14 @@ export const styles = css`
     }
 
     .button-toggle {
-        background-color: rgb(45, 49, 52);
+        background-color: var(--md-sys-surface-container-high);
     }
 
     .field-menu {
-        background-color: rgb(72, 70, 76);
+        background-color: var(--md-sys-surface-container);
         border-radius: 4px;
-        padding: 0.5rem 0.75rem;
         margin: 0;
+        padding: 0.5rem 0.75rem;
         position: absolute;
         right: 0;
         z-index: 2;
@@ -59,8 +59,8 @@ export const styles = css`
     }
 
     .field-toggle {
-        position: relative;
         border-radius: 1.5rem;
+        position: relative;
     }
 
     .input-container {
@@ -68,19 +68,23 @@ export const styles = css`
     }
 
     input {
-        width: 100%;
-        max-width: 20rem;
-        height: 2rem;
-        border-radius: 1.5rem;
+        background: var(--md-sys-surface-container);
         border: none;
+        border-radius: 1.5rem;
         font-family: "Google Sans";
+        height: 2rem;
+        max-width: 20rem;
         padding: 0 1rem;
-        color: rgba(255, 255, 255, 0.87);
-        background: #2d3134;
+        width: 100%;
         /* border: 1px solid rgba(255, 255, 255, 0.87); */
     }
 
+    input::placeholder {
+        color: var(--md-sys-color-on-surface-variant);
+    }
+
     input[type=checkbox] {
+        accent-color: var(--md-sys-color-primary);
         height: 1.125rem;
         width: 1.125rem;
     }
