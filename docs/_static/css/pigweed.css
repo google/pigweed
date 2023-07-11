@@ -133,6 +133,11 @@ h4, h5, h6 {
   font-size: var(--font-size--normal);
 }
 
+/* Indicate in-progress SEEDs */
+a[href="seed/0000-index.html"] ~ ul > li > a.reference.external[href*="pigweed-review.googlesource.com"]::before {
+  content: "🚧 ";
+}
+
 div.pw-main {
   display: flex;
   flex-direction: column;
