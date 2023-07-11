@@ -27,8 +27,10 @@ McuxpressoDigitalInInterrupt::McuxpressoDigitalInInterrupt(
     pint_pin_int_t pin)
     : controller_(controller), pin_(pin) {}
 
-pw::Status McuxpressoDigitalInInterrupt::DoEnable(bool enable) {
-  return controller_.acquire()->Enable(pin_);
+pw::Status McuxpressoDigitalInInterrupt::DoEnable(bool) {
+  // Can not enabled at individual line level. Only at controller level, which
+  // is always enabled.
+  return pw::OkStatus();
 }
 
 pw::Result<pw::digital_io::State> McuxpressoDigitalInInterrupt::DoGetState() {

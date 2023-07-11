@@ -34,12 +34,14 @@ pw_cc_library(
         "public/pw_digital_io_mcuxpresso/interrupt_controller.h",
         "public/pw_digital_io_mcuxpresso/interrupt_line.h",
     ],
+    includes = ["public"],
     target_compatible_with = [
         "//pw_build/constraints/board:mimxrt595_evk",
     ],
     deps = [
-        "//pw_digital_io:facade",
+        "//pw_digital_io",
         "//pw_preprocessor",
+        "//pw_sync:borrow",
         "@pigweed_config//:mcuxpresso_sdk",
     ],
 )

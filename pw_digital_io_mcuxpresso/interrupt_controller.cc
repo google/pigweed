@@ -83,12 +83,6 @@ pw::Status McuxpressoInterruptController::Config(
   return pw::OkStatus();
 }
 
-pw::Status McuxpressoInterruptController::Enable(pint_pin_int_t /*pin*/) {
-  // Can not enabled at individual line level. Only at controller level, which
-  // is always enabled.
-  return pw::OkStatus();
-}
-
 pw::Status McuxpressoInterruptController::EnableHandler(pint_pin_int_t pin,
                                                         bool enable) {
   if (enable) {

@@ -32,7 +32,6 @@ class McuxpressoInterruptController {
   pw::Status Config(pint_pin_int_t pin,
                     pw::digital_io::InterruptTrigger trigger,
                     pw::digital_io::InterruptHandler&& handler);
-  pw::Status Enable(pint_pin_int_t pin);
   pw::Status EnableHandler(pint_pin_int_t pin, bool enable);
   pw::Result<pw::digital_io::State> GetState(pint_pin_int_t pin);
 
