@@ -39,3 +39,30 @@ cc_library_static {
         "pw_status",
     ],
 }
+
+cc_library_static {
+    name: "pw_stream_std_file_stream",
+    vendor_available: true,
+    host_supported: true,
+    header_libs: [
+        "pw_assert_headers",
+        "pw_assert_log_headers",
+        "pw_log_headers",
+        "pw_log_null_headers",
+        "pw_polyfill_headers",
+        "pw_preprocessor_headers",
+        "pw_result_headers",
+        "pw_span_headers",
+    ],
+    srcs: [
+        "std_file_stream.cc",
+    ],
+    static_libs: [
+        "pw_bytes",
+        "pw_status",
+        "pw_stream",
+    ],
+    export_static_lib_headers: [
+        "pw_stream",
+    ],
+}
