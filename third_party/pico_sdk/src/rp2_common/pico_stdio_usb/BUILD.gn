@@ -31,6 +31,7 @@ pw_source_set("tusb_config") {
   visibility = [
     ":pico_stdio_usb",
     "${PICO_ROOT}/src/rp2_common/tinyusb",
+    "${PICO_ROOT}/src/rp2_common/tinyusb:bsp",
   ]
 }
 

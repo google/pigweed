@@ -44,7 +44,7 @@ class PiPicoSdk(pw_package.package_manager.Package):
                 'https://pigweed.googlesource.com/'
                 'third_party/github/raspberrypi/pico-sdk'
             ),
-            commit='2e6142b15b8a75c1227dd3edbe839193b2bf9041',
+            commit='6a7db34ff63345a7badec79ebea3aaef1712f374',
         )
 
     def install(self, path: Path) -> None:

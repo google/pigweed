@@ -45,15 +45,20 @@ pw_source_set("bsp") {
     "${PICO_ROOT}/src/common/pico_stdlib:public_include_dirs",
     "${PICO_ROOT}/src/rp2_common/pico_stdio_usb:public_include_dirs",
   ]
+  public_configs = [ ":tinyusb_defines" ]
   include_dirs = [ "${PICO_SRC_DIR}/lib/tinyusb/hw" ]
   deps = [
     "${PICO_ROOT}/src/common/pico_base",
     "${PICO_ROOT}/src/common/pico_binary_info",
-    "${PICO_ROOT}/src/common/pico_time",
     "${PICO_ROOT}/src/rp2_common/hardware_gpio",
     "${PICO_ROOT}/src/rp2_common/hardware_sync",
     "${PICO_ROOT}/src/rp2_common/hardware_uart",
     "${PICO_ROOT}/src/rp2_common/pico_stdio:headers",
+    "${PICO_ROOT}/src/rp2_common/pico_stdio_usb:tusb_config",
+  ]
+  public_deps = [
+    "${PICO_ROOT}/src/common/pico_sync",
+    "${PICO_ROOT}/src/common/pico_time",
   ]
   sources = [
     "${PICO_SRC_DIR}/lib/tinyusb/hw/bsp/board.h",
