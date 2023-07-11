@@ -73,6 +73,8 @@ generate_toolchain("rp2040") {
       get_path_info(":float_printf_adapter", "abspath"),
     ]
 
+    default_configs += [ "$dir_pw_build:extra_strict_warnings" ]
+
     current_cpu = "arm"
     current_os = ""
   }
