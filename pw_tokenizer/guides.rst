@@ -59,3 +59,129 @@ Once enabled, the tokenizer headers can be included like any Zephyr headers:
   Zephyr handles the additional linker sections via
   ``pw_tokenizer_zephyr.ld`` which is added to the end of the linker file
   via a call to ``zephyr_linker_sources(SECTIONS ...)``.
+
+.. _module-pw_tokenizer-managing-token-databases:
+
+Managing token databases
+========================
+Background: :ref:`module-pw_tokenizer-token-databases`
+
+Token databases are managed with the ``database.py`` script. This script can be
+used to extract tokens from compilation artifacts and manage database files.
+Invoke ``database.py`` with ``-h`` for full usage information.
+
+An example ELF file with tokenized logs is provided at
+``pw_tokenizer/py/example_binary_with_tokenized_strings.elf``. You can use that
+file to experiment with the ``database.py`` commands.
+
+.. _module-pw_tokenizer-database-creation:
+
+Create a database
+-----------------
+The ``create`` command makes a new token database from ELF files (.elf, .o, .so,
+etc.), archives (.a), existing token databases (CSV or binary), or a JSON file
+containing an array of strings.
+
+.. code-block:: sh
+
+   ./database.py create --database DATABASE_NAME ELF_OR_DATABASE_FILE...
+
+Two database output formats are supported: CSV and binary. Provide
+``--type binary`` to ``create`` to generate a binary database instead of the
+default CSV. CSV databases are great for checking into a source control or for
+human review. Binary databases are more compact and simpler to parse. The C++
+detokenizer library only supports binary databases currently.
+
+.. _module-pw_tokenizer-update-token-database:
+
+Update a database
+-----------------
+As new tokenized strings are added, update the database with the ``add``
+command.
+
+.. code-block:: sh
+
+   ./database.py add --database DATABASE_NAME ELF_OR_DATABASE_FILE...
+
+This command adds new tokens from ELF files or other databases to the database.
+Adding tokens already present in the database updates the date removed, if any,
+to the latest.
+
+A CSV token database can be checked into a source repository and updated as code
+changes are made. The build system can invoke ``database.py`` to update the
+database after each build.
+
+GN integration
+--------------
+Token databases may be updated or created as part of a GN build. The
+``pw_tokenizer_database`` template provided by
+``$dir_pw_tokenizer/database.gni`` automatically updates an in-source tokenized
+strings database or creates a new database with artifacts from one or more GN
+targets or other database files.
+
+To create a new database, set the ``create`` variable to the desired database
+type (``"csv"`` or ``"binary"``). The database will be created in the output
+directory. To update an existing database, provide the path to the database with
+the ``database`` variable.
+
+.. code-block::
+
+   import("//build_overrides/pigweed.gni")
+
+   import("$dir_pw_tokenizer/database.gni")
+
+   pw_tokenizer_database("my_database") {
+     database = "database_in_the_source_tree.csv"
+     targets = [ "//firmware/image:foo(//targets/my_board:some_toolchain)" ]
+     input_databases = [ "other_database.csv" ]
+   }
+
+Instead of specifying GN targets, paths or globs to output files may be provided
+with the ``paths`` option.
+
+.. code-block::
+
+   pw_tokenizer_database("my_database") {
+     database = "database_in_the_source_tree.csv"
+     deps = [ ":apps" ]
+     optional_paths = [ "$root_build_dir/**/*.elf" ]
+   }
+
+.. note::
+
+   The ``paths`` and ``optional_targets`` arguments do not add anything to
+   ``deps``, so there is no guarantee that the referenced artifacts will exist
+   when the database is updated. Provide ``targets`` or ``deps`` or build other
+   GN targets first if this is a concern.
+
+CMake integration
+-----------------
+Token databases may be updated or created as part of a CMake build. The
+``pw_tokenizer_database`` template provided by
+``$dir_pw_tokenizer/database.cmake`` automatically updates an in-source tokenized
+strings database or creates a new database with artifacts from a CMake target.
+
+To create a new database, set the ``CREATE`` variable to the desired database
+type (``"csv"`` or ``"binary"``). The database will be created in the output
+directory.
+
+.. code-block::
+
+   include("$dir_pw_tokenizer/database.cmake")
+
+   pw_tokenizer_database("my_database") {
+     CREATE binary
+     TARGET my_target.ext
+     DEPS ${deps_list}
+   }
+
+To update an existing database, provide the path to the database with
+the ``database`` variable.
+
+.. code-block::
+
+   pw_tokenizer_database("my_database") {
+     DATABASE database_in_the_source_tree.csv
+     TARGET my_target.ext
+     DEPS ${deps_list}
+   }

@@ -91,6 +91,118 @@ size (49 → 15 bytes).
 | When viewed      | ``"Battery state: CHARGING; battery voltage: 3989 mV"``   |         |
 +------------------+-----------------------------------------------------------+---------+
 
+.. _module-pw_tokenizer-token-databases:
+
+---------------
+Token databases
+---------------
+Token databases store a mapping of tokens to the strings they represent. An ELF
+file can be used as a token database, but it only contains the strings for its
+exact build. A token database file aggregates tokens from multiple ELF files, so
+that a single database can decode tokenized strings from any known ELF.
+
+Token databases contain the token, removal date (if any), and string for each
+tokenized string.
+
+For help with using token databases, see
+:ref:`module-pw_tokenizer-managing-token-databases`.
+
+Token database formats
+======================
+Three token database formats are supported: CSV, binary, and directory. Tokens
+may also be read from ELF files or ``.a`` archives, but cannot be written to
+these formats.
+
+CSV database format
+-------------------
+The CSV database format has three columns: the token in hexadecimal, the removal
+date (if any) in year-month-day format, and the string literal, surrounded by
+quotes. Quote characters within the string are represented as two quote
+characters.
+
+This example database contains six strings, three of which have removal dates.
+
+.. code-block::
+
+   141c35d5,          ,"The answer: ""%s"""
+   2e668cd6,2019-12-25,"Jello, world!"
+   7b940e2a,          ,"Hello %s! %hd %e"
+   851beeb6,          ,"%u %d"
+   881436a0,2020-01-01,"The answer is: %s"
+   e13b0f94,2020-04-01,"%llu"
+
+Binary database format
+----------------------
+The binary database format is comprised of a 16-byte header followed by a series
+of 8-byte entries. Each entry stores the token and the removal date, which is
+0xFFFFFFFF if there is none. The string literals are stored next in the same
+order as the entries. Strings are stored with null terminators. See
+`token_database.h <https://pigweed.googlesource.com/pigweed/pigweed/+/HEAD/pw_tokenizer/public/pw_tokenizer/token_database.h>`_
+for full details.
+
+The binary form of the CSV database is shown below. It contains the same
+information, but in a more compact and easily processed form. It takes 141 B
+compared with the CSV database's 211 B.
+
+.. code-block:: text
+
+   [header]
+   0x00: 454b4f54 0000534e  TOKENS..
+   0x08: 00000006 00000000  ........
+
+   [entries]
+   0x10: 141c35d5 ffffffff  .5......
+   0x18: 2e668cd6 07e30c19  ..f.....
+   0x20: 7b940e2a ffffffff  *..{....
+   0x28: 851beeb6 ffffffff  ........
+   0x30: 881436a0 07e40101  .6......
+   0x38: e13b0f94 07e40401  ..;.....
+
+   [string table]
+   0x40: 54 68 65 20 61 6e 73 77 65 72 3a 20 22 25 73 22  The answer: "%s"
+   0x50: 00 4a 65 6c 6c 6f 2c 20 77 6f 72 6c 64 21 00 48  .Jello, world!.H
+   0x60: 65 6c 6c 6f 20 25 73 21 20 25 68 64 20 25 65 00  ello %s! %hd %e.
+   0x70: 25 75 20 25 64 00 54 68 65 20 61 6e 73 77 65 72  %u %d.The answer
+   0x80: 20 69 73 3a 20 25 73 00 25 6c 6c 75 00            is: %s.%llu.
+
+.. _module-pw_tokenizer-directory-database-format:
+
+Directory database format
+-------------------------
+pw_tokenizer can consume directories of CSV databases. A directory database
+will be searched recursively for files with a `.pw_tokenizer.csv` suffix, all
+of which will be used for subsequent detokenization lookups.
+
+An example directory database might look something like this:
+
+.. code-block:: text
+
+   token_database
+   ├── chuck_e_cheese.pw_tokenizer.csv
+   ├── fungi_ble.pw_tokenizer.csv
+   └── some_more
+       └── arcade.pw_tokenizer.csv
+
+This format is optimized for storage in a Git repository alongside source code.
+The token database commands randomly generate unique file names for the CSVs in
+the database to prevent merge conflicts. Running ``mark_removed`` or ``purge``
+commands in the database CLI consolidates the files to a single CSV.
+
+The database command line tool supports a ``--discard-temporary
+<upstream_commit>`` option for ``add``. In this mode, the tool attempts to
+discard temporary tokens. It identifies the latest CSV not present in the
+provided ``<upstream_commit>``, and tokens present that CSV that are not in the
+newly added tokens are discarded. This helps keep temporary tokens (e.g from
+debug logs) out of the database.
+
+JSON support
+============
+While pw_tokenizer doesn't specify a JSON database format, a token database can
+be created from a JSON formatted array of strings. This is useful for side-band
+token database generation for strings that are not embedded as parsable tokens
+in compiled binaries. See :ref:`module-pw_tokenizer-database-creation` for
+instructions on generating a token database from a JSON file.
+
 -------------
 Compatibility
 -------------
