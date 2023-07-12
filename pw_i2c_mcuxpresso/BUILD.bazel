@@ -25,8 +25,9 @@ pw_cc_library(
     srcs = ["initiator.cc"],
     hdrs = ["public/pw_i2c_mcuxpresso/initiator.h"],
     includes = ["public"],
-    # TODO(b/259153338): Get this to build.
-    tags = ["manual"],
+    target_compatible_with = [
+        "//pw_build/constraints/board:mimxrt595_evk",
+    ],
     deps = [
         "//pw_chrono:system_clock",
         "//pw_i2c:initiator",
@@ -35,5 +36,6 @@ pw_cc_library(
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
         "//pw_sync:timed_thread_notification",
+        "@pigweed_config//:mcuxpresso_sdk",
     ],
 )
