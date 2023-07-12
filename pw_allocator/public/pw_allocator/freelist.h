@@ -24,34 +24,38 @@ namespace pw::allocator {
 template <size_t kNumBuckets>
 class FreeListBuffer;
 
-// Basic freelist implementation for an allocator.
-// This implementation buckets by chunk size, with a list of user-provided
-// buckets. Each bucket is a linked list of storage chunks. Because this
-// freelist uses the added chunks themselves as list nodes, there is lower bound
-// of sizeof(FreeList.FreeListNode) bytes for chunks which can be added to this
-// freelist. There is also an implicit bucket for "everything else", for chunks
-// which do not fit into a bucket.
-//
-// Each added chunk will be added to the smallest bucket under which it fits. If
-// it does not fit into any user-provided bucket, it will be added to the
-// default bucket.
-//
-// As an example, assume that the FreeList is configured with buckets of sizes
-// {64, 128, 256 and 512} bytes. The internal state may look like the following.
-//
-// bucket[0] (64B) --> chunk[12B] --> chunk[42B] --> chunk[64B] --> NULL
-// bucket[1] (128B) --> chunk[65B] --> chunk[72B] --> NULL
-// bucket[2] (256B) --> NULL
-// bucket[3] (512B) --> chunk[312B] --> chunk[512B] --> chunk[416B] --> NULL
-// bucket[4] (implicit) --> chunk[1024B] --> chunk[513B] --> NULL
-//
-// Note that added chunks should be aligned to a 4-byte boundary.
-//
-// This class is split into two parts; FreeList implements all of the
-// logic, and takes in pointers for two pw::Vector instances for its storage.
-// This prevents us from having to specialise this class for every kMaxSize
-// parameter for the vector. FreeListBuffer then provides the storage for these
-// two pw::Vector instances and instantiates FreeListInternal.
+/// Basic [freelist](https://en.wikipedia.org/wiki/Free_list) implementation
+/// for an allocator. This implementation buckets by chunk size, with a list
+/// of user-provided buckets. Each bucket is a linked list of storage chunks.
+/// Because this freelist uses the added chunks themselves as list nodes, there
+/// is a lower bound of `sizeof(FreeList.FreeListNode)` bytes for chunks which
+/// can be added to this freelist. There is also an implicit bucket for
+/// "everything else", for chunks which do not fit into a bucket.
+///
+/// Each added chunk will be added to the smallest bucket under which it fits.
+/// If it does not fit into any user-provided bucket, it will be added to the
+/// default bucket.
+///
+/// As an example, assume that the `FreeList` is configured with buckets of
+/// sizes {64, 128, 256, and 512} bytes. The internal state may look like the
+/// following:
+///
+/// @code{.unparsed}
+/// bucket[0] (64B) --> chunk[12B] --> chunk[42B] --> chunk[64B] --> NULL
+/// bucket[1] (128B) --> chunk[65B] --> chunk[72B] --> NULL
+/// bucket[2] (256B) --> NULL
+/// bucket[3] (512B) --> chunk[312B] --> chunk[512B] --> chunk[416B] --> NULL
+/// bucket[4] (implicit) --> chunk[1024B] --> chunk[513B] --> NULL
+/// @endcode
+///
+/// Note that added chunks should be aligned to a 4-byte boundary.
+///
+/// This class is split into two parts:
+/// * `FreeList` implements all of the logic, and takes in pointers for two
+///   `pw::Vector` instances for its storage. This prevents us from having to
+///   specialise this class for every `kMaxSize` parameter for the vector.
+/// * `FreeListBuffer` then provides the storage for these two `pw::Vector`
+///   instances and instantiates `FreeListInternal`.
 class FreeList {
  public:
   // Remove copy/move ctors

@@ -19,6 +19,10 @@ The ``Block`` class provides two check functions:
 .. doxygenclass:: pw::allocator::Block
    :members:
 
+FreeList
+========
+.. doxygenclass:: pw::allocator::FreeList
+
 Heap Poisoning
 ==============
 
