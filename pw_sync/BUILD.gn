@@ -223,12 +223,19 @@ pw_test_group("tests") {
   ]
 }
 
+pw_source_set("lock_testing") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_sync/lock_testing.h" ]
+  sources = [ "lock_testing.cc" ]
+  public_deps = [ ":virtual_basic_lockable" ]
+  deps = [ dir_pw_assert ]
+}
+
 pw_test("borrow_test") {
   sources = [ "borrow_test.cc" ]
   deps = [
     ":borrow",
-    ":virtual_basic_lockable",
-    dir_pw_assert,
+    ":lock_testing",
   ]
 }
 

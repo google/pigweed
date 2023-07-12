@@ -447,6 +447,21 @@ filegroup(
     srcs = ["condition_variable_test.cc"],
 )
 
+pw_cc_library(
+    name = "lock_testing",
+    srcs = [
+        "lock_testing.cc",
+    ],
+    hdrs = [
+        "public/pw_sync/lock_testing.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":virtual_basic_lockable",
+        "//pw_assert",
+    ],
+)
+
 pw_cc_test(
     name = "borrow_test",
     srcs = [
@@ -454,8 +469,7 @@ pw_cc_test(
     ],
     deps = [
         ":borrow",
-        ":virtual_basic_lockable",
-        "//pw_assert",
+        ":lock_testing",
         "//pw_unit_test",
     ],
 )

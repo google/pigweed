@@ -214,13 +214,25 @@ pw_add_facade(pw_sync.condition_variable INTERFACE
     pw_sync.mutex
 )
 
+pw_add_library(pw_sync.lock_testing STATIC
+  HEADERS
+    public/pw_sync/lock_testing.h
+  SOURCES
+    lock_testing.cc
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_sync.virtual_basic_lockable
+  PRIVATE_DEPS
+    pw_assert
+)
+
 pw_add_test(pw_sync.borrow_test
   SOURCES
     borrow_test.cc
   PRIVATE_DEPS
-    pw_assert
     pw_sync.borrow
-    pw_sync.virtual_basic_lockable
+    pw_sync.lock_testing
   GROUPS
     modules
     pw_sync
