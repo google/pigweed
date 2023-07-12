@@ -247,6 +247,7 @@ pw_proto_library("unit_test_proto") {
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
+  other_deps = [ "py" ]
 }
 
 pw_test("metadata_only_test") {

@@ -629,6 +629,26 @@ Build arguments
    Type: string (Bazel target label)
    Usage: toolchain-controlled only
 
+Serial test runner
+==================
+To accelerate automated unit test bringup for devices with plain-text logging,
+this module provides a serial-based test runner that triggers a device flash
+and evaluates whether the test passed or failed based on the produced output.
+
+pw_unit_test.serial_test_runner
+-------------------------------
+.. automodule:: pw_unit_test.serial_test_runner
+   :members:
+     DEFAULT_TEST_START_CHARACTER,
+     SerialTestingDevice,
+     run_device_test,
+
+Setup
+-----
+To add support for a new device, implement a ``SerialTestingDevice`` class for
+your device, and then configure your on-device firmware to wait to run unit
+tests until ``DEFAULT_TEST_START_CHARACTER`` is sent over the serial connection.
+
 RPC service
 ===========
 ``pw_unit_test`` provides an RPC service which runs unit tests on demand and
@@ -681,8 +701,9 @@ pw_unit_test.rpc
 .. automodule:: pw_unit_test.rpc
    :members: EventHandler, run_tests
 
+----------------------------
 Module Configuration Options
-============================
+----------------------------
 The following configurations can be adjusted via compile-time configuration of
 this module.
 
@@ -697,8 +718,9 @@ this module.
    The size of the memory pool to use for test fixture instances. By default this
    is set to 16K.
 
+-------------------------
 Using upstream GoogleTest
-=========================
+-------------------------
 Upstream `GoogleTest`_ may be used as the backend for ``pw_unit_test``. A clone
 of the GoogleTest repository is required. See the
 :ref:`third_party/googletest documentation <module-pw_third_party_googletest>`
