@@ -21,6 +21,7 @@ DIR="$(python3 -c "import os; print(os.path.dirname(os.path.abspath(os.path.real
 VENV="${DIR}/python-venv"
 PY_TO_TEST="python3"
 CONSTRAINTS_PATH="${DIR}/constraints.txt"
+EXTRA_REQUIREMENT_PATH="${DIR}/python_wheels/requirements.txt"
 
 if [ ! -z "${1-}" ]; then
   VENV="${1-}"
@@ -32,12 +33,17 @@ if [ -f "${CONSTRAINTS_PATH}" ]; then
     CONSTRAINTS_ARG="-c""${CONSTRAINTS_PATH}"
 fi
 
+EXTRA_REQUIREMENT_ARG=""
+if [ -f "${EXTRA_REQUIREMENT_PATH}" ]; then
+    EXTRA_REQUIREMENT_ARG="-r""${EXTRA_REQUIREMENT_PATH}"
+fi
+
 PY_MAJOR_VERSION=$(${PY_TO_TEST} -c "import sys; print(sys.version_info[0])")
 PY_MINOR_VERSION=$(${PY_TO_TEST} -c "import sys; print(sys.version_info[1])")
 
-if [ ${PY_MAJOR_VERSION} -ne 3 ] || [ ${PY_MINOR_VERSION} -lt 7 ]
+if [ ${PY_MAJOR_VERSION} -ne 3 ] || [ ${PY_MINOR_VERSION} -lt 8 ]
 then
-    echo "ERROR: This Python distributable requires Python 3.7 or newer."
+    echo "ERROR: This Python distributable requires Python 3.8 or newer."
     exit 1
 fi
 
@@ -46,23 +52,8 @@ then
     ${PY_TO_TEST} -m venv "${VENV}"
 fi
 
-"${VENV}/bin/python" -m pip install --upgrade pip
-
-# Uninstall wheels first, in case installing over an existing venv. This is a
-# faster and less destructive approach than --force-reinstall to ensure wheels
-# whose version numbers haven't incremented still get reinstalled.
-IFS_BACKUP="$IFS"
-IFS=$'\n'
-for wheel in $(ls "${DIR}/python_wheels/"*.whl)
-do
-    "${VENV}/bin/python" -m pip uninstall --yes "$wheel"
-done
-
-for wheel in $(ls "${DIR}/python_wheels/"*.whl)
-do
-    "${VENV}/bin/python" -m pip install \
-    --upgrade --find-links="${DIR}/python_wheels" ${CONSTRAINTS_ARG} "$wheel"
-done
-IFS="$IFS_BACKUP"
+"${VENV}/bin/python" -m pip install --require-hashes \
+  --find-links="${DIR}/python_wheels" \
+  -r requirements.txt ${EXTRA_REQUIREMENT_ARG} ${CONSTRAINTS_ARG}
 
 exit 0

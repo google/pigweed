@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/python.gni")
 import("$dir_pw_build/python_dist.gni")
+import("$dir_pw_build/python_venv.gni")
 
 pw_python_distribution("test_dist1") {
   packages = []
@@ -32,5 +33,37 @@ pw_python_distribution("test_dist1") {
 }
 
 group("python_package_integration_tests") {
-  public_deps = [ ":test_dist1._build_wheel($pw_build_PYTHON_TOOLCHAIN)" ]
+  public_deps = [
+    ":downstream_project_bundle",
+    ":downstream_project_tools",
+    ":test_dist1._build_wheel($pw_build_PYTHON_TOOLCHAIN)",
+  ]
+}
+
+# DOCSTAG: [downstream-project-venv]
+pw_python_distribution("downstream_project_tools") {
+  packages = [
+    "$dir_pw_env_setup/py",
+    "$dir_pw_console/py",
+  ]
+  generate_setup_cfg = {
+    name = "downstream_project_tools"
+    version = "0.0.1"
+    include_default_pyproject_file = true
+  }
+}
+
+pw_python_venv("downstream_tools_build_venv") {
+  path = "$root_build_dir/python-venv-downstream-tools-test"
+  requirements = []
+  constraints =
+      [ "$dir_pw_env_setup/py/pw_env_setup/virtualenv_setup/constraint.list" ]
+  source_packages = [ ":downstream_project_tools" ]
+}
+
+# DOCSTAG: [downstream-project-venv]
+
+pw_python_zip_with_setup("downstream_project_bundle") {
+  packages = [ ":downstream_project_tools" ]
+  venv = ":downstream_tools_build_venv"
 }

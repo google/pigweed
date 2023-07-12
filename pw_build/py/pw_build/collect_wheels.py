@@ -31,15 +31,15 @@ def _parse_args():
         help='Root search path to use in conjunction with --wheels_file',
     )
     parser.add_argument(
-        '--suffix_file',
-        type=argparse.FileType('r'),
+        '--suffix-file',
+        type=Path,
         help=(
             'File that lists subdirs relative to --prefix, one per line,'
             'to search for .whl files to copy into --out_dir'
         ),
     )
     parser.add_argument(
-        '--out_dir',
+        '--out-dir',
         type=Path,
         help='Path where all the built and collected .whl files should be put',
     )
@@ -47,17 +47,28 @@ def _parse_args():
     return parser.parse_args()
 
 
-def copy_wheels(prefix, suffix_file, out_dir):
+def copy_wheels(prefix: Path, suffix_file: Path, out_dir: Path) -> None:
+    """Copy Python wheels or source archives to the out_dir.
+
+    Raises:
+      FileExistsError: If any separate wheel files are copied to the same
+          destination file path.
+    """
     if not out_dir.exists():
         out_dir.mkdir()
 
     copied_files: Dict[str, Path] = dict()
-    for suffix in suffix_file.readlines():
+    requirements_content: str = ''
+
+    for suffix in suffix_file.read_text().splitlines():
         path = prefix / suffix.strip()
         _LOG.debug('Searching for wheels in %s', path)
         if path == out_dir:
             continue
-        for wheel in path.glob('**/*.whl'):
+        for wheel in path.iterdir():
+            if wheel.suffix not in ('.gz', '.whl'):
+                continue
+
             if wheel.name in copied_files:
                 _LOG.error(
                     'Attempting to override %s with %s',
@@ -71,9 +82,20 @@ def copy_wheels(prefix, suffix_file, out_dir):
             copied_files[wheel.name] = wheel
             _LOG.debug('Copying %s to %s', wheel, out_dir)
             shutil.copy(wheel, out_dir)
+            requirements_file = wheel.parent / 'requirements.txt'
+
+            if requirements_file.is_file():
+                requirements_content += '\n'
+                requirements_content += requirements_file.read_text()
+
+    if requirements_content:
+        (out_dir / 'requirements.txt').write_text(
+            '# Auto-generated requirements.txt\n' + requirements_content,
+            encoding='utf-8',
+        )
 
 
-def main():
+def main() -> None:
     copy_wheels(**vars(_parse_args()))
 
 

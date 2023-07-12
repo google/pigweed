@@ -5,7 +5,6 @@ Pigweed's GN Python Build
 =========================
 
 .. seealso::
-
    - :bdg-ref-primary-line:`module-pw_build-python` for detailed template usage.
    - :bdg-ref-primary-line:`module-pw_build` for other GN templates available
      within Pigweed.
@@ -117,11 +116,14 @@ Managing Python Requirements
 
 Build Time Python Virtualenv
 ----------------------------
-Pigweed's GN Python build infrastructure relies on a single build-only venv for
-executing Python code. This provides an isolated environment with a reproducible
-set of third party Python constraints where all Python tests and linting can
-run. All :ref:`module-pw_build-pw_python_action` targets are executed within
-this build venv.
+Pigweed's GN Python build infrastructure relies on `Python virtual environments
+<https://docs.python.org/3/library/venv.html>`_ for executing Python code. This
+provides a controlled isolated environment with a defined set of third party
+Python constraints where all Python tests, linting and
+:ref:`module-pw_build-pw_python_action` targets are executed.
+
+There must be at least one venv for Python defined in GN. There can be multiple
+venvs but one must be the designated default.
 
 The default build venv is specified via a GN arg and is best set in the root
 ``.gn`` or ``BUILD.gn`` file. For example:
@@ -129,6 +131,13 @@ The default build venv is specified via a GN arg and is best set in the root
 .. code-block::
 
    pw_build_PYTHON_BUILD_VENV = "//:project_build_venv"
+
+.. tip::
+   Additional :ref:`module-pw_build-pw_python_venv` targets can be created as
+   needed. The :ref:`module-pw_build-pw_python_action` template can take an
+   optional ``venv`` argument to specify which Python venv it should run
+   within. If not specified the target referred in the
+   ``pw_build_PYTHON_BUILD_VENV`` is used.
 
 .. _docs-python-build-python-gn-requirements-files:
 
@@ -182,47 +191,272 @@ project specific constraints can be appended to this list.
      "//tools/constraints.txt",
    ]
 
+In-tree ``pw_python_package`` Requirements
+------------------------------------------
+A given venv inherits a project's requirements and constraint files by default
+via the ``pw_build_PIP_CONSTRAINTS`` and ``pw_build_PIP_REQUIREMENTS`` GN args
+as described above. This can be overridden if needed.
+
+``generated_requirements.txt``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To ensure the requirements of in-tree :ref:`module-pw_build-pw_python_package`
+targets are installed :ref:`module-pw_build-pw_python_venv` introduces the
+``source_packages`` argument. This is a list of in-tree ``pw_python_package``
+GN targets expected to be used within the venv. When the venv is created each
+``pw_python_package``'s ``setup.cfg`` file is read to pull the
+``install_requires`` section for all third party dependencies. The full list of
+all in-tree packages and any in-tree transitive dependencies is then written to
+the out directory in a single ``generated_requirements.txt``.
+
+Take the ``//pw_build/py/gn_tests:downstream_tools_build_venv`` example below,
+its ``source package`` is a single ``pw_python_distribution`` package which
+bundles the ``pw_env_setup`` and ``pw_console`` ``pw_python_package``s. Those
+two packages each depend on a few other ``pw_python_package`` targets. The
+output ``generated_requirements.txt`` below merges all these package deps and
+adds ``-c`` lines for constraint files.
+
+.. seealso::
+   The pip documentation on the `Requirements File Format
+   <https://pip.pypa.io/en/stable/reference/requirements-file-format/#requirements-file-format>`_
+
+.. literalinclude:: pw_build/py/gn_tests/BUILD.gn
+   :start-after: [downstream-project-venv]
+   :end-before: [downstream-project-venv]
+
+.. code-block::
+   :caption: :octicon:`file;1em` out/python/gen/pw_build/py/gn_tests/downstream_tools_build_venv/generated_requirements.txt
+   :name: generated_requirements
+
+   # Auto-generated requirements.txt from the following packages:
+   #
+   # //pw_arduino_build/py:py
+   # //pw_build/py/gn_tests:downstream_project_tools
+   # //pw_build/py:py
+   # //pw_cli/py:py
+   # //pw_console/py:py
+   # //pw_env_setup/py:py
+   # //pw_log_tokenized/py:py
+   # //pw_package/py:py
+   # //pw_presubmit/py:py
+   # //pw_stm32cube_build/py:py
+
+   # Constraint files:
+   -c ../../../../../../../pw_env_setup/py/pw_env_setup/virtualenv_setup/constraint.list
+
+   black>=23.1.0
+   build>=0.8.0
+   coloredlogs
+   coverage
+   ipython
+   jinja2
+   mypy>=0.971
+   parameterized
+   pip-tools>=6.12.3
+   prompt-toolkit>=3.0.26
+   psutil
+   ptpython>=3.0.20
+   pygments
+   pylint>=2.9.3
+   pyperclip
+   pyserial>=3.5,<4.0
+   pyyaml
+   setuptools
+   six
+   toml
+   types-pygments
+   types-pyserial>=3.5,<4.0
+   types-pyyaml
+   types-setuptools
+   types-six
+   websockets
+   wheel
+   yapf>=0.31.0
+
+``compiled_requirements.txt``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The above ``generated_requirements.txt`` file is then fed into the
+``pip-compile`` command from `the pip-tools package
+<https://pypi.org/project/pip-tools>`_ to fully expand and pin each package with
+hashes. The resulting ``compiled_requirements.txt`` can then be used as the
+single Python requirements file for replicating this ``pw_python_venv``
+elsewhere. Each ``pw_python_venv`` will get this single file containing the
+exact versions of each required Python package.
+
+.. tip::
+   The ``compiled_requirements.txt`` generated by a ``pw_python_venv`` is used
+   by the :ref:`module-pw_build-pw_python_zip_with_setup` template when
+   producing a self contained zip of in-tree and third party Python packages.
+
+Below is a snippet of the ``compiled_requirements.txt`` for this
+:ref:`module-pw_build-pw_python_venv` target:
+``//pw_build/py/gn_tests:downstream_tools_build_venv``
+
+.. code-block::
+   :caption: :octicon:`file;1em` out/python/gen/pw_build/py/gn_tests/downstream_tools_build_venv/compiled_requirements.txt
+   :name: compiled_requirements
+
+   #
+   # This file is autogenerated by pip-compile with Python 3.11
+   # by the following command:
+   #
+   #    pip-compile --allow-unsafe --generate-hashes
+   #      --output-file=python/gen/pw_build/py/gn_tests/downstream_tools_build_venv/compiled_requirements.txt
+   #      --resolver=backtracking
+   #      python/gen/pw_build/py/gn_tests/downstream_tools_build_venv/generated_requirements.txt
+   #
+   appdirs==1.4.4 \
+       --hash=sha256:7d5d0167b2b1ba821647616af46a749d1c653740dd0d2415100fe26e27afdf41 \
+       --hash=sha256:a841dacd6b99318a741b166adb07e19ee71a274450e68237b4650ca1055ab128
+       # via
+       #   -c python/gen/pw_build/py/gn_tests/downstream_tools_build_venv/../../../../../../../pw_env_setup/py/pw_env_setup/virtualenv_setup/constraint.list
+       #   ptpython
+   astroid==2.14.2 \
+       --hash=sha256:0e0e3709d64fbffd3037e4ff403580550f14471fd3eaae9fa11cc9a5c7901153 \
+       --hash=sha256:a3cf9f02c53dd259144a7e8f3ccd75d67c9a8c716ef183e0c1f291bc5d7bb3cf
+       # via
+       #   -c python/gen/pw_build/py/gn_tests/downstream_tools_build_venv/../../../../../../../pw_env_setup/py/pw_env_setup/virtualenv_setup/constraint.list
+       #   pylint
+   ...
+
+Caching Python Packages for Offline Installation
+------------------------------------------------
+The :ref:`module-pw_build-pw_python_venv` target adds an optional sub target
+that will download all Python packages from remote servers into a local
+directory. The remote server is typically `pypi.org <https://pypi.org/>`_.
+
+Taking the ``//pw_build/py/gn_tests:downstream_tools_build_venv`` target as an
+example again let's build a local cache. To run the download target append
+``.vendor_wheels`` to the end of the ``pw_python_venv`` target name. In this
+example it would be
+``//pw_build/py/gn_tests:downstream_tools_build_venv.vendor_wheels``
+
+To build that one gn target with ninja, pass the output name from gn as a target
+name for ninja:
+
+.. code-block:: bash
+
+   gn gen out
+   ninja -C out \
+     $(gn ls out --as=output \
+       '//pw_build/py/gn_tests:downstream_tools_build_venv.vendor_wheels')
+
+This creates a ``wheels`` folder with all downloaded packages and a
+``pip_download_log.txt`` with verbose logs from running ``pip download``.
+
+.. code-block::
+   :caption: :octicon:`file-directory;1em` Vendor wheels output directory
+   :name: vendor-wheel-output
+
+   out/python/gen/pw_build/py/gn_tests/downstream_tools_build_venv.vendor_wheels/
+   ├── pip_download_log.txt
+   └── wheels
+       ├── appdirs-1.4.4-py2.py3-none-any.whl
+       ├── astroid-2.14.2-py3-none-any.whl
+       ├── backcall-0.2.0-py2.py3-none-any.whl
+       ├── black-23.1.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+       ├ ...
+       ├── websockets-10.4-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+       ├── wheel-0.40.0-py3-none-any.whl
+       ├── wrapt-1.14.1.tar.gz
+       └── yapf-0.31.0-py2.py3-none-any.whl
+
+Note the above output has both Python wheel ``.whl`` and source distribution
+``.tar.gz`` files. The ``.whl`` may contain Python packages with precompiled C
+extensions. This is denoted by this part of the filename:
+``cp311-cp311-manylinux_2_17_x86_64.whl``. These binary packages are selected by
+the ``pip download`` command based on the host machine python version, OS, and
+CPU architecture.
+
+.. warning::
+   If you need to cache Python packages for multiple platforms the
+   ``.vendor_wheels`` target will need to be run for each combination of Python
+   version, host operating system and architecture. For example, look at `the
+   files available for numpy <https://pypi.org/project/numpy/#files>`_. Some
+   combinations are:
+
+   - cp311, linux, x86_64
+   - cp311, macosx, arm64
+   - cp311, macosx, x86_64
+   - cp311, win, amd64
+   - cp311, win, win32
+
+   Plus all of the above duplicated for Python 3.10 and 3.9 (``cp310`` and
+   ``cp39``).
+
+   The output of multiple ``.vendor_wheels`` runs on different host systems can
+   all be merged into the same output directory.
+
+Once the vendor wheel output is saved to a directory in your project you can use
+this as the default pip install location by creating a project ``.pip.conf``
+file. Say you commit all the Python packages to git in your repo under
+``//third_party/python_packages``. Create a ``//pip.conf`` file containing:
+
+.. code-block::
+   :caption: :octicon:`file;1em` //pip.conf
+   :name: pip-conf-file
+
+   [global]
+   # Disable searching pypi.org for packages
+   no-index = True
+   # Find packages in this directory:
+   find-links = file://third_party/python_packages
+
+This tells pip to not search pypi.org for packages and only look in
+``third_party/python_packages``. In the project ``bootstrap.sh`` set
+``PIP_CONFIG_FILE`` to the location of this file.
+
+.. code-block:: bash
+
+   export PIP_CONFIG_FILE="${PW_PROJECT_ROOT}/pip.conf"
+
+With that environment var set all invocations of pip will apply the config file
+settings above.
+
+.. seealso::
+   The ``pip`` `documentation on Configuration
+   <https://pip.pypa.io/en/stable/topics/configuration/>`_.
+
 .. _docs-python-build-python-gn-structure:
 
-GN Structure for Python Code
-============================
+GN File Structure for Python Code
+=================================
 Here is a full example of what is required to build Python packages using
 Pigweed's GN build system. A brief file hierarchy is shown here with file
 content following. See also :ref:`docs-python-build-structure` below for details
 on the structure of Python packages.
 
 .. code-block::
-  :caption: :octicon:`file-directory;1em` Top level GN file hierarchy
-  :name: gn-python-file-tree
+   :caption: :octicon:`file-directory;1em` Top level GN file hierarchy
+   :name: gn-python-file-tree
 
-  project_root/
-  ├── .gn
-  ├── BUILDCONFIG.gn
-  ├── build_overrides/
-  │   └── pigweed.gni
-  ├── BUILD.gn
-  │
-  ├── python_package1/
-  │   ├── BUILD.gn
-  │   ├── setup.cfg
-  │   ├── setup.py
-  │   ├── pyproject.toml
-  │   │
-  │   ├── package_name/
-  │   │   ├── module_a.py
-  │   │   ├── module_b.py
-  │   │   ├── py.typed
-  │   │   └── nested_package/
-  │   │       ├── py.typed
-  │   │       └── module_c.py
-  │   │
-  │   ├── module_a_test.py
-  │   └── module_c_test.py
-  │
-  ├── third_party/
-  │   └── pigweed/
-  │
-  └── ...
+   project_root/
+   ├── .gn
+   ├── BUILDCONFIG.gn
+   ├── build_overrides/
+   │   └── pigweed.gni
+   ├── BUILD.gn
+   │
+   ├── python_package1/
+   │   ├── BUILD.gn
+   │   ├── setup.cfg
+   │   ├── setup.py
+   │   ├── pyproject.toml
+   │   │
+   │   ├── package_name/
+   │   │   ├── module_a.py
+   │   │   ├── module_b.py
+   │   │   ├── py.typed
+   │   │   └── nested_package/
+   │   │       ├── py.typed
+   │   │       └── module_c.py
+   │   │
+   │   ├── module_a_test.py
+   │   └── module_c_test.py
+   │
+   ├── third_party/
+   │   └── pigweed/
+   │
+   └── ...
 
 - :octicon:`file-directory;1em` project_root/
 
@@ -365,25 +599,25 @@ modules. A module's Python package is nested under a ``py/`` directory (see
 :ref:`Pigweed Module Stucture <docs-module-structure>`).
 
 .. code-block::
-  :caption: :octicon:`file-directory;1em` Example layout of a Pigweed Python package.
-  :name: python-file-tree
+   :caption: :octicon:`file-directory;1em` Example layout of a Pigweed Python package.
+   :name: python-file-tree
 
-  module_name/
-  ├── py/
-  │   ├── BUILD.gn
-  │   ├── setup.cfg
-  │   ├── setup.py
-  │   ├── pyproject.toml
-  │   ├── package_name/
-  │   │   ├── module_a.py
-  │   │   ├── module_b.py
-  │   │   ├── py.typed
-  │   │   └── nested_package/
-  │   │       ├── py.typed
-  │   │       └── module_c.py
-  │   ├── module_a_test.py
-  │   └── module_c_test.py
-  └── ...
+   module_name/
+   ├── py/
+   │   ├── BUILD.gn
+   │   ├── setup.cfg
+   │   ├── setup.py
+   │   ├── pyproject.toml
+   │   ├── package_name/
+   │   │   ├── module_a.py
+   │   │   ├── module_b.py
+   │   │   ├── py.typed
+   │   │   └── nested_package/
+   │   │       ├── py.typed
+   │   │       └── module_c.py
+   │   ├── module_a_test.py
+   │   └── module_c_test.py
+   └── ...
 
 The ``BUILD.gn`` declares this package in GN. For upstream Pigweed, a presubmit
 check in ensures that all Python files are listed in a ``BUILD.gn``.
@@ -393,19 +627,19 @@ above file tree ``setup.py`` and ``pyproject.toml`` files are stubs with the
 following content:
 
 .. code-block::
-  :caption: :octicon:`file;1em` setup.py
-  :name: setup-py-stub
+   :caption: :octicon:`file;1em` setup.py
+   :name: setup-py-stub
 
-  import setuptools  # type: ignore
-  setuptools.setup()  # Package definition in setup.cfg
+   import setuptools  # type: ignore
+   setuptools.setup()  # Package definition in setup.cfg
 
 .. code-block::
-  :caption: :octicon:`file;1em` pyproject.toml
-  :name: pyproject-toml-stub
+   :caption: :octicon:`file;1em` pyproject.toml
+   :name: pyproject-toml-stub
 
-  [build-system]
-  requires = ['setuptools', 'wheel']
-  build-backend = 'setuptools.build_meta'
+   [build-system]
+   requires = ['setuptools', 'wheel']
+   build-backend = 'setuptools.build_meta'
 
 The stub ``setup.py`` file is there to support running ``pip install --editable``.
 
@@ -417,7 +651,6 @@ setuptools.
 
    - ``setup.cfg`` examples at `Configuring setup() using setup.cfg files`_
    - ``pyproject.toml`` background at `Build System Support - How to use it?`_
-
 
 .. _module-pw_build-python-target:
 

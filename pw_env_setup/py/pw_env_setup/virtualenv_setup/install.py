@@ -306,6 +306,7 @@ def install(  # pylint: disable=too-many-arguments,too-many-locals
         # Include wheel so pip installs can be done without build
         # isolation.
         'wheel',
+        'pip-tools',
         constraint_args,
     )
 

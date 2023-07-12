@@ -415,6 +415,10 @@ is set.
 
 pw_python_action
 ----------------
+.. seealso::
+   - :ref:`module-pw_build-python` for all of Pigweed's Python build GN templates.
+   - :ref:`docs-python-build` for details on how the GN Python build works.
+
 The ``pw_python_action`` template is a convenience wrapper around GN's `action
 function <https://gn.googlesource.com/gn/+/main/docs/reference.md#func_action>`_
 for running Python scripts. The main benefit it provides is resolution of GN

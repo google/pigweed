@@ -13,15 +13,27 @@
 :: the License.
 @echo off
 
+set "ROOT_DIR=%~dp0"
+set "WHEEL_DIR=%ROOT_DIR%\python_wheels"
+
 :: Generate python virtual environment using existing python.
-python3 -m venv %~dp0python-venv
+python -m venv "%ROOT_DIR%\python-venv"
+:: Use the venv python for pip installs
+set "python=%ROOT_DIR%\python-venv\Scripts\python.exe"
 
-:: Install pip inside the virtual environment.
-%~dp0python-venv\Scripts\python.exe -m pip install --upgrade pip
-
-:: Install all wheel files, possibly with constraints.
-if exist %~dp0constraints.txt (
-  for %%f in (%~dp0python_wheels\*) do %~dp0python-venv\Scripts\python.exe -m pip install -c %~dp0constraints.txt --find-links=%~dp0python_wheels %%f
-) else (
-  for %%f in (%~dp0python_wheels\*) do %~dp0python-venv\Scripts\python.exe -m pip install --find-links=%~dp0python_wheels %%f
+set "CONSTRAINT_PATH=%ROOT_DIR%\constraints.txt"
+set "CONSTRAINT_ARG="
+if exist "%CONSTRAINT_PATH%" (
+  set "CONSTRAINT_ARG=--constraint=%CONSTRAINT_PATH%"
 )
+
+set "EXTRA_REQUIREMENT_PATH=%WHEEL_DIR%\requirements.txt"
+set "EXTRA_REQUIREMENT_ARG="
+if exist "%EXTRA_REQUIREMENT_PATH%" (
+  set "EXTRA_REQUIREMENT_ARG=--requirement=%EXTRA_REQUIREMENT_PATH%"
+)
+
+:: Run pip install in the venv.
+call "%python%" -m pip install --require-hashes ^
+    "--find-links=%ROOT_DIR%python_wheels" ^
+    "--requirement=requirements.txt" %EXTRA_REQUIREMENT_ARG% %CONSTRAINT_ARG%

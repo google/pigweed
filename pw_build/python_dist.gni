@@ -55,6 +55,15 @@ template("pw_python_wheels") {
     _packages += [ "${_pkg_name}.wheel(${_pkg_toolchain})" ]
   }
 
+  if (defined(invoker.venv)) {
+    _venv_target_label = pw_build_PYTHON_BUILD_VENV
+    _venv_target_label = invoker.venv
+    _venv_target_label =
+        get_label_info(_venv_target_label, "label_no_toolchain")
+    _packages +=
+        [ "${_venv_target_label}.vendor_wheels($pw_build_PYTHON_TOOLCHAIN)" ]
+  }
+
   # Build a list of relative paths containing all the wheels we depend on.
   generated_file("${target_name}._wheel_paths") {
     data_keys = [ "pw_python_package_wheels" ]
@@ -74,7 +83,7 @@ template("pw_python_wheels") {
       rebase_path(root_build_dir, root_build_dir),
       "--suffix",
       rebase_path(_wheel_paths_path, root_build_dir),
-      "--out_dir",
+      "--out-dir",
       rebase_path(_directory, root_build_dir),
     ]
 
@@ -120,7 +129,11 @@ template("pw_python_zip_with_setup") {
 
   pw_python_wheels("$target_name.wheels") {
     packages = invoker.packages
-    forward_variables_from(invoker, [ "deps" ])
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "venv",
+                           ])
   }
 
   pw_zip(target_name) {
@@ -136,6 +149,20 @@ template("pw_python_zip_with_setup") {
 
     # TODO(b/235245034): Remove the plumbing-through of invoker's public_deps.
     public_deps = _public_deps + [ ":${_outer_name}.wheels" ]
+
+    if (defined(invoker.venv)) {
+      _venv_target_label = get_label_info(invoker.venv, "label_no_toolchain")
+      _requirements_target_name =
+          get_label_info("${_venv_target_label}($pw_build_PYTHON_TOOLCHAIN)",
+                         "name")
+      _requirements_gen_dir =
+          get_label_info("${_venv_target_label}($pw_build_PYTHON_TOOLCHAIN)",
+                         "target_gen_dir")
+
+      inputs += [ "$_requirements_gen_dir/$_requirements_target_name/compiled_requirements.txt > /${target_name}/requirements.txt" ]
+
+      public_deps += [ "${_venv_target_label}._compile_requirements($pw_build_PYTHON_TOOLCHAIN)" ]
+    }
   }
 }
 
@@ -535,6 +562,7 @@ template("pw_python_pip_install") {
       }
 
       inputs = pw_build_PIP_CONSTRAINTS
+
       foreach(_constraints_file, pw_build_PIP_CONSTRAINTS) {
         args += [
           "--constraint",

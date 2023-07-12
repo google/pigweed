@@ -11,12 +11,13 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Check Python package install_requires are covered."""
+"""Generate a requirements.txt for a pw_python_venv."""
 
 import argparse
 import configparser
 from pathlib import Path
 import sys
+from typing import List
 
 try:
     from pw_build.python_package import load_packages
@@ -39,7 +40,13 @@ def _parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
-        '--requirement',
+        '--gn-root-build-dir',
+        type=Path,
+        required=True,
+        help='Path to the root gn build dir.',
+    )
+    parser.add_argument(
+        '--output-requirement-file',
         type=Path,
         required=True,
         help='requirement file to generate',
@@ -57,6 +64,12 @@ def _parse_args() -> argparse.Namespace:
         action='store_true',
         help='Exclude checking transitive deps of the specified --gn-packages',
     )
+    parser.add_argument(
+        '--constraint-files',
+        nargs='*',
+        type=Path,
+        help='Optional constraint files to include as requirements.',
+    )
     return parser.parse_args()
 
 
@@ -66,7 +79,9 @@ class NoMatchingGnPythonDependency(Exception):
 
 def main(
     python_dep_list_files: Path,
-    requirement: Path,
+    gn_root_build_dir: Path,
+    output_requirement_file: Path,
+    constraint_files: List[Path],
     gn_packages: str,
     exclude_transitive_deps: bool,
 ) -> int:
@@ -123,10 +138,25 @@ def main(
             target_py_packages, key=lambda pkg: pkg.gn_target_name
         )
     )
+    output += '\n\n'
+    output += '# Constraint files:\n'
+
+    for constraint_file in constraint_files:
+        parent_count = len(
+            output_requirement_file.parent.absolute()
+            .relative_to(gn_root_build_dir.absolute())
+            .parents
+        )
+
+        relative_constraint_path = Path('../' * parent_count) / constraint_file
+
+        # NOTE: Must use as_posix() here or backslash paths will appear in the
+        # generated requirements.txt file on Windows.
+        output += f'-c {relative_constraint_path.as_posix()}\n'
 
     output += config['options']['install_requires']
     output += '\n'
-    requirement.write_text(output)
+    output_requirement_file.write_text(output)
 
     return 0
 

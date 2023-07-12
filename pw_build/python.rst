@@ -265,7 +265,7 @@ Arguments
   :ref:`module-pw_build-pw_python_package` or targets that will be checked for
   external third_party pip dependencies to install into this
   virtualenv. Note this list of targets isn't actually installed into the
-  virtualenv. Only packages defined inside the [options] install_requires
+  virtualenv. Only packages defined inside the ``[options] install_requires``
   section of each pw_python_package's setup.cfg will be pip installed.
 
   .. seealso::

@@ -526,6 +526,7 @@ template("pw_python_package") {
     if (_is_package) {
       # Builds a Python wheel for this package. Records the output directory
       # in the pw_python_package_wheels metadata key.
+
       pw_python_action("$target_name._build_wheel") {
         _wheel_out_dir = "$target_out_dir/$target_name"
         _wheel_requirement = "$_wheel_out_dir/requirements.txt"

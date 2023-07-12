@@ -40,6 +40,7 @@ pw_doc_group("core_docs") {
     "images/stm32f429i-disc1_connected.jpg",
     "layout/page.html",
     "run_doxygen.py",
+    "$dir_pw_build/py/gn_tests/BUILD.gn",
   ]
   sources = [
     "code_of_conduct.rst",
