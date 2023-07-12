@@ -5,7 +5,6 @@
 =========
 pw_stream
 =========
-
 ``pw_stream`` provides a foundational interface for streaming data from one part
 of a system to another. In the simplest use cases, this is basically a memcpy
 behind a reusable interface that can be passed around the system. On the other
@@ -51,14 +50,13 @@ and seeking.
 
 Usage overview
 ==============
-
 .. list-table::
    :header-rows: 1
 
    * - pw::stream Interfaces
      - Accept in APIs?
      - Extend to create new stream?
-   * - :cpp:class:`pw::stream::Stream::Stream`
+   * - :cpp:class:`pw::stream::Stream`
      - ❌
      - ❌
    * - | :cpp:class:`pw::stream::Reader`
