@@ -1,4 +1,4 @@
-# Copyright 2021 The Pigweed Authors
+# Copyright 2023 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -49,6 +49,7 @@ pw_source_set("pw_protobuf") {
     "$dir_pw_bytes:bit",
     "$dir_pw_containers:vector",
     "$dir_pw_stream:interval_reader",
+    "$dir_pw_string:string",
     "$dir_pw_varint:stream",
     dir_pw_assert,
     dir_pw_bytes,
@@ -81,7 +82,6 @@ pw_source_set("pw_protobuf") {
     "message.cc",
     "stream_decoder.cc",
   ]
-  deps = [ "$dir_pw_string:string" ]
 }
 
 pw_source_set("bytes_utils") {
@@ -155,7 +155,10 @@ pw_test("encoder_test") {
 }
 
 pw_test("find_test") {
-  deps = [ ":pw_protobuf" ]
+  deps = [
+    ":pw_protobuf",
+    dir_pw_string,
+  ]
   sources = [ "find_test.cc" ]
 
   # TODO(b/259746255): Remove this when everything compiles with -Wconversion.

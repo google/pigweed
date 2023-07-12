@@ -53,10 +53,9 @@ pw_add_library(pw_protobuf STATIC
     pw_status
     pw_stream
     pw_stream.interval_reader
+    pw_string.string
     pw_varint
     pw_varint.stream
-  PRIVATE_DEPS
-    pw_string.string
   SOURCES
     decoder.cc
     encoder.cc

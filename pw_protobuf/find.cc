@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -14,28 +14,43 @@
 
 #include "pw_protobuf/find.h"
 
-namespace pw::protobuf {
+#include "pw_protobuf/wire_format.h"
 
-Status FindDecodeHandler::ProcessField(CallbackDecoder& decoder,
-                                       uint32_t field_number) {
-  if (field_number != field_number_) {
-    // Continue to the next field.
-    return OkStatus();
+namespace pw::protobuf::internal {
+
+Status AdvanceToField(Decoder& decoder, uint32_t field_number) {
+  if (!ValidFieldNumber(field_number)) {
+    return Status::InvalidArgument();
   }
 
-  found_ = true;
-  if (nested_handler_ == nullptr) {
-    return Status::Cancelled();
+  Status status;
+
+  while ((status = decoder.Next()).ok()) {
+    if (decoder.FieldNumber() == field_number) {
+      return OkStatus();
+    }
   }
 
-  span<const std::byte> submessage;
-  if (Status status = decoder.ReadBytes(&submessage); !status.ok()) {
-    return status;
-  }
-
-  CallbackDecoder subdecoder;
-  subdecoder.set_handler(nested_handler_);
-  return subdecoder.Decode(submessage);
+  // As this is a backend for the Find() APIs, remap OUT_OF_RANGE to NOT_FOUND.
+  return status.IsOutOfRange() ? Status::NotFound() : status;
 }
 
-}  // namespace pw::protobuf
+Status AdvanceToField(StreamDecoder& decoder, uint32_t field_number) {
+  if (!ValidFieldNumber(field_number)) {
+    return Status::InvalidArgument();
+  }
+
+  Status status;
+
+  while ((status = decoder.Next()).ok()) {
+    PW_TRY_ASSIGN(uint32_t field, decoder.FieldNumber());
+    if (field == field_number) {
+      return OkStatus();
+    }
+  }
+
+  // As this is a backend for the Find() APIs, remap OUT_OF_RANGE to NOT_FOUND.
+  return status.IsOutOfRange() ? Status::NotFound() : status;
+}
+
+}  // namespace pw::protobuf::internal

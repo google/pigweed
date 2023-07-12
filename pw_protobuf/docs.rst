@@ -551,6 +551,11 @@ through the fields and checking the field numbers, along with casting types.
     return status.IsOutOfRange() ? OkStatus() : status;
   }
 
+Find APIs
+---------
+
+.. doxygenfile:: pw_protobuf/public/pw_protobuf/find.h
+
 
 Handling of packages
 ====================

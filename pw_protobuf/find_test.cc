@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -15,12 +15,14 @@
 #include "pw_protobuf/find.h"
 
 #include "gtest/gtest.h"
+#include "pw_stream/memory_stream.h"
+#include "pw_string/string.h"
 
 namespace pw::protobuf {
 namespace {
 
 // clang-format off
-constexpr uint8_t encoded_proto[] = {
+constexpr uint8_t _encoded_proto[] = {
   // type=int32, k=1, v=42
   0x08, 0x2a,
   // type=sint32, k=2, v=-13
@@ -39,53 +41,112 @@ constexpr uint8_t encoded_proto[] = {
   // (nested) type=uint32, k=1, v=3
   0x08, 0x03
 };
+ConstByteSpan encoded_proto(as_bytes(span(_encoded_proto)));
 
-TEST(FindDecodeHandler, SingleLevel_FindsExistingField) {
-  CallbackDecoder decoder;
-  FindDecodeHandler finder(3);
+TEST(Find, PresentField) {
+  EXPECT_EQ(FindInt32(encoded_proto, 1).value(), 42);
+  EXPECT_EQ(FindSint32(encoded_proto, 2).value(), -13);
+  EXPECT_EQ(FindBool(encoded_proto, 3).value(), false);
+  EXPECT_EQ(FindDouble(encoded_proto, 4).value(), 3.14159);
+  EXPECT_EQ(FindFixed32(encoded_proto, 5).value(), 0xdeadbeef);
 
-  decoder.set_handler(&finder);
-  ASSERT_EQ(Status::Cancelled(), decoder.Decode(as_bytes(span(encoded_proto))));
-
-  EXPECT_TRUE(finder.found());
-  EXPECT_TRUE(decoder.cancelled());
+  Result<std::string_view> result = FindString(encoded_proto, 6);
+  ASSERT_EQ(result.status(), OkStatus());
+  InlineString<32> str(*result);
+  EXPECT_STREQ(str.c_str(), "Hello world");
 }
 
-TEST(FindDecodeHandler, SingleLevel_DoesntFindNonExistingField) {
-  CallbackDecoder decoder;
-  FindDecodeHandler finder(8);
-
-  decoder.set_handler(&finder);
-  ASSERT_EQ(OkStatus(), decoder.Decode(as_bytes(span(encoded_proto))));
-
-  EXPECT_FALSE(finder.found());
-  EXPECT_FALSE(decoder.cancelled());
+TEST(Find, MissingField) {
+  EXPECT_EQ(FindUint32(encoded_proto, 8).status(), Status::NotFound());
+  EXPECT_EQ(FindUint32(encoded_proto, 66).status(), Status::NotFound());
+  EXPECT_EQ(FindUint32(encoded_proto, 123456789).status(), Status::NotFound());
 }
 
-TEST(FindDecodeHandler, MultiLevel_FindsExistingNestedField) {
-  CallbackDecoder decoder;
-  FindDecodeHandler nested_finder(1);
-  FindDecodeHandler finder(7, &nested_finder);
-
-  decoder.set_handler(&finder);
-  ASSERT_EQ(Status::Cancelled(), decoder.Decode(as_bytes(span(encoded_proto))));
-
-  EXPECT_TRUE(finder.found());
-  EXPECT_TRUE(nested_finder.found());
-  EXPECT_TRUE(decoder.cancelled());
+TEST(Find, InvalidFieldNumber) {
+  EXPECT_EQ(FindUint32(encoded_proto, 0).status(), Status::InvalidArgument());
+  EXPECT_EQ(FindUint32(encoded_proto, uint32_t(-1)).status(), Status::InvalidArgument());
 }
 
-TEST(FindDecodeHandler, MultiLevel_DoesntFindNonExistingNestedField) {
-  CallbackDecoder decoder;
-  FindDecodeHandler nested_finder(3);
-  FindDecodeHandler finder(7, &nested_finder);
+TEST(Find, WrongWireType) {
+  // Field 5 is a fixed32, but we request a uint32 (varint).
+  EXPECT_EQ(FindUint32(encoded_proto, 5).status(), Status::FailedPrecondition());
+}
 
-  decoder.set_handler(&finder);
-  ASSERT_EQ(OkStatus(), decoder.Decode(as_bytes(span(encoded_proto))));
+TEST(Find, MultiLevel) {
+  Result<ConstByteSpan> submessage = FindSubmessage(encoded_proto, 7);
+  ASSERT_EQ(submessage.status(), OkStatus());
+  EXPECT_EQ(submessage->size(), 2u);
 
-  EXPECT_TRUE(finder.found());
-  EXPECT_FALSE(nested_finder.found());
-  EXPECT_FALSE(decoder.cancelled());
+  // Read a field from the submessage.
+  EXPECT_EQ(FindUint32(*submessage, 1).value(), 3u);
+}
+
+TEST(FindStream, PresentField) {
+  stream::MemoryReader reader(encoded_proto);
+
+  EXPECT_EQ(FindInt32(reader, 1).value(), 42);
+  EXPECT_EQ(FindSint32(reader, 2).value(), -13);
+  EXPECT_EQ(FindBool(reader, 3).value(), false);
+  EXPECT_EQ(FindDouble(encoded_proto, 4).value(), 3.14159);
+
+  EXPECT_EQ(FindFixed32(reader, 5).value(), 0xdeadbeef);
+
+  char str[32];
+  StatusWithSize sws = FindString(reader, 6, str);
+  ASSERT_EQ(sws.status(), OkStatus());
+  ASSERT_EQ(sws.size(), 11u);
+  str[sws.size()] = '\0';
+  EXPECT_STREQ(str, "Hello world");
+}
+
+TEST(FindStream, MissingField) {
+  stream::MemoryReader reader(encoded_proto);
+  EXPECT_EQ(FindUint32(reader, 8).status(), Status::NotFound());
+
+  reader = stream::MemoryReader(encoded_proto);
+  EXPECT_EQ(FindUint32(reader, 66).status(), Status::NotFound());
+
+  reader = stream::MemoryReader(encoded_proto);
+  EXPECT_EQ(FindUint32(reader, 123456789).status(), Status::NotFound());
+}
+
+TEST(FindStream, InvalidFieldNumber) {
+  stream::MemoryReader reader(encoded_proto);
+  EXPECT_EQ(FindUint32(reader, 0).status(), Status::InvalidArgument());
+
+  reader = stream::MemoryReader(encoded_proto);
+  EXPECT_EQ(FindUint32(reader, uint32_t(-1)).status(), Status::InvalidArgument());
+}
+
+TEST(FindStream, WrongWireType) {
+  stream::MemoryReader reader(encoded_proto);
+
+  // Field 5 is a fixed32, but we request a uint32 (varint).
+  EXPECT_EQ(FindUint32(reader, 5).status(), Status::FailedPrecondition());
+}
+
+enum class Fields : uint32_t {
+  kField1 = 1,
+  kField2 = 2,
+  kField3 = 3,
+  kField4 = 4,
+  kField5 = 5,
+  kField6 = 6,
+  kField7 = 7,
+};
+
+TEST(FindEnum, PresentField) {
+  EXPECT_EQ(FindInt32(encoded_proto, Fields::kField1).value(), 42);
+  EXPECT_EQ(FindSint32(encoded_proto, Fields::kField2).value(), -13);
+  EXPECT_EQ(FindBool(encoded_proto, Fields::kField3).value(), false);
+  EXPECT_EQ(FindDouble(encoded_proto, Fields::kField4).value(), 3.14159);
+  EXPECT_EQ(FindFixed32(encoded_proto, Fields::kField5).value(), 0xdeadbeef);
+
+  stream::MemoryReader reader(encoded_proto);
+  InlineString<32> str;
+  StatusWithSize result = FindString(reader, Fields::kField6, str);
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_STREQ(str.c_str(), "Hello world");
 }
 
 }  // namespace
