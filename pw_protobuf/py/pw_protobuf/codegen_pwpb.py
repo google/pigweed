@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2023 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -346,6 +346,47 @@ class PackedReadVectorMethod(ReadMethod):
         return [('::pw::Vector<{}>&'.format(self._result_type()), 'out')]
 
 
+class FindMethod(ReadMethod):
+    def name(self) -> str:
+        return 'Find{}'.format(self._field.name())
+
+    def params(self) -> List[Tuple[str, str]]:
+        return [('::pw::ConstByteSpan', 'message')]
+
+    def body(self) -> List[str]:
+        lines: List[str] = []
+        lines += [
+            f'return {PROTOBUF_NAMESPACE}::{self._find_fn()}'
+            f'(message, {self.field_cast()});'
+        ]
+        return lines
+
+    def _find_fn(self) -> str:
+        """The find function to call.
+
+        Defined in subclasses.
+
+        e.g. 'FindUint32', 'FindBytes', etc.
+        """
+        raise NotImplementedError()
+
+
+class FindStreamMethod(FindMethod):
+    def name(self) -> str:
+        return 'Find{}'.format(self._field.name())
+
+    def params(self) -> List[Tuple[str, str]]:
+        return [('::pw::stream::Reader&', 'message_stream')]
+
+    def body(self) -> List[str]:
+        lines: List[str] = []
+        lines += [
+            f'return {PROTOBUF_NAMESPACE}::{self._find_fn()}'
+            f'(message_stream, {self.field_cast()});'
+        ]
+        return lines
+
+
 class MessageProperty(ProtoMember):
     """Base class for a C++ property for a field in a protobuf message."""
 
@@ -574,6 +615,16 @@ class SubMessageDecoderMethod(ReadMethod):
         return False
 
 
+class SubMessageFindMethod(FindMethod):
+    """Method which reads a proto submessage."""
+
+    def _result_type(self) -> str:
+        return '::pw::ConstByteSpan'
+
+    def _find_fn(self) -> str:
+        return 'FindBytes'
+
+
 class SubMessageProperty(MessageProperty):
     """Property which contains a sub-message."""
 
@@ -716,6 +767,26 @@ class PackedDoubleReadVectorMethod(PackedReadVectorMethod):
         return 'ReadRepeatedDouble'
 
 
+class DoubleFindMethod(FindMethod):
+    """Method which reads a proto double value."""
+
+    def _result_type(self) -> str:
+        return 'double'
+
+    def _find_fn(self) -> str:
+        return 'FindDouble'
+
+
+class DoubleFindStreamMethod(FindStreamMethod):
+    """Method which reads a proto double value."""
+
+    def _result_type(self) -> str:
+        return 'double'
+
+    def _find_fn(self) -> str:
+        return 'FindDouble'
+
+
 class DoubleProperty(MessageProperty):
     """Property which holds a proto double value."""
 
@@ -789,6 +860,26 @@ class PackedFloatReadVectorMethod(PackedReadVectorMethod):
         return 'ReadRepeatedFloat'
 
 
+class FloatFindMethod(FindMethod):
+    """Method which reads a proto float value."""
+
+    def _result_type(self) -> str:
+        return 'float'
+
+    def _find_fn(self) -> str:
+        return 'FindFloat'
+
+
+class FloatFindStreamMethod(FindStreamMethod):
+    """Method which reads a proto float value."""
+
+    def _result_type(self) -> str:
+        return 'float'
+
+    def _find_fn(self) -> str:
+        return 'FindFloat'
+
+
 class FloatProperty(MessageProperty):
     """Property which holds a proto float value."""
 
@@ -860,6 +951,26 @@ class PackedInt32ReadVectorMethod(PackedReadVectorMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadRepeatedInt32'
+
+
+class Int32FindMethod(FindMethod):
+    """Method which reads a proto int32 value."""
+
+    def _result_type(self) -> str:
+        return 'int32_t'
+
+    def _find_fn(self) -> str:
+        return 'FindInt32'
+
+
+class Int32FindStreamMethod(FindStreamMethod):
+    """Method which reads a proto int32 value."""
+
+    def _result_type(self) -> str:
+        return 'int32_t'
+
+    def _find_fn(self) -> str:
+        return 'FindInt32'
 
 
 class Int32Property(MessageProperty):
@@ -938,6 +1049,26 @@ class PackedSint32ReadVectorMethod(PackedReadVectorMethod):
         return 'ReadRepeatedSint32'
 
 
+class Sint32FindMethod(FindMethod):
+    """Method which reads a proto sint32 value."""
+
+    def _result_type(self) -> str:
+        return 'int32_t'
+
+    def _find_fn(self) -> str:
+        return 'FindSint32'
+
+
+class Sint32FindStreamMethod(FindStreamMethod):
+    """Method which reads a proto sint32 value."""
+
+    def _result_type(self) -> str:
+        return 'int32_t'
+
+    def _find_fn(self) -> str:
+        return 'FindSint32'
+
+
 class Sint32Property(MessageProperty):
     """Property which holds a proto sint32 value."""
 
@@ -1014,6 +1145,26 @@ class PackedSfixed32ReadVectorMethod(PackedReadVectorMethod):
         return 'ReadRepeatedSfixed32'
 
 
+class Sfixed32FindMethod(FindMethod):
+    """Method which reads a proto sfixed32 value."""
+
+    def _result_type(self) -> str:
+        return 'int32_t'
+
+    def _find_fn(self) -> str:
+        return 'FindSfixed32'
+
+
+class Sfixed32FindStreamMethod(FindStreamMethod):
+    """Method which reads a proto sfixed32 value."""
+
+    def _result_type(self) -> str:
+        return 'int32_t'
+
+    def _find_fn(self) -> str:
+        return 'FindSfixed32'
+
+
 class Sfixed32Property(MessageProperty):
     """Property which holds a proto sfixed32 value."""
 
@@ -1085,6 +1236,26 @@ class PackedInt64ReadVectorMethod(PackedReadVectorMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadRepeatedInt64'
+
+
+class Int64FindMethod(FindMethod):
+    """Method which reads a proto int64 value."""
+
+    def _result_type(self) -> str:
+        return 'int64_t'
+
+    def _find_fn(self) -> str:
+        return 'FindInt64'
+
+
+class Int64FindStreamMethod(FindStreamMethod):
+    """Method which reads a proto int64 value."""
+
+    def _result_type(self) -> str:
+        return 'int64_t'
+
+    def _find_fn(self) -> str:
+        return 'FindInt64'
 
 
 class Int64Property(MessageProperty):
@@ -1163,6 +1334,26 @@ class PackedSint64ReadVectorMethod(PackedReadVectorMethod):
         return 'ReadRepeatedSint64'
 
 
+class Sint64FindMethod(FindMethod):
+    """Method which reads a proto sint64 value."""
+
+    def _result_type(self) -> str:
+        return 'int64_t'
+
+    def _find_fn(self) -> str:
+        return 'FindSint64'
+
+
+class Sint64FindStreamMethod(FindStreamMethod):
+    """Method which reads a proto sint64 value."""
+
+    def _result_type(self) -> str:
+        return 'int64_t'
+
+    def _find_fn(self) -> str:
+        return 'FindSint64'
+
+
 class Sint64Property(MessageProperty):
     """Property which holds a proto sint64 value."""
 
@@ -1239,6 +1430,26 @@ class PackedSfixed64ReadVectorMethod(PackedReadVectorMethod):
         return 'ReadRepeatedSfixed64'
 
 
+class Sfixed64FindMethod(FindMethod):
+    """Method which reads a proto sfixed64 value."""
+
+    def _result_type(self) -> str:
+        return 'int64_t'
+
+    def _find_fn(self) -> str:
+        return 'FindSfixed64'
+
+
+class Sfixed64FindStreamMethod(FindStreamMethod):
+    """Method which reads a proto sfixed64 value."""
+
+    def _result_type(self) -> str:
+        return 'int64_t'
+
+    def _find_fn(self) -> str:
+        return 'FindSfixed64'
+
+
 class Sfixed64Property(MessageProperty):
     """Property which holds a proto sfixed64 value."""
 
@@ -1310,6 +1521,26 @@ class PackedUint32ReadVectorMethod(PackedReadVectorMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadRepeatedUint32'
+
+
+class Uint32FindMethod(FindMethod):
+    """Method which finds a proto uint32 value."""
+
+    def _result_type(self) -> str:
+        return 'uint32_t'
+
+    def _find_fn(self) -> str:
+        return 'FindUint32'
+
+
+class Uint32FindStreamMethod(FindStreamMethod):
+    """Method which finds a proto uint32 value."""
+
+    def _result_type(self) -> str:
+        return 'uint32_t'
+
+    def _find_fn(self) -> str:
+        return 'FindUint32'
 
 
 class Uint32Property(MessageProperty):
@@ -1388,6 +1619,26 @@ class PackedFixed32ReadVectorMethod(PackedReadVectorMethod):
         return 'ReadRepeatedFixed32'
 
 
+class Fixed32FindMethod(FindMethod):
+    """Method which finds a proto fixed32 value."""
+
+    def _result_type(self) -> str:
+        return 'uint32_t'
+
+    def _find_fn(self) -> str:
+        return 'FindFixed32'
+
+
+class Fixed32FindStreamMethod(FindStreamMethod):
+    """Method which finds a proto fixed32 value."""
+
+    def _result_type(self) -> str:
+        return 'uint32_t'
+
+    def _find_fn(self) -> str:
+        return 'FindFixed32'
+
+
 class Fixed32Property(MessageProperty):
     """Property which holds a proto fixed32 value."""
 
@@ -1459,6 +1710,26 @@ class PackedUint64ReadVectorMethod(PackedReadVectorMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadRepeatedUint64'
+
+
+class Uint64FindMethod(FindMethod):
+    """Method which finds a proto uint64 value."""
+
+    def _result_type(self) -> str:
+        return 'uint64_t'
+
+    def _find_fn(self) -> str:
+        return 'FindUint64'
+
+
+class Uint64FindStreamMethod(FindStreamMethod):
+    """Method which finds a proto uint64 value."""
+
+    def _result_type(self) -> str:
+        return 'uint64_t'
+
+    def _find_fn(self) -> str:
+        return 'FindUint64'
 
 
 class Uint64Property(MessageProperty):
@@ -1537,6 +1808,26 @@ class PackedFixed64ReadVectorMethod(PackedReadVectorMethod):
         return 'ReadRepeatedFixed64'
 
 
+class Fixed64FindMethod(FindMethod):
+    """Method which finds a proto fixed64 value."""
+
+    def _result_type(self) -> str:
+        return 'uint64_t'
+
+    def _find_fn(self) -> str:
+        return 'FindFixed64'
+
+
+class Fixed64FindStreamMethod(FindStreamMethod):
+    """Method which finds a proto fixed64 value."""
+
+    def _result_type(self) -> str:
+        return 'uint64_t'
+
+    def _find_fn(self) -> str:
+        return 'FindFixed64'
+
+
 class Fixed64Property(MessageProperty):
     """Property which holds a proto fixed64 value."""
 
@@ -1600,6 +1891,26 @@ class PackedBoolReadMethod(PackedReadMethod):
         return 'ReadPackedBool'
 
 
+class BoolFindMethod(FindMethod):
+    """Method which finds a proto bool value."""
+
+    def _result_type(self) -> str:
+        return 'bool'
+
+    def _find_fn(self) -> str:
+        return 'FindBool'
+
+
+class BoolFindStreamMethod(FindStreamMethod):
+    """Method which finds a proto bool value."""
+
+    def _result_type(self) -> str:
+        return 'bool'
+
+    def _find_fn(self) -> str:
+        return 'FindBool'
+
+
 class BoolProperty(MessageProperty):
     """Property which holds a proto bool value."""
 
@@ -1637,6 +1948,40 @@ class BytesReadMethod(ReadMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadBytes'
+
+
+class BytesFindMethod(FindMethod):
+    """Method which reads a proto bytes value."""
+
+    def _result_type(self) -> str:
+        return '::pw::ConstByteSpan'
+
+    def _find_fn(self) -> str:
+        return 'FindBytes'
+
+
+class BytesFindStreamMethod(FindStreamMethod):
+    """Method which reads a proto bytes value."""
+
+    def return_type(self, from_root: bool = False) -> str:
+        return '::pw::StatusWithSize'
+
+    def params(self) -> List[Tuple[str, str]]:
+        return [
+            ('::pw::stream::Reader&', 'message_stream'),
+            ('::pw::ByteSpan', 'out'),
+        ]
+
+    def body(self) -> List[str]:
+        lines: List[str] = []
+        lines += [
+            f'return {PROTOBUF_NAMESPACE}::{self._find_fn()}'
+            f'(message_stream, {self.field_cast()}, out);'
+        ]
+        return lines
+
+    def _find_fn(self) -> str:
+        return 'FindBytes'
 
 
 class BytesProperty(MessageProperty):
@@ -1710,6 +2055,64 @@ class StringReadMethod(ReadMethod):
 
     def _decoder_fn(self) -> str:
         return 'ReadString'
+
+
+class StringFindMethod(FindMethod):
+    """Method which reads a proto string value."""
+
+    def _result_type(self) -> str:
+        return 'std::string_view'
+
+    def _find_fn(self) -> str:
+        return 'FindString'
+
+
+class StringFindStreamMethod(FindStreamMethod):
+    """Method which reads a proto string value."""
+
+    def return_type(self, from_root: bool = False) -> str:
+        return '::pw::StatusWithSize'
+
+    def params(self) -> List[Tuple[str, str]]:
+        return [
+            ('::pw::stream::Reader&', 'message_stream'),
+            ('::pw::span<char>', 'out'),
+        ]
+
+    def body(self) -> List[str]:
+        lines: List[str] = []
+        lines += [
+            f'return {PROTOBUF_NAMESPACE}::{self._find_fn()}'
+            f'(message_stream, {self.field_cast()}, out);'
+        ]
+        return lines
+
+    def _find_fn(self) -> str:
+        return 'FindString'
+
+
+class StringFindStreamMethodInlineString(FindStreamMethod):
+    """Method which reads a proto string value to an InlineString."""
+
+    def return_type(self, from_root: bool = False) -> str:
+        return '::pw::StatusWithSize'
+
+    def params(self) -> List[Tuple[str, str]]:
+        return [
+            ('::pw::stream::Reader&', 'message_stream'),
+            ('::pw::InlineString<>&', 'out'),
+        ]
+
+    def body(self) -> List[str]:
+        lines: List[str] = []
+        lines += [
+            f'return {PROTOBUF_NAMESPACE}::{self._find_fn()}'
+            f'(message_stream, {self.field_cast()}, out);'
+        ]
+        return lines
+
+    def _find_fn(self) -> str:
+        return 'FindString'
 
 
 class StringProperty(MessageProperty):
@@ -1861,6 +2264,52 @@ class PackedEnumReadVectorMethod(PackedReadVectorMethod):
             f'return ReadRepeatedUint32('
             f'*reinterpret_cast<pw::Vector<uint32_t>*>(&{value_param}));'
         ]
+
+
+class EnumFindMethod(FindMethod):
+    """Method which finds a proto enum value."""
+
+    def _result_type(self) -> str:
+        return self._relative_type_namespace()
+
+    def body(self) -> List[str]:
+        lines: List[str] = []
+        lines += [
+            '::pw::Result<uint32_t> result = '
+            f'{PROTOBUF_NAMESPACE}::{self._find_fn()}'
+            f'(message, {self.field_cast()});',
+            'if (!result.ok()) {',
+            '  return result.status();',
+            '}',
+            f'return static_cast<{self._result_type()}>(result.value());',
+        ]
+        return lines
+
+    def _find_fn(self) -> str:
+        return 'FindUint32'
+
+
+class EnumFindStreamMethod(FindStreamMethod):
+    """Method which finds a proto enum value."""
+
+    def _result_type(self) -> str:
+        return self._relative_type_namespace()
+
+    def body(self) -> List[str]:
+        lines: List[str] = []
+        lines += [
+            '::pw::Result<uint32_t> result = '
+            f'{PROTOBUF_NAMESPACE}::{self._find_fn()}'
+            f'(message_stream, {self.field_cast()});',
+            'if (!result.ok()) {',
+            '  return result.status();',
+            '}',
+            f'return static_cast<{self._result_type()}>(result.value());',
+        ]
+        return lines
+
+    def _find_fn(self) -> str:
+        return 'FindUint32'
 
 
 class EnumProperty(MessageProperty):
@@ -2037,6 +2486,77 @@ PROTO_FIELD_READ_METHODS: Dict[int, List] = {
         EnumReadMethod,
         PackedEnumReadMethod,
         PackedEnumReadVectorMethod,
+    ],
+}
+
+PROTO_FIELD_FIND_METHODS: Dict[int, List] = {
+    descriptor_pb2.FieldDescriptorProto.TYPE_DOUBLE: [
+        DoubleFindMethod,
+        DoubleFindStreamMethod,
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT: [
+        FloatFindMethod,
+        FloatFindStreamMethod,
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_INT32: [
+        Int32FindMethod,
+        Int32FindStreamMethod,
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_SINT32: [
+        Sint32FindMethod,
+        Sint32FindStreamMethod,
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED32: [
+        Sfixed32FindMethod,
+        Sfixed32FindStreamMethod,
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_INT64: [
+        Int64FindMethod,
+        Int64FindStreamMethod,
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_SINT64: [
+        Sint64FindMethod,
+        Sint64FindStreamMethod,
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED64: [
+        Sfixed64FindMethod,
+        Sfixed64FindStreamMethod,
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_UINT32: [
+        Uint32FindMethod,
+        Uint32FindStreamMethod,
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED32: [
+        Fixed32FindMethod,
+        Fixed32FindStreamMethod,
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_UINT64: [
+        Uint64FindMethod,
+        Uint64FindStreamMethod,
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED64: [
+        Fixed64FindMethod,
+        Fixed64FindStreamMethod,
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_BOOL: [
+        BoolFindMethod,
+        BoolFindStreamMethod,
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_BYTES: [
+        BytesFindMethod,
+        BytesFindStreamMethod,
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_STRING: [
+        StringFindMethod,
+        StringFindStreamMethod,
+        StringFindStreamMethodInlineString,
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE: [
+        SubMessageFindMethod,
+    ],
+    descriptor_pb2.FieldDescriptorProto.TYPE_ENUM: [
+        EnumFindMethod,
+        EnumFindStreamMethod,
     ],
 }
 
@@ -2540,6 +3060,45 @@ def generate_sizes_for_message(
     output.write_line(f'}}  // namespace {namespace}')
 
 
+def generate_find_functions_for_message(
+    message: ProtoMessage, root: ProtoNode, output: OutputFile
+) -> None:
+    """Creates C++ constants for the encoded sizes of a protobuf message."""
+    assert message.type() == ProtoNode.Type.MESSAGE
+
+    namespace = message.cpp_namespace(root=root)
+    output.write_line(f'namespace {namespace} {{')
+
+    for field in message.fields():
+        if field.is_repeated():
+            # Find methods don't account for repeated field semantics, so
+            # ignore them to avoid confusion.
+            continue
+
+        try:
+            methods = PROTO_FIELD_FIND_METHODS[field.type()]
+        except KeyError:
+            continue
+
+        for cls in methods:
+            method = cls(field, message, root, '')
+            method_signature = (
+                f'inline {method.return_type()} '
+                f'{method.name()}({method.param_string()})'
+            )
+
+            output.write_line()
+            output.write_line(f'{method_signature} {{')
+
+            with output.indent():
+                for line in method.body():
+                    output.write_line(line)
+
+            output.write_line('}')
+
+    output.write_line(f'}}  // namespace {namespace}')
+
+
 def generate_is_trivially_comparable_specialization(
     message: ProtoMessage, root: ProtoNode, output: OutputFile
 ) -> None:
@@ -2626,6 +3185,7 @@ def generate_code_for_package(
     output.write_line('#include "pw_containers/vector.h"')
     output.write_line('#include "pw_preprocessor/compiler.h"')
     output.write_line('#include "pw_protobuf/encoder.h"')
+    output.write_line('#include "pw_protobuf/find.h"')
     output.write_line('#include "pw_protobuf/internal/codegen.h"')
     output.write_line('#include "pw_protobuf/serialized_size.h"')
     output.write_line('#include "pw_protobuf/stream_decoder.h"')
@@ -2674,6 +3234,8 @@ def generate_code_for_package(
         generate_table_for_message(message, package, output)
         output.write_line()
         generate_sizes_for_message(message, package, output)
+        output.write_line()
+        generate_find_functions_for_message(message, package, output)
         output.write_line()
         generate_class_for_message(
             message, package, output, ClassType.STREAMING_ENCODER

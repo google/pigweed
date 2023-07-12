@@ -447,6 +447,70 @@ complex than encoding or using the message structure.
   This support will be removed after downstream projects have been migrated.
 
 
+Reading a single field
+----------------------
+Sometimes, only a single field from a serialized message needs to be read. In
+these cases, setting up a decoder and iterating through the message is a lot of
+boilerplate. ``pw_protobuf`` generates convenient ``Find*()`` functions for
+most fields in a message which handle this for you.
+
+.. code-block:: c++
+
+  pw::Status ReadCustomerData(pw::ConstByteSpan serialized_customer) {
+    pw::Result<uint32_t> age = Customer::FindAge(serialized_customer);
+    if (!age.ok()) {
+      return age.status();
+    }
+
+    // This will scan the buffer again from the start, which is less efficient
+    // than writing a custom decoder loop.
+    pw::Result<std::string_view> name = Customer::FindName(serialized_customer);
+    if (!age.ok()) {
+      return age.status();
+    }
+
+    DoStuff(age, name);
+    return pw::OkStatus();
+  }
+
+The ``Find`` APIs also work with streamed data, as shown below.
+
+.. code-block:: c++
+
+  pw::Status ReadCustomerData(pw::stream::Reader& customer_stream) {
+    pw::Result<uint32_t> age = Customer::FindAge(customer_stream);
+    if (!age.ok()) {
+      return age.status();
+    }
+
+    // This will begin scanning for `name` from the current position of the
+    // stream (following the `age` field). If `name` appeared before `age` in
+    // the serialized data, it will not be found.
+    //
+    // Note that unlike with the buffer APIs, stream Find methods copy `string`
+    // and `bytes` fields into a user-provided buffer.
+    char name[32];
+    pw::StatusWithSize sws = Customer::FindName(serialized_customer, name);
+    if (!sws.ok()) {
+      return sws.status();
+    }
+    if (sws.size() >= sizeof(name)) {
+      return pw::Status::OutOfRange();
+    }
+    name[sws.size()] = '\0';
+
+    DoStuff(age, name);
+    return pw::OkStatus();
+  }
+
+.. note::
+
+   Each call to ``Find*()`` linearly scans through the message. If you have to
+   read multiple fields, it is more efficient to instantiate your own decoder as
+   described above. Additionally, to avoid confusion, ``Find*()`` methods are
+   not generated for repeated fields.
+
+
 Direct Writers and Readers
 ==========================
 The lowest level API is provided by the core C++ implementation, and requires

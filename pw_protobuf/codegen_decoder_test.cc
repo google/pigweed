@@ -1025,5 +1025,251 @@ TEST(CodegenRepeated, PackedEnumVector) {
   EXPECT_EQ(repeated_test.Next(), Status::OutOfRange());
 }
 
+TEST(Codegen, FindBuffer) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // pigweed.magic_number
+    0x08, 0x49,
+    // pigweed.ziggy
+    0x10, 0xdd, 0x01,
+    // pigweed.cycles
+    0x19, 0xde, 0xad, 0xca, 0xfe, 0x10, 0x20, 0x30, 0x40,
+    // pigweed.ratio
+    0x25, 0x8f, 0xc2, 0xb5, 0xbf,
+    // pigweed.error_message
+    0x2a, 0x10, 'n', 'o', 't', ' ', 'a', ' ',
+    't', 'y', 'p', 'e', 'w', 'r', 'i', 't', 'e', 'r',
+    // pigweed.bin
+    0x40, 0x01,
+    // pigweed.pigweed
+    0x3a, 0x02,
+    // pigweed.pigweed.status
+    0x08, 0x02,
+    // pigweed.proto
+    0x4a, 0x56,
+    // pigweed.proto.bin
+    0x10, 0x00,
+    // pigweed.proto.pigweed_pigweed_bin
+    0x18, 0x00,
+    // pigweed.proto.pigweed_protobuf_bin
+    0x20, 0x01,
+    // pigweed.proto.meta
+    0x2a, 0x0f,
+    // pigweed.proto.meta.file_name
+    0x0a, 0x0b, '/', 'e', 't', 'c', '/', 'p', 'a', 's', 's', 'w', 'd',
+    // pigweed.proto.meta.status
+    0x10, 0x02,
+    // pigweed.proto.nested_pigweed
+    0x0a, 0x3d,
+    // pigweed.proto.nested_pigweed.error_message
+    0x2a, 0x10, 'h', 'e', 'r', 'e', ' ', 'w', 'e', ' ',
+    'g', 'o', ' ', 'a', 'g', 'a', 'i', 'n',
+    // pigweed.proto.nested_pigweed.magic_number
+    0x08, 0xe8, 0x04,
+    // pigweed.proto.nested_pigweed.device_info
+    0x32, 0x26,
+    // pigweed.proto.nested_pigweed.device_info.attributes[0]
+    0x22, 0x10,
+    // pigweed.proto.nested_pigweed.device_info.attributes[0].key
+    0x0a, 0x07, 'v', 'e', 'r', 's', 'i', 'o', 'n',
+    // pigweed.proto.nested_pigweed.device_info.attributes[0].value
+    0x12, 0x05, '5', '.', '3', '.', '1',
+    // pigweed.proto.nested_pigweed.device_info.attributes[1]
+    0x22, 0x10,
+    // pigweed.proto.nested_pigweed.device_info.attributes[1].key
+    0x0a, 0x04, 'c', 'h', 'i', 'p',
+    // pigweed.proto.nested_pigweed.device_info.attributes[1].value
+    0x12, 0x08, 'l', 'e', 'f', 't', '-', 's', 'o', 'c',
+    // pigweed.proto.nested_pigweed.device_info.status
+    0x18, 0x03,
+    // pigweed.id[0]
+    0x52, 0x02,
+    // pigweed.id[0].id
+    0x08, 0x31,
+    // pigweed.id[1]
+    0x52, 0x02,
+    // pigweed.id[1].id
+    0x08, 0x39,
+    // pigweed.id[2]
+    0x52, 0x02,
+    // pigweed.id[2].id
+    0x08, 0x4b,
+    // pigweed.id[3]
+    0x52, 0x02,
+    // pigweed.id[3].id
+    0x08, 0x67,
+    // pigweed.id[4]
+    0x52, 0x03,
+    // pigweed.id[4].id
+    0x08, 0x8d, 0x01
+
+  };
+  // clang-format on
+
+  EXPECT_EQ(Pigweed::FindMagicNumber(as_bytes(span(proto_data))).value(),
+            0x49u);
+  EXPECT_EQ(Pigweed::FindZiggy(as_bytes(span(proto_data))).value(), -111);
+  EXPECT_EQ(Pigweed::FindCycles(as_bytes(span(proto_data))).value(),
+            0x40302010fecaaddeu);
+  EXPECT_EQ(Pigweed::FindRatio(as_bytes(span(proto_data))).value(), -1.42f);
+
+  auto result = Pigweed::FindErrorMessage(as_bytes(span(proto_data)));
+  EXPECT_EQ(result.status(), OkStatus());
+  InlineString<32> str(*result);
+  EXPECT_STREQ(str.c_str(), "not a typewriter");
+
+  EXPECT_EQ(Pigweed::FindBin(as_bytes(span(proto_data))).value(),
+            Pigweed::Protobuf::Binary::ZERO);
+
+  Result<ConstByteSpan> pigweed =
+      Pigweed::FindPigweed(as_bytes(span(proto_data)));
+  EXPECT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(pigweed->size(), 2u);
+
+  EXPECT_EQ(Pigweed::Pigweed::FindStatus(*pigweed).value(),
+            Bool::FILE_NOT_FOUND);
+
+  // Nonexisting fields.
+  EXPECT_EQ(Pigweed::FindData(as_bytes(span(proto_data))).status(),
+            Status::NotFound());
+  EXPECT_EQ(Pigweed::FindDescription(as_bytes(span(proto_data))).status(),
+            Status::NotFound());
+  EXPECT_EQ(Pigweed::FindSpecialProperty(as_bytes(span(proto_data))).status(),
+            Status::NotFound());
+  EXPECT_EQ(Pigweed::FindBungle(as_bytes(span(proto_data))).status(),
+            Status::NotFound());
+}
+
+TEST(Codegen, FindStream) {
+  stream::MemoryReader reader({});
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // pigweed.magic_number
+    0x08, 0x49,
+    // pigweed.ziggy
+    0x10, 0xdd, 0x01,
+    // pigweed.cycles
+    0x19, 0xde, 0xad, 0xca, 0xfe, 0x10, 0x20, 0x30, 0x40,
+    // pigweed.ratio
+    0x25, 0x8f, 0xc2, 0xb5, 0xbf,
+    // pigweed.error_message
+    0x2a, 0x10, 'n', 'o', 't', ' ', 'a', ' ',
+    't', 'y', 'p', 'e', 'w', 'r', 'i', 't', 'e', 'r',
+    // pigweed.bin
+    0x40, 0x01,
+    // pigweed.pigweed
+    0x3a, 0x02,
+    // pigweed.pigweed.status
+    0x08, 0x02,
+    // pigweed.proto
+    0x4a, 0x56,
+    // pigweed.proto.bin
+    0x10, 0x00,
+    // pigweed.proto.pigweed_pigweed_bin
+    0x18, 0x00,
+    // pigweed.proto.pigweed_protobuf_bin
+    0x20, 0x01,
+    // pigweed.proto.meta
+    0x2a, 0x0f,
+    // pigweed.proto.meta.file_name
+    0x0a, 0x0b, '/', 'e', 't', 'c', '/', 'p', 'a', 's', 's', 'w', 'd',
+    // pigweed.proto.meta.status
+    0x10, 0x02,
+    // pigweed.proto.nested_pigweed
+    0x0a, 0x3d,
+    // pigweed.proto.nested_pigweed.error_message
+    0x2a, 0x10, 'h', 'e', 'r', 'e', ' ', 'w', 'e', ' ',
+    'g', 'o', ' ', 'a', 'g', 'a', 'i', 'n',
+    // pigweed.proto.nested_pigweed.magic_number
+    0x08, 0xe8, 0x04,
+    // pigweed.proto.nested_pigweed.device_info
+    0x32, 0x26,
+    // pigweed.proto.nested_pigweed.device_info.attributes[0]
+    0x22, 0x10,
+    // pigweed.proto.nested_pigweed.device_info.attributes[0].key
+    0x0a, 0x07, 'v', 'e', 'r', 's', 'i', 'o', 'n',
+    // pigweed.proto.nested_pigweed.device_info.attributes[0].value
+    0x12, 0x05, '5', '.', '3', '.', '1',
+    // pigweed.proto.nested_pigweed.device_info.attributes[1]
+    0x22, 0x10,
+    // pigweed.proto.nested_pigweed.device_info.attributes[1].key
+    0x0a, 0x04, 'c', 'h', 'i', 'p',
+    // pigweed.proto.nested_pigweed.device_info.attributes[1].value
+    0x12, 0x08, 'l', 'e', 'f', 't', '-', 's', 'o', 'c',
+    // pigweed.proto.nested_pigweed.device_info.status
+    0x18, 0x03,
+    // pigweed.id[0]
+    0x52, 0x02,
+    // pigweed.id[0].id
+    0x08, 0x31,
+    // pigweed.id[1]
+    0x52, 0x02,
+    // pigweed.id[1].id
+    0x08, 0x39,
+    // pigweed.id[2]
+    0x52, 0x02,
+    // pigweed.id[2].id
+    0x08, 0x4b,
+    // pigweed.id[3]
+    0x52, 0x02,
+    // pigweed.id[3].id
+    0x08, 0x67,
+    // pigweed.id[4]
+    0x52, 0x03,
+    // pigweed.id[4].id
+    0x08, 0x8d, 0x01
+
+  };
+  // clang-format on
+
+  reader = stream::MemoryReader(as_bytes(span(proto_data)));
+  EXPECT_EQ(Pigweed::FindMagicNumber(reader).value(), 0x49u);
+
+  reader = stream::MemoryReader(as_bytes(span(proto_data)));
+  EXPECT_EQ(Pigweed::FindZiggy(reader).value(), -111);
+
+  reader = stream::MemoryReader(as_bytes(span(proto_data)));
+  EXPECT_EQ(Pigweed::FindCycles(reader).value(), 0x40302010fecaaddeu);
+
+  reader = stream::MemoryReader(as_bytes(span(proto_data)));
+  EXPECT_EQ(Pigweed::FindRatio(reader).value(), -1.42f);
+
+  reader = stream::MemoryReader(as_bytes(span(proto_data)));
+  char str[32] = {'\0'};
+  auto result = Pigweed::FindErrorMessage(reader, str);
+  EXPECT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.size(), 16u);
+  EXPECT_STREQ(str, "not a typewriter");
+
+  reader = stream::MemoryReader(as_bytes(span(proto_data)));
+  InlineString<32> error_message;
+  result = Pigweed::FindErrorMessage(reader, error_message);
+  EXPECT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.size(), 16u);
+  EXPECT_STREQ(error_message.c_str(), "not a typewriter");
+
+  reader = stream::MemoryReader(as_bytes(span(proto_data)));
+  EXPECT_EQ(Pigweed::FindBin(reader).value(), Pigweed::Protobuf::Binary::ZERO);
+
+  // Nonexisting fields.
+  reader = stream::MemoryReader(as_bytes(span(proto_data)));
+  std::byte buf[32];
+  EXPECT_EQ(Pigweed::FindData(reader, buf).status(), Status::NotFound());
+
+  reader = stream::MemoryReader(as_bytes(span(proto_data)));
+  EXPECT_EQ(Pigweed::FindDescription(reader, str).status(), Status::NotFound());
+
+  reader = stream::MemoryReader(as_bytes(span(proto_data)));
+  EXPECT_EQ(Pigweed::FindSpecialProperty(reader).status(), Status::NotFound());
+
+  reader = stream::MemoryReader(as_bytes(span(proto_data)));
+  EXPECT_EQ(Pigweed::FindBungle(reader).status(), Status::NotFound());
+
+  // Advance the stream past `magic_number`, then attempt to find it.
+  reader = stream::MemoryReader(as_bytes(span(proto_data)));
+  EXPECT_EQ(Pigweed::FindZiggy(reader).status(), OkStatus());
+  EXPECT_EQ(Pigweed::FindMagicNumber(reader).status(), Status::NotFound());
+}
+
 }  // namespace
 }  // namespace pw::protobuf
