@@ -105,7 +105,7 @@ cc_library_headers {
 //
 // see pw_rpc_nanopb_defaults, pw_rpc_raw_defaults
 cc_defaults {
-   name: "pw_rpc_defaults",
+    name: "pw_rpc_defaults",
     cpp_std: "c++2a",
     header_libs: [
         "fuchsia_sdk_lib_fit",
@@ -166,7 +166,7 @@ cc_defaults {
         "pw_rpc_internal_packet_pwpb_h",
     ],
     srcs: [
-        ":pw_rpc_src_files"
+        ":pw_rpc_src_files",
     ],
     host_supported: true,
     vendor_available: true,
@@ -176,13 +176,13 @@ genrule {
     name: "pw_rpc_internal_packet_pwpb_h",
     srcs: ["internal/packet.proto"],
     cmd: "python3 $(location pw_protobuf_compiler_py) " +
-         "--out-dir=$$(dirname $(location pw_rpc/internal/packet.pwpb.h)) " +
-         "--plugin-path=$(location pw_protobuf_plugin_py) " +
-         "--compile-dir=$$(dirname $(in)) " +
-         "--sources $(in) " +
-         "--language pwpb " +
-         "--no-experimental-proto3-optional " +
-         "--protoc=$(location aprotoc) ",
+        "--out-dir=$$(dirname $(location pw_rpc/internal/packet.pwpb.h)) " +
+        "--plugin-path=$(location pw_protobuf_plugin_py) " +
+        "--compile-dir=$$(dirname $(in)) " +
+        "--sources $(in) " +
+        "--language pwpb " +
+        "--no-experimental-proto3-optional " +
+        "--protoc=$(location aprotoc) ",
     out: [
         "pw_rpc/internal/packet.pwpb.h",
     ],
@@ -197,13 +197,13 @@ genrule {
     name: "pw_rpc_internal_packet_py",
     srcs: ["internal/packet.proto"],
     cmd: "python3 $(location pw_protobuf_compiler_py) " +
-         "--out-dir=$(genDir) " +
-         "--compile-dir=$$(dirname $(in)) " +
-         "--sources $(in) " +
-         "--language python " +
-         "--no-generate-type-hints " +
-         "--no-experimental-proto3-optional " +
-         "--protoc=$(location aprotoc)",
+        "--out-dir=$(genDir) " +
+        "--compile-dir=$$(dirname $(in)) " +
+        "--sources $(in) " +
+        "--language python " +
+        "--no-generate-type-hints " +
+        "--no-experimental-proto3-optional " +
+        "--protoc=$(location aprotoc)",
     out: [
         "packet_pb2.py",
     ],
@@ -218,14 +218,14 @@ genrule {
 genrule_defaults {
     name: "pw_rpc_generate_nanopb_proto",
     cmd: "in_files=($(in)); compile_dir=$$(dirname $${in_files[0]}); " +
-         "python3 $(location pw_protobuf_compiler_py) " +
-         "--plugin-path=$(location protoc-gen-nanopb) " +
-         "--out-dir=$(genDir) " +
-         "--compile-dir=$${compile_dir} " +
-         "--language nanopb " +
-         "--sources $(in) " +
-         "--no-experimental-proto3-optional " +
-         "--protoc=$(location aprotoc)",
+        "python3 $(location pw_protobuf_compiler_py) " +
+        "--plugin-path=$(location protoc-gen-nanopb) " +
+        "--out-dir=$(genDir) " +
+        "--compile-dir=$${compile_dir} " +
+        "--language nanopb " +
+        "--sources $(in) " +
+        "--no-experimental-proto3-optional " +
+        "--protoc=$(location aprotoc)",
     tools: [
         "aprotoc",
         "protoc-gen-nanopb",
@@ -244,18 +244,18 @@ genrule_defaults {
 genrule_defaults {
     name: "pw_rpc_generate_nanopb_proto_with_prefix",
     cmd: "in_files=($(in)); prefix_dir=$$(dirname $${in_files[0]}); " +
-         "compile_dir=$$(dirname $${prefix_dir}); proto_files=(); " +
-         "for f in \"$${in_files[@]}\"; do " +
-         "if [[ \"$${f##*.}\" == \"proto\" ]]; then " +
-         "proto_files+=(\"$${f}\"); fi; done; " +
-         "python3 $(location pw_protobuf_compiler_py) " +
-         "--plugin-path=$(location protoc-gen-nanopb) " +
-         "--out-dir=$(genDir) " +
-         "--compile-dir=$${compile_dir} " +
-         "--language nanopb " +
-         "--sources $${proto_files} " +
-         "--no-experimental-proto3-optional " +
-         "--protoc=$(location aprotoc)",
+        "compile_dir=$$(dirname $${prefix_dir}); proto_files=(); " +
+        "for f in \"$${in_files[@]}\"; do " +
+        "if [[ \"$${f##*.}\" == \"proto\" ]]; then " +
+        "proto_files+=(\"$${f}\"); fi; done; " +
+        "python3 $(location pw_protobuf_compiler_py) " +
+        "--plugin-path=$(location protoc-gen-nanopb) " +
+        "--out-dir=$(genDir) " +
+        "--compile-dir=$${compile_dir} " +
+        "--language nanopb " +
+        "--sources $${proto_files} " +
+        "--no-experimental-proto3-optional " +
+        "--protoc=$(location aprotoc)",
     tools: [
         "aprotoc",
         "protoc-gen-nanopb",
@@ -268,14 +268,14 @@ genrule_defaults {
 genrule_defaults {
     name: "pw_rpc_generate_nanopb_rpc_header",
     cmd: "in_files=($(in)); compile_dir=$$(dirname $${in_files[0]}); " +
-         "python3 $(location pw_protobuf_compiler_py) " +
-         "--plugin-path=$(location pw_rpc_plugin_nanopb_py) " +
-         "--out-dir=$(genDir) " +
-         "--compile-dir=$${compile_dir} " +
-         "--language nanopb_rpc " +
-         "--sources $(in) " +
-         "--no-experimental-proto3-optional " +
-         "--protoc=$(location aprotoc)",
+        "python3 $(location pw_protobuf_compiler_py) " +
+        "--plugin-path=$(location pw_rpc_plugin_nanopb_py) " +
+        "--out-dir=$(genDir) " +
+        "--compile-dir=$${compile_dir} " +
+        "--language nanopb_rpc " +
+        "--sources $(in) " +
+        "--no-experimental-proto3-optional " +
+        "--protoc=$(location aprotoc)",
     tools: [
         "aprotoc",
         "pw_protobuf_compiler_py",
@@ -294,18 +294,18 @@ genrule_defaults {
 genrule_defaults {
     name: "pw_rpc_generate_nanopb_rpc_header_with_prefix",
     cmd: "in_files=($(in)); prefix_dir=$$(dirname $${in_files[0]}); " +
-         "compile_dir=$$(dirname $${prefix_dir}); proto_files=(); " +
-         "for f in \"$${in_files[@]}\"; do " +
-         "if [[ \"$${f##*.}\" == \"proto\" ]]; then " +
-         "proto_files+=(\"$${f}\"); fi; done; " +
-         "python3 $(location pw_protobuf_compiler_py) " +
-         "--plugin-path=$(location pw_rpc_plugin_nanopb_py) " +
-         "--out-dir=$(genDir) " +
-         "--compile-dir=$${compile_dir} " +
-         "--language nanopb_rpc " +
-         "--sources $${proto_files} " +
-         "--no-experimental-proto3-optional " +
-         "--protoc=$(location aprotoc)",
+        "compile_dir=$$(dirname $${prefix_dir}); proto_files=(); " +
+        "for f in \"$${in_files[@]}\"; do " +
+        "if [[ \"$${f##*.}\" == \"proto\" ]]; then " +
+        "proto_files+=(\"$${f}\"); fi; done; " +
+        "python3 $(location pw_protobuf_compiler_py) " +
+        "--plugin-path=$(location pw_rpc_plugin_nanopb_py) " +
+        "--out-dir=$(genDir) " +
+        "--compile-dir=$${compile_dir} " +
+        "--language nanopb_rpc " +
+        "--sources $${proto_files} " +
+        "--no-experimental-proto3-optional " +
+        "--protoc=$(location aprotoc)",
     tools: [
         "aprotoc",
         "pw_protobuf_compiler_py",
@@ -318,14 +318,14 @@ genrule_defaults {
 genrule_defaults {
     name: "pw_rpc_generate_raw_rpc_header",
     cmd: "in_files=($(in)); compile_dir=$$(dirname $${in_files[0]}); " +
-         "python3 $(location pw_protobuf_compiler_py) " +
-         "--plugin-path=$(location pw_rpc_plugin_rawpb_py) " +
-         "--out-dir=$(genDir) " +
-         "--compile-dir=$${compile_dir} " +
-         "--language raw_rpc " +
-         "--sources $(in) " +
-         "--no-experimental-proto3-optional " +
-         "--protoc=$(location aprotoc)",
+        "python3 $(location pw_protobuf_compiler_py) " +
+        "--plugin-path=$(location pw_rpc_plugin_rawpb_py) " +
+        "--out-dir=$(genDir) " +
+        "--compile-dir=$${compile_dir} " +
+        "--language raw_rpc " +
+        "--sources $(in) " +
+        "--no-experimental-proto3-optional " +
+        "--protoc=$(location aprotoc)",
     tools: [
         "aprotoc",
         "pw_protobuf_compiler_py",
@@ -338,14 +338,14 @@ genrule_defaults {
 genrule_defaults {
     name: "pw_rpc_generate_pwpb_proto",
     cmd: "in_files=($(in)); compile_dir=$$(dirname $${in_files[0]}); " +
-         "python3 $(location pw_protobuf_compiler_py) " +
-         "--plugin-path=$(location pw_protobuf_plugin_py) " +
-         "--out-dir=$(genDir) " +
-         "--compile-dir=$${compile_dir} " +
-         "--language pwpb " +
-         "--sources $(in) " +
-         "--no-experimental-proto3-optional " +
-         "--protoc=$(location aprotoc)",
+        "python3 $(location pw_protobuf_compiler_py) " +
+        "--plugin-path=$(location pw_protobuf_plugin_py) " +
+        "--out-dir=$(genDir) " +
+        "--compile-dir=$${compile_dir} " +
+        "--language pwpb " +
+        "--sources $(in) " +
+        "--no-experimental-proto3-optional " +
+        "--protoc=$(location aprotoc)",
     tools: [
         "aprotoc",
         "pw_protobuf_plugin_py",
@@ -358,14 +358,14 @@ genrule_defaults {
 genrule_defaults {
     name: "pw_rpc_generate_pwpb_rpc_header",
     cmd: "in_files=($(in)); compile_dir=$$(dirname $${in_files[0]}); " +
-         "python3 $(location pw_protobuf_compiler_py) " +
-         "--plugin-path=$(location pw_rpc_plugin_pwpb_py) " +
-         "--out-dir=$(genDir) " +
-         "--compile-dir=$${compile_dir} " +
-         "--language pwpb_rpc " +
-         "--sources $(in) " +
-         "--no-experimental-proto3-optional " +
-         "--protoc=$(location aprotoc)",
+        "python3 $(location pw_protobuf_compiler_py) " +
+        "--plugin-path=$(location pw_rpc_plugin_pwpb_py) " +
+        "--out-dir=$(genDir) " +
+        "--compile-dir=$${compile_dir} " +
+        "--language pwpb_rpc " +
+        "--sources $(in) " +
+        "--no-experimental-proto3-optional " +
+        "--protoc=$(location aprotoc)",
     tools: [
         "aprotoc",
         "pw_protobuf_compiler_py",
@@ -379,7 +379,7 @@ genrule_defaults {
 genrule_defaults {
     name: "pw_rpc_add_prefix_to_proto",
     cmd: "out_files=($(out)); prefix=$$(dirname $${out_files[0]}); " +
-         "mkdir -p $${prefix}; cp -t $${prefix} $(in);"
+        "mkdir -p $${prefix}; cp -t $${prefix} $(in);",
 }
 
 genrule {
