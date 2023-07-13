@@ -69,7 +69,7 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "test_threads",
+    name = "non_portable_test_thread_options",
     srcs = [
         "test_threads.cc",
     ],
@@ -77,8 +77,8 @@ pw_cc_library(
     tags = ["manual"],
     deps = [
         "//pw_chrono:system_clock",
+        "//pw_thread:non_portable_test_thread_options",
         "//pw_thread:sleep",
-        "//pw_thread:test_threads_header",
         "//pw_thread:thread_facade",
     ],
 )
@@ -88,7 +88,7 @@ pw_cc_test(
     # TODO(b/257321712): This target doesn't build.
     tags = ["manual"],
     deps = [
-        ":test_threads",
+        ":non_portable_test_thread_options",
         "//pw_thread:thread_facade_test",
     ],
 )

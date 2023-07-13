@@ -85,7 +85,7 @@ pw_add_library(pw_thread_stl.test_thread_context INTERFACE
 
 pw_add_library(pw_thread_stl.test_threads STATIC
   PUBLIC_DEPS
-    pw_thread.test_threads
+    pw_thread.non_portable_test_thread_options
   SOURCES
     test_threads.cc
   PRIVATE_DEPS

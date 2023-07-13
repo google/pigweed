@@ -435,7 +435,7 @@ pw_cc_facade(
 #         "//pw_sync:mutex",
 #         "//pw_sync:timed_thread_notification",
 #         "//pw_thread:sleep",
-#         "//pw_thread:test_threads_header",
+#         "//pw_thread:non_portable_test_thread_options",
 #         "//pw_thread:thread",
 #         "//pw_unit_test",
 #     ],

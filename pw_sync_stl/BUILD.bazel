@@ -169,6 +169,6 @@ pw_cc_library(
 #     name = "condition_variable_test",
 #     deps = [
 #         "//pw_sync:condition_variable_test",
-#         "//pw_thread_stl:test_threads",
+#         "//pw_thread_stl:non_portable_test_thread_options",
 #     ]
 # )

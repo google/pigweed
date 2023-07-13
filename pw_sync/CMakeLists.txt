@@ -352,7 +352,7 @@ pw_add_library(pw_sync.condition_variable_test STATIC
     pw_sync.mutex
     pw_sync.timed_thread_notification
     pw_thread.sleep
-    pw_thread.test_threads
+    pw_thread.non_portable_test_thread_options
     pw_thread.thread
     pw_unit_test
   SOURCES

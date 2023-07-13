@@ -93,13 +93,13 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "test_threads",
+    name = "non_portable_test_thread_options",
     srcs = [
         "test_threads.cc",
     ],
     target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
-        "//pw_thread:test_threads_header",
+        "//pw_thread:non_portable_test_thread_options",
         "//pw_thread:thread_facade",
     ],
 )
@@ -108,7 +108,7 @@ pw_cc_test(
     name = "thread_backend_test",
     target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
-        ":test_threads",
+        ":non_portable_test_thread_options",
         "//pw_thread:thread_facade_test",
     ],
 )

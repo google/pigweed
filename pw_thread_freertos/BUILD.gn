@@ -287,7 +287,7 @@ if (pw_thread_freertos_FREERTOS_TSKTCB_BACKEND != "") {
       "$dir_pw_string:util",
       "$dir_pw_sync:thread_notification",
       "$dir_pw_third_party/freertos",
-      "$dir_pw_thread:test_threads",
+      "$dir_pw_thread:non_portable_test_thread_options",
       "$dir_pw_thread:thread",
       "$dir_pw_thread:thread_info",
       "$dir_pw_thread:thread_iteration",
@@ -296,7 +296,7 @@ if (pw_thread_freertos_FREERTOS_TSKTCB_BACKEND != "") {
 }
 
 pw_source_set("dynamic_test_threads") {
-  public_deps = [ "$dir_pw_thread:test_threads" ]
+  public_deps = [ "$dir_pw_thread:non_portable_test_thread_options" ]
   sources = [ "dynamic_test_threads.cc" ]
   deps = [
     "$dir_pw_chrono:system_clock",
@@ -314,7 +314,7 @@ pw_test("dynamic_thread_backend_test") {
 }
 
 pw_source_set("static_test_threads") {
-  public_deps = [ "$dir_pw_thread:test_threads" ]
+  public_deps = [ "$dir_pw_thread:non_portable_test_thread_options" ]
   sources = [ "static_test_threads.cc" ]
   deps = [
     "$dir_pw_chrono:system_clock",

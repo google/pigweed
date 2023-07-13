@@ -196,9 +196,9 @@ if((NOT "${pw_thread.id_BACKEND}" STREQUAL "") AND
   )
 endif()
 
-pw_add_library(pw_thread.test_threads INTERFACE
+pw_add_library(pw_thread.non_portable_test_thread_options INTERFACE
   HEADERS
-    public/pw_thread/test_threads.h
+    public/pw_thread/non_portable_test_thread_options.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
@@ -215,7 +215,7 @@ pw_add_library(pw_thread.thread_facade_test STATIC
   PRIVATE_DEPS
     pw_thread.id
     pw_thread.sleep
-    pw_thread.test_threads
+    pw_thread.non_portable_test_thread_options
     pw_thread.thread
     pw_sync.binary_semaphore
     pw_unit_test

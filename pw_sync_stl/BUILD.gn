@@ -174,7 +174,7 @@ pw_test("condition_variable_test") {
               "$dir_pw_sync_stl:condition_variable"
   deps = [
     "$dir_pw_sync:condition_variable_test",
-    "$dir_pw_thread_stl:test_threads",
+    "$dir_pw_thread_stl:non_portable_test_thread_options",
   ]
 }
 

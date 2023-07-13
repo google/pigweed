@@ -12,14 +12,13 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_thread/test_threads.h"
-
 #include <chrono>
 
 #include "RTOS.h"
 #include "pw_assert/check.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_log/log.h"
+#include "pw_thread/non_portable_test_thread_options.h"
 #include "pw_thread/sleep.h"
 #include "pw_thread_embos/context.h"
 #include "pw_thread_embos/options.h"

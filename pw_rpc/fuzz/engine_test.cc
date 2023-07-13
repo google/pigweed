@@ -23,7 +23,7 @@
 #include "pw_rpc/internal/client_server_testing.h"
 #include "pw_rpc/internal/client_server_testing_threaded.h"
 #include "pw_rpc/internal/fake_channel_output.h"
-#include "pw_thread/test_threads.h"
+#include "pw_thread/non_portable_test_thread_options.h"
 
 namespace pw::rpc::fuzz {
 namespace {
@@ -76,6 +76,7 @@ class FuzzerContext : public FuzzerContextBase {
   explicit FuzzerContext(
       TestPacketProcessor&& server_packet_processor = nullptr,
       TestPacketProcessor&& client_packet_processor = nullptr)
+      // TODO(b/290860904): Replace TestOptionsThread0 with TestThreadContext.
       : FuzzerContextBase(thread::test::TestOptionsThread0(),
                           std::move(server_packet_processor),
                           std::move(client_packet_processor)) {}

@@ -189,7 +189,7 @@ if(("${pw_thread.thread_BACKEND}" STREQUAL "pw_thread_stl.thread") AND
       pw_rpc.test_protos.pwpb_rpc
       pw_sync.binary_semaphore
       pw_sync.mutex
-      pw_thread.test_threads
+      pw_thread.non_portable_test_thread_options
       pw_thread.thread
       pw_thread_stl.test_threads
     GROUPS

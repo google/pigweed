@@ -245,7 +245,7 @@ pw_test_group("tests") {
   ]
 }
 
-# You can instantiate this with your own provided "$dir_pw_thread:test_threads",
+# You can instantiate this with your own provided "$dir_pw_thread:non_portable_test_thread_options",
 # see ":thread_notification_test_with_static_threads" below as an example.
 pw_source_set("thread_notification_test") {
   sources = [ "thread_notification_test.cc" ]
@@ -253,8 +253,8 @@ pw_source_set("thread_notification_test") {
     "$dir_pw_chrono:system_clock",
     "$dir_pw_sync:thread_notification",
     "$dir_pw_third_party/freertos",
+    "$dir_pw_thread:non_portable_test_thread_options",
     "$dir_pw_thread:sleep",
-    "$dir_pw_thread:test_threads",
     "$dir_pw_thread:thread",
     "$dir_pw_unit_test",
   ]
@@ -271,7 +271,7 @@ pw_test("thread_notification_test_with_static_threads") {
   ]
 }
 
-# You can instantiate this with your own provided "$dir_pw_thread:test_threads",
+# You can instantiate this with your own provided "$dir_pw_thread:non_portable_test_thread_options",
 # see ":timed_thread_notification_test_with_static_threads" below as an example.
 pw_source_set("timed_thread_notification_test") {
   sources = [ "timed_thread_notification_test.cc" ]
@@ -279,8 +279,8 @@ pw_source_set("timed_thread_notification_test") {
     "$dir_pw_chrono:system_clock",
     "$dir_pw_sync:timed_thread_notification",
     "$dir_pw_third_party/freertos",
+    "$dir_pw_thread:non_portable_test_thread_options",
     "$dir_pw_thread:sleep",
-    "$dir_pw_thread:test_threads",
     "$dir_pw_thread:thread",
     "$dir_pw_unit_test",
   ]

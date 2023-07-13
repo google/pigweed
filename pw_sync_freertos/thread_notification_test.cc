@@ -20,8 +20,8 @@
 #include "FreeRTOS.h"
 #include "gtest/gtest.h"
 #include "pw_chrono/system_clock.h"
+#include "pw_thread/non_portable_test_thread_options.h"
 #include "pw_thread/sleep.h"
-#include "pw_thread/test_threads.h"
 #include "pw_thread/thread.h"
 #include "pw_thread/thread_core.h"
 #include "task.h"
@@ -67,6 +67,7 @@ class NotificationAcquirer : public thread::ThreadCore {
 
 TEST(ThreadNotification, AcquireWithoutSuspend) {
   NotificationAcquirer notification_acquirer;
+  // TODO(b/290860904): Replace TestOptionsThread0 with TestThreadContext.
   Thread thread =
       Thread(thread::test::TestOptionsThread0(), notification_acquirer);
 

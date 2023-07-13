@@ -208,9 +208,9 @@ pw_test("sleep_facade_test") {
   ]
 }
 
-pw_source_set("test_threads") {
+pw_source_set("non_portable_test_thread_options") {
   public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_thread/test_threads.h" ]
+  public = [ "public/pw_thread/non_portable_test_thread_options.h" ]
   public_deps = [ ":thread" ]
 }
 
@@ -222,8 +222,8 @@ pw_source_set("thread_facade_test") {
   sources = [ "thread_facade_test.cc" ]
   deps = [
     ":id",
+    ":non_portable_test_thread_options",
     ":sleep",
-    ":test_threads",
     ":thread",
     "$dir_pw_sync:binary_semaphore",
     dir_pw_unit_test,

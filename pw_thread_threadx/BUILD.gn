@@ -201,8 +201,8 @@ pw_test_group("tests") {
   tests = [ ":thread_backend_test" ]
 }
 
-pw_source_set("test_threads") {
-  public_deps = [ "$dir_pw_thread:test_threads" ]
+pw_source_set("non_portable_test_thread_options") {
+  public_deps = [ "$dir_pw_thread:non_portable_test_thread_options" ]
   sources = [ "test_threads.cc" ]
   deps = [
     "$dir_pw_chrono:system_clock",
@@ -216,7 +216,7 @@ pw_source_set("test_threads") {
 pw_test("thread_backend_test") {
   enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_threadx:thread"
   deps = [
-    ":test_threads",
+    ":non_portable_test_thread_options",
     "$dir_pw_thread:thread_facade_test",
   ]
 }

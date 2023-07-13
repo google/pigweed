@@ -15,7 +15,7 @@
 #include "gtest/gtest.h"
 #include "pw_sync/binary_semaphore.h"
 #include "pw_thread/id.h"
-#include "pw_thread/test_threads.h"
+#include "pw_thread/non_portable_test_thread_options.h"
 #include "pw_thread/thread.h"
 
 using pw::thread::test::TestOptionsThread0;

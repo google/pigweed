@@ -17,18 +17,16 @@
 
 namespace pw::thread::test {
 
-/// The class `TestThreadContext` is a facade class for thread testing across
-/// platforms. The usage is similar to using `TestOptionsThread0()`, but user
-/// doesn't need to hard-code backend dependency in the test. User needs to
-/// implement the `pw::thread::test::backend::TestThreadContextNative` class in
-/// `test_thread_context.h` and set the facade backend with
-/// `pw_thread_TEST_THREAD_CONTEXT_BACKEND`.
-/// User needs to ensure the context's lifespan outlives the thread it
-/// created. Recyling or destroy context is only allowed for using `join()` in
-/// thread.
-/// WARNING: Threads using the `TestThreadContext` may only be detached if the
-/// context has a static lifetime, meaning the context is both never re-used and
-/// not destroyed before the end of the lifetime of the application.
+/// `TestThreadContext` is a facade class for creating threads for unit tests in
+/// a platform independent way. To use it, set
+/// `pw_thread_TEST_THREAD_CONTEXT_BACKEND` to a backend that implements the
+/// `pw::thread::test::backend::TestThreadContextNative` class.
+///
+/// To create a thread for unit testing, instantiate a `TestThreadContext`, then
+/// call `options()` to obtain a `pw::thread::Options`. Use that `Options` to
+/// start a `Thread`. Users must ensure the context's lifespan outlives the
+/// thread it creates. Recycling or destroying the context is only allowed if
+/// `join()` is called on the thread first.
 ///
 /// @code{.cpp}
 ///    pw::thread::test::TestThreadContext context;
@@ -36,11 +34,20 @@ namespace pw::thread::test {
 ///                                   ExampleThreadFunction);
 /// @endcode
 ///
-/// IMPORTANT: Developers typically test thread logic inside a thread, which
-/// should not need a thread to be spawned in most cases. It is recommended to
-/// isolate thread logic in a separate function so that such function can be
-/// called outside the thread scope in tests. Unit tests should avoid spawning
-/// threads unless absolutely necessary.
+/// Threads created with `TestThreadContext` cannot be configured in any way.
+/// Backends should create threads with sufficient resources to execute typical
+/// unit tests. Tests for complex scenarios or interactions where e.g. priority
+/// matters are not portable, and `TestThreadContext` may not work for them.
+/// Non-portable tests may include backend-specific headers and instantiate
+/// thread options for their platforms as required.
+///
+/// @note Developers should structure their logic so it can be tested without
+/// spawning a thread. Unit tests should avoid spawning threads unless
+/// absolutely necessary.
+///
+/// @warning Threads using the `TestThreadContext` may only be detached if the
+/// context has a static lifetime, meaning the context is both never re-used and
+/// not destroyed before the end of the lifetime of the application.
 class TestThreadContext {
  public:
   TestThreadContext() = default;
@@ -48,8 +55,8 @@ class TestThreadContext {
   TestThreadContext(const TestThreadContext&) = delete;
   TestThreadContext& operator=(const TestThreadContext&) = delete;
 
-  /// @brief `pw::thread::test::TestThreadContext` returns a default
-  /// `pw::thread::Options` associated with the current object for testing.
+  /// `pw::thread::test::TestThreadContext` returns a `pw::thread::Options`
+  /// associated with the this object, which can be used to contruct a thread.
   ///
   /// @return The default options for testing thread.
   const Options& options() const { return context_.options(); }

@@ -451,13 +451,14 @@ function without arguments. For example:
   implements the ThreadCore MUST meet or exceed the lifetime of its thread of
   execution!
 
-----------------
-Thread Unit Test
-----------------
+-------------------------
+Unit testing with threads
+-------------------------
 .. doxygenclass:: pw::thread::test::TestThreadContext
    :members:
 
-The STL backend implementation ``test_thread_context_native.h`` lists below:
+As an example, the STL :cpp:class:`TestThreadContext` backend implementation in
+``test_thread_context_native.h`` is shown below.
 
 .. literalinclude:: ../pw_thread_stl/public/pw_thread_stl/test_thread_context_native.h
    :language: cpp

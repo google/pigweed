@@ -12,8 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_thread/test_threads.h"
-
+#include "pw_thread/non_portable_test_thread_options.h"
 #include "pw_thread_stl/options.h"
 
 namespace pw::thread::test {

@@ -309,9 +309,9 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "test_threads_header",
+    name = "non_portable_test_thread_options",
     hdrs = [
-        "public/pw_thread/test_threads.h",
+        "public/pw_thread/non_portable_test_thread_options.h",
     ],
     deps = [
         ":thread",
@@ -319,7 +319,7 @@ pw_cc_library(
 )
 
 # To instantiate this as a pw_cc_test, depend on this pw_cc_library and the
-# pw_cc_library which implements the backend for test_threads_header. See
+# pw_cc_library which implements the backend for non_portable_test_thread_options. See
 # //pw_thread_stl:thread_backend_test as an example.
 pw_cc_library(
     name = "thread_facade_test",
@@ -328,7 +328,7 @@ pw_cc_library(
     ],
     deps = [
         ":id",
-        ":test_threads_header",
+        ":non_portable_test_thread_options",
         ":thread",
         "//pw_chrono:system_clock",
         "//pw_sync:binary_semaphore",

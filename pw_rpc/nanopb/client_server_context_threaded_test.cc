@@ -19,7 +19,7 @@
 #include "pw_rpc_test_protos/test.rpc.pb.h"
 #include "pw_sync/binary_semaphore.h"
 #include "pw_sync/mutex.h"
-#include "pw_thread/test_threads.h"
+#include "pw_thread/non_portable_test_thread_options.h"
 
 namespace pw::rpc {
 namespace {
@@ -72,6 +72,7 @@ class RpcCaller {
 
 TEST(NanopbClientServerTestContextThreaded, ReceivesUnaryRpcResponseThreaded) {
   NanopbClientServerTestContextThreaded<> ctx(
+      // TODO(b/290860904): Replace TestOptionsThread0 with TestThreadContext.
       thread::test::TestOptionsThread0());
   TestService service;
   ctx.server().RegisterService(service);

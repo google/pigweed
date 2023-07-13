@@ -20,7 +20,7 @@
 #include "pw_rpc/pwpb/client_server_testing_threaded.h"
 #include "pw_rpc_test_protos/test.rpc.pwpb.h"
 #include "pw_sync/binary_semaphore.h"
-#include "pw_thread/test_threads.h"
+#include "pw_thread/non_portable_test_thread_options.h"
 
 namespace pw::rpc {
 namespace {
@@ -80,6 +80,7 @@ class RpcCaller {
 };
 
 TEST(PwpbClientServerTestContextThreaded, ReceivesUnaryRpcResponseThreaded) {
+  // TODO(b/290860904): Replace TestOptionsThread0 with TestThreadContext.
   PwpbClientServerTestContextThreaded<> ctx(thread::test::TestOptionsThread0());
   test::TestService service;
   ctx.server().RegisterService(service);

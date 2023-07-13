@@ -111,8 +111,8 @@ pw_cc_library(
     ],
     deps = [
         "//pw_chrono:system_clock",
+        "//pw_thread:non_portable_test_thread_options",
         "//pw_thread:sleep",
-        "//pw_thread:test_threads_header",
         "//pw_thread:thread_facade",
     ],
 )
@@ -137,8 +137,8 @@ pw_cc_library(
     ],
     deps = [
         "//pw_chrono:system_clock",
+        "//pw_thread:non_portable_test_thread_options",
         "//pw_thread:sleep",
-        "//pw_thread:test_threads_header",
         "//pw_thread:thread_facade",
     ],
 )
@@ -206,7 +206,7 @@ pw_cc_test(
         "//pw_string:builder",
         "//pw_string:util",
         "//pw_sync:thread_notification",
-        "//pw_thread:test_threads_header",
+        "//pw_thread:non_portable_test_thread_options",
         "//pw_thread:thread",
         "//pw_thread:thread_info",
         "//pw_thread:thread_iteration",

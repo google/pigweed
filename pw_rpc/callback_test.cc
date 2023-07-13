@@ -16,8 +16,8 @@
 #include "pw_rpc/raw/client_testing.h"
 #include "pw_rpc_test_protos/test.raw_rpc.pb.h"
 #include "pw_sync/binary_semaphore.h"
+#include "pw_thread/non_portable_test_thread_options.h"
 #include "pw_thread/sleep.h"
-#include "pw_thread/test_threads.h"
 #include "pw_thread/thread.h"
 #include "pw_thread/yield.h"
 
@@ -44,6 +44,8 @@ class CallbacksTest : public ::testing::Test {
  protected:
   CallbacksTest()
       : callback_thread_(
+            // TODO(b/290860904): Replace TestOptionsThread0 with
+            // TestThreadContext.
             thread::test::TestOptionsThread0(),
             [](void* arg) {
               static_cast<CallbacksTest*>(arg)->SendResponseAfterSemaphore();

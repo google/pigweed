@@ -480,10 +480,10 @@ pw_test("callback_test") {
     ":server",
     ":test_protos.raw_rpc",
     "$dir_pw_sync:binary_semaphore",
+    "$dir_pw_thread:non_portable_test_thread_options",
     "$dir_pw_thread:sleep",
-    "$dir_pw_thread:test_threads",
     "$dir_pw_thread:yield",
-    "$dir_pw_thread_stl:test_threads",
+    "$dir_pw_thread_stl:non_portable_test_thread_options",
     "raw:client_testing",
   ]
   sources = [ "callback_test.cc" ]

@@ -355,8 +355,8 @@ pw_source_set("condition_variable_test") {
     "$dir_pw_containers:vector",
     "$dir_pw_sync:mutex",
     "$dir_pw_sync:timed_thread_notification",
+    "$dir_pw_thread:non_portable_test_thread_options",
     "$dir_pw_thread:sleep",
-    "$dir_pw_thread:test_threads",
     "$dir_pw_thread:thread",
     "$dir_pw_unit_test",
   ]
