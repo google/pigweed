@@ -16,6 +16,13 @@ package {
     default_applicable_licenses: ["external_pigweed_license"],
 }
 
+filegroup {
+    name: "pw_rpc_pwpb_src_files",
+    srcs: [
+        "server_reader_writer.cc",
+    ],
+}
+
 cc_library_headers {
     name: "pw_rpc_pwpb_include_dirs",
     export_include_dirs: [
@@ -26,14 +33,16 @@ cc_library_headers {
 }
 
 cc_defaults {
-   name: "pw_rpc_pwpb_defaults",
+    name: "pw_rpc_pwpb_defaults",
     cpp_std: "c++2a",
     header_libs: [
-      "pw_rpc_pwpb_include_dirs",
+        "pw_rpc_pwpb_include_dirs",
     ],
-
     export_header_lib_headers: [
-      "pw_rpc_pwpb_include_dirs",
+        "pw_rpc_pwpb_include_dirs",
+    ],
+    srcs: [
+        ":pw_rpc_pwpb_src_files",
     ],
     vendor_available: true,
     host_supported: true,
