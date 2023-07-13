@@ -21,6 +21,11 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+constraint_value(
+    name = "backend",
+    constraint_setting = "//pw_sys_io:backend_constraint_setting",
+)
+
 pw_cc_library(
     name = "pw_sys_io_baremetal_lm3s6965evb",
     srcs = ["sys_io_baremetal.cc"],

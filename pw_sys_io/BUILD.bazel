@@ -22,6 +22,10 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+constraint_setting(
+    name = "backend_constraint_setting",
+)
+
 pw_cc_facade(
     name = "facade",
     hdrs = ["public/pw_sys_io/sys_io.h"],
@@ -53,13 +57,21 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+alias(
     name = "backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
-    deps = select({
-        "//pw_build/constraints/board:mimxrt595_evk": ["@pigweed//pw_sys_io_mcuxpresso"],
-        "//pw_build/constraints/chipset:stm32f429": ["@pigweed//pw_sys_io_baremetal_stm32f429"],
-        "//pw_build/constraints/chipset:lm3s6965evb": ["@pigweed//pw_sys_io_baremetal_lm3s6965evb"],
-        "//conditions:default": ["@pigweed//pw_sys_io_stdio"],
+    actual = select({
+        "//pw_sys_io_arduino:backend": "@pigweed//pw_sys_io_arduino",
+        "//pw_sys_io_baremetal_lm3s6965evb:backend": "@pigweed//pw_sys_io_baremetal_lm3s6965evb",
+        "//pw_sys_io_baremetal_stm32f429:backend": "@pigweed//pw_sys_io_baremetal_stm32f429",
+        "//pw_sys_io_emcraft_sf2:backend": "@pigweed//pw_sys_io_emcraft_sf2",
+        "//pw_sys_io_mcuxpresso:backend": "@pigweed//pw_sys_io_mcuxpresso",
+        "//pw_sys_io_pico:backend": "@pigweed//pw_sys_io_pico",
+        "//pw_sys_io_stm32cube:backend": "@pigweed//pw_sys_io_stm32cube",
+        "//pw_sys_io_stdio:backend": "@pigweed//pw_sys_io_stdio",
+        "@platforms//os:macos": "@pigweed//pw_sys_io_stdio",
+        "@platforms//os:linux": "@pigweed//pw_sys_io_stdio",
+        "@platforms//os:windows": "@pigweed//pw_sys_io_stdio",
+        "//conditions:default": "@pigweed//pw_build:unspecified_backend",
     }),
+    visibility = ["@pigweed_config//:__pkg__"],
 )

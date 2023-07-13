@@ -47,3 +47,16 @@ pw_cc_test(
         "PW_BUILD_EXPECTED_SOURCE_PATH=\\\"pw_build/file_prefix_map_test.cc\\\"",
     ],
 )
+
+# Special target that may be used instead of a cc_library as the default
+# condition in backend multiplexer select statements.  This produces better
+# error messages than e.g. using an invalid label.
+#
+# If you're a user whose build errored out because a library transitively
+# depended on this target: the platform you're targeting did not specify which
+# backend to use for some facade. Look at the previous step in the dependency
+# chain (printed with the error) to figure out which one.
+cc_library(
+    name = "unspecified_backend",
+    target_compatible_with = ["@platforms//:incompatible"],
+)

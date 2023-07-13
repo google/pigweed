@@ -98,6 +98,7 @@ platform(
     constraint_values = [
         "//pw_build/constraints/chipset:lm3s6965evb",
         "@rust_crates//:no_std",
+        "//pw_sys_io_baremetal_lm3s6965evb:backend",
     ],
     parents = [":cortex_m3"],
 )
@@ -115,11 +116,14 @@ platform(
     parents = [":stm32f429"],
 )
 
+# Primarily a QEMU supported m0 target for rust development, based on the
+# nRF51822.
 platform(
     name = "microbit",
     constraint_values = [
         "//pw_build/constraints/board:microbit",
         "@rust_crates//:no_std",
+        # We have no pw_sys_io backend for this platform.
     ],
     parents = [":nrf52833"],
 )
@@ -137,9 +141,9 @@ platform(
         "//targets/stm32f429i_disc1_stm32cube:freertos_config_cv",
         # Use the ARM_CM4F port of FreeRTOS.
         "@freertos//:port_ARM_CM4F",
-        # Specify this chipset to use the baremetal pw_sys_io backend (because
-        # the default pw_sys_io_stdio backend is not compatible with FreeRTOS).
-        "//pw_build/constraints/chipset:stm32f429",
+        # Use the baremetal pw_sys_io backend (because the default
+        # pw_sys_io_stdio backend is not compatible with FreeRTOS).
+        "//pw_sys_io_baremetal_stm32f429:backend",
         # os:none means, we're not building for any host platform (Windows,
         # Linux, or Mac). The pw_sys_io_baremetal_stm32f429 backend is only
         # compatible with os:none.

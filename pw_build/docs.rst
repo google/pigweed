@@ -1484,11 +1484,52 @@ components:
    If a project uses only one backend for a given facade, the backend label
    flag should point at that backend target.
 
+#. The **facade constraint setting** and **backend constraint values**. Every
+   facade has an associated `constraint setting
+   <https://bazel.build/concepts/platforms#api-review>`_ (enum used in platform
+   definition), and each backend for this facade has an associated
+   ``constraint_value`` (enum value). Example:
+
+   .. code-block:: python
+
+     # //pw_sync/BUILD.bazel
+     constraint_setting(
+       name = "binary_semaphore_backend_constraint_setting",
+     )
+
+     # //pw_sync_stl/BUILD.bazel
+     constraint_value(
+       name = "binary_semaphore_backend",
+       constraint_setting = "//pw_sync:binary_semaphore_backend_constraint_setting",
+     )
+
+     # //pw_sync_freertos/BUILD.bazel
+     constraint_value(
+       name = "binary_semaphore_backend",
+       constraint_setting = "//pw_sync:binary_semaphore_backend_constraint_setting",
+     )
+
+   `Target platforms <https://bazel.build/extending/platforms>`_ for Pigweed
+   projects should indicate which backend they select for each facade by
+   listing the corresponding ``constraint_value`` in their definition. This can
+   be used in a couple of ways:
+
+   #.  It allows projects to switch between multiple backends based only on the
+       `target platform <https://bazel.build/extending/platforms>`_ using a
+       *backend multiplexer* (see below) instead of setting label flags in
+       their ``.bazelrc``.
+
+   #.  It allows tests or libraries that only support a particular backend to
+       express this through the `target_compatible_with
+       <https://bazel.build/reference/be/common-definitions#common.target_compatible_with>`_
+       attribute. Bazel will use this to `automatically skip incompatible
+       targets in wildcard builds
+       <https://bazel.build/extending/platforms#skipping-incompatible-targets>`_.
+
 #. The **backend multiplexer**. If a project uses more than one backend for a
    given facade (e.g., it uses different backends for host and embedded target
    builds), the backend label flag will point to a target that resolves to the
-   correct backend based on the `target platform
-   <https://bazel.build/extending/platforms>`_. This will typically be an
+   correct backend based on the target platform. This will typically be an
    `alias <https://bazel.build/reference/be/general#alias>`_ with a ``select``
    statement mapping constraint values to the appropriate backend targets. For
    example,
@@ -1500,6 +1541,15 @@ components:
          actual = select({
              "//pw_sync_stl:binary_semaphore_backend": "@pigweed//pw_sync_stl:binary_semaphore",
              "//pw_sync_freertos:binary_semaphore_backend": "@pigweed//pw_sync_freertos:binary_semaphore_backend",
+             # If we're building for a host OS, use the STL backend.
+             "@platforms//os:macos": "@pigweed//pw_sync_stl:binary_semaphore",
+             "@platforms//os:linux": "@pigweed//pw_sync_stl:binary_semaphore",
+             "@platforms//os:windows": "@pigweed//pw_sync_stl:binary_semaphore",
+             # Unless the target platform is the host platform, it must
+             # explicitly specify which backend to use. The unspecified_backend
+             # is not compatible with any platform; taking this branch will produce
+             # an informative error.
+             "//conditions:default": "@pigweed//pw_build:unspecified_backend",
          }),
      )
 

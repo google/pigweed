@@ -21,6 +21,11 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+constraint_value(
+    name = "backend",
+    constraint_setting = "//pw_sys_io:backend_constraint_setting",
+)
+
 pw_cc_library(
     name = "pw_sys_io_mcuxpresso",
     srcs = ["sys_io.cc"],

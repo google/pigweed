@@ -923,11 +923,11 @@ right one. In this case it looks like;
     name = "system_clock_backend_multiplexer",
     visibility = ["@pigweed_config//:__pkg__"],
     deps = select({
-        "@pigweed//pw_build/constraints/rtos:freertos":
+        "@pigweed//pw_chrono_freertos:system_clock_backend":
             ["//pw_chrono_freertos:system_clock"],
-        "@pigweed//pw_build/constraints/rtos:embos":
+        "@pigweed//pw_chrono_embos:system_clock_backend":
             ["//pw_chrono_embos:system_clock"],
-        "@pigweed//pw_build/constraints/rtos:threadx":
+        "@pigweed//pw_chrono_threadx:system_clock_backend":
             ["//pw_chrono_threadx:system_clock"],
         "//conditions:default": ["//pw_chrono_stl:system_clock"],
     }),
@@ -972,83 +972,72 @@ requiring different combinations of different backends as you can't even reuse
 your command line entries. Instead you would have to memorize the correct
 combination of backends for each of your targets.
 
-So continuing on with our scenario, let's say we add a backup micro-controller,
+So continuing on with our scenario, let's say we add a backup microcontroller
 to our spacecraft. But this backup computer doesn't have a hardware RTC. We
 still want to share the bulk of the code between the two computers but now we
 need two separate implementations for our pw_chrono facade. Let's say we choose
-to keep the primary flight computer using the hardware RTC and switch the backup
-computer over to use Pigweeds default FreeRTOS backend. In this case we might,
-want to do something similar to
-'@pigweed//pw_chrono:system_clock_backend_multiplexer' and create selectable
-dependencies for the two different computers. Now because there are no default
-constraint_setting's that meet our requirements we are going to have to;
+to keep the primary flight computer using the hardware RTC and switch the
+backup computer over to use Pigweed's default FreeRTOS backend. In this case we
+might want to do something similar to
+``@pigweed//pw_chrono:system_clock_backend_multiplexer`` and create selectable
+dependencies for the two different computers:
 
-1. Create a constraint_setting and a set of constraint_value's for the flight
-   computer. For example;
+#. Create a constraint value corresponding to your custom backend:
 
-  .. code:: py
+   .. code-block:: python
 
-    # //platforms/flight_computer/BUILD
-    constraint_setting(
-      name = "flight_computer",
-    )
+     # //pw_chrono_my_hardware_rtc/BUILD.bazel
+     constraint_value(
+       name = "system_clock_backend",
+       constraint_setting = "//pw_chrono:system_clock_constraint_setting",
+     )
 
-    constraint_value(
-      name = "primary",
-      constraint_setting = ":flight_computer",
-    )
+#. Create a set of platforms that can be used to switch constraint values.
+   For example:
 
-    constraint_value(
-      name = "backup",
-      constraint_setting = ":flight_computer",
-    )
+   .. code-block:: python
 
-2. Create a set of platforms that can be used to switch constraint_value's.
-   For example;
+      # //platforms/BUILD.bazel
+      platform(
+        name = "primary_computer",
+        constraint_values = ["//pw_chrono_my_hardware_rtc:system_clock_backend"],
+      )
 
-  .. code:: py
+      platform(
+        name = "backup_computer",
+        constraint_values = ["@pigweed//pw_chrono_freertos:system_clock_backend"],
+      )
 
-    # //platforms/BUILD
-    platform(
-      name = "primary_computer",
-      constraint_values = ["//platforms/flight_computer:primary"],
-    )
+#. Create a target multiplexer that will select the right backend depending on
+   which computer you are using. For example:
 
-    platform(
-      name = "backup_computer",
-      constraint_values = ["//platforms/flight_computer:backup"],
-    )
+   .. code-block:: python
 
-3. Create a target multiplexer that will select the right backend depending on
-   which computer you are using. For example;
+     # //pw_chrono/BUILD
+     load("//pw_build:pigweed.bzl", "pw_cc_library")
 
-  .. code:: py
+     pw_cc_library(
+       name = "system_clock_backend_multiplexer",
+       deps = select({
+         "//pw_chrono_my_hardware_rtc:system_clock_backend": [
+           "//pw_chrono_my_hardware_rtc:system_clock",
+         ],
+         "@pigweed//pw_chrono_freertos:system_clock_backend": [
+           "@pigweed//pw_chrono_freertos:system_clock",
+         ],
+         "//conditions:default": [
+           "@pigweed//pw_chrono_stl:system_clock",
+         ],
+       }),
+     )
 
-    # //pw_chrono/BUILD
-    load("//pw_build:pigweed.bzl", "pw_cc_library")
-
-    pw_cc_library(
-      name = "system_clock_backend_multiplexer",
-      deps = select({
-        "//platforms/flight_computer:primary": [
-          "//pw_chrono_my_hardware_rtc:system_clock",
-        ],
-        "//platforms/flight_computer:backup": [
-          "@pigweed//pw_chrono_freertos:system_clock",
-        ],
-        "//conditions:default": [
-          "@pigweed//pw_chrono_stl:system_clock",
-        ],
-      }),
-    )
-
-4. Add a build setting override for the ``pw_chrono_system_clock_backend`` label
+#. Add a build setting override for the ``pw_chrono_system_clock_backend`` label
    flag to your ``.bazelrc`` file that points to your new target multiplexer.
 
-  .. code:: py
+   .. code-block:: python
 
-    # //.bazelrc
-    build --@pigweed_config//:pw_chrono_system_clock_backend=@your_workspace//pw_chrono:system_clock_backend_multiplexer
+     # //.bazelrc
+     build --@pigweed_config//:pw_chrono_system_clock_backend=@your_workspace//pw_chrono:system_clock_backend_multiplexer
 
 Building your target now will result in slightly different build graph. For
 example, running;
