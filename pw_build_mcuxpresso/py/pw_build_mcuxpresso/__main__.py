@@ -19,10 +19,12 @@ import pathlib
 import sys
 
 try:
-    from pw_build_mcuxpresso import components
+    from pw_build_mcuxpresso import bazel, components, gn
 except ImportError:
     # Load from this directory if pw_build_mcuxpresso is not available.
     import components  # type: ignore
+    import bazel  # type: ignore
+    import gn  # type: ignore
 
 
 def _parse_args() -> argparse.Namespace:
@@ -33,13 +35,22 @@ def _parse_args() -> argparse.Namespace:
         dest='command', metavar='<command>', required=True
     )
 
-    project_parser = subparsers.add_parser(
-        'project', help='output components of an MCUXpresso project'
+    subparser = subparsers.add_parser(
+        'gn', help='output components of an MCUXpresso project as GN scope'
     )
-    project_parser.add_argument('manifest_filename', type=pathlib.Path)
-    project_parser.add_argument('--include', type=str, action='append')
-    project_parser.add_argument('--exclude', type=str, action='append')
-    project_parser.add_argument('--prefix', dest='path_prefix', type=str)
+    subparser.add_argument('manifest_filename', type=pathlib.Path)
+    subparser.add_argument('--include', type=str, action='append')
+    subparser.add_argument('--exclude', type=str, action='append')
+    subparser.add_argument('--prefix', dest='path_prefix', type=str)
+
+    subparser = subparsers.add_parser(
+        'bazel', help='output an MCUXpresso project as a bazel target'
+    )
+    subparser.add_argument('manifest_filename', type=pathlib.Path)
+    subparser.add_argument('--name', dest='bazel_name', type=str, required=True)
+    subparser.add_argument('--include', type=str, action='append')
+    subparser.add_argument('--exclude', type=str, action='append')
+    subparser.add_argument('--prefix', dest='path_prefix', type=str)
 
     return parser.parse_args()
 
@@ -48,12 +59,17 @@ def main():
     """Main command line function."""
     args = _parse_args()
 
-    if args.command == 'project':
-        components.project(
-            args.manifest_filename,
-            include=args.include,
-            exclude=args.exclude,
-            path_prefix=args.path_prefix,
+    project = components.Project.from_file(
+        args.manifest_filename,
+        include=args.include,
+        exclude=args.exclude,
+    )
+
+    if args.command == 'gn':
+        gn.gn_output(project, path_prefix=args.path_prefix)
+    if args.command == 'bazel':
+        bazel.bazel_output(
+            project, name=args.bazel_name, path_prefix=args.path_prefix
         )
 
     sys.exit(0)

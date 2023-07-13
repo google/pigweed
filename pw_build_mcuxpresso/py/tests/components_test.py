@@ -805,8 +805,8 @@ class CheckDependenciesTest(unittest.TestCase):
         self.assertEqual(satisfied, True)
 
 
-class CreateProjectTest(unittest.TestCase):
-    """create_project tests."""
+class ProjectTest(unittest.TestCase):
+    """Project tests."""
 
     def test_create_project(self):
         """test creating a project."""
@@ -904,21 +904,14 @@ class CreateProjectTest(unittest.TestCase):
         </manifest>
         '''
         root = xml.etree.ElementTree.fromstring(test_manifest_xml)
-        (
-            component_ids,
-            defines,
-            include_dirs,
-            headers,
-            sources,
-            libs,
-        ) = components.create_project(
-            root, ['test', 'frodo'], exclude=['bilbo']
+        project = components.Project(
+            root, ['test', 'frodo'], exclude=['baz', 'bilbo']
         )
 
-        self.assertEqual(component_ids, ['test', 'frodo', 'foo', 'bar'])
-        self.assertEqual(defines, ['FRODO', 'FOO', 'BAR'])
+        self.assertEqual(project.component_ids, ['test', 'frodo', 'foo', 'bar'])
+        self.assertEqual(project.defines, ['FRODO', 'FOO', 'BAR'])
         self.assertEqual(
-            include_dirs,
+            project.include_dirs,
             [
                 pathlib.Path('frodo/include'),
                 pathlib.Path('foo/include'),
@@ -926,7 +919,7 @@ class CreateProjectTest(unittest.TestCase):
             ],
         )
         self.assertEqual(
-            headers,
+            project.headers,
             [
                 pathlib.Path('frodo/include/frodo.h'),
                 pathlib.Path('foo/include/foo.h'),
@@ -934,14 +927,15 @@ class CreateProjectTest(unittest.TestCase):
             ],
         )
         self.assertEqual(
-            sources,
+            project.sources,
             [
                 pathlib.Path('frodo/src/frodo.cc'),
                 pathlib.Path('foo/src/foo.cc'),
                 pathlib.Path('bar/src/bar.cc'),
             ],
         )
-        self.assertEqual(libs, [pathlib.Path('frodo/libonering.a')])
+        self.assertEqual(project.libs, [pathlib.Path('frodo/libonering.a')])
+        self.assertTrue(project.dependencies_satisfied)
 
 
 if __name__ == '__main__':

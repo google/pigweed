@@ -25,7 +25,9 @@ pw_python_package("py") {
   sources = [
     "pw_build_mcuxpresso/__init__.py",
     "pw_build_mcuxpresso/__main__.py",
+    "pw_build_mcuxpresso/bazel.py",
     "pw_build_mcuxpresso/components.py",
+    "pw_build_mcuxpresso/gn.py",
   ]
   tests = [ "tests/components_test.py" ]
   pylintrc = "$dir_pigweed/.pylintrc"

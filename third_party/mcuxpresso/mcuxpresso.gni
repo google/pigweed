@@ -69,7 +69,7 @@ template("pw_mcuxpresso_sdk") {
   }
 
   _script_args = [
-    "project",
+    "gn",
     rebase_path(invoker.manifest),
     "--prefix=$_sdk_dir",
   ]
