@@ -20,6 +20,10 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_toolchain/arm_gcc/toolchains.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
 
+declare_args() {
+  pw_targets_ENABLE_RP2040_TEST_RUNNER = false
+}
+
 if (current_toolchain != default_toolchain) {
   pw_source_set("pico_logging_test_main") {
     deps = [
@@ -54,6 +58,11 @@ generate_toolchain("rp2040") {
     pw_build_EXECUTABLE_TARGET_TYPE = "pico_executable"
     pw_build_EXECUTABLE_TARGET_TYPE_FILE =
         get_path_info("pico_executable.gni", "abspath")
+    if (pw_targets_ENABLE_RP2040_TEST_RUNNER) {
+      _test_runner_script = "py/rp2040_utils/unit_test_client.py"
+      pw_unit_test_AUTOMATIC_RUNNER =
+          get_path_info(_test_runner_script, "abspath")
+    }
     pw_unit_test_MAIN = "$dir_pigweed/targets/rp2040:pico_logging_test_main"
     pw_assert_BACKEND = dir_pw_assert_basic
     pw_log_BACKEND = dir_pw_log_basic

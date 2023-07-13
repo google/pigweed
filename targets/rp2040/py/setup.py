@@ -1,4 +1,4 @@
-# Copyright 2022 The Pigweed Authors
+# Copyright 2023 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -11,18 +11,8 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""rp2040_utils"""
 
-# Pigweed upstream specific depenencies:
-# pigweed.dev Sphinx themes
-beautifulsoup4==4.12.2
-furo @ https://github.com/chadnorvell/furo/releases/download/2023.03.27/furo-2023.3.27.dev1-py3-none-any.whl
-sphinx-copybutton==0.5.1
-sphinx-tabs==3.4.1
-myst-parser==0.18.1
-breathe==4.34.0
-kconfiglib==14.1.0
-# Renode requirements
-psutil==5.9.4
-robotframework==6.0.2
-# RP2040 utils.
-pyusb==1.2.1
+import setuptools  # type: ignore
+
+setuptools.setup()  # Package definition in setup.cfg

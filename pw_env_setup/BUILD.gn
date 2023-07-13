@@ -100,6 +100,7 @@ pw_python_venv("pigweed_build_venv") {
 pw_python_pip_install("target_support_packages") {
   packages = [
     "$dir_pigweed/targets/lm3s6965evb_qemu/py",
+    "$dir_pigweed/targets/rp2040/py",
     "$dir_pigweed/targets/stm32f429i_disc1/py",
   ]
   editable = true
