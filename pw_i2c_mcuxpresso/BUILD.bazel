@@ -30,6 +30,7 @@ pw_cc_library(
     ],
     deps = [
         "//pw_chrono:system_clock",
+        "//pw_i2c:address",
         "//pw_i2c:initiator",
         "//pw_status",
         "//pw_sync:interrupt_spin_lock",

@@ -57,8 +57,8 @@ McuxpressoInitiator::McuxpressoInitiator(I2C_Type* base,
 
 McuxpressoInitiator::~McuxpressoInitiator() { I2C_MasterDeinit(base_); }
 
-void McuxpressoInitiator::TransferCompleteCallback(I2C_Type* base,
-                                                   i2c_master_handle_t* handle,
+void McuxpressoInitiator::TransferCompleteCallback(I2C_Type*,
+                                                   i2c_master_handle_t*,
                                                    status_t status,
                                                    void* initiator_ptr) {
   McuxpressoInitiator& initiator =
