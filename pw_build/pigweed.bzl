@@ -72,6 +72,13 @@ def pw_cc_test(**kwargs):
     *  Sets "linkstatic" to True.
     *  Disables header modules (via the feature -use_header_modules).
 
+    In addition, a .lib target is created that's a cc_library with the same
+    kwargs. Such library targets can be used as dependencies of firmware images
+    bundling multiple tests. The library target has alwayslink = 1, to support
+    dynamic registration (ensure the tests are baked into the image even though
+    there are no references to them, so that they can be found by RUN_ALL_TESTS
+    at runtime).
+
     Args:
       **kwargs: Passed to cc_test.
     """
@@ -95,6 +102,28 @@ def pw_cc_test(**kwargs):
     kwargs["copts"] = kwargs.get("copts", []) + extra_copts
 
     native.cc_test(**kwargs)
+
+    kwargs["alwayslink"] = 1
+
+    # pw_cc_test deps may include testonly targets.
+    kwargs["testonly"] = True
+
+    # Remove any kwargs that cc_library would not recognize.
+    for arg in (
+        "additional_linker_inputs",
+        "args",
+        "env",
+        "env_inherit",
+        "flaky",
+        "local",
+        "malloc",
+        "shard_count",
+        "size",
+        "stamp",
+        "timeout",
+    ):
+        kwargs.pop(arg, "")
+    native.cc_library(name = kwargs.pop("name") + ".lib", **kwargs)
 
 def pw_cc_perf_test(**kwargs):
     """A Pigweed performance test.
