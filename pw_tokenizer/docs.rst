@@ -129,41 +129,9 @@ Encoding command line utility
 =============================
 See :ref:`module-pw_tokenizer-cli-encoding`.
 
-.. _module-pw_tokenizer-domains:
-
 Tokenization domains
 ====================
-``pw_tokenizer`` supports having multiple tokenization domains. Domains are a
-string label associated with each tokenized string. This allows projects to keep
-tokens from different sources separate. Potential use cases include the
-following:
-
-* Keep large sets of tokenized strings separate to avoid collisions.
-* Create a separate database for a small number of strings that use truncated
-  tokens, for example only 10 or 16 bits instead of the full 32 bits.
-
-If no domain is specified, the domain is empty (``""``). For many projects, this
-default domain is sufficient, so no additional configuration is required.
-
-.. code-block:: cpp
-
-   // Tokenizes this string to the default ("") domain.
-   PW_TOKENIZE_STRING("Hello, world!");
-
-   // Tokenizes this string to the "my_custom_domain" domain.
-   PW_TOKENIZE_STRING_DOMAIN("my_custom_domain", "Hello, world!");
-
-The database and detokenization command line tools default to reading from the
-default domain. The domain may be specified for ELF files by appending
-``#DOMAIN_NAME`` to the file path. Use ``#.*`` to read from all domains. For
-example, the following reads strings in ``some_domain`` from ``my_image.elf``.
-
-.. code-block:: sh
-
-   ./database.py create --database my_db.csv path/to/my_image.elf#some_domain
-
-See :ref:`module-pw_tokenizer-managing-token-databases` for information about
-the ``database.py`` command line tool.
+See :ref:`module-pw_tokenizer-domains`.
 
 .. _module-pw_tokenizer-masks:
 

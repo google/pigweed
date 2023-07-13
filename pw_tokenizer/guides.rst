@@ -60,10 +60,48 @@ Once enabled, the tokenizer headers can be included like any Zephyr headers:
   ``pw_tokenizer_zephyr.ld`` which is added to the end of the linker file
   via a call to ``zephyr_linker_sources(SECTIONS ...)``.
 
+.. _module-pw_tokenizer-domains:
+
+---------------------------------------------------------------------
+Keep tokens from different sources separate with tokenization domains
+---------------------------------------------------------------------
+``pw_tokenizer`` supports having multiple tokenization domains. Domains are a
+string label associated with each tokenized string. This allows projects to keep
+tokens from different sources separate. Potential use cases include the
+following:
+
+* Keep large sets of tokenized strings separate to avoid collisions.
+* Create a separate database for a small number of strings that use truncated
+  tokens, for example only 10 or 16 bits instead of the full 32 bits.
+
+If no domain is specified, the domain is empty (``""``). For many projects, this
+default domain is sufficient, so no additional configuration is required.
+
+.. code-block:: cpp
+
+   // Tokenizes this string to the default ("") domain.
+   PW_TOKENIZE_STRING("Hello, world!");
+
+   // Tokenizes this string to the "my_custom_domain" domain.
+   PW_TOKENIZE_STRING_DOMAIN("my_custom_domain", "Hello, world!");
+
+The database and detokenization command line tools default to reading from the
+default domain. The domain may be specified for ELF files by appending
+``#DOMAIN_NAME`` to the file path. Use ``#.*`` to read from all domains. For
+example, the following reads strings in ``some_domain`` from ``my_image.elf``.
+
+.. code-block:: sh
+
+   ./database.py create --database my_db.csv path/to/my_image.elf#some_domain
+
+See :ref:`module-pw_tokenizer-managing-token-databases` for information about
+the ``database.py`` command line tool.
+
 .. _module-pw_tokenizer-managing-token-databases:
 
+------------------------
 Managing token databases
-========================
+------------------------
 Background: :ref:`module-pw_tokenizer-token-databases`
 
 Token databases are managed with the ``database.py`` script. This script can be
@@ -77,7 +115,7 @@ file to experiment with the ``database.py`` commands.
 .. _module-pw_tokenizer-database-creation:
 
 Create a database
------------------
+=================
 The ``create`` command makes a new token database from ELF files (.elf, .o, .so,
 etc.), archives (.a), existing token databases (CSV or binary), or a JSON file
 containing an array of strings.
@@ -95,7 +133,7 @@ detokenizer library only supports binary databases currently.
 .. _module-pw_tokenizer-update-token-database:
 
 Update a database
------------------
+=================
 As new tokenized strings are added, update the database with the ``add``
 command.
 
@@ -112,7 +150,7 @@ changes are made. The build system can invoke ``database.py`` to update the
 database after each build.
 
 GN integration
---------------
+==============
 Token databases may be updated or created as part of a GN build. The
 ``pw_tokenizer_database`` template provided by
 ``$dir_pw_tokenizer/database.gni`` automatically updates an in-source tokenized
@@ -155,7 +193,7 @@ with the ``paths`` option.
    GN targets first if this is a concern.
 
 CMake integration
------------------
+=================
 Token databases may be updated or created as part of a CMake build. The
 ``pw_tokenizer_database`` template provided by
 ``$dir_pw_tokenizer/database.cmake`` automatically updates an in-source tokenized
