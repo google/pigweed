@@ -1,0 +1,52 @@
+// Copyright 2023 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+syntax = "proto3";
+
+package pw.i2c;
+
+message I2cWriteRequest {
+  // Which I2C initiator bus to communicate on.
+  uint32 bus_index = 1;
+  // 7-bit I2C target address to write to.
+  uint32 target_address = 2;
+  // Register address to write. Follow the endianness required by the
+  // peripheral for multi-byte address.
+  bytes register_address = 3;
+  // Value to write. Follow the endianness required by the peripheral.
+  bytes value = 4;
+}
+
+message I2cWriteResponse {}
+
+message I2cReadRequest {
+  // Which I2C initiator bus to communicate on.
+  uint32 bus_index = 1;
+  // 7-bit I2C target address to read from.
+  uint32 target_address = 2;
+  // Register address to write. Follow the endianness required by the
+  // peripheral for multi-byte address.
+  bytes register_address = 3;
+  // Expected number of bytes from the peripheral.
+  uint32 read_size = 4;
+}
+
+message I2cReadResponse {
+  bytes value = 1;
+}
+
+service I2c {
+  // Enable access to I2C devices implementing register read/writes.
+  rpc I2cWrite(I2cWriteRequest) returns (I2cWriteResponse) {}
+  rpc I2cRead(I2cReadRequest) returns (I2cReadResponse) {}
+}

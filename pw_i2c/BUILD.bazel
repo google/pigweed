@@ -17,6 +17,12 @@ load(
     "pw_cc_library",
     "pw_cc_test",
 )
+load(
+    "//pw_protobuf_compiler:pw_proto_library.bzl",
+    "pw_proto_filegroup",
+    "pw_proto_library",
+)
+load("@rules_proto//proto:defs.bzl", "proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -155,5 +161,48 @@ pw_cc_test(
     deps = [
         ":register_device",
         "//pw_unit_test",
+    ],
+)
+
+pw_proto_filegroup(
+    name = "i2c_proto_and_options",
+    srcs = ["i2c.proto"],
+    options_files = ["i2c.options"],
+)
+
+proto_library(
+    name = "i2c_proto",
+    srcs = [":i2c_proto_and_options"],
+)
+
+pw_proto_library(
+    name = "i2c_cc",
+    deps = [":i2c_proto"],
+)
+
+pw_cc_library(
+    name = "i2c_service",
+    srcs = ["i2c_service.cc"],
+    hdrs = ["public/pw_i2c/i2c_service.h"],
+    includes = ["public"],
+    deps = [
+        ":address",
+        ":i2c_cc.pwpb_rpc",
+        ":initiator",
+        "//pw_chrono:system_clock",
+        "//pw_containers:vector",
+        "//pw_status",
+    ],
+)
+
+pw_cc_test(
+    name = "i2c_service_test",
+    srcs = ["i2c_service_test.cc"],
+    deps = [
+        ":i2c_service",
+        ":initiator_mock",
+        "//pw_containers:vector",
+        "//pw_rpc/pwpb:test_method_context",
+        "//pw_status",
     ],
 )

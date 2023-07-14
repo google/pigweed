@@ -17,6 +17,7 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
@@ -70,6 +71,27 @@ pw_source_set("register_device") {
   deps = [ "$dir_pw_assert" ]
 }
 
+pw_proto_library("protos") {
+  sources = [ "i2c.proto" ]
+  inputs = [ "i2c.options" ]
+  prefix = "pw_i2c"
+}
+
+pw_source_set("i2c_service") {
+  public = [ "public/pw_i2c/i2c_service.h" ]
+  sources = [ "i2c_service.cc" ]
+  public_deps = [
+    ":protos.pwpb_rpc",
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_i2c:initiator",
+  ]
+  deps = [
+    "$dir_pw_containers:vector",
+    "$dir_pw_i2c:address",
+    "$dir_pw_status",
+  ]
+}
+
 pw_source_set("mock") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_i2c/initiator_mock.h" ]
@@ -102,6 +124,7 @@ pw_test_group("tests") {
     ":device_test",
     ":initiator_mock_test",
     ":register_device_test",
+    ":i2c_service_test",
   ]
 }
 
@@ -135,6 +158,18 @@ pw_test("initiator_mock_test") {
   deps = [
     ":mock",
     "$dir_pw_containers",
+  ]
+}
+
+pw_test("i2c_service_test") {
+  enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
+  sources = [ "i2c_service_test.cc" ]
+  deps = [
+    ":i2c_service",
+    "$dir_pw_containers:vector",
+    "$dir_pw_i2c:mock",
+    "$dir_pw_rpc/pwpb:test_method_context",
+    "$dir_pw_status",
   ]
 }
 
