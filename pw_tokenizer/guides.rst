@@ -257,3 +257,111 @@ the ``database`` variable.
      TARGET my_target.ext
      DEPS ${deps_list}
    }
+
+.. _module-pw_tokenizer-detokenization-guides:
+
+---------------------
+Detokenization guides
+---------------------
+See :ref:`module-pw_tokenizer-detokenization` for a conceptual overview
+of detokenization.
+
+Python
+======
+To detokenize in Python, import ``Detokenizer`` from the ``pw_tokenizer``
+package, and instantiate it with paths to token databases or ELF files.
+
+.. code-block:: python
+
+   import pw_tokenizer
+
+   detokenizer = pw_tokenizer.Detokenizer('path/to/database.csv', 'other/path.elf')
+
+   def process_log_message(log_message):
+       result = detokenizer.detokenize(log_message.payload)
+       self._log(str(result))
+
+The ``pw_tokenizer`` package also provides the ``AutoUpdatingDetokenizer``
+class, which can be used in place of the standard ``Detokenizer``. This class
+monitors database files for changes and automatically reloads them when they
+change. This is helpful for long-running tools that use detokenization. The
+class also supports token domains for the given database files in the
+``<path>#<domain>`` format.
+
+For messages that are optionally tokenized and may be encoded as binary,
+Base64, or plaintext UTF-8, use
+:func:`pw_tokenizer.proto.decode_optionally_tokenized`. This will attempt to
+determine the correct method to detokenize and always provide a printable
+string. For more information on this feature, see
+:ref:`module-pw_tokenizer-proto`.
+
+C++
+===
+The C++ detokenization libraries can be used in C++ or any language that can
+call into C++ with a C-linkage wrapper, such as Java or Rust. A reference
+Java Native Interface (JNI) implementation is provided.
+
+The C++ detokenization library uses binary-format token databases (created with
+``database.py create --type binary``). Read a binary format database from a
+file or include it in the source code. Pass the database array to
+``TokenDatabase::Create``, and construct a detokenizer.
+
+.. code-block:: cpp
+
+   Detokenizer detokenizer(TokenDatabase::Create(token_database_array));
+
+   std::string ProcessLog(span<uint8_t> log_data) {
+     return detokenizer.Detokenize(log_data).BestString();
+   }
+
+The ``TokenDatabase`` class verifies that its data is valid before using it. If
+it is invalid, the ``TokenDatabase::Create`` returns an empty database for which
+``ok()`` returns false. If the token database is included in the source code,
+this check can be done at compile time.
+
+.. code-block:: cpp
+
+   // This line fails to compile with a static_assert if the database is invalid.
+   constexpr TokenDatabase kDefaultDatabase =  TokenDatabase::Create<kData>();
+
+   Detokenizer OpenDatabase(std::string_view path) {
+     std::vector<uint8_t> data = ReadWholeFile(path);
+
+     TokenDatabase database = TokenDatabase::Create(data);
+
+     // This checks if the file contained a valid database. It is safe to use a
+     // TokenDatabase that failed to load (it will be empty), but it may be
+     // desirable to provide a default database or otherwise handle the error.
+     if (database.ok()) {
+       return Detokenizer(database);
+     }
+     return Detokenizer(kDefaultDatabase);
+   }
+
+TypeScript
+==========
+To detokenize in TypeScript, import ``Detokenizer`` from the ``pigweedjs``
+package, and instantiate it with a CSV token database.
+
+.. code-block:: typescript
+
+   import { pw_tokenizer, pw_hdlc } from 'pigweedjs';
+   const { Detokenizer } = pw_tokenizer;
+   const { Frame } = pw_hdlc;
+
+   const detokenizer = new Detokenizer(String(tokenCsv));
+
+   function processLog(frame: Frame){
+     const result = detokenizer.detokenize(frame);
+     console.log(result);
+   }
+
+For messages that are encoded in Base64, use ``Detokenizer::detokenizeBase64``.
+`detokenizeBase64` will also attempt to detokenize nested Base64 tokens. There
+is also `detokenizeUint8Array` that works just like `detokenize` but expects
+`Uint8Array` instead of a `Frame` argument.
+
+Protocol buffers
+================
+``pw_tokenizer`` provides utilities for handling tokenized fields in protobufs.
+See :ref:`module-pw_tokenizer-proto` for details.

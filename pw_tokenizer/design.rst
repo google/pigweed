@@ -203,6 +203,58 @@ token database generation for strings that are not embedded as parsable tokens
 in compiled binaries. See :ref:`module-pw_tokenizer-database-creation` for
 instructions on generating a token database from a JSON file.
 
+.. _module-pw_tokenizer-detokenization:
+
+--------------
+Detokenization
+--------------
+Detokenization is the process of expanding a token to the string it represents
+and decoding its arguments. ``pw_tokenizer`` provides Python, C++ and
+TypeScript detokenization libraries.
+
+**Example: decoding tokenized logs**
+
+A project might tokenize its log messages with the
+:ref:`module-pw_tokenizer-base64-format`. Consider the following log file, which
+has four tokenized logs and one plain text log:
+
+.. code-block:: text
+
+   20200229 14:38:58 INF $HL2VHA==
+   20200229 14:39:00 DBG $5IhTKg==
+   20200229 14:39:20 DBG Crunching numbers to calculate probability of success
+   20200229 14:39:21 INF $EgFj8lVVAUI=
+   20200229 14:39:23 ERR $DFRDNwlOT1RfUkVBRFk=
+
+The project's log strings are stored in a database like the following:
+
+.. code-block::
+
+   1c95bd1c,          ,"Initiating retrieval process for recovery object"
+   2a5388e4,          ,"Determining optimal approach and coordinating vectors"
+   3743540c,          ,"Recovery object retrieval failed with status %s"
+   f2630112,          ,"Calculated acceptable probability of success (%.2f%%)"
+
+Using the detokenizing tools with the database, the logs can be decoded:
+
+.. code-block:: text
+
+   20200229 14:38:58 INF Initiating retrieval process for recovery object
+   20200229 14:39:00 DBG Determining optimal algorithm and coordinating approach vectors
+   20200229 14:39:20 DBG Crunching numbers to calculate probability of success
+   20200229 14:39:21 INF Calculated acceptable probability of success (32.33%)
+   20200229 14:39:23 ERR Recovery object retrieval failed with status NOT_READY
+
+.. note::
+
+   This example uses the :ref:`module-pw_tokenizer-base64-format`, which
+   occupies about 4/3 (133%) as much space as the default binary format when
+   encoded. For projects that wish to interleave tokenized with plain text,
+   using Base64 is a worthwhile tradeoff.
+
+See :ref:`module-pw_tokenizer-detokenization-guides` for detailed instructions
+on how to do detokenization in different programming languages.
+
 -------------
 Compatibility
 -------------
