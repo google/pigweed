@@ -25,7 +25,16 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
-    name = "headers",
+    name = "linux_config_overrides",
+    hdrs = ["linux_config_overrides.h"],
+    tags = ["manual"],
+)
+
+pw_cc_library(
+    name = "pw_trace_tokenized",
+    srcs = [
+        "trace.cc",
+    ],
     hdrs = [
         "public/pw_trace_tokenized/config.h",
         "public/pw_trace_tokenized/internal/trace_tokenized_internal.h",
@@ -38,26 +47,9 @@ pw_cc_library(
         "public_overrides",
     ],
     deps = [
-        "//pw_preprocessor",
-        "//pw_tokenizer",
-    ],
-)
-
-pw_cc_library(
-    name = "linux_config_overrides",
-    hdrs = ["linux_config_overrides.h"],
-    tags = ["manual"],
-)
-
-pw_cc_library(
-    name = "pw_trace_tokenized",
-    srcs = [
-        "trace.cc",
-    ],
-    deps = [
-        ":headers",
         "//pw_assert",
         "//pw_log",
+        "//pw_preprocessor",
         "//pw_status",
         "//pw_tokenizer",
         "//pw_trace:facade",
@@ -87,7 +79,10 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "trace_buffer_headers",
+    name = "buffer",
+    srcs = [
+        "trace_buffer.cc",
+    ],
     hdrs = [
         "public/pw_trace_tokenized/trace_buffer.h",
     ],
@@ -102,20 +97,6 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "buffer",
-    srcs = [
-        "trace_buffer.cc",
-    ],
-    # TODO(b/260641850): Get pw_trace_tokenized building in Bazel.
-    tags = ["manual"],
-    deps = [
-        ":trace_buffer_headers",
-        "//pw_ring_buffer",
-        "//pw_status",
-    ],
-)
-
-pw_cc_library(
     name = "buffer_log",
     srcs = [
         "trace_buffer_log.cc",
@@ -123,10 +104,8 @@ pw_cc_library(
     hdrs = [
         "public/pw_trace_tokenized/trace_buffer_log.h",
     ],
-    # TODO(b/260641850): Get pw_trace_tokenized building in Bazel.
-    tags = ["manual"],
     deps = [
-        ":trace_buffer_headers",
+        ":buffer",
         "//pw_base64",
         "//pw_log",
         "//pw_string",
