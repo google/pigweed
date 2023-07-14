@@ -75,34 +75,17 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "rpc_server_headers",
+    name = "rpc_server",
+    srcs = [
+        "hdlc_rpc_server.cc",
+    ],
     hdrs = [
         "public/pw_system/rpc_server.h",
     ],
     includes = ["public"],
     deps = [
         ":config",
-    ],
-)
-
-pw_cc_library(
-    name = "rpc_server",
-    deps = [
-        ":config",
-        ":hdlc_rpc_server",
-        ":rpc_server_headers",
-    ],
-)
-
-pw_cc_library(
-    name = "hdlc_rpc_server",
-    srcs = [
-        "hdlc_rpc_server.cc",
-    ],
-    includes = ["public"],
-    deps = [
         ":io",
-        ":rpc_server_headers",
         ":target_io",
         "//pw_assert",
         "//pw_hdlc:pw_rpc",
@@ -203,17 +186,6 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "target_hooks_headers",
-    hdrs = [
-        "public/pw_system/target_hooks.h",
-    ],
-    includes = ["public"],
-    deps = [
-        "//pw_thread:thread",
-    ],
-)
-
-pw_cc_library(
     name = "target_hooks",
     hdrs = [
         "public/pw_system/target_hooks.h",
@@ -253,11 +225,14 @@ pw_cc_library(
     srcs = [
         "freertos_target_hooks.cc",
     ],
+    hdrs = [
+        "public/pw_system/target_hooks.h",
+    ],
+    includes = ["public"],
     target_compatible_with = [
         "//pw_build/constraints/rtos:freertos",
     ],
     deps = [
-        ":target_hooks_headers",
         "//pw_thread:thread",
         "//pw_thread_freertos:thread",
     ],
