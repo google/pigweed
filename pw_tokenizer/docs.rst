@@ -133,38 +133,11 @@ Tokenization domains
 ====================
 See :ref:`module-pw_tokenizer-domains`.
 
-.. _module-pw_tokenizer-masks:
+Masking
+=======
+See :ref:`module-pw_tokenizer-masks`.
 
-Smaller tokens with masking
-===========================
-``pw_tokenizer`` uses 32-bit tokens. On 32-bit or 64-bit architectures, using
-fewer than 32 bits does not improve runtime or code size efficiency. However,
-when tokens are packed into data structures or stored in arrays, the size of the
-token directly affects memory usage. In those cases, every bit counts, and it
-may be desireable to use fewer bits for the token.
-
-``pw_tokenizer`` allows users to provide a mask to apply to the token. This
-masked token is used in both the token database and the code. The masked token
-is not a masked version of the full 32-bit token, the masked token is the token.
-This makes it trivial to decode tokens that use fewer than 32 bits.
-
-Masking functionality is provided through the ``*_MASK`` versions of the macros.
-For example, the following generates 16-bit tokens and packs them into an
-existing value.
-
-.. code-block:: cpp
-
-   constexpr uint32_t token = PW_TOKENIZE_STRING_MASK("domain", 0xFFFF, "Pigweed!");
-   uint32_t packed_word = (other_bits << 16) | token;
-
-Tokens are hashes, so tokens of any size have a collision risk. The fewer bits
-used for tokens, the more likely two strings are to hash to the same token. See
-`token collisions`_.
-
-Masked tokens without arguments may be encoded in fewer bytes. For example, the
-16-bit token ``0x1234`` may be encoded as two little-endian bytes (``34 12``)
-rather than four (``34 12 00 00``). The detokenizer tools zero-pad data smaller
-than four bytes. Tokens with arguments must always be encoded as four bytes.
+.. _module-pw_tokenizer-collisions:
 
 Token collisions
 ================
@@ -230,10 +203,10 @@ hash).
 |    8  |          19        |           3      |
 +-------+--------------------+------------------+
 
-Keep this table in mind when masking tokens (see `Smaller tokens with
-masking`_). 16 bits might be acceptable when tokenizing a small set of strings,
-such as module names, but won't be suitable for large sets of strings, like log
-messages.
+Keep this table in mind when masking tokens (see
+:ref:`module-pw_tokenizer-masks`). 16 bits might be acceptable when
+tokenizing a small set of strings, such as module names, but won't be suitable
+for large sets of strings, like log messages.
 
 ---------------
 Token databases
