@@ -1,8 +1,8 @@
 .. _module-pw_build_mcuxpresso:
 
--------------------
+===================
 pw_build_mcuxpresso
--------------------
+===================
 
 The ``pw_build_mcuxpresso`` module provides helper utilities for building a
 target based on an NXP MCUXpresso SDK.
@@ -12,8 +12,9 @@ The rationale for keeping the build files in ``third_party`` is that code
 depending on an MCUXpresso SDK can clearly see that their dependency is on
 third party, not pigweed code.
 
+-----------------------
 Using an MCUXpresso SDK
-=======================
+-----------------------
 An MCUXpresso SDK consists of a number of components, each of which has a set
 of sources, headers, preprocessor defines, and dependencies on other
 components. These are all described in an XML "manifest" file included in the
@@ -25,21 +26,21 @@ the sources and headers, along with necessary preprocessor defines, for those
 components and their dependencies.
 
 Optional components
--------------------
+===================
 Including components will include all of their required dependencies. Where the
 components you include have optional dependencies, they must be satisfied by the
 set of components you include otherwise the library generation will fail with an
 error.
 
 Excluding components
---------------------
+====================
 Components can be excluded from the generated source set, for example to
 suppress errors about optional dependencies your project does not need, or to
 prevent an unwanted component dependency from being introduced into your
 project.
 
 mcuxpresso_builder
-------------------
+==================
 ``mcuxpresso_builder`` is a utility installed into the environment that is used
 by the GN build scripts in ``third_party/mcuxpresso``, or directly by you to
 generate rules for the Bazel build.
