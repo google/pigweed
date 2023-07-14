@@ -151,6 +151,7 @@ class TestCipdSetupUpdate(unittest.TestCase):
             Path('bazel.json'),
             Path('buildifier.json'),
             Path('cmake.json'),
+            Path('coverage.json'),
             Path('default.json'),
             Path('arm.json'),
             Path('pigweed.json'),

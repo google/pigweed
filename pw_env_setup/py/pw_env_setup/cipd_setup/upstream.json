@@ -2,6 +2,7 @@
   "included_files": [
     "bazel.json",
     "cmake.json",
+    "coverage.json",
     "default.json",
     "doxygen.json",
     "go.json",

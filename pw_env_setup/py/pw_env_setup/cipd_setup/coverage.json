@@ -1,0 +1,22 @@
+{
+  "packages": [
+    {
+      "path": "fuchsia/coverage/absolute_uploader/${platform}",
+      "platforms": [
+        "linux-amd64"
+      ],
+      "tags": [
+        "g3-revision:fuchsia.infra.coverage.upload_clients_20230713_RC00"
+      ]
+    },
+    {
+      "path": "fuchsia/coverage/incremental_uploader/${platform}",
+      "platforms": [
+        "linux-amd64"
+      ],
+      "tags": [
+        "g3-revision:fuchsia.infra.coverage.upload_clients_20230713_RC00"
+      ]
+    }
+  ]
+}
