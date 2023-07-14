@@ -165,9 +165,8 @@ filegroup(
 )
 
 # Chrono Implementation
-
 pw_cc_library(
-    name = "chrono_timer_headers",
+    name = "chrono_timer",
     hdrs = [
         "chrono_public_overrides/pw_perf_test_timer_backend/timer.h",
         "public/pw_perf_test/internal/chrono_timer_interface.h",
@@ -176,25 +175,17 @@ pw_cc_library(
         "chrono_public_overrides",
         "public",
     ],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":duration_unit",
+        ":timer_interface_facade",
         "//pw_chrono:system_clock",
     ],
 )
 
-pw_cc_library(
-    name = "chrono_timer",
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
-    deps = [
-        ":chrono_timer_headers",
-        ":timer_interface_facade",
-    ],
-)
-
 # ARM Cortex Implementation
-
 pw_cc_library(
-    name = "arm_cortex_timer_headers",
+    name = "arm_cortex_timer",
     hdrs = [
         "arm_cortex_cyccnt_public_overrides/pw_perf_test_timer_backend/timer.h",
         "public/pw_perf_test/internal/cyccnt_timer_interface.h",
@@ -203,14 +194,9 @@ pw_cc_library(
         "arm_cortex_cyccnt_public_overrides",
         "public",
     ],
-    deps = [":duration_unit"],
-)
-
-pw_cc_library(
-    name = "arm_cortex_timer",
     target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
-        ":arm_cortex_timer_headers",
+        ":duration_unit",
         ":timer_interface_facade",
     ],
 )
