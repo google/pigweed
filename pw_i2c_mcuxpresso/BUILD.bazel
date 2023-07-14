@@ -14,6 +14,7 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
+    "pw_cc_test",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -25,9 +26,6 @@ pw_cc_library(
     srcs = ["initiator.cc"],
     hdrs = ["public/pw_i2c_mcuxpresso/initiator.h"],
     includes = ["public"],
-    target_compatible_with = [
-        "//pw_build/constraints/board:mimxrt595_evk",
-    ],
     deps = [
         "//pw_chrono:system_clock",
         "//pw_i2c:address",
@@ -39,4 +37,10 @@ pw_cc_library(
         "//pw_sync:timed_thread_notification",
         "@pigweed_config//:mcuxpresso_sdk",
     ],
+)
+
+pw_cc_test(
+    name = "initiator_test",
+    srcs = ["initiator_test.cc"],
+    deps = [":pw_i2c_mcuxpresso"],
 )
