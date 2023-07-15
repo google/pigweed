@@ -48,12 +48,14 @@ void HandleTimerCallback(TimerHandle_t timer_handle) {
   backend::NativeSystemTimer& native_type =
       *reinterpret_cast<backend::NativeSystemTimer*>(timer_handle);
 
-  PW_CHECK_UINT_EQ(xTimerIsTimerActive(timer_handle),
-                   pdFALSE,
-                   "The timer is still active while being executed");
-
   if (native_type.state == State::kCancelled) {
     // Do nothing, we were invoked while the stop command was in the queue.
+    //
+    // Note that xTimerIsTimerActive cannot be used here, as this only controls
+    // whether the tick handler is permitted to enqueue a timer for expiry
+    // execution. If it was already enqueued for execution before the stop
+    // command was executed, then this callback will be invoked while
+    // xTimerIsTimerActive returns false.
     return;
   }
 
@@ -141,6 +143,10 @@ SystemTimer::~SystemTimer() {
   // has been removed. Note that this is safe before the scheduler has been
   // started because the timer cannot have been added to the queue yet and ergo
   // it shouldn't attempt to yield.
+  //
+  // TODO(b/291346908): There is still a race condition here for use after
+  // free because xTimerIsTimerActive may return false while the timer is still
+  // enqueued in the expiry execution callback queue.
   while (
       xTimerIsTimerActive(reinterpret_cast<TimerHandle_t>(&native_type_.tcb))) {
     taskYIELD();
