@@ -53,9 +53,9 @@ pw_cc_library(
     }),
     visibility = ["@pigweed_config//:__pkg__"],
     deps = select({
-        "@platforms//cpu:armv7-m": ["//pw_interrupt_cortex_m:context_armv7m"],
-        "@platforms//cpu:armv7e-m": ["//pw_interrupt_cortex_m:context_armv7m"],
-        "@platforms//cpu:armv8-m": ["//pw_interrupt_cortex_m:context_armv8m"],
+        "@platforms//cpu:armv7-m": ["//pw_interrupt_cortex_m:context"],
+        "@platforms//cpu:armv7e-m": ["//pw_interrupt_cortex_m:context"],
+        "@platforms//cpu:armv8-m": ["//pw_interrupt_cortex_m:context"],
         # This is required for this to be a valid select when building for the
         # host i.e. 'bazel build //pw_interrupt/...'. The
         # target_compatible_with attribute is used to skip this target when
