@@ -427,3 +427,9 @@ Presubmit flags
 
 .. inclusive-language: enable
 
+.. toctree::
+  :maxdepth: 1
+
+  embedded_cpp_guide
+  style_guide
+  module_structure

@@ -24,12 +24,9 @@
   Issue Tracker <https://issues.pigweed.dev/issues?q=status:open>
   docs/contributing
   docs/code_of_conduct
-  docs/embedded_cpp_guide
-  Style Guide <docs/style_guide>
   Automated Analysis <automated_analysis>
   Build System <build_system>
   SEEDs <seed/0000-index>
-  docs/module_structure
 
 =======
 Pigweed
