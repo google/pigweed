@@ -38,6 +38,7 @@ pw_python_group("core_pigweed_python_packages") {
     "$dir_pw_compilation_testing/py",
     "$dir_pw_console/py",
     "$dir_pw_cpu_exception_cortex_m/py",
+    "$dir_pw_digital_io:protos.python",
     "$dir_pw_docgen/py",
     "$dir_pw_doctor/py",
     "$dir_pw_env_setup/py",

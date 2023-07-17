@@ -272,6 +272,33 @@ Backend Implemention Notes
 * Calling ``Enable()`` on a line that is already enabled should be a no-op. In
   particular, the state of an already-enabled output line should not change.
 
+-----------
+RPC Service
+-----------
+The ``DigitalIoService`` pw_rpc service is provided to support bringup/debug
+efforts. It allows manual control of individual DigitalIo lines for both input
+and output.
+
+.. code-block:: cpp
+
+   std::array<std::reference_wrapper<DigitalIoOptional>> lines = {
+     ...DigitalIn(),
+     ...DigitalOut(),
+   };
+   DigitalIoService service(lines);
+   rpc_server.RegisterService(service);
+
+Set the state of the output line via RPC. This snippet demonstrates how you
+might do that using a Pigweed console device object.
+
+.. code-block:: python
+
+   from pw_digital_io import digital_io_pb2
+
+   device.rpcs.pw.digital_io.DigitalIo.SetState(
+                line_index=0, state=digital_io_pb2.DigitalIoState.ACTIVE)
+
+
 -------------
 API reference
 -------------

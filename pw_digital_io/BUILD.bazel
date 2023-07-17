@@ -17,6 +17,10 @@ load(
     "pw_cc_library",
     "pw_cc_test",
 )
+load(
+    "//pw_protobuf_compiler:pw_proto_library.bzl",
+    "pw_proto_library",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -45,4 +49,35 @@ pw_cc_test(
         ":pw_digital_io",
         "//pw_unit_test",
     ],
+)
+
+pw_cc_library(
+    name = "digital_io_controller",
+    hdrs = ["public/pw_digital_io/digital_io_controller.h"],
+    includes = ["public"],
+)
+
+pw_cc_library(
+    name = "digital_io_service",
+    srcs = ["digital_io_service.cc"],
+    hdrs = ["public/pw_digital_io/digital_io_service.h"],
+    includes = ["public"],
+    deps = [
+        ":digital_io_proto_cc.pwpb",
+        ":digital_io_proto_cc.pwpb_rpc",
+        ":pw_digital_io",
+        "//pw_function",
+        "//pw_rpc/pwpb:server_api",
+        "//pw_span",
+    ],
+)
+
+proto_library(
+    name = "digital_io_proto",
+    srcs = ["digital_io.proto"],
+)
+
+pw_proto_library(
+    name = "digital_io_proto_cc",
+    deps = [":digital_io_proto"],
 )
