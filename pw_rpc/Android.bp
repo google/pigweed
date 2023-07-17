@@ -353,6 +353,36 @@ genrule_defaults {
     ],
 }
 
+// Same as pw_rpc_generate_pwpb_proto but the proto files are compiled with a
+// single prefix, which can be added with pw_rpc_add_prefix_to_proto.
+// Since pw_rpc_add_prefix_to_proto may include .option files as an input, only
+// .proto files are passed to the compile script. Make sure .option files are
+// prefixed in the same rule as their .proto files.
+//
+// See the pw_rpc_echo_service_pwpb target for an example. The echo.proto file
+// is compiled with "pw_rpc" as the prefix.
+genrule_defaults {
+    name: "pw_rpc_generate_pwpb_proto_with_prefix",
+    cmd: "in_files=($(in)); prefix_dir=$$(dirname $${in_files[0]}); " +
+        "compile_dir=$$(dirname $${prefix_dir}); proto_files=(); " +
+        "for f in \"$${in_files[@]}\"; do " +
+        "if [[ \"$${f##*.}\" == \"proto\" ]]; then " +
+        "proto_files+=(\"$${f}\"); fi; done; " +
+        "python3 $(location pw_protobuf_compiler_py) " +
+        "--plugin-path=$(location pw_protobuf_plugin_py) " +
+        "--out-dir=$(genDir) " +
+        "--compile-dir=$${compile_dir} " +
+        "--language pwpb " +
+        "--sources $${proto_files} " +
+        "--no-experimental-proto3-optional " +
+        "--protoc=$(location aprotoc)",
+    tools: [
+        "aprotoc",
+        "pw_protobuf_plugin_py",
+        "pw_protobuf_compiler_py",
+    ],
+}
+
 // Generate the header pwpb RPC file.
 // The output file name is based on the srcs file name with a .rpc.pwpb.h extension.
 genrule_defaults {
@@ -364,6 +394,36 @@ genrule_defaults {
         "--compile-dir=$${compile_dir} " +
         "--language pwpb_rpc " +
         "--sources $(in) " +
+        "--no-experimental-proto3-optional " +
+        "--protoc=$(location aprotoc)",
+    tools: [
+        "aprotoc",
+        "pw_protobuf_compiler_py",
+        "pw_rpc_plugin_pwpb_py",
+    ],
+}
+
+// Same as pw_rpc_generate_pwpb_rpc_header but the proto files are compiled
+// with a single prefix, which can be added with pw_rpc_add_prefix_to_proto.
+// Since pw_rpc_add_prefix_to_proto may include .option files as an input, only
+// .proto files are passed to the compile script. Make sure .option files are
+// prefixed in the same rule as their .proto files.
+//
+// See the pw_rpc_echo_service_pwpb target for an example. The echo.proto file
+// is compiled with "pw_rpc" as the prefix.
+genrule_defaults {
+    name: "pw_rpc_generate_pwpb_rpc_header_with_prefix",
+    cmd: "in_files=($(in)); prefix_dir=$$(dirname $${in_files[0]}); " +
+        "compile_dir=$$(dirname $${prefix_dir}); proto_files=(); " +
+        "for f in \"$${in_files[@]}\"; do " +
+        "if [[ \"$${f##*.}\" == \"proto\" ]]; then " +
+        "proto_files+=(\"$${f}\"); fi; done; " +
+        "python3 $(location pw_protobuf_compiler_py) " +
+        "--plugin-path=$(location pw_rpc_plugin_pwpb_py) " +
+        "--out-dir=$(genDir) " +
+        "--compile-dir=$${compile_dir} " +
+        "--language pwpb_rpc " +
+        "--sources $${proto_files} " +
         "--no-experimental-proto3-optional " +
         "--protoc=$(location aprotoc)",
     tools: [
@@ -447,6 +507,36 @@ cc_library_static {
     ],
     generated_sources: ["pw_rpc_echo_proto_source"],
     static_libs: ["libprotobuf-c-nano"],
+}
+
+genrule {
+    name: "pw_rpc_echo_pwpb_rpc_header",
+    defaults: ["pw_rpc_generate_pwpb_rpc_header_with_prefix"],
+    srcs: [":pw_rpc_echo_proto_with_prefix"],
+    out: ["pw_rpc/echo.rpc.pwpb.h"],
+}
+
+genrule {
+    name: "pw_rpc_echo_pwpb_proto_header",
+    defaults: ["pw_rpc_generate_pwpb_proto_with_prefix"],
+    srcs: [":pw_rpc_echo_proto_with_prefix"],
+    out: ["pw_rpc/echo.pwpb.h"],
+}
+
+cc_library_static {
+    name: "pw_rpc_echo_service_pwpb",
+    cpp_std: "c++2a",
+    vendor_available: true,
+    host_supported: true,
+    export_include_dirs: ["public/pw_rpc"],
+    generated_headers: [
+        "pw_rpc_echo_pwpb_proto_header",
+        "pw_rpc_echo_pwpb_rpc_header",
+    ],
+    export_generated_headers: [
+        "pw_rpc_echo_pwpb_proto_header",
+        "pw_rpc_echo_pwpb_rpc_header",
+    ],
 }
 
 python_library_host {
