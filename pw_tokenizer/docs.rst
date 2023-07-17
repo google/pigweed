@@ -137,76 +137,11 @@ Masking
 =======
 See :ref:`module-pw_tokenizer-masks`.
 
-.. _module-pw_tokenizer-collisions:
-
 Token collisions
 ================
-Tokens are calculated with a hash function. It is possible for different
-strings to hash to the same token. When this happens, multiple strings will have
-the same token in the database, and it may not be possible to unambiguously
-decode a token.
-
-The detokenization tools attempt to resolve collisions automatically. Collisions
-are resolved based on two things:
-
-- whether the tokenized data matches the strings arguments' (if any), and
-- if / when the string was marked as having been removed from the database.
-
-Working with collisions
------------------------
-Collisions may occur occasionally. Run the command
-``python -m pw_tokenizer.database report <database>`` to see information about a
-token database, including any collisions.
-
-If there are collisions, take the following steps to resolve them.
-
-- Change one of the colliding strings slightly to give it a new token.
-- In C (not C++), artificial collisions may occur if strings longer than
-  ``PW_TOKENIZER_CFG_C_HASH_LENGTH`` are hashed. If this is happening, consider
-  setting ``PW_TOKENIZER_CFG_C_HASH_LENGTH`` to a larger value.  See
-  ``pw_tokenizer/public/pw_tokenizer/config.h``.
-- Run the ``mark_removed`` command with the latest version of the build
-  artifacts to mark missing strings as removed. This deprioritizes them in
-  collision resolution.
-
-  .. code-block:: sh
-
-     python -m pw_tokenizer.database mark_removed --database <database> <ELF files>
-
-  The ``purge`` command may be used to delete these tokens from the database.
-
-Probability of collisions
--------------------------
-Hashes of any size have a collision risk. The probability of one at least
-one collision occurring for a given number of strings is unintuitively high
-(this is known as the `birthday problem
-<https://en.wikipedia.org/wiki/Birthday_problem>`_). If fewer than 32 bits are
-used for tokens, the probability of collisions increases substantially.
-
-This table shows the approximate number of strings that can be hashed to have a
-1% or 50% probability of at least one collision (assuming a uniform, random
-hash).
-
-+-------+---------------------------------------+
-| Token | Collision probability by string count |
-| bits  +--------------------+------------------+
-|       |         50%        |          1%      |
-+=======+====================+==================+
-|   32  |       77000        |        9300      |
-+-------+--------------------+------------------+
-|   31  |       54000        |        6600      |
-+-------+--------------------+------------------+
-|   24  |        4800        |         580      |
-+-------+--------------------+------------------+
-|   16  |         300        |          36      |
-+-------+--------------------+------------------+
-|    8  |          19        |           3      |
-+-------+--------------------+------------------+
-
-Keep this table in mind when masking tokens (see
-:ref:`module-pw_tokenizer-masks`). 16 bits might be acceptable when
-tokenizing a small set of strings, such as module names, but won't be suitable
-for large sets of strings, like log messages.
+See :ref:`module-pw_tokenizer-collisions` for a conceptual overview and
+:ref:`module-pw_tokenizer-collisions-guide` for guidance on how to fix
+collisions.
 
 ---------------
 Token databases

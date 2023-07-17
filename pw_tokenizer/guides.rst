@@ -258,6 +258,36 @@ the ``database`` variable.
      DEPS ${deps_list}
    }
 
+
+.. _module-pw_tokenizer-collisions-guide:
+
+-----------------------------
+Working with token collisions
+-----------------------------
+See :ref:`module-pw_tokenizer-collisions` for a conceptual overview of token
+collisions.
+
+Collisions may occur occasionally. Run the command
+``python -m pw_tokenizer.database report <database>`` to see information about a
+token database, including any collisions.
+
+If there are collisions, take the following steps to resolve them.
+
+- Change one of the colliding strings slightly to give it a new token.
+- In C (not C++), artificial collisions may occur if strings longer than
+  ``PW_TOKENIZER_CFG_C_HASH_LENGTH`` are hashed. If this is happening, consider
+  setting ``PW_TOKENIZER_CFG_C_HASH_LENGTH`` to a larger value.  See
+  ``pw_tokenizer/public/pw_tokenizer/config.h``.
+- Run the ``mark_removed`` command with the latest version of the build
+  artifacts to mark missing strings as removed. This deprioritizes them in
+  collision resolution.
+
+  .. code-block:: sh
+
+     python -m pw_tokenizer.database mark_removed --database <database> <ELF files>
+
+  The ``purge`` command may be used to delete these tokens from the database.
+
 .. _module-pw_tokenizer-detokenization-guides:
 
 ---------------------
