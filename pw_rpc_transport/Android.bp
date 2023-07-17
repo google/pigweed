@@ -12,8 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-package{
-  default_applicable_licenses : ["external_pigweed_license"],
+package {
+    default_applicable_licenses: ["external_pigweed_license"],
 }
 
 cc_library_headers {
@@ -36,4 +36,91 @@ cc_library_headers {
     ],
     host_supported: true,
     vendor_available: true,
+}
+
+cc_library_static {
+    name: "pw_rpc_transport_local_rpc_egress",
+    vendor_available: true,
+    host_supported: true,
+    header_libs: [
+        "pw_log_headers",
+        "pw_log_null_headers",
+        "pw_preprocessor_headers",
+        "pw_result_headers",
+        "pw_rpc_transport_rpc_transport_headers",
+    ],
+    export_header_lib_headers: [
+        "pw_log_headers",
+        "pw_result_headers",
+        "pw_rpc_transport_rpc_transport_headers",
+    ],
+    static_libs: [
+        "pw_containers",
+    ],
+    export_static_lib_headers: [
+        "pw_containers",
+    ],
+    srcs: [
+        "local_rpc_egress.cc",
+    ],
+}
+
+filegroup {
+    name: "pw_rpc_transport_egress_ingress_src_files",
+    srcs: [
+        "egress_ingress.cc",
+    ],
+}
+
+// This rule must be instantiated, e.g.
+//
+//   cc_library_static {
+//       name: "<instance_name>",
+//       cflags: [
+//           "-DPW_RPC_USE_GLOBAL_MUTEX=0",
+//           "-DPW_RPC_COMPLETION_REQUEST_CALLBACK",
+//           "-DPW_RPC_DYNAMIC_ALLOCATION",
+//       ],
+//       defaults: [
+//           "pw_rpc_transport_egress_ingress_defaults",
+//       ],
+//   }
+cc_defaults {
+    name: "pw_rpc_transport_egress_ingress_defaults",
+    vendor_available: true,
+    host_supported: true,
+    defaults: [
+        "pw_chrono_defaults",
+        "pw_chrono_stl_defaults",
+        "pw_rpc_defaults",
+        "pw_sync_stl_defaults",
+        "pw_thread_defaults",
+        "pw_thread_stl_defaults",
+    ],
+    header_libs: [
+        "pw_assert_headers",
+        "pw_assert_log_headers",
+        "pw_log_headers",
+        "pw_log_null_headers",
+        "pw_rpc_transport_rpc_transport_headers",
+        "pw_sync_headers",
+        "pw_sync_binary_semaphore_thread_notification_backend_headers",
+    ],
+    export_header_lib_headers: [
+        "pw_assert_headers",
+        "pw_log_headers",
+        "pw_rpc_transport_rpc_transport_headers",
+        "pw_sync_headers",
+    ],
+    static_libs: [
+        "pw_hdlc",
+        "pw_metric",
+    ],
+    export_static_lib_headers: [
+        "pw_hdlc",
+        "pw_metric",
+    ],
+    srcs: [
+        ":pw_rpc_transport_egress_ingress_src_files",
+    ],
 }
