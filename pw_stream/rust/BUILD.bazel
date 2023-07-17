@@ -16,6 +16,7 @@ load("@rules_rust//rust:defs.bzl", "rust_doc", "rust_doc_test", "rust_library", 
 rust_library(
     name = "pw_stream",
     srcs = [
+        "pw_stream/cursor.rs",
         "pw_stream/lib.rs",
     ],
     crate_features = select({
