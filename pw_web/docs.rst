@@ -35,7 +35,7 @@ your HTML page by:
 
 .. code:: html
 
-   <script src="https://unpkg.com/pigweedjs@0.0.5/dist/index.umd.js"></script>
+   <script src="https://unpkg.com/pigweedjs/dist/index.umd.js"></script>
    <script>
      const { pw_rpc, pw_hdlc, Device, WebSerial } from Pigweed;
    </script>
@@ -57,8 +57,8 @@ an example to connect to device and call ``EchoService.Echo`` RPC service.
    <button onclick="echo()">Echo RPC</button>
    <br /><br />
    <code></code>
-   <script src="https://unpkg.com/pigweedjs@0.0.5/dist/index.umd.js"></script>
-   <script src="https://unpkg.com/pigweedjs@0.0.5/dist/protos/collection.umd.js"></script>
+   <script src="https://unpkg.com/pigweedjs/dist/index.umd.js"></script>
+   <script src="https://unpkg.com/pigweedjs/dist/protos/collection.umd.js"></script>
    <script>
      const { Device } = Pigweed;
      const { ProtoCollection } = PigweedProtoCollection;
@@ -85,8 +85,8 @@ example that streams logs using the ``Device`` API.
    <button onclick="connect()">Connect</button>
    <br /><br />
    <code></code>
-   <script src="https://unpkg.com/pigweedjs@0.0.5/dist/index.umd.js"></script>
-   <script src="https://unpkg.com/pigweedjs@0.0.5/dist/protos/collection.umd.js"></script>
+   <script src="https://unpkg.com/pigweedjs/dist/index.umd.js"></script>
+   <script src="https://unpkg.com/pigweedjs/dist/protos/collection.umd.js"></script>
    <script>
      const { Device, pw_tokenizer } = Pigweed;
      const { ProtoCollection } = PigweedProtoCollection;
@@ -197,3 +197,96 @@ autocomplete. Here's how to run the web console locally:
    $ cd pw_web/webconsole
    $ npm install
    $ npm run dev
+
+Log viewer component
+====================
+
+The NPM package also includes a log viewer component that can be embedded in any
+webapp. The component works with Pigweed's RPC stack out-of-the-box but also
+supports defining your own log source.
+
+The component is composed of the component itself and a log source. Here is a
+simple example app that uses a mock log source:
+
+.. code:: html
+
+   <div id="log-viewer-container"></div>
+   <script src="https://unpkg.com/pigweedjs/dist/logging.umd.js"></script>
+   <script>
+
+     const { createLogViewer, MockLogSource } = PigweedLogging;
+     const logSource = new MockLogSource();
+     const containerEl = document.querySelector(
+       '#log-viewer-container'
+     );
+
+     let unsubscribe = createLogViewer(logSource, containerEl);
+     logSource.start(); // Start producing mock logs
+
+   </script>
+
+The code above will render a working log viewer that just streams mock
+log entries.
+
+It also comes with an RPC log source with support for detokenization. Here is an
+example app using that:
+
+.. code:: html
+
+   <div id="log-viewer-container"></div>
+   <script src="https://unpkg.com/pigweedjs/dist/index.umd.js"></script>
+   <script src="https://unpkg.com/pigweedjs/dist/protos/collection.umd.js"></script>
+   <script src="https://unpkg.com/pigweedjs/dist/logging.umd.js"></script>
+   <script>
+
+     const { Device, pw_tokenizer } = Pigweed;
+     const { ProtoCollection } = PigweedProtoCollection;
+     const { createLogViewer, PigweedRPCLogSource } = PigweedLogging;
+
+     const device = new Device(new ProtoCollection());
+     const logSource = new PigweedRPCLogSource(device, "CSV TOKEN DB HERE");
+     const containerEl = document.querySelector(
+       '#log-viewer-container'
+     );
+
+     let unsubscribe = createLogViewer(logSource, containerEl);
+
+   </script>
+
+Custom Log Source
+-----------------
+
+You can define a custom log source that works with the log viewer component by
+just extending the abstract `LogSource` class and emitting the `logEntry` events
+like this:
+
+.. code:: typescript
+
+  import { LogSource, LogEntry, Severity } from 'pigweedjs/logging';
+
+  export class MockLogSource extends LogSource {
+    constructor(){
+      super();
+      // Do any initializations here
+      // ...
+      // Then emit logs
+      const log1: LogEntry = {
+
+      }
+      this.emitEvent('logEntry', {
+        severity: Severity.INFO,
+        timestamp: new Date(),
+        fields: [
+          { key: 'severity', value: severity }
+          { key: 'timestamp', value: new Date().toISOString() },
+          { key: 'source', value: "LEFT SHOE" },
+          { key: 'message', value: "Running mode activated." }
+        ]
+      });
+    }
+  }
+
+After this, you just need to pass your custom log source object
+to `createLogViewer()`. See implementation of
+`PigweedRPCLogSource <https://cs.opensource.google/pigweed/pigweed/+/main:ts/logging_source_rpc.ts>`_
+for reference.
