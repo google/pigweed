@@ -17,16 +17,16 @@ rust_library(
     name = "pw_stream",
     srcs = [
         "pw_stream/cursor.rs",
+        "pw_stream/integer.rs",
         "pw_stream/lib.rs",
     ],
     crate_features = select({
         "@rust_crates//:std": ["std"],
         "//conditions:default": [""],
     }),
+    proc_macro_deps = ["@rust_crates//:paste"],
     visibility = ["//visibility:public"],
-    deps = [
-        "//pw_status/rust:pw_status",
-    ],
+    deps = ["//pw_status/rust:pw_status"],
 )
 
 rust_test(

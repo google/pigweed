@@ -25,8 +25,10 @@ use pw_status::Result;
 
 #[doc(hidden)]
 mod cursor;
+mod integer;
 
 pub use cursor::Cursor;
+pub use integer::{ReadInteger, WriteInteger};
 
 /// A trait for objects that provide streaming read capability.
 pub trait Read {
