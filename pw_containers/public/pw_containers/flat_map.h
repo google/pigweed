@@ -39,7 +39,7 @@ Pair(T1, T2) -> Pair<T1, T2>;
 // A simple, fixed-size associative array with lookup by key or value.
 //
 // FlatMaps are initialized with a std::array of Pair<K, V> objects:
-//   FlatMap<int, int> map({{{1, 2}, {3, 4}}});
+//   FlatMap<int, int, 2> map({{{1, 2}, {3, 4}}});
 //
 // The keys do not need to be sorted as the constructor will sort the items
 // if need be.
