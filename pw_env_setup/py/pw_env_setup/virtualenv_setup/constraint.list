@@ -46,8 +46,8 @@ parso==0.8.3
 pathspec==0.11.1
 pep517==0.12.0
 pexpect==4.8.0
-pip==23.1.2
-pip-tools==6.13.0
+pip==23.2
+pip-tools==7.0.0
 platformdirs==3.0.0
 pickleshare==0.7.5
 prompt-toolkit==3.0.36
