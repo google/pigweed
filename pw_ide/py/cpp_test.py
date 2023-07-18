@@ -970,7 +970,7 @@ class TestCppCompilationDatabase(PwIdeTestCase):
     """Tests CppCompilationDatabase"""
 
     def setUp(self):
-        self.build_dir = Path('/pigweed/pigweed/out')
+        self.root_dir = Path('/pigweed/pigweed/out')
 
         self.fixture: List[CppCompileCommandDict] = [
             {
@@ -1046,10 +1046,10 @@ class TestCppCompilationDatabase(PwIdeTestCase):
 
     def test_merge(self):
         compdb1 = CppCompilationDatabase.load(
-            self.fixture_merge_1, self.build_dir
+            self.fixture_merge_1, self.root_dir
         )
         compdb2 = CppCompilationDatabase.load(
-            self.fixture_merge_2, self.build_dir
+            self.fixture_merge_2, self.root_dir
         )
         compdb1.merge(compdb2)
         result = [compile_command.as_dict() for compile_command in compdb1]
@@ -1058,22 +1058,22 @@ class TestCppCompilationDatabase(PwIdeTestCase):
 
     def test_merge_no_dupes(self):
         compdb1 = CppCompilationDatabase.load(
-            self.fixture_merge_1, self.build_dir
+            self.fixture_merge_1, self.root_dir
         )
         fixture_combo = [*self.fixture_merge_1, *self.fixture_merge_2]
-        compdb2 = CppCompilationDatabase.load(fixture_combo, self.build_dir)
+        compdb2 = CppCompilationDatabase.load(fixture_combo, self.root_dir)
         compdb1.merge(compdb2)
         result = [compile_command.as_dict() for compile_command in compdb1]
         expected = [*self.fixture_merge_1, *self.fixture_merge_2]
         self.assertCountEqual(result, expected)
 
     def test_load_from_dicts(self):
-        compdb = CppCompilationDatabase.load(self.fixture, self.build_dir)
+        compdb = CppCompilationDatabase.load(self.fixture, self.root_dir)
         self.assertCountEqual(compdb.as_dicts(), self.expected)
 
     def test_load_from_json(self):
         compdb = CppCompilationDatabase.load(
-            json.dumps(self.fixture), self.build_dir
+            json.dumps(self.fixture), self.root_dir
         )
         self.assertCountEqual(compdb.as_dicts(), self.expected)
 
@@ -1084,7 +1084,7 @@ class TestCppCompilationDatabase(PwIdeTestCase):
         ) as (_, file_path):
             path = file_path
 
-        compdb = CppCompilationDatabase.load(path, self.build_dir)
+        compdb = CppCompilationDatabase.load(path, self.root_dir)
         self.assertCountEqual(compdb.as_dicts(), self.expected)
 
     def test_load_from_file_handle(self):
@@ -1092,7 +1092,7 @@ class TestCppCompilationDatabase(PwIdeTestCase):
             COMPDB_FILE_NAME,
             json.dumps(self.fixture),
         ) as (file, _):
-            compdb = CppCompilationDatabase.load(file, self.build_dir)
+            compdb = CppCompilationDatabase.load(file, self.root_dir)
 
         self.assertCountEqual(compdb.as_dicts(), self.expected)
 
@@ -1111,22 +1111,22 @@ class TestCppCompilationDatabase(PwIdeTestCase):
         raw_db: List[CppCompileCommandDict] = [
             {
                 'command': 'arm-none-eabi-g++ -MMD -MF stm32f429i_disc1_debug/obj/pw_allocator/block.block.cc.o.d -Wno-psabi -mabi=aapcs -mthumb --sysroot=../environment/cipd/packages/arm -specs=nano.specs -specs=nosys.specs -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -Og -Wshadow -Wredundant-decls -u_printf_float -fdiagnostics-color -g -fno-common -fno-exceptions -ffunction-sections -fdata-sections -Wall -Wextra -Wimplicit-fallthrough -Wcast-qual -Wundef -Wpointer-arith -Werror -Wno-error=cpp -Wno-error=deprecated-declarations -ffile-prefix-map=/pigweed/pigweed/out=out -ffile-prefix-map=/pigweed/pigweed/= -ffile-prefix-map=../= -ffile-prefix-map=/pigweed/pigweed/out=out -fno-rtti -Wnon-virtual-dtor -std=c++17 -Wno-register -DPW_ARMV7M_ENABLE_FPU=1  -I../pw_allocator/public -I../pw_assert/public -I../pw_assert/assert_compatibility_public_overrides -I../pw_preprocessor/public -I../pw_assert_basic/public_overrides -I../pw_assert_basic/public -I../pw_span/public -I../pw_polyfill/public -I../pw_polyfill/standard_library_public -I../pw_status/public -c ../pw_allocator/block.cc -o stm32f429i_disc1_debug/obj/pw_allocator/block.block.cc.o',
-                'directory': str(self.build_dir),
+                'directory': str(self.root_dir),
                 'file': '../pw_allocator/block.cc',
             },
             {
                 'command': '../environment/cipd/packages/pigweed/bin/isosceles-clang++ -MMD -MF isosceles_debug/obj/pw_allocator/block.block.cc.o.d -g3 --sysroot=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -Og -Wshadow -Wredundant-decls -Wthread-safety -Wswitch-enum -fdiagnostics-color -g -fno-common -fno-exceptions -ffunction-sections -fdata-sections -Wall -Wextra -Wimplicit-fallthrough -Wcast-qual -Wundef -Wpointer-arith -Werror -Wno-error=cpp -Wno-error=deprecated-declarations -ffile-prefix-map=/pigweed/pigweed/out=out -ffile-prefix-map=/pigweed/pigweed/= -ffile-prefix-map=../= -ffile-prefix-map=/pigweed/pigweed/out=out -Wextra-semi -fno-rtti -Wnon-virtual-dtor -std=c++17 -Wno-register -D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS=1 -DPW_STATUS_CFG_CHECK_IF_USED=1 -I../pw_allocator/public -I../pw_assert/public -I../pw_assert/print_and_abort_assert_public_overrides -I../pw_preprocessor/public -I../pw_assert_basic/public_overrides -I../pw_assert_basic/public -I../pw_span/public -I../pw_polyfill/public -I../pw_polyfill/standard_library_public -I../pw_status/public -c ../pw_allocator/block.cc -o isosceles_debug/obj/pw_allocator/block.block.cc.o',
-                'directory': str(self.build_dir),
+                'directory': str(self.root_dir),
                 'file': '../pw_allocator/block.cc',
             },
             {
                 'command': 'ccache ../environment/cipd/packages/pigweed/bin/clang++ -MMD -MF pw_strict_host_clang_debug/obj/pw_allocator/block.block.cc.o.d -g3 --sysroot=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -Og -Wshadow -Wredundant-decls -Wthread-safety -Wswitch-enum -fdiagnostics-color -g -fno-common -fno-exceptions -ffunction-sections -fdata-sections -Wall -Wextra -Wimplicit-fallthrough -Wcast-qual -Wundef -Wpointer-arith -Werror -Wno-error=cpp -Wno-error=deprecated-declarations -ffile-prefix-map=/pigweed/pigweed/out=out -ffile-prefix-map=/pigweed/pigweed/= -ffile-prefix-map=../= -ffile-prefix-map=/pigweed/pigweed/out=out -Wextra-semi -fno-rtti -Wnon-virtual-dtor -std=c++17 -Wno-register -D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS=1 -DPW_STATUS_CFG_CHECK_IF_USED=1 -I../pw_allocator/public -I../pw_assert/public -I../pw_assert/print_and_abort_assert_public_overrides -I../pw_preprocessor/public -I../pw_assert_basic/public_overrides -I../pw_assert_basic/public -I../pw_span/public -I../pw_polyfill/public -I../pw_polyfill/standard_library_public -I../pw_status/public -c ../pw_allocator/block.cc -o  pw_strict_host_clang_debug/obj/pw_allocator/block.block.cc.o',
-                'directory': str(self.build_dir),
+                'directory': str(self.root_dir),
                 'file': '../pw_allocator/block.cc',
             },
             {
                 'command': "python ../pw_toolchain/py/pw_toolchain/clang_tidy.py --source-exclude 'third_party/.*' --source-exclude '.*packages/mbedtls.*' --source-exclude '.*packages/boringssl.*' --skip-include-path 'mbedtls/include' --skip-include-path 'mbedtls' --skip-include-path 'boringssl/src/include' --skip-include-path 'boringssl' --skip-include-path 'pw_tls_client/generate_test_data' --source-file ../pw_allocator/block.cc --source-root '../' --export-fixes  pw_strict_host_clang_debug.static_analysis/obj/pw_allocator/block.block.cc.o.yaml -- ../environment/cipd/packages/pigweed/bin/clang++ END_OF_INVOKER -MMD -MF pw_strict_host_clang_debug.static_analysis/obj/pw_allocator/block.block.cc.o.d -g3 --sysroot=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -Og -Wshadow -Wredundant-decls -Wthread-safety -Wswitch-enum -fdiagnostics-color -g -fno-common -fno-exceptions -ffunction-sections -fdata-sections -Wall -Wextra -Wimplicit-fallthrough -Wcast-qual -Wundef -Wpointer-arith -Werror -Wno-error=cpp -Wno-error=deprecated-declarations -ffile-prefix-map=/pigweed/pigweed/out=out -ffile-prefix-map=/pigweed/pigweed/= -ffile-prefix-map=../= -ffile-prefix-map=/pigweed/pigweed/out=out -Wextra-semi -fno-rtti -Wnon-virtual-dtor -std=c++17 -Wno-register -D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS=1 -DPW_STATUS_CFG_CHECK_IF_USED=1 -I../pw_allocator/public -I../pw_assert/public -I../pw_assert/print_and_abort_assert_public_overrides -I../pw_preprocessor/public -I../pw_assert_basic/public_overrides -I../pw_assert_basic/public -I../pw_span/public -I../pw_polyfill/public -I../pw_polyfill/standard_library_public -I../pw_status/public -c ../pw_allocator/block.cc -o pw_strict_host_clang_debug.static_analysis/obj/pw_allocator/block.block.cc.o && touch pw_strict_host_clang_debug.static_analysis/obj/pw_allocator/block.block.cc.o",
-                'directory': str(self.build_dir),
+                'directory': str(self.root_dir),
                 'file': '../pw_allocator/block.cc',
             },
         ]
@@ -1137,7 +1137,7 @@ class TestCppCompilationDatabase(PwIdeTestCase):
                     'command':
                     # Ensures path format matches OS (e.g. Windows)
                     f'{Path("../environment/cipd/packages/pigweed/bin/isosceles-clang++")} -MMD -MF isosceles_debug/obj/pw_allocator/block.block.cc.o.d -g3 --sysroot=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -Og -Wshadow -Wredundant-decls -Wthread-safety -Wswitch-enum -fdiagnostics-color -g -fno-common -fno-exceptions -ffunction-sections -fdata-sections -Wall -Wextra -Wimplicit-fallthrough -Wcast-qual -Wundef -Wpointer-arith -Werror -Wno-error=cpp -Wno-error=deprecated-declarations -ffile-prefix-map=/pigweed/pigweed/out=out -ffile-prefix-map=/pigweed/pigweed/= -ffile-prefix-map=../= -ffile-prefix-map=/pigweed/pigweed/out=out -Wextra-semi -fno-rtti -Wnon-virtual-dtor -std=c++17 -Wno-register -D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS=1 -DPW_STATUS_CFG_CHECK_IF_USED=1 -I../pw_allocator/public -I../pw_assert/public -I../pw_assert/print_and_abort_assert_public_overrides -I../pw_preprocessor/public -I../pw_assert_basic/public_overrides -I../pw_assert_basic/public -I../pw_span/public -I../pw_polyfill/public -I../pw_polyfill/standard_library_public -I../pw_status/public -c ../pw_allocator/block.cc -o isosceles_debug/obj/pw_allocator/block.block.cc.o',
-                    'directory': str(self.build_dir),
+                    'directory': str(self.root_dir),
                     'file': '../pw_allocator/block.cc',
                     'output': 'isosceles_debug/obj/pw_allocator/block.block.cc.o',
                 },
@@ -1147,7 +1147,7 @@ class TestCppCompilationDatabase(PwIdeTestCase):
                     'command':
                     # Ensures path format matches OS (e.g. Windows)
                     f'ccache {Path("../environment/cipd/packages/pigweed/bin/clang++")} -MMD -MF pw_strict_host_clang_debug/obj/pw_allocator/block.block.cc.o.d -g3 --sysroot=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -Og -Wshadow -Wredundant-decls -Wthread-safety -Wswitch-enum -fdiagnostics-color -g -fno-common -fno-exceptions -ffunction-sections -fdata-sections -Wall -Wextra -Wimplicit-fallthrough -Wcast-qual -Wundef -Wpointer-arith -Werror -Wno-error=cpp -Wno-error=deprecated-declarations -ffile-prefix-map=/pigweed/pigweed/out=out -ffile-prefix-map=/pigweed/pigweed/= -ffile-prefix-map=../= -ffile-prefix-map=/pigweed/pigweed/out=out -Wextra-semi -fno-rtti -Wnon-virtual-dtor -std=c++17 -Wno-register -D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS=1 -DPW_STATUS_CFG_CHECK_IF_USED=1 -I../pw_allocator/public -I../pw_assert/public -I../pw_assert/print_and_abort_assert_public_overrides -I../pw_preprocessor/public -I../pw_assert_basic/public_overrides -I../pw_assert_basic/public -I../pw_span/public -I../pw_polyfill/public -I../pw_polyfill/standard_library_public -I../pw_status/public -c ../pw_allocator/block.cc -o pw_strict_host_clang_debug/obj/pw_allocator/block.block.cc.o',
-                    'directory': str(self.build_dir),
+                    'directory': str(self.root_dir),
                     'file': '../pw_allocator/block.cc',
                     'output': 'pw_strict_host_clang_debug/obj/pw_allocator/block.block.cc.o',
                 },
@@ -1157,7 +1157,7 @@ class TestCppCompilationDatabase(PwIdeTestCase):
                     'command':
                     # Ensures this test avoids the unpathed compiler search
                     f'{self.temp_dir_path / "arm-none-eabi-g++"} -MMD -MF stm32f429i_disc1_debug/obj/pw_allocator/block.block.cc.o.d -Wno-psabi -mabi=aapcs -mthumb --sysroot=../environment/cipd/packages/arm -specs=nano.specs -specs=nosys.specs -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -Og -Wshadow -Wredundant-decls -u_printf_float -fdiagnostics-color -g -fno-common -fno-exceptions -ffunction-sections -fdata-sections -Wall -Wextra -Wimplicit-fallthrough -Wcast-qual -Wundef -Wpointer-arith -Werror -Wno-error=cpp -Wno-error=deprecated-declarations -ffile-prefix-map=/pigweed/pigweed/out=out -ffile-prefix-map=/pigweed/pigweed/= -ffile-prefix-map=../= -ffile-prefix-map=/pigweed/pigweed/out=out -fno-rtti -Wnon-virtual-dtor -std=c++17 -Wno-register -DPW_ARMV7M_ENABLE_FPU=1 -I../pw_allocator/public -I../pw_assert/public -I../pw_assert/assert_compatibility_public_overrides -I../pw_preprocessor/public -I../pw_assert_basic/public_overrides -I../pw_assert_basic/public -I../pw_span/public -I../pw_polyfill/public -I../pw_polyfill/standard_library_public -I../pw_status/public -c ../pw_allocator/block.cc -o stm32f429i_disc1_debug/obj/pw_allocator/block.block.cc.o',
-                    'directory': str(self.build_dir),
+                    'directory': str(self.root_dir),
                     'file': '../pw_allocator/block.cc',
                     'output': 'stm32f429i_disc1_debug/obj/pw_allocator/block.block.cc.o',
                 },
@@ -1166,7 +1166,7 @@ class TestCppCompilationDatabase(PwIdeTestCase):
         # pylint: enable=line-too-long
 
         compdbs = CppCompilationDatabase.load(
-            raw_db, build_dir=self.build_dir
+            raw_db, root_dir=self.root_dir
         ).process(settings, default_path=self.temp_dir_path)
         compdbs_as_dicts = {
             target: compdb.as_dicts() for target, compdb in compdbs.items()

@@ -26,8 +26,7 @@ source control, and applies only to that checkout of the project. All of these
 files have the same schema, in which these options can be configured:
 
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.working_dir
-.. autoproperty:: pw_ide.settings.PigweedIdeSettings.build_dir
-.. autoproperty:: pw_ide.settings.PigweedIdeSettings.compdb_paths
+.. autoproperty:: pw_ide.settings.PigweedIdeSettings.compdb_search_paths
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.targets
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.target_inference
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.default_target

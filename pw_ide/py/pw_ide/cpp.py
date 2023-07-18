@@ -666,6 +666,27 @@ class CppCompileCommand:
         return compile_command_dict
 
 
+def _path_nearest_parent(path1: Path, path2: Path) -> Path:
+    """Get the closest common parent of two paths."""
+    # This is the Python < 3.9 version of: if path2.is_relative_to(path1)
+    try:
+        path2.relative_to(path1)
+        return path1
+    except ValueError:
+        pass
+
+    if path1 == path2:
+        return path1
+
+    if len(path1.parts) > len(path2.parts):
+        return _path_nearest_parent(path1.parent, path2)
+
+    if len(path1.parts) < len(path2.parts):
+        return _path_nearest_parent(path1, path2.parent)
+
+    return _path_nearest_parent(path1.parent, path2.parent)
+
+
 def _infer_target_pos(target_glob: str) -> List[int]:
     """Infer the position of the target in a compilation unit artifact path."""
     tokens = Path(target_glob).parts
@@ -697,7 +718,17 @@ def infer_target(
     # may be in the "directory" or the "output" of the compile command. So we
     # need to construct the full path that combines both and use that to search
     # for the target.
-    subpath = output_path.relative_to(root)
+    try:
+        # The path used for target inference is the path relative to the root
+        # dir. If this artifact is a direct child of the root, this just
+        # truncates the root off of its path.
+        subpath = output_path.relative_to(root)
+    except ValueError:
+        # If the output path isn't a child path of the root dir, find the
+        # closest shared parent dir and use that as the root for truncation.
+        common_parent = _path_nearest_parent(root, output_path)
+        subpath = output_path.relative_to(common_parent)
+
     return '_'.join([subpath.parts[pos] for pos in target_pos])
 
 
@@ -714,20 +745,26 @@ class CppCompilationDatabase:
 
     def __init__(
         self,
-        build_dir: Optional[Path] = None,
+        root_dir: Optional[Path] = None,
         file_path: Optional[Path] = None,
         source_file_path: Optional[Path] = None,
+        target_inference: Optional[str] = None,
     ) -> None:
         self._db: List[CppCompileCommand] = []
         self.file_path: Optional[Path] = file_path
         self.source_file_path: Optional[Path] = source_file_path
         self.source_file_hash: Optional[str] = None
 
+        if target_inference is None:
+            self.target_inference = PigweedIdeSettings().target_inference
+        else:
+            self.target_inference = target_inference
+
         # Only compilation databases that are loaded will have this, and it
         # contains the root directory of the build that the compilation
         # database is based on. Processed compilation databases will not have
         # a value here.
-        self._build_dir = build_dir
+        self._root_dir = root_dir
 
     def __len__(self) -> int:
         return len(self._db)
@@ -784,7 +821,10 @@ class CppCompilationDatabase:
 
     @classmethod
     def load(
-        cls, compdb_to_load: LoadableToCppCompilationDatabase, build_dir: Path
+        cls,
+        compdb_to_load: LoadableToCppCompilationDatabase,
+        root_dir: Path,
+        target_inference: Optional[str] = None,
     ) -> 'CppCompilationDatabase':
         """Load a compilation database.
 
@@ -817,7 +857,11 @@ class CppCompilationDatabase:
 
             db_as_dicts = json.loads(compdb_data)
 
-        compdb = cls(build_dir=build_dir, file_path=file_path)
+        compdb = cls(
+            root_dir=root_dir,
+            file_path=file_path,
+            target_inference=target_inference,
+        )
 
         try:
             compdb.add(
@@ -862,7 +906,7 @@ class CppCompilationDatabase:
         original compilation databases outside the working directory are never
         made available for code intelligence.
         """
-        if self._build_dir is None:
+        if self._root_dir is None:
             raise ValueError(
                 'Can only process a compilation database that '
                 'contains a root build directory, usually '
@@ -885,8 +929,8 @@ class CppCompilationDatabase:
                 and processed_command.output_path is not None
             ):
                 target = infer_target(
-                    settings.target_inference,
-                    self._build_dir,
+                    self.target_inference,
+                    self._root_dir,
                     processed_command.output_path,
                 )
 

@@ -18,7 +18,7 @@ from pathlib import Path
 import shlex
 import subprocess
 import sys
-from typing import cast, Dict, List, Optional, Set
+from typing import cast, Dict, List, Optional, Set, Tuple
 
 from pw_cli.env import pigweed_environment
 
@@ -280,13 +280,37 @@ def _process_compdbs(  # pylint: disable=too-many-locals
     # Associate processed compilation databases with their original sources
     all_processed_compdbs: Dict[Path, CppCompilationDatabasesMap] = {}
 
-    build_dir: Path = pw_ide_settings.build_dir
-    compdb_file_paths = list(build_dir.rglob(str(COMPDB_FILE_NAME)))
+    # Get a list of paths to search for compilation databases.
+    compdb_search_paths: List[
+        Tuple[Path, str]
+    ] = pw_ide_settings.compdb_search_paths
+    # Get the list of files for each search path, tupled with the search path.
+    compdb_file_path_groups = [
+        (search_path, list(search_path[0].rglob(str(COMPDB_FILE_NAME))))
+        for search_path in compdb_search_paths
+    ]
+    # Flatten that list.
+    compdb_file_paths: List[Tuple[Path, Path, str]] = [
+        (search_path, file_path, target_inference)
+        for (
+            (search_path, target_inference),
+            file_path_group,
+        ) in compdb_file_path_groups
+        for file_path in file_path_group
+    ]
 
-    for compdb_file_path in compdb_file_paths:
+    for (
+        compdb_root_dir,
+        compdb_file_path,
+        target_inference,
+    ) in compdb_file_paths:
         # Load the compilation database
         try:
-            compdb = CppCompilationDatabase.load(compdb_file_path, build_dir)
+            compdb = CppCompilationDatabase.load(
+                compdb_to_load=compdb_file_path,
+                root_dir=compdb_root_dir,
+                target_inference=target_inference,
+            )
         except MissingCompDbException:
             reporter.err(f'File not found: {str(compdb_file_path)}')
             sys.exit(1)
@@ -330,14 +354,16 @@ def _process_compdbs(  # pylint: disable=too-many-locals
         if processed_compdbs is None:
             # Infer the name of the target from the path
             name = '_'.join(
-                compdb_file_path.relative_to(build_dir).parent.parts
+                compdb_file_path.relative_to(compdb_root_dir).parent.parts
             )
 
             target = CppIdeFeaturesTarget(
                 name=name,
                 compdb_file_path=compdb_file_path,
                 num_commands=len(
-                    CppCompilationDatabase.load(compdb_file_path, build_dir)
+                    CppCompilationDatabase.load(
+                        compdb_file_path, compdb_root_dir
+                    )
                 ),
             )
 
@@ -456,7 +482,6 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
     should_list_targets: bool,
     should_get_target: bool,
     target_to_set: Optional[str],
-    build_dir: Optional[Path],
     process: bool = True,
     use_default_target: bool = False,
     clangd_command: bool = False,
@@ -555,10 +580,6 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
 
     state = CppIdeFeaturesState(pw_ide_settings)
     should_update_ides = False
-
-    build_dir = (
-        build_dir if build_dir is not None else pw_ide_settings.build_dir
-    )
 
     if process:
         default = False

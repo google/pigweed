@@ -16,7 +16,6 @@
 import argparse
 import enum
 from inspect import cleandoc
-from pathlib import Path
 import re
 from typing import Any, Callable, Dict, List, Optional, Protocol
 
@@ -312,11 +311,6 @@ def _build_argument_parser() -> argparse.ArgumentParser:
         action='store_true',
         help='process a file or several files matching '
         'the clang compilation database format',
-    )
-    parser_cpp.add_argument(
-        '--build-dir',
-        type=Path,
-        help='override the build directory defined in pw_ide settings',
     )
     parser_cpp.add_argument(
         '--clangd-command',

@@ -15,10 +15,9 @@
 
 import enum
 from inspect import cleandoc
-import glob
 import os
 from pathlib import Path
-from typing import Any, cast, Dict, List, Literal, Optional, Union
+from typing import Any, cast, Dict, List, Literal, Optional, Tuple, Union
 import yaml
 
 from pw_cli.env import pigweed_environment
@@ -49,8 +48,7 @@ _DEFAULT_SUPPORTED_EDITORS: Dict[SupportedEditorName, bool] = {
 _DEFAULT_CONFIG: Dict[str, Any] = {
     'cascade_targets': False,
     'clangd_additional_query_drivers': [],
-    'build_dir': _DEFAULT_BUILD_DIR,
-    'compdb_paths': _DEFAULT_BUILD_DIR_NAME,
+    'compdb_search_paths': [_DEFAULT_BUILD_DIR_NAME],
     'default_target': None,
     'editors': _DEFAULT_SUPPORTED_EDITORS,
     'sync': ['pw --no-banner ide cpp --process'],
@@ -91,6 +89,22 @@ def _expand_any_vars_str(input_path: str) -> str:
     return str(_expand_any_vars(Path(input_path)))
 
 
+def _parse_dir_path(input_path_str: str) -> Path:
+    if (path := Path(input_path_str)).is_absolute():
+        return path
+
+    return Path.cwd() / path
+
+
+def _parse_compdb_search_path(
+    input_data: Union[str, Tuple[str, str]], default_inference: str
+) -> Tuple[Path, str]:
+    if isinstance(input_data, (tuple, list)):
+        return _parse_dir_path(input_data[0]), input_data[1]
+
+    return _parse_dir_path(input_data), default_inference
+
+
 class PigweedIdeSettings(YamlConfigLoaderMixin):
     """Pigweed IDE features settings storage class."""
 
@@ -124,30 +138,25 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         return Path(self._config.get('working_dir', PW_IDE_DEFAULT_DIR))
 
     @property
-    def build_dir(self) -> Path:
-        """The build system's root output directory.
+    def compdb_search_paths(self) -> List[Tuple[Path, str]]:
+        """Paths to directories to search for compilation databases.
 
-        We will use this as the output directory when automatically running
-        build system commands, and will use it to resolve target names using
-        target name inference when processing compilation databases. This can
-        be the same build directory used for general-purpose builds, but it
-        does not have to be.
+        If you're using a build system to generate compilation databases, this
+        may simply be your build output directory. However, you can add
+        additional directories to accommodate compilation databases from other
+        sources.
+
+        Entries can be just directories, in which case the default target
+        inference pattern will be used. Or entries can be tuples of a directory
+        and a target inference pattern. See the documentation for
+        ``target_inference`` for more information.
         """
-        return Path(self._config.get('build_dir', _DEFAULT_BUILD_DIR))
-
-    @property
-    def compdb_paths(self) -> str:
-        """A path glob to search for compilation databases.
-
-        These paths can be to files or to directories. Paths that are
-        directories will be appended with the default file name for
-        ``clangd`` compilation databases, ``compile_commands.json``.
-        """
-        return self._config.get('compdb_paths', _DEFAULT_BUILD_DIR_NAME)
-
-    @property
-    def compdb_paths_expanded(self) -> List[Path]:
-        return [Path(node) for node in glob.iglob(self.compdb_paths)]
+        return [
+            _parse_compdb_search_path(search_path, self.target_inference)
+            for search_path in self._config.get(
+                'compdb_search_paths', _DEFAULT_BUILD_DIR
+            )
+        ]
 
     @property
     def targets(self) -> List[str]:
@@ -205,6 +214,14 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         ignored. For example, a glob indicating that the directory two levels
         down from the build directory root has the target name would be
         expressed with ``*/*/?``.
+
+        Note that the build artifact path is relative to the compilation
+        database search path that found the file. For example, for a compilation
+        database search path of ``{project dir}/out``, for the purposes of
+        target inference, the build artifact path is relative to the ``{project
+        dir}/out`` directory. Target inference patterns can be defined for each
+        compilation database search path. See the documentation for
+        ``compdb_search_paths`` for more information.
         """
         return self._config.get('target_inference', _DEFAULT_TARGET_INFERENCE)
 
@@ -349,11 +366,8 @@ _docstring_set_default(
     PigweedIdeSettings.working_dir, PW_IDE_DIR_NAME, literal=True
 )
 _docstring_set_default(
-    PigweedIdeSettings.build_dir, _DEFAULT_BUILD_DIR_NAME, literal=True
-)
-_docstring_set_default(
-    PigweedIdeSettings.compdb_paths,
-    _DEFAULT_CONFIG['compdb_paths'],
+    PigweedIdeSettings.compdb_search_paths,
+    [_DEFAULT_BUILD_DIR_NAME],
     literal=True,
 )
 _docstring_set_default(
