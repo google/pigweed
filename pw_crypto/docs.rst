@@ -108,9 +108,7 @@ configured. If using GN, do,
   # Install and configure MbedTLS
   pw package install mbedtls
   gn gen out --args='
-      import("//build_overrides/pigweed_environment.gni")
-
-      dir_pw_third_party_mbedtls=pw_env_setup_PACKAGE_ROOT+"/mbedtls"
+      dir_pw_third_party_mbedtls=getenv("PW_PACKAGE_ROOT")+"/mbedtls"
       pw_crypto_SHA256_BACKEND="//pw_crypto:sha256_mbedtls_v3"
       pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_mbedtls_v3"
   '
@@ -170,9 +168,7 @@ To select Micro ECC, the library needs to be installed and configured.
   # Install and configure Micro ECC
   pw package install micro-ecc
   gn gen out --args='
-      import("//build_overrides/pigweed_environment.gni")
-
-      dir_pw_third_party_micro_ecc=pw_env_setup_PACKAGE_ROOT+"/micro-ecc"
+      dir_pw_third_party_micro_ecc=getenv("PW_PACKAGE_ROOT")+"/micro-ecc"
       pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_uecc"
   '
 

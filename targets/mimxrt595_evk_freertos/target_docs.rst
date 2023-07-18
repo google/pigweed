@@ -47,8 +47,12 @@ Step 3: Install Freertos Source and Configure Location
   pw package install freertos
 
   gn args out
-    # Add this line.
-    dir_pw_third_party_freertos = pw_env_setup_PACKAGE_ROOT + "/freertos"
+
+Then add the following line to that text file:
+
+.. code::
+
+    dir_pw_third_party_freertos = getenv("PW_PACKAGE_ROOT") + "/freertos"
 
 --------
 Building

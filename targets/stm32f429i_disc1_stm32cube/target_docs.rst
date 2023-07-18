@@ -49,9 +49,9 @@ locations the repositories were downloaded to.
 
    .. code::
 
-      dir_pw_third_party_nanopb = pw_env_setup_PACKAGE_ROOT + "/nanopb"
-      dir_pw_third_party_freertos = pw_env_setup_PACKAGE_ROOT + "/freertos"
-      dir_pw_third_party_stm32cube_f4 = pw_env_setup_PACKAGE_ROOT + "/stm32cube_f4"
+      dir_pw_third_party_nanopb = getenv("PW_PACKAGE_ROOT") + "/nanopb"
+      dir_pw_third_party_freertos = getenv("PW_PACKAGE_ROOT") + "/freertos"
+      dir_pw_third_party_stm32cube_f4 = getenv("PW_PACKAGE_ROOT") + "/stm32cube_f4"
 
 -----------------------------
 Building and Running the Demo

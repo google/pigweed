@@ -22,11 +22,14 @@ to point to the locations the repositories were downloaded to.
   pw package install nanopb
 
   gn args out
-    # Add these lines.
-    dir_pw_third_party_freertos = pw_env_setup_PACKAGE_ROOT + "/freertos"
-    dir_pw_third_party_smartfusion_mss =
-      pw_env_setup_PACKAGE_ROOT + "/smartfusion_mss"
-    dir_pw_third_party_nanopb = pw_env_setup_PACKAGE_ROOT + "/nanopb"
+
+Then add the following lines to that text file:
+
+.. code::
+
+    dir_pw_third_party_freertos = getenv("PW_PACKAGE_ROOT") + "/freertos"
+    dir_pw_third_party_smartfusion_mss = getenv("PW_PACKAGE_ROOT") + "/smartfusion_mss"
+    dir_pw_third_party_nanopb = getenv("PW_PACKAGE_ROOT") + "/nanopb"
 
 Building and running the demo
 =============================

@@ -24,12 +24,9 @@ Next add nanopb to your args.gn by running the command
 
 gn args out
 
-Then add the following lines to that text file:
+Then add the following line to that text file:
 
-# Add this line if pigweed_environment.gni is not already imported
-import("//build_overrides/pigweed_environment.gni")
-
-dir_pw_third_party_nanopb = pw_env_setup_PACKAGE_ROOT + "/nanopb"
+dir_pw_third_party_nanopb = getenv("PW_PACKAGE_ROOT") + "/nanopb"
 
 BUILD
 ninja -C out \
