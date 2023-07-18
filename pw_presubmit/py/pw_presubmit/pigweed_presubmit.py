@@ -482,6 +482,7 @@ def _env_with_zephyr_vars(ctx: PresubmitContext) -> dict:
     env = os.environ.copy()
     # Set some variables here.
     env['ZEPHYR_BASE'] = str(ctx.package_root / 'zephyr')
+    env['ZEPHYR_MODULES'] = str(ctx.root)
     return env
 
 
