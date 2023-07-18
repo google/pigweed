@@ -28,7 +28,7 @@ class TraceBuffer {
   TraceBuffer() {
     ring_buffer_.SetBuffer(raw_buffer_)
         .IgnoreError();  // TODO(b/242598609): Handle Status properly
-    Callbacks::Instance()
+    GetCallbacks()
         .RegisterSink(
             TraceSinkStartBlock, TraceSinkAddBytes, TraceSinkEndBlock, this)
         .IgnoreError();  // TODO(b/242598609): Handle Status properly

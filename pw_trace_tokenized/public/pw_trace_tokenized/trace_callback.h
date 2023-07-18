@@ -119,7 +119,9 @@ PW_EXTERN_C_END
 namespace pw {
 namespace trace {
 
-class CallbacksImpl {
+// C++ API to the tokenized trace callback system
+// Example: pw::trace::GetTraceCallbacks().UnregisterAllSinks();
+class Callbacks {
  public:
   enum CallOnEveryEvent {
     kCallOnlyWhenEnabled = PW_TRACE_CALL_ONLY_WHEN_ENABLED,
@@ -180,16 +182,8 @@ class CallbacksImpl {
   }
 };
 
-// A singleton object of the CallbacksImpl class which can be used to
-// interface with trace using the C++ API.
-// Example: pw::trace::Callbacks::Instance().UnregisterAllSinks();
-class Callbacks {
- public:
-  static CallbacksImpl& Instance() { return instance_; }
-
- private:
-  static CallbacksImpl instance_;
-};
+// Returns a reference of the tokenized trace callbacks
+Callbacks& GetCallbacks();
 
 // This is a convenience class to register the callback when the object is
 // created. For example if the callback should always be registered this can be
@@ -197,19 +191,19 @@ class Callbacks {
 class RegisterCallbackWhenCreated {
  public:
   RegisterCallbackWhenCreated(
-      CallbacksImpl::EventCallback event_callback,
-      CallbacksImpl::CallOnEveryEvent called_on_every_event =
-          CallbacksImpl::kCallOnlyWhenEnabled,
+      Callbacks::EventCallback event_callback,
+      Callbacks::CallOnEveryEvent called_on_every_event =
+          Callbacks::kCallOnlyWhenEnabled,
       void* user_data = nullptr) {
-    Callbacks::Instance()
+    GetCallbacks()
         .RegisterEventCallback(event_callback, called_on_every_event, user_data)
         .IgnoreError();  // TODO(b/242598609): Handle Status properly
   }
-  RegisterCallbackWhenCreated(CallbacksImpl::SinkStartBlock sink_start,
-                              CallbacksImpl::SinkAddBytes sink_add_bytes,
-                              CallbacksImpl::SinkEndBlock sink_end,
+  RegisterCallbackWhenCreated(Callbacks::SinkStartBlock sink_start,
+                              Callbacks::SinkAddBytes sink_add_bytes,
+                              Callbacks::SinkEndBlock sink_end,
                               void* user_data = nullptr) {
-    Callbacks::Instance()
+    GetCallbacks()
         .RegisterSink(sink_start, sink_add_bytes, sink_end, user_data)
         .IgnoreError();  // TODO(b/242598609): Handle Status properly
   }

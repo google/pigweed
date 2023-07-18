@@ -17,9 +17,13 @@
 
 namespace pw::trace {
 
+class TokenizedTracer;
+
 class TraceService final
     : public pw_rpc::nanopb::TraceService::Service<TraceService> {
  public:
+  TraceService(TokenizedTracer& tokenized_tracer);
+
   pw::Status Enable(const pw_trace_TraceEnableMessage& request,
                     pw_trace_TraceEnableMessage& response);
 
@@ -28,6 +32,9 @@ class TraceService final
 
   void GetTraceData(const pw_trace_Empty& request,
                     ServerWriter<pw_trace_TraceDataMessage>& writer);
+
+ private:
+  TokenizedTracer& tokenized_tracer_;
 };
 
 }  // namespace pw::trace

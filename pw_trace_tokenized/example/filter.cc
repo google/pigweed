@@ -51,7 +51,7 @@ int main(int argc, char** argv) {  // Take filename as arg
   }
 
   // Register filter callback
-  pw::trace::Callbacks::Instance()
+  pw::trace::GetCallbacks()
       .RegisterEventCallback(TraceEventCallback)
       .IgnoreError();  // TODO(b/242598609): Handle Status properly
 

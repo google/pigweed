@@ -15,25 +15,35 @@
 /*
 
 NOTE
-To use this example you need to enable nanopb, one option is to set this in
-either your out/args.gn or the root .gn:
-default_args = {
-  dir_pw_third_party_nanopb = "<path to nanopb repo>"
-}
+To use this example you need to enable nanopb. One option is to first install
+the nanopb package by running the command:
+
+pw package install nanopb
+
+Next add nanopb to your args.gn by running the command
+
+gn args out
+
+Then add the following lines to that text file:
+
+# Add this line if pigweed_environment.gni is not already imported
+import("//build_overrides/pigweed_environment.gni")
+
+dir_pw_third_party_nanopb = pw_env_setup_PACKAGE_ROOT + "/nanopb"
 
 BUILD
-ninja -C out
+ninja -C out \
 pw_strict_host_clang_debug/obj/pw_trace_tokenized/bin/trace_tokenized_example_rpc
 
 RUN
 ./out/pw_strict_host_clang_debug/obj/pw_trace_tokenized/bin/trace_tokenized_example_rpc
 
 DECODE
-python pw_trace_tokenized/py/pw_trace_tokenized/get_trace.py
- -s localhost:33000
- -o trace.json
- -t
- out/pw_strict_host_clang_debug/obj/pw_trace_tokenized/bin/trace_tokenized_example_rpc
+python pw_trace_tokenized/py/pw_trace_tokenized/get_trace.py \
+ -s localhost:33000 \
+ -o trace.json \
+ -t \
+ out/pw_strict_host_clang_debug/obj/pw_trace_tokenized/bin/trace_tokenized_example_rpc\
  pw_trace_tokenized/pw_trace_protos/trace_rpc.proto
 
 VIEW
@@ -46,12 +56,12 @@ In chrome navigate to chrome://tracing, and load the trace.json file.
 #include "pw_rpc/server.h"
 #include "pw_rpc_system_server/rpc_server.h"
 #include "pw_trace/example/sample_app.h"
-#include "pw_trace/trace.h"
 #include "pw_trace_tokenized/trace_rpc_service_nanopb.h"
+#include "pw_trace_tokenized/trace_tokenized.h"
 
 namespace {
 
-pw::trace::TraceService trace_service;
+pw::trace::TraceService trace_service(pw::trace::GetTokenizedTracer());
 
 void RpcThread() {
   pw::rpc::system_server::Init();

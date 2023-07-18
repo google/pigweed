@@ -57,23 +57,23 @@ class TraceTestInterface {
   TraceTestInterface() {
     PW_TRACE_SET_ENABLED(true);
     EXPECT_EQ(pw::OkStatus(),
-              pw::trace::Callbacks::Instance().RegisterSink(TraceSinkStartBlock,
-                                                            TraceSinkAddBytes,
-                                                            TraceSinkEndBlock,
-                                                            this,
-                                                            &sink_handle_));
+              pw::trace::GetCallbacks().RegisterSink(TraceSinkStartBlock,
+                                                     TraceSinkAddBytes,
+                                                     TraceSinkEndBlock,
+                                                     this,
+                                                     &sink_handle_));
     EXPECT_EQ(pw::OkStatus(),
-              pw::trace::Callbacks::Instance().RegisterEventCallback(
+              pw::trace::GetCallbacks().RegisterEventCallback(
                   TraceEventCallback,
-                  pw::trace::CallbacksImpl::kCallOnlyWhenEnabled,
+                  pw::trace::Callbacks::kCallOnlyWhenEnabled,
                   this,
                   &event_callback_handle_));
   }
   ~TraceTestInterface() {
     EXPECT_EQ(pw::OkStatus(),
-              pw::trace::Callbacks::Instance().UnregisterSink(sink_handle_));
+              pw::trace::GetCallbacks().UnregisterSink(sink_handle_));
     EXPECT_EQ(pw::OkStatus(),
-              pw::trace::Callbacks::Instance().UnregisterEventCallback(
+              pw::trace::GetCallbacks().UnregisterEventCallback(
                   event_callback_handle_));
   }
   // ActionOnEvent will perform a specific action within the callback when an
@@ -162,8 +162,8 @@ class TraceTestInterface {
   size_t sink_block_size_;
   size_t sink_bytes_received_;
   std::deque<TraceInfo> buffer_;
-  pw::trace::CallbacksImpl::SinkHandle sink_handle_;
-  pw::trace::CallbacksImpl::EventCallbackHandle event_callback_handle_;
+  pw::trace::Callbacks::SinkHandle sink_handle_;
+  pw::trace::Callbacks::EventCallbackHandle event_callback_handle_;
 };
 
 }  // namespace

@@ -24,21 +24,24 @@
 namespace pw {
 namespace trace {
 
-TokenizedTraceImpl TokenizedTrace::instance_;
-CallbacksImpl Callbacks::instance_;
+TokenizedTracer tokenized_tracer;
+TokenizedTracer& GetTokenizedTracer() { return tokenized_tracer; }
+
+Callbacks callbacks;
+Callbacks& GetCallbacks() { return callbacks; }
 
 using TraceEvent = pw_trace_tokenized_TraceEvent;
 
-void TokenizedTraceImpl::HandleTraceEvent(uint32_t trace_token,
-                                          EventType event_type,
-                                          const char* module,
-                                          uint32_t trace_id,
-                                          uint8_t flags,
-                                          const void* data_buffer,
-                                          size_t data_size) {
+void TokenizedTracer::HandleTraceEvent(uint32_t trace_token,
+                                       EventType event_type,
+                                       const char* module,
+                                       uint32_t trace_id,
+                                       uint8_t flags,
+                                       const void* data_buffer,
+                                       size_t data_size) {
   // Early exit if disabled and no callbacks are register to receive events
   // while disabled.
-  if (!enabled_ && Callbacks::Instance().GetCalledOnEveryEventCount() == 0) {
+  if (!enabled_ && GetCallbacks().GetCalledOnEveryEventCount() == 0) {
     return;
   }
 
@@ -54,16 +57,16 @@ void TokenizedTraceImpl::HandleTraceEvent(uint32_t trace_token,
 
   // Call any event callback which is registered to receive every event.
   pw_trace_TraceEventReturnFlags ret_flags = 0;
-  ret_flags |= Callbacks::Instance().CallEventCallbacks(
-      CallbacksImpl::kCallOnEveryEvent, &event);
+  ret_flags |=
+      GetCallbacks().CallEventCallbacks(Callbacks::kCallOnEveryEvent, &event);
   // Return if disabled.
   if ((PW_TRACE_EVENT_RETURN_FLAGS_SKIP_EVENT & ret_flags) || !enabled_) {
     return;
   }
 
   // Call any event callback not already called.
-  ret_flags |= Callbacks::Instance().CallEventCallbacks(
-      CallbacksImpl::kCallOnlyWhenEnabled, &event);
+  ret_flags |= GetCallbacks().CallEventCallbacks(
+      Callbacks::kCallOnlyWhenEnabled, &event);
   // Return if disabled (from a callback) or if a callback has indicated the
   // sample should be skipped.
   if ((PW_TRACE_EVENT_RETURN_FLAGS_SKIP_EVENT & ret_flags) || !enabled_) {
@@ -103,7 +106,7 @@ void TokenizedTraceImpl::HandleTraceEvent(uint32_t trace_token,
   }
 }
 
-void TokenizedTraceImpl::HandleNextItemInQueue(
+void TokenizedTracer::HandleNextItemInQueue(
     const volatile TraceQueue::QueueEventBlock* event_block) {
   // Get next item in queue
   uint32_t trace_token = event_block->trace_token;
@@ -140,27 +143,27 @@ void TokenizedTraceImpl::HandleNextItemInQueue(
   }
 
   // Send encoded output to any registered trace sinks.
-  Callbacks::Instance().CallSinks(
+  GetCallbacks().CallSinks(
       span<const std::byte>(header, header_size),
       span<const std::byte>(reinterpret_cast<const std::byte*>(data_buffer),
                             data_size));
 }
 
-pw_trace_TraceEventReturnFlags CallbacksImpl::CallEventCallbacks(
+pw_trace_TraceEventReturnFlags Callbacks::CallEventCallbacks(
     CallOnEveryEvent called_on_every_event, TraceEvent* event) {
   pw_trace_TraceEventReturnFlags ret_flags = 0;
   for (size_t i = 0; i < PW_TRACE_CONFIG_MAX_EVENT_CALLBACKS; i++) {
     if (event_callbacks_[i].callback &&
         event_callbacks_[i].called_on_every_event == called_on_every_event) {
-      ret_flags |= Callbacks::Instance().GetEventCallback(i)->callback(
+      ret_flags |= GetCallbacks().GetEventCallback(i)->callback(
           event_callbacks_[i].user_data, event);
     }
   }
   return ret_flags;
 }
 
-void CallbacksImpl::CallSinks(span<const std::byte> header,
-                              span<const std::byte> data) {
+void Callbacks::CallSinks(span<const std::byte> header,
+                          span<const std::byte> data) {
   for (size_t sink_idx = 0; sink_idx < PW_TRACE_CONFIG_MAX_SINKS; sink_idx++) {
     void* user_data = sink_callbacks_[sink_idx].user_data;
     if (sink_callbacks_[sink_idx].start_block) {
@@ -181,11 +184,11 @@ void CallbacksImpl::CallSinks(span<const std::byte> header,
   }
 }
 
-pw::Status CallbacksImpl::RegisterSink(SinkStartBlock start_func,
-                                       SinkAddBytes add_bytes_func,
-                                       SinkEndBlock end_block_func,
-                                       void* user_data,
-                                       SinkHandle* handle) {
+pw::Status Callbacks::RegisterSink(SinkStartBlock start_func,
+                                   SinkAddBytes add_bytes_func,
+                                   SinkEndBlock end_block_func,
+                                   void* user_data,
+                                   SinkHandle* handle) {
   pw_Status status = PW_STATUS_RESOURCE_EXHAUSTED;
   PW_TRACE_LOCK();
   for (size_t sink_idx = 0; sink_idx < PW_TRACE_CONFIG_MAX_SINKS; sink_idx++) {
@@ -205,7 +208,7 @@ pw::Status CallbacksImpl::RegisterSink(SinkStartBlock start_func,
   return status;
 }
 
-pw::Status CallbacksImpl::UnregisterSink(SinkHandle handle) {
+pw::Status Callbacks::UnregisterSink(SinkHandle handle) {
   PW_TRACE_LOCK();
   if (handle >= PW_TRACE_CONFIG_MAX_SINKS) {
     return PW_STATUS_INVALID_ARGUMENT;
@@ -217,7 +220,7 @@ pw::Status CallbacksImpl::UnregisterSink(SinkHandle handle) {
   return PW_STATUS_OK;
 }
 
-pw::Status CallbacksImpl::UnregisterAllSinks() {
+pw::Status Callbacks::UnregisterAllSinks() {
   for (size_t sink_idx = 0; sink_idx < PW_TRACE_CONFIG_MAX_SINKS; sink_idx++) {
     UnregisterSink(sink_idx)
         .IgnoreError();  // TODO(b/242598609): Handle Status properly
@@ -225,14 +228,14 @@ pw::Status CallbacksImpl::UnregisterAllSinks() {
   return PW_STATUS_OK;
 }
 
-CallbacksImpl::SinkCallbacks* CallbacksImpl::GetSink(SinkHandle handle) {
+Callbacks::SinkCallbacks* Callbacks::GetSink(SinkHandle handle) {
   if (handle >= PW_TRACE_CONFIG_MAX_EVENT_CALLBACKS) {
     return nullptr;
   }
   return &sink_callbacks_[handle];
 }
 
-pw::Status CallbacksImpl::RegisterEventCallback(
+pw::Status Callbacks::RegisterEventCallback(
     EventCallback callback,
     CallOnEveryEvent called_on_every_event,
     void* user_data,
@@ -256,7 +259,7 @@ pw::Status CallbacksImpl::RegisterEventCallback(
   return status;
 }
 
-pw::Status CallbacksImpl::UnregisterEventCallback(EventCallbackHandle handle) {
+pw::Status Callbacks::UnregisterEventCallback(EventCallbackHandle handle) {
   PW_TRACE_LOCK();
   if (handle >= PW_TRACE_CONFIG_MAX_EVENT_CALLBACKS) {
     return PW_STATUS_INVALID_ARGUMENT;
@@ -270,7 +273,7 @@ pw::Status CallbacksImpl::UnregisterEventCallback(EventCallbackHandle handle) {
   return PW_STATUS_OK;
 }
 
-pw::Status CallbacksImpl::UnregisterAllEventCallbacks() {
+pw::Status Callbacks::UnregisterAllEventCallbacks() {
   for (size_t i = 0; i < PW_TRACE_CONFIG_MAX_EVENT_CALLBACKS; i++) {
     UnregisterEventCallback(i)
         .IgnoreError();  // TODO(b/242598609): Handle Status properly
@@ -278,7 +281,7 @@ pw::Status CallbacksImpl::UnregisterAllEventCallbacks() {
   return PW_STATUS_OK;
 }
 
-CallbacksImpl::EventCallbacks* CallbacksImpl::GetEventCallback(
+Callbacks::EventCallbacks* Callbacks::GetEventCallback(
     EventCallbackHandle handle) {
   if (handle >= PW_TRACE_CONFIG_MAX_EVENT_CALLBACKS) {
     return nullptr;
@@ -290,9 +293,9 @@ CallbacksImpl::EventCallbacks* CallbacksImpl::GetEventCallback(
 
 PW_EXTERN_C_START
 
-void pw_trace_Enable(bool enable) { TokenizedTrace::Instance().Enable(enable); }
+void pw_trace_Enable(bool enable) { GetTokenizedTracer().Enable(enable); }
 
-bool pw_trace_IsEnabled() { return TokenizedTrace::Instance().IsEnabled(); }
+bool pw_trace_IsEnabled() { return GetTokenizedTracer().IsEnabled(); }
 
 void pw_trace_TraceEvent(uint32_t trace_token,
                          pw_trace_EventType event_type,
@@ -301,7 +304,7 @@ void pw_trace_TraceEvent(uint32_t trace_token,
                          uint8_t flags,
                          const void* data_buffer,
                          size_t data_size) {
-  TokenizedTrace::Instance().HandleTraceEvent(
+  GetTokenizedTracer().HandleTraceEvent(
       trace_token, event_type, module, trace_id, flags, data_buffer, data_size);
 }
 
@@ -310,14 +313,14 @@ pw_Status pw_trace_RegisterSink(pw_trace_SinkStartBlock start_func,
                                 pw_trace_SinkEndBlock end_block_func,
                                 void* user_data,
                                 pw_trace_SinkHandle* handle) {
-  return Callbacks::Instance()
+  return GetCallbacks()
       .RegisterSink(
           start_func, add_bytes_func, end_block_func, user_data, handle)
       .code();
 }
 
 pw_Status pw_trace_UnregisterSink(pw_trace_EventCallbackHandle handle) {
-  return Callbacks::Instance().UnregisterSink(handle).code();
+  return GetCallbacks().UnregisterSink(handle).code();
 }
 
 pw_Status pw_trace_RegisterEventCallback(
@@ -325,10 +328,10 @@ pw_Status pw_trace_RegisterEventCallback(
     pw_trace_ShouldCallOnEveryEvent called_on_every_event,
     void* user_data,
     pw_trace_EventCallbackHandle* handle) {
-  return Callbacks::Instance()
+  return GetCallbacks()
       .RegisterEventCallback(
           callback,
-          static_cast<CallbacksImpl::CallOnEveryEvent>(called_on_every_event),
+          static_cast<Callbacks::CallOnEveryEvent>(called_on_every_event),
           user_data,
           handle)
       .code();
@@ -336,7 +339,7 @@ pw_Status pw_trace_RegisterEventCallback(
 
 pw_Status pw_trace_UnregisterEventCallback(
     pw_trace_EventCallbackHandle handle) {
-  return Callbacks::Instance().UnregisterEventCallback(handle).code();
+  return GetCallbacks().UnregisterEventCallback(handle).code();
 }
 
 PW_EXTERN_C_END
