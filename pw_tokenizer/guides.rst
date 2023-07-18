@@ -60,6 +60,95 @@ Once enabled, the tokenizer headers can be included like any Zephyr headers:
   ``pw_tokenizer_zephyr.ld`` which is added to the end of the linker file
   via a call to ``zephyr_linker_sources(SECTIONS ...)``.
 
+.. _module-pw_tokenizer-base64-guides:
+
+-------------
+Base64 guides
+-------------
+See :ref:`module-pw_tokenizer-base64-format` for a conceptual overview of
+Base64.
+
+Encoding Base64
+===============
+To encode with the Base64 format, add a call to
+``pw::tokenizer::PrefixedBase64Encode`` or ``pw_tokenizer_PrefixedBase64Encode``
+in the tokenizer handler function. For example,
+
+.. code-block:: cpp
+
+   void TokenizedMessageHandler(const uint8_t encoded_message[],
+                                size_t size_bytes) {
+     pw::InlineBasicString base64 = pw::tokenizer::PrefixedBase64Encode(
+         pw::span(encoded_message, size_bytes));
+
+     TransmitLogMessage(base64.data(), base64.size());
+   }
+
+Decoding Base64
+===============
+The Python ``Detokenizer`` class supports decoding and detokenizing prefixed
+Base64 messages with ``detokenize_base64`` and related methods.
+
+.. tip::
+   The Python detokenization tools support recursive detokenization for prefixed
+   Base64 text. Tokenized strings found in detokenized text are detokenized, so
+   prefixed Base64 messages can be passed as ``%s`` arguments.
+
+   For example, the tokenized string for "Wow!" is ``$RhYjmQ==``. This could be
+   passed as an argument to the printf-style string ``Nested message: %s``, which
+   encodes to ``$pEVTYQkkUmhZam1RPT0=``. The detokenizer would decode the message
+   as follows:
+
+   ::
+
+     "$pEVTYQkkUmhZam1RPT0=" → "Nested message: $RhYjmQ==" → "Nested message: Wow!"
+
+Base64 decoding is supported in C++ or C with the
+``pw::tokenizer::PrefixedBase64Decode`` or ``pw_tokenizer_PrefixedBase64Decode``
+functions.
+
+Investigating undecoded messages
+================================
+Tokenized messages cannot be decoded if the token is not recognized. The Python
+package includes the ``parse_message`` tool, which parses tokenized Base64
+messages without looking up the token in a database. This tool attempts to guess
+the types of the arguments and displays potential ways to decode them.
+
+This tool can be used to extract argument information from an otherwise unusable
+message. It could help identify which statement in the code produced the
+message. This tool is not particularly helpful for tokenized messages without
+arguments, since all it can do is show the value of the unknown token.
+
+The tool is executed by passing Base64 tokenized messages, with or without the
+``$`` prefix, to ``pw_tokenizer.parse_message``. Pass ``-h`` or ``--help`` to
+see full usage information.
+
+Example
+-------
+.. code-block::
+
+   $ python -m pw_tokenizer.parse_message '$329JMwA=' koSl524TRkFJTEVEX1BSRUNPTkRJVElPTgJPSw== --specs %s %d
+
+   INF Decoding arguments for '$329JMwA='
+   INF Binary: b'\xdfoI3\x00' [df 6f 49 33 00] (5 bytes)
+   INF Token:  0x33496fdf
+   INF Args:   b'\x00' [00] (1 bytes)
+   INF Decoding with up to 8 %s or %d arguments
+   INF   Attempt 1: [%s]
+   INF   Attempt 2: [%d] 0
+
+   INF Decoding arguments for '$koSl524TRkFJTEVEX1BSRUNPTkRJVElPTgJPSw=='
+   INF Binary: b'\x92\x84\xa5\xe7n\x13FAILED_PRECONDITION\x02OK' [92 84 a5 e7 6e 13 46 41 49 4c 45 44 5f 50 52 45 43 4f 4e 44 49 54 49 4f 4e 02 4f 4b] (28 bytes)
+   INF Token:  0xe7a58492
+   INF Args:   b'n\x13FAILED_PRECONDITION\x02OK' [6e 13 46 41 49 4c 45 44 5f 50 52 45 43 4f 4e 44 49 54 49 4f 4e 02 4f 4b] (24 bytes)
+   INF Decoding with up to 8 %s or %d arguments
+   INF   Attempt 1: [%d %s %d %d %d] 55 FAILED_PRECONDITION 1 -40 -38
+   INF   Attempt 2: [%d %s %s] 55 FAILED_PRECONDITION OK
+
+Detokenizing command line utilities
+-----------------------------------
+See :ref:`module-pw_tokenizer-cli-detokenizing`.
+
 .. _module-pw_tokenizer-masks:
 
 ---------------------------

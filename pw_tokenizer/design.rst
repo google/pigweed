@@ -91,6 +91,35 @@ size (49 → 15 bytes).
 | When viewed      | ``"Battery state: CHARGING; battery voltage: 3989 mV"``   |         |
 +------------------+-----------------------------------------------------------+---------+
 
+.. _module-pw_tokenizer-base64-format:
+
+-------------
+Base64 format
+-------------
+The tokenizer encodes messages to a compact binary representation. Applications
+may desire a textual representation of tokenized strings. This makes it easy to
+use tokenized messages alongside plain text messages, but comes at a small
+efficiency cost: encoded Base64 messages occupy about 4/3 (133%) as much memory
+as binary messages.
+
+The Base64 format is comprised of a ``$`` character followed by the
+Base64-encoded contents of the tokenized message. For example, consider
+tokenizing the string ``This is an example: %d!`` with the argument -1. The
+string's token is 0x4b016e66.
+
+.. code-block:: text
+
+   Source code: PW_LOG("This is an example: %d!", -1);
+
+    Plain text: This is an example: -1! [23 bytes]
+
+        Binary: 66 6e 01 4b 01          [ 5 bytes]
+
+        Base64: $Zm4BSwE=               [ 9 bytes]
+
+See :ref:`module-pw_tokenizer-base64-guides` for guidance on encoding and
+decoding Base64 messages.
+
 .. _module-pw_tokenizer-token-databases:
 
 ---------------
