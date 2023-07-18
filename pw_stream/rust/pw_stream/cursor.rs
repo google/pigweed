@@ -54,21 +54,35 @@ impl<T: AsRef<[u8]>> Cursor<T> {
     }
 }
 
+// Implement `read()` as a concrete function to avoid extra monomorphization
+// overhead.
+fn read_impl(inner: &[u8], pos: &mut usize, buf: &mut [u8]) -> Result<usize> {
+    let remaining = inner.len() - *pos;
+    let read_len = min(remaining, buf.len());
+    buf[..read_len].copy_from_slice(&inner[*pos..(*pos + read_len)]);
+    *pos += read_len;
+    Ok(read_len)
+}
+
 impl<T: AsRef<[u8]>> Read for Cursor<T> {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
-        let read_len = min(self.remaining(), buf.len());
-        buf[..read_len].copy_from_slice(&self.inner.as_ref()[self.pos..(self.pos + read_len)]);
-        self.pos += read_len;
-        Ok(read_len)
+        read_impl(self.inner.as_ref(), &mut self.pos, buf)
     }
+}
+
+// Implement `write()` as a concrete function to avoid extra monomorphization
+// overhead.
+fn write_impl(inner: &mut [u8], pos: &mut usize, buf: &[u8]) -> Result<usize> {
+    let remaining = inner.len() - *pos;
+    let write_len = min(remaining, buf.len());
+    inner[*pos..(*pos + write_len)].copy_from_slice(&buf[0..write_len]);
+    *pos += write_len;
+    Ok(write_len)
 }
 
 impl<T: AsRef<[u8]> + AsMut<[u8]>> Write for Cursor<T> {
     fn write(&mut self, buf: &[u8]) -> Result<usize> {
-        let write_len = min(self.remaining(), buf.len());
-        self.inner.as_mut()[self.pos..(self.pos + write_len)].copy_from_slice(&buf[0..write_len]);
-        self.pos += write_len;
-        Ok(write_len)
+        write_impl(self.inner.as_mut(), &mut self.pos, buf)
     }
 
     fn flush(&mut self) -> Result<()> {
