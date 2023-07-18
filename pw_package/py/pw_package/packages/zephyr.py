@@ -93,6 +93,15 @@ class Zephyr(pw_package.git_repo.GitRepo):
                 "-force",
             ]
         )
+        # Setup Zephyr SDK
+        subprocess.check_call(
+            [
+                core_cache_path.as_posix() + "/setup.sh",
+                "-t all",
+                "-c",
+                "-h",
+            ]
+        )
 
     def install(self, path: pathlib.Path) -> None:
         super().install(path)
