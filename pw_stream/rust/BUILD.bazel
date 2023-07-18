@@ -26,7 +26,10 @@ rust_library(
     }),
     proc_macro_deps = ["@rust_crates//:paste"],
     visibility = ["//visibility:public"],
-    deps = ["//pw_status/rust:pw_status"],
+    deps = [
+        "//pw_status/rust:pw_status",
+        "//pw_varint/rust:pw_varint",
+    ],
 )
 
 rust_test(

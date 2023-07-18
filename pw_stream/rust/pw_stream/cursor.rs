@@ -16,6 +16,7 @@ use core::cmp::min;
 
 use paste::paste;
 use pw_status::{Error, Result};
+use pw_varint::{VarintDecode, VarintEncode};
 
 use super::{Read, Seek, SeekFrom, Write};
 
@@ -49,8 +50,18 @@ impl<T: AsRef<[u8]>> Cursor<T> {
         self.len() - self.pos
     }
 
+    fn remaining_slice(&mut self) -> &[u8] {
+        &self.inner.as_ref()[self.pos..]
+    }
+
     fn len(&self) -> usize {
         self.inner.as_ref().len()
+    }
+}
+
+impl<T: AsRef<[u8]> + AsMut<[u8]>> Cursor<T> {
+    fn remaining_mut(&mut self) -> &mut [u8] {
+        &mut self.inner.as_mut()[self.pos..]
     }
 }
 
@@ -221,10 +232,38 @@ impl<T: AsRef<[u8]> + AsMut<[u8]>> crate::WriteInteger for Cursor<T> {
     cursor_write_bits_impl!(128);
 }
 
+impl<T: AsRef<[u8]>> crate::ReadVarint for Cursor<T> {
+    fn read_varint(&mut self) -> Result<u64> {
+        let (len, value) = u64::varint_decode(self.remaining_slice())?;
+        self.pos += len;
+        Ok(value)
+    }
+
+    fn read_signed_varint(&mut self) -> Result<i64> {
+        let (len, value) = i64::varint_decode(self.remaining_slice())?;
+        self.pos += len;
+        Ok(value)
+    }
+}
+
+impl<T: AsRef<[u8]> + AsMut<[u8]>> crate::WriteVarint for Cursor<T> {
+    fn write_varint(&mut self, value: u64) -> Result<()> {
+        let encoded_len = value.varint_encode(self.remaining_mut())?;
+        self.pos += encoded_len;
+        Ok(())
+    }
+
+    fn write_signed_varint(&mut self, value: i64) -> Result<()> {
+        let encoded_len = value.varint_encode(self.remaining_mut())?;
+        self.pos += encoded_len;
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{test_utils::*, ReadInteger, WriteInteger};
+    use crate::{test_utils::*, ReadInteger, ReadVarint, WriteInteger, WriteVarint};
 
     #[test]
     fn cursor_remaining_returns_remaining_bytes() {
@@ -419,4 +458,52 @@ mod tests {
 
     cursor_read_n_bit_integers_unpacks_data_correctly!(128);
     cursor_write_n_bit_integers_packs_data_correctly!(128);
+
+    #[test]
+    pub fn read_varint_unpacks_data_correctly() {
+        let mut cursor = Cursor::new(vec![0xfe, 0xff, 0xff, 0xff, 0x0f, 0x0, 0x0, 0x0]);
+        let value = cursor.read_varint().unwrap();
+        assert_eq!(value, 0xffff_fffe);
+
+        let mut cursor = Cursor::new(vec![0xff, 0xff, 0xff, 0xff, 0x0f, 0x0, 0x0, 0x0]);
+        let value = cursor.read_varint().unwrap();
+        assert_eq!(value, 0xffff_ffff);
+    }
+
+    #[test]
+    pub fn read_signed_varint_unpacks_data_correctly() {
+        let mut cursor = Cursor::new(vec![0xfe, 0xff, 0xff, 0xff, 0x0f, 0x0, 0x0, 0x0]);
+        let value = cursor.read_signed_varint().unwrap();
+        assert_eq!(value, i32::MAX.into());
+
+        let mut cursor = Cursor::new(vec![0xff, 0xff, 0xff, 0xff, 0x0f, 0x0, 0x0, 0x0]);
+        let value = cursor.read_signed_varint().unwrap();
+        assert_eq!(value, i32::MIN.into());
+    }
+
+    #[test]
+    pub fn write_varint_packs_data_correctly() {
+        let mut cursor = Cursor::new(vec![0u8; 8]);
+        cursor.write_varint(0xffff_fffe).unwrap();
+        let buf = cursor.into_inner();
+        assert_eq!(buf, vec![0xfe, 0xff, 0xff, 0xff, 0x0f, 0x0, 0x0, 0x0]);
+
+        let mut cursor = Cursor::new(vec![0u8; 8]);
+        cursor.write_varint(0xffff_ffff).unwrap();
+        let buf = cursor.into_inner();
+        assert_eq!(buf, vec![0xff, 0xff, 0xff, 0xff, 0x0f, 0x0, 0x0, 0x0]);
+    }
+
+    #[test]
+    pub fn write_signed_varint_packs_data_correctly() {
+        let mut cursor = Cursor::new(vec![0u8; 8]);
+        cursor.write_signed_varint(i32::MAX.into()).unwrap();
+        let buf = cursor.into_inner();
+        assert_eq!(buf, vec![0xfe, 0xff, 0xff, 0xff, 0x0f, 0x0, 0x0, 0x0]);
+
+        let mut cursor = Cursor::new(vec![0u8; 8]);
+        cursor.write_signed_varint(i32::MIN.into()).unwrap();
+        let buf = cursor.into_inner();
+        assert_eq!(buf, vec![0xff, 0xff, 0xff, 0xff, 0x0f, 0x0, 0x0, 0x0]);
+    }
 }

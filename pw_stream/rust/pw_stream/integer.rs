@@ -300,3 +300,67 @@ pub trait WriteInteger {
     /// implementation.
     fn write_u128_be(&mut self, value: &u128) -> Result<()>;
 }
+
+/// A trait for reading varint integers from a stream.
+///
+/// The API here is explicitly limited to `u64` and `i64` in order to reduce
+/// code size.
+///
+/// # Example
+///
+/// ```
+/// use pw_stream::{Cursor, ReadVarint};
+///
+/// let mut cursor = Cursor::new(vec![0xfe, 0xff, 0xff, 0xff, 0x0f, 0xff, 0xff, 0xff, 0xff, 0x0f]);
+/// let unsigned_value = cursor.read_varint().unwrap();
+/// let signed_value = cursor.read_signed_varint().unwrap();
+/// assert_eq!(unsigned_value, 0xffff_fffe);
+/// assert_eq!(signed_value, i32::MIN.into());
+/// ```
+pub trait ReadVarint {
+    /// Read an unsigned varint from the stream.
+    ///
+    /// Errors that may be returned are dependant on the underlying
+    /// implementation.
+    fn read_varint(&mut self) -> Result<u64>;
+
+    /// Read a signed varint from the stream.
+    ///
+    /// Errors that may be returned are dependant on the underlying
+    /// implementation.
+    fn read_signed_varint(&mut self) -> Result<i64>;
+}
+
+/// A trait for writing varint integers from a stream.
+///
+/// The API here is explicitly limited to `u64` and `i64` in order to reduce
+/// code size.
+///
+/// # Example
+///
+/// ```
+/// use pw_stream::{Cursor, WriteVarint};
+///
+/// let mut cursor = Cursor::new(vec![0x0; 16]);
+///
+/// cursor.write_varint(0xffff_fffe).unwrap();
+/// cursor.write_signed_varint(i32::MIN.into()).unwrap();
+///
+/// let buffer = cursor.into_inner();
+/// assert_eq!(buffer,vec![
+///   0xfe, 0xff, 0xff, 0xff, 0x0f, 0xff, 0xff, 0xff,
+///   0xff, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+/// ```
+pub trait WriteVarint {
+    /// Write an unsigned varint to the stream.
+    ///
+    /// Errors that may be returned are dependant on the underlying
+    /// implementation.
+    fn write_varint(&mut self, value: u64) -> Result<()>;
+
+    /// Write a signed varint to the stream.
+    ///
+    /// Errors that may be returned are dependant on the underlying
+    /// implementation.
+    fn write_signed_varint(&mut self, value: i64) -> Result<()>;
+}
