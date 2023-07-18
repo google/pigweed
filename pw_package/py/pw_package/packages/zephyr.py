@@ -96,8 +96,9 @@ class Zephyr(pw_package.git_repo.GitRepo):
         # Setup Zephyr SDK
         subprocess.check_call(
             [
-                core_cache_path.as_posix() + "/setup.sh",
-                "-t all",
+                (core_cache_path / "setup.sh").as_posix(),
+                "-t",
+                "all",
                 "-c",
                 "-h",
             ]
