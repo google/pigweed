@@ -33,19 +33,9 @@
 //!
 //! let mut buffer = [0u8; 64];
 //!
-//! // Encoding and decoding operations return a reference to the unused buffer.
-//! let b = 1u16.varint_encode(&mut buffer).unwrap();
-//! let b = (-1i64).varint_encode(b).unwrap();
-//! let b = 0xffff_ffffu32.varint_encode(b).unwrap();
+//! let encoded_len = (-1i64).varint_encode(&mut buffer).unwrap();
 //!
-//! let (b, val) = u16::varint_decode(&mut buffer).unwrap();
-//! assert_eq!(val, 1u16, "1");
-//!
-//! let (b, val) = i64::varint_decode(b).unwrap();
-//! assert_eq!(val, -1i64, "2");
-//!
-//! let (b, val) = u32::varint_decode(b).unwrap();
-//! assert_eq!(val, 0xffff_ffffu32, "3");
+//! let (decoded_len, val) = i64::varint_decode(&buffer ).unwrap();
 //! ```
 
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -62,7 +52,7 @@ pub trait VarintDecode: Sized {
     /// Decode a type from a varint encoded series of bytes.
     ///
     /// Signed values will be implicitly zig-zag decoded.
-    fn varint_decode(data: &[u8]) -> Result<(&[u8], Self)>;
+    fn varint_decode(data: &[u8]) -> Result<(usize, Self)>;
 }
 
 /// A trait for objects than can be encoded into a varint.
@@ -73,20 +63,20 @@ pub trait VarintEncode: Sized {
     /// Encode a type into a varint encoded series of bytes.
     ///
     /// Signed values will be implicitly zig-zag encoded.
-    fn varint_encode(self, data: &mut [u8]) -> Result<&mut [u8]>;
+    fn varint_encode(self, data: &mut [u8]) -> Result<usize>;
 }
 
 macro_rules! unsigned_varint_impl {
     ($t:ty) => {
         impl VarintDecode for $t {
-            fn varint_decode(data: &[u8]) -> Result<(&[u8], Self)> {
+            fn varint_decode(data: &[u8]) -> Result<(usize, Self)> {
                 let (data, val) = decode_u64(data)?;
                 Ok((data, val as Self))
             }
         }
 
         impl VarintEncode for $t {
-            fn varint_encode(self, data: &mut [u8]) -> Result<&mut [u8]> {
+            fn varint_encode(self, data: &mut [u8]) -> Result<usize> {
                 encode_u64(data, self as u64)
             }
         }
@@ -96,14 +86,14 @@ macro_rules! unsigned_varint_impl {
 macro_rules! signed_varint_impl {
     ($t:ty) => {
         impl VarintDecode for $t {
-            fn varint_decode(data: &[u8]) -> Result<(&[u8], Self)> {
+            fn varint_decode(data: &[u8]) -> Result<(usize, Self)> {
                 let (data, val) = decode_u64(data)?;
                 Ok((data, zig_zag_decode(val) as Self))
             }
         }
 
         impl VarintEncode for $t {
-            fn varint_encode(self, data: &mut [u8]) -> Result<&mut [u8]> {
+            fn varint_encode(self, data: &mut [u8]) -> Result<usize> {
                 encode_u64(data, zig_zag_encode(self as i64))
             }
         }
@@ -120,19 +110,19 @@ signed_varint_impl!(i16);
 signed_varint_impl!(i32);
 signed_varint_impl!(i64);
 
-fn decode_u64(data: &[u8]) -> Result<(&[u8], u64)> {
+fn decode_u64(data: &[u8]) -> Result<(usize, u64)> {
     let mut value: u64 = 0;
     for (i, d) in data.iter().enumerate() {
         value |= (*d as u64 & 0x7f) << (i * 7);
 
         if (*d & 0x80) == 0 {
-            return Ok((&data[i + 1..], value));
+            return Ok((i + 1, value));
         }
     }
     Err(Error::OutOfRange)
 }
 
-fn encode_u64(data: &mut [u8], value: u64) -> Result<&mut [u8]> {
+fn encode_u64(data: &mut [u8], value: u64) -> Result<usize> {
     let mut value = value;
     for (i, d) in data.iter_mut().enumerate() {
         let mut byte: u8 = (value & 0x7f) as u8;
@@ -142,7 +132,7 @@ fn encode_u64(data: &mut [u8], value: u64) -> Result<&mut [u8]> {
         }
         *d = byte;
         if value == 0 {
-            return Ok(&mut data[(i + 1)..]);
+            return Ok(i + 1);
         }
     }
     Err(Error::OutOfRange)
@@ -240,7 +230,7 @@ mod test {
     #[test]
     fn decode_test_u16() {
         for case in success_cases_u8::<u16>() {
-            assert_eq!(u16::varint_decode(&case.0), Ok((&[0u8; 0][..], case.1)));
+            assert_eq!(u16::varint_decode(&case.0), Ok((case.0.len(), case.1)));
         }
 
         assert_eq!(u16::varint_decode(&[0x96]), Err(Error::OutOfRange));
@@ -249,7 +239,7 @@ mod test {
     #[test]
     fn decode_test_i16() {
         for case in success_cases_i8::<i16>() {
-            assert_eq!(i16::varint_decode(&case.0), Ok((&[0u8; 0][..], case.1)));
+            assert_eq!(i16::varint_decode(&case.0), Ok((case.0.len(), case.1)));
         }
 
         assert_eq!(i16::varint_decode(&[0x96]), Err(Error::OutOfRange));
@@ -261,7 +251,7 @@ mod test {
             .into_iter()
             .chain(success_cases_u32::<u32>())
         {
-            assert_eq!(u32::varint_decode(&case.0), Ok((&[0u8; 0][..], case.1)));
+            assert_eq!(u32::varint_decode(&case.0), Ok((case.0.len(), case.1)));
         }
 
         assert_eq!(u32::varint_decode(&[0x96]), Err(Error::OutOfRange));
@@ -273,7 +263,7 @@ mod test {
             .into_iter()
             .chain(success_cases_i32::<i32>())
         {
-            assert_eq!(i32::varint_decode(&case.0), Ok((&[0u8; 0][..], case.1)));
+            assert_eq!(i32::varint_decode(&case.0), Ok((case.0.len(), case.1)));
         }
 
         assert_eq!(i32::varint_decode(&[0x96]), Err(Error::OutOfRange));
@@ -285,7 +275,7 @@ mod test {
             .into_iter()
             .chain(success_cases_u32::<u64>())
         {
-            assert_eq!(u64::varint_decode(&case.0), Ok((&[0u8; 0][..], case.1)));
+            assert_eq!(u64::varint_decode(&case.0), Ok((case.0.len(), case.1)));
         }
 
         assert_eq!(u64::varint_decode(&[0x96]), Err(Error::OutOfRange));
@@ -297,7 +287,7 @@ mod test {
             .into_iter()
             .chain(success_cases_i32::<i64>())
         {
-            assert_eq!(i64::varint_decode(&case.0), Ok((&[0u8; 0][..], case.1)));
+            assert_eq!(i64::varint_decode(&case.0), Ok((case.0.len(), case.1)));
         }
 
         assert_eq!(i64::varint_decode(&[0x96]), Err(Error::OutOfRange));
@@ -307,10 +297,9 @@ mod test {
     fn encode_test_u16() {
         for case in success_cases_u8::<u16>() {
             let mut buffer = [0u8; 64];
-            let buffer_len = buffer.len(); // Grab length before mutably lending to encode().
-            let rest_buffer = case.1.varint_encode(&mut buffer).unwrap();
-            assert_eq!(buffer_len - rest_buffer.len(), case.0.len());
-            assert_eq!(&buffer[0..case.0.len()], case.0);
+            let len = case.1.varint_encode(&mut buffer).unwrap();
+            assert_eq!(len, case.0.len());
+            assert_eq!(&buffer[0..len], case.0);
         }
     }
 
@@ -318,10 +307,9 @@ mod test {
     fn encode_test_i16() {
         for case in success_cases_i8::<i16>() {
             let mut buffer = [0u8; 64];
-            let buffer_len = buffer.len(); // Grab length before mutably lending to encode().
-            let rest_buffer = case.1.varint_encode(&mut buffer).unwrap();
-            assert_eq!(buffer_len - rest_buffer.len(), case.0.len(),);
-            assert_eq!(&buffer[0..case.0.len()], case.0);
+            let len = case.1.varint_encode(&mut buffer).unwrap();
+            assert_eq!(len, case.0.len());
+            assert_eq!(&buffer[0..len], case.0);
         }
     }
 
@@ -332,10 +320,9 @@ mod test {
             .chain(success_cases_u32::<u32>())
         {
             let mut buffer = [0u8; 64];
-            let buffer_len = buffer.len(); // Grab length before mutably lending to encode().
-            let rest_buffer = case.1.varint_encode(&mut buffer).unwrap();
-            assert_eq!(buffer_len - rest_buffer.len(), case.0.len());
-            assert_eq!(&buffer[0..case.0.len()], case.0);
+            let len = case.1.varint_encode(&mut buffer).unwrap();
+            assert_eq!(len, case.0.len());
+            assert_eq!(&buffer[0..len], case.0);
         }
     }
 
@@ -346,10 +333,9 @@ mod test {
             .chain(success_cases_i32::<i32>())
         {
             let mut buffer = [0u8; 64];
-            let buffer_len = buffer.len(); // Grab length before mutably lending to encode().
-            let rest_buffer = case.1.varint_encode(&mut buffer).unwrap();
-            assert_eq!(buffer_len - rest_buffer.len(), case.0.len());
-            assert_eq!(&buffer[0..case.0.len()], case.0);
+            let len = case.1.varint_encode(&mut buffer).unwrap();
+            assert_eq!(len, len);
+            assert_eq!(&buffer[0..len], case.0);
         }
     }
 
@@ -360,10 +346,9 @@ mod test {
             .chain(success_cases_u32::<u64>())
         {
             let mut buffer = [0u8; 64];
-            let buffer_len = buffer.len(); // Grab length before mutably lending to encode().
-            let rest_buffer = case.1.varint_encode(&mut buffer).unwrap();
-            assert_eq!(buffer_len - rest_buffer.len(), case.0.len());
-            assert_eq!(&buffer[0..case.0.len()], case.0);
+            let len = case.1.varint_encode(&mut buffer).unwrap();
+            assert_eq!(len, case.0.len());
+            assert_eq!(&buffer[0..len], case.0);
         }
     }
 
@@ -374,10 +359,9 @@ mod test {
             .chain(success_cases_i32::<i64>())
         {
             let mut buffer = [0u8; 64];
-            let buffer_len = buffer.len(); // Grab length before mutably lending to encode().
-            let rest_buffer = case.1.varint_encode(&mut buffer).unwrap();
-            assert_eq!(buffer_len - rest_buffer.len(), case.0.len());
-            assert_eq!(&buffer[0..case.0.len()], case.0);
+            let len = case.1.varint_encode(&mut buffer).unwrap();
+            assert_eq!(len, case.0.len());
+            assert_eq!(&buffer[0..len], case.0);
         }
     }
 }

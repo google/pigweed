@@ -22,7 +22,10 @@ rust_library(
         "//conditions:default": [""],
     }),
     visibility = ["//visibility:public"],
-    deps = ["//pw_status/rust:pw_status"],
+    deps = [
+        "//pw_status/rust:pw_status",
+        "//pw_stream/rust:pw_stream",
+    ],
 )
 
 rust_test(
