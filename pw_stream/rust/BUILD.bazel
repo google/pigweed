@@ -21,7 +21,7 @@ rust_library(
         "pw_stream/lib.rs",
     ],
     crate_features = select({
-        "@rust_crates//:std": ["std"],
+        "@rust_crates//:no_std": ["no_std"],
         "//conditions:default": [""],
     }),
     proc_macro_deps = ["@rust_crates//:paste"],
@@ -36,7 +36,7 @@ rust_test(
     name = "pw_stream_test",
     crate = ":pw_stream",
     crate_features = select({
-        "@rust_crates//:std": ["std"],
+        "@rust_crates//:no_std": ["no_std"],
         "//conditions:default": [""],
     }),
 )

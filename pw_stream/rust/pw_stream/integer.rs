@@ -32,7 +32,7 @@ use pw_status::Result;
 /// # Future Work
 ///
 /// In order to allow for optimized non-generic implementations, there is
-/// no blanket implementation over the [`Read`] trait.  An `IntegerReader`
+/// no blanket implementation over the [`crate::Read`] trait.  An `IntegerReader`
 /// adapter could be written to allow this functionality.
 pub trait ReadInteger {
     /// Reads a little-endian i8 returning it's value or an Error.
@@ -177,7 +177,7 @@ pub trait ReadInteger {
 /// # Future Work
 ///
 /// In order to allow for optimized non-generic implementations, there is
-/// no blanket implementation over the [`Read`] trait.  An `IntegerReader`
+/// no blanket implementation over the [`crate::Write`] trait.  An `IntegerWriter`
 /// adapter could be written to allow this functionality.
 pub trait WriteInteger {
     /// Writes a little-endian i8.
