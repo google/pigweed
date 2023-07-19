@@ -371,20 +371,37 @@ CPU architecture.
    If you need to cache Python packages for multiple platforms the
    ``.vendor_wheels`` target will need to be run for each combination of Python
    version, host operating system and architecture. For example, look at `the
-   files available for numpy <https://pypi.org/project/numpy/#files>`_. Some
+   files available for numpy <https://pypi.org/project/cffi/#files>`_. Some
    combinations are:
 
-   - cp311, linux, x86_64
-   - cp311, macosx, arm64
-   - cp311, macosx, x86_64
-   - cp311, win, amd64
-   - cp311, win, win32
+   - cp311, manylinux_2_17_x86_64
+   - cp311, manylinux2014_x86_64
+   - cp311, macosx_11_0_arm64
+   - cp311, macosx_10_9_x86_64
+   - cp311, win_amd64
+   - cp311, win32
 
    Plus all of the above duplicated for Python 3.10 and 3.9 (``cp310`` and
    ``cp39``).
 
    The output of multiple ``.vendor_wheels`` runs on different host systems can
    all be merged into the same output directory.
+
+``.vendor_wheels`` can attempt to download binary packages for multiple
+platforms all at once by setting a GN arg:
+
+.. code-block::
+
+   pw_build_PYTHON_PIP_DOWNLOAD_ALL_PLATFORMS = true
+
+This will invoke `pip download
+<https://pip.pypa.io/en/stable/cli/pip_download/>`_ for each combination of
+platform, architecture and Python version. This can take a significant amount of
+time to complete. The current set of combinations is shown below:
+
+.. literalinclude:: pw_build/py/pw_build/generate_python_wheel_cache.py
+   :start-after: [wheel-platform-args]
+   :end-before: [wheel-platform-args]
 
 Once the vendor wheel output is saved to a directory in your project you can use
 this as the default pip install location by creating a project ``.pip.conf``

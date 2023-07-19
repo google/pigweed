@@ -21,4 +21,8 @@ declare_args() {
 
   # Default gn build virtualenv target.
   pw_build_PYTHON_BUILD_VENV = "$dir_pw_env_setup:pigweed_build_venv"
+
+  # Set pw_python_venv.vendor_wheel targets to download Python packages for all
+  # platform combinations. This takes a significant amount of time.
+  pw_build_PYTHON_PIP_DOWNLOAD_ALL_PLATFORMS = false
 }

@@ -320,6 +320,26 @@ group("integration_tests") {
   ]
 }
 
+group("pip_constraint_update") {
+  public_deps = []
+
+  if (current_toolchain == pw_build_PYTHON_TOOLCHAIN) {
+    public_deps += [ "$dir_pw_env_setup:pigweed_build_venv._compile_requirements($pw_build_PYTHON_TOOLCHAIN)" ]
+  } else {
+    public_deps = [ ":${target_name}($pw_build_PYTHON_TOOLCHAIN)" ]
+  }
+}
+
+group("pip_vendor_wheels") {
+  public_deps = []
+
+  if (current_toolchain == pw_build_PYTHON_TOOLCHAIN) {
+    public_deps += [ "$dir_pw_env_setup:pigweed_build_venv.vendor_wheels($pw_build_PYTHON_TOOLCHAIN)" ]
+  } else {
+    public_deps = [ ":${target_name}($pw_build_PYTHON_TOOLCHAIN)" ]
+  }
+}
+
 # Build-only target for fuzzers.
 group("fuzzers") {
   deps = []

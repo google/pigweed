@@ -72,7 +72,7 @@ _DEFAULT_PATH = Path('out', 'format')
 _Context = Union[PresubmitContext, FormatContext]
 
 
-def _colorize_diff_line(line: str) -> str:
+def colorize_diff_line(line: str) -> str:
     if line.startswith('--- ') or line.startswith('+++ '):
         return _COLOR.bold_white(line)
     if line.startswith('-'):
@@ -89,7 +89,7 @@ def colorize_diff(lines: Iterable[str]) -> str:
     if isinstance(lines, str):
         lines = lines.splitlines(True)
 
-    return ''.join(_colorize_diff_line(line) for line in lines)
+    return ''.join(colorize_diff_line(line) for line in lines)
 
 
 def _diff(path, original: bytes, formatted: bytes) -> str:

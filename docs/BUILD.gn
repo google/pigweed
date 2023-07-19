@@ -30,6 +30,8 @@ pw_doc_group("static_assets") {
 # split out from the overall docgen target below.
 pw_doc_group("core_docs") {
   inputs = [
+    "$dir_pw_build/py/gn_tests/BUILD.gn",
+    "$dir_pw_build/py/pw_build/generate_python_wheel_cache.py",
     "$dir_pw_build/python.gni",
     "images/pw_env_setup_demo.gif",
     "images/pw_status_test.png",
@@ -40,7 +42,6 @@ pw_doc_group("core_docs") {
     "images/stm32f429i-disc1_connected.jpg",
     "layout/page.html",
     "run_doxygen.py",
-    "$dir_pw_build/py/gn_tests/BUILD.gn",
   ]
   sources = [
     "code_of_conduct.rst",

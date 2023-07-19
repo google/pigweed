@@ -108,8 +108,8 @@ def _stderr(*args, **kwargs):
 def _load_requirements_lines(*req_files: Path) -> Iterator[str]:
     for req_file in req_files:
         for line in req_file.read_text().splitlines():
-            # Ignore comments and blank lines
-            if line.startswith('#') or line == '':
+            # Ignore constraints, comments and blank lines
+            if line.startswith('-c') or line.startswith('#') or line == '':
                 continue
             yield line
 

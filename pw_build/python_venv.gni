@@ -230,10 +230,9 @@ template("pw_python_venv") {
         outputs = [ _compiled_requirements_file ]
       }
 
-      # This target will run 'pip install wheel' in the venv. This is purposely
-      # run before further pip installs so packages that run bdist_wheel as part
-      # of their install process will succeed. Packages that run native compiles
-      # typically do this.
+      # This target will run 'pip install' in the venv to provide base
+      # dependencies needed to run piptools commands. That is required for the
+      # _compile_requirements sub target.
       pw_python_action("${target_name}._install_base_3p_deps") {
         module = "pip"
 
@@ -242,19 +241,22 @@ template("pw_python_venv") {
         _skip_installing_external_python_deps = true
         venv = get_label_info(":${invoker.target_name}", "label_no_toolchain")
 
-        args = [
-          "install",
-          "pip-tools",
-          "wheel",
-        ]
-        inputs = _constraints
+        _pip_install_log_file =
+            "$target_gen_dir/$target_name/pip_install_log.txt"
 
-        foreach(_constraints_file, _constraints) {
-          args += [
-            "--constraint",
-            rebase_path(_constraints_file, root_build_dir),
-          ]
-        }
+        _base_requirement_file = "$dir_pw_env_setup/py/pw_env_setup/virtualenv_setup/python_base_requirements.txt"
+
+        args = [
+          "--log",
+          rebase_path(_pip_install_log_file, root_build_dir),
+          "install",
+          "--requirement",
+          rebase_path(_base_requirement_file, root_build_dir),
+        ]
+
+        # NOTE: Constraints should be ignored for this step.
+
+        outputs = [ _pip_install_log_file ]
 
         deps = [ ":${invoker.target_name}._create_virtualenv($pw_build_PYTHON_TOOLCHAIN)" ]
         stamp = true
@@ -278,6 +280,7 @@ template("pw_python_venv") {
           rebase_path(_pip_install_log_file, root_build_dir),
           "install",
           "--require-hashes",
+          "--upgrade",
         ]
 
         # Note: --no-build-isolation should be avoided for installing 3rd party
@@ -329,6 +332,10 @@ template("pw_python_venv") {
           "-r",
           rebase_path(_compiled_requirements_file, root_build_dir),
         ]
+
+        if (pw_build_PYTHON_PIP_DOWNLOAD_ALL_PLATFORMS) {
+          args += [ "--download-all-platforms" ]
+        }
 
         deps = [
           ":${invoker.target_name}._compile_requirements($pw_build_PYTHON_TOOLCHAIN)",

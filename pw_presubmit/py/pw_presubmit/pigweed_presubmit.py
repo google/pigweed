@@ -725,6 +725,9 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\bDoxyfile$',
     r'\bPW_PLUGINS$',
     r'\bconstraint.list$',
+    r'\bconstraint_hashes.list$',
+    r'\bpython_base_requirements.txt$',
+    r'\bupstream_requirements_lock.txt$',
     r'^(?:.+/)?\..+$',
     # keep-sorted: end
     # Metadata
@@ -1097,6 +1100,8 @@ OTHER_CHECKS = (
     module_owners.presubmit_check(),
     npm_presubmit.npm_test,
     pw_transfer_integration_test,
+    python_checks.update_upstream_python_constraints,
+    python_checks.vendor_python_wheels,
     # TODO(hepler): Many files are missing from the CMake build. Add this check
     # to lintformat when the missing files are fixed.
     source_in_build.cmake(SOURCE_FILES_FILTER, _run_cmake),
@@ -1187,6 +1192,7 @@ FULL = (
     bazel_build if sys.platform == 'linux' else (),
     python_checks.gn_python_check,
     python_checks.gn_python_test_coverage,
+    python_checks.check_upstream_python_constraints,
     build_env_setup,
     # Skip gn_teensy_build if running on Windows. The Teensycore installer is
     # an exe that requires an admin role.

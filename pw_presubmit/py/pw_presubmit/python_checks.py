@@ -16,14 +16,17 @@
 These checks assume that they are running in a preconfigured Python environment.
 """
 
+import difflib
 import json
 import logging
 from pathlib import Path
 import sys
+from tempfile import TemporaryDirectory
 from typing import Optional
 
 from pw_env_setup import python_packages
 
+from pw_presubmit.format_code import colorize_diff_line
 from pw_presubmit.presubmit import (
     call,
     Check,
@@ -157,6 +160,171 @@ def gn_python_test_coverage(ctx: PresubmitContext):
     call('coverage', 'html', coverage_omit_patterns, cwd=ctx.output_dir)
     html_report = ctx.output_dir / 'htmlcov' / 'index.html'
     _LOG.info('Coverage html report saved to: %s', html_report.resolve())
+
+
+@filter_paths(endswith=_PYTHON_EXTENSIONS + ('.list', '.cfg'))
+def vendor_python_wheels(ctx: PresubmitContext) -> None:
+    """Download Python packages locally for all platforms."""
+    build.gn_gen(
+        ctx,
+        pw_build_PYTHON_PIP_DOWNLOAD_ALL_PLATFORMS=True,
+    )
+    build.ninja(ctx, 'pip_vendor_wheels')
+
+    _LOG.info(
+        'Python wheels downloaded to: %s',
+        ctx.output_dir
+        / 'python/gen/pw_env_setup'
+        / 'pigweed_build_venv.vendor_wheels/',
+    )
+
+
+def _generate_constraint_with_hashes(
+    ctx: PresubmitContext, input_file: Path, output_file: Path
+) -> None:
+    assert input_file.is_file()
+
+    call(
+        "pip-compile",
+        input_file,
+        "--generate-hashes",
+        "--reuse-hashes",
+        "--resolver=backtracking",
+        "--strip-extras",
+        # Force pinning pip and setuptools
+        "--allow-unsafe",
+        "-o",
+        output_file,
+    )
+
+    # Remove absolute paths from comments
+    output_text = output_file.read_text()
+    output_text = output_text.replace(f'{str(ctx.output_dir)}/', '')
+    output_text = output_text.replace(f'{str(ctx.root)}/', '')
+    output_text = output_text.replace(f'{str(output_file.parent)}/', '')
+    output_file.write_text(output_text)
+
+
+def _update_upstream_python_constraints(
+    ctx: PresubmitContext,
+    update_files: bool = False,
+) -> None:
+    """Regenerate Python constraint files with hashes."""
+    with TemporaryDirectory() as tmpdirname:
+        out_dir = Path(tmpdirname)
+
+        build.gn_gen(
+            ctx,
+            pw_build_PIP_REQUIREMENTS=[],
+            pw_build_PIP_CONSTRAINTS=[
+                '//pw_env_setup/py/pw_env_setup/virtualenv_setup/'
+                'constraint.list',
+            ],
+        )
+        build.ninja(ctx, 'pip_constraint_update')
+
+        constraint_hashes_original = (
+            ctx.root
+            / 'pw_env_setup/py/pw_env_setup/virtualenv_setup'
+            / 'constraint_hashes.list'
+        )
+        constraint_hashes_tmp_out = out_dir / 'constraint_hashes.list'
+
+        _generate_constraint_with_hashes(
+            ctx,
+            input_file=(
+                ctx.output_dir
+                / 'python/gen/pw_env_setup/pigweed_build_venv'
+                / 'compiled_requirements.txt'
+            ),
+            output_file=constraint_hashes_tmp_out,
+        )
+
+        build.gn_gen(ctx)
+        build.ninja(ctx, 'pip_constraint_update')
+
+        upstream_requirements_lock_original = (
+            ctx.root
+            / 'pw_env_setup/py/pw_env_setup/virtualenv_setup'
+            / 'upstream_requirements_lock.txt'
+        )
+        upstream_requirements_lock_tmp_out = (
+            out_dir / 'upstream_requirements_lock.txt'
+        )
+
+        _generate_constraint_with_hashes(
+            ctx,
+            input_file=(
+                ctx.output_dir
+                / 'python/gen/pw_env_setup/pigweed_build_venv'
+                / 'compiled_requirements.txt'
+            ),
+            output_file=upstream_requirements_lock_tmp_out,
+        )
+
+        if update_files:
+            constraint_hashes_original.write_text(
+                constraint_hashes_tmp_out.read_text()
+            )
+            _LOG.info('Updated: %s', constraint_hashes_original)
+            upstream_requirements_lock_original.write_text(
+                upstream_requirements_lock_tmp_out.read_text()
+            )
+            _LOG.info('Updated: %s', upstream_requirements_lock_original)
+            return
+
+        # Make a diff of required changes
+        constraint_hashes_diff = list(
+            difflib.unified_diff(
+                constraint_hashes_original.read_text(
+                    'utf-8', errors='replace'
+                ).splitlines(),
+                constraint_hashes_tmp_out.read_text(
+                    'utf-8', errors='replace'
+                ).splitlines(),
+                fromfile=str(constraint_hashes_original) + ' (original)',
+                tofile=str(constraint_hashes_original) + ' (updated)',
+                lineterm='',
+                n=1,
+            )
+        )
+        upstream_requirements_lock_diff = list(
+            difflib.unified_diff(
+                upstream_requirements_lock_original.read_text(
+                    'utf-8', errors='replace'
+                ).splitlines(),
+                upstream_requirements_lock_tmp_out.read_text(
+                    'utf-8', errors='replace'
+                ).splitlines(),
+                fromfile=str(upstream_requirements_lock_original)
+                + ' (original)',
+                tofile=str(upstream_requirements_lock_original) + ' (updated)',
+                lineterm='',
+                n=1,
+            )
+        )
+        if constraint_hashes_diff:
+            for line in constraint_hashes_diff:
+                print(colorize_diff_line(line))
+        if upstream_requirements_lock_diff:
+            for line in upstream_requirements_lock_diff:
+                print(colorize_diff_line(line))
+        if constraint_hashes_diff or upstream_requirements_lock_diff:
+            raise PresubmitFailure(
+                'Please run:\n'
+                '\n'
+                '  pw presubmit --step update_upstream_python_constraints'
+            )
+
+
+@filter_paths(endswith=_PYTHON_EXTENSIONS + ('.list', '.cfg'))
+def check_upstream_python_constraints(ctx: PresubmitContext) -> None:
+    _update_upstream_python_constraints(ctx, update_files=False)
+
+
+@filter_paths(endswith=_PYTHON_EXTENSIONS + ('.list', '.cfg'))
+def update_upstream_python_constraints(ctx: PresubmitContext) -> None:
+    _update_upstream_python_constraints(ctx, update_files=True)
 
 
 @filter_paths(endswith=_PYTHON_EXTENSIONS + ('.pylintrc',))

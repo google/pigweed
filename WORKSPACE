@@ -81,7 +81,7 @@ load("@rules_python//python:pip.bzl", "pip_parse")
 pip_parse(
     name = "python_packages",
     python_interpreter_target = interpreter,
-    requirements_lock = "//pw_env_setup/py/pw_env_setup/virtualenv_setup:constraint.list",
+    requirements_lock = "//pw_env_setup/py/pw_env_setup/virtualenv_setup:upstream_requirements_lock.txt",
 )
 
 load("@python_packages//:requirements.bzl", "install_deps")
