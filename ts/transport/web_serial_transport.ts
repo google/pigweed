@@ -57,6 +57,8 @@ export class WebSerialTransport implements DeviceTransport {
   private portConnections: Map<SerialPort, PortConnection> = new Map();
   private activePortConnectionConnection: PortConnection | undefined;
   private rxSubscriptions: Subscription[] = [];
+  private writer: WritableStreamDefaultWriter<Uint8Array>;
+  private abortController: AbortController;
 
   constructor(
     private serial: Serial = (navigator as unknown as Navigator).serial,
@@ -85,13 +87,22 @@ export class WebSerialTransport implements DeviceTransport {
     await this.connectPort(port);
   }
 
-  private disconnect() {
+  async disconnect() {
     for (const subscription of this.rxSubscriptions) {
       subscription.unsubscribe();
     }
     this.rxSubscriptions = [];
 
     this.activePortConnectionConnection = undefined;
+    this.portConnections.clear();
+    this.abortController?.abort();
+
+    try {
+      await this.writer?.close();
+    }
+    catch (err) {
+      this.errors.next(err);
+    }
     this.connected.next(false);
   }
 
@@ -100,10 +111,8 @@ export class WebSerialTransport implements DeviceTransport {
    * and can be called whenever a port is available.
    */
   async connectPort(port: SerialPort): Promise<void> {
-    this.disconnect();
-
     this.activePortConnectionConnection =
-      this.portConnections.get(port) ?? (await this.conectNewPort(port));
+      this.portConnections.get(port) ?? (await this.connectNewPort(port));
 
     this.connected.next(true);
 
@@ -135,9 +144,10 @@ export class WebSerialTransport implements DeviceTransport {
     );
   }
 
-  private async conectNewPort(port: SerialPort): Promise<PortConnection> {
+  private async connectNewPort(port: SerialPort): Promise<PortConnection> {
     await port.open(this.serialOptions);
     const writer = port.writable.getWriter();
+    this.writer = writer;
 
     async function sendChunk(chunk: Uint8Array) {
       await writer.ready;
@@ -154,6 +164,8 @@ export class WebSerialTransport implements DeviceTransport {
   private getChunks(port: SerialPort): PortReadConnection {
     const chunks = new Subject<Uint8Array>();
     const errors = new Subject<Error>();
+    const abortController = new AbortController();
+    this.abortController = abortController;
 
     async function read() {
       if (!port.readable) {
@@ -171,12 +183,7 @@ export class WebSerialTransport implements DeviceTransport {
             chunks.complete();
             errors.complete();
           },
-          abort: () => {
-            // Reconnect to the port.
-            connect();
-          },
-        })
-      );
+        }), {signal: abortController.signal});
     }
 
     function connect() {

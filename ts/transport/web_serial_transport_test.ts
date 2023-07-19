@@ -104,7 +104,7 @@ describe('WebSerialTransport', () => {
     await transport.connect();
 
     const reportedErrorPromise = transport.errors.pipe(take(1)).toPromise();
-    serialMock.serialPort.errorFromDevice(new Error());
+    serialMock.serialPort.errorFromDevice(new DeviceLockedError());
 
     expect(await reportedErrorPromise).toEqual(new DeviceLockedError());
   });

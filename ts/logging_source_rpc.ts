@@ -47,21 +47,19 @@ export class PigweedRPCLogSource extends LogSource {
     }
     this.logs = [...this.logs, entry];
     this.emitEvent("logEntry", entry);
-    console.log("log", entry);
   }
 
   private parseLogMsg(msg: string): LogEntry {
     const pairs = msg.split("■").slice(1).map(pair => pair.split("♦"));
 
     // Not a valid message, print as-is.
-    const timestamp = new Date().toISOString();
+    const timestamp = new Date();
     if (pairs.length === 0) {
       return {
         fields: [
-          {key: "timestamp", value: timestamp},
+          {key: "timestamp", value: timestamp.toISOString()},
           {key: "message", value: msg},
         ],
-        hostId: "example-host",
         timestamp: timestamp,
       }
     }
@@ -75,7 +73,6 @@ export class PigweedRPCLogSource extends LogSource {
         {key: "module", value: map.module},
         {key: "file", value: map.file},
       ],
-      hostId: "example-host",
       timestamp: timestamp,
     }
   }

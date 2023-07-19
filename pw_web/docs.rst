@@ -164,6 +164,9 @@ example usage:
    // Present device selection prompt to user
    await transport.connect();
 
+   // Or connect to an existing `SerialPort`
+   // await transport.connectPort(port);
+
    // Listen and decode HDLC frames
    transport.chunks.subscribe((item) => {
      const decoded = decoder.process(item);
@@ -175,6 +178,8 @@ example usage:
      }
    });
 
+   // Later, close all streams and close the port.
+   transport.disconnect();
 
 Individual Modules
 ==================
