@@ -19,8 +19,9 @@ int main() {
   pw::bloat::BloatThisBinary();
 
   pw::async::BasicDispatcher dispatcher;
-  pw::async::Task task(
-      [](pw::async::Context& /*ctx*/) { printf("hello world\n"); });
+  pw::async::Task task([](pw::async::Context& /*ctx*/, pw::Status /*status*/) {
+    printf("hello world\n");
+  });
   dispatcher.Post(task);
   dispatcher.Run();
   return 0;

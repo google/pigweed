@@ -18,6 +18,7 @@
 
 int main() {
   pw::bloat::BloatThisBinary();
-  pw::async::Task task([](pw::async::Context& /*ctx*/) {});
+  pw::async::Task task(
+      [](pw::async::Context& /*ctx*/, pw::Status /*status*/) {});
   return 0;
 }

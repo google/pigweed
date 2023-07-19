@@ -39,6 +39,16 @@ label_flag(
 )
 
 label_flag(
+    name = "pw_async_task_backend",
+    build_setting_default = "@pigweed//pw_async_basic:task",
+)
+
+label_flag(
+    name = "pw_async_fake_dispatcher_backend",
+    build_setting_default = "@pigweed//pw_async_basic:fake_dispatcher",
+)
+
+label_flag(
     name = "pw_boot_backend",
     build_setting_default = "@pigweed//pw_boot:backend_multiplexer",
 )

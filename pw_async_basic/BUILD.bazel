@@ -12,20 +12,89 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-filegroup(
-    name = "pw_async_files",
-    srcs = [
-        "dispatcher.cc",
-        "dispatcher_test.cc",
-        "fake_dispatcher.cc",
-        "fake_dispatcher_fixture_test.cc",
-        "heap_dispatcher_test.cc",
-        "public/pw_async_basic/dispatcher.h",
-        "public/pw_async_basic/fake_dispatcher.h",
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_library",
+    "pw_cc_test",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+# Backend for //pw_async:task
+pw_cc_library(
+    name = "task",
+    hdrs = [
         "public/pw_async_basic/task.h",
-        "public_overrides/pw_async_backend/fake_dispatcher.h",
         "public_overrides/pw_async_backend/task.h",
-        "size_report/post_1_task.cc",
-        "size_report/task.cc",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    deps = [
+        "//pw_async:task_facade",
+        "//pw_containers:intrusive_list",
+    ],
+)
+
+# Backend for //pw_async:fake_dispatcher
+pw_cc_library(
+    name = "fake_dispatcher",
+    srcs = ["fake_dispatcher.cc"],
+    hdrs = [
+        "public/pw_async_basic/fake_dispatcher.h",
+        "public_overrides/pw_async_backend/fake_dispatcher.h",
+    ],
+    includes = [
+        "public",
+        "public_override",
+    ],
+    deps = [
+        "//pw_async:fake_dispatcher_facade",
+        "//pw_async:task",
+        "//pw_log",
+    ],
+)
+
+pw_cc_test(
+    name = "fake_dispatcher_fixture_test",
+    srcs = ["fake_dispatcher_fixture_test.cc"],
+    deps = ["//pw_async:fake_dispatcher_fixture"],
+)
+
+pw_cc_library(
+    name = "dispatcher",
+    srcs = ["dispatcher.cc"],
+    hdrs = ["public/pw_async_basic/dispatcher.h"],
+    includes = ["public"],
+    deps = [
+        "//pw_async:dispatcher",
+        "//pw_async:task",
+        "//pw_containers:intrusive_list",
+        "//pw_log",
+        "//pw_sync:interrupt_spin_lock",
+        "//pw_sync:timed_thread_notification",
+        "//pw_thread:thread_core",
+    ],
+)
+
+pw_cc_test(
+    name = "dispatcher_test",
+    srcs = ["dispatcher_test.cc"],
+    deps = [
+        ":dispatcher",
+        "//pw_log",
+        "//pw_thread:thread",
+    ],
+)
+
+pw_cc_test(
+    name = "heap_dispatcher_test",
+    srcs = ["heap_dispatcher_test.cc"],
+    deps = [
+        "//pw_async:fake_dispatcher_fixture",
+        "//pw_async:heap_dispatcher",
     ],
 )

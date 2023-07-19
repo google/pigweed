@@ -64,6 +64,9 @@ The active Task backend is configured with the GN variable
 that meets the interface requirements in ``public/pw_async/task.h``. Task will
 then trivially wrap ``NativeTask``.
 
+The bazel build provides the ``pw_async_task_backend`` label flag to configure
+the active Task backend.
+
 FakeDispatcher
 --------------
 The FakeDispatcher facade is a utility for simulating a real Dispatcher
@@ -72,12 +75,15 @@ code that uses Dispatcher. FakeDispatcher is a facade instead of a concrete
 implementation because it depends on Task state for processing tasks, which
 varies across Task backends.
 
-The active Task backend is configured with the GN variable
+The active FakeDispatcher backend is configured with the GN variable
 ``pw_async_FAKE_DISPATCHER_BACKEND``. The specified target must define a class
 ``pw::async::test::backend::NativeFakeDispatcher`` in the header
 ``pw_async_backend/fake_dispatcher.h`` that meets the interface requirements in
 ``public/pw_async/task.h``. FakeDispatcher will then trivially wrap
 ``NativeFakeDispatcher``.
+
+The bazel build provides the ``pw_async_fake_dispatcher_backend`` label flag to
+configure the FakeDispatcher backend.
 
 Testing FakeDispatcher
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -193,6 +199,5 @@ Roadmap
 -------
 - Stabilize Task cancellation API
 - Utility for dynamically allocated Tasks
-- Bazel support
 - CMake support
 - Support for C++20 coroutines
