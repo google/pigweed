@@ -17,8 +17,8 @@ import { css } from 'lit';
 export const styles = css`
     :host {
         align-items: center;
-        background: var(--md-sys-surface-container-high);
-        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        background-color: var(--sys-log-viewer-color-controls-bg);
+        color: var(--sys-log-viewer-color-controls-text);
         display: flex;
         flex-shrink: 0;
         gap: 1rem;
@@ -36,12 +36,12 @@ export const styles = css`
     }
 
     .button-toggle {
-        background-color: var(--md-sys-surface-container-high);
+        background-color: var(--md-sys-color-surface-container-high);
         border-radius: 100%;
     }
 
     .field-menu {
-        background-color: var(--md-sys-surface-container);
+        background-color: var(--md-sys-color-surface-container);
         border-radius: 4px;
         margin: 0;
         padding: 0.5rem 0.75rem;
@@ -67,15 +67,15 @@ export const styles = css`
     }
 
     input {
-        background: var(--md-sys-surface-container);
+        background-color: var(--sys-log-viewer-color-controls-input-bg);
         border: none;
         border-radius: 1.5rem;
         font-family: 'Google Sans';
-        height: 2rem;
+        height: 1.75rem;
         max-width: 20rem;
         padding: 0 1rem;
         width: 100%;
-        border: 1px solid var(--md-sys-color-outline-variant);
+        border: 1px solid var(--sys-log-viewer-color-controls-input-outline);
     }
 
     input::placeholder {

@@ -21,7 +21,7 @@ import {
     state,
 } from 'lit/decorators.js';
 import { styles } from './log-list.styles';
-import { FieldData, LogEntry } from '../../shared/interfaces';
+import { FieldData, LogEntry, Severity } from '../../shared/interfaces';
 import { virtualize } from '@lit-labs/virtualizer/virtualize.js';
 import '@lit-labs/virtualizer';
 
@@ -424,26 +424,14 @@ export class LogList extends LitElement {
     }
 
     private tableDataRow(log: LogEntry) {
-        let bgColor = '';
-        let textColor = '';
-
-        switch (log.severity) {
-            case 'WARNING':
-                bgColor = 'var(--sys-color-surface-yellow)';
-                textColor = 'var(--sys-color-on-surface-yellow)';
-                break;
-            case 'ERROR':
-            case 'CRITICAL':
-                bgColor = 'var(--sys-color-surface-error)';
-                textColor = 'var(--sys-color-on-surface-error)';
-                break;
-            case 'DEBUG':
-                textColor = 'var(--sys-color-debug)';
-                break;
-        }
+        const logSeverity = log.severity || Severity.INFO;
+        const className =
+            logSeverity === Severity.INFO
+                ? 'log-row'
+                : `log-row log-row--${logSeverity.toLowerCase()}`;
 
         return html`
-            <tr style="color:${textColor}; background-color:${bgColor};">
+            <tr class="${className}">
                 ${log.fields.map((field, columnIndex) =>
                     this.tableDataCell(field, columnIndex)
                 )}
@@ -452,54 +440,34 @@ export class LogList extends LitElement {
     }
 
     private tableDataCell(field: FieldData, columnIndex: number) {
-        let iconColor = '';
-        let iconId = '';
-        const toTitleCase = (input: string): string => {
-            return input.replace(/\b\w+/g, (match) => {
-                return (
-                    match.charAt(0).toUpperCase() + match.slice(1).toLowerCase()
-                );
-            });
-        };
-
         if (field.key == 'severity') {
-            switch (field.value) {
-                case 'WARNING':
-                    iconColor = 'var(--sys-color-orange-bright)';
-                    iconId = 'warning';
-                    break;
-                case 'ERROR':
-                    iconColor = 'var(--sys-color-error-bright)';
-                    iconId = 'cancel';
-                    break;
-                case 'CRITICAL':
-                    iconColor = 'var(--sys-color-error-bright)';
-                    iconId = 'brightness_alert';
-                    break;
-                case 'DEBUG':
-                    iconColor = 'var(--sys-color-debug)';
-                    iconId = 'bug_report';
-                    break;
-            }
+            const severityIcons = new Map<Severity, string>([
+                [Severity.WARNING, 'warning'],
+                [Severity.ERROR, 'cancel'],
+                [Severity.CRITICAL, 'brightness_alert'],
+                [Severity.DEBUG, 'bug_report'],
+            ]);
+
+            const severityValue = field.value as Severity;
+            const iconId = severityIcons.get(severityValue) || '';
+            const toTitleCase = (input: string): string => {
+                return input.replace(/\b\w+/g, (match) => {
+                    return (
+                        match.charAt(0).toUpperCase() +
+                        match.slice(1).toLowerCase()
+                    );
+                });
+            };
 
             return html`
                 <td>
-                    <div class="cell-content cell-content--with-icon">
+                    <div class="cell-content cell-content--icon">
                         <md-icon
-                            style="color:${iconColor}"
                             class="cell-icon"
                             title="${toTitleCase(field.value.toString())}"
                         >
                             ${iconId}
                         </md-icon>
-                    </div>
-                </td>
-            `;
-        } else if (field.key == 'timestamp') {
-            return html`
-                <td>
-                    <div class="cell-content">
-                        ${this.highlightMatchedText(field.value.toString())}
                     </div>
                 </td>
             `;
@@ -510,7 +478,11 @@ export class LogList extends LitElement {
                 <div class="cell-content">
                     ${this.highlightMatchedText(field.value.toString())}
                 </div>
-                ${columnIndex > 0 ? this.resizeHandle(columnIndex - 1) : html``}
+                <!-- Don't add resize handles for default columns 'severity' and 'timestamp' -->
+                ${!['severity', 'timestamp'].includes(field.key) &&
+                columnIndex > 0
+                    ? this.resizeHandle(columnIndex - 1)
+                    : html``}
             </td>
         `;
     }

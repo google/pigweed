@@ -20,7 +20,8 @@ export const styles = css`
     }
 
     :host {
-        background-color: var(--md-sys-color-surface);
+        background-color: var(--sys-log-viewer-color-table-bg);
+        color: var(--sys-log-viewer-color-table-text);
         display: block;
         font-family: 'Roboto Mono', monospace;
         font-size: 1rem;
@@ -52,19 +53,52 @@ export const styles = css`
     }
 
     thead {
-        background: var(--md-sys-surface-container);
+        background-color: var(--sys-log-viewer-color-table-header-bg);
+        color: var(--sys-log-viewer-color-table-header-text);
     }
 
     tr {
-        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        border-bottom: 1px solid var(--sys-log-viewer-color-table-cell-outline);
         display: grid;
         justify-content: flex-start;
         width: 100%;
     }
 
+    .log-row--warning {
+        --bg-color: var(--sys-log-viewer-color-surface-yellow);
+        --text-color: var(--sys-log-viewer-color-on-surface-yellow);
+        --icon-color: var(--sys-log-viewer-color-orange-bright);
+    }
+
+    .log-row--error,
+    .log-row--critical {
+        --bg-color: var(--sys-log-viewer-color-surface-error);
+        --text-color: var(--sys-log-viewer-color-on-surface-error);
+        --icon-color: var(--sys-log-viewer-color-error-bright);
+    }
+
+    .log-row--debug {
+        --bg-color: initial;
+        --text-color: var(--sys-log-viewer-color-debug);
+        --icon-color: var(--sys-log-viewer-color-debug);
+    }
+
+    .log-row--warning .cell-content--icon,
+    .log-row--error .cell-content--icon,
+    .log-row--critical .cell-content--icon {
+        color: var(--icon-color);
+    }
+
+    .log-row--warning,
+    .log-row--error,
+    .log-row--critical,
+    .log-row--debug {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+    }
+
     tr:hover > td {
-        background-color: rgba(var(--md-sys-inverse-surface-rgb), 0.1);
-        color: var(--sys-on-inverse-surface);
+        background-color: rgba(var(--md-sys-inverse-surface-rgb), 0.05);
     }
 
     th,
@@ -95,12 +129,13 @@ export const styles = css`
     }
 
     .resize-handle {
-        background-color: var(--md-sys-color-outline-variant);
+        background-color: var(--sys-log-viewer-color-table-cell-outline);
         bottom: 0;
         content: '';
         cursor: col-resize;
         height: 100%;
         left: 0;
+        mix-blend-mode: luminosity;
         opacity: 1;
         pointer-events: auto;
         position: absolute;
@@ -113,6 +148,7 @@ export const styles = css`
 
     .resize-handle:hover {
         background-color: var(--md-sys-color-primary);
+        mix-blend-mode: unset;
         outline: 1px solid var(--md-sys-color-primary);
     }
 
@@ -126,7 +162,7 @@ export const styles = css`
         width: 1rem;
     }
 
-    .cell-content--with-icon {
+    .cell-content--icon {
         padding-top: 0.125rem;
     }
 
@@ -148,7 +184,7 @@ export const styles = css`
         background: linear-gradient(
             to right,
             transparent,
-            var(--md-sys-color-surface)
+            var(--sys-log-viewer-color-overflow-indicator)
         );
         right: 0;
     }
@@ -157,15 +193,15 @@ export const styles = css`
         background: linear-gradient(
             to left,
             transparent,
-            var(--md-sys-color-surface)
+            var(--sys-log-viewer-color-overflow-indicator)
         );
         left: 0;
     }
 
     mark {
-        background-color: var(--md-sys-color-primary-container);
+        background-color: var(--sys-log-viewer-color-table-mark);
         border-radius: 2px;
         color: var(--md-sys-color-on-primary-container);
-        outline: 1px solid var(--md-sys-color-outline-variant);
+        outline: 1px solid var(--sys-log-viewer-color-table-mark);
     }
 `;
