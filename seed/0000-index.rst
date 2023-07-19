@@ -16,3 +16,4 @@ All pending, active, and resolved SEEDs are listed below.
   0104: display support<https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/150793>
   0105: Nested Tokens and Tokenized Args <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/154190>
   0106: Project Template <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/155430>
+  0107: Communications <http://pigweed-review.googlesource.com/c/pigweed/pigweed/+/157090>
