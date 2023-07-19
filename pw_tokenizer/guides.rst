@@ -60,6 +60,63 @@ Once enabled, the tokenizer headers can be included like any Zephyr headers:
   ``pw_tokenizer_zephyr.ld`` which is added to the end of the linker file
   via a call to ``zephyr_linker_sources(SECTIONS ...)``.
 
+.. _module-pw_tokenizer-tokenization-guides:
+
+-------------------
+Tokenization guides
+-------------------
+
+Tokenize a message with arguments in a custom macro
+===================================================
+The following example implements a custom tokenization macro similar to
+:ref:`module-pw_log_tokenized`.
+
+.. code-block:: cpp
+
+   #include "pw_tokenizer/tokenize.h"
+
+   #ifndef __cplusplus
+   extern "C" {
+   #endif
+
+   void EncodeTokenizedMessage(uint32_t metadata,
+                               pw_tokenizer_Token token,
+                               pw_tokenizer_ArgTypes types,
+                               ...);
+
+   #ifndef __cplusplus
+   }  // extern "C"
+   #endif
+
+   #define PW_LOG_TOKENIZED_ENCODE_MESSAGE(metadata, format, ...)         \
+     do {                                                                 \
+       PW_TOKENIZE_FORMAT_STRING(                                         \
+           PW_TOKENIZER_DEFAULT_DOMAIN, UINT32_MAX, format, __VA_ARGS__); \
+       EncodeTokenizedMessage(payload,                                    \
+                              _pw_tokenizer_token,                        \
+                              PW_TOKENIZER_ARG_TYPES(__VA_ARGS__)         \
+                                  PW_COMMA_ARGS(__VA_ARGS__));            \
+     } while (0)
+
+In this example, the ``EncodeTokenizedMessage`` function would handle encoding
+and processing the message. Encoding is done by the
+:cpp:class:`pw::tokenizer::EncodedMessage` class or
+:cpp:func:`pw::tokenizer::EncodeArgs` function from
+``pw_tokenizer/encode_args.h``. The encoded message can then be transmitted or
+stored as needed.
+
+.. code-block:: cpp
+
+   #include "pw_log_tokenized/log_tokenized.h"
+   #include "pw_tokenizer/encode_args.h"
+
+   void HandleTokenizedMessage(pw::log_tokenized::Metadata metadata,
+                               pw::span<std::byte> message);
+
+   extern "C" void EncodeTokenizedMessage(const uint32_t metadata,
+                                          const pw_tokenizer_Token token,
+                                          const pw_tokenizer_ArgTypes types,
+
 .. _module-pw_tokenizer-base64-guides:
 
 -------------
