@@ -15,6 +15,7 @@
 import importlib.resources
 import json
 import pathlib
+import os
 import subprocess
 import sys
 import tempfile
@@ -79,7 +80,7 @@ class Zephyr(pw_package.git_repo.GitRepo):
                 "cipd",
                 "init",
                 "-force",
-                core_cache_path.as_posix(),
+                str(core_cache_path),
             ]
         )
         # Install the Zephyr SDK
@@ -89,14 +90,15 @@ class Zephyr(pw_package.git_repo.GitRepo):
                 "install",
                 cipd_package_subpath,
                 "-root",
-                core_cache_path.as_posix(),
+                str(core_cache_path),
                 "-force",
             ]
         )
         # Setup Zephyr SDK
+        setup_file = "setup.cmd" if os.name == "nt" else "setup.sh"
         subprocess.check_call(
             [
-                (core_cache_path / "setup.sh").as_posix(),
+                str(core_cache_path / setup_file),
                 "-t",
                 "all",
                 "-c",
