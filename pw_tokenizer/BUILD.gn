@@ -319,7 +319,6 @@ pw_doc_group("docs") {
     "design.rst",
     "docs.rst",
     "guides.rst",
-    "proto.rst",
   ]
   inputs = [ "py/pw_tokenizer/encode.py" ]
   report_deps = [ ":tokenizer_size_report" ]

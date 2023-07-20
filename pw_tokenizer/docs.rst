@@ -52,4 +52,3 @@ for an example of how much ``pw_tokenizer`` can save you in binary size.
    cli
    design
    guides
-   proto

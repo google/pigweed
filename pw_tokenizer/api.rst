@@ -234,3 +234,26 @@ entries.
    to C++) code, ``pw_tokenizer_65599_hash()`` should be called with a matching
    hash length limit. When creating an offline database, it's a good idea to
    generate tokens for both, and merge the databases.
+
+.. _module-pw_tokenizer-protobuf-tokenization-python:
+
+Protobuf tokenization library
+-----------------------------
+The ``pw_tokenizer.proto`` Python module defines functions that may be used to
+detokenize protobuf objects in Python. The function
+:func:`pw_tokenizer.proto.detokenize_fields` detokenizes all fields annotated as
+tokenized, replacing them with their detokenized version. For example:
+
+.. code-block:: python
+
+  my_detokenizer = pw_tokenizer.Detokenizer(some_database)
+
+  my_message = SomeMessage(tokenized_field=b'$YS1EMQ==')
+  pw_tokenizer.proto.detokenize_fields(my_detokenizer, my_message)
+
+  assert my_message.tokenized_field == b'The detokenized string! Cool!'
+
+pw_tokenizer.proto
+^^^^^^^^^^^^^^^^^^
+.. automodule:: pw_tokenizer.proto
+  :members:
