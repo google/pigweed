@@ -151,6 +151,12 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
     NINJA_BUILD_STEP = re.compile(
         r'^\[(?P<step>[0-9]+)/(?P<total_steps>[0-9]+)\] (?P<action>.*)$'
     )
+    _FILESYSTEM_EVENTS_THAT_TRIGGER_BUILDS = [
+        'created',
+        'modified',
+        'deleted',
+        'moved',
+    ]
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
@@ -228,6 +234,9 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         # It's the creation or modification of files that indicate something
         # meaningful enough changed for a build.
         if event.is_directory:
+            return
+
+        if event.event_type not in self._FILESYSTEM_EVENTS_THAT_TRIGGER_BUILDS:
             return
 
         # Collect paths of interest from the event.
