@@ -391,7 +391,7 @@ compile them. e.g.
 
   # BUILD ...
   load("@rules_proto//proto:defs.bzl", "proto_library")
-  load("@pigweed//pw_protobuf_compiler:proto.bzl",
+  load("@pigweed//pw_protobuf_compiler:pw_proto_library.bzl",
     "nanopb_proto_library",
     "nanopb_rpc_proto_library",
     "pwpb_proto_library",

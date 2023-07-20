@@ -17,7 +17,7 @@ load(
     "pw_cc_library",
     "pw_cc_test",
 )
-load("//pw_protobuf_compiler:proto.bzl", "pw_proto_library")
+load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
 load("//pw_build/bazel_internal:py_proto_library.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])

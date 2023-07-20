@@ -16,13 +16,6 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 load(
     "//pw_protobuf_compiler:pw_proto_library.bzl",
     "pw_proto_filegroup",
-    # TODO(b/234873954): Also load `pw_proto_library` from here when possible.
-    # A somewhat different Starlark macro with the same name is currently loaded
-    # from `proto.bzl` (below), but we need to switch to the implementation from
-    # `pw_proto_library.bzl` when possible.
-)
-load(
-    "//pw_protobuf_compiler:proto.bzl",
     "pw_proto_library",
 )
 

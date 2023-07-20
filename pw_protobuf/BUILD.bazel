@@ -22,7 +22,7 @@ load(
 load("//pw_fuzzer:fuzzer.bzl", "pw_cc_fuzz_test")
 load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
 load("@rules_proto_grpc//:defs.bzl", "proto_plugin")
-load("//pw_protobuf_compiler:proto.bzl", "pw_proto_library")
+load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_filegroup", "pw_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -250,16 +250,22 @@ py_proto_library(
     ],
 )
 
-proto_library(
-    name = "codegen_test_deps_protos",
+pw_proto_filegroup(
+    name = "codegen_test_deps_protos_and_options",
     srcs = [
         "pw_protobuf_test_deps_protos/imported.proto",
     ],
-    strip_import_prefix = "/pw_protobuf",
+    options_files = ["pw_protobuf_test_deps_protos/imported.options"],
 )
 
 proto_library(
-    name = "codegen_test_proto",
+    name = "codegen_test_deps_protos",
+    srcs = [":codegen_test_deps_protos_and_options"],
+    strip_import_prefix = "/pw_protobuf",
+)
+
+pw_proto_filegroup(
+    name = "codegen_test_proto_and_options",
     srcs = [
         "pw_protobuf_test_protos/full_test.proto",
         "pw_protobuf_test_protos/imported.proto",
@@ -270,6 +276,17 @@ proto_library(
         "pw_protobuf_test_protos/repeated.proto",
         "pw_protobuf_test_protos/size_report.proto",
     ],
+    options_files = [
+        "pw_protobuf_test_protos/full_test.options",
+        "pw_protobuf_test_protos/optional.options",
+        "pw_protobuf_test_protos/imported.options",
+        "pw_protobuf_test_protos/repeated.options",
+    ],
+)
+
+proto_library(
+    name = "codegen_test_proto",
+    srcs = [":codegen_test_proto_and_options"],
     strip_import_prefix = "/pw_protobuf",
     deps = [
         ":codegen_test_deps_protos",

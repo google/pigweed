@@ -356,11 +356,20 @@ pw_cc_test(
     deps = [":internal_test_utils"],
 )
 
-# TODO(b/234874064): Add test_helpers_test when it is possible to use .options
-# in bazel build.
-filegroup(
+pw_cc_test(
     name = "test_helpers_test",
     srcs = ["test_helpers_test.cc"],
+    deps = [
+        ":test_helpers",
+        "//pw_result",
+        "//pw_rpc/pwpb:client_testing",
+        "//pw_rpc/pwpb:echo_service",
+        "//pw_rpc/pwpb:server_api",
+        "//pw_status",
+        "//pw_sync:interrupt_spin_lock",
+        "//pw_sync:lock_annotations",
+        "//pw_sync:timed_thread_notification",
+    ],
 )
 
 proto_library(

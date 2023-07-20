@@ -13,10 +13,6 @@
 # the License.
 """WORK IN PROGRESS!
 
-This is intended to be a replacement for the proto codegen in proto.bzl, which
-relies on the transitive proto compilation support removed from newer versions
-of rules_proto_grpc.
-
 # Overview of implementation
 
 (If you just want to use the macros, see their docstrings; this section is
@@ -45,6 +41,7 @@ _proto_compiler_aspect.
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
 load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 load("@pigweed//pw_build/bazel_internal:pigweed_internal.bzl", "PW_DEFAULT_COPTS")
+load("@bazel_skylib//lib:paths.bzl", "paths")
 
 # For Copybara use only
 ADDITIONAL_PWPB_DEPS = []
@@ -109,12 +106,28 @@ def raw_rpc_proto_library(name, deps, tags = None, visibility = None):
 
 # TODO(b/234873954) Enable unused variable check.
 # buildifier: disable=unused-variable
-def nanopb_proto_library(name, deps, tags = None, visibility = None, options = None):
+def nanopb_proto_library(name, deps, tags = [], visibility = None, options = None):
     """A C++ proto library generated using pw_protobuf.
 
     Attributes:
       deps: proto_library targets for which to generate this library.
     """
+
+    # TODO(tpudlik): Find a way to get Nanopb to generate nested structs.
+    # Otherwise add the manual tag to the resulting library, preventing it
+    # from being built unless directly depended on.  e.g. The 'Pigweed'
+    # message in
+    # pw_protobuf/pw_protobuf_test_protos/full_test.proto will fail to
+    # compile as it has a self referring nested message. According to
+    # the docs
+    # https://jpa.kapsi.fi/nanopb/docs/reference.html#proto-file-options
+    # and https://github.com/nanopb/nanopb/issues/433 it seems like it
+    # should be possible to configure nanopb to generate nested structs via
+    # flags in .options files.
+    #
+    # One issue is nanopb doesn't silently ignore unknown options in .options
+    # files so we can't share .options files with pwpb.
+    extra_tags = ["manual"]
     _nanopb_proto_library(
         name = name,
         protos = deps,
@@ -128,11 +141,11 @@ def nanopb_proto_library(name, deps, tags = None, visibility = None, options = N
             Label("//pw_status"),
             Label("//pw_string:string"),
         ],
-        tags = tags,
+        tags = tags + extra_tags,
         visibility = visibility,
     )
 
-def nanopb_rpc_proto_library(name, deps, nanopb_proto_library_deps, tags = None, visibility = None):
+def nanopb_rpc_proto_library(name, deps, nanopb_proto_library_deps, tags = [], visibility = None):
     """A C++ RPC proto library using nanopb.
 
     Attributes:
@@ -140,6 +153,9 @@ def nanopb_rpc_proto_library(name, deps, nanopb_proto_library_deps, tags = None,
       nanopb_proto_library_deps: A pw_nanopb_cc_library generated
         from the same proto_library. Required.
     """
+
+    # See comment in nanopb_proto_library.
+    extra_tags = ["manual"]
     _pw_nanopb_rpc_proto_library(
         name = name,
         protos = deps,
@@ -148,7 +164,7 @@ def nanopb_rpc_proto_library(name, deps, nanopb_proto_library_deps, tags = None,
             Label("//pw_rpc/nanopb:client_api"),
             Label("//pw_rpc/nanopb:server_api"),
         ] + nanopb_proto_library_deps,
-        tags = tags,
+        tags = tags + extra_tags,
         visibility = visibility,
     )
 
@@ -156,7 +172,7 @@ def pw_proto_library(
         name,
         deps,
         visibility = None,
-        tags = None,
+        tags = [],
         nanopb_options = None,
         enabled_targets = None):
     """Generate Pigweed proto C++ code.
@@ -258,6 +274,7 @@ def pw_proto_library(
             name = name + ".nanopb_rpc",
             deps = deps,
             nanopb_proto_library_deps = [":" + name + ".nanopb"],
+            tags = tags,
             visibility = visibility,
         )
 
@@ -280,40 +297,44 @@ PwProtoOptionsInfo = provider(
     },
 )
 
-def _output_dir(ctx, proto_info):
-    """Returns the output directory where generated proto files will be placed.
-
-    Args:
-      ctx: Rule context.
-      proto_info: ProtoInfo provider.
-
-    Returns:
-      A string specifying the output directory
-    """
-    if proto_info.proto_source_root.startswith(ctx.bin_dir.path):
-        # Path of proto file is already in output dir. protoc will place
-        # generated files next to if we specify the CWD where protoc is run.
-        path = "."
-    else:
-        path = ctx.bin_dir.path
-
-    return path
-
 def _proto_compiler_aspect_impl(target, ctx):
     # List the files we will generate for this proto_library target.
     proto_info = target[ProtoInfo]
-    proto_root = proto_info.proto_source_root
 
     srcs = []
     hdrs = []
-    includes = [proto_root]
 
-    out_path = _output_dir(ctx, proto_info)
+    # Setup the output root for the plugin to point to targets output
+    # directory. This allows us to declare the location of the files that protoc
+    # will output in a way that `ctx.actions.declare_file` will understand,
+    # since it works relative to the target.
+    out_path = ctx.bin_dir.path
+    if target.label.workspace_root:
+        out_path += "/" + target.label.workspace_root
+    if target.label.package:
+        out_path += "/" + target.label.package
 
-    for src in target[ProtoInfo].direct_sources:
+    # Add location of headers to cc include path.
+    # Depending on prefix rules, the include path can be directly from the
+    # output path, or underneath the package.
+    includes = [out_path]
+
+    for src in proto_info.direct_sources:
+        # Get the relative import path for this .proto file.
+        src_rel = paths.relativize(src.path, proto_info.proto_source_root)
+        proto_dir = paths.dirname(src_rel)
+
+        # Add location of headers to cc include path.
+        includes.append("{}/{}".format(out_path, src.owner.package))
+
         for ext in ctx.attr._extensions:
-            path = src.basename[:-len("proto")] + ext
-            out_file = ctx.actions.declare_file(path, sibling = src)
+            # Declare all output files, in target package dir.
+            generated_filename = src.basename[:-len("proto")] + ext
+            out_file = ctx.actions.declare_file("{}/{}".format(
+                proto_dir,
+                generated_filename,
+            ))
+
             if ext.endswith(".h"):
                 hdrs.append(out_file)
             else:
@@ -328,30 +349,39 @@ def _proto_compiler_aspect_impl(target, ctx):
         for options_file in src[PwProtoOptionsInfo].options_files.to_list()
     ]
 
-    # Convert include paths to a depset and back to deduplicate entries.
-    # Note that this will probably evaluate to either [] or ["."] in most cases.
-    options_file_include_paths = depset([
-        "." if options_file.root.path == "" else options_file.root.path
-        for options_file in options_files
-    ]).to_list()
+    # Local repository options files.
+    options_file_include_paths = ["."]
+    for options_file in options_files:
+        # Handle .options files residing in external repositories.
+        if options_file.owner.workspace_root:
+            options_file_include_paths.append(options_file.owner.workspace_root)
+
+        # Handle generated .options files.
+        if options_file.root.path:
+            options_file_include_paths.append(options_file.root.path)
 
     args = ctx.actions.args()
+    for path in proto_info.transitive_proto_path.to_list():
+        args.add("-I{}".format(path))
+
     args.add("--plugin=protoc-gen-custom={}".format(ctx.executable._protoc_plugin.path))
-    for options_file_include_path in options_file_include_paths:
+
+    # Convert include paths to a depset and back to deduplicate entries.
+    for options_file_include_path in depset(options_file_include_paths).to_list():
         args.add("--custom_opt=-I{}".format(options_file_include_path))
 
     for plugin_option in ctx.attr._plugin_options:
         args.add("--custom_opt={}".format(plugin_option))
-    args.add("--custom_out={}".format(out_path))
 
-    args.add_all(target[ProtoInfo].direct_sources)
+    args.add("--custom_out={}".format(out_path))
+    args.add_all(proto_info.direct_sources)
 
     ctx.actions.run(
         inputs = depset(
-            direct = target[ProtoInfo].direct_sources +
-                     target[ProtoInfo].transitive_sources.to_list() +
+            direct = proto_info.direct_sources +
+                     proto_info.transitive_sources.to_list() +
                      options_files,
-            transitive = [target[ProtoInfo].transitive_descriptor_sets],
+            transitive = [proto_info.transitive_descriptor_sets],
         ),
         progress_message = "Generating %s C++ files for %s" % (ctx.attr._extensions, ctx.label.name),
         tools = [ctx.executable._protoc_plugin],
@@ -507,7 +537,6 @@ def _impl_pw_proto_library(ctx):
 _pwpb_proto_compiler_aspect = _proto_compiler_aspect(
     ["pwpb.h"],
     "//pw_protobuf/py:plugin",
-    ["--no-legacy-namespace"],
 )
 
 _pwpb_proto_library = rule(
@@ -549,7 +578,6 @@ _nanopb_proto_library = rule(
 _pw_pwpb_rpc_proto_compiler_aspect = _proto_compiler_aspect(
     ["rpc.pwpb.h"],
     "//pw_rpc/py:plugin_pwpb",
-    ["--no-legacy-namespace"],
 )
 
 _pw_pwpb_rpc_proto_library = rule(
@@ -570,7 +598,6 @@ _pw_pwpb_rpc_proto_library = rule(
 _pw_raw_rpc_proto_compiler_aspect = _proto_compiler_aspect(
     ["raw_rpc.pb.h"],
     "//pw_rpc/py:plugin_raw",
-    ["--no-legacy-namespace"],
 )
 
 _pw_raw_rpc_proto_library = rule(
@@ -591,7 +618,6 @@ _pw_raw_rpc_proto_library = rule(
 _pw_nanopb_rpc_proto_compiler_aspect = _proto_compiler_aspect(
     ["rpc.pb.h"],
     "//pw_rpc/py:plugin_nanopb",
-    ["--no-legacy-namespace"],
 )
 
 _pw_nanopb_rpc_proto_library = rule(

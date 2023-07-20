@@ -273,14 +273,13 @@ pw_cc_test(
     ],
 )
 
-# TODO(b/234874064): Requires pwpb options file support to compile.
-filegroup(
+pw_cc_test(
     name = "echo_service_test",
     srcs = ["echo_service_test.cc"],
-    #     deps = [
-    #       ":echo_service",
-    #       ":test_method_context",
-    #     ],
+    deps = [
+        ":echo_service",
+        ":test_method_context",
+    ],
 )
 
 pw_cc_test(
