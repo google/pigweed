@@ -52,7 +52,9 @@ then
     ${PY_TO_TEST} -m venv "${VENV}"
 fi
 
-"${VENV}/bin/python" -m pip install --require-hashes \
+# Note: pip install --require-hashes will be triggered if any hashes are present
+# in the requirement.txt file.
+"${VENV}/bin/python" -m pip install \
   --find-links="${DIR}/python_wheels" \
   -r requirements.txt ${EXTRA_REQUIREMENT_ARG} ${CONSTRAINTS_ARG}
 

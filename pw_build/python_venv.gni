@@ -46,6 +46,9 @@ import("$dir_pw_build/python_action.gni")
 #   requirements: A list of requirements files to install into this virtualenv
 #     on creation. By default this is set to pw_build_PIP_REQUIREMENTS
 #
+#   pip_generate_hashes: (Default: false) Use --generate-hashes When
+#     running pip-compile to compute the final requirements.txt
+#
 #   source_packages: A list of in-tree pw_python_package targets that will be
 #     checked for external third_party pip dependencies to install into this
 #     virtualenv. Note this list of targets isn't actually installed into the
@@ -183,6 +186,13 @@ template("pw_python_venv") {
     }
   }
 
+  _pip_generate_hashes = false
+  if (defined(invoker.pip_generate_hashes)) {
+    _pip_generate_hashes = invoker.pip_generate_hashes
+  } else {
+    not_needed([ "_pip_generate_hashes" ])
+  }
+
   if (defined(invoker.source_packages) || defined(invoker.requirements)) {
     if (current_toolchain == pw_build_PYTHON_TOOLCHAIN) {
       # Compile requirements with hashes
@@ -194,10 +204,16 @@ template("pw_python_venv") {
         _skip_installing_external_python_deps = true
         venv = get_label_info(":${invoker.target_name}", "label_no_toolchain")
 
-        args = [
-          "compile",
-          "--generate-hashes",
-          "--reuse-hashes",
+        args = [ "compile" ]
+
+        if (_pip_generate_hashes) {
+          args += [
+            "--generate-hashes",
+            "--reuse-hashes",
+          ]
+        }
+
+        args += [
           "--resolver=backtracking",
 
           # --allow-unsafe will force pinning pip and setuptools.
@@ -279,9 +295,12 @@ template("pw_python_venv") {
           "--log",
           rebase_path(_pip_install_log_file, root_build_dir),
           "install",
-          "--require-hashes",
           "--upgrade",
         ]
+
+        if (_pip_generate_hashes) {
+          args += [ "--require-hashes" ]
+        }
 
         # Note: --no-build-isolation should be avoided for installing 3rd party
         # Python packages that use C/C++ extension modules.

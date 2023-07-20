@@ -42,12 +42,18 @@ def _parse_args() -> argparse.Namespace:
         required=True,
         help='requirement file to generate',
     )
+    parser.add_argument(
+        '--generate-hashes',
+        action='store_true',
+        help='Generate sha256 sums for the requirements.txt file.',
+    )
     return parser.parse_args()
 
 
 def main(
     package_dir: Path,
     out_dir: Path,
+    generate_hashes: bool,
 ) -> int:
     """Build a Python wheel."""
 
@@ -79,14 +85,15 @@ def main(
         check=True,
     )
 
-    # Cacluate the sha256
-    for wheel_path in out_dir.glob('**/*.whl'):
-        wheel_sha256 = hashlib.sha256()
-        wheel_sha256.update(wheel_path.read_bytes())
-        sha256 = wheel_sha256.hexdigest()
-        requirement_lines += ' \\\n    '
-        requirement_lines += f'--hash=sha256:{sha256}'
-        break
+    if generate_hashes:
+        # Cacluate the sha256
+        for wheel_path in out_dir.glob('**/*.whl'):
+            wheel_sha256 = hashlib.sha256()
+            wheel_sha256.update(wheel_path.read_bytes())
+            sha256 = wheel_sha256.hexdigest()
+            requirement_lines += ' \\\n    '
+            requirement_lines += f'--hash=sha256:{sha256}'
+            break
 
     # Save a requirements file for this wheel and hash value.
     requirement_file = out_dir / 'requirements.txt'

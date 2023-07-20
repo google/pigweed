@@ -34,6 +34,8 @@ if exist "%EXTRA_REQUIREMENT_PATH%" (
 )
 
 :: Run pip install in the venv.
-call "%python%" -m pip install --require-hashes ^
+:: Note: pip install --require-hashes will be triggered if any hashes are present
+:: in the requirement.txt file.
+call "%python%" -m pip install ^
     "--find-links=%ROOT_DIR%python_wheels" ^
     "--requirement=requirements.txt" %EXTRA_REQUIREMENT_ARG% %CONSTRAINT_ARG%

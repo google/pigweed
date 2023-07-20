@@ -318,6 +318,10 @@ Below is a snippet of the ``compiled_requirements.txt`` for this
        #   pylint
    ...
 
+The presence of hashes in the above example can be controlled via the
+``pip_generate_hashes`` arg to the :ref:`module-pw_build-pw_python_venv`
+template.
+
 Caching Python Packages for Offline Installation
 ------------------------------------------------
 The :ref:`module-pw_build-pw_python_venv` target adds an optional sub target

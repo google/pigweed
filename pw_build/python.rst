@@ -239,6 +239,7 @@ Example
        "//tools:another_pw_python_package",
        "//:my_product_packages",
      ]
+     pip_generate_hashes = true
    }
 
 Arguments
@@ -260,6 +261,10 @@ Arguments
      For more info on the ``pw_build_PIP_CONSTRAINTS`` and
      ``pw_build_PIP_REQUIREMENTS`` GN args see:
      :ref:`docs-python-build-python-gn-requirements-files`
+
+- ``pip_generate_hashes``: (Default: false) Use ``--generate-hashes`` When
+  running `pip-compile <A list of requirements files to install into this
+  virtualenv>`_ to compute the final ``requirements.txt``
 
 - ``source_packages``: A list of in-tree
   :ref:`module-pw_build-pw_python_package` or targets that will be checked for
