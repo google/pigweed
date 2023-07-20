@@ -1460,7 +1460,7 @@ are supported. Code that uses the raw API may be tested with the raw test
 helpers, and vice versa. The Nanopb and Pwpb APIs also provides a test helper
 with a real client-server pair that supports testing of asynchronous messaging.
 
-To test sychronous code that invokes RPCs, declare a ``RawClientTestContext``,
+To test synchronous code that invokes RPCs, declare a ``RawClientTestContext``,
 ``PwpbClientTestContext``,  or ``NanopbClientTestContext``. These test context
 objects provide a preconfigured RPC client, channel, server fake, and buffer for
 encoding packets.
@@ -1576,6 +1576,21 @@ response is received. It verifies that expected data was both sent and received.
      EXPECT_EQ(response.value, value + 1);
    }
 
+Use the context's
+``response(uint32_t index, Response<kMethod>& response)`` to decode messages
+into a provided response object. You would use this version if decoder callbacks
+are needed to fully decode a message. For instance if it uses ``repeated``
+fields.
+
+.. code-block:: cpp
+
+   TestResponse::Message response{};
+   response.repeated_field.SetDecoder(
+       [&values](TestResponse::StreamDecoder& decoder) {
+         return decoder.ReadRepeatedField(values);
+       });
+   ctx.response<test::GeneratedService::TestAnotherUnaryRpc>(0, response);
+
 Synchronous versions of these test contexts also exist that may be used on
 non-threaded systems ``NanopbClientServerTestContext`` and
 ``PwpbClientServerTestContext``. While these do not allow for asynchronous
@@ -1620,7 +1635,7 @@ to with a test service implemenation.
      // Needed after ever RPC call to trigger forward of packets
      ctx.ForwardNewPackets();
      const auto request = ctx.request<MyService::TheMethod>(0);
-     const auto response = ctx.resonse<MyService::TheMethod>(0);
+     const auto response = ctx.response<MyService::TheMethod>(0);
 
      // Verify content of messages
      EXPECT_EQ(result, pw::OkStatus());

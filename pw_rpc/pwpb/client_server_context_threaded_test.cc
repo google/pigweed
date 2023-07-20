@@ -43,8 +43,16 @@ class TestService final : public GeneratedService::Service<TestService> {
     return static_cast<Status::Code>(request.status_code);
   }
 
-  void TestAnotherUnaryRpc(const TestRequest::Message&,
-                           PwpbUnaryResponder<TestResponse::Message>&) {}
+  Status TestAnotherUnaryRpc(const TestRequest::Message& request,
+                             TestResponse::Message& response) {
+    response.value = 42;
+    response.repeated_field.SetEncoder(
+        [](TestResponse::StreamEncoder& encoder) {
+          constexpr std::array<uint32_t, 3> kValues = {7, 8, 9};
+          return encoder.WriteRepeatedField(kValues);
+        });
+    return static_cast<Status::Code>(request.status_code);
+  }
 
   static void TestServerStreamRpc(const TestRequest::Message&,
                                   ServerWriter<TestStreamResponse::Message>&) {}
@@ -62,20 +70,30 @@ namespace {
 
 class RpcCaller {
  public:
-  void BlockOnResponse(uint32_t i, Client& client, uint32_t channel_id) {
+  template <auto kMethod = test::GeneratedService::TestUnaryRpc>
+  Status BlockOnResponse(uint32_t i, Client& client, uint32_t channel_id) {
     TestRequest::Message request{.integer = i,
                                  .status_code = OkStatus().code()};
-    auto call = test::GeneratedService::TestUnaryRpc(
+    response_status_ = OkStatus();
+    auto call = kMethod(
         client,
         channel_id,
         request,
-        [this](const TestResponse::Message&, Status) { semaphore_.release(); },
-        [](Status) {});
+        [this](const TestResponse::Message&, Status status) {
+          response_status_ = status;
+          semaphore_.release();
+        },
+        [this](Status status) {
+          response_status_ = status;
+          semaphore_.release();
+        });
 
     semaphore_.acquire();
+    return response_status_;
   }
 
  private:
+  Status response_status_ = OkStatus();
   pw::sync::BinarySemaphore semaphore_;
 };
 
@@ -87,7 +105,8 @@ TEST(PwpbClientServerTestContextThreaded, ReceivesUnaryRpcResponseThreaded) {
 
   RpcCaller caller;
   constexpr auto value = 1;
-  caller.BlockOnResponse(value, ctx.client(), ctx.channel().id());
+  EXPECT_EQ(caller.BlockOnResponse(value, ctx.client(), ctx.channel().id()),
+            OkStatus());
 
   const auto request =
       ctx.request<test::pw_rpc::pwpb::TestService::TestUnaryRpc>(0);
@@ -106,8 +125,10 @@ TEST(PwpbClientServerTestContextThreaded, ReceivesMultipleResponsesThreaded) {
   RpcCaller caller;
   constexpr auto value1 = 1;
   constexpr auto value2 = 2;
-  caller.BlockOnResponse(value1, ctx.client(), ctx.channel().id());
-  caller.BlockOnResponse(value2, ctx.client(), ctx.channel().id());
+  EXPECT_EQ(caller.BlockOnResponse(value1, ctx.client(), ctx.channel().id()),
+            OkStatus());
+  EXPECT_EQ(caller.BlockOnResponse(value2, ctx.client(), ctx.channel().id()),
+            OkStatus());
 
   const auto request1 =
       ctx.request<test::pw_rpc::pwpb::TestService::TestUnaryRpc>(0);
@@ -155,8 +176,10 @@ TEST(PwpbClientServerTestContextThreaded,
   RpcCaller caller;
   constexpr auto value1 = 1;
   constexpr auto value2 = 2;
-  caller.BlockOnResponse(value1, ctx.client(), ctx.channel().id());
-  caller.BlockOnResponse(value2, ctx.client(), ctx.channel().id());
+  EXPECT_EQ(caller.BlockOnResponse(value1, ctx.client(), ctx.channel().id()),
+            OkStatus());
+  EXPECT_EQ(caller.BlockOnResponse(value2, ctx.client(), ctx.channel().id()),
+            OkStatus());
 
   const auto request1 =
       ctx.request<test::pw_rpc::pwpb::TestService::TestUnaryRpc>(0);
@@ -178,6 +201,37 @@ TEST(PwpbClientServerTestContextThreaded,
   client_counter.second.lock();
   EXPECT_EQ(client_counter.first, 2);
   client_counter.second.unlock();
+}
+
+TEST(PwpbClientServerTestContextThreaded, ResponseWithCallbacks) {
+  PwpbClientServerTestContextThreaded<> ctx(thread::test::TestOptionsThread0());
+  test::TestService service;
+  ctx.server().RegisterService(service);
+
+  RpcCaller caller;
+  // DataLoss expected on initial response, since pwpb provides no way to
+  // populate response callback. We setup callbacks on response packet below.
+  EXPECT_EQ(caller.BlockOnResponse<test::GeneratedService::TestAnotherUnaryRpc>(
+                0, ctx.client(), ctx.channel().id()),
+            Status::DataLoss());
+
+  // To decode a response object that requires to set callbacks, pass it to the
+  // response() method as a parameter.
+  pw::Vector<uint32_t, 4> values{};
+
+  TestResponse::Message response{};
+  response.repeated_field.SetDecoder(
+      [&values](TestResponse::StreamDecoder& decoder) {
+        return decoder.ReadRepeatedField(values);
+      });
+  ctx.response<test::GeneratedService::TestAnotherUnaryRpc>(0, response);
+
+  EXPECT_EQ(42, response.value);
+
+  EXPECT_EQ(3u, values.size());
+  EXPECT_EQ(7u, values[0]);
+  EXPECT_EQ(8u, values[1]);
+  EXPECT_EQ(9u, values[2]);
 }
 
 }  // namespace

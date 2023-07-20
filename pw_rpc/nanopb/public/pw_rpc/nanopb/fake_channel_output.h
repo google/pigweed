@@ -86,6 +86,9 @@ class NanopbPayloadsView {
   iterator begin() const { return iterator(view_.begin(), serde_); }
   iterator end() const { return iterator(view_.end(), serde_); }
 
+  PayloadsView& payloads() { return view_; }
+  internal::NanopbSerde& serde() { return serde_; }
+
  private:
   using Base =
       containers::WrappedIterator<iterator, PayloadsView::iterator, Payload>;

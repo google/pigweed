@@ -41,8 +41,16 @@ class TestService final : public GeneratedService::Service<TestService> {
     return static_cast<Status::Code>(request.status_code);
   }
 
-  void TestAnotherUnaryRpc(const TestRequest::Message&,
-                           PwpbUnaryResponder<TestResponse::Message>&) {}
+  Status TestAnotherUnaryRpc(const TestRequest::Message& request,
+                             TestResponse::Message& response) {
+    response.value = 42;
+    response.repeated_field.SetEncoder(
+        [](TestResponse::StreamEncoder& encoder) {
+          constexpr std::array<uint32_t, 3> kValues = {7, 8, 9};
+          return encoder.WriteRepeatedField(kValues);
+        });
+    return static_cast<Status::Code>(request.status_code);
+  }
 
   static void TestServerStreamRpc(const TestRequest::Message&,
                                   ServerWriter<TestStreamResponse::Message>&) {}
@@ -190,6 +198,36 @@ TEST(PwpbClientServerTestContext,
   client_counter.second.lock();
   EXPECT_EQ(client_counter.first, 2);
   client_counter.second.unlock();
+}
+
+TEST(PwpbClientServerTestContext, ResponseWithCallbacks) {
+  PwpbClientServerTestContext<> ctx;
+  test::TestService service;
+  ctx.server().RegisterService(service);
+
+  TestRequest::Message request{};
+  const auto call = test::GeneratedService::TestAnotherUnaryRpc(
+      ctx.client(), ctx.channel().id(), request);
+  // Force manual forwarding of packets as context is not threaded
+  ctx.ForwardNewPackets();
+
+  // To decode a response object that requires to set callbacks, pass it to the
+  // response() method as a parameter.
+  pw::Vector<uint32_t, 4> values{};
+
+  TestResponse::Message response{};
+  response.repeated_field.SetDecoder(
+      [&values](TestResponse::StreamDecoder& decoder) {
+        return decoder.ReadRepeatedField(values);
+      });
+  ctx.response<test::GeneratedService::TestAnotherUnaryRpc>(0, response);
+
+  EXPECT_EQ(42, response.value);
+
+  EXPECT_EQ(3u, values.size());
+  EXPECT_EQ(7u, values[0]);
+  EXPECT_EQ(8u, values[1]);
+  EXPECT_EQ(9u, values[2]);
 }
 
 }  // namespace

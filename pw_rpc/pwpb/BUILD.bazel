@@ -105,6 +105,7 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         ":test_method_context",
+        "//pw_assert",
         "//pw_rpc:client_server_testing",
     ],
 )

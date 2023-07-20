@@ -61,6 +61,18 @@ class PwpbWatchableChannelOutput final
   }
 
   template <auto kMethod>
+  void response(uint32_t channel_id,
+                uint32_t index,
+                Response<kMethod>& response) PW_LOCKS_EXCLUDED(Base::mutex_) {
+    std::lock_guard lock(Base::mutex_);
+    PW_ASSERT(Base::PacketCount() >= index);
+    auto payloads_view = Base::output_.template responses<kMethod>(channel_id);
+    PW_ASSERT(payloads_view.serde()
+                  .Decode(payloads_view.payloads()[index], response)
+                  .ok());
+  }
+
+  template <auto kMethod>
   Request<kMethod> request(uint32_t channel_id, uint32_t index)
       PW_LOCKS_EXCLUDED(Base::mutex_) {
     std::lock_guard lock(Base::mutex_);
@@ -119,6 +131,15 @@ class PwpbClientServerTestContextThreaded final
   Response<kMethod> response(uint32_t index) {
     return Base::channel_output_.template response<kMethod>(
         Base::channel().id(), index);
+  }
+
+  // Gives access to the RPC's indexed by order of occurance using passed
+  // Response object to parse using pw_protobuf. Use this version when you need
+  // to set callback fields in the Response object before parsing.
+  template <auto kMethod>
+  void response(uint32_t index, Response<kMethod>& response) {
+    return Base::channel_output_.template response<kMethod>(
+        Base::channel().id(), index, response);
   }
 };
 

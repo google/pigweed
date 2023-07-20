@@ -105,6 +105,7 @@ pw_source_set("client_server_testing") {
   public = [ "public/pw_rpc/pwpb/client_server_testing.h" ]
   public_deps = [
     ":test_method_context",
+    "$dir_pw_assert",
     "..:client_server_testing",
   ]
 }
