@@ -46,7 +46,7 @@
 pub const OK: u32 = 0;
 
 #[cfg_attr(feature = "std", derive(Debug))]
-#[derive(Eq, PartialEq)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 /// Error type compatible with Pigweed's [pw_status](https://pigweed.dev/pw_status).
 ///
 /// For an in depth explanation of the values of the `Error` enum, see
