@@ -537,6 +537,7 @@ def _impl_pw_proto_library(ctx):
 _pwpb_proto_compiler_aspect = _proto_compiler_aspect(
     ["pwpb.h"],
     "//pw_protobuf/py:plugin",
+    ["--no-legacy-namespace"],
 )
 
 _pwpb_proto_library = rule(
@@ -578,6 +579,7 @@ _nanopb_proto_library = rule(
 _pw_pwpb_rpc_proto_compiler_aspect = _proto_compiler_aspect(
     ["rpc.pwpb.h"],
     "//pw_rpc/py:plugin_pwpb",
+    ["--no-legacy-namespace"],
 )
 
 _pw_pwpb_rpc_proto_library = rule(
@@ -598,6 +600,7 @@ _pw_pwpb_rpc_proto_library = rule(
 _pw_raw_rpc_proto_compiler_aspect = _proto_compiler_aspect(
     ["raw_rpc.pb.h"],
     "//pw_rpc/py:plugin_raw",
+    ["--no-legacy-namespace"],
 )
 
 _pw_raw_rpc_proto_library = rule(
@@ -618,6 +621,7 @@ _pw_raw_rpc_proto_library = rule(
 _pw_nanopb_rpc_proto_compiler_aspect = _proto_compiler_aspect(
     ["rpc.pb.h"],
     "//pw_rpc/py:plugin_nanopb",
+    ["--no-legacy-namespace"],
 )
 
 _pw_nanopb_rpc_proto_library = rule(

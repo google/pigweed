@@ -33,7 +33,8 @@ bool EncodedThreadExists(ConstByteSpan serialized_thread_buffer,
   protobuf::Decoder decoder(serialized_thread_buffer);
   while (decoder.Next().ok()) {
     switch (decoder.FieldNumber()) {
-      case static_cast<uint32_t>(proto::SnapshotThreadInfo::Fields::kThreads): {
+      case static_cast<uint32_t>(
+          proto::pwpb::SnapshotThreadInfo::Fields::kThreads): {
         ConstByteSpan thread_buffer;
         EXPECT_EQ(OkStatus(), decoder.ReadBytes(&thread_buffer));
         ConstByteSpan encoded_name;
@@ -78,7 +79,7 @@ ThreadInfo CreateThreadInfoObject(std::optional<ConstByteSpan> name,
 TEST(ThreadSnapshotService, DecodeSingleThreadInfoObject) {
   std::array<std::byte, RequiredServiceBufferSize(1)> encode_buffer;
 
-  proto::SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
+  proto::pwpb::SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
 
   ConstByteSpan name = bytes::String("MyThread\0");
   ThreadInfo thread_info = CreateThreadInfoObject(
@@ -99,7 +100,7 @@ TEST(ThreadSnapshotService, DecodeSingleThreadInfoObject) {
 TEST(ThreadSnapshotService, DecodeMultipleThreadInfoObjects) {
   std::array<std::byte, RequiredServiceBufferSize(3)> encode_buffer;
 
-  proto::SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
+  proto::pwpb::SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
 
   ConstByteSpan name = bytes::String("MyThread1\0");
   ThreadInfo thread_info_1 =
@@ -139,7 +140,7 @@ TEST(ThreadSnapshotService, DecodeMultipleThreadInfoObjects) {
 TEST(ThreadSnapshotService, DefaultBufferSize) {
   static std::array<std::byte, RequiredServiceBufferSize()> encode_buffer;
 
-  proto::SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
+  proto::pwpb::SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
 
   ConstByteSpan name = bytes::String("MyThread\0");
   std::optional<uintptr_t> example_addr =
@@ -160,7 +161,7 @@ TEST(ThreadSnapshotService, DefaultBufferSize) {
 TEST(ThreadSnapshotService, FailedPrecondition) {
   static std::array<std::byte, RequiredServiceBufferSize(1)> encode_buffer;
 
-  proto::SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
+  proto::pwpb::SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
 
   ThreadInfo thread_info_no_name = CreateThreadInfoObject(
       std::nullopt,
@@ -186,7 +187,7 @@ TEST(ThreadSnapshotService, FailedPrecondition) {
 TEST(ThreadSnapshotService, Unimplemented) {
   static std::array<std::byte, RequiredServiceBufferSize(1)> encode_buffer;
 
-  proto::SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
+  proto::pwpb::SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
 
   ConstByteSpan name = bytes::String("MyThread\0");
   ThreadInfo thread_info_no_peak_addr =

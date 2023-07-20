@@ -21,13 +21,15 @@
 
 namespace pw::multisink {
 
-Status UnsafeDumpMultiSinkLogs(MultiSink& sink,
-                               pw::log::LogEntries::StreamEncoder& encoder,
-                               size_t max_num_entries) {
+Status UnsafeDumpMultiSinkLogs(
+    MultiSink& sink,
+    pw::log::pwpb::LogEntries::StreamEncoder& encoder,
+    size_t max_num_entries) {
   auto callback = [&encoder](ConstByteSpan entry) {
     encoder
         .WriteBytes(
-            static_cast<uint32_t>(pw::log::LogEntries::Fields::kEntries), entry)
+            static_cast<uint32_t>(pw::log::pwpb::LogEntries::Fields::kEntries),
+            entry)
         .IgnoreError();
   };
   return sink.UnsafeForEachEntry(callback, max_num_entries);

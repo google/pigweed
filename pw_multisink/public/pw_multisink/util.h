@@ -27,7 +27,7 @@ namespace pw::multisink {
 // pw.snapshot.Snapshot.
 Status UnsafeDumpMultiSinkLogs(
     MultiSink& sink,
-    pw::log::LogEntries::StreamEncoder& encoder,
+    pw::log::pwpb::LogEntries::StreamEncoder& encoder,
     size_t max_num_entries = std::numeric_limits<size_t>::max());
 
 }  // namespace pw::multisink

@@ -34,13 +34,13 @@ void UnitTestService::Run(ConstByteSpan request, RawServerWriter& writer) {
 
   Status status;
   while ((status = decoder.Next()).ok()) {
-    switch (static_cast<TestRunRequest::Fields>(decoder.FieldNumber())) {
-      case TestRunRequest::Fields::kReportPassedExpectations:
+    switch (static_cast<pwpb::TestRunRequest::Fields>(decoder.FieldNumber())) {
+      case pwpb::TestRunRequest::Fields::kReportPassedExpectations:
         decoder.ReadBool(&verbose_)
             .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
 
-      case TestRunRequest::Fields::kTestSuite: {
+      case pwpb::TestRunRequest::Fields::kTestSuite: {
         std::string_view suite_name;
         if (!decoder.ReadString(&suite_name).ok()) {
           break;
@@ -76,13 +76,14 @@ void UnitTestService::Run(ConstByteSpan request, RawServerWriter& writer) {
 
 void UnitTestService::WriteTestRunStart() {
   // Write out the key for the start field (even though the message is empty).
-  WriteEvent(
-      [&](Event::StreamEncoder& event) { event.GetTestRunStartEncoder(); });
+  WriteEvent([&](pwpb::Event::StreamEncoder& event) {
+    event.GetTestRunStartEncoder();
+  });
 }
 
 void UnitTestService::WriteTestRunEnd(const RunTestsSummary& summary) {
-  WriteEvent([&](Event::StreamEncoder& event) {
-    TestRunEnd::StreamEncoder test_run_end = event.GetTestRunEndEncoder();
+  WriteEvent([&](pwpb::Event::StreamEncoder& event) {
+    pwpb::TestRunEnd::StreamEncoder test_run_end = event.GetTestRunEndEncoder();
     test_run_end.WritePassed(summary.passed_tests)
         .IgnoreError();  // TODO(b/242598609): Handle Status properly
     test_run_end.WriteFailed(summary.failed_tests)
@@ -95,8 +96,8 @@ void UnitTestService::WriteTestRunEnd(const RunTestsSummary& summary) {
 }
 
 void UnitTestService::WriteTestCaseStart(const TestCase& test_case) {
-  WriteEvent([&](Event::StreamEncoder& event) {
-    TestCaseDescriptor::StreamEncoder descriptor =
+  WriteEvent([&](pwpb::Event::StreamEncoder& event) {
+    pwpb::TestCaseDescriptor::StreamEncoder descriptor =
         event.GetTestCaseStartEncoder();
     descriptor.WriteSuiteName(test_case.suite_name)
         .IgnoreError();  // TODO(b/242598609): Handle Status properly
@@ -108,15 +109,15 @@ void UnitTestService::WriteTestCaseStart(const TestCase& test_case) {
 }
 
 void UnitTestService::WriteTestCaseEnd(TestResult result) {
-  WriteEvent([&](Event::StreamEncoder& event) {
-    event.WriteTestCaseEnd(static_cast<TestCaseResult>(result))
+  WriteEvent([&](pwpb::Event::StreamEncoder& event) {
+    event.WriteTestCaseEnd(static_cast<pwpb::TestCaseResult>(result))
         .IgnoreError();  // TODO(b/242598609): Handle Status properly
   });
 }
 
 void UnitTestService::WriteTestCaseDisabled(const TestCase& test_case) {
-  WriteEvent([&](Event::StreamEncoder& event) {
-    TestCaseDescriptor::StreamEncoder descriptor =
+  WriteEvent([&](pwpb::Event::StreamEncoder& event) {
+    pwpb::TestCaseDescriptor::StreamEncoder descriptor =
         event.GetTestCaseDisabledEncoder();
     descriptor.WriteSuiteName(test_case.suite_name)
         .IgnoreError();  // TODO(b/242598609): Handle Status properly
@@ -133,8 +134,8 @@ void UnitTestService::WriteTestCaseExpectation(
     return;
   }
 
-  WriteEvent([&](Event::StreamEncoder& event) {
-    TestCaseExpectation::StreamEncoder test_case_expectation =
+  WriteEvent([&](pwpb::Event::StreamEncoder& event) {
+    pwpb::TestCaseExpectation::StreamEncoder test_case_expectation =
         event.GetTestCaseExpectationEncoder();
     test_case_expectation.WriteExpression(expectation.expression)
         .IgnoreError();  // TODO(b/242598609): Handle Status properly
