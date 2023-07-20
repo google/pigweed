@@ -21,7 +21,7 @@
 // Allows docs to reference `std`
 #![cfg_attr(feature = "no_std", no_std)]
 
-use pw_status::Result;
+use pw_status::{Error, Result};
 
 #[doc(hidden)]
 mod cursor;
@@ -36,6 +36,28 @@ pub trait Read {
     ///
     /// Semantics match [`std::io::Read::read()`].
     fn read(&mut self, buf: &mut [u8]) -> Result<usize>;
+
+    /// Read exactly enough bytes to fill the buffer.
+    ///
+    /// Semantics match [`std::io::Read::read_exact()`].
+    fn read_exact(&mut self, mut buf: &mut [u8]) -> Result<()> {
+        while !buf.is_empty() {
+            let len = self.read(buf)?;
+
+            // End of stream
+            if len == 0 {
+                break;
+            }
+
+            buf = &mut buf[len..];
+        }
+
+        if !buf.is_empty() {
+            Err(Error::OutOfRange)
+        } else {
+            Ok(())
+        }
+    }
 }
 
 /// A trait for objects that provide streaming write capability.
@@ -49,6 +71,28 @@ pub trait Write {
     ///
     /// Semantics match [`std::io::Write::flush()`].
     fn flush(&mut self) -> Result<()>;
+
+    /// Writes entire buffer to stream.
+    ///
+    /// Semantics match [`std::io::Write::write_all()`].
+    fn write_all(&mut self, mut buf: &[u8]) -> Result<()> {
+        while !buf.is_empty() {
+            let len = self.write(buf)?;
+
+            // End of stream
+            if len == 0 {
+                break;
+            }
+
+            buf = &buf[len..];
+        }
+
+        if !buf.is_empty() {
+            Err(Error::OutOfRange)
+        } else {
+            Ok(())
+        }
+    }
 }
 
 /// A description of a seek operation in a stream.
@@ -136,6 +180,8 @@ pub(crate) mod test_utils {
 
 #[cfg(test)]
 mod tests {
+    use core::cmp::min;
+
     use pw_status::Error;
 
     use super::test_utils::*;
@@ -165,6 +211,65 @@ mod tests {
         }
     }
 
+    // A stream wrapper that limits reads and writes to a maximum chunk size.
+    struct ChunkedStreamAdapter<S: Read + Write + Seek> {
+        inner: S,
+        chunk_size: usize,
+        num_reads: u32,
+        num_writes: u32,
+    }
+
+    impl<S: Read + Write + Seek> ChunkedStreamAdapter<S> {
+        fn new(inner: S, chunk_size: usize) -> Self {
+            Self {
+                inner,
+                chunk_size,
+                num_reads: 0,
+                num_writes: 0,
+            }
+        }
+    }
+
+    impl<S: Read + Write + Seek> Read for ChunkedStreamAdapter<S> {
+        fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+            let read_len = min(self.chunk_size, buf.len());
+            self.num_reads += 1;
+            self.inner.read(&mut buf[..read_len])
+        }
+    }
+
+    impl<S: Read + Write + Seek> Write for ChunkedStreamAdapter<S> {
+        fn write(&mut self, buf: &[u8]) -> Result<usize> {
+            let write_len = min(self.chunk_size, buf.len());
+            self.num_writes += 1;
+            self.inner.write(&buf[..write_len])
+        }
+
+        fn flush(&mut self) -> Result<()> {
+            self.inner.flush()
+        }
+    }
+
+    struct ErrorStream {
+        error: Error,
+    }
+
+    impl Read for ErrorStream {
+        fn read(&mut self, _buf: &mut [u8]) -> Result<usize> {
+            Err(self.error)
+        }
+    }
+
+    impl Write for ErrorStream {
+        fn write(&mut self, _buf: &[u8]) -> Result<usize> {
+            Err(self.error)
+        }
+
+        fn flush(&mut self) -> Result<()> {
+            Err(self.error)
+        }
+    }
+
     #[test]
     fn default_rewind_impl_resets_position_to_zero() {
         test_rewind_resets_position_to_zero::<64, _>(TestSeeker { len: 64, pos: 0 });
@@ -178,5 +283,78 @@ mod tests {
     #[test]
     fn default_stream_len_impl_reports_correct_length() {
         test_stream_len_reports_correct_length::<64, _>(TestSeeker { len: 64, pos: 32 });
+    }
+
+    #[test]
+    fn read_exact_reads_full_buffer_on_short_reads() {
+        let cursor = Cursor::new((0x0..=0xff).collect::<Vec<u8>>());
+        // Limit reads to 10 bytes per read.
+        let mut wrapper = ChunkedStreamAdapter::new(cursor, 10);
+        let mut read_buffer = vec![0u8; 256];
+
+        wrapper.read_exact(&mut read_buffer).unwrap();
+
+        // Ensure that the correct bytes were read.
+        assert_eq!(wrapper.inner.into_inner(), read_buffer);
+
+        // Verify that the read was broken up into the correct number of reads.
+        assert_eq!(wrapper.num_reads, 26);
+    }
+
+    #[test]
+    fn read_exact_returns_error_on_too_little_data() {
+        let cursor = Cursor::new((0x0..=0x7f).collect::<Vec<u8>>());
+        // Limit reads to 10 bytes per read.
+        let mut wrapper = ChunkedStreamAdapter::new(cursor, 10);
+        let mut read_buffer = vec![0u8; 256];
+
+        assert_eq!(wrapper.read_exact(&mut read_buffer), Err(Error::OutOfRange));
+    }
+
+    #[test]
+    fn read_exact_propagates_read_errors() {
+        let mut error_stream = ErrorStream {
+            error: Error::Internal,
+        };
+        let mut read_buffer = vec![0u8; 256];
+        assert_eq!(
+            error_stream.read_exact(&mut read_buffer),
+            Err(Error::Internal)
+        );
+    }
+
+    #[test]
+    fn write_all_writes_full_buffer_on_short_writes() {
+        let cursor = Cursor::new(vec![0u8; 256]);
+        // Limit writes to 10 bytes per write.
+        let mut wrapper = ChunkedStreamAdapter::new(cursor, 10);
+        let write_buffer = (0x0..=0xff).collect::<Vec<u8>>();
+
+        wrapper.write_all(&write_buffer).unwrap();
+
+        // Ensure that the correct bytes were written.
+        assert_eq!(wrapper.inner.into_inner(), write_buffer);
+
+        // Verify that the write was broken up into the correct number of writes.
+        assert_eq!(wrapper.num_writes, 26);
+    }
+
+    #[test]
+    fn write_all_returns_error_on_too_little_data() {
+        let cursor = Cursor::new(vec![0u8; 128]);
+        // Limit writes to 10 bytes per write.
+        let mut wrapper = ChunkedStreamAdapter::new(cursor, 10);
+        let write_buffer = (0x0..=0xff).collect::<Vec<u8>>();
+
+        assert_eq!(wrapper.write_all(&write_buffer), Err(Error::OutOfRange));
+    }
+
+    #[test]
+    fn write_all_propagates_write_errors() {
+        let mut error_stream = ErrorStream {
+            error: Error::Internal,
+        };
+        let write_buffer = (0x0..=0xff).collect::<Vec<u8>>();
+        assert_eq!(error_stream.write_all(&write_buffer), Err(Error::Internal));
     }
 }
