@@ -24,10 +24,3 @@ def pw_protobuf_dependencies():
             strip_prefix = "protobuf-3.12.3",
             url = "https://github.com/protocolbuffers/protobuf/archive/v3.12.3.tar.gz",
         )
-    if "rules_proto_grpc" not in native.existing_rules():
-        http_archive(
-            name = "rules_proto_grpc",
-            sha256 = "5f0f2fc0199810c65a2de148a52ba0aff14d631d4e8202f41aff6a9d590a471b",
-            strip_prefix = "rules_proto_grpc-1.0.2",
-            urls = ["https://github.com/rules-proto-grpc/rules_proto_grpc/archive/1.0.2.tar.gz"],
-        )

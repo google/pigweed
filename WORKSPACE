@@ -146,29 +146,6 @@ git_repository(
     shallow_since = "1651081130 -0400",
 )
 
-# Set up tools to build custom GRPC rules.
-#
-# We use a fork that silences some zlib compilation warnings.
-#
-# Required by: pigweed.
-# Used in modules: //pw_protobuf.
-git_repository(
-    name = "rules_proto_grpc",
-    commit = "2fbf774a5553b773372f7b91f9b1dc06ee0da2d3",
-    remote = "https://github.com/tpudlik/rules_proto_grpc.git",
-    shallow_since = "1675375991 -0800",
-)
-
-load(
-    "@rules_proto_grpc//:repositories.bzl",
-    "rules_proto_grpc_repos",
-    "rules_proto_grpc_toolchains",
-)
-
-rules_proto_grpc_toolchains()
-
-rules_proto_grpc_repos()
-
 # Set up Protobuf rules.
 # Required by: pigweed.
 # Used in modules: //pw_protobuf.
