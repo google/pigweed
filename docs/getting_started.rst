@@ -122,21 +122,9 @@ via the App Store, then install the relevant tools from the command line.
 
   $ xcode-select --install
 
-On macOS you may get SSL certificate errors with the system Python
-installation. Run ``/Applications/Python <default_py_version>/Install Certificates.command``
-to fix this. If you get SSL
-errors with the Python from `Homebrew <https://brew.sh>`_ try running the
-following commands to ensure Python knows how to use OpenSSL.
-
-.. code:: none
-
-  $ brew install openssl
-  $ brew uninstall python
-  $ brew install python
-
-To flash firmware to a STM32 Discovery development board (and run ``pw test``)
-from macOS, you will need to install OpenOCD. Install
-`Homebrew <https://brew.sh>`_, then install OpenOCD with ``brew install openocd``.
+If you get SSL certificate errors, try installing
+`Python 3.11.3 <https://www.python.org/downloads/release/python-3113/>`
+and then running ``/Applications/Python\ 3.11/Install\ Certificates.command``.
 
 **Windows**
 
@@ -364,11 +352,6 @@ stm32f429i-disc1 target.
   # Append this line to the file that opens in your editor to tell GN to run
   # on-device unit tests.
   pw_use_test_server = true
-
-**Note:** There are several additional dependencies required to test on device:
-libusb-compat, libftdi, and hidapi at the time of writing. On MacOS, these
-dependencies should be installed to the default homebrew location:
-``/usr/local/opt/``.
 
 Done!
 -----
