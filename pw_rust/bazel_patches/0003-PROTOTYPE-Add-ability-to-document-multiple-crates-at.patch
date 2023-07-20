@@ -1,0 +1,391 @@
+From ab7763c6cd48ff6a2b653dd9ea8560e5ad7b1ff0 Mon Sep 17 00:00:00 2001
+From: Erik Gilling <konkers@google.com>
+Date: Mon, 27 Mar 2023 16:48:26 +0000
+Subject: [PATCH 3/3] PROTOTYPE: Add ability to document multiple crates at
+ once
+
+---
+ rust/defs.bzl                     |   4 +
+ rust/private/rustdoc.bzl          | 203 ++++++++++++++++++++++++++++++
+ util/BUILD.bazel                  |  12 ++
+ util/capture_args/BUILD.bazel     |   8 ++
+ util/capture_args/capture_args.rs |  28 +++++
+ util/run_scripts/BUILD.bazel      |   8 ++
+ util/run_scripts/run_scripts.rs   |  40 ++++++
+ 7 files changed, 303 insertions(+)
+ create mode 100644 util/capture_args/BUILD.bazel
+ create mode 100644 util/capture_args/capture_args.rs
+ create mode 100644 util/run_scripts/BUILD.bazel
+ create mode 100644 util/run_scripts/run_scripts.rs
+
+diff --git a/rust/defs.bzl b/rust/defs.bzl
+index 7c972439..c0e84b80 100644
+--- a/rust/defs.bzl
++++ b/rust/defs.bzl
+@@ -56,6 +56,7 @@ load(
+ load(
+     "//rust/private:rustdoc.bzl",
+     _rust_doc = "rust_doc",
++    _rust_docs = "rust_docs",
+ )
+ load(
+     "//rust/private:rustdoc_test.bzl",
+@@ -94,6 +95,9 @@ rust_test_suite = _rust_test_suite
+ rust_doc = _rust_doc
+ # See @rules_rust//rust/private:rustdoc.bzl for a complete description.
+ 
++rust_docs = _rust_docs
++# See @rules_rust//rust/private:rustdoc.bzl for a complete description.
++
+ rust_doc_test = _rust_doc_test
+ # See @rules_rust//rust/private:rustdoc_test.bzl for a complete description.
+ 
+diff --git a/rust/private/rustdoc.bzl b/rust/private/rustdoc.bzl
+index f06d18e4..7326f59f 100644
+--- a/rust/private/rustdoc.bzl
++++ b/rust/private/rustdoc.bzl
+@@ -229,6 +229,81 @@ def _rust_doc_impl(ctx):
+         ),
+     ]
+ 
++def _rust_docs_impl(ctx):
++    """The implementation of the `rust_doc` rule
++
++    Args:
++        ctx (ctx): The rule's context object
++    """
++
++    output_dir = ctx.actions.declare_directory("{}.rustdoc".format(ctx.label.name))
++
++    rustdoc_scripts = []
++    rustdoc_inputs = []
++
++    for crate in ctx.attr.crates:
++        crate_info = crate[rust_common.crate_info]
++
++        # Add the current crate as an extern for the compile action
++        rustdoc_flags = [
++            "--extern",
++            "{}={}".format(crate_info.name, crate_info.output.path),
++        ]
++
++        action = rustdoc_compile_action(
++            ctx = ctx,
++            toolchain = find_toolchain(ctx),
++            crate_info = crate_info,
++            output = output_dir,
++            rustdoc_flags = rustdoc_flags,
++        )
++
++        arg_file = ctx.actions.declare_file("gendocs-{}.sh".format(crate.label.name))
++
++        dump_args = ctx.actions.args()
++        dump_args.add(action.executable)
++
++        ctx.actions.run(
++            mnemonic = "Args",
++            progress_message = "Dumping args for {}".format(crate.label),
++            outputs = [arg_file],
++            executable = ctx.executable._capture_args,
++            inputs = [],
++            env = {"OUTPUT_FILE": arg_file.path},
++            arguments = [dump_args] + action.arguments,
++        )
++
++        rustdoc_scripts.append(arg_file)
++        rustdoc_inputs += [action.inputs, depset([action.executable])]
++
++    args = ctx.actions.args()
++    for script in rustdoc_scripts:
++        args.add(script)
++
++    ctx.actions.run(
++        mnemonic = "Rustdoc",
++        progress_message = "Generating Rustdocs",
++        outputs = [output_dir],
++        executable = ctx.executable._run_scripts,
++        inputs = depset(rustdoc_scripts, transitive = rustdoc_inputs),
++        #env = action.env,
++        arguments = [args],
++        #tools = action.tools,
++    )
++
++    # This rule does nothing without a single-file output, though the directory should've sufficed.
++    _zip_action(ctx, output_dir, ctx.outputs.rust_doc_zip, crate.label)
++
++    return [
++        DefaultInfo(
++            files = depset([ctx.outputs.rust_doc_zip]),
++        ),
++        OutputGroupInfo(
++            rustdoc_dir = depset([output_dir]),
++            rustdoc_zip = depset([ctx.outputs.rust_doc_zip]),
++        ),
++    ]
++
+ rust_doc = rule(
+     doc = dedent("""\
+     Generates code documentation.
+@@ -345,3 +420,131 @@ rust_doc = rule(
+     ],
+     incompatible_use_toolchain_transition = True,
+ )
++
++rust_docs = rule(
++    doc = dedent("""\
++    Generates code documentation for multiple crates.
++
++    Example:
++    Suppose you have the following directory structure for two Rust library crates:
++
++    ```
++    [workspace]/
++        WORKSPACE
++        BUILD
++        hello_lib/
++            BUILD
++            src/
++                lib.rs
++        world_lib/
++            BUILD
++            src/
++                lib.rs
++    ```
++
++    To build [`rustdoc`][rustdoc] documentation for the `hello_lib` and `world_lib` \
++    crates, define a `rust_docs` rule that depends on the `hello_lib` and \
++    `world_lib` `rust_library` targets:
++
++    [rustdoc]: https://doc.rust-lang.org/book/documentation.html
++
++    ```python
++    package(default_visibility = ["//visibility:public"])
++
++    load("@rules_rust//rust:defs.bzl", "rust_docs")
++
++    rust_doc(
++        name = "workspace_docs",
++        crates = ["//hello_lib", "//world_lib"],
++    )
++    ```
++
++    Running `bazel build //:workspaces` will build a zip file containing \
++    the documentation for the `hello_lib` and `world_lib` library crates \
++    generated by `rustdoc`.
++    """),
++    implementation = _rust_docs_impl,
++    attrs = {
++        "crates": attr.label_list(
++            doc = (
++                "A list of lablesThe label of the target to generate code documentation for.\n" +
++                "\n" +
++                "`rust_doc` can generate HTML code documentation for the source files of " +
++                "`rust_library` or `rust_binary` targets."
++            ),
++            providers = [rust_common.crate_info],
++            mandatory = True,
++        ),
++        "html_after_content": attr.label(
++            doc = "File to add in `<body>`, after content.",
++            allow_single_file = [".html", ".md"],
++        ),
++        "html_before_content": attr.label(
++            doc = "File to add in `<body>`, before content.",
++            allow_single_file = [".html", ".md"],
++        ),
++        "html_in_header": attr.label(
++            doc = "File to add to `<head>`.",
++            allow_single_file = [".html", ".md"],
++        ),
++        "markdown_css": attr.label_list(
++            doc = "CSS files to include via `<link>` in a rendered Markdown file.",
++            allow_files = [".css"],
++        ),
++        "rustc_flags": attr.string_list(
++            doc = dedent("""\
++                List of compiler flags passed to `rustc`.
++
++                These strings are subject to Make variable expansion for predefined
++                source/output path variables like `$location`, `$execpath`, and
++                `$rootpath`. This expansion is useful if you wish to pass a generated
++                file of arguments to rustc: `@$(location //package:target)`.
++            """),
++        ),
++        "_cc_toolchain": attr.label(
++            doc = "In order to use find_cpp_toolchain, you must define the '_cc_toolchain' attribute on your rule or aspect.",
++            default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
++        ),
++        "_dir_zipper": attr.label(
++            doc = "A tool that orchestrates the creation of zip archives for rustdoc outputs.",
++            default = Label("//util/dir_zipper"),
++            cfg = "exec",
++            executable = True,
++        ),
++        "_capture_args": attr.label(
++            doc = "A tool for dumping arguments to a file",
++            default = Label("//util/capture_args"),
++            cfg = "exec",
++            executable = True,
++        ),
++        "_process_wrapper": attr.label(
++            doc = "A process wrapper for running rustdoc on all platforms",
++            default = Label("@rules_rust//util/process_wrapper"),
++            executable = True,
++            allow_single_file = True,
++            cfg = "exec",
++        ),
++        "_run_scripts": attr.label(
++            doc = "A tool for running multiple scripts in the same action",
++            default = Label("//util/run_scripts"),
++            cfg = "exec",
++            executable = True,
++        ),
++        "_zipper": attr.label(
++            doc = "A Bazel provided tool for creating archives",
++            default = Label("@bazel_tools//tools/zip:zipper"),
++            cfg = "exec",
++            executable = True,
++        ),
++    },
++    fragments = ["cpp"],
++    host_fragments = ["cpp"],
++    outputs = {
++        "rust_doc_zip": "%{name}.zip",
++    },
++    toolchains = [
++        str(Label("//rust:toolchain_type")),
++        "@bazel_tools//tools/cpp:toolchain_type",
++    ],
++    incompatible_use_toolchain_transition = True,
++)
+diff --git a/util/BUILD.bazel b/util/BUILD.bazel
+index 8502870b..76e1d0d5 100644
+--- a/util/BUILD.bazel
++++ b/util/BUILD.bazel
+@@ -9,3 +9,15 @@ filegroup(
+     srcs = ["collect_coverage.sh"],
+     visibility = ["//visibility:public"],
+ )
++
++sh_binary(
++    name = "dump_args",
++    srcs = ["dump_args.sh"],
++    visibility = ["//visibility:public"],
++)
++
++sh_binary(
++    name = "run_all",
++    srcs = ["run_all.sh"],
++    visibility = ["//visibility:public"],
++)
+diff --git a/util/capture_args/BUILD.bazel b/util/capture_args/BUILD.bazel
+new file mode 100644
+index 00000000..0d7146c2
+--- /dev/null
++++ b/util/capture_args/BUILD.bazel
+@@ -0,0 +1,8 @@
++load("//rust:defs.bzl", "rust_binary")
++
++rust_binary(
++    name = "capture_args",
++    srcs = ["capture_args.rs"],
++    edition = "2018",
++    visibility = ["//visibility:public"],
++)
+diff --git a/util/capture_args/capture_args.rs b/util/capture_args/capture_args.rs
+new file mode 100644
+index 00000000..fbcc4fc1
+--- /dev/null
++++ b/util/capture_args/capture_args.rs
+@@ -0,0 +1,28 @@
++// Copyright 2023 The Bazel Authors. All rights reserved.
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//    http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++use std::env;
++use std::fs::File;
++use std::io::Write;
++
++// Simple utility to capture command line arguments and write them to a file.
++pub fn main() {
++    let file_name = env::var("OUTPUT_FILE").expect("OUTPUT_FILE environment variable is not set");
++    let mut file = File::create(file_name).expect("Can't open OUTPUT_FILE");
++
++    // Write command line args, skipping the first (our executable path), to
++    // `OUTPUT_FILE` separated by newlines.
++    let args: Vec<String> = env::args().skip(1).collect();
++    writeln!(&mut file, "{}", args.join("\n")).expect("Unable to write to OUTPUT_FILE");
++}
+diff --git a/util/run_scripts/BUILD.bazel b/util/run_scripts/BUILD.bazel
+new file mode 100644
+index 00000000..f295fb69
+--- /dev/null
++++ b/util/run_scripts/BUILD.bazel
+@@ -0,0 +1,8 @@
++load("//rust:defs.bzl", "rust_binary")
++
++rust_binary(
++    name = "run_scripts",
++    srcs = ["run_scripts.rs"],
++    edition = "2018",
++    visibility = ["//visibility:public"],
++)
+diff --git a/util/run_scripts/run_scripts.rs b/util/run_scripts/run_scripts.rs
+new file mode 100644
+index 00000000..cc8e4796
+--- /dev/null
++++ b/util/run_scripts/run_scripts.rs
+@@ -0,0 +1,40 @@
++use std::env;
++use std::fs::File;
++use std::io::{BufRead, BufReader};
++use std::process::Command;
++
++// Simple utility to run commands from files.  Each command/command line
++// argument in the file is on a separate line.
++pub fn main() {
++    // Skip the first arg (our executable path).
++    let scripts = env::args().skip(1);
++
++    for script in scripts {
++        let script_file = BufReader::new(File::open(&script).expect("unable to open file"));
++        let mut lines = script_file.lines().map(|l| {
++            l.map_err(|e| format!("{script}: error reading line: {e}"))
++                .unwrap()
++        });
++
++        // First line of the file is the command to run.
++        let command = lines
++            .next()
++            .ok_or_else(|| format!("{script}: no command in file"))
++            .unwrap();
++
++        // Subsequent lines are arguments.
++        let args = lines.collect::<Vec<_>>();
++
++        // Run the command and wait for it to finish.
++        let mut child = Command::new(&command)
++            .args(args)
++            .spawn()
++            .map_err(|e| format!("{script}: failed to spawn child process {command}: {e}"))
++            .unwrap();
++        let status = child.wait().expect("");
++
++        if !status.success() {
++            panic!("{}: error running script: {}", script, status);
++        }
++    }
++}
+-- 
+2.41.0.487.g6d72f3e995-goog
+
