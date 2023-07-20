@@ -22,6 +22,12 @@ astroid==2.14.2 \
     # via
     #   -r python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   pylint
+asttokens==2.2.1 \
+    --hash=sha256:4622110b2a6f30b77e1473affaa97e711bc2f07d3f10848420ff1898edbe94f3 \
+    --hash=sha256:6b0ac9e93fb0335014d382b8fa9b3afa7df546984258005da0b9e7095b3deb1c
+    # via
+    #   -r python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
+    #   stack-data
 babel==2.9.1 \
     --hash=sha256:ab49e12b91d937cd11f0b67cb259a57ab4ad2b59ac7a3b41d6c06c0ac5b0def9 \
     --hash=sha256:bc0c176f9f6a994582230df350aa6e05ba2ebe4b3ac317eab29d9be5d2768da0
@@ -267,6 +273,12 @@ docutils==0.18 \
     #   -r python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   sphinx
     #   sphinx-rtd-theme
+executing==1.2.0 \
+    --hash=sha256:0314a69e37426e3608aada02473b4161d4caf5a4b244d1d0c48072b8fee7bacc \
+    --hash=sha256:19da64c18d2d851112f09c287f8d3dbbdf725ab0e569077efb6cdcbd3497c107
+    # via
+    #   -r python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
+    #   stack-data
 google-api-core==2.7.1 \
     --hash=sha256:6be1fc59e2a7ba9f66808bbc22f976f81e4c3e7ab20fa0620ce42686288787d0 \
     --hash=sha256:b0fa577e512f0c8e063386b974718b8614586a798c5894ed34bedf256d9dae24
@@ -404,9 +416,9 @@ importlib-metadata==6.8.0 \
     # via
     #   -r python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   sphinx
-ipython==7.31.0 \
-    --hash=sha256:346c74db7312c41fa566d3be45d2e759a528dcc2994fe48aac1a03a70cd668a3 \
-    --hash=sha256:4c4234cdcc6b8f87c5b5c7af9899aa696ac5cfcf0e9f6d0688018bbee5c73bce
+ipython==8.12.2 \
+    --hash=sha256:c7b80eb7f5a855a88efc971fda506ff7a91c280b42cdae26643e0f601ea281ea \
+    --hash=sha256:ea8801f15dfe4ffb76dea1b09b847430ffd70d827b41735c64a0638a04103bfc
     # via -r python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
 isort==5.10.1 \
     --hash=sha256:6f62d78e2f89b4500b080fe3a81690850cd254227f27f75c3a0c491a1f351ba7 \
@@ -623,9 +635,9 @@ platformdirs==3.0.0 \
     #   -r python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   black
     #   pylint
-prompt-toolkit==3.0.36 \
-    --hash=sha256:3e163f254bef5a03b146397d7c1963bd3e2812f0964bb9a24e6ec761fd28db63 \
-    --hash=sha256:aa64ad242a462c5ff0363a7b9cfe696c20d55d9fc60c11fd8e632d064804d305
+prompt-toolkit==3.0.39 \
+    --hash=sha256:04505ade687dc26dc4284b1ad19a83be2f2afe83e7a828ace0c72f3a1df72aac \
+    --hash=sha256:9dffbe1d8acf91e3de75f3b544e4842382fc06c6babe903ac9acb74dc6e08d88
     # via
     #   -r python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   ipython
@@ -675,9 +687,9 @@ psutil==5.9.4 \
     --hash=sha256:efeae04f9516907be44904cc7ce08defb6b665128992a56957abc9b61dca94b7 \
     --hash=sha256:fd8522436a6ada7b4aad6638662966de0d61d241cb821239b2ae7013d41a43d4
     # via -r python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
-ptpython==3.0.22 \
-    --hash=sha256:2b06f28e63b8bfe30736ac07d23c00adb4161c4f0e1c1a26a51344b07e2100bd \
-    --hash=sha256:c097b324406014a005c6b09f493bbbdde571e412360af2ba1551873a10c36cf8
+ptpython==3.0.23 \
+    --hash=sha256:51069503684169b21e1980734a9ba2e104643b7e6a50d3ca0e5669ea70d9e21c \
+    --hash=sha256:9fc9bec2cc51bc4000c1224d8c56241ce8a406b3d49ec8dc266f78cd3cd04ba4
     # via -r python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
 ptyprocess==0.7.0 \
     --hash=sha256:4b41f3967fce3af57cc7e94b888626c18bf37a083e3651ca8feeb66d492fef35 \
@@ -685,6 +697,12 @@ ptyprocess==0.7.0 \
     # via
     #   -r python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   pexpect
+pure-eval==0.2.2 \
+    --hash=sha256:01eaab343580944bc56080ebe0a674b39ec44a945e6d09ba7db3cb8cec289350 \
+    --hash=sha256:2b45320af6dfaa1750f543d714b6d1c520a1688dec6fd24d339063ce0aaa9ac3
+    # via
+    #   -r python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
+    #   stack-data
 pyasn1==0.4.8 \
     --hash=sha256:39c7e2ec30515947ff4e87fb6f456dfc6e84857d34be479c9d4a4ba4bf46aa5d \
     --hash=sha256:aef77c9fb94a3ac588e87841208bdec464471d9871bd5050a287cc9a475cd0ba
@@ -800,6 +818,7 @@ six==1.16.0 \
     --hash=sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254
     # via
     #   -r python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
+    #   asttokens
     #   google-auth
 snowballstemmer==2.2.0 \
     --hash=sha256:09b16deb8547d3412ad7b590689584cd0fe25ec8db3be37788be3810cbf19cb1 \
@@ -874,6 +893,12 @@ sphinxcontrib-serializinghtml==1.1.5 \
     # via
     #   -r python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   sphinx
+stack-data==0.6.2 \
+    --hash=sha256:32d2dd0376772d01b6cb9fc996f3c8b57a357089dec328ed4b6553d037eaf815 \
+    --hash=sha256:cbb2a53eb64e5785878201a97ed7c7b94883f48b87bfb0bbe8b623c74679e4a8
+    # via
+    #   -r python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
+    #   ipython
 toml==0.10.2 \
     --hash=sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b \
     --hash=sha256:b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f
@@ -940,9 +965,9 @@ types-six==1.16.9 \
     --hash=sha256:04da8bad920aea300e13d99c8948fd0914abdfc5d9421bad636137f9829dcbf6 \
     --hash=sha256:da5748f10eec44accbd393e7f5a834991aff8f37522472166fbc8233cc735b84
     # via -r python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
-types-urllib3==1.26.25.13 \
-    --hash=sha256:3300538c9dc11dad32eae4827ac313f5d986b8b21494801f1bf97a1ac6c03ae5 \
-    --hash=sha256:5dbd1d2bef14efee43f5318b5d36d805a489f6600252bb53626d4bfafd95e27c
+types-urllib3==1.26.25.14 \
+    --hash=sha256:229b7f577c951b8c1b92c1bc2b2fdb0b49847bd2af6d1cc2a2e3dd340f3bda8f \
+    --hash=sha256:9683bbb7fb72e32bfe9d2be6e04875fbe1b3eeec3cbb4ea231435aa7fd6b4f0e
     # via
     #   -r python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   types-requests
@@ -953,6 +978,7 @@ typing-extensions==4.4.0 \
     #   -r python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   astroid
     #   black
+    #   ipython
     #   mypy
     #   pylint
 urllib3==1.26.14 \
@@ -1176,5 +1202,4 @@ setuptools==68.0.0 \
     --hash=sha256:baf1fdb41c6da4cd2eae722e135500da913332ab3f2f5c7d33af9b492acb5235
     # via
     #   -r python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
-    #   ipython
     #   pip-tools
