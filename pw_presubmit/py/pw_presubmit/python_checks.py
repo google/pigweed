@@ -212,14 +212,17 @@ def _update_upstream_python_constraints(
     """Regenerate Python constraint files with hashes."""
     with TemporaryDirectory() as tmpdirname:
         out_dir = Path(tmpdirname)
-
         build.gn_gen(
             ctx,
             pw_build_PIP_REQUIREMENTS=[],
+            # Use the constraint file without hashes as the input. This is where
+            # new packages are added by developers.
             pw_build_PIP_CONSTRAINTS=[
                 '//pw_env_setup/py/pw_env_setup/virtualenv_setup/'
                 'constraint.list',
             ],
+            # This should always be set to false when regenrating constraints.
+            pw_build_PYTHON_PIP_INSTALL_REQUIRE_HASHES=False,
         )
         build.ninja(ctx, 'pip_constraint_update')
 
@@ -240,7 +243,11 @@ def _update_upstream_python_constraints(
             output_file=constraint_hashes_tmp_out,
         )
 
-        build.gn_gen(ctx)
+        build.gn_gen(
+            ctx,
+            # This should always be set to false when regenrating constraints.
+            pw_build_PYTHON_PIP_INSTALL_REQUIRE_HASHES=False,
+        )
         build.ninja(ctx, 'pip_constraint_update')
 
         upstream_requirements_lock_original = (

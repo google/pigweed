@@ -324,6 +324,9 @@ template.
 
 Caching Python Packages for Offline Installation
 ------------------------------------------------
+
+Downloading Packages
+^^^^^^^^^^^^^^^^^^^^
 The :ref:`module-pw_build-pw_python_venv` target adds an optional sub target
 that will download all Python packages from remote servers into a local
 directory. The remote server is typically `pypi.org <https://pypi.org/>`_.
@@ -407,31 +410,83 @@ time to complete. The current set of combinations is shown below:
    :start-after: [wheel-platform-args]
    :end-before: [wheel-platform-args]
 
+.. warning::
+   The set of Python packages that will be downloaded is determined by the
+   ``compiled_requirements.txt`` file. This file can only be generated for the
+   current host OS and Python version. `pip-tools
+   <https://pypi.org/project/pip-tools>`_ does not expand requirements for
+   `platform specific dependencies
+   <https://setuptools.pypa.io/en/latest/userguide/dependency_management.html#platform-specific-dependencies>`_. For
+   example ipython defines these two requirements:
+
+   .. code-block::
+
+      appnope; sys_platform == "darwin"
+      colorama; sys_platform == "win32"
+
+   If pip-tools is run on Linux then the above packages will not appear in
+   ``compiled_requirements.txt`` and not downloaded by the ``.vendor_wheels``
+   target.
+
+Installing Offline
+^^^^^^^^^^^^^^^^^^
 Once the vendor wheel output is saved to a directory in your project you can use
-this as the default pip install location by creating a project ``.pip.conf``
-file. Say you commit all the Python packages to git in your repo under
-``//third_party/python_packages``. Create a ``//pip.conf`` file containing:
+this as the default pip install location in two different ways.
+
+GN Args
+.......
+Setting these args in the ``//.gn`` file will add the relevant pip command line
+args to perform offline installations.
 
 .. code-block::
-   :caption: :octicon:`file;1em` //pip.conf
-   :name: pip-conf-file
 
-   [global]
-   # Disable searching pypi.org for packages
-   no-index = True
-   # Find packages in this directory:
-   find-links = file://third_party/python_packages
+   # Adds --no-index forcing pip to not reach out to the internet (pypi.org) to
+   # download packages. Using this option requires setting
+   # pw_build_PYTHON_PIP_INSTALL_FIND_LINKS as well.
+   pw_build_PYTHON_PIP_INSTALL_OFFLINE = true
 
-This tells pip to not search pypi.org for packages and only look in
-``third_party/python_packages``. In the project ``bootstrap.sh`` set
-``PIP_CONFIG_FILE`` to the location of this file.
+   # List of paths to folders containing Python wheels (*.whl) or source tar
+   # files (*.tar.gz). Pip will check each of these directories when looking for
+   # potential install candidates.
+   pw_build_PYTHON_PIP_INSTALL_FIND_LINKS = [
+     "//environment/cipd/packages/python_packages/universal",
+     "//environment/cipd/packages/python_packages/linux/cp311",
+   ]
 
-.. code-block:: bash
+   # Optional: Adds '--no-cache-dir' forcing pip to ignore any previously cached
+   # Python packages. On most systems this is located in ~/.cache/pip/
+   pw_build_PYTHON_PIP_INSTALL_DISABLE_CACHE = false
 
-   export PIP_CONFIG_FILE="${PW_PROJECT_ROOT}/pip.conf"
+Using a ``.pip.conf`` File
+..........................
+1. Create a ``//pip.conf`` file containing:
 
-With that environment var set all invocations of pip will apply the config file
-settings above.
+   .. code-block::
+      :caption: :octicon:`file;1em` //pip.conf
+      :name: pip-conf-file
+
+      [global]
+      # Disable searching pypi.org for packages
+      no-index = True
+      # Find packages in these directories:
+      find-links =
+          file://third_party/python_packages/universal
+          file://third_party/python_packages/linux/cp311
+
+   This tells pip to not search pypi.org for packages and only look in
+   ``third_party/python_packages/universal`` and
+   ``third_party/python_packages/linux/cp311``. These paths can be absolute or
+   are relative to the ``pip.conf`` file.
+
+2. In the project ``bootstrap.sh`` set ``PIP_CONFIG_FILE`` to the location of
+   this file.
+
+   .. code-block:: bash
+
+      export PIP_CONFIG_FILE="${PW_PROJECT_ROOT}/pip.conf"
+
+   With that environment var set all invocations of pip will apply the config file
+   settings above.
 
 .. seealso::
    The ``pip`` `documentation on Configuration
@@ -505,6 +560,15 @@ on the structure of Python packages.
          # Default gn build virtualenv target.
          pw_build_PYTHON_BUILD_VENV = "//:project_build_venv"
        }
+
+    .. tip::
+
+       There are some additional gn args to control how pip installations are
+       performed during the build.
+
+       .. literalinclude:: pw_build/python_gn_args.gni
+          :start-after: [default-pip-gn-args]
+          :end-before: [default-pip-gn-args]
 
   - :octicon:`file;1em` BUILDCONFIG.gn
 

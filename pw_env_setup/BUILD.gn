@@ -74,6 +74,17 @@ pw_python_group("core_pigweed_python_packages") {
     "$dir_pw_watch/py",
   ]
 }
+
+# Python packages for supporting specific targets. This includes flashing tools
+# and unit test runners.
+pw_python_group("pigweed_target_support_packages") {
+  python_deps = [
+    "$dir_pigweed/targets/lm3s6965evb_qemu/py",
+    "$dir_pigweed/targets/rp2040/py",
+    "$dir_pigweed/targets/stm32f429i_disc1/py",
+  ]
+}
+
 pw_python_group("python") {
   python_deps = [
     ":core_pigweed_python_packages",
@@ -97,14 +108,18 @@ pw_python_venv("pigweed_build_venv") {
   source_packages = [ ":core_pigweed_python_packages" ]
 }
 
-# Python packages for supporting specific targets.
 pw_python_pip_install("target_support_packages") {
-  packages = [
-    "$dir_pigweed/targets/lm3s6965evb_qemu/py",
-    "$dir_pigweed/targets/rp2040/py",
-    "$dir_pigweed/targets/stm32f429i_disc1/py",
-  ]
-  editable = true
+  packages = [ ":target_support_package_distribution" ]
+}
+
+pw_python_distribution("target_support_package_distribution") {
+  packages = [ ":pigweed_target_support_packages" ]
+  generate_setup_cfg = {
+    name = "pigweed_target_support"
+    version = "0.0.1"
+    include_default_pyproject_file = true
+    append_date_to_version = true
+  }
 }
 
 # This target is responsible for building the Python source uploaded to PyPI:

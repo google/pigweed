@@ -204,6 +204,20 @@ template("pw_python_venv") {
         _skip_installing_external_python_deps = true
         venv = get_label_info(":${invoker.target_name}", "label_no_toolchain")
 
+        _pip_args = []
+        if (pw_build_PYTHON_PIP_INSTALL_OFFLINE) {
+          _pip_args += [ "--no-index" ]
+        }
+        if (pw_build_PYTHON_PIP_INSTALL_DISABLE_CACHE) {
+          _pip_args += [ "--no-cache-dir" ]
+        }
+        if (pw_build_PYTHON_PIP_INSTALL_FIND_LINKS != []) {
+          foreach(link_dir, pw_build_PYTHON_PIP_INSTALL_FIND_LINKS) {
+            _pip_args +=
+                [ "--find-links=" + rebase_path(link_dir, root_build_dir) ]
+          }
+        }
+
         args = [ "compile" ]
 
         if (_pip_generate_hashes) {
@@ -224,6 +238,14 @@ template("pw_python_venv") {
           # Input requirements file:
           rebase_path(_generated_requirements_file, root_build_dir),
         ]
+
+        # Pass offline related pip args through the pip-compile command.
+        if (_pip_args != []) {
+          args += [
+            "--pip-args",
+            string_join(" ", _pip_args),
+          ]
+        }
 
         # Extra requirements files
         foreach(_requirements_file, _requirements) {
@@ -274,6 +296,21 @@ template("pw_python_venv") {
 
         outputs = [ _pip_install_log_file ]
 
+        if (pw_build_PYTHON_PIP_INSTALL_OFFLINE) {
+          args += [ "--no-index" ]
+        }
+        if (pw_build_PYTHON_PIP_INSTALL_DISABLE_CACHE) {
+          args += [ "--no-cache-dir" ]
+        }
+        if (pw_build_PYTHON_PIP_INSTALL_FIND_LINKS != []) {
+          foreach(link_dir, pw_build_PYTHON_PIP_INSTALL_FIND_LINKS) {
+            args += [
+              "--find-links",
+              rebase_path(link_dir, root_build_dir),
+            ]
+          }
+        }
+
         deps = [ ":${invoker.target_name}._create_virtualenv($pw_build_PYTHON_TOOLCHAIN)" ]
         stamp = true
         pool = "$dir_pw_build/pool:pip($default_toolchain)"
@@ -300,6 +337,21 @@ template("pw_python_venv") {
 
         if (_pip_generate_hashes) {
           args += [ "--require-hashes" ]
+        }
+
+        if (pw_build_PYTHON_PIP_INSTALL_OFFLINE) {
+          args += [ "--no-index" ]
+        }
+        if (pw_build_PYTHON_PIP_INSTALL_DISABLE_CACHE) {
+          args += [ "--no-cache-dir" ]
+        }
+        if (pw_build_PYTHON_PIP_INSTALL_FIND_LINKS != []) {
+          foreach(link_dir, pw_build_PYTHON_PIP_INSTALL_FIND_LINKS) {
+            args += [
+              "--find-links",
+              rebase_path(link_dir, root_build_dir),
+            ]
+          }
         }
 
         # Note: --no-build-isolation should be avoided for installing 3rd party

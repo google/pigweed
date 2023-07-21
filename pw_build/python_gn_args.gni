@@ -22,7 +22,28 @@ declare_args() {
   # Default gn build virtualenv target.
   pw_build_PYTHON_BUILD_VENV = "$dir_pw_env_setup:pigweed_build_venv"
 
+  # DOCSTAG: [default-pip-gn-args]
   # Set pw_python_venv.vendor_wheel targets to download Python packages for all
   # platform combinations. This takes a significant amount of time.
   pw_build_PYTHON_PIP_DOWNLOAD_ALL_PLATFORMS = false
+
+  # Adds '--require-hashes'. This option enforces hash checking on Python
+  # package files.
+  pw_build_PYTHON_PIP_INSTALL_REQUIRE_HASHES = false
+
+  # Adds --no-index forcing pip to not reach out to the internet (pypi.org) to
+  # download packages. Using this opiton requires setting
+  # pw_build_PYTHON_PIP_INSTALL_FIND_LINKS as well.
+  pw_build_PYTHON_PIP_INSTALL_OFFLINE = false
+
+  # Adds '--no-cache-dir' forcing pip to ignore any previously cached Python
+  # packages. On most systems this is located in ~/.cache/pip/
+  pw_build_PYTHON_PIP_INSTALL_DISABLE_CACHE = false
+
+  # List of paths to folders containing Python wheels (*.whl) or source tar
+  # files (*.tar.gz). Pip will check each of these directories when looking for
+  # potential install candidates.
+  pw_build_PYTHON_PIP_INSTALL_FIND_LINKS = []
+
+  # DOCSTAG: [default-pip-gn-args]
 }

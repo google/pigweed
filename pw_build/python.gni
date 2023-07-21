@@ -543,6 +543,11 @@ template("pw_python_package") {
           rebase_path(_wheel_out_dir, root_build_dir),
         ]
 
+        # Add hashes to the _wheel_requirement output.
+        if (pw_build_PYTHON_PIP_INSTALL_REQUIRE_HASHES) {
+          args += [ "--generate-hashes" ]
+        }
+
         deps = [ ":${invoker.target_name}" ]
         foreach(dep, _python_deps) {
           deps += [ string_replace(dep, "(", ".wheel(") ]

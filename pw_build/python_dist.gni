@@ -430,6 +430,11 @@ template("pw_python_distribution") {
       rebase_path(_wheel_out_dir, root_build_dir),
     ]
 
+    # Add hashes to the _wheel_requirement output.
+    if (pw_build_PYTHON_PIP_INSTALL_REQUIRE_HASHES) {
+      args += [ "--generate-hashes" ]
+    }
+
     public_deps = []
     if (defined(invoker.public_deps)) {
       public_deps += invoker.public_deps
@@ -552,6 +557,33 @@ template("pw_python_pip_install") {
         "install",
         "--no-build-isolation",
       ]
+
+      if (!_editable_install) {
+        if (pw_build_PYTHON_PIP_INSTALL_REQUIRE_HASHES) {
+          args += [ "--require-hashes" ]
+
+          # The --require-hashes option can only install wheels via
+          # requirement.txt files that contain hashes. Depend on this package's
+          # _build_wheel target.
+          foreach(pkg, _pkg_gn_labels) {
+            public_deps += [ "${pkg}._build_wheel" ]
+          }
+        }
+        if (pw_build_PYTHON_PIP_INSTALL_OFFLINE) {
+          args += [ "--no-index" ]
+        }
+        if (pw_build_PYTHON_PIP_INSTALL_DISABLE_CACHE) {
+          args += [ "--no-cache-dir" ]
+        }
+        if (pw_build_PYTHON_PIP_INSTALL_FIND_LINKS != []) {
+          foreach(link_dir, pw_build_PYTHON_PIP_INSTALL_FIND_LINKS) {
+            args += [
+              "--find-links",
+              rebase_path(link_dir, root_build_dir),
+            ]
+          }
+        }
+      }
 
       _force_reinstall = false
       if (defined(invoker.force_reinstall)) {

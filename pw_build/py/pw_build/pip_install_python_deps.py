@@ -14,8 +14,10 @@
 """Pip install Pigweed Python packages."""
 
 import argparse
+import logging
 from pathlib import Path
 import subprocess
+import shlex
 import sys
 from typing import List, Tuple
 
@@ -24,6 +26,8 @@ try:
 except ImportError:
     # Load from python_package from this directory if pw_build is not available.
     from python_package import load_packages  # type: ignore
+
+_LOG = logging.getLogger('pw_build.pip_install_python_deps')
 
 
 def _parse_args() -> Tuple[argparse.Namespace, List[str]]:
@@ -65,8 +69,14 @@ def main(
     gn_targets: List[str],
     pip_args: List[str],
 ) -> int:
-    """Find matching python packages to pip install."""
-    pip_target_dirs: List[str] = []
+    """Find matching python packages to pip install.
+
+    Raises:
+      NoMatchingGnPythonDependency: if a given gn_target is missing.
+      FileNotFoundError: if a Python wheel was not found when using pip install
+          with --require-hashes.
+    """
+    pip_target_dirs: List[Path] = []
 
     py_packages = load_packages([python_dep_list_files], ignore_missing=True)
     for pkg in py_packages:
@@ -74,7 +84,7 @@ def main(
         if not any(valid_target):
             continue
         top_level_source_dir = pkg.package_dir
-        pip_target_dirs.append(str(top_level_source_dir.parent.resolve()))
+        pip_target_dirs.append(top_level_source_dir.parent)
 
     if not pip_target_dirs:
         raise NoMatchingGnPythonDependency(
@@ -90,7 +100,34 @@ def main(
         command_args += pip_args
         if editable_pip_install:
             command_args.append('--editable')
-        command_args.append(target)
+
+        if '--require-hashes' in pip_args:
+            build_wheel_path = target.with_suffix('._build_wheel')
+            req_file = build_wheel_path / 'requirements.txt'
+            req_file_str = str(req_file.resolve())
+            if not req_file.exists():
+                raise FileNotFoundError(
+                    'Missing Python wheel requirement file: ' + req_file_str
+                )
+            # Install the wheel requirement file
+            command_args.extend(['--requirement', req_file_str])
+            # Add the wheel dir to --find-links
+            command_args.extend(
+                ['--find-links', str(build_wheel_path.resolve())]
+            )
+            # Switch any constraint files to requirements. Hashes seem to be
+            # ignored in constraint files.
+            command_args = list(
+                '--requirement' if arg == '--constraint' else arg
+                for arg in command_args
+            )
+
+        else:
+            # Pass the target along to pip with no modifications.
+            command_args.append(str(target.resolve()))
+
+        quoted_command_args = ' '.join(shlex.quote(arg) for arg in command_args)
+        _LOG.info('Run ==> %s', quoted_command_args)
 
         process = subprocess.run(
             command_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
@@ -103,6 +140,8 @@ def main(
 
 
 if __name__ == '__main__':
+    logging.basicConfig(format='%(message)s', level=logging.DEBUG)
+
     # Parse this script's args and pass any remaining args to pip.
     argparse_args, remaining_args_for_pip = _parse_args()
 
