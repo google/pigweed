@@ -115,6 +115,14 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "lock_traits",
+    hdrs = [
+        "public/pw_sync/lock_traits.h",
+    ],
+    includes = ["public"],
+)
+
+pw_cc_library(
     name = "borrow",
     hdrs = [
         "public/pw_sync/borrow.h",
@@ -459,6 +467,15 @@ pw_cc_library(
     deps = [
         ":virtual_basic_lockable",
         "//pw_assert",
+    ],
+)
+
+pw_cc_test(
+    name = "lock_traits_test",
+    srcs = ["lock_traits_test.cc"],
+    deps = [
+        ":lock_testing",
+        ":lock_traits",
     ],
 )
 

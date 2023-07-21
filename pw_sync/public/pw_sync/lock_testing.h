@@ -51,6 +51,17 @@ struct FakeClock {
   using time_point = std::chrono::time_point<FakeClock>;
 };
 
+/// Fake clock that provides invalid dependent types.
+///
+/// This clock is guaranteed to fail `is_lockable_until<Lock, NoClock>` for any
+/// `Lock`.
+struct NotAClock {
+  using rep = void;
+  using period = void;
+  using duration = void;
+  using time_point = void;
+};
+
 /// Fake lock that meet's C++'s \em TimedLockable named requirement.
 class FakeTimedLockable : public FakeLockable {
  public:

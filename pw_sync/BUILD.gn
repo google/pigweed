@@ -59,6 +59,11 @@ pw_source_set("lock_annotations") {
   public_deps = [ "$dir_pw_preprocessor" ]
 }
 
+pw_source_set("lock_traits") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_sync/lock_traits.h" ]
+}
+
 pw_source_set("borrow") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_sync/borrow.h" ]
@@ -210,6 +215,7 @@ pw_facade("condition_variable") {
 
 pw_test_group("tests") {
   tests = [
+    ":lock_traits_test",
     ":borrow_test",
     ":binary_semaphore_facade_test",
     ":counting_semaphore_facade_test",
@@ -229,6 +235,14 @@ pw_source_set("lock_testing") {
   sources = [ "lock_testing.cc" ]
   public_deps = [ ":virtual_basic_lockable" ]
   deps = [ dir_pw_assert ]
+}
+
+pw_test("lock_traits_test") {
+  sources = [ "lock_traits_test.cc" ]
+  deps = [
+    ":lock_testing",
+    ":lock_traits",
+  ]
 }
 
 pw_test("borrow_test") {
