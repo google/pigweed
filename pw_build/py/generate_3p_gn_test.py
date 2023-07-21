@@ -640,7 +640,12 @@ The update script was last run for revision `deadbeef`_.
             generator.write_docs_rst(output, 'Repo')
             contents = output.getvalue()
             original = contents.split('\n')
-            updated = list(generator.update_version(original))
+
+            # Convert the contents to a list of lines similar to those returned
+            # by iterating over an open file. In particular, include a newline
+            # at the end of each line.
+            with_newlines = [s + '\n' for s in original]
+            updated = list(generator.update_version(with_newlines))
 
         self.assertEqual(original[:-6], updated[:-6])
         self.assertEqual(

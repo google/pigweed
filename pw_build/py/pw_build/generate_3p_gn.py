@@ -342,6 +342,7 @@ class GnGenerator:
         revision = self._workspace.revision()
         short = revision[:_GIT_SHORT_REV_LEN]
         for line in lines:
+            line = line.rstrip()
             if line == comment:
                 break
             yield line
