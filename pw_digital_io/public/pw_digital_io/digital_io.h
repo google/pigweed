@@ -217,32 +217,34 @@ class DigitalIoOptional {
   //
   Status DisableInterruptHandler() { return DoEnableInterruptHandler(false); }
 
-  // Enable the line to initialize it into the default state as determined by
-  // the backend. This may enable pull-up/down resistors, drive the line high or
-  // low, etc. The line must be enabled before getting/setting the state
-  // or enabling interrupts.
-  //
-  // Callers are responsible to wait for the voltage level to settle after this
-  // call returns.
-  //
-  // This method is not thread-safe and cannot be used in interrupt handlers.
-  //
-  // Returns:
-  //   OK - the line is enabled and ready for use.
-  //   Other status codes as defined by the backend.
-  //
+  /// Enables the line to initialize it into the default state as determined by
+  /// the backend.
+  ///
+  /// This may enable pull-up/down resistors, drive the line high/low, etc.
+  /// The line must be enabled before getting/setting the state or enabling
+  /// interrupts. Callers are responsible for waiting for the voltage level to
+  /// settle after this call returns.
+  ///
+  /// @warning This method is not thread-safe and cannot be used in interrupt
+  /// handlers.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - The line is enabled and ready for use.
+  /// * Other status codes as defined by the backend.
   Status Enable() { return DoEnable(true); }
 
-  // Disable the line to power down any pull-up/down resistors and disconnect
-  // from any voltage sources. This is usually done to save power. Interrupt
-  // handlers are automatically disabled.
-  //
-  // This method is not thread-safe and cannot be used in interrupt handlers.
-  //
-  // Returns:
-  //   OK - the line is disabled.
-  //   Other status codes as defined by the backend.
-  //
+  /// Disables the line to power down any pull-up/down resistors and disconnect
+  /// from any voltage sources.
+  ///
+  /// This is usually done to save power. Interrupt handlers are automatically
+  /// disabled.
+  ///
+  /// @warning This method is not thread-safe and cannot be used in interrupt
+  /// handlers.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - The line is disabled.
+  /// * Other status codes as defined by the backend.
   Status Disable() { return DoEnable(false); }
 
  private:
