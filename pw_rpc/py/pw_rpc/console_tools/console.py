@@ -176,10 +176,9 @@ class Context:
 
     .. code-block:: python
 
-      context = console_tools.Context(
-          clients, default_client, protos, help_header=WELCOME_MESSAGE)
-      IPython.terminal.embed.InteractiveShellEmbed().mainloop(
-          module=types.SimpleNamespace(**context.variables()))
+       context = console_tools.Context(
+           clients, default_client, protos, help_header=WELCOME_MESSAGE)
+       IPython.start_ipython(argv=[], user_ns=dict(**context.variables()))
     """
 
     def __init__(

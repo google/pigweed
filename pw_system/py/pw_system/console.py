@@ -302,8 +302,10 @@ def _start_python_terminal(  # pylint: disable=too-many-arguments
 
     if use_ipython:
         print(welcome_message)
-        IPython.terminal.embed.InteractiveShellEmbed().mainloop(
-            local_ns=local_variables, module=argparse.Namespace()
+        IPython.start_ipython(
+            argv=[],
+            display_banner=False,
+            user_ns=local_variables,
         )
         return
 
