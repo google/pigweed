@@ -34,7 +34,7 @@ span<const std::byte> AsSpan(const T& t) {
 // TODO(keir): Consider putting this into upstream pw_tokenizer.
 struct Base64EncodedToken {
   Base64EncodedToken(Token token) {
-    int encoded_size = tokenizer::PrefixedBase64Encode(AsSpan(token), data);
+    size_t encoded_size = tokenizer::PrefixedBase64Encode(AsSpan(token), data);
     data[encoded_size] = 0;
   }
 

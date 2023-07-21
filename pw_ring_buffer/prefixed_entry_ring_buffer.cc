@@ -98,8 +98,9 @@ Status PrefixedEntryRingBufferMulti::InternalPushBack(
     user_preamble_bytes =
         varint::Encode<uint32_t>(user_preamble_data, preamble_buf);
   }
-  size_t length_bytes = varint::Encode<uint32_t>(
-      data.size_bytes(), span(preamble_buf).subspan(user_preamble_bytes));
+  size_t length_bytes =
+      varint::Encode<uint32_t>(static_cast<uint32_t>(data.size_bytes()),
+                               span(preamble_buf).subspan(user_preamble_bytes));
   size_t total_write_bytes =
       user_preamble_bytes + length_bytes + data.size_bytes();
   if (buffer_bytes_ < total_write_bytes) {
@@ -263,9 +264,11 @@ Status PrefixedEntryRingBufferMulti::InternalDering(Reader& dering_reader) {
   }
 
   auto buffer_span = span(buffer_, buffer_bytes_);
-  std::rotate(buffer_span.begin(),
-              buffer_span.begin() + dering_reader.read_idx_,
-              buffer_span.end());
+  std::rotate(
+      buffer_span.begin(),
+      buffer_span.begin() + static_cast<span<std::byte>::difference_type>(
+                                dering_reader.read_idx_),
+      buffer_span.end());
 
   // If the new index is past the end of the buffer,
   // alias it back (wrap) to the start of the buffer.
@@ -359,7 +362,7 @@ PrefixedEntryRingBufferMulti::RawFrontEntryInfo(size_t source_idx) const {
   EntryInfo info = {};
   info.preamble_bytes = user_preamble_bytes + length_bytes;
   info.user_preamble = static_cast<uint32_t>(user_preamble_data);
-  info.data_bytes = entry_bytes;
+  info.data_bytes = static_cast<size_t>(entry_bytes);
   return info;
 }
 

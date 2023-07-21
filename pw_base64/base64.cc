@@ -74,13 +74,14 @@ constexpr uint8_t CharToBits(char ch) {
 }
 
 constexpr uint8_t Byte0(uint8_t bits0, uint8_t bits1) {
-  return (bits0 << 2) | ((bits1 & 0b110000) >> 4);
+  return static_cast<uint8_t>(bits0 << 2) | ((bits1 & 0b110000) >> 4);
 }
 constexpr uint8_t Byte1(uint8_t bits1, uint8_t bits2) {
-  return ((bits1 & 0b001111) << 4) | ((bits2 & 0b111100) >> 2);
+  return static_cast<uint8_t>((bits1 & 0b001111) << 4) |
+         ((bits2 & 0b111100) >> 2);
 }
 constexpr uint8_t Byte2(uint8_t bits2, uint8_t bits3) {
-  return ((bits2 & 0b000011) << 6) | bits3;
+  return static_cast<uint8_t>((bits2 & 0b000011) << 6) | bits3;
 }
 
 }  // namespace
@@ -141,7 +142,7 @@ extern "C" size_t pw_Base64Decode(const char* base64,
     pad = 1;
   }
 
-  return binary - static_cast<uint8_t*>(output) - pad;
+  return static_cast<size_t>(binary - static_cast<uint8_t*>(output)) - pad;
 }
 
 extern "C" bool pw_Base64IsValid(const char* base64_data, size_t base64_size) {
