@@ -131,7 +131,7 @@ def generate_report(
     test_binaries = [
         Path(obj['test_directory']) / obj['test_name']
         for obj in test_metadata
-        if 'type' in obj and obj['type'] == 'test'
+        if 'test_type' in obj and obj['test_type'] == 'unit_test'
     ]
 
     # llvm-cov export does not create an output file, so we mimic it by creating

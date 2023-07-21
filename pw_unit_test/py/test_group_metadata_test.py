@@ -40,13 +40,14 @@ class TestGroupMetadataTest(unittest.TestCase):
             meta = json.loads(meta_text)
         except json.decoder.JSONDecodeError as jde:
             raise ValueError(
-                f'Failed to decode file {self.metadata_path} as JSON: {meta_text}'
+                f'Failed to decode file {self.metadata_path} '
+                f'as JSON: {meta_text}'
             ) from jde
         self.assertIsInstance(meta, list)
         found = False
         for test_entry in meta:
-            self.assertIn('type', test_entry)
-            if test_entry['type'] != 'test':
+            self.assertIn('test_type', test_entry)
+            if test_entry['test_type'] != 'unit_test':
                 continue
             self.assertIn('test_name', test_entry)
             self.assertIn('test_directory', test_entry)

@@ -323,9 +323,9 @@ template("pw_test") {
 
     # Metadata for this test when used as part of a pw_test_group target.
     metadata = {
-      tests = [
+      unit_tests = [
         {
-          type = "test"
+          test_type = "unit_test"
           test_name = _test_target_name
           test_directory = rebase_path(_test_output_dir, root_build_dir)
           extra_metadata = _extra_metadata
@@ -514,8 +514,8 @@ template("pw_test_group") {
         group_deps = _group_deps_metadata
         self = [
           {
-            type = "self"
-            name = get_label_info(":$_group_target", "label_no_toolchain")
+            test_type = "self"
+            test_name = get_label_info(":$_group_target", "label_no_toolchain")
           },
         ]
 
@@ -537,7 +537,7 @@ template("pw_test_group") {
       data_keys = [
         "group_deps",
         "self",
-        "tests",
+        "unit_tests",
       ]
       walk_keys = [ "propagate_metadata_from" ]
       output_conversion = "json"

@@ -142,7 +142,7 @@ template("pw_coverage_report") {
     generated_file("_$_report_name.test_metadata") {
       outputs = [ _test_metadata ]
       data_keys = [
-        "tests",
+        "unit_tests",
         "profraws",
       ]
       output_conversion = "json"
