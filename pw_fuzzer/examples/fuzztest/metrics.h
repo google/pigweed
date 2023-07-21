@@ -18,15 +18,33 @@
 #include <functional>
 #include <optional>
 #include <span>
-#include <string>
 #include <string_view>
-#include <unordered_map>
 
 #include "pw_bytes/span.h"
+#include "pw_containers/vector.h"
+#include "pw_status/status.h"
+#include "pw_status/status_with_size.h"
+#include "pw_string/string.h"
 
-namespace pw_fuzzer::examples {
+namespace pw::fuzzer::examples {
 
 // DOCSTAG: [pwfuzzer_examples_fuzztest-metrics_h]
+// Represent a named value. In order to transmit these values efficiently, they
+// can be referenced by fixed length, generated keys instead of names.
+struct Metric {
+  using Key = uint16_t;
+  using Value = uint32_t;
+
+  static constexpr size_t kMaxNameLen = 32;
+
+  Metric() = default;
+  Metric(std::string_view name_, Value value_);
+
+  InlineString<kMaxNameLen> name;
+  Key key = 0;
+  Value value = 0;
+};
+
 // Represents a set of measurements from a particular source.
 //
 // In order to transmit metrics efficiently, the names of metrics are hashed
@@ -35,50 +53,38 @@ namespace pw_fuzzer::examples {
 // and `Deserialize`.
 class Metrics {
  public:
-  using Key = uint16_t;
-  using KeyMap = std::unordered_map<std::string_view, Key>;
-  using Value = uint32_t;
+  static constexpr size_t kMaxMetrics = 32;
+  static constexpr size_t kMaxSerializedSize =
+      sizeof(size_t) +
+      kMaxMetrics * (sizeof(Metric::Key) + sizeof(Metric::Value));
 
   // Retrieves the value of a named metric and stores it in `out_value`. The
   // name must consist of printable ASCII characters. Returns false if the named
   // metric was not `Set` or `Import`ed.
-  std::optional<Value> GetValue(std::string_view name) const;
+  std::optional<Metric::Value> GetValue(std::string_view name) const;
 
   // Sets the value of a named metric. The name must consist of printable ASCII
   // characters, and will be added to the mapping of names to keys.
-  void SetValue(std::string_view name, Value value);
+  Status SetValue(std::string_view name, Metric::Value value);
 
   // Returns the current mapping of names to keys.
-  const KeyMap& GetKeys() const;
+  const Vector<Metric>& GetMetrics() const;
 
   // Replaces the current mapping of names to keys.
-  void SetKeys(const KeyMap& keys);
+  Status SetMetrics(const Vector<Metric>& metrics);
 
   // Serializes this object to the given `buffer`. Does not write more bytes
-  // than `buffer.size()`. Returns the number of number of bytes written if the
-  // buffer is large enough, or the number that would have been if the `buffer`
-  // had been large enough.
-  size_t Serialize(pw::ByteSpan buffer) const;
+  // than `buffer.size()`. Returns the number of number of bytes written or an
+  // error if insufficient space.
+  StatusWithSize Serialize(pw::ByteSpan buffer) const;
 
   // Populates this object from the data in the given `buffer`.
   // Returns whether this buffer could be deserialized.
-  bool Deserialize(pw::ConstByteSpan buffer);
+  Status Deserialize(pw::ConstByteSpan buffer);
 
  private:
-  using NameMap = std::unordered_map<Key, std::string>;
-  using ValueMap = std::unordered_map<std::string_view, Value>;
-
-  // Add a name and a keys, while managing the associated `string_view`s.
-  void AddKey(std::string_view name, Key key);
-
-  // The data represented by this object are the names mapped to values in
-  // `values_`. In order to marshal this data efficiently, the names are mapped
-  // to fixed length keys in `keys_`. In order to efficently unmarshal, these
-  // keys are mapped back to names in `names_`.
-  NameMap names_;
-  KeyMap keys_;
-  ValueMap values_;
+  Vector<Metric, kMaxMetrics> metrics_;
 };
 // DOCSTAG: [pwfuzzer_examples_fuzztest-metrics_h]
 
-}  // namespace pw_fuzzer::examples
+}  // namespace pw::fuzzer::examples

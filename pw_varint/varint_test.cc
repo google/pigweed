@@ -19,13 +19,11 @@
 #include <cstring>
 #include <limits>
 
-#include "fuzztest/fuzztest.h"
 #include "gtest/gtest.h"
+#include "pw_fuzzer/fuzztest.h"
 
 namespace pw::varint {
 namespace {
-
-using namespace fuzztest;
 
 extern "C" {
 

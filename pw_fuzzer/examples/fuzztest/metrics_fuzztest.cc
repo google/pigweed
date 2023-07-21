@@ -14,61 +14,62 @@
 
 #include <algorithm>
 
-#include "fuzztest/fuzztest.h"
 #include "gtest/gtest.h"
 #include "metrics.h"
+#include "pw_fuzzer/fuzztest.h"
 
-namespace pw_fuzzer::examples {
-
-using namespace fuzztest;
-using ValueMap = std::unordered_map<std::string, Metrics::Value>;
+namespace pw::fuzzer::examples {
 
 // DOCSTAG: [pwfuzzer_examples_fuzztest-metrics_fuzztest1]
-void ArbitrarySerializeAndDeserialize(const ValueMap& values) {
-  std::array<std::byte, 100> buffer;
+void ArbitrarySerializeAndDeserialize(const Vector<Metric>& metrics) {
+  std::array<std::byte, Metrics::kMaxSerializedSize> buffer;
 
-  Metrics src;
-  for (const auto& [name, value] : values) {
-    src.SetValue(name, value);
+  // Add and copy the names only.
+  Metrics src, dst;
+  for (const auto& metric : metrics) {
+    EXPECT_TRUE(src.SetValue(metric.name, 0).ok());
   }
-  size_t num = src.Serialize(buffer);
-  if (num > buffer.size()) {
-    return;
+  EXPECT_TRUE(dst.SetMetrics(src.GetMetrics()).ok());
+
+  // Modify the values.
+  for (const auto& metric : metrics) {
+    EXPECT_TRUE(src.SetValue(metric.name, metric.value).ok());
   }
 
-  Metrics dst;
-  dst.SetKeys(src.GetKeys());
-  EXPECT_TRUE(dst.Deserialize(buffer));
-  for (const auto& [name, expected] : values) {
-    auto actual = dst.GetValue(name);
-    EXPECT_TRUE(actual);
-    EXPECT_EQ(*actual, expected);
+  // Transfer the data and check.
+  EXPECT_TRUE(src.Serialize(buffer).ok());
+  EXPECT_TRUE(dst.Deserialize(buffer).ok());
+  for (const auto& metric : metrics) {
+    EXPECT_EQ(dst.GetValue(metric.name).value_or(0), metric.value);
   }
 }
 
 // This unit test will run on host and may run on target devices (if supported).
 TEST(MetricsTest, SerializeAndDeserialize) {
-  ValueMap values;
-  values["one"] = 1;
-  values["two"] = 2;
-  values["three"] = 3;
-  ArbitrarySerializeAndDeserialize(values);
+  Vector<Metric, 3> metrics;
+  metrics.emplace_back("one", 1);
+  metrics.emplace_back("two", 2);
+  metrics.emplace_back("three", 3);
+  ArbitrarySerializeAndDeserialize(metrics);
 }
 // DOCSTAG: [pwfuzzer_examples_fuzztest-metrics_fuzztest1]
 
 // DOCSTAG: [pwfuzzer_examples_fuzztest-metrics_fuzztest2]
+auto ArbitraryMetric() {
+  return ConstructorOf<Metric>(PrintableAsciiString<Metric::kMaxNameLen>(),
+                               Arbitrary<uint32_t>());
+}
+
 // This fuzz test will only run on host.
 FUZZ_TEST(MetricsTest, ArbitrarySerializeAndDeserialize)
-    .WithDomains(UnorderedMapOf(PrintableAsciiString(),
-                                Arbitrary<Metrics::Value>())
-                     .WithMaxSize(15));
+    .WithDomains(VectorOf<Metrics::kMaxMetrics>(ArbitraryMetric()));
 // DOCSTAG: [pwfuzzer_examples_fuzztest-metrics_fuzztest2]
 
 // DOCSTAG: [pwfuzzer_examples_fuzztest-metrics_fuzztest3]
 void ArbitraryDeserialize(pw::ConstByteSpan buffer) {
   // Just make sure this does not crash.
   Metrics dst;
-  dst.Deserialize(buffer);
+  dst.Deserialize(buffer).IgnoreError();
 }
 
 // This unit test will run on host and may run on target devices (if supported).
@@ -80,7 +81,7 @@ TEST(MetricsTest, DeserializeDoesNotCrash) {
 // DOCSTAG: [pwfuzzer_examples_fuzztest-metrics_fuzztest4]
 // This fuzz test will only run on host.
 FUZZ_TEST(MetricsTest, ArbitraryDeserialize)
-    .WithDomains(VectorOf(Arbitrary<std::byte>()));
+    .WithDomains(VectorOf<Metrics::kMaxSerializedSize>(Arbitrary<std::byte>()));
 // DOCSTAG: [pwfuzzer_examples_fuzztest-metrics_fuzztest4]
 
-}  // namespace pw_fuzzer::examples
+}  // namespace pw::fuzzer::examples

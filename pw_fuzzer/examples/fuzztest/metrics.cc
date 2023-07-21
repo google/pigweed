@@ -19,12 +19,13 @@
 #include <cstring>
 
 #include "pw_assert/check.h"
+#include "pw_status/try.h"
 
-namespace pw_fuzzer::examples {
+namespace pw::fuzzer::examples {
 namespace {
-Metrics::Key Hash(std::string_view str) {
+Metric::Key Hash(std::string_view str) {
   PW_CHECK(std::all_of(str.begin(), str.end(), isprint));
-  return static_cast<Metrics::Key>(std::hash<std::string_view>{}(str));
+  return static_cast<Metric::Key>(std::hash<std::string_view>{}(str));
 }
 
 template <typename T>
@@ -32,89 +33,99 @@ using IsCopyable =
     std::enable_if_t<std::is_unsigned_v<T> && !std::is_same_v<T, bool>>;
 
 template <typename T, typename = IsCopyable<T>>
-void CopyTo(pw::ByteSpan dst, size_t& offset, const T& src) {
+Status CopyTo(pw::ByteSpan dst, size_t& offset, const T& src) {
   size_t len = sizeof(src);
-  if (offset + len <= dst.size()) {
-    memcpy(&dst[offset], &src, len);
+  if (offset + len > dst.size()) {
+    return Status::ResourceExhausted();
   }
+  memcpy(&dst[offset], &src, len);
   offset += len;
+  return OkStatus();
 }
 
 template <typename T, typename = IsCopyable<T>>
-void CopyFrom(pw::ConstByteSpan src, size_t& offset, T& dst) {
+Status CopyFrom(pw::ConstByteSpan src, size_t& offset, T& dst) {
   size_t len = sizeof(dst);
-  if (offset + len <= src.size()) {
-    memcpy(&dst, &src[offset], len);
+  if (offset + len > src.size()) {
+    return Status::ResourceExhausted();
   }
+  memcpy(&dst, &src[offset], len);
   offset += len;
+  return OkStatus();
 }
 
 }  // namespace
 
-std::optional<Metrics::Value> Metrics::GetValue(std::string_view name) const {
-  auto iter = values_.find(std::string(name));
-  if (iter == values_.end()) {
-    return std::optional<Metrics::Value>();
-  }
-  return iter->second;
+Metric::Metric(std::string_view name_, Value value_)
+    : name(name_), value(value_) {
+  key = Hash(name_);
 }
 
-void Metrics::SetValue(std::string_view name, Value value) {
-  std::string name_copy(name);
-  auto iter = values_.find(name_copy);
-  if (iter == values_.end()) {
-    AddKey(name, Hash(name));
-    values_[name] = value;
-  } else {
-    iter->second = value;
+std::optional<Metric::Value> Metrics::GetValue(std::string_view name) const {
+  for (const auto& metric : metrics_) {
+    if (metric.name == name) {
+      return metric.value;
+    }
   }
+  return std::optional<Metric::Value>();
 }
 
-const Metrics::KeyMap& Metrics::GetKeys() const { return keys_; }
-
-void Metrics::SetKeys(const Metrics::KeyMap& keys) {
-  for (const auto& [name, key] : keys) {
-    AddKey(name, key);
-    values_.try_emplace(name, 0);
+Status Metrics::SetValue(std::string_view name, Metric::Value value) {
+  for (auto& metric : metrics_) {
+    if (metric.name == name) {
+      metric.value = value;
+      return OkStatus();
+    }
   }
+  if (metrics_.full()) {
+    return Status::ResourceExhausted();
+  }
+  metrics_.emplace_back(name, value);
+  return OkStatus();
 }
 
-size_t Metrics::Serialize(pw::ByteSpan buffer) const {
+const Vector<Metric>& Metrics::GetMetrics() const { return metrics_; }
+
+Status Metrics::SetMetrics(const Vector<Metric>& metrics) {
+  if (metrics_.capacity() < metrics.size()) {
+    return Status::ResourceExhausted();
+  }
+  metrics_.assign(metrics.begin(), metrics.end());
+  return OkStatus();
+}
+
+StatusWithSize Metrics::Serialize(pw::ByteSpan buffer) const {
   size_t offset = 0;
-  CopyTo(buffer, offset, values_.size());
-  for (const auto& [name, key] : keys_) {
-    CopyTo(buffer, offset, key);
-    CopyTo(buffer, offset, values_.at(name));
+  PW_TRY_WITH_SIZE(CopyTo(buffer, offset, metrics_.size()));
+  for (const auto& metric : metrics_) {
+    PW_TRY_WITH_SIZE(CopyTo(buffer, offset, metric.key));
+    PW_TRY_WITH_SIZE(CopyTo(buffer, offset, metric.value));
   }
-  return offset;
+  return StatusWithSize(offset);
 }
 
-bool Metrics::Deserialize(pw::ConstByteSpan buffer) {
+Status Metrics::Deserialize(pw::ConstByteSpan buffer) {
   size_t offset = 0;
   size_t num_values = 0;
-  CopyFrom(buffer, offset, num_values);
+  PW_TRY(CopyFrom(buffer, offset, num_values));
   for (size_t i = 0; i < num_values; ++i) {
-    Metrics::Key key;
-    CopyFrom(buffer, offset, key);
-    Value value;
-    CopyFrom(buffer, offset, value);
-    if (offset > buffer.size()) {
-      return false;
+    Metric::Key key;
+    PW_TRY(CopyFrom(buffer, offset, key));
+    Metric::Value value;
+    PW_TRY(CopyFrom(buffer, offset, value));
+    bool found = false;
+    for (auto& metric : metrics_) {
+      if (metric.key == key) {
+        metric.value = value;
+        found = true;
+        break;
+      }
     }
-    auto iter = names_.find(key);
-    if (iter != names_.end()) {
-      auto [mapped_key, name] = *iter;
-      values_[name] = value;
+    if (!found) {
+      return Status::InvalidArgument();
     }
   }
-  return offset <= buffer.size();
+  return OkStatus();
 }
 
-void Metrics::AddKey(std::string_view name, Metrics::Key key) {
-  auto [iter, found] = names_.emplace(key, name);
-  auto& [mapped_key, mapped_name] = *iter;
-  name = std::string_view(mapped_name);
-  keys_[name] = mapped_key;
-}
-
-}  // namespace pw_fuzzer::examples
+}  // namespace pw::fuzzer::examples

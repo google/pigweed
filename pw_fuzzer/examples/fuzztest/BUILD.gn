@@ -27,7 +27,12 @@ pw_source_set("metrics_lib") {
   public = [ "metrics.h" ]
   sources = [ "metrics.cc" ]
   public_configs = [ ":includes" ]
-  public_deps = [ dir_pw_bytes ]
+  public_deps = [
+    dir_pw_bytes,
+    dir_pw_containers,
+    dir_pw_status,
+    dir_pw_string,
+  ]
   deps = [ "$dir_pw_assert:check" ]
 }
 
@@ -49,7 +54,6 @@ pw_test("metrics_fuzztest") {
 }
 
 # DOCSTAG: [pwfuzzer_examples_fuzztest-gn]
-
 pw_test_group("tests") {
   tests = [
     ":metrics_unittest",

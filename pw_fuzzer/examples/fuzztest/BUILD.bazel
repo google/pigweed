@@ -30,6 +30,9 @@ pw_cc_library(
     deps = [
         "//pw_assert",
         "//pw_bytes",
+        "//pw_containers",
+        "//pw_status",
+        "//pw_string",
     ],
 )
 

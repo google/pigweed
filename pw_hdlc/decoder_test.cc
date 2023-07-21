@@ -17,16 +17,16 @@
 #include <array>
 #include <cstddef>
 
-#include "fuzztest/fuzztest.h"
 #include "gtest/gtest.h"
 #include "pw_bytes/array.h"
+#include "pw_fuzzer/fuzztest.h"
 #include "pw_hdlc/internal/protocol.h"
 
 namespace pw::hdlc {
 namespace {
 
 using std::byte;
-using namespace fuzztest;
+using namespace fuzzer;
 
 TEST(Frame, Fields) {
   static constexpr auto kFrameData =
@@ -164,7 +164,7 @@ void ProcessNeverCrashes(ConstByteSpan data) {
 }
 
 FUZZ_TEST(Decoder, ProcessNeverCrashes)
-    .WithDomains(Arbitrary<std::vector<std::byte>>());
+    .WithDomains(VectorOf<1024>(Arbitrary<byte>()));
 
 }  // namespace
 }  // namespace pw::hdlc

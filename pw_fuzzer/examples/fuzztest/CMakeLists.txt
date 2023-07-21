@@ -21,8 +21,9 @@ pw_add_library(pw_fuzzer.examples.fuzztest.metrics_lib STATIC
   PUBLIC_INCLUDES
     .
   PUBLIC_DEPS
-    pw_bytes
     pw_assert
+    pw_bytes
+    pw_string
   SOURCES
     metrics.cc
 )
