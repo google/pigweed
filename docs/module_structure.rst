@@ -17,8 +17,14 @@ Example module structure
 
   pw_foo/...
 
-    docs.rst   # If there is just 1 docs file, call it docs.rst
-    README.md  # All modules must have a short README for gittiles
+    docs.rst         # Docs landing page (required)
+    concepts.rst     # Conceptual docs (optional)
+    design.rst       # Design docs (optional)
+    guides.rst       # How-to guides (optional)
+    api.rst          # API reference (optional)
+    cli.rst          # CLI reference (optional)
+    gui.rst          # GUI reference (optional)
+    tutorials/*.rst  # Tutorials (optional)
 
     BUILD.gn   # GN build required
     BUILD      # Bazel build required
@@ -419,30 +425,7 @@ it's possible to use multiple backends for a module.
 
 Documentation
 -------------
-Documentation should go in the root module folder, typically in the
-``docs.rst`` file. There must be a docgen entry for the documentation in the
-``BUILD.gn`` file with the target name ``docs``; so the full target for the
-docs would be ``<module>:docs``.
-
-.. code-block::
-
-  pw_example_module/...
-
-    docs.rst
-
-For modules with more involved documentation, create a separate directory
-called ``docs/`` under the module root, and put the ``.rst`` files and other
-related files (like images and diagrams) there.
-
-.. code-block::
-
-  pw_example_module/...
-
-    docs/docs.rst
-    docs/bar.rst
-    docs/foo.rst
-    docs/image/screenshot.png
-    docs/image/diagram.svg
+See :ref:`seed-0102`.
 
 Creating a new Pigweed module
 -----------------------------
@@ -466,6 +449,7 @@ To create a new Pigweed module, follow the below steps.
    - Add ``{pw_module_dir}/README.md`` that has a module summary
    - Add ``{pw_module_dir}/docs.rst`` that contains the main module
      documentation
+   - Add optional documentation as described in :ref:`seed-0102`
 
 5. Add GN build support in ``{pw_module_dir}/BUILD.gn``
 
