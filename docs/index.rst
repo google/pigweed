@@ -158,26 +158,58 @@ And more!
 =========
 Here is a selection of interesting modules:
 
-- :ref:`module-pw_cpu_exception_cortex_m` - Robust low level hardware fault
-  handler for ARM Cortex-M; the handler even has unit tests written in assembly
-  to verify nested-hardware-fault handling!
+.. grid:: 3
 
-- :ref:`module-pw_polyfill` - Similar to JavaScript “polyfill” libraries, this
-  module provides selected C++17 standard library components that are compatible
-  with C++14.
+   .. grid-item-card:: :octicon:`cpu` pw_cpu_exception
+      :link: module-pw_cpu_exception_cortex_m
+      :link-type: ref
 
-- :ref:`module-pw_tokenizer` - Replace string literals from log statements with
-  32-bit tokens, to reduce flash use, reduce logging bandwidth, and save
-  formatting cycles from log statements at runtime.
+      An interface for entering CPU exception handlers. Includes robust low
+      level hardware fault handling for ARM Cortex-M; the handler even has unit
+      tests written in assembly to verify nested-hardware-fault handling!
 
-- :ref:`module-pw_kvs` - A key-value-store implementation for flash-backed
-  persistent storage with integrated wear levelling. This is a lightweight
-  alternative to a file system for embedded devices.
+   .. grid-item-card:: :octicon:`code-square` pw_polyfill
+      :link: module-pw_polyfill
+      :link-type: ref
 
-- :ref:`module-pw_protobuf` - An early preview of our wire-format-oriented
-  protocol buffer implementation. This protobuf compiler makes a different set
-  of implementation tradeoffs than the most popular protocol buffer library in
-  this space, nanopb.
+      Similar to JavaScript “polyfill” libraries, this module provides selected
+      C++17 standard library components that are compatible with C++14.
+
+   .. grid-item-card:: :octicon:`container` pw_tokenizer
+      :link: module-pw_tokenizer
+      :link-type: ref
+
+      Replace string literals from log statements with 32-bit tokens, to reduce
+      flash use, reduce logging bandwidth, and save formatting cycles from log
+      statements at runtime.
+
+.. grid:: 3
+
+   .. grid-item-card:: :octicon:`database` pw_kvs
+      :link: module-pw_kvs
+      :link-type: ref
+
+      A key-value-store implementation for flash-backed persistent storage with
+      integrated wear levelling. This is a lightweight alternative to a file
+      system for embedded devices.
+
+   .. grid-item-card:: :octicon:`paper-airplane` pw_protobuf
+      :link: module-pw_protobuf
+      :link-type: ref
+
+      An early preview of our wire-format-oriented protocol buffer
+      implementation. This protobuf compiler makes a different set of
+      implementation tradeoffs than the most popular protocol buffer library in
+      this space, nanopb.
+
+   .. grid-item-card:: :octicon:`device-desktop` pw_console
+      :link: module-pw_console
+      :link-type: ref
+
+      Interactive Python repl and log viewer designed to be a a complete
+      solution for interacting with hardware devices using :ref:`module-pw_rpc`
+      over a :ref:`module-pw_hdlc` transport.
+
 
 See the :ref:`docs-module-guides` for the complete list of modules and their
 documentation.
