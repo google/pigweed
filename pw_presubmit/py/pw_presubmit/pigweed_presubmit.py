@@ -510,9 +510,37 @@ def zephyr_build(ctx: PresubmitContext) -> None:
     # Produces reports at (ctx.root / 'twister_out' / 'twister*.xml')
 
 
-gn_docs_build = build.GnGenNinja(
-    name='gn_docs_build', packages=('nanopb',), ninja_targets=('docs',)
-)
+def docs_build(ctx: PresubmitContext) -> None:
+    """Build Pigweed docs"""
+
+    # Build main docs through GN/Ninja.
+    build.install_package(ctx, 'nanopb')
+    build.gn_gen(ctx, pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
+    build.ninja(ctx, 'docs')
+    build.gn_check(ctx)
+
+    # Build Rust docs through Bazel.
+    build.bazel(
+        ctx,
+        'build',
+        '--',
+        '//pw_rust:docs',
+    )
+
+    # Copy rust docs from Bazel's out directory into where the GN build
+    # put the main docs.
+    rust_docs_bazel_dir = ctx.output_dir.joinpath(
+        '.bazel-bin', 'pw_rust', 'docs.rustdoc'
+    )
+    rust_docs_output_dir = ctx.output_dir.joinpath(
+        'docs', 'gen', 'docs', 'html', 'rustdoc'
+    )
+    shutil.copytree(rust_docs_bazel_dir, rust_docs_output_dir)
+
+
+def gn_docs_build(ctx: PresubmitContext) -> None:
+    docs_build(ctx)
+
 
 gn_host_tools = build.GnGenNinja(
     name='gn_host_tools',
@@ -1093,6 +1121,7 @@ OTHER_CHECKS = (
     cmake_clang,
     cmake_gcc,
     coverage,
+    docs_build,
     gitmodules.create(gitmodules.Config(allow_submodules=False)),
     gn_clang_build,
     gn_combined_build_check,
