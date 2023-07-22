@@ -104,7 +104,6 @@ pw_source_set("dispatcher") {
     "$dir_pw_sync:interrupt_spin_lock",
     "$dir_pw_sync:timed_thread_notification",
     "$dir_pw_thread:thread_core",
-    dir_pw_log,
   ]
   visibility = [
                  ":*",

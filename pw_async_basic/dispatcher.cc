@@ -13,9 +13,7 @@
 // the License.
 #include "pw_async_basic/dispatcher.h"
 
-#include "pw_assert/check.h"
 #include "pw_chrono/system_clock.h"
-#include "pw_log/log.h"
 
 using namespace std::chrono_literals;
 
@@ -75,7 +73,6 @@ void BasicDispatcher::MaybeSleep() {
                             : task_queue_.front().due_time_;
 
     lock_.unlock();
-    PW_LOG_DEBUG("no task due; waiting for signal");
     timed_notification_.try_acquire_until(wake_time);
     lock_.lock();
   }
@@ -88,7 +85,6 @@ void BasicDispatcher::ExecuteDueTasks() {
     task_queue_.pop_front();
 
     lock_.unlock();
-    PW_LOG_DEBUG("running task");
     Context ctx{this, &task.task_};
     task(ctx, OkStatus());
     lock_.lock();
@@ -97,19 +93,16 @@ void BasicDispatcher::ExecuteDueTasks() {
 
 void BasicDispatcher::RequestStop() {
   std::lock_guard lock(lock_);
-  PW_LOG_DEBUG("stop requested");
   stop_requested_ = true;
   timed_notification_.release();
 }
 
 void BasicDispatcher::DrainTaskQueue() {
-  PW_LOG_DEBUG("draining task queue");
   while (!task_queue_.empty()) {
     backend::NativeTask& task = task_queue_.front();
     task_queue_.pop_front();
 
     lock_.unlock();
-    PW_LOG_DEBUG("running cancelled task");
     Context ctx{this, &task.task_};
     task(ctx, Status::Cancelled());
     lock_.lock();
@@ -118,7 +111,6 @@ void BasicDispatcher::DrainTaskQueue() {
 
 void BasicDispatcher::PostAt(Task& task, chrono::SystemClock::time_point time) {
   lock_.lock();
-  PW_LOG_DEBUG("posting task");
   PostTaskInternal(task.native_type(), time);
   lock_.unlock();
 }

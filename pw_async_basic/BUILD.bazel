@@ -73,7 +73,6 @@ pw_cc_library(
         "//pw_async:dispatcher",
         "//pw_async:task",
         "//pw_containers:intrusive_list",
-        "//pw_log",
         "//pw_sync:interrupt_spin_lock",
         "//pw_sync:timed_thread_notification",
         "//pw_thread:thread_core",
