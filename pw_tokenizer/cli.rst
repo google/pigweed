@@ -11,6 +11,7 @@ CLI reference
       design: module-pw_tokenizer-design
       api: module-pw_tokenizer-api
       cli: module-pw_tokenizer-cli
+      guides: module-pw_tokenizer-guides
 
 .. _module-pw_tokenizer-cli-encoding:
 

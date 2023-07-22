@@ -11,6 +11,14 @@ API reference
       design: module-pw_tokenizer-design
       api: module-pw_tokenizer-api
       cli: module-pw_tokenizer-cli
+      guides: module-pw_tokenizer-guides
+
+-------------
+Compatibility
+-------------
+* C11
+* C++14
+* Python 3
 
 .. _module-pw_tokenizer-api-tokenization:
 
@@ -165,51 +173,9 @@ They are defined as static character arrays, so they cannot be implicitly
 concatentated with string literals. For example, ``printf(__func__ ": %d",
 123);`` will not compile.
 
-Encoding
-========
-The token is a 32-bit hash calculated during compilation. The string is encoded
-little-endian with the token followed by arguments, if any. For example, the
-31-byte string ``You can go about your business.`` hashes to 0xdac9a244.
-This is encoded as 4 bytes: ``44 a2 c9 da``.
-
-Arguments are encoded as follows:
-
-* **Integers**  (1--10 bytes) --
-  `ZagZag and varint encoded <https://developers.google.com/protocol-buffers/docs/encoding#signed-integers>`_,
-  similarly to Protocol Buffers. Smaller values take fewer bytes.
-* **Floating point numbers** (4 bytes) -- Single precision floating point.
-* **Strings** (1--128 bytes) -- Length byte followed by the string contents.
-  The top bit of the length whether the string was truncated or not. The
-  remaining 7 bits encode the string length, with a maximum of 127 bytes.
-
-.. TODO(hepler): insert diagram here!
-
-.. tip::
-   ``%s`` arguments can quickly fill a tokenization buffer. Keep ``%s``
-   arguments short or avoid encoding them as strings (e.g. encode an enum as an
-   integer instead of a string). See also
-   :ref:`module-pw_tokenizer-tokenized-strings-as-args`.
-
 Buffer sizing helper
 --------------------
 .. doxygenfunction:: pw::tokenizer::MinEncodingBufferSizeBytes
-
-Token generation: fixed length hashing at compile time
-======================================================
-String tokens are generated using a modified version of the x65599 hash used by
-the SDBM project. All hashing is done at compile time.
-
-In C code, strings are hashed with a preprocessor macro. For compatibility with
-macros, the hash must be limited to a fixed maximum number of characters. This
-value is set by ``PW_TOKENIZER_CFG_C_HASH_LENGTH``. Increasing
-``PW_TOKENIZER_CFG_C_HASH_LENGTH`` increases the compilation time for C due to
-the complexity of the hashing macros.
-
-C++ macros use a constexpr function instead of a macro. This function works with
-any length of string and has lower compilation time impact than the C macros.
-For consistency, C++ tokenization uses the same hash algorithm, but the
-calculated values will differ between C and C++ for strings longer than
-``PW_TOKENIZER_CFG_C_HASH_LENGTH`` characters.
 
 Tokenization in Python
 ======================

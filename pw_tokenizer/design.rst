@@ -11,6 +11,7 @@ Design
       design: module-pw_tokenizer-design
       api: module-pw_tokenizer-api
       cli: module-pw_tokenizer-cli
+      guides: module-pw_tokenizer-guides
 
 There are two sides to ``pw_tokenizer``, which we call tokenization and
 detokenization.
@@ -36,60 +37,49 @@ Here's an overview of what happens when ``pw_tokenizer`` is used:
 6. Off-device, the detokenizer tools use the token database to decode the
    strings to human-readable form.
 
-.. _module-pw_tokenizer-design-example:
+--------
+Encoding
+--------
+The token is a 32-bit hash calculated during compilation. The string is encoded
+little-endian with the token followed by arguments, if any. For example, the
+31-byte string ``You can go about your business.`` hashes to 0xdac9a244.
+This is encoded as 4 bytes: ``44 a2 c9 da``.
 
---------------------------
-Example: tokenized logging
---------------------------
-This example demonstrates using ``pw_tokenizer`` for logging. In this example,
-tokenized logging saves ~90% in binary size (41 → 4 bytes) and 70% in encoded
-size (49 → 15 bytes).
+Arguments are encoded as follows:
 
-**Before**: plain text logging
+* **Integers**  (1--10 bytes) --
+  `ZagZag and varint encoded <https://developers.google.com/protocol-buffers/docs/encoding#signed-integers>`_,
+  similarly to Protocol Buffers. Smaller values take fewer bytes.
+* **Floating point numbers** (4 bytes) -- Single precision floating point.
+* **Strings** (1--128 bytes) -- Length byte followed by the string contents.
+  The top bit of the length whether the string was truncated or not. The
+  remaining 7 bits encode the string length, with a maximum of 127 bytes.
 
-+------------------+-------------------------------------------+---------------+
-| Location         | Logging Content                           | Size in bytes |
-+==================+===========================================+===============+
-| Source contains  | ``LOG("Battery state: %s; battery         |               |
-|                  | voltage: %d mV", state, voltage);``       |               |
-+------------------+-------------------------------------------+---------------+
-| Binary contains  | ``"Battery state: %s; battery             | 41            |
-|                  | voltage: %d mV"``                         |               |
-+------------------+-------------------------------------------+---------------+
-|                  | (log statement is called with             |               |
-|                  | ``"CHARGING"`` and ``3989`` as arguments) |               |
-+------------------+-------------------------------------------+---------------+
-| Device transmits | ``"Battery state: CHARGING; battery       | 49            |
-|                  | voltage: 3989 mV"``                       |               |
-+------------------+-------------------------------------------+---------------+
-| When viewed      | ``"Battery state: CHARGING; battery       |               |
-|                  | voltage: 3989 mV"``                       |               |
-+------------------+-------------------------------------------+---------------+
+.. TODO(hepler): insert diagram here!
 
-**After**: tokenized logging
+.. tip::
+   ``%s`` arguments can quickly fill a tokenization buffer. Keep ``%s``
+   arguments short or avoid encoding them as strings (e.g. encode an enum as an
+   integer instead of a string). See also
+   :ref:`module-pw_tokenizer-tokenized-strings-as-args`.
 
-+------------------+-----------------------------------------------------------+---------+
-| Location         | Logging Content                                           | Size in |
-|                  |                                                           | bytes   |
-+==================+===========================================================+=========+
-| Source contains  | ``LOG("Battery state: %s; battery                         |         |
-|                  | voltage: %d mV", state, voltage);``                       |         |
-+------------------+-----------------------------------------------------------+---------+
-| Binary contains  | ``d9 28 47 8e`` (0x8e4728d9)                              | 4       |
-+------------------+-----------------------------------------------------------+---------+
-|                  | (log statement is called with                             |         |
-|                  | ``"CHARGING"`` and ``3989`` as arguments)                 |         |
-+------------------+-----------------------------------------------------------+---------+
-| Device transmits | =============== ============================== ========== | 15      |
-|                  | ``d9 28 47 8e`` ``08 43 48 41 52 47 49 4E 47`` ``aa 3e``  |         |
-|                  | --------------- ------------------------------ ---------- |         |
-|                  | Token           ``"CHARGING"`` argument        ``3989``,  |         |
-|                  |                                                as         |         |
-|                  |                                                varint     |         |
-|                  | =============== ============================== ========== |         |
-+------------------+-----------------------------------------------------------+---------+
-| When viewed      | ``"Battery state: CHARGING; battery voltage: 3989 mV"``   |         |
-+------------------+-----------------------------------------------------------+---------+
+------------------------------------------------------
+Token generation: fixed length hashing at compile time
+------------------------------------------------------
+String tokens are generated using a modified version of the x65599 hash used by
+the SDBM project. All hashing is done at compile time.
+
+In C code, strings are hashed with a preprocessor macro. For compatibility with
+macros, the hash must be limited to a fixed maximum number of characters. This
+value is set by ``PW_TOKENIZER_CFG_C_HASH_LENGTH``. Increasing
+``PW_TOKENIZER_CFG_C_HASH_LENGTH`` increases the compilation time for C due to
+the complexity of the hashing macros.
+
+C++ macros use a constexpr function instead of a macro. This function works with
+any length of string and has lower compilation time impact than the C macros.
+For consistency, C++ tokenization uses the same hash algorithm, but the
+calculated values will differ between C and C++ for strings longer than
+``PW_TOKENIZER_CFG_C_HASH_LENGTH`` characters.
 
 .. _module-pw_tokenizer-proto:
 
@@ -144,6 +134,26 @@ fields in detail.
      start([Received bytes]) --> binary
 
      binary[Decode as<br>binary tokenized] --> binary_ok
+     binary_ok{Detokenizes<br>successfully?} -->|no| utf8
+     binary_ok -->|yes| done_binary([Display decoded binary])
+
+     utf8[Decode as UTF-8] --> utf8_ok
+     utf8_ok{Valid UTF-8?} -->|no| base64_encode
+     utf8_ok -->|yes| base64
+
+     base64_encode[Encode as<br>tokenized Base64] --> display
+     display([Display encoded Base64])
+
+     base64[Decode as<br>Base64 tokenized] --> base64_ok
+
+     base64_ok{Fully<br>or partially<br>detokenized?} -->|no| is_plain_text
+     base64_ok -->|yes| base64_results
+
+     is_plain_text{Text is<br>printable?} -->|no| base64_encode
+     is_plain_text-->|yes| plain_text
+
+     base64_results([Display decoded Base64])
+     plain_text([Display text])
 
 Potential decoding problems
 ---------------------------
@@ -437,138 +447,10 @@ Using the detokenizing tools with the database, the logs can be decoded:
 See :ref:`module-pw_tokenizer-detokenization-guides` for detailed instructions
 on how to do detokenization in different programming languages.
 
--------------
-Compatibility
--------------
-* C11
-* C++14
-* Python 3
+.. _module-pw_tokenizer-python-detokenization-c99-printf-notes:
 
-------------
-Dependencies
-------------
-* ``pw_varint`` module
-* ``pw_preprocessor`` module
-* ``pw_span`` module
-
----------------------------
-Limitations and future work
----------------------------
-
-GCC bug: tokenization in template functions
-===========================================
-GCC incorrectly ignores the section attribute for template `functions
-<https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70435>`_ and `variables
-<https://gcc.gnu.org/bugzilla/show_bug.cgi?id=88061>`_. For example, the
-following won't work when compiling with GCC and tokenized logging:
-
-.. code-block:: cpp
-
-   template <...>
-   void DoThings() {
-     int value = GetValue();
-     // This log won't work with tokenized logs due to the templated context.
-     PW_LOG_INFO("Got value: %d", value);
-     ...
-   }
-
-The bug causes tokenized strings in template functions to be emitted into
-``.rodata`` instead of the special tokenized string section. This causes two
-problems:
-
-1. Tokenized strings will not be discovered by the token database tools.
-2. Tokenized strings may not be removed from the final binary.
-
-There are two workarounds.
-
-#. **Use Clang.** Clang puts the string data in the requested section, as
-   expected. No extra steps are required.
-
-#. **Move tokenization calls to a non-templated context.** Creating a separate
-   non-templated function and invoking it from the template resolves the issue.
-   This enables tokenizing in most cases encountered in practice with
-   templates.
-
-   .. code-block:: cpp
-
-      // In .h file:
-      void LogThings(value);
-
-      template <...>
-      void DoThings() {
-        int value = GetValue();
-        // This log will work: calls non-templated helper.
-        LogThings(value);
-        ...
-      }
-
-      // In .cc file:
-      void LogThings(int value) {
-        // Tokenized logging works as expected in this non-templated context.
-        PW_LOG_INFO("Got value %d", value);
-      }
-
-There is a third option, which isn't implemented yet, which is to compile the
-binary twice: once to extract the tokens, and once for the production binary
-(without tokens). If this is interesting to you please get in touch.
-
-64-bit tokenization
-===================
-The Python and C++ detokenizing libraries currently assume that strings were
-tokenized on a system with 32-bit ``long``, ``size_t``, ``intptr_t``, and
-``ptrdiff_t``. Decoding may not work correctly for these types if a 64-bit
-device performed the tokenization.
-
-Supporting detokenization of strings tokenized on 64-bit targets would be
-simple. This could be done by adding an option to switch the 32-bit types to
-64-bit. The tokenizer stores the sizes of these types in the
-``.pw_tokenizer.info`` ELF section, so the sizes of these types can be verified
-by checking the ELF file, if necessary.
-
-Tokenization in headers
-=======================
-Tokenizing code in header files (inline functions or templates) may trigger
-warnings such as ``-Wlto-type-mismatch`` under certain conditions. That
-is because tokenization requires declaring a character array for each tokenized
-string. If the tokenized string includes macros that change value, the size of
-this character array changes, which means the same static variable is defined
-with different sizes. It should be safe to suppress these warnings, but, when
-possible, code that tokenizes strings with macros that can change value should
-be moved to source files rather than headers.
-
-.. _module-pw_tokenizer-tokenized-strings-as-args:
-
-Tokenized strings as ``%s`` arguments
-=====================================
-Encoding ``%s`` string arguments is inefficient, since ``%s`` strings are
-encoded 1:1, with no tokenization. It would be better to send a tokenized string
-literal as an integer instead of a string argument, but this is not yet
-supported.
-
-A string token could be sent by marking an integer % argument in a way
-recognized by the detokenization tools. The detokenizer would expand the
-argument to the string represented by the integer.
-
-.. code-block:: cpp
-
-   #define PW_TOKEN_ARG PRIx32 "<PW_TOKEN]"
-
-   constexpr uint32_t answer_token = PW_TOKENIZE_STRING("Uh, who is there");
-
-   PW_TOKENIZE_STRING("Knock knock: %" PW_TOKEN_ARG "?", answer_token);
-
-Strings with arguments could be encoded to a buffer, but since printf strings
-are null-terminated, a binary encoding would not work. These strings can be
-prefixed Base64-encoded and sent as ``%s`` instead. See
-:ref:`module-pw_tokenizer-base64-format`.
-
-Another possibility: encode strings with arguments to a ``uint64_t`` and send
-them as an integer. This would be efficient and simple, but only support a small
-number of arguments.
-
-----------------------------------
-C99 ``printf`` Compatibility Notes
-----------------------------------
+Python detokenization: C99 ``printf`` compatibility notes
+=========================================================
 This implementation is designed to align with the
 `C99 specification, section 7.19.6
 <https://www.dii.uchile.cl/~daespino/files/Iso_C_1999_definition.pdf>`_.
@@ -796,6 +678,121 @@ Non-conformant details:
   for us to retroactively tell the original program how many characters have
   been printed since this decoding happens a great deal of time after the
   device sent it, usually on a separate processing device entirely.
+
+---------------------------
+Limitations and future work
+---------------------------
+
+GCC bug: tokenization in template functions
+===========================================
+GCC incorrectly ignores the section attribute for template `functions
+<https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70435>`_ and `variables
+<https://gcc.gnu.org/bugzilla/show_bug.cgi?id=88061>`_. For example, the
+following won't work when compiling with GCC and tokenized logging:
+
+.. code-block:: cpp
+
+   template <...>
+   void DoThings() {
+     int value = GetValue();
+     // This log won't work with tokenized logs due to the templated context.
+     PW_LOG_INFO("Got value: %d", value);
+     ...
+   }
+
+The bug causes tokenized strings in template functions to be emitted into
+``.rodata`` instead of the special tokenized string section. This causes two
+problems:
+
+1. Tokenized strings will not be discovered by the token database tools.
+2. Tokenized strings may not be removed from the final binary.
+
+There are two workarounds.
+
+#. **Use Clang.** Clang puts the string data in the requested section, as
+   expected. No extra steps are required.
+
+#. **Move tokenization calls to a non-templated context.** Creating a separate
+   non-templated function and invoking it from the template resolves the issue.
+   This enables tokenizing in most cases encountered in practice with
+   templates.
+
+   .. code-block:: cpp
+
+      // In .h file:
+      void LogThings(value);
+
+      template <...>
+      void DoThings() {
+        int value = GetValue();
+        // This log will work: calls non-templated helper.
+        LogThings(value);
+        ...
+      }
+
+      // In .cc file:
+      void LogThings(int value) {
+        // Tokenized logging works as expected in this non-templated context.
+        PW_LOG_INFO("Got value %d", value);
+      }
+
+There is a third option, which isn't implemented yet, which is to compile the
+binary twice: once to extract the tokens, and once for the production binary
+(without tokens). If this is interesting to you please get in touch.
+
+64-bit tokenization
+===================
+The Python and C++ detokenizing libraries currently assume that strings were
+tokenized on a system with 32-bit ``long``, ``size_t``, ``intptr_t``, and
+``ptrdiff_t``. Decoding may not work correctly for these types if a 64-bit
+device performed the tokenization.
+
+Supporting detokenization of strings tokenized on 64-bit targets would be
+simple. This could be done by adding an option to switch the 32-bit types to
+64-bit. The tokenizer stores the sizes of these types in the
+``.pw_tokenizer.info`` ELF section, so the sizes of these types can be verified
+by checking the ELF file, if necessary.
+
+Tokenization in headers
+=======================
+Tokenizing code in header files (inline functions or templates) may trigger
+warnings such as ``-Wlto-type-mismatch`` under certain conditions. That
+is because tokenization requires declaring a character array for each tokenized
+string. If the tokenized string includes macros that change value, the size of
+this character array changes, which means the same static variable is defined
+with different sizes. It should be safe to suppress these warnings, but, when
+possible, code that tokenizes strings with macros that can change value should
+be moved to source files rather than headers.
+
+.. _module-pw_tokenizer-tokenized-strings-as-args:
+
+Tokenized strings as ``%s`` arguments
+=====================================
+Encoding ``%s`` string arguments is inefficient, since ``%s`` strings are
+encoded 1:1, with no tokenization. It would be better to send a tokenized string
+literal as an integer instead of a string argument, but this is not yet
+supported.
+
+A string token could be sent by marking an integer % argument in a way
+recognized by the detokenization tools. The detokenizer would expand the
+argument to the string represented by the integer.
+
+.. code-block:: cpp
+
+   #define PW_TOKEN_ARG PRIx32 "<PW_TOKEN]"
+
+   constexpr uint32_t answer_token = PW_TOKENIZE_STRING("Uh, who is there");
+
+   PW_TOKENIZE_STRING("Knock knock: %" PW_TOKEN_ARG "?", answer_token);
+
+Strings with arguments could be encoded to a buffer, but since printf strings
+are null-terminated, a binary encoding would not work. These strings can be
+prefixed Base64-encoded and sent as ``%s`` instead. See
+:ref:`module-pw_tokenizer-base64-format`.
+
+Another possibility: encode strings with arguments to a ``uint64_t`` and send
+them as an integer. This would be efficient and simple, but only support a small
+number of arguments.
 
 --------------------
 Deployment war story

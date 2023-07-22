@@ -5,7 +5,7 @@ pw_tokenizer
 ============
 .. pigweed-module::
    :name: pw_tokenizer
-   :tagline: Cut your log sizes in half
+   :tagline: Compress strings to shrink logs by +75%
    :status: stable
    :languages: C11, C++14, Python, TypeScript
    :code-size-impact: 50% reduction in binary log size
@@ -41,8 +41,62 @@ without printf-style arguments.
 * Remove potentially sensitive log, assert, and other strings from binaries.
 
 See :ref:`module-pw_tokenizer-design` for a more detailed explanation
-of how ``pw__tokenizer`` works and :ref:`module-pw_tokenizer-design-example`
-for an example of how much ``pw_tokenizer`` can save you in binary size.
+of how ``pw_tokenizer`` works.
+
+.. _module-pw_tokenizer-tokenized-logging-example:
+
+--------------------------
+Example: tokenized logging
+--------------------------
+This example demonstrates using ``pw_tokenizer`` for logging. In this example,
+tokenized logging saves ~90% in binary size (41 → 4 bytes) and 70% in encoded
+size (49 → 15 bytes).
+
+**Before**: plain text logging
+
++------------------+-------------------------------------------+---------------+
+| Location         | Logging Content                           | Size in bytes |
++==================+===========================================+===============+
+| Source contains  | ``LOG("Battery state: %s; battery         |               |
+|                  | voltage: %d mV", state, voltage);``       |               |
++------------------+-------------------------------------------+---------------+
+| Binary contains  | ``"Battery state: %s; battery             | 41            |
+|                  | voltage: %d mV"``                         |               |
++------------------+-------------------------------------------+---------------+
+|                  | (log statement is called with             |               |
+|                  | ``"CHARGING"`` and ``3989`` as arguments) |               |
++------------------+-------------------------------------------+---------------+
+| Device transmits | ``"Battery state: CHARGING; battery       | 49            |
+|                  | voltage: 3989 mV"``                       |               |
++------------------+-------------------------------------------+---------------+
+| When viewed      | ``"Battery state: CHARGING; battery       |               |
+|                  | voltage: 3989 mV"``                       |               |
++------------------+-------------------------------------------+---------------+
+
+**After**: tokenized logging
+
++------------------+-----------------------------------------------------------+---------+
+| Location         | Logging Content                                           | Size in |
+|                  |                                                           | bytes   |
++==================+===========================================================+=========+
+| Source contains  | ``LOG("Battery state: %s; battery                         |         |
+|                  | voltage: %d mV", state, voltage);``                       |         |
++------------------+-----------------------------------------------------------+---------+
+| Binary contains  | ``d9 28 47 8e`` (0x8e4728d9)                              | 4       |
++------------------+-----------------------------------------------------------+---------+
+|                  | (log statement is called with                             |         |
+|                  | ``"CHARGING"`` and ``3989`` as arguments)                 |         |
++------------------+-----------------------------------------------------------+---------+
+| Device transmits | =============== ============================== ========== | 15      |
+|                  | ``d9 28 47 8e`` ``08 43 48 41 52 47 49 4E 47`` ``aa 3e``  |         |
+|                  | --------------- ------------------------------ ---------- |         |
+|                  | Token           ``"CHARGING"`` argument        ``3989``,  |         |
+|                  |                                                as         |         |
+|                  |                                                varint     |         |
+|                  | =============== ============================== ========== |         |
++------------------+-----------------------------------------------------------+---------+
+| When viewed      | ``"Battery state: CHARGING; battery voltage: 3989 mV"``   |         |
++------------------+-----------------------------------------------------------+---------+
 
 .. toctree::
    :hidden:
