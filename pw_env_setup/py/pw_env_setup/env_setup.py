@@ -189,6 +189,7 @@ class EnvSetup(object):
         use_pinned_pip_packages,
         cipd_only,
         trust_cipd_hash,
+        additional_cipd_file,
     ):
         self._env = environment.Environment()
         self._project_root = project_root
@@ -205,6 +206,7 @@ class EnvSetup(object):
         self._strict = strict
         self._cipd_only = cipd_only
         self._trust_cipd_hash = trust_cipd_hash
+        self._additional_cipd_file = additional_cipd_file
 
         if os.path.isfile(shell_file):
             os.unlink(shell_file)
@@ -317,6 +319,10 @@ class EnvSetup(object):
         self._cipd_package_file.extend(
             os.path.join(self._project_root, x)
             for x in _assert_sequence(config.pop('cipd_package_files', ()))
+        )
+        self._cipd_package_file.extend(
+            os.path.join(self._project_root, x)
+            for x in self._additional_cipd_file or ()
         )
 
         for action in config.pop('project_actions', {}):
@@ -854,6 +860,15 @@ def parse(argv=None):
         '--config-file',
         help='Path to pigweed.json file.',
         default=os.path.join(project_root, 'pigweed.json'),
+    )
+
+    parser.add_argument(
+        '--additional-cipd-file',
+        help=(
+            'Path to additional CIPD files, in addition to those referenced by '
+            'the --config-file file.'
+        ),
+        action='append',
     )
 
     parser.add_argument(
