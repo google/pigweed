@@ -176,8 +176,6 @@ def cipd_deps_impl(repository_ctx):
     """ Generates a CIPD dependencies file """
     pigweed_deps = json.decode(
         repository_ctx.read(repository_ctx.attr._pigweed_packages_json),
-    )["packages"] + json.decode(
-        repository_ctx.read(repository_ctx.attr._python_packages_json),
     )["packages"]
     repository_ctx.file("BUILD", "exports_files(glob([\"**/*\"]))\n")
 
