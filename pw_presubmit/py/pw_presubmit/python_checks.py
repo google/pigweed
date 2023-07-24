@@ -20,6 +20,7 @@ import difflib
 import json
 import logging
 from pathlib import Path
+import platform
 import sys
 from tempfile import TemporaryDirectory
 from typing import Optional
@@ -42,6 +43,12 @@ from pw_presubmit.tools import log_run
 _LOG = logging.getLogger(__name__)
 
 _PYTHON_EXTENSIONS = ('.py', '.gn', '.gni')
+
+_PYTHON_PACKAGE_EXTENSIONS = (
+    'setup.cfg',
+    'constraint.list',
+    'requirements.txt',
+)
 
 _PYTHON_IS_3_9_OR_HIGHER = sys.version_info >= (
     3,
@@ -162,20 +169,17 @@ def gn_python_test_coverage(ctx: PresubmitContext):
     _LOG.info('Coverage html report saved to: %s', html_report.resolve())
 
 
-@filter_paths(endswith=_PYTHON_EXTENSIONS + ('.list', '.cfg'))
+@filter_paths(endswith=_PYTHON_PACKAGE_EXTENSIONS)
 def vendor_python_wheels(ctx: PresubmitContext) -> None:
-    """Download Python packages locally for all platforms."""
-    build.gn_gen(
-        ctx,
-        pw_build_PYTHON_PIP_DOWNLOAD_ALL_PLATFORMS=True,
-    )
+    """Download Python packages locally for the current platform."""
+    build.gn_gen(ctx)
     build.ninja(ctx, 'pip_vendor_wheels')
 
     _LOG.info(
-        'Python wheels downloaded to: %s',
+        'Python packages downloaded to: %s',
         ctx.output_dir
         / 'python/gen/pw_env_setup'
-        / 'pigweed_build_venv.vendor_wheels/',
+        / 'pigweed_build_venv.vendor_wheels/wheels/',
     )
 
 
@@ -209,7 +213,7 @@ def _update_upstream_python_constraints(
     ctx: PresubmitContext,
     update_files: bool = False,
 ) -> None:
-    """Regenerate Python constraint files with hashes."""
+    """Regenerate platform specific Python constraint files with hashes."""
     with TemporaryDirectory() as tmpdirname:
         out_dir = Path(tmpdirname)
         build.gn_gen(
@@ -226,13 +230,16 @@ def _update_upstream_python_constraints(
         )
         build.ninja(ctx, 'pip_constraint_update')
 
+        # Either: darwin, linux or windows
+        platform_name = platform.system().lower()
+
+        constraint_hashes_filename = f'constraint_hashes_{platform_name}.list'
         constraint_hashes_original = (
             ctx.root
             / 'pw_env_setup/py/pw_env_setup/virtualenv_setup'
-            / 'constraint_hashes.list'
+            / constraint_hashes_filename
         )
-        constraint_hashes_tmp_out = out_dir / 'constraint_hashes.list'
-
+        constraint_hashes_tmp_out = out_dir / constraint_hashes_filename
         _generate_constraint_with_hashes(
             ctx,
             input_file=(
@@ -250,15 +257,17 @@ def _update_upstream_python_constraints(
         )
         build.ninja(ctx, 'pip_constraint_update')
 
+        upstream_requirements_lock_filename = (
+            f'upstream_requirements_{platform_name}_lock.txt'
+        )
         upstream_requirements_lock_original = (
             ctx.root
             / 'pw_env_setup/py/pw_env_setup/virtualenv_setup'
-            / 'upstream_requirements_lock.txt'
+            / upstream_requirements_lock_filename
         )
         upstream_requirements_lock_tmp_out = (
-            out_dir / 'upstream_requirements_lock.txt'
+            out_dir / upstream_requirements_lock_filename
         )
-
         _generate_constraint_with_hashes(
             ctx,
             input_file=(
@@ -324,12 +333,12 @@ def _update_upstream_python_constraints(
             )
 
 
-@filter_paths(endswith=_PYTHON_EXTENSIONS + ('.list', '.cfg'))
+@filter_paths(endswith=_PYTHON_PACKAGE_EXTENSIONS)
 def check_upstream_python_constraints(ctx: PresubmitContext) -> None:
     _update_upstream_python_constraints(ctx, update_files=False)
 
 
-@filter_paths(endswith=_PYTHON_EXTENSIONS + ('.list', '.cfg'))
+@filter_paths(endswith=_PYTHON_PACKAGE_EXTENSIONS)
 def update_upstream_python_constraints(ctx: PresubmitContext) -> None:
     _update_upstream_python_constraints(ctx, update_files=True)
 

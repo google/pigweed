@@ -753,9 +753,13 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\bDoxyfile$',
     r'\bPW_PLUGINS$',
     r'\bconstraint.list$',
-    r'\bconstraint_hashes.list$',
+    r'\bconstraint_hashes_darwin.list$',
+    r'\bconstraint_hashes_linux.list$',
+    r'\bconstraint_hashes_windows.list$',
     r'\bpython_base_requirements.txt$',
-    r'\bupstream_requirements_lock.txt$',
+    r'\bupstream_requirements_darwin_lock.txt$',
+    r'\bupstream_requirements_linux_lock.txt$',
+    r'\bupstream_requirements_windows_lock.txt$',
     r'^(?:.+/)?\..+$',
     # keep-sorted: end
     # Metadata

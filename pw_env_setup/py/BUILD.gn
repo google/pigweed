@@ -53,4 +53,31 @@ pw_python_package("py") {
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
   mypy_ini = "$dir_pigweed/.mypy.ini"
+  inputs = [
+    "pw_env_setup/cipd_setup/.cipd_version",
+    "pw_env_setup/cipd_setup/.cipd_version.digests",
+    "pw_env_setup/cipd_setup/arm.json",
+    "pw_env_setup/cipd_setup/bazel.json",
+    "pw_env_setup/cipd_setup/black.json",
+    "pw_env_setup/cipd_setup/buildifier.json",
+    "pw_env_setup/cipd_setup/cmake.json",
+    "pw_env_setup/cipd_setup/compatibility.json",
+    "pw_env_setup/cipd_setup/default.json",
+    "pw_env_setup/cipd_setup/doxygen.json",
+    "pw_env_setup/cipd_setup/go.json",
+    "pw_env_setup/cipd_setup/host_tools.json",
+    "pw_env_setup/cipd_setup/kythe.json",
+    "pw_env_setup/cipd_setup/luci.json",
+    "pw_env_setup/cipd_setup/msrv_python.json",
+    "pw_env_setup/cipd_setup/pigweed.json",
+    "pw_env_setup/cipd_setup/python.json",
+    "pw_env_setup/cipd_setup/rbe.json",
+    "pw_env_setup/cipd_setup/riscv.json",
+    "pw_env_setup/cipd_setup/testing.json",
+    "pw_env_setup/cipd_setup/upstream.json",
+    "pw_env_setup/cipd_setup/web.json",
+    "pw_env_setup/virtualenv_setup/constraint.list",
+    "pw_env_setup/virtualenv_setup/constraint_hashes_linux.list",
+    "pw_env_setup/virtualenv_setup/python_base_requirements.txt",
+  ]
 }
