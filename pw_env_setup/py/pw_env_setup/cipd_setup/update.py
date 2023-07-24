@@ -394,6 +394,21 @@ def update(  # pylint: disable=too-many-locals
         for package_file in reversed(package_files):
             name = package_file_name(package_file)
             file_install_dir = os.path.join(install_dir, name)
+
+            # If this package file has no packages and just includes one other
+            # file, there won't be any contents of the folder for this package.
+            # In that case, point the variable that would point to this folder
+            # to the folder of the included file.
+            with open(package_file) as ins:
+                contents = json.load(ins)
+                entries = contents.get('included_files', ())
+                file_packages = contents.get('packages', ())
+                if not file_packages and len(entries) == 1:
+                    file_install_dir = os.path.join(
+                        install_dir,
+                        package_file_name(os.path.basename(entries[0])),
+                    )
+
             # Some executables get installed at top-level and some get
             # installed under 'bin'. A small number of old packages prefix the
             # entire tree with the platform (e.g., chromium/third_party/tcl).
