@@ -44,6 +44,25 @@ enum GenericEnableParam:
   ENABLE  = 0x01
 
 
+enum CoreSpecificationVersion:
+  -- Bluetooth Core Specification version
+  [maximum_bits: 8]
+  V1_0B    = 0x00  # v1.0b
+  V1_1     = 0x01  # v1.1
+  V1_2     = 0x02  # v1.2
+  V2_0_EDR = 0x03  # v2.0+EDR
+  V2_1_EDR = 0x04  # v2.0+EDR
+  V3_0_HS  = 0x05  # v3.0+HS
+  V4_0     = 0x06  # v4.0
+  V4_1     = 0x07  # v4.1
+  V4_2     = 0x08  # v4.2
+  V5_0     = 0x09  # v5.0
+  V5_1     = 0x0A  # v5.1
+  V5_2     = 0x0B  # v5.2
+  V5_3     = 0x0C  # v5.3
+  V5_4     = 0x0D  # v5.4
+
+
 enum InquiryAccessCode:
   -- General- and Device-specific Inquiry Access Codes (DIACs) for use in Inquiry
   -- command LAP fields.
@@ -922,6 +941,7 @@ enum EncryptionStatus:
 
 bits LmpFeatures(page: UInt:8):
   -- Bit mask of Link Manager Protocol features.
+  [requires: page <= 2]
   if page == 0:
     0  [+1]  Flag  three_slot_packets
     1  [+1]  Flag  five_slot_packets
@@ -1004,6 +1024,56 @@ bits LmpFeatures(page: UInt:8):
     11 [+1]  Flag  train_nudging
 
 
+bits LEFeatureSet:
+  0     [+1]  Flag  le_encryption
+  $next [+1]  Flag  connection_parameters_request_procedure
+  $next [+1]  Flag  extended_reject_indication
+  $next [+1]  Flag  peripheral_initiated_features_exchange
+  $next [+1]  Flag  le_ping
+  $next [+1]  Flag  le_data_packet_length_extension
+  $next [+1]  Flag  ll_privacy
+  $next [+1]  Flag  extended_scanning_filter_policies
+  $next [+1]  Flag  le_2m_phy
+  $next [+1]  Flag  stable_modulation_index_transmitter
+  $next [+1]  Flag  stable_modulation_index_receiver
+  $next [+1]  Flag  le_coded_phy
+  $next [+1]  Flag  le_extended_advertising
+  $next [+1]  Flag  le_periodic_advertising
+  $next [+1]  Flag  channel_selection_algorithm_2
+  $next [+1]  Flag  le_power_class_1
+  $next [+1]  Flag  minimum_number_of_used_channels_procedure
+  $next [+1]  Flag  connection_cte_request
+  $next [+1]  Flag  connection_cte_response
+  $next [+1]  Flag  connectionless_cte_transmitter
+  $next [+1]  Flag  connectionless_cte_receiver
+  $next [+1]  Flag  antenna_switching_during_cte_transmission
+  $next [+1]  Flag  antenna_switching_during_cte_reception
+  $next [+1]  Flag  receiving_constant_tone_extensions
+  $next [+1]  Flag  periodic_advertising_sync_transfer_sender
+  $next [+1]  Flag  periodic_advertising_sync_transfer_recipient
+  $next [+1]  Flag  sleep_clock_accuracy_updates
+  $next [+1]  Flag  remote_public_key_validation
+  $next [+1]  Flag  connected_isochronous_stream_central
+  $next [+1]  Flag  connected_isochronous_stream_peripheral
+  $next [+1]  Flag  isochronous_broadcaster
+  $next [+1]  Flag  synchronized_receiver
+  $next [+1]  Flag  connected_isochronous_stream_host_support
+  $next [+1]  Flag  le_power_control_request_1
+  $next [+1]  Flag  le_power_control_request_2
+    -- Previous two bits shall always have the same value.
+
+  $next [+1]  Flag  le_path_loss_monitoring
+  $next [+1]  Flag  periodic_advertising_adi_support
+  $next [+1]  Flag  connection_subrating
+  $next [+1]  Flag  connection_subrating_host_support
+  $next [+1]  Flag  channel_classification
+  $next [+1]  Flag  advertising_coding_selection
+  $next [+1]  Flag  advertising_coding_selection_host_support
+  $next [+1]  Flag  reserved  # Bit 42 is skipped
+  $next [+1]  Flag  periodic_advertising_with_responses_advertiser
+  $next [+1]  Flag  periodic_advertising_with_responses_scanner
+
+
 enum LEClockAccuracy:
   -- Possible values that can be reported for the |central_clock_accuracy| and
   -- |advertiser_clock_accuracy| parameters.
@@ -1020,38 +1090,38 @@ enum LEClockAccuracy:
 
 bits LECISPHYOptions:
   -- Identifies PHYs that can be used for transmission
-  0      [+1]  Flag  le_1m
-  $next  [+1]  Flag  le_2m
-  $next  [+1]  Flag  le_coded
-  $next  [+5]  UInt  padding
+  0     [+1]  Flag  le_1m
+  $next [+1]  Flag  le_2m
+  $next [+1]  Flag  le_coded
+  $next [+5]  UInt  padding
 
 
 struct LESetCIGParametersCISOptions:
   -- Parameters for the CISes defined in a LESetCIGParametersCommand
 
-  0      [+1]  UInt            cis_id
+  0     [+1]  UInt             cis_id
     -- Used to identify a CIS
     [requires: 0x00 <= this <= 0xEF]
 
-  $next  [+2]  UInt            max_sdu_c_to_p
+  $next [+2]  UInt             max_sdu_c_to_p
     -- Maximum size, in octets, of the payload from the Central's Host
     [requires: 0x0000 <= this <= 0x0FFF]
 
-  $next  [+2]  UInt            max_sdu_p_to_c
+  $next [+2]  UInt             max_sdu_p_to_c
     -- Maximum size, in octets, of the payload from the Peripheral's Host
     [requires: 0x0000 <= this <= 0x0FFF]
 
-  $next  [+1]  LECISPHYOptions  phy_c_to_p
+  $next [+1]  LECISPHYOptions  phy_c_to_p
     -- Identifies which PHY to use for transmission from the Central to the Peripheral
 
-  $next  [+1]  LECISPHYOptions  phy_p_to_c
+  $next [+1]  LECISPHYOptions  phy_p_to_c
     -- Identifies which PHY to use for transmission from the Peripheral to the Central
 
-  $next  [+1]  UInt            rtn_c_to_p
+  $next [+1]  UInt             rtn_c_to_p
     -- Number of times every CIS Data PDU should be retransmitted from the Central to the
     -- Peripheral
 
-  $next  [+1]  UInt            rtn_p_to_c
+  $next [+1]  UInt             rtn_p_to_c
     -- Number of times every CIS Data PDU should be retransmitted from the Peripheral to the
     -- Central
 
@@ -1084,8 +1154,8 @@ enum LECISFraming:
 
 
 enum DataPathDirection:
-  [maximum_bits:8]
-  INPUT = 0x00
+  [maximum_bits: 8]
+  INPUT  = 0x00
     -- Host to Controller
 
   OUTPUT = 0x01
@@ -1120,6 +1190,7 @@ struct EventHeader:
 
 # ========== 7.1 Link Control Commands ==========
 
+
 struct InquiryCommand:
   -- 7.1.1 Inquiry command (v1.1) (BR/EDR)
   -- HCI_Inquiry
@@ -1153,7 +1224,6 @@ struct InquiryCancelCommand:
   -- No command parameters
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
-
 
 # 7.1.3 Periodic Inquiry Mode command
 # HCI_Periodic_Inquiry_Mode
@@ -1275,7 +1345,6 @@ struct LinkKeyRequestNegativeReplyCommand:
   $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
     -- BD_ADDR of the peer device that the host does not have a link key for.
 
-
 # 7.1.12 PIN Code Request Reply command
 # HCI_PIN_Code_Request_Reply
 # TODO: b/265052417 - Definition needs to be added
@@ -1324,7 +1393,6 @@ struct SetConnectionEncryptionCommand:
   $next [+1]         GenericEnableParam  encryption_enable
     -- Whether link level encryption should be turned on or off.
 
-
 # 7.1.17 Change Connection Link Key command
 # HCI_Change_Connection_Link_Key
 # TODO: b/265052417 - Definition needs to be added
@@ -1358,7 +1426,6 @@ struct RemoteNameRequestCommand:
     -- Clock offset.  The lower 15 bits of this represent bits 16-2
     -- of CLKNPeripheral-CLK, and the highest bit is set when the other
     -- bits are valid.
-
 
 # 7.1.20 Remote Name Request Cancel command
 # HCI_Remote_Name_Request_Cancel
@@ -1415,7 +1482,6 @@ struct ReadRemoteVersionInfoCommand:
   $next [+2]         UInt           connection_handle
     -- Connection_Handle (only the lower 12-bits are meaningful).
     --   Range: 0x0000 to 0x0EFF
-
 
 # 7.1.24 Read Clock Offset command
 # HCI_Read_Clock_Offset
@@ -1505,7 +1571,6 @@ struct UserPasskeyRequestNegativeReplyCommand:
   0     [+hdr_size]               CommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
     -- The BD_ADDR of the remote device involved in the simple pairing process.
-
 
 # 7.1.34 Remote OOB Data Request Reply command
 # HCI_Remote_OOB_Data_Request_Reply
@@ -1660,7 +1725,6 @@ struct EnhancedAcceptSynchronousConnectionRequestCommand:
   let scp_size = SynchronousConnectionParameters.$size_in_bytes
   $next [+scp_size]               SynchronousConnectionParameters  connection_parameters
 
-
 # 7.1.47 Truncated Page command
 # HCI_Truncated_Page
 # TODO: b/265052417 - Definition needs to be added
@@ -1698,6 +1762,7 @@ struct EnhancedAcceptSynchronousConnectionRequestCommand:
 
 # ========== 7.3 Controller & Baseband Commands ==========
 
+
 struct SetEventMaskCommand:
   -- 7.3.1 Set Event Mask command (v1.1)
   -- HCI_Set_Event_Mask
@@ -1713,7 +1778,6 @@ struct ResetCommand:
   -- HCI_Reset
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
-
 
 # 7.3.3 Set Event Filter command
 # HCI_Set_Event_Filter
@@ -1769,7 +1833,6 @@ struct ReadLocalNameCommand:
   -- HCI_Read_Local_Name
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
-
 
 # 7.3.13 Read Connection Accept Timeout command
 # HCI_Read_Connection_Accept_Timeout
@@ -1859,7 +1922,6 @@ struct WriteInquiryScanActivityCommand:
     -- Valid Range: MIN - MAX in ScanWindow in this file
     [requires: 0x0011 <= this <= 0x1000]
 
-
 # 7.3.23 Read Authentication Enable command
 # HCI_Read_Authentication_Enable
 # TODO: b/265052417 - Definition needs to be added
@@ -1883,7 +1945,6 @@ struct WriteClassOfDeviceCommand:
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+3]         ClassOfDevice  class_of_device
-
 
 # 7.3.27 Read Voice Setting command
 # HCI_Read_Voice_Setting
@@ -1916,7 +1977,6 @@ struct WriteAutomaticFlushTimeoutCommand:
     -- Time = flush_timeout * 0.625ms.
     -- Time Range: 0.625ms to 1279.375ms.
     [requires: 0x0000 <= this <= 0x07FF]
-
 
 # 7.3.31 Read Num Broadcast Retransmissions command
 # HCI_Read_Num_Broadcast_Retransmissions
@@ -1956,7 +2016,6 @@ struct WriteSynchronousFlowControlEnableCommand:
   $next [+1]         GenericEnableParam  synchronous_flow_control_enable
     -- If enabled, HCI_Number_Of_Completed_Packets events shall be sent from the controller
     -- for synchronous connection handles.
-
 
 # 7.3.38 Set Controller To Host Flow Control command
 # HCI_Set_Controller_To_Host_Flow_Control
@@ -2046,7 +2105,6 @@ struct WritePageScanTypeCommand:
   0     [+hdr_size]  CommandHeader  header
   $next [+1]         PageScanType   page_scan_type
 
-
 # 7.3.53 Read AFH Channel Assessment Mode command
 # HCI_Read_AFH_Channel_Assessment_Mode
 # TODO: b/265052417 - Definition needs to be added
@@ -2074,7 +2132,6 @@ struct WriteExtendedInquiryResponseCommand:
   $next [+eir_size]  ExtendedInquiryResponse  extended_inquiry_response
     -- Extended inquiry response data as defined in Vol 3, Part C, Sec 8
 
-
 # 7.3.57 Refresh Encryption Key command
 # HCI_Refresh_Encryption_Key
 # TODO: b/265052417 - Definition needs to be added
@@ -2093,7 +2150,6 @@ struct WriteSimplePairingModeCommand:
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader       header
   $next [+1]         GenericEnableParam  simple_pairing_mode
-
 
 # 7.3.60 Read Local OOB Data command
 # HCI_Read_Local_OOB_Data
@@ -2151,7 +2207,6 @@ struct WriteFlowControlModeCommand:
   0     [+CommandHeader.$size_in_bytes]  CommandHeader    header
   $next [+1]                             FlowControlMode  flow_control_mode
 
-
 # 7.3.74 Read Enhanced Transmit Power Level command
 # HCI_Read_Enhanced_Transmit_Power_Level
 # TODO: b/265052417 - Definition needs to be added
@@ -2177,7 +2232,6 @@ struct WriteLEHostSupportCommand:
     -- "shall be ignored".
     -- Core Spec v5.3, Vol 4, Part E, Section 7.3.79: This parameter was renamed
     -- to "Unused" and "shall be ignored by the controller".
-
 
 # 7.3.80 Set MWS Channel Parameters command
 # HCI_Set_MWS_Channel_Parameters
@@ -2268,7 +2322,6 @@ struct WriteAuthenticatedPayloadTimeoutCommand:
     -- Time Range: 10 ms to 655,350 ms
     [requires: 0x0001 <= this <= 0xFFFF]
 
-
 # 7.3.95 Read Local OOB Extended Data command
 # HCI_Read_Local_OOB_Extended_Data
 # TODO: b/265052417 - Definition needs to be added
@@ -2310,6 +2363,7 @@ struct WriteAuthenticatedPayloadTimeoutCommand:
 
 
 # ========== 7.4 Informational Parameters ==========
+
 
 struct ReadLocalVersionInformationCommand:
   -- 7.4.1 Read Local Version Information command (v1.1)
@@ -2356,7 +2410,6 @@ struct ReadBdAddrCommand:
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
-
 # 7.4.7 Read Data Block Size command
 # HCI_Read_Data_Block_Size
 # TODO: b/265052417 - Definition needs to be added
@@ -2384,6 +2437,7 @@ struct ReadBdAddrCommand:
 
 # ========== 7.5 Status Parameters ==========
 
+
 struct ReadEncryptionKeySizeCommand:
   -- 7.5.6 Read Encryption Key Size (v1.1) (BR/EDR)
   -- HCI_Read_Encryption_Key_Size
@@ -2393,8 +2447,8 @@ struct ReadEncryptionKeySizeCommand:
     -- Identifies an active ACL link (only the lower 12 bits are meaningful).
     [requires: 0x0000 <= this <= 0x0EFF]
 
-
 # ========== 7.8 LE Controller Commands ==========
+
 
 struct LESetEventMaskCommand:
   -- 7.8.1 LE Set Event Mask command (v4.0) (LE)
@@ -2638,7 +2692,6 @@ struct LECreateConnectionCancelCommand:
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
-
 # 7.8.14 LE Read Filter Accept List Size command
 # HCI_LE_Read_Filter_Accept_List_Size
 # TODO: b/265052417 - Definition needs to be added
@@ -2717,7 +2770,6 @@ struct LEConnectionUpdateCommand:
   $next [+2]         UInt           max_connection_event_length
     -- Time: N * 0.625 ms
 
-
 # 7.8.19 LE Set Host Channel Classification command
 # HCI_LE_Set_Host_Channel_Classification
 # TODO: b/265052417 - Definition needs to be added
@@ -2735,7 +2787,6 @@ struct LEReadRemoteFeaturesCommand:
   0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt           connection_handle
     [requires: 0x0000 <= this <= 0x0EFF]
-
 
 # 7.8.22 LE Encrypt command
 # HCI_LE_Encrypt
@@ -2785,7 +2836,6 @@ struct LEReadSupportedStatesCommand:
   -- HCI_LE_Read_Supported_States
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
-
 
 # 7.8.28 LE Receiver Test command
 # HCI_LE_Receiver_Test [v1] [v2] [v3]
@@ -2853,7 +2903,6 @@ struct LEClearResolvingListCommand:
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
-
 # 7.8.41 LE Read Resolving List Size command
 # HCI_LE_Read_Resolving_List_Size
 # TODO: b/265052417 - Definition needs to be added
@@ -2875,7 +2924,6 @@ struct LESetAddressResolutionEnableCommand:
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader       header
   $next [+1]         GenericEnableParam  address_resolution_enable
-
 
 # 7.8.45 LE Set Resolvable Private Address Timeout command
 # HCI_LE_Set_Resolvable_Private_Address_Timeout
@@ -3075,7 +3123,6 @@ struct LEClearAdvertisingSetsCommand:
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
-
 # 7.8.61 LE Set Periodic Advertising Parameters command
 # HCI_LE_Set_Periodic_Advertising_Parameters [v1] [v2]
 # TODO: b/265052417 - Definition needs to be added
@@ -3152,7 +3199,6 @@ struct LESetExtendedScanEnableCommand:
     --   Scan_Duration until it begins the subsequent Scan_Duration, where:
     --     Time = N * 1.28 sec
     --     Time Range: 1.28 s to 83,884.8 s
-
 
 # 7.8.66 LE Extended Create Connection command
 # HCI_LE_Extended_Create_Connection [v1] [v2]
@@ -3311,7 +3357,6 @@ struct LESetPrivacyModeCommand:
   $next [+1]                      LEPrivacyMode            privacy_mode
     -- The privacy mode to be used for the given entry on the resolving list.
 
-
 # 7.8.93 [No longer used]
 # 7.8.94 LE Modify Sleep Clock Accuracy command
 # 7.8.95 [No longer used]
@@ -3321,9 +3366,8 @@ struct LEReadISOTXSyncCommand:
   -- 7.8.96 LE Read ISO TX Sync command (v5.2) (LE)
   -- HCI_LE_Read_ISO_TX_Sync
   let hdr_size = CommandHeader.$size_in_bytes
-  0      [+hdr_size]  CommandHeader               header
-
-  $next  [+2]         UInt                        connection_handle
+  0     [+hdr_size]  CommandHeader  header
+  $next [+2]         UInt           connection_handle
     -- Connection handle of the CIS or BIS
     [requires: 0x0000 <= this <= 0x0EFF]
 
@@ -3331,50 +3375,52 @@ struct LEReadISOTXSyncCommand:
 struct LESetCIGParametersCommand:
   -- 7.8.97 LE Set CIG Parameters command (v5.2) (LE)
   -- HCI_LE_Set_CIG_Parameters
-  let hdr_size = CommandHeader.$size_in_bytes
-  0      [+hdr_size]  CommandHeader               header
 
-  $next  [+1]         UInt                        cig_id
+  let hdr_size = CommandHeader.$size_in_bytes
+
+  0     [+hdr_size]                CommandHeader                            header
+
+  $next [+1]                       UInt                                     cig_id
     -- Used to identify the CIG
     [requires: 0x00 <= this <= 0xEF]
 
-  $next  [+3]         UInt                        sdu_interval_c_to_p
+  $next [+3]                       UInt                                     sdu_interval_c_to_p
     -- The interval, in microseconds, of periodic SDUs (Central => Peripheral)
     [requires: 0x0000FF <= this <= 0x0FFFFF]
 
-  $next  [+3]         UInt                        sdu_interval_p_to_c
+  $next [+3]                       UInt                                     sdu_interval_p_to_c
     -- The interval, in microseconds, of periodic SDUs (Peripheral => Central)
     [requires: 0x0000FF <= this <= 0x0FFFFF]
 
-  $next  [+1]          LESleepClockAccuracyRange  worst_case_sca
+  $next [+1]                       LESleepClockAccuracyRange                worst_case_sca
     -- Worst-case sleep clock accuracy of all Peripherals that will participate in the CIG
 
-  $next  [+1]          LECISPacking                packing
+  $next [+1]                       LECISPacking                             packing
     -- Preferred method of arranging subevents of multiple CISes
 
-  $next  [+1]          LECISFraming                framing
+  $next [+1]                       LECISFraming                             framing
     -- Format of the CIS Data PDUs
 
-  $next  [+2]          UInt                        max_transport_latency_c_to_p
+  $next [+2]                       UInt                                     max_transport_latency_c_to_p
     -- Maximum transport latency, in milliseconds, from the Central's Controller to the
     -- Peripheral's Controller
     [requires: 0x0005 <= this <= 0x0FA0]
 
-  $next  [+2]          UInt                        max_transport_latency_p_to_c
+  $next [+2]                       UInt                                     max_transport_latency_p_to_c
     -- Maximum transport latency, in milliseconds, from the Peripheral's Controller to the
     -- Central's Controller
     [requires: 0x0005 <= this <= 0x0FA0]
 
-  $next  [+1]          UInt                        cis_count
+  $next [+1]                       UInt                                     cis_count
     -- Total number of CIS configurations in the CIG being added or modified
     [requires: 0x00 <= this <= 0x1F]
 
   let single_cis_options_size = LESetCIGParametersCISOptions.$size_in_bytes
-  let total_cis_options_size = cis_count * single_cis_options_size
 
-  $next  [+total_cis_options_size]  LESetCIGParametersCISOptions[cis_count]  cis_options
+  let total_cis_options_size = cis_count*single_cis_options_size
+
+  $next [+total_cis_options_size]  LESetCIGParametersCISOptions[cis_count]  cis_options
     -- Array of parameters, one for each of the CISes in this CIG
-
 
 # 7.8.98 LE Set CIG Parameters Test command
 
@@ -3382,28 +3428,26 @@ struct LESetCIGParametersCommand:
 struct LECreateCISCommand:
   -- 7.8.99 LE Create CIS command (v5.2) (LE)
   -- HCI_LE_Create_CIS
-
   struct ConnectionInfo:
     -- Handles for each stream being created
-    0      [+2]  UInt  cis_connection_handle
+
+    0     [+2]  UInt  cis_connection_handle
       -- Connection handle of a CIS
       [requires: 0x0000 <= this <= 0xEFFF]
 
-    $next  [+2]  UInt  acl_connection_handle
+    $next [+2]  UInt  acl_connection_handle
       -- Connection handle of an ACL connection
       [requires: 0x0000 <= this <= 0xEFFF]
 
   let hdr_size = CommandHeader.$size_in_bytes
-  0      [+hdr_size]  CommandHeader  header
-
-  $next  [+1]         UInt           cis_count
+  0     [+hdr_size]               CommandHeader              header
+  $next [+1]                      UInt                       cis_count
     -- Total number of CISes to be created
     [requires: 0x01 <= this <= 0x1F]
 
   let single_cis_params_size = ConnectionInfo.$size_in_bytes
-  let total_cis_params_size = cis_count * single_cis_params_size
-
-  $next  [+total_cis_params_size]    ConnectionInfo[cis_count]  cis_connection_info
+  let total_cis_params_size = cis_count*single_cis_params_size
+  $next [+total_cis_params_size]  ConnectionInfo[cis_count]  cis_connection_info
     -- Connection handle information for the CIS(es) being created
 
 
@@ -3411,9 +3455,8 @@ struct LERemoveCIGCommand:
   -- 7.8.100 LE Remove CIG command (v5.2) (LE)
   -- HCI_LE_Remove_CIG
   let hdr_size = CommandHeader.$size_in_bytes
-  0      [+hdr_size]  CommandHeader  header
-
-  $next  [+1]         UInt           cig_id
+  0     [+hdr_size]  CommandHeader  header
+  $next [+1]         UInt           cig_id
     -- Identifier of a CIG
     [requires: 0x00 <= this <= 0xEF]
 
@@ -3422,9 +3465,8 @@ struct LEAcceptCISRequestCommand:
   -- 7.8.101 LE Accept CIS Request command (v5.2) (LE)
   -- HCI_LE_Accept_CIS_Request
   let hdr_size = CommandHeader.$size_in_bytes
-  0      [+hdr_size]  CommandHeader  header
-
-  $next  [+2]         UInt           connection_handle
+  0     [+hdr_size]  CommandHeader  header
+  $next [+2]         UInt           connection_handle
     -- Connection handle of the CIS
     [requires: 0x0000 <= this <= 0x0EFF]
 
@@ -3433,15 +3475,13 @@ struct LERejectCISRequestCommand:
   -- 7.8.102 LE Reject CIS Request command (v5.2) (LE)
   -- HCI_LE_Reject_CIS_Request
   let hdr_size = CommandHeader.$size_in_bytes
-  0      [+hdr_size]  CommandHeader  header
-
-  $next  [+2]         UInt           connection_handle
+  0     [+hdr_size]  CommandHeader  header
+  $next [+2]         UInt           connection_handle
     -- Connection handle of the CIS
     [requires: 0x0000 <= this <= 0x0EFF]
 
-  $next  [+1]         StatusCode     reason
+  $next [+1]         StatusCode     reason
     -- Reason the CIS request was rejected
-
 
 # 7.8.103 LE Create BIG command
 # 7.8.104 LE Create BIG Test command
@@ -3454,9 +3494,8 @@ struct LERequestPeerSCACommand:
   -- 7.8.108 LE Request Peer SCA command
   -- HCI_LE_Request_Peer_SCA
   let hdr_size = CommandHeader.$size_in_bytes
-  0      [+hdr_size]  CommandHeader  header
-
-  $next [+2]          UInt           connection_handle
+  0     [+hdr_size]  CommandHeader  header
+  $next [+2]         UInt           connection_handle
     -- Connection handle of the ACL
     [requires: 0x0000 <= this <= 0xEFF]
 
@@ -3465,31 +3504,30 @@ struct LESetupISODataPathCommand:
   -- 7.8.109 LE Setup ISO Data Path command
   -- HCI_LE_Setup_ISO_Data_Path
   let hdr_size = CommandHeader.$size_in_bytes
-  0      [+hdr_size]  CommandHeader  header
-
-  $next  [+2]  UInt                       connection_handle
+  0     [+hdr_size]                    CommandHeader                       header
+  $next [+2]                           UInt                                connection_handle
     -- Connection handle of the CIS or BIS
     [requires: 0x0000 <= this <= 0x0EFF]
 
-  $next  [+1]  DataPathDirection          data_path_direction
+  $next [+1]                           DataPathDirection                   data_path_direction
     -- Specifies the direction for which the data path is being configured
 
-  $next  [+1]  UInt                       data_path_id
+  $next [+1]                           UInt                                data_path_id
     -- Data transport path used (0x00 for HCI).
     [requires: 0x00 <= this <= 0xFE]
 
   let vcf_size = CodecId.$size_in_bytes
-  $next  [+vcf_size]  CodecId  codec_id
+  $next [+vcf_size]                    CodecId                             codec_id
     -- Codec to be used
 
-  $next  [+3]  UInt                       controller_delay
+  $next [+3]                           UInt                                controller_delay
     -- Controller delay in microseconds (0s to 4s)
     [requires: 0x000000 <= this <= 0x3D0900]
 
-  $next  [+1]  UInt                       codec_configuration_length
+  $next [+1]                           UInt                                codec_configuration_length
     -- Length of codec configuration
 
-  $next  [+codec_configuration_length]  UInt:8[codec_configuration_length]  codec_configuration
+  $next [+codec_configuration_length]  UInt:8[codec_configuration_length]  codec_configuration
     -- Codec-specific configuration data
 
 
@@ -3497,17 +3535,15 @@ struct LERemoveISODataPathCommand:
   -- 7.8.110 LE Remove ISO Data Path command
   -- HCI_LE_Remove_ISO_Data_Path
   let hdr_size = CommandHeader.$size_in_bytes
-  0      [+hdr_size]  CommandHeader  header
-
-  $next  [+2]  UInt                  connection_handle
+  0     [+hdr_size]  CommandHeader  header
+  $next [+2]         UInt           connection_handle
     -- Connection handle of the CIS or BIS
     [requires: 0x0000 <= this <= 0x0EFFF]
 
-  $next  [+1]  bits:
-    0      [+1]  Flag  remove_input_data_path
-    $next  [+1]  Flag  remove_output_data_path
-    $next  [+6]  UInt  padding
-
+  $next [+1]  bits:
+    0     [+1]       Flag           remove_input_data_path
+    $next [+1]       Flag           remove_output_data_path
+    $next [+6]       UInt           padding
 
 # 7.8.111 LE ISO Transmit Test command
 # 7.8.112 LE ISO Receive Test command
@@ -3680,6 +3716,44 @@ struct ReadRemoteSupportedFeaturesCompleteEvent:
     -- Page 0 of the LMP features.
 
 
+struct ReadRemoteVersionInfoCompleteEvent:
+  -- Read Remote Version Information Complete Event (v1.1) (BR/EDR & LE)
+  let hdr_size = EventHeader.$size_in_bytes
+  0     [+hdr_size]  EventHeader               header
+  $next [+1]         StatusCode                status
+  $next [+2]         UInt                      connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+1]         CoreSpecificationVersion  version
+    -- Version of the Current LMP or Link Layer supported by the remote Controller.
+
+  $next [+2]         UInt                      company_identifier
+    -- Company identifier for the manufacturer of the remote Controller. Assigned by Bluetooth SIG.
+
+  $next [+2]         UInt                      subversion
+    -- Revision of the LMP or Link Layer implementation in the remote Controller. This value is vendor-specific.
+
+
+struct ReadRemoteExtendedFeaturesCompleteEvent:
+  -- Read Remote Extended Features Complete Event (v1.1) (BR/EDR)
+  let hdr_size = EventHeader.$size_in_bytes
+  0     [+hdr_size]  EventHeader               header
+  $next [+1]         StatusCode                status
+  $next [+2]         UInt                      connection_handle
+    -- Only the lower 12-bits are meaningful.
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+1]         UInt                      page_number
+    -- 0x00: The normal LMP features as returned by HCI_Read_Remote_Supported_Features command.
+    -- 0x01 to 0xFF: The page number of the features returned.
+
+  $next [+1]         UInt                      max_page_number
+    -- The highest features page number which contains non-zero bits for the remote device.
+
+  $next [+8]         LmpFeatures(page_number)  lmp_features
+    -- Bit map of requested page of LMP features.
+
+
 struct LEMetaEvent:
   let hdr_size = EventHeader.$size_in_bytes
   0     [+hdr_size]  EventHeader  header
@@ -3741,6 +3815,17 @@ struct LEConnectionUpdateCompleteSubevent:
     -- Time: N * 10 ms
     -- Range: 100 ms to 32 s
     [requires: 0x000A <= this <= 0x0C80]
+
+
+struct LEReadRemoteFeaturesCompleteSubevent:
+  0     [+LEMetaEvent.$size_in_bytes]    LEMetaEvent   le_meta_event
+  $next [+1]                             StatusCode    status
+  $next [+2]                             UInt          connection_handle
+    -- Only the lower 12-bits are meaningful.
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+8]  bits:
+    0     [+LEFeatureSet.$size_in_bits]  LEFeatureSet  le_features
 
 
 struct LEExtendedAdvertisingReportData:
