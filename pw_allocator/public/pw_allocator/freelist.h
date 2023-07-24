@@ -64,22 +64,30 @@ class FreeList {
   FreeList& operator=(const FreeList& other) = delete;
   FreeList& operator=(FreeList&& other) = delete;
 
-  // Adds a chunk to this freelist. Returns:
-  //   OK: The chunk was added successfully
-  //   OUT_OF_RANGE: The chunk could not be added for size reasons (e.g. if
-  //                 the chunk is too small to store the FreeListNode).
+  /// Adds a chunk to this freelist.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - The chunk was added successfully.
+  /// * @pw_status{OUT_OF_RANGE} - The chunk could not be added for size
+  ///   reasons (e.g. the chunk is too small to store the `FreeListNode`).
   Status AddChunk(span<std::byte> chunk);
 
-  // Finds an eligible chunk for an allocation of size `size`. Note that this
-  // will return the first allocation possible within a given bucket, it does
-  // not currently optimize for finding the smallest chunk. Returns a span
-  // representing the chunk. This will be "valid" on success, and will have size
-  // = 0 on failure (if there were no chunks available for that allocation).
+  /// Finds an eligible chunk for an allocation of size `size`.
+  ///
+  /// @note This returns the first allocation possible within a given bucket;
+  /// It does not currently optimize for finding the smallest chunk.
+  ///
+  /// @returns
+  /// * On success - A span representing the chunk.
+  /// * On failure (e.g. there were no chunks available for that allocation) -
+  ///   A span with a size of 0.
   span<std::byte> FindChunk(size_t size) const;
 
-  // Remove a chunk from this freelist. Returns:
-  //   OK: The chunk was removed successfully
-  //   NOT_FOUND: The chunk could not be found in this freelist.
+  /// Removes a chunk from this freelist.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - The chunk was removed successfully.
+  /// * @pw_status{NOT_FOUND} - The chunk could not be found in this freelist.
   Status RemoveChunk(span<std::byte> chunk);
 
  private:

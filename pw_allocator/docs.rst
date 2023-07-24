@@ -22,6 +22,7 @@ The ``Block`` class provides two check functions:
 FreeList
 ========
 .. doxygenclass:: pw::allocator::FreeList
+   :members:
 
 Heap Poisoning
 ==============
