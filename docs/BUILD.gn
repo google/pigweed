@@ -158,6 +158,7 @@ _doxygen_input_files = [
   "$dir_pw_function/public/pw_function/pointer.h",
   "$dir_pw_status/public/pw_status/status.h",
   "$dir_pw_stream/public/pw_stream/stream.h",
+  "$dir_pw_stream_uart_linux/public/pw_stream_uart_linux/stream.h",
   "$dir_pw_string/public/pw_string/string_builder.h",
   "$dir_pw_string/public/pw_string/util.h",
   "$dir_pw_sync/public/pw_sync/binary_semaphore.h",

@@ -129,6 +129,7 @@ declare_args() {
   dir_pw_status = get_path_info("../pw_status", "abspath")
   dir_pw_stm32cube_build = get_path_info("../pw_stm32cube_build", "abspath")
   dir_pw_stream = get_path_info("../pw_stream", "abspath")
+  dir_pw_stream_uart_linux = get_path_info("../pw_stream_uart_linux", "abspath")
   dir_pw_stream_uart_mcuxpresso =
       get_path_info("../pw_stream_uart_mcuxpresso", "abspath")
   dir_pw_string = get_path_info("../pw_string", "abspath")
@@ -281,6 +282,7 @@ declare_args() {
     dir_pw_status,
     dir_pw_stm32cube_build,
     dir_pw_stream,
+    dir_pw_stream_uart_linux,
     dir_pw_stream_uart_mcuxpresso,
     dir_pw_string,
     dir_pw_symbolizer,
@@ -424,6 +426,7 @@ declare_args() {
     "$dir_pw_status:tests",
     "$dir_pw_stm32cube_build:tests",
     "$dir_pw_stream:tests",
+    "$dir_pw_stream_uart_linux:tests",
     "$dir_pw_stream_uart_mcuxpresso:tests",
     "$dir_pw_string:tests",
     "$dir_pw_symbolizer:tests",
@@ -567,6 +570,7 @@ declare_args() {
     "$dir_pw_status:docs",
     "$dir_pw_stm32cube_build:docs",
     "$dir_pw_stream:docs",
+    "$dir_pw_stream_uart_linux:docs",
     "$dir_pw_stream_uart_mcuxpresso:docs",
     "$dir_pw_string:docs",
     "$dir_pw_symbolizer:docs",
