@@ -550,10 +550,6 @@ def docs_build(ctx: PresubmitContext) -> None:
     )
 
 
-def gn_docs_build(ctx: PresubmitContext) -> None:
-    docs_build(ctx)
-
-
 gn_host_tools = build.GnGenNinja(
     name='gn_host_tools',
     ninja_targets=('host_tools',),
@@ -1141,7 +1137,6 @@ OTHER_CHECKS = (
     gitmodules.create(gitmodules.Config(allow_submodules=False)),
     gn_clang_build,
     gn_combined_build_check,
-    gn_docs_build,
     module_owners.presubmit_check(),
     npm_presubmit.npm_test,
     pw_transfer_integration_test,
