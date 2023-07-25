@@ -203,9 +203,9 @@ def _generate_constraint_with_hashes(
 
     # Remove absolute paths from comments
     output_text = output_file.read_text()
-    output_text = output_text.replace(f'{str(ctx.output_dir)}/', '')
-    output_text = output_text.replace(f'{str(ctx.root)}/', '')
-    output_text = output_text.replace(f'{str(output_file.parent)}/', '')
+    output_text = output_text.replace(str(ctx.output_dir), '')
+    output_text = output_text.replace(str(ctx.root), '')
+    output_text = output_text.replace(str(output_file.parent), '')
     output_file.write_text(output_text)
 
 
