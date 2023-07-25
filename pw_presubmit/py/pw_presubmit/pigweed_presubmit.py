@@ -535,7 +535,19 @@ def docs_build(ctx: PresubmitContext) -> None:
     rust_docs_output_dir = ctx.output_dir.joinpath(
         'docs', 'gen', 'docs', 'html', 'rustdoc'
     )
-    shutil.copytree(rust_docs_bazel_dir, rust_docs_output_dir)
+
+    # Remove the docs tree to avoid including stale files from previous runs.
+    shutil.rmtree(rust_docs_output_dir, ignore_errors=True)
+
+    # Bazel generates files and directories without write permissions.  In
+    # order to allow this rule to be run multiple times we use shutil.copyfile
+    # for the actual copies to not copy permissions of files.
+    shutil.copytree(
+        rust_docs_bazel_dir,
+        rust_docs_output_dir,
+        copy_function=shutil.copyfile,
+        dirs_exist_ok=True,
+    )
 
 
 def gn_docs_build(ctx: PresubmitContext) -> None:
