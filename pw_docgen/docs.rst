@@ -231,3 +231,31 @@ automatically based on the value of the GN argument
 ``pw_docs_google_analytics_id``, allowing you to control whether tracking is
 enabled or not in your build configuration. Typically, you would only enable
 this for documentation builds intended for deployment on the web.
+
+Debugging Pigweed's Sphinx extensions
+-------------------------------------
+To step through your Pigweed extension code with
+`pdb <https://docs.python.org/3/library/pdb.html>`_:
+
+#. Set a breakpoint in your extension code:
+
+   .. code::
+
+      breakpoint()
+
+#. Build ``python.install`` to install the code change into the bootstrap venv
+   (``environment/pigweed-venv/lib/python3.8/site-packages/pw_docgen``):
+
+   .. code::
+
+      ninja -C out python.install
+
+#. Manually invoke Sphinx to build the docs and trigger your breakpoint:
+
+   .. code::
+
+      cd out
+      sphinx-build -W -b html -d docs/gen/docs/help docs/gen/docs/pw_docgen_tree docs/gen/docs/html -v -v -v
+
+   You should see build output from Sphinx. The build should pause at your
+   breakpoint and you should then see pdb's prompt (``(Pdb)``).
