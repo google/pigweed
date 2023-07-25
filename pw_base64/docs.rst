@@ -11,3 +11,4 @@ data as specified by `RFC 3548 <https://tools.ietf.org/html/rfc3548>`_ and
   The documentation for this module is currently incomplete.
 
 .. doxygenfunction:: pw::base64::EncodedSize(size_t binary_size_bytes)
+.. doxygenfunction:: pw::base64::MaxDecodedSize(size_t base64_size_bytes)

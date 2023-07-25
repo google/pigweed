@@ -109,10 +109,17 @@ inline InlineString<EncodedSize(kMaxBinaryDataSizeBytes)> Encode(
   return output;
 }
 
-// Returns the maximum size of decoded Base64 data in bytes. base64_size_bytes
-// must be a multiple of 4, since Base64 encodes 3-byte groups into 4-character
-// strings. If the last 3-byte group has padding, the actual decoded size would
-// be 1 or 2 bytes less than MaxDecodedSize.
+/// Calculates the maximum size of Base64-encoded data after decoding.
+///
+/// @param[in] base64_size_bytes The size of the Base64-encoded data.
+///
+/// @pre `base64_size_bytes` must be a multiple of 4, since Base64 encodes
+/// 3-byte groups into 4-character strings.
+///
+/// @returns The maximum size of the Base64-encoded data represented by
+/// `base64_bytes_size` after decoding. If the last 3-byte group has padding,
+/// the actual decoded size will be 1 or 2 bytes less than the value returned
+/// by `MaxDecodedSize()`.
 constexpr size_t MaxDecodedSize(size_t base64_size_bytes) {
   return PW_BASE64_MAX_DECODED_SIZE(base64_size_bytes);
 }
