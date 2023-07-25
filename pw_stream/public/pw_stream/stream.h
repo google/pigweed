@@ -68,7 +68,7 @@ class Stream {
   virtual ~Stream() = default;
 
   /// @retval True If reading is supported.
-  /// @retaval False If Read() returns UNIMPLEMENTED.
+  /// @retval False If Read() returns UNIMPLEMENTED.
   constexpr bool readable() const { return readable_; }
 
   /// @retval True If writing is supported.
