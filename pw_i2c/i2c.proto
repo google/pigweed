@@ -21,9 +21,9 @@ message I2cWriteRequest {
   // 7-bit I2C target address to write to.
   uint32 target_address = 2;
   // Register address to write. Follow the endianness required by the
-  // peripheral for multi-byte address.
+  // responder for multi-byte address.
   bytes register_address = 3;
-  // Value to write. Follow the endianness required by the peripheral.
+  // Value to write. Follow the endianness required by the responder.
   bytes value = 4;
 }
 
@@ -35,9 +35,9 @@ message I2cReadRequest {
   // 7-bit I2C target address to read from.
   uint32 target_address = 2;
   // Register address to write. Follow the endianness required by the
-  // peripheral for multi-byte address.
+  // responder for multi-byte address.
   bytes register_address = 3;
-  // Expected number of bytes from the peripheral.
+  // Expected number of bytes from the responder.
   uint32 read_size = 4;
 }
 

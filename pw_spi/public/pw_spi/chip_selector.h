@@ -30,7 +30,7 @@ enum class ChipSelectBehavior : uint8_t {
 };
 
 // The ChipSelector class provides an abstract interface for controlling the
-// chip-select signal associated with a specific SPI peripheral.
+// chip-select signal associated with a specific SPI responder.
 class ChipSelector {
  public:
   virtual ~ChipSelector() = default;

@@ -31,7 +31,7 @@ with devices with a single device address.
 
 .. note::
 
-   ``Device`` is intended to represent ownership of a specific peripheral.
+   ``Device`` is intended to represent ownership of a specific responder.
    Individual transactions are atomic (as described under ``Initiator``), but
    there is no synchronization for sequences of transactions. Therefore, shared
    access should be faciliated with higher level application abstractions. To
@@ -110,7 +110,7 @@ Using the pigweed console, you can invoke the service to perform an I2C read:
 The above shows reading register 0x0e on a device located at
 I2C address 0x22.
 
-For peripherals that support 4 byte register width, you can specify as:
+For responders that support 4 byte register width, you can specify as:
 
 .. code:: python
 
@@ -127,7 +127,7 @@ And similarly, for performing I2C write:
 Similarly, multi-byte writes can also be specified with the bytes fields for
 `register_address` and `value`.
 
-I2C peripherals that require multi-byte access may expect a specific endianness.
+I2C responders that require multi-byte access may expect a specific endianness.
 The order of bytes specified in the bytes field will match the order of bytes
 sent/received on the bus. Maximum supported value for multi-byte access is
 4 bytes.

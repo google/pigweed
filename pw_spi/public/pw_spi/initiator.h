@@ -82,7 +82,7 @@ class Initiator {
  public:
   virtual ~Initiator() = default;
 
-  // Configure the SPI bus to communicate with peripherals using a given set of
+  // Configure the SPI bus to communicate with responders using a given set of
   // properties, including the clock polarity, clock phase, bit-order, and
   // bits-per-word.
   // Returns OkStatus() on success, and implementation-specific values on
