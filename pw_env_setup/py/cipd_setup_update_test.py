@@ -146,6 +146,8 @@ class TestCipdSetupUpdate(unittest.TestCase):
         self.assertSequenceEqual(expected_pkgs, pkgs)
 
     def test_all_package_files(self) -> None:
+        """Test that CIPD files are loaded in the correct order."""
+
         upstream_load_order = [
             Path('upstream.json'),
             Path('bazel.json'),
@@ -156,12 +158,14 @@ class TestCipdSetupUpdate(unittest.TestCase):
             Path('arm.json'),
             Path('pigweed.json'),
             Path('python.json'),
+            Path('python311.json'),
             Path('doxygen.json'),
             Path('go.json'),
             Path('host_tools.json'),
             Path('kythe.json'),
             Path('luci.json'),
             Path('msrv_python.json'),
+            Path('python38.json'),
             Path('rbe.json'),
             Path('testing.json'),
             Path('web.json'),

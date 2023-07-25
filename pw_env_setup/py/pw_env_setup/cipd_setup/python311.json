@@ -1,0 +1,18 @@
+{
+  "packages": [
+    {
+      "path": "infra/3pp/tools/cpython3/${platform}",
+      "platforms": [
+        "linux-amd64",
+        "linux-arm64",
+        "mac-amd64",
+        "mac-arm64",
+        "windows-amd64"
+      ],
+      "tags": [
+        "version:2@3.11.3.chromium.29"
+      ],
+      "version_file": ".versions/cpython3.cipd_version"
+    }
+  ]
+}
