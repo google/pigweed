@@ -15,15 +15,24 @@
 
 #include <gtest/gtest.h>
 
+#include <cstdint>
+
+#include "fsl_clock.h"
+
 namespace pw::i2c {
 namespace {
 
 constexpr uint32_t kI2CBaudRate = 100000;
+constexpr McuxpressoInitiator::Config kConfig = {
+    .flexcomm_address = I2C11_BASE,
+    .clock_name = kCLOCK_Flexcomm11Clk,
+    .baud_rate_bps = kI2CBaudRate,
+};
 
 TEST(InitiatorTest, Init) {
   // Simple test only meant to ensure module is compiled.
-  const auto clock_freq = CLOCK_GetFlexcommClkFreq(11);
-  McuxpressoInitiator initiator(I2C11, kI2CBaudRate, clock_freq);
+  McuxpressoInitiator initiator{kConfig};
+  initiator.Enable();
 }
 
 }  // namespace

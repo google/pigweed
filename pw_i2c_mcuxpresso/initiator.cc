@@ -41,21 +41,28 @@ Status HalStatusToPwStatus(status_t status) {
 }  // namespace
 
 // inclusive-language: disable
-McuxpressoInitiator::McuxpressoInitiator(I2C_Type* base,
-                                         uint32_t baud_rate_bps,
-                                         uint32_t src_clock_hz)
-    : base_(base) {
+void McuxpressoInitiator::Enable() {
+  std::lock_guard lock(mutex_);
+
   i2c_master_config_t master_config;
   I2C_MasterGetDefaultConfig(&master_config);
-  master_config.baudRate_Bps = baud_rate_bps;
-  I2C_MasterInit(base_, &master_config, src_clock_hz);
+  master_config.baudRate_Bps = config_.baud_rate_bps;
+  I2C_MasterInit(base_, &master_config, CLOCK_GetFreq(config_.clock_name));
 
   // Create the handle for the non-blocking transfer and register callback.
   I2C_MasterTransferCreateHandle(
       base_, &handle_, McuxpressoInitiator::TransferCompleteCallback, this);
+
+  enabled_ = true;
 }
 
-McuxpressoInitiator::~McuxpressoInitiator() { I2C_MasterDeinit(base_); }
+void McuxpressoInitiator::Disable() {
+  std::lock_guard lock(mutex_);
+  I2C_MasterDeinit(base_);
+  enabled_ = false;
+}
+
+McuxpressoInitiator::~McuxpressoInitiator() { Disable(); }
 
 void McuxpressoInitiator::TransferCompleteCallback(I2C_Type*,
                                                    i2c_master_handle_t*,
@@ -102,6 +109,10 @@ Status McuxpressoInitiator::DoWriteReadFor(
 
   const uint8_t address = device_address.GetSevenBit();
   std::lock_guard lock(mutex_);
+
+  if (!enabled_) {
+    return Status::FailedPrecondition();
+  }
 
   if (!tx_buffer.empty() && rx_buffer.empty()) {
     i2c_master_transfer_t transfer{kI2C_TransferDefaultFlag,

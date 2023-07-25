@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include "fsl_clock.h"
 #include "fsl_i2c.h"
 #include "pw_i2c/initiator.h"
 #include "pw_sync/interrupt_spin_lock.h"
@@ -26,11 +27,21 @@ namespace pw::i2c {
 // Currently supports only devices with 7 bit adresses.
 class McuxpressoInitiator final : public Initiator {
  public:
-  McuxpressoInitiator(I2C_Type* base,
-                      uint32_t baud_rate_bps,
-                      uint32_t src_clock_hz);
+  struct Config {
+    uint32_t flexcomm_address;
+    clock_name_t clock_name;
+    uint32_t baud_rate_bps;
+  };
 
-  ~McuxpressoInitiator();
+  McuxpressoInitiator(const Config& config)
+      : config_(config),
+        base_(reinterpret_cast<I2C_Type*>(config_.flexcomm_address)) {}
+
+  // Should be called before attempting any transfers.
+  void Enable() PW_LOCKS_EXCLUDED(mutex_);
+  void Disable() PW_LOCKS_EXCLUDED(mutex_);
+
+  ~McuxpressoInitiator() final;
 
  private:
   Status DoWriteReadFor(Address device_address,
@@ -53,7 +64,9 @@ class McuxpressoInitiator final : public Initiator {
   // inclusive-language: enable
 
   sync::Mutex mutex_;
-  I2C_Type* base_ PW_GUARDED_BY(mutex_);
+  Config const config_;
+  I2C_Type* const base_;
+  bool enabled_ PW_GUARDED_BY(mutex_);
 
   // Transfer completion status for non-blocking I2C transfer.
   sync::TimedThreadNotification callback_complete_notification_;
@@ -61,7 +74,7 @@ class McuxpressoInitiator final : public Initiator {
   status_t transfer_status_ PW_GUARDED_BY(callback_isl_);
 
   // inclusive-language: disable
-  i2c_master_handle_t handle_;
+  i2c_master_handle_t handle_ PW_GUARDED_BY(mutex_);
   // inclusive-language: enable
 };
 

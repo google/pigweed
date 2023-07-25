@@ -12,7 +12,6 @@ non-blocking driver API.
 
 Setup
 =====
-
 This module requires following setup:
 
  1. Use ``pw_build_mcuxpresso`` to create a ``pw_source_set`` for an
@@ -24,3 +23,16 @@ This module requires following setup:
     ``pw::i2c::Initiator`` while creating ``pw::i2c::Device`` or
     ``pw::i2c::RegisterDevice`` interface to access the I2C devices connected to
     target.
+
+Usage
+=====
+.. code-block:: cpp
+
+   constexpr uint32_t kI2CBaudRate = 100000;
+   constexpr McuxpressoInitiator::Config kConfig = {
+       .flexcomm_address = I2C11_BASE,
+       .clock_name = kCLOCK_Flexcomm11Clk,
+       .baud_rate_bps = kI2CBaudRate,
+   };
+   McuxpressoInitiator initiator{kConfig};
+   initiator.Enable();
