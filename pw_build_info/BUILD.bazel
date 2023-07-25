@@ -76,6 +76,12 @@ pw_cc_library(
 pw_cc_test(
     name = "build_id_test",
     srcs = ["build_id_test.cc"],
+    # Only compatible with platforms that support linker scripts.
+    target_compatible_with = select({
+        "@platforms//os:macos": ["@platforms//:incompatible"],
+        "@platforms//os:windows": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":build_id",
         "//pw_span",

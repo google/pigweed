@@ -112,6 +112,9 @@ pw_cc_library(
     srcs = ["linux_spi.cc"],
     hdrs = ["public/pw_spi/linux_spi.h"],
     includes = ["public"],
+    target_compatible_with = [
+        "@platforms//os:linux",
+    ],
     deps = [
         ":device",
         "//pw_bytes",
