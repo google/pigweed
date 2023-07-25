@@ -11,8 +11,12 @@
     },
     "pw_cli": {
       "plugins": {
+        "build": {
+          "module": "pw_build.pigweed_upstream_build",
+          "function": "pigweed_upstream_main"
+        },
         "console": {
-          "module": "pw_console.__main__",
+          "module": "pw_system.console",
           "function": "main"
         },
         "format": {

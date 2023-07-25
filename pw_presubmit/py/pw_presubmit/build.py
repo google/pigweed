@@ -703,9 +703,7 @@ class _NinjaBase(Check):
 
     @property
     def ninja_targets(self) -> List[str]:
-        return list(
-            target for target in itertools.chain(*self._ninja_target_lists)
-        )
+        return list(itertools.chain(*self._ninja_target_lists))
 
     def _install_package(  # pylint: disable=no-self-use
         self,
