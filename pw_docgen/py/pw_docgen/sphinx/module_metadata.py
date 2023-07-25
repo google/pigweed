@@ -269,7 +269,14 @@ class PigweedModuleDirective(SphinxDirective):
 
             if len(languages) > 0:
                 for language in languages:
-                    language_tags.append(f':bdg-info:`{language.strip()}`')
+                    language = language.strip()
+                    if language == 'Rust':
+                        language_tags.append(
+                            f':bdg-link-info:`{language}'
+                            + f'</rustdoc/{module_name}>`'
+                        )
+                    else:
+                        language_tags.append(f':bdg-info:`{language}`')
 
         code_size_impact = []
 

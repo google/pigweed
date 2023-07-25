@@ -196,7 +196,7 @@ example:
       :name: pw_string
       :tagline: Efficient, easy, and safe string manipulation
       :status: stable
-      :languages: C++14, C++17
+      :languages: C++14, C++17, Rust
       :code-size-impact: 500 to 1500 bytes
       :get-started: module-pw_string-get-started
       :design: module-pw_string-design
@@ -211,7 +211,8 @@ _________________
 - ``tagline``: A very short tagline that summarizes the module (required)
 - ``status``: One of ``experimental``, ``unstable``, and ``stable`` (required)
 - ``is-deprecated``: A flag indicating that the module is deprecated
-- ``languages``: A comma-separated list of languages the module supports
+- ``languages``: A comma-separated list of languages the module supports.  If
+  the language has API docs (Rust), they will be linked from the metadata block.
 - ``code-size-impact``: A summarize of the average code size impact
 - ``get-started``: A reference to the getting started section (required)
 - ``tutorials``: A reference to the tutorials section
