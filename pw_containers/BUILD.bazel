@@ -151,6 +151,7 @@ pw_cc_test(
     srcs = ["algorithm_test.cc"],
     deps = [
         ":algorithm",
+        ":flat_map",
         ":intrusive_list",
         ":vector",
         "//pw_span",
@@ -161,7 +162,9 @@ pw_cc_test(
     name = "filtered_view_test",
     srcs = ["filtered_view_test.cc"],
     deps = [
+        ":algorithm",
         ":filtered_view",
+        ":flat_map",
         ":intrusive_list",
     ],
 )

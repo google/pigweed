@@ -22,6 +22,7 @@
 #include <iterator>
 
 #include "gtest/gtest.h"
+#include "pw_containers/flat_map.h"
 #include "pw_containers/intrusive_list.h"
 #include "pw_containers/vector.h"
 #include "pw_span/span.h"
@@ -227,6 +228,15 @@ TEST_F(NonMutatingTest, Equal) {
   EXPECT_TRUE(pw::containers::Equal(span_, vector_));
   EXPECT_TRUE(pw::containers::Equal(span_, array_));
   EXPECT_TRUE(pw::containers::Equal(array_, vector_));
+
+  pw::containers::FlatMap<char, int, 3> map1({{{'A', 1}, {'B', 2}, {'C', 3}}});
+  pw::containers::FlatMap<char, int, 3> map2({{{'B', 2}, {'A', 1}, {'C', 3}}});
+  pw::containers::FlatMap<char, int, 3> map3({{{'A', 1}, {'B', 2}, {'C', 4}}});
+  pw::containers::FlatMap<char, int, 3> map4({{{'A', 1}, {'B', 2}, {'D', 3}}});
+
+  EXPECT_TRUE(pw::containers::Equal(map1, map2));
+  EXPECT_FALSE(pw::containers::Equal(map1, map3));
+  EXPECT_FALSE(pw::containers::Equal(map1, map4));
 
   // Test that behavior appropriately differs from that of equal().
   pw::Vector<int, 4> vector_plus = {1, 2, 3};

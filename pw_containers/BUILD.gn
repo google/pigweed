@@ -140,6 +140,7 @@ pw_test("algorithm_test") {
   sources = [ "algorithm_test.cc" ]
   deps = [
     ":algorithm",
+    ":flat_map",
     ":intrusive_list",
     ":vector",
     dir_pw_span,
@@ -152,7 +153,9 @@ pw_test("algorithm_test") {
 pw_test("filtered_view_test") {
   sources = [ "filtered_view_test.cc" ]
   deps = [
+    ":algorithm",
     ":filtered_view",
+    ":flat_map",
     ":intrusive_list",
     dir_pw_span,
   ]

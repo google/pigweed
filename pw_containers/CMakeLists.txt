@@ -133,6 +133,7 @@ pw_add_test(pw_containers.algorithm_test
     algorithm_test.cc
   PRIVATE_DEPS
     pw_containers.algorithm
+    pw_containers.flat_map
     pw_containers.intrusive_list
     pw_containers.vector
     pw_span
@@ -145,7 +146,9 @@ pw_add_test(pw_containers.filtered_view_test
   SOURCES
     filtered_view_test.cc
   PRIVATE_DEPS
+    pw_containers.algorithm
     pw_containers.filtered_view
+    pw_containers.flat_map
     pw_containers.intrusive_list
     pw_span
   GROUPS

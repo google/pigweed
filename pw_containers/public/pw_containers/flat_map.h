@@ -31,6 +31,12 @@ template <typename First, typename Second>
 struct Pair {
   First first;
   Second second;
+
+  bool operator==(const Pair& p) const {
+    return first == p.first && second == p.second;
+  }
+
+  bool operator!=(const Pair& p) const { return !(*this == p); }
 };
 
 template <typename T1, typename T2>
@@ -49,6 +55,8 @@ class FlatMap {
   using key_type = Key;
   using mapped_type = Value;
   using value_type = Pair<key_type, mapped_type>;
+  using pointer = value_type*;
+  using reference = value_type&;
   using size_type = size_t;
   using difference_type = ptrdiff_t;
   using container_type = typename std::array<value_type, kArraySize>;

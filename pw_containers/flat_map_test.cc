@@ -34,6 +34,17 @@ constexpr FlatMap<int, char, 5> kOddMap({{
 
 }  // namespace
 
+TEST(FlatMap, PairEquality) {
+  Pair<char, int> p1{'a', 1};
+  Pair<char, int> p2{'a', 1};
+  Pair<char, int> p3{'b', 1};
+  Pair<char, int> p4{'a', 2};
+
+  EXPECT_EQ(p1, p2);
+  EXPECT_NE(p1, p3);
+  EXPECT_NE(p1, p4);
+}
+
 TEST(FlatMap, Size) { EXPECT_EQ(kOddMap.size(), static_cast<uint32_t>(5)); }
 
 TEST(FlatMap, EmptyFlatMapSize) {
