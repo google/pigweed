@@ -51,11 +51,13 @@ void HandleTimerCallback(TimerHandle_t timer_handle) {
   if (native_type.state == State::kCancelled) {
     // Do nothing, we were invoked while the stop command was in the queue.
     //
-    // Note that xTimerIsTimerActive cannot be used here, as this only controls
-    // whether the tick handler is permitted to enqueue a timer for expiry
-    // execution. If it was already enqueued for execution before the stop
-    // command was executed, then this callback will be invoked while
-    // xTimerIsTimerActive returns false.
+    // Note that xTimerIsTimerActive cannot be used here. If a timer is started
+    // after it expired, it is executed immediately from the command queue.
+    // Older versions of FreeRTOS failed to mark expired timers as inactive
+    // before executing them in this way. So, if the timer is executed in the
+    // command queue before the stop command is processed, this callback will be
+    // invoked while xTimerIsTimerActive returns true. This was fixed in
+    // https://github.com/FreeRTOS/FreeRTOS-Kernel/pull/305.
     return;
   }
 
@@ -140,13 +142,12 @@ SystemTimer::~SystemTimer() {
       "Timer command queue overflowed");
 
   // In case the timer is still active as warned above, busy yield loop until it
-  // has been removed. Note that this is safe before the scheduler has been
-  // started because the timer cannot have been added to the queue yet and ergo
-  // it shouldn't attempt to yield.
+  // has been removed. The active flag is cleared in the StaticTimer_t when the
+  // delete command is processed.
   //
-  // TODO(b/291346908): There is still a race condition here for use after
-  // free because xTimerIsTimerActive may return false while the timer is still
-  // enqueued in the expiry execution callback queue.
+  // Note that this is safe before the scheduler has been started because the
+  // timer cannot have been added to the queue yet and ergo it shouldn't attempt
+  // to yield.
   while (
       xTimerIsTimerActive(reinterpret_cast<TimerHandle_t>(&native_type_.tcb))) {
     taskYIELD();
