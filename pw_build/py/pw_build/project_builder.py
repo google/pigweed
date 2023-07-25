@@ -126,10 +126,67 @@ def _exit_due_to_interrupt() -> None:
 
 
 _NINJA_BUILD_STEP = re.compile(
-    r'^\[(?P<step>[0-9]+)/(?P<total_steps>[0-9]+)\] (?P<action>.*)$'
+    # Start of line
+    r'^'
+    # Step count: [1234/5678]
+    r'\[(?P<step>[0-9]+)/(?P<total_steps>[0-9]+)\]'
+    # whitespace
+    r' *'
+    # Build step text
+    r'(?P<action>.*)$'
 )
 
-_NINJA_FAILURE_TEXT = '\033[31mFAILED: '
+_BAZEL_BUILD_STEP = re.compile(
+    # Start of line
+    r'^'
+    # Optional starting green color
+    r'(?:\x1b\[32m)?'
+    # Step count: [1,234 / 5,678]
+    r'\[(?P<step>[0-9,]+) */ *(?P<total_steps>[0-9,]+)\]'
+    # Optional ending clear color and space
+    r'(?:\x1b\[0m)? *'
+    # Build step text
+    r'(?P<action>.*)$'
+)
+
+_NINJA_FAILURE = re.compile(
+    # Start of line
+    r'^'
+    # Optional red color
+    r'(?:\x1b\[31m)?'
+    r'FAILED:'
+    r' '
+    # Optional color reset
+    r'(?:\x1b\[0m)?'
+)
+
+_BAZEL_FAILURE = re.compile(
+    # Start of line
+    r'^'
+    # Optional red color
+    r'(?:\x1b\[31m)?'
+    # Optional bold color
+    r'(?:\x1b\[1m)?'
+    r'FAIL:'
+    # Optional color reset
+    r'(?:\x1b\[0m)?'
+    # whitespace
+    r' *'
+    r'.*bazel-out.*'
+)
+
+_BAZEL_ELAPSED_TIME = re.compile(
+    # Start of line
+    r'^'
+    # Optional green color
+    r'(?:\x1b\[32m)?'
+    r'INFO:'
+    # single space
+    r' '
+    # Optional color reset
+    r'(?:\x1b\[0m)?'
+    r'Elapsed time:'
+)
 
 
 def execute_command_no_logging(
@@ -167,6 +224,19 @@ def execute_command_with_logging(
     current_stdout = ''
     returncode = None
 
+    starting_failure_regex = _NINJA_FAILURE
+    ending_failure_regex = _NINJA_BUILD_STEP
+    build_step_regex = _NINJA_BUILD_STEP
+
+    if command[0].endswith('ninja'):
+        build_step_regex = _NINJA_BUILD_STEP
+        starting_failure_regex = _NINJA_FAILURE
+        ending_failure_regex = _NINJA_BUILD_STEP
+    elif command[0].endswith('bazel'):
+        build_step_regex = _BAZEL_BUILD_STEP
+        starting_failure_regex = _BAZEL_FAILURE
+        ending_failure_regex = _BAZEL_ELAPSED_TIME
+
     with subprocess.Popen(
         command,
         env=env,
@@ -194,7 +264,7 @@ def execute_command_with_logging(
                 returncode = proc.poll()
                 continue
 
-            line_match_result = _NINJA_BUILD_STEP.match(output)
+            line_match_result = build_step_regex.match(output)
             if line_match_result:
                 if failure_line and not BUILDER_CONTEXT.build_stopping():
                     recipe.status.log_last_failure()
@@ -206,12 +276,16 @@ def execute_command_with_logging(
                 recipe.status.percent = float(step / total_steps)
 
             logger_method = logger.info
-            if output.startswith(_NINJA_FAILURE_TEXT):
+            if starting_failure_regex.match(output):
                 logger_method = logger.error
                 if failure_line and not BUILDER_CONTEXT.build_stopping():
                     recipe.status.log_last_failure()
                 recipe.status.increment_error_count()
                 failure_line = True
+            elif ending_failure_regex.match(output):
+                if failure_line and not BUILDER_CONTEXT.build_stopping():
+                    recipe.status.log_last_failure()
+                failure_line = False
 
             # Mypy output mixes character encoding in color coded output
             # and uses the 'sgr0' (or exit_attribute_mode) capability from the

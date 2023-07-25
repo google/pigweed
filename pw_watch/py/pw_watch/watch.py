@@ -418,7 +418,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
             self.current_build_errors = recipe.status.error_count
 
             if self.watch_app:
-                self.watch_app.redraw_ui()
+                self.watch_app.logs_redraw()
 
         desired_logger = _LOG
         if self.separate_logfiles:
