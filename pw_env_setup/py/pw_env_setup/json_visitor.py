@@ -27,6 +27,12 @@ class JSONVisitor(object):  # pylint: disable=useless-object-inheritance
         self._data = {}
 
     def serialize(self, env, outs):
+        """Write a json file based on the given environment.
+
+        Args:
+            env (environment.Environment): Environment variables to use.
+            outs (file): JSON file to write.
+        """
         self._data = {
             'modify': {},
             'set': {},

@@ -61,6 +61,12 @@ class ShellVisitor(_BaseShellVisitor):
         self._replacements = ()
 
     def serialize(self, env, outs):
+        """Write a shell file based on the given environment.
+
+        Args:
+            env (environment.Environment): Environment variables to use.
+            outs (file): Shell file to write.
+        """
         try:
             self._replacements = tuple(
                 (key, env.get(key) if value is None else value)

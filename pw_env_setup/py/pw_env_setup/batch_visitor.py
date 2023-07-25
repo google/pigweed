@@ -31,6 +31,12 @@ class BatchVisitor(object):  # pylint: disable=useless-object-inheritance
         self._pathsep = pathsep
 
     def serialize(self, env, outs):
+        """Write a batch file based on the given environment.
+
+        Args:
+            env (environment.Environment): Environment variables to use.
+            outs (file): Batch file to write.
+        """
         try:
             self._replacements = tuple(
                 (key, env.get(key) if value is None else value)

@@ -30,6 +30,13 @@ class ApplyVisitor(object):  # pylint: disable=useless-object-inheritance
         self._unapply_steps = None
 
     def apply(self, env, environ):
+        """Apply the given environment to the current process.
+
+        Args:
+            env (environment.Environment): Environment variables to use.
+            environ (dict): Where to set variables. In most cases this should be
+                os.environ.
+        """
         self._unapply_steps = []
         try:
             self._environ = environ
