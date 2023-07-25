@@ -255,6 +255,39 @@ load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_anal
 
 rules_rust_dependencies()
 
+RUST_EMBEDDED_TARGET_TRIPLES = {
+    "thumbv8m.main-none-eabihf": [
+        "@platforms//cpu:armv8-m",
+        "@bazel_embedded//constraints/fpu:fpv5-d16",
+    ],
+    "thumbv7m-none-eabi": [
+        "@platforms//cpu:armv7-m",
+        "@bazel_embedded//constraints/fpu:none",
+    ],
+    "thumbv6m-none-eabi": [
+        "@platforms//cpu:armv6-m",
+        "@bazel_embedded//constraints/fpu:none",
+    ],
+}
+
+RUST_OPT_LEVELS = {
+    "thumbv8m.main-none-eabihf": {
+        "dbg": "0",
+        "fastbuild": "0",
+        "opt": "z",
+    },
+    "thumbv7m-none-eabi": {
+        "dbg": "0",
+        "fastbuild": "0",
+        "opt": "z",
+    },
+    "thumbv6m-none-eabi": {
+        "dbg": "0",
+        "fastbuild": "0",
+        "opt": "z",
+    },
+}
+
 # Here we register a specific set of toolchains.
 #
 # Note: This statement creates name mangled remotes of the form:
@@ -264,37 +297,17 @@ rust_repository_set(
     name = "rust_linux_x86_64",
     edition = "2021",
     exec_triple = "x86_64-unknown-linux-gnu",
-    extra_target_triples = {
-        "thumbv8m.main-none-eabihf": [
-            "@platforms//cpu:armv8-m",
-            "@bazel_embedded//constraints/fpu:fpv5-d16",
-        ],
-        "thumbv7m-none-eabi": [
-            "@platforms//cpu:armv7-m",
-            "@bazel_embedded//constraints/fpu:none",
-        ],
-        "thumbv6m-none-eabi": [
-            "@platforms//cpu:armv6-m",
-            "@bazel_embedded//constraints/fpu:none",
-        ],
-    },
-    opt_level = {
-        "thumbv8m.main-none-eabihf": {
-            "dbg": "0",
-            "fastbuild": "0",
-            "opt": "z",
-        },
-        "thumbv7m-none-eabi": {
-            "dbg": "0",
-            "fastbuild": "0",
-            "opt": "z",
-        },
-        "thumbv6m-none-eabi": {
-            "dbg": "0",
-            "fastbuild": "0",
-            "opt": "z",
-        },
-    },
+    extra_target_triples = RUST_EMBEDDED_TARGET_TRIPLES,
+    opt_level = RUST_OPT_LEVELS,
+    versions = ["1.67.0"],
+)
+
+rust_repository_set(
+    name = "rust_macos_x86_64",
+    edition = "2021",
+    exec_triple = "x86_64-apple-darwin",
+    extra_target_triples = RUST_EMBEDDED_TARGET_TRIPLES,
+    opt_level = RUST_OPT_LEVELS,
     versions = ["1.67.0"],
 )
 
@@ -304,8 +317,16 @@ load("@rules_rust//tools/rust_analyzer:deps.bzl", "rust_analyzer_dependencies")
 # Since we do not use rust_register_toolchains, we need to define a
 # rust_analyzer_toolchain.
 register_toolchains(rust_analyzer_toolchain_repository(
-    name = "rust_analyzer_toolchain",
-    # This should match the currently registered toolchain.
+    name = "linux_rust_analyzer_toolchain",
+    exec_compatible_with = ["@platforms//os:linux"],
+    # This should match the currently registered linux toolchain.
+    version = "1.67.0",
+))
+
+register_toolchains(rust_analyzer_toolchain_repository(
+    name = "macos_rust_analyzer_toolchain",
+    exec_compatible_with = ["@platforms//os:macos"],
+    # This should match the currently registered macos toolchain.
     version = "1.67.0",
 ))
 
