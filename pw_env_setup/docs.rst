@@ -624,10 +624,10 @@ the GNI file specified in the environment config file.
 .. code-block::
 
    declare_args() {
-     pw_env_setup_CIPD_PIGWEED = "<environment-root>/cipd/packages/pigweed"
      pw_env_setup_CIPD_LUCI = "<environment-root>/cipd/packages/luci"
-     pw_env_setup_VIRTUAL_ENV = "<environment-root>/pigweed-venv"
+     pw_env_setup_CIPD_PIGWEED = "<environment-root>/cipd/packages/pigweed"
      pw_env_setup_PACKAGE_ROOT = "<environment-root>/packages"
+     pw_env_setup_VIRTUAL_ENV = "<environment-root>/pigweed-venv"
    }
 
 It's straightforward to use these variables.
