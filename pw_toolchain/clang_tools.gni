@@ -20,10 +20,16 @@ declare_args() {
   # and llvm-ar binaries to use when compiling with a clang-based toolchain.
   # This is useful for debugging toolchain-related issues by building with an
   # externally-provided toolchain.
-  pw_toolchain_CLANG_PREFIX = ""
+  #
+  # If the prefix begins with "//", it will be rebased to be relative to the
+  # root build directory.
+  pw_toolchain_CLANG_PREFIX = pw_env_setup_CIPD_PIGWEED + "/bin/"
 
   # This flag allows you to specify the root directory of the rustc binary.
-  pw_toolchain_RUST_PREFIX = ""
+  #
+  # If the prefix begins with "//", it will be rebased to be relative to the
+  # root build directory.
+  pw_toolchain_RUST_PREFIX = pw_env_setup_CIPD_PIGWEED + "/bin/"
 }
 
 pw_toolchain_clang_tools = {
@@ -33,15 +39,35 @@ pw_toolchain_clang_tools = {
   ld = cxx
   rustc = "rustc"
 
-  if (pw_toolchain_CLANG_PREFIX != "") {
-    ar = pw_toolchain_CLANG_PREFIX + ar
-    cc = pw_toolchain_CLANG_PREFIX + cc
-    cxx = pw_toolchain_CLANG_PREFIX + cxx
-    ld = pw_toolchain_CLANG_PREFIX + ld
+  _toolchain_prefix = pw_toolchain_CLANG_PREFIX
+  if (_toolchain_prefix != "") {
+    # If the prefix is a GN-absolute path, rebase it so it's relative to the
+    # root of the build directory.
+    _split_prefix = string_split(_toolchain_prefix, "//")
+    if (_split_prefix[0] == "") {
+      _toolchain_prefix = rebase_path(_toolchain_prefix, root_build_dir)
+    }
+    ar = _toolchain_prefix + ar
+    cc = _toolchain_prefix + cc
+    cxx = _toolchain_prefix + cxx
+    ld = _toolchain_prefix + ld
+  }
+  if (host_os == "win") {
+    _toolchain_prefix = string_replace(_toolchain_prefix, "/", "\\")
   }
 
-  if (pw_toolchain_RUST_PREFIX != "") {
-    rustc = pw_toolchain_RUST_PREFIX + rustc
+  _rust_prefix = pw_toolchain_RUST_PREFIX
+  if (host_os == "win") {
+    _rust_prefix = string_replace(_rust_prefix, "/", "\\")
+  }
+  if (_rust_prefix != "") {
+    # If the prefix is a GN-absolute path, rebase it so it's relative to the
+    # root of the build directory.
+    _split_rust_prefix = string_split(_rust_prefix, "//")
+    if (_split_rust_prefix[0] == "") {
+      _rust_prefix = rebase_path(_rust_prefix, root_build_dir)
+    }
+    rustc = _rust_prefix + rustc
   }
 
   if (pw_toolchain_USE_RBE) {

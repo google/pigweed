@@ -16,10 +16,41 @@ import("//build_overrides/pigweed.gni")
 import("//build_overrides/pigweed_environment.gni")
 import("$dir_pw_toolchain/rbe.gni")
 
+_default_compiler_prefix = ""
+if (defined(pw_env_setup_CIPD_ARM)) {
+  _default_compiler_prefix = pw_env_setup_CIPD_ARM + "/bin/"
+}
+
+declare_args() {
+  # This flag allows you to specify the root directory of the ARM GCC tools to
+  # to use when compiling with an arm-none-eabi toolchain. This is useful for
+  # debugging toolchain-related issues, or for building with an
+  # externally-provided toolchain.
+  #
+  # If the prefix begins with "//", it will be rebased to be relative to the
+  # root build directory.
+  pw_toolchain_ARM_NONE_EABI_PREFIX = _default_compiler_prefix
+}
+
 # Specifies the tools used by ARM GCC toolchains.
 arm_gcc_toolchain_tools = {
   _rbe_debug_flag = ""
   _local_tool_name_root = "arm-none-eabi-"
+
+  _toolchain_prefix = pw_toolchain_ARM_NONE_EABI_PREFIX
+  if (_toolchain_prefix != "") {
+    # If the prefix is a GN-absolute path, rebase it so it's relative to the
+    # root of the build directory.
+    _split_prefix = string_split(_toolchain_prefix, "//")
+    if (_split_prefix[0] == "") {
+      _toolchain_prefix = rebase_path(_toolchain_prefix, root_build_dir)
+    }
+    _local_tool_name_root = _toolchain_prefix + _local_tool_name_root
+  }
+  if (host_os == "win") {
+    _local_tool_name_root = string_replace(_local_tool_name_root, "/", "\\")
+  }
+
   if (pw_toolchain_USE_RBE) {
     if (pw_toolchain_RBE_DEBUG) {
       _rbe_debug_flag = " -v "
