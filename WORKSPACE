@@ -54,14 +54,31 @@ cipd_repository(
     tag = "version:pw_transfer_test_binaries_528098d588f307881af83f769207b8e6e1b57520-linux-amd64-cipd.cipd",
 )
 
+# Set up Starlark library.
+# Required by: io_bazel_rules_go, com_google_protobuf, rules_python
+# Used in modules: None.
+# This must be instantiated before com_google_protobuf as protobuf_deps() pulls
+# in an older version of bazel_skylib. However io_bazel_rules_go requires a
+# newer version.
+http_archive(
+    name = "bazel_skylib",  # 2022-09-01
+    sha256 = "4756ab3ec46d94d99e5ed685d2d24aece484015e45af303eb3a11cab3cdc2e71",
+    strip_prefix = "bazel-skylib-1.3.0",
+    urls = ["https://github.com/bazelbuild/bazel-skylib/archive/refs/tags/1.3.0.zip"],
+)
+
+load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
+
+bazel_skylib_workspace()
+
 # Set up Python support.
 # Required by: rules_fuzzing, com_github_nanopb_nanopb.
 # Used in modules: None.
 http_archive(
     name = "rules_python",
-    sha256 = "9fcf91dbcc31fde6d1edb15f117246d912c33c36f44cf681976bd886538deba6",
-    strip_prefix = "rules_python-0.8.0",
-    url = "https://github.com/bazelbuild/rules_python/archive/refs/tags/0.8.0.tar.gz",
+    sha256 = "0a8003b044294d7840ac7d9d73eef05d6ceb682d7516781a4ec62eeb34702578",
+    strip_prefix = "rules_python-0.24.0",
+    url = "https://github.com/bazelbuild/rules_python/releases/download/0.24.0/rules_python-0.24.0.tar.gz",
 )
 
 load("@rules_python//python:repositories.bzl", "python_register_toolchains")
@@ -81,30 +98,15 @@ load("@rules_python//python:pip.bzl", "pip_parse")
 pip_parse(
     name = "python_packages",
     python_interpreter_target = interpreter,
-    requirements_lock = "//pw_env_setup/py/pw_env_setup/virtualenv_setup:upstream_requirements_linux_lock.txt",
+    requirements_darwin = "//pw_env_setup/py/pw_env_setup/virtualenv_setup:upstream_requirements_darwin_lock.txt",
+    requirements_linux = "//pw_env_setup/py/pw_env_setup/virtualenv_setup:upstream_requirements_linux_lock.txt",
+    requirements_windows = "//pw_env_setup/py/pw_env_setup/virtualenv_setup:upstream_requirements_windows_lock.txt",
 )
 
 load("@python_packages//:requirements.bzl", "install_deps")
 
 # Run pip install for all @python_packages_*//:pkg deps.
 install_deps()
-
-# Set up Starlark library.
-# Required by: io_bazel_rules_go, com_google_protobuf.
-# Used in modules: None.
-# This must be instantiated before com_google_protobuf as protobuf_deps() pulls
-# in an older version of bazel_skylib. However io_bazel_rules_go requires a
-# newer version.
-http_archive(
-    name = "bazel_skylib",  # 2022-09-01
-    sha256 = "4756ab3ec46d94d99e5ed685d2d24aece484015e45af303eb3a11cab3cdc2e71",
-    strip_prefix = "bazel-skylib-1.3.0",
-    urls = ["https://github.com/bazelbuild/bazel-skylib/archive/refs/tags/1.3.0.zip"],
-)
-
-load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
-
-bazel_skylib_workspace()
 
 # Set up upstream googletest and googlemock.
 # Required by: Pigweed.
@@ -357,6 +359,10 @@ rules_fuzzing_dependencies()
 load("@rules_fuzzing//fuzzing:init.bzl", "rules_fuzzing_init")
 
 rules_fuzzing_init()
+
+load("@fuzzing_py_deps//:requirements.bzl", fuzzing_install_deps = "install_deps")
+
+fuzzing_install_deps()
 
 # Required by: fuzztest
 http_archive(
