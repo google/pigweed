@@ -20,7 +20,6 @@ pw_python_package("py") {
   setup = [
     "pyproject.toml",
     "setup.cfg",
-    "setup.py",
   ]
   sources = [
     "pw_hdlc/__init__.py",
