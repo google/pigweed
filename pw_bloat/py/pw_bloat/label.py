@@ -17,6 +17,7 @@ The label module defines a class to store and manipulate size reports.
 
 from collections import defaultdict
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Iterable, Dict, Sequence, Tuple, List, Optional
 import csv
 
@@ -69,9 +70,8 @@ class _LabelMap:
     def __contains__(self, parent_label: str) -> bool:
         return parent_label in self._label_map
 
-    def map_generator(self) -> Iterable[Tuple[str, Dict[str, LabelInfo]]]:
-        for parent_label, label_dict in self._label_map.items():
-            yield parent_label, label_dict
+    def map_items(self) -> Iterable[Tuple[str, Dict[str, LabelInfo]]]:
+        return self._label_map.items()
 
 
 class _DataSource:
@@ -102,9 +102,8 @@ class _DataSource:
     def __contains__(self, parent_label: str) -> bool:
         return parent_label in self._ds_label_map
 
-    def label_map_generator(self) -> Iterable[Tuple[str, Dict[str, LabelInfo]]]:
-        for parent_label, label_dict in self._ds_label_map.map_generator():
-            yield parent_label, label_dict
+    def label_map_items(self) -> Iterable[Tuple[str, Dict[str, LabelInfo]]]:
+        return self._ds_label_map.map_items()
 
 
 class DataSourceMap:
@@ -234,6 +233,7 @@ class DataSourceMap:
             data_source.get_name() for data_source in self._data_sources[1:]
         )
 
+    @lru_cache
     def labels(self, ds_index: Optional[int] = None) -> Iterable[Label]:
         """Generator that yields a Label depending on specified data source.
 
@@ -244,36 +244,43 @@ class DataSourceMap:
             Iterable Label objects.
         """
         ds_index = len(self._data_sources) if ds_index is None else ds_index + 2
-        yield from self._per_data_source_generator(
+        return self._per_data_source_labels(
             tuple(), self._data_sources[1:ds_index]
         )
 
-    def _per_data_source_generator(
+    def _per_data_source_labels(
         self,
         parent_labels: Tuple[str, ...],
         data_sources: Sequence[_DataSource],
     ) -> Iterable[Label]:
         """Recursive generator to return Label based off parent labels."""
+        if parent_labels:
+            current_parent = parent_labels[-1]
+        else:
+            current_parent = self._BASE_TOTAL_LABEL
+        labels = []
         for ds_index, curr_ds in enumerate(data_sources):
-            for parent_label, label_map in curr_ds.label_map_generator():
-                if not parent_labels:
-                    curr_parent = self._BASE_TOTAL_LABEL
+            if not current_parent in curr_ds:
+                continue
+            label_map = curr_ds[current_parent]
+            for child_label, label_info in label_map.items():
+                if len(data_sources) == 1:
+                    labels.append(
+                        Label(
+                            child_label,
+                            label_info.size,
+                            parents=parent_labels,
+                            exists_both=label_info.exists_both,
+                        )
+                    )
                 else:
-                    curr_parent = parent_labels[-1]
-                if parent_label == curr_parent:
-                    for child_label, label_info in label_map.items():
-                        if len(data_sources) == 1:
-                            yield Label(
-                                child_label,
-                                label_info.size,
-                                parents=parent_labels,
-                                exists_both=label_info.exists_both,
-                            )
-                        else:
-                            yield from self._per_data_source_generator(
-                                (*parent_labels, child_label),
-                                data_sources[ds_index + 1 :],
-                            )
+                    labels.extend(
+                        self._per_data_source_labels(
+                            (*parent_labels, child_label),
+                            data_sources[ds_index + 1 :],
+                        )
+                    )
+        return labels
 
 
 class DiffDataSourceMap(DataSourceMap):
