@@ -165,6 +165,12 @@ def install(
             9,
         ):
             formatter.default_msec_format = ''
+        # For 3.8 set datefmt to time_format
+        elif sys.version_info >= (
+            3,
+            8,
+        ):
+            formatter.datefmt = time_format
 
     # Set the log level on the root logger to NOTSET, so that all logs
     # propagated from child loggers are handled.
