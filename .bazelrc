@@ -77,3 +77,11 @@ build:fuzztest \
 #     (this will force tests to be executed locally one at a time regardless
 #     of --test_strategy value).
 test --test_output=errors
+
+# User bazelrc file; see
+# https://bazel.build/configure/best-practices#bazelrc-file
+#
+# Note: this should be at the bottom of the file, so that user-specified
+# options override anything in this file
+# (https://bazel.build/run/bazelrc#imports)
+try-import %workspace%/user.bazelrc

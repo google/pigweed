@@ -1,6 +1,7 @@
 # Build
 compile_commands.json
 rust-project.json
+user.bazelrc
 out/
 bazel-*
 outbazel/
