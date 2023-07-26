@@ -271,8 +271,11 @@ def execute_command_with_logging(
                 failure_line = False
                 matches = line_match_result.groupdict()
                 recipe.status.current_step = line_match_result.group(0)
-                step = int(matches.get('step', 0))
-                total_steps = int(matches.get('total_steps', 1))
+                # Remove commas from step and total_steps strings
+                step = int(matches.get('step', '0').replace(',', ''))
+                total_steps = int(
+                    matches.get('total_steps', '1').replace(',', '')
+                )
                 recipe.status.percent = float(step / total_steps)
 
             logger_method = logger.info

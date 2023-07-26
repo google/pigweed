@@ -15,6 +15,7 @@
 
 import logging
 from pathlib import Path
+import shutil
 import sys
 
 import pw_presubmit.pigweed_presubmit
@@ -57,20 +58,23 @@ def pigweed_upstream_main() -> int:
     bazel_root = Path('out/bazel')
     bazel_root.mkdir(parents=True, exist_ok=True)
 
+    default_gn_gen_command = [
+        'gn',
+        'gen',
+        '{build_dir}',
+        '--export-compile-commands',
+    ]
+    if shutil.which('ccache'):
+        default_gn_gen_command.append(gn_args(pw_command_launcher='ccache'))
+
     build_recipes = [
         BuildRecipe(
-            build_dir=Path('out'),
+            build_dir=Path('out/gn'),
             title='default_ninja',
             steps=[
                 BuildCommand(
                     run_if=should_gn_gen,
-                    command=[
-                        'gn',
-                        'gen',
-                        '{build_dir}',
-                        '--export-compile-commands',
-                        gn_args(pw_command_launcher='ccache'),
-                    ],
+                    command=default_gn_gen_command,
                 ),
                 BuildCommand(
                     build_system_command='ninja',
@@ -93,7 +97,10 @@ def pigweed_upstream_main() -> int:
                 ),
                 BuildCommand(
                     build_system_command='bazel',
-                    build_system_extra_args=['test', '--test_output=errors'],
+                    build_system_extra_args=[
+                        'test',
+                        '--test_output=errors',
+                    ],
                     targets=default_bazel_targets,
                 ),
             ],

@@ -62,6 +62,7 @@ from pw_build.project_builder_argparse import add_project_builder_arguments
 from pw_build.project_builder_prefs import ProjectBuilderPrefs
 
 
+_COLOR = pw_cli.color.colors()
 _LOG = logging.getLogger('pw_build')
 
 
@@ -79,6 +80,18 @@ def should_gn_gen(out: Path) -> bool:
     return any(not gen_file.is_file() for gen_file in expected_files)
 
 
+def _pw_package_install_command(package_name: str) -> BuildCommand:
+    return BuildCommand(
+        command=[
+            'pw',
+            '--no-banner',
+            'package',
+            'install',
+            package_name,
+        ],
+    )
+
+
 def _pw_package_install_to_build_command(
     trace: PresubmitCheckTrace,
 ) -> BuildCommand:
@@ -89,15 +102,7 @@ def _pw_package_install_to_build_command(
             'Missing "pw_package_install" value.'
         )
 
-    return BuildCommand(
-        command=[
-            'pw',
-            '--no-banner',
-            'package',
-            'install',
-            package_name,
-        ],
-    )
+    return _pw_package_install_command(package_name)
 
 
 def _bazel_command_args_to_build_commands(
@@ -289,17 +294,26 @@ def presubmit_build_recipe(  # pylint: disable=too-many-locals
 
     if isinstance(presubmit_step, GnGenNinja):
         # GnGenNinja is directly translatable to a BuildRecipe.
+        selected_gn_args = {
+            name: value(ctx) if callable(value) else value
+            for name, value in presubmit_step.gn_args.items()
+        }
+
         return BuildRecipe(
             build_dir=out_dir,
             title=presubmit_step.name,
             steps=[
+                _pw_package_install_command(name)
+                for name in presubmit_step._packages  # pylint: disable=protected-access
+            ]
+            + [
                 BuildCommand(
                     run_if=should_gn_gen,
                     command=[
                         'gn',
                         'gen',
                         str(out_dir),
-                        gn_args(**presubmit_step.gn_args),
+                        gn_args(**selected_gn_args),
                     ],
                 ),
                 BuildCommand(
@@ -407,6 +421,14 @@ def _parse_args(
             action='store_true',
             default=False,
             help=('List all known build recipes and presubmit steps.'),
+        )
+
+    if build_recipes:
+        parser.add_argument(
+            '--all',
+            action='store_true',
+            default=False,
+            help=('Run all known build recipes.'),
         )
 
     parser.add_argument(
@@ -523,6 +545,59 @@ def _list_steps_and_recipes(
         print()
 
 
+def _print_usage_help(
+    presubmit_programs: Optional[Programs] = None,
+    build_recipes: Optional[List[BuildRecipe]] = None,
+) -> None:
+    """Print usage examples with known presubmits and build recipes."""
+
+    def print_pw_build(
+        option: str, arg: Optional[str] = None, end: str = '\n'
+    ) -> None:
+        print(
+            ' '.join(
+                [
+                    'pw build',
+                    _COLOR.cyan(option),
+                    _COLOR.yellow(arg) if arg else '',
+                ]
+            ),
+            end=end,
+        )
+
+    if presubmit_programs:
+        print(_COLOR.green('All presubmit steps:'))
+        for name in sorted(presubmit_programs.all_steps().keys()):
+            print_pw_build('--step', name)
+    if build_recipes:
+        if presubmit_programs:
+            # Add a blank line separator
+            print()
+        print(_COLOR.green('All build recipes:'))
+        for name in sorted(recipe.display_name for recipe in build_recipes):
+            print_pw_build('--recipe', name)
+
+        print()
+        print(
+            _COLOR.green(
+                'Recipe and step names may use wildcards and be repeated:'
+            )
+        )
+        print_pw_build('--recipe', '"default_*"', end=' ')
+        print(
+            _COLOR.cyan('--step'),
+            _COLOR.yellow('step1'),
+            _COLOR.cyan('--step'),
+            _COLOR.yellow('step2'),
+        )
+        print()
+        print(_COLOR.green('Run all build recipes:'))
+        print_pw_build('--all')
+        print()
+        print(_COLOR.green('For more help please run:'))
+        print_pw_build('--help')
+
+
 def main(
     presubmit_programs: Optional[Programs] = None,
     default_presubmit_step_names: Optional[List[str]] = None,
@@ -541,7 +616,8 @@ def main(
     pw_cli.log.install(
         level=log_level,
         use_color=args.colors,
-        hide_timestamp=False,
+        # Hide the date from the timestamp
+        time_format='%H:%M:%S',
     )
 
     pw_env = pw_cli.env.pigweed_environment()
@@ -607,14 +683,17 @@ def main(
             default_presubmit_step_names=default_presubmit_step_names,
         )
 
-    # If no builds specifed on the command line, use the default set of
-    # recipes.
+    # If no builds specifed on the command line print a useful help message:
     if (
         not selected_build_recipes
         and not command_line_dash_c_recipes
         and not selected_presubmit_recipes
-        and build_recipes
+        and not args.all
     ):
+        _print_usage_help(presubmit_programs, build_recipes)
+        return 1
+
+    if build_recipes and args.all:
         selected_build_recipes = build_recipes
 
     # Run these builds in order:
