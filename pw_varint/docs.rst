@@ -15,6 +15,7 @@ Compatibility
 =============
 * C
 * C++14 (with :doc:`../pw_polyfill/docs`)
+* `Rust </rustdoc/pw_varint>`_
 
 API
 ===
@@ -43,8 +44,8 @@ project's configuration.
 
 Rust
 ====
-The Rust implementation is documented in
-`//pw_varint/rust/pw_varint.rs <https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/main/pw_varint/rust/pw_varint.rs>`_
+``pw_varint``'s Rust API is documented in our
+`rustdoc API docs </rustdoc/pw_varint>`_.
 
 ..
   TODO(b/280102965): Update above to point to rustdoc API docs

@@ -431,5 +431,4 @@ Rust
 ----
 Pigweed centric analogs to Rust ``std``'s ``Read``, ``Write``, ``Seek`` traits
 as well as a basic ``Cursor`` implementation are provided by the
-`pw_stream crate
-<https://cs.pigweed.dev/pigweed/+/main:pw_stream/rust>`_.
+`pw_stream crate </rustdoc/pw_stream>`_.
