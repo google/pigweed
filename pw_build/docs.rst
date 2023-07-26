@@ -150,8 +150,8 @@ import ``$dir_pw_build/cc_library.gni`` instead.
   Prefer to use ``pw_executable`` over plain ``executable`` targets to allow
   cleanly building the same code for multiple target configs.
 
-**Arguments**
-
+Arguments
+^^^^^^^^^
 All of the ``pw_*`` target type overrides accept any arguments supported by
 the underlying native types, as they simply forward them through to the
 underlying target.
@@ -293,8 +293,8 @@ time, including before ``main()``.
 ``pw_cc_blob_library`` is also available in the CMake build. It is provided by
 ``pw_build/cc_blob_library.cmake``.
 
-**Arguments**
-
+Arguments
+^^^^^^^^^
 * ``blobs``: A list of GN scopes, where each scope corresponds to a binary blob
   to be transformed from file to byte array. This is a required field. Blob
   fields include:
@@ -313,7 +313,6 @@ time, including before ``main()``.
 
 Example
 ^^^^^^^
-
 **BUILD.gn**
 
 .. code-block::
@@ -431,8 +430,8 @@ files, but GN requires that all actions have an output. ``pw_python_action``
 solves this by accepting a boolean ``stamp`` argument which tells it to create a
 placeholder output file for the action.
 
-**Arguments**
-
+Arguments
+^^^^^^^^^
 ``pw_python_action`` accepts all of the arguments of a regular ``action``
 target. Additionally, it has some of its own arguments:
 
@@ -462,11 +461,106 @@ target. Additionally, it has some of its own arguments:
   generating a Python package metadata manifest, not the overall Python script
   ``action``. This should rarely be used by non-Pigweed code.
 
+.. _module-pw_build-test-info:
+
+pw_test_info
+---------------------
+``pw_test_info`` generates metadata describing tests. To produce a JSON file
+containing this metadata:
+
+#. For new modules, add a :ref:`module-pw_unit_test-pw_test_group` to the
+   BUILD.gn file. All modules are required to have a ``tests`` target.
+#. Include one or more tests or test groups via ``tests`` or ``group_deps``,
+   respectively, in the ``pw_test_group``.
+#. Set ``output_metadata`` to ``true`` in the ``pw_test_group`` definition.
+
+This template does not typically need to be used directly, unless adding new
+types of tests. It is typically used by other templates, such as the
+:ref:`module-pw_unit_test-pw_test` and the
+:ref:`module-pw_unit_test-pw_test_group`.
+
+Arguments
+^^^^^^^^^
+* ``test_type``: One of "test_group" or "unit_test".
+* ``test_name``: Name of the test. Defaults to the target name.
+* ``build_label``: GN label for the test. Defaults to the test name.
+* ``extra_metadata``: Additional variables to add to the metadata.
+
+Specific test templates add additional details using ``extra_metadata``. For
+example:
+
+* The :ref:`module-pw_unit_test-pw_test` includes the ``test_directory``
+  that contains the test executable.
+* The :ref:`module-pw_unit_test-pw_test_group` includes its collected list of
+  tests and test groups as ``deps``.
+
+Example
+^^^^^^^
+Let ``//my_module/BUILD.gn`` contain the following:
+
+.. code::
+
+   import("$dir_pw_unit_test/test.gni")
+
+   pw_test("my_unit_test") {
+     sources = [ ... ]
+     deps = [ ... ]
+   }
+
+   pw_test_group("tests") {
+     tests = [ ":my_unit_test" ]
+   }
+
+
+  Let `//BUILD.gn`` contain the following:
+
+.. code::
+
+   import("$dir_pw_unit_test/test.gni")
+
+   group("run_tests") {
+     deps = [ ":my_module_tests(//targets/my_targets:my_toolchain)" ]
+   }
+
+   pw_test_group("my_module_tests") {
+     group_deps = [ "//my_module:tests" ]
+     output_metadata = true
+   }
+
+Then running ``gn gen out`` will produce the following JSON file at
+``out/my_toolchain/my_module_tests.testinfo.json``:
+
+.. code:: json
+
+   [
+     {
+       "build_label": "//my_module:my_unit_test",
+       "test_directory": "my_toolchain/obj/my_module/test",
+       "test_name": "my_unit_test",
+       "test_type": "unit_test"
+     },
+     {
+       "build_label": "//my_module:tests",
+       "deps": [
+         "//my_module:my_unit_test",
+       ],
+       "test_name": "my_module/tests",
+       "test_type": "test_group"
+     },
+     {
+       "build_label": "//:my_module_tests",
+       "deps": [
+         "//my_module:tests",
+       ],
+       "test_name": "my_module_tests",
+       "test_type": "test_group"
+     }
+   ]
+
 .. _module-pw_build-python-action-expressions:
 
 Expressions
 ^^^^^^^^^^^
-
 ``pw_python_action`` evaluates expressions in ``args``, the arguments passed to
 the script. These expressions function similarly to generator expressions in
 CMake. Expressions may be passed as a standalone argument or as part of another
@@ -554,8 +648,8 @@ The following expressions are supported:
     "/home/User/project_root/out/obj/foo/bar/a_source_set.file_b.cc.o"
     "/home/User/project_root/out/obj/foo/bar/a_source_set.file_c.cc.o"
 
-**Example**
-
+Example
+^^^^^^^
 .. code-block::
 
   import("$dir_pw_build/python_action.gni")
@@ -592,13 +686,13 @@ section for the list of supported expressions.
   ``pw_evaluate_path_expressions`` is typically used as an intermediate
   sub-target of a larger template, rather than a standalone build target.
 
-**Arguments**
-
+Arguments
+^^^^^^^^^
 * ``files``: A list of scopes, each containing a ``source`` file to process and
   a ``dest`` file to which to write the result.
 
-**Example**
-
+Example
+^^^^^^^
 The following template defines an executable target which additionally outputs
 the list of object files from which it was compiled, making use of
 ``pw_evaluate_path_expressions`` to resolve their paths.
@@ -653,8 +747,8 @@ pw_exec
    scripts, as the Python will be more portable. ``pw_exec`` should generally
    only be used for interacting with legacy/existing scripts.
 
-**Arguments**
-
+Arguments
+^^^^^^^^^
 * ``program``: The program to run. Can be a full path or just a name (in which
   case $PATH is searched).
 * ``args``: Optional list of arguments to the program.
@@ -684,8 +778,8 @@ pw_exec
   :ref:`module-pw_build-pw_python_action`.
 * ``visibility``: GN visibility to apply to the underlying target.
 
-**Example**
-
+Example
+^^^^^^^
 .. code-block::
 
    import("$dir_pw_build/exec.gni")
@@ -718,15 +812,15 @@ the inputs are modified but GN cannot express this dependency.
 in a target that does not output any build artifacts, causing all dependent
 targets to correctly rebuild.
 
-**Arguments**
-
+Arguments
+^^^^^^^^^
 ``pw_input_group`` accepts all arguments that can be passed to a ``group``
 target, as well as requiring one extra:
 
 * ``inputs``: List of input files.
 
-**Example**
-
+Example
+^^^^^^^
 .. code-block::
 
   import("$dir_pw_build/input_group.gni")
@@ -751,8 +845,8 @@ pw_zip
 directories into a single output ``.zip`` file—a simple automation of a
 potentially repetitive task.
 
-**Arguments**
-
+Arguments
+^^^^^^^^^
 * ``inputs``: List of source files as well as the desired relative zip
   destination. See below for the input syntax.
 * ``dirs``: List of entire directories to be zipped as well as the desired
@@ -760,8 +854,8 @@ potentially repetitive task.
 * ``output``: Filename of output ``.zip`` file.
 * ``deps``: List of dependencies for the target.
 
-**Input Syntax**
-
+Input Syntax
+^^^^^^^^^^^^
 Inputs all need to follow the correct syntax:
 
 #. Path to source file or directory. Directories must end with a ``/``.
@@ -774,8 +868,8 @@ Inputs all need to follow the correct syntax:
 
 Thus, it should look like the following: ``"[source file or dir] > /"``.
 
-**Example**
-
+Example
+^^^^^^^
 Let's say we have the following structure for a ``//source/`` directory:
 
 .. code-block::
@@ -843,14 +937,14 @@ This template produces a JSON file containing an array of strings (file paths
 with ``-ffile-prefix-map``-like transformations applied) that can be used to
 :ref:`generate a token database <module-pw_tokenizer-database-creation>`.
 
-**Arguments**
-
+Arguments
+^^^^^^^^^
 * ``deps``: A required list of targets to recursively extract file names from.
 * ``outputs``: A required array with a single element: the path to write the
   final JSON file to.
 
-**Example**
-
+Example
+^^^^^^^
 Let's say we have the following project structure:
 
 .. code-block::

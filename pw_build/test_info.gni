@@ -1,0 +1,85 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# Generate metadata for tests.
+#
+# Various types of tests may use this template to create metadata used to
+# describe those tests. All entries will have the following form:
+#
+#   {
+#       "build_label": <GN source-absolute label>,
+#       "test_name": <Name of test>,
+#       "test_type": <Type of test>,
+#       ...
+#   }
+#
+# where "..." may represent additional, type-specific details.
+#
+# Args:
+#   - test_type (required): String describing the type of test. One of:
+#         "test_group"
+#         "unit_test"
+#   - test_name (optional): Name of the test as a string. Defaults to the
+#         target name.
+#   - build_label (optional): GN label for the test being described. Defaults to
+#         the source-absolute label corresponding to `test_name`.
+#   - extra_metadata (optional): Scope that defines additional metadata to
+#         include for this test. Variables defined in the scope will be included
+#         directly in the metadata, and thus should not be named "build_label",
+#         "test_name", or "test_type".
+template("pw_test_info") {
+  assert(defined(invoker.test_type),
+         "`pw_test_info($target_name)` is missing `test_type`")
+  _type = invoker.test_type
+
+  if (defined(invoker.test_name)) {
+    _name = invoker.test_name
+  } else {
+    _name = get_label_info(target_name, "name")
+  }
+
+  if (defined(invoker.build_label)) {
+    _label = invoker.build_label
+  } else {
+    _label = _name
+  }
+
+  _metadata = {
+    # Include the extra metadata first, so any name collisions trigger errors.
+    forward_variables_from(invoker.extra_metadata, "*")
+    build_label = get_label_info(":$_label", "label_no_toolchain")
+    test_name = _name
+    test_type = _type
+    if (defined(invoker.tags) && invoker.tags != []) {
+      tags = invoker.tags
+    }
+  }
+
+  group(target_name) {
+    if (_type == "test_group") {
+      metadata = {
+        test_groups = [ _metadata ]
+      }
+      forward_variables_from(invoker, [ "deps" ])
+    } else if (_type == "unit_test") {
+      metadata = {
+        unit_tests = [ _metadata ]
+      }
+    } else {
+      assert(
+          false,
+          "pw_test_info($target_name) does not have a valid `test_type`: $_type")
+    }
+  }
+}

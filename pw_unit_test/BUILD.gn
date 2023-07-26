@@ -259,6 +259,7 @@ pw_test("metadata_only_test") {
 # pw_test_group produces the metadata file for its tests.
 pw_test_group("metadata_only_group") {
   tests = [ ":metadata_only_test" ]
+  output_metadata = true
 }
 
 pw_python_script("test_group_metadata_test") {

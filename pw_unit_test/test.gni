@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/python_action.gni")
 import("$dir_pw_build/target_types.gni")
+import("$dir_pw_build/test_info.gni")
 import("$dir_pw_compilation_testing/negative_compilation_test.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
 import("$dir_pw_toolchain/host_clang/toolchains.gni")
@@ -182,6 +183,10 @@ template("pw_internal_disableable_target") {
 # creates a "${test_name}.run" target which runs the unit test executable after
 # building it.
 #
+# Targets defined using this template will produce test metadata with a
+# `test_type` of "unit_test" and an additional `test_directory` value describing
+# the location of the test binary within the build output.
+#
 # Args:
 #   - enable_if: (optional) Conditionally enables or disables this test. The
 #         test target and *.run target do nothing when the test is disabled. The
@@ -190,6 +195,10 @@ template("pw_internal_disableable_target") {
 #         Defaults to true (enable_if).
 #   - envvars: (optional) A list of `var_name=value` strings to set as
 #         environment variables when running the target exectuable.
+#   - tags: (optional) List of strings to include in the test metadata. These
+#         have no effect on the build, but may be used by external tools to
+#         distinguish between tests. For example, a tool may want to skip tests
+#         tagged as "slow".
 #   - extra_metadata: (optional) Extra metadata to include in test group
 #         metadata output. This can be used to pass information about this test
 #         to later build tasks.
@@ -218,12 +227,6 @@ template("pw_test") {
   _test_output_dir = "${target_out_dir}/test"
   if (defined(invoker.output_dir)) {
     _test_output_dir = invoker.output_dir
-  }
-
-  _extra_metadata = {
-  }
-  if (defined(invoker.extra_metadata)) {
-    _extra_metadata = invoker.extra_metadata
   }
 
   _test_main = pw_unit_test_MAIN
@@ -305,12 +308,26 @@ template("pw_test") {
     }
   }
 
+  # Metadata for this test when used as part of a pw_test_group target.
+  _test_metadata = "${target_name}.metadata"
+  _extra_metadata = {
+    forward_variables_from(invoker, [ "extra_metadata" ])
+    test_directory = rebase_path(_test_output_dir, root_build_dir)
+  }
+  pw_test_info(_test_metadata) {
+    test_type = "unit_test"
+    test_name = _test_target_name
+    forward_variables_from(invoker, [ "tags" ])
+    extra_metadata = _extra_metadata
+  }
+
   pw_internal_disableable_target(_test_target_name) {
     target_type = pw_unit_test_EXECUTABLE_TARGET_TYPE
     enable_if = _test_is_enabled
 
     # Include configs, deps, etc. from the pw_test in the executable as well as
     # the library to ensure that linker flags propagate to the executable.
+    deps = []
     forward_variables_from(invoker,
                            "*",
                            [
@@ -320,18 +337,16 @@ template("pw_test") {
                              "source_gen_deps",
                              "public",
                            ])
+    deps += [
+      ":$_test_metadata",
+      ":$_test_target_name.lib",
+    ]
+    if (_test_main != "") {
+      deps += [ _test_main ]
+    }
+    output_dir = _test_output_dir
 
-    # Metadata for this test when used as part of a pw_test_group target.
     metadata = {
-      unit_tests = [
-        {
-          test_type = "unit_test"
-          test_name = _test_target_name
-          test_directory = rebase_path(_test_output_dir, root_build_dir)
-          extra_metadata = _extra_metadata
-        },
-      ]
-
       # N.B.: This is placed here instead of in $_test_target_name._run because
       # pw_test_group only forwards the metadata from _test_target_name and not
       # _test_target_name._run or _test_target_name.run.
@@ -343,17 +358,10 @@ template("pw_test") {
           },
         ]
       }
-    }
 
-    if (!defined(deps)) {
-      deps = []
+      # Only collect test metadata for the test itself.
+      test_barrier = [ ":$_test_metadata" ]
     }
-    deps += [ ":$_test_target_name.lib" ]
-    if (_test_main != "") {
-      deps += [ _test_main ]
-    }
-
-    output_dir = _test_output_dir
   }
 
   if (defined(invoker.negative_compilation_tests) &&
@@ -459,16 +467,21 @@ template("pw_test") {
 
 # Defines a related collection of unit tests.
 #
-# pw_test_group targets output a JSON metadata file for the Pigweed test runner.
+# Targets defined using this template will produce test metadata with a
+# `test_type` of "test_group" and an additional `deps` list describing the tests
+# collected by this target.
 #
 # Args:
 #   - tests: List of pw_test targets for each of the tests in the group.
 #   - group_deps: (optional) pw_test_group targets on which this group depends.
 #   - enable_if: (optional) Conditionally enables or disables this test group.
 #         If false, an empty group is created. Defaults to true.
+#   - output_metadata: (optional) If true, generates a JSON file containing the
+#         test metadata for this group and all of its dependencies. Defaults to
+#         false.
+#
 template("pw_test_group") {
   _group_target = target_name
-  _group_deps_metadata = []
   if (defined(invoker.tests)) {
     _deps = invoker.tests
   } else {
@@ -484,18 +497,6 @@ template("pw_test_group") {
 
   if (_group_is_enabled) {
     if (defined(invoker.group_deps)) {
-      # If the group specified any other group dependencies, create a metadata
-      # entry for each of them indicating that they are another group and a
-      # group target to collect that metadata.
-      foreach(dep, invoker.group_deps) {
-        _group_deps_metadata += [
-          {
-            type = "dep"
-            group = get_label_info(dep, "label_no_toolchain")
-          },
-        ]
-      }
-
       _deps += invoker.group_deps
     }
 
@@ -508,40 +509,40 @@ template("pw_test_group") {
       }
     }
 
-    _metadata_group_target = "${target_name}_pw_test_group_metadata"
-    group(_metadata_group_target) {
-      metadata = {
-        group_deps = _group_deps_metadata
-        self = [
-          {
-            test_type = "self"
-            test_name = get_label_info(":$_group_target", "label_no_toolchain")
-          },
-        ]
-
-        # Metadata from the group's own unit test targets is forwarded through
-        # the group dependencies group. This entry is listed as a "walk_key" in
-        # the generated file so that only test targets' metadata (not group
-        # targets) appear in the output.
-        if (defined(invoker.tests)) {
-          propagate_metadata_from = invoker.tests
+    # Create a manifest entry to indicate which tests are a part of this group.
+    _test_group_metadata = "${target_name}_pw_test_group_metadata"
+    _extra_metadata = {
+      forward_variables_from(invoker, [ "extra_metadata" ])
+      if (_deps != []) {
+        deps = []
+        foreach(dep, _deps) {
+          deps += [ get_label_info(dep, "label_no_toolchain") ]
         }
       }
+    }
+    pw_test_info(_test_group_metadata) {
+      build_label = _group_target
+      test_type = "test_group"
+      test_name = rebase_path(get_label_info(_group_target, "dir"), "//")
+      extra_metadata = _extra_metadata
       deps = _deps
     }
 
-    _test_group_deps = [ ":$_metadata_group_target" ]
-
-    generated_file(_group_target) {
-      outputs = [ "$target_out_dir/$target_name.testinfo.json" ]
-      data_keys = [
-        "group_deps",
-        "self",
-        "unit_tests",
-      ]
-      walk_keys = [ "propagate_metadata_from" ]
-      output_conversion = "json"
-      deps = _test_group_deps
+    if (defined(invoker.output_metadata) && invoker.output_metadata) {
+      generated_file(_group_target) {
+        outputs = [ "$target_out_dir/$target_name.testinfo.json" ]
+        data_keys = [
+          "test_groups",
+          "unit_tests",
+        ]
+        walk_keys = [ "test_barrier" ]
+        output_conversion = "json"
+        deps = [ ":$_test_group_metadata" ]
+      }
+    } else {
+      group(_group_target) {
+        deps = [ ":$_test_group_metadata" ]
+      }
     }
 
     # If automatic test running is enabled, create a *.run group that collects

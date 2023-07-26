@@ -550,6 +550,7 @@ if (current_toolchain != default_toolchain) {
   # Targets for all module unit test groups.
   pw_test_group("pw_module_tests") {
     group_deps = pw_module_tests
+    output_metadata = true
   }
 
   group("pw_perf_tests") {
@@ -582,6 +583,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_containers:to_array_test",
       "$dir_pw_string:string_test",
     ]
+    output_metadata = true
   }
 
   pw_coverage_report("coverage_report") {
