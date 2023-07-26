@@ -130,6 +130,7 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         ":lock_annotations",
+        ":lock_traits",
         ":virtual_basic_lockable",
         "//pw_assert",
     ],

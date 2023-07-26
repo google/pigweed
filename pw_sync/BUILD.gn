@@ -69,6 +69,7 @@ pw_source_set("borrow") {
   public = [ "public/pw_sync/borrow.h" ]
   public_deps = [
     ":lock_annotations",
+    ":lock_traits",
     ":virtual_basic_lockable",
     dir_pw_assert,
   ]

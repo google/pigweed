@@ -67,6 +67,7 @@ pw_add_library(pw_sync.borrow INTERFACE
   PUBLIC_DEPS
     pw_assert
     pw_sync.lock_annotations
+    pw_sync.lock_traits
     pw_sync.virtual_basic_lockable
 )
 
