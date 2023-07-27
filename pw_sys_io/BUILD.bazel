@@ -14,6 +14,7 @@
 
 load(
     "//pw_build:pigweed.bzl",
+    "host_backend_alias",
     "pw_cc_facade",
     "pw_cc_library",
 )
@@ -68,12 +69,12 @@ alias(
         "//pw_sys_io_pico:backend": "@pigweed//pw_sys_io_pico",
         "//pw_sys_io_stm32cube:backend": "@pigweed//pw_sys_io_stm32cube",
         "//pw_sys_io_stdio:backend": "@pigweed//pw_sys_io_stdio",
-        "@platforms//os:android": "@pigweed//pw_sys_io_stdio",
-        "@platforms//os:chromiumos": "@pigweed//pw_sys_io_stdio",
-        "@platforms//os:linux": "@pigweed//pw_sys_io_stdio",
-        "@platforms//os:macos": "@pigweed//pw_sys_io_stdio",
-        "@platforms//os:windows": "@pigweed//pw_sys_io_stdio",
-        "//conditions:default": "@pigweed//pw_build:unspecified_backend",
+        "//conditions:default": ":unspecified_backend",
     }),
     visibility = ["@pigweed_config//:__pkg__"],
+)
+
+host_backend_alias(
+    name = "unspecified_backend",
+    backend = "@pigweed//pw_sys_io_stdio",
 )

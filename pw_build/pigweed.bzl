@@ -13,6 +13,7 @@
 # the License.
 """Pigweed build environment for bazel."""
 
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load(
     "//pw_build/bazel_internal:pigweed_internal.bzl",
     _add_defaults = "add_defaults",
@@ -157,3 +158,19 @@ def pw_cc_facade(**kwargs):
         main implementing target.")
     _add_defaults(kwargs)
     native.cc_library(**kwargs)
+
+def host_backend_alias(name, backend):
+    """An alias that resolves to the backend for host platforms."""
+    native.alias(
+        name = name,
+        actual = selects.with_or({
+            (
+                "@platforms//os:android",
+                "@platforms//os:chromiumos",
+                "@platforms//os:linux",
+                "@platforms//os:macos",
+                "@platforms//os:windows",
+            ): backend,
+            "//conditions:default": "@pigweed//pw_build:unspecified_backend",
+        }),
+    )
