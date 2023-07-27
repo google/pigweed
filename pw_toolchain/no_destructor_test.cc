@@ -43,6 +43,13 @@ class CrashInDestructor {
   ~CrashInDestructor() { PW_CRASH("This destructor should never execute!"); }
 };
 
+class TrivialDestructor {
+ public:
+  TrivialDestructor(int initial_value) : value(initial_value) {}
+
+  int value;
+};
+
 TEST(NoDestructor, ShouldNotCallDestructor) {
   bool destructor_called = false;
 
@@ -61,6 +68,14 @@ TEST(NoDestructor, MemberAccess) {
   no_destructor->some_value = 123;
   EXPECT_EQ(123, (*no_destructor).some_value);
   EXPECT_EQ(no_destructor.operator->(), no_destructor->MyAddress());
+}
+
+TEST(NoDestructor, TrivialDestructor) {
+  NoDestructor<TrivialDestructor> no_destructor(555);
+
+  EXPECT_EQ(no_destructor->value, 555);
+  no_destructor->value = 123;
+  EXPECT_EQ(no_destructor->value, 123);
 }
 
 TEST(NoDestructor, TrivialType) {
