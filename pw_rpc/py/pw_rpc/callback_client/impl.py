@@ -18,6 +18,7 @@ import logging
 import textwrap
 from typing import Any, Callable, Dict, Iterable, Optional, Type
 
+from dataclasses import dataclass
 from pw_status import Status
 from google.protobuf.message import Message
 
@@ -42,6 +43,15 @@ from pw_rpc.callback_client.call import (
 )
 
 _LOG = logging.getLogger(__package__)
+
+
+@dataclass(eq=True, frozen=True)
+class CallInfo:
+    method: Method
+
+    @property
+    def service(self) -> Service:
+        return self.method.service
 
 
 class _MethodClient:
@@ -118,6 +128,9 @@ class _MethodClient:
         """Creates the Call object and invokes the RPC using it."""
         if timeout_s is UseDefault.VALUE:
             timeout_s = self.default_timeout_s
+
+        if self._impl.on_call_hook:
+            self._impl.on_call_hook(CallInfo(self._method))
 
         rpc = PendingRpc(
             self._channel,
@@ -385,18 +398,24 @@ asynchronously using the invoke method.
 
 
 class Impl(client.ClientImpl):
-    """Callback-based ClientImpl, for use with pw_rpc.Client."""
+    """Callback-based ClientImpl, for use with pw_rpc.Client.
+
+    Args:
+        on_call_hook: A callable object to handle RPC method calls.
+            If hook is set, it will be called before RPC execution.
+    """
 
     def __init__(
         self,
         default_unary_timeout_s: Optional[float] = None,
         default_stream_timeout_s: Optional[float] = None,
+        on_call_hook: Optional[Callable[[CallInfo], Any]] = None,
         cancel_duplicate_calls: Optional[bool] = True,
     ) -> None:
         super().__init__()
         self._default_unary_timeout_s = default_unary_timeout_s
         self._default_stream_timeout_s = default_stream_timeout_s
-
+        self.on_call_hook = on_call_hook
         # Temporary workaround for clients that rely on mulitple in-flight
         # instances of an RPC on the same channel, which is not supported.
         # TODO(hepler): Remove this option when clients have updated.

@@ -547,6 +547,28 @@ class UnaryTest(_CallbackClientImplTestBase):
             '(Status.OK, None)',
         )
 
+    def test_on_call_hook(self) -> None:
+        hook_function = mock.Mock()
+
+        self._client = client.Client.from_modules(
+            callback_client.Impl(on_call_hook=hook_function),
+            [client.Channel(CLIENT_CHANNEL_ID, self._handle_packet)],
+            self._protos.modules(),
+        )
+
+        self._service = self._client.channel(
+            CLIENT_CHANNEL_ID
+        ).rpcs.pw.test1.PublicService
+
+        self._enqueue_response(CLIENT_CHANNEL_ID, self.method, Status.OK)
+        self._service.SomeUnary(self.method.request_type(magic_number=6))
+
+        hook_function.assert_called_once()
+        self.assertEqual(
+            hook_function.call_args[0][0].method.full_name,
+            self.method.full_name,
+        )
+
 
 class ServerStreamingTest(_CallbackClientImplTestBase):
     """Tests for server streaming RPCs."""
