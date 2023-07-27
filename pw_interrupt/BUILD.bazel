@@ -22,6 +22,10 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+constraint_setting(
+    name = "backend_constraint_setting",
+)
+
 pw_cc_facade(
     name = "context_facade",
     hdrs = [
@@ -52,6 +56,8 @@ pw_cc_library(
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     visibility = ["@pigweed_config//:__pkg__"],
+    # TODO(b/272090220): Remove the CPU-based default, require users to specify
+    # a backend through its constraint_value.
     deps = select({
         "@platforms//cpu:armv7-m": ["//pw_interrupt_cortex_m:context"],
         "@platforms//cpu:armv7e-m": ["//pw_interrupt_cortex_m:context"],
