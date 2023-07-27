@@ -67,6 +67,7 @@ pw_cc_library(
     deps = [
         ":pw_hdlc",
         "//pw_rpc",
+        "//pw_sys_io",
     ],
 )
 

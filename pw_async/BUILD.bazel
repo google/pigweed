@@ -122,5 +122,6 @@ pw_cc_library(
         ":dispatcher",
         ":task",
         ":types",
+        "//pw_result",
     ],
 )
