@@ -45,5 +45,9 @@ declare_args() {
   # potential install candidates.
   pw_build_PYTHON_PIP_INSTALL_FIND_LINKS = []
 
+  # General options passed to pip commands
+  # https://pip.pypa.io/en/stable/cli/pip/#general-options
+  pw_build_PYTHON_PIP_DEFAULT_OPTIONS = [ "--disable-pip-version-check" ]
+
   # DOCSTAG: [default-pip-gn-args]
 }

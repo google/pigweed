@@ -62,7 +62,7 @@ class GitRepoNotFound(Exception):
 
 
 def _installed_packages(venv_python):
-    cmd = (venv_python, '-m', 'pip', 'list', '--disable-pip-version-check')
+    cmd = (venv_python, '-m', 'pip', '--disable-pip-version-check', 'list')
     output = subprocess.check_output(cmd).splitlines()
     return set(x.split()[0].lower() for x in output[2:])
 
@@ -287,7 +287,13 @@ def install(  # pylint: disable=too-many-arguments,too-many-locals
     def pip_install(*args):
         args = list(_flatten(args))
         with env():
-            cmd = [venv_python, '-m', 'pip', 'install'] + args
+            cmd = [
+                venv_python,
+                '-m',
+                'pip',
+                '--disable-pip-version-check',
+                'install',
+            ] + args
             return _check_call(cmd)
 
     constraint_args = []
@@ -390,7 +396,13 @@ def install(  # pylint: disable=too-many-arguments,too-many-locals
 
         with open(os.path.join(venv_path, 'pip-list.log'), 'w') as outs:
             subprocess.check_call(
-                [venv_python, '-m', 'pip', 'list'],
+                [
+                    venv_python,
+                    '-m',
+                    'pip',
+                    '--disable-pip-version-check',
+                    'list',
+                ],
                 stdout=outs,
             )
 

@@ -331,6 +331,9 @@ template("pw_python_venv") {
         args = [
           "--log",
           rebase_path(_pip_install_log_file, root_build_dir),
+        ]
+        args += pw_build_PYTHON_PIP_DEFAULT_OPTIONS
+        args += [
           "install",
           "--upgrade",
         ]
