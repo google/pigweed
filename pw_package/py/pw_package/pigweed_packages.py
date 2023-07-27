@@ -32,6 +32,7 @@ from pw_package.packages import mcuxpresso
 from pw_package.packages import micro_ecc
 from pw_package.packages import nanopb
 from pw_package.packages import pico_sdk
+from pw_package.packages import picotool
 from pw_package.packages import protobuf
 from pw_package.packages import re2
 from pw_package.packages import smartfusion_mss
