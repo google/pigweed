@@ -90,6 +90,32 @@ also be internal log readers, i.e. ``MultiSink::Drain``\s, attached to the
     pw_rpc-->computer[Computer];
     pw_rpc-->other_listener[Other log<br>listener];
 
+Relation to pw_log and pw_log_tokenized
+=======================================
+``pw_log_rpc`` is often used in combination with ``pw_log`` and
+``pw_log_tokenized``. The diagram below shows the order of execution after
+invoking a ``pw_log`` macro.
+
+.. mermaid::
+
+   flowchart TD
+     project["`**your project code**`"]
+     --> pw_log["`**pw_log**
+                  *facade*`"]
+     --> token_backend["`**pw_log_tokenized**
+                         *backend for pw_log*`"]
+     --> token_facade["`**pw_log_tokenized:handler**
+                        *facade*`"]
+     --> custom_backend["`**your custom code**
+                          *backend for pw_log_tokenized:handler*`"]
+     --> pw_log_rpc["`**pw_log_rpc**`"];
+
+* See :ref:`docs-module-structure-facades` for an explanation of facades and
+  backends.
+* See ``pw_log_tokenized_HandleLog()`` and ``pw_log_tokenized_HandleMessageVaList()``
+  in ``//pw_system/log_backend.cc`` for an example of how :ref:`module-pw_system`
+  implements ``your custom code (pw_log_tokenized backend)``.
+
 Components Overview
 ===================
 LogEntry and LogEntries
