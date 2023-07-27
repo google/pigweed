@@ -150,27 +150,27 @@ class DigitalIoOptional {
   /// * Other status codes as defined by the backend.
   Status SetStateInactive() { return SetState(State::kInactive); }
 
-  // Set an interrupt handler to execute when an interrupt is triggered, and
-  // Configure the condition for triggering the interrupt.
-  //
-  // The handler is executed in a backend-specific context - this may be a
-  // system interrupt handler or a shared notification thread. Do not do any
-  // blocking or expensive work in the handler. The only universally safe
-  // operations are the IRQ-safe functions on pw_sync primitives.
-  //
-  // In particular, it is NOT safe to get the state of a DigitalIo line - either
-  // from this line or any other DigitalIoOptional instance - inside the
-  // handler.
-  //
-  // This method is not thread-safe and cannot be used in interrupt handlers.
-  //
-  // Precondition: no handler is currently set.
-  //
-  // Returns:
-  //   OK - the interrupt handler was configured.
-  //   INVALID_ARGUMENT - handler is empty.
-  //   Other status codes as defined by the backend.
-  //
+  /// Sets an interrupt handler to execute when an interrupt is triggered, and
+  /// configures the condition for triggering the interrupt.
+  ///
+  /// The handler is executed in a backend-specific context—this may be a
+  /// system interrupt handler or a shared notification thread. Do not do any
+  /// blocking or expensive work in the handler. The only universally safe
+  /// operations are the IRQ-safe functions on `pw_sync` primitives.
+  ///
+  /// In particular, it is NOT safe to get the state of a `DigitalIo`
+  /// line—either from this line or any other `DigitalIoOptional`
+  /// instance—inside the handler.
+  ///
+  /// @warning This method is not thread-safe and cannot be used in interrupt
+  /// handlers.
+  ///
+  /// @pre No handler is currently set.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - The interrupt handler was configured.
+  /// * @pw_status{INVALID_ARGUMENT} - The handler is empty.
+  /// * Other status codes as defined by the backend.
   Status SetInterruptHandler(InterruptTrigger trigger,
                              InterruptHandler&& handler) {
     if (handler == nullptr) {
@@ -179,42 +179,43 @@ class DigitalIoOptional {
     return DoSetInterruptHandler(trigger, std::move(handler));
   }
 
-  // Clear the interrupt handler and disable interrupts if enabled.
-  //
-  // This method is not thread-safe and cannot be used in interrupt handlers.
-  //
-  // Returns:
-  //   OK - the itnerrupt handler was cleared.
-  //   Other status codes as defined by the backend.
-  //
+  /// Clears the interrupt handler and disables any existing interrupts that
+  /// are enabled.
+  ///
+  /// @warning This method is not thread-safe and cannot be used in interrupt
+  /// handlers.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - The interrupt handler was cleared.
+  /// * Other status codes as defined by the backend.
   Status ClearInterruptHandler() {
     return DoSetInterruptHandler(InterruptTrigger::kActivatingEdge, nullptr);
   }
 
-  // Enable interrupts which will trigger the interrupt handler.
-  //
-  // This method is not thread-safe and cannot be used in interrupt handlers.
-  //
-  // Precondition: a handler has been set using SetInterruptHandler.
-  //
-  // Returns:
-  //   OK - the interrupt handler was configured.
-  //   FAILED_PRECONDITION - The line has not been enabled.
-  //   Other status codes as defined by the backend.
-  //
+  /// Enables interrupts which will trigger the interrupt handler.
+  ///
+  /// @warning This method is not thread-safe and cannot be used in interrupt
+  /// handlers.
+  ///
+  /// @pre A handler has been set using `SetInterruptHandler()`.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - The interrupt handler was configured.
+  /// * @pw_status{FAILED_PRECONDITION} - The line has not been enabled.
+  /// * Other status codes as defined by the backend.
   Status EnableInterruptHandler() { return DoEnableInterruptHandler(true); }
 
-  // Disable the interrupt handler. This is a no-op if interrupts are disabled.
-  //
-  // This method can be called inside the interrupt handler for this line
-  // without any external synchronization. However, the exact behavior is
-  // backend-specific. There may be queued events that will trigger the handler
-  // again after this call returns.
-  //
-  // Returns:
-  //   OK - the interrupt handler was configured.
-  //   Other status codes as defined by the backend.
-  //
+  /// Disables the interrupt handler. This is a no-op if interrupts are
+  /// disabled.
+  ///
+  /// This method can be called inside the interrupt handler for this line
+  /// without any external synchronization. However, the exact behavior is
+  /// backend-specific. There may be queued events that will trigger the handler
+  /// again after this call returns.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - The interrupt handler was disabled.
+  /// * Other status codes as defined by the backend.
   Status DisableInterruptHandler() { return DoEnableInterruptHandler(false); }
 
   /// Enables the line to initialize it into the default state as determined by
