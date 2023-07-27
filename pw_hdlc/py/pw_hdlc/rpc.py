@@ -280,8 +280,12 @@ class HdlcRpcClient(RpcClient):
                 _LOG.exception('Exception in HDLC frame handler thread')
 
         decoder = FrameDecoder()
+
+        def on_read_error(exc: Exception) -> None:
+            _LOG.error(str(exc))
+
         reader = DataReaderAndExecutor(
-            read, lambda exc: None, decoder.process_valid_frames, handle_frame
+            read, on_read_error, decoder.process_valid_frames, handle_frame
         )
         super().__init__(reader, paths_or_modules, channels, client_impl)
 
@@ -312,8 +316,11 @@ class NoEncodingSingleChannelRpcClient(RpcClient):
         def process_data(data: bytes):
             yield data
 
+        def on_read_error(exc: Exception) -> None:
+            _LOG.error(str(exc))
+
         reader = DataReaderAndExecutor(
-            read, lambda exc: None, process_data, self.handle_rpc_packet
+            read, on_read_error, process_data, self.handle_rpc_packet
         )
         super().__init__(reader, paths_or_modules, [channel], client_impl)
 

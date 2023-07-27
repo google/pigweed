@@ -38,6 +38,7 @@ from inspect import cleandoc
 import logging
 from pathlib import Path
 import sys
+import time
 from types import ModuleType
 from typing import (
     Any,
@@ -465,14 +466,9 @@ def console(
         ', '.join(proto_globs),
     )
 
-    serial_impl = serial.Serial
-    socket_impl = SocketClient
-    if serial_debug:
-        serial_impl = SerialWithLogging
-        socket_impl = SocketClientWithLogging
-
     timestamp_decoder = None
     if socket_addr is None:
+        serial_impl = SerialWithLogging if serial_debug else serial.Serial
         serial_device = serial_impl(
             device,
             baudrate,
@@ -492,8 +488,24 @@ def console(
 
         timestamp_decoder = milliseconds_to_string
     else:
+        socket_impl = SocketClientWithLogging if serial_debug else SocketClient
+
+        def disconnect_handler(socket_device: SocketClient) -> None:
+            """Attempts to reconnect on disconnected socket."""
+            _LOG.error('Socket disconnected. Will retry to connect.')
+            while True:
+                try:
+                    socket_device.connect()
+                    break
+                except:  # pylint: disable=bare-except
+                    # Ignore errors and retry to reconnect.
+                    time.sleep(1)
+            _LOG.info('Successfully reconnected')
+
         try:
-            socket_device = socket_impl(socket_addr)
+            socket_device = socket_impl(
+                socket_addr, on_disconnect=disconnect_handler
+            )
             read = socket_device.read
             write = socket_device.write
         except ValueError:

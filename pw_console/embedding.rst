@@ -115,6 +115,10 @@ Logging data with sockets
 
    serial_device = SocketClientWithLogging('localhost:1234')
 
+.. tip::
+   The ``SocketClient`` takes an optional callback called when a disconnect is
+   detected. The ``pw_system`` console provides an example reconnect routine.
+
 With the above examples each ``serial_device.read`` and ``write`` call will
 create a log message to the ``pw_console.serial_debug_logger`` Python
 logger. This logger can then be included as a log window pane in the
