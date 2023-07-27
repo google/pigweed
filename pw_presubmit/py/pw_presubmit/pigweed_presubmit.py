@@ -849,6 +849,8 @@ _COPYRIGHT = re.compile(
 
 _SKIP_LINE_PREFIXES = (
     '#!',
+    '#autoload',
+    '#compdef',
     '@echo off',
     ':<<',
     '/*',

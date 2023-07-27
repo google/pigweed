@@ -93,6 +93,15 @@ unset _PW_BOOTSTRAP_PATH
 unset SETUP_SH
 unset _bootstrap_abspath
 
+# Shell completion: bash.
+if test -n "$BASH"; then
+  . "$PW_ROOT/pw_cli/py/pw_cli/shell_completion/pw.bash"
+  . "$PW_ROOT/pw_cli/py/pw_cli/shell_completion/pw_build.bash"
+# Shell completion: zsh.
+elif test -n "$ZSH_NAME"; then
+  . "$PW_ROOT/pw_cli/py/pw_cli/shell_completion/pw.zsh"
+fi
+
 pw_cleanup
 
 git -C "$PW_ROOT" config blame.ignoreRevsFile .git-blame-ignore-revs

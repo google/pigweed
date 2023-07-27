@@ -35,6 +35,8 @@ pw_python_package("py") {
     "pw_cli/process.py",
     "pw_cli/pw_command_plugins.py",
     "pw_cli/requires.py",
+    "pw_cli/shell_completion/__init__.py",
+    "pw_cli/shell_completion/zsh/__init__.py",
     "pw_cli/toml_config_loader_mixin.py",
     "pw_cli/yaml_config_loader_mixin.py",
   ]
@@ -45,6 +47,14 @@ pw_python_package("py") {
   python_deps = [ "$dir_pw_env_setup/py" ]
   pylintrc = "$dir_pigweed/.pylintrc"
   mypy_ini = "$dir_pigweed/.mypy.ini"
+  inputs = [
+    "pw_cli/shell_completion/common.bash",
+    "pw_cli/shell_completion/pw.bash",
+    "pw_cli/shell_completion/pw.zsh",
+    "pw_cli/shell_completion/pw_build.bash",
+    "pw_cli/shell_completion/zsh/_pw",
+    "pw_cli/shell_completion/zsh/_pw_build",
+  ]
 }
 
 pw_python_script("process_integration_test") {

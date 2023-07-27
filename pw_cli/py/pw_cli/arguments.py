@@ -14,10 +14,12 @@
 """Defines arguments for the pw command."""
 
 import argparse
+from dataclasses import dataclass, field
+from enum import Enum
 import logging
 from pathlib import Path
 import sys
-from typing import NoReturn
+from typing import List, NoReturn, Optional
 
 from pw_cli import argument_types, plugins
 from pw_cli.branding import banner
@@ -31,7 +33,77 @@ Example uses:
 
 
 def parse_args() -> argparse.Namespace:
-    return _parser().parse_args()
+    return arg_parser().parse_args()
+
+
+class ShellCompletionFormat(Enum):
+    """Supported shell tab completion modes."""
+
+    BASH = 'bash'
+    ZSH = 'zsh'
+
+
+@dataclass(frozen=True)
+class ShellCompletion:
+    option_strings: List[str] = field(default_factory=list)
+    help: Optional[str] = None
+    choices: Optional[List[str]] = None
+    flag: bool = True
+
+    def bash_completion(self, text: str) -> List[str]:
+        result: List[str] = []
+        for option_str in self.option_strings:
+            if option_str.startswith(text):
+                result.append(option_str)
+        return result
+
+    def zsh_completion(self, text: str) -> List[str]:
+        result: List[str] = []
+        for option_str in self.option_strings:
+            if option_str.startswith(text):
+                short_and_long_opts = ' '.join(self.option_strings)
+                # '(-h --help)-h[Display help message and exit]'
+                # '(-h --help)--help[Display help message and exit]'
+                help_text = self.help if self.help else ''
+                state_str = ''
+                if not self.flag:
+                    state_str = ': :->' + option_str
+
+                result.append(
+                    f'({short_and_long_opts}){option_str}[{help_text}]'
+                    f'{state_str}'
+                )
+        return result
+
+
+def get_options_and_help(
+    parser: argparse.ArgumentParser,
+) -> List[ShellCompletion]:
+    return list(
+        ShellCompletion(
+            option_strings=list(action.option_strings),
+            help=action.help,
+            choices=list(action.choices) if action.choices else [],
+            flag=action.nargs == 0,
+        )
+        for action in parser._actions  # pylint: disable=protected-access
+    )
+
+
+def print_completions_for_option(
+    parser: argparse.ArgumentParser,
+    text: str = '',
+    tab_completion_format: str = ShellCompletionFormat.BASH.value,
+) -> None:
+    matched_lines: List[str] = []
+    for completion in get_options_and_help(parser):
+        if tab_completion_format == ShellCompletionFormat.ZSH.value:
+            matched_lines.extend(completion.zsh_completion(text))
+        else:
+            matched_lines.extend(completion.bash_completion(text))
+
+    for line in matched_lines:
+        print(line)
 
 
 def print_banner() -> None:
@@ -41,7 +113,7 @@ def print_banner() -> None:
 
 def format_help(registry: plugins.Registry) -> str:
     """Returns the pw help information as a string."""
-    return f'{_parser().format_help()}\n{registry.short_help()}'
+    return f'{arg_parser().format_help()}\n{registry.short_help()}'
 
 
 class _ArgumentParserWithBanner(argparse.ArgumentParser):
@@ -53,7 +125,24 @@ class _ArgumentParserWithBanner(argparse.ArgumentParser):
         self.exit(2, f'{self.prog}: error: {message}\n')
 
 
-def _parser() -> argparse.ArgumentParser:
+def add_tab_complete_arguments(
+    parser: argparse.ArgumentParser,
+) -> argparse.ArgumentParser:
+    parser.add_argument(
+        '--tab-complete-option',
+        nargs='?',
+        help='Print tab completions for the supplied option text.',
+    )
+    parser.add_argument(
+        '--tab-complete-format',
+        choices=list(shell.value for shell in ShellCompletionFormat),
+        default='bash',
+        help='Output format for tab completion results.',
+    )
+    return parser
+
+
+def arg_parser() -> argparse.ArgumentParser:
     """Creates an argument parser for the pw command."""
     argparser = _ArgumentParserWithBanner(
         prog='pw',
@@ -97,6 +186,11 @@ def _parser() -> argparse.ArgumentParser:
         help='Do not print the Pigweed banner',
     )
     argparser.add_argument(
+        '--tab-complete-command',
+        nargs='?',
+        help='Print tab completions for the supplied command text.',
+    )
+    argparser.add_argument(
         'command',
         nargs='?',
         help='Which command to run; see supported commands below',
@@ -107,5 +201,4 @@ def _parser() -> argparse.ArgumentParser:
         nargs=argparse.REMAINDER,
         help='Remaining arguments are forwarded to the command',
     )
-
-    return argparser
+    return add_tab_complete_arguments(argparser)

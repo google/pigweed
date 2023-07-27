@@ -21,6 +21,10 @@ from typing import List, Optional, Union
 
 
 import pw_cli.log
+from pw_cli.arguments import (
+    print_completions_for_option,
+    add_tab_complete_arguments,
+)
 from pw_presubmit.presubmit import (
     Program,
     Programs,
@@ -335,10 +339,10 @@ def presubmit_build_recipe(  # pylint: disable=too-many-locals
     )
 
 
-def _parse_args(
+def _get_parser(
     presubmit_programs: Optional[Programs] = None,
     build_recipes: Optional[List[BuildRecipe]] = None,
-) -> argparse.Namespace:
+) -> argparse.ArgumentParser:
     """Setup argparse for pw_build.project_builder and optionally pw_watch."""
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -463,7 +467,21 @@ def _parse_args(
         ),
     )
 
-    return parser.parse_args()
+    parser = add_tab_complete_arguments(parser)
+
+    parser.add_argument(
+        '--tab-complete-recipe',
+        nargs='?',
+        help='Print tab completions for the supplied recipe name.',
+    )
+
+    parser.add_argument(
+        '--tab-complete-presubmit-step',
+        nargs='?',
+        help='Print tab completions for the supplied presubmit name.',
+    )
+
+    return parser
 
 
 def _get_prefs(
@@ -525,6 +543,24 @@ def load_presubmit_build_recipes(
             presubmit_recipes.append(build_recipe)
 
     return presubmit_recipes
+
+
+def _tab_complete_recipe(
+    build_recipes: List[BuildRecipe],
+    text: str = '',
+) -> None:
+    for name in sorted(recipe.display_name for recipe in build_recipes):
+        if name.startswith(text):
+            print(name)
+
+
+def _tab_complete_presubmit_step(
+    presubmit_programs: Programs,
+    text: str = '',
+) -> None:
+    for name in sorted(presubmit_programs.all_steps().keys()):
+        if name.startswith(text):
+            print(name)
 
 
 def _list_steps_and_recipes(
@@ -609,7 +645,16 @@ def main(
 ) -> int:
     """Build upstream Pigweed presubmit steps."""
     # pylint: disable=too-many-locals
-    args = _parse_args(presubmit_programs, build_recipes)
+    parser = _get_parser(presubmit_programs, build_recipes)
+    args = parser.parse_args()
+
+    if args.tab_complete_option is not None:
+        print_completions_for_option(
+            parser,
+            text=args.tab_complete_option,
+            tab_completion_format=args.tab_complete_format,
+        )
+        return 0
 
     log_level = logging.DEBUG if args.debug_logging else logging.INFO
 
@@ -625,6 +670,16 @@ def main(
         charset = EMOJI_CHARSET
     else:
         charset = ASCII_CHARSET
+
+    if build_recipes and args.tab_complete_recipe is not None:
+        _tab_complete_recipe(build_recipes, text=args.tab_complete_recipe)
+        return 0
+
+    if presubmit_programs and args.tab_complete_presubmit_step is not None:
+        _tab_complete_presubmit_step(
+            presubmit_programs, text=args.tab_complete_presubmit_step
+        )
+        return 0
 
     # List valid steps + recipes.
     if hasattr(args, 'list') and args.list:

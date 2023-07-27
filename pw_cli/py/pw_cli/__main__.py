@@ -31,14 +31,33 @@ def main() -> NoReturn:
 
     pw_cli.log.install(level=args.loglevel, debug_log=args.debug_log)
 
-    # Start with the most critical part of the Pigweed command line tool.
-    if not args.no_banner:
+    # Print the banner unless --no-banner or --tab-complete-command is provided.
+    # Note: args.tab_complete_command may be the empty string '' so check for
+    # None instead.
+    if not args.no_banner and args.tab_complete_command is None:
         arguments.print_banner()
 
     _LOG.debug('Executing the pw command from %s', args.directory)
     os.chdir(args.directory)
 
     pw_command_plugins.register()
+
+    if args.tab_complete_option is not None:
+        arguments.print_completions_for_option(
+            arguments.arg_parser(),
+            text=args.tab_complete_option,
+            tab_completion_format=args.tab_complete_format,
+        )
+        sys.exit(0)
+
+    if args.tab_complete_command is not None:
+        for name, plugin in sorted(pw_command_plugins.plugin_registry.items()):
+            if name.startswith(args.tab_complete_command):
+                if args.tab_complete_format == 'zsh':
+                    print(':'.join([name, plugin.help()]))
+                else:
+                    print(name)
+        sys.exit(0)
 
     if args.help or args.command is None:
         print(pw_command_plugins.format_help(), file=sys.stderr)

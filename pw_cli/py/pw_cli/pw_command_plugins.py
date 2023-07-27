@@ -21,7 +21,7 @@ from typing import Iterable
 from pw_cli import arguments, env, plugins
 import pw_env_setup.config_file
 
-_plugin_registry = plugins.Registry(validator=plugins.callable_with_no_args)
+plugin_registry = plugins.Registry(validator=plugins.callable_with_no_args)
 REGISTRY_FILE = 'PW_PLUGINS'
 
 
@@ -54,33 +54,33 @@ def _help_command():
         help='command for which to display detailed info',
     )
 
-    print(arguments.format_help(_plugin_registry), file=sys.stderr)
+    print(arguments.format_help(plugin_registry), file=sys.stderr)
 
-    for line in _plugin_registry.detailed_help(**vars(parser.parse_args())):
+    for line in plugin_registry.detailed_help(**vars(parser.parse_args())):
         print(line, file=sys.stderr)
 
 
 def register() -> None:
-    _register_builtin_plugins(_plugin_registry)
+    _register_builtin_plugins(plugin_registry)
     parsed_env = env.pigweed_environment()
     pw_plugins_file: Path = parsed_env.PW_PROJECT_ROOT / REGISTRY_FILE
 
     if pw_plugins_file.is_file():
-        _plugin_registry.register_file(pw_plugins_file)
+        plugin_registry.register_file(pw_plugins_file)
     else:
-        _plugin_registry.register_config(
+        plugin_registry.register_config(
             config=pw_env_setup.config_file.load(),
             path=pw_env_setup.config_file.path(),
         )
 
 
 def errors() -> dict:
-    return _plugin_registry.errors()
+    return plugin_registry.errors()
 
 
 def format_help() -> str:
-    return arguments.format_help(_plugin_registry)
+    return arguments.format_help(plugin_registry)
 
 
 def run(name: str, args: Iterable[str]) -> int:
-    return _plugin_registry.run_with_argv(name, args)
+    return plugin_registry.run_with_argv(name, args)

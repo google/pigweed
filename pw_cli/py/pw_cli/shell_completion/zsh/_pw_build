@@ -1,0 +1,40 @@
+#autoload
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+_pw_build() {
+  local -a _pw_build_options=("${(@f)$(pw --no-banner build --tab-complete-format=zsh --tab-complete-option '')}")
+  _arguments $_pw_build_options && return 0
+
+  case "$state" in
+    -r|--recipe)
+      _pw_build_recipe
+      ;;
+    -s|--step)
+      _pw_build_presubmit_step
+      ;;
+    *)
+      ;;
+  esac
+}
+
+_pw_build_recipe() {
+  local -a all_recipes=("${(@f)$(pw --no-banner build --tab-complete-recipe '')}")
+  _values recipe $all_recipes
+}
+
+_pw_build_presubmit_step() {
+  local -a all_steps=("${(@f)$(pw --no-banner build --tab-complete-presubmit-step '')}")
+  _values 'presubmit step' $all_steps
+}
