@@ -2891,12 +2891,16 @@ TEST_F(LowEnergyConnectionManagerTest,
   // Complete interrogation of peer_0
   ASSERT_FALSE(fake_peer_0_ptr->logical_links().empty());
   auto handle_0 = *fake_peer_0_ptr->logical_links().begin();
-  hci_spec::LEReadRemoteFeaturesCompleteSubeventParams response;
-  response.connection_handle = htole16(handle_0);
-  response.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-  response.le_features = 0u;
-  test_device()->SendLEMetaEvent(hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode,
-                                 BufferView(&response, sizeof(response)));
+
+  auto response = hci::EmbossEventPacket::New<
+      pw::bluetooth::emboss::LEReadRemoteFeaturesCompleteSubeventWriter>(
+      hci_spec::kLEMetaEventCode);
+  auto view = response.view_t();
+  view.le_meta_event().subevent_code().Write(hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode);
+  view.connection_handle().Write(handle_0);
+  view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  view.le_features().BackingStorage().WriteUInt(0u);
+  test_device()->SendCommandChannelPacket(response.data());
   RunLoopUntilIdle();
   EXPECT_TRUE(conn_0);
   EXPECT_TRUE(peer_0->le()->connected());
@@ -2904,9 +2908,8 @@ TEST_F(LowEnergyConnectionManagerTest,
   // Complete interrogation of peer_1
   ASSERT_FALSE(fake_peer_1_ptr->logical_links().empty());
   auto handle_1 = *fake_peer_0_ptr->logical_links().begin();
-  response.connection_handle = htole16(handle_1);
-  test_device()->SendLEMetaEvent(hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode,
-                                 BufferView(&response, sizeof(response)));
+  view.connection_handle().Write(handle_1);
+  test_device()->SendCommandChannelPacket(response.data());
   RunLoopUntilIdle();
   EXPECT_TRUE(conn_1);
   EXPECT_TRUE(peer_1->le()->connected());
@@ -2958,12 +2961,15 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSecondPeerDuringInterrogationOfFir
   // Complete interrogation of peer_0. No asserts should fail.
   ASSERT_FALSE(fake_peer_0_ptr->logical_links().empty());
   auto handle_0 = *fake_peer_0_ptr->logical_links().begin();
-  hci_spec::LEReadRemoteFeaturesCompleteSubeventParams response;
-  response.connection_handle = htole16(handle_0);
-  response.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-  response.le_features = 0u;
-  test_device()->SendLEMetaEvent(hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode,
-                                 BufferView(&response, sizeof(response)));
+  auto response = hci::EmbossEventPacket::New<
+      pw::bluetooth::emboss::LEReadRemoteFeaturesCompleteSubeventWriter>(
+      hci_spec::kLEMetaEventCode);
+  auto view = response.view_t();
+  view.le_meta_event().subevent_code().Write(hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode);
+  view.connection_handle().Write(handle_0);
+  view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  view.le_features().BackingStorage().WriteUInt(0u);
+  test_device()->SendCommandChannelPacket(response.data());
   RunLoopUntilIdle();
   EXPECT_TRUE(conn_0);
   EXPECT_TRUE(peer_0->le()->connected());
@@ -3133,11 +3139,13 @@ TEST_F(LowEnergyConnectionManagerTest, PeerDisconnectBeforeInterrogationComplete
   RunLoopUntilIdle();
 
   // Complete interrogation so that callback gets called.
-  hci_spec::ReadRemoteVersionInfoCompleteEventParams response = {};
-  response.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-  response.connection_handle = htole16(handle);
-  test_device()->SendEvent(hci_spec::kReadRemoteVersionInfoCompleteEventCode,
-                           BufferView(&response, sizeof(response)));
+  auto response =
+      hci::EmbossEventPacket::New<pw::bluetooth::emboss::ReadRemoteVersionInfoCompleteEventWriter>(
+          hci_spec::kReadRemoteVersionInfoCompleteEventCode);
+  auto view = response.view_t();
+  view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  view.connection_handle().Write(handle);
+  test_device()->SendCommandChannelPacket(response.data());
 
   RunLoopUntilIdle();
   EXPECT_EQ(0u, connected_peers().size());
@@ -3178,11 +3186,13 @@ TEST_F(LowEnergyConnectionManagerTest, LocalDisconnectBeforeInterrogationComplet
   RunLoopUntilIdle();
 
   // Complete interrogation so that callback gets called.
-  hci_spec::ReadRemoteVersionInfoCompleteEventParams response = {};
-  response.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-  response.connection_handle = htole16(handle);
-  test_device()->SendEvent(hci_spec::kReadRemoteVersionInfoCompleteEventCode,
-                           BufferView(&response, sizeof(response)));
+  auto response =
+      hci::EmbossEventPacket::New<pw::bluetooth::emboss::ReadRemoteVersionInfoCompleteEventWriter>(
+          hci_spec::kReadRemoteVersionInfoCompleteEventCode);
+  auto view = response.view_t();
+  view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  view.connection_handle().Write(handle);
+  test_device()->SendCommandChannelPacket(response.data());
 
   RunLoopUntilIdle();
   EXPECT_EQ(0u, connected_peers().size());
@@ -3381,10 +3391,13 @@ TEST_F(LowEnergyConnectionManagerTest,
 
   // Complete interrogation with an error that will be received after the disconnect event.
   // Event params other than status will be ignored because status is an error.
-  hci_spec::ReadRemoteVersionInfoCompleteEventParams response{
-      .status = pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID};
-  test_device()->SendEvent(hci_spec::kReadRemoteVersionInfoCompleteEventCode,
-                           BufferView(&response, sizeof(response)));
+  auto response =
+      hci::EmbossEventPacket::New<pw::bluetooth::emboss::ReadRemoteVersionInfoCompleteEventWriter>(
+          hci_spec::kReadRemoteVersionInfoCompleteEventCode);
+  auto view = response.view_t();
+  view.status().Write(pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID);
+  test_device()->SendCommandChannelPacket(response.data());
+
   RunLoopUntilIdle();
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
   EXPECT_EQ(connect_cb_count, 0);

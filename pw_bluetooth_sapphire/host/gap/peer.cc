@@ -462,7 +462,7 @@ Peer::Peer(NotifyListenersCallback notify_listeners_callback, PeerCallback updat
               return v ? v->name + " [source: " + NameSourceToString(v->source) + "]" : "";
             }),
       lmp_version_(std::nullopt,
-                   [](const std::optional<hci_spec::HCIVersion>& v) {
+                   [](const std::optional<pw::bluetooth::emboss::CoreSpecificationVersion>& v) {
                      return v ? hci_spec::HCIVersionToString(*v) : "";
                    }),
       lmp_manufacturer_(

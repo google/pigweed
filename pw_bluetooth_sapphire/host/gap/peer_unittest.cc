@@ -194,7 +194,8 @@ class PeerDeathTest : public PeerTest {};
 
 #ifndef NINSPECT
 TEST_F(PeerTest, InspectHierarchy) {
-  peer().set_version(hci_spec::HCIVersion::k5_0, kManufacturer, kSubversion);
+  peer().set_version(pw::bluetooth::emboss::CoreSpecificationVersion::V5_0, kManufacturer,
+                     kSubversion);
 
   peer().RegisterName("Sapphire💖", Peer::NameSource::kGenericAccessService);
 

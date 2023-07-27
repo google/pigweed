@@ -10,28 +10,36 @@
 
 namespace bt::hci_spec {
 
-std::string HCIVersionToString(HCIVersion version) {
+std::string HCIVersionToString(pw::bluetooth::emboss::CoreSpecificationVersion version) {
   switch (version) {
-    case HCIVersion::k1_0b:
+    case pw::bluetooth::emboss::CoreSpecificationVersion::V1_0B:
       return "1.0b";
-    case HCIVersion::k1_1:
+    case pw::bluetooth::emboss::CoreSpecificationVersion::V1_1:
       return "1.1";
-    case HCIVersion::k1_2:
+    case pw::bluetooth::emboss::CoreSpecificationVersion::V1_2:
       return "1.2";
-    case HCIVersion::k2_0_EDR:
+    case pw::bluetooth::emboss::CoreSpecificationVersion::V2_0_EDR:
       return "2.0 + EDR";
-    case HCIVersion::k2_1_EDR:
+    case pw::bluetooth::emboss::CoreSpecificationVersion::V2_1_EDR:
       return "2.1 + EDR";
-    case HCIVersion::k3_0_HS:
+    case pw::bluetooth::emboss::CoreSpecificationVersion::V3_0_HS:
       return "3.0 + HS";
-    case HCIVersion::k4_0:
+    case pw::bluetooth::emboss::CoreSpecificationVersion::V4_0:
       return "4.0";
-    case HCIVersion::k4_1:
+    case pw::bluetooth::emboss::CoreSpecificationVersion::V4_1:
       return "4.1";
-    case HCIVersion::k4_2:
+    case pw::bluetooth::emboss::CoreSpecificationVersion::V4_2:
       return "4.2";
-    case HCIVersion::k5_0:
+    case pw::bluetooth::emboss::CoreSpecificationVersion::V5_0:
       return "5.0";
+    case pw::bluetooth::emboss::CoreSpecificationVersion::V5_1:
+      return "5.1";
+    case pw::bluetooth::emboss::CoreSpecificationVersion::V5_2:
+      return "5.2";
+    case pw::bluetooth::emboss::CoreSpecificationVersion::V5_3:
+      return "5.3";
+    case pw::bluetooth::emboss::CoreSpecificationVersion::V5_4:
+      return "5.4";
     default:
       break;
   }

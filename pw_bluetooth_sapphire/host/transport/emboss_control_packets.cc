@@ -52,6 +52,14 @@ std::optional<pw::bluetooth::emboss::StatusCode> EmbossEventPacket::StatusCode()
       return StatusCodeFromView<pw::bluetooth::emboss::ConnectionCompleteEventView>();
     case hci_spec::kDisconnectionCompleteEventCode:
       return StatusCodeFromView<pw::bluetooth::emboss::DisconnectionCompleteEventView>();
+    case hci_spec::kReadRemoteVersionInfoCompleteEventCode:
+      return StatusCodeFromView<pw::bluetooth::emboss::ReadRemoteVersionInfoCompleteEventView>();
+    case hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode:
+      return StatusCodeFromView<
+          pw::bluetooth::emboss::ReadRemoteSupportedFeaturesCompleteEventView>();
+    case hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode:
+      return StatusCodeFromView<
+          pw::bluetooth::emboss::ReadRemoteExtendedFeaturesCompleteEventView>();
     case hci_spec::kRemoteNameRequestCompleteEventCode: {
       // Tests expect that a kPacketMalformed status is returned for incomplete events, even if they
       // contain the status field.
@@ -94,6 +102,11 @@ std::optional<pw::bluetooth::emboss::StatusCode> EmbossEventPacket::StatusCode()
         case hci_spec::kLEConnectionUpdateCompleteSubeventCode: {
           return StatusCodeFromView<
               pw::bluetooth::emboss::LEConnectionUpdateCompleteSubeventView>();
+        }
+
+        case hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode: {
+          return StatusCodeFromView<
+              pw::bluetooth::emboss::LEReadRemoteFeaturesCompleteSubeventView>();
         }
 
         default: {

@@ -16,7 +16,7 @@ using AdvertisingEventBits = uint16_t;
 // Helper functions to convert HCI data types to library objects.
 
 // Returns a user-friendly string representation of |version|.
-std::string HCIVersionToString(hci_spec::HCIVersion version);
+std::string HCIVersionToString(pw::bluetooth::emboss::CoreSpecificationVersion version);
 
 // Returns a user-friendly string representation of |status|.
 std::string StatusCodeToString(pw::bluetooth::emboss::StatusCode code);

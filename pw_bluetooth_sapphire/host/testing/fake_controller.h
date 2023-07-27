@@ -56,7 +56,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
     zx::duration le_connection_delay = zx::sec(0);
 
     // HCI settings.
-    hci_spec::HCIVersion hci_version = hci_spec::HCIVersion::k5_0;
+    pw::bluetooth::emboss::CoreSpecificationVersion hci_version =
+        pw::bluetooth::emboss::CoreSpecificationVersion::V5_0;
     uint8_t num_hci_command_packets = 250;
     uint64_t event_mask = 0;
     uint64_t le_event_mask = 0;

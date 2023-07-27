@@ -456,7 +456,9 @@ class Peer final {
   bool identity_known() const { return identity_known_; }
 
   // The LMP version of this device obtained doing discovery.
-  const std::optional<hci_spec::HCIVersion>& version() const { return *lmp_version_; }
+  const std::optional<pw::bluetooth::emboss::CoreSpecificationVersion>& version() const {
+    return *lmp_version_;
+  }
 
   // Returns true if this is a connectable device.
   bool connectable() const { return *connectable_; }
@@ -541,7 +543,8 @@ class Peer final {
   // Sets the last available LMP feature |page| number for this device.
   void set_last_page_number(uint8_t page) { lmp_features_.Mutable()->set_last_page_number(page); }
 
-  void set_version(hci_spec::HCIVersion version, uint16_t manufacturer, uint16_t subversion) {
+  void set_version(pw::bluetooth::emboss::CoreSpecificationVersion version, uint16_t manufacturer,
+                   uint16_t subversion) {
     lmp_version_.Set(version);
     lmp_manufacturer_.Set(manufacturer);
     lmp_subversion_ = subversion;
@@ -639,7 +642,7 @@ class Peer final {
   StringInspectable<std::optional<PeerName>> name_;
   // TODO(fxbug.dev/95912): Coordinate this field with the appearance read from advertising data.
   std::optional<uint16_t> appearance_;
-  StringInspectable<std::optional<hci_spec::HCIVersion>> lmp_version_;
+  StringInspectable<std::optional<pw::bluetooth::emboss::CoreSpecificationVersion>> lmp_version_;
   StringInspectable<std::optional<uint16_t>> lmp_manufacturer_;
   std::optional<uint16_t> lmp_subversion_;
   StringInspectable<hci_spec::LMPFeatureSet> lmp_features_;

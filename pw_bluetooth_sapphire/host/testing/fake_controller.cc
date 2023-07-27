@@ -45,7 +45,7 @@ namespace hci_android = hci_spec::vendor::android;
 
 void FakeController::Settings::ApplyDualModeDefaults() {
   le_connection_delay = zx::sec(0);
-  hci_version = hci_spec::HCIVersion::k5_0;
+  hci_version = pw::bluetooth::emboss::CoreSpecificationVersion::V5_0;
   num_hci_command_packets = 250;
   event_mask = 0;
   le_event_mask = 0;
@@ -130,7 +130,7 @@ void FakeController::Settings::AddLESupportedCommands() {
 void FakeController::Settings::ApplyLegacyLEConfig() {
   ApplyLEOnlyDefaults();
 
-  hci_version = hci_spec::HCIVersion::k4_2;
+  hci_version = pw::bluetooth::emboss::CoreSpecificationVersion::V4_2;
 
   SetBit(supported_commands + 26, hci_spec::SupportedCommand::kLESetScanParameters);
   SetBit(supported_commands + 26, hci_spec::SupportedCommand::kLESetScanEnable);
@@ -1422,42 +1422,48 @@ void FakeController::OnReadRemoteVersionInfoCommandReceived(
     const pw::bluetooth::emboss::ReadRemoteVersionInfoCommandView& params) {
   RespondWithCommandStatus(hci_spec::kReadRemoteVersionInfo,
                            pw::bluetooth::emboss::StatusCode::SUCCESS);
-
-  hci_spec::ReadRemoteVersionInfoCompleteEventParams response = {};
-  response.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-  response.connection_handle = htole16(params.connection_handle().Read());
-  response.lmp_version = hci_spec::HCIVersion::k4_2;
-  response.manufacturer_name = 0xFFFF;  // anything
-  response.lmp_subversion = 0xADDE;     // anything
-  SendEvent(hci_spec::kReadRemoteVersionInfoCompleteEventCode,
-            BufferView(&response, sizeof(response)));
+  auto response =
+      hci::EmbossEventPacket::New<pw::bluetooth::emboss::ReadRemoteVersionInfoCompleteEventWriter>(
+          hci_spec::kReadRemoteVersionInfoCompleteEventCode);
+  auto view = response.view_t();
+  view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  view.connection_handle().CopyFrom(params.connection_handle());
+  view.version().Write(pw::bluetooth::emboss::CoreSpecificationVersion::V4_2);
+  view.company_identifier().Write(0xFFFF);  // anything
+  view.subversion().Write(0xADDE);          // anything
+  SendCommandChannelPacket(response.data());
 }
 
 void FakeController::OnReadRemoteExtendedFeaturesCommandReceived(
     const pw::bluetooth::emboss::ReadRemoteExtendedFeaturesCommandView& params) {
-  hci_spec::ReadRemoteExtendedFeaturesCompleteEventParams response = {};
+  auto response = hci::EmbossEventPacket::New<
+      pw::bluetooth::emboss::ReadRemoteExtendedFeaturesCompleteEventWriter>(
+      hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode);
+  auto view = response.view_t();
 
   switch (params.page_number().Read()) {
-    case 1:
-      response.lmp_features = settings_.lmp_features_page1;
+    case 1: {
+      view.lmp_features().BackingStorage().WriteUInt(settings_.lmp_features_page1);
       break;
-    case 2:
-      response.lmp_features = settings_.lmp_features_page2;
+    }
+    case 2: {
+      view.lmp_features().BackingStorage().WriteUInt(settings_.lmp_features_page2);
       break;
-    default:
+    }
+    default: {
       RespondWithCommandStatus(hci_spec::kReadRemoteExtendedFeatures,
                                pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
       return;
+    }
   }
 
   RespondWithCommandStatus(hci_spec::kReadRemoteExtendedFeatures,
                            pw::bluetooth::emboss::StatusCode::SUCCESS);
-  response.page_number = params.page_number().Read();
-  response.max_page_number = 3;
-  response.connection_handle = htole16(params.connection_handle().Read());
-  response.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-  SendEvent(hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode,
-            BufferView(&response, sizeof(response)));
+  view.page_number().CopyFrom(params.page_number());
+  view.max_page_number().Write(3);
+  view.connection_handle().CopyFrom(params.connection_handle());
+  view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  SendCommandChannelPacket(response.data());
 }
 
 void FakeController::OnAuthenticationRequestedCommandReceived(
@@ -1703,12 +1709,15 @@ void FakeController::OnLEReadRemoteFeaturesCommand(
   RespondWithCommandStatus(hci_spec::kLEReadRemoteFeatures,
                            pw::bluetooth::emboss::StatusCode::SUCCESS);
 
-  hci_spec::LEReadRemoteFeaturesCompleteSubeventParams response;
-  response.connection_handle = params.connection_handle;
-  response.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-  response.le_features = peer->le_features().le_features;
-  SendLEMetaEvent(hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode,
-                  BufferView(&response, sizeof(response)));
+  auto response = hci::EmbossEventPacket::New<
+      pw::bluetooth::emboss::LEReadRemoteFeaturesCompleteSubeventWriter>(
+      hci_spec::kLEMetaEventCode);
+  auto view = response.view_t();
+  view.le_meta_event().subevent_code().Write(hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode);
+  view.connection_handle().Write(params.connection_handle);
+  view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  view.le_features().BackingStorage().WriteUInt(peer->le_features().le_features);
+  SendCommandChannelPacket(response.data());
 }
 
 void FakeController::OnLEStartEncryptionCommand(

@@ -20,43 +20,6 @@
 
 namespace bt::hci_spec {
 
-// HCI_Version Assigned Values See the "Assigned Numbers" document for
-// reference.
-// (https://www.bluetooth.com/specifications/assigned-numbers/host-controller-interface)
-enum class HCIVersion : uint8_t {
-  // Bluetooth Core Specification 1.0b
-  k1_0b = 0,
-
-  // Bluetooth Core Specification 1.1
-  k1_1,
-
-  // Bluetooth Core Specification 1.2
-  k1_2,
-
-  // Bluetooth Core Specification 2.0 + EDR
-  k2_0_EDR,
-
-  // Bluetooth Core Specification 2.1 + EDR
-  k2_1_EDR,
-
-  // Bluetooth Core Specification 3.0 + HS
-  k3_0_HS,
-
-  // Bluetooth Core Specification 4.0
-  k4_0,
-
-  // Bluetooth Core Specification 4.1
-  k4_1,
-
-  // Bluetooth Core Specification 4.2
-  k4_2,
-
-  // Bluetooth Core Specification 5.0
-  k5_0,
-
-  kReserved
-};
-
 // Bitmask values for the 8-octet Local Supported LMP Features bit-field. See
 // Core Specv5.0, Volume 2, Part C, Section 3.3 "Feature Mask Definition".
 enum class LMPFeature : uint64_t {

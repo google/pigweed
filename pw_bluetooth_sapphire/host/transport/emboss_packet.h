@@ -13,8 +13,8 @@ namespace bt {
 // reading/writing them using Emboss (https://github.com/google/emboss).
 //
 // Emboss does not own memory; it provides structured views into user allocated memory. These views
-// are specified in Emboss source files such as hci-protocol.emb, which implements the HCI protocol
-// packet definitions.
+// are specified in Emboss source files such as hci.emb in pw_bluetooth, which implements the HCI
+// protocol packet definitions.
 //
 // This file defines two classes: StaticPacket, which provides an Emboss view over a statically
 // allocated buffer, and DynamicPacket, which is part of a class hierarchy that provides Emboss

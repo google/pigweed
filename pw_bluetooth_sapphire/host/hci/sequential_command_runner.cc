@@ -92,7 +92,17 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
   auto command_callback = [self, cmd_cb = std::move(next.callback),
                            complete_event_code = next.complete_event_code,
                            seq_no = sequence_number_](auto, const EventPacket& event_packet) {
-    auto status = event_packet.ToResult();
+    std::optional<EmbossEventPacket> emboss_packet;
+    hci::Result<> status = bt::ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS);
+    using T = std::decay_t<decltype(cmd_cb)>;
+    if constexpr (std::is_same_v<T, CommandCompleteCallback>) {
+      status = event_packet.ToResult();
+    } else {
+      emboss_packet = EmbossEventPacket::New(event_packet.view().size());
+      MutableBufferView buffer = emboss_packet->mutable_data();
+      event_packet.view().data().Copy(&buffer);
+      status = emboss_packet->ToResult();
+    }
 
     if (self.is_alive() && seq_no != self->sequence_number_) {
       bt_log(TRACE, "hci", "Ignoring event for previous sequence (event code: %#.2x, status: %s)",
@@ -111,7 +121,7 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
     }
 
     std::visit(
-        [&event_packet](auto& cmd_cb) {
+        [&event_packet, &emboss_packet](auto& cmd_cb) {
           using T = std::decay_t<decltype(cmd_cb)>;
           if constexpr (std::is_same_v<T, CommandCompleteCallback>) {
             if (cmd_cb) {
@@ -119,10 +129,7 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
             }
           } else if constexpr (std::is_same_v<T, EmbossCommandCompleteCallback>) {
             if (cmd_cb) {
-              EmbossEventPacket emboss_packet = EmbossEventPacket::New(event_packet.view().size());
-              MutableBufferView buffer = emboss_packet.mutable_data();
-              event_packet.view().data().Copy(&buffer);
-              cmd_cb(emboss_packet);
+              cmd_cb(*emboss_packet);
             }
           }
         },

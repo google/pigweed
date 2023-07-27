@@ -147,9 +147,7 @@ bool EventPacket::ToStatusCode(pw::bluetooth::emboss::StatusCode* out_code) cons
     CASE_EMBOSS_EVENT_STATUS(DisconnectionComplete);
     CASE_EVENT_STATUS(EncryptionKeyRefreshComplete);
     CASE_EMBOSS_EVENT_STATUS(RemoteNameRequestComplete);
-    CASE_EVENT_STATUS(ReadRemoteVersionInfoComplete);
     CASE_EVENT_STATUS(ReadRemoteSupportedFeaturesComplete);
-    CASE_EVENT_STATUS(ReadRemoteExtendedFeaturesComplete);
     CASE_EVENT_STATUS(RoleChange);
     CASE_EVENT_STATUS(SimplePairingComplete);
     CASE_EVENT_STATUS(SynchronousConnectionComplete);
@@ -161,7 +159,6 @@ bool EventPacket::ToStatusCode(pw::bluetooth::emboss::StatusCode* out_code) cons
       auto subevent_code = params<hci_spec::LEMetaEventParams>().subevent_code;
       switch (subevent_code) {
         CASE_SUBEVENT_STATUS(LEAdvertisingSetTerminated);
-        CASE_SUBEVENT_STATUS(LEReadRemoteFeaturesComplete);
         default:
           BT_PANIC("LE subevent (%#.2x) not implemented!", subevent_code);
           break;

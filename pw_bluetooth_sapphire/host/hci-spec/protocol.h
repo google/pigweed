@@ -604,8 +604,7 @@ struct ReadLocalVersionInfoReturnParams {
   // See enum StatusCode in hci_constants.h.
   StatusCode status;
 
-  // HCI version (see enum class HCIVersion in hci_constants.h)
-  HCIVersion hci_version;
+  pw::bluetooth::emboss::CoreSpecificationVersion hci_version;
 
   uint16_t hci_revision;
   uint8_t lmp_pal_version;
@@ -762,22 +761,6 @@ struct ReadRemoteSupportedFeaturesCompleteEventParams {
 // Read Remote Version Information Complete Event (v1.1) (BR/EDR & LE)
 constexpr EventCode kReadRemoteVersionInfoCompleteEventCode = 0x0C;
 
-struct ReadRemoteVersionInfoCompleteEventParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Connection_Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  HCIVersion lmp_version;
-  // Manufacturer Name. Assigned by Bluetooth SIG. See Assigned Numbers
-  // (https://www.bluetooth.com/specifications/assigned-numbers/company-identifiers)
-  uint16_t manufacturer_name;
-  // See Spec 5.0 Vol 2, Part C, Sec 5.2. Defined by each company.
-  uint16_t lmp_subversion;
-} __attribute__((packed));
-
 // =============================
 // Command Complete Event (v1.1)
 constexpr EventCode kCommandCompleteEventCode = 0x0E;
@@ -932,27 +915,6 @@ struct InquiryResultWithRSSIEventParams {
 // ============================================================
 // Read Remote Extended Features Complete Event (v1.1) (BR/EDR)
 constexpr EventCode kReadRemoteExtendedFeaturesCompleteEventCode = 0x23;
-
-struct ReadRemoteExtendedFeaturesCompleteEventParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // A connection handle for an ACL connection.
-  //  Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // Page number
-  uint8_t page_number;
-
-  // Maximum page number
-  // The highest features page number that has non-zero bits on the remote
-  // device.
-  uint8_t max_page_number;
-
-  // Bit Mask List of LMP features. See enum class LMPFeature in hci_constants.h
-  // for how to interpret this bitfield.
-  uint64_t lmp_features;
-} __attribute__((packed));
 
 // ============================================================
 // Synchronous Connection Complete Event (BR/EDR)
@@ -1185,19 +1147,6 @@ constexpr EventCode kLEConnectionUpdateCompleteSubeventCode = 0x03;
 
 // LE Read Remote Features Complete Event (v4.0) (LE)
 constexpr EventCode kLEReadRemoteFeaturesCompleteSubeventCode = 0x04;
-
-struct LEReadRemoteFeaturesCompleteSubeventParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // Bit Mask List of supported LE features. See enum class LEFeatures in
-  // hci_constants.h.
-  uint64_t le_features;
-} __attribute__((packed));
 
 // LE Long Term Key Request Event (v4.0) (LE)
 constexpr EventCode kLELongTermKeyRequestSubeventCode = 0x05;

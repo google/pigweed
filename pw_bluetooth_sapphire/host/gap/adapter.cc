@@ -767,7 +767,7 @@ void AdapterImpl::InitializeStep2() {
 
   // Check the HCI version. We officially only support 4.2+ only but for now we
   // just log a warning message if the version is legacy.
-  if (state_.hci_version < hci_spec::HCIVersion::k4_2) {
+  if (state_.hci_version < pw::bluetooth::emboss::CoreSpecificationVersion::V4_2) {
     bt_log(WARN, "gap", "controller is using legacy HCI version %s",
            hci_spec::HCIVersionToString(state_.hci_version).c_str());
   }

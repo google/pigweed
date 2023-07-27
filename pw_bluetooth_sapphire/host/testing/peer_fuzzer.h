@@ -238,8 +238,9 @@ class PeerFuzzer final {
   void set_last_page_number() { peer_.set_last_page_number(fdp().ConsumeIntegral<uint8_t>()); }
 
   void set_version() {
-    peer_.set_version(bt::hci_spec::HCIVersion{fdp().ConsumeIntegral<uint8_t>()},
-                      fdp().ConsumeIntegral<uint16_t>(), fdp().ConsumeIntegral<uint16_t>());
+    peer_.set_version(
+        pw::bluetooth::emboss::CoreSpecificationVersion{fdp().ConsumeIntegral<uint8_t>()},
+        fdp().ConsumeIntegral<uint16_t>(), fdp().ConsumeIntegral<uint16_t>());
   }
 
   void set_identity_known() { peer_.set_identity_known(fdp().ConsumeBool()); }

@@ -73,14 +73,14 @@ void LowEnergyInterrogator::QueueReadLERemoteFeatures() {
 
   // It's safe to capture |this| instead of a weak ptr to self because |cmd_runner_| guarantees that
   // |cmd_cb| won't be invoked if |cmd_runner_| is destroyed, and |this| outlives |cmd_runner_|.
-  auto cmd_cb = [this](const hci::EventPacket& event) {
+  auto cmd_cb = [this](const hci::EmbossEventPacket& event) {
     if (hci_is_error(event, WARN, "gap-le", "LE read remote features failed")) {
       return;
     }
     bt_log(DEBUG, "gap-le", "LE read remote features complete (peer: %s)", bt_str(peer_id_));
-    const auto* params =
-        event.subevent_params<hci_spec::LEReadRemoteFeaturesCompleteSubeventParams>();
-    peer_->MutLe().SetFeatures(hci_spec::LESupportedFeatures{params->le_features});
+    auto view = event.view<pw::bluetooth::emboss::LEReadRemoteFeaturesCompleteSubeventView>();
+    peer_->MutLe().SetFeatures(
+        hci_spec::LESupportedFeatures{view.le_features().BackingStorage().ReadUInt()});
   };
 
   bt_log(TRACE, "gap-le", "sending LE read remote features command (peer id: %s)",
@@ -98,13 +98,15 @@ void LowEnergyInterrogator::QueueReadRemoteVersionInformation() {
 
   // It's safe to capture |this| instead of a weak ptr to self because |cmd_runner_| guarantees that
   // |cmd_cb| won't be invoked if |cmd_runner_| is destroyed, and |this| outlives |cmd_runner_|.
-  auto cmd_cb = [this](const hci::EventPacket& event) {
+  auto cmd_cb = [this](const hci::EmbossEventPacket& event) {
     if (hci_is_error(event, WARN, "gap-le", "read remote version info failed")) {
       return;
     }
+    BT_DEBUG_ASSERT(event.event_code() == hci_spec::kReadRemoteVersionInfoCompleteEventCode);
     bt_log(TRACE, "gap-le", "read remote version info completed (peer: %s)", bt_str(peer_id_));
-    const auto params = event.params<hci_spec::ReadRemoteVersionInfoCompleteEventParams>();
-    peer_->set_version(params.lmp_version, params.manufacturer_name, params.lmp_subversion);
+    auto view = event.view<pw::bluetooth::emboss::ReadRemoteVersionInfoCompleteEventView>();
+    peer_->set_version(view.version().Read(), view.company_identifier().Read(),
+                       view.subversion().Read());
   };
 
   bt_log(TRACE, "gap-le", "asking for version info (peer id: %s)", bt_str(peer_id_));

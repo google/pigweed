@@ -87,7 +87,8 @@ class LowEnergyInterrogatorTest : public TestingBase {
 using GAP_LowEnergyInterrogatorTest = LowEnergyInterrogatorTest;
 
 TEST_F(LowEnergyInterrogatorTest, SuccessfulInterrogation) {
-  const hci_spec::LESupportedFeatures kFeatures{0x0123456789abcdef};
+  // As of Core Spec v5.4, the Feature Set mask has 44 bits (5.5 bytes) in use.
+  const hci_spec::LESupportedFeatures kFeatures{0x0123456789a};
   QueueSuccessfulInterrogation(kConnectionHandle, kFeatures);
 
   std::optional<hci::Result<>> status;
@@ -103,7 +104,8 @@ TEST_F(LowEnergyInterrogatorTest, SuccessfulInterrogation) {
 }
 
 TEST_F(LowEnergyInterrogatorTest, SuccessfulInterrogationPeerAlreadyHasLEFeatures) {
-  const hci_spec::LESupportedFeatures kFeatures{0x0123456789abcdef};
+  // As of Core Spec v5.4, the Feature Set mask has 44 bits (5.5 bytes) in use.
+  const hci_spec::LESupportedFeatures kFeatures{0x0123456789a};
 
   const auto remote_version_complete_packet =
       testing::ReadRemoteVersionInfoCompletePacket(kConnectionHandle);
@@ -242,7 +244,8 @@ TEST_F(LowEnergyInterrogatorTest, ReadRemoteVersionCallbackHandlesCanceledInterr
 }
 
 TEST_F(LowEnergyInterrogatorTest, DestroyInterrogatorInCompleteCallback) {
-  const hci_spec::LESupportedFeatures kFeatures{0x0123456789abcdef};
+  // As of Core Spec v5.4, the Feature Set mask has 44 bits (5.5 bytes) in use.
+  const hci_spec::LESupportedFeatures kFeatures{0x0123456789a};
   QueueSuccessfulInterrogation(kConnectionHandle, kFeatures);
 
   std::optional<hci::Result<>> status;

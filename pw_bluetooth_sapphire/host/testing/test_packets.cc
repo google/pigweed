@@ -230,15 +230,16 @@ DynamicByteBuffer ReadRemoteVersionInfoPacket(hci_spec::ConnectionHandle conn) {
 }
 
 DynamicByteBuffer ReadRemoteVersionInfoCompletePacket(hci_spec::ConnectionHandle conn) {
-  return DynamicByteBuffer(StaticByteBuffer(hci_spec::kReadRemoteVersionInfoCompleteEventCode,
-                                            0x08,  // parameter_total_size (8 bytes)
-                                            pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
-                                            LowerBits(conn),
-                                            UpperBits(conn),  // Little-Endian Connection_handle
-                                            hci_spec::HCIVersion::k4_2,  // lmp_version
-                                            0xE0, 0x00,  // manufacturer_name (Google)
-                                            0xAD, 0xDE   // lmp_subversion (anything)
-                                            ));
+  return DynamicByteBuffer(StaticByteBuffer(
+      hci_spec::kReadRemoteVersionInfoCompleteEventCode,
+      0x08,                                        // parameter_total_size (8 bytes)
+      pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
+      LowerBits(conn),
+      UpperBits(conn),                                        // Little-Endian Connection_handle
+      pw::bluetooth::emboss::CoreSpecificationVersion::V4_2,  // version
+      0xE0, 0x00,                                             // company_identifier (Google)
+      0xAD, 0xDE                                              // subversion (anything)
+      ));
 }
 
 DynamicByteBuffer ReadRemoteSupportedFeaturesPacket(hci_spec::ConnectionHandle conn) {

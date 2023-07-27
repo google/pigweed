@@ -208,9 +208,9 @@ const auto kRemoteVersionInfoComplete =
                      0x08,                                        // parameter_total_size (8 bytes)
                      pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
                      0xAA, 0x0B,                                  // connection_handle
-                     hci_spec::HCIVersion::k4_2,                  // lmp_version
-                     0xE0, 0x00,                                  // manufacturer_name (Google)
-                     0xAD, 0xDE                                   // lmp_subversion (anything)
+                     pw::bluetooth::emboss::CoreSpecificationVersion::V4_2,  // version
+                     0xE0, 0x00,  // company_identifier (Google)
+                     0xAD, 0xDE   // subversion (anything)
     );
 
 const auto kReadRemoteSupportedFeaturesRsp = COMMAND_STATUS_RSP(
