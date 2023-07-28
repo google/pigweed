@@ -28,6 +28,10 @@ build --ui_event_filters=-debug
 # variables.
 build --incompatible_strict_action_env
 
+# Workaround for https://github.com/bazelbuild/rules_jvm_external/issues/445.
+build --java_runtime_version=remotejdk_11
+build --repo_env=JAVA_HOME=../bazel_tools/jdk
+
 # Silence compiler warnings from external repositories.
 #
 # This is supported by Bazel's default C++ toolchain, but not yet by
