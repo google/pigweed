@@ -1,12 +1,13 @@
 .. _module-pw_containers:
 
--------------
+=============
 pw_containers
--------------
+=============
 The ``pw_containers`` module provides embedded-friendly container classes.
 
+----------
 pw::Vector
-==========
+----------
 The Vector class is similar to ``std::vector``, except it is backed by a
 fixed-size buffer. Vectors must be declared with an explicit maximum size
 (e.g. ``Vector<int, 10>``) but vectors can be used and referred to without the
@@ -18,16 +19,19 @@ size in a variable. This allows Vectors to be used without having to know
 their maximum size at compile time. It also keeps code size small since
 function implementations are shared for all maximum sizes.
 
+---------------
 pw::InlineDeque
-===============
+---------------
 .. doxygentypedef:: pw::InlineDeque
 
+---------------
 pw::InlineQueue
-===============
+---------------
 .. doxygentypedef:: pw::InlineQueue
 
+-----------------
 pw::IntrusiveList
-=================
+-----------------
 IntrusiveList provides an embedded-friendly singly-linked intrusive list
 implementation. An intrusive list is a type of linked list that embeds the
 "next" pointer into the list object itself. This allows the construction of a
@@ -41,7 +45,7 @@ pointer from being accessed by the item class, so only the ``pw::IntrusiveList``
 class can modify the list.
 
 Usage
------
+=====
 While the API of ``pw::IntrusiveList`` is similar to a ``std::forward_list``,
 there are extra steps to creating objects that can be stored in this data
 structure. Objects that will be added to a ``IntrusiveList<T>`` must inherit
@@ -113,7 +117,7 @@ That means two key things:
    }
 
 Performance Considerations
---------------------------
+==========================
 Items only include pointers to the next item. To reach previous items, the list
 maintains a cycle of items so that the first item can be reached from the last.
 This structure means certain operations have linear complexity in terms of the
@@ -134,8 +138,9 @@ preferrable to create items that together with their storage outlive the list.
 Notably, ``pw::IntrusiveList<T>::end()`` is constant complexity (i.e. "O(1)").
 As a result iterating over a list does not incur an additional penalty.
 
+-----------------------
 pw::containers::FlatMap
-=======================
+-----------------------
 ``FlatMap`` provides a simple, fixed-size associative array with `O`\ (log `n`)
 lookup by key.
 
@@ -150,26 +155,14 @@ The underlying array in ``pw::containers::FlatMap`` does not need to be sorted.
 During construction, ``pw::containers::FlatMap`` will perform a constexpr
 insertion sort.
 
+----------------------------
 pw::containers::FilteredView
-============================
-``pw::containers::FilteredView`` provides a view of a container that only
-contains elements that match the specified filter. This class is similar to
-C++20's `std::ranges::filter_view
-<https://en.cppreference.com/w/cpp/ranges/filter_view>`_.
+----------------------------
+.. doxygenclass:: pw::containers::FilteredView
 
-To create a ``FilteredView``, pass a container and a filter object, which may be
-a lambda or class that implements ``operator()`` for the container's value type.
-
-.. code-block:: cpp
-
-   std::array<int, 99> kNumbers = {3, 1, 4, 1, ...};
-
-   for (int even : FilteredView(kNumbers, [](int n) { return n % 2 == 0; })) {
-     PW_LOG_INFO("This number is even: %d", even);
-   }
-
+-------------------------------
 pw::containers::WrappedIterator
-===============================
+-------------------------------
 ``pw::containers::WrappedIterator`` is a class that makes it easy to wrap an
 existing iterator type. It reduces boilerplate by providing ``operator++``,
 ``operator--``, ``operator==``, ``operator!=``, and the standard iterator
@@ -218,15 +211,17 @@ in Java 8. ``WrappedIterator`` and ``FilteredView`` require no memory
 allocation, which is helpful when memory is too constrained to process the items
 into a new container.
 
+------------------------
 pw::containers::to_array
-========================
+------------------------
 ``pw::containers::to_array`` is a C++14-compatible implementation of C++20's
 `std::to_array <https://en.cppreference.com/w/cpp/container/array/to_array>`_.
 In C++20, it is an alias for ``std::to_array``. It converts a C array to a
 ``std::array``.
 
+-------------------------
 pw_containers/algorithm.h
-=========================
+-------------------------
 Pigweed provides a set of Container-based versions of algorithmic functions
 within the C++ standard library, based on a subset of
 ``absl/algorithm/container.h``.
@@ -236,48 +231,40 @@ within the C++ standard library, based on a subset of
    Container-based version of the <algorithm> ``std::all_of()`` function to
    test if all elements within a container satisfy a condition.
 
-
 .. cpp:function:: bool pw::containers::AnyOf()
 
    Container-based version of the <algorithm> ``std::any_of()`` function to
    test if any element in a container fulfills a condition.
-
 
 .. cpp:function:: bool pw::containers::NoneOf()
 
    Container-based version of the <algorithm> ``std::none_of()`` function to
    test if no elements in a container fulfill a condition.
 
-
 .. cpp:function:: pw::containers::ForEach()
 
    Container-based version of the <algorithm> ``std::for_each()`` function to
    apply a function to a container's elements.
-
 
 .. cpp:function:: pw::containers::Find()
 
    Container-based version of the <algorithm> ``std::find()`` function to find
    the first element containing the passed value within a container value.
 
-
 .. cpp:function:: pw::containers::FindIf()
 
    Container-based version of the <algorithm> ``std::find_if()`` function to find
    the first element in a container matching the given condition.
-
 
 .. cpp:function:: pw::containers::FindIfNot()
 
    Container-based version of the <algorithm> ``std::find_if_not()`` function to
    find the first element in a container not matching the given condition.
 
-
 .. cpp:function:: pw::containers::FindEnd()
 
    Container-based version of the <algorithm> ``std::find_end()`` function to
    find the last subsequence within a container.
-
 
 .. cpp:function:: pw::containers::FindFirstOf()
 
@@ -285,24 +272,20 @@ within the C++ standard library, based on a subset of
    to find the first element within the container that is also within the options
    container.
 
-
 .. cpp:function:: pw::containers::AdjacentFind()
 
    Container-based version of the <algorithm> ``std::adjacent_find()`` function
    to find equal adjacent elements within a container.
-
 
 .. cpp:function:: pw::containers::Count()
 
    Container-based version of the <algorithm> ``std::count()`` function to count
    values that match within a container.
 
-
 .. cpp:function:: pw::containers::CountIf()
 
    Container-based version of the <algorithm> ``std::count_if()`` function to
    count values matching a condition within a container.
-
 
 .. cpp:function:: pw::containers::Mismatch()
 
@@ -312,7 +295,6 @@ within the C++ standard library, based on a subset of
    ``N = min(size(c1), size(c2)).`` the function's test condition. Applies
    ``pred`` to the first N elements of ``c1``  and ``c2``, where
    ``N = min(size(c1), size(c2))``.
-
 
 .. cpp:function:: bool pw::containers::Equal()
 
@@ -332,27 +314,23 @@ within the C++ standard library, based on a subset of
    Container-based version of the <algorithm> ``std::is_permutation()`` function
    to test whether a container is a permutation of another.
 
-
 .. cpp:function:: pw::containers::Search()
 
    Container-based version of the <algorithm> ``std::search()`` function to
    search a container for a subsequence.
-
 
 .. cpp:function:: pw::containers::SearchN()
 
    Container-based version of the <algorithm> ``std::search_n()`` function to
    search a container for the first sequence of N elements.
 
+-------------
 Compatibility
-=============
+-------------
 - C++17
 
-Dependencies
-============
-- :bdg-ref-primary-line:`module-pw_span`
-
+------
 Zephyr
-======
+------
 To enable ``pw_containers`` for Zephyr add ``CONFIG_PIGWEED_CONTAINERS=y`` to
 the project's configuration.
