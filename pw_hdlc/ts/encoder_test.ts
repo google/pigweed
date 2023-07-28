@@ -86,4 +86,15 @@ describe('Encoder', () => {
     );
     expect(encoder.uiFrame(0x3e, data2)).toEqual(withFlags(expectedContent2));
   });
+
+  it('Computes frameCheckSequence correctly', () => {
+    expect(protocol.frameCheckSequence(textEncoder.encode('\x7d\x03A\x7e\x7dBC')))
+      .toEqual(new Uint8Array([195, 124, 135, 9]));
+    expect(protocol.frameCheckSequence(textEncoder.encode('\x7d\x5d\x03\x7d\x5d')))
+      .toEqual(new Uint8Array([183, 144, 10, 115]));
+    expect(protocol.frameCheckSequence(textEncoder.encode('\x7d\x03\x7d')))
+      .toEqual(new Uint8Array([83, 124, 241, 166]));
+    expect(protocol.frameCheckSequence(textEncoder.encode('hello pigweed')))
+      .toEqual(new Uint8Array([34, 22, 236, 2]));
+  });
 });

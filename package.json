@@ -43,8 +43,6 @@
     "ansi_up": "^5.1.0",
     "arg": "^5.0.2",
     "base64-js": "^1.5.1",
-    "buffer": "^6.0.3",
-    "crc": "^4.1.1",
     "debug": "^4.3.2",
     "eslint": "^7.30.0",
     "eslint-plugin-react": "^7.24.0",
