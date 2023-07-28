@@ -33,5 +33,7 @@
 #define MBEDTLS_NO_PLATFORM_ENTROPY
 // Error string support for debugging
 #define MBEDTLS_ERROR_C
+// This feature requires MBEDTLS_PSA_CRYPTO_C.
+#undef MBEDTLS_LMS_C
 
 #include "mbedtls/check_config.h"
