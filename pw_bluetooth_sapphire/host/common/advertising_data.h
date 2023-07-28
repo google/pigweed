@@ -148,9 +148,8 @@ class AdvertisingData {
   static ParseResult FromBytes(const ByteBuffer& data);
   static std::string ParseErrorToString(ParseError e);
 
-  // Copies all of the data in this object to |out|, including making a copy of
-  // any data in manufacturing data or service data.
-  // Overwrites any data which is already in |out|.
+  // Copies all of the data in this object to |out|, including making a copy of any data in
+  // manufacturing data or service data. The result is |out| being an exact copy of this object.
   void Copy(AdvertisingData* out) const;
 
   // Add a UUID to the set of services advertised.

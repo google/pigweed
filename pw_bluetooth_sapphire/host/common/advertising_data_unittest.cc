@@ -34,6 +34,35 @@ TEST(AdvertisingDataTest, MakeEmpty) {
   EXPECT_EQ(0u, data.CalculateBlockSize());
 }
 
+TEST(AdvertisingDataTest, CopyLeavesNoRemnants) {
+  AdvertisingData data;
+  data.SetTxPower(4);
+  data.SetAppearance(0x4567);
+  EXPECT_TRUE(data.SetLocalName("fuchsia"));
+  EXPECT_TRUE(data.AddUri("http://fuchsia.cl"));
+
+  StaticByteBuffer bytes(0x01, 0x02, 0x03);
+  EXPECT_TRUE(data.SetManufacturerData(0x0123, bytes.view()));
+
+  auto service_uuid = UUID(kId1As16);
+  EXPECT_TRUE(data.AddServiceUuid(service_uuid));
+
+  StaticByteBuffer service_bytes(0x01, 0x02);
+  EXPECT_TRUE(data.SetServiceData(service_uuid, service_bytes.view()));
+
+  AdvertisingData new_data;
+  new_data.SetTxPower(1);
+  new_data.Copy(&data);
+
+  EXPECT_EQ(1, data.tx_power().value());
+  EXPECT_FALSE(data.appearance().has_value());
+  EXPECT_FALSE(data.local_name().has_value());
+  EXPECT_EQ(0u, data.uris().size());
+  EXPECT_EQ(0u, data.manufacturer_data_ids().size());
+  EXPECT_EQ(0u, data.service_uuids().size());
+  EXPECT_EQ(0u, data.service_data_uuids().size());
+}
+
 TEST(AdvertisingDataTest, EncodeKnownURI) {
   AdvertisingData data;
   EXPECT_TRUE(data.AddUri("https://abc.xyz"));

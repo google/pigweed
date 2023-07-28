@@ -478,6 +478,43 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingParameters) {
   EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC, state->own_address_type);
 }
 
+// Tests that a previous advertisement's advertising data isn't accidentally kept around. This test
+// was added to address fxbug.dev/131260.
+TYPED_TEST(LowEnergyAdvertiserTest, PreviousAdvertisingParameters) {
+  AdvertisingData scan_data = this->GetExampleData();
+  auto flags = AdvFlag::kLEGeneralDiscoverableMode;
+  AdvertisingOptions options(kTestInterval, /*anonymous=*/false, flags,
+                             /*include_tx_power_level=*/false);
+
+  // old advertising data: ideally we would fill this completely so that in the next start
+  // advertising call, we can confirm that none of the remnants are left. However, doing so results
+  // in the advertising data being too long. Instead, we rely on other unit tests within advertising
+  // data unittests to ensure all previous remnants are removed.
+  AdvertisingData ad;
+  ad.SetTxPower(4);
+  ad.SetAppearance(0x4567);
+  EXPECT_TRUE(ad.SetLocalName("fuchsia"));
+
+  this->advertiser()->StartAdvertising(kRandomAddress, ad, scan_data, options, nullptr,
+                                       this->MakeExpectSuccessCallback());
+  this->RunLoopUntilIdle();
+  EXPECT_TRUE(this->GetLastStatus());
+
+  // new advertising data (with fewer fields filled in)
+  this->advertiser()->StopAdvertising(kRandomAddress);
+  AdvertisingData new_ad = this->GetExampleData();
+  this->advertiser()->StartAdvertising(kRandomAddress, new_ad, scan_data, options, nullptr,
+                                       this->MakeExpectSuccessCallback());
+  this->RunLoopUntilIdle();
+  EXPECT_TRUE(this->GetLastStatus());
+
+  DynamicByteBuffer expected_ad(new_ad.CalculateBlockSize(/*include_flags=*/true));
+  new_ad.WriteBlock(&expected_ad, flags);
+
+  std::optional<FakeController::LEAdvertisingState> state = this->GetControllerAdvertisingState();
+  EXPECT_EQ(expected_ad, state->advertised_view());
+}
+
 // Tests that advertising interval values are capped within the allowed range.
 TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingIntervalWithinAllowedRange) {
   AdvertisingData ad = this->GetExampleData();

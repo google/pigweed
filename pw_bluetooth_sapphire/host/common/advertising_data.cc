@@ -331,6 +331,8 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(const ByteBuffer& data) 
 }
 
 void AdvertisingData::Copy(AdvertisingData* out) const {
+  *out = AdvertisingData();
+
   if (local_name_) {
     BT_ASSERT(out->SetLocalName(*local_name_));
   }
