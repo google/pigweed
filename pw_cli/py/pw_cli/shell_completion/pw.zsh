@@ -13,4 +13,4 @@
 # the License.
 
 fpath=("$PW_ROOT/pw_cli/py/pw_cli/shell_completion/zsh/pw" $fpath)
-compinit
+autoload -Uz compinit && compinit -i
