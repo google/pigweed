@@ -87,6 +87,7 @@ declare_args() {
   dir_pw_interrupt = get_path_info("../pw_interrupt", "abspath")
   dir_pw_interrupt_cortex_m =
       get_path_info("../pw_interrupt_cortex_m", "abspath")
+  dir_pw_interrupt_xtensa = get_path_info("../pw_interrupt_xtensa", "abspath")
   dir_pw_interrupt_zephyr = get_path_info("../pw_interrupt_zephyr", "abspath")
   dir_pw_intrusive_ptr = get_path_info("../pw_intrusive_ptr", "abspath")
   dir_pw_kvs = get_path_info("../pw_kvs", "abspath")
@@ -241,6 +242,7 @@ declare_args() {
     dir_pw_ide,
     dir_pw_interrupt,
     dir_pw_interrupt_cortex_m,
+    dir_pw_interrupt_xtensa,
     dir_pw_interrupt_zephyr,
     dir_pw_intrusive_ptr,
     dir_pw_kvs,
@@ -385,6 +387,7 @@ declare_args() {
     "$dir_pw_ide:tests",
     "$dir_pw_interrupt:tests",
     "$dir_pw_interrupt_cortex_m:tests",
+    "$dir_pw_interrupt_xtensa:tests",
     "$dir_pw_interrupt_zephyr:tests",
     "$dir_pw_intrusive_ptr:tests",
     "$dir_pw_kvs:tests",
@@ -529,6 +532,7 @@ declare_args() {
     "$dir_pw_ide:docs",
     "$dir_pw_interrupt:docs",
     "$dir_pw_interrupt_cortex_m:docs",
+    "$dir_pw_interrupt_xtensa:docs",
     "$dir_pw_interrupt_zephyr:docs",
     "$dir_pw_intrusive_ptr:docs",
     "$dir_pw_kvs:docs",
