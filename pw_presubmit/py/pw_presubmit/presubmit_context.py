@@ -40,6 +40,7 @@ from typing import (
 import urllib
 
 import pw_cli.color
+import pw_cli.env
 import pw_env_setup.config_file
 
 if TYPE_CHECKING:
@@ -68,6 +69,14 @@ class FormatOptions:
             black_path=fmt.get('black_path', 'black'),
             exclude=tuple(re.compile(x) for x in fmt.get('exclude', ())),
         )
+
+    def filter_paths(self, paths: Iterable[Path]) -> Tuple[Path, ...]:
+        root = Path(pw_cli.env.pigweed_environment().PW_PROJECT_ROOT)
+        relpaths = [x.relative_to(root) for x in paths]
+
+        for filt in self.exclude:
+            relpaths = [x for x in relpaths if not filt.search(str(x))]
+        return tuple(root / x for x in relpaths)
 
 
 def get_buildbucket_info(bbid) -> Dict[str, Any]:
@@ -542,9 +551,4 @@ def apply_exclusions(
     ctx: PresubmitContext,
     paths: Optional[Sequence[Path]] = None,
 ) -> Tuple[Path, ...]:
-    root = Path(pw_cli.env.pigweed_environment().PW_PROJECT_ROOT)
-    relpaths = [x.relative_to(root) for x in paths or ctx.paths]
-
-    for filt in ctx.format_options.exclude:
-        relpaths = [x for x in relpaths if not filt.search(str(x))]
-    return tuple(root / x for x in relpaths)
+    return ctx.format_options.filter_paths(paths or ctx.paths)

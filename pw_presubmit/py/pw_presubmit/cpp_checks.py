@@ -14,6 +14,9 @@
 """C++-related checks."""
 
 import logging
+from pathlib import Path
+import re
+from typing import Callable, Optional, Iterable, Iterator
 
 from pw_presubmit.presubmit import (
     Check,
@@ -37,12 +40,109 @@ def pragma_once(ctx: PresubmitContext) -> None:
 
     for path in ctx.paths:
         _LOG.debug('Checking %s', path)
-        with open(path) as file:
+        with path.open() as file:
             for line in file:
                 if line.startswith('#pragma once'):
                     break
             else:
                 ctx.fail('#pragma once is missing!', path=path)
+
+
+def include_guard_check(
+    guard: Optional[Callable[[Path], str]] = None,
+    allow_pragma_once: bool = True,
+) -> Check:
+    """Create an include guard check.
+
+    Args:
+        guard: Callable that generates an expected include guard name for the
+            given Path. If None, any include guard is acceptable, as long as
+            it's consistent between the '#ifndef' and '#define' lines.
+        allow_pragma_once: Whether to allow headers to use '#pragma once'
+            instead of '#ifndef'/'#define'.
+    """
+
+    def stripped_non_comment_lines(iterable: Iterable[str]) -> Iterator[str]:
+        """Yield non-comment non-empty lines from a C++ file."""
+        multi_line_comment = False
+        for line in iterable:
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith('//'):
+                continue
+            if line.startswith('/*'):
+                multi_line_comment = True
+            if multi_line_comment:
+                if line.endswith('*/'):
+                    multi_line_comment = False
+                continue
+            yield line
+
+    def check_path(ctx: PresubmitContext, path: Path) -> None:
+        """Check if path has a valid include guard."""
+
+        _LOG.debug('checking %s', path)
+        expected: Optional[str] = None
+        if guard:
+            expected = guard(path)
+            _LOG.debug('expecting guard %r', expected)
+
+        with path.open() as ins:
+            iterable = stripped_non_comment_lines(ins)
+            first_line = next(iterable, '')
+            _LOG.debug('first line %r', first_line)
+
+            if allow_pragma_once and first_line.startswith('#pragma once'):
+                _LOG.debug('found %r', first_line)
+                return
+
+            if expected:
+                ifndef_expected = f'#ifndef {expected}'
+                if not re.match(rf'^#ifndef {expected}$', first_line):
+                    ctx.fail(
+                        'Include guard is missing! Expected: '
+                        f'{ifndef_expected!r}, Found: {first_line!r}',
+                        path=path,
+                    )
+                    return
+
+            else:
+                match = re.match(
+                    r'^#\s*ifndef\s+([a-zA-Z_][a-zA-Z_0-9]*)$',
+                    first_line,
+                )
+                if not match:
+                    ctx.fail(
+                        'Include guard is missing! Expected "#ifndef" line, '
+                        f'Found: {first_line!r}',
+                        path=path,
+                    )
+                    return
+                expected = match.group(1)
+
+            second_line = next(iterable, '')
+            _LOG.debug('second line %r', second_line)
+
+            if not re.match(rf'^#\s*define\s+{expected}$', second_line):
+                define_expected = f'#define {expected}'
+                ctx.fail(
+                    'Include guard is missing! Expected: '
+                    f'{define_expected!r}, Found: {second_line!r}',
+                    path=path,
+                )
+                return
+
+            _LOG.debug('passed')
+
+    @filter_paths(endswith=format_code.CPP_HEADER_EXTS, exclude=(r'\.pb\.h$',))
+    def include_guard(ctx: PresubmitContext):
+        """Check that all header files contain an include guard."""
+        ctx.paths = presubmit_context.apply_exclusions(ctx)
+        for path in ctx.paths:
+            check_path(ctx, path)
+
+    return include_guard
 
 
 @Check

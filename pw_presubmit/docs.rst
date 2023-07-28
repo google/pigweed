@@ -28,6 +28,8 @@ system. If it's not Bazel formatting passes without checking.)
 The ``pw_presubmit`` package includes presubmit checks that can be used with any
 project. These checks include:
 
+.. todo-check: disable
+
 * Check code format of several languages including C, C++, and Python
 * Initialize a Python environment
 * Run all Python tests
@@ -36,7 +38,15 @@ project. These checks include:
 * Ensure source files are included in the GN and Bazel builds
 * Build and run all tests with GN
 * Build and run all tests with Bazel
-* Ensure all header files contain ``#pragma once``
+* Ensure all header files contain ``#pragma once`` (or, that they have matching
+  ``#ifndef``/``#define`` lines)
+* Ensure lists are kept in alphabetical order
+* Forbid non-inclusive language
+* Check format of TODO lines
+* Apply various rules to ``.gitmodules`` or ``OWNERS`` files
+* Ensure all source files are in the build
+
+.. todo-check: enable
 
 -------------
 Compatibility
@@ -341,6 +351,17 @@ function takes an optional argument of type ``pw_presubmit.gitmodules.Config``.
 There's a ``pragma_once`` check that confirms the first non-comment line of
 C/C++ headers is ``#pragma once``. This is enabled by adding
 ``pw_presubmit.cpp_checks.pragma_once`` to a presubmit program.
+
+#ifndef/#define
+^^^^^^^^^^^^^^^
+There's an ``ifndef_guard`` check that confirms the first two non-comment lines
+of C/C++ headers are ``#ifndef HEADER_H`` and ``#define HEADER_H``. This is
+enabled by adding ``pw_presubmit.cpp_checks.include_guard_check()`` to a
+presubmit program. ``include_guard_check()`` has options for specifying what the
+header guard should be based on the path.
+
+This check is not used in Pigweed itself but is available to projects using
+Pigweed.
 
 .. todo-check: disable
 

@@ -604,18 +604,6 @@ CODE_FORMATS_WITH_BLACK: Tuple[CodeFormat, ...] = CODE_FORMATS
 CODE_FORMATS_WITH_YAPF: Tuple[CodeFormat, ...] = CODE_FORMATS
 
 
-def _filter_paths(
-    paths: Iterable[Path],
-    filters: Sequence[re.Pattern],
-) -> Tuple[Path, ...]:
-    root = Path(pw_cli.env.pigweed_environment().PW_PROJECT_ROOT)
-    relpaths = [x.relative_to(root) for x in paths]
-
-    for filt in filters:
-        relpaths = [x for x in relpaths if not filt.search(str(x))]
-    return tuple(root / x for x in relpaths)
-
-
 def presubmit_check(
     code_format: CodeFormat,
     *,
@@ -692,9 +680,7 @@ class CodeFormatter:
         self.package_root = package_root or output_dir / 'packages'
         self._format_options = FormatOptions.load()
         raw_paths = files
-        self.paths: Tuple[Path, ...] = _filter_paths(
-            files, self._format_options.exclude
-        )
+        self.paths: Tuple[Path, ...] = self._format_options.filter_paths(files)
 
         filtered_paths = set(raw_paths) - set(self.paths)
         for path in sorted(filtered_paths):
