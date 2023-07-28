@@ -97,8 +97,11 @@ class FilteredView {
 
   using const_iterator = iterator;
 
-  template <typename... FilterArgs>
-  constexpr FilteredView(const Container& container, Filter&& filter)
+  constexpr explicit FilteredView(const Container& container,
+                                  const Filter& filter)
+      : container_(container), filter_(filter) {}
+
+  constexpr explicit FilteredView(const Container& container, Filter&& filter)
       : container_(container), filter_(std::move(filter)) {}
 
   constexpr FilteredView(const FilteredView&) = delete;
