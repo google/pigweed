@@ -37,6 +37,8 @@ pw_python_package("py") {
     "pw_cli/requires.py",
     "pw_cli/shell_completion/__init__.py",
     "pw_cli/shell_completion/zsh/__init__.py",
+    "pw_cli/shell_completion/zsh/pw/__init__.py",
+    "pw_cli/shell_completion/zsh/pw_build/__init__.py",
     "pw_cli/toml_config_loader_mixin.py",
     "pw_cli/yaml_config_loader_mixin.py",
   ]
@@ -52,8 +54,9 @@ pw_python_package("py") {
     "pw_cli/shell_completion/pw.bash",
     "pw_cli/shell_completion/pw.zsh",
     "pw_cli/shell_completion/pw_build.bash",
-    "pw_cli/shell_completion/zsh/_pw",
-    "pw_cli/shell_completion/zsh/_pw_build",
+    "pw_cli/shell_completion/pw_build.zsh",
+    "pw_cli/shell_completion/zsh/pw/_pw",
+    "pw_cli/shell_completion/zsh/pw_build/_pw_build",
   ]
 }
 

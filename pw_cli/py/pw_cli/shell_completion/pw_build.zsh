@@ -12,5 +12,5 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-fpath=("$PW_ROOT/pw_cli/py/pw_cli/shell_completion/zsh/pw" $fpath)
+fpath=("$PW_ROOT/pw_cli/py/pw_cli/shell_completion/zsh/pw_build" $fpath)
 compinit

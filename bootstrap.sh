@@ -100,6 +100,7 @@ if test -n "$BASH"; then
 # Shell completion: zsh.
 elif test -n "$ZSH_NAME"; then
   . "$PW_ROOT/pw_cli/py/pw_cli/shell_completion/pw.zsh"
+  . "$PW_ROOT/pw_cli/py/pw_cli/shell_completion/pw_build.zsh"
 fi
 
 pw_cleanup
