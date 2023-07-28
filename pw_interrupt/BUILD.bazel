@@ -51,11 +51,5 @@ alias(
         "//pw_interrupt_cortex_m:backend": "//pw_interrupt_cortex_m:context",
         "//conditions:default": "//pw_build:unspecified_backend",
     }),
-    # Normally this would be done in the backend packages but because there is
-    # no host implementation we have to define this here.
-    target_compatible_with = select({
-        "//pw_interrupt_cortex_m:backend": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
     visibility = ["@pigweed_config//:__pkg__"],
 )

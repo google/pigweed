@@ -36,6 +36,7 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
+    target_compatible_with = [":backend"],
     deps = [
         "//pw_interrupt:context_facade",
         "//pw_preprocessor:cortex_m",
