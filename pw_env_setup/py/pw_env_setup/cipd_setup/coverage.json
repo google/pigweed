@@ -15,7 +15,7 @@
         "linux-amd64"
       ],
       "tags": [
-        "g3-revision:fuchsia.infra.coverage.upload_clients_20230721_RC00"
+        "g3-revision:fuchsia.infra.coverage.upload_clients_20230728_RC00"
       ]
     }
   ]
