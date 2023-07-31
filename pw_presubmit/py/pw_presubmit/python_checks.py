@@ -188,7 +188,7 @@ def vendor_python_wheels(ctx: PresubmitContext) -> None:
         / 'python/gen/pw_env_setup'
         / 'pigweed_build_venv.vendor_wheels/wheels/'
     )
-    wheel_destination = ctx.output_dir / 'python-wheels'
+    wheel_destination = ctx.output_dir / 'python_wheels'
     shutil.rmtree(wheel_destination, ignore_errors=True)
     shutil.copytree(wheel_output, wheel_destination, dirs_exist_ok=True)
 
