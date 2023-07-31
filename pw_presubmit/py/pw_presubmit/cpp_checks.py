@@ -32,6 +32,12 @@ from pw_presubmit import (
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
+def _fail(ctx, error, path):
+    ctx.fail(error, path=path)
+    with open(ctx.failure_summary_log, 'a') as outs:
+        print(f'{path}\n{error}\n', file=outs)
+
+
 @filter_paths(endswith=format_code.CPP_HEADER_EXTS, exclude=(r'\.pb\.h$',))
 def pragma_once(ctx: PresubmitContext) -> None:
     """Presubmit check that ensures all header files contain '#pragma once'."""
@@ -45,7 +51,7 @@ def pragma_once(ctx: PresubmitContext) -> None:
                 if line.startswith('#pragma once'):
                     break
             else:
-                ctx.fail('#pragma once is missing!', path=path)
+                _fail(ctx, '#pragma once is missing!', path=path)
 
 
 def include_guard_check(
@@ -100,7 +106,8 @@ def include_guard_check(
             if expected:
                 ifndef_expected = f'#ifndef {expected}'
                 if not re.match(rf'^#ifndef {expected}$', first_line):
-                    ctx.fail(
+                    _fail(
+                        ctx,
                         'Include guard is missing! Expected: '
                         f'{ifndef_expected!r}, Found: {first_line!r}',
                         path=path,
@@ -113,7 +120,8 @@ def include_guard_check(
                     first_line,
                 )
                 if not match:
-                    ctx.fail(
+                    _fail(
+                        ctx,
                         'Include guard is missing! Expected "#ifndef" line, '
                         f'Found: {first_line!r}',
                         path=path,
@@ -126,7 +134,8 @@ def include_guard_check(
 
             if not re.match(rf'^#\s*define\s+{expected}$', second_line):
                 define_expected = f'#define {expected}'
-                ctx.fail(
+                _fail(
+                    ctx,
                     'Include guard is missing! Expected: '
                     f'{define_expected!r}, Found: {second_line!r}',
                     path=path,
