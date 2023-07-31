@@ -43,6 +43,15 @@ pw_source_set("initiator") {
   ]
 }
 
+pw_source_set("responder") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_spi/responder.h" ]
+  public_deps = [
+    "$dir_pw_bytes",
+    "$dir_pw_status",
+  ]
+}
+
 pw_source_set("chip_selector") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_spi/chip_selector.h" ]

@@ -36,6 +36,18 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "responder",
+    hdrs = [
+        "public/pw_spi/responder.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_bytes",
+        "//pw_status",
+    ],
+)
+
+pw_cc_library(
     name = "chip_selector",
     hdrs = [
         "public/pw_spi/chip_selector.h",

@@ -4,14 +4,15 @@
 pw_spi
 ======
 Pigweed's SPI module provides a set of interfaces for communicating with SPI
-responders attached to a target.
+responders attached to a target. It also provides an interface for implementing
+SPI responders.
 
 --------
 Overview
 --------
 The ``pw_spi`` module provides a series of interfaces that facilitate the
 development of SPI responder drivers that are abstracted from the target's
-SPI hardware implementation.  The interface consists of three main classes:
+SPI hardware implementation.  The interface consists of these main classes:
 
 - ``pw::spi::Initiator`` - Interface for configuring a SPI bus, and using it
   to transmit and receive data.
@@ -19,6 +20,7 @@ SPI hardware implementation.  The interface consists of three main classes:
   responder attached to the bus.
 - ``pw::spi::Device`` - primary HAL interface used to interact with a SPI
   responder.
+- ``pw::spi::Responder`` - Interface for implementing a SPI responder.
 
 ``pw_spi`` relies on a target-specific implementations of
 ``pw::spi::Initiator`` and ``pw::spi::ChipSelector`` to be defined, and
@@ -118,6 +120,7 @@ The SPI API consists of the following components:
   structs.
 - The ``pw::spi::ChipSelector`` interface.
 - The ``pw::spi::Device`` class.
+- The ``pw::spi::Responder`` interface.
 
 pw::spi::Initiator
 ------------------
@@ -146,10 +149,6 @@ method.
    describe the two roles SPI devices can implement.  These terms correspond
    to the  "master" and "slave" roles described in legacy documentation
    related to the SPI protocol.
-
-   ``pw_spi`` only supports SPI transfers where the target implements the
-   "initiator" role, and does not support the target acting in the
-   "responder" role.
 
 .. inclusive-language: enable
 
@@ -372,3 +371,23 @@ list. An example of this is shown below:
   // Alternatively this is also called from MockInitiator::~MockInitiator().
   EXPECT_EQ(spi_mock.Finalize(), OkStatus());
 
+pw::spi::Responder
+------------------
+The common interface for implementing a SPI responder. It provides a way to
+respond to SPI transactions coming from a SPI initiator in a non-target specific
+way. A concrete implementation of the ``Responder`` class should be provided for
+the target hardware. Applications can then use it to implement their specific
+protocols.
+
+.. code-block:: cpp
+
+   MyResponder responder;
+   responder.SetCompletionHandler([](ByteSpan rx_data, Status status) {
+     // Handle incoming data from initiator.
+     // ...
+     // Prepare data to send back to initiator during next SPI transaction.
+     responder.WriteReadAsync(tx_data, rx_data);
+   });
+
+   // Prepare data to send back to initiator during next SPI transaction.
+   responder.WriteReadAsync(tx_data, rx_data)
