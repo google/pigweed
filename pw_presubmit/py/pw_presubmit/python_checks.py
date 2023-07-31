@@ -21,6 +21,7 @@ import json
 import logging
 from pathlib import Path
 import platform
+import shutil
 import sys
 from tempfile import TemporaryDirectory
 from typing import Optional
@@ -175,12 +176,23 @@ def vendor_python_wheels(ctx: PresubmitContext) -> None:
     build.gn_gen(ctx)
     build.ninja(ctx, 'pip_vendor_wheels')
 
-    _LOG.info(
-        'Python packages downloaded to: %s',
+    download_log = (
+        ctx.output_dir
+        / 'python/gen/pw_env_setup/pigweed_build_venv.vendor_wheels'
+        / 'pip_download_log.txt'
+    )
+    _LOG.info('Python package download log: %s', download_log)
+
+    wheel_output = (
         ctx.output_dir
         / 'python/gen/pw_env_setup'
-        / 'pigweed_build_venv.vendor_wheels/wheels/',
+        / 'pigweed_build_venv.vendor_wheels/wheels/'
     )
+    wheel_destination = ctx.output_dir / 'python-wheels'
+    shutil.rmtree(wheel_destination, ignore_errors=True)
+    shutil.copytree(wheel_output, wheel_destination, dirs_exist_ok=True)
+
+    _LOG.info('Python packages downloaded to: %s', wheel_destination)
 
 
 def _generate_constraint_with_hashes(
