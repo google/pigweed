@@ -1472,6 +1472,73 @@ reference documentation in :ref:`module-pw_status`.
    The guidance in this section only applies to Doxygen comments in C++ header
    files.
 
+Customize the depth of a page's table of contents
+=================================================
+Put ``:tocdepth: X`` on the first line of the page, where ``X`` equals how many
+levels of section heading you want to show in the page's table of contents. See
+``//docs/changelog.rst`` for an example.
+
+Changelog
+=========
+
+This section explains how we update the changelog.
+
+#. On the Friday before Pigweed Live, use
+   `changelog <https://kaycebasques.github.io/changelog/>`_ to generate a first
+   draft of the changelog.
+
+#. Copy-paste the reStructuredText output from the changelog tool to the top
+   of ``//docs/changelog.rst``.
+
+#. Delete these lines from the previous update in ``changelog.rst``
+   (which is no longer the latest update):
+
+   * ``.. _docs-changelog-latest:``
+   * ``.. changelog_highlights_start``
+   * ``.. changelog_highlights_end``
+
+#. Polish up the auto-generated first draft into something more readable:
+
+   * Don't change the section headings. The text in each section heading
+     should map to one of the categories that we allow in our commit
+     messages, such as ``bazel``, ``docs``, ``pw_base64``, and so on.
+   * Add a 1-paragraph summary to each section.
+   * Focus on features, important bug fixes, and breaking changes. Delete
+     internal commits that Pigweed customers won't care about.
+
+#. Push your change up to Gerrit and kick off a dry run. After a few minutes
+   the docs will get staged.
+
+#. Copy the rendered content from the staging site into the Pigweed Live
+   Google Doc.
+
+#. Make sure to land the changelog updates the same week as Pigweed Live.
+
+There is no need to update ``//docs/index.rst``. The ``What's new in Pigweed``
+content on the homepage is pulled from the changelog (that's what the
+``docs-changelog-latest``, ``changelog_highlights_start``, and
+``changelog_highlights_end`` labels are for).
+
+Why "changelog" and not "release notes"?
+----------------------------------------
+Because Pigweed doesn't have releases.
+
+Why organize by module / category?
+----------------------------------
+Why is the changelog organized by category / module? Why not the usual
+3 top-level sections: features, fixes, breaking changes?
+
+* Because some Pigweed customers only use a few modules. Organizing by module
+  helps them filter out all the changes that aren't relevant to them faster.
+* If we keep the changelog section heading text fairly structured, we may
+  be able to present the changelog in other interesting ways. For example,
+  it should be possible to collect every ``pw_base64`` section in the changelog
+  and then provide a changelog for only ``pw_base64`` over in the ``pw_base64``
+  docs.
+* The changelog tool is easily able to organize by module / category due to
+  how we annotate our commits. We will not be able to publish changelog updates
+  every 2 weeks if there is too much manual work involved.
+
 .. _commit-style:
 
 --------------

@@ -60,13 +60,6 @@ pw_doc_group("core_docs") {
   ]
 }
 
-pw_doc_group("release_notes") {
-  sources = [
-    "release_notes/2022_jan.rst",
-    "release_notes/index.rst",
-  ]
-}
-
 pw_doc_group("templates") {
   sources = [
     "templates/docs/api.rst",
@@ -212,6 +205,7 @@ pw_doc_gen("docs") {
     # contrast, the pw_doc_group above should not use the docs prefix.
     "automated_analysis.rst",
     "build_system.rst",
+    "changelog.rst",
     "index.rst",
     "module_guides.rst",
     "python_build.rst",
@@ -223,7 +217,6 @@ pw_doc_gen("docs") {
     ":core_docs",
     ":generate_doxygen",
     ":module_docs",
-    ":release_notes",
     ":static_assets",
     ":target_docs",
     ":templates",
