@@ -3,22 +3,12 @@
 =====================================
 0102: Consistent Module Documentation
 =====================================
-
-.. card::
-   :fas:`seedling` SEED-0102: :ref:`Consistent Module Documentation<seed-0102>`
-
-   :octicon:`comment-discussion` Status:
-   :bdg-secondary-line:`Open for Comments`
-   :octicon:`chevron-right`
-   :bdg-secondary-line:`Last Call`
-   :octicon:`chevron-right`
-   :bdg-primary:`Accepted`
-   :octicon:`kebab-horizontal`
-   :bdg-secondary-line:`Rejected`
-
-   :octicon:`calendar` Proposal Date: 2023-02-10
-
-   :octicon:`code-review` CL: `pwrev/128811 <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/128811>`_, `pwrev/130410 <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/130410>`_
+.. seed::
+   :number: 102
+   :name: Consistent Module Documentation
+   :status: Accepted
+   :proposal_date: 2023-02-10
+   :cl: 128811, 130410
 
 -------
 Summary

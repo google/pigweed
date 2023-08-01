@@ -3,22 +3,12 @@
 ===================
 0002: SEED Template
 ===================
-
-.. card::
-   :fas:`seedling` SEED-0002: :ref:`SEED Template<seed-0002>`
-
-   :octicon:`comment-discussion` Status:
-   :bdg-primary:`Open for Comments`
-   :octicon:`chevron-right`
-   :bdg-secondary-line:`Last Call`
-   :octicon:`chevron-right`
-   :bdg-secondary-line:`Accepted`
-   :octicon:`kebab-horizontal`
-   :bdg-secondary-line:`Rejected`
-
-   :octicon:`calendar` Proposal Date: 2022-11-30
-
-   :octicon:`code-review` CL: `pwrev/123090 <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/123090>`_
+.. seed::
+   :number: 2
+   :name: SEED Template
+   :status: Open for Comments
+   :proposal_date: 2022-11-30
+   :cl: 123090
 
 -------
 Summary

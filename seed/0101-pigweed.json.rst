@@ -3,22 +3,12 @@
 ==================
 0101: pigweed.json
 ==================
-
-.. card::
-   :fas:`seedling` SEED-0101: :ref:`pigweed.json<seed-0101>`
-
-   :octicon:`comment-discussion` Status:
-   :bdg-secondary-line:`Open for Comments`
-   :octicon:`chevron-right`
-   :bdg-secondary-line:`Last Call`
-   :octicon:`chevron-right`
-   :bdg-primary:`Accepted`
-   :octicon:`kebab-horizontal`
-   :bdg-secondary-line:`Rejected`
-
-   :octicon:`calendar` Proposal Date: 2023-02-06
-
-   :octicon:`code-review` CL: `pwrev/128010 <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/128010>`_
+.. seed::
+   :number: 0101
+   :name: pigweed.json
+   :status: Accepted
+   :proposal_date: 2023-02-06
+   :cl: 128010
 
 -------
 Summary

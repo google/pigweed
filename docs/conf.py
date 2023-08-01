@@ -43,6 +43,7 @@ extensions = [
     'pw_docgen.sphinx.google_analytics',  # Enables optional Google Analytics
     'pw_docgen.sphinx.kconfig',
     'pw_docgen.sphinx.module_metadata',
+    'pw_docgen.sphinx.seed_metadata',
     'sphinx.ext.autodoc',  # Automatic documentation for Python code
     'sphinx.ext.napoleon',  # Parses Google-style docstrings
     'sphinxarg.ext',  # Automatic documentation of Python argparse

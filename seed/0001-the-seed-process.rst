@@ -3,22 +3,12 @@
 ======================
 0001: The SEED Process
 ======================
-
-.. card::
-   :fas:`seedling` SEED-0001: :ref:`The SEED Process<seed-0001>`
-
-   :octicon:`comment-discussion` Status:
-   :bdg-secondary-line:`Open for Comments`
-   :octicon:`chevron-right`
-   :bdg-secondary-line:`Last Call`
-   :octicon:`chevron-right`
-   :bdg-primary:`Accepted`
-   :octicon:`kebab-horizontal`
-   :bdg-secondary-line:`Rejected`
-
-   :octicon:`calendar` Proposal Date: 2022-10-31
-
-   :octicon:`code-review` CL: `pwrev/116577 <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/116577>`_
+.. seed::
+   :number: 1
+   :name: The SEED Process
+   :status: Accepted
+   :proposal_date: 2022-10-31
+   :cl: 116577
 
 -------
 Summary
