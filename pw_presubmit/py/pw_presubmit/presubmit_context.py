@@ -208,6 +208,18 @@ class LuciContext:
     pipeline: Optional[LuciPipeline]
     triggers: Sequence[LuciTrigger] = dataclasses.field(default_factory=tuple)
 
+    @property
+    def is_try(self):
+        return re.search(r'\btry$', self.bucket)
+
+    @property
+    def is_ci(self):
+        return re.search(r'\bci$', self.bucket)
+
+    @property
+    def is_dev(self):
+        return re.search(r'\bdev\b', self.bucket)
+
     @staticmethod
     def create_from_environment(
         env: Optional[Dict[str, str]] = None,

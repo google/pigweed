@@ -160,6 +160,9 @@ The ``luci`` member is of type ``LuciContext`` and has the following members:
 * ``cas_instance``: The CAS instance accessible from this build
 * ``pipeline``: Information about the build pipeline, if applicable.
 * ``triggers``: Information about triggering commits, if applicable.
+* ``is_try``: True if the bucket is a try bucket.
+* ``is_ci``: True if the bucket is a ci bucket.
+* ``is_dev``: True if the bucket is a dev bucket.
 
 The ``pipeline`` member, if present, is of type ``LuciPipeline`` and has the
 following members:
