@@ -511,7 +511,8 @@ the size from the ``StatusWithSize`` on ok.
     // following code executed if the PW_TRY_ASSIGN function above returns OK.
   }
 
+------
 Zephyr
-======
+------
 To enable ``pw_status`` for Zephyr add ``CONFIG_PIGWEED_STATUS=y`` to the
 project's configuration.
