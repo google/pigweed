@@ -12,11 +12,6 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import {
-  BidirectionalStreamingCall,
-  BidirectionalStreamingMethodStub,
-  ServiceClient,
-} from 'pigweedjs/pw_rpc';
 import {Status} from 'pigweedjs/pw_status';
 import {Chunk} from 'pigweedjs/protos/pw_transfer/transfer_pb';
 
@@ -89,7 +84,7 @@ class Timer {
 export abstract class Transfer {
   status: Status = Status.OK;
   done: Promise<Status>;
-  protected data = new Uint8Array(0);
+  data = new Uint8Array(0);
 
   private retries = 0;
   private responseTimer?: Timer;
@@ -231,8 +226,6 @@ export class ReadTransfer extends Transfer {
   // requested data has been received, a divisor of three will extend at a third
   // of the window, and so on.
   private static EXTEND_WINDOW_DIVISOR = 2;
-
-  data = new Uint8Array(0);
 
   constructor(
     id: number,
@@ -379,7 +372,6 @@ export class ReadTransfer extends Transfer {
  * A client => server write transfer.
  */
 export class WriteTransfer extends Transfer {
-  readonly data: Uint8Array;
   private windowId = 0;
   offset = 0;
   maxChunkSize = 0;
