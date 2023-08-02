@@ -25,6 +25,7 @@
 #include <utility>
 #include <vector>
 
+#include "pw_preprocessor/compiler.h"
 #include "pw_span/span.h"
 
 // Decoding errors are marked with prefix and suffix so that they stand out from
@@ -240,6 +241,8 @@ class FormatString {
   std::vector<StringSegment> segments_;
 };
 
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC(ignored, "-Wformat-nonliteral");
 // Implementation of DecodedArg::FromValue template function.
 template <typename ArgumentType>
 DecodedArg DecodedArg::FromValue(const char* format,
@@ -263,5 +266,6 @@ DecodedArg DecodedArg::FromValue(const char* format,
 
   return arg;
 }
+PW_MODIFY_DIAGNOSTICS_POP();
 
 }  // namespace pw::tokenizer
