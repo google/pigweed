@@ -12,6 +12,18 @@
       "tags": [
         "version:2@3.10.8.chromium.23"
       ]
+    },
+    {
+      "path": "pigweed/third_party/python_packages/310/${platform}",
+      "platforms": [
+        "linux-amd64",
+        "mac-amd64",
+        "windows-amd64"
+      ],
+      "tags": [
+        "git_revision:797baaed66ab642510ca07e9478754a11000a5f5"
+      ],
+      "subdir": "pip_cache"
     }
   ]
 }
