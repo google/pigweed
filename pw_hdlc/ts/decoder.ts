@@ -36,8 +36,8 @@ export class Frame {
   status: FrameStatus;
 
   address = -1;
-  control: Uint8Array = new Uint8Array();
-  data: Uint8Array = new Uint8Array();
+  control: Uint8Array = new Uint8Array(0);
+  data: Uint8Array = new Uint8Array(0);
 
   constructor(
     rawEncoded: Uint8Array,
@@ -80,8 +80,8 @@ enum DecoderState {
 
 /** Decodes one or more HDLC frames from a stream of data. */
 export class Decoder {
-  private decodedData = new Uint8Array();
-  private rawData = new Uint8Array();
+  private decodedData = new Uint8Array(0);
+  private rawData = new Uint8Array(0);
   private state = DecoderState.INTERFRAME;
 
   /**
@@ -142,8 +142,8 @@ export class Decoder {
       new Uint8Array(this.decodedData),
       status
     );
-    this.rawData = new Uint8Array();
-    this.decodedData = new Uint8Array();
+    this.rawData = new Uint8Array(0);
+    this.decodedData = new Uint8Array(0);
     return frame;
   }
 

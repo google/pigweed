@@ -89,7 +89,7 @@ class Timer {
 export abstract class Transfer {
   status: Status = Status.OK;
   done: Promise<Status>;
-  protected data = new Uint8Array();
+  protected data = new Uint8Array(0);
 
   private retries = 0;
   private responseTimer?: Timer;
@@ -232,7 +232,7 @@ export class ReadTransfer extends Transfer {
   // of the window, and so on.
   private static EXTEND_WINDOW_DIVISOR = 2;
 
-  data = new Uint8Array();
+  data = new Uint8Array(0);
 
   constructor(
     id: number,

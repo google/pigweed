@@ -49,7 +49,7 @@ describe('WebSerialTransport', () => {
     packet.setMethodId(method.id);
     packet.setStatus(status);
     if (response === undefined) {
-      packet.setPayload(new Uint8Array());
+      packet.setPayload(new Uint8Array(0));
     } else {
       packet.setPayload(response.serializeBinary());
     }
