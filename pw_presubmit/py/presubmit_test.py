@@ -18,7 +18,7 @@ import dataclasses
 import re
 import unittest
 
-from pw_presubmit import presubmit, presubmit_context
+from pw_presubmit import presubmit
 
 
 class TestFileFilter(unittest.TestCase):
@@ -153,17 +153,6 @@ class ProgramsTest(unittest.TestCase):
         self.assertEqual(all_substeps['_fake_function_1'], _fake_function_1)
         self.assertEqual(all_substeps['_fake_function_2'], _fake_function_2)
         # pylint: enable=protected-access
-
-
-class ContextTest(unittest.TestCase):
-    def test_presubmitcontext(self):  # pylint: disable=no-self-use
-        _ = presubmit_context.PresubmitContext.create_for_testing()
-
-    def test_lucicontext(self):  # pylint: disable=no-self-use
-        _ = presubmit_context.LuciContext.create_for_testing()
-
-    def test_lucitrigger(self):  # pylint: disable=no-self-use
-        _ = presubmit_context.LuciTrigger.create_for_testing()
 
 
 if __name__ == '__main__':

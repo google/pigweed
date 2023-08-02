@@ -179,7 +179,7 @@ class LuciTrigger:
         return tuple(result)
 
     @staticmethod
-    def create_for_testing():
+    def create_for_testing(**kwargs):
         change = {
             'number': 123456,
             'patchset': 1,
@@ -190,6 +190,8 @@ class LuciTrigger:
             'gerrit_name': 'pigweed',
             'submitted': True,
         }
+        change.update(kwargs)
+
         with tempfile.TemporaryDirectory() as tempdir:
             changes_json = Path(tempdir) / 'changes.json'
             with changes_json.open('w') as outs:
@@ -278,7 +280,7 @@ class LuciContext:
         return result
 
     @staticmethod
-    def create_for_testing():
+    def create_for_testing(**kwargs):
         env = {
             'BUILDBUCKET_ID': '881234567890',
             'BUILDBUCKET_NAME': 'pigweed:bucket.try:builder-name',
@@ -286,6 +288,8 @@ class LuciContext:
             'SWARMING_SERVER': 'https://chromium-swarm.appspot.com',
             'SWARMING_TASK_ID': 'cd2dac62d2',
         }
+        env.update(kwargs)
+
         return LuciContext.create_from_environment(env, {})
 
 
@@ -404,22 +408,24 @@ class PresubmitContext:  # pylint: disable=too-many-instance-attributes
         self._failed = True
 
     @staticmethod
-    def create_for_testing():
+    def create_for_testing(**kwargs):
         parsed_env = pw_cli.env.pigweed_environment()
         root = parsed_env.PW_PROJECT_ROOT
         presubmit_root = root / 'out' / 'presubmit'
-        return PresubmitContext(
-            root=root,
-            repos=(root,),
-            output_dir=presubmit_root / 'test',
-            failure_summary_log=presubmit_root / 'failure-summary.log',
-            paths=(root / 'foo.cc', root / 'foo.py'),
-            all_paths=(root / 'BUILD.gn', root / 'foo.cc', root / 'foo.py'),
-            package_root=root / 'environment' / 'packages',
-            luci=None,
-            override_gn_args={},
-            format_options=FormatOptions(),
-        )
+        presubmit_kwargs = {
+            'root': root,
+            'repos': (root,),
+            'output_dir': presubmit_root / 'test',
+            'failure_summary_log': presubmit_root / 'failure-summary.log',
+            'paths': (root / 'foo.cc', root / 'foo.py'),
+            'all_paths': (root / 'BUILD.gn', root / 'foo.cc', root / 'foo.py'),
+            'package_root': root / 'environment' / 'packages',
+            'luci': None,
+            'override_gn_args': {},
+            'format_options': FormatOptions(),
+        }
+        presubmit_kwargs.update(kwargs)
+        return PresubmitContext(**presubmit_kwargs)
 
     def append_check_command(
         self,

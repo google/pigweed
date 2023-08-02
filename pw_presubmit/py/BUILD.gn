@@ -49,6 +49,7 @@ pw_python_package("py") {
   ]
   tests = [
     "bazel_parser_test.py",
+    "context_test.py",
     "cpp_checks_test.py",
     "git_repo_test.py",
     "gitmodules_test.py",
