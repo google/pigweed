@@ -244,6 +244,8 @@ py_test(
         "@pw_transfer_test_binaries//:all",
     ],
     tags = ["integration"],
+    # Legacy binaries were only built for linux-x86_64.
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":config_pb2",
         ":integration_test_fixture",
