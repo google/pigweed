@@ -68,6 +68,9 @@
         ],
         "constraints": [
           "pw_env_setup/py/pw_env_setup/virtualenv_setup/constraint.list"
+        ],
+        "pip_install_find_links": [
+          "${PW_MSRV_PYTHON_CIPD_INSTALL_DIR}/pip_cache"
         ]
       }
     },

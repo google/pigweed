@@ -220,6 +220,10 @@ class EnvSetup(object):
         self._virtualenv_constraints = []
         self._virtualenv_gn_targets = []
         self._virtualenv_gn_args = []
+        self._virtualenv_pip_install_disable_cache = False
+        self._virtualenv_pip_install_find_links = []
+        self._virtualenv_pip_install_offline = False
+        self._virtualenv_pip_install_require_hashes = False
         self._use_pinned_pip_packages = use_pinned_pip_packages
         self._optional_submodules = []
         self._required_submodules = []
@@ -366,6 +370,21 @@ class EnvSetup(object):
             self._virtualenv_constraints.append(
                 os.path.join(self._project_root, constraint_txt)
             )
+
+        for pip_cache_dir in _assert_sequence(
+            virtualenv.pop('pip_install_find_links', ())
+        ):
+            self._virtualenv_pip_install_find_links.append(pip_cache_dir)
+
+        self._virtualenv_pip_install_disable_cache = virtualenv.pop(
+            'pip_install_disable_cache', False
+        )
+        self._virtualenv_pip_install_offline = virtualenv.pop(
+            'pip_install_offline', False
+        )
+        self._virtualenv_pip_install_require_hashes = virtualenv.pop(
+            'pip_install_require_hashes', False
+        )
 
         if virtualenv:
             raise ConfigFileError(
@@ -730,6 +749,14 @@ Then use `set +x` to go back to normal.
             venv_path=self._virtualenv_root,
             requirements=requirements,
             constraints=constraints,
+            pip_install_find_links=self._virtualenv_pip_install_find_links,
+            pip_install_offline=self._virtualenv_pip_install_offline,
+            pip_install_require_hashes=(
+                self._virtualenv_pip_install_require_hashes
+            ),
+            pip_install_disable_cache=(
+                self._virtualenv_pip_install_disable_cache
+            ),
             gn_args=self._virtualenv_gn_args,
             gn_targets=self._virtualenv_gn_targets,
             gn_out_dir=self._virtualenv_gn_out_dir,

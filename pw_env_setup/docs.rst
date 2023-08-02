@@ -319,6 +319,45 @@ here.
   A boolean value that can be used the give the Python virtual environment
   access to the system site packages. Defaults to ``false``.
 
+``pw.pw_env_setup.virtualenv.pip_install_offline``
+  A boolean value that adds ``--no-index`` to all ``pip install`` commands that
+  are part of bootstrap. This forces pip to not reach out to the internet
+  (usually `pypi.org <https://pypi.org/>`_) to download packages. Using this
+  option requires setting
+  ``pw.pw_env_setup.virtualenv.pip_install_find_links``. Defaults to
+  ``false``.
+
+  .. seealso::
+     The Python GN guide for offline pip installation:
+     :ref:`docs-python-build-installing-offline`
+
+``pw.pw_env_setup.virtualenv.pip_install_find_links``
+  List of paths to folders containing Python wheels (``*.whl``) or source tar
+  files (``*.tar.gz``). Pip will check each of these directories when looking
+  for potential install candidates. Each path will be passed to all ``pip
+  install`` commands as ``--find-links PATH``.
+
+  .. tip::
+     Environment variables may be used in these paths. For example:
+
+     .. code-block:: json
+
+        "virtualenv": {
+           "pip_install_find_links": [
+             "${PW_PROJECT_ROOT}/pip_cache"
+           ]
+         }
+
+``pw.pw_env_setup.virtualenv.pip_install_require_hashes``
+  Adds ``--require-hashes`` This option enforces hash checking on Python
+  package files. Defaults to ``false``.
+
+``pw.pw_env_setup.virtualenv.pip_install_disable_cache``
+  A boolean value that adds ``--no-cache-dir`` to all ``pip install`` commands
+  that are part of bootstrap. This forces pip to ignore any previously cached
+  Python packages. On most systems this is located in
+  ``~/.cache/pip/``. Defaults to ``false``.
+
 ``pw.pw_env_setup.optional_submodules``
   By default environment setup will check that all submodules are present in
   the checkout. Any submodules in this list are excluded from that check.

@@ -428,6 +428,8 @@ time to complete. The current set of combinations is shown below:
    ``compiled_requirements.txt`` and not downloaded by the ``.vendor_wheels``
    target.
 
+.. _docs-python-build-installing-offline:
+
 Installing Offline
 ^^^^^^^^^^^^^^^^^^
 Once the vendor wheel output is saved to a directory in your project you can use

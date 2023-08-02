@@ -32,7 +32,7 @@ declare_args() {
   pw_build_PYTHON_PIP_INSTALL_REQUIRE_HASHES = false
 
   # Adds --no-index forcing pip to not reach out to the internet (pypi.org) to
-  # download packages. Using this opiton requires setting
+  # download packages. Using this option requires setting
   # pw_build_PYTHON_PIP_INSTALL_FIND_LINKS as well.
   pw_build_PYTHON_PIP_INSTALL_OFFLINE = false
 
@@ -42,7 +42,8 @@ declare_args() {
 
   # List of paths to folders containing Python wheels (*.whl) or source tar
   # files (*.tar.gz). Pip will check each of these directories when looking for
-  # potential install candidates.
+  # potential install candidates. Each path will be passed to all 'pip install'
+  # commands as '--find-links PATH'.
   pw_build_PYTHON_PIP_INSTALL_FIND_LINKS = []
 
   # General options passed to pip commands

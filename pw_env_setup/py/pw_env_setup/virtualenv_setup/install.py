@@ -189,12 +189,16 @@ def _python_version(python_path: str):
     return tuple(map(int, version_str.split('.')))
 
 
-def install(  # pylint: disable=too-many-arguments,too-many-locals
+def install(  # pylint: disable=too-many-arguments,too-many-locals,too-many-statements
     project_root,
     venv_path,
     full_envsetup=True,
     requirements=None,
     constraints=None,
+    pip_install_disable_cache=None,
+    pip_install_find_links=None,
+    pip_install_offline=None,
+    pip_install_require_hashes=None,
     gn_args=(),
     gn_targets=(),
     gn_out_dir=None,
@@ -284,16 +288,33 @@ def install(  # pylint: disable=too-many-arguments,too-many-locals
     ):
         os.unlink(egg_link)
 
+    pip_install_args = []
+    if pip_install_find_links:
+        for package_dir in pip_install_find_links:
+            pip_install_args.append('--find-links')
+            with env():
+                pip_install_args.append(os.path.expandvars(package_dir))
+    if pip_install_require_hashes:
+        pip_install_args.append('--require-hashes')
+    if pip_install_offline:
+        pip_install_args.append('--no-index')
+    if pip_install_disable_cache:
+        pip_install_args.append('--no-cache-dir')
+
     def pip_install(*args):
         args = list(_flatten(args))
         with env():
-            cmd = [
-                venv_python,
-                '-m',
-                'pip',
-                '--disable-pip-version-check',
-                'install',
-            ] + args
+            cmd = (
+                [
+                    venv_python,
+                    '-m',
+                    'pip',
+                    '--disable-pip-version-check',
+                    'install',
+                ]
+                + pip_install_args
+                + args
+            )
             return _check_call(cmd)
 
     constraint_args = []

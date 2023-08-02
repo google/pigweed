@@ -13,6 +13,7 @@
 # the License.
 
 buildconfig = "//BUILDCONFIG.gn"
+import("//build_overrides/pigweed_environment.gni")
 
 # Generate a compilation database for all targets.
 export_compile_commands = [ ":*" ]
@@ -29,6 +30,9 @@ default_args = {
   # TODO(b/292098416): This should stay false until a cross-platform constraint
   # file workflow is implemented.
   pw_build_PYTHON_PIP_INSTALL_REQUIRE_HASHES = false
+
+  pw_build_PYTHON_PIP_INSTALL_FIND_LINKS =
+      [ "${pw_env_setup_CIPD_MSRV_PYTHON}/pip_cache" ]
 
   # Exclude third-party headers from static analysis.
   pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_RES = [ "third_party/.*" ]
