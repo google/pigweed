@@ -184,6 +184,9 @@ following members:
   patch for unsubmitted changes and the hash for submitted changes.
 * ``gerrit_name``: The name of the googlesource.com Gerrit host.
 * ``submitted``: Whether the change has been submitted or is still pending.
+* ``gerrit_host``: The scheme and hostname of the googlesource.com Gerrit host.
+* ``gerrit_url``: The full URL to this change on the Gerrit host.
+* ``gitiles_url``: The full URL to this commit in Gitiles.
 
 Additional members can be added by subclassing ``PresubmitContext`` and
 ``Presubmit``. Then override ``Presubmit._create_presubmit_context()`` to

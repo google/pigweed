@@ -125,6 +125,7 @@ class LuciTrigger:
     """Details the pending change or submitted commit triggering the build."""
 
     number: int
+    patchset: int
     remote: str
     project: str
     branch: str
@@ -133,16 +134,18 @@ class LuciTrigger:
     submitted: bool
 
     @property
+    def gerrit_host(self):
+        return f'https://{self.gerrit_name}-review.googlesource.com'
+
+    @property
     def gerrit_url(self):
         if not self.number:
             return self.gitiles_url
-        return 'https://{}-review.googlesource.com/c/{}'.format(
-            self.gerrit_name, self.number
-        )
+        return f'{self.gerrit_host}/c/{self.number}'
 
     @property
     def gitiles_url(self):
-        return '{}/+/{}'.format(self.remote, self.ref)
+        return f'{self.remote}/+/{self.ref}'
 
     @staticmethod
     def create_from_environment(
@@ -162,6 +165,7 @@ class LuciTrigger:
             for trigger in json.load(ins):
                 keys = {
                     'number',
+                    'patchset',
                     'remote',
                     'project',
                     'branch',
@@ -178,6 +182,7 @@ class LuciTrigger:
     def create_for_testing():
         change = {
             'number': 123456,
+            'patchset': 1,
             'remote': 'https://pigweed.googlesource.com/pigweed/pigweed',
             'project': 'pigweed/pigweed',
             'branch': 'main',
