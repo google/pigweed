@@ -31,4 +31,4 @@ pw_add_backend_variable(pw_thread.thread_iteration_BACKEND)
 pw_add_backend_variable(pw_thread.yield_BACKEND)
 
 # Backend for the pw_thread module's pw::thread::test_thread_context.
-pw_add_backend_variable(pw_thread.text_thread_context_BACKEND)
+pw_add_backend_variable(pw_thread.test_thread_context_BACKEND)

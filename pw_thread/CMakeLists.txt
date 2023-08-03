@@ -123,7 +123,7 @@ pw_add_library(pw_thread.thread_snapshot_service STATIC
 
 pw_add_facade(pw_thread.test_thread_context INTERFACE
   BACKEND
-    pw_thread.text_thread_context_BACKEND
+    pw_thread.test_thread_context_BACKEND
   HEADERS
     public/pw_thread/test_thread_context.h
   PUBLIC_INCLUDES
@@ -236,12 +236,12 @@ if((NOT "${pw_thread.id_BACKEND}" STREQUAL "") AND
   )
 endif()
 
-if(NOT "${pw_thread.text_thread_context_BACKEND}" STREQUAL "")
-  pw_add_test(pw_thread.text_thread_context_facade_test
+if(NOT "${pw_thread.test_thread_context_BACKEND}" STREQUAL "")
+  pw_add_test(pw_thread.test_thread_context_facade_test
     SOURCES
       test_thread_context_facade_test.cc
     PRIVATE_DEPS
-      pw_thread.text_thread_context
+      pw_thread.test_thread_context
       pw_thread.thread
       pw_sync.binary_semaphore
   )
