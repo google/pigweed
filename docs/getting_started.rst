@@ -413,6 +413,15 @@ In macOS and Linux, ``xargs`` can be used to turn this into a single command:
 Next steps
 ==========
 
+Editor setup
+-----------------------
+Check out the :ref:`module-pw_ide` for setting up editor configurations or run
+the following for a quick setup:
+
+.. code:: bash
+
+  pw ide sync
+
 Check out other modules
 -----------------------
 If you'd like to see more of what Pigweed has to offer, dive into the
