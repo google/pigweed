@@ -52,6 +52,15 @@ _LOG = logging.getLogger(__name__)
 PathOrStr = Union[Path, str]
 
 
+def _find_protoc() -> str:
+    """Locates a protoc binary to use for compiling protos."""
+    if 'PROTOC' in os.environ:
+        return os.environ['PROTOC']
+
+    # Fallback is assuming `protoc` is on the system PATH.
+    return 'protoc'
+
+
 def compile_protos(
     output_dir: PathOrStr,
     proto_files: Iterable[PathOrStr],
@@ -70,7 +79,7 @@ def compile_protos(
             include_paths.add(path.parent)
 
     cmd: Tuple[PathOrStr, ...] = (
-        'protoc',
+        _find_protoc(),
         '--experimental_allow_proto3_optional',
         '--python_out',
         os.path.abspath(output_dir),

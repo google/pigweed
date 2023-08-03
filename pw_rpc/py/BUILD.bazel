@@ -107,6 +107,12 @@ py_test(
     srcs = [
         "tests/callback_client_test.py",
     ],
+    data = [
+        "@com_google_protobuf//:protoc",
+    ],
+    env = {
+        "PROTOC": "$(location @com_google_protobuf//:protoc)",
+    },
     deps = [
         ":pw_rpc",
         "//pw_protobuf_compiler:pw_protobuf_compiler_protos",
@@ -121,6 +127,12 @@ py_test(
     srcs = [
         "tests/client_test.py",
     ],
+    data = [
+        "@com_google_protobuf//:protoc",
+    ],
+    env = {
+        "PROTOC": "$(location @com_google_protobuf//:protoc)",
+    },
     deps = [
         ":pw_rpc",
         "//pw_rpc:internal_packet_proto_pb2",
@@ -134,6 +146,12 @@ py_test(
     srcs = [
         "tests/descriptors_test.py",
     ],
+    data = [
+        "@com_google_protobuf//:protoc",
+    ],
+    env = {
+        "PROTOC": "$(location @com_google_protobuf//:protoc)",
+    },
     deps = [
         ":pw_rpc",
         "//pw_protobuf_compiler:pw_protobuf_compiler_protos",
