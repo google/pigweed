@@ -21,6 +21,7 @@ import("$dir_pw_docgen/docs.gni")
 pw_doc_group("static_assets") {
   inputs = [
     "_static/css/pigweed.css",
+    "_static/js/pigweed.js",
     "_static/pw_logo.ico",
     "_static/pw_logo.svg",
   ]

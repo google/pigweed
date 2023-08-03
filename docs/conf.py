@@ -127,6 +127,8 @@ html_css_files = [
     "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css",
 ]
 
+html_js_files = ['js/pigweed.js']
+
 # Furo color theme variables based on:
 # https://github.com/pradyunsg/furo/blob/main/src/furo/assets/styles/variables/_colors.scss
 # Colors with unchanged defaults are left commented out for easy updating.

@@ -1539,6 +1539,14 @@ Why is the changelog organized by category / module? Why not the usual
   how we annotate our commits. We will not be able to publish changelog updates
   every 2 weeks if there is too much manual work involved.
 
+Site nav scrolling
+==================
+The site nav was customized (`change #162410`_) to scroll on initial page load
+so that the current page is visible in the site nav. The scrolling logic is
+handled in ``//docs/_static/js/pigweed.js``.
+
+.. _change #162410: https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162410
+
 .. _commit-style:
 
 --------------
