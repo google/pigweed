@@ -25,6 +25,8 @@
 #include "pw_log/log.h"
 #include "pw_trace/trace.h"
 #include "pw_trace_tokenized/example/trace_to_file.h"
+#include "pw_trace_tokenized/trace_callback.h"
+#include "pw_trace_tokenized/trace_tokenized.h"
 
 // Example for annotating trace events with thread id.
 // The platform annotates instants and duration events with the thread id if the
@@ -84,10 +86,11 @@ int main(int argc, char** argv) {
   PW_TRACE_SET_ENABLED(true);
 
   // Dump trace data to the file passed in.
-  pw::trace::TraceToFile trace_to_file{argv[1]};
+  pw::trace::TraceToFile trace_to_file(pw::trace::GetCallbacks(), argv[1]);
 
   // Register platform callback
-  pw::trace::RegisterCallbackWhenCreated{TraceEventCallback};
+  pw::trace::RegisterCallbackWhenCreated(pw::trace::GetCallbacks(),
+                                         TraceEventCallback);
 
   PW_LOG_INFO("Running threaded trace example...\n");
   RunThreadedTraceSampleApp();

@@ -191,22 +191,28 @@ Callbacks& GetCallbacks();
 class RegisterCallbackWhenCreated {
  public:
   RegisterCallbackWhenCreated(
+      Callbacks& callbacks,
       Callbacks::EventCallback event_callback,
       Callbacks::CallOnEveryEvent called_on_every_event =
           Callbacks::kCallOnlyWhenEnabled,
-      void* user_data = nullptr) {
-    GetCallbacks()
+      void* user_data = nullptr)
+      : callbacks_(callbacks) {
+    callbacks_
         .RegisterEventCallback(event_callback, called_on_every_event, user_data)
         .IgnoreError();  // TODO(b/242598609): Handle Status properly
   }
-  RegisterCallbackWhenCreated(Callbacks::SinkStartBlock sink_start,
+  RegisterCallbackWhenCreated(Callbacks& callbacks,
+                              Callbacks::SinkStartBlock sink_start,
                               Callbacks::SinkAddBytes sink_add_bytes,
                               Callbacks::SinkEndBlock sink_end,
-                              void* user_data = nullptr) {
-    GetCallbacks()
-        .RegisterSink(sink_start, sink_add_bytes, sink_end, user_data)
+                              void* user_data = nullptr)
+      : callbacks_(callbacks) {
+    callbacks_.RegisterSink(sink_start, sink_add_bytes, sink_end, user_data)
         .IgnoreError();  // TODO(b/242598609): Handle Status properly
   }
+
+ private:
+  Callbacks& callbacks_;
 };
 
 }  // namespace trace

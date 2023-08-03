@@ -54,27 +54,25 @@ class TraceTestInterface {
     }
   };
 
-  TraceTestInterface() {
+  TraceTestInterface() : callbacks_(pw::trace::GetCallbacks()) {
     PW_TRACE_SET_ENABLED(true);
     EXPECT_EQ(pw::OkStatus(),
-              pw::trace::GetCallbacks().RegisterSink(TraceSinkStartBlock,
-                                                     TraceSinkAddBytes,
-                                                     TraceSinkEndBlock,
-                                                     this,
-                                                     &sink_handle_));
+              callbacks_.RegisterSink(TraceSinkStartBlock,
+                                      TraceSinkAddBytes,
+                                      TraceSinkEndBlock,
+                                      this,
+                                      &sink_handle_));
     EXPECT_EQ(pw::OkStatus(),
-              pw::trace::GetCallbacks().RegisterEventCallback(
+              callbacks_.RegisterEventCallback(
                   TraceEventCallback,
                   pw::trace::Callbacks::kCallOnlyWhenEnabled,
                   this,
                   &event_callback_handle_));
   }
   ~TraceTestInterface() {
+    EXPECT_EQ(pw::OkStatus(), callbacks_.UnregisterSink(sink_handle_));
     EXPECT_EQ(pw::OkStatus(),
-              pw::trace::GetCallbacks().UnregisterSink(sink_handle_));
-    EXPECT_EQ(pw::OkStatus(),
-              pw::trace::GetCallbacks().UnregisterEventCallback(
-                  event_callback_handle_));
+              callbacks_.UnregisterEventCallback(event_callback_handle_));
   }
   // ActionOnEvent will perform a specific action within the callback when an
   // event matches one of the characteristics of event_match_.
@@ -162,6 +160,7 @@ class TraceTestInterface {
   size_t sink_block_size_;
   size_t sink_bytes_received_;
   std::deque<TraceInfo> buffer_;
+  pw::trace::Callbacks& callbacks_;
   pw::trace::Callbacks::SinkHandle sink_handle_;
   pw::trace::Callbacks::EventCallbackHandle event_callback_handle_;
 };

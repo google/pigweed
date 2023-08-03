@@ -30,6 +30,7 @@
 #include "pw_log/log.h"
 #include "pw_trace/example/sample_app.h"
 #include "pw_trace_tokenized/example/trace_to_file.h"
+#include "pw_trace_tokenized/trace_callback.h"
 
 int main(int argc, char** argv) {  // Take filename as arg
   if (argc != 2) {
@@ -41,7 +42,7 @@ int main(int argc, char** argv) {  // Take filename as arg
   PW_TRACE_SET_ENABLED(true);
 
   // Dump trace data to the file passed in.
-  pw::trace::TraceToFile trace_to_file(argv[1]);
+  pw::trace::TraceToFile trace_to_file(pw::trace::GetCallbacks(), argv[1]);
 
   PW_LOG_INFO("Running basic trace example...\n");
   RunTraceSampleApp();

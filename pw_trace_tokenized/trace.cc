@@ -24,11 +24,11 @@
 namespace pw {
 namespace trace {
 
-TokenizedTracer tokenized_tracer;
-TokenizedTracer& GetTokenizedTracer() { return tokenized_tracer; }
-
 Callbacks callbacks;
 Callbacks& GetCallbacks() { return callbacks; }
+
+TokenizedTracer tokenized_tracer(GetCallbacks());
+TokenizedTracer& GetTokenizedTracer() { return tokenized_tracer; }
 
 using TraceEvent = pw_trace_tokenized_TraceEvent;
 
@@ -41,7 +41,7 @@ void TokenizedTracer::HandleTraceEvent(uint32_t trace_token,
                                        size_t data_size) {
   // Early exit if disabled and no callbacks are register to receive events
   // while disabled.
-  if (!enabled_ && GetCallbacks().GetCalledOnEveryEventCount() == 0) {
+  if (!enabled_ && callbacks_.GetCalledOnEveryEventCount() == 0) {
     return;
   }
 
@@ -58,15 +58,15 @@ void TokenizedTracer::HandleTraceEvent(uint32_t trace_token,
   // Call any event callback which is registered to receive every event.
   pw_trace_TraceEventReturnFlags ret_flags = 0;
   ret_flags |=
-      GetCallbacks().CallEventCallbacks(Callbacks::kCallOnEveryEvent, &event);
+      callbacks_.CallEventCallbacks(Callbacks::kCallOnEveryEvent, &event);
   // Return if disabled.
   if ((PW_TRACE_EVENT_RETURN_FLAGS_SKIP_EVENT & ret_flags) || !enabled_) {
     return;
   }
 
   // Call any event callback not already called.
-  ret_flags |= GetCallbacks().CallEventCallbacks(
-      Callbacks::kCallOnlyWhenEnabled, &event);
+  ret_flags |=
+      callbacks_.CallEventCallbacks(Callbacks::kCallOnlyWhenEnabled, &event);
   // Return if disabled (from a callback) or if a callback has indicated the
   // sample should be skipped.
   if ((PW_TRACE_EVENT_RETURN_FLAGS_SKIP_EVENT & ret_flags) || !enabled_) {
@@ -143,7 +143,7 @@ void TokenizedTracer::HandleNextItemInQueue(
   }
 
   // Send encoded output to any registered trace sinks.
-  GetCallbacks().CallSinks(
+  callbacks_.CallSinks(
       span<const std::byte>(header, header_size),
       span<const std::byte>(reinterpret_cast<const std::byte*>(data_buffer),
                             data_size));
@@ -155,8 +155,8 @@ pw_trace_TraceEventReturnFlags Callbacks::CallEventCallbacks(
   for (size_t i = 0; i < PW_TRACE_CONFIG_MAX_EVENT_CALLBACKS; i++) {
     if (event_callbacks_[i].callback &&
         event_callbacks_[i].called_on_every_event == called_on_every_event) {
-      ret_flags |= GetCallbacks().GetEventCallback(i)->callback(
-          event_callbacks_[i].user_data, event);
+      ret_flags |=
+          GetEventCallback(i)->callback(event_callbacks_[i].user_data, event);
     }
   }
   return ret_flags;

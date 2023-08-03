@@ -74,7 +74,8 @@ int main(int argc, char** argv) {  // Take filename as arg
   }
 
   // Register trigger callback
-  pw::trace::GetCallbacks()
+  pw::trace::Callbacks& callbacks = pw::trace::GetCallbacks();
+  callbacks
       .RegisterEventCallback(TraceEventCallback,
                              pw::trace::Callbacks::kCallOnEveryEvent)
       .IgnoreError();  // TODO(b/242598609): Handle Status properly
@@ -83,7 +84,7 @@ int main(int argc, char** argv) {  // Take filename as arg
   PW_TRACE_SET_ENABLED(false);
 
   // Dump trace data to the file passed in.
-  pw::trace::TraceToFile trace_to_file(argv[1]);
+  pw::trace::TraceToFile trace_to_file(callbacks, argv[1]);
 
   PW_LOG_INFO("Running trigger example...");
   RunTraceSampleApp();

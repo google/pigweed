@@ -27,8 +27,9 @@ namespace trace {
 
 class TraceToFile {
  public:
-  TraceToFile(const char* file_name) {
-    GetCallbacks()
+  TraceToFile(Callbacks& callbacks, const char* file_name)
+      : callbacks_(callbacks) {
+    callbacks_
         .RegisterSink(TraceSinkStartBlock,
                       TraceSinkAddBytes,
                       TraceSinkEndBlock,
@@ -39,8 +40,7 @@ class TraceToFile {
   }
 
   ~TraceToFile() {
-    GetCallbacks()
-        .UnregisterSink(sink_handle_)
+    callbacks_.UnregisterSink(sink_handle_)
         .IgnoreError();  // TODO(b/242598609): Handle Status properly
     out_.close();
   }
@@ -64,6 +64,7 @@ class TraceToFile {
   }
 
  private:
+  Callbacks& callbacks_;
   std::ofstream out_;
   Callbacks::SinkHandle sink_handle_;
 };

@@ -25,10 +25,10 @@ namespace {
 
 class TraceBuffer {
  public:
-  TraceBuffer() {
+  TraceBuffer(Callbacks& callbacks) : callbacks_(callbacks) {
     ring_buffer_.SetBuffer(raw_buffer_)
         .IgnoreError();  // TODO(b/242598609): Handle Status properly
-    GetCallbacks()
+    callbacks_
         .RegisterSink(
             TraceSinkStartBlock, TraceSinkAddBytes, TraceSinkEndBlock, this)
         .IgnoreError();  // TODO(b/242598609): Handle Status properly
@@ -78,6 +78,7 @@ class TraceBuffer {
   }
 
  private:
+  Callbacks& callbacks_;
   uint16_t block_size_ = 0;
   uint16_t block_idx_ = 0;
   std::byte current_block_[PW_TRACE_BUFFER_MAX_BLOCK_SIZE_BYTES];
@@ -86,7 +87,7 @@ class TraceBuffer {
 };
 
 #if PW_TRACE_BUFFER_SIZE_BYTES > 0
-TraceBuffer trace_buffer_instance;
+TraceBuffer trace_buffer_instance(GetCallbacks());
 #endif  // PW_TRACE_BUFFER_SIZE_BYTES > 0
 
 }  // namespace
