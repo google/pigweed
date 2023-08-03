@@ -794,6 +794,7 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\.json$',
     r'\.png$',
     r'\.svg$',
+    r'\.vsix$',
     r'\.xml$',
     # keep-sorted: end
     # Documentation
