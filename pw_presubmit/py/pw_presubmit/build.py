@@ -651,6 +651,9 @@ def _value(ctx: PresubmitContext, val: InputValue) -> Value:
 _CtxMgrLambda = Callable[[PresubmitContext], ContextManager]
 _CtxMgrOrLambda = Union[ContextManager, _CtxMgrLambda]
 
+_INCREMENTAL_COVERAGE_TOOL = 'cloud_client'
+_ABSOLUTE_COVERAGE_TOOL = 'raw_coverage_cloud_uploader'
+
 
 class _NinjaBase(Check):
     """Thin wrapper of Check for steps that call ninja."""
@@ -735,16 +738,81 @@ class _NinjaBase(Check):
         """Archive and (on LUCI) upload coverage reports."""
         reports = ctx.output_dir / 'coverage_reports'
         os.makedirs(reports, exist_ok=True)
+        coverage_jsons: List[Path] = []
         for path in ctx.output_dir.rglob('coverage_report'):
+            _LOG.debug('exploring %s', path)
             name = str(path.relative_to(ctx.output_dir))
             name = name.replace('_', '').replace('/', '_')
             with tarfile.open(reports / f'{name}.tar.gz', 'w:gz') as tar:
                 tar.add(path, arcname=name, recursive=True)
+            json_path = path / 'json' / 'report.json'
+            if json_path.is_file():
+                _LOG.debug('found json %s', json_path)
+                coverage_jsons.append(json_path)
+
+        if not coverage_jsons:
+            ctx.fail('No coverage json file found')
+            return PresubmitResult.FAIL
+
+        if len(coverage_jsons) > 1:
+            _LOG.warning(
+                'More than one coverage json file, selecting first: %r',
+                coverage_jsons,
+            )
+
+        coverage_json = coverage_jsons[0]
 
         if ctx.luci:
-            with self._context(ctx):
-                _LOG.warning('TODO(b/279161371) Add upload.')
+            if ctx.luci.is_dev:
+                _LOG.warning('Not uploading coverage since running in dev')
+                return PresubmitResult.PASS
 
+            with self._context(ctx):
+                assert len(ctx.luci.triggers) == 1
+                change = ctx.luci.triggers[0]
+
+                common_args = [
+                    f'--host={change.gerrit_host}',
+                    f'--project={change.project}',
+                    f'--uploader_name={ctx.luci.builder}',
+                    f'--uploader_id={ctx.luci.buildbucket_id}',
+                    '--format=LLVM',
+                    f'--coverage_file={coverage_json}',
+                    f'--insert_dir_prefix={ctx.output_dir}',
+                ]
+
+                if ctx.luci.is_try:
+                    cmd = [
+                        _INCREMENTAL_COVERAGE_TOOL,
+                        '--env=prod',
+                        f'--change_id={change.number}',
+                        f'--patchset={change.patchset}',
+                        *common_args,
+                    ]
+
+                else:
+                    requests_log = (
+                        ctx.output_dir / 'coverage-upload-requests.log'
+                    )
+
+                    cmd = [
+                        _ABSOLUTE_COVERAGE_TOOL,
+                        '--absolute_coverage_service_env=prod',
+                        f'--ref={change.branch}',
+                        f'--commit_id={change.ref}',
+                        f'--requests_log={requests_log}',
+                        '--timeout=5m',
+                        *common_args,
+                    ]
+
+                upload_stdout = ctx.output_dir / 'coverage-upload.stdout'
+                ctx.output_dir.mkdir(exist_ok=True, parents=True)
+                with upload_stdout.open('w') as outs:
+                    call(*cmd, tee=outs)
+
+                return PresubmitResult.PASS
+
+        _LOG.warning('Not uploading coverage since running locally')
         return PresubmitResult.PASS
 
     def _package_substeps(self) -> Iterator[SubStep]:
