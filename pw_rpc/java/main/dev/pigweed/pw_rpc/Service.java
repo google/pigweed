@@ -55,6 +55,10 @@ public class Service {
     return name();
   }
 
+  // TODO(b/293361955): Method declarations should use ProtobufClass.parser()
+  //     instead of the class object so that the parser() method is referenced,
+  //     preventing it from being optimized out.
+
   public static Method.Builder unaryMethod(
       String name, Class<? extends MessageLite> request, Class<? extends MessageLite> response) {
     return Method.builder()

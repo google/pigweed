@@ -37,9 +37,9 @@ public abstract class Method {
 
   public abstract Type type();
 
-  public abstract Class<? extends MessageLite> request();
+  abstract Class<? extends MessageLite> request();
 
-  public abstract Class<? extends MessageLite> response();
+  abstract Class<? extends MessageLite> response();
 
   final int id() {
     return Ids.calculate(name());
@@ -101,7 +101,11 @@ public abstract class Method {
       return parser.parseFrom(data);
     } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
       throw new LinkageError(
-          "Method was created with a protobuf class with an invalid or missing parser() method", e);
+          String.format("Service method was created with %s, which does not have parser() method; "
+                  + "either the class is not a generated protobuf class "
+                  + "or the parser() method was optimized out (see b/293361955)",
+              messageType),
+          e);
     }
   }
 
