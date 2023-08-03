@@ -34,5 +34,9 @@ function scrollSiteNavToCurrentPage() {
 }
 
 window.addEventListener('load', () => {
-  scrollSiteNavToCurrentPage();
+  // Run the scrolling function with a 1-second delay so that it doesn't
+  // interfere with Sphinx's scrolling function. E.g. when you visit
+  // https://pigweed.dev/pw_tokenizer/design.html#bit-tokenization we need
+  // to give Sphinx a chance to scroll to the #bit-tokenization section.
+  setTimeout(scrollSiteNavToCurrentPage, 1000);
 });

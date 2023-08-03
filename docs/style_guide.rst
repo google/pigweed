@@ -1545,6 +1545,13 @@ The site nav was customized (`change #162410`_) to scroll on initial page load
 so that the current page is visible in the site nav. The scrolling logic is
 handled in ``//docs/_static/js/pigweed.js``.
 
+The site nav scrolling logic runs on a 1-second delay after the ``load`` event
+to protect against a race condition between our scrolling logic and Sphinx's
+scrolling logic. For example, if the user visits
+``https://pigweed.dev/pw_tokenizer/design.html#bit-tokenization``, the page
+should first scroll to the ``#bit-tokenization`` section and then the site
+nav can scroll to the current page.
+
 .. _change #162410: https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162410
 
 .. _commit-style:
