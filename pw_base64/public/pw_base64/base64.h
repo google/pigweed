@@ -78,29 +78,40 @@ constexpr size_t EncodedSize(size_t binary_size_bytes) {
   return PW_BASE64_ENCODED_SIZE(binary_size_bytes);
 }
 
-// Encodes the provided data in Base64 and writes the result to the buffer.
-// Encodes to the standard alphabet with + and / for characters 62 and 63.
-// Exactly EncodedSize(binary_size_bytes) bytes will be written. The
-// output buffer *MUST* be large enough for the encoded output! The input and
-// output buffers MUST NOT be the same; encoding cannot occur in place.
-//
-// The resulting string in the output is NOT null-terminated!
+/// Encodes the provided data in Base64 and writes the result to the buffer.
+///
+/// Encodes to the standard alphabet with `+` and `/` for characters `62` and
+/// `63`. Exactly `EncodedSize(binary_size_bytes)` bytes will be written.
+///
+/// @pre
+/// * The output buffer **MUST** be large enough for the encoded output!
+/// * The input and output buffers **MUST NOT** be the same; encoding cannot
+///   occur in place.
+///
+/// @warning The resulting string in the output is **NOT** null-terminated!
 inline void Encode(span<const std::byte> binary, char* output) {
   pw_Base64Encode(binary.data(), binary.size_bytes(), output);
 }
 
-// Encodes the provided data in Base64 if the result fits in the provided
-// buffer. Returns the number of bytes written, which will be 0 if the output
-// buffer is too small.
+/// Encodes the provided data in Base64 if the result fits in the provided
+/// buffer.
+///
+/// @warning The resulting string in the output is **NOT** null-terminated!
+///
+/// @returns The number of bytes written, which will be `0` if the output buffer
+/// is too small.
 size_t Encode(span<const std::byte> binary, span<char> output_buffer);
 
-// Appends Base64 encoded binary data to the provided pw::InlineString. If the
-// data does not fit in the string, an assertion fails.
+/// Appends Base64 encoded binary data to the provided `pw::InlineString`.
+///
+/// If the data does not fit in the string, an assertion fails.
 void Encode(span<const std::byte> binary, InlineString<>& output);
 
-// Creates a pw::InlineString<> large enough to hold kMaxBinaryDataSizeBytes of
-// binary data when encoded as Base64 and encodes the provided span into it.
-// If the data is larger than kMaxBinaryDataSizeBytes, an assertion fails.
+/// Creates a `pw::InlineString<>` large enough to hold
+/// `kMaxBinaryDataSizeBytes` of binary data when encoded as Base64 and encodes
+/// the provided span into it.
+///
+/// If the data is larger than `kMaxBinaryDataSizeBytes`, an assertion fails.
 template <size_t kMaxBinaryDataSizeBytes>
 inline InlineString<EncodedSize(kMaxBinaryDataSizeBytes)> Encode(
     span<const std::byte> binary) {
