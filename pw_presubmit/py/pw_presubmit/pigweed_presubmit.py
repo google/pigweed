@@ -887,9 +887,12 @@ def copyright_notice(ctx: PresubmitContext):
         if path.stat().st_size == 0:
             continue  # Skip empty files
 
-        with path.open() as file:
-            if not _COPYRIGHT.match(''.join(_read_notice_lines(file))):
-                errors.append(path)
+        try:
+            with path.open() as file:
+                if not _COPYRIGHT.match(''.join(_read_notice_lines(file))):
+                    errors.append(path)
+        except UnicodeDecodeError as exc:
+            raise PresubmitFailure(f'failed to read {path}') from exc
 
     if errors:
         _LOG.warning(
