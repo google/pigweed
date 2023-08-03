@@ -52,51 +52,61 @@ This example demonstrates using ``pw_tokenizer`` for logging. In this example,
 tokenized logging saves ~90% in binary size (41 → 4 bytes) and 70% in encoded
 size (49 → 15 bytes).
 
-**Before**: plain text logging
+.. mermaid::
 
-+------------------+-------------------------------------------+---------------+
-| Location         | Logging Content                           | Size in bytes |
-+==================+===========================================+===============+
-| Source contains  | ``LOG("Battery state: %s; battery         |               |
-|                  | voltage: %d mV", state, voltage);``       |               |
-+------------------+-------------------------------------------+---------------+
-| Binary contains  | ``"Battery state: %s; battery             | 41            |
-|                  | voltage: %d mV"``                         |               |
-+------------------+-------------------------------------------+---------------+
-|                  | (log statement is called with             |               |
-|                  | ``"CHARGING"`` and ``3989`` as arguments) |               |
-+------------------+-------------------------------------------+---------------+
-| Device transmits | ``"Battery state: CHARGING; battery       | 49            |
-|                  | voltage: 3989 mV"``                       |               |
-+------------------+-------------------------------------------+---------------+
-| When viewed      | ``"Battery state: CHARGING; battery       |               |
-|                  | voltage: 3989 mV"``                       |               |
-+------------------+-------------------------------------------+---------------+
+   flowchart TD
+     subgraph call_macro_sub [Call log macro]
+     call_macro["LOG(#quot;Got battery abnormality; voltage = %d mV#quot;, voltage)"]
+     end
 
-**After**: tokenized logging
+     call_macro_sub -->
+     plain_text_start([With Plain Text Logging]) -- Encoded as -->
+     plain_text_encoded_sub
 
-+------------------+-----------------------------------------------------------+---------+
-| Location         | Logging Content                                           | Size in |
-|                  |                                                           | bytes   |
-+==================+===========================================================+=========+
-| Source contains  | ``LOG("Battery state: %s; battery                         |         |
-|                  | voltage: %d mV", state, voltage);``                       |         |
-+------------------+-----------------------------------------------------------+---------+
-| Binary contains  | ``d9 28 47 8e`` (0x8e4728d9)                              | 4       |
-+------------------+-----------------------------------------------------------+---------+
-|                  | (log statement is called with                             |         |
-|                  | ``"CHARGING"`` and ``3989`` as arguments)                 |         |
-+------------------+-----------------------------------------------------------+---------+
-| Device transmits | =============== ============================== ========== | 15      |
-|                  | ``d9 28 47 8e`` ``08 43 48 41 52 47 49 4E 47`` ``aa 3e``  |         |
-|                  | --------------- ------------------------------ ---------- |         |
-|                  | Token           ``"CHARGING"`` argument        ``3989``,  |         |
-|                  |                                                as         |         |
-|                  |                                                varint     |         |
-|                  | =============== ============================== ========== |         |
-+------------------+-----------------------------------------------------------+---------+
-| When viewed      | ``"Battery state: CHARGING; battery voltage: 3989 mV"``   |         |
-+------------------+-----------------------------------------------------------+---------+
+     subgraph plain_text_encoded_sub ["41 bytes in storage"]
+     plain_text_encoded["#quot;Got battery abnormality; voltage = %d mV#quot;"]
+     end
+
+     plain_text_encoded_sub -- Transmitted as --> plain_text_transmitted_sub
+
+     subgraph plain_text_transmitted_sub ["43 bytes over the wire"]
+     plain_text_transmitted["#quot;Got battery abnormality; voltage = 3989 mV#quot;"]
+     end
+
+     style plain_text_start fill:#FFFFE0,stroke:#BDBB6B
+     style plain_text_encoded_sub fill:#FBE0DD,stroke:#ED6357
+     style plain_text_transmitted_sub fill:#FBE0DD,stroke:#ED6357
+
+     plain_text_transmitted_sub -- Displayed as -->
+     plain_text_displayed["#quot;Got battery abnormality; voltage = 3989 mV#quot;"]
+
+     call_macro_sub -->
+     tokenized_start([With Tokenized Logging]) -- Encoded as -->
+     tokenized_encoded_sub
+
+     subgraph tokenized_encoded_sub ["4 bytes in storage"]
+     tokenized_encoded["`
+     d9 28 47 8e
+     or
+     0x8e4728d9
+     `"]
+     end
+
+     tokenized_encoded_sub -- Transmitted as --> tokenized_transmitted_sub
+
+     subgraph tokenized_transmitted_sub ["6 bytes over the wire"]
+     tokenized_transmitted["`
+     **Token:** d9 28 47 8e
+     **3989, as varint:** aa 3e
+     `"]
+     end
+
+     style tokenized_start fill:#FFFFE0,stroke:#BDBB6B
+     style tokenized_encoded_sub fill:#DEF3DE,stroke:#5AC35C
+     style tokenized_transmitted_sub fill:#DEF3DE,stroke:#5AC35C
+
+     tokenized_transmitted_sub -- Displayed as -->
+     tokenized_displayed["#quot;Got battery abnormality; voltage = 3989 mV#quot;"]
 
 .. toctree::
    :hidden:
