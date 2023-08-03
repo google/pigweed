@@ -254,7 +254,10 @@ class LegacyTransferIntegrationTest(test_fixture.TransferIntegrationTest):
 
 class LegacyClientTransferIntegrationTests(LegacyTransferIntegrationTest):
     r = runfiles.Create()
-    client_binary = r.Rlocation("pw_transfer_test_binaries/cpp_client_528098d5")
+    client_binary = r.Rlocation(
+        "pw_transfer_test_binaries/cpp_client_528098d5",
+        "pw_transfer_test_binaries",
+    )
     HARNESS_CONFIG = TransferIntegrationTestHarness.Config(
         cpp_client_binary=client_binary,
         server_port=_SERVER_PORT,
@@ -265,7 +268,9 @@ class LegacyClientTransferIntegrationTests(LegacyTransferIntegrationTest):
 
 class LegacyServerTransferIntegrationTests(LegacyTransferIntegrationTest):
     r = runfiles.Create()
-    server_binary = r.Rlocation("pw_transfer_test_binaries/server_528098d5")
+    server_binary = r.Rlocation(
+        "pw_transfer_test_binaries/server_528098d5", "pw_transfer_test_binaries"
+    )
     HARNESS_CONFIG = TransferIntegrationTestHarness.Config(
         server_binary=server_binary,
         server_port=_SERVER_PORT,
