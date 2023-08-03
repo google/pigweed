@@ -42,7 +42,6 @@ load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_c
 load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 load("@pigweed//pw_build/bazel_internal:pigweed_internal.bzl", "PW_DEFAULT_COPTS")
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("@python3_10//:defs.bzl", "interpreter")
 
 # For Copybara use only
 ADDITIONAL_PWPB_DEPS = []
@@ -448,7 +447,7 @@ def _proto_compiler_aspect(extensions, protoc_plugin, plugin_options = []):
                 cfg = "exec",
             ),
             "_python_runtime": attr.label(
-                default = Label(interpreter),
+                default = Label("//:python3_interpreter"),
                 allow_single_file = True,
                 executable = True,
                 cfg = "exec",

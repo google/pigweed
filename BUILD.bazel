@@ -12,7 +12,15 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@python3_10//:defs.bzl", "interpreter")
+
 licenses(["notice"])
+
+alias(
+    name = "python3_interpreter",
+    actual = interpreter,
+    visibility = ["//visibility:public"],
+)
 
 exports_files(
     ["tsconfig.json"],
