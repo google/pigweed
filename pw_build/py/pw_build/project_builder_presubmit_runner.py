@@ -449,6 +449,19 @@ def _get_parser(
         help='Hide progress bars in terminal output.',
     )
 
+    parser.add_argument(
+        '--log-build-steps',
+        action='store_true',
+        help='Show ninja build step log lines in output.',
+    )
+
+    parser.add_argument(
+        '--no-log-build-steps',
+        action='store_false',
+        dest='log_build_steps',
+        help='Hide ninja build steps log lines from log output.',
+    )
+
     if PW_WATCH_AVAILABLE:
         parser.add_argument(
             '-w',
@@ -792,6 +805,7 @@ def main(
         root_logger=_LOG,
         log_level=log_level,
         allow_progress_bars=args.progress_bars,
+        log_build_steps=args.log_build_steps,
     )
 
     if project_builder.should_use_progress_bars():

@@ -187,6 +187,12 @@ class ProjectBuilderContext:  # pylint: disable=too-many-instance-attributes,too
     def using_progress_bars(self) -> bool:
         return bool(self.progress_bar) or self.using_fullscreen
 
+    @property
+    def log_build_steps(self) -> bool:
+        if self.project_builder:
+            return self.project_builder.log_build_steps
+        return False
+
     def interrupted(self) -> bool:
         return self.ctrl_c_pressed or self.restart_flag
 

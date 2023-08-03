@@ -245,6 +245,7 @@ def execute_command_with_logging(
         errors='replace',
     ) as proc:
         BUILDER_CONTEXT.register_process(recipe, proc)
+        should_log_build_steps = BUILDER_CONTEXT.log_build_steps
         # Empty line at the start.
         logger.info('')
 
@@ -303,7 +304,14 @@ def execute_command_with_logging(
             # sequences.
             stripped_output = output.replace('\x1b(B', '').strip()
 
-            if not line_match_result:
+            # If this isn't a build step.
+            if not line_match_result or (
+                # Or if this is a build step and logging build steps is
+                # requested:
+                line_match_result
+                and should_log_build_steps
+            ):
+                # Log this line.
                 logger_method(stripped_output)
             recipe.status.current_step = stripped_output
 
@@ -478,6 +486,8 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
             the ``-k`` option.
         banners: Print the project banner at the start of each build.
         allow_progress_bars: If False progress bar output will be disabled.
+        log_build_steps: If True all build step lines will be logged to the
+            screen and logfiles. Default: False.
         colors: Print ANSI colors to stdout and logfiles
         log_level: Optional log_level, defaults to logging.INFO.
         root_logfile: Optional root logfile.
@@ -514,6 +524,7 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
         log_level: int = logging.INFO,
         allow_progress_bars: bool = True,
         use_verbatim_error_log_formatting: bool = False,
+        log_build_steps: bool = False,
     ):
         self.charset: ProjectBuilderCharset = charset
         self.abort_callback = abort_callback
@@ -555,6 +566,7 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
 
         # Progress bar enable/disable flag
         self.allow_progress_bars = allow_progress_bars
+        self.log_build_steps = log_build_steps
         self.stdout_proxy: Optional[StdoutProxy] = None
 
         # Logger configuration
