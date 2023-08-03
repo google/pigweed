@@ -47,15 +47,6 @@ build --cxxopt="-Wnon-virtual-dtor"
 # Allow uses of the register keyword, which may appear in C headers.
 build --cxxopt="-Wno-register"
 
-# This leaks the PATH variable into the Bazel build environment, which
-# enables the Python pw_protobuf plugins to find the Python version
-# via CIPD and pw_env_setup. This is a partial fix for pwbug/437,
-# however this does not provide a fix for downstream projects that
-# use system Python < 3.6. This approach is problematic because of the
-# Protobuf rebuild sensitivity to environment variable changes.
-# TODO(pwbug/437): Remove this once pwbug/437 is completely resolved.
-build --action_env=PATH
-
 build --@mbedtls//:mbedtls_config=//third_party/mbedtls:default_config
 
 # Define the --config=asan-libfuzzer configuration.
