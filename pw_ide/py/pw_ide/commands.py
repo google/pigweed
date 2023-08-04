@@ -49,7 +49,11 @@ from pw_ide.settings import (
 from pw_ide.status_reporter import StatusReporter
 
 from pw_ide import vscode
-from pw_ide.vscode import VscSettingsManager, VscSettingsType
+from pw_ide.vscode import (
+    install_extension_from_vsix,
+    VscSettingsManager,
+    VscSettingsType,
+)
 
 _LOG = logging.getLogger(__package__)
 env = pigweed_environment()
@@ -118,6 +122,7 @@ def cmd_setup(
 def cmd_vscode(
     include: Optional[List[VscSettingsType]] = None,
     exclude: Optional[List[VscSettingsType]] = None,
+    should_install_extension: bool = False,
     reporter: StatusReporter = StatusReporter(),
     pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings(),
 ) -> None:
@@ -241,6 +246,18 @@ def cmd_vscode(
             reporter.new(
                 f'{verb} Visual Studio Code active ' f'{settings_type.value}'
             )
+
+    if should_install_extension:
+        reporter.new("Installing Visual Studio Code extension")
+
+        try:
+            install_extension_from_vsix(reporter)
+        except FileNotFoundError:
+            reporter.err("Could not find Visual Studio Code")
+            sys.exit(1)
+        except subprocess.CalledProcessError:
+            reporter.err("Failed to install extension!")
+            sys.exit(1)
 
 
 def _process_compdbs(  # pylint: disable=too-many-locals
