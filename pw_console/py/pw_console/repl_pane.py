@@ -321,22 +321,20 @@ class ReplPane(WindowPane):
     def copy_output_selection(self):
         """Copy highlighted output text to the system clipboard."""
         clipboard_data = self.output_field.buffer.copy_selection()
-        self.application.application.clipboard.set_data(clipboard_data)
+        self.application.set_system_clipboard_data(clipboard_data)
 
     def copy_input_selection(self):
         """Copy highlighted input text to the system clipboard."""
         clipboard_data = self.pw_ptpython_repl.default_buffer.copy_selection()
-        self.application.application.clipboard.set_data(clipboard_data)
+        self.application.set_system_clipboard_data(clipboard_data)
 
     def copy_all_output_text(self):
         """Copy all text in the Python output to the system clipboard."""
-        self.application.application.clipboard.set_text(
-            self.output_field.buffer.text
-        )
+        self.application.set_system_clipboard(self.output_field.buffer.text)
 
     def copy_all_input_text(self):
         """Copy all text in the Python input to the system clipboard."""
-        self.application.application.clipboard.set_text(
+        self.application.set_system_clipboard(
             self.pw_ptpython_repl.default_buffer.text
         )
 

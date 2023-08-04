@@ -14,6 +14,7 @@
 """ConsoleApp control class."""
 
 import asyncio
+import base64
 import builtins
 import functools
 import socketserver
@@ -21,13 +22,16 @@ import importlib.resources
 import logging
 import os
 from pathlib import Path
+import subprocess
 import sys
+import tempfile
 import time
 from threading import Thread
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 from jinja2 import Environment, DictLoader, make_logging_undefined
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
+from prompt_toolkit.clipboard import ClipboardData
 from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.application import Application
@@ -57,6 +61,7 @@ from ptpython.key_bindings import (  # type: ignore
     load_python_bindings,
     load_sidebar_bindings,
 )
+from pyperclip import PyperclipException  # type: ignore
 
 from pw_console.command_runner import CommandRunner, CommandRunnerItem
 from pw_console.console_log_server import (
@@ -503,6 +508,58 @@ class ConsoleApp:
             ),
         )
         return call_function
+
+    def set_system_clipboard_data(self, data: ClipboardData) -> str:
+        return self.set_system_clipboard(data.text)
+
+    def set_system_clipboard(self, text: str) -> str:
+        """Set the host system clipboard.
+
+        The following methods are attempted in order:
+
+        - The pyperclip package which uses various cross platform methods.
+        - Teminal OSC 52 escape sequence which works on some terminal emulators
+          such as: iTerm2 (MacOS), Alacritty, xterm.
+        - Tmux paste buffer via the load-buffer command. This only happens if
+          pw-console is running inside tmux. You can paste in tmux by pressing:
+          ctrl-b =
+        """
+        copied = False
+        copy_methods = []
+        try:
+            self.application.clipboard.set_text(text)
+
+            copied = True
+            copy_methods.append('system clipboard')
+        except PyperclipException:
+            pass
+
+        # Set the clipboard via terminal escape sequence.
+        b64_data = base64.b64encode(text.encode('utf-8'))
+        sys.stdout.write(f"\x1B]52;c;{b64_data.decode('utf-8')}\x07")
+        _LOG.debug('Clipboard set via teminal escape sequence')
+        copy_methods.append('teminal')
+        copied = True
+
+        if os.environ.get('TMUX'):
+            with tempfile.NamedTemporaryFile(
+                prefix='pw_console_clipboard_',
+                delete=True,
+            ) as clipboard_file:
+                clipboard_file.write(text.encode('utf-8'))
+                clipboard_file.flush()
+                subprocess.run(
+                    ['tmux', 'load-buffer', '-w', clipboard_file.name]
+                )
+                _LOG.debug('Clipboard set via tmux load-buffer')
+            copy_methods.append('tmux')
+            copied = True
+
+        message = ''
+        if copied:
+            message = 'Copied to: '
+            message += ', '.join(copy_methods)
+        return message
 
     def update_menu_items(self):
         self.menu_items = self._create_menu_items()

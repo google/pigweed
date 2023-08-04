@@ -166,9 +166,6 @@ class LogView:
         self.websocket_port = self.websocket_server.ws_server.sockets[
             0
         ].getsockname()[1]
-        self.log_pane.application.application.clipboard.set_text(
-            self.get_web_socket_url()
-        )
         self.websocket_running = True
         self.websocket_loop.run_forever()
 
@@ -964,9 +961,7 @@ class LogView:
         elif to_clipboard:
             if add_markdown_fence:
                 text_output = '```\n' + text_output + '```\n'
-            self.log_pane.application.application.clipboard.set_text(
-                text_output
-            )
+            self.log_pane.application.set_system_clipboard(text_output)
             _LOG.debug('Copied logs to clipboard.')
 
         return True

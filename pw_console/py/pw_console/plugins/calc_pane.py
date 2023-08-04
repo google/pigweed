@@ -196,10 +196,8 @@ class CalcPane(WindowPane):
     def copy_selected_output(self):
         """Copy highlighted text in the output_field to the system clipboard."""
         clipboard_data = self.output_field.buffer.copy_selection()
-        self.application.application.clipboard.set_data(clipboard_data)
+        self.application.set_system_clipboard_data(clipboard_data)
 
     def copy_all_output(self):
         """Copy all text in the output_field to the system clipboard."""
-        self.application.application.clipboard.set_text(
-            self.output_field.buffer.text
-        )
+        self.application.set_system_clipboard(self.output_field.buffer.text)

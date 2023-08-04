@@ -424,10 +424,11 @@ class LogPaneWebsocketDialog(ConditionalContainer):
         self._last_action_message = text
 
     def copy_url_to_clipboard(self) -> None:
-        self.log_pane.application.application.clipboard.set_text(
+        result_message = self.log_pane.application.set_system_clipboard(
             self.log_pane.log_view.get_web_socket_url()
         )
-        self._set_action_message('Copied!')
+        if result_message:
+            self._set_action_message(result_message)
 
     def get_message_fragments(self):
         """Return FormattedText with the last action message."""

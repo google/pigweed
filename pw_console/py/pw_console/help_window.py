@@ -227,9 +227,7 @@ class HelpWindow(ConditionalContainer):
 
     def copy_all_text(self):
         """Copy all text in the Python input to the system clipboard."""
-        self.application.application.clipboard.set_text(
-            self.help_text_area.buffer.text
-        )
+        self.application.set_system_clipboard(self.help_text_area.buffer.text)
 
     def toggle_display(self):
         """Toggle visibility of this help window."""
