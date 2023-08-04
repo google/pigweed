@@ -5,7 +5,7 @@ Guides
 ======
 .. pigweed-module-subpage::
    :name: pw_tokenizer
-   :tagline: Cut your log sizes in half
+   :tagline: Compress strings to shrink logs by +75%
 
 .. _module-pw_tokenizer-get-started:
 

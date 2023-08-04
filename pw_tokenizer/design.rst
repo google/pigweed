@@ -5,7 +5,7 @@ Design
 ======
 .. pigweed-module-subpage::
    :name: pw_tokenizer
-   :tagline: Cut your log sizes in half
+   :tagline: Compress strings to shrink logs by +75%
 
 There are two sides to ``pw_tokenizer``, which we call tokenization and
 detokenization.
