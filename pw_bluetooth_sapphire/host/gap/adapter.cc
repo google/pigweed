@@ -840,7 +840,7 @@ void AdapterImpl::InitializeStep2() {
         }
       });
 
-  if (state_.features.HasBit(0u, hci_spec::LMPFeature::kSecureSimplePairing)) {
+  if (state_.features.HasBit(0u, hci_spec::LMPFeature::kSecureSimplePairingControllerSupport)) {
     // HCI_Write_Simple_Pairing_Mode
     auto write_spm =
         hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WriteSimplePairingModeCommandWriter>(
@@ -1070,7 +1070,8 @@ void AdapterImpl::InitializeStep4() {
 
     bredr_connection_manager_ = std::make_unique<BrEdrConnectionManager>(
         hci_, &peer_cache_, local_bredr_address, l2cap_.get(),
-        state_.features.HasBit(0, hci_spec::LMPFeature::kInterlacedPageScan));
+        state_.features.HasBit(/*page=*/0, hci_spec::LMPFeature::kInterlacedPageScan),
+        state_.IsLocalSecureConnectionsSupported());
     bredr_connection_manager_->AttachInspect(adapter_node_, kInspectBrEdrConnectionManagerNodeName);
 
     pw::bluetooth::emboss::InquiryMode mode = pw::bluetooth::emboss::InquiryMode::STANDARD;
@@ -1090,8 +1091,8 @@ void AdapterImpl::InitializeStep4() {
     bredr_ = std::make_unique<BrEdrImpl>(this);
   }
 
-  // Override the current privacy setting and always use the local stable identity address (i.e. not
-  // a RPA) when initiating connections. This improves interoperability with certain Bluetooth
+  // Override the current privacy setting and always use the local stable identity address (i.e.
+  // not a RPA) when initiating connections. This improves interoperability with certain Bluetooth
   // peripherals that fail to authenticate following a RPA rotation.
   //
   // The implication here is that the public address is revealed in LL connection request PDUs. LE

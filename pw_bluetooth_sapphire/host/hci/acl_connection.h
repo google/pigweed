@@ -41,6 +41,10 @@ class AclConnection : public Connection {
   // The current long term key of the connection.
   const std::optional<hci_spec::LinkKey>& ltk() const { return ltk_; }
 
+  void set_use_secure_connections(bool use_secure_connections) {
+    use_secure_connections_ = use_secure_connections;
+  }
+
  protected:
   AclConnection(hci_spec::ConnectionHandle handle, const DeviceAddress& local_address,
                 const DeviceAddress& peer_address, pw::bluetooth::emboss::ConnectionRole role,
@@ -69,6 +73,10 @@ class AclConnection : public Connection {
 
   // This connection's current link key.
   std::optional<hci_spec::LinkKey> ltk_;
+
+  // Flag indicating if peer and local Secure Connections support are both present. Set in
+  // OnLinkKeyNotification in PairingState
+  bool use_secure_connections_ = false;
 
   pw::bluetooth::emboss::ConnectionRole role_;
 

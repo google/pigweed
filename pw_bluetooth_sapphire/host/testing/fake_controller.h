@@ -754,7 +754,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   uint8_t bredr_scan_state_;
   pw::bluetooth::emboss::PageScanType page_scan_type_ =
       pw::bluetooth::emboss::PageScanType::STANDARD_SCAN;
-  uint16_t page_scan_interval_ = 0x800;
+  uint16_t page_scan_interval_ = 0x0800;
   uint16_t page_scan_window_ = 0x0012;
 
   // The GAP local name, as written/read by HCI_(Read/Write)_Local_Name. While the aforementioned

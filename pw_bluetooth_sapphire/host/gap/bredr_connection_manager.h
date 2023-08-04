@@ -66,7 +66,7 @@ class BrEdrConnectionManager final {
  public:
   BrEdrConnectionManager(hci::Transport::WeakPtr hci, PeerCache* peer_cache,
                          DeviceAddress local_address, l2cap::ChannelManager* l2cap,
-                         bool use_interlaced_scan);
+                         bool use_interlaced_scan, bool local_secure_connections_supported);
   ~BrEdrConnectionManager();
 
   // Set whether this host is connectable
@@ -328,6 +328,9 @@ class BrEdrConnectionManager final {
   uint16_t page_scan_window_;
   pw::bluetooth::emboss::PageScanType page_scan_type_;
   bool use_interlaced_scan_;
+
+  // True when local host and local controller support BR/EDR Secure Connections
+  bool local_secure_connections_supported_;
 
   // Outstanding connection requests based on remote peer ID.
   std::unordered_map<PeerId, BrEdrConnectionRequest> connection_requests_;

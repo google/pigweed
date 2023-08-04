@@ -84,18 +84,30 @@ CommandChannel::EventCallbackResult AclConnection::OnEncryptionChangeEvent(
   }
 
   if (state() != Connection::State::kConnected) {
-    bt_log(DEBUG, "hci", "encryption change ignored: connection closed");
+    bt_log(DEBUG, "hci", "encryption change ignored for closed connection");
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
   Result<> result = event.ToResult();
-  bool enabled = params.encryption_enabled().Read() != pw::bluetooth::emboss::EncryptionStatus::OFF;
+  pw::bluetooth::emboss::EncryptionStatus encryption_status = params.encryption_enabled().Read();
+  bool encryption_enabled = encryption_status != pw::bluetooth::emboss::EncryptionStatus::OFF;
 
-  bt_log(DEBUG, "hci", "encryption change (%s) %s", enabled ? "enabled" : "disabled",
+  bt_log(DEBUG, "hci", "encryption change (%s) %s", encryption_enabled ? "enabled" : "disabled",
          bt_str(result));
 
-  HandleEncryptionStatus(result.is_ok() ? Result<bool>(fit::ok(enabled)) : result.take_error(),
-                         /*key_refreshed=*/false);
+  // If peer and local Secure Connections support are present, the pairing logic needs to verify
+  // that the status received in the Encryption Changed event is for AES encryption.
+  if (use_secure_connections_ &&
+      encryption_status != pw::bluetooth::emboss::EncryptionStatus::ON_WITH_AES_FOR_BREDR) {
+    bt_log(DEBUG, "hci", "BR/EDR Secure Connection must use AES encryption. Closing connection...");
+    HandleEncryptionStatus(fit::error(Error(HostError::kInsufficientSecurity)),
+                           /*key_refreshed=*/false);
+    return CommandChannel::EventCallbackResult::kContinue;
+  }
+
+  HandleEncryptionStatus(
+      result.is_ok() ? Result<bool>(fit::ok(encryption_enabled)) : result.take_error(),
+      /*key_refreshed=*/false);
   return CommandChannel::EventCallbackResult::kContinue;
 }
 
@@ -117,7 +129,7 @@ CommandChannel::EventCallbackResult AclConnection::OnEncryptionKeyRefreshComplet
   }
 
   if (state() != Connection::State::kConnected) {
-    bt_log(DEBUG, "hci", "encryption key refresh ignored: connection closed");
+    bt_log(DEBUG, "hci", "encryption key refresh ignored for closed connection");
     return CommandChannel::EventCallbackResult::kContinue;
   }
 

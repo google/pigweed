@@ -38,8 +38,11 @@ const uint32_t kTestPasskey = 123456;
 const auto kTestLinkKeyValue = UInt128{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
 const hci_spec::LinkKey kTestLinkKey(kTestLinkKeyValue, 0, 0);
-const auto kTestUnauthenticatedLinkKeyType = hci_spec::LinkKeyType::kUnauthenticatedCombination192;
-const auto kTestAuthenticatedLinkKeyType = hci_spec::LinkKeyType::kAuthenticatedCombination192;
+const auto kTestUnauthenticatedLinkKeyType192 =
+    hci_spec::LinkKeyType::kUnauthenticatedCombination192;
+const auto kTestAuthenticatedLinkKeyType192 = hci_spec::LinkKeyType::kAuthenticatedCombination192;
+const auto kTestUnauthenticatedLinkKeyType256 =
+    hci_spec::LinkKeyType::kUnauthenticatedCombination256;
 const auto kTestLegacyLinkKeyType = hci_spec::LinkKeyType::kCombination;
 const auto kTestChangedLinkKeyType = hci_spec::LinkKeyType::kChangedCombination;
 const BrEdrSecurityRequirements kNoSecurityRequirements{.authentication = false,
@@ -332,7 +335,7 @@ TEST_F(PairingStateTest, PeerMayChangeLinkKeyWhenInIdleState) {
 
   PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
-  connection()->set_link_key(hci_spec::LinkKey(UInt128(), 0, 0), kTestAuthenticatedLinkKeyType);
+  connection()->set_link_key(hci_spec::LinkKey(UInt128(), 0, 0), kTestAuthenticatedLinkKeyType192);
 
   pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestChangedLinkKeyType);
 
@@ -351,7 +354,7 @@ void AdvanceToEncryptionAsInitiator(PairingState* pairing_state) {
   pairing_state->OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state->OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
   pairing_state->OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
-  pairing_state->OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
+  pairing_state->OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType192);
   pairing_state->OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
 }
 
@@ -483,7 +486,7 @@ TEST_F(PairingStateTest, InitiatingPairingOnResponderWaitsForPairingToFinish) {
 
   // Keep advancing state machine.
   pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
-  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType192);
 
   EXPECT_FALSE(pairing_state.initiator());
   ASSERT_EQ(0, status_handler.call_count());
@@ -521,7 +524,7 @@ TEST_F(PairingStateTest, UnresolvedPairingCallbackIsCalledOnDestruction) {
 
     // Keep advancing state machine.
     pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
-    pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
+    pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType192);
 
     // as pairing_state falls out of scope, we expect additional pairing callbacks to be called
     ASSERT_EQ(0, overall_status.call_count());
@@ -597,9 +600,8 @@ TEST_F(PairingStateTest, UnexpectedLinkKeyAuthenticationRaisesError) {
   pairing_state.OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
   pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
 
-  // Provide an authenticated link key when this should have resulted in an
-  // unauthenticated link key.
-  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestAuthenticatedLinkKeyType);
+  // Provide an authenticated link key when this should have resulted in an unauthenticated link key
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestAuthenticatedLinkKeyType192);
 
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.handle());
@@ -649,11 +651,78 @@ TEST_F(PairingStateTest, PairingSetsConnectionLinkKey) {
   pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   ASSERT_FALSE(connection()->ltk());
-  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType192);
   ASSERT_TRUE(connection()->ltk());
   EXPECT_EQ(kTestLinkKeyValue, connection()->ltk()->value());
 
   EXPECT_EQ(0, status_handler.call_count());
+}
+
+TEST_F(PairingStateTest, SecureConnectionsRequiresSecureConnectionsLinkKeySuccess) {
+  TestStatusHandler status_handler;
+
+  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
+                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  NoOpPairingDelegate pairing_delegate(sm::IOCapability::kDisplayOnly);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Set peer lmp_features: Secure Connections (Host Support)
+  peer()->SetFeaturePage(
+      1u, static_cast<uint64_t>(hci_spec::LMPFeature::kSecureConnectionsHostSupport));
+
+  // Set peer lmp_features: Secure Connections (Controller Support)
+  peer()->SetFeaturePage(
+      2u, static_cast<uint64_t>(hci_spec::LMPFeature::kSecureConnectionsControllerSupport));
+
+  // Advance state machine.
+  pairing_state.OnIoCapabilityResponse(IoCapability::DISPLAY_YES_NO);
+  ASSERT_FALSE(pairing_state.initiator());
+  static_cast<void>(pairing_state.OnIoCapabilityRequest());
+  pairing_state.OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
+  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+
+  // Ensure that P-256 authenticated link key was provided
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType256,
+                                      /*local_secure_connections_supported=*/true);
+
+  ASSERT_TRUE(connection()->ltk());
+  EXPECT_EQ(kTestLinkKeyValue, connection()->ltk()->value());
+
+  EXPECT_EQ(0, status_handler.call_count());
+}
+
+TEST_F(PairingStateTest, SecureConnectionsRequiresSecureConnectionsLinkKeyFail) {
+  TestStatusHandler status_handler;
+
+  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
+                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  NoOpPairingDelegate pairing_delegate(sm::IOCapability::kDisplayOnly);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Set peer lmp_features: Secure Connections (Host Support)
+  peer()->SetFeaturePage(
+      1u, static_cast<uint64_t>(hci_spec::LMPFeature::kSecureConnectionsHostSupport));
+
+  // Set peer lmp_features: Secure Connections (Controller Support)
+  peer()->SetFeaturePage(
+      2u, static_cast<uint64_t>(hci_spec::LMPFeature::kSecureConnectionsControllerSupport));
+
+  // Advance state machine.
+  pairing_state.OnIoCapabilityResponse(IoCapability::DISPLAY_YES_NO);
+  ASSERT_FALSE(pairing_state.initiator());
+  static_cast<void>(pairing_state.OnIoCapabilityRequest());
+  pairing_state.OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
+  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+
+  // Provide P-192 authenticated link key when this should have resulted in an P-256 link key
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType192,
+                                      /*local_secure_connections_supported=*/true);
+
+  EXPECT_EQ(1, status_handler.call_count());
+  ASSERT_TRUE(status_handler.handle());
+  EXPECT_EQ(kTestHandle, *status_handler.handle());
+  ASSERT_TRUE(status_handler.status());
+  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity), *status_handler.status());
 }
 
 TEST_F(PairingStateTest, NumericComparisonPairingComparesPasskeyOnInitiatorDisplayYesNoSide) {
@@ -1070,7 +1139,7 @@ void SimplePairingComplete(PairingState* pairing_state) {
   pairing_state->OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
 }
 void LinkKeyNotification(PairingState* pairing_state) {
-  pairing_state->OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
+  pairing_state->OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType192);
 }
 void AuthenticationComplete(PairingState* pairing_state) {
   pairing_state->OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
@@ -1173,7 +1242,7 @@ TEST_P(HandlesEvent, InInitiatorWaitIoCapRequest) {
 
 TEST_P(HandlesEvent, InInitiatorWaitAuthCompleteSkippingSimplePairing) {
   peer()->MutBrEdr().SetBondData(
-      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType), kTestLinkKey));
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey));
 
   // Advance state machine.
   pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
@@ -1404,7 +1473,7 @@ TEST_P(HandlesEvent, InInitiatorWaitAuthCompleteStateAfterSimplePairing) {
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
   pairing_state().OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
-  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
+  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType192);
   ASSERT_TRUE(pairing_state().initiator());
   EXPECT_EQ(0, connection()->start_encryption_count());
 
@@ -1427,7 +1496,7 @@ TEST_P(HandlesEvent, InWaitEncryptionStateAsInitiator) {
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
   pairing_state().OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
-  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
+  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType192);
   pairing_state().OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
   ASSERT_TRUE(pairing_state().initiator());
 
@@ -1450,7 +1519,7 @@ TEST_P(HandlesEvent, InWaitEncryptionStateAsResponder) {
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
   pairing_state().OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
-  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
+  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType192);
   ASSERT_FALSE(pairing_state().initiator());
 
   RETURN_IF_FATAL(InjectEvent());
@@ -1469,7 +1538,7 @@ TEST_P(HandlesEvent, InWaitEncryptionStateAsResponder) {
 TEST_P(HandlesEvent, InWaitEncryptionStateAsResponderForBonded) {
   // We are previously bonded.
   auto existing_link_key =
-      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType), kTestLinkKey);
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey);
   peer()->MutBrEdr().SetBondData(existing_link_key);
 
   // Advance state machine.
@@ -1498,7 +1567,7 @@ TEST_P(HandlesEvent, InIdleStateAfterOnePairing) {
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
   pairing_state().OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
-  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
+  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType192);
   pairing_state().OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
   ASSERT_TRUE(pairing_state().initiator());
 
@@ -1546,7 +1615,7 @@ TEST_P(HandlesEvent, InFailedStateAfterAuthenticationFailed) {
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
   pairing_state().OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
-  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
+  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType192);
 
   // Inject failure status.
   pairing_state().OnAuthenticationComplete(
@@ -1784,7 +1853,7 @@ TEST_F(PairingStateTest, SkipPairingIfExistingKeyMeetsSecurityRequirements) {
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
-  connection()->set_link_key(kTestLinkKey, kTestAuthenticatedLinkKeyType);
+  connection()->set_link_key(kTestLinkKey, kTestAuthenticatedLinkKeyType192);
 
   constexpr BrEdrSecurityRequirements kSecurityRequirements{.authentication = true,
                                                             .secure_connections = false};
@@ -1811,7 +1880,7 @@ TEST_F(PairingStateTest,
   pairing_state.InitiatePairing(security, status_handler.MakeStatusCallback());
 
   peer()->MutBrEdr().SetBondData(
-      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType), kTestLinkKey));
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey));
 
   EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
   EXPECT_EQ(0, status_handler.call_count());
@@ -1828,7 +1897,7 @@ TEST_F(PairingStateTest, InitiatorNoSecurityRequirementsCausesOnLinkKeyRequestTo
   pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
 
   peer()->MutBrEdr().SetBondData(
-      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType), kTestLinkKey));
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey));
   EXPECT_FALSE(connection()->ltk().has_value());
 
   auto reply_key = pairing_state.OnLinkKeyRequest();
@@ -1862,7 +1931,7 @@ TEST_F(PairingStateTest, IdleStateOnLinkKeyRequestReturnsLinkKeyWhenBondDataExis
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   peer()->MutBrEdr().SetBondData(
-      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType), kTestLinkKey));
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey));
   EXPECT_FALSE(connection()->ltk().has_value());
 
   auto reply_key = pairing_state.OnLinkKeyRequest();
@@ -1950,7 +2019,7 @@ TEST_F(PairingStateTest,
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   auto existing_link_key =
-      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType), kTestLinkKey);
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey);
 
   peer()->MutBrEdr().SetBondData(existing_link_key);
   EXPECT_FALSE(connection()->ltk().has_value());
@@ -2011,7 +2080,7 @@ TEST_F(PairingStateTest, ResponderSignalsCompletionOfPairing) {
   EXPECT_FALSE(pairing_state.initiator());
 
   auto existing_link_key =
-      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType), kTestLinkKey);
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey);
 
   peer()->MutBrEdr().SetBondData(existing_link_key);
   EXPECT_FALSE(connection()->ltk().has_value());
@@ -2052,7 +2121,7 @@ TEST_F(PairingStateTest,
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   auto existing_link_key =
-      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType), kTestLinkKey);
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey);
 
   peer()->MutBrEdr().SetBondData(existing_link_key);
   EXPECT_FALSE(connection()->ltk().has_value());
@@ -2101,7 +2170,7 @@ TEST_F(PairingStateTest,
   const auto new_link_key_value = UInt128{0xC0, 0xDE, 0xFA, 0xCE, 0x00, 0x00, 0x00, 0x00,
                                           0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04};
 
-  pairing_state.OnLinkKeyNotification(new_link_key_value, kTestUnauthenticatedLinkKeyType);
+  pairing_state.OnLinkKeyNotification(new_link_key_value, kTestUnauthenticatedLinkKeyType192);
   pairing_state.OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
   // then we request encryption, which when it finishes, completes pairing.
   ASSERT_EQ(1, connection()->start_encryption_count());
@@ -2237,7 +2306,7 @@ TEST_F(PairingStateTest, InitiatingPairingDuringAuthenticationWithExistingUnauth
   pairing_state.SetPairingDelegate(fake_pairing_delegate.GetWeakPtr());
 
   peer()->MutBrEdr().SetBondData(
-      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType), kTestLinkKey));
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey));
 
   TestStatusHandler initiator_status_handler_0;
   pairing_state.InitiatePairing(kNoSecurityRequirements,
@@ -2285,7 +2354,7 @@ TEST_F(PairingStateTest, InitiatingPairingDuringAuthenticationWithExistingUnauth
   EXPECT_TRUE(confirmed);
 
   pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
-  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestAuthenticatedLinkKeyType);
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestAuthenticatedLinkKeyType192);
   pairing_state.OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
   EXPECT_EQ(2, connection()->start_encryption_count());
 

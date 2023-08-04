@@ -246,7 +246,8 @@ class PairingState final {
   [[nodiscard]] std::optional<hci_spec::LinkKey> OnLinkKeyRequest();
 
   // Caller is not expected to send a response.
-  void OnLinkKeyNotification(const UInt128& link_key, hci_spec::LinkKeyType key_type);
+  void OnLinkKeyNotification(const UInt128& link_key, hci_spec::LinkKeyType key_type,
+                             bool local_secure_connections_supported = false);
 
   // Caller is not expected to send a response.
   void OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode status_code);
@@ -397,6 +398,9 @@ class PairingState final {
   // Compute the expected pairing event and state to occur after receiving the peer IO Capability
   // and write it to |current_pairing_| (which must exist).
   void WritePairingData();
+
+  // Returns true when the peer's host and peer's controller support Secure Connections
+  bool IsPeerSecureConnectionsSupported() const;
 
   PeerId peer_id_;
   Peer::WeakPtr peer_;

@@ -23,7 +23,7 @@ namespace bt::hci_spec {
 // Bitmask values for the 8-octet Local Supported LMP Features bit-field. See
 // Core Specv5.0, Volume 2, Part C, Section 3.3 "Feature Mask Definition".
 enum class LMPFeature : uint64_t {
-  // Octet 0
+  // Extended features (Page 0): Octet 0
   k3SlotPackets   = (1 << 0),
   k5SlotPackets   = (1 << 1),
   kEncryption     = (1 << 2),
@@ -33,14 +33,27 @@ enum class LMPFeature : uint64_t {
   kHoldMode       = (1 << 6),
   kSniffMode      = (1 << 7),
 
-  // Octet 1
-  // Reserved (1 << 0 + 8)
-  // TODO(armansito): Add definitions
+  // Extended features (Page 0): Octet 1
+  // kPreviouslyUsed               = (1ull << 8),
+  kPowerControlRequests         = (1ull << 9),
+  kChannelQualityDrivenDataRate = (1ull << 10),
+  kSCOLink                      = (1ull << 11),
+  kHV2Packets                   = (1ull << 12),
+  kHV3Packets                   = (1ull << 13),
+  kmLawLogSynchronousData       = (1ull << 14),
+  kALawLogSynchronousData       = (1ull << 15),
 
-  // Octet 2
-  // TODO(armansito): Add definitions
+  // Extended features (Page 0): Octet 2
+  kCVSDSynchronousData        = (1ull << 16),
+  kPagingParameterNegotiation = (1ull << 17),
+  kPowerControl               = (1ull << 18),
+  kTransparentSynchronousData = (1ull << 19),
+  kFCLLeastSignificantBit     = (1ull << 20),
+  kFCLMiddleBit               = (1ull << 21),
+  kFCLMostSignificantBit      = (1ull << 22),
+  kBroadcastEncryption        = (1ull << 23),
 
-  // Octet 3
+  // Extended features (Page 0): Octet 3
   // Reserved (1ull << 24)
   kEDRACL2MbitMode        = (1ull << 25),
   kEDRACL3MbitMode        = (1ull << 26),
@@ -50,32 +63,39 @@ enum class LMPFeature : uint64_t {
   kRSSIwithInquiryResults = (1ull << 30),
   kEV3Packets             = (1ull << 31),
 
-  // Octet 4
-  kEV4Packets              = (1ull << 32),
-  kEV5Packets              = (1ull << 33),
+  // Extended features (Page 0): Octet 4
+  kEV4Packets                  = (1ull << 32),
+  kEV5Packets                  = (1ull << 33),
   // Reserved
-  kAFHCapablePeripheral    = (1ull << 35),
-  kAFHClassPeripheral      = (1ull << 36),
-  kBREDRNotSupported       = (1ull << 37),
-  kLESupported             = (1ull << 38),
-  k3SlotEDRACLPackets      = (1ull << 39),
+  kAFHCapablePeripheral        = (1ull << 35),
+  kAFHClassificationPeripheral = (1ull << 36),
+  kBREDRNotSupported           = (1ull << 37),
+  kLESupportedController       = (1ull << 38),
+  k3SlotEDRACLPackets          = (1ull << 39),
 
-  // Octet 5
-  // TODO(armansito): Add definitions
+  // Extended features (Page 0): Octet 5
+  k5SlotEDRACLPackets       = (1ull << 40),
+  kSniffSubrating           = (1ull << 41),
+  kPauseEncryption          = (1ull << 42),
+  kAFHCapableCentral        = (1ull << 43),
+  kAFHClassificationCentral = (1ull << 44),
+  kEDReSCO2MbitMode         = (1ull << 45),
+  kEDReSCO3MbitMode         = (1ull << 46),
+  k3SlotEDReSCOPackets      = (1ull << 47),
 
-  // Octet 6
-  kExtendedInquiryResponse        = (1ull << 48),
-  kSimultaneousLEAndBREDR         = (1ull << 49),
+  // Extended features (Page 0): Octet 6
+  kExtendedInquiryResponse              = (1ull << 48),
+  kSimultaneousLEAndBREDR               = (1ull << 49),
   // Reserved
-  kSecureSimplePairing            = (1ull << 51),
-  kEncapsulatedPDU                = (1ull << 52),
-  kErroneousDataReporting         = (1ull << 53),
-  kNonflushablePacketBoundaryFlag = (1ull << 54),
-  // Reerved
+  kSecureSimplePairingControllerSupport = (1ull << 51),
+  kEncapsulatedPDU                      = (1ull << 52),
+  kErroneousDataReporting               = (1ull << 53),
+  kNonflushablePacketBoundaryFlag       = (1ull << 54),
+  // Reserved
 
-  // Octet 7
+  // Extended features (Page 0): Octet 7
   kLinkSupervisionTimeoutChangedEvent = (1ull << 56),
-  kInquiryTxPowerLevel                = (1ull << 57),
+  kVariableInquiryTxPowerLevel        = (1ull << 57),
   kEnhancedPowerControl               = (1ull << 58),
   // Reserved
   // Reserved
@@ -83,14 +103,27 @@ enum class LMPFeature : uint64_t {
   // Reserved
   kExtendedFeatures                   = (1ull << 63),
 
-  // Extended features (Page 1)
+  // Extended features (Page 1): Octet 0
   kSecureSimplePairingHostSupport = (1ull << 0),
   kLESupportedHost                = (1ull << 1),
   kSimultaneousLEAndBREDRHost     = (1ull << 2),
-  kSecureConnectionsHost          = (1ull << 3),
+  kSecureConnectionsHostSupport   = (1ull << 3),
 
-  // Extended features (Page 2)
-  // TODO(armansito): Add definitions
+  // Extended features (Page 2): Octet 0
+  kCPBTransmitterOperation          = (1ull << 0),
+  kCPBReceiverOperation             = (1ull << 1),
+  kSynchronizationTrain             = (1ull << 2),
+  kSynchronizationScan              = (1ull << 3),
+  kInquiryResponseNotificationEvent = (1ull << 4),
+  kGeneralizedInterlacedScan        = (1ull << 5),
+  kCoarseClockAdjustment            = (1ull << 6),
+  // Reserved
+
+  // Extended features (Page 2): Octet 1
+  kSecureConnectionsControllerSupport = (1ull << 8),
+  kPing                               = (1ull << 9),
+  kSlotAvailabilityMask               = (1ull << 10),
+  kTrainNudging                       = (1ull << 11)
 };
 
 // Bitmask values for the 64-octet Supported Commands bit-field. See Core Spec

@@ -42,7 +42,12 @@ struct AdapterState final {
   }
 
   inline bool IsLowEnergySupported() const {
-    return features.HasBit(0u, hci_spec::LMPFeature::kLESupported);
+    return features.HasBit(0u, hci_spec::LMPFeature::kLESupportedHost);
+  }
+
+  inline bool IsLocalSecureConnectionsSupported() const {
+    return features.HasBit(1u, hci_spec::LMPFeature::kSecureConnectionsHostSupport) &&
+           features.HasBit(2u, hci_spec::LMPFeature::kSecureConnectionsControllerSupport);
   }
 
   // Returns true if |command_bit| in the given |octet| is set in the supported

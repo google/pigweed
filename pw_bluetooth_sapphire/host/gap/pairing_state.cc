@@ -360,7 +360,8 @@ std::optional<hci_spec::LinkKey> PairingState::OnLinkKeyRequest() {
   return std::nullopt;
 }
 
-void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::LinkKeyType key_type) {
+void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::LinkKeyType key_type,
+                                         bool local_secure_connections_supported) {
   // TODO(fxbug.dev/36360): We assume the controller is never in pairing debug mode because it's a
   // security hazard to pair and bond using Debug Combination link keys.
   BT_ASSERT_MSG(key_type != hci_spec::LinkKeyType::kDebugCombination,
@@ -417,6 +418,26 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::Link
     SignalStatus(ToResult(HostError::kInsufficientSecurity),
                  "OnLinkKeyNotification with incorrect link authorization");
     return;
+  }
+
+  // If peer and local Secure Connections support are present, the pairing logic needs to verify
+  // that the Link Key Type received in the Link Key Notification event is one of the Secure
+  // Connections types (0x07 and 0x08).
+  //
+  // Core Spec v5.2 Vol 4, Part E, 7.7.24: The values 0x07 and 0x08 shall only be used when the Host
+  // has indicated support for Secure Connections in the Secure_Connections_Host_Support parameter.
+  if (IsPeerSecureConnectionsSupported() && local_secure_connections_supported) {
+    if (!sec_props.secure_connections()) {
+      bt_log(WARN, "gap-bredr",
+             "Link Key Type must be a Secure Connections key type;"
+             " Received type: %hhu (handle: %#.4x, id: %s)",
+             static_cast<unsigned char>(key_type), handle(), bt_str(peer_id()));
+      state_ = State::kFailed;
+      SignalStatus(ToResult(HostError::kInsufficientSecurity),
+                   "OnLinkKeyNotification requires Secure Connections");
+      return;
+    }
+    link_->set_use_secure_connections(true);
   }
 
   link_->set_link_key(hci_spec::LinkKey(link_key, 0, 0), key_type);
@@ -688,6 +709,13 @@ void PairingState::FailWithUnexpectedEvent(const char* handler_name) {
          bt_str(peer_id()), handler_name, ToString(state()));
   state_ = State::kFailed;
   SignalStatus(ToResult(HostError::kNotSupported), __func__);
+}
+
+bool PairingState::IsPeerSecureConnectionsSupported() const {
+  return peer_->features().HasBit(/*page=*/1,
+                                  hci_spec::LMPFeature::kSecureConnectionsHostSupport) &&
+         peer_->features().HasBit(/*page=*/2,
+                                  hci_spec::LMPFeature::kSecureConnectionsControllerSupport);
 }
 
 PairingAction GetInitiatorPairingAction(IoCapability initiator_cap, IoCapability responder_cap) {

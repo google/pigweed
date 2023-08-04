@@ -125,7 +125,7 @@ TEST_F(AdapterTest, InitializeFailureNoBufferInfo) {
 
   // Enable LE support.
   FakeController::Settings settings;
-  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupported);
+  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupportedHost);
   test_device()->set_settings(settings);
 
   InitializeAdapter(std::move(init_cb));
@@ -144,7 +144,7 @@ TEST_F(AdapterTest, InitializeNoBREDR) {
 
   // Enable LE support, disable BR/EDR
   FakeController::Settings settings;
-  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupported);
+  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupportedHost);
   settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kBREDRNotSupported);
   settings.le_acl_data_packet_length = 5;
   settings.le_total_num_acl_data_packets = 1;
@@ -217,7 +217,7 @@ TEST_F(AdapterTest, InitializeSuccess) {
   // Return valid buffer information and enable LE support. (This should
   // succeed).
   FakeController::Settings settings;
-  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupported);
+  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupportedHost);
   settings.le_acl_data_packet_length = 5;
   settings.le_total_num_acl_data_packets = 1;
   test_device()->set_settings(settings);
@@ -1006,7 +1006,7 @@ TEST_F(AdapterTest, InspectHierarchy) {
   // succeed).
   FakeController::Settings settings;
   settings.AddBREDRSupportedCommands();
-  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupported);
+  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupportedHost);
   settings.le_acl_data_packet_length = 5;
   settings.le_total_num_acl_data_packets = 1;
   settings.synchronous_data_packet_length = 6;
@@ -1228,7 +1228,7 @@ TEST_F(AdapterTest, BufferSizesRecordedInState) {
   // Enable ReadBuffer commands.
   settings.AddBREDRSupportedCommands();
   settings.AddLESupportedCommands();
-  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupported);
+  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupportedHost);
   settings.le_acl_data_packet_length = 1;
   settings.le_total_num_acl_data_packets = 2;
   settings.acl_data_packet_length = 3;
@@ -1251,7 +1251,7 @@ TEST_F(AdapterTest, ScoDataChannelInitializedSuccessfully) {
   // Return valid buffer information and enable LE support.
   FakeController::Settings settings;
   settings.AddBREDRSupportedCommands();
-  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupported);
+  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupportedHost);
   settings.le_acl_data_packet_length = 5;
   settings.le_total_num_acl_data_packets = 1;
   // Ensure SCO buffers are available.
@@ -1274,7 +1274,7 @@ TEST_F(AdapterTest, ScoDataChannelNotInitializedBecauseFlowControlNotSupported) 
   // Return valid buffer information and enable LE support.
   FakeController::Settings settings;
   settings.AddBREDRSupportedCommands();
-  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupported);
+  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupportedHost);
   constexpr size_t flow_control_command_byte = 10;
   constexpr uint8_t disable_flow_control_mask =
       ~static_cast<uint8_t>(hci_spec::SupportedCommand::kWriteSynchronousFlowControlEnable);
@@ -1297,7 +1297,7 @@ TEST_F(AdapterTest, ScoDataChannelNotInitializedBecauseBufferInfoNotAvailable) {
   // Return valid buffer information and enable LE support.
   FakeController::Settings settings;
   settings.AddBREDRSupportedCommands();
-  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupported);
+  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupportedHost);
   settings.le_acl_data_packet_length = 5;
   settings.le_total_num_acl_data_packets = 1;
   // Ensure SCO buffers are not available.
@@ -1320,7 +1320,7 @@ TEST_F(AdapterScoDisabledTest, ScoDataChannelFailsToInitializeBecauseScoDisabled
   // Return valid buffer information and enable LE support.
   FakeController::Settings settings;
   settings.AddBREDRSupportedCommands();
-  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupported);
+  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupportedHost);
   settings.le_acl_data_packet_length = 5;
   settings.le_total_num_acl_data_packets = 1;
   // Ensure SCO buffers are available.

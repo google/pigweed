@@ -139,7 +139,8 @@ hci::CommandChannel::EventHandlerId BrEdrConnectionManager::AddEventHandler(
 BrEdrConnectionManager::BrEdrConnectionManager(hci::Transport::WeakPtr hci, PeerCache* peer_cache,
                                                DeviceAddress local_address,
                                                l2cap::ChannelManager* l2cap,
-                                               bool use_interlaced_scan)
+                                               bool use_interlaced_scan,
+                                               bool local_secure_connections_supported)
     : hci_(std::move(hci)),
       cache_(peer_cache),
       local_address_(local_address),
@@ -147,6 +148,7 @@ BrEdrConnectionManager::BrEdrConnectionManager(hci::Transport::WeakPtr hci, Peer
       page_scan_interval_(0),
       page_scan_window_(0),
       use_interlaced_scan_(use_interlaced_scan),
+      local_secure_connections_supported_(local_secure_connections_supported),
       request_timeout_(kBrEdrCreateConnectionTimeout),
       dispatcher_(async_get_default_dispatcher()),
       weak_self_(this) {
@@ -1065,7 +1067,8 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnLinkKeyNotifi
     bt_log(WARN, "gap-bredr", "can't find current connection for ltk (peer: %s)", bt_str(peer_id));
   } else {
     handle->second->link().set_link_key(hci_key, key_type);
-    handle->second->pairing_state().OnLinkKeyNotification(key_value, key_type);
+    handle->second->pairing_state().OnLinkKeyNotification(key_value, key_type,
+                                                          local_secure_connections_supported_);
   }
 
   if (cache_->StoreBrEdrBond(addr, key)) {

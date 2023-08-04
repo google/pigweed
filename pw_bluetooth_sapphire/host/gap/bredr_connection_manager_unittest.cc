@@ -216,16 +216,15 @@ const auto kRemoteVersionInfoComplete =
 const auto kReadRemoteSupportedFeaturesRsp = COMMAND_STATUS_RSP(
     hci_spec::kReadRemoteSupportedFeatures, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
-const auto kReadRemoteSupportedFeaturesComplete =
-    StaticByteBuffer(hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode,
-                     0x0B,                                        // parameter_total_size (11 bytes)
-                     pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
-                     0xAA, 0x0B,                                  // connection_handle,
-                     0xFF, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x80
-                     // lmp_features
-                     // Set: 3 slot packets, 5 slot packets, Encryption, Timing Accuracy,
-                     // Role Switch, Hold Mode, Sniff Mode, LE Supported, Extended Features
-    );
+const auto kReadRemoteSupportedFeaturesComplete = StaticByteBuffer(
+    hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode,
+    0x0B,                                        // parameter_total_size (11 bytes)
+    pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
+    0xAA, 0x0B,                                  // connection_handle,
+    0xFF, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x80
+    // lmp_features_page0: 3 slot packets, 5 slot packets, Encryption, Slot Offset, Timing
+    // Accuracy, Role Switch, Hold Mode, Sniff Mode, LE Supported, Extended Features
+);
 
 const auto kReadRemoteExtended1 = StaticByteBuffer(LowerBits(hci_spec::kReadRemoteExtendedFeatures),
                                                    UpperBits(hci_spec::kReadRemoteExtendedFeatures),
@@ -243,11 +242,10 @@ const auto kReadRemoteExtended1Complete =
                      pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
                      0xAA, 0x0B,                                  // connection_handle,
                      0x01,                                        // page_number
-                     0x03,                                        // max_page_number (3 pages)
-                     0x0F, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00
-                     // lmp_features
-                     // Set: Secure Simple Pairing (Host Support), LE Supported (Host),
-                     //  SimultaneousLEAndBREDR, Secure Connections (Host Support)
+                     0x02,                                        // max_page_number
+                     0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+                     // lmp_features_page1: Secure Simple Pairing (Host Support), LE Supported
+                     // (Host), Previously Used, Secure Connections (Host Support)
     );
 
 const auto kReadRemoteExtended2 = StaticByteBuffer(LowerBits(hci_spec::kReadRemoteExtendedFeatures),
@@ -263,9 +261,9 @@ const auto kReadRemoteExtended2Complete =
                      pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
                      0xAA, 0x0B,                                  // connection_handle,
                      0x02,                                        // page_number
-                     0x03,                                        // max_page_number (3 pages)
+                     0x02,                                        // max_page_number
                      0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0xFF, 0x00
-                     // lmp_features  - All the bits should be ignored.
+                     // lmp_features_page2  - All the bits should be ignored.
     );
 
 const auto kDisconnect = testing::DisconnectPacket(kConnectionHandle);
@@ -452,11 +450,12 @@ const StaticByteBuffer kSetConnectionEncryption(LowerBits(hci_spec::kSetConnecti
 const auto kSetConnectionEncryptionRsp = COMMAND_STATUS_RSP(
     hci_spec::kSetConnectionEncryption, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
-const StaticByteBuffer kEncryptionChangeEvent(hci_spec::kEncryptionChangeEventCode,
-                                              4,           // parameter total size
-                                              0x00,        // status
-                                              0xAA, 0x0B,  // connection handle
-                                              0x01         // encryption enabled
+const StaticByteBuffer kEncryptionChangeEvent(
+    hci_spec::kEncryptionChangeEventCode,
+    4,           // parameter total size
+    0x00,        // status
+    0xAA, 0x0B,  // connection handle
+    0x01         // encryption enabled: E0 for BR/EDR or AES-CCM for LE
 );
 
 const StaticByteBuffer kReadEncryptionKeySize(LowerBits(hci_spec::kReadEncryptionKeySize),
@@ -575,7 +574,9 @@ class BrEdrConnectionManagerTest : public TestingBase {
                           &kWritePageTimeoutRsp);
 
     connection_manager_ = std::make_unique<BrEdrConnectionManager>(
-        transport()->GetWeakPtr(), peer_cache_.get(), kLocalDevAddr, l2cap_.get(), true);
+        transport()->GetWeakPtr(), peer_cache_.get(), kLocalDevAddr, l2cap_.get(),
+        /*use_interlaced_scan=*/true,
+        /*local_secure_connections_supported=*/true);
 
     RunLoopUntilIdle();
 
@@ -4116,6 +4117,185 @@ TEST_F(BrEdrConnectionManagerTest, RoleChangeDuringInboundConnectionProcedure) {
   EXPECT_EQ(conn_ref->link().role(), pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   QueueDisconnection(kConnectionHandle);
+}
+
+// Peer and local Secure Connections (SC) are supported and key is of SC type
+TEST_F(BrEdrConnectionManagerTest, SecureConnectionsSupportedCorrectLinkKeyTypeSucceeds) {
+  const auto kReadRemoteExtended1Complete =
+      StaticByteBuffer(hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode,
+                       0x0D,  // parameter_total_size (13 bytes)
+                       pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
+                       0xAA, 0x0B,                                  // connection_handle,
+                       0x01,                                        // page_number
+                       0x02,                                        // max_page_number
+                       0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+                       // lmp_features_page1: Secure Simple Pairing (Host Support), LE Supported
+                       // (Host), Previously Used, Secure Connections (Host Support)
+      );
+  const auto kReadRemoteExtended2Complete =
+      StaticByteBuffer(hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode,
+                       0x0D,  // parameter_total_size (13 bytes)
+                       pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
+                       0xAA, 0x0B,                                  // connection_handle,
+                       0x02,                                        // page_number
+                       0x02,                                        // max_page_number
+                       0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+                       // lmp_features_page2: Secure Connections (Controller Support)
+      );
+  const auto kLinkKeyNotification =
+      MakeLinkKeyNotification(hci_spec::LinkKeyType::kAuthenticatedCombination256);
+  const StaticByteBuffer kEncryptionChangeEvent(hci_spec::kEncryptionChangeEventCode,
+                                                4,           // parameter total size
+                                                0x00,        // status
+                                                0xAA, 0x0B,  // connection handle
+                                                0x02  // encryption enabled: AES-CCM for BR/EDR
+  );
+
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Trigger inbound connection and respond to interrogation. LMP features are set to support peer
+  // host and controller Secure Connections.
+  EXPECT_CMD_PACKET_OUT(test_device(), kAcceptConnectionRequest, &kAcceptConnectionRequestRsp,
+                        &kConnectionComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest, &kRemoteNameRequestRsp,
+                        &kRemoteNameRequestComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteVersionInfo, &kReadRemoteVersionInfoRsp,
+                        &kRemoteVersionInfoComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kReadRemoteSupportedFeatures,
+                        &kReadRemoteSupportedFeaturesRsp, &kReadRemoteSupportedFeaturesComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteExtended1, &kReadRemoteExtendedFeaturesRsp,
+                        &kReadRemoteExtended1Complete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteExtended2, &kReadRemoteExtendedFeaturesRsp,
+                        &kReadRemoteExtended2Complete);
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunLoopUntilIdle();
+
+  // Ensure that the interrogation has begun but the peer hasn't yet bonded
+  EXPECT_EQ(6, transaction_count());
+  auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(IsInitializing(peer));
+  ASSERT_FALSE(peer->bredr()->bonded());
+
+  // Approve pairing requests
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId, uint32_t passkey, auto method, auto confirm_cb) {
+        ASSERT_TRUE(confirm_cb);
+        confirm_cb(true);
+      });
+
+  pairing_delegate.SetCompletePairingCallback(
+      [](PeerId, sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
+
+  // Initiate pairing from the peer before interrogation completes
+  test_device()->SendCommandChannelPacket(MakeIoCapabilityResponse(
+      IoCapability::DISPLAY_YES_NO, AuthenticationRequirements::MITM_GENERAL_BONDING));
+  test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
+  const auto kUserConfirmationRequest = MakeUserConfirmationRequest(kPasskey);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      MakeIoCapabilityRequestReply(IoCapability::DISPLAY_YES_NO,
+                                   AuthenticationRequirements::MITM_GENERAL_BONDING),
+      &kIoCapabilityRequestReplyRsp, &kUserConfirmationRequest);
+  EXPECT_CMD_PACKET_OUT(test_device(), kUserConfirmationRequestReply,
+                        &kUserConfirmationRequestReplyRsp, &kSimplePairingCompleteSuccess,
+                        &kLinkKeyNotification);
+  EXPECT_CMD_PACKET_OUT(test_device(), kSetConnectionEncryption, &kSetConnectionEncryptionRsp,
+                        &kEncryptionChangeEvent);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySize, &kReadEncryptionKeySizeRsp);
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  EXPECT_TRUE(l2cap()->IsLinkConnected(kConnectionHandle));
+
+  QueueDisconnection(kConnectionHandle);
+}
+
+// Peer and local Secure Connections (SC) are supported, but key is not of SC type
+TEST_F(BrEdrConnectionManagerTest, SecureConnectionsSupportedIncorrectLinkKeyTypeFails) {
+  const auto kReadRemoteExtended1Complete =
+      StaticByteBuffer(hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode,
+                       0x0D,  // parameter_total_size (13 bytes)
+                       pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
+                       0xAA, 0x0B,                                  // connection_handle,
+                       0x01,                                        // page_number
+                       0x02,                                        // max_page_number
+                       0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+                       // lmp_features_page1: Secure Simple Pairing (Host Support), LE Supported
+                       // (Host), Previously Used, Secure Connections (Host Support)
+      );
+  const auto kReadRemoteExtended2Complete =
+      StaticByteBuffer(hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode,
+                       0x0D,  // parameter_total_size (13 bytes)
+                       pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
+                       0xAA, 0x0B,                                  // connection_handle,
+                       0x02,                                        // page_number
+                       0x02,                                        // max_page_number
+                       0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+                       // lmp_features_page2: Secure Connections (Controller Support)
+      );
+
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Trigger inbound connection and respond to interrogation. LMP features are set to support peer
+  // host and controller Secure Connections.
+  EXPECT_CMD_PACKET_OUT(test_device(), kAcceptConnectionRequest, &kAcceptConnectionRequestRsp,
+                        &kConnectionComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest, &kRemoteNameRequestRsp,
+                        &kRemoteNameRequestComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteVersionInfo, &kReadRemoteVersionInfoRsp,
+                        &kRemoteVersionInfoComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kReadRemoteSupportedFeatures,
+                        &kReadRemoteSupportedFeaturesRsp, &kReadRemoteSupportedFeaturesComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteExtended1, &kReadRemoteExtendedFeaturesRsp,
+                        &kReadRemoteExtended1Complete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteExtended2, &kReadRemoteExtendedFeaturesRsp,
+                        &kReadRemoteExtended2Complete);
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunLoopUntilIdle();
+
+  // Ensure that the interrogation has begun but the peer hasn't yet bonded
+  EXPECT_EQ(6, transaction_count());
+  auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(IsInitializing(peer));
+  ASSERT_FALSE(peer->bredr()->bonded());
+
+  // Approve pairing requests
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId, uint32_t passkey, auto method, auto confirm_cb) {
+        ASSERT_TRUE(confirm_cb);
+        confirm_cb(true);
+      });
+
+  pairing_delegate.SetCompletePairingCallback(
+      [](PeerId, sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
+
+  // Initiate pairing from the peer
+  test_device()->SendCommandChannelPacket(MakeIoCapabilityResponse(
+      IoCapability::DISPLAY_YES_NO, AuthenticationRequirements::MITM_GENERAL_BONDING));
+  test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
+  const auto kUserConfirmationRequest = MakeUserConfirmationRequest(kPasskey);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      MakeIoCapabilityRequestReply(IoCapability::DISPLAY_YES_NO,
+                                   AuthenticationRequirements::MITM_GENERAL_BONDING),
+      &kIoCapabilityRequestReplyRsp, &kUserConfirmationRequest);
+  EXPECT_CMD_PACKET_OUT(test_device(), kUserConfirmationRequestReply,
+                        &kUserConfirmationRequestReplyRsp, &kSimplePairingCompleteSuccess,
+                        &kLinkKeyNotification);
+
+  // Connection terminates because kLinkKeyNotification's key type is kAuthenticatedCombination192.
+  // When SC is supported, key type must be of SC type (kUnauthenticatedCombination256 or
+  // kAuthenticatedCombination256).
+  QueueDisconnection(kConnectionHandle);
+  RETURN_IF_FATAL(RunLoopUntilIdle());
 }
 
 #undef COMMAND_COMPLETE_RSP

@@ -4,6 +4,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 
+#include "pw_bluetooth/hci.emb.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/bredr_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connection.h"
@@ -34,6 +35,26 @@ const DataBufferInfo kLeBufferInfo(1024, 1);
 using bt::testing::CommandTransaction;
 
 using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
+
+const StaticByteBuffer kReadEncryptionKeySizeCommand =
+    StaticByteBuffer(0x08, 0x14,  // opcode: HCI_ReadEncryptionKeySize
+                     0x02,        // parameter size
+                     0x01, 0x00   // connection handle: 0x0001
+    );
+
+// HCI_Disconnect (handle: 0x0001, reason: RemoteUserTerminatedConnection)
+const StaticByteBuffer kDisconnectCommand(
+    0x06, 0x04,  // opcode: HCI_Disconnect
+    0x03,        // parameter total size
+    0x01, 0x00,  // handle: 1
+    pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
+
+// HCI_Disconnect (handle: 0x0001, reason: RemoteUserTerminatedConnection)
+const StaticByteBuffer kDisconnectCommandAuthFailure(
+    0x06, 0x04,  // opcode: HCI_Disconnect
+    0x03,        // parameter total size
+    0x01, 0x00,  // handle: 1
+    pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE);
 
 class ConnectionTest : public TestingBase {
  public:
@@ -130,11 +151,6 @@ TEST_F(ConnectionTest, AclLinkKeyAndTypeAccessors) {
 TEST_P(LinkTypeConnectionTest, Disconnect) {
   // clang-format off
 
-  // HCI_Disconnect (handle: 0x0001, reason: RemoteUserTerminatedConnection)
-  StaticByteBuffer req_bytes(
-      0x06, 0x04, 0x03, 0x01, 0x00,
-      pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
-
   // Respond with Command Status and Disconnection Complete.
   StaticByteBuffer cmd_status_bytes(
       hci_spec::kCommandStatusEventCode, 0x04, pw::bluetooth::emboss::StatusCode::SUCCESS, 1,
@@ -147,7 +163,7 @@ TEST_P(LinkTypeConnectionTest, Disconnect) {
 
   // clang-format on
 
-  EXPECT_CMD_PACKET_OUT(test_device(), req_bytes, &cmd_status_bytes, &disc_cmpl_bytes);
+  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommand, &cmd_status_bytes, &disc_cmpl_bytes);
 
   bool callback_called = false;
   test_device()->SetTransactionCallback([&callback_called] { callback_called = true; },
@@ -373,11 +389,6 @@ TEST_F(ConnectionTest, StartEncryptionSucceedsWithBrEdrLinkKeyType) {
 TEST_P(LinkTypeConnectionTest, DisconnectError) {
   // clang-format off
 
-  // HCI_Disconnect (handle: 0x0001, reason: RemoteUserTerminatedConnection)
-  StaticByteBuffer req_bytes(
-      0x06, 0x04, 0x03, 0x01, 0x00,
-      pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
-
   // Respond with Command Status and Disconnection Complete.
   StaticByteBuffer cmd_status_bytes(
       hci_spec::kCommandStatusEventCode, 0x04, pw::bluetooth::emboss::StatusCode::SUCCESS, 1,
@@ -390,7 +401,7 @@ TEST_P(LinkTypeConnectionTest, DisconnectError) {
 
   // clang-format on
 
-  EXPECT_CMD_PACKET_OUT(test_device(), req_bytes, &cmd_status_bytes, &disc_cmpl_bytes);
+  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommand, &cmd_status_bytes, &disc_cmpl_bytes);
 
   // The callback should get called regardless of the procedure status.
   bool callback_called = false;
@@ -571,25 +582,6 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeIgnoredEvents) {
   EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kTestHandle));
 }
 
-const StaticByteBuffer kEncryptionChangeEventEnabled(0x08,  // HCI Encryption Change event code
-                                                     4,     // parameter total size
-                                                     0x00,  // status
-                                                     0x01, 0x00,  // connection handle: 1
-                                                     0x01         // encryption enabled
-);
-
-const auto kReadEncryptionKeySizeCommand =
-    StaticByteBuffer(0x08, 0x14,  // opcode: HCI_ReadEncryptionKeySize
-                     0x02,        // parameter size
-                     0x01, 0x00   // connection handle: 0x0001
-    );
-
-const StaticByteBuffer kDisconnectCommand(0x06, 0x04,  // opcode: HCI_Disconnect
-                                          0x03,        // parameter total size
-                                          0x01, 0x00,  // handle: 1
-                                          0x05         // reason: authentication failure
-);
-
 TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
   // clang-format off
   StaticByteBuffer kEncryptionChangeEventDisabled(
@@ -634,7 +626,8 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
     EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySizeCommand, &kKeySizeComplete);
   }
 
-  test_device()->SendCommandChannelPacket(kEncryptionChangeEventEnabled);
+  test_device()->SendCommandChannelPacket(bt::testing::EncryptionChangeEventPacket(
+      pw::bluetooth::emboss::StatusCode::SUCCESS, kTestHandle, hci_spec::EncryptionStatus::kOn));
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, callback_count);
@@ -649,7 +642,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
   EXPECT_FALSE(result.value_or(true));
 
   // The host should disconnect the link if encryption fails.
-  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommand);
+  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommandAuthFailure);
   test_device()->SendCommandChannelPacket(kEncryptionChangeEventFailed);
   RunLoopUntilIdle();
 
@@ -666,7 +659,7 @@ TEST_F(ConnectionTest, EncryptionFailureNotifiesPeerDisconnectCallback) {
   });
 
   // Send the encryption change failure. The host should disconnect the link as a result.
-  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommand);
+  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommandAuthFailure);
   test_device()->SendCommandChannelPacket(bt::testing::EncryptionChangeEventPacket(
       pw::bluetooth::emboss::StatusCode::CONNECTION_TERMINATED_MIC_FAILURE, kTestHandle,
       hci_spec::EncryptionStatus::kOff));
@@ -702,8 +695,9 @@ TEST_F(ConnectionTest, AclEncryptionEnableCanNotReadKeySizeClosesLink) {
   });
 
   EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySizeCommand, &kKeySizeComplete);
-  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommand);
-  test_device()->SendCommandChannelPacket(kEncryptionChangeEventEnabled);
+  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommandAuthFailure);
+  test_device()->SendCommandChannelPacket(bt::testing::EncryptionChangeEventPacket(
+      pw::bluetooth::emboss::StatusCode::SUCCESS, kTestHandle, hci_spec::EncryptionStatus::kOn));
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, callback_count);
@@ -729,11 +723,75 @@ TEST_F(ConnectionTest, AclEncryptionEnableKeySizeOneByteClosesLink) {
   });
 
   EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySizeCommand, &kKeySizeComplete);
-  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommand);
-  test_device()->SendCommandChannelPacket(kEncryptionChangeEventEnabled);
+  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommandAuthFailure);
+  test_device()->SendCommandChannelPacket(bt::testing::EncryptionChangeEventPacket(
+      pw::bluetooth::emboss::StatusCode::SUCCESS, kTestHandle, hci_spec::EncryptionStatus::kOn));
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, callback_count);
+}
+
+TEST_F(ConnectionTest, SecureConnectionsSucceedsWithAESEncryptionAlgorithm) {
+  StaticByteBuffer kKeySizeComplete(0x0E,        // event code: Command Complete
+                                    0x07,        // parameters total size
+                                    0xFF,        // num command packets allowed (255)
+                                    0x08, 0x14,  // original opcode
+
+                                    // return parameters
+                                    0x00,        // status (success)
+                                    0x01, 0x00,  // connection handle: 0x0001
+                                    0x10         // encryption key size: 16
+  );
+
+  std::unique_ptr<BrEdrConnection> connection =
+      NewACLConnection(pw::bluetooth::emboss::ConnectionRole::CENTRAL, kTestHandle);
+
+  int callback_count = 0;
+  Result<bool> result = fit::error(Error(HostError::kFailed));
+  connection->set_encryption_change_callback([&](Result<bool> cb_result) {
+    callback_count++;
+    result = cb_result;
+  });
+
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySizeCommand, &kKeySizeComplete);
+  test_device()->SendCommandChannelPacket(bt::testing::EncryptionChangeEventPacket(
+      pw::bluetooth::emboss::StatusCode::SUCCESS, kTestHandle,
+      hci_spec::EncryptionStatus::kBredrSecureConnections));
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1, callback_count);
+  EXPECT_EQ(fit::ok(), result);
+  EXPECT_TRUE(result.value_or(false));
+
+  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommand);
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+}
+
+TEST_F(ConnectionTest, EncryptionSecureConnectionsWrongAlgorithmClosesLink) {
+  std::unique_ptr<BrEdrConnection> connection =
+      NewACLConnection(pw::bluetooth::emboss::ConnectionRole::CENTRAL, kTestHandle);
+
+  connection->set_use_secure_connections(true);
+
+  int callback_count = 0;
+  Result<bool> result = fit::error(Error(HostError::kFailed));
+  connection->set_encryption_change_callback([&](Result<bool> cb_result) {
+    ASSERT_TRUE(cb_result.is_error());
+    EXPECT_TRUE(cb_result.error_value().is(HostError::kInsufficientSecurity));
+    callback_count++;
+    result = cb_result;
+  });
+
+  // The host should disconnect the link if encryption fails.
+  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommandAuthFailure);
+  test_device()->SendCommandChannelPacket(bt::testing::EncryptionChangeEventPacket(
+      pw::bluetooth::emboss::StatusCode::SUCCESS, kTestHandle, hci_spec::EncryptionStatus::kOn));
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1, callback_count);
+  EXPECT_TRUE(result.is_error());
+
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 }
 
 TEST_P(LinkTypeConnectionTest, EncryptionKeyRefreshEvents) {
@@ -769,7 +827,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionKeyRefreshEvents) {
   EXPECT_TRUE(result.value());
 
   // The host should disconnect the link if encryption fails.
-  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommand);
+  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommandAuthFailure);
   test_device()->SendCommandChannelPacket(kEncryptionKeyRefreshFailed);
   RunLoopUntilIdle();
 
