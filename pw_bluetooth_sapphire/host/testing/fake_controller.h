@@ -485,6 +485,10 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   void OnWriteLEHostSupportCommandReceived(
       const pw::bluetooth::emboss::WriteLEHostSupportCommandView& params);
 
+  // Called when a HCI_Write_Secure_Connections_Host_Support command is received.
+  void OnWriteSecureConnectionsHostSupport(
+      const pw::bluetooth::emboss::WriteSecureConnectionsHostSupportCommandView& params);
+
   // Called when a HCI_Reset command is received.
   void OnReset();
 
@@ -741,6 +745,9 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet);
   void OnScoDataPacketReceived(const ByteBuffer& sco_data_packet);
 
+  const uint8_t BIT_1 = 1;
+  bool isBREDRPageScanEnabled() const { return (bredr_scan_state_ >> BIT_1) & BIT_1; }
+
   Settings settings_;
 
   // Value is non-null when A2DP offload is started, and null when it is stopped.
@@ -751,7 +758,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   std::unordered_map<hci_spec::AdvertisingHandle, LEAdvertisingState> extended_advertising_states_;
 
   // Used for BR/EDR Scans
-  uint8_t bredr_scan_state_;
+  uint8_t bredr_scan_state_ = 0x00;
   pw::bluetooth::emboss::PageScanType page_scan_type_ =
       pw::bluetooth::emboss::PageScanType::STANDARD_SCAN;
   uint16_t page_scan_interval_ = 0x0800;

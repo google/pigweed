@@ -539,6 +539,10 @@ struct ReadLEHostSupportReturnParams {
 // Write LE Host Support Command (v4.0) (BR/EDR)
 constexpr OpCode kWriteLEHostSupport = ControllerAndBasebandOpCode(0x006D);
 
+// =============================================
+// Write Secure Connections Host Support Command (v4.1) (BR/EDR)
+constexpr OpCode kWriteSecureConnectionsHostSupport = ControllerAndBasebandOpCode(0x007A);
+
 // ===============================================================
 // Read Authenticated Payload Timeout Command (v4.1) (BR/EDR & LE)
 constexpr OpCode kReadAuthenticatedPayloadTimeout = ControllerAndBasebandOpCode(0x007B);

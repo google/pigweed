@@ -50,6 +50,10 @@ struct AdapterState final {
            features.HasBit(2u, hci_spec::LMPFeature::kSecureConnectionsControllerSupport);
   }
 
+  inline bool IsSecureConnectionHostSupportSupported() const {
+    return features.HasBit(1, hci_spec::LMPFeature::kSecureConnectionsHostSupport);
+  }
+
   // Returns true if |command_bit| in the given |octet| is set in the supported
   // command list.
   inline bool IsCommandSupported(size_t octet, hci_spec::SupportedCommand command_bit) const {

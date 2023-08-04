@@ -1339,5 +1339,35 @@ TEST_F(AdapterScoDisabledTest, ScoDataChannelFailsToInitializeBecauseScoDisabled
   EXPECT_FALSE(transport()->sco_data_channel());
 }
 
+TEST_F(AdapterTest, InitializeWriteSecureConnectionsHostSupport) {
+  bool success;
+  int init_cb_count = 0;
+  auto init_cb = [&](bool cb_success) {
+    success = cb_success;
+    init_cb_count++;
+  };
+
+  // Enable LE support and extended features (Secure Connections Host Support)
+  FakeController::Settings settings;
+  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kLESupportedHost);
+  settings.lmp_features_page0 |= static_cast<uint64_t>(hci_spec::LMPFeature::kExtendedFeatures);
+  settings.lmp_features_page1 |=
+      static_cast<uint64_t>(hci_spec::LMPFeature::kSecureConnectionsHostSupport);
+  settings.le_acl_data_packet_length = 5;
+  settings.le_total_num_acl_data_packets = 1;
+  test_device()->set_settings(settings);
+
+  InitializeAdapter(std::move(init_cb));
+  EXPECT_TRUE(success);
+  EXPECT_EQ(1, init_cb_count);
+  EXPECT_TRUE(adapter()->state().IsLowEnergySupported());
+  EXPECT_TRUE(adapter()->state().IsBREDRSupported());
+  EXPECT_TRUE(adapter()->state().IsSecureConnectionHostSupportSupported());
+  EXPECT_TRUE(adapter()->le());
+  EXPECT_TRUE(adapter()->bredr());
+  EXPECT_EQ(TechnologyType::kDualMode, adapter()->state().type());
+  EXPECT_FALSE(transport_closed_called());
+}
+
 }  // namespace
 }  // namespace bt::gap

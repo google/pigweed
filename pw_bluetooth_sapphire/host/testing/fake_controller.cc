@@ -102,6 +102,7 @@ void FakeController::Settings::AddBREDRSupportedCommands() {
   SetBit(supported_commands + 17, hci_spec::SupportedCommand::kReadSimplePairingMode);
   SetBit(supported_commands + 17, hci_spec::SupportedCommand::kWriteSimplePairingMode);
   SetBit(supported_commands + 17, hci_spec::SupportedCommand::kWriteExtendedInquiryResponse);
+  SetBit(supported_commands + 32, hci_spec::SupportedCommand::kWriteSecureConnectionsHostSupport);
 }
 
 void FakeController::Settings::AddLESupportedCommands() {
@@ -658,9 +659,8 @@ void FakeController::OnCreateConnectionCommandReceived(
     response.view_t().connection_handle().Write(handle);
   }
 
-  // Don't send a connection event if we were asked to force the request to
-  // remain pending. This is used by test cases that operate during the pending
-  // state.
+  // Don't send a connection event if we were asked to force the request to remain pending. This is
+  // used by test cases that operate during the pending state.
   if (peer->force_pending_connect())
     return;
 
@@ -766,9 +766,8 @@ void FakeController::OnLECreateConnectionCommandReceived(
     view.connection_handle().Write(++next_conn_handle_);
   }
 
-  // Don't send a connection event if we were asked to force the request to
-  // remain pending. This is used by test cases that operate during the pending
-  // state.
+  // Don't send a connection event if we were asked to force the request to remain pending. This is
+  // used by test cases that operate during the pending state.
   if (peer->force_pending_connect())
     return;
 
@@ -882,6 +881,35 @@ void FakeController::OnWriteLEHostSupportCommandReceived(
   }
 
   RespondWithCommandComplete(hci_spec::kWriteLEHostSupport,
+                             pw::bluetooth::emboss::StatusCode::SUCCESS);
+}
+
+void FakeController::OnWriteSecureConnectionsHostSupport(
+    const pw::bluetooth::emboss::WriteSecureConnectionsHostSupportCommandView& params) {
+  // Core Spec Volume 4, Part E, Section 7.3.92: If the Host issues this command while the
+  // Controller is paging, has page scanning enabled, or has an ACL connection, the Controller shall
+  // return the error code Command Disallowed (0x0C).
+  bool has_acl_connection = false;
+  for (auto& [_, peer] : peers_) {
+    if (peer->connected()) {
+      has_acl_connection = true;
+      break;
+    }
+  }
+  if (bredr_connect_pending_ || isBREDRPageScanEnabled() || has_acl_connection) {
+    RespondWithCommandComplete(hci_spec::kWriteSecureConnectionsHostSupport,
+                               pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED);
+    return;
+  }
+
+  if (params.secure_connections_host_support().Read() ==
+      pw::bluetooth::emboss::GenericEnableParam::ENABLE) {
+    SetBit(&settings_.lmp_features_page1, hci_spec::LMPFeature::kSecureConnectionsHostSupport);
+  } else {
+    UnsetBit(&settings_.lmp_features_page1, hci_spec::LMPFeature::kSecureConnectionsHostSupport);
+  }
+
+  RespondWithCommandComplete(hci_spec::kWriteSecureConnectionsHostSupport,
                              pw::bluetooth::emboss::StatusCode::SUCCESS);
 }
 
@@ -2931,6 +2959,7 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kWriteInquiryMode:
     case hci_spec::kWritePageScanType:
     case hci_spec::kWriteLEHostSupport:
+    case hci_spec::kWriteSecureConnectionsHostSupport:
     case hci_spec::kReadEncryptionKeySize:
     case hci_spec::kLESetEventMask:
     case hci_spec::kLESetRandomAddress:
@@ -3155,6 +3184,13 @@ void FakeController::HandleReceivedCommandPacket(const hci::EmbossCommandPacket&
       const auto& params =
           command_packet.view<pw::bluetooth::emboss::WriteLEHostSupportCommandView>();
       OnWriteLEHostSupportCommandReceived(params);
+      break;
+    }
+    case hci_spec::kWriteSecureConnectionsHostSupport: {
+      const auto& params =
+          command_packet
+              .view<pw::bluetooth::emboss::WriteSecureConnectionsHostSupportCommandView>();
+      OnWriteSecureConnectionsHostSupport(params);
       break;
     }
     case hci_spec::kReadEncryptionKeySize: {

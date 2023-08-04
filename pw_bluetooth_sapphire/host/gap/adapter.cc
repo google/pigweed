@@ -840,7 +840,8 @@ void AdapterImpl::InitializeStep2() {
         }
       });
 
-  if (state_.features.HasBit(0u, hci_spec::LMPFeature::kSecureSimplePairingControllerSupport)) {
+  if (state_.features.HasBit(/*page=*/0u,
+                             hci_spec::LMPFeature::kSecureSimplePairingControllerSupport)) {
     // HCI_Write_Simple_Pairing_Mode
     auto write_spm =
         hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WriteSimplePairingModeCommandWriter>(
@@ -853,9 +854,8 @@ void AdapterImpl::InitializeStep2() {
     });
   }
 
-  // If there are extended features then try to read the first page of the
-  // extended features.
-  if (state_.features.HasBit(0u, hci_spec::LMPFeature::kExtendedFeatures)) {
+  // If there are extended features then try to read the first page of the extended features.
+  if (state_.features.HasBit(/*page=*/0u, hci_spec::LMPFeature::kExtendedFeatures)) {
     // Page index 1 must be available.
     max_lmp_feature_page_index_ = 1;
 
@@ -983,20 +983,46 @@ void AdapterImpl::InitializeStep3() {
 
   // HCI_Write_LE_Host_Support if the appropriate feature bit is not set AND if
   // the controller supports this command.
-  if (!state_.features.HasBit(1, hci_spec::LMPFeature::kLESupportedHost) &&
-      state_.IsCommandSupported(24, hci_spec::SupportedCommand::kWriteLEHostSupport)) {
+  if (!state_.IsCommandSupported(/*octet=*/24, hci_spec::SupportedCommand::kWriteLEHostSupport)) {
+    bt_log(INFO, "gap", "LE Host is not supported");
+  } else if (state_.features.HasBit(/*page=*/1, hci_spec::LMPFeature::kLESupportedHost)) {
+    bt_log(INFO, "gap", "LE Host is already enabled");
+  } else {
+    bt_log(INFO, "gap", "LE Host is supported. Enabling LE Host mode");
     auto cmd_packet =
         hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WriteLEHostSupportCommandWriter>(
             hci_spec::kWriteLEHostSupport);
     auto params = cmd_packet.view_t();
     params.le_supported_host().Write(pw::bluetooth::emboss::GenericEnableParam::ENABLE);
     init_seq_runner_->QueueCommand(std::move(cmd_packet), [](const hci::EventPacket& event) {
-      hci_is_error(event, WARN, "gap", "write LE host support failed");
+      hci_is_error(event, WARN, "gap", "Write LE Host support failed");
     });
   }
 
-  // If we know that Page 2 of the extended features bitfield is available, then
-  // request it.
+  // HCI_Write_Secure_Connections_Host_Support if the appropriate feature bit is not set AND if
+  // the controller supports secure connections.
+  if (!state_.IsCommandSupported(/*octet=*/32,
+                                 hci_spec::SupportedCommand::kWriteSecureConnectionsHostSupport)) {
+    bt_log(INFO, "gap", "Secure Connections (Host Support) is not supported");
+  } else if (state_.features.HasBit(/*page=*/1,
+                                    hci_spec::LMPFeature::kSecureConnectionsHostSupport)) {
+    bt_log(INFO, "gap", "Secure Connections (Host Support) is already enabled");
+  } else {
+    bt_log(
+        INFO, "gap",
+        "Secure Connections (Host Support) is supported. Enabling Secure Connections (Host Support) mode");
+    auto cmd_packet = hci::EmbossCommandPacket::New<
+        pw::bluetooth::emboss::WriteSecureConnectionsHostSupportCommandWriter>(
+        hci_spec::kWriteSecureConnectionsHostSupport);
+    auto params = cmd_packet.view_t();
+    params.secure_connections_host_support().Write(
+        pw::bluetooth::emboss::GenericEnableParam::ENABLE);
+    init_seq_runner_->QueueCommand(std::move(cmd_packet), [](const hci::EventPacket& event) {
+      hci_is_error(event, WARN, "gap", "Write Secure Connections (Host Support) failed");
+    });
+  }
+
+  // If we know that Page 2 of the extended features bitfield is available, then request it.
   if (max_lmp_feature_page_index_ > 1) {
     auto cmd_packet = hci::EmbossCommandPacket::New<
         pw::bluetooth::emboss::ReadLocalExtendedFeaturesCommandWriter>(
@@ -1075,9 +1101,9 @@ void AdapterImpl::InitializeStep4() {
     bredr_connection_manager_->AttachInspect(adapter_node_, kInspectBrEdrConnectionManagerNodeName);
 
     pw::bluetooth::emboss::InquiryMode mode = pw::bluetooth::emboss::InquiryMode::STANDARD;
-    if (state_.features.HasBit(0, hci_spec::LMPFeature::kExtendedInquiryResponse)) {
+    if (state_.features.HasBit(/*page=*/0, hci_spec::LMPFeature::kExtendedInquiryResponse)) {
       mode = pw::bluetooth::emboss::InquiryMode::EXTENDED;
-    } else if (state_.features.HasBit(0, hci_spec::LMPFeature::kRSSIwithInquiryResults)) {
+    } else if (state_.features.HasBit(/*page=*/0, hci_spec::LMPFeature::kRSSIwithInquiryResults)) {
       mode = pw::bluetooth::emboss::InquiryMode::RSSI;
     }
 
