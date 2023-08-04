@@ -6,12 +6,6 @@ API reference
 .. pigweed-module-subpage::
    :name: pw_tokenizer
    :tagline: Cut your log sizes in half
-   :nav:
-      getting started: module-pw_tokenizer-get-started
-      design: module-pw_tokenizer-design
-      api: module-pw_tokenizer-api
-      cli: module-pw_tokenizer-cli
-      guides: module-pw_tokenizer-guides
 
 -------------
 Compatibility

@@ -11,11 +11,6 @@ pw_hdlc
    :status: stable
    :languages: C++17
    :code-size-impact: 1400 to 2600 bytes
-   :nav:
-     getting started: module-pw_hdlc-get-started
-     design: module-pw_hdlc-design
-     guides: module-pw_hdlc-guide
-     api: module-pw_hdlc-api
 
    - Transmit RPCs and other data between devices over serial
    - Detect corruption and data loss

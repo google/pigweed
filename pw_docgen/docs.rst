@@ -198,10 +198,6 @@ example:
       :status: stable
       :languages: C++14, C++17, Rust
       :code-size-impact: 500 to 1500 bytes
-      :get-started: module-pw_string-get-started
-      :design: module-pw_string-design
-      :guides: module-pw_string-guide
-      :api: module-pw_string-api
 
       Module sales pitch goes here!
 
@@ -214,12 +210,6 @@ _________________
 - ``languages``: A comma-separated list of languages the module supports.  If
   the language has API docs (Rust), they will be linked from the metadata block.
 - ``code-size-impact``: A summarize of the average code size impact
-- ``get-started``: A reference to the getting started section (required)
-- ``tutorials``: A reference to the tutorials section
-- ``guides``: A reference to the guides section
-- ``design``: A reference to the design considerations section (required)
-- ``concepts``: A reference to the concepts documentation
-- ``api``: A reference to the API documentation
 
 google_analytics
 ----------------

@@ -8,10 +8,6 @@ pw_fuzzer
    :tagline: Better C++ code through easier fuzzing
    :status: unstable
    :languages: C++14, C++17, C++20
-   :nav:
-     getting started: module-pw_fuzzer-get-started
-     concepts: module-pw_fuzzer-concepts
-     guides: module-pw_fuzzer-guides
 
 Use state of the art tools to automatically find bugs in your C++ code with 5
 lines of code or less!

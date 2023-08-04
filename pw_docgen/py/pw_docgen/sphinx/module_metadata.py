@@ -37,7 +37,6 @@ import docutils.statemachine
 import docutils.parsers.rst.directives as directives  # type: ignore
 
 # pylint: enable=consider-using-from-import
-from sphinx import addnodes
 from sphinx.application import Sphinx as SphinxApplication
 from sphinx.environment import BuildEnvironment
 from sphinx.util.docutils import SphinxDirective
@@ -114,73 +113,9 @@ def concat_tags(*tag_lists: List[str]) -> List[str]:
     return all_tags
 
 
-def parse_nav(nav_option: str) -> Dict[str, str]:
-    """Parse the `nav` option.
-
-    The value for this option must contain key-value pairs separated by ':',
-    with each pair on a separate line. The value is a Sphinx ref pointing to
-    the destination of the nav button link, and the key is the name of the nav
-    button (see :func:`nav_name`).
-    """
-    try:
-        return {
-            line.split(':')[0].strip(): line.split(':')[1].strip()
-            for line in nav_option.split('\n')
-        }
-    except IndexError:
-        raise ValueError(
-            'Nav parsing failure. Ensure each line has a single pair in the '
-            f'form `name: ref`. You provided this:\n{nav_option}'
-        )
-
-
-def nav_name(name: str) -> str:
-    """Return the display name for a particular nav button name.
-
-    By default, the returned display name be the provided name with the words
-    capitalized. However, this can be overridden by adding an entry to the
-    canonical names list.
-    """
-    canonical_names: Dict[str, str] = {
-        'api': 'API Reference',
-        'cli': 'CLI Reference',
-        'gui': 'GUI Reference',
-    }
-
-    if name in canonical_names:
-        return canonical_names[name]
-
-    return ' '.join(
-        [name_part.lower().capitalize() for name_part in name.split()]
-    )
-
-
-def create_ref_node(
-    docname: str, rawtext: str, target: str, classes: Optional[List[str]] = None
-) -> nodes.Node:
-    """Create a reference node."""
-
-    if classes is None:
-        classes = []
-
-    options = {
-        "classes": classes,
-        "reftarget": target,
-        "refdoc": docname,
-        "refdomain": "std",
-        "reftype": "ref",
-        "refexplicit": True,
-        "refwarn": True,
-    }
-
-    return addnodes.pending_xref(rawtext, **options)
-
-
 def create_topnav(
-    docname: str,
     title: str,
     subtitle: str,
-    nav: Dict[str, str],
     extra_classes: Optional[List[str]] = None,
 ) -> nodes.Node:
     """Create the nodes for the top title and navigation bar."""
@@ -199,19 +134,6 @@ def create_topnav(
     )
 
     topnav_inline_container += title_node
-    nav_group = nodes.bullet_list(classes=['pw-module-section-nav-group'])
-
-    for raw_name, ref in nav.items():
-        name = nav_name(raw_name)
-        ref_node = create_ref_node(docname, name, ref)
-        ref_node.append(nodes.inline(name, name))  # type: ignore
-        p_node = nodes.paragraph()
-        p_node += ref_node
-        nav_link = nodes.list_item(classes=['pw-module-section-nav-link'])
-        nav_link += p_node
-        nav_group += nav_link
-
-    topnav_inline_container += nav_group
 
     subtitle_node = nodes.paragraph(
         classes=['pw-topnav-subtitle'],
@@ -302,16 +224,9 @@ class PigweedModuleDirective(SphinxDirective):
             options={},
         )
 
-        try:
-            nav = parse_nav(self._try_get_option('nav'))
-        except ValueError as err:
-            raise self.error(err)
-
         topbar = create_topnav(
-            self.env.docname,
             module_name,
             tagline,
-            nav,
             ['pw-module-index'],
         )
 
@@ -334,16 +249,9 @@ class PigweedModuleSubpageDirective(PigweedModuleDirective):
         module_name = self._try_get_option('name')
         tagline = self._try_get_option('tagline')
 
-        try:
-            nav = parse_nav(self._try_get_option('nav'))
-        except ValueError as err:
-            raise self.error(err)
-
         topbar = create_topnav(
-            self.env.docname,
             module_name,
             tagline,
-            nav,
             ['pw-module-subpage'],
         )
 

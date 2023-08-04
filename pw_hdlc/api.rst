@@ -6,11 +6,6 @@ pw_hdlc: API reference
 .. pigweed-module-subpage::
    :name: pw_hdlc
    :tagline: Lightweight, simple, and easy serial communication
-   :nav:
-     getting started: module-pw_hdlc-get-started
-     design: module-pw_hdlc-design
-     guides: module-pw_hdlc-guide
-     api: module-pw_hdlc-api
 
 This page describes the :ref:`module-pw_hdlc-api-encoder`, :ref:`module-pw_hdlc-api-decoder`,
 and :ref:`module-pw_hdlc-api-rpc` APIs of ``pw_hdlc``.

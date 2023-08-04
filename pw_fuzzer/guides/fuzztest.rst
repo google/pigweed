@@ -6,10 +6,6 @@ pw_fuzzer: Adding Fuzzers Using FuzzTest
 .. pigweed-module-subpage::
    :name: pw_fuzzer
    :tagline: Better C++ code through easier fuzzing
-   :nav:
-     getting started: module-pw_fuzzer-get-started
-     concepts: module-pw_fuzzer-concepts
-     guides: module-pw_fuzzer-guides
 
 .. note::
 

@@ -9,12 +9,6 @@ pw_tokenizer
    :status: stable
    :languages: C11, C++14, Python, TypeScript
    :code-size-impact: 50% reduction in binary log size
-   :nav:
-      getting started: module-pw_tokenizer-get-started
-      design: module-pw_tokenizer-design
-      api: module-pw_tokenizer-api
-      cli: module-pw_tokenizer-cli
-      guides: module-pw_tokenizer-guides
 
 Logging is critical, but developers are often forced to choose between
 additional logging or saving crucial flash space. The ``pw_tokenizer`` module

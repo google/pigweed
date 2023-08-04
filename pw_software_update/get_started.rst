@@ -6,11 +6,6 @@ pw_software_update: Get started
 .. pigweed-module-subpage::
    :name: pw_software_update
    :tagline: Secure software delivery
-   :nav:
-    getting started: module-pw_software_update-get-started
-    design: module-pw_software_update-design
-    guides: module-pw_software_update-guides
-    cli: module-pw_software_update-cli
 
 Hello Bundles!
 --------------
