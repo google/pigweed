@@ -38,20 +38,20 @@ struct AdapterState final {
 
   // Helpers for querying LMP capabilities.
   inline bool IsBREDRSupported() const {
-    return !features.HasBit(0u, hci_spec::LMPFeature::kBREDRNotSupported);
+    return !features.HasBit(/*page=*/0u, hci_spec::LMPFeature::kBREDRNotSupported);
   }
 
   inline bool IsLowEnergySupported() const {
-    return features.HasBit(0u, hci_spec::LMPFeature::kLESupportedHost);
+    return features.HasBit(/*page=*/0u, hci_spec::LMPFeature::kLESupportedHost);
   }
 
   inline bool IsLocalSecureConnectionsSupported() const {
-    return features.HasBit(1u, hci_spec::LMPFeature::kSecureConnectionsHostSupport) &&
-           features.HasBit(2u, hci_spec::LMPFeature::kSecureConnectionsControllerSupport);
+    return features.HasBit(/*page=*/1u, hci_spec::LMPFeature::kSecureConnectionsHostSupport) &&
+           features.HasBit(/*page=*/2u, hci_spec::LMPFeature::kSecureConnectionsControllerSupport);
   }
 
   inline bool IsSecureConnectionHostSupportSupported() const {
-    return features.HasBit(1, hci_spec::LMPFeature::kSecureConnectionsHostSupport);
+    return features.HasBit(/*page=*/1, hci_spec::LMPFeature::kSecureConnectionsHostSupport);
   }
 
   // Returns true if |command_bit| in the given |octet| is set in the supported

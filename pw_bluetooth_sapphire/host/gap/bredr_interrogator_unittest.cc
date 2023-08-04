@@ -52,7 +52,7 @@ class BrEdrInterrogatorTest : public TestingBase {
     EXPECT_FALSE(peer_->name());
     EXPECT_FALSE(peer_->version());
     EXPECT_FALSE(peer_->features().HasPage(0));
-    EXPECT_FALSE(peer_->features().HasBit(0, hci_spec::LMPFeature::kExtendedFeatures));
+    EXPECT_FALSE(peer_->features().HasBit(/*page=*/0, hci_spec::LMPFeature::kExtendedFeatures));
     EXPECT_EQ(0u, peer_->features().last_page_number());
 
     interrogator_ = std::make_unique<BrEdrInterrogator>(peer_->GetWeakPtr(), kConnectionHandle,
@@ -154,7 +154,7 @@ TEST_F(BrEdrInterrogatorTest, SuccessfulInterrogation) {
   EXPECT_TRUE(peer()->name());
   EXPECT_TRUE(peer()->version());
   EXPECT_TRUE(peer()->features().HasPage(0));
-  EXPECT_TRUE(peer()->features().HasBit(0, hci_spec::LMPFeature::kExtendedFeatures));
+  EXPECT_TRUE(peer()->features().HasBit(/*page=*/0, hci_spec::LMPFeature::kExtendedFeatures));
   EXPECT_EQ(2u, peer()->features().last_page_number());
 }
 
@@ -228,7 +228,7 @@ TEST_F(BrEdrInterrogatorTest, InterrogatorDestroyedInCompleteCallback) {
   EXPECT_TRUE(peer()->name());
   EXPECT_TRUE(peer()->version());
   EXPECT_TRUE(peer()->features().HasPage(0));
-  EXPECT_TRUE(peer()->features().HasBit(0, hci_spec::LMPFeature::kExtendedFeatures));
+  EXPECT_TRUE(peer()->features().HasBit(/*page=*/0, hci_spec::LMPFeature::kExtendedFeatures));
   EXPECT_EQ(2u, peer()->features().last_page_number());
 }
 }  // namespace bt::gap

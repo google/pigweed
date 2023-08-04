@@ -776,7 +776,7 @@ void AdapterImpl::InitializeStep2() {
 
   // If the controller supports the Read Buffer Size command then send it.
   // Otherwise we'll default to 0 when initializing the ACLDataChannel.
-  if (state_.IsCommandSupported(14, hci_spec::SupportedCommand::kReadBufferSize)) {
+  if (state_.IsCommandSupported(/*octet=*/14, hci_spec::SupportedCommand::kReadBufferSize)) {
     // HCI_Read_Buffer_Size
     init_seq_runner_->QueueCommand(
         hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ReadBufferSizeCommandView>(

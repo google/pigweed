@@ -125,7 +125,7 @@ void BrEdrInterrogator::QueueReadRemoteFeatures() {
         event.view().payload<hci_spec::ReadRemoteSupportedFeaturesCompleteEventParams>();
     peer_->SetFeaturePage(0, le64toh(params.lmp_features));
 
-    if (peer_->features().HasBit(0, hci_spec::LMPFeature::kExtendedFeatures)) {
+    if (peer_->features().HasBit(/*page=*/0, hci_spec::LMPFeature::kExtendedFeatures)) {
       peer_->set_last_page_number(1);
       QueueReadRemoteExtendedFeatures(/*page=*/1);
     }
