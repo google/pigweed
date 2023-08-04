@@ -20,7 +20,7 @@ import("$dir_pw_toolchain/clang_tools.gni")
 _arm_clang_toolchain = {
   forward_variables_from(pw_toolchain_clang_tools, "*")
 
-  link_whole_archive = true
+  link_group = true
 
   # Enable static analysis for arm clang based toolchains.
   static_analysis = {

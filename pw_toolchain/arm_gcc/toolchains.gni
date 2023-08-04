@@ -74,7 +74,7 @@ arm_gcc_toolchain_tools = {
   ar = _local_tool_name_root + "ar"
   ld = _local_tool_name_root + "g++"
 
-  link_whole_archive = true
+  link_group = true
 }
 
 # Common configs shared by all ARM GCC toolchains.
