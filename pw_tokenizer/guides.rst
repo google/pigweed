@@ -63,6 +63,33 @@ Tokenization guides
 
 Tokenize a message with arguments in a custom macro
 ===================================================
+Projects can leverage the tokenization machinery in whichever way best suits
+their needs. The most efficient way to use ``pw_tokenizer`` is to pass tokenized
+data to a global handler function. A project's custom tokenization macro can
+handle tokenized data in a function of their choosing.
+
+``pw_tokenizer`` provides two low-level macros for projects to use
+to create custom tokenization macros:
+
+* ``PW_TOKENIZE_FORMAT_STRING``
+* ``PW_TOKENIZER_ARG_TYPES``
+
+.. caution::
+
+   Note the spelling difference! The first macro begins with ``PW_TOKENIZE_``
+   (no ``R``) whereas the second begins with ``PW_TOKENIZER`` (``R`` included).
+
+The outputs of these macros are typically passed to an encoding function. That
+function encodes the token, argument types, and argument data to a buffer using
+helpers provided by ``pw_tokenizer/encode_args.h``:
+
+* :cpp:func:`pw::tokenizer::EncodeArgs`
+* :cpp:class:`pw::tokenizer::EncodedMessage`
+* :cpp:func:`pw_tokenizer_EncodeArgs`
+
+Example
+-------
+
 The following example implements a custom tokenization macro similar to
 :ref:`module-pw_log_tokenized`.
 
@@ -111,6 +138,21 @@ stored as needed.
    extern "C" void EncodeTokenizedMessage(const uint32_t metadata,
                                           const pw_tokenizer_Token token,
                                           const pw_tokenizer_ArgTypes types,
+                                          ...) {
+     va_list args;
+     va_start(args, types);
+     pw::tokenizer::EncodedMessage<> encoded_message(token, types, args);
+     va_end(args);
+
+     HandleTokenizedMessage(metadata, encoded_message);
+   }
+
+.. admonition:: Why use a custom macro
+
+   - Optimal code size. Invoking a free function with the tokenized data results
+     in the smallest possible call site.
+   - Pass additional arguments, such as metadata, with the tokenized message.
+   - Integrate ``pw_tokenizer`` with other systems.
 
 .. _module-pw_tokenizer-base64-guides:
 
