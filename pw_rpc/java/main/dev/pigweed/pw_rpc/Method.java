@@ -37,9 +37,9 @@ public abstract class Method {
 
   public abstract Type type();
 
-  abstract Class<? extends MessageLite> request();
+  abstract Parser<? extends MessageLite> requestParser();
 
-  abstract Class<? extends MessageLite> response();
+  abstract Parser<? extends MessageLite> responseParser();
 
   final int id() {
     return Ids.calculate(name());
@@ -57,11 +57,11 @@ public abstract class Method {
     return createFullName(service().name(), name());
   }
 
-  public static String createFullName(String serviceName, String methodName) {
+  static String createFullName(String serviceName, String methodName) {
     return serviceName + '/' + methodName;
   }
 
-  /* package */ static Builder builder() {
+  static Builder builder() {
     return new AutoValue_Method.Builder();
   }
 
@@ -79,34 +79,16 @@ public abstract class Method {
 
     abstract Builder setName(String value);
 
-    abstract Builder setRequest(Class<? extends MessageLite> value);
+    abstract Builder setRequestParser(Parser<? extends MessageLite> parser);
 
-    abstract Builder setResponse(Class<? extends MessageLite> value);
+    abstract Builder setResponseParser(Parser<? extends MessageLite> parser);
 
     abstract Method build();
   }
 
   /** Decodes a response payload according to the method's response type. */
   final MessageLite decodeResponsePayload(ByteString data) throws InvalidProtocolBufferException {
-    return decodeProtobuf(response(), data);
-  }
-
-  /** Deserializes a protobuf using the provided class. */
-  @SuppressWarnings("unchecked")
-  static MessageLite decodeProtobuf(Class<? extends MessageLite> messageType, ByteString data)
-      throws InvalidProtocolBufferException {
-    try {
-      Parser<? extends MessageLite> parser =
-          (Parser<? extends MessageLite>) messageType.getMethod("parser").invoke(null);
-      return parser.parseFrom(data);
-    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-      throw new LinkageError(
-          String.format("Service method was created with %s, which does not have parser() method; "
-                  + "either the class is not a generated protobuf class "
-                  + "or the parser() method was optimized out (see b/293361955)",
-              messageType),
-          e);
-    }
+    return responseParser().parseFrom(data);
   }
 
   /** Which type of RPC this is: unary or server/client/bidirectional streaming. */

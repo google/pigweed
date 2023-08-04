@@ -43,11 +43,13 @@ public final class ClientTest {
   @Rule public final MockitoRule mockito = MockitoJUnit.rule();
 
   private static final Service SERVICE = new Service("pw.rpc.test1.TheTestService",
-      Service.unaryMethod("SomeUnary", SomeMessage.class, AnotherMessage.class),
-      Service.serverStreamingMethod("SomeServerStreaming", SomeMessage.class, AnotherMessage.class),
-      Service.clientStreamingMethod("SomeClientStreaming", SomeMessage.class, AnotherMessage.class),
+      Service.unaryMethod("SomeUnary", SomeMessage.parser(), AnotherMessage.parser()),
+      Service.serverStreamingMethod(
+          "SomeServerStreaming", SomeMessage.parser(), AnotherMessage.parser()),
+      Service.clientStreamingMethod(
+          "SomeClientStreaming", SomeMessage.parser(), AnotherMessage.parser()),
       Service.bidirectionalStreamingMethod(
-          "SomeBidiStreaming", SomeMessage.class, AnotherMessage.class));
+          "SomeBidiStreaming", SomeMessage.parser(), AnotherMessage.parser()));
 
   private static final Method UNARY_METHOD = SERVICE.method("SomeUnary");
   private static final Method SERVER_STREAMING_METHOD = SERVICE.method("SomeServerStreaming");
@@ -135,7 +137,7 @@ public final class ClientTest {
         InvalidRpcServiceException.class, () -> client.method(CHANNEL_ID, "abc.Service/Method"));
 
     Service service = new Service("throwaway.NotRealService",
-        Service.unaryMethod("NotAnRpc", SomeMessage.class, AnotherMessage.class));
+        Service.unaryMethod("NotAnRpc", SomeMessage.parser(), AnotherMessage.parser()));
     assertThrows(InvalidRpcServiceException.class,
         () -> client.method(CHANNEL_ID, service.method("NotAnRpc")));
   }
@@ -416,5 +418,35 @@ public final class ClientTest {
   public void openChannel_alreadyExists_throwsException() {
     assertThrows(InvalidRpcChannelException.class,
         () -> client.openChannel(new Channel(CHANNEL_ID, packet -> {})));
+  }
+
+  @Test
+  public void serviceDeclaration_deprecatedClassBasedEquivalentToParserBased() {
+    final Service declaredWithClassObjects = new Service(SERVICE.name(),
+        Service.unaryMethod("SomeUnary", SomeMessage.parser(), AnotherMessage.parser()),
+        Service.serverStreamingMethod(
+            "SomeServerStreaming", SomeMessage.parser(), AnotherMessage.parser()),
+        Service.clientStreamingMethod(
+            "SomeClientStreaming", SomeMessage.parser(), AnotherMessage.parser()),
+        Service.bidirectionalStreamingMethod(
+            "SomeBidiStreaming", SomeMessage.parser(), AnotherMessage.parser()));
+
+    assertThat(declaredWithClassObjects.method("SomeUnary").responseParser())
+        .isSameInstanceAs(declaredWithClassObjects.method("SomeUnary").responseParser());
+    assertThat(declaredWithClassObjects.method("SomeServerStreaming").responseParser())
+        .isSameInstanceAs(declaredWithClassObjects.method("SomeServerStreaming").responseParser());
+    assertThat(declaredWithClassObjects.method("SomeClientStreaming").responseParser())
+        .isSameInstanceAs(declaredWithClassObjects.method("SomeClientStreaming").responseParser());
+    assertThat(declaredWithClassObjects.method("SomeBidiStreaming").responseParser())
+        .isSameInstanceAs(declaredWithClassObjects.method("SomeBidiStreaming").responseParser());
+
+    assertThat(declaredWithClassObjects.method("SomeUnary").requestParser())
+        .isSameInstanceAs(declaredWithClassObjects.method("SomeUnary").requestParser());
+    assertThat(declaredWithClassObjects.method("SomeServerStreaming").requestParser())
+        .isSameInstanceAs(declaredWithClassObjects.method("SomeServerStreaming").requestParser());
+    assertThat(declaredWithClassObjects.method("SomeClientStreaming").requestParser())
+        .isSameInstanceAs(declaredWithClassObjects.method("SomeClientStreaming").requestParser());
+    assertThat(declaredWithClassObjects.method("SomeBidiStreaming").requestParser())
+        .isSameInstanceAs(declaredWithClassObjects.method("SomeBidiStreaming").requestParser());
   }
 }

@@ -36,11 +36,13 @@ public final class EndpointTest {
   @Rule public final MockitoRule mockito = MockitoJUnit.rule();
 
   private static final Service SERVICE = new Service("pw.rpc.test1.TheTestService",
-      Service.unaryMethod("SomeUnary", SomeMessage.class, SomeMessage.class),
-      Service.serverStreamingMethod("SomeServerStreaming", SomeMessage.class, SomeMessage.class),
-      Service.clientStreamingMethod("SomeClientStreaming", SomeMessage.class, SomeMessage.class),
+      Service.unaryMethod("SomeUnary", SomeMessage.parser(), SomeMessage.parser()),
+      Service.serverStreamingMethod(
+          "SomeServerStreaming", SomeMessage.parser(), SomeMessage.parser()),
+      Service.clientStreamingMethod(
+          "SomeClientStreaming", SomeMessage.parser(), SomeMessage.parser()),
       Service.bidirectionalStreamingMethod(
-          "SomeBidiStreaming", SomeMessage.class, SomeMessage.class));
+          "SomeBidiStreaming", SomeMessage.parser(), SomeMessage.parser()));
 
   private static final Method METHOD = SERVICE.method("SomeUnary");
 

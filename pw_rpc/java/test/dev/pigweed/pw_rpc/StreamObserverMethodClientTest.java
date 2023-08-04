@@ -34,11 +34,13 @@ import org.mockito.junit.MockitoRule;
 
 public final class StreamObserverMethodClientTest {
   private static final Service SERVICE = new Service("pw.rpc.test1.TheTestService",
-      Service.unaryMethod("SomeUnary", SomeMessage.class, AnotherMessage.class),
-      Service.serverStreamingMethod("SomeServerStreaming", SomeMessage.class, AnotherMessage.class),
-      Service.clientStreamingMethod("SomeClientStreaming", SomeMessage.class, AnotherMessage.class),
+      Service.unaryMethod("SomeUnary", SomeMessage.parser(), AnotherMessage.parser()),
+      Service.serverStreamingMethod(
+          "SomeServerStreaming", SomeMessage.parser(), AnotherMessage.parser()),
+      Service.clientStreamingMethod(
+          "SomeClientStreaming", SomeMessage.parser(), AnotherMessage.parser()),
       Service.bidirectionalStreamingMethod(
-          "SomeBidirectionalStreaming", SomeMessage.class, AnotherMessage.class));
+          "SomeBidirectionalStreaming", SomeMessage.parser(), AnotherMessage.parser()));
 
   @Rule public final MockitoRule mockito = MockitoJUnit.rule();
 
@@ -212,7 +214,8 @@ public final class StreamObserverMethodClientTest {
   @Test
   public void invalidService_throwsException() {
     Service otherService = new Service("something.Else",
-        Service.clientStreamingMethod("ClientStream", SomeMessage.class, AnotherMessage.class));
+        Service.clientStreamingMethod(
+            "ClientStream", SomeMessage.parser(), AnotherMessage.parser()));
 
     MethodClient methodClient = new MethodClient(
         client, channel.id(), otherService.method("ClientStream"), defaultObserver);
@@ -222,13 +225,13 @@ public final class StreamObserverMethodClientTest {
   @Test
   public void invalidMethod_throwsException() {
     Service serviceWithDifferentUnaryMethod = new Service("pw.rpc.test1.TheTestService",
-        Service.unaryMethod("SomeUnary", AnotherMessage.class, AnotherMessage.class),
+        Service.unaryMethod("SomeUnary", AnotherMessage.parser(), AnotherMessage.parser()),
         Service.serverStreamingMethod(
-            "SomeServerStreaming", SomeMessage.class, AnotherMessage.class),
+            "SomeServerStreaming", SomeMessage.parser(), AnotherMessage.parser()),
         Service.clientStreamingMethod(
-            "SomeClientStreaming", SomeMessage.class, AnotherMessage.class),
+            "SomeClientStreaming", SomeMessage.parser(), AnotherMessage.parser()),
         Service.bidirectionalStreamingMethod(
-            "SomeBidirectionalStreaming", SomeMessage.class, AnotherMessage.class));
+            "SomeBidirectionalStreaming", SomeMessage.parser(), AnotherMessage.parser()));
 
     MethodClient methodClient = new MethodClient(
         client, 999, serviceWithDifferentUnaryMethod.method("SomeUnary"), defaultObserver);

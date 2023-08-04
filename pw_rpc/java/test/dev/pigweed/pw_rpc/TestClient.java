@@ -175,9 +175,10 @@ public class TestClient {
 
   private <T extends MessageLite> T parseRequestPayload(Class<T> payloadType, RpcPacket packet) {
     try {
-      return payloadType.cast(Method.decodeProtobuf(
-          client.method(CHANNEL_ID, packet.getServiceId(), packet.getMethodId()).method().request(),
-          packet.getPayload()));
+      return payloadType.cast(client.method(CHANNEL_ID, packet.getServiceId(), packet.getMethodId())
+                                  .method()
+                                  .requestParser()
+                                  .parseFrom(packet.getPayload()));
     } catch (InvalidProtocolBufferException e) {
       throw new AssertionError("Decoding sent packet payload failed", e);
     }
