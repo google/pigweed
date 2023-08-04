@@ -71,8 +71,12 @@ bool pw_Base64IsValid(const char* base64_data, size_t base64_size);
 
 namespace pw::base64 {
 
-/// @returns The size of the given number of bytes when encoded as Base64.
-/// Base64 encodes 3-byte groups into 4-character strings. The final group
+/// @param[in] binary_size_bytes The size of the binary data in bytes, before
+/// encoding.
+///
+/// @returns The size of `binary_size_bytes` after Base64 encoding.
+///
+/// @note Base64 encodes 3-byte groups into 4-character strings. The final group
 /// is padded to be 3 bytes if it only has 1 or 2.
 constexpr size_t EncodedSize(size_t binary_size_bytes) {
   return PW_BASE64_ENCODED_SIZE(binary_size_bytes);
@@ -80,8 +84,13 @@ constexpr size_t EncodedSize(size_t binary_size_bytes) {
 
 /// Encodes the provided data in Base64 and writes the result to the buffer.
 ///
-/// Encodes to the standard alphabet with `+` and `/` for characters `62` and
-/// `63`. Exactly `EncodedSize(binary_size_bytes)` bytes will be written.
+/// @param[in] binary The binary data to encode.
+///
+/// @param[out] The output buffer where the encoded data is placed. Exactly
+/// `EncodedSize(binary_size_bytes)` bytes is written.
+///
+/// @note Encodes to the standard alphabet with `+` and `/` for characters `62`
+/// and `63`.
 ///
 /// @pre
 /// * The output buffer **MUST** be large enough for the encoded output!
@@ -96,13 +105,22 @@ inline void Encode(span<const std::byte> binary, char* output) {
 /// Encodes the provided data in Base64 if the result fits in the provided
 /// buffer.
 ///
+/// @param[in] binary The binary data to encode.
+///
+/// @param[out] output_buffer The output buffer where the encoded data is
+/// placed.
+///
 /// @warning The resulting string in the output is **NOT** null-terminated!
 ///
-/// @returns The number of bytes written, which will be `0` if the output buffer
+/// @returns The number of bytes written. Returns `0` if the output buffer
 /// is too small.
 size_t Encode(span<const std::byte> binary, span<char> output_buffer);
 
 /// Appends Base64 encoded binary data to the provided `pw::InlineString`.
+///
+/// @param[in] binary The binary data that has already been Base64-encoded.
+///
+/// @param[out] output The `pw::InlineString` that `binary` is appended to.
 ///
 /// If the data does not fit in the string, an assertion fails.
 void Encode(span<const std::byte> binary, InlineString<>& output);
@@ -110,8 +128,6 @@ void Encode(span<const std::byte> binary, InlineString<>& output);
 /// Creates a `pw::InlineString<>` large enough to hold
 /// `kMaxBinaryDataSizeBytes` of binary data when encoded as Base64 and encodes
 /// the provided span into it.
-///
-/// If the data is larger than `kMaxBinaryDataSizeBytes`, an assertion fails.
 template <size_t kMaxBinaryDataSizeBytes>
 inline InlineString<EncodedSize(kMaxBinaryDataSizeBytes)> Encode(
     span<const std::byte> binary) {
@@ -135,32 +151,44 @@ constexpr size_t MaxDecodedSize(size_t base64_size_bytes) {
   return PW_BASE64_MAX_DECODED_SIZE(base64_size_bytes);
 }
 
-// Decodes the provided Base64 data into raw binary. The output buffer *MUST* be
-// at least MaxDecodedSize bytes large. The output buffer may be the same as the
-// input buffer; decoding can occur in place. Returns the number of bytes that
-// were decoded.
-//
-// Decodes either standard (+/) or URL-safe (-_) alphabets. The data must be
-// padded to 4-character blocks with =. This function does NOT check that the
-// input is valid! Use IsValid or the four-argument overload to check the
-// input formatting.
+/// Decodes the provided Base64 data into raw binary.
+///
+/// @pre
+/// * The output buffer **MUST** be at least `MaxDecodedSize()` bytes large.
+/// * This function does NOT check that the input is valid! Use `IsValid()`
+///   or the four-argument overload to check the input formatting.
+///
+/// @param[in] base64 The Base64 data that should be decoded. Can be encoded
+/// with either the standard (`+/`) or URL-safe (`-_`) alphabet. The data must
+/// be padded to 4-character blocks with `=`.
+///
+/// @param[out] output The output buffer where the raw binary will be placed.
+/// The output buffer may be the same as the input buffer; decoding can occur
+/// in place.
+///
+/// @returns The number of bytes that were decoded.
 inline size_t Decode(std::string_view base64, void* output) {
   return pw_Base64Decode(base64.data(), base64.size(), output);
 }
 
-// Decodes the provided Base64 data, if the data is valid and fits in the output
-// buffer. Returns the number of bytes written, which will be 0 if the data is
-// invalid or doesn't fit.
+/// Decodes the provided Base64 data, if the data is valid and fits in the
+/// output buffer.
+///
+/// @returns The number of bytes written, which will be `0` if the data is
+/// invalid or doesn't fit.
 size_t Decode(std::string_view base64, span<std::byte> output_buffer);
 
+/// Decodes a `pw::InlineString<>` in place.
 template <typename T>
 inline void DecodeInPlace(InlineBasicString<T>& buffer) {
   static_assert(sizeof(T) == sizeof(char));
   buffer.resize(Decode(buffer, buffer.data()));
 }
 
-// Returns true if the provided string is valid Base64 encoded data. Accepts
-// either the standard (+/) or URL-safe (-_) alphabets.
+/// @param[in] base64 The string to check. Can be encoded with either the
+/// standard (`+/`) or URL-safe (`-_`) alphabet.
+///
+/// @returns `true` if the provided string is valid Base64-encoded data.
 inline bool IsValid(std::string_view base64) {
   return pw_Base64IsValid(base64.data(), base64.size());
 }
