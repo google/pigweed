@@ -11,7 +11,8 @@
   docs/getting_started
   docs/concepts/index
   targets
-  module_guides
+  Modules <module_guides>
+  docs/module_structure
   changelog
   Mailing List <https://groups.google.com/forum/#!forum/pigweed>
   Chat Room <https://discord.gg/M9NSeTA>

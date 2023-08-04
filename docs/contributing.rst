@@ -432,4 +432,3 @@ Presubmit flags
 
   embedded_cpp_guide
   style_guide
-  module_structure
