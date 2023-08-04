@@ -13,6 +13,8 @@ Setup
 -----
 Most of the time, ``pw ide sync`` is all you need to get started.
 
+.. _module-pw_ide-configuration:
+
 Configuration
 -------------
 ``pw_ide`` has a built-in default configuration. You can create a configuration
@@ -197,6 +199,8 @@ Automated Support for Code Editors & IDEs
 for code editors, where default settings can be defined within ``pw_ide``,
 which can be overridden by project settings, which in turn can be overridden
 by individual user settings.
+
+.. _module-pw_ide-vscode:
 
 Visual Studio Code
 ^^^^^^^^^^^^^^^^^^

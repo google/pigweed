@@ -49,6 +49,7 @@ pw_doc_group("core_docs") {
     "code_of_conduct.rst",
     "concepts/index.rst",
     "contributing.rst",
+    "editors.rst",
     "embedded_cpp_guide.rst",
     "faq.rst",
     "getting_started.rst",

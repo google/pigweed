@@ -17,6 +17,7 @@
   Chat Room <https://discord.gg/M9NSeTA>
   docs/os/index
   docs/size_optimizations
+  Code Editor Support <docs/editors>
   FAQ <docs/faq>
   third_party_support
   Source Code <https://cs.pigweed.dev/pigweed>
