@@ -578,3 +578,103 @@ Protocol buffers
 ================
 ``pw_tokenizer`` provides utilities for handling tokenized fields in protobufs.
 See :ref:`module-pw_tokenizer-proto` for details.
+
+----------
+Case study
+----------
+.. note:: This section discusses the implementation, results, and lessons
+   learned from a real-world deployment of ``pw_tokenizer``.
+
+The tokenizer module was developed to bring tokenized logging to an
+in-development product. The product already had an established text-based
+logging system. Deploying tokenization was straightforward and had substantial
+benefits.
+
+Results
+=======
+* Log contents shrunk by over 50%, even with Base64 encoding.
+
+  * Significant size savings for encoded logs, even using the less-efficient
+    Base64 encoding required for compatibility with the existing log system.
+  * Freed valuable communication bandwidth.
+  * Allowed storing many more logs in crash dumps.
+
+* Substantial flash savings.
+
+  * Reduced the size firmware images by up to 18%.
+
+* Simpler logging code.
+
+  * Removed CPU-heavy ``snprintf`` calls.
+  * Removed complex code for forwarding log arguments to a low-priority task.
+
+This section describes the tokenizer deployment process and highlights key
+insights.
+
+Firmware deployment
+===================
+* In the project's logging macro, calls to the underlying logging function were
+  replaced with a tokenized log macro invocation.
+* The log level was passed as the payload argument to facilitate runtime log
+  level control.
+* For this project, it was necessary to encode the log messages as text. In
+  the handler function the log messages were encoded in the $-prefixed
+  :ref:`module-pw_tokenizer-base64-format`, then dispatched as normal log messages.
+* Asserts were tokenized a callback-based API that has been removed (a
+  :ref:`custom macro <module-pw_tokenizer-custom-macro>` is a better
+  alternative).
+
+.. attention::
+  Do not encode line numbers in tokenized strings. This results in a huge
+  number of lines being added to the database, since every time code moves,
+  new strings are tokenized. If :ref:`module-pw_log_tokenized` is used, line
+  numbers are encoded in the log metadata. Line numbers may also be included by
+  by adding ``"%d"`` to the format string and passing ``__LINE__``.
+
+.. _module-pw_tokenizer-database-management:
+
+Database management
+===================
+* The token database was stored as a CSV file in the project's Git repo.
+* The token database was automatically updated as part of the build, and
+  developers were expected to check in the database changes alongside their code
+  changes.
+* A presubmit check verified that all strings added by a change were added to
+  the token database.
+* The token database included logs and asserts for all firmware images in the
+  project.
+* No strings were purged from the token database.
+
+.. tip::
+   Merge conflicts may be a frequent occurrence with an in-source CSV database.
+   Use the :ref:`module-pw_tokenizer-directory-database-format` instead.
+
+Decoding tooling deployment
+===========================
+* The Python detokenizer in ``pw_tokenizer`` was deployed to two places:
+
+  * Product-specific Python command line tools, using
+    ``pw_tokenizer.Detokenizer``.
+  * Standalone script for decoding prefixed Base64 tokens in files or
+    live output (e.g. from ``adb``), using ``detokenize.py``'s command line
+    interface.
+
+* The C++ detokenizer library was deployed to two Android apps with a Java
+  Native Interface (JNI) layer.
+
+  * The binary token database was included as a raw resource in the APK.
+  * In one app, the built-in token database could be overridden by copying a
+    file to the phone.
+
+.. tip::
+   Make the tokenized logging tools simple to use for your project.
+
+   * Provide simple wrapper shell scripts that fill in arguments for the
+     project. For example, point ``detokenize.py`` to the project's token
+     databases.
+   * Use ``pw_tokenizer.AutoUpdatingDetokenizer`` to decode in
+     continuously-running tools, so that users don't have to restart the tool
+     when the token database updates.
+   * Integrate detokenization everywhere it is needed. Integrating the tools
+     takes just a few lines of code, and token databases can be embedded in APKs
+     or binaries.
