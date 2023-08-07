@@ -495,7 +495,7 @@ CPP_SOURCE_EXTS = frozenset(
 )
 CPP_EXTS = CPP_HEADER_EXTS.union(CPP_SOURCE_EXTS)
 CPP_FILE_FILTER = FileFilter(
-    endswith=CPP_EXTS, exclude=(r'\.pb\.h$', r'\.pb\.c$')
+    endswith=CPP_EXTS, exclude=[r'\.pb\.h$', r'\.pb\.c$']
 )
 
 C_FORMAT = CodeFormat(
@@ -504,50 +504,50 @@ C_FORMAT = CodeFormat(
 
 PROTO_FORMAT: CodeFormat = CodeFormat(
     'Protocol buffer',
-    FileFilter(endswith=('.proto',)),
+    FileFilter(endswith=['.proto']),
     clang_format_check,
     clang_format_fix,
 )
 
 JAVA_FORMAT: CodeFormat = CodeFormat(
     'Java',
-    FileFilter(endswith=('.java',)),
+    FileFilter(endswith=['.java']),
     clang_format_check,
     clang_format_fix,
 )
 
 JAVASCRIPT_FORMAT: CodeFormat = CodeFormat(
     'JavaScript',
-    FileFilter(endswith=('.js',)),
+    FileFilter(endswith=['.js']),
     clang_format_check,
     clang_format_fix,
 )
 
 GO_FORMAT: CodeFormat = CodeFormat(
-    'Go', FileFilter(endswith=('.go',)), check_go_format, fix_go_format
+    'Go', FileFilter(endswith=['.go']), check_go_format, fix_go_format
 )
 
 PYTHON_FORMAT: CodeFormat = CodeFormat(
     'Python',
-    FileFilter(endswith=('.py',)),
+    FileFilter(endswith=['.py']),
     check_py_format,
     fix_py_format,
 )
 
 GN_FORMAT: CodeFormat = CodeFormat(
-    'GN', FileFilter(endswith=('.gn', '.gni')), check_gn_format, fix_gn_format
+    'GN', FileFilter(endswith=['.gn', '.gni']), check_gn_format, fix_gn_format
 )
 
 BAZEL_FORMAT: CodeFormat = CodeFormat(
     'Bazel',
-    FileFilter(endswith=('BUILD', '.bazel', '.bzl'), name=('WORKSPACE')),
+    FileFilter(endswith=['.bazel', '.bzl'], name=['^BUILD$', '^WORKSPACE$']),
     check_bazel_format,
     fix_bazel_format,
 )
 
 COPYBARA_FORMAT: CodeFormat = CodeFormat(
     'Copybara',
-    FileFilter(endswith=('.bara.sky',)),
+    FileFilter(endswith=['.bara.sky']),
     check_bazel_format,
     fix_bazel_format,
 )
@@ -555,28 +555,28 @@ COPYBARA_FORMAT: CodeFormat = CodeFormat(
 # TODO(b/234881054): Add real code formatting support for CMake
 CMAKE_FORMAT: CodeFormat = CodeFormat(
     'CMake',
-    FileFilter(endswith=('CMakeLists.txt', '.cmake')),
+    FileFilter(endswith=['.cmake'], name=['^CMakeLists.txt$']),
     check_trailing_space,
     fix_trailing_space,
 )
 
 RST_FORMAT: CodeFormat = CodeFormat(
     'reStructuredText',
-    FileFilter(endswith=('.rst',)),
+    FileFilter(endswith=['.rst']),
     check_trailing_space,
     fix_trailing_space,
 )
 
 MARKDOWN_FORMAT: CodeFormat = CodeFormat(
     'Markdown',
-    FileFilter(endswith=('.md',)),
+    FileFilter(endswith=['.md']),
     check_trailing_space,
     fix_trailing_space,
 )
 
 OWNERS_CODE_FORMAT = CodeFormat(
     'OWNERS',
-    filter=FileFilter(name=('OWNERS',)),
+    filter=FileFilter(name=['^OWNERS$']),
     check=check_owners_format,
     fix=fix_owners_format,
 )
