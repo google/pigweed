@@ -1554,6 +1554,51 @@ nav can scroll to the current page.
 
 .. _change #162410: https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162410
 
+Call-to-action buttons on sales pitch pages (docs.rst)
+======================================================
+Use the following directive to put call-to-action buttons on a ``docs.rst``
+page:
+
+.. code-block::
+
+   .. grid:: 2
+
+      .. grid-item-card:: :octicon:`zap` Get started & guides
+         :link: <REF>
+         :link-type: ref
+         :class-item: sales-pitch-cta-primary
+
+         Learn how to integrate <MODULE> into your project and implement
+         common use cases.
+
+      .. grid-item-card:: :octicon:`info` API reference
+         :link: <REF>
+         :link-type: ref
+         :class-item: sales-pitch-cta-secondary
+
+         Get detailed reference information about the <MODULE> API.
+
+   .. grid:: 2
+
+      .. grid-item-card:: :octicon:`info` CLI reference
+         :link: <REF>
+         :link-type: ref
+         :class-item: sales-pitch-cta-secondary
+
+         Get usage information about <MODULE> command line utilities.
+
+      .. grid-item-card:: :octicon:`table` Design
+         :link: <REF>
+         :link-type: ref
+         :class-item: sales-pitch-cta-secondary
+
+         Read up on how <MODULE> is designed.
+
+* Remove cards for content that does not exist. For example, if the module
+  doesn't have a CLI reference, remove the card for that doc.
+* Replace ``<REF>`` and ``<MODULE>``. Don't change anything else. We want
+  a consistent call-to-action experience across all the modules.
+
 .. _commit-style:
 
 --------------

@@ -34,8 +34,38 @@ without printf-style arguments.
 * Reduce CPU usage by replacing snprintf calls with simple tokenization code.
 * Remove potentially sensitive log, assert, and other strings from binaries.
 
-See :ref:`module-pw_tokenizer-design` for a more detailed explanation
-of how ``pw_tokenizer`` works.
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`zap` Get started & guides
+      :link: module-pw_tokenizer-guides
+      :link-type: ref
+      :class-item: sales-pitch-cta-primary
+
+      Learn how to integrate pw_tokenizer into your project and implement
+      common use cases.
+
+   .. grid-item-card:: :octicon:`info` API reference
+      :link: module-pw_tokenizer-api
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Get detailed reference information about the pw_tokenizer API.
+
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`info` CLI reference
+      :link: module-pw_tokenizer-cli
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Get usage information about pw_tokenizer command line utilities.
+
+   .. grid-item-card:: :octicon:`table` Design
+      :link: module-pw_tokenizer-design
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Read up on how pw_tokenizer is designed.
 
 .. _module-pw_tokenizer-tokenized-logging-example:
 
@@ -106,7 +136,7 @@ size (49 → 15 bytes).
    :hidden:
    :maxdepth: 1
 
+   guides
    api
    cli
    design
-   guides

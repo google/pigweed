@@ -206,3 +206,17 @@ li.pw-module-section-nav-link p a:hover {
 div.font-monospace {
   font-family: var(--font-stack--monospace);
 }
+
+/* Sales pitch pages like //pw_tokenizer/docs.rst use the feature grid as a
+ * call-to-action to check out other docs in the set. The following CSS makes
+ * the feature grid items stand out a bit more. */
+
+.sales-pitch-cta-primary .sd-card-title {
+  border-bottom: 3px solid var(--color-sidebar-brand-text);
+  padding-bottom: 0.5rem;
+}
+
+.sales-pitch-cta-secondary .sd-card-title {
+  border-bottom: 3px solid var(--color-sidebar-link-text);
+  padding-bottom: 0.5rem;
+}
