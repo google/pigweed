@@ -12,6 +12,32 @@ Guides
 ---------------
 Getting started
 ---------------
+There are two sides to ``pw_tokenizer``, which we call tokenization and
+detokenization.
+
+* **Tokenization** converts string literals in the source code to binary tokens
+  at compile time. If the string has printf-style arguments, these are encoded
+  to compact binary form at runtime.
+* **Detokenization** converts tokenized strings back to the original
+  human-readable strings.
+
+Here's an overview of what happens when ``pw_tokenizer`` is used:
+
+1. During compilation, the ``pw_tokenizer`` module hashes string literals to
+   generate stable 32-bit tokens.
+2. The tokenization macro removes these strings by declaring them in an ELF
+   section that is excluded from the final binary.
+3. After compilation, strings are extracted from the ELF to build a database of
+   tokenized strings for use by the detokenizer. The ELF file may also be used
+   directly.
+4. During operation, the device encodes the string token and its arguments, if
+   any.
+5. The encoded tokenized strings are sent off-device or stored.
+6. Off-device, the detokenizer tools use the token database to decode the
+   strings to human-readable form.
+
+Integrating with Bazel / GN / CMake projects
+============================================
 Integrating ``pw_tokenizer`` requires a few steps beyond building the code. This
 section describes one way ``pw_tokenizer`` might be integrated with a project.
 These steps can be adapted as needed.
