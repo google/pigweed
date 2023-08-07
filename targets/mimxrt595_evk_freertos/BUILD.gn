@@ -116,9 +116,10 @@ if (pw_third_party_mcuxpresso_SDK == "//targets/mimxrt595_evk_freertos:sdk") {
       "platform.drivers.flexcomm_spi.MIMXRT595S",
       "platform.drivers.flexcomm_usart_freertos.MIMXRT595S",
       "platform.drivers.flexio_spi.MIMXRT595S",
+      "platform.drivers.pint.MIMXRT595S",
       "platform.drivers.power.MIMXRT595S",
       "platform.drivers.lpc_gpio.MIMXRT595S",
-      "platform.drivers.pint.MIMXRT595S",
+      "platform.drivers.mu.MIMXRT595S",
       "utility.debug_console.MIMXRT595S",
     ]
     exclude = [

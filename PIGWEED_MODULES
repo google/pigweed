@@ -95,6 +95,7 @@ pw_spi_mcuxpresso
 pw_status
 pw_stm32cube_build
 pw_stream
+pw_stream_shmem_mcuxpresso
 pw_stream_uart_linux
 pw_stream_uart_mcuxpresso
 pw_string
