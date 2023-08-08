@@ -204,7 +204,11 @@ def execute_command_no_logging(
     returncode = None
     while returncode is None:
         if BUILDER_CONTEXT.build_stopping():
-            proc.terminate()
+            try:
+                proc.terminate()
+            except ProcessLookupError:
+                # Process already stopped.
+                pass
         returncode = proc.poll()
         time.sleep(0.05)
     print()
@@ -324,7 +328,11 @@ def execute_command_with_logging(
                 line_processed_callback(recipe)
 
             if BUILDER_CONTEXT.build_stopping():
-                proc.terminate()
+                try:
+                    proc.terminate()
+                except ProcessLookupError:
+                    # Process already stopped.
+                    pass
 
         recipe.status.return_code = returncode
 
