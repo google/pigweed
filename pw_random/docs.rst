@@ -1,8 +1,8 @@
 .. _module-pw_random:
 
----------
+=========
 pw_random
----------
+=========
 Pigweed's ``pw_random`` module provides a generic interface for random number
 generators, as well as some practical embedded-friendly implementations. While
 this module does not provide drivers for hardware random number generators, it
@@ -17,8 +17,9 @@ not be available. Even if RNG hardware is present, it might not always be active
 or accessible. ``pw_random`` provides libraries that make these situations
 easier to manage.
 
+---------------------
 Using RandomGenerator
-=====================
+---------------------
 There's two sides to a RandomGenerator; the input, and the output. The outputs
 are relatively straightforward; ``GetInt(T&)`` randomizes the passed integer
 reference, ``GetInt(T&, T exclusive_upper_bound)`` produces a random integer
@@ -34,10 +35,18 @@ few bits of noise from ADCs or other highly variable inputs can be accumulated
 in a RandomGenerator over time to improve randomness. Such an approach might
 not be sufficient for security, but it could help for less strict uses.
 
+-------------
+API reference
+-------------
+.. doxygennamespace:: pw::random
+   :members:
+
+----------
 Algorithms
-==========
+----------
+
 xorshift*
----------
+=========
 The ``xorshift*`` algorithm is a pseudo-random number generation algorithm. It's
 very simple in principle; the state is represented as an integer that, with each
 generation, performs exclusive OR operations on different left/right bit shifts
@@ -57,8 +66,9 @@ For more information, see:
  * https://www.jstatsoft.org/article/view/v008i14
  * http://vigna.di.unimi.it/ftp/papers/xorshift.pdf
 
+-----------
 Future Work
-===========
+-----------
 A simple "entropy pool" implementation could buffer incoming entropy later use
 instead of requiring an application to directly poll the hardware RNG peripheral
 when the random data is needed. This would let a device collect entropy when

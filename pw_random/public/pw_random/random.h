@@ -25,12 +25,12 @@
 
 namespace pw::random {
 
-// A random generator uses injected entropy to generate random values. Many of
-// the guarantees for this interface are provided at the level of the
-// implementations. In general:
-//  * DO assume a generator will always succeed.
-//  * DO NOT assume a generator is cryptographically secure.
-//  * DO NOT assume uniformity of generated data.
+/// A random generator uses injected entropy to generate random values. Many of
+/// the guarantees for this interface are provided at the level of the
+/// implementations. In general:
+///  * DO assume a generator will always succeed.
+///  * DO NOT assume a generator is cryptographically secure.
+///  * DO NOT assume uniformity of generated data.
 class RandomGenerator {
  public:
   virtual ~RandomGenerator() = default;
@@ -42,11 +42,18 @@ class RandomGenerator {
     Get({reinterpret_cast<std::byte*>(&dest), sizeof(T)});
   }
 
-  // Calculate a uniformly distributed random number in the range [0,
-  // exclusive_upper_bound). This avoids modulo biasing. Uniformity is only
-  // guaranteed if the underlying generator generates uniform data. Uniformity
-  // is achieved by generating new random numbers until one is generated in the
-  // desired range (with optimizations).
+  /// Calculates a uniformly distributed random number in the range
+  /// `[0, exclusive_upper_bound)`.
+  ///
+  /// This avoids modulo biasing. Uniformity is only guaranteed if the
+  /// underlying generator generates uniform data. Uniformity is achieved by
+  /// generating new random numbers until one is generated in the desired
+  /// range (with optimizations).
+  ///
+  /// @param[out] dest The destination to populate the random number into.
+  ///
+  /// @param[in] exclusive_upper_bound The largest number that can be
+  /// populated into `dest`, exclusive.
   template <class T>
   void GetInt(T& dest, const T& exclusive_upper_bound) {
     static_assert(std::is_unsigned_v<T>, "T must be an unsigned integer");
@@ -77,15 +84,20 @@ class RandomGenerator {
     }
   }
 
-  // Populates the destination buffer with a randomly generated value.
+  /// Populates the destination buffer with a randomly generated value.
+  ///
+  /// @param[out] dest The destination buffer.
   virtual void Get(ByteSpan dest) = 0;
 
-  // Injects entropy into the pool. `data` may have up to 32 bits of random
-  // entropy. If the number of bits of entropy is less than 32, entropy is
-  // assumed to be stored in the least significant bits of `data`.
+  /// Injects entropy into the pool.
+  ///
+  /// @param[in] data Up to 32 bits of random entropy data.
+  ///
+  /// @param[in] num_bits The number of bits of entropy. If less than `32`,
+  /// entropy is assumed to be stored in the least significant bits of `data`.
   virtual void InjectEntropyBits(uint32_t data, uint_fast8_t num_bits) = 0;
 
-  // Injects entropy into the pool byte-by-byte.
+  /// Injects entropy into the pool byte-by-byte.
   void InjectEntropy(ConstByteSpan data) {
     for (std::byte b : data) {
       InjectEntropyBits(std::to_integer<uint32_t>(b), /*num_bits=*/8);
