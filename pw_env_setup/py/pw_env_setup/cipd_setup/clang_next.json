@@ -1,0 +1,18 @@
+{
+  "packages": [
+    {
+      "path": "fuchsia/third_party/clang/${platform}",
+      "platforms": [
+        "linux-amd64",
+        "linux-arm64",
+        "mac-amd64",
+        "mac-arm64",
+        "windows-amd64"
+      ],
+      "tags": [
+        "git_revision:020d2fb7711d70e296f19d83565f8d93d2cfda71"
+      ],
+      "version_file": ".versions/clang.cipd_version"
+    }
+  ]
+}
