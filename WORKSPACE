@@ -37,6 +37,16 @@ http_archive(
     ],
 )
 
+local_repository(
+    name = "pw_toolchain",
+    path = "pw_toolchain_bazel",
+)
+
+# Setup xcode on mac.
+load("@pw_toolchain//features/macos:generate_xcode_repository.bzl", "pw_xcode_command_line_tools_repository")
+
+pw_xcode_command_line_tools_repository()
+
 # Setup CIPD client and packages.
 # Required by: pigweed.
 # Used by modules: all.
@@ -70,6 +80,12 @@ http_archive(
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 
 bazel_skylib_workspace()
+
+cipd_repository(
+    name = "llvm_toolchain",
+    path = "fuchsia/third_party/clang/${os}-${arch}",
+    tag = "git_revision:ebd0b8a0472b865b7eb6e1a32af97ae31d829033",
+)
 
 # Set up Python support.
 # Required by: rules_fuzzing, com_github_nanopb_nanopb.
@@ -329,6 +345,10 @@ register_toolchains(rust_analyzer_toolchain_repository(
     # This should match the currently registered macos toolchain.
     version = "1.67.0",
 ))
+
+register_toolchains(
+    "//pw_toolchain/host_clang:host_cc_toolchain_macos",
+)
 
 rust_analyzer_dependencies()
 

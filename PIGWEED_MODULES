@@ -131,6 +131,7 @@ pw_tls_client_mbedtls
 pw_tokenizer
 pw_tool
 pw_toolchain
+pw_toolchain_bazel
 pw_trace
 pw_trace_tokenized
 pw_transfer

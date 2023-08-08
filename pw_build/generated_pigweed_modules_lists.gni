@@ -173,6 +173,7 @@ declare_args() {
   dir_pw_tokenizer = get_path_info("../pw_tokenizer", "abspath")
   dir_pw_tool = get_path_info("../pw_tool", "abspath")
   dir_pw_toolchain = get_path_info("../pw_toolchain", "abspath")
+  dir_pw_toolchain_bazel = get_path_info("../pw_toolchain_bazel", "abspath")
   dir_pw_trace = get_path_info("../pw_trace", "abspath")
   dir_pw_trace_tokenized = get_path_info("../pw_trace_tokenized", "abspath")
   dir_pw_transfer = get_path_info("../pw_transfer", "abspath")
@@ -322,6 +323,7 @@ declare_args() {
     dir_pw_tokenizer,
     dir_pw_tool,
     dir_pw_toolchain,
+    dir_pw_toolchain_bazel,
     dir_pw_trace,
     dir_pw_trace_tokenized,
     dir_pw_transfer,
@@ -468,6 +470,7 @@ declare_args() {
     "$dir_pw_tokenizer:tests",
     "$dir_pw_tool:tests",
     "$dir_pw_toolchain:tests",
+    "$dir_pw_toolchain_bazel:tests",
     "$dir_pw_trace:tests",
     "$dir_pw_trace_tokenized:tests",
     "$dir_pw_transfer:tests",
@@ -614,6 +617,7 @@ declare_args() {
     "$dir_pw_tokenizer:docs",
     "$dir_pw_tool:docs",
     "$dir_pw_toolchain:docs",
+    "$dir_pw_toolchain_bazel:docs",
     "$dir_pw_trace:docs",
     "$dir_pw_trace_tokenized:docs",
     "$dir_pw_transfer:docs",

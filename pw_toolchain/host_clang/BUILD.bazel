@@ -1,0 +1,81 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load(
+    "@pw_toolchain//cc_toolchain:defs.bzl",
+    "pw_cc_toolchain",
+    "pw_cc_toolchain_feature",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+filegroup(name = "empty")
+
+pw_cc_toolchain_feature(
+    name = "macos_stdlib",
+    cxx_builtin_include_directories = [
+        "@llvm_toolchain//:include/c++/v1",
+        "@llvm_toolchain//:lib/clang/17/include",
+    ],
+    linker_files = ["@llvm_toolchain//:lib/libc++.a"],
+    target_compatible_with = ["@platforms//os:macos"],
+)
+
+pw_cc_toolchain(
+    name = "host_toolchain",
+    abi_libc_version = "unknown",
+    abi_version = "unknown",
+    all_files = "@llvm_toolchain//:all",
+    ar = "@llvm_toolchain//:bin/llvm-ar",
+    ar_files = "@llvm_toolchain//:all",
+    as_files = "@llvm_toolchain//:all",
+    compiler = "unknown",
+    compiler_files = "@llvm_toolchain//:all",
+    coverage_files = "@llvm_toolchain//:all",
+    cpp = "@llvm_toolchain//:bin/clang++",
+    dwp_files = "@llvm_toolchain//:all",
+    feature_deps = [
+        "@pw_toolchain//features:no_default_cpp_stdlib",
+        ":macos_stdlib",
+        "@pw_toolchain//features/macos:macos_sysroot",
+        "@pw_toolchain//features:no_canonical_prefixes",
+    ],
+    gcc = "@llvm_toolchain//:bin/clang",
+    gcov = "@llvm_toolchain//:bin/llvm-cov",
+    host_system_name = "unknown",
+    ld = "@llvm_toolchain//:bin/clang++",
+    linker_files = "@llvm_toolchain//:all",
+    objcopy_files = "@llvm_toolchain//:all",
+    strip = "@llvm_toolchain//:bin/llvm-strip",
+    strip_files = "@llvm_toolchain//:all",
+    supports_param_files = 0,
+    target_cpu = "unknown",
+    target_libc = "unknown",
+    target_system_name = "unknown",
+    toolchain_identifier = "host-toolchain",
+)
+
+toolchain(
+    name = "host_cc_toolchain_macos",
+    exec_compatible_with = [
+        "@platforms//os:macos",
+    ],
+    target_compatible_with = [
+        "@platforms//os:macos",
+    ],
+    toolchain = ":host_toolchain",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
