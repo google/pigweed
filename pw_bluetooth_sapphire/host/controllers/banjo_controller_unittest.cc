@@ -136,6 +136,8 @@ class FakeDevice : public ddk::BtHciProtocol<FakeDevice>, public ddk::BtVendorPr
     }
   }
 
+  zx_status_t BtHciOpenIsoChannel(zx::channel in) { return ZX_ERR_NOT_SUPPORTED; }
+
   zx_status_t BtHciOpenSnoopChannel(zx::channel in) { return ZX_ERR_NOT_SUPPORTED; }
 
   // ddk::BtVendorProtocol mixins:
