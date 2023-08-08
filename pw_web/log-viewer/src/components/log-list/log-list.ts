@@ -85,7 +85,8 @@ export class LogList extends LitElement {
     private readonly MAX_ENTRIES = 100_000;
 
     @property({ type: Array })
-    colsHidden: boolean[] = [];
+    colsHidden: (boolean|undefined)[] = [];
+
 
     firstUpdated() {
         setInterval(() => this.updateHorizontalOverflowState(), 1000);
@@ -142,9 +143,10 @@ export class LogList extends LitElement {
             logEntry.fields.forEach((fieldData) => {
                 if (fieldData.key === 'severity') {
                     this._fieldKeys.add('');
-                } else {
-                    this._fieldKeys.add(fieldData.key);
+                    return;
                 }
+                this._fieldKeys.add(fieldData.key);
+
             });
         });
     }
@@ -188,7 +190,7 @@ export class LogList extends LitElement {
                 const colHidden = this.colsHidden[index];
 
                 const cellEl = cell as HTMLElement;
-                cellEl.hidden = colHidden;
+                cellEl.hidden = colHidden as boolean;
             });
         });
 
@@ -222,11 +224,11 @@ export class LogList extends LitElement {
                 .map((width, index) => {
                     if (index === columnWidths.length - 1) {
                         return '1fr';
-                    } else if (index === 0) {
-                        return '3.25rem';
-                    } else {
-                        return `${width}px`;
                     }
+                    if (index === 0) {
+                        return '3.25rem';
+                    }
+                    return `${width}px`;
                 })
                 .join(' ');
             row.style.gridTemplateColumns = gridTemplateColumns;
@@ -280,10 +282,9 @@ export class LogList extends LitElement {
             container.offsetHeight
         ) {
             this._autoscrollIsEnabled = true;
-        } else {
-            this._autoscrollIsEnabled = false;
+            return;
         }
-
+        this._autoscrollIsEnabled = false;
         this.requestUpdate();
     };
 
@@ -345,14 +346,13 @@ export class LogList extends LitElement {
         for (let i = 0; i < totalColumns; i++) {
             if (i === columnIndex) {
                 gridTemplateColumns += `${newWidth}px `;
-            } else {
-                const otherColumnHeader = this._table.querySelector(
-                    `th:nth-child(${i + 1})`
-                ) as HTMLElement;
-                const otherColumnWidth = otherColumnHeader.offsetWidth;
-
-                gridTemplateColumns += `${otherColumnWidth}px `;
+                return;
             }
+            const otherColumnHeader = this._table.querySelector(
+                `th:nth-child(${i + 1})`
+            ) as HTMLElement;
+            const otherColumnWidth = otherColumnHeader.offsetWidth;
+            gridTemplateColumns += `${otherColumnWidth}px `;
         }
 
         this._tableRows.forEach((row) => {

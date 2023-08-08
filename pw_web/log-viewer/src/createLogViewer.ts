@@ -13,6 +13,7 @@
 // the License.
 
 import { LogViewer as RootComponent } from './components/log-viewer';
+import { StateStore, LocalStorageState } from './shared/state';
 import { LogEntry } from '../src/shared/interfaces';
 import { LogSource } from '../src/log-source';
 
@@ -25,8 +26,8 @@ import '@material/web/textfield/filled-text-field.js';
 import '@material/web/iconbutton/standard-icon-button.js';
 import '@material/web/icon/icon.js';
 
-export function createLogViewer(logSource: LogSource, root: HTMLElement) {
-    const logViewer = new RootComponent();
+export function createLogViewer(logSource: LogSource, root: HTMLElement, state: StateStore=new LocalStorageState()) {
+    const logViewer = new RootComponent(state);
     const logs: LogEntry[] = [];
     root.appendChild(logViewer);
 

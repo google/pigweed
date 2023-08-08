@@ -13,8 +13,10 @@
 // the License.
 
 import { LitElement, html } from 'lit';
-import { customElement, property, query } from 'lit/decorators.js';
+import { customElement, property, query, queryAll, state } from 'lit/decorators.js';
 import { styles } from './log-view-controls.styles';
+import { State } from '../../shared/interfaces';
+import { StateStore, LocalStorageState } from '../../shared/state';
 
 /**
  * A sub-component of the log view with user inputs for managing and customizing
@@ -38,13 +40,65 @@ export class LogViewControls extends LitElement {
     @property({ type: Boolean })
     hideCloseButton = false;
 
+    @property({ type: String })
+    _searchText = '';
+
+    @property({ type: Array })
+    colsHidden: (boolean|undefined)[] = [];
+
+    /** A StateStore object that stores state of views */
+    @state()
+    _stateStore: StateStore = new LocalStorageState();
+
+    @state()
+    _state: State;
+
+    @state()
+    _viewTitle: string = '';
+
     @query('.field-menu') _fieldMenu!: HTMLMenuElement;
+
+    @query('.search-input') _searchInput!: HTMLInputElement;
+
+    @queryAll('.item-checkboxeses') _itemCheckboxes!: HTMLCollection[];
+
+    private firstCheckboxLoad = false;
 
     /** The timer identifier for debouncing search input. */
     private _inputDebounceTimer: number | null = null;
 
     /** The delay (in ms) used for debouncing search input. */
     private readonly INPUT_DEBOUNCE_DELAY = 50;
+
+    constructor() {
+        super();
+        this._state = this._stateStore.getState();
+    }
+
+    protected firstUpdated(): void {
+        if (this._state !== null) {
+            const viewConfigArr = this._state.logViewConfig;
+            for (const i in viewConfigArr) {
+                if (viewConfigArr[i].viewID === this.viewId) {
+                    this._searchText = viewConfigArr[i].search as string;
+                    this._viewTitle = viewConfigArr[i].viewTitle as string;
+                }
+            }
+        }
+        this._searchInput.value = this._searchText;
+        this._searchInput.dispatchEvent(new CustomEvent('input'));
+    }
+
+    protected updated(): void {
+        const checkboxItems = Array.from(this._itemCheckboxes);
+        if (checkboxItems.length > 0 && !this.firstCheckboxLoad) {
+            for (let i in checkboxItems) {
+                const checkboxEl = checkboxItems[i] as unknown as HTMLInputElement;
+                checkboxEl.checked = !this.colsHidden[Number(i) + 1];
+            }
+            this.firstCheckboxLoad = !this.firstCheckboxLoad;
+        }
+    }
 
     /**
      * Called whenever the search field value is changed. Debounces the input
@@ -134,17 +188,16 @@ export class LogViewControls extends LitElement {
      */
     private toggleColumnVisibilityMenu(event: Event) {
         const dropdownButton = event.target as HTMLElement;
-
         this._fieldMenu.hidden = !this._fieldMenu.hidden;
         dropdownButton.classList.toggle('button-toggle');
     }
 
     render() {
         return html`
-            <p class="host-name">Log View</p>
+            <p class="host-name"> ${this._viewTitle}</p>
 
             <div class="input-container">
-                <input placeholder="Search" type="text" @input=${
+                <input class="search-input" placeholder="Search" type="text" @input=${
                     this.handleInput
                 }></input>
             </div>
@@ -181,7 +234,7 @@ export class LogViewControls extends LitElement {
                             (field) => html`
                                 <li class="field-menu-item">
                                     <input
-                                        class="fields"
+                                        class="item-checkboxeses"
                                         @click=${this.handleColumnToggle}
                                         checked
                                         type="checkbox"
