@@ -596,11 +596,10 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
     default = True
 
     state = CppIdeFeaturesState(pw_ide_settings)
-    should_update_ides = False
 
     if process:
         default = False
-        should_update_ides = _process_compdbs(reporter, pw_ide_settings)
+        _process_compdbs(reporter, pw_ide_settings)
 
         if state.current_target is None:
             use_default_target = True
@@ -658,7 +657,6 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
                 )
                 sys.exit(1)
 
-            should_update_ides = True
         except InvalidTargetException:
             reporter.err(
                 f'Invalid target toolchain! {target_to_set} not among the '
@@ -675,10 +673,6 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
             'Set C/C++ language server analysis target toolchain to: '
             f'{CppIdeFeaturesState(pw_ide_settings).current_target}'
         )
-
-    if should_update_ides:
-        if pw_ide_settings.editor_enabled('vscode'):
-            cmd_vscode()
 
     if clangd_command:
         default = False

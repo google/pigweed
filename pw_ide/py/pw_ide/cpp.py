@@ -77,11 +77,13 @@ from pw_ide.exceptions import (
 )
 
 from pw_ide.settings import PigweedIdeSettings
+from pw_ide.symlinks import set_symlink
 
 _LOG = logging.getLogger(__package__)
 env = pigweed_environment()
 
 COMPDB_FILE_NAME = 'compile_commands.json'
+STABLE_CLANGD_DIR_NAME = '.stable'
 _CPP_IDE_FEATURES_DATA_FILE = 'pw_ide_state.json'
 _UNSUPPORTED_TOOLCHAIN_EXECUTABLES = ('_pw_invalid', 'python')
 _SUPPORTED_WRAPPER_EXECUTABLES = ('ccache',)
@@ -198,6 +200,10 @@ class CppIdeFeaturesState:
     def __iter__(self) -> Generator[CppIdeFeaturesTarget, None, None]:
         return (target for target in self.targets.values())
 
+    @property
+    def stable_target_link(self) -> Path:
+        return self.settings.working_dir / STABLE_CLANGD_DIR_NAME
+
     @contextmanager
     def _file(self) -> Generator[CppIdeFeaturesData, None, None]:
         """A simple key-value store for state data."""
@@ -239,14 +245,22 @@ class CppIdeFeaturesState:
             else:
                 if isinstance(new_current_target, CppIdeFeaturesTarget):
                     name = new_current_target.name
+                    new_current_target_inst = new_current_target
                 else:
                     name = new_current_target
 
-                if name not in state.targets:
-                    raise InvalidTargetException
+                    try:
+                        new_current_target_inst = state.targets[name]
+                    except KeyError:
+                        raise InvalidTargetException
 
-                if not state.targets[name].compdb_file_path.exists():
+                if not new_current_target_inst.compdb_file_path.exists():
                     raise MissingCompDbException
+
+                set_symlink(
+                    new_current_target_inst.compdb_file_path.parent,
+                    self.stable_target_link,
+                )
 
                 state.current_target = state.targets[name]
 
@@ -1128,9 +1142,7 @@ class ClangdSettings:
         compile_commands_dir = env.PW_PROJECT_ROOT
 
         if state.current_target is not None:
-            compile_commands_dir = str(
-                state.current_target.compdb_file_path.parent
-            )
+            compile_commands_dir = str(state.stable_target_link)
 
         self.arguments: List[str] = [
             f'--compile-commands-dir={compile_commands_dir}',
