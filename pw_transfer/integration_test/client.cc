@@ -84,6 +84,15 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
   transfer::Thread<2, 2> transfer_thread(chunk_buffer, encode_buffer);
   thread::Thread system_thread(TransferThreadOptions(), transfer_thread);
 
+  // As much as we don't want to dynamically allocate an array,
+  // variable length arrays (VLA) are nonstandard, and a std::vector could cause
+  // references to go stale if the vector's underlying buffer is resized. This
+  // array of TransferResults needs to outlive the loop that performs the
+  // actual transfer actions due to how some references to TransferResult
+  // may persist beyond the lifetime of a transfer.
+  const int num_actions = config.transfer_actions().size();
+  auto transfer_results = std::make_unique<TransferResult[]>(num_actions);
+
   pw::transfer::Client client(rpc::integration_test::client(),
                               rpc::integration_test::kChannelId,
                               transfer_thread);
@@ -92,8 +101,9 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
   client.set_max_lifetime_retries(config.max_lifetime_retries());
 
   Status status = pw::OkStatus();
-  for (const pw::transfer::TransferAction& action : config.transfer_actions()) {
-    TransferResult result;
+  for (int i = 0; i < num_actions; i++) {
+    const pw::transfer::TransferAction& action = config.transfer_actions()[i];
+    TransferResult& result = transfer_results[i];
     // If no protocol version is specified, default to the latest version.
     pw::transfer::ProtocolVersion protocol_version =
         action.protocol_version() ==
