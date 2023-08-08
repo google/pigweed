@@ -40,6 +40,7 @@ pw_add_library(pw_log_zephyr.tokenized_handler STATIC
   SOURCES
     pw_log_zephyr_tokenized_handler.cc
   PUBLIC_DEPS
+    pw_log_tokenized.config
     pw_log_tokenized.handler
     pw_span
     pw_sync.interrupt_spin_lock

@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include <pw_log_tokenized/config.h>
 #include <pw_log_tokenized/handler.h>
 #include <pw_log_tokenized/metadata.h>
 #include <pw_span/span.h>
@@ -19,10 +20,17 @@
 #include <pw_tokenizer/base64.h>
 #include <zephyr/logging/log_core.h>
 
-namespace pw::log_tokenized {
+namespace pw::log_zephyr {
 namespace {
+
+// The Zephyr console may output raw text along with Base64 tokenized messages,
+// which could interfere with detokenization. Output a character to mark the end
+// of a Base64 message.
+constexpr char kEndDelimiter = '#';
+
 sync::InterruptSpinLock log_encode_lock;
-}
+
+}  // namespace
 
 extern "C" void pw_log_tokenized_HandleLog(uint32_t metadata,
                                            const uint8_t log_buffer[],
@@ -30,12 +38,11 @@ extern "C" void pw_log_tokenized_HandleLog(uint32_t metadata,
   pw::log_tokenized::Metadata meta(metadata);
 
   // Encode the tokenized message as Base64.
-  char base64_buffer[tokenizer::kDefaultBase64EncodedBufferSize];
-  const char EOT = '#';
-  const size_t bytes = tokenizer::PrefixedBase64Encode(
-      span(log_buffer, size_bytes), base64_buffer);
+  const InlineBasicString base64_string =
+      tokenizer::PrefixedBase64Encode<log_tokenized::kEncodingBufferSizeBytes>(
+          span(log_buffer, size_bytes));
 
-  if (bytes == 0) {
+  if (base64_string.empty()) {
     return;
   }
 
@@ -45,8 +52,8 @@ extern "C" void pw_log_tokenized_HandleLog(uint32_t metadata,
   log_encode_lock.lock();
   // _is_raw is set to 0 here because the print string is required to be a
   // string literal if _is_raw is set to 1.
-  Z_LOG_PRINTK(/*_is_raw=*/0, "%s%c", base64_buffer, EOT);
+  Z_LOG_PRINTK(/*_is_raw=*/0, "%s%c", base64_string.c_str(), kEndDelimiter);
   log_encode_lock.unlock();
 }
 
-}  // namespace pw::log_tokenized
+}  // namespace pw::log_zephyr
