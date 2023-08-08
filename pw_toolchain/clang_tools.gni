@@ -15,6 +15,16 @@ import("//build_overrides/pigweed.gni")
 import("//build_overrides/pigweed_environment.gni")
 import("$dir_pw_toolchain/rbe.gni")
 
+_default_llvm_prefix = ""
+_default_rust_prefix = ""
+
+# If Pigweed's CIPD environment setup was run, assume a LLVM toolchain and Rust
+# compiler are present there.
+if (defined(pw_env_setup_CIPD_PIGWEED)) {
+  _default_llvm_prefix = pw_env_setup_CIPD_PIGWEED + "/bin/"
+  _default_rust_prefix = pw_env_setup_CIPD_PIGWEED + "/bin/"
+}
+
 declare_args() {
   # This flag allows you to specify the root directory of the clang, clang++,
   # and llvm-ar binaries to use when compiling with a clang-based toolchain.
@@ -23,13 +33,13 @@ declare_args() {
   #
   # If the prefix begins with "//", it will be rebased to be relative to the
   # root build directory.
-  pw_toolchain_CLANG_PREFIX = pw_env_setup_CIPD_PIGWEED + "/bin/"
+  pw_toolchain_CLANG_PREFIX = _default_llvm_prefix
 
   # This flag allows you to specify the root directory of the rustc binary.
   #
   # If the prefix begins with "//", it will be rebased to be relative to the
   # root build directory.
-  pw_toolchain_RUST_PREFIX = pw_env_setup_CIPD_PIGWEED + "/bin/"
+  pw_toolchain_RUST_PREFIX = _default_rust_prefix
 }
 
 pw_toolchain_clang_tools = {
