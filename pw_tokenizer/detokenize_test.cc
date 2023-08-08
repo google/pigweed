@@ -28,7 +28,7 @@ using namespace std::literals::string_view_literals;
 
 // Use alignas to ensure that the data is properly aligned to be read from a
 // token database entry struct. This avoids unaligned memory reads.
-alignas(TokenDatabase::RawEntry) constexpr char kBasicData[] =
+constexpr char kBasicData[] =
     "TOKENS\0\0"
     "\x04\x00\x00\x00"
     "\0\0\0\0"
@@ -102,7 +102,7 @@ TEST_F(Detokenize, BestStringWithErrors_UnknownToken_ErrorMessage) {
             ERR("unknown token fedcba98"));
 }
 
-alignas(TokenDatabase::RawEntry) constexpr char kDataWithArguments[] =
+constexpr char kDataWithArguments[] =
     "TOKENS\0\0"
     "\x09\x00\x00\x00"
     "\0\0\0\0"
@@ -191,7 +191,7 @@ TEST_F(DetokenizeWithArgs, DecodingError) {
             "Now there are " ERR("%d ERROR") " of " ERR("%s SKIPPED") "!");
 }
 
-alignas(TokenDatabase::RawEntry) constexpr char kDataWithCollisions[] =
+constexpr char kDataWithCollisions[] =
     "TOKENS\0\0"
     "\x0F\x00\x00\x00"
     "\0\0\0\0"

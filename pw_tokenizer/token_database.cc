@@ -17,20 +17,20 @@
 namespace pw::tokenizer {
 
 TokenDatabase::Entry TokenDatabase::Entries::operator[](size_t index) const {
-  Iterator it = begin();
+  iterator it = begin();
   for (size_t i = 0; i < index; ++i) {
     ++it;
   }
-  return it.entry();
+  return *it;
 }
 
 TokenDatabase::Entries TokenDatabase::Find(const uint32_t token) const {
-  Iterator first = begin();
+  iterator first = begin();
   while (first != end() && token > first->token) {
     ++first;
   }
 
-  Iterator last = first;
+  iterator last = first;
   while (last != end() && token == last->token) {
     ++last;
   }

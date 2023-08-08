@@ -27,7 +27,7 @@ using namespace std::literals::string_view_literals;
 
 // Use alignas to ensure that the data is properly aligned for database entries.
 // This avoids unaligned memory reads.
-alignas(TokenDatabase::RawEntry) constexpr char kBasicData[] =
+constexpr char kBasicData[] =
     "TOKENS\0\0\x03\x00\x00\x00\0\0\0\0"
     "\x01\0\0\0\0\0\0\0"
     "\x02\0\0\0\0\0\0\0"
@@ -36,23 +36,21 @@ alignas(TokenDatabase::RawEntry) constexpr char kBasicData[] =
     "goodbye\0"
     ":)";
 
-alignas(TokenDatabase::RawEntry) constexpr char kEmptyData[] =
+constexpr char kEmptyData[] =
     "TOKENS\0\0\x00\x00\x00\x00\0\0\0";  // Last byte is null terminator.
 
-alignas(TokenDatabase::RawEntry) constexpr char kBadMagic[] =
+constexpr char kBadMagic[] =
     "TOKENs\0\0\x03\x00\x00\x00\0\0\0\0"
     "\x01\0\0\0\0\0\0\0"
     "hi!\0";
 
-alignas(TokenDatabase::RawEntry) constexpr char kBadVersion[] =
-    "TOKENS\0\1\x00\0\0\0\0\0\0\0";
+constexpr char kBadVersion[] = "TOKENS\0\1\x00\0\0\0\0\0\0\0";
 
-alignas(TokenDatabase::RawEntry) constexpr char kBadEntryCount[] =
-    "TOKENS\0\0\xff\x00\x00\x00\0\0\0\0";
+constexpr char kBadEntryCount[] = "TOKENS\0\0\xff\x00\x00\x00\0\0\0\0";
 
 // Use signed data and a size with the top bit set to test that the entry count
 // is read correctly, without per-byte sign extension.
-alignas(TokenDatabase::RawEntry) constexpr signed char kSignedWithTopBit[] =
+constexpr signed char kSignedWithTopBit[] =
     "TOKENS\0\0\x80\x00\x00\x00\0\0\0\0"
     // Entries
     "TOKNdateTOKNdateTOKNdateTOKNdateTOKNdateTOKNdateTOKNdateTOKNdate"
@@ -132,16 +130,16 @@ TEST(TokenDatabase, ValidCheck) {
 TEST(TokenDatabase, Iterator) {
   auto it = kBasicDatabase.begin();
   EXPECT_EQ(it->token, 1u);
-  EXPECT_STREQ(it.entry().string, "hi!");
+  EXPECT_STREQ(it->string, "hi!");
 
   ++it;
   EXPECT_EQ(it->token, 2u);
-  EXPECT_STREQ(it.entry().string, "goodbye");
+  EXPECT_STREQ(it->string, "goodbye");
   EXPECT_EQ(it - kBasicDatabase.begin(), 1);
 
   ++it;
-  EXPECT_EQ(it->token, 0xFFu);
-  EXPECT_STREQ(it.entry().string, ":)");
+  EXPECT_EQ((*it).token, 0xFFu);
+  EXPECT_STREQ((*it).string, ":)");
   EXPECT_EQ(it - kBasicDatabase.begin(), 2);
 
   ++it;
@@ -150,10 +148,33 @@ TEST(TokenDatabase, Iterator) {
             kBasicDatabase.size());
 }
 
+static_assert(
+    [] {
+      auto it1 = kBasicDatabase.begin();
+      auto it2 = it1;
+      ++it2;
+      return it1->token == 1u && it2->token == 2u;
+    }(),
+    "Iterators work in constant expression");
+
+static_assert(
+    [] {
+      constexpr uint32_t expected[3] = {1, 2, 0xff};
+
+      int i = 0;
+      for (const auto& entry : kBasicDatabase) {
+        if (entry.token != expected[i++]) {
+          return false;
+        }
+      }
+      return i == 3;
+    }(),
+    "Range based for loop iteration");
+
 TEST(TokenDatabase, Iterator_PreIncrement) {
   auto it = kBasicDatabase.begin();
   EXPECT_EQ((++it)->token, 2u);
-  EXPECT_STREQ(it.entry().string, "goodbye");
+  EXPECT_STREQ((*it).string, "goodbye");
 }
 
 TEST(TokenDatabase, Iterator_PostIncrement) {
@@ -161,7 +182,7 @@ TEST(TokenDatabase, Iterator_PostIncrement) {
   EXPECT_EQ((it++)->token, 1u);
 
   EXPECT_EQ(it->token, 2u);
-  EXPECT_STREQ(it.entry().string, "goodbye");
+  EXPECT_STREQ((*it).string, "goodbye");
 }
 
 TEST(TokenDatabase, SingleEntryLookup_FirstEntry) {
@@ -210,7 +231,7 @@ TEST(TokenDatabase, SingleEntryLookup_NoMatches) {
   }
 }
 
-alignas(TokenDatabase::RawEntry) constexpr char kCollisionsData[] =
+constexpr char kCollisionsData[] =
     "TOKENS\0\0\x05\0\0\0\0\0\0\0"
     "\x01\0\0\0date"
     "\x01\0\0\0date"
@@ -241,7 +262,8 @@ TEST(TokenDatabase, MultipleEntriesWithSameToken) {
 TEST(TokenDatabase, Empty) {
   constexpr TokenDatabase empty_db = TokenDatabase::Create<kEmptyData>();
   static_assert(empty_db.size() == 0u);
-  static_assert(empty_db.ok());
+  static_assert(empty_db.ok(), "Database has no entries, but is valid");
+  static_assert(empty_db.end() == empty_db.begin());
 
   EXPECT_TRUE(empty_db.Find(0).empty());
   EXPECT_TRUE(empty_db.Find(123).empty());
@@ -252,8 +274,8 @@ TEST(TokenDatabase, Empty) {
   }
 }
 
-TEST(TokenDatabase, NullDatabase) {
-  constexpr TokenDatabase empty_db;
+TEST(TokenDatabase, DefaultConstructedDatabase) {
+  constexpr TokenDatabase empty_db;  // No underlying data
 
   static_assert(empty_db.size() == 0u);
   static_assert(!empty_db.ok());
