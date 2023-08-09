@@ -15,7 +15,7 @@
 /* eslint-env browser */
 import {BehaviorSubject, Observable, Subject, Subscription} from 'rxjs';
 import DeviceTransport from './device_transport';
-import type {SerialPort, Serial, SerialOptions, Navigator, SerialPortFilter} from "pigweedjs/types/serial"
+import type {SerialPort, Serial, SerialOptions, Navigator, SerialPortFilter} from "../types/serial";
 
 const DEFAULT_SERIAL_OPTIONS: SerialOptions & {baudRate: number} = {
   // Some versions of chrome use `baudrate` (linux)
@@ -37,11 +37,11 @@ interface PortConnection extends PortReadConnection {
 }
 
 export class DeviceLostError extends Error {
-  message = 'The device has been lost';
+  override message = 'The device has been lost';
 }
 
 export class DeviceLockedError extends Error {
-  message =
+  override message =
     "The device's port is locked. Try unplugging it" +
     ' and plugging it back in.';
 }
@@ -57,8 +57,8 @@ export class WebSerialTransport implements DeviceTransport {
   private portConnections: Map<SerialPort, PortConnection> = new Map();
   private activePortConnectionConnection: PortConnection | undefined;
   private rxSubscriptions: Subscription[] = [];
-  private writer: WritableStreamDefaultWriter<Uint8Array>;
-  private abortController: AbortController;
+  private writer: WritableStreamDefaultWriter<Uint8Array> | undefined;
+  private abortController: AbortController | undefined;
 
   constructor(
     private serial: Serial = (navigator as unknown as Navigator).serial,
@@ -101,7 +101,7 @@ export class WebSerialTransport implements DeviceTransport {
       await this.writer?.close();
     }
     catch (err) {
-      this.errors.next(err);
+      this.errors.next(err as Error);
     }
     this.connected.next(false);
   }
