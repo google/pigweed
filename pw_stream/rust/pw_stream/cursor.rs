@@ -46,16 +46,23 @@ impl<T: AsRef<[u8]>> Cursor<T> {
         self.inner
     }
 
-    fn remaining(&self) -> usize {
+    /// Returns the number of remaining bytes in the Cursor.
+    pub fn remaining(&self) -> usize {
         self.len() - self.pos
+    }
+
+    /// Returns the total length of the Cursor.
+    pub fn len(&self) -> usize {
+        self.inner.as_ref().len()
+    }
+
+    /// Returns current IO position of the Cursor.
+    pub fn position(&self) -> usize {
+        self.pos
     }
 
     fn remaining_slice(&mut self) -> &[u8] {
         &self.inner.as_ref()[self.pos..]
-    }
-
-    fn len(&self) -> usize {
-        self.inner.as_ref().len()
     }
 }
 
@@ -266,12 +273,30 @@ mod tests {
     use crate::{test_utils::*, ReadInteger, ReadVarint, WriteInteger, WriteVarint};
 
     #[test]
+    fn cursor_len_returns_total_bytes() {
+        let cursor = Cursor {
+            inner: &[0u8; 64],
+            pos: 31,
+        };
+        assert_eq!(cursor.len(), 64);
+    }
+
+    #[test]
     fn cursor_remaining_returns_remaining_bytes() {
         let cursor = Cursor {
             inner: &[0u8; 64],
-            pos: 32,
+            pos: 31,
         };
-        assert_eq!(cursor.remaining(), 32);
+        assert_eq!(cursor.remaining(), 33);
+    }
+
+    #[test]
+    fn cursor_position_returns_current_position() {
+        let cursor = Cursor {
+            inner: &[0u8; 64],
+            pos: 31,
+        };
+        assert_eq!(cursor.position(), 31);
     }
 
     #[test]
