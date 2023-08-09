@@ -56,6 +56,6 @@ fi
 # in the requirement.txt file.
 "${VENV}/bin/python" -m pip install \
   --find-links="${DIR}/python_wheels" \
-  -r requirements.txt ${EXTRA_REQUIREMENT_ARG} ${CONSTRAINTS_ARG}
+  -r ${DIR}/requirements.txt ${EXTRA_REQUIREMENT_ARG} ${CONSTRAINTS_ARG}
 
 exit 0
