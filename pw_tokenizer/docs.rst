@@ -12,27 +12,21 @@ pw_tokenizer
 
 Logging is critical, but developers are often forced to choose between
 additional logging or saving crucial flash space. The ``pw_tokenizer`` module
-helps address this by replacing printf-style strings with binary tokens during
-compilation. This enables extensive logging with substantially less memory
-usage.
+enables **extensive logging with substantially less memory usage** by replacing
+printf-style strings with binary tokens during compilation. It is designed to
+integrate easily into existing logging systems.
 
-.. note::
-  This usage of the term "tokenizer" is not related to parsing! The
-  module is called tokenizer because it replaces a whole string literal with an
-  integer token. It does not parse strings into separate tokens.
+Although the most common application of ``pw_tokenizer`` is binary logging,
+**the tokenizer is general purpose and can be used to tokenize any strings**,
+with or without printf-style arguments.
 
-The most common application of ``pw_tokenizer`` is binary logging, and it is
-designed to integrate easily into existing logging systems. However, the
-tokenizer is general purpose and can be used to tokenize any strings, with or
-without printf-style arguments.
+Why tokenize strings?
 
-**Why tokenize strings?**
-
-* Dramatically reduce binary size by removing string literals from binaries.
-* Reduce I/O traffic, RAM, and flash usage by sending and storing compact tokens
+* **Dramatically reduce binary size** by removing string literals from binaries.
+* **Reduce I/O traffic, RAM, and flash usage** by sending and storing compact tokens
   instead of strings. We've seen over 50% reduction in encoded log contents.
-* Reduce CPU usage by replacing snprintf calls with simple tokenization code.
-* Remove potentially sensitive log, assert, and other strings from binaries.
+* **Reduce CPU usage** by replacing snprintf calls with simple tokenization code.
+* **Remove potentially sensitive log, assert, and other strings** from binaries.
 
 .. grid:: 2
 
@@ -67,70 +61,49 @@ without printf-style arguments.
 
       Read up on how pw_tokenizer is designed.
 
+
 .. _module-pw_tokenizer-tokenized-logging-example:
 
---------------------------
-Example: tokenized logging
---------------------------
-This example demonstrates using ``pw_tokenizer`` for logging. In this example,
-tokenized logging saves ~90% in binary size (41 → 4 bytes) and 70% in encoded
-size (49 → 15 bytes).
+---------------------------
+Tokenized logging in action
+---------------------------
+Here's an example of how ``pw_tokenizer`` enables you to store
+and send the same logging information using significantly less
+resources:
 
 .. mermaid::
 
    flowchart TD
-     subgraph call_macro_sub [Call log macro]
-     call_macro["LOG(#quot;Got battery abnormality; voltage = %d mV#quot;, voltage)"]
+
+     subgraph after["After: Tokenized Logs (37 bytes saved!)"]
+       after_log["LOG(#quot;Battery Voltage: %d mV#quot;, voltage)"] -- 4 bytes stored on-device as... -->
+       after_encoding["d9 28 47 8e"] -- 6 bytes sent over the wire as... -->
+       after_transmission["d9 28 47 8e aa 3e"] -- Displayed in logs as... -->
+       after_display["#quot;Battery Voltage: 3989 mV#quot;"]
      end
 
-     call_macro_sub -->
-     plain_text_start([With Plain Text Logging]) -- Encoded as -->
-     plain_text_encoded_sub
-
-     subgraph plain_text_encoded_sub ["41 bytes in storage"]
-     plain_text_encoded["#quot;Got battery abnormality; voltage = %d mV#quot;"]
+     subgraph before["Before: No Tokenization"]
+       before_log["LOG(#quot;Battery Voltage: %d mV#quot;, voltage)"] -- 41 bytes stored on-device as... -->
+       before_encoding["#quot;Battery Voltage: %d mV#quot;"] -- 43 bytes sent over the wire as... -->
+       before_transmission["#quot;Battery Voltage: 3989 mV#quot;"] -- Displayed in logs as... -->
+       before_display["#quot;Battery Voltage: 3989 mV#quot;"]
      end
 
-     plain_text_encoded_sub -- Transmitted as --> plain_text_transmitted_sub
+     style after stroke:#00c852,stroke-width:3px
+     style before stroke:#ff5252,stroke-width:3px
 
-     subgraph plain_text_transmitted_sub ["43 bytes over the wire"]
-     plain_text_transmitted["#quot;Got battery abnormality; voltage = 3989 mV#quot;"]
-     end
+A quick overview of how the tokenized version works:
 
-     style plain_text_start fill:#FFFFE0,stroke:#BDBB6B
-     style plain_text_encoded_sub fill:#FBE0DD,stroke:#ED6357
-     style plain_text_transmitted_sub fill:#FBE0DD,stroke:#ED6357
-
-     plain_text_transmitted_sub -- Displayed as -->
-     plain_text_displayed["#quot;Got battery abnormality; voltage = 3989 mV#quot;"]
-
-     call_macro_sub -->
-     tokenized_start([With Tokenized Logging]) -- Encoded as -->
-     tokenized_encoded_sub
-
-     subgraph tokenized_encoded_sub ["4 bytes in storage"]
-     tokenized_encoded["`
-     d9 28 47 8e
-     or
-     0x8e4728d9
-     `"]
-     end
-
-     tokenized_encoded_sub -- Transmitted as --> tokenized_transmitted_sub
-
-     subgraph tokenized_transmitted_sub ["6 bytes over the wire"]
-     tokenized_transmitted["`
-     **Token:** d9 28 47 8e
-     **3989, as varint:** aa 3e
-     `"]
-     end
-
-     style tokenized_start fill:#FFFFE0,stroke:#BDBB6B
-     style tokenized_encoded_sub fill:#DEF3DE,stroke:#5AC35C
-     style tokenized_transmitted_sub fill:#DEF3DE,stroke:#5AC35C
-
-     tokenized_transmitted_sub -- Displayed as -->
-     tokenized_displayed["#quot;Got battery abnormality; voltage = 3989 mV#quot;"]
+* You tokenize ``"Battery Voltage: %d mV"`` with a macro like
+  :c:macro:`PW_TOKENIZE_STRING`. You can use :ref:`module-pw_log_tokenized`
+  to handle the tokenization automatically.
+* After tokenization, ``"Battery Voltage: %d mV"`` becomes ``d9 28 47 8e``.
+* The first 4 bytes sent over the wire is the tokenized version of
+  ``"Battery Voltage: %d mV"``. The last 2 bytes are the value of ``voltage``
+  converted to a varint using :ref:`module-pw_varint`.
+* The logs are converted back to the original, human-readable message
+  via the :ref:`Detokenization API <module-pw_tokenizer-detokenization-guides>`
+  and a :ref:`token database <module-pw_tokenizer-managing-token-databases>`.
 
 .. toctree::
    :hidden:
