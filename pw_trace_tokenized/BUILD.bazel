@@ -201,7 +201,10 @@ pw_cc_library(
     name = "pw_trace_example_to_file",
     hdrs = ["example/public/pw_trace_tokenized/example/trace_to_file.h"],
     includes = ["example/public"],
-    deps = ["//pw_trace"],
+    deps = [
+        ":pw_trace_tokenized",
+        "//pw_trace",
+    ],
 )
 
 pw_cc_binary(
@@ -261,6 +264,7 @@ pw_cc_library(
 pw_cc_library(
     name = "trace_tokenized_example_linux_group_by_tid",
     srcs = ["example/linux_group_by_tid.cc"],
+    # TODO(b/258071921): Fix puzzling compiler errors
     tags = ["manual"],
     deps = [
         ":pw_trace_example_to_file",
