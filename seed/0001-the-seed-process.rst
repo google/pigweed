@@ -142,6 +142,9 @@ Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
    reviewed, push it up to Gerrit and switch the change from WIP to Active.
    This will begin the open comments period.
 
+#. Create a thread for your SEED in the ``#seed`` channel of Pigweed's
+   `Discord server <https://discord.gg/M9NSeTA>`_.
+
 #. Engage with reviewers to iterate on your proposal through its comment period.
 
 #. When a tentative decision has been reached, a Pigweed team member will
