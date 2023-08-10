@@ -57,13 +57,13 @@ pw_toolchain_clang_tools = {
     if (_split_prefix[0] == "") {
       _toolchain_prefix = rebase_path(_toolchain_prefix, root_build_dir)
     }
+    if (host_os == "win") {
+      _toolchain_prefix = "./" + string_replace(_toolchain_prefix, "/", "\\")
+    }
     ar = _toolchain_prefix + ar
     cc = _toolchain_prefix + cc
     cxx = _toolchain_prefix + cxx
     ld = _toolchain_prefix + ld
-  }
-  if (host_os == "win") {
-    _toolchain_prefix = string_replace(_toolchain_prefix, "/", "\\")
   }
 
   _rust_prefix = pw_toolchain_RUST_PREFIX
