@@ -18,6 +18,7 @@ import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_third_party/nanopb/nanopb.gni")
+import("$dir_pw_trace/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 import("config.gni")
 
@@ -29,6 +30,13 @@ config("public_include_path") {
 config("backend_config") {
   include_dirs = [ "public_overrides" ]
 }
+
+# Some tests in this file do not compile unless pw_trace_tokenized is the trace
+# backend.
+_pw_trace_tokenized_is_selected =
+    get_label_info(pw_trace_BACKEND, "label_no_toolchain") ==
+    get_label_info(":pw_trace_tokenized", "label_no_toolchain") &&
+    pw_trace_tokenizer_time != ""
 
 pw_source_set("config") {
   public_deps = [ pw_trace_CONFIG ]
@@ -76,7 +84,7 @@ pw_source_set("pw_trace_tokenized") {
 }
 
 pw_test("trace_tokenized_test") {
-  enable_if = pw_trace_tokenizer_time != ""
+  enable_if = _pw_trace_tokenized_is_selected
   deps = [
     ":core",
     "$dir_pw_trace",
@@ -131,7 +139,7 @@ pw_source_set("tokenized_trace_buffer") {
 }
 
 pw_test("tokenized_trace_buffer_test") {
-  enable_if = pw_trace_tokenizer_time != ""
+  enable_if = _pw_trace_tokenized_is_selected
   deps = [
     ":tokenized_trace_buffer",
     "$dir_pw_trace",
@@ -152,7 +160,7 @@ pw_source_set("tokenized_trace_buffer_log") {
 }
 
 pw_test("tokenized_trace_buffer_log_test") {
-  enable_if = pw_trace_tokenizer_time != ""
+  enable_if = _pw_trace_tokenized_is_selected
   deps = [
     ":tokenized_trace_buffer_log",
     "$dir_pw_trace",
@@ -206,7 +214,7 @@ config("trace_example_config") {
 }
 
 pw_source_set("trace_example_to_file") {
-  deps = [ ":pw_trace_tokenized" ]
+  public_deps = [ ":pw_trace_tokenized" ]
   public_configs = [ ":trace_example_config" ]
   public = [ "example/public/pw_trace_tokenized/example/trace_to_file.h" ]
 }
@@ -249,6 +257,7 @@ if (dir_pw_third_party_nanopb == "") {
   pw_executable("trace_tokenized_example_rpc") {
     sources = [ "example/rpc.cc" ]
     deps = [
+      ":pw_trace_tokenized",
       ":trace_rpc_service",
       "$dir_pw_hdlc",
       "$dir_pw_log",

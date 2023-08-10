@@ -153,13 +153,10 @@ be done in one of a few ways.
 1. Create a file with the default time functions, and provide as build variable
    ``pw_trace_tokenized_time``, which will get pulled in as a dependency.
 2. Provide time functions elsewhere in project, and ensure they are included.
-3. Redefine the trace time macros to something else, other then the default
-   trace time functions.
+3. Provide definitions of the following trace time functions.
 
 .. cpp:function:: PW_TRACE_TIME_TYPE pw_trace_GetTraceTime()
-.. cpp:function:: PW_TRACE_GET_TIME()
 .. cpp:function:: size_t pw_trace_GetTraceTimeTicksPerSecond()
-.. cpp:function:: PW_TRACE_GET_TIME_TICKS_PER_SECOND()
 
 
 ------

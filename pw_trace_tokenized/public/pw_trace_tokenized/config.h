@@ -35,23 +35,13 @@
 #define PW_TRACE_TIME_TYPE uint32_t
 #endif  // PW_TRACE_TIME_TYPE
 
-// PW_TRACE_GET_TIME is the macro which is called to get the current time for a
-// trace event. It's default is to use pw_trace_GetTraceTime() which needs to be
-// provided by the platform.
-#ifndef PW_TRACE_GET_TIME
-#define PW_TRACE_GET_TIME() pw_trace_GetTraceTime()
+// pw_trace_GetTraceTime() is the macro which is called to get the current time
+// for a trace event. It must be provided by the platform.
 extern PW_TRACE_TIME_TYPE pw_trace_GetTraceTime(void);
-#endif  // PW_TRACE_GET_TIME
 
-// PW_TRACE_GET_TIME_TICKS_PER_SECOND is the macro which is called to determine
-// the unit of the trace time. It's default is to use
-// pw_trace_GetTraceTimeTicksPerSecond() which needs to be provided by the
-// platform.
-#ifndef PW_TRACE_GET_TIME_TICKS_PER_SECOND
-#define PW_TRACE_GET_TIME_TICKS_PER_SECOND() \
-  pw_trace_GetTraceTimeTicksPerSecond()
+// pw_trace_GetTraceTimeTicksPerSecond() is the function which is called to
+// determine the unit of the trace time. It must be provided by the platform.
 extern size_t pw_trace_GetTraceTimeTicksPerSecond(void);
-#endif  // PW_TRACE_GET_TIME_TICKS_PER_SECOND
 
 // PW_TRACE_GET_TIME_DELTA is te macro which is called to determine
 // the delta between two PW_TRACE_TIME_TYPE variables. It should return a

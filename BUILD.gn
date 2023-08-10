@@ -28,6 +28,7 @@ import("$dir_pw_third_party/mcuxpresso/mcuxpresso.gni")
 import("$dir_pw_toolchain/c_optimization.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
 import("$dir_pw_toolchain/non_c_toolchain.gni")
+import("$dir_pw_trace/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
 # Main build file for upstream Pigweed.
@@ -478,14 +479,18 @@ group("pigweed_default") {
 
     # Trace examples currently only support running on non-windows host
     if (_is_host_toolchain && host_os != "win") {
-      deps += [
-        "$dir_pw_trace:trace_example_basic",
-        "$dir_pw_trace_tokenized:trace_tokenized_example_basic",
-        "$dir_pw_trace_tokenized:trace_tokenized_example_filter",
-        "$dir_pw_trace_tokenized:trace_tokenized_example_linux_group_by_tid",
-        "$dir_pw_trace_tokenized:trace_tokenized_example_rpc",
-        "$dir_pw_trace_tokenized:trace_tokenized_example_trigger",
-      ]
+      deps += [ "$dir_pw_trace:trace_example_basic" ]
+
+      if (get_label_info(pw_trace_BACKEND, "label_no_toolchain") ==
+          get_label_info(":pw_trace_tokenized", "label_no_toolchain")) {
+        deps += [
+          "$dir_pw_trace_tokenized:trace_tokenized_example_basic",
+          "$dir_pw_trace_tokenized:trace_tokenized_example_filter",
+          "$dir_pw_trace_tokenized:trace_tokenized_example_linux_group_by_tid",
+          "$dir_pw_trace_tokenized:trace_tokenized_example_rpc",
+          "$dir_pw_trace_tokenized:trace_tokenized_example_trigger",
+        ]
+      }
     }
   }
 }

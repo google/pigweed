@@ -42,11 +42,11 @@ PW_EXTERN_C_START
 //
 // These two functions are used in PW_TRACE and PW_TRACE_DATA.
 
-static inline void pw_trace_Ignored(int event_type,
-                                    uint8_t flags,
-                                    const char* label,
-                                    const char* group,
-                                    uint32_t trace_id) {
+static inline void _pw_trace_Ignored(int event_type,
+                                     uint8_t flags,
+                                     const char* label,
+                                     const char* group,
+                                     uint32_t trace_id) {
   (void)event_type;
   (void)flags;
   (void)label;
@@ -54,13 +54,13 @@ static inline void pw_trace_Ignored(int event_type,
   (void)trace_id;
 }
 
-static inline void pw_trace_data_Ignored(int event_type,
+static inline void _pw_trace_IgnoredData(int event_type,
                                          uint8_t flags,
                                          const char* label,
                                          const char* group,
                                          uint32_t trace_id,
                                          const char* type,
-                                         const char* data,
+                                         const void* data,
                                          size_t size) {
   (void)event_type;
   (void)flags;
@@ -75,9 +75,9 @@ static inline void pw_trace_data_Ignored(int event_type,
 PW_EXTERN_C_END
 
 #define PW_TRACE(event_type, flags, label, group, trace_id) \
-  pw_trace_Ignored(event_type, flags, label, group, trace_id)
+  _pw_trace_Ignored(event_type, flags, label, group, trace_id)
 
 #define PW_TRACE_DATA(                                           \
     event_type, flags, label, group, trace_id, type, data, size) \
-  pw_trace_data_Ignored(                                         \
+  _pw_trace_IgnoredData(                                         \
       event_type, flags, label, group, trace_id, type, data, size)

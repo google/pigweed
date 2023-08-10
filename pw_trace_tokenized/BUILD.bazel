@@ -89,6 +89,8 @@ pw_cc_library(
     includes = [
         "public",
     ],
+    # TODO(b/260641850): Get pw_trace_tokenized building in Bazel.
+    tags = ["manual"],
     deps = [
         ":pw_trace_tokenized",
         "//pw_ring_buffer",
@@ -104,6 +106,8 @@ pw_cc_library(
     hdrs = [
         "public/pw_trace_tokenized/trace_buffer_log.h",
     ],
+    # TODO(b/260641850): Get pw_trace_tokenized building in Bazel.
+    tags = ["manual"],
     deps = [
         ":buffer",
         "//pw_base64",
