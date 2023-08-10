@@ -461,10 +461,53 @@ target. Additionally, it has some of its own arguments:
   generating a Python package metadata manifest, not the overall Python script
   ``action``. This should rarely be used by non-Pigweed code.
 
+.. _module-pw_build-python-action-test:
+
+pw_python_action_test
+---------------------
+The ``pw_python_action_test`` extends :ref:`module-pw_build-python-action` to
+create a test that is run by a Python script, and its associated test metadata.
+
+Include action tests in the :ref:`module-pw_unit_test-pw_test_group` to produce
+the JSON metadata that :ref:`module-pw_build-test-info` adds.
+
+This template derives several additional targets:
+
+* ``<target_name>.metadata`` produces the test metadata when included in a
+  ``pw_test_group``. This metadata includes the Ninja target that runs the test.
+* If``action`` is not provided as a label, ``<target_name>.script`` wraps a
+  ``pw_python_action`` to run the test as a standalone ``pw_python_package``.
+* ``<target_name>.group`` creates a ``pw_python_group`` in order to apply tools,
+  e.g. linters, to the standalone package.
+* ``<target_name>.lib`` is an empty group for compatibility with
+  ``pw_test_group``.
+* ``<target_name>.run`` invokes the test.
+
+Targets defined using this template will produce test metadata with a
+``test_type`` of "action_test" and a ``ninja_target`` value that will invoke the
+test when passed to Ninja, i.e. ``ninja -C out <ninja_target>``.
+
+Arguments
+^^^^^^^^^
+``pw_python_action_test`` accepts the following arguments:
+
+* All of the arguments of :ref:`module-pw_unit_test-pw_test`.
+* ``action``: An optional string or scope. If a string, this should be a label
+  to a ``pw_python_action`` target that performs the test. If a scope, this has
+  the same meaning as for ``pw_python_script``.
+* Optionally, the ``test_type`` and ``extra_metadata`` arguments of the
+  :ref:`module-pw_build-test-info` template.
+* Optionally, all of the arguments of the :ref:`module-pw_build-python-action`
+  template except ``module``, ``capture_output``, ``stamp``, and
+  ``python_metadata_deps``.
+* Optionally, all of the arguments of the ``pw_python_package`` template except
+  ``setup``, ``generate_setup``, ``tests``, ``python_test_deps``, and
+  ``proto_library``.
+
 .. _module-pw_build-test-info:
 
 pw_test_info
----------------------
+------------
 ``pw_test_info`` generates metadata describing tests. To produce a JSON file
 containing this metadata:
 
@@ -493,6 +536,8 @@ example:
   that contains the test executable.
 * The :ref:`module-pw_unit_test-pw_test_group` includes its collected list of
   tests and test groups as ``deps``.
+* The :ref:`module-pw_build-python-action-test` includes the Ninja target that
+  can be used to invoke the Python action and run the test.
 
 Example
 ^^^^^^^
@@ -500,6 +545,7 @@ Let ``//my_module/BUILD.gn`` contain the following:
 
 .. code::
 
+   import("$dir_pw_build/python_action_test.gni")
    import("$dir_pw_unit_test/test.gni")
 
    pw_test("my_unit_test") {
@@ -507,12 +553,20 @@ Let ``//my_module/BUILD.gn`` contain the following:
      deps = [ ... ]
    }
 
-   pw_test_group("tests") {
-     tests = [ ":my_unit_test" ]
+   pw_python_action_test("my_action_test") {
+     script = [ ... ]
+     args = [ ... ]
+     deps = [ ... ]
    }
 
+   pw_test_group("tests") {
+     tests = [
+      ":my_unit_test",
+      ":my_action_test",
+     ]
+   }
 
-  Let `//BUILD.gn`` contain the following:
+Let `//BUILD.gn`` contain the following:
 
 .. code::
 
@@ -540,9 +594,16 @@ Then running ``gn gen out`` will produce the following JSON file at
        "test_type": "unit_test"
      },
      {
+       "build_label": "//my_module:my_action_test",
+       "ninja_target": "my_toolchain/obj/my_module/my_action_test.run.stamp",
+       "test_name": "my_action_test",
+       "test_type": "action_test"
+     },
+     {
        "build_label": "//my_module:tests",
        "deps": [
          "//my_module:my_unit_test",
+         "//my_module:my_action_test",
        ],
        "test_name": "my_module/tests",
        "test_type": "test_group"

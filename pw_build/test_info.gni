@@ -30,6 +30,7 @@
 #   - test_type (required): String describing the type of test. One of:
 #         "test_group"
 #         "unit_test"
+#         "action_test"
 #   - test_name (optional): Name of the test as a string. Defaults to the
 #         target name.
 #   - build_label (optional): GN label for the test being described. Defaults to
@@ -75,6 +76,10 @@ template("pw_test_info") {
     } else if (_type == "unit_test") {
       metadata = {
         unit_tests = [ _metadata ]
+      }
+    } else if (_type == "action_test") {
+      metadata = {
+        action_tests = [ _metadata ]
       }
     } else {
       assert(

@@ -306,7 +306,7 @@ group("docs") {
 # build.
 group("action_tests") {
   _default_tc = _default_toolchain_prefix + pw_DEFAULT_C_OPTIMIZATION_LEVEL
-  deps = [ "$dir_pw_unit_test:test_group_metadata_test.action($_default_tc)" ]
+  deps = [ ":pw_action_tests.run($_default_tc)" ]
 }
 
 # Tests larger than unit tests, typically run in a specific configuration.
@@ -472,9 +472,11 @@ group("pigweed_default") {
 
       # Add performance tests to the automatic build
       deps += [ ":pw_perf_tests" ]
+    }
 
-      # Add action tests to the automatic build
-      deps += [ ":action_tests" ]
+    # Add action tests to the automatic build
+    if (_is_host_toolchain) {
+      deps += [ ":pw_action_tests.run" ]
     }
 
     # Trace examples currently only support running on non-windows host
@@ -557,6 +559,10 @@ if (current_toolchain != default_toolchain) {
   pw_test_group("pw_module_tests") {
     group_deps = pw_module_tests
     output_metadata = true
+  }
+
+  pw_test_group("pw_action_tests") {
+    tests = [ "$dir_pw_unit_test:test_group_metadata_test" ]
   }
 
   group("pw_perf_tests") {

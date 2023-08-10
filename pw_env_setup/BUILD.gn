@@ -99,7 +99,6 @@ pw_python_group("python") {
     "$dir_pw_rpc/py:python_client_cpp_server_test",
     "$dir_pw_third_party/fuchsia:generate_fuchsia_patch",
     "$dir_pw_third_party/nanopb:generate_nanopb_proto",
-    "$dir_pw_unit_test:test_group_metadata_test",
   ]
 }
 
