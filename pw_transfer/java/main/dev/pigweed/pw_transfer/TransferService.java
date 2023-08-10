@@ -21,8 +21,8 @@ import dev.pigweed.pw_rpc.Service;
 /** Provides a service definition for the pw_transfer service. */
 public class TransferService {
   private static final Service SERVICE = new Service("pw.transfer.Transfer",
-      bidirectionalStreamingMethod("Read", Chunk.class, Chunk.class),
-      bidirectionalStreamingMethod("Write", Chunk.class, Chunk.class));
+      bidirectionalStreamingMethod("Read", Chunk.parser(), Chunk.parser()),
+      bidirectionalStreamingMethod("Write", Chunk.parser(), Chunk.parser()));
 
   public static Service get() {
     return SERVICE;

@@ -41,6 +41,14 @@ public abstract class Method {
 
   abstract Parser<? extends MessageLite> responseParser();
 
+  public final Class<? extends MessageLite> request() {
+    return getProtobufClass(requestParser());
+  }
+
+  public final Class<? extends MessageLite> response() {
+    return getProtobufClass(responseParser());
+  }
+
   final int id() {
     return Ids.calculate(name());
   }
@@ -89,6 +97,17 @@ public abstract class Method {
   /** Decodes a response payload according to the method's response type. */
   final MessageLite decodeResponsePayload(ByteString data) throws InvalidProtocolBufferException {
     return responseParser().parseFrom(data);
+  }
+
+  private static Class<? extends MessageLite> getProtobufClass(
+      Parser<? extends MessageLite> parser) {
+    try {
+      return parser.parseFrom(ByteString.EMPTY).getClass();
+    } catch (InvalidProtocolBufferException e) {
+      throw new AssertionError("Failed to parse zero bytes as a protobuf! "
+              + "It was assumed that zero bytes is always a valid protobuf.",
+          e);
+    }
   }
 
   /** Which type of RPC this is: unary or server/client/bidirectional streaming. */

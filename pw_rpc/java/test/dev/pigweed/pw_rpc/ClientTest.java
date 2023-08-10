@@ -419,34 +419,4 @@ public final class ClientTest {
     assertThrows(InvalidRpcChannelException.class,
         () -> client.openChannel(new Channel(CHANNEL_ID, packet -> {})));
   }
-
-  @Test
-  public void serviceDeclaration_deprecatedClassBasedEquivalentToParserBased() {
-    final Service declaredWithClassObjects = new Service(SERVICE.name(),
-        Service.unaryMethod("SomeUnary", SomeMessage.parser(), AnotherMessage.parser()),
-        Service.serverStreamingMethod(
-            "SomeServerStreaming", SomeMessage.parser(), AnotherMessage.parser()),
-        Service.clientStreamingMethod(
-            "SomeClientStreaming", SomeMessage.parser(), AnotherMessage.parser()),
-        Service.bidirectionalStreamingMethod(
-            "SomeBidiStreaming", SomeMessage.parser(), AnotherMessage.parser()));
-
-    assertThat(declaredWithClassObjects.method("SomeUnary").responseParser())
-        .isSameInstanceAs(declaredWithClassObjects.method("SomeUnary").responseParser());
-    assertThat(declaredWithClassObjects.method("SomeServerStreaming").responseParser())
-        .isSameInstanceAs(declaredWithClassObjects.method("SomeServerStreaming").responseParser());
-    assertThat(declaredWithClassObjects.method("SomeClientStreaming").responseParser())
-        .isSameInstanceAs(declaredWithClassObjects.method("SomeClientStreaming").responseParser());
-    assertThat(declaredWithClassObjects.method("SomeBidiStreaming").responseParser())
-        .isSameInstanceAs(declaredWithClassObjects.method("SomeBidiStreaming").responseParser());
-
-    assertThat(declaredWithClassObjects.method("SomeUnary").requestParser())
-        .isSameInstanceAs(declaredWithClassObjects.method("SomeUnary").requestParser());
-    assertThat(declaredWithClassObjects.method("SomeServerStreaming").requestParser())
-        .isSameInstanceAs(declaredWithClassObjects.method("SomeServerStreaming").requestParser());
-    assertThat(declaredWithClassObjects.method("SomeClientStreaming").requestParser())
-        .isSameInstanceAs(declaredWithClassObjects.method("SomeClientStreaming").requestParser());
-    assertThat(declaredWithClassObjects.method("SomeBidiStreaming").requestParser())
-        .isSameInstanceAs(declaredWithClassObjects.method("SomeBidiStreaming").requestParser());
-  }
 }

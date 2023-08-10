@@ -109,6 +109,20 @@ java_test(
 )
 
 java_test(
+    name = "ServiceTest",
+    size = "small",
+    srcs = ["ServiceTest.java"],
+    test_class = "dev.pigweed.pw_rpc.ServiceTest",
+    deps = [
+        ":test_proto_java_proto_lite",
+        "//pw_rpc/java/main/dev/pigweed/pw_rpc:client",
+        "@com_google_protobuf//java/lite",
+        "@maven//:com_google_flogger_flogger_system_backend",
+        "@maven//:com_google_truth_truth",
+    ],
+)
+
+java_test(
     name = "StreamObserverCallTest",
     size = "small",
     srcs = ["StreamObserverCallTest.java"],

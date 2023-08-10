@@ -14,11 +14,13 @@
 
 package dev.pigweed.pw_rpc;
 
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.MessageLite;
 import com.google.protobuf.Parser;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.stream.Collectors;
 
 /** Represents an RPC service: a collection of related methods. */
@@ -44,8 +46,21 @@ public class Service {
     return id;
   }
 
-  ImmutableMap<Integer, Method> methods() {
+  /**
+   * TODO(hepler): Make this function package private, since it exposes method IDs.
+   *
+   * @deprecated Do not call this function; call getMethods() instead.
+   */
+  @Deprecated
+  public ImmutableMap<Integer, Method> methods() {
     return methods;
+  }
+
+  /**
+   * @return collection of methods in this service.
+   */
+  public final ImmutableCollection<Method> getMethods() {
+    return methods().values();
   }
 
   final Method method(String name) {
