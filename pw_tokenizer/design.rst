@@ -198,8 +198,8 @@ string's token is 0x4b016e66.
 
         Base64: $Zm4BSwE=               [ 9 bytes]
 
-See :ref:`module-pw_tokenizer-base64-guides` for guidance on encoding and
-decoding Base64 messages.
+See :ref:`module-pw_tokenizer-base64-encoding` and :ref:`module-pw_tokenizer-base64-decoding`
+for guidance on encoding and decoding Base64.
 
 .. _module-pw_tokenizer-token-databases:
 

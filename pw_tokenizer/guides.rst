@@ -45,7 +45,8 @@ These steps can be adapted as needed.
 #. Add ``pw_tokenizer`` to your build. Build files for GN, CMake, and Bazel are
    provided. For Make or other build systems, add the files specified in the
    BUILD.gn's ``pw_tokenizer`` target to the build.
-#. Use the tokenization macros in your code. See :ref:`module-pw_tokenizer-api-tokenization`.
+#. Use the tokenization macros in your code. See
+   :ref:`module-pw_tokenizer-tokenization-guides`.
 #. Add the contents of ``pw_tokenizer_linker_sections.ld`` to your project's
    linker script. In GN and CMake, this step is done automatically.
 #. Compile your code to produce an ELF file.
@@ -83,9 +84,118 @@ Once enabled, the tokenizer headers can be included like any Zephyr headers:
 
 .. _module-pw_tokenizer-tokenization-guides:
 
--------------------
-Tokenization guides
--------------------
+------------
+Tokenization
+------------
+Tokenization converts a string literal to a token. If it's a printf-style
+string, its arguments are encoded along with it. The results of tokenization can
+be sent off device or stored in place of a full string.
+
+.. Note: pw_tokenizer_Token is a C typedef so you would expect to reference it
+.. as :c:type:`pw_tokenizer_Token`. That doesn't work because it's defined in
+.. a header file that mixes C and C++.
+
+* :cpp:type:`pw_tokenizer_Token`
+
+To tokenize a string, include ``pw_tokenizer/tokenize.h`` and invoke one of the
+``PW_TOKENIZE_*`` macros.
+
+Tokenize string literals outside of expressions
+===============================================
+``pw_tokenizer`` provides macros for tokenizing string literals with no
+arguments:
+
+* :c:macro:`PW_TOKENIZE_STRING`
+* :c:macro:`PW_TOKENIZE_STRING_DOMAIN`
+* :c:macro:`PW_TOKENIZE_STRING_MASK`
+
+The tokenization macros above cannot be used inside other expressions.
+
+.. admonition:: **Yes**: Assign :c:macro:`PW_TOKENIZE_STRING` to a ``constexpr`` variable.
+  :class: checkmark
+
+  .. code:: cpp
+
+    constexpr uint32_t kGlobalToken = PW_TOKENIZE_STRING("Wowee Zowee!");
+
+    void Function() {
+      constexpr uint32_t local_token = PW_TOKENIZE_STRING("Wowee Zowee?");
+    }
+
+.. admonition:: **No**: Use :c:macro:`PW_TOKENIZE_STRING` in another expression.
+  :class: error
+
+  .. code:: cpp
+
+   void BadExample() {
+     ProcessToken(PW_TOKENIZE_STRING("This won't compile!"));
+   }
+
+  Use :c:macro:`PW_TOKENIZE_STRING_EXPR` instead.
+
+Tokenize inside expressions
+===========================
+An alternate set of macros are provided for use inside expressions. These make
+use of lambda functions, so while they can be used inside expressions, they
+require C++ and cannot be assigned to constexpr variables or be used with
+special function variables like ``__func__``.
+
+* :c:macro:`PW_TOKENIZE_STRING_EXPR`
+* :c:macro:`PW_TOKENIZE_STRING_DOMAIN_EXPR`
+* :c:macro:`PW_TOKENIZE_STRING_MASK_EXPR`
+
+.. admonition:: When to use these macros
+
+  Use :c:macro:`PW_TOKENIZE_STRING` and related macros to tokenize string
+  literals that do not need %-style arguments encoded.
+
+.. admonition:: **Yes**: Use :c:macro:`PW_TOKENIZE_STRING_EXPR` within other expressions.
+  :class: checkmark
+
+  .. code:: cpp
+
+    void GoodExample() {
+      ProcessToken(PW_TOKENIZE_STRING_EXPR("This will compile!"));
+    }
+
+.. admonition:: **No**: Assign :c:macro:`PW_TOKENIZE_STRING_EXPR` to a ``constexpr`` variable.
+  :class: error
+
+  .. code:: cpp
+
+     constexpr uint32_t wont_work = PW_TOKENIZE_STRING_EXPR("This won't compile!"));
+
+  Instead, use :c:macro:`PW_TOKENIZE_STRING` to assign to a ``constexpr`` variable.
+
+.. admonition:: **No**: Tokenize ``__func__`` in :c:macro:`PW_TOKENIZE_STRING_EXPR`.
+  :class: error
+
+  .. code:: cpp
+
+    void BadExample() {
+      // This compiles, but __func__ will not be the outer function's name, and
+      // there may be compiler warnings.
+      constexpr uint32_t wont_work = PW_TOKENIZE_STRING_EXPR(__func__);
+    }
+
+  Instead, use :c:macro:`PW_TOKENIZE_STRING` to tokenize ``__func__`` or similar macros.
+
+Tokenize a message with arguments to a buffer
+=============================================
+* :c:macro:`PW_TOKENIZE_TO_BUFFER`
+* :c:macro:`PW_TOKENIZE_TO_BUFFER_DOMAIN`
+* :c:macro:`PW_TOKENIZE_TO_BUFFER_MASK`
+
+.. admonition:: Why use this macro
+
+   - Encode a tokenized message for consumption within a function.
+   - Encode a tokenized message into an existing buffer.
+
+   Avoid using ``PW_TOKENIZE_TO_BUFFER`` in widely expanded macros, such as a
+   logging macro, because it will result in larger code size than passing the
+   tokenized data to a function.
+
+.. _module-pw_tokenizer-custom-macro:
 
 Tokenize a message with arguments in a custom macro
 ===================================================
@@ -97,8 +207,62 @@ handle tokenized data in a function of their choosing.
 ``pw_tokenizer`` provides two low-level macros for projects to use
 to create custom tokenization macros:
 
-* ``PW_TOKENIZE_FORMAT_STRING``
-* ``PW_TOKENIZER_ARG_TYPES``
+* :c:macro:`PW_TOKENIZE_FORMAT_STRING`
+* :c:macro:`PW_TOKENIZER_ARG_TYPES`
+
+.. caution::
+
+   Note the spelling difference! The first macro begins with ``PW_TOKENIZE_``
+   (no ``R``) whereas the second begins with ``PW_TOKENIZER`` (``R`` included).
+
+The outputs of these macros are typically passed to an encoding function. That
+function encodes the token, argument types, and argument data to a buffer using
+helpers provided by ``pw_tokenizer/encode_args.h``:
+
+.. Note: pw_tokenizer_EncodeArgs is a C function so you would expect to
+.. reference it as :c:func:`pw_tokenizer_EncodeArgs`. That doesn't work because
+.. it's defined in a header file that mixes C and C++.
+
+* :cpp:func:`pw::tokenizer::EncodeArgs`
+* :cpp:class:`pw::tokenizer::EncodedMessage`
+* :cpp:func:`pw_tokenizer_EncodeArgs`
+
+Tokenizing function names
+=========================
+The string literal tokenization functions support tokenizing string literals or
+constexpr character arrays (``constexpr const char[]``). In GCC and Clang, the
+special ``__func__`` variable and ``__PRETTY_FUNCTION__`` extension are declared
+as ``static constexpr char[]`` in C++ instead of the standard ``static const
+char[]``. This means that ``__func__`` and ``__PRETTY_FUNCTION__`` can be
+tokenized while compiling C++ with GCC or Clang.
+
+.. code-block:: cpp
+
+   // Tokenize the special function name variables.
+   constexpr uint32_t function = PW_TOKENIZE_STRING(__func__);
+   constexpr uint32_t pretty_function = PW_TOKENIZE_STRING(__PRETTY_FUNCTION__);
+
+Note that ``__func__`` and ``__PRETTY_FUNCTION__`` are not string literals.
+They are defined as static character arrays, so they cannot be implicitly
+concatentated with string literals. For example, ``printf(__func__ ": %d",
+123);`` will not compile.
+
+Calculate minimum required buffer size
+======================================
+* :cpp:func:`pw::tokenizer::MinEncodingBufferSizeBytes`
+
+Tokenize a message with arguments in a custom macro
+===================================================
+Projects can leverage the tokenization machinery in whichever way best suits
+their needs. The most efficient way to use ``pw_tokenizer`` is to pass tokenized
+data to a global handler function. A project's custom tokenization macro can
+handle tokenized data in a function of their choosing.
+
+``pw_tokenizer`` provides two low-level macros for projects to use
+to create custom tokenization macros:
+
+* :c:macro:`PW_TOKENIZE_FORMAT_STRING`
+* :c:macro:`PW_TOKENIZER_ARG_TYPES`
 
 .. caution::
 
@@ -180,100 +344,10 @@ stored as needed.
    - Pass additional arguments, such as metadata, with the tokenized message.
    - Integrate ``pw_tokenizer`` with other systems.
 
-.. _module-pw_tokenizer-base64-guides:
-
--------------
-Base64 guides
--------------
-See :ref:`module-pw_tokenizer-base64-format` for a conceptual overview of
-Base64.
-
-Encoding Base64
-===============
-To encode with the Base64 format, add a call to
-``pw::tokenizer::PrefixedBase64Encode`` or ``pw_tokenizer_PrefixedBase64Encode``
-in the tokenizer handler function. For example,
-
-.. code-block:: cpp
-
-   void TokenizedMessageHandler(const uint8_t encoded_message[],
-                                size_t size_bytes) {
-     pw::InlineBasicString base64 = pw::tokenizer::PrefixedBase64Encode(
-         pw::span(encoded_message, size_bytes));
-
-     TransmitLogMessage(base64.data(), base64.size());
-   }
-
-Decoding Base64
-===============
-The Python ``Detokenizer`` class supports decoding and detokenizing prefixed
-Base64 messages with ``detokenize_base64`` and related methods.
-
-.. tip::
-   The Python detokenization tools support recursive detokenization for prefixed
-   Base64 text. Tokenized strings found in detokenized text are detokenized, so
-   prefixed Base64 messages can be passed as ``%s`` arguments.
-
-   For example, the tokenized string for "Wow!" is ``$RhYjmQ==``. This could be
-   passed as an argument to the printf-style string ``Nested message: %s``, which
-   encodes to ``$pEVTYQkkUmhZam1RPT0=``. The detokenizer would decode the message
-   as follows:
-
-   ::
-
-     "$pEVTYQkkUmhZam1RPT0=" → "Nested message: $RhYjmQ==" → "Nested message: Wow!"
-
-Base64 decoding is supported in C++ or C with the
-``pw::tokenizer::PrefixedBase64Decode`` or ``pw_tokenizer_PrefixedBase64Decode``
-functions.
-
-Investigating undecoded messages
-================================
-Tokenized messages cannot be decoded if the token is not recognized. The Python
-package includes the ``parse_message`` tool, which parses tokenized Base64
-messages without looking up the token in a database. This tool attempts to guess
-the types of the arguments and displays potential ways to decode them.
-
-This tool can be used to extract argument information from an otherwise unusable
-message. It could help identify which statement in the code produced the
-message. This tool is not particularly helpful for tokenized messages without
-arguments, since all it can do is show the value of the unknown token.
-
-The tool is executed by passing Base64 tokenized messages, with or without the
-``$`` prefix, to ``pw_tokenizer.parse_message``. Pass ``-h`` or ``--help`` to
-see full usage information.
-
-Example
--------
-.. code-block::
-
-   $ python -m pw_tokenizer.parse_message '$329JMwA=' koSl524TRkFJTEVEX1BSRUNPTkRJVElPTgJPSw== --specs %s %d
-
-   INF Decoding arguments for '$329JMwA='
-   INF Binary: b'\xdfoI3\x00' [df 6f 49 33 00] (5 bytes)
-   INF Token:  0x33496fdf
-   INF Args:   b'\x00' [00] (1 bytes)
-   INF Decoding with up to 8 %s or %d arguments
-   INF   Attempt 1: [%s]
-   INF   Attempt 2: [%d] 0
-
-   INF Decoding arguments for '$koSl524TRkFJTEVEX1BSRUNPTkRJVElPTgJPSw=='
-   INF Binary: b'\x92\x84\xa5\xe7n\x13FAILED_PRECONDITION\x02OK' [92 84 a5 e7 6e 13 46 41 49 4c 45 44 5f 50 52 45 43 4f 4e 44 49 54 49 4f 4e 02 4f 4b] (28 bytes)
-   INF Token:  0xe7a58492
-   INF Args:   b'n\x13FAILED_PRECONDITION\x02OK' [6e 13 46 41 49 4c 45 44 5f 50 52 45 43 4f 4e 44 49 54 49 4f 4e 02 4f 4b] (24 bytes)
-   INF Decoding with up to 8 %s or %d arguments
-   INF   Attempt 1: [%d %s %d %d %d] 55 FAILED_PRECONDITION 1 -40 -38
-   INF   Attempt 2: [%d %s %s] 55 FAILED_PRECONDITION OK
-
-Detokenizing command line utilities
------------------------------------
-See :ref:`module-pw_tokenizer-cli-detokenizing`.
-
 .. _module-pw_tokenizer-masks:
 
----------------------------
 Smaller tokens with masking
----------------------------
+===========================
 ``pw_tokenizer`` uses 32-bit tokens. On 32-bit or 64-bit architectures, using
 fewer than 32 bits does not improve runtime or code size efficiency. However,
 when tokens are packed into data structures or stored in arrays, the size of the
@@ -285,7 +359,12 @@ masked token is used in both the token database and the code. The masked token
 is not a masked version of the full 32-bit token, the masked token is the token.
 This makes it trivial to decode tokens that use fewer than 32 bits.
 
-Masking functionality is provided through the ``*_MASK`` versions of the macros.
+Masking functionality is provided through the ``*_MASK`` versions of the macros:
+
+* :c:macro:`PW_TOKENIZE_STRING_MASK`
+* :c:macro:`PW_TOKENIZE_STRING_MASK_EXPR`
+* :c:macro:`PW_TOKENIZE_TO_BUFFER_MASK`
+
 For example, the following generates 16-bit tokens and packs them into an
 existing value.
 
@@ -303,48 +382,75 @@ Masked tokens without arguments may be encoded in fewer bytes. For example, the
 rather than four (``34 12 00 00``). The detokenizer tools zero-pad data smaller
 than four bytes. Tokens with arguments must always be encoded as four bytes.
 
-.. _module-pw_tokenizer-domains:
+.. _module-pw_tokenizer-base64-encoding:
 
----------------------------------------------------------------------
-Keep tokens from different sources separate with tokenization domains
----------------------------------------------------------------------
-``pw_tokenizer`` supports having multiple tokenization domains. Domains are a
-string label associated with each tokenized string. This allows projects to keep
-tokens from different sources separate. Potential use cases include the
-following:
+Encoding Base64
+===============
+See :ref:`module-pw_tokenizer-base64-format` for a conceptual overview of
+Base64.
 
-* Keep large sets of tokenized strings separate to avoid collisions.
-* Create a separate database for a small number of strings that use truncated
-  tokens, for example only 10 or 16 bits instead of the full 32 bits.
-
-If no domain is specified, the domain is empty (``""``). For many projects, this
-default domain is sufficient, so no additional configuration is required.
+To encode with the Base64 format, add a call to
+``pw::tokenizer::PrefixedBase64Encode`` or ``pw_tokenizer_PrefixedBase64Encode``
+in the tokenizer handler function. For example,
 
 .. code-block:: cpp
 
-   // Tokenizes this string to the default ("") domain.
-   PW_TOKENIZE_STRING("Hello, world!");
+   void TokenizedMessageHandler(const uint8_t encoded_message[],
+                                size_t size_bytes) {
+     pw::InlineBasicString base64 = pw::tokenizer::PrefixedBase64Encode(
+         pw::span(encoded_message, size_bytes));
 
-   // Tokenizes this string to the "my_custom_domain" domain.
-   PW_TOKENIZE_STRING_DOMAIN("my_custom_domain", "Hello, world!");
+     TransmitLogMessage(base64.data(), base64.size());
+   }
 
-The database and detokenization command line tools default to reading from the
-default domain. The domain may be specified for ELF files by appending
-``#DOMAIN_NAME`` to the file path. Use ``#.*`` to read from all domains. For
-example, the following reads strings in ``some_domain`` from ``my_image.elf``.
+Tokenization in Python
+======================
+The Python ``pw_tokenizer.encode`` module has limited support for encoding
+tokenized messages with the ``encode_token_and_args`` function.
 
-.. code-block:: sh
+.. autofunction:: pw_tokenizer.encode.encode_token_and_args
 
-   ./database.py create --database my_db.csv path/to/my_image.elf#some_domain
+This function requires a string's token is already calculated. Typically these
+tokens are provided by a database, but they can be manually created using the
+tokenizer hash.
 
-See :ref:`module-pw_tokenizer-managing-token-databases` for information about
-the ``database.py`` command line tool.
+.. autofunction:: pw_tokenizer.tokens.pw_tokenizer_65599_hash
+
+This is particularly useful for offline token database generation in cases where
+tokenized strings in a binary cannot be embedded as parsable pw_tokenizer
+entries.
+
+.. note::
+   In C, the hash length of a string has a fixed limit controlled by
+   ``PW_TOKENIZER_CFG_C_HASH_LENGTH``. To match tokens produced by C (as opposed
+   to C++) code, ``pw_tokenizer_65599_hash()`` should be called with a matching
+   hash length limit. When creating an offline database, it's a good idea to
+   generate tokens for both, and merge the databases.
+
+.. _module-pw_tokenizer-protobuf-tokenization-python:
+
+Protobuf detokenization library
+-------------------------------
+The :py:mod:`pw_tokenizer.proto` Python module defines functions that may be
+used to detokenize protobuf objects in Python. The function
+:py:func:`pw_tokenizer.proto.detokenize_fields` detokenizes all fields
+annotated as tokenized, replacing them with their detokenized version. For
+example:
+
+.. code-block:: python
+
+   my_detokenizer = pw_tokenizer.Detokenizer(some_database)
+
+   my_message = SomeMessage(tokenized_field=b'$YS1EMQ==')
+   pw_tokenizer.proto.detokenize_fields(my_detokenizer, my_message)
+
+   assert my_message.tokenized_field == b'The detokenized string! Cool!'
 
 .. _module-pw_tokenizer-managing-token-databases:
 
-------------------------
-Managing token databases
-------------------------
+---------------
+Token databases
+---------------
 Background: :ref:`module-pw_tokenizer-token-databases`
 
 Token databases are managed with the ``database.py`` script. This script can be
@@ -467,43 +573,17 @@ the ``database`` variable.
      DEPS ${deps_list}
    }
 
-
-.. _module-pw_tokenizer-collisions-guide:
-
------------------------------
-Working with token collisions
------------------------------
-See :ref:`module-pw_tokenizer-collisions` for a conceptual overview of token
-collisions.
-
-Collisions may occur occasionally. Run the command
-``python -m pw_tokenizer.database report <database>`` to see information about a
-token database, including any collisions.
-
-If there are collisions, take the following steps to resolve them.
-
-- Change one of the colliding strings slightly to give it a new token.
-- In C (not C++), artificial collisions may occur if strings longer than
-  ``PW_TOKENIZER_CFG_C_HASH_LENGTH`` are hashed. If this is happening, consider
-  setting ``PW_TOKENIZER_CFG_C_HASH_LENGTH`` to a larger value.  See
-  ``pw_tokenizer/public/pw_tokenizer/config.h``.
-- Run the ``mark_removed`` command with the latest version of the build
-  artifacts to mark missing strings as removed. This deprioritizes them in
-  collision resolution.
-
-  .. code-block:: sh
-
-     python -m pw_tokenizer.database mark_removed --database <database> <ELF files>
-
-  The ``purge`` command may be used to delete these tokens from the database.
-
 .. _module-pw_tokenizer-detokenization-guides:
 
----------------------
-Detokenization guides
----------------------
+--------------
+Detokenization
+--------------
 See :ref:`module-pw_tokenizer-detokenization` for a conceptual overview
 of detokenization.
+
+Detokenizing command line utilities
+===================================
+See :ref:`module-pw_tokenizer-cli-detokenizing`.
 
 Python
 ======
@@ -604,6 +684,135 @@ Protocol buffers
 ================
 ``pw_tokenizer`` provides utilities for handling tokenized fields in protobufs.
 See :ref:`module-pw_tokenizer-proto` for details.
+
+.. _module-pw_tokenizer-base64-decoding:
+
+Decoding Base64
+===============
+The Python ``Detokenizer`` class supports decoding and detokenizing prefixed
+Base64 messages with ``detokenize_base64`` and related methods.
+
+.. tip::
+   The Python detokenization tools support recursive detokenization for prefixed
+   Base64 text. Tokenized strings found in detokenized text are detokenized, so
+   prefixed Base64 messages can be passed as ``%s`` arguments.
+
+   For example, the tokenized string for "Wow!" is ``$RhYjmQ==``. This could be
+   passed as an argument to the printf-style string ``Nested message: %s``, which
+   encodes to ``$pEVTYQkkUmhZam1RPT0=``. The detokenizer would decode the message
+   as follows:
+
+   ::
+
+     "$pEVTYQkkUmhZam1RPT0=" → "Nested message: $RhYjmQ==" → "Nested message: Wow!"
+
+Base64 decoding is supported in C++ or C with the
+``pw::tokenizer::PrefixedBase64Decode`` or ``pw_tokenizer_PrefixedBase64Decode``
+functions.
+
+Investigating undecoded Base64 messages
+---------------------------------------
+Tokenized messages cannot be decoded if the token is not recognized. The Python
+package includes the ``parse_message`` tool, which parses tokenized Base64
+messages without looking up the token in a database. This tool attempts to guess
+the types of the arguments and displays potential ways to decode them.
+
+This tool can be used to extract argument information from an otherwise unusable
+message. It could help identify which statement in the code produced the
+message. This tool is not particularly helpful for tokenized messages without
+arguments, since all it can do is show the value of the unknown token.
+
+The tool is executed by passing Base64 tokenized messages, with or without the
+``$`` prefix, to ``pw_tokenizer.parse_message``. Pass ``-h`` or ``--help`` to
+see full usage information.
+
+Example
+^^^^^^^
+.. code-block::
+
+   $ python -m pw_tokenizer.parse_message '$329JMwA=' koSl524TRkFJTEVEX1BSRUNPTkRJVElPTgJPSw== --specs %s %d
+
+   INF Decoding arguments for '$329JMwA='
+   INF Binary: b'\xdfoI3\x00' [df 6f 49 33 00] (5 bytes)
+   INF Token:  0x33496fdf
+   INF Args:   b'\x00' [00] (1 bytes)
+   INF Decoding with up to 8 %s or %d arguments
+   INF   Attempt 1: [%s]
+   INF   Attempt 2: [%d] 0
+
+   INF Decoding arguments for '$koSl524TRkFJTEVEX1BSRUNPTkRJVElPTgJPSw=='
+   INF Binary: b'\x92\x84\xa5\xe7n\x13FAILED_PRECONDITION\x02OK' [92 84 a5 e7 6e 13 46 41 49 4c 45 44 5f 50 52 45 43 4f 4e 44 49 54 49 4f 4e 02 4f 4b] (28 bytes)
+   INF Token:  0xe7a58492
+   INF Args:   b'n\x13FAILED_PRECONDITION\x02OK' [6e 13 46 41 49 4c 45 44 5f 50 52 45 43 4f 4e 44 49 54 49 4f 4e 02 4f 4b] (24 bytes)
+   INF Decoding with up to 8 %s or %d arguments
+   INF   Attempt 1: [%d %s %d %d %d] 55 FAILED_PRECONDITION 1 -40 -38
+   INF   Attempt 2: [%d %s %s] 55 FAILED_PRECONDITION OK
+
+.. _module-pw_tokenizer-collisions-guide:
+
+----------------
+Token collisions
+----------------
+See :ref:`module-pw_tokenizer-collisions` for a conceptual overview of token
+collisions.
+
+Collisions may occur occasionally. Run the command
+``python -m pw_tokenizer.database report <database>`` to see information about a
+token database, including any collisions.
+
+If there are collisions, take the following steps to resolve them.
+
+- Change one of the colliding strings slightly to give it a new token.
+- In C (not C++), artificial collisions may occur if strings longer than
+  ``PW_TOKENIZER_CFG_C_HASH_LENGTH`` are hashed. If this is happening, consider
+  setting ``PW_TOKENIZER_CFG_C_HASH_LENGTH`` to a larger value.  See
+  ``pw_tokenizer/public/pw_tokenizer/config.h``.
+- Run the ``mark_removed`` command with the latest version of the build
+  artifacts to mark missing strings as removed. This deprioritizes them in
+  collision resolution.
+
+  .. code-block:: sh
+
+     python -m pw_tokenizer.database mark_removed --database <database> <ELF files>
+
+  The ``purge`` command may be used to delete these tokens from the database.
+
+.. _module-pw_tokenizer-domains:
+
+--------------------
+Tokenization domains
+--------------------
+``pw_tokenizer`` supports having multiple tokenization domains. Domains are a
+string label associated with each tokenized string. This allows projects to keep
+tokens from different sources separate. Potential use cases include the
+following:
+
+* Keep large sets of tokenized strings separate to avoid collisions.
+* Create a separate database for a small number of strings that use truncated
+  tokens, for example only 10 or 16 bits instead of the full 32 bits.
+
+If no domain is specified, the domain is empty (``""``). For many projects, this
+default domain is sufficient, so no additional configuration is required.
+
+.. code-block:: cpp
+
+   // Tokenizes this string to the default ("") domain.
+   PW_TOKENIZE_STRING("Hello, world!");
+
+   // Tokenizes this string to the "my_custom_domain" domain.
+   PW_TOKENIZE_STRING_DOMAIN("my_custom_domain", "Hello, world!");
+
+The database and detokenization command line tools default to reading from the
+default domain. The domain may be specified for ELF files by appending
+``#DOMAIN_NAME`` to the file path. Use ``#.*`` to read from all domains. For
+example, the following reads strings in ``some_domain`` from ``my_image.elf``.
+
+.. code-block:: sh
+
+   ./database.py create --database my_db.csv path/to/my_image.elf#some_domain
+
+See :ref:`module-pw_tokenizer-managing-token-databases` for information about
+the ``database.py`` command line tool.
 
 ----------
 Case study
