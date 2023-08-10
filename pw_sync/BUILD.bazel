@@ -484,6 +484,7 @@ pw_cc_test(
     name = "borrow_test",
     srcs = [
         "borrow_test.cc",
+        "pw_sync_private/borrow_lockable_tests.h",
     ],
     deps = [
         ":borrow",

@@ -247,7 +247,10 @@ pw_test("lock_traits_test") {
 }
 
 pw_test("borrow_test") {
-  sources = [ "borrow_test.cc" ]
+  sources = [
+    "borrow_test.cc",
+    "pw_sync_private/borrow_lockable_tests.h",
+  ]
   deps = [
     ":borrow",
     ":lock_testing",

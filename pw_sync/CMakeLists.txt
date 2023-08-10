@@ -246,6 +246,7 @@ pw_add_test(pw_sync.lock_traits_test
 pw_add_test(pw_sync.borrow_test
   SOURCES
     borrow_test.cc
+    pw_sync_private/borrow_lockable_tests.h
   PRIVATE_DEPS
     pw_sync.borrow
     pw_sync.lock_testing
