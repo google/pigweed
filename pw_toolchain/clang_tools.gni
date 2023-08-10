@@ -58,7 +58,8 @@ pw_toolchain_clang_tools = {
       _toolchain_prefix = rebase_path(_toolchain_prefix, root_build_dir)
     }
     if (host_os == "win") {
-      _toolchain_prefix = "./" + string_replace(_toolchain_prefix, "/", "\\")
+      _toolchain_prefix = "./" + _toolchain_prefix
+      _toolchain_prefix = string_replace(_toolchain_prefix, "/", "\\")
     }
     ar = _toolchain_prefix + ar
     cc = _toolchain_prefix + cc
