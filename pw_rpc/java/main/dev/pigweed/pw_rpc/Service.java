@@ -20,7 +20,6 @@ import com.google.protobuf.MessageLite;
 import com.google.protobuf.Parser;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.stream.Collectors;
 
 /** Represents an RPC service: a collection of related methods. */
@@ -57,7 +56,7 @@ public class Service {
   }
 
   /**
-   * @return collection of methods in this service.
+   * Returns the methods in this service.
    */
   public final ImmutableCollection<Method> getMethods() {
     return methods().values();

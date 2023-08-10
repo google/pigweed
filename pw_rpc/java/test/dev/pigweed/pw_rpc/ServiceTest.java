@@ -18,7 +18,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import org.junit.Test;
 
-public class ServiceTest {
+public final class ServiceTest {
   private static final Service SERVICE = new Service("pw.rpc.test1.TheTestService",
       Service.unaryMethod("SomeUnary", SomeMessage.parser(), AnotherMessage.parser()),
       Service.serverStreamingMethod(

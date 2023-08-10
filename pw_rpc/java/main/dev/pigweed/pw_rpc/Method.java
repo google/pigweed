@@ -20,7 +20,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageLite;
 import com.google.protobuf.Parser;
-import java.lang.reflect.InvocationTargetException;
 
 /**
  * Information about an RPC service method.
