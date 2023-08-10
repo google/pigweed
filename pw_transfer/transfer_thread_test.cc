@@ -32,6 +32,10 @@ namespace {
 
 using internal::Chunk;
 
+// Effectively unlimited timeout as these tests should never hit it.
+constexpr chrono::SystemClock::duration kNeverTimeout =
+    std::chrono::seconds(60);
+
 // TODO(frolv): Have a generic way to obtain a thread for testing on any system.
 thread::Options& TransferThreadOptions() {
   static thread::stl::Options options;
@@ -111,7 +115,7 @@ TEST_F(TransferThreadTest, AddTransferHandler) {
                                        3,
                                        {},
                                        max_parameters_,
-                                       std::chrono::seconds(2),
+                                       kNeverTimeout,
                                        3,
                                        10);
 
@@ -136,7 +140,7 @@ TEST_F(TransferThreadTest, RemoveTransferHandler) {
                                        3,
                                        {},
                                        max_parameters_,
-                                       std::chrono::seconds(2),
+                                       kNeverTimeout,
                                        3,
                                        10);
 
@@ -173,7 +177,7 @@ TEST_F(TransferThreadTest, ProcessChunk_SendsWindow) {
                 .set_max_chunk_size_bytes(8)
                 .set_offset(0)),
         max_parameters_,
-        std::chrono::seconds(2),
+        kNeverTimeout,
         3,
         10);
   });
@@ -220,7 +224,7 @@ TEST_F(TransferThreadTest, StartTransferExhausted_Server) {
               .set_max_chunk_size_bytes(8)
               .set_offset(0)),
       max_parameters_,
-      std::chrono::seconds(2),
+      kNeverTimeout,
       3,
       10);
   transfer_thread_.WaitUntilEventIsProcessed();
@@ -244,7 +248,7 @@ TEST_F(TransferThreadTest, StartTransferExhausted_Server) {
               .set_max_chunk_size_bytes(8)
               .set_offset(0)),
       max_parameters_,
-      std::chrono::seconds(2),
+      kNeverTimeout,
       3,
       10);
   transfer_thread_.WaitUntilEventIsProcessed();
@@ -279,8 +283,8 @@ TEST_F(TransferThreadTest, StartTransferExhausted_Client) {
       &buffer3,
       max_parameters_,
       [&status3](Status status) { status3 = status; },
-      std::chrono::seconds(2),
-      std::chrono::seconds(4),
+      kNeverTimeout,
+      kNeverTimeout,
       3,
       10);
   transfer_thread_.WaitUntilEventIsProcessed();
@@ -297,8 +301,8 @@ TEST_F(TransferThreadTest, StartTransferExhausted_Client) {
       &buffer4,
       max_parameters_,
       [&status4](Status status) { status4 = status; },
-      std::chrono::seconds(2),
-      std::chrono::seconds(4),
+      kNeverTimeout,
+      kNeverTimeout,
       3,
       10);
   transfer_thread_.WaitUntilEventIsProcessed();
@@ -324,7 +328,7 @@ TEST_F(TransferThreadTest, VersionTwo_NoHandler) {
                                        /*resource_id=*/7,
                                        {},
                                        max_parameters_,
-                                       std::chrono::seconds(2),
+                                       kNeverTimeout,
                                        3,
                                        10);
 
