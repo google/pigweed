@@ -15,7 +15,10 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
+import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_fuzzer/fuzzer.gni")
+import("$dir_pw_thread/backend.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -83,6 +86,24 @@ pw_source_set("interval_reader") {
   sources = [ "interval_reader.cc" ]
 }
 
+pw_source_set("mpsc_stream") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":pw_stream",
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_containers:intrusive_list",
+    "$dir_pw_sync:lock_annotations",
+    "$dir_pw_sync:mutex",
+    "$dir_pw_sync:timed_thread_notification",
+    dir_pw_assert,
+    dir_pw_bytes,
+    dir_pw_function,
+    dir_pw_status,
+  ]
+  public = [ "public/pw_stream/mpsc_stream.h" ]
+  sources = [ "mpsc_stream.cc" ]
+}
+
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }
@@ -94,6 +115,7 @@ pw_test_group("tests") {
     ":null_stream_test",
     ":seek_test",
     ":stream_test",
+    ":mpsc_stream_test",
   ]
 
   if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
@@ -149,4 +171,19 @@ pw_test("interval_reader_test") {
 pw_test("socket_stream_test") {
   sources = [ "socket_stream_test.cc" ]
   deps = [ ":socket_stream" ]
+}
+
+pw_test("mpsc_stream_test") {
+  sources = [ "mpsc_stream_test.cc" ]
+  deps = [
+    ":mpsc_stream",
+    "$dir_pw_containers:vector",
+    "$dir_pw_fuzzer:fuzztest",
+    "$dir_pw_thread:test_thread_context",
+    "$dir_pw_thread:thread",
+    dir_pw_random,
+  ]
+  enable_if =
+      pw_chrono_SYSTEM_CLOCK_BACKEND != "" && pw_thread_THREAD_BACKEND != "" &&
+      pw_thread_TEST_THREAD_CONTEXT_BACKEND != ""
 }

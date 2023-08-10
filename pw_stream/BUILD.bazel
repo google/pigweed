@@ -82,6 +82,24 @@ pw_cc_library(
     deps = [":pw_stream"],
 )
 
+pw_cc_library(
+    name = "mpsc_stream",
+    srcs = ["mpsc_stream.cc"],
+    hdrs = ["public/pw_stream/mpsc_stream.h"],
+    deps = [
+        ":pw_stream",
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_chrono:system_clock_facade",
+        "//pw_containers:intrusive_list",
+        "//pw_function",
+        "//pw_status",
+        "//pw_sync:lock_annotations",
+        "//pw_sync:mutex",
+        "//pw_sync:timed_thread_notification",
+    ],
+)
+
 pw_cc_test(
     name = "memory_stream_test",
     srcs = ["memory_stream_test.cc"],
@@ -150,6 +168,20 @@ pw_cc_test(
     srcs = ["socket_stream_test.cc"],
     deps = [
         ":socket_stream",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "mpsc_stream_test",
+    srcs = ["mpsc_stream_test.cc"],
+    deps = [
+        ":mpsc_stream",
+        "//pw_containers:vector",
+        "//pw_fuzzer:fuzztest",
+        "//pw_random",
+        "//pw_thread:test_thread_context",
+        "//pw_thread:thread",
         "//pw_unit_test",
     ],
 )
