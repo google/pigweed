@@ -571,12 +571,13 @@ if (current_toolchain != default_toolchain) {
     output_metadata = true
   }
 
-  group("pw_perf_tests") {
-    deps = [
+  pw_test_group("pw_perf_tests") {
+    tests = [
       "$dir_pw_checksum:perf_tests",
       "$dir_pw_perf_test:perf_test_tests_test",
       "$dir_pw_protobuf:perf_tests",
     ]
+    output_metadata = true
   }
 
   # Modules that support C++14.

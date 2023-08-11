@@ -524,7 +524,8 @@ types of tests. It is typically used by other templates, such as the
 
 Arguments
 ^^^^^^^^^
-* ``test_type``: One of "test_group" or "unit_test".
+* ``test_type``: One of "test_group", "unit_test", "action_test", or
+  "perf_test".
 * ``test_name``: Name of the test. Defaults to the target name.
 * ``build_label``: GN label for the test. Defaults to the test name.
 * ``extra_metadata``: Additional variables to add to the metadata.
@@ -546,6 +547,7 @@ Let ``//my_module/BUILD.gn`` contain the following:
 .. code::
 
    import("$dir_pw_build/python_action_test.gni")
+   import("$dir_pw_perf_test/perf_test.gni")
    import("$dir_pw_unit_test/test.gni")
 
    pw_test("my_unit_test") {
@@ -564,6 +566,11 @@ Let ``//my_module/BUILD.gn`` contain the following:
      args = [ ... ]
      deps = [ ... ]
      tags = [ "integration" ]
+   }
+
+   pw_perf_test("my_perf_test") {
+     sources = [ ... ]
+     deps = [ ... ]
    }
 
    pw_test_group("tests") {
@@ -615,6 +622,12 @@ Then running ``gn gen out`` will produce the following JSON file at
        ],
        "test_name": "my_integration_test",
        "test_type": "action_test"
+     },
+     {
+       "build_label": "//my_module:my_perf_test",
+       "test_directory": "my_toolchain/obj/my_module/test",
+       "test_name": "my_perf_test",
+       "test_type": "perf_test"
      },
      {
        "build_label": "//my_module:tests",

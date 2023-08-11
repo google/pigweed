@@ -15,6 +15,7 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
+import("$dir_pw_build/test_info.gni")
 import("$dir_pw_compilation_testing/negative_compilation_test.gni")
 import("$dir_pw_toolchain/host_clang/toolchains.gni")
 import("$dir_pw_unit_test/test.gni")
@@ -37,12 +38,17 @@ declare_args() {
 # <target_name> is a standalone executable which contains only the test sources
 # specified in the pw_perf_test_template.
 #
+# Targets defined using this template will produce test metadata with a
+# `test_type` of "perf_test" and an additional `test_directory` value describing
+# the location of the test binary within the build output.
+#
 # Args:
-#   - enable_if: (optional) Conditionally enables or disables this test. The
-#         test target does nothing when the test is disabled. The
-#         disabled test can still be built and run with the
-#         <target_name>.DISABLED. Defaults to true (enable_if).
-#   - All of the regular "executable" target args are accepted.
+#   - The following args have the same meaning as for `pw_test`:
+#         enable_if
+#         tags
+#         extra_metadata
+#
+#   - All of the regular `executable` target args are accepted.
 #
 template("pw_perf_test") {
   _test_target_name = target_name
@@ -70,11 +76,26 @@ template("pw_perf_test") {
     deps += [ dir_pw_perf_test ]
   }
 
+  _test_metadata = "${target_name}.metadata"
+  _extra_metadata = {
+    forward_variables_from(invoker, [ "extra_metadata" ])
+    test_directory = rebase_path(_test_output_dir, root_build_dir)
+  }
+  pw_test_info(_test_metadata) {
+    test_type = "perf_test"
+    test_name = _test_target_name
+    forward_variables_from(invoker, [ "tags" ])
+    extra_metadata = _extra_metadata
+  }
+
   pw_internal_disableable_target(_test_target_name) {
     target_type = pw_perf_test_EXECUTABLE_TARGET_TYPE
     enable_if = _test_is_enabled
 
-    deps = [ ":$_test_target_name.lib" ]
+    deps = [
+      ":$_test_metadata",
+      ":$_test_target_name.lib",
+    ]
     if (_test_main != "") {
       deps += [ _test_main ]
     }
