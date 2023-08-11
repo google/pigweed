@@ -15,6 +15,7 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/python.gni")
+import("$dir_pw_build/python_action_test.gni")
 import("$dir_pw_rpc/internal/integration_test_ports.gni")
 
 pw_python_package("py") {
@@ -37,7 +38,7 @@ pw_python_package("py") {
   mypy_ini = "$dir_pigweed/.mypy.ini"
 }
 
-pw_python_script("rpc_service_test") {
+pw_python_action_test("rpc_service_test") {
   sources = [ "rpc_service_test.py" ]
   python_deps = [
     ":py",
@@ -45,16 +46,11 @@ pw_python_script("rpc_service_test") {
     "$dir_pw_rpc/py",
     "$dir_pw_status/py",
   ]
-  pylintrc = "$dir_pigweed/.pylintrc"
-  mypy_ini = "$dir_pigweed/.mypy.ini"
-
-  action = {
-    args = [
-      "--port=$pw_unit_test_RPC_SERVICE_TEST_PORT",
-      "--test-server-command",
-      "<TARGET_FILE(..:test_rpc_server)>",
-    ]
-    deps = [ "..:test_rpc_server" ]
-    stamp = true
-  }
+  args = [
+    "--port=$pw_unit_test_RPC_SERVICE_TEST_PORT",
+    "--test-server-command",
+    "<TARGET_FILE(..:test_rpc_server)>",
+  ]
+  deps = [ "..:test_rpc_server" ]
+  tags = [ "integration" ]
 }

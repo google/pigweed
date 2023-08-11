@@ -559,10 +559,18 @@ Let ``//my_module/BUILD.gn`` contain the following:
      deps = [ ... ]
    }
 
+   pw_python_action_test("my_integration_test") {
+     script = [ ... ]
+     args = [ ... ]
+     deps = [ ... ]
+     tags = [ "integration" ]
+   }
+
    pw_test_group("tests") {
      tests = [
       ":my_unit_test",
       ":my_action_test",
+      ":my_integration_test",
      ]
    }
 
@@ -600,10 +608,20 @@ Then running ``gn gen out`` will produce the following JSON file at
        "test_type": "action_test"
      },
      {
+       "build_label": "//my_module:my_integration_test",
+       "ninja_target": "my_toolchain/obj/my_module/my_integration_test.run.stamp",
+       "tags": [
+         "integration"
+       ],
+       "test_name": "my_integration_test",
+       "test_type": "action_test"
+     },
+     {
        "build_label": "//my_module:tests",
        "deps": [
          "//my_module:my_unit_test",
          "//my_module:my_action_test",
+         "//my_module:my_integration_test",
        ],
        "test_name": "my_module/tests",
        "test_type": "test_group"

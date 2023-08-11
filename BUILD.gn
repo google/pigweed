@@ -312,13 +312,7 @@ group("action_tests") {
 # Tests larger than unit tests, typically run in a specific configuration.
 group("integration_tests") {
   _default_tc = _default_toolchain_prefix + pw_DEFAULT_C_OPTIMIZATION_LEVEL
-  deps = [
-    "$dir_pw_build/py/gn_tests:python_package_integration_tests",
-    "$dir_pw_cli/py:process_integration_test.action($_default_tc)",
-    "$dir_pw_rpc:cpp_client_server_integration_test($_default_tc)",
-    "$dir_pw_rpc/py:python_client_cpp_server_test.action($_default_tc)",
-    "$dir_pw_unit_test/py:rpc_service_test.action($_default_tc)",
-  ]
+  deps = [ ":pw_integration_tests.run($_default_tc)" ]
 }
 
 group("pip_constraint_update") {
@@ -563,6 +557,18 @@ if (current_toolchain != default_toolchain) {
 
   pw_test_group("pw_action_tests") {
     tests = [ "$dir_pw_unit_test:test_group_metadata_test" ]
+  }
+
+  pw_test_group("pw_integration_tests") {
+    tests = [
+      "$dir_pw_build/py/gn_tests:python_package_integration_tests",
+      "$dir_pw_cli/py:process_integration_test",
+      "$dir_pw_rpc:cpp_client_server_integration_test",
+      "$dir_pw_rpc/py:python_client_cpp_server_test",
+      "$dir_pw_unit_test/py:rpc_service_test",
+    ]
+
+    output_metadata = true
   }
 
   group("pw_perf_tests") {

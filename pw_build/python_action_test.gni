@@ -42,11 +42,11 @@ import("$dir_pw_build/test_info.gni")
 #         tags
 #         extra_metadata
 #         source_gen_deps
-#         deps
 #
 #   - The following args have the same meaning as for `pw_python_action`:
 #         script (may be omitted if `sources` has length=1)
 #         args
+#         deps
 #         environment (may also use `envvars`)
 #         working_directory
 #         command_launcher
@@ -73,10 +73,6 @@ template("pw_python_action_test") {
 
   _test_is_enabled = !defined(invoker.enable_if) || invoker.enable_if
   if (_test_is_enabled) {
-    if (defined(invoker.deps)) {
-      _deps += invoker.deps
-    }
-
     # Metadata for this test when used as part of a pw_test_group target.
     _test_metadata = "${target_name}.metadata"
     _ninja_target = "$target_out_dir/$target_name.run.stamp"
@@ -98,6 +94,9 @@ template("pw_python_action_test") {
     if (defined(invoker.action) && invoker.action == "${invoker.action}") {
       # `action` is a label to an existing Python action.
       _run_deps = [ invoker.action ]
+      if (defined(invoker.deps)) {
+        _deps += invoker.deps
+      }
     } else {
       # Wrap the action in a Python script target for additional flexibility.
       _test_script_name = _test_target_name + ".script"
@@ -139,6 +138,7 @@ template("pw_python_action_test") {
                                    [
                                      "script",
                                      "args",
+                                     "deps",
                                      "environment",
                                      "working_directory",
                                      "command_launcher",

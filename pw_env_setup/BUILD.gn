@@ -95,8 +95,6 @@ pw_python_group("python") {
 
     # Standalone scripts
     # These targets are included here in order to ensure they are linted.
-    "$dir_pw_hdlc/rpc_example:example_script",
-    "$dir_pw_rpc/py:python_client_cpp_server_test",
     "$dir_pw_third_party/fuchsia:generate_fuchsia_patch",
     "$dir_pw_third_party/nanopb:generate_nanopb_proto",
   ]

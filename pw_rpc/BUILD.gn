@@ -17,6 +17,7 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/python.gni")
 import("$dir_pw_build/python_action.gni")
+import("$dir_pw_build/python_action_test.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_compilation_testing/negative_compilation_test.gni")
@@ -357,7 +358,7 @@ pw_executable("client_integration_test") {
   }
 }
 
-pw_python_action("cpp_client_server_integration_test") {
+pw_python_action_test("cpp_client_server_integration_test") {
   script = "py/pw_rpc/testing.py"
   args = [
     "--server",
@@ -371,8 +372,7 @@ pw_python_action("cpp_client_server_integration_test") {
     ":client_integration_test",
     ":test_rpc_server",
   ]
-
-  stamp = true
+  tags = [ "integration" ]
 }
 
 pw_proto_library("protos") {
