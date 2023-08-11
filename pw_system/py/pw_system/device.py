@@ -127,6 +127,15 @@ class Device:
             )
             self.log_stream_handler.listen_to_logs()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc_info):
+        self.close()
+
+    def close(self) -> None:
+        self.client.close()
+
     def info(self) -> console_tools.ClientInfo:
         return console_tools.ClientInfo('device', self.rpcs, self.client.client)
 
