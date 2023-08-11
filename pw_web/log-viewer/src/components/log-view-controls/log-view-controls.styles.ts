@@ -35,11 +35,6 @@ export const styles = css`
     white-space: nowrap;
   }
 
-  .button-toggle {
-    background-color: var(--md-sys-color-surface-container-high);
-    border-radius: 100%;
-  }
-
   .field-menu {
     background-color: var(--md-sys-color-surface-container);
     border-radius: 4px;
@@ -48,6 +43,11 @@ export const styles = css`
     position: absolute;
     right: 0;
     z-index: 2;
+  }
+
+  .button-toggle-enabled {
+    background-color: var(--sys-log-viewer-color-controls-button-enabled);
+    border-radius: 100%;
   }
 
   .field-menu-item {

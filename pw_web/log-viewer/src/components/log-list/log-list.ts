@@ -20,6 +20,7 @@ import {
   queryAll,
   state,
 } from 'lit/decorators.js';
+import { classMap } from 'lit/directives/class-map.js';
 import { styles } from './log-list.styles';
 import { FieldData, LogEntry, Severity } from '../../shared/interfaces';
 import { virtualize } from '@lit-labs/virtualizer/virtualize.js';
@@ -46,6 +47,10 @@ export class LogList extends LitElement {
   /** A string representing the value contained in the search field. */
   @property({ type: String })
   searchText = '';
+
+  /** Whether line wrapping in table cells should be used. */
+  @property({ type: Boolean })
+  lineWrap = false;
 
   /** The field keys (column values) for the incoming log entries. */
   @state()
@@ -415,14 +420,17 @@ export class LogList extends LitElement {
   }
 
   private tableDataRow(log: LogEntry) {
-    const logSeverity = log.severity || Severity.INFO;
-    const className =
-      logSeverity === Severity.INFO
-        ? 'log-row'
-        : `log-row log-row--${logSeverity.toLowerCase()}`;
+    // eslint-disable-next-line prefer-const
+    let classes = {
+      'log-row': true,
+      'log-row--nowrap': !this.lineWrap,
+    };
+    const logSeverityClass = ('log-row--' +
+      (log.severity || Severity.INFO).toLowerCase()) as keyof typeof classes;
+    classes[logSeverityClass] = true;
 
     return html`
-      <tr class="${className}">
+      <tr class="${classMap(classes)}">
         ${log.fields.map((field, columnIndex) =>
           this.tableDataCell(field, columnIndex),
         )}

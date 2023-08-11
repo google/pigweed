@@ -54,6 +54,10 @@ export class LogView extends LitElement {
   @property({ type: Boolean })
   isOneOfMany = false;
 
+  /** Whether line wrapping in table cells should be used. */
+  @state()
+  _lineWrap = false;
+
   /**
    * An array containing the logs that remain after the current filter has
    * been applied.
@@ -78,7 +82,7 @@ export class LogView extends LitElement {
 
   /** A string representing the value contained in the search field. */
   @state()
-  public searchText: string = '';
+  public searchText = '';
 
   /** A StateStore object that stores state of views */
   @state()
@@ -100,6 +104,7 @@ export class LogView extends LitElement {
     this.colsHidden = [];
 
     if (this._state) {
+      // eslint-disable-next-line prefer-const
       let viewConfigArr = this._state.logViewConfig;
       const index = viewConfigArr.findIndex((i) => this.id === i.viewID);
 
@@ -156,6 +161,7 @@ export class LogView extends LitElement {
         break;
     }
 
+    // eslint-disable-next-line prefer-const
     let viewConfigArr = this._state.logViewConfig;
     const index = viewConfigArr.findIndex((i) => this.id === i.viewID);
     if (index !== -1) {
@@ -197,6 +203,7 @@ export class LogView extends LitElement {
    *   toggled.
    */
   private toggleColumns(event: CustomEvent) {
+    // eslint-disable-next-line prefer-const
     let viewConfigArr = this._state.logViewConfig;
     let colIndex = -1;
 
@@ -226,6 +233,15 @@ export class LogView extends LitElement {
   }
 
   /**
+   * Toggles the wrapping of text in each row.
+   *
+   * @param {CustomEvent} event - The click event.
+   */
+  private toggleWrapping() {
+    this._lineWrap = !this._lineWrap;
+  }
+
+  /**
    * Combines constituent filter expressions and filters the logs. The
    * filtered logs are stored in the `_filteredLogs` state property.
    */
@@ -248,12 +264,14 @@ export class LogView extends LitElement {
         @input-change="${this.updateFilter}"
         @clear-logs="${this.updateFilter}"
         @column-toggle="${this.toggleColumns}"
+        @wrap-toggle="${this.toggleWrapping}"
         role="toolbar"
       >
       </log-view-controls>
 
       <log-list
         .colsHidden=${[...this.colsHidden]}
+        .lineWrap=${this._lineWrap}
         .viewId=${this.id}
         .logs=${this._filteredLogs}
         .searchText=${this.searchText}

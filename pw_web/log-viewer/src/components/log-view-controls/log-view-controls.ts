@@ -60,7 +60,7 @@ export class LogViewControls extends LitElement {
   _state: State;
 
   @state()
-  _viewTitle: string = '';
+  _viewTitle = '';
 
   @query('.field-menu') _fieldMenu!: HTMLMenuElement;
 
@@ -98,7 +98,7 @@ export class LogViewControls extends LitElement {
   protected updated(): void {
     const checkboxItems = Array.from(this._itemCheckboxes);
     if (checkboxItems.length > 0 && !this.firstCheckboxLoad) {
-      for (let i in checkboxItems) {
+      for (const i in checkboxItems) {
         const checkboxEl = checkboxItems[i] as unknown as HTMLInputElement;
         checkboxEl.checked = !this.colsHidden[Number(i) + 1];
       }
@@ -150,6 +150,21 @@ export class LogViewControls extends LitElement {
   }
 
   /**
+   * Dispatches a custom event for toggling wrapping.
+   */
+  private handleWrapToggle(event: Event) {
+    const dropdownButton = event.target as HTMLElement;
+    dropdownButton.classList.toggle('button-toggle-enabled');
+
+    const wrapToggle = new CustomEvent('wrap-toggle', {
+      bubbles: true,
+      composed: true,
+    });
+
+    this.dispatchEvent(wrapToggle);
+  }
+
+  /**
    * Dispatches a custom event for closing the parent view. This event
    * includes a `viewId` object indicating the `id` of the parent log view.
    */
@@ -195,7 +210,7 @@ export class LogViewControls extends LitElement {
   private toggleColumnVisibilityMenu(event: Event) {
     const dropdownButton = event.target as HTMLElement;
     this._fieldMenu.hidden = !this._fieldMenu.hidden;
-    dropdownButton.classList.toggle('button-toggle');
+    dropdownButton.classList.toggle('button-toggle-enabled');
   }
 
   render() {
@@ -229,6 +244,12 @@ export class LogViewControls extends LitElement {
                     </md-standard-icon-button>
                 </span>
 
+                <span class="action-button" title="Toggle Line Wrapping">
+                    <md-standard-icon-button @click=${this.handleWrapToggle}>
+                        <md-icon>wrap_text</md-icon>
+                    </md-standard-icon-button>
+                </span>
+
                 <span class='field-toggle' title="Toggle fields">
                     <md-standard-icon-button @click=${
                       this.toggleColumnVisibilityMenu
@@ -245,6 +266,7 @@ export class LogViewControls extends LitElement {
                                 checked
                                 type="checkbox"
                                 value=${field}
+                                id=${field}
                               />
                               <label for=${field}>${field}</label>
                             </li>

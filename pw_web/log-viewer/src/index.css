@@ -119,6 +119,7 @@ body {
         --sys-log-viewer-color-controls-text: var(--md-sys-color-on-surface-variant);
         --sys-log-viewer-color-controls-input-outline: transparent;
         --sys-log-viewer-color-controls-input-bg: var(--md-sys-color-surface);
+        --sys-log-viewer-color-controls-button-enabled: var(--md-sys-color-primary-container);
 
         /* Log List */
         --sys-log-viewer-color-table-header-bg: var(--md-sys-color-surface-container);
@@ -145,6 +146,7 @@ body {
 @media (prefers-color-scheme: light) {
     :root {
         --md-sys-color-primary: #0B57D0;
+        --md-sys-color-primary-70: #7CACF8;
         --md-sys-color-primary-90: #D3E3FD;
         --md-sys-color-primary-95: #ECF3FE;
         --md-sys-color-primary-99: #FAFBFF;
@@ -190,6 +192,7 @@ body {
         --sys-log-viewer-color-controls-text: var(--md-sys-color-on-primary-container);
         --sys-log-viewer-color-controls-input-outline: transparent;
         --sys-log-viewer-color-controls-input-bg: var(--md-sys-color-surface-container-lowest);
+        --sys-log-viewer-color-controls-button-enabled: var(--md-sys-color-primary-70);
 
         /* Log List */
         --sys-log-viewer-color-table-header-bg: var(--md-sys-color-primary-95);

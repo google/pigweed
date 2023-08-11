@@ -97,6 +97,12 @@ export const styles = css`
     color: var(--text-color);
   }
 
+  .log-row--nowrap .cell-content {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
   tr:hover > td {
     background-color: rgba(var(--md-sys-inverse-surface-rgb), 0.05);
   }

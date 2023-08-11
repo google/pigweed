@@ -63,10 +63,10 @@ export class LogViewer extends LitElement {
       return;
     }
 
-    let viewState = this._state.logViewConfig;
-    let viewEls = [];
-    for (let i in viewState) {
-      let view = new LogView();
+    let viewState = this._state.logViewConfig; // eslint-disable-line prefer-const
+    let viewEls = []; // eslint-disable-line prefer-const
+    for (const i in viewState) {
+      const view = new LogView();
       view.id = viewState[i].viewID;
       view.searchText = viewState[i].search;
       viewEls.push(view);
@@ -90,6 +90,7 @@ export class LogViewer extends LitElement {
     const newViewState = this.addLogViewState(newView);
     let viewStates: State;
 
+    // eslint-disable-next-line prefer-const
     viewStates = { logViewConfig: this._state.logViewConfig };
     viewStates.logViewConfig.push(newViewState);
     this._logViews = [...this._logViews, newView];
@@ -99,10 +100,11 @@ export class LogViewer extends LitElement {
 
   /** Creates a new log view state to store in the state object. */
   private addLogViewState(view: LogView): LogViewConfig {
+    // eslint-disable-next-line prefer-const
     let fieldColumns = [];
     const fields = view.getFieldsFromLogs(this.logs);
 
-    for (let i in fields) {
+    for (const i in fields) {
       const col: LogColumnState = {
         hidden: false,
         name: fields[i],
@@ -127,7 +129,7 @@ export class LogViewer extends LitElement {
    */
   private handleCloseView(event: CloseViewEvent) {
     const viewId = event.detail.viewId;
-    let index = this._logViews.findIndex((view) => view.id === viewId);
+    const index = this._logViews.findIndex((view) => view.id === viewId);
     this._logViews = this._logViews.filter((view) => view.id !== viewId);
 
     if (index > -1) {
