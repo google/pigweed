@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { State } from "./interfaces";
+import { State } from './interfaces';
 
 /**
  * Abstract Class for StateStore.
@@ -22,12 +22,10 @@ export abstract class StateStore {
   abstract setState(state: State): void;
 }
 
-
 /**
  * LocalStorage version of StateStore
  */
 export class LocalStorageState extends StateStore {
-
   getState(): State {
     try {
       const state = localStorage.getItem('logState') as string;

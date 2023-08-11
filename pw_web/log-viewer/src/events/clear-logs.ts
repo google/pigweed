@@ -13,15 +13,15 @@
 // the License.
 
 interface ClearLogsEvent extends CustomEvent {
-    detail: {
-        timestamp: Date;
-    };
+  detail: {
+    timestamp: Date;
+  };
 }
 
 declare global {
-    interface GlobalEventHandlersEventMap {
-        'clear-logs': ClearLogsEvent;
-    }
+  interface GlobalEventHandlersEventMap {
+    'clear-logs': ClearLogsEvent;
+  }
 }
 
 export default ClearLogsEvent;

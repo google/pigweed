@@ -12,14 +12,14 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import {Status} from 'pigweedjs/pw_status';
-import {Chunk} from 'pigweedjs/protos/pw_transfer/transfer_pb';
+import { Status } from 'pigweedjs/pw_status';
+import { Chunk } from 'pigweedjs/protos/pw_transfer/transfer_pb';
 
 export class ProgressStats {
   constructor(
     readonly bytesSent: number,
     readonly bytesConfirmedReceived: number,
-    readonly totalSizeBytes?: number
+    readonly totalSizeBytes?: number,
   ) {}
 
   get percentReceived(): number {
@@ -50,7 +50,7 @@ class Timer {
 
   constructor(
     readonly timeoutS: number,
-    private readonly callback: () => any
+    private readonly callback: () => any,
   ) {}
 
   /**
@@ -95,10 +95,10 @@ export abstract class Transfer {
     protected sendChunk: (chunk: Chunk) => void,
     responseTimeoutS: number,
     private maxRetries: number,
-    private progressCallback?: ProgressCallback
+    private progressCallback?: ProgressCallback,
   ) {
     this.responseTimer = new Timer(responseTimeoutS, this.onTimeout);
-    this.done = new Promise<Status>(resolve => {
+    this.done = new Promise<Status>((resolve) => {
       this.resolve = resolve!;
     });
   }
@@ -121,7 +121,7 @@ export abstract class Transfer {
     }
 
     console.debug(
-      `Received no responses for ${this.responseTimer?.timeoutS}; retrying ${this.retries}/${this.maxRetries}`
+      `Received no responses for ${this.responseTimer?.timeoutS}; retrying ${this.retries}/${this.maxRetries}`,
     );
 
     this.retryAfterTimeout();
@@ -162,12 +162,12 @@ export abstract class Transfer {
   updateProgress(
     bytesSent: number,
     bytesConfirmedReceived: number,
-    totalSizeBytes?: number
+    totalSizeBytes?: number,
   ): void {
     const stats = new ProgressStats(
       bytesSent,
       bytesConfirmedReceived,
-      totalSizeBytes
+      totalSizeBytes,
     );
     console.debug(`Transfer ${this.id} progress: ${stats}`);
 
@@ -235,7 +235,7 @@ export class ReadTransfer extends Transfer {
     progressCallback?: ProgressCallback,
     maxBytesToReceive = 8192,
     maxChunkSize = 1024,
-    chunkDelayMicroS?: number
+    chunkDelayMicroS?: number,
   ) {
     super(id, sendChunk, responseTimeoutS, maxRetries, progressCallback);
     this.maxBytesToReceive = maxBytesToReceive;
@@ -321,7 +321,7 @@ export class ReadTransfer extends Transfer {
             this.id
           }: transmitter sent invalid earlier end offset ${chunk.getWindowEndOffset()} (receiver offset ${
             this.offset
-          })`
+          })`,
         );
         this.sendError(Status.INTERNAL);
         return;
@@ -333,7 +333,7 @@ export class ReadTransfer extends Transfer {
             this.id
           }: transmitter sent invalid later end offset ${chunk.getWindowEndOffset()} (receiver end offset ${
             this.windowEndOffset
-          })`
+          })`,
         );
         this.sendError(Status.INTERNAL);
         return;
@@ -386,7 +386,7 @@ export class WriteTransfer extends Transfer {
     responseTimeoutS: number,
     initialResponseTimeoutS: number,
     maxRetries: number,
-    progressCallback?: ProgressCallback
+    progressCallback?: ProgressCallback,
   ) {
     super(id, sendChunk, responseTimeoutS, maxRetries, progressCallback);
     this.data = data;
@@ -451,7 +451,7 @@ export class WriteTransfer extends Transfer {
           this.id
         }: server requested invalid offset ${chunk.getOffset()} (size ${
           this.data.length
-        })`
+        })`,
       );
 
       this.sendError(Status.OUT_OF_RANGE);
@@ -460,7 +460,7 @@ export class WriteTransfer extends Transfer {
 
     if (chunk.getPendingBytes() === 0) {
       console.error(
-        `Transfer ${this.id}: service requested 0 bytes (invalid); aborting`
+        `Transfer ${this.id}: service requested 0 bytes (invalid); aborting`,
       );
       this.sendError(Status.INTERNAL);
       return false;
@@ -473,7 +473,7 @@ export class WriteTransfer extends Transfer {
         console.debug(
           `Write transfer ${
             this.id
-          } rolling back to offset ${chunk.getOffset()} from ${this.offset}`
+          } rolling back to offset ${chunk.getOffset()} from ${this.offset}`,
         );
       }
 
@@ -484,14 +484,14 @@ export class WriteTransfer extends Transfer {
       // to be set in these version, so it must be calculated.
       const maxBytesToSend = Math.min(
         chunk.getPendingBytes(),
-        this.data.length - this.offset
+        this.data.length - this.offset,
       );
       this.windowEndOffset = this.offset + maxBytesToSend;
     } else {
       // Extend the window to the new end offset specified by the server.
       this.windowEndOffset = Math.min(
         chunk.getWindowEndOffset(),
-        this.data.length
+        this.data.length,
       );
     }
 
@@ -514,7 +514,7 @@ export class WriteTransfer extends Transfer {
 
     const maxBytesInChunk = Math.min(
       this.maxChunkSize,
-      this.windowEndOffset - this.offset
+      this.windowEndOffset - this.offset,
     );
 
     chunk.setData(this.data.slice(this.offset, this.offset + maxBytesInChunk));

@@ -13,29 +13,43 @@
 // the License.
 
 import {
-  keymap, highlightSpecialChars, drawSelection, highlightActiveLine, dropCursor,
-  rectangularSelection, crosshairCursor,
-  highlightActiveLineGutter
-} from "@codemirror/view"
-import {Extension, EditorState} from "@codemirror/state"
+  keymap,
+  highlightSpecialChars,
+  drawSelection,
+  highlightActiveLine,
+  dropCursor,
+  rectangularSelection,
+  crosshairCursor,
+  highlightActiveLineGutter,
+} from '@codemirror/view';
+import { Extension, EditorState } from '@codemirror/state';
 import {
-  defaultHighlightStyle, syntaxHighlighting, indentOnInput, bracketMatching,
-  foldGutter, foldKeymap
-} from "@codemirror/language"
-import {defaultKeymap, history, historyKeymap} from "@codemirror/commands"
-import {searchKeymap, highlightSelectionMatches} from "@codemirror/search"
-import {autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap} from "@codemirror/autocomplete"
-import {lintKeymap} from "@codemirror/lint"
+  defaultHighlightStyle,
+  syntaxHighlighting,
+  indentOnInput,
+  bracketMatching,
+  foldGutter,
+  foldKeymap,
+} from '@codemirror/language';
+import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
+import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
+import {
+  autocompletion,
+  completionKeymap,
+  closeBrackets,
+  closeBracketsKeymap,
+} from '@codemirror/autocomplete';
+import { lintKeymap } from '@codemirror/lint';
 
 const defaultKeymapMinusEnterAndArrowUpDown = defaultKeymap.map((keymap) => {
-  if (keymap.key === "Enter") {
-    return {...keymap, key: "Shift-Enter"};
+  if (keymap.key === 'Enter') {
+    return { ...keymap, key: 'Shift-Enter' };
   }
-  if (keymap.key === "ArrowUp") {
-    return {...keymap, key: "Shift-ArrowUp"}
+  if (keymap.key === 'ArrowUp') {
+    return { ...keymap, key: 'Shift-ArrowUp' };
   }
-  if (keymap.key === "ArrowDown") {
-    return {...keymap, key: "Shift-ArrowDown"}
+  if (keymap.key === 'ArrowDown') {
+    return { ...keymap, key: 'Shift-ArrowDown' };
   }
   return keymap;
 });
@@ -49,7 +63,7 @@ export const basicSetup: Extension = (() => [
   dropCursor(),
   EditorState.allowMultipleSelections.of(true),
   indentOnInput(),
-  syntaxHighlighting(defaultHighlightStyle, {fallback: true}),
+  syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
   bracketMatching(),
   closeBrackets(),
   autocompletion(),
@@ -64,6 +78,6 @@ export const basicSetup: Extension = (() => [
     ...historyKeymap,
     ...foldKeymap,
     ...completionKeymap,
-    ...lintKeymap
-  ])
-])()
+    ...lintKeymap,
+  ]),
+])();

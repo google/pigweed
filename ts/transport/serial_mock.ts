@@ -13,8 +13,14 @@
 // the License.
 
 /* eslint-env browser */
-import {Subject} from 'rxjs';
-import type {SerialConnectionEvent, SerialPort, Serial, SerialPortRequestOptions, SerialOptions} from "pigweedjs/types/serial"
+import { Subject } from 'rxjs';
+import type {
+  SerialConnectionEvent,
+  SerialPort,
+  Serial,
+  SerialPortRequestOptions,
+  SerialOptions,
+} from 'pigweedjs/types/serial';
 /**
  * AsyncQueue is a queue that allows values to be dequeued
  * before they are enqueued, returning a promise that resolves
@@ -46,7 +52,7 @@ class AsyncQueue<T> {
     if (val !== undefined) {
       return val;
     } else {
-      const queuePromise = new Promise<T>(resolve => {
+      const queuePromise = new Promise<T>((resolve) => {
         this.requestQueue.push(resolve);
       });
       return queuePromise;
@@ -71,14 +77,14 @@ class SerialPortMock implements SerialPort {
    * @param {Uint8Array} data
    */
   dataFromDevice(data: Uint8Array) {
-    this.deviceData.enqueue({data});
+    this.deviceData.enqueue({ data });
   }
 
   /**
    * Simulate the device closing the connection with the browser.
    */
   closeFromDevice() {
-    this.deviceData.enqueue({done: true});
+    this.deviceData.enqueue({ done: true });
   }
 
   /**
@@ -86,7 +92,7 @@ class SerialPortMock implements SerialPort {
    * @param {Error} error
    */
   errorFromDevice(error: Error) {
-    this.deviceData.enqueue({error});
+    this.deviceData.enqueue({ error });
   }
 
   /**
@@ -98,8 +104,8 @@ class SerialPortMock implements SerialPort {
    * The ReadableStream of bytes from the device.
    */
   readable = new ReadableStream<Uint8Array>({
-    pull: async controller => {
-      const {data, done, error} = await this.deviceData.dequeue();
+    pull: async (controller) => {
+      const { data, done, error } = await this.deviceData.dequeue();
       if (done) {
         controller.close();
         return;
@@ -117,7 +123,7 @@ class SerialPortMock implements SerialPort {
    * The WritableStream of bytes to the device.
    */
   writable = new WritableStream<Uint8Array>({
-    write: chunk => {
+    write: (chunk) => {
       this.dataToDevice.next(chunk);
     },
   });
@@ -125,12 +131,12 @@ class SerialPortMock implements SerialPort {
   /**
    * A spy for opening the serial port.
    */
-  open = jest.fn(async (options?: SerialOptions) => { });
+  open = jest.fn(async (options?: SerialOptions) => {});
 
   /**
    * A spy for closing the serial port.
    */
-  close = jest.fn(() => { });
+  close = jest.fn(() => {});
 }
 
 export class SerialMock implements Serial {
@@ -171,13 +177,13 @@ export class SerialMock implements Serial {
   addEventListener(
     type: 'connect' | 'disconnect',
     listener: (this: this, ev: SerialConnectionEvent) => any,
-    useCapture?: boolean
+    useCapture?: boolean,
   ): void;
 
   addEventListener(
     type: string,
     listener: EventListener | EventListenerObject | null,
-    options?: boolean | AddEventListenerOptions
+    options?: boolean | AddEventListenerOptions,
   ): void;
 
   addEventListener(type: any, listener: any, options?: any) {
@@ -187,13 +193,13 @@ export class SerialMock implements Serial {
   removeEventListener(
     type: 'connect' | 'disconnect',
     callback: (this: this, ev: SerialConnectionEvent) => any,
-    useCapture?: boolean
+    useCapture?: boolean,
   ): void;
 
   removeEventListener(
     type: string,
     callback: EventListener | EventListenerObject | null,
-    options?: boolean | EventListenerOptions
+    options?: boolean | EventListenerOptions,
   ): void;
 
   removeEventListener(type: any, callback: any, options?: any) {

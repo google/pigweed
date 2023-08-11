@@ -22,14 +22,13 @@ import {
   pw_rpc,
   pw_tokenizer,
   pw_transfer,
-  WebSerial
-} from "../dist/index.umd";
+  WebSerial,
+} from '../dist/index.umd';
 
-import {ProtoCollection} from "../dist/protos/collection.umd";
-import * as fs from "fs";
+import { ProtoCollection } from '../dist/protos/collection.umd';
+import * as fs from 'fs';
 
 describe('Pigweed Bundle', () => {
-
   it('proto collection has file list', () => {
     const protoCollection = new ProtoCollection();
     const fd = protoCollection.fileDescriptorSet.getFileList();
@@ -69,8 +68,7 @@ describe('Pigweed Bundle', () => {
 
   it('is not referring to any outside Pigweed modules', () => {
     const requireString = "require('pigweedjs";
-    const file = fs.readFileSync(require.resolve("../dist/index.umd"));
-    expect(file.indexOf(requireString)).toBe(-1)
+    const file = fs.readFileSync(require.resolve('../dist/index.umd'));
+    expect(file.indexOf(requireString)).toBe(-1);
   });
-
 });

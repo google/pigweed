@@ -15,7 +15,12 @@
 import { LitElement, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
-import { LogColumnState, LogEntry, LogViewConfig, State } from '../shared/interfaces';
+import {
+  LogColumnState,
+  LogEntry,
+  LogViewConfig,
+  State,
+} from '../shared/interfaces';
 import { StateStore } from '../shared/state';
 import { styles } from './log-viewer.styles';
 import { LogView } from './log-view/log-view';
@@ -29,138 +34,138 @@ import CloseViewEvent from '../events/close-view';
  */
 @customElement('log-viewer')
 export class LogViewer extends LitElement {
-    static styles = styles;
+  static styles = styles;
 
-    /** An array of log entries to be displayed. */
-    @property({ type: Array })
-    logs: LogEntry[] = [];
+  /** An array of log entries to be displayed. */
+  @property({ type: Array })
+  logs: LogEntry[] = [];
 
-    /** An array of rendered log view instances. */
-    @state()
-    _logViews: LogView[] = [];
+  /** An array of rendered log view instances. */
+  @state()
+  _logViews: LogView[] = [];
 
-    /** A StateStore object that stores state of views */
-    @state()
-    _stateStore: StateStore;
+  /** A StateStore object that stores state of views */
+  @state()
+  _stateStore: StateStore;
 
-    @state()
-    _state: State;
+  @state()
+  _state: State;
 
-    constructor(state: StateStore) {
-        super();
-        this._stateStore = state;
-        this._state = this._stateStore.getState();
+  constructor(state: StateStore) {
+    super();
+    this._stateStore = state;
+    this._state = this._stateStore.getState();
+  }
+
+  protected firstUpdated(): void {
+    if (this._state.logViewConfig.length == 0) {
+      this.addLogView();
+      return;
     }
 
-    protected firstUpdated(): void {
-        if (this._state.logViewConfig.length == 0) {
-            this.addLogView();
-            return;
-        }
+    let viewState = this._state.logViewConfig;
+    let viewEls = [];
+    for (let i in viewState) {
+      let view = new LogView();
+      view.id = viewState[i].viewID;
+      view.searchText = viewState[i].search;
+      viewEls.push(view);
+      this._logViews = viewEls;
+    }
+  }
 
-        let viewState = this._state.logViewConfig;
-        let viewEls = [];
-        for (let i in viewState) {
-            let view = new LogView();
-            view.id = viewState[i].viewID;
-            view.searchText = viewState[i].search;
-            viewEls.push(view);
-            this._logViews = viewEls;
-        }
+  connectedCallback() {
+    super.connectedCallback();
+    this.addEventListener('close-view', this.handleCloseView);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.removeEventListener('close-view', this.handleCloseView);
+  }
+
+  /** Creates a new log view in the `_logViews` arrray. */
+  private addLogView() {
+    const newView = new LogView();
+    const newViewState = this.addLogViewState(newView);
+    let viewStates: State;
+
+    viewStates = { logViewConfig: this._state.logViewConfig };
+    viewStates.logViewConfig.push(newViewState);
+    this._logViews = [...this._logViews, newView];
+    this._stateStore.setState(viewStates);
+    this._state = viewStates;
+  }
+
+  /** Creates a new log view state to store in the state object. */
+  private addLogViewState(view: LogView): LogViewConfig {
+    let fieldColumns = [];
+    const fields = view.getFieldsFromLogs(this.logs);
+
+    for (let i in fields) {
+      const col: LogColumnState = {
+        hidden: false,
+        name: fields[i],
+      };
+      fieldColumns.push(col);
     }
 
-    connectedCallback() {
-        super.connectedCallback();
-        this.addEventListener('close-view', this.handleCloseView);
+    const obj = {
+      columns: fieldColumns,
+      search: '',
+      viewID: view.id,
+      viewTitle: 'Log View',
+    };
+
+    return obj as LogViewConfig;
+  }
+
+  /**
+   * Removes a log view when its Close button is clicked.
+   *
+   * @param event The event object dispatched by the log view controls.
+   */
+  private handleCloseView(event: CloseViewEvent) {
+    const viewId = event.detail.viewId;
+    let index = this._logViews.findIndex((view) => view.id === viewId);
+    this._logViews = this._logViews.filter((view) => view.id !== viewId);
+
+    if (index > -1) {
+      this._state.logViewConfig.splice(index, 1);
+      this._stateStore.setState(this._state);
     }
+  }
 
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        this.removeEventListener('close-view', this.handleCloseView);
-    }
+  render() {
+    return html`
+      <md-outlined-button
+        class="add-button"
+        @click="${this.addLogView}"
+        title="Add a view"
+      >
+        Add View
+      </md-outlined-button>
 
-    /** Creates a new log view in the `_logViews` arrray. */
-    private addLogView() {
-        const newView = new LogView();
-        const newViewState = this.addLogViewState(newView);
-        let viewStates: State;
-
-        viewStates = { logViewConfig: this._state.logViewConfig };
-        viewStates.logViewConfig.push(newViewState);
-        this._logViews = [...this._logViews, newView];
-        this._stateStore.setState(viewStates);
-        this._state = viewStates;
-    }
-
-    /** Creates a new log view state to store in the state object. */
-    private addLogViewState(view: LogView): LogViewConfig {
-        let fieldColumns = [];
-        const fields = view.getFieldsFromLogs(this.logs);
-
-        for (let i in fields) {
-            const col: LogColumnState = {
-                hidden: false,
-                name: fields[i]
-            }
-            fieldColumns.push(col);
-        }
-
-        const obj = {
-            columns: fieldColumns,
-            search: '',
-            viewID: view.id,
-            viewTitle: 'Log View',
-        };
-
-        return obj as LogViewConfig;
-    }
-
-    /**
-     * Removes a log view when its Close button is clicked.
-     *
-     * @param event The event object dispatched by the log view controls.
-     */
-    private handleCloseView(event: CloseViewEvent) {
-        const viewId = event.detail.viewId;
-        let index = this._logViews.findIndex((view) => view.id === viewId);
-        this._logViews = this._logViews.filter((view) => view.id !== viewId);
-
-        if (index > -1) {
-            this._state.logViewConfig.splice(index, 1);
-            this._stateStore.setState(this._state);
-        }
-    }
-
-    render() {
-        return html`
-            <md-outlined-button
-                class="add-button"
-                @click="${this.addLogView}"
-                title="Add a view"
-            >
-                Add View
-            </md-outlined-button>
-
-            <div class="grid-container">
-                ${repeat(
-                    this._logViews,
-                    (view) => view.id,
-                    (view) => html`
-                        <log-view
-                            id=${view.id}
-                            .logs=${[...this.logs]}
-                            .isOneOfMany=${this._logViews.length > 1}
-                            .stateStore=${this._stateStore}
-                        ></log-view>
-                    `
-                )}
-            </div>
-        `;
-    }
+      <div class="grid-container">
+        ${repeat(
+          this._logViews,
+          (view) => view.id,
+          (view) => html`
+            <log-view
+              id=${view.id}
+              .logs=${[...this.logs]}
+              .isOneOfMany=${this._logViews.length > 1}
+              .stateStore=${this._stateStore}
+            ></log-view>
+          `,
+        )}
+      </div>
+    `;
+  }
 }
 
 declare global {
-    interface HTMLElementTagNameMap {
-        'log-viewer': LogViewer;
-    }
+  interface HTMLElementTagNameMap {
+    'log-viewer': LogViewer;
+  }
 }

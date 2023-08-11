@@ -42,7 +42,7 @@ export class Frame {
   constructor(
     rawEncoded: Uint8Array,
     rawDecoded: Uint8Array,
-    status: FrameStatus = FrameStatus.OK
+    status: FrameStatus = FrameStatus.OK,
   ) {
     this.rawEncoded = rawEncoded;
     this.rawDecoded = rawDecoded;
@@ -115,7 +115,7 @@ export class Decoder {
         console.warn(
           'Failed to decode frame: %s; discarded %d bytes',
           frame.status,
-          frame.rawEncoded.length
+          frame.rawEncoded.length,
         );
         console.debug('Discarded data: %s', frame.rawEncoded);
       }
@@ -128,7 +128,7 @@ export class Decoder {
     }
     const frameCrc = new DataView(data.slice(-4).buffer).getInt8(0);
     const crc = new DataView(
-      protocol.frameCheckSequence(data.slice(0, -4)).buffer
+      protocol.frameCheckSequence(data.slice(0, -4)).buffer,
     ).getInt8(0);
     if (crc !== frameCrc) {
       return FrameStatus.FCS_MISMATCH;
@@ -140,7 +140,7 @@ export class Decoder {
     const frame = new Frame(
       new Uint8Array(this.rawData),
       new Uint8Array(this.decodedData),
-      status
+      status,
     );
     this.rawData = new Uint8Array(0);
     this.decodedData = new Uint8Array(0);
@@ -175,7 +175,7 @@ export class Decoder {
         } else {
           this.decodedData = util.concatenate(
             this.decodedData,
-            Uint8Array.of(byte)
+            Uint8Array.of(byte),
           );
         }
         break;
@@ -188,7 +188,7 @@ export class Decoder {
           this.state = DecoderState.FRAME;
           this.decodedData = util.concatenate(
             this.decodedData,
-            Uint8Array.of(protocol.escape(byte))
+            Uint8Array.of(protocol.escape(byte)),
           );
         } else {
           this.state = DecoderState.INTERFRAME;

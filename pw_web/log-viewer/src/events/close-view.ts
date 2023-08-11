@@ -13,15 +13,15 @@
 // the License.
 
 interface CloseViewEvent extends CustomEvent {
-    detail: {
-        viewId: string;
-    };
+  detail: {
+    viewId: string;
+  };
 }
 
 declare global {
-    interface GlobalEventHandlersEventMap {
-        'close-view': CloseViewEvent;
-    }
+  interface GlobalEventHandlersEventMap {
+    'close-view': CloseViewEvent;
+  }
 }
 
 export default CloseViewEvent;

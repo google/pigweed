@@ -21,9 +21,10 @@ import { getExtensionsJson } from './config';
  * @param extensions - A list of extension IDs
  */
 function showExtensions(extensions: string[]) {
-	vscode.commands.executeCommand(
-		'workbench.extensions.search', '@id:' + extensions.join(', @id:'),
-	);
+  vscode.commands.executeCommand(
+    'workbench.extensions.search',
+    '@id:' + extensions.join(', @id:'),
+  );
 }
 
 /**
@@ -33,19 +34,19 @@ function showExtensions(extensions: string[]) {
  * @returns A list of extension IDs
  */
 function getUnavailableExtensions(extensions: string[]): string[] {
-	let unavailableExtensions: string[] = [];
-	const available = vscode.extensions.all;
+  let unavailableExtensions: string[] = [];
+  const available = vscode.extensions.all;
 
-	// TODO(chadnorvell): Verify that this includes disabled extensions
-	extensions.map(async extId => {
-		const ext = available.find(ext => ext.id == extId);
-		
-		if (!(ext)) {
-			unavailableExtensions.push(extId);
-		}
-	});
+  // TODO(chadnorvell): Verify that this includes disabled extensions
+  extensions.map(async (extId) => {
+    const ext = available.find((ext) => ext.id == extId);
 
-	return unavailableExtensions;
+    if (!ext) {
+      unavailableExtensions.push(extId);
+    }
+  });
+
+  return unavailableExtensions;
 }
 
 /**
@@ -56,67 +57,66 @@ function getUnavailableExtensions(extensions: string[]): string[] {
  * @param recs - A list of extension IDs
  */
 async function installRecommendedExtensions(recs: string[]): Promise<void> {
-	let unavailableRecs = getUnavailableExtensions(recs);
-	const totalNumUnavailableRecs = unavailableRecs.length;
-	let numUnavailableRecs = totalNumUnavailableRecs;
+  let unavailableRecs = getUnavailableExtensions(recs);
+  const totalNumUnavailableRecs = unavailableRecs.length;
+  let numUnavailableRecs = totalNumUnavailableRecs;
 
-	const update = () => {
-		unavailableRecs = getUnavailableExtensions(recs);
-		numUnavailableRecs = unavailableRecs.length;
-	}
+  const update = () => {
+    unavailableRecs = getUnavailableExtensions(recs);
+    numUnavailableRecs = unavailableRecs.length;
+  };
 
-	const wait = async () => new Promise(resolve => setTimeout(resolve, 2500));
+  const wait = async () => new Promise((resolve) => setTimeout(resolve, 2500));
 
-	const progressIncrement = (num: number) =>
-		1 - (num / totalNumUnavailableRecs) * 100;
+  const progressIncrement = (num: number) =>
+    1 - (num / totalNumUnavailableRecs) * 100;
 
-	// All recommendations are installed; we're done.
-	if (totalNumUnavailableRecs == 0) {
-		console.log(
-			'User has all recommended extensions'
-		);
+  // All recommendations are installed; we're done.
+  if (totalNumUnavailableRecs == 0) {
+    console.log('User has all recommended extensions');
 
-		return;
-	}
+    return;
+  }
 
-	showExtensions(unavailableRecs);
+  showExtensions(unavailableRecs);
 
-	vscode.window.withProgress({
-		location: vscode.ProgressLocation.Notification,
-		// TODO(chadnorvell): Make this look better
-		title: 'Install these extensions! This Pigweed project needs these recommended extensions to be installed.',
-		cancellable: true,
-	}, async (progress, token) => {
+  vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      // TODO(chadnorvell): Make this look better
+      title:
+        'Install these extensions! This Pigweed project needs these recommended extensions to be installed.',
+      cancellable: true,
+    },
+    async (progress, token) => {
+      while (numUnavailableRecs > 0) {
+        // TODO(chadnorvell): Wait for vscode.extensions.onDidChange
+        await wait();
+        update();
 
-		while (numUnavailableRecs > 0) {
-			// TODO(chadnorvell): Wait for vscode.extensions.onDidChange
-			await wait();
-			update();
+        progress.report({
+          increment: progressIncrement(numUnavailableRecs),
+        });
 
-			progress.report({
-				increment: progressIncrement(numUnavailableRecs),
-			});
-			
-			if (numUnavailableRecs > 0) {
-				console.log(
-					`User lacks ${numUnavailableRecs} recommended extensions`
-				);
+        if (numUnavailableRecs > 0) {
+          console.log(
+            `User lacks ${numUnavailableRecs} recommended extensions`,
+          );
 
-				showExtensions(unavailableRecs);
-			}
+          showExtensions(unavailableRecs);
+        }
 
-			if (token.isCancellationRequested) {
-				console.log(
-					'User cancelled recommended extensions check'
-				);
+        if (token.isCancellationRequested) {
+          console.log('User cancelled recommended extensions check');
 
-				break;
-			}
-		}
+          break;
+        }
+      }
 
-		console.log('All recommended extensions are enabled');
-		progress.report({ increment: 100 });
-	});
+      console.log('All recommended extensions are enabled');
+      progress.report({ increment: 100 });
+    },
+  );
 }
 
 /**
@@ -125,19 +125,19 @@ async function installRecommendedExtensions(recs: string[]): Promise<void> {
  * @returns A list of extension IDs
  */
 function getEnabledExtensions(extensions: string[]): string[] {
-	let enabledExtensions: string[] = [];
-	const available = vscode.extensions.all;
+  let enabledExtensions: string[] = [];
+  const available = vscode.extensions.all;
 
-	// TODO(chadnorvell): Verify that this excludes disabled extensions
-	extensions.map(async extId => {
-		const ext = available.find(ext => ext.id == extId);
-		
-		if (ext) {
-			enabledExtensions.push(extId);
-		}
-	});
+  // TODO(chadnorvell): Verify that this excludes disabled extensions
+  extensions.map(async (extId) => {
+    const ext = available.find((ext) => ext.id == extId);
 
-	return enabledExtensions;
+    if (ext) {
+      enabledExtensions.push(extId);
+    }
+  });
+
+  return enabledExtensions;
 }
 
 /**
@@ -148,91 +148,92 @@ function getEnabledExtensions(extensions: string[]): string[] {
  * @param recs - A list of extension IDs
  */
 async function disableUnwantedExtensions(unwanted: string[]) {
-	let enabledUnwanted = getEnabledExtensions(unwanted);
-	const totalNumEnabledUnwanted = enabledUnwanted.length;
-	let numEnabledUnwanted = totalNumEnabledUnwanted;
+  let enabledUnwanted = getEnabledExtensions(unwanted);
+  const totalNumEnabledUnwanted = enabledUnwanted.length;
+  let numEnabledUnwanted = totalNumEnabledUnwanted;
 
-	const update = () => {
-		enabledUnwanted = getEnabledExtensions(unwanted);
-		numEnabledUnwanted = enabledUnwanted.length;
-	}
+  const update = () => {
+    enabledUnwanted = getEnabledExtensions(unwanted);
+    numEnabledUnwanted = enabledUnwanted.length;
+  };
 
-	const wait = async () => new Promise(resolve => setTimeout(resolve, 2500));
+  const wait = async () => new Promise((resolve) => setTimeout(resolve, 2500));
 
-	const progressIncrement = (num: number) =>
-		1 - (num / totalNumEnabledUnwanted) * 100;
+  const progressIncrement = (num: number) =>
+    1 - (num / totalNumEnabledUnwanted) * 100;
 
-	// All unwanted are disabled; we're done.
-	if (totalNumEnabledUnwanted == 0) {
-		console.log(
-			'User has no unwanted extensions enabled'
-		);
+  // All unwanted are disabled; we're done.
+  if (totalNumEnabledUnwanted == 0) {
+    console.log('User has no unwanted extensions enabled');
 
-		return;
-	}
+    return;
+  }
 
-	showExtensions(enabledUnwanted);
+  showExtensions(enabledUnwanted);
 
-	vscode.window.withProgress({
-		location: vscode.ProgressLocation.Notification,
-		// TODO(chadnorvell): Make this look better
-		title: 'Disable these extensions! This Pigweed project needs these extensions to be disabled.',
-		cancellable: true,
-	}, async (progress, token) => {
+  vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      // TODO(chadnorvell): Make this look better
+      title:
+        'Disable these extensions! This Pigweed project needs these extensions to be disabled.',
+      cancellable: true,
+    },
+    async (progress, token) => {
+      while (numEnabledUnwanted > 0) {
+        // TODO(chadnorvell): Wait for vscode.extensions.onDidChange
+        await wait();
+        update();
 
-		while (numEnabledUnwanted > 0) {
-			// TODO(chadnorvell): Wait for vscode.extensions.onDidChange
-			await wait();
-			update();
+        progress.report({
+          increment: progressIncrement(numEnabledUnwanted),
+        });
 
-			progress.report({
-				increment: progressIncrement(numEnabledUnwanted),
-			});
-			
-			if (numEnabledUnwanted > 0) {
-				console.log(
-					`User has ${numEnabledUnwanted} unwanted extensions enabled`
-				);
+        if (numEnabledUnwanted > 0) {
+          console.log(
+            `User has ${numEnabledUnwanted} unwanted extensions enabled`,
+          );
 
-				showExtensions(enabledUnwanted);
-			}
+          showExtensions(enabledUnwanted);
+        }
 
-			if (token.isCancellationRequested) {
-				console.log(
-					'User cancelled unwanted extensions check'
-				);
+        if (token.isCancellationRequested) {
+          console.log('User cancelled unwanted extensions check');
 
-				break;
-			}
-		}
+          break;
+        }
+      }
 
-		console.log('All unwanted extensions are disabled');
-		progress.report({ increment: 100 });
-	});
+      console.log('All unwanted extensions are disabled');
+      progress.report({ increment: 100 });
+    },
+  );
 }
 
 async function checkExtensions(context: vscode.ExtensionContext) {
-	const extensions = await getExtensionsJson();
+  const extensions = await getExtensionsJson();
 
-	const num_recommendations = extensions.recommendations?.length ?? 0;
-	const num_unwanted = extensions.unwantedRecommendations?.length ?? 0;
+  const num_recommendations = extensions.recommendations?.length ?? 0;
+  const num_unwanted = extensions.unwantedRecommendations?.length ?? 0;
 
-	if (num_recommendations > 0) {
-		await installRecommendedExtensions(extensions.recommendations as string[]);
-	}
+  if (num_recommendations > 0) {
+    await installRecommendedExtensions(extensions.recommendations as string[]);
+  }
 
-	if (num_unwanted > 0) {
-		await disableUnwantedExtensions(extensions.unwantedRecommendations as string[]);
-	}
+  if (num_unwanted > 0) {
+    await disableUnwantedExtensions(
+      extensions.unwantedRecommendations as string[],
+    );
+  }
 }
 
 export function activate(context: vscode.ExtensionContext) {
-	let pwCheckExtensions = vscode.commands.registerCommand(
-		'pigweed.check-extensions',
-		() => checkExtensions(context)
-	);
+  let pwCheckExtensions = vscode.commands.registerCommand(
+    'pigweed.check-extensions',
+    () => checkExtensions(context),
+  );
 
-	context.subscriptions.push(pwCheckExtensions);
+  context.subscriptions.push(pwCheckExtensions);
 }
 
 export function deactivate() {}

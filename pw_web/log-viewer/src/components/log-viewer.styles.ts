@@ -15,35 +15,35 @@
 import { css } from 'lit';
 
 export const styles = css`
-    * {
-        box-sizing: border-box;
-    }
+  * {
+    box-sizing: border-box;
+  }
 
-    :host {
-        display: flex;
-        flex-direction: column;
-        gap: 2rem;
-        height: 100%;
-    }
+  :host {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    height: 100%;
+  }
 
-    button {
-        font-family: 'Google Sans';
-    }
+  button {
+    font-family: 'Google Sans';
+  }
 
-    .grid-container {
-        display: grid;
-        grid-gap: 1rem;
-        grid-template-columns: repeat(auto-fit, minmax(27rem, 1fr));
-        height: 100%;
-        overflow: hidden;
-    }
+  .grid-container {
+    display: grid;
+    grid-gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(27rem, 1fr));
+    height: 100%;
+    overflow: hidden;
+  }
 
-    .add-button {
-        width: 8rem;
-        height: 2rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-    }
+  .add-button {
+    width: 8rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
 `;

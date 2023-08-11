@@ -13,15 +13,15 @@
 // the License.
 
 interface InputChangeEvent extends CustomEvent {
-    detail: {
-        inputValue: string;
-    };
+  detail: {
+    inputValue: string;
+  };
 }
 
 declare global {
-    interface GlobalEventHandlersEventMap {
-        'input-change': InputChangeEvent;
-    }
+  interface GlobalEventHandlersEventMap {
+    'input-change': InputChangeEvent;
+  }
 }
 
 export default InputChangeEvent;

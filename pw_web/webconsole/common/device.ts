@@ -12,8 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import {Device} from "pigweedjs";
-import {createDefaultProtoCollection} from "./protos";
+import { Device } from 'pigweedjs';
+import { createDefaultProtoCollection } from './protos';
 
 /**
  * Returns an instance of Device, ensures there is only one Device in

@@ -19,8 +19,8 @@ import {
   BidirectionalStreamingMethodStub,
   ServiceClient,
 } from 'pigweedjs/pw_rpc';
-import {Status} from 'pigweedjs/pw_status';
-import {Chunk} from 'pigweedjs/protos/pw_transfer/transfer_pb';
+import { Status } from 'pigweedjs/pw_status';
+import { Chunk } from 'pigweedjs/protos/pw_transfer/transfer_pb';
 
 import {
   ReadTransfer,
@@ -73,7 +73,7 @@ export class Manager {
     private service: ServiceClient,
     private defaultResponseTimeoutS = DEFAULT_RESPONSE_TIMEOUT_S,
     private initialResponseTimeoutS = DEFAULT_INITIAL_RESPONSE_TIMEOUT,
-    private maxRetries = DEFAULT_MAX_RETRIES
+    private maxRetries = DEFAULT_MAX_RETRIES,
   ) {}
 
   /**
@@ -83,11 +83,11 @@ export class Manager {
    */
   async read(
     resourceId: number,
-    progressCallback?: ProgressCallback
+    progressCallback?: ProgressCallback,
   ): Promise<Uint8Array> {
     if (resourceId in this.readTransfers) {
       throw new Error(
-        `Read transfer for resource ${resourceId} already exists`
+        `Read transfer for resource ${resourceId} already exists`,
       );
     }
     const transfer = new ReadTransfer(
@@ -95,7 +95,7 @@ export class Manager {
       this.sendReadChunkCallback,
       this.defaultResponseTimeoutS,
       this.maxRetries,
-      progressCallback
+      progressCallback,
     );
 
     this.startReadTransfer(transfer);
@@ -129,7 +129,7 @@ export class Manager {
   async write(
     resourceId: number,
     data: Uint8Array,
-    progressCallback?: ProgressCallback
+    progressCallback?: ProgressCallback,
   ): Promise<void> {
     const transfer = new WriteTransfer(
       resourceId,
@@ -138,7 +138,7 @@ export class Manager {
       this.defaultResponseTimeoutS,
       this.initialResponseTimeoutS,
       this.maxRetries,
-      progressCallback
+      progressCallback,
     );
     this.startWriteTransfer(transfer);
 
@@ -172,27 +172,27 @@ export class Manager {
 
   private openReadStream(): void {
     const readRpc = this.service.method(
-      'Read'
+      'Read',
     )! as BidirectionalStreamingMethodStub;
     this.readStream = readRpc.invoke(
       (chunk: Chunk) => {
         this.handleChunk(this.readTransfers, chunk);
       },
       () => {},
-      this.onReadError
+      this.onReadError,
     );
   }
 
   private openWriteStream(): void {
     const writeRpc = this.service.method(
-      'Write'
+      'Write',
     )! as BidirectionalStreamingMethodStub;
     this.writeStream = writeRpc.invoke(
       (chunk: Chunk) => {
         this.handleChunk(this.writeTransfers, chunk);
       },
       () => {},
-      this.onWriteError
+      this.onWriteError,
     );
   }
 
@@ -255,7 +255,7 @@ export class Manager {
     const transfer = transfers[chunk.getTransferId()];
     if (transfer === undefined) {
       console.error(
-        `TransferManager received chunk for unknown transfer ${chunk.getTransferId()}`
+        `TransferManager received chunk for unknown transfer ${chunk.getTransferId()}`,
       );
       return;
     }

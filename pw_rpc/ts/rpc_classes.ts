@@ -12,11 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import {Message} from 'google-protobuf';
-import {Status} from 'pigweedjs/pw_status';
+import { Message } from 'google-protobuf';
+import { Status } from 'pigweedjs/pw_status';
 
-import {Call} from './call';
-import {Channel, Method, Service} from './descriptors';
+import { Call } from './call';
+import { Channel, Method, Service } from './descriptors';
 import * as packets from './packets';
 
 /** Data class for a pending RPC call. */
@@ -70,7 +70,7 @@ export class PendingCalls {
     rpc: Rpc,
     call: Call,
     ignoreError: boolean,
-    request?: Message
+    request?: Message,
   ): Call | undefined {
     const previous = this.open(rpc, call);
     const packet = packets.encodeRequest(rpc.idSet, request);

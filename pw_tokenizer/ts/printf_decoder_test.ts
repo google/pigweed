@@ -13,7 +13,7 @@
 // the License.
 
 /* eslint-env browser */
-import {PrintfDecoder} from './printf_decoder';
+import { PrintfDecoder } from './printf_decoder';
 import IntDB from './int_testdata';
 
 function argFromString(arg: string): Uint8Array {
@@ -22,7 +22,7 @@ function argFromString(arg: string): Uint8Array {
 }
 
 function argFromStringBinary(arg: string): Uint8Array {
-  return new Uint8Array(arg.split('').map(ch => ch.charCodeAt(0)));
+  return new Uint8Array(arg.split('').map((ch) => ch.charCodeAt(0)));
 }
 
 function argsConcat(...args: Uint8Array[]): Uint8Array {
@@ -43,13 +43,13 @@ describe('PrintfDecoder', () => {
 
   it('formats string correctly', () => {
     expect(printfDecoder.decode('Hello %s', argFromString('Computer'))).toEqual(
-      'Hello Computer'
+      'Hello Computer',
     );
     expect(
       printfDecoder.decode(
         'Hello %s and %s',
-        argsConcat(argFromString('Mac'), argFromString('PC'))
-      )
+        argsConcat(argFromString('Mac'), argFromString('PC')),
+      ),
     ).toEqual('Hello Mac and PC');
   });
 
@@ -57,9 +57,12 @@ describe('PrintfDecoder', () => {
     expect(
       printfDecoder.decode(
         'Hello %s and %u',
-        argsConcat(argFromString('Computer'), argFromStringBinary('\xff\xff\x03'))
-      )).toEqual(
-        'Hello Computer and 4294934528');
+        argsConcat(
+          argFromString('Computer'),
+          argFromStringBinary('\xff\xff\x03'),
+        ),
+      ),
+    ).toEqual('Hello Computer and 4294934528');
   });
 
   it('formats integers correctly', () => {
@@ -67,15 +70,13 @@ describe('PrintfDecoder', () => {
       const testcase = IntDB[index];
       // Test signed
       expect(
-        printfDecoder
-          .decode(testcase[0], argFromStringBinary(testcase[4])))
-        .toEqual(testcase[1]);
+        printfDecoder.decode(testcase[0], argFromStringBinary(testcase[4])),
+      ).toEqual(testcase[1]);
 
       // Test unsigned
       expect(
-        printfDecoder
-          .decode(testcase[2], argFromStringBinary(testcase[4])))
-        .toEqual(testcase[3]);
+        printfDecoder.decode(testcase[2], argFromStringBinary(testcase[4])),
+      ).toEqual(testcase[3]);
     }
   });
 
@@ -83,8 +84,8 @@ describe('PrintfDecoder', () => {
     expect(
       printfDecoder.decode(
         'Hello %s and %s',
-        argsConcat(argFromString('Mac'), argFromString('PC'))
-      )
+        argsConcat(argFromString('Mac'), argFromString('PC')),
+      ),
     ).toEqual('Hello Mac and PC');
   });
 
@@ -92,31 +93,34 @@ describe('PrintfDecoder', () => {
     const arg = argFromStringBinary('\xff\xff\x03');
     expect(printfDecoder.decode('Number %d', arg)).toEqual('Number -32768');
     expect(
-      printfDecoder.decode('Numbers %u and %d', argsConcat(arg, arg))
+      printfDecoder.decode('Numbers %u and %d', argsConcat(arg, arg)),
     ).toEqual('Numbers 4294934528 and -32768');
     expect(printfDecoder.decode('Growth is %u%', arg)).toEqual(
-      'Growth is 4294934528%'
+      'Growth is 4294934528%',
     );
   });
 
   it('formats char correctly', () => {
     expect(
-      printfDecoder.decode('Battery: 100%c', argFromStringBinary('\x4a'))
+      printfDecoder.decode('Battery: 100%c', argFromStringBinary('\x4a')),
     ).toEqual('Battery: 100%');
     expect(
-      printfDecoder.decode('Price: %c97.99', argFromStringBinary('\x48'))
+      printfDecoder.decode('Price: %c97.99', argFromStringBinary('\x48')),
     ).toEqual('Price: $97.99');
   });
 
   it('formats floats correctly', () => {
     expect(
-      printfDecoder.decode('Value: %f', argFromStringBinary('\xdb\x0f\x49\x40'))
+      printfDecoder.decode(
+        'Value: %f',
+        argFromStringBinary('\xdb\x0f\x49\x40'),
+      ),
     ).toEqual('Value: 3.1415927410125732');
     expect(
       printfDecoder.decode(
         'Value: %.5f',
-        argFromStringBinary('\xdb\x0f\x49\x40')
-      )
+        argFromStringBinary('\xdb\x0f\x49\x40'),
+      ),
     ).toEqual('Value: 3.14159');
   });
 });

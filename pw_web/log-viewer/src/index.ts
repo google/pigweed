@@ -17,13 +17,13 @@ import { createLogViewer } from './createLogViewer';
 
 const logSource = new MockLogSource();
 const containerEl = document.querySelector(
-    '#log-viewer-container'
+  '#log-viewer-container',
 ) as HTMLElement;
 
 let unsubscribe: () => void;
 
 if (containerEl) {
-    unsubscribe = createLogViewer(logSource, containerEl);
+  unsubscribe = createLogViewer(logSource, containerEl);
 }
 
 const TIMEOUT_DURATION = 60_000; // ms
@@ -32,6 +32,6 @@ logSource.start();
 
 // Stop reading log data once timeout duration has elapsed
 setTimeout(() => {
-    logSource.stop();
-    unsubscribe();
+  logSource.stop();
+  unsubscribe();
 }, TIMEOUT_DURATION);

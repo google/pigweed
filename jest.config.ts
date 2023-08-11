@@ -12,21 +12,17 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import {pathsToModuleNameMapper} from "ts-jest";
-import type {InitialOptionsTsJest} from 'ts-jest/dist/types';
+import { pathsToModuleNameMapper } from 'ts-jest';
+import type { InitialOptionsTsJest } from 'ts-jest/dist/types';
 
 const paths = {
-  "pigweedjs/pw_*": [
-    "./pw_*/ts"
-  ],
-  "pigweedjs/protos/*": [
-    "./dist/protos/*"
-  ]
-}
+  'pigweedjs/pw_*': ['./pw_*/ts'],
+  'pigweedjs/protos/*': ['./dist/protos/*'],
+};
 const config: InitialOptionsTsJest = {
   preset: 'ts-jest/presets/js-with-ts',
-  testRegex: "(/__tests__/.*|(\\_|/)(test|spec))\\.[jt]sx?$",
-  moduleNameMapper: pathsToModuleNameMapper(paths, {prefix: '<rootDir>/'})
-}
+  testRegex: '(/__tests__/.*|(\\_|/)(test|spec))\\.[jt]sx?$',
+  moduleNameMapper: pathsToModuleNameMapper(paths, { prefix: '<rootDir>/' }),
+};
 
-export default config
+export default config;

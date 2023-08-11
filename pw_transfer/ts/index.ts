@@ -12,4 +12,4 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-export {Manager} from './client';
+export { Manager } from './client';

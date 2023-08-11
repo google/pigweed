@@ -14,11 +14,8 @@
 
 /* eslint-env browser */
 
-import {ProtoCollection} from 'pigweedjs/protos/collection';
-import {
-  Request,
-  Response,
-} from 'pigweedjs/protos/pw_rpc/ts/test_pb';
+import { ProtoCollection } from 'pigweedjs/protos/collection';
+import { Request, Response } from 'pigweedjs/protos/pw_rpc/ts/test_pb';
 
 import * as descriptors from './descriptors';
 
@@ -27,13 +24,14 @@ const TEST_PROTO_PATH = 'pw_rpc/ts/test_protos-descriptor-set.proto.bin';
 describe('Descriptors', () => {
   it('parses from ServiceDescriptor binary', async () => {
     const protoCollection = new ProtoCollection();
-    const fd = protoCollection.fileDescriptorSet.getFileList()
-      .find((file: any) => file.array[1].indexOf("pw.rpc.test1") !== -1);
+    const fd = protoCollection.fileDescriptorSet
+      .getFileList()
+      .find((file: any) => file.array[1].indexOf('pw.rpc.test1') !== -1);
     const sd = fd.getServiceList()[0];
     const service = new descriptors.Service(
       sd,
       protoCollection,
-      fd.getPackage()!
+      fd.getPackage()!,
     );
 
     expect(service.name).toEqual('pw.rpc.test1.TheTestService');

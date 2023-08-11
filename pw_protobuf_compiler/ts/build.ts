@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import {exec, ExecException} from 'child_process';
+import { exec, ExecException } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import generateTemplate from './codegen/template_replacement';
@@ -35,18 +35,22 @@ const args = arg({
 const protos = args['--proto'];
 const outDir = args['--out'] || 'protos';
 
-fs.mkdirSync(outDir, {recursive: true});
+fs.mkdirSync(outDir, { recursive: true });
 
 const run = function (executable: string, args: string[]) {
-  return new Promise<void>(resolve => {
-    exec(`${executable} ${args.join(" ")}`, {cwd: process.cwd()}, (error: ExecException | null, stdout: string | Buffer) => {
-      if (error) {
-        throw error;
-      }
+  return new Promise<void>((resolve) => {
+    exec(
+      `${executable} ${args.join(' ')}`,
+      { cwd: process.cwd() },
+      (error: ExecException | null, stdout: string | Buffer) => {
+        if (error) {
+          throw error;
+        }
 
-      console.log(stdout);
-      resolve();
-    });
+        console.log(stdout);
+        resolve();
+      },
+    );
   });
 };
 
@@ -55,7 +59,7 @@ const protoc = async function (protos: string[], outDir: string) {
     path.dirname(require.resolve('ts-protoc-gen/generate.js')),
     '..',
     '.bin',
-    'protoc-gen-ts'
+    'protoc-gen-ts',
   );
 
   await run('protoc', [
@@ -68,12 +72,15 @@ const protoc = async function (protos: string[], outDir: string) {
   ]);
 
   // ES6 workaround: Replace google-protobuf imports with entire library.
-  protos.forEach(protoPath => {
+  protos.forEach((protoPath) => {
     const outPath = path.join(outDir, protoPath.replace('.proto', '_pb.js'));
 
     if (fs.existsSync(outPath)) {
       let data = fs.readFileSync(outPath, 'utf8');
-      data = data.replace("var jspb = require('google-protobuf');", googProtobufModule);
+      data = data.replace(
+        "var jspb = require('google-protobuf');",
+        googProtobufModule,
+      );
       data = data.replace('var goog = jspb;', '');
       fs.writeFileSync(outPath, data);
     }
@@ -83,16 +90,24 @@ const protoc = async function (protos: string[], outDir: string) {
 const makeProtoCollection = function (
   descriptorBinPath: string,
   protoPath: string,
-  importPath: string
+  importPath: string,
 ) {
-  const outputCollectionName = path.extname(require.resolve("./ts_proto_collection.template")) === ".ts" ? "collection.ts" : "collection.js";
-  generateTemplate(`${protoPath}/${outputCollectionName}`, descriptorBinPath, require.resolve("./ts_proto_collection.template"), importPath)
+  const outputCollectionName =
+    path.extname(require.resolve('./ts_proto_collection.template')) === '.ts'
+      ? 'collection.ts'
+      : 'collection.js';
+  generateTemplate(
+    `${protoPath}/${outputCollectionName}`,
+    descriptorBinPath,
+    require.resolve('./ts_proto_collection.template'),
+    importPath,
+  );
 };
 
 protoc(protos, outDir).then(() => {
   makeProtoCollection(
     path.join(outDir, 'descriptor.bin'),
     outDir,
-    'pigweedjs/protos'
+    'pigweedjs/protos',
   );
 });

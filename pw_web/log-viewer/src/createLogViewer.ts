@@ -26,23 +26,27 @@ import '@material/web/textfield/filled-text-field.js';
 import '@material/web/iconbutton/standard-icon-button.js';
 import '@material/web/icon/icon.js';
 
-export function createLogViewer(logSource: LogSource, root: HTMLElement, state: StateStore=new LocalStorageState()) {
-    const logViewer = new RootComponent(state);
-    const logs: LogEntry[] = [];
-    root.appendChild(logViewer);
+export function createLogViewer(
+  logSource: LogSource,
+  root: HTMLElement,
+  state: StateStore = new LocalStorageState(),
+) {
+  const logViewer = new RootComponent(state);
+  const logs: LogEntry[] = [];
+  root.appendChild(logViewer);
 
-    // Define an event listener for the 'logEntry' event
-    const logEntryListener = (logEntry: LogEntry) => {
-        logs.push(logEntry);
-        logViewer.logs = logs;
-        logViewer.requestUpdate('logs', []);
-    };
+  // Define an event listener for the 'logEntry' event
+  const logEntryListener = (logEntry: LogEntry) => {
+    logs.push(logEntry);
+    logViewer.logs = logs;
+    logViewer.requestUpdate('logs', []);
+  };
 
-    // Add the event listener to the LogSource instance
-    logSource.addEventListener('logEntry', logEntryListener);
+  // Add the event listener to the LogSource instance
+  logSource.addEventListener('logEntry', logEntryListener);
 
-    // Method to destroy and unsubscribe
-    return () => {
-        logSource.removeEventListener('logEntry', logEntryListener);
-    };
+  // Method to destroy and unsubscribe
+  return () => {
+    logSource.removeEventListener('logEntry', logEntryListener);
+  };
 }

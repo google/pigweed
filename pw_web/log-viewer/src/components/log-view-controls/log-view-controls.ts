@@ -13,7 +13,13 @@
 // the License.
 
 import { LitElement, html } from 'lit';
-import { customElement, property, query, queryAll, state } from 'lit/decorators.js';
+import {
+  customElement,
+  property,
+  query,
+  queryAll,
+  state,
+} from 'lit/decorators.js';
 import { styles } from './log-view-controls.styles';
 import { State } from '../../shared/interfaces';
 import { StateStore, LocalStorageState } from '../../shared/state';
@@ -26,179 +32,179 @@ import { StateStore, LocalStorageState } from '../../shared/state';
  */
 @customElement('log-view-controls')
 export class LogViewControls extends LitElement {
-    static styles = styles;
+  static styles = styles;
 
-    /** The `id` of the parent view containing this log list. */
-    @property({ type: String })
-    viewId = '';
+  /** The `id` of the parent view containing this log list. */
+  @property({ type: String })
+  viewId = '';
 
-    /** The field keys (column values) for the incoming log entries. */
-    @property({ type: Array })
-    fieldKeys: string[] = [];
+  /** The field keys (column values) for the incoming log entries. */
+  @property({ type: Array })
+  fieldKeys: string[] = [];
 
-    /** Indicates whether to enable the button for closing the current log view. */
-    @property({ type: Boolean })
-    hideCloseButton = false;
+  /** Indicates whether to enable the button for closing the current log view. */
+  @property({ type: Boolean })
+  hideCloseButton = false;
 
-    @property({ type: String })
-    _searchText = '';
+  @property({ type: String })
+  _searchText = '';
 
-    @property({ type: Array })
-    colsHidden: (boolean|undefined)[] = [];
+  @property({ type: Array })
+  colsHidden: (boolean | undefined)[] = [];
 
-    /** A StateStore object that stores state of views */
-    @state()
-    _stateStore: StateStore = new LocalStorageState();
+  /** A StateStore object that stores state of views */
+  @state()
+  _stateStore: StateStore = new LocalStorageState();
 
-    @state()
-    _state: State;
+  @state()
+  _state: State;
 
-    @state()
-    _viewTitle: string = '';
+  @state()
+  _viewTitle: string = '';
 
-    @query('.field-menu') _fieldMenu!: HTMLMenuElement;
+  @query('.field-menu') _fieldMenu!: HTMLMenuElement;
 
-    @query('.search-input') _searchInput!: HTMLInputElement;
+  @query('.search-input') _searchInput!: HTMLInputElement;
 
-    @queryAll('.item-checkboxeses') _itemCheckboxes!: HTMLCollection[];
+  @queryAll('.item-checkboxeses') _itemCheckboxes!: HTMLCollection[];
 
-    private firstCheckboxLoad = false;
+  private firstCheckboxLoad = false;
 
-    /** The timer identifier for debouncing search input. */
-    private _inputDebounceTimer: number | null = null;
+  /** The timer identifier for debouncing search input. */
+  private _inputDebounceTimer: number | null = null;
 
-    /** The delay (in ms) used for debouncing search input. */
-    private readonly INPUT_DEBOUNCE_DELAY = 50;
+  /** The delay (in ms) used for debouncing search input. */
+  private readonly INPUT_DEBOUNCE_DELAY = 50;
 
-    constructor() {
-        super();
-        this._state = this._stateStore.getState();
-    }
+  constructor() {
+    super();
+    this._state = this._stateStore.getState();
+  }
 
-    protected firstUpdated(): void {
-        if (this._state !== null) {
-            const viewConfigArr = this._state.logViewConfig;
-            for (const i in viewConfigArr) {
-                if (viewConfigArr[i].viewID === this.viewId) {
-                    this._searchText = viewConfigArr[i].search as string;
-                    this._viewTitle = viewConfigArr[i].viewTitle as string;
-                }
-            }
+  protected firstUpdated(): void {
+    if (this._state !== null) {
+      const viewConfigArr = this._state.logViewConfig;
+      for (const i in viewConfigArr) {
+        if (viewConfigArr[i].viewID === this.viewId) {
+          this._searchText = viewConfigArr[i].search as string;
+          this._viewTitle = viewConfigArr[i].viewTitle as string;
         }
-        this._searchInput.value = this._searchText;
-        this._searchInput.dispatchEvent(new CustomEvent('input'));
+      }
+    }
+    this._searchInput.value = this._searchText;
+    this._searchInput.dispatchEvent(new CustomEvent('input'));
+  }
+
+  protected updated(): void {
+    const checkboxItems = Array.from(this._itemCheckboxes);
+    if (checkboxItems.length > 0 && !this.firstCheckboxLoad) {
+      for (let i in checkboxItems) {
+        const checkboxEl = checkboxItems[i] as unknown as HTMLInputElement;
+        checkboxEl.checked = !this.colsHidden[Number(i) + 1];
+      }
+      this.firstCheckboxLoad = !this.firstCheckboxLoad;
+    }
+  }
+
+  /**
+   * Called whenever the search field value is changed. Debounces the input
+   * event and dispatches an event with the input value after a specified
+   * delay.
+   *
+   * @param {Event} event - The input event object.
+   */
+  private handleInput = (event: Event) => {
+    if (this._inputDebounceTimer) {
+      clearTimeout(this._inputDebounceTimer);
     }
 
-    protected updated(): void {
-        const checkboxItems = Array.from(this._itemCheckboxes);
-        if (checkboxItems.length > 0 && !this.firstCheckboxLoad) {
-            for (let i in checkboxItems) {
-                const checkboxEl = checkboxItems[i] as unknown as HTMLInputElement;
-                checkboxEl.checked = !this.colsHidden[Number(i) + 1];
-            }
-            this.firstCheckboxLoad = !this.firstCheckboxLoad;
-        }
-    }
+    const inputElement = event.target as HTMLInputElement;
+    const inputValue = inputElement.value;
 
-    /**
-     * Called whenever the search field value is changed. Debounces the input
-     * event and dispatches an event with the input value after a specified
-     * delay.
-     *
-     * @param {Event} event - The input event object.
-     */
-    private handleInput = (event: Event) => {
-        if (this._inputDebounceTimer) {
-            clearTimeout(this._inputDebounceTimer);
-        }
+    this._inputDebounceTimer = window.setTimeout(() => {
+      const customEvent = new CustomEvent('input-change', {
+        detail: { inputValue },
+        bubbles: true,
+        composed: true,
+      });
 
-        const inputElement = event.target as HTMLInputElement;
-        const inputValue = inputElement.value;
+      this.dispatchEvent(customEvent);
+    }, this.INPUT_DEBOUNCE_DELAY);
+  };
 
-        this._inputDebounceTimer = window.setTimeout(() => {
-            const customEvent = new CustomEvent('input-change', {
-                detail: { inputValue },
-                bubbles: true,
-                composed: true,
-            });
+  /**
+   * Dispatches a custom event for clearing logs. This event includes a
+   * `timestamp` object indicating the date/time in which the 'clear-logs'
+   * event was dispatched.
+   */
+  private handleClearLogsClick() {
+    const timestamp = new Date();
 
-            this.dispatchEvent(customEvent);
-        }, this.INPUT_DEBOUNCE_DELAY);
-    };
+    const clearLogs = new CustomEvent('clear-logs', {
+      detail: { timestamp },
+      bubbles: true,
+      composed: true,
+    });
 
-    /**
-     * Dispatches a custom event for clearing logs. This event includes a
-     * `timestamp` object indicating the date/time in which the 'clear-logs'
-     * event was dispatched.
-     */
-    private handleClearLogsClick() {
-        const timestamp = new Date();
+    this.dispatchEvent(clearLogs);
+  }
 
-        const clearLogs = new CustomEvent('clear-logs', {
-            detail: { timestamp },
-            bubbles: true,
-            composed: true,
-        });
+  /**
+   * Dispatches a custom event for closing the parent view. This event
+   * includes a `viewId` object indicating the `id` of the parent log view.
+   */
+  private handleCloseViewClick() {
+    const closeView = new CustomEvent('close-view', {
+      bubbles: true,
+      composed: true,
+      detail: {
+        viewId: this.viewId,
+      },
+    });
 
-        this.dispatchEvent(clearLogs);
-    }
+    this.dispatchEvent(closeView);
+  }
 
-    /**
-     * Dispatches a custom event for closing the parent view. This event
-     * includes a `viewId` object indicating the `id` of the parent log view.
-     */
-    private handleCloseViewClick() {
-        const closeView = new CustomEvent('close-view', {
-            bubbles: true,
-            composed: true,
-            detail: {
-                viewId: this.viewId,
-            },
-        });
+  /**
+   * Dispatches a custom event for showing or hiding a column in the table.
+   * This event includes a `field` string indicating the affected column's
+   * field name and an `isChecked` boolean indicating whether to show or hide
+   * the column.
+   *
+   * @param {Event} event - The click event object.
+   */
+  private handleColumnToggle(event: Event) {
+    const inputEl = event.target as HTMLInputElement;
+    const columnToggle = new CustomEvent('column-toggle', {
+      bubbles: true,
+      composed: true,
+      detail: {
+        field: inputEl.value,
+        isChecked: inputEl.checked,
+      },
+    });
 
-        this.dispatchEvent(closeView);
-    }
+    this.dispatchEvent(columnToggle);
+  }
 
-    /**
-     * Dispatches a custom event for showing or hiding a column in the table.
-     * This event includes a `field` string indicating the affected column's
-     * field name and an `isChecked` boolean indicating whether to show or hide
-     * the column.
-     *
-     * @param {Event} event - The click event object.
-     */
-    private handleColumnToggle(event: Event) {
-        const inputEl = event.target as HTMLInputElement;
-        const columnToggle = new CustomEvent('column-toggle', {
-            bubbles: true,
-            composed: true,
-            detail: {
-                field: inputEl.value,
-                isChecked: inputEl.checked,
-            },
-        });
+  /**
+   * Opens and closes the column visibility dropdown menu.
+   *
+   * @param {Event} event - The click event object.
+   */
+  private toggleColumnVisibilityMenu(event: Event) {
+    const dropdownButton = event.target as HTMLElement;
+    this._fieldMenu.hidden = !this._fieldMenu.hidden;
+    dropdownButton.classList.toggle('button-toggle');
+  }
 
-        this.dispatchEvent(columnToggle);
-    }
-
-    /**
-     * Opens and closes the column visibility dropdown menu.
-     *
-     * @param {Event} event - The click event object.
-     */
-    private toggleColumnVisibilityMenu(event: Event) {
-        const dropdownButton = event.target as HTMLElement;
-        this._fieldMenu.hidden = !this._fieldMenu.hidden;
-        dropdownButton.classList.toggle('button-toggle');
-    }
-
-    render() {
-        return html`
+  render() {
+    return html`
             <p class="host-name"> ${this._viewTitle}</p>
 
             <div class="input-container">
                 <input class="search-input" placeholder="Search" type="text" @input=${
-                    this.handleInput
+                  this.handleInput
                 }></input>
             </div>
 
@@ -217,7 +223,7 @@ export class LogViewControls extends LitElement {
 
                 <span class="action-button" title="Clear logs">
                     <md-standard-icon-button @click=${
-                        this.handleClearLogsClick
+                      this.handleClearLogsClick
                     }>
                         <md-icon>delete_sweep</md-icon>
                     </md-standard-icon-button>
@@ -225,33 +231,33 @@ export class LogViewControls extends LitElement {
 
                 <span class='field-toggle' title="Toggle fields">
                     <md-standard-icon-button @click=${
-                        this.toggleColumnVisibilityMenu
+                      this.toggleColumnVisibilityMenu
                     }>
                         <md-icon>view_column</md-icon>
                     </md-standard-icon-button>
                     <menu class='field-menu' hidden>
                         ${Array.from(this.fieldKeys).map(
-                            (field) => html`
-                                <li class="field-menu-item">
-                                    <input
-                                        class="item-checkboxeses"
-                                        @click=${this.handleColumnToggle}
-                                        checked
-                                        type="checkbox"
-                                        value=${field}
-                                    />
-                                    <label for=${field}>${field}</label>
-                                </li>
-                            `
+                          (field) => html`
+                            <li class="field-menu-item">
+                              <input
+                                class="item-checkboxeses"
+                                @click=${this.handleColumnToggle}
+                                checked
+                                type="checkbox"
+                                value=${field}
+                              />
+                              <label for=${field}>${field}</label>
+                            </li>
+                          `,
                         )}
                     </menu>
                 </span>
 
                 <span class="action-button" title="Close view" ?hidden=${
-                    this.hideCloseButton
+                  this.hideCloseButton
                 }>
                     <md-standard-icon-button  @click=${
-                        this.handleCloseViewClick
+                      this.handleCloseViewClick
                     }>
                         <md-icon>close</md-icon>
                     </md-standard-icon-button>
@@ -264,5 +270,5 @@ export class LogViewControls extends LitElement {
                 </span>
             </div>
         `;
-    }
+  }
 }

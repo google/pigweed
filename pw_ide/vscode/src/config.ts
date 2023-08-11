@@ -19,15 +19,15 @@ import * as vscode from 'vscode';
  * Schema for extensions.json
  */
 export interface ExtensionsJson {
-    recommendations?: string[];
-    unwantedRecommendations?: string[];
+  recommendations?: string[];
+  unwantedRecommendations?: string[];
 }
 
 /**
  * Partial schema for the workspace config file
  */
 interface WorkspaceConfig {
-    extensions?: ExtensionsJson;
+  extensions?: ExtensionsJson;
 }
 
 // When the project is opened directly (i.e., by opening the repo directory),
@@ -45,16 +45,16 @@ type LoadableConfig = ExtensionsJson & WorkspaceConfig;
  * @returns - The extensions.json file data
  */
 export async function loadExtensionsJson(
-    uri: vscode.Uri
+  uri: vscode.Uri,
 ): Promise<ExtensionsJson> {
-    const buffer = await vscode.workspace.fs.readFile(uri);
-    const config: LoadableConfig = hjson.parse(buffer.toString());
+  const buffer = await vscode.workspace.fs.readFile(uri);
+  const config: LoadableConfig = hjson.parse(buffer.toString());
 
-    if (config.extensions) {
-        return config.extensions;
-    }
+  if (config.extensions) {
+    return config.extensions;
+  }
 
-    return config as ExtensionsJson;
+  return config as ExtensionsJson;
 }
 
 /**
@@ -63,31 +63,32 @@ export async function loadExtensionsJson(
  * @returns The extensions.json file data
  */
 export async function getExtensionsJson(
-    includeWorkspace = false
+  includeWorkspace = false,
 ): Promise<ExtensionsJson> {
-    const files = await vscode.workspace.findFiles(
-        '.vscode/extensions.json', '**/node_modules/**'
-    );
+  const files = await vscode.workspace.findFiles(
+    '.vscode/extensions.json',
+    '**/node_modules/**',
+  );
 
-    if (includeWorkspace) {
-        const workspaceFile = vscode.workspace.workspaceFile;
-        
-        if (workspaceFile) {
-            files.push(workspaceFile);
-        }
+  if (includeWorkspace) {
+    const workspaceFile = vscode.workspace.workspaceFile;
+
+    if (workspaceFile) {
+      files.push(workspaceFile);
+    }
+  }
+
+  if (files.length == 0) {
+    // TODO(chadnorvell): Improve this
+    vscode.window.showErrorMessage('extensions.json is missing!');
+    throw new Error('extensions.json is missing!');
+  } else {
+    if (files.length > 1) {
+      vscode.window.showWarningMessage(
+        'Found multiple extensions.json! Will only use the first.',
+      );
     }
 
-    if (files.length == 0) {
-        // TODO(chadnorvell): Improve this
-        vscode.window.showErrorMessage('extensions.json is missing!')
-        throw new Error('extensions.json is missing!')
-    } else {
-        if (files.length > 1) {
-            vscode.window.showWarningMessage(
-                'Found multiple extensions.json! Will only use the first.'
-            )
-        }
-
-        return await loadExtensionsJson(files[0])
-    }
+    return await loadExtensionsJson(files[0]);
+  }
 }

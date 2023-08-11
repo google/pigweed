@@ -13,16 +13,16 @@
 // the License.
 
 interface ColumnToggleEvent extends CustomEvent {
-    detail: {
-        field: string;
-        isChecked: boolean;
-    };
+  detail: {
+    field: string;
+    isChecked: boolean;
+  };
 }
 
 declare global {
-    interface GlobalEventHandlersEventMap {
-        'column-toggle': ColumnToggleEvent;
-    }
+  interface GlobalEventHandlersEventMap {
+    'column-toggle': ColumnToggleEvent;
+  }
 }
 
 export default ColumnToggleEvent;

@@ -12,9 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-
 export async function createDefaultProtoCollection() {
   // @ts-ignore
-  const ProtoCollection = await import("pigweedjs/protos/collection.umd");
+  const ProtoCollection = await import('pigweedjs/protos/collection.umd');
   return new ProtoCollection.ProtoCollection();
 }

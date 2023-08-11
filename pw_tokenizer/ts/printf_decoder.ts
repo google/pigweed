@@ -13,9 +13,10 @@
 // the License.
 
 /** Decodes arguments and formats them with the provided format string. */
-import Long from "long";
+import Long from 'long';
 
-const SPECIFIER_REGEX = /%(\.([0-9]+))?(hh|h|ll|l|j|z|t|L)?([%csdioxXufFeEaAgGnp])/g;
+const SPECIFIER_REGEX =
+  /%(\.([0-9]+))?(hh|h|ll|l|j|z|t|L)?([%csdioxXufFeEaAgGnp])/g;
 // Conversion specifiers by type; n is not supported.
 const SIGNED_INT = 'di'.split('');
 const UNSIGNED_INT = 'oxXup'.split('');
@@ -45,17 +46,18 @@ function zigzagDecode(value: Long, unsigned: boolean = false): Long {
   // To work with 32 bit, we can operate on both but "carry" the lowest bit
   // from the high word by shifting it up 31 bits to be the most significant bit
   // of the low word.
-  var bitsLow = value.low, bitsHigh = value.high;
+  var bitsLow = value.low,
+    bitsHigh = value.high;
   var signFlipMask = -(bitsLow & 1);
   bitsLow = ((bitsLow >>> 1) | (bitsHigh << 31)) ^ signFlipMask;
   bitsHigh = (bitsHigh >>> 1) ^ signFlipMask;
   return new Long(bitsLow, bitsHigh, unsigned);
-};
+}
 
 export class PrintfDecoder {
   // Reads a unicode string from the encoded data.
   private decodeString(args: Uint8Array): DecodedArg {
-    if (args.length === 0) return {size: 0, value: null};
+    if (args.length === 0) return { size: 0, value: null };
     let sizeAndStatus = args[0];
     let status = DecodedStatusFlags.OK;
 
@@ -71,7 +73,7 @@ export class PrintfDecoder {
     }
 
     const decoded = new TextDecoder().decode(data);
-    return {size: rawData.length, value: decoded};
+    return { size: rawData.length, value: decoded };
   }
 
   private decodeSignedInt(args: Uint8Array): DecodedArg {
@@ -79,24 +81,29 @@ export class PrintfDecoder {
   }
 
   private _decodeInt(args: Uint8Array, unsigned: boolean = false): DecodedArg {
-    if (args.length === 0) return {size: 0, value: null};
+    if (args.length === 0) return { size: 0, value: null };
     let count = 0;
     let result = new Long(0);
     let shift = 0;
     for (count = 0; count < args.length; count++) {
       const byte = args[count];
-      result = result.or((Long.fromInt(byte, unsigned).and(0x7f)).shiftLeft(shift));
+      result = result.or(
+        Long.fromInt(byte, unsigned).and(0x7f).shiftLeft(shift),
+      );
       if (!(byte & 0x80)) {
-        return {value: zigzagDecode(result, unsigned), size: count + 1};
+        return { value: zigzagDecode(result, unsigned), size: count + 1 };
       }
       shift += 7;
       if (shift >= 64) break;
     }
 
-    return {size: 0, value: null};
+    return { size: 0, value: null };
   }
 
-  private decodeUnsignedInt(args: Uint8Array, lengthSpecifier: string): DecodedArg {
+  private decodeUnsignedInt(
+    args: Uint8Array,
+    lengthSpecifier: string,
+  ): DecodedArg {
     const arg = this._decodeInt(args, true);
     const bits = ['ll', 'j'].indexOf(lengthSpecifier) !== -1 ? 64 : 32;
 
@@ -105,9 +112,8 @@ export class PrintfDecoder {
     if (arg.value !== null) {
       let num = arg.value as Long;
       if (bits === 32) {
-        num = num.and((Long.fromInt(1).shiftLeft(bits)).add(-1));
-      }
-      else {
+        num = num.and(Long.fromInt(1).shiftLeft(bits).add(-1));
+      } else {
         num = num.and(-1);
       }
       arg.value = num.toString();
@@ -126,17 +132,23 @@ export class PrintfDecoder {
   }
 
   private decodeFloat(args: Uint8Array, precision: string): DecodedArg {
-    if (args.length < 4) return {size: 0, value: ''};
+    if (args.length < 4) return { size: 0, value: '' };
     const floatValue = new DataView(args.buffer, args.byteOffset, 4).getFloat32(
       0,
-      true
+      true,
     );
-    if (precision) return {size: 4, value: floatValue.toFixed(parseInt(precision))}
-    return {size: 4, value: floatValue};
+    if (precision)
+      return { size: 4, value: floatValue.toFixed(parseInt(precision)) };
+    return { size: 4, value: floatValue };
   }
 
-  private format(specifierType: string, args: Uint8Array, precision: string, lengthSpecifier: string): DecodedArg {
-    if (specifierType == '%') return {size: 0, value: '%'}; // literal %
+  private format(
+    specifierType: string,
+    args: Uint8Array,
+    precision: string,
+    lengthSpecifier: string,
+  ): DecodedArg {
+    if (specifierType == '%') return { size: 0, value: '%' }; // literal %
     if (specifierType === 's') {
       return this.decodeString(args);
     }
@@ -154,17 +166,29 @@ export class PrintfDecoder {
     }
 
     // Unsupported specifier, return as-is
-    return {size: 0, value: '%' + specifierType};
+    return { size: 0, value: '%' + specifierType };
   }
 
   decode(formatString: string, args: Uint8Array): string {
     return formatString.replace(
       SPECIFIER_REGEX,
-      (_specifier, _precisionFull, precision, lengthSpecifier, specifierType) => {
-        const decodedArg = this.format(specifierType, args, precision, lengthSpecifier);
+      (
+        _specifier,
+        _precisionFull,
+        precision,
+        lengthSpecifier,
+        specifierType,
+      ) => {
+        const decodedArg = this.format(
+          specifierType,
+          args,
+          precision,
+          lengthSpecifier,
+        );
         args = args.slice(decodedArg.size);
         if (decodedArg === null) return '';
         return String(decodedArg.value);
-      });
+      },
+    );
   }
 }

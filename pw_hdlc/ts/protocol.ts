@@ -13,7 +13,7 @@
 // the License.
 
 /** Low-level HDLC protocol features. */
-import {crc32} from './crc32';
+import { crc32 } from './crc32';
 
 /** Special flag character for delimiting HDLC frames. */
 export const FLAG = 0x7e;

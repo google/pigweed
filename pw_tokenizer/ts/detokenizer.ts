@@ -13,9 +13,9 @@
 // the License.
 
 /**  Decodes and detokenizes strings from binary or Base64 input. */
-import {Frame} from 'pigweedjs/pw_hdlc';
-import {TokenDatabase} from './token_database';
-import {PrintfDecoder} from './printf_decoder';
+import { Frame } from 'pigweedjs/pw_hdlc';
+import { TokenDatabase } from './token_database';
+import { PrintfDecoder } from './printf_decoder';
 
 const MAX_RECURSIONS = 9;
 const BASE64CHARS = '[A-Za-z0-9+/-_]';
@@ -26,7 +26,7 @@ const PATTERN = new RegExp(
     `(?:${BASE64CHARS}{4})*` +
     // The last block of 4 chars may have one or two padding chars (=).
     `(?:${BASE64CHARS}{3}=|${BASE64CHARS}{2}==)?`,
-  'g'
+  'g',
 );
 
 interface TokenAndArgs {
@@ -60,7 +60,7 @@ export class Detokenizer {
    * returned as string as-is.
    */
   detokenizeUint8Array(data: Uint8Array): string {
-    const {token, args} = this.decodeUint8Array(data);
+    const { token, args } = this.decodeUint8Array(data);
     // Parse arguments if this is printf-style text.
     const format = this.database.get(token);
     if (format) {
@@ -79,7 +79,7 @@ export class Detokenizer {
    */
   detokenizeBase64(
     tokenizedFrame: Frame,
-    maxRecursion: number = MAX_RECURSIONS
+    maxRecursion: number = MAX_RECURSIONS,
   ): string {
     const base64String = new TextDecoder().decode(tokenizedFrame.data);
     return this.detokenizeBase64String(base64String, maxRecursion);
@@ -87,16 +87,16 @@ export class Detokenizer {
 
   private detokenizeBase64String(
     base64String: string,
-    recursions: number
+    recursions: number,
   ): string {
-    return base64String.replace(PATTERN, base64Substring => {
-      const {token, args} = this.decodeBase64TokenFrame(base64Substring);
+    return base64String.replace(PATTERN, (base64Substring) => {
+      const { token, args } = this.decodeBase64TokenFrame(base64Substring);
       const format = this.database.get(token);
       // Parse arguments if this is printf-style text.
       if (format) {
         const decodedOriginal = new PrintfDecoder().decode(
           String(format),
-          args
+          args,
         );
         // Detokenize nested Base64 tokens and their arguments.
         if (recursions > 0) {
@@ -109,14 +109,13 @@ export class Detokenizer {
   }
 
   private decodeUint8Array(data: Uint8Array): TokenAndArgs {
-    const token = new DataView(
-      data.buffer,
-      data.byteOffset,
-      4
-    ).getUint32(0, true);
+    const token = new DataView(data.buffer, data.byteOffset, 4).getUint32(
+      0,
+      true,
+    );
     const args = new Uint8Array(data.buffer.slice(data.byteOffset + 4));
 
-    return {token, args};
+    return { token, args };
   }
 
   private decodeBase64TokenFrame(base64Data: string): TokenAndArgs {
@@ -124,15 +123,15 @@ export class Detokenizer {
     const prefixRemoved = base64Data.slice(1);
     const noBase64 = Buffer.from(prefixRemoved, 'base64').toString('binary');
     // Convert back to bytes and return token and arguments.
-    const bytes = noBase64.split('').map(ch => ch.charCodeAt(0));
+    const bytes = noBase64.split('').map((ch) => ch.charCodeAt(0));
     const uIntArray = new Uint8Array(bytes);
     const token = new DataView(
       uIntArray.buffer,
       uIntArray.byteOffset,
-      4
+      4,
     ).getUint32(0, true);
     const args = new Uint8Array(bytes.slice(4));
 
-    return {token, args};
+    return { token, args };
   }
 }

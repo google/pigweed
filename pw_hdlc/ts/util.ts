@@ -21,10 +21,10 @@
 export function replace(
   data: Uint8Array,
   target: number,
-  substitute: number[]
+  substitute: number[],
 ): Uint8Array {
   const result: number[] = [];
-  data.forEach(value => {
+  data.forEach((value) => {
     if (value === target) {
       result.push(...substitute);
     } else {
@@ -38,11 +38,11 @@ export function replace(
 export function concatenate(...byteList: Uint8Array[]): Uint8Array {
   const length = byteList.reduce(
     (accumulator, bytes) => accumulator + bytes.length,
-    0
+    0,
   );
   const result = new Uint8Array(length);
   let offset = 0;
-  byteList.forEach(value => {
+  byteList.forEach((value) => {
     result.set(value, offset);
     offset += value.length;
   });

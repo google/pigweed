@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import {BehaviorSubject, Observable} from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 
 export default interface DeviceTransport {
   chunks: Observable<Uint8Array>;

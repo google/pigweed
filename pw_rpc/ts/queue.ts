@@ -32,7 +32,7 @@ export default class Queue<T> {
   }
 
   shift(): Promise<T> {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       if (this.length > 0) {
         return resolve(this.queue.shift()!);
       } else {

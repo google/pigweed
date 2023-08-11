@@ -15,13 +15,13 @@
 import { css } from 'lit';
 
 export const styles = css`
-    :host {
-        border: var(--sys-log-viewer-view-outline-width) solid
-            var(--sys-log-viewer-color-view-outline);
-        border-radius: var(--sys-log-viewer-view-corner-radius);
-        color: var(--md-sys-color-on-surface);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
+  :host {
+    border: var(--sys-log-viewer-view-outline-width) solid
+      var(--sys-log-viewer-color-view-outline);
+    border-radius: var(--sys-log-viewer-view-corner-radius);
+    color: var(--md-sys-color-on-surface);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 `;

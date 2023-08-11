@@ -31,7 +31,7 @@ export class TokenDatabase {
 
   private parseTokensToTokensMap(csv: string[]) {
     for (const [lineNumber, line] of Object.entries(
-      csv.map(line => line.split(/,/))
+      csv.map((line) => line.split(/,/)),
     )) {
       if (!line[0] || !line[2]) {
         continue;
@@ -41,8 +41,8 @@ export class TokenDatabase {
         console.error(
           new Error(
             `TokenDatabase number ${line[0]} at line ` +
-              `${lineNumber} is not a valid hex number`
-          )
+              `${lineNumber} is not a valid hex number`,
+          ),
         );
         continue;
       }

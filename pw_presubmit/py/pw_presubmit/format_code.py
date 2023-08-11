@@ -631,9 +631,8 @@ CODE_FORMATS: Tuple[CodeFormat, ...] = tuple(
             PROTO_FORMAT,
             PYTHON_FORMAT,
             RST_FORMAT,
+            TYPESCRIPT_FORMAT if shutil.which('npx') else None,
             # keep-sorted: end
-            # TODO(tonymd): Enable this in a followup CL.
-            # TYPESCRIPT_FORMAT if shutil.which('npx') else None,
         ),
     )
 )

@@ -12,11 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-export * as pw_hdlc from "../pw_hdlc/ts";
-export * as pw_rpc from "../pw_rpc/ts";
-export * as pw_status from "../pw_status/ts";
-export * as pw_tokenizer from "../pw_tokenizer/ts";
-export * as pw_protobuf_compiler from "../pw_protobuf_compiler/ts";
-export * as pw_transfer from "../pw_transfer/ts";
-export * as WebSerial from "./transport/web_serial_transport";
-export {Device} from "./device";
+export * as pw_hdlc from '../pw_hdlc/ts';
+export * as pw_rpc from '../pw_rpc/ts';
+export * as pw_status from '../pw_status/ts';
+export * as pw_tokenizer from '../pw_tokenizer/ts';
+export * as pw_protobuf_compiler from '../pw_protobuf_compiler/ts';
+export * as pw_transfer from '../pw_transfer/ts';
+export * as WebSerial from './transport/web_serial_transport';
+export { Device } from './device';

@@ -12,10 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import {Detokenizer} from "../pw_tokenizer/ts";
-import {LogSource} from "../pw_web/log-viewer/src/log-source";
-import {Device} from "./device";
-import {LogEntry} from "./logging";
+import { Detokenizer } from '../pw_tokenizer/ts';
+import { LogSource } from '../pw_web/log-viewer/src/log-source';
+import { Device } from './device';
+import { LogEntry } from './logging';
 
 export class PigweedRPCLogSource extends LogSource {
   private detokenizer: Detokenizer | undefined;
@@ -27,7 +27,9 @@ export class PigweedRPCLogSource extends LogSource {
       this.detokenizer = new Detokenizer(tokenDB);
     }
     this.call = device.rpcs.pw.log.Logs.Listen((msg: any) => {
-      msg.getEntriesList().forEach((entry: any) => this.processFrame(entry.getMessage()));
+      msg
+        .getEntriesList()
+        .forEach((entry: any) => this.processFrame(entry.getMessage()));
     });
   }
 
@@ -40,40 +42,42 @@ export class PigweedRPCLogSource extends LogSource {
     if (this.detokenizer) {
       const detokenized = this.detokenizer.detokenizeUint8Array(frame);
       entry = this.parseLogMsg(detokenized);
-    }
-    else {
+    } else {
       const decoded = new TextDecoder().decode(frame);
       entry = this.parseLogMsg(decoded);
     }
     this.logs = [...this.logs, entry];
-    this.emitEvent("logEntry", entry);
+    this.emitEvent('logEntry', entry);
   }
 
   private parseLogMsg(msg: string): LogEntry {
-    const pairs = msg.split("■").slice(1).map(pair => pair.split("♦"));
+    const pairs = msg
+      .split('■')
+      .slice(1)
+      .map((pair) => pair.split('♦'));
 
     // Not a valid message, print as-is.
     const timestamp = new Date();
     if (pairs.length === 0) {
       return {
         fields: [
-          {key: "timestamp", value: timestamp.toISOString()},
-          {key: "message", value: msg},
+          { key: 'timestamp', value: timestamp.toISOString() },
+          { key: 'message', value: msg },
         ],
         timestamp: timestamp,
-      }
+      };
     }
 
     let map: any = {};
-    pairs.forEach(pair => map[pair[0]] = pair[1])
+    pairs.forEach((pair) => (map[pair[0]] = pair[1]));
     return {
       fields: [
-        {key: "timestamp", value: timestamp},
-        {key: "message", value: map.msg},
-        {key: "module", value: map.module},
-        {key: "file", value: map.file},
+        { key: 'timestamp', value: timestamp },
+        { key: 'message', value: map.msg },
+        { key: 'module', value: map.module },
+        { key: 'file', value: map.file },
       ],
       timestamp: timestamp,
-    }
+    };
   }
 }

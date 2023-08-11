@@ -12,13 +12,13 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import {ProtoCollection} from 'pigweedjs/pw_protobuf_compiler';
+import { ProtoCollection } from 'pigweedjs/pw_protobuf_compiler';
 import {
   MethodDescriptorProto,
   ServiceDescriptorProto,
 } from 'google-protobuf/google/protobuf/descriptor_pb';
 
-import {hash} from './hash';
+import { hash } from './hash';
 
 interface ChannelOutput {
   (data: Uint8Array): void;
@@ -48,7 +48,7 @@ export class Service {
   constructor(
     descriptor: ServiceDescriptorProto,
     protoCollection: ProtoCollection,
-    packageName: string
+    packageName: string,
   ) {
     this.name = packageName + '.' + descriptor.getName()!;
     this.id = hash(this.name);
@@ -83,7 +83,7 @@ export class Method {
   constructor(
     descriptor: MethodDescriptorProto,
     protoCollection: ProtoCollection,
-    service: Service
+    service: Service,
   ) {
     this.name = descriptor.getName()!;
     this.id = hash(this.name);
@@ -97,10 +97,10 @@ export class Method {
 
     // Remove leading period if it exists.
     this.requestType = protoCollection.getMessageCreator(
-      requestTypePath.replace(/^\./, '')
+      requestTypePath.replace(/^\./, ''),
     )!;
     this.responseType = protoCollection.getMessageCreator(
-      responseTypePath.replace(/^\./, '')
+      responseTypePath.replace(/^\./, ''),
     )!;
   }
 

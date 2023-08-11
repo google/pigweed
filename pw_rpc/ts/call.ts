@@ -12,12 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import {Status} from 'pigweedjs/pw_status';
-import {Message} from 'google-protobuf';
+import { Status } from 'pigweedjs/pw_status';
+import { Message } from 'google-protobuf';
 
-import WaitQueue from "./queue";
+import WaitQueue from './queue';
 
-import {PendingCalls, Rpc} from './rpc_classes';
+import { PendingCalls, Rpc } from './rpc_classes';
 
 export type Callback = (a: any) => any;
 
@@ -70,7 +70,7 @@ export class Call {
     rpc: Rpc,
     onNext: Callback,
     onCompleted: Callback,
-    onError: Callback
+    onError: Callback,
   ) {
     this.rpcs = rpcs;
     this.rpc = rpc;
@@ -86,7 +86,7 @@ export class Call {
       this.rpc,
       this,
       ignoreErrors,
-      request
+      request,
     );
 
     if (previous !== undefined && !previous.completed) {
@@ -104,7 +104,7 @@ export class Call {
     } catch (err: unknown) {
       if (err instanceof Error) {
         console.error(
-          `An exception was raised while invoking a callback: ${err}`
+          `An exception was raised while invoking a callback: ${err}`,
         );
         this.callbackException = err;
       }
@@ -131,7 +131,7 @@ export class Call {
   }
 
   private async queuePopWithTimeout(
-    timeoutMs: number
+    timeoutMs: number,
   ): Promise<Message | undefined> {
     return new Promise(async (resolve, reject) => {
       let timeoutExpired = false;
@@ -170,7 +170,7 @@ export class Call {
    */
   async *getResponses(
     count?: number,
-    timeoutMs?: number
+    timeoutMs?: number,
   ): AsyncGenerator<Message> {
     this.checkErrors();
 
@@ -276,7 +276,7 @@ export class ClientStreamingCall extends Call {
   /** Ends the client stream and waits for the RPC to complete. */
   async finishAndWait(
     requests: Message[] = [],
-    timeoutMs?: number
+    timeoutMs?: number,
   ): Promise<[Status, Message[]]> {
     this.finishClientStream(requests);
     return await this.streamWait(timeoutMs);
@@ -300,7 +300,7 @@ export class BidirectionalStreamingCall extends Call {
   /** Ends the client stream and waits for the RPC to complete. */
   async finishAndWait(
     requests: Array<Message> = [],
-    timeoutMs?: number
+    timeoutMs?: number,
   ): Promise<[Status, Array<Message>]> {
     this.finishClientStream(requests);
     return await this.streamWait(timeoutMs);

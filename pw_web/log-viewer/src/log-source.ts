@@ -15,38 +15,38 @@
 import { LogEntry } from './shared/interfaces';
 
 export abstract class LogSource {
-    private eventListeners: {
-        eventType: string;
-        listener: (data: LogEntry) => void;
-    }[];
+  private eventListeners: {
+    eventType: string;
+    listener: (data: LogEntry) => void;
+  }[];
 
-    constructor() {
-        this.eventListeners = [];
-    }
+  constructor() {
+    this.eventListeners = [];
+  }
 
-    addEventListener(
-        eventType: string,
-        listener: (data: LogEntry) => void
-    ): void {
-        this.eventListeners.push({ eventType, listener });
-    }
+  addEventListener(
+    eventType: string,
+    listener: (data: LogEntry) => void,
+  ): void {
+    this.eventListeners.push({ eventType, listener });
+  }
 
-    removeEventListener(
-        eventType: string,
-        listener: (data: LogEntry) => void
-    ): void {
-        this.eventListeners = this.eventListeners.filter(
-            (eventListener) =>
-                eventListener.eventType !== eventType ||
-                eventListener.listener !== listener
-        );
-    }
+  removeEventListener(
+    eventType: string,
+    listener: (data: LogEntry) => void,
+  ): void {
+    this.eventListeners = this.eventListeners.filter(
+      (eventListener) =>
+        eventListener.eventType !== eventType ||
+        eventListener.listener !== listener,
+    );
+  }
 
-    emitEvent(eventType: string, data: LogEntry): void {
-        this.eventListeners.forEach((eventListener) => {
-            if (eventListener.eventType === eventType) {
-                eventListener.listener(data);
-            }
-        });
-    }
+  emitEvent(eventType: string, data: LogEntry): void {
+    this.eventListeners.forEach((eventListener) => {
+      if (eventListener.eventType === eventType) {
+        eventListener.listener(data);
+      }
+    });
+  }
 }

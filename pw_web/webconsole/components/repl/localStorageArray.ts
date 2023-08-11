@@ -15,13 +15,13 @@
 export default class LocalStorageArray {
   data: string[] = [];
   maxSize: number;
-  key: string = "__pw_repl_history";
+  key: string = '__pw_repl_history';
 
   constructor(maxSize: number = 4) {
     this.maxSize = maxSize;
     const curHistory = localStorage.getItem(this.key);
     if (curHistory) {
-      this.data = JSON.parse(localStorage.getItem(this.key)!)
+      this.data = JSON.parse(localStorage.getItem(this.key)!);
     }
   }
 

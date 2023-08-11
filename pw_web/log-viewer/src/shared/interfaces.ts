@@ -13,37 +13,37 @@
 // the License.
 
 export interface FieldData {
-    key: string;
-    value: string | boolean | number | object;
+  key: string;
+  value: string | boolean | number | object;
 }
 
 export interface LogColumnState {
-    hidden: boolean,
-    name: string,
-    width?: string
+  hidden: boolean;
+  name: string;
+  width?: string;
 }
 
 export interface LogEntry {
-    severity?: Severity;
-    timestamp: Date;
-    fields: FieldData[];
+  severity?: Severity;
+  timestamp: Date;
+  fields: FieldData[];
 }
 
 export interface LogViewConfig {
-    columns: LogColumnState[],
-    search: string,
-    viewID: string
-    viewTitle: string,
+  columns: LogColumnState[];
+  search: string;
+  viewID: string;
+  viewTitle: string;
 }
 
 export enum Severity {
-    DEBUG = 'DEBUG',
-    INFO = 'INFO',
-    WARNING = 'WARNING',
-    ERROR = 'ERROR',
-    CRITICAL = 'CRITICAL',
+  DEBUG = 'DEBUG',
+  INFO = 'INFO',
+  WARNING = 'WARNING',
+  ERROR = 'ERROR',
+  CRITICAL = 'CRITICAL',
 }
 
 export interface State {
-    logViewConfig: LogViewConfig[],
+  logViewConfig: LogViewConfig[];
 }

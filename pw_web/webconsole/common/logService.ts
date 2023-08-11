@@ -12,14 +12,15 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import {Device} from "pigweedjs";
+import { Device } from 'pigweedjs';
 
 export async function listenToDefaultLogService(
   device: Device,
-  onFrame: (frame: Uint8Array) => void) {
+  onFrame: (frame: Uint8Array) => void,
+) {
   const call = device.rpcs.pw.log.Logs.Listen((msg: any) => {
     msg.getEntriesList().forEach((entry: any) => onFrame(entry.getMessage()));
-  })
+  });
   return () => {
     call.cancel();
   };

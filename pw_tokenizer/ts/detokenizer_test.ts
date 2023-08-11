@@ -14,8 +14,8 @@
 
 /* eslint-env browser */
 
-import {Frame, Encoder, Decoder} from 'pigweedjs/pw_hdlc';
-import {Detokenizer} from './detokenizer';
+import { Frame, Encoder, Decoder } from 'pigweedjs/pw_hdlc';
+import { Detokenizer } from './detokenizer';
 
 const CSV = `
 64636261,          ,"regular token"
@@ -50,18 +50,18 @@ describe('Detokenizer', () => {
   it('failure to detokenize returns original string', () => {
     expect(detokenizer.detokenize(generateFrame('aabbcc'))).toEqual('aabbcc');
     expect(detokenizer.detokenizeBase64(generateFrame('$8zP7hg=='))).toEqual(
-      '$8zP7hg=='
+      '$8zP7hg==',
     );
   });
   it('recursive detokenize all nested base64 tokens', () => {
     expect(
       detokenizer.detokenizeBase64(
         generateFrame(
-          '$PNNrDQkkN1lZZFJRPT0lJGIxNFlsd2trTjFsWlpGSlJQVDBGUTJGdFpXeFlwSENkUHc9PQ=='
-        )
-      )
+          '$PNNrDQkkN1lZZFJRPT0lJGIxNFlsd2trTjFsWlpGSlJQVDBGUTJGdFpXeFlwSENkUHc9PQ==',
+        ),
+      ),
     ).toEqual(
-      'Regular Token: Cat and Nested Token: (token: Cat, string: Camel, int: 44, float: 1.2300000190734863)'
+      'Regular Token: Cat and Nested Token: (token: Cat, string: Camel, int: 44, float: 1.2300000190734863)',
     );
   });
 
@@ -69,12 +69,12 @@ describe('Detokenizer', () => {
     expect(
       detokenizer.detokenizeBase64(
         generateFrame(
-          '$PNNrDQkkN1lZZFJRPT0lJGIxNFlsd2trTjFsWlpGSlJQVDBGUTJGdFpXeFlwSENkUHc9PQ=='
+          '$PNNrDQkkN1lZZFJRPT0lJGIxNFlsd2trTjFsWlpGSlJQVDBGUTJGdFpXeFlwSENkUHc9PQ==',
         ),
-        1
-      )
+        1,
+      ),
     ).toEqual(
-      'Regular Token: Cat and Nested Token: (token: $7YYdRQ==, string: Camel, int: 44, float: 1.2300000190734863)'
+      'Regular Token: Cat and Nested Token: (token: $7YYdRQ==, string: Camel, int: 44, float: 1.2300000190734863)',
     );
   });
 });

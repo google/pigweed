@@ -12,5 +12,5 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-export {Detokenizer} from './detokenizer';
-export {PrintfDecoder} from './printf_decoder';
+export { Detokenizer } from './detokenizer';
+export { PrintfDecoder } from './printf_decoder';

@@ -13,18 +13,19 @@
 // the License.
 
 /* eslint-env browser */
-import {SerialMock} from '../transport/serial_mock';
-import {Device} from "./"
-import {ProtoCollection} from 'pigweedjs/protos/collection';
-import {WebSerialTransport} from '../transport/web_serial_transport';
-import {Serial} from 'pigweedjs/types/serial';
-import {Message} from 'google-protobuf';
-import {RpcPacket, PacketType} from 'pigweedjs/protos/pw_rpc/internal/packet_pb';
-import {Method, ServerStreamingMethodStub} from 'pigweedjs/pw_rpc';
-import {Status} from 'pigweedjs/pw_status';
+import { SerialMock } from '../transport/serial_mock';
+import { Device } from './';
+import { ProtoCollection } from 'pigweedjs/protos/collection';
+import { WebSerialTransport } from '../transport/web_serial_transport';
+import { Serial } from 'pigweedjs/types/serial';
+import { Message } from 'google-protobuf';
 import {
-  Response,
-} from 'pigweedjs/protos/pw_rpc/ts/test_pb';
+  RpcPacket,
+  PacketType,
+} from 'pigweedjs/protos/pw_rpc/internal/packet_pb';
+import { Method, ServerStreamingMethodStub } from 'pigweedjs/pw_rpc';
+import { Status } from 'pigweedjs/pw_status';
+import { Response } from 'pigweedjs/protos/pw_rpc/ts/test_pb';
 
 describe('WebSerialTransport', () => {
   let device: Device;
@@ -40,7 +41,7 @@ describe('WebSerialTransport', () => {
     channelId: number,
     method: Method,
     status: Status,
-    response?: Message
+    response?: Message,
   ) {
     const packet = new RpcPacket();
     packet.setType(PacketType.RESPONSE);
@@ -60,7 +61,7 @@ describe('WebSerialTransport', () => {
     channelId: number,
     method: Method,
     response: Message,
-    status: Status = Status.OK
+    status: Status = Status.OK,
   ) {
     const packet = new RpcPacket();
     packet.setType(PacketType.SERVER_STREAM);
@@ -74,7 +75,10 @@ describe('WebSerialTransport', () => {
 
   beforeEach(() => {
     serialMock = new SerialMock();
-    device = new Device(new ProtoCollection(), new WebSerialTransport(serialMock as Serial));
+    device = new Device(
+      new ProtoCollection(),
+      new WebSerialTransport(serialMock as Serial),
+    );
   });
 
   it('has rpcs defined', () => {
@@ -83,21 +87,29 @@ describe('WebSerialTransport', () => {
   });
 
   it('has method arguments data', () => {
-    expect(device.getMethodArguments("pw.rpc.EchoService.Echo")).toStrictEqual(["msg"]);
-    expect(device.getMethodArguments("pw.test2.Alpha.Unary")).toStrictEqual(['magic_number']);
+    expect(device.getMethodArguments('pw.rpc.EchoService.Echo')).toStrictEqual([
+      'msg',
+    ]);
+    expect(device.getMethodArguments('pw.test2.Alpha.Unary')).toStrictEqual([
+      'magic_number',
+    ]);
   });
 
   it('unary rpc sends request to serial', async () => {
+    // prettier-ignore
     const helloResponse = new Uint8Array([
       126, 165, 3, 42, 7, 10, 5, 104,
       101, 108, 108, 111, 8, 1, 16, 1,
       29, 82, 208, 251, 20, 37, 233, 14,
-      71, 139, 109, 127, 108, 165, 126]);
+      71, 139, 109, 127, 108, 165, 126,
+    ]);
 
     await device.connect();
     serialMock.dataFromDevice(helloResponse);
-    const [status, response] = await device.rpcs.pw.rpc.EchoService.Echo("hello");
-    expect(response.getMsg()).toBe("hello");
+    const [status, response] = await device.rpcs.pw.rpc.EchoService.Echo(
+      'hello',
+    );
+    expect(response.getMsg()).toBe('hello');
     expect(status).toBe(0);
   });
 
@@ -108,16 +120,27 @@ describe('WebSerialTransport', () => {
     const serverStreaming = device.client
       .channel()
       ?.methodStub(
-        'pw.rpc.test1.TheTestService.SomeServerStreaming'
+        'pw.rpc.test1.TheTestService.SomeServerStreaming',
       )! as ServerStreamingMethodStub;
     const onNext = jest.fn();
     const onCompleted = jest.fn();
     const onError = jest.fn();
 
-    device.rpcs.pw.rpc.test1.TheTestService.SomeServerStreaming(4, onNext, onCompleted, onError);
-    device.client.processPacket(generateStreamingPacket(1, serverStreaming.method, response1));
-    device.client.processPacket(generateStreamingPacket(1, serverStreaming.method, response2));
-    device.client.processPacket(generateResponsePacket(1, serverStreaming.method, Status.ABORTED));
+    device.rpcs.pw.rpc.test1.TheTestService.SomeServerStreaming(
+      4,
+      onNext,
+      onCompleted,
+      onError,
+    );
+    device.client.processPacket(
+      generateStreamingPacket(1, serverStreaming.method, response1),
+    );
+    device.client.processPacket(
+      generateStreamingPacket(1, serverStreaming.method, response2),
+    );
+    device.client.processPacket(
+      generateResponsePacket(1, serverStreaming.method, Status.ABORTED),
+    );
 
     expect(onNext).toBeCalledWith(response1);
     expect(onNext).toBeCalledWith(response2);

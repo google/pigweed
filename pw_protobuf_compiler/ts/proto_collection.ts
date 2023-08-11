@@ -14,12 +14,15 @@
 
 /** Tools for compiling and importing Javascript protos on the fly. */
 
-import {Message} from 'google-protobuf';
-import {DescriptorProto, FileDescriptorSet} from 'google-protobuf/google/protobuf/descriptor_pb';
+import { Message } from 'google-protobuf';
+import {
+  DescriptorProto,
+  FileDescriptorSet,
+} from 'google-protobuf/google/protobuf/descriptor_pb';
 
 export type MessageCreator = new () => Message;
 class MessageMap extends Map<string, MessageCreator> {}
-class MessageDescriptorMap extends Map<string, DescriptorProto> { }
+class MessageDescriptorMap extends Map<string, DescriptorProto> {}
 export class ModuleMap extends Map<string, any> {}
 
 /**
@@ -31,7 +34,7 @@ export class ProtoCollection {
 
   constructor(
     readonly fileDescriptorSet: FileDescriptorSet,
-    modules: ModuleMap
+    modules: ModuleMap,
   ) {
     this.mapMessages(fileDescriptorSet, modules);
   }

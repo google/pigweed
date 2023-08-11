@@ -12,8 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import {Status} from 'pigweedjs/pw_status';
-import {Message} from 'google-protobuf';
+import { Status } from 'pigweedjs/pw_status';
+import { Message } from 'google-protobuf';
 
 import {
   BidirectionalStreamingCall,
@@ -23,13 +23,13 @@ import {
   ServerStreamingCall,
   UnaryCall,
 } from './call';
-import {Channel, Method, MethodType, Service} from './descriptors';
-import {PendingCalls, Rpc} from './rpc_classes';
+import { Channel, Method, MethodType, Service } from './descriptors';
+import { PendingCalls, Rpc } from './rpc_classes';
 
 export function methodStubFactory(
   rpcs: PendingCalls,
   channel: Channel,
-  method: Method
+  method: Method,
 ): MethodStub {
   switch (method.type) {
     case MethodType.BIDIRECTIONAL_STREAMING:
@@ -66,14 +66,14 @@ export class UnaryMethodStub extends MethodStub {
     request: Message,
     onNext: Callback = () => {},
     onCompleted: Callback = () => {},
-    onError: Callback = () => {}
+    onError: Callback = () => {},
   ): UnaryCall {
     const call = new UnaryCall(
       this.rpcs,
       this.rpc,
       onNext,
       onCompleted,
-      onError
+      onError,
     );
     call.invoke(request);
     return call;
@@ -83,14 +83,14 @@ export class UnaryMethodStub extends MethodStub {
     request: Message,
     onNext: Callback = () => {},
     onCompleted: Callback = () => {},
-    onError: Callback = () => {}
+    onError: Callback = () => {},
   ): UnaryCall {
     const call = new UnaryCall(
       this.rpcs,
       this.rpc,
       onNext,
       onCompleted,
-      onError
+      onError,
     );
     call.invoke(request, true);
     return call;
@@ -106,14 +106,14 @@ export class ServerStreamingMethodStub extends MethodStub {
     request?: Message,
     onNext: Callback = () => {},
     onCompleted: Callback = () => {},
-    onError: Callback = () => {}
+    onError: Callback = () => {},
   ): ServerStreamingCall {
     const call = new ServerStreamingCall(
       this.rpcs,
       this.rpc,
       onNext,
       onCompleted,
-      onError
+      onError,
     );
     call.invoke(request);
     return call;
@@ -123,14 +123,14 @@ export class ServerStreamingMethodStub extends MethodStub {
     request: Message,
     onNext: Callback = () => {},
     onCompleted: Callback = () => {},
-    onError: Callback = () => {}
+    onError: Callback = () => {},
   ): UnaryCall {
     const call = new UnaryCall(
       this.rpcs,
       this.rpc,
       onNext,
       onCompleted,
-      onError
+      onError,
     );
     call.invoke(request, true);
     return call;
@@ -145,14 +145,14 @@ export class ClientStreamingMethodStub extends MethodStub {
   invoke(
     onNext: Callback = () => {},
     onCompleted: Callback = () => {},
-    onError: Callback = () => {}
+    onError: Callback = () => {},
   ): ClientStreamingCall {
     const call = new ClientStreamingCall(
       this.rpcs,
       this.rpc,
       onNext,
       onCompleted,
-      onError
+      onError,
     );
     call.invoke();
     return call;
@@ -161,14 +161,14 @@ export class ClientStreamingMethodStub extends MethodStub {
   open(
     onNext: Callback = () => {},
     onCompleted: Callback = () => {},
-    onError: Callback = () => {}
+    onError: Callback = () => {},
   ): ClientStreamingCall {
     const call = new ClientStreamingCall(
       this.rpcs,
       this.rpc,
       onNext,
       onCompleted,
-      onError
+      onError,
     );
     call.invoke(undefined, true);
     return call;
@@ -183,14 +183,14 @@ export class BidirectionalStreamingMethodStub extends MethodStub {
   invoke(
     onNext: Callback = () => {},
     onCompleted: Callback = () => {},
-    onError: Callback = () => {}
+    onError: Callback = () => {},
   ): BidirectionalStreamingCall {
     const call = new BidirectionalStreamingCall(
       this.rpcs,
       this.rpc,
       onNext,
       onCompleted,
-      onError
+      onError,
     );
     call.invoke();
     return call;
@@ -199,14 +199,14 @@ export class BidirectionalStreamingMethodStub extends MethodStub {
   open(
     onNext: Callback = () => {},
     onCompleted: Callback = () => {},
-    onError: Callback = () => {}
+    onError: Callback = () => {},
   ): BidirectionalStreamingCall {
     const call = new BidirectionalStreamingCall(
       this.rpcs,
       this.rpc,
       onNext,
       onCompleted,
-      onError
+      onError,
     );
     call.invoke(undefined, true);
     return call;

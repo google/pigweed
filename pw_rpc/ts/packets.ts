@@ -14,9 +14,12 @@
 
 /** Functions for working with pw_rpc packets. */
 
-import {Message} from 'google-protobuf';
-import {RpcPacket, PacketType} from 'pigweedjs/protos/pw_rpc/internal/packet_pb';
-import {Status} from 'pigweedjs/pw_status';
+import { Message } from 'google-protobuf';
+import {
+  RpcPacket,
+  PacketType,
+} from 'pigweedjs/protos/pw_rpc/internal/packet_pb';
+import { Status } from 'pigweedjs/pw_status';
 
 // Channel, Service, Method
 type idSet = [number, number, number];
@@ -36,7 +39,7 @@ export function forServer(packet: RpcPacket): boolean {
 
 export function encodeClientError(
   packet: RpcPacket,
-  status: Status
+  status: Status,
 ): Uint8Array {
   const errorPacket = new RpcPacket();
   errorPacket.setType(PacketType.CLIENT_ERROR);

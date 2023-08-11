@@ -14,9 +14,8 @@
  * the License.
  */
 
-
 /** @see https://wicg.github.io/serial/#paritytype-enum */
-type ParityType = 'none'|'even'|'odd';
+type ParityType = 'none' | 'even' | 'odd';
 
 /** @see https://wicg.github.io/serial/#serialoptions-dictionary */
 interface SerialOptions {
@@ -69,26 +68,30 @@ declare class SerialConnectionEvent extends Event {
 
 /** @see https://wicg.github.io/serial/#serial-interface */
 declare class Serial extends EventTarget {
-  onconnect(): ((this: this, ev: SerialConnectionEvent) => any)|null;
-  ondisconnect(): ((this: this, ev: SerialConnectionEvent) => any)|null;
+  onconnect(): ((this: this, ev: SerialConnectionEvent) => any) | null;
+  ondisconnect(): ((this: this, ev: SerialConnectionEvent) => any) | null;
   getPorts(): Promise<SerialPort[]>;
   requestPort(options?: SerialPortRequestOptions): Promise<SerialPort>;
   addEventListener(
-      type: 'connect'|'disconnect',
-      listener: (this: this, ev: SerialConnectionEvent) => any,
-      useCapture?: boolean): void;
+    type: 'connect' | 'disconnect',
+    listener: (this: this, ev: SerialConnectionEvent) => any,
+    useCapture?: boolean,
+  ): void;
   addEventListener(
-      type: string,
-      listener: EventListenerOrEventListenerObject|null,
-      options?: boolean|AddEventListenerOptions): void;
+    type: string,
+    listener: EventListenerOrEventListenerObject | null,
+    options?: boolean | AddEventListenerOptions,
+  ): void;
   removeEventListener(
-      type: 'connect'|'disconnect',
-      callback: (this: this, ev: SerialConnectionEvent) => any,
-      useCapture?: boolean): void;
+    type: 'connect' | 'disconnect',
+    callback: (this: this, ev: SerialConnectionEvent) => any,
+    useCapture?: boolean,
+  ): void;
   removeEventListener(
-      type: string,
-      callback: EventListenerOrEventListenerObject|null,
-      options?: EventListenerOptions|boolean): void;
+    type: string,
+    callback: EventListenerOrEventListenerObject | null,
+    options?: EventListenerOptions | boolean,
+  ): void;
 }
 
 /** @see https://wicg.github.io/serial/#extensions-to-the-navigator-interface */
@@ -103,4 +106,12 @@ interface WorkerNavigator {
   readonly serial: Serial;
 }
 
-export type {Navigator, SerialPortFilter, Serial, SerialOptions, SerialConnectionEvent, SerialPortRequestOptions, SerialPort}
+export type {
+  Navigator,
+  SerialPortFilter,
+  Serial,
+  SerialOptions,
+  SerialConnectionEvent,
+  SerialPortRequestOptions,
+  SerialPort,
+};

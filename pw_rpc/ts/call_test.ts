@@ -14,11 +14,11 @@
 
 /* eslint-env browser */
 
-import {SomeMessage} from 'pigweedjs/protos/pw_rpc/ts/test2_pb';
+import { SomeMessage } from 'pigweedjs/protos/pw_rpc/ts/test2_pb';
 
-import {Call} from './call';
-import {Channel, Method, Service} from './descriptors';
-import {PendingCalls, Rpc} from './rpc_classes';
+import { Call } from './call';
+import { Channel, Method, Service } from './descriptors';
+import { PendingCalls, Rpc } from './rpc_classes';
 
 class FakeRpc {
   readonly channel: any = undefined;
@@ -33,7 +33,7 @@ describe('Call', () => {
   let call: Call;
 
   beforeEach(() => {
-    const noop = () => { };
+    const noop = () => {};
     const pendingCalls = new PendingCalls();
     const rpc = new FakeRpc();
     call = new Call(pendingCalls, rpc, noop, noop, noop);

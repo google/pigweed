@@ -14,7 +14,7 @@
 
 /* eslint-env browser */
 
-import {Decoder} from './decoder';
+import { Decoder } from './decoder';
 import * as protocol from './protocol';
 import * as util from './util';
 
@@ -42,7 +42,7 @@ describe('Decoder', () => {
     const expectedAddress = 128;
 
     const frameData = withFlags(
-      withFCS(textEncoder.encode('\x00\x03\x03123456789'))
+      withFCS(textEncoder.encode('\x00\x03\x03123456789')),
     );
 
     const frames = Array.from(decoder.process(frameData));

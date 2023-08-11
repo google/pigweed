@@ -14,9 +14,9 @@
 
 /* eslint-env browser */
 
-import {Message} from 'pigweedjs/protos/pw_protobuf_compiler/pw_protobuf_compiler_protos/nested/more_nesting/test_pb';
+import { Message } from 'pigweedjs/protos/pw_protobuf_compiler/pw_protobuf_compiler_protos/nested/more_nesting/test_pb';
 
-import {ProtoCollection} from 'pigweedjs/protos/collection';
+import { ProtoCollection } from 'pigweedjs/protos/collection';
 
 describe('ProtoCollection', () => {
   it('getMessageType returns message', () => {
@@ -39,7 +39,7 @@ describe('ProtoCollection', () => {
     const lib = new ProtoCollection();
 
     const fetched = lib.getDescriptorProto('pw.protobuf_compiler.test.Message');
-    expect(fetched.getFieldList()[0].getName()).toEqual("field");
+    expect(fetched.getFieldList()[0].getName()).toEqual('field');
   });
 
   it('getDescriptorProto for invalid identifier returns undefined', () => {
