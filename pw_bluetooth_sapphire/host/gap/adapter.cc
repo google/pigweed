@@ -15,6 +15,7 @@
 #include "low_energy_discovery_manager.h"
 #include "peer.h"
 #include "src/connectivity/bluetooth/core/bt-host//hci-spec/vendor_protocol.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/metrics.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
@@ -308,6 +309,9 @@ class AdapterImpl final : public Adapter {
   // in progress.
   bool CompleteInitialization(bool success);
 
+  // Reads LMP feature mask's bits from |page|
+  void InitQueueReadLMPFeatureMaskPage(uint8_t page);
+
   // Assigns properties to |adapter_node_| using values discovered during other initialization
   // steps.
   void UpdateInspectProperties();
@@ -419,7 +423,7 @@ class AdapterImpl final : public Adapter {
   AdapterState state_;
 
   // The maximum LMP feature page that we will read.
-  size_t max_lmp_feature_page_index_;
+  std::optional<size_t> max_lmp_feature_page_index_;
 
   // Provides access to discovered, connected, and/or bonded remote Bluetooth
   // devices.
@@ -469,7 +473,6 @@ AdapterImpl::AdapterImpl(hci::Transport::WeakPtr hci, gatt::GATT::WeakPtr gatt,
       dispatcher_(async_get_default_dispatcher()),
       hci_(std::move(hci)),
       init_state_(State::kNotInitialized),
-      max_lmp_feature_page_index_(0),
       l2cap_(std::move(l2cap)),
       gatt_(std::move(gatt)),
       weak_self_(this),
@@ -701,17 +704,7 @@ void AdapterImpl::InitializeStep1() {
       });
 
   // HCI_Read_Local_Supported_Features
-  init_seq_runner_->QueueCommand(
-      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ReadLocalSupportedFeaturesCommandView>(
-          hci_spec::kReadLocalSupportedFeatures),
-      [this](const hci::EventPacket& cmd_complete) {
-        if (hci_is_error(cmd_complete, WARN, "gap", "read local supported features failed")) {
-          return;
-        }
-        auto params =
-            cmd_complete.return_params<hci_spec::ReadLocalSupportedFeaturesReturnParams>();
-        state_.features.SetPage(0, le64toh(params->lmp_features));
-      });
+  InitQueueReadLMPFeatureMaskPage(0);
 
   // HCI_Read_BD_ADDR
   init_seq_runner_->QueueCommand(
@@ -856,26 +849,42 @@ void AdapterImpl::InitializeStep2() {
 
   // If there are extended features then try to read the first page of the extended features.
   if (state_.features.HasBit(/*page=*/0u, hci_spec::LMPFeature::kExtendedFeatures)) {
-    // Page index 1 must be available.
-    max_lmp_feature_page_index_ = 1;
+    // HCI_Write_LE_Host_Support
+    if (!state_.IsCommandSupported(/*octet=*/24, hci_spec::SupportedCommand::kWriteLEHostSupport)) {
+      bt_log(INFO, "gap", "LE Host is not supported");
+    } else {
+      bt_log(INFO, "gap", "LE Host is supported. Enabling LE Host mode");
+      auto cmd_packet =
+          hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WriteLEHostSupportCommandWriter>(
+              hci_spec::kWriteLEHostSupport);
+      auto params = cmd_packet.view_t();
+      params.le_supported_host().Write(pw::bluetooth::emboss::GenericEnableParam::ENABLE);
+      init_seq_runner_->QueueCommand(std::move(cmd_packet), [](const hci::EventPacket& event) {
+        hci_is_error(event, WARN, "gap", "Write LE Host support failed");
+      });
+    }
 
-    // HCI_Read_Local_Extended_Features
-    auto cmd_packet = hci::EmbossCommandPacket::New<
-        pw::bluetooth::emboss::ReadLocalExtendedFeaturesCommandWriter>(
-        hci_spec::kReadLocalExtendedFeatures);
-    // Try to read page 1.
-    cmd_packet.view_t().page_number().Write(1);
+    // HCI_Write_Secure_Connections_Host_Support
+    if (!state_.IsCommandSupported(
+            /*octet=*/32, hci_spec::SupportedCommand::kWriteSecureConnectionsHostSupport)) {
+      bt_log(INFO, "gap", "Secure Connections (Host Support) is not supported");
+    } else {
+      bt_log(INFO, "gap",
+             "Secure Connections (Host Support) is supported. "
+             "Enabling Secure Connections (Host Support) mode");
+      auto cmd_packet = hci::EmbossCommandPacket::New<
+          pw::bluetooth::emboss::WriteSecureConnectionsHostSupportCommandWriter>(
+          hci_spec::kWriteSecureConnectionsHostSupport);
+      auto params = cmd_packet.view_t();
+      params.secure_connections_host_support().Write(
+          pw::bluetooth::emboss::GenericEnableParam::ENABLE);
+      init_seq_runner_->QueueCommand(std::move(cmd_packet), [](const hci::EventPacket& event) {
+        hci_is_error(event, WARN, "gap", "Write Secure Connections (Host Support) failed");
+      });
+    }
 
-    init_seq_runner_->QueueCommand(
-        std::move(cmd_packet), [this](const hci::EventPacket& cmd_complete) {
-          if (hci_is_error(cmd_complete, WARN, "gap", "read local extended features failed")) {
-            return;
-          }
-          auto params =
-              cmd_complete.return_params<hci_spec::ReadLocalExtendedFeaturesReturnParams>();
-          state_.features.SetPage(1, le64toh(params->extended_lmp_features));
-          max_lmp_feature_page_index_ = params->maximum_page_number;
-        });
+    // Read updated page 1 after host support bits enabled.
+    InitQueueReadLMPFeatureMaskPage(1);
   }
 
   init_seq_runner_->RunCommands([this](hci::Result<> status) mutable {
@@ -981,66 +990,9 @@ void AdapterImpl::InitializeStep3() {
     });
   }
 
-  // HCI_Write_LE_Host_Support if the appropriate feature bit is not set AND if
-  // the controller supports this command.
-  if (!state_.IsCommandSupported(/*octet=*/24, hci_spec::SupportedCommand::kWriteLEHostSupport)) {
-    bt_log(INFO, "gap", "LE Host is not supported");
-  } else if (state_.features.HasBit(/*page=*/1, hci_spec::LMPFeature::kLESupportedHost)) {
-    bt_log(INFO, "gap", "LE Host is already enabled");
-  } else {
-    bt_log(INFO, "gap", "LE Host is supported. Enabling LE Host mode");
-    auto cmd_packet =
-        hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WriteLEHostSupportCommandWriter>(
-            hci_spec::kWriteLEHostSupport);
-    auto params = cmd_packet.view_t();
-    params.le_supported_host().Write(pw::bluetooth::emboss::GenericEnableParam::ENABLE);
-    init_seq_runner_->QueueCommand(std::move(cmd_packet), [](const hci::EventPacket& event) {
-      hci_is_error(event, WARN, "gap", "Write LE Host support failed");
-    });
-  }
-
-  // HCI_Write_Secure_Connections_Host_Support if the appropriate feature bit is not set AND if
-  // the controller supports secure connections.
-  if (!state_.IsCommandSupported(/*octet=*/32,
-                                 hci_spec::SupportedCommand::kWriteSecureConnectionsHostSupport)) {
-    bt_log(INFO, "gap", "Secure Connections (Host Support) is not supported");
-  } else if (state_.features.HasBit(/*page=*/1,
-                                    hci_spec::LMPFeature::kSecureConnectionsHostSupport)) {
-    bt_log(INFO, "gap", "Secure Connections (Host Support) is already enabled");
-  } else {
-    bt_log(
-        INFO, "gap",
-        "Secure Connections (Host Support) is supported. Enabling Secure Connections (Host Support) mode");
-    auto cmd_packet = hci::EmbossCommandPacket::New<
-        pw::bluetooth::emboss::WriteSecureConnectionsHostSupportCommandWriter>(
-        hci_spec::kWriteSecureConnectionsHostSupport);
-    auto params = cmd_packet.view_t();
-    params.secure_connections_host_support().Write(
-        pw::bluetooth::emboss::GenericEnableParam::ENABLE);
-    init_seq_runner_->QueueCommand(std::move(cmd_packet), [](const hci::EventPacket& event) {
-      hci_is_error(event, WARN, "gap", "Write Secure Connections (Host Support) failed");
-    });
-  }
-
-  // If we know that Page 2 of the extended features bitfield is available, then request it.
-  if (max_lmp_feature_page_index_ > 1) {
-    auto cmd_packet = hci::EmbossCommandPacket::New<
-        pw::bluetooth::emboss::ReadLocalExtendedFeaturesCommandWriter>(
-        hci_spec::kReadLocalExtendedFeatures);
-    // Try to read page 2.
-    cmd_packet.view_t().page_number().Write(2);
-
-    // HCI_Read_Local_Extended_Features
-    init_seq_runner_->QueueCommand(
-        std::move(cmd_packet), [this](const hci::EventPacket& cmd_complete) {
-          if (hci_is_error(cmd_complete, WARN, "gap", "read local extended features failed")) {
-            return;
-          }
-          auto params =
-              cmd_complete.return_params<hci_spec::ReadLocalExtendedFeaturesReturnParams>();
-          state_.features.SetPage(2, le64toh(params->extended_lmp_features));
-          max_lmp_feature_page_index_ = params->maximum_page_number;
-        });
+  // If page 2 of the extended features bitfield is available, read it
+  if (max_lmp_feature_page_index_.has_value() && max_lmp_feature_page_index_.value() > 1) {
+    InitQueueReadLMPFeatureMaskPage(2);
   }
 
   init_seq_runner_->RunCommands([this](hci::Result<> status) mutable {
@@ -1156,6 +1108,57 @@ bool AdapterImpl::CompleteInitialization(bool success) {
 
   init_cb_(success);
   return true;
+}
+
+void AdapterImpl::InitQueueReadLMPFeatureMaskPage(uint8_t page) {
+  BT_DEBUG_ASSERT(init_seq_runner_);
+  BT_DEBUG_ASSERT(init_seq_runner_->IsReady());
+
+  if (max_lmp_feature_page_index_.has_value() && page > max_lmp_feature_page_index_.value()) {
+    bt_log(WARN, "gap", "Maximum value of LMP features mask page is %lu. Received page %hu",
+           max_lmp_feature_page_index_.value(), page);
+    return;
+  }
+
+  if (page == 0) {
+    init_seq_runner_->QueueCommand(
+        hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ReadLocalSupportedFeaturesCommandView>(
+            hci_spec::kReadLocalSupportedFeatures),
+        [this, page](const hci::EventPacket& cmd_complete) {
+          if (hci_is_error(cmd_complete, WARN, "gap", "read local supported features failed")) {
+            return;
+          }
+          auto params =
+              cmd_complete.return_params<hci_spec::ReadLocalSupportedFeaturesReturnParams>();
+          state_.features.SetPage(page, le64toh(params->lmp_features));
+        });
+    return;
+  }
+
+  if (!state_.features.HasBit(/*page=*/0u, hci_spec::LMPFeature::kExtendedFeatures)) {
+    bt_log(WARN, "gap", "LMP features mask does not have extended features");
+    max_lmp_feature_page_index_ = 0;
+    return;
+  }
+
+  if (!max_lmp_feature_page_index_.has_value() || page <= max_lmp_feature_page_index_.value()) {
+    // HCI_Read_Local_Extended_Features
+    auto cmd_packet = hci::EmbossCommandPacket::New<
+        pw::bluetooth::emboss::ReadLocalExtendedFeaturesCommandWriter>(
+        hci_spec::kReadLocalExtendedFeatures);
+    cmd_packet.view_t().page_number().Write(page);  // Try to read |page|
+
+    init_seq_runner_->QueueCommand(
+        std::move(cmd_packet), [this, page](const hci::EventPacket& cmd_complete) {
+          if (hci_is_error(cmd_complete, WARN, "gap", "read local extended features failed")) {
+            return;
+          }
+          auto params =
+              cmd_complete.return_params<hci_spec::ReadLocalExtendedFeaturesReturnParams>();
+          state_.features.SetPage(page, le64toh(params->extended_lmp_features));
+          max_lmp_feature_page_index_ = params->maximum_page_number;
+        });
+  }
 }
 
 void AdapterImpl::UpdateInspectProperties() {
