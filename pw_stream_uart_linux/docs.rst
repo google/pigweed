@@ -33,5 +33,5 @@ A simple example illustrating writing to a UART:
 Caveats
 =======
 No interfaces are supplied for configuring data bits, stop bits, or parity.
-Supported baud rates are limited but could be extended by modifying the ``Open``
-method.
+These attributes are left as they are already configured on the TTY; only the
+speed is modified.
