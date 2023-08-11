@@ -29,7 +29,6 @@ from typing import (
     Dict,
     Iterable,
     List,
-    NoReturn,
     Optional,
     Sequence,
     TypeVar,
@@ -101,28 +100,61 @@ class DataReaderAndExecutor:
         Args:
             read: Reads incoming bytes from the given transport, blocking until
               data is available or an exception is raised. Otherwise the reader
-              will busy-loop.
+              will exit.
             on_read_error: Called when there is an error reading incoming bytes.
             data_processor: Processes read bytes and returns a frame-like object
               that the frame_handler can process.
             frame_handler: Handles a received frame.
             handler_threads: The number of threads in the executor pool.
         """
+
         self._read = read
         self._on_read_error = on_read_error
         self._data_processor = data_processor
         self._frame_handler = frame_handler
         self._handler_threads = handler_threads
 
-    def run(self) -> NoReturn:
+        self._reader_thread = threading.Thread(
+            target=self._run,
+            # TODO(b/294858483): When we are confident that we can cancel the
+            # blocking read(), this no longer needs to be a daemon thread.
+            daemon=True,
+        )
+        self._reader_stop = threading.Event()
+
+    def start(self) -> None:
         """Starts the reading process."""
+        self._reader_stop.clear()
+        self._reader_thread.start()
+
+    def stop(self) -> None:
+        """Requests that the reading process stop.
+
+        The thread will not stop immediately, but only after the ongoing read()
+        operation completes or raises an exception.
+        """
+        self._reader_stop.set()
+        # TODO(b/294858483): When we are confident that we can cancel the
+        # blocking read(), wait for the thread to exit.
+        # self._reader_thread.join()
+
+    def _run(self) -> None:
+        """Reads raw data in a background thread."""
         with ThreadPoolExecutor(max_workers=self._handler_threads) as executor:
-            while True:
+            while not self._reader_stop.is_set():
                 try:
                     data = self._read()
                 except Exception as exc:  # pylint: disable=broad-except
-                    self._on_read_error(exc)
-                    continue
+                    # Don't report the read error if the thread is stopping.
+                    # The stream or device backing _read was likely closed,
+                    # so errors are expected.
+                    if not self._reader_stop.is_set():
+                        self._on_read_error(exc)
+                    _LOG.debug(
+                        'DataReaderAndExecutor thread exiting due to exception',
+                        exc_info=exc,
+                    )
+                    return
 
                 if not data:
                     continue
@@ -186,10 +218,17 @@ class RpcClient:
         )
 
         # Start background thread that reads and processes RPC packets.
-        threading.Thread(
-            target=reader.run,
-            daemon=True,
-        ).start()
+        self._reader = reader
+        self._reader.start()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc_info):
+        self.close()
+
+    def close(self) -> None:
+        self._reader.stop()
 
     def rpcs(self, channel_id: Optional[int] = None) -> Any:
         """Returns object for accessing services on the specified channel.
@@ -282,7 +321,7 @@ class HdlcRpcClient(RpcClient):
         decoder = FrameDecoder()
 
         def on_read_error(exc: Exception) -> None:
-            _LOG.error(str(exc))
+            _LOG.error('data reader encountered an error', exc_info=exc)
 
         reader = DataReaderAndExecutor(
             read, on_read_error, decoder.process_valid_frames, handle_frame
@@ -317,7 +356,7 @@ class NoEncodingSingleChannelRpcClient(RpcClient):
             yield data
 
         def on_read_error(exc: Exception) -> None:
-            _LOG.error(str(exc))
+            _LOG.error('data reader encountered an error', exc_info=exc)
 
         reader = DataReaderAndExecutor(
             read, on_read_error, process_data, self.handle_rpc_packet

@@ -57,3 +57,14 @@ py_test(
         "//pw_build/py:pw_build",
     ],
 )
+
+py_test(
+    name = "rpc_test",
+    size = "small",
+    srcs = [
+        "rpc_test.py",
+    ],
+    deps = [
+        ":pw_hdlc",
+    ],
+)
