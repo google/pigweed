@@ -45,7 +45,7 @@ export const styles = css`
     z-index: 2;
   }
 
-  .button-toggle-enabled {
+  md-standard-icon-button[selected] {
     background-color: var(--sys-log-viewer-color-controls-button-enabled);
     border-radius: 100%;
   }

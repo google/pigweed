@@ -153,9 +153,6 @@ export class LogViewControls extends LitElement {
    * Dispatches a custom event for toggling wrapping.
    */
   private handleWrapToggle(event: Event) {
-    const dropdownButton = event.target as HTMLElement;
-    dropdownButton.classList.toggle('button-toggle-enabled');
-
     const wrapToggle = new CustomEvent('wrap-toggle', {
       bubbles: true,
       composed: true,
@@ -208,89 +205,83 @@ export class LogViewControls extends LitElement {
    * @param {Event} event - The click event object.
    */
   private toggleColumnVisibilityMenu(event: Event) {
-    const dropdownButton = event.target as HTMLElement;
     this._fieldMenu.hidden = !this._fieldMenu.hidden;
-    dropdownButton.classList.toggle('button-toggle-enabled');
   }
 
   render() {
     return html`
-            <p class="host-name"> ${this._viewTitle}</p>
+      <p class="host-name"> ${this._viewTitle}</p>
 
-            <div class="input-container">
-                <input class="search-input" placeholder="Search" type="text" @input=${
-                  this.handleInput
-                }></input>
-            </div>
+      <div class="input-container">
+        <input class="search-input" placeholder="Search" type="text" @input=${
+          this.handleInput
+        }></input>
+      </div>
 
-            <div class="actions-container">
-                <span class="action-button" hidden>
-                    <md-standard-icon-button>
-                        <md-icon>pause_circle</md-icon>
-                    </md-standard-icon-button>
-                </span>
+      <div class="actions-container">
+        <span class="action-button" hidden>
+          <md-standard-icon-button>
+            <md-icon>pause_circle</md-icon>
+          </md-standard-icon-button>
+        </span>
 
-                <span class="action-button" hidden>
-                    <md-standard-icon-button>
-                        <md-icon>wrap_text</md-icon>
-                    </md-standard-icon-button>
-                </span>
+        <span class="action-button" hidden>
+          <md-standard-icon-button>
+            <md-icon>wrap_text</md-icon>
+          </md-standard-icon-button>
+        </span>
 
-                <span class="action-button" title="Clear logs">
-                    <md-standard-icon-button @click=${
-                      this.handleClearLogsClick
-                    }>
-                        <md-icon>delete_sweep</md-icon>
-                    </md-standard-icon-button>
-                </span>
+        <span class="action-button" title="Clear logs">
+          <md-standard-icon-button @click=${this.handleClearLogsClick}>
+            <md-icon>delete_sweep</md-icon>
+          </md-standard-icon-button>
+        </span>
 
-                <span class="action-button" title="Toggle Line Wrapping">
-                    <md-standard-icon-button @click=${this.handleWrapToggle}>
-                        <md-icon>wrap_text</md-icon>
-                    </md-standard-icon-button>
-                </span>
+        <span class="action-button" title="Toggle Line Wrapping">
+          <md-standard-icon-button @click=${this.handleWrapToggle} toggle>
+            <md-icon>wrap_text</md-icon>
+          </md-standard-icon-button>
+        </span>
 
-                <span class='field-toggle' title="Toggle fields">
-                    <md-standard-icon-button @click=${
-                      this.toggleColumnVisibilityMenu
-                    }>
-                        <md-icon>view_column</md-icon>
-                    </md-standard-icon-button>
-                    <menu class='field-menu' hidden>
-                        ${Array.from(this.fieldKeys).map(
-                          (field) => html`
-                            <li class="field-menu-item">
-                              <input
-                                class="item-checkboxeses"
-                                @click=${this.handleColumnToggle}
-                                checked
-                                type="checkbox"
-                                value=${field}
-                                id=${field}
-                              />
-                              <label for=${field}>${field}</label>
-                            </li>
-                          `,
-                        )}
-                    </menu>
-                </span>
+        <span class='field-toggle' title="Toggle fields">
+          <md-standard-icon-button @click=${
+            this.toggleColumnVisibilityMenu
+          } toggle>
+            <md-icon>view_column</md-icon>
+          </md-standard-icon-button>
+          <menu class='field-menu' hidden>
+            ${Array.from(this.fieldKeys).map(
+              (field) => html`
+                <li class="field-menu-item">
+                  <input
+                    class="item-checkboxeses"
+                    @click=${this.handleColumnToggle}
+                    checked
+                    type="checkbox"
+                    value=${field}
+                    id=${field}
+                  />
+                  <label for=${field}>${field}</label>
+                </li>
+              `,
+            )}
+          </menu>
+        </span>
 
-                <span class="action-button" title="Close view" ?hidden=${
-                  this.hideCloseButton
-                }>
-                    <md-standard-icon-button  @click=${
-                      this.handleCloseViewClick
-                    }>
-                        <md-icon>close</md-icon>
-                    </md-standard-icon-button>
-                </span>
+        <span class="action-button" title="Close view" ?hidden=${
+          this.hideCloseButton
+        }>
+          <md-standard-icon-button @click=${this.handleCloseViewClick}>
+            <md-icon>close</md-icon>
+          </md-standard-icon-button>
+        </span>
 
-                <span class="action-button" hidden>
-                    <md-standard-icon-button>
-                        <md-icon>more_horiz</md-icon>
-                    </md-standard-icon-button>
-                </span>
-            </div>
-        `;
+        <span class="action-button" hidden>
+          <md-standard-icon-button>
+            <md-icon>more_horiz</md-icon>
+          </md-standard-icon-button>
+        </span>
+      </div>
+    `;
   }
 }
