@@ -26,6 +26,7 @@ import logging
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -155,6 +156,30 @@ def clang_format_check(ctx: _Context) -> Dict[Path, str]:
 def clang_format_fix(ctx: _Context) -> Dict[Path, str]:
     """Fixes formatting for the provided files in place."""
     _clang_format('-i', *ctx.paths)
+    return {}
+
+
+def _typescript_format(*args: Union[Path, str], **kwargs) -> bytes:
+    return log_run(
+        ['npx', 'prettier@3.0.1', *args],
+        stdout=subprocess.PIPE,
+        check=True,
+        **kwargs,
+    ).stdout
+
+
+def typescript_format_check(ctx: _Context) -> Dict[Path, str]:
+    """Checks formatting; returns {path: diff} for files with bad formatting."""
+    return _check_files(
+        ctx.paths,
+        lambda path, _: _typescript_format(path),
+        ctx.dry_run,
+    )
+
+
+def typescript_format_fix(ctx: _Context) -> Dict[Path, str]:
+    """Fixes formatting for the provided files in place."""
+    _typescript_format('--write', *ctx.paths)
     return {}
 
 
@@ -519,8 +544,15 @@ JAVA_FORMAT: CodeFormat = CodeFormat(
 JAVASCRIPT_FORMAT: CodeFormat = CodeFormat(
     'JavaScript',
     FileFilter(endswith=['.js']),
-    clang_format_check,
-    clang_format_fix,
+    typescript_format_check,
+    typescript_format_fix,
+)
+
+TYPESCRIPT_FORMAT: CodeFormat = CodeFormat(
+    'TypeScript',
+    FileFilter(endswith=['.ts']),
+    typescript_format_check,
+    typescript_format_fix,
 )
 
 GO_FORMAT: CodeFormat = CodeFormat(
@@ -581,23 +613,31 @@ OWNERS_CODE_FORMAT = CodeFormat(
     fix=fix_owners_format,
 )
 
-CODE_FORMATS: Tuple[CodeFormat, ...] = (
-    # keep-sorted: start
-    BAZEL_FORMAT,
-    CMAKE_FORMAT,
-    COPYBARA_FORMAT,
-    C_FORMAT,
-    GN_FORMAT,
-    GO_FORMAT,
-    JAVASCRIPT_FORMAT,
-    JAVA_FORMAT,
-    MARKDOWN_FORMAT,
-    OWNERS_CODE_FORMAT,
-    PROTO_FORMAT,
-    PYTHON_FORMAT,
-    RST_FORMAT,
-    # keep-sorted: end
+CODE_FORMATS: Tuple[CodeFormat, ...] = tuple(
+    filter(
+        None,
+        (
+            # keep-sorted: start
+            BAZEL_FORMAT,
+            CMAKE_FORMAT,
+            COPYBARA_FORMAT,
+            C_FORMAT,
+            GN_FORMAT,
+            GO_FORMAT,
+            JAVASCRIPT_FORMAT if shutil.which('npx') else None,
+            JAVA_FORMAT,
+            MARKDOWN_FORMAT,
+            OWNERS_CODE_FORMAT,
+            PROTO_FORMAT,
+            PYTHON_FORMAT,
+            RST_FORMAT,
+            # keep-sorted: end
+            # TODO(tonymd): Enable this in a followup CL.
+            # TYPESCRIPT_FORMAT if shutil.which('npx') else None,
+        ),
+    )
 )
+
 
 # TODO(b/264578594) Remove these lines when these globals aren't referenced.
 CODE_FORMATS_WITH_BLACK: Tuple[CodeFormat, ...] = CODE_FORMATS

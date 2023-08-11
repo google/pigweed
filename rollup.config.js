@@ -17,64 +17,77 @@ import resolve from '@rollup/plugin-node-resolve';
 import pluginTypescript from '@rollup/plugin-typescript';
 import path from 'path';
 import nodePolyfills from 'rollup-plugin-node-polyfills';
-import postcss from 'rollup-plugin-postcss'
+import postcss from 'rollup-plugin-postcss';
 import sourceMaps from 'rollup-plugin-sourcemaps';
 
 export default [
   // Bundle proto collection script
   {
     input: path.join('pw_protobuf_compiler', 'ts', 'build.ts'),
-    output: [{
-      file: path.join('dist', 'bin', 'pw_protobuf_compiler.js'),
-      format: 'cjs',
-      banner: '#!/usr/bin/env node\n\nconst window = null;'
-    }],
+    output: [
+      {
+        file: path.join('dist', 'bin', 'pw_protobuf_compiler.js'),
+        format: 'cjs',
+        banner: '#!/usr/bin/env node\n\nconst window = null;',
+      },
+    ],
     plugins: [
-      pluginTypescript(
-          {tsconfig: './tsconfig.json', exclude: ['**/*_test.ts']}),
+      pluginTypescript({
+        tsconfig: './tsconfig.json',
+        exclude: ['**/*_test.ts'],
+      }),
       resolve(),
       commonjs(),
 
       // Resolve source maps to the original source
-      sourceMaps()
-    ]
+      sourceMaps(),
+    ],
   },
   // bundle proto collection template used by the above script
   {
     input: path.join(
-        'pw_protobuf_compiler', 'ts', 'ts_proto_collection.template.ts'),
-    output: [{
-      file: path.join('dist', 'bin', 'ts_proto_collection.template.js'),
-      format: 'esm',
-      banner: '/* eslint-disable */'
-    }],
+      'pw_protobuf_compiler',
+      'ts',
+      'ts_proto_collection.template.ts',
+    ),
+    output: [
+      {
+        file: path.join('dist', 'bin', 'ts_proto_collection.template.js'),
+        format: 'esm',
+        banner: '/* eslint-disable */',
+      },
+    ],
     plugins: [
-      pluginTypescript(
-          {tsconfig: './tsconfig.json', exclude: ['**/*_test.ts']}),
+      pluginTypescript({
+        tsconfig: './tsconfig.json',
+        exclude: ['**/*_test.ts'],
+      }),
       resolve(),
       commonjs(),
 
       // Resolve source maps to the original source
-      sourceMaps()
-    ]
+      sourceMaps(),
+    ],
   },
   // Bundle proto collection into one UMD file for consumption from browser
   {
     input: path.join('dist', 'protos', 'collection.ts'),
-    output: [{
-      file: path.join('dist', 'protos', 'collection.umd.js'),
-      format: 'umd',
-      sourcemap: true,
-      name: 'PigweedProtoCollection',
-    }],
+    output: [
+      {
+        file: path.join('dist', 'protos', 'collection.umd.js'),
+        format: 'umd',
+        sourcemap: true,
+        name: 'PigweedProtoCollection',
+      },
+    ],
     plugins: [
-      pluginTypescript({tsconfig: './tsconfig.json'}),
+      pluginTypescript({ tsconfig: './tsconfig.json' }),
       commonjs(),
       resolve(),
 
       // Resolve source maps to the original source
-      sourceMaps()
-    ]
+      sourceMaps(),
+    ],
   },
   // Bundle Pigweed log component and modules
   {
@@ -85,26 +98,28 @@ export default [
         format: 'umd',
         sourcemap: true,
         name: 'PigweedLogging',
-        inlineDynamicImports: true
+        inlineDynamicImports: true,
       },
       {
         file: path.join('dist', 'logging.mjs'),
         format: 'esm',
         sourcemap: true,
-        inlineDynamicImports: true
-      }
+        inlineDynamicImports: true,
+      },
     ],
     plugins: [
-      postcss({plugins: []}),
-      pluginTypescript(
-          {tsconfig: './tsconfig.json', exclude: ['**/*_test.ts']}),
+      postcss({ plugins: [] }),
+      pluginTypescript({
+        tsconfig: './tsconfig.json',
+        exclude: ['**/*_test.ts'],
+      }),
       nodePolyfills(),
       resolve(),
       commonjs(),
 
       // Resolve source maps to the original source
-      sourceMaps()
-    ]
+      sourceMaps(),
+    ],
   },
   // Bundle Pigweed modules
   {
@@ -120,17 +135,19 @@ export default [
         file: path.join('dist', 'index.mjs'),
         format: 'esm',
         sourcemap: true,
-      }
+      },
     ],
     plugins: [
-      pluginTypescript(
-          {tsconfig: './tsconfig.json', exclude: ['**/*_test.ts']}),
+      pluginTypescript({
+        tsconfig: './tsconfig.json',
+        exclude: ['**/*_test.ts'],
+      }),
       nodePolyfills(),
       resolve(),
       commonjs(),
 
       // Resolve source maps to the original source
-      sourceMaps()
-    ]
-  }
+      sourceMaps(),
+    ],
+  },
 ];

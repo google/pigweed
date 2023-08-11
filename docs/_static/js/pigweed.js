@@ -19,8 +19,10 @@ function scrollSiteNavToCurrentPage() {
   const currentPage = document.querySelector('.current-page');
   // Determine which site nav node to scroll to.
   let targetNode;
-  if (currentPage.classList.contains('toctree-l1') ||
-      currentPage.classList.contains('toctree-l2')) {
+  if (
+    currentPage.classList.contains('toctree-l1') ||
+    currentPage.classList.contains('toctree-l2')
+  ) {
     // Scroll directly to top-level (L1) and second-level (L2) nodes.
     targetNode = currentPage;
   } else {
@@ -28,8 +30,9 @@ function scrollSiteNavToCurrentPage() {
     // user sees all the docs in the set.
     targetNode = document.querySelector('li.toctree-l2.current');
   }
-  scrollDistance = targetNode.getBoundingClientRect().top -
-      siteNav.getBoundingClientRect().top;
+  scrollDistance =
+    targetNode.getBoundingClientRect().top -
+    siteNav.getBoundingClientRect().top;
   siteNav.scrollTop = scrollDistance;
 }
 

@@ -76,6 +76,7 @@
     "long": "^5.2.1",
     "object-path": "^0.11.8",
     "postcss": "^8.4.24",
+    "prettier": "^3.0.1",
     "rollup-plugin-postcss": "^4.0.2",
     "ts-protoc-gen": "^0.15.0"
   },
