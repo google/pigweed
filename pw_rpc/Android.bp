@@ -168,8 +168,6 @@ cc_defaults {
     srcs: [
         ":pw_rpc_src_files",
     ],
-    host_supported: true,
-    vendor_available: true,
 }
 
 genrule {

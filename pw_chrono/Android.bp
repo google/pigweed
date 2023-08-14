@@ -35,6 +35,4 @@ cc_defaults {
     export_header_lib_headers: [
       "pw_chrono_include_dirs",
     ],
-    vendor_available: true,
-    host_supported: true,
 }

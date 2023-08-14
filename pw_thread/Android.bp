@@ -51,6 +51,4 @@ cc_defaults {
     srcs: [
         ":pw_thread_src_files"
     ],
-    vendor_available: true,
-    host_supported: true,
 }

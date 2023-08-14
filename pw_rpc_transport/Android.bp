@@ -113,8 +113,6 @@ filegroup {
 //   }
 cc_defaults {
     name: "pw_rpc_transport_egress_ingress_defaults",
-    vendor_available: true,
-    host_supported: true,
     defaults: [
         "pw_chrono_defaults",
         "pw_chrono_stl_defaults",

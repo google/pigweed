@@ -36,6 +36,4 @@ cc_defaults {
     export_header_lib_headers: [
       "pw_log_basic_include_dirs",
     ],
-    vendor_available: true,
-    host_supported: true,
 }
