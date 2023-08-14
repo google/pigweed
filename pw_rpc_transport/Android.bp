@@ -65,6 +65,32 @@ cc_library_static {
     ],
 }
 
+cc_library_static {
+    name: "pw_rpc_transport_simple_framing",
+    vendor_available: true,
+    host_supported: true,
+    header_libs: [
+        "pw_assert_headers",
+        "pw_assert_log_headers",
+        "pw_log_headers",
+        "pw_log_null_headers",
+        "pw_preprocessor_headers",
+        "pw_result_headers",
+        "pw_rpc_transport_rpc_transport_headers",
+        "pw_span_headers",
+    ],
+    export_header_lib_headers: [
+        "pw_assert_headers",
+        "pw_log_headers",
+        "pw_result_headers",
+        "pw_rpc_transport_rpc_transport_headers",
+        "pw_span_headers",
+    ],
+    srcs: [
+        "simple_framing.cc",
+    ],
+}
+
 filegroup {
     name: "pw_rpc_transport_egress_ingress_src_files",
     srcs: [
