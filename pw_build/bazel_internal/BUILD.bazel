@@ -24,7 +24,7 @@ pw_linker_script(
         "PW_BOOT_RAM_BEGIN=0x20000000",
         "PW_BOOT_RAM_SIZE=192K",
         "PW_BOOT_VECTOR_TABLE_BEGIN=0x08000000",
-        "PW_BOOT_VECTOR_TABLE_SIZE=512",
+        "PW_BOOT_VECTOR_TABLE_SIZE=1M",
     ],
     linker_script = "linker_script.ld",
 )
