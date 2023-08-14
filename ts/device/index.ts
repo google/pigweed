@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import objectPath from 'object-path';
+import { setPathOnObject } from './object_set';
 import { Decoder, Encoder } from 'pigweedjs/pw_hdlc';
 import {
   Client,
@@ -85,7 +85,7 @@ export class Device {
     let channel = this.client.channel();
     let servicesKeys = Array.from(channel.services.keys());
     servicesKeys.forEach((serviceKey) => {
-      objectPath.set(
+      setPathOnObject(
         rpcMap,
         serviceKey,
         this.mapServiceMethods(channel.services.get(serviceKey)),
