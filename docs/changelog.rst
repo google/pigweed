@@ -1,4 +1,4 @@
-:tocdepth: 3
+:tocdepth: 2
 
 .. _docs-changelog:
 
@@ -9,11 +9,354 @@ Changelog
 .. _docs-changelog-latest:
 
 ----------------------------
-Jul 13, 2023 to Jul 28, 2023
+Jul 27, 2023 to Aug 11, 2023
 ----------------------------
 
 .. changelog_highlights_start
 
+Highlights (Jul 27, 2023 to Aug 11, 2023):
+
+* We're prototyping a Pigweed extension for VS Code. Learn more at
+  :ref:`docs-editors`.
+* We added ``pw_toolchain_bazel``, a new LLVM toolchain for building with
+  Bazel on macOS.
+* We are working on many docs improvements in parallel: auto-generating ``rustdocs``
+  for modules that support Rust
+  (`example <https://pigweed.dev/rustdoc/pw_varint/>`_), refactoring the
+  :ref:`module-pw_tokenizer` docs, migrating API references to Doxygen,
+  fixing `longstanding docs site UI issues <https://issues.pigweed.dev/issues/292273650>`_,
+  and more.
+
+Please join us at the next Pigweed Live on Monday, Aug 14 1PM PST to
+discuss these changes and anything else on your mind. Join our
+`Discord <https://discord.gg/M9NSeTA>`_ and head over to the ``#pigweed-live``
+channel to get a link to the video meeting.
+
+.. changelog_highlights_end
+
+Active SEEDs
+============
+Help shape the future of Pigweed! Please leave feedback on the following active RFCs (SEEDs):
+
+* `SEED-0103: pw_protobuf Object Model <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/133971>`__
+* `SEED-0104: display support <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/150793>`__
+* `SEED-0105: Add nested tokens and tokenized args to pw_tokenizer and pw_log <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/154190>`__
+* `SEED-0106: Project Template <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/155430>`__
+* `SEED-0107: Pigweed communications <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/157090>`__
+* `SEED-0108: Emulators Frontend <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/158190>`__
+
+Modules
+=======
+
+pw_alignment
+------------
+* `Fix typos <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163250>`__
+
+pw_analog
+---------
+Long-term, all of our API references will be generated from header comments via
+Doxygen. Short-term, we are starting to show header files directly within the
+docs as a stopgap solution for helping Pigweed users get a sense of each
+module's API. See :ref:`module-pw_analog` for an example.
+
+* `Include header files as stopgap API reference <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/161491>`__
+  (issue `#293895312 <https://issues.pigweed.dev/issues/293895312>`__)
+
+pw_base64
+---------
+We finished migrating the ``pw_random`` API reference to Doxygen.
+
+* `Finish Doxygenifying the API reference <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162911>`__
+* `Doxygenify the Encode() functions <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/156532>`__
+
+pw_boot_cortex_m
+----------------
+* `Allow explict target name <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/159790>`__
+
+pw_build
+--------
+We added a ``log_build_steps`` option to ``ProjectBuilder`` that enables you
+to log all build step lines to your screen and logfiles.
+
+* `Handle ProcessLookupError exceptions <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163710>`__
+* `ProjectBuilder log build steps option <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162931>`__
+* `Fix progress bar clear <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/160791>`__
+
+pw_cli
+------
+We polished tab completion support.
+
+* `Zsh shell completion autoload <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/160796>`__
+* `Make pw_cli tab completion reusable <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/160379>`__
+
+pw_console
+----------
+We made copy-to-clipboard functionality more robust when running ``pw_console``
+over SSH.
+
+* `Set clipboard fallback methods <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/150238>`__
+
+pw_containers
+-------------
+We updated :cpp:class:`filteredview` constructors and migrated the
+``FilteredView`` API reference to Doxygen.
+
+* `Doxygenify pw::containers::FilteredView <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/160373>`__
+* `Support copying the FilteredView predicate <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/160372>`__
+
+pw_docgen
+---------
+At the top of pages like :ref:`module-pw_tokenizer` there is a UI widget that
+provides information about the module. Previously, this UI widget had links
+to all the module's docs. This is no longer needed now that the site nav
+automatically scrolls to the page you're on, which allows you to see the
+module's other docs.
+
+* `Remove the navbar from the module docs header widget <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162991>`__
+  (issue `#292273650 <https://issues.pigweed.dev/issues/292273650>`__)
+
+pw_env_setup
+------------
+We made Python setup more flexible.
+
+* `Add clang_next.json <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163810>`__
+  (issue `#295020927 <https://issues.pigweed.dev/issues/295020927>`__)
+* `Pip installs from CIPD <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162093>`__
+* `Include Python packages from CIPD <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162073>`__
+* `Remove unused pep517 package <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162072>`__
+* `Use more available Python 3.9 <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/161492>`__
+  (issue `#292278707 <https://issues.pigweed.dev/issues/292278707>`__)
+* `Update Bazel to 2@6.3.0.6 <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/161010>`__
+
+pw_ide
+------
+We are prototyping a ``pw_ide`` extension for VS Code.
+
+* `Restore stable clangd settings link <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/164011>`__
+* `Add command to install prototype extension <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162412>`__
+* `Prototype VS Code extension <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/151653>`__
+
+pw_interrupt
+------------
+We added a backend for Xtensa processors.
+
+* `Add backend for xtensa processors <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/160031>`__
+* `Tidy up target compatibility <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/160650>`__
+  (issue `#272090220 <https://issues.pigweed.dev/issues/272090220>`__)
+
+pw_log_zephyr
+-------------
+We encoded tokenized messages to ``pw::InlineString`` so that the output is
+always null-terminated.
+
+* `Fix null termination of Base64 messages <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163650>`__
+
+pw_presubmit
+------------
+We increased
+`LUCI <https://chromium.googlesource.com/infra/infra/+/main/doc/users/services/about_luci.md>`_
+support and updated the ``#pragma once`` check to look for matching ``#ifndef``
+and ``#define`` lines.
+
+* `Fix overeager format_code matches <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162611>`__
+* `Exclude vsix files from copyright <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163011>`__
+* `Clarify unicode errors <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162993>`__
+* `Upload coverage json to zoss <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162090>`__
+  (issue `#279161371 <https://issues.pigweed.dev/issues/279161371>`__)
+* `Add to context tests <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162311>`__
+* `Add patchset to LuciTrigger <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162310>`__
+* `Add helpers to LuciContext <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162091>`__
+* `Update Python vendor wheel dir <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/161514>`__
+* `Add summaries to guard checks <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/161391>`__
+  (issue `#287529705 <https://issues.pigweed.dev/issues/287529705>`__)
+* `Copy Python packages <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/161490>`__
+* `Add ifndef/define check <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/152173>`__
+  (issue `#287529705 <https://issues.pigweed.dev/issues/287529705>`__)
+
+pw_protobuf_compiler
+--------------------
+We continued work to ensure that the Python environment in Bazel is hermetic.
+
+* `Use hermetic protoc <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162913>`__
+  (issue `#294284927 <https://issues.pigweed.dev/issues/294284927>`__)
+* `Move reference to python interpreter <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162932>`__
+  (issue `#294414535 <https://issues.pigweed.dev/issues/294414535>`__)
+* `Make nanopb hermetic <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162313>`__
+  (issue `#293792686 <https://issues.pigweed.dev/issues/293792686>`__)
+
+pw_python
+---------
+We fixed bugs related to ``requirements.txt`` files not getting found.
+
+* `setup.sh requirements arg fix path <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/164430>`__
+* `setup.sh arg spaces bug <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163510>`__
+
+pw_random
+---------
+We continued migrating the ``pw_random`` API reference to Doxygen.
+
+* `Doxygenify random.h <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163730>`__
+
+pw_rpc
+------
+We made the Java client more robust.
+
+* `Java client backwards compatibility <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/164515>`__
+* `Avoid reflection in Java client <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162930>`__
+  (issue `#293361955 <https://issues.pigweed.dev/issues/293361955>`__)
+* `Use hermetic protoc <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162913>`__
+  (issue `#294284927 <https://issues.pigweed.dev/issues/294284927>`__)
+* `Improve Java client error message for missing parser() method <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/159471>`__
+
+pw_spi
+------
+We continued work on implementing a SPI responder interface.
+
+* `Responder interface definition <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/159230>`__
+
+pw_status
+---------
+We fixed the nesting on a documentation section.
+
+* `Promote Zephyr heading to h2 <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/160730>`__
+
+pw_stream
+---------
+We added ``remaining()``, ``len()``, and ``position()`` methods to the
+``Cursor`` wrapping in Rust.
+
+* `Add infalible methods to Rust Cursor <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/164271>`__
+
+pw_stream_shmem_mcuxpresso
+--------------------------
+We added the :ref:`module-pw_stream_shmem_mcuxpresso` backend for ``pw_stream``.
+
+* `Add shared memory stream for NXP MCU cores <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/160831>`__
+  (issue `#294406620 <https://issues.pigweed.dev/issues/294406620>`__)
+
+pw_sync_freertos
+----------------
+* `Fix ODR violation in tests <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/160795>`__
+
+pw_thread
+---------
+* `Fix test_thread_context typo and presubmit <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162770>`__
+
+pw_tokenizer
+------------
+We added support for unaligned token databases and continued the
+:ref:`seed-0102` update of the ``pw_tokenizer`` docs.
+
+* `Separate API reference and how-to guide content <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163256>`__
+* `Polish the sales pitch <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163571>`__
+* `Support unaligned databases <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163333>`__
+* `Move the basic overview into getting started <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163253>`__
+* `Move the case study to guides.rst <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163255>`__
+* `Restore info that get lost during the SEED-0102 migration <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163330>`__
+* `Use the same tagline on every doc <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163332>`__
+* `Replace savings table with flowchart <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/158893>`__
+* `Ignore string nonliteral warnings <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162092>`__
+
+pw_toolchain
+------------
+We fixed a regression that made it harder to use Pigweed in an environment where
+``pw_env_setup`` has not been run and fixed a bug related to incorrect Clang linking.
+
+* `Optionally depend on pw_env_setup_CIPD_PIGWEED <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163790>`__
+  (issue `#294886611 <https://issues.pigweed.dev/issues/294886611>`__)
+* `Prefer start-group over whole-archive <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/150610>`__
+  (issue `#285357895 <https://issues.pigweed.dev/issues/285357895>`__)
+
+pw_toolchain_bazel
+------------------
+We added a an LLVM toolchain for building with Bazel on macOS.
+
+* `LLVM toolchain for macOS Bazel build <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/157634>`__
+  (issue `#291795899 <https://issues.pigweed.dev/issues/291795899>`__)
+
+pw_trace_tokenized
+------------------
+We made tracing more robust.
+
+* `Replace trace callback singletons with dep injection <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/156912>`__
+
+pw_transfer
+-----------
+We made integration tests more robust.
+
+* `Fix use-after-destroy in integration test client <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163252>`__
+  (issue `#294101325 <https://issues.pigweed.dev/issues/294101325>`__)
+* `Fix legacy binary path <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162914>`__
+  (issue `#294284927 <https://issues.pigweed.dev/issues/294284927>`__)
+* `Mark linux-only Bazel tests <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162094>`__
+  (issue `#294101325 <https://issues.pigweed.dev/issues/294101325>`__)
+
+pw_web
+------
+We added support for storing user preferences in ``localStorage``.
+
+* `Fix TypeScript warnings in web_serial_transport.ts <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/164591>`__
+* `Add state for view number, search string, and columns visible <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/161390>`__
+* `Fix TypeScript warnings in transfer.ts <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162411>`__
+* `Fix TypeScript warnings <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162095>`__
+* `Remove dependency on 'crc' and 'buffer' NPM packages <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/160830>`__
+
+Build
+=====
+We made the Bazel system more hermetic and fixed an error related to not
+finding the Java runtime.
+
+* `Do not allow PATH leakage into Bazel build <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162610>`__
+  (issue `#294284927 <https://issues.pigweed.dev/issues/294284927>`__)
+* `Use remote Java runtime for Bazel build <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/160793>`__
+  (issue `#291791485 <https://issues.pigweed.dev/issues/291791485>`__)
+
+Docs
+====
+We created a new doc (:ref:`docs-editors`) that explains how to improve Pigweed
+support in various IDEs. We standardized how we present call-to-action buttons
+on module homepages. See :ref:`module-pw_tokenizer` for an example. We fixed a
+longstanding UI issue around the site nav not scrolling to the page that you're
+currently on.
+
+* `Add call-to-action buttons <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163331>`__
+* `Update module items in site nav <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163251>`__
+* `Add editor support doc <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/110261>`__
+* `Delay nav scrolling to fix main content scrolling <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162990>`__
+  (issue `#292273650 <https://issues.pigweed.dev/issues/292273650>`__)
+* `Suggest editor configuration <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162710>`__
+* `Scroll to the current page in the site nav <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162410>`__
+  (issue `#292273650 <https://issues.pigweed.dev/issues/292273650>`__)
+* `Add changelog <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/160170>`__
+  (issue `#292247409 <https://issues.pigweed.dev/issues/292247409>`__)
+
+SEEDs
+=====
+We created a UI widget to standardize how we present SEED status information.
+See the start of :ref:`seed-0102` for an example.
+
+* `Create Sphinx directive for metadata <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/161517>`__
+
+Third party
+===========
+
+third_party/mbedtls
+-------------------
+* `3.3.0 compatibility <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/160790>`__
+  (issue `#293612945 <https://issues.pigweed.dev/issues/293612945>`__)
+
+Miscellaneous
+=============
+
+OWNERS
+------
+* `Add kayce@ <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163254>`__
+
+
+
+----------------------------
+Jul 13, 2023 to Jul 28, 2023
+----------------------------
 Highlights (Jul 13, 2023 to Jul 28, 2023):
 
 * `SEED-0107: Pigweed Communications <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/157090>`__,
@@ -21,8 +364,6 @@ Highlights (Jul 13, 2023 to Jul 28, 2023):
   discussion. Please review and provide your input!
 * ``pw_cli`` now supports tab completion!
 * A new UART Linux backend for ``pw_stream`` was added (``pw_stream_uart_linux``).
-
-.. changelog_highlights_end
 
 Active SEEDs
 ============
