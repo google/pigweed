@@ -24,28 +24,29 @@ const dontCompleteIn = [
   'VariableDefinition',
   'PropertyDefinition',
 ];
-var objectPath = require('object-path');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const objectPath = require('object-path');
 
 export function completeFromGlobalScope(context: CompletionContext) {
-  let nodeBefore = syntaxTree(context.state).resolveInner(context.pos, -1);
+  const nodeBefore = syntaxTree(context.state).resolveInner(context.pos, -1);
 
   if (
     completePropertyAfter.includes(nodeBefore.name) &&
     nodeBefore.parent?.name == 'MemberExpression'
   ) {
-    let object = nodeBefore.parent.getChild('Expression');
+    const object = nodeBefore.parent.getChild('Expression');
     if (object?.name == 'VariableName') {
-      let from = /\./.test(nodeBefore.name) ? nodeBefore.to : nodeBefore.from;
-      let variableName = context.state.sliceDoc(object.from, object.to);
+      const from = /\./.test(nodeBefore.name) ? nodeBefore.to : nodeBefore.from;
+      const variableName = context.state.sliceDoc(object.from, object.to);
       // @ts-ignore
       if (typeof window[variableName] == 'object') {
         // @ts-ignore
         return completeProperties(from, window[variableName]);
       }
     } else if (object?.name == 'MemberExpression') {
-      let from = /\./.test(nodeBefore.name) ? nodeBefore.to : nodeBefore.from;
-      let variableName = context.state.sliceDoc(object.from, object.to);
-      let variable = resolveWindowVariable(variableName);
+      const from = /\./.test(nodeBefore.name) ? nodeBefore.to : nodeBefore.from;
+      const variableName = context.state.sliceDoc(object.from, object.to);
+      const variable = resolveWindowVariable(variableName);
       // @ts-ignore
       if (typeof variable == 'object') {
         // @ts-ignore
@@ -62,13 +63,14 @@ export function completeFromGlobalScope(context: CompletionContext) {
 
 function completeProperties(
   from: number,
-  object: Object,
+  object: object,
   variableName?: string,
 ) {
-  let options = [];
-  for (let name in object) {
+  const options = [];
+  for (const name in object) {
     // @ts-ignore
     if (object[name] instanceof Function && variableName) {
+      // eslint-disable-next-line no-debugger
       debugger;
       options.push({
         label: name,

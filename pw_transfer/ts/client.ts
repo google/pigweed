@@ -178,7 +178,9 @@ export class Manager {
       (chunk: Chunk) => {
         this.handleChunk(this.readTransfers, chunk);
       },
-      () => {},
+      () => {
+        // Do nothing.
+      },
       this.onReadError,
     );
   }
@@ -191,7 +193,9 @@ export class Manager {
       (chunk: Chunk) => {
         this.handleChunk(this.writeTransfers, chunk);
       },
-      () => {},
+      () => {
+        // Do nothing.
+      },
       this.onWriteError,
     );
   }

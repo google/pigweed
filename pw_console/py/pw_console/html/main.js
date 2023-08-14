@@ -265,7 +265,9 @@ function applyStyling(data, applyColors = false) {
     let dataObj;
     try {
       dataObj = JSON.parse(event.data);
-    } catch (e) {}
+    } catch (e) {
+      // empty
+    }
     if (!dataObj) return;
 
     if (dataObj.__pw_console_colors) {

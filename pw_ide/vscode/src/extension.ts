@@ -34,7 +34,7 @@ function showExtensions(extensions: string[]) {
  * @returns A list of extension IDs
  */
 function getUnavailableExtensions(extensions: string[]): string[] {
-  let unavailableExtensions: string[] = [];
+  const unavailableExtensions: string[] = [];
   const available = vscode.extensions.all;
 
   // TODO(chadnorvell): Verify that this includes disabled extensions
@@ -125,7 +125,7 @@ async function installRecommendedExtensions(recs: string[]): Promise<void> {
  * @returns A list of extension IDs
  */
 function getEnabledExtensions(extensions: string[]): string[] {
-  let enabledExtensions: string[] = [];
+  const enabledExtensions: string[] = [];
   const available = vscode.extensions.all;
 
   // TODO(chadnorvell): Verify that this excludes disabled extensions
@@ -228,7 +228,7 @@ async function checkExtensions(context: vscode.ExtensionContext) {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  let pwCheckExtensions = vscode.commands.registerCommand(
+  const pwCheckExtensions = vscode.commands.registerCommand(
     'pigweed.check-extensions',
     () => checkExtensions(context),
   );
@@ -236,4 +236,6 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(pwCheckExtensions);
 }
 
-export function deactivate() {}
+export function deactivate() {
+  // Do nothing.
+}

@@ -68,7 +68,7 @@ export class PigweedRPCLogSource extends LogSource {
       };
     }
 
-    let map: any = {};
+    const map: any = {};
     pairs.forEach((pair) => (map[pair[0]] = pair[1]));
     return {
       fields: [

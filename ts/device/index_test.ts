@@ -121,7 +121,7 @@ describe('WebSerialTransport', () => {
       .channel()
       ?.methodStub(
         'pw.rpc.test1.TheTestService.SomeServerStreaming',
-      )! as ServerStreamingMethodStub;
+      ) as ServerStreamingMethodStub;
     const onNext = jest.fn();
     const onCompleted = jest.fn();
     const onError = jest.fn();

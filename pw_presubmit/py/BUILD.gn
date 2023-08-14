@@ -32,6 +32,7 @@ pw_python_package("py") {
     "pw_presubmit/gitmodules.py",
     "pw_presubmit/inclusive_language.py",
     "pw_presubmit/install_hook.py",
+    "pw_presubmit/javascript_checks.py",
     "pw_presubmit/json_check.py",
     "pw_presubmit/keep_sorted.py",
     "pw_presubmit/module_owners.py",

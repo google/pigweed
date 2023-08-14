@@ -38,7 +38,7 @@ interface DecodedArg {
 }
 
 // ZigZag decode function from protobuf's wire_format module.
-function zigzagDecode(value: Long, unsigned: boolean = false): Long {
+function zigzagDecode(value: Long, unsigned = false): Long {
   // 64 bit math is:
   //   signmask = (zigzag & 1) ? -1 : 0;
   //   twosComplement = (zigzag >> 1) ^ signmask;
@@ -46,9 +46,9 @@ function zigzagDecode(value: Long, unsigned: boolean = false): Long {
   // To work with 32 bit, we can operate on both but "carry" the lowest bit
   // from the high word by shifting it up 31 bits to be the most significant bit
   // of the low word.
-  var bitsLow = value.low,
+  let bitsLow = value.low,
     bitsHigh = value.high;
-  var signFlipMask = -(bitsLow & 1);
+  const signFlipMask = -(bitsLow & 1);
   bitsLow = ((bitsLow >>> 1) | (bitsHigh << 31)) ^ signFlipMask;
   bitsHigh = (bitsHigh >>> 1) ^ signFlipMask;
   return new Long(bitsLow, bitsHigh, unsigned);
@@ -80,7 +80,7 @@ export class PrintfDecoder {
     return this._decodeInt(args);
   }
 
-  private _decodeInt(args: Uint8Array, unsigned: boolean = false): DecodedArg {
+  private _decodeInt(args: Uint8Array, unsigned = false): DecodedArg {
     if (args.length === 0) return { size: 0, value: null };
     let count = 0;
     let result = new Long(0);

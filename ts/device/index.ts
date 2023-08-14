@@ -45,7 +45,7 @@ export class Device {
   constructor(
     protoCollection: ProtoCollection,
     transport: WebSerialTransport = new WebSerialTransport(),
-    rpcAddress: number = 82,
+    rpcAddress = 82,
   ) {
     this.transport = transport;
     this.rpcAddress = rpcAddress;
@@ -81,9 +81,9 @@ export class Device {
   }
 
   private setupRpcs() {
-    let rpcMap = {};
-    let channel = this.client.channel();
-    let servicesKeys = Array.from(channel.services.keys());
+    const rpcMap = {};
+    const channel = this.client.channel();
+    const servicesKeys = Array.from(channel.services.keys());
     servicesKeys.forEach((serviceKey) => {
       setPathOnObject(
         rpcMap,
@@ -95,8 +95,8 @@ export class Device {
   }
 
   private mapServiceMethods(service: ServiceClient) {
-    let methodMap = {};
-    let methodKeys = Array.from(service.methodsByName.keys());
+    const methodMap = {};
+    const methodKeys = Array.from(service.methodsByName.keys());
     methodKeys
       .filter(
         (method: any) =>
@@ -105,7 +105,7 @@ export class Device {
             ServerStreamingMethodStub,
       )
       .forEach((key) => {
-        let fn = this.createMethodWrapper(
+        const fn = this.createMethodWrapper(
           service.methodsByName.get(key),
           key,
           `${service.name}.${key}`,
@@ -157,7 +157,7 @@ export class Device {
 
     // We create a new JS function dynamically here that takes
     // proto message fields as arguments and calls the actual RPC method.
-    let fn = new Function(...functionArguments).bind((args) => {
+    const fn = new Function(...functionArguments).bind((args) => {
       const request = new realMethod.method.requestType();
       requestFields.forEach((field, index) => {
         request[`set${titleCase(field.getName())}`](args[index]);
@@ -189,7 +189,7 @@ export class Device {
 
     // We create a new JS function dynamically here that takes
     // proto message fields as arguments and calls the actual RPC method.
-    let fn = new Function(...functionArguments).bind((args) => {
+    const fn = new Function(...functionArguments).bind((args) => {
       const request = new realMethod.method.requestType();
       requestFields.forEach((field, index) => {
         request[`set${protoFieldToMethodName(field.getName())}`](args[index]);

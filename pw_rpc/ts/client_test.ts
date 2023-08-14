@@ -156,7 +156,12 @@ describe('RPC', () => {
 
   beforeEach(async () => {
     protoCollection = new ProtoCollection();
-    const channels = [new Channel(1, handlePacket), new Channel(2, () => {})];
+    const channels = [
+      new Channel(1, handlePacket),
+      new Channel(2, () => {
+        // Do nothing.
+      }),
+    ];
     client = Client.fromProtoSet(channels, protoCollection);
     lastPacketSent = undefined;
     requests = [];
@@ -274,7 +279,7 @@ describe('RPC', () => {
         .channel()
         ?.methodStub(
           'pw.rpc.test1.TheTestService.SomeUnary',
-        )! as UnaryMethodStub;
+        ) as UnaryMethodStub;
     });
 
     it('blocking call', async () => {
@@ -404,7 +409,7 @@ describe('RPC', () => {
         .channel()
         ?.methodStub(
           'pw.rpc.test1.TheTestService.SomeServerStreaming',
-        )! as ServerStreamingMethodStub;
+        ) as ServerStreamingMethodStub;
     });
 
     it('non-blocking call', () => {
@@ -505,7 +510,7 @@ describe('RPC', () => {
         .channel()
         ?.methodStub(
           'pw.rpc.test1.TheTestService.SomeClientStreaming',
-        )! as ClientStreamingMethodStub;
+        ) as ClientStreamingMethodStub;
     });
 
     it('non-blocking call', () => {
@@ -720,7 +725,7 @@ describe('RPC', () => {
         .channel()
         ?.methodStub(
           'pw.rpc.test1.TheTestService.SomeBidiStreaming',
-        )! as BidirectionalStreamingMethodStub;
+        ) as BidirectionalStreamingMethodStub;
     });
 
     it('blocking call', async () => {

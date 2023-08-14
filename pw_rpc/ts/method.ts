@@ -64,9 +64,15 @@ export abstract class MethodStub {
 export class UnaryMethodStub extends MethodStub {
   invoke(
     request: Message,
-    onNext: Callback = () => {},
-    onCompleted: Callback = () => {},
-    onError: Callback = () => {},
+    onNext: Callback = () => {
+      // Do nothing.
+    },
+    onCompleted: Callback = () => {
+      // Do nothing.
+    },
+    onError: Callback = () => {
+      // Do nothing.
+    },
   ): UnaryCall {
     const call = new UnaryCall(
       this.rpcs,
@@ -81,9 +87,15 @@ export class UnaryMethodStub extends MethodStub {
 
   open(
     request: Message,
-    onNext: Callback = () => {},
-    onCompleted: Callback = () => {},
-    onError: Callback = () => {},
+    onNext: Callback = () => {
+      // Do nothing.
+    },
+    onCompleted: Callback = () => {
+      // Do nothing.
+    },
+    onError: Callback = () => {
+      // Do nothing.
+    },
   ): UnaryCall {
     const call = new UnaryCall(
       this.rpcs,
@@ -104,9 +116,15 @@ export class UnaryMethodStub extends MethodStub {
 export class ServerStreamingMethodStub extends MethodStub {
   invoke(
     request?: Message,
-    onNext: Callback = () => {},
-    onCompleted: Callback = () => {},
-    onError: Callback = () => {},
+    onNext: Callback = () => {
+      // Do nothing.
+    },
+    onCompleted: Callback = () => {
+      // Do nothing.
+    },
+    onError: Callback = () => {
+      // Do nothing.
+    },
   ): ServerStreamingCall {
     const call = new ServerStreamingCall(
       this.rpcs,
@@ -121,9 +139,15 @@ export class ServerStreamingMethodStub extends MethodStub {
 
   open(
     request: Message,
-    onNext: Callback = () => {},
-    onCompleted: Callback = () => {},
-    onError: Callback = () => {},
+    onNext: Callback = () => {
+      // Do nothing.
+    },
+    onCompleted: Callback = () => {
+      // Do nothing.
+    },
+    onError: Callback = () => {
+      // Do nothing.
+    },
   ): UnaryCall {
     const call = new UnaryCall(
       this.rpcs,
@@ -143,9 +167,15 @@ export class ServerStreamingMethodStub extends MethodStub {
 
 export class ClientStreamingMethodStub extends MethodStub {
   invoke(
-    onNext: Callback = () => {},
-    onCompleted: Callback = () => {},
-    onError: Callback = () => {},
+    onNext: Callback = () => {
+      // Do nothing.
+    },
+    onCompleted: Callback = () => {
+      // Do nothing.
+    },
+    onError: Callback = () => {
+      // Do nothing.
+    },
   ): ClientStreamingCall {
     const call = new ClientStreamingCall(
       this.rpcs,
@@ -159,9 +189,15 @@ export class ClientStreamingMethodStub extends MethodStub {
   }
 
   open(
-    onNext: Callback = () => {},
-    onCompleted: Callback = () => {},
-    onError: Callback = () => {},
+    onNext: Callback = () => {
+      // Do nothing.
+    },
+    onCompleted: Callback = () => {
+      // Do nothing.
+    },
+    onError: Callback = () => {
+      // Do nothing.
+    },
   ): ClientStreamingCall {
     const call = new ClientStreamingCall(
       this.rpcs,
@@ -181,9 +217,15 @@ export class ClientStreamingMethodStub extends MethodStub {
 
 export class BidirectionalStreamingMethodStub extends MethodStub {
   invoke(
-    onNext: Callback = () => {},
-    onCompleted: Callback = () => {},
-    onError: Callback = () => {},
+    onNext: Callback = () => {
+      // Do nothing.
+    },
+    onCompleted: Callback = () => {
+      // Do nothing.
+    },
+    onError: Callback = () => {
+      // Do nothing.
+    },
   ): BidirectionalStreamingCall {
     const call = new BidirectionalStreamingCall(
       this.rpcs,
@@ -197,9 +239,15 @@ export class BidirectionalStreamingMethodStub extends MethodStub {
   }
 
   open(
-    onNext: Callback = () => {},
-    onCompleted: Callback = () => {},
-    onError: Callback = () => {},
+    onNext: Callback = () => {
+      // Do nothing.
+    },
+    onCompleted: Callback = () => {
+      // Do nothing.
+    },
+    onError: Callback = () => {
+      // Do nothing.
+    },
   ): BidirectionalStreamingCall {
     const call = new BidirectionalStreamingCall(
       this.rpcs,

@@ -16,7 +16,6 @@ import { exec, ExecException } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import generateTemplate from './codegen/template_replacement';
-// eslint-disable-next-line node/no-extraneous-import
 import * as argModule from 'arg';
 const arg = argModule.default;
 

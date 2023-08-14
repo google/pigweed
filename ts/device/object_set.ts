@@ -12,27 +12,27 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-function hasOwnProperty(obj: Object, prop: number | string) {
+function hasOwnProperty(obj: object, prop: number | string) {
   if (obj == null) {
     return false;
   }
   //to handle objects with null prototypes (too edge case?)
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
-function hasShallowProperty(obj: Object, prop: number | string) {
+function hasShallowProperty(obj: object, prop: number | string) {
   return (
     (typeof prop === 'number' && Array.isArray(obj)) ||
     hasOwnProperty(obj, prop)
   );
 }
 
-function getShallowProperty(obj: Object, prop: number | string) {
+function getShallowProperty(obj: object, prop: number | string) {
   if (hasShallowProperty(obj, prop)) {
     return obj[prop];
   }
 }
 function getKey(key) {
-  var intKey = parseInt(key);
+  const intKey = parseInt(key);
   if (intKey.toString() === key) {
     return intKey;
   }
@@ -40,7 +40,7 @@ function getKey(key) {
 }
 
 export function setPathOnObject(
-  obj: Object,
+  obj: object,
   path: number | string | Array<number | string>,
   value: any,
   doNotReplace: boolean = false,
@@ -59,8 +59,8 @@ export function setPathOnObject(
       doNotReplace,
     );
   }
-  var currentPath = path[0];
-  var currentValue = getShallowProperty(obj, currentPath);
+  const currentPath = path[0];
+  const currentValue = getShallowProperty(obj, currentPath);
   if (path.length === 1) {
     if (currentValue === void 0 || !doNotReplace) {
       obj[currentPath] = value;

@@ -28,7 +28,12 @@ export class Channel {
   readonly id: number;
   private output: ChannelOutput;
 
-  constructor(id: number, output: ChannelOutput = () => {}) {
+  constructor(
+    id: number,
+    output: ChannelOutput = () => {
+      /* do nothing. */
+    },
+  ) {
     this.id = id;
     this.output = output;
   }

@@ -18,7 +18,9 @@ import * as util from './util';
 const FLAG_BYTE = Uint8Array.from([protocol.FLAG]);
 
 export class Encoder {
-  constructor() {}
+  constructor() {
+    // Do nothing.
+  }
 
   /** Encodes an HDLC UI-frame with a CRC-32 frame check sequence. */
   uiFrame(address: number, data: Uint8Array): Uint8Array {

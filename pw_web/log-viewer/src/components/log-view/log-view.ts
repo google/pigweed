@@ -104,8 +104,7 @@ export class LogView extends LitElement {
     this.colsHidden = [];
 
     if (this._state) {
-      // eslint-disable-next-line prefer-const
-      let viewConfigArr = this._state.logViewConfig;
+      const viewConfigArr = this._state.logViewConfig;
       const index = viewConfigArr.findIndex((i) => this.id === i.viewID);
 
       if (index !== -1) {
@@ -161,8 +160,7 @@ export class LogView extends LitElement {
         break;
     }
 
-    // eslint-disable-next-line prefer-const
-    let viewConfigArr = this._state.logViewConfig;
+    const viewConfigArr = this._state.logViewConfig;
     const index = viewConfigArr.findIndex((i) => this.id === i.viewID);
     if (index !== -1) {
       viewConfigArr[index].search = this.searchText;
@@ -203,8 +201,7 @@ export class LogView extends LitElement {
    *   toggled.
    */
   private toggleColumns(event: CustomEvent) {
-    // eslint-disable-next-line prefer-const
-    let viewConfigArr = this._state.logViewConfig;
+    const viewConfigArr = this._state.logViewConfig;
     let colIndex = -1;
 
     this.colsHidden = [];

@@ -420,8 +420,7 @@ export class LogList extends LitElement {
   }
 
   private tableDataRow(log: LogEntry) {
-    // eslint-disable-next-line prefer-const
-    let classes = {
+    const classes = {
       'log-row': true,
       'log-row--nowrap': !this.lineWrap,
     };

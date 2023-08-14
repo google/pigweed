@@ -63,6 +63,7 @@ export function escape(byte: number): number {
 /** Encodes an HDLC address as a one-terminated LSB varint. */
 export function encodeAddress(address: number): Uint8Array {
   const byteList = [];
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     byteList.push((address & 0x7f) << 1);
     address >>= 7;

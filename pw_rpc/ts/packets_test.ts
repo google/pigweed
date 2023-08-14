@@ -31,7 +31,9 @@ function addTestData(packet: RpcPacket) {
 }
 
 describe('Packets', () => {
-  beforeEach(() => {});
+  beforeEach(() => {
+    // Do nothing.
+  });
 
   it('encodeRequest sets packet fields', () => {
     const goldenRequest = new RpcPacket();

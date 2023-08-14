@@ -421,6 +421,7 @@ export class WriteTransfer extends Transfer {
     const bytesAknowledged = chunk.getOffset();
 
     let writeChunk: Chunk;
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       writeChunk = this.nextChunk();
       this.offset += writeChunk.getData().length;

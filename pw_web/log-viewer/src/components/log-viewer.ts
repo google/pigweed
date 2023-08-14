@@ -63,8 +63,8 @@ export class LogViewer extends LitElement {
       return;
     }
 
-    let viewState = this._state.logViewConfig; // eslint-disable-line prefer-const
-    let viewEls = []; // eslint-disable-line prefer-const
+    const viewState = this._state.logViewConfig;
+    const viewEls = [];
     for (const i in viewState) {
       const view = new LogView();
       view.id = viewState[i].viewID;
@@ -88,10 +88,7 @@ export class LogViewer extends LitElement {
   private addLogView() {
     const newView = new LogView();
     const newViewState = this.addLogViewState(newView);
-    let viewStates: State;
-
-    // eslint-disable-next-line prefer-const
-    viewStates = { logViewConfig: this._state.logViewConfig };
+    const viewStates: State = { logViewConfig: this._state.logViewConfig };
     viewStates.logViewConfig.push(newViewState);
     this._logViews = [...this._logViews, newView];
     this._stateStore.setState(viewStates);
@@ -100,8 +97,7 @@ export class LogViewer extends LitElement {
 
   /** Creates a new log view state to store in the state object. */
   private addLogViewState(view: LogView): LogViewConfig {
-    // eslint-disable-next-line prefer-const
-    let fieldColumns = [];
+    const fieldColumns = [];
     const fields = view.getFieldsFromLogs(this.logs);
 
     for (const i in fields) {

@@ -33,7 +33,9 @@ describe('Call', () => {
   let call: Call;
 
   beforeEach(() => {
-    const noop = () => {};
+    const noop = () => {
+      // Do nothing.
+    };
     const pendingCalls = new PendingCalls();
     const rpc = new FakeRpc();
     call = new Call(pendingCalls, rpc, noop, noop, noop);

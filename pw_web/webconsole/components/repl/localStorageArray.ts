@@ -17,7 +17,7 @@ export default class LocalStorageArray {
   maxSize: number;
   key: string = '__pw_repl_history';
 
-  constructor(maxSize: number = 4) {
+  constructor(maxSize = 4) {
     this.maxSize = maxSize;
     const curHistory = localStorage.getItem(this.key);
     if (curHistory) {

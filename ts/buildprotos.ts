@@ -57,7 +57,7 @@ const remapImports = {
 // Only modify the .proto files when running this builder and then restore any
 // modified .proto files to their original states after the builder has finished
 // running.
-let restoreProtoList = [];
+const restoreProtoList = [];
 protos.forEach((protoPath) => {
   const protoData = fs.readFileSync(protoPath, 'utf-8');
   let newProtoData = protoData;

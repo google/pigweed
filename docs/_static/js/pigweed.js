@@ -30,7 +30,7 @@ function scrollSiteNavToCurrentPage() {
     // user sees all the docs in the set.
     targetNode = document.querySelector('li.toctree-l2.current');
   }
-  scrollDistance =
+  var scrollDistance =
     targetNode.getBoundingClientRect().top -
     siteNav.getBoundingClientRect().top;
   siteNav.scrollTop = scrollDistance;

@@ -131,12 +131,16 @@ class SerialPortMock implements SerialPort {
   /**
    * A spy for opening the serial port.
    */
-  open = jest.fn(async (options?: SerialOptions) => {});
+  open = jest.fn(async (options?: SerialOptions) => {
+    // Do nothing.
+  });
 
   /**
    * A spy for closing the serial port.
    */
-  close = jest.fn(() => {});
+  close = jest.fn(() => {
+    // Do nothing.
+  });
 }
 
 export class SerialMock implements Serial {

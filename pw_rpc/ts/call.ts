@@ -98,6 +98,7 @@ export class Call {
     return this.status !== undefined || this.error !== undefined;
   }
 
+  // eslint-disable-next-line @typescript-eslint/ban-types
   private invokeCallback(func: () => {}) {
     try {
       func();
@@ -133,6 +134,7 @@ export class Call {
   private async queuePopWithTimeout(
     timeoutMs: number,
   ): Promise<Message | undefined> {
+    // eslint-disable-next-line no-async-promise-executor
     return new Promise(async (resolve, reject) => {
       let timeoutExpired = false;
       const timeoutWatcher = setTimeout(() => {
@@ -213,6 +215,7 @@ export class Call {
 
   protected async unaryWait(timeoutMs?: number): Promise<[Status, Message]> {
     for await (const response of this.getResponses(1, timeoutMs)) {
+      // Do nothing.
     }
     if (this.status === undefined) {
       throw Error('Unexpected undefined status at end of stream');
@@ -225,6 +228,7 @@ export class Call {
 
   protected async streamWait(timeoutMs?: number): Promise<[Status, Message[]]> {
     for await (const response of this.getResponses(undefined, timeoutMs)) {
+      // Do nothing.
     }
     if (this.status === undefined) {
       throw Error('Unexpected undefined status at end of stream');
