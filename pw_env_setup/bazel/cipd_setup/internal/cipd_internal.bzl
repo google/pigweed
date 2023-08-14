@@ -152,7 +152,10 @@ def cipd_repository_impl(rctx):
         rctx: Repository context.
     """
     cipd_repository_base(rctx)
-    rctx.file("BUILD", """
+    if rctx.attr.build_file:
+        rctx.file("BUILD", rctx.read(rctx.attr.build_file))
+    else:
+        rctx.file("BUILD", """
 exports_files(glob(["**"]))
 
 filegroup(
@@ -160,7 +163,7 @@ filegroup(
     srcs = glob(["**"]),
     visibility = ["//visibility:public"],
 )
-""")
+  """)
 
 def _cipd_path_to_repository_name(path, platform):
     """ Converts a cipd path to a repository name
