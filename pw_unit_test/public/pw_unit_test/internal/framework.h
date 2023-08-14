@@ -189,6 +189,10 @@ namespace internal {
 class Test;
 class TestInfo;
 
+// Types of SetUpTestSuite() and TearDownTestSuite() functions.
+using SetUpTestSuiteFunc = void (*)();
+using TearDownTestSuiteFunc = void (*)();
+
 // Used to tag arguments to EXPECT_STREQ/EXPECT_STRNE so they are treated like C
 // strings rather than pointers.
 struct CStringArg {
@@ -265,6 +269,8 @@ class Framework {
     // uninitialized memory.
     std::memset(&framework.memory_pool_, 0xa5, sizeof(framework.memory_pool_));
 
+    framework.SetUpTestSuiteIfNeeded(TestInstance::SetUpTestSuite);
+
     // Construct the test object within the static memory pool. The StartTest
     // function has already been called by the TestInfo at this point.
     TestInstance* test_instance = new (&framework.memory_pool_) TestInstance;
@@ -273,6 +279,8 @@ class Framework {
     // Manually call the destructor as it is not called automatically for
     // objects constructed using placement new.
     test_instance->~TestInstance();
+
+    framework.TearDownTestSuiteIfNeeded(TestInstance::TearDownTestSuite);
 
     framework.EndCurrentTest();
   }
@@ -334,6 +342,12 @@ class Framework {
   static constexpr T ConvertForPrint(T&& value) {
     return std::forward<T>(value);
   }
+
+  // If current_test_ will be first of its suite, call set_up_ts
+  void SetUpTestSuiteIfNeeded(SetUpTestSuiteFunc set_up_ts) const;
+
+  // If current_test_ was the last of its suite, call tear_down_ts
+  void TearDownTestSuiteIfNeeded(TearDownTestSuiteFunc tear_down_ts) const;
 
   // Sets current_test_ and dispatches an event indicating that a test started.
   void StartTest(const TestInfo& test);
@@ -432,6 +446,9 @@ class Test {
   Test& operator=(const Test&) = delete;
 
   virtual ~Test() = default;
+
+  static void SetUpTestSuite() {}
+  static void TearDownTestSuite() {}
 
   // Runs the unit test.
   void PigweedTestRun() {

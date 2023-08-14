@@ -194,21 +194,50 @@ class Expectations : public ::testing::Test {
 TEST_F(Expectations, SetCoolNumber) { cool_number_ = 14159; }
 
 class SetUpAndTearDown : public ::testing::Test {
+ public:
+  static int value;
+
+  static void SetUpTestSuite() {
+    EXPECT_EQ(value, 1);
+    value++;
+  }
+
+  static void TearDownTestSuite() {
+    EXPECT_EQ(value, 7);
+    value++;
+  }
+
  protected:
-  SetUpAndTearDown() : value_(0) { EXPECT_EQ(value_, 0); }
+  SetUpAndTearDown() {
+    EXPECT_EQ(value, 2);
+    value++;
+  }
 
-  ~SetUpAndTearDown() override { EXPECT_EQ(value_, 1); }
+  ~SetUpAndTearDown() override {
+    EXPECT_EQ(value, 6);
+    value++;
+  }
 
-  void SetUp() override { value_ = 1337; }
+  void SetUp() override {
+    EXPECT_EQ(value, 3);
+    value++;
+  }
 
-  void TearDown() override { value_ = 1; }
-
-  int value_;
+  void TearDown() override {
+    EXPECT_EQ(value, 5);
+    value++;
+  }
 };
 
+int SetUpAndTearDown::value = 1;
+
 TEST_F(SetUpAndTearDown, MakeSureItIsSet) {
-  EXPECT_EQ(value_, 1337);
-  value_ = 3210;
+  EXPECT_EQ(value, 4);
+  value++;
+}
+
+TEST(TestSuiteTearDown, MakeSureItRan) {
+  EXPECT_EQ(SetUpAndTearDown::value, 8);
 }
 
 TEST(UnknownTypeToString, SmallObjectDisplaysFullContents) {

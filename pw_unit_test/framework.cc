@@ -78,6 +78,36 @@ int Framework::RunAllTests() {
   return exit_status_;
 }
 
+void Framework::SetUpTestSuiteIfNeeded(SetUpTestSuiteFunc set_up_ts) const {
+  if (set_up_ts == Test::SetUpTestSuite) {
+    return;
+  }
+
+  for (TestInfo* info = tests_; info != current_test_; info = info->next()) {
+    if (info->test_case().suite_name == current_test_->test_case().suite_name) {
+      return;
+    }
+  }
+
+  set_up_ts();
+}
+
+void Framework::TearDownTestSuiteIfNeeded(
+    TearDownTestSuiteFunc tear_down_ts) const {
+  if (tear_down_ts == Test::TearDownTestSuite) {
+    return;
+  }
+
+  for (TestInfo* info = current_test_->next(); info != nullptr;
+       info = info->next()) {
+    if (info->test_case().suite_name == current_test_->test_case().suite_name) {
+      return;
+    }
+  }
+
+  tear_down_ts();
+}
+
 void Framework::StartTest(const TestInfo& test) {
   current_test_ = &test;
   current_result_ = TestResult::kSuccess;
