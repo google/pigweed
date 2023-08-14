@@ -16,6 +16,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_sync/mutex.h"
+#include "pw_sync_private/borrow_lockable_tests.h"
 
 namespace pw::sync {
 namespace {
@@ -58,6 +59,8 @@ TEST(Mutex, TryLockUnlock) {
   }
 }
 
+PW_SYNC_ADD_BORROWABLE_LOCK_NAMED_TESTS(BorrowableMutex, Mutex);
+
 TEST(VirtualMutex, LockUnlock) {
   pw::sync::VirtualMutex mutex;
   mutex.lock();
@@ -73,6 +76,8 @@ TEST(VirtualMutex, LockUnlockStatic) {
   // EXPECT_FALSE(static_virtual_mutex.try_lock());
   static_virtual_mutex.unlock();
 }
+
+PW_SYNC_ADD_BORROWABLE_LOCK_NAMED_TESTS(BorrowableVirtualMutex, VirtualMutex);
 
 TEST(Mutex, LockUnlockInC) {
   pw::sync::Mutex mutex;

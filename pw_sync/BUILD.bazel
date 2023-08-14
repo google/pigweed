@@ -458,16 +458,21 @@ filegroup(
 
 pw_cc_library(
     name = "lock_testing",
-    srcs = [
-        "lock_testing.cc",
-    ],
-    hdrs = [
-        "public/pw_sync/lock_testing.h",
-    ],
+    srcs = ["lock_testing.cc"],
+    hdrs = ["public/pw_sync/lock_testing.h"],
     includes = ["public"],
     deps = [
         ":virtual_basic_lockable",
         "//pw_assert",
+    ],
+)
+
+pw_cc_library(
+    name = "borrow_lockable_tests",
+    hdrs = ["pw_sync_private/borrow_lockable_tests.h"],
+    deps = [
+        ":borrow",
+        ":lock_traits",
     ],
 )
 
@@ -482,12 +487,10 @@ pw_cc_test(
 
 pw_cc_test(
     name = "borrow_test",
-    srcs = [
-        "borrow_test.cc",
-        "pw_sync_private/borrow_lockable_tests.h",
-    ],
+    srcs = ["borrow_test.cc"],
     deps = [
         ":borrow",
+        ":borrow_lockable_tests",
         ":lock_testing",
         "//pw_unit_test",
     ],
@@ -540,6 +543,7 @@ pw_cc_test(
         "mutex_facade_test_c.c",
     ],
     deps = [
+        ":borrow_lockable_tests",
         ":mutex",
         "//pw_preprocessor",
         "//pw_unit_test",
@@ -553,6 +557,7 @@ pw_cc_test(
         "timed_mutex_facade_test_c.c",
     ],
     deps = [
+        ":borrow_lockable_tests",
         ":timed_mutex",
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
@@ -580,6 +585,7 @@ pw_cc_test(
         "interrupt_spin_lock_facade_test_c.c",
     ],
     deps = [
+        ":borrow_lockable_tests",
         ":interrupt_spin_lock",
         "//pw_preprocessor",
         "//pw_unit_test",

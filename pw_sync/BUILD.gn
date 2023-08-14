@@ -238,6 +238,14 @@ pw_source_set("lock_testing") {
   deps = [ dir_pw_assert ]
 }
 
+pw_source_set("borrow_lockable_tests") {
+  public = [ "pw_sync_private/borrow_lockable_tests.h" ]
+  public_deps = [
+    ":borrow",
+    ":lock_traits",
+  ]
+}
+
 pw_test("lock_traits_test") {
   sources = [ "lock_traits_test.cc" ]
   deps = [
@@ -247,12 +255,10 @@ pw_test("lock_traits_test") {
 }
 
 pw_test("borrow_test") {
-  sources = [
-    "borrow_test.cc",
-    "pw_sync_private/borrow_lockable_tests.h",
-  ]
+  sources = [ "borrow_test.cc" ]
   deps = [
     ":borrow",
+    ":borrow_lockable_tests",
     ":lock_testing",
   ]
 }
@@ -300,6 +306,7 @@ pw_test("mutex_facade_test") {
     "mutex_facade_test_c.c",
   ]
   deps = [
+    ":borrow_lockable_tests",
     ":mutex",
     "$dir_pw_preprocessor",
     pw_sync_MUTEX_BACKEND,
@@ -313,6 +320,7 @@ pw_test("timed_mutex_facade_test") {
     "timed_mutex_facade_test_c.c",
   ]
   deps = [
+    ":borrow_lockable_tests",
     ":timed_mutex",
     "$dir_pw_preprocessor",
     pw_sync_TIMED_MUTEX_BACKEND,
@@ -339,6 +347,7 @@ pw_test("interrupt_spin_lock_facade_test") {
     "interrupt_spin_lock_facade_test_c.c",
   ]
   deps = [
+    ":borrow_lockable_tests",
     ":interrupt_spin_lock",
     "$dir_pw_preprocessor",
     pw_sync_INTERRUPT_SPIN_LOCK_BACKEND,

@@ -14,6 +14,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_sync/interrupt_spin_lock.h"
+#include "pw_sync_private/borrow_lockable_tests.h"
 
 namespace pw::sync {
 namespace {
@@ -59,6 +60,9 @@ TEST(InterruptSpinLock, TryLockUnlock) {
   }
 }
 
+PW_SYNC_ADD_BORROWABLE_LOCK_NAMED_TESTS(BorrowableInterruptSpinLock,
+                                        InterruptSpinLock);
+
 TEST(VirtualInterruptSpinLock, LockUnlock) {
   pw::sync::VirtualInterruptSpinLock interrupt_spin_lock;
   interrupt_spin_lock.lock();
@@ -74,6 +78,9 @@ TEST(VirtualInterruptSpinLock, LockUnlockStatic) {
   // EXPECT_FALSE(static_virtual_interrupt_spin_lock.try_lock());
   static_virtual_interrupt_spin_lock.unlock();
 }
+
+PW_SYNC_ADD_BORROWABLE_LOCK_NAMED_TESTS(BorrowableVirtualInterruptSpinLock,
+                                        VirtualInterruptSpinLock);
 
 TEST(InterruptSpinLock, LockUnlockInC) {
   pw::sync::InterruptSpinLock interrupt_spin_lock;

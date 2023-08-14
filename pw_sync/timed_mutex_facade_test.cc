@@ -17,6 +17,7 @@
 #include "gtest/gtest.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_sync/timed_mutex.h"
+#include "pw_sync_private/borrow_lockable_tests.h"
 
 using pw::chrono::SystemClock;
 using namespace std::chrono_literals;
@@ -115,6 +116,10 @@ TEST(TimedMutex, TryLockUnlockUntil) {
   // held by someone else and a timestamp in the past is used.
 }
 
+PW_SYNC_ADD_BORROWABLE_TIMED_LOCK_NAMED_TESTS(BorrowableTimedMutex,
+                                              TimedMutex,
+                                              chrono::SystemClock);
+
 TEST(VirtualTimedMutex, LockUnlock) {
   pw::sync::VirtualTimedMutex mutex;
   mutex.lock();
@@ -132,6 +137,10 @@ TEST(VirtualTimedMutex, LockUnlockStatic) {
   // EXPECT_FALSE(static_virtual_mutex.try_lock());
   static_virtual_mutex.unlock();
 }
+
+PW_SYNC_ADD_BORROWABLE_TIMED_LOCK_NAMED_TESTS(BorrowableVirtualTimedMutex,
+                                              VirtualTimedMutex,
+                                              chrono::SystemClock);
 
 TEST(TimedMutex, LockUnlockInC) {
   pw::sync::TimedMutex mutex;
