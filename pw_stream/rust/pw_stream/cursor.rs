@@ -154,13 +154,13 @@ macro_rules! cursor_read_type_impl {
           fn [<read_ $ty _ $endian>](&mut self) -> Result<$ty> {
             const NUM_BYTES: usize = $ty::BITS as usize / 8;
             if NUM_BYTES > self.remaining() {
-                return Err(Error::ResourceExhausted);
+                return Err(Error::OutOfRange);
             }
             let sub_slice = self
                 .inner
                 .as_ref()
                 .get(self.pos..self.pos + NUM_BYTES)
-                .ok_or_else(|| Error::Unknown)?;
+                .ok_or_else(|| Error::InvalidArgument)?;
             // Because we are code size conscious we want an infallible way to
             // turn `sub_slice` into a fixed sized array as opposed to using
             // something like `.try_into()?`.
@@ -194,14 +194,14 @@ macro_rules! cursor_write_type_impl {
           fn [<write_ $ty _ $endian>](&mut self, value: &$ty) -> Result<()> {
             const NUM_BYTES: usize = $ty::BITS as usize / 8;
             if NUM_BYTES > self.remaining() {
-                return Err(Error::ResourceExhausted);
+                return Err(Error::OutOfRange);
             }
             let value_bytes = $ty::[<to_ $endian _bytes>](*value);
             let sub_slice = self
                 .inner
                 .as_mut()
                 .get_mut(self.pos..self.pos + NUM_BYTES)
-                .ok_or_else(|| Error::Unknown)?;
+                .ok_or_else(|| Error::InvalidArgument)?;
 
             sub_slice.copy_from_slice(&value_bytes[..]);
 
