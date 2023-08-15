@@ -218,7 +218,18 @@ def _generate_constraint_with_hashes(
     output_text = output_text.replace(str(ctx.output_dir), '')
     output_text = output_text.replace(str(ctx.root), '')
     output_text = output_text.replace(str(output_file.parent), '')
-    output_file.write_text(output_text)
+
+    final_output_text = ''
+    for line in output_text.splitlines(keepends=True):
+        # Remove --find-links lines
+        if line.startswith('--find-links'):
+            continue
+        # Remove blank lines
+        if line == '\n':
+            continue
+        final_output_text += line
+
+    output_file.write_text(final_output_text)
 
 
 def _update_upstream_python_constraints(
