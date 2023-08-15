@@ -22,9 +22,9 @@ appnope==0.1.3 \
     # via
     #   -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   ipython
-astroid==2.14.2 \
-    --hash=sha256:0e0e3709d64fbffd3037e4ff403580550f14471fd3eaae9fa11cc9a5c7901153 \
-    --hash=sha256:a3cf9f02c53dd259144a7e8f3ccd75d67c9a8c716ef183e0c1f291bc5d7bb3cf
+astroid==2.15.6 \
+    --hash=sha256:389656ca57b6108f939cf5d2f9a2a825a3be50ba9d589670f393236e0a03b91c \
+    --hash=sha256:903f024859b7c7687d7a7f3a3f73b17301f8e42dfd9cc9df9d4418172d3e2dbd
     # via
     #   -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
     #   pylint
@@ -743,9 +743,9 @@ pygments==2.14.0 \
     #   ipython
     #   ptpython
     #   sphinx
-pylint==2.16.2 \
-    --hash=sha256:13b2c805a404a9bf57d002cd5f054ca4d40b0b87542bdaba5e05321ae8262c84 \
-    --hash=sha256:ff22dde9c2128cd257c145cfd51adeff0be7df4d80d669055f24a962b351bbe4
+pylint==2.17.5 \
+    --hash=sha256:73995fb8216d3bed149c8d51bba25b2c52a8251a2c8ac846ec668ce38fab5413 \
+    --hash=sha256:f7b601cbc06fef7e62a754e2b41294c2aa31f1cb659624b9a85bcba29eaf8252
     # via -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
 pyperclip==1.8.2 \
     --hash=sha256:105254a8b04934f0bc84e9c24eb360a591aaf6535c9def5f29d92af107a9bf57
