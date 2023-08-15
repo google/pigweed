@@ -115,9 +115,14 @@ pw_test("fuzztest_tests") {
   deps = [ ":fuzztest" ]
 }
 
-# This target should only be when defining a fuzzing toolchain, e.g. to set
+# This target should only be used when defining a fuzzing toolchain, e.g. to set
 # `pw_unit_test_GOOGLETEST_BACKEND = "$dir_pw_fuzzer:gtest"
-if (dir_pw_third_party_googletest != "") {
+# TODO: b/295961502 - Support running FuzzTest-based fuzzers on OSS-Fuzz.
+if (pw_toolchain_OSS_FUZZ_ENABLED) {
+  group("gtest") {
+    public_deps = [ "$dir_pw_unit_test:light" ]
+  }
+} else if (dir_pw_third_party_googletest != "") {
   group("gtest") {
     public_deps = [ "$dir_pw_third_party/googletest" ]
   }
@@ -130,9 +135,14 @@ if (dir_pw_third_party_googletest != "") {
   }
 }
 
-# This target should only be when defining a fuzzing toolchain, e.g. to set
+# This target should only be used when defining a fuzzing toolchain, e.g. to set
 # `pw_unit_test_MAIN = "$dir_pw_fuzzer:fuzztest_main"
-if (dir_pw_third_party_fuzztest != "") {
+# TODO: b/295961502 - Support running FuzzTest-based fuzzers on OSS-Fuzz.
+if (pw_toolchain_OSS_FUZZ_ENABLED) {
+  group("fuzztest_main") {
+    deps = [ "$dir_pw_unit_test:simple_printing_main" ]
+  }
+} else if (dir_pw_third_party_fuzztest != "") {
   group("fuzztest_main") {
     deps = [ "$dir_pw_third_party/fuzztest/fuzztest:fuzztest_gtest_main" ]
   }

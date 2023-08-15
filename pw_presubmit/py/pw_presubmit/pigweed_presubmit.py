@@ -153,7 +153,6 @@ def _gn_combined_build_check_targets() -> Sequence[str]:
         'python.tests',
         'python.lint',
         'docs',
-        'fuzzers',
         'pigweed_pypi_distribution',
     ]
 
@@ -469,7 +468,7 @@ gn_fuzz_build = build.GnGenNinja(
             ctx.root / 'third_party/googletest'
         ),
     },
-    ninja_targets=('host_clang_fuzz',),
+    ninja_targets=('fuzzers',),
     ninja_contexts=(
         lambda ctx: build.modified_env(
             FUZZTEST_PRNG_SEED=build.fuzztest_prng_seed(ctx),

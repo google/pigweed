@@ -230,6 +230,8 @@ use the ``pw_perf_test`` template to register your code.
    with ``pw_watch``. However you will still need to add your test group to the
    pw_perf_tests group in the top level BUILD.gn.
 
+.. _module-pw_perf_test-pw_perf_test:
+
 pw_perf_test template
 ---------------------
 ``pw_perf_test`` defines a single perf test suite. It creates two sub-targets.

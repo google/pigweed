@@ -524,8 +524,8 @@ types of tests. It is typically used by other templates, such as the
 
 Arguments
 ^^^^^^^^^
-* ``test_type``: One of "test_group", "unit_test", "action_test", or
-  "perf_test".
+* ``test_type``: One of "test_group", "unit_test", "action_test", "perf_test",
+  or "fuzz_test".
 * ``test_name``: Name of the test. Defaults to the target name.
 * ``build_label``: GN label for the test. Defaults to the test name.
 * ``extra_metadata``: Additional variables to add to the metadata.
@@ -533,10 +533,11 @@ Arguments
 Specific test templates add additional details using ``extra_metadata``. For
 example:
 
-* The :ref:`module-pw_unit_test-pw_test` includes the ``test_directory``
-  that contains the test executable.
 * The :ref:`module-pw_unit_test-pw_test_group` includes its collected list of
   tests and test groups as ``deps``.
+* The :ref:`module-pw_unit_test-pw_test` and the
+  :ref:`module-pw_perf_test-pw_perf_test` includes the ``test_directory``
+  that contains the test executable.
 * The :ref:`module-pw_build-python-action-test` includes the Ninja target that
   can be used to invoke the Python action and run the test.
 

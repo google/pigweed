@@ -120,8 +120,6 @@ pw_test_group("tests") {
     ":codegen_message_test",
     ":decoder_test",
     ":encoder_test",
-    ":encoder_fuzzer_test",
-    ":decoder_fuzzer_test",
     ":find_test",
     ":map_utils_test",
     ":message_test",
@@ -129,10 +127,11 @@ pw_test_group("tests") {
     ":stream_decoder_test",
     ":varint_size_test",
   ]
+  group_deps = [ ":fuzzers" ]
 }
 
-group("fuzzers") {
-  deps = [
+pw_fuzzer_group("fuzzers") {
+  fuzzers = [
     ":decoder_fuzzer",
     ":encoder_fuzzer",
   ]

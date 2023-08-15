@@ -208,10 +208,6 @@ _build_pigweed_default_at_all_optimization_levels("host_clang") {
   toolchain_prefix = "$_internal_toolchains:pw_strict_host_clang_"
 }
 
-group("host_clang_fuzz") {
-  deps = [ ":pigweed_default($_internal_toolchains:pw_strict_host_clang_fuzz)" ]
-}
-
 # GCC is only supported for Windows. Pigweed doesn't yet provide a Windows
 # clang toolchain, and Pigweed does not provide gcc toolchains for macOS and
 # Linux.
@@ -339,22 +335,18 @@ group("pip_vendor_wheels") {
 group("fuzzers") {
   deps = []
 
-  # TODO(b/274437709): The client_fuzzer encounters build errors on macos. Limit
-  # it to Linux hosts for now.
-  if (host_os == "linux") {
-    _default_tc = _default_toolchain_prefix + pw_DEFAULT_C_OPTIMIZATION_LEVEL
-    deps += [ "$dir_pw_rpc/fuzz:client_fuzzer($_default_tc)" ]
-  }
-
   if (host_os != "win") {
     # Coverage-guided fuzzing is only supported on Linux and MacOS using clang.
-    deps += [
-      "$dir_pw_bluetooth_hci:fuzzers($dir_pigweed/targets/host:host_clang_fuzz)",
-      "$dir_pw_fuzzer:fuzzers($dir_pigweed/targets/host:host_clang_fuzz)",
-      "$dir_pw_protobuf:fuzzers($dir_pigweed/targets/host:host_clang_fuzz)",
-      "$dir_pw_random:fuzzers($dir_pigweed/targets/host:host_clang_fuzz)",
-      "$dir_pw_tokenizer:fuzzers($dir_pigweed/targets/host:host_clang_fuzz)",
-    ]
+    # Fuzztest-based fuzzers will run in unit test mode. libFuzzer-based fuzzers
+    # will only build.
+    _clang_fuzz_tc = _default_toolchain_prefix + "fuzz"
+    deps += [ ":pw_module_tests.run($_clang_fuzz_tc)" ]
+  }
+
+  # Include additional, bespoke fuzzers.
+  if (!pw_toolchain_OSS_FUZZ_ENABLED) {
+    _default_tc = _default_toolchain_prefix + pw_DEFAULT_C_OPTIMIZATION_LEVEL
+    deps += [ ":pw_custom_fuzzers($_default_tc)" ]
   }
 }
 
@@ -577,6 +569,17 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_perf_test:perf_test_tests_test",
       "$dir_pw_protobuf:perf_tests",
     ]
+    output_metadata = true
+  }
+
+  # Fuzzers not based on a fuzzing engine. Engine-based fuzzers should be
+  # included in `pw_module_tests`.
+  pw_test_group("pw_custom_fuzzers") {
+    # TODO(b/274437709): The RPC client_fuzzer encounters build errors on macos.
+    # Limit it to Linux hosts for now.
+    if (host_os == "linux") {
+      tests = [ "$dir_pw_rpc/fuzz:client_fuzzer" ]
+    }
     output_metadata = true
   }
 

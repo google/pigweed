@@ -63,12 +63,12 @@ pw_test_group("tests") {
   tests = [
     ":packet_test",
     ":uart_transport_test",
-    ":uart_transport_fuzzer_test",
   ]
+  group_deps = [ ":fuzzers" ]
 }
 
-group("fuzzers") {
-  deps = [ ":uart_transport_fuzzer" ]
+pw_fuzzer_group("fuzzers") {
+  fuzzers = [ ":uart_transport_fuzzer" ]
 }
 
 pw_test("packet_test") {

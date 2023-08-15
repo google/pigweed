@@ -15,9 +15,7 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/error.gni")
-import("$dir_pw_third_party/abseil-cpp/abseil-cpp.gni")
-import("$dir_pw_third_party/fuzztest/fuzztest.gni")
-import("$dir_pw_third_party/re2/re2.gni")
+import("$dir_pw_build/test_info.gni")
 import("$dir_pw_toolchain/host_clang/toolchains.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -36,8 +34,7 @@ import("$dir_pw_unit_test/test.gni")
 #
 # Args:
 #   - enable_test_if: (optional) Passed as `enable_if` to the unit test.
-#   Remaining arguments are the same as `pw_executable`.
-#
+#   - All of the `pw_executable` args are accepted.
 template("pw_fuzzer") {
   if (!pw_toolchain_FUZZING_ENABLED) {
     pw_error(target_name) {
@@ -50,6 +47,30 @@ template("pw_fuzzer") {
     }
     not_needed(invoker, "*")
   } else {
+    # Metadata for this test when used as part of a pw_test_group target.
+    _fuzzer_target_name = target_name
+    _fuzzer_output_dir = "${target_out_dir}/bin"
+    if (defined(invoker.output_dir)) {
+      _fuzzer_output_dir = invoker.output_dir
+    }
+
+    _tags = [ "libfuzzer" ]
+    if (defined(invoker.tags)) {
+      _tags += invoker.tags
+    }
+
+    _test_metadata = "${target_name}.metadata"
+    _extra_metadata = {
+      forward_variables_from(invoker, [ "extra_metadata" ])
+      test_directory = rebase_path(_fuzzer_output_dir, root_build_dir)
+    }
+    pw_test_info(_test_metadata) {
+      test_type = "fuzz_test"
+      test_name = _fuzzer_target_name
+      tags = _tags
+      extra_metadata = _extra_metadata
+    }
+
     pw_executable(target_name) {
       configs = []
       deps = []
@@ -61,8 +82,18 @@ template("pw_fuzzer") {
                              ])
       forward_variables_from(invoker, [ "visibility" ])
       configs += [ "$dir_pw_fuzzer:libfuzzer_config" ]
-      deps += [ "$dir_pw_fuzzer:libfuzzer" ]
+      deps += [
+        ":$_test_metadata",
+        "$dir_pw_fuzzer:libfuzzer",
+      ]
+      output_dir = _fuzzer_output_dir
+      metadata = {
+        test_barrier = [ ":$_test_metadata" ]
+      }
     }
+  }
+
+  group(target_name + ".run") {
   }
 
   pw_test("${target_name}_test") {
@@ -71,5 +102,45 @@ template("pw_fuzzer") {
     forward_variables_from(invoker, [ "visibility" ])
     deps += [ "$dir_pw_fuzzer:libfuzzer_test" ]
     enable_if = !defined(enable_test_if) || enable_test_if
+  }
+}
+
+# Defines a related collection of fuzzers.
+#
+# This template wraps `pw_test_group` to collect a set of libFuzzer-based fuzzer
+# tests. These unit tests do not perform fuzzing. Instead, they execute the fuzz
+# target function with a set of fixed inputs to verify the fuzzer can be built
+# and run.
+#
+# If and only if the current toolchain supports fuzzing, this template will also
+# include the fuzzers themselves.
+#
+# As with `pw_test_group`, targets defined using this template will produce test
+# metadata with a `test_type` of "test_group" and an additional `deps` list
+# describing the tests collected by this target.
+#
+# Args:
+#   - fuzzers: List of `pw_fuzzer` targets for each of the fuzzers in the group.
+#
+#   - The following args have the same meaning as for `pw_python_action`:
+#         group_deps
+#         enable_if
+#         output_metadata
+template("pw_fuzzer_group") {
+  _with_fuzzers = pw_toolchain_FUZZING_ENABLED && pw_toolchain_SANITIZERS != []
+  pw_test_group(target_name) {
+    forward_variables_from(invoker,
+                           "*",
+                           [
+                             "fuzzers",
+                             "tests",
+                           ])
+    tests = []
+    foreach(fuzzer, invoker.fuzzers) {
+      if (_with_fuzzers) {
+        tests += [ fuzzer ]
+      }
+      tests += [ fuzzer + "_test" ]
+    }
   }
 }

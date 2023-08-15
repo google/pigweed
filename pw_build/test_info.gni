@@ -32,6 +32,7 @@
 #         "unit_test"
 #         "action_test"
 #         "perf_test"
+#         "fuzz_test"
 #   - test_name (optional): Name of the test as a string. Defaults to the
 #         target name.
 #   - build_label (optional): GN label for the test being described. Defaults to
@@ -85,6 +86,10 @@ template("pw_test_info") {
     } else if (_type == "perf_test") {
       metadata = {
         perf_tests = [ _metadata ]
+      }
+    } else if (_type == "fuzz_test") {
+      metadata = {
+        fuzz_tests = [ _metadata ]
       }
     } else {
       assert(
