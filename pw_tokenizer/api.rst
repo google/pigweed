@@ -37,3 +37,8 @@ Python
    :members:
 .. autofunction:: pw_tokenizer.tokens.pw_tokenizer_65599_hash
    :noindex:
+
+Tokenization in Rust
+====================
+``pw_tokenizer``'s Rust API is documented in the
+`pw_tokenizer crate's docs </rustdoc/pw_tokenizer>`_.

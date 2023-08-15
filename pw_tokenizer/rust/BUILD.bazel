@@ -12,7 +12,28 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_rust//rust:defs.bzl", "rust_doc", "rust_doc_test", "rust_library", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_doc", "rust_doc_test", "rust_library", "rust_proc_macro", "rust_test")
+
+rust_proc_macro(
+    name = "pw_tokenizer_macro",
+    srcs = [
+        "pw_tokenizer_macro.rs",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":pw_tokenizer_core",
+        ":pw_tokenizer_printf",
+        "//pw_status/rust:pw_status",
+        "@rust_crates//:proc-macro2",
+        "@rust_crates//:quote",
+        "@rust_crates//:syn",
+    ],
+)
+
+rust_test(
+    name = "pw_tokenizer_macro_test",
+    crate = ":pw_tokenizer_macro",
+)
 
 rust_library(
     name = "pw_tokenizer_core",
@@ -64,4 +85,34 @@ rust_doc_test(
 rust_doc(
     name = "pw_tokenizer_printf_doc",
     crate = ":pw_tokenizer_printf",
+)
+
+rust_library(
+    name = "pw_tokenizer",
+    srcs = [
+        "pw_tokenizer/internal.rs",
+        "pw_tokenizer/lib.rs",
+    ],
+    proc_macro_deps = [":pw_tokenizer_macro"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":pw_tokenizer_core",  # Added for rustdoc linking support.
+        "//pw_status/rust:pw_status",
+        "//pw_stream/rust:pw_stream",
+    ],
+)
+
+rust_test(
+    name = "pw_tokenizer_test",
+    crate = ":pw_tokenizer",
+)
+
+rust_doc_test(
+    name = "pw_tokenizer_doc_test",
+    crate = ":pw_tokenizer",
+)
+
+rust_doc(
+    name = "pw_tokenizer_doc",
+    crate = ":pw_tokenizer",
 )

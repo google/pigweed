@@ -16,9 +16,18 @@ load("@rules_rust//rust:defs.bzl", "rust_docs")
 
 rust_docs(
     name = "docs",
+
+    # These need to be kept in dependency order for inter-crate linking to
+    # work.
+    #
+    # TODO: b/295227522 - Add support to `rust_docs` to automatically processs
+    # crates in topological order.
     crates = [
         "//pw_status/rust:pw_status",
         "//pw_stream/rust:pw_stream",
         "//pw_varint/rust:pw_varint",
+        "//pw_tokenizer/rust:pw_tokenizer_core",
+        "//pw_tokenizer/rust:pw_tokenizer_printf",
+        "//pw_tokenizer/rust:pw_tokenizer",
     ],
 )

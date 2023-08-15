@@ -7,7 +7,7 @@ pw_tokenizer
    :name: pw_tokenizer
    :tagline: Compress strings to shrink logs by +75%
    :status: stable
-   :languages: C11, C++14, Python, TypeScript
+   :languages: C11, C++14, Python, Rust, TypeScript
    :code-size-impact: 50% reduction in binary log size
 
 Logging is critical, but developers are often forced to choose between

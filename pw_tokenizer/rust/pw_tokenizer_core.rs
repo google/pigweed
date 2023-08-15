@@ -35,8 +35,7 @@ pub fn hash_bytes(bytes: &[u8]) -> u32 {
     hash_bytes_fixed(bytes, bytes.len())
 }
 
-/// Calculate the hash for a sequence of bytes, truncating to a fixed length
-/// if necessary.
+/// Calculate the hash for a sequence of bytes, examining at most `len` bytes.
 ///
 /// ```
 /// use pw_tokenizer_core::hash_bytes_fixed;
