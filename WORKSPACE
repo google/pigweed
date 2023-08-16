@@ -251,9 +251,6 @@ http_archive(
         # Fix rustdoc test w/ proc macros
         # https://github.com/bazelbuild/rules_rust/pull/1952
         "//pw_rust/bazel_patches:0001-rustdoc_test-Apply-prefix-stripping-to-proc_macro-de.patch",
-        # Allow `rust_repository_set` to specify `opt_level`
-        # https://github.com/bazelbuild/rules_rust/pull/2036
-        "//pw_rust/bazel_patches:0002-Add-opt_level-argument-to-rust_repository_set.patch",
         # Adds prototype functionality for documenting multiple crates in one
         # HTML output directory.  While the approach in this patch may have
         # issues scaling to giant mono-repos, it is apporpriate for embedded
@@ -261,10 +258,10 @@ http_archive(
         # the `rules_rust` community decides on a way to propperly support this,
         # we will migrate to that solution.
         # https://github.com/konkers/rules_rust/tree/wip/rustdoc
-        "//pw_rust/bazel_patches:0003-PROTOTYPE-Add-ability-to-document-multiple-crates-at.patch",
+        "//pw_rust/bazel_patches:0002-PROTOTYPE-Add-ability-to-document-multiple-crates-at.patch",
     ],
-    sha256 = "190b5aeba104210f8ed9b1ff595d1f459297fe32db70f0a04f5c537a13ee0602",
-    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.24.1/rules_rust-v0.24.1.tar.gz"],
+    sha256 = "9d04e658878d23f4b00163a72da3db03ddb451273eb347df7d7c50838d698f49",
+    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.26.0/rules_rust-v0.26.0.tar.gz"],
 )
 
 load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_analyzer_toolchain_repository", "rust_repository_set")

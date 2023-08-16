@@ -1,18 +1,17 @@
-From ab7763c6cd48ff6a2b653dd9ea8560e5ad7b1ff0 Mon Sep 17 00:00:00 2001
+From 0b48b44de59c8fd85f3ec3267061dd3610503655 Mon Sep 17 00:00:00 2001
 From: Erik Gilling <konkers@google.com>
 Date: Mon, 27 Mar 2023 16:48:26 +0000
-Subject: [PATCH 3/3] PROTOTYPE: Add ability to document multiple crates at
+Subject: [PATCH 2/2] PROTOTYPE: Add ability to document multiple crates at
  once
 
 ---
  rust/defs.bzl                     |   4 +
  rust/private/rustdoc.bzl          | 203 ++++++++++++++++++++++++++++++
- util/BUILD.bazel                  |  12 ++
  util/capture_args/BUILD.bazel     |   8 ++
  util/capture_args/capture_args.rs |  28 +++++
  util/run_scripts/BUILD.bazel      |   8 ++
  util/run_scripts/run_scripts.rs   |  40 ++++++
- 7 files changed, 303 insertions(+)
+ 6 files changed, 291 insertions(+)
  create mode 100644 util/capture_args/BUILD.bazel
  create mode 100644 util/capture_args/capture_args.rs
  create mode 100644 util/run_scripts/BUILD.bazel
@@ -258,26 +257,6 @@ index f06d18e4..7326f59f 100644
 +    ],
 +    incompatible_use_toolchain_transition = True,
 +)
-diff --git a/util/BUILD.bazel b/util/BUILD.bazel
-index 8502870b..76e1d0d5 100644
---- a/util/BUILD.bazel
-+++ b/util/BUILD.bazel
-@@ -9,3 +9,15 @@ filegroup(
-     srcs = ["collect_coverage.sh"],
-     visibility = ["//visibility:public"],
- )
-+
-+sh_binary(
-+    name = "dump_args",
-+    srcs = ["dump_args.sh"],
-+    visibility = ["//visibility:public"],
-+)
-+
-+sh_binary(
-+    name = "run_all",
-+    srcs = ["run_all.sh"],
-+    visibility = ["//visibility:public"],
-+)
 diff --git a/util/capture_args/BUILD.bazel b/util/capture_args/BUILD.bazel
 new file mode 100644
 index 00000000..0d7146c2
@@ -387,5 +366,5 @@ index 00000000..cc8e4796
 +    }
 +}
 -- 
-2.41.0.487.g6d72f3e995-goog
+2.41.0.694.ge786442a9b-goog
 
