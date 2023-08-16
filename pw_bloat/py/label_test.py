@@ -51,24 +51,24 @@ class LabelStructTest(unittest.TestCase):
 
     def test_data_source_single_insert_total_size(self):
         ds_map = DataSourceMap(['a', 'b', 'c'])
-        ds_map.insert_label_hierachy(['FLASH', '.code', 'main()'], 30)
+        ds_map.insert_label_hierarchy(['FLASH', '.code', 'main()'], 30)
         self.assertEqual(ds_map.get_total_size(), 30)
 
     def test_data_source_multiple_insert_total_size(self):
         ds_map = DataSourceMap(['a', 'b', 'c'])
-        ds_map.insert_label_hierachy(['FLASH', '.code', 'main()'], 30)
-        ds_map.insert_label_hierachy(['RAM', '.code', 'foo()'], 100)
+        ds_map.insert_label_hierarchy(['FLASH', '.code', 'main()'], 30)
+        ds_map.insert_label_hierarchy(['RAM', '.code', 'foo()'], 100)
         self.assertEqual(ds_map.get_total_size(), 130)
 
     def test_parsing_generator_three_datasource_names(self):
         ds_map = DataSourceMap(['a', 'b', 'c'])
         for label in LIST_LABELS:
-            ds_map.insert_label_hierachy(
+            ds_map.insert_label_hierarchy(
                 [label.parents[0], label.parents[1], label.name], label.size
             )
         list_labels_three = [*LIST_LABELS, Label(name='total', size=350)]
-        for label_hiearchy in ds_map.labels():
-            self.assertIn(label_hiearchy, list_labels_three)
+        for label_hierarchy in ds_map.labels():
+            self.assertIn(label_hierarchy, list_labels_three)
         self.assertEqual(ds_map.get_total_size(), 350)
 
     def test_parsing_generator_two_datasource_names(self):
@@ -79,18 +79,18 @@ class LabelStructTest(unittest.TestCase):
             Label(name='bar()', size=220, parents=tuple(['RAM'])),
         ]
         for label in ds_label_list:
-            ds_map.insert_label_hierachy(
+            ds_map.insert_label_hierarchy(
                 [label.parents[0], label.name], label.size
             )
         list_labels_two = [*ds_label_list, Label(name='total', size=350)]
-        for label_hiearchy in ds_map.labels():
-            self.assertIn(label_hiearchy, list_labels_two)
+        for label_hierarchy in ds_map.labels():
+            self.assertIn(label_hierarchy, list_labels_two)
         self.assertEqual(ds_map.get_total_size(), 350)
 
     def test_parsing_generator_specified_datasource_1(self):
         ds_map = DataSourceMap(['a', 'b', 'c'])
         for label in LIST_LABELS:
-            ds_map.insert_label_hierachy(
+            ds_map.insert_label_hierarchy(
                 [label.parents[0], label.parents[1], label.name], label.size
             )
         list_labels_ds_b = [
@@ -98,14 +98,14 @@ class LabelStructTest(unittest.TestCase):
             Label(name='.heap', size=320, parents=tuple(['RAM'])),
         ]
         list_labels_ds_b += [Label(name='total', size=350)]
-        for label_hiearchy in ds_map.labels(1):
-            self.assertIn(label_hiearchy, list_labels_ds_b)
+        for label_hierarchy in ds_map.labels(1):
+            self.assertIn(label_hierarchy, list_labels_ds_b)
         self.assertEqual(ds_map.get_total_size(), 350)
 
     def test_parsing_generator_specified_datasource_str_2(self):
         ds_map = DataSourceMap(['a', 'b', 'c'])
         for label in LIST_LABELS:
-            ds_map.insert_label_hierachy(
+            ds_map.insert_label_hierarchy(
                 [label.parents[0], label.parents[1], label.name], label.size
             )
         list_labels_ds_a = [
@@ -113,14 +113,14 @@ class LabelStructTest(unittest.TestCase):
             Label(name='RAM', size=320, parents=tuple([])),
         ]
         list_labels_ds_a += [Label(name='total', size=350)]
-        for label_hiearchy in ds_map.labels(0):
-            self.assertIn(label_hiearchy, list_labels_ds_a)
+        for label_hierarchy in ds_map.labels(0):
+            self.assertIn(label_hierarchy, list_labels_ds_a)
         self.assertEqual(ds_map.get_total_size(), 350)
 
     def test_parsing_generator_specified_datasource_int(self):
         ds_map = DataSourceMap(['a', 'b', 'c'])
         for label in LIST_LABELS:
-            ds_map.insert_label_hierachy(
+            ds_map.insert_label_hierarchy(
                 [label.parents[0], label.parents[1], label.name], label.size
             )
         list_labels_ds_a = [
@@ -128,14 +128,14 @@ class LabelStructTest(unittest.TestCase):
             Label(name='RAM', size=320, parents=tuple([])),
         ]
         list_labels_ds_a += [Label(name='total', size=350)]
-        for label_hiearchy in ds_map.labels(0):
-            self.assertIn(label_hiearchy, list_labels_ds_a)
+        for label_hierarchy in ds_map.labels(0):
+            self.assertIn(label_hierarchy, list_labels_ds_a)
         self.assertEqual(ds_map.get_total_size(), 350)
 
     def test_parsing_generator_specified_datasource_int_2(self):
         ds_map = DataSourceMap(['a', 'b', 'c'])
         for label in LIST_LABELS:
-            ds_map.insert_label_hierachy(
+            ds_map.insert_label_hierarchy(
                 [label.parents[0], label.parents[1], label.name], label.size
             )
         list_labels_ds_b = [
@@ -143,21 +143,21 @@ class LabelStructTest(unittest.TestCase):
             Label(name='.heap', size=320, parents=tuple(['RAM'])),
         ]
         list_labels_ds_b += [Label(name='total', size=350)]
-        for label_hiearchy in ds_map.labels(1):
-            self.assertIn(label_hiearchy, list_labels_ds_b)
+        for label_hierarchy in ds_map.labels(1):
+            self.assertIn(label_hierarchy, list_labels_ds_b)
         self.assertEqual(ds_map.get_total_size(), 350)
 
     def test_diff_same_ds_labels_diff_sizes(self):
         """Same map with different sizes."""
         ds_map = DataSourceMap(['a', 'b', 'c'])
         for label in LIST_LABELS:
-            ds_map.insert_label_hierachy(
+            ds_map.insert_label_hierarchy(
                 [label.parents[0], label.parents[1], label.name], label.size
             )
 
         ds_map2 = DataSourceMap(['a', 'b', 'c'])
         for label in LIST_LABELS:
-            ds_map2.insert_label_hierachy(
+            ds_map2.insert_label_hierarchy(
                 [label.parents[0], label.parents[1], label.name],
                 label.size + 10,
             )
@@ -185,28 +185,30 @@ class LabelStructTest(unittest.TestCase):
 
         ds_map_diff = ds_map.diff(ds_map2)
 
-        for label_hiearchy in ds_map_diff.labels():
-            self.assertIn(label_hiearchy, list_labels_ds_b)
+        for label_hierarchy in ds_map_diff.labels():
+            self.assertIn(label_hierarchy, list_labels_ds_b)
 
     def test_diff_missing_ds_labels_diff_sizes(self):
         """Different map with different sizes."""
         ds_map = DataSourceMap(['a', 'b', 'c'])
         for label in LIST_LABELS:
-            ds_map.insert_label_hierachy(
+            ds_map.insert_label_hierarchy(
                 [label.parents[0], label.parents[1], label.name], label.size
             )
 
         ds_map2 = DataSourceMap(['a', 'b', 'c'])
         for label in LIST_LABELS[:-1]:
-            ds_map2.insert_label_hierachy(
+            ds_map2.insert_label_hierarchy(
                 [label.parents[0], label.parents[1], label.name],
                 label.size + 20,
             )
-        ds_map2.insert_label_hierachy(
+        ds_map2.insert_label_hierarchy(
             [label.parents[0], label.parents[1], 'foobar()'], label.size + 20
         )
 
-        ds_map2.insert_label_hierachy(["LOAD #5", 'random_load', 'func()'], 250)
+        ds_map2.insert_label_hierarchy(
+            ["LOAD #5", 'random_load', 'func()'], 250
+        )
 
         list_labels_ds_b = [
             Label(
@@ -234,8 +236,8 @@ class LabelStructTest(unittest.TestCase):
 
         ds_map_diff = ds_map2.diff(ds_map)
 
-        for label_hiearchy in ds_map_diff.labels(0):
-            self.assertIn(label_hiearchy, list_labels_ds_b)
+        for label_hierarchy in ds_map_diff.labels(0):
+            self.assertIn(label_hierarchy, list_labels_ds_b)
 
 
 if __name__ == '__main__':

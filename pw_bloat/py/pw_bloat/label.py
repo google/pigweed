@@ -109,7 +109,7 @@ class _DataSource:
 class DataSourceMap:
     """Module to store an array of DataSources and capacities.
 
-    An organize way to store a hierachy of labels and their sizes.
+    An organized way to store a hierarchy of labels and their sizes.
     Includes a capacity array to hold regex patterns for applying
     capacities to matching label names.
 
@@ -125,7 +125,7 @@ class DataSourceMap:
         vmsize_index = top_row.index('vmsize')
         ds_map_tsv = cls(top_row[:vmsize_index])
         for row in reader:
-            ds_map_tsv.insert_label_hierachy(
+            ds_map_tsv.insert_label_hierarchy(
                 row[:vmsize_index], int(row[vmsize_index])
             )
         return ds_map_tsv
@@ -143,25 +143,25 @@ class DataSourceMap:
             child_label in self._data_sources[ds_index][parent_label]
         )
 
-    def insert_label_hierachy(
+    def insert_label_hierarchy(
         self,
         label_hierarchy: Iterable[str],
         size: int,
         diff_exist: Optional[bool] = None,
     ) -> None:
-        """Insert a hierachy of labels with its size."""
+        """Insert a hierarchy of labels with its size."""
 
         # Insert initial '__base__' data source that holds the
         # running total size.
         self._data_sources[0].add_label(
             '__base__', self._BASE_TOTAL_LABEL, size
         )
-        complete_label_hierachy = [self._BASE_TOTAL_LABEL, *label_hierarchy]
-        for index in range(len(complete_label_hierachy) - 1):
-            if complete_label_hierachy[index]:
+        complete_label_hierarchy = [self._BASE_TOTAL_LABEL, *label_hierarchy]
+        for index in range(len(complete_label_hierarchy) - 1):
+            if complete_label_hierarchy[index]:
                 self._data_sources[index + 1].add_label(
-                    complete_label_hierachy[index],
-                    complete_label_hierachy[index + 1],
+                    complete_label_hierarchy[index],
+                    complete_label_hierarchy[index + 1],
                     size,
                     diff_exist,
                 )
@@ -181,7 +181,7 @@ class DataSourceMap:
         for b_label in base.labels(last_data_source):
             if last_data_source > 0:
                 curr_parent = b_label.parents[-1]
-            lb_hierachy_names = [*b_label.parents, b_label.name]
+            lb_hierarchy_names = [*b_label.parents, b_label.name]
 
             # Check if label exists in target binary DataSourceMap.
             # Subtract base from target size and insert diff size
@@ -196,16 +196,16 @@ class DataSourceMap:
                 ) - b_label.size
 
                 if diff_size:
-                    diff_dsm.insert_label_hierachy(
-                        lb_hierachy_names, diff_size, True
+                    diff_dsm.insert_label_hierarchy(
+                        lb_hierarchy_names, diff_size, True
                     )
                 else:
-                    diff_dsm.insert_label_hierachy(lb_hierachy_names, 0, True)
+                    diff_dsm.insert_label_hierarchy(lb_hierarchy_names, 0, True)
 
             # label is not present in target - insert with negative size
             else:
-                diff_dsm.insert_label_hierachy(
-                    lb_hierachy_names, -1 * b_label.size, False
+                diff_dsm.insert_label_hierarchy(
+                    lb_hierarchy_names, -1 * b_label.size, False
                 )
 
         # Iterate through all of target labels
@@ -218,7 +218,7 @@ class DataSourceMap:
             if not base.label_exists(
                 parent_data_source_index, curr_parent, t_label.name
             ):
-                diff_dsm.insert_label_hierachy(
+                diff_dsm.insert_label_hierarchy(
                     [*t_label.parents, f"{t_label.name}"], t_label.size, False
                 )
 

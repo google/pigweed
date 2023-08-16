@@ -201,7 +201,7 @@ class BloatTableOutput:
 
     def create_table(self) -> str:
         """Parse DataSourceMap to create ASCII table."""
-        curr_lb_hierachy = None
+        curr_lb_hierarchy = None
         last_diff_name = ''
         if self._diff_mode:
             self._ascii_table_rows.extend([*self._label_title_row()])
@@ -219,7 +219,7 @@ class BloatTableOutput:
 
             has_entries = True
 
-            new_lb_hierachy = tuple(
+            new_lb_hierarchy = tuple(
                 [
                     *self._get_ds_label_size(curr_label.parents),
                     self._LabelContent(
@@ -230,9 +230,9 @@ class BloatTableOutput:
                 ]
             )
             diff_list = self._diff_label_names(
-                curr_lb_hierachy, new_lb_hierachy
+                curr_lb_hierarchy, new_lb_hierarchy
             )
-            curr_lb_hierachy = new_lb_hierachy
+            curr_lb_hierarchy = new_lb_hierarchy
 
             if curr_label.parents and curr_label.parents[0] == last_diff_name:
                 continue
