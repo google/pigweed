@@ -198,6 +198,7 @@ class SetUpAndTearDown : public ::testing::Test {
   static int value;
 
   static void SetUpTestSuite() {
+    value = 1;
     EXPECT_EQ(value, 1);
     value++;
   }
