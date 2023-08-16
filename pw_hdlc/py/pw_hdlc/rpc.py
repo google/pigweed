@@ -42,7 +42,7 @@ from pw_rpc import callback_client
 from pw_hdlc.decode import Frame, FrameDecoder
 from pw_hdlc import encode
 
-_LOG = logging.getLogger(__name__)
+_LOG = logging.getLogger('pw_hdlc.rpc')
 
 STDOUT_ADDRESS = 1
 DEFAULT_ADDRESS = ord('R')
