@@ -22,15 +22,22 @@ import subprocess
 
 
 def main() -> None:
+    """arm-gdb wrapper that sets up the Python environment for gdb"""
+
     # Find 'arm-none-eabi-gdb' as long as it isn't in the current Python
     # virtualenv entry point. In other words: not this script.
+    exclude_paths = sys.path
+    venv = os.environ.get('VIRTUAL_ENV')
+    if venv:
+        venv_path = Path(venv).resolve()
+        exclude_paths.append(os.path.join(venv_path, 'Scripts'))
     arm_gdb_binary = shutil.which(
         'arm-none-eabi-gdb',
         path=os.pathsep.join(
             [
                 path_entry
                 for path_entry in os.environ.get('PATH', '').split(os.pathsep)
-                if path_entry not in sys.path
+                if str(Path(path_entry).resolve()) not in exclude_paths
             ]
         ),
     )
