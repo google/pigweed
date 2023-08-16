@@ -64,7 +64,7 @@ export class LogViewControls extends LitElement {
 
   @query('.field-menu') _fieldMenu!: HTMLMenuElement;
 
-  @query('.search-input') _searchInput!: HTMLInputElement;
+  @query('#search-field') _searchField!: HTMLInputElement;
 
   @queryAll('.item-checkboxeses') _itemCheckboxes!: HTMLCollection[];
 
@@ -91,8 +91,8 @@ export class LogViewControls extends LitElement {
         }
       }
     }
-    this._searchInput.value = this._searchText;
-    this._searchInput.dispatchEvent(new CustomEvent('input'));
+    this._searchField.value = this._searchText;
+    this._searchField.dispatchEvent(new CustomEvent('input'));
   }
 
   protected updated(): void {
@@ -118,8 +118,10 @@ export class LogViewControls extends LitElement {
       clearTimeout(this._inputDebounceTimer);
     }
 
-    const inputElement = event.target as HTMLInputElement;
-    const inputValue = inputElement.value;
+    const inputFacade = event.target as HTMLDivElement;
+    this.markKeysInText(inputFacade);
+    this._searchField.value = inputFacade.textContent || '';
+    const inputValue = this._searchField.value;
 
     this._inputDebounceTimer = window.setTimeout(() => {
       const customEvent = new CustomEvent('input-change', {
@@ -130,6 +132,26 @@ export class LogViewControls extends LitElement {
 
       this.dispatchEvent(customEvent);
     }, this.INPUT_DEBOUNCE_DELAY);
+  };
+
+  private markKeysInText(target: HTMLElement) {
+    const pattern = /\b(\w+):(?=\w)/;
+    const textContent = target.textContent || '';
+    const conditions = textContent.split(/\s+/);
+    const wordsBeforeColons: string[] = [];
+
+    for (const condition of conditions) {
+      const match = condition.match(pattern);
+      if (match) {
+        wordsBeforeColons.push(match[0]);
+      }
+    }
+  }
+
+  private handleKeydown = (event: KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === 'Cmd') {
+      event.preventDefault();
+    }
   };
 
   /**
@@ -210,12 +232,13 @@ export class LogViewControls extends LitElement {
 
   render() {
     return html`
-      <p class="host-name"> ${this._viewTitle}</p>
+      <p class="host-name"> ${this._viewTitle || 'Log View'}</p>
 
       <div class="input-container">
-        <input class="search-input" placeholder="Search" type="text" @input=${
+        <div class="input-facade" contenteditable="plaintext-only" @input="${
           this.handleInput
-        }></input>
+        }" @keydown="${this.handleKeydown}"></div>
+        <input id="search-field" type="text"></input>
       </div>
 
       <div class="actions-container">

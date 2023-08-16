@@ -5,7 +5,7 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "peggy src/assets/filters.pegjs --format es && tsc && vite build --base=/asset/5b095937-1e59-52cf-9255-eb8577d1ff83/",
+        "build": "tsc && vite build --base=/asset/5b095937-1e59-52cf-9255-eb8577d1ff83/",
         "preview": "vite preview",
         "lint": "eslint --max-warnings=0 src"
     },
@@ -14,7 +14,6 @@
         "@material/web": "^1.0.0-pre.8",
         "date-fns": "^2.30.0",
         "lit": "^3.0.0-pre.0",
-        "peggy": "^3.0.2",
         "prettier-plugin-jsdoc": "^0.4.2"
     },
     "devDependencies": {

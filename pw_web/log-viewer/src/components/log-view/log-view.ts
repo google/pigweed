@@ -16,17 +16,13 @@ import { LitElement, PropertyValues, html } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { styles } from './log-view.styles';
 import { LogList } from '../log-list/log-list';
-import {
-  FieldData,
-  LogColumnState,
-  LogEntry,
-  State,
-} from '../../shared/interfaces';
+import { LogColumnState, LogEntry, State } from '../../shared/interfaces';
 import { LocalStorageState, StateStore } from '../../shared/state';
+import { LogFilter } from '../../utils/log-filter/log-filter';
 import '../log-list/log-list';
 import '../log-view-controls/log-view-controls';
 
-type LogFilter = (logEntry: LogEntry) => boolean;
+type FilterFunction = (logEntry: LogEntry) => boolean;
 
 /**
  * A component that filters and displays incoming log entries in an encapsulated
@@ -71,14 +67,14 @@ export class LogView extends LitElement {
 
   /** A function used for filtering rows that contain a certain substring. */
   @state()
-  private _stringFilter: LogFilter = () => true;
+  private _stringFilter: FilterFunction = () => true;
 
   /**
    * A function used for filtering rows that contain a timestamp within a
    * certain window.
    */
   @state()
-  private _timeFilter: LogFilter = () => true;
+  private _timeFilter: FilterFunction = () => true;
 
   /** A string representing the value contained in the search field. */
   @state()
@@ -91,9 +87,15 @@ export class LogView extends LitElement {
   @state()
   _state: State;
 
-  colsHidden: (boolean | undefined)[] = [];
+  @state()
+  _colsHidden: (boolean | undefined)[] = [];
 
   @query('log-list') _logList!: LogList;
+
+  private _debounceTimeout: NodeJS.Timeout | null = null;
+
+  /** The amount of time, in ms, before the filter expression is executed. */
+  private readonly FILTER_DELAY = 100;
 
   constructor() {
     super();
@@ -101,7 +103,7 @@ export class LogView extends LitElement {
   }
 
   protected firstUpdated(): void {
-    this.colsHidden = [];
+    this._colsHidden = [];
 
     if (this._state) {
       const viewConfigArr = this._state.logViewConfig;
@@ -110,9 +112,9 @@ export class LogView extends LitElement {
       if (index !== -1) {
         viewConfigArr[index].search = this.searchText;
         viewConfigArr[index].columns.map((i: LogColumnState) => {
-          this.colsHidden.push(i.hidden);
+          this._colsHidden.push(i.hidden);
         });
-        this.colsHidden.unshift(undefined);
+        this._colsHidden.unshift(undefined);
       }
     }
   }
@@ -135,6 +137,10 @@ export class LogView extends LitElement {
   private updateFilter(event: CustomEvent) {
     switch (event.type) {
       case 'input-change':
+        if (this._debounceTimeout) {
+          clearTimeout(this._debounceTimeout);
+        }
+
         this.searchText = event.detail.inputValue;
 
         if (!this.searchText) {
@@ -142,15 +148,20 @@ export class LogView extends LitElement {
           return;
         }
 
-        this._stringFilter = (logEntry: LogEntry) =>
-          logEntry.fields
-            .filter(
-              // Exclude severity field, since its text is omitted from the table
-              (field: FieldData) => field.key !== 'severity',
-            )
-            .some((field: FieldData) =>
-              new RegExp(this.searchText, 'i').test(field.value.toString()),
-            );
+        // Run the filter after the timeout delay
+        this._debounceTimeout = setTimeout(() => {
+          const filters = LogFilter.parseSearchQuery(this.searchText).map(
+            (condition) => LogFilter.createFilterFunction(condition),
+          );
+          this._stringFilter =
+            filters.length > 0
+              ? (logEntry: LogEntry) =>
+                  filters.some((filter) => filter(logEntry))
+              : () => true;
+
+          this.filterLogs();
+          this.requestUpdate();
+        }, this.FILTER_DELAY);
         break;
       case 'clear-logs':
         this._timeFilter = (logEntry) =>
@@ -204,16 +215,16 @@ export class LogView extends LitElement {
     const viewConfigArr = this._state.logViewConfig;
     let colIndex = -1;
 
-    this.colsHidden = [];
+    this._colsHidden = [];
     const index = viewConfigArr
       .map((i) => {
         return i.viewID;
       })
       .indexOf(this.id);
     viewConfigArr[index].columns.map((i: LogColumnState) => {
-      this.colsHidden.push(i.hidden);
+      this._colsHidden.push(i.hidden);
     });
-    this.colsHidden.unshift(undefined);
+    this._colsHidden.unshift(undefined);
 
     this._fieldKeys.forEach((field: string, i: number) => {
       if (field == event.detail.field) {
@@ -222,8 +233,8 @@ export class LogView extends LitElement {
       }
     });
 
-    this.colsHidden[colIndex + 1] = !event.detail.isChecked; // Exclude first column (severity)
-    this._logList.colsHidden = [...this.colsHidden];
+    this._colsHidden[colIndex + 1] = !event.detail.isChecked; // Exclude first column (severity)
+    this._logList.colsHidden = [...this._colsHidden];
 
     this._state = { logViewConfig: viewConfigArr };
     this._stateStore.setState({ logViewConfig: viewConfigArr });
@@ -253,7 +264,7 @@ export class LogView extends LitElement {
 
   render() {
     return html` <log-view-controls
-        .colsHidden=${[...this.colsHidden]}
+        .colsHidden=${[...this._colsHidden]}
         .viewId=${this.id}
         .fieldKeys=${this._fieldKeys}
         .hideCloseButton=${!this.isOneOfMany}
@@ -267,7 +278,7 @@ export class LogView extends LitElement {
       </log-view-controls>
 
       <log-list
-        .colsHidden=${[...this.colsHidden]}
+        .colsHidden=${[...this._colsHidden]}
         .lineWrap=${this._lineWrap}
         .viewId=${this.id}
         .logs=${this._filteredLogs}

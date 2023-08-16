@@ -2,8 +2,6 @@
 
 An embeddable log-viewing web component that is customizable and extensible for use in various developer contexts.
 
-Visit [go/fxd-pigweed-log-viewer](http://goto.google.com/fxd-pigweed-log-viewer) for more information.
-
 ## Installation
 
 1. Clone the main Pigweed repository:

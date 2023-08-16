@@ -89,7 +89,7 @@ export class MockLogSource extends LogSource {
       'Database connection lost. Attempting to reconnect.',
       'User authentication failed. Invalid credentials provided.',
       'System reboot initiated. Please wait for the system to come back online.',
-      'File not found. The requested file does not exist.',
+      'File not found. (The requested file does not exist).',
       'Data corruption detected. Initiating recovery process.',
       'Network congestion detected. Traffic is high, please try again later.',
       'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam condimentum auctor justo, sit amet condimentum nibh facilisis non. Quisque in quam a urna dignissim cursus. Suspendisse egestas nisl sed massa dictum dictum. In tincidunt arcu nec odio eleifend, vel pharetra justo iaculis. Vivamus quis tellus ac velit vehicula consequat. Nam eu felis sed risus hendrerit faucibus ac id lacus. Vestibulum tincidunt tellus in ex feugiat interdum. Nulla sit amet luctus neque. Mauris et aliquet nunc, vel finibus massa. Curabitur laoreet eleifend nibh eget luctus. Fusce sodales augue nec purus faucibus, vel tristique enim vehicula. Aenean eu magna eros. Fusce accumsan dignissim dui auctor scelerisque. Proin ultricies nunc vel tincidunt facilisis.',
