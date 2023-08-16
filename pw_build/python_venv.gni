@@ -57,6 +57,8 @@ import("$dir_pw_build/python_action.gni")
 #     this page for a setup.cfg example:
 #     https://setuptools.pypa.io/en/latest/userguide/declarative_config.html
 #
+#   output_logs: (Default: true) Commands will output logs.
+#
 template("pw_python_venv") {
   assert(defined(invoker.path), "pw_python_venv requires a 'path'")
 
@@ -195,6 +197,12 @@ template("pw_python_venv") {
 
   if (defined(invoker.source_packages) || defined(invoker.requirements)) {
     if (current_toolchain == pw_build_PYTHON_TOOLCHAIN) {
+      if (defined(invoker.output_logs)) {
+        _output_logs = invoker.output_logs
+      } else {
+        _output_logs = true
+      }
+
       # Compile requirements with hashes
       pw_python_action("${target_name}._compile_requirements") {
         module = "piptools"
@@ -279,22 +287,24 @@ template("pw_python_venv") {
         _skip_installing_external_python_deps = true
         venv = get_label_info(":${invoker.target_name}", "label_no_toolchain")
 
-        _pip_install_log_file =
-            "$target_gen_dir/$target_name/pip_install_log.txt"
-
         _base_requirement_file = "$dir_pw_env_setup/py/pw_env_setup/virtualenv_setup/python_base_requirements.txt"
 
         args = [
-          "--log",
-          rebase_path(_pip_install_log_file, root_build_dir),
           "install",
           "--requirement",
           rebase_path(_base_requirement_file, root_build_dir),
         ]
+        if (_output_logs) {
+          _pip_install_log_file =
+              "$target_gen_dir/$target_name/pip_install_log.txt"
+          args += [
+            "--log",
+            rebase_path(_pip_install_log_file, root_build_dir),
+          ]
+          outputs = [ _pip_install_log_file ]
+        }
 
         # NOTE: Constraints should be ignored for this step.
-
-        outputs = [ _pip_install_log_file ]
 
         if (pw_build_PYTHON_PIP_INSTALL_OFFLINE) {
           args += [ "--no-index" ]
@@ -325,18 +335,20 @@ template("pw_python_venv") {
         _skip_installing_external_python_deps = true
         venv = get_label_info(":${invoker.target_name}", "label_no_toolchain")
 
-        _pip_install_log_file =
-            "$target_gen_dir/$target_name/pip_install_log.txt"
-
-        args = [
-          "--log",
-          rebase_path(_pip_install_log_file, root_build_dir),
-        ]
-        args += pw_build_PYTHON_PIP_DEFAULT_OPTIONS
+        args = pw_build_PYTHON_PIP_DEFAULT_OPTIONS
         args += [
           "install",
           "--upgrade",
         ]
+
+        if (_output_logs) {
+          _pip_install_log_file =
+              "$target_gen_dir/$target_name/pip_install_log.txt"
+          args += [
+            "--log",
+            rebase_path(_pip_install_log_file, root_build_dir),
+          ]
+        }
 
         if (_pip_generate_hashes) {
           args += [ "--require-hashes" ]
