@@ -50,7 +50,6 @@ PW_CC_TOOLCHAIN_CONFIG_ATTRS = {
     "compiler": "See documentation for cc_common.create_cc_toolchain_config_info()",
     "abi_version": "See documentation for cc_common.create_cc_toolchain_config_info()",
     "abi_libc_version": "See documentation for cc_common.create_cc_toolchain_config_info()",
-    "builtin_sysroot": "See documentation for cc_common.create_cc_toolchain_config_info()",
     "cc_target_os": "See documentation for cc_common.create_cc_toolchain_config_info()",
 }
 
@@ -64,6 +63,7 @@ PW_CC_TOOLCHAIN_BLOCKED_ATTRS = {
     "cxx_builtin_include_directories": "Use a pw_cc_toolchain_feature to add cxx_builtin_include_directories",
     "tool_paths": "pw_cc_toolchain does not support tool_paths, use \"ar\", \"cpp\", \"gcc\", \"gcov\", \"ld\", and \"strip\" attributes to set toolchain tools",
     "make_variables": "pw_cc_toolchain does not yet support make variables",
+    "builtin_sysroot": "Use a pw_cc_toolchain_feature to add a builtin_sysroot",
 }
 
 def _action_configs(action_tool, action_list):
@@ -138,6 +138,14 @@ def _pw_cc_toolchain_config_impl(ctx):
     for dep in ctx.attr.feature_deps:
         builtin_include_dirs.extend(dep[ToolchainFeatureInfo].cxx_builtin_include_directories)
 
+    sysroot_dir = None
+    for dep in ctx.attr.feature_deps:
+        dep_sysroot = dep[ToolchainFeatureInfo].builtin_sysroot
+        if dep_sysroot:
+            if sysroot_dir:
+                fail("Failed to set sysroot at `{}`, already have sysroot at `{}` ".format(dep_sysroot, sysroot_dir))
+            sysroot_dir = dep_sysroot
+
     return cc_common.create_cc_toolchain_config_info(
         ctx = ctx,
         action_configs = all_actions,
@@ -151,7 +159,7 @@ def _pw_cc_toolchain_config_impl(ctx):
         compiler = ctx.attr.compiler,
         abi_version = ctx.attr.abi_version,
         abi_libc_version = ctx.attr.abi_libc_version,
-        builtin_sysroot = ctx.attr.builtin_sysroot,
+        builtin_sysroot = sysroot_dir,
         cc_target_os = ctx.attr.cc_target_os,
     )
 
@@ -176,7 +184,6 @@ pw_cc_toolchain_config = rule(
         "compiler": attr.string(),
         "abi_version": attr.string(),
         "abi_libc_version": attr.string(),
-        "builtin_sysroot": attr.string(),
         "cc_target_os": attr.string(),
     },
     provides = [CcToolchainConfigInfo],

@@ -33,6 +33,7 @@ TOOLCHAIN_FEATURE_INFO_ATTRS = {
     "linkopts": "List[str]: Flags to pass to C compile actions",
     "linker_files": "List[File]: Files to link",
     "cxx_builtin_include_directories": "List[str]: Paths to C++ standard library include directories",
+    "builtin_sysroot": "str: Path to the directory containing the sysroot",
 }
 
 def _dict_to_str(dict_to_stringify):
@@ -137,6 +138,11 @@ def _initialize_args(**kwargs):
         initialized_args["cxx_builtin_include_directories"] = kwargs["cxx_builtin_include_directories"]
     else:
         initialized_args["cxx_builtin_include_directories"] = []
+
+    if "builtin_sysroot" in kwargs:
+        initialized_args["builtin_sysroot"] = kwargs["builtin_sysroot"]
+    else:
+        initialized_args["builtin_sysroot"] = None
     return initialized_args
 
 def build_toolchain_feature_info(ctx, **kwargs):
@@ -164,6 +170,7 @@ def build_toolchain_feature_info(ctx, **kwargs):
         ToolchainFeatureInfo(
             feature = new_feature,
             cxx_builtin_include_directories = initialized_args["cxx_builtin_include_directories"],
+            builtin_sysroot = initialized_args["builtin_sysroot"],
         ),
         DefaultInfo(files = initialized_args["linker_files"]),
     ]
@@ -186,6 +193,7 @@ def _pw_cc_toolchain_feature_impl(ctx):
         linkopts = ctx.attr.linkopts,
         linker_files = ctx.files.linker_files,
         cxx_builtin_include_directories = ctx.attr.cxx_builtin_include_directories,
+        builtin_sysroot = ctx.attr.builtin_sysroot,
     )
 
 pw_cc_toolchain_feature = rule(
@@ -198,6 +206,7 @@ pw_cc_toolchain_feature = rule(
         "linkopts": attr.string_list(),
         "linker_files": attr.label_list(allow_files = True),
         "cxx_builtin_include_directories": attr.string_list(),
+        "builtin_sysroot": attr.string(),
     },
     provides = [ToolchainFeatureInfo, DefaultInfo],
 )

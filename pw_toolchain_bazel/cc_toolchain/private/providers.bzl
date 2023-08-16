@@ -16,7 +16,8 @@
 ToolchainFeatureInfo = provider(
     doc = "A provider containing cc_toolchain features and related fields.",
     fields = {
-        "feature": "feature: The a group of build flags structured as a toolchain feature",
-        "cxx_builtin_include_directories": "List[str]: Builtin C/C++ standard library include directories",
+        "feature": "feature: A group of build flags structured as a toolchain feature.",
+        "cxx_builtin_include_directories": "List[str]: Builtin C/C++ standard library include directories.",
+        "builtin_sysroot": "str: Path to the sysroot directory. Use `external/[repo_name]` for sysroots provided as an external repository.",
     },
 )

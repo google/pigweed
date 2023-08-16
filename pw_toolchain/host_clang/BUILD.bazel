@@ -27,8 +27,8 @@ filegroup(name = "empty")
 pw_cc_toolchain_feature(
     name = "macos_stdlib",
     cxx_builtin_include_directories = [
-        "@llvm_toolchain//:include/c++/v1",
-        "@llvm_toolchain//:lib/clang/17/include",
+        "%package(@llvm_toolchain//)%/include/c++/v1",
+        "%package(@llvm_toolchain//)%/lib/clang/17/include",
     ],
     linker_files = ["@llvm_toolchain//:lib/libc++.a"],
     target_compatible_with = ["@platforms//os:macos"],
