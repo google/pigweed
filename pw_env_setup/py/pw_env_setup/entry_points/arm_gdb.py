@@ -21,7 +21,7 @@ import sys
 import subprocess
 
 
-def main() -> None:
+def main() -> int:
     """arm-gdb wrapper that sets up the Python environment for gdb"""
 
     # Find 'arm-none-eabi-gdb' as long as it isn't in the current Python
@@ -56,9 +56,11 @@ def main() -> None:
         env['PYTHONPATH'] = str(python_path)
 
     # Ignore Ctrl-C to allow gdb to handle normally
-    signal.signal(signal.SIGINT, lambda sig, frame: None)
-    subprocess.run([str(arm_gdb_path)] + sys.argv[1:], env=env, check=False)
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    return subprocess.run(
+        [str(arm_gdb_path)] + sys.argv[1:], env=env, check=False
+    ).returncode
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
