@@ -16,6 +16,7 @@
 #pragma once
 
 #include <assert.h>
+#include <stdbool.h>
 
 // For a tokenized string that has arguments, the types of the arguments are
 // encoded in either a 4-byte (uint32_t) or a 8-byte (uint64_t) value. The 4 or
@@ -27,8 +28,8 @@
 #define PW_TOKENIZER_CFG_ARG_TYPES_SIZE_BYTES 4
 #endif  // PW_TOKENIZER_CFG_ARG_TYPES_SIZE_BYTES
 
-static_assert(PW_TOKENIZER_CFG_ARG_TYPES_SIZE_BYTES == 4 ||
-                  PW_TOKENIZER_CFG_ARG_TYPES_SIZE_BYTES == 8,
+static_assert((bool)(PW_TOKENIZER_CFG_ARG_TYPES_SIZE_BYTES == 4) ||
+                  (bool)(PW_TOKENIZER_CFG_ARG_TYPES_SIZE_BYTES == 8),
               "PW_TOKENIZER_CFG_ARG_TYPES_SIZE_BYTES must be 4 or 8");
 
 // Maximum number of characters to hash in C. In C code, strings shorter than
