@@ -37,33 +37,26 @@ public class Service {
                                            .collect(Collectors.toMap(Method::id, m -> m)));
   }
 
-  public String name() {
+  /** Returns the fully qualified name of this service (package.Service). */
+  public final String name() {
     return name;
   }
 
-  int id() {
+  /** Returns the methods in this service. */
+  public final ImmutableCollection<Method> getMethods() {
+    return methods.values();
+  }
+
+  final int id() {
     return id;
   }
 
-  /**
-   * TODO(hepler): Make this function package private, since it exposes method IDs.
-   *
-   * @deprecated Do not call this function; call getMethods() instead.
-   */
-  @Deprecated
-  public ImmutableMap<Integer, Method> methods() {
-    return methods;
-  }
-
-  /**
-   * Returns the methods in this service.
-   */
-  public final ImmutableCollection<Method> getMethods() {
-    return methods().values();
-  }
-
   final Method method(String name) {
-    return methods().get(Ids.calculate(name));
+    return methods.get(Ids.calculate(name));
+  }
+
+  final Method method(int id) {
+    return methods.get(id);
   }
 
   @Override
