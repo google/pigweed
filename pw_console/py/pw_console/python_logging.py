@@ -105,6 +105,7 @@ def setup_python_logging(
         "parso.python.diff",
         "parso.cache",
         "pw_console.serial_debug_logger",
+        "websockets.server",
     ]
     for logger_name in hidden_host_loggers:
         logging.getLogger(logger_name).propagate = False
@@ -122,6 +123,15 @@ def log_record_to_json(record: logging.LogRecord) -> str:
     log_dict["levelno"] = record.levelno
     log_dict["levelname"] = record.levelname
     log_dict["args"] = record.args
+    log_dict["time"] = str(record.created)
+    log_dict["time_string"] = datetime.fromtimestamp(record.created).isoformat(
+        timespec="seconds"
+    )
+
+    lineno = record.lineno
+    file_name = str(record.filename)
+    log_dict['py_file'] = f'{file_name}:{lineno}'
+    log_dict['py_logger'] = str(record.name)
 
     if hasattr(record, "extra_metadata_fields") and (
         record.extra_metadata_fields  # type: ignore
@@ -158,11 +168,15 @@ class JsonLogFormatter(logging.Formatter):
            "pw_system ",
            "System init"
          ],
+         "time": "1692302986.4729185",
+         "time_string": "2023-08-17T13:09:46",
          "fields": {
            "module": "pw_system",
            "file": "pw_system/init.cc",
            "timestamp": "0:00"
-         }
+         },
+         "py_file": "script.py:1234",
+         "py_logger": "root"
        }
 
     Example usage:

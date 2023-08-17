@@ -18,20 +18,13 @@ the License.
 </head>
 
 <body>
-  <div class="table-container">
-    <div class="log-header">
-      <div class="log-entry">
-        <span class="timestamp">Time</span>
-        <span class="level">Level</span>
-        <span class="module">Module</span>
-        <span class="time">Timestamp</span>
-        <span class="keys">Keys</span>
-        <span class="msg">Message</span>
-      </div>
-    </div>
-    <div class="log-container"></div>
-  </div>
+  <main id="log-viewer-container"></main>
 
-  <script src="https://unpkg.com/virtualized-list@2.2.0/umd/virtualized-list.min.js"></script>
+  <!-- CDN pigweedjs -->
+  <script src="https://unpkg.com/pigweedjs/dist/logging.umd.js"></script>
+
+  <!-- Locally built pigweedjs -->
+  <!-- <script src="./index.umd.js"></script> -->
+  <!-- <script src="./logging.umd.js"></script> -->
   <script src="./main.js"></script>
 </body>

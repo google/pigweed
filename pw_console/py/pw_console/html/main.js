@@ -12,9 +12,81 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-var VirtualizedList = window.VirtualizedList.default;
-const rowHeight = 30;
+// eslint-disable-next-line no-undef
+const { createLogViewer, LogSource, LogEntry, Severity } = PigweedLogging;
 
+let currentTheme = {};
+let defaultLogStyleRule = 'color: #ffffff;';
+let columnStyleRules = {};
+let defaultColumnStyles = [];
+let logLevelStyles = {};
+
+const logLevelToString = {
+  10: 'DBG',
+  20: 'INF',
+  21: 'OUT',
+  30: 'WRN',
+  40: 'ERR',
+  50: 'CRT',
+  70: 'FTL',
+};
+
+const logLevelToSeverity = {
+  10: Severity.DEBUG,
+  20: Severity.INFO,
+  21: Severity.INFO,
+  30: Severity.WARNING,
+  40: Severity.ERROR,
+  50: Severity.CRITICAL,
+  70: Severity.CRITICAL,
+};
+
+let nonAdditionalDataFields = [
+  '_hosttime',
+  'levelname',
+  'levelno',
+  'args',
+  'fields',
+  'message',
+  'time',
+];
+let additionalHeaders = [];
+
+// New LogSource to consume pw-console log json messages
+class PwConsoleLogSource extends LogSource {
+  constructor() {
+    super();
+  }
+  append_log(data) {
+    var fields = [
+      { key: 'severity', value: logLevelToSeverity[data.levelno] },
+      { key: 'time', value: data.time },
+    ];
+    Object.keys(data.fields).forEach((columnName) => {
+      if (
+        nonAdditionalDataFields.indexOf(columnName) === -1 &&
+        additionalHeaders.indexOf(columnName) === -1
+      ) {
+        fields.push({ key: columnName, value: data.fields[columnName] });
+      }
+    });
+    fields.push({ key: 'message', value: data.message });
+    fields.push({ key: 'py_file', value: data.py_file });
+    fields.push({ key: 'py_logger', value: data.py_logger });
+    this.emitEvent('logEntry', {
+      severity: logLevelToSeverity[data.levelno],
+      timestamp: new Date(),
+      fields: fields,
+    });
+  }
+}
+
+// Setup the pigweedjs log-viewer
+const logSource = new PwConsoleLogSource();
+const containerEl = document.querySelector('#log-viewer-container');
+let unsubscribe = createLogViewer(logSource, containerEl);
+
+// Format a date in the standard pw_cli style YYYY-mm-dd HH:MM:SS
 function formatDate(dt) {
   function pad2(n) {
     return (n < 10 ? '0' : '') + n;
@@ -33,88 +105,13 @@ function formatDate(dt) {
   );
 }
 
-let data = [];
-function clearLogs() {
-  data = [
-    {
-      message: 'Logs started',
-      levelno: 20,
-      time: formatDate(new Date()),
-      levelname: '\u001b[35m\u001b[1mINF\u001b[0m',
-      args: [],
-      fields: { module: '', file: '', timestamp: '', keys: '' },
-    },
-  ];
-}
-clearLogs();
-
-let nonAdditionalDataFields = [
-  '_hosttime',
-  'levelname',
-  'levelno',
-  'args',
-  'fields',
-  'message',
-  'time',
-];
-let additionalHeaders = [];
-function updateHeadersFromData(data) {
-  let dirty = false;
-  Object.keys(data).forEach((columnName) => {
-    if (
-      nonAdditionalDataFields.indexOf(columnName) === -1 &&
-      additionalHeaders.indexOf(columnName) === -1
-    ) {
-      additionalHeaders.push(columnName);
-      dirty = true;
-    }
-  });
-  Object.keys(data.fields || {}).forEach((columnName) => {
-    if (
-      nonAdditionalDataFields.indexOf(columnName) === -1 &&
-      additionalHeaders.indexOf(columnName) === -1
-    ) {
-      additionalHeaders.push(columnName);
-      dirty = true;
-    }
-  });
-
-  const headerDOM = document.querySelector('.log-header');
-  if (dirty) {
-    headerDOM.innerHTML = `
-      <span class="_hosttime">Time</span>
-      <span class="level">Level</span>
-      ${additionalHeaders
-        .map(
-          (key) => `
-        <span class="${key}">${key}</span>
-      `,
-        )
-        .join('\n')}
-      <span class="msg">Message</span>`;
-  }
-
-  // Also update column widths to match actual row.
-  const headerChildren = Array.from(headerDOM.children);
-
-  const firstRow = document.querySelector('.log-container .log-entry');
-  const firstRowChildren = Array.from(firstRow.children);
-  headerChildren.forEach((col, index) => {
-    if (firstRowChildren[index]) {
-      col.setAttribute(
-        'style',
-        `width:${firstRowChildren[index].getBoundingClientRect().width}`,
-      );
-      col.setAttribute('title', col.innerText);
-    }
-  });
-}
-
+// Return the value for the given # parameter name.
 function getUrlHashParameter(param) {
   var params = getUrlHashParameters();
   return params[param];
 }
 
+// Capture all # parameters from the current URL.
 function getUrlHashParameters() {
   var sPageURL = window.location.hash;
   if (sPageURL) sPageURL = sPageURL.split('#')[1];
@@ -126,25 +123,14 @@ function getUrlHashParameters() {
   });
   return object;
 }
-let currentTheme = {};
-let defaultLogStyleRule = 'color: #ffffff;';
-let columnStyleRules = {};
-let defaultColumnStyles = [];
-let logLevelStyles = {};
-const logLevelToString = {
-  10: 'DBG',
-  20: 'INF',
-  21: 'OUT',
-  30: 'WRN',
-  40: 'ERR',
-  50: 'CRT',
-  70: 'FTL',
-};
 
+// Update web page CSS styles based on a pw-console color json log message.
 function setCurrentTheme(newTheme) {
   currentTheme = newTheme;
-  defaultLogStyleRule = parseStyle(newTheme.default);
-  document.querySelector('body').setAttribute('style', defaultLogStyleRule);
+  defaultLogStyleRule = parsePromptToolkitStyle(newTheme.default);
+  // Set body background color
+  // document.querySelector('body').setAttribute('style', defaultLogStyleRule);
+
   // Apply default font styles to columns
   let styles = [];
   Object.keys(newTheme).forEach((key) => {
@@ -152,15 +138,16 @@ function setCurrentTheme(newTheme) {
       styles.push(newTheme[key]);
     }
     if (key.startsWith('log-level-')) {
-      logLevelStyles[parseInt(key.replace('log-level-', ''))] = parseStyle(
-        newTheme[key],
-      );
+      logLevelStyles[parseInt(key.replace('log-level-', ''))] =
+        parsePromptToolkitStyle(newTheme[key]);
     }
   });
   defaultColumnStyles = styles;
 }
 
-function parseStyle(rule) {
+// Convert prompt_toolkit color format strings to CSS.
+// 'bg:#BG-HEX #FG-HEX STYLE' where STYLE is either 'bold' or 'underline'
+function parsePromptToolkitStyle(rule) {
   const ruleList = rule.split(' ');
   let outputStyle = ruleList.map((fragment) => {
     if (fragment.startsWith('bg:')) {
@@ -176,6 +163,7 @@ function parseStyle(rule) {
   return outputStyle.join(';');
 }
 
+// Inject styled spans into the log message column values.
 function applyStyling(data, applyColors = false) {
   let colIndex = 0;
   Object.keys(data).forEach((key) => {
@@ -188,7 +176,7 @@ function applyStyling(data, applyColors = false) {
                 applyColors
                   ? defaultColumnStyles[colIndex % defaultColumnStyles.length]
                   : ''
-              };${parseStyle(columnStyleRules[key][token])};">
+              };${parsePromptToolkitStyle(columnStyleRules[key][token])};">
                 ${token}
             </span>`,
         );
@@ -198,7 +186,7 @@ function applyStyling(data, applyColors = false) {
     }
     if (applyColors) {
       data[key] = `<span
-      style="${parseStyle(
+      style="${parsePromptToolkitStyle(
         defaultColumnStyles[colIndex % defaultColumnStyles.length],
       )}">
         ${data[key]}
@@ -209,54 +197,11 @@ function applyStyling(data, applyColors = false) {
   return data;
 }
 
+// Connect to the pw-console websocket and start emitting logs.
 (function () {
   const container = document.querySelector('.log-container');
   const height = window.innerHeight - 50;
   let follow = true;
-  // Initialize our VirtualizedList
-  var virtualizedList = new VirtualizedList(container, {
-    height,
-    rowCount: data.length,
-    rowHeight: rowHeight,
-    estimatedRowHeight: rowHeight,
-    renderRow: (index) => {
-      const element = document.createElement('div');
-      element.classList.add('log-entry');
-      element.setAttribute('style', `height: ${rowHeight}px;`);
-      const logData = data[index];
-      element.innerHTML = `
-        <span class="time">${logData.time}</span>
-        <span class="level" style="${logLevelStyles[logData.levelno] || ''}">${
-          logLevelToString[logData.levelno]
-        }</span>
-        ${additionalHeaders
-          .map(
-            (key) => `
-          <span class="${key}">${
-            logData[key] || logData.fields[key] || ''
-          }</span>
-        `,
-          )
-          .join('\n')}
-        <span class="msg">${logData.message}</span>
-      `;
-      return element;
-    },
-    initialIndex: 0,
-    onScroll: (scrollTop, event) => {
-      const offset =
-        virtualizedList._sizeAndPositionManager.getUpdatedOffsetForIndex({
-          containerSize: height,
-          targetIndex: data.length - 1,
-        });
-
-      if (scrollTop < offset) {
-        follow = false;
-      } else {
-        follow = true;
-      }
-    },
-  });
 
   const port = getUrlHashParameter('ws');
   const hostname = location.hostname || '127.0.0.1';
@@ -271,19 +216,16 @@ function applyStyling(data, applyColors = false) {
     if (!dataObj) return;
 
     if (dataObj.__pw_console_colors) {
+      // If this is a color theme message, update themes.
       const colors = dataObj.__pw_console_colors;
       setCurrentTheme(colors.classes);
       if (colors.column_values) {
         columnStyleRules = { ...colors.column_values };
       }
     } else {
+      // Normal log message.
       const currentData = { ...dataObj, time: formatDate(new Date()) };
-      updateHeadersFromData(currentData);
-      data.push(applyStyling(currentData));
-      virtualizedList.setRowCount(data.length);
-      if (follow) {
-        virtualizedList.scrollToIndex(data.length - 1);
-      }
+      logSource.append_log(currentData);
     }
   };
 })();

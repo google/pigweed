@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 The Pigweed Authors
+ * Copyright 2023 The Pigweed Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -13,62 +13,205 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
+ @import url('https://fonts.googleapis.com/css2?family=Google+Sans&family=Roboto+Mono:wght@400;500&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block');
+
+:root {
+    background-color: var(--sys-log-viewer-color-bg);
+    color-scheme: light dark;
+    font-family: "Google Sans", Arial, sans-serif;
+    font-synthesis: none;
+    font-weight: 400;
+    line-height: 1.5;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+}
+
+
+:root {
+    /* Material component properties */
+    --md-icon-font: 'Material Symbols Rounded';
+    --md-icon-size: 1.25rem;
+    --md-filled-button-label-text-type: "Google Sans", Arial, sans-serif;
+    --md-outlined-button-label-text-type: "Google Sans", Arial, sans-serif;
+    --md-icon-button-unselected-icon-color: var(--md-sys-color-on-surface-variant);
+    --md-icon-button-unselected-hover-icon-color: var(--md-sys-color-on-primary-container);
+
+    /* Log View */
+    --sys-log-viewer-view-outline-width: 1px;
+    --sys-log-viewer-view-corner-radius: 0.5rem;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+button {
+    font-family: "Google Sans";
+}
+
+main {
+    height: 100vh;
+    padding: 2rem;
+}
+
+a {
+    color: var(--md-sys-color-primary);
+    font-weight: 500;
+    text-decoration: inherit;
+}
+
+a:hover {
+    color: var(--md-sys-color-secondary);
+}
+
 body {
-  background-color: rgb(46, 46, 46);
-  color: #ffffff;
-  overflow: hidden;
-  margin: 0;
+    display: grid;
+    place-content: start;
+    margin: 0;
 }
 
-.table-container {
-  display: table;
-  width: 100%;
-  border-spacing: 30px 0px;
+@media (prefers-color-scheme: dark) {
+    :root {
+        --md-sys-color-primary: #A8C7FA;
+        --md-sys-color-primary-60: #4C8DF6;
+        --md-sys-color-primary-container: #0842A0;
+        --md-sys-color-on-primary: #062E6F;
+        --md-sys-color-on-primary-container: #D3E3FD;
+        --md-sys-color-inverse-primary: #0B57D0;
+        --md-sys-color-secondary: #7FCFFF;
+        --md-sys-color-secondary-container: #004A77;
+        --md-sys-color-on-secondary: #003355;
+        --md-sys-color-on-secondary-container: #C2E7FF;
+        --md-sys-color-tertiary: #6DD58C;
+        --md-sys-color-tertiary-container: #0F5223;
+        --md-sys-color-on-tertiary: #0A3818;
+        --md-sys-color-on-tertiary-container: #C4EED0;
+        --md-sys-color-surface: #131314;
+        --md-sys-color-surface-dim: #131314;
+        --md-sys-color-surface-bright: #37393B;
+        --md-sys-color-surface-container-lowest: #0E0E0E;
+        --md-sys-color-surface-container-low: #1B1B1B;
+        --md-sys-color-surface-container: #1E1F20;
+        --md-sys-color-surface-container-high: #282A2C;
+        --md-sys-color-surface-container-highest: #333537;
+        --md-sys-color-on-surface: #E3E3E3;
+        --md-sys-color-on-surface-variant: #C4C7C5;
+        --md-sys-color-inverse-surface: #E3E3E3;
+        --md-sys-color-inverse-on-surface: #303030;
+        --md-sys-color-outline: #8E918F;
+        --md-sys-color-outline-variant: #444746;
+        --md-sys-color-shadow: #000000;
+        --md-sys-color-scrim: #000000;
+
+        --md-sys-inverse-surface-rgb: 230, 225, 229;
+
+        /* Log Viewer */
+        --sys-log-viewer-color-bg: var(--md-sys-color-surface);
+
+        /* Log View */
+        --sys-log-viewer-color-view-outline:  var(--md-sys-color-outline-variant);
+
+        /* Log View Controls */
+        --sys-log-viewer-color-controls-bg: var(--md-sys-color-surface-container-high);
+        --sys-log-viewer-color-controls-text: var(--md-sys-color-on-surface-variant);
+        --sys-log-viewer-color-controls-input-outline: transparent;
+        --sys-log-viewer-color-controls-input-bg: var(--md-sys-color-surface);
+        --sys-log-viewer-color-controls-button-enabled: var(--md-sys-color-primary-container);
+
+        /* Log List */
+        --sys-log-viewer-color-table-header-bg: var(--md-sys-color-surface-container);
+        --sys-log-viewer-color-table-header-text: var(--md-sys-color-on-surface);
+        --sys-log-viewer-color-table-bg: var(--md-sys-color-surface-container-lowest);
+        --sys-log-viewer-color-table-text: var(--md-sys-color-on-surface);
+        --sys-log-viewer-color-table-cell-outline: var(--md-sys-color-outline-variant);
+        --sys-log-viewer-color-overflow-indicator: var(--md-sys-color-surface-container-lowest);
+        --sys-log-viewer-color-table-mark: var(--md-sys-color-primary-container);
+        --sys-log-viewer-color-table-mark-text: var(--md-sys-color-on-primary-container);
+        --sys-log-viewer-color-table-mark-outline: var(--md-sys-color-outline-variant);
+
+        /* Severity */
+        --sys-log-viewer-color-error-bright: #E46962;
+        --sys-log-viewer-color-surface-error: #601410;
+        --sys-log-viewer-color-on-surface-error: #F9DEDC;
+        --sys-log-viewer-color-orange-bright: #EE9836;
+        --sys-log-viewer-color-surface-yellow: #402D00;
+        --sys-log-viewer-color-on-surface-yellow: #FFDFA0;
+        --sys-log-viewer-color-debug: var(--md-sys-color-primary-60);
+    }
 }
 
-.log-header {
-  font-size: 18px;
-  font-family: monospace;
-}
+@media (prefers-color-scheme: light) {
+    :root {
+        --md-sys-color-primary: #0B57D0;
+        --md-sys-color-primary-70: #7CACF8;
+        --md-sys-color-primary-90: #D3E3FD;
+        --md-sys-color-primary-95: #ECF3FE;
+        --md-sys-color-primary-99: #FAFBFF;
+        --md-sys-color-primary-container: #D3E3FD;
+        --md-sys-color-on-primary: #FFFFFF;
+        --md-sys-color-on-primary-container: #041E49;
+        --md-sys-color-inverse-primary: #A8C7FA;
+        --md-sys-color-secondary: #00639B;
+        --md-sys-color-secondary-container: #C2E7FF;
+        --md-sys-color-on-secondary: #FFFFFF;
+        --md-sys-color-on-secondary-container: #001D35;
+        --md-sys-color-tertiary: #146C2E;
+        --md-sys-color-tertiary-container: #C4EED0;
+        --md-sys-color-on-tertiary: #FFFFFF;
+        --md-sys-color-on-tertiary-container: #072711;
+        --md-sys-color-surface: #FFFFFF;
+        --md-sys-color-surface-dim: #D3DBE5;
+        --md-sys-color-surface-bright: #FFFFFF;
+        --md-sys-color-surface-container-lowest: #FFFFFF;
+        --md-sys-color-surface-container-low: #F8FAFD;
+        --md-sys-color-surface-container: #F0F4F9;
+        --md-sys-color-surface-container-high: #E9EEF6;
+        --md-sys-color-surface-container-highest: #DDE3EA;
+        --md-sys-color-on-surface: #1F1F1F;
+        --md-sys-color-on-surface-variant: #444746;
+        --md-sys-color-inverse-surface: #303030;
+        --md-sys-color-inverse-on-surface: #F2F2F2;
+        --md-sys-color-outline: #747775;
+        --md-sys-color-outline-variant: #C4C7C5;
+        --md-sys-color-shadow: #000000;
+        --md-sys-color-scrim: #000000;
 
-.log-container {
-  width: 100%;
-  height: calc(100vh - 50px);
-  overflow-y: auto;
-  border-top: 1px solid #DDD;
-  font-size: 18px;
-  font-family: monospace;
-}
+        --md-sys-inverse-surface-rgb: 49, 48, 51;
 
-.log-header {
-  width: 100%;
-  font-weight: bold;
-  display: table-row;
-}
+        /* Log Viewer */
+        --sys-log-viewer-color-bg: var(--md-sys-color-surface);
 
-.log-container .row>span {
-  display: table-cell;
-  padding: 20px 18px;
+        /* Log View */
+        --sys-log-viewer-color-view-outline:  var(--md-sys-color-outline);
 
-}
+        /* Log View Controls */
+        --sys-log-viewer-color-controls-bg: var(--md-sys-color-primary-90);
+        --sys-log-viewer-color-controls-text: var(--md-sys-color-on-primary-container);
+        --sys-log-viewer-color-controls-input-outline: transparent;
+        --sys-log-viewer-color-controls-input-bg: var(--md-sys-color-surface-container-lowest);
+        --sys-log-viewer-color-controls-button-enabled: var(--md-sys-color-primary-70);
 
-.log-header>span {
-  text-transform: capitalize;
-  overflow: hidden;
-    display: inline-block;
-    margin-left: 30px;
-}
+        /* Log List */
+        --sys-log-viewer-color-table-header-bg: var(--md-sys-color-primary-95);
+        --sys-log-viewer-color-table-header-text: var(--md-sys-color-on-surface);
+        --sys-log-viewer-color-table-bg: var(--md-sys-color-surface-container-lowest);
+        --sys-log-viewer-color-table-text: var(--md-sys-color-on-surface);
+        --sys-log-viewer-color-table-cell-outline: var(--md-sys-color-outline-variant);
+        --sys-log-viewer-color-overflow-indicator: var(--md-sys-color-surface-container);
+        --sys-log-viewer-color-table-mark: var(--md-sys-color-primary-container);
+        --sys-log-viewer-color-table-mark-text: var(--md-sys-color-on-primary-container);
+        --sys-log-viewer-color-table-mark-outline: var(--md-sys-color-outline-variant);
 
-.log-entry {
-  display: table-row;
-}
-
-.log-entry>span {
-  display: table-cell;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.log-entry .msg {
-  flex: 1;
+        /* Severity */
+        --sys-log-viewer-color-error-bright: #DC362E;
+        --sys-log-viewer-color-surface-error: #FCEFEE;
+        --sys-log-viewer-color-on-surface-error: #8C1D18;
+        --sys-log-viewer-color-orange-bright: #F49F2A;
+        --sys-log-viewer-color-surface-yellow: #FEF9EB;
+        --sys-log-viewer-color-on-surface-yellow: #783616;
+        --sys-log-viewer-color-debug: var(--md-sys-color-primary);
+    }
 }

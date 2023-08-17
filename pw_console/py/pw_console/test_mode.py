@@ -54,7 +54,7 @@ def prepare_fake_logs(lines) -> List[Tuple[str, Dict]]:
         if search:
             keyboard_key = search.group(1)
 
-        fake_logs.append((line, {'keys': keyboard_key}))
+        fake_logs.append((line.lstrip(), {'keys': keyboard_key}))
     return fake_logs
 
 
@@ -64,15 +64,25 @@ async def log_forever(fake_log_messages: List[Tuple[str, Dict]]):
     start_time = time.time()
     message_count = 0
 
+    log_methods = [
+        _FAKE_DEVICE_LOG.info,
+        _FAKE_DEVICE_LOG.debug,
+        _FAKE_DEVICE_LOG.warning,
+        _FAKE_DEVICE_LOG.error,
+        _FAKE_DEVICE_LOG.critical,
+    ]
+    log_method_rand_weights = [50, 20, 10, 10, 10]
+
     # Fake module column names.
     module_names = ['APP', 'RADIO', 'BAT', 'USB', 'CPU']
     while True:
-        if message_count > 32 or message_count < 2:
-            await asyncio.sleep(0.1)
+        if message_count > 32:
+            await asyncio.sleep(1)
         fake_log = random.choice(fake_log_messages)
+        log_func = random.choices(log_methods, weights=log_method_rand_weights)
 
         module_name = module_names[message_count % len(module_names)]
-        _FAKE_DEVICE_LOG.info(
+        log_func[0](
             fake_log[0],
             extra=dict(
                 extra_metadata_fields=dict(
@@ -84,3 +94,5 @@ async def log_forever(fake_log_messages: List[Tuple[str, Dict]]):
             ),
         )
         message_count += 1
+        if message_count % 10 == 0:
+            _ROOT_LOG.info('Device message count: %d', message_count)

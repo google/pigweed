@@ -1072,6 +1072,15 @@ class ConsoleApp:
         self.update_menu_items()
         self._update_help_window()
 
+    def all_log_stores(self) -> List[LogStore]:
+        log_stores: List[LogStore] = []
+        for pane in self.window_manager.active_panes():
+            if not isinstance(pane, LogPane):
+                continue
+            if pane.log_view.log_store not in log_stores:
+                log_stores.append(pane.log_view.log_store)
+        return log_stores
+
     def add_log_handler(
         self,
         window_title: str,

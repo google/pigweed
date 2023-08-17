@@ -147,6 +147,9 @@ class LogStore(logging.Handler):
         self.channel_formatted_prefix_widths = {}
         self.line_index = 0
 
+    def get_channel_names(self) -> List[str]:
+        return list(sorted(self.channel_counts.keys()))
+
     def get_channel_counts(self):
         """Return the seen channel log counts for this conatiner."""
         return ', '.join(
