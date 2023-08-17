@@ -1,0 +1,563 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# This file contains Emboss definitions for Host Controller Interface packets
+# and types found in the Bluetooth Core Specification. The Emboss compiler is
+# used to generate a C++ header from this file.
+
+import "hci_common.emb" as hci
+
+[$default byte_order: "LittleEndian"]
+[(cpp) namespace: "pw::bluetooth::emboss"]
+# =========================== Constants =================================
+
+
+enum CoreSpecificationVersion:
+  -- Bluetooth Core Specification version
+  [maximum_bits: 8]
+  V1_0B    = 0x00  # v1.0b
+  V1_1     = 0x01  # v1.1
+  V1_2     = 0x02  # v1.2
+  V2_0_EDR = 0x03  # v2.0+EDR
+  V2_1_EDR = 0x04  # v2.0+EDR
+  V3_0_HS  = 0x05  # v3.0+HS
+  V4_0     = 0x06  # v4.0
+  V4_1     = 0x07  # v4.1
+  V4_2     = 0x08  # v4.2
+  V5_0     = 0x09  # v5.0
+  V5_1     = 0x0A  # v5.1
+  V5_2     = 0x0B  # v5.2
+  V5_3     = 0x0C  # v5.3
+  V5_4     = 0x0D  # v5.4
+
+
+enum LinkType:
+  [maximum_bits: 8]
+  SCO  = 0x00
+  ACL  = 0x01
+  ESCO = 0x02
+
+
+enum EncryptionStatus:
+  OFF                                = 0x00
+  ON_WITH_E0_FOR_BREDR_OR_AES_FOR_LE = 0x01
+  ON_WITH_AES_FOR_BREDR              = 0x02
+
+
+enum LEAdvertisingDataStatus:
+  [maximum_bits: 2]
+  COMPLETE             = 0b00
+  INCOMPLETE           = 0b01
+  INCOMPLETE_TRUNCATED = 0b10
+
+
+enum LEDirectAddressType:
+  -- Possible values that can be reported for the |direct_address_type| parameter in LE Advertising Report events.
+  [maximum_bits: 8]
+  PUBLIC                                = 0x00
+    -- Public Device Address
+
+  PRIVATE                               = 0x01
+    -- Non-resolvable Private Address or Static Device Address
+
+  RESOLVABLE_PRIVATE_OWN_ADDRESS_PUBLIC = 0x02
+    -- Resolvable Private Address (resolved by Controller; Own_Address_Type was 0x00 or 0x02)
+
+  RESOLVABLE_PRIVATE_OWN_ADDRESS_RANDOM = 0x03
+    -- Resolvable Private Address (resolved by Controller; Own_Address_Type was 0x01 or 0x03)
+
+  RESOLVABLE_PRIVATE                    = 0xFE
+    -- Resolvable Private Address (Controller unable to resolve)
+
+
+enum LEClockAccuracy:
+  -- Possible values that can be reported for the |central_clock_accuracy| and
+  -- |advertiser_clock_accuracy| parameters.
+  [maximum_bits: 8]
+  PPM_500 = 0x00
+  PPM_250 = 0x01
+  PPM_150 = 0x02
+  PPM_100 = 0x03
+  PPM_75  = 0x04
+  PPM_50  = 0x05
+  PPM_30  = 0x06
+  PPM_20  = 0x07
+
+# =========================== Field Types =================================
+
+
+bits LmpFeatures(page: UInt:8):
+  -- Bit mask of Link Manager Protocol features.
+  [requires: page <= 2]
+  if page == 0:
+    0  [+1]  Flag  three_slot_packets
+    1  [+1]  Flag  five_slot_packets
+    2  [+1]  Flag  encryption
+    3  [+1]  Flag  slot_offset
+    4  [+1]  Flag  timing_accuracy
+    5  [+1]  Flag  role_switch
+    6  [+1]  Flag  hold_mode
+    7  [+1]  Flag  sniff_mode
+    # 8: previously used
+    9  [+1]  Flag  power_control_requests
+    10 [+1]  Flag  channel_quality_driven_data_rate
+    11 [+1]  Flag  sco_link
+    12 [+1]  Flag  hv2_packets
+    13 [+1]  Flag  hv3_packets
+    14 [+1]  Flag  mu_law_log_synchronous_data
+    15 [+1]  Flag  a_law_log_synchronous_data
+    16 [+1]  Flag  cvsd_synchronous_data
+    17 [+1]  Flag  paging_parameter_negotiation
+    18 [+1]  Flag  power_control
+    19 [+1]  Flag  transparent_synchronous_data
+    20 [+3]  UInt  flow_control_lag
+    23 [+1]  Flag  broadcast_encryption
+    # 24: reserved for future use
+    25 [+1]  Flag  enhanced_data_rate_acl_2_mbs_mode
+    26 [+1]  Flag  enhanced_data_rate_acl_3_mbs_mode
+    27 [+1]  Flag  enhanced_inquiry_scan
+    28 [+1]  Flag  interlaced_inquiry_scan
+    29 [+1]  Flag  interlaced_page_scan
+    30 [+1]  Flag  rssi_with_inquiry_results
+    31 [+1]  Flag  extended_sco_link_ev3_packets
+    32 [+1]  Flag  ev4_packets
+    33 [+1]  Flag  ev5_packets
+    # 34: reserved for future use
+    35 [+1]  Flag  afh_capable_peripheral
+    36 [+1]  Flag  afh_classification_peripheral
+    37 [+1]  Flag  bredr_not_supported
+    38 [+1]  Flag  le_supported_controller
+    39 [+1]  Flag  three_slot_enhanced_data_rate_acl_packets
+    40 [+1]  Flag  five_slot_enhanced_data_rate_acl_packets
+    41 [+1]  Flag  sniff_subrating
+    42 [+1]  Flag  pause_encryption
+    43 [+1]  Flag  afh_capable_central
+    44 [+1]  Flag  afh_classification_central
+    45 [+1]  Flag  enhanced_data_rate_esco_2_mbs_mode
+    46 [+1]  Flag  enhanced_data_rate_esco_3_mbs_mode
+    47 [+1]  Flag  three_slot_enhanced_data_rate_esco_packets
+    48 [+1]  Flag  extended_inquiry_response
+    49 [+1]  Flag  simultaneous_le_and_bredr_to_same_device_capable_controller
+    # 50: reserved for future use
+    51 [+1]  Flag  secure_simple_pairing_controller_support
+    52 [+1]  Flag  encapsulated_pdu
+    53 [+1]  Flag  erroneous_data_reporting
+    54 [+1]  Flag  non_flushable_packet_boundary_flag
+    # 55: reserved for future use
+    56 [+1]  Flag  hci_link_supervision_timeout_changed_event
+    57 [+1]  Flag  variable_inquiry_tx_power_level
+    58 [+1]  Flag  enhanced_power_control
+    # 59-62: reserved for future use
+    63 [+1]  Flag  extended_features
+
+  if page == 1:
+    0  [+1]  Flag  secure_simple_pairing_host_support
+    1  [+1]  Flag  le_supported_host
+    # 2: previously used
+    3  [+1]  Flag  secure_connection_host_support
+
+  if page == 2:
+    0  [+1]  Flag  connectionless_peripheral_broadcast_transmitter_operation
+    1  [+1]  Flag  connectionless_peripheral_broadcast_receiver_operation
+    2  [+1]  Flag  synchronization_train
+    3  [+1]  Flag  synchronization_scan
+    4  [+1]  Flag  hci_inquiry_response_notification_event
+    5  [+1]  Flag  generalized_interlaced_scan
+    6  [+1]  Flag  coarse_clock_adjustment
+    # 7: reserved for future use
+    8  [+1]  Flag  secure_connections_controller_support
+    9  [+1]  Flag  ping
+    10 [+1]  Flag  slot_availability_mask
+    11 [+1]  Flag  train_nudging
+
+
+bits LEFeatureSet:
+  0     [+1]  Flag  le_encryption
+  $next [+1]  Flag  connection_parameters_request_procedure
+  $next [+1]  Flag  extended_reject_indication
+  $next [+1]  Flag  peripheral_initiated_features_exchange
+  $next [+1]  Flag  le_ping
+  $next [+1]  Flag  le_data_packet_length_extension
+  $next [+1]  Flag  ll_privacy
+  $next [+1]  Flag  extended_scanning_filter_policies
+  $next [+1]  Flag  le_2m_phy
+  $next [+1]  Flag  stable_modulation_index_transmitter
+  $next [+1]  Flag  stable_modulation_index_receiver
+  $next [+1]  Flag  le_coded_phy
+  $next [+1]  Flag  le_extended_advertising
+  $next [+1]  Flag  le_periodic_advertising
+  $next [+1]  Flag  channel_selection_algorithm_2
+  $next [+1]  Flag  le_power_class_1
+  $next [+1]  Flag  minimum_number_of_used_channels_procedure
+  $next [+1]  Flag  connection_cte_request
+  $next [+1]  Flag  connection_cte_response
+  $next [+1]  Flag  connectionless_cte_transmitter
+  $next [+1]  Flag  connectionless_cte_receiver
+  $next [+1]  Flag  antenna_switching_during_cte_transmission
+  $next [+1]  Flag  antenna_switching_during_cte_reception
+  $next [+1]  Flag  receiving_constant_tone_extensions
+  $next [+1]  Flag  periodic_advertising_sync_transfer_sender
+  $next [+1]  Flag  periodic_advertising_sync_transfer_recipient
+  $next [+1]  Flag  sleep_clock_accuracy_updates
+  $next [+1]  Flag  remote_public_key_validation
+  $next [+1]  Flag  connected_isochronous_stream_central
+  $next [+1]  Flag  connected_isochronous_stream_peripheral
+  $next [+1]  Flag  isochronous_broadcaster
+  $next [+1]  Flag  synchronized_receiver
+  $next [+1]  Flag  connected_isochronous_stream_host_support
+  $next [+1]  Flag  le_power_control_request_1
+  $next [+1]  Flag  le_power_control_request_2
+    -- Previous two bits shall always have the same value.
+
+  $next [+1]  Flag  le_path_loss_monitoring
+  $next [+1]  Flag  periodic_advertising_adi_support
+  $next [+1]  Flag  connection_subrating
+  $next [+1]  Flag  connection_subrating_host_support
+  $next [+1]  Flag  channel_classification
+  $next [+1]  Flag  advertising_coding_selection
+  $next [+1]  Flag  advertising_coding_selection_host_support
+  $next [+1]  Flag  reserved                                        # Bit 42 is skipped
+  $next [+1]  Flag  periodic_advertising_with_responses_advertiser
+  $next [+1]  Flag  periodic_advertising_with_responses_scanner
+
+
+bits LEExtendedAdvertisingEventType:
+  0     [+1]  Flag                     connectable
+  $next [+1]  Flag                     scannable
+  $next [+1]  Flag                     directed
+  $next [+1]  Flag                     scan_response
+  $next [+1]  Flag                     legacy
+  $next [+2]  LEAdvertisingDataStatus  data_status
+
+# ========================= HCI Event packets ===========================
+# Core Spec v5.3 Vol 4, Part E, Section 7.7
+
+
+struct InquiryCompleteEvent:
+  -- Inquiry Complete Event (v1.1) (BR/EDR)
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]  hci.EventHeader  header
+  $next [+1]         hci.StatusCode   status
+
+
+struct InquiryResult:
+  0     [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                  bd_addr
+    -- BD_ADDR for a device which responded.
+
+  $next [+1]                          hci.PageScanRepetitionMode  page_scan_repetition_mode
+  $next [+2]                          UInt                        reserved
+    -- Reserved for future use.
+
+  $next [+3]                          hci.ClassOfDevice           class_of_device
+    -- Class of Device for the device.
+
+  $next [+2]                          hci.ClockOffset             clock_offset
+    -- The lower 15 bits represent bits 16-2 of CLKNPeripheral-CLK.
+
+
+struct InquiryResultEvent:
+  -- Inquiry Result Event (v1.1) (BR/EDR)
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]                     hci.EventHeader  header
+  $next [+1]                            UInt             num_responses
+    -- Number of responses from the Inquiry.
+
+  let response_size = InquiryResult.$size_in_bytes
+  $next [+num_responses*response_size]  InquiryResult[]  responses
+
+
+struct SimpleCommandCompleteEvent:
+  -- A Command Complete event where a StatusCode is the only return parameter.
+  -- Also useful for generically getting to status of a larger command complete
+  -- event.
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  $next [+1]         hci.StatusCode            status
+
+
+struct CommandStatusEvent:
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]  hci.EventHeader  header
+  $next [+1]         hci.StatusCode   status
+  $next [+1]         UInt             num_hci_command_packets
+  $next [+2]         hci.OpCodeBits   command_opcode
+
+
+struct ConnectionCompleteEvent:
+  -- Connection Complete Event (v1.1) (BR/EDR)
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]                   hci.EventHeader         header
+  $next [+1]                          hci.StatusCode          status
+  $next [+2]                          UInt                    connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr              bd_addr
+    -- The address of the connected device
+
+  $next [+1]                          LinkType                link_type
+  $next [+1]                          hci.GenericEnableParam  encryption_enabled
+
+
+struct ConnectionRequestEvent:
+  -- Connection Request Event (v1.1) (BR/EDR)
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]                   hci.EventHeader    header
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr         bd_addr
+    -- The address of the device that's requesting the connection.
+
+  $next [+3]                          hci.ClassOfDevice  class_of_device
+    -- The Class of Device of the device which requests the connection.
+
+  $next [+1]                          LinkType           link_type
+
+
+struct DisconnectionCompleteEvent:
+  -- Disconnection Complete Event (v1.1) (BR/EDR & LE)
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]  hci.EventHeader  header
+  $next [+1]         hci.StatusCode   status
+  $next [+2]         UInt             connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+1]         hci.StatusCode   reason
+
+
+struct AuthenticationCompleteEvent:
+  -- Authentication Complete Event (v1.1) (BR/EDR)
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]  hci.EventHeader  header
+  $next [+1]         hci.StatusCode   status
+  $next [+2]         UInt             connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+
+struct RemoteNameRequestCompleteEvent:
+  -- Remote Name Request Complete Event (v1.1) (BR/EDR)
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]                   hci.EventHeader  header
+  $next [+1]                          hci.StatusCode   status
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr       bd_addr
+  $next [+248]                        UInt:8[248]      remote_name
+    -- UTF-8 encoded friendly name. If the name is less than 248 characters, it
+    -- is null terminated and the remaining bytes are not valid.
+
+
+struct EncryptionChangeEventV1:
+  -- Encryption Change Event (v1.1) (BR/EDR & LE)
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]  hci.EventHeader   header
+  $next [+1]         hci.StatusCode    status
+  $next [+2]         UInt              connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+1]         EncryptionStatus  encryption_enabled
+
+
+struct ChangeConnectionLinkKeyCompleteEvent:
+  -- Change Connection Link Key Complete Event (v1.1) (BR/EDR)
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]  hci.EventHeader  header
+  $next [+1]         hci.StatusCode   status
+  $next [+2]         UInt             connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+
+struct ReadRemoteSupportedFeaturesCompleteEvent:
+  -- Read Remote Supported Features Complete Event (v1.1) (BR/EDR)
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]  hci.EventHeader  header
+  $next [+1]         hci.StatusCode   status
+  $next [+2]         UInt             connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+8]         LmpFeatures(0)   lmp_features
+    -- Page 0 of the LMP features.
+
+
+struct ReadRemoteVersionInfoCompleteEvent:
+  -- Read Remote Version Information Complete Event (v1.1) (BR/EDR & LE)
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]  hci.EventHeader           header
+  $next [+1]         hci.StatusCode            status
+  $next [+2]         UInt                      connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+1]         CoreSpecificationVersion  version
+    -- Version of the Current LMP or Link Layer supported by the remote Controller.
+
+  $next [+2]         UInt                      company_identifier
+    -- Company identifier for the manufacturer of the remote Controller. Assigned by Bluetooth SIG.
+
+  $next [+2]         UInt                      subversion
+    -- Revision of the LMP or Link Layer implementation in the remote Controller. This value is vendor-specific.
+
+
+struct ReadRemoteExtendedFeaturesCompleteEvent:
+  -- Read Remote Extended Features Complete Event (v1.1) (BR/EDR)
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]  hci.EventHeader           header
+  $next [+1]         hci.StatusCode            status
+  $next [+2]         UInt                      connection_handle
+    -- Only the lower 12-bits are meaningful.
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+1]         UInt                      page_number
+    -- 0x00: The normal LMP features as returned by HCI_Read_Remote_Supported_Features command.
+    -- 0x01 to 0xFF: The page number of the features returned.
+
+  $next [+1]         UInt                      max_page_number
+    -- The highest features page number which contains non-zero bits for the remote device.
+
+  $next [+8]         LmpFeatures(page_number)  lmp_features
+    -- Bit map of requested page of LMP features.
+
+
+struct LEMetaEvent:
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]  hci.EventHeader  header
+  $next [+1]         UInt             subevent_code
+    -- The event code for the LE subevent.
+
+
+struct LEConnectionCompleteSubevent:
+  0     [+LEMetaEvent.$size_in_bytes]  LEMetaEvent            le_meta_event
+
+  $next [+1]                           hci.StatusCode         status
+
+  $next [+2]                           UInt                   connection_handle
+    -- Only the lower 12-bits are meaningful.
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+1]                           hci.ConnectionRole     role
+
+  $next [+1]                           hci.LEPeerAddressType  peer_address_type
+
+  $next [+hci.BdAddr.$size_in_bytes]   hci.BdAddr             peer_address
+    -- Public Device Address or Random Device Address of the peer device.
+
+  $next [+2]                           UInt                   connection_interval
+    -- Time: N * 1.25 ms
+    -- Range: 7.5 ms to 4 s
+    [requires: 0x0006 <= this <= 0x0C80]
+
+  $next [+2]                           UInt                   peripheral_latency
+    [requires: 0x0000 <= this <= 0x01F3]
+
+  $next [+2]                           UInt                   supervision_timeout
+    -- Time: N * 10 ms
+    -- Range: 100 ms to 32 s
+    [requires: 0x000A <= this <= 0x0C80]
+
+  $next [+1]                           LEClockAccuracy        central_clock_accuracy
+    -- Only valid for a peripheral. On a central, this parameter shall be set to 0x00.
+
+
+struct LEConnectionUpdateCompleteSubevent:
+  0     [+LEMetaEvent.$size_in_bytes]  LEMetaEvent     le_meta_event
+
+  $next [+1]                           hci.StatusCode  status
+
+  $next [+2]                           UInt            connection_handle
+    -- Only the lower 12-bits are meaningful.
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+2]                           UInt            connection_interval
+    -- Time: N * 1.25 ms
+    -- Range: 7.5 ms to 4 s
+    [requires: 0x0006 <= this <= 0x0C80]
+
+  $next [+2]                           UInt            peripheral_latency
+    [requires: 0x0000 <= this <= 0x01F3]
+
+  $next [+2]                           UInt            supervision_timeout
+    -- Time: N * 10 ms
+    -- Range: 100 ms to 32 s
+    [requires: 0x000A <= this <= 0x0C80]
+
+
+struct LEReadRemoteFeaturesCompleteSubevent:
+  0     [+LEMetaEvent.$size_in_bytes]    LEMetaEvent     le_meta_event
+  $next [+1]                             hci.StatusCode  status
+  $next [+2]                             UInt            connection_handle
+    -- Only the lower 12-bits are meaningful.
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+8]  bits:
+    0     [+LEFeatureSet.$size_in_bits]  LEFeatureSet    le_features
+
+
+struct LEExtendedAdvertisingReportData:
+  0     [+2]  bits:
+
+    0     [+7]                        LEExtendedAdvertisingEventType  event_type
+
+  $next [+1]                          hci.LEAddressType               address_type
+    -- Address type of the advertiser.
+
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                      address
+    -- Public Device Address, Random Device Address, Public Identity Address or
+    -- Random (static) Identity Address of the advertising device.
+
+  $next [+1]                          hci.LEPrimaryAdvertisingPHY     primary_phy
+    -- Indicates the PHY used to send the advertising PDU on the primary advertising
+    -- channel. Legacy PDUs always use LE_1M. NONE, LE_2M, and LE_CODED_S2 are excluded.
+
+  $next [+1]                          hci.LESecondaryAdvertisingPHY   secondary_phy
+    -- Indicates the PHY used to send the advertising PDU(s), if any, on the secondary
+    -- advertising channel. A value of NONE means that no packets were received on the
+    -- secondary advertising channel.
+
+  $next [+1]                          UInt                            advertising_sid
+    -- Value of the Advertising SID subfield in the ADI field of the PDU. A value of
+    -- 0xFF means no ADI field provided.
+    [requires: 0x00 <= this <= 0x0F || this == 0xFF]
+
+  $next [+1]                          UInt                            tx_power
+    -- Units: dBm. A value of 0x7F means Tx Power information is not available.
+    [requires: -127 <= this <= 20 || this == 0x7F]
+
+  $next [+1]                          UInt                            rssi
+    -- Units: dBm. A value of 0x7F means RSSI is not available.
+    [requires: -127 <= this <= 20 || this == 0x7F]
+
+  $next [+2]                          UInt                            periodic_advertising_interval
+    -- 0x0000: No periodic advertising.
+    -- 0xXXXX:
+    --   Time = N * 1.25 ms
+    --   Time Range: 7.5 ms to 81,918.75 s
+    [requires: 0x0006 <= this <= 0xFFFF || this == 0x0000]
+
+  $next [+1]                          LEDirectAddressType             direct_address_type
+
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                      direct_address
+    -- TargetA field in the advertisement or either Public Identity Address or Random (static)
+    -- Identity Address of the target device.
+
+  $next [+1]                          UInt                            data_length
+    -- Length of the |data| field.
+
+  $next [+data_length]                UInt:8[data_length]             data
+    -- |data_length| octets of advertising or scan response data formatted as defined in
+    -- [Vol 3] Part C, Section 11. Note: Each element of this array has a variable length.
+
+
+struct LEExtendedAdvertisingReportSubevent(reports_size: UInt:8):
+  -- LE Extended Advertising Report Event (v5.0) (LE)
+  0     [+LEMetaEvent.$size_in_bytes]  LEMetaEvent           le_meta_event
+  $next [+1]                           UInt                  num_reports
+    -- Number of separate reports in the event.
+    [requires: 0x01 <= this <= 0x0A]
+
+  $next [+reports_size]                UInt:8[reports_size]  reports
+    -- Since each report has a variable length, they are stored in a UInt:8 array.
