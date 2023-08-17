@@ -46,6 +46,10 @@ class ChannelManager {
     l2cap::Channel::WeakPtr smp;
   };
 
+  struct BrEdrFixedChannels {
+    l2cap::Channel::WeakPtr smp;
+  };
+
   // Create a ChannelManager. FakeL2cap can be used instead in tests.
   static std::unique_ptr<ChannelManager> Create(hci::AclDataChannel* acl_data_channel,
                                                 hci::CommandChannel* cmd_channel,
@@ -66,10 +70,12 @@ class ChannelManager {
   // |security_callback| will be used to request an upgrade to the link security level. This can be
   // triggered by dynamic L2CAP channel creation or by a service-level client via
   // Channel::UpgradeSecurity().
-  virtual void AddACLConnection(hci_spec::ConnectionHandle handle,
-                                pw::bluetooth::emboss::ConnectionRole role,
-                                l2cap::LinkErrorCallback link_error_callback,
-                                l2cap::SecurityUpgradeCallback security_callback) = 0;
+  //
+  // Returns the fixed channels of this link.
+  virtual BrEdrFixedChannels AddACLConnection(hci_spec::ConnectionHandle handle,
+                                              pw::bluetooth::emboss::ConnectionRole role,
+                                              l2cap::LinkErrorCallback link_error_callback,
+                                              l2cap::SecurityUpgradeCallback security_callback) = 0;
 
   // Registers an LE connection with the L2CAP layer. L2CAP channels can be opened on the logical
   // link represented by |handle| after a call to this method.  It is an error to register the same

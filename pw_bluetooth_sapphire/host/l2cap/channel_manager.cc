@@ -32,9 +32,10 @@ class ChannelManagerImpl final : public ChannelManager {
                      bool random_channel_ids);
   ~ChannelManagerImpl() override;
 
-  void AddACLConnection(hci_spec::ConnectionHandle handle,
-                        pw::bluetooth::emboss::ConnectionRole role, LinkErrorCallback link_error_cb,
-                        SecurityUpgradeCallback security_cb) override;
+  BrEdrFixedChannels AddACLConnection(hci_spec::ConnectionHandle handle,
+                                      pw::bluetooth::emboss::ConnectionRole role,
+                                      LinkErrorCallback link_error_cb,
+                                      SecurityUpgradeCallback security_cb) override;
 
   [[nodiscard]] LEFixedChannels AddLEConnection(hci_spec::ConnectionHandle handle,
                                                 pw::bluetooth::emboss::ConnectionRole role,
@@ -160,15 +161,18 @@ hci::ACLPacketHandler ChannelManagerImpl::MakeInboundDataHandler() {
   };
 }
 
-void ChannelManagerImpl::AddACLConnection(hci_spec::ConnectionHandle handle,
-                                          pw::bluetooth::emboss::ConnectionRole role,
-                                          LinkErrorCallback link_error_cb,
-                                          SecurityUpgradeCallback security_cb) {
+ChannelManagerImpl::BrEdrFixedChannels ChannelManagerImpl::AddACLConnection(
+    hci_spec::ConnectionHandle handle, pw::bluetooth::emboss::ConnectionRole role,
+    LinkErrorCallback link_error_cb, SecurityUpgradeCallback security_cb) {
   bt_log(DEBUG, "l2cap", "register ACL link (handle: %#.4x)", handle);
 
   auto* ll = RegisterInternal(handle, bt::LinkType::kACL, role, max_acl_payload_size_);
   ll->set_error_callback(std::move(link_error_cb));
   ll->set_security_upgrade_callback(std::move(security_cb));
+
+  Channel::WeakPtr smp = OpenFixedChannel(handle, kSMPChannelId);
+  BT_ASSERT(smp.is_alive());
+  return BrEdrFixedChannels{.smp = std::move(smp)};
 }
 
 ChannelManagerImpl::LEFixedChannels ChannelManagerImpl::AddLEConnection(

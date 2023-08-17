@@ -125,28 +125,30 @@ class ChannelManagerMockControllerTest
   struct QueueAclConnectionRetVal {
     l2cap::CommandId extended_features_id;
     l2cap::CommandId fixed_channels_supported_id;
+    ChannelManager::BrEdrFixedChannels fixed_channels;
   };
 
   QueueAclConnectionRetVal QueueAclConnection(
       hci_spec::ConnectionHandle handle,
       pw::bluetooth::emboss::ConnectionRole role = pw::bluetooth::emboss::ConnectionRole::CENTRAL) {
-    QueueAclConnectionRetVal cmd_ids;
-    cmd_ids.extended_features_id = NextCommandId();
-    cmd_ids.fixed_channels_supported_id = NextCommandId();
+    QueueAclConnectionRetVal return_val;
+    return_val.extended_features_id = NextCommandId();
+    return_val.fixed_channels_supported_id = NextCommandId();
 
-    const auto kExtFeaturesRsp = l2cap::testing::AclExtFeaturesInfoRsp(cmd_ids.extended_features_id,
-                                                                       handle, kExtendedFeatures);
+    const auto kExtFeaturesRsp = l2cap::testing::AclExtFeaturesInfoRsp(
+        return_val.extended_features_id, handle, kExtendedFeatures);
     EXPECT_ACL_PACKET_OUT(
-        test_device(), l2cap::testing::AclExtFeaturesInfoReq(cmd_ids.extended_features_id, handle),
+        test_device(),
+        l2cap::testing::AclExtFeaturesInfoReq(return_val.extended_features_id, handle),
         &kExtFeaturesRsp);
     EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclFixedChannelsSupportedInfoReq(
-                                             cmd_ids.fixed_channels_supported_id, handle));
+                                             return_val.fixed_channels_supported_id, handle));
 
-    chanmgr()->AddACLConnection(
+    return_val.fixed_channels = chanmgr()->AddACLConnection(
         handle, role, /*link_error_callback=*/[]() {},
         /*security_callback=*/[](auto, auto, auto) {});
 
-    return cmd_ids;
+    return return_val;
   }
 
   ChannelManager::LEFixedChannels QueueLEConnection(hci_spec::ConnectionHandle handle,
