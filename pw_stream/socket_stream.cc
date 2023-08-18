@@ -129,6 +129,10 @@ Status SocketStream::DoWrite(span<const std::byte> data) {
 StatusWithSize SocketStream::DoRead(ByteSpan dest) {
   ssize_t bytes_rcvd = recv(connection_fd_, dest.data(), dest.size_bytes(), 0);
   if (bytes_rcvd == 0) {
+    // Remote peer has closed the connection.
+    Close();
+    return StatusWithSize::OutOfRange();
+  } else if (bytes_rcvd < 0) {
     if (errno == EAGAIN || errno == EWOULDBLOCK) {
       // Socket timed out when trying to read.
       // This should only occur if SO_RCVTIMEO was configured to be nonzero, or
@@ -136,10 +140,6 @@ StatusWithSize SocketStream::DoRead(ByteSpan dest) {
       // blocking when performing reads or writes.
       return StatusWithSize::ResourceExhausted();
     }
-    // Remote peer has closed the connection.
-    Close();
-    return StatusWithSize::OutOfRange();
-  } else if (bytes_rcvd < 0) {
     return StatusWithSize::Unknown();
   }
   return StatusWithSize(bytes_rcvd);
