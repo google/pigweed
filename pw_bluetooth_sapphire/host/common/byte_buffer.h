@@ -328,6 +328,7 @@ using MutableByteBufferPtr = std::unique_ptr<MutableByteBuffer>;
 template <size_t BufferSize>
 class StaticByteBuffer : public MutableByteBuffer {
  public:
+  // Create a buffer of size |BufferSize|. The buffer bytes will be initialized to 0x00.
   StaticByteBuffer() { static_assert(BufferSize, "|BufferSize| must be non-zero"); }
   ~StaticByteBuffer() override = default;
 
@@ -377,6 +378,7 @@ class StaticByteBuffer : public MutableByteBuffer {
   void Fill(uint8_t value) override { buffer_.fill(value); }
 
  private:
+  // Value-initialize to 0.
   std::array<uint8_t, BufferSize> buffer_{};
 };
 
@@ -397,7 +399,7 @@ class DynamicByteBuffer : public MutableByteBuffer {
   DynamicByteBuffer();
   ~DynamicByteBuffer() override = default;
 
-  // Allocates a new buffer with |buffer_size| bytes.
+  // Allocates a new buffer with |buffer_size| bytes. The buffer bytes will be initialized to 0x00.
   explicit DynamicByteBuffer(size_t buffer_size);
 
   // Copies the contents of |buffer|.

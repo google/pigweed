@@ -19,6 +19,7 @@ TEST(ByteBufferTest, StaticByteBuffer) {
   constexpr size_t kBufferSize = 5;
   StaticByteBuffer<kBufferSize> buffer;
 
+  // The buffer is initialized to 0.
   constexpr std::array<uint8_t, kBufferSize> kExpectedDefault{{0x00, 0x00, 0x00, 0x00, 0x00}};
   EXPECT_TRUE(ContainersEqual(kExpectedDefault, buffer));
 
@@ -72,11 +73,13 @@ TEST(ByteBufferTest, StaticByteBufferPackConstructor) {
 TEST(ByteBufferTest, DynamicByteBuffer) {
   constexpr size_t kBufferSize = 5;
   DynamicByteBuffer buffer(kBufferSize);
-
   EXPECT_EQ(kBufferSize, buffer.size());
-  buffer.SetToZeros();
-  buffer[3] = 3;
 
+  // The buffer is initialized to 0.
+  constexpr std::array<uint8_t, kBufferSize> kExpectedDefault{{0x00, 0x00, 0x00, 0x00, 0x00}};
+  EXPECT_TRUE(ContainersEqual(kExpectedDefault, buffer));
+
+  buffer[3] = 3;
   constexpr std::array<uint8_t, kBufferSize> kExpected{{0x00, 0x00, 0x00, 0x03, 0x00}};
   EXPECT_TRUE(ContainersEqual(kExpected, buffer));
 

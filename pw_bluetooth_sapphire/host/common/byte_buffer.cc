@@ -109,8 +109,11 @@ pw::span<std::byte> MutableByteBuffer::mutable_subspan(size_t pos, size_t size) 
 DynamicByteBuffer::DynamicByteBuffer() = default;
 
 DynamicByteBuffer::DynamicByteBuffer(size_t buffer_size) : buffer_size_(buffer_size) {
-  if (buffer_size == 0)
+  if (buffer_size == 0) {
     return;
+  }
+
+  // make_unique value-initializes the buffer to 0.
   buffer_ = std::make_unique<uint8_t[]>(buffer_size);
 
   // TODO(armansito): For now this is dumb but we should properly handle the
