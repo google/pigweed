@@ -107,6 +107,7 @@ pw_add_library(pw_containers.vector INTERFACE
   PUBLIC_DEPS
     pw_assert
     pw_polyfill
+    pw_preprocessor
 )
 
 pw_add_library(pw_containers.wrapped_iterator INTERFACE

@@ -98,6 +98,7 @@ pw_cc_library(
     deps = [
         "//pw_assert:facade",
         "//pw_polyfill",
+        "//pw_preprocessor",
     ],
 )
 
