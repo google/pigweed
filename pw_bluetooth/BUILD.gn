@@ -123,6 +123,8 @@ if (dir_pw_third_party_emboss != "") {
   emboss_cc_library("emboss_hci_test") {
     public_configs = [ ":emboss_include_path" ]
     source = "public/pw_bluetooth/hci_test.emb"
+    imports = [ "public/pw_bluetooth/hci_common.emb" ]
+    deps = [ ":emboss_hci_common" ]
   }
 
   group("emboss_hci_group") {
