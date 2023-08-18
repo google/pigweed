@@ -10,11 +10,13 @@
 
 #include <atomic>
 #include <climits>
+#include <cstdint>
 #include <list>
 #include <memory>
 #include <mutex>
 #include <queue>
 
+#include "lib/inspect/cpp/vmo/types.h"
 #include "pw_bluetooth/vendor.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
@@ -37,6 +39,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
 
 namespace bt::l2cap {
+
+// Maximum count of packets a channel can queue before it must drop old packets
+constexpr uint16_t kDefaultTxMaxQueuedCount = 500;
 
 // Represents a L2CAP channel. Each instance is owned by a service
 // implementation that operates on the corresponding channel. Instances can only
@@ -68,7 +73,7 @@ class Channel : public WeakSelf<Channel> {
  public:
   // TODO(fxbug.dev/1022): define a preferred MTU somewhere
   Channel(ChannelId id, ChannelId remote_id, bt::LinkType link_type,
-          hci_spec::ConnectionHandle link_handle, ChannelInfo info);
+          hci_spec::ConnectionHandle link_handle, ChannelInfo info, uint16_t max_tx_queued);
   virtual ~Channel() = default;
 
   // Identifier for this channel's endpoint on this device. It can be prior-
@@ -113,6 +118,9 @@ class Channel : public WeakSelf<Channel> {
 
   // Returns the current configuration parameters for this channel.
   ChannelInfo info() const { return info_; }
+
+  uint16_t max_tx_queued() const { return max_tx_queued_; }
+  void set_max_tx_queued(uint16_t count) { max_tx_queued_ = count; }
 
   // Returns the current link security properties of the underlying link.
   // Returns the lowest security level if the link is closed.
@@ -216,6 +224,8 @@ class Channel : public WeakSelf<Channel> {
   const bt::LinkType link_type_;
   const hci_spec::ConnectionHandle link_handle_;
   ChannelInfo info_;
+  // Maximum number of PDUs in the channel queue
+  uint16_t max_tx_queued_;
   // The ACL priority that was requested by a client and accepted by the controller.
   pw::bluetooth::AclPriority requested_acl_priority_;
 
@@ -236,16 +246,15 @@ class ChannelImpl : public Channel {
   // fixed channels are required to respect their MTU internally by:
   //   1.) never sending packets larger than their spec-defined MTU.
   //   2.) handling inbound PDUs which are larger than their spec-defined MTU appropriately.
-  static std::unique_ptr<ChannelImpl> CreateFixedChannel(ChannelId id,
-                                                         internal::LogicalLinkWeakPtr link,
-                                                         hci::CommandChannel::WeakPtr cmd_channel,
-                                                         uint16_t max_acl_payload_size,
-                                                         A2dpOffloadManager& a2dp_offload_manager);
+  static std::unique_ptr<ChannelImpl> CreateFixedChannel(
+      ChannelId id, internal::LogicalLinkWeakPtr link, hci::CommandChannel::WeakPtr cmd_channel,
+      uint16_t max_acl_payload_size, A2dpOffloadManager& a2dp_offload_manager,
+      uint16_t max_tx_queued = kDefaultTxMaxQueuedCount);
 
   static std::unique_ptr<ChannelImpl> CreateDynamicChannel(
       ChannelId id, ChannelId peer_id, internal::LogicalLinkWeakPtr link, ChannelInfo info,
       hci::CommandChannel::WeakPtr cmd_channel, uint16_t max_acl_payload_size,
-      A2dpOffloadManager& a2dp_offload_manager);
+      A2dpOffloadManager& a2dp_offload_manager, uint16_t max_tx_queued = kDefaultTxMaxQueuedCount);
 
   ~ChannelImpl() override;
 
@@ -289,7 +298,8 @@ class ChannelImpl : public Channel {
  private:
   ChannelImpl(ChannelId id, ChannelId remote_id, internal::LogicalLinkWeakPtr link,
               ChannelInfo info, hci::CommandChannel::WeakPtr cmd_channel,
-              uint16_t max_acl_payload_size, A2dpOffloadManager& a2dp_offload_manager);
+              uint16_t max_acl_payload_size, A2dpOffloadManager& a2dp_offload_manager,
+              uint16_t max_tx_queued);
 
   // Common channel closure logic. Called on Deactivate/OnClosed.
   void CleanUp();
@@ -339,11 +349,14 @@ class ChannelImpl : public Channel {
   // Fragmenter and Recombiner are always accessed on the L2CAP thread.
   const Fragmenter fragmenter_;
 
+  uint8_t dropped_packets = 0;
+
   struct InspectProperties {
     inspect::Node node;
     inspect::StringProperty psm;
     inspect::StringProperty local_id;
     inspect::StringProperty remote_id;
+    inspect::UintProperty dropped_packets;
   };
   InspectProperties inspect_;
 

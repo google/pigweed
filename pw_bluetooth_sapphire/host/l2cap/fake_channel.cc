@@ -12,8 +12,8 @@
 namespace bt::l2cap::testing {
 
 FakeChannel::FakeChannel(ChannelId id, ChannelId remote_id, hci_spec::ConnectionHandle handle,
-                         bt::LinkType link_type, ChannelInfo info)
-    : Channel(id, remote_id, link_type, handle, info),
+                         bt::LinkType link_type, ChannelInfo info, uint16_t max_tx_queued)
+    : Channel(id, remote_id, link_type, handle, info, max_tx_queued),
       handle_(handle),
       fragmenter_(handle),
       send_dispatcher_(nullptr),

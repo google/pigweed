@@ -24,7 +24,8 @@ class FakeChannel : public Channel {
  public:
   FakeChannel(ChannelId id, ChannelId remote_id, hci_spec::ConnectionHandle handle,
               bt::LinkType link_type,
-              ChannelInfo info = ChannelInfo::MakeBasicMode(kDefaultMTU, kDefaultMTU));
+              ChannelInfo info = ChannelInfo::MakeBasicMode(kDefaultMTU, kDefaultMTU),
+              uint16_t max_tx_queued = 1);
   ~FakeChannel() override = default;
 
   // Routes the given data over to the rx handler as if it were received from

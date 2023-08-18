@@ -1134,9 +1134,15 @@ TEST_F(ChannelManagerRealAclChannelTest, SendBREDRFragmentedSDUsOverTwoDynamicCh
       kTestHandle1, kConnectionCreationPacketCount + kChannelCreationPacketCount));
   RunLoopUntilIdle();
 
+  // Queue size should be equal to or larger than |num_queued_packets| to ensure that all packets
+  // get queued and sent
+  uint16_t num_queued_packets = 3;
+  EXPECT_TRUE(num_queued_packets <= kDefaultTxMaxQueuedCount);
+
   // Queue 14 packets in total, distributed between the two channels
-  // Fill up BR/EDR controller buffer then queue 4 additional packets
-  for (size_t i = 0; i < kBufferMaxNumPackets / 2 + 2; i++) {
+  // Fill up BR/EDR controller buffer then queue 3 additional packets (which will be later
+  // fragmented to form 6 packets)
+  for (size_t i = 0; i < kBufferMaxNumPackets / 2 + num_queued_packets; i++) {
     Channel::WeakPtr channel = (i % 2) ? channel1 : channel0;
     ChannelId channel_id = (i % 2) ? kRemoteId1 : kRemoteId0;
 
@@ -1164,8 +1170,8 @@ TEST_F(ChannelManagerRealAclChannelTest, SendBREDRFragmentedSDUsOverTwoDynamicCh
   EXPECT_FALSE(test_device()->AllExpectedDataPacketsSent());
 
   // Notify the processed packets with a Number Of Completed Packet HCI event
-  // This should cause the remaining 4 packets to be sent
-  test_device()->SendCommandChannelPacket(NumberOfCompletedPacketsPacket(kTestHandle1, 4));
+  // This should cause the remaining 6 fragmented packets to be sent
+  test_device()->SendCommandChannelPacket(NumberOfCompletedPacketsPacket(kTestHandle1, 6));
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 }
@@ -3456,9 +3462,14 @@ TEST_F(ChannelManagerRealAclChannelTest, SignalingChannelAndTwoDynamicChannels) 
       kTestHandle1, kConnectionCreationPacketCount + kChannelCreationPacketCount));
   RunLoopUntilIdle();
 
+  // Queue size should be equal to or larger than |num_queued_packets| to ensure that all packets
+  // get queued and sent
+  uint16_t num_queued_packets = 5;
+  EXPECT_TRUE(num_queued_packets <= kDefaultTxMaxQueuedCount);
+
   // Queue 15 packets in total, distributed between the two channels
   // Fill up BR/EDR controller buffer then queue 5 additional packets
-  for (size_t i = 0; i < kBufferMaxNumPackets + 5; i++) {
+  for (size_t i = 0; i < kBufferMaxNumPackets + num_queued_packets; i++) {
     Channel::WeakPtr channel = (i % 2) ? channel1 : channel0;
     ChannelId channel_id = (i % 2) ? kRemoteId1 : kRemoteId0;
 
@@ -3480,6 +3491,69 @@ TEST_F(ChannelManagerRealAclChannelTest, SignalingChannelAndTwoDynamicChannels) 
   // Notify the processed packets with a Number Of Completed Packet HCI event
   // This should cause the remaining 5 packets to be sent
   test_device()->SendCommandChannelPacket(NumberOfCompletedPacketsPacket(kTestHandle1, 5));
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+}
+
+TEST_F(ChannelManagerRealAclChannelTest, ChannelMaximumQueueSize) {
+  constexpr l2cap::PSM kPSM = l2cap::kSDP;
+  constexpr l2cap::ChannelId kLocalId = 0x0040;
+  constexpr l2cap::ChannelId kRemoteId = 0x9042;
+
+  // L2CAP connection request/response, config request, config response
+  constexpr size_t kChannelCreationPacketCount = 3;
+
+  QueueAclConnection(kTestHandle1);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+
+  l2cap::Channel::WeakPtr channel;
+  auto chan_cb = [&](auto activated_chan) {
+    EXPECT_EQ(kTestHandle1, activated_chan->link_handle());
+    channel = std::move(activated_chan);
+  };
+  QueueOutboundL2capConnection(kTestHandle1, kPSM, kLocalId, kRemoteId, std::move(chan_cb));
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+  EXPECT_TRUE(channel.is_alive());
+  channel->Activate(NopRxCallback, DoNothing);
+
+  // Free up the buffer space from packets sent while creating |channel|
+  test_device()->SendCommandChannelPacket(NumberOfCompletedPacketsPacket(
+      kTestHandle1, kConnectionCreationPacketCount + kChannelCreationPacketCount));
+
+  // Set maximum PDU queue size for |channel|. Queue size should be less than |num_queued_packets|
+  // to ensure that some packets are dropped in order to test maximum queue size behaviour
+  const uint16_t kTxMaxQueuedCount = 10;
+  channel->set_max_tx_queued(kTxMaxQueuedCount);
+  uint16_t num_queued_packets = 20;
+
+  // Fill up BR/EDR controller buffer then queue 20 additional packets. 10 of these packets will be
+  // dropped since the maximum PDU queue size |kTxMaxQueuedCount| is 10
+  for (size_t i = 0; i < kBufferMaxNumPackets + num_queued_packets; i++) {
+    if (i < kBufferMaxNumPackets + channel->max_tx_queued()) {
+      const StaticByteBuffer kPacket(
+          // ACL data header (handle: 0, length 1)
+          0x01, 0x00, 0x05, 0x00,
+          // L2CAP B-frame: (length: 1, channel-id)
+          0x01, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId),
+          // L2CAP payload
+          0x01);
+
+      EXPECT_ACL_PACKET_OUT(test_device(), kPacket);
+    }
+
+    // Create PDU to send on dynamic channel
+    EXPECT_TRUE(channel->Send(NewBuffer(0x01)));
+    RunLoopUntilIdle();
+  }
+  EXPECT_FALSE(test_device()->AllExpectedDataPacketsSent());
+
+  // Notify the processed packets with a Number Of Completed Packet HCI event
+  // This should cause the remaining 10 packets to be sent
+  test_device()->SendCommandChannelPacket(
+      bt::testing::NumberOfCompletedPacketsPacket(kTestHandle1, 10));
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 }

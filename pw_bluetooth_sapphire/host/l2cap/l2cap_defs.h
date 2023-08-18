@@ -70,7 +70,6 @@ constexpr ChannelId kATTChannelId = 0x0004;
 constexpr ChannelId kLESignalingChannelId = 0x0005;
 constexpr ChannelId kLESMPChannelId = 0x0006;
 
-
 // Range of dynamic channel identifiers; each logical link has its own set of
 // channel IDs (except for ACL-U and AMP-U, which share a namespace)
 // (see Tables 2.1 and 2.2 in v5.0, Vol 3, Part A, Section 2.1)
