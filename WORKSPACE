@@ -264,95 +264,35 @@ http_archive(
     urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.26.0/rules_rust-v0.26.0.tar.gz"],
 )
 
-load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_analyzer_toolchain_repository", "rust_repository_set")
+load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies")
 
 rules_rust_dependencies()
 
-RUST_EMBEDDED_TARGET_TRIPLES = {
-    "thumbv8m.main-none-eabihf": [
-        "@platforms//cpu:armv8-m",
-        "@bazel_embedded//constraints/fpu:fpv5-d16",
-    ],
-    "thumbv7m-none-eabi": [
-        "@platforms//cpu:armv7-m",
-        "@bazel_embedded//constraints/fpu:none",
-    ],
-    "thumbv6m-none-eabi": [
-        "@platforms//cpu:armv6-m",
-        "@bazel_embedded//constraints/fpu:none",
-    ],
-}
-
-RUST_OPT_LEVELS = {
-    "thumbv8m.main-none-eabihf": {
-        "dbg": "0",
-        "fastbuild": "0",
-        "opt": "z",
-    },
-    "thumbv7m-none-eabi": {
-        "dbg": "0",
-        "fastbuild": "0",
-        "opt": "z",
-    },
-    "thumbv6m-none-eabi": {
-        "dbg": "0",
-        "fastbuild": "0",
-        "opt": "z",
-    },
-}
-
-# Here we register a specific set of toolchains.
-#
-# Note: This statement creates name mangled remotes of the form:
-# `@{name}__{triplet}_tools`
-# (example: `@rust_linux_x86_64__thumbv7m-none-eabi_tools/`)
-rust_repository_set(
-    name = "rust_linux_x86_64",
-    edition = "2021",
-    exec_triple = "x86_64-unknown-linux-gnu",
-    extra_target_triples = RUST_EMBEDDED_TARGET_TRIPLES,
-    opt_level = RUST_OPT_LEVELS,
-    versions = ["1.67.0"],
+load(
+    "//pw_toolchain/rust:defs.bzl",
+    "pw_rust_register_toolchain_and_target_repos",
+    "pw_rust_register_toolchains",
 )
 
-rust_repository_set(
-    name = "rust_macos_x86_64",
-    edition = "2021",
-    exec_triple = "x86_64-apple-darwin",
-    extra_target_triples = RUST_EMBEDDED_TARGET_TRIPLES,
-    opt_level = RUST_OPT_LEVELS,
-    versions = ["1.67.0"],
+pw_rust_register_toolchain_and_target_repos(
+    cipd_tag = "rust_revision:faee636ebfff793ea9dcff17960a611b580e3cd5",
 )
 
 # Allows creation of a `rust-project.json` file to allow rust analyzer to work.
 load("@rules_rust//tools/rust_analyzer:deps.bzl", "rust_analyzer_dependencies")
 
-# Since we do not use rust_register_toolchains, we need to define a
-# rust_analyzer_toolchain.
-register_toolchains(rust_analyzer_toolchain_repository(
-    name = "linux_rust_analyzer_toolchain",
-    exec_compatible_with = ["@platforms//os:linux"],
-    # This should match the currently registered linux toolchain.
-    version = "1.67.0",
-))
+rust_analyzer_dependencies()
 
-register_toolchains(rust_analyzer_toolchain_repository(
-    name = "macos_rust_analyzer_toolchain",
-    exec_compatible_with = ["@platforms//os:macos"],
-    # This should match the currently registered macos toolchain.
-    version = "1.67.0",
-))
+pw_rust_register_toolchains()
 
 register_toolchains(
     "//pw_toolchain/host_clang:host_cc_toolchain_macos",
 )
 
-rust_analyzer_dependencies()
-
 # Vendored third party rust crates.
 git_repository(
     name = "rust_crates",
-    commit = "e4dcd91091f0537e6b5482677f2007b32a94703e",
+    commit = "6d975531f7672cc6aa54bdd7517e1beeffa578da",
     remote = "https://pigweed.googlesource.com/third_party/rust_crates",
     shallow_since = "1675359057 +0000",
 )
