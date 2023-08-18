@@ -79,6 +79,14 @@ template("pw_python_venv") {
                  "_generated_requirements_file",
                ])
   }
+  _output_logs = true
+  if (defined(invoker.output_logs)) {
+    _output_logs = invoker.output_logs
+  }
+  if (!defined(invoker.output_logs) ||
+      current_toolchain != pw_build_PYTHON_TOOLCHAIN) {
+    not_needed([ "_output_logs" ])
+  }
 
   _source_package_labels = []
   foreach(pkg, _source_packages) {
@@ -197,12 +205,6 @@ template("pw_python_venv") {
 
   if (defined(invoker.source_packages) || defined(invoker.requirements)) {
     if (current_toolchain == pw_build_PYTHON_TOOLCHAIN) {
-      if (defined(invoker.output_logs)) {
-        _output_logs = invoker.output_logs
-      } else {
-        _output_logs = true
-      }
-
       # Compile requirements with hashes
       pw_python_action("${target_name}._compile_requirements") {
         module = "piptools"
