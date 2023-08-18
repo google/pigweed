@@ -58,10 +58,36 @@ cipd_init()
 
 cipd_client_repository()
 
+# Set up legacy pw_transfer test binaries.
+# Required by: pigweed.
+# Used in modules: //pw_transfer.
 cipd_repository(
     name = "pw_transfer_test_binaries",
     path = "pigweed/pw_transfer_test_binaries/${os=linux}-${arch=amd64}",
     tag = "version:pw_transfer_test_binaries_528098d588f307881af83f769207b8e6e1b57520-linux-amd64-cipd.cipd",
+)
+
+# Fetch llvm toolchain.
+# Required by: pigweed.
+# Used in modules: //pw_toolchain.
+cipd_repository(
+    name = "llvm_toolchain",
+    path = "fuchsia/third_party/clang/${os}-${arch}",
+    tag = "git_revision:ebd0b8a0472b865b7eb6e1a32af97ae31d829033",
+)
+
+# Fetch linux sysroot for host builds.
+# Required by: pigweed.
+# Used in modules: //pw_toolchain.
+cipd_repository(
+    name = "linux_sysroot",
+    path = "fuchsia/third_party/sysroot/linux",
+    tag = "git_revision:d342388843734b6c5c50fb7e18cd3a76476b93aa",
+)
+
+register_toolchains(
+    "//pw_toolchain/host_clang:host_cc_toolchain_linux",
+    "//pw_toolchain/host_clang:host_cc_toolchain_macos",
 )
 
 # Set up Starlark library.
@@ -80,12 +106,6 @@ http_archive(
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 
 bazel_skylib_workspace()
-
-cipd_repository(
-    name = "llvm_toolchain",
-    path = "fuchsia/third_party/clang/${os}-${arch}",
-    tag = "git_revision:ebd0b8a0472b865b7eb6e1a32af97ae31d829033",
-)
 
 # Set up Python support.
 # Required by: rules_fuzzing, com_github_nanopb_nanopb.
@@ -136,26 +156,7 @@ http_archive(
     ],
 )
 
-# Set up host hermetic host toolchain.
-# Required by: All cc targets.
-# Used in modules: All cc targets.
-git_repository(
-    name = "rules_cc_toolchain",
-    commit = "9f209fda87414285bc66accd3612575b29760fba",
-    remote = "https://github.com/bazelembedded/rules_cc_toolchain",
-    shallow_since = "1675385535 -0800",
-)
-
-load("@rules_cc_toolchain//:rules_cc_toolchain_deps.bzl", "rules_cc_toolchain_deps")
-
-rules_cc_toolchain_deps()
-
-load("@rules_cc_toolchain//cc_toolchain:cc_toolchain.bzl", "register_cc_toolchains")
-
-register_cc_toolchains()
-
 # Sets up Bazels documentation generator.
-# Required by: rules_cc_toolchain.
 # Required by modules: All
 git_repository(
     name = "io_bazel_stardoc",
@@ -284,10 +285,6 @@ load("@rules_rust//tools/rust_analyzer:deps.bzl", "rust_analyzer_dependencies")
 rust_analyzer_dependencies()
 
 pw_rust_register_toolchains()
-
-register_toolchains(
-    "//pw_toolchain/host_clang:host_cc_toolchain_macos",
-)
 
 # Vendored third party rust crates.
 git_repository(
