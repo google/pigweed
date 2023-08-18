@@ -135,13 +135,21 @@ export class LogView extends LitElement {
    *   to update the filter.
    */
   private updateFilter(event: CustomEvent) {
+    this.searchText = event.detail.inputValue;
+    const viewConfigArr = this._state.logViewConfig;
+    const index = viewConfigArr.findIndex((i) => this.id === i.viewID);
+
     switch (event.type) {
       case 'input-change':
         if (this._debounceTimeout) {
           clearTimeout(this._debounceTimeout);
         }
 
-        this.searchText = event.detail.inputValue;
+        if (index !== -1) {
+          viewConfigArr[index].search = this.searchText;
+          this._state = { logViewConfig: viewConfigArr };
+          this._stateStore.setState({ logViewConfig: viewConfigArr });
+        }
 
         if (!this.searchText) {
           this._stringFilter = () => true;
@@ -169,14 +177,6 @@ export class LogView extends LitElement {
         break;
       default:
         break;
-    }
-
-    const viewConfigArr = this._state.logViewConfig;
-    const index = viewConfigArr.findIndex((i) => this.id === i.viewID);
-    if (index !== -1) {
-      viewConfigArr[index].search = this.searchText;
-      this._state = { logViewConfig: viewConfigArr };
-      this._stateStore.setState({ logViewConfig: viewConfigArr });
     }
 
     this.filterLogs();

@@ -60,9 +60,13 @@ export class LogList extends LitElement {
   @state()
   private _isOverflowingToRight = false;
 
-  /** A number reprecenting the scroll percentage in the horizontal direction. */
+  /** A number representing the scroll percentage in the horizontal direction. */
   @state()
   private _scrollPercentageLeft = 0;
+
+  /** A number representing visibility of vertical scroll indicator. */
+  @state()
+  private _scrollDownOpacity = 0;
 
   /**
    * Indicates whether to automatically scroll the table container to the
@@ -71,6 +75,7 @@ export class LogList extends LitElement {
   @state()
   private _autoscrollIsEnabled = true;
 
+  @query('.jump-to-bottom-btn') private _jumpBottomBtn!: HTMLButtonElement;
   @query('.table-container') private _tableContainer!: HTMLDivElement;
   @query('table') private _table!: HTMLTableElement;
   @query('tbody') private _tableBody!: HTMLTableSectionElement;
@@ -115,7 +120,7 @@ export class LogList extends LitElement {
 
     if (changedProperties.has('logs')) {
       this.setFieldNames(this.logs);
-      this.scrollTableToBottom();
+      this.handleTableScroll();
     }
 
     if (changedProperties.has('colsHidden')) {
@@ -151,19 +156,22 @@ export class LogList extends LitElement {
   /** Called when the Lit virtualizer updates its range of entries. */
   private onRangeChanged = () => {
     this.updateGridTemplateColumns();
-    this.scrollTableToBottom();
+    if (this._autoscrollIsEnabled) {
+      this.scrollTableToBottom();
+    }
   };
 
-  /** Scrolls to the bottom of the table container if autoscroll is enabled. */
+  /** Scrolls to the bottom of the table container. */
   private scrollTableToBottom() {
-    if (this._autoscrollIsEnabled) {
-      const container = this._tableContainer;
+    const container = this._tableContainer;
 
-      // TODO(b/289101398): Refactor `setTimeout` usage
-      setTimeout(() => {
-        container.scrollTop = container.scrollHeight;
-      }, 0); // Complete any rendering tasks before scrolling
-    }
+    // TODO(b/289101398): Refactor `setTimeout` usage
+    setTimeout(() => {
+      container.scrollTop = container.scrollHeight;
+      this._autoscrollIsEnabled = true;
+      this._jumpBottomBtn.hidden = true;
+      this._scrollDownOpacity = 0;
+    }, 0); // Complete any rendering tasks before scrolling
   }
 
   /** Clears the `gridTemplateColumns` value for all rows in the table. */
@@ -275,13 +283,15 @@ export class LogList extends LitElement {
     this._scrollPercentageLeft = scrollLeft / maxScrollLeft || 0;
 
     if (
-      container.scrollHeight - container.scrollTop <=
-      container.offsetHeight
+      Math.floor(container.scrollHeight - container.scrollTop) <=
+      Math.floor(container.offsetHeight)
     ) {
-      this._autoscrollIsEnabled = true;
+      this.scrollTableToBottom();
       return;
     }
     this._autoscrollIsEnabled = false;
+    this._jumpBottomBtn.hidden = false;
+    this._scrollDownOpacity = 1;
     this.requestUpdate();
   };
 
@@ -343,7 +353,7 @@ export class LogList extends LitElement {
     for (let i = 0; i < totalColumns; i++) {
       if (i === columnIndex) {
         gridTemplateColumns += `${newWidth}px `;
-        return;
+        continue;
       }
       const otherColumnHeader = this._table.querySelector(
         `th:nth-child(${i + 1})`,
@@ -378,9 +388,17 @@ export class LogList extends LitElement {
             })}
           </tbody>
         </table>
-
         ${this.overflowIndicators()}
       </div>
+      <md-filled-button
+        class="jump-to-bottom-btn"
+        title="Jump to Bottom"
+        @click="${this.scrollTableToBottom}"
+        trailing-icon
+      >
+        <md-icon slot="icon" aria-hidden="true">arrow_downward</md-icon>
+        Jump to Bottom
+      </md-filled-button>
     `;
   }
 
@@ -482,6 +500,11 @@ export class LogList extends LitElement {
   }
 
   private overflowIndicators = () => html`
+    <div
+      class="bottom-indicator"
+      style="opacity: ${this._scrollDownOpacity}"
+    ></div>
+
     <div
       class="overflow-indicator left-indicator"
       style="opacity: ${this._scrollPercentageLeft}"
