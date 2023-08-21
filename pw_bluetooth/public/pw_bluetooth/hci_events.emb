@@ -573,3 +573,11 @@ struct RoleChangeEvent:
 
   $next [+1]                          hci.ConnectionRole  role
     -- The new role for the specified address.
+
+
+struct LinkKeyRequestEvent:
+  -- Link Key Request Event (v1.1) (BR/EDR)
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]                   hci.EventHeader  header
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr       bd_addr
+    -- The address for the device that a host-stored link key is being requested.
