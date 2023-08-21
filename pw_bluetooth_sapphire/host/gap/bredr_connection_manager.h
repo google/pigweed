@@ -220,7 +220,7 @@ class BrEdrConnectionManager final {
   hci::CommandChannel::EventCallbackResult OnUserConfirmationRequest(const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnUserPasskeyRequest(const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnUserPasskeyNotification(const hci::EventPacket& event);
-  hci::CommandChannel::EventCallbackResult OnRoleChange(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult OnRoleChange(const hci::EmbossEventPacket& event);
 
   void HandleNonAclConnectionRequest(const DeviceAddress& addr,
                                      pw::bluetooth::emboss::LinkType link_type);

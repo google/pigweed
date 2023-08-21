@@ -71,6 +71,8 @@ std::optional<pw::bluetooth::emboss::StatusCode> EmbossEventPacket::StatusCode()
     }
     case hci_spec::kEncryptionChangeEventCode:
       return StatusCodeFromView<pw::bluetooth::emboss::EncryptionChangeEventV1View>();
+    case hci_spec::kRoleChangeEventCode:
+      return StatusCodeFromView<pw::bluetooth::emboss::RoleChangeEventView>();
     case hci_spec::kVendorDebugEventCode: {
       hci_spec::EventCode subevent_code =
           view<pw::bluetooth::emboss::VendorDebugEventView>().subevent_code().Read();

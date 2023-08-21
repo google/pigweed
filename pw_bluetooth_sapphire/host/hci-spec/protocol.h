@@ -819,17 +819,6 @@ struct HardwareErrorEventParams {
 // Role Change Event (BR/EDR) (v1.1)
 constexpr EventCode kRoleChangeEventCode = 0x12;
 
-struct RoleChangeEventParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // The address of the device for which a role change has completed.
-  DeviceAddressBytes bd_addr;
-
-  // The new role for the specified address.
-  ConnectionRole new_role;
-} __attribute__((packed));
-
 // ========================================
 // Number Of Completed Packets Event (v1.1)
 constexpr EventCode kNumberOfCompletedPacketsEventCode = 0x13;

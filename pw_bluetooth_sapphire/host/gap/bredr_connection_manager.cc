@@ -1166,11 +1166,9 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnUserPasskeyNo
 }
 
 hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnRoleChange(
-    const hci::EventPacket& event) {
-  BT_ASSERT(event.event_code() == hci_spec::kRoleChangeEventCode);
-  const auto& params = event.params<hci_spec::RoleChangeEventParams>();
-
-  DeviceAddress address(DeviceAddress::Type::kBREDR, params.bd_addr);
+    const hci::EmbossEventPacket& event) {
+  const auto params = event.view<pw::bluetooth::emboss::RoleChangeEventView>();
+  const DeviceAddress address(DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr()));
   Peer* peer = cache_->FindByAddress(address);
   if (!peer) {
     bt_log(WARN, "gap-bredr", "got %s for unknown peer (address: %s)", __func__, bt_str(address));
@@ -1178,29 +1176,31 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnRoleChange(
   }
   PeerId peer_id = peer->identifier();
 
+  const pw::bluetooth::emboss::ConnectionRole new_role = params.role().Read();
+
   // When a role change is requested in the HCI_Accept_Connection_Request command, a HCI_Role_Change
   // event may be received prior to the HCI_Connection_Complete event (so no connection object will
   // exist yet) (Core Spec v5.2, Vol 2, Part F, Sec 3.1).
   auto request_iter = connection_requests_.find(peer_id);
   if (request_iter != connection_requests_.end()) {
-    request_iter->second.set_role_change(params.new_role);
+    request_iter->second.set_role_change(new_role);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  auto conn_pair = FindConnectionByAddress(params.bd_addr);
+  auto conn_pair = FindConnectionByAddress(address.value());
   if (!conn_pair) {
     bt_log(WARN, "gap-bredr", "got %s for unconnected peer %s", __func__, bt_str(peer_id));
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
   if (hci_is_error(event, WARN, "gap-bredr", "role change failed and remains %s (peer: %s)",
-                   hci_spec::ConnectionRoleToString(params.new_role).c_str(), bt_str(peer_id))) {
+                   hci_spec::ConnectionRoleToString(new_role).c_str(), bt_str(peer_id))) {
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
   bt_log(DEBUG, "gap-bredr", "role changed to %s (peer: %s)",
-         hci_spec::ConnectionRoleToString(params.new_role).c_str(), bt_str(peer_id));
-  conn_pair->second->link().set_role(params.new_role);
+         hci_spec::ConnectionRoleToString(new_role).c_str(), bt_str(peer_id));
+  conn_pair->second->link().set_role(new_role);
 
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
