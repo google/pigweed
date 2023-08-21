@@ -561,3 +561,15 @@ struct LEExtendedAdvertisingReportSubevent(reports_size: UInt:8):
 
   $next [+reports_size]                UInt:8[reports_size]  reports
     -- Since each report has a variable length, they are stored in a UInt:8 array.
+
+
+struct RoleChangeEvent:
+  -- Role Change Event (BR/EDR) (v1.1)
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]                   hci.EventHeader     header
+  $next [+1]                          hci.StatusCode      status
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr          bd_addr
+    -- The address of the device for which a role change has completed.
+
+  $next [+1]                          hci.ConnectionRole  role
+    -- The new role for the specified address.
