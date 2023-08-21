@@ -12,8 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 #include "gtest/gtest.h"
-#include "pw_bluetooth/hci.emb.h"
-#include "pw_bluetooth/vendor.emb.h"
+#include "pw_bluetooth/hci_test.emb.h"
 
 namespace pw::bluetooth {
 namespace {
