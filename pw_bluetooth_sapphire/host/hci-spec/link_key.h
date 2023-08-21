@@ -9,7 +9,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 
-#include <pw_bluetooth/hci.emb.h>
+#include <pw_bluetooth/hci_commands.emb.h>
 
 namespace bt::hci_spec {
 

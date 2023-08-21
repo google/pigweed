@@ -14,6 +14,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/trace.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
+#include <pw_bluetooth/hci_common.emb.h>
+#include <pw_bluetooth/hci_vendor.emb.h>
+
 namespace bt::hci {
 
 namespace {

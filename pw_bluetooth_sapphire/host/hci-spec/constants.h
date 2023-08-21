@@ -13,7 +13,7 @@
 
 #include "lib/zx/time.h"
 
-#include <pw_bluetooth/hci.emb.h>
+#include <pw_bluetooth/hci_commands.emb.h>
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 
 // This file contains constants and numbers used in HCI packet payloads.

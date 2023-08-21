@@ -12,6 +12,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
+#include <pw_bluetooth/hci_common.emb.h>
+#include <pw_bluetooth/hci_test.emb.h>
+
 namespace bt::hci {
 
 namespace {

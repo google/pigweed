@@ -11,7 +11,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 
-#include <pw_bluetooth/hci.emb.h>
+#include <pw_bluetooth/hci_common.emb.h>
 
 namespace bt {
 

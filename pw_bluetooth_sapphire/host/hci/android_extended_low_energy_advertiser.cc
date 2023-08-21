@@ -7,7 +7,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/vendor_protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
-#include <pw_bluetooth/vendor.emb.h>
+#include <pw_bluetooth/hci_common.emb.h>
+#include <pw_bluetooth/hci_vendor.emb.h>
 
 namespace bt::hci {
 

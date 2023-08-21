@@ -4,7 +4,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 
-#include "pw_bluetooth/hci.emb.h"
+#include "pw_bluetooth/hci_common.emb.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/bredr_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connection.h"

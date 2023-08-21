@@ -31,7 +31,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/emboss_control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
-#include <pw_bluetooth/hci.emb.h>
+#include <pw_bluetooth/hci_commands.emb.h>
 
 namespace bt::gap {
 

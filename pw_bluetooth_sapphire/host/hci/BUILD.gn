@@ -46,7 +46,7 @@ static_library("hci") {
   public_deps = [
     "//sdk/lib/fit",
     "//src/connectivity/bluetooth/core/bt-host/transport",
-    "//third_party/pigweed/src/pw_bluetooth:emboss_vendor",
+    "//third_party/pigweed/src/pw_bluetooth:emboss_hci_group",
   ]
 }
 
@@ -89,6 +89,7 @@ source_set("tests") {
     ":testing",
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//third_party/googletest:gtest",
+    "//third_party/pigweed/src/pw_bluetooth:emboss_hci_test",
   ]
 }
 
