@@ -23,6 +23,7 @@ pw_doc_group("docs") {
     ":0002",
     ":0101",
     ":0102",
+    ":0107",
   ]
 }
 
@@ -41,4 +42,8 @@ pw_doc_group("0101") {
 
 pw_doc_group("0102") {
   sources = [ "0102-module-docs.rst" ]
+}
+
+pw_doc_group("0107") {
+  sources = [ "0107-communications.rst" ]
 }

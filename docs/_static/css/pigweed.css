@@ -177,6 +177,10 @@ div.pw-topnav-inline h1 {
   padding: 0;
 }
 
+.pw-text-center-align {
+    text-align: center
+}
+
 ul.pw-module-section-nav-group {
   display: flex;
   margin: 0 1em;
