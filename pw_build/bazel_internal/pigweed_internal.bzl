@@ -110,6 +110,11 @@ def _preprocess_linker_script_impl(ctx):
         arguments = [
             "-E",
             "-P",
+            # TODO: b/296928739 - This flag is needed so cc1 can be located
+            # despite the presence of symlinks. Normally this is provided
+            # through copts inherited from the toolchain, but since those are
+            # not pulled in here the flag must be explicitly added.
+            "-no-canonical-prefixes",
             "-xc",
             ctx.file.linker_script.short_path,
             "-o",
