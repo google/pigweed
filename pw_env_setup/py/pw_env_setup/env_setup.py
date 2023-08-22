@@ -473,6 +473,7 @@ class EnvSetup(object):
 
         with open(gni_file, 'w') as outs:
             self._env.gni(outs, self._project_root)
+        shutil.copy(gni_file, os.path.join(self._install_dir, 'logs'))
 
     def _log(self, *args, **kwargs):
         # Not using logging module because it's awkward to flush a log handler.
