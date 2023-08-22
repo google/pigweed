@@ -110,6 +110,8 @@ class TokenDatabase {
     using reference = const Entry&;
     using iterator_category = std::forward_iterator_tag;
 
+    constexpr iterator() : entry_{}, raw_(nullptr) {}
+
     constexpr iterator(const iterator& other) = default;
     constexpr iterator& operator=(const iterator& other) = default;
 
@@ -147,14 +149,12 @@ class TokenDatabase {
     // Constructs a new iterator to a valid entry.
     constexpr iterator(const char* raw_entry, const char* string)
         : entry_{0, 0, string}, raw_{raw_entry} {
-      if (raw_entry != string) {
+      if (raw_entry != string) {  // raw_entry == string if the DB is empty
         ReadRawEntry();
       }
     }
 
     explicit constexpr iterator(const char* end) : entry_{}, raw_(end) {}
-
-    constexpr iterator() : entry_{}, raw_(nullptr) {}
 
     constexpr void ReadRawEntry() {
       entry_.token = ReadUint32(raw_);
@@ -189,8 +189,7 @@ class TokenDatabase {
     // True of the list is empty.
     constexpr bool empty() const { return begin_ == end_; }
 
-    // Accesses the specified entry in this set. Returns an Entry object, which
-    // is constructed from the underlying raw entry. The index must be less than
+    // Accesses the specified entry in this set. The index must be less than
     // size(). This operation is O(n) in size().
     Entry operator[](size_type index) const;
 
