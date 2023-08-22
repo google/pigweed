@@ -17,7 +17,7 @@ import enum
 import abc
 from dataclasses import dataclass
 import logging
-from typing import Iterable
+from typing import Iterable, List, Tuple
 
 from pw_rpc.client import Services
 from pw_rpc.callback_client import OptionalTimeout, UseDefault
@@ -133,13 +133,28 @@ class LoggingEventHandler(EventHandler):
         log('        Actual: %s', expectation.evaluated_expression)
 
 
+@dataclass(frozen=True)
+class TestRecord:
+    """Class for recording test results."""
+
+    passing_tests: Tuple[TestCase, ...]
+    failing_tests: Tuple[TestCase, ...]
+    disabled_tests: Tuple[TestCase, ...]
+
+    def all_tests_passed(self) -> bool:
+        return not self.failing_tests
+
+    def __bool__(self) -> bool:
+        return self.all_tests_passed()
+
+
 def run_tests(
     rpcs: Services,
     report_passed_expectations: bool = False,
     test_suites: Iterable[str] = (),
     event_handlers: Iterable[EventHandler] = (LoggingEventHandler(),),
     timeout_s: OptionalTimeout = UseDefault.VALUE,
-) -> bool:
+) -> TestRecord:
     """Runs unit tests on a device over Pigweed RPC.
 
     Calls each of the provided event handlers as test events occur, and returns
@@ -174,39 +189,53 @@ def run_tests(
     for event_handler in event_handlers:
         event_handler.run_all_tests_start()
 
-    all_tests_passed = False
+    passing_tests: List[TestCase] = []
+    failing_tests: List[TestCase] = []
+    disabled_tests: List[TestCase] = []
 
     for response in test_responses:
-        if response.HasField('test_case_start'):
-            raw_test_case = response.test_case_start
-            current_test_case = _test_case(raw_test_case)
-
-        for event_handler in event_handlers:
-            if response.HasField('test_run_start'):
+        if response.HasField('test_run_start'):
+            for event_handler in event_handlers:
                 event_handler.run_all_tests_start()
-            elif response.HasField('test_run_end'):
+        elif response.HasField('test_run_end'):
+            for event_handler in event_handlers:
                 event_handler.run_all_tests_end(
                     response.test_run_end.passed, response.test_run_end.failed
                 )
-                if response.test_run_end.failed == 0:
-                    all_tests_passed = True
-            elif response.HasField('test_case_start'):
+            assert len(passing_tests) == response.test_run_end.passed
+            assert len(failing_tests) == response.test_run_end.failed
+            test_record = TestRecord(
+                passing_tests=tuple(passing_tests),
+                failing_tests=tuple(failing_tests),
+                disabled_tests=tuple(disabled_tests),
+            )
+        elif response.HasField('test_case_start'):
+            raw_test_case = response.test_case_start
+            current_test_case = _test_case(raw_test_case)
+            for event_handler in event_handlers:
                 event_handler.test_case_start(current_test_case)
-            elif response.HasField('test_case_end'):
-                result = TestCaseResult(response.test_case_end)
+        elif response.HasField('test_case_end'):
+            result = TestCaseResult(response.test_case_end)
+            for event_handler in event_handlers:
                 event_handler.test_case_end(current_test_case, result)
-            elif response.HasField('test_case_disabled'):
-                event_handler.test_case_disabled(
-                    _test_case(response.test_case_disabled)
-                )
-            elif response.HasField('test_case_expectation'):
-                raw_expectation = response.test_case_expectation
-                expectation = TestExpectation(
-                    raw_expectation.expression,
-                    raw_expectation.evaluated_expression,
-                    raw_expectation.line_number,
-                    raw_expectation.success,
-                )
+            if result == TestCaseResult.SUCCESS:
+                passing_tests.append(current_test_case)
+            else:
+                failing_tests.append(current_test_case)
+        elif response.HasField('test_case_disabled'):
+            raw_test_case = response.test_case_disabled
+            current_test_case = _test_case(raw_test_case)
+            for event_handler in event_handlers:
+                event_handler.test_case_disabled(current_test_case)
+            disabled_tests.append(current_test_case)
+        elif response.HasField('test_case_expectation'):
+            raw_expectation = response.test_case_expectation
+            expectation = TestExpectation(
+                raw_expectation.expression,
+                raw_expectation.evaluated_expression,
+                raw_expectation.line_number,
+                raw_expectation.success,
+            )
+            for event_handler in event_handlers:
                 event_handler.test_case_expect(current_test_case, expectation)
-
-    return all_tests_passed
+    return test_record

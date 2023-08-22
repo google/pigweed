@@ -683,7 +683,8 @@ To set up RPC-based unit tests in your application, instantiate a
 All tests flashed to an attached device can be run via python by calling
 ``pw_unit_test.rpc.run_tests()`` with a RPC client services object that has
 the unit testing RPC service enabled. By default, the results will output via
-logging.
+logging. This method returns a ``TestRecord`` dataclass instance, containing
+the results of the test run.
 
 .. code:: python
 
@@ -699,7 +700,7 @@ logging.
 pw_unit_test.rpc
 ----------------
 .. automodule:: pw_unit_test.rpc
-   :members: EventHandler, run_tests
+   :members: EventHandler, run_tests, TestRecord
 
 ----------------------------
 Module Configuration Options
