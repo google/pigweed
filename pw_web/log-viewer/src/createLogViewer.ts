@@ -34,12 +34,19 @@ export function createLogViewer(
   const logViewer = new RootComponent(state);
   const logs: LogEntry[] = [];
   root.appendChild(logViewer);
+  let lastUpdateTimeoutId: number = 0;
 
   // Define an event listener for the 'logEntry' event
   const logEntryListener = (logEntry: LogEntry) => {
     logs.push(logEntry);
     logViewer.logs = logs;
-    logViewer.requestUpdate('logs', []);
+    if (lastUpdateTimeoutId) {
+      clearTimeout(lastUpdateTimeoutId);
+    }
+    // Call requestUpdate at most once every 100 milliseconds.
+    lastUpdateTimeoutId = setTimeout(() => {
+      logViewer.requestUpdate('logs', []);
+    }, 100);
   };
 
   // Add the event listener to the LogSource instance
