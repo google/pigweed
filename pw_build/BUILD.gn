@@ -313,7 +313,10 @@ group("empty") {
 
 pw_doc_group("docs") {
   sources = [
+    "bazel.rst",
+    "cmake.rst",
     "docs.rst",
+    "gn.rst",
     "python.rst",
   ]
 }
