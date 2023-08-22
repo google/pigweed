@@ -607,3 +607,10 @@ struct LinkKeyNotificationEvent:
 
   $next [+1]                          KeyType          key_type
     -- Type of key used when pairing.
+
+
+struct DataBufferOverflowEvent:
+  -- Data Buffer Overflow Event (v1.1) (BR/EDR & LE)
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]  hci.EventHeader  header
+  $next [+1]         LinkType         ll_type
