@@ -26,16 +26,39 @@ if (defined(pw_env_setup_CIPD_PIGWEED)) {
 }
 
 declare_args() {
-  # This flag allows you to specify the root directory of the clang, clang++,
+  # This flag allows you to specify a prefix to use for clang, clang++,
   # and llvm-ar binaries to use when compiling with a clang-based toolchain.
   # This is useful for debugging toolchain-related issues by building with an
   # externally-provided toolchain.
+  #
+  # Pigweed toolchains should NOT override this variable so projects or users
+  # can control it via `.gn` or by setting it as a regular gn argument (e.g.
+  # `gn gen --args='pw_toolchain_CLANG_PREFIX=/path/to/my-llvm-'`).
+  #
+  # Examples:
+  #   pw_toolchain_CLANG_PREFIX = ""
+  #   command: "clang" (from PATH)
+  #
+  #   pw_toolchain_CLANG_PREFIX = "my-"
+  #   command: "my-clang" (from PATH)
+  #
+  #   pw_toolchain_CLANG_PREFIX = "/bin/my-"
+  #   command: "/bin/my-clang" (absolute path)
+  #
+  #   pw_toolchain_CLANG_PREFIX = "//environment/clang_next/"
+  #   command: "../environment/clang_next/clang" (relative path)
+  #
+  # GN templates should use `pw_toolchain_clang_tools.*` to get the intended
+  # command string rather than relying directly on pw_toolchain_CLANG_PREFIX.
   #
   # If the prefix begins with "//", it will be rebased to be relative to the
   # root build directory.
   pw_toolchain_CLANG_PREFIX = _default_llvm_prefix
 
-  # This flag allows you to specify the root directory of the rustc binary.
+  # This flag allows you to specify a prefix for rustc.
+  #
+  # This follows the same rules as pw_toolchain_CLANG_PREFIX, see above for
+  # more information.
   #
   # If the prefix begins with "//", it will be rebased to be relative to the
   # root build directory.

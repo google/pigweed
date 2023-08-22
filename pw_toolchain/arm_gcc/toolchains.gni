@@ -22,10 +22,31 @@ if (defined(pw_env_setup_CIPD_ARM)) {
 }
 
 declare_args() {
-  # This flag allows you to specify the root directory of the ARM GCC tools to
-  # to use when compiling with an arm-none-eabi toolchain. This is useful for
-  # debugging toolchain-related issues, or for building with an
-  # externally-provided toolchain.
+  # This flag allows you to specify a prefix for ARM GCC tools use when
+  # compiling with an arm-none-eabi toolchain. This is useful for debugging
+  # toolchain-related issues, or for building with an externally-provided
+  # toolchain.
+  #
+  # Pigweed toolchains should NOT override this variable so projects or users
+  # can control it via `.gn` or by setting it as a regular gn argument (e.g.
+  # `gn gen --args='pw_toolchain_ARM_NONE_EABI_PREFIX=/path/to/my-'`).
+  #
+  # Examples:
+  #   pw_toolchain_ARM_NONE_EABI_PREFIX = ""
+  #   command: "arm-none-eabi-gcc" (from PATH)
+  #
+  #   pw_toolchain_ARM_NONE_EABI_PREFIX = "my-"
+  #   command: "my-arm-none-eabi-gcc" (from PATH)
+  #
+  #   pw_toolchain_ARM_NONE_EABI_PREFIX = "/bin/my-"
+  #   command: "/bin/my-arm-none-eabi-gcc" (absolute path)
+  #
+  #   pw_toolchain_ARM_NONE_EABI_PREFIX = "//environment/gcc_next/"
+  #   command: "../environment/gcc_next/arm-none-eabi-gcc" (relative path)
+  #
+  # GN templates should use `arm_gcc_toolchain_tools.*` to get the intended
+  # command string rather than relying directly on
+  # pw_toolchain_ARM_NONE_EABI_PREFIX.
   #
   # If the prefix begins with "//", it will be rebased to be relative to the
   # root build directory.
