@@ -94,6 +94,18 @@ enum LEClockAccuracy:
   PPM_30  = 0x06
   PPM_20  = 0x07
 
+
+enum KeyType:
+  -- The key type used during pairing.
+  [maximum_bits: 8]
+  COMBINATION                           = 0x00
+  DEBUG_COMBINATION                     = 0x03
+  UNAUTHENTICATED_COMBINATION_FROM_P192 = 0x04
+  AUTHENTICATED_COMBINATION_FROM_P192   = 0x05
+  CHANGED_COMBINATION_KEY               = 0x06
+  UNAUTHENTICATED_COMBINATION_FROM_P256 = 0x07
+  AUTHENTICATED_COMBINATION_FROM_P256   = 0x08
+
 # =========================== Field Types =================================
 
 
@@ -581,3 +593,17 @@ struct LinkKeyRequestEvent:
   0     [+hdr_size]                   hci.EventHeader  header
   $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr       bd_addr
     -- The address for the device that a host-stored link key is being requested.
+
+
+struct LinkKeyNotificationEvent:
+  -- Link Key Notification Event (v1.1) (BR/EDR)
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]                   hci.EventHeader  header
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr       bd_addr
+    -- The address for the device for which a new link key has been generated.
+
+  $next [+16]                         UInt:8[16]       link_key
+    -- Link key for the associated address.
+
+  $next [+1]                          KeyType          key_type
+    -- Type of key used when pairing.
