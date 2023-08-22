@@ -6,7 +6,7 @@
 .. seed::
    :number: 107
    :name: Communications
-   :status: Last Call
+   :status: Accepted
    :proposal_date: 2023-07-19
    :cl: 157090
 
