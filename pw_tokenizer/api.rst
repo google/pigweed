@@ -10,6 +10,9 @@ API reference
 -------
 C++ / C
 -------
+
+Tokenization
+============
 .. doxygenfunction:: pw::tokenizer::EncodeArgs
 .. doxygenclass:: pw::tokenizer::EncodedMessage
    :members:
@@ -28,6 +31,11 @@ C++ / C
 .. doxygenfunction:: pw_tokenizer_EncodeArgs
 .. doxygentypedef:: pw_tokenizer_Token
 
+Detokenization
+==============
+.. doxygenclass:: pw::tokenizer::TokenDatabase
+   :members:
+
 ------
 Python
 ------
@@ -38,7 +46,8 @@ Python
 .. autofunction:: pw_tokenizer.tokens.pw_tokenizer_65599_hash
    :noindex:
 
-Tokenization in Rust
-====================
+----
+Rust
+----
 ``pw_tokenizer``'s Rust API is documented in the
 `pw_tokenizer crate's docs </rustdoc/pw_tokenizer>`_.
