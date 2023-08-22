@@ -70,6 +70,8 @@ pw_toolchain_clang_tools = {
   cc = "clang"
   cxx = "clang++"
   ld = cxx
+  llvm_cov = "llvm-cov"
+  llvm_profdata = "llvm-profdata"
   rustc = "rustc"
 
   _toolchain_prefix = pw_toolchain_CLANG_PREFIX
@@ -88,6 +90,8 @@ pw_toolchain_clang_tools = {
     cc = _toolchain_prefix + cc
     cxx = _toolchain_prefix + cxx
     ld = _toolchain_prefix + ld
+    llvm_cov = _toolchain_prefix + llvm_cov
+    llvm_profdata = _toolchain_prefix + llvm_profdata
   }
 
   _rust_prefix = pw_toolchain_RUST_PREFIX

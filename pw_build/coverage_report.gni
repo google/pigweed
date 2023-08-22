@@ -157,8 +157,7 @@ template("pw_coverage_report") {
       module = "pw_build.merge_profraws"
       args = [
         "--llvm-profdata-path",
-        rebase_path("$pw_env_setup_CIPD_PIGWEED/bin/llvm-profdata",
-                    root_build_dir),
+        pw_toolchain_clang_tools.llvm_profdata,
         "--test-metadata-path",
         rebase_path(_test_metadata, root_build_dir),
         "--profdata-path",
@@ -201,8 +200,7 @@ template("pw_coverage_report") {
         module = "pw_build.generate_report"
         args = [
           "--llvm-cov-path",
-          rebase_path("$pw_env_setup_CIPD_PIGWEED/bin/llvm-cov",
-                      root_build_dir),
+          pw_toolchain_clang_tools.llvm_cov,
           "--format",
           format,
           "--test-metadata-path",
