@@ -106,6 +106,7 @@ pw_source_set("config") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     "$dir_pw_log:facade",
+    "$dir_pw_tokenizer:config",
     pw_log_tokenized_CONFIG,
   ]
   public = [ "public/pw_log_tokenized/config.h" ]
@@ -122,13 +123,21 @@ pw_source_set("pw_log_tokenized.impl") {
   }
 }
 
+pw_source_set("base64") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_log_tokenized/base64.h" ]
+  public_deps = [
+    ":config",
+    "$dir_pw_tokenizer:base64",
+  ]
+}
+
 # This target provides a backend for pw_tokenizer that encodes tokenized logs as
 # Base64, encodes them into HDLC frames, and writes them over sys_io.
 pw_source_set("base64_over_hdlc") {
-  public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_log_tokenized/base64_over_hdlc.h" ]
   sources = [ "base64_over_hdlc.cc" ]
   deps = [
+    ":base64",
     ":handler.facade",
     "$dir_pw_hdlc:encoder",
     "$dir_pw_stream:sys_io_stream",
@@ -151,6 +160,7 @@ pw_test("log_tokenized_test") {
     "pw_log_tokenized_private/test_utils.h",
   ]
   deps = [
+    ":base64",
     ":headers",
     dir_pw_preprocessor,
   ]

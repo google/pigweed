@@ -24,6 +24,7 @@ pw_add_library(pw_log_tokenized.config INTERFACE
     public
   PUBLIC_DEPS
     pw_log.facade
+    pw_tokenizer.config
     ${pw_log_tokenized_CONFIG}
 )
 
@@ -86,21 +87,27 @@ pw_add_facade(pw_log_tokenized.handler INTERFACE
     pw_preprocessor
 )
 
+pw_add_library(pw_log_tokenized.base64 INTERFACE
+  HEADERS
+    public/pw_log_tokenized/base64.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_log_tokenized.config
+    pw_tokenizer.base64
+)
+
 # This target provides a backend for pw_tokenizer that encodes tokenized logs as
 # Base64, encodes them into HDLC frames, and writes them over sys_io.
 pw_add_library(pw_log_tokenized.base64_over_hdlc STATIC
-  HEADERS
-    public/pw_log_tokenized/base64_over_hdlc.h
-  PUBLIC_INCLUDES
-    public
   SOURCES
     base64_over_hdlc.cc
   PRIVATE_DEPS
     pw_hdlc.encoder
+    pw_log_tokenized.base64
     pw_log_tokenized.handler
     pw_span
     pw_stream.sys_io_stream
-    pw_tokenizer.base64
 )
 
 pw_add_test(pw_log_tokenized.log_tokenized_test
@@ -109,6 +116,7 @@ pw_add_test(pw_log_tokenized.log_tokenized_test
     log_tokenized_test_c.c
     pw_log_tokenized_private/test_utils.h
   PRIVATE_DEPS
+    pw_log_tokenized.base64
     pw_log_tokenized._headers
     pw_preprocessor
   GROUPS

@@ -97,7 +97,7 @@ TEST_F(PrefixedBase64, Encode_NoRoomForNullAfterMessage_OnlyNullTerminates) {
 
 TEST_F(PrefixedBase64, Encode_InlineString) {
   for (auto& [binary, base64] : kTestData) {
-    EXPECT_EQ(base64, PrefixedBase64Encode(binary));
+    EXPECT_EQ(base64, PrefixedBase64Encode<64>(binary));
   }
 }
 

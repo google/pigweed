@@ -53,17 +53,10 @@ static_assert((bool)(PW_TOKENIZER_CFG_ARG_TYPES_SIZE_BYTES == 4) ||
 #define PW_TOKENIZER_CFG_C_HASH_LENGTH 128
 #endif  // PW_TOKENIZER_CFG_C_HASH_LENGTH
 
-// The size of the stack-allocated argument encoding buffer to use by default.
-// This only affects tokenization macros that use the
-// pw::tokenizer::EncodedMessage class. A buffer of this size is allocated and
-// used for the 4-byte token and for encoding all arguments. It must be at least
-// large enough for the token (4 bytes).
-//
-// This buffer does not need to be large to accommodate a good number of
-// tokenized string arguments. Integer arguments are usually encoded smaller
-// than their native size (e.g. 1 or 2 bytes for smaller numbers). All floating
-// point types are encoded as four bytes. Null-terminated strings are encoded
-// 1:1 in size.
+// PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES is deprecated. It is used as the
+// default value for pw_log_tokenized's
+// PW_LOG_TOKENIZED_ENCODING_BUFFER_SIZE_BYTES. This value should not be
+// configured; set PW_LOG_TOKENIZED_ENCODING_BUFFER_SIZE_BYTES instead.
 #ifndef PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES
 #define PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES 52
 #endif  // PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES

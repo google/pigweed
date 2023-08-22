@@ -82,10 +82,8 @@ size_t EncodeArgs(pw_tokenizer_ArgTypes types,
                   va_list args,
                   span<std::byte> output);
 
-/// Encodes a tokenized message to a fixed size buffer. By default, the buffer
-/// size is set by the @c_macro{PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES}
-/// config macro. This class is used to encode tokenized messages passed in from
-/// tokenization macros.
+/// Encodes a tokenized message to a fixed size buffer. This class is used to
+/// encode tokenized messages passed in from tokenization macros.
 ///
 /// To use `pw::tokenizer::EncodedMessage`, construct it with the token,
 /// argument types, and `va_list` from the variadic arguments:
@@ -104,7 +102,7 @@ size_t EncodeArgs(pw_tokenizer_ArgTypes types,
 ///     SendLogMessage(encoded_message);  // EncodedMessage converts to span
 ///   }
 /// @endcode
-template <size_t kMaxSizeBytes = PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES>
+template <size_t kMaxSizeBytes>
 class EncodedMessage {
  public:
   // Encodes a tokenized message to an internal buffer.

@@ -96,11 +96,20 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "base64_over_hdlc",
-    srcs = ["base64_over_hdlc.cc"],
-    hdrs = ["public/pw_log_tokenized/base64_over_hdlc.h"],
+    name = "base64",
+    hdrs = ["public/pw_log_tokenized/base64.h"],
     includes = ["public"],
     deps = [
+        ":headers",  # Only config.h is needed
+        "//pw_tokenizer:base64",
+    ],
+)
+
+pw_cc_library(
+    name = "base64_over_hdlc",
+    srcs = ["base64_over_hdlc.cc"],
+    deps = [
+        ":base64",
         ":handler_facade",
         "//pw_hdlc",
         "//pw_stream:sys_io_stream",
@@ -116,6 +125,7 @@ pw_cc_test(
         "pw_log_tokenized_private/test_utils.h",
     ],
     deps = [
+        ":base64",
         ":headers",
         "//pw_unit_test",
     ],

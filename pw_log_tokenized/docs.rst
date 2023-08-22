@@ -175,6 +175,11 @@ object:
         token_buffer.size());
   }
 
+The binary tokenized message may be encoded in the :ref:`prefixed Base64 format
+<module-pw_tokenizer-base64-format>` with the following function:
+
+.. doxygenfunction:: PrefixedBase64Encode(span<const std::byte>)
+
 Build targets
 -------------
 The GN build for ``pw_log_tokenized`` has two targets: ``pw_log_tokenized`` and

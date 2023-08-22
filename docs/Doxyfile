@@ -2391,7 +2391,8 @@ PREDEFINED             = __cplusplus \
                          PW_EXTERN_C_START= \
                          PW_LOCKS_EXCLUDED(...)= \
                          PW_EXCLUSIVE_LOCKS_REQUIRED(...)= \
-                         PW_GUARDED_BY(...)=
+                         PW_GUARDED_BY(...)= \
+                         PW_EXCLUDE_FROM_DOXYGEN=1
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this
 # tag can be used to specify a list of macro names that should be expanded. The

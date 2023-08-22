@@ -91,11 +91,6 @@ constexpr size_t Base64EncodedBufferSize(size_t message_size) {
   return Base64EncodedStringSize(message_size) + sizeof('\0');
 }
 
-// The minimum buffer size that can hold a tokenized message that is
-// PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES long encoded as prefixed Base64.
-inline constexpr size_t kDefaultBase64EncodedBufferSize =
-    Base64EncodedBufferSize(PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES);
-
 // Encodes a binary tokenized message as prefixed Base64 with a null terminator.
 // Returns the encoded string length (excluding the null terminator). Returns 0
 // if the buffer is too small. Always null terminates if the output buffer is
@@ -128,8 +123,7 @@ inline void PrefixedBase64Encode(span<const uint8_t> binary_message,
 // Encodes a binary tokenized message as prefixed Base64 to a pw::InlineString.
 // The pw::InlineString is sized to fit messages up to
 // kMaxBinaryMessageSizeBytes long. Asserts if the message is larger.
-template <size_t kMaxBinaryMessageSizeBytes =
-              PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES>
+template <size_t kMaxBinaryMessageSizeBytes>
 auto PrefixedBase64Encode(span<const std::byte> binary_message) {
   static_assert(kMaxBinaryMessageSizeBytes >= 1, "Messages cannot be empty");
   InlineString<Base64EncodedStringSize(kMaxBinaryMessageSizeBytes)> string(
@@ -138,8 +132,7 @@ auto PrefixedBase64Encode(span<const std::byte> binary_message) {
   return string;
 }
 
-template <size_t kMaxBinaryMessageSizeBytes =
-              PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES>
+template <size_t kMaxBinaryMessageSizeBytes>
 auto PrefixedBase64Encode(span<const uint8_t> binary_message) {
   return PrefixedBase64Encode<kMaxBinaryMessageSizeBytes>(
       as_bytes(binary_message));

@@ -28,6 +28,7 @@
 #include "pw_log_tokenized/log_tokenized.h"
 
 #include "gtest/gtest.h"
+#include "pw_log_tokenized/base64.h"
 #include "pw_log_tokenized_private/test_utils.h"
 
 namespace pw::log_tokenized {
@@ -43,6 +44,22 @@ TEST(LogTokenized, FormatString) {
 constexpr uintptr_t kModuleToken =
     PW_TOKENIZER_STRING_TOKEN(PW_LOG_MODULE_NAME) &
     ((1u << PW_LOG_TOKENIZED_MODULE_BITS) - 1);
+
+TEST(LogTokenized, Base64) {
+  constexpr uint8_t kBinary[6]{1, 2, 3, 4, 5, 6};
+  constexpr const char* kBase64Expected = "$AQIDBAUG";  // calculated in Python
+
+  InlineBasicString result_1 = PrefixedBase64Encode(as_bytes(span(kBinary)));
+  EXPECT_EQ(result_1, kBase64Expected);
+  EXPECT_EQ(result_1.capacity(), kBase64EncodedBufferSizeBytes);
+
+  InlineBasicString result_2 = PrefixedBase64Encode(kBinary, sizeof(kBinary));
+  EXPECT_EQ(result_2, kBase64Expected);
+
+  InlineBasicString result_3 = PrefixedBase64Encode(
+      reinterpret_cast<const std::byte*>(kBinary), sizeof(kBinary));
+  EXPECT_EQ(result_3, kBase64Expected);
+}
 
 TEST(LogTokenized, LogMetadata_LevelTooLarge_Clamps) {
   auto check_metadata = [] {

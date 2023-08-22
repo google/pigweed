@@ -147,6 +147,7 @@ _doxygen_input_files = [
   "$dir_pw_i2c_linux/public/pw_i2c_linux/initiator.h",
   "$dir_pw_log_tokenized/public/pw_log_tokenized/handler.h",
   "$dir_pw_log_tokenized/public/pw_log_tokenized/metadata.h",
+  "$dir_pw_log_tokenized/public/pw_log_tokenized/base64.h",
   "$dir_pw_protobuf/public/pw_protobuf/find.h",
   "$dir_pw_random/public/pw_random/random.h",
   "$dir_pw_rpc/public/pw_rpc/internal/config.h",

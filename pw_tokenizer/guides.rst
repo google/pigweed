@@ -331,7 +331,7 @@ stored as needed.
                                           ...) {
      va_list args;
      va_start(args, types);
-     pw::tokenizer::EncodedMessage<> encoded_message(token, types, args);
+     pw::tokenizer::EncodedMessage<kLogBufferSize> encoded_message(token, types, args);
      va_end(args);
 
      HandleTokenizedMessage(metadata, encoded_message);

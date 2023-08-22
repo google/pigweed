@@ -16,6 +16,7 @@
 
 #include <cstdarg>
 
+#include "pw_log_tokenized/config.h"
 #include "pw_log_tokenized/handler.h"
 #include "pw_tokenizer/encode_args.h"
 
@@ -26,7 +27,8 @@ extern "C" void _pw_log_tokenized_EncodeTokenizedLog(
     ...) {
   va_list args;
   va_start(args, types);
-  pw::tokenizer::EncodedMessage<> encoded_message(token, types, args);
+  pw::tokenizer::EncodedMessage<PW_LOG_TOKENIZED_ENCODING_BUFFER_SIZE_BYTES>
+      encoded_message(token, types, args);
   va_end(args);
 
   pw_log_tokenized_HandleLog(
