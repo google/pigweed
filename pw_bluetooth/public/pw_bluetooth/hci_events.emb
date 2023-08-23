@@ -539,7 +539,7 @@ struct LEExtendedAdvertisingReportData:
     -- Units: dBm. A value of 0x7F means Tx Power information is not available.
     [requires: -127 <= this <= 20 || this == 0x7F]
 
-  $next [+1]                          UInt                            rssi
+  $next [+1]                          Int                             rssi
     -- Units: dBm. A value of 0x7F means RSSI is not available.
     [requires: -127 <= this <= 20 || this == 0x7F]
 
@@ -614,3 +614,33 @@ struct DataBufferOverflowEvent:
   let hdr_size = hci.EventHeader.$size_in_bytes
   0     [+hdr_size]  hci.EventHeader  header
   $next [+1]         LinkType         ll_type
+
+
+struct InquiryResultWithRssi:
+  -- A single inquiry result (with RSSI).
+  0     [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                  bd_addr
+    -- The address for the device which responded.
+
+  $next [+1]                          hci.PageScanRepetitionMode  page_scan_repetition_mode
+    -- The Page Scan Repetition Mode being used by the remote device.
+
+  $next [+1]                          UInt                        reserved
+  $next [+3]                          hci.ClassOfDevice           class_of_device
+  $next [+2]                          hci.ClockOffset             clock_offset
+    -- The lower 15 bits represent bits 16-2 of CLKNPeripheral-CLK. The most
+    -- significant bit is reserved.
+
+  $next [+1]                          Int                         rssi
+    -- Units: dBm
+    [requires: -127 <= this <= 20]
+
+
+struct InquiryResultWithRssiEvent:
+  -- Inquiry Result with RSSI Event (v1.2) (BR/EDR)
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]                    hci.EventHeader          header
+  $next [+1]                           UInt                     num_responses
+    -- The number of responses included.
+
+  let response_size = InquiryResultWithRssi.$size_in_bytes
+  $next [+num_response*response_size]  InquiryResultWithRssi[]  responses
