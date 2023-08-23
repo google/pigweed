@@ -239,7 +239,7 @@ def get_include_dirs(stm32cube_path: pathlib.Path) -> List[pathlib.Path]:
 
 def get_sources_and_headers(
     files: List[str], stm32cube_path: pathlib.Path
-) -> Tuple[List[str], List[str]]:
+) -> Tuple[List[pathlib.Path], List[pathlib.Path]]:
     """Gets list of all sources and headers needed to build the stm32cube hal.
 
     Args:
@@ -265,7 +265,7 @@ def get_sources_and_headers(
         files,
     )
 
-    rebase_path = lambda f: str(stm32cube_path / f)
+    rebase_path = lambda f: pathlib.Path(stm32cube_path / f)
     return list(map(rebase_path, source_files)), list(
         map(rebase_path, header_files)
     )
@@ -304,13 +304,10 @@ def find_files(stm32cube_path: pathlib.Path, product_str: str, init: bool):
     (family, defines, name) = parse_product_str(product_str)
 
     family_header_path = list(
-        filter(lambda p: p.endswith(f'/{family}.h'), headers)
+        filter(lambda p: p.name == f'{family}.h', headers)
     )[0]
 
-    with open(family_header_path, 'rb') as family_header:
-        family_header_str = family_header.read().decode(
-            'utf-8', errors='ignore'
-        )
+    family_header_str = family_header_path.read_text('utf-8', errors='ignore')
 
     define = select_define(defines, family_header_str)
 

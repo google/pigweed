@@ -319,8 +319,8 @@ class GetSourceAndHeadersTest(unittest.TestCase):
         self.assertSetEqual(
             set(
                 [
-                    str(path / 'hal_driver/Src/stm32f4xx_hal_adc.c'),
-                    str(path / 'hal_driver/Src/stm32f4xx_hal_eth.c'),
+                    path / 'hal_driver/Src/stm32f4xx_hal_adc.c',
+                    path / 'hal_driver/Src/stm32f4xx_hal_eth.c',
                 ]
             ),
             set(sources),
@@ -328,11 +328,11 @@ class GetSourceAndHeadersTest(unittest.TestCase):
         self.assertSetEqual(
             set(
                 [
-                    str(path / 'cmsis_core/Include/core_cm4.h'),
-                    str(path / 'cmsis_device/Include/stm32f4xx.h'),
-                    str(path / 'cmsis_device/Include/stm32f439xx.h'),
-                    str(path / 'hal_driver/Inc/stm32f4xx_hal_eth.h'),
-                    str(path / 'hal_driver/Inc/stm32f4xx_hal.h'),
+                    path / 'cmsis_core/Include/core_cm4.h',
+                    path / 'cmsis_device/Include/stm32f4xx.h',
+                    path / 'cmsis_device/Include/stm32f439xx.h',
+                    path / 'hal_driver/Inc/stm32f4xx_hal_eth.h',
+                    path / 'hal_driver/Inc/stm32f4xx_hal.h',
                 ]
             ),
             set(headers),
