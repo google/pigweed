@@ -46,13 +46,13 @@ namespace pw {
 ///   }
 ///
 /// @endcode
-template <typename Callable,
+template <typename FunctionType,
           size_t inline_target_size =
               function_internal::config::kInlineCallableSize>
 using Function = fit::function_impl<
     inline_target_size,
     /*require_inline=*/!function_internal::config::kEnableDynamicAllocation,
-    Callable>;
+    FunctionType>;
 
 /// Version of `pw::Function` that exclusively uses inline storage.
 ///
@@ -62,10 +62,10 @@ using Function = fit::function_impl<
 ///
 // TODO(b/252852651): Remove warning above when conversion from
 // `fit::inline_function` to `fit::function` doesn't allocate anymore.
-template <typename Callable,
+template <typename FunctionType,
           size_t inline_target_size =
               function_internal::config::kInlineCallableSize>
-using InlineFunction = fit::inline_function<Callable, inline_target_size>;
+using InlineFunction = fit::inline_function<FunctionType, inline_target_size>;
 
 using Closure = Function<void()>;
 
@@ -79,18 +79,18 @@ using Closure = Function<void()>;
 ///
 /// A `pw::Callback` in the "already called" state has the same state as a
 /// `pw::Callback` that has been assigned to `nullptr`.
-template <typename Callable,
+template <typename FunctionType,
           size_t inline_target_size =
               function_internal::config::kInlineCallableSize>
 using Callback = fit::callback_impl<
     inline_target_size,
     /*require_inline=*/!function_internal::config::kEnableDynamicAllocation,
-    Callable>;
+    FunctionType>;
 
 /// Version of `pw::Callback` that exclusively uses inline storage.
-template <typename Callable,
+template <typename FunctionType,
           size_t inline_target_size =
               function_internal::config::kInlineCallableSize>
-using InlineCallback = fit::inline_callback<Callable, inline_target_size>;
+using InlineCallback = fit::inline_callback<FunctionType, inline_target_size>;
 
 }  // namespace pw
