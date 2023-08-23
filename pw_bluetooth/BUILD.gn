@@ -172,7 +172,12 @@ pw_test("emboss_test") {
   enable_if = dir_pw_third_party_emboss != ""
   configs = [ "$dir_pigweed/third_party/emboss:flags" ]
   sources = [ "emboss_test.cc" ]
-  deps = [ ":emboss_hci_test" ]
+  deps = [
+    ":emboss_hci_commands",
+    ":emboss_hci_events",
+    ":emboss_hci_test",
+    ":emboss_hci_vendor",
+  ]
 }
 
 if (dir_pw_third_party_emboss != "") {

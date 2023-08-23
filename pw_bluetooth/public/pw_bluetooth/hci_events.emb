@@ -643,4 +643,4 @@ struct InquiryResultWithRssiEvent:
     -- The number of responses included.
 
   let response_size = InquiryResultWithRssi.$size_in_bytes
-  $next [+num_response*response_size]  InquiryResultWithRssi[]  responses
+  $next [+num_responses*response_size]  InquiryResultWithRssi[]  responses
