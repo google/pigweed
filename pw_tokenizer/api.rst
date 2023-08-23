@@ -41,10 +41,18 @@ Python
 ------
 .. autofunction:: pw_tokenizer.encode.encode_token_and_args
    :noindex:
-.. automodule:: pw_tokenizer.proto
-   :members:
 .. autofunction:: pw_tokenizer.tokens.pw_tokenizer_65599_hash
    :noindex:
+
+pw_tokenizer.proto
+==================
+.. automodule:: pw_tokenizer.proto
+   :members:
+
+pw_tokenizer.detokenize
+=======================
+.. automodule:: pw_tokenizer.detokenize
+   :members:
 
 ----
 Rust

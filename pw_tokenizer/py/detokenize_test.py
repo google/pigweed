@@ -21,6 +21,7 @@ import os
 from pathlib import Path
 import struct
 import tempfile
+from typing import Any, Callable, NamedTuple, Tuple
 import unittest
 from unittest import mock
 
@@ -561,40 +562,122 @@ def _next_char(message: bytes) -> bytes:
     return bytes(b + 1 for b in message)
 
 
-class PrefixedMessageDecoderTest(unittest.TestCase):
-    def setUp(self):
-        super().setUp()
-        self.decode = detokenize.PrefixedMessageDecoder('$', 'abcdefg')
+class NestedMessageParserTest(unittest.TestCase):
+    """Tests parsing prefixed messages."""
 
-    def test_transform_single_message(self):
-        self.assertEqual(
-            b'%bcde',
-            b''.join(self.decode.transform(io.BytesIO(b'$abcd'), _next_char)),
-        )
+    class _Case(NamedTuple):
+        data: bytes
+        expected: bytes
+        title: str
+        transform: Callable[[bytes], bytes] = _next_char
 
-    def test_transform_message_amidst_other_only_affects_message(self):
-        self.assertEqual(
+    TRANSFORM_TEST_CASES = (
+        _Case(b'$abcd', b'%bcde', 'single message'),
+        _Case(
+            b'$$WHAT?$abc$WHY? is this $ok $',
             b'%%WHAT?%bcd%WHY? is this %ok %',
-            b''.join(
-                self.decode.transform(
-                    io.BytesIO(b'$$WHAT?$abc$WHY? is this $ok $'), _next_char
-                )
-            ),
+            'message and non-message',
+        ),
+        _Case(b'$1$', b'%1%', 'empty message'),
+        _Case(b'$abc$defgh', b'%bcd%efghh', 'sequential message'),
+        _Case(
+            b'w$abcx$defygh$$abz',
+            b'w$ABCx$DEFygh$$ABz',
+            'interspersed start/end non-message',
+            bytes.upper,
+        ),
+        _Case(
+            b'$abcx$defygh$$ab',
+            b'$ABCx$DEFygh$$AB',
+            'interspersed start/end message ',
+            bytes.upper,
+        ),
+    )
+
+    def setUp(self) -> None:
+        self.decoder = detokenize.NestedMessageParser('$', 'abcdefg')
+
+    def test_transform_io(self) -> None:
+        for data, expected, title, transform in self.TRANSFORM_TEST_CASES:
+            self.assertEqual(
+                expected,
+                b''.join(
+                    self.decoder.transform_io(io.BytesIO(data), transform)
+                ),
+                f'{title}: {data!r}',
+            )
+
+    def test_transform_bytes_with_flush(self) -> None:
+        for data, expected, title, transform in self.TRANSFORM_TEST_CASES:
+            self.assertEqual(
+                expected,
+                self.decoder.transform(data, transform, flush=True),
+                f'{title}: {data!r}',
+            )
+
+    def test_transform_bytes_sequential(self) -> None:
+        transform = lambda message: message.upper().replace(b'$', b'*')
+
+        self.assertEqual(self.decoder.transform(b'abc$abcd', transform), b'abc')
+        self.assertEqual(self.decoder.transform(b'$', transform), b'*ABCD')
+        self.assertEqual(self.decoder.transform(b'$b', transform), b'*')
+        self.assertEqual(self.decoder.transform(b'', transform), b'')
+        self.assertEqual(self.decoder.transform(b' ', transform), b'*B ')
+        self.assertEqual(self.decoder.transform(b'hello', transform), b'hello')
+        self.assertEqual(self.decoder.transform(b'?? $ab', transform), b'?? ')
+        self.assertEqual(
+            self.decoder.transform(b'123$ab4$56$a', transform), b'*AB123*AB4*56'
+        )
+        self.assertEqual(
+            self.decoder.transform(b'bc', transform, flush=True), b'*ABC'
         )
 
-    def test_transform_empty_message(self):
+    MESSAGES_TEST: Any = (
+        (b'123$abc456$a', (False, b'123'), (True, b'$abc'), (False, b'456')),
+        (b'7$abcd', (True, b'$a'), (False, b'7')),
+        (b'e',),
+        (b'',),
+        (b'$', (True, b'$abcde')),
+        (b'$', (True, b'$')),
+        (b'$a$b$c', (True, b'$'), (True, b'$a'), (True, b'$b')),
+        (b'1', (True, b'$c'), (False, b'1')),
+        (b'',),
+        (b'?', (False, b'?')),
+        (b'!@', (False, b'!@')),
+        (b'%^&', (False, b'%^&')),
+    )
+
+    def test_read_messages(self) -> None:
+        for step in self.MESSAGES_TEST:
+            data: bytes = step[0]
+            pieces: Tuple[Tuple[bool, bytes], ...] = step[1:]
+            self.assertEqual(tuple(self.decoder.read_messages(data)), pieces)
+
+    def test_read_messages_flush(self) -> None:
         self.assertEqual(
-            b'%1%',
-            b''.join(self.decode.transform(io.BytesIO(b'$1$'), _next_char)),
+            list(self.decoder.read_messages(b'123$a')), [(False, b'123')]
+        )
+        self.assertEqual(list(self.decoder.read_messages(b'b')), [])
+        self.assertEqual(
+            list(self.decoder.read_messages(b'', flush=True)), [(True, b'$ab')]
         )
 
-    def test_transform_sequential_messages(self):
-        self.assertEqual(
-            b'%bcd%efghh',
-            b''.join(
-                self.decode.transform(io.BytesIO(b'$abc$defgh'), _next_char)
-            ),
-        )
+    def test_read_messages_io(self) -> None:
+        # Rework the read_messages test data for stream input.
+        data = io.BytesIO(b''.join(step[0] for step in self.MESSAGES_TEST))
+        expected_pieces = sum((step[1:] for step in self.MESSAGES_TEST), ())
+
+        result = self.decoder.read_messages_io(data)
+        for expected_is_message, expected_data in expected_pieces:
+            if expected_is_message:
+                is_message, piece = next(result)
+                self.assertTrue(is_message)
+                self.assertEqual(expected_data, piece)
+            else:  # the IO version yields non-messages byte by byte
+                for byte in expected_data:
+                    is_message, piece = next(result)
+                    self.assertFalse(is_message)
+                    self.assertEqual(bytes([byte]), piece)
 
 
 class DetokenizeBase64(unittest.TestCase):
@@ -627,6 +710,10 @@ class DetokenizeBase64(unittest.TestCase):
         (JELLO + b'$a' + JELLO + b'bcd', b'Jello, world!$aJello, world!bcd'),
         (b'$3141', b'$3141'),
         (JELLO + b'$3141', b'Jello, world!$3141'),
+        (
+            JELLO + b'$a' + JELLO + b'b' + JELLO + b'c',
+            b'Jello, world!$aJello, world!bJello, world!c',
+        ),
         (RECURSION, b'The secret message is "Jello, world!"'),
         (
             RECURSION_2,
@@ -650,7 +737,7 @@ class DetokenizeBase64(unittest.TestCase):
             output = io.BytesIO()
             self.detok.detokenize_base64_live(io.BytesIO(data), output, '$')
 
-            self.assertEqual(expected, output.getvalue())
+            self.assertEqual(expected, output.getvalue(), f'Input: {data!r}')
 
     def test_detokenize_base64_to_file(self):
         for data, expected in self.TEST_CASES:
