@@ -108,6 +108,7 @@ pw_sync_stl
 pw_sync_threadx
 pw_sync_zephyr
 pw_sys_io
+pw_sys_io_ambiq_sdk
 pw_sys_io_arduino
 pw_sys_io_baremetal_lm3s6965evb
 pw_sys_io_baremetal_stm32f429

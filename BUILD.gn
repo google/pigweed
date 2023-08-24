@@ -24,6 +24,7 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_perf_test/perf_test.gni")
 import("$dir_pw_rpc/config.gni")
 import("$dir_pw_rust/rust.gni")
+import("$dir_pw_third_party/ambiq/ambiq.gni")
 import("$dir_pw_third_party/mcuxpresso/mcuxpresso.gni")
 import("$dir_pw_toolchain/c_optimization.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
@@ -225,6 +226,12 @@ if (pw_third_party_mcuxpresso_SDK != "") {
   _build_pigweed_default_at_all_optimization_levels("mimxrt595_freertos") {
     toolchain_prefix =
         "$dir_pigweed/targets/mimxrt595_evk_freertos:mimxrt595_evk_freertos_"
+  }
+}
+
+if (dir_pw_third_party_ambiq_SDK != "") {
+  _build_pigweed_default_at_all_optimization_levels("apollo4") {
+    toolchain_prefix = "$dir_pigweed/targets/apollo4:apollo4_"
   }
 }
 

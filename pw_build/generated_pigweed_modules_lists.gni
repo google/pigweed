@@ -145,6 +145,7 @@ declare_args() {
   dir_pw_sync_threadx = get_path_info("../pw_sync_threadx", "abspath")
   dir_pw_sync_zephyr = get_path_info("../pw_sync_zephyr", "abspath")
   dir_pw_sys_io = get_path_info("../pw_sys_io", "abspath")
+  dir_pw_sys_io_ambiq_sdk = get_path_info("../pw_sys_io_ambiq_sdk", "abspath")
   dir_pw_sys_io_arduino = get_path_info("../pw_sys_io_arduino", "abspath")
   dir_pw_sys_io_baremetal_lm3s6965evb =
       get_path_info("../pw_sys_io_baremetal_lm3s6965evb", "abspath")
@@ -300,6 +301,7 @@ declare_args() {
     dir_pw_sync_threadx,
     dir_pw_sync_zephyr,
     dir_pw_sys_io,
+    dir_pw_sys_io_ambiq_sdk,
     dir_pw_sys_io_arduino,
     dir_pw_sys_io_baremetal_lm3s6965evb,
     dir_pw_sys_io_baremetal_stm32f429,
@@ -447,6 +449,7 @@ declare_args() {
     "$dir_pw_sync_threadx:tests",
     "$dir_pw_sync_zephyr:tests",
     "$dir_pw_sys_io:tests",
+    "$dir_pw_sys_io_ambiq_sdk:tests",
     "$dir_pw_sys_io_arduino:tests",
     "$dir_pw_sys_io_baremetal_lm3s6965evb:tests",
     "$dir_pw_sys_io_baremetal_stm32f429:tests",
@@ -594,6 +597,7 @@ declare_args() {
     "$dir_pw_sync_threadx:docs",
     "$dir_pw_sync_zephyr:docs",
     "$dir_pw_sys_io:docs",
+    "$dir_pw_sys_io_ambiq_sdk:docs",
     "$dir_pw_sys_io_arduino:docs",
     "$dir_pw_sys_io_baremetal_lm3s6965evb:docs",
     "$dir_pw_sys_io_baremetal_stm32f429:docs",

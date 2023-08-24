@@ -14,6 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pigweed/third_party/ambiq/ambiq.gni")
 import("$dir_pigweed/third_party/freertos/freertos.gni")
 import("$dir_pigweed/third_party/nanopb/nanopb.gni")
 import("$dir_pigweed/third_party/pico_sdk/pi_pico.gni")
@@ -253,6 +254,12 @@ group("system_examples") {
     deps += [
       ":system_example($dir_pigweed/targets/rp2040_pw_system:rp2040_pw_system.debug)",
       ":system_example($dir_pigweed/targets/rp2040_pw_system:rp2040_pw_system.size_optimized)",
+    ]
+  }
+  if (dir_pw_third_party_ambiq_SDK != "" && dir_pw_third_party_freertos != "") {
+    deps += [
+      ":system_example($dir_pigweed/targets/apollo4_pw_system:apollo4_pw_system.debug)",
+      ":system_example($dir_pigweed/targets/apollo4_pw_system:apollo4_pw_system.size_optimized)",
     ]
   }
 }

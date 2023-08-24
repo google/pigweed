@@ -79,6 +79,8 @@ pw_doc_group("templates") {
 group("target_docs") {
   deps = [
     "$dir_pigweed/targets/android:target_docs",
+    "$dir_pigweed/targets/apollo4:target_docs",
+    "$dir_pigweed/targets/apollo4_pw_system:target_docs",
     "$dir_pigweed/targets/arduino:target_docs",
     "$dir_pigweed/targets/docs:target_docs",
     "$dir_pigweed/targets/emcraft_sf2_som:docs",

@@ -1,0 +1,87 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/target_types.gni")
+import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_system/system_target.gni")
+
+config("config_includes") {
+  include_dirs = [ "config" ]
+}
+
+if (current_toolchain != default_toolchain) {
+  pw_source_set("main") {
+    deps = [
+      "$dir_pigweed/targets/apollo4:boot",
+      "$dir_pw_system",
+      "$dir_pw_third_party/freertos",
+    ]
+
+    sources = [ "main.cc" ]
+  }
+
+  pw_source_set("apollo4_freertos_config") {
+    public_configs = [ ":config_includes" ]
+    public_deps = [ "$dir_pw_third_party/freertos:config_assert" ]
+    public = [ "config/FreeRTOSConfig.h" ]
+  }
+}
+
+pw_system_target("apollo4_pw_system") {
+  cpu = PW_SYSTEM_CPU.CORTEX_M4F
+  scheduler = PW_SYSTEM_SCHEDULER.FREERTOS
+
+  build_args = {
+    pw_third_party_ambiq_PRODUCT = "apollo4p"
+    pw_log_BACKEND = dir_pw_log_tokenized
+
+    pw_third_party_freertos_CONFIG =
+        "$dir_pigweed/targets/apollo4_pw_system:apollo4_freertos_config"
+    pw_third_party_freertos_PORT = "$dir_pw_third_party/freertos:arm_cm4f"
+    pw_sys_io_BACKEND = "$dir_pw_sys_io_ambiq_sdk"
+    pw_log_BACKEND = "$dir_pw_log_basic"
+    pw_cpu_exception_ENTRY_BACKEND =
+        "$dir_pw_cpu_exception_cortex_m:cpu_exception"
+    pw_cpu_exception_HANDLER_BACKEND = "$dir_pw_cpu_exception:basic_handler"
+    pw_cpu_exception_SUPPORT_BACKEND = "$dir_pw_cpu_exception_cortex_m:support"
+
+    pw_boot_cortex_m_LINK_CONFIG_DEFINES = [
+      "PW_BOOT_VECTOR_TABLE_BEGIN=0x00018000",
+      "PW_BOOT_VECTOR_TABLE_SIZE=512",
+
+      "PW_BOOT_FLASH_BEGIN=0x00018200",
+      "PW_BOOT_FLASH_SIZE=1951K",
+
+      "PW_BOOT_HEAP_SIZE=100K",
+      "PW_BOOT_MIN_STACK_SIZE=1K",
+
+      "PW_BOOT_RAM_BEGIN=0x10000000",
+      "PW_BOOT_RAM_SIZE=1408K",
+    ]
+
+    pw_build_LINK_DEPS += [
+      "$dir_pigweed/targets/apollo4_pw_system:main",
+      "$dir_pw_assert:impl",
+      "$dir_pw_log:impl",
+      "$dir_pw_cpu_exception:entry_impl",
+      "$dir_pw_toolchain/arm_gcc:arm_none_eabi_gcc_support",
+    ]
+  }
+}
+
+pw_doc_group("target_docs") {
+  sources = [ "target_docs.rst" ]
+}

@@ -1,0 +1,216 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/target_types.gni")
+import("$dir_pw_docgen/docs.gni")
+import("ambiq.gni")
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
+}
+
+# This file defines a GN source_set for an external installation of Ambiq SDK.
+# To use, checkout the Ambiq Apollo4 SDK source into a directory, then set
+# the build arg dir_pw_third_party_ambiq_SDK to point to that directory. The
+# Ambiq Apollo 4 SDK library will be available in GN
+# at "$dir_pw_third_party/apollo4".
+if (dir_pw_third_party_ambiq_SDK != "") {
+  config("apollo4p_sdk_defines") {
+    defines = [
+      "AM_PART_APOLLO4P=1",
+      "apollo4p_evb=1",
+      "gcc=1",
+      "AM_PACKAGE_BGA=1",
+    ]
+    visibility = [ ":*" ]
+  }
+
+  config("apollo4b_sdk_defines") {
+    defines = [
+      "AM_PART_APOLLO4B=1",
+      "apollo4b_evb=1",
+      "gcc=1",
+      "AM_PACKAGE_BGA=1",
+    ]
+    visibility = [ ":*" ]
+  }
+
+  config("disable_warnings") {
+    cflags = [
+      "-Wno-sign-compare",
+      "-Wno-unused-parameter",
+      "-Wno-cast-qual",
+      "-Wno-shadow",
+      "-Wno-implicit-fallthrough",
+      "-Wno-maybe-uninitialized",
+    ]
+    cflags_c = [ "-Wno-old-style-declaration" ]
+    visibility = [ ":*" ]
+  }
+
+  config("apollo4_include_dirs") {
+    include_dirs = [
+      "$dir_pw_third_party_ambiq_SDK/devices",
+      "$dir_pw_third_party_ambiq_SDK/utils",
+      "$dir_pw_third_party_ambiq_SDK/CMSIS/ARM/Include",
+      "$dir_pw_third_party_ambiq_SDK/CMSIS/AmbiqMicro/Include",
+    ]
+  }
+
+  config("apollo4p_include_dirs") {
+    include_dirs = [
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p",
+      "$dir_pw_third_party_ambiq_SDK/boards/apollo4p_evb/bsp",
+    ]
+  }
+
+  config("apollo4b_include_dirs") {
+    include_dirs = [
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b",
+      "$dir_pw_third_party_ambiq_SDK/boards/apollo4b_evb/bsp",
+    ]
+  }
+
+  pw_source_set("apollo4p") {
+    remove_configs = [ "$dir_pw_build:extra_strict_warnings" ]
+
+    public_configs = [
+      ":disable_warnings",
+      ":apollo4_include_dirs",
+      ":apollo4p_include_dirs",
+      ":apollo4p_sdk_defines",
+    ]
+
+    sources = [
+      "$dir_pw_third_party_ambiq_SDK/boards/apollo4p_evb/bsp/am_bsp.c",
+      "$dir_pw_third_party_ambiq_SDK/boards/apollo4p_evb/bsp/am_bsp_pins.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/am_hal_access.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/am_hal_adc.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/am_hal_audadc.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/am_hal_dcu.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/am_hal_global.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/am_hal_gpio.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/am_hal_i2s.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/am_hal_otp.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/am_hal_pdm.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/am_hal_pin.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/am_hal_pwrctrl.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/am_hal_queue.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/am_hal_security.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/am_hal_stimer.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/am_hal_timer.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/am_hal_usb.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/am_hal_wdt.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_bootrom_helper.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_cachectrl.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_card.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_card_host.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_clkgen.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_cmdq.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_dsi.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_fault.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_interrupt.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_iom.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_ios.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_itm.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_itm.h",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_mcuctrl.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_mpu.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_mram.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_mspi.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_reset.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_rtc.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_sdhc.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_secure_ota.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_sysctrl.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_systick.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_tpiu.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_uart.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4p/hal/mcu/am_hal_utils.c",
+    ]
+  }
+
+  pw_source_set("apollo4b") {
+    remove_configs = [ "$dir_pw_build:extra_strict_warnings" ]
+
+    public_configs = [
+      ":disable_warnings",
+      ":apollo4_include_dirs",
+      ":apollo4b_include_dirs",
+      ":apollo4b_sdk_defines",
+    ]
+
+    sources = [
+      "$dir_pw_third_party_ambiq_SDK/boards/apollo4b_evb/bsp/am_bsp.c",
+      "$dir_pw_third_party_ambiq_SDK/boards/apollo4b_evb/bsp/am_bsp_pins.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/am_hal_access.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/am_hal_adc.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/am_hal_audadc.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/am_hal_dcu.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/am_hal_global.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/am_hal_gpio.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/am_hal_i2s.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/am_hal_otp.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/am_hal_pdm.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/am_hal_pin.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/am_hal_pwrctrl.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/am_hal_queue.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/am_hal_security.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/am_hal_stimer.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/am_hal_timer.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/am_hal_usb.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/am_hal_wdt.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_bootrom_helper.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_cachectrl.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_card.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_card_host.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_clkgen.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_cmdq.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_dsi.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_fault.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_interrupt.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_iom.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_ios.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_itm.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_itm.h",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_mcuctrl.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_mpu.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_mram.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_mspi.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_reset.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_rtc.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_sdhc.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_secure_ota.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_sysctrl.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_systick.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_tpiu.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_uart.c",
+      "$dir_pw_third_party_ambiq_SDK/mcu/apollo4b/hal/mcu/am_hal_utils.c",
+    ]
+  }
+
+  pw_source_set("sdk") {
+    if (pw_third_party_ambiq_PRODUCT == "apollo4p") {
+      public_deps = [ ":apollo4p" ]
+    } else if (pw_third_party_ambiq_PRODUCT == "apollo4b") {
+      public_deps = [ ":apollo4b" ]
+    }
+  }
+}

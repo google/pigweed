@@ -1,0 +1,149 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_log/backend.gni")
+import("$dir_pw_toolchain/arm_gcc/toolchains.gni")
+
+_target_config = {
+  pw_third_party_ambiq_PRODUCT = "apollo4p"
+
+  # Use the logging main.
+  pw_unit_test_MAIN = "$dir_pw_unit_test:logging_main"
+
+  # Use ARM Cycle Counts
+  pw_perf_test_TIMER_INTERFACE_BACKEND = "$dir_pw_perf_test:arm_cortex_timer"
+
+  # Configuration options for Pigweed executable targets.
+  pw_build_EXECUTABLE_TARGET_TYPE = "apollo4_executable"
+
+  pw_build_EXECUTABLE_TARGET_TYPE_FILE =
+      get_path_info("apollo4_executable.gni", "abspath")
+
+  # Path to the bloaty config file for the output binaries.
+  pw_bloat_BLOATY_CONFIG = "$dir_pw_boot_cortex_m/bloaty_config.bloaty"
+
+  # Configure backend for assert facade.
+  pw_assert_BACKEND = dir_pw_assert_basic
+
+  pw_boot_BACKEND = "$dir_pw_boot_cortex_m"
+  pw_cpu_exception_ENTRY_BACKEND =
+      "$dir_pw_cpu_exception_cortex_m:cpu_exception"
+  pw_cpu_exception_HANDLER_BACKEND = "$dir_pw_cpu_exception:basic_handler"
+  pw_cpu_exception_SUPPORT_BACKEND = "$dir_pw_cpu_exception_cortex_m:support"
+  pw_sync_INTERRUPT_SPIN_LOCK_BACKEND =
+      "$dir_pw_sync_baremetal:interrupt_spin_lock"
+
+  # Configure backends for pw_sync's facades.
+  pw_sync_MUTEX_BACKEND = "$dir_pw_sync_baremetal:mutex"
+
+  # Configure backend for logging facade.
+  pw_log_BACKEND = "$dir_pw_log_basic"
+
+  # Configure backend for pw_sys_io facade.
+  pw_sys_io_BACKEND = "$dir_pw_sys_io_ambiq_sdk"
+
+  # Configure backend for pw_rpc_system_server.
+  pw_rpc_system_server_BACKEND = "$dir_pw_hdlc:hdlc_sys_io_system_server"
+  pw_rpc_CONFIG = "$dir_pw_rpc:disable_global_mutex"
+
+  pw_malloc_BACKEND = "$dir_pw_malloc_freelist"
+
+  pw_boot_cortex_m_LINK_CONFIG_DEFINES = [
+    "PW_BOOT_VECTOR_TABLE_BEGIN=0x00018000",
+    "PW_BOOT_VECTOR_TABLE_SIZE=512",
+
+    "PW_BOOT_FLASH_BEGIN=0x00018200",
+    "PW_BOOT_FLASH_SIZE=1951K",
+
+    "PW_BOOT_HEAP_SIZE=100K",
+    "PW_BOOT_MIN_STACK_SIZE=1K",
+
+    "PW_BOOT_RAM_BEGIN=0x10000000",
+    "PW_BOOT_RAM_SIZE=1408K",
+  ]
+
+  pw_build_LINK_DEPS = []  # Explicit list overwrite required by GN
+  pw_build_LINK_DEPS = [
+    "$dir_pw_assert:impl",
+    "$dir_pw_log:impl",
+    "$dir_pw_cpu_exception:entry_impl",
+    "$dir_pw_toolchain/arm_gcc:arm_none_eabi_gcc_support",
+  ]
+
+  current_cpu = "arm"
+  current_os = ""
+}
+
+_toolchain_properties = {
+  final_binary_extension = ".elf"
+}
+
+_target_default_configs = [
+  "$dir_pw_build:extra_strict_warnings",
+  "$dir_pw_toolchain/arm_gcc:enable_float_printf",
+]
+
+pw_target_toolchain_apollo4 = {
+  _excluded_members = [
+    "defaults",
+    "name",
+  ]
+
+  debug = {
+    name = "apollo4_debug"
+    _toolchain_base = pw_toolchain_arm_gcc.cortex_m4f_debug
+    forward_variables_from(_toolchain_base, "*", _excluded_members)
+    forward_variables_from(_toolchain_properties, "*")
+    defaults = {
+      forward_variables_from(_toolchain_base.defaults, "*")
+      forward_variables_from(_target_config, "*")
+      default_configs += _target_default_configs
+    }
+  }
+
+  speed_optimized = {
+    name = "apollo4_speed_optimized"
+    _toolchain_base = pw_toolchain_arm_gcc.cortex_m4f_speed_optimized
+    forward_variables_from(_toolchain_base, "*", _excluded_members)
+    forward_variables_from(_toolchain_properties, "*")
+    defaults = {
+      forward_variables_from(_toolchain_base.defaults, "*")
+      forward_variables_from(_target_config, "*")
+      default_configs += _target_default_configs
+    }
+  }
+
+  size_optimized = {
+    name = "apollo4_size_optimized"
+    _toolchain_base = pw_toolchain_arm_gcc.cortex_m4f_size_optimized
+    forward_variables_from(_toolchain_base, "*", _excluded_members)
+    forward_variables_from(_toolchain_properties, "*")
+    defaults = {
+      forward_variables_from(_toolchain_base.defaults, "*")
+      forward_variables_from(_target_config, "*")
+      default_configs += _target_default_configs
+    }
+  }
+}
+
+# This list just contains the members of the above scope for convenience to make
+# it trivial to generate all the toolchains in this file via a
+# `generate_toolchains` target.
+pw_target_toolchain_apollo4_list = [
+  pw_target_toolchain_apollo4.debug,
+  pw_target_toolchain_apollo4.speed_optimized,
+  pw_target_toolchain_apollo4.size_optimized,
+]

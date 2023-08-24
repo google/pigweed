@@ -1,0 +1,107 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pigweed/third_party/ambiq/ambiq.gni")
+import("$dir_pw_build/error.gni")
+import("$dir_pw_build/linker_script.gni")
+import("$dir_pw_build/target_types.gni")
+import("$dir_pw_cpu_exception/backend.gni")
+import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_malloc/backend.gni")
+import("$dir_pw_system/backend.gni")
+import("$dir_pw_toolchain/generate_toolchain.gni")
+import("target_toolchains.gni")
+
+generate_toolchains("target_toolchains") {
+  toolchains = pw_target_toolchain_apollo4_list
+}
+
+pw_build_assert("check_ambiq_product_defined") {
+  condition = pw_third_party_ambiq_PRODUCT == "apollo4p" ||
+              pw_third_party_ambiq_PRODUCT == "apollo4b"
+  message = "Build argument pw_third_party_ambiq_PRODUCT must be one of " +
+            "the following values: 'apollo4p' or 'apollo4b'."
+  visibility = [ ":*" ]
+}
+
+config("disable_warnings") {
+  cflags = [ "-Wno-undef" ]
+  visibility = [ ":*" ]
+}
+
+config("pw_malloc_active") {
+  if (pw_malloc_BACKEND != "") {
+    defines = [ "PW_MALLOC_ACTIVE=1" ]
+  } else {
+    defines = [ "PW_MALLOC_ACTIVE=0" ]
+  }
+}
+
+config("pw_system_active") {
+  if (pw_system_TARGET_HOOKS_BACKEND != "") {
+    ldflags = [
+      "-Wl,--defsym=SysTick_Handler=xPortSysTickHandler",
+      "-Wl,--defsym=PendSV_Handler=xPortPendSVHandler",
+      "-Wl,--defsym=SVC_Handler=vPortSVCHandler",
+    ]
+  }
+}
+
+config("pw_cpu_exception_active") {
+  if (pw_cpu_exception_ENTRY_BACKEND != "") {
+    ldflags = [
+      "-Wl,--defsym=HardFault_Handler=pw_cpu_exception_Entry",
+      "-Wl,--defsym=MemManage_Handler=pw_cpu_exception_Entry",
+      "-Wl,--defsym=BusFault_Handler=pw_cpu_exception_Entry",
+      "-Wl,--defsym=UsageFault_Handler=pw_cpu_exception_Entry",
+      "-Wl,--defsym=NMI_Handler=pw_cpu_exception_Entry",
+    ]
+  }
+}
+
+if (current_toolchain != default_toolchain) {
+  pw_source_set("boot") {
+    public_configs = [ ":pw_malloc_active" ]
+
+    all_dependent_configs = [
+      ":pw_system_active",
+      ":pw_cpu_exception_active",
+    ]
+
+    public_deps = [ "$dir_pw_third_party/ambiq:sdk" ]
+
+    deps = [
+      ":check_ambiq_product_defined",
+      "$dir_pw_boot",
+      "$dir_pw_boot_cortex_m",
+      "$dir_pw_preprocessor",
+      "$dir_pw_sys_io_ambiq_sdk",
+    ]
+
+    if (pw_malloc_BACKEND != "") {
+      deps += [ "$dir_pw_malloc" ]
+    }
+
+    sources = [
+      "boot.cc",
+      "vector_table.c",
+    ]
+  }
+}
+
+pw_doc_group("target_docs") {
+  sources = [ "target_docs.rst" ]
+}
