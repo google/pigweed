@@ -1809,150 +1809,164 @@ particular code block but it has not been implemented yet. See
 
 Grouping related content with tabs
 ==================================
-Use the ``tabs`` directive to group related content together. This feature is
-powered by `sphinx-tabs <https://sphinx-tabs.readthedocs.io>`_.
+Use the ``tab-set`` directive to group related content together. This feature is
+powered by `sphinx-design Tabs
+<https://sphinx-design.readthedocs.io/en/furo-theme/tabs.html>`_
 
 Tabs for code-only content
 --------------------------
 Use the ``tabs`` and ``code-tab`` directives together. Example:
 
-.. code:: none
+.. code-block:: rst
 
-   .. tabs::
+   .. tab-set-code::
 
-      .. code-tab:: c++
+      .. code-block:: c++
 
          // C++ code...
 
-      .. code-tab:: py
+      .. code-block:: python
 
          # Python code...
 
 Rendered output:
 
-.. tabs::
+.. tab-set-code::
 
-   .. code-tab:: c++
+   .. code-block:: c++
 
       // C++ code...
 
-   .. code-tab:: py
+   .. code-block:: python
 
       # Python code...
 
 Tabs for all other content
 --------------------------
-Use the ``tabs`` and ``group-tab`` directives together. Example:
+Use the ``tabs`` and ``tab-item`` directives together. Example:
 
-.. code:: none
+.. code-block:: rst
 
-   .. tabs::
+   .. tab-set::
 
-      .. group-tab:: Linux
+      .. tab-item:: Linux
 
          Linux instructions...
 
-      .. group-tab:: Windows
+      .. tab-item:: Windows
 
          Windows instructions...
 
 Rendered output:
 
-.. tabs::
+.. tab-set::
 
-   .. group-tab:: Linux
+   .. tab-item:: Linux
 
       Linux instructions...
 
-   .. group-tab:: Windows
+   .. tab-item:: Windows
 
       Windows instructions...
 
 Tab synchronization
 -------------------
-Tabs are synchronized based on ``group-tab`` and ``code-tab`` values. Example:
+Tabs are synchronized in two ways:
 
-.. code:: none
+1. ``tab-set-code::`` ``code-block`` languages names.
+2. ``tab-item::`` ``:sync:`` values.
 
-   .. tabs::
+For Example:
 
-      .. code-tab:: c++
+.. code-block:: rst
+
+   .. tabs-set-code::
+
+      .. code-block:: c++
 
          // C++ code...
 
-      .. code-tab:: py
+      .. code-block:: py
 
          # Python code...
 
-   .. tabs::
+   .. tabs-set-code::
 
-      .. code-tab:: c++
+      .. code-block:: c++
 
          // More C++ code...
 
-      .. code-tab:: py
+      .. code-block:: py
 
          # More Python code...
 
-   .. tabs::
+   .. tab-set::
 
-      .. group-tab:: Linux
+      .. tab-item:: Linux
+         :sync: key1
 
          Linux instructions...
 
-      .. group-tab:: Windows
+      .. tab-item:: Windows
+         :sync: key2
 
          Windows instructions...
 
-   .. tabs::
+   .. tab-set::
 
-      .. group-tab:: Linux
+      .. tab-item:: Linux
+         :sync: key1
 
          More Linux instructions...
 
-      .. group-tab:: Windows
+      .. tab-item:: Windows
+         :sync: key2
 
          More Windows instructions...
 
 Rendered output:
 
-.. tabs::
+.. tab-set-code::
 
-   .. code-tab:: c++
+   .. code-block:: c++
 
       // C++ code...
 
-   .. code-tab:: py
+   .. code-block:: py
 
       # Python code...
 
-.. tabs::
+.. tab-set-code::
 
-   .. code-tab:: c++
+   .. code-block:: c++
 
       // More C++ code...
 
-   .. code-tab:: py
+   .. code-block:: py
 
       # More Python code...
 
-.. tabs::
+.. tab-set::
 
-   .. group-tab:: Linux
+   .. tab-item:: Linux
+      :sync: key1
 
       Linux instructions...
 
-   .. group-tab:: Windows
+   .. tab-item:: Windows
+      :sync: key2
 
       Windows instructions...
 
-.. tabs::
+.. tab-set::
 
-   .. group-tab:: Linux
+   .. tab-item:: Linux
+      :sync: key1
 
       More Linux instructions...
 
-   .. group-tab:: Windows
+   .. tab-item:: Windows
+      :sync: key2
 
       More Windows instructions...
 

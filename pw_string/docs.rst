@@ -92,9 +92,9 @@ meets your needs.
 Getting Started
 ---------------
 
-.. tabs::
+.. tab-set::
 
-   .. group-tab:: GN
+   .. tab-item:: GN
 
       Add ``$dir_pw_string`` to the ``deps`` list in your ``pw_executable()``
       build target:
@@ -113,7 +113,7 @@ Getting Started
       See `//source/BUILD.gn <https://pigweed.googlesource.com/pigweed/sample_project/+/refs/heads/main/source/BUILD.gn>`_
       in the Pigweed Sample Project for an example.
 
-   .. group-tab:: Zephyr
+   .. tab-item:: Zephyr
 
       Add ``CONFIG_PIGWEED_STRING=y`` to the Zephyr project's configuration.
 
