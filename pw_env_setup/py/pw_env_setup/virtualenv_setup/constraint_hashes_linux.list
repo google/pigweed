@@ -838,9 +838,9 @@ sphinx-argparse==0.4.0 \
     --hash=sha256:73bee01f7276fae2bf621ccfe4d167af7306e7288e3482005405d9f826f9b037 \
     --hash=sha256:e0f34184eb56f12face774fbc87b880abdb9017a0998d1ec559b267e9697e449
     # via -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
-sphinx-design==0.3.0 \
-    --hash=sha256:7183fa1fae55b37ef01bda5125a21ee841f5bbcbf59a35382be598180c4cefba \
-    --hash=sha256:823c1dd74f31efb3285ec2f1254caefed29d762a40cd676f58413a1e4ed5cc96
+sphinx-design==0.5.0 \
+    --hash=sha256:1af1267b4cea2eedd6724614f19dcc88fe2e15aff65d06b2f6252cee9c4f4c1e \
+    --hash=sha256:e8e513acea6f92d15c6de3b34e954458f245b8e761b45b63950f65373352ab00
     # via -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
 sphinx-rtd-theme==1.2.0 \
     --hash=sha256:a0d8bd1a2ed52e0b338cbe19c4b2eef3c5e7a048769753dac6a9f059c7b641b8 \

@@ -922,9 +922,9 @@ sphinx-copybutton==0.5.1 \
     --hash=sha256:0842851b5955087a7ec7fc870b622cb168618ad408dee42692e9a5c97d071da8 \
     --hash=sha256:366251e28a6f6041514bfb5439425210418d6c750e98d3a695b73e56866a677a
     # via -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
-sphinx-design==0.3.0 \
-    --hash=sha256:7183fa1fae55b37ef01bda5125a21ee841f5bbcbf59a35382be598180c4cefba \
-    --hash=sha256:823c1dd74f31efb3285ec2f1254caefed29d762a40cd676f58413a1e4ed5cc96
+sphinx-design==0.5.0 \
+    --hash=sha256:1af1267b4cea2eedd6724614f19dcc88fe2e15aff65d06b2f6252cee9c4f4c1e \
+    --hash=sha256:e8e513acea6f92d15c6de3b34e954458f245b8e761b45b63950f65373352ab00
     # via -r /python/gen/pw_env_setup/pigweed_build_venv/compiled_requirements.txt
 sphinx-rtd-theme==1.2.0 \
     --hash=sha256:a0d8bd1a2ed52e0b338cbe19c4b2eef3c5e7a048769753dac6a9f059c7b641b8 \
