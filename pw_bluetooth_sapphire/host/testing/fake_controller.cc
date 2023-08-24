@@ -1507,9 +1507,10 @@ void FakeController::OnAuthenticationRequestedCommandReceived(
   RespondWithCommandStatus(hci_spec::kAuthenticationRequested,
                            pw::bluetooth::emboss::StatusCode::SUCCESS);
 
-  hci_spec::LinkKeyRequestParams request = {};
-  request.bd_addr = peer->address_.value();
-  SendEvent(hci_spec::kLinkKeyRequestEventCode, BufferView(&request, sizeof(request)));
+  auto event = hci::EmbossEventPacket::New<pw::bluetooth::emboss::LinkKeyRequestEventWriter>(
+      hci_spec::kLinkKeyRequestEventCode);
+  event.view_t().bd_addr().CopyFrom(peer->address_.value().view());
+  SendCommandChannelPacket(event.data());
 }
 
 void FakeController::OnLinkKeyRequestReplyCommandReceived(

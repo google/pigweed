@@ -979,15 +979,13 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnIoCapabilityR
 }
 
 hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnLinkKeyRequest(
-    const hci::EventPacket& event) {
-  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kLinkKeyRequestEventCode);
-  const auto& params = event.params<hci_spec::LinkKeyRequestParams>();
-
-  DeviceAddress addr(DeviceAddress::Type::kBREDR, params.bd_addr);
+    const hci::EmbossEventPacket& event) {
+  const auto params = event.view<pw::bluetooth::emboss::LinkKeyRequestEventView>();
+  const DeviceAddress addr(DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr()));
   auto* peer = cache_->FindByAddress(addr);
   if (!peer) {
     bt_log(WARN, "gap-bredr", "no peer with address %s found", bt_str(addr));
-    SendLinkKeyRequestNegativeReply(params.bd_addr);
+    SendLinkKeyRequestNegativeReply(addr.value());
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
@@ -996,18 +994,18 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnLinkKeyReques
 
   if (!conn_pair) {
     bt_log(WARN, "gap-bredr", "can't find connection for ltk (id: %s)", bt_str(peer_id));
-    SendLinkKeyRequestNegativeReply(params.bd_addr);
+    SendLinkKeyRequestNegativeReply(addr.value());
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
   auto& [handle, conn] = *conn_pair;
 
   auto link_key = conn->pairing_state().OnLinkKeyRequest();
   if (!link_key.has_value()) {
-    SendLinkKeyRequestNegativeReply(params.bd_addr);
+    SendLinkKeyRequestNegativeReply(addr.value());
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  SendLinkKeyRequestReply(params.bd_addr, link_key.value());
+  SendLinkKeyRequestReply(addr.value(), link_key.value());
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 

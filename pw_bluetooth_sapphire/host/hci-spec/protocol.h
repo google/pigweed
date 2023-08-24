@@ -840,11 +840,6 @@ struct NumberOfCompletedPacketsEventParams {
 // Link Key Request Event (v1.1) (BR/EDR)
 constexpr EventCode kLinkKeyRequestEventCode = 0x17;
 
-struct LinkKeyRequestParams {
-  // The address for the device that a host-stored link key is being requested.
-  DeviceAddressBytes bd_addr;
-} __attribute__((packed));
-
 // ===========================================
 // Link Key Notification Event (v1.1) (BR/EDR)
 constexpr EventCode kLinkKeyNotificationEventCode = 0x18;
