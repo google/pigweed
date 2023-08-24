@@ -38,9 +38,9 @@ pw_cc_toolchain_feature(
     name = "linux_sysroot",
     builtin_sysroot = "external/linux_sysroot",
     cxx_builtin_include_directories = [
-        "@llvm_toolchain//:include/x86_64-unknown-linux-gnu/c++/v1",
-        "@llvm_toolchain//:include/c++/v1",
-        "@llvm_toolchain//:lib/clang/17/include",
+        "%package(@llvm_toolchain//)%/include/x86_64-unknown-linux-gnu/c++/v1",
+        "%package(@llvm_toolchain//)%/include/c++/v1",
+        "%package(@llvm_toolchain//)%/lib/clang/17/include",
         "%sysroot%/usr/local/include",
         "%sysroot%/usr/include/x86_64-linux-gnu",
         "%sysroot%/usr/include",
