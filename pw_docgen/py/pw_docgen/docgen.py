@@ -50,6 +50,13 @@ def parse_args() -> argparse.Namespace:
         '--conf', required=True, help='Path to conf.py file for Sphinx'
     )
     parser.add_argument(
+        '-j',
+        '--parallel',
+        type=int,
+        default=os.cpu_count(),
+        help='Number of parallel processes to run',
+    )
+    parser.add_argument(
         '--gn-root', required=True, help='Root of the GN build tree'
     )
     parser.add_argument(
@@ -78,13 +85,25 @@ def parse_args() -> argparse.Namespace:
 
 
 def build_docs(
-    src_dir: str, dst_dir: str, google_analytics_id: Optional[str] = None
+    src_dir: str,
+    dst_dir: str,
+    parallel: int,
+    google_analytics_id: Optional[str] = None,
 ) -> int:
     """Runs Sphinx to render HTML documentation from a doc tree."""
 
     # TODO(frolv): Specify the Sphinx script from a prebuilts path instead of
     # requiring it in the tree.
-    command = ['sphinx-build', '-W', '-b', 'html', '-d', f'{dst_dir}/help']
+    command = [
+        'sphinx-build',
+        '-W',
+        '-j',
+        str(parallel),
+        '-b',
+        'html',
+        '-d',
+        f'{dst_dir}/help',
+    ]
 
     if google_analytics_id is not None:
         command.append(f'-Dgoogle_analytics_id={google_analytics_id}')
@@ -147,7 +166,10 @@ def main() -> int:
     print('-' * 80, flush=True)
 
     return build_docs(
-        args.sphinx_build_dir, args.out_dir, args.google_analytics_id
+        args.sphinx_build_dir,
+        args.out_dir,
+        args.parallel,
+        args.google_analytics_id,
     )
 
 

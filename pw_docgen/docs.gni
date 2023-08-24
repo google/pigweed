@@ -23,6 +23,9 @@ declare_args() {
 
   # Set to enable Google Analytics tracking of generated docs.
   pw_docgen_GOOGLE_ANALYTICS_ID = ""
+
+  # Set to define the number of parallel threads to use during the Sphinx build.
+  pw_docgen_THREADS = ""
 }
 
 # Defines a group of documentation files and assets.
@@ -124,6 +127,14 @@ template("pw_doc_gen") {
         args += [
           "--google-analytics-id",
           pw_docgen_GOOGLE_ANALYTICS_ID,
+        ]
+      }
+
+      # Override the default number of threads for the Sphinx build.
+      if (pw_docgen_THREADS != "") {
+        args += [
+          "-j",
+          pw_docgen_THREADS,
         ]
       }
 
