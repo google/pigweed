@@ -25,5 +25,5 @@ declare_args() {
   # kConstantCase. Set this variable to temporarily enable legacy SNAKE_CASE
   # support while you migrate your codebase to kConstantCase.
   # b/266298474
-  pw_protobuf_compiler_GENERATE_LEGACY_ENUM_SNAKE_CASE_NAMES = true
+  pw_protobuf_compiler_GENERATE_LEGACY_ENUM_SNAKE_CASE_NAMES = false
 }
