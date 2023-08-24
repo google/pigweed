@@ -389,6 +389,21 @@ enum PageScanRepetitionMode:
   R1_ = 0x01  # <= 1.28s
   R2_ = 0x02  # <= 2.56s
 
+
+enum CodingFormat:
+  -- Coding formats from assigned numbers.
+  -- (https://www.bluetooth.com/specifications/assigned-numbers/host-controller-interface)
+  [maximum_bits: 8]
+  U_LAW           = 0x00
+  A_LAW           = 0x01
+  CVSD            = 0x02
+  TRANSPARENT     = 0x03
+  LINEAR_PCM      = 0x04
+  MSBC            = 0x05
+  LC3             = 0x06
+  G729A           = 0x07
+  VENDOR_SPECIFIC = 0xFF
+
 # ========================= HCI packet headers ==========================
 
 

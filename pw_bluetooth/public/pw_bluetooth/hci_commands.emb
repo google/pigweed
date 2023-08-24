@@ -22,22 +22,6 @@ import "hci_common.emb" as hci
 [(cpp) namespace: "pw::bluetooth::emboss"]
 # =========================== Constants =================================
 
-
-enum CodingFormat:
-  -- Coding formats from assigned numbers.
-  -- (https://www.bluetooth.com/specifications/assigned-numbers/host-controller-interface)
-  [maximum_bits: 8]
-  U_LAW           = 0x00
-  A_LAW           = 0x01
-  CVSD            = 0x02
-  TRANSPARENT     = 0x03
-  LINEAR_PCM      = 0x04
-  MSBC            = 0x05
-  LC3             = 0x06
-  G729A           = 0x07
-  VENDOR_SPECIFIC = 0xFF
-
-
 enum InquiryAccessCode:
   -- General- and Device-specific Inquiry Access Codes (DIACs) for use in Inquiry
   -- command LAP fields.
@@ -988,7 +972,7 @@ struct IoCapabilityRequestNegativeReplyCommand:
 
 
 struct CodecId:
-  0     [+1]  CodingFormat  coding_format
+  0     [+1]  hci.CodingFormat  coding_format
   $next [+2]  UInt          company_id
     -- See assigned numbers.
 
@@ -1000,7 +984,7 @@ struct SynchronousConnectionParameters:
   -- Enhanced Setup Synchronous Connection Command (CSA2) (BR/EDR)
 
   struct VendorCodingFormat:
-    0     [+1]  CodingFormat  coding_format
+    0     [+1]  hci.CodingFormat  coding_format
     $next [+2]  UInt          company_id
       -- See assigned numbers.
 

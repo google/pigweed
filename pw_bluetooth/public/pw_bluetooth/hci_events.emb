@@ -644,3 +644,40 @@ struct InquiryResultWithRssiEvent:
 
   let response_size = InquiryResultWithRssi.$size_in_bytes
   $next [+num_responses*response_size]  InquiryResultWithRssi[]  responses
+
+
+struct SynchronousConnectionCompleteEvent:
+  -- Synchronous Connection Complete Event (BR/EDR)
+
+  let hdr_size = hci.EventHeader.$size_in_bytes
+
+  0     [+hdr_size]                   hci.EventHeader   header
+
+  $next [+1]                          hci.StatusCode    status
+
+  $next [+2]                          UInt              connection_handle
+    -- A connection handle for the newly created SCO connection.
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr        bd_addr
+    -- BD_ADDR of the other connected device forming the connection.
+
+  $next [+1]                          LinkType          link_type
+
+  $next [+1]                          UInt              transmission_interval
+    -- Time between two consecutive eSCO instants measured in slots. Shall be
+    -- zero for SCO links.
+
+  $next [+1]                          UInt              retransmission_window
+    -- The size of the retransmission window measured in slots. Shall be zero
+    -- for SCO links.
+
+  $next [+2]                          UInt              rx_packet_length
+    -- Length in bytes of the eSCO payload in the receive direction. Shall be
+    -- zero for SCO links.
+
+  $next [+2]                          UInt              tx_packet_length
+    -- Length in bytes of the eSCO payload in the transmit direction. Shall be
+    -- zero for SCO links.
+
+  $next [+1]                          hci.CodingFormat  air_mode
