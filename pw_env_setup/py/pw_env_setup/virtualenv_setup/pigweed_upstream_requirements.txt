@@ -15,9 +15,9 @@
 # Pigweed upstream specific depenencies:
 # pigweed.dev Sphinx themes
 beautifulsoup4==4.12.2
-furo @ https://github.com/chadnorvell/furo/releases/download/2023.03.27/furo-2023.3.27.dev1-py3-none-any.whl
+furo==2023.8.19
 sphinx-copybutton==0.5.1
-breathe==4.34.0
+breathe==4.35.0
 kconfiglib==14.1.0
 # Renode requirements
 psutil==5.9.4
