@@ -334,6 +334,11 @@ def _build_argument_parser() -> argparse.ArgumentParser:
         action='store_true',
         help='print the path to the Pigweed Python virtual environment',
     )
+    parser_python.add_argument(
+        '--install-editable',
+        metavar='MODULE',
+        help='install a Pigweed Python module in editable mode',
+    )
 
     parser_vscode = add_parser(cmd_vscode, 'vscode')
     parser_vscode.add_argument(

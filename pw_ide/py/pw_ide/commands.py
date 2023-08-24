@@ -16,6 +16,7 @@
 import logging
 from pathlib import Path
 import shlex
+import shutil
 import subprocess
 import sys
 from typing import cast, Dict, List, Optional, Set, Tuple
@@ -714,8 +715,51 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
         )
 
 
+def install_py_module_as_editable(
+    module_name: str,
+    reporter: StatusReporter,
+) -> None:
+    """Install a Pigweed Python module in editable mode."""
+    reporter.info(f'Installing {module_name} as an editable module')
+    try:
+        site_packages_path = [
+            path for path in sys.path if 'site-packages' in path
+        ][0]
+    except IndexError:
+        reporter.err(f'Could not find {module_name} in the Python path!')
+        sys.exit(1)
+
+    reporter.info(f'Found {module_name} at: {site_packages_path}')
+    shutil.rmtree(Path(site_packages_path) / module_name)
+
+    try:
+        subprocess.run(
+            [
+                'pip',
+                'install',
+                '--no-deps',
+                '-e',
+                f'{module_name}/py',
+            ],
+            check=True,
+            stdout=subprocess.PIPE,
+        )
+    except subprocess.CalledProcessError:
+        reporter.err(
+            [
+                f'Failed to install {module_name}!',
+                'You may need to re-bootstrap',
+            ]
+        )
+
+    reporter.new('Success!')
+    reporter.wrn('Note that running bootstrap or building will reverse this.')
+
+
 def cmd_python(
-    should_print_venv: bool, reporter: StatusReporter = StatusReporter()
+    should_print_venv: bool,
+    install_editable: Optional[str] = None,
+    reporter: StatusReporter = StatusReporter(),
 ) -> None:
     """Configure Python code intelligence support.
 
@@ -725,10 +769,24 @@ def cmd_python(
     .. code-block:: bash
 
        pw ide python --venv
+
+    When working on Pigweed's Python modules, it can be convenient to install
+    them in editable mode to instantly realize code changes. You can do this by
+    running:
+
+    .. code-block:: bash
+
+       pw ide python --install-editable pw_{module name}
+
+    Just note that running bootstrap or building will override this.
     """
     # If true, no arguments were provided and we should do the default
     # behavior.
     default = True
+
+    if install_editable is not None:
+        default = False
+        install_py_module_as_editable(install_editable, reporter)
 
     if should_print_venv or default:
         reporter.info(
