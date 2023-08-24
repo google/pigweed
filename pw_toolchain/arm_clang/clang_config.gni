@@ -79,5 +79,12 @@ template("pw_clang_arm_config") {
     cflags += _arm_flags.cflags
     ldflags += _arm_flags.cflags
     ldflags += _arm_flags.ldflags
+
+    libs = [
+      "c_nano",
+      "m",
+      "gcc",
+      "stdc++_nano",
+    ]
   }
 }
