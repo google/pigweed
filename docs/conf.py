@@ -17,7 +17,7 @@ from datetime import date
 import sphinx
 
 # The suffix of source filenames.
-source_suffix = ['.rst', '.md']
+source_suffix = ['.rst']
 
 # The master toctree document.  # inclusive-language: ignore
 master_doc = 'index'
@@ -49,23 +49,8 @@ extensions = [
     'sphinxarg.ext',  # Automatic documentation of Python argparse
     'sphinxcontrib.mermaid',
     'sphinx_design',
-    'myst_parser',
     'breathe',
     'sphinx_copybutton',  # Copy-to-clipboard button on code blocks
-]
-
-myst_enable_extensions = [
-    # "amsmath",
-    "colon_fence",
-    # "deflist",
-    "dollarmath",
-    # "html_admonition",
-    # "html_image",
-    # "linkify",
-    # "replacements",
-    # "smartquotes",
-    # "substitution",
-    # "tasklist",
 ]
 
 # When a user clicks the copy-to-clipboard button the `$ ` prompt should not be

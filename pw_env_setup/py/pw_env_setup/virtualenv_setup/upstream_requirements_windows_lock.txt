@@ -295,7 +295,6 @@ docutils==0.18 \
     # via
     #   -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
     #   breathe
-    #   myst-parser
     #   sphinx
     #   sphinx-rtd-theme
 executing==1.2.0 \
@@ -466,7 +465,6 @@ jinja2==3.0.3 \
     --hash=sha256:611bb273cd68f3b993fabdc4064fc858c5b47a973cb5aa7999ec1ba405c87cd7
     # via
     #   -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
-    #   myst-parser
     #   sphinx
 json5==0.9.11 \
     --hash=sha256:1aa54b80b5e507dfe31d12b7743a642e2ffa6f70bf73b8e3d7d1d5fba83d99bd \
@@ -516,13 +514,6 @@ lazy-object-proxy==1.9.0 \
     # via
     #   -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
     #   astroid
-markdown-it-py==2.2.0 \
-    --hash=sha256:5a35f8d1870171d9acc47b99612dc146129b631baf04970128b568f190d0cc30 \
-    --hash=sha256:7c9a5e412688bc771c67432cbfebcdd686c93ce6484913dccf06cb5a0bea35a1
-    # via
-    #   -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
-    #   mdit-py-plugins
-    #   myst-parser
 markupsafe==2.1.3 \
     --hash=sha256:05fb21170423db021895e1ea1e1f3ab3adb85d1c2333cbc2310f2a26bc77272e \
     --hash=sha256:0a4e4a1aff6c7ac4cd55792abf96c915634c2b97e3cc1c7129578aa68ebd754e \
@@ -589,18 +580,6 @@ mccabe==0.6.1 \
     # via
     #   -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
     #   pylint
-mdit-py-plugins==0.3.5 \
-    --hash=sha256:ca9a0714ea59a24b2b044a1831f48d817dd0c817e84339f20e7889f392d77c4e \
-    --hash=sha256:eee0adc7195e5827e17e02d2a258a2ba159944a0748f59c5099a4a27f78fcf6a
-    # via
-    #   -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
-    #   myst-parser
-mdurl==0.1.2 \
-    --hash=sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8 \
-    --hash=sha256:bb413d29f5eea38f31dd4754dd7377d4465116fb207585f97bf925588687c1ba
-    # via
-    #   -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
-    #   markdown-it-py
 mypy==1.5.0 \
     --hash=sha256:1fe816e26e676c1311b9e04fd576543b873576d39439f7c24c8e5c7728391ecf \
     --hash=sha256:2c9d570f53908cbea326ad8f96028a673b814d9dca7515bf71d95fa662c3eb6f \
@@ -635,10 +614,6 @@ mypy-extensions==1.0.0 \
 mypy-protobuf==3.3.0 \
     --hash=sha256:15604f6943b16c05db646903261e3b3e775cf7f7990b7c37b03d043a907b650d \
     --hash=sha256:24f3b0aecb06656e983f58e07c732a90577b9d7af3e1066fc2b663bbf0370248
-    # via -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
-myst-parser==0.18.1 \
-    --hash=sha256:61b275b85d9f58aa327f370913ae1bec26ebad372cc99f3ab85c8ec3ee8d9fb8 \
-    --hash=sha256:79317f4bb2c13053dd6e64f9da1ba1da6cd9c40c8a430c447a7b146a594c246d
     # via -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
 packaging==23.0 \
     --hash=sha256:714ac14496c3e68c99c29b00845f7a2b85f3bb6f1078fd9f72fd20f0570002b2 \
@@ -849,9 +824,7 @@ pyyaml==6.0.1 \
     --hash=sha256:fca0e3a251908a499833aa292323f32437106001d436eca0e6e7833256674585 \
     --hash=sha256:fd1592b3fdf65fff2ad0004b5e363300ef59ced41c2e6b3a99d4089fa8c5435d \
     --hash=sha256:fd66fc5d0da6d9815ba2cebeb4205f95818ff4b79c3ebe268e75d961704af52f
-    # via
-    #   -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
-    #   myst-parser
+    # via -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
 requests==2.27.1 \
     --hash=sha256:68d7c56fd5a8999887728ef304a6d12edc7be74f1cfa47714fc8b414525c9a61 \
     --hash=sha256:f22fa1e554c9ddfd16e6e41ac79759e17be9e492b3587efa038054674760e72d
@@ -896,7 +869,6 @@ sphinx==5.3.0 \
     #   -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
     #   breathe
     #   furo
-    #   myst-parser
     #   sphinx-argparse
     #   sphinx-basic-ng
     #   sphinx-copybutton
@@ -1058,7 +1030,6 @@ typing-extensions==4.4.0 \
     #   black
     #   ipython
     #   mypy
-    #   myst-parser
     #   pylint
 urllib3==1.26.14 \
     --hash=sha256:076907bf8fd355cde77728471316625a4d2f7e713c125f51953bb5b3eecf4f72 \

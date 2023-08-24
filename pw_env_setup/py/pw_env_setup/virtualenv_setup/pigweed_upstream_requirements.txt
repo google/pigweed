@@ -17,7 +17,6 @@
 beautifulsoup4==4.12.2
 furo @ https://github.com/chadnorvell/furo/releases/download/2023.03.27/furo-2023.3.27.dev1-py3-none-any.whl
 sphinx-copybutton==0.5.1
-myst-parser==0.18.1
 breathe==4.34.0
 kconfiglib==14.1.0
 # Renode requirements
