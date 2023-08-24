@@ -1139,6 +1139,8 @@ OTHER_CHECKS = (
     cmake_clang,
     cmake_gcc,
     coverage,
+    # TODO(b/234876100): Remove once msan is added to all_sanitizers().
+    cpp_checks.msan,
     docs_build,
     gitmodules.create(gitmodules.Config(allow_submodules=False)),
     gn_clang_build,
