@@ -356,13 +356,11 @@ group("asan") {
   }
 }
 
-# TODO(b/234876100): msan will not work until the C++ standard library included
-# in the sysroot has a variant built with msan.
+# TODO(b/234876100): msan will not work without false positives until the C++
+# standard library included in the sysroot has a variant built with msan.
 group("msan") {
   # TODO(b/259695498): msan doesn't work on macOS yet.
-  if (host_os != "win" && host_os != "mac" && host_os != "linux") {
-    deps = [ ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_msan)" ]
-  }
+  deps = [ ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_msan)" ]
 }
 
 group("tsan") {
