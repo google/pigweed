@@ -17,17 +17,9 @@ the License.
 
 {% block supermain %}
   <div class="pw-main">
-    {% if body %}
-      {{ parse_body(body).topnav }}
-    {% endif %}
     <div class="pw-content">
       {{ super() }}
     </div>
   </div>
 {% endblock supermain %}
 
-{% block content %}
-  {% if body %}
-    {{ parse_body(body).body_without_topnav }}
-  {% endif %}
-{% endblock content %}
