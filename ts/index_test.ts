@@ -26,6 +26,11 @@ import {
 } from '../dist/index.umd';
 
 import { ProtoCollection } from '../dist/protos/collection.umd';
+import {
+  createLogViewer,
+  MockLogSource,
+  PigweedRPCLogSource,
+} from '../dist/logging.umd';
 import * as fs from 'fs';
 
 describe('Pigweed Bundle', () => {
@@ -64,6 +69,19 @@ describe('Pigweed Bundle', () => {
 
   it('has WebSerialTransport defined', () => {
     expect(WebSerial.WebSerialTransport).toBeDefined();
+  });
+
+  it('has log viewer exports defined', () => {
+    expect(createLogViewer).toBeDefined();
+    expect(typeof createLogViewer).toBe('function');
+
+    expect(MockLogSource).toBeDefined();
+    expect(typeof MockLogSource).toBe('function');
+    expect(MockLogSource.name).toBe('MockLogSource');
+
+    expect(PigweedRPCLogSource).toBeDefined();
+    expect(typeof PigweedRPCLogSource).toBe('function');
+    expect(PigweedRPCLogSource.name).toBe('PigweedRPCLogSource');
   });
 
   it('is not referring to any outside Pigweed modules', () => {
