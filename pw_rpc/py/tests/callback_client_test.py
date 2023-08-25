@@ -688,6 +688,40 @@ class ServerStreamingTest(_CallbackClientImplTestBase):
             ]
         )
 
+    def test_request_completion(self) -> None:
+        resp = self.rpc.method.response_type(payload='!!!')
+        self._enqueue_server_stream(CLIENT_CHANNEL_ID, self.rpc.method, resp)
+
+        callback = mock.Mock()
+        call = self.rpc.invoke(self._request(magic_number=3), callback)
+        callback.assert_called_once_with(
+            call, self.rpc.method.response_type(payload='!!!')
+        )
+
+        callback.reset_mock()
+
+        call.request_completion()
+
+        self.assertEqual(
+            self.last_request().type,
+            packet_pb2.PacketType.CLIENT_REQUEST_COMPLETION,
+        )
+
+        # Ensure the RPC can be called after being completed.
+        self._enqueue_server_stream(CLIENT_CHANNEL_ID, self.method, resp)
+        self._enqueue_response(CLIENT_CHANNEL_ID, self.method, Status.OK)
+
+        call = self.rpc.invoke(
+            self._request(magic_number=3), callback, callback
+        )
+
+        callback.assert_has_calls(
+            [
+                mock.call(call, self.method.response_type(payload='!!!')),
+                mock.call(call, Status.OK),
+            ]
+        )
+
     def test_nonblocking_with_request_args(self) -> None:
         self.rpc.invoke(request_args=dict(magic_number=1138))
         self.assertEqual(

@@ -322,6 +322,11 @@ class ServerStreamingCall(Call):
     ) -> Iterator:
         return self._get_responses(count=count, timeout_s=timeout_s)
 
+    def request_completion(self) -> None:
+        """Sends client completion packet to server."""
+        if not self.completed():
+            self._rpcs.send_client_stream_end(self._rpc)
+
     def __iter__(self) -> Iterator:
         return self.get_responses()
 
