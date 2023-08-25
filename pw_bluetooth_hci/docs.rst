@@ -31,24 +31,25 @@ Decoding
 A decoder function is provided to parse HCI packets out of a HCI UART Transport
 Layer buffer which may contain multiple packets.
 
-  .. cpp:function:: StatusWithSize DecodeHciUartData(ConstByteSpan data, const DecodedPacketCallback& packet_callback);
+.. cpp:function:: StatusWithSize DecodeHciUartData(ConstByteSpan data, const DecodedPacketCallback& packet_callback);
 
-    Parses the HCI Packets out of a HCI UART Transport Layer buffer.
+   Parses the HCI Packets out of a HCI UART Transport Layer buffer.
 
-    Parses as many complete HCI packets out of the provided buffer based on the
-    HCI UART Transport Layer as defined by Bluetooth Core Specification version
-    5.3 "Host Controller Interface Transport Layer" volume 4, part A.
+   Parses as many complete HCI packets out of the provided buffer based on the
+   HCI UART Transport Layer as defined by Bluetooth Core Specification version
+   5.3 "Host Controller Interface Transport Layer" volume 4, part A.
 
-    The HciPacketCallback is invoked for each full HCI packet.
+   The HciPacketCallback is invoked for each full HCI packet.
 
-    Returns the number of bytes processed and a status based on:
+   Returns the number of bytes processed and a status based on:
 
-      * OK - No invalid packet indicator found.
-      * DATA_LOSS - An invalid packet indicator was detected between packets.
-        Synchronization has been lost. The caller is responsible for
-        regaining synchronization
+   * OK - No invalid packet indicator found.
+   * DATA_LOSS - An invalid packet indicator was detected between packets.
+     Synchronization has been lost. The caller is responsible for
+     regaining synchronization
 
-    .. note:: The caller is responsible for detecting the lack of progress due
-      to an undersized data buffer and/or an invalid length field in case a full
+   .. note::
+      The caller is responsible for detecting the lack of progress due to an
+      undersized data buffer and/or an invalid length field in case a full
       buffer is passed and no bytes are processed.
 

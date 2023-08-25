@@ -361,10 +361,10 @@ Next runtime sanitizers supported:
 * ``ubsan_heuristic`` -- `UndefinedBehaviorSanitizer`_ with the following
   additional checks enabled:
 
-   * ``integer``: Checks for undefined or suspicious integer behavior.
-   * ``float-divide-by-zero``: Checks for floating point division by zero.
-   * ``implicit-conversion``: Checks for suspicious behavior of implicit conversions.
-   * ``nullability``: Checks for null as function arg, lvalue and return type.
+  * ``integer``: Checks for undefined or suspicious integer behavior.
+  * ``float-divide-by-zero``: Checks for floating point division by zero.
+  * ``implicit-conversion``: Checks for suspicious behavior of implicit conversions.
+  * ``nullability``: Checks for null as function arg, lvalue and return type.
 
   These additional checks are heuristic and may not correspond to undefined
   behavior.
@@ -662,23 +662,23 @@ Making use of the code coverage functionality in Bazel is straightforward.
 
 1. Add the following lines to your '.bazelrc'.
 
-  .. code:: sh
+   .. code:: sh
 
-    coverage --experimental_generate_llvm_lcov
-    coverage --combined_report=lcov
+      coverage --experimental_generate_llvm_lcov
+      coverage --combined_report=lcov
 
 2. Generate a combined lcov coverage report. This will produce a combined lcov
    coverage report at the path 'bazel-out/_coverage/_coverage_report.dat'. e.g.
 
-  .. code:: sh
+   .. code:: sh
 
-    bazel coverage //pw_log/...
+      bazel coverage //pw_log/...
 
 3. View the results using the command line utility 'lcov'.
 
-  .. code:: sh
+   .. code:: sh
 
-    lcov --list bazel-out/_coverage/_coverage_report.dat
+      lcov --list bazel-out/_coverage/_coverage_report.dat
 
 Configuration
 -------------
@@ -821,16 +821,16 @@ landed here. First things first you would;
 2. Add a pigweed_config rule to your WORKSPACE, using Pigweed's default
    configuration.
 
-  .. code:: py
+   .. code:: py
 
-    # WORKSPACE ...
-    load("//pw_build:target_config.bzl", "pigweed_config")
+      # WORKSPACE ...
+      load("//pw_build:target_config.bzl", "pigweed_config")
 
-    # Configure Pigweeds backend.
-    pigweed_config(
-        name = "pigweed_config",
-        build_file = "@pigweed//targets:default_config.BUILD",
-    )
+      # Configure Pigweeds backend.
+      pigweed_config(
+          name = "pigweed_config",
+          build_file = "@pigweed//targets:default_config.BUILD",
+      )
 
 .. note::
   We are aware, that the experience of setting up your WORKSPACE file to work

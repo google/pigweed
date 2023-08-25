@@ -47,15 +47,15 @@ appending to existing data.
 
 .. code-block:: cpp
 
-  BlobStore::BlobWriterWithBuffer writer(my_blob_store);
-  writer.Open();
-  writer.Write(my_data);
+   BlobStore::BlobWriterWithBuffer writer(my_blob_store);
+   writer.Open();
+   writer.Write(my_data);
 
-  // ...
+   // ...
 
-  // A close is implied when a BlobWriter is destroyed. Manually closing a
-  // BlobWriter enables error handling on Close() failure.
-  writer.Close();
+   // A close is implied when a BlobWriter is destroyed. Manually closing a
+   // BlobWriter enables error handling on Close() failure.
+   writer.Close();
 
 Erasing a BlobStore
 ===================
@@ -83,13 +83,13 @@ for the ``std::string_view`` to be invalidated after the function returns.
 
 .. code-block:: cpp
 
-  constexpr size_t kMaxFileNameLength = 48;
-  BlobStore::BlobWriterWithBuffer<kMaxFileNameLength> writer(my_blob_store);
-  writer.Open();
-  writer.SetFileName("stonks.jpg");
-  writer.Write(my_data);
-  // ...
-  writer.Close();
+   constexpr size_t kMaxFileNameLength = 48;
+   BlobStore::BlobWriterWithBuffer<kMaxFileNameLength> writer(my_blob_store);
+   writer.Open();
+   writer.SetFileName("stonks.jpg");
+   writer.Write(my_data);
+   // ...
+   writer.Close();
 
 Reading from a BlobStore
 ------------------------
@@ -97,12 +97,12 @@ A ``BlobStore`` may have multiple open ``BlobReader`` objects. No other
 readers/writers may be open/active if a ``BlobWriter`` is opened on a blob
 store.
 
-  0) Create BlobReader instance
-  1) BlobReader::Open()
-  2) Read data using BlobReader::Read() or
-     BlobReader::GetMemoryMappedBlob(). BlobReader is seekable. Use
-     BlobReader::Seek() to read from a desired offset.
-  3) BlobReader::Close()
+0) Create BlobReader instance
+1) BlobReader::Open()
+2) Read data using BlobReader::Read() or
+   BlobReader::GetMemoryMappedBlob(). BlobReader is seekable. Use
+   BlobReader::Seek() to read from a desired offset.
+3) BlobReader::Close()
 
 --------------------------
 FileSystem RPC integration
@@ -118,7 +118,6 @@ Size report
 The following size report showcases the memory usage of the blob store.
 
 .. include:: blob_size
-
 
 .. note::
   The documentation for this module is currently incomplete.

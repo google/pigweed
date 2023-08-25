@@ -39,12 +39,12 @@ Applications must also provide an implementation for
 ``pw_cpu_exception_DefaultHandler()``. The behavior of this functions is entirely
 up to the application/project, but some examples are provided below:
 
-  * Enter an infinite loop so the device can be debugged by JTAG.
-  * Reset the device.
-  * Attempt to handle the exception so execution can continue.
-  * Capture and record additional device state and save to flash for a crash
-    report.
-  * A combination of the above, using logic that fits the needs of your project.
+* Enter an infinite loop so the device can be debugged by JTAG.
+* Reset the device.
+* Attempt to handle the exception so execution can continue.
+* Capture and record additional device state and save to flash for a crash
+  report.
+* A combination of the above, using logic that fits the needs of your project.
 
 ``pw_cpu_exception_SUPPORT_BACKEND``
 ====================================
@@ -102,22 +102,20 @@ CPU exception backends do not provide an exception handler, but instead provide
 mechanisms to capture CPU state for use by an application's exception handler,
 and allow recovery from CPU exceptions when possible.
 
-  * The entry backend should provide a definition for the
-    ``pw_cpu_exception_State`` object through
-    ``pw_cpu_exception_backend/state.h``.
-  * In GN, the entry backend should also provide a ``.impl`` suffixed form of
-    the entry backend target which collects the actual entry implementation to
-    avoid circular dependencies due to the state definition in the entry backend
-    target.
-  * The entry backend should implement the ``pw_cpu_exception_Entry()`` function
-    that will call ``pw_cpu_exception_HandleException()`` after performing any
-    necessary actions prior to handing control to the application's exception
-    handler (e.g. capturing necessary CPU state).
-  * If an application's exception handler backend modifies the captured CPU
-    state, the state should be treated as though it were the original state of
-    the CPU when the exception occurred. The backend may need to manually
-    restore some of the modified state to ensure this on exception handler
-    return.
+* The entry backend should provide a definition for the
+  ``pw_cpu_exception_State`` object through
+  ``pw_cpu_exception_backend/state.h``.
+* In GN, the entry backend should also provide a ``.impl`` suffixed form of the
+  entry backend target which collects the actual entry implementation to avoid
+  circular dependencies due to the state definition in the entry backend target.
+* The entry backend should implement the ``pw_cpu_exception_Entry()`` function
+  that will call ``pw_cpu_exception_HandleException()`` after performing any
+  necessary actions prior to handing control to the application's exception
+  handler (e.g. capturing necessary CPU state).
+* If an application's exception handler backend modifies the captured CPU state,
+  the state should be treated as though it were the original state of the CPU
+  when the exception occurred. The backend may need to manually restore some of
+  the modified state to ensure this on exception handler return.
 
 -------------
 Compatibility
@@ -128,5 +126,5 @@ the "support" facade and library, which requires C++.
 ------------
 Dependencies
 ------------
-  * ``pw_span``
-  * ``pw_preprocessor``
+- :ref:`module-pw_span`
+- :ref:`module-pw_preprocessor`

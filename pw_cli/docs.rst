@@ -293,50 +293,50 @@ registered (see :py:meth:`pw_cli.plugins.Registry.__init__`).
 
 Plugins may be registered in a few different ways.
 
- * **Direct function call.** Register plugins by calling
-   :py:meth:`pw_cli.plugins.Registry.register` or
-   :py:meth:`pw_cli.plugins.Registry.register_by_name`.
+* **Direct function call.** Register plugins by calling
+  :py:meth:`pw_cli.plugins.Registry.register` or
+  :py:meth:`pw_cli.plugins.Registry.register_by_name`.
 
-   .. code-block:: python
+  .. code-block:: python
 
-     registry = pw_cli.plugins.Registry()
+    registry = pw_cli.plugins.Registry()
 
-     registry.register('plugin_name', my_plugin)
-     registry.register_by_name('plugin_name', 'module_name', 'function_name')
+    registry.register('plugin_name', my_plugin)
+    registry.register_by_name('plugin_name', 'module_name', 'function_name')
 
- * **Decorator.** Register using the :py:meth:`pw_cli.plugins.Registry.plugin`
-   decorator.
+* **Decorator.** Register using the :py:meth:`pw_cli.plugins.Registry.plugin`
+  decorator.
 
-   .. code-block:: python
+  .. code-block:: python
 
-     _REGISTRY = pw_cli.plugins.Registry()
+    _REGISTRY = pw_cli.plugins.Registry()
 
-     # This function is registered as the "my_plugin" plugin.
-     @_REGISTRY.plugin
-     def my_plugin():
-         pass
+    # This function is registered as the "my_plugin" plugin.
+    @_REGISTRY.plugin
+    def my_plugin():
+        pass
 
-     # This function is registered as the "input" plugin.
-     @_REGISTRY.plugin(name='input')
-     def read_something():
-         pass
+    # This function is registered as the "input" plugin.
+    @_REGISTRY.plugin(name='input')
+    def read_something():
+        pass
 
-   The decorator may be aliased to give a cleaner syntax (e.g. ``register =
-   my_registry.plugin``).
+  The decorator may be aliased to give a cleaner syntax (e.g. ``register =
+  my_registry.plugin``).
 
- * **Plugins files.** Plugins files use a simple format:
+* **Plugins files.** Plugins files use a simple format:
 
-   .. code-block::
+  .. code-block::
 
-     # Comments start with "#". Blank lines are ignored.
-     name_of_the_plugin module.name module_member
+    # Comments start with "#". Blank lines are ignored.
+    name_of_the_plugin module.name module_member
 
-     another_plugin some_module some_function
+    another_plugin some_module some_function
 
-   These files are placed in the file system and apply similarly to Git's
-   ``.gitignore`` files. From Python, these files are registered using
-   :py:meth:`pw_cli.plugins.Registry.register_file` and
-   :py:meth:`pw_cli.plugins.Registry.register_directory`.
+  These files are placed in the file system and apply similarly to Git's
+  ``.gitignore`` files. From Python, these files are registered using
+  :py:meth:`pw_cli.plugins.Registry.register_file` and
+  :py:meth:`pw_cli.plugins.Registry.register_directory`.
 
 pw_cli.plugins module reference
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

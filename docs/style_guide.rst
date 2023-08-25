@@ -859,11 +859,11 @@ The styling follows these rules.
 #. Groups are placed the following order with a blank line separating each
    grouping.
 
-    * "set noparent" line
-    * "include" lines
-    * "file:" lines
-    * user grants (some examples: "*", "foo@example.com")
-    * "per-file:" lines
+   * "set noparent" line
+   * "include" lines
+   * "file:" lines
+   * user grants (some examples: "*", "foo@example.com")
+   * "per-file:" lines
 
 This plugin will, by default, act upon any file named "OWNERS".
 

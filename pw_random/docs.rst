@@ -62,9 +62,9 @@ Note that this generator is NOT cryptographically secure.
 
 For more information, see:
 
- * https://en.wikipedia.org/wiki/Xorshift
- * https://www.jstatsoft.org/article/view/v008i14
- * http://vigna.di.unimi.it/ftp/papers/xorshift.pdf
+* https://en.wikipedia.org/wiki/Xorshift
+* https://www.jstatsoft.org/article/view/v008i14
+* http://vigna.di.unimi.it/ftp/papers/xorshift.pdf
 
 -----------
 Future Work

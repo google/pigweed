@@ -6,4 +6,4 @@ pw_sys_io_baremetal_lm3s6965evb
 
 .. warning::
 
-  This documentation is under construction.
+   This documentation is under construction.

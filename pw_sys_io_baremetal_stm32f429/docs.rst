@@ -3,7 +3,6 @@
 -----------------------------
 pw_sys_io_baremetal_stm32f429
 -----------------------------
-
 ``pw_sys_io_baremetal_stm32f429`` implements the ``pw_sys_io`` facade over
 UART.
 
@@ -21,16 +20,16 @@ Setup
 =====
 This module requires relatively minimal setup:
 
-  1. Write code against the ``pw_sys_io`` facade.
-  2. Specify the ``dir_pw_sys_io_backend`` GN global variable to point to this
-     backend.
-  3. Build an executable with a main() function using a toolchain that
-     supports Cortex-M4.
+1. Write code against the ``pw_sys_io`` facade.
+2. Specify the ``dir_pw_sys_io_backend`` GN global variable to point to this
+   backend.
+3. Build an executable with a main() function using a toolchain that
+   supports Cortex-M4.
 
 .. note::
-  This module provides early firmware init and a linker script, so it will
-  conflict with other modules that do any early device init or provide a linker
-  script.
+   This module provides early firmware init and a linker script, so it will
+   conflict with other modules that do any early device init or provide a linker
+   script.
 
 Module usage
 ============
@@ -47,15 +46,15 @@ Sample connection diagram
 
 .. code-block:: text
 
-  --USB Serial--+    +-----STM32F429 MCU-----
-                |    |
-             TX o--->o PA10/USART1_RX
-                |    |
-             RX o<---o PA9/USART1_TX
-                |    |
-  --------------+    +-----------------------
+   --USB Serial--+    +-----STM32F429 MCU-----
+                 |    |
+              TX o--->o PA10/USART1_RX
+                 |    |
+              RX o<---o PA9/USART1_TX
+                 |    |
+   --------------+    +-----------------------
 
 Dependencies
 ============
-  * ``pw_sys_io`` facade
-  * ``pw_preprocessor`` module
+- :ref:`module-pw_sys_io`
+- :ref:`module-pw_preprocessor`

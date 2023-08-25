@@ -30,9 +30,9 @@ Setup
 =====
 This module requires relatively minimal setup:
 
-  1. Choose a ``pw_sys_io`` backend, or write one yourself.
-  2. If using GN build, Specify the ``pw_sys_io_BACKEND`` GN build arg to point
-     the library that provides a ``pw_sys_io`` backend.
+1. Choose a ``pw_sys_io`` backend, or write one yourself.
+2. If using GN build, Specify the ``pw_sys_io_BACKEND`` GN build arg to point
+   the library that provides a ``pw_sys_io`` backend.
 
 Module usage
 ============
@@ -50,6 +50,7 @@ API reference
 
 Dependencies
 ============
-  * pw_sys_io_backend
-  * pw_span
-  * pw_status
+- :ref:`module-pw_sys_io`
+- :ref:`module-pw_span`
+- :ref:`module-pw_status`
+

@@ -15,60 +15,63 @@ Setup
 There are a few ways to set up the Cortex M exception handler so the
 application's exception handler is properly called during an exception.
 
-**1. Use existing CMSIS functions**
-  Inside of CMSIS fault handler functions, branch to ``pw_cpu_exception_Entry``.
+1. Use existing CMSIS functions
+-------------------------------
+Inside of CMSIS fault handler functions, branch to ``pw_cpu_exception_Entry``.
 
-  .. code-block:: cpp
+.. code-block:: cpp
 
-    __attribute__((naked)) void HardFault_Handler(void) {
-    asm volatile(
-        " ldr r0, =pw_cpu_exception_Entry  \n"
-        " bx r0                            \n");
-    }
+   __attribute__((naked)) void HardFault_Handler(void) {
+   asm volatile(
+       " ldr r0, =pw_cpu_exception_Entry  \n"
+       " bx r0                            \n");
+   }
 
-**2. Modify a startup file**
-  Assembly startup files for some microcontrollers initialize the interrupt
-  vector table. The functions to call for fault handlers can be changed here.
-  For ARMv7-M and ARMv8-M, the fault handlers are indexes 3 to 6 of the
-  interrupt vector table. It's also may be helpful to redirect the NMI handler
-  to the entry function (if it's otherwise unused in your project).
+2. Modify a startup file
+------------------------
+Assembly startup files for some microcontrollers initialize the interrupt
+vector table. The functions to call for fault handlers can be changed here.
+For ARMv7-M and ARMv8-M, the fault handlers are indexes 3 to 6 of the
+interrupt vector table. It's also may be helpful to redirect the NMI handler
+to the entry function (if it's otherwise unused in your project).
 
-  Default:
+Default:
 
-  .. code-block:: cpp
+.. code-block:: cpp
 
-    __isr_vector_table:
-      .word  __stack_start
-      .word  Reset_Handler
-      .word  NMI_Handler
-      .word  HardFault_Handler
-      .word  MemManage_Handler
-      .word  BusFault_Handler
-      .word  UsageFault_Handler
+   __isr_vector_table:
+     .word  __stack_start
+     .word  Reset_Handler
+     .word  NMI_Handler
+     .word  HardFault_Handler
+     .word  MemManage_Handler
+     .word  BusFault_Handler
+     .word  UsageFault_Handler
 
-  Using CPU exception module:
+Using CPU exception module:
 
-  .. code-block:: cpp
+.. code-block:: cpp
 
-    __isr_vector_table:
-      .word  __stack_start
-      .word  Reset_Handler
-      .word  pw_cpu_exception_Entry
-      .word  pw_cpu_exception_Entry
-      .word  pw_cpu_exception_Entry
-      .word  pw_cpu_exception_Entry
-      .word  pw_cpu_exception_Entry
+   __isr_vector_table:
+     .word  __stack_start
+     .word  Reset_Handler
+     .word  pw_cpu_exception_Entry
+     .word  pw_cpu_exception_Entry
+     .word  pw_cpu_exception_Entry
+     .word  pw_cpu_exception_Entry
+     .word  pw_cpu_exception_Entry
 
-  Note: ``__isr_vector_table`` and ``__stack_start`` are example names, and may
-  vary by platform. See your platform's assembly startup script.
+Note: ``__isr_vector_table`` and ``__stack_start`` are example names, and may
+vary by platform. See your platform's assembly startup script.
 
-**3. Modify interrupt vector table at runtime**
-  Some applications may choose to modify their interrupt vector tables at
-  runtime. The exception handler works with this use case (see the
-  exception_entry_test integration test), but keep in mind that your
-  application's exception handler will not be entered if an exception occurs
-  before the vector table entries are updated to point to
-  ``pw_cpu_exception_Entry``.
+3. Modify interrupt vector table at runtime
+-------------------------------------------
+Some applications may choose to modify their interrupt vector tables at
+runtime. The exception handler works with this use case (see the
+exception_entry_test integration test), but keep in mind that your
+application's exception handler will not be entered if an exception occurs
+before the vector table entries are updated to point to
+``pw_cpu_exception_Entry``.
 
 Module Usage
 ============
@@ -115,7 +118,6 @@ nest.
 
 Configuration Options
 =====================
-
 - ``PW_CPU_EXCEPTION_CORTEX_M_EXTENDED_CFSR_DUMP``: Enable extended logging in
   ``pw::cpu_exception::LogCpuState()`` that dumps the active CFSR fields with
   help strings. This is disabled by default since it increases the binary size
@@ -139,30 +141,30 @@ human-readable information (e.g. "Encountered invalid instruction").
 
 For example:
 
-  .. code-block::
+.. code-block::
 
-    $ python -m pw_cpu_exception_cortex_m.cfsr_decoder 0x00010100
-    20210412 15:11:14 INF Exception caused by a usage fault, bus fault.
+   $ python -m pw_cpu_exception_cortex_m.cfsr_decoder 0x00010100
+   20210412 15:11:14 INF Exception caused by a usage fault, bus fault.
 
-    Active Crash Fault Status Register (CFSR) fields:
-    IBUSERR     Instruction bus error.
-        The processor attempted to issue an invalid instruction. It
-        detects the instruction bus error on prefecting, but this
-        flag is only set to 1 if it attempts to issue the faulting
-        instruction. When this bit is set, the processor has not
-        written a fault address to the BFAR.
-    UNDEFINSTR  Encountered invalid instruction.
-        The processor has attempted to execute an undefined
-        instruction. When this bit is set to 1, the PC value stacked
-        for the exception return points to the undefined instruction.
-        An undefined instruction is an instruction that the processor
-        cannot decode.
+   Active Crash Fault Status Register (CFSR) fields:
+   IBUSERR     Instruction bus error.
+       The processor attempted to issue an invalid instruction. It
+       detects the instruction bus error on prefecting, but this
+       flag is only set to 1 if it attempts to issue the faulting
+       instruction. When this bit is set, the processor has not
+       written a fault address to the BFAR.
+   UNDEFINSTR  Encountered invalid instruction.
+       The processor has attempted to execute an undefined
+       instruction. When this bit is set to 1, the PC value stacked
+       for the exception return points to the undefined instruction.
+       An undefined instruction is an instruction that the processor
+       cannot decode.
 
-    All registers:
-    cfsr       0x00010100
+   All registers:
+   cfsr       0x00010100
 
 .. note::
-  The CFSR is not supported on ARMv6-M CPUs (Cortex M0, M0+, M1).
+   The CFSR is not supported on ARMv6-M CPUs (Cortex M0, M0+, M1).
 
 --------------------
 Snapshot integration
@@ -186,10 +188,10 @@ limits must be provided along with a stack processing callback. All of this
 information is captured by a ``pw::thread::Thread`` protobuf encoder.
 
 .. note::
-  We recommend providing the ``pw_cpu_exception_State``, for example through
-  ``pw_cpu_exception_DefaultHandler()`` instead of using the current running
-  context to capture the main stack to minimize how much of the snapshot
-  handling is captured in the stack.
+   We recommend providing the ``pw_cpu_exception_State``, for example through
+   ``pw_cpu_exception_DefaultHandler()`` instead of using the current running
+   context to capture the main stack to minimize how much of the snapshot
+   handling is captured in the stack.
 
 Python processor
 ================
@@ -199,43 +201,43 @@ dump from a serialized snapshot proto, for example:
 
 .. code-block::
 
-  Exception caused by a usage fault.
+   Exception caused by a usage fault.
 
-  Active Crash Fault Status Register (CFSR) fields:
-  UNDEFINSTR  Undefined Instruction UsageFault.
-      The processor has attempted to execute an undefined
-      instruction. When this bit is set to 1, the PC value stacked
-      for the exception return points to the undefined instruction.
-      An undefined instruction is an instruction that the processor
-      cannot decode.
+   Active Crash Fault Status Register (CFSR) fields:
+   UNDEFINSTR  Undefined Instruction UsageFault.
+       The processor has attempted to execute an undefined
+       instruction. When this bit is set to 1, the PC value stacked
+       for the exception return points to the undefined instruction.
+       An undefined instruction is an instruction that the processor
+       cannot decode.
 
-  All registers:
-  pc         0x0800e1c4 example::Service::Crash(_example_service_CrashRequest const&, _pw_protobuf_Empty&) (src/example_service/service.cc:131)
-  lr         0x0800e141 example::Service::Crash(_example_service_CrashRequest const&, _pw_protobuf_Empty&) (src/example_service/service.cc:128)
-  psr        0x81000000
-  msp        0x20040fd8
-  psp        0x20001488
-  exc_return 0xffffffed
-  cfsr       0x00010000
-  mmfar      0xe000ed34
-  bfar       0xe000ed38
-  icsr       0x00000803
-  hfsr       0x40000000
-  shcsr      0x00000000
-  control    0x00000000
-  r0         0xe03f7847
-  r1         0x714083dc
-  r2         0x0b36dc49
-  r3         0x7fbfbe1a
-  r4         0xc36e8efb
-  r5         0x69a14b13
-  r6         0x0ec35eaa
-  r7         0xa5df5543
-  r8         0xc892b931
-  r9         0xa2372c94
-  r10        0xbd15c968
-  r11        0x759b95ab
-  r12        0x00000000
+   All registers:
+   pc         0x0800e1c4 example::Service::Crash(_example_service_CrashRequest const&, _pw_protobuf_Empty&) (src/example_service/service.cc:131)
+   lr         0x0800e141 example::Service::Crash(_example_service_CrashRequest const&, _pw_protobuf_Empty&) (src/example_service/service.cc:128)
+   psr        0x81000000
+   msp        0x20040fd8
+   psp        0x20001488
+   exc_return 0xffffffed
+   cfsr       0x00010000
+   mmfar      0xe000ed34
+   bfar       0xe000ed38
+   icsr       0x00000803
+   hfsr       0x40000000
+   shcsr      0x00000000
+   control    0x00000000
+   r0         0xe03f7847
+   r1         0x714083dc
+   r2         0x0b36dc49
+   r3         0x7fbfbe1a
+   r4         0xc36e8efb
+   r5         0x69a14b13
+   r6         0x0ec35eaa
+   r7         0xa5df5543
+   r8         0xc892b931
+   r9         0xa2372c94
+   r10        0xbd15c968
+   r11        0x759b95ab
+   r12        0x00000000
 
 Module Configuration Options
 ============================
@@ -246,17 +248,17 @@ more details.
 
 .. c:macro:: PW_CPU_EXCEPTION_CORTEX_M_LOG_LEVEL
 
-  The log level to use for this module. Logs below this level are omitted.
+   The log level to use for this module. Logs below this level are omitted.
 
-  This defaults to ``PW_LOG_LEVEL_DEBUG``.
+   This defaults to ``PW_LOG_LEVEL_DEBUG``.
 
 .. c:macro:: PW_CPU_EXCEPTION_CORTEX_M_EXTENDED_CFSR_DUMP
 
-  Enables extended logging in pw::cpu_exception::LogCpuState() and
-  pw::cpu_exception::cortex_m::LogExceptionAnalysis() that dumps the active
-  CFSR fields with help strings. This is disabled by default since it
-  increases the binary size by >1.5KB when using plain-text logs, or ~460
-  Bytes when using tokenized logging. It's useful to enable this for device
-  bringup until your application has an end-to-end crash reporting solution.
+   Enables extended logging in pw::cpu_exception::LogCpuState() and
+   pw::cpu_exception::cortex_m::LogExceptionAnalysis() that dumps the active
+   CFSR fields with help strings. This is disabled by default since it
+   increases the binary size by >1.5KB when using plain-text logs, or ~460
+   Bytes when using tokenized logging. It's useful to enable this for device
+   bringup until your application has an end-to-end crash reporting solution.
 
-  This is disabled by default.
+   This is disabled by default.

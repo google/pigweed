@@ -12,11 +12,10 @@ rate:
 
 .. code-block:: cpp
 
-  Serial.begin(115200);
+   Serial.begin(115200);
 
-  // Wait for serial port to be available
-  while (!Serial) {
-  }
+   // Wait for serial port to be available
+   while (!Serial) {}
 
 After ``Serial.begin(115200)`` it will busy wait until a host connects to the
 serial port.

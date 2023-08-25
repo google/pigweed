@@ -5,9 +5,8 @@ pw_metric
 =========
 
 .. attention::
-
-  This module is **not yet production ready**; ask us if you are interested in
-  using it out or have ideas about how to improve it.
+   This module is **not yet production ready**; ask us if you are interested in
+   using it out or have ideas about how to improve it.
 
 --------
 Overview
@@ -180,20 +179,20 @@ The metric object is 12 bytes on 32-bit platforms.
 
 .. cpp:class:: pw::metric::Metric
 
-  .. cpp:function:: Increment(uint32_t amount = 0)
+   .. cpp:function:: Increment(uint32_t amount = 0)
 
-    Increment the metric by the given amount. Results in undefined behaviour if
-    the metric is not of type int.
+      Increment the metric by the given amount. Results in undefined behaviour if
+      the metric is not of type int.
 
-  .. cpp:function:: Set(uint32_t value)
+   .. cpp:function:: Set(uint32_t value)
 
-    Set the metric to the given value. Results in undefined behaviour if the
-    metric is not of type int.
+      Set the metric to the given value. Results in undefined behaviour if the
+      metric is not of type int.
 
-  .. cpp:function:: Set(float value)
+   .. cpp:function:: Set(float value)
 
-    Set the metric to the given value. Results in undefined behaviour if the
-    metric is not of type float.
+      Set the metric to the given value. Results in undefined behaviour if the
+      metric is not of type float.
 
 Group
 -----
@@ -208,39 +207,39 @@ The group object is 16 bytes on 32-bit platforms.
 
 .. cpp:class:: pw::metric::Group
 
-  .. cpp:function:: Dump(int indent_level = 0)
+   .. cpp:function:: Dump(int indent_level = 0)
 
-    Recursively dump a metrics group to ``pw_log``. Produces output like:
+      Recursively dump a metrics group to ``pw_log``. Produces output like:
 
-    .. code:: none
+      .. code:: none
 
-      "$6doqFw==": {
-        "$05OCZw==": {
-          "$VpPfzg==": 1,
-          "$LGPMBQ==": 1.000000,
-          "$+iJvUg==": 5,
-        }
-        "$9hPNxw==": 65,
-        "$oK7HmA==": 13,
-        "$FCM4qQ==": 0,
-      }
+         "$6doqFw==": {
+           "$05OCZw==": {
+             "$VpPfzg==": 1,
+             "$LGPMBQ==": 1.000000,
+             "$+iJvUg==": 5,
+           }
+           "$9hPNxw==": 65,
+           "$oK7HmA==": 13,
+           "$FCM4qQ==": 0,
+         }
 
-    Note the metric names are tokenized with base64. Decoding requires using
-    the Pigweed detokenizer. With a detokenizing-enabled logger, you could get
-    something like:
+      Note the metric names are tokenized with base64. Decoding requires using
+      the Pigweed detokenizer. With a detokenizing-enabled logger, you could get
+      something like:
 
-    .. code:: none
+      .. code:: none
 
-      "i2c_1": {
-        "gyro": {
-          "num_sampleses": 1,
-          "init_time_us": 1.000000,
-          "initialized": 5,
-        }
-        "bus_errors": 65,
-        "transactions": 13,
-        "bytes_sent": 0,
-      }
+         "i2c_1": {
+           "gyro": {
+             "num_sampleses": 1,
+             "init_time_us": 1.000000,
+             "initialized": 5,
+           }
+           "bus_errors": 65,
+           "transactions": 13,
+           "bytes_sent": 0,
+         }
 
 Macros
 ------
@@ -253,150 +252,147 @@ tokenizing the metric and group names.
 .. cpp:function:: PW_METRIC_STATIC(identifier, name, value)
 .. cpp:function:: PW_METRIC_STATIC(group, identifier, name, value)
 
-  Declare a metric, optionally adding it to a group.
+   Declare a metric, optionally adding it to a group.
 
-  - **identifier** - An identifier name for the created variable or member.
-    For example: ``i2c_transactions`` might be used as a local or global
-    metric; inside a class, could be named according to members
-    (``i2c_transactions_`` for Google's C++ style).
-  - **name** - The string name for the metric. This will be tokenized. There
-    are no restrictions on the contents of the name; however, consider
-    restricting these to be valid C++ identifiers to ease integration with
-    other systems.
-  - **value** - The initial value for the metric. Must be either a floating
-    point value (e.g. ``3.2f``) or unsigned int (e.g. ``21u``).
-  - **group** - A ``pw::metric::Group`` instance. If provided, the metric is
-    added to the given group.
+   - **identifier** - An identifier name for the created variable or member.
+     For example: ``i2c_transactions`` might be used as a local or global
+     metric; inside a class, could be named according to members
+     (``i2c_transactions_`` for Google's C++ style).
+   - **name** - The string name for the metric. This will be tokenized. There
+     are no restrictions on the contents of the name; however, consider
+     restricting these to be valid C++ identifiers to ease integration with
+     other systems.
+   - **value** - The initial value for the metric. Must be either a floating
+     point value (e.g. ``3.2f``) or unsigned int (e.g. ``21u``).
+   - **group** - A ``pw::metric::Group`` instance. If provided, the metric is
+     added to the given group.
 
-  The macro declares a variable or member named "name" with type
-  ``pw::metric::Metric``, and works in three contexts: global, local, and
-  member.
+   The macro declares a variable or member named "name" with type
+   ``pw::metric::Metric``, and works in three contexts: global, local, and
+   member.
 
-  If the `_STATIC` variant is used, the macro declares a variable with static
-  storage. These can be used in function scopes, but not in classes.
+   If the `_STATIC` variant is used, the macro declares a variable with static
+   storage. These can be used in function scopes, but not in classes.
 
-  1. At global scope:
+   1. At global scope:
 
-    .. code::
+      .. code::
 
-      PW_METRIC(foo, "foo", 15.5f);
+         PW_METRIC(foo, "foo", 15.5f);
 
-      void MyFunc() {
-        foo.Increment();
-      }
+         void MyFunc() {
+           foo.Increment();
+         }
 
-  2. At local function or member function scope:
+   2. At local function or member function scope:
 
-    .. code::
+      .. code::
 
-      void MyFunc() {
-        PW_METRIC(foo, "foo", 15.5f);
-        foo.Increment();
-        // foo goes out of scope here; be careful!
-      }
+         void MyFunc() {
+           PW_METRIC(foo, "foo", 15.5f);
+           foo.Increment();
+           // foo goes out of scope here; be careful!
+         }
 
-  3. At member level inside a class or struct:
+   3. At member level inside a class or struct:
 
-    .. code::
+      .. code::
 
-      struct MyStructy {
-        void DoSomething() {
-          somethings.Increment();
-        }
-        // Every instance of MyStructy will have a separate somethings counter.
-        PW_METRIC(somethings, "somethings", 0u);
-      }
+         struct MyStructy {
+           void DoSomething() {
+             somethings.Increment();
+           }
+           // Every instance of MyStructy will have a separate somethings counter.
+           PW_METRIC(somethings, "somethings", 0u);
+         }
 
-  You can also put a metric into a group with the macro. Metrics can belong to
-  strictly one group, otherwise an assertion will fail. Example:
+   You can also put a metric into a group with the macro. Metrics can belong to
+   strictly one group, otherwise an assertion will fail. Example:
 
-  .. code::
+   .. code::
 
-    PW_METRIC_GROUP(my_group, "my_group");
-    PW_METRIC(my_group, foo, "foo", 0.2f);
-    PW_METRIC(my_group, bar, "bar", 44000u);
-    PW_METRIC(my_group, zap, "zap", 3.14f);
+      PW_METRIC_GROUP(my_group, "my_group");
+      PW_METRIC(my_group, foo, "foo", 0.2f);
+      PW_METRIC(my_group, bar, "bar", 44000u);
+      PW_METRIC(my_group, zap, "zap", 3.14f);
 
-  .. tip::
-
-    If you want a globally registered metric, see ``pw_metric/global.h``; in
-    that contexts, metrics are globally registered without the need to
-    centrally register in a single place.
+   .. tip::
+      If you want a globally registered metric, see ``pw_metric/global.h``; in
+      that contexts, metrics are globally registered without the need to
+      centrally register in a single place.
 
 .. cpp:function:: PW_METRIC_GROUP(identifier, name)
 .. cpp:function:: PW_METRIC_GROUP(parent_group, identifier, name)
 .. cpp:function:: PW_METRIC_GROUP_STATIC(identifier, name)
 .. cpp:function:: PW_METRIC_GROUP_STATIC(parent_group, identifier, name)
 
-  Declares a ``pw::metric::Group`` with name name; the name is tokenized.
-  Works similar to ``PW_METRIC`` and can be used in the same contexts (global,
-  local, and member). Optionally, the group can be added to a parent group.
+   Declares a ``pw::metric::Group`` with name name; the name is tokenized.
+   Works similar to ``PW_METRIC`` and can be used in the same contexts (global,
+   local, and member). Optionally, the group can be added to a parent group.
 
-  If the `_STATIC` variant is used, the macro declares a variable with static
-  storage. These can be used in function scopes, but not in classes.
+   If the `_STATIC` variant is used, the macro declares a variable with static
+   storage. These can be used in function scopes, but not in classes.
 
-  Example:
+   Example:
 
-  .. code::
+   .. code::
 
-    PW_METRIC_GROUP(my_group, "my_group");
-    PW_METRIC(my_group, foo, "foo", 0.2f);
-    PW_METRIC(my_group, bar, "bar", 44000u);
-    PW_METRIC(my_group, zap, "zap", 3.14f);
+      PW_METRIC_GROUP(my_group, "my_group");
+      PW_METRIC(my_group, foo, "foo", 0.2f);
+      PW_METRIC(my_group, bar, "bar", 44000u);
+      PW_METRIC(my_group, zap, "zap", 3.14f);
 
 .. cpp:function:: PW_METRIC_GLOBAL(identifier, name, value)
 
-  Declare a ``pw::metric::Metric`` with name name, and register it in the
-  global metrics list ``pw::metric::global_metrics``.
+   Declare a ``pw::metric::Metric`` with name name, and register it in the
+   global metrics list ``pw::metric::global_metrics``.
 
-  Example:
+   Example:
 
-  .. code::
+   .. code::
 
-    #include "pw_metric/metric.h"
-    #include "pw_metric/global.h"
+      #include "pw_metric/metric.h"
+      #include "pw_metric/global.h"
 
-    // No need to coordinate collection of foo and bar; they're autoregistered.
-    PW_METRIC_GLOBAL(foo, "foo", 0.2f);
-    PW_METRIC_GLOBAL(bar, "bar", 44000u);
+      // No need to coordinate collection of foo and bar; they're autoregistered.
+      PW_METRIC_GLOBAL(foo, "foo", 0.2f);
+      PW_METRIC_GLOBAL(bar, "bar", 44000u);
 
-  Note that metrics defined with ``PW_METRIC_GLOBAL`` should never be added to
-  groups defined with ``PW_METRIC_GROUP_GLOBAL``. Each metric can only belong
-  to one group, and metrics defined with ``PW_METRIC_GLOBAL`` are
-  pre-registered with the global metrics list.
+   Note that metrics defined with ``PW_METRIC_GLOBAL`` should never be added to
+   groups defined with ``PW_METRIC_GROUP_GLOBAL``. Each metric can only belong
+   to one group, and metrics defined with ``PW_METRIC_GLOBAL`` are
+   pre-registered with the global metrics list.
 
-  .. attention::
-
-    Do not create ``PW_METRIC_GLOBAL`` instances anywhere other than global
-    scope. Putting these on an instance (member context) would lead to dangling
-    pointers and misery. Metrics are never deleted or unregistered!
+   .. attention::
+      Do not create ``PW_METRIC_GLOBAL`` instances anywhere other than global
+      scope. Putting these on an instance (member context) would lead to dangling
+      pointers and misery. Metrics are never deleted or unregistered!
 
 .. cpp:function:: PW_METRIC_GROUP_GLOBAL(identifier, name, value)
 
-  Declare a ``pw::metric::Group`` with name name, and register it in the
-  global metric groups list ``pw::metric::global_groups``.
+   Declare a ``pw::metric::Group`` with name name, and register it in the
+   global metric groups list ``pw::metric::global_groups``.
 
-  Note that metrics created with ``PW_METRIC_GLOBAL`` should never be added to
-  groups! Instead, just create a freestanding metric and register it into the
-  global group (like in the example below).
+   Note that metrics created with ``PW_METRIC_GLOBAL`` should never be added to
+   groups! Instead, just create a freestanding metric and register it into the
+   global group (like in the example below).
 
-  Example:
+   Example:
 
-  .. code::
+   .. code::
 
-    #include "pw_metric/metric.h"
-    #include "pw_metric/global.h"
+      #include "pw_metric/metric.h"
+      #include "pw_metric/global.h"
 
-    // No need to coordinate collection of this group; it's globally registered.
-    PW_METRIC_GROUP_GLOBAL(leagcy_system, "legacy_system");
-    PW_METRIC(leagcy_system, foo, "foo",0.2f);
-    PW_METRIC(leagcy_system, bar, "bar",44000u);
+      // No need to coordinate collection of this group; it's globally registered.
+      PW_METRIC_GROUP_GLOBAL(leagcy_system, "legacy_system");
+      PW_METRIC(leagcy_system, foo, "foo",0.2f);
+      PW_METRIC(leagcy_system, bar, "bar",44000u);
 
-  .. attention::
-
-    Do not create ``PW_METRIC_GROUP_GLOBAL`` instances anywhere other than
-    global scope. Putting these on an instance (member context) would lead to
-    dangling pointers and misery. Metrics are never deleted or unregistered!
+   .. attention::
+      Do not create ``PW_METRIC_GROUP_GLOBAL`` instances anywhere other than
+      global scope. Putting these on an instance (member context) would lead to
+      dangling pointers and misery. Metrics are never deleted or unregistered!
 
 ----------------------
 Usage & Best Practices
@@ -415,21 +411,21 @@ hypothetical global ``Uart`` object:
 
 .. code::
 
-  class Uart {
-   public:
-    Uart(span<std::byte> rx_buffer, span<std::byte> tx_buffer)
-      : rx_buffer_(rx_buffer), tx_buffer_(tx_buffer) {}
+   class Uart {
+    public:
+     Uart(span<std::byte> rx_buffer, span<std::byte> tx_buffer)
+       : rx_buffer_(rx_buffer), tx_buffer_(tx_buffer) {}
 
-    // Send/receive here...
+     // Send/receive here...
 
-   private:
-    pw::span<std::byte> rx_buffer;
-    pw::span<std::byte> tx_buffer;
-  };
+    private:
+     pw::span<std::byte> rx_buffer;
+     pw::span<std::byte> tx_buffer;
+   };
 
-  std::array<std::byte, 512> uart_rx_buffer;
-  std::array<std::byte, 512> uart_tx_buffer;
-  Uart uart1(uart_rx_buffer, uart_tx_buffer);
+   std::array<std::byte, 512> uart_rx_buffer;
+   std::array<std::byte, 512> uart_tx_buffer;
+   Uart uart1(uart_rx_buffer, uart_tx_buffer);
 
 Through the course of building a product, the team may want to add metrics to
 the UART to for example gain insight into which operations are triggering lots
@@ -438,37 +434,37 @@ might consider the following approach:
 
 .. code::
 
-  class Uart {
-   public:
-    Uart(span<std::byte> rx_buffer,
-         span<std::byte> tx_buffer,
-         Group& parent_metrics)
-      : rx_buffer_(rx_buffer),
-        tx_buffer_(tx_buffer) {
-        // PROBLEM! parent_metrics may not be constructed if it's a reference
-        // to a static global.
-        parent_metrics.Add(tx_bytes_);
-        parent_metrics.Add(rx_bytes_);
-     }
+   class Uart {
+    public:
+     Uart(span<std::byte> rx_buffer,
+          span<std::byte> tx_buffer,
+          Group& parent_metrics)
+       : rx_buffer_(rx_buffer),
+         tx_buffer_(tx_buffer) {
+         // PROBLEM! parent_metrics may not be constructed if it's a reference
+         // to a static global.
+         parent_metrics.Add(tx_bytes_);
+         parent_metrics.Add(rx_bytes_);
+      }
 
-    // Send/receive here which increment tx/rx_bytes.
+     // Send/receive here which increment tx/rx_bytes.
 
-   private:
-    pw::span<std::byte> rx_buffer;
-    pw::span<std::byte> tx_buffer;
+    private:
+     pw::span<std::byte> rx_buffer;
+     pw::span<std::byte> tx_buffer;
 
-    PW_METRIC(tx_bytes_, "tx_bytes", 0);
-    PW_METRIC(rx_bytes_, "rx_bytes", 0);
-  };
+     PW_METRIC(tx_bytes_, "tx_bytes", 0);
+     PW_METRIC(rx_bytes_, "rx_bytes", 0);
+   };
 
-  PW_METRIC_GROUP(global_metrics, "/");
-  PW_METRIC_GROUP(global_metrics, uart1_metrics, "uart1");
+   PW_METRIC_GROUP(global_metrics, "/");
+   PW_METRIC_GROUP(global_metrics, uart1_metrics, "uart1");
 
-  std::array<std::byte, 512> uart_rx_buffer;
-  std::array<std::byte, 512> uart_tx_buffer;
-  Uart uart1(uart_rx_buffer,
-             uart_tx_buffer,
-             uart1_metrics);
+   std::array<std::byte, 512> uart_rx_buffer;
+   std::array<std::byte, 512> uart_tx_buffer;
+   Uart uart1(uart_rx_buffer,
+              uart_tx_buffer,
+              uart1_metrics);
 
 However, this **is incorrect**, since the ``parent_metrics`` (pointing to
 ``uart1_metrics`` in this case) may not be constructed at the point of
@@ -486,48 +482,47 @@ correctly, even when the objects are allocated globally:
 
 .. code::
 
-  class Uart {
-   public:
-    // Note that metrics is not passed in here at all.
-    Uart(span<std::byte> rx_buffer,
-         span<std::byte> tx_buffer)
-      : rx_buffer_(rx_buffer),
-        tx_buffer_(tx_buffer) {}
+   class Uart {
+    public:
+     // Note that metrics is not passed in here at all.
+     Uart(span<std::byte> rx_buffer,
+          span<std::byte> tx_buffer)
+       : rx_buffer_(rx_buffer),
+         tx_buffer_(tx_buffer) {}
 
-     // Precondition: parent_metrics is already constructed.
-     void Init(Group& parent_metrics) {
-        parent_metrics.Add(tx_bytes_);
-        parent_metrics.Add(rx_bytes_);
-     }
+      // Precondition: parent_metrics is already constructed.
+      void Init(Group& parent_metrics) {
+         parent_metrics.Add(tx_bytes_);
+         parent_metrics.Add(rx_bytes_);
+      }
 
-    // Send/receive here which increment tx/rx_bytes.
+     // Send/receive here which increment tx/rx_bytes.
 
-   private:
-    pw::span<std::byte> rx_buffer;
-    pw::span<std::byte> tx_buffer;
+    private:
+     pw::span<std::byte> rx_buffer;
+     pw::span<std::byte> tx_buffer;
 
-    PW_METRIC(tx_bytes_, "tx_bytes", 0);
-    PW_METRIC(rx_bytes_, "rx_bytes", 0);
-  };
+     PW_METRIC(tx_bytes_, "tx_bytes", 0);
+     PW_METRIC(rx_bytes_, "rx_bytes", 0);
+   };
 
-  PW_METRIC_GROUP(root_metrics, "/");
-  PW_METRIC_GROUP(root_metrics, uart1_metrics, "uart1");
+   PW_METRIC_GROUP(root_metrics, "/");
+   PW_METRIC_GROUP(root_metrics, uart1_metrics, "uart1");
 
-  std::array<std::byte, 512> uart_rx_buffer;
-  std::array<std::byte, 512> uart_tx_buffer;
-  Uart uart1(uart_rx_buffer,
-             uart_tx_buffer);
+   std::array<std::byte, 512> uart_rx_buffer;
+   std::array<std::byte, 512> uart_tx_buffer;
+   Uart uart1(uart_rx_buffer,
+              uart_tx_buffer);
 
-  void main() {
-    // uart1_metrics is guaranteed to be initialized by this point, so it is
-    safe to pass it to Init().
-    uart1.Init(uart1_metrics);
-  }
+   void main() {
+     // uart1_metrics is guaranteed to be initialized by this point, so it is
+     safe to pass it to Init().
+     uart1.Init(uart1_metrics);
+   }
 
 .. attention::
-
-  Be extra careful about **static global metric registration**. Consider using
-  the ``Init()`` pattern.
+   Be extra careful about **static global metric registration**. Consider using
+   the ``Init()`` pattern.
 
 Metric member order matters in objects
 --------------------------------------
@@ -537,40 +532,40 @@ work fine:
 
 .. code::
 
-  #include "pw_metric/metric.h"
+   #include "pw_metric/metric.h"
 
-  class PowerSubsystem {
-   public:
-     Group& metrics() { return metrics_; }
-     const Group& metrics() const { return metrics_; }
+   class PowerSubsystem {
+    public:
+      Group& metrics() { return metrics_; }
+      const Group& metrics() const { return metrics_; }
 
-   private:
-    PW_METRIC_GROUP(metrics_, "power");  // Note metrics_ declared first.
-    PW_METRIC(metrics_, foo, "foo", 0.2f);
-    PW_METRIC(metrics_, bar, "bar", 44000u);
-  };
+    private:
+     PW_METRIC_GROUP(metrics_, "power");  // Note metrics_ declared first.
+     PW_METRIC(metrics_, foo, "foo", 0.2f);
+     PW_METRIC(metrics_, bar, "bar", 44000u);
+   };
 
 but the following one will not since the group is constructed after the metrics
 (and will result in a compile error):
 
 .. code::
 
-  #include "pw_metric/metric.h"
+   #include "pw_metric/metric.h"
 
-  class PowerSubsystem {
-   public:
-     Group& metrics() { return metrics_; }
-     const Group& metrics() const { return metrics_; }
+   class PowerSubsystem {
+    public:
+      Group& metrics() { return metrics_; }
+      const Group& metrics() const { return metrics_; }
 
-   private:
-    PW_METRIC(metrics_, foo, "foo", 0.2f);
-    PW_METRIC(metrics_, bar, "bar", 44000u);
-    PW_METRIC_GROUP(metrics_, "power");  // Error: metrics_ must be first.
-  };
+    private:
+     PW_METRIC(metrics_, foo, "foo", 0.2f);
+     PW_METRIC(metrics_, bar, "bar", 44000u);
+     PW_METRIC_GROUP(metrics_, "power");  // Error: metrics_ must be first.
+   };
 
 .. attention::
 
-  Put **groups before metrics** when declaring metrics members inside classes.
+   Put **groups before metrics** when declaring metrics members inside classes.
 
 Thread safety
 -------------
@@ -586,9 +581,9 @@ synchronization, and can be used from ISRs.
 
 .. attention::
 
-  **You must synchronize access to metrics**. ``pw_metrics`` does not
-  internally synchronize access during construction. Metric Set/Increment are
-  safe.
+   **You must synchronize access to metrics**. ``pw_metrics`` does not
+   internally synchronize access during construction. Metric Set/Increment are
+   safe.
 
 Lifecycle
 ---------
@@ -609,24 +604,23 @@ Below is an example that **is incorrect**. Don't do what follows!
 
 .. code::
 
-  #include "pw_metric/metric.h"
+   #include "pw_metric/metric.h"
 
-  void main() {
-    PW_METRIC_GROUP(root, "/");
-    {
-      // BAD! The metrics have a different lifetime than the group.
-      PW_METRIC(root, temperature, "temperature_f", 72.3f);
-      PW_METRIC(root, humidity, "humidity_relative_percent", 33.2f);
-    }
-    // OOPS! root now has a linked list that points to the destructed
-    // "humidity" object.
-  }
+   void main() {
+     PW_METRIC_GROUP(root, "/");
+     {
+       // BAD! The metrics have a different lifetime than the group.
+       PW_METRIC(root, temperature, "temperature_f", 72.3f);
+       PW_METRIC(root, humidity, "humidity_relative_percent", 33.2f);
+     }
+     // OOPS! root now has a linked list that points to the destructed
+     // "humidity" object.
+   }
 
 .. attention::
-
-  **Don't destruct metrics**. Metrics are designed to be registered /
-  structured upfront, then manipulated during a device's active phase. They do
-  not support destruction.
+   **Don't destruct metrics**. Metrics are designed to be registered /
+   structured upfront, then manipulated during a device's active phase. They do
+   not support destruction.
 
 -----------------
 Exporting metrics
@@ -648,14 +642,14 @@ returned metrics (post detokenization and jsonified) might look something like:
 
 .. code:: none
 
-  {
-    "/i2c1/failed_txns": 17,
-    "/i2c1/total_txns": 2013,
-    "/i2c1/gyro/resets": 24,
-    "/i2c1/gyro/hangs": 1,
-    "/spi1/thermocouple/reads": 242,
-    "/spi1/thermocouple/temp_celsius": 34.52,
-  }
+   {
+     "/i2c1/failed_txns": 17,
+     "/i2c1/total_txns": 2013,
+     "/i2c1/gyro/resets": 24,
+     "/i2c1/gyro/hangs": 1,
+     "/spi1/thermocouple/reads": 242,
+     "/spi1/thermocouple/temp_celsius": 34.52,
+   }
 
 Note that there is no nesting of the groups; the nesting is implied from the
 path.
@@ -705,25 +699,23 @@ For example:
    }
 
 .. attention::
-
-  Take care when exporting metrics. Ensure **appropriate access control** is in
-  place. In some cases it may make sense to entirely disable metrics export for
-  production builds. Although reading metrics via RPC won't influence the
-  device, in some cases the metrics could expose sensitive information if
-  product owners are not careful.
+   Take care when exporting metrics. Ensure **appropriate access control** is in
+   place. In some cases it may make sense to entirely disable metrics export for
+   production builds. Although reading metrics via RPC won't influence the
+   device, in some cases the metrics could expose sensitive information if
+   product owners are not careful.
 
 .. attention::
+   **MetricService::Get is a synchronous RPC method**
 
-  **MetricService::Get is a synchronous RPC method**
+   Calls to is ``MetricService::Get`` are blocking and will send all metrics
+   immediately, even though it is a server-streaming RPC. This will work fine if
+   the device doesn't have too many metrics, or doesn't have concurrent RPCs
+   like logging, but could be a problem in some cases.
 
-  Calls to is ``MetricService::Get`` are blocking and will send all metrics
-  immediately, even though it is a server-streaming RPC. This will work fine if
-  the device doesn't have too many metrics, or doesn't have concurrent RPCs
-  like logging, but could be a problem in some cases.
-
-  We plan to offer an async version where the application is responsible for
-  pumping the metrics into the streaming response. This gives flow control to
-  the application.
+   We plan to offer an async version where the application is responsible for
+   pumping the metrics into the streaming response. This gives flow control to
+   the application.
 
 -----------
 Size report
@@ -734,10 +726,9 @@ metrics. This does not include the RPC service.
 .. include:: metric_size_report
 
 .. attention::
-
-  At time of writing, **the above sizes show an unexpectedly large flash
-  impact**. We are investigating why GCC is inserting large global static
-  constructors per group, when all the logic should be reused across objects.
+   At time of writing, **the above sizes show an unexpectedly large flash
+   impact**. We are investigating why GCC is inserting large global static
+   constructors per group, when all the logic should be reused across objects.
 
 -------------
 Metric Parser

@@ -38,11 +38,11 @@ Target types
 ------------
 .. code-block::
 
-  import("$dir_pw_build/target_types.gni")
+   import("$dir_pw_build/target_types.gni")
 
-  pw_source_set("my_library") {
-    sources = [ "lib.cc" ]
-  }
+   pw_source_set("my_library") {
+     sources = [ "lib.cc" ]
+   }
 
 Pigweed defines wrappers around the four basic GN binary types ``source_set``,
 ``executable``, ``static_library``, and ``shared_library``. These templates
@@ -170,9 +170,9 @@ given library, these include:
 To add or update GN build files for libraries that only offer Bazel build files,
 the Python script at ``pw_build/py/pw_build/generate_3p_gn.py`` may be used.
 
-  .. note::
-    The ``generate_3p_gn.py`` script is experimental, and may not work on an
-    arbitrary Bazel library.
+.. note::
+   The ``generate_3p_gn.py`` script is experimental, and may not work on an
+   arbitrary Bazel library.
 
 To generate or update the GN offered by Pigweed from an Bazel upstream project,
 first create a ``third_party/<library>/repo.json`` file. This file should

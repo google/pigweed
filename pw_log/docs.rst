@@ -17,9 +17,9 @@ service for efficiently storing and transmitting log messages. See
 :ref:`module-pw_log-protobuf` for details.
 
 .. toctree::
-  :hidden:
+   :hidden:
 
-  protobuf
+   protobuf
 
 --------------
 Usage examples
@@ -29,19 +29,19 @@ long-form names.
 
 .. code-block:: cpp
 
-  #define PW_LOG_MODULE_NAME "BLE"
+   #define PW_LOG_MODULE_NAME "BLE"
 
-  #include "pw_log/log.h"
+   #include "pw_log/log.h"
 
-  int main() {
-    PW_LOG_INFO("Booting...");
-    PW_LOG_DEBUG("CPU temp: %.2f", cpu_temperature);
-    if (BootFailed()) {
-      PW_LOG_CRITICAL("Had trouble booting due to error %d", GetErrorCode());
-      ReportErrorsAndHalt();
-    }
-    PW_LOG_INFO("Successfully booted");
-  }
+   int main() {
+     PW_LOG_INFO("Booting...");
+     PW_LOG_DEBUG("CPU temp: %.2f", cpu_temperature);
+     if (BootFailed()) {
+       PW_LOG_CRITICAL("Had trouble booting due to error %d", GetErrorCode());
+       ReportErrorsAndHalt();
+     }
+     PW_LOG_INFO("Successfully booted");
+   }
 
 In ``.cc`` files, it is possible to dispense with the ``PW_`` part of the log
 names and go for shorter log macros. Include ``pw_log/short.h`` or
@@ -49,19 +49,19 @@ names and go for shorter log macros. Include ``pw_log/short.h`` or
 
 .. code-block:: cpp
 
-  #define PW_LOG_MODULE_NAME "BLE"
+   #define PW_LOG_MODULE_NAME "BLE"
 
-  #include "pw_log/shorter.h"
+   #include "pw_log/shorter.h"
 
-  int main() {
-    INF("Booting...");
-    DBG("CPU temp: %.2f", cpu_temperature);
-    if (BootFailed()) {
-      CRT("Had trouble booting due to error %d", GetErrorCode());
-      ReportErrorsAndHalt();
-    }
-    INF("Successfully booted");
-  }
+   int main() {
+     INF("Booting...");
+     DBG("CPU temp: %.2f", cpu_temperature);
+     if (BootFailed()) {
+       CRT("Had trouble booting due to error %d", GetErrorCode());
+       ReportErrorsAndHalt();
+     }
+     INF("Successfully booted");
+   }
 
 Layer diagram example: ``stm32f429i-disc1``
 ===========================================
@@ -80,45 +80,45 @@ system, intended to be used directly.
 
 .. c:macro:: PW_LOG(level, module, flags, fmt, ...)
 
-  This is the primary mechanism for logging.
+   This is the primary mechanism for logging.
 
-  *level* - An integer level as defined by ``pw_log/levels.h``.
+   *level* - An integer level as defined by ``pw_log/levels.h``.
 
-  *module* - A string literal for the module name. Defaults to
-  :c:macro:`PW_LOG_MODULE_NAME`.
+   *module* - A string literal for the module name. Defaults to
+   :c:macro:`PW_LOG_MODULE_NAME`.
 
-  *flags* - Arbitrary flags the backend can leverage. The semantics of these
-  flags are not defined in the facade, but are instead meant as a general
-  mechanism for communication bits of information to the logging backend.
-  ``pw_log`` reserves 2 flag bits by default, but log backends may provide for
-  more or fewer flag bits.
+   *flags* - Arbitrary flags the backend can leverage. The semantics of these
+   flags are not defined in the facade, but are instead meant as a general
+   mechanism for communication bits of information to the logging backend.
+   ``pw_log`` reserves 2 flag bits by default, but log backends may provide for
+   more or fewer flag bits.
 
-  Here are some ideas for what a backend might use flags for:
+   Here are some ideas for what a backend might use flags for:
 
-  - Example: ``HAS_PII`` - A log has personally-identifying data
-  - Example: ``HAS_DII`` - A log has device-identifying data
-  - Example: ``RELIABLE_DELIVERY`` - Ask the backend to ensure the log is
-    delivered; this may entail blocking other logs.
-  - Example: ``BEST_EFFORT`` - Don't deliver this log if it would mean blocking
-    or dropping important-flagged logs
+   - Example: ``HAS_PII`` - A log has personally-identifying data
+   - Example: ``HAS_DII`` - A log has device-identifying data
+   - Example: ``RELIABLE_DELIVERY`` - Ask the backend to ensure the log is
+     delivered; this may entail blocking other logs.
+   - Example: ``BEST_EFFORT`` - Don't deliver this log if it would mean blocking
+     or dropping important-flagged logs
 
-  *fmt* - The message to log, which may contain format specifiers like ``%d``
-  or ``%0.2f``.
+   *fmt* - The message to log, which may contain format specifiers like ``%d``
+   or ``%0.2f``.
 
-  Example:
+   Example:
 
-  .. code-block:: cpp
+   .. code-block:: cpp
 
-    PW_LOG(PW_LOG_LEVEL_INFO, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, "Temp is %d degrees", temp);
-    PW_LOG(PW_LOG_LEVEL_ERROR, PW_LOG_MODULE_NAME, UNRELIABLE_DELIVERY, "It didn't work!");
+      PW_LOG(PW_LOG_LEVEL_INFO, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, "Temp is %d degrees", temp);
+      PW_LOG(PW_LOG_LEVEL_ERROR, PW_LOG_MODULE_NAME, UNRELIABLE_DELIVERY, "It didn't work!");
 
-  .. note::
+   .. note::
 
-    ``PW_LOG()`` should not be used frequently; typically only when adding
-    flags to a particular message to mark PII or to indicate delivery
-    guarantees.  For most cases, prefer to use the direct ``PW_LOG_INFO`` or
-    ``PW_LOG_DEBUG`` style macros, which are often implemented more efficiently
-    in the backend.
+      ``PW_LOG()`` should not be used frequently; typically only when adding
+      flags to a particular message to mark PII or to indicate delivery
+      guarantees.  For most cases, prefer to use the direct ``PW_LOG_INFO`` or
+      ``PW_LOG_DEBUG`` style macros, which are often implemented more efficiently
+      in the backend.
 
 
 .. c:macro:: PW_LOG_DEBUG(fmt, ...)
@@ -127,7 +127,7 @@ system, intended to be used directly.
 .. c:macro:: PW_LOG_ERROR(fmt, ...)
 .. c:macro:: PW_LOG_CRITICAL(fmt, ...)
 
-  Shorthand for ``PW_LOG(<level>, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, fmt, ...)``.
+   Shorthand for ``PW_LOG(<level>, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, fmt, ...)``.
 
 --------------------
 Module configuration
@@ -139,22 +139,22 @@ more details.
 
 .. c:macro:: PW_LOG_LEVEL_DEFAULT
 
-  Controls the default value of ``PW_LOG_LEVEL``. Setting
-  ``PW_LOG_LEVEL_DEFAULT`` will change the behavior of all source files that
-  have not explicitly set ``PW_LOG_LEVEL``. Defaults to ``PW_LOG_LEVEL_DEBUG``.
+   Controls the default value of ``PW_LOG_LEVEL``. Setting
+   ``PW_LOG_LEVEL_DEFAULT`` will change the behavior of all source files that
+   have not explicitly set ``PW_LOG_LEVEL``. Defaults to ``PW_LOG_LEVEL_DEBUG``.
 
 .. c:macro:: PW_LOG_FLAGS_DEFAULT
 
-  Controls the default value of ``PW_LOG_FLAGS``. Setting
-  ``PW_LOG_FLAGS_DEFAULT`` will change the behavior of all source files that
-  have not explicitly set ``PW_LOG_FLAGS``. Defaults to ``0``.
+   Controls the default value of ``PW_LOG_FLAGS``. Setting
+   ``PW_LOG_FLAGS_DEFAULT`` will change the behavior of all source files that
+   have not explicitly set ``PW_LOG_FLAGS``. Defaults to ``0``.
 
 .. c:macro:: PW_LOG_ENABLE_IF_DEFAULT
 
-  Controls the default value of ``PW_LOG_ENABLE_IF``. Setting
-  ``PW_LOG_ENABLE_IF_DEFAULT`` will change the behavior of all source files that
-  have not explicitly set ``PW_LOG_ENABLE_IF``. Defaults to
-  ``((level) >= PW_LOG_LEVEL)``.
+   Controls the default value of ``PW_LOG_ENABLE_IF``. Setting
+   ``PW_LOG_ENABLE_IF_DEFAULT`` will change the behavior of all source files that
+   have not explicitly set ``PW_LOG_ENABLE_IF``. Defaults to
+   ``((level) >= PW_LOG_LEVEL)``.
 
 
 Per-source file configuration
@@ -168,38 +168,38 @@ it is included. To handle potential transitive includes, place these
 ``#defines`` before all ``#include`` statements. This should only be done in
 source files, not headers. For example:
 
-  .. code-block:: cpp
+.. code-block:: cpp
 
-    // Set the pw_log option macros here, before ALL of the #includes.
-    #define PW_LOG_MODULE_NAME "Calibration"
-    #define PW_LOG_LEVEL PW_LOG_LEVEL_WARN
+   // Set the pw_log option macros here, before ALL of the #includes.
+   #define PW_LOG_MODULE_NAME "Calibration"
+   #define PW_LOG_LEVEL PW_LOG_LEVEL_WARN
 
-    #include <array>
-    #include <random>
+   #include <array>
+   #include <random>
 
-    #include "devices/hal9000.h"
-    #include "pw_log/log.h"
-    #include "pw_rpc/server.h"
+   #include "devices/hal9000.h"
+   #include "pw_log/log.h"
+   #include "pw_rpc/server.h"
 
-    int MyFunction() {
-      PW_LOG_INFO("hello???");
-    }
+   int MyFunction() {
+     PW_LOG_INFO("hello???");
+   }
 
 .. c:macro:: PW_LOG_MODULE_NAME
 
-  A string literal module name to use in logs. Log backends may attach this
-  name to log messages or use it for runtime filtering. Defaults to ``""``. The
-  ``PW_LOG_MODULE_NAME_DEFINED`` macro is set to ``1`` or ``0`` to indicate
-  whether ``PW_LOG_MODULE_NAME`` was overridden.
+   A string literal module name to use in logs. Log backends may attach this
+   name to log messages or use it for runtime filtering. Defaults to ``""``. The
+   ``PW_LOG_MODULE_NAME_DEFINED`` macro is set to ``1`` or ``0`` to indicate
+   whether ``PW_LOG_MODULE_NAME`` was overridden.
 
 .. c:macro:: PW_LOG_FLAGS
 
-  Log flags to use for the ``PW_LOG_<level>`` macros. Different flags may be
-  applied when using the ``PW_LOG`` macro directly.
+   Log flags to use for the ``PW_LOG_<level>`` macros. Different flags may be
+   applied when using the ``PW_LOG`` macro directly.
 
-  Log backends use flags to change how they handle individual log messages.
-  Potential uses include assigning logs priority or marking them as containing
-  personal information. Defaults to ``PW_LOG_FLAGS_DEFAULT``.
+   Log backends use flags to change how they handle individual log messages.
+   Potential uses include assigning logs priority or marking them as containing
+   personal information. Defaults to ``PW_LOG_FLAGS_DEFAULT``.
 
 .. c:macro:: PW_LOG_LEVEL
 
@@ -211,15 +211,15 @@ source files, not headers. For example:
 
    .. code-block:: cpp
 
-     #define PW_LOG_LEVEL PW_LOG_LEVEL_INFO
+      #define PW_LOG_LEVEL PW_LOG_LEVEL_INFO
 
-     #include "pw_log/log.h"
+      #include "pw_log/log.h"
 
-     void DoSomething() {
-       PW_LOG_DEBUG("This won't be logged at all");
-       PW_LOG_INFO("This is INFO level, and will display");
-       PW_LOG_WARN("This is above INFO level, and will display");
-     }
+      void DoSomething() {
+        PW_LOG_DEBUG("This won't be logged at all");
+        PW_LOG_INFO("This is INFO level, and will display");
+        PW_LOG_WARN("This is above INFO level, and will display");
+      }
 
 .. c:macro:: PW_LOG_ENABLE_IF(level, flags)
 
@@ -232,37 +232,37 @@ source files, not headers. For example:
 
    .. code-block:: cpp
 
-     // Pigweed's log facade will call this macro to decide to log or not. In
-     // this case, it will drop logs with the PII flag set if display of PII is
-     // not enabled for the application.
-     #define PW_LOG_ENABLE_IF(level, flags) \
-         (level >= PW_LOG_LEVEL_INFO && \
-          !((flags & MY_PRODUCT_PII_MASK) && MY_PRODUCT_LOG_PII_ENABLED)
+      // Pigweed's log facade will call this macro to decide to log or not. In
+      // this case, it will drop logs with the PII flag set if display of PII is
+      // not enabled for the application.
+      #define PW_LOG_ENABLE_IF(level, flags) \
+          (level >= PW_LOG_LEVEL_INFO && \
+           !((flags & MY_PRODUCT_PII_MASK) && MY_PRODUCT_LOG_PII_ENABLED)
 
-     #include "pw_log/log.h"
+      #include "pw_log/log.h"
 
-     // This define might be supplied by the build system.
-     #define MY_PRODUCT_LOG_PII_ENABLED false
+      // This define might be supplied by the build system.
+      #define MY_PRODUCT_LOG_PII_ENABLED false
 
-     // This is the PII mask bit selected by the application.
-     #define MY_PRODUCT_PII_MASK (1 << 5)
+      // This is the PII mask bit selected by the application.
+      #define MY_PRODUCT_PII_MASK (1 << 5)
 
-     void DoSomethingWithSensitiveInfo() {
-       PW_LOG_DEBUG("This won't be logged at all");
-       PW_LOG_INFO("This is INFO level, and will display");
+      void DoSomethingWithSensitiveInfo() {
+        PW_LOG_DEBUG("This won't be logged at all");
+        PW_LOG_INFO("This is INFO level, and will display");
 
-       // In this example, this will not be logged since logging with PII
-       // is disabled by the above macros.
-       PW_LOG(PW_LOG_LEVEL_INFO,
-              MY_PRODUCT_PII_MASK,
-              "Sensitive: %d",
-              sensitive_info);
-     }
+        // In this example, this will not be logged since logging with PII
+        // is disabled by the above macros.
+        PW_LOG(PW_LOG_LEVEL_INFO,
+               MY_PRODUCT_PII_MASK,
+               "Sensitive: %d",
+               sensitive_info);
+      }
 
 .. attention::
 
-  At this time, only compile time filtering is supported. In the future, we
-  plan to add support for runtime filtering.
+   At this time, only compile time filtering is supported. In the future, we
+   plan to add support for runtime filtering.
 
 ------------------
 Logging attributes
@@ -329,15 +329,15 @@ Configuration
 
 .. c:macro:: PW_LOG_CFG_GLOG_BUFFER_SIZE_BYTES
 
-  The size of the stack-allocated buffer used by the Google Logging (glog)
-  macros. This only affects the glog macros provided through pw_log/glog.h.
+   The size of the stack-allocated buffer used by the Google Logging (glog)
+   macros. This only affects the glog macros provided through pw_log/glog.h.
 
-  Pigweed strongly recommends sticking to printf-style logging instead
-  of C++ stream-style Google Log logging unless absolutely necessary. The glog
-  macros are only provided for compatibility with non-embedded code. See
-  :ref:`module-pw_log-design-discussion` for more details.
+   Pigweed strongly recommends sticking to printf-style logging instead
+   of C++ stream-style Google Log logging unless absolutely necessary. The glog
+   macros are only provided for compatibility with non-embedded code. See
+   :ref:`module-pw_log-design-discussion` for more details.
 
-  Undersizing this buffer will result in truncated log messages.
+   Undersizing this buffer will result in truncated log messages.
 
 -----------------
 Design discussion
@@ -356,14 +356,14 @@ Consider this example use of Google Log:
 
 .. code-block:: cpp
 
-  LOG(INFO) << "My temperature is " << temperature << ". State: " << state;
+   LOG(INFO) << "My temperature is " << temperature << ". State: " << state;
 
 This log statement has two string literals. It might seem like one could convert
 move to tokenization:
 
 .. code-block:: cpp
 
-  LOG(INFO) << TOKEN("My temperature is ") << temperature << TOKEN(". State: ") << state;
+   LOG(INFO) << TOKEN("My temperature is ") << temperature << TOKEN(". State: ") << state;
 
 However, this doesn't work. The key problem is that the tokenization system
 needs to allocate the string in a linker section that is excluded from the
@@ -378,8 +378,8 @@ string constant, which can be expanded by the preprocessor (as part of
 
 .. code-block:: cpp
 
-  // Note: LOG_INFO can be tokenized behind the macro; transparent to users.
-  PW_LOG_INFO("My temperature is %d. State: %s", temperature, state);
+   // Note: LOG_INFO can be tokenized behind the macro; transparent to users.
+   PW_LOG_INFO("My temperature is %d. State: %s", temperature, state);
 
 Additionally, while Pigweed is mostly C++, it a practical reality that at times
 projects using Pigweed will need to log from third-party libraries written in

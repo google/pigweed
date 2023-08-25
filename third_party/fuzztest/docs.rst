@@ -93,8 +93,8 @@ the ``-w`` option, e.g.
 
 .. code-block:: sh
 
-  python pw_build/py/pw_build/generate_3p_gn.py \
-    -w third_party/fuzztest/src
+   python pw_build/py/pw_build/generate_3p_gn.py \
+     -w third_party/fuzztest/src
 
 .. DO NOT EDIT BELOW THIS LINE. Generated section.
 

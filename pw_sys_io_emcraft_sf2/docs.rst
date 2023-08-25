@@ -19,17 +19,17 @@ Setup
 =====
 This module requires relatively minimal setup:
 
-  1. Write code against the ``pw_sys_io`` facade.
-  2. Specify the ``dir_pw_sys_io_backend`` GN global variable to point to this
-     backend.
-  3. pw_sys_io_Init() provided by this module needs to be called in early boot
-     to get pw_sys_io into a working state.
-  4. Build an executable with a main() function using a toolchain that
-     supports Cortex-M3.
+1. Write code against the ``pw_sys_io`` facade.
+2. Specify the ``dir_pw_sys_io_backend`` GN global variable to point to this
+   backend.
+3. pw_sys_io_Init() provided by this module needs to be called in early boot
+   to get pw_sys_io into a working state.
+4. Build an executable with a main() function using a toolchain that
+   supports Cortex-M3.
 
 .. note::
-  This module provides early firmware init, so it will conflict with other
-  modules that do any early device init.
+   This module provides early firmware init, so it will conflict with other
+   modules that do any early device init.
 
 Module usage
 ============
@@ -40,5 +40,5 @@ connect to the device at a baud rate of 57600 (8N1).
 
 Dependencies
 ============
-  * ``pw_sys_io`` facade
-  * ``pw_preprocessor`` module
+- :ref:`module-pw_sys_io`
+- :ref:`module-pw_preprocessor`

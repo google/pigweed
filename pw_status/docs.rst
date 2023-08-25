@@ -392,21 +392,21 @@ intended behavior of "latching" to the first error.
 
 .. code-block:: cpp
 
-  Status overall_status;
-  for (Sector& sector : sectors) {
-    Status erase_status = sector.Erase();
-    if (!overall_status.ok()) {
-      overall_status = erase_status;
-    }
+   Status overall_status;
+   for (Sector& sector : sectors) {
+     Status erase_status = sector.Erase();
+     if (!overall_status.ok()) {
+       overall_status = erase_status;
+     }
 
-    if (erase_status.ok()) {
-      Status header_write_status = sector.WriteHeader();
-      if (!overall_status.ok()) {
-        overall_status = header_write_status;
-      }
-    }
-  }
-  return overall_status;
+     if (erase_status.ok()) {
+       Status header_write_status = sector.WriteHeader();
+       if (!overall_status.ok()) {
+         overall_status = header_write_status;
+       }
+     }
+   }
+   return overall_status;
 
 :cpp:class:`pw::Status` has a :cpp:func:`pw::Status::Update()` helper function
 that does exactly this to reduce visual clutter and succinctly highlight the
@@ -414,16 +414,16 @@ intended behavior.
 
 .. code-block:: cpp
 
-  Status overall_status;
-  for (Sector& sector : sectors) {
-    Status erase_status = sector.Erase();
-    overall_status.Update(erase_status);
+   Status overall_status;
+   for (Sector& sector : sectors) {
+     Status erase_status = sector.Erase();
+     overall_status.Update(erase_status);
 
-    if (erase_status.ok()) {
-      overall_status.Update(sector.WriteHeader());
-    }
-  }
-  return overall_status;
+     if (erase_status.ok()) {
+       overall_status.Update(sector.WriteHeader());
+     }
+   }
+   return overall_status;
 
 Unused result warnings
 ----------------------
@@ -460,16 +460,16 @@ bits).
 ``pw::StatusWithSize`` values may be created with functions similar to
 ``pw::Status``. For example,
 
-  .. code-block:: cpp
+.. code-block:: cpp
 
-    // An OK StatusWithSize with a size of 123.
-    StatusWithSize(123)
+   // An OK StatusWithSize with a size of 123.
+   StatusWithSize(123)
 
-    // A NOT_FOUND StatusWithSize with a size of 0.
-    StatusWithSize::NotFound()
+   // A NOT_FOUND StatusWithSize with a size of 0.
+   StatusWithSize::NotFound()
 
-    // A RESOURCE_EXHAUSTED StatusWithSize with a size of 10.
-    StatusWithSize::ResourceExhausted(10)
+   // A RESOURCE_EXHAUSTED StatusWithSize with a size of 10.
+   StatusWithSize::ResourceExhausted(10)
 
 ------
 PW_TRY
@@ -483,19 +483,19 @@ Example:
 
 .. code-block:: cpp
 
-  Status PwTryExample() {
-    PW_TRY(FunctionThatReturnsStatus());
-    PW_TRY(FunctionThatReturnsStatusWithSize());
+   Status PwTryExample() {
+     PW_TRY(FunctionThatReturnsStatus());
+     PW_TRY(FunctionThatReturnsStatusWithSize());
 
-    // Do something, only executed if both functions above return OK.
-  }
+     // Do something, only executed if both functions above return OK.
+   }
 
-  StatusWithSize PwTryWithSizeExample() {
-    PW_TRY_WITH_SIZE(FunctionThatReturnsStatus());
-    PW_TRY_WITH_SIZE(FunctionThatReturnsStatusWithSize());
+   StatusWithSize PwTryWithSizeExample() {
+     PW_TRY_WITH_SIZE(FunctionThatReturnsStatus());
+     PW_TRY_WITH_SIZE(FunctionThatReturnsStatusWithSize());
 
-    // Do something, only executed if both functions above return OK.
-  }
+     // Do something, only executed if both functions above return OK.
+   }
 
 ``PW_TRY_ASSIGN`` is for working with ``StatusWithSize`` objects in in functions
 that return Status. It is similar to ``PW_TRY`` with the addition of assigning
@@ -503,13 +503,13 @@ the size from the ``StatusWithSize`` on ok.
 
 .. code-block:: cpp
 
-  Status PwTryAssignExample() {
-    size_t size_value
-    PW_TRY_ASSIGN(size_value, FunctionThatReturnsStatusWithSize());
+   Status PwTryAssignExample() {
+     size_t size_value
+     PW_TRY_ASSIGN(size_value, FunctionThatReturnsStatusWithSize());
 
-    // Do something that uses size_value. size_value is only assigned and this
-    // following code executed if the PW_TRY_ASSIGN function above returns OK.
-  }
+     // Do something that uses size_value. size_value is only assigned and this
+     // following code executed if the PW_TRY_ASSIGN function above returns OK.
+   }
 
 ------
 Zephyr

@@ -22,16 +22,16 @@ information frames. These frames are encoded as follows:
 
 .. code-block:: text
 
-    _________________________________________
-    | | | |                          |    | |...
-    | | | |                          |    | |... [More frames]
-    |_|_|_|__________________________|____|_|...
-     F A C       Payload              FCS  F
+   _________________________________________
+   | | | |                          |    | |...
+   | | | |                          |    | |... [More frames]
+   |_|_|_|__________________________|____|_|...
+    F A C       Payload              FCS  F
 
-     F = flag byte (0x7e, the ~ character)
-     A = address field
-     C = control field
-     FCS = frame check sequence (CRC-32)
+    F = flag byte (0x7e, the ~ character)
+    A = address field
+    C = control field
+    FCS = frame check sequence (CRC-32)
 
 
 Encoding and sending data
@@ -40,13 +40,13 @@ This module first writes an initial frame delimiter byte (0x7E) to indicate the
 beginning of the frame. Before sending any of the payload data through serial,
 the special bytes are escaped:
 
-            +-------------------------+-----------------------+
-            | Unescaped Special Bytes | Escaped Special Bytes |
-            +=========================+=======================+
-            |           7E            |        7D 5E          |
-            +-------------------------+-----------------------+
-            |           7D            |        7D 5D          |
-            +-------------------------+-----------------------+
++-------------------------+-----------------------+
+| Unescaped Special Bytes | Escaped Special Bytes |
++=========================+=======================+
+|           7E            |        7D 5E          |
++-------------------------+-----------------------+
+|           7D            |        7D 5D          |
++-------------------------+-----------------------+
 
 The bytes of the payload are escaped and written in a single pass. The
 frame check sequence is calculated, escaped, and written after. After this, a

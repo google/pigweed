@@ -117,14 +117,14 @@ one tool to help identify and fix bugs early in development.
 Pigweed compiles with a strict set of warnings. The warnings include the
 following:
 
-  * ``-Wall`` and ``-Wextra`` -- Standard sets of compilation warnings, which
-    are recommended for all projects.
-  * ``-Wimplicit-fallthrough`` -- Requires explicit ``[[fallthrough]]``
-    annotations for fallthrough between switch cases. Prevents unintentional
-    fallthroughs if a ``break`` or ``return`` is forgotten.
-  * ``-Wundef`` -- Requires macros to be defined before using them. This
-    disables the standard, problematic behavior that replaces undefined (or
-    misspelled) macros with ``0``.
+* ``-Wall`` and ``-Wextra`` -- Standard sets of compilation warnings, which
+  are recommended for all projects.
+* ``-Wimplicit-fallthrough`` -- Requires explicit ``[[fallthrough]]``
+  annotations for fallthrough between switch cases. Prevents unintentional
+  fallthroughs if a ``break`` or ``return`` is forgotten.
+* ``-Wundef`` -- Requires macros to be defined before using them. This
+  disables the standard, problematic behavior that replaces undefined (or
+  misspelled) macros with ``0``.
 
 Unused variable and function warnings
 -------------------------------------
@@ -133,46 +133,46 @@ functions. Usually, the best way to address these warnings is to remove the
 unused items. In some circumstances, these cannot be removed, so the warning
 must be silenced. This is done in one of the following ways:
 
-  1. When possible, delete unused variables, functions, or class definitions.
-  2. If an unused entity must remain in the code, avoid giving it a name. A
-     common situation that triggers unused parameter warnings is implementing a
-     virtual function or callback. In C++, function parameters may be unnamed.
-     If desired, the variable name can remain in the code as a comment.
+1. When possible, delete unused variables, functions, or class definitions.
+2. If an unused entity must remain in the code, avoid giving it a name. A
+   common situation that triggers unused parameter warnings is implementing a
+   virtual function or callback. In C++, function parameters may be unnamed.
+   If desired, the variable name can remain in the code as a comment.
 
-     .. code-block:: cpp
+   .. code-block:: cpp
 
-       class BaseCalculator {
-        public:
-         virtual int DoMath(int number_1, int number_2, int number_3) = 0;
-       };
+      class BaseCalculator {
+       public:
+        virtual int DoMath(int number_1, int number_2, int number_3) = 0;
+      };
 
-       class Calculator : public BaseCalculator {
-         int DoMath(int number_1, int /* number_2 */, int) override {
-           return number_1 * 100;
-         }
-       };
+      class Calculator : public BaseCalculator {
+        int DoMath(int number_1, int /* number_2 */, int) override {
+          return number_1 * 100;
+        }
+      };
 
-  3. In C++, annotate unused entities with `[[maybe_unused]]
-     <https://en.cppreference.com/w/cpp/language/attributes/maybe_unused>`_ to
-     silence warnings.
+3. In C++, annotate unused entities with `[[maybe_unused]]
+   <https://en.cppreference.com/w/cpp/language/attributes/maybe_unused>`_ to
+   silence warnings.
 
-     .. code-block:: cpp
+   .. code-block:: cpp
 
-       // This variable is unused in certain circumstances.
-       [[maybe_unused]] int expected_size = size * 4;
-       #if OPTION_1
-       DoThing1(expected_size);
-       #elif OPTION_2
-       DoThing2(expected_size);
-       #endif
+      // This variable is unused in certain circumstances.
+      [[maybe_unused]] int expected_size = size * 4;
+      #if OPTION_1
+      DoThing1(expected_size);
+      #elif OPTION_2
+      DoThing2(expected_size);
+      #endif
 
-  4. As a final option, cast unused variables to ``void`` to silence these
-     warnings. Use ``static_cast<void>(unused_var)`` in C++ or
-     ``(void)unused_var`` in C.
+4. As a final option, cast unused variables to ``void`` to silence these
+   warnings. Use ``static_cast<void>(unused_var)`` in C++ or
+   ``(void)unused_var`` in C.
 
-     In C, silencing warnings on unused functions may require compiler-specific
-     attributes (``__attribute__((unused))``). Avoid this by removing the
-     functions or compiling with C++ and using ``[[maybe_unused]]``.
+   In C, silencing warnings on unused functions may require compiler-specific
+   attributes (``__attribute__((unused))``). Avoid this by removing the
+   functions or compiling with C++ and using ``[[maybe_unused]]``.
 
 Dealing with ``nodiscard`` return values
 ----------------------------------------
@@ -183,8 +183,8 @@ used.
 
 .. code-block:: cpp
 
-  // <tuple> defines std::ignore.
-  #include <tuple>
+   // <tuple> defines std::ignore.
+   #include <tuple>
 
-  DoThingWithStatus().IgnoreError();
-  std::ignore = DoThingWithReturnValue();
+   DoThingWithStatus().IgnoreError();
+   std::ignore = DoThingWithReturnValue();

@@ -3,10 +3,9 @@
 ------
 pw_i2c
 ------
-
 .. warning::
-  This module is under construction, not ready for use, and the documentation
-  is incomplete.
+   This module is under construction, not ready for use, and the documentation
+   is incomplete.
 
 pw_i2c contains interfaces and utility functions for using I2C.
 
@@ -15,12 +14,8 @@ Features
 
 pw::i2c::Initiator
 ------------------
-.. inclusive-language: disable
-
 .. doxygenclass:: pw::i2c::Initiator
    :members:
-
-.. inclusive-language: enable
 
 pw::i2c::Device
 ---------------
@@ -30,7 +25,6 @@ Common use case includes streaming arbitrary data (Read/Write). Only works
 with devices with a single device address.
 
 .. note::
-
    ``Device`` is intended to represent ownership of a specific responder.
    Individual transactions are atomic (as described under ``Initiator``), but
    there is no synchronization for sequences of transactions. Therefore, shared

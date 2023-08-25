@@ -13,97 +13,97 @@ That is where the duplicated ``<module>`` occurrences in file paths comes from.
 
 Example module structure
 ------------------------
-.. code-block:: python
+.. code-block:: text
 
-  pw_foo/...
+   pw_foo/...
 
-    docs.rst         # Docs landing page (required)
-    concepts.rst     # Conceptual docs (optional)
-    design.rst       # Design docs (optional)
-    guides.rst       # How-to guides (optional)
-    api.rst          # API reference (optional)
-    cli.rst          # CLI reference (optional)
-    gui.rst          # GUI reference (optional)
-    tutorials/*.rst  # Tutorials (optional)
+     docs.rst         # Docs landing page (required)
+     concepts.rst     # Conceptual docs (optional)
+     design.rst       # Design docs (optional)
+     guides.rst       # How-to guides (optional)
+     api.rst          # API reference (optional)
+     cli.rst          # CLI reference (optional)
+     gui.rst          # GUI reference (optional)
+     tutorials/*.rst  # Tutorials (optional)
 
-    BUILD.gn   # GN build required
-    BUILD      # Bazel build required
+     BUILD.gn   # GN build required
+     BUILD      # Bazel build required
 
-    # C++ public headers; the repeated module name is required
-    public/pw_foo/foo.h
-    public/pw_foo/baz.h
+     # C++ public headers; the repeated module name is required
+     public/pw_foo/foo.h
+     public/pw_foo/baz.h
 
-    # Exposed private headers go under internal/
-    public/pw_foo/internal/bar.h
-    public/pw_foo/internal/qux.h
+     # Exposed private headers go under internal/
+     public/pw_foo/internal/bar.h
+     public/pw_foo/internal/qux.h
 
-    # Public override headers must go in 'public_overrides'
-    public_overrides/gtest/gtest.h
-    public_overrides/string.h
+     # Public override headers must go in 'public_overrides'
+     public_overrides/gtest/gtest.h
+     public_overrides/string.h
 
-    # Private headers go into <module>_*/...
-    pw_foo_internal/zap.h
-    pw_foo_private/zip.h
-    pw_foo_secret/alxx.h
+     # Private headers go into <module>_*/...
+     pw_foo_internal/zap.h
+     pw_foo_private/zip.h
+     pw_foo_secret/alxx.h
 
-    # C++ implementations go in the root
-    foo_impl.cc
-    foo.cc
-    baz.cc
-    bar.cc
-    zap.cc
-    zip.cc
-    alxx.cc
+     # C++ implementations go in the root
+     foo_impl.cc
+     foo.cc
+     baz.cc
+     bar.cc
+     zap.cc
+     zip.cc
+     alxx.cc
 
-    # C++ tests also go in the root
-    foo_test.cc
-    bar_test.cc
-    zip_test.cc
+     # C++ tests also go in the root
+     foo_test.cc
+     bar_test.cc
+     zip_test.cc
 
-    # Python files go into 'py/<module>/...'
-    py/BUILD.gn     # Python packages are declared in GN using pw_python_package
-    py/setup.py     # Python files are structured as standard Python packages
-    py/foo_test.py  # Tests go in py/ but outside of the Python package
-    py/bar_test.py
-    py/pw_foo/__init__.py
-    py/pw_foo/__main__.py
-    py/pw_foo/bar.py
-    py/pw_foo/py.typed  # Indicates that this package has type annotations
+     # Python files go into 'py/<module>/...'
+     py/BUILD.gn     # Python packages are declared in GN using pw_python_package
+     py/setup.py     # Python files are structured as standard Python packages
+     py/foo_test.py  # Tests go in py/ but outside of the Python package
+     py/bar_test.py
+     py/pw_foo/__init__.py
+     py/pw_foo/__main__.py
+     py/pw_foo/bar.py
+     py/pw_foo/py.typed  # Indicates that this package has type annotations
 
-    # Rust crates go into 'rust/...'
-    rust/BUILD.bazel
-    rust/crate_one.rs          # Single file crates are in rust/<crate_name>.rs
-    rust/crate_two/lib.rs      # Multi-file crate's top level source in:
-                               #   rust/<crate>/lib.rs
-    rust/crate_two/mod_one.rs  # Multi-file crate's modules in:
-    rust/crate_two/mod_two.rs  #   rust/<crate>/<module_name>.rs
-                               # Prefer not using mod.rs files.
+     # Rust crates go into 'rust/...'
+     rust/BUILD.bazel
+     rust/crate_one.rs          # Single file crates are in rust/<crate_name>.rs
+     rust/crate_two/lib.rs      # Multi-file crate's top level source in:
+                                #   rust/<crate>/lib.rs
+     rust/crate_two/mod_one.rs  # Multi-file crate's modules in:
+     rust/crate_two/mod_two.rs  #   rust/<crate>/<module_name>.rs
+                                # Prefer not using mod.rs files.
 
-    # Go files go into 'go/...'
-    go/...
+     # Go files go into 'go/...'
+     go/...
 
-    # Examples go in examples/, mixing different languages
-    examples/demo.py
-    examples/demo.cc
-    examples/demo.go
-    examples/BUILD.gn
-    examples/BUILD
+     # Examples go in examples/, mixing different languages
+     examples/demo.py
+     examples/demo.cc
+     examples/demo.go
+     examples/BUILD.gn
+     examples/BUILD
 
-    # Size reports go under size_report/
-    size_report/BUILD.gn
-    size_report/base.cc
-    size_report/use_case_a.cc
-    size_report/use_case_b.cc
+     # Size reports go under size_report/
+     size_report/BUILD.gn
+     size_report/base.cc
+     size_report/use_case_a.cc
+     size_report/use_case_b.cc
 
-    # Protobuf definition files go into <module>_protos/...
-    pw_foo_protos/foo.proto
-    pw_foo_protos/internal/zap.proto
+     # Protobuf definition files go into <module>_protos/...
+     pw_foo_protos/foo.proto
+     pw_foo_protos/internal/zap.proto
 
-    # Other directories are fine, but should be private.
-    data/...
-    graphics/...
-    collection_of_tests/...
-    code_relating_to_subfeature/...
+     # Other directories are fine, but should be private.
+     data/...
+     graphics/...
+     collection_of_tests/...
+     code_relating_to_subfeature/...
 
 Module name
 -----------
@@ -133,10 +133,10 @@ Examples:
 
 .. code-block::
 
-  pw_foo/...
-    public/pw_foo/foo.h
-    public/pw_foo/a_header.h
-    public/pw_foo/baz.h
+   pw_foo/...
+     public/pw_foo/foo.h
+     public/pw_foo/a_header.h
+     public/pw_foo/baz.h
 
 For headers that must be exposed due to C++ limitations (i.e. are included from
 the public interface, but are not intended for use), place the headers in a
@@ -475,7 +475,7 @@ To create a new Pigweed module, follow the below steps.
 
 10. Add the new module to CMake build
 
-   - In ``/CMakeLists.txt`` add ``add_subdirectory(pw_new)``
+    - In ``/CMakeLists.txt`` add ``add_subdirectory(pw_new)``
 
 11. Run :ref:`module-pw_module-module-check`
 
