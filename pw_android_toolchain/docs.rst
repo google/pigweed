@@ -49,7 +49,7 @@ and ensure that ``current_cpu`` is set in the toolchain ``defaults``.
 
 For example:
 
-.. code::
+.. code-block::
 
    import("//build_overrides/pigweed.gni")
 
@@ -85,7 +85,7 @@ convenience, ``pw_generate_android_toolchains`` does not require that
 ``current_cpu`` is set. If any toolchain scope in the list does not set it, a
 toolchain for each supported target will be generated.
 
-.. code::
+.. code-block::
 
    # Generate arm_*, arm64_*, x64_*, and x86_* for each scope in the list.
    pw_generate_android_toolchains("target_toolchains) {

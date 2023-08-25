@@ -14,7 +14,7 @@ To use this target, Pigweed must be set up to build against the Raspberry Pi
 Pico SDK. This can be downloaded via ``pw package``, and then the build must be
 manually configured to point to the location of the downloaded SDK.
 
-.. code:: sh
+.. code-block:: sh
 
    pw package install pico_sdk
 
@@ -27,7 +27,7 @@ Linux
 On linux, you may need to update your udev rules at
 ``/etc/udev/rules.d/49-pico.rules`` to include the following:
 
-.. code:: none
+.. code-block:: none
 
    SUBSYSTEMS=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0004", MODE:="0666"
    KERNEL=="ttyACM*", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0004", MODE:="0666"
@@ -44,7 +44,7 @@ baud rate of 115200.
 Once the pico SDK is configured, the Pi Pico will build as part of the default
 GN build:
 
-.. code:: sh
+.. code-block:: sh
 
    ninja -C out
 
@@ -66,7 +66,7 @@ Unlike some other targets, the RP2040 does not automatically run tests on boot.
 To run a test, flash it to the RP2040 and connect to the serial port and then
 press the spacebar to start the test:
 
-.. code:: none
+.. code-block:: none
 
    $ python -m serial.tools.miniterm --raw /dev/ttyACM0 115200
    --- Miniterm on /dev/cu.usbmodem142401  115200,8,N,1 ---
@@ -126,7 +126,7 @@ attached Pi Pico running an application with USB serial enabled, then using
 it for testing. To override this behavior, provide a custom server configuration
 file with ``--server-config``.
 
-.. code:: sh
+.. code-block:: sh
 
    $ python -m rp2040_utils.unit_test_server
 
@@ -146,7 +146,7 @@ By default, this hardware target has incremental testing disabled. Enabling the
 ``pw_targets_ENABLE_RP2040_TEST_RUNNER`` build arg tells GN to send requests to
 a running ``rp2040_utils.unit_test_server``.
 
-.. code:: sh
+.. code-block:: sh
 
    $ gn args out
    # Modify and save the args file to use pw_target_runner.

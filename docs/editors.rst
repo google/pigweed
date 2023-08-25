@@ -171,14 +171,14 @@ compilation databases that will work smoothly with ``clangd``.
 
 Once you have a compilation database, run this command to process it:
 
-.. code:: bash
+.. code-block:: bash
 
    pw ide cpp --process <path to compilation database>
 
 Or better yet, just let ``pw_ide`` find any compilation databases you have
 in your build and process them:
 
-.. code:: bash
+.. code-block:: bash
 
    pw ide cpp --process
 
@@ -202,7 +202,7 @@ Setting the Target to Use for Analysis
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Discover which targets are available for code analysis:
 
-.. code::
+.. code-block::
 
    $ pw ide cpp --list
 
@@ -213,7 +213,7 @@ Discover which targets are available for code analysis:
 
 Select the target you want to use for code analysis:
 
-.. code::
+.. code-block::
 
    $ pw ide cpp --set pw_strict_host_gcc_debug
 
@@ -221,7 +221,7 @@ Select the target you want to use for code analysis:
 
 Check which target is currently used for code analysis:
 
-.. code::
+.. code-block::
 
    $ pw ide cpp
 

@@ -51,7 +51,7 @@ STM32F429I Discovery board with a specified serial number.
 
 **server_config.txt**
 
-.. code:: text
+.. code-block:: text
 
   runner {
     command: "stm32f429i_disc1_unit_test_runner"
@@ -75,7 +75,7 @@ Running the server
 To start the standalone server, run the ``pw_target_runner_server`` program and
 point it to your config file.
 
-.. code:: text
+.. code-block:: text
 
   $ pw_target_runner_server -config server_config.txt -port 8080
 
@@ -85,7 +85,7 @@ Sending requests
 To request the server to run an executable, run the ``pw_target_runner_client``,
 specifying the path to the executable through a ``-binary`` option.
 
-.. code:: text
+.. code-block:: text
 
   $ pw_target_runner_client -host localhost -port 8080 -binary /path/to/my/test.elf
 

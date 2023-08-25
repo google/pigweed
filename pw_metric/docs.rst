@@ -44,7 +44,7 @@ and metrics might look like. In this case, the object's
 ``MySubsystem::metrics()`` member is not globally registered; the user is on
 their own for combining this subsystem's metrics with others.
 
-.. code::
+.. code-block::
 
   #include "pw_metric/metric.h"
 
@@ -67,7 +67,7 @@ their own for combining this subsystem's metrics with others.
 The metrics subsystem has no canonical output format at this time, but a JSON
 dump might look something like this:
 
-.. code:: none
+.. code-block:: none
 
   {
     "my_subsystem" : {
@@ -88,7 +88,7 @@ this use case. For example:
 
 **Before instrumenting:**
 
-.. code::
+.. code-block::
 
   // This code was passed down from generations of developers before; no one
   // knows what it does or how it works. But it needs to be fixed!
@@ -102,7 +102,7 @@ this use case. For example:
 
 **After instrumenting:**
 
-.. code::
+.. code-block::
 
   #include "pw_metric/global.h"
   #include "pw_metric/metric.h"
@@ -211,7 +211,7 @@ The group object is 16 bytes on 32-bit platforms.
 
       Recursively dump a metrics group to ``pw_log``. Produces output like:
 
-      .. code:: none
+      .. code-block:: none
 
          "$6doqFw==": {
            "$05OCZw==": {
@@ -228,7 +228,7 @@ The group object is 16 bytes on 32-bit platforms.
       the Pigweed detokenizer. With a detokenizing-enabled logger, you could get
       something like:
 
-      .. code:: none
+      .. code-block:: none
 
          "i2c_1": {
            "gyro": {
@@ -276,7 +276,7 @@ tokenizing the metric and group names.
 
    1. At global scope:
 
-      .. code::
+      .. code-block::
 
          PW_METRIC(foo, "foo", 15.5f);
 
@@ -286,7 +286,7 @@ tokenizing the metric and group names.
 
    2. At local function or member function scope:
 
-      .. code::
+      .. code-block::
 
          void MyFunc() {
            PW_METRIC(foo, "foo", 15.5f);
@@ -296,7 +296,7 @@ tokenizing the metric and group names.
 
    3. At member level inside a class or struct:
 
-      .. code::
+      .. code-block::
 
          struct MyStructy {
            void DoSomething() {
@@ -309,7 +309,7 @@ tokenizing the metric and group names.
    You can also put a metric into a group with the macro. Metrics can belong to
    strictly one group, otherwise an assertion will fail. Example:
 
-   .. code::
+   .. code-block::
 
       PW_METRIC_GROUP(my_group, "my_group");
       PW_METRIC(my_group, foo, "foo", 0.2f);
@@ -335,7 +335,7 @@ tokenizing the metric and group names.
 
    Example:
 
-   .. code::
+   .. code-block::
 
       PW_METRIC_GROUP(my_group, "my_group");
       PW_METRIC(my_group, foo, "foo", 0.2f);
@@ -349,7 +349,7 @@ tokenizing the metric and group names.
 
    Example:
 
-   .. code::
+   .. code-block::
 
       #include "pw_metric/metric.h"
       #include "pw_metric/global.h"
@@ -379,7 +379,7 @@ tokenizing the metric and group names.
 
    Example:
 
-   .. code::
+   .. code-block::
 
       #include "pw_metric/metric.h"
       #include "pw_metric/global.h"
@@ -409,7 +409,7 @@ to a pattern where rich/large objects are statically constructed at global
 scope, then interacted with via tasks or threads. For example, consider a
 hypothetical global ``Uart`` object:
 
-.. code::
+.. code-block::
 
    class Uart {
     public:
@@ -432,7 +432,7 @@ the UART to for example gain insight into which operations are triggering lots
 of data transfer. When adding metrics to the above imaginary UART object, one
 might consider the following approach:
 
-.. code::
+.. code-block::
 
    class Uart {
     public:
@@ -480,7 +480,7 @@ phases: The constructor where references are stored, and a ``Init()`` function
 which is called after all static constructors have run. This approach works
 correctly, even when the objects are allocated globally:
 
-.. code::
+.. code-block::
 
    class Uart {
     public:
@@ -530,7 +530,7 @@ The order of declaring in-class groups and metrics matters if the metrics are
 within a group declared inside the class. For example, the following class will
 work fine:
 
-.. code::
+.. code-block::
 
    #include "pw_metric/metric.h"
 
@@ -548,7 +548,7 @@ work fine:
 but the following one will not since the group is constructed after the metrics
 (and will result in a compile error):
 
-.. code::
+.. code-block::
 
    #include "pw_metric/metric.h"
 
@@ -602,7 +602,7 @@ there are no helper functions for this, so be careful.
 
 Below is an example that **is incorrect**. Don't do what follows!
 
-.. code::
+.. code-block::
 
    #include "pw_metric/metric.h"
 
@@ -640,7 +640,7 @@ Batching the returned metrics avoids requiring a large buffer or large RPC MTU.
 The returned metric objects have flattened paths to the root. For example, the
 returned metrics (post detokenization and jsonified) might look something like:
 
-.. code:: none
+.. code-block:: none
 
    {
      "/i2c1/failed_txns": 17,
@@ -666,7 +666,7 @@ To expose a ``MetricService`` in your application, do the following:
 
 For example:
 
-.. code::
+.. code-block::
 
    #include "pw_rpc/server.h"
    #include "pw_metric/metric.h"

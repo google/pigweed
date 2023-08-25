@@ -15,13 +15,13 @@ Once the AmbiqSuite SDK package has been downloaded and extracted, the user
 needs to set ``dir_pw_third_party_ambiq_SDK`` build arg to the location of
 extracted directory:
 
-.. code:: sh
+.. code-block:: sh
 
   $ gn args out
 
 Then add the following lines to that text file:
 
-.. code::
+.. code-block::
 
   # Path to the extracted AmbiqSuite SDK package.
   dir_pw_third_party_ambiq_SDK = "/path/to/AmbiqSuite_R4.3.0"
@@ -34,7 +34,7 @@ on-board J-Link Debug Probe (Virtual COM Port) at a baud rate of 115200.
 Once the AmbiqSuite SDK is configured, the unit tests for the Apollo4 board
 can be build with a command:
 
-.. code:: sh
+.. code-block:: sh
 
   ninja -C out apollo4
 
@@ -47,7 +47,7 @@ a command line using ``JLinkExe`` program. The latter requires a script which
 describes the steps of programming. Here is an example bash script to flash
 an Apollo4 board using ``JLinkExe`` program:
 
-.. code:: sh
+.. code-block:: sh
 
   #!/bin/bash
   function flash_jlink()
@@ -71,7 +71,7 @@ an Apollo4 board using ``JLinkExe`` program:
 
 Then call this script:
 
-.. code:: sh
+.. code-block:: sh
 
   bash ./flash_amap4.sh ./out/apollo4_debug/obj/pw_log/test/basic_log_test.elf
 
@@ -82,7 +82,7 @@ Debugging
 Debugging can be done using the on-board J-Link Debug Probe. First you need to
 start ``JLinkGDBServer`` and connect to the on-board J-Link Debug Probe.
 
-.. code:: sh
+.. code-block:: sh
 
   JLinkGDBServer -select USB      \
             -device AMAP42KK-KBR  \
@@ -102,13 +102,13 @@ The ``-rtos`` option is for `Thread Aware Debugging`_.
 Then on the second terminal window use ``arm-none-eabi-gdb`` to load an executable
 into the target, debug, and run it.
 
-.. code:: sh
+.. code-block:: sh
 
   arm-none-eabi-gdb -q out/apollo4_debug/obj/pw_log/test/basic_log_test.elf
 
 This can be combined with a simple bash script. Here is an example of one:
 
-.. code:: sh
+.. code-block:: sh
 
   #!/bin/bash
 
@@ -160,6 +160,6 @@ This can be combined with a simple bash script. Here is an example of one:
 
 Then call this script:
 
-.. code:: sh
+.. code-block:: sh
 
   bash ./debug_amap4.sh ./out/apollo4_debug/obj/pw_log/test/basic_log_test.elf

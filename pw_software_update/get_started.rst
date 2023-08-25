@@ -21,7 +21,7 @@ and verified using ``pw update ...`` commands.
    ``pw update`` command is not yet visible outside the Pigweed
    directory.
 
-.. code:: bash
+.. code-block:: bash
 
     $ cd ~/pigweed
     $ source activate.sh
@@ -38,7 +38,7 @@ and verified using ``pw update ...`` commands.
    `Google Cloud KMS <https://cloud.google.com/security-key-management>`_)
    to generate, control access to, and log usage of software signing keys.
 
-.. code:: bash
+.. code-block:: bash
 
     $ mkdir keys
     $ pw update generate-key keys/root_key
@@ -54,7 +54,7 @@ and verified using ``pw update ...`` commands.
 3. Now that we have the keys, let's find them an owner by creating the root
    metadata.
 
-.. code:: bash
+.. code-block:: bash
 
     # Assign a single key to each "root" and "targets" roles.
     $ pw update create-root-metadata --append-root-key keys/root_key.pub \
@@ -69,7 +69,7 @@ and verified using ``pw update ...`` commands.
 
 4. Now we are ready to create a bundle.
 
-.. code:: bash
+.. code-block:: bash
 
     # Start with an empty bundle.
     $ pw update create-empty-bundle my_bundle.pb
@@ -109,7 +109,7 @@ and verified using ``pw update ...`` commands.
    Here we are using ``python3 -m pw_software_update.verify`` because the
    ``pw verify-bundle`` command is WIP.
 
-.. code:: bash
+.. code-block:: bash
 
     $ python3 -m pw_software_update.verify --incoming my_bundle.pb
        Verifying: my_bundle.pb

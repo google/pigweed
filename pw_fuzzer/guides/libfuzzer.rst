@@ -98,7 +98,7 @@ Step 1: Write a fuzz target function
 To write a fuzzer, a developer needs to write a `fuzz target function`_
 following the guidelines given by libFuzzer:
 
-.. code:: cpp
+.. code-block:: cpp
 
   extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     DoSomethingInterestingWithMyAPI(data, size);
@@ -245,7 +245,7 @@ runtimes when building.
 
       Select a sanitizer runtime. See LLVM for `valid options`_.
 
-      .. code:: sh
+      .. code-block:: sh
 
         $ gn gen out --args='pw_toolchain_SANITIZERS=["address"]'
 
@@ -254,7 +254,7 @@ runtimes when building.
 
       Build the fuzzers using ``ninja`` directly.
 
-      .. code:: sh
+      .. code-block:: sh
 
         $ ninja -C out fuzzers
 
@@ -271,7 +271,7 @@ runtimes when building.
       :ref:`fuzzing toolchain<module-pw_fuzzer-guides-using_libfuzzer-toolchain>`
       via a ``--config`` when building fuzzers.
 
-      .. code:: sh
+      .. code-block:: sh
 
         $ bazel build //my_module:my_fuzzer --config=asan-libfuzzer
 
@@ -287,7 +287,7 @@ Step 5: Running the fuzzer locally
       Additional `libFuzzer options`_ and `corpus`_ arguments can be passed on
       the command line. For example:
 
-      .. code:: sh
+      .. code-block:: sh
 
         $ out/host_clang_fuzz/obj/my_module/bin/my_fuzzer -seed=1 path/to/corpus
 
@@ -308,14 +308,14 @@ Step 5: Running the fuzzer locally
       `libFuzzer options`_ and `corpus`_ arguments can be passed on the command
       line. For example:
 
-      .. code:: sh
+      .. code-block:: sh
 
         $ bazel run //my_module:my_fuzzer --config=asan-libfuzzer -- \
           -seed=1 path/to/corpus
 
 Running the fuzzer should produce output similar to the following:
 
-.. code::
+.. code-block::
 
    INFO: Seed: 305325345
    INFO: Loaded 1 modules   (46 inline 8-bit counters): 46 [0x38dfc0, 0x38dfee),

@@ -25,20 +25,20 @@ Building
 To build for this Pigweed target, simply build the top-level "android" Ninja
 target. You can set Pigweed build options using ``gn args out`` or by running:
 
-.. code:: sh
+.. code-block:: sh
 
   gn gen out --args='
     pw_android_toolchain_NDK_PATH="/path/to/android/ndk"'
 
 On a Windows machine it's easier to run:
 
-.. code:: sh
+.. code-block:: sh
 
   gn args out
 
 That will open a text file where you can paste the args in:
 
-.. code:: text
+.. code-block:: text
 
   pw_android_toolchain_NDK_PATH = "/path/to/android/ndk"
 
@@ -46,7 +46,7 @@ Save the file and close the text editor.
 
 Then build with:
 
-.. code:: sh
+.. code-block:: sh
 
   ninja -C out android
 
@@ -55,12 +55,12 @@ optimization level, currently arm, arm64, x64, and x86.
 
 To build for a specific CPU target only, at the default optimization level:
 
-.. code:: sh
+.. code-block:: sh
 
   ninja -C out arm64_android
 
 Or to build for a specific CPU target and optimization level:
 
-.. code:: sh
+.. code-block:: sh
 
   ninja -C out arm64_android_size_optimized

@@ -18,7 +18,7 @@ Examples
 ========
 A simple example illustrating the usage:
 
-.. code:: C++
+.. code-block:: C++
 
    #include "pw_i2c/address.h"
    #include "pw_i2c/device.h"
@@ -41,7 +41,7 @@ A simple example illustrating the usage:
 In real-world use cases, you may want to create an initiator singleton. This
 can be done by initializing a function-local static variable with a lambda:
 
-.. code:: C++
+.. code-block:: C++
 
    #include <functional>
 

@@ -16,14 +16,14 @@ Installation
 -------------
 If you have a bundler set up, you can install ``pigweedjs`` in your web application by:
 
-.. code:: bash
+.. code-block:: bash
 
    $ npm install --save pigweedjs
 
 
 After installing, you can import modules from ``pigweedjs`` in this way:
 
-.. code:: javascript
+.. code-block:: javascript
 
    import { pw_rpc, pw_tokenizer, Device, WebSerial } from 'pigweedjs';
 
@@ -33,7 +33,7 @@ Import Directly in HTML
 If you don't want to set up a bundler, you can also load Pigweed directly in
 your HTML page by:
 
-.. code:: html
+.. code-block:: html
 
    <script src="https://unpkg.com/pigweedjs/dist/index.umd.js"></script>
    <script>
@@ -50,7 +50,7 @@ instructions on how to build the demo and try things out.
 ``pigweedjs`` provides a ``Device`` API which simplifies common tasks. Here is
 an example to connect to device and call ``EchoService.Echo`` RPC service.
 
-.. code:: html
+.. code-block:: html
 
    <h1>Hello Pigweed</h1>
    <button onclick="connect()">Connect</button>
@@ -79,7 +79,7 @@ pw_system demo uses ``pw_log_rpc``; an RPC-based logging solution. pw_system
 also uses pw_tokenizer to tokenize strings and save device space. Below is an
 example that streams logs using the ``Device`` API.
 
-.. code:: html
+.. code-block:: html
 
    <h1>Hello Pigweed</h1>
    <button onclick="connect()">Connect</button>
@@ -110,7 +110,7 @@ example that streams logs using the ``Device`` API.
 The above example requires a token database in CSV format. You can generate one
 from the pw_system's ``.elf`` file by running:
 
-.. code:: bash
+.. code-block:: bash
 
    $ pw_tokenizer/py/pw_tokenizer/database.py create \
    --database db.csv out/stm32f429i_disc1_stm32cube.size_optimized/obj/pw_system/bin/system_example.elf
@@ -154,7 +154,7 @@ To help with connecting to WebSerial and listening for serial data, a helper
 class is also included under ``WebSerial.WebSerialTransport``. Here is an
 example usage:
 
-.. code:: javascript
+.. code-block:: javascript
 
    import { WebSerial, pw_hdlc } from 'pigweedjs';
 
@@ -197,7 +197,7 @@ Pigweed includes a web console that demonstrates `pigweedjs` usage in a
 React-based web app. Web console includes a log viewer and a REPL that supports
 autocomplete. Here's how to run the web console locally:
 
-.. code:: bash
+.. code-block:: bash
 
    $ cd pw_web/webconsole
    $ npm install
@@ -213,7 +213,7 @@ supports defining your own log source.
 The component is composed of the component itself and a log source. Here is a
 simple example app that uses a mock log source:
 
-.. code:: html
+.. code-block:: html
 
    <div id="log-viewer-container"></div>
    <script src="https://unpkg.com/pigweedjs/dist/logging.umd.js"></script>
@@ -236,7 +236,7 @@ log entries.
 It also comes with an RPC log source with support for detokenization. Here is an
 example app using that:
 
-.. code:: html
+.. code-block:: html
 
    <div id="log-viewer-container"></div>
    <script src="https://unpkg.com/pigweedjs/dist/index.umd.js"></script>
@@ -265,7 +265,7 @@ You can define a custom log source that works with the log viewer component by
 just extending the abstract `LogSource` class and emitting the `logEntry` events
 like this:
 
-.. code:: typescript
+.. code-block:: typescript
 
   import { LogSource, LogEntry, Severity } from 'pigweedjs/logging';
 

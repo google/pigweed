@@ -23,7 +23,7 @@ HAL. The supported repositories can be downloaded via ``pw package``, and then
 the build must be manually configured to point to the locations the repositories
 were downloaded to.
 
-.. code:: sh
+.. code-block:: sh
 
    pw package install nanopb
    pw package install freertos
@@ -40,13 +40,13 @@ were downloaded to.
    Instead of the ``gn gen out`` with args set on the command line above you can
    run:
 
-   .. code:: sh
+   .. code-block:: sh
 
       gn args out
 
    Then add the following lines to that text file:
 
-   .. code::
+   .. code-block::
 
       dir_pw_third_party_nanopb = getenv("PW_PACKAGE_ROOT") + "/nanopb"
       dir_pw_third_party_freertos = getenv("PW_PACKAGE_ROOT") + "/freertos"
@@ -60,7 +60,7 @@ flashed to a device with the following commands:
 
 **Build**
 
-.. code:: sh
+.. code-block:: sh
 
    ninja -C out pw_system_demo
 
@@ -82,7 +82,7 @@ flashed to a device with the following commands:
 
   **Install RaspberryPi's OpenOCD Fork:**
 
-  .. code:: sh
+  .. code-block:: sh
 
      git clone https://github.com/raspberrypi/openocd.git \
        --branch picoprobe \
@@ -99,7 +99,7 @@ flashed to a device with the following commands:
 
   **Setup udev rules (Linux only):**
 
-  .. code:: sh
+  .. code-block:: sh
 
      cat <<EOF > 49-picoprobe.rules
      SUBSYSTEMS=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000[43a]", MODE:="0666"
@@ -110,7 +110,7 @@ flashed to a device with the following commands:
 
   **Flash the Pico:**
 
-  .. code:: sh
+  .. code-block:: sh
 
      ~/apps/openocd/bin/openocd -f ~/apps/openocd/share/openocd/scripts/interface/picoprobe.cfg -f ~/apps/openocd/share/openocd/scripts/target/rp2040.cfg -c 'program out/rp2040_pw_system.size_optimized/obj/pw_system/bin/system_example.elf verify reset exit'
 
@@ -119,7 +119,7 @@ flashed to a device with the following commands:
 Once the board has been flashed, you can connect to it and send RPC commands
 via the Pigweed console:
 
-.. code:: sh
+.. code-block:: sh
 
    pw-system-console -d /dev/{ttyX} -b 115200 \
      --proto-globs pw_rpc/echo.proto \
@@ -132,7 +132,7 @@ may look like ``ttyACM0``, and on a Mac it may look like ``cu.usbmodem***``.
 When the console opens, try sending an Echo RPC request. You should get back
 the same message you sent to the device.
 
-.. code:: pycon
+.. code-block:: pycon
 
    >>> device.rpcs.pw.rpc.EchoService.Echo(msg="Hello, Pigweed!")
    (Status.OK, pw.rpc.EchoMessage(msg='Hello, Pigweed!'))
@@ -140,13 +140,13 @@ the same message you sent to the device.
 You can also try out our thread snapshot RPC service, which should return a
 stack usage overview of all running threads on the device in Host Logs.
 
-.. code:: pycon
+.. code-block:: pycon
 
    >>> device.snapshot_peak_stack_usage()
 
 Example output:
 
-.. code::
+.. code-block::
 
    20220826 09:47:22  INF  PendingRpc(channel=1, method=pw.thread.ThreadSnapshotService.GetPeakStackUsage) completed: Status.OK
    20220826 09:47:22  INF  Thread State

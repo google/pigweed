@@ -114,7 +114,7 @@ The tokenization macros above cannot be used inside other expressions.
 .. admonition:: **Yes**: Assign :c:macro:`PW_TOKENIZE_STRING` to a ``constexpr`` variable.
   :class: checkmark
 
-  .. code:: cpp
+  .. code-block:: cpp
 
     constexpr uint32_t kGlobalToken = PW_TOKENIZE_STRING("Wowee Zowee!");
 
@@ -125,7 +125,7 @@ The tokenization macros above cannot be used inside other expressions.
 .. admonition:: **No**: Use :c:macro:`PW_TOKENIZE_STRING` in another expression.
   :class: error
 
-  .. code:: cpp
+  .. code-block:: cpp
 
    void BadExample() {
      ProcessToken(PW_TOKENIZE_STRING("This won't compile!"));
@@ -152,7 +152,7 @@ special function variables like ``__func__``.
 .. admonition:: **Yes**: Use :c:macro:`PW_TOKENIZE_STRING_EXPR` within other expressions.
   :class: checkmark
 
-  .. code:: cpp
+  .. code-block:: cpp
 
     void GoodExample() {
       ProcessToken(PW_TOKENIZE_STRING_EXPR("This will compile!"));
@@ -161,7 +161,7 @@ special function variables like ``__func__``.
 .. admonition:: **No**: Assign :c:macro:`PW_TOKENIZE_STRING_EXPR` to a ``constexpr`` variable.
   :class: error
 
-  .. code:: cpp
+  .. code-block:: cpp
 
      constexpr uint32_t wont_work = PW_TOKENIZE_STRING_EXPR("This won't compile!"));
 
@@ -170,7 +170,7 @@ special function variables like ``__func__``.
 .. admonition:: **No**: Tokenize ``__func__`` in :c:macro:`PW_TOKENIZE_STRING_EXPR`.
   :class: error
 
-  .. code:: cpp
+  .. code-block:: cpp
 
     void BadExample() {
       // This compiles, but __func__ will not be the outer function's name, and

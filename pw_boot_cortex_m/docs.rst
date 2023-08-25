@@ -29,7 +29,7 @@ Sequence
 The high level pw_boot_cortex_m boot sequence looks like the following
 pseudo-code invocation of the user-implemented functions:
 
-.. code:: cpp
+.. code-block:: cpp
 
    void pw_boot_Entry() {  // Boot entry point.
      // Set VTOR.

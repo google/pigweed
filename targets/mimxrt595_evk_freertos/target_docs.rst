@@ -32,7 +32,7 @@ the manifest file within the unpacked SDK, and then setting the
 ``pw_third_party_mcuxpresso_SDK`` to the ``sdk`` source set within the
 Pigweed target directory.
 
-.. code:: sh
+.. code-block:: sh
 
   $ gn args out
   # Modify and save the args file to use the sample SDK.
@@ -42,7 +42,7 @@ Pigweed target directory.
 Step 3: Install Freertos Source and Configure Location
 ======================================================
 
-.. code:: sh
+.. code-block:: sh
 
   pw package install freertos
 
@@ -50,7 +50,7 @@ Step 3: Install Freertos Source and Configure Location
 
 Then add the following line to that text file:
 
-.. code::
+.. code-block::
 
     dir_pw_third_party_freertos = getenv("PW_PACKAGE_ROOT") + "/freertos"
 
@@ -60,7 +60,7 @@ Building
 Once configured, to build for this Pigweed target, build the top-level
 "mimxrt595_freertos" Ninja target.
 
-.. code:: sh
+.. code-block:: sh
 
   $ ninja -C out mimxrt595_freertos
 

@@ -225,7 +225,7 @@ All loops and conditional statements must use braces, and be on their own line.
 .. admonition:: **Yes**: Always use braces for line conditionals and loops:
    :class: checkmark
 
-   .. code:: cpp
+   .. code-block:: cpp
 
       while (SomeCondition()) {
         x += 2;
@@ -238,7 +238,7 @@ All loops and conditional statements must use braces, and be on their own line.
 .. admonition:: **No**: Missing braces
    :class: error
 
-   .. code:: cpp
+   .. code-block:: cpp
 
       while (SomeCondition())
         x += 2;
@@ -248,7 +248,7 @@ All loops and conditional statements must use braces, and be on their own line.
 .. admonition:: **No**: Statement on same line as condition
    :class: error
 
-   .. code:: cpp
+   .. code-block:: cpp
 
       while (SomeCondition()) { x += 2; }
       if (OtherCondition()) { DoTheThing(); }
@@ -259,7 +259,7 @@ The syntax ``while (true)`` is preferred over ``for (;;)`` for infinite loops.
 .. admonition:: **Yes**:
    :class: checkmark
 
-   .. code:: cpp
+   .. code-block:: cpp
 
       while (true) {
         DoSomethingForever();
@@ -268,7 +268,7 @@ The syntax ``while (true)`` is preferred over ``for (;;)`` for infinite loops.
 .. admonition:: **No**:
    :class: error
 
-   .. code:: cpp
+   .. code-block:: cpp
 
       for (;;) {
         DoSomethingForever();
@@ -308,7 +308,7 @@ The guidance applies in two cases:
    at the bottom and de-dentend.
    :class: checkmark
 
-   .. code:: cpp
+   .. code-block:: cpp
 
       Status DoSomething(Parameter parameter) {
         // Parameter validation first; detecting incoming use errors.
@@ -339,7 +339,7 @@ The guidance applies in two cases:
    the early bail structure; so pay close attention.
    :class: error
 
-   .. code:: cpp
+   .. code-block:: cpp
 
       Status DoSomething(Parameter parameter) {
         // Parameter validation first; detecting incoming use errors.
@@ -365,7 +365,7 @@ The guidance applies in two cases:
    the bottom and de-dentend.
    :class: checkmark
 
-   .. code:: cpp
+   .. code-block:: cpp
 
       for (int i = 0; i < LoopSize(); ++i) {
         // Early skip of item based on edge condition.
@@ -390,7 +390,7 @@ The guidance applies in two cases:
    main purpose of the loop versus what is edge case handling.
    :class: error
 
-   .. code:: cpp
+   .. code-block:: cpp
 
       for (int i = 0; i < LoopSize(); ++i) {
         if (CommonCase()) {
@@ -420,7 +420,7 @@ and standardize loop/function structure.
 .. admonition:: **Yes**: No else after return or continue
    :class: checkmark
 
-   .. code:: cpp
+   .. code-block:: cpp
 
       // Note lack of else block due to return.
       if (Failure()) {
@@ -443,7 +443,7 @@ and standardize loop/function structure.
 .. admonition:: **No**: Else after return needlessly creeps right
    :class: error
 
-   .. code:: cpp
+   .. code-block:: cpp
 
       if (Failure()) {
         DoTheThing();
@@ -989,7 +989,7 @@ Headings
 Use headings according to the following hierarchy, with the shown characters
 for the ReST heading syntax.
 
-.. code:: rst
+.. code-block:: rst
 
    ==================================
    Document Title: Two Bars of Equals
@@ -1030,7 +1030,7 @@ Do not put blank lines after headings.
 .. admonition:: **Yes**: No blank after heading
    :class: checkmark
 
-   .. code:: rst
+   .. code-block:: rst
 
       Here is a heading
       -----------------
@@ -1039,7 +1039,7 @@ Do not put blank lines after headings.
 .. admonition:: **No**: Unnecessary blank line
    :class: error
 
-   .. code:: rst
+   .. code-block:: rst
 
       Here is a heading
       -----------------
@@ -1051,7 +1051,7 @@ Do not put multiple blank lines before a heading.
 .. admonition:: **Yes**: Just one blank after section content before the next heading
    :class: checkmark
 
-   .. code:: rst
+   .. code-block:: rst
 
       There is some text here in the section before the next. It's just here to
       illustrate the spacing standard. Note that there is just one blank line
@@ -1064,7 +1064,7 @@ Do not put multiple blank lines before a heading.
 .. admonition:: **No**: Extra blank lines
    :class: error
 
-   .. code:: rst
+   .. code-block:: rst
 
       There is some text here in the section before the next. It's just here to
       illustrate the spacing standard. Note that there are too many blank lines
@@ -1084,7 +1084,7 @@ content. This aligns the directive content with the directive name.
 .. admonition:: **Yes**: Three space indent for directives; and nested
    :class: checkmark
 
-   .. code:: none
+   .. code-block:: none
 
       Here is a paragraph that has some content. After this content is a
       directive.
@@ -1105,7 +1105,7 @@ content. This aligns the directive content with the directive name.
    for directives
    :class: error
 
-   .. code:: none
+   .. code-block:: none
 
       Here is a paragraph with some content.
 
@@ -1121,7 +1121,7 @@ content. This aligns the directive content with the directive name.
 .. admonition:: **No**: Missing blank between directive and content.
    :class: error
 
-   .. code:: none
+   .. code-block:: none
 
       Here is a paragraph with some content.
 
@@ -1628,7 +1628,7 @@ Pigweed commit messages should conform to the following style:
 .. admonition:: **Yes**:
    :class: checkmark
 
-   .. code:: none
+   .. code-block:: none
 
       pw_some_module: Short capitalized description
 
@@ -1641,7 +1641,7 @@ Pigweed commit messages should conform to the following style:
 .. admonition:: **Yes**: Small number of modules affected; use {} syntax.
    :class: checkmark
 
-   .. code:: none
+   .. code-block:: none
 
       pw_{foo, bar, baz}: Change something in a few places
 
@@ -1652,14 +1652,14 @@ Pigweed commit messages should conform to the following style:
    nested, so they get a ``/`` character.
    :class: checkmark
 
-   .. code:: none
+   .. code-block:: none
 
       targets/xyz123: Tweak support for XYZ's PQR
 
 .. admonition:: **Yes**: Uses imperative style for subject and text.
    :class: checkmark
 
-   .. code:: none
+   .. code-block:: none
 
       pw_something: Add foo and bar functions
 
@@ -1668,7 +1668,7 @@ Pigweed commit messages should conform to the following style:
 .. admonition:: **No**: Uses non-imperative style for subject and text.
    :class: error
 
-   .. code:: none
+   .. code-block:: none
 
       pw_something: Adds more things
 
@@ -1679,7 +1679,7 @@ Pigweed commit messages should conform to the following style:
    single CL. Prefer smaller CLs, but larger CLs are a practical reality.
    :class: checkmark
 
-   .. code:: none
+   .. code-block:: none
 
       pw_complicated_module: Pre-work for refactor
 
@@ -1694,7 +1694,7 @@ Pigweed commit messages should conform to the following style:
 .. admonition:: **No**: Run on paragraph instead of bulleted list
    :class: error
 
-   .. code:: none
+   .. code-block:: none
 
       pw_foo: Many things in a giant BWOT
 
@@ -1706,7 +1706,7 @@ Pigweed commit messages should conform to the following style:
 .. admonition:: **No**: Doesn't capitalize the subject
    :class: error
 
-   .. code:: none
+   .. code-block:: none
 
       pw_foo: do a thing
 
@@ -1716,7 +1716,7 @@ Pigweed commit messages should conform to the following style:
    word is a lowercase identifier.
    :class: checkmark
 
-   .. code:: none
+   .. code-block:: none
 
       pw_foo: std::unique_lock cleanup
 
@@ -1727,28 +1727,28 @@ Pigweed commit messages should conform to the following style:
    However, imperative style subjects often have the identifier elsewhere in
    the subject; for example:
 
-   .. code:: none
+   .. code-block:: none
 
      pw_foo: Improve use of std::unique_lock
 
 .. admonition:: **No**: Uses a non-standard ``[]`` to indicate module:
    :class: error
 
-   .. code:: none
+   .. code-block:: none
 
       [pw_foo]: Do a thing
 
 .. admonition:: **No**: Has a period at the end of the subject
    :class: error
 
-   .. code:: none
+   .. code-block:: none
 
       pw_bar: Do something great.
 
 .. admonition:: **No**: Puts extra stuff after the module which isn't a module.
    :class: error
 
-   .. code:: none
+   .. code-block:: none
 
       pw_bar/byte_builder: Add more stuff to builder
 
@@ -1757,7 +1757,7 @@ Footer
 We support a number of `git footers`_ in the commit message, such as ``Bug:
 123`` in the message below:
 
-.. code:: none
+.. code-block:: none
 
    pw_something: Add foo and bar functions
 
@@ -1769,7 +1769,7 @@ You are encouraged to use the following footers when appropriate:
   bug will be automatically updated when the change is submitted. When a change
   is relevant to more than one bug, include multiple ``Bug`` lines, like so:
 
-  .. code:: none
+  .. code-block:: none
 
       pw_something: Add foo and bar functions
 
@@ -1779,7 +1779,7 @@ You are encouraged to use the following footers when appropriate:
 * ``Fixed`` or ``Fixes``: Like ``Bug``, but automatically closes the bug when
   submitted.
 
-  .. code:: none
+  .. code-block:: none
 
       pw_something: Fix incorrect use of foo
 

@@ -249,7 +249,7 @@ pw_perf_test template
 
 **Example**
 
-.. code::
+.. code-block::
 
  import("$dir_pw_perf_test/perf_test.gni")
 
@@ -265,7 +265,7 @@ For grouping tests, no special template is required. Simply create a basic GN
 
 **Example**
 
-.. code::
+.. code-block::
 
   import("$dir_pw_perf_test/perf_test.gni")
 
@@ -308,7 +308,7 @@ template from ``//pw_build:pigweed.bzl``.
 
 **Example**
 
-.. code::
+.. code-block::
 
   load(
     "//pw_build:pigweed.bzl",

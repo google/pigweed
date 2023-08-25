@@ -121,7 +121,7 @@ base for the size diff can be specified either globally through the top-level
   sources that override the global ones (if specified).
 
 
-.. code::
+.. code-block::
 
   import("$dir_pw_bloat/bloat.gni")
 
@@ -169,7 +169,7 @@ a size report for a single binary. The template requires a target binary.
 * ``data_sources``: Optional list of data sources to organize outputs.
 * ``source_filter``: Optional regex to filter labels in the output.
 
-.. code::
+.. code-block::
 
   import("$dir_pw_bloat/bloat.gni")
 
@@ -248,7 +248,7 @@ reports' data into a single JSON file.
 * ``deps``: List of ``pw_size_report`` targets whose data to collect.
 * ``output``: Path to the output JSON file.
 
-.. code::
+.. code-block::
 
   import("$dir_pw_bloat/bloat.gni")
 
@@ -270,7 +270,7 @@ This file can be imported directly into a ReST documentation file using the
 For example, the ``simple_bloat_loop`` and ``simple_bloat_function`` size
 reports under ``//pw_bloat/examples`` are imported into this file as follows:
 
-.. code:: rst
+.. code-block:: rst
 
   Simple bloat loop example
   ^^^^^^^^^^^^^^^^^^^^^^^^^

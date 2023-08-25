@@ -24,7 +24,7 @@ Pigweed to provide explicit support for all possible implementations.
 ``Symbolizer`` Also provides a helper function for producing nicely formatted
 stack trace style dumps.
 
-.. code:: py
+.. code-block:: py
 
   import pw_symbolizer
 
@@ -63,7 +63,7 @@ The ``FakeSymbolizer`` is utility class that implements the ``Symbolizer``
 interface with a fixed database of address to ``Symbol`` mappings. This is
 useful for testing, or as a no-op ``Symbolizer``.
 
-.. code:: py
+.. code-block:: py
 
   import pw_symbolizer
 
@@ -81,7 +81,7 @@ The ``LlvmSymbolizer`` is a python layer that wraps ``llvm-symbolizer`` to
 produce symbols from provided addresses. This module will only work if
 ``llvm-symbolizer`` is available on the system ``PATH``.
 
-.. code:: py
+.. code-block:: py
 
   import pw_symbolizer
 

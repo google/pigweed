@@ -12,7 +12,7 @@ Define a ``pw_proto_library`` containing the .proto file defining your service
 (and optionally other related protos), then depend on the ``pwpb_rpc``
 version of that library in the code implementing the service.
 
-.. code::
+.. code-block::
 
   # chat/BUILD.gn
 
@@ -41,7 +41,7 @@ Generated code API
 ==================
 All examples in this document use the following RPC service definition.
 
-.. code:: protobuf
+.. code-block:: protobuf
 
   // chat/chat_protos/chat_service.proto
 
@@ -70,7 +70,7 @@ located within a special ``pw_rpc::pwpb`` sub-namespace of the file's package.
 The generated class is a base class which must be derived to implement the
 service's methods. The base class is templated on the derived class.
 
-.. code:: c++
+.. code-block:: c++
 
   #include "chat_protos/chat_service.rpc.pwpb.h"
 
@@ -85,7 +85,7 @@ A unary RPC is implemented as a function which takes in the RPC's request struct
 and populates a response struct to send back, with a status indicating whether
 the request succeeded.
 
-.. code:: c++
+.. code-block:: c++
 
   pw::Status GetRoomInformation(const RoomInfoRequest::Message& request,
                                 RoomInfoResponse::Message& response);
@@ -95,7 +95,7 @@ Server streaming RPC
 A server streaming RPC receives the client's request message alongside a
 ``ServerWriter``, used to stream back responses.
 
-.. code:: c++
+.. code-block:: c++
 
   void ListUsersInRoom(const ListUsersRequest::Message& request,
                        pw::rpc::ServerWriter<ListUsersResponse::Message>& writer);

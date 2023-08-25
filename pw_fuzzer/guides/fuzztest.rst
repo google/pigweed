@@ -360,7 +360,7 @@ Step 6: Running the fuzzer locally
 
 Running the fuzzer should produce output similar to the following:
 
-.. code::
+.. code-block::
 
    [.] Sanitizer coverage enabled. Counter map size: 21290, Cmp map size: 262144
    Note: Google Test filter = MetricsTest.Roundtrip

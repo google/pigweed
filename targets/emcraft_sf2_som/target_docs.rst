@@ -15,7 +15,7 @@ MSS HAL for the SmartFusion series. The supported repositories can be
 downloaded via ``pw package``, and then the build must be manually configured
 to point to the locations the repositories were downloaded to.
 
-.. code:: sh
+.. code-block:: sh
 
   pw package install freertos
   pw package install smartfusion_mss
@@ -25,7 +25,7 @@ to point to the locations the repositories were downloaded to.
 
 Then add the following lines to that text file:
 
-.. code::
+.. code-block::
 
     dir_pw_third_party_freertos = getenv("PW_PACKAGE_ROOT") + "/freertos"
     dir_pw_third_party_smartfusion_mss = getenv("PW_PACKAGE_ROOT") + "/smartfusion_mss"

@@ -519,7 +519,7 @@ Example
 ^^^^^^^
 Let ``//my_module/BUILD.gn`` contain the following:
 
-.. code::
+.. code-block::
 
    import("$dir_pw_build/python_action_test.gni")
    import("$dir_pw_perf_test/perf_test.gni")
@@ -558,7 +558,7 @@ Let ``//my_module/BUILD.gn`` contain the following:
 
 Let `//BUILD.gn`` contain the following:
 
-.. code::
+.. code-block::
 
    import("$dir_pw_unit_test/test.gni")
 
@@ -574,7 +574,7 @@ Let `//BUILD.gn`` contain the following:
 Then running ``gn gen out`` will produce the following JSON file at
 ``out/my_toolchain/my_module_tests.testinfo.json``:
 
-.. code:: json
+.. code-block:: json
 
    [
      {

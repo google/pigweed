@@ -19,7 +19,7 @@ and ``microbit`` QEMU machines.  The example can be built and run using
 the following commands where ``PLATFORM`` is one of ``lm3s6965evb`` or
 ``microbit``.
 
-.. code:: bash
+.. code-block:: bash
 
    $ bazel build //pw_rust/examples/embedded_hello:hello \
      --platforms //pw_build/platforms:${PLATFORM} \
@@ -42,13 +42,13 @@ Building
 To build the sample rust targets, you need to enable
 ``pw_rust_ENABLE_EXPERIMENTAL_BUILD``:
 
-.. code:: bash
+.. code-block:: bash
 
    $ gn gen out --args="pw_rust_ENABLE_EXPERIMENTAL_BUILD=true"
 
 Once that is set, you can build and run the ``hello`` example:
 
-.. code:: bash
+.. code-block:: bash
 
    $ ninja -C out host_clang_debug/obj/pw_rust/example/bin/hello
    $ ./out/host_clang_debug/obj/pw_rust/examples/host_executable/bin/hello

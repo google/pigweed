@@ -77,7 +77,7 @@ groups, causing them to be built with it.
 
 **Example**
 
-.. code::
+.. code-block::
 
   pw_doc_group("my_doc_group") {
     sources = [ "docs.rst" ]
@@ -109,7 +109,7 @@ to tie everything together.
 
 **Example**
 
-.. code::
+.. code-block::
 
   pw_doc_gen("my_docs") {
     conf = "//my_docs/conf.py"
@@ -129,7 +129,7 @@ using a subset of Pigweed's core documentation.
 
 Consider the following target in ``$dir_pigweed/docs/BUILD.gn``:
 
-.. code::
+.. code-block::
 
   pw_doc_gen("docs") {
     conf = "conf.py"
@@ -148,7 +148,7 @@ same directory structure as they appear under the root GN build directory
 (``$dir_pigweed`` in this case). The ``conf.py`` and ``index.rst`` provided
 directly to the ``pw_doc_gen`` template are copied in at the root of the tree.
 
-.. code::
+.. code-block::
 
   out/gen/docs/pw_docgen_tree/
   ├── conf.py
@@ -230,20 +230,20 @@ To step through your Pigweed extension code with
 
 #. Set a breakpoint in your extension code:
 
-   .. code::
+   .. code-block::
 
       breakpoint()
 
 #. Build ``python.install`` to install the code change into the bootstrap venv
    (``environment/pigweed-venv/lib/python3.8/site-packages/pw_docgen``):
 
-   .. code::
+   .. code-block::
 
       ninja -C out python.install
 
 #. Manually invoke Sphinx to build the docs and trigger your breakpoint:
 
-   .. code::
+   .. code-block::
 
       cd out
       sphinx-build -W -b html -d docs/gen/docs/help docs/gen/docs/pw_docgen_tree docs/gen/docs/html -v -v -v

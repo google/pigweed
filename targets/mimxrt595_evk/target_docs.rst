@@ -29,7 +29,7 @@ the manifest file within the unpacked SDK, and then setting the
 ``pw_third_party_mcuxpresso_SDK`` to the ``sample_sdk`` source set within the
 Pigweed target directory.
 
-.. code:: sh
+.. code-block:: sh
 
   $ gn args out
   # Modify and save the args file to use the sample SDK.
@@ -41,7 +41,7 @@ Building
 Once configured, to build for this Pigweed target, simply build the top-level
 "mimxrt595" Ninja target.
 
-.. code:: sh
+.. code-block:: sh
 
   $ ninja -C out mimxrt595
 

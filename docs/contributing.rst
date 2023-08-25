@@ -99,7 +99,7 @@ instructions below.
 The command below assumes that your current working directory is the root
 of your Pigweed repository.
 
-.. code:: bash
+.. code-block:: bash
 
   $ f=`git rev-parse --git-dir`/hooks/commit-msg ; mkdir -p $(dirname $f) ; curl -Lo $f https://gerrit-review.googlesource.com/tools/hooks/commit-msg ; chmod +x $f
 
@@ -109,7 +109,7 @@ Download `the Gerrit commit hook
 <https://gerrit-review.googlesource.com/tools/hooks/commit-msg>`_ and then copy
 it to the ``.git\hooks`` directory in the Pigweed repository.
 
-.. code::
+.. code-block::
 
   copy %HOMEPATH%\Downloads\commit-msg %HOMEPATH%\pigweed\.git\hooks\commit-msg
 
@@ -254,7 +254,7 @@ browsers.
 
 Apache header for C and C++ files:
 
-.. code:: none
+.. code-block:: none
 
   // Copyright 2021 The Pigweed Authors
   //
@@ -272,7 +272,7 @@ Apache header for C and C++ files:
 
 Apache header for Python and GN files:
 
-.. code:: none
+.. code-block:: none
 
   # Copyright 2020 The Pigweed Authors
   #
@@ -346,14 +346,14 @@ git push hook using the following command:
 
 Linux/macOS
 ^^^^^^^^^^^
-.. code:: bash
+.. code-block:: bash
 
   $ pw presubmit --install
 
 This will be effectively the same as running the following command before every
 ``git push``:
 
-.. code:: bash
+.. code-block:: bash
 
   $ pw presubmit
 
@@ -365,7 +365,7 @@ This will be effectively the same as running the following command before every
 If you ever need to bypass the presubmit hook (due to it being broken, for
 example) you may push using this command:
 
-.. code:: bash
+.. code-block:: bash
 
   $ git push origin HEAD:refs/for/main --no-verify
 
@@ -374,7 +374,7 @@ Presubmit and branch management
 When creating new feature branches, make sure to specify the upstream branch to
 track, e.g.
 
-.. code:: bash
+.. code-block:: bash
 
   $ git checkout -b myfeature origin/main
 

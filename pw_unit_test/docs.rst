@@ -249,7 +249,7 @@ pw_test template
 
 **Example**
 
-.. code::
+.. code-block::
 
    import("$dir_pw_unit_test/test.gni")
 
@@ -285,7 +285,7 @@ several sub-targets:
 
 **Example**
 
-.. code::
+.. code-block::
 
    import("$dir_pw_unit_test/test.gni")
 
@@ -454,7 +454,7 @@ sub-targets.
 
 **Example**
 
-.. code::
+.. code-block::
 
    include($ENV{PW_ROOT}/pw_unit_test/test.cmake)
 
@@ -494,7 +494,7 @@ creates several sub-targets:
 
 **Example**
 
-.. code::
+.. code-block::
 
    include($ENV{PW_ROOT}/pw_unit_test/test.cmake)
 
@@ -663,7 +663,7 @@ however some features (such as test suite filtering) are missing.
 To set up RPC-based unit tests in your application, instantiate a
 ``pw::unit_test::UnitTestService`` and register it with your RPC server.
 
-.. code:: c++
+.. code-block:: c++
 
    #include "pw_rpc/server.h"
    #include "pw_unit_test/unit_test_service.h"
@@ -686,7 +686,7 @@ the unit testing RPC service enabled. By default, the results will output via
 logging. This method returns a ``TestRecord`` dataclass instance, containing
 the results of the test run.
 
-.. code:: python
+.. code-block:: python
 
    from pw_hdlc.rpc import HdlcRpcClient
    from pw_unit_test.rpc import run_tests

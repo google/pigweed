@@ -65,7 +65,7 @@ organized by their protocol buffer package and RPC service, as defined in a
 is in the ``pw.rpc`` package. To invoke it synchronously, call
 ``rpcs.pw.rpc.EchoService.Echo``:
 
-.. code:: pycon
+.. code-block:: pycon
 
    >>> device.rpcs.pw.rpc.EchoService.Echo(msg='Hello, world!')
    (Status.OK, pw.rpc.EchoMessage(msg='Hello, world!'))
@@ -138,7 +138,7 @@ if needed.
 
 Then you can invoke RPCs from the interactive console on the client side.
 
-.. code:: pycon
+.. code-block:: pycon
 
    >>> device.rpcs.pw.rpc.EchoService.Echo(msg='Hello, world!')
    (Status.OK, pw.rpc.EchoMessage(msg='Hello, world!'))

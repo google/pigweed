@@ -55,7 +55,7 @@ takes to run tests.
 -----------
 Get started
 -----------
-.. code:: bash
+.. code-block:: bash
 
    cd ~/pigweed
    source activate.sh

@@ -31,7 +31,7 @@ To reproduce a bug:
 For example, if the testcase is saved as ``~/Downloads/testcase``
 and the fuzzer is the same as in the examples above, you could run:
 
-.. code::
+.. code-block::
 
   $ ./out/host/obj/pw_fuzzer/toy_fuzzer ~/Downloads/testcase
 
@@ -40,7 +40,7 @@ documentation on `reproducing`_ issues.
 
 In particular, you can recreate the OSS-Fuzz environment using:
 
-.. code::
+.. code-block::
 
   $ python infra/helper.py pull_images
   $ python infra/helper.py build_image pigweed
@@ -48,13 +48,13 @@ In particular, you can recreate the OSS-Fuzz environment using:
 
 With that environment, you can run the reproduce bugs using:
 
-.. code::
+.. code-block::
 
   python infra/helper.py reproduce pigweed <pw_module>_<fuzzer_name> ~/Downloads/testcase
 
 You can even verify fixes in your local source checkout:
 
-.. code::
+.. code-block::
 
   $ python infra/helper.py build_fuzzers --sanitizer <address/undefined> pigweed $PW_ROOT
   $ python infra/helper.py reproduce pigweed <pw_module>_<fuzzer_name> ~/Downloads/testcase

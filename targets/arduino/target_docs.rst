@@ -51,7 +51,7 @@ Installing Arduino Cores
 The ``arduino_builder`` utility can install Arduino cores automatically. It's
 recommended to install them to into ``third_party/arduino/cores/``.
 
-.. code:: sh
+.. code-block:: sh
 
    # Setup pigweed environment.
    . ./activate.sh
@@ -63,7 +63,7 @@ Building
 To build for this Pigweed target, simply build the top-level "arduino" Ninja
 target. You can set Arduino build options using ``gn args out`` or by running:
 
-.. code:: sh
+.. code-block:: sh
 
    gn gen out --args='
      pw_arduino_build_CORE_PATH = "//environment/packages"
@@ -74,13 +74,13 @@ target. You can set Arduino build options using ``gn args out`` or by running:
 
 On a Windows machine it's easier to run:
 
-.. code:: sh
+.. code-block:: sh
 
    gn args out
 
 That will open a text file where you can paste the args in:
 
-.. code:: text
+.. code-block:: text
 
    pw_arduino_build_CORE_PATH = "//environment/packages"
    pw_arduino_build_CORE_NAME = "teensy"
@@ -92,19 +92,19 @@ Save the file and close the text editor.
 
 Then build with:
 
-.. code:: sh
+.. code-block:: sh
 
   ninja -C out arduino
 
 To see supported boards and Arduino menu options for a given core:
 
-.. code:: sh
+.. code-block:: sh
 
    arduino_builder --arduino-package-path ./environment/packages/teensy \
                    --arduino-package-name avr/1.58.1 \
                    list-boards
 
-.. code:: text
+.. code-block:: text
 
    Board Name  Description
    teensy41    Teensy 4.1
@@ -116,7 +116,7 @@ To see supported boards and Arduino menu options for a given core:
 You may wish to set different arduino build options in
 ``pw_arduino_build_MENU_OPTIONS``. Run this to see what's available for your core:
 
-.. code:: sh
+.. code-block:: sh
 
    arduino_builder --arduino-package-path ./environment/packages/teensy \
                    --arduino-package-name avr/1.58.1 \
@@ -125,7 +125,7 @@ You may wish to set different arduino build options in
 
 That will show all menu options that can be added to ``gn args out``.
 
-.. code:: text
+.. code-block:: text
 
    All Options
    ----------------------------------------------------------------
@@ -160,7 +160,7 @@ If using ``out`` as a build directory, tests will be located in
 Tests can be flashed and run using the `arduino_unit_test_runner` tool. Here is
 a sample bash script to run all tests on a Linux machine.
 
-.. code:: sh
+.. code-block:: sh
 
    #!/bin/bash
    gn gen out --export-compile-commands \
@@ -185,7 +185,7 @@ Tests may also be run using the `pw_arduino_use_test_server = true` GN arg.
 The server must be run with an `arduino_builder` config file so it can locate
 the correct Arduino core, compiler path, and Arduino board used.
 
-.. code:: sh
+.. code-block:: sh
 
   arduino_test_server --verbose \
       --config-file ./out/arduino_debug/gen/arduino_builder_config.json
@@ -210,7 +210,7 @@ GN Target Example
 Here is an example `pw_executable` gn rule that includes some Teensyduino
 libraries.
 
-.. code:: text
+.. code-block:: text
 
   import("//build_overrides/pigweed.gni")
   import("$dir_pw_arduino_build/arduino.gni")

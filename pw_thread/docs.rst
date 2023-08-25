@@ -510,7 +510,7 @@ To expose a ``ThreadSnapshotService`` in your application, do the following:
 
 For example:
 
-.. code::
+.. code-block::
 
    #include "pw_rpc/server.h"
    #include "pw_thread/thread_snapshot_service.h"

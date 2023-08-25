@@ -29,13 +29,13 @@ Once the AmbiqSuite SDK package has been downloaded and extracted, the user
 needs to set ``dir_pw_third_party_ambiq_SDK`` build arg to the location of
 extracted directory:
 
-.. code:: sh
+.. code-block:: sh
 
    $ gn args out
 
 Then add the following lines to that text file:
 
-.. code::
+.. code-block::
 
    # Path to the extracted AmbiqSuite SDK package.
    dir_pw_third_party_ambiq_SDK = "/path/to/AmbiqSuite_R4.3.0"
@@ -49,7 +49,7 @@ Building and Running the Demo
 This target has an associated demo application that can be built and then
 flashed to a device with the following commands:
 
-.. code:: sh
+.. code-block:: sh
 
    ninja -C out pw_system_demo
 
@@ -60,7 +60,7 @@ flashed to a device with the following commands:
 Once the board has been flashed, you can connect to it and send RPC commands
 via the Pigweed console:
 
-.. code:: sh
+.. code-block:: sh
 
    pw-system-console -d /dev/{ttyX} -b 115200 \
      --proto-globs pw_rpc/echo.proto \
@@ -73,7 +73,7 @@ may look like ``ttyACM0``, and on a Mac it may look like ``cu.usbmodem***``.
 When the console opens, try sending an Echo RPC request. You should get back
 the same message you sent to the device.
 
-.. code:: pycon
+.. code-block:: pycon
 
    >>> device.rpcs.pw.rpc.EchoService.Echo(msg="Hello, Pigweed!")
    (Status.OK, pw.rpc.EchoMessage(msg='Hello, Pigweed!'))
@@ -81,13 +81,13 @@ the same message you sent to the device.
 You can also try out our thread snapshot RPC service, which should return a
 stack usage overview of all running threads on the device in Host Logs.
 
-.. code:: pycon
+.. code-block:: pycon
 
    >>> device.rpcs.pw.thread.proto.ThreadSnapshotService.GetPeakStackUsage()
 
 Example output:
 
-.. code::
+.. code-block::
 
    20220826 09:47:22  INF  PendingRpc(channel=1, method=pw.thread.ThreadSnapshotService.GetPeakStackUsage) completed: Status.OK
    20220826 09:47:22  INF  Thread State

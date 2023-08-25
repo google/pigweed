@@ -459,7 +459,7 @@ working as intended by registering the provided ``EchoService``, defined in
 
 For example, in C++ with pw_protobuf:
 
-.. code:: c++
+.. code-block:: c++
 
    #include "pw_rpc/server.h"
 
@@ -1040,7 +1040,7 @@ clients cannot use the same channels.
 To send incoming RPC packets from the transport layer to be processed by a
 client, the client's ``ProcessPacket`` function is called with the packet data.
 
-.. code:: c++
+.. code-block:: c++
 
    #include "pw_rpc/client.h"
 
@@ -1683,7 +1683,7 @@ SendResponseIfCalled() helper
 have a call for the specified method and then responses to it. It supports
 timeout for the waiting part (default timeout is 100ms).
 
-.. code:: c++
+.. code-block:: c++
 
    #include "pw_rpc/test_helpers.h"
 

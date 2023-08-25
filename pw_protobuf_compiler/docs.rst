@@ -463,7 +463,7 @@ compile them. e.g.
 From ``my/lib.cc`` you can now include the generated headers.
 e.g.
 
-.. code:: cpp
+.. code-block:: cpp
 
    #include "my_protos/bar.pwpb.h"
    // and/or RPC headers

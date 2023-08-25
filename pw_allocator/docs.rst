@@ -31,7 +31,7 @@ By default, this module disables heap poisoning since it requires extra space.
 User can enable heap poisoning by enabling the ``pw_allocator_POISON_HEAP``
 build arg.
 
-.. code:: sh
+.. code-block:: sh
 
   $ gn args out
   # Modify and save the args file to use heap poison.
@@ -60,7 +60,7 @@ Usage
 
 The heap visualizer can be launched from a shell using the Pigweed environment.
 
-.. code:: sh
+.. code-block:: sh
 
   $ pw heap-viewer --dump-file <directory of dump file> --heap-low-address
   <hex address of heap lower address> --heap-high-address <hex address of heap
@@ -74,7 +74,7 @@ The required arguments are:
   represented as ``f <memory address>``. For example, a dump file should look
   like:
 
-  .. code:: sh
+  .. code-block:: sh
 
     m 20 0x20004450  # malloc 20 bytes, the pointer is 0x20004450
     m 8 0x2000447c   # malloc 8 bytes, the pointer is 0x2000447c
@@ -85,13 +85,13 @@ The required arguments are:
 
 - ``--heap-low-address`` is the start of the heap. For example:
 
-  .. code:: sh
+  .. code-block:: sh
 
     --heap-low-address 0x20004440
 
 - ``--heap-high-address`` is the end of the heap. For example:
 
-  .. code:: sh
+  .. code-block:: sh
 
     --heap-high-address 0x20006040
 

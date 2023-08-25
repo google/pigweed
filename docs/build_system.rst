@@ -202,7 +202,7 @@ Pigweed's build arguments, which apply across all Pigweed targets. For example,
 a project could configure the protobuf libraries that it uses. This is done by
 defining a ``default_args`` scope containing the overrides.
 
-.. code::
+.. code-block::
 
   # The location of the BUILDCONFIG file.
   buildconfig = "//BUILDCONFIG.gn"
@@ -273,7 +273,7 @@ therefore should not evaluate any other GN files. The pattern that Pigweed uses
 to achieve this is to wrap all dependencies within a condition checking the
 toolchain.
 
-.. code::
+.. code-block::
 
   group("my_application_images") {
     deps = []  # Empty in the default toolchain.
@@ -433,7 +433,7 @@ Pigweed's modules, set relative to a project-specific ``dir_pigweed``.
 To depend on Pigweed modules from GN code, import Pigweed's overrides file and
 reference these module variables.
 
-.. code::
+.. code-block::
 
   # This must be imported before .gni files from any other Pigweed modules. To
   # prevent gn format from reordering this import, it must be separated by a
@@ -494,7 +494,7 @@ Building a custom executable/app image
 
 1. Define your executable GN target using the ``pw_executable`` template.
 
-   .. code::
+   .. code-block::
 
      # //foo/BUILD.gn
      pw_executable("foo") {
@@ -505,7 +505,7 @@ Building a custom executable/app image
 2. In the root ``BUILD.gn`` file, add the executable's GN target to the ``apps``
    group.
 
-   .. code::
+   .. code-block::
 
      # //BUILD.gn
      group("apps") {
@@ -519,7 +519,7 @@ Building a custom executable/app image
    default, so there's no need to provide a target. The executable will be
    compiled for every supported Pigweed target.
 
-   .. code::
+   .. code-block::
 
      ninja -C out
 
@@ -529,7 +529,7 @@ Building a custom executable/app image
 
    For example, to build for the Pigweed target ``host_gcc_debug``:
 
-   .. code::
+   .. code-block::
 
      ninja -C out host_gcc_debug/obj/foo/bin/foo
 
@@ -541,7 +541,7 @@ Building a custom executable/app image
 4. Retrieve your compiled binary from the out directory. It is located at the
    path
 
-   .. code::
+   .. code-block::
 
      out/<pw_target>/obj/<gn_path>/{bin,test}/<executable>
 
@@ -554,7 +554,7 @@ Building a custom executable/app image
    For example, the ``foo`` executable defined above and compiled for the
    Pigweed target stm32f429i_disc1_debug is found at:
 
-   .. code::
+   .. code-block::
 
      out/stm32f429i_disc1_debug/obj/foo/bin/foo
 
@@ -594,7 +594,7 @@ While described in more detail in the Bazel docs there a few Bazel features that
 are of particular importance when targeting embedded platforms. The most
 commonly used commands used in bazel are;
 
-.. code:: sh
+.. code-block:: sh
 
   bazel build //your:target
   bazel test //your:target
@@ -607,7 +607,7 @@ Building
 When it comes to building/testing your Bazel target for a specific Pigweed
 target (e.g. stm32f429i-discovery) a slight variation is required.
 
-.. code:: sh
+.. code-block:: sh
 
   bazel build //your:target \
     --platforms=@pigweed//pw_build/platforms:stm32f429i-disc1
@@ -635,7 +635,7 @@ Bazel's '--run_under' flag. To make this work create a Bazel target
    your target).
 4. Run;
 
-   .. code:: sh
+   .. code-block:: sh
 
     bazel test //your:test --platforms=//your/platform --run_under=//your_handler
 
@@ -650,7 +650,7 @@ use the following additional tags:
    `--test_tag_filters
    <https://bazel.build/docs/user-manual#test-tag-filters>`_. For example,
 
-   .. code:: sh
+   .. code-block:: sh
 
      bazel test --test_tag_filters=-integration //...
 
@@ -662,7 +662,7 @@ Making use of the code coverage functionality in Bazel is straightforward.
 
 1. Add the following lines to your '.bazelrc'.
 
-   .. code:: sh
+   .. code-block:: sh
 
       coverage --experimental_generate_llvm_lcov
       coverage --combined_report=lcov
@@ -670,13 +670,13 @@ Making use of the code coverage functionality in Bazel is straightforward.
 2. Generate a combined lcov coverage report. This will produce a combined lcov
    coverage report at the path 'bazel-out/_coverage/_coverage_report.dat'. e.g.
 
-   .. code:: sh
+   .. code-block:: sh
 
       bazel coverage //pw_log/...
 
 3. View the results using the command line utility 'lcov'.
 
-   .. code:: sh
+   .. code-block:: sh
 
       lcov --list bazel-out/_coverage/_coverage_report.dat
 
@@ -695,7 +695,7 @@ Selects are useful for specifying different dependencies/source depending on the
 platform that is currently being targeted. For more information on this please
 see the `Bazel selects reference`_. e.g.
 
-.. code:: py
+.. code-block:: py
 
   pw_cc_library(
     name = "some_platform_dependant_library",
@@ -711,7 +711,7 @@ Compatibility lists allow you to specify which platforms your targets are
 compatible with. Consider an example where you want to specify that a target is
 compatible with only a host os;
 
-.. code:: py
+.. code-block:: py
 
   pw_cc_library(
     name = "some_host_only_lib",
@@ -730,7 +730,7 @@ other OS's will fail if this target is explicitly depended on. However if
 building with a wild card for a non-host platform this target will be skipped
 and the build will continue. e.g.
 
-.. code:: sh
+.. code-block:: sh
 
   bazel build //... --platforms=@pigweed//pw_build/platforms:cortex_m0
 
@@ -756,7 +756,7 @@ select statement.
 A simple example of when it is useful to use a label_flag is when you want to
 swap out a single dependency from the command line. e.g.
 
-.. code:: py
+.. code-block:: py
 
   pw_cc_library(
     name = "some_default_io",
@@ -781,7 +781,7 @@ swap out a single dependency from the command line. e.g.
 From here the label_flag by default redirects to the target ":some_default_io",
 however it is possible to override this from the command line. e.g.
 
-.. code:: sh
+.. code-block:: sh
 
   bazel build //:some_target_that_needs_io --//:io=//:some_other_io
 
@@ -821,7 +821,7 @@ landed here. First things first you would;
 2. Add a pigweed_config rule to your WORKSPACE, using Pigweed's default
    configuration.
 
-   .. code:: py
+   .. code-block:: py
 
       # WORKSPACE ...
       load("//pw_build:target_config.bzl", "pigweed_config")
@@ -848,7 +848,7 @@ dependencies into facades to override the default backend.
 Continuing on with our scenario, consider that you maybe want to try using the
 '//pw_chrono' module. So you create a target in your repository like so;
 
-.. code::
+.. code-block::
 
   # BUILD
   pw_cc_library(
@@ -859,7 +859,7 @@ Continuing on with our scenario, consider that you maybe want to try using the
 
 Now this should work out of the box for any host operating system. e.g. Running;
 
-.. code::
+.. code-block::
 
   bazel build //:time_is_relative
 
@@ -870,7 +870,7 @@ some coincidence you are using FreeRTOS and are happy to make use
 of our default '//pw_chrono' backend for FreeRTOS. You could build the following
 with;
 
-.. code:: sh
+.. code-block:: sh
 
   bazel build //:time_is_relative \
   --platforms=@pigweed//pw_build/platforms:freertos
@@ -880,7 +880,7 @@ is determining which dependencies to choose for your build. The dependency
 tree (that is important for configuration) in a project such as this would
 look like.
 
-.. code::
+.. code-block::
 
   @pigweed//pw_chrono:pw_chrono_facade <-----------.
    ^                                               |
@@ -902,7 +902,7 @@ So when evaluating this setup Bazel checks the dependencies for '//pw_chrono'
 and finds that it depends on "@pigweed_config//:pw_chrono_system_clock_backend" which looks
 like this;
 
-.. code:: py
+.. code-block:: py
 
   # pw_chrono config.
   label_flag(
@@ -917,7 +917,7 @@ you only had one backend you could actually just change the
 have four different backends we have to use the select semantics to choose the
 right one. In this case it looks like;
 
-.. code:: py
+.. code-block:: py
 
   pw_cc_library(
     name = "system_clock_backend_multiplexer",
@@ -943,14 +943,14 @@ directory 'pw_chrono_my_hardware_rtc'. To ensure that your new backend compiles
 with the facade an easy and temporary way to override the dependency tree is
 to override the label flag in '@pigweed_config'. For example;
 
-.. code:: sh
+.. code-block:: sh
 
   bazel build //:time_is_relative \
     --@pigweed_config//pw_chrono_system_clock_backend=//pw_chrono_my_hardware_rtc:system_clock
 
 This temporarily modifies the build graph to look something like this;
 
-.. code::
+.. code-block::
 
   @pigweed//pw_chrono:pw_chrono_facade <-----.
    ^                                         |
@@ -1042,13 +1042,13 @@ dependencies for the two different computers:
 Building your target now will result in slightly different build graph. For
 example, running;
 
-.. code:: sh
+.. code-block:: sh
 
   bazel build //:time_is_relative --platforms=//platforms:primary_computer
 
 Will result in a build graph that looks like;
 
-.. code::
+.. code-block::
 
   @pigweed//pw_chrono:pw_chrono_facade <---.
    ^                                        |
