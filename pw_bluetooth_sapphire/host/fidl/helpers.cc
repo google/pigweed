@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <functional>
 #include <iterator>
 #include <optional>
 #include <unordered_set>
@@ -731,18 +732,19 @@ fsys::Peer PeerToFidl(const bt::gap::Peer& peer) {
   }
 
   if (peer.le()) {
-    const std::optional<bt::AdvertisingData>& adv_data = peer.le()->parsed_advertising_data();
+    const std::optional<std::reference_wrapper<const bt::AdvertisingData>> adv_data =
+        peer.le()->parsed_advertising_data();
     if (adv_data.has_value()) {
-      if (adv_data->appearance().has_value()) {
-        if (auto appearance = AppearanceToFidl(adv_data->appearance().value())) {
+      if (adv_data->get().appearance().has_value()) {
+        if (auto appearance = AppearanceToFidl(adv_data->get().appearance().value())) {
           output.set_appearance(appearance.value());
         } else {
           bt_log(DEBUG, "fidl", "omitting unencodeable appearance %#.4x of peer %s",
-                 adv_data->appearance().value(), bt_str(peer.identifier()));
+                 adv_data->get().appearance().value(), bt_str(peer.identifier()));
         }
       }
-      if (adv_data->tx_power()) {
-        output.set_tx_power(adv_data->tx_power().value());
+      if (adv_data->get().tx_power()) {
+        output.set_tx_power(adv_data->get().tx_power().value());
       }
     }
   }
@@ -900,14 +902,14 @@ fble::RemoteDevicePtr NewLERemoteDevice(const bt::gap::Peer& peer) {
   fidl_device->connectable = peer.connectable();
 
   // Initialize advertising data only if its non-empty.
-  const std::optional<bt::AdvertisingData>& adv_data = peer.le()->parsed_advertising_data();
+  const std::optional<std::reference_wrapper<const bt::AdvertisingData>> adv_data =
+      peer.le()->parsed_advertising_data();
   if (adv_data.has_value()) {
     auto data = fidl_helpers::AdvertisingDataToFidlDeprecated(adv_data.value());
     fidl_device->advertising_data =
         std::make_unique<fble::AdvertisingDataDeprecated>(std::move(data));
-  } else if (peer.le()->advertising_data().size()) {
-    // If the peer's raw advertising_data has been set (which is the case if the size is non-0),
-    // but failed to parse, then this conversion failed.
+  } else if (peer.le()->advertising_data_error().has_value()) {
+    // If the peer advertising data has failed to parse, then this conversion failed.
     return nullptr;
   }
 
@@ -1230,7 +1232,8 @@ fble::Peer PeerToFidlLe(const bt::gap::Peer& peer) {
     output.set_rssi(peer.rssi());
   }
 
-  const std::optional<bt::AdvertisingData>& advertising_data = peer.le()->parsed_advertising_data();
+  const std::optional<std::reference_wrapper<const bt::AdvertisingData>> advertising_data =
+      peer.le()->parsed_advertising_data();
   if (advertising_data.has_value()) {
     std::optional<zx::time> timestamp = peer.le()->parsed_advertising_data_timestamp();
     output.set_advertising_data(AdvertisingDataToFidl(advertising_data.value()));

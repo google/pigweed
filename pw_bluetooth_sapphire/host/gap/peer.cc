@@ -12,6 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/manufacturer_names.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
@@ -114,11 +115,14 @@ void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi, const ByteBuffer& data
     } else {
       bt_log(DEBUG, "gap-le", "%s", message.c_str());
     }
+    // Update the error if we don't have a successful parse already
+    if (parsed_adv_data_.is_error()) {
+      parsed_adv_data_ = std::move(res);
+    }
   } else {
     // Only update the adv_timestamp if the AdvertisingData parsed successfully
     adv_timestamp_ = timestamp;
-
-    parsed_adv_data_ = std::move(*res);
+    parsed_adv_data_ = std::move(res);
 
     // Do not update the name of bonded peers because advertisements are unauthenticated.
     // TODO(fxbug.dev/85365): Populate more Peer fields with relevant fields from parsed_adv_data_.
@@ -404,13 +408,21 @@ bool Peer::BrEdrData::SetEirData(const ByteBuffer& eir) {
   while (reader.GetNextField(&type, &data)) {
     if (type == DataType::kCompleteLocalName) {
       // TODO(armansito): Parse more fields.
-      // TODO(armansito): SetName should be a no-op if a name was obtained via
-      // the name discovery procedure.
       // Do not update the name of bonded peers because inquiry results are unauthenticated.
       if (!peer_->bonded()) {
         changed =
             peer_->RegisterNameInternal(data.ToString(), Peer::NameSource::kInquiryResultComplete);
       }
+    } else if (type == DataType::kIncomplete16BitServiceUuids ||
+               type == DataType::kComplete16BitServiceUuids) {
+      // TODO(fxbug.dev/131973): Consider adding 32-bit and 128-bit UUIDs to the list
+      ParseUuids(data, UUIDElemSize::k16Bit, [this, &changed](const UUID& uuid) {
+        auto [_, inserted] = services_.Mutable()->insert(uuid);
+        if (inserted) {
+          changed = true;
+        }
+        return true;
+      });
     }
   }
   return changed;

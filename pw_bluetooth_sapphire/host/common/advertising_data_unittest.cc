@@ -36,6 +36,7 @@ TEST(AdvertisingDataTest, MakeEmpty) {
 
 TEST(AdvertisingDataTest, CopyLeavesNoRemnants) {
   AdvertisingData data;
+  data.SetFlags(0x4);
   data.SetTxPower(4);
   data.SetAppearance(0x4567);
   EXPECT_TRUE(data.SetLocalName("fuchsia"));
@@ -57,6 +58,7 @@ TEST(AdvertisingDataTest, CopyLeavesNoRemnants) {
   EXPECT_EQ(1, data.tx_power().value());
   EXPECT_FALSE(data.appearance().has_value());
   EXPECT_FALSE(data.local_name().has_value());
+  EXPECT_FALSE(data.flags().has_value());
   EXPECT_EQ(0u, data.uris().size());
   EXPECT_EQ(0u, data.manufacturer_data_ids().size());
   EXPECT_EQ(0u, data.service_uuids().size());
@@ -292,8 +294,14 @@ TEST(AdvertisingDataTest, TooManyUuidsOfSizeRejected) {
   EXPECT_EQ(AdvertisingData::ParseError::kUuidsMalformed, adv_result.error_value());
 }
 
-TEST(AdvertisingDataTest, InvalidTlvFormat) {
+TEST(AdvertisingDataTest, Missing) {
   AdvertisingData::ParseResult result = AdvertisingData::FromBytes(DynamicByteBuffer());
+  ASSERT_TRUE(result.is_error());
+  EXPECT_EQ(AdvertisingData::ParseError::kMissing, result.error_value());
+}
+
+TEST(AdvertisingDataTest, InvalidTlvFormat) {
+  AdvertisingData::ParseResult result = AdvertisingData::FromBytes(StaticByteBuffer(0x03));
   ASSERT_TRUE(result.is_error());
   EXPECT_EQ(AdvertisingData::ParseError::kInvalidTlvFormat, result.error_value());
 }
@@ -424,8 +432,10 @@ TEST(AdvertisingDataTest, Move) {
   UUID heart_rate_uuid(kHeartRateServiceUuid);
   int8_t tx_power = 18;          // arbitrary TX power
   uint16_t appearance = 0x4567;  // arbitrary appearance value
+  uint8_t flags = 0x48;          // arbitrary flags value
   AdvertisingData source;
   EXPECT_TRUE(source.SetLocalName("test"));
+  source.SetFlags(flags);
   source.SetTxPower(tx_power);
   source.SetAppearance(appearance);
   EXPECT_TRUE(source.AddUri("http://fuchsia.cl"));
@@ -445,6 +455,7 @@ TEST(AdvertisingDataTest, Move) {
     EXPECT_TRUE(ContainersEqual(rand_data, dest.manufacturer_data(0x0123)));
     EXPECT_EQ(std::unordered_set<UUID>({gatt, eddy}), dest.service_uuids());
     EXPECT_TRUE(ContainersEqual(rand_data, dest.service_data(heart_rate_uuid)));
+    EXPECT_EQ(flags, dest.flags().value());
   };
 
   AdvertisingData move_constructed(std::move(source));
@@ -457,6 +468,23 @@ TEST(AdvertisingDataTest, Move) {
   move_assigned = std::move(move_constructed);
   EXPECT_EQ(AdvertisingData(), move_constructed);
   verify_advertising_data(move_assigned, "move_assigned");
+}
+
+TEST(AdvertisingDataTest, Flags) {
+  // A zero-byte flags is allowed, and sets the flags field to zeroes.
+  StaticByteBuffer flags_empty(0x01, DataType::kFlags);
+  // Extra bytes are accepted but ignored.
+  StaticByteBuffer flags_extra(0x04, DataType::kFlags, 0x03, 0x42, 0x49);
+
+  AdvertisingData::ParseResult data = AdvertisingData::FromBytes(flags_empty);
+  ASSERT_EQ(fit::ok(), data);
+  ASSERT_TRUE(data->flags().has_value());
+  ASSERT_EQ(0x00, data->flags().value());
+
+  data = AdvertisingData::FromBytes(flags_extra);
+  ASSERT_EQ(fit::ok(), data);
+  ASSERT_TRUE(data->flags().has_value());
+  ASSERT_EQ(0x03, data->flags().value());
 }
 
 TEST(AdvertisingDataTest, Uris) {

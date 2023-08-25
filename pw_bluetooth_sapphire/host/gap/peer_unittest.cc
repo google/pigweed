@@ -11,7 +11,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/manufacturer_names.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/inspect_util.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
@@ -30,6 +29,7 @@ constexpr uint16_t kSubversion = 0x0002;
 const StaticByteBuffer kAdvData(0x05,  // Length
                                 0x09,  // AD type: Complete Local Name
                                 'T', 'e', 's', 't');
+
 const StaticByteBuffer kInvalidAdvData{
     // 32 bit service UUIDs are supposed to be 4 bytes, but the value in this TLV field is only 3
     // bytes long, hence the AdvertisingData is not valid.
@@ -322,7 +322,8 @@ TEST_F(PeerTest, BrEdrDataSetEirDataWithInvalidUtf8NameDoesNotUpdatePeerName) {
   eirep.num_responses = 1;
   eirep.bd_addr = peer().address().value();
   MutableBufferView(eirep.extended_inquiry_response, sizeof(eirep.extended_inquiry_response))
-      .Write(kEirData);
+      .Fill(0);
+  MutableBufferView(eirep.extended_inquiry_response, kEirData.size()).Write(kEirData);
 
   peer().MutBrEdr().SetInquiryData(eirep);
   EXPECT_TRUE(listener_notified);  // Fresh EIR data still results in an update
@@ -1122,11 +1123,58 @@ TEST_F(PeerTest, SettingInquiryDataOfBondedPeerDoesNotUpdateName) {
   eirep.num_responses = 1;
   eirep.bd_addr = peer().address().value();
   MutableBufferView(eirep.extended_inquiry_response, sizeof(eirep.extended_inquiry_response))
-      .Write(kEirData);
+      .Fill(0);
+  MutableBufferView(eirep.extended_inquiry_response, kEirData.size()).Write(kEirData);
   peer().MutBrEdr().SetInquiryData(eirep);
 
   ASSERT_TRUE(peer().name().has_value());
   EXPECT_EQ(peer().name().value(), "alice");
+}
+
+TEST_F(PeerTest, BrEdrDataSetEirDataDoesUpdatePeerName) {
+  peer().MutBrEdr();  // Initialize BrEdrData.
+  ASSERT_FALSE(peer().name().has_value());
+
+  bool listener_notified = false;
+  set_notify_listeners_cb([&](auto&, Peer::NotifyListenersChange) { listener_notified = true; });
+
+  const StaticByteBuffer kEirData(0x0D,  // Length (13)
+                                  0x09,  // AD type: Complete Local Name
+                                  'S', 'a', 'p', 'p', 'h', 'i', 'r', 'e', 0xf0, 0x9f, 0x92, 0x96);
+  hci_spec::ExtendedInquiryResultEventParams eirep;
+  eirep.num_responses = 1;
+  eirep.bd_addr = peer().address().value();
+  MutableBufferView(eirep.extended_inquiry_response, sizeof(eirep.extended_inquiry_response))
+      .Fill(0);
+  MutableBufferView(eirep.extended_inquiry_response, kEirData.size()).Write(kEirData);
+
+  peer().MutBrEdr().SetInquiryData(eirep);
+  EXPECT_TRUE(listener_notified);  // Fresh EIR data results in an update
+  ASSERT_TRUE(peer().name().has_value());
+  EXPECT_EQ(peer().name().value(), "Sapphire💖");
+}
+
+TEST_F(PeerTest, SetEirDataUpdatesServiceUUIDs) {
+  peer().MutBrEdr();  // Initialize BrEdrData.
+                      // clang-format off
+  const StaticByteBuffer kEirJustServiceUuids{
+      // One 16-bit UUID: AudioSink
+      0x03, static_cast<uint8_t>(DataType::kIncomplete16BitServiceUuids), 0x0A, 0x11,
+  };
+  hci_spec::ExtendedInquiryResultEventParams eirep;
+  eirep.num_responses = 1;
+  eirep.bd_addr = peer().address().value();
+  MutableBufferView(eirep.extended_inquiry_response, sizeof(eirep.extended_inquiry_response)).Fill(0);
+  MutableBufferView(eirep.extended_inquiry_response, kEirJustServiceUuids.size())
+      .Write(kEirJustServiceUuids);
+  peer().MutBrEdr().SetInquiryData(eirep);
+
+  for (const auto it : peer().bredr()->services()) {
+      bt_log(WARN, "gap-le", "After adding: %s", bt_str(it));
+  }
+
+  EXPECT_EQ(peer().bredr()->services().size(), 1u);
+  EXPECT_EQ(peer().bredr()->services().count(UUID((uint16_t)0x110A)), 1u);
 }
 
 TEST_F(PeerTest, LowEnergyStoreBondCallsCallback) {

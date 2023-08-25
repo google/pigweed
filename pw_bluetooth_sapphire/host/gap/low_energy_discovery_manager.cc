@@ -69,7 +69,7 @@ void LowEnergyDiscoverySession::NotifyDiscoveryResult(const Peer& peer) const {
     return;
   }
 
-  if (filter_.MatchLowEnergyResult(peer.le()->advertising_data(), peer.connectable(),
+  if (filter_.MatchLowEnergyResult(peer.le()->parsed_advertising_data(), peer.connectable(),
                                    peer.rssi())) {
     peer_found_callback_(peer);
   }

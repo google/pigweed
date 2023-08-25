@@ -247,7 +247,7 @@ void LowEnergyCentralServer::ScanInstance::FilterAndAddPeers(std::unordered_set<
       // TODO(fxbug.dev/36373): Match peer names that are not in advertising data.
       // This might require implementing a new peer filtering class, as
       // DiscoveryFilter only filters advertising data.
-      if (filter.MatchLowEnergyResult(peer->le()->advertising_data(), peer->connectable(),
+      if (filter.MatchLowEnergyResult(peer->le()->parsed_advertising_data(), peer->connectable(),
                                       peer->rssi())) {
         matches_any = true;
         break;

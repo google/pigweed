@@ -120,6 +120,8 @@ class AdvertisingData {
     kServiceDataUuidMalformed,
     // The length of an Appearance-type field does not match the Appearance value size.
     kAppearanceMalformed,
+    // Advertising Data missing
+    kMissing,
   };
 
   // Both complete and shortened forms of the local name can be advertised.
@@ -218,6 +220,12 @@ class AdvertisingData {
   // Get the appearance
   std::optional<uint16_t> appearance() const;
 
+  // Sets the Advertising Flags
+  void SetFlags(AdvFlags flags);
+
+  // Get the currently-set flags.
+  std::optional<AdvFlags> flags() const;
+
   // Calculates the size of the current set of fields if they were to be written
   // to a buffer using WriteBlock().
   //
@@ -283,6 +291,10 @@ class AdvertisingData {
   std::unordered_map<UUID, DynamicByteBuffer> service_data_;
 
   std::unordered_set<std::string> uris_;
+
+  // Flags, if they have been parsed or set.
+  // Note: When using `WriteBlock`, the passed flags override these.
+  std::optional<AdvFlags> flags_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdvertisingData);
 };

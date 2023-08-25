@@ -6,8 +6,50 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 namespace bt {
+
+bool ParseUuids(const BufferView& data, UUIDElemSize uuid_size, UuidFunction func) {
+  BT_ASSERT(func);
+
+  if (data.size() % uuid_size) {
+    return false;
+  }
+
+  size_t uuid_count = data.size() / uuid_size;
+  for (size_t i = 0; i < uuid_count; i++) {
+    const BufferView uuid_bytes(data.data() + (i * uuid_size), uuid_size);
+    UUID uuid;
+    if (!UUID::FromBytes(uuid_bytes, &uuid) || !func(uuid)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+UUIDElemSize SizeForType(DataType type) {
+  switch (type) {
+    case DataType::kIncomplete16BitServiceUuids:
+    case DataType::kComplete16BitServiceUuids:
+    case DataType::kServiceData16Bit:
+      return UUIDElemSize::k16Bit;
+    case DataType::kIncomplete32BitServiceUuids:
+    case DataType::kComplete32BitServiceUuids:
+    case DataType::kServiceData32Bit:
+      return UUIDElemSize::k32Bit;
+    case DataType::kIncomplete128BitServiceUuids:
+    case DataType::kComplete128BitServiceUuids:
+    case DataType::kServiceData128Bit:
+      return UUIDElemSize::k128Bit;
+    default:
+      break;
+  };
+
+  BT_PANIC("called SizeForType with non-UUID DataType %du", static_cast<uint8_t>(type));
+  return UUIDElemSize::k16Bit;
+}
 
 SupplementDataReader::SupplementDataReader(const ByteBuffer& data)
     : is_valid_(true), remaining_(data) {

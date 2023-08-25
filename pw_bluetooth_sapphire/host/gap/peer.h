@@ -8,15 +8,13 @@
 #include <lib/fit/defer.h>
 
 #include <string>
-#include <type_traits>
-#include <unordered_map>
 #include <unordered_set>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/metrics.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_metrics.h"
@@ -176,19 +174,27 @@ class Peer final {
       return bonded() && auto_conn_behavior_ == AutoConnectBehavior::kAlways;
     }
 
-    // Advertising (and optionally scan response) data obtained during
-    // discovery.
-    const ByteBuffer& advertising_data() const { return adv_data_buffer_; }
-
     // Note that it is possible for `advertising_data()` to return a non-empty buffer while this
     // method returns std::nullopt, as AdvertisingData is only stored if it is parsed correctly.
     // TODO(fxbug.dev/85368): Migrate clients off of advertising_data, so that we do not need to
     // store the raw buffer after parsing it.
-    const std::optional<AdvertisingData>& parsed_advertising_data() const {
-      return parsed_adv_data_;
+    const std::optional<std::reference_wrapper<const AdvertisingData>> parsed_advertising_data()
+        const {
+      if (parsed_adv_data_.is_error()) {
+        return std::nullopt;
+      }
+      return std::cref(parsed_adv_data_.value());
     }
     // Returns the timestamp associated with the most recently successfully parsed AdvertisingData.
     std::optional<zx::time> parsed_advertising_data_timestamp() const { return adv_timestamp_; }
+
+    // Returns the error, if any, encountered when parsing the advertising data from the peer.
+    std::optional<AdvertisingData::ParseError> advertising_data_error() const {
+      if (!parsed_adv_data_.is_error()) {
+        return std::nullopt;
+      }
+      return parsed_adv_data_.error_value();
+    }
 
     // Most recently used LE connection parameters. Has no value if the peer
     // has never been connected.
@@ -285,8 +291,9 @@ class Peer final {
     DynamicByteBuffer adv_data_buffer_;
     // Time when advertising data was last updated and successfully parsed.
     std::optional<zx::time> adv_timestamp_;
-    // AdvertisingData parsed out of the adv_data_buffer_, if it is present and parses correctly.
-    std::optional<AdvertisingData> parsed_adv_data_;
+    // AdvertisingData parsed from the peer's advertising data, if parsed correctly.
+    AdvertisingData::ParseResult parsed_adv_data_ =
+        fit::error(AdvertisingData::ParseError::kMissing);
 
     BoolInspectable<std::optional<sm::PairingData>> bond_data_;
 
@@ -346,7 +353,6 @@ class Peer final {
     // have the highest-order bit set and the rest represents bits 16-2 of CLKNPeripheral-CLK (see
     // hci_spec::kClockOffsetFlagBit in hci/hci_constants.h).
     const std::optional<uint16_t>& clock_offset() const { return clock_offset_; }
-    const BufferView extended_inquiry_response() const { return eir_buffer_.view(0, eir_len_); }
 
     const std::optional<sm::LTK>& link_key() const { return *link_key_; }
 

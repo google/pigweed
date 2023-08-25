@@ -18,53 +18,6 @@ namespace bt {
 
 namespace {
 
-// Return true to indicate that the UUID was processed successfully, false to indicate failure.
-using UuidFunction = fit::function<bool(const UUID&)>;
-
-// Parses `data` into `data.size()` / `uuid_size` UUIDs, callling `func` with each parsed UUID.
-// Returns false without further parsing if `uuid_size` does not evenly divide `data.size()` or
-// `func` returns false for any UUID, otherwise returns true.
-bool ParseUuids(const BufferView& data, UUIDElemSize uuid_size, UuidFunction func) {
-  BT_ASSERT(func);
-
-  if (data.size() % uuid_size) {
-    return false;
-  }
-
-  size_t uuid_count = data.size() / uuid_size;
-  for (size_t i = 0; i < uuid_count; i++) {
-    const BufferView uuid_bytes(data.data() + (i * uuid_size), uuid_size);
-    UUID uuid;
-    if (!UUID::FromBytes(uuid_bytes, &uuid) || !func(uuid)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-UUIDElemSize SizeForType(DataType type) {
-  switch (type) {
-    case DataType::kIncomplete16BitServiceUuids:
-    case DataType::kComplete16BitServiceUuids:
-    case DataType::kServiceData16Bit:
-      return UUIDElemSize::k16Bit;
-    case DataType::kIncomplete32BitServiceUuids:
-    case DataType::kComplete32BitServiceUuids:
-    case DataType::kServiceData32Bit:
-      return UUIDElemSize::k32Bit;
-    case DataType::kIncomplete128BitServiceUuids:
-    case DataType::kComplete128BitServiceUuids:
-    case DataType::kServiceData128Bit:
-      return UUIDElemSize::k128Bit;
-    default:
-      break;
-  };
-
-  BT_PANIC("called SizeForType with non-UUID DataType %du", static_cast<uint8_t>(type));
-  return UUIDElemSize::k16Bit;
-}
-
 DataType ServiceUuidTypeForUuidSize(UUIDElemSize size, bool complete) {
   switch (size) {
     case UUIDElemSize::k16Bit:
@@ -189,6 +142,7 @@ AdvertisingData& AdvertisingData::operator=(AdvertisingData&& other) noexcept {
   manufacturer_data_ = std::exchange(other.manufacturer_data_, {});
   service_data_ = std::exchange(other.service_data_, {});
   uris_ = std::exchange(other.uris_, {});
+  flags_ = std::exchange(other.flags_, {});
   return *this;
 }
 
@@ -210,22 +164,27 @@ std::string AdvertisingData::ParseErrorToString(ParseError e) {
       return "UUIDs associated with service data are malformed";
     case ParseError::kAppearanceMalformed:
       return "malformed appearance field";
+    case ParseError::kMissing:
+      return "data missing";
   }
 }
 
 AdvertisingData::ParseResult AdvertisingData::FromBytes(const ByteBuffer& data) {
-  AdvertisingData out_ad;
+  if (data.size() == 0) {
+    return fit::error(ParseError::kMissing);
+  }
   SupplementDataReader reader(data);
   if (!reader.is_valid()) {
     return fit::error(ParseError::kInvalidTlvFormat);
   }
 
+  AdvertisingData out_ad;
   DataType type;
   BufferView field;
   while (reader.GetNextField(&type, &field)) {
     // While parsing through the advertising data fields, we do not need to validate that per-field
     // sizes do not overflow a uint8_t because they, by construction, are obtained from a uint8_t.
-    BT_ASSERT(field.size() <= std::numeric_limits<uint8_t>::max());
+    BT_DEBUG_ASSERT(field.size() <= std::numeric_limits<uint8_t>::max());
     switch (type) {
       case DataType::kTxPowerLevel: {
         if (field.size() != kTxPowerLevelSize) {
@@ -317,11 +276,16 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(const ByteBuffer& data) 
         break;
       }
       case DataType::kFlags: {
-        // TODO(jamuraa): is there anything to do here?
+        // Flags field may be zero or more octets long but we only store the first octet.
+        if (field.size() > 0) {
+          out_ad.SetFlags(field[0]);
+        } else {
+          out_ad.SetFlags(0);
+        }
         break;
       }
       default:
-        bt_log(DEBUG, "gap-le", "ignored advertising field (type %#.2x)",
+        bt_log(DEBUG, "gap", "ignored advertising field (type %#.2x)",
                static_cast<unsigned int>(type));
         break;
     }
@@ -471,6 +435,10 @@ void AdvertisingData::SetAppearance(uint16_t appearance) { appearance_ = appeara
 
 std::optional<uint16_t> AdvertisingData::appearance() const { return appearance_; }
 
+void AdvertisingData::SetFlags(AdvFlags flags) { flags_ = flags; }
+
+std::optional<AdvFlags> AdvertisingData::flags() const { return flags_; }
+
 size_t AdvertisingData::CalculateBlockSize(bool include_flags) const {
   size_t len = 0;
   if (include_flags) {
@@ -605,7 +573,7 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFla
 bool AdvertisingData::operator==(const AdvertisingData& other) const {
   if ((local_name_ != other.local_name_) || (tx_power_ != other.tx_power_) ||
       (appearance_ != other.appearance_) || (service_uuids_ != other.service_uuids_) ||
-      (uris_ != other.uris_)) {
+      (uris_ != other.uris_) || (flags_ != other.flags_)) {
     return false;
   }
 

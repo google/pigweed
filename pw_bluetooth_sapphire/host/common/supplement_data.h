@@ -5,10 +5,13 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_SUPPLEMENT_DATA_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_SUPPLEMENT_DATA_H_
 
+#include <lib/fit/function.h>
+
 #include <cstddef>
 #include <cstdint>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 
 namespace bt {
 
@@ -37,6 +40,15 @@ enum class DataType : uint8_t {
   // TODO(armansito): Complete this list.
 };
 // clang-format on
+
+UUIDElemSize SizeForType(DataType type);
+
+using UuidFunction = fit::function<bool(const UUID&)>;
+
+// Parses `data` into `data.size()` / `uuid_size` UUIDs, calling `func` with each parsed UUID.
+// Returns false without further parsing if `uuid_size` does not evenly divide `data.size()` or
+// `func` returns false for any UUID, otherwise returns true.
+bool ParseUuids(const BufferView& data, UUIDElemSize uuid_size, UuidFunction func);
 
 // Convenience classes for reading and writing the contents
 // of Advertising Data, Scan Response Data, or Extended Inquiry Response Data

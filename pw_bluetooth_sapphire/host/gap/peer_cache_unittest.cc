@@ -185,7 +185,7 @@ TEST_F(PeerCacheTest, LookUp) {
   EXPECT_TRUE(peer->connectable());
   EXPECT_TRUE(peer->temporary());
   EXPECT_EQ(kAddrLePublic, peer->address());
-  EXPECT_EQ(0u, peer->le()->advertising_data().size());
+  EXPECT_FALSE(peer->le()->parsed_advertising_data().has_value());
   EXPECT_EQ(hci_spec::kRSSIInvalid, peer->rssi());
 
   // A look up should return the same instance.
@@ -196,12 +196,16 @@ TEST_F(PeerCacheTest, LookUp) {
   EXPECT_FALSE(cache()->NewPeer(kAddrLePublic, true));
 
   peer->MutLe().SetAdvertisingData(kTestRSSI, kAdvData1, zx::time());
-  EXPECT_TRUE(ContainersEqual(kAdvData1, peer->le()->advertising_data()));
+  EXPECT_TRUE(peer->le()->parsed_advertising_data().has_value());
   EXPECT_EQ(kTestRSSI, peer->rssi());
+  ASSERT_TRUE(peer->name().has_value());
+  EXPECT_EQ(peer->name().value(), "Test Device");
 
   peer->MutLe().SetAdvertisingData(kTestRSSI, kAdvData0, zx::time());
-  EXPECT_TRUE(ContainersEqual(kAdvData0, peer->le()->advertising_data()));
+  EXPECT_TRUE(peer->le()->parsed_advertising_data().has_value());
   EXPECT_EQ(kTestRSSI, peer->rssi());
+  ASSERT_TRUE(peer->name().has_value());
+  EXPECT_EQ(peer->name().value(), "Test");
 }
 
 TEST_F(PeerCacheTest, LookUpBrEdrPeerByLePublicAlias) {
@@ -1091,7 +1095,8 @@ TEST_F(PeerCacheLowEnergyUpdateCallbackTest,
   ASSERT_NE(peer()->rssi(), kTestRSSI);
   cache()->add_peer_updated_callback([&](const auto& updated_peer) {
     ASSERT_TRUE(updated_peer.le());
-    EXPECT_TRUE(ContainersEqual(kAdvData, updated_peer.le()->advertising_data()));
+    ASSERT_TRUE(updated_peer.name().has_value());
+    EXPECT_EQ(updated_peer.name().value(), "Test");
     EXPECT_EQ(updated_peer.rssi(), kTestRSSI);
   });
   peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, zx::time());

@@ -109,8 +109,9 @@ class DiscoveryFilter final {
   // Returns true, if the given LE scan result satisfies this filter. Otherwise
   // returns false. |advertising_data| should include scan response data, if
   // any.
-  bool MatchLowEnergyResult(const ByteBuffer& advertising_data, bool connectable,
-                            int8_t rssi) const;
+  bool MatchLowEnergyResult(
+      const std::optional<std::reference_wrapper<const AdvertisingData>> advertising_data,
+      bool connectable, int8_t rssi) const;
 
   // Clears all the fields of this filter.
   void Reset();
