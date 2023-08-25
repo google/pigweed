@@ -114,15 +114,15 @@ group("third_party_docs") {
   ]
 }
 
-_doxygen_input_files = [
-  # All sources with doxygen comment blocks.
+# All sources with doxygen comment blocks.
+_doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_allocator/public/pw_allocator/block.h",
   "$dir_pw_allocator/public/pw_allocator/freelist.h",
   "$dir_pw_async/public/pw_async/context.h",
   "$dir_pw_async/public/pw_async/dispatcher.h",
-  "$dir_pw_async/public/pw_async/heap_dispatcher.h",
   "$dir_pw_async/public/pw_async/fake_dispatcher_fixture.h",
   "$dir_pw_async/public/pw_async/function_dispatcher.h",
+  "$dir_pw_async/public/pw_async/heap_dispatcher.h",
   "$dir_pw_async/public/pw_async/task.h",
   "$dir_pw_async/public/pw_async/task_function.h",
   "$dir_pw_async_basic/public/pw_async_basic/dispatcher.h",
@@ -133,32 +133,32 @@ _doxygen_input_files = [
   "$dir_pw_bluetooth/public/pw_bluetooth/low_energy/central.h",
   "$dir_pw_bluetooth/public/pw_bluetooth/low_energy/connection.h",
   "$dir_pw_bluetooth/public/pw_bluetooth/low_energy/peripheral.h",
+  "$dir_pw_chrono/public/pw_chrono/system_clock.h",
+  "$dir_pw_chrono/public/pw_chrono/system_timer.h",
   "$dir_pw_containers/public/pw_containers/filtered_view.h",
   "$dir_pw_containers/public/pw_containers/inline_deque.h",
   "$dir_pw_containers/public/pw_containers/inline_queue.h",
-  "$dir_pw_chrono/public/pw_chrono/system_clock.h",
-  "$dir_pw_chrono/public/pw_chrono/system_timer.h",
   "$dir_pw_digital_io/public/pw_digital_io/digital_io.h",
   "$dir_pw_function/public/pw_function/function.h",
   "$dir_pw_function/public/pw_function/pointer.h",
   "$dir_pw_function/public/pw_function/scope_guard.h",
   "$dir_pw_hdlc/public/pw_hdlc/decoder.h",
   "$dir_pw_hdlc/public/pw_hdlc/encoder.h",
-  "$dir_pw_interrupt/public/pw_interrupt/context.h",
   "$dir_pw_i2c/public/pw_i2c/initiator.h",
   "$dir_pw_i2c_linux/public/pw_i2c_linux/initiator.h",
+  "$dir_pw_interrupt/public/pw_interrupt/context.h",
+  "$dir_pw_log_tokenized/public/pw_log_tokenized/base64.h",
   "$dir_pw_log_tokenized/public/pw_log_tokenized/handler.h",
   "$dir_pw_log_tokenized/public/pw_log_tokenized/metadata.h",
-  "$dir_pw_log_tokenized/public/pw_log_tokenized/base64.h",
   "$dir_pw_protobuf/public/pw_protobuf/find.h",
   "$dir_pw_random/public/pw_random/random.h",
   "$dir_pw_rpc/public/pw_rpc/internal/config.h",
   "$dir_pw_rpc/public/pw_rpc/synchronous_call.h",
-  "$dir_pw_string/public/pw_string/format.h",
-  "$dir_pw_string/public/pw_string/string.h",
   "$dir_pw_status/public/pw_status/status.h",
   "$dir_pw_stream/public/pw_stream/stream.h",
   "$dir_pw_stream_uart_linux/public/pw_stream_uart_linux/stream.h",
+  "$dir_pw_string/public/pw_string/format.h",
+  "$dir_pw_string/public/pw_string/string.h",
   "$dir_pw_string/public/pw_string/string_builder.h",
   "$dir_pw_string/public/pw_string/util.h",
   "$dir_pw_sync/public/pw_sync/binary_semaphore.h",
@@ -174,13 +174,14 @@ _doxygen_input_files = [
   "$dir_pw_sync/public/pw_sync/virtual_basic_lockable.h",
   "$dir_pw_sys_io/public/pw_sys_io/sys_io.h",
   "$dir_pw_thread/public/pw_thread/test_thread_context.h",
+  "$dir_pw_tokenizer/public/pw_tokenizer/config.h",
   "$dir_pw_tokenizer/public/pw_tokenizer/encode_args.h",
-  "$dir_pw_tokenizer/public/pw_tokenizer/tokenize.h",
   "$dir_pw_tokenizer/public/pw_tokenizer/token_database.h",
+  "$dir_pw_tokenizer/public/pw_tokenizer/tokenize.h",
   "$dir_pw_toolchain/public/pw_toolchain/no_destructor.h",
-  "$dir_pw_varint/public/pw_varint/varint.h",
   "$dir_pw_varint/public/pw_varint/stream.h",
-]
+  "$dir_pw_varint/public/pw_varint/varint.h",
+]  # keep-sorted: end
 
 pw_python_action("generate_doxygen") {
   _output_dir = "docs/doxygen"

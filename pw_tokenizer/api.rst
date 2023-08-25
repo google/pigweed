@@ -31,6 +31,11 @@ Tokenization
 .. doxygenfunction:: pw_tokenizer_EncodeArgs
 .. doxygentypedef:: pw_tokenizer_Token
 
+Configuration
+-------------
+.. doxygenfile:: pw_tokenizer/config.h
+   :sections: define
+
 Detokenization
 ==============
 .. doxygenclass:: pw::tokenizer::TokenDatabase

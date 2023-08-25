@@ -20,6 +20,10 @@
 #include "pw_preprocessor/compiler.h"
 #include "pw_varint/varint.h"
 
+static_assert((PW_TOKENIZER_CFG_ARG_TYPES_SIZE_BYTES == 4) ||
+                  (PW_TOKENIZER_CFG_ARG_TYPES_SIZE_BYTES == 8),
+              "PW_TOKENIZER_CFG_ARG_TYPES_SIZE_BYTES must be 4 or 8");
+
 namespace pw {
 namespace tokenizer {
 namespace {
