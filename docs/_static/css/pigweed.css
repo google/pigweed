@@ -27,6 +27,7 @@
 
 .sidebar-brand-text {
   font-size: 2.5rem;
+  text-align: center;
 }
 
 /********** General document coloring ***********/
@@ -76,6 +77,12 @@ dl.describe>dt {
 /* Function signature unindent */
 .sig {
     text-indent: 0em;
+}
+
+/* Remove blank space before/after function signature open/close parens. */
+.sig > dl {
+    margin-block-start: 0;
+    margin-block-end: 0;
 }
 
 /* Make inline code standout more */

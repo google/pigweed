@@ -282,6 +282,11 @@ cpp_paren_attributes = [
 # Disable Python type hints
 # autodoc_typehints = 'none'
 
+# Break class and function signature arguments into one arg per line if the
+# total length exceeds 130 characters. 130 seems about right for keeping one or
+# two parameters on a single line.
+maximum_signature_line_length = 130
+
 
 def do_not_skip_init(app, what, name, obj, would_skip, options):
     if name == "__init__":
