@@ -9,10 +9,321 @@ Changelog
 .. _docs-changelog-latest:
 
 ----------------------------
-Jul 27, 2023 to Aug 11, 2023
+Aug 11, 2023 to Aug 25, 2023
 ----------------------------
 
 .. changelog_highlights_start
+
+Highlights (Aug 11, 2023 to Aug 25, 2023):
+
+* ``pw_tokenizer`` now has Rust support.
+* The ``pw_web`` log viewer now has advanced filtering and a jump-to-bottom
+  button.
+* The ``run_tests()`` method of ``pw_unit_test`` now returns a new
+  ``TestRecord`` dataclass which provides more detailed information
+  about the test run.
+* A new Ambiq Apollo4 target that uses the Ambiq Suite SDK and FreeRTOS
+  has been added.
+
+Please join us at the next Pigweed Live on **Monday, Aug 28 1PM PST** to
+discuss these changes and anything else on your mind. Join our
+`Discord <https://discord.gg/M9NSeTA>`_ and head over to the ``#pigweed-live``
+channel to get a link to the video meeting.
+
+.. changelog_highlights_end
+
+------------
+Active SEEDs
+------------
+Help shape the future of Pigweed! Please leave feedback on the following active RFCs (SEEDs):
+
+* `SEED-0103: pw_protobuf Object Model <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/133971>`__
+* `SEED-0104: display support <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/150793>`__
+* `SEED-0105: Add nested tokens and tokenized args to pw_tokenizer and pw_log <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/154190>`__
+* `SEED-0106: Project Template <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/155430>`__
+* `SEED-0108: Emulators Frontend <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/158190>`__
+
+Modules
+=======
+
+pw_bloat
+--------
+* `Fix typo in method name <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/166832>`__
+
+pw_bluetooth
+------------
+The :ref:`module-pw_third_party_emboss` files were refactored.
+
+* `Add SynchronousConnectionCompleteEvent Emboss definition <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/167862>`__
+* `Add all Emboss headers/deps to emboss_test & fix errors <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168355>`__
+* `Add InquiryResultWithRssiEvent Emboss definition <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/167859>`__
+* `Add DataBufferOverflowEvent Emboss definition <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/167858>`__
+* `Add LinkKeyNotificationEvent Emboss definition <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/167855>`__
+* `Add LinkKeyRequestEvent emboss definition <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/167349>`__
+* `Remove unused hci emboss files <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/167090>`__
+* `Add RoleChangeEvent emboss definition <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/167230>`__
+* `Add missing test dependency <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/167130>`__
+* `Add new hci subset files <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/166730>`__
+
+pw_build
+--------
+The ``pw_build`` docs were split up so that each build system has its own page
+now. The new ``output_logs`` flag enables you to not output logs for ``pw_python_venv``.
+
+* `Handle read-only files when deleting venvs <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/167863>`__
+* `Split build system docs into separate pages <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/165071>`__
+* `Use pw_toolchain_clang_tools <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/167671>`__
+* `Add missing pw_linker_script flag <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/167632>`__
+  (issue `#296928739 <https://issues.pigweed.dev/issues/296928739>`__)
+* `Fix output_logs_ unused warning <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/166991>`__
+  (issue `#295524695 <https://issues.pigweed.dev/issues/295524695>`__)
+* `Don't include compile cmds when preprocessing ldscripts <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/166490>`__
+* `Add pw_python_venv.output_logs <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/165330>`__
+  (issue `#295524695 <https://issues.pigweed.dev/issues/295524695>`__)
+* `Increase size of test linker script memory region <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/164823>`__
+* `Add integration test metadata <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/154553>`__
+
+pw_cli
+------
+* `Default change pw_protobuf default <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/126806>`__
+  (issue `#266298474 <https://issues.pigweed.dev/issues/266298474>`__)
+
+pw_console
+----------
+* `Update web viewer to use pigweedjs <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162995>`__
+
+pw_containers
+-------------
+* `Silence MSAN false positive in pw::Vector <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/167111>`__
+
+pw_docgen
+---------
+Docs builds should be faster now because Sphinx has been configured to use
+all available cores.
+
+* `Remove top nav bar <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168446>`__
+* `Parallelize Sphinx <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/164738>`__
+
+pw_env_setup
+------------
+Sphinx was updated from v5.3.0 to v7.1.2. We switched back to the upstream Furo
+theme and updated to v2023.8.19. The content of ``pigweed_environment.gni`` now
+gets logged. There was an update to ensure that ``arm-none-eabi-gdb`` errors
+propagate correctly. There is now a way to override Bazel build files for CIPD
+repos.
+
+* `Upgrade sphinx and dependencies for docs <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168431>`__
+* `Upgrade sphinx-design <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168339>`__
+* `Copy pigweed_environment.gni to logs <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/167850>`__
+* `arm-gdb: propagate errors <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/165411>`__
+* `arm-gdb: exclude %VIRTUAL_ENV%\Scripts from search paths <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/164370>`__
+* `Add ability to override bazel BUILD file for CIPD repos <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/165530>`__
+
+pw_function
+-----------
+* `Rename template parameter <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168334>`__
+
+pw_fuzzer
+---------
+* `Add test metadata <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/154555>`__
+
+pw_hdlc
+-------
+A new ``close()`` method was added to ``HdlcRpcClient`` to signal to the thread
+to stop.
+
+* `Use explicit logger name <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/166591>`__
+* `Mitigate errors on Python background thread <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162712>`__
+  (issue `#293595266 <https://issues.pigweed.dev/issues/293595266>`__)
+
+pw_ide
+------
+A new ``--install-editable`` flag was added to install Pigweed Python modules
+in editable mode so that code changes are instantly realized.
+
+* `Add cmd to install Py packages as editable <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163572>`__
+* `Make VSC extension run on older versions <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/167054>`__
+
+pw_perf_test
+------------
+* `Add test metadata <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/154554>`__
+
+pw_presubmit
+------------
+``pw_presubmit`` now has an ESLint check for linting and a Prettier check for
+formatting JavaScript and TypeScript files.
+
+* `Add msan to OTHER_CHECKS <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168325>`__
+  (issue `#234876100 <https://issues.pigweed.dev/issues/234876100>`__)
+* `Upstream constraint file output fix <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/166270>`__
+* `JavaScript and TypeScript lint check <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/165410>`__
+* `Apply TypeScript formatting <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/164825>`__
+* `Use prettier for JS and TS files <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/165390>`__
+
+pw_rpc
+------
+A ``request_completion()`` method was added to the ``ServerStreamingCall``
+Python API. A bug was fixed related to encoding failures when dynamic buffers
+are enabled.
+
+* `Add request_completion to ServerStreamingCall python API <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168439>`__
+* `Various small enhancements <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/167162>`__
+* `Remove deprecated method from Service <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/165510>`__
+* `Prevent encoding failure when dynamic buffer enabled <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/166833>`__
+  (issue `#269633514 <https://issues.pigweed.dev/issues/269633514>`__)
+
+pw_rpc_transport
+----------------
+* `Add simple_framing Soong rule <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/165350>`__
+
+pw_rust
+-------
+* `Update rules_rust to 0.26.0 <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/166831>`__
+
+pw_stm32cube_build
+------------------
+* `Windows path fixes <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/167865>`__
+
+pw_stream
+---------
+Error codes were updated to be more accurate and descriptive.
+
+* `Use more appropriate error codes for Cursor <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/164592>`__
+
+pw_stream_uart_linux
+--------------------
+Common baud rates such as ``9600``, ``19200``, and so on are now supported.
+
+* `Add support for baud rates other than 115200 <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/165070>`__
+
+pw_sync
+-------
+Tests were added to make sure that ``pw::sync::Borrowable`` works with lock
+annotations.
+
+* `Test Borrowable with Mutex, TimedMutex, and InterruptSpinLock <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/153575>`__
+  (issue `#261078330 <https://issues.pigweed.dev/issues/261078330>`__)
+
+pw_system
+---------
+The ``pw_system.device.Device`` Python class can now be used as a
+`context manager <https://realpython.com/python-with-statement/>`_.
+
+* `Make pw_system.device.Device a context manager <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163410>`__
+
+pw_tokenizer
+------------
+``pw_tokenizer`` now has Rust support. The ``pw_tokenizer`` C++ config API
+is now documented at :ref:`module-pw_tokenizer-api-cpp-configuration` and
+the C++ token database API is now documented at
+:ref:`module-pw_tokenizer-api-cpp-detokenization`. When creating a token
+database, parent directories are now automatically created if they don't
+already exist. ``PrefixedMessageDecoder`` has been renamed to
+``NestedMessageDecoder``.
+
+* `Move config value check to .cc file <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168615>`__
+* `Create parent directory as needed <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168510>`__
+* `Rework pw_tokenizer.detokenize.PrefixedMessageDecoder <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/167150>`__
+* `Minor binary database improvements <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/167053>`__
+* `Update binary DB docs and convert to Doxygen <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163570>`__
+* `Deprecate tokenizer buffer size config <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163257>`__
+* `Fix instance of -Wconstant-logical-operand <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/166731>`__
+* `Add Rust support <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/145389>`__
+
+pw_toolchain
+------------
+A new Linux host toolchain built using ``pw_toolchain_bazel`` has been
+started. CIPD-provided Rust toolchains are now being used.
+
+* `Link against system libraries using libs not ldflags <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/151050>`__
+* `Use %package% for cxx_builtin_include_directories <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168340>`__
+* `Extend documentation for tool prefixes <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/167633>`__
+* `Add Linux host toolchain <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/164824>`__
+  (issue `#269204725 <https://issues.pigweed.dev/issues/269204725>`__)
+* `Use CIPD provided Rust toolchains <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/166852>`__
+* `Switch macOS to use builtin_sysroot <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/165414>`__
+* `Add cmake helpers for getting clang compile+link flags <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163811>`__
+
+pw_unit_test
+------------
+``run_tests()`` now returns the new ``TestRecord`` dataclass which provides
+more detailed information about the test run. ``SetUpTestSuit()`` and
+``TearDownTestSuite()`` were added to improve GoogleTest compatibility.
+
+* `Add TestRecord of Test Results <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/166273>`__
+* `Reset static value before running tests <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/166590>`__
+  (issue `#296157327 <https://issues.pigweed.dev/issues/296157327>`__)
+* `Add per-fixture setup/teardown <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/165210>`__
+
+pw_web
+------
+Log viewers are now drawn every 100 milliseconds at most to prevent crashes
+when many logs arrive simultaneously. The log viewer now has a jump-to-bottom
+button. Advanced filtering has been added.
+
+* `NPM version bump to 0.0.11 <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168591>`__
+* `Add basic bundling tests for log viewer bundle <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168539>`__
+* `Limit LogViewer redraws to 100ms <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/167852>`__
+* `Add jump to bottom button, fix UI bugs and fix state bugs <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/164272>`__
+* `Implement advanced filtering <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162070>`__
+* `Remove object-path dependency from Device API <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/165013>`__
+* `Log viewer toolbar button toggle style <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/165412>`__
+* `Log-viewer line wrap toggle <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/164010>`__
+
+Targets
+=======
+
+targets
+-------
+A new Ambiq Apollo4 target that uses the Ambiq Suite SDK and FreeRTOS
+has been added.
+
+* `Ambiq Apollo4 support <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/129490>`__
+
+Language support
+================
+
+Python
+------
+* `Upgrade mypy to 1.5.0 <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/166272>`__
+* `Upgrade pylint to 2.17.5 <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/166271>`__
+
+Docs
+====
+Doxygen-generated function signatures now present each argument on a separate
+line. Tabbed content looks visually different than before.
+
+* `Use code-block:: instead of code:: everywhere <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168617>`__
+* `Add function signature line breaks <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168554>`__
+* `Cleanup indentation <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168537>`__
+* `Remove unused myst-parser <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168392>`__
+* `Use sphinx-design for tabbed content <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168341>`__
+* `Update changelog <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/164810>`__
+
+SEEDs
+=====
+:ref:`SEED-0107 (Pigweed Communications) <seed-0107>` was accepted and
+SEED-0109 (Communication Buffers) was started.
+
+* `Update protobuf SEED title in index <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/166470>`__
+* `Update status to Accepted <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/167770>`__
+* `Pigweed communications <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/157090>`__
+* `Claim SEED number <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168358>`__
+
+Miscellaneous
+=============
+
+Build
+-----
+* `Make it possible to run MSAN in GN <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/167112>`__
+
+soong
+-----
+* `Remove host/vendor properties from defaults <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/165270>`__
+
+----------------------------
+Jul 27, 2023 to Aug 11, 2023
+----------------------------
 
 Highlights (Jul 27, 2023 to Aug 11, 2023):
 
@@ -31,8 +342,6 @@ Please join us at the next Pigweed Live on Monday, Aug 14 1PM PST to
 discuss these changes and anything else on your mind. Join our
 `Discord <https://discord.gg/M9NSeTA>`_ and head over to the ``#pigweed-live``
 channel to get a link to the video meeting.
-
-.. changelog_highlights_end
 
 Active SEEDs
 ============

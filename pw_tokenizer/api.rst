@@ -31,10 +31,14 @@ Tokenization
 .. doxygenfunction:: pw_tokenizer_EncodeArgs
 .. doxygentypedef:: pw_tokenizer_Token
 
+.. _module-pw_tokenizer-api-cpp-configuration:
+
 Configuration
 -------------
 .. doxygenfile:: pw_tokenizer/config.h
    :sections: define
+
+.. _module-pw_tokenizer-api-cpp-detokenization:
 
 Detokenization
 ==============
