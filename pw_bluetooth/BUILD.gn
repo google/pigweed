@@ -170,7 +170,6 @@ pw_test("uuid_test") {
 
 pw_test("emboss_test") {
   enable_if = dir_pw_third_party_emboss != ""
-  configs = [ "$dir_pigweed/third_party/emboss:flags" ]
   sources = [ "emboss_test.cc" ]
   deps = [
     ":emboss_hci_commands",

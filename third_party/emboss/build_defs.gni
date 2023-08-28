@@ -72,7 +72,7 @@ template("emboss_cc_library") {
   default_import_dir = get_path_info(default_import_dir, "dir")
   default_import_dir = rebase_path(default_import_dir, root_build_dir)
 
-  action(target_name + "_header") {
+  action("${target_name}_header") {
     script = "$dir_pw_third_party/emboss/embossc_runner.py"
 
     args = [
@@ -141,27 +141,28 @@ template("emboss_cc_library") {
     outputs = [ compiled_header_path ]
   }
 
-  config(target_name + "_emboss_config") {
+  config("${target_name}_emboss_config") {
     include_dirs = [
       "$dir_pw_third_party_emboss",
       root_gen_dir,
     ]
   }
 
+  # Since the emboss_cc_library template is used in non-Pigweed environments, this target is not pw_source_set,
+  # which restricts visibility by default.
   source_set(target_name) {
     forward_variables_from(invoker, "*")
 
     sources = [ compiled_header_path ]
 
-    if (!defined(invoker.deps)) {
-      deps = []
-    }
-    deps += [ "$dir_pw_third_party/emboss:cpp_utils" ]
-    public_deps = [ ":" + target_name + "_header" ]
+    public_deps = [
+      ":${target_name}_header",
+      "$dir_pw_third_party/emboss:cpp_utils",
+    ]
 
     if (!defined(invoker.public_configs)) {
       public_configs = []
     }
-    public_configs += [ ":" + target_name + "_emboss_config" ]
+    public_configs += [ ":${target_name}_emboss_config" ]
   }
 }

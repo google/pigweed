@@ -19,7 +19,7 @@ declare_args() {
   # source code.
   dir_pw_third_party_emboss = ""
 
-  # config target for overriding Emboss defines (e.g. EMBOSS_CHECK).
+  # target for overriding Emboss defines (e.g. EMBOSS_CHECK).
   pw_third_party_emboss_CONFIG =
-      "$dir_pigweed/third_party/emboss:default_config"
+      "$dir_pigweed/third_party/emboss:default_overrides"
 }

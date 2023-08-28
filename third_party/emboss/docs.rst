@@ -34,8 +34,9 @@ installation. If using the submodule path from above, add the following to the
 Optionally, configure the Emboss defines documented at
 `dir_pw_third_party_emboss/runtime/cpp/emboss_defines.h
 <https://github.com/google/emboss/blob/master/runtime/cpp/emboss_defines.h>`_
-by setting the ``pw_third_party_emboss_CONFIG`` variable to a config that
-overrides the defines. By default, checks will use PW_DCHECK.
+by setting the ``pw_third_party_emboss_CONFIG`` variable to a source set that
+includes a public config overriding the defines. By default, checks will
+use PW_DASSERT.
 
 ..
    inclusive-language: enable
