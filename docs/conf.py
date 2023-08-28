@@ -217,7 +217,8 @@ html_theme_options = {
 
 mermaid_init_js = '''
 mermaid.initialize({
-  startOnLoad: true,
+  // Mermaid is manually started in //docs/_static/js/pigweed.js.
+  startOnLoad: false,
   // sequenceDiagram Note text alignment
   noteAlign: "left",
   // Set mermaid theme to the current furo theme
