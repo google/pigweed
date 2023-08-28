@@ -89,8 +89,11 @@ pw_cc_toolchain(
     strip = "@llvm_toolchain//:bin/llvm-strip",
     strip_files = "@llvm_toolchain//:all",
     supports_param_files = 0,
-    target_cpu = "unknown",
-    target_libc = "unknown",
+    # The implementations of some "legacy features" built into Bazel use
+    # `target_libc` to determine if a toolchain targets MacOS,
+    # https://github.com/bazelbuild/bazel/blob/release-7.0.0-pre.20230816.3rc1/src/main/java/com/google/devtools/build/lib/rules/cpp/CcModule.java#L1301-L1304
+    target_cpu = "darwin",
+    target_libc = "macosx",
     target_system_name = "unknown",
     toolchain_identifier = "host-toolchain-macos",
 )
