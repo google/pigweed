@@ -86,31 +86,9 @@ class PW_LOCKABLE("pw::sync::Mutex") Mutex {
 };
 
 class PW_LOCKABLE("pw::sync::VirtualMutex") VirtualMutex final
-    : public VirtualBasicLockable {
+    : public GenericBasicLockable<Mutex> {
  public:
-  VirtualMutex() = default;
-
-  VirtualMutex(const VirtualMutex&) = delete;
-  VirtualMutex(VirtualMutex&&) = delete;
-  VirtualMutex& operator=(const VirtualMutex&) = delete;
-  VirtualMutex& operator=(VirtualMutex&&) = delete;
-
-  Mutex& mutex() { return mutex_; }
-
- private:
-  void DoLockOperation(Operation operation) override
-      PW_NO_LOCK_SAFETY_ANALYSIS {
-    switch (operation) {
-      case Operation::kLock:
-        return mutex_.lock();
-
-      case Operation::kUnlock:
-      default:
-        return mutex_.unlock();
-    }
-  }
-
-  Mutex mutex_;
+  Mutex& mutex() { return impl(); }
 };
 
 }  // namespace pw::sync

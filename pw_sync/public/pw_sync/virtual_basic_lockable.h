@@ -70,4 +70,34 @@ class PW_LOCKABLE("pw::sync::NoOpLock") NoOpLock final
   void DoLockOperation(Operation) override {}
 };
 
+/// Templated base class to facilitate making "Virtual{LockType}" from a
+/// "LockType" class that provides `lock()` and `unlock()` methods.
+/// The resulting classes will derive from `VirtualBasicLockable`.
+///
+/// Example:
+///   class VirtualMutex : public GenericBasicLockable<Mutex> {};
+template <typename LockType>
+class GenericBasicLockable : public VirtualBasicLockable {
+ public:
+  virtual ~GenericBasicLockable() = default;
+
+ protected:
+  LockType& impl() { return impl_; }
+
+ private:
+  void DoLockOperation(Operation operation) override
+      PW_NO_LOCK_SAFETY_ANALYSIS {
+    switch (operation) {
+      case Operation::kLock:
+        return impl_.lock();
+
+      case Operation::kUnlock:
+      default:
+        return impl_.unlock();
+    }
+  }
+
+  LockType impl_;
+};
+
 }  // namespace pw::sync

@@ -731,9 +731,9 @@ internal mutex, however at crash time we may want to switch to a no-op lock. A
 virtual lock interface could be used here to minimize the code-size cost that
 would occur otherwise if the flash driver were templated.
 
-VirtualBasicLock
-----------------
-The ``VirtualBasicLock`` interface meets the
+VirtualBasicLockable
+--------------------
+The ``VirtualBasicLockable`` interface meets the
 `BasicLockable <https://en.cppreference.com/w/cpp/named_req/BasicLockable>`_ C++
 named requirement. Our critical section lock primitives offer optional virtual
 versions, including:
@@ -742,9 +742,22 @@ versions, including:
 * :cpp:func:`pw::sync::VirtualTimedMutex`
 * :cpp:func:`pw::sync::VirtualInterruptSpinLock`
 
+GenericBasicLockable
+--------------------
+``GenericBasicLockable`` is a helper construct that can be used to declare
+virtual versions of a critical section lock primitive that meets the
+`BasicLockable <https://en.cppreference.com/w/cpp/named_req/BasicLockable>`_
+C++ named requirement. For example, given a ``Mutex`` type with ``lock()`` and
+``unlock()`` methods, a ``VirtualMutex`` type that derives from
+``VirtualBasicLockable`` can be declared as follows:
+
+.. code-block:: cpp
+
+   class VirtualMutex : public GenericBasicLockable<Mutex> {};
+
 Borrowable
 ==========
-The Borrowable is a helper construct that enables callers to borrow an object
+``Borrowable`` is a helper construct that enables callers to borrow an object
 which is guarded by a lock, enabling a containerized style of external locking.
 
 Users who need access to the guarded object can ask to acquire a

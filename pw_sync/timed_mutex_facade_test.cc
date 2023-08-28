@@ -49,7 +49,7 @@ constexpr pw_chrono_SystemClock_Duration kRoundedArbitraryDurationInC =
 // TODO(b/235284163): Add real concurrency tests once we have pw::thread.
 
 TEST(TimedMutex, LockUnlock) {
-  pw::sync::TimedMutex mutex;
+  TimedMutex mutex;
   mutex.lock();
   mutex.unlock();
   // TODO(b/235284163): Ensure it fails to lock when already held by someone
@@ -67,7 +67,7 @@ TEST(TimedMutex, LockUnlockStatic) {
 }
 
 TEST(TimedMutex, TryLockUnlock) {
-  pw::sync::TimedMutex mutex;
+  TimedMutex mutex;
   const bool locked = mutex.try_lock();
   EXPECT_TRUE(locked);
   if (locked) {
@@ -79,7 +79,7 @@ TEST(TimedMutex, TryLockUnlock) {
 }
 
 TEST(TimedMutex, TryLockUnlockFor) {
-  pw::sync::TimedMutex mutex;
+  TimedMutex mutex;
 
   SystemClock::time_point before = SystemClock::now();
   const bool locked = mutex.try_lock_for(kRoundedArbitraryDuration);
@@ -98,7 +98,7 @@ TEST(TimedMutex, TryLockUnlockFor) {
 }
 
 TEST(TimedMutex, TryLockUnlockUntil) {
-  pw::sync::TimedMutex mutex;
+  TimedMutex mutex;
 
   const SystemClock::time_point deadline =
       SystemClock::now() + kRoundedArbitraryDuration;
@@ -121,7 +121,7 @@ PW_SYNC_ADD_BORROWABLE_TIMED_LOCK_NAMED_TESTS(BorrowableTimedMutex,
                                               chrono::SystemClock);
 
 TEST(VirtualTimedMutex, LockUnlock) {
-  pw::sync::VirtualTimedMutex mutex;
+  VirtualTimedMutex mutex;
   mutex.lock();
   // TODO(b/235284163): Ensure it fails to lock when already held by someone
   // else.
@@ -138,18 +138,27 @@ TEST(VirtualTimedMutex, LockUnlockStatic) {
   static_virtual_mutex.unlock();
 }
 
+TEST(VirtualMutex, LockUnlockExternal) {
+  VirtualTimedMutex virtual_timed_mutex;
+  auto& mutex = virtual_timed_mutex.timed_mutex();
+  mutex.lock();
+  // TODO(b/235284163): Ensure it fails to lock when already held.
+  // EXPECT_FALSE(mutex.try_lock());
+  mutex.unlock();
+}
+
 PW_SYNC_ADD_BORROWABLE_TIMED_LOCK_NAMED_TESTS(BorrowableVirtualTimedMutex,
                                               VirtualTimedMutex,
                                               chrono::SystemClock);
 
 TEST(TimedMutex, LockUnlockInC) {
-  pw::sync::TimedMutex mutex;
+  TimedMutex mutex;
   pw_sync_TimedMutex_CallLock(&mutex);
   pw_sync_TimedMutex_CallUnlock(&mutex);
 }
 
 TEST(TimedMutex, TryLockUnlockInC) {
-  pw::sync::TimedMutex mutex;
+  TimedMutex mutex;
   ASSERT_TRUE(pw_sync_TimedMutex_CallTryLock(&mutex));
   // TODO(b/235284163): Ensure it fails to lock when already held by someone
   // else.
@@ -158,7 +167,7 @@ TEST(TimedMutex, TryLockUnlockInC) {
 }
 
 TEST(TimedMutex, TryLockUnlockForInC) {
-  pw::sync::TimedMutex mutex;
+  TimedMutex mutex;
 
   pw_chrono_SystemClock_TimePoint before = pw_chrono_SystemClock_Now();
   ASSERT_TRUE(
@@ -176,7 +185,7 @@ TEST(TimedMutex, TryLockUnlockForInC) {
 }
 
 TEST(TimedMutex, TryLockUnlockUntilInC) {
-  pw::sync::TimedMutex mutex;
+  TimedMutex mutex;
   pw_chrono_SystemClock_TimePoint deadline;
   deadline.duration_since_epoch.ticks =
       pw_chrono_SystemClock_Now().duration_since_epoch.ticks +

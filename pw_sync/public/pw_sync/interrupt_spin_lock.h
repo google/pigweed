@@ -81,32 +81,8 @@ class PW_LOCKABLE("pw::sync::InterruptSpinLock") InterruptSpinLock {
 };
 
 class PW_LOCKABLE("pw::sync::VirtualInterruptSpinLock")
-    VirtualInterruptSpinLock final : public VirtualBasicLockable {
- public:
-  VirtualInterruptSpinLock() = default;
-
-  VirtualInterruptSpinLock(const VirtualInterruptSpinLock&) = delete;
-  VirtualInterruptSpinLock(VirtualInterruptSpinLock&&) = delete;
-  VirtualInterruptSpinLock& operator=(const VirtualInterruptSpinLock&) = delete;
-  VirtualInterruptSpinLock& operator=(VirtualInterruptSpinLock&&) = delete;
-
-  InterruptSpinLock& interrupt_spin_lock() { return interrupt_spin_lock_; }
-
- private:
-  void DoLockOperation(Operation operation) override
-      PW_NO_LOCK_SAFETY_ANALYSIS {
-    switch (operation) {
-      case Operation::kLock:
-        return interrupt_spin_lock_.lock();
-
-      case Operation::kUnlock:
-      default:
-        return interrupt_spin_lock_.unlock();
-    }
-  }
-
-  InterruptSpinLock interrupt_spin_lock_;
-};
+    VirtualInterruptSpinLock final
+    : public GenericBasicLockable<InterruptSpinLock> {};
 
 }  // namespace pw::sync
 

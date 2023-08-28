@@ -71,31 +71,9 @@ class TimedMutex : public Mutex {
 };
 
 class PW_LOCKABLE("pw::sync::VirtualTimedMutex") VirtualTimedMutex final
-    : public VirtualBasicLockable {
+    : public GenericBasicLockable<TimedMutex> {
  public:
-  VirtualTimedMutex() = default;
-
-  VirtualTimedMutex(const VirtualTimedMutex&) = delete;
-  VirtualTimedMutex(VirtualTimedMutex&&) = delete;
-  VirtualTimedMutex& operator=(const VirtualTimedMutex&) = delete;
-  VirtualTimedMutex& operator=(VirtualTimedMutex&&) = delete;
-
-  TimedMutex& timed_mutex() { return timed_mutex_; }
-
- private:
-  void DoLockOperation(Operation operation) override
-      PW_NO_LOCK_SAFETY_ANALYSIS {
-    switch (operation) {
-      case Operation::kLock:
-        return timed_mutex_.lock();
-
-      case Operation::kUnlock:
-      default:
-        return timed_mutex_.unlock();
-    }
-  }
-
-  TimedMutex timed_mutex_;
+  TimedMutex& timed_mutex() { return impl(); }
 };
 
 }  // namespace pw::sync
