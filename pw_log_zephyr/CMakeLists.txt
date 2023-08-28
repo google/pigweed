@@ -34,19 +34,33 @@ pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_LOG_ZEPHYR
     pw_log_zephyr
 )
 
-pw_add_library(pw_log_zephyr.tokenized_handler STATIC
+pw_add_library(pw_log_zephyr.tokenized_lib INTERFACE
   HEADERS
     zephyr_public_overrides/zephyr_custom_log.h
-  SOURCES
-    pw_log_zephyr_tokenized_handler.cc
   PUBLIC_DEPS
     pw_log_tokenized.base64
-    pw_log_tokenized.handler
     pw_span
     pw_sync.interrupt_spin_lock
     pw_tokenizer
     pw_tokenizer.base64
 )
+
+pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_LOG_TOKENIZED_LIB
+  pw_log.facade
+  pw_log_tokenized
+)
+if(CONFIG_PIGWEED_LOG_TOKENIZED_LIB)
+  zephyr_include_directories(zephyr_public_overrides)
+endif()
+
+pw_add_library(pw_log_zephyr.tokenized_handler STATIC
+  SOURCES
+    pw_log_zephyr_tokenized_handler.cc
+  PUBLIC_DEPS
+    pw_log_tokenized.handler
+    pw_log_zephyr.tokenized_lib
+)
+
 pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_LOG_TOKENIZED
     pw_log.facade
     pw_log_tokenized

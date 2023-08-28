@@ -46,6 +46,18 @@ menuconfig PIGWEED_LOG_TOKENIZED
       automatically tokenize all the logging strings. This means that Pigweed
       will also tokenize all of Zephyr's logging statements.
 
+config PIGWEED_LOG_TOKENIZED_LIB
+    bool "Tokenize logging and implement your own pw_log_tokenized_HandleLog"
+    select PIGWEED_PREPROCESSOR
+    select PIGWEED_SYNC_INTERRUPT_SPIN_LOCK
+    select PIGWEED_SYS_IO
+    select PIGWEED_TOKENIZER
+    select LOG_CUSTOM_HEADER
+    help
+      Same as PIGWEED_LOG_TOKENIZED but you'll need to implement
+      pw_log_tokenized_HandleLog. This gives you flexiblity to access handlers
+      outside of pigweed.
+
 config PIGWEED_LOG_NONE
     bool "Do not use pigweed logging"
     help
