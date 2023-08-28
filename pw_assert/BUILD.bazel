@@ -152,3 +152,10 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+# Just a placeholder to allow a soft transition.
+#
+# TODO(b/234877642): Remove this target.
+cc_library(
+    name = "empty",
+)

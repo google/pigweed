@@ -490,6 +490,8 @@ common for the ``pw_assert`` backend to cause circular dependencies. Because of
 this, assert backends may avoid declaring explicit dependencies, instead relying
 on include paths to access header files.
 
+GN
+--
 In GN, the ``pw_assert`` backend's full implementation with true dependencies is
 made available through the ``$dir_pw_assert:impl`` group. When
 ``pw_assert_BACKEND`` is set, ``$dir_pw_assert:impl`` must be listed in the
@@ -505,6 +507,31 @@ In order to break dependency cycles, the ``pw_assert_BACKEND`` target may need
 to directly provide dependencies through include paths only, rather than GN
 ``public_deps``. In this case, GN header checking can be disabled with
 ``check_includes = false``.
+
+Bazel
+-----
+In Bazel, assert backends may break dependency cycles by placing the full
+implementation in an ``impl`` target, like ``//pw_assert_basic:impl`` or
+``//pw_assert_tokenized:impl``. The ``@pigweed_config//pw_assert_backend_impl``
+label flag should be set to the ``impl`` target required by the assert backend
+used by the platform.
+
+You must add a dependency on the ``@pigweed_config//:pw_assert_backend_impl``
+target to any binary using ``pw_assert``.  You can do this in a few ways:
+
+1.  Use ``pw_cc_binary``, one of the :ref:`module-pw_build-bazel-wrapper-rules`
+    provided by Pigweed, instead of native ``cc_binary``. This wrapper adds the
+    required dependency.
+
+1.  Use `link_extra_lib
+    <https://bazel.build/reference/be/c-cpp#cc_binary.link_extra_lib>`_: set
+    the ``@bazel_tools//tools/cpp:link_extra_lib`` label flag to point to
+    ``@pigweed_config//:pw_assert_backend_impl``, probably using `bazelrc
+    <https://bazel.build/run/bazelrc>`_. Note that this is only supported in
+    Bazel 7.0.0 or newer.
+
+1.  Add ``@pigweed_config//:pw_assert_backend_impl`` directly to the ``deps``
+    of every embedded ``cc_binary`` in your project.
 
 .. _module-pw_assert-backend_api:
 

@@ -3,6 +3,8 @@ Bazel
 Bazel is currently very experimental, and only builds for host and ARM Cortex-M
 microcontrollers.
 
+.. _module-pw_build-bazel-wrapper-rules:
+
 Wrapper rules
 -------------
 The common configuration for Bazel for all modules is in the ``pigweed.bzl``
