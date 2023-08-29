@@ -49,11 +49,11 @@ To generate its bindings, you can add the following to ``//some/path/to/BUILD.gn
 
 .. code-block::
 
-  import("$dir_pw_third_party/emboss/build_defs.gni")
+   import("$dir_pw_third_party/emboss/build_defs.gni")
 
-  emboss_cc_library("protocol") {
-    source = "my-protocol.emb"
-  }
+   emboss_cc_library("protocol") {
+     source = "my-protocol.emb"
+   }
 
 This generates a source set of the same name as the target, in this case "protocol".
 To use the bindings, list this target as a dependency in GN and include the generated
@@ -61,4 +61,5 @@ header by adding ``.h`` to the path of your Emboss source file:
 
 .. code-block::
 
-  #include <some/path/to/protocol.emb.h>
+   #include <some/path/to/protocol.emb.h>
+

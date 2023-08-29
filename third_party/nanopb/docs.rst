@@ -22,7 +22,7 @@ In your toolchain configuration, you can use the following:
 
 .. code-block::
 
-  pw_third_party_nanopb_CONFIG = "$dir_pw_third_party/nanopb:disable_error_messages"
+   pw_third_party_nanopb_CONFIG = "$dir_pw_third_party/nanopb:disable_error_messages"
 
 
 This will add ``-DPB_NO_ERRMSG=1`` to the build, which disables error messages

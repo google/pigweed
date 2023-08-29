@@ -35,9 +35,9 @@ This can be done in your cmake by including your own header that defines it.
 
 .. code-block::
 
-  add_library(log_tokenized_config INTERFACE)
-  target_compile_options(log_tokenized_config INTERFACE -include header_file_that_sets_that_macro.h)
-  pw_set_module_config(pw_log_tokenized_CONFIG log_tokenized_config)
+   add_library(log_tokenized_config INTERFACE)
+   target_compile_options(log_tokenized_config INTERFACE -include header_file_that_sets_that_macro.h)
+   pw_set_module_config(pw_log_tokenized_CONFIG log_tokenized_config)
 
 Setting the log level
 ---------------------

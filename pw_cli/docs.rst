@@ -61,44 +61,44 @@ pigweed.json file format
 
 .. code-block::
 
-  {
-    "pw": {
-      "pw_cli": {
-        "plugins": {
-          "<plugin name>": {
-            "module": "<module containing plugin>",
-            "function": "<entry point for plugin>"
-          },
-          ...
-        }
-      }
-    }
-  }
+   {
+     "pw": {
+       "pw_cli": {
+         "plugins": {
+           "<plugin name>": {
+             "module": "<module containing plugin>",
+             "function": "<entry point for plugin>"
+           },
+           ...
+         }
+       }
+     }
+   }
 
 The following example registers three commands:
 
 .. code-block::
 
-  {
-    "pw": {
-      "pw_cli": {
-        "plugins": {
-          "presubmit": {
-            "module": "my_cool_project.tools",
-            "function": "run_presubmit"
-          },
-          "test": {
-            "module": "my_cool_project.testing",
-            "function": "run_test"
-          },
-          "flash": {
-            "module": "my_cool_project.flash",
-            "function": "main"
-          }
-        }
-      }
-    }
-  }
+   {
+     "pw": {
+       "pw_cli": {
+         "plugins": {
+           "presubmit": {
+             "module": "my_cool_project.tools",
+             "function": "run_presubmit"
+           },
+           "test": {
+             "module": "my_cool_project.testing",
+             "function": "run_test"
+           },
+           "flash": {
+             "module": "my_cool_project.flash",
+             "function": "main"
+           }
+         }
+       }
+     }
+   }
 
 Defining a plugin function
 --------------------------
@@ -328,10 +328,10 @@ Plugins may be registered in a few different ways.
 
   .. code-block::
 
-    # Comments start with "#". Blank lines are ignored.
-    name_of_the_plugin module.name module_member
+     # Comments start with "#". Blank lines are ignored.
+     name_of_the_plugin module.name module_member
 
-    another_plugin some_module some_function
+     another_plugin some_module some_function
 
   These files are placed in the file system and apply similarly to Git's
   ``.gitignore`` files. From Python, these files are registered using

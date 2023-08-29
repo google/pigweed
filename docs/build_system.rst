@@ -204,13 +204,13 @@ defining a ``default_args`` scope containing the overrides.
 
 .. code-block::
 
-  # The location of the BUILDCONFIG file.
-  buildconfig = "//BUILDCONFIG.gn"
+   # The location of the BUILDCONFIG file.
+   buildconfig = "//BUILDCONFIG.gn"
 
-  # Build arguments set across all Pigweed targets.
-  default_args = {
-    dir_pw_third_party_nanopb = "//third_party/nanopb-0.4.2"
-  }
+   # Build arguments set across all Pigweed targets.
+   default_args = {
+     dir_pw_third_party_nanopb = "//third_party/nanopb-0.4.2"
+   }
 
 Configuration: BUILDCONFIG.gn
 -----------------------------
@@ -275,20 +275,20 @@ toolchain.
 
 .. code-block::
 
-  group("my_application_images") {
-    deps = []  # Empty in the default toolchain.
+   group("my_application_images") {
+     deps = []  # Empty in the default toolchain.
 
-    if (current_toolchain != default_toolchain) {
-      # This is only evaluated by Pigweed target toolchains, which configure
-      # all of the required options to build Pigweed code.
-      deps += [ "//images:evt" ]
-    }
-  }
+     if (current_toolchain != default_toolchain) {
+       # This is only evaluated by Pigweed target toolchains, which configure
+       # all of the required options to build Pigweed code.
+       deps += [ "//images:evt" ]
+     }
+   }
 
-  # The images group is instantiated for each of the project's Pigweed targets.
-  group("my_pigweed_target") {
-    deps = [ ":my_application_images(//toolchains:my_pigweed_target)" ]
-  }
+   # The images group is instantiated for each of the project's Pigweed targets.
+   group("my_pigweed_target") {
+     deps = [ ":my_application_images(//toolchains:my_pigweed_target)" ]
+   }
 
 .. warning::
   Pigweed's default toolchain is never used, so it is set to an empty toolchain
@@ -435,11 +435,11 @@ reference these module variables.
 
 .. code-block::
 
-  # This must be imported before .gni files from any other Pigweed modules. To
-  # prevent gn format from reordering this import, it must be separated by a
-  # blank line from other imports.
+   # This must be imported before .gni files from any other Pigweed modules. To
+   # prevent gn format from reordering this import, it must be separated by a
+   # blank line from other imports.
 
-  import("//build_overrides/pigweed.gni")
+   import("//build_overrides/pigweed.gni")
 
 GN target type wrappers
 -----------------------
@@ -496,24 +496,24 @@ Building a custom executable/app image
 
    .. code-block::
 
-     # //foo/BUILD.gn
-     pw_executable("foo") {
-       sources = [ "main.cc" ]
-       deps = [ ":libfoo" ]
-     }
+      # //foo/BUILD.gn
+      pw_executable("foo") {
+        sources = [ "main.cc" ]
+        deps = [ ":libfoo" ]
+      }
 
 2. In the root ``BUILD.gn`` file, add the executable's GN target to the ``apps``
    group.
 
    .. code-block::
 
-     # //BUILD.gn
-     group("apps") {
-       deps = [
-         # ...
-         "//foo",  # Shorthand for //foo:foo
-       ]
-     }
+      # //BUILD.gn
+      group("apps") {
+        deps = [
+          # ...
+          "//foo",  # Shorthand for //foo:foo
+        ]
+      }
 
 3. Run the ninja build to compile your executable. The apps group is built by
    default, so there's no need to provide a target. The executable will be
@@ -521,7 +521,7 @@ Building a custom executable/app image
 
    .. code-block::
 
-     ninja -C out
+      ninja -C out
 
    Alternatively, build your executable by itself by specifying its path to
    Ninja. When building a GN target manually, the Pigweed target for which it
@@ -531,7 +531,7 @@ Building a custom executable/app image
 
    .. code-block::
 
-     ninja -C out host_gcc_debug/obj/foo/bin/foo
+      ninja -C out host_gcc_debug/obj/foo/bin/foo
 
    .. note::
 
@@ -543,7 +543,7 @@ Building a custom executable/app image
 
    .. code-block::
 
-     out/<pw_target>/obj/<gn_path>/{bin,test}/<executable>
+      out/<pw_target>/obj/<gn_path>/{bin,test}/<executable>
 
    where ``pw_target`` is the Pigweed target for which the binary was built,
    ``gn_path`` is the GN path to the BUILD.gn file defining the executable,
@@ -556,7 +556,7 @@ Building a custom executable/app image
 
    .. code-block::
 
-     out/stm32f429i_disc1_debug/obj/foo/bin/foo
+      out/stm32f429i_disc1_debug/obj/foo/bin/foo
 
 CMake
 -----
@@ -850,18 +850,18 @@ Continuing on with our scenario, consider that you maybe want to try using the
 
 .. code-block::
 
-  # BUILD
-  pw_cc_library(
-    name = "time_is_relative",
-    srcs = ["relative_time_on_earth.cc"],
-    deps = ["@pigweed//pw_chrono"],
-  )
+   # BUILD
+   pw_cc_library(
+     name = "time_is_relative",
+     srcs = ["relative_time_on_earth.cc"],
+     deps = ["@pigweed//pw_chrono"],
+   )
 
 Now this should work out of the box for any host operating system. e.g. Running;
 
 .. code-block::
 
-  bazel build //:time_is_relative
+   bazel build //:time_is_relative
 
 will produce a working library. But as your probably here because Pigweed offers
 a set of embedded libraries you might be interested in running your code on some
@@ -882,21 +882,21 @@ look like.
 
 .. code-block::
 
-  @pigweed//pw_chrono:pw_chrono_facade <-----------.
-   ^                                               |
-   |                            @pigweed//pw_chrono_freertos:system_clock
-   |                            (Actual backend)
-   |                                               ^
-   |                                               |
-   |                            @pigweed//pw_chrono:system_clock_backend_multiplexer
-   |                            Select backend based on OS:
-   |                            [FreeRTOS (X), Embos ( ), STL ( ), Threadx ( )]
-   |                                               ^
-   |                                               |
-  @pigweed//pw_chrono  -------> @pigweed_config//:pw_chrono_system_clock_backend
-   ^                            (Injectable)
-   |
-  //:time_is_relative
+   @pigweed//pw_chrono:pw_chrono_facade <-----------.
+    ^                                               |
+    |                            @pigweed//pw_chrono_freertos:system_clock
+    |                            (Actual backend)
+    |                                               ^
+    |                                               |
+    |                            @pigweed//pw_chrono:system_clock_backend_multiplexer
+    |                            Select backend based on OS:
+    |                            [FreeRTOS (X), Embos ( ), STL ( ), Threadx ( )]
+    |                                               ^
+    |                                               |
+   @pigweed//pw_chrono  -------> @pigweed_config//:pw_chrono_system_clock_backend
+    ^                            (Injectable)
+    |
+   //:time_is_relative
 
 So when evaluating this setup Bazel checks the dependencies for '//pw_chrono'
 and finds that it depends on "@pigweed_config//:pw_chrono_system_clock_backend" which looks
@@ -952,16 +952,16 @@ This temporarily modifies the build graph to look something like this;
 
 .. code-block::
 
-  @pigweed//pw_chrono:pw_chrono_facade <-----.
-   ^                                         |
-   |                      @your_workspace//pw_chrono_my_hardware_rtc:system_clock
-   |                      (Actual backend)
-   |                                         ^
-   |                                         |
-  @pigweed//pw_chrono  -> @pigweed_config//:pw_chrono_system_clock_backend
-   ^                      (Injectable)
-   |
-  //:time_is_relative
+   @pigweed//pw_chrono:pw_chrono_facade <-----.
+    ^                                         |
+    |                      @your_workspace//pw_chrono_my_hardware_rtc:system_clock
+    |                      (Actual backend)
+    |                                         ^
+    |                                         |
+   @pigweed//pw_chrono  -> @pigweed_config//:pw_chrono_system_clock_backend
+    ^                      (Injectable)
+    |
+   //:time_is_relative
 
 Now while this is a nice temporary change, but you might find yourself in need
 of a more permanent configuration. Particularly if you want to override multiple
@@ -1050,18 +1050,19 @@ Will result in a build graph that looks like;
 
 .. code-block::
 
-  @pigweed//pw_chrono:pw_chrono_facade <---.
-   ^                                        |
-   |                     @your_workspace//pw_chrono_my_hardware_rtc:system_clock
-   |                     (Actual backend)
-   |                                        ^
-   |                                        |
-   |                     @your_workspace//pw_chrono:system_clock_backend_multiplexer
-   |                     Select backend based on OS:
-   |                     [Primary (X), Backup ( ), Host only default ( )]
-   |                                        ^
-   |                                        |
-  @pigweed//pw_chrono -> @pigweed_config//:pw_chrono_system_clock_backend
-   ^                     (Injectable)
-   |
-  //:time_is_relative
+   @pigweed//pw_chrono:pw_chrono_facade <---.
+    ^                                        |
+    |                     @your_workspace//pw_chrono_my_hardware_rtc:system_clock
+    |                     (Actual backend)
+    |                                        ^
+    |                                        |
+    |                     @your_workspace//pw_chrono:system_clock_backend_multiplexer
+    |                     Select backend based on OS:
+    |                     [Primary (X), Backup ( ), Host only default ( )]
+    |                                        ^
+    |                                        |
+   @pigweed//pw_chrono -> @pigweed_config//:pw_chrono_system_clock_backend
+    ^                     (Injectable)
+    |
+   //:time_is_relative
+

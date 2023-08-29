@@ -166,10 +166,10 @@ to add Python package dependencies:
 
    .. code-block::
 
-     pw_build_PIP_REQUIREMENTS = [
-       # Project specific requirements
-       "//tools/requirements.txt",
-     ]
+      pw_build_PIP_REQUIREMENTS = [
+        # Project specific requirements
+        "//tools/requirements.txt",
+      ]
 
    See the :ref:`docs-python-build-python-gn-structure` section below for a full
    code listing.

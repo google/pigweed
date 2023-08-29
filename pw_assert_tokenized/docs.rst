@@ -70,29 +70,29 @@ Example file name token database setup
 
 .. code-block::
 
-  pw_executable("main") {
-    deps = [
-      # ...
-    ]
-    sources = [ "main.cc" ]
-  }
+   pw_executable("main") {
+     deps = [
+       # ...
+     ]
+     sources = [ "main.cc" ]
+   }
 
-  pw_tokenizer_database("log_tokens") {
-    database = "tools/tokenized_logs.csv"
-    deps = [
-      ":source_file_names",
-      ":main",
-    ]
-    optional_paths = [ "$root_build_dir/**/*.elf" ]
-    input_databases = [ "$target_gen_dir/source_file_names.json" ]
-  }
+   pw_tokenizer_database("log_tokens") {
+     database = "tools/tokenized_logs.csv"
+     deps = [
+       ":source_file_names",
+       ":main",
+     ]
+     optional_paths = [ "$root_build_dir/**/*.elf" ]
+     input_databases = [ "$target_gen_dir/source_file_names.json" ]
+   }
 
-  # Extracts all source/header file names from "main" and its transitive
-  # dependencies for tokenization.
-  pw_relative_source_file_names("source_file_names") {
-    deps = [ ":main" ]
-    outputs = [ "$target_gen_dir/source_file_names.json" ]
-  }
+   # Extracts all source/header file names from "main" and its transitive
+   # dependencies for tokenization.
+   pw_relative_source_file_names("source_file_names") {
+     deps = [ ":main" ]
+     outputs = [ "$target_gen_dir/source_file_names.json" ]
+   }
 
 
 .. warning::

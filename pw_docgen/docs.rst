@@ -79,12 +79,12 @@ groups, causing them to be built with it.
 
 .. code-block::
 
-  pw_doc_group("my_doc_group") {
-    sources = [ "docs.rst" ]
-    inputs = [ "face-with-tears-of-joy-emoji.svg" ]
-    group_deps = [ ":sub_doc_group" ]
-    report_deps = [ ":my_size_report" ]
-  }
+   pw_doc_group("my_doc_group") {
+     sources = [ "docs.rst" ]
+     inputs = [ "face-with-tears-of-joy-emoji.svg" ]
+     group_deps = [ ":sub_doc_group" ]
+     report_deps = [ ":my_size_report" ]
+   }
 
 pw_doc_gen
 __________
@@ -111,14 +111,14 @@ to tie everything together.
 
 .. code-block::
 
-  pw_doc_gen("my_docs") {
-    conf = "//my_docs/conf.py"
-    index = "//my_docs/index.rst"
-    output_directory = target_gen_dir
-    deps = [
-      "//my_module:my_doc_group",
-    ]
-  }
+   pw_doc_gen("my_docs") {
+     conf = "//my_docs/conf.py"
+     index = "//my_docs/index.rst"
+     output_directory = target_gen_dir
+     deps = [
+       "//my_module:my_doc_group",
+     ]
+   }
 
 Generating Documentation
 ------------------------
@@ -131,16 +131,16 @@ Consider the following target in ``$dir_pigweed/docs/BUILD.gn``:
 
 .. code-block::
 
-  pw_doc_gen("docs") {
-    conf = "conf.py"
-    index = "index.rst"
-    output_directory = target_gen_dir
-    deps = [
-      "$dir_pw_bloat:docs",
-      "$dir_pw_docgen:docs",
-      "$dir_pw_preprocessor:docs",
-    ]
-  }
+   pw_doc_gen("docs") {
+     conf = "conf.py"
+     index = "index.rst"
+     output_directory = target_gen_dir
+     deps = [
+       "$dir_pw_bloat:docs",
+       "$dir_pw_docgen:docs",
+       "$dir_pw_preprocessor:docs",
+     ]
+   }
 
 A documentation tree is created under the output directory. Each of the sources
 and inputs in the target's dependency graph is copied under this tree in the
@@ -150,17 +150,17 @@ directly to the ``pw_doc_gen`` template are copied in at the root of the tree.
 
 .. code-block::
 
-  out/gen/docs/pw_docgen_tree/
-  ├── conf.py
-  ├── index.rst
-  ├── pw_bloat
-  │   ├── bloat.rst
-  │   └── examples
-  │       └── simple_bloat.rst
-  ├── pw_docgen
-  │   └── docgen.rst
-  └── pw_preprocessor
-      └── docs.rst
+   out/gen/docs/pw_docgen_tree/
+   ├── conf.py
+   ├── index.rst
+   ├── pw_bloat
+   │   ├── bloat.rst
+   │   └── examples
+   │       └── simple_bloat.rst
+   ├── pw_docgen
+   │   └── docgen.rst
+   └── pw_preprocessor
+       └── docs.rst
 
 This is the documentation tree which gets passed to Sphinx to build HTML output.
 Imports within documentation files must be relative to this structure. In

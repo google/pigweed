@@ -23,8 +23,8 @@ Then add the following lines to that text file:
 
 .. code-block::
 
-  # Path to the extracted AmbiqSuite SDK package.
-  dir_pw_third_party_ambiq_SDK = "/path/to/AmbiqSuite_R4.3.0"
+   # Path to the extracted AmbiqSuite SDK package.
+   dir_pw_third_party_ambiq_SDK = "/path/to/AmbiqSuite_R4.3.0"
 
 Usage
 =====

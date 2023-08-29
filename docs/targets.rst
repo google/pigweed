@@ -69,31 +69,31 @@ targets.
 
 .. code-block::
 
-  import("//build_overrides/pigweed.gni")
+   import("//build_overrides/pigweed.gni")
 
-  import("$dir_pw_toolchain/arm_gcc/toolchains.gni")
-  import("$dir_pw_toolchain/generate_toolchain.gni")
+   import("$dir_pw_toolchain/arm_gcc/toolchains.gni")
+   import("$dir_pw_toolchain/generate_toolchain.gni")
 
-  my_target_scope = {
-    # Use Pigweed's Cortex M4 toolchain as a base.
-    _toolchain_base = pw_toolchain_arm_gcc.cortex_m4f_debug
+   my_target_scope = {
+     # Use Pigweed's Cortex M4 toolchain as a base.
+     _toolchain_base = pw_toolchain_arm_gcc.cortex_m4f_debug
 
-    # Forward everything except the defaults scope from that toolchain.
-    forward_variables_from(_toolchain_base, "*", [ "defaults" ])
+     # Forward everything except the defaults scope from that toolchain.
+     forward_variables_from(_toolchain_base, "*", [ "defaults" ])
 
-    defaults = {
-      # Forward everything from the base toolchain's defaults.
-      forward_variables_from(_toolchain_base.defaults, "*")
+     defaults = {
+       # Forward everything from the base toolchain's defaults.
+       forward_variables_from(_toolchain_base.defaults, "*")
 
-      # Extend with custom build arguments for the target.
-      pw_log_BACKEND = dir_pw_log_tokenized
-    }
-  }
+       # Extend with custom build arguments for the target.
+       pw_log_BACKEND = dir_pw_log_tokenized
+     }
+   }
 
-  # Create the actual GN toolchain from the scope.
-  generate_toolchain("my_target") {
-    forward_variables_from(my_target_scope, "*")
-  }
+   # Create the actual GN toolchain from the scope.
+   generate_toolchain("my_target") {
+     forward_variables_from(my_target_scope, "*")
+   }
 
 Upstream targets
 ================

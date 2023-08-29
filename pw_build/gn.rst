@@ -291,22 +291,22 @@ Example
 
 .. code-block::
 
-  pw_cc_blob_library("foo_bar_blobs") {
-    blobs: [
-      {
-        symbol_name: "kFooBlob"
-        file_path: "${target_out_dir}/stuff/bin/foo.bin"
-      },
-      {
-        symbol_name: "kBarBlob"
-        file_path: "//stuff/bin/bar.bin"
-        linker_section: ".bar_section"
-      },
-    ]
-    out_header: "my/stuff/foo_bar_blobs.h"
-    namespace: "my::stuff"
-    deps = [ ":generate_foo_bin" ]
-  }
+   pw_cc_blob_library("foo_bar_blobs") {
+     blobs: [
+       {
+         symbol_name: "kFooBlob"
+         file_path: "${target_out_dir}/stuff/bin/foo.bin"
+       },
+       {
+         symbol_name: "kBarBlob"
+         file_path: "//stuff/bin/bar.bin"
+         linker_section: ".bar_section"
+       },
+     ]
+     out_header: "my/stuff/foo_bar_blobs.h"
+     namespace: "my::stuff"
+     deps = [ ":generate_foo_bin" ]
+   }
 
 .. note:: If the binary blobs are generated as part of the build, be sure to
           list them as deps to the pw_cc_blob_library target.
@@ -315,38 +315,38 @@ Example
 
 .. code-block::
 
-  #pragma once
+   #pragma once
 
-  #include <array>
-  #include <cstddef>
+   #include <array>
+   #include <cstddef>
 
-  namespace my::stuff {
+   namespace my::stuff {
 
-  extern const std::array<std::byte, 100> kFooBlob;
+   extern const std::array<std::byte, 100> kFooBlob;
 
-  extern const std::array<std::byte, 50> kBarBlob;
+   extern const std::array<std::byte, 50> kBarBlob;
 
-  }  // namespace my::stuff
+   }  // namespace my::stuff
 
 **Generated Source**
 
 .. code-block::
 
-  #include "my/stuff/foo_bar_blobs.h"
+   #include "my/stuff/foo_bar_blobs.h"
 
-  #include <array>
-  #include <cstddef>
+   #include <array>
+   #include <cstddef>
 
-  #include "pw_preprocessor/compiler.h"
+   #include "pw_preprocessor/compiler.h"
 
-  namespace my::stuff {
+   namespace my::stuff {
 
-  const std::array<std::byte, 100> kFooBlob = { ... };
+   const std::array<std::byte, 100> kFooBlob = { ... };
 
-  PW_PLACE_IN_SECTION(".bar_section")
-  const std::array<std::byte, 50> kBarBlob = { ... };
+   PW_PLACE_IN_SECTION(".bar_section")
+   const std::array<std::byte, 50> kBarBlob = { ... };
 
-  }  // namespace my::stuff
+   }  // namespace my::stuff
 
 .. _module-pw_build-facade:
 
@@ -369,12 +369,12 @@ The ``pw_facade`` template declares two targets:
 
 .. code-block::
 
-  # Declares ":foo" and ":foo.facade" GN targets
-  pw_facade("foo") {
-    backend = pw_log_BACKEND
-    public_configs = [ ":public_include_path" ]
-    public = [ "public/pw_foo/foo.h" ]
-  }
+   # Declares ":foo" and ":foo.facade" GN targets
+   pw_facade("foo") {
+     backend = pw_log_BACKEND
+     public_configs = [ ":public_include_path" ]
+     public = [ "public/pw_foo/foo.h" ]
+   }
 
 Low-level facades like ``pw_assert`` cannot express all of their dependencies
 due to the potential for dependency cycles. Facades with this issue may require
@@ -651,13 +651,13 @@ The following expressions are supported:
 
   .. code-block::
 
-    "<TARGET_FILE(//foo/bar:static_lib)>"
+     "<TARGET_FILE(//foo/bar:static_lib)>"
 
   might expand to
 
   .. code-block::
 
-    "/home/User/project_root/out/obj/foo/bar/static_lib.a"
+     "/home/User/project_root/out/obj/foo/bar/static_lib.a"
 
   ``TARGET_FILE`` parses the ``.ninja`` file for the GN target, so it should
   always find the correct output file, regardless of the toolchain's or target's
@@ -682,14 +682,14 @@ The following expressions are supported:
 
   .. code-block::
 
-    "--database=<TARGET_FILE_IF_EXISTS(//alpha/bravo)>"
+     "--database=<TARGET_FILE_IF_EXISTS(//alpha/bravo)>"
 
   If the ``//alpha/bravo`` target file exists, this might expand to the
   following:
 
   .. code-block::
 
-    "--database=/home/User/project/out/obj/alpha/bravo/bravo.elf"
+     "--database=/home/User/project/out/obj/alpha/bravo/bravo.elf"
 
   If the ``//alpha/bravo`` target file does not exist, the entire
   ``--database=`` argument is omitted from the script arguments.
@@ -705,31 +705,31 @@ The following expressions are supported:
 
   .. code-block::
 
-    "<TARGET_OBJECTS(//foo/bar:a_source_set)>"
+     "<TARGET_OBJECTS(//foo/bar:a_source_set)>"
 
   might expand to multiple separate arguments:
 
   .. code-block::
 
-    "/home/User/project_root/out/obj/foo/bar/a_source_set.file_a.cc.o"
-    "/home/User/project_root/out/obj/foo/bar/a_source_set.file_b.cc.o"
-    "/home/User/project_root/out/obj/foo/bar/a_source_set.file_c.cc.o"
+     "/home/User/project_root/out/obj/foo/bar/a_source_set.file_a.cc.o"
+     "/home/User/project_root/out/obj/foo/bar/a_source_set.file_b.cc.o"
+     "/home/User/project_root/out/obj/foo/bar/a_source_set.file_c.cc.o"
 
 Example
 ^^^^^^^
 .. code-block::
 
-  import("$dir_pw_build/python_action.gni")
+   import("$dir_pw_build/python_action.gni")
 
-  pw_python_action("postprocess_main_image") {
-    script = "py/postprocess_binary.py"
-    args = [
-      "--database",
-      rebase_path("my/database.csv", root_build_dir),
-      "--binary=<TARGET_FILE(//firmware/images:main)>",
-    ]
-    stamp = true
-  }
+   pw_python_action("postprocess_main_image") {
+     script = "py/postprocess_binary.py"
+     args = [
+       "--database",
+       rebase_path("my/database.csv", root_build_dir),
+       "--binary=<TARGET_FILE(//firmware/images:main)>",
+     ]
+     stamp = true
+   }
 
 .. _module-pw_build-evaluate-path-expressions:
 
@@ -766,40 +766,40 @@ the list of object files from which it was compiled, making use of
 
 .. code-block::
 
-  import("$dir_pw_build/evaluate_path_expressions.gni")
+   import("$dir_pw_build/evaluate_path_expressions.gni")
 
-  template("executable_with_artifacts") {
-    executable("${target_name}.exe") {
-      sources = invoker.sources
-      if defined(invoker.deps) {
-        deps = invoker.deps
-      }
-    }
+   template("executable_with_artifacts") {
+     executable("${target_name}.exe") {
+       sources = invoker.sources
+       if defined(invoker.deps) {
+         deps = invoker.deps
+       }
+     }
 
-    _artifacts_input = "$target_gen_dir/${target_name}_artifacts.json.in"
-    _artifacts_output = "$target_gen_dir/${target_name}_artifacts.json"
-    _artifacts = {
-      binary = "<TARGET_FILE(:${target_name}.exe)>"
-      objects = "<TARGET_OBJECTS(:${target_name}.exe)>"
-    }
-    write_file(_artifacts_input, _artifacts, "json")
+     _artifacts_input = "$target_gen_dir/${target_name}_artifacts.json.in"
+     _artifacts_output = "$target_gen_dir/${target_name}_artifacts.json"
+     _artifacts = {
+       binary = "<TARGET_FILE(:${target_name}.exe)>"
+       objects = "<TARGET_OBJECTS(:${target_name}.exe)>"
+     }
+     write_file(_artifacts_input, _artifacts, "json")
 
-    pw_evaluate_path_expressions("${target_name}.evaluate") {
-      files = [
-        {
-          source = _artifacts_input
-          dest = _artifacts_output
-        },
-      ]
-    }
+     pw_evaluate_path_expressions("${target_name}.evaluate") {
+       files = [
+         {
+           source = _artifacts_input
+           dest = _artifacts_output
+         },
+       ]
+     }
 
-    group(target_name) {
-      deps = [
-        ":${target_name}.exe",
-        ":${target_name}.evaluate",
-      ]
-    }
-  }
+     group(target_name) {
+       deps = [
+         ":${target_name}.exe",
+         ":${target_name}.evaluate",
+       ]
+     }
+   }
 
 .. _module-pw_build-pw_exec:
 
@@ -890,18 +890,18 @@ Example
 ^^^^^^^
 .. code-block::
 
-  import("$dir_pw_build/input_group.gni")
+   import("$dir_pw_build/input_group.gni")
 
-  pw_input_group("foo_metadata") {
-    metadata = {
-      files = [
-        "x.foo",
-        "y.foo",
-        "z.foo",
-      ]
-    }
-    inputs = metadata.files
-  }
+   pw_input_group("foo_metadata") {
+     metadata = {
+       files = [
+         "x.foo",
+         "y.foo",
+         "z.foo",
+       ]
+     }
+     inputs = metadata.files
+   }
 
 Targets depending on ``foo_metadata`` will rebuild when any of the ``.foo``
 files are modified.
@@ -941,53 +941,53 @@ Let's say we have the following structure for a ``//source/`` directory:
 
 .. code-block::
 
-  source/
-  ├── file1.txt
-  ├── file2.txt
-  ├── file3.txt
-  └── some_dir/
-      ├── file4.txt
-      └── some_other_dir/
-          └── file5.txt
+   source/
+   ├── file1.txt
+   ├── file2.txt
+   ├── file3.txt
+   └── some_dir/
+       ├── file4.txt
+       └── some_other_dir/
+           └── file5.txt
 
 And we create the following build target:
 
 .. code-block::
 
-  import("$dir_pw_build/zip.gni")
+   import("$dir_pw_build/zip.gni")
 
-  pw_zip("target_name") {
-    inputs = [
-      "//source/file1.txt > /",             # Copied to the zip root dir.
-      "//source/file2.txt > /renamed.txt",  # File renamed.
-      "//source/file3.txt > /bar/",         # File moved to the /bar/ dir.
-    ]
+   pw_zip("target_name") {
+     inputs = [
+       "//source/file1.txt > /",             # Copied to the zip root dir.
+       "//source/file2.txt > /renamed.txt",  # File renamed.
+       "//source/file3.txt > /bar/",         # File moved to the /bar/ dir.
+     ]
 
-    dirs = [
-      "//source/some_dir/ > /bar/some_dir/",  # All /some_dir/ contents copied
-                                              # as /bar/some_dir/.
-    ]
+     dirs = [
+       "//source/some_dir/ > /bar/some_dir/",  # All /some_dir/ contents copied
+                                               # as /bar/some_dir/.
+     ]
 
-    # Note on output: if the specific output directory isn't defined
-    # (such as output = "zoo.zip") then the .zip will output to the
-    # same directory as the BUILD.gn file that called the target.
-    output = "//$target_out_dir/foo.zip"  # Where the foo.zip will end up
-  }
+     # Note on output: if the specific output directory isn't defined
+     # (such as output = "zoo.zip") then the .zip will output to the
+     # same directory as the BUILD.gn file that called the target.
+     output = "//$target_out_dir/foo.zip"  # Where the foo.zip will end up
+   }
 
 This will result in a ``.zip`` file called ``foo.zip`` stored in
 ``//$target_out_dir`` with the following structure:
 
 .. code-block::
 
-  foo.zip
-  ├── bar/
-  │   ├── file3.txt
-  │   └── some_dir/
-  │       ├── file4.txt
-  │       └── some_other_dir/
-  │           └── file5.txt
-  ├── file1.txt
-  └── renamed.txt
+   foo.zip
+   ├── bar/
+   │   ├── file3.txt
+   │   └── some_dir/
+   │       ├── file4.txt
+   │       └── some_other_dir/
+   │           └── file5.txt
+   ├── file1.txt
+   └── renamed.txt
 
 .. _module-pw_build-relative-source-file-names:
 
@@ -1016,64 +1016,64 @@ Let's say we have the following project structure:
 
 .. code-block::
 
-  project root
-  ├── foo/
-  │   ├── foo.h
-  │   └── foo.cc
-  ├── bar/
-  │   ├── bar.h
-  │   └── bar.cc
-  ├── unused/
-  │   ├── unused.h
-  │   └── unused.cc
-  └── main.cc
+   project root
+   ├── foo/
+   │   ├── foo.h
+   │   └── foo.cc
+   ├── bar/
+   │   ├── bar.h
+   │   └── bar.cc
+   ├── unused/
+   │   ├── unused.h
+   │   └── unused.cc
+   └── main.cc
 
 And a BUILD.gn at the root:
 
 .. code-block::
 
-  pw_source_set("bar") {
-    public_configs = [ ":bar_headers" ]
-    public = [ "bar/bar.h" ]
-    sources = [ "bar/bar.cc" ]
-  }
+   pw_source_set("bar") {
+     public_configs = [ ":bar_headers" ]
+     public = [ "bar/bar.h" ]
+     sources = [ "bar/bar.cc" ]
+   }
 
-  pw_source_set("foo") {
-    public_configs = [ ":foo_headers" ]
-    public = [ "foo/foo.h" ]
-    sources = [ "foo/foo.cc" ]
-    deps = [ ":bar" ]
-  }
+   pw_source_set("foo") {
+     public_configs = [ ":foo_headers" ]
+     public = [ "foo/foo.h" ]
+     sources = [ "foo/foo.cc" ]
+     deps = [ ":bar" ]
+   }
 
 
-  pw_source_set("unused") {
-    public_configs = [ ":unused_headers" ]
-    public = [ "unused/unused.h" ]
-    sources = [ "unused/unused.cc" ]
-    deps = [ ":bar" ]
-  }
+   pw_source_set("unused") {
+     public_configs = [ ":unused_headers" ]
+     public = [ "unused/unused.h" ]
+     sources = [ "unused/unused.cc" ]
+     deps = [ ":bar" ]
+   }
 
-  pw_executable("main") {
-    sources = [ "main.cc" ]
-    deps = [ ":foo" ]
-  }
+   pw_executable("main") {
+     sources = [ "main.cc" ]
+     deps = [ ":foo" ]
+   }
 
-  pw_relative_source_file_names("main_source_files") {
-    deps = [ ":main" ]
-    outputs = [ "$target_gen_dir/main_source_files.json" ]
-  }
+   pw_relative_source_file_names("main_source_files") {
+     deps = [ ":main" ]
+     outputs = [ "$target_gen_dir/main_source_files.json" ]
+   }
 
 The json file written to `out/gen/main_source_files.json` will contain:
 
 .. code-block::
 
-  [
-    "bar/bar.cc",
-    "bar/bar.h",
-    "foo/foo.cc",
-    "foo/foo.h",
-    "main.cc"
-  ]
+   [
+     "bar/bar.cc",
+     "bar/bar.h",
+     "foo/foo.cc",
+     "foo/foo.h",
+     "main.cc"
+   ]
 
 Since ``unused`` isn't a transitive dependency of ``main``, its source files
 are not included. Similarly, even though ``bar`` is not a direct dependency of
@@ -1294,16 +1294,16 @@ target has been building for:
 
 .. code-block::
 
-  [51.3s] Building [8924/10690] ...
-    [10.4s] c++ pw_strict_host_clang_debug/obj/pw_string/string_test.lib.string_test.cc.o
-    [ 9.5s] ACTION //pw_console/py:py.lint.mypy(//pw_build/python_toolchain:python)
-    [ 9.4s] ACTION //pw_console/py:py.lint.pylint(//pw_build/python_toolchain:python)
-    [ 6.1s] clang-tidy ../pw_log_rpc/log_service.cc
-    [ 6.1s] clang-tidy ../pw_log_rpc/log_service_test.cc
-    [ 6.1s] clang-tidy ../pw_log_rpc/rpc_log_drain.cc
-    [ 6.1s] clang-tidy ../pw_log_rpc/rpc_log_drain_test.cc
-    [ 5.4s] c++ pw_strict_host_clang_debug/obj/BUILD_DIR/pw_strict_host_clang_debug/gen/pw...
-    ... and 109 more
+   [51.3s] Building [8924/10690] ...
+     [10.4s] c++ pw_strict_host_clang_debug/obj/pw_string/string_test.lib.string_test.cc.o
+     [ 9.5s] ACTION //pw_console/py:py.lint.mypy(//pw_build/python_toolchain:python)
+     [ 9.4s] ACTION //pw_console/py:py.lint.pylint(//pw_build/python_toolchain:python)
+     [ 6.1s] clang-tidy ../pw_log_rpc/log_service.cc
+     [ 6.1s] clang-tidy ../pw_log_rpc/log_service_test.cc
+     [ 6.1s] clang-tidy ../pw_log_rpc/rpc_log_drain.cc
+     [ 6.1s] clang-tidy ../pw_log_rpc/rpc_log_drain_test.cc
+     [ 5.4s] c++ pw_strict_host_clang_debug/obj/BUILD_DIR/pw_strict_host_clang_debug/gen/pw...
+     ... and 109 more
 
 This allows you to, at a glance, know what Ninja's currently building, which
 targets are bottlenecking the rest of the build, and which targets are taking

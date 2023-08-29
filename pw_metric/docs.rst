@@ -46,23 +46,23 @@ their own for combining this subsystem's metrics with others.
 
 .. code-block::
 
-  #include "pw_metric/metric.h"
+   #include "pw_metric/metric.h"
 
-  class MySubsystem {
-   public:
-    void DoSomething() {
-      attempts_.Increment();
-      if (ActionSucceeds()) {
-        successes_.Increment();
-      }
-    }
-    Group& metrics() { return metrics_; }
+   class MySubsystem {
+    public:
+     void DoSomething() {
+       attempts_.Increment();
+       if (ActionSucceeds()) {
+         successes_.Increment();
+       }
+     }
+     Group& metrics() { return metrics_; }
 
-   private:
-    PW_METRIC_GROUP(metrics_, "my_subsystem");
-    PW_METRIC(metrics_, attempts_, "attempts", 0u);
-    PW_METRIC(metrics_, successes_, "successes", 0u);
-  };
+    private:
+     PW_METRIC_GROUP(metrics_, "my_subsystem");
+     PW_METRIC(metrics_, attempts_, "attempts", 0u);
+     PW_METRIC(metrics_, successes_, "successes", 0u);
+   };
 
 The metrics subsystem has no canonical output format at this time, but a JSON
 dump might look something like this:
@@ -90,37 +90,37 @@ this use case. For example:
 
 .. code-block::
 
-  // This code was passed down from generations of developers before; no one
-  // knows what it does or how it works. But it needs to be fixed!
-  void OldCodeThatDoesntWorkButWeDontKnowWhy() {
-    if (some_variable) {
-      DoSomething();
-    } else {
-      DoSomethingElse();
-    }
-  }
+   // This code was passed down from generations of developers before; no one
+   // knows what it does or how it works. But it needs to be fixed!
+   void OldCodeThatDoesntWorkButWeDontKnowWhy() {
+     if (some_variable) {
+       DoSomething();
+     } else {
+       DoSomethingElse();
+     }
+   }
 
 **After instrumenting:**
 
 .. code-block::
 
-  #include "pw_metric/global.h"
-  #include "pw_metric/metric.h"
+   #include "pw_metric/global.h"
+   #include "pw_metric/metric.h"
 
-  PW_METRIC_GLOBAL(legacy_do_something, "legacy_do_something");
-  PW_METRIC_GLOBAL(legacy_do_something_else, "legacy_do_something_else");
+   PW_METRIC_GLOBAL(legacy_do_something, "legacy_do_something");
+   PW_METRIC_GLOBAL(legacy_do_something_else, "legacy_do_something_else");
 
-  // This code was passed down from generations of developers before; no one
-  // knows what it does or how it works. But it needs to be fixed!
-  void OldCodeThatDoesntWorkButWeDontKnowWhy() {
-    if (some_variable) {
-      legacy_do_something.Increment();
-      DoSomething();
-    } else {
-      legacy_do_something_else.Increment();
-      DoSomethingElse();
-    }
-  }
+   // This code was passed down from generations of developers before; no one
+   // knows what it does or how it works. But it needs to be fixed!
+   void OldCodeThatDoesntWorkButWeDontKnowWhy() {
+     if (some_variable) {
+       legacy_do_something.Increment();
+       DoSomething();
+     } else {
+       legacy_do_something_else.Increment();
+       DoSomethingElse();
+     }
+   }
 
 In this case, the developer merely had to add the metrics header, define some
 metrics, and then start incrementing them. These metrics will be available

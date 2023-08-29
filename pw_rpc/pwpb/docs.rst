@@ -14,23 +14,23 @@ version of that library in the code implementing the service.
 
 .. code-block::
 
-  # chat/BUILD.gn
+   # chat/BUILD.gn
 
-  import("$dir_pw_build/target_types.gni")
-  import("$dir_pw_protobuf_compiler/proto.gni")
+   import("$dir_pw_build/target_types.gni")
+   import("$dir_pw_protobuf_compiler/proto.gni")
 
-  pw_proto_library("chat_protos") {
-    sources = [ "chat_protos/chat_service.proto" ]
-  }
+   pw_proto_library("chat_protos") {
+     sources = [ "chat_protos/chat_service.proto" ]
+   }
 
-  # Library that implements the Chat service.
-  pw_source_set("chat_service") {
-    sources = [
-      "chat_service.cc",
-      "chat_service.h",
-    ]
-    public_deps = [ ":chat_protos.pwpb_rpc" ]
-  }
+   # Library that implements the Chat service.
+   pw_source_set("chat_service") {
+     sources = [
+       "chat_service.cc",
+       "chat_service.h",
+     ]
+     public_deps = [ ":chat_protos.pwpb_rpc" ]
+   }
 
 A C++ header file is generated for each input .proto file, with the ``.proto``
 extension replaced by ``.rpc.pwpb.h``. For example, given the input file

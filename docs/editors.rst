@@ -207,9 +207,9 @@ Discover which targets are available for code analysis:
    $ pw ide cpp --list
 
    C/C++ targets available for language server analysis:
-	         pw_strict_host_gcc_debug
-	         pw_strict_host_clang_debug
-	         stm32f429i_disc1_debug
+         pw_strict_host_gcc_debug
+         pw_strict_host_clang_debug
+         stm32f429i_disc1_debug
 
 Select the target you want to use for code analysis:
 

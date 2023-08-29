@@ -65,6 +65,7 @@ from pw_presubmit import (
     presubmit_context,
 )
 from pw_presubmit.tools import exclude_paths, file_summary, log_run, plural
+from pw_presubmit.rst_format import reformat_rst
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 _COLOR = pw_cli.color.colors()
@@ -461,6 +462,24 @@ def fix_trailing_space(ctx: _Context) -> Dict[Path, str]:
     return {}
 
 
+def rst_format_check(ctx: _Context) -> Dict[Path, str]:
+    errors = {}
+    for path in ctx.paths:
+        result = reformat_rst(path, diff=True, in_place=False)
+        if result:
+            errors[path] = ''.join(result)
+    return errors
+
+
+def rst_format_fix(ctx: _Context) -> Dict[Path, str]:
+    errors = {}
+    for path in ctx.paths:
+        result = reformat_rst(path, diff=True, in_place=True)
+        if result:
+            errors[path] = ''.join(result)
+    return errors
+
+
 def print_format_check(
     errors: Dict[Path, str],
     show_fix_commands: bool,
@@ -595,8 +614,8 @@ CMAKE_FORMAT: CodeFormat = CodeFormat(
 RST_FORMAT: CodeFormat = CodeFormat(
     'reStructuredText',
     FileFilter(endswith=['.rst']),
-    check_trailing_space,
-    fix_trailing_space,
+    rst_format_check,
+    rst_format_fix,
 )
 
 MARKDOWN_FORMAT: CodeFormat = CodeFormat(

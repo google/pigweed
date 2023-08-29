@@ -123,35 +123,35 @@ base for the size diff can be specified either globally through the top-level
 
 .. code-block::
 
-  import("$dir_pw_bloat/bloat.gni")
+   import("$dir_pw_bloat/bloat.gni")
 
-  executable("empty_base") {
-    sources = [ "empty_main.cc" ]
-  }
+   executable("empty_base") {
+     sources = [ "empty_main.cc" ]
+   }
 
-  executable("hello_world_printf") {
-    sources = [ "hello_printf.cc" ]
-  }
+   executable("hello_world_printf") {
+     sources = [ "hello_printf.cc" ]
+   }
 
-  executable("hello_world_iostream") {
-    sources = [ "hello_iostream.cc" ]
-  }
+   executable("hello_world_iostream") {
+     sources = [ "hello_iostream.cc" ]
+   }
 
-  pw_size_diff("my_size_report") {
-    base = ":empty_base"
-    data_sources = "symbols,segments"
-    binaries = [
-      {
-        target = ":hello_world_printf"
-        label = "Hello world using printf"
-      },
-      {
-        target = ":hello_world_iostream"
-        label = "Hello world using iostream"
-        data_sources = "symbols"
-      },
-    ]
-  }
+   pw_size_diff("my_size_report") {
+     base = ":empty_base"
+     data_sources = "symbols,segments"
+     binaries = [
+       {
+         target = ":hello_world_printf"
+         label = "Hello world using printf"
+       },
+       {
+         target = ":hello_world_iostream"
+         label = "Hello world using iostream"
+         data_sources = "symbols"
+       },
+     ]
+   }
 
 A sample ``pw_size_diff`` ReST size report table can be found within module
 docs. For example, see the :ref:`pw_checksum-size-report` section of the
@@ -171,58 +171,58 @@ a size report for a single binary. The template requires a target binary.
 
 .. code-block::
 
-  import("$dir_pw_bloat/bloat.gni")
+   import("$dir_pw_bloat/bloat.gni")
 
-  executable("hello_world_iostream") {
-    sources = [ "hello_iostream.cc" ]
-  }
+   executable("hello_world_iostream") {
+     sources = [ "hello_iostream.cc" ]
+   }
 
-  pw_size_report("hello_world_iostream_size_report") {
-    target = ":hello_iostream"
-    data_sources = "segments,symbols"
-    source_filter = "pw::hello"
-  }
+   pw_size_report("hello_world_iostream_size_report") {
+     target = ":hello_iostream"
+     data_sources = "segments,symbols"
+     source_filter = "pw::hello"
+   }
 
 Sample Single Binary ASCII Table Generated
 
 .. code-block::
 
-  ┌─────────────┬──────────────────────────────────────────────────┬──────┐
-  │segment_names│                      symbols                     │ sizes│
-  ├═════════════┼══════════════════════════════════════════════════┼══════┤
-  │FLASH        │                                                  │12,072│
-  │             │pw::kvs::KeyValueStore::InitializeMetadata()      │   684│
-  │             │pw::kvs::KeyValueStore::Init()                    │   456│
-  │             │pw::kvs::internal::EntryCache::Find()             │   444│
-  │             │pw::kvs::FakeFlashMemory::Write()                 │   240│
-  │             │pw::kvs::internal::Entry::VerifyChecksumInFlash() │   228│
-  │             │pw::kvs::KeyValueStore::GarbageCollectSector()    │   220│
-  │             │pw::kvs::KeyValueStore::RemoveDeletedKeyEntries() │   220│
-  │             │pw::kvs::KeyValueStore::AppendEntry()             │   204│
-  │             │pw::kvs::KeyValueStore::Get()                     │   194│
-  │             │pw::kvs::internal::Entry::Read()                  │   188│
-  │             │pw::kvs::ChecksumAlgorithm::Finish()              │    26│
-  │             │pw::kvs::internal::Entry::ReadKey()               │    26│
-  │             │pw::kvs::internal::Sectors::BaseAddress()         │    24│
-  │             │pw::kvs::ChecksumAlgorithm::Update()              │    20│
-  │             │pw::kvs::FlashTestPartition()                     │     8│
-  │             │pw::kvs::FakeFlashMemory::Disable()               │     6│
-  │             │pw::kvs::FakeFlashMemory::Enable()                │     6│
-  │             │pw::kvs::FlashMemory::SelfTest()                  │     6│
-  │             │pw::kvs::FlashPartition::Init()                   │     6│
-  │             │pw::kvs::FlashPartition::sector_size_bytes()      │     6│
-  │             │pw::kvs::FakeFlashMemory::IsEnabled()             │     4│
-  ├─────────────┼──────────────────────────────────────────────────┼──────┤
-  │RAM          │                                                  │ 1,424│
-  │             │test_kvs                                          │   992│
-  │             │pw::kvs::(anonymous namespace)::test_flash        │   384│
-  │             │pw::kvs::(anonymous namespace)::test_partition    │    24│
-  │             │pw::kvs::FakeFlashMemory::no_errors_              │    12│
-  │             │borrowable_kvs                                    │     8│
-  │             │kvs_entry_count                                   │     4│
-  ├═════════════┼══════════════════════════════════════════════════┼══════┤
-  │Total        │                                                  │13,496│
-  └─────────────┴──────────────────────────────────────────────────┴──────┘
+   ┌─────────────┬──────────────────────────────────────────────────┬──────┐
+   │segment_names│                      symbols                     │ sizes│
+   ├═════════════┼══════════════════════════════════════════════════┼══════┤
+   │FLASH        │                                                  │12,072│
+   │             │pw::kvs::KeyValueStore::InitializeMetadata()      │   684│
+   │             │pw::kvs::KeyValueStore::Init()                    │   456│
+   │             │pw::kvs::internal::EntryCache::Find()             │   444│
+   │             │pw::kvs::FakeFlashMemory::Write()                 │   240│
+   │             │pw::kvs::internal::Entry::VerifyChecksumInFlash() │   228│
+   │             │pw::kvs::KeyValueStore::GarbageCollectSector()    │   220│
+   │             │pw::kvs::KeyValueStore::RemoveDeletedKeyEntries() │   220│
+   │             │pw::kvs::KeyValueStore::AppendEntry()             │   204│
+   │             │pw::kvs::KeyValueStore::Get()                     │   194│
+   │             │pw::kvs::internal::Entry::Read()                  │   188│
+   │             │pw::kvs::ChecksumAlgorithm::Finish()              │    26│
+   │             │pw::kvs::internal::Entry::ReadKey()               │    26│
+   │             │pw::kvs::internal::Sectors::BaseAddress()         │    24│
+   │             │pw::kvs::ChecksumAlgorithm::Update()              │    20│
+   │             │pw::kvs::FlashTestPartition()                     │     8│
+   │             │pw::kvs::FakeFlashMemory::Disable()               │     6│
+   │             │pw::kvs::FakeFlashMemory::Enable()                │     6│
+   │             │pw::kvs::FlashMemory::SelfTest()                  │     6│
+   │             │pw::kvs::FlashPartition::Init()                   │     6│
+   │             │pw::kvs::FlashPartition::sector_size_bytes()      │     6│
+   │             │pw::kvs::FakeFlashMemory::IsEnabled()             │     4│
+   ├─────────────┼──────────────────────────────────────────────────┼──────┤
+   │RAM          │                                                  │ 1,424│
+   │             │test_kvs                                          │   992│
+   │             │pw::kvs::(anonymous namespace)::test_flash        │   384│
+   │             │pw::kvs::(anonymous namespace)::test_partition    │    24│
+   │             │pw::kvs::FakeFlashMemory::no_errors_              │    12│
+   │             │borrowable_kvs                                    │     8│
+   │             │kvs_entry_count                                   │     4│
+   ├═════════════┼══════════════════════════════════════════════════┼══════┤
+   │Total        │                                                  │13,496│
+   └─────────────┴──────────────────────────────────────────────────┴──────┘
 
 
 Size reports are typically included in ReST documentation, as described in
@@ -250,15 +250,15 @@ reports' data into a single JSON file.
 
 .. code-block::
 
-  import("$dir_pw_bloat/bloat.gni")
+   import("$dir_pw_bloat/bloat.gni")
 
-  pw_size_report_aggregation("image_sizes") {
-     deps = [
-       ":app_image_size_report",
-       ":bootloader_image_size_report",
-     ]
-     output = "$root_gen_dir/artifacts/image_sizes.json"
-  }
+   pw_size_report_aggregation("image_sizes") {
+      deps = [
+        ":app_image_size_report",
+        ":bootloader_image_size_report",
+      ]
+      output = "$root_gen_dir/artifacts/image_sizes.json"
+   }
 
 Documentation integration
 =========================
@@ -313,16 +313,16 @@ which may return something like:
 
 .. code-block::
 
-    84.2%  1023Ki    FLASH
-      94.2%   963Ki    Free space
-       5.8%  59.6Ki    Used space
-    15.8%   192Ki    RAM
-     100.0%   192Ki    Used space
-     0.0%     512    VECTOR_TABLE
-      96.9%     496    Free space
-       3.1%      16    Used space
-     0.0%       0    Not resident in memory
-       NAN%       0    Used space
+   84.2%  1023Ki    FLASH
+     94.2%   963Ki    Free space
+      5.8%  59.6Ki    Used space
+   15.8%   192Ki    RAM
+    100.0%   192Ki    Used space
+    0.0%     512    VECTOR_TABLE
+     96.9%     496    Free space
+      3.1%      16    Used space
+    0.0%       0    Not resident in memory
+      NAN%       0    Used space
 
 
 ``utilization`` data source
@@ -345,125 +345,125 @@ For example imagine this partial example GNU LD linker script:
 
 .. code-block::
 
-  MEMORY
-  {
-    FLASH(rx) : \
-      ORIGIN = PW_BOOT_FLASH_BEGIN, \
-      LENGTH = PW_BOOT_FLASH_SIZE
-    RAM(rwx) : \
-      ORIGIN = PW_BOOT_RAM_BEGIN, \
-      LENGTH = PW_BOOT_RAM_SIZE
-  }
+   MEMORY
+   {
+     FLASH(rx) : \
+       ORIGIN = PW_BOOT_FLASH_BEGIN, \
+       LENGTH = PW_BOOT_FLASH_SIZE
+     RAM(rwx) : \
+       ORIGIN = PW_BOOT_RAM_BEGIN, \
+       LENGTH = PW_BOOT_RAM_SIZE
+   }
 
-  SECTIONS
-  {
-    /* Main executable code. */
-    .code : ALIGN(4)
-    {
-      /* Application code. */
-      *(.text)
-      *(.text*)
-      KEEP(*(.init))
-      KEEP(*(.fini))
+   SECTIONS
+   {
+     /* Main executable code. */
+     .code : ALIGN(4)
+     {
+       /* Application code. */
+       *(.text)
+       *(.text*)
+       KEEP(*(.init))
+       KEEP(*(.fini))
 
-      . = ALIGN(4);
-      /* Constants.*/
-      *(.rodata)
-      *(.rodata*)
-    } >FLASH
+       . = ALIGN(4);
+       /* Constants.*/
+       *(.rodata)
+       *(.rodata*)
+     } >FLASH
 
-    /* Explicitly initialized global and static data. (.data)*/
-    .static_init_ram : ALIGN(4)
-    {
-      *(.data)
-      *(.data*)
-      . = ALIGN(4);
-    } >RAM AT> FLASH
+     /* Explicitly initialized global and static data. (.data)*/
+     .static_init_ram : ALIGN(4)
+     {
+       *(.data)
+       *(.data*)
+       . = ALIGN(4);
+     } >RAM AT> FLASH
 
-    /* Zero initialized global/static data. (.bss) */
-    .zero_init_ram (NOLOAD) : ALIGN(4)
-    {
-      *(.bss)
-      *(.bss*)
-      *(COMMON)
-      . = ALIGN(4);
-    } >RAM
-  }
+     /* Zero initialized global/static data. (.bss) */
+     .zero_init_ram (NOLOAD) : ALIGN(4)
+     {
+       *(.bss)
+       *(.bss*)
+       *(COMMON)
+       . = ALIGN(4);
+     } >RAM
+   }
 
 Could be modified as follows enable ``Free Space`` reporting:
 
 .. code-block::
 
-  MEMORY
-  {
-    FLASH(rx) : ORIGIN = PW_BOOT_FLASH_BEGIN, LENGTH = PW_BOOT_FLASH_SIZE
-    RAM(rwx) : ORIGIN = PW_BOOT_RAM_BEGIN, LENGTH = PW_BOOT_RAM_SIZE
+   MEMORY
+   {
+     FLASH(rx) : ORIGIN = PW_BOOT_FLASH_BEGIN, LENGTH = PW_BOOT_FLASH_SIZE
+     RAM(rwx) : ORIGIN = PW_BOOT_RAM_BEGIN, LENGTH = PW_BOOT_RAM_SIZE
 
-    /* Each memory region above has an associated .*.unused_space section that
-     * overlays the unused space at the end of the memory segment. These
-     * segments are used by pw_bloat.bloaty_config to create the utilization
-     * data source for bloaty size reports.
-     *
-     * These sections MUST be located immediately after the last section that is
-     * placed in the respective memory region or lld will issue a warning like:
-     *
-     *   warning: ignoring memory region assignment for non-allocatable section
-     *      '.VECTOR_TABLE.unused_space'
-     *
-     * If this warning occurs, it's also likely that LLD will have created quite
-     * large padded regions in the ELF file due to bad cursor operations. This
-     * can cause ELF files to balloon from hundreds of kilobytes to hundreds of
-     * megabytes.
-     *
-     * Attempting to add sections to the memory region AFTER the unused_space
-     * section will cause the region to overflow.
-     */
-  }
+     /* Each memory region above has an associated .*.unused_space section that
+      * overlays the unused space at the end of the memory segment. These
+      * segments are used by pw_bloat.bloaty_config to create the utilization
+      * data source for bloaty size reports.
+      *
+      * These sections MUST be located immediately after the last section that is
+      * placed in the respective memory region or lld will issue a warning like:
+      *
+      *   warning: ignoring memory region assignment for non-allocatable section
+      *      '.VECTOR_TABLE.unused_space'
+      *
+      * If this warning occurs, it's also likely that LLD will have created quite
+      * large padded regions in the ELF file due to bad cursor operations. This
+      * can cause ELF files to balloon from hundreds of kilobytes to hundreds of
+      * megabytes.
+      *
+      * Attempting to add sections to the memory region AFTER the unused_space
+      * section will cause the region to overflow.
+      */
+   }
 
-  SECTIONS
-  {
-    /* Main executable code. */
-    .code : ALIGN(4)
-    {
-      /* Application code. */
-      *(.text)
-      *(.text*)
-      KEEP(*(.init))
-      KEEP(*(.fini))
+   SECTIONS
+   {
+     /* Main executable code. */
+     .code : ALIGN(4)
+     {
+       /* Application code. */
+       *(.text)
+       *(.text*)
+       KEEP(*(.init))
+       KEEP(*(.fini))
 
-      . = ALIGN(4);
-      /* Constants.*/
-      *(.rodata)
-      *(.rodata*)
-    } >FLASH
+       . = ALIGN(4);
+       /* Constants.*/
+       *(.rodata)
+       *(.rodata*)
+     } >FLASH
 
-    /* Explicitly initialized global and static data. (.data)*/
-    .static_init_ram : ALIGN(4)
-    {
-      *(.data)
-      *(.data*)
-      . = ALIGN(4);
-    } >RAM AT> FLASH
+     /* Explicitly initialized global and static data. (.data)*/
+     .static_init_ram : ALIGN(4)
+     {
+       *(.data)
+       *(.data*)
+       . = ALIGN(4);
+     } >RAM AT> FLASH
 
-    /* Defines a section representing the unused space in the FLASH segment.
-     * This MUST be the last section assigned to the FLASH region.
-     */
-    PW_BLOAT_UNUSED_SPACE(FLASH)
+     /* Defines a section representing the unused space in the FLASH segment.
+      * This MUST be the last section assigned to the FLASH region.
+      */
+     PW_BLOAT_UNUSED_SPACE(FLASH)
 
-    /* Zero initialized global/static data. (.bss). */
-    .zero_init_ram (NOLOAD) : ALIGN(4)
-    {
-      *(.bss)
-      *(.bss*)
-      *(COMMON)
-      . = ALIGN(4);
-    } >RAM
+     /* Zero initialized global/static data. (.bss). */
+     .zero_init_ram (NOLOAD) : ALIGN(4)
+     {
+       *(.bss)
+       *(.bss*)
+       *(COMMON)
+       . = ALIGN(4);
+     } >RAM
 
-    /* Defines a section representing the unused space in the RAM segment. This
-     * MUST be the last section assigned to the RAM region.
-     */
-    PW_BLOAT_UNUSED_SPACE(RAM)
-  }
+     /* Defines a section representing the unused space in the RAM segment. This
+      * MUST be the last section assigned to the RAM region.
+      */
+     PW_BLOAT_UNUSED_SPACE(RAM)
+   }
 
 The preprocessor macro ``PW_BLOAT_UNUSED_SPACE`` is defined in
 ``pw_bloat/bloat_macros.ld``. To use these macros include this file in your
@@ -518,7 +518,7 @@ generate the symbols needed for the that region:
 
 .. code-block::
 
-  PW_BLOAT_MEMORY_REGION(FLASH)
+   PW_BLOAT_MEMORY_REGION(FLASH)
 
 As another example, if you have two aliased memory regions (``DCTM`` and
 ``ITCM``) into the same effective memory named you'd like to call ``RAM``, then
@@ -526,5 +526,6 @@ you should produce the following four symbols in your linker script:
 
 .. code-block::
 
-  PW_BLOAT_MEMORY_REGION_MAP(RAM, ITCM)
-  PW_BLOAT_MEMORY_REGION_MAP(RAM, DTCM)
+   PW_BLOAT_MEMORY_REGION_MAP(RAM, ITCM)
+   PW_BLOAT_MEMORY_REGION_MAP(RAM, DTCM)
+

@@ -27,9 +27,9 @@ Then add the following lines to that text file:
 
 .. code-block::
 
-    dir_pw_third_party_freertos = getenv("PW_PACKAGE_ROOT") + "/freertos"
-    dir_pw_third_party_smartfusion_mss = getenv("PW_PACKAGE_ROOT") + "/smartfusion_mss"
-    dir_pw_third_party_nanopb = getenv("PW_PACKAGE_ROOT") + "/nanopb"
+   dir_pw_third_party_freertos = getenv("PW_PACKAGE_ROOT") + "/freertos"
+   dir_pw_third_party_smartfusion_mss = getenv("PW_PACKAGE_ROOT") + "/smartfusion_mss"
+   dir_pw_third_party_nanopb = getenv("PW_PACKAGE_ROOT") + "/nanopb"
 
 Building and running the demo
 =============================

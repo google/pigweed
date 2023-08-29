@@ -85,12 +85,12 @@ dependency to the generated ``.d`` files for the
 
 .. code-block::
 
-     static_analysis = {
-      clang_tidy_path = "//third_party/ctcache/clang-tidy"
-      _clang_tidy_cfg_path = rebase_path("//.clang-tidy", root_build_dir)
-      cc_post = "echo '-: $_clang_tidy_cfg_path' >> {{output}}.d"
-      cxx_post = "echo '-: $_clang_tidy_cfg_path' >> {{output}}.d"
-     }
+   static_analysis = {
+    clang_tidy_path = "//third_party/ctcache/clang-tidy"
+    _clang_tidy_cfg_path = rebase_path("//.clang-tidy", root_build_dir)
+    cc_post = "echo '-: $_clang_tidy_cfg_path' >> {{output}}.d"
+    cxx_post = "echo '-: $_clang_tidy_cfg_path' >> {{output}}.d"
+   }
 
 Excluding files from checks
 ===========================

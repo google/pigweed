@@ -49,7 +49,7 @@ The GN variables needed are defined in
 
      .. code-block::
 
-       dir_pw_third_party_boringssl = "//third_party/boringssl/src"
+        dir_pw_third_party_boringssl = "//third_party/boringssl/src"
 
 #. Having a non-empty ``dir_pw_third_party_boringssl`` variable causes GN to
    attempt to include the ``BUILD.generated.gni`` file from the sources even

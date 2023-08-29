@@ -686,4 +686,5 @@ change by adding to following line to the commit message footer:
 
 .. code-block::
 
-  Cq-Include-Trybots: luci.pigweed.try:pigweed-integration-transfer
+   Cq-Include-Trybots: luci.pigweed.try:pigweed-integration-transfer
+

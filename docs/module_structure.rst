@@ -145,9 +145,9 @@ the public interface, but are not intended for use), place the headers in a
 
 .. code-block::
 
-  pw_foo/...
-    public/pw_foo/internal/secret.h
-    public/pw_foo/internal/business.h
+   pw_foo/...
+     public/pw_foo/internal/secret.h
+     public/pw_foo/internal/business.h
 
 .. note::
 
@@ -174,15 +174,15 @@ For example, the ``pw_unit_test`` module provides a header override for
 
 .. code-block::
 
-  pw_unit_test/...
+   pw_unit_test/...
 
-    public_overrides/gtest
-    public_overrides/gtest/gtest.h
+     public_overrides/gtest
+     public_overrides/gtest/gtest.h
 
-    public/pw_unit_test
-    public/pw_unit_test/simple_printing_event_handler.h
-    public/pw_unit_test/event_handler.h
-    public/pw_unit_test/internal/framework.h
+     public/pw_unit_test
+     public/pw_unit_test/simple_printing_event_handler.h
+     public/pw_unit_test/event_handler.h
+     public/pw_unit_test/internal/framework.h
 
 Note that the overrides are in a separate directory ``public_overrides``.
 
@@ -195,12 +195,12 @@ Example:
 
 .. code-block::
 
-  pw_unit_test/...
-    main.cc
-    framework.cc
-    test.gni
-    BUILD.gn
-    README.md
+   pw_unit_test/...
+     main.cc
+     framework.cc
+     test.gni
+     BUILD.gn
+     README.md
 
 .. _module-structure-compile-time-configuration:
 
@@ -241,16 +241,16 @@ on whether the header should be exposed by the module or not.
 
 .. code-block::
 
-  pw_foo/...
+   pw_foo/...
 
-    # Publicly accessible configuration header
-    public/pw_foo/config.h
+     # Publicly accessible configuration header
+     public/pw_foo/config.h
 
-    # Internal configuration header that is included by other module headers
-    public/pw_foo/internal/config.h
+     # Internal configuration header that is included by other module headers
+     public/pw_foo/internal/config.h
 
-    # Internal configuration header
-    pw_foo_private/config.h
+     # Internal configuration header
+     pw_foo_private/config.h
 
 The configuration header is provided by a build system library. This library
 acts as a :ref:`facade<docs-module-structure-facades>`. The facade uses a
@@ -260,37 +260,37 @@ system, the config facade is declared as follows:
 
 .. code-block::
 
-  declare_args() {
-    # The build target that overrides the default configuration options for this
-    # module. This should point to a source set that provides defines through a
-    # public config (which may -include a file or add defines directly).
-    pw_foo_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
-  }
+   declare_args() {
+     # The build target that overrides the default configuration options for this
+     # module. This should point to a source set that provides defines through a
+     # public config (which may -include a file or add defines directly).
+     pw_foo_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
+   }
 
-  # An example source set for each potential config header location follows.
+   # An example source set for each potential config header location follows.
 
-  # Publicly accessible configuration header (most common)
-  pw_source_set("config") {
-    public = [ "public/pw_foo/config.h" ]
-    public_configs = [ ":public_include_path" ]
-    public_deps = [ pw_foo_CONFIG ]
-  }
+   # Publicly accessible configuration header (most common)
+   pw_source_set("config") {
+     public = [ "public/pw_foo/config.h" ]
+     public_configs = [ ":public_include_path" ]
+     public_deps = [ pw_foo_CONFIG ]
+   }
 
-  # Internal configuration header that is included by other module headers
-  pw_source_set("config") {
-    sources = [ "public/pw_foo/internal/config.h" ]
-    public_configs = [ ":public_include_path" ]
-    public_deps = [ pw_foo_CONFIG ]
-    visibility = [":*"]  # Only allow this module to depend on ":config"
-    friend = [":*"]  # Allow this module to access the config.h header.
-  }
+   # Internal configuration header that is included by other module headers
+   pw_source_set("config") {
+     sources = [ "public/pw_foo/internal/config.h" ]
+     public_configs = [ ":public_include_path" ]
+     public_deps = [ pw_foo_CONFIG ]
+     visibility = [":*"]  # Only allow this module to depend on ":config"
+     friend = [":*"]  # Allow this module to access the config.h header.
+   }
 
-  # Internal configuration header
-  pw_source_set("config") {
-    public = [ "pw_foo_private/config.h" ]
-    public_deps = [ pw_foo_CONFIG ]
-    visibility = [":*"]  # Only allow this module to depend on ":config"
-  }
+   # Internal configuration header
+   pw_source_set("config") {
+     public = [ "pw_foo_private/config.h" ]
+     public_deps = [ pw_foo_CONFIG ]
+     visibility = [":*"]  # Only allow this module to depend on ":config"
+   }
 
 Overriding configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -311,32 +311,32 @@ This example shows two ways to configure a module in the GN build system.
 
 .. code-block::
 
-  # In the toolchain, set either pw_build_DEFAULT_MODULE_CONFIG or pw_foo_CONFIG
-  pw_build_DEFAULT_MODULE_CONFIG = get_path_info(":define_overrides", "abspath")
+   # In the toolchain, set either pw_build_DEFAULT_MODULE_CONFIG or pw_foo_CONFIG
+   pw_build_DEFAULT_MODULE_CONFIG = get_path_info(":define_overrides", "abspath")
 
-  # This configuration sets PW_FOO_INPUT_BUFFER_SIZE_BYTES using the -D flag.
-  pw_source_set("define_overrides") {
-    public_configs = [ ":define_options" ]
-  }
+   # This configuration sets PW_FOO_INPUT_BUFFER_SIZE_BYTES using the -D flag.
+   pw_source_set("define_overrides") {
+     public_configs = [ ":define_options" ]
+   }
 
-  config("define_options") {
-    defines = [ "PW_FOO_INPUT_BUFFER_SIZE_BYTES=256" ]
-  }
+   config("define_options") {
+     defines = [ "PW_FOO_INPUT_BUFFER_SIZE_BYTES=256" ]
+   }
 
-  # This configuration sets PW_FOO_INPUT_BUFFER_SIZE_BYTES in a header file.
-  pw_source_set("include_overrides") {
-    public_configs = [ ":set_options_in_header_file" ]
+   # This configuration sets PW_FOO_INPUT_BUFFER_SIZE_BYTES in a header file.
+   pw_source_set("include_overrides") {
+     public_configs = [ ":set_options_in_header_file" ]
 
-    # Header file with #define PW_FOO_INPUT_BUFFER_SIZE_BYTES 256
-    sources = [ "my_config_overrides.h" ]
-  }
+     # Header file with #define PW_FOO_INPUT_BUFFER_SIZE_BYTES 256
+     sources = [ "my_config_overrides.h" ]
+   }
 
-  config("set_options_in_header_file") {
-    cflags = [
-      "-include",
-      rebase_path("my_config_overrides.h", root_build_dir),
-    ]
-  }
+   config("set_options_in_header_file") {
+     cflags = [
+       "-include",
+       rebase_path("my_config_overrides.h", root_build_dir),
+     ]
+   }
 
 .. admonition:: Why this config pattern is preferred
 
@@ -409,19 +409,19 @@ it's possible to use multiple backends for a module.
 
 .. code-block::
 
-  # pw_foo contains 2 facades, foo and bar
-  pw_foo/...
-    # Public headers
-    # public/pw_foo/foo.h #includes pw_foo_backend/foo.h
-    # public/pw_foo/bar.h #includes pw_foo_backend/bar.h
-    public/pw_foo/foo.h
-    public/pw_foo/bar.h
+   # pw_foo contains 2 facades, foo and bar
+   pw_foo/...
+     # Public headers
+     # public/pw_foo/foo.h #includes pw_foo_backend/foo.h
+     # public/pw_foo/bar.h #includes pw_foo_backend/bar.h
+     public/pw_foo/foo.h
+     public/pw_foo/bar.h
 
-  pw_foo_backend/...
+   pw_foo_backend/...
 
-    # Public override headers for facade1 and facade2 go in separate folders
-    foo_public_overrides/pw_foo_backend/foo.h
-    bar_public_overrides/pw_foo_backend/bar.h
+     # Public override headers for facade1 and facade2 go in separate folders
+     foo_public_overrides/pw_foo_backend/foo.h
+     bar_public_overrides/pw_foo_backend/bar.h
 
 Documentation
 -------------

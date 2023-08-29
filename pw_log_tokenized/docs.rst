@@ -55,7 +55,7 @@ letter.
 
 .. code-block::
 
-  "■key1♦contents1■key2♦contents2■key3♦contents3"
+   "■key1♦contents1■key2♦contents2■key3♦contents3"
 
 This format makes the message easily machine parseable and human readable. It is
 extremely unlikely to conflict with log message contents due to the characters
@@ -67,7 +67,7 @@ Implementations may add other fields, but they will be ignored by the
 
 .. code-block::
 
-  "■msg♦Hyperdrive %d set to %f■module♦engine■file♦propulsion/hyper.cc"
+   "■msg♦Hyperdrive %d set to %f■module♦engine■file♦propulsion/hyper.cc"
 
 Using key-value pairs allows placing the fields in any order.
 ``pw_log_tokenized`` places the message first. This is prefered when tokenizing

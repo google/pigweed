@@ -27,26 +27,26 @@ something like this:
 
 .. code-block::
 
-  {
-    "root_variable": "<PROJNAME>_ROOT",
-    "cipd_package_files": ["tools/default.json"],
-    "virtualenv": {
-      "gn_args": ["dir_pw_third_party_stm32cube=\"\""],
-      "gn_root": ".",
-      "gn_targets": [":python.install"]
-    },
-    "optional_submodules": ["vendor/shhh-secret"],
-    "gni_file": "build_overrides/pigweed_environment.gni"
-  }
+   {
+     "root_variable": "<PROJNAME>_ROOT",
+     "cipd_package_files": ["tools/default.json"],
+     "virtualenv": {
+       "gn_args": ["dir_pw_third_party_stm32cube=\"\""],
+       "gn_root": ".",
+       "gn_targets": [":python.install"]
+     },
+     "optional_submodules": ["vendor/shhh-secret"],
+     "gni_file": "build_overrides/pigweed_environment.gni"
+   }
 
 The plugins to the ``pw`` command-line utility are configured in ``PW_PLUGINS``,
 which looks like this:
 
 .. code-block::
 
-  # <name> <Python module> <function>
-  console pw_console.__main__ main
-  format pw_presubmit.format_code _pigweed_upstream_main
+   # <name> <Python module> <function>
+   console pw_console.__main__ main
+   format pw_presubmit.format_code _pigweed_upstream_main
 
 In addition, changes have been proposed to configure some of the behavior of
 ``pw format`` and the formatting steps of ``pw presubmit`` from config files,
@@ -130,54 +130,54 @@ documentation related to the option in question.
 
 .. code-block::
 
-  {
-    "pw": {
-      "pw_cli": {
-        "plugins": {
-          "console": {
-            "module": "pw_console.__main__",
-            "function": "main"
-          },
-          "format": {
-            "module": "pw_presubmit.format_code",
-            "function": "_pigweed_upstream_main"
-          }
-        }
-      },
-      "pw_env_setup": {
-        "root_variable": "<PROJNAME>_ROOT",
-        "rosetta": "allow",
-        "gni_file": "build_overrides/pigweed_environment.gni",
-        "cipd": {
-          "package_files": [
-            "tools/default.json"
-          ]
-        },
-        "virtualenv": {
-          "gn_args": [
-            "dir_pw_third_party_stm32cube=\"\""
-          ],
-          "gn_targets": [
-            "python.install"
-          ],
-          "gn_root": "."
-        },
-        "submodules": {
-          "optional": [
-            "vendor/shhh-secret"
-          ]
-        }
-      },
-      "pw_presubmit": {
-        "format": {
-          "python": {
-            "formatter": "black",
-            "black_path": "pyink"
-          }
-        }
-      }
-    }
-  }
+   {
+     "pw": {
+       "pw_cli": {
+         "plugins": {
+           "console": {
+             "module": "pw_console.__main__",
+             "function": "main"
+           },
+           "format": {
+             "module": "pw_presubmit.format_code",
+             "function": "_pigweed_upstream_main"
+           }
+         }
+       },
+       "pw_env_setup": {
+         "root_variable": "<PROJNAME>_ROOT",
+         "rosetta": "allow",
+         "gni_file": "build_overrides/pigweed_environment.gni",
+         "cipd": {
+           "package_files": [
+             "tools/default.json"
+           ]
+         },
+         "virtualenv": {
+           "gn_args": [
+             "dir_pw_third_party_stm32cube=\"\""
+           ],
+           "gn_targets": [
+             "python.install"
+           ],
+           "gn_root": "."
+         },
+         "submodules": {
+           "optional": [
+             "vendor/shhh-secret"
+           ]
+         }
+       },
+       "pw_presubmit": {
+         "format": {
+           "python": {
+             "formatter": "black",
+             "black_path": "pyink"
+           }
+         }
+       }
+     }
+   }
 
 Some teams will resist a new file at the root of their checkout, but this seed
 won't be adding any files, it'll be combining at least one top-level file, maybe
