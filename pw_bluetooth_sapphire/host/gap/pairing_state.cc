@@ -7,6 +7,7 @@
 #include <inttypes.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
@@ -53,6 +54,8 @@ PairingState::~PairingState() {
 
 void PairingState::InitiatePairing(BrEdrSecurityRequirements security_requirements,
                                    StatusCallback status_cb) {
+  // TODO(fxbug.dev/132667): Reject pairing if peer/local device don't support Secure Connections
+  // and SC is required
   if (state() == State::kIdle) {
     BT_ASSERT(!is_pairing());
 
@@ -393,7 +396,7 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::Link
   // The association model and resulting link security properties are computed by both the Link
   // Manager (controller) and the host subsystem, so check that they agree.
   BT_ASSERT(is_pairing());
-  const sm::SecurityProperties sec_props = sm::SecurityProperties(key_type);
+  sm::SecurityProperties sec_props = sm::SecurityProperties(key_type);
   current_pairing_->security_properties = sec_props;
 
   // Link keys resulting from legacy pairing are assigned lowest security level and we reject them.
@@ -420,6 +423,20 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::Link
     return;
   }
 
+  // Set Security Properties for this BR/EDR connection
+  set_security_properties(sec_props);
+
+  // TODO(fxbug.dev/132673): When in SC Only mode, all services require security mode 4, level 4
+  if (security_mode() == BrEdrSecurityMode::SecureConnectionsOnly &&
+      security_properties().level() != sm::SecurityLevel::kSecureAuthenticated) {
+    bt_log(WARN, "gap-bredr",
+           "BR/EDR link key has insufficient security for Secure Connections Only mode");
+    state_ = State::kFailed;
+    SignalStatus(ToResult(HostError::kInsufficientSecurity),
+                 "OnLinkKeyNotification requires Secure Connections");
+    return;
+  }
+
   // If peer and local Secure Connections support are present, the pairing logic needs to verify
   // that the Link Key Type received in the Link Key Notification event is one of the Secure
   // Connections types (0x07 and 0x08).
@@ -427,7 +444,7 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::Link
   // Core Spec v5.2 Vol 4, Part E, 7.7.24: The values 0x07 and 0x08 shall only be used when the Host
   // has indicated support for Secure Connections in the Secure_Connections_Host_Support parameter.
   if (IsPeerSecureConnectionsSupported() && local_secure_connections_supported) {
-    if (!sec_props.secure_connections()) {
+    if (!security_properties().secure_connections()) {
       bt_log(WARN, "gap-bredr",
              "Link Key Type must be a Secure Connections key type;"
              " Received type: %hhu (handle: %#.4x, id: %s)",

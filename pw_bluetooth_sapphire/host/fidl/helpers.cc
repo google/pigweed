@@ -662,6 +662,19 @@ bt::sm::IOCapability IoCapabilityFromFidl(fsys::InputCapability input,
   return bt::sm::IOCapability::kNoInputNoOutput;
 }
 
+std::optional<bt::gap::BrEdrSecurityMode> BrEdrSecurityModeFromFidl(
+    const fsys::BrEdrSecurityMode mode) {
+  switch (mode) {
+    case fsys::BrEdrSecurityMode::MODE_4:
+      return bt::gap::BrEdrSecurityMode::Mode4;
+    case fsys::BrEdrSecurityMode::SECURE_CONNECTIONS_ONLY:
+      return bt::gap::BrEdrSecurityMode::SecureConnectionsOnly;
+    default:
+      bt_log(WARN, "fidl", "BR/EDR security mode not recognized");
+      return std::nullopt;
+  }
+}
+
 bt::gap::LESecurityMode LeSecurityModeFromFidl(const fsys::LeSecurityMode mode) {
   switch (mode) {
     case fsys::LeSecurityMode::MODE_1:

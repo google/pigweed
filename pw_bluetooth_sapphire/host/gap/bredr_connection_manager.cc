@@ -11,6 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_interrogator.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
@@ -270,6 +271,7 @@ void BrEdrConnectionManager::Pair(PeerId peer_id, BrEdrSecurityRequirements secu
     callback(ToResult(HostError::kNotFound));
     return;
   }
+
   auto& [handle, connection] = *conn_pair;
   auto pairing_callback = [pair_callback = std::move(callback)](auto, hci::Result<> status) {
     pair_callback(status);
@@ -410,6 +412,31 @@ bool BrEdrConnectionManager::Disconnect(PeerId peer_id, DisconnectReason reason)
 
   CleanUpConnection(handle, std::move(connections_.extract(handle).mapped()), reason);
   return true;
+}
+
+void BrEdrConnectionManager::SetSecurityMode(BrEdrSecurityMode mode) {
+  security_mode_ = mode;
+
+  if (mode == BrEdrSecurityMode::SecureConnectionsOnly) {
+    // `Disconnect`ing the peer must not be done while iterating through `connections_` as it
+    // removes the connection from `connections_`, hence the helper vector.
+    std::vector<PeerId> insufficiently_secure_peers;
+    for (auto& [_, connection] : connections_) {
+      if (connection.security_properties().level() != sm::SecurityLevel::kSecureAuthenticated) {
+        insufficiently_secure_peers.push_back(connection.peer_id());
+      }
+    }
+    for (PeerId id : insufficiently_secure_peers) {
+      bt_log(WARN, "gap-bredr",
+             "Peer has insufficient security for Secure Connections Only mode. \
+             Closing connection for peer (%s)",
+             bt_str(id));
+      Disconnect(id, DisconnectReason::kPairingFailed);
+    }
+  }
+  for (auto& [_, connection] : connections_) {
+    connection.set_security_mode(mode);
+  }
 }
 
 void BrEdrConnectionManager::AttachInspect(inspect::Node& parent, std::string name) {
@@ -586,7 +613,10 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
                   handle);
     });
   };
-  auto disconnect_cb = [this, peer_id] { Disconnect(peer_id, DisconnectReason::kPairingFailed); };
+  auto disconnect_cb = [this, handle, peer_id] {
+    bt_log(WARN, "gap-bredr", "Error occurred during pairing (handle %#.4x)", handle);
+    Disconnect(peer_id, DisconnectReason::kPairingFailed);
+  };
   auto on_peer_disconnect_cb = [this, link = link.get()] { OnPeerDisconnect(link); };
   auto [conn_iter, success] = connections_.try_emplace(
       handle, peer->GetWeakPtr(), std::move(link), std::move(send_auth_request_cb),
@@ -595,6 +625,7 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
 
   BrEdrConnection& connection = conn_iter->second;
   connection.pairing_state().SetPairingDelegate(pairing_delegate_);
+  connection.set_security_mode(security_mode_);
   connection.AttachInspect(
       inspect_properties_.connections_node_,
       inspect_properties_.connections_node_.UniqueName(kInspectConnectionNodeNamePrefix));

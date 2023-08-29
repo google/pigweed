@@ -11,6 +11,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/types.h"
@@ -255,7 +256,18 @@ class PairingState final {
   // Handler for hci::Connection::set_encryption_change_callback.
   void OnEncryptionChange(hci::Result<bool> result);
 
+  void set_security_properties(sm::SecurityProperties& security) { bredr_security_ = security; }
+  const sm::SecurityProperties& security_properties() const { return bredr_security_; }
+
+  // Sets the BR/EDR Security Mode of the pairing state - see enum definition for details of each
+  // mode. If a security upgrade is in-progress, only takes effect on the next security upgrade.
+  void set_security_mode(gap::BrEdrSecurityMode mode) { security_mode_ = mode; }
+  gap::BrEdrSecurityMode security_mode() const { return security_mode_; }
+
  private:
+  // Current security properties of the ACL-U link.
+  sm::SecurityProperties bredr_security_ = sm::SecurityProperties();
+
   enum class State {
     // Wait for initiator's IO Capability Response, Link Key Request, or for locally-initiated
     // pairing.
@@ -404,6 +416,9 @@ class PairingState final {
 
   PeerId peer_id_;
   Peer::WeakPtr peer_;
+
+  // The current GAP security mode of the device (v5.2 Vol. 3 Part C Section 5.2.2)
+  gap::BrEdrSecurityMode security_mode_;
 
   // The BR/EDR link whose pairing is being driven by this object.
   hci::BrEdrConnection* link_;

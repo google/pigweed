@@ -13,12 +13,14 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_interrogator.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_state.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/bredr_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/sco/sco_connection_manager.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
 namespace bt::gap {
 
@@ -82,6 +84,16 @@ class BrEdrConnection final {
   // Returns the duration that this connection has been alive.
   zx::duration duration() const {
     return async::Now(async_get_default_dispatcher()) - create_time_;
+  }
+
+  sm::SecurityProperties security_properties() const {
+    ZX_ASSERT(pairing_state_);
+    return pairing_state_->security_properties();
+  }
+
+  void set_security_mode(BrEdrSecurityMode mode) {
+    ZX_ASSERT(pairing_state_);
+    pairing_state_->set_security_mode(mode);
   }
 
  private:

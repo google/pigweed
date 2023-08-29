@@ -7,6 +7,7 @@
 
 #include "adapter.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 
 namespace bt::gap::testing {
@@ -75,7 +76,7 @@ class FakeAdapter final : public Adapter {
     void Pair(PeerId peer_id, sm::SecurityLevel pairing_level, sm::BondableMode bondable_mode,
               sm::ResultFunction<> cb) override {}
 
-    void SetSecurityMode(LESecurityMode mode) override {}
+    void SetLESecurityMode(LESecurityMode mode) override {}
 
     LESecurityMode security_mode() const override { return adapter_->le_security_mode_; }
 
@@ -181,6 +182,10 @@ class FakeAdapter final : public Adapter {
 
     void Pair(PeerId peer_id, BrEdrSecurityRequirements security,
               hci::ResultFunction<> callback) override {}
+
+    void SetBrEdrSecurityMode(BrEdrSecurityMode mode) override {}
+
+    BrEdrSecurityMode security_mode() const override { return BrEdrSecurityMode::Mode4; }
 
     void SetConnectable(bool connectable, hci::ResultFunction<> status_cb) override {}
 

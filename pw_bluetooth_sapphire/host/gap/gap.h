@@ -32,6 +32,17 @@ enum class Mode {
   kExtended,
 };
 
+// Enum for the supported values of the BR/EDR Security Mode as defined in
+// Core Spec v5.4, Vol 3, Part C, 4.2.2.
+enum class BrEdrSecurityMode {
+  // Mode 4 entails possibly encrypted, possibly authenticated communication.
+  Mode4,
+  // Secure Connections Only mode enforces that all encrypted transmissions use 128-bit,
+  // SC-generated and authenticated encryption keys.
+  SecureConnectionsOnly,
+};
+const char* BrEdrSecurityModeToString(BrEdrSecurityMode mode);
+
 // Enum for the supported values of the LE Security Mode as defined in spec v5.2 Vol 3 Part C 10.2.
 enum class LESecurityMode {
   // Mode 1 entails possibly encrypted, possibly authenticated communication.

@@ -17,6 +17,15 @@ const char* TechnologyTypeToString(TechnologyType type) {
   }
 }
 
+const char* BrEdrSecurityModeToString(BrEdrSecurityMode mode) {
+  switch (mode) {
+    case BrEdrSecurityMode::Mode4:
+      return "Mode 4";
+    case BrEdrSecurityMode::SecureConnectionsOnly:
+      return "Secure Connections Only Mode";
+  }
+}
+
 const char* LeSecurityModeToString(LESecurityMode mode) {
   switch (mode) {
     case LESecurityMode::Mode1:

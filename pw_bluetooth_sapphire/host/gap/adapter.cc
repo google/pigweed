@@ -19,6 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/metrics.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/android_extended_low_energy_advertiser.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -87,7 +88,7 @@ class AdapterImpl final : public Adapter {
       adapter_->metrics_.le.pair_requests.Add();
     }
 
-    void SetSecurityMode(LESecurityMode mode) override {
+    void SetLESecurityMode(LESecurityMode mode) override {
       adapter_->le_connection_manager_->SetSecurityMode(mode);
     }
 
@@ -209,6 +210,14 @@ class AdapterImpl final : public Adapter {
               hci::ResultFunction<> callback) override {
       adapter_->bredr_connection_manager_->Pair(peer_id, security, std::move(callback));
       adapter_->metrics_.bredr.pair_requests.Add();
+    }
+
+    void SetBrEdrSecurityMode(BrEdrSecurityMode mode) override {
+      adapter_->bredr_connection_manager_->SetSecurityMode(mode);
+    }
+
+    BrEdrSecurityMode security_mode() const override {
+      return adapter_->bredr_connection_manager_->security_mode();
     }
 
     void SetConnectable(bool connectable, hci::ResultFunction<> status_cb) override {

@@ -148,7 +148,7 @@ class Adapter {
     // Sets the LE security mode of the local device (see v5.2 Vol. 3 Part C Section 10.2). If set
     // to SecureConnectionsOnly, any currently encrypted links not meeting the requirements of
     // Security Mode 1 Level 4 will be disconnected.
-    virtual void SetSecurityMode(LESecurityMode mode) = 0;
+    virtual void SetLESecurityMode(LESecurityMode mode) = 0;
 
     // Returns the current LE security mode.
     virtual LESecurityMode security_mode() const = 0;
@@ -279,6 +279,14 @@ class Adapter {
     // will be called with the result of the procedure, successful or not.
     virtual void Pair(PeerId peer_id, BrEdrSecurityRequirements security,
                       hci::ResultFunction<> callback) = 0;
+
+    // Sets the BR/EDR security mode of the local device (Core Spec v5.4, Vol 3, Part C, 5.2.2). If
+    // set to SecureConnectionsOnly, any currently encrypted links not meeting the requirements of
+    // Security Mode 4 Level 4 will be disconnected.
+    virtual void SetBrEdrSecurityMode(BrEdrSecurityMode mode) = 0;
+
+    // Returns the current BR/EDR security mode.
+    virtual BrEdrSecurityMode security_mode() const = 0;
 
     // Set whether this host is connectable.
     virtual void SetConnectable(bool connectable, hci::ResultFunction<> status_cb) = 0;

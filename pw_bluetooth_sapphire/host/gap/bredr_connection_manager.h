@@ -13,6 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/metrics.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_request.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
@@ -143,6 +144,13 @@ class BrEdrConnectionManager final {
   // Disconnects any existing BR/EDR connection to |peer_id|. Returns true if
   // the peer is disconnected, false if the peer can not be disconnected.
   bool Disconnect(PeerId peer_id, DisconnectReason reason);
+
+  // Sets the BR/EDR security mode of the local device (Core Spec v5.4, Vol 3, Part C, 5.2.2). If
+  // set to SecureConnectionsOnly, any currently encrypted links not meeting the requirements of
+  // Security Mode 4 Level 4 will be disconnected.
+  void SetSecurityMode(BrEdrSecurityMode mode);
+
+  BrEdrSecurityMode security_mode() { return security_mode_; }
 
   // If `reason` is DisconnectReason::kApiRequest, then incoming connections from `peer_id` are
   // rejected for kLocalDisconnectCooldownDuration
@@ -315,6 +323,9 @@ class BrEdrConnectionManager final {
 
   // Holds the connections that are active.
   ConnectionMap connections_;
+
+  // Current security mode
+  BrEdrSecurityMode security_mode_ = BrEdrSecurityMode::Mode4;
 
   // Holds a denylist with cooldowns for locally requested disconnects.
   ExpiringSet<DeviceAddress> deny_incoming_;

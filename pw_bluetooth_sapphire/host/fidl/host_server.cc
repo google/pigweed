@@ -34,8 +34,10 @@ namespace fbt = fuchsia::bluetooth;
 namespace fsys = fuchsia::bluetooth::sys;
 
 using bt::PeerId;
+using bt::gap::BrEdrSecurityModeToString;
 using bt::gap::LeSecurityModeToString;
 using bt::sm::IOCapability;
+using fidl_helpers::BrEdrSecurityModeFromFidl;
 using fidl_helpers::HostErrorToFidl;
 using fidl_helpers::LeSecurityModeFromFidl;
 using fidl_helpers::NewFidlError;
@@ -476,11 +478,24 @@ void HostServer::EnablePrivacy(bool enabled) {
   }
 }
 
+void HostServer::SetBrEdrSecurityMode(fsys::BrEdrSecurityMode mode) {
+  std::optional<bt::gap::BrEdrSecurityMode> gap_mode = BrEdrSecurityModeFromFidl(mode);
+  if (!gap_mode.has_value()) {
+    bt_log(WARN, "fidl", "%s: Unrecognized BR/EDR security mode", __FUNCTION__);
+    return;
+  }
+
+  bt_log(INFO, "fidl", "%s: %s", __FUNCTION__, BrEdrSecurityModeToString(gap_mode.value()));
+  if (adapter()->bredr()) {
+    adapter()->bredr()->SetBrEdrSecurityMode(gap_mode.value());
+  }
+}
+
 void HostServer::SetLeSecurityMode(fsys::LeSecurityMode mode) {
   bt::gap::LESecurityMode gap_mode = LeSecurityModeFromFidl(mode);
   bt_log(INFO, "fidl", "%s: %s", __FUNCTION__, LeSecurityModeToString(gap_mode));
   if (adapter()->le()) {
-    adapter()->le()->SetSecurityMode(gap_mode);
+    adapter()->le()->SetLESecurityMode(gap_mode);
   }
 }
 

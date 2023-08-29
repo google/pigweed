@@ -699,6 +699,15 @@ TEST(HelpersTest, AdvertisingDataToFidlOmitsNonEnumeratedAppearance) {
   EXPECT_TRUE(AdvertisingDataToFidl(input).has_appearance());
 }
 
+TEST(HelpersTest, BrEdrSecurityModeFromFidl) {
+  EXPECT_EQ(bt::gap::BrEdrSecurityMode::Mode4,
+            BrEdrSecurityModeFromFidl(fsys::BrEdrSecurityMode::MODE_4));
+  EXPECT_EQ(bt::gap::BrEdrSecurityMode::SecureConnectionsOnly,
+            BrEdrSecurityModeFromFidl(fsys::BrEdrSecurityMode::SECURE_CONNECTIONS_ONLY));
+  auto nonexistent_security_mode = static_cast<fsys::BrEdrSecurityMode>(0xFF);
+  EXPECT_EQ(std::nullopt, BrEdrSecurityModeFromFidl(nonexistent_security_mode));
+}
+
 TEST(HelpersTest, LeSecurityModeFromFidl) {
   EXPECT_EQ(bt::gap::LESecurityMode::Mode1, LeSecurityModeFromFidl(fsys::LeSecurityMode::MODE_1));
   EXPECT_EQ(bt::gap::LESecurityMode::SecureConnectionsOnly,

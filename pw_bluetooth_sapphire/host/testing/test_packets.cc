@@ -372,8 +372,8 @@ DynamicByteBuffer ReadRemoteExtended1CompletePacket(hci_spec::ConnectionHandle c
       0x03,                                        // max_page_number (3 pages)
       0x0F, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00
       // lmp_features (page 1)
-      // Set: Secure Simple Pairing (Host Support), LE Supported (Host),
-      //  SimultaneousLEAndBREDR, Secure Connections (Host Support)
+      // Set: Secure Simple Pairing (Host Support), LE Supported (Host), SimultaneousLEAndBREDR,
+      // Secure Connections (Host Support)
       ));
 }
 

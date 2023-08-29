@@ -81,8 +81,10 @@ constexpr KeyDistGenField DistributableKeys(KeyDistGenField keys) {
 // during the Key Distribution/Generation Phase 3.
 bool HasKeysToDistribute(PairingFeatures features);
 
-// Each enum variant corresponds to an LE security mode 1 level in v5.2 Vol. Part C 10.2.1. Fuchsia
-// only supports encryption based security (Security Mode 1 and Secure Connections Only mode).
+// Each enum variant corresponds to either:
+// 1) a LE security mode 1 level (Core Spec v5.4, Vol 3, Part C 10.2.1)
+// 2) a BR/EDR security mode 4 level (Core Spec v5.4, Vol 3, Part C, 5.2.2.8)
+// Fuchsia only supports encryption based security
 enum class SecurityLevel {
   // No encryption
   kNoSecurity = 1,

@@ -54,6 +54,8 @@ const sm::LTK kLinkKey(sm::SecurityProperties(hci_spec::LinkKeyType::kAuthentica
 
 constexpr BrEdrSecurityRequirements kNoSecurityRequirements{.authentication = false,
                                                             .secure_connections = false};
+constexpr BrEdrSecurityRequirements kAuthSecurityRequirements{.authentication = true,
+                                                              .secure_connections = false};
 
 // A default size for PDUs when generating responses for testing.
 const uint16_t PDU_MAX = 0xFFF;
@@ -1827,8 +1829,7 @@ TEST_F(BrEdrConnectionManagerTest, SearchOnReconnect) {
         sdp_chan = std::move(new_chan);
       });
 
-  // This test uses a modified peer and interrogation which doesn't use
-  // extended pages.
+  // This test uses a modified peer and interrogation which doesn't use extended pages.
   EXPECT_CMD_PACKET_OUT(test_device(), kAcceptConnectionRequest, &kAcceptConnectionRequestRsp,
                         &kConnectionComplete);
   const DynamicByteBuffer remote_name_complete_packet =
@@ -3542,11 +3543,10 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelUpgradesLinkKey) {
   constexpr auto kPSM0 = l2cap::kHIDControl;
   constexpr l2cap::ChannelId kLocalId0 = l2cap::kFirstDynamicChannelId;
   constexpr l2cap::ChannelId kRemoteId0 = 0x41;
-  const BrEdrSecurityRequirements sec_reqs{.authentication = false, .secure_connections = false};
   l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, kPSM0, kLocalId0, kRemoteId0,
                                       l2cap::ChannelParameters());
-  connmgr()->OpenL2capChannel(peer->identifier(), kPSM0, sec_reqs, l2cap::ChannelParameters(),
-                              sock_cb);
+  connmgr()->OpenL2capChannel(peer->identifier(), kPSM0, kNoSecurityRequirements,
+                              l2cap::ChannelParameters(), sock_cb);
 
   RunLoopUntilIdle();
   EXPECT_EQ(1u, sock_cb_count);
@@ -3565,11 +3565,10 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelUpgradesLinkKey) {
   constexpr auto kPSM1 = l2cap::kHIDInteerup;
   constexpr l2cap::ChannelId kLocalId1 = kLocalId0 + 1;
   constexpr l2cap::ChannelId kRemoteId1 = kRemoteId0 + 1;
-  const BrEdrSecurityRequirements sec_reqs1{.authentication = true, .secure_connections = false};
   l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, kPSM1, kLocalId1, kRemoteId1,
                                       l2cap::ChannelParameters());
-  connmgr()->OpenL2capChannel(peer->identifier(), kPSM1, sec_reqs1, l2cap::ChannelParameters(),
-                              sock_cb);
+  connmgr()->OpenL2capChannel(peer->identifier(), kPSM1, kAuthSecurityRequirements,
+                              l2cap::ChannelParameters(), sock_cb);
 
   RunLoopUntilIdle();
   EXPECT_EQ(2u, sock_cb_count);
@@ -3614,12 +3613,10 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelUpgradeLinkKeyFails) {
   constexpr auto kPSM0 = l2cap::kHIDControl;
   constexpr l2cap::ChannelId kLocalId = l2cap::kFirstDynamicChannelId;
   constexpr l2cap::ChannelId kRemoteId = 0x41;
-  const BrEdrSecurityRequirements sec_reqs_none{.authentication = false,
-                                                .secure_connections = false};
   l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, kPSM0, kLocalId, kRemoteId,
                                       l2cap::ChannelParameters());
-  connmgr()->OpenL2capChannel(peer->identifier(), kPSM0, sec_reqs_none, l2cap::ChannelParameters(),
-                              sock_cb);
+  connmgr()->OpenL2capChannel(peer->identifier(), kPSM0, kNoSecurityRequirements,
+                              l2cap::ChannelParameters(), sock_cb);
 
   RunLoopUntilIdle();
   EXPECT_EQ(1u, sock_cb_count);
@@ -3628,10 +3625,9 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelUpgradeLinkKeyFails) {
   QueueSuccessfulUnauthenticatedPairing();
 
   constexpr auto kPSM1 = l2cap::kHIDInteerup;
-  const BrEdrSecurityRequirements sec_reqs_auth{.authentication = true,
-                                                .secure_connections = false};
-  connmgr()->OpenL2capChannel(peer->identifier(), kPSM1, sec_reqs_auth, l2cap::ChannelParameters(),
-                              sock_cb);
+
+  connmgr()->OpenL2capChannel(peer->identifier(), kPSM1, kAuthSecurityRequirements,
+                              l2cap::ChannelParameters(), sock_cb);
 
   RunLoopUntilIdle();
   EXPECT_EQ(2u, sock_cb_count);
@@ -4121,17 +4117,6 @@ TEST_F(BrEdrConnectionManagerTest, RoleChangeDuringInboundConnectionProcedure) {
 
 // Peer and local Secure Connections (SC) are supported and key is of SC type
 TEST_F(BrEdrConnectionManagerTest, SecureConnectionsSupportedCorrectLinkKeyTypeSucceeds) {
-  const auto kReadRemoteExtended1Complete =
-      StaticByteBuffer(hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode,
-                       0x0D,  // parameter_total_size (13 bytes)
-                       pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
-                       0xAA, 0x0B,                                  // connection_handle,
-                       0x01,                                        // page_number
-                       0x02,                                        // max_page_number
-                       0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-                       // lmp_features_page1: Secure Simple Pairing (Host Support), LE Supported
-                       // (Host), Previously Used, Secure Connections (Host Support)
-      );
   const auto kReadRemoteExtended2Complete =
       StaticByteBuffer(hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode,
                        0x0D,  // parameter_total_size (13 bytes)
@@ -4216,17 +4201,6 @@ TEST_F(BrEdrConnectionManagerTest, SecureConnectionsSupportedCorrectLinkKeyTypeS
 
 // Peer and local Secure Connections (SC) are supported, but key is not of SC type
 TEST_F(BrEdrConnectionManagerTest, SecureConnectionsSupportedIncorrectLinkKeyTypeFails) {
-  const auto kReadRemoteExtended1Complete =
-      StaticByteBuffer(hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode,
-                       0x0D,  // parameter_total_size (13 bytes)
-                       pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
-                       0xAA, 0x0B,                                  // connection_handle,
-                       0x01,                                        // page_number
-                       0x02,                                        // max_page_number
-                       0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-                       // lmp_features_page1: Secure Simple Pairing (Host Support), LE Supported
-                       // (Host), Previously Used, Secure Connections (Host Support)
-      );
   const auto kReadRemoteExtended2Complete =
       StaticByteBuffer(hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode,
                        0x0D,  // parameter_total_size (13 bytes)
@@ -4296,6 +4270,111 @@ TEST_F(BrEdrConnectionManagerTest, SecureConnectionsSupportedIncorrectLinkKeyTyp
   // kAuthenticatedCombination256).
   QueueDisconnection(kConnectionHandle);
   RETURN_IF_FATAL(RunLoopUntilIdle());
+}
+
+// Active connections that do not meeting the requirements for Secure Connections Only mode are
+// disconnected when the security mode is changed to SC Only.
+TEST_F(BrEdrConnectionManagerTest, SecureConnectionsOnlyDisconnectsInsufficientSecurity) {
+  QueueSuccessfulIncomingConn();
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  RunLoopUntilIdle();
+  EXPECT_EQ(kIncomingConnTransactions, transaction_count());
+  auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(IsInitializing(peer));
+  ASSERT_FALSE(peer->bonded());
+
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Approve pairing requests.
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId, uint32_t passkey, auto method, auto confirm_cb) {
+        ASSERT_TRUE(confirm_cb);
+        confirm_cb(true);
+      });
+
+  pairing_delegate.SetCompletePairingCallback(
+      [](PeerId, sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
+
+  QueueSuccessfulPairing();  // kAuthenticatedCombination192 default is not of SC type
+
+  // Initialize as error to verify that |pairing_complete_cb| assigns success.
+  hci::Result<> pairing_status = ToResult(HostError::kInsufficientSecurity);
+  auto pairing_complete_cb = [&pairing_status](hci::Result<> status) {
+    ASSERT_EQ(fit::ok(), status);
+    pairing_status = status;
+  };
+
+  connmgr()->Pair(peer->identifier(), kNoSecurityRequirements, pairing_complete_cb);
+  ASSERT_TRUE(IsInitializing(peer));
+  ASSERT_FALSE(peer->bonded());
+  RunLoopUntilIdle();
+
+  ASSERT_EQ(fit::ok(), pairing_status);
+  ASSERT_TRUE(IsConnected(peer));
+  ASSERT_TRUE(peer->bonded());
+
+  // Setting Secure Connections Only mode causes connections not allowed under this mode to be
+  // disconnected. In this case, |peer| is encrypted, authenticated, but not SC-generated.
+  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnect);
+  connmgr()->SetSecurityMode(BrEdrSecurityMode::SecureConnectionsOnly);
+  RunLoopUntilIdle();
+  EXPECT_EQ(BrEdrSecurityMode::SecureConnectionsOnly, connmgr()->security_mode());
+  ASSERT_TRUE(IsNotConnected(peer));
+}
+
+// Active connections that meet the requirements for Secure Connections Only mode are not
+// disconnected when the security mode is changed to SC Only.
+TEST_F(BrEdrConnectionManagerTest, SecureConnectionsOnlySufficientSecuritySucceeds) {
+  QueueSuccessfulIncomingConn();
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  RunLoopUntilIdle();
+  EXPECT_EQ(kIncomingConnTransactions, transaction_count());
+  auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(IsInitializing(peer));
+  ASSERT_FALSE(peer->bonded());
+
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Approve pairing requests.
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId, uint32_t passkey, auto method, auto confirm_cb) {
+        ASSERT_TRUE(confirm_cb);
+        confirm_cb(true);
+      });
+
+  pairing_delegate.SetCompletePairingCallback(
+      [](PeerId, sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
+
+  QueueSuccessfulPairing(hci_spec::LinkKeyType::kAuthenticatedCombination256);
+
+  // Initialize as error to verify that |pairing_complete_cb| assigns success.
+  hci::Result<> pairing_status = ToResult(HostError::kInsufficientSecurity);
+  auto pairing_complete_cb = [&pairing_status](hci::Result<> status) {
+    ASSERT_EQ(fit::ok(), status);
+    pairing_status = status;
+  };
+
+  connmgr()->Pair(peer->identifier(), kNoSecurityRequirements, pairing_complete_cb);
+  ASSERT_TRUE(IsInitializing(peer));
+  ASSERT_FALSE(peer->bonded());
+  RunLoopUntilIdle();
+
+  ASSERT_EQ(fit::ok(), pairing_status);
+  ASSERT_TRUE(IsConnected(peer));
+  ASSERT_TRUE(peer->bonded());
+
+  // Setting Secure Connections Only mode causes connections not allowed under this mode to be
+  // disconnected. In this case, |peer| is encrypted, authenticated, and SC-generated.
+  connmgr()->SetSecurityMode(BrEdrSecurityMode::SecureConnectionsOnly);
+  RunLoopUntilIdle();
+  EXPECT_EQ(BrEdrSecurityMode::SecureConnectionsOnly, connmgr()->security_mode());
+  ASSERT_TRUE(IsConnected(peer));
+
+  QueueDisconnection(kConnectionHandle);
 }
 
 #undef COMMAND_COMPLETE_RSP

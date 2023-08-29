@@ -90,6 +90,7 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   void SetDiscoverable(bool discoverable, SetDiscoverableCallback callback) override;
   void EnableBackgroundScan(bool enabled) override;
   void EnablePrivacy(bool enabled) override;
+  void SetBrEdrSecurityMode(::fuchsia::bluetooth::sys::BrEdrSecurityMode mode) override;
   void SetLeSecurityMode(::fuchsia::bluetooth::sys::LeSecurityMode mode) override;
   void SetPairingDelegate(
       ::fuchsia::bluetooth::sys::InputCapability input,

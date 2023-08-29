@@ -844,6 +844,25 @@ TEST_F(HostServerTest, WatchPeersUpdatedThenRemoved) {
   EXPECT_TRUE(replied);
 }
 
+TEST_F(HostServerTest, SetBrEdrSecurityMode) {
+  // Default BR/EDR security mode is Mode 4
+  ASSERT_EQ(fidl_helpers::BrEdrSecurityModeFromFidl(fsys::BrEdrSecurityMode::MODE_4),
+            adapter()->bredr()->security_mode());
+
+  // Set the HostServer to SecureConnectionsOnly mode first
+  host_client()->SetBrEdrSecurityMode(fsys::BrEdrSecurityMode::SECURE_CONNECTIONS_ONLY);
+  RunLoopUntilIdle();
+  ASSERT_EQ(
+      fidl_helpers::BrEdrSecurityModeFromFidl(fsys::BrEdrSecurityMode::SECURE_CONNECTIONS_ONLY),
+      adapter()->bredr()->security_mode());
+
+  // Set the HostServer back to Mode 4 and verify that the change takes place
+  host_client()->SetBrEdrSecurityMode(fsys::BrEdrSecurityMode::MODE_4);
+  RunLoopUntilIdle();
+  ASSERT_EQ(fidl_helpers::BrEdrSecurityModeFromFidl(fsys::BrEdrSecurityMode::MODE_4),
+            adapter()->bredr()->security_mode());
+}
+
 TEST_F(HostServerTest, SetLeSecurityMode) {
   // Set the HostServer to SecureConnectionsOnly mode first
   host_client()->SetLeSecurityMode(fsys::LeSecurityMode::SECURE_CONNECTIONS_ONLY);
