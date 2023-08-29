@@ -709,3 +709,14 @@ struct ExtendedInquiryResultEvent:
 
   $next [+240]                        UInt:8[240]                 extended_inquiry_response
     -- Extended inquiey response data as defined in Vol 3, Part C, Sec 8
+
+
+struct EncryptionKeyRefreshCompleteEvent:
+  -- Encryption Key Refresh Complete Event (v2.1 + EDR) (BR/EDR & LE)
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]  hci.EventHeader  header
+  $next [+1]         hci.StatusCode   status
+  $next [+2]         UInt             connection_handle
+    -- The connection_handle on which the encryption key was refreshed due to
+    -- encryption being started or resumed.
+    [requires: 0x0000 <= this <= 0x0EFF]
