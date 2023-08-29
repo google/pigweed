@@ -101,11 +101,35 @@ if (dir_pw_third_party_llvm_libc != "") {
     no_test_functions = functions
   }
 
+  pw_libc_source_set("stdio") {
+    functions = [ "snprintf" ]
+
+    additional_srcs = [
+      "printf_core/string_writer.cpp",
+      "printf_core/printf_main.cpp",
+      "printf_core/writer.cpp",
+      "printf_core/parser.cpp",
+      "printf_core/converter.cpp",
+    ]
+
+    defines = [
+      "LIBC_COPT_PRINTF_DISABLE_FLOAT",
+      "LIBC_COPT_PRINTF_DISABLE_WRITE_INT",
+      "LIBC_COPT_PRINTF_DISABLE_INDEX_MODE",
+    ]
+
+    # This config includes -Wshadow. On gcc, this warns even for constructor
+    # arguments which shadow members. This is too pedantic and shouldn't be
+    # changed upstream.
+    remove_configs = [ "//pw_build:extra_strict_warnings" ]
+  }
+
   pw_static_library("pw_libc") {
     complete_static_lib = true
     deps = [
       ":ctype",
       ":math",
+      ":stdio",
       ":stdlib",
       ":string",
     ]
@@ -115,6 +139,7 @@ if (dir_pw_third_party_llvm_libc != "") {
     tests = [
       ":ctype_tests",
       ":math_tests",
+      ":stdio_tests",
       ":stdlib_tests",
       ":string_tests",
     ]
