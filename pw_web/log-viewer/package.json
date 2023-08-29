@@ -11,7 +11,7 @@
     },
     "dependencies": {
         "@lit-labs/virtualizer": "^2.0.3",
-        "@material/web": "^1.0.0-pre.8",
+        "@material/web": "^1.0.0-pre.16",
         "date-fns": "^2.30.0",
         "lit": "^3.0.0-pre.0",
         "prettier-plugin-jsdoc": "^0.4.2"

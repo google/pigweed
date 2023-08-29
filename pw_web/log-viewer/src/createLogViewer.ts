@@ -23,8 +23,10 @@ import '@material/web/checkbox/checkbox.js';
 import '@material/web/field/outlined-field.js';
 import '@material/web/textfield/outlined-text-field.js';
 import '@material/web/textfield/filled-text-field.js';
-import '@material/web/iconbutton/standard-icon-button.js';
 import '@material/web/icon/icon.js';
+import '@material/web/iconbutton/icon-button.js';
+import '@material/web/menu/menu.js';
+import '@material/web/menu/menu-item.js';
 
 export function createLogViewer(
   logSource: LogSource,

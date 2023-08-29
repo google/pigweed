@@ -25,6 +25,7 @@ export const styles = css`
     height: 3rem;
     justify-content: space-between;
     padding: 0 1rem;
+    --md-list-item-leading-icon-size: 1.5rem;
   }
 
   :host > * {

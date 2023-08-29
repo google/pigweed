@@ -57,7 +57,10 @@ export class LogViewControls extends LitElement {
   _state: State;
 
   @state()
-  _viewTitle = '';
+  _viewTitle = 'Log View';
+
+  @state()
+  _settingsMenuOpen = false;
 
   @query('.field-menu') _fieldMenu!: HTMLMenuElement;
 
@@ -65,7 +68,7 @@ export class LogViewControls extends LitElement {
 
   @query('.input-facade') _inputFacade!: HTMLDivElement;
 
-  @queryAll('.item-checkboxeses') _itemCheckboxes!: HTMLCollection[];
+  @queryAll('.item-checkboxes') _itemCheckboxes!: HTMLCollection[];
 
   private firstCheckboxLoad = false;
 
@@ -74,6 +77,8 @@ export class LogViewControls extends LitElement {
 
   /** The delay (in ms) used for debouncing search input. */
   private readonly INPUT_DEBOUNCE_DELAY = 50;
+
+  @query('.settings-menu-button') settingsMenuButtonEl!: HTMLElement;
 
   constructor() {
     super();
@@ -87,7 +92,9 @@ export class LogViewControls extends LitElement {
       for (const i in viewConfigArr) {
         if (viewConfigArr[i].viewID === this.viewId) {
           searchText = viewConfigArr[i].search as string;
-          this._viewTitle = viewConfigArr[i].viewTitle as string;
+          this._viewTitle = viewConfigArr[i].viewTitle
+            ? viewConfigArr[i].viewTitle
+            : this._viewTitle;
         }
       }
     }
@@ -223,17 +230,43 @@ export class LogViewControls extends LitElement {
   }
 
   /**
-   * Opens and closes the column visibility dropdown menu.
+   * Dispatches a custom event for downloading a logs file. This event includes
+   * a `format` string indicating the format of the file to be downloaded and a
+   * `viewTitle` string which passes the title of the current view for naming
+   * the file.
    *
    * @param {Event} event - The click event object.
+   */
+  private handleDownloadLogs() {
+    const downloadLogs = new CustomEvent('download-logs', {
+      bubbles: true,
+      composed: true,
+      detail: {
+        format: 'plaintext',
+        viewTitle: this._viewTitle,
+      },
+    });
+
+    this.dispatchEvent(downloadLogs);
+  }
+
+  /**
+   * Opens and closes the column visibility dropdown menu.
    */
   private toggleColumnVisibilityMenu() {
     this._fieldMenu.hidden = !this._fieldMenu.hidden;
   }
 
+  /**
+   * Opens and closes the Settings menu.
+   */
+  private toggleSettingsMenu() {
+    this._settingsMenuOpen = !this._settingsMenuOpen;
+  }
+
   render() {
     return html`
-      <p class="host-name"> ${this._viewTitle || 'Log View'}</p>
+      <p class="host-name"> ${this._viewTitle}</p>
 
       <div class="input-container">
         <div class="input-facade" contenteditable="plaintext-only" @input="${
@@ -244,41 +277,39 @@ export class LogViewControls extends LitElement {
 
       <div class="actions-container">
         <span class="action-button" hidden>
-          <md-standard-icon-button>
+          <md-icon-button>
             <md-icon>pause_circle</md-icon>
-          </md-standard-icon-button>
+          </md-icon-button>
         </span>
 
         <span class="action-button" hidden>
-          <md-standard-icon-button>
+          <md-icon-button>
             <md-icon>wrap_text</md-icon>
-          </md-standard-icon-button>
+          </md-icon-button>
         </span>
 
         <span class="action-button" title="Clear logs">
-          <md-standard-icon-button @click=${this.handleClearLogsClick}>
+          <md-icon-button @click=${this.handleClearLogsClick}>
             <md-icon>delete_sweep</md-icon>
-          </md-standard-icon-button>
+          </md-icon-button>
         </span>
 
         <span class="action-button" title="Toggle Line Wrapping">
-          <md-standard-icon-button @click=${this.handleWrapToggle} toggle>
+          <md-icon-button @click=${this.handleWrapToggle} toggle>
             <md-icon>wrap_text</md-icon>
-          </md-standard-icon-button>
+          </md-icon-button>
         </span>
 
-        <span class='field-toggle' title="Toggle fields">
-          <md-standard-icon-button @click=${
-            this.toggleColumnVisibilityMenu
-          } toggle>
+        <span class='action-button field-toggle' title="Toggle fields">
+          <md-icon-button @click=${this.toggleColumnVisibilityMenu} toggle>
             <md-icon>view_column</md-icon>
-          </md-standard-icon-button>
+          </md-icon-button>
           <menu class='field-menu' hidden>
             ${Array.from(this.fieldKeys).map(
               (field) => html`
                 <li class="field-menu-item">
                   <input
-                    class="item-checkboxeses"
+                    class="item-checkboxes"
                     @click=${this.handleColumnToggle}
                     checked
                     type="checkbox"
@@ -292,18 +323,39 @@ export class LogViewControls extends LitElement {
           </menu>
         </span>
 
+        <span class="action-button" title="Toggle fields">
+          <md-icon-button @click=${
+            this.toggleSettingsMenu
+          } class="settings-menu-button">
+            <md-icon >more_vert</md-icon>
+          </md-icon-button>
+
+          <md-menu quick fixed
+            ?open=${this._settingsMenuOpen}
+            .anchor=${this.settingsMenuButtonEl}
+            @closed=${() => {
+              this._settingsMenuOpen = false;
+            }}>
+            <md-menu-item headline="Download logs (.txt)" @click=${
+              this.handleDownloadLogs
+            } role="button">
+              <md-icon slot="start" data-variant="icon">download</md-icon>
+            </md-menu-item>
+          </md-menu>
+        </span>
+
         <span class="action-button" title="Close view" ?hidden=${
           this.hideCloseButton
         }>
-          <md-standard-icon-button @click=${this.handleCloseViewClick}>
+          <md-icon-button @click=${this.handleCloseViewClick}>
             <md-icon>close</md-icon>
-          </md-standard-icon-button>
+          </md-icon-button>
         </span>
 
         <span class="action-button" hidden>
-          <md-standard-icon-button>
+          <md-icon-button>
             <md-icon>more_horiz</md-icon>
-          </md-standard-icon-button>
+          </md-icon-button>
         </span>
       </div>
     `;

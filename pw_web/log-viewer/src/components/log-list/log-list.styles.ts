@@ -140,6 +140,7 @@ export const styles = css`
     --md-filled-button-container-elevation: 4;
     --md-filled-button-hover-container-elevation: 4;
     bottom: 2rem;
+    font-family: 'Google Sans', sans-serif;
     left: 50%;
     position: absolute;
     transform: translate(-50%);
@@ -190,11 +191,11 @@ export const styles = css`
       'wght' 400,
       'GRAD' 200,
       'opsz' 58;
+    font-size: 1.25rem;
     user-select: none;
   }
 
   .overflow-indicator {
-    height: 100%;
     pointer-events: none;
     position: absolute;
     width: 8rem;
@@ -210,7 +211,7 @@ export const styles = css`
     height: 8rem;
     pointer-events: none;
     position: absolute;
-    width: 100%;
+    width: calc(100% - 1rem);
   }
 
   .left-indicator {
@@ -219,6 +220,7 @@ export const styles = css`
       transparent,
       var(--sys-log-viewer-color-overflow-indicator)
     );
+    height: calc(100% - 1rem);
     justify-self: flex-start;
   }
 
@@ -228,6 +230,7 @@ export const styles = css`
       transparent,
       var(--sys-log-viewer-color-overflow-indicator)
     );
+    height: calc(100% - 1rem);
     justify-self: flex-end;
   }
 
