@@ -46,9 +46,6 @@ export class LogViewControls extends LitElement {
   @property({ type: Boolean })
   hideCloseButton = false;
 
-  @property({ type: String })
-  _searchText = '';
-
   @property({ type: Array })
   colsHidden: (boolean | undefined)[] = [];
 
@@ -66,6 +63,8 @@ export class LogViewControls extends LitElement {
 
   @query('#search-field') _searchField!: HTMLInputElement;
 
+  @query('.input-facade') _inputFacade!: HTMLDivElement;
+
   @queryAll('.item-checkboxeses') _itemCheckboxes!: HTMLCollection[];
 
   private firstCheckboxLoad = false;
@@ -82,17 +81,19 @@ export class LogViewControls extends LitElement {
   }
 
   protected firstUpdated(): void {
+    let searchText = '';
     if (this._state !== null) {
       const viewConfigArr = this._state.logViewConfig;
       for (const i in viewConfigArr) {
         if (viewConfigArr[i].viewID === this.viewId) {
-          this._searchText = viewConfigArr[i].search as string;
+          searchText = viewConfigArr[i].search as string;
           this._viewTitle = viewConfigArr[i].viewTitle as string;
         }
       }
     }
-    this._searchField.value = this._searchText;
-    this._searchField.dispatchEvent(new CustomEvent('input'));
+
+    this._inputFacade.textContent = searchText;
+    this._inputFacade.dispatchEvent(new CustomEvent('input'));
   }
 
   protected updated(): void {
@@ -174,7 +175,7 @@ export class LogViewControls extends LitElement {
   /**
    * Dispatches a custom event for toggling wrapping.
    */
-  private handleWrapToggle(event: Event) {
+  private handleWrapToggle() {
     const wrapToggle = new CustomEvent('wrap-toggle', {
       bubbles: true,
       composed: true,
@@ -226,7 +227,7 @@ export class LogViewControls extends LitElement {
    *
    * @param {Event} event - The click event object.
    */
-  private toggleColumnVisibilityMenu(event: Event) {
+  private toggleColumnVisibilityMenu() {
     this._fieldMenu.hidden = !this._fieldMenu.hidden;
   }
 

@@ -168,7 +168,6 @@ export class LogList extends LitElement {
     // TODO(b/289101398): Refactor `setTimeout` usage
     setTimeout(() => {
       container.scrollTop = container.scrollHeight;
-      this._autoscrollIsEnabled = true;
       this._jumpBottomBtn.hidden = true;
       this._scrollDownOpacity = 0;
     }, 0); // Complete any rendering tasks before scrolling
@@ -278,21 +277,25 @@ export class LogList extends LitElement {
     const container = this._tableContainer;
     const containerWidth = container.offsetWidth;
     const scrollLeft = container.scrollLeft;
+    const scrollY =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
     const maxScrollLeft = container.scrollWidth - containerWidth;
+    const rowHeight = this._tableRows[0].offsetHeight;
 
     this._scrollPercentageLeft = scrollLeft / maxScrollLeft || 0;
 
-    if (
-      Math.floor(container.scrollHeight - container.scrollTop) <=
-      Math.floor(container.offsetHeight)
-    ) {
-      this.scrollTableToBottom();
+    if (Math.abs(scrollY) <= 1) {
+      this._autoscrollIsEnabled = true;
+      this.requestUpdate();
       return;
     }
-    this._autoscrollIsEnabled = false;
-    this._jumpBottomBtn.hidden = false;
-    this._scrollDownOpacity = 1;
-    this.requestUpdate();
+
+    if (Math.round(scrollY - rowHeight) >= 1) {
+      this._autoscrollIsEnabled = false;
+      this._jumpBottomBtn.hidden = false;
+      this._scrollDownOpacity = 1;
+      this.requestUpdate();
+    }
   };
 
   /**

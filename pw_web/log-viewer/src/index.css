@@ -40,6 +40,7 @@
     --md-icon-button-unselected-hover-icon-color: var(--md-sys-color-on-primary-container);
 
     /* Log View */
+    --sys-log-viewer-height: 100vh;
     --sys-log-viewer-view-outline-width: 1px;
     --sys-log-viewer-view-corner-radius: 0.5rem;
 }
