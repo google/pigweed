@@ -34,11 +34,10 @@ from typing import (
 )
 
 import pw_cli
-from . import cli, format_code, git_repo, presubmit, presubmit_context, tools
+from . import cli, git_repo, presubmit, presubmit_context, tools
 
 DEFAULT_PATH = Path('out', 'presubmit', 'keep_sorted')
 
-_COLOR = pw_cli.color.colors()
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 # Ignore a whole section. Please do not change the order of these lines.
@@ -390,7 +389,7 @@ def _process_files(
             )
 
             outs.write(diff)
-            print(format_code.colorize_diff(diff))
+            print(tools.colorize_diff(diff))
 
     return errors
 

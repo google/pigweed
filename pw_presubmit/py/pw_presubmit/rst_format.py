@@ -23,11 +23,13 @@ from pathlib import Path
 import textwrap
 from typing import List, Optional
 
+from pw_presubmit.tools import colorize_diff
+
 DEFAULT_TAB_WIDTH = 8
 CODE_BLOCK_INDENTATION = 3
 
 
-def _parse_args():
+def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
 
     parser.add_argument(
@@ -71,6 +73,10 @@ def _reindent(input_text: str, amount: int) -> str:
         text += line
         text += '\n'
     return text
+
+
+def _strip_trailing_whitespace(line: str) -> str:
+    return line.rstrip() + '\n'
 
 
 @dataclass
@@ -162,10 +168,6 @@ class CodeBlock:
         return self.to_text()
 
 
-def _strip_trailing_whitespace(line: str) -> str:
-    return line.rstrip() + '\n'
-
-
 def reindent_code_blocks(in_text: str) -> str:
     """Reindent code blocks to 3 spaces."""
     out_text = ''
@@ -222,7 +224,7 @@ def reformat_rst(
         )
     )
     if diff and result_diff:
-        print(''.join(result_diff))
+        print(''.join(colorize_diff(result_diff)))
 
     if in_place:
         file_name.write_text(out_text)

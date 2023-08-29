@@ -28,7 +28,6 @@ from typing import Optional
 
 from pw_env_setup import python_packages
 
-from pw_presubmit.format_code import colorize_diff_line
 from pw_presubmit.presubmit import (
     call,
     Check,
@@ -39,7 +38,7 @@ from pw_presubmit.presubmit_context import (
     PresubmitFailure,
 )
 from pw_presubmit import build
-from pw_presubmit.tools import log_run
+from pw_presubmit.tools import log_run, colorize_diff_line
 
 _LOG = logging.getLogger(__name__)
 

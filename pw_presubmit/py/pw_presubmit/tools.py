@@ -32,9 +32,31 @@ from typing import (
     Tuple,
 )
 
+import pw_cli.color
 from pw_presubmit.presubmit_context import PRESUBMIT_CONTEXT
 
 _LOG: logging.Logger = logging.getLogger(__name__)
+_COLOR = pw_cli.color.colors()
+
+
+def colorize_diff_line(line: str) -> str:
+    if line.startswith('--- ') or line.startswith('+++ '):
+        return _COLOR.bold_white(line)
+    if line.startswith('-'):
+        return _COLOR.red(line)
+    if line.startswith('+'):
+        return _COLOR.green(line)
+    if line.startswith('@@ '):
+        return _COLOR.cyan(line)
+    return line
+
+
+def colorize_diff(lines: Iterable[str]) -> str:
+    """Takes a diff str or list of str lines and returns a colorized version."""
+    if isinstance(lines, str):
+        lines = lines.splitlines(True)
+
+    return ''.join(colorize_diff_line(line) for line in lines)
 
 
 def plural(

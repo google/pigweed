@@ -64,7 +64,13 @@ from pw_presubmit import (
     owners_checks,
     presubmit_context,
 )
-from pw_presubmit.tools import exclude_paths, file_summary, log_run, plural
+from pw_presubmit.tools import (
+    exclude_paths,
+    file_summary,
+    log_run,
+    plural,
+    colorize_diff,
+)
 from pw_presubmit.rst_format import reformat_rst
 
 _LOG: logging.Logger = logging.getLogger(__name__)
@@ -72,26 +78,6 @@ _COLOR = pw_cli.color.colors()
 _DEFAULT_PATH = Path('out', 'format')
 
 _Context = Union[PresubmitContext, FormatContext]
-
-
-def colorize_diff_line(line: str) -> str:
-    if line.startswith('--- ') or line.startswith('+++ '):
-        return _COLOR.bold_white(line)
-    if line.startswith('-'):
-        return _COLOR.red(line)
-    if line.startswith('+'):
-        return _COLOR.green(line)
-    if line.startswith('@@ '):
-        return _COLOR.cyan(line)
-    return line
-
-
-def colorize_diff(lines: Iterable[str]) -> str:
-    """Takes a diff str or list of str lines and returns a colorized version."""
-    if isinstance(lines, str):
-        lines = lines.splitlines(True)
-
-    return ''.join(colorize_diff_line(line) for line in lines)
 
 
 def _diff(path, original: bytes, formatted: bytes) -> str:
