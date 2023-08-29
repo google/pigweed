@@ -681,3 +681,31 @@ struct SynchronousConnectionCompleteEvent:
     -- zero for SCO links.
 
   $next [+1]                          hci.CodingFormat  air_mode
+
+
+struct ExtendedInquiryResultEvent:
+  -- Extended Inquiry Result Event (v1.2) (BR/EDR)
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]                   hci.EventHeader             header
+  $next [+1]                          UInt                        num_responses
+    -- Number of responses from the inquiry. The HCI_Extended_Inquiry_Result
+    -- event always contains a single response.
+    [requires: this == 0x01]
+
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                  bd_addr
+    -- BD_ADDR of the device that responded.
+
+  $next [+1]                          hci.PageScanRepetitionMode  page_scan_repetition_mode
+    -- The Page Scan Repetition Mode being used by the remote device.
+
+  $next [+1]                          UInt                        reserved
+  $next [+3]                          hci.ClassOfDevice           class_of_device
+  $next [+2]                          hci.ClockOffset             clock_offset
+    -- The lower 15 bits represent bits 16-2 of CLKNPeripheral-CLK.
+
+  $next [+1]                          Int                         rssi
+    -- Units: dBm
+    [requires: -127 <= this <= 20]
+
+  $next [+240]                        UInt:8[240]                 extended_inquiry_response
+    -- Extended inquiey response data as defined in Vol 3, Part C, Sec 8
