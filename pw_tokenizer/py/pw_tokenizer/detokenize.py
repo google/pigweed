@@ -367,6 +367,12 @@ class AutoUpdatingDetokenizer(Detokenizer):
             return True
 
         def _last_modified_time(self) -> Optional[float]:
+            if self.path.is_dir():
+                mtime = -1.0
+                for child in self.path.glob(tokens.DIR_DB_GLOB):
+                    mtime = max(mtime, os.path.getmtime(child))
+                return mtime if mtime >= 0 else None
+
             try:
                 return os.path.getmtime(self.path)
             except FileNotFoundError:

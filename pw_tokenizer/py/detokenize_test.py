@@ -494,6 +494,54 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
         # The database stays around if the file is deleted.
         self.assertTrue(detok.detokenize(JELLO_WORLD_TOKEN).ok())
 
+    def test_update_with_directory(self, mock_getmtime):
+        """Tests the update command with a directory format database."""
+        db = database.load_token_database(
+            io.BytesIO(ELF_WITH_TOKENIZER_SECTIONS)
+        )
+        self.assertEqual(len(db), TOKENS_IN_ELF)
+
+        the_time = [100]
+
+        def move_back_time_if_file_exists(path):
+            if os.path.exists(path):
+                the_time[0] -= 1
+                return the_time[0]
+
+            raise FileNotFoundError
+
+        mock_getmtime.side_effect = move_back_time_if_file_exists
+
+        with tempfile.TemporaryDirectory() as dbdir:
+            with tempfile.NamedTemporaryFile(
+                'wb', delete=False, suffix='.pw_tokenizer.csv', dir=dbdir
+            ) as matching_suffix_file, tempfile.NamedTemporaryFile(
+                'wb', delete=False, suffix='.not.right', dir=dbdir
+            ) as mismatched_suffix_file:
+                try:
+                    matching_suffix_file.close()
+                    mismatched_suffix_file.close()
+
+                    detok = detokenize.AutoUpdatingDetokenizer(
+                        dbdir, min_poll_period_s=0
+                    )
+                    self.assertFalse(detok.detokenize(JELLO_WORLD_TOKEN).ok())
+
+                    with open(mismatched_suffix_file.name, 'wb') as fd:
+                        tokens.write_csv(db, fd)
+                    self.assertFalse(detok.detokenize(JELLO_WORLD_TOKEN).ok())
+
+                    with open(matching_suffix_file.name, 'wb') as fd:
+                        tokens.write_csv(db, fd)
+                    self.assertTrue(detok.detokenize(JELLO_WORLD_TOKEN).ok())
+                finally:
+                    os.unlink(mismatched_suffix_file.name)
+                    os.unlink(matching_suffix_file.name)
+                    os.rmdir(dbdir)
+
+        # The database stays around if the file is deleted.
+        self.assertTrue(detok.detokenize(JELLO_WORLD_TOKEN).ok())
+
     def test_no_update_if_time_is_same(self, mock_getmtime):
         mock_getmtime.return_value = 100
 
