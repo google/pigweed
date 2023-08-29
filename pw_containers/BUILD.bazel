@@ -96,7 +96,7 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
-        "//pw_assert:facade",
+        "//pw_assert",
         "//pw_polyfill",
         "//pw_preprocessor",
     ],

@@ -75,7 +75,7 @@ pw_cc_library(
     hdrs = ["public/pw_string/string.h"],
     includes = ["public"],
     deps = [
-        "//pw_assert:facade",
+        "//pw_assert",
         "//pw_polyfill",
     ],
 )
@@ -104,7 +104,7 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         ":string",
-        "//pw_assert:facade",
+        "//pw_assert",
         "//pw_result",
         "//pw_span",
         "//pw_status",

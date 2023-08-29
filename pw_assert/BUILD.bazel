@@ -119,6 +119,12 @@ pw_cc_library(
     ],
 )
 
+alias(
+    name = "backend_impl_multiplexer",
+    actual = "@pigweed//pw_assert_basic:impl",
+    visibility = ["@pigweed_config//:__pkg__"],
+)
+
 pw_cc_test(
     name = "assert_facade_test",
     srcs = [

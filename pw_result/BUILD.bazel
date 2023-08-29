@@ -28,7 +28,7 @@ pw_cc_library(
     hdrs = ["public/pw_result/result.h"],
     includes = ["public"],
     deps = [
-        "//pw_assert:facade",
+        "//pw_assert",
         "//pw_status",
     ],
 )

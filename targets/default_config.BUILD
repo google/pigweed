@@ -40,7 +40,7 @@ label_flag(
 
 label_flag(
     name = "pw_assert_backend_impl",
-    build_setting_default = "@pigweed//pw_assert:empty",
+    build_setting_default = "@pigweed//pw_assert:backend_impl_multiplexer",
 )
 
 label_flag(

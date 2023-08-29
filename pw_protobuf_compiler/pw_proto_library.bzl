@@ -56,7 +56,7 @@ def pwpb_proto_library(name, deps, tags = None, visibility = None):
         name = name,
         protos = deps,
         deps = [
-            Label("//pw_assert:facade"),
+            Label("//pw_assert"),
             Label("//pw_containers:vector"),
             Label("//pw_preprocessor"),
             Label("//pw_protobuf"),

@@ -21,17 +21,20 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+# Note: to avoid circular dependencies, this target only includes the headers
+# for pw_assert_tokenized. The source file and its dependencies are in the separate
+# ":impl" target.
+#
+# If you point the @pigweed_config//pw_assert_backend to //pw_assert_tokenized,
+# then @pigweed_config//pw_assert_backend_impl should point to
+# //pw_assert_tokenized:impl.
 pw_cc_library(
     name = "pw_assert_tokenized",
-    srcs = [
-        "log_handler.cc",
-    ],
     hdrs = [
         "assert_public_overrides/pw_assert_backend/assert_backend.h",
         "check_public_overrides/pw_assert_backend/check_backend.h",
         "public/pw_assert_tokenized/assert_tokenized.h",
         "public/pw_assert_tokenized/check_tokenized.h",
-        "public/pw_assert_tokenized/handler.h",
     ],
     includes = [
         "assert_public_overrides",
@@ -39,11 +42,37 @@ pw_cc_library(
         "public",
     ],
     deps = [
-        "//pw_assert",
-        "//pw_base64",
-        "//pw_bytes",
+        ":handler",
+        "//pw_assert:facade",
         "//pw_log_tokenized",
         "//pw_preprocessor",
         "//pw_tokenizer",
     ],
+)
+
+pw_cc_library(
+    name = "handler",
+    hdrs = [
+        "public/pw_assert_tokenized/handler.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_preprocessor",
+    ],
+)
+
+pw_cc_library(
+    name = "impl",
+    srcs = [
+        "log_handler.cc",
+    ],
+    deps = [
+        ":handler",
+        "//pw_base64",
+        "//pw_bytes",
+        "//pw_log",
+        "//pw_log_tokenized",
+        "//pw_span",
+    ],
+    alwayslink = 1,
 )

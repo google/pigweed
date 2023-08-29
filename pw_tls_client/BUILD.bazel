@@ -37,6 +37,7 @@ pw_cc_facade(
         "//pw_result",
         "//pw_status",
         "//pw_stream",
+        "//pw_string",
     ],
 )
 

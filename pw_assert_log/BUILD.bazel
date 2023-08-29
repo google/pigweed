@@ -56,3 +56,6 @@ pw_cc_library(
         "//pw_preprocessor",
     ],
 )
+
+# There is no "impl" target: pw_assert_log doesn't have potential circular
+# dependencies.
