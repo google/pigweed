@@ -720,3 +720,12 @@ struct EncryptionKeyRefreshCompleteEvent:
     -- The connection_handle on which the encryption key was refreshed due to
     -- encryption being started or resumed.
     [requires: 0x0000 <= this <= 0x0EFF]
+
+
+struct IoCapabilityRequestEvent:
+  -- IO Capability Request Event (v2.1 + EDR) (BR/EDR)
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]                   hci.EventHeader  header
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr       bd_addr
+    -- The address of the remote device involved in the Secure Simple Pairing
+    -- process.
