@@ -21,7 +21,7 @@ from graphlib import CycleError, TopologicalSorter  # type: ignore
 from itertools import takewhile
 import os
 import sys
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple, Type
 from typing import cast
 
 from google.protobuf import descriptor_pb2
@@ -2551,24 +2551,24 @@ PROTO_FIELD_FIND_METHODS: Dict[int, List] = {
     ],
 }
 
-PROTO_FIELD_PROPERTIES: Dict[int, List] = {
-    descriptor_pb2.FieldDescriptorProto.TYPE_DOUBLE: [DoubleProperty],
-    descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT: [FloatProperty],
-    descriptor_pb2.FieldDescriptorProto.TYPE_INT32: [Int32Property],
-    descriptor_pb2.FieldDescriptorProto.TYPE_SINT32: [Sint32Property],
-    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED32: [Sfixed32Property],
-    descriptor_pb2.FieldDescriptorProto.TYPE_INT64: [Int64Property],
-    descriptor_pb2.FieldDescriptorProto.TYPE_SINT64: [Sint64Property],
-    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED64: [Sfixed32Property],
-    descriptor_pb2.FieldDescriptorProto.TYPE_UINT32: [Uint32Property],
-    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED32: [Fixed32Property],
-    descriptor_pb2.FieldDescriptorProto.TYPE_UINT64: [Uint64Property],
-    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED64: [Fixed64Property],
-    descriptor_pb2.FieldDescriptorProto.TYPE_BOOL: [BoolProperty],
-    descriptor_pb2.FieldDescriptorProto.TYPE_BYTES: [BytesProperty],
-    descriptor_pb2.FieldDescriptorProto.TYPE_STRING: [StringProperty],
-    descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE: [SubMessageProperty],
-    descriptor_pb2.FieldDescriptorProto.TYPE_ENUM: [EnumProperty],
+PROTO_FIELD_PROPERTIES: Dict[int, Type[MessageProperty]] = {
+    descriptor_pb2.FieldDescriptorProto.TYPE_DOUBLE: DoubleProperty,
+    descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT: FloatProperty,
+    descriptor_pb2.FieldDescriptorProto.TYPE_INT32: Int32Property,
+    descriptor_pb2.FieldDescriptorProto.TYPE_SINT32: Sint32Property,
+    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED32: Sfixed32Property,
+    descriptor_pb2.FieldDescriptorProto.TYPE_INT64: Int64Property,
+    descriptor_pb2.FieldDescriptorProto.TYPE_SINT64: Sint64Property,
+    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED64: Sfixed32Property,
+    descriptor_pb2.FieldDescriptorProto.TYPE_UINT32: Uint32Property,
+    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED32: Fixed32Property,
+    descriptor_pb2.FieldDescriptorProto.TYPE_UINT64: Uint64Property,
+    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED64: Fixed64Property,
+    descriptor_pb2.FieldDescriptorProto.TYPE_BOOL: BoolProperty,
+    descriptor_pb2.FieldDescriptorProto.TYPE_BYTES: BytesProperty,
+    descriptor_pb2.FieldDescriptorProto.TYPE_STRING: StringProperty,
+    descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE: SubMessageProperty,
+    descriptor_pb2.FieldDescriptorProto.TYPE_ENUM: EnumProperty,
 }
 
 
@@ -2890,17 +2890,17 @@ def generate_struct_for_message(
     with output.indent():
         cmp: List[str] = []
         for field in message.fields():
-            for property_class in PROTO_FIELD_PROPERTIES[field.type()]:
-                prop = property_class(field, message, root)
-                if not prop.should_appear():
-                    continue
+            property_class = PROTO_FIELD_PROPERTIES[field.type()]
+            prop = property_class(field, message, root)
+            if not prop.should_appear():
+                continue
 
-                type_name = prop.struct_member_type()
-                name = prop.name()
-                output.write_line(f'{type_name} {name};')
+            type_name = prop.struct_member_type()
+            name = prop.name()
+            output.write_line(f'{type_name} {name};')
 
-                if not prop.use_callback():
-                    cmp.append(f'{name} == other.{name}')
+            if not prop.use_callback():
+                cmp.append(f'{name} == other.{name}')
 
         # Equality operator
         output.write_line()
@@ -2931,10 +2931,10 @@ def generate_table_for_message(
 
     properties = []
     for field in message.fields():
-        for property_class in PROTO_FIELD_PROPERTIES[field.type()]:
-            prop = property_class(field, message, root)
-            if prop.should_appear():
-                properties.append(prop)
+        property_class = PROTO_FIELD_PROPERTIES[field.type()]
+        prop = property_class(field, message, root)
+        if prop.should_appear():
+            properties.append(prop)
 
     output.write_line('PW_MODIFY_DIAGNOSTICS_PUSH();')
     output.write_line('PW_MODIFY_DIAGNOSTIC(ignored, "-Winvalid-offsetof");')
@@ -3018,14 +3018,14 @@ def generate_sizes_for_message(
     property_sizes: List[str] = []
     scratch_sizes: List[str] = []
     for field in message.fields():
-        for property_class in PROTO_FIELD_PROPERTIES[field.type()]:
-            prop = property_class(field, message, root)
-            if not prop.should_appear():
-                continue
+        property_class = PROTO_FIELD_PROPERTIES[field.type()]
+        prop = property_class(field, message, root)
+        if not prop.should_appear():
+            continue
 
-            property_sizes.append(prop.max_encoded_size())
-            if prop.include_in_scratch_size():
-                scratch_sizes.append(prop.max_encoded_size())
+        property_sizes.append(prop.max_encoded_size())
+        if prop.include_in_scratch_size():
+            scratch_sizes.append(prop.max_encoded_size())
 
     output.write_line('inline constexpr size_t kMaxEncodedSizeBytes =')
     with output.indent():
@@ -3096,14 +3096,14 @@ def generate_is_trivially_comparable_specialization(
 ) -> None:
     is_trivially_comparable = True
     for field in message.fields():
-        for property_class in PROTO_FIELD_PROPERTIES[field.type()]:
-            prop = property_class(field, message, root)
-            if not prop.should_appear():
-                continue
+        property_class = PROTO_FIELD_PROPERTIES[field.type()]
+        prop = property_class(field, message, root)
+        if not prop.should_appear():
+            continue
 
-            if prop.use_callback():
-                is_trivially_comparable = False
-                break
+        if prop.use_callback():
+            is_trivially_comparable = False
+            break
 
     qualified_message = f'{message.cpp_namespace()}::Message'
 
