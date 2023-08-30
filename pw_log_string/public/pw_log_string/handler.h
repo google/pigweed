@@ -41,8 +41,8 @@ void pw_log_string_HandleMessage(int level,
                                  const char* message,
                                  ...) PW_PRINTF_FORMAT(6, 7);
 
-// Log a message with the listed attributes, this must be implemented by the
-// backend.
+/// Logs a message with the listed attributes. This must be implemented by the
+/// backend.
 void pw_log_string_HandleMessageVaList(int level,
                                        unsigned int flags,
                                        const char* module_name,

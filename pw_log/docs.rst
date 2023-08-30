@@ -73,6 +73,8 @@ turn outputs to the STM32F429 bare metal backend for ``pw_sys_io``, which is
 
 .. image:: example_layer_diagram.svg
 
+.. _module-pw_log-macros:
+
 Logging macros
 ==============
 These are the primary macros for logging information about the functioning of a
