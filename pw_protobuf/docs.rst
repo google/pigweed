@@ -929,6 +929,8 @@ that can hold the set of values encoded by it, following these rules.
   ``max_count`` option is set for that field, or by ``std::array`` when both
   ``max_count`` and ``fixed_count:true`` are set.
 
+  The max count is exposed as an UpperCamelCase constant ``k{FieldName}MaxSize``.
+
   .. code-block:: protobuf
 
     message Register {
@@ -943,14 +945,21 @@ that can hold the set of values encoded by it, following these rules.
 
   .. code-block:: c++
 
+     namespace Register {
+       static constexpr size_t kCashInMaxSize = 32;
+       static constexpr size_t kCashOutMaxSize = 64;
+     }
+
      struct Register::Message {
-       std::array<int32_t, 32> cash_in;
-       pw::Vector<int32_t, 64> cash_out;
+       std::array<int32_t, kCashInMaxSize> cash_in;
+       pw::Vector<int32_t, kCashOutMaxSize> cash_out;
      };
 
 * `bytes` fields are represented by ``pw::Vector`` when the ``max_size`` option
   is set for that field, or by ``std::array`` when both ``max_size`` and
   ``fixed_size:true`` are set.
+
+  The max size is exposed as an UpperCamelCase constant ``k{FieldName}MaxSize``.
 
   .. code-block:: protobuf
 
@@ -966,15 +975,22 @@ that can hold the set of values encoded by it, following these rules.
 
   .. code-block:: c++
 
+     namespace Product {
+       static constexpr size_t kSkuMaxSize = 8;
+       static constexpr size_t kSerialNumberMaxSize = 64;
+     }
+
      struct Product::Message {
-       std::array<std::byte, 8> sku;
-       pw::Vector<std::byte, 64> serial_number;
+       std::array<std::byte, kSkuMaxSize> sku;
+       pw::Vector<std::byte, kSerialNumberMaxSize> serial_number;
      };
 
 * `string` fields are represented by a :cpp:type:`pw::InlineString` when the
   ``max_size`` option is set for that field. The string can hold up to
   ``max_size`` characters, and is always null terminated. The null terminator is
   not counted in ``max_size``.
+
+  The max size is exposed as an UpperCamelCase constant ``k{FieldName}MaxSize``.
 
   .. code-block:: protobuf
 
@@ -988,8 +1004,12 @@ that can hold the set of values encoded by it, following these rules.
 
   .. code-block:: c++
 
+     namespace Employee {
+       static constexpr size_t kNameMaxSize = 128;
+     }
+
      struct Employee::Message {
-       pw::InlineString<128> name;
+       pw::InlineString<kNameMaxSize> name;
      };
 
 * Nested messages with a dependency cycle, repeated scalar fields without a

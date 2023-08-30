@@ -416,7 +416,7 @@ class MessageProperty(ProtoMember):
         return False
 
     @staticmethod
-    def repeated_field_container(type_name: str, max_size: int) -> str:
+    def repeated_field_container(type_name: str, max_size: str) -> str:
         """Returns the container type used for repeated fields.
 
         Defaults to ::pw::Vector<type, max_size>. String fields use
@@ -483,13 +483,16 @@ class MessageProperty(ProtoMember):
         # Fixed size fields use std::array.
         if self.is_fixed_size():
             return 'std::array<{}, {}>'.format(
-                self.type_name(from_root), max_size
+                self.type_name(from_root), self.max_size_constant_name()
             )
 
         # Otherwise prefer pw::Vector for repeated fields.
         return self.repeated_field_container(
-            self.type_name(from_root), max_size
+            self.type_name(from_root), self.max_size_constant_name()
         )
+
+    def max_size_constant_name(self) -> str:
+        return f'k{self._field.name()}MaxSize'
 
     def _varint_type_table_entry(self) -> str:
         if self.wire_type() == 'kVarint':
@@ -2012,7 +2015,7 @@ class BytesProperty(MessageProperty):
     def _size_length(self) -> Optional[str]:
         if self.use_callback():
             return None
-        return f'{self.max_size()}'
+        return self.max_size_constant_name()
 
 
 class StringLenWriteMethod(WriteMethod):
@@ -2133,7 +2136,7 @@ class StringProperty(MessageProperty):
         return True
 
     @staticmethod
-    def repeated_field_container(type_name: str, max_size: int) -> str:
+    def repeated_field_container(type_name: str, max_size: str) -> str:
         return f'::pw::InlineBasicString<{type_name}, {max_size}>'
 
     def _size_fn(self) -> str:
@@ -2145,7 +2148,7 @@ class StringProperty(MessageProperty):
     def _size_length(self) -> Optional[str]:
         if self.use_callback():
             return None
-        return f'{self.max_size()}'
+        return self.max_size_constant_name()
 
 
 class EnumWriteMethod(WriteMethod):
@@ -2874,6 +2877,16 @@ def forward_declare(
                 )
 
     output.write_line('};')
+
+    # Define constants for fixed-size fields.
+    output.write_line()
+    for prop in proto_message_field_props(message, root):
+        max_size = prop.max_size()
+        if max_size:
+            output.write_line(
+                f'static constexpr size_t {prop.max_size_constant_name()} '
+                f'= {max_size};'
+            )
 
     # Declare the message's message struct.
     output.write_line()

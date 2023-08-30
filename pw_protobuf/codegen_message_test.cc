@@ -2052,5 +2052,30 @@ TEST(CodegenMessage, CallbackInSubclass) {
   }
 }
 
+TEST(CodegenMessage, MaxSize) {
+  // Verify constants generated from max_size options in full_test.options
+  static_assert(Pigweed::kErrorMessageMaxSize == 64);
+  static_assert(Pigweed::kDataMaxSize == 8);
+
+  Pigweed::Message size_message;
+  EXPECT_EQ(size_message.error_message.max_size(),
+            Pigweed::kErrorMessageMaxSize);
+  EXPECT_EQ(size_message.data.max_size(), Pigweed::kDataMaxSize);
+
+  // Verify constants generated from max_count options in repeated.options
+  static_assert(RepeatedTest::kUint32sMaxSize == 8);
+  static_assert(RepeatedTest::kFixed32sMaxSize == 8);
+  static_assert(RepeatedTest::kDoublesMaxSize == 2);
+  static_assert(RepeatedTest::kUint64sMaxSize == 4);
+  static_assert(RepeatedTest::kEnumsMaxSize == 4);
+
+  RepeatedTest::Message count_message;
+  EXPECT_EQ(count_message.uint32s.max_size(), RepeatedTest::kUint32sMaxSize);
+  EXPECT_EQ(count_message.fixed32s.max_size(), RepeatedTest::kFixed32sMaxSize);
+  EXPECT_EQ(count_message.doubles.max_size(), RepeatedTest::kDoublesMaxSize);
+  EXPECT_EQ(count_message.uint64s.max_size(), RepeatedTest::kUint64sMaxSize);
+  EXPECT_EQ(count_message.enums.max_size(), RepeatedTest::kEnumsMaxSize);
+}
+
 }  // namespace
 }  // namespace pw::protobuf
