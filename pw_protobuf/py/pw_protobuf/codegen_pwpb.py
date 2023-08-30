@@ -2827,25 +2827,25 @@ def generate_to_string_for_enum(
 
 
 def forward_declare(
-    node: ProtoMessage,
+    message: ProtoMessage,
     root: ProtoNode,
     output: OutputFile,
     exclude_legacy_snake_case_field_name_enums: bool,
 ) -> None:
     """Generates code forward-declaring entities in a message's namespace."""
-    namespace = node.cpp_namespace(root=root)
+    namespace = message.cpp_namespace(root=root)
     output.write_line()
     output.write_line(f'namespace {namespace} {{')
 
     # Define an enum defining each of the message's fields and their numbers.
     output.write_line('enum class Fields : uint32_t {')
     with output.indent():
-        for field in node.fields():
+        for field in message.fields():
             output.write_line(f'{field.enum_name()} = {field.number()},')
 
         # Migration support from SNAKE_CASE to kConstantCase.
         if not exclude_legacy_snake_case_field_name_enums:
-            for field in node.fields():
+            for field in message.fields():
                 output.write_line(
                     f'{field.legacy_enum_name()} = {field.number()},'
                 )
@@ -2866,14 +2866,14 @@ def forward_declare(
     output.write_line('class StreamDecoder;')
 
     # Declare the message's enums.
-    for child in node.children():
+    for child in message.children():
         if child.type() == ProtoNode.Type.ENUM:
             output.write_line()
-            generate_code_for_enum(cast(ProtoEnum, child), node, output)
+            generate_code_for_enum(cast(ProtoEnum, child), message, output)
             output.write_line()
-            generate_function_for_enum(cast(ProtoEnum, child), node, output)
+            generate_function_for_enum(cast(ProtoEnum, child), message, output)
             output.write_line()
-            generate_to_string_for_enum(cast(ProtoEnum, child), node, output)
+            generate_to_string_for_enum(cast(ProtoEnum, child), message, output)
 
     output.write_line(f'}}  // namespace {namespace}')
 
