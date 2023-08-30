@@ -2572,6 +2572,29 @@ PROTO_FIELD_PROPERTIES: Dict[int, Type[MessageProperty]] = {
 }
 
 
+def proto_message_field_props(
+    message: ProtoMessage,
+    root: ProtoNode,
+) -> Iterable[MessageProperty]:
+    """Yields a MessageProperty for each field in a ProtoMessage.
+
+    Only properties which should_appear() is True are returned.
+
+    Args:
+      message: The ProtoMessage whose fields are iterated.
+      root: The root ProtoNode of the tree.
+
+    Yields:
+      An appropriately-typed MessageProperty object for each field
+      in the message, to which the property refers.
+    """
+    for field in message.fields():
+        property_class = PROTO_FIELD_PROPERTIES[field.type()]
+        prop = property_class(field, message, root)
+        if prop.should_appear():
+            yield prop
+
+
 def proto_field_methods(class_type: ClassType, field_type: int) -> List:
     return (
         PROTO_FIELD_WRITE_METHODS[field_type]
@@ -2889,12 +2912,7 @@ def generate_struct_for_message(
     # Generate members for each of the message's fields.
     with output.indent():
         cmp: List[str] = []
-        for field in message.fields():
-            property_class = PROTO_FIELD_PROPERTIES[field.type()]
-            prop = property_class(field, message, root)
-            if not prop.should_appear():
-                continue
-
+        for prop in proto_message_field_props(message, root):
             type_name = prop.struct_member_type()
             name = prop.name()
             output.write_line(f'{type_name} {name};')
@@ -2929,12 +2947,7 @@ def generate_table_for_message(
     namespace = message.cpp_namespace(root=root)
     output.write_line(f'namespace {namespace} {{')
 
-    properties = []
-    for field in message.fields():
-        property_class = PROTO_FIELD_PROPERTIES[field.type()]
-        prop = property_class(field, message, root)
-        if prop.should_appear():
-            properties.append(prop)
+    properties = list(proto_message_field_props(message, root))
 
     output.write_line('PW_MODIFY_DIAGNOSTICS_PUSH();')
     output.write_line('PW_MODIFY_DIAGNOSTIC(ignored, "-Winvalid-offsetof");')
@@ -3017,12 +3030,7 @@ def generate_sizes_for_message(
 
     property_sizes: List[str] = []
     scratch_sizes: List[str] = []
-    for field in message.fields():
-        property_class = PROTO_FIELD_PROPERTIES[field.type()]
-        prop = property_class(field, message, root)
-        if not prop.should_appear():
-            continue
-
+    for prop in proto_message_field_props(message, root):
         property_sizes.append(prop.max_encoded_size())
         if prop.include_in_scratch_size():
             scratch_sizes.append(prop.max_encoded_size())
@@ -3095,12 +3103,7 @@ def generate_is_trivially_comparable_specialization(
     message: ProtoMessage, root: ProtoNode, output: OutputFile
 ) -> None:
     is_trivially_comparable = True
-    for field in message.fields():
-        property_class = PROTO_FIELD_PROPERTIES[field.type()]
-        prop = property_class(field, message, root)
-        if not prop.should_appear():
-            continue
-
+    for prop in proto_message_field_props(message, root):
         if prop.use_callback():
             is_trivially_comparable = False
             break
