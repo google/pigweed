@@ -227,56 +227,6 @@ helpers provided by ``pw_tokenizer/encode_args.h``:
 * :cpp:class:`pw::tokenizer::EncodedMessage`
 * :cpp:func:`pw_tokenizer_EncodeArgs`
 
-Tokenizing function names
-=========================
-The string literal tokenization functions support tokenizing string literals or
-constexpr character arrays (``constexpr const char[]``). In GCC and Clang, the
-special ``__func__`` variable and ``__PRETTY_FUNCTION__`` extension are declared
-as ``static constexpr char[]`` in C++ instead of the standard ``static const
-char[]``. This means that ``__func__`` and ``__PRETTY_FUNCTION__`` can be
-tokenized while compiling C++ with GCC or Clang.
-
-.. code-block:: cpp
-
-   // Tokenize the special function name variables.
-   constexpr uint32_t function = PW_TOKENIZE_STRING(__func__);
-   constexpr uint32_t pretty_function = PW_TOKENIZE_STRING(__PRETTY_FUNCTION__);
-
-Note that ``__func__`` and ``__PRETTY_FUNCTION__`` are not string literals.
-They are defined as static character arrays, so they cannot be implicitly
-concatentated with string literals. For example, ``printf(__func__ ": %d",
-123);`` will not compile.
-
-Calculate minimum required buffer size
-======================================
-* :cpp:func:`pw::tokenizer::MinEncodingBufferSizeBytes`
-
-Tokenize a message with arguments in a custom macro
-===================================================
-Projects can leverage the tokenization machinery in whichever way best suits
-their needs. The most efficient way to use ``pw_tokenizer`` is to pass tokenized
-data to a global handler function. A project's custom tokenization macro can
-handle tokenized data in a function of their choosing.
-
-``pw_tokenizer`` provides two low-level macros for projects to use
-to create custom tokenization macros:
-
-* :c:macro:`PW_TOKENIZE_FORMAT_STRING`
-* :c:macro:`PW_TOKENIZER_ARG_TYPES`
-
-.. caution::
-
-   Note the spelling difference! The first macro begins with ``PW_TOKENIZE_``
-   (no ``R``) whereas the second begins with ``PW_TOKENIZER`` (``R`` included).
-
-The outputs of these macros are typically passed to an encoding function. That
-function encodes the token, argument types, and argument data to a buffer using
-helpers provided by ``pw_tokenizer/encode_args.h``:
-
-* :cpp:func:`pw::tokenizer::EncodeArgs`
-* :cpp:class:`pw::tokenizer::EncodedMessage`
-* :cpp:func:`pw_tokenizer_EncodeArgs`
-
 Example
 -------
 
@@ -343,6 +293,30 @@ stored as needed.
      in the smallest possible call site.
    - Pass additional arguments, such as metadata, with the tokenized message.
    - Integrate ``pw_tokenizer`` with other systems.
+
+Tokenizing function names
+=========================
+The string literal tokenization functions support tokenizing string literals or
+constexpr character arrays (``constexpr const char[]``). In GCC and Clang, the
+special ``__func__`` variable and ``__PRETTY_FUNCTION__`` extension are declared
+as ``static constexpr char[]`` in C++ instead of the standard ``static const
+char[]``. This means that ``__func__`` and ``__PRETTY_FUNCTION__`` can be
+tokenized while compiling C++ with GCC or Clang.
+
+.. code-block:: cpp
+
+   // Tokenize the special function name variables.
+   constexpr uint32_t function = PW_TOKENIZE_STRING(__func__);
+   constexpr uint32_t pretty_function = PW_TOKENIZE_STRING(__PRETTY_FUNCTION__);
+
+Note that ``__func__`` and ``__PRETTY_FUNCTION__`` are not string literals.
+They are defined as static character arrays, so they cannot be implicitly
+concatentated with string literals. For example, ``printf(__func__ ": %d",
+123);`` will not compile.
+
+Calculate minimum required buffer size
+======================================
+* :cpp:func:`pw::tokenizer::MinEncodingBufferSizeBytes`
 
 .. _module-pw_tokenizer-masks:
 
