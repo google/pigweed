@@ -464,40 +464,31 @@ class MessageProperty(ProtoMember):
     def sub_table(self) -> str:  # pylint: disable=no-self-use
         return '{}'
 
-    def struct_member(self, from_root: bool = False) -> Tuple[str, str]:
-        """Returns the structure member."""
+    def struct_member_type(self, from_root: bool = False) -> str:
+        """Returns the structure member type."""
         if self.use_callback():
             return (
-                f'{PROTOBUF_NAMESPACE}::Callback'
-                '<StreamEncoder, StreamDecoder>',
-                self.name(),
+                f'{PROTOBUF_NAMESPACE}::Callback<StreamEncoder, StreamDecoder>'
             )
 
         # Optional fields are wrapped in std::optional
         if self.is_optional():
-            return (
-                'std::optional<{}>'.format(self.type_name(from_root)),
-                self.name(),
-            )
+            return 'std::optional<{}>'.format(self.type_name(from_root))
 
         # Non-repeated fields have a member of just the type name.
         max_size = self.max_size()
         if max_size == 0:
-            return (self.type_name(from_root), self.name())
+            return self.type_name(from_root)
 
         # Fixed size fields use std::array.
         if self.is_fixed_size():
-            return (
-                'std::array<{}, {}>'.format(
-                    self.type_name(from_root), max_size
-                ),
-                self.name(),
+            return 'std::array<{}, {}>'.format(
+                self.type_name(from_root), max_size
             )
 
         # Otherwise prefer pw::Vector for repeated fields.
-        return (
-            self.repeated_field_container(self.type_name(from_root), max_size),
-            self.name(),
+        return self.repeated_field_container(
+            self.type_name(from_root), max_size
         )
 
     def _varint_type_table_entry(self) -> str:
@@ -2904,7 +2895,8 @@ def generate_struct_for_message(
                 if not prop.should_appear():
                     continue
 
-                (type_name, name) = prop.struct_member()
+                type_name = prop.struct_member_type()
+                name = prop.name()
                 output.write_line(f'{type_name} {name};')
 
                 if not prop.use_callback():
@@ -2989,7 +2981,7 @@ def generate_table_for_message(
         )
 
         member_list = ', '.join(
-            [f'message.{prop.struct_member()[1]}' for prop in properties]
+            [f'message.{prop.name()}' for prop in properties]
         )
 
         # Generate std::tuple for Message fields.
