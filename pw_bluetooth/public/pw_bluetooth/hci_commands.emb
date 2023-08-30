@@ -112,15 +112,6 @@ bits PacketType:
   15 [+1]  Flag  enable_dh5
 
 
-enum IoCapability:
-  -- All other values reserved for future use.
-  [maximum_bits: 8]
-  DISPLAY_ONLY       = 0x00
-  DISPLAY_YES_NO     = 0x01
-  KEYBOARD_ONLY      = 0x02
-  NO_INPUT_NO_OUTPUT = 0x03
-
-
 enum OobDataPresent:
   -- Whether there is out-of-band data present, and what type.
   -- All other values reserved for future use.
@@ -129,24 +120,6 @@ enum OobDataPresent:
   P192_         = 0x01
   P256_         = 0x02
   P192_AND_P256 = 0x03
-
-# inclusive-language: disable
-
-
-enum AuthenticationRequirements:
-  -- All options without MITM do not require MITM protection, and a numeric
-  -- comparison with automatic accept is allowed.
-  -- All options with MITM do require MITM protection, and IO capabilities should
-  -- be used to determine the authentication procedure.
-  [maximum_bits: 8]
-  NO_BONDING             = 0x00
-  MITM_NO_BONDING        = 0x01
-  DEDICATED_BONDING      = 0x02
-  MITM_DEDICATED_BONDING = 0x03
-  GENERAL_BONDING        = 0x04
-  MITM_GENERAL_BONDING   = 0x05
-
-# inclusive-language: enable
 
 
 bits ScanEnableBits:
@@ -900,13 +873,13 @@ struct IoCapabilityRequestReplyCommand:
   $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                  bd_addr
     -- The BD_ADDR of the remote device involved in simple pairing process
 
-  $next [+1]                          IoCapability                io_capability
+  $next [+1]                          hci.IoCapability                io_capability
     -- The IO capabilities of this device.
 
   $next [+1]                          OobDataPresent              oob_data_present
     -- Whether there is out-of-band data present, and what type.
 
-  $next [+1]                          AuthenticationRequirements  authentication_requirements
+  $next [+1]                          hci.AuthenticationRequirements  authentication_requirements
     -- Authentication requirements of the host.
 
 

@@ -729,3 +729,19 @@ struct IoCapabilityRequestEvent:
   $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr       bd_addr
     -- The address of the remote device involved in the Secure Simple Pairing
     -- process.
+
+
+struct IoCapabilityResponseEvent:
+  -- IO Capability Response Event (v2.1 + EDR) (BR/EDR)
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]                   hci.EventHeader                 header
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                      bd_addr
+    -- The address of the remote device which the IO capabilities apply
+
+  $next [+1]                          hci.IoCapability                io_capability
+    -- IO Capabilities of the device
+
+  $next [+1]                          hci.GenericPresenceParam        oob_data_present
+    -- Whether out-of-band authentication data is present.
+
+  $next [+1]                          hci.AuthenticationRequirements  authentication_requirements
