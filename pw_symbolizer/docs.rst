@@ -78,8 +78,13 @@ useful for testing, or as a no-op ``Symbolizer``.
 LlvmSymbolizer
 ==============
 The ``LlvmSymbolizer`` is a python layer that wraps ``llvm-symbolizer`` to
-produce symbols from provided addresses. This module will only work if
-``llvm-symbolizer`` is available on the system ``PATH``.
+produce symbols from provided addresses. This module requires either:
+
+* ``llvm-symbolizer`` is available on the system ``PATH``.
+* ``llvm_symbolizer_binary`` argument is specified and points to the executable.
+
+This object also defines a ``close`` to ensure the background process is
+cleaned up deterministically.
 
 .. code-block:: py
 

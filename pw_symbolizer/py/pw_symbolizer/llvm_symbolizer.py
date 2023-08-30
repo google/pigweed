@@ -25,21 +25,32 @@ from pw_symbolizer import symbolizer
 class LlvmSymbolizer(symbolizer.Symbolizer):
     """A symbolizer that wraps llvm-symbolizer."""
 
-    def __init__(self, binary: Optional[Path] = None, force_legacy=False):
+    def __init__(
+        self,
+        binary: Optional[Path] = None,
+        force_legacy=False,
+        llvm_symbolizer_binary: Optional[Path] = None,
+    ):
         # Lets destructor return cleanly if the binary is not found.
         self._symbolizer = None
-        if shutil.which('llvm-symbolizer') is None:
-            raise FileNotFoundError(
-                'llvm-symbolizer not installed. Run bootstrap, or download '
-                'LLVM (https://github.com/llvm/llvm-project/releases/) and add '
-                'the tools to your system PATH'
-            )
+        if llvm_symbolizer_binary:
+            self._symbolizer_binary = str(llvm_symbolizer_binary)
+        else:
+            self._symbolizer_binary = 'llvm-symbolizer'
+            if shutil.which(self._symbolizer_binary) is None:
+                raise FileNotFoundError(
+                    'llvm-symbolizer not installed. Run bootstrap, or download '
+                    'LLVM (https://github.com/llvm/llvm-project/releases/) and '
+                    'add the tools to your system PATH'
+                )
 
         # Prefer JSON output as it's easier to decode.
         if force_legacy:
             self._json_mode = False
         else:
-            self._json_mode = LlvmSymbolizer._is_json_compatibile()
+            self._json_mode = LlvmSymbolizer._is_json_compatibile(
+                self._symbolizer_binary
+            )
 
         if binary is not None:
             if not binary.exists():
@@ -47,7 +58,7 @@ class LlvmSymbolizer(symbolizer.Symbolizer):
 
             output_style = 'JSON' if self._json_mode else 'LLVM'
             cmd = [
-                'llvm-symbolizer',
+                self._symbolizer_binary,
                 '--no-inlines',
                 '--demangle',
                 '--functions',
@@ -62,15 +73,22 @@ class LlvmSymbolizer(symbolizer.Symbolizer):
             self._lock: threading.Lock = threading.Lock()
 
     def __del__(self):
-        if self._symbolizer:
+        self.close()
+
+    def close(self):
+        """Closes the active llvm-symbolizer process."""
+        if self._symbolizer is not None:
             self._symbolizer.terminate()
             self._symbolizer.wait()
+            self._symbolizer.stdin.close()
+            self._symbolizer.stdout.close()
+            self._symbolizer = None
 
     @staticmethod
-    def _is_json_compatibile() -> bool:
+    def _is_json_compatibile(symbolizer_binary: str) -> bool:
         """Checks llvm-symbolizer to ensure compatibility"""
         result = subprocess.run(
-            ('llvm-symbolizer', '--help'),
+            (symbolizer_binary, '--help'),
             stdout=subprocess.PIPE,
             stdin=subprocess.PIPE,
         )
