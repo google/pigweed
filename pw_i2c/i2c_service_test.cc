@@ -170,8 +170,7 @@ TEST(I2cServiceTest, I2cReadMultiByteOk) {
 TEST(I2cServiceTest, I2cReadMaxByteOk) {
   constexpr auto kExpectWrite = bytes::Array<0x02, 0x04, 0x06, 0x08>();
   constexpr auto kExpectRead = bytes::Array<0x03, 0x05, 0x07, 0x09>();
-  pwpb::I2cReadResponse::Message size_message;
-  static_assert(sizeof(kExpectRead) <= size_message.value.max_size());
+  static_assert(sizeof(kExpectRead) <= pwpb::I2cReadResponse::kValueMaxSize);
 
   Vector<std::byte, 4> register_addr{};
   std::copy(kExpectWrite.begin(),

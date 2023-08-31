@@ -40,12 +40,9 @@ void I2cService::I2cWrite(
     return;
   }
 
-  // Get the underlying buffer size of the register_address and value fields.
-  pwpb::I2cWriteRequest::Message size_message;
-  // NOLINTNEXTLINE(readability-static-accessed-through-instance)
   constexpr auto kMaxWriteSize =
-      size_message.register_address.max_size() + size_message.value.max_size();
-
+      pwpb::I2cWriteRequest::kRegisterAddressMaxSize +
+      pwpb::I2cWriteRequest::kValueMaxSize;
   Vector<std::byte, kMaxWriteSize> write_buffer{};
   write_buffer.assign(std::begin(request.register_address),
                       std::end(request.register_address));
@@ -62,10 +59,7 @@ void I2cService::I2cWrite(
 void I2cService::I2cRead(
     const pwpb::I2cReadRequest::Message& request,
     rpc::PwpbUnaryResponder<pwpb::I2cReadResponse::Message>& responder) {
-  // Get the underlying buffer size of the ReadResponse message.
-  pwpb::I2cReadResponse::Message size_message;
-  // NOLINTNEXTLINE(readability-static-accessed-through-instance)
-  constexpr auto kMaxReadSize = size_message.value.max_size();
+  constexpr auto kMaxReadSize = pwpb::I2cReadResponse::kValueMaxSize;
 
   Initiator* initiator = initiator_selector_(request.bus_index);
   if (initiator == nullptr || request.read_size > kMaxReadSize) {
