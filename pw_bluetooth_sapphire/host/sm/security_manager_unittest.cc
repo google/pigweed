@@ -430,7 +430,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
     RunLoopUntilIdle();
     auto mock_controller = std::make_unique<bt::testing::MockController>();
     controller_ = mock_controller->GetWeakPtr();
-    transport_ = std::make_unique<hci::Transport>(std::move(mock_controller));
+    transport_ = std::make_unique<hci::Transport>(std::move(mock_controller), pw_dispatcher_);
     std::optional<bool> init_success;
     transport_->Initialize([&](bool success) { init_success = success; });
     RunLoopUntilIdle();
@@ -439,6 +439,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
     transport_->InitializeACLDataChannel(hci::DataBufferInfo(1, 1), hci::DataBufferInfo(1, 1));
   }
 
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
   testing::MockController::WeakPtr controller_;
   std::unique_ptr<hci::Transport> transport_;
 

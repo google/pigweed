@@ -15,8 +15,6 @@
 #include <memory>
 #include <thread>
 
-#include <pw_async_fuchsia/dispatcher.h>
-
 #include "pw_bluetooth/controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
@@ -32,7 +30,8 @@ namespace bt::hci {
 // and receive HCI packets from the underlying Bluetooth controller.
 class Transport final : public WeakSelf<Transport> {
  public:
-  explicit Transport(std::unique_ptr<pw::bluetooth::Controller> hci);
+  explicit Transport(std::unique_ptr<pw::bluetooth::Controller> hci,
+                     pw::async::Dispatcher& dispatcher);
 
   // Initializes the command channel and features. The result will be reported via
   // |complete_callback|.
@@ -90,6 +89,8 @@ class Transport final : public WeakSelf<Transport> {
   // Callback called by CommandChannel or ACLDataChannel on errors.
   void OnChannelError();
 
+  pw::async::Dispatcher& dispatcher_;
+
   // HCI inspect node.
   inspect::Node hci_node_;
 
@@ -111,8 +112,6 @@ class Transport final : public WeakSelf<Transport> {
 
   // The SCO data flow control handler.
   std::unique_ptr<ScoDataChannel> sco_data_channel_;
-
-  pw::async::fuchsia::FuchsiaDispatcher dispatcher_{async_get_default_dispatcher()};
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Transport);
 };

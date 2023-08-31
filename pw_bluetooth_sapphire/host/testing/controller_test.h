@@ -9,6 +9,8 @@
 
 #include <memory>
 
+#include <pw_async_fuchsia/dispatcher.h>
+
 #include "pw_bluetooth/controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
@@ -54,7 +56,7 @@ class ControllerTest : public ::gtest::TestLoopFixture {
     std::unique_ptr<pw::bluetooth::Controller> controller =
         ControllerTest<ControllerTestDoubleType>::SetUpTestController();
     test_device_->set_features(features);
-    transport_ = std::make_unique<hci::Transport>(std::move(controller));
+    transport_ = std::make_unique<hci::Transport>(std::move(controller), pw_dispatcher_);
 
     if (initialize_transport) {
       std::optional<bool> init_result;
@@ -143,6 +145,7 @@ class ControllerTest : public ::gtest::TestLoopFixture {
     });
   }
 
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{async_get_default_dispatcher()};
   typename ControllerTestDoubleType::WeakPtr test_device_;
   std::unique_ptr<hci::Transport> transport_;
   hci::ACLPacketHandler data_received_callback_;

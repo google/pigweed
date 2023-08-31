@@ -16,7 +16,9 @@ namespace bthost {
 
 Host::Host(const bt_hci_protocol_t& hci_proto, std::optional<bt_vendor_protocol_t> vendor_proto,
            bool initialize_rng)
-    : hci_proto_(hci_proto), vendor_proto_(vendor_proto) {
+    : hci_proto_(hci_proto),
+      vendor_proto_(vendor_proto),
+      pw_dispatcher_(async_get_default_dispatcher()) {
   if (initialize_rng) {
     set_random_generator(&random_generator_);
   }
@@ -43,7 +45,7 @@ bool Host::Initialize(inspect::Node& root_node, InitCallback init_cb, ErrorCallb
   auto controller = std::make_unique<controllers::BanjoController>(&hci_proto_, vendor_client,
                                                                    async_get_default_dispatcher());
 
-  hci_ = std::make_unique<hci::Transport>(std::move(controller));
+  hci_ = std::make_unique<hci::Transport>(std::move(controller), pw_dispatcher_);
 
   gatt_ = gatt::GATT::Create();
 

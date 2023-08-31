@@ -6,7 +6,6 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_ACL_DATA_CHANNEL_H_
 
 #include <lib/async/cpp/wait.h>
-#include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 
 #include <unordered_map>

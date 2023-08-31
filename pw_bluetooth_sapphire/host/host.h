@@ -15,6 +15,7 @@
 
 #include <fbl/ref_counted.h>
 #include <fbl/ref_ptr.h>
+#include <pw_async_fuchsia/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
@@ -84,6 +85,8 @@ class Host final : public fbl::RefCounted<Host> {
 
   bt_hci_protocol_t hci_proto_;
   std::optional<bt_vendor_protocol_t> vendor_proto_;
+
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{async_get_default_dispatcher()};
 
   pw_random_zircon::ZirconRandomGenerator random_generator_;
 

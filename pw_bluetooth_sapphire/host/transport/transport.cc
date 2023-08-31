@@ -12,8 +12,9 @@ namespace bt::hci {
 
 using FeaturesBits = pw::bluetooth::Controller::FeaturesBits;
 
-Transport::Transport(std::unique_ptr<pw::bluetooth::Controller> controller)
-    : WeakSelf(this), controller_(std::move(controller)) {
+Transport::Transport(std::unique_ptr<pw::bluetooth::Controller> controller,
+                     pw::async::Dispatcher& dispatcher)
+    : WeakSelf(this), dispatcher_(dispatcher), controller_(std::move(controller)) {
   BT_ASSERT(controller_);
 }
 

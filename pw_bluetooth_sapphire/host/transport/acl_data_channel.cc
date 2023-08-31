@@ -116,9 +116,6 @@ class AclDataChannelImpl final : public AclDataChannel {
   // The event handler ID for the Data Buffer Overflow event.
   CommandChannel::EventHandlerId data_buffer_overflow_event_handler_id_ = 0;
 
-  // The dispatcher used for posting tasks on the HCI transport I/O thread.
-  async_dispatcher_t* io_dispatcher_ = async_get_default_dispatcher();
-
   // The current handler for incoming data.
   ACLPacketHandler rx_callback_;
 
