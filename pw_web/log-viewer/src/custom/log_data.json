@@ -1,0 +1,5 @@
+[
+  {"message": "Sample log_data.json", "levelno": 30, "levelname": "WRN", "time": "1692302986.4599075", "time_string": "2023-08-17T13:09:46", "fields": {"module": "pigweedjs", "timestamp": "1.0"}},
+  {"message": "Log message 1", "levelno": 20, "levelname": "INF", "time": "1692302986.4599075", "time_string": "2023-08-17T13:09:46", "fields": {"module": "device", "file": "sample_file.cc", "timestamp": "1.0"}},
+  {"message": "Log message 2", "levelno": 20, "levelname": "INF", "time": "1692303000.1080465", "time_string": "2023-08-17T13:10:00", "fields": {"module": "device", "file": "sample_file.cc", "timestamp": "14.0"}}
+]

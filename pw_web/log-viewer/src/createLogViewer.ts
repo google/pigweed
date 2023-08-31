@@ -36,7 +36,7 @@ export function createLogViewer(
   const logViewer = new RootComponent(state);
   const logs: LogEntry[] = [];
   root.appendChild(logViewer);
-  let lastUpdateTimeoutId: number = 0;
+  let lastUpdateTimeoutId: NodeJS.Timeout;
 
   // Define an event listener for the 'logEntry' event
   const logEntryListener = (logEntry: LogEntry) => {

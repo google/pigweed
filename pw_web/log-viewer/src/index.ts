@@ -12,26 +12,17 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { MockLogSource } from './custom/mock-log-source';
+import { JsonLogSource } from './custom/json-log-source';
 import { createLogViewer } from './createLogViewer';
 
-const logSource = new MockLogSource();
+const logSource = new JsonLogSource();
 const containerEl = document.querySelector(
   '#log-viewer-container',
 ) as HTMLElement;
 
-let unsubscribe: () => void;
-
 if (containerEl) {
-  unsubscribe = createLogViewer(logSource, containerEl);
+  createLogViewer(logSource, containerEl);
 }
 
-const TIMEOUT_DURATION = 60_000; // ms
 // Start reading log data
 logSource.start();
-
-// Stop reading log data once timeout duration has elapsed
-setTimeout(() => {
-  logSource.stop();
-  unsubscribe();
-}, TIMEOUT_DURATION);
