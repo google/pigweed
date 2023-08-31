@@ -88,6 +88,37 @@ TEST(PigweedTest, SkipMacro) {
   EXPECT_TRUE(false);
 }
 
+TEST(PigweedTest, Logs) {
+  EXPECT_TRUE(true) << "This message is ignored";
+  EXPECT_FALSE(false) << "This message is ignored";
+  EXPECT_EQ(0, 0) << "This message is ignored";
+  EXPECT_NE(0, 1) << "This message is ignored";
+  EXPECT_GT(1, 0) << "This message is ignored";
+  EXPECT_GE(0, 0) << "This message is ignored";
+  EXPECT_LT(0, 1) << "This message is ignored";
+  EXPECT_LE(0, 0) << "This message is ignored";
+  EXPECT_STREQ("", "") << "This message is ignored";
+  EXPECT_STRNE("", "?") << "This message is ignored";
+
+  ASSERT_TRUE(true) << "This message is ignored";
+  ASSERT_FALSE(false) << "This message is ignored";
+  ASSERT_EQ(0, 0) << "This message is ignored";
+  ASSERT_NE(0, 1) << "This message is ignored";
+  ASSERT_GT(1, 0) << "This message is ignored";
+  ASSERT_GE(0, 0) << "This message is ignored";
+  ASSERT_LT(0, 1) << "This message is ignored";
+  ASSERT_LE(0, 0) << "This message is ignored";
+  ASSERT_STREQ("", "") << "This message is ignored";
+  ASSERT_STRNE("", "?") << "This message is ignored";
+
+  if (false) {
+    ADD_FAILURE() << "This failed!" << 123;
+    GTEST_FAIL() << "This failed!" << 123 << '?';
+    GTEST_SKIP() << 1.0f << " skips!";
+  }
+  GTEST_SUCCEED() << "This message is ignored";
+}
+
 class SkipOnSetUpTest : public ::testing::Test {
  public:
   void SetUp() override { GTEST_SKIP(); }

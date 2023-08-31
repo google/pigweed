@@ -33,22 +33,29 @@ for examples of how to define unit test cases.
 expected in a complete testing framework; nevertheless, it is already used
 heavily within Pigweed.
 
-.. note::
+GoogleTest compatibility
+========================
+pw_unit_test implements a subset of GoogleTest. Supported features include:
 
-   Many of GoogleTest's more advanced features are not yet implemented. Missing
-   features include:
+* Test and test suite declarations.
+* Most ``EXPECT`` and ``ASSERT`` macros.
+* Stream-style expectation messages, such as
+  ``EXPECT_EQ(val, 5) << "Inputs: " << input``. Messages are currently ignored.
 
-   * Any GoogleMock features (e.g. :c:macro:`EXPECT_THAT`)
-   * Floating point comparison macros (e.g. :c:macro:`EXPECT_FLOAT_EQ`)
-   * Death tests (e.g. :c:macro:`EXPECT_DEATH`); ``EXPECT_DEATH_IF_SUPPORTED``
-     does nothing but silently passes
-   * Value-parameterized tests
+Many of GoogleTest's advanced features are not yet implemented. Missing features
+include:
 
-   To request a feature addition, please
-   `let us know <mailto:pigweed@googlegroups.com>`_.
+* Any GoogleMock features (e.g. :c:macro:`EXPECT_THAT`)
+* Floating point comparison macros (e.g. :c:macro:`EXPECT_FLOAT_EQ`)
+* Death tests (e.g. :c:macro:`EXPECT_DEATH`); ``EXPECT_DEATH_IF_SUPPORTED``
+  does nothing but silently passes
+* Value-parameterized tests
 
-   See `Using upstream GoogleTest`_ below for information
-   about using upstream GoogleTest instead.
+To request a feature addition, please `let us know
+<mailto:pigweed@googlegroups.com>`_.
+
+See `Using upstream GoogleTest`_ below for information
+about using upstream GoogleTest instead.
 
 The EventHandler interface
 ==========================

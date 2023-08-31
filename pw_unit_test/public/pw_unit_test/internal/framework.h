@@ -47,16 +47,16 @@
   _PW_TEST_SUITE_NAMES_MUST_BE_UNIQUE(int /* TEST_F */, test_fixture); \
   _PW_TEST(test_fixture, test_name, test_fixture)
 
-#define EXPECT_TRUE(expr) static_cast<void>(_PW_TEST_BOOL(expr, true))
-#define EXPECT_FALSE(expr) static_cast<void>(_PW_TEST_BOOL(expr, false))
-#define EXPECT_EQ(lhs, rhs) static_cast<void>(_PW_TEST_OP(lhs, rhs, ==))
-#define EXPECT_NE(lhs, rhs) static_cast<void>(_PW_TEST_OP(lhs, rhs, !=))
-#define EXPECT_GT(lhs, rhs) static_cast<void>(_PW_TEST_OP(lhs, rhs, >))
-#define EXPECT_GE(lhs, rhs) static_cast<void>(_PW_TEST_OP(lhs, rhs, >=))
-#define EXPECT_LT(lhs, rhs) static_cast<void>(_PW_TEST_OP(lhs, rhs, <))
-#define EXPECT_LE(lhs, rhs) static_cast<void>(_PW_TEST_OP(lhs, rhs, <=))
-#define EXPECT_STREQ(lhs, rhs) static_cast<void>(_PW_TEST_C_STR(lhs, rhs, ==))
-#define EXPECT_STRNE(lhs, rhs) static_cast<void>(_PW_TEST_C_STR(lhs, rhs, !=))
+#define EXPECT_TRUE(expr) _PW_TEST_EXPECT(_PW_TEST_BOOL(expr, true))
+#define EXPECT_FALSE(expr) _PW_TEST_EXPECT(_PW_TEST_BOOL(expr, false))
+#define EXPECT_EQ(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_OP(lhs, rhs, ==))
+#define EXPECT_NE(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_OP(lhs, rhs, !=))
+#define EXPECT_GT(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_OP(lhs, rhs, >))
+#define EXPECT_GE(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_OP(lhs, rhs, >=))
+#define EXPECT_LT(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_OP(lhs, rhs, <))
+#define EXPECT_LE(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_OP(lhs, rhs, <=))
+#define EXPECT_STREQ(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_C_STR(lhs, rhs, ==))
+#define EXPECT_STRNE(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_C_STR(lhs, rhs, !=))
 
 #define ASSERT_TRUE(expr) _PW_TEST_ASSERT(_PW_TEST_BOOL(expr, true))
 #define ASSERT_FALSE(expr) _PW_TEST_ASSERT(_PW_TEST_BOOL(expr, false))
@@ -70,17 +70,19 @@
 #define ASSERT_STRNE(lhs, rhs) _PW_TEST_ASSERT(_PW_TEST_C_STR(lhs, rhs, !=))
 
 // Generates a non-fatal failure with a generic message.
-#define ADD_FAILURE()                                                  \
-  ::pw::unit_test::internal::Framework::Get().CurrentTestExpectSimple( \
-      "(line is not executed)", "(line was executed)", __LINE__, false)
+#define ADD_FAILURE()                                                    \
+  ::pw::unit_test::internal::Framework::Get().CurrentTestExpectSimple(   \
+      "(line is not executed)", "(line was executed)", __LINE__, false); \
+  _PW_UNIT_TEST_LOG
 
 // Generates a fatal failure with a generic message.
 #define GTEST_FAIL() return ADD_FAILURE()
 
 // Skips test at runtime, which is neither successful nor failed. Skip aborts
 // current function.
-#define GTEST_SKIP() \
-  return ::pw::unit_test::internal::Framework::Get().CurrentTestSkip(__LINE__)
+#define GTEST_SKIP()                                                     \
+  ::pw::unit_test::internal::Framework::Get().CurrentTestSkip(__LINE__); \
+  return _PW_UNIT_TEST_LOG
 
 // Define either macro to 1 to omit the definition of FAIL(), which is a
 // generic name and clashes with some other libraries.
@@ -91,7 +93,8 @@
 // Generates a success with a generic message.
 #define GTEST_SUCCEED()                                                \
   ::pw::unit_test::internal::Framework::Get().CurrentTestExpectSimple( \
-      "(success)", "(success)", __LINE__, true)
+      "(success)", "(success)", __LINE__, true);                       \
+  _PW_UNIT_TEST_LOG
 
 // Define either macro to 1 to omit the definition of SUCCEED(), which
 // is a generic name and clashes with some other libraries.
@@ -497,6 +500,35 @@ constexpr bool HasNoUnderscores(const char* suite) {
   return true;
 }
 
+// GoogleTest supports stream-style messages, but pw_unit_test does not. This
+// class accepts and ignores C++ <<-style logs. This could be replaced with
+// pw_log/glog_adapter.h.
+class IgnoreLogs {
+ public:
+  constexpr IgnoreLogs() = default;
+
+  template <typename T>
+  constexpr const IgnoreLogs& operator<<(const T&) const {
+    return *this;
+  }
+};
+
+// Used to ignore a stream-style message in an assert, which returns. This uses
+// a similar approach as upstream GoogleTest, but drops any messages.
+class ReturnHelper {
+ public:
+  constexpr ReturnHelper() = default;
+
+  // Return void so that assigning to ReturnHelper converts the log expression
+  // to void without blocking the stream-style log with a closing parenthesis.
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator)
+  constexpr void operator=(const IgnoreLogs&) const {}
+};
+
+#define _PW_UNIT_TEST_LOG                     \
+  ::pw::unit_test::internal::ReturnHelper() = \
+      ::pw::unit_test::internal::IgnoreLogs()
+
 }  // namespace internal
 
 #if PW_CXX_STANDARD_IS_SUPPORTED(17)
@@ -542,12 +574,13 @@ inline void SetTestSuitesToRun(span<std::string_view> test_suites) {
                                                                             \
   void class_name::PigweedTestBody()
 
-#define _PW_TEST_ASSERT(expectation)                                           \
-  do {                                                                         \
-    if (!(expectation)) {                                                      \
-      return static_cast<void>(0); /* Prevent using ASSERT in constructors. */ \
-    }                                                                          \
-  } while (0)
+#define _PW_TEST_ASSERT(expectation) \
+  if (!(expectation))                \
+  return _PW_UNIT_TEST_LOG
+
+#define _PW_TEST_EXPECT(expectation) \
+  if (!(expectation))                \
+  _PW_UNIT_TEST_LOG
 
 #define _PW_TEST_BOOL(expr, value)                               \
   ::pw::unit_test::internal::Framework::Get().CurrentTestExpect( \

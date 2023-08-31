@@ -89,11 +89,11 @@ class CallbacksTest : public ::testing::Test {
 };
 
 TEST_F(CallbacksTest, DestructorWaitsUntilCallbacksComplete) {
-  // Skip this test if locks are disabled because the thread can't yield.
   if (PW_RPC_USE_GLOBAL_MUTEX == 0) {
     callback_thread_sem_.release();
     callback_thread_.join();
-    GTEST_SKIP();
+    GTEST_SKIP()
+        << "Skipping because locks are disabled, so this thread cannot yield.";
   }
 
   {
@@ -134,11 +134,11 @@ TEST_F(CallbacksTest, DestructorWaitsUntilCallbacksComplete) {
 }
 
 TEST_F(CallbacksTest, MoveActiveCall_WaitsForCallbackToComplete) {
-  // Skip this test if locks are disabled because the thread can't yield.
   if (PW_RPC_USE_GLOBAL_MUTEX == 0) {
     callback_thread_sem_.release();
     callback_thread_.join();
-    GTEST_SKIP();
+    GTEST_SKIP()
+        << "Skipping because locks are disabled, so this thread cannot yield.";
   }
 
   call_1_ = TestService::TestBidirectionalStreamRpc(
