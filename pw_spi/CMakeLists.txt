@@ -32,6 +32,7 @@ pw_add_library(pw_spi.responder INTERFACE
     public
   PUBLIC_DEPS
     pw_bytes
+    pw_function
     pw_status
 )
 

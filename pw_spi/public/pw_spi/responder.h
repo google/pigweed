@@ -33,7 +33,7 @@ class Responder {
   // A value of CANCELLED for the Status parameter indicates Abort() was called.
   // Partially transferred data may be passed in that case as well.
   // Other Status values are implementer defined.
-  void SetCompletionHandler(Function<ByteSpan, Status> callback);
+  void SetCompletionHandler(Function<void(ByteSpan, Status)> callback);
 
   // `tx_data` is queued for tx when called, but only transmitted when
   //   the initiator starts the next transaction. It's up to the implementer to

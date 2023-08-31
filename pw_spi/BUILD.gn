@@ -48,6 +48,7 @@ pw_source_set("responder") {
   public = [ "public/pw_spi/responder.h" ]
   public_deps = [
     "$dir_pw_bytes",
+    "$dir_pw_function",
     "$dir_pw_status",
   ]
 }
@@ -116,6 +117,7 @@ pw_test("spi_test") {
   sources = [ "spi_test.cc" ]
   deps = [
     ":device",
+    ":responder",
     "$dir_pw_sync:mutex",
   ]
 }

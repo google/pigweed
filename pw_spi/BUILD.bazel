@@ -43,6 +43,7 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         "//pw_bytes",
+        "//pw_function",
         "//pw_status",
     ],
 )
@@ -113,6 +114,7 @@ pw_cc_test(
     ],
     deps = [
         ":device",
+        ":responder",
         "//pw_sync:mutex",
         "//pw_unit_test",
     ],
