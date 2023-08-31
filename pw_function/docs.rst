@@ -239,6 +239,11 @@ nullptr.
 
 Invoking ``pw::Function`` from a C-style API
 ============================================
+.. _trampoline layers: https://en.wikipedia.org/wiki/Trampoline_(computing)
+
+One use case for invoking ``pw_function`` from a C-style API is to automate
+the generation of `trampoline layers`_.
+
 .. doxygenfile:: pw_function/pointer.h
    :sections: detaileddescription
 
@@ -279,6 +284,19 @@ Design
 
 :cpp:type:`pw::Callback` is an alias of
 `fit::callback <https://cs.opensource.google/fuchsia/fuchsia/+/main:sdk/lib/fit/include/lib/fit/function.h;drc=f66f54fca0c11a1168d790bcc3d8a5a3d940218d>`_.
+
+Why pw::Function is not a literal
+=================================
+The default constructor for ``pw::Function`` is ``constexpr`` but
+``pw::Function`` is not a literal type. Instances can be declared ``constinit``
+but can't be used in ``constexpr`` contexts. There are a few reasons for this:
+
+* ``pw::Function`` supports wrapping any callable type, and the wrapped type
+  might not be a literal type.
+* ``pw::Function`` stores inline callables in a bytes array, which is not
+  ``constexpr``-friendly.
+* ``pw::Function`` optionally uses dynamic allocation, which doesn't work in
+  ``constexpr`` contexts (at least before C++20).
 
 ------
 Zephyr
