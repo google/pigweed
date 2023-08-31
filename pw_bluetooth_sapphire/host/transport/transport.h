@@ -8,11 +8,14 @@
 #include <lib/async-loop/cpp/loop.h>
 #include <lib/async-loop/default.h>
 #include <lib/async/cpp/wait.h>
+#include <lib/async/default.h>
 #include <lib/async/dispatcher.h>
 
 #include <atomic>
 #include <memory>
 #include <thread>
+
+#include <pw_async_fuchsia/dispatcher.h>
 
 #include "pw_bluetooth/controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
@@ -108,6 +111,8 @@ class Transport final : public WeakSelf<Transport> {
 
   // The SCO data flow control handler.
   std::unique_ptr<ScoDataChannel> sco_data_channel_;
+
+  pw::async::fuchsia::FuchsiaDispatcher dispatcher_{async_get_default_dispatcher()};
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Transport);
 };

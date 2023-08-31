@@ -14,6 +14,7 @@
 #include "lib/zx/time.h"
 
 #include <pw_bluetooth/hci_commands.emb.h>
+#include <pw_chrono/system_clock.h>
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 
 // This file contains constants and numbers used in HCI packet payloads.
@@ -794,6 +795,7 @@ enum class EncryptionStatus : uint8_t {
 // We may want to reduce this to something lower again once we have a better
 // resolution to this issue.
 constexpr zx::duration kCommandTimeout = zx::sec(10);
+constexpr pw::chrono::SystemClock::duration kPwCommandTimeout = std::chrono::seconds(10);
 
 // The minimum and maximum range values for the LE advertising interval
 // parameters.

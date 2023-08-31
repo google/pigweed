@@ -78,17 +78,21 @@ CommandChannel::TransactionData::~TransactionData() {
         }
       },
       callback_);
+  channel_->dispatcher_.Cancel(timeout_task_);
 }
 
 void CommandChannel::TransactionData::StartTimer() {
   // Transactions should only ever be started once.
-  BT_DEBUG_ASSERT(!timeout_task_.is_pending());
-  timeout_task_.set_handler([chan = channel_, tid = id()] { chan->OnCommandTimeout(tid); });
-  timeout_task_.PostDelayed(async_get_default_dispatcher(), hci_spec::kCommandTimeout);
+  timeout_task_.set_function([chan = channel_, tid = id()](auto, pw::Status status) {
+    if (status.ok()) {
+      chan->OnCommandTimeout(tid);
+    }
+  });
+  channel_->dispatcher_.PostAfter(timeout_task_, hci_spec::kPwCommandTimeout);
 }
 
 void CommandChannel::TransactionData::Complete(std::unique_ptr<EventPacket> event) {
-  timeout_task_.Cancel();
+  channel_->dispatcher_.Cancel(timeout_task_);
 
   std::visit(
       [this, &event](auto& cb) {
@@ -118,7 +122,7 @@ void CommandChannel::TransactionData::Complete(std::unique_ptr<EventPacket> even
 }
 
 void CommandChannel::TransactionData::Cancel() {
-  timeout_task_.Cancel();
+  channel_->dispatcher_.Cancel(timeout_task_);
   std::visit([](auto& cb) { cb = nullptr; }, callback_);
 }
 
@@ -140,11 +144,12 @@ CommandChannel::EventCallbackVariant CommandChannel::TransactionData::MakeCallba
                     callback_);
 }
 
-CommandChannel::CommandChannel(pw::bluetooth::Controller* hci)
+CommandChannel::CommandChannel(pw::bluetooth::Controller* hci, pw::async::Dispatcher& dispatcher)
     : next_transaction_id_(1u),
       next_event_handler_id_(1u),
       hci_(hci),
       allowed_command_packets_(1u),
+      dispatcher_(dispatcher),
       weak_ptr_factory_(this) {
   hci_->SetEventFunction(fit::bind_member<&CommandChannel::OnEvent>(this));
 

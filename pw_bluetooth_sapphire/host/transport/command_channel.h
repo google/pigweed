@@ -16,6 +16,9 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include <pw_async/dispatcher.h>
+#include <pw_async/task.h>
+
 #include "pw_bluetooth/controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
@@ -46,7 +49,7 @@ class CommandChannel final {
   using CommandPacketVariant = std::variant<std::unique_ptr<CommandPacket>, EmbossCommandPacket>;
 
   // Starts listening for HCI commands and starts handling commands and events.
-  explicit CommandChannel(pw::bluetooth::Controller* hci);
+  explicit CommandChannel(pw::bluetooth::Controller* hci, pw::async::Dispatcher& dispatcher);
 
   ~CommandChannel();
 
@@ -276,7 +279,7 @@ class CommandChannel final {
     std::optional<hci_spec::EventCode> le_meta_subevent_code_;
     std::unordered_set<hci_spec::OpCode> exclusions_;
     CommandCallbackVariant callback_;
-    async::TaskClosure timeout_task_;
+    pw::async::Task timeout_task_;
 
     // If non-zero, the id of the handler registered for this transaction.
     // Always zero if this transaction is synchronous.
@@ -408,6 +411,8 @@ class CommandChannel final {
 
   // Command channel inspect node.
   inspect::Node command_channel_node_;
+
+  pw::async::Dispatcher& dispatcher_;
 
   // As events can arrive in the event thread at any time, we should invalidate our weak pointers
   // early.

@@ -34,7 +34,8 @@ void Transport::Initialize(fit::callback<void(bool /*success*/)> complete_callba
       return;
     }
 
-    self->command_channel_ = std::make_unique<CommandChannel>(self->controller_.get());
+    self->command_channel_ =
+        std::make_unique<CommandChannel>(self->controller_.get(), self->dispatcher_);
     self->command_channel_->set_channel_timeout_cb([self] {
       if (self.is_alive()) {
         self->OnChannelError();
