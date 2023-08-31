@@ -23,7 +23,7 @@ extern "C++" {
 #include "pw_preprocessor/util.h"
 
 #ifdef __cplusplus
-}  // extern "C++"
+}       // extern "C++"
 #endif  // __cplusplus
 
 // Provide static_assert() on >=C11

@@ -111,7 +111,7 @@ typedef uint32_t pw_tokenizer_Token;
   }()
 
 #define _PW_TOKENIZER_MASK_TOKEN(mask, string_literal) \
-  ((pw_tokenizer_Token)(mask)&PW_TOKENIZER_STRING_TOKEN(string_literal))
+  ((pw_tokenizer_Token)(mask) & PW_TOKENIZER_STRING_TOKEN(string_literal))
 
 /// Encodes a tokenized string and arguments to the provided buffer. The size of
 /// the buffer is passed via a pointer to a `size_t`. After encoding is

@@ -29,5 +29,5 @@ extern "C++" {
 #endif  // PW_THIRD_PARTY_FREERTOS_NO_STATICS == 1
 
 #ifdef __cplusplus
-}  // extern "C++"
+}       // extern "C++"
 #endif  // __cplusplus
