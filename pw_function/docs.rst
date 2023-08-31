@@ -133,6 +133,7 @@ Reference
 .. doxygentypedef:: pw::InlineFunction
 .. doxygentypedef:: pw::Callback
 .. doxygentypedef:: pw::InlineCallback
+.. doxygenfunction:: pw::bind_member
 
 ``pw::Function`` as a function parameter
 ========================================

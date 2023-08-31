@@ -93,4 +93,17 @@ template <typename FunctionType,
               function_internal::config::kInlineCallableSize>
 using InlineCallback = fit::inline_callback<FunctionType, inline_target_size>;
 
+/// Returns a `Callable` which, when called, invokes `method` on `instance`
+/// using the arguments provided.
+///
+/// This is useful for binding the `this` argument of a callable.
+///
+/// `pw::bind_member<&T::MethodName>(instance)` is roughly equivalent to
+/// `[instance](Arg arg1, ...) { instance->MethodName(arg1, ...) }`, albeit with
+/// proper support for overloads and argument forwarding.
+template <auto method, typename T>
+auto bind_member(T* instance) {
+  return fit::bind_member<method, T>(instance);
+}
+
 }  // namespace pw
