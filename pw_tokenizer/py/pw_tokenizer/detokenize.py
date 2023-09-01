@@ -34,6 +34,7 @@ messages from a file or stdin.
 import argparse
 import base64
 import binascii
+from concurrent.futures import Executor, ThreadPoolExecutor
 import enum
 import io
 import logging
@@ -43,6 +44,7 @@ import re
 import string
 import struct
 import sys
+import threading
 import time
 from typing import (
     AnyStr,
@@ -189,26 +191,32 @@ class Detokenizer:
         """
         self.show_errors = show_errors
 
+        self._database_lock = threading.Lock()
+
         # Cache FormatStrings for faster lookup & formatting.
         self._cache: Dict[int, List[_TokenizedFormatString]] = {}
 
         self._initialize_database(token_database_or_elf)
 
     def _initialize_database(self, token_sources: Iterable) -> None:
-        self.database = database.load_token_database(*token_sources)
-        self._cache.clear()
+        with self._database_lock:
+            self.database = database.load_token_database(*token_sources)
+            self._cache.clear()
 
     def lookup(self, token: int) -> List[_TokenizedFormatString]:
         """Returns (TokenizedStringEntry, FormatString) list for matches."""
-        try:
-            return self._cache[token]
-        except KeyError:
-            format_strings = [
-                _TokenizedFormatString(entry, decode.FormatString(str(entry)))
-                for entry in self.database.token_to_entries[token]
-            ]
-            self._cache[token] = format_strings
-            return format_strings
+        with self._database_lock:
+            try:
+                return self._cache[token]
+            except KeyError:
+                format_strings = [
+                    _TokenizedFormatString(
+                        entry, decode.FormatString(str(entry))
+                    )
+                    for entry in self.database.token_to_entries[token]
+                ]
+                self._cache[token] = format_strings
+                return format_strings
 
     def detokenize(self, encoded_message: bytes) -> DetokenizedString:
         """Decodes and detokenizes a message as a DetokenizedString."""
@@ -389,12 +397,24 @@ class AutoUpdatingDetokenizer(Detokenizer):
                 return database.load_token_database()
 
     def __init__(
-        self, *paths_or_files: _PathOrStr, min_poll_period_s: float = 1.0
+        self,
+        *paths_or_files: _PathOrStr,
+        min_poll_period_s: float = 1.0,
+        pool: Executor = ThreadPoolExecutor(max_workers=1),
     ) -> None:
         self.paths = tuple(self._DatabasePath(path) for path in paths_or_files)
         self.min_poll_period_s = min_poll_period_s
         self._last_checked_time: float = time.time()
+        # Thread pool to use for loading the databases. Limit to a single
+        # worker since this is low volume and not time critical.
+        self._pool = pool
         super().__init__(*(path.load() for path in self.paths))
+
+    def __del__(self) -> None:
+        self._pool.shutdown(wait=False)
+
+    def _reload_paths(self) -> None:
+        self._initialize_database([path.load() for path in self.paths])
 
     def _reload_if_changed(self) -> None:
         if time.time() - self._last_checked_time >= self.min_poll_period_s:
@@ -402,7 +422,7 @@ class AutoUpdatingDetokenizer(Detokenizer):
 
             if any(path.updated() for path in self.paths):
                 _LOG.info('Changes detected; reloading token database')
-                self._initialize_database(path.load() for path in self.paths)
+                self._pool.submit(self._reload_paths)
 
     def lookup(self, token: int) -> List[_TokenizedFormatString]:
         self._reload_if_changed()

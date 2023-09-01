@@ -15,7 +15,9 @@
 """Tests for detokenize."""
 
 import base64
+import concurrent
 import datetime as dt
+import functools
 import io
 import os
 from pathlib import Path
@@ -452,6 +454,35 @@ class DetokenizeWithCollisions(unittest.TestCase):
         self.assertIn('#0 -1', repr(unambiguous))
 
 
+class ManualPoolExecutor(concurrent.futures.Executor):
+    """A stubbed pool executor that captures the most recent work request
+    and holds it until the public process method is manually called."""
+
+    def __init__(self):
+        super().__init__()
+        self._func = None
+
+    # pylint: disable=arguments-differ
+    def submit(self, func, *args, **kwargs):
+        """Submits work to the pool, stashing the partial for later use."""
+        self._func = functools.partial(func, *args, **kwargs)
+
+    def process(self):
+        """Processes the latest func submitted to the pool."""
+        if self._func is not None:
+            self._func()
+            self._func = None
+
+
+class InlinePoolExecutor(concurrent.futures.Executor):
+    """A stubbed pool executor that runs work immediately, inline."""
+
+    # pylint: disable=arguments-differ
+    def submit(self, func, *args, **kwargs):
+        """Submits work to the pool, stashing the partial for later use."""
+        func(*args, **kwargs)
+
+
 @mock.patch('os.path.getmtime')
 class AutoUpdatingDetokenizerTest(unittest.TestCase):
     """Tests the AutoUpdatingDetokenizer class."""
@@ -479,20 +510,24 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
             try:
                 file.close()
 
+                pool = ManualPoolExecutor()
                 detok = detokenize.AutoUpdatingDetokenizer(
-                    file.name, min_poll_period_s=0
+                    file.name, min_poll_period_s=0, pool=pool
                 )
                 self.assertFalse(detok.detokenize(JELLO_WORLD_TOKEN).ok())
 
                 with open(file.name, 'wb') as fd:
                     tokens.write_binary(db, fd)
 
+                # After the change but before the pool runs in another thread,
+                # the token should not exist.
+                self.assertFalse(detok.detokenize(JELLO_WORLD_TOKEN).ok())
+
+                # After the pool is allowed to process, it should.
+                pool.process()
                 self.assertTrue(detok.detokenize(JELLO_WORLD_TOKEN).ok())
             finally:
                 os.unlink(file.name)
-
-        # The database stays around if the file is deleted.
-        self.assertTrue(detok.detokenize(JELLO_WORLD_TOKEN).ok())
 
     def test_update_with_directory(self, mock_getmtime):
         """Tests the update command with a directory format database."""
@@ -522,17 +557,26 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
                     matching_suffix_file.close()
                     mismatched_suffix_file.close()
 
+                    pool = ManualPoolExecutor()
                     detok = detokenize.AutoUpdatingDetokenizer(
-                        dbdir, min_poll_period_s=0
+                        dbdir, min_poll_period_s=0, pool=pool
                     )
                     self.assertFalse(detok.detokenize(JELLO_WORLD_TOKEN).ok())
 
                     with open(mismatched_suffix_file.name, 'wb') as fd:
                         tokens.write_csv(db, fd)
+                    pool.process()
                     self.assertFalse(detok.detokenize(JELLO_WORLD_TOKEN).ok())
 
                     with open(matching_suffix_file.name, 'wb') as fd:
                         tokens.write_csv(db, fd)
+
+                    # After the change but before the pool runs in another
+                    # thread, the token should not exist.
+                    self.assertFalse(detok.detokenize(JELLO_WORLD_TOKEN).ok())
+                    pool.process()
+
+                    # After the pool is allowed to process, it should.
                     self.assertTrue(detok.detokenize(JELLO_WORLD_TOKEN).ok())
                 finally:
                     os.unlink(mismatched_suffix_file.name)
@@ -556,7 +600,7 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
                 file.close()
 
                 detok = detokenize.AutoUpdatingDetokenizer(
-                    file.name, min_poll_period_s=0
+                    file.name, min_poll_period_s=0, pool=InlinePoolExecutor()
                 )
                 self.assertTrue(detok.detokenize(JELLO_WORLD_TOKEN).ok())
 
@@ -576,7 +620,9 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
     def test_token_domain_in_str(self, _) -> None:
         """Tests a str containing a domain"""
         detok = detokenize.AutoUpdatingDetokenizer(
-            f'{ELF_WITH_TOKENIZER_SECTIONS_PATH}#.*', min_poll_period_s=0
+            f'{ELF_WITH_TOKENIZER_SECTIONS_PATH}#.*',
+            min_poll_period_s=0,
+            pool=InlinePoolExecutor(),
         )
         self.assertEqual(
             len(detok.database), TOKENS_IN_ELF_WITH_TOKENIZER_SECTIONS
@@ -585,7 +631,9 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
     def test_token_domain_in_path(self, _) -> None:
         """Tests a Path() containing a domain"""
         detok = detokenize.AutoUpdatingDetokenizer(
-            Path(f'{ELF_WITH_TOKENIZER_SECTIONS_PATH}#.*'), min_poll_period_s=0
+            Path(f'{ELF_WITH_TOKENIZER_SECTIONS_PATH}#.*'),
+            min_poll_period_s=0,
+            pool=InlinePoolExecutor(),
         )
         self.assertEqual(
             len(detok.database), TOKENS_IN_ELF_WITH_TOKENIZER_SECTIONS
@@ -594,14 +642,18 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
     def test_token_no_domain_in_str(self, _) -> None:
         """Tests a str without a domain"""
         detok = detokenize.AutoUpdatingDetokenizer(
-            str(ELF_WITH_TOKENIZER_SECTIONS_PATH), min_poll_period_s=0
+            str(ELF_WITH_TOKENIZER_SECTIONS_PATH),
+            min_poll_period_s=0,
+            pool=InlinePoolExecutor(),
         )
         self.assertEqual(len(detok.database), TOKENS_IN_ELF)
 
     def test_token_no_domain_in_path(self, _) -> None:
         """Tests a Path() without a domain"""
         detok = detokenize.AutoUpdatingDetokenizer(
-            ELF_WITH_TOKENIZER_SECTIONS_PATH, min_poll_period_s=0
+            ELF_WITH_TOKENIZER_SECTIONS_PATH,
+            min_poll_period_s=0,
+            pool=InlinePoolExecutor(),
         )
         self.assertEqual(len(detok.database), TOKENS_IN_ELF)
 
