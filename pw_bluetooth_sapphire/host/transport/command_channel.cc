@@ -65,6 +65,7 @@ CommandChannel::TransactionData::TransactionData(
       le_meta_subevent_code_(le_meta_subevent_code),
       exclusions_(std::move(exclusions)),
       callback_(std::move(callback)),
+      timeout_task_(channel_->dispatcher_),
       handler_id_(0u) {
   BT_DEBUG_ASSERT(transaction_id != 0u);
   exclusions_.insert(opcode_);
@@ -78,21 +79,21 @@ CommandChannel::TransactionData::~TransactionData() {
         }
       },
       callback_);
-  channel_->dispatcher_.Cancel(timeout_task_);
 }
 
 void CommandChannel::TransactionData::StartTimer() {
   // Transactions should only ever be started once.
+  BT_DEBUG_ASSERT(!timeout_task_.is_pending());
   timeout_task_.set_function([chan = channel_, tid = id()](auto, pw::Status status) {
     if (status.ok()) {
       chan->OnCommandTimeout(tid);
     }
   });
-  channel_->dispatcher_.PostAfter(timeout_task_, hci_spec::kPwCommandTimeout);
+  timeout_task_.PostAfter(hci_spec::kPwCommandTimeout);
 }
 
 void CommandChannel::TransactionData::Complete(std::unique_ptr<EventPacket> event) {
-  channel_->dispatcher_.Cancel(timeout_task_);
+  timeout_task_.Cancel();
 
   std::visit(
       [this, &event](auto& cb) {
@@ -122,7 +123,7 @@ void CommandChannel::TransactionData::Complete(std::unique_ptr<EventPacket> even
 }
 
 void CommandChannel::TransactionData::Cancel() {
-  channel_->dispatcher_.Cancel(timeout_task_);
+  timeout_task_.Cancel();
   std::visit([](auto& cb) { cb = nullptr; }, callback_);
 }
 

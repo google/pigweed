@@ -24,6 +24,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/smart_task.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/trace.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
@@ -279,7 +280,7 @@ class CommandChannel final {
     std::optional<hci_spec::EventCode> le_meta_subevent_code_;
     std::unordered_set<hci_spec::OpCode> exclusions_;
     CommandCallbackVariant callback_;
-    pw::async::Task timeout_task_;
+    bt::SmartTask timeout_task_;
 
     // If non-zero, the id of the handler registered for this transaction.
     // Always zero if this transaction is synchronous.
