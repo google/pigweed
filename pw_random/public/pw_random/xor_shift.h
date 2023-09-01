@@ -24,20 +24,35 @@
 
 namespace pw::random {
 
-// This is the "xorshift*" algorithm which is a bit stronger than plain XOR
-// shift thanks to the nonlinear transformation at the end (multiplication).
-//
-// See: https://en.wikipedia.org/wiki/Xorshift
-//
-// This random generator is NOT cryptographically secure, and incorporates
-// pseudo-random generation to extrapolate any true injected entropy. The
-// distribution is not guaranteed to be uniform.
+/// A random generator based off the
+/// [xorshift*](https://en.wikipedia.org/wiki/Xorshift) algorithm.
+///
+/// The state is represented as an integer that, with each generation, performs
+/// exclusive OR (XOR) operations on different left/right bit shifts of itself.
+/// The `*` in `xorshift*` refers to a final multiplication that is applied to
+/// the output value. The final multiplication is essentially a nonlinear
+/// transformation that makes the algorithm stronger than a plain XOR shift.
+///
+/// Pigweed's implementation augments `xorshift*` with an ability to inject
+/// entropy to reseed the generator throughout its lifetime. When entropy is
+/// injected, the results of the generator are no longer completely
+/// deterministic based on the original seed.
+///
+/// See also [Xorshift RNGs](https://www.jstatsoft.org/article/view/v008i14)
+/// and [An experimental exploration of Marsaglia's xorshift generators,
+/// scrambled](https://vigna.di.unimi.it/ftp/papers/xorshift.pdf).
+///
+/// @warning This random generator is **NOT** cryptographically secure. It
+/// incorporates pseudo-random generation to extrapolate any true injected
+/// entropy. The distribution is not guaranteed to be uniform.
 class XorShiftStarRng64 : public RandomGenerator {
  public:
   XorShiftStarRng64(uint64_t initial_seed) : state_(initial_seed) {}
 
-  // This generator uses entropy-seeded PRNG to never exhaust its random number
-  // pool.
+  /// Populates the destination buffer with a randomly generated value.
+  ///
+  /// This generator uses entropy-seeded PRNG to never exhaust its random
+  /// number pool.
   void Get(ByteSpan dest) final {
     while (!dest.empty()) {
       uint64_t random = Regenerate();
@@ -47,10 +62,11 @@ class XorShiftStarRng64 : public RandomGenerator {
     }
   }
 
-  // Entropy is injected by rotating the state by the number of entropy bits
-  // before xoring the entropy with the current state. This ensures seeding
-  // the random value with single bits will progressively fill the state with
-  // more entropy.
+  /// Injects entropy by rotating the state by the number of entropy bits
+  /// before XORing the entropy with the current state.
+  ///
+  /// This technique ensures that seeding the random value with single bits
+  /// will progressively fill the state with more entropy.
   void InjectEntropyBits(uint32_t data, uint_fast8_t num_bits) final {
     if (num_bits == 0) {
       return;

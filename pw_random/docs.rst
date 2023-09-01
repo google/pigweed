@@ -41,31 +41,6 @@ API reference
 .. doxygennamespace:: pw::random
    :members:
 
-----------
-Algorithms
-----------
-
-xorshift*
-=========
-The ``xorshift*`` algorithm is a pseudo-random number generation algorithm. It's
-very simple in principle; the state is represented as an integer that, with each
-generation, performs exclusive OR operations on different left/right bit shifts
-of itself. The "*" refers to a final multiplication that is applied to the
-output value.
-
-Pigweed's implementation augments this with an ability to inject entropy to
-reseed the generator throughout its lifetime. When entropy is injected, the
-results of the generator are no longer completely deterministic based on the
-original seed.
-
-Note that this generator is NOT cryptographically secure.
-
-For more information, see:
-
-* https://en.wikipedia.org/wiki/Xorshift
-* https://www.jstatsoft.org/article/view/v008i14
-* http://vigna.di.unimi.it/ftp/papers/xorshift.pdf
-
 -----------
 Future Work
 -----------

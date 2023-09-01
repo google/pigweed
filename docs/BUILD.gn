@@ -153,6 +153,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_log_tokenized/public/pw_log_tokenized/metadata.h",
   "$dir_pw_protobuf/public/pw_protobuf/find.h",
   "$dir_pw_random/public/pw_random/random.h",
+  "$dir_pw_random/public/pw_random/xor_shift.h",
   "$dir_pw_rpc/public/pw_rpc/internal/config.h",
   "$dir_pw_rpc/public/pw_rpc/synchronous_call.h",
   "$dir_pw_status/public/pw_status/status.h",
