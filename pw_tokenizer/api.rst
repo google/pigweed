@@ -35,6 +35,7 @@ Tokenization
          :members:
       .. doxygenfunction:: pw::tokenizer::MinEncodingBufferSizeBytes
       .. doxygendefine:: PW_TOKENIZE_FORMAT_STRING
+      .. doxygendefine:: PW_TOKENIZE_FORMAT_STRING_ANY_ARG_COUNT
       .. doxygendefine:: PW_TOKENIZE_STRING
       .. doxygendefine:: PW_TOKENIZE_STRING_DOMAIN
       .. doxygendefine:: PW_TOKENIZE_STRING_DOMAIN_EXPR
@@ -44,6 +45,7 @@ Tokenization
       .. doxygendefine:: PW_TOKENIZE_TO_BUFFER
       .. doxygendefine:: PW_TOKENIZE_TO_BUFFER_DOMAIN
       .. doxygendefine:: PW_TOKENIZE_TO_BUFFER_MASK
+      .. doxygendefine:: PW_TOKENIZER_REPLACE_FORMAT_STRING
       .. doxygendefine:: PW_TOKENIZER_ARG_TYPES
       .. doxygenfunction:: pw_tokenizer_EncodeArgs
       .. doxygentypedef:: pw_tokenizer_Token

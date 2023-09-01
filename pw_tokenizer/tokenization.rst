@@ -197,22 +197,27 @@ Tokenize a message with arguments in a custom macro
 Projects can leverage the tokenization machinery in whichever way best suits
 their needs. The most efficient way to use ``pw_tokenizer`` is to pass tokenized
 data to a global handler function. A project's custom tokenization macro can
-handle tokenized data in a function of their choosing.
+handle tokenized data in a function of their choosing. The function may accept
+any arguments, but its final arguments must be:
 
-``pw_tokenizer`` provides two low-level macros for projects to use
-to create custom tokenization macros:
+* The 32-bit token (:cpp:type:`pw_tokenizer_Token`)
+* The argument types (:cpp:type:`pw_tokenizer_ArgTypes`)
+* Variadic arguments, if any
+
+``pw_tokenizer`` provides two low-level macros to help projects create custom
+tokenization macros:
 
 * :c:macro:`PW_TOKENIZE_FORMAT_STRING`
-* :c:macro:`PW_TOKENIZER_ARG_TYPES`
+* :c:macro:`PW_TOKENIZER_REPLACE_FORMAT_STRING`
 
 .. caution::
 
    Note the spelling difference! The first macro begins with ``PW_TOKENIZE_``
    (no ``R``) whereas the second begins with ``PW_TOKENIZER_``.
 
-The outputs of these macros are typically passed to an encoding function. That
-function encodes the token, argument types, and argument data to a buffer using
-helpers provided by ``pw_tokenizer/encode_args.h``:
+Use these macros to invoke an encoding function with the token, argument types,
+and variadic arguments. The function can then encode the tokenized message to a
+buffer using helpers in ``pw_tokenizer/encode_args.h``:
 
 .. Note: pw_tokenizer_EncodeArgs is a C function so you would expect to
 .. reference it as :c:func:`pw_tokenizer_EncodeArgs`. That doesn't work because
@@ -224,7 +229,6 @@ helpers provided by ``pw_tokenizer/encode_args.h``:
 
 Example
 -------
-
 The following example implements a custom tokenization macro similar to
 :ref:`module-pw_log_tokenized`.
 
@@ -245,14 +249,11 @@ The following example implements a custom tokenization macro similar to
    }  // extern "C"
    #endif
 
-   #define PW_LOG_TOKENIZED_ENCODE_MESSAGE(metadata, format, ...)         \
-     do {                                                                 \
-       PW_TOKENIZE_FORMAT_STRING(                                         \
-           PW_TOKENIZER_DEFAULT_DOMAIN, UINT32_MAX, format, __VA_ARGS__); \
-       EncodeTokenizedMessage(payload,                                    \
-                              _pw_tokenizer_token,                        \
-                              PW_TOKENIZER_ARG_TYPES(__VA_ARGS__)         \
-                                  PW_COMMA_ARGS(__VA_ARGS__));            \
+   #define PW_LOG_TOKENIZED_ENCODE_MESSAGE(metadata, format, ...)          \
+     do {                                                                  \
+       PW_TOKENIZE_FORMAT_STRING("logs", UINT32_MAX, format, __VA_ARGS__); \
+       EncodeTokenizedMessage(                                             \
+           metadata, PW_TOKENIZER_REPLACE_FORMAT_STRING(__VA_ARGS__));     \
      } while (0)
 
 In this example, the ``EncodeTokenizedMessage`` function would handle encoding
