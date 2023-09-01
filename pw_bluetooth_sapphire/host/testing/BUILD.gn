@@ -104,6 +104,7 @@ source_set("mock_controller") {
     "//src/connectivity/bluetooth/core/bt-host/transport",
     "//src/connectivity/bluetooth/core/bt-host/transport:testing",
     "//src/lib/testing/loop_fixture",
+    "//third_party/pigweed:pw_async_heap_dispatcher",
   ]
 }
 

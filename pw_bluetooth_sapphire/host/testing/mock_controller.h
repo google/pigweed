@@ -13,6 +13,7 @@
 #include <vector>
 
 #include <pw_async/dispatcher.h>
+#include <pw_async/heap_dispatcher.h>
 #include <pw_async_fuchsia/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
@@ -200,6 +201,7 @@ class MockController final : public ControllerTestDoubleBase, public WeakSelf<Mo
   TransactionCallback transaction_callback_;
 
   pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{async_get_default_dispatcher()};
+  pw::async::HeapDispatcher heap_dispatcher_{pw_dispatcher_};
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(MockController);
 };

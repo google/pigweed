@@ -172,13 +172,12 @@ void MockController::OnCommandReceived(const ByteBuffer& data) {
 
   if (transaction_callback_) {
     DynamicByteBuffer rx(data);
-    // TODO(fxbug.dev/100594): use HeapDispatcher
-    pw_async_fuchsia::Post(&pw_dispatcher_, [rx = std::move(rx), f = transaction_callback_.share()](
-                                                auto, pw::Status status) {
-      if (status.ok()) {
-        f(rx);
-      }
-    });
+    heap_dispatcher_.Post(
+        [rx = std::move(rx), f = transaction_callback_.share()](auto, pw::Status status) {
+          if (status.ok()) {
+            f(rx);
+          }
+        });
   }
 }
 
@@ -201,14 +200,12 @@ void MockController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) 
 
   if (data_callback_) {
     DynamicByteBuffer packet_copy(acl_data_packet);
-    // TODO(fxbug.dev/100594): Use HeapDispatcher instead of Post
-    pw_async_fuchsia::Post(&pw_dispatcher_,
-                           [packet_copy = std::move(packet_copy), cb = data_callback_.share()](
-                               auto, pw::Status status) mutable {
-                             if (status.ok()) {
-                               cb(packet_copy);
-                             }
-                           });
+    heap_dispatcher_.Post([packet_copy = std::move(packet_copy), cb = data_callback_.share()](
+                              auto, pw::Status status) mutable {
+      if (status.ok()) {
+        cb(packet_copy);
+      }
+    });
   }
 }
 
