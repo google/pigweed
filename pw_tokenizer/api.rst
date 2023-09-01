@@ -1,70 +1,89 @@
+:tocdepth: 2
+
 .. _module-pw_tokenizer-api:
 
-=============
-API reference
-=============
+==========================
+pw_tokenizer API reference
+==========================
 .. pigweed-module-subpage::
    :name: pw_tokenizer
    :tagline: Compress strings to shrink logs by +75%
 
--------
-C++ / C
--------
+.. _module-pw_tokenizer-api-configuration:
 
-Tokenization
-============
-.. doxygenfunction:: pw::tokenizer::EncodeArgs
-.. doxygenclass:: pw::tokenizer::EncodedMessage
-   :members:
-.. doxygenfunction:: pw::tokenizer::MinEncodingBufferSizeBytes
-.. doxygendefine:: PW_TOKENIZE_FORMAT_STRING
-.. doxygendefine:: PW_TOKENIZE_STRING
-.. doxygendefine:: PW_TOKENIZE_STRING_DOMAIN
-.. doxygendefine:: PW_TOKENIZE_STRING_DOMAIN_EXPR
-.. doxygendefine:: PW_TOKENIZE_STRING_EXPR
-.. doxygendefine:: PW_TOKENIZE_STRING_MASK
-.. doxygendefine:: PW_TOKENIZE_STRING_MASK_EXPR
-.. doxygendefine:: PW_TOKENIZE_TO_BUFFER
-.. doxygendefine:: PW_TOKENIZE_TO_BUFFER_DOMAIN
-.. doxygendefine:: PW_TOKENIZE_TO_BUFFER_MASK
-.. doxygendefine:: PW_TOKENIZER_ARG_TYPES
-.. doxygenfunction:: pw_tokenizer_EncodeArgs
-.. doxygentypedef:: pw_tokenizer_Token
-
-.. _module-pw_tokenizer-api-cpp-configuration:
-
+-------------
 Configuration
 -------------
-.. doxygenfile:: pw_tokenizer/config.h
-   :sections: define
+.. tab-set::
 
-.. _module-pw_tokenizer-api-cpp-detokenization:
+   .. tab-item:: C++ / C
+      :sync: cpp
 
+      .. doxygenfile:: pw_tokenizer/config.h
+         :sections: define
+
+------------
+Tokenization
+------------
+.. tab-set::
+
+   .. tab-item:: C++ / C
+      :sync: cpp
+
+      .. doxygenfunction:: pw::tokenizer::EncodeArgs
+      .. doxygenclass:: pw::tokenizer::EncodedMessage
+         :members:
+      .. doxygenfunction:: pw::tokenizer::MinEncodingBufferSizeBytes
+      .. doxygendefine:: PW_TOKENIZE_FORMAT_STRING
+      .. doxygendefine:: PW_TOKENIZE_STRING
+      .. doxygendefine:: PW_TOKENIZE_STRING_DOMAIN
+      .. doxygendefine:: PW_TOKENIZE_STRING_DOMAIN_EXPR
+      .. doxygendefine:: PW_TOKENIZE_STRING_EXPR
+      .. doxygendefine:: PW_TOKENIZE_STRING_MASK
+      .. doxygendefine:: PW_TOKENIZE_STRING_MASK_EXPR
+      .. doxygendefine:: PW_TOKENIZE_TO_BUFFER
+      .. doxygendefine:: PW_TOKENIZE_TO_BUFFER_DOMAIN
+      .. doxygendefine:: PW_TOKENIZE_TO_BUFFER_MASK
+      .. doxygendefine:: PW_TOKENIZER_ARG_TYPES
+      .. doxygenfunction:: pw_tokenizer_EncodeArgs
+      .. doxygentypedef:: pw_tokenizer_Token
+
+   .. tab-item:: Python
+      :sync: py
+
+      .. autofunction:: pw_tokenizer.encode.encode_token_and_args
+      .. autofunction:: pw_tokenizer.tokens.pw_tokenizer_65599_hash
+
+   .. tab-item:: Rust
+      :sync: rs
+
+      See `Crate pw_tokenizer </rustdoc/pw_tokenizer/>`_.
+
+.. _module-pw_tokenizer-api-token-databases:
+
+---------------
+Token databases
+---------------
+.. tab-set::
+
+   .. tab-item:: C++ / C
+      :sync: cpp
+
+      .. doxygenclass:: pw::tokenizer::TokenDatabase
+         :members:
+
+.. _module-pw_tokenizer-api-detokenization:
+
+--------------
 Detokenization
-==============
-.. doxygenclass:: pw::tokenizer::TokenDatabase
-   :members:
+--------------
+.. tab-set::
 
-------
-Python
-------
-.. autofunction:: pw_tokenizer.encode.encode_token_and_args
-   :noindex:
-.. autofunction:: pw_tokenizer.tokens.pw_tokenizer_65599_hash
-   :noindex:
+   .. tab-item:: Python
+      :sync: py
 
-pw_tokenizer.proto
-==================
-.. automodule:: pw_tokenizer.proto
-   :members:
+      .. automodule:: pw_tokenizer.detokenize
+         :members:
 
-pw_tokenizer.detokenize
-=======================
-.. automodule:: pw_tokenizer.detokenize
-   :members:
-
-----
-Rust
-----
-``pw_tokenizer``'s Rust API is documented in the
-`pw_tokenizer crate's docs </rustdoc/pw_tokenizer>`_.
+      .. automodule:: pw_tokenizer.proto
+         :members:

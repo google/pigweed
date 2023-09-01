@@ -28,38 +28,46 @@ Why tokenize strings?
 * **Reduce CPU usage** by replacing snprintf calls with simple tokenization code.
 * **Remove potentially sensitive log, assert, and other strings** from binaries.
 
-.. grid:: 2
+.. grid:: 1
 
-   .. grid-item-card:: :octicon:`zap` Get started & guides
-      :link: module-pw_tokenizer-guides
+   .. grid-item-card:: :octicon:`rocket` Get started
+      :link: module-pw_tokenizer-get-started
       :link-type: ref
       :class-item: sales-pitch-cta-primary
 
-      Learn how to integrate pw_tokenizer into your project and implement
-      common use cases.
+      Integrate pw_tokenizer into your project.
+
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`code-square` Tokenization
+      :link: module-pw_tokenizer-tokenization
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Convert strings and arguments to tokens.
+
+   .. grid-item-card:: :octicon:`code-square` Token databases
+      :link: module-pw_tokenizer-token-databases
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Store a mapping of tokens to the strings and arguments they represent.
+
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`code-square` Detokenization
+      :link: module-pw_tokenizer-detokenization
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Expand tokens back to the strings and arguments they represent.
 
    .. grid-item-card:: :octicon:`info` API reference
       :link: module-pw_tokenizer-api
       :link-type: ref
       :class-item: sales-pitch-cta-secondary
 
-      Get detailed reference information about the pw_tokenizer API.
-
-.. grid:: 2
-
-   .. grid-item-card:: :octicon:`info` CLI reference
-      :link: module-pw_tokenizer-cli
-      :link-type: ref
-      :class-item: sales-pitch-cta-secondary
-
-      Get usage information about pw_tokenizer command line utilities.
-
-   .. grid-item-card:: :octicon:`table` Design
-      :link: module-pw_tokenizer-design
-      :link-type: ref
-      :class-item: sales-pitch-cta-secondary
-
-      Read up on how pw_tokenizer is designed.
+      Detailed reference information about the pw_tokenizer API.
 
 
 .. _module-pw_tokenizer-tokenized-logging-example:
@@ -102,14 +110,15 @@ A quick overview of how the tokenized version works:
   ``"Battery Voltage: %d mV"``. The last 2 bytes are the value of ``voltage``
   converted to a varint using :ref:`module-pw_varint`.
 * The logs are converted back to the original, human-readable message
-  via the :ref:`Detokenization API <module-pw_tokenizer-detokenization-guides>`
-  and a :ref:`token database <module-pw_tokenizer-managing-token-databases>`.
+  via the :ref:`Detokenization API <module-pw_tokenizer-detokenization>`
+  and a :ref:`token database <module-pw_tokenizer-token-databases>`.
 
 .. toctree::
    :hidden:
    :maxdepth: 1
 
-   guides
-   api
-   cli
-   design
+   Get started <get_started>
+   tokenization
+   token_databases
+   detokenization
+   API reference <api>

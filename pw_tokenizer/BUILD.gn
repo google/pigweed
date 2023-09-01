@@ -319,10 +319,11 @@ pw_shared_library("detokenizer_jni") {
 pw_doc_group("docs") {
   sources = [
     "api.rst",
-    "cli.rst",
-    "design.rst",
+    "detokenization.rst",
     "docs.rst",
-    "guides.rst",
+    "get_started.rst",
+    "token_databases.rst",
+    "tokenization.rst",
   ]
   inputs = [ "py/pw_tokenizer/encode.py" ]
   report_deps = [ ":tokenizer_size_report" ]
