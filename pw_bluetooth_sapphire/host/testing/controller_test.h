@@ -51,6 +51,8 @@ class ControllerTest : public ::gtest::TestLoopFixture {
   ControllerTest() = default;
   ~ControllerTest() override = default;
 
+  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
+
  protected:
   void SetUp(pw::bluetooth::Controller::FeaturesBits features, bool initialize_transport = true) {
     std::unique_ptr<pw::bluetooth::Controller> controller =

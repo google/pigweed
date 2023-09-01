@@ -244,8 +244,7 @@ TEST_F(CommandChannelTest, OneSentUntilStatus) {
   size_t cb_event_count = 0u;
   size_t transaction_count = 0u;
 
-  test_device()->SetTransactionCallback([&transaction_count]() { transaction_count++; },
-                                        dispatcher());
+  test_device()->SetTransactionCallback([&transaction_count]() { transaction_count++; });
 
   auto cb = [&cb_event_count](CommandChannel::TransactionId, const EventPacket& event) {
     EXPECT_EQ(hci_spec::kCommandCompleteEventCode, event.event_code());
@@ -323,8 +322,7 @@ TEST_F(CommandChannelTest, QueuedCommands) {
   size_t reset_count = 0u;
   size_t cancel_count = 0u;
 
-  test_device()->SetTransactionCallback([&transaction_count]() { transaction_count++; },
-                                        dispatcher());
+  test_device()->SetTransactionCallback([&transaction_count]() { transaction_count++; });
 
   auto cb = [&reset_count, &cancel_count](CommandChannel::TransactionId id,
                                           const EventPacket& event) {
@@ -511,8 +509,7 @@ TEST_F(CommandChannelTest, AsyncQueueWhenBlocked) {
 
   size_t transaction_count = 0u;
 
-  test_device()->SetTransactionCallback([&transaction_count]() { transaction_count++; },
-                                        dispatcher());
+  test_device()->SetTransactionCallback([&transaction_count]() { transaction_count++; });
 
   EXPECT_CMD_PACKET_OUT(test_device(), req_reset, &rsp_resetstatus, &rsp_bogocomplete);
 
@@ -742,8 +739,7 @@ TEST_F(CommandChannelTest, RemoveQueuedSyncCommandPendingStatus) {
   EXPECT_CMD_PACKET_OUT(test_device(), req_reset, );
 
   int transaction_count = 0u;
-  test_device()->SetTransactionCallback([&transaction_count]() { transaction_count++; },
-                                        dispatcher());
+  test_device()->SetTransactionCallback([&transaction_count]() { transaction_count++; });
 
   auto cmd =
       hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ResetCommandWriter>(hci_spec::kReset);
@@ -782,8 +778,7 @@ TEST_F(CommandChannelTest, RemoveQueuedQueuedSyncCommand) {
   EXPECT_CMD_PACKET_OUT(test_device(), req_reset, );
 
   int transaction_count = 0u;
-  test_device()->SetTransactionCallback([&transaction_count]() { transaction_count++; },
-                                        dispatcher());
+  test_device()->SetTransactionCallback([&transaction_count]() { transaction_count++; });
 
   auto event_cb = [](CommandChannel::TransactionId id, const EventPacket& event, int* event_count) {
     EXPECT_EQ(hci_spec::kCommandCompleteEventCode, event.event_code());
@@ -861,8 +856,7 @@ TEST_F(CommandChannelTest, RemoveQueuedQueuedAsyncCommand) {
   EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteSupportedFeaturesCmd, );
 
   int transaction_count = 0u;
-  test_device()->SetTransactionCallback([&transaction_count]() { transaction_count++; },
-                                        dispatcher());
+  test_device()->SetTransactionCallback([&transaction_count]() { transaction_count++; });
 
   auto event_cb = [](CommandChannel::TransactionId id, const EventPacket& event, int* event_count) {
     (*event_count)++;
@@ -912,8 +906,7 @@ TEST_F(CommandChannelTest, RemoveQueuedCompletedAsyncCommand) {
                         &kReadRemoteSupportedFeaturesRsp, &kReadRemoteSupportedFeaturesComplete);
 
   int transaction_count = 0;
-  test_device()->SetTransactionCallback([&transaction_count] { transaction_count++; },
-                                        dispatcher());
+  test_device()->SetTransactionCallback([&transaction_count] { transaction_count++; });
 
   int event_count = 0;
   auto event_cb = [&event_count](CommandChannel::TransactionId id, const EventPacket& event) {
@@ -946,8 +939,7 @@ TEST_F(CommandChannelTest, RemoveQueuedAsyncCommandPendingUpdate) {
   EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteSupportedFeaturesCmd, );
 
   int transaction_count = 0;
-  test_device()->SetTransactionCallback([&transaction_count] { transaction_count++; },
-                                        dispatcher());
+  test_device()->SetTransactionCallback([&transaction_count] { transaction_count++; });
 
   CommandChannel::TransactionId cmd_id;
   int cmd_events = 0;
@@ -990,8 +982,7 @@ TEST_F(CommandChannelTest, RemoveQueuedAsyncCommandPendingCompletion) {
                         &kReadRemoteSupportedFeaturesRsp);
 
   int transaction_count = 0;
-  test_device()->SetTransactionCallback([&transaction_count] { transaction_count++; },
-                                        dispatcher());
+  test_device()->SetTransactionCallback([&transaction_count] { transaction_count++; });
 
   CommandChannel::TransactionId cmd_id;
   int cmd_events = 0;

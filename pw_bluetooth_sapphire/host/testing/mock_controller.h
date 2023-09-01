@@ -5,11 +5,15 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_MOCK_CONTROLLER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_MOCK_CONTROLLER_H_
 
+#include <lib/async/default.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 
 #include <queue>
 #include <vector>
+
+#include <pw_async/dispatcher.h>
+#include <pw_async_fuchsia/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
@@ -168,15 +172,15 @@ class MockController final : public ControllerTestDoubleBase, public WeakSelf<Mo
   // should be taken to ensure that a callback with a reference to test case
   // variables is not invoked when tearing down.
   using DataCallback = fit::function<void(const ByteBuffer& packet)>;
-  void SetDataCallback(DataCallback callback, async_dispatcher_t* dispatcher);
+  void SetDataCallback(DataCallback callback);
   void ClearDataCallback();
 
   // Callback invoked when a transaction completes. Care should be taken to
   // ensure that a callback with a reference to test case variables is not
   // invoked when tearing down.
   using TransactionCallback = fit::function<void(const ByteBuffer& rx)>;
-  void SetTransactionCallback(TransactionCallback callback, async_dispatcher_t* dispatcher);
-  void SetTransactionCallback(fit::closure callback, async_dispatcher_t* dispatcher);
+  void SetTransactionCallback(TransactionCallback callback);
+  void SetTransactionCallback(fit::closure callback);
   void ClearTransactionCallback();
 
  private:
@@ -193,9 +197,9 @@ class MockController final : public ControllerTestDoubleBase, public WeakSelf<Mo
   std::queue<DataTransaction> data_transactions_;
   std::queue<ScoTransaction> sco_transactions_;
   DataCallback data_callback_;
-  async_dispatcher_t* data_dispatcher_;
   TransactionCallback transaction_callback_;
-  async_dispatcher_t* transaction_dispatcher_;
+
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{async_get_default_dispatcher()};
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(MockController);
 };

@@ -84,15 +84,13 @@ TEST_F(LowEnergyAddressManagerTest, EnablePrivacy) {
   const UInt128 kIrk{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}};
   int hci_cmd_count = 0;
   DeviceAddress addr;
-  test_device()->SetTransactionCallback(
-      [&](const auto& rx) {
-        hci_cmd_count++;
+  test_device()->SetTransactionCallback([&](const auto& rx) {
+    hci_cmd_count++;
 
-        const auto addr_bytes = rx.view(sizeof(hci_spec::CommandHeader));
-        ASSERT_EQ(6u, addr_bytes.size());
-        addr = DeviceAddress(DeviceAddress::Type::kLERandom, DeviceAddressBytes(addr_bytes));
-      },
-      dispatcher());
+    const auto addr_bytes = rx.view(sizeof(hci_spec::CommandHeader));
+    ASSERT_EQ(6u, addr_bytes.size());
+    addr = DeviceAddress(DeviceAddress::Type::kLERandom, DeviceAddressBytes(addr_bytes));
+  });
 
   addr_mgr()->set_irk(kIrk);
   ASSERT_TRUE(addr_mgr()->irk());
@@ -153,15 +151,13 @@ TEST_F(LowEnergyAddressManagerTest, EnablePrivacyNoIrk) {
 
   int hci_cmd_count = 0;
   DeviceAddress addr;
-  test_device()->SetTransactionCallback(
-      [&](const auto& rx) {
-        hci_cmd_count++;
+  test_device()->SetTransactionCallback([&](const auto& rx) {
+    hci_cmd_count++;
 
-        const auto addr_bytes = rx.view(sizeof(hci_spec::CommandHeader));
-        ASSERT_EQ(6u, addr_bytes.size());
-        addr = DeviceAddress(DeviceAddress::Type::kLERandom, DeviceAddressBytes(addr_bytes));
-      },
-      dispatcher());
+    const auto addr_bytes = rx.view(sizeof(hci_spec::CommandHeader));
+    ASSERT_EQ(6u, addr_bytes.size());
+    addr = DeviceAddress(DeviceAddress::Type::kLERandom, DeviceAddressBytes(addr_bytes));
+  });
 
   addr_mgr()->EnablePrivacy(true);
 
@@ -207,7 +203,7 @@ TEST_F(LowEnergyAddressManagerTest, EnablePrivacyHciError) {
   // Requesting the address a second time while address update is disallowed
   // should return the old address without sending HCI commands.
   int hci_count = 0;
-  test_device()->SetTransactionCallback([&] { hci_count++; }, dispatcher());
+  test_device()->SetTransactionCallback([&] { hci_count++; });
   set_random_address_change_allowed(false);
   EXPECT_EQ(kPublic, EnsureLocalAddress());
   EXPECT_EQ(0, hci_count);
@@ -231,7 +227,7 @@ TEST_F(LowEnergyAddressManagerTest, EnablePrivacyWhileAddressChangeIsDisallowed)
   EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kLESetRandomAddress, &kSuccessResponse);
 
   int hci_count = 0;
-  test_device()->SetTransactionCallback([&] { hci_count++; }, dispatcher());
+  test_device()->SetTransactionCallback([&] { hci_count++; });
   set_random_address_change_allowed(false);
 
   // No HCI commands should be sent while disallowed.
@@ -272,7 +268,7 @@ TEST_F(LowEnergyAddressManagerTest, AddressExpiration) {
   // Requesting the address again should keep returning the same address without
   // sending any HCI commands.
   int hci_count = 0;
-  test_device()->SetTransactionCallback([&] { hci_count++; }, dispatcher());
+  test_device()->SetTransactionCallback([&] { hci_count++; });
   EXPECT_EQ(addr1, EnsureLocalAddress());
   EXPECT_EQ(addr1, EnsureLocalAddress());
   EXPECT_EQ(addr1, EnsureLocalAddress());
@@ -314,7 +310,7 @@ TEST_F(LowEnergyAddressManagerTest, AddressExpirationWhileAddressChangeIsDisallo
   // Requesting the address again should keep returning the same address without
   // sending any HCI commands.
   int hci_count = 0;
-  test_device()->SetTransactionCallback([&] { hci_count++; }, dispatcher());
+  test_device()->SetTransactionCallback([&] { hci_count++; });
   EXPECT_EQ(addr1, EnsureLocalAddress());
   EXPECT_EQ(addr1, EnsureLocalAddress());
   EXPECT_EQ(addr1, EnsureLocalAddress());
@@ -362,7 +358,7 @@ TEST_F(LowEnergyAddressManagerTest, DisablePrivacy) {
 
   // No HCI commands should get sent after private address interval expires.
   int hci_count = 0;
-  test_device()->SetTransactionCallback([&] { hci_count++; }, dispatcher());
+  test_device()->SetTransactionCallback([&] { hci_count++; });
   RunLoopFor(kPrivateAddressTimeout);
   EXPECT_EQ(0, hci_count);
   EXPECT_EQ(DeviceAddress::Type::kLEPublic, EnsureLocalAddress().type());
@@ -377,7 +373,7 @@ TEST_F(LowEnergyAddressManagerTest, DisablePrivacyDuringAddressChange) {
   EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kLESetRandomAddress, &kSuccessResponse);
 
   int hci_count = 0;
-  test_device()->SetTransactionCallback([&] { hci_count++; }, dispatcher());
+  test_device()->SetTransactionCallback([&] { hci_count++; });
 
   // Enable and disable in quick succession. HCI command should be sent but the
   // local address shouldn't take effect.

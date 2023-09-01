@@ -582,7 +582,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
 
     RunLoopUntilIdle();
 
-    test_device()->SetTransactionCallback([this] { transaction_count_++; }, dispatcher());
+    test_device()->SetTransactionCallback([this] { transaction_count_++; });
   }
 
   void TearDown() override {
@@ -3239,7 +3239,7 @@ TEST_F(BrEdrConnectionManagerTest,
   EXPECT_EQ(2 * kIncomingConnTransactions, transaction_count());
 
   size_t packet_count = 0;
-  test_device()->SetDataCallback([&](const auto&) { packet_count++; }, dispatcher());
+  test_device()->SetDataCallback([&](const auto&) { packet_count++; });
 
   // Should register connection with ACL Data Channel.
   hci::FakeAclConnection connection_0(acl_data_channel(), kConnectionHandle, LinkType::kACL);

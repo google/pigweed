@@ -166,8 +166,7 @@ TEST_P(LinkTypeConnectionTest, Disconnect) {
   EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommand, &cmd_status_bytes, &disc_cmpl_bytes);
 
   bool callback_called = false;
-  test_device()->SetTransactionCallback([&callback_called] { callback_called = true; },
-                                        dispatcher());
+  test_device()->SetTransactionCallback([&callback_called] { callback_called = true; });
 
   auto connection = NewConnection();
 
@@ -405,8 +404,7 @@ TEST_P(LinkTypeConnectionTest, DisconnectError) {
 
   // The callback should get called regardless of the procedure status.
   bool callback_called = false;
-  test_device()->SetTransactionCallback([&callback_called] { callback_called = true; },
-                                        dispatcher());
+  test_device()->SetTransactionCallback([&callback_called] { callback_called = true; });
 
   auto connection = NewConnection();
 
