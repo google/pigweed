@@ -82,24 +82,23 @@ DynamicByteBuffer FakePeer::CreateInquiryResponseEvent(
     return DynamicByteBuffer{packet.data()};
   }
 
-  size_t param_size =
-      sizeof(hci_spec::InquiryResultWithRSSIEventParams) + sizeof(hci_spec::InquiryResultRSSI);
-  DynamicByteBuffer buffer(sizeof(hci_spec::EventHeader) + param_size);
-  MutablePacketView<hci_spec::EventHeader> event(&buffer, param_size);
-  event.mutable_header()->parameter_total_size = param_size;
+  constexpr size_t packet_size =
+      pw::bluetooth::emboss::InquiryResultWithRssiEvent::MinSizeInBytes() +
+      pw::bluetooth::emboss::InquiryResultWithRssi::IntrinsicSizeInBytes();
+  auto packet =
+      hci::EmbossEventPacket::New<pw::bluetooth::emboss::InquiryResultWithRssiEventWriter>(
+          hci_spec::kInquiryResultEventCode, packet_size);
+  auto view = packet.view_t();
 
   // TODO(jamuraa): simulate clock offset and RSSI
-  event.mutable_header()->event_code = hci_spec::kInquiryResultWithRSSIEventCode;
-  auto payload = event.mutable_payload<hci_spec::InquiryResultWithRSSIEventParams>();
-  payload->num_responses = 1u;
-
-  auto inq_result = reinterpret_cast<hci_spec::InquiryResultRSSI*>(payload->responses);
-  inq_result->bd_addr = address_.value();
-  inq_result->page_scan_repetition_mode = pw::bluetooth::emboss::PageScanRepetitionMode::R0_;
-  inq_result->class_of_device = class_of_device_;
-  inq_result->clock_offset = 0;
-  inq_result->rssi = -30;
-  return buffer;
+  view.num_responses().Write(1);
+  auto response = view.responses()[0];
+  response.bd_addr().CopyFrom(address_.value().view());
+  response.page_scan_repetition_mode().Write(pw::bluetooth::emboss::PageScanRepetitionMode::R0_);
+  response.class_of_device().BackingStorage().WriteUInt(class_of_device_.to_int());
+  response.clock_offset().BackingStorage().WriteUInt(0);
+  response.rssi().Write(-30);
+  return DynamicByteBuffer{packet.data()};
 }
 
 DynamicByteBuffer FakePeer::CreateAdvertisingReportEvent(bool include_scan_rsp) const {

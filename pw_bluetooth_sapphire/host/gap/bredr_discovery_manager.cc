@@ -20,34 +20,24 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 #include <pw_bluetooth/hci_commands.emb.h>
+#include <pw_bluetooth/hci_events.emb.h>
 
 namespace bt::gap {
 
 namespace {
 
-template <typename EventParamType, typename ResultType>
-std::unordered_set<Peer*> ProcessInquiryResult(PeerCache* cache, const hci::EventPacket& event) {
-  std::unordered_set<Peer*> updated;
+std::unordered_set<Peer*> ProcessInquiryResultEvent(
+    PeerCache* cache, const pw::bluetooth::emboss::InquiryResultWithRssiEventView& event) {
   bt_log(TRACE, "gap-bredr", "inquiry result received");
-
-  const size_t event_payload_size = event.view().payload_size();
-  BT_ASSERT_MSG(event_payload_size >= sizeof(EventParamType), "undersized (%zu) inquiry event",
-                event_payload_size);
-  size_t result_size = event_payload_size - sizeof(EventParamType);
-  BT_ASSERT_MSG(result_size % sizeof(ResultType) == 0, "wrong size result (%zu %% %zu != 0)",
-                result_size, sizeof(ResultType));
-
-  const auto params_data = event.view().payload_data();
-  const auto num_responses = params_data.ReadMember<&EventParamType::num_responses>();
-  for (int i = 0; i < num_responses; i++) {
-    const auto response = params_data.ReadMember<&EventParamType::responses>(i);
-    DeviceAddress addr(DeviceAddress::Type::kBREDR, response.bd_addr);
+  std::unordered_set<Peer*> updated;
+  auto responses = event.responses();
+  for (auto response : responses) {
+    DeviceAddress addr(DeviceAddress::Type::kBREDR, DeviceAddressBytes(response.bd_addr()));
     Peer* peer = cache->FindByAddress(addr);
     if (!peer) {
       peer = cache->NewPeer(addr, /*connectable=*/true);
     }
     BT_ASSERT(peer);
-
     peer->MutBrEdr().SetInquiryData(response);
     updated.insert(peer);
   }
@@ -98,7 +88,7 @@ BrEdrDiscoveryManager::BrEdrDiscoveryManager(hci::CommandChannel::WeakPtr cmd,
   BT_DEBUG_ASSERT(result_handler_id_);
   rssi_handler_id_ =
       cmd_->AddEventHandler(hci_spec::kInquiryResultWithRSSIEventCode,
-                            cpp20::bind_front(&BrEdrDiscoveryManager::InquiryResultWithRSSI, this));
+                            cpp20::bind_front(&BrEdrDiscoveryManager::InquiryResultWithRssi, this));
   BT_DEBUG_ASSERT(rssi_handler_id_);
   eir_handler_id_ =
       cmd_->AddEventHandler(hci_spec::kExtendedInquiryResultEventCode,
@@ -256,13 +246,10 @@ hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::InquiryResult(
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
-hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::InquiryResultWithRSSI(
-    const hci::EventPacket& event) {
-  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kInquiryResultWithRSSIEventCode);
-  std::unordered_set<Peer*> peers =
-      ProcessInquiryResult<hci_spec::InquiryResultWithRSSIEventParams, hci_spec::InquiryResultRSSI>(
-          cache_, event);
-
+hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::InquiryResultWithRssi(
+    const hci::EmbossEventPacket& event) {
+  std::unordered_set<Peer*> peers = ProcessInquiryResultEvent(
+      cache_, event.view<pw::bluetooth::emboss::InquiryResultWithRssiEventView>());
   NotifyPeersUpdated(peers);
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }

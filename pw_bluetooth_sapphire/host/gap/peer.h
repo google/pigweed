@@ -365,7 +365,7 @@ class Peer final {
     // the Bluetooth controller. Each field should be encoded in little-endian
     // byte order.
     void SetInquiryData(const pw::bluetooth::emboss::InquiryResultView& view);
-    void SetInquiryData(const hci_spec::InquiryResultRSSI& value);
+    void SetInquiryData(const pw::bluetooth::emboss::InquiryResultWithRssiView& view);
     void SetInquiryData(const hci_spec::ExtendedInquiryResultEventParams& value);
 
     // Register a connection that is in the request/initializing state. A token is returned that

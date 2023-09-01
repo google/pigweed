@@ -92,7 +92,8 @@ class BrEdrDiscoveryManager final {
   hci::CommandChannel::EventCallbackResult InquiryResult(const hci::EmbossEventPacket& event);
 
   // Used to receive Inquiry Results.
-  hci::CommandChannel::EventCallbackResult InquiryResultWithRSSI(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult InquiryResultWithRssi(
+      const hci::EmbossEventPacket& event);
 
   // Used to receive Inquiry Results.
   hci::CommandChannel::EventCallbackResult ExtendedInquiryResult(const hci::EventPacket& event);

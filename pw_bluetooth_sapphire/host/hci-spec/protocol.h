@@ -863,39 +863,6 @@ constexpr EventCode kDataBufferOverflowEventCode = 0x1A;
 // Inquiry Result with RSSI Event (v1.2) (BR/EDR)
 constexpr EventCode kInquiryResultWithRSSIEventCode = 0x22;
 
-struct InquiryResultRSSI {
-  // The address for the device which responded.
-  DeviceAddressBytes bd_addr;
-
-  // The Page Scan Repetition Mode being used by the remote device.
-  pw::bluetooth::emboss::PageScanRepetitionMode page_scan_repetition_mode;
-
-  // Reserved (no meaning as of v1.2)
-  uint8_t page_scan_period_mode;
-
-  // Class of device
-  DeviceClass class_of_device;
-
-  // Clock Offset
-  // the 15 lower bits represent bits 16-2 of CLKNPeripheral-CLK
-  // the most significant bit is reserved
-  uint16_t clock_offset;
-
-  // RSSI
-  // Valid range: -127 to +20
-  int8_t rssi;
-} __attribute__((packed));
-
-struct InquiryResultWithRSSIEventParams {
-  InquiryResultWithRSSIEventParams() = default;
-  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(InquiryResultWithRSSIEventParams);
-
-  // The number of responses included.
-  uint8_t num_responses;
-
-  InquiryResultRSSI responses[];
-} __attribute__((packed));
-
 // ============================================================
 // Read Remote Extended Features Complete Event (v1.1) (BR/EDR)
 constexpr EventCode kReadRemoteExtendedFeaturesCompleteEventCode = 0x23;

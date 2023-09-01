@@ -1047,7 +1047,7 @@ class PeerCacheTest_UpdateCallbackTest : public PeerCacheTest {
     ASSERT_TRUE(NewPeer(*DevAddr, true));
     cache()->add_peer_updated_callback([this](const auto&) { was_called_ = true; });
     ir_.view().bd_addr().CopyFrom(peer()->address().value().view());
-    irr_.bd_addr = peer()->address().value();
+    irr_.view().bd_addr().CopyFrom(peer()->address().value().view());
     eirep_.bd_addr = peer()->address().value();
     eir_data().SetToZeros();
     EXPECT_FALSE(was_called_);
@@ -1057,7 +1057,7 @@ class PeerCacheTest_UpdateCallbackTest : public PeerCacheTest {
 
  protected:
   pw::bluetooth::emboss::InquiryResultWriter ir() { return ir_.view(); }
-  hci_spec::InquiryResultRSSI& irr() { return irr_; }
+  pw::bluetooth::emboss::InquiryResultWithRssiWriter irr() { return irr_.view(); }
   hci_spec::ExtendedInquiryResultEventParams& eirep() { return eirep_; }
 
   MutableBufferView eir_data() {
@@ -1070,7 +1070,7 @@ class PeerCacheTest_UpdateCallbackTest : public PeerCacheTest {
  private:
   bool was_called_;
   StaticPacket<pw::bluetooth::emboss::InquiryResultWriter> ir_;
-  hci_spec::InquiryResultRSSI irr_;
+  StaticPacket<pw::bluetooth::emboss::InquiryResultWithRssiWriter> irr_;
   hci_spec::ExtendedInquiryResultEventParams eirep_;
 };
 
@@ -1176,24 +1176,27 @@ TEST_F(PeerCacheBrEdrUpdateCallbackTest,
 
 TEST_F(PeerCacheBrEdrUpdateCallbackTest,
        SetBrEdrInquiryDataFromInquiryResultRSSITriggersUpdateCallbackOnDeviceClassSet) {
-  irr().class_of_device = kTestDeviceClass;
+  irr().class_of_device().major_device_class().Write(
+      pw::bluetooth::emboss::MajorDeviceClass::PHONE);
   peer()->MutBrEdr().SetInquiryData(irr());
   EXPECT_TRUE(was_called());
 }
 
 TEST_F(PeerCacheBrEdrUpdateCallbackTest,
        SetBrEdrInquiryDataFromInquiryResultRSSIUpdateCallbackProvidesUpdatedPeer) {
-  irr().class_of_device = kTestDeviceClass;
+  irr().class_of_device().major_device_class().Write(
+      pw::bluetooth::emboss::MajorDeviceClass::PHONE);
   cache()->add_peer_updated_callback([](const auto& updated_peer) {
     ASSERT_TRUE(updated_peer.bredr()->device_class());
-    EXPECT_EQ(DeviceClass::MajorClass(0x02), updated_peer.bredr()->device_class()->major_class());
+    EXPECT_EQ(DeviceClass::MajorClass::kPhone, updated_peer.bredr()->device_class()->major_class());
   });
   peer()->MutBrEdr().SetInquiryData(irr());
 }
 
 TEST_F(PeerCacheBrEdrUpdateCallbackTest,
        SetBrEdrInquiryDataFromInquiryResultRSSIDoesNotTriggerUpdateCallbackOnSameDeviceClass) {
-  irr().class_of_device = kTestDeviceClass;
+  irr().class_of_device().major_device_class().Write(
+      pw::bluetooth::emboss::MajorDeviceClass::PHONE);
   peer()->MutBrEdr().SetInquiryData(irr());
   ASSERT_TRUE(was_called());
 
@@ -1204,12 +1207,12 @@ TEST_F(PeerCacheBrEdrUpdateCallbackTest,
 
 TEST_F(PeerCacheBrEdrUpdateCallbackTest,
        SetBrEdrInquiryDataFromInquiryResultRSSIDoesNotTriggerUpdateCallbackOnRSSI) {
-  irr().rssi = 1;
+  irr().rssi().Write(1);
   peer()->MutBrEdr().SetInquiryData(irr());
   ASSERT_TRUE(was_called());  // Callback due to |class_of_device|.
 
   ClearWasCalled();
-  irr().rssi = 20;
+  irr().rssi().Write(20);
   peer()->MutBrEdr().SetInquiryData(irr());
   EXPECT_FALSE(was_called());
 }
@@ -1579,13 +1582,13 @@ TEST_F(PeerCacheExpirationTest, SetBrEdrInquiryDataFromInquiryResultUpdatesExpir
 }
 
 TEST_F(PeerCacheExpirationTest, SetBrEdrInquiryDataFromInquiryResultRSSIUpdatesExpiration) {
-  hci_spec::InquiryResultRSSI irr;
+  StaticPacket<pw::bluetooth::emboss::InquiryResultWithRssiWriter> irr;
   ASSERT_TRUE(IsDefaultPeerPresent());
-  irr.bd_addr = GetDefaultPeer()->address().value();
+  irr.view().bd_addr().CopyFrom(GetDefaultPeer()->address().value().view());
 
   RunLoopFor(kCacheTimeout - zx::msec(1));
   ASSERT_TRUE(IsDefaultPeerPresent());
-  GetDefaultPeer()->MutBrEdr().SetInquiryData(irr);
+  GetDefaultPeer()->MutBrEdr().SetInquiryData(irr.view());
 
   RunLoopFor(zx::msec(1));
   EXPECT_TRUE(IsDefaultPeerPresent());
