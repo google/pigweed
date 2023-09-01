@@ -598,14 +598,14 @@ struct LinkKeyRequestEvent:
 struct LinkKeyNotificationEvent:
   -- Link Key Notification Event (v1.1) (BR/EDR)
   let hdr_size = hci.EventHeader.$size_in_bytes
-  0     [+hdr_size]                   hci.EventHeader  header
-  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr       bd_addr
+  0     [+hdr_size]                    hci.EventHeader  header
+  $next [+hci.BdAddr.$size_in_bytes]   hci.BdAddr       bd_addr
     -- The address for the device for which a new link key has been generated.
 
-  $next [+16]                         UInt:8[16]       link_key
+  $next [+hci.LinkKey.$size_in_bytes]  hci.LinkKey      link_key
     -- Link key for the associated address.
 
-  $next [+1]                          KeyType          key_type
+  $next [+1]                           KeyType          key_type
     -- Type of key used when pairing.
 
 
@@ -638,8 +638,8 @@ struct InquiryResultWithRssi:
 struct InquiryResultWithRssiEvent:
   -- Inquiry Result with RSSI Event (v1.2) (BR/EDR)
   let hdr_size = hci.EventHeader.$size_in_bytes
-  0     [+hdr_size]                    hci.EventHeader          header
-  $next [+1]                           UInt                     num_responses
+  0     [+hdr_size]                     hci.EventHeader          header
+  $next [+1]                            UInt                     num_responses
     -- The number of responses included.
 
   let response_size = InquiryResultWithRssi.$size_in_bytes

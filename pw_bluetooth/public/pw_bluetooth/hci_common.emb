@@ -438,6 +438,10 @@ enum AuthenticationRequirements:
 
 # inclusive-language: enable
 
+
+struct LinkKey:
+  0 [+16]  UInt:8[16]  value
+
 # ========================= HCI packet headers ==========================
 
 

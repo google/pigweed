@@ -22,6 +22,7 @@ import "hci_common.emb" as hci
 [(cpp) namespace: "pw::bluetooth::emboss"]
 # =========================== Constants =================================
 
+
 enum InquiryAccessCode:
   -- General- and Device-specific Inquiry Access Codes (DIACs) for use in Inquiry
   -- command LAP fields.
@@ -670,10 +671,6 @@ struct RejectConnectionRequestCommand:
     -- Must be one of CONNECTION_REJECTED* from hci.StatusCode in this file
 
 
-struct LinkKey:
-  0 [+16]  UInt:8[16]  value
-
-
 struct LinkKeyRequestReplyCommand:
   -- 7.1.10 Link Key Request Reply command (v1.1) (BR/EDR)
   -- HCI_Link_Key_Request_Reply
@@ -682,8 +679,8 @@ struct LinkKeyRequestReplyCommand:
   $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr         bd_addr
     -- The 48-bit BD_ADDR of the remote device requesting the connection.
 
-  let bredr_link_key_size = LinkKey.$size_in_bytes
-  $next [+bredr_link_key_size]        LinkKey            link_key
+  let bredr_link_key_size = hci.LinkKey.$size_in_bytes
+  $next [+bredr_link_key_size]        hci.LinkKey        link_key
     -- Link key to use for the connection with the peer device.
 
 
@@ -869,14 +866,14 @@ struct IoCapabilityRequestReplyCommand:
   -- 7.1.29 IO Capability Request Reply command (v2.1 + EDR) (BR/EDR)
   -- HCI_IO_Capability_Request_Reply
   let hdr_size = hci.CommandHeader.$size_in_bytes
-  0     [+hdr_size]                   hci.CommandHeader           header
-  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                  bd_addr
+  0     [+hdr_size]                   hci.CommandHeader               header
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                      bd_addr
     -- The BD_ADDR of the remote device involved in simple pairing process
 
   $next [+1]                          hci.IoCapability                io_capability
     -- The IO capabilities of this device.
 
-  $next [+1]                          OobDataPresent              oob_data_present
+  $next [+1]                          OobDataPresent                  oob_data_present
     -- Whether there is out-of-band data present, and what type.
 
   $next [+1]                          hci.AuthenticationRequirements  authentication_requirements
@@ -946,10 +943,10 @@ struct IoCapabilityRequestNegativeReplyCommand:
 
 struct CodecId:
   0     [+1]  hci.CodingFormat  coding_format
-  $next [+2]  UInt          company_id
+  $next [+2]  UInt              company_id
     -- See assigned numbers.
 
-  $next [+2]  UInt          vendor_codec_id
+  $next [+2]  UInt              vendor_codec_id
     -- Shall be ignored if |coding_format| is not VENDOR_SPECIFIC.
 
 
@@ -958,10 +955,10 @@ struct SynchronousConnectionParameters:
 
   struct VendorCodingFormat:
     0     [+1]  hci.CodingFormat  coding_format
-    $next [+2]  UInt          company_id
+    $next [+2]  UInt              company_id
       -- See assigned numbers.
 
-    $next [+2]  UInt          vendor_codec_id
+    $next [+2]  UInt              vendor_codec_id
       -- Shall be ignored if |coding_format| is not VENDOR_SPECIFIC.
 
   enum ScoRetransmissionEffort:
@@ -2152,24 +2149,24 @@ struct LEEnableEncryptionCommand:
   -- 7.8.24 LE Enable Encryption command (v4.0) (LE)
   -- HCI_LE_Enable_Encryption
   let hdr_size = hci.CommandHeader.$size_in_bytes
-  0     [+hdr_size]                hci.CommandHeader  header
-  $next [+2]                       UInt               connection_handle
+  0     [+hdr_size]                    hci.CommandHeader  header
+  $next [+2]                           UInt               connection_handle
     [requires: 0x0000 <= this <= 0x0EFF]
 
-  $next [+8]                       UInt               random_number
-  $next [+2]                       UInt               encrypted_diversifier
-  $next [+LinkKey.$size_in_bytes]  LinkKey            long_term_key
+  $next [+8]                           UInt               random_number
+  $next [+2]                           UInt               encrypted_diversifier
+  $next [+hci.LinkKey.$size_in_bytes]  hci.LinkKey        long_term_key
 
 
 struct LELongTermKeyRequestReplyCommand:
   -- 7.8.25 LE Long Term Key Request Reply command (v4.0) (LE)
   -- HCI_LE_Long_Term_Key_Request_Reply
   let hdr_size = hci.CommandHeader.$size_in_bytes
-  0     [+hdr_size]                hci.CommandHeader  header
-  $next [+2]                       UInt               connection_handle
+  0     [+hdr_size]                    hci.CommandHeader  header
+  $next [+2]                           UInt               connection_handle
     [requires: 0x0000 <= this <= 0x0EFF]
 
-  $next [+LinkKey.$size_in_bytes]  LinkKey            long_term_key
+  $next [+hci.LinkKey.$size_in_bytes]  hci.LinkKey        long_term_key
 
 
 struct LELongTermKeyRequestNegativeReplyCommand:
