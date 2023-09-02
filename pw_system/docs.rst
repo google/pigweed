@@ -169,3 +169,21 @@ See :ref:`module-pw_system-cli` for detailed CLI usage information.
    :maxdepth: 1
 
    cli
+
+-------------------
+Multi-endpoint mode
+-------------------
+
+The default configuration serves all its traffic with the same
+channel ID and RPC address. There is an alternative mode that assigns a separate
+channel ID and address for logging. This can be useful if you want to separate logging and primary RPC to
+``pw_system`` among multiple clients.
+
+To use this mode, add the following to ``gn args out``:
+
+.. code-block::
+
+   pw_system_USE_MULTI_ENDPOINT_CONFIG = true
+
+The settings for the channel ID and address can be found in the target
+``//pw_system:multi_endpoint_rpc_overrides``.

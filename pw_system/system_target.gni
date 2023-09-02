@@ -57,6 +57,18 @@ PW_SYSTEM_SCHEDULER = {
   NATIVE = "native"
 }
 
+declare_args() {
+  # This argument is intended to be user-facing and should NOT be set by a
+  # toolchain. This switches ALL pw_system_target toolchains to use the
+  # multi_endpoint_rpc_config config to illustrate a multi-endpoint mode that
+  # isolates logging and RPC traffic via HDLC multiplexing.
+  #
+  # If you would like to use this in production, it is strongly recommended that
+  # you instead just add the appropriate defines to your target's toolchain
+  # definition.
+  pw_system_USE_MULTI_ENDPOINT_CONFIG = false
+}
+
 # Defines a target toolchain, automatically setting many required build
 # arguments to simplify instantiation of a target.
 #
@@ -113,6 +125,10 @@ template("pw_system_target") {
     # TODO(amontanez): This should be set to a "$dir_pw_unit_test:rpc_main"
     # when RPC is working.
     pw_unit_test_MAIN = "$dir_pw_unit_test:logging_main"
+
+    if (pw_system_USE_MULTI_ENDPOINT_CONFIG) {
+      pw_system_CONFIG = "$dir_pw_system:multi_endpoint_rpc_config"
+    }
   }
 
   # Populate architecture-specific build args.

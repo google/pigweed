@@ -16,16 +16,24 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <mutex>
 
 #include "pw_assert/check.h"
 #include "pw_hdlc/encoded_size.h"
 #include "pw_hdlc/rpc_channel.h"
 #include "pw_hdlc/rpc_packets.h"
 #include "pw_log/log.h"
+#include "pw_rpc/channel.h"
 #include "pw_sync/mutex.h"
 #include "pw_system/config.h"
 #include "pw_system/io.h"
 #include "pw_system/rpc_server.h"
+
+#if PW_SYSTEM_DEFAULT_CHANNEL_ID != PW_SYSTEM_LOGGING_CHANNEL_ID && \
+    PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS == PW_SYSTEM_LOGGING_RPC_HDLC_ADDRESS
+#error \
+    "Default and logging addresses must be different to support multiple channels."
+#endif
 
 namespace pw::system {
 namespace {
@@ -35,10 +43,50 @@ constexpr size_t kMaxTransmissionUnit = PW_SYSTEM_MAX_TRANSMISSION_UNIT;
 static_assert(kMaxTransmissionUnit ==
               hdlc::MaxEncodedFrameSize(rpc::cfg::kEncodingBufferSizeBytes));
 
+#if PW_SYSTEM_DEFAULT_CHANNEL_ID == PW_SYSTEM_LOGGING_CHANNEL_ID
 hdlc::FixedMtuChannelOutput<kMaxTransmissionUnit> hdlc_channel_output(
     GetWriter(), PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS, "HDLC channel");
 rpc::Channel channels[] = {
     rpc::Channel::Create<kDefaultRpcChannelId>(&hdlc_channel_output)};
+#else
+class SynchronizedChannelOutput : public rpc::ChannelOutput {
+ public:
+  SynchronizedChannelOutput(stream::Writer& writer,
+                            uint64_t address,
+                            const char* channel_name)
+      : rpc::ChannelOutput(channel_name),
+        inner_(writer, address, channel_name) {}
+
+  Status Send(span<const std::byte> buffer) override {
+    std::lock_guard guard(mtx_);
+    auto s = inner_.Send(buffer);
+    return s;
+  }
+
+  size_t MaximumTransmissionUnit() override {
+    std::lock_guard guard(mtx_);
+    auto s = inner_.MaximumTransmissionUnit();
+    return s;
+  }
+
+ private:
+  sync::Mutex mtx_;
+  hdlc::FixedMtuChannelOutput<kMaxTransmissionUnit> inner_ PW_GUARDED_BY(mtx_);
+};
+
+SynchronizedChannelOutput hdlc_channel_output[] = {
+    SynchronizedChannelOutput(GetWriter(),
+                              PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS,
+                              "HDLC default channel"),
+    SynchronizedChannelOutput(GetWriter(),
+                              PW_SYSTEM_LOGGING_RPC_HDLC_ADDRESS,
+                              "HDLC logging channel"),
+};
+rpc::Channel channels[] = {
+    rpc::Channel::Create<kDefaultRpcChannelId>(&hdlc_channel_output[0]),
+    rpc::Channel::Create<kLoggingRpcChannelId>(&hdlc_channel_output[1]),
+};
+#endif
 rpc::Server server(channels);
 
 constexpr size_t kDecoderBufferSize =
@@ -69,7 +117,8 @@ class RpcDispatchThread final : public thread::ThreadCore {
         for (std::byte byte : ret_val.value()) {
           if (auto result = decoder.Process(byte); result.ok()) {
             hdlc::Frame& frame = result.value();
-            if (frame.address() == PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS) {
+            if (frame.address() == PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS ||
+                frame.address() == PW_SYSTEM_LOGGING_RPC_HDLC_ADDRESS) {
               server.ProcessPacket(frame.data());
             }
           }

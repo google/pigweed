@@ -46,7 +46,7 @@ std::array<std::byte, PW_SYSTEM_MAX_LOG_ENTRY_SIZE> log_decode_buffer
     PW_GUARDED_BY(drains_mutex);
 
 std::array<RpcLogDrain, 1> drains{{
-    RpcLogDrain(kDefaultRpcChannelId,
+    RpcLogDrain(kLoggingRpcChannelId,
                 log_decode_buffer,
                 drains_mutex,
                 RpcLogDrain::LogDrainErrorHandling::kIgnoreWriterErrors),

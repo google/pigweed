@@ -39,6 +39,33 @@ config("public_include_path") {
   include_dirs = [ "public" ]
 }
 
+# This config moves RPC logging to a separate RPC channel and HDLC
+# address. This does two things:
+#   * The separate RPC channel allows logging traffic to be treated as
+#     if it is being sent to a different client via a separate RPC
+#     channel. This illustrates the ability for an RPC server to
+#     communicate to multiple clients over multiple physical links.
+#   * The separate HDLC address completely isolates typical RPC traffic
+#     from logging traffic by communicating to a different HDLC endpoint
+#     address. This effectively creates two virtual data pipes over the
+#     same physical link.
+#
+# This is mostly to illustrate pw_rpc's capability to route and multiplex
+# traffic.
+config("multi_endpoint_rpc_overrides") {
+  defines = [
+    "PW_SYSTEM_LOGGING_CHANNEL_ID=10000",
+    "PW_SYSTEM_LOGGING_RPC_HDLC_ADDRESS=10000",
+  ]
+}
+
+# The Pigweed config pattern requires a pw_source_set to provide the
+# configuration defines. This provides the flags in
+# multi_endpoint_rpc_overrides.
+pw_source_set("multi_endpoint_rpc_config") {
+  public_configs = [ ":multi_endpoint_rpc_overrides" ]
+}
+
 pw_source_set("config") {
   sources = [ "public/pw_system/config.h" ]
   public_configs = [ ":public_include_path" ]
