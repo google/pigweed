@@ -26,7 +26,12 @@ import argparse
 import os
 import sys
 
-from .colors import Color, enable_colors  # type: ignore
+try:
+    from pw_env_setup.colors import Color, enable_colors
+except ImportError:
+    # Load from this directory if pw_env_setup is not available.
+    from colors import Color, enable_colors  # type: ignore
+
 
 _PIGWEED_BANNER = u'''
  ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
@@ -42,7 +47,21 @@ def print_banner(bootstrap, no_shell_file):
     enable_colors()
 
     print(Color.green('\n  WELCOME TO...'))
-    print(Color.magenta(_PIGWEED_BANNER))
+
+    banner_file = os.environ.get('PW_BRANDING_BANNER', None)
+    banner_str = None
+    if banner_file:
+        try:
+            banner_str = open(
+                banner_file, 'r', encoding='utf-8', errors='replace'
+            ).read()
+        except FileNotFoundError:
+            pass
+    if banner_str:
+        print()
+        print(banner_str, end='')
+    else:
+        print(Color.magenta(_PIGWEED_BANNER), end='')
 
     if bootstrap:
         print(
