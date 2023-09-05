@@ -102,7 +102,6 @@ py_test(
     ],
     deps = [
         ":pw_tokenizer",
-        "@rules_python//python/runfiles",
     ],
 )
 
@@ -114,7 +113,6 @@ py_test(
     ],
     deps = [
         ":pw_tokenizer",
-        "@rules_python//python/runfiles",
     ],
 )
 
