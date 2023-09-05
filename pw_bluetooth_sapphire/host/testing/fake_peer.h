@@ -132,10 +132,10 @@ class FakePeer {
   bool force_pending_connect() const { return force_pending_connect_; }
   void set_force_pending_connect(bool value) { force_pending_connect_ = value; }
 
-  void set_last_connection_request_link_type(std::optional<hci_spec::LinkType> type) {
+  void set_last_connection_request_link_type(std::optional<pw::bluetooth::emboss::LinkType> type) {
     last_connection_request_link_type_ = type;
   }
-  const std::optional<hci_spec::LinkType>& last_connection_request_link_type() const {
+  const std::optional<pw::bluetooth::emboss::LinkType>& last_connection_request_link_type() const {
     return last_connection_request_link_type_;
   }
 
@@ -190,7 +190,7 @@ class FakePeer {
   pw::bluetooth::emboss::StatusCode connect_status_;
   pw::bluetooth::emboss::StatusCode connect_response_;
   bool force_pending_connect_;  // Causes connection requests to remain pending.
-  std::optional<hci_spec::LinkType> last_connection_request_link_type_;
+  std::optional<pw::bluetooth::emboss::LinkType> last_connection_request_link_type_;
 
   hci_spec::LEConnectionParameters le_params_;
 

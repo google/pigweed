@@ -130,11 +130,9 @@ hci::CommandChannel::EventHandlerId ScoConnectionManager::AddEventHandler(
 }
 
 hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnSynchronousConnectionComplete(
-    const hci::EventPacket& event) {
-  BT_ASSERT(event.event_code() == hci_spec::kSynchronousConnectionCompleteEventCode);
-
-  const auto& params = event.params<hci_spec::SynchronousConnectionCompleteEventParams>();
-  DeviceAddress addr(DeviceAddress::Type::kBREDR, params.bd_addr);
+    const hci::EmbossEventPacket& event) {
+  const auto params = event.view<pw::bluetooth::emboss::SynchronousConnectionCompleteEventView>();
+  DeviceAddress addr(DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr()));
 
   // Ignore events from other peers.
   if (addr != peer_address_) {
@@ -152,13 +150,14 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnSynchronousConn
   }
 
   // The controller should only report SCO and eSCO link types (other values are reserved).
-  auto link_type = params.link_type;
-  if (link_type != hci_spec::LinkType::kSCO && link_type != hci_spec::LinkType::kExtendedSCO) {
+  pw::bluetooth::emboss::LinkType link_type = params.link_type().Read();
+  if (link_type != pw::bluetooth::emboss::LinkType::SCO &&
+      link_type != pw::bluetooth::emboss::LinkType::ESCO) {
     bt_log(ERROR, "gap-sco", "Received SynchronousConnectionComplete event with invalid link type");
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  auto connection_handle = letoh16(params.connection_handle);
+  hci_spec::ConnectionHandle connection_handle = params.connection_handle().Read();
   auto link = std::make_unique<hci::ScoConnection>(connection_handle, local_address_, peer_address_,
                                                    transport_);
 

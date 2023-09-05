@@ -387,7 +387,7 @@ void FakeController::SendConnectionRequest(const DeviceAddress& addr,
                                            pw::bluetooth::emboss::LinkType link_type) {
   FakePeer* peer = FindPeer(addr);
   BT_ASSERT(peer);
-  peer->set_last_connection_request_link_type(static_cast<hci_spec::LinkType>(link_type));
+  peer->set_last_connection_request_link_type(link_type);
 
   bt_log(DEBUG, "fake-hci", "sending connection request (addr: %s, link: %s)", bt_str(addr),
          hci_spec::LinkTypeToString(link_type));
@@ -1675,19 +1675,21 @@ void FakeController::OnEnhancedAcceptSynchronousConnectionRequestCommand(
   hci_spec::ConnectionHandle sco_handle = ++next_conn_handle_;
   peer->AddLink(sco_handle);
 
-  hci_spec::SynchronousConnectionCompleteEventParams response;
-  response.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-  response.connection_handle = htole16(sco_handle);
-  response.bd_addr = peer->address().value();
-  response.link_type = peer->last_connection_request_link_type().value();
-  response.transmission_interval = 1;
-  response.retransmission_window = 2;
-  response.rx_packet_length = 3;
-  response.tx_packet_length = 4;
-  response.air_coding_format = static_cast<pw::bluetooth::emboss::CodingFormat>(
+  auto packet =
+      hci::EmbossEventPacket::New<pw::bluetooth::emboss::SynchronousConnectionCompleteEventWriter>(
+          hci_spec::kSynchronousConnectionCompleteEventCode);
+  auto view = packet.view_t();
+  view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  view.connection_handle().Write(sco_handle);
+  view.bd_addr().CopyFrom(peer->address().value().view());
+  view.link_type().Write(peer->last_connection_request_link_type().value());
+  view.transmission_interval().Write(1);
+  view.retransmission_window().Write(2);
+  view.rx_packet_length().Write(3);
+  view.tx_packet_length().Write(4);
+  view.air_mode().Write(
       params.connection_parameters().transmit_coding_format().coding_format().Read());
-  SendEvent(hci_spec::kSynchronousConnectionCompleteEventCode,
-            BufferView(&response, sizeof(response)));
+  SendCommandChannelPacket(packet.data());
 }
 
 void FakeController::OnEnhancedSetupSynchronousConnectionCommand(
@@ -1706,19 +1708,21 @@ void FakeController::OnEnhancedSetupSynchronousConnectionCommand(
   hci_spec::ConnectionHandle sco_handle = ++next_conn_handle_;
   peer->AddLink(sco_handle);
 
-  hci_spec::SynchronousConnectionCompleteEventParams response;
-  response.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-  response.connection_handle = htole16(sco_handle);
-  response.bd_addr = peer->address().value();
-  response.link_type = hci_spec::LinkType::kExtendedSCO;
-  response.transmission_interval = 1;
-  response.retransmission_window = 2;
-  response.rx_packet_length = 3;
-  response.tx_packet_length = 4;
-  response.air_coding_format = static_cast<pw::bluetooth::emboss::CodingFormat>(
+  auto packet =
+      hci::EmbossEventPacket::New<pw::bluetooth::emboss::SynchronousConnectionCompleteEventWriter>(
+          hci_spec::kSynchronousConnectionCompleteEventCode);
+  auto view = packet.view_t();
+  view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  view.connection_handle().Write(sco_handle);
+  view.bd_addr().CopyFrom(peer->address().value().view());
+  view.link_type().Write(pw::bluetooth::emboss::LinkType::ESCO);
+  view.transmission_interval().Write(1);
+  view.retransmission_window().Write(2);
+  view.rx_packet_length().Write(3);
+  view.tx_packet_length().Write(4);
+  view.air_mode().Write(
       params.connection_parameters().transmit_coding_format().coding_format().Read());
-  SendEvent(hci_spec::kSynchronousConnectionCompleteEventCode,
-            BufferView(&response, sizeof(response)));
+  SendCommandChannelPacket(packet.data());
 }
 
 void FakeController::OnLEReadRemoteFeaturesCommand(

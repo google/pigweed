@@ -149,7 +149,6 @@ bool EventPacket::ToStatusCode(pw::bluetooth::emboss::StatusCode* out_code) cons
     CASE_EMBOSS_EVENT_STATUS(RemoteNameRequestComplete);
     CASE_EVENT_STATUS(ReadRemoteSupportedFeaturesComplete);
     CASE_EVENT_STATUS(SimplePairingComplete);
-    CASE_EVENT_STATUS(SynchronousConnectionComplete);
     CASE_EMBOSS_EVENT_STATUS(InquiryComplete);
     case hci_spec::kEncryptionChangeEventCode:
       return StatusCodeFromEmbossEvent<pw::bluetooth::emboss::EncryptionChangeEventV1View>(

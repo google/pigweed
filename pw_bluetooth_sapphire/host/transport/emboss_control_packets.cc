@@ -73,6 +73,8 @@ std::optional<pw::bluetooth::emboss::StatusCode> EmbossEventPacket::StatusCode()
       return StatusCodeFromView<pw::bluetooth::emboss::EncryptionChangeEventV1View>();
     case hci_spec::kRoleChangeEventCode:
       return StatusCodeFromView<pw::bluetooth::emboss::RoleChangeEventView>();
+    case hci_spec::kSynchronousConnectionCompleteEventCode:
+      return StatusCodeFromView<pw::bluetooth::emboss::SynchronousConnectionCompleteEventView>();
     case hci_spec::kVendorDebugEventCode: {
       hci_spec::EventCode subevent_code =
           view<pw::bluetooth::emboss::VendorDebugEventView>().subevent_code().Read();

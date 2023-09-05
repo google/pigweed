@@ -871,37 +871,6 @@ constexpr EventCode kReadRemoteExtendedFeaturesCompleteEventCode = 0x23;
 // Synchronous Connection Complete Event (BR/EDR)
 constexpr EventCode kSynchronousConnectionCompleteEventCode = 0x2C;
 
-struct SynchronousConnectionCompleteEventParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // A connection handle for the newly created SCO connection.
-  ConnectionHandle connection_handle;
-
-  // BD_ADDR of the other connected device forming the connection.
-  DeviceAddressBytes bd_addr;
-
-  LinkType link_type;
-
-  // Time between two consecutive eSCO instants measured in slots. Shall be
-  // zero for SCO links.
-  uint8_t transmission_interval;
-
-  // The size of the retransmission window measured in slots. Shall be zero for
-  // SCO links.
-  uint8_t retransmission_window;
-
-  // Length in bytes of the eSCO payload in the receive direction. Shall be
-  // zero for SCO links.
-  uint16_t rx_packet_length;
-
-  // Length in bytes of the eSCO payload in the transmit direction. Shall be
-  // zero for SCO links.
-  uint16_t tx_packet_length;
-
-  pw::bluetooth::emboss::CodingFormat air_coding_format;
-} __attribute__((packed));
-
 // =============================================
 // Extended Inquiry Result Event (v1.2) (BR/EDR)
 constexpr EventCode kExtendedInquiryResultEventCode = 0x2F;
