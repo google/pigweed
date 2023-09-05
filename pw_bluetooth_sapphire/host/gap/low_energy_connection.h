@@ -263,6 +263,8 @@ class LowEnergyConnection final : public sm::Delegate {
                       ConfirmCallback confirm) override;
   void RequestPasskey(PasskeyResponseCallback respond) override;
 
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{async_get_default_dispatcher()};
+
   // Notifies Peer of connection destruction. This should be ordered first so that it is
   // destroyed last.
   std::optional<Peer::ConnectionToken> peer_conn_token_;

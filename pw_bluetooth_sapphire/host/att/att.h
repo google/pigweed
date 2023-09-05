@@ -31,6 +31,7 @@ constexpr size_t kMaxAttributeValueLength = 512;
 // The ATT protocol transaction timeout.
 // (see v5.0, Vol 3, Part F, Section 3.3.3).
 constexpr zx::duration kTransactionTimeout = zx::sec(30);
+constexpr pw::chrono::SystemClock::duration kPwTransactionTimeout = std::chrono::seconds(30);
 
 // A server identifies each attribute using a 16-bit handle.
 using Handle = uint16_t;

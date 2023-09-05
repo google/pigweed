@@ -504,7 +504,7 @@ void LowEnergyConnection::MaybeUpdateConnectionParameters() {
 
 bool LowEnergyConnection::InitializeGatt(l2cap::Channel::WeakPtr att_channel,
                                          std::optional<UUID> service_uuid) {
-  att_bearer_ = att::Bearer::Create(std::move(att_channel));
+  att_bearer_ = att::Bearer::Create(std::move(att_channel), pw_dispatcher_);
   if (!att_bearer_) {
     // This can happen if the link closes before the Bearer activates the
     // channel.

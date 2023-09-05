@@ -12,6 +12,8 @@
 #include <memory>
 #include <unordered_map>
 
+#include <pw_async_fuchsia/dispatcher.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/packet.h"
@@ -43,7 +45,8 @@ class Bearer final {
  public:
   // Creates a new ATT Bearer. Returns nullptr if |chan| cannot be activated.
   // This can happen if the link is closed.
-  static std::unique_ptr<Bearer> Create(l2cap::Channel::WeakPtr chan);
+  static std::unique_ptr<Bearer> Create(l2cap::Channel::WeakPtr chan,
+                                        pw::async::Dispatcher& dispatcher);
 
   ~Bearer();
 
@@ -153,7 +156,7 @@ class Bearer final {
   WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
 
  private:
-  explicit Bearer(l2cap::Channel::WeakPtr chan);
+  explicit Bearer(l2cap::Channel::WeakPtr chan, pw::async::Dispatcher& dispatcher);
 
   // Returns false if activation fails. This is called by the factory method.
   bool Activate();
@@ -197,7 +200,7 @@ class Bearer final {
   // transactions.
   class TransactionQueue {
    public:
-    TransactionQueue() = default;
+    TransactionQueue(pw::async::Dispatcher& dispatcher) : timeout_task_(dispatcher) {}
     ~TransactionQueue() = default;
 
     TransactionQueue(TransactionQueue&& other);
@@ -212,8 +215,8 @@ class Bearer final {
 
     // Tries to initiate the next transaction. Sends the PDU over |chan| if
     // successful.
-    void TrySendNext(const l2cap::Channel::WeakPtr& chan, async::Task::Handler timeout_cb,
-                     zx::duration timeout);
+    void TrySendNext(const l2cap::Channel::WeakPtr& chan, pw::async::TaskFunction timeout_cb,
+                     pw::chrono::SystemClock::duration timeout);
 
     // Adds |next| to the transaction queue.
     void Enqueue(PendingTransactionPtr transaction);
@@ -227,7 +230,7 @@ class Bearer final {
    private:
     std::queue<std::unique_ptr<PendingTransaction>> queue_;
     std::unique_ptr<PendingTransaction> current_;
-    async::Task timeout_task_;
+    SmartTask timeout_task_;
   };
 
   bool SendInternal(ByteBufferPtr pdu, TransactionCallback callback);
@@ -270,6 +273,8 @@ class Bearer final {
   // l2cap::Channel callbacks:
   void OnChannelClosed();
   void OnRxBFrame(ByteBufferPtr sdu);
+
+  pw::async::Dispatcher& dispatcher_;
 
   l2cap::ScopedChannel chan_;
   uint16_t mtu_;

@@ -45,11 +45,12 @@ class ServerTest : public l2cap::testing::MockChannelTest {
 
  protected:
   void SetUp() override {
+    pw_dispatcher_.emplace(dispatcher());
     local_services_ = std::make_unique<LocalServiceManager>();
 
     ChannelOptions options(l2cap::kATTChannelId);
     fake_att_chan_ = CreateFakeChannel(options);
-    att_ = att::Bearer::Create(fake_att_chan_->GetWeakPtr());
+    att_ = att::Bearer::Create(fake_att_chan_->GetWeakPtr(), *pw_dispatcher_);
     server_ = gatt::Server::Create(kTestPeerId, local_services_->GetWeakPtr(), att_->GetWeakPtr());
   }
 
@@ -142,6 +143,7 @@ class ServerTest : public l2cap::testing::MockChannelTest {
     return modified_attrs;
   }
 
+  std::optional<pw::async::fuchsia::FuchsiaDispatcher> pw_dispatcher_;
   std::unique_ptr<LocalServiceManager> local_services_;
   l2cap::testing::FakeChannel::WeakPtr fake_att_chan_;
   std::unique_ptr<att::Bearer> att_;

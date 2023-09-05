@@ -163,8 +163,9 @@ OpCode MatchingTransactionCode(OpCode transaction_end_code) {
 }  // namespace
 
 // static
-std::unique_ptr<Bearer> Bearer::Create(l2cap::Channel::WeakPtr chan) {
-  std::unique_ptr<Bearer> bearer(new Bearer(std::move(chan)));
+std::unique_ptr<Bearer> Bearer::Create(l2cap::Channel::WeakPtr chan,
+                                       pw::async::Dispatcher& dispatcher) {
+  std::unique_ptr<Bearer> bearer(new Bearer(std::move(chan), dispatcher));
   return bearer->Activate() ? std::move(bearer) : nullptr;
 }
 
@@ -182,7 +183,9 @@ Bearer::PendingRemoteTransaction::PendingRemoteTransaction(TransactionId id, OpC
     : id(id), opcode(opcode) {}
 
 Bearer::TransactionQueue::TransactionQueue(TransactionQueue&& other)
-    : queue_(std::move(other.queue_)), current_(std::move(other.current_)) {
+    : queue_(std::move(other.queue_)),
+      current_(std::move(other.current_)),
+      timeout_task_(other.timeout_task_.dispatcher()) {
   // The move constructor is only used during shut down below. So we simply
   // cancel the task and not worry about moving it.
   other.timeout_task_.Cancel();
@@ -202,7 +205,8 @@ void Bearer::TransactionQueue::Enqueue(PendingTransactionPtr transaction) {
 }
 
 void Bearer::TransactionQueue::TrySendNext(const l2cap::Channel::WeakPtr& chan,
-                                           async::Task::Handler timeout_cb, zx::duration timeout) {
+                                           pw::async::TaskFunction timeout_cb,
+                                           pw::chrono::SystemClock::duration timeout) {
   BT_DEBUG_ASSERT(chan.is_alive());
 
   // Abort if a transaction is currently pending or there are no transactions queued.
@@ -222,8 +226,8 @@ void Bearer::TransactionQueue::TrySendNext(const l2cap::Channel::WeakPtr& chan,
     auto pdu = NewBuffer(current()->pdu->size());
     if (pdu) {
       current()->pdu->Copy(pdu.get());
-      timeout_task_.set_handler(std::move(timeout_cb));
-      timeout_task_.PostDelayed(async_get_default_dispatcher(), timeout);
+      timeout_task_.set_function(std::move(timeout_cb));
+      timeout_task_.PostAfter(timeout);
       chan->Send(std::move(pdu));
       break;
     }
@@ -262,8 +266,11 @@ void Bearer::TransactionQueue::InvokeErrorAll(Error error) {
   }
 }
 
-Bearer::Bearer(l2cap::Channel::WeakPtr chan)
-    : chan_(std::move(chan)),
+Bearer::Bearer(l2cap::Channel::WeakPtr chan, pw::async::Dispatcher& dispatcher)
+    : dispatcher_(dispatcher),
+      chan_(std::move(chan)),
+      request_queue_(dispatcher_),
+      indication_queue_(dispatcher_),
       next_remote_transaction_id_(1u),
       next_handler_id_(1u),
       weak_self_(this) {
@@ -499,11 +506,12 @@ void Bearer::TryStartNextTransaction(TransactionQueue* tq) {
 
   tq->TrySendNext(
       chan_.get(),
-      [this](async_dispatcher_t* /*unused*/, async::Task* /*unused*/, zx_status_t status) {
-        if (status == ZX_OK)
+      [this](pw::async::Context /*ctx*/, pw::Status status) {
+        if (status.ok()) {
           ShutDownInternal(/*due_to_timeout=*/true);
+        }
       },
-      kTransactionTimeout);
+      kPwTransactionTimeout);
 }
 
 void Bearer::SendErrorResponse(OpCode request_opcode, Handle attribute_handle,
