@@ -25,19 +25,19 @@
 
 namespace pw::crypto::sha256 {
 
-// Size in bytes of a SHA256 digest.
+/// The size of a SHA256 digest in bytes.
 constexpr uint32_t kDigestSizeBytes = 32;
 
-// State machine of a hashing session.
+/// A state machine of a hashing session.
 enum class Sha256State {
-  // Initialized and accepting input (via Update()).
+  /// Initialized and accepting input (via `Update()`).
   kReady = 1,
 
-  // Finalized by Final(). Any additional requests, Update() or Final(), will
-  // trigger a transition to kError.
+  /// Finalized by `Final()`. Any additional requests to `Update()` or `Final()`
+  /// will trigger a transition to `kError`.
   kFinalized = 2,
 
-  // In an unrecoverable error state.
+  /// In an unrecoverable error state.
   kError = 3,
 };
 
@@ -50,14 +50,16 @@ Status DoFinal(NativeSha256Context& ctx, ByteSpan out_digest);
 
 }  // namespace backend
 
-// Sha256 computes the SHA256 digest of potentially long, non-contiguous input
-// messages.
-//
-// Usage:
-//
-// if (!Sha256().Update(message).Update(more_message).Final(out_digest).ok()) {
-//   // Error handling.
-// }
+/// Computes the SHA256 digest of potentially long, non-contiguous input
+/// messages.
+///
+/// Usage:
+///
+/// @code{.cpp}
+/// if (!Sha256().Update(message).Update(more_message).Final(out_digest).ok()) {
+///     // Error handling.
+/// }
+/// @endcode
 class Sha256 {
  public:
   Sha256() {
@@ -70,8 +72,8 @@ class Sha256 {
     state_ = Sha256State::kReady;
   }
 
-  // Update feeds `data` to the running hasher. The feeding can involve zero
-  // or more `Update()` calls and the order matters.
+  /// Feeds `data` to the running hasher. The feeding can involve zero
+  /// or more `Update()` calls and the order matters.
   Sha256& Update(ConstByteSpan data) {
     if (state_ != Sha256State::kReady) {
       PW_LOG_DEBUG("The backend is not ready/initialized");
@@ -87,14 +89,14 @@ class Sha256 {
     return *this;
   }
 
-  // Final wraps up the hashing session and outputs the final digest in the
-  // first `kDigestSizeBytes` of `out_digest`. `out_digest` must be at least
-  // `kDigestSizeBytes` long.
-  //
-  // Final locks down the Sha256 instance from any additional use.
-  //
-  // Any error, including those occurr inside `Init()` or `Update()` will be
-  // reflected in the return value of Final();
+  /// Finishes the hashing session and outputs the final digest in the
+  /// first `kDigestSizeBytes` of `out_digest`. `out_digest` must be at least
+  /// `kDigestSizeBytes` long.
+  ///
+  /// `Final()` locks down the `Sha256` instance from any additional use.
+  ///
+  /// Any error, including those occurring inside the constructor or `Update()`
+  /// will be reflected in the return value of `Final()`.
   Status Final(ByteSpan out_digest) {
     if (out_digest.size() < kDigestSizeBytes) {
       PW_LOG_DEBUG("Digest output buffer is too small");
@@ -125,8 +127,38 @@ class Sha256 {
   backend::NativeSha256Context native_ctx_;
 };
 
-// Hash calculates the SHA256 digest of `message` and stores the result
-// in `out_digest`. `out_digest` must be at least `kDigestSizeBytes` long.
+/// Calculates the SHA256 digest of `message` and stores the result
+/// in `out_digest`. `out_digest` must be at least `kDigestSizeBytes` long.
+///
+/// One-shot digest example:
+///
+/// @code{.cpp}
+/// #include "pw_crypto/sha256.h"
+///
+/// std::byte digest[32];
+/// if (!pw::crypto::sha256::Hash(message, digest).ok()) {
+///     // Handle errors.
+/// }
+///
+/// // The content can also come from a pw::stream::Reader.
+/// if (!pw::crypto::sha256::Hash(reader, digest).ok()) {
+///     // Handle errors.
+/// }
+/// @endcode
+///
+/// Long, potentially non-contiguous message example:
+///
+/// @code{.cpp}
+/// #include "pw_crypto/sha256.h"
+///
+/// std::byte digest[32];
+///
+/// if (!pw::crypto::sha256::Sha256()
+///     .Update(chunk1).Update(chunk2).Update(chunk...)
+///     .Final().ok()) {
+///     // Handle errors.
+/// }
+/// @endcode
 inline Status Hash(ConstByteSpan message, ByteSpan out_digest) {
   return Sha256().Update(message).Final(out_digest);
 }

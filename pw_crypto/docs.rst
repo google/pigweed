@@ -1,5 +1,6 @@
 .. _module-pw_crypto:
 
+=========
 pw_crypto
 =========
 A set of safe (read: easy to use, hard to misuse) crypto APIs.
@@ -10,6 +11,7 @@ The following crypto services are provided by this module.
 2. Verifying a digital signature signed with `ECDSA`_ over the NIST P256 curve.
 3. Many more to come ...
 
+------
 SHA256
 ------
 
@@ -43,6 +45,7 @@ SHA256
     // Handle errors.
   }
 
+-----
 ECDSA
 -----
 
@@ -82,6 +85,7 @@ ECDSA
       // Handle errors.
   }
 
+-------------
 Configuration
 -------------
 
@@ -89,7 +93,7 @@ The crypto services offered by pw_crypto can be backed by different backend
 crypto libraries.
 
 Mbed TLS
-^^^^^^^^
+========
 
 The `Mbed TLS project <https://www.trustedfirmware.org/projects/mbed-tls/>`_
 is a mature and full-featured crypto library that implements cryptographic
@@ -159,7 +163,7 @@ a code size of ~12KiB.
    #define MBEDTLS_ECP_DP_SECP256R1_ENABLED
 
 Micro ECC
-^^^^^^^^^
+=========
 
 To select Micro ECC, the library needs to be installed and configured.
 
@@ -180,6 +184,7 @@ can be selected with ``pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_uecc_little_en
 
 Note Micro-ECC does not implement any hashing functions, so you will need to use other backends for SHA256 functionality if needed.
 
+------------
 Size Reports
 ------------
 
@@ -187,3 +192,14 @@ Below are size reports for each crypto service. These vary across
 configurations.
 
 .. include:: size_report
+
+-------------
+API reference
+-------------
+.. doxygenfunction:: pw::crypto::ecdsa::VerifyP256Signature(ConstByteSpan public_key, ConstByteSpan digest, ConstByteSpan signature)
+.. doxygenfunction:: pw::crypto::sha256::Hash(ConstByteSpan message, ByteSpan out_digest)
+.. doxygenfunction:: pw::crypto::sha256::Hash(stream::Reader& reader, ByteSpan out_digest)
+.. doxygenvariable:: pw::crypto::sha256::kDigestSizeBytes
+.. doxygenfunction:: pw::crypto::sha256::Sha256::Final(ByteSpan out_digest)
+.. doxygenfunction:: pw::crypto::sha256::Sha256::Update(ConstByteSpan data)
+.. doxygenenum::     pw::crypto::sha256::Sha256State
