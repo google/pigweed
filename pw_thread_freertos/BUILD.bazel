@@ -228,6 +228,7 @@ pw_cc_library(
     deps = [
         "//pw_function",
         "//pw_log",
+        "//pw_span",
         "//pw_status",
         "@freertos",
     ],
