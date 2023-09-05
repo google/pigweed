@@ -19,24 +19,35 @@
 
 #include "pw_varint/varint.h"
 
-size_t pw_varint_CallEncode(uint64_t integer,
-                            void* output,
-                            size_t output_size) {
-  return pw_varint_Encode(integer, output, output_size);
+size_t pw_varint_CallEncode32(uint32_t integer, void* output) {
+  return pw_varint_Encode32(integer, output);
 }
 
-size_t pw_varint_CallZigZagEncode(int64_t integer,
-                                  void* output,
-                                  size_t output_size) {
-  return pw_varint_ZigZagEncode(integer, output, output_size);
+size_t pw_varint_CallEncode64(uint64_t integer, void* output) {
+  return pw_varint_Encode64(integer, output);
 }
 
-size_t pw_varint_CallDecode(void* input, size_t input_size, uint64_t* output) {
-  return pw_varint_Decode(input, input_size, output);
+size_t pw_varint_CallZigZagAndVarintEncode64(int64_t integer, void* output) {
+  return pw_varint_Encode64(pw_varint_ZigZagEncode64(integer), output);
 }
 
-size_t pw_varint_CallZigZagDecode(void* input,
-                                  size_t input_size,
-                                  int64_t* output) {
-  return pw_varint_ZigZagDecode(input, input_size, output);
+size_t pw_varint_CallDecode32(void* input,
+                              size_t input_size,
+                              uint32_t* output) {
+  return pw_varint_Decode32(input, input_size, output);
+}
+
+size_t pw_varint_CallDecode64(void* input,
+                              size_t input_size,
+                              uint64_t* output) {
+  return pw_varint_Decode64(input, input_size, output);
+}
+
+size_t pw_varint_CallZigZagAndVarintDecode64(void* input,
+                                             size_t input_size,
+                                             int64_t* output) {
+  uint64_t value = 0;
+  const size_t bytes_read = pw_varint_Decode64(input, input_size, &value);
+  *output = pw_varint_ZigZagDecode64(value);
+  return bytes_read;
 }

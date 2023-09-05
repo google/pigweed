@@ -24,8 +24,10 @@ pw_add_library(pw_varint STATIC
     pw_polyfill
     pw_preprocessor
     pw_span
+    pw_third_party.fuchsia.stdcompat
   SOURCES
     varint.cc
+    varint_c.c
 )
 
 pw_add_library(pw_varint.stream STATIC

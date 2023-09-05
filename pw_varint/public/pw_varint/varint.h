@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -22,8 +22,66 @@
 extern "C" {
 #endif
 
-// Expose a subset of the varint API for use in C code.
+/// Maximum size of a varint (LEB128) encoded `uint32_t`.
+#define PW_VARINT_MAX_INT32_SIZE_BYTES 5
 
+/// Maximum size of a varint (LEB128) encoded `uint64_t`.
+#define PW_VARINT_MAX_INT64_SIZE_BYTES 10
+
+/// Encodes a 32-bit integer as a varint (LEB128).
+///
+/// @pre The output buffer **MUST** be 5 bytes
+///     (@c_macro{PW_VARINT_MAX_INT32_SIZE_BYTES}) or larger.
+///
+/// @returns the number of bytes written
+size_t pw_varint_Encode32(uint32_t integer, void* buffer_of_at_least_5_bytes);
+
+/// Encodes a 64-bit integer as a varint (LEB128).
+///
+/// @pre The output buffer **MUST** be 10 bytes
+///     (@c_macro{PW_VARINT_MAX_INT64_SIZE_BYTES}) or larger.
+///
+/// @returns the number of bytes written
+size_t pw_varint_Encode64(uint64_t integer, void* buffer_of_at_least_10_bytes);
+
+/// Zig-zag encodes an `int32_t`, returning it as a `uint32_t`.
+static inline uint32_t pw_varint_ZigZagEncode32(int32_t n) {
+  return (uint32_t)((uint32_t)n << 1) ^ (uint32_t)(n >> (sizeof(n) * 8 - 1));
+}
+
+/// Zig-zag encodes an `int64_t`, returning it as a `uint64_t`.
+static inline uint64_t pw_varint_ZigZagEncode64(int64_t n) {
+  return (uint64_t)((uint64_t)n << 1) ^ (uint64_t)(n >> (sizeof(n) * 8 - 1));
+}
+
+/// Zig-zag decodes a `uint64_t`, returning it as an `int64_t`.
+static inline int32_t pw_varint_ZigZagDecode32(uint32_t n)
+    PW_NO_SANITIZE("unsigned-integer-overflow") {
+  return (int32_t)((n >> 1) ^ (~(n & 1) + 1));
+}
+
+/// Zig-zag decodes a `uint64_t`, returning it as an `int64_t`.
+static inline int64_t pw_varint_ZigZagDecode64(uint64_t n)
+    PW_NO_SANITIZE("unsigned-integer-overflow") {
+  return (int64_t)((n >> 1) ^ (~(n & 1) + 1));
+}
+
+/// Decodes a varint (LEB128) to a `uint32_t`.
+/// @returns the number of bytes read; 0 if decoding failed
+size_t pw_varint_Decode32(const void* input,
+                          size_t input_size_bytes,
+                          uint32_t* output);
+
+/// Decodes a varint (LEB128) to a `uint64_t`.
+/// @returns the number of bytes read; 0 if decoding failed
+size_t pw_varint_Decode64(const void* input,
+                          size_t input_size_bytes,
+                          uint64_t* output);
+
+/// Returns the size of a `uint64_t` when encoded as a varint (LEB128).
+size_t pw_varint_EncodedSize(uint64_t integer);
+
+/// Describes a custom varint format.
 typedef enum {
   PW_VARINT_ZERO_TERMINATED_LEAST_SIGNIFICANT = 0,
   PW_VARINT_ZERO_TERMINATED_MOST_SIGNIFICANT = 1,
@@ -31,40 +89,17 @@ typedef enum {
   PW_VARINT_ONE_TERMINATED_MOST_SIGNIFICANT = 3,
 } pw_varint_Format;
 
+/// Encodes a `uint64_t` using a custom varint format.
 size_t pw_varint_EncodeCustom(uint64_t integer,
                               void* output,
                               size_t output_size,
                               pw_varint_Format format);
+
+/// Decodes a `uint64_t` using a custom varint format.
 size_t pw_varint_DecodeCustom(const void* input,
                               size_t input_size,
                               uint64_t* output,
                               pw_varint_Format format);
-
-static inline size_t pw_varint_Encode(uint64_t integer,
-                                      void* output,
-                                      size_t output_size) {
-  return pw_varint_EncodeCustom(
-      integer, output, output_size, PW_VARINT_ZERO_TERMINATED_MOST_SIGNIFICANT);
-}
-
-size_t pw_varint_ZigZagEncode(int64_t integer,
-                              void* output,
-                              size_t output_size);
-
-static inline size_t pw_varint_Decode(const void* input,
-                                      size_t input_size,
-                                      uint64_t* output) {
-  return pw_varint_DecodeCustom(
-      input, input_size, output, PW_VARINT_ZERO_TERMINATED_MOST_SIGNIFICANT);
-}
-
-size_t pw_varint_ZigZagDecode(const void* input,
-                              size_t input_size,
-                              int64_t* output);
-
-// Returns the size of an when encoded as a varint.
-size_t pw_varint_EncodedSize(uint64_t integer);
-size_t pw_varint_ZigZagEncodedSize(int64_t integer);
 
 #ifdef __cplusplus
 
@@ -73,26 +108,34 @@ size_t pw_varint_ZigZagEncodedSize(int64_t integer);
 #include <limits>
 #include <type_traits>
 
+#include "lib/stdcompat/bit.h"
 #include "pw_polyfill/language_feature_macros.h"
 #include "pw_span/span.h"
 
 namespace pw {
 namespace varint {
 
-// The maximum number of bytes occupied by an encoded varint.
-PW_INLINE_VARIABLE constexpr size_t kMaxVarint32SizeBytes = 5;
-PW_INLINE_VARIABLE constexpr size_t kMaxVarint64SizeBytes = 10;
+/// Maximum size of a varint (LEB128) encoded `uint32_t`.
+PW_INLINE_VARIABLE constexpr size_t kMaxVarint32SizeBytes =
+    PW_VARINT_MAX_INT32_SIZE_BYTES;
 
-// ZigZag encodes a signed integer. This maps small negative numbers to small,
-// unsigned positive numbers, which improves their density for LEB128 encoding.
-//
-// ZigZag encoding works by moving the sign bit from the most-significant bit to
-// the least-significant bit. For the signed k-bit integer n, the formula is
-//
-//   (n << 1) ^ (n >> (k - 1))
-//
-// See the following for a description of ZigZag encoding:
-//   https://developers.google.com/protocol-buffers/docs/encoding#types
+/// Maximum size of a varint (LEB128) encoded `uint64_t`.
+PW_INLINE_VARIABLE constexpr size_t kMaxVarint64SizeBytes =
+    PW_VARINT_MAX_INT64_SIZE_BYTES;
+
+/// ZigZag encodes a signed integer. This maps small negative numbers to small,
+/// unsigned positive numbers, which improves their density for LEB128 encoding.
+///
+/// ZigZag encoding works by moving the sign bit from the most-significant bit
+/// to the least-significant bit. For the signed `k`-bit integer `n`, the
+/// formula is:
+///
+/// @code{.cpp}
+///   (n << 1) ^ (n >> (k - 1))
+/// @endcode
+///
+/// See the following for a description of ZigZag encoding:
+///   https://developers.google.com/protocol-buffers/docs/encoding#types
 template <typename T>
 constexpr std::make_unsigned_t<T> ZigZagEncode(T n) {
   static_assert(std::is_signed<T>(), "Zig-zag encoding is for signed integers");
@@ -101,97 +144,16 @@ constexpr std::make_unsigned_t<T> ZigZagEncode(T n) {
          static_cast<U>(n >> (sizeof(T) * 8 - 1));
 }
 
-// ZigZag decodes a signed integer.
-// The calculation is done modulo std::numeric_limits<T>::max()+1, so the
-// unsigned integer overflows are intentional.
+/// ZigZag decodes a signed integer.
+///
+/// The calculation is done modulo `std::numeric_limits<T>::max()+1`, so the
+/// unsigned integer overflows are intentional.
 template <typename T>
 constexpr std::make_signed_t<T> ZigZagDecode(T n)
     PW_NO_SANITIZE("unsigned-integer-overflow") {
   static_assert(std::is_unsigned<T>(),
                 "Zig-zag decoding is for unsigned integers");
   return static_cast<std::make_signed_t<T>>((n >> 1) ^ (~(n & 1) + 1));
-}
-
-// Encodes a uint64_t with Little-Endian Base 128 (LEB128) encoding.
-inline size_t EncodeLittleEndianBase128(uint64_t integer,
-                                        const span<std::byte>& output) {
-  return pw_varint_Encode(integer, output.data(), output.size());
-}
-
-// Encodes the provided integer using a variable-length encoding and returns the
-// number of bytes written.
-//
-// The encoding is the same as used in protocol buffers. Signed integers are
-// ZigZag encoded to remove leading 1s from small negative numbers, then the
-// resulting number is encoded as Little Endian Base 128 (LEB128). Unsigned
-// integers are encoded directly as LEB128.
-//
-// Returns the number of bytes written or 0 if the result didn't fit in the
-// encoding buffer.
-template <typename T>
-size_t Encode(T integer, const span<std::byte>& output) {
-  if (std::is_signed<T>()) {
-    using Signed =
-        std::conditional_t<std::is_signed<T>::value, T, std::make_signed_t<T>>;
-    return pw_varint_ZigZagEncode(
-        static_cast<Signed>(integer), output.data(), output.size());
-  } else {
-    using Unsigned = std::
-        conditional_t<std::is_signed<T>::value, std::make_unsigned_t<T>, T>;
-    return pw_varint_Encode(
-        static_cast<Unsigned>(integer), output.data(), output.size());
-  }
-}
-
-// Decodes a varint-encoded value. If reading into a signed integer, the value
-// is ZigZag decoded.
-//
-// Returns the number of bytes read from the input if successful. Returns zero
-// if the result does not fit in a int64_t / uint64_t or if the input is
-// exhausted before the number terminates. Reads a maximum of 10 bytes.
-//
-// The following example decodes multiple varints from a buffer:
-//
-//   while (!data.empty()) {
-//     int64_t value;
-//     size_t bytes = Decode(data, &value);
-//
-//     if (bytes == 0u) {
-//       return Status::DataLoss();
-//     }
-//     results.push_back(value);
-//     data = data.subspan(bytes)
-//   }
-//
-inline size_t Decode(const span<const std::byte>& input, int64_t* value) {
-  return pw_varint_ZigZagDecode(input.data(), input.size(), value);
-}
-
-inline size_t Decode(const span<const std::byte>& input, uint64_t* value) {
-  return pw_varint_Decode(input.data(), input.size(), value);
-}
-
-enum class Format {
-  kZeroTerminatedLeastSignificant = PW_VARINT_ZERO_TERMINATED_LEAST_SIGNIFICANT,
-  kZeroTerminatedMostSignificant = PW_VARINT_ZERO_TERMINATED_MOST_SIGNIFICANT,
-  kOneTerminatedLeastSignificant = PW_VARINT_ONE_TERMINATED_LEAST_SIGNIFICANT,
-  kOneTerminatedMostSignificant = PW_VARINT_ONE_TERMINATED_MOST_SIGNIFICANT,
-};
-
-// Encodes a varint in a custom format.
-inline size_t Encode(uint64_t value, span<std::byte> output, Format format) {
-  return pw_varint_EncodeCustom(value,
-                                output.data(),
-                                output.size(),
-                                static_cast<pw_varint_Format>(format));
-}
-
-// Decodes a varint from a custom format.
-inline size_t Decode(span<const std::byte> input,
-                     uint64_t* value,
-                     Format format) {
-  return pw_varint_DecodeCustom(
-      input.data(), input.size(), value, static_cast<pw_varint_Format>(format));
 }
 
 /// @brief Computes the size of an integer when encoded as a varint.
@@ -204,38 +166,104 @@ template <typename T,
           typename = std::enable_if_t<std::is_integral<T>::value ||
                                       std::is_convertible<T, uint64_t>::value>>
 constexpr size_t EncodedSize(T integer) {
-  return integer == 0 ? 1
-                      : (64 -
-                         static_cast<size_t>(
-                             __builtin_clzll(static_cast<uint64_t>(integer))) +
-                         6) /
-                            7;
+  if (integer == 0) {
+    return 1;
+  }
+  return static_cast<size_t>(
+      (64 - cpp20::countl_zero(static_cast<uint64_t>(integer)) + 6) / 7);
 }
 
-/// @brief Computes the size of an integer when encoded as a varint.
-///
-/// @param integer The integer whose encoded size is to be computed. `integer`
-/// can be signed or unsigned.
-///
-/// @returns The size of `integer` when encoded as a varint.
-constexpr size_t EncodedSize(uint64_t integer) {
-  return integer == 0 ? 1
-                      : (64 -
-                         static_cast<size_t>(
-                             __builtin_clzll(static_cast<uint64_t>(integer))) +
-                         6) /
-                            7;
+/// Encodes a `uint64_t` with Little-Endian Base 128 (LEB128) encoding.
+/// @returns the number of bytes written; 0 if the buffer is too small
+inline size_t EncodeLittleEndianBase128(uint64_t integer,
+                                        const span<std::byte>& output) {
+  if (EncodedSize(integer) > output.size()) {
+    return 0;
+  }
+  return pw_varint_Encode64(integer, output.data());
 }
 
-/// @brief Returns the size of a signed integer when
-/// [ZigZag](https://protobuf.dev/programming-guides/encoding/#signed-ints)-encoded
-/// as a variable-length integer (varint).
+/// Encodes the provided integer using a variable-length encoding and returns
+/// the number of bytes written.
 ///
-/// @param integer The signed integer that will be ZigZag-encoded as a varint.
+/// The encoding is the same as used in protocol buffers. Signed integers are
+/// ZigZag encoded to remove leading 1s from small negative numbers, then the
+/// resulting number is encoded as Little Endian Base 128 (LEB128). Unsigned
+/// integers are encoded directly as LEB128.
 ///
-/// @returns The size of `integer` when ZigZag-encoded as a varint.
-constexpr size_t ZigZagEncodedSize(int64_t integer) {
-  return EncodedSize(ZigZagEncode(integer));
+/// Returns the number of bytes written or 0 if the result didn't fit in the
+/// encoding buffer.
+template <typename T>
+size_t Encode(T integer, const span<std::byte>& output) {
+  if (std::is_signed<T>()) {
+    using Signed =
+        std::conditional_t<std::is_signed<T>::value, T, std::make_signed_t<T>>;
+    return EncodeLittleEndianBase128(ZigZagEncode(static_cast<Signed>(integer)),
+                                     output);
+  } else {
+    using Unsigned = std::
+        conditional_t<std::is_signed<T>::value, std::make_unsigned_t<T>, T>;
+    return EncodeLittleEndianBase128(static_cast<Unsigned>(integer), output);
+  }
+}
+
+/// Decodes a varint-encoded value. If reading into a signed integer, the value
+/// is ZigZag decoded.
+///
+/// Returns the number of bytes read from the input if successful. Returns zero
+/// if the result does not fit in a `int64_t`/ `uint64_t` or if the input is
+/// exhausted before the number terminates. Reads a maximum of 10 bytes.
+///
+/// The following example decodes multiple varints from a buffer:
+///
+/// @code{.cpp}
+///
+///   while (!data.empty()) {
+///     int64_t value;
+///     size_t bytes = Decode(data, &value);
+///
+///     if (bytes == 0u) {
+///       return Status::DataLoss();
+///     }
+///     results.push_back(value);
+///     data = data.subspan(bytes)
+///   }
+///
+/// @endcode
+inline size_t Decode(const span<const std::byte>& input, int64_t* output) {
+  uint64_t value = 0;
+  size_t bytes_read = pw_varint_Decode64(input.data(), input.size(), &value);
+  *output = pw_varint_ZigZagDecode64(value);
+  return bytes_read;
+}
+
+/// @overload
+inline size_t Decode(const span<const std::byte>& input, uint64_t* value) {
+  return pw_varint_Decode64(input.data(), input.size(), value);
+}
+
+/// Describes a custom varint format.
+enum class Format {
+  kZeroTerminatedLeastSignificant = PW_VARINT_ZERO_TERMINATED_LEAST_SIGNIFICANT,
+  kZeroTerminatedMostSignificant = PW_VARINT_ZERO_TERMINATED_MOST_SIGNIFICANT,
+  kOneTerminatedLeastSignificant = PW_VARINT_ONE_TERMINATED_LEAST_SIGNIFICANT,
+  kOneTerminatedMostSignificant = PW_VARINT_ONE_TERMINATED_MOST_SIGNIFICANT,
+};
+
+/// Encodes a varint in a custom format.
+inline size_t Encode(uint64_t value, span<std::byte> output, Format format) {
+  return pw_varint_EncodeCustom(value,
+                                output.data(),
+                                output.size(),
+                                static_cast<pw_varint_Format>(format));
+}
+
+/// Decodes a varint from a custom format.
+inline size_t Decode(span<const std::byte> input,
+                     uint64_t* value,
+                     Format format) {
+  return pw_varint_DecodeCustom(
+      input.data(), input.size(), value, static_cast<pw_varint_Format>(format));
 }
 
 /// @brief Returns the maximum (max) integer value that can be encoded as a

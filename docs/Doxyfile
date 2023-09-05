@@ -2383,6 +2383,7 @@ PREDEFINED             = __cplusplus \
                          PW_LOCKABLE= \
                          PW_PRINTF_FORMAT(...)= \
                          PW_CONSTEXPR_CPP20= \
+                         PW_INLINE_VARIABLE=inline \
                          PW_EXCLUSIVE_LOCK_FUNCTION(...)= \
                          PW_EXCLUSIVE_TRYLOCK_FUNCTION(...)= \
                          PW_UNLOCK_FUNCTION(...)= \
@@ -2392,6 +2393,7 @@ PREDEFINED             = __cplusplus \
                          PW_LOCKS_EXCLUDED(...)= \
                          PW_EXCLUSIVE_LOCKS_REQUIRED(...)= \
                          PW_GUARDED_BY(...)= \
+                         PW_NO_SANITIZE(...)= \
                          PW_EXCLUDE_FROM_DOXYGEN=1
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this
