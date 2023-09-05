@@ -242,14 +242,18 @@ void LowEnergyConnection::RegisterEventHandlers() {
 // procedures have completed.
 void LowEnergyConnection::StartConnectionPausePeripheralTimeout() {
   BT_ASSERT(!conn_pause_peripheral_timeout_.has_value());
-  conn_pause_peripheral_timeout_.emplace([this]() {
-    // Destroying this task will invalidate the capture list, so we need to save a self pointer.
-    auto self = this;
-    conn_pause_peripheral_timeout_.reset();
-    self->MaybeUpdateConnectionParameters();
-  });
-  conn_pause_peripheral_timeout_->PostDelayed(async_get_default_dispatcher(),
-                                              kLEConnectionPausePeripheral);
+  conn_pause_peripheral_timeout_.emplace(pw_dispatcher_);
+  conn_pause_peripheral_timeout_->set_function(
+      [this](pw::async::Context /*ctx*/, pw::Status status) {
+        if (!status.ok()) {
+          return;
+        }
+        // Destroying this task will invalidate the capture list, so we need to save a self pointer.
+        auto self = this;
+        conn_pause_peripheral_timeout_.reset();
+        self->MaybeUpdateConnectionParameters();
+      });
+  conn_pause_peripheral_timeout_->PostAfter(kPwLEConnectionPausePeripheral);
 }
 
 // Connection parameter updates by the central are not allowed until the central is idle and the

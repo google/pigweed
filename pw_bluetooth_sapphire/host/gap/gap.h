@@ -7,6 +7,8 @@
 
 #include <cstdint>
 
+#include <pw_chrono/system_clock.h>
+
 #include "lib/zx/time.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
@@ -133,6 +135,8 @@ constexpr zx::duration kLEConnectionPauseCentral = zx::sec(1);
 // Recommended minimum time upon connection establishment before the peripheral starts a connection
 // update procedure.
 constexpr zx::duration kLEConnectionPausePeripheral = zx::sec(5);
+constexpr pw::chrono::SystemClock::duration kPwLEConnectionPausePeripheral =
+    std::chrono::seconds(5);
 
 constexpr uint16_t kLEInitialConnIntervalMin = 0x0018;       // 30 ms
 constexpr uint16_t kLEInitialConnIntervalMax = 0x0028;       // 50 ms

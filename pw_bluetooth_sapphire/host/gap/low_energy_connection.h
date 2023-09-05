@@ -314,7 +314,7 @@ class LowEnergyConnection final : public sm::Delegate {
   fit::callback<void(pw::bluetooth::emboss::StatusCode)> le_conn_update_complete_command_callback_;
 
   // Called after kLEConnectionPausePeripheral.
-  std::optional<async::TaskClosure> conn_pause_peripheral_timeout_;
+  std::optional<SmartTask> conn_pause_peripheral_timeout_;
 
   // Called after kLEConnectionPauseCentral.
   std::optional<async::TaskClosure> conn_pause_central_timeout_;
