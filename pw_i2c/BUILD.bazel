@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_proto//proto:defs.bzl", "proto_library")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
@@ -22,7 +23,6 @@ load(
     "pw_proto_filegroup",
     "pw_proto_library",
 )
-load("@rules_proto//proto:defs.bzl", "proto_library")
 
 package(default_visibility = ["//visibility:public"])
 

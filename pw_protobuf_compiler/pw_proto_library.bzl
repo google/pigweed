@@ -38,10 +38,10 @@ _pw_nanopb_rpc_proto_library), they actually share an implementation
 _proto_compiler_aspect.
 """
 
-load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
-load("@rules_proto//proto:defs.bzl", "ProtoInfo")
-load("@pigweed//pw_build/bazel_internal:pigweed_internal.bzl", "PW_DEFAULT_COPTS")
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
+load("@pigweed//pw_build/bazel_internal:pigweed_internal.bzl", "PW_DEFAULT_COPTS")
+load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 
 # For Copybara use only
 ADDITIONAL_PWPB_DEPS = []

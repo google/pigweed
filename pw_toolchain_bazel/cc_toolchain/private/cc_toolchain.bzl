@@ -15,6 +15,15 @@
 
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 load(
+    "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
+    "action_config",
+    "feature",
+    "flag_group",
+    "flag_set",
+    "tool",
+    "variable_with_value",
+)
+load(
     "//cc_toolchain/private:providers.bzl",
     "ToolchainFeatureInfo",
 )
@@ -25,15 +34,6 @@ load(
     "ALL_C_COMPILER_ACTIONS",
     "ALL_LINK_ACTIONS",
     "check_deps",
-)
-load(
-    "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
-    "action_config",
-    "feature",
-    "flag_group",
-    "flag_set",
-    "tool",
-    "variable_with_value",
 )
 
 PW_CC_TOOLCHAIN_CONFIG_ATTRS = {

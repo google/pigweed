@@ -12,17 +12,17 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("//pw_build:pigweed.bzl", "pw_cc_library", "pw_cc_test")
 load("@rules_proto//proto:defs.bzl", "proto_library")
+load("//pw_build:pigweed.bzl", "pw_cc_library", "pw_cc_test")
+load(
+    "//pw_build:selects.bzl",
+    "TARGET_COMPATIBLE_WITH_HOST_SELECT",
+)
 load(
     "//pw_protobuf_compiler:pw_proto_library.bzl",
     "pw_proto_filegroup",
     "pwpb_proto_library",
     "pwpb_rpc_proto_library",
-)
-load(
-    "//pw_build:selects.bzl",
-    "TARGET_COMPATIBLE_WITH_HOST_SELECT",
 )
 
 package(default_visibility = ["//visibility:public"])

@@ -13,8 +13,8 @@
 # the License.
 """Utilities for declaring Rust toolchains that are compatible with @bazel_embedded"""
 
-load("//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl", "cipd_repository")
 load("@rules_rust//rust:toolchain.bzl", "rust_analyzer_toolchain", "rust_toolchain")
+load("//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl", "cipd_repository")
 
 HOSTS = [
     {

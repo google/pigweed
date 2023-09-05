@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_facade",
@@ -19,7 +20,6 @@ load(
     "pw_cc_test",
 )
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
-load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
