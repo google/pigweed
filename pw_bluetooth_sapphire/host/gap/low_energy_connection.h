@@ -317,7 +317,7 @@ class LowEnergyConnection final : public sm::Delegate {
   std::optional<SmartTask> conn_pause_peripheral_timeout_;
 
   // Called after kLEConnectionPauseCentral.
-  std::optional<async::TaskClosure> conn_pause_central_timeout_;
+  std::optional<SmartTask> conn_pause_central_timeout_;
 
   // Set to true when a request to update the connection parameters has been sent.
   bool connection_parameters_update_requested_ = false;

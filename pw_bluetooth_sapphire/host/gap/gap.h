@@ -132,6 +132,7 @@ constexpr zx::duration kLEConnectionParameterTimeout = zx::sec(30);
 // Recommended minimum time upon connection establishment before the central starts a connection
 // update procedure.
 constexpr zx::duration kLEConnectionPauseCentral = zx::sec(1);
+constexpr pw::chrono::SystemClock::duration kPwLEConnectionPauseCentral = std::chrono::seconds(1);
 // Recommended minimum time upon connection establishment before the peripheral starts a connection
 // update procedure.
 constexpr zx::duration kLEConnectionPausePeripheral = zx::sec(5);
