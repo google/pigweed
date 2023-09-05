@@ -4,10 +4,6 @@
 
 #include "low_energy_connection.h"
 
-#include <lib/async/cpp/task.h>
-#include <lib/async/default.h>
-#include <lib/async/time.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
 
 namespace bt::gap::internal {
@@ -30,17 +26,17 @@ std::unique_ptr<LowEnergyConnection> LowEnergyConnection::Create(
     LowEnergyConnectionOptions connection_options, PeerDisconnectCallback peer_disconnect_cb,
     ErrorCallback error_cb, WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
     l2cap::ChannelManager* l2cap, gatt::GATT::WeakPtr gatt,
-    hci::CommandChannel::WeakPtr cmd_channel) {
+    hci::CommandChannel::WeakPtr cmd_channel, pw::async::Dispatcher& dispatcher) {
   // Catch any errors/disconnects during connection initialization so that they are reported by
   // returning a nullptr. This is less error-prone than calling the user's callbacks during
   // initialization.
   bool error = false;
   auto peer_disconnect_cb_temp = [&error](auto) { error = true; };
   auto error_cb_temp = [&error] { error = true; };
-  std::unique_ptr<LowEnergyConnection> connection(
-      new LowEnergyConnection(std::move(peer), std::move(link), connection_options,
-                              std::move(peer_disconnect_cb_temp), std::move(error_cb_temp),
-                              std::move(conn_mgr), l2cap, std::move(gatt), std::move(cmd_channel)));
+  std::unique_ptr<LowEnergyConnection> connection(new LowEnergyConnection(
+      std::move(peer), std::move(link), connection_options, std::move(peer_disconnect_cb_temp),
+      std::move(error_cb_temp), std::move(conn_mgr), l2cap, std::move(gatt), std::move(cmd_channel),
+      dispatcher));
 
   // This looks strange, but it is possible for InitializeFixedChannels() to trigger an error and
   // still return true, so |error| can change between the first and last check.
@@ -55,15 +51,14 @@ std::unique_ptr<LowEnergyConnection> LowEnergyConnection::Create(
   return connection;
 }
 
-LowEnergyConnection::LowEnergyConnection(Peer::WeakPtr peer,
-                                         std::unique_ptr<hci::LowEnergyConnection> link,
-                                         LowEnergyConnectionOptions connection_options,
-                                         PeerDisconnectCallback peer_disconnect_cb,
-                                         ErrorCallback error_cb,
-                                         WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
-                                         l2cap::ChannelManager* l2cap, gatt::GATT::WeakPtr gatt,
-                                         hci::CommandChannel::WeakPtr cmd_channel)
-    : peer_(std::move(peer)),
+LowEnergyConnection::LowEnergyConnection(
+    Peer::WeakPtr peer, std::unique_ptr<hci::LowEnergyConnection> link,
+    LowEnergyConnectionOptions connection_options, PeerDisconnectCallback peer_disconnect_cb,
+    ErrorCallback error_cb, WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
+    l2cap::ChannelManager* l2cap, gatt::GATT::WeakPtr gatt,
+    hci::CommandChannel::WeakPtr cmd_channel, pw::async::Dispatcher& dispatcher)
+    : pw_dispatcher_(dispatcher),
+      peer_(std::move(peer)),
       link_(std::move(link)),
       connection_options_(connection_options),
       conn_mgr_(std::move(conn_mgr)),

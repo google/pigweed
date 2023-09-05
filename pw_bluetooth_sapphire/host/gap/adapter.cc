@@ -6,6 +6,8 @@
 
 #include <endian.h>
 
+#include <pw_async_fuchsia/dispatcher.h>
+
 #include "bredr_connection_manager.h"
 #include "bredr_discovery_manager.h"
 #include "event_masks.h"
@@ -408,6 +410,7 @@ class AdapterImpl final : public Adapter {
   AdapterId identifier_;
 
   async_dispatcher_t* dispatcher_;
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_;
   hci::Transport::WeakPtr hci_;
 
   // Callback invoked to notify clients when the underlying transport is closed.
@@ -480,6 +483,7 @@ AdapterImpl::AdapterImpl(hci::Transport::WeakPtr hci, gatt::GATT::WeakPtr gatt,
                          std::unique_ptr<l2cap::ChannelManager> l2cap)
     : identifier_(Random<AdapterId>()),
       dispatcher_(async_get_default_dispatcher()),
+      pw_dispatcher_(dispatcher_),
       hci_(std::move(hci)),
       init_state_(State::kNotInitialized),
       l2cap_(std::move(l2cap)),
@@ -1044,7 +1048,7 @@ void AdapterImpl::InitializeStep4() {
   le_connection_manager_ = std::make_unique<LowEnergyConnectionManager>(
       hci_->command_channel()->AsWeakPtr(), le_address_manager_.get(), hci_le_connector_.get(),
       &peer_cache_, l2cap_.get(), gatt_, le_discovery_manager_->GetWeakPtr(),
-      sm::SecurityManager::Create);
+      sm::SecurityManager::Create, pw_dispatcher_);
   le_connection_manager_->AttachInspect(adapter_node_, kInspectLowEnergyConnectionManagerNodeName);
 
   le_advertising_manager_ = std::make_unique<LowEnergyAdvertisingManager>(

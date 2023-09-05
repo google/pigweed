@@ -38,8 +38,10 @@ LowEnergyConnector::LowEnergyConnector(PeerId peer_id, LowEnergyConnectionOption
                                        hci::CommandChannel::WeakPtr cmd_channel,
                                        PeerCache* peer_cache,
                                        WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
-                                       l2cap::ChannelManager* l2cap, gatt::GATT::WeakPtr gatt)
-    : peer_id_(peer_id),
+                                       l2cap::ChannelManager* l2cap, gatt::GATT::WeakPtr gatt,
+                                       pw::async::Dispatcher& dispatcher)
+    : pw_dispatcher_(dispatcher),
+      peer_id_(peer_id),
       peer_cache_(peer_cache),
       l2cap_(l2cap),
       gatt_(std::move(gatt)),
@@ -309,9 +311,9 @@ bool LowEnergyConnector::InitializeConnection(std::unique_ptr<hci::LowEnergyConn
 
   Peer* peer = peer_cache_->FindById(peer_id_);
   BT_ASSERT(peer);
-  auto connection =
-      LowEnergyConnection::Create(peer->GetWeakPtr(), std::move(link), options_, peer_disconnect_cb,
-                                  error_cb, le_connection_manager_, l2cap_, gatt_, cmd_);
+  auto connection = LowEnergyConnection::Create(
+      peer->GetWeakPtr(), std::move(link), options_, peer_disconnect_cb, error_cb,
+      le_connection_manager_, l2cap_, gatt_, cmd_, pw_dispatcher_);
   if (!connection) {
     bt_log(WARN, "gap-le", "connection initialization failed (peer: %s)", bt_str(peer_id_));
     NotifyFailure();

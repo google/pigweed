@@ -54,7 +54,7 @@ class LowEnergyConnection final : public sm::Delegate {
       LowEnergyConnectionOptions connection_options, PeerDisconnectCallback peer_disconnect_cb,
       ErrorCallback error_cb, WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
       l2cap::ChannelManager* l2cap, gatt::GATT::WeakPtr gatt,
-      hci::CommandChannel::WeakPtr cmd_channel);
+      hci::CommandChannel::WeakPtr cmd_channel, pw::async::Dispatcher& dispatcher);
 
   // Notifies request callbacks and connection refs of the disconnection.
   ~LowEnergyConnection() override;
@@ -136,7 +136,7 @@ class LowEnergyConnection final : public sm::Delegate {
                       PeerDisconnectCallback peer_disconnect_cb, ErrorCallback error_cb,
                       WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
                       l2cap::ChannelManager* l2cap, gatt::GATT::WeakPtr gatt,
-                      hci::CommandChannel::WeakPtr cmd_channel);
+                      hci::CommandChannel::WeakPtr cmd_channel, pw::async::Dispatcher& dispatcher);
 
   // Registers this connection with L2CAP and initializes the fixed channel
   // protocols. Return true on success, false on failure.
@@ -263,7 +263,7 @@ class LowEnergyConnection final : public sm::Delegate {
                       ConfirmCallback confirm) override;
   void RequestPasskey(PasskeyResponseCallback respond) override;
 
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{async_get_default_dispatcher()};
+  pw::async::Dispatcher& pw_dispatcher_;
 
   // Notifies Peer of connection destruction. This should be ordered first so that it is
   // destroyed last.

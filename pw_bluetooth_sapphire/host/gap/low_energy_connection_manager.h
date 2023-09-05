@@ -84,7 +84,8 @@ class LowEnergyConnectionManager final {
                              hci::LowEnergyConnector* connector, PeerCache* peer_cache,
                              l2cap::ChannelManager* l2cap, gatt::GATT::WeakPtr gatt,
                              LowEnergyDiscoveryManager::WeakPtr discovery_manager,
-                             sm::SecurityManagerFactory sm_creator);
+                             sm::SecurityManagerFactory sm_creator,
+                             pw::async::Dispatcher& dispatcher);
   ~LowEnergyConnectionManager();
 
   // Allows a caller to claim shared ownership over a connection to the requested remote LE peer
@@ -253,6 +254,8 @@ class LowEnergyConnectionManager final {
   // The general rules of validity around std::unordered_map::iterator apply to
   // the returned value.
   ConnectionMap::iterator FindConnection(hci_spec::ConnectionHandle handle);
+
+  pw::async::Dispatcher& pw_dispatcher_;
 
   hci::CommandChannel::WeakPtr cmd_;
 

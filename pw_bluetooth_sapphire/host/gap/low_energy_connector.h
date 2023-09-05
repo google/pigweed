@@ -31,7 +31,8 @@ class LowEnergyConnector final {
   LowEnergyConnector(PeerId peer_id, LowEnergyConnectionOptions options,
                      hci::CommandChannel::WeakPtr cmd_channel, PeerCache* peer_cache,
                      WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
-                     l2cap::ChannelManager* l2cap, gatt::GATT::WeakPtr gatt);
+                     l2cap::ChannelManager* l2cap, gatt::GATT::WeakPtr gatt,
+                     pw::async::Dispatcher& dispatcher);
 
   // Instances should only be destroyed after the result callback is called (except for stack tear
   // down). Due to the asynchronous nature of cancelling the connection process, it is NOT safe to
@@ -108,6 +109,8 @@ class LowEnergyConnector final {
 
   // Set is_outbound_ and its Inspect property.
   void set_is_outbound(bool is_outbound);
+
+  pw::async::Dispatcher& pw_dispatcher_;
 
   StringInspectable<State> state_{State::kDefault,
                                   /*convert=*/[](auto s) { return StateToString(s); }};
