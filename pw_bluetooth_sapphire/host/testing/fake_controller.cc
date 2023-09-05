@@ -1598,14 +1598,18 @@ void FakeController::OnUserConfirmationRequestReplyCommand(
   SendEvent(hci_spec::kSimplePairingCompleteEventCode,
             BufferView(&pairing_event, sizeof(pairing_event)));
 
-  hci_spec::LinkKeyNotificationEventParams link_key_event;
-  link_key_event.bd_addr = DeviceAddressBytes(params.bd_addr());
+  auto link_key_event =
+      hci::EmbossEventPacket::New<pw::bluetooth::emboss::LinkKeyNotificationEventWriter>(
+          hci_spec::kLinkKeyNotificationEventCode);
+  auto link_key_view = link_key_event.view_t();
+  link_key_view.bd_addr().CopyFrom(params.bd_addr());
   uint8_t key[] = {0xc0, 0xde, 0xfa, 0x57, 0x4b, 0xad, 0xf0, 0x0d,
                    0xa7, 0x60, 0x06, 0x1e, 0xca, 0x1e, 0xca, 0xfe};
-  std::copy(key, key + sizeof(key), link_key_event.link_key);
-  link_key_event.key_type = 4;  // Unauthenticated Combination Key generated from P-192
-  SendEvent(hci_spec::kLinkKeyNotificationEventCode,
-            BufferView(&link_key_event, sizeof(link_key_event)));
+  link_key_view.link_key().value().BackingStorage().CopyFrom(
+      ::emboss::support::ReadOnlyContiguousBuffer(key, sizeof(key)), sizeof(key));
+  link_key_view.key_type().Write(
+      pw::bluetooth::emboss::KeyType::UNAUTHENTICATED_COMBINATION_FROM_P192);
+  SendCommandChannelPacket(link_key_event.data());
 
   BT_ASSERT(!peer->logical_links().empty());
   for (auto& conn_handle : peer->logical_links()) {

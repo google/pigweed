@@ -1041,27 +1041,26 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnLinkKeyReques
 }
 
 hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnLinkKeyNotification(
-    const hci::EventPacket& event) {
-  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kLinkKeyNotificationEventCode);
-  const auto& params = event.params<hci_spec::LinkKeyNotificationEventParams>();
+    const hci::EmbossEventPacket& event) {
+  const auto params = event.view<pw::bluetooth::emboss::LinkKeyNotificationEventView>();
 
-  DeviceAddress addr(DeviceAddress::Type::kBREDR, params.bd_addr);
+  const DeviceAddress addr(DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr()));
+  pw::bluetooth::emboss::KeyType key_type = params.key_type().Read();
 
   auto* peer = cache_->FindByAddress(addr);
   if (!peer) {
     bt_log(WARN, "gap-bredr",
            "no known peer with address %s found; link key not stored (key type: %u)", bt_str(addr),
-           params.key_type);
+           static_cast<uint8_t>(key_type));
     cache_->LogBrEdrBondingEvent(false);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  bt_log(INFO, "gap-bredr", "got link key notification (key type: %u, peer: %s)", params.key_type,
-         bt_str(peer->identifier()));
+  bt_log(INFO, "gap-bredr", "got link key notification (key type: %u, peer: %s)",
+         static_cast<uint8_t>(key_type), bt_str(peer->identifier()));
 
-  auto key_type = hci_spec::LinkKeyType{params.key_type};
   sm::SecurityProperties sec_props;
-  if (key_type == hci_spec::LinkKeyType::kChangedCombination) {
+  if (key_type == pw::bluetooth::emboss::KeyType::CHANGED_COMBINATION_KEY) {
     if (!peer->bredr() || !peer->bredr()->bonded()) {
       bt_log(WARN, "gap-bredr", "can't update link key of unbonded peer %s",
              bt_str(peer->identifier()));
@@ -1072,9 +1071,9 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnLinkKeyNotifi
     // Reuse current properties
     BT_DEBUG_ASSERT(peer->bredr()->link_key());
     sec_props = peer->bredr()->link_key()->security();
-    key_type = *sec_props.GetLinkKeyType();
+    key_type = static_cast<pw::bluetooth::emboss::KeyType>(sec_props.GetLinkKeyType().value());
   } else {
-    sec_props = sm::SecurityProperties(key_type);
+    sec_props = sm::SecurityProperties(static_cast<hci_spec::LinkKeyType>(key_type));
   }
 
   auto peer_id = peer->identifier();
@@ -1087,7 +1086,9 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnLinkKeyNotifi
   }
 
   UInt128 key_value;
-  std::copy(params.link_key, &params.link_key[key_value.size()], key_value.begin());
+  ::emboss::support::ReadWriteContiguousBuffer(&key_value)
+      .CopyFrom(params.link_key().value().BackingStorage(), key_value.size());
+
   hci_spec::LinkKey hci_key(key_value, 0, 0);
   sm::LTK key(sec_props, hci_key);
 
@@ -1095,9 +1096,10 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnLinkKeyNotifi
   if (!handle) {
     bt_log(WARN, "gap-bredr", "can't find current connection for ltk (peer: %s)", bt_str(peer_id));
   } else {
-    handle->second->link().set_link_key(hci_key, key_type);
-    handle->second->pairing_state().OnLinkKeyNotification(key_value, key_type,
-                                                          local_secure_connections_supported_);
+    handle->second->link().set_link_key(hci_key, static_cast<hci_spec::LinkKeyType>(key_type));
+    handle->second->pairing_state().OnLinkKeyNotification(
+        key_value, static_cast<hci_spec::LinkKeyType>(key_type),
+        local_secure_connections_supported_);
   }
 
   if (cache_->StoreBrEdrBond(addr, key)) {

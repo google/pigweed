@@ -844,17 +844,6 @@ constexpr EventCode kLinkKeyRequestEventCode = 0x17;
 // Link Key Notification Event (v1.1) (BR/EDR)
 constexpr EventCode kLinkKeyNotificationEventCode = 0x18;
 
-struct LinkKeyNotificationEventParams {
-  // The address for the device for which a new link key has been generated.
-  DeviceAddressBytes bd_addr;
-
-  // Link key for the associated address.
-  uint8_t link_key[kBrEdrLinkKeySize];
-
-  // Type of key used when pairing.
-  uint8_t key_type;
-} __attribute__((packed));
-
 // ===========================================
 // Data Buffer Overflow Event (v1.1) (BR/EDR & LE)
 constexpr EventCode kDataBufferOverflowEventCode = 0x1A;
