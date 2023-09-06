@@ -178,6 +178,13 @@ TEST(PigweedTest, MacroArgumentsOnlyAreEvaluatedOnce) {
   EXPECT_EQ(i, 4);
 }
 
+class ClassWithPrivateMethod {
+  FRIEND_TEST(FixtureTest, FriendClass);
+
+ private:
+  int Return314() { return 314; }
+};
+
 class FixtureTest : public ::testing::Test {
  public:
   FixtureTest() : string_("hello world") {}
@@ -192,6 +199,10 @@ class FixtureTest : public ::testing::Test {
 TEST_F(FixtureTest, CustomFixture) {
   EXPECT_TRUE(ReturnTrue());
   EXPECT_EQ(StringLength(), 11);
+}
+
+TEST_F(FixtureTest, FriendClass) {
+  EXPECT_EQ(ClassWithPrivateMethod().Return314(), 314);
 }
 
 class PigweedTestFixture : public ::testing::Test {

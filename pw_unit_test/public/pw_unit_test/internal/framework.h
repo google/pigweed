@@ -47,6 +47,11 @@
   _PW_TEST_SUITE_NAMES_MUST_BE_UNIQUE(int /* TEST_F */, test_fixture); \
   _PW_TEST(test_fixture, test_name, test_fixture)
 
+// Use of the FRIEND_TEST() macro is discouraged, because it induces coupling
+// between testing and implementation code. Consider this a last resort only.
+#define FRIEND_TEST(test_suite_name, test_name) \
+  friend class test_suite_name##_##test_name##_Test
+
 #define EXPECT_TRUE(expr) _PW_TEST_EXPECT(_PW_TEST_BOOL(expr, true))
 #define EXPECT_FALSE(expr) _PW_TEST_EXPECT(_PW_TEST_BOOL(expr, false))
 #define EXPECT_EQ(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_OP(lhs, rhs, ==))
