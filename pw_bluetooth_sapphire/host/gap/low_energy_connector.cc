@@ -4,8 +4,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connector.h"
 
-#include <lib/async/default.h>
-
 #include <utility>
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
@@ -57,6 +55,13 @@ LowEnergyConnector::LowEnergyConnector(PeerId peer_id, LowEnergyConnectionOption
   auto peer = peer_cache_->FindById(peer_id_);
   BT_ASSERT(peer);
   peer_address_ = peer->address();
+
+  request_create_connection_task_.set_function(
+      [this](pw::async::Context /*ctx*/, pw::Status status) {
+        if (status.ok()) {
+          RequestCreateConnection();
+        }
+      });
 }
 
 LowEnergyConnector::~LowEnergyConnector() {
@@ -220,13 +225,17 @@ void LowEnergyConnector::OnScanStart(LowEnergyDiscoverySessionPtr session) {
   state_.Set(State::kScanning);
 
   auto self = weak_self_.GetWeakPtr();
-  scan_timeout_task_.emplace([this] {
+  scan_timeout_task_.emplace(pw_dispatcher_, [this](pw::async::Context& /*ctx*/,
+                                                    pw::Status status) {
+    if (!status.ok()) {
+      return;
+    }
     BT_ASSERT(*state_ == State::kScanning);
     bt_log(INFO, "gap-le", "scan for pending connection timed out (peer: %s)", bt_str(peer_id_));
     NotifyFailure(ToResult(HostError::kTimedOut));
   });
   // The scan timeout may include time during which scanning is paused.
-  scan_timeout_task_->PostDelayed(async_get_default_dispatcher(), kLEGeneralCepScanTimeout);
+  scan_timeout_task_->PostAfter(kPwLEGeneralCepScanTimeout);
 
   discovery_session_ = std::move(session);
   discovery_session_->filter()->set_connectable(true);
@@ -397,12 +406,12 @@ bool LowEnergyConnector::MaybeRetryConnection() {
     state_.Set(State::kPauseBeforeConnectionRetry);
 
     // Exponential backoff (2s, 4s, 8s, ...)
-    zx::duration retry_delay = zx::sec(kRetryExponentialBackoffBase << *connection_attempt_);
+    std::chrono::seconds retry_delay(kRetryExponentialBackoffBase << *connection_attempt_);
 
     connection_attempt_.Set(*connection_attempt_ + 1);
-    bt_log(INFO, "gap-le", "Retrying connection in %lds (peer: %s, attempt: %d)",
-           retry_delay.to_secs(), bt_str(peer_id_), *connection_attempt_);
-    request_create_connection_task_.PostDelayed(async_get_default_dispatcher(), retry_delay);
+    bt_log(INFO, "gap-le", "Retrying connection in %llds (peer: %s, attempt: %d)",
+           retry_delay.count(), bt_str(peer_id_), *connection_attempt_);
+    request_create_connection_task_.PostAfter(retry_delay);
     return true;
   }
   return false;

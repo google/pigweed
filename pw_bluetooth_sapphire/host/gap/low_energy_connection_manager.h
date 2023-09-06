@@ -5,7 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_CONNECTION_MANAGER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_CONNECTION_MANAGER_H_
 
-#include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 
 #include <list>
@@ -272,12 +271,6 @@ class LowEnergyConnectionManager final {
   // Time after which a connection attempt is considered to have timed out. This
   // is configurable to allow unit tests to set a shorter value.
   zx::duration request_timeout_;
-
-  // Task called after a peer scan attempt is times out.
-  std::optional<async::TaskClosure> scan_timeout_task_;
-
-  // The dispatcher for all asynchronous tasks.
-  async_dispatcher_t* dispatcher_;
 
   // The peer cache is used to look up and persist remote peer data that is
   // relevant during connection establishment (such as the address, preferred

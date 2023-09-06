@@ -125,6 +125,7 @@ constexpr zx::duration kBrEdrCreateConnectionTimeout = zx::sec(20);
 
 // Timeout used for scanning during LE General CEP. Selected to be longer than the scan period.
 constexpr zx::duration kLEGeneralCepScanTimeout = zx::sec(20);
+constexpr pw::chrono::SystemClock::duration kPwLEGeneralCepScanTimeout = std::chrono::seconds(20);
 
 // Connection Interval Timing Parameters (see v5.0, Vol 3, Part C,
 // Section 9.3.12 and Appendix A)

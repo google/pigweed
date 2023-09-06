@@ -147,11 +147,10 @@ class LowEnergyConnector final {
   // is on.
   IntInspectable<int> connection_attempt_{0};
 
-  async::TaskClosureMethod<LowEnergyConnector, &LowEnergyConnector::RequestCreateConnection>
-      request_create_connection_task_{this};
+  SmartTask request_create_connection_task_{pw_dispatcher_};
 
   // Task called after the scan attempt times out.
-  std::optional<async::TaskClosure> scan_timeout_task_;
+  std::optional<SmartTask> scan_timeout_task_;
 
   std::unique_ptr<LowEnergyDiscoverySession> discovery_session_;
 

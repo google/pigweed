@@ -4,10 +4,6 @@
 
 #include "low_energy_connection_manager.h"
 
-#include <lib/async/cpp/task.h>
-#include <lib/async/default.h>
-#include <lib/async/time.h>
-
 #include <optional>
 #include <vector>
 
@@ -96,7 +92,6 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(
       security_mode_(LESecurityMode::Mode1),
       sm_factory_func_(std::move(sm_creator)),
       request_timeout_(kLECreateConnectionTimeout),
-      dispatcher_(async_get_default_dispatcher()),
       peer_cache_(peer_cache),
       l2cap_(l2cap),
       gatt_(gatt),
@@ -104,7 +99,6 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(
       hci_connector_(connector),
       local_address_delegate_(addr_delegate),
       weak_self_(this) {
-  BT_DEBUG_ASSERT(dispatcher_);
   BT_DEBUG_ASSERT(peer_cache_);
   BT_DEBUG_ASSERT(l2cap_);
   BT_DEBUG_ASSERT(gatt_.is_alive());
