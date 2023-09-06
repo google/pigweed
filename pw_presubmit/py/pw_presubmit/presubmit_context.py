@@ -92,7 +92,7 @@ def get_buildbucket_info(bbid) -> Dict[str, Any]:
 @dataclasses.dataclass
 class LuciPipeline:
     round: int
-    builds_from_previous_iteration: Sequence[str]
+    builds_from_previous_iteration: Sequence[int]
 
     @staticmethod
     def create(
@@ -115,7 +115,7 @@ class LuciPipeline:
         return LuciPipeline(
             round=int(pipeline_props['round']),
             builds_from_previous_iteration=list(
-                pipeline_props['builds_from_previous_iteration']
+                int(x) for x in pipeline_props['builds_from_previous_iteration']
             ),
         )
 
