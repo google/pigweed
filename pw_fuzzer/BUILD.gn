@@ -172,7 +172,15 @@ config("instrumentation") {
 
     # OSS-Fuzz sets "-stdlib=libc++", which conflicts with the "-nostdinc++" set
     # by `pw_minimal_cpp_stdlib`.
-    cflags_cc += [ "-Wno-unused-command-line-argument" ]
+    if (cflags_cc + [ "-stdlib=libc++" ] - [ "-stdlib=libc++" ] != cflags_cc) {
+      cflags_cc += [ "-Wno-unused-command-line-argument" ]
+    }
+
+    # Disable UBSan vptr when the target is built with -fno-rtti.
+    if (cflags_cc + [ "-fno-rtti" ] - [ "-fno-rtti" ] != cflags_cc) {
+      cflags_cc += [ " -fno-sanitize=vptr" ]
+    }
+    cflags_cc += [ "-fcoverage-compilation-dir=" + getenv("PW_ROOT") ]
   } else {
     cflags = [ "-fsanitize=fuzzer-no-link" ]
   }
@@ -181,13 +189,18 @@ config("instrumentation") {
 # Add flags for linking against compiler-rt's libFuzzer. This is added
 # automatically by `pw_fuzzer`.
 config("libfuzzer_config") {
+  ldflags = []
+  engine = ""
   if (pw_toolchain_OSS_FUZZ_ENABLED) {
     # OSS-Fuzz manipulates linker flags directly. See
     # google.github.io/oss-fuzz/getting-started/new-project-guide/#Requirements.
-    ldflags = string_split(getenv("LDFLAGS")) + [ getenv("LIB_FUZZING_ENGINE") ]
-  } else {
-    ldflags = [ "-fsanitize=fuzzer" ]
+    ldflags = string_split(getenv("LDFLAGS"))
+    engine = getenv("LIB_FUZZING_ENGINE")
   }
+  if (engine == "") {
+    engine = "-fsanitize=fuzzer"
+  }
+  ldflags += [ engine ]
 }
 
 # Includes wrapper's for LLVM's libFuzzer compiler runtime library.

@@ -477,6 +477,16 @@ gn_fuzz_build = build.GnGenNinja(
 )
 
 
+oss_fuzz_build = build.GnGenNinja(
+    name='oss_fuzz_build',
+    path_filter=_BUILD_FILE_FILTER,
+    gn_args={
+        'pw_toolchain_OSS_FUZZ_ENABLED': True,
+    },
+    ninja_targets=('oss_fuzz',),
+)
+
+
 def _env_with_zephyr_vars(ctx: PresubmitContext) -> dict:
     """Returns the environment variables with ... set for Zephyr."""
     env = os.environ.copy()
@@ -1185,6 +1195,7 @@ SECURITY = (
     gn_crypto_micro_ecc_build,
     gn_fuzz_build,
     gn_software_update_build,
+    oss_fuzz_build,
     # keep-sorted: end
 )
 

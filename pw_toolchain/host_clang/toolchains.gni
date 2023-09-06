@@ -45,23 +45,10 @@ declare_args() {
 
 # Specifies the tools used by host Clang toolchains.
 _host_clang_toolchain = {
-  if (pw_toolchain_OSS_FUZZ_ENABLED) {
-    # OSS-Fuzz sets compiler and linker paths. See
-    # google.github.io/oss-fuzz/getting-started/new-project-guide/#Requirements.
-
-    # Just use the "llvm-ar" on the system path.
-    ar = "llvm-ar"
-    cc = getenv("CC")
-    cxx = getenv("CXX")
-  } else {
-    forward_variables_from(pw_toolchain_clang_tools, "*")
-  }
-
+  forward_variables_from(pw_toolchain_clang_tools, "*")
   is_host_toolchain = true
-
   static_analysis = {
-    # Enable static analysis for host clang based toolchains,
-    # even with OSS-Fuzz enabled.
+    # Enable static analysis for host clang based toolchains.
     enabled = true
   }
 }
@@ -126,7 +113,27 @@ pw_toolchain_host_clang = {
 
   fuzz = {
     name = "host_clang_fuzz"
-    forward_variables_from(_host_clang_toolchain, "*")
+    cc = ""
+    cxx = ""
+    forward_variables_from(_host_clang_toolchain,
+                           "*",
+                           [
+                             "cc",
+                             "cxx",
+                           ])
+
+    # OSS-Fuzz sets compiler paths. See
+    # google.github.io/oss-fuzz/getting-started/new-project-guide/#Requirements.
+    if (pw_toolchain_OSS_FUZZ_ENABLED) {
+      cc = getenv("CC")
+      cxx = getenv("CXX")
+    }
+    if (cc == "") {
+      cc = _host_clang_toolchain.cc
+    }
+    if (cxx == "") {
+      cxx = _host_clang_toolchain.cxx
+    }
     defaults = {
       forward_variables_from(_defaults, "*")
 

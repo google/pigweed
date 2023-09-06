@@ -338,7 +338,6 @@ group("pip_vendor_wheels") {
   }
 }
 
-# Build-only target for fuzzers.
 group("fuzzers") {
   deps = []
 
@@ -350,10 +349,18 @@ group("fuzzers") {
     deps += [ ":pw_module_tests.run($_clang_fuzz_tc)" ]
   }
 
-  # Include additional, bespoke fuzzers.
+  # Also build (but do not run) bespoke fuzzers.
   if (!pw_toolchain_OSS_FUZZ_ENABLED) {
     _default_tc = _default_toolchain_prefix + pw_DEFAULT_C_OPTIMIZATION_LEVEL
     deps += [ ":pw_custom_fuzzers($_default_tc)" ]
+  }
+}
+
+# Build-only target for OSS-Fuzz. No-op unless OSS-Fuzz is enabled.
+group("oss_fuzz") {
+  if (pw_toolchain_OSS_FUZZ_ENABLED) {
+    _clang_fuzz_tc = _default_toolchain_prefix + "fuzz"
+    deps = [ ":pw_module_tests($_clang_fuzz_tc)" ]
   }
 }
 
