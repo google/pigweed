@@ -366,7 +366,7 @@ class Peer final {
     // byte order.
     void SetInquiryData(const pw::bluetooth::emboss::InquiryResultView& view);
     void SetInquiryData(const pw::bluetooth::emboss::InquiryResultWithRssiView& view);
-    void SetInquiryData(const hci_spec::ExtendedInquiryResultEventParams& value);
+    void SetInquiryData(const pw::bluetooth::emboss::ExtendedInquiryResultEventView& view);
 
     // Register a connection that is in the request/initializing state. A token is returned that
     // should be owned until the initialization is complete or canceled. The connection state may be
@@ -423,9 +423,6 @@ class Peer final {
     std::optional<DeviceClass> device_class_;
     std::optional<pw::bluetooth::emboss::PageScanRepetitionMode> page_scan_rep_mode_;
     std::optional<uint16_t> clock_offset_;
-    // TODO(jamuraa): Parse more of the Extended Inquiry Response fields
-    size_t eir_len_;
-    DynamicByteBuffer eir_buffer_;
     BoolInspectable<std::optional<sm::LTK>> link_key_;
     StringInspectable<std::unordered_set<UUID>> services_;
   };

@@ -179,10 +179,10 @@ class PeerFuzzer final {
     if (!peer_.identity_known()) {
       return;
     }
-    hci_spec::ExtendedInquiryResultEventParams inquiry_data = {};
-    fdp().ConsumeData(&inquiry_data, sizeof(inquiry_data));
-    inquiry_data.bd_addr = peer_.address().value();
-    peer_.MutBrEdr().SetInquiryData(inquiry_data);
+    StaticPacket<pw::bluetooth::emboss::ExtendedInquiryResultEventWriter> inquiry_data;
+    fdp().ConsumeData(inquiry_data.mutable_data().mutable_data(), inquiry_data.data().size());
+    inquiry_data.view().bd_addr().CopyFrom(peer_.address().value().view());
+    peer_.MutBrEdr().SetInquiryData(inquiry_data.view());
   }
 
   void BrEdrDataRegisterInitializingConnection() {

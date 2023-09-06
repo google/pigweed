@@ -318,14 +318,14 @@ TEST_F(PeerTest, BrEdrDataSetEirDataWithInvalidUtf8NameDoesNotUpdatePeerName) {
                                   'T', 'e', 's',
                                   0xFF  // 0xFF should not appear in a valid UTF-8 string
   );
-  hci_spec::ExtendedInquiryResultEventParams eirep;
-  eirep.num_responses = 1;
-  eirep.bd_addr = peer().address().value();
-  MutableBufferView(eirep.extended_inquiry_response, sizeof(eirep.extended_inquiry_response))
-      .Fill(0);
-  MutableBufferView(eirep.extended_inquiry_response, kEirData.size()).Write(kEirData);
 
-  peer().MutBrEdr().SetInquiryData(eirep);
+  StaticPacket<pw::bluetooth::emboss::ExtendedInquiryResultEventWriter> eirep;
+  eirep.view().num_responses().Write(1);
+  eirep.view().bd_addr().CopyFrom(peer().address().value().view());
+  eirep.view().extended_inquiry_response().BackingStorage().CopyFrom(
+      ::emboss::support::ReadOnlyContiguousBuffer(&kEirData), kEirData.size());
+
+  peer().MutBrEdr().SetInquiryData(eirep.view());
   EXPECT_TRUE(listener_notified);  // Fresh EIR data still results in an update
   EXPECT_FALSE(peer().name().has_value());
 }
@@ -1119,13 +1119,13 @@ TEST_F(PeerTest, SettingInquiryDataOfBondedPeerDoesNotUpdateName) {
   const StaticByteBuffer kEirData(0x08,  // Length
                                   0x09,  // AD type: Complete Local Name
                                   'M', 'a', 'l', 'l', 'o', 'r', 'y');
-  hci_spec::ExtendedInquiryResultEventParams eirep;
-  eirep.num_responses = 1;
-  eirep.bd_addr = peer().address().value();
-  MutableBufferView(eirep.extended_inquiry_response, sizeof(eirep.extended_inquiry_response))
-      .Fill(0);
-  MutableBufferView(eirep.extended_inquiry_response, kEirData.size()).Write(kEirData);
-  peer().MutBrEdr().SetInquiryData(eirep);
+  StaticPacket<pw::bluetooth::emboss::ExtendedInquiryResultEventWriter> eirep;
+  eirep.view().num_responses().Write(1);
+  eirep.view().bd_addr().CopyFrom(peer().address().value().view());
+  eirep.view().extended_inquiry_response().BackingStorage().CopyFrom(
+      ::emboss::support::ReadOnlyContiguousBuffer(&kEirData), kEirData.size());
+
+  peer().MutBrEdr().SetInquiryData(eirep.view());
 
   ASSERT_TRUE(peer().name().has_value());
   EXPECT_EQ(peer().name().value(), "alice");
@@ -1141,14 +1141,15 @@ TEST_F(PeerTest, BrEdrDataSetEirDataDoesUpdatePeerName) {
   const StaticByteBuffer kEirData(0x0D,  // Length (13)
                                   0x09,  // AD type: Complete Local Name
                                   'S', 'a', 'p', 'p', 'h', 'i', 'r', 'e', 0xf0, 0x9f, 0x92, 0x96);
-  hci_spec::ExtendedInquiryResultEventParams eirep;
-  eirep.num_responses = 1;
-  eirep.bd_addr = peer().address().value();
-  MutableBufferView(eirep.extended_inquiry_response, sizeof(eirep.extended_inquiry_response))
-      .Fill(0);
-  MutableBufferView(eirep.extended_inquiry_response, kEirData.size()).Write(kEirData);
 
-  peer().MutBrEdr().SetInquiryData(eirep);
+  StaticPacket<pw::bluetooth::emboss::ExtendedInquiryResultEventWriter> eirep;
+  eirep.view().num_responses().Write(1);
+  eirep.view().bd_addr().CopyFrom(peer().address().value().view());
+  eirep.view().extended_inquiry_response().BackingStorage().CopyFrom(
+      ::emboss::support::ReadOnlyContiguousBuffer(&kEirData), kEirData.size());
+
+  peer().MutBrEdr().SetInquiryData(eirep.view());
+
   EXPECT_TRUE(listener_notified);  // Fresh EIR data results in an update
   ASSERT_TRUE(peer().name().has_value());
   EXPECT_EQ(peer().name().value(), "Sapphire💖");
@@ -1161,17 +1162,14 @@ TEST_F(PeerTest, SetEirDataUpdatesServiceUUIDs) {
       // One 16-bit UUID: AudioSink
       0x03, static_cast<uint8_t>(DataType::kIncomplete16BitServiceUuids), 0x0A, 0x11,
   };
-  hci_spec::ExtendedInquiryResultEventParams eirep;
-  eirep.num_responses = 1;
-  eirep.bd_addr = peer().address().value();
-  MutableBufferView(eirep.extended_inquiry_response, sizeof(eirep.extended_inquiry_response)).Fill(0);
-  MutableBufferView(eirep.extended_inquiry_response, kEirJustServiceUuids.size())
-      .Write(kEirJustServiceUuids);
-  peer().MutBrEdr().SetInquiryData(eirep);
 
-  for (const auto it : peer().bredr()->services()) {
-      bt_log(WARN, "gap-le", "After adding: %s", bt_str(it));
-  }
+  StaticPacket<pw::bluetooth::emboss::ExtendedInquiryResultEventWriter> eirep;
+  eirep.view().num_responses().Write(1);
+  eirep.view().bd_addr().CopyFrom(peer().address().value().view());
+  eirep.view().extended_inquiry_response().BackingStorage().CopyFrom(
+      ::emboss::support::ReadOnlyContiguousBuffer(&kEirJustServiceUuids),
+      kEirJustServiceUuids.size());
+  peer().MutBrEdr().SetInquiryData(eirep.view());
 
   EXPECT_EQ(peer().bredr()->services().size(), 1u);
   EXPECT_EQ(peer().bredr()->services().count(UUID((uint16_t)0x110A)), 1u);

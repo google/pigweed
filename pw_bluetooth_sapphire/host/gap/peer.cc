@@ -247,7 +247,6 @@ void Peer::LowEnergyData::OnConnectionStateMaybeChanged(ConnectionState previous
 
 Peer::BrEdrData::BrEdrData(Peer* owner)
     : peer_(owner),
-      eir_len_(0u),
       link_key_(std::nullopt, [](const std::optional<sm::LTK>& l) { return l.has_value(); }),
       services_({}, MakeContainerOfToStringConvertFunction()) {
   BT_DEBUG_ASSERT(peer_);
@@ -282,11 +281,14 @@ void Peer::BrEdrData::SetInquiryData(const pw::bluetooth::emboss::InquiryResultW
                  view.page_scan_repetition_mode().Read(), view.rssi().Read());
 }
 
-void Peer::BrEdrData::SetInquiryData(const hci_spec::ExtendedInquiryResultEventParams& value) {
-  BT_DEBUG_ASSERT(peer_->address().value() == value.bd_addr);
-  SetInquiryData(
-      value.class_of_device, value.clock_offset, value.page_scan_repetition_mode, value.rssi,
-      BufferView(value.extended_inquiry_response, sizeof(value.extended_inquiry_response)));
+void Peer::BrEdrData::SetInquiryData(
+    const pw::bluetooth::emboss::ExtendedInquiryResultEventView& view) {
+  BT_DEBUG_ASSERT(peer_->address().value() == DeviceAddressBytes(view.bd_addr()));
+  const BufferView response_view(view.extended_inquiry_response().BackingStorage().data(),
+                                 view.extended_inquiry_response().SizeInBytes());
+  SetInquiryData(DeviceClass(view.class_of_device().BackingStorage().ReadUInt()),
+                 view.clock_offset().BackingStorage().ReadUInt(),
+                 view.page_scan_repetition_mode().Read(), view.rssi().Read(), response_view);
 }
 
 Peer::InitializingConnectionToken Peer::BrEdrData::RegisterInitializingConnection() {
@@ -396,12 +398,6 @@ bool Peer::BrEdrData::SetEirData(const ByteBuffer& eir) {
   BT_DEBUG_ASSERT(eir.size());
 
   // TODO(armansito): Validate that the EIR data is not malformed?
-  if (eir_buffer_.size() < eir.size()) {
-    eir_buffer_ = DynamicByteBuffer(eir.size());
-  }
-  eir_len_ = eir.size();
-  eir.Copy(&eir_buffer_);
-
   SupplementDataReader reader(eir);
   DataType type;
   BufferView data;

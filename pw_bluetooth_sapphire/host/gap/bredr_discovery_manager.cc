@@ -255,17 +255,11 @@ hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::InquiryResultWit
 }
 
 hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::ExtendedInquiryResult(
-    const hci::EventPacket& event) {
-  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kExtendedInquiryResultEventCode);
-
+    const hci::EmbossEventPacket& event) {
   bt_log(TRACE, "gap-bredr", "ExtendedInquiryResult received");
-  if (event.view().payload_size() != sizeof(hci_spec::ExtendedInquiryResultEventParams)) {
-    bt_log(WARN, "gap-bredr", "ignoring malformed result (%zu bytes)", event.view().payload_size());
-    return hci::CommandChannel::EventCallbackResult::kContinue;
-  }
-  const auto& result = event.params<hci_spec::ExtendedInquiryResultEventParams>();
+  const auto result = event.view<pw::bluetooth::emboss::ExtendedInquiryResultEventView>();
 
-  DeviceAddress addr(DeviceAddress::Type::kBREDR, result.bd_addr);
+  DeviceAddress addr(DeviceAddress::Type::kBREDR, DeviceAddressBytes(result.bd_addr()));
   Peer* peer = cache_->FindByAddress(addr);
   if (!peer) {
     peer = cache_->NewPeer(addr, /*connectable=*/true);

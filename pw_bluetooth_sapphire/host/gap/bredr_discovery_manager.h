@@ -96,7 +96,8 @@ class BrEdrDiscoveryManager final {
       const hci::EmbossEventPacket& event);
 
   // Used to receive Inquiry Results.
-  hci::CommandChannel::EventCallbackResult ExtendedInquiryResult(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult ExtendedInquiryResult(
+      const hci::EmbossEventPacket& event);
 
   // Creates and stores a new session object and returns it.
   std::unique_ptr<BrEdrDiscoverySession> AddDiscoverySession();

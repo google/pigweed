@@ -864,37 +864,6 @@ constexpr EventCode kSynchronousConnectionCompleteEventCode = 0x2C;
 // Extended Inquiry Result Event (v1.2) (BR/EDR)
 constexpr EventCode kExtendedInquiryResultEventCode = 0x2F;
 
-struct ExtendedInquiryResultEventParams {
-  // Num_Responses
-  // The number of responses from the inquiry.
-  // Must be 1.
-  uint8_t num_responses;
-
-  // BD_ADDR of the device that responded.
-  DeviceAddressBytes bd_addr;
-
-  // The Page Scan Repetition Mode being used by the remote device.
-  pw::bluetooth::emboss::PageScanRepetitionMode page_scan_repetition_mode;
-
-  // Reserved for future use
-  uint8_t reserved;
-
-  // Class of device
-  DeviceClass class_of_device;
-
-  // Clock offset
-  // the 15 lower bits represent bits 16-2 of CLKNPeripheral-CLK
-  // the most significant bit is reserved
-  uint16_t clock_offset;
-
-  // RSSI in dBm.
-  // Valid range: -127 to +20
-  int8_t rssi;
-
-  // Extended inquiey response data as defined in Vol 3, Part C, Sec 8
-  uint8_t extended_inquiry_response[kExtendedInquiryResponseBytes];
-} __attribute__((packed));
-
 // ================================================================
 // Encryption Key Refresh Complete Event (v2.1 + EDR) (BR/EDR & LE)
 constexpr EventCode kEncryptionKeyRefreshCompleteEventCode = 0x30;
