@@ -254,6 +254,9 @@ class Framework {
   // Whether the current test is skipped.
   bool IsSkipped() const { return current_result_ == TestResult::kSkipped; }
 
+  // Whether the current test has failed.
+  bool HasFailure() const { return current_result_ == TestResult::kFailure; }
+
   // Constructs an instance of a unit test class and runs the test.
   //
   // Tests are constructed within a static memory pool at run time instead of
@@ -457,6 +460,8 @@ class Test {
 
   static void SetUpTestSuite() {}
   static void TearDownTestSuite() {}
+
+  static bool HasFailure() { return Framework::Get().HasFailure(); }
 
   // Runs the unit test.
   void PigweedTestRun() {
