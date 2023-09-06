@@ -1028,7 +1028,7 @@ void AdapterImpl::InitializeStep4() {
   // Initialize the LE local address manager.
   le_address_manager_ = std::make_unique<LowEnergyAddressManager>(
       adapter_identity, fit::bind_member<&AdapterImpl::IsLeRandomAddressChangeAllowed>(this),
-      hci_->command_channel()->AsWeakPtr());
+      hci_->command_channel()->AsWeakPtr(), pw_dispatcher_);
 
   // Initialize the HCI adapters.
   hci_le_advertiser_ = CreateAdvertiser();

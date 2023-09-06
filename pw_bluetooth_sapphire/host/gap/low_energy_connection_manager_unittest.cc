@@ -94,8 +94,6 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     settings.ApplyLegacyLEConfig();
     test_device()->set_settings(settings);
 
-    pw_dispatcher_.emplace(dispatcher());
-
     peer_cache_ = std::make_unique<PeerCache>();
     l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>();
 
@@ -109,7 +107,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     sm_factory_ = std::make_unique<TestSmFactory>();
 
     address_manager_ = std::make_unique<LowEnergyAddressManager>(
-        kAdapterAddress, /*delegate=*/[] { return false; }, cmd_weak);
+        kAdapterAddress, /*delegate=*/[] { return false; }, cmd_weak, pw_dispatcher_);
     scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(
         address_manager_.get(), transport()->GetWeakPtr(), dispatcher());
     discovery_manager_ =
@@ -117,7 +115,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     conn_mgr_ = std::make_unique<LowEnergyConnectionManager>(
         cmd_weak, &addr_delegate_, connector_.get(), peer_cache_.get(), l2cap_.get(),
         gatt_->GetWeakPtr(), discovery_manager_->GetWeakPtr(),
-        fit::bind_member<&TestSmFactory::CreateSm>(sm_factory_.get()), *pw_dispatcher_);
+        fit::bind_member<&TestSmFactory::CreateSm>(sm_factory_.get()), pw_dispatcher_);
 
     test_device()->set_connection_state_callback(
         fit::bind_member<&LowEnergyConnectionManagerTest::OnConnectionStateChanged>(this));
@@ -195,7 +193,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     }
   }
 
-  std::optional<pw::async::fuchsia::FuchsiaDispatcher> pw_dispatcher_;
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
   std::unique_ptr<l2cap::testing::FakeL2cap> l2cap_;
   hci::FakeLocalAddressDelegate addr_delegate_;
   std::unique_ptr<PeerCache> peer_cache_;

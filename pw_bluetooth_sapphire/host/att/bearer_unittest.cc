@@ -28,9 +28,8 @@ class BearerTest : public l2cap::testing::MockChannelTest {
 
  protected:
   void SetUp() override {
-    pw_dispatcher_.emplace(dispatcher());
     ChannelOptions options(l2cap::kATTChannelId);
-    bearer_ = Bearer::Create(CreateFakeChannel(options)->GetWeakPtr(), *pw_dispatcher_);
+    bearer_ = Bearer::Create(CreateFakeChannel(options)->GetWeakPtr(), pw_dispatcher_);
   }
 
   void TearDown() override { bearer_ = nullptr; }
@@ -40,10 +39,10 @@ class BearerTest : public l2cap::testing::MockChannelTest {
 
   void DeleteBearer() { bearer_ = nullptr; }
 
-  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_.value(); }
+  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
 
  private:
-  std::optional<pw::async::fuchsia::FuchsiaDispatcher> pw_dispatcher_;
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
   std::unique_ptr<Bearer> bearer_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BearerTest);

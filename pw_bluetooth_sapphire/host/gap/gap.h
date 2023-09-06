@@ -152,6 +152,7 @@ constexpr zx::duration kCacheTimeout = zx::sec(60);
 // Time interval between random address changes when privacy is enabled (see
 // T_GAP(private_addr_int) in 5.0 Vol 3, Part C, Appendix A)
 constexpr zx::duration kPrivateAddressTimeout = zx::min(15);
+constexpr pw::chrono::SystemClock::duration kPwPrivateAddressTimeout = std::chrono::minutes(15);
 
 // Maximum duration for which a scannable advertisement will be stored and not reported to
 // clients until a corresponding scan response is received.

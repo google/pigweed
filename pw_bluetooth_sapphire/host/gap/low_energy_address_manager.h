@@ -12,6 +12,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/smart_task.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
@@ -67,7 +68,8 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
   using StateQueryDelegate = fit::function<bool()>;
 
   LowEnergyAddressManager(const DeviceAddress& public_address, StateQueryDelegate delegate,
-                          hci::CommandChannel::WeakPtr cmd_channel);
+                          hci::CommandChannel::WeakPtr cmd_channel,
+                          pw::async::Dispatcher& dispatcher);
   ~LowEnergyAddressManager();
 
   // Assigns the IRK to generate a RPA for the next address refresh when privacy
@@ -120,6 +122,8 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
   // Notifies all address changed listeners of the change in device address.
   void NotifyAddressUpdate();
 
+  pw::async::Dispatcher& pw_dispatcher_;
+
   StateQueryDelegate delegate_;
   hci::CommandChannel::WeakPtr cmd_;
   bool privacy_enabled_;
@@ -154,7 +158,7 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
 
   // The task that executes when a random address expires and needs to be
   // refreshed.
-  async::Task random_address_expiry_task_;
+  SmartTask random_address_expiry_task_{pw_dispatcher_};
 
   WeakSelf<LowEnergyAddressManager> weak_self_;
 

@@ -67,10 +67,9 @@ class ClientTest : public l2cap::testing::MockChannelTest {
 
  protected:
   void SetUp() override {
-    pw_dispatcher_.emplace(dispatcher());
     ChannelOptions options(l2cap::kATTChannelId);
     auto fake_chan = CreateFakeChannel(options);
-    att_ = att::Bearer::Create(fake_chan->GetWeakPtr(), *pw_dispatcher_);
+    att_ = att::Bearer::Create(fake_chan->GetWeakPtr(), pw_dispatcher_);
     client_ = Client::Create(att_->GetWeakPtr());
   }
 
@@ -90,7 +89,7 @@ class ClientTest : public l2cap::testing::MockChannelTest {
   Client* client() const { return client_.get(); }
 
  private:
-  std::optional<pw::async::fuchsia::FuchsiaDispatcher> pw_dispatcher_;
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
   std::unique_ptr<att::Bearer> att_;
   std::unique_ptr<Client> client_;
 

@@ -4,8 +4,6 @@
 
 #include "low_energy_address_manager.h"
 
-#include <lib/async/default.h>
-
 #include "gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
@@ -14,8 +12,10 @@ namespace bt::gap {
 
 LowEnergyAddressManager::LowEnergyAddressManager(const DeviceAddress& public_address,
                                                  StateQueryDelegate delegate,
-                                                 hci::CommandChannel::WeakPtr cmd_channel)
-    : delegate_(std::move(delegate)),
+                                                 hci::CommandChannel::WeakPtr cmd_channel,
+                                                 pw::async::Dispatcher& dispatcher)
+    : pw_dispatcher_(dispatcher),
+      delegate_(std::move(delegate)),
       cmd_(std::move(cmd_channel)),
       privacy_enabled_(false),
       public_(public_address),
@@ -114,14 +114,14 @@ void LowEnergyAddressManager::TryRefreshRandomAddress() {
       bt_log(INFO, "gap-le", "random address updated: %s", bt_str(*random_));
 
       // Set the new random address to expire in kPrivateAddressTimeout.
-      random_address_expiry_task_.set_handler([this](auto*, auto*, zx_status_t status) {
-        if (status == ZX_OK) {
-          needs_refresh_ = true;
-          TryRefreshRandomAddress();
-        }
-      });
-      random_address_expiry_task_.PostDelayed(async_get_default_dispatcher(),
-                                              kPrivateAddressTimeout);
+      random_address_expiry_task_.set_function(
+          [this](pw::async::Context /*ctx*/, pw::Status status) {
+            if (status.ok()) {
+              needs_refresh_ = true;
+              TryRefreshRandomAddress();
+            }
+          });
+      random_address_expiry_task_.PostAfter(kPwPrivateAddressTimeout);
 
       // Notify any listeners of the change in device address.
       NotifyAddressUpdate();

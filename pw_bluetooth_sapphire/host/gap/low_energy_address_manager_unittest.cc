@@ -30,7 +30,8 @@ class LowEnergyAddressManagerTest : public TestingBase {
   void SetUp() override {
     TestingBase::SetUp();
     addr_mgr_ = std::make_unique<LowEnergyAddressManager>(
-        kPublic, [this] { return IsRandomAddressChangeAllowed(); }, cmd_channel()->AsWeakPtr());
+        kPublic, [this] { return IsRandomAddressChangeAllowed(); }, cmd_channel()->AsWeakPtr(),
+        pw_dispatcher_);
     ASSERT_EQ(kPublic, addr_mgr()->identity_address());
     ASSERT_FALSE(addr_mgr()->irk());
     addr_mgr_->register_address_changed_callback([&](auto) { address_changed_cb_count_++; });
@@ -63,6 +64,7 @@ class LowEnergyAddressManagerTest : public TestingBase {
   size_t address_changed_cb_count() const { return address_changed_cb_count_; }
 
  private:
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
   std::unique_ptr<LowEnergyAddressManager> addr_mgr_;
   bool random_address_change_allowed_ = true;
   size_t address_changed_cb_count_ = 0;
