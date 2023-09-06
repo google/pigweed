@@ -34,16 +34,16 @@ class Zephyr(pw_package.git_repo.GitRepo):
     def __init__(self, *args, **kwargs):
         super().__init__(
             *args,
-            name="zephyr",
-            url="https://github.com/zephyrproject-rtos/zephyr",
-            commit="356c8cbe63ae01b3ab438382639d25bb418a0213",  # v3.4 release
+            name='zephyr',
+            url='https://github.com/zephyrproject-rtos/zephyr',
+            commit='356c8cbe63ae01b3ab438382639d25bb418a0213',  # v3.4 release
             **kwargs,
         )
 
     def info(self, path: pathlib.Path) -> Sequence[str]:
         return (
-            f"{self.name} installed in: {path}",
-            "Enable by running 'gn args out' and adding this line:",
+            f'{self.name} installed in: {path}',
+            'Enable by running "gn args out" and adding this line:',
             f'  dir_pw_third_party_zephyr = "{path}"',
         )
 
@@ -51,58 +51,67 @@ class Zephyr(pw_package.git_repo.GitRepo):
     def __populate_download_cache_from_cipd(path: pathlib.Path) -> None:
         """Check for Zephyr SDK in cipd"""
         package_path = path.parent.resolve()
-        core_cache_path = package_path / "zephyr_sdk"
+        core_cache_path = package_path / 'zephyr_sdk'
         core_cache_path.mkdir(parents=True, exist_ok=True)
 
-        cipd_package_subpath = "infra/3pp/tools/zephyr_sdk/${platform}"
+        cipd_package_subpath = 'infra/3pp/tools/zephyr_sdk/${platform}'
 
-        # Check if a teensy cipd package is readable
+        # Check if the zephyr_sdk cipd package is readable
         with tempfile.NamedTemporaryFile(
-            prefix="cipd", delete=True
+            prefix='cipd', delete=True
         ) as temp_json:
+            temp_json_path = pathlib.Path(temp_json.name)
             cipd_acl_check_command = [
-                "cipd",
-                "acl-check",
+                'cipd',
+                'acl-check',
                 cipd_package_subpath,
-                "-reader",
-                "-json-output",
-                temp_json.name,
+                '-reader',
+                '-json-output',
+                str(temp_json_path),
             ]
             subprocess.run(cipd_acl_check_command, capture_output=True)
 
             # Return if no packages are readable.
-            if not json.load(temp_json)["result"]:
-                raise RuntimeError("Failed to verify cipd is readable")
+            if not temp_json_path.is_file():
+                raise RuntimeError(
+                    'Failed to verify zephyr_sdk cipd package is readable.'
+                )
+            result_text = temp_json_path.read_text()
+            result_dict = json.loads(result_text)
+            if 'result' not in result_dict:
+                raise RuntimeError(
+                    'Failed to verify zephyr_sdk cipd package is readable.'
+                )
 
         # Initialize cipd
         subprocess.check_call(
             [
-                "cipd",
-                "init",
-                "-force",
+                'cipd',
+                'init',
+                '-force',
                 str(core_cache_path),
             ]
         )
         # Install the Zephyr SDK
         subprocess.check_call(
             [
-                "cipd",
-                "install",
+                'cipd',
+                'install',
                 cipd_package_subpath,
-                "-root",
+                '-root',
                 str(core_cache_path),
-                "-force",
+                '-force',
             ]
         )
         # Setup Zephyr SDK
-        setup_file = "setup.cmd" if os.name == "nt" else "setup.sh"
+        setup_file = 'setup.cmd' if os.name == 'nt' else 'setup.sh'
         subprocess.check_call(
             [
                 str(core_cache_path / setup_file),
-                "-t",
-                "all",
-                "-c",
-                "-h",
+                '-t',
+                'all',
+                '-c',
+                '-h',
             ]
         )
 
@@ -111,17 +120,17 @@ class Zephyr(pw_package.git_repo.GitRepo):
 
         self.__populate_download_cache_from_cipd(path)
         with importlib.resources.path(
-            pw_env_setup.virtualenv_setup, "constraint.list"
+            pw_env_setup.virtualenv_setup, 'constraint.list'
         ) as constraint:
             subprocess.check_call(
                 [
                     sys.executable,
-                    "-m",
-                    "pip",
-                    "install",
-                    "-r",
-                    f"{path}/scripts/requirements.txt",
-                    "-c",
+                    '-m',
+                    'pip',
+                    'install',
+                    '-r',
+                    f'{path}/scripts/requirements.txt',
+                    '-c',
                     str(constraint),
                 ]
             )

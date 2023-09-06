@@ -41,53 +41,61 @@ class ArduinoCore(pw_package.package_manager.Package):
         """Check for arduino core availability in pigweed_internal cipd."""
         package_path = path.parent.resolve()
         core_name = self.name
-        core_cache_path = package_path / ".cache" / core_name
+        core_cache_path = package_path / '.cache' / core_name
         core_cache_path.mkdir(parents=True, exist_ok=True)
 
-        cipd_package_subpath = "pigweed_internal/third_party/"
+        cipd_package_subpath = 'pigweed_internal/third_party/'
         cipd_package_subpath += core_name
-        cipd_package_subpath += "/${platform}"
+        cipd_package_subpath += '/${platform}'
 
         # Check if teensy cipd package is readable
-
         with tempfile.NamedTemporaryFile(
-            prefix='cipd', delete=True
+            prefix='cipd', delete=True, dir=core_cache_path
         ) as temp_json:
+            temp_json_path = Path(temp_json.name)
             cipd_acl_check_command = [
-                "cipd",
-                "acl-check",
+                'cipd',
+                'acl-check',
                 cipd_package_subpath,
-                "-reader",
-                "-json-output",
-                temp_json.name,
+                '-reader',
+                '-json-output',
+                str(temp_json_path),
             ]
             subprocess.run(cipd_acl_check_command, capture_output=True)
-            # Return if no packages are readable.
-            if not json.load(temp_json)['result']:
+
+            # Return if cipd_package_subpath does not exist or is not readable
+            # by the current user.
+            if not temp_json_path.is_file():
+                # Return and proceed with normal installation.
+                return
+            result_text = temp_json_path.read_text()
+            result_dict = json.loads(result_text)
+            if 'result' not in result_dict:
+                # Return and proceed with normal installation.
                 return
 
         def _run_command(command):
-            _LOG.debug("Running: `%s`", " ".join(command))
+            _LOG.debug('Running: `%s`', ' '.join(command))
             result = subprocess.run(command, capture_output=True)
             _LOG.debug(
-                "Output:\n%s", result.stdout.decode() + result.stderr.decode()
+                'Output:\n%s', result.stdout.decode() + result.stderr.decode()
             )
 
-        _run_command(["cipd", "init", "-force", core_cache_path.as_posix()])
+        _run_command(['cipd', 'init', '-force', core_cache_path.as_posix()])
         _run_command(
             [
-                "cipd",
-                "install",
+                'cipd',
+                'install',
                 cipd_package_subpath,
-                "-root",
+                '-root',
                 core_cache_path.as_posix(),
-                "-force",
+                '-force',
             ]
         )
 
         _LOG.debug(
-            "Available Cache Files:\n%s",
-            "\n".join([p.as_posix() for p in core_cache_path.glob("*")]),
+            'Available Cache Files:\n%s',
+            '\n'.join([p.as_posix() for p in core_cache_path.glob('*')]),
         )
 
     def install(self, path: Path) -> None:
@@ -118,7 +126,7 @@ class ArduinoCore(pw_package.package_manager.Package):
         for hardware_dir in [
             path for path in (path / 'hardware').iterdir() if path.is_dir()
         ]:
-            if path.name in ["arduino", "tools"]:
+            if path.name in ['arduino', 'tools']:
                 continue
             for subdir in [
                 path for path in hardware_dir.iterdir() if path.is_dir()
@@ -132,7 +140,7 @@ class ArduinoCore(pw_package.package_manager.Package):
                 f'  pw_arduino_build_PACKAGE_NAME = "{arduino_package_name}"',
                 '  pw_arduino_build_BOARD = "BOARD_NAME"',
             ]
-            message += ["\n".join(message_gn_args)]
+            message += ['\n'.join(message_gn_args)]
             message += [
                 'Where BOARD_NAME is any supported board.',
                 # Have arduino_builder command appear on it's own line.
