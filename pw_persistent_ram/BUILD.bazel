@@ -38,6 +38,18 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "flat_file_system_entry",
+    hdrs = [
+        "public/pw_persistent_ram/flat_file_system_entry.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_file:flat_file_system",
+        "//pw_persistent_ram",
+    ],
+)
+
 pw_cc_test(
     name = "persistent_test",
     srcs = [
@@ -63,5 +75,15 @@ pw_cc_test(
         ":pw_persistent_ram",
         "//pw_random",
         "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "flat_file_system_entry_test",
+    srcs = [
+        "flat_file_system_entry_test.cc",
+    ],
+    deps = [
+        ":flat_file_system_entry",
     ],
 )

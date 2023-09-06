@@ -41,10 +41,23 @@ pw_source_set("pw_persistent_ram") {
   ]
 }
 
+pw_source_set("flat_file_system_entry") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_persistent_ram/flat_file_system_entry.h" ]
+  sources = []
+  public_deps = [
+    ":pw_persistent_ram",
+    "$dir_pw_file:flat_file_system",
+    dir_pw_status,
+  ]
+  deps = []
+}
+
 pw_test_group("tests") {
   tests = [
     ":persistent_test",
     ":persistent_buffer_test",
+    ":flat_file_system_entry_test",
   ]
 }
 
@@ -62,6 +75,11 @@ pw_test("persistent_buffer_test") {
     dir_pw_random,
   ]
   sources = [ "persistent_buffer_test.cc" ]
+}
+
+pw_test("flat_file_system_entry_test") {
+  deps = [ ":flat_file_system_entry" ]
+  sources = [ "flat_file_system_entry_test.cc" ]
 }
 
 pw_doc_group("docs") {

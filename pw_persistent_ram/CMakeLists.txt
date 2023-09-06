@@ -31,6 +31,16 @@ pw_add_library(pw_persistent_ram STATIC
     persistent_buffer.cc
 )
 
+pw_add_library(pw_persistent_ram.flat_file_system_entry INTERFACE
+  HEADERS
+    public/pw_persistent_ram/flat_file_system_entry.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_file.flat_file_system
+    pw_persistent_ram
+)
+
 pw_add_test(pw_persistent_ram.persistent_test
   SOURCES
     persistent_test.cc
@@ -48,6 +58,16 @@ pw_add_test(pw_persistent_ram.persistent_buffer_test
   PRIVATE_DEPS
     pw_persistent_ram
     pw_random
+  GROUPS
+    modules
+    pw_persistent_ram
+)
+
+pw_add_test(pw_persistent_ram.flat_file_system_entry_test
+  SOURCES
+    flat_file_system_entry_test.cc
+  PRIVATE_DEPS
+    pw_persistent_ram.flat_file_system_entry
   GROUPS
     modules
     pw_persistent_ram

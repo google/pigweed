@@ -16,6 +16,8 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
 pw_add_library(pw_file.flat_file_system INTERFACE
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
     pw_file.proto.pwpb
     pw_file.proto.raw_rpc
