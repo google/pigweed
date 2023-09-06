@@ -51,7 +51,10 @@ Configure ``pw_unit_test`` to use upstream GoogleTest/GoogleMock.
         ``pw_third_party.googletest``.
 
    .. tab-item:: Bazel
-      Set the following `label flags`_, either in your `target config`_ or on
+
+      Set the following :ref:`label flags <docs-build_system-bazel_flags>`,
+      either in your
+      :ref:`target config <docs-build_system-bazel_configuration>` or on
       the command line:
 
       * ``pw_unit_test_googletest_backend`` to
@@ -70,6 +73,3 @@ Configure ``pw_unit_test`` to use upstream GoogleTest/GoogleMock.
 
   Not all unit tests build properly with upstream GoogleTest yet. This is a
   work in progress.
-
-.. _target config: :ref:`_docs-build_system-bazel_configuration`
-.. _label flags: :ref:`_docs-build_system-bazel_flags`

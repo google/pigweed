@@ -93,7 +93,7 @@ Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
 #. If you haven't already, clone the Pigweed repository and set it up locally,
    following the :ref:`docs-getting-started` guide.
 
-#. Copy the `SEED template <0002-template>`_ to create the RST file for your
+#. Copy the :ref:`SEED template <seed-0002>` to create the RST file for your
    SEED. As you don't yet have a SEED number, use XXXX as a placeholder,
    followed by the lowercase title of the proposal, with words separated by
    hyphens.

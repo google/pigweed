@@ -41,8 +41,13 @@ In order to use this you are expected to set the following variables from
 
 Bazel
 =====
+.. There's a bug in the Bazel docs site which is causing the link to the evergreen
+.. section on constraint settings to 404. So for now, we'll just link to the
+.. v5.4.0 doc on constraint settings. When the Bazel bug is fixed we can return the
+.. URL to https://bazel.build/reference/be/platform#constraint_setting
+
 In Bazel, the FreeRTOS build is configured through `constraint_settings
-<https://bazel.build/reference/be/platform#constraint_setting>`_. The `platform
+<https://docs.bazel.build/versions/5.4.0/be/platform.html#constraint_setting>`_. The `platform
 <https://bazel.build/extending/platforms>`_ you are building for must specify
 values for the following settings:
 

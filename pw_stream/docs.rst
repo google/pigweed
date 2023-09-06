@@ -354,7 +354,7 @@ some similarities with Python's `io module
 
 An alternative approach is to have the reading, writing, and seeking portions of
 the interface provided by different entities. This is how Go's `io
-<https://pkg.go.dev/io package>`_ and C++'s `input/output library
+package <https://pkg.go.dev/io>`_ and C++'s `input/output library
 <https://en.cppreference.com/w/cpp/io>`_ are structured.
 
 We chose to use a single base class for a few reasons:
