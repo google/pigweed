@@ -70,6 +70,7 @@ pw_cc_library(
         "FreeRTOSConfig.h",
     ],
     includes = ["./"],
+    deps = ["//third_party/freertos:config_assert"],
 )
 
 pw_cc_library(

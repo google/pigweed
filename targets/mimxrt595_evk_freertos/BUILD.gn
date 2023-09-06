@@ -182,6 +182,7 @@ if (pw_third_party_mcuxpresso_SDK == "//targets/mimxrt595_evk_freertos:sdk") {
       ":disable_warnings",
       ":freertos_config_public_includes",
     ]
+    public_deps = [ "$dir_pw_third_party/freertos:config_assert" ]
     public = [ "FreeRTOSConfig.h" ]
   }
 
