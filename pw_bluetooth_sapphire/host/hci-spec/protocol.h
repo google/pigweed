@@ -872,11 +872,6 @@ constexpr EventCode kEncryptionKeyRefreshCompleteEventCode = 0x30;
 // IO Capability Request Event (v2.1 + EDR) (BR/EDR)
 constexpr EventCode kIOCapabilityRequestEventCode = 0x31;
 
-struct IOCapabilityRequestEventParams {
-  // The address of the remote device involved in the simple pairing process
-  DeviceAddressBytes bd_addr;
-} __attribute__((packed));
-
 // ==================================================
 // IO Capability Response Event (v2.1 + EDR) (BR/EDR)
 constexpr EventCode kIOCapabilityResponseEventCode = 0x32;

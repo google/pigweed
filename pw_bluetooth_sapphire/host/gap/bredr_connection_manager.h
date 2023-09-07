@@ -220,7 +220,8 @@ class BrEdrConnectionManager final {
   hci::CommandChannel::EventCallbackResult OnConnectionRequest(const hci::EmbossEventPacket& event);
   hci::CommandChannel::EventCallbackResult OnConnectionComplete(
       const hci::EmbossEventPacket& event);
-  hci::CommandChannel::EventCallbackResult OnIoCapabilityRequest(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult OnIoCapabilityRequest(
+      const hci::EmbossEventPacket& event);
   hci::CommandChannel::EventCallbackResult OnIoCapabilityResponse(const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnLinkKeyRequest(const hci::EmbossEventPacket& event);
   hci::CommandChannel::EventCallbackResult OnLinkKeyNotification(

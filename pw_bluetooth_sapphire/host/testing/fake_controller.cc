@@ -1551,9 +1551,10 @@ void FakeController::OnLinkKeyRequestNegativeReplyCommandReceived(
   RespondWithCommandStatus(hci_spec::kLinkKeyRequestNegativeReply,
                            pw::bluetooth::emboss::StatusCode::SUCCESS);
 
-  hci_spec::IOCapabilityRequestEventParams request = {};
-  request.bd_addr = DeviceAddressBytes(params.bd_addr());
-  SendEvent(hci_spec::kIOCapabilityRequestEventCode, BufferView(&request, sizeof(request)));
+  auto event = hci::EmbossEventPacket::New<pw::bluetooth::emboss::IoCapabilityRequestEventWriter>(
+      hci_spec::kIOCapabilityRequestEventCode);
+  event.view_t().bd_addr().CopyFrom(params.bd_addr());
+  SendCommandChannelPacket(event.data());
 }
 
 void FakeController::OnIOCapabilityRequestReplyCommand(

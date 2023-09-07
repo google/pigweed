@@ -959,14 +959,14 @@ void BrEdrConnectionManager::CleanUpConnection(hci_spec::ConnectionHandle handle
 }
 
 hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnIoCapabilityRequest(
-    const hci::EventPacket& event) {
-  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kIOCapabilityRequestEventCode);
-  const auto& params = event.params<hci_spec::IOCapabilityRequestEventParams>();
+    const hci::EmbossEventPacket& event) {
+  const auto params = event.view<pw::bluetooth::emboss::IoCapabilityRequestEventView>();
+  const DeviceAddressBytes addr(params.bd_addr());
 
-  auto conn_pair = FindConnectionByAddress(params.bd_addr);
+  auto conn_pair = FindConnectionByAddress(addr);
   if (!conn_pair) {
-    bt_log(ERROR, "gap-bredr", "got %s for unconnected addr %s", __func__, bt_str(params.bd_addr));
-    SendIoCapabilityRequestNegativeReply(params.bd_addr,
+    bt_log(ERROR, "gap-bredr", "got %s for unconnected addr %s", __func__, bt_str(addr));
+    SendIoCapabilityRequestNegativeReply(addr,
                                          pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
@@ -974,7 +974,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnIoCapabilityR
   auto reply = conn_ptr->pairing_state().OnIoCapabilityRequest();
 
   if (!reply) {
-    SendIoCapabilityRequestNegativeReply(params.bd_addr,
+    SendIoCapabilityRequestNegativeReply(addr,
                                          pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
@@ -991,7 +991,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnIoCapabilityR
           ? pw::bluetooth::emboss::AuthenticationRequirements::GENERAL_BONDING
           : pw::bluetooth::emboss::AuthenticationRequirements::MITM_GENERAL_BONDING;
 
-  SendIoCapabilityRequestReply(params.bd_addr, io_capability, oob_data_present, auth_requirements);
+  SendIoCapabilityRequestReply(addr, io_capability, oob_data_present, auth_requirements);
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
