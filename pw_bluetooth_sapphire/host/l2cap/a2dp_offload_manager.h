@@ -37,10 +37,10 @@ class A2dpOffloadManager {
                         hci_spec::ConnectionHandle link_handle, uint16_t max_tx_sdu_size,
                         hci::ResultCallback<> callback);
 
-  // Request the stop of A2DP source offloading. |callback| will be called with the result of the
-  // request. If offloading is already stopped, report success. The possible host errors are:
-  //    kFailed - No channels are offloaded or the |local_id| does not match |offloaded_channel_id_|
-  //    kInProgress - Channel offloading is still stopping
+  // Request the stop of A2DP source offloading on a specific channel.
+  // |callback| will be called with the result of the request.
+  // If offloading was not started or the channel requested is not offloaded, report success.
+  // Returns kInProgress error if channel offloading is currently in the process of stopping.
   void RequestStopA2dpOffload(ChannelId local_id, hci_spec::ConnectionHandle link_handle,
                               hci::ResultCallback<> callback);
 

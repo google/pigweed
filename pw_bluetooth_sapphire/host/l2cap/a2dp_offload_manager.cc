@@ -144,7 +144,7 @@ void A2dpOffloadManager::RequestStopA2dpOffload(ChannelId local_id,
     case A2dpOffloadStatus::kStopped: {
       bt_log(DEBUG, "l2cap", "No channels are offloading A2DP (status: %hhu)",
              static_cast<unsigned char>(a2dp_offload_status_));
-      callback(ToResult(HostError::kFailed));
+      callback(fit::success());
       return;
     }
     case A2dpOffloadStatus::kStopping: {
@@ -159,7 +159,7 @@ void A2dpOffloadManager::RequestStopA2dpOffload(ChannelId local_id,
   }
 
   if (!IsChannelOffloaded(local_id, link_handle)) {
-    callback(ToResult(HostError::kFailed));
+    callback(fit::success());
     return;
   }
 

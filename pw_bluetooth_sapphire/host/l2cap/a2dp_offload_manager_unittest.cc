@@ -360,13 +360,13 @@ TEST_F(A2dpOffloadTest, StopA2dpOffloadStillStopping) {
 TEST_F(A2dpOffloadTest, StopA2dpOffloadAlreadyStopped) {
   std::optional<hci::Result<>> stop_result;
   offload_mgr()->RequestStopA2dpOffload(kLocalId, kTestHandle1, [&stop_result](auto res) {
-    EXPECT_EQ(ToResult(HostError::kFailed), res);
+    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
     stop_result = res;
   });
   RunLoopUntilIdle();
   EXPECT_FALSE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   ASSERT_TRUE(stop_result.has_value());
-  EXPECT_TRUE(stop_result->is_error());
+  EXPECT_TRUE(stop_result->is_ok());
 }
 
 TEST_F(A2dpOffloadTest, A2dpOffloadOnlyOneChannel) {
@@ -426,13 +426,26 @@ TEST_F(A2dpOffloadTest, DifferentChannelCannotStopA2dpOffloading) {
 
   std::optional<hci::Result<>> stop_result;
   offload_mgr()->RequestStopA2dpOffload(kLocalId + 1, kTestHandle1 + 1, [&stop_result](auto res) {
-    EXPECT_EQ(ToResult(HostError::kFailed), res);
+    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
     stop_result = res;
   });
   RunLoopUntilIdle();
   EXPECT_TRUE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   ASSERT_TRUE(stop_result.has_value());
-  EXPECT_TRUE(stop_result->is_error());
+  EXPECT_TRUE(stop_result->is_ok());
+
+  EXPECT_CMD_PACKET_OUT(test_device(), StopA2dpOffloadRequest(), &command_complete);
+
+  // Can still stop it from the correct one.
+  stop_result = std::nullopt;
+  offload_mgr()->RequestStopA2dpOffload(kLocalId, kTestHandle1, [&stop_result](auto res) {
+    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
+    stop_result = res;
+  });
+  RunLoopUntilIdle();
+  EXPECT_FALSE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
+  ASSERT_TRUE(stop_result.has_value());
+  EXPECT_TRUE(stop_result->is_ok());
 }
 
 }  // namespace
