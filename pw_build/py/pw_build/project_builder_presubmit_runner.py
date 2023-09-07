@@ -651,10 +651,12 @@ def main(
     presubmit_programs: Optional[Programs] = None,
     default_presubmit_step_names: Optional[List[str]] = None,
     build_recipes: Optional[List[BuildRecipe]] = None,
+    default_build_recipe_names: Optional[List[str]] = None,
     repo_root: Optional[Path] = None,
     presubmit_out_dir: Optional[Path] = None,
     package_root: Optional[Path] = None,
     default_root_logfile: Path = Path('out/build.txt'),
+    force_pw_watch: bool = False,
 ) -> int:
     """Build upstream Pigweed presubmit steps."""
     # pylint: disable=too-many-locals
@@ -735,8 +737,15 @@ def main(
         _LOG.info('')
 
     selected_build_recipes: List[BuildRecipe] = []
-    if build_recipes and hasattr(args, 'recipe'):
-        selected_build_recipes = args.recipe
+    if build_recipes:
+        if hasattr(args, 'recipe'):
+            selected_build_recipes = args.recipe
+        if not selected_build_recipes and default_build_recipe_names:
+            selected_build_recipes = [
+                recipe
+                for recipe in build_recipes
+                if recipe.display_name in default_build_recipe_names
+            ]
 
     selected_presubmit_recipes: List[BuildRecipe] = []
     if presubmit_programs and hasattr(args, 'step'):
@@ -811,7 +820,9 @@ def main(
     if project_builder.should_use_progress_bars():
         project_builder.use_stdout_proxy()
 
-    if PW_WATCH_AVAILABLE and (args.watch or args.fullscreen):
+    if PW_WATCH_AVAILABLE and (
+        force_pw_watch or (args.watch or args.fullscreen)
+    ):
         event_handler, exclude_list = watch_setup(
             project_builder,
             parallel=args.parallel,
