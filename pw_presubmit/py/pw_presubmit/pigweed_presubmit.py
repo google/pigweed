@@ -476,7 +476,6 @@ gn_fuzz_build = build.GnGenNinja(
     ),
 )
 
-
 oss_fuzz_build = build.GnGenNinja(
     name='oss_fuzz_build',
     path_filter=_BUILD_FILE_FILTER,
@@ -685,6 +684,8 @@ def bazel_build(ctx: PresubmitContext) -> None:
         '//pw_sync/...',
         '//pw_thread/...',
         '//pw_thread_freertos/...',
+        '//pw_interrupt/...',
+        '//pw_cpu_exception/...',
     )
 
 

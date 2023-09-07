@@ -24,6 +24,16 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+constraint_value(
+    name = "entry_backend",
+    constraint_setting = "//pw_cpu_exception:entry_constraint_setting",
+)
+
+constraint_value(
+    name = "support_backend",
+    constraint_setting = "//pw_cpu_exception:support_constraint_setting",
+)
+
 pw_cc_library(
     name = "config",
     hdrs = ["pw_cpu_exception_cortex_m_private/config.h"],
@@ -68,6 +78,7 @@ pw_cc_library(
         ":cortex_m_constants",
         ":cpu_state",
         ":util",
+        "//pw_cpu_exception:support_facade",
         "//pw_log",
         "//pw_preprocessor",
         "//pw_preprocessor:cortex_m",
@@ -110,23 +121,31 @@ pw_proto_library(
 
 pw_cc_library(
     name = "cpu_exception",
-    srcs = ["entry.cc"],
     hdrs = [
-        "public/pw_cpu_exception_cortex_m/cpu_state.h",
         "public_overrides/pw_cpu_exception_backend/state.h",
     ],
-    includes = ["public"],
+    includes = [
+        "public_overrides",
+    ],
     deps = [
-        ":config",
         ":cpu_state",
-        ":cortex_m_constants",
-        ":proto_dump",
-        ":support",
-        ":util",
-        # TODO(b/242183021): Need to add support for facades/backends to Bazel.
-        # "//pw_cpu_exception",
+        "//pw_cpu_exception:entry_facade",
         "//pw_preprocessor",
         "//pw_preprocessor:cortex_m",
+    ],
+)
+
+pw_cc_library(
+    name = "cpu_exception_impl",
+    srcs = ["entry.cc"],
+    deps = [
+        ":config",
+        ":cortex_m_constants",
+        ":cpu_state",
+        ":util",
+        # Depend on the full backends in the impl target.
+        "//pw_cpu_exception:entry",
+        "//pw_cpu_exception:handler",
     ],
 )
 
@@ -165,6 +184,7 @@ pw_cc_test(
         ":config",
         ":cpu_exception",
         ":cpu_state",
+        "//pw_cpu_exception:handler",
     ],
 )
 

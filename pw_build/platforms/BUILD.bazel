@@ -144,6 +144,11 @@ platform(
         # Use the baremetal pw_sys_io backend (because the default
         # pw_sys_io_stdio backend is not compatible with FreeRTOS).
         "//pw_sys_io_baremetal_stm32f429:backend",
+        # Select cortex-m backends
+        "//pw_cpu_exception:basic_handler_backend",
+        "//pw_cpu_exception_cortex_m:entry_backend",
+        "//pw_cpu_exception_cortex_m:support_backend",
+        "//pw_interrupt_cortex_m:backend",
         # os:none means, we're not building for any host platform (Windows,
         # Linux, or Mac). The pw_sys_io_baremetal_stm32f429 backend is only
         # compatible with os:none.
