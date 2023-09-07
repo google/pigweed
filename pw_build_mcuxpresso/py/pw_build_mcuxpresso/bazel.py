@@ -72,17 +72,18 @@ def bazel_output(
     """
     print('cc_library(')
     _bazel_str_out('name', name, indent=1)
-    _bazel_str_list_out('defines', project.defines, indent=1)
-    _bazel_path_list_out(
-        'includes', project.include_dirs, path_prefix=path_prefix, indent=1
-    )
-    _bazel_path_list_out(
-        'hdrs', project.headers, path_prefix=path_prefix, indent=1
-    )
     _bazel_path_list_out(
         'srcs',
         project.sources + project.libs,
         path_prefix=path_prefix,
         indent=1,
     )
+    _bazel_path_list_out(
+        'hdrs', project.headers, path_prefix=path_prefix, indent=1
+    )
+    _bazel_str_list_out('defines', project.defines, indent=1)
+    _bazel_path_list_out(
+        'includes', project.include_dirs, path_prefix=path_prefix, indent=1
+    )
+
     print(')')
