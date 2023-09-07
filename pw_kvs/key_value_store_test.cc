@@ -37,7 +37,6 @@
 #include "pw_kvs/internal/entry.h"
 #include "pw_kvs_private/config.h"
 #include "pw_log/log.h"
-#include "pw_log/shorter.h"
 #include "pw_status/status.h"
 #include "pw_string/string_builder.h"
 
@@ -168,11 +167,11 @@ TEST(InMemoryKvs, WriteOneKeyMultipleTimes) {
 
   int num_reloads = 2;
   for (int reload = 0; reload < num_reloads; ++reload) {
-    DBG("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    DBG("xxx                                      xxxx");
-    DBG("xxx               Reload %2d              xxxx", reload);
-    DBG("xxx                                      xxxx");
-    DBG("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    PW_LOG_DEBUG("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    PW_LOG_DEBUG("xxx                                      xxxx");
+    PW_LOG_DEBUG("xxx               Reload %2d              xxxx", reload);
+    PW_LOG_DEBUG("xxx                                      xxxx");
+    PW_LOG_DEBUG("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
 
     // Create and initialize the KVS. For KVS magic value always use a random 32
     // bit integer rather than a human readable 4 bytes. See pw_kvs/format.h for
@@ -188,7 +187,8 @@ TEST(InMemoryKvs, WriteOneKeyMultipleTimes) {
     uint32_t written_value;
     EXPECT_EQ(kvs.size(), (reload == 0) ? 0 : 1u);
     for (uint32_t i = 0; i < num_writes; ++i) {
-      DBG("PUT #%zu for key %s with value %zu", size_t(i), key, size_t(i));
+      PW_LOG_DEBUG(
+          "PUT #%zu for key %s with value %zu", size_t(i), key, size_t(i));
 
       written_value = i + 0xfc;  // Prevent accidental pass with zero.
       EXPECT_OK(kvs.Put(key, written_value));
@@ -196,7 +196,7 @@ TEST(InMemoryKvs, WriteOneKeyMultipleTimes) {
     }
 
     // Verify that we can read the value back.
-    DBG("GET final value for key: %s", key);
+    PW_LOG_DEBUG("GET final value for key: %s", key);
     uint32_t actual_value;
     EXPECT_OK(kvs.Get(key, &actual_value));
     EXPECT_EQ(actual_value, written_value);
@@ -229,7 +229,7 @@ TEST(InMemoryKvs, WritingMultipleKeysIncreasesSize) {
   for (size_t i = 0; i < num_writes; ++i) {
     StringBuffer<150> key;
     key << "key_" << i;
-    DBG("PUT #%zu for key %s with value %zu", i, key.c_str(), i);
+    PW_LOG_DEBUG("PUT #%zu for key %s with value %zu", i, key.c_str(), i);
 
     size_t value = i + 77;  // Prevent accidental pass with zero.
     EXPECT_OK(kvs.Put(key.view(), value));
@@ -253,12 +253,12 @@ TEST(InMemoryKvs, WriteAndReadOneKey) {
 
   // Add one entry.
   const char* key = "Key1";
-  DBG("PUT value for key: %s", key);
+  PW_LOG_DEBUG("PUT value for key: %s", key);
   uint8_t written_value = 0xDA;
   ASSERT_OK(kvs.Put(key, written_value));
   EXPECT_EQ(kvs.size(), 1u);
 
-  DBG("GET value for key: %s", key);
+  PW_LOG_DEBUG("GET value for key: %s", key);
   uint8_t actual_value;
   ASSERT_OK(kvs.Get(key, &actual_value));
   EXPECT_EQ(actual_value, written_value);
@@ -280,12 +280,12 @@ TEST(InMemoryKvs, WriteOneKeyValueMultipleTimes) {
   const char* key = "Key1";
   uint8_t written_value = 0xDA;
   for (int i = 0; i < 50; i++) {
-    DBG("PUT [%d] value for key: %s", i, key);
+    PW_LOG_DEBUG("PUT [%d] value for key: %s", i, key);
     ASSERT_OK(kvs.Put(key, written_value));
     EXPECT_EQ(kvs.size(), 1u);
   }
 
-  DBG("GET value for key: %s", key);
+  PW_LOG_DEBUG("GET value for key: %s", key);
   uint8_t actual_value;
   ASSERT_OK(kvs.Get(key, &actual_value));
   EXPECT_EQ(actual_value, written_value);

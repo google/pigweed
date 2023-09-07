@@ -18,7 +18,7 @@
 #include "pw_kvs/internal/sectors.h"
 
 #include "pw_kvs_private/config.h"
-#include "pw_log/shorter.h"
+#include "pw_log/log.h"
 
 namespace pw::kvs::internal {
 namespace {
@@ -64,12 +64,13 @@ Status Sectors::Find(FindMode find_mode,
     temp_sectors_to_skip_[sectors_to_skip++] = &FromAddress(address);
   }
 
-  DBG("Find sector with %u bytes available, starting with sector %u, %s",
+  PW_LOG_DEBUG(
+      "Find sector with %u bytes available, starting with sector %u, %s",
       unsigned(size),
       Index(last_new_),
       (find_mode == kAppendEntry) ? "Append" : "GC");
   for (size_t i = 0; i < sectors_to_skip; ++i) {
-    DBG("  Skip sector %u", Index(temp_sectors_to_skip_[i]));
+    PW_LOG_DEBUG("  Skip sector %u", Index(temp_sectors_to_skip_[i]));
   }
 
   // last_new_ is the sector that was last selected as the "new empty sector" to
@@ -136,7 +137,8 @@ Status Sectors::Find(FindMode find_mode,
   // to keep 1 empty sector after the sector found here, but that rule does not
   // apply during GC.
   if (first_empty_sector != nullptr && at_least_two_empty_sectors) {
-    DBG("  Found a usable empty sector; returning the first found (%u)",
+    PW_LOG_DEBUG(
+        "  Found a usable empty sector; returning the first found (%u)",
         Index(first_empty_sector));
     last_new_ = first_empty_sector;
     *found_sector = first_empty_sector;
@@ -147,14 +149,15 @@ Status Sectors::Find(FindMode find_mode,
   // bytes
   if (non_empty_least_reclaimable_sector != nullptr) {
     *found_sector = non_empty_least_reclaimable_sector;
-    DBG("  Found a usable sector %u, with %u B recoverable, in GC",
+    PW_LOG_DEBUG(
+        "  Found a usable sector %u, with %u B recoverable, in GC",
         Index(*found_sector),
         unsigned((*found_sector)->RecoverableBytes(sector_size_bytes)));
     return OkStatus();
   }
 
   // No sector was found.
-  DBG("  Unable to find a usable sector");
+  PW_LOG_DEBUG("  Unable to find a usable sector");
   *found_sector = nullptr;
   return Status::ResourceExhausted();
 }
@@ -173,7 +176,7 @@ SectorDescriptor* Sectors::FindSectorToGarbageCollect(
   // Build a vector of sectors to avoid.
   for (size_t i = 0; i < reserved_addresses.size(); ++i) {
     temp_sectors_to_skip_[i] = &FromAddress(reserved_addresses[i]);
-    DBG("    Skip sector %u", Index(reserved_addresses[i]));
+    PW_LOG_DEBUG("    Skip sector %u", Index(reserved_addresses[i]));
   }
   const span sectors_to_skip(temp_sectors_to_skip_, reserved_addresses.size());
 
@@ -216,17 +219,18 @@ SectorDescriptor* Sectors::FindSectorToGarbageCollect(
           !Contains(sectors_to_skip, &sector)) {
         sector_candidate = &sector;
         candidate_bytes = sector.valid_bytes();
-        DBG("    Doing GC on sector with no reclaimable bytes!");
+        PW_LOG_DEBUG("    Doing GC on sector with no reclaimable bytes!");
       }
     }
   }
 
   if (sector_candidate != nullptr) {
-    DBG("Found sector %u to Garbage Collect, %u recoverable bytes",
+    PW_LOG_DEBUG(
+        "Found sector %u to Garbage Collect, %u recoverable bytes",
         Index(sector_candidate),
         unsigned(sector_candidate->RecoverableBytes(sector_size_bytes)));
   } else {
-    DBG("Unable to find sector to garbage collect!");
+    PW_LOG_DEBUG("Unable to find sector to garbage collect!");
   }
   return sector_candidate;
 }

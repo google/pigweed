@@ -47,6 +47,11 @@ In ``.cc`` files, it is possible to dispense with the ``PW_`` part of the log
 names and go for shorter log macros. Include ``pw_log/short.h`` or
 ``pw_log/shorter.h`` for shorter versions of the macros.
 
+.. warning::
+   The shorter log macros collide with `Abseil's logging API
+   <https://abseil.io/docs/cpp/guides/logging>`_. Do not use them in upstream
+   Pigweed modules, or any code that may depend on Abseil.
+
 .. code-block:: cpp
 
    #define PW_LOG_MODULE_NAME "BLE"
