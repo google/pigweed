@@ -765,3 +765,12 @@ struct UserPasskeyRequestEvent:
   0     [+hdr_size]                   hci.EventHeader  header
   $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr       bd_addr
     -- Address of the device involved in simple pairing process
+
+
+struct SimplePairingCompleteEvent:
+  -- Simple Pairing Complete Event (v2.1 + EDR) (BR/EDR)
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]                   hci.EventHeader  header
+  $next [+1]                          hci.StatusCode   status
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr       bd_addr
+    -- Address of the device involved in simple pairing process
