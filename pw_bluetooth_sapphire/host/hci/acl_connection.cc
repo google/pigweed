@@ -112,16 +112,9 @@ CommandChannel::EventCallbackResult AclConnection::OnEncryptionChangeEvent(
 }
 
 CommandChannel::EventCallbackResult AclConnection::OnEncryptionKeyRefreshCompleteEvent(
-    const EventPacket& event) {
-  BT_ASSERT(event.event_code() == hci_spec::kEncryptionKeyRefreshCompleteEventCode);
-
-  if (event.view().payload_size() != sizeof(hci_spec::EncryptionKeyRefreshCompleteEventParams)) {
-    bt_log(WARN, "hci", "malformed encryption key refresh complete event");
-    return CommandChannel::EventCallbackResult::kContinue;
-  }
-
-  const auto& params = event.params<hci_spec::EncryptionKeyRefreshCompleteEventParams>();
-  hci_spec::ConnectionHandle handle = le16toh(params.connection_handle);
+    const EmbossEventPacket& event) {
+  const auto params = event.view<pw::bluetooth::emboss::EncryptionKeyRefreshCompleteEventView>();
+  const hci_spec::ConnectionHandle handle = params.connection_handle().Read();
 
   // Silently ignore this event as it isn't meant for this connection.
   if (handle != this->handle()) {

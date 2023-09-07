@@ -868,15 +868,6 @@ constexpr EventCode kExtendedInquiryResultEventCode = 0x2F;
 // Encryption Key Refresh Complete Event (v2.1 + EDR) (BR/EDR & LE)
 constexpr EventCode kEncryptionKeyRefreshCompleteEventCode = 0x30;
 
-struct EncryptionKeyRefreshCompleteEventParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Connection_Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-} __attribute__((packed));
-
 // =================================================
 // IO Capability Request Event (v2.1 + EDR) (BR/EDR)
 constexpr EventCode kIOCapabilityRequestEventCode = 0x31;

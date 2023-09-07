@@ -145,7 +145,6 @@ bool EventPacket::ToStatusCode(pw::bluetooth::emboss::StatusCode* out_code) cons
     CASE_EVENT_STATUS(CommandStatus);
     CASE_EMBOSS_EVENT_STATUS(ConnectionComplete);
     CASE_EMBOSS_EVENT_STATUS(DisconnectionComplete);
-    CASE_EVENT_STATUS(EncryptionKeyRefreshComplete);
     CASE_EMBOSS_EVENT_STATUS(RemoteNameRequestComplete);
     CASE_EVENT_STATUS(ReadRemoteSupportedFeaturesComplete);
     CASE_EVENT_STATUS(SimplePairingComplete);
