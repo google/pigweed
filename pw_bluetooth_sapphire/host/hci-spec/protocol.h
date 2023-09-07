@@ -876,24 +876,6 @@ constexpr EventCode kIOCapabilityRequestEventCode = 0x31;
 // IO Capability Response Event (v2.1 + EDR) (BR/EDR)
 constexpr EventCode kIOCapabilityResponseEventCode = 0x32;
 
-struct IOCapabilityResponseEventParams {
-  // The address of the remote device which the IO capabilities apply
-  DeviceAddressBytes bd_addr;
-
-  // IO Capabilities of the device
-  pw::bluetooth::emboss::IoCapability io_capability;
-
-  // Whether OOB Data is present.
-  // Allowed values:
-  //  0x00 - OOB authentication data not present
-  //  0x01 - OOB authentication data from remote device present
-  uint8_t oob_data_present;
-
-  // Authentication Requirements.
-  // See AuthenticationRequirements in hci_constants.h
-  pw::bluetooth::emboss::AuthenticationRequirements auth_requirements;
-} __attribute__((packed));
-
 // =====================================================
 // User Confirmation Request Event (v2.1 + EDR) (BR/EDR)
 constexpr EventCode kUserConfirmationRequestEventCode = 0x33;

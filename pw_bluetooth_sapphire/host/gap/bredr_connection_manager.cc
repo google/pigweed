@@ -996,16 +996,16 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnIoCapabilityR
 }
 
 hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnIoCapabilityResponse(
-    const hci::EventPacket& event) {
-  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kIOCapabilityResponseEventCode);
-  const auto& params = event.params<hci_spec::IOCapabilityResponseEventParams>();
+    const hci::EmbossEventPacket& event) {
+  const auto params = event.view<pw::bluetooth::emboss::IoCapabilityResponseEventView>();
+  const DeviceAddressBytes addr(params.bd_addr());
 
-  auto conn_pair = FindConnectionByAddress(params.bd_addr);
+  auto conn_pair = FindConnectionByAddress(addr);
   if (!conn_pair) {
-    bt_log(INFO, "gap-bredr", "got %s for unconnected addr %s", __func__, bt_str(params.bd_addr));
+    bt_log(INFO, "gap-bredr", "got %s for unconnected addr %s", __func__, bt_str(addr));
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
-  conn_pair->second->pairing_state().OnIoCapabilityResponse(params.io_capability);
+  conn_pair->second->pairing_state().OnIoCapabilityResponse(params.io_capability().Read());
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 

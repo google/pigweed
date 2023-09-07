@@ -1562,16 +1562,17 @@ void FakeController::OnIOCapabilityRequestReplyCommand(
   RespondWithCommandStatus(hci_spec::kIOCapabilityRequestReply,
                            pw::bluetooth::emboss::StatusCode::SUCCESS);
 
-  hci_spec::IOCapabilityResponseEventParams io_response = {};
-  io_response.bd_addr = DeviceAddressBytes(params.bd_addr());
-  // By specifying kNoInputNoOutput, we constrain the possible subsequent event types
-  // to just UserConfirmationRequestEventCode.
-  io_response.io_capability = pw::bluetooth::emboss::IoCapability::NO_INPUT_NO_OUTPUT;
-  io_response.oob_data_present = 0x00;  // OOB auth data not present
-  io_response.auth_requirements =
-      pw::bluetooth::emboss::AuthenticationRequirements::GENERAL_BONDING;
-  SendEvent(hci_spec::kIOCapabilityResponseEventCode,
-            BufferView(&io_response, sizeof(io_response)));
+  auto io_response =
+      hci::EmbossEventPacket::New<pw::bluetooth::emboss::IoCapabilityResponseEventWriter>(
+          hci_spec::kIOCapabilityResponseEventCode);
+  io_response.view_t().bd_addr().CopyFrom(params.bd_addr());
+  io_response.view_t().io_capability().Write(
+      pw::bluetooth::emboss::IoCapability::NO_INPUT_NO_OUTPUT);
+  io_response.view_t().oob_data_present().Write(
+      pw::bluetooth::emboss::GenericPresenceParam::NOT_PRESENT);
+  io_response.view_t().authentication_requirements().Write(
+      pw::bluetooth::emboss::AuthenticationRequirements::GENERAL_BONDING);
+  SendCommandChannelPacket(io_response.data());
 
   // Event type based on |params.io_capability| and |io_response.io_capability|.
   hci_spec::UserConfirmationRequestEventParams request = {};
