@@ -24,6 +24,7 @@ pw_doc_group("docs") {
     ":0101",
     ":0102",
     ":0107",
+    ":0108",
   ]
 }
 
@@ -46,4 +47,8 @@ pw_doc_group("0102") {
 
 pw_doc_group("0107") {
   sources = [ "0107-communications.rst" ]
+}
+
+pw_doc_group("0108") {
+  sources = [ "0108-pw_emu-emulators-frontend.rst" ]
 }

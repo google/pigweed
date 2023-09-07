@@ -17,5 +17,5 @@ All pending, active, and resolved SEEDs are listed below.
   0105: Nested Tokens and Tokenized Args <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/154190>
   0106: Project Template <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/155430>
   0107-communications
-  0108: Emulators Frontend <http://pigweed-review.googlesource.com/c/pigweed/pigweed/+/158190>
+  0108-pw_emu-emulators-frontend
   0109: Communication Buffers <https://pigweed-review.git.corp.google.com/c/pigweed/pigweed/+/168357>
