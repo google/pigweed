@@ -12,6 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_third_party/re2/re2.gni")
+
 # Targets that include RE2 headers need to include this config.
 config("disabled_warnings") {
   cflags = [
@@ -26,9 +30,20 @@ config("internal_disabled_warnings") {
   cflags = [
     "-Wno-c99-extensions",
     "-Wno-cast-qual",
+    "-Wno-dtor-name",
+    "-Wno-gnu-anonymous-struct",
+    "-Wno-nested-anon-types",
     "-Wno-shadow",
     "-Wno-switch-enum",
     "-Wno-unused-parameter",
   ]
-  configs = [ ":disabled_warnings" ]
+}
+
+# Include path for RE2.
+#
+# This is needed as the library is used to build FuzzTest in a dedicated
+# toolchain, and `public_configs` do not propagate across toolchain boundaries
+# by default.
+config("public_include_path") {
+  include_dirs = [ "$dir_pw_third_party_re2" ]
 }

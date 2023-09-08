@@ -12,6 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_third_party/abseil-cpp/abseil-cpp.gni")
+
 # Targets that include Abseil C++ headers need to include this config.
 config("disabled_warnings") {
   cflags = [ "-Wno-gcc-compat" ]
@@ -19,6 +23,17 @@ config("disabled_warnings") {
 
 # This config should only be used to build the Abseil C++ library itself.
 config("internal_disabled_warnings") {
-  cflags = [ "-Wno-switch-enum" ]
-  configs = [ ":disabled_warnings" ]
+  cflags = [
+    "-Wno-gcc-compat",
+    "-Wno-switch-enum",
+  ]
+}
+
+# Include path for Abseil C++.
+#
+# This is needed as the library is used to build FuzzTest in a dedicated
+# toolchain, and `public_configs` do not propagate across toolchain boundaries
+# by default.
+config("public_include_path") {
+  include_dirs = [ "$dir_pw_third_party_abseil_cpp" ]
 }

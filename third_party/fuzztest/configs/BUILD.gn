@@ -12,6 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_third_party/fuzztest/fuzztest.gni")
+
 # Targets that include FuzzTest headers need to include this config.
 config("disabled_warnings") {
   cflags = [
@@ -20,4 +24,12 @@ config("disabled_warnings") {
     "-Wno-missing-field-initializers",
   ]
   cflags_cc = [ "-Wno-extra-semi" ]
+}
+
+# Include path for FuzzTest.
+#
+# This is needed as FuzzTest is built in a dedicated toolchain, and
+# `public_configs` do not propagate across toolchain boundaries by default.
+config("public_include_path") {
+  include_dirs = [ "$dir_pw_third_party_fuzztest" ]
 }
