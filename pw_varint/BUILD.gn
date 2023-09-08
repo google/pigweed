@@ -36,6 +36,9 @@ pw_source_set("pw_varint") {
     "varint_c.c",
   ]
   public = [ "public/pw_varint/varint.h" ]
+
+  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
 pw_source_set("stream") {

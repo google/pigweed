@@ -291,6 +291,7 @@ ALIASES                = "rst=^^\verbatim embed:rst:leading-asterisk^^" \
                          "cpp_class{1}=@crossref{cpp,class,\1}" \
                          "cpp_func{1}=@crossref{cpp,func,\1}" \
                          "cpp_type{1}=@crossref{cpp,type,\1}" \
+                         "cpp_enum{1}=@crossref{cpp,type,\1}" \
                          "pw_status{1}=@crossref{c,enumerator,\1}"
 
 # Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C sources

@@ -14,50 +14,54 @@
 
 #include "pw_varint/varint.h"
 
-#define VARINT_ENCODE_FUNCTION_BODY(output)                                \
-  size_t written = 0;                                                      \
-  uint8_t* buffer = (uint8_t*)output;                                      \
-                                                                           \
-  do {                                                                     \
-    /* Grab 7 bits; the eighth bit is set to indicate more data coming. */ \
-    buffer[written++] = (integer & 0x7F) | 0x80;                           \
-    integer >>= 7;                                                         \
-  } while (integer != 0u);                                                 \
-                                                                           \
-  buffer[written - 1] &= 0x7f;                                             \
+#define VARINT_ENCODE_FUNCTION_BODY(bits)                        \
+  size_t written = 0;                                            \
+  uint8_t* buffer = (uint8_t*)output;                            \
+                                                                 \
+  do {                                                           \
+    if (written >= output_size_bytes) {                          \
+      return 0u;                                                 \
+    }                                                            \
+    buffer[written++] = pw_varint_EncodeOneByte##bits(&integer); \
+  } while (integer != 0u);                                       \
+                                                                 \
+  buffer[written - 1] &= 0x7f;                                   \
   return written
 
-size_t pw_varint_Encode32(uint32_t integer, void* buffer_of_at_least_5_bytes) {
-  VARINT_ENCODE_FUNCTION_BODY(buffer_of_at_least_5_bytes);
+size_t pw_varint_Encode32(uint32_t integer,
+                          void* output,
+                          size_t output_size_bytes) {
+  VARINT_ENCODE_FUNCTION_BODY(32);
 }
 
-size_t pw_varint_Encode64(uint64_t integer, void* buffer_of_at_least_10_bytes) {
-  VARINT_ENCODE_FUNCTION_BODY(buffer_of_at_least_10_bytes);
+size_t pw_varint_Encode64(uint64_t integer,
+                          void* output,
+                          size_t output_size_bytes) {
+  VARINT_ENCODE_FUNCTION_BODY(64);
 }
 
-#define VARINT_DECODE_FUNCTION_BODY(bits)                                    \
-  uint##bits##_t decoded_value = 0;                                          \
-  uint_fast8_t count = 0;                                                    \
-  const uint8_t* buffer = (const uint8_t*)(input);                           \
-                                                                             \
-  /* Only read up to the largest possible encoded size. */                   \
-  const size_t max_count =                                                   \
-      input_size_bytes < PW_VARINT_MAX_INT##bits##_SIZE_BYTES                \
-          ? input_size_bytes                                                 \
-          : PW_VARINT_MAX_INT##bits##_SIZE_BYTES;                            \
-                                                                             \
-  do {                                                                       \
-    if (count >= max_count) {                                                \
-      return 0;                                                              \
-    }                                                                        \
-                                                                             \
-    /* Add the bottom seven bits of the next byte to the result. */          \
-    decoded_value |= (uint##bits##_t)(buffer[count] & 0x7fu) << (7 * count); \
-                                                                             \
-    /* Stop decoding if the top bit is not set. */                           \
-  } while ((buffer[count++] & 0x80u) != 0);                                  \
-                                                                             \
-  *output = decoded_value;                                                   \
+#define VARINT_DECODE_FUNCTION_BODY(bits)                                     \
+  uint##bits##_t value = 0;                                                   \
+  size_t count = 0;                                                           \
+  const uint8_t* buffer = (const uint8_t*)(input);                            \
+                                                                              \
+  /* Only read to the end of the buffer or largest possible encoded size. */  \
+  const size_t max_count =                                                    \
+      input_size_bytes < PW_VARINT_MAX_INT##bits##_SIZE_BYTES                 \
+          ? input_size_bytes                                                  \
+          : PW_VARINT_MAX_INT##bits##_SIZE_BYTES;                             \
+                                                                              \
+  bool keep_going;                                                            \
+  do {                                                                        \
+    if (count >= max_count) {                                                 \
+      return 0;                                                               \
+    }                                                                         \
+                                                                              \
+    keep_going = pw_varint_DecodeOneByte##bits(buffer[count], count, &value); \
+    count += 1;                                                               \
+  } while (keep_going);                                                       \
+                                                                              \
+  *output = value;                                                            \
   return count
 
 size_t pw_varint_Decode32(const void* input,

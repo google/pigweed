@@ -19,16 +19,23 @@
 
 #include "pw_varint/varint.h"
 
-size_t pw_varint_CallEncode32(uint32_t integer, void* output) {
-  return pw_varint_Encode32(integer, output);
+size_t pw_varint_CallEncode32(uint32_t integer,
+                              void* output,
+                              size_t output_size_bytes) {
+  return pw_varint_Encode32(integer, output, output_size_bytes);
 }
 
-size_t pw_varint_CallEncode64(uint64_t integer, void* output) {
-  return pw_varint_Encode64(integer, output);
+size_t pw_varint_CallEncode64(uint64_t integer,
+                              void* output,
+                              size_t output_size_bytes) {
+  return pw_varint_Encode64(integer, output, output_size_bytes);
 }
 
-size_t pw_varint_CallZigZagAndVarintEncode64(int64_t integer, void* output) {
-  return pw_varint_Encode64(pw_varint_ZigZagEncode64(integer), output);
+size_t pw_varint_CallZigZagAndVarintEncode64(int64_t integer,
+                                             void* output,
+                                             size_t output_size_bytes) {
+  return pw_varint_Encode64(
+      pw_varint_ZigZagEncode64(integer), output, output_size_bytes);
 }
 
 size_t pw_varint_CallDecode32(void* input,

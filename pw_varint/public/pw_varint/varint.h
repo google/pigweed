@@ -13,6 +13,25 @@
 // the License.
 #pragma once
 
+/// @file pw_varint/varint.h
+///
+/// The `pw_varint` module provides functions for encoding and decoding variable
+/// length integers or varints. For smaller values, varints require less memory
+/// than a fixed-size encoding. For example, a 32-bit (4-byte) integer requires
+/// 1–5 bytes when varint-encoded.
+///
+/// `pw_varint` supports custom variable-length encodings with different
+/// terminator bit values and positions (@cpp_enum{pw::varint::Format}).
+/// The basic encoding for unsigned integers is Little Endian Base 128 (LEB128).
+/// ZigZag encoding is also supported, which maps negative integers to positive
+/// integers to improve encoding density for LEB128.
+///
+/// <a
+/// href=https://developers.google.com/protocol-buffers/docs/encoding#varints>
+/// Protocol Buffers</a> and @rstref{HDLC <module-pw_hdlc>} use variable-length
+/// integer encodings for integers.
+
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -22,27 +41,25 @@
 extern "C" {
 #endif
 
-/// Maximum size of a varint (LEB128) encoded `uint32_t`.
+/// Maximum size of an LEB128-encoded `uint32_t`.
 #define PW_VARINT_MAX_INT32_SIZE_BYTES 5
 
-/// Maximum size of a varint (LEB128) encoded `uint64_t`.
+/// Maximum size of an LEB128-encoded `uint64_t`.
 #define PW_VARINT_MAX_INT64_SIZE_BYTES 10
 
-/// Encodes a 32-bit integer as a varint (LEB128).
-///
-/// @pre The output buffer **MUST** be 5 bytes
-///     (@c_macro{PW_VARINT_MAX_INT32_SIZE_BYTES}) or larger.
+/// Encodes a 32-bit integer as LEB128.
 ///
 /// @returns the number of bytes written
-size_t pw_varint_Encode32(uint32_t integer, void* buffer_of_at_least_5_bytes);
+size_t pw_varint_Encode32(uint32_t integer,
+                          void* output,
+                          size_t output_size_bytes);
 
-/// Encodes a 64-bit integer as a varint (LEB128).
-///
-/// @pre The output buffer **MUST** be 10 bytes
-///     (@c_macro{PW_VARINT_MAX_INT64_SIZE_BYTES}) or larger.
+/// Encodes a 64-bit integer as LEB128.
 ///
 /// @returns the number of bytes written
-size_t pw_varint_Encode64(uint64_t integer, void* buffer_of_at_least_10_bytes);
+size_t pw_varint_Encode64(uint64_t integer,
+                          void* output,
+                          size_t output_size_bytes);
 
 /// Zig-zag encodes an `int32_t`, returning it as a `uint32_t`.
 static inline uint32_t pw_varint_ZigZagEncode32(int32_t n) {
@@ -52,6 +69,21 @@ static inline uint32_t pw_varint_ZigZagEncode32(int32_t n) {
 /// Zig-zag encodes an `int64_t`, returning it as a `uint64_t`.
 static inline uint64_t pw_varint_ZigZagEncode64(int64_t n) {
   return (uint64_t)((uint64_t)n << 1) ^ (uint64_t)(n >> (sizeof(n) * 8 - 1));
+}
+
+/// Extracts and encodes 7 bits from the integer. Sets the top bit to indicate
+/// more data is coming, which must be cleared if this was the last byte.
+static inline uint8_t pw_varint_EncodeOneByte32(uint32_t* integer) {
+  const uint8_t bits = (uint8_t)((*integer & 0x7Fu) | 0x80u);
+  *integer >>= 7;
+  return bits;
+}
+
+/// @copydoc pw_varint_EncodeOneByte32
+static inline uint8_t pw_varint_EncodeOneByte64(uint64_t* integer) {
+  const uint8_t bits = (uint8_t)((*integer & 0x7Fu) | 0x80u);
+  *integer >>= 7;
+  return bits;
 }
 
 /// Zig-zag decodes a `uint64_t`, returning it as an `int64_t`.
@@ -66,20 +98,53 @@ static inline int64_t pw_varint_ZigZagDecode64(uint64_t n)
   return (int64_t)((n >> 1) ^ (~(n & 1) + 1));
 }
 
-/// Decodes a varint (LEB128) to a `uint32_t`.
+/// Decodes an LEB128-encoded integer to a `uint32_t`.
 /// @returns the number of bytes read; 0 if decoding failed
 size_t pw_varint_Decode32(const void* input,
                           size_t input_size_bytes,
                           uint32_t* output);
 
-/// Decodes a varint (LEB128) to a `uint64_t`.
+/// Decodes an LEB128-encoded integer to a `uint64_t`.
 /// @returns the number of bytes read; 0 if decoding failed
 size_t pw_varint_Decode64(const void* input,
                           size_t input_size_bytes,
                           uint64_t* output);
 
+/// Decodes one byte of an LEB128-encoded integer to a `uint32_t`.
+/// @returns true if there is more data to decode (top bit is set).
+static inline bool pw_varint_DecodeOneByte32(uint8_t byte,
+                                             size_t count,
+                                             uint32_t* value) {
+  *value |= (uint32_t)(byte & 0x7fu) << (count * 7);
+  return (byte & 0x80u) != 0u;
+}
+
+/// Decodes one byte of an LEB128-encoded integer to a `uint64_t`.
+/// @returns true if there is more data to decode (top bit is set).
+static inline bool pw_varint_DecodeOneByte64(uint8_t byte,
+                                             size_t count,
+                                             uint64_t* value) {
+  *value |= (uint64_t)(byte & 0x7fu) << (count * 7);
+  return (byte & 0x80u) != 0u;
+}
+
+/// Macro that returns the encoded size of up to a 64-bit integer. This is
+/// inefficient, but is a constant expression if the input is a constant. Use
+/// `pw_varint_EncodedSizeBytes` for runtime encoded size calculation.
+#define PW_VARINT_ENCODED_SIZE_BYTES(value)        \
+  ((unsigned long long)value < (1u << 7)      ? 1u \
+   : (unsigned long long)value < (1u << 14)   ? 2u \
+   : (unsigned long long)value < (1u << 21)   ? 3u \
+   : (unsigned long long)value < (1u << 28)   ? 4u \
+   : (unsigned long long)value < (1llu << 35) ? 5u \
+   : (unsigned long long)value < (1llu << 42) ? 6u \
+   : (unsigned long long)value < (1llu << 49) ? 7u \
+   : (unsigned long long)value < (1llu << 56) ? 8u \
+   : (unsigned long long)value < (1llu << 63) ? 9u \
+                                              : 10u)
+
 /// Returns the size of a `uint64_t` when encoded as a varint (LEB128).
-size_t pw_varint_EncodedSize(uint64_t integer);
+size_t pw_varint_EncodedSizeBytes(uint64_t integer);
 
 /// Describes a custom varint format.
 typedef enum {
@@ -177,10 +242,7 @@ constexpr size_t EncodedSize(T integer) {
 /// @returns the number of bytes written; 0 if the buffer is too small
 inline size_t EncodeLittleEndianBase128(uint64_t integer,
                                         const span<std::byte>& output) {
-  if (EncodedSize(integer) > output.size()) {
-    return 0;
-  }
-  return pw_varint_Encode64(integer, output.data());
+  return pw_varint_Encode64(integer, output.data(), output.size());
 }
 
 /// Encodes the provided integer using a variable-length encoding and returns

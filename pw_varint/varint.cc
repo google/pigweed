@@ -122,7 +122,7 @@ extern "C" size_t pw_varint_DecodeCustom(const void* input,
   return count;
 }
 
-extern "C" size_t pw_varint_EncodedSize(uint64_t integer) {
+extern "C" size_t pw_varint_EncodedSizeBytes(uint64_t integer) {
   return EncodedSize(integer);
 }
 
