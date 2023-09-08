@@ -49,7 +49,12 @@ class CommandChannelTest : public TestingBase {
   CommandChannelTest() = default;
   ~CommandChannelTest() override = default;
 
+  pw::async::HeapDispatcher heap_dispatcher() { return heap_dispatcher_; }
+
   inspect::Inspector inspector_;
+
+ private:
+  pw::async::HeapDispatcher heap_dispatcher_{pw_dispatcher()};
 };
 
 EmbossCommandPacket MakeReadRemoteSupportedFeatures(uint16_t connection_handle) {
@@ -1248,7 +1253,11 @@ TEST_F(CommandChannelTest, TransportClosedCallback) {
   auto error_cb = [&error_cb_called] { error_cb_called = true; };
   transport()->SetTransportErrorCallback(error_cb);
 
-  async::PostTask(dispatcher(), [this] { test_device()->Stop(); });
+  heap_dispatcher().Post([this](pw::async::Context /*ctx*/, pw::Status status) {
+    if (status.ok()) {
+      test_device()->Stop();
+    }
+  });
   RunLoopUntilIdle();
   EXPECT_TRUE(error_cb_called);
 }

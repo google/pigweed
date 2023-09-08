@@ -202,7 +202,7 @@ void MockController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) 
   if (data_callback_) {
     DynamicByteBuffer packet_copy(acl_data_packet);
     heap_dispatcher().Post([packet_copy = std::move(packet_copy), cb = data_callback_.share()](
-                              auto, pw::Status status) mutable {
+                               auto, pw::Status status) mutable {
       if (status.ok()) {
         cb(packet_copy);
       }
@@ -226,20 +226,32 @@ void MockController::OnScoDataPacketReceived(const ByteBuffer& sco_data_packet) 
 void MockController::SendCommand(pw::span<const std::byte> data) {
   // Post task to simulate async
   DynamicByteBuffer buffer(BufferView(data.data(), data.size()));
-  async::PostTask(async_get_default_dispatcher(),
-                  [this, buffer = std::move(buffer)]() { OnCommandReceived(buffer); });
+  heap_dispatcher().Post(
+      [this, buffer = std::move(buffer)](pw::async::Context /*ctx*/, pw::Status status) {
+        if (status.ok()) {
+          OnCommandReceived(buffer);
+        }
+      });
 }
 void MockController::SendAclData(pw::span<const std::byte> data) {
   // Post task to simulate async
   DynamicByteBuffer buffer(BufferView(data.data(), data.size()));
-  async::PostTask(async_get_default_dispatcher(),
-                  [this, buffer = std::move(buffer)]() { OnACLDataPacketReceived(buffer); });
+  heap_dispatcher().Post(
+      [this, buffer = std::move(buffer)](pw::async::Context /*ctx*/, pw::Status status) {
+        if (status.ok()) {
+          OnACLDataPacketReceived(buffer);
+        }
+      });
 }
 void MockController::SendScoData(pw::span<const std::byte> data) {
   // Post task to simulate async
   DynamicByteBuffer buffer(BufferView(data.data(), data.size()));
-  async::PostTask(async_get_default_dispatcher(),
-                  [this, buffer = std::move(buffer)]() { OnScoDataPacketReceived(buffer); });
+  heap_dispatcher().Post(
+      [this, buffer = std::move(buffer)](pw::async::Context /*ctx*/, pw::Status status) {
+        if (status.ok()) {
+          OnScoDataPacketReceived(buffer);
+        }
+      });
 }
 
 }  // namespace bt::testing
