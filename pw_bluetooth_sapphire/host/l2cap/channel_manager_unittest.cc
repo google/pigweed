@@ -298,7 +298,7 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
 
     // TODO(63074): Make these tests not depend on strict channel ID ordering.
     chanmgr_ = ChannelManager::Create(&acl_data_channel_, transport()->command_channel(),
-                                      /*random_channel_ids=*/false);
+                                      /*random_channel_ids=*/false, pw_dispatcher());
 
     packet_rx_handler_ = [this](std::unique_ptr<hci::ACLDataPacket> packet) {
       acl_data_channel_.ReceivePacket(std::move(packet));

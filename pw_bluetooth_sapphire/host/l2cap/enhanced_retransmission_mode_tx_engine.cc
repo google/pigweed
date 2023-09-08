@@ -31,8 +31,10 @@ uint8_t NumFramesBetween(uint8_t low, uint8_t high) {
 Engine::EnhancedRetransmissionModeTxEngine(ChannelId channel_id, uint16_t max_tx_sdu_size,
                                            uint8_t max_transmissions, uint8_t n_frames_in_tx_window,
                                            SendFrameCallback send_frame_callback,
-                                           ConnectionFailureCallback connection_failure_callback)
+                                           ConnectionFailureCallback connection_failure_callback,
+                                           pw::async::Dispatcher& dispatcher)
     : TxEngine(channel_id, max_tx_sdu_size, std::move(send_frame_callback)),
+      pw_dispatcher_(dispatcher),
       max_transmissions_(max_transmissions),
       n_frames_in_tx_window_(n_frames_in_tx_window),
       connection_failure_callback_(std::move(connection_failure_callback)),
@@ -44,11 +46,17 @@ Engine::EnhancedRetransmissionModeTxEngine(ChannelId channel_id, uint16_t max_tx
       n_receiver_ready_polls_sent_(0),
       remote_is_busy_(false) {
   BT_DEBUG_ASSERT(n_frames_in_tx_window_);
-  receiver_ready_poll_task_.set_handler([this] {
+  receiver_ready_poll_task_.set_function([this](pw::async::Context /*ctx*/, pw::Status status) {
+    if (!status.ok()) {
+      return;
+    }
     SendReceiverReadyPoll();
     StartMonitorTimer();
   });
-  monitor_task_.set_handler([this] {
+  monitor_task_.set_function([this](pw::async::Context /*ctx*/, pw::Status status) {
+    if (!status.ok()) {
+      return;
+    }
     if (max_transmissions_ == 0 || n_receiver_ready_polls_sent_ < max_transmissions_) {
       SendReceiverReadyPoll();
       StartMonitorTimer();
@@ -259,14 +267,13 @@ void Engine::StartReceiverReadyPollTimer() {
   BT_DEBUG_ASSERT(!monitor_task_.is_pending());
   n_receiver_ready_polls_sent_ = 0;
   receiver_ready_poll_task_.Cancel();
-  receiver_ready_poll_task_.PostDelayed(async_get_default_dispatcher(),
-                                        kErtmReceiverReadyPollTimerDuration);
+  receiver_ready_poll_task_.PostAfter(kPwErtmReceiverReadyPollTimerDuration);
 }
 
 void Engine::StartMonitorTimer() {
   BT_DEBUG_ASSERT(!receiver_ready_poll_task_.is_pending());
   monitor_task_.Cancel();
-  monitor_task_.PostDelayed(async_get_default_dispatcher(), kErtmMonitorTimerDuration);
+  monitor_task_.PostAfter(kPwErtmMonitorTimerDuration);
 }
 
 void Engine::SendReceiverReadyPoll() {

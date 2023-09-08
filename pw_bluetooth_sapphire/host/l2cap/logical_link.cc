@@ -59,8 +59,10 @@ LogicalLink::LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type,
                          pw::bluetooth::emboss::ConnectionRole role, uint16_t max_acl_payload_size,
                          QueryServiceCallback query_service_cb,
                          hci::AclDataChannel* acl_data_channel, hci::CommandChannel* cmd_channel,
-                         bool random_channel_ids, A2dpOffloadManager& a2dp_offload_manager)
-    : handle_(handle),
+                         bool random_channel_ids, A2dpOffloadManager& a2dp_offload_manager,
+                         pw::async::Dispatcher& dispatcher)
+    : pw_dispatcher_(dispatcher),
+      handle_(handle),
       type_(type),
       role_(role),
       max_acl_payload_size_(max_acl_payload_size),
@@ -121,8 +123,9 @@ Channel::WeakPtr LogicalLink::OpenFixedChannel(ChannelId id) {
     return Channel::WeakPtr();
   }
 
-  std::unique_ptr<ChannelImpl> chan = ChannelImpl::CreateFixedChannel(
-      id, GetWeakPtr(), cmd_channel_->AsWeakPtr(), max_acl_payload_size_, a2dp_offload_manager_);
+  std::unique_ptr<ChannelImpl> chan =
+      ChannelImpl::CreateFixedChannel(pw_dispatcher_, id, GetWeakPtr(), cmd_channel_->AsWeakPtr(),
+                                      max_acl_payload_size_, a2dp_offload_manager_);
 
   auto pp_iter = pending_pdus_.find(id);
   if (pp_iter != pending_pdus_.end()) {
@@ -489,7 +492,7 @@ void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCal
   chan_info.flush_timeout.reset();
 
   std::unique_ptr<ChannelImpl> chan = ChannelImpl::CreateDynamicChannel(
-      local_cid, remote_cid, GetWeakPtr(), chan_info, cmd_channel_->AsWeakPtr(),
+      pw_dispatcher_, local_cid, remote_cid, GetWeakPtr(), chan_info, cmd_channel_->AsWeakPtr(),
       max_acl_payload_size_, a2dp_offload_manager_);
   auto chan_weak = chan->GetWeakPtr();
   channels_[local_cid] = std::move(chan);

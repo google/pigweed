@@ -43,7 +43,7 @@ class ChannelManagerMockControllerTest
     // TODO(63074): Remove assumptions about channel ordering so we can turn random ids on.
     channel_manager_ =
         ChannelManager::Create(transport()->acl_data_channel(), transport()->command_channel(),
-                               /*random_channel_ids=*/false);
+                               /*random_channel_ids=*/false, pw_dispatcher());
 
     next_command_id_ = 1;
   }
@@ -58,7 +58,7 @@ class ChannelManagerMockControllerTest
 
     channel_manager_ =
         ChannelManager::Create(transport()->acl_data_channel(), transport()->command_channel(),
-                               /*random_channel_ids=*/false);
+                               /*random_channel_ids=*/false, pw_dispatcher());
 
     next_command_id_ = 1;
   }

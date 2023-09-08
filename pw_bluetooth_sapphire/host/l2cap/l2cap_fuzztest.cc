@@ -52,7 +52,7 @@ class DataFuzzTest : public TestingBase {
 
     channel_manager_ = l2cap::ChannelManager::Create(transport()->acl_data_channel(),
                                                      transport()->command_channel(),
-                                                     /*random_channel_ids=*/true);
+                                                     /*random_channel_ids=*/true, pw_dispatcher());
   }
 
   ~DataFuzzTest() override {

@@ -247,14 +247,15 @@ class ChannelImpl : public Channel {
   //   1.) never sending packets larger than their spec-defined MTU.
   //   2.) handling inbound PDUs which are larger than their spec-defined MTU appropriately.
   static std::unique_ptr<ChannelImpl> CreateFixedChannel(
-      ChannelId id, internal::LogicalLinkWeakPtr link, hci::CommandChannel::WeakPtr cmd_channel,
-      uint16_t max_acl_payload_size, A2dpOffloadManager& a2dp_offload_manager,
-      uint16_t max_tx_queued = kDefaultTxMaxQueuedCount);
-
-  static std::unique_ptr<ChannelImpl> CreateDynamicChannel(
-      ChannelId id, ChannelId peer_id, internal::LogicalLinkWeakPtr link, ChannelInfo info,
+      pw::async::Dispatcher& dispatcher, ChannelId id, internal::LogicalLinkWeakPtr link,
       hci::CommandChannel::WeakPtr cmd_channel, uint16_t max_acl_payload_size,
       A2dpOffloadManager& a2dp_offload_manager, uint16_t max_tx_queued = kDefaultTxMaxQueuedCount);
+
+  static std::unique_ptr<ChannelImpl> CreateDynamicChannel(
+      pw::async::Dispatcher& dispatcher, ChannelId id, ChannelId peer_id,
+      internal::LogicalLinkWeakPtr link, ChannelInfo info, hci::CommandChannel::WeakPtr cmd_channel,
+      uint16_t max_acl_payload_size, A2dpOffloadManager& a2dp_offload_manager,
+      uint16_t max_tx_queued = kDefaultTxMaxQueuedCount);
 
   ~ChannelImpl() override;
 
@@ -296,16 +297,18 @@ class ChannelImpl : public Channel {
   WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
 
  private:
-  ChannelImpl(ChannelId id, ChannelId remote_id, internal::LogicalLinkWeakPtr link,
-              ChannelInfo info, hci::CommandChannel::WeakPtr cmd_channel,
-              uint16_t max_acl_payload_size, A2dpOffloadManager& a2dp_offload_manager,
-              uint16_t max_tx_queued);
+  ChannelImpl(pw::async::Dispatcher& dispatcher, ChannelId id, ChannelId remote_id,
+              internal::LogicalLinkWeakPtr link, ChannelInfo info,
+              hci::CommandChannel::WeakPtr cmd_channel, uint16_t max_acl_payload_size,
+              A2dpOffloadManager& a2dp_offload_manager, uint16_t max_tx_queued);
 
   // Common channel closure logic. Called on Deactivate/OnClosed.
   void CleanUp();
 
   // Callback that |tx_engine_| uses to deliver a PDU to lower layers.
   void SendFrame(ByteBufferPtr pdu);
+
+  pw::async::Dispatcher& pw_dispatcher_;
 
   bool active_;
   RxCallback rx_cb_;

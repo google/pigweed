@@ -56,7 +56,7 @@ class LogicalLinkTest : public TestingBase {
         kConnHandle, type, pw::bluetooth::emboss::ConnectionRole::CENTRAL, kMaxPayload,
         std::move(query_service_cb), transport()->acl_data_channel(),
         transport()->command_channel(),
-        /*random_channel_ids=*/true, *a2dp_offload_manager_);
+        /*random_channel_ids=*/true, *a2dp_offload_manager_, pw_dispatcher());
   }
   void ResetAndCreateNewLogicalLink(LinkType type = LinkType::kACL) {
     link()->Close();

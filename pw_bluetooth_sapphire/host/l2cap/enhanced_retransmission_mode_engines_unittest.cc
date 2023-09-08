@@ -6,6 +6,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <pw_async_fuchsia/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fragmenter.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
@@ -14,7 +15,13 @@
 namespace bt::l2cap::internal {
 namespace {
 
-class EnhancedRetransmissionModeEnginesTest : public ::gtest::TestLoopFixture {};
+class EnhancedRetransmissionModeEnginesTest : public ::gtest::TestLoopFixture {
+ public:
+  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
+
+ private:
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
+};
 
 constexpr size_t kMaxTransmissions = 2;
 constexpr size_t kTxWindow = 63;
@@ -31,9 +38,9 @@ void NoOpTxCallback(ByteBufferPtr) {}
 void NoOpFailureCallback() {}
 
 TEST_F(EnhancedRetransmissionModeEnginesTest, MakeLinkedERTMEngines) {
-  auto [rx_engine, tx_engine] =
-      MakeLinkedEnhancedRetransmissionModeEngines(kTestChannelId, kDefaultMTU, kMaxTransmissions,
-                                                  kTxWindow, NoOpTxCallback, NoOpFailureCallback);
+  auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, NoOpTxCallback,
+      NoOpFailureCallback, pw_dispatcher());
   EXPECT_TRUE(rx_engine);
   EXPECT_TRUE(tx_engine);
 }
@@ -67,7 +74,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
   };
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
       kTestChannelId, kDefaultMTU, kMaxTransmissions, /*n_frames_in_tx_window=*/1, tx_callback,
-      NoOpFailureCallback);
+      NoOpFailureCallback, pw_dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
@@ -111,7 +118,8 @@ TEST_F(EnhancedRetransmissionModeEnginesTest, SignalFailureAfterMonitorTimerExpi
   bool failure_cb_called = false;
   auto failure_cb = [&failure_cb_called] { failure_cb_called = true; };
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
-      kTestChannelId, kDefaultMTU, /*max_transmissions=*/1, kTxWindow, tx_callback, failure_cb);
+      kTestChannelId, kDefaultMTU, /*max_transmissions=*/1, kTxWindow, tx_callback, failure_cb,
+      pw_dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
@@ -153,7 +161,8 @@ TEST_F(EnhancedRetransmissionModeEnginesTest, SignalFailureAfterMaxTransmitExhau
   bool failure_cb_called = false;
   auto failure_cb = [&failure_cb_called] { failure_cb_called = true; };
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
-      kTestChannelId, kDefaultMTU, /*max_transmissions=*/1, kTxWindow, tx_callback, failure_cb);
+      kTestChannelId, kDefaultMTU, /*max_transmissions=*/1, kTxWindow, tx_callback, failure_cb,
+      pw_dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
@@ -195,7 +204,8 @@ TEST_F(EnhancedRetransmissionModeEnginesTest, RetransmitAfterReceivingRejectSFra
     }
   };
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
-      kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback, NoOpFailureCallback);
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback, NoOpFailureCallback,
+      pw_dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
@@ -239,7 +249,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
   };
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
       kTestChannelId, kDefaultMTU, kMaxTransmissions, /*n_frames_in_tx_window=*/3, tx_callback,
-      NoOpFailureCallback);
+      NoOpFailureCallback, pw_dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
@@ -281,7 +291,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest, RetransmitAfterReceivingSelectiveR
   };
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
       kTestChannelId, kDefaultMTU, kMaxTransmissions, /*n_frames_in_tx_window=*/3, tx_callback,
-      NoOpFailureCallback);
+      NoOpFailureCallback, pw_dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
@@ -342,7 +352,8 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
     tx_count++;
   };
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
-      kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback, NoOpFailureCallback);
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback, NoOpFailureCallback,
+      pw_dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
@@ -387,7 +398,8 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
     tx_count++;
   };
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
-      kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback, NoOpFailureCallback);
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback, NoOpFailureCallback,
+      pw_dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
@@ -440,7 +452,8 @@ TEST_F(
     }
   };
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
-      kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback, NoOpFailureCallback);
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback, NoOpFailureCallback,
+      pw_dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
@@ -509,7 +522,8 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
     }
   };
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
-      kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback, NoOpFailureCallback);
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback, NoOpFailureCallback,
+      pw_dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
@@ -589,7 +603,8 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
     }
   };
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
-      kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback, NoOpFailureCallback);
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback, NoOpFailureCallback,
+      pw_dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 

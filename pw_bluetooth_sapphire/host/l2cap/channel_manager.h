@@ -53,7 +53,8 @@ class ChannelManager {
   // Create a ChannelManager. FakeL2cap can be used instead in tests.
   static std::unique_ptr<ChannelManager> Create(hci::AclDataChannel* acl_data_channel,
                                                 hci::CommandChannel* cmd_channel,
-                                                bool random_channel_ids);
+                                                bool random_channel_ids,
+                                                pw::async::Dispatcher& dispatcher);
 
   virtual ~ChannelManager() = default;
 

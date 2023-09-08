@@ -29,7 +29,7 @@ class ChannelManagerImpl final : public ChannelManager {
   using LinkErrorCallback = fit::closure;
 
   ChannelManagerImpl(hci::AclDataChannel* acl_data_channel, hci::CommandChannel* cmd_channel,
-                     bool random_channel_ids);
+                     bool random_channel_ids, pw::async::Dispatcher& dispatcher);
   ~ChannelManagerImpl() override;
 
   BrEdrFixedChannels AddACLConnection(hci_spec::ConnectionHandle handle,
@@ -86,6 +86,8 @@ class ChannelManagerImpl final : public ChannelManager {
   // unregistered services return null.
   std::optional<ServiceInfo> QueryService(hci_spec::ConnectionHandle handle, PSM psm);
 
+  pw::async::Dispatcher& pw_dispatcher_;
+
   // Maximum sizes for data packet payloads from host to controller.
   size_t max_acl_payload_size_;
   size_t max_le_payload_size_;
@@ -129,8 +131,10 @@ class ChannelManagerImpl final : public ChannelManager {
 };
 
 ChannelManagerImpl::ChannelManagerImpl(hci::AclDataChannel* acl_data_channel,
-                                       hci::CommandChannel* cmd_channel, bool random_channel_ids)
-    : acl_data_channel_(acl_data_channel),
+                                       hci::CommandChannel* cmd_channel, bool random_channel_ids,
+                                       pw::async::Dispatcher& dispatcher)
+    : pw_dispatcher_(dispatcher),
+      acl_data_channel_(acl_data_channel),
       cmd_channel_(cmd_channel),
       a2dp_offload_manager_(std::make_unique<A2dpOffloadManager>(cmd_channel_->AsWeakPtr())),
       random_channel_ids_(random_channel_ids),
@@ -347,7 +351,7 @@ internal::LogicalLink* ChannelManagerImpl::RegisterInternal(
   auto ll = std::make_unique<internal::LogicalLink>(
       handle, ll_type, role, max_payload_size,
       fit::bind_member<&ChannelManagerImpl::QueryService>(this), acl_data_channel_, cmd_channel_,
-      random_channel_ids_, *a2dp_offload_manager_);
+      random_channel_ids_, *a2dp_offload_manager_, pw_dispatcher_);
 
   if (ll_node_) {
     ll->AttachInspect(ll_node_, ll_node_.UniqueName(kInspectLogicalLinkNodePrefix));
@@ -394,8 +398,10 @@ void ChannelManagerImpl::ServiceData::AttachInspect(inspect::Node& parent) {
 
 std::unique_ptr<ChannelManager> ChannelManager::Create(hci::AclDataChannel* acl_data_channel,
                                                        hci::CommandChannel* cmd_channel,
-                                                       bool random_channel_ids) {
-  return std::make_unique<ChannelManagerImpl>(acl_data_channel, cmd_channel, random_channel_ids);
+                                                       bool random_channel_ids,
+                                                       pw::async::Dispatcher& dispatcher) {
+  return std::make_unique<ChannelManagerImpl>(acl_data_channel, cmd_channel, random_channel_ids,
+                                              dispatcher);
 }
 
 }  // namespace bt::l2cap

@@ -24,7 +24,8 @@ MakeLinkedEnhancedRetransmissionModeEngines(
     ChannelId channel_id, uint16_t max_tx_sdu_size, uint8_t max_transmissions,
     uint8_t n_frames_in_tx_window,
     EnhancedRetransmissionModeTxEngine::SendFrameCallback send_frame_callback,
-    EnhancedRetransmissionModeTxEngine::ConnectionFailureCallback connection_failure_callback);
+    EnhancedRetransmissionModeTxEngine::ConnectionFailureCallback connection_failure_callback,
+    pw::async::Dispatcher& dispatcher);
 
 }  // namespace bt::l2cap::internal
 

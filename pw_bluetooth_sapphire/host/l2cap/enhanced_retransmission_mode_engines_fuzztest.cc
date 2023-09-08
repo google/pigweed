@@ -8,6 +8,7 @@
 #include <limits>
 
 #include <fuzzer/FuzzedDataProvider.h>
+#include <pw_async_fuchsia/dispatcher.h>
 
 #include "enhanced_retransmission_mode_engines.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
@@ -24,6 +25,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 
   // Sets default dispatcher needed for timeouts.
   async::TestLoop loop;
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher(loop.dispatcher());
 
   uint8_t tx_window = std::max(provider.ConsumeIntegral<uint8_t>(), static_cast<uint8_t>(1u));
 
@@ -34,7 +36,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   auto failure_cb = [&failure] { failure = true; };
 
   auto [rx_engine, tx_engine] = bt::l2cap::internal::MakeLinkedEnhancedRetransmissionModeEngines(
-      kTestChannelId, max_tx_sdu_size, max_transmissions, tx_window, NoOpTxCallback, failure_cb);
+      kTestChannelId, max_tx_sdu_size, max_transmissions, tx_window, NoOpTxCallback, failure_cb,
+      pw_dispatcher);
 
   // In the real stack, the engines are shut down on failure, so we do the same here.
   while (provider.remaining_bytes() > 0 && !failure) {

@@ -52,9 +52,9 @@ constexpr const char* kInspectDroppedPacketsPropertyName = "dropped_packets";
 }  // namespace
 
 std::unique_ptr<ChannelImpl> ChannelImpl::CreateFixedChannel(
-    ChannelId id, internal::LogicalLinkWeakPtr link, hci::CommandChannel::WeakPtr cmd_channel,
-    uint16_t max_acl_payload_size, A2dpOffloadManager& a2dp_offload_manager,
-    uint16_t max_tx_queued) {
+    pw::async::Dispatcher& dispatcher, ChannelId id, internal::LogicalLinkWeakPtr link,
+    hci::CommandChannel::WeakPtr cmd_channel, uint16_t max_acl_payload_size,
+    A2dpOffloadManager& a2dp_offload_manager, uint16_t max_tx_queued) {
   // A fixed channel's endpoints have the same local and remote identifiers.
   // Setting the ChannelInfo MTU to kMaxMTU effectively cancels any L2CAP-level MTU enforcement for
   // services which operate over fixed channels. Such services often define minimum MTU values in
@@ -62,24 +62,26 @@ std::unique_ptr<ChannelImpl> ChannelImpl::CreateFixedChannel(
   //   1.) never sending packets larger than their spec-defined MTU.
   //   2.) handling inbound PDUs which are larger than their spec-defined MTU appropriately.
   return std::unique_ptr<ChannelImpl>(new ChannelImpl(
-      id, id, link, ChannelInfo::MakeBasicMode(kMaxMTU, kMaxMTU), std::move(cmd_channel),
-      max_acl_payload_size, a2dp_offload_manager, max_tx_queued));
+      dispatcher, id, id, link, ChannelInfo::MakeBasicMode(kMaxMTU, kMaxMTU),
+      std::move(cmd_channel), max_acl_payload_size, a2dp_offload_manager, max_tx_queued));
 }
 
 std::unique_ptr<ChannelImpl> ChannelImpl::CreateDynamicChannel(
-    ChannelId id, ChannelId peer_id, internal::LogicalLinkWeakPtr link, ChannelInfo info,
-    hci::CommandChannel::WeakPtr cmd_channel, uint16_t max_acl_payload_size,
-    A2dpOffloadManager& a2dp_offload_manager, uint16_t max_tx_queued) {
-  return std::unique_ptr<ChannelImpl>(new ChannelImpl(id, peer_id, link, info,
+    pw::async::Dispatcher& dispatcher, ChannelId id, ChannelId peer_id,
+    internal::LogicalLinkWeakPtr link, ChannelInfo info, hci::CommandChannel::WeakPtr cmd_channel,
+    uint16_t max_acl_payload_size, A2dpOffloadManager& a2dp_offload_manager,
+    uint16_t max_tx_queued) {
+  return std::unique_ptr<ChannelImpl>(new ChannelImpl(dispatcher, id, peer_id, link, info,
                                                       std::move(cmd_channel), max_acl_payload_size,
                                                       a2dp_offload_manager, max_tx_queued));
 }
 
-ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, internal::LogicalLinkWeakPtr link,
-                         ChannelInfo info, hci::CommandChannel::WeakPtr cmd_channel,
-                         uint16_t max_acl_payload_size, A2dpOffloadManager& a2dp_offload_manager,
-                         uint16_t max_tx_queued)
+ChannelImpl::ChannelImpl(pw::async::Dispatcher& dispatcher, ChannelId id, ChannelId remote_id,
+                         internal::LogicalLinkWeakPtr link, ChannelInfo info,
+                         hci::CommandChannel::WeakPtr cmd_channel, uint16_t max_acl_payload_size,
+                         A2dpOffloadManager& a2dp_offload_manager, uint16_t max_tx_queued)
     : Channel(id, remote_id, link->type(), link->handle(), info, max_tx_queued),
+      pw_dispatcher_(dispatcher),
       active_(false),
       link_(link),
       cmd_channel_(std::move(cmd_channel)),
@@ -105,7 +107,8 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, internal::LogicalLin
     };
     std::tie(rx_engine_, tx_engine_) = MakeLinkedEnhancedRetransmissionModeEngines(
         id, max_tx_sdu_size(), info_.max_transmissions, info_.n_frames_in_tx_window,
-        fit::bind_member<&ChannelImpl::SendFrame>(this), std::move(connection_failure_cb));
+        fit::bind_member<&ChannelImpl::SendFrame>(this), std::move(connection_failure_cb),
+        pw_dispatcher_);
   }
 }
 

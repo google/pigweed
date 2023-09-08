@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <limits>
 #include <string>
+#include <pw_chrono/system_clock.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 
@@ -23,12 +24,14 @@ namespace bt::l2cap {
 // on the underlying logical link.
 static constexpr auto kErtmReceiverReadyPollTimerDuration = zx::sec(2);
 static_assert(kErtmReceiverReadyPollTimerDuration <= zx::msec(std::numeric_limits<uint16_t>::max()));
+static constexpr pw::chrono::SystemClock::duration  kPwErtmReceiverReadyPollTimerDuration = std::chrono::seconds(2);
 
 // See Core Spec v5.0, Volume 3, Part A, Sec 8.6.2.1. Note that we assume there is no flush timeout
 // on the underlying logical link. If the link _does_ have a flush timeout, then our implementation
 // will be slower to trigger the monitor timeout than the specification recommends.
 static constexpr auto kErtmMonitorTimerDuration = zx::sec(12);
 static_assert(kErtmMonitorTimerDuration <= zx::msec(std::numeric_limits<uint16_t>::max()));
+static constexpr pw::chrono::SystemClock::duration kPwErtmMonitorTimerDuration = std::chrono::seconds(12);
 
 // See Core Spec v5.0, Volume 3, Part A, Sec 6.2.1. This is the initial value of the timeout duration.
 // Although Signaling Channel packets are not sent as automatically flushable, Signaling Channel packets
