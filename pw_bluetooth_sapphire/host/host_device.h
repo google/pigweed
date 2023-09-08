@@ -7,10 +7,6 @@
 
 #include <fidl/fuchsia.hardware.bluetooth/cpp/wire.h>
 #include <fuchsia/hardware/bt/vendor/c/banjo.h>
-#include <lib/async-loop/cpp/loop.h>
-#include <lib/async-loop/default.h>
-#include <lib/async/cpp/task.h>
-#include <lib/async/dispatcher.h>
 #include <lib/fit/result.h>
 
 #include <mutex>
@@ -75,6 +71,9 @@ class HostDevice final : public HostDeviceType {
   // This is necessary as Host owns FIDL bindings which require a
   // single-threaded dispatcher.
   async::Loop loop_;
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_;
+  pw::async::HeapDispatcher heap_dispatcher_;
+
   fbl::RefPtr<Host> host_ __TA_GUARDED(mtx_);
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(HostDevice);

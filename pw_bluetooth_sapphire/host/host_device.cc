@@ -18,7 +18,10 @@ const char* kDeviceName = "bt_host";
 }  // namespace
 
 HostDevice::HostDevice(zx_device_t* parent)
-    : HostDeviceType(parent), loop_(&kAsyncLoopConfigNoAttachToCurrentThread) {
+    : HostDeviceType(parent),
+      loop_(&kAsyncLoopConfigNoAttachToCurrentThread),
+      pw_dispatcher_(loop_.dispatcher()),
+      heap_dispatcher_(pw_dispatcher_) {
   BT_DEBUG_ASSERT(parent);
 
   inspect_.GetRoot().CreateString("name", kDeviceName, &inspect_);
@@ -110,24 +113,32 @@ void HostDevice::InitializeHostLocked(fit::function<void(bool success)> callback
 
   // Send the bootstrap message to Host. The Host object can only be accessed on
   // the Host thread.
-  async::PostTask(loop_.dispatcher(), [this, callback{std::move(callback)}]() mutable {
-    bt_log(TRACE, "bt-host", "host thread start");
+  heap_dispatcher_.Post(
+      [this, callback{std::move(callback)}](pw::async::Context /*ctx*/, pw::Status status) mutable {
+        if (!status.ok()) {
+          bt_log(INFO, "bt-host", "dispatcher shut down before host initialization");
+          return;
+        }
+        bt_log(TRACE, "bt-host", "host thread start");
 
-    std::lock_guard<std::mutex> lock(mtx_);
-    host_ = Host::Create(hci_proto_, vendor_proto_);
-    bt_host_node_ = inspect_.GetRoot().CreateChild("bt-host");
-    host_->Initialize(bt_host_node_, std::move(callback), [this]() {
-      bt_log(WARN, "bt-host", "transport error, shutting down and removing host..");
-      // TODO(fxbug.dev/52588): Consider destroying the host stack synchronously here, instead of
-      // waiting for device unbinding.
-      DdkAsyncRemove();
-    });
-  });
+        std::lock_guard<std::mutex> lock(mtx_);
+        host_ = Host::Create(hci_proto_, vendor_proto_);
+        bt_host_node_ = inspect_.GetRoot().CreateChild("bt-host");
+        host_->Initialize(bt_host_node_, std::move(callback), [this]() {
+          bt_log(WARN, "bt-host", "transport error, shutting down and removing host..");
+          // TODO(fxbug.dev/52588): Consider destroying the host stack synchronously here, instead
+          // of waiting for device unbinding.
+          DdkAsyncRemove();
+        });
+      });
 }
 
 void HostDevice::ShutdownHost() {
   std::lock_guard<std::mutex> lock(mtx_);
-  async::PostTask(loop_.dispatcher(), [this] {
+  heap_dispatcher_.Post([this](pw::async::Context /*ctx*/, pw::Status status) {
+    if (!status.ok()) {
+      return;
+    }
     std::lock_guard<std::mutex> lock(mtx_);
     host_->ShutDown();
     host_ = nullptr;
@@ -163,8 +174,11 @@ void HostDevice::Open(OpenRequestView request, OpenCompleter::Sync& completer) {
   BT_DEBUG_ASSERT(host_);
 
   // Tell Host to start processing messages on this handle.
-  async::PostTask(loop_.dispatcher(), [host = host_, chan = std::move(request->channel)]() mutable {
-    host->BindHostInterface(chan.TakeChannel());
+  heap_dispatcher_.Post([host = host_, chan = std::move(request->channel)](
+                            pw::async::Context /*ctx*/, pw::Status status) mutable {
+    if (status.ok()) {
+      host->BindHostInterface(chan.TakeChannel());
+    }
   });
 }
 
