@@ -85,7 +85,7 @@ class LowEnergyConnectorTest : public TestingBase {
     request_canceled = canceled;
   }
 
-  FakeLocalAddressDelegate fake_address_delegate_;
+  FakeLocalAddressDelegate fake_address_delegate_{pw_dispatcher()};
   std::unique_ptr<LowEnergyConnector> connector_;
 
   // Incoming connections.

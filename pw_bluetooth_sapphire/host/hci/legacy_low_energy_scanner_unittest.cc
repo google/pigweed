@@ -145,7 +145,7 @@ class LegacyLowEnergyScannerTest : public TestingBase, public LowEnergyScanner::
  private:
   PeerFoundCallback peer_found_cb_;
   DirectedAdvCallback directed_adv_cb_;
-  FakeLocalAddressDelegate fake_address_delegate_;
+  FakeLocalAddressDelegate fake_address_delegate_{pw_dispatcher()};
   std::unique_ptr<LegacyLowEnergyScanner> scanner_;
 
   LowEnergyScanner::ScanStatus last_scan_status_;

@@ -221,7 +221,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
  private:
   PeerCache peer_cache_{pw_dispatcher()};
-  hci::FakeLocalAddressDelegate fake_address_delegate_;
+  hci::FakeLocalAddressDelegate fake_address_delegate_{pw_dispatcher()};
   std::unique_ptr<hci::LegacyLowEnergyScanner> scanner_;
   std::unique_ptr<LowEnergyDiscoveryManager> discovery_manager_;
 

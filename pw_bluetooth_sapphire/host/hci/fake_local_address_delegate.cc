@@ -15,8 +15,12 @@ void FakeLocalAddressDelegate::EnsureLocalAddress(AddressCallback callback) {
     callback(local_address_);
     return;
   }
-  async::PostTask(async_get_default_dispatcher(),
-                  [callback = std::move(callback), addr = local_address_] { callback(addr); });
+  heap_dispatcher_.Post([callback = std::move(callback), addr = local_address_](
+                            pw::async::Context /*ctx*/, pw::Status status) {
+    if (status.ok()) {
+      callback(addr);
+    }
+  });
 }
 
 }  // namespace bt::hci

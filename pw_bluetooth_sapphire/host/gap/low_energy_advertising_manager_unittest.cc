@@ -241,7 +241,7 @@ class LowEnergyAdvertisingManagerTest : public TestingBase {
   FakeLowEnergyAdvertiser* advertiser() const { return advertiser_.get(); }
 
  private:
-  hci::FakeLocalAddressDelegate fake_address_delegate_;
+  hci::FakeLocalAddressDelegate fake_address_delegate_{pw_dispatcher()};
 
   // TODO(armansito): The address mapping is currently broken since the gap::LEAM always assigns the
   // controller random address. Make this track each instance by instance ID instead once the

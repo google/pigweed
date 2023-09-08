@@ -46,6 +46,7 @@ static_library("hci") {
   public_deps = [
     "//sdk/lib/fit",
     "//src/connectivity/bluetooth/core/bt-host/transport",
+    "//third_party/pigweed:pw_async_heap_dispatcher",
     "//third_party/pigweed/src/pw_bluetooth:emboss_hci_group",
   ]
 }

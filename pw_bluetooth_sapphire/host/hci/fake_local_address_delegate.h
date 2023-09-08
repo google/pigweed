@@ -5,6 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_FAKE_LOCAL_ADDRESS_DELEGATE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_FAKE_LOCAL_ADDRESS_DELEGATE_H_
 
+#include "pw_async/heap_dispatcher.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 
@@ -12,7 +13,8 @@ namespace bt::hci {
 
 class FakeLocalAddressDelegate : public LocalAddressDelegate {
  public:
-  FakeLocalAddressDelegate() = default;
+  explicit FakeLocalAddressDelegate(pw::async::Dispatcher& pw_dispatcher)
+      : heap_dispatcher_(pw_dispatcher) {}
   ~FakeLocalAddressDelegate() override = default;
 
   std::optional<UInt128> irk() const override { return std::nullopt; }
@@ -29,6 +31,7 @@ class FakeLocalAddressDelegate : public LocalAddressDelegate {
   bool async_ = false;
   DeviceAddress local_address_ = DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
   DeviceAddress identity_address_ = DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
+  pw::async::HeapDispatcher heap_dispatcher_;
 };
 
 }  // namespace bt::hci
