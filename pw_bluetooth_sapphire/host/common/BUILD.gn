@@ -69,6 +69,7 @@ source_set("common") {
     "//third_party/pigweed:pw_random",
     "//third_party/pigweed:pw_span",
     "//third_party/pigweed:pw_string",
+    "//third_party/pigweed/backends/pw_async_fuchsia:util",
     "//third_party/pigweed/src/pw_bluetooth:emboss_hci_group",
     "//zircon/system/ulib/async:async-cpp",
     "//zircon/system/ulib/async-default",

@@ -325,8 +325,10 @@ class LowEnergyConnectionManager final {
 
   struct InspectProperties {
     // Count of connection failures in the past 10 minutes.
-    WindowedInspectIntProperty recent_connection_failures{
-        kInspectRecentConnectionFailuresExpiryDuration};
+    explicit InspectProperties(pw::async::Dispatcher& pw_dispatcher)
+        : recent_connection_failures(pw_dispatcher,
+                                     kInspectRecentConnectionFailuresExpiryDuration) {}
+    WindowedInspectIntProperty recent_connection_failures;
 
     UintMetricCounter outgoing_connection_success_count_;
     UintMetricCounter outgoing_connection_failure_count_;
@@ -338,7 +340,7 @@ class LowEnergyConnectionManager final {
     UintMetricCounter disconnect_zero_ref_count_;
     UintMetricCounter disconnect_remote_disconnection_count_;
   };
-  InspectProperties inspect_properties_;
+  InspectProperties inspect_properties_{pw_dispatcher_};
   inspect::Node inspect_node_;
   // Container node for pending request nodes.
   inspect::Node inspect_pending_requests_node_;

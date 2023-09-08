@@ -8,6 +8,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <pw_async_fuchsia/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
@@ -45,11 +46,17 @@ class TestProperty {
 };
 
 using WindowedProperty = WindowedInspectNumericProperty<TestProperty<int>, int>;
-using WindowedInspectNumericPropertyTest = ::gtest::TestLoopFixture;
+class WindowedInspectNumericPropertyTest : public ::gtest::TestLoopFixture {
+ public:
+  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
+
+ private:
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
+};
 
 TEST_F(WindowedInspectNumericPropertyTest, AddTwoValues) {
   constexpr zx::duration kExpiryDuration = zx::min(3);
-  WindowedProperty windowed_prop(kExpiryDuration);
+  WindowedProperty windowed_prop(pw_dispatcher(), kExpiryDuration);
   int value = 0;
   auto value_cb = [&](auto val) { value = val; };
   windowed_prop.SetProperty(TestProperty<int>(0, value_cb));
@@ -78,7 +85,7 @@ TEST_F(WindowedInspectNumericPropertyTest, AddTwoValues) {
 
 TEST_F(WindowedInspectNumericPropertyTest, AddTwoValuesAtSameTime) {
   constexpr zx::duration kExpiryDuration = zx::min(3);
-  WindowedProperty windowed_prop(kExpiryDuration);
+  WindowedProperty windowed_prop(pw_dispatcher(), kExpiryDuration);
   int value = 0;
   auto value_cb = [&](auto val) { value = val; };
   windowed_prop.SetProperty(TestProperty<int>(0, value_cb));
@@ -98,7 +105,7 @@ TEST_F(WindowedInspectNumericPropertyTest, AddTwoValuesAtSameTime) {
 
 TEST_F(WindowedInspectNumericPropertyTest, AddValueThenExpireThenAddValue) {
   constexpr zx::duration kExpiryDuration = zx::min(3);
-  WindowedProperty windowed_prop(kExpiryDuration);
+  WindowedProperty windowed_prop(pw_dispatcher(), kExpiryDuration);
   int value = 0;
   auto value_cb = [&](auto val) { value = val; };
   windowed_prop.SetProperty(TestProperty<int>(0, value_cb));
@@ -122,7 +129,7 @@ TEST_F(WindowedInspectNumericPropertyTest,
        AddTwoValuesWithinResolutionIntervalExpiresBothSimultaneously) {
   constexpr zx::duration kExpiryDuration = zx::min(3);
   constexpr zx::duration kResolution = zx::sec(3);
-  WindowedProperty windowed_prop(kExpiryDuration, kResolution);
+  WindowedProperty windowed_prop(pw_dispatcher(), kExpiryDuration, kResolution);
   int value = 0;
   auto value_cb = [&](auto val) { value = val; };
   windowed_prop.SetProperty(TestProperty<int>(0, value_cb));
@@ -152,7 +159,7 @@ TEST_F(WindowedInspectNumericPropertyTest,
 
 TEST_F(WindowedInspectNumericPropertyTest, SetPropertyClearsValueAndTimer) {
   constexpr zx::duration kExpiryDuration = zx::min(3);
-  WindowedProperty windowed_prop(kExpiryDuration);
+  WindowedProperty windowed_prop(pw_dispatcher(), kExpiryDuration);
   int value_0 = 0;
   auto value_cb_0 = [&](auto val) { value_0 = val; };
   windowed_prop.SetProperty(TestProperty<int>(0, value_cb_0));
@@ -181,7 +188,7 @@ TEST_F(WindowedInspectNumericPropertyTest, AttachInspectRealIntProperty) {
   auto& root = inspector.GetRoot();
 
   constexpr zx::duration kExpiryDuration = zx::min(3);
-  WindowedInspectIntProperty windowed_property(kExpiryDuration);
+  WindowedInspectIntProperty windowed_property(pw_dispatcher(), kExpiryDuration);
   windowed_property.AttachInspect(root, "windowed");
 
   auto hierarchy = ::inspect::ReadFromVmo(inspector.DuplicateVmo());

@@ -5,16 +5,17 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_WINDOWED_INSPECT_NUMERIC_PROPERTY_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_WINDOWED_INSPECT_NUMERIC_PROPERTY_H_
 
-#include <lib/async/cpp/task.h>
 #include <lib/async/cpp/time.h>
-#include <lib/async/default.h>
 
 #include <optional>
 #include <queue>
 
+#include <pw_async_fuchsia/util.h>
+
 #include "lib/zx/time.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/smart_task.h"
 
 namespace bt {
 
@@ -32,9 +33,25 @@ class WindowedInspectNumericProperty {
   // |min_resolution| is the smallest duration between changes such that they are reversed
   // independently. Changes closer to this interval may be batched together for expiry, biased
   // towards earlier expiry than |expiry_duration|. May be 0 (default) to disable batching.
-  explicit WindowedInspectNumericProperty(zx::duration expiry_duration = zx::min(10),
+  explicit WindowedInspectNumericProperty(pw::async::Dispatcher& pw_dispatcher,
+                                          zx::duration expiry_duration = zx::min(10),
                                           zx::duration min_resolution = zx::duration())
-      : expiry_duration_(expiry_duration), min_resolution_(min_resolution) {}
+      : expiry_duration_(expiry_duration),
+        min_resolution_(min_resolution),
+        expiry_task_(pw_dispatcher,
+                     [this](pw::async::Context /*ctx*/, pw::Status status) {
+                       if (!status.ok()) {
+                         return;
+                       }
+
+                       BT_ASSERT(!values_.empty());
+                       auto oldest_value = values_.front();
+                       // Undo expiring value.
+                       property_.Subtract(oldest_value.second);
+                       values_.pop();
+                       StartExpiryTimeout();
+                     }),
+        pw_dispatcher_(pw_dispatcher) {}
   virtual ~WindowedInspectNumericProperty() = default;
 
   // Allow moving, disallow copying.
@@ -63,7 +80,7 @@ class WindowedInspectNumericProperty {
   // Add the given value to the value of this numeric metric.
   void Add(ValueT value) {
     property_.Add(value);
-    zx::time now = async::Now(async_get_default_dispatcher());
+    zx::time now = pw_async_fuchsia::TimepointToZxTime(pw_dispatcher_.now());
     if (!values_.empty()) {
       // If the most recent change's age is less than |min_resolution_|, merge this change to it
       if (now < values_.back().first + min_resolution_) {
@@ -87,16 +104,7 @@ class WindowedInspectNumericProperty {
     auto oldest_value = values_.front();
     zx::time oldest_value_time = oldest_value.first;
     zx::time expiry_time = expiry_duration_ + oldest_value_time;
-    expiry_task_.PostForTime(async_get_default_dispatcher(), expiry_time);
-  }
-
-  void OnExpiryTimeout() {
-    BT_ASSERT(!values_.empty());
-    auto oldest_value = values_.front();
-    // Undo expiring value.
-    property_.Subtract(oldest_value.second);
-    values_.pop();
-    StartExpiryTimeout();
+    expiry_task_.PostAt(pw_async_fuchsia::ZxTimeToTimepoint(expiry_time));
   }
 
   // This is not very space efficient, requiring a node for every value during the expiry_duration_.
@@ -107,7 +115,8 @@ class WindowedInspectNumericProperty {
   zx::duration min_resolution_;
 
   using SelfT = WindowedInspectNumericProperty<NumericPropertyT, ValueT>;
-  async::TaskClosureMethod<SelfT, &SelfT::OnExpiryTimeout> expiry_task_{this};
+  SmartTask expiry_task_;
+  pw::async::Dispatcher& pw_dispatcher_;
 };
 
 // Convenience WindowedInspectNumericProperty types:
