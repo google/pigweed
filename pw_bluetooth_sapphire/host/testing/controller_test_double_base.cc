@@ -9,7 +9,8 @@
 
 namespace bt::testing {
 
-ControllerTestDoubleBase::ControllerTestDoubleBase() {}
+ControllerTestDoubleBase::ControllerTestDoubleBase(pw::async::Dispatcher& pw_dispatcher)
+    : pw_dispatcher_(pw_dispatcher), heap_dispatcher_(pw_dispatcher) {}
 
 ControllerTestDoubleBase::~ControllerTestDoubleBase() {
   // When this destructor gets called any subclass state will be undefined. If
@@ -26,11 +27,12 @@ bool ControllerTestDoubleBase::SendCommandChannelPacket(const ByteBuffer& packet
   // Post packet to simulate async behavior that many tests expect.
   DynamicByteBuffer buffer(packet);
   auto self = weak_self_.GetWeakPtr();
-  async::PostTask(async_get_default_dispatcher(), [self, buffer = std::move(buffer)]() {
-    if (self.is_alive()) {
-      self->event_cb_({reinterpret_cast<const std::byte*>(buffer.data()), buffer.size()});
-    }
-  });
+  heap_dispatcher().Post(
+      [self, buffer = std::move(buffer)](pw::async::Context /*ctx*/, pw::Status status) {
+        if (self.is_alive() && status.ok()) {
+          self->event_cb_({reinterpret_cast<const std::byte*>(buffer.data()), buffer.size()});
+        }
+      });
   return true;
 }
 
@@ -42,11 +44,12 @@ bool ControllerTestDoubleBase::SendACLDataChannelPacket(const ByteBuffer& packet
   // Post packet to simulate async behavior that some tests expect.
   DynamicByteBuffer buffer(packet);
   auto self = weak_self_.GetWeakPtr();
-  async::PostTask(async_get_default_dispatcher(), [self, buffer = std::move(buffer)]() {
-    if (self.is_alive()) {
-      self->acl_cb_({reinterpret_cast<const std::byte*>(buffer.data()), buffer.size()});
-    }
-  });
+  heap_dispatcher().Post(
+      [self, buffer = std::move(buffer)](pw::async::Context /*ctx*/, pw::Status status) {
+        if (self.is_alive() && status.ok()) {
+          self->acl_cb_({reinterpret_cast<const std::byte*>(buffer.data()), buffer.size()});
+        }
+      });
   return true;
 }
 
@@ -80,9 +83,15 @@ void ControllerTestDoubleBase::ConfigureSco(ScoCodingFormat coding_format, ScoEn
   }
 
   // Post the callback to simulate async behavior with a real controller.
-  auto callback_wrapper = [=, cb = std::move(callback)](pw::Status status) mutable {
-    async::PostTask(async_get_default_dispatcher(),
-                    [status, cb = std::move(cb)]() mutable { cb(status); });
+  auto callback_wrapper = [dispatcher = &pw_dispatcher_,
+                           cb = std::move(callback)](pw::Status cb_status) mutable {
+    pw::async::HeapDispatcher(*dispatcher)
+        .Post(
+            [cb_status, cb = std::move(cb)](pw::async::Context /*ctx*/, pw::Status status) mutable {
+              if (status.ok()) {
+                cb(cb_status);
+              }
+            });
   };
   configure_sco_cb_(coding_format, encoding, sample_rate, std::move(callback_wrapper));
 }
@@ -93,9 +102,15 @@ void ControllerTestDoubleBase::ResetSco(pw::Callback<void(pw::Status)> callback)
   }
 
   // Post the callback to simulate async behavior with a real controller.
-  auto callback_wrapper = [=, cb = std::move(callback)](pw::Status status) mutable {
-    async::PostTask(async_get_default_dispatcher(),
-                    [status, cb = std::move(cb)]() mutable { cb(status); });
+  auto callback_wrapper = [dispatcher = &pw_dispatcher_,
+                           cb = std::move(callback)](pw::Status cb_status) mutable {
+    pw::async::HeapDispatcher(*dispatcher)
+        .Post(
+            [cb_status, cb = std::move(cb)](pw::async::Context /*ctx*/, pw::Status status) mutable {
+              if (status.ok()) {
+                cb(cb_status);
+              }
+            });
   };
   reset_sco_cb_(std::move(callback_wrapper));
 }

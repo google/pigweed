@@ -30,7 +30,8 @@ constexpr float kToggleConnectionChance = 0.04;
 
 class FuzzerController : public ControllerTestDoubleBase, public WeakSelf<FuzzerController> {
  public:
-  explicit FuzzerController(pw::async::Dispatcher& /*pw_dispatcher*/) : WeakSelf(this) {}
+  explicit FuzzerController(pw::async::Dispatcher& pw_dispatcher)
+      : ControllerTestDoubleBase(pw_dispatcher), WeakSelf(this) {}
   ~FuzzerController() override = default;
 
  private:

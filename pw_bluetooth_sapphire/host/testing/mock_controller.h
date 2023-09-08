@@ -12,8 +12,6 @@
 #include <queue>
 #include <vector>
 
-#include <pw_async/heap_dispatcher.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
@@ -197,8 +195,6 @@ class MockController final : public ControllerTestDoubleBase, public WeakSelf<Mo
   std::queue<ScoTransaction> sco_transactions_;
   DataCallback data_callback_;
   TransactionCallback transaction_callback_;
-
-  pw::async::HeapDispatcher heap_dispatcher_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(MockController);
 };

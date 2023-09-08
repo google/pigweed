@@ -5,6 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_CONTROLLER_TEST_DOUBLE_BASE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_CONTROLLER_TEST_DOUBLE_BASE_H_
 
+#include <pw_async/dispatcher.h>
+#include <pw_async/heap_dispatcher.h>
+
 #include "pw_bluetooth/controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
@@ -28,8 +31,11 @@ class ControllerTestDoubleBase : public pw::bluetooth::Controller {
 
   using ResetScoFunction = fit::function<void(fit::callback<void(pw::Status)>)>;
 
-  ControllerTestDoubleBase();
+  explicit ControllerTestDoubleBase(pw::async::Dispatcher& pw_dispatcher);
   ~ControllerTestDoubleBase() override;
+
+  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
+  pw::async::HeapDispatcher& heap_dispatcher() { return heap_dispatcher_; }
 
   // Sends the given packet over this FakeController's command channel endpoint.
   // Returns the result of the write operation on the command channel.
@@ -104,6 +110,8 @@ class ControllerTestDoubleBase : public pw::bluetooth::Controller {
 
   PwStatusCallback error_cb_;
 
+  pw::async::Dispatcher& pw_dispatcher_;
+  pw::async::HeapDispatcher heap_dispatcher_;
   WeakSelf<ControllerTestDoubleBase> weak_self_{this};
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ControllerTestDoubleBase);
 };

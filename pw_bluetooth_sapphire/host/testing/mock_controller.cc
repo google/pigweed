@@ -43,7 +43,7 @@ bool CommandTransaction::Match(const ByteBuffer& cmd) {
 }
 
 MockController::MockController(pw::async::Dispatcher& pw_dispatcher)
-    : WeakSelf(this), heap_dispatcher_(pw_dispatcher) {}
+    : ControllerTestDoubleBase(pw_dispatcher), WeakSelf(this) {}
 
 MockController::~MockController() {
   while (!cmd_transactions_.empty()) {
@@ -173,7 +173,7 @@ void MockController::OnCommandReceived(const ByteBuffer& data) {
 
   if (transaction_callback_) {
     DynamicByteBuffer rx(data);
-    heap_dispatcher_.Post(
+    heap_dispatcher().Post(
         [rx = std::move(rx), f = transaction_callback_.share()](auto, pw::Status status) {
           if (status.ok()) {
             f(rx);
@@ -201,7 +201,7 @@ void MockController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) 
 
   if (data_callback_) {
     DynamicByteBuffer packet_copy(acl_data_packet);
-    heap_dispatcher_.Post([packet_copy = std::move(packet_copy), cb = data_callback_.share()](
+    heap_dispatcher().Post([packet_copy = std::move(packet_copy), cb = data_callback_.share()](
                               auto, pw::Status status) mutable {
       if (status.ok()) {
         cb(packet_copy);
