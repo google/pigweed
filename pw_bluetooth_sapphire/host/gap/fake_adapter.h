@@ -261,8 +261,6 @@ class FakeAdapter final : public Adapter {
 
   InitState init_state_;
   AdapterState state_;
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{async_get_default_dispatcher()};
-  PeerCache peer_cache_{pw_dispatcher_};
   std::unique_ptr<FakeLowEnergy> fake_le_;
   std::unique_ptr<FakeBrEdr> fake_bredr_;
   bool is_discoverable_ = true;
@@ -271,6 +269,9 @@ class FakeAdapter final : public Adapter {
   DeviceClass device_class_;
   LESecurityMode le_security_mode_;
 
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{async_get_default_dispatcher()};
+  pw::async::HeapDispatcher heap_dispatcher_{pw_dispatcher_};
+  PeerCache peer_cache_{pw_dispatcher_};
   WeakSelf<Adapter> weak_self_;
 };
 
