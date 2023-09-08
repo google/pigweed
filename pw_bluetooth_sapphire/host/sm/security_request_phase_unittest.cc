@@ -37,6 +37,8 @@ class SecurityRequestPhaseTest : public l2cap::testing::FakeChannelTest {
 
   void TearDown() override { security_request_phase_ = nullptr; }
 
+  pw::async::HeapDispatcher& heap_dispatcher() { return heap_dispatcher_; }
+
   void NewSecurityRequestPhase(SecurityRequestOptions opts = SecurityRequestOptions(),
                                bt::LinkType ll_type = bt::LinkType::kLE) {
     l2cap::ChannelId cid =
@@ -65,6 +67,8 @@ class SecurityRequestPhaseTest : public l2cap::testing::FakeChannelTest {
 
   std::optional<PairingRequestParams> last_pairing_req_;
 
+  pw::async::HeapDispatcher heap_dispatcher_{pw_dispatcher()};
+
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SecurityRequestPhaseTest);
 };
 
@@ -74,7 +78,11 @@ TEST_F(SecurityRequestPhaseTest, MakeEncryptedBondableSecurityRequest) {
   NewSecurityRequestPhase(SecurityRequestOptions{.requested_level = SecurityLevel::kEncrypted,
                                                  .bondable = BondableMode::Bondable});
   StaticByteBuffer kExpectedReq(kSecurityRequest, AuthReq::kBondingFlag);
-  async::PostTask(dispatcher(), [this] { security_request_phase()->Start(); });
+  heap_dispatcher().Post([this](pw::async::Context /*ctx*/, pw::Status status) {
+    if (status.ok()) {
+      security_request_phase()->Start();
+    }
+  });
   ASSERT_TRUE(Expect(kExpectedReq));
   EXPECT_EQ(SecurityLevel::kEncrypted, security_request_phase()->pending_security_request());
 }
@@ -83,7 +91,11 @@ TEST_F(SecurityRequestPhaseTest, MakeAuthenticatedNonBondableSecurityRequest) {
   NewSecurityRequestPhase(SecurityRequestOptions{.requested_level = SecurityLevel::kAuthenticated,
                                                  .bondable = BondableMode::NonBondable});
   StaticByteBuffer kExpectedReq(kSecurityRequest, AuthReq::kMITM);
-  async::PostTask(dispatcher(), [this] { security_request_phase()->Start(); });
+  heap_dispatcher().Post([this](pw::async::Context /*ctx*/, pw::Status status) {
+    if (status.ok()) {
+      security_request_phase()->Start();
+    }
+  });
   ASSERT_TRUE(Expect(kExpectedReq));
   EXPECT_EQ(SecurityLevel::kAuthenticated, security_request_phase()->pending_security_request());
 }
@@ -93,9 +105,10 @@ TEST_F(SecurityRequestPhaseTest, MakeSecureAuthenticatedBondableSecurityRequest)
       SecurityRequestOptions{.requested_level = SecurityLevel::kSecureAuthenticated});
   StaticByteBuffer kExpectedReq(kSecurityRequest,
                                 AuthReq::kBondingFlag | AuthReq::kMITM | AuthReq::kSC);
-  async::PostTask(dispatcher(), [this] {
-    security_request_phase()->Start();
-    ;
+  heap_dispatcher().Post([this](pw::async::Context /*ctx*/, pw::Status status) {
+    if (status.ok()) {
+      security_request_phase()->Start();
+    }
   });
   ASSERT_TRUE(Expect(kExpectedReq));
   EXPECT_EQ(SecurityLevel::kSecureAuthenticated,
