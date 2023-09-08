@@ -68,8 +68,7 @@ std::string ReasonAsString(DisconnectReason reason) {
 
 // This procedure can continue to operate independently of the existence of an
 // BrEdrConnectionManager instance, which will begin to disable Page Scan as it shuts down.
-void SetPageScanEnabled(bool enabled, hci::Transport::WeakPtr hci, async_dispatcher_t* dispatcher,
-                        hci::ResultFunction<> cb) {
+void SetPageScanEnabled(bool enabled, hci::Transport::WeakPtr hci, hci::ResultFunction<> cb) {
   BT_DEBUG_ASSERT(cb);
   auto read_enable =
       hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ReadScanEnableCommandWriter>(
@@ -141,7 +140,8 @@ BrEdrConnectionManager::BrEdrConnectionManager(hci::Transport::WeakPtr hci, Peer
                                                DeviceAddress local_address,
                                                l2cap::ChannelManager* l2cap,
                                                bool use_interlaced_scan,
-                                               bool local_secure_connections_supported)
+                                               bool local_secure_connections_supported,
+                                               pw::async::Dispatcher& dispatcher)
     : hci_(std::move(hci)),
       cache_(peer_cache),
       local_address_(local_address),
@@ -150,13 +150,11 @@ BrEdrConnectionManager::BrEdrConnectionManager(hci::Transport::WeakPtr hci, Peer
       page_scan_window_(0),
       use_interlaced_scan_(use_interlaced_scan),
       local_secure_connections_supported_(local_secure_connections_supported),
-      request_timeout_(kBrEdrCreateConnectionTimeout),
-      dispatcher_(async_get_default_dispatcher()),
+      pw_dispatcher_(dispatcher),
       weak_self_(this) {
   BT_DEBUG_ASSERT(hci_.is_alive());
   BT_DEBUG_ASSERT(cache_);
   BT_DEBUG_ASSERT(l2cap_);
-  BT_DEBUG_ASSERT(dispatcher_);
 
   hci_cmd_runner_ =
       std::make_unique<hci::SequentialCommandRunner>(hci_->command_channel()->AsWeakPtr());
@@ -205,7 +203,7 @@ BrEdrConnectionManager::~BrEdrConnectionManager() {
     SendCreateConnectionCancelCommand(pending_request_->peer_address());
 
   // Become unconnectable
-  SetPageScanEnabled(/*enabled=*/false, hci_, dispatcher_, [](const auto) {});
+  SetPageScanEnabled(/*enabled=*/false, hci_, [](const auto) {});
 
   // Remove all event handlers
   for (auto handler_id : event_handler_ids_) {
@@ -226,7 +224,7 @@ void BrEdrConnectionManager::SetConnectable(bool connectable, hci::ResultFunctio
       }
       cb(status);
     };
-    SetPageScanEnabled(/*enabled=*/false, hci_, dispatcher_, std::move(not_connectable_cb));
+    SetPageScanEnabled(/*enabled=*/false, hci_, std::move(not_connectable_cb));
     return;
   }
 
@@ -241,7 +239,7 @@ void BrEdrConnectionManager::SetConnectable(bool connectable, hci::ResultFunctio
           cb(ToResult(HostError::kFailed));
           return;
         }
-        SetPageScanEnabled(/*enabled=*/true, self->hci_, self->dispatcher_, std::move(cb));
+        SetPageScanEnabled(/*enabled=*/true, self->hci_, std::move(cb));
       });
 }
 
@@ -1354,8 +1352,8 @@ void BrEdrConnectionManager::InitiatePendingConnection(CreateConnectionParams pa
       self->OnRequestTimeout();
   };
   BrEdrConnectionRequest& pending_gap_req = connection_requests_.find(params.peer_id)->second;
-  pending_request_.emplace(params.peer_id, params.addr, on_timeout);
-  pending_request_->CreateConnection(hci_->command_channel(), dispatcher_, params.clock_offset,
+  pending_request_.emplace(params.peer_id, params.addr, on_timeout, pw_dispatcher_);
+  pending_request_->CreateConnection(hci_->command_channel(), params.clock_offset,
                                      params.page_scan_repetition_mode, request_timeout_,
                                      on_failure);
   pending_gap_req.RecordHciCreateConnectionAttempt();
@@ -1574,7 +1572,10 @@ void BrEdrConnectionManager::RecordDisconnectInspect(const BrEdrConnection& conn
                                  conn.peer_id().ToString());
   inspect_item.node.RecordUint(kInspectLastDisconnectedItemDurationPropertyName,
                                conn.duration().to_secs());
-  inspect_item.node.RecordInt(kInspectTimestampPropertyName, async::Now(dispatcher_).get());
+  inspect_item.node.RecordInt(
+      kInspectTimestampPropertyName,
+      std::chrono::duration_cast<std::chrono::nanoseconds>(pw_dispatcher_.now().time_since_epoch())
+          .count());
 
   switch (reason) {
     case DisconnectReason::kApiRequest:

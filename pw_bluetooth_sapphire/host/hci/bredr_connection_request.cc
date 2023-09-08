@@ -46,11 +46,10 @@ EmbossCommandPacket CreateConnectionPacket(
 }
 
 void BrEdrConnectionRequest::CreateConnection(
-    CommandChannel* command_channel, async_dispatcher_t* dispatcher,
-    std::optional<uint16_t> clock_offset,
+    CommandChannel* command_channel, std::optional<uint16_t> clock_offset,
     std::optional<pw::bluetooth::emboss::PageScanRepetitionMode> page_scan_repetition_mode,
-    zx::duration timeout, OnCompleteDelegate on_command_fail) {
-  BT_DEBUG_ASSERT(timeout > zx::msec(0));
+    pw::chrono::SystemClock::duration timeout, OnCompleteDelegate on_command_fail) {
+  BT_DEBUG_ASSERT(timeout.count() > 0);
 
   // HCI Command Status Event will be sent as our completion callback.
   auto self = weak_self_.GetWeakPtr();
@@ -75,7 +74,7 @@ void BrEdrConnectionRequest::CreateConnection(
       // The request was started but has not completed; initiate the command
       // timeout period. NOTE: The request will complete when the controller
       // asynchronously notifies us of with a BrEdr Connection Complete event.
-      self->timeout_task_.PostDelayed(async_get_default_dispatcher(), timeout);
+      self->timeout_task_.PostAfter(timeout);
     }
   };
 

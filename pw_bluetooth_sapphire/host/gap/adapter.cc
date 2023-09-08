@@ -1060,7 +1060,7 @@ void AdapterImpl::InitializeStep4() {
     bredr_connection_manager_ = std::make_unique<BrEdrConnectionManager>(
         hci_, &peer_cache_, local_bredr_address, l2cap_.get(),
         state_.features.HasBit(/*page=*/0, hci_spec::LMPFeature::kInterlacedPageScan),
-        state_.IsLocalSecureConnectionsSupported());
+        state_.IsLocalSecureConnectionsSupported(), pw_dispatcher_);
     bredr_connection_manager_->AttachInspect(adapter_node_, kInspectBrEdrConnectionManagerNodeName);
 
     pw::bluetooth::emboss::InquiryMode mode = pw::bluetooth::emboss::InquiryMode::STANDARD;

@@ -578,7 +578,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
     connection_manager_ = std::make_unique<BrEdrConnectionManager>(
         transport()->GetWeakPtr(), peer_cache_.get(), kLocalDevAddr, l2cap_.get(),
         /*use_interlaced_scan=*/true,
-        /*local_secure_connections_supported=*/true);
+        /*local_secure_connections_supported=*/true, pw_dispatcher());
 
     RunLoopUntilIdle();
 

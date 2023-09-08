@@ -122,6 +122,8 @@ constexpr uint16_t kLEAdvertisingSlowIntervalCodedMax = 0x1680;  // 3.6 s
 constexpr zx::duration kLECreateConnectionTimeout = zx::sec(20);
 // Timeout used for the Br/Edr Create Connection command.
 constexpr zx::duration kBrEdrCreateConnectionTimeout = zx::sec(20);
+constexpr pw::chrono::SystemClock::duration kPwBrEdrCreateConnectionTimeout =
+    std::chrono::seconds(20);
 
 // Timeout used for scanning during LE General CEP. Selected to be longer than the scan period.
 constexpr zx::duration kLEGeneralCepScanTimeout = zx::sec(20);

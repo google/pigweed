@@ -8,6 +8,8 @@
 #include <functional>
 #include <optional>
 
+#include <pw_async_fuchsia/dispatcher.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/bounded_inspect_list_node.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/expiring_set.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/metrics.h"
@@ -67,7 +69,8 @@ class BrEdrConnectionManager final {
  public:
   BrEdrConnectionManager(hci::Transport::WeakPtr hci, PeerCache* peer_cache,
                          DeviceAddress local_address, l2cap::ChannelManager* l2cap,
-                         bool use_interlaced_scan, bool local_secure_connections_supported);
+                         bool use_interlaced_scan, bool local_secure_connections_supported,
+                         pw::async::Dispatcher& dispatcher);
   ~BrEdrConnectionManager();
 
   // Set whether this host is connectable
@@ -352,7 +355,7 @@ class BrEdrConnectionManager final {
   std::optional<hci::BrEdrConnectionRequest> pending_request_;
 
   // Time after which a connection attempt is considered to have timed out.
-  zx::duration request_timeout_;
+  pw::chrono::SystemClock::duration request_timeout_{kPwBrEdrCreateConnectionTimeout};
 
   struct InspectProperties {
     BoundedInspectListNode last_disconnected_list = BoundedInspectListNode(/*capacity=*/5);
@@ -382,8 +385,7 @@ class BrEdrConnectionManager final {
   InspectProperties inspect_properties_;
   inspect::Node inspect_node_;
 
-  // The dispatcher that all commands are queued on.
-  async_dispatcher_t* dispatcher_;
+  pw::async::Dispatcher& pw_dispatcher_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.
