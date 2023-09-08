@@ -15,11 +15,11 @@ namespace {
 
 // Increased after some particularly slow devices taking a long time for transactions with
 // continuations.
-constexpr zx::duration kTransactionTimeout = zx::sec(10);
+constexpr pw::chrono::SystemClock::duration kTransactionTimeout = std::chrono::seconds(10);
 
 class Impl final : public Client {
  public:
-  explicit Impl(l2cap::Channel::WeakPtr channel);
+  explicit Impl(l2cap::Channel::WeakPtr channel, pw::async::Dispatcher& dispatcher);
 
   ~Impl() override;
 
@@ -62,6 +62,7 @@ class Impl final : public Client {
   // Try to send the next pending request, if possible.
   void TrySendNextTransaction();
 
+  pw::async::Dispatcher& pw_dispatcher_;
   // The channel that this client is running on.
   l2cap::ScopedChannel channel_;
   // THe next transaction id that we should use
@@ -69,14 +70,15 @@ class Impl final : public Client {
   // Any transactions that are not completed.
   std::unordered_map<TransactionId, Transaction> pending_;
   // Timeout for the current transaction. false if none are waiting for a response.
-  std::optional<async::TaskClosure> pending_timeout_;
+  std::optional<SmartTask> pending_timeout_;
 
   WeakSelf<Impl> weak_self_{this};
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Impl);
 };
 
-Impl::Impl(l2cap::Channel::WeakPtr channel) : channel_(std::move(channel)) {
+Impl::Impl(l2cap::Channel::WeakPtr channel, pw::async::Dispatcher& dispatcher)
+    : pw_dispatcher_(dispatcher), channel_(std::move(channel)) {
   auto self = weak_self_.GetWeakPtr();
   bool activated = channel_->Activate(
       [self](auto packet) {
@@ -130,14 +132,17 @@ void Impl::TrySendNextTransaction() {
     return;
   }
 
-  auto& timeout = pending_timeout_.emplace();
+  auto& timeout = pending_timeout_.emplace(pw_dispatcher_);
 
   // Timeouts are held in this so it is safe to use.
-  timeout.set_handler([this, id = next.id]() {
+  timeout.set_function([this, id = next.id](pw::async::Context /*ctx*/, pw::Status status) {
+    if (!status.ok()) {
+      return;
+    }
     bt_log(WARN, "sdp", "Transaction %d timed out, removing!", id);
     Cancel(id, HostError::kTimedOut);
   });
-  timeout.PostDelayed(async_get_default_dispatcher(), kTransactionTimeout);
+  timeout.PostAfter(kTransactionTimeout);
 }
 
 void Impl::ServiceSearchAttributes(std::unordered_set<UUID> search_pattern,
@@ -270,9 +275,10 @@ TransactionId Impl::GetNextId() {
 
 }  // namespace
 
-std::unique_ptr<Client> Client::Create(l2cap::Channel::WeakPtr channel) {
+std::unique_ptr<Client> Client::Create(l2cap::Channel::WeakPtr channel,
+                                       pw::async::Dispatcher& dispatcher) {
   BT_DEBUG_ASSERT(channel.is_alive());
-  return std::make_unique<Impl>(std::move(channel));
+  return std::make_unique<Impl>(std::move(channel), dispatcher);
 }
 
 }  // namespace bt::sdp
