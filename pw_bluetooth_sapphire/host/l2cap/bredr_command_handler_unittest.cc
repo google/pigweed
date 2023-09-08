@@ -10,6 +10,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <pw_async_fuchsia/dispatcher.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_configuration.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_signaling_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
@@ -19,13 +21,11 @@
 namespace bt::l2cap::internal {
 namespace {
 
-using TestBase = ::gtest::TestLoopFixture;
-
 constexpr uint16_t kPsm = 0x0001;
 constexpr ChannelId kLocalCId = 0x0040;
 constexpr ChannelId kRemoteCId = 0x60a3;
 
-class BrEdrCommandHandlerTest : public TestBase {
+class BrEdrCommandHandlerTest : public ::gtest::TestLoopFixture {
  public:
   BrEdrCommandHandlerTest() = default;
   ~BrEdrCommandHandlerTest() override = default;
@@ -34,8 +34,8 @@ class BrEdrCommandHandlerTest : public TestBase {
  protected:
   // TestLoopFixture overrides
   void SetUp() override {
-    TestBase::SetUp();
-    signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(dispatcher());
+    TestLoopFixture::SetUp();
+    signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(pw_dispatcher_);
     command_handler_ = std::make_unique<BrEdrCommandHandler>(
         fake_sig(), fit::bind_member<&BrEdrCommandHandlerTest::OnRequestFail>(this));
     request_fail_callback_ = nullptr;
@@ -46,7 +46,7 @@ class BrEdrCommandHandlerTest : public TestBase {
     request_fail_callback_ = nullptr;
     signaling_channel_ = nullptr;
     command_handler_ = nullptr;
-    TestBase::TearDown();
+    TestLoopFixture::TearDown();
   }
 
   testing::FakeSignalingChannel* fake_sig() const { return signaling_channel_.get(); }
@@ -70,6 +70,7 @@ class BrEdrCommandHandlerTest : public TestBase {
   std::unique_ptr<BrEdrCommandHandler> command_handler_;
   fit::closure request_fail_callback_;
   size_t failed_requests_;
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
 };
 
 TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRej) {

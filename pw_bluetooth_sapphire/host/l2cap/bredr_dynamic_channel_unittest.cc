@@ -9,6 +9,7 @@
 #include <vector>
 
 #include <gtest/gtest.h>
+#include <pw_async_fuchsia/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
@@ -469,7 +470,7 @@ class BrEdrDynamicChannelTest : public ::gtest::TestLoopFixture {
     TestLoopFixture::SetUp();
     channel_close_cb_ = nullptr;
     service_request_cb_ = nullptr;
-    signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(dispatcher());
+    signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(pw_dispatcher_);
 
     ext_info_transaction_id_ =
         EXPECT_OUTBOUND_REQ(*sig(), kInformationRequest, kExtendedFeaturesInfoReq.view());
@@ -525,6 +526,7 @@ class BrEdrDynamicChannelTest : public ::gtest::TestLoopFixture {
   std::unique_ptr<testing::FakeSignalingChannel> signaling_channel_;
   std::unique_ptr<BrEdrDynamicChannelRegistry> registry_;
   testing::FakeSignalingChannel::TransactionId ext_info_transaction_id_;
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDynamicChannelTest);
 };

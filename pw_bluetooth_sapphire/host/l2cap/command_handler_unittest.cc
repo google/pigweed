@@ -4,6 +4,8 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/command_handler.h"
 
+#include <pw_async_fuchsia/dispatcher.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_signaling_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
@@ -42,8 +44,7 @@ class TestCommandHandler final : public CommandHandler {
   }
 };
 
-using TestBase = ::gtest::TestLoopFixture;
-class CommandHandlerTest : public TestBase {
+class CommandHandlerTest : public ::gtest::TestLoopFixture {
  public:
   CommandHandlerTest() = default;
   ~CommandHandlerTest() override = default;
@@ -52,8 +53,8 @@ class CommandHandlerTest : public TestBase {
  protected:
   // TestLoopFixture overrides
   void SetUp() override {
-    TestBase::SetUp();
-    signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(dispatcher());
+    TestLoopFixture::SetUp();
+    signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(pw_dispatcher_);
     command_handler_ = std::make_unique<TestCommandHandler>(
         fake_sig(), fit::bind_member<&CommandHandlerTest::OnRequestFail>(this));
     request_fail_callback_ = nullptr;
@@ -64,7 +65,7 @@ class CommandHandlerTest : public TestBase {
     request_fail_callback_ = nullptr;
     signaling_channel_ = nullptr;
     command_handler_ = nullptr;
-    TestBase::TearDown();
+    TestLoopFixture::TearDown();
   }
 
   testing::FakeSignalingChannel* fake_sig() const { return signaling_channel_.get(); }
@@ -88,6 +89,7 @@ class CommandHandlerTest : public TestBase {
   std::unique_ptr<TestCommandHandler> command_handler_;
   fit::closure request_fail_callback_;
   size_t failed_requests_;
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
 };
 
 TEST_F(CommandHandlerTest, OutboundDisconReqRspOk) {

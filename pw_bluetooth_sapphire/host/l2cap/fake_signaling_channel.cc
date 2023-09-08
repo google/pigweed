@@ -77,10 +77,8 @@ class RejectInvalidChannelIdExpecter : public Expecter {
 
 }  // namespace
 
-FakeSignalingChannel::FakeSignalingChannel(async_dispatcher_t* dispatcher)
-    : dispatcher_(dispatcher) {
-  BT_DEBUG_ASSERT(dispatcher_);
-}
+FakeSignalingChannel::FakeSignalingChannel(pw::async::Dispatcher& pw_dispatcher)
+    : heap_dispatcher_(pw_dispatcher) {}
 
 FakeSignalingChannel::~FakeSignalingChannel() {
   // Add a test failure for each expected request that wasn't received
@@ -107,10 +105,13 @@ bool FakeSignalingChannel::SendRequest(CommandCode req_code, const ByteBuffer& p
   transaction.response_callback = std::move(cb);
 
   // Simulate the remote's response(s)
-  async::PostTask(dispatcher_, [this, index = expected_transaction_index_]() {
-    Transaction& transaction = transactions_[index];
-    transaction.responses_handled = TriggerResponses(transaction, transaction.responses);
-  });
+  heap_dispatcher_.Post(
+      [this, index = expected_transaction_index_](pw::async::Context /*ctx*/, pw::Status status) {
+        if (status.ok()) {
+          Transaction& transaction = transactions_[index];
+          transaction.responses_handled = TriggerResponses(transaction, transaction.responses);
+        }
+      });
 
   expected_transaction_index_++;
   return (transaction.request_code == req_code);

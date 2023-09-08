@@ -4,14 +4,15 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/low_energy_command_handler.h"
 
+#include <pw_async_fuchsia/dispatcher.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_signaling_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::l2cap::internal {
 
-using TestBase = ::gtest::TestLoopFixture;
-class LowEnergyCommandHandlerTest : public TestBase {
+class LowEnergyCommandHandlerTest : public ::gtest::TestLoopFixture {
  public:
   LowEnergyCommandHandlerTest() = default;
   ~LowEnergyCommandHandlerTest() override = default;
@@ -20,8 +21,8 @@ class LowEnergyCommandHandlerTest : public TestBase {
  protected:
   // TestLoopFixture overrides
   void SetUp() override {
-    TestBase::SetUp();
-    signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(dispatcher());
+    TestLoopFixture::SetUp();
+    signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(pw_dispatcher_);
     command_handler_ = std::make_unique<LowEnergyCommandHandler>(
         fake_sig(), fit::bind_member<&LowEnergyCommandHandlerTest::OnRequestFail>(this));
     request_fail_callback_ = nullptr;
@@ -32,7 +33,7 @@ class LowEnergyCommandHandlerTest : public TestBase {
     request_fail_callback_ = nullptr;
     signaling_channel_ = nullptr;
     command_handler_ = nullptr;
-    TestBase::TearDown();
+    TestLoopFixture::TearDown();
   }
 
   testing::FakeSignalingChannel* fake_sig() const { return signaling_channel_.get(); }
@@ -56,6 +57,7 @@ class LowEnergyCommandHandlerTest : public TestBase {
   std::unique_ptr<LowEnergyCommandHandler> command_handler_;
   fit::closure request_fail_callback_;
   size_t failed_requests_;
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
 };
 
 TEST_F(LowEnergyCommandHandlerTest, OutboundConnParamUpdateReqRspOk) {

@@ -5,10 +5,10 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_SIGNALING_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_SIGNALING_CHANNEL_H_
 
-#include <lib/async/cpp/task.h>
-
 #include <unordered_map>
 #include <vector>
+
+#include <pw_async/heap_dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/signaling_channel.h"
 
@@ -31,7 +31,7 @@ class FakeSignalingChannel : public SignalingChannelInterface {
   using Response = std::pair<Status, BufferView>;
 
   // |dispatcher| is the test message loop's dispatcher
-  explicit FakeSignalingChannel(async_dispatcher_t* dispatcher);
+  explicit FakeSignalingChannel(pw::async::Dispatcher& pw_dispatcher);
   ~FakeSignalingChannel() override;
 
   // SignalingChannelInterface overrides
@@ -94,9 +94,6 @@ class FakeSignalingChannel : public SignalingChannelInterface {
   void ReceiveExpectInternal(CommandCode req_code, const ByteBuffer& req_payload,
                              Responder* fake_responder);
 
-  // Test message loop dispatcher
-  async_dispatcher_t* const dispatcher_;
-
   // Expected outbound transactions
   std::vector<Transaction> transactions_;
 
@@ -105,6 +102,9 @@ class FakeSignalingChannel : public SignalingChannelInterface {
 
   // Registered inbound request delegates
   std::unordered_map<CommandCode, RequestDelegate> request_handlers_;
+
+  // Test message loop dispatcher
+  pw::async::HeapDispatcher heap_dispatcher_;
 };
 
 }  // namespace bt::l2cap::internal::testing
