@@ -4,33 +4,43 @@
 
 #include "weak_self.h"
 
-#include <lib/async/cpp/task.h>
-#include <lib/async/default.h>
-#include <lib/async/dispatcher.h>
-
 #include <gtest/gtest.h>
+#include <pw_async/heap_dispatcher.h>
+#include <pw_async_fuchsia/dispatcher.h>
 
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt {
 namespace {
 
-using WeakSelfTest = ::gtest::TestLoopFixture;
+class WeakSelfTest : public ::gtest::TestLoopFixture {
+ public:
+  pw::async::Dispatcher &pw_dispatcher() { return pw_dispatcher_; }
+
+ private:
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
+};
 
 class FunctionTester : public WeakSelf<FunctionTester> {
  public:
-  explicit FunctionTester(uint8_t testval) : WeakSelf(this), value_(testval) {}
+  explicit FunctionTester(uint8_t testval, pw::async::Dispatcher &pw_dispatcher)
+      : WeakSelf(this), value_(testval), heap_dispatcher_(pw_dispatcher) {}
 
   void callback_later_with_weak(fit::function<void(FunctionTester::WeakPtr)> cb) {
     auto weak = GetWeakPtr();
-    auto timed = [self = std::move(weak), cb = std::move(cb)]() { cb(self); };
-    async::PostTask(async_get_default_dispatcher(), std::move(timed));
+    heap_dispatcher_.Post([self = std::move(weak), cb = std::move(cb)](pw::async::Context /*ctx*/,
+                                                                       pw::Status status) {
+      if (status.ok()) {
+        cb(self);
+      }
+    });
   }
 
   uint8_t value() const { return value_; }
 
  private:
   uint8_t value_;
+  pw::async::HeapDispatcher heap_dispatcher_;
 };
 
 TEST_F(WeakSelfTest, InvalidatingSelf) {
@@ -46,7 +56,7 @@ TEST_F(WeakSelfTest, InvalidatingSelf) {
   };
 
   {
-    FunctionTester test(0xBA);
+    FunctionTester test(0xBA, pw_dispatcher());
 
     test.callback_later_with_weak(cb);
 
@@ -84,7 +94,7 @@ TEST_F(WeakSelfTest, InvalidatePtrs) {
     ptr = weakptr;
   };
 
-  FunctionTester test(0xBA);
+  FunctionTester test(0xBA, pw_dispatcher());
 
   test.callback_later_with_weak(cb);
 
