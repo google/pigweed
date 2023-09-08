@@ -4,6 +4,8 @@
 
 #include "signaling_channel.h"
 
+#include <pw_async_fuchsia/dispatcher.h>
+
 #include "fake_channel_test.h"
 #include "lib/zx/time.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
@@ -26,8 +28,9 @@ const auto kTestResponseHandler = [](Status status, const ByteBuffer& rsp_payloa
 
 class TestSignalingChannel : public SignalingChannel {
  public:
-  explicit TestSignalingChannel(Channel::WeakPtr chan)
-      : SignalingChannel(std::move(chan), pw::bluetooth::emboss::ConnectionRole::CENTRAL) {
+  explicit TestSignalingChannel(Channel::WeakPtr chan, pw::async::Dispatcher& dispatcher)
+      : SignalingChannel(std::move(chan), pw::bluetooth::emboss::ConnectionRole::CENTRAL,
+                         dispatcher) {
     set_mtu(kTestMTU);
   }
   ~TestSignalingChannel() override = default;
@@ -86,7 +89,7 @@ class SignalingChannelTest : public testing::FakeChannelTest {
     options.conn_handle = kTestHandle;
 
     fake_channel_inst_ = CreateFakeChannel(options);
-    sig_ = std::make_unique<TestSignalingChannel>(fake_channel_inst_->GetWeakPtr());
+    sig_ = std::make_unique<TestSignalingChannel>(fake_channel_inst_->GetWeakPtr(), pw_dispatcher_);
   }
 
   void TearDown() override {
@@ -101,6 +104,7 @@ class SignalingChannelTest : public testing::FakeChannelTest {
   void DestroySig() { sig_ = nullptr; }
 
  private:
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
   std::unique_ptr<TestSignalingChannel> sig_;
 
   // Own the fake channel so that its lifetime can span beyond that of |sig_|.

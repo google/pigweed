@@ -9,8 +9,9 @@
 namespace bt::l2cap::internal {
 
 BrEdrSignalingChannel::BrEdrSignalingChannel(Channel::WeakPtr chan,
-                                             pw::bluetooth::emboss::ConnectionRole role)
-    : SignalingChannel(std::move(chan), role) {
+                                             pw::bluetooth::emboss::ConnectionRole role,
+                                             pw::async::Dispatcher& dispatcher)
+    : SignalingChannel(std::move(chan), role, dispatcher) {
   set_mtu(kDefaultMTU);
 
   // Add default handler for incoming Echo Request commands.

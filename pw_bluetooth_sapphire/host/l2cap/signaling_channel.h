@@ -100,7 +100,8 @@ class SignalingChannelInterface {
 // TODO(armansito): Implement flow control (RTX/ERTX timers).
 class SignalingChannel : public SignalingChannelInterface {
  public:
-  SignalingChannel(Channel::WeakPtr chan, pw::bluetooth::emboss::ConnectionRole role);
+  SignalingChannel(Channel::WeakPtr chan, pw::bluetooth::emboss::ConnectionRole role,
+                   pw::async::Dispatcher& dispatcher);
   ~SignalingChannel() override = default;
 
   // SignalingChannelInterface overrides
@@ -217,13 +218,13 @@ class SignalingChannel : public SignalingChannelInterface {
   // Stores copy of request, response handlers, and timeout state for requests that have been sent.
   struct PendingCommand {
     PendingCommand(const ByteBuffer& request_packet, CommandCode response_code,
-                   ResponseHandler response_handler)
+                   ResponseHandler response_handler, pw::async::Dispatcher& dispatcher)
         : response_code(response_code),
           response_handler(std::move(response_handler)),
           command_packet(std::make_unique<DynamicByteBuffer>(request_packet)),
           transmit_count(1u),
           timer_duration(0u),
-          response_timeout_task() {}
+          response_timeout_task(dispatcher) {}
     CommandCode response_code;
     ResponseHandler response_handler;
 
@@ -234,14 +235,16 @@ class SignalingChannel : public SignalingChannelInterface {
     size_t transmit_count;
 
     // The current timer duration. Used to perform exponential backoff with the RTX timer.
-    zx::duration timer_duration;
+    pw::chrono::SystemClock::duration timer_duration;
 
     // Automatically canceled by destruction if the response is received.
-    async::TaskClosure response_timeout_task;
+    SmartTask response_timeout_task;
   };
 
   // Retransmit the request corresponding to |pending_command| and reset the RTX timer.
   void RetransmitPendingCommand(PendingCommand& pending_command);
+
+  pw::async::Dispatcher& pw_dispatcher_;
 
   bool is_open_;
   l2cap::ScopedChannel chan_;

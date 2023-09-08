@@ -40,6 +40,7 @@ static constexpr pw::chrono::SystemClock::duration kPwErtmMonitorTimerDuration =
 static constexpr auto kSignalingChannelResponseTimeout = zx::sec(1);
 static_assert(kSignalingChannelResponseTimeout >= zx::sec(1));
 static_assert(kSignalingChannelResponseTimeout <= zx::sec(60));
+static constexpr pw::chrono::SystemClock::duration kPwSignalingChannelResponseTimeout = std::chrono::seconds(1);
 
 // Selected so that total time between initial transmission and last retransmission timout is less
 // than 60 seconds when using the exponential back-off scheme.
@@ -51,6 +52,7 @@ static constexpr size_t kMaxSignalingChannelTransmissions = 5;
 static constexpr auto kSignalingChannelExtendedResponseTimeout = zx::sec(60);
 static_assert(kSignalingChannelExtendedResponseTimeout >= zx::sec(60));
 static_assert(kSignalingChannelExtendedResponseTimeout <= zx::sec(300));
+static constexpr pw::chrono::SystemClock::duration kPwSignalingChannelExtendedResponseTimeout = std::chrono::seconds(60);
 
 // L2CAP channel identifier uniquely identifies fixed and connection-oriented
 // channels over a logical link.

@@ -4,6 +4,8 @@
 
 #include "bredr_signaling_channel.h"
 
+#include <pw_async_fuchsia/dispatcher.h>
+
 #include "mock_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 
@@ -29,7 +31,8 @@ class BrEdrSignalingChannelTest : public testing::MockChannelTest {
     options.conn_handle = kTestHandle;
 
     fake_chan_ = CreateFakeChannel(options);
-    sig_ = std::make_unique<BrEdrSignalingChannel>(fake_chan_->GetWeakPtr(), kDeviceRole);
+    sig_ = std::make_unique<BrEdrSignalingChannel>(fake_chan_->GetWeakPtr(), kDeviceRole,
+                                                   pw_dispatcher_);
   }
 
   void TearDown() override {
@@ -40,6 +43,7 @@ class BrEdrSignalingChannelTest : public testing::MockChannelTest {
   BrEdrSignalingChannel* sig() const { return sig_.get(); }
 
  private:
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
   testing::FakeChannel::WeakPtr fake_chan_;
   std::unique_ptr<BrEdrSignalingChannel> sig_;
 };

@@ -15,8 +15,14 @@
 namespace bt::l2cap::internal {
 
 SignalingChannel::SignalingChannel(Channel::WeakPtr chan,
-                                   pw::bluetooth::emboss::ConnectionRole role)
-    : is_open_(true), chan_(std::move(chan)), role_(role), next_cmd_id_(0x01), weak_self_(this) {
+                                   pw::bluetooth::emboss::ConnectionRole role,
+                                   pw::async::Dispatcher& dispatcher)
+    : pw_dispatcher_(dispatcher),
+      is_open_(true),
+      chan_(std::move(chan)),
+      role_(role),
+      next_cmd_id_(0x01),
+      weak_self_(this) {
   BT_DEBUG_ASSERT(chan_);
   BT_DEBUG_ASSERT(chan_->id() == kSignalingChannelId || chan_->id() == kLESignalingChannelId);
 
@@ -78,18 +84,21 @@ void SignalingChannel::EnqueueResponse(const ByteBuffer& request_packet, Command
                                        CommandCode response_code, ResponseHandler cb) {
   BT_ASSERT(IsSupportedResponse(response_code));
 
-  const auto [iter, inserted] =
-      pending_commands_.try_emplace(id, request_packet, response_code, std::move(cb));
+  const auto [iter, inserted] = pending_commands_.try_emplace(id, request_packet, response_code,
+                                                              std::move(cb), pw_dispatcher_);
   BT_ASSERT(inserted);
 
   // Start the RTX timer per Core Spec v5.0, Volume 3, Part A, Sec 6.2.1 which will call
   // OnResponseTimeout when it expires. This timer is canceled if the response is received before
   // expiry because OnRxResponse destroys its containing PendingCommand.
-  auto& rtx_task = iter->second.response_timeout_task;
-  rtx_task.set_handler(
-      std::bind(&SignalingChannel::OnResponseTimeout, this, id, /*retransmit=*/true));
-  iter->second.timer_duration = kSignalingChannelResponseTimeout;
-  rtx_task.PostDelayed(async_get_default_dispatcher(), iter->second.timer_duration);
+  SmartTask& rtx_task = iter->second.response_timeout_task;
+  rtx_task.set_function([this, id](pw::async::Context /*ctx*/, pw::Status status) {
+    if (status.ok()) {
+      OnResponseTimeout(id, /*retransmit=*/true);
+    }
+  });
+  iter->second.timer_duration = kPwSignalingChannelResponseTimeout;
+  rtx_task.PostAfter(iter->second.timer_duration);
 }
 
 bool SignalingChannel::IsCommandPending(CommandId id) const {
@@ -175,13 +184,16 @@ void SignalingChannel::OnRxResponse(const SignalingPacket& packet) {
   // TODO(fxbug.dev/55361): Limit the number of times the ERTX timer is reset so that total
   // timeout duration is <= 300 seconds.
   pending_command.response_timeout_task.Cancel();
-  pending_command.timer_duration = kSignalingChannelExtendedResponseTimeout;
+  pending_command.timer_duration = kPwSignalingChannelExtendedResponseTimeout;
   // Don't retransmit after an ERTX timeout as the peer has already indicated that it received the
   // request and has been given a large amount of time.
-  pending_command.response_timeout_task.set_handler(
-      std::bind(&SignalingChannel::OnResponseTimeout, this, cmd_id, /*retransmit=*/false));
-  pending_command.response_timeout_task.PostDelayed(async_get_default_dispatcher(),
-                                                    pending_command.timer_duration);
+  pending_command.response_timeout_task.set_function(
+      [this, cmd_id](pw::async::Context /*ctx*/, pw::Status status) {
+        if (status.ok()) {
+          OnResponseTimeout(cmd_id, /*retransmit=*/false);
+        }
+      });
+  pending_command.response_timeout_task.PostAfter(pending_command.timer_duration);
   pending_commands_.insert(std::move(command_node));
 }
 
@@ -299,8 +311,7 @@ void SignalingChannel::RetransmitPendingCommand(PendingCommand& pending_command)
   // least double the previous value". (Core Spec v5.1, Vol 3, Part A, Sec 6.2.1).
   pending_command.timer_duration *= 2;
 
-  pending_command.response_timeout_task.PostDelayed(async_get_default_dispatcher(),
-                                                    pending_command.timer_duration);
+  pending_command.response_timeout_task.PostAfter(pending_command.timer_duration);
 
   Send(std::make_unique<DynamicByteBuffer>(*pending_command.command_packet));
 }

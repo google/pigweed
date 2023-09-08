@@ -4,6 +4,8 @@
 
 #include "le_signaling_channel.h"
 
+#include <pw_async_fuchsia/dispatcher.h>
+
 #include "fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 
@@ -26,7 +28,7 @@ class LESignalingChannelTestBase : public testing::FakeChannelTest {
     options.conn_handle = kTestHandle;
 
     fake_sig_chan_ = CreateFakeChannel(options);
-    sig_ = std::make_unique<LESignalingChannel>(fake_sig_chan_->GetWeakPtr(), Role);
+    sig_ = std::make_unique<LESignalingChannel>(fake_sig_chan_->GetWeakPtr(), Role, pw_dispatcher_);
   }
 
   void TearDown() override { sig_ = nullptr; }
@@ -34,6 +36,7 @@ class LESignalingChannelTestBase : public testing::FakeChannelTest {
   LESignalingChannel* sig() const { return sig_.get(); }
 
  private:
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
   std::unique_ptr<testing::FakeChannel> fake_sig_chan_;
   std::unique_ptr<LESignalingChannel> sig_;
 

@@ -85,14 +85,14 @@ LogicalLink::LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type,
 
   // Set up the signaling channel and dynamic channels.
   if (type_ == bt::LinkType::kLE) {
-    signaling_channel_ =
-        std::make_unique<LESignalingChannel>(OpenFixedChannel(kLESignalingChannelId), role_);
+    signaling_channel_ = std::make_unique<LESignalingChannel>(
+        OpenFixedChannel(kLESignalingChannelId), role_, pw_dispatcher_);
     // TODO(armansito): Initialize LE registry when it exists.
 
     ServeConnectionParameterUpdateRequest();
   } else {
-    signaling_channel_ =
-        std::make_unique<BrEdrSignalingChannel>(OpenFixedChannel(kSignalingChannelId), role_);
+    signaling_channel_ = std::make_unique<BrEdrSignalingChannel>(
+        OpenFixedChannel(kSignalingChannelId), role_, pw_dispatcher_);
     dynamic_registry_ = std::make_unique<BrEdrDynamicChannelRegistry>(
         signaling_channel_.get(), fit::bind_member<&LogicalLink::OnChannelDisconnectRequest>(this),
         fit::bind_member<&LogicalLink::OnServiceRequest>(this), random_channel_ids);
