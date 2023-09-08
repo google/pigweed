@@ -786,3 +786,13 @@ struct UserPasskeyNotificationEvent:
   $next [+4]                          UInt             passkey
     -- Numeric value (passkey) entered by user.
     [requires: 0 <= this <= 999999]
+
+
+struct LELongTermKeyRequestSubevent:
+  -- LE Long Term Key Request Event (v4.0) (LE)
+  0     [+LEMetaEvent.$size_in_bytes]  LEMetaEvent  le_meta_event
+  $next [+2]                           UInt         connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+8]                           UInt         random_number
+  $next [+2]                           UInt         encrypted_diversifier
