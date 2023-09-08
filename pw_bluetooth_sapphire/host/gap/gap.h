@@ -71,6 +71,8 @@ constexpr uint16_t kInquiryScanWindow = 0x0012;    // 11.25 ms
 // Constants used in Low Energy (see Core Spec v5.0, Vol 3, Part C, Appendix A).
 
 constexpr zx::duration kLEGeneralDiscoveryScanMin = zx::msec(10240);
+constexpr pw::chrono::SystemClock::duration kPwLEGeneralDiscoveryScanMin =
+    std::chrono::milliseconds(10240);
 constexpr zx::duration kLEGeneralDiscoveryScanMinCoded = zx::msec(30720);
 constexpr zx::duration kLEScanFastPeriod = zx::msec(30720);
 
@@ -165,6 +167,7 @@ constexpr pw::chrono::SystemClock::duration kPwPrivateAddressTimeout = std::chro
 // events from the same peer is <=10ms. However in practice it's possible to see gaps as high as
 // 1.5 seconds or more.
 constexpr zx::duration kLEScanResponseTimeout = zx::sec(2);
+constexpr pw::chrono::SystemClock::duration kPwLEScanResponseTimeout = std::chrono::seconds(2);
 
 // GATT types used in the GAP service.
 constexpr UUID kGenericAccessService(uint16_t{0x1800});

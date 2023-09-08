@@ -19,7 +19,9 @@ using bt::testing::FakePeer;
 using TestingBase = bt::testing::ControllerTest<FakeController>;
 
 constexpr zx::duration kScanPeriod = zx::sec(10);
+constexpr pw::chrono::SystemClock::duration kPwScanPeriod = std::chrono::seconds(10);
 constexpr zx::duration kScanResponseTimeout = zx::sec(2);
+constexpr pw::chrono::SystemClock::duration kPwScanResponseTimeout = std::chrono::seconds(2);
 
 // The unit tests below assume that the scan period is longer than the scan response timeout when
 // exercising timeout expiration.
@@ -56,7 +58,7 @@ class LegacyLowEnergyScannerTest : public TestingBase, public LowEnergyScanner::
     test_device()->set_settings(settings);
 
     scanner_ = std::make_unique<LegacyLowEnergyScanner>(&fake_address_delegate_,
-                                                        transport()->GetWeakPtr(), dispatcher());
+                                                        transport()->GetWeakPtr(), pw_dispatcher());
     scanner_->set_delegate(this);
   }
 
@@ -72,11 +74,12 @@ class LegacyLowEnergyScannerTest : public TestingBase, public LowEnergyScanner::
   using DirectedAdvCallback = fit::function<void(const LowEnergyScanResult&)>;
   void set_directed_adv_callback(DirectedAdvCallback cb) { directed_adv_cb_ = std::move(cb); }
 
-  bool StartScan(bool active, zx::duration period = LowEnergyScanner::kPeriodInfinite) {
+  bool StartScan(bool active,
+                 pw::chrono::SystemClock::duration period = LowEnergyScanner::kPeriodInfinite) {
     LowEnergyScanner::ScanOptions options{.active = active,
                                           .filter_duplicates = true,
                                           .period = period,
-                                          .scan_response_timeout = kScanResponseTimeout};
+                                          .scan_response_timeout = kPwScanResponseTimeout};
     return scanner()->StartScan(options, [this](auto status) { last_scan_status_ = status; });
   }
 
@@ -201,7 +204,7 @@ TEST_F(LegacyLowEnergyScannerTest, StartScan) {
   EXPECT_FALSE(scanner()->IsScanning());
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
 
-  EXPECT_TRUE(StartScan(true, kScanPeriod));
+  EXPECT_TRUE(StartScan(true, kPwScanPeriod));
   EXPECT_EQ(LowEnergyScanner::State::kInitiating, scanner()->state());
   RunLoopUntilIdle();
 
@@ -239,7 +242,7 @@ TEST_F(LegacyLowEnergyScannerTest, StopScan) {
 
   // Pass a long scan period value. This should not matter as we will terminate
   // the scan directly.
-  EXPECT_TRUE(StartScan(true, kScanPeriod * 10u));
+  EXPECT_TRUE(StartScan(true, kPwScanPeriod * 10u));
   EXPECT_EQ(LowEnergyScanner::State::kInitiating, scanner()->state());
   RunLoopUntilIdle();
 
@@ -339,7 +342,7 @@ TEST_F(LegacyLowEnergyScannerTest, ActiveScanResults) {
   });
 
   // Perform an active scan.
-  EXPECT_TRUE(StartScan(true, kScanPeriod));
+  EXPECT_TRUE(StartScan(true, kPwScanPeriod));
   EXPECT_EQ(LowEnergyScanner::State::kInitiating, scanner()->state());
 
   RunLoopUntilIdle();

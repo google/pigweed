@@ -17,14 +17,14 @@ void LowEnergyScanner::Delegate::OnPeerFound(const LowEnergyScanResult& result,
 
 void LowEnergyScanner::Delegate::OnDirectedAdvertisement(const LowEnergyScanResult& result) {}
 
-LowEnergyScanner::LowEnergyScanner(hci::Transport::WeakPtr hci, async_dispatcher_t* dispatcher)
+LowEnergyScanner::LowEnergyScanner(hci::Transport::WeakPtr hci,
+                                   pw::async::Dispatcher& pw_dispatcher)
     : state_(State::kIdle),
       active_scan_requested_(false),
       delegate_(nullptr),
-      dispatcher_(dispatcher),
+      pw_dispatcher_(pw_dispatcher),
       transport_(std::move(hci)) {
   BT_DEBUG_ASSERT(transport_.is_alive());
-  BT_DEBUG_ASSERT(dispatcher_);
 
   hci_cmd_runner_ =
       std::make_unique<SequentialCommandRunner>(transport_->command_channel()->AsWeakPtr());

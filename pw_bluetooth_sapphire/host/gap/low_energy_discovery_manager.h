@@ -138,7 +138,7 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate,
   [[nodiscard]] PauseToken PauseDiscovery();
 
   // Sets a new scan period to any future and ongoing discovery procedures.
-  void set_scan_period(zx::duration period) { scan_period_ = period; }
+  void set_scan_period(pw::chrono::SystemClock::duration period) { scan_period_ = period; }
 
   // Returns whether there is an active scan in progress.
   bool discovering() const;
@@ -263,7 +263,7 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate,
   std::unordered_set<PeerId> cached_scan_results_;
 
   // The value (in ms) that we use for the duration of each scan period.
-  zx::duration scan_period_ = kLEGeneralDiscoveryScanMin;
+  pw::chrono::SystemClock::duration scan_period_ = kPwLEGeneralDiscoveryScanMin;
 
   // Count of the number of outstanding PauseTokens. When |paused_count_| is 0, discovery is
   // unpaused.

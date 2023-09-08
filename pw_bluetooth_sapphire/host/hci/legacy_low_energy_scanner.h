@@ -29,7 +29,7 @@ class LocalAddressDelegate;
 class LegacyLowEnergyScanner : public LowEnergyScanner {
  public:
   LegacyLowEnergyScanner(LocalAddressDelegate* local_addr_delegate, Transport::WeakPtr hci,
-                         async_dispatcher_t* dispatcher);
+                         pw::async::Dispatcher& pw_dispatcher);
   ~LegacyLowEnergyScanner() override;
 
   // LowEnergyScanner overrides:
@@ -43,8 +43,9 @@ class LegacyLowEnergyScanner : public LowEnergyScanner {
   class PendingScanResult {
    public:
     // |adv|: Initial advertising data payload.
-    PendingScanResult(LowEnergyScanResult result, const ByteBuffer& adv, zx::duration timeout,
-                      fit::closure timeout_handler);
+    PendingScanResult(LowEnergyScanResult result, const ByteBuffer& adv,
+                      pw::chrono::SystemClock::duration timeout, fit::closure timeout_handler,
+                      pw::async::Dispatcher& dispatcher);
 
     // Return the contents of the data.
     BufferView data() const { return buffer_.view(0, data_size_); }
@@ -68,7 +69,7 @@ class LegacyLowEnergyScanner : public LowEnergyScanner {
 
     // Since not all scannable advertisements are always followed by a scan response, we report a
     // pending result if a scan response is not received within a timeout.
-    async::TaskClosure timeout_task_;
+    SmartTask timeout_task_;
   };
 
   // Called by StartScan() after the local peer address has been obtained.
@@ -100,11 +101,11 @@ class LegacyLowEnergyScanner : public LowEnergyScanner {
   ScanStatusCallback scan_cb_;
 
   // The scan period timeout handler for the currently active scan session.
-  async::TaskClosure scan_timeout_task_;
+  SmartTask scan_timeout_task_{pw_dispatcher()};
 
   // Maximum time duration for which a scannable advertisement will be stored and not reported to
   // clients until a corresponding scan response is received.
-  zx::duration scan_response_timeout_;
+  pw::chrono::SystemClock::duration scan_response_timeout_;
 
   // Our event handler ID for the LE Advertising Report event.
   CommandChannel::EventHandlerId event_handler_id_;

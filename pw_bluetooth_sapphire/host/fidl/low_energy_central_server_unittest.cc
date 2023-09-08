@@ -961,7 +961,8 @@ TEST_F(LowEnergyCentralServerTest, ScanFailsToStart) {
 
 TEST_F(LowEnergyCentralServerTest, ScanSessionErrorCancelsScan) {
   zx::duration kTestScanPeriod = zx::sec(1);
-  adapter()->le()->set_scan_period_for_testing(kTestScanPeriod);
+  pw::chrono::SystemClock::duration kPwTestScanPeriod = std::chrono::seconds(1);
+  adapter()->le()->set_scan_period_for_testing(kPwTestScanPeriod);
   std::vector<bool> scan_states;
   test_device()->set_scan_state_callback([&](bool enabled) {
     scan_states.push_back(enabled);

@@ -49,7 +49,8 @@ struct LowEnergyScanResult {
 class LowEnergyScanner : public LocalAddressClient {
  public:
   // Value that can be passed to StartScan() to scan indefinitely.
-  static constexpr zx::duration kPeriodInfinite = zx::duration::infinite();
+  static constexpr pw::chrono::SystemClock::duration kPeriodInfinite =
+      pw::chrono::SystemClock::duration::zero();
 
   enum class State {
     // No scan is currently being performed.
@@ -83,7 +84,7 @@ class LowEnergyScanner : public LocalAddressClient {
     virtual void OnDirectedAdvertisement(const LowEnergyScanResult& result);
   };
 
-  LowEnergyScanner(Transport::WeakPtr hci, async_dispatcher_t* dispatcher);
+  LowEnergyScanner(Transport::WeakPtr hci, pw::async::Dispatcher& pw_dispatcher);
   virtual ~LowEnergyScanner() = default;
 
   // Returns the current Scan state.
@@ -178,11 +179,11 @@ class LowEnergyScanner : public LocalAddressClient {
     // Determines the length of the software defined scan period. If the value is kPeriodInfinite,
     // then the scan will remain enabled until StopScan() gets called. For all other values, the
     // scan will be disabled after the duration expires.
-    zx::duration period;
+    pw::chrono::SystemClock::duration period;
 
     // Maximum time duration during an active scan for which a scannable advertisement will be
     // stored and not reported to clients until a corresponding scan response is received.
-    zx::duration scan_response_timeout;
+    pw::chrono::SystemClock::duration scan_response_timeout;
 
     // Scan parameters.
     uint16_t interval = hci_spec::defaults::kLEScanInterval;
@@ -200,7 +201,7 @@ class LowEnergyScanner : public LocalAddressClient {
   void set_delegate(Delegate* delegate) { delegate_ = delegate; }
 
  protected:
-  async_dispatcher_t* dispatcher() const { return dispatcher_; }
+  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
   Transport::WeakPtr transport() const { return transport_; }
   SequentialCommandRunner* hci_cmd_runner() const { return hci_cmd_runner_.get(); }
   Delegate* delegate() const {
@@ -221,8 +222,7 @@ class LowEnergyScanner : public LocalAddressClient {
 
   Delegate* delegate_;  // weak
 
-  // Task runner for all asynchronous tasks.
-  async_dispatcher_t* dispatcher_;
+  pw::async::Dispatcher& pw_dispatcher_;
 
   // The HCI transport.
   Transport::WeakPtr transport_;

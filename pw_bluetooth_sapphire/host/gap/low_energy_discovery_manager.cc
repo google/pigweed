@@ -463,7 +463,7 @@ void LowEnergyDiscoveryManager::StartScan(bool active) {
       .filter_duplicates = true,
       .filter_policy = pw::bluetooth::emboss::LEScanFilterPolicy::BASIC_UNFILTERED,
       .period = scan_period_,
-      .scan_response_timeout = kLEScanResponseTimeout,
+      .scan_response_timeout = kPwLEScanResponseTimeout,
   };
 
   // See Vol 3, Part C, 9.3.11 "Connection Establishment Timing Parameters".

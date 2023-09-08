@@ -107,7 +107,7 @@ class FakeAdapter final : public Adapter {
 
     void set_request_timeout_for_testing(zx::duration value) override {}
 
-    void set_scan_period_for_testing(zx::duration period) override {}
+    void set_scan_period_for_testing(pw::chrono::SystemClock::duration period) override {}
 
    private:
     FakeAdapter* adapter_;

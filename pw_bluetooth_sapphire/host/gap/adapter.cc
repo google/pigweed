@@ -163,7 +163,7 @@ class AdapterImpl final : public Adapter {
       adapter_->le_connection_manager_->set_request_timeout_for_testing(value);
     }
 
-    void set_scan_period_for_testing(zx::duration period) override {
+    void set_scan_period_for_testing(pw::chrono::SystemClock::duration period) override {
       adapter_->le_discovery_manager_->set_scan_period(period);
     }
 
@@ -1033,8 +1033,8 @@ void AdapterImpl::InitializeStep4() {
   hci_le_connector_ = std::make_unique<hci::LowEnergyConnector>(
       hci_, le_address_manager_.get(), dispatcher_,
       fit::bind_member<&hci::LowEnergyAdvertiser::OnIncomingConnection>(hci_le_advertiser_.get()));
-  hci_le_scanner_ =
-      std::make_unique<hci::LegacyLowEnergyScanner>(le_address_manager_.get(), hci_, dispatcher_);
+  hci_le_scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(le_address_manager_.get(), hci_,
+                                                                  pw_dispatcher_);
 
   // Initialize the LE manager objects
   le_discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(hci_le_scanner_.get(),

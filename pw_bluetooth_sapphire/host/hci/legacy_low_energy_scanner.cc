@@ -42,14 +42,18 @@ std::string ScanStateToString(LowEnergyScanner::State state) {
 
 }  // namespace
 
-LegacyLowEnergyScanner::PendingScanResult::PendingScanResult(LowEnergyScanResult result,
-                                                             const ByteBuffer& adv,
-                                                             zx::duration timeout,
-                                                             fit::closure timeout_handler)
-    : result_(result), data_size_(0u) {
+LegacyLowEnergyScanner::PendingScanResult::PendingScanResult(
+    LowEnergyScanResult result, const ByteBuffer& adv, pw::chrono::SystemClock::duration timeout,
+    fit::closure timeout_handler, pw::async::Dispatcher& dispatcher)
+    : result_(result), data_size_(0u), timeout_task_(dispatcher) {
   Append(adv);
-  timeout_task_.set_handler(std::move(timeout_handler));
-  timeout_task_.PostDelayed(async_get_default_dispatcher(), timeout);
+  timeout_task_.set_function([timeout_handler = std::move(timeout_handler)](
+                                 pw::async::Context /*ctx*/, pw::Status status) {
+    if (status.ok()) {
+      timeout_handler();
+    }
+  });
+  timeout_task_.PostAfter(timeout);
 }
 
 void LegacyLowEnergyScanner::PendingScanResult::Append(const ByteBuffer& data) {
@@ -60,14 +64,17 @@ void LegacyLowEnergyScanner::PendingScanResult::Append(const ByteBuffer& data) {
 
 LegacyLowEnergyScanner::LegacyLowEnergyScanner(LocalAddressDelegate* local_addr_delegate,
                                                Transport::WeakPtr hci,
-                                               async_dispatcher_t* dispatcher)
-    : LowEnergyScanner(std::move(hci), dispatcher), local_addr_delegate_(local_addr_delegate) {
+                                               pw::async::Dispatcher& pw_dispatcher)
+    : LowEnergyScanner(std::move(hci), pw_dispatcher), local_addr_delegate_(local_addr_delegate) {
   BT_DEBUG_ASSERT(local_addr_delegate_);
   event_handler_id_ = transport()->command_channel()->AddLEMetaEventHandler(
       hci_spec::kLEAdvertisingReportSubeventCode,
       fit::bind_member<&LegacyLowEnergyScanner::OnAdvertisingReportEvent>(this));
-  scan_timeout_task_.set_handler(
-      fit::bind_member<&LegacyLowEnergyScanner::OnScanPeriodComplete>(this));
+  scan_timeout_task_.set_function([this](pw::async::Context /*ctx*/, pw::Status status) {
+    if (status.ok()) {
+      OnScanPeriodComplete();
+    }
+  });
 }
 
 LegacyLowEnergyScanner::~LegacyLowEnergyScanner() {
@@ -78,7 +85,6 @@ LegacyLowEnergyScanner::~LegacyLowEnergyScanner() {
 
 bool LegacyLowEnergyScanner::StartScan(const ScanOptions& options, ScanStatusCallback callback) {
   BT_ASSERT(callback);
-  BT_ASSERT(options.period == kPeriodInfinite || options.period.get() > 0);
   BT_ASSERT(options.interval <= hci_spec::kLEScanIntervalMax &&
             options.interval >= hci_spec::kLEScanIntervalMin);
   BT_ASSERT(options.window <= hci_spec::kLEScanIntervalMax &&
@@ -175,7 +181,7 @@ void LegacyLowEnergyScanner::StartScanInternal(const DeviceAddress& local_addres
 
     // Schedule the timeout.
     if (period != kPeriodInfinite) {
-      scan_timeout_task_.PostDelayed(dispatcher(), period);
+      scan_timeout_task_.PostAfter(period);
     }
 
     if (active_scan_requested()) {
@@ -312,7 +318,7 @@ CommandChannel::EventCallbackResult LegacyLowEnergyScanner::OnAdvertisingReportE
 
     pending_results_[address] = std::make_unique<PendingScanResult>(
         result, BufferView(report->data, report->length_data), scan_response_timeout_,
-        [this, address] { OnScanResponseTimeout(address); });
+        [this, address] { OnScanResponseTimeout(address); }, pw_dispatcher());
   }
   return CommandChannel::EventCallbackResult::kContinue;
 }
