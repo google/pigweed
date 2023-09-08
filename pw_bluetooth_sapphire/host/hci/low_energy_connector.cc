@@ -23,14 +23,13 @@ LowEnergyConnector::PendingRequest::PendingRequest(const DeviceAddress& peer_add
 
 LowEnergyConnector::LowEnergyConnector(Transport::WeakPtr hci,
                                        LocalAddressDelegate* local_addr_delegate,
-                                       async_dispatcher_t* dispatcher,
+                                       pw::async::Dispatcher& dispatcher,
                                        IncomingConnectionDelegate delegate)
-    : dispatcher_(dispatcher),
+    : pw_dispatcher_(dispatcher),
       hci_(std::move(hci)),
       local_addr_delegate_(local_addr_delegate),
       delegate_(std::move(delegate)),
       weak_self_(this) {
-  BT_DEBUG_ASSERT(dispatcher_);
   BT_DEBUG_ASSERT(hci_.is_alive());
   BT_DEBUG_ASSERT(local_addr_delegate_);
   BT_DEBUG_ASSERT(delegate_);
@@ -43,6 +42,12 @@ LowEnergyConnector::LowEnergyConnector(Transport::WeakPtr hci,
         }
         return CommandChannel::EventCallbackResult::kRemove;
       });
+
+  request_timeout_task_.set_function([this](pw::async::Context& /*ctx*/, pw::Status status) {
+    if (status.ok()) {
+      OnCreateConnectionTimeout();
+    }
+  });
 }
 
 LowEnergyConnector::~LowEnergyConnector() {
@@ -56,9 +61,9 @@ LowEnergyConnector::~LowEnergyConnector() {
 bool LowEnergyConnector::CreateConnection(
     bool use_accept_list, const DeviceAddress& peer_address, uint16_t scan_interval,
     uint16_t scan_window, const hci_spec::LEPreferredConnectionParameters& initial_parameters,
-    StatusCallback status_callback, zx::duration timeout) {
+    StatusCallback status_callback, pw::chrono::SystemClock::duration timeout) {
   BT_DEBUG_ASSERT(status_callback);
-  BT_DEBUG_ASSERT(timeout.get() > 0);
+  BT_DEBUG_ASSERT(timeout.count() > 0);
 
   if (request_pending())
     return false;
@@ -83,7 +88,7 @@ void LowEnergyConnector::CreateConnectionInternal(
     const DeviceAddress& local_address, bool use_accept_list, const DeviceAddress& peer_address,
     uint16_t scan_interval, uint16_t scan_window,
     const hci_spec::LEPreferredConnectionParameters& initial_parameters,
-    StatusCallback status_callback, zx::duration timeout) {
+    StatusCallback status_callback, pw::chrono::SystemClock::duration timeout) {
   if (!hci_.is_alive()) {
     return;
   }
@@ -143,7 +148,7 @@ void LowEnergyConnector::CreateConnectionInternal(
     // timeout period. NOTE: The request will complete when the controller
     // asynchronously notifies us of with a LE Connection Complete event.
     self->request_timeout_task_.Cancel();
-    self->request_timeout_task_.PostDelayed(async_get_default_dispatcher(), timeout);
+    self->request_timeout_task_.PostAfter(timeout);
   };
 
   hci_->command_channel()->SendCommand(std::move(request), complete_cb,

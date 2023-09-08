@@ -91,7 +91,7 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(
       cmd_(std::move(cmd_channel)),
       security_mode_(LESecurityMode::Mode1),
       sm_factory_func_(std::move(sm_creator)),
-      request_timeout_(kLECreateConnectionTimeout),
+      request_timeout_(kPwLECreateConnectionTimeout),
       peer_cache_(peer_cache),
       l2cap_(l2cap),
       gatt_(gatt),

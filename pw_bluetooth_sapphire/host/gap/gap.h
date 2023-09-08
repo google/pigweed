@@ -122,6 +122,7 @@ constexpr uint16_t kLEAdvertisingSlowIntervalCodedMax = 0x1680;  // 3.6 s
 
 // Timeout used for the LE Create Connection command.
 constexpr zx::duration kLECreateConnectionTimeout = zx::sec(20);
+constexpr pw::chrono::SystemClock::duration kPwLECreateConnectionTimeout = std::chrono::seconds(20);
 // Timeout used for the Br/Edr Create Connection command.
 constexpr zx::duration kBrEdrCreateConnectionTimeout = zx::sec(20);
 constexpr pw::chrono::SystemClock::duration kPwBrEdrCreateConnectionTimeout =

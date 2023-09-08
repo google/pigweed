@@ -157,7 +157,9 @@ class LowEnergyConnectionManager final {
 
   // Sets the timeout interval to be used on future connect requests. The
   // default value is kLECreateConnectionTimeout.
-  void set_request_timeout_for_testing(zx::duration value) { request_timeout_ = value; }
+  void set_request_timeout_for_testing(pw::chrono::SystemClock::duration value) {
+    request_timeout_ = value;
+  }
 
   // Callback for hci::Connection, called when the peer disconnects.
   // |reason| is used to control retry logic.
@@ -270,7 +272,7 @@ class LowEnergyConnectionManager final {
 
   // Time after which a connection attempt is considered to have timed out. This
   // is configurable to allow unit tests to set a shorter value.
-  zx::duration request_timeout_;
+  pw::chrono::SystemClock::duration request_timeout_;
 
   // The peer cache is used to look up and persist remote peer data that is
   // relevant during connection establishment (such as the address, preferred

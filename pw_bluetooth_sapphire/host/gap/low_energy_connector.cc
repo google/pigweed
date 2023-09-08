@@ -79,14 +79,14 @@ LowEnergyConnector::~LowEnergyConnector() {
   }
 }
 
-void LowEnergyConnector::StartOutbound(zx::duration request_timeout,
+void LowEnergyConnector::StartOutbound(pw::chrono::SystemClock::duration request_timeout,
                                        hci::LowEnergyConnector* connector,
                                        LowEnergyDiscoveryManager::WeakPtr discovery_manager,
                                        ResultCallback cb) {
   BT_ASSERT(*state_ == State::kDefault);
   BT_ASSERT(discovery_manager.is_alive());
   BT_ASSERT(connector);
-  BT_ASSERT(request_timeout.get() != 0);
+  BT_ASSERT(request_timeout.count() != 0);
   hci_connector_ = connector;
   discovery_manager_ = std::move(discovery_manager);
   hci_request_timeout_ = request_timeout;

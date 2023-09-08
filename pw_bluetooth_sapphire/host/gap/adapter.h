@@ -219,7 +219,7 @@ class Adapter {
 
     // Sets the timeout interval to be used on future connect requests. The
     // default value is kLECreateConnectionTimeout.
-    virtual void set_request_timeout_for_testing(zx::duration value) = 0;
+    virtual void set_request_timeout_for_testing(pw::chrono::SystemClock::duration value) = 0;
 
     // Sets a new scan period to any future and ongoing discovery procedures.
     virtual void set_scan_period_for_testing(pw::chrono::SystemClock::duration period) = 0;

@@ -105,7 +105,7 @@ class FakeAdapter final : public Adapter {
 
     std::optional<UInt128> irk() const override { return std::nullopt; }
 
-    void set_request_timeout_for_testing(zx::duration value) override {}
+    void set_request_timeout_for_testing(pw::chrono::SystemClock::duration value) override {}
 
     void set_scan_period_for_testing(pw::chrono::SystemClock::duration period) override {}
 

@@ -814,8 +814,11 @@ TEST_F(AdapterTest, LocalAddressDuringHangingConnect) {
   fake_peer->set_force_pending_connect(true);
   test_device()->AddPeer(std::move(fake_peer));
 
-  constexpr auto kTestDelay = zx::sec(5);
-  constexpr auto kTestTimeout = kPrivateAddressTimeout + kTestDelay;
+  constexpr zx::duration kTestDelay = zx::sec(5);
+  constexpr pw::chrono::SystemClock::duration kPwTestDelay = std::chrono::seconds(5);
+  constexpr zx::duration kTestTimeout = kPrivateAddressTimeout + kTestDelay;
+  constexpr pw::chrono::SystemClock::duration kPwTestTimeout =
+      kPwPrivateAddressTimeout + kPwTestDelay;
 
   // Some of the behavior below stems from the fact that kTestTimeout is longer
   // than kCacheTimeout. This assertion is here to catch regressions in this
@@ -824,7 +827,7 @@ TEST_F(AdapterTest, LocalAddressDuringHangingConnect) {
   // remove some of the unnecessary invariants from this test case.
   static_assert(kTestTimeout > kCacheTimeout, "expected a shorter device cache timeout");
 
-  adapter()->le()->set_request_timeout_for_testing(kTestTimeout);
+  adapter()->le()->set_request_timeout_for_testing(kPwTestTimeout);
 
   // The connection request should use a public address.
   std::optional<HostError> error;

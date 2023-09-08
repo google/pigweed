@@ -64,7 +64,7 @@ class LowEnergyConnector : public LocalAddressClient {
   //   - |delegate|: The delegate that will be notified when a new logical link
   //     is established due to an incoming request (remote initiated).
   LowEnergyConnector(Transport::WeakPtr hci, LocalAddressDelegate* local_addr_delegate,
-                     async_dispatcher_t* dispatcher, IncomingConnectionDelegate delegate);
+                     pw::async::Dispatcher& dispatcher, IncomingConnectionDelegate delegate);
 
   // Deleting an instance cancels any pending connection request.
   ~LowEnergyConnector() override;
@@ -87,7 +87,7 @@ class LowEnergyConnector : public LocalAddressClient {
   bool CreateConnection(bool use_accept_list, const DeviceAddress& peer_address,
                         uint16_t scan_interval, uint16_t scan_window,
                         const hci_spec::LEPreferredConnectionParameters& initial_parameters,
-                        StatusCallback status_callback, zx::duration timeout);
+                        StatusCallback status_callback, pw::chrono::SystemClock::duration timeout);
 
   // Cancels the currently pending connection attempt.
   void Cancel();
@@ -139,7 +139,8 @@ class LowEnergyConnector : public LocalAddressClient {
                                 const DeviceAddress& peer_address, uint16_t scan_interval,
                                 uint16_t scan_window,
                                 const hci_spec::LEPreferredConnectionParameters& initial_parameters,
-                                StatusCallback status_callback, zx::duration timeout);
+                                StatusCallback status_callback,
+                                pw::chrono::SystemClock::duration timeout);
 
   // Called by Cancel() and by OnCreateConnectionTimeout().
   void CancelInternal(bool timed_out = false);
@@ -153,8 +154,7 @@ class LowEnergyConnector : public LocalAddressClient {
   // Called when a LE Create Connection request has timed out.
   void OnCreateConnectionTimeout();
 
-  // Task runner for all asynchronous tasks.
-  async_dispatcher_t* dispatcher_;
+  pw::async::Dispatcher& pw_dispatcher_;
 
   // The HCI transport.
   Transport::WeakPtr hci_;
@@ -172,8 +172,7 @@ class LowEnergyConnector : public LocalAddressClient {
   // Task that runs when a request to create connection times out. We do not
   // rely on CommandChannel's timer since that request completes when we receive
   // the HCI Command Status event.
-  async::TaskClosureMethod<LowEnergyConnector, &LowEnergyConnector::OnCreateConnectionTimeout>
-      request_timeout_task_{this};
+  SmartTask request_timeout_task_{pw_dispatcher_};
 
   // Our event handle ID for the LE Connection Complete event.
   CommandChannel::EventHandlerId event_handler_id_;

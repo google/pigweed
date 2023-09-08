@@ -43,7 +43,8 @@ class LowEnergyConnector final {
 
   // Initiate an outbound connection. |cb| will be called with the result of the
   // procedure. Must only be called once.
-  void StartOutbound(zx::duration request_timeout, hci::LowEnergyConnector* connector,
+  void StartOutbound(pw::chrono::SystemClock::duration request_timeout,
+                     hci::LowEnergyConnector* connector,
                      LowEnergyDiscoveryManager::WeakPtr discovery_manager, ResultCallback cb);
 
   // Start interrogating peer using an already established |connection|. |cb| will be called with
@@ -129,7 +130,7 @@ class LowEnergyConnector final {
 
   // Time after which an outbound HCI connection request is considered to have timed out. This
   // is configurable to allow unit tests to set a shorter value.
-  zx::duration hci_request_timeout_;
+  pw::chrono::SystemClock::duration hci_request_timeout_;
 
   LowEnergyConnectionOptions options_;
 

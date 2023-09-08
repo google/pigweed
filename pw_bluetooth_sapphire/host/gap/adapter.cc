@@ -159,7 +159,7 @@ class AdapterImpl final : public Adapter {
 
     std::optional<UInt128> irk() const override { return adapter_->le_address_manager_->irk(); }
 
-    void set_request_timeout_for_testing(zx::duration value) override {
+    void set_request_timeout_for_testing(pw::chrono::SystemClock::duration value) override {
       adapter_->le_connection_manager_->set_request_timeout_for_testing(value);
     }
 
@@ -1031,7 +1031,7 @@ void AdapterImpl::InitializeStep4() {
   // Initialize the HCI adapters.
   hci_le_advertiser_ = CreateAdvertiser();
   hci_le_connector_ = std::make_unique<hci::LowEnergyConnector>(
-      hci_, le_address_manager_.get(), dispatcher_,
+      hci_, le_address_manager_.get(), pw_dispatcher_,
       fit::bind_member<&hci::LowEnergyAdvertiser::OnIncomingConnection>(hci_le_advertiser_.get()));
   hci_le_scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(le_address_manager_.get(), hci_,
                                                                   pw_dispatcher_);
