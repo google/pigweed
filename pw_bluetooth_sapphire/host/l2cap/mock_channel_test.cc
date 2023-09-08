@@ -45,7 +45,7 @@ FakeChannel::WeakPtr MockChannelTest::CreateFakeChannel(const ChannelOptions& op
   fake_chan_ = std::make_unique<FakeChannel>(options.id, options.remote_id, options.conn_handle,
                                              options.link_type,
                                              ChannelInfo::MakeBasicMode(options.mtu, options.mtu));
-  fake_chan_->SetSendCallback(fit::bind_member<&MockChannelTest::OnPacketSent>(this), nullptr);
+  fake_chan_->SetSendCallback(fit::bind_member<&MockChannelTest::OnPacketSent>(this));
   return fake_chan_->AsWeakPtr();
 }
 

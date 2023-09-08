@@ -132,7 +132,7 @@ TEST_F(SecurityRequestPhaseTest, InboundSecurityRequestFails) {
         ASSERT_EQ(reader.code(), kPairingFailed);
         message_sent = true;
       },
-      dispatcher());
+      pw_dispatcher());
 
   fake_chan()->Receive(pres_packet);
   RunLoopUntilIdle();
@@ -150,7 +150,7 @@ TEST_F(SecurityRequestPhaseTest, DropsInvalidPacket) {
         ASSERT_EQ(reader.code(), kPairingFailed);
         message_sent = true;
       },
-      dispatcher());
+      pw_dispatcher());
 
   fake_chan()->Receive(bad_packet);
   RunLoopUntilIdle();

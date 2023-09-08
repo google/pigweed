@@ -208,7 +208,7 @@ TEST_F(Phase3Test, EncryptionInformationReceivedTwice) {
   args.features.remote_key_distribution = KeyDistGen::kEncKey;
   NewPhase3(args);
   ByteBufferPtr sent = nullptr;
-  fake_chan()->SetSendCallback([&](ByteBufferPtr sdu) { sent = std::move(sdu); }, dispatcher());
+  fake_chan()->SetSendCallback([&](ByteBufferPtr sdu) { sent = std::move(sdu); }, pw_dispatcher());
   phase_3()->Start();
   Receive128BitCmd(kEncryptionInformation, UInt128());
   RunLoopUntilIdle();
@@ -344,7 +344,8 @@ TEST_F(Phase3Test, InitiatorReceivesEncKey) {
   args.le_props = kExpectedLtk.security();
   NewPhase3(args);
   size_t sent_msg_count = 0;
-  fake_chan()->SetSendCallback([&](ByteBufferPtr /*ignore*/) { sent_msg_count++; }, dispatcher());
+  fake_chan()->SetSendCallback([&](ByteBufferPtr /*ignore*/) { sent_msg_count++; },
+                               pw_dispatcher());
 
   phase_3()->Start();
   Receive128BitCmd(kEncryptionInformation, kExpectedLtk.key().value());
@@ -372,7 +373,7 @@ TEST_F(Phase3Test, InitiatorSendsLocalIdKey) {
   std::optional<IdentityAddressInformationParams> identity_addr = std::nullopt;
   fake_chan()->SetSendCallback(
       [&](ByteBufferPtr sdu) { ExpectIdentity(std::move(sdu), &irk, &identity_addr); },
-      dispatcher());
+      pw_dispatcher());
   IdentityInfo kLocalIdentity{.irk = Random<IRK>(), .address = kSampleDeviceAddress};
   listener()->set_identity_info(kLocalIdentity);
   phase_3()->Start();
@@ -402,7 +403,7 @@ TEST_F(Phase3Test, InitiatorSendsEncKey) {
   std::optional<CentralIdentificationParams> central_id = std::nullopt;
   fake_chan()->SetSendCallback(
       [&](ByteBufferPtr sdu) { ExpectEncryptionInfo(std::move(sdu), &ltk_bytes, &central_id); },
-      dispatcher());
+      pw_dispatcher());
   phase_3()->Start();
   RunLoopUntilIdle();
 
@@ -427,7 +428,7 @@ TEST_F(Phase3Test, InitiatorReceivesThenSendsEncKey) {
   std::optional<CentralIdentificationParams> central_id = std::nullopt;
   fake_chan()->SetSendCallback(
       [&](ByteBufferPtr sdu) { ExpectEncryptionInfo(std::move(sdu), &ltk_bytes, &central_id); },
-      dispatcher());
+      pw_dispatcher());
   phase_3()->Start();
   Receive128BitCmd(kEncryptionInformation, kExpectedLtk.key().value());
   ReceiveCentralIdentification(kExpectedLtk.key().rand(), kExpectedLtk.key().ediv());
@@ -551,7 +552,8 @@ TEST_F(Phase3Test, InitiatorCompleteWithIdKey) {
   args.le_props = kIrk.security();
   NewPhase3(args);
   size_t sent_msg_count = 0;
-  fake_chan()->SetSendCallback([&](ByteBufferPtr /*ignore*/) { sent_msg_count++; }, dispatcher());
+  fake_chan()->SetSendCallback([&](ByteBufferPtr /*ignore*/) { sent_msg_count++; },
+                               pw_dispatcher());
 
   phase_3()->Start();
   Receive128BitCmd(kIdentityInformation, kIrk.value());
@@ -580,7 +582,8 @@ TEST_F(Phase3Test, InitiatorCompleteWithEncAndIdKey) {
   args.le_props = kExpectedLtk.security();
   NewPhase3(args);
   size_t sent_msg_count = 0;
-  fake_chan()->SetSendCallback([&](ByteBufferPtr /*ignore*/) { sent_msg_count++; }, dispatcher());
+  fake_chan()->SetSendCallback([&](ByteBufferPtr /*ignore*/) { sent_msg_count++; },
+                               pw_dispatcher());
 
   phase_3()->Start();
   Receive128BitCmd(kEncryptionInformation, kExpectedLtk.key().value());
@@ -613,7 +616,7 @@ TEST_F(Phase3Test, ResponderLTKDistributionNoRemoteKeys) {
   std::optional<CentralIdentificationParams> central_id = std::nullopt;
   fake_chan()->SetSendCallback(
       [&](ByteBufferPtr sdu) { ExpectEncryptionInfo(std::move(sdu), &ltk_bytes, &central_id); },
-      dispatcher());
+      pw_dispatcher());
   phase_3()->Start();
   RunLoopUntilIdle();
   // We should have sent both the Encryption Info and Central ID to the peer
@@ -638,7 +641,8 @@ TEST_F(Phase3Test, ResponderAcceptsInitiatorEncKey) {
   NewPhase3(args);
 
   size_t sent_msg_count = 0;
-  fake_chan()->SetSendCallback([&](ByteBufferPtr /*ignore*/) { sent_msg_count++; }, dispatcher());
+  fake_chan()->SetSendCallback([&](ByteBufferPtr /*ignore*/) { sent_msg_count++; },
+                               pw_dispatcher());
 
   phase_3()->Start();
   Receive128BitCmd(kEncryptionInformation, kExpectedLtk.key().value());
@@ -668,7 +672,7 @@ TEST_F(Phase3Test, ResponderLTKDistributionWithRemoteKeys) {
   std::optional<CentralIdentificationParams> central_id = std::nullopt;
   fake_chan()->SetSendCallback(
       [&](ByteBufferPtr sdu) { ExpectEncryptionInfo(std::move(sdu), &ltk_bytes, &central_id); },
-      dispatcher());
+      pw_dispatcher());
   phase_3()->Start();
   RunLoopUntilIdle();
   // We should have sent the Encryption Info and Central ID & be waiting for the peer's IRK
@@ -709,7 +713,7 @@ TEST_F(Phase3Test, ResponderLocalLTKMaxLength) {
   std::optional<CentralIdentificationParams> central_id = std::nullopt;
   fake_chan()->SetSendCallback(
       [&](ByteBufferPtr sdu) { ExpectEncryptionInfo(std::move(sdu), &ltk_bytes, &central_id); },
-      dispatcher());
+      pw_dispatcher());
   phase_3()->Start();
   RunLoopUntilIdle();
 
@@ -738,7 +742,7 @@ TEST_F(Phase3Test, ResponderLocalIdKeyDistributionWithRemoteKeys) {
   std::optional<IdentityAddressInformationParams> identity_addr = std::nullopt;
   fake_chan()->SetSendCallback(
       [&](ByteBufferPtr sdu) { ExpectIdentity(std::move(sdu), &irk, &identity_addr); },
-      dispatcher());
+      pw_dispatcher());
   IdentityInfo kLocalIdentity{.irk = Random<IRK>(), .address = kSampleDeviceAddress};
   listener()->set_identity_info(kLocalIdentity);
   phase_3()->Start();

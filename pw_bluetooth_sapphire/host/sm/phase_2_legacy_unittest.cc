@@ -186,7 +186,7 @@ TEST_F(Phase2LegacyTest, InitiatorJustWorksStkSucceeds) {
       [&](ByteBufferPtr sdu) {
         std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
       },
-      dispatcher());
+      pw_dispatcher());
   phase_2_legacy()->Start();
   // We should request user confirmation, but not send a message until we receive it.
   ASSERT_EQ(kInvalidCode, sent_code);
@@ -231,7 +231,7 @@ TEST_F(Phase2LegacyTest, InitiatorPasskeyInputStkSucceeds) {
       [&](ByteBufferPtr sdu) {
         std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
       },
-      dispatcher());
+      pw_dispatcher());
   phase_2_legacy()->Start();
 
   // We should request user confirmation, but not send a message until we receive it.
@@ -282,7 +282,7 @@ TEST_F(Phase2LegacyTest, InitiatorPasskeyDisplaySucceeds) {
       [&](ByteBufferPtr sdu) {
         std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
       },
-      dispatcher());
+      pw_dispatcher());
   phase_2_legacy()->Start();
   // We should request user confirmation, but not send a message until we receive it.
   ASSERT_EQ(kInvalidCode, sent_code);
@@ -303,7 +303,8 @@ TEST_F(Phase2LegacyTest, InitiatorReceivesConfirmBeforeTkFails) {
       [&](FakeListener::ConfirmCallback cb) { confirm_cb = std::move(cb); });
 
   ByteBufferPtr sent_sdu = nullptr;
-  fake_chan()->SetSendCallback([&](ByteBufferPtr sdu) { sent_sdu = std::move(sdu); }, dispatcher());
+  fake_chan()->SetSendCallback([&](ByteBufferPtr sdu) { sent_sdu = std::move(sdu); },
+                               pw_dispatcher());
   phase_2_legacy()->Start();
   ASSERT_TRUE(confirm_cb);
   ASSERT_FALSE(sent_sdu);
@@ -322,7 +323,7 @@ TEST_F(Phase2LegacyTest, InvalidConfirmValueFails) {
       [&](ByteBufferPtr sdu) {
         std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
       },
-      dispatcher());
+      pw_dispatcher());
   phase_2_legacy()->Start();
   RunLoopUntilIdle();
   ASSERT_EQ(kPairingConfirm, sent_code);
@@ -541,7 +542,7 @@ TEST_F(Phase2LegacyTest, ResponderJustWorksStkSucceeds) {
       [&](ByteBufferPtr sdu) {
         std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
       },
-      dispatcher());
+      pw_dispatcher());
   phase_2_legacy()->Start();
   // We should not send a message until we receive the requested user input AND the peer confirm.
   ASSERT_TRUE(confirm_cb);
@@ -588,7 +589,7 @@ TEST_F(Phase2LegacyTest, ResponderPasskeyInputStkSucceeds) {
       [&](ByteBufferPtr sdu) {
         std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
       },
-      dispatcher());
+      pw_dispatcher());
 
   phase_2_legacy()->Start();
 
@@ -644,7 +645,7 @@ TEST_F(Phase2LegacyTest, ResponderPasskeyDisplaySucceeds) {
       [&](ByteBufferPtr sdu) {
         std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
       },
-      dispatcher());
+      pw_dispatcher());
 
   phase_2_legacy()->Start();
   // We should not send a message until we receive the requested user input AND the peer confirm.
@@ -677,7 +678,7 @@ TEST_F(Phase2LegacyTest, ResponderReceivesConfirmBeforeTkSucceeds) {
       [&](ByteBufferPtr sdu) {
         std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
       },
-      dispatcher());
+      pw_dispatcher());
   phase_2_legacy()->Start();
 
   // We should not send a message until we receive the requested user input AND the peer confirm.
@@ -716,7 +717,7 @@ TEST_F(Phase2LegacyTest, ReceiveConfirmValueTwiceFails) {
       [&](ByteBufferPtr sdu) {
         std::tie(code, std::ignore) = ExtractCodeAnd128BitCmd(std::move(sdu));
       },
-      dispatcher());
+      pw_dispatcher());
   phase_2_legacy()->Start();
 
   MatchingPair values = GenerateMatchingConfirmAndRandom(0);  // Just Works TK is 0

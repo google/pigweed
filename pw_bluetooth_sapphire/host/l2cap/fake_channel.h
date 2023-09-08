@@ -7,6 +7,8 @@
 
 #include <memory>
 
+#include <pw_async/heap_dispatcher.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
@@ -33,16 +35,17 @@ class FakeChannel : public Channel {
   void Receive(const ByteBuffer& data);
 
   // Sets a delegate to notify when a frame was sent over the channel.
-  // If |dispatcher| is nullptr, |callback| will be called synchronously.
+  // If a |dispatcher| is specified, |callback| will be invoked asynchronously.
   using SendCallback = fit::function<void(ByteBufferPtr)>;
-  void SetSendCallback(SendCallback callback, async_dispatcher_t* dispatcher);
+  void SetSendCallback(SendCallback callback);
+  void SetSendCallback(SendCallback callback, pw::async::Dispatcher& dispatcher);
 
   // Sets a callback to emulate the result of "SignalLinkError()". In
   // production, this callback is invoked by the link.
   void SetLinkErrorCallback(LinkErrorCallback callback);
 
   // Sets a callback to emulate the result of "UpgradeSecurity()".
-  void SetSecurityCallback(SecurityUpgradeCallback callback, async_dispatcher_t* dispatcher);
+  void SetSecurityCallback(SecurityUpgradeCallback callback, pw::async::Dispatcher& dispatcher);
 
   // Emulates channel closure.
   void Close();
@@ -92,13 +95,13 @@ class FakeChannel : public Channel {
 
   sm::SecurityProperties security_;
   SecurityUpgradeCallback security_cb_;
-  async_dispatcher_t* security_dispatcher_;
+  std::optional<pw::async::HeapDispatcher> security_dispatcher_;
 
   ClosedCallback closed_cb_;
   RxCallback rx_cb_;
 
   SendCallback send_cb_;
-  async_dispatcher_t* send_dispatcher_;
+  std::optional<pw::async::HeapDispatcher> send_dispatcher_;
 
   LinkErrorCallback link_err_cb_;
 

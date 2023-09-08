@@ -11,6 +11,7 @@
 #include <type_traits>
 
 #include <gtest/gtest.h>
+#include <pw_async_fuchsia/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
@@ -26,7 +27,8 @@ constexpr size_t kDefaultSocketWriteQueueLimitFrames = 2;
 
 class SocketChannelRelayTest : public ::testing::Test {
  public:
-  SocketChannelRelayTest() : loop_(&kAsyncLoopConfigAttachToCurrentThread) {
+  SocketChannelRelayTest()
+      : loop_(&kAsyncLoopConfigAttachToCurrentThread), pw_dispatcher_(dispatcher()) {
     EXPECT_EQ(ASYNC_LOOP_RUNNABLE, loop_.GetState());
 
     constexpr l2cap::ChannelId kDynamicChannelIdMin = 0x0040;
@@ -40,6 +42,8 @@ class SocketChannelRelayTest : public ::testing::Test {
     local_socket_unowned_ = zx::unowned_socket(local_socket_);
     EXPECT_EQ(ZX_OK, socket_status);
   }
+
+  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
 
   // Writes data on |local_socket| until the socket is full, or an error occurs.
   // Returns the number of bytes written if the socket fills, and zero
@@ -116,9 +120,9 @@ class SocketChannelRelayTest : public ::testing::Test {
   zx::socket local_socket_;
   zx::socket remote_socket_;
   zx::unowned_socket local_socket_unowned_;
-  // TODO(fxbug.dev/716): Move to FakeChannelTest, which incorporates
-  // async::TestLoop.
+  // TODO(fxbug.dev/716): Move to FakeChannelTest, which wraps pw_async.
   async::Loop loop_;
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_;
 };
 
 class SocketChannelRelayLifetimeTest : public SocketChannelRelayTest {
@@ -260,7 +264,7 @@ class SocketChannelRelayDataPathTest : public SocketChannelRelayTest {
       : relay_(ConsumeLocalSocket(), channel()->GetWeakPtr(), /*deactivation_cb=*/nullptr,
                kDefaultSocketWriteQueueLimitFrames) {
     channel()->SetSendCallback([&](auto data) { sent_to_channel_.push_back(std::move(data)); },
-                               dispatcher());
+                               pw_dispatcher());
   }
 
  protected:

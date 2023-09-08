@@ -278,7 +278,7 @@ TEST_F(ServerTest, RegisterProtocolOnlyService) {
     responded = true;
   };
 
-  fake_chan()->SetSendCallback(service_search_cb, dispatcher());
+  fake_chan()->SetSendCallback(service_search_cb, pw_dispatcher());
   fake_chan()->Receive(kL2capSearch);
   RunLoopUntilIdle();
   EXPECT_TRUE(responded);
@@ -316,7 +316,7 @@ TEST_F(ServerTest, RegisterProtocolOnlyService) {
     responded = true;
   };
 
-  fake_chan()->SetSendCallback(service_search_attribute_cb, dispatcher());
+  fake_chan()->SetSendCallback(service_search_attribute_cb, pw_dispatcher());
   fake_chan()->Receive(kServiceSearchAttributeRequest);
   RunLoopUntilIdle();
   EXPECT_TRUE(responded);
@@ -353,7 +353,7 @@ TEST_F(ServerTest, RegisterProtocolOnlyService) {
     responded = true;
   };
 
-  fake_chan()->SetSendCallback(service_attribute_cb, dispatcher());
+  fake_chan()->SetSendCallback(service_attribute_cb, pw_dispatcher());
   fake_chan()->Receive(kServiceAttributeRequest);
   RunLoopUntilIdle();
 
@@ -770,7 +770,7 @@ TEST_F(ServerTest, ServiceSearchRequest) {
     recv = true;
   };
 
-  fake_chan()->SetSendCallback(cb, dispatcher());
+  fake_chan()->SetSendCallback(cb, pw_dispatcher());
   fake_chan()->Receive(kL2capSearch);
   RunLoopUntilIdle();
 
@@ -849,7 +849,7 @@ TEST_F(ServerTest, ServiceSearchRequestOneOfMany) {
   handles.clear();
   recv = false;
 
-  fake_chan()->SetSendCallback(cb, dispatcher());
+  fake_chan()->SetSendCallback(cb, pw_dispatcher());
   fake_chan()->Receive(kL2capSearchOne);
   RunLoopUntilIdle();
 
@@ -943,7 +943,7 @@ TEST_F(ServerTest, ServiceSearchContinuationState) {
                                       0x00               // Continuation State: none
   );
 
-  fake_chan()->SetSendCallback(send_cb, dispatcher());
+  fake_chan()->SetSendCallback(send_cb, pw_dispatcher());
   fake_chan()->Receive(kL2capSearch);
   RunLoopUntilIdle();
 
@@ -1041,7 +1041,7 @@ TEST_F(ServerTest, ServiceAttributeRequest) {
     }
   };
 
-  fake_chan()->SetSendCallback(send_cb, dispatcher());
+  fake_chan()->SetSendCallback(send_cb, pw_dispatcher());
   fake_chan()->Receive(kRequestAttr);
   RunLoopUntilIdle();
 
@@ -1197,7 +1197,7 @@ TEST_F(ServerTest, SearchAttributeRequest) {
     }
   };
 
-  fake_chan()->SetSendCallback(send_cb, dispatcher());
+  fake_chan()->SetSendCallback(send_cb, pw_dispatcher());
   fake_chan()->Receive(kRequestAttr);
   RunLoopUntilIdle();
 
@@ -1330,7 +1330,7 @@ TEST_F(ServerTest, BrowseGroup) {
     EXPECT_EQ(fit::ok(), status);
   };
 
-  fake_chan()->SetSendCallback(send_cb, dispatcher());
+  fake_chan()->SetSendCallback(send_cb, pw_dispatcher());
   fake_chan()->Receive(kRequestAttr);
   RunLoopUntilIdle();
 

@@ -52,7 +52,7 @@ TEST_F(LESignalingChannelTest, IgnoreEmptyFrame) {
   bool send_cb_called = false;
   auto send_cb = [&send_cb_called](auto) { send_cb_called = true; };
 
-  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
+  fake_chan()->SetSendCallback(std::move(send_cb), pw_dispatcher());
   fake_chan()->Receive(BufferView());
 
   RunLoopUntilIdle();

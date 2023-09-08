@@ -116,7 +116,7 @@ TEST_F(PairingPhaseTest, OnFailureNotifiesListener) {
 TEST_F(PairingPhaseTest, AbortSendsFailureMessageAndNotifiesListener) {
   ByteBufferPtr msg_sent = nullptr;
   fake_chan()->SetSendCallback([&msg_sent](ByteBufferPtr sdu) { msg_sent = std::move(sdu); },
-                               dispatcher());
+                               pw_dispatcher());
   ASSERT_EQ(0, listener()->pairing_error_count());
 
   pairing_phase()->Abort(ErrorCode::kDHKeyCheckFailed);

@@ -99,7 +99,7 @@ TEST_F(ClientTest, ConnectAndQuery) {
           request_tid = ((*packet)[1] << 8) != 0 || (*packet)[2];
           success = true;
         },
-        dispatcher());
+        pw_dispatcher());
 
     // Search for all A2DP sinks, get the:
     //  - Service Class ID list
@@ -178,7 +178,7 @@ TEST_F(ClientTest, TwoQueriesSubsequent) {
           request_tid = ((*packet)[1] << 8) != 0 || (*packet)[2];
           success = true;
         },
-        dispatcher());
+        pw_dispatcher());
 
     // Search for all A2DP sinks, get the:
     //  - Service Class ID list
@@ -253,7 +253,7 @@ TEST_F(ClientTest, TwoQueriesQueued) {
           request_tid = ((*packet)[1] << 8) != 0 || (*packet)[2];
           sent_packets++;
         },
-        dispatcher());
+        pw_dispatcher());
 
     // Search for all A2DP sinks, get the:
     //  - Service Class ID list
@@ -356,7 +356,7 @@ TEST_F(ClientTest, ContinuingResponseRequested) {
                                   packet->view(5 + kSearchExpectedParams.size() + 1));
         fake_chan()->Receive(*rsp_ptr);
       },
-      dispatcher());
+      pw_dispatcher());
 
   // Search for all A2DP sinks, get the:
   //  - Service Class ID list
@@ -409,7 +409,7 @@ TEST_F(ClientTest, NoResults) {
         request_tid = ((*packet)[1] << 8) != 0 || (*packet)[2];
         success = true;
       },
-      dispatcher());
+      pw_dispatcher());
 
   // Search for all A2DP sinks, get the:
   //  - Service Class ID list
@@ -469,7 +469,7 @@ TEST_F(ClientTest, Disconnected) {
         ASSERT_EQ(kSearchExpectedParams, packet->view(5));
         requested = true;
       },
-      dispatcher());
+      pw_dispatcher());
 
   // Search for all A2DP sinks, get the:
   //  - Service Class ID list
@@ -529,7 +529,7 @@ TEST_F(ClientTest, InvalidResponse) {
         request_tid = ((*packet)[1] << 8) != 0 || (*packet)[2];
         requested = true;
       },
-      dispatcher());
+      pw_dispatcher());
 
   // Search for all A2DP sinks, get the:
   //  - Service Class ID list
@@ -586,7 +586,7 @@ TEST_F(ClientTest, Timeout) {
         ASSERT_EQ(kSearchExpectedParams, packet->view(5));
         requested = true;
       },
-      dispatcher());
+      pw_dispatcher());
 
   // Search for all A2DP sinks, get the:
   //  - Service Class ID list
@@ -619,7 +619,7 @@ TEST_F(ClientTest, DestroyClientInErrorResultCallbackDoesNotCrash) {
       };
 
   bool requested = false;
-  fake_chan()->SetSendCallback([&](auto packet) { requested = true; }, dispatcher());
+  fake_chan()->SetSendCallback([&](auto packet) { requested = true; }, pw_dispatcher());
 
   client->ServiceSearchAttributes({profile::kAudioSink},
                                   {kServiceClassIdList, kProtocolDescriptorList}, result_cb);
@@ -647,7 +647,7 @@ TEST_F(ClientTest, DestroyClientInDisconnectedResultCallback) {
       };
 
   bool requested = false;
-  fake_chan()->SetSendCallback([&](auto packet) { requested = true; }, dispatcher());
+  fake_chan()->SetSendCallback([&](auto packet) { requested = true; }, pw_dispatcher());
 
   client->ServiceSearchAttributes({profile::kAudioSink},
                                   {kServiceClassIdList, kProtocolDescriptorList}, result_cb);

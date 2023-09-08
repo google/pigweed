@@ -60,7 +60,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
     ChannelOptions options(l2cap::kLESMPChannelId);
     fake_chan_ = CreateFakeChannel(options);
     fake_chan_->SetSendCallback(fit::bind_member<&SecurityManagerTest::OnDataReceived>(this),
-                                dispatcher());
+                                pw_dispatcher());
 
     // Setup a fake logical link.
     auto link_role = role == Role::kInitiator ? pw::bluetooth::emboss::ConnectionRole::CENTRAL

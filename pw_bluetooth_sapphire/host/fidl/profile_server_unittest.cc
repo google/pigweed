@@ -881,8 +881,7 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectReturnsValidSocket) {
   ASSERT_TRUE(fake_chan.has_value());
   auto fake_chan_ptr = fake_chan.value();
   size_t send_count = 0;
-  fake_chan_ptr->SetSendCallback([&send_count](auto buffer) { send_count++; },
-                                 async_get_default_dispatcher());
+  fake_chan_ptr->SetSendCallback([&send_count](auto buffer) { send_count++; }, pw_dispatcher());
 
   const char write_data[2] = "a";
   size_t bytes_written = 0;
@@ -929,8 +928,7 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectionReceiverReturnsValidSocket) {
   ASSERT_TRUE(fake_chan.has_value());
   auto fake_chan_ptr = fake_chan.value();
   size_t send_count = 0;
-  fake_chan_ptr->SetSendCallback([&send_count](auto buffer) { send_count++; },
-                                 async_get_default_dispatcher());
+  fake_chan_ptr->SetSendCallback([&send_count](auto buffer) { send_count++; }, pw_dispatcher());
 
   const char write_data[2] = "a";
   size_t bytes_written = 0;

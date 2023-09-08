@@ -7,6 +7,8 @@
 
 #include <memory>
 
+#include <pw_async_fuchsia/dispatcher.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
@@ -41,6 +43,8 @@ class FakeChannelTest : public ::gtest::TestLoopFixture {
 
   void SetUp() override;
 
+  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
+
   // Creates a new FakeChannel and returns it. A WeakPtr to the returned
   // channel is stored internally so that the returned channel can be accessed
   // by tests even if its ownership is passed outside of the test harness.
@@ -73,6 +77,8 @@ class FakeChannelTest : public ::gtest::TestLoopFixture {
   // Helper that sets a reception expectation callback with |expected| then sends |packet| if it is
   // not std::nullopt, returning whether |expected| was received when the test loop run until idle.
   bool ExpectAfterMaybeReceiving(std::optional<BufferView> packet, const ByteBuffer& expected);
+
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
 
   FakeChannel::WeakPtr fake_chan_;
 

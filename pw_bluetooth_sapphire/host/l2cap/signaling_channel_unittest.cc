@@ -89,7 +89,8 @@ class SignalingChannelTest : public testing::FakeChannelTest {
     options.conn_handle = kTestHandle;
 
     fake_channel_inst_ = CreateFakeChannel(options);
-    sig_ = std::make_unique<TestSignalingChannel>(fake_channel_inst_->GetWeakPtr(), pw_dispatcher_);
+    sig_ =
+        std::make_unique<TestSignalingChannel>(fake_channel_inst_->GetWeakPtr(), pw_dispatcher());
   }
 
   void TearDown() override {
@@ -98,6 +99,8 @@ class SignalingChannelTest : public testing::FakeChannelTest {
     fake_channel_inst_ = nullptr;
     DestroySig();
   }
+
+  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
 
   TestSignalingChannel* sig() const { return sig_.get(); }
 
@@ -117,7 +120,7 @@ TEST_F(SignalingChannelTest, IgnoreEmptyFrame) {
   bool send_cb_called = false;
   auto send_cb = [&send_cb_called](auto) { send_cb_called = true; };
 
-  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
+  fake_chan()->SetSendCallback(std::move(send_cb), pw_dispatcher());
   fake_chan()->Receive(BufferView());
 
   RunLoopUntilIdle();
@@ -183,7 +186,7 @@ TEST_F(SignalingChannelTest, RejectNotUnderstoodWithResponder) {
     cb_called = true;
     EXPECT_TRUE(ContainersEqual(expected, *packet));
   };
-  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
+  fake_chan()->SetSendCallback(std::move(send_cb), pw_dispatcher());
 
   TestSignalingChannel::ResponderImpl responder(sig(), kCommandCode, kTestId);
   responder.RejectNotUnderstood();
@@ -212,7 +215,7 @@ TEST_F(SignalingChannelTest, RejectInvalidCIdWithResponder) {
     cb_called = true;
     EXPECT_TRUE(ContainersEqual(expected, *packet));
   };
-  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
+  fake_chan()->SetSendCallback(std::move(send_cb), pw_dispatcher());
 
   TestSignalingChannel::ResponderImpl responder(sig(), kCommandCode, kTestId);
   responder.RejectInvalidChannelId(kLocalCId, kRemoteCId);
@@ -306,7 +309,7 @@ TEST_F(SignalingChannelTest, DoNotRejectUnsolicitedResponse) {
 
   size_t send_count = 0;
   auto send_cb = [&](auto) { send_count++; };
-  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
+  fake_chan()->SetSendCallback(std::move(send_cb), pw_dispatcher());
 
   fake_chan()->Receive(cmd);
   RunLoopUntilIdle();
@@ -326,7 +329,7 @@ TEST_F(SignalingChannelTest, RejectRemoteResponseWithWrongType) {
   const StaticByteBuffer req_data('P', 'W', 'N');
 
   bool tx_success = false;
-  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, dispatcher());
+  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, pw_dispatcher());
 
   bool echo_cb_called = false;
   EXPECT_TRUE(sig()->SendRequest(kEchoRequest, req_data, [&echo_cb_called](auto, auto&) {
@@ -348,7 +351,7 @@ TEST_F(SignalingChannelTest, RejectRemoteResponseWithWrongType) {
       [&reject_rsp, &reject_sent](auto cb_packet) {
         reject_sent = ContainersEqual(reject_rsp, *cb_packet);
       },
-      dispatcher());
+      pw_dispatcher());
 
   fake_chan()->Receive(rsp_invalid_id);
 
@@ -373,7 +376,7 @@ TEST_F(SignalingChannelTest, ReuseCommandIdsUntilExhausted) {
       EXPECT_EQ(req_count, sent_sig_pkt.header().id);
     }
   };
-  fake_chan()->SetSendCallback(std::move(check_header_id), dispatcher());
+  fake_chan()->SetSendCallback(std::move(check_header_id), pw_dispatcher());
 
   const StaticByteBuffer req_data('y', 'o', 'o', 'o', 'o', '\0');
 
@@ -406,7 +409,7 @@ TEST_F(SignalingChannelTest, ReuseCommandIdsUntilExhausted) {
 
 // Ensure that a response handler may destroy the signaling channel.
 TEST_F(SignalingChannelTest, ResponseHandlerThatDestroysSigDoesNotCrash) {
-  fake_chan()->SetSendCallback([](auto) {}, dispatcher());
+  fake_chan()->SetSendCallback([](auto) {}, pw_dispatcher());
 
   const StaticByteBuffer req_data('h', 'e', 'l', 'l', 'o');
   bool rx_success = false;
@@ -442,7 +445,7 @@ TEST_F(SignalingChannelTest, RemoteRejectionPassedToHandler) {
       0x00, 0x00);
 
   bool tx_success = false;
-  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, dispatcher());
+  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, pw_dispatcher());
 
   const StaticByteBuffer req_data('h', 'e', 'l', 'l', 'o');
   bool rx_success = false;
@@ -467,7 +470,7 @@ TEST_F(SignalingChannelTest, RemoteRejectionPassedToHandler) {
 
 TEST_F(SignalingChannelTest, HandlerCompletedByResponseNotCalledAgainAfterRtxTimeout) {
   bool tx_success = false;
-  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, dispatcher());
+  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, pw_dispatcher());
 
   const StaticByteBuffer req_data('h', 'e', 'l', 'l', 'o');
   int rx_cb_count = 0;
@@ -500,7 +503,7 @@ TEST_F(SignalingChannelTest, CallHandlerCalledAfterMaxNumberOfRtxTimeoutRetransm
     EXPECT_EQ(pkt.header().id, 1u);
     send_cb_count++;
   };
-  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
+  fake_chan()->SetSendCallback(std::move(send_cb), pw_dispatcher());
 
   const StaticByteBuffer req_data('h', 'e', 'l', 'l', 'o');
   bool rx_cb_called = false;
@@ -541,7 +544,7 @@ TEST_F(SignalingChannelTest, TwoResponsesToARetransmittedOutboundRequest) {
     EXPECT_EQ(pkt.header().id, 1u);
     send_cb_count++;
   };
-  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
+  fake_chan()->SetSendCallback(std::move(send_cb), pw_dispatcher());
 
   const StaticByteBuffer req_data('h', 'e', 'l', 'l', 'o');
   size_t rx_cb_count = 0;
@@ -575,7 +578,7 @@ TEST_F(SignalingChannelTest, TwoResponsesToARetransmittedOutboundRequest) {
 // response.
 TEST_F(SignalingChannelTest, ExpectAdditionalResponseExtendsRtxTimeoutToErtxTimeout) {
   bool tx_success = false;
-  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, dispatcher());
+  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, pw_dispatcher());
 
   const StaticByteBuffer req_data{'h', 'e', 'l', 'l', 'o'};
   int rx_cb_calls = 0;
@@ -670,7 +673,7 @@ TEST_F(SignalingChannelTest, DoNotRejectRemoteResponseInvalidId) {
   const BufferView req_data = rsp_invalid_id.view(sizeof(CommandHeader));
 
   bool tx_success = false;
-  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, dispatcher());
+  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, pw_dispatcher());
 
   bool echo_cb_called = false;
   EXPECT_TRUE(sig()->SendRequest(kEchoRequest, req_data, [&echo_cb_called](auto, auto&) {
@@ -683,7 +686,7 @@ TEST_F(SignalingChannelTest, DoNotRejectRemoteResponseInvalidId) {
 
   bool reject_sent = false;
   fake_chan()->SetSendCallback([&reject_sent](auto cb_packet) { reject_sent = true; },
-                               dispatcher());
+                               pw_dispatcher());
 
   fake_chan()->Receive(rsp_invalid_id);
 

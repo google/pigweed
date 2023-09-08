@@ -40,7 +40,7 @@ bool FakeChannelTest::ExpectAfterMaybeReceiving(std::optional<BufferView> packet
     success = ContainersEqual(expected, *cb_packet);
   };
 
-  fake_chan()->SetSendCallback(cb, dispatcher());
+  fake_chan()->SetSendCallback(cb, pw_dispatcher());
   if (packet.has_value()) {
     fake_chan()->Receive(packet.value());
   }

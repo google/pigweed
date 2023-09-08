@@ -56,7 +56,7 @@ class ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeChanne
           last_packet_.emplace(maybe_reader.value());
           last_packet_internal_ = std::move(sent_packet);
         },
-        async_get_default_dispatcher());
+        pw_dispatcher());
     stage_1_ = std::make_unique<ScStage1JustWorksNumericComparison>(
         listener_->as_weak_ptr(), args.role, args.local_pub_key_x, args.peer_pub_key_x, args.method,
         sm_chan_->GetWeakPtr(),

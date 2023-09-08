@@ -246,7 +246,7 @@ class HostServerPairingTest : public HostServerTest {
   // frees. These failures mostly stem from the Host server notifying the client upon pairing
   // delegate destruction, which is not important behavior for many tests.
   void TearDown() override {
-    fake_chan_->SetSendCallback(/*callback=*/nullptr, /*dispatcher=*/nullptr);
+    fake_chan_->SetSendCallback(/*callback=*/nullptr);
     host_client_ptr().Unbind();
     HostServerTest::TearDown();
   }
@@ -626,7 +626,7 @@ TEST_F(HostServerPairingTest, InitiatePairingLeDefault) {
     ASSERT_EQ(*sent, kExpected);
     pairing_request_sent = true;
   };
-  fake_chan()->SetSendCallback(expect_default_bytebuffer, dispatcher());
+  fake_chan()->SetSendCallback(expect_default_bytebuffer, pw_dispatcher());
 
   std::optional<fpromise::result<void, fsys::Error>> pair_result;
   fsys::PairingOptions opts;
@@ -660,7 +660,7 @@ TEST_F(HostServerPairingTest, InitiatePairingLeEncrypted) {
     ASSERT_EQ(*sent, kExpected);
     pairing_request_sent = true;
   };
-  fake_chan()->SetSendCallback(expect_default_bytebuffer, dispatcher());
+  fake_chan()->SetSendCallback(expect_default_bytebuffer, pw_dispatcher());
 
   std::optional<fpromise::result<void, fsys::Error>> pair_result;
   fsys::PairingOptions opts;
@@ -697,7 +697,7 @@ TEST_F(HostServerPairingTest, InitiatePairingNonBondableLe) {
     ASSERT_EQ(*sent, kExpected);
     pairing_request_sent = true;
   };
-  fake_chan()->SetSendCallback(expect_default_bytebuffer, dispatcher());
+  fake_chan()->SetSendCallback(expect_default_bytebuffer, pw_dispatcher());
 
   std::optional<fpromise::result<void, fsys::Error>> pair_result;
   fsys::PairingOptions opts;

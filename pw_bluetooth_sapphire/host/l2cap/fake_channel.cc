@@ -16,7 +16,6 @@ FakeChannel::FakeChannel(ChannelId id, ChannelId remote_id, hci_spec::Connection
     : Channel(id, remote_id, link_type, handle, info, max_tx_queued),
       handle_(handle),
       fragmenter_(handle),
-      send_dispatcher_(nullptr),
       activate_fails_(false),
       link_error_(false),
       acl_priority_fails_(false),
@@ -33,9 +32,11 @@ void FakeChannel::Receive(const ByteBuffer& data) {
   }
 }
 
-void FakeChannel::SetSendCallback(SendCallback callback, async_dispatcher_t* dispatcher) {
-  send_cb_ = std::move(callback);
-  send_dispatcher_ = dispatcher;
+void FakeChannel::SetSendCallback(SendCallback callback) { send_cb_ = std::move(callback); }
+
+void FakeChannel::SetSendCallback(SendCallback callback, pw::async::Dispatcher& dispatcher) {
+  SetSendCallback(std::move(callback));
+  send_dispatcher_.emplace(dispatcher);
 }
 
 void FakeChannel::SetLinkErrorCallback(LinkErrorCallback callback) {
@@ -43,11 +44,9 @@ void FakeChannel::SetLinkErrorCallback(LinkErrorCallback callback) {
 }
 
 void FakeChannel::SetSecurityCallback(SecurityUpgradeCallback callback,
-                                      async_dispatcher_t* dispatcher) {
-  BT_DEBUG_ASSERT(static_cast<bool>(callback) == static_cast<bool>(dispatcher));
-
+                                      pw::async::Dispatcher& dispatcher) {
   security_cb_ = std::move(callback);
-  security_dispatcher_ = dispatcher;
+  security_dispatcher_.emplace(dispatcher);
 }
 
 void FakeChannel::Close() {
@@ -104,8 +103,11 @@ bool FakeChannel::Send(ByteBufferPtr sdu) {
   }
 
   if (send_dispatcher_) {
-    async::PostTask(send_dispatcher_, [cb = send_cb_.share(), sdu = std::move(sdu)]() mutable {
-      cb(std::move(sdu));
+    send_dispatcher_->Post([cb = send_cb_.share(), sdu = std::move(sdu)](
+                               pw::async::Context /*ctx*/, pw::Status status) mutable {
+      if (status.ok()) {
+        cb(std::move(sdu));
+      }
     });
   } else {
     send_cb_(std::move(sdu));
@@ -116,9 +118,12 @@ bool FakeChannel::Send(ByteBufferPtr sdu) {
 
 void FakeChannel::UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback) {
   BT_ASSERT(security_dispatcher_);
-  async::PostTask(security_dispatcher_,
-                  [cb = std::move(callback), f = security_cb_.share(), handle = handle_,
-                   level]() mutable { f(handle, level, std::move(cb)); });
+  security_dispatcher_->Post([cb = std::move(callback), f = security_cb_.share(), handle = handle_,
+                              level](pw::async::Context /*ctx*/, pw::Status status) mutable {
+    if (status.ok()) {
+      f(handle, level, std::move(cb));
+    }
+  });
 }
 
 void FakeChannel::RequestAclPriority(pw::bluetooth::AclPriority priority,
