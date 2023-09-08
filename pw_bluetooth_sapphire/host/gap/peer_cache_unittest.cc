@@ -8,6 +8,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <pw_async_fuchsia/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_class.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
@@ -81,7 +82,7 @@ class PeerCacheTest : public ::gtest::TestLoopFixture {
  public:
   void SetUp() override {
     TestLoopFixture::SetUp();
-    cache_ = std::make_unique<PeerCache>();
+    cache_ = std::make_unique<PeerCache>(pw_dispatcher_);
   }
 
   void TearDown() override {
@@ -109,6 +110,7 @@ class PeerCacheTest : public ::gtest::TestLoopFixture {
   Peer* peer() { return peer_; }
 
  private:
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
   std::unique_ptr<PeerCache> cache_;
   Peer* peer_;
 };
@@ -1389,7 +1391,8 @@ class PeerCacheExpirationTest : public ::gtest::TestLoopFixture {
   int peers_removed() const { return peers_removed_; }
 
  private:
-  PeerCache cache_;
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
+  PeerCache cache_{pw_dispatcher_};
   DeviceAddress peer_addr_;
   DeviceAddress peer_addr_alias_;
   PeerId peer_id_;

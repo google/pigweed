@@ -409,8 +409,8 @@ class AdapterImpl final : public Adapter {
   // Uniquely identifies this adapter on the current system.
   AdapterId identifier_;
 
-  async_dispatcher_t* dispatcher_;
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_;
+  async_dispatcher_t* dispatcher_ = async_get_default_dispatcher();
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher_};
   hci::Transport::WeakPtr hci_;
 
   // Callback invoked to notify clients when the underlying transport is closed.
@@ -439,7 +439,7 @@ class AdapterImpl final : public Adapter {
 
   // Provides access to discovered, connected, and/or bonded remote Bluetooth
   // devices.
-  PeerCache peer_cache_;
+  PeerCache peer_cache_{pw_dispatcher_};
 
   // L2CAP layer used by GAP. This must be destroyed after the following members because they raw
   // pointers to this member.
@@ -482,8 +482,6 @@ class AdapterImpl final : public Adapter {
 AdapterImpl::AdapterImpl(hci::Transport::WeakPtr hci, gatt::GATT::WeakPtr gatt,
                          std::unique_ptr<l2cap::ChannelManager> l2cap)
     : identifier_(Random<AdapterId>()),
-      dispatcher_(async_get_default_dispatcher()),
-      pw_dispatcher_(dispatcher_),
       hci_(std::move(hci)),
       init_state_(State::kNotInitialized),
       l2cap_(std::move(l2cap)),

@@ -148,6 +148,7 @@ constexpr uint16_t kLEInitialConnIntervalCodedMax = 0x0078;  // 150 ms
 // Time interval that must expire before a temporary device is removed from the
 // cache.
 constexpr zx::duration kCacheTimeout = zx::sec(60);
+constexpr pw::chrono::SystemClock::duration kPwCacheTimeout = std::chrono::seconds(60);
 
 // Time interval between random address changes when privacy is enabled (see
 // T_GAP(private_addr_int) in 5.0 Vol 3, Part C, Appendix A)

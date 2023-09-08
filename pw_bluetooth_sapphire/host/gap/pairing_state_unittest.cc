@@ -83,7 +83,7 @@ class PairingStateTest : public TestBase {
     TestBase::SetUp();
     InitializeACLDataChannel();
 
-    peer_cache_ = std::make_unique<PeerCache>();
+    peer_cache_ = std::make_unique<PeerCache>(pw_dispatcher());
     peer_ = peer_cache_->NewPeer(kPeerAddress, /*connectable=*/true);
 
     auth_request_count_ = 0;

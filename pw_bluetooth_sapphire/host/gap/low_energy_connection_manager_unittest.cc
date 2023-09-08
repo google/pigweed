@@ -94,7 +94,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     settings.ApplyLegacyLEConfig();
     test_device()->set_settings(settings);
 
-    peer_cache_ = std::make_unique<PeerCache>();
+    peer_cache_ = std::make_unique<PeerCache>(pw_dispatcher_);
     l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>();
 
     const hci::CommandChannel::WeakPtr cmd_weak = cmd_channel()->AsWeakPtr();

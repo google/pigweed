@@ -47,7 +47,7 @@ class BrEdrInterrogatorTest : public TestingBase {
   void SetUp() override {
     TestingBase::SetUp();
 
-    peer_cache_ = std::make_unique<PeerCache>();
+    peer_cache_ = std::make_unique<PeerCache>(pw_dispatcher());
     peer_ = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
     EXPECT_FALSE(peer_->name());
     EXPECT_FALSE(peer_->version());

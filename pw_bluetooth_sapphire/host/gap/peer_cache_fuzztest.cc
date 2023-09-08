@@ -6,6 +6,7 @@
 #include <lib/async-loop/default.h>
 
 #include <fuzzer/FuzzedDataProvider.h>
+#include <pw_async_fuchsia/dispatcher.h>
 #include <pw_random/fuzzer.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
@@ -15,11 +16,13 @@
 // Lightweight harness that adds a single peer to a PeerCache and mutates it with fuzz inputs
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   async::Loop loop(&kAsyncLoopConfigAttachToCurrentThread);
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher(loop.dispatcher());
+
   FuzzedDataProvider fuzzed_data_provider(data, size);
   pw::random::FuzzerRandomGenerator rng(&fuzzed_data_provider);
   bt::set_random_generator(&rng);
 
-  bt::gap::PeerCache peer_cache;
+  bt::gap::PeerCache peer_cache(pw_dispatcher);
   bt::gap::Peer *const peer =
       peer_cache.NewPeer(bt::testing::MakePublicDeviceAddress(fuzzed_data_provider),
                          fuzzed_data_provider.ConsumeBool());

@@ -13,6 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/smart_task.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bonding_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/identity_resolving_list.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
@@ -38,7 +39,7 @@ class PeerCache final {
   using PeerCallback = fit::function<void(const Peer& peer)>;
   using PeerIdCallback = fit::function<void(PeerId identifier)>;
 
-  PeerCache() = default;
+  PeerCache(pw::async::Dispatcher& dispatcher) : pw_dispatcher_(dispatcher) {}
 
   // Creates a new peer entry using the given parameters, and returns a
   // (non-owning) pointer to that peer. The caller must not retain the pointer
@@ -155,8 +156,17 @@ class PeerCache final {
  private:
   class PeerRecord final {
    public:
-    PeerRecord(std::unique_ptr<Peer> peer, fit::closure remove_peer_callback)
-        : peer_(std::move(peer)), removal_task_(std::move(remove_peer_callback)) {}
+    PeerRecord(std::unique_ptr<Peer> peer, fit::closure remove_peer_callback,
+               pw::async::Dispatcher& dispatcher)
+        : peer_(std::move(peer)),
+          remove_peer_callback_(std::move(remove_peer_callback)),
+          removal_task_(dispatcher) {
+      removal_task_.set_function([this](pw::async::Context /*ctx*/, pw::Status status) {
+        if (status.ok() && remove_peer_callback_) {
+          remove_peer_callback_();
+        }
+      });
+    }
 
     // The copy and move ctors cannot be implicitly defined, since
     // async::TaskClosure does not support those operations. Nor is any
@@ -168,11 +178,12 @@ class PeerCache final {
 
     // Returns a pointer to removal_task_, which can be used to (re-)schedule or
     // cancel |remove_peer_callback|.
-    async::TaskClosure* removal_task() { return &removal_task_; }
+    SmartTask* removal_task() { return &removal_task_; }
 
    private:
     std::unique_ptr<Peer> peer_;
-    async::TaskClosure removal_task_;
+    fit::closure remove_peer_callback_;
+    SmartTask removal_task_;
   };
 
   // Create and track a record of a remote peer with a given |identifier|,
@@ -208,6 +219,8 @@ class PeerCache final {
   // resolved, if it is resolvable. If found, returns a valid peer ID;
   // otherwise returns std::nullopt.
   std::optional<PeerId> FindIdByAddress(const DeviceAddress& address) const;
+
+  pw::async::Dispatcher& pw_dispatcher_;
 
   // Mapping from unique peer IDs to PeerRecords.
   // Owns the corresponding Peers.

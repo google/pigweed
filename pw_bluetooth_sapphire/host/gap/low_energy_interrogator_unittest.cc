@@ -36,7 +36,7 @@ class LowEnergyInterrogatorTest : public TestingBase {
   void SetUp() override {
     TestingBase::SetUp();
 
-    peer_cache_ = std::make_unique<PeerCache>();
+    peer_cache_ = std::make_unique<PeerCache>(pw_dispatcher());
 
     peer_ = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
     ASSERT_TRUE(peer_->le());

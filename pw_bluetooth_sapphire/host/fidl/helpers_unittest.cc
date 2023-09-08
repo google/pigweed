@@ -738,9 +738,10 @@ TEST(HelpersTest, SecurityLevelFromBadFidlFails) {
 
 TEST(HelpersTest, PeerToFidlMandatoryFields) {
   // Required by PeerCache expiry functions.
-  async::TestLoop dispatcher;
+  async::TestLoop test_loop;
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher(test_loop.dispatcher());
 
-  bt::gap::PeerCache cache;
+  bt::gap::PeerCache cache(pw_dispatcher);
   bt::DeviceAddress addr(bt::DeviceAddress::Type::kLEPublic, {0, 1, 2, 3, 4, 5});
   auto* peer = cache.NewPeer(addr, /*connectable=*/true);
   auto fidl = PeerToFidl(*peer);
@@ -768,7 +769,8 @@ TEST(HelpersTest, PeerToFidlMandatoryFields) {
 
 TEST(HelpersTest, PeerToFidlOptionalFields) {
   // Required by PeerCache expiry functions.
-  async::TestLoop dispatcher;
+  async::TestLoop test_loop;
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher(test_loop.dispatcher());
 
   const int8_t kRssi = 5;
   const int8_t kTxPower = 6;
@@ -780,7 +782,7 @@ TEST(HelpersTest, PeerToFidlOptionalFields) {
       );
   const std::vector kBrEdrServices = {bt::UUID(uint16_t{0x110a}), bt::UUID(uint16_t{0x110b})};
 
-  bt::gap::PeerCache cache;
+  bt::gap::PeerCache cache(pw_dispatcher);
   bt::DeviceAddress addr(bt::DeviceAddress::Type::kLEPublic, {0, 1, 2, 3, 4, 5});
   auto* peer = cache.NewPeer(addr, /*connectable=*/true);
   peer->MutLe().SetAdvertisingData(kRssi, kAdv, zx::time());

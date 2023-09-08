@@ -86,7 +86,7 @@ class BrEdrDiscoveryManagerTest : public TestingBase {
   BrEdrDiscoveryManager* discovery_manager() const { return discovery_manager_.get(); }
 
  private:
-  PeerCache peer_cache_;
+  PeerCache peer_cache_{pw_dispatcher()};
   std::unique_ptr<BrEdrDiscoveryManager> discovery_manager_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDiscoveryManagerTest);
