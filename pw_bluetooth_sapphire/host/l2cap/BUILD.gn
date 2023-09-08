@@ -121,6 +121,7 @@ source_set("testing") {
     "//src/connectivity/bluetooth/core/bt-host/testing:test_helpers",
     "//src/lib/testing/loop_fixture",
     "//third_party/googletest:gtest",
+    "//third_party/pigweed:pw_async_heap_dispatcher",
     "//third_party/pigweed:pw_bluetooth",
   ]
 }

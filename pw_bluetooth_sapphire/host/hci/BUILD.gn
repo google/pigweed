@@ -65,6 +65,8 @@ source_set("testing") {
     "fake_sco_connection.h",
   ]
 
+  deps = [ "//third_party/pigweed:pw_async_heap_dispatcher" ]
+
   public_deps = [ ":hci" ]
 }
 
