@@ -68,6 +68,8 @@ class Phase2LegacyTest : public l2cap::testing::FakeChannelTest {
   Phase2LegacyTest() = default;
   ~Phase2LegacyTest() override = default;
 
+  pw::async::HeapDispatcher& heap_dispatcher() { return heap_dispatcher_; }
+
  protected:
   void SetUp() override { NewPhase2Legacy(); }
 
@@ -157,6 +159,7 @@ class Phase2LegacyTest : public l2cap::testing::FakeChannelTest {
   Phase2LegacyArgs phase_args_;
   int phase_2_complete_count_ = 0;
   UInt128 stk_;
+  pw::async::HeapDispatcher heap_dispatcher_{pw_dispatcher()};
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase2LegacyTest);
 };
@@ -353,7 +356,11 @@ TEST_F(Phase2LegacyTest, JustWorksUserConfirmationRejectedPairingFails) {
     confirmation_requested = true;
     cb(false);
   });
-  async::PostTask(dispatcher(), [this] { phase_2_legacy()->Start(); });
+  heap_dispatcher().Post([this](pw::async::Context /*ctx*/, pw::Status status) {
+    if (status.ok()) {
+      phase_2_legacy()->Start();
+    }
+  });
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
   ASSERT_TRUE(Expect(kExpectedFailure));
@@ -372,7 +379,11 @@ TEST_F(Phase2LegacyTest, PasskeyInputRejectedPairingFails) {
     const int64_t kGenericNegativeInt = -12;
     cb(kGenericNegativeInt);
   });
-  async::PostTask(dispatcher(), [this] { phase_2_legacy()->Start(); });
+  heap_dispatcher().Post([this](pw::async::Context /*ctx*/, pw::Status status) {
+    if (status.ok()) {
+      phase_2_legacy()->Start();
+    }
+  });
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kPasskeyEntryFailed};
   ASSERT_TRUE(Expect(kExpectedFailure));
@@ -391,7 +402,11 @@ TEST_F(Phase2LegacyTest, PasskeyDisplayRejectedPairingFails) {
         confirmation_requested = true;
         cb(false);
       });
-  async::PostTask(dispatcher(), [this] { phase_2_legacy()->Start(); });
+  heap_dispatcher().Post([this](pw::async::Context /*ctx*/, pw::Status status) {
+    if (status.ok()) {
+      phase_2_legacy()->Start();
+    }
+  });
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
   ASSERT_TRUE(Expect(kExpectedFailure));

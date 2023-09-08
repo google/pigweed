@@ -57,6 +57,8 @@ class Phase3Test : public l2cap::testing::FakeChannelTest {
   Phase3Test() = default;
   ~Phase3Test() override = default;
 
+  pw::async::HeapDispatcher& heap_dispatcher() { return heap_dispatcher_; }
+
  protected:
   void SetUp() override { NewPhase3(); }
 
@@ -167,6 +169,7 @@ class Phase3Test : public l2cap::testing::FakeChannelTest {
   std::unique_ptr<Phase3> phase_3_;
   int phase_3_complete_count_ = 0;
   PairingData pairing_data_;
+  pw::async::HeapDispatcher heap_dispatcher_{pw_dispatcher()};
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase3Test);
 };
@@ -455,7 +458,11 @@ TEST_F(Phase3Test, AbortsIfLocalIdKeyIsRemoved) {
   NewPhase3(args);
   listener()->set_identity_info(std::nullopt);
 
-  async::PostTask(dispatcher(), [this] { phase_3()->Start(); });
+  heap_dispatcher().Post([this](pw::async::Context /*ctx*/, pw::Status status) {
+    if (status.ok()) {
+      phase_3()->Start();
+    }
+  });
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
   ASSERT_TRUE(Expect(kExpectedFailure));
