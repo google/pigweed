@@ -15,8 +15,6 @@
 namespace bt::sdp {
 namespace {
 
-using TestingBase = ::gtest::TestLoopFixture;
-
 constexpr PeerId kDeviceOne(1), kDeviceTwo(2), kDeviceThree(3);
 
 class FakeClient : public Client {
@@ -49,10 +47,12 @@ class FakeClient : public Client {
   fit::closure destroyed_cb_;
 };
 
-class ServiceDiscovererTest : public TestingBase {
+class ServiceDiscovererTest : public ::gtest::TestLoopFixture {
  public:
   ServiceDiscovererTest() = default;
   ~ServiceDiscovererTest() = default;
+
+  pw::async::HeapDispatcher &heap_dispatcher() { return heap_dispatcher_; }
 
  protected:
   void SetUp() override {
@@ -74,6 +74,8 @@ class ServiceDiscovererTest : public TestingBase {
 
  private:
   size_t clients_created_, clients_destroyed_;
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
+  pw::async::HeapDispatcher heap_dispatcher_{pw_dispatcher_};
 };
 
 // When there are no searches registered, it just disconnects the client.
@@ -106,12 +108,16 @@ TEST_F(ServiceDiscovererTest, NoResults) {
 
   std::vector<std::unordered_set<UUID>> searches;
 
-  client->SetServiceSearchAttributesCallback([dispatcher = dispatcher(), &searches](
-                                                 auto pattern, auto attributes, auto callback) {
-    searches.emplace_back(std::move(pattern));
-    async::PostTask(dispatcher,
-                    [cb = std::move(callback)]() { cb(fit::error(Error(HostError::kNotFound))); });
-  });
+  client->SetServiceSearchAttributesCallback(
+      [dispatcher = heap_dispatcher(), &searches](auto pattern, auto attributes,
+                                                  auto callback) mutable {
+        searches.emplace_back(std::move(pattern));
+        dispatcher.Post([cb = std::move(callback)](pw::async::Context /*ctx*/, pw::Status status) {
+          if (status.ok()) {
+            cb(fit::error(Error(HostError::kNotFound)));
+          }
+        });
+      });
 
   discoverer.StartServiceDiscovery(kDeviceOne, std::move(client));
 
@@ -181,12 +187,16 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
 
   std::vector<std::unordered_set<UUID>> searches;
 
-  client->SetServiceSearchAttributesCallback([this, &searches](auto pattern, auto attributes,
-                                                               auto callback) {
-    searches.emplace_back(std::move(pattern));
-    async::PostTask(dispatcher(),
-                    [cb = std::move(callback)]() { cb(fit::error(Error(HostError::kNotFound))); });
-  });
+  client->SetServiceSearchAttributesCallback(
+      [dispatcher = heap_dispatcher(), &searches](auto pattern, auto attributes,
+                                                  auto callback) mutable {
+        searches.emplace_back(std::move(pattern));
+        dispatcher.Post([cb = std::move(callback)](pw::async::Context /*ctx*/, pw::Status status) {
+          if (status.ok()) {
+            cb(fit::error(Error(HostError::kNotFound)));
+          }
+        });
+      });
 
   discoverer.StartServiceDiscovery(kDeviceOne, std::move(client));
 
@@ -200,40 +210,47 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
 
   searches.clear();
 
-  client->SetServiceSearchAttributesCallback(
-      [cb_dispatcher = dispatcher(), &searches](auto pattern, auto attributes, auto callback) {
-        searches.emplace_back(pattern);
-        if (pattern.count(profile::kSerialPort)) {
-          async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
-            ServiceSearchAttributeResponse rsp;
-            rsp.SetAttribute(0, kServiceId, DataElement(UUID(uint16_t{1})));
-            // This would normally be a element list. uint32_t for Testing.
-            rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t{1}));
-
-            if (!cb(fit::ok(std::cref(rsp.attributes(0))))) {
-              return;
-            }
-            cb(fit::error(Error(HostError::kNotFound)));
-          });
-        } else if (pattern.count(profile::kAudioSink)) {
-          async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
-            ServiceSearchAttributeResponse rsp;
-            // This would normally be a element list. uint32_t for Testing.
-            rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t{1}));
-
-            if (!cb(fit::ok(std::cref(rsp.attributes(0))))) {
-              return;
-            }
-            cb(fit::error(Error(HostError::kNotFound)));
-          });
-        } else {
-          std::cerr << "Searched for " << pattern.size() << std::endl;
-          for (auto it : pattern) {
-            std::cerr << it.ToString() << std::endl;
-          }
-          FAIL() << "Unexpected search called";
+  client->SetServiceSearchAttributesCallback([cb_dispatcher = heap_dispatcher(), &searches](
+                                                 auto pattern, auto attributes,
+                                                 auto callback) mutable {
+    searches.emplace_back(pattern);
+    if (pattern.count(profile::kSerialPort)) {
+      cb_dispatcher.Post([cb = std::move(callback)](pw::async::Context /*ctx*/, pw::Status status) {
+        if (!status.ok()) {
+          return;
         }
+        ServiceSearchAttributeResponse rsp;
+        rsp.SetAttribute(0, kServiceId, DataElement(UUID(uint16_t{1})));
+        // This would normally be a element list. uint32_t for Testing.
+        rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t{1}));
+
+        if (!cb(fit::ok(std::cref(rsp.attributes(0))))) {
+          return;
+        }
+        cb(fit::error(Error(HostError::kNotFound)));
       });
+    } else if (pattern.count(profile::kAudioSink)) {
+      cb_dispatcher.Post([cb = std::move(callback)](pw::async::Context /*ctx*/, pw::Status status) {
+        if (!status.ok()) {
+          return;
+        }
+        ServiceSearchAttributeResponse rsp;
+        // This would normally be a element list. uint32_t for Testing.
+        rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t{1}));
+
+        if (!cb(fit::ok(std::cref(rsp.attributes(0))))) {
+          return;
+        }
+        cb(fit::error(Error(HostError::kNotFound)));
+      });
+    } else {
+      std::cerr << "Searched for " << pattern.size() << std::endl;
+      for (auto it : pattern) {
+        std::cerr << it.ToString() << std::endl;
+      }
+      FAIL() << "Unexpected search called";
+    }
+  });
 
   discoverer.StartServiceDiscovery(kDeviceTwo, std::move(client));
 
@@ -252,32 +269,36 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
 
   client = GetFakeClient();
 
-  client->SetServiceSearchAttributesCallback(
-      [cb_dispatcher = dispatcher(), &searches](auto pattern, auto attributes, auto callback) {
-        searches.emplace_back(pattern);
-        if (pattern.count(profile::kAudioSink)) {
-          async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
-            ServiceSearchAttributeResponse rsp;
-            // This would normally be a element list. uint32_t for Testing.
-            rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t{1}));
-            rsp.SetAttribute(1, kProtocolDescriptorList, DataElement(uint32_t{2}));
-
-            if (!cb(fit::ok(std::cref(rsp.attributes(0))))) {
-              return;
-            }
-            if (!cb(fit::ok(std::cref(rsp.attributes(1))))) {
-              return;
-            }
-            cb(fit::error(Error(HostError::kNotFound)));
-          });
-        } else {
-          std::cerr << "Searched for " << pattern.size() << std::endl;
-          for (auto it : pattern) {
-            std::cerr << it.ToString() << std::endl;
-          }
-          FAIL() << "Unexpected search called";
+  client->SetServiceSearchAttributesCallback([cb_dispatcher = heap_dispatcher(), &searches](
+                                                 auto pattern, auto attributes,
+                                                 auto callback) mutable {
+    searches.emplace_back(pattern);
+    if (pattern.count(profile::kAudioSink)) {
+      cb_dispatcher.Post([cb = std::move(callback)](pw::async::Context /*ctx*/, pw::Status status) {
+        if (!status.ok()) {
+          return;
         }
+        ServiceSearchAttributeResponse rsp;
+        // This would normally be a element list. uint32_t for Testing.
+        rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t{1}));
+        rsp.SetAttribute(1, kProtocolDescriptorList, DataElement(uint32_t{2}));
+
+        if (!cb(fit::ok(std::cref(rsp.attributes(0))))) {
+          return;
+        }
+        if (!cb(fit::ok(std::cref(rsp.attributes(1))))) {
+          return;
+        }
+        cb(fit::error(Error(HostError::kNotFound)));
       });
+    } else {
+      std::cerr << "Searched for " << pattern.size() << std::endl;
+      for (auto it : pattern) {
+        std::cerr << it.ToString() << std::endl;
+      }
+      FAIL() << "Unexpected search called";
+    }
+  });
 
   discoverer.StartServiceDiscovery(kDeviceThree, std::move(client));
 
@@ -306,11 +327,14 @@ TEST_F(ServiceDiscovererTest, SingleSearchDifferentPeers) {
 
   std::vector<std::unordered_set<UUID>> searches;
 
-  auto search_attributes_cb = [cb_dispatcher = dispatcher(), &searches](
-                                  auto pattern, auto attributes, auto callback) {
+  auto search_attributes_cb = [cb_dispatcher = heap_dispatcher(), &searches](
+                                  auto pattern, auto attributes, auto callback) mutable {
     searches.emplace_back(pattern);
     if (pattern.count(profile::kSerialPort)) {
-      async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
+      cb_dispatcher.Post([cb = std::move(callback)](pw::async::Context /*ctx*/, pw::Status status) {
+        if (!status.ok()) {
+          return;
+        }
         ServiceSearchAttributeResponse rsp;
         rsp.SetAttribute(0, kServiceId, DataElement(UUID(uint16_t{1})));
         if (!cb(fit::ok(std::cref(rsp.attributes(0))))) {
@@ -356,11 +380,14 @@ TEST_F(ServiceDiscovererTest, SingleSearchSamePeer) {
   auto client = GetFakeClient();
   std::vector<std::unordered_set<UUID>> searches;
 
-  auto search_attributes_cb = [cb_dispatcher = dispatcher(), &searches](
-                                  auto pattern, auto attributes, auto callback) {
+  auto search_attributes_cb = [cb_dispatcher = heap_dispatcher(), &searches](
+                                  auto pattern, auto attributes, auto callback) mutable {
     searches.emplace_back(pattern);
     if (pattern.count(profile::kSerialPort)) {
-      async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
+      cb_dispatcher.Post([cb = std::move(callback)](pw::async::Context /*ctx*/, pw::Status status) {
+        if (!status.ok()) {
+          return;
+        }
         ServiceSearchAttributeResponse rsp;
         rsp.SetAttribute(0, kServiceId, DataElement(UUID(uint16_t{1})));
         if (!cb(fit::ok(std::cref(rsp.attributes(0))))) {
@@ -407,21 +434,24 @@ TEST_F(ServiceDiscovererTest, Disconnected) {
 
   std::vector<std::unordered_set<UUID>> searches;
 
-  client->SetServiceSearchAttributesCallback(
-      [cb_dispatcher = dispatcher(), &searches](auto pattern, auto attributes, auto callback) {
-        searches.emplace_back(pattern);
-        if (pattern.count(profile::kSerialPort)) {
-          async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
-            cb(fit::error(Error(HostError::kLinkDisconnected)));
-          });
-        } else {
-          std::cerr << "Searched for " << pattern.size() << std::endl;
-          for (auto it : pattern) {
-            std::cerr << it.ToString() << std::endl;
-          }
-          FAIL() << "Unexpected search called";
+  client->SetServiceSearchAttributesCallback([cb_dispatcher = heap_dispatcher(), &searches](
+                                                 auto pattern, auto attributes,
+                                                 auto callback) mutable {
+    searches.emplace_back(pattern);
+    if (pattern.count(profile::kSerialPort)) {
+      cb_dispatcher.Post([cb = std::move(callback)](pw::async::Context /*ctx*/, pw::Status status) {
+        if (status.ok()) {
+          cb(fit::error(Error(HostError::kLinkDisconnected)));
         }
       });
+    } else {
+      std::cerr << "Searched for " << pattern.size() << std::endl;
+      for (auto it : pattern) {
+        std::cerr << it.ToString() << std::endl;
+      }
+      FAIL() << "Unexpected search called";
+    }
+  });
 
   discoverer.StartServiceDiscovery(kDeviceOne, std::move(client));
 
@@ -463,32 +493,36 @@ TEST_F(ServiceDiscovererTest, UnregisterInProgress) {
 
   std::vector<std::unordered_set<UUID>> searches;
 
-  client->SetServiceSearchAttributesCallback(
-      [cb_dispatcher = dispatcher(), &searches](auto pattern, auto attributes, auto callback) {
-        searches.emplace_back(pattern);
-        if (pattern.count(profile::kAudioSink)) {
-          async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
-            ServiceSearchAttributeResponse rsp;
-            // This would normally be a element list. uint32_t for Testing.
-            rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t{1}));
-            rsp.SetAttribute(1, kProtocolDescriptorList, DataElement(uint32_t{2}));
-
-            if (!cb(fit::ok(std::cref(rsp.attributes(0))))) {
-              return;
-            }
-            if (!cb(fit::ok(std::cref(rsp.attributes(1))))) {
-              return;
-            }
-            cb(fit::error(Error(HostError::kNotFound)));
-          });
-        } else {
-          std::cerr << "Searched for " << pattern.size() << std::endl;
-          for (auto it : pattern) {
-            std::cerr << it.ToString() << std::endl;
-          }
-          FAIL() << "Unexpected search called";
+  client->SetServiceSearchAttributesCallback([cb_dispatcher = heap_dispatcher(), &searches](
+                                                 auto pattern, auto attributes,
+                                                 auto callback) mutable {
+    searches.emplace_back(pattern);
+    if (pattern.count(profile::kAudioSink)) {
+      cb_dispatcher.Post([cb = std::move(callback)](pw::async::Context /*ctx*/, pw::Status status) {
+        if (!status.ok()) {
+          return;
         }
+        ServiceSearchAttributeResponse rsp;
+        // This would normally be a element list. uint32_t for Testing.
+        rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t{1}));
+        rsp.SetAttribute(1, kProtocolDescriptorList, DataElement(uint32_t{2}));
+
+        if (!cb(fit::ok(std::cref(rsp.attributes(0))))) {
+          return;
+        }
+        if (!cb(fit::ok(std::cref(rsp.attributes(1))))) {
+          return;
+        }
+        cb(fit::error(Error(HostError::kNotFound)));
       });
+    } else {
+      std::cerr << "Searched for " << pattern.size() << std::endl;
+      for (auto it : pattern) {
+        std::cerr << it.ToString() << std::endl;
+      }
+      FAIL() << "Unexpected search called";
+    }
+  });
 
   discoverer.StartServiceDiscovery(kDeviceOne, std::move(client));
 
