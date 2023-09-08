@@ -393,7 +393,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeerDoesNotExpireDuringDelayedConnect) {
       kPwCacheTimeout + std::chrono::seconds(1);
   FakeController::Settings settings;
   settings.ApplyLegacyLEConfig();
-  settings.le_connection_delay = kConnectionDelay;
+  settings.le_connection_delay = std::chrono::seconds(kConnectionDelay.to_secs());
   test_device()->set_settings(settings);
 
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
@@ -3853,7 +3853,7 @@ class PendingPacketsTest : public LowEnergyConnectionManagerTest {
     RunLoopUntilIdle();
 
     packet_count_ = 0;
-    test_device()->SetDataCallback([&](const auto&) { packet_count_++; }, dispatcher());
+    test_device()->SetDataCallback([&](const auto&) { packet_count_++; }, pw_dispatcher());
     test_device()->set_auto_completed_packets_event_enabled(false);
     test_device()->set_auto_disconnection_complete_event_enabled(false);
   }
