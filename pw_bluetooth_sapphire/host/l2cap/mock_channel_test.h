@@ -81,7 +81,7 @@ class MockChannelTest : public ::gtest::TestLoopFixture {
 
   void TearDown() override;
 
-  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
+  pw::async::HeapDispatcher& heap_dispatcher() { return heap_dispatcher_; }
 
   // Queues a transaction into the MockChannelTest's expected packet queue. Each packet received
   // through the channel will be verified against the next expected transaction in the queue. A
@@ -109,6 +109,7 @@ class MockChannelTest : public ::gtest::TestLoopFixture {
   std::unique_ptr<FakeChannel> fake_chan_;
   PacketCallback packet_callback_;
   pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
+  pw::async::HeapDispatcher heap_dispatcher_{pw_dispatcher_};
 };
 
 // Helper macro for expecting a packet and receiving a variable number of responses.

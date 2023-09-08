@@ -68,8 +68,12 @@ void MockChannelTest::OnPacketSent(std::unique_ptr<ByteBuffer> packet) {
     auto reply = std::move(expected.replies().front());
     expected.replies().pop();
     // Post tasks to simulate real inbound packets, which are asynchronous.
-    async::PostTask(async_get_default_dispatcher(),
-                    [this, reply = std::move(reply)]() { fake_chan_->Receive(reply); });
+    heap_dispatcher().Post(
+        [this, reply = std::move(reply)](pw::async::Context /*ctx*/, pw::Status status) {
+          if (status.ok()) {
+            fake_chan_->Receive(reply);
+          }
+        });
   }
 }
 
