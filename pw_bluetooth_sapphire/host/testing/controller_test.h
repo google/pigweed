@@ -9,6 +9,7 @@
 
 #include <memory>
 
+#include <pw_async/heap_dispatcher.h>
 #include <pw_async_fuchsia/dispatcher.h>
 
 #include "pw_bluetooth/controller.h"
@@ -142,12 +143,16 @@ class ControllerTest : public ::gtest::TestLoopFixture {
     if (!data_received_callback_)
       return;
 
-    async::PostTask(dispatcher(), [this, packet = std::move(data_packet)]() mutable {
-      data_received_callback_(std::move(packet));
+    heap_dispatcher_.Post([this, packet = std::move(data_packet)](pw::async::Context /*ctx*/,
+                                                                  pw::Status status) mutable {
+      if (status.ok()) {
+        data_received_callback_(std::move(packet));
+      }
     });
   }
 
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{async_get_default_dispatcher()};
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
+  pw::async::HeapDispatcher heap_dispatcher_{pw_dispatcher_};
   typename ControllerTestDoubleType::WeakPtr test_device_;
   std::unique_ptr<hci::Transport> transport_;
   hci::ACLPacketHandler data_received_callback_;
