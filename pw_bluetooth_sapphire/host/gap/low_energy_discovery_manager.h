@@ -12,6 +12,9 @@
 #include <queue>
 #include <unordered_set>
 
+#include <pw_async/heap_dispatcher.h>
+#include <pw_async_fuchsia/dispatcher.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
@@ -112,7 +115,8 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate,
                                         public WeakSelf<LowEnergyDiscoveryManager> {
  public:
   // |peer_cache| and |scanner| MUST out-live this LowEnergyDiscoveryManager.
-  LowEnergyDiscoveryManager(hci::LowEnergyScanner* scanner, PeerCache* peer_cache);
+  LowEnergyDiscoveryManager(hci::LowEnergyScanner* scanner, PeerCache* peer_cache,
+                            pw::async::Dispatcher& dispatcher);
   virtual ~LowEnergyDiscoveryManager();
 
   // Starts a new discovery session and reports the result via |callback|. If a
@@ -219,7 +223,8 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate,
   void DeactivateAndNotifySessions();
 
   // The dispatcher that we use for invoking callbacks asynchronously.
-  async_dispatcher_t* dispatcher_;
+  pw::async::Dispatcher& pw_dispatcher_;
+  pw::async::HeapDispatcher heap_dispatcher_{pw_dispatcher_};
 
   InspectProperties inspect_;
 

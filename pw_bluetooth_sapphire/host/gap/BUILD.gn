@@ -79,6 +79,7 @@ static_library("gap") {
     "//src/connectivity/bluetooth/core/bt-host/sco",
     "//src/connectivity/bluetooth/core/bt-host/sdp",
     "//src/connectivity/bluetooth/core/bt-host/sm",
+    "//third_party/pigweed:pw_async_heap_dispatcher",
     "//third_party/pigweed:pw_bluetooth",
   ]
 }

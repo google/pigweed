@@ -4,8 +4,6 @@
 
 #include "low_energy_discovery_manager.h"
 
-#include <lib/async/cpp/time.h>
-#include <lib/async/default.h>
 #include <lib/fit/function.h>
 
 #include "peer.h"
@@ -83,14 +81,14 @@ void LowEnergyDiscoverySession::NotifyError() {
 }
 
 LowEnergyDiscoveryManager::LowEnergyDiscoveryManager(hci::LowEnergyScanner* scanner,
-                                                     PeerCache* peer_cache)
+                                                     PeerCache* peer_cache,
+                                                     pw::async::Dispatcher& dispatcher)
     : WeakSelf(this),
-      dispatcher_(async_get_default_dispatcher()),
+      pw_dispatcher_(dispatcher),
       state_(State::kIdle, StateToString),
       peer_cache_(peer_cache),
       paused_count_(0),
       scanner_(scanner) {
-  BT_DEBUG_ASSERT(dispatcher_);
   BT_DEBUG_ASSERT(peer_cache_);
   BT_DEBUG_ASSERT(scanner_);
 
@@ -134,10 +132,14 @@ void LowEnergyDiscoveryManager::StartDiscovery(bool active, SessionCallback call
     }
 
     auto session = AddSession(active);
-    async::PostTask(dispatcher_,
-                    [callback = std::move(callback), session = std::move(session)]() mutable {
-                      callback(std::move(session));
-                    });
+    // Post the callback instead of calling it synchronously to avoid bugs caused by client code not
+    // expecting this.
+    heap_dispatcher_.Post([callback = std::move(callback), session = std::move(session)](
+                              pw::async::Context /*ctx*/, pw::Status status) mutable {
+      if (status.ok()) {
+        callback(std::move(session));
+      }
+    });
     return;
   }
 
