@@ -5,6 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_FAKE_CLIENT_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_FAKE_CLIENT_H_
 
+#include "pw_async/heap_dispatcher.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/client.h"
 
@@ -12,7 +13,7 @@ namespace bt::gatt::testing {
 
 class FakeClient final : public Client {
  public:
-  explicit FakeClient(async_dispatcher_t* dispatcher);
+  explicit FakeClient(pw::async::Dispatcher& pw_dispatcher);
   ~FakeClient() override = default;
 
   void set_server_mtu(uint16_t mtu) { server_mtu_ = mtu; }
@@ -156,7 +157,7 @@ class FakeClient final : public Client {
 
   // All callbacks will be posted on this dispatcher to emulate asynchronous
   // behavior.
-  async_dispatcher_t* dispatcher_;
+  pw::async::HeapDispatcher heap_dispatcher_;
 
   // Value to return for MTU exchange.
   uint16_t server_mtu_ = att::kLEMinMTU;

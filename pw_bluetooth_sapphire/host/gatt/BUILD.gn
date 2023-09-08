@@ -64,6 +64,7 @@ source_set("testing") {
     ":gatt",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/lib/testing/loop_fixture",
+    "//third_party/pigweed:pw_async_heap_dispatcher",
   ]
 }
 

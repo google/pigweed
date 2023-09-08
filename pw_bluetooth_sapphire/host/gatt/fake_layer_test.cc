@@ -7,7 +7,7 @@
 namespace bt::gatt::testing {
 
 FakeLayerTest::FakeLayerTest()
-    : gatt_(std::make_unique<FakeLayer>()),
+    : gatt_(std::make_unique<FakeLayer>(pw_dispatcher_)),
       weak_gatt_(gatt_->GetWeakPtr()),
       weak_fake_layer_(gatt_->GetFakePtr()) {}
 

@@ -1248,7 +1248,7 @@ class HostServerTestFakeAdapter : public bt::gap::testing::FakeAdapterTestFixtur
 
   void SetUp() override {
     FakeAdapterTestFixture::SetUp();
-    gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>();
+    gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>(pw_dispatcher());
     fidl::InterfaceHandle<fuchsia::bluetooth::host::Host> host_handle;
     host_server_ = std::make_unique<HostServer>(host_handle.NewRequest().TakeChannel(),
                                                 adapter()->AsWeakPtr(), gatt_->GetWeakPtr());

@@ -45,7 +45,7 @@ class GattTest : public ::gtest::TestLoopFixture {
   };
 
   void SetUp() override {
-    auto client = std::make_unique<testing::FakeClient>(dispatcher());
+    auto client = std::make_unique<testing::FakeClient>(pw_dispatcher());
     fake_client_weak_ = client->AsFakeWeakPtr();
     client_ = std::move(client);
     gatt_ = GATT::Create();
@@ -57,6 +57,8 @@ class GattTest : public ::gtest::TestLoopFixture {
     fake_client()->set_write_request_callback({});
     gatt_.reset();
   }
+
+  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
 
   // Register an arbitrary service with a single characteristic of id |kChrcId|, e.g. for sending
   // notifications. Returns the internal IdType of the registered service.
@@ -92,6 +94,7 @@ class GattTest : public ::gtest::TestLoopFixture {
   std::unique_ptr<GATT> gatt_;
   std::unique_ptr<Client> client_;
   testing::FakeClient::WeakPtr fake_client_weak_;
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GattTest);
 };
@@ -207,7 +210,7 @@ TEST_F(GattTest, MultipleRegisterRemoteServiceWatcherForPeers) {
   const att::Handle kSvcStartHandle0(42);
   const att::Handle kSvcEndHandle0(kSvcStartHandle0);
   ServiceData svc_data_0(ServiceKind::PRIMARY, kSvcStartHandle0, kSvcEndHandle0, kTestServiceUuid0);
-  auto client_0 = std::make_unique<testing::FakeClient>(dispatcher());
+  auto client_0 = std::make_unique<testing::FakeClient>(pw_dispatcher());
   client_0->set_services({svc_data_0});
 
   gatt()->AddConnection(kPeerId0, std::move(client_0), CreateMockServer);
@@ -233,7 +236,7 @@ TEST_F(GattTest, MultipleRegisterRemoteServiceWatcherForPeers) {
                                           kSvcChangedChrcValueHandle,
                                           types::kServiceChangedCharacteristic);
   DescriptorData ccc_descriptor(kCCCDescriptorHandle, types::kClientCharacteristicConfig);
-  auto client_1 = std::make_unique<testing::FakeClient>(dispatcher());
+  auto client_1 = std::make_unique<testing::FakeClient>(pw_dispatcher());
   auto client_1_weak = client_1.get();
   client_1->set_services({gatt_svc});
   client_1->set_characteristics({service_changed_chrc});
@@ -467,7 +470,7 @@ TEST_F(GattTest, UpdateMtuListenersNotified) {
   listener_1_results.reset();
   listener_2_results.reset();
   EXPECT_TRUE(gatt()->UnregisterPeerMtuListener(listener_2_id));
-  auto client_2 = std::make_unique<testing::FakeClient>(dispatcher());
+  auto client_2 = std::make_unique<testing::FakeClient>(pw_dispatcher());
   const uint16_t kNewExpectedMtu = kExpectedMtu + 1;
   client_2->set_server_mtu(kNewExpectedMtu);
   gatt()->AddConnection(kPeerId1, std::move(client_2), CreateMockServer);
@@ -551,7 +554,7 @@ class GattIndicateMultipleConnectedPeersTest : public GattTest {
       mock_server_0_ = unique_mock_server->AsMockWeakPtr();
       return unique_mock_server;
     };
-    gatt()->AddConnection(kPeerId0, std::make_unique<testing::FakeClient>(dispatcher()),
+    gatt()->AddConnection(kPeerId0, std::make_unique<testing::FakeClient>(pw_dispatcher()),
                           std::move(mock_server_factory_0));
     ASSERT_TRUE(mock_server_0_.is_alive());
 
@@ -562,7 +565,7 @@ class GattIndicateMultipleConnectedPeersTest : public GattTest {
       mock_server_1_ = unique_mock_server->AsMockWeakPtr();
       return unique_mock_server;
     };
-    gatt()->AddConnection(kPeerId1, std::make_unique<testing::FakeClient>(dispatcher()),
+    gatt()->AddConnection(kPeerId1, std::make_unique<testing::FakeClient>(pw_dispatcher()),
                           std::move(mock_server_factory_1));
     ASSERT_TRUE(mock_server_1_.is_alive());
 

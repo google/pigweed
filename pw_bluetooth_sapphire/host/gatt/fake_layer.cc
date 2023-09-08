@@ -10,11 +10,11 @@
 
 namespace bt::gatt::testing {
 
-FakeLayer::TestPeer::TestPeer() : fake_client(async_get_default_dispatcher()) {}
+FakeLayer::TestPeer::TestPeer(pw::async::Dispatcher& pw_dispatcher) : fake_client(pw_dispatcher) {}
 
 std::pair<RemoteService::WeakPtr, FakeClient::WeakPtr> FakeLayer::AddPeerService(
     PeerId peer_id, const ServiceData& info, bool notify) {
-  auto [iter, _] = peers_.try_emplace(peer_id);
+  auto [iter, _] = peers_.try_emplace(peer_id, pw_dispatcher_);
   auto& peer = iter->second;
 
   BT_ASSERT(info.range_start <= info.range_end);
@@ -71,7 +71,7 @@ void FakeLayer::RemovePeerService(PeerId peer_id, att::Handle handle) {
 
 void FakeLayer::AddConnection(PeerId peer_id, std::unique_ptr<Client> client,
                               Server::FactoryFunction server_factory) {
-  peers_.try_emplace(peer_id);
+  peers_.try_emplace(peer_id, pw_dispatcher_);
 }
 
 void FakeLayer::RemoveConnection(PeerId peer_id) { peers_.erase(peer_id); }

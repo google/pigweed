@@ -39,7 +39,7 @@ class LowEnergyPeripheralServerTestFakeAdapter : public bt::gap::testing::FakeAd
   void SetUp() override {
     bt::gap::testing::FakeAdapterTestFixture::SetUp();
 
-    fake_gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>();
+    fake_gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>(pw_dispatcher());
 
     // Create a LowEnergyPeripheralServer and bind it to a local client.
     fidl::InterfaceHandle<fble::Peripheral> handle;
@@ -77,7 +77,7 @@ class LowEnergyPeripheralServerTest : public bthost::testing::AdapterTestFixture
   void SetUp() override {
     AdapterTestFixture::SetUp();
 
-    fake_gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>();
+    fake_gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>(pw_dispatcher());
 
     // Create a LowEnergyPeripheralServer and bind it to a local client.
     fidl::InterfaceHandle<fble::Peripheral> handle;

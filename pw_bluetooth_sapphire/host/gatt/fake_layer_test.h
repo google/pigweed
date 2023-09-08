@@ -39,6 +39,7 @@ class FakeLayerTest : public ::gtest::TestLoopFixture {
   std::unique_ptr<FakeLayer> gatt_;
   const GATT::WeakPtr weak_gatt_;
   const FakeLayer::WeakPtr weak_fake_layer_;
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
 
   BT_DISALLOW_COPY_ASSIGN_AND_MOVE(FakeLayerTest);
 };

@@ -5,6 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_FAKE_LAYER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_FAKE_LAYER_H_
 
+#include "pw_async/dispatcher.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_client.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 
@@ -29,7 +30,7 @@ class FakeLayer final : public GATT {
     std::vector<Update> updates;
   };
 
-  FakeLayer() = default;
+  explicit FakeLayer(pw::async::Dispatcher& pw_dispatcher) : pw_dispatcher_(pw_dispatcher) {}
   ~FakeLayer() override = default;
 
   // Create a new peer GATT service. Creates a peer entry if it doesn't already exist.
@@ -132,7 +133,7 @@ class FakeLayer final : public GATT {
 
   // Emulated GATT peer.
   struct TestPeer {
-    TestPeer();
+    explicit TestPeer(pw::async::Dispatcher& pw_dispatcher);
 
     FakeClient fake_client;
     std::unordered_map<IdType, std::unique_ptr<RemoteService>> services;
@@ -141,6 +142,7 @@ class FakeLayer final : public GATT {
   };
   std::unordered_map<PeerId, TestPeer> peers_;
 
+  pw::async::Dispatcher& pw_dispatcher_;
   WeakSelf<FakeLayer> weak_fake_{this};
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeLayer);

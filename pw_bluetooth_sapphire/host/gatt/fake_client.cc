@@ -11,10 +11,8 @@
 
 namespace bt::gatt::testing {
 
-FakeClient::FakeClient(async_dispatcher_t* dispatcher)
-    : dispatcher_(dispatcher), weak_self_(this), weak_fake_(this) {
-  BT_DEBUG_ASSERT(dispatcher_);
-}
+FakeClient::FakeClient(pw::async::Dispatcher& pw_dispatcher)
+    : heap_dispatcher_(pw_dispatcher), weak_self_(this), weak_fake_(this) {}
 
 uint16_t FakeClient::mtu() const {
   // TODO(armansito): Return a configurable value.
@@ -22,15 +20,19 @@ uint16_t FakeClient::mtu() const {
 }
 
 void FakeClient::ExchangeMTU(MTUCallback callback) {
-  auto task = [status = exchange_mtu_status_, mtu = server_mtu_,
-               callback = std::move(callback)]() mutable {
-    if (status.is_error()) {
-      callback(fit::error(status.error_value()));
-    } else {
-      callback(fit::ok(mtu));
-    }
-  };
-  async::PostTask(dispatcher_, std::move(task));
+  heap_dispatcher_.Post(
+      [mtu_status = exchange_mtu_status_, mtu = server_mtu_, callback = std::move(callback)](
+          pw::async::Context /*ctx*/, pw::Status status) mutable {
+        if (!status.ok()) {
+          return;
+        }
+
+        if (mtu_status.is_error()) {
+          callback(fit::error(mtu_status.error_value()));
+        } else {
+          callback(fit::ok(mtu));
+        }
+      });
 }
 
 void FakeClient::DiscoverServices(ServiceKind kind, ServiceCallback svc_callback,
@@ -58,23 +60,33 @@ void FakeClient::DiscoverServicesWithUuidsInRange(ServiceKind kind, att::Handle 
                                                   att::Handle end, ServiceCallback svc_callback,
                                                   att::ResultFunction<> status_callback,
                                                   std::vector<UUID> uuids) {
-  att::Result<> status = fit::ok();
+  att::Result<> callback_status = fit::ok();
   if (discover_services_callback_) {
-    status = discover_services_callback_(kind);
+    callback_status = discover_services_callback_(kind);
   }
 
   std::unordered_set<UUID> uuids_set(uuids.cbegin(), uuids.cend());
 
-  if (status.is_ok()) {
+  if (callback_status.is_ok()) {
     for (const ServiceData& svc : services_) {
       bool uuid_matches = uuids.empty() || uuids_set.find(svc.type) != uuids_set.end();
       if (svc.kind == kind && uuid_matches && svc.range_start >= start && svc.range_start <= end) {
-        async::PostTask(dispatcher_, [svc, cb = svc_callback.share()] { cb(svc); });
+        heap_dispatcher_.Post(
+            [svc, cb = svc_callback.share()](pw::async::Context /*ctx*/, pw::Status status) {
+              if (status.ok()) {
+                cb(svc);
+              }
+            });
       }
     }
   }
 
-  async::PostTask(dispatcher_, [status, cb = std::move(status_callback)] { cb(status); });
+  heap_dispatcher_.Post([callback_status, cb = std::move(status_callback)](
+                            pw::async::Context /*ctx*/, pw::Status status) {
+    if (status.ok()) {
+      cb(callback_status);
+    }
+  });
 }
 
 void FakeClient::DiscoverCharacteristics(att::Handle range_start, att::Handle range_end,
@@ -84,16 +96,19 @@ void FakeClient::DiscoverCharacteristics(att::Handle range_start, att::Handle ra
   last_chrc_discovery_end_handle_ = range_end;
   chrc_discovery_count_++;
 
-  async::PostTask(dispatcher_,
-                  [this, range_start, range_end, chrc_callback = std::move(chrc_callback),
-                   status_callback = std::move(status_callback)] {
-                    for (const auto& chrc : chrcs_) {
-                      if (chrc.handle >= range_start && chrc.handle <= range_end) {
-                        chrc_callback(chrc);
-                      }
-                    }
-                    status_callback(chrc_discovery_status_);
-                  });
+  heap_dispatcher_.Post([this, range_start, range_end, chrc_callback = std::move(chrc_callback),
+                         status_callback = std::move(status_callback)](pw::async::Context /*ctx*/,
+                                                                       pw::Status status) {
+    if (!status.ok()) {
+      return;
+    }
+    for (const auto& chrc : chrcs_) {
+      if (chrc.handle >= range_start && chrc.handle <= range_end) {
+        chrc_callback(chrc);
+      }
+    }
+    status_callback(chrc_discovery_status_);
+  });
 }
 
 void FakeClient::DiscoverDescriptors(att::Handle range_start, att::Handle range_end,
@@ -103,21 +118,25 @@ void FakeClient::DiscoverDescriptors(att::Handle range_start, att::Handle range_
   last_desc_discovery_end_handle_ = range_end;
   desc_discovery_count_++;
 
-  att::Result<> status = fit::ok();
+  att::Result<> discovery_status = fit::ok();
   if (!desc_discovery_status_target_ || desc_discovery_count_ == desc_discovery_status_target_) {
-    status = desc_discovery_status_;
+    discovery_status = desc_discovery_status_;
   }
 
-  async::PostTask(dispatcher_,
-                  [this, status, range_start, range_end, desc_callback = std::move(desc_callback),
-                   status_callback = std::move(status_callback)] {
-                    for (const auto& desc : descs_) {
-                      if (desc.handle >= range_start && desc.handle <= range_end) {
-                        desc_callback(desc);
-                      }
-                    }
-                    status_callback(status);
-                  });
+  heap_dispatcher_.Post([this, discovery_status, range_start, range_end,
+                         desc_callback = std::move(desc_callback),
+                         status_callback = std::move(status_callback)](pw::async::Context /*ctx*/,
+                                                                       pw::Status status) {
+    if (!status.ok()) {
+      return;
+    }
+    for (const auto& desc : descs_) {
+      if (desc.handle >= range_start && desc.handle <= range_end) {
+        desc_callback(desc);
+      }
+    }
+    status_callback(discovery_status);
+  });
 }
 
 void FakeClient::ReadRequest(att::Handle handle, ReadCallback callback) {

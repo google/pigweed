@@ -103,7 +103,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
         transport()->GetWeakPtr(), &addr_delegate_, pw_dispatcher(),
         fit::bind_member<&LowEnergyConnectionManagerTest::OnIncomingConnection>(this));
 
-    gatt_ = std::make_unique<gatt::testing::FakeLayer>();
+    gatt_ = std::make_unique<gatt::testing::FakeLayer>(pw_dispatcher());
     sm_factory_ = std::make_unique<TestSmFactory>();
 
     address_manager_ = std::make_unique<LowEnergyAddressManager>(

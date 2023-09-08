@@ -22,11 +22,14 @@ class FakeAdapterTestFixture : public ::gtest::TestLoopFixture {
 
   void TearDown() override { adapter_ = nullptr; }
 
+  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
+
  protected:
   bt::gap::testing::FakeAdapter* adapter() const { return adapter_.get(); }
 
  private:
   std::unique_ptr<bt::gap::testing::FakeAdapter> adapter_;
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeAdapterTestFixture);
 };

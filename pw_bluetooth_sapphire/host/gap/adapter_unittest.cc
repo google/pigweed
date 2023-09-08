@@ -54,7 +54,7 @@ class AdapterTest : public TestingBase {
     transport_closed_called_ = false;
 
     auto l2cap = std::make_unique<l2cap::testing::FakeL2cap>();
-    gatt_ = std::make_unique<gatt::testing::FakeLayer>();
+    gatt_ = std::make_unique<gatt::testing::FakeLayer>(pw_dispatcher());
     adapter_ = Adapter::Create(transport()->GetWeakPtr(), gatt_->GetWeakPtr(), std::move(l2cap));
   }
 
@@ -1158,7 +1158,7 @@ class AdapterConstructorTest : public TestingBase {
     TestingBase::SetUp();
 
     l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>();
-    gatt_ = std::make_unique<gatt::testing::FakeLayer>();
+    gatt_ = std::make_unique<gatt::testing::FakeLayer>(pw_dispatcher());
   }
 
   void TearDown() override {

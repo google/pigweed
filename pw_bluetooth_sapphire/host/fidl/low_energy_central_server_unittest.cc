@@ -123,7 +123,7 @@ class LowEnergyCentralServerTestFakeAdapter : public bt::gap::testing::FakeAdapt
 
     // Create a LowEnergyCentralServer and bind it to a local client.
     fidl::InterfaceHandle<fble::Central> handle;
-    gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>();
+    gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>(pw_dispatcher());
     server_ = std::make_unique<LowEnergyCentralServer>(adapter()->AsWeakPtr(), handle.NewRequest(),
                                                        gatt_->GetWeakPtr());
     proxy_.Bind(std::move(handle));

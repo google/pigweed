@@ -52,7 +52,7 @@ class RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
 
  protected:
   void SetUp() override {
-    auto client = std::make_unique<testing::FakeClient>(dispatcher());
+    auto client = std::make_unique<testing::FakeClient>(pw_dispatcher_);
     fake_client_ = client.get();
 
     mgr_ = std::make_unique<RemoteServiceManager>(std::move(client), dispatcher());
@@ -156,6 +156,8 @@ class RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
 
   // The memory is owned by |mgr_|.
   testing::FakeClient* fake_client_;
+
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteServiceManagerTest);
 };
