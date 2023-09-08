@@ -8,6 +8,7 @@
 
 #include <vector>
 
+#include "pw_async/heap_dispatcher.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_local_address_delegate.h"
@@ -61,6 +62,8 @@ class LowEnergyConnectorTest : public TestingBase {
     TestingBase::TearDown();
   }
 
+  pw::async::HeapDispatcher& heap_dispatcher() { return heap_dispatcher_; }
+
   void DeleteConnector() { connector_ = nullptr; }
 
   bool request_canceled = false;
@@ -90,6 +93,7 @@ class LowEnergyConnectorTest : public TestingBase {
 
   // Incoming connections.
   std::vector<std::unique_ptr<LowEnergyConnection>> in_connections_;
+  pw::async::HeapDispatcher heap_dispatcher_{pw_dispatcher()};
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectorTest);
 };
@@ -302,7 +306,11 @@ TEST_F(LowEnergyConnectorTest, IncomingConnectDuringConnectionRequest) {
       /*use_accept_list=*/false, kTestAddress, hci_spec::defaults::kLEScanInterval,
       hci_spec::defaults::kLEScanWindow, kTestParams, callback, kPwConnectTimeout);
 
-  async::PostTask(dispatcher(), [kIncomingAddress, this] {
+  heap_dispatcher().Post([kIncomingAddress, this](pw::async::Context /*ctx*/, pw::Status status) {
+    if (!status.ok()) {
+      return;
+    }
+
     auto packet =
         hci::EmbossEventPacket::New<pw::bluetooth::emboss::LEConnectionCompleteSubeventWriter>(
             hci_spec::kLEMetaEventCode);
