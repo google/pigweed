@@ -56,6 +56,8 @@ class Gatt2RemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
     bt::gatt::testing::FakeLayerTest::TearDown();
   }
 
+  pw::async::HeapDispatcher& heap_dispatcher() { return heap_dispatcher_; }
+
  protected:
   const bt::gatt::testing::FakeClient::WeakPtr& fake_client() const {
     BT_ASSERT(fake_client_.is_alive());
@@ -73,6 +75,8 @@ class Gatt2RemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
   fbg::RemoteServicePtr proxy_;
   bt::gatt::RemoteService::WeakPtr service_;
   bt::gatt::testing::FakeClient::WeakPtr fake_client_;
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
+  pw::async::HeapDispatcher heap_dispatcher_{pw_dispatcher_};
 
   BT_DISALLOW_COPY_ASSIGN_AND_MOVE(Gatt2RemoteServiceServerTest);
 };
@@ -295,10 +299,13 @@ TEST_F(Gatt2RemoteServiceServerTest, ReadByTypeTooManyResults) {
         }
 
         // Dispatch callback to prevent recursing too deep and breaking the stack.
-        async::PostTask(dispatcher(), [start, cb = std::move(callback), &value = value]() {
-          std::vector<bt::gatt::Client::ReadByTypeValue> values = {
-              {start, value.view(), /*maybe_truncated=*/false}};
-          cb(fit::ok(values));
+        heap_dispatcher().Post([start, cb = std::move(callback), &value = value](
+                                   pw::async::Context /*ctx*/, pw::Status status) {
+          if (status.ok()) {
+            std::vector<bt::gatt::Client::ReadByTypeValue> values = {
+                {start, value.view(), /*maybe_truncated=*/false}};
+            cb(fit::ok(values));
+          }
         });
       });
 
