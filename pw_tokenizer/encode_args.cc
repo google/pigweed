@@ -37,11 +37,12 @@ enum class ArgType : uint8_t {
 };
 
 size_t EncodeInt(int value, const span<std::byte>& output) {
-  return varint::Encode(value, as_writable_bytes(output));
+  // Use the 64-bit function to avoid instantiating both 32-bit and 64-bit.
+  return pw_tokenizer_EncodeInt64(value, output.data(), output.size());
 }
 
 size_t EncodeInt64(int64_t value, const span<std::byte>& output) {
-  return varint::Encode(value, as_writable_bytes(output));
+  return pw_tokenizer_EncodeInt64(value, output.data(), output.size());
 }
 
 size_t EncodeFloat(float value, const span<std::byte>& output) {

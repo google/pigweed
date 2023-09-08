@@ -38,5 +38,17 @@ static_assert(
     MinEncodingBufferSizeBytes<const char*, long long, int, short>() ==
     4 + 1 + 10 + 5 + 3);
 
+TEST(TokenizerCEncodingFunctions, EncodeInt) {
+  uint8_t buffer[5] = {};
+  EXPECT_EQ(pw_tokenizer_EncodeInt(-1, buffer, sizeof(buffer)), 1u);
+  EXPECT_EQ(buffer[0], 1);  // -1 encodes to 1 with ZigZag
+}
+
+TEST(TokenizerCEncodingFunctions, EncodeInt64) {
+  uint8_t buffer[5] = {};
+  EXPECT_EQ(pw_tokenizer_EncodeInt(1, buffer, sizeof(buffer)), 1u);
+  EXPECT_EQ(buffer[0], 2);  // 1 encodes to 2 with ZigZag
+}
+
 }  // namespace tokenizer
 }  // namespace pw

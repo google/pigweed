@@ -20,6 +20,7 @@
 #include "pw_polyfill/standard.h"
 #include "pw_preprocessor/util.h"
 #include "pw_tokenizer/internal/argument_types.h"
+#include "pw_varint/varint.h"
 
 #if PW_CXX_STANDARD_IS_SUPPORTED(17)
 
@@ -147,4 +148,23 @@ size_t pw_tokenizer_EncodeArgs(pw_tokenizer_ArgTypes types,
                                va_list args,
                                void* output_buffer,
                                size_t output_buffer_size);
+
+/// Encodes an `int` with the standard integer encoding: zig-zag + LEB128.
+/// This function is only necessary when manually encoding tokenized messages.
+static inline size_t pw_tokenizer_EncodeInt(int value,
+                                            void* output,
+                                            size_t output_size_bytes) {
+  return pw_varint_Encode32(
+      pw_varint_ZigZagEncode32(value), output, output_size_bytes);
+}
+
+/// Encodes an `int64_t` with the standard integer encoding: zig-zag + LEB128.
+/// This function is only necessary when manually encoding tokenized messages.
+static inline size_t pw_tokenizer_EncodeInt64(int64_t value,
+                                              void* output,
+                                              size_t output_size_bytes) {
+  return pw_varint_Encode64(
+      pw_varint_ZigZagEncode64(value), output, output_size_bytes);
+}
+
 PW_EXTERN_C_END

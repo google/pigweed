@@ -48,6 +48,8 @@ Tokenization
       .. doxygendefine:: PW_TOKENIZER_REPLACE_FORMAT_STRING
       .. doxygendefine:: PW_TOKENIZER_ARG_TYPES
       .. doxygenfunction:: pw_tokenizer_EncodeArgs
+      .. doxygenfunction:: pw_tokenizer_EncodeInt
+      .. doxygenfunction:: pw_tokenizer_EncodeInt64
       .. doxygentypedef:: pw_tokenizer_Token
 
    .. tab-item:: Python
