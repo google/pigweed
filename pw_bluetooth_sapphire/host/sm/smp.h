@@ -7,6 +7,8 @@
 
 #include <cstdint>
 
+#include <pw_chrono/system_clock.h>
+
 #include "lib/zx/time.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
@@ -22,6 +24,7 @@ constexpr uint16_t kLeSecureConnectionsMtu = 65;
 
 // SMP Timeout in seconds (Core Spec v5.3, Vol 3, Part H, 3.4)
 constexpr zx::duration kPairingTimeout = zx::sec(30);
+constexpr pw::chrono::SystemClock::duration kPwPairingTimeout = std::chrono::seconds(30);
 
 // The supported encryption key sizes (Core Spec v5.3, Vol 3, Part H, 2.3.4).
 constexpr uint8_t kMinEncryptionKeySize = 7;

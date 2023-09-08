@@ -299,7 +299,7 @@ bool LowEnergyConnection::OnL2capFixedChannelsOpened(
   LESecurityMode security_mode = conn_mgr_->security_mode();
   sm_ = conn_mgr_->sm_factory_func()(link_->GetWeakPtr(), std::move(smp), io_cap,
                                      weak_delegate_.GetWeakPtr(), connection_options.bondable_mode,
-                                     security_mode);
+                                     security_mode, pw_dispatcher_);
 
   // Provide SMP with the correct LTK from a previous pairing with the peer, if it exists. This
   // will start encryption if the local device is the link-layer central.

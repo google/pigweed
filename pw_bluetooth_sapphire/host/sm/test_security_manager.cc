@@ -40,7 +40,8 @@ void TestSecurityManager::Abort(ErrorCode ecode) {}
 
 std::unique_ptr<SecurityManager> TestSecurityManagerFactory::CreateSm(
     hci::LowEnergyConnection::WeakPtr link, l2cap::Channel::WeakPtr smp, IOCapability io_capability,
-    Delegate::WeakPtr delegate, BondableMode bondable_mode, gap::LESecurityMode security_mode) {
+    Delegate::WeakPtr delegate, BondableMode bondable_mode, gap::LESecurityMode security_mode,
+    pw::async::Dispatcher& /*dispatcher*/) {
   hci_spec::ConnectionHandle conn = link->handle();
   auto test_sm = std::unique_ptr<TestSecurityManager>(
       new TestSecurityManager(std::move(link), std::move(smp), io_capability, std::move(delegate),

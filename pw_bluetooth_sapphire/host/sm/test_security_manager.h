@@ -73,7 +73,8 @@ class TestSecurityManagerFactory {
   std::unique_ptr<SecurityManager> CreateSm(hci::LowEnergyConnection::WeakPtr link,
                                             l2cap::Channel::WeakPtr smp, IOCapability io_capability,
                                             Delegate::WeakPtr delegate, BondableMode bondable_mode,
-                                            gap::LESecurityMode security_mode);
+                                            gap::LESecurityMode security_mode,
+                                            pw::async::Dispatcher& dispatcher);
 
   // Obtain a reference to the TestSecurityManager associated with |conn_handle|'s connection for
   // use in test code.

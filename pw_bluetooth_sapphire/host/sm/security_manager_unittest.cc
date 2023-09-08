@@ -80,7 +80,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
 
     pairing_ = SecurityManager::Create(fake_link_->GetWeakPtr(), fake_chan_->GetWeakPtr(), ioc,
                                        weak_delegate_.GetWeakPtr(), bondable_mode,
-                                       gap::LESecurityMode::Mode1);
+                                       gap::LESecurityMode::Mode1, pw_dispatcher_);
   }
 
   void DestroySecurityManager() { pairing_ = nullptr; }
