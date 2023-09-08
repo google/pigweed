@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include "pw_preprocessor/arguments.h"
+
 // User-provided header to optionally override options in this file.
 #if defined(PW_LOG_STRING_CONFIG_HEADER)
 #include PW_LOG_STRING_CONFIG_HEADER
@@ -23,7 +25,10 @@
 #ifndef PW_LOG_STRING_CONFIG_HANDLE_MESSAGE
 #define PW_LOG_STRING_CONFIG_HANDLE_MESSAGE(level, module, flags, ...) \
   do {                                                                 \
-    pw_log_string_HandleMessage(                                       \
-        (level), (flags), (module), __FILE__, __LINE__, __VA_ARGS__);  \
+    pw_log_string_HandleMessage((level),                               \
+                                (flags),                               \
+                                (module),                              \
+                                __FILE__,                              \
+                                __LINE__ PW_COMMA_ARGS(__VA_ARGS__));  \
   } while (0)
 #endif  // PW_LOG_STRING_CONFIG_HANDLE_MESSAGE
