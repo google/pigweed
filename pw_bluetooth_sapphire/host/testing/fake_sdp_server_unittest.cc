@@ -4,6 +4,8 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_sdp_server.h"
 
+#include <pw_async_fuchsia/dispatcher.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
@@ -60,7 +62,15 @@ std::vector<sdp::ServiceRecord> GetA2DPServiceRecord() {
 #define UINT32_AS_BE_BYTES(x) \
   UpperBits(x >> 16), LowerBits(x >> 16), UpperBits(x & 0xFFFF), LowerBits(x & 0xFFFF)
 
-TEST(FakeSdpServerTest, SuccessfulSearch) {
+class FakeSdpServerTest : public ::gtest::TestLoopFixture {
+ public:
+  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
+
+ private:
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
+};
+
+TEST_F(FakeSdpServerTest, SuccessfulSearch) {
   std::unique_ptr<ByteBuffer> sent_packet;
   auto send_cb = [&sent_packet](auto& buffer) {
     sent_packet = std::make_unique<DynamicByteBuffer>(buffer);
@@ -68,7 +78,7 @@ TEST(FakeSdpServerTest, SuccessfulSearch) {
   FakeDynamicChannel channel(kConnectionHandle, kCommandId, src_id, src_id);
   channel.set_send_packet_callback(send_cb);
   channel.set_opened();
-  auto sdp_server = FakeSdpServer();
+  auto sdp_server = FakeSdpServer(pw_dispatcher());
 
   // Configure the SDP server to provide a response to the search.
   auto NopConnectCallback = [](auto /*channel*/, const sdp::DataElement&) {};
@@ -101,7 +111,7 @@ TEST(FakeSdpServerTest, SuccessfulSearch) {
   EXPECT_TRUE(ContainersEqual(kL2capSearchResponse, *sent_packet));
 }
 
-TEST(FakeSdpServerTest, ErrorIfTooSmall) {
+TEST_F(FakeSdpServerTest, ErrorIfTooSmall) {
   std::unique_ptr<ByteBuffer> sent_packet;
   auto send_cb = [&sent_packet](auto& buffer) {
     sent_packet = std::make_unique<DynamicByteBuffer>(buffer);
@@ -109,7 +119,7 @@ TEST(FakeSdpServerTest, ErrorIfTooSmall) {
   FakeDynamicChannel channel(kConnectionHandle, kCommandId, src_id, src_id);
   channel.set_send_packet_callback(send_cb);
   channel.set_opened();
-  auto sdp_server = FakeSdpServer();
+  auto sdp_server = FakeSdpServer(pw_dispatcher());
 
   // Expect an error response if the packet is too small
   const StaticByteBuffer kTooSmall(0x01,        // SDP_ServiceSearchRequest
@@ -121,13 +131,13 @@ TEST(FakeSdpServerTest, ErrorIfTooSmall) {
   EXPECT_TRUE(ContainersEqual(kRspTooSmall, *sent_packet));
 }
 
-TEST(FakeSdpServerTest, RegisterWithL2cap) {
+TEST_F(FakeSdpServerTest, RegisterWithL2cap) {
   std::unique_ptr<ByteBuffer> received_packet;
   auto send_cb = [&received_packet](auto conn, auto cid, auto& buffer) {
     received_packet = std::make_unique<DynamicByteBuffer>(buffer);
   };
   auto fake_l2cap = FakeL2cap(send_cb);
-  auto sdp_server = std::make_unique<FakeSdpServer>();
+  auto sdp_server = std::make_unique<FakeSdpServer>(pw_dispatcher());
   sdp_server->RegisterWithL2cap(&fake_l2cap);
   EXPECT_TRUE(fake_l2cap.ServiceRegisteredForPsm(kPsm));
 }

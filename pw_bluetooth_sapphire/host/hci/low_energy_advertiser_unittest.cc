@@ -350,7 +350,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, IncomingConnectionWhenNotAdvertising) {
         connection_states.push_back(std::make_pair(connected, handle));
       });
 
-  auto fake_peer = std::make_unique<FakePeer>(kRandomAddress, true, true);
+  auto fake_peer =
+      std::make_unique<FakePeer>(kRandomAddress, TestFixture::pw_dispatcher(), true, true);
   this->test_device()->AddPeer(std::move(fake_peer));
   this->test_device()->ConnectLowEnergy(kRandomAddress,
                                         pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
@@ -392,7 +393,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, IncomingConnectionWhenNonConnectableAdvertis
         connection_states.push_back(std::make_pair(connected, handle));
       });
 
-  auto fake_peer = std::make_unique<FakePeer>(kRandomAddress, true, true);
+  auto fake_peer =
+      std::make_unique<FakePeer>(kRandomAddress, TestFixture::pw_dispatcher(), true, true);
   this->test_device()->AddPeer(std::move(fake_peer));
   this->test_device()->ConnectLowEnergy(kRandomAddress,
                                         pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);

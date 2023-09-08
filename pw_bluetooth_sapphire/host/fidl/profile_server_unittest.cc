@@ -431,7 +431,7 @@ class ProfileServerTestConnectedPeer : public ProfileServerTest {
   void SetUp(FeaturesBits features) {
     ProfileServerTest::SetUp(features);
     peer_ = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
-    auto fake_peer = std::make_unique<bt::testing::FakePeer>(kTestDevAddr);
+    auto fake_peer = std::make_unique<bt::testing::FakePeer>(kTestDevAddr, pw_dispatcher());
     test_device()->AddPeer(std::move(fake_peer));
 
     std::optional<bt::hci::Result<>> status;

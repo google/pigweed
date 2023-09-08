@@ -12,9 +12,7 @@
 #include <queue>
 #include <vector>
 
-#include <pw_async/dispatcher.h>
 #include <pw_async/heap_dispatcher.h>
-#include <pw_async_fuchsia/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
@@ -129,7 +127,7 @@ class ScoTransaction final : public Transaction {
 // code internally verifies each received packet using gtest ASSERT_* macros.
 class MockController final : public ControllerTestDoubleBase, public WeakSelf<MockController> {
  public:
-  MockController();
+  explicit MockController(pw::async::Dispatcher& pw_dispatcher);
   ~MockController() override;
 
   // Queues a transaction into the MockController's expected command queue. Each
@@ -200,8 +198,7 @@ class MockController final : public ControllerTestDoubleBase, public WeakSelf<Mo
   DataCallback data_callback_;
   TransactionCallback transaction_callback_;
 
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{async_get_default_dispatcher()};
-  pw::async::HeapDispatcher heap_dispatcher_{pw_dispatcher_};
+  pw::async::HeapDispatcher heap_dispatcher_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(MockController);
 };

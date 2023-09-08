@@ -29,7 +29,8 @@ void WriteRandomRSSI(int8_t* out_mem) {
 
 }  // namespace
 
-FakePeer::FakePeer(const DeviceAddress& address, bool connectable, bool scannable)
+FakePeer::FakePeer(const DeviceAddress& address, pw::async::Dispatcher& pw_dispatcher,
+                   bool connectable, bool scannable)
     : ctrl_(nullptr),
       address_(address),
       name_("FakePeer"),
@@ -46,7 +47,8 @@ FakePeer::FakePeer(const DeviceAddress& address, bool connectable, bool scannabl
       le_features_(hci_spec::LESupportedFeatures{0}),
       should_batch_reports_(false),
       l2cap_(fit::bind_member<&FakePeer::SendPacket>(this)),
-      gatt_server_(this) {
+      gatt_server_(this),
+      sdp_server_(pw_dispatcher) {
   signaling_server_.RegisterWithL2cap(&l2cap_);
   gatt_server_.RegisterWithL2cap(&l2cap_);
   sdp_server_.RegisterWithL2cap(&l2cap_);

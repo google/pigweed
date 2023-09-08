@@ -53,7 +53,7 @@ class AdapterTest : public TestingBase {
 
     transport_closed_called_ = false;
 
-    auto l2cap = std::make_unique<l2cap::testing::FakeL2cap>();
+    auto l2cap = std::make_unique<l2cap::testing::FakeL2cap>(pw_dispatcher());
     gatt_ = std::make_unique<gatt::testing::FakeLayer>(pw_dispatcher());
     adapter_ = Adapter::Create(transport()->GetWeakPtr(), gatt_->GetWeakPtr(), std::move(l2cap));
   }
@@ -502,7 +502,7 @@ TEST_F(AdapterTest, LeAutoConnect) {
   InitializeAdapter([](bool) {});
   adapter()->le()->set_scan_period_for_testing(kPwTestScanPeriod);
 
-  auto fake_peer = std::make_unique<FakePeer>(kTestAddr, true, false);
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddr, pw_dispatcher(), true, false);
   fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
 
@@ -547,7 +547,7 @@ TEST_F(AdapterTest, LeSkipAutoConnectBehavior) {
   InitializeAdapter([](bool) {});
   adapter()->le()->set_scan_period_for_testing(kPwTestScanPeriod);
 
-  auto fake_peer = std::make_unique<FakePeer>(kTestAddr, true, false);
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddr, pw_dispatcher(), true, false);
   fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
 
@@ -753,7 +753,7 @@ TEST_F(AdapterTest, LocalAddressForConnections) {
 
   // Set-up a device for testing.
   auto* peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
-  auto fake_peer = std::make_unique<FakePeer>(kTestAddr);
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddr, pw_dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn_ref;
@@ -810,7 +810,7 @@ TEST_F(AdapterTest, LocalAddressDuringHangingConnect) {
   auto* peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
 
   // Cause scanning to succeed and the connection request to hang.
-  auto fake_peer = std::make_unique<FakePeer>(kTestAddr);
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddr, pw_dispatcher());
   fake_peer->set_force_pending_connect(true);
   test_device()->AddPeer(std::move(fake_peer));
 
@@ -909,7 +909,7 @@ TEST_F(AdapterTest, ExistingConnectionDoesNotPreventLocalAddressChange) {
   };
 
   auto* peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
-  auto fake_peer = std::make_unique<FakePeer>(kTestAddr);
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddr, pw_dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
   adapter()->le()->Connect(peer->identifier(), connect_cb, LowEnergyConnectionOptions());
   RunLoopUntilIdle();
@@ -1130,7 +1130,7 @@ TEST_F(AdapterTest, LowEnergyStartAdvertisingConnectCallbackReceivesConnection) 
       bt::hci_spec::kReadRemoteVersionInfo,
       [&](fit::closure trigger) { complete_interrogation = std::move(trigger); });
 
-  test_device()->AddPeer(std::make_unique<FakePeer>(kTestAddr));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kTestAddr, pw_dispatcher()));
   test_device()->ConnectLowEnergy(kTestAddr);
   RunLoopUntilIdle();
   ASSERT_FALSE(conn_result);
@@ -1157,7 +1157,7 @@ class AdapterConstructorTest : public TestingBase {
   void SetUp() override {
     TestingBase::SetUp();
 
-    l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>();
+    l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>(pw_dispatcher());
     gatt_ = std::make_unique<gatt::testing::FakeLayer>(pw_dispatcher());
   }
 

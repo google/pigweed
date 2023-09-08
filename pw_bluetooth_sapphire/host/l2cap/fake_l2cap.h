@@ -16,7 +16,7 @@ namespace bt::l2cap::testing {
 // layers for unit testing.
 class FakeL2cap final : public ChannelManager {
  public:
-  FakeL2cap() = default;
+  explicit FakeL2cap(pw::async::Dispatcher& pw_dispatcher) : heap_dispatcher_(pw_dispatcher) {}
   ~FakeL2cap() override;
 
   void AttachInspect(inspect::Node& parent, std::string name) override {}
@@ -145,6 +145,8 @@ class FakeL2cap final : public ChannelManager {
   ConnectionParameterUpdateRequestResponder connection_parameter_update_request_responder_;
 
   std::unordered_map<PSM, ServiceInfo> registered_services_;
+
+  pw::async::HeapDispatcher heap_dispatcher_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeL2cap);
 };

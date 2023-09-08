@@ -155,7 +155,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
 
   // Constructor initializes the controller with the minimal default settings (equivalent to calling
   // Settings::ApplyDefaults()).
-  FakeController() : WeakSelf(this) {}
+  explicit FakeController(pw::async::Dispatcher& pw_dispatcher)
+      : WeakSelf(this), pw_dispatcher_(pw_dispatcher) {}
   ~FakeController() override = default;
 
   // Resets the controller settings.
@@ -396,6 +397,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
                       }
                     });
   }
+
+  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
 
  private:
   static bool IsValidAdvertisingHandle(hci_spec::AdvertisingHandle handle) {
@@ -837,6 +840,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
 
   bool auto_completed_packets_event_enabled_ = true;
   bool auto_disconnection_complete_event_enabled_ = true;
+
+  pw::async::Dispatcher& pw_dispatcher_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeController);
 };

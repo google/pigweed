@@ -42,7 +42,8 @@ bool CommandTransaction::Match(const ByteBuffer& cmd) {
                          (prefix_ ? cmd.view(0, expected().data.size()) : cmd.view()));
 }
 
-MockController::MockController() : WeakSelf(this) {}
+MockController::MockController(pw::async::Dispatcher& pw_dispatcher)
+    : WeakSelf(this), heap_dispatcher_(pw_dispatcher) {}
 
 MockController::~MockController() {
   while (!cmd_transactions_.empty()) {

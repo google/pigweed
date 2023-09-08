@@ -80,7 +80,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
 
     pairing_ = SecurityManager::Create(fake_link_->GetWeakPtr(), fake_chan_->GetWeakPtr(), ioc,
                                        weak_delegate_.GetWeakPtr(), bondable_mode,
-                                       gap::LESecurityMode::Mode1, pw_dispatcher_);
+                                       gap::LESecurityMode::Mode1, pw_dispatcher());
   }
 
   void DestroySecurityManager() { pairing_ = nullptr; }
@@ -428,9 +428,9 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
   void InitializeTransport() {
     // Ensure any tasks posted by an existing transport are dispatched.
     RunLoopUntilIdle();
-    auto mock_controller = std::make_unique<bt::testing::MockController>();
+    auto mock_controller = std::make_unique<bt::testing::MockController>(pw_dispatcher());
     controller_ = mock_controller->GetWeakPtr();
-    transport_ = std::make_unique<hci::Transport>(std::move(mock_controller), pw_dispatcher_);
+    transport_ = std::make_unique<hci::Transport>(std::move(mock_controller), pw_dispatcher());
     std::optional<bool> init_success;
     transport_->Initialize([&](bool success) { init_success = success; });
     RunLoopUntilIdle();
@@ -439,7 +439,6 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
     transport_->InitializeACLDataChannel(hci::DataBufferInfo(1, 1), hci::DataBufferInfo(1, 1));
   }
 
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
   testing::MockController::WeakPtr controller_;
   std::unique_ptr<hci::Transport> transport_;
 

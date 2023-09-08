@@ -22,7 +22,7 @@ class FakeSdpServer {
  public:
   // Initialize a FakeSdpServer instance and create an associated instance of
   // the production SDP server.
-  FakeSdpServer();
+  explicit FakeSdpServer(pw::async::Dispatcher& pw_dispatcher);
 
   // Register this FakeSdpServer as a service on PSM l2cap::kSDP on |l2cap|.
   // Any channel registered with this service will have its packet handler

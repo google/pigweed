@@ -8,6 +8,7 @@
 #include <cstdint>
 
 #include <gtest/gtest.h>
+#include <pw_async_fuchsia/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
@@ -16,10 +17,16 @@
 
 namespace bt::testing {
 
-class FakeControllerTest : public ::gtest::TestLoopFixture {};
+class FakeControllerTest : public ::gtest::TestLoopFixture {
+ public:
+  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
+
+ private:
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
+};
 
 TEST_F(FakeControllerTest, TestInquiryCommand) {
-  FakeController controller;
+  FakeController controller(pw_dispatcher());
 
   int event_cb_count = 0;
   controller.SetEventFunction([&event_cb_count](pw::span<const std::byte> packet_bytes) {

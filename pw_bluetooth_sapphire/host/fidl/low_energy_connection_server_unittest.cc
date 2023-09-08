@@ -46,7 +46,7 @@ class LowEnergyConnectionServerTest : public bthost::testing::AdapterTestFixture
     // Since LowEnergyConnectionHandle must be created by LowEnergyConnectionManager, we discover
     // and connect to a fake peer to get a LowEnergyConnectionHandle.
     std::unique_ptr<bt::testing::FakePeer> fake_peer =
-        std::make_unique<bt::testing::FakePeer>(kTestAddr, /*connectable=*/true);
+        std::make_unique<bt::testing::FakePeer>(kTestAddr, pw_dispatcher(), /*connectable=*/true);
     test_device()->AddPeer(std::move(fake_peer));
 
     std::optional<bt::PeerId> peer_id;

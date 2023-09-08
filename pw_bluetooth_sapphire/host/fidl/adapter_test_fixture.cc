@@ -19,7 +19,7 @@ void AdapterTestFixture::SetUp(FakeController::Settings settings,
                                pw::bluetooth::Controller::FeaturesBits features) {
   TestingBase::SetUp(features, /*initialize_transport=*/false);
 
-  auto l2cap = std::make_unique<bt::l2cap::testing::FakeL2cap>();
+  auto l2cap = std::make_unique<bt::l2cap::testing::FakeL2cap>(pw_dispatcher());
   l2cap_ = l2cap.get();
   gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>(pw_dispatcher());
   adapter_ =

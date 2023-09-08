@@ -132,7 +132,12 @@ void FakeL2cap::RequestConnectionParameterUpdate(
                       ? connection_parameter_update_request_responder_(handle, params)
                       : true;
   // Simulate async response.
-  async::PostTask(async_get_default_dispatcher(), std::bind(std::move(request_cb), response));
+  heap_dispatcher_.Post([request_cb = std::move(request_cb), response](pw::async::Context /*ctx*/,
+                                                                       pw::Status status) {
+    if (status.ok()) {
+      request_cb(response);
+    }
+  });
 }
 
 void FakeL2cap::OpenL2capChannel(hci_spec::ConnectionHandle handle, l2cap::PSM psm,
@@ -169,8 +174,12 @@ void FakeL2cap::OpenL2capChannel(hci_spec::ConnectionHandle handle, l2cap::PSM p
   }
 
   // Simulate async channel creation process.
-  async::PostTask(async_get_default_dispatcher(),
-                  [cb = std::move(cb), chan = std::move(chan)]() { cb(chan); });
+  heap_dispatcher_.Post(
+      [cb = std::move(cb), chan = std::move(chan)](pw::async::Context /*ctx*/, pw::Status status) {
+        if (status.ok()) {
+          cb(chan);
+        }
+      });
 }
 
 bool FakeL2cap::RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,

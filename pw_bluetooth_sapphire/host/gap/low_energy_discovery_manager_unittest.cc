@@ -168,7 +168,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
         // Complete local name
         0x09, 0x09, 'D', 'e', 'v', 'i', 'c', 'e', ' ', '0');
-    auto fake_peer = std::make_unique<FakePeer>(kAddress0, true, true);
+    auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher(), true, true);
     fake_peer->SetAdvertisingData(kAdvData0);
     test_device()->AddPeer(std::move(fake_peer));
 
@@ -179,7 +179,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
         // Complete 16-bit service UUIDs
         0x03, 0x03, 0x0d, 0x18);
-    fake_peer = std::make_unique<FakePeer>(kAddress1, true, true);
+    fake_peer = std::make_unique<FakePeer>(kAddress1, pw_dispatcher(), true, true);
     fake_peer->SetAdvertisingData(kAdvData1);
     test_device()->AddPeer(std::move(fake_peer));
 
@@ -190,7 +190,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
         // Complete local name
         0x09, 0x09, 'D', 'e', 'v', 'i', 'c', 'e', ' ', '2');
-    fake_peer = std::make_unique<FakePeer>(kAddress2, false, false);
+    fake_peer = std::make_unique<FakePeer>(kAddress2, pw_dispatcher(), false, false);
     fake_peer->SetAdvertisingData(kAdvData2);
     test_device()->AddPeer(std::move(fake_peer));
 
@@ -201,7 +201,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
         // Complete local name
         0x09, 0x09, 'D', 'e', 'v', 'i', 'c', 'e', ' ', '3');
-    fake_peer = std::make_unique<FakePeer>(kAddress3, false, false);
+    fake_peer = std::make_unique<FakePeer>(kAddress3, pw_dispatcher(), false, false);
     fake_peer->SetAdvertisingData(kAdvData3);
     test_device()->AddPeer(std::move(fake_peer));
   }
@@ -805,7 +805,8 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWithFiltersCachedPeerNotific
 }
 
 TEST_F(LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromUnknownPeer) {
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, /*connectable=*/true, /*scannable=*/false);
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher(), /*connectable=*/true,
+                                              /*scannable=*/false);
   fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
 
@@ -830,8 +831,8 @@ TEST_F(LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromUnknownPeer) {
 }
 
 TEST_F(LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromKnownNonConnectablePeer) {
-  auto fake_peer =
-      std::make_unique<FakePeer>(kAddress0, /*connectable=*/false, /*scannable=*/false);
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher(), /*connectable=*/false,
+                                              /*scannable=*/false);
   fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
   Peer* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/false);
@@ -858,7 +859,8 @@ TEST_F(LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromKnownNonConnec
 }
 
 TEST_F(LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromKnownConnectablePeer) {
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, /*connectable=*/true, /*scannable=*/false);
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher(), /*connectable=*/true,
+                                              /*scannable=*/false);
   fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
   Peer* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
@@ -1065,17 +1067,20 @@ TEST_F(LowEnergyDiscoveryManagerTest,
        PeerConnectableCallbackOnlyHandlesEventsFromKnownConnectableDevices) {
   // Address 0: undirected connectable; added to cache below
   {
-    auto peer = std::make_unique<FakePeer>(kAddress0, /*connectable=*/true, /*scannable=*/true);
+    auto peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher(), /*connectable=*/true,
+                                           /*scannable=*/true);
     test_device()->AddPeer(std::move(peer));
   }
   // Address 1: undirected connectable; NOT in cache
   {
-    auto peer = std::make_unique<FakePeer>(kAddress1, /*connectable=*/true, /*scannable=*/true);
+    auto peer = std::make_unique<FakePeer>(kAddress1, pw_dispatcher(), /*connectable=*/true,
+                                           /*scannable=*/true);
     test_device()->AddPeer(std::move(peer));
   }
   // Address 2: not connectable; added to cache below
   {
-    auto peer = std::make_unique<FakePeer>(kAddress2, /*connectable=*/false, /*scannable=*/false);
+    auto peer = std::make_unique<FakePeer>(kAddress2, pw_dispatcher(), /*connectable=*/false,
+                                           /*scannable=*/false);
     test_device()->AddPeer(std::move(peer));
   }
   // Address 3: not connectable but directed advertising (NOTE: although a directed advertising PDU
@@ -1084,19 +1089,22 @@ TEST_F(LowEnergyDiscoveryManagerTest,
   //
   // added to cache below
   {
-    auto peer = std::make_unique<FakePeer>(kAddress3, /*connectable=*/false, /*scannable=*/false);
+    auto peer = std::make_unique<FakePeer>(kAddress3, pw_dispatcher(), /*connectable=*/false,
+                                           /*scannable=*/false);
     peer->enable_directed_advertising(true);
     test_device()->AddPeer(std::move(peer));
   }
   // Address 4: directed connectable; added to cache below
   {
-    auto peer = std::make_unique<FakePeer>(kAddress4, /*connectable=*/true, /*scannable=*/false);
+    auto peer = std::make_unique<FakePeer>(kAddress4, pw_dispatcher(), /*connectable=*/true,
+                                           /*scannable=*/false);
     peer->enable_directed_advertising(true);
     test_device()->AddPeer(std::move(peer));
   }
   // Address 5: directed connectable; NOT in cache
   {
-    auto peer = std::make_unique<FakePeer>(kAddress5, /*connectable=*/true, /*scannable=*/false);
+    auto peer = std::make_unique<FakePeer>(kAddress5, pw_dispatcher(), /*connectable=*/true,
+                                           /*scannable=*/false);
     peer->enable_directed_advertising(true);
     test_device()->AddPeer(std::move(peer));
   }
@@ -1313,7 +1321,8 @@ TEST_F(LowEnergyDiscoveryManagerTest, StopSessionInsideOfResultCallbackDoesNotCr
 }
 
 TEST_F(LowEnergyDiscoveryManagerTest, PeerChangesFromNonConnectableToConnectable) {
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, /*connectable=*/false));
+  test_device()->AddPeer(
+      std::make_unique<FakePeer>(kAddress0, pw_dispatcher(), /*connectable=*/false));
 
   std::unique_ptr<LowEnergyDiscoverySession> session;
   discovery_manager()->StartDiscovery(
@@ -1327,7 +1336,8 @@ TEST_F(LowEnergyDiscoveryManagerTest, PeerChangesFromNonConnectableToConnectable
 
   // Make peer connectable.
   test_device()->RemovePeer(kAddress0);
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, /*connectable=*/true));
+  test_device()->AddPeer(
+      std::make_unique<FakePeer>(kAddress0, pw_dispatcher(), /*connectable=*/true));
 
   RunLoopUntilIdle();
   peer = peer_cache()->FindByAddress(kAddress0);
@@ -1336,7 +1346,8 @@ TEST_F(LowEnergyDiscoveryManagerTest, PeerChangesFromNonConnectableToConnectable
 
   // Ensure peer stays connectable after non-connectable advertisement.
   test_device()->RemovePeer(kAddress0);
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, /*connectable=*/false));
+  test_device()->AddPeer(
+      std::make_unique<FakePeer>(kAddress0, pw_dispatcher(), /*connectable=*/false));
 
   RunLoopUntilIdle();
   peer = peer_cache()->FindByAddress(kAddress0);
@@ -1398,12 +1409,12 @@ TEST_F(LowEnergyDiscoveryManagerTest, Inspect) {
 #endif  // NINSPECT
 
 TEST_F(LowEnergyDiscoveryManagerTest, SetResultCallbackIgnoresRemovedPeers) {
-  auto fake_peer_0 = std::make_unique<FakePeer>(kAddress0);
+  auto fake_peer_0 = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
   test_device()->AddPeer(std::move(fake_peer_0));
   Peer* peer_0 = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   PeerId peer_id_0 = peer_0->identifier();
 
-  auto fake_peer_1 = std::make_unique<FakePeer>(kAddress1);
+  auto fake_peer_1 = std::make_unique<FakePeer>(kAddress1, pw_dispatcher());
   test_device()->AddPeer(std::move(fake_peer_1));
   Peer* peer_1 = peer_cache()->NewPeer(kAddress1, /*connectable=*/true);
   PeerId peer_id_1 = peer_1->identifier();

@@ -41,7 +41,7 @@ class ServerTest : public TestingBase {
 
  protected:
   void SetUp() override {
-    l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>();
+    l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>(pw_dispatcher());
     l2cap_->set_channel_callback([this](auto fake_chan) {
       channel_ = std::move(fake_chan);
       set_fake_chan(channel_);

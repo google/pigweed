@@ -567,7 +567,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
     InitializeACLDataChannel(kBrEdrBufferInfo, kLeBufferInfo);
 
     peer_cache_ = std::make_unique<PeerCache>(pw_dispatcher());
-    l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>();
+    l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>(pw_dispatcher());
 
     // Respond to BrEdrConnectionManager controller setup with success.
     EXPECT_CMD_PACKET_OUT(test_device(),

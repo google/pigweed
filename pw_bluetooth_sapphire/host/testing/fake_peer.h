@@ -30,7 +30,8 @@ class FakePeer {
   // false. This is OK since we use |scannable| to drive the receipt of Scan
   // Response PDUs: we use this to test the condition in which the advertisement
   // is scannable but the host never receives a scan response.
-  explicit FakePeer(const DeviceAddress& address, bool connectable = true, bool scannable = true);
+  explicit FakePeer(const DeviceAddress& address, pw::async::Dispatcher& pw_dispatcher,
+                    bool connectable = true, bool scannable = true);
 
   void SetAdvertisingData(const ByteBuffer& data);
 

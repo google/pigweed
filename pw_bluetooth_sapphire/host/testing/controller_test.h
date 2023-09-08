@@ -131,7 +131,7 @@ class ControllerTest : public ::gtest::TestLoopFixture {
  private:
   std::unique_ptr<pw::bluetooth::Controller> SetUpTestController() {
     std::unique_ptr<ControllerTestDoubleType> controller =
-        std::make_unique<ControllerTestDoubleType>();
+        std::make_unique<ControllerTestDoubleType>(pw_dispatcher());
     test_device_ = controller->GetWeakPtr();
     return controller;
   }
