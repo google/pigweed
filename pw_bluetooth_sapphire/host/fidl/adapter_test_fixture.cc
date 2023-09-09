@@ -22,8 +22,8 @@ void AdapterTestFixture::SetUp(FakeController::Settings settings,
   auto l2cap = std::make_unique<bt::l2cap::testing::FakeL2cap>(pw_dispatcher());
   l2cap_ = l2cap.get();
   gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>(pw_dispatcher());
-  adapter_ =
-      bt::gap::Adapter::Create(transport()->GetWeakPtr(), gatt_->GetWeakPtr(), std::move(l2cap));
+  adapter_ = bt::gap::Adapter::Create(pw_dispatcher(), transport()->GetWeakPtr(),
+                                      gatt_->GetWeakPtr(), std::move(l2cap));
 
   test_device()->set_settings(settings);
 

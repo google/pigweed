@@ -6,7 +6,7 @@
 
 #include <endian.h>
 
-#include <pw_async_fuchsia/dispatcher.h>
+#include <pw_async/dispatcher.h>
 
 #include "bredr_connection_manager.h"
 #include "bredr_discovery_manager.h"
@@ -51,11 +51,8 @@ static constexpr const char* kInspectBrEdrDiscoveryManagerNodeName = "bredr_disc
 // instance is created.
 class AdapterImpl final : public Adapter {
  public:
-  // There must be an async_t dispatcher registered as a default when an AdapterImpl
-  // instance is created. The Adapter instance will use it for all of its
-  // asynchronous tasks.
-  explicit AdapterImpl(hci::Transport::WeakPtr hci, gatt::GATT::WeakPtr gatt,
-                       std::unique_ptr<l2cap::ChannelManager> l2cap);
+  explicit AdapterImpl(pw::async::Dispatcher& pw_dispatcher, hci::Transport::WeakPtr hci,
+                       gatt::GATT::WeakPtr gatt, std::unique_ptr<l2cap::ChannelManager> l2cap);
   ~AdapterImpl() override;
 
   AdapterId identifier() const override { return identifier_; }
@@ -409,8 +406,6 @@ class AdapterImpl final : public Adapter {
   // Uniquely identifies this adapter on the current system.
   AdapterId identifier_;
 
-  async_dispatcher_t* dispatcher_ = async_get_default_dispatcher();
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher_};
   hci::Transport::WeakPtr hci_;
 
   // Callback invoked to notify clients when the underlying transport is closed.
@@ -439,7 +434,7 @@ class AdapterImpl final : public Adapter {
 
   // Provides access to discovered, connected, and/or bonded remote Bluetooth
   // devices.
-  PeerCache peer_cache_{pw_dispatcher_};
+  PeerCache peer_cache_;
 
   // L2CAP layer used by GAP. This must be destroyed after the following members because they raw
   // pointers to this member.
@@ -471,6 +466,8 @@ class AdapterImpl final : public Adapter {
   // Callback to propagate ownership of an auto-connected LE link.
   AutoConnectCallback auto_conn_cb_;
 
+  pw::async::Dispatcher& pw_dispatcher_;
+
   // This must remain the last member to make sure that all weak pointers are
   // invalidating before other members are destroyed.
   WeakSelf<AdapterImpl> weak_self_;
@@ -479,18 +476,19 @@ class AdapterImpl final : public Adapter {
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdapterImpl);
 };
 
-AdapterImpl::AdapterImpl(hci::Transport::WeakPtr hci, gatt::GATT::WeakPtr gatt,
-                         std::unique_ptr<l2cap::ChannelManager> l2cap)
+AdapterImpl::AdapterImpl(pw::async::Dispatcher& pw_dispatcher, hci::Transport::WeakPtr hci,
+                         gatt::GATT::WeakPtr gatt, std::unique_ptr<l2cap::ChannelManager> l2cap)
     : identifier_(Random<AdapterId>()),
       hci_(std::move(hci)),
       init_state_(State::kNotInitialized),
+      peer_cache_(pw_dispatcher),
       l2cap_(std::move(l2cap)),
       gatt_(std::move(gatt)),
+      pw_dispatcher_(pw_dispatcher),
       weak_self_(this),
       weak_self_adapter_(this) {
   BT_DEBUG_ASSERT(hci_.is_alive());
   BT_DEBUG_ASSERT(gatt_.is_alive());
-  BT_DEBUG_ASSERT_MSG(dispatcher_, "must create on a thread with a dispatcher");
 
   auto self = weak_self_.GetWeakPtr();
   hci_->SetTransportErrorCallback([self] {
@@ -1287,9 +1285,10 @@ bool AdapterImpl::IsLeRandomAddressChangeAllowed() {
          hci_le_connector_->AllowsRandomAddressChange();
 }
 
-std::unique_ptr<Adapter> Adapter::Create(hci::Transport::WeakPtr hci, gatt::GATT::WeakPtr gatt,
+std::unique_ptr<Adapter> Adapter::Create(pw::async::Dispatcher& pw_dispatcher,
+                                         hci::Transport::WeakPtr hci, gatt::GATT::WeakPtr gatt,
                                          std::unique_ptr<l2cap::ChannelManager> l2cap) {
-  return std::make_unique<AdapterImpl>(hci, gatt, std::move(l2cap));
+  return std::make_unique<AdapterImpl>(pw_dispatcher, hci, gatt, std::move(l2cap));
 }
 
 }  // namespace bt::gap
