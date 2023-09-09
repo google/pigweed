@@ -10,6 +10,10 @@
 
 #include <unordered_map>
 
+#include <pw_async/dispatcher.h>
+
+#include "pw_async_fuchsia/util.h"
+
 namespace bt {
 
 // A set which only holds items until the expiry time given.
@@ -17,7 +21,7 @@ template <typename Key>
 class ExpiringSet {
  public:
   virtual ~ExpiringSet() = default;
-  ExpiringSet() = default;
+  explicit ExpiringSet(pw::async::Dispatcher& pw_dispatcher) : pw_dispatcher_(pw_dispatcher) {}
 
   // Add an item with the key `k` to the set, until the `expiration` passes.
   // If the key is already in the set, the expiration is updated, even if it changes the expiration.
@@ -33,7 +37,7 @@ class ExpiringSet {
     if (it == elems_.end()) {
       return false;
     }
-    if (it->second <= async::Now(async_get_default_dispatcher())) {
+    if (it->second <= pw_async_fuchsia::TimepointToZxTime(pw_dispatcher_.now())) {
       elems_.erase(it);
       return false;
     }
@@ -42,6 +46,7 @@ class ExpiringSet {
 
  private:
   std::unordered_map<Key, zx::time> elems_;
+  pw::async::Dispatcher& pw_dispatcher_;
 };
 
 }  // namespace bt

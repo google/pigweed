@@ -5,6 +5,8 @@
 #include "expiring_set.h"
 
 #include <gtest/gtest.h>
+#include <pw_async_fuchsia/dispatcher.h>
+#include <pw_async_fuchsia/util.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
@@ -13,12 +15,17 @@ namespace bt {
 
 namespace {
 
-zx::time now() { return async::Now(async_get_default_dispatcher()); }
+class ExpiringSetTest : public ::gtest::TestLoopFixture {
+ public:
+  zx::time now() { return pw_async_fuchsia::TimepointToZxTime(pw_dispatcher_.now()); }
+  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
 
-using ExpiringSetTest = ::gtest::TestLoopFixture;
+ private:
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
+};
 
 TEST_F(ExpiringSetTest, Expiration) {
-  ExpiringSet<std::string> set;
+  ExpiringSet<std::string> set(pw_dispatcher());
 
   set.add_until("Expired", now() - zx::msec(1));
   EXPECT_FALSE(set.contains("Expired"));
@@ -42,7 +49,7 @@ TEST_F(ExpiringSetTest, Expiration) {
 }
 
 TEST_F(ExpiringSetTest, Remove) {
-  ExpiringSet<std::string> set;
+  ExpiringSet<std::string> set(pw_dispatcher());
 
   set.add_until("Expired", now() - zx::msec(1));
   EXPECT_FALSE(set.contains("Expired"));

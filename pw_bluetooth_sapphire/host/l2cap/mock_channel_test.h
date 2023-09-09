@@ -81,6 +81,7 @@ class MockChannelTest : public ::gtest::TestLoopFixture {
 
   void TearDown() override;
 
+  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
   pw::async::HeapDispatcher& heap_dispatcher() { return heap_dispatcher_; }
 
   // Queues a transaction into the MockChannelTest's expected packet queue. Each packet received

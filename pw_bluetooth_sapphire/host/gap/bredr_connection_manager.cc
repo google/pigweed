@@ -146,6 +146,7 @@ BrEdrConnectionManager::BrEdrConnectionManager(hci::Transport::WeakPtr hci, Peer
       cache_(peer_cache),
       local_address_(local_address),
       l2cap_(l2cap),
+      deny_incoming_(dispatcher),
       page_scan_interval_(0),
       page_scan_window_(0),
       use_interlaced_scan_(use_interlaced_scan),
