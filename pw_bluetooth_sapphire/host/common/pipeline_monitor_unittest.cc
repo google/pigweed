@@ -7,6 +7,7 @@
 #include <memory>
 
 #include <gmock/gmock.h>
+#include <pw_async_fuchsia/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/retire_log.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
@@ -17,19 +18,24 @@ namespace {
 using Token = PipelineMonitor::Token;
 
 // Use a test dispatch loop.
-class PipelineMonitorTest : public gtest::TestLoopFixture {};
+class PipelineMonitorTest : public gtest::TestLoopFixture {
+ public:
+  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
+
+ private:
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
+};
 
 const internal::RetireLog kRetireLogDefaultParams(/*min_depth=*/1, /*max_depth=*/100);
 
 TEST_F(PipelineMonitorTest, TokensCanOutliveMonitor) {
-  auto monitor =
-      std::make_unique<PipelineMonitor>(fit::nullable{dispatcher()}, kRetireLogDefaultParams);
+  auto monitor = std::make_unique<PipelineMonitor>(pw_dispatcher(), kRetireLogDefaultParams);
   auto token = monitor->Issue(0);
   monitor.reset();
 }
 
 TEST_F(PipelineMonitorTest, SequentialTokensModifyCounts) {
-  PipelineMonitor monitor(fit::nullable{dispatcher()}, kRetireLogDefaultParams);
+  PipelineMonitor monitor(pw_dispatcher(), kRetireLogDefaultParams);
   EXPECT_EQ(0U, monitor.bytes_issued());
   EXPECT_EQ(0, monitor.tokens_issued());
   EXPECT_EQ(0U, monitor.bytes_in_flight());
@@ -74,7 +80,7 @@ TEST_F(PipelineMonitorTest, SequentialTokensModifyCounts) {
 }
 
 TEST_F(PipelineMonitorTest, TokensCanBeMoved) {
-  PipelineMonitor monitor(fit::nullable{dispatcher()}, kRetireLogDefaultParams);
+  PipelineMonitor monitor(pw_dispatcher(), kRetireLogDefaultParams);
   EXPECT_EQ(0U, monitor.bytes_issued());
   EXPECT_EQ(0, monitor.tokens_issued());
   EXPECT_EQ(0U, monitor.bytes_in_flight());
@@ -104,7 +110,7 @@ TEST_F(PipelineMonitorTest, TokensCanBeMoved) {
 }
 
 TEST_F(PipelineMonitorTest, SubscribeToMaxTokensAlert) {
-  PipelineMonitor monitor(fit::nullable{dispatcher()}, kRetireLogDefaultParams);
+  PipelineMonitor monitor(pw_dispatcher(), kRetireLogDefaultParams);
 
   std::optional<PipelineMonitor::MaxTokensInFlightAlert> received_alert;
   constexpr int kMaxTokensInFlight = 1;
@@ -133,7 +139,7 @@ TEST_F(PipelineMonitorTest, SubscribeToMaxTokensAlert) {
 }
 
 TEST_F(PipelineMonitorTest, SubscribeToMaxBytesAlert) {
-  PipelineMonitor monitor(fit::nullable{dispatcher()}, kRetireLogDefaultParams);
+  PipelineMonitor monitor(pw_dispatcher(), kRetireLogDefaultParams);
 
   std::optional<PipelineMonitor::MaxBytesInFlightAlert> received_alert;
   constexpr size_t kMaxBytesInFlight = 1;
@@ -151,7 +157,7 @@ TEST_F(PipelineMonitorTest, SubscribeToMaxBytesAlert) {
 }
 
 TEST_F(PipelineMonitorTest, SubscribeToMaxAgeAlert) {
-  PipelineMonitor monitor(fit::nullable{dispatcher()}, kRetireLogDefaultParams);
+  PipelineMonitor monitor(pw_dispatcher(), kRetireLogDefaultParams);
 
   std::optional<PipelineMonitor::MaxAgeRetiredAlert> received_alert;
   constexpr zx::duration kMaxAge = zx::msec(500);
@@ -170,7 +176,7 @@ TEST_F(PipelineMonitorTest, SubscribeToMaxAgeAlert) {
 }
 
 TEST_F(PipelineMonitorTest, SubscribeToAlertInsideHandler) {
-  PipelineMonitor monitor(fit::nullable{dispatcher()}, kRetireLogDefaultParams);
+  PipelineMonitor monitor(pw_dispatcher(), kRetireLogDefaultParams);
 
   std::optional<PipelineMonitor::MaxBytesInFlightAlert> received_alert;
   constexpr size_t kMaxBytesInFlight = 2;
@@ -193,7 +199,7 @@ TEST_F(PipelineMonitorTest, SubscribeToAlertInsideHandler) {
 }
 
 TEST_F(PipelineMonitorTest, MultipleMaxBytesInFlightAlertsWithDifferentThresholds) {
-  PipelineMonitor monitor(fit::nullable{dispatcher()}, kRetireLogDefaultParams);
+  PipelineMonitor monitor(pw_dispatcher(), kRetireLogDefaultParams);
 
   std::optional<PipelineMonitor::MaxBytesInFlightAlert> received_alert_0;
   constexpr size_t kMaxBytesInFlight0 = 1;
@@ -218,7 +224,7 @@ TEST_F(PipelineMonitorTest, MultipleMaxBytesInFlightAlertsWithDifferentThreshold
 }
 
 TEST_F(PipelineMonitorTest, SubscribeToMultipleDissimilarAlerts) {
-  PipelineMonitor monitor(fit::nullable{dispatcher()}, kRetireLogDefaultParams);
+  PipelineMonitor monitor(pw_dispatcher(), kRetireLogDefaultParams);
 
   constexpr size_t kMaxBytesInFlight = 2;
   constexpr int kMaxTokensInFlight = 1;
@@ -250,8 +256,7 @@ TEST_F(PipelineMonitorTest, SubscribeToMultipleDissimilarAlerts) {
 }
 
 TEST_F(PipelineMonitorTest, TokensRetireIntoRetireLog) {
-  PipelineMonitor monitor(fit::nullable{dispatcher()},
-                          internal::RetireLog(/*min_depth=*/1, /*max_depth=*/64));
+  PipelineMonitor monitor(pw_dispatcher(), internal::RetireLog(/*min_depth=*/1, /*max_depth=*/64));
 
   auto token = monitor.Issue(1);
   EXPECT_EQ(0U, monitor.retire_log().depth());
@@ -271,7 +276,7 @@ TEST_F(PipelineMonitorTest, TokensRetireIntoRetireLog) {
 }
 
 TEST_F(PipelineMonitorTest, TokensCanBeSplit) {
-  PipelineMonitor monitor(fit::nullable{dispatcher()}, kRetireLogDefaultParams);
+  PipelineMonitor monitor(pw_dispatcher(), kRetireLogDefaultParams);
 
   const size_t kSplits = 10;
   Token token_main = monitor.Issue(kSplits);
@@ -318,7 +323,7 @@ TEST_F(PipelineMonitorTest, TokensCanBeSplit) {
 using PipelineMonitorDeathTest = PipelineMonitorTest;
 
 TEST_F(PipelineMonitorDeathTest, SplittingTokenIntoMoreThanConstituentBytes) {
-  PipelineMonitor monitor(fit::nullable{dispatcher()}, kRetireLogDefaultParams);
+  PipelineMonitor monitor(pw_dispatcher(), kRetireLogDefaultParams);
 
   auto token_main = monitor.Issue(1);
 
