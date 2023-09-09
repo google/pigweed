@@ -405,8 +405,8 @@ bool BrEdrConnectionManager::Disconnect(PeerId peer_id, DisconnectReason reason)
   if (reason == DisconnectReason::kApiRequest) {
     bt_log(DEBUG, "gap-bredr", "requested disconnect from peer, cooldown for %lds (addr: %s)",
            kLocalDisconnectCooldownDuration.to_secs(), bt_str(peer_addr));
-    deny_incoming_.add_until(
-        peer_addr, async::Now(async_get_default_dispatcher()) + kLocalDisconnectCooldownDuration);
+    deny_incoming_.add_until(peer_addr, pw_async_fuchsia::TimepointToZxTime(pw_dispatcher_.now()) +
+                                            kLocalDisconnectCooldownDuration);
   }
 
   CleanUpConnection(handle, std::move(connections_.extract(handle).mapped()), reason);
@@ -619,7 +619,8 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
   auto on_peer_disconnect_cb = [this, link = link.get()] { OnPeerDisconnect(link); };
   auto [conn_iter, success] = connections_.try_emplace(
       handle, peer->GetWeakPtr(), std::move(link), std::move(send_auth_request_cb),
-      std::move(disconnect_cb), std::move(on_peer_disconnect_cb), l2cap_, hci_, std::move(request));
+      std::move(disconnect_cb), std::move(on_peer_disconnect_cb), l2cap_, hci_, std::move(request),
+      pw_dispatcher_);
   BT_ASSERT(success);
 
   BrEdrConnection& connection = conn_iter->second;
@@ -797,7 +798,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnConnectionReq
   // Register that we're in the middle of an incoming request for this peer - create a new
   // request if one doesn't already exist
   auto [request, _] = connection_requests_.try_emplace(
-      peer_id, addr, peer_id, peer->MutBrEdr().RegisterInitializingConnection());
+      peer_id, pw_dispatcher_, addr, peer_id, peer->MutBrEdr().RegisterInitializingConnection());
 
   inspect_properties_.incoming_.connection_attempts_.Add(1);
 
@@ -1301,8 +1302,8 @@ bool BrEdrConnectionManager::Connect(PeerId peer_id, ConnectResultCallback on_co
   }
   // If we are not already connected or pending, initiate a new connection
   auto [request_iter, _] = connection_requests_.try_emplace(
-      peer_id, peer->address(), peer_id, peer->MutBrEdr().RegisterInitializingConnection(),
-      std::move(on_connection_result));
+      peer_id, pw_dispatcher_, peer->address(), peer_id,
+      peer->MutBrEdr().RegisterInitializingConnection(), std::move(on_connection_result));
   request_iter->second.AttachInspect(
       inspect_properties_.requests_node_,
       inspect_properties_.requests_node_.UniqueName(kInspectRequestNodeNamePrefix));

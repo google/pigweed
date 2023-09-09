@@ -5,9 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_CONNECTION_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_CONNECTION_H_
 
-#include <lib/async/cpp/time.h>
-#include <lib/async/default.h>
-
 #include <optional>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
@@ -40,12 +37,12 @@ class BrEdrConnection final {
   BrEdrConnection(Peer::WeakPtr peer, std::unique_ptr<hci::BrEdrConnection> link,
                   fit::closure send_auth_request_cb, fit::callback<void()> disconnect_cb,
                   fit::closure on_peer_disconnect_cb, l2cap::ChannelManager* l2cap,
-                  hci::Transport::WeakPtr transport, std::optional<Request> request);
+                  hci::Transport::WeakPtr transport, std::optional<Request> request,
+                  pw::async::Dispatcher& pw_dispatcher);
 
   ~BrEdrConnection();
 
   BrEdrConnection(BrEdrConnection&&) = default;
-  BrEdrConnection& operator=(BrEdrConnection&&) = default;
 
   void Interrogate(BrEdrInterrogator::ResultCallback callback);
 
@@ -82,9 +79,7 @@ class BrEdrConnection final {
   PairingState& pairing_state() { return *pairing_state_; }
 
   // Returns the duration that this connection has been alive.
-  zx::duration duration() const {
-    return async::Now(async_get_default_dispatcher()) - create_time_;
-  }
+  zx::duration duration() const;
 
   sm::SecurityProperties security_properties() const {
     ZX_ASSERT(pairing_state_);
@@ -128,6 +123,8 @@ class BrEdrConnection final {
   // Ensures that this peer is marked "connected" once pairing completes.
   // Unregisters the connection from PeerCache when this connection is destroyed.
   Peer::ConnectionToken peer_conn_token_;
+
+  pw::async::Dispatcher& pw_dispatcher_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnection);
 };

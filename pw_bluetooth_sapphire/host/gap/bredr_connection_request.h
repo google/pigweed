@@ -5,7 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_CONNECTION_REQUEST_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_CONNECTION_REQUEST_H_
 
-#include <lib/async/cpp/task.h>
 #include <lib/fit/function.h>
 #include <lib/zx/time.h>
 
@@ -39,14 +38,14 @@ class BrEdrConnectionRequest final {
   using RefFactory = fit::function<BrEdrConnection*()>;
 
   // Construct without a callback. Can be used for incoming only requests
-  BrEdrConnectionRequest(const DeviceAddress& addr, PeerId peer_id,
-                         Peer::InitializingConnectionToken token);
+  BrEdrConnectionRequest(pw::async::Dispatcher& pw_dispatcher, const DeviceAddress& addr,
+                         PeerId peer_id, Peer::InitializingConnectionToken token);
 
-  BrEdrConnectionRequest(const DeviceAddress& addr, PeerId peer_id,
-                         Peer::InitializingConnectionToken token, OnComplete&& callback);
+  BrEdrConnectionRequest(pw::async::Dispatcher& pw_dispatcher, const DeviceAddress& addr,
+                         PeerId peer_id, Peer::InitializingConnectionToken token,
+                         OnComplete&& callback);
 
   BrEdrConnectionRequest(BrEdrConnectionRequest&&) = default;
-  BrEdrConnectionRequest& operator=(BrEdrConnectionRequest&&) = default;
 
   void RecordHciCreateConnectionAttempt();
   bool ShouldRetry(hci::Error failure_mode);
@@ -98,6 +97,8 @@ class BrEdrConnectionRequest final {
   inspect::Node inspect_node_;
 
   std::optional<Peer::InitializingConnectionToken> peer_init_conn_token_;
+
+  pw::async::Dispatcher& pw_dispatcher_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnectionRequest);
 };

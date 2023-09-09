@@ -81,6 +81,7 @@ static_library("gap") {
     "//src/connectivity/bluetooth/core/bt-host/sm",
     "//third_party/pigweed:pw_async_heap_dispatcher",
     "//third_party/pigweed:pw_bluetooth",
+    "//third_party/pigweed/backends/pw_async_fuchsia:util",
   ]
 }
 

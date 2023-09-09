@@ -6,6 +6,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <pw_async_fuchsia/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
@@ -22,9 +23,18 @@ const PeerId kPeerId;
 constexpr hci::Error RetryableError =
     ToResult(pw::bluetooth::emboss::StatusCode::PAGE_TIMEOUT).error_value();
 
-TEST(BrEdrConnectionRequestTests, IncomingRequestStatusTracked) {
+class BrEdrConnectionRequestTests : public gtest::TestLoopFixture {
+ public:
+  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
+
+ private:
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
+};
+
+TEST_F(BrEdrConnectionRequestTests, IncomingRequestStatusTracked) {
   // A freshly created request is not yet incoming
-  auto req = BrEdrConnectionRequest(kTestAddr, kPeerId, Peer::InitializingConnectionToken([] {}));
+  auto req = BrEdrConnectionRequest(pw_dispatcher(), kTestAddr, kPeerId,
+                                    Peer::InitializingConnectionToken([] {}));
   EXPECT_FALSE(req.HasIncoming());
 
   req.BeginIncoming();
@@ -37,11 +47,11 @@ TEST(BrEdrConnectionRequestTests, IncomingRequestStatusTracked) {
   EXPECT_FALSE(req.HasIncoming());
 }
 
-TEST(BrEdrConnectionRequestTests, CallbacksExecuted) {
+TEST_F(BrEdrConnectionRequestTests, CallbacksExecuted) {
   bool callback_called = false;
   bool token_destroyed = false;
   auto req = BrEdrConnectionRequest(
-      kTestAddr, kPeerId,
+      pw_dispatcher(), kTestAddr, kPeerId,
       Peer::InitializingConnectionToken([&token_destroyed] { token_destroyed = true; }),
       [&callback_called](auto, auto) { callback_called = true; });
 
@@ -57,11 +67,11 @@ TEST(BrEdrConnectionRequestTests, CallbacksExecuted) {
 }
 
 #ifndef NINSPECT
-TEST(BrEdrConnectionRequestTests, Inspect) {
+TEST_F(BrEdrConnectionRequestTests, Inspect) {
   // inspector must outlive request
   inspect::Inspector inspector;
-  BrEdrConnectionRequest req(kTestAddr, kPeerId, Peer::InitializingConnectionToken([] {}),
-                             [](auto, auto) {});
+  BrEdrConnectionRequest req(pw_dispatcher(), kTestAddr, kPeerId,
+                             Peer::InitializingConnectionToken([] {}), [](auto, auto) {});
   req.BeginIncoming();
   req.AttachInspect(inspector.GetRoot(), "request_name");
 
@@ -76,13 +86,12 @@ TEST(BrEdrConnectionRequestTests, Inspect) {
 }
 #endif  // NINSPECT
 
-using TestingBase = gtest::TestLoopFixture;
-class BrEdrConnectionRequestLoopTest : public TestingBase {
+class BrEdrConnectionRequestLoopTest : public gtest::TestLoopFixture {
  protected:
   using OnComplete = BrEdrConnectionRequest::OnComplete;
 
   BrEdrConnectionRequestLoopTest()
-      : req_(kTestAddr, kPeerId, Peer::InitializingConnectionToken([] {}),
+      : req_(pw_dispatcher_, kTestAddr, kPeerId, Peer::InitializingConnectionToken([] {}),
              [this](hci::Result<> res, BrEdrConnection* conn) {
                if (handler_) {
                  handler_(res, conn);
@@ -94,12 +103,6 @@ class BrEdrConnectionRequestLoopTest : public TestingBase {
     };
   }
 
-  // Used to reset the request to be inbound
-  void SetUpInbound() {
-    handler_ = nullptr;
-    req_ = BrEdrConnectionRequest(kTestAddr, kPeerId, Peer::InitializingConnectionToken([] {}));
-  }
-
   void set_on_complete(BrEdrConnectionRequest::OnComplete handler) {
     handler_ = std::move(handler);
   }
@@ -109,6 +112,7 @@ class BrEdrConnectionRequestLoopTest : public TestingBase {
  private:
   BrEdrConnectionRequest req_;
   OnComplete handler_;
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
 };
 using BrEdrConnectionRequestLoopDeathTest = BrEdrConnectionRequestLoopTest;
 

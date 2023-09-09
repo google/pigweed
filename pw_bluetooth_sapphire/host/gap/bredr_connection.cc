@@ -4,9 +4,9 @@
 
 #include "bredr_connection.h"
 
-#include <lib/async/default.h>
-
 #include <utility>
+
+#include <pw_async_fuchsia/util.h>
 
 namespace bt::gap {
 
@@ -20,7 +20,8 @@ BrEdrConnection::BrEdrConnection(Peer::WeakPtr peer, std::unique_ptr<hci::BrEdrC
                                  fit::closure send_auth_request_cb,
                                  fit::callback<void()> disconnect_cb,
                                  fit::closure on_peer_disconnect_cb, l2cap::ChannelManager* l2cap,
-                                 hci::Transport::WeakPtr transport, std::optional<Request> request)
+                                 hci::Transport::WeakPtr transport, std::optional<Request> request,
+                                 pw::async::Dispatcher& pw_dispatcher)
     : peer_id_(peer->identifier()),
       peer_(std::move(peer)),
       link_(std::move(link)),
@@ -34,10 +35,11 @@ BrEdrConnection::BrEdrConnection(Peer::WeakPtr peer, std::unique_ptr<hci::BrEdrC
           peer_id_, link_->handle(), link_->peer_address(), link_->local_address(), transport)),
       interrogator_(
           new BrEdrInterrogator(peer_, link_->handle(), transport->command_channel()->AsWeakPtr())),
-      create_time_(async::Now(async_get_default_dispatcher())),
+      create_time_(pw_async_fuchsia::TimepointToZxTime(pw_dispatcher.now())),
       disconnect_cb_(std::move(disconnect_cb)),
       peer_init_token_(request_->take_peer_init_token()),
-      peer_conn_token_(peer_->MutBrEdr().RegisterConnection()) {
+      peer_conn_token_(peer_->MutBrEdr().RegisterConnection()),
+      pw_dispatcher_(pw_dispatcher) {
   link_->set_peer_disconnect_callback(
       [peer_disconnect_cb = std::move(on_peer_disconnect_cb)](const auto& conn, auto /*reason*/) {
         peer_disconnect_cb();
@@ -126,6 +128,10 @@ void BrEdrConnection::OnPairingStateStatus(hci_spec::ConnectionHandle handle,
   // Once pairing succeeds for the first time, the transition from Initializing -> Connected can
   // happen.
   peer_init_token_.reset();
+}
+
+zx::duration BrEdrConnection::duration() const {
+  return pw_async_fuchsia::TimepointToZxTime(pw_dispatcher_.now()) - create_time_;
 }
 
 }  // namespace bt::gap

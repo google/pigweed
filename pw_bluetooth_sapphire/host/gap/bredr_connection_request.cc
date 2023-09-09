@@ -20,7 +20,8 @@ constexpr zx::duration kRetryWindowAfterFirstCreateConn = zx::sec(30);
 
 }  // namespace
 
-BrEdrConnectionRequest::BrEdrConnectionRequest(const DeviceAddress& addr, PeerId peer_id,
+BrEdrConnectionRequest::BrEdrConnectionRequest(pw::async::Dispatcher& pw_dispatcher,
+                                               const DeviceAddress& addr, PeerId peer_id,
                                                Peer::InitializingConnectionToken token)
     : peer_id_(peer_id),
       address_(addr),
@@ -28,12 +29,14 @@ BrEdrConnectionRequest::BrEdrConnectionRequest(const DeviceAddress& addr, PeerId
       has_incoming_(false),
       first_create_connection_req_made_(
           std::nullopt, [](const std::optional<zx::time>& t) { return t ? t->get() : -1; }),
-      peer_init_conn_token_(std::move(token)) {}
+      peer_init_conn_token_(std::move(token)),
+      pw_dispatcher_(pw_dispatcher) {}
 
-BrEdrConnectionRequest::BrEdrConnectionRequest(const DeviceAddress& addr, PeerId peer_id,
+BrEdrConnectionRequest::BrEdrConnectionRequest(pw::async::Dispatcher& pw_dispatcher,
+                                               const DeviceAddress& addr, PeerId peer_id,
                                                Peer::InitializingConnectionToken token,
                                                OnComplete&& callback)
-    : BrEdrConnectionRequest(addr, peer_id, std::move(token)) {
+    : BrEdrConnectionRequest(pw_dispatcher, addr, peer_id, std::move(token)) {
   callbacks_.Mutable()->push_back(std::move(callback));
 }
 
@@ -59,12 +62,13 @@ void BrEdrConnectionRequest::AttachInspect(inspect::Node& parent, std::string na
 
 void BrEdrConnectionRequest::RecordHciCreateConnectionAttempt() {
   if (!first_create_connection_req_made_.value()) {
-    first_create_connection_req_made_.Set(async::Now(async_get_default_dispatcher()));
+    first_create_connection_req_made_.Set(
+        pw_async_fuchsia::TimepointToZxTime(pw_dispatcher_.now()));
   }
 }
 
 bool BrEdrConnectionRequest::ShouldRetry(hci::Error failure_mode) {
-  zx::time now = async::Now(async_get_default_dispatcher());
+  zx::time now = pw_async_fuchsia::TimepointToZxTime(pw_dispatcher_.now());
   std::optional<zx::time> first_create_conn_req_made = first_create_connection_req_made_.value();
   return failure_mode.is(pw::bluetooth::emboss::StatusCode::PAGE_TIMEOUT) &&
          first_create_conn_req_made.has_value() &&
