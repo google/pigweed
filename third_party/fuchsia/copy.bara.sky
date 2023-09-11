@@ -61,7 +61,8 @@ core.workflow(
         checker = leakr.disable_check("Syncing between OSS projects"),
     ),
     origin_files = glob(fuchsia_repo_files),
-    destination_files = glob(["third_party/fuchsia/repo/**"]),
+    # Exclude BUILD.gn files to keep Pigweed's versions.
+    destination_files = glob(["third_party/fuchsia/repo/**"], exclude = ["**/BUILD.gn"]),
     authoring = authoring.pass_thru("Fuchsia Authors <noreply@google.com>"),
     transformations = [
         core.move("", "third_party/fuchsia/repo"),

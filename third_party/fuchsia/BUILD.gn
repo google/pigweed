@@ -18,39 +18,14 @@ import("$dir_pw_build/python.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
+import("fuchsia.gni")
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }
 
-config("fit_public_include_path") {
-  include_dirs = [ "repo/sdk/lib/fit/include" ]
-  visibility = [ ":*" ]
-}
-
-config("stdcompat_public_include_path") {
-  include_dirs = [ "repo/sdk/lib/stdcompat/include" ]
-  visibility = [ ":*" ]
-}
-
-pw_source_set("fit") {
-  public_configs = [ ":fit_public_include_path" ]
-  public_deps = [
-    ":stdcompat",
-    dir_pw_assert,
-  ]
-  public = [
-    "repo/sdk/lib/fit/include/lib/fit/function.h",
-    "repo/sdk/lib/fit/include/lib/fit/nullable.h",
-    "repo/sdk/lib/fit/include/lib/fit/result.h",
-    "repo/sdk/lib/fit/include/lib/fit/traits.h",
-  ]
-  sources = [
-    "repo/sdk/lib/fit/include/lib/fit/internal/compiler.h",
-    "repo/sdk/lib/fit/include/lib/fit/internal/function.h",
-    "repo/sdk/lib/fit/include/lib/fit/internal/result.h",
-    "repo/sdk/lib/fit/include/lib/fit/internal/utility.h",
-  ]
+group("fit") {
+  public_deps = [ "$dir_pw_third_party_fuchsia/sdk/lib/fit" ]
 }
 
 pw_test("function_tests") {
@@ -64,25 +39,8 @@ pw_test("function_tests") {
   remove_configs = [ "$dir_pw_build:strict_warnings" ]
 }
 
-pw_source_set("stdcompat") {
-  public_configs = [ ":stdcompat_public_include_path" ]
-  public = [
-    "repo/sdk/lib/stdcompat/include/lib/stdcompat/bit.h",
-    "repo/sdk/lib/stdcompat/include/lib/stdcompat/functional.h",
-    "repo/sdk/lib/stdcompat/include/lib/stdcompat/memory.h",
-    "repo/sdk/lib/stdcompat/include/lib/stdcompat/optional.h",
-    "repo/sdk/lib/stdcompat/include/lib/stdcompat/type_traits.h",
-    "repo/sdk/lib/stdcompat/include/lib/stdcompat/utility.h",
-    "repo/sdk/lib/stdcompat/include/lib/stdcompat/version.h",
-  ]
-  sources = [
-    "repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/bit.h",
-    "repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/constructors.h",
-    "repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/exception.h",
-    "repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/storage.h",
-    "repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/type_traits.h",
-    "repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/utility.h",
-  ]
+group("stdcompat") {
+  public_deps = [ "$dir_pw_third_party_fuchsia/sdk/lib/stdcompat" ]
 }
 
 pw_python_script("generate_fuchsia_patch") {
