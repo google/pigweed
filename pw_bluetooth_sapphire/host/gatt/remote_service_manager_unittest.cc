@@ -55,7 +55,7 @@ class RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
     auto client = std::make_unique<testing::FakeClient>(pw_dispatcher_);
     fake_client_ = client.get();
 
-    mgr_ = std::make_unique<RemoteServiceManager>(std::move(client), dispatcher());
+    mgr_ = std::make_unique<RemoteServiceManager>(std::move(client));
   }
 
   void TearDown() override {

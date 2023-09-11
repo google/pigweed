@@ -5,8 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_REMOTE_SERVICE_MANAGER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_REMOTE_SERVICE_MANAGER_H_
 
-#include <lib/async/dispatcher.h>
-
 #include <map>
 #include <memory>
 #include <vector>
@@ -29,7 +27,7 @@ namespace internal {
 // as services get discovered.
 class RemoteServiceManager final {
  public:
-  RemoteServiceManager(std::unique_ptr<Client> client, async_dispatcher_t* gatt_dispatcher);
+  RemoteServiceManager(std::unique_ptr<Client> client);
   ~RemoteServiceManager();
 
   // Adds a handler to be notified when services are removed, added, or modified.
@@ -149,7 +147,6 @@ class RemoteServiceManager final {
       std::vector<ServiceMap::iterator>& removed_services, std::vector<ServiceData>& added_services,
       std::vector<std::pair<ServiceMap::iterator, ServiceData>>& modified_services);
 
-  async_dispatcher_t* gatt_dispatcher_;
   std::unique_ptr<Client> client_;
 
   bool initialized_;

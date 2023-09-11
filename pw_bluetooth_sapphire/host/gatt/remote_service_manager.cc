@@ -38,13 +38,8 @@ void RemoteServiceManager::ServiceListRequest::Complete(att::Result<> status,
   callback_(status, std::move(result));
 }
 
-RemoteServiceManager::RemoteServiceManager(std::unique_ptr<Client> client,
-                                           async_dispatcher_t* gatt_dispatcher)
-    : gatt_dispatcher_(gatt_dispatcher),
-      client_(std::move(client)),
-      initialized_(false),
-      weak_self_(this) {
-  BT_DEBUG_ASSERT(gatt_dispatcher_);
+RemoteServiceManager::RemoteServiceManager(std::unique_ptr<Client> client)
+    : client_(std::move(client)), initialized_(false), weak_self_(this) {
   BT_DEBUG_ASSERT(client_);
 
   client_->SetNotificationHandler(fit::bind_member<&RemoteServiceManager::OnNotification>(this));

@@ -15,12 +15,11 @@
 namespace bt::gatt::internal {
 
 Connection::Connection(std::unique_ptr<Client> client, std::unique_ptr<Server> server,
-                       RemoteServiceWatcher svc_watcher, async_dispatcher_t* gatt_dispatcher)
+                       RemoteServiceWatcher svc_watcher)
     : server_(std::move(server)), weak_self_(this) {
   BT_ASSERT(svc_watcher);
 
-  remote_service_manager_ =
-      std::make_unique<RemoteServiceManager>(std::move(client), gatt_dispatcher);
+  remote_service_manager_ = std::make_unique<RemoteServiceManager>(std::move(client));
   remote_service_manager_->set_service_watcher(std::move(svc_watcher));
 }
 

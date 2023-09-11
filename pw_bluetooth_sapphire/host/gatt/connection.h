@@ -5,8 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_CONNECTION_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_CONNECTION_H_
 
-#include <lib/async/dispatcher.h>
-
 #include <memory>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
@@ -39,7 +37,7 @@ class Connection final {
   // |server| is the GATT server for this connection, which uses |att_bearer| in production.
   // |svc_watcher| communicates updates about the peer's GATT services to the Connection's owner.
   Connection(std::unique_ptr<Client> client, std::unique_ptr<Server> server,
-             RemoteServiceWatcher svc_watcher, async_dispatcher_t* gatt_dispatcher);
+             RemoteServiceWatcher svc_watcher);
   ~Connection() = default;
 
   Server* server() const { return server_.get(); }

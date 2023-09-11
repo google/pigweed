@@ -79,7 +79,7 @@ class Impl final : public GATT {
         };
     std::unique_ptr<Server> server = server_factory(peer_id, local_services_->GetWeakPtr());
     connections_.try_emplace(peer_id, std::move(client), std::move(server),
-                             std::move(service_watcher), async_get_default_dispatcher());
+                             std::move(service_watcher));
 
     if (retrieve_service_changed_ccc_callback_) {
       auto optional_service_changed_ccc_data = retrieve_service_changed_ccc_callback_(peer_id);
