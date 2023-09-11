@@ -43,5 +43,5 @@ pw_source_set("pico_multicore") {
     "${PICO_ROOT}/src/rp2_common/pico_runtime",
   ]
   public = [ "${_CWD}/include/pico/multicore.h" ]
-  sources = [ "${_CWD}/pico_multicore.c" ]
+  sources = [ "${_CWD}/multicore.c" ]
 }
