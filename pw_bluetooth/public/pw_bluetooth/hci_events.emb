@@ -824,3 +824,11 @@ struct ReadLocalVersionInfoCommandCompleteEvent:
   $next [+2]         UInt                      lmp_subversion
     -- Subversion of the Current LMP in the Controller. This value is
     -- vendor-specific.
+
+
+struct ReadBdAddrCommandCompleteEvent:
+  -- Read BD_ADDR Command (v1.1) (BR/EDR, LE)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]                   hci.CommandCompleteEvent  command_complete
+  $next [+1]                          hci.StatusCode            status
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                bd_addr
