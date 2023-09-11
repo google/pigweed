@@ -6,6 +6,8 @@
 
 #include <lib/fit/function.h>
 
+#include <pw_async_fuchsia/util.h>
+
 #include "peer.h"
 #include "peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
@@ -269,7 +271,8 @@ void LowEnergyDiscoveryManager::OnPeerFound(const hci::LowEnergyScanResult& resu
     peer->set_connectable(true);
   }
 
-  peer->MutLe().SetAdvertisingData(result.rssi, data, async::Now(async_get_default_dispatcher()));
+  peer->MutLe().SetAdvertisingData(result.rssi, data,
+                                   pw_async_fuchsia::TimepointToZxTime(pw_dispatcher_.now()));
 
   cached_scan_results_.insert(peer->identifier());
 

@@ -9,6 +9,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <pw_async_fuchsia/dispatcher.h>
 
 #include "fuchsia/bluetooth/bredr/cpp/fidl.h"
 #include "fuchsia/bluetooth/cpp/fidl.h"
@@ -75,7 +76,13 @@ const fsys::PeerKey kTestKeyFidl{
 };
 const fsys::Ltk kTestLtkFidl{.key = kTestKeyFidl, .ediv = 0, .rand = 0};
 
-using HelpersTestWithLoop = ::gtest::TestLoopFixture;
+class HelpersTestWithLoop : public ::gtest::TestLoopFixture {
+ public:
+  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
+
+ private:
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
+};
 
 TEST(HelpersTest, HostErrorToFidl) {
   EXPECT_EQ(fsys::Error::FAILED, HostErrorToFidl(bt::HostError::kFailed));
@@ -1518,7 +1525,7 @@ TEST_F(HelpersTestWithLoop, PeerToFidlLeWithAllFields) {
   bt::gap::PeerMetrics metrics;
   bt::gap::Peer peer([](auto&, auto) {}, [](auto&) {}, [](auto&) {}, [](auto&) { return false; },
                      kPeerId, kAddr,
-                     /*connectable=*/true, &metrics);
+                     /*connectable=*/true, &metrics, pw_dispatcher());
   peer.RegisterName("name");
   const int8_t kRssi = 1;
   auto adv_bytes = bt::StaticByteBuffer(
@@ -1549,7 +1556,7 @@ TEST_F(HelpersTestWithLoop, PeerToFidlLeWithoutAdvertisingData) {
   bt::gap::PeerMetrics metrics;
   bt::gap::Peer peer([](auto&, auto) {}, [](auto&) {}, [](auto&) {}, [](auto&) { return false; },
                      kPeerId, kAddr,
-                     /*connectable=*/true, &metrics);
+                     /*connectable=*/true, &metrics, pw_dispatcher());
 
   fble::Peer fidl_peer = PeerToFidlLe(peer);
   ASSERT_TRUE(fidl_peer.has_id());

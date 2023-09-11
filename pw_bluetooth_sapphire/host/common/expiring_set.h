@@ -11,8 +11,7 @@
 #include <unordered_map>
 
 #include <pw_async/dispatcher.h>
-
-#include "pw_async_fuchsia/util.h"
+#include <pw_async_fuchsia/util.h>
 
 namespace bt {
 

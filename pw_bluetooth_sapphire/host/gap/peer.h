@@ -55,8 +55,8 @@ class Peer final {
   // (do the callbacks outlive |this|?).
   Peer(NotifyListenersCallback notify_listeners_callback, PeerCallback update_expiry_callback,
        PeerCallback dual_mode_callback, StoreLowEnergyBondCallback store_le_bond_callback,
-       PeerId identifier, const DeviceAddress& address, bool connectable,
-       PeerMetrics* peer_metrics);
+       PeerId identifier, const DeviceAddress& address, bool connectable, PeerMetrics* peer_metrics,
+       pw::async::Dispatcher& pw_dispatcher);
 
   // Connection state as considered by the GAP layer. This may not correspond
   // exactly with the presence or absence of a link at the link layer. For
@@ -671,6 +671,8 @@ class Peer final {
 
   // The time when the most recent update occurred.
   zx::time last_updated_;
+
+  pw::async::Dispatcher& pw_dispatcher_;
 
   WeakSelf<Peer> weak_self_;
 

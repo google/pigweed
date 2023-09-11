@@ -320,7 +320,7 @@ Peer* PeerCache::InsertPeerRecord(PeerId identifier, const DeviceAddress& addres
                                       fit::bind_member<&PeerCache::UpdateExpiry>(this),
                                       fit::bind_member<&PeerCache::MakeDualMode>(this),
                                       std::move(store_le_bond_cb), identifier, address, connectable,
-                                      &peer_metrics_));
+                                      &peer_metrics_, pw_dispatcher_));
   if (node_) {
     peer->AttachInspect(node_, node_.UniqueName("peer_"));
   }

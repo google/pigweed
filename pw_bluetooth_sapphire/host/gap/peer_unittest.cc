@@ -6,6 +6,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <pw_async_fuchsia/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
@@ -75,7 +76,7 @@ class PeerTest : public ::gtest::TestLoopFixture {
                                    fit::bind_member<&PeerTest::UpdateExpiryCallback>(this),
                                    fit::bind_member<&PeerTest::DualModeCallback>(this),
                                    fit::bind_member<&PeerTest::StoreLowEnergyBondCallback>(this),
-                                   PeerId(1), address_, connectable, &metrics_);
+                                   PeerId(1), address_, connectable, &metrics_, pw_dispatcher_);
     peer_->AttachInspect(peer_inspector_.GetRoot());
     // Reset metrics as they should only apply to the new peer under test.
     metrics_.AttachInspect(metrics_inspector_.GetRoot());
@@ -188,6 +189,7 @@ class PeerTest : public ::gtest::TestLoopFixture {
   inspect::Inspector metrics_inspector_;
   PeerMetrics metrics_;
   inspect::Inspector peer_inspector_;
+  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
 };
 
 class PeerDeathTest : public PeerTest {};

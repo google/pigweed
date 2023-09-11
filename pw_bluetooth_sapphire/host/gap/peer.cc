@@ -9,6 +9,7 @@
 
 #include <iomanip>
 
+#include "pw_async_fuchsia/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/manufacturer_names.h"
@@ -455,7 +456,7 @@ void Peer::BrEdrData::AddService(UUID uuid) {
 Peer::Peer(NotifyListenersCallback notify_listeners_callback, PeerCallback update_expiry_callback,
            PeerCallback dual_mode_callback, StoreLowEnergyBondCallback store_le_bond_callback,
            PeerId identifier, const DeviceAddress& address, bool connectable,
-           PeerMetrics* peer_metrics)
+           PeerMetrics* peer_metrics, pw::async::Dispatcher& pw_dispatcher)
     : notify_listeners_callback_(std::move(notify_listeners_callback)),
       update_expiry_callback_(std::move(update_expiry_callback)),
       dual_mode_callback_(std::move(dual_mode_callback)),
@@ -482,7 +483,8 @@ Peer::Peer(NotifyListenersCallback notify_listeners_callback, PeerCallback updat
       temporary_(true),
       rssi_(hci_spec::kRSSIInvalid),
       peer_metrics_(peer_metrics),
-      last_updated_(async::Now(async_get_default_dispatcher())),
+      last_updated_(pw_async_fuchsia::TimepointToZxTime(pw_dispatcher.now())),
+      pw_dispatcher_(pw_dispatcher),
       weak_self_(this) {
   BT_DEBUG_ASSERT(notify_listeners_callback_);
   BT_DEBUG_ASSERT(update_expiry_callback_);
@@ -658,7 +660,9 @@ void Peer::MakeDualMode() {
   dual_mode_callback_(*this);
 }
 
-void Peer::OnPeerUpdate() { last_updated_ = async::Now(async_get_default_dispatcher()); }
+void Peer::OnPeerUpdate() {
+  last_updated_ = pw_async_fuchsia::TimepointToZxTime(pw_dispatcher_.now());
+}
 
 void Peer::UpdatePeerAndNotifyListeners(NotifyListenersChange change) {
   OnPeerUpdate();

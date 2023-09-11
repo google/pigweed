@@ -9,7 +9,8 @@
 #include <lib/fit/defer.h>
 #include <lib/stdcompat/functional.h>
 
-#include "pw_async_fuchsia/util.h"
+#include <pw_async_fuchsia/util.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
