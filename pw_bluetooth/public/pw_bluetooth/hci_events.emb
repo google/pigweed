@@ -291,7 +291,7 @@ struct InquiryResultEvent:
 
 struct SimpleCommandCompleteEvent:
   -- A Command Complete event where a StatusCode is the only return parameter.
-  -- Also useful for generically getting to status of a larger command complete
+  -- Also useful for generically getting the status of a larger command complete
   -- event.
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
   0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
@@ -796,3 +796,31 @@ struct LELongTermKeyRequestSubevent:
 
   $next [+8]                           UInt         random_number
   $next [+2]                           UInt         encrypted_diversifier
+
+
+struct ReadLocalVersionInfoCommandCompleteEvent:
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+
+  $next [+1]         hci.StatusCode            status
+
+  $next [+1]         CoreSpecificationVersion  hci_version
+    -- Version of the HCI Specification supported by the Controller. See
+    -- Assigned Numbers
+
+  $next [+2]         UInt                      hci_subversion
+    -- Revision of the HCI implementation in the Controller. This value is
+    -- vendor-specific.
+
+  $next [+1]         UInt                      lmp_version
+    -- Version of the Current LMP supported by the Controller. See Assigned
+    -- Numbers
+
+  $next [+2]         UInt                      company_identifier
+    -- Company identifier for the manufacturer of the Controller. See Assigned
+    -- Numbers
+
+  $next [+2]         UInt                      lmp_subversion
+    -- Subversion of the Current LMP in the Controller. This value is
+    -- vendor-specific.
