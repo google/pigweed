@@ -93,25 +93,45 @@ Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
 #. If you haven't already, clone the Pigweed repository and set it up locally,
    following the :ref:`docs-getting-started` guide.
 
-#. Copy the :ref:`SEED template <seed-0002>` to create the RST file for your
-   SEED. As you don't yet have a SEED number, use XXXX as a placeholder,
-   followed by the lowercase title of the proposal, with words separated by
+#. Claim a number for your SEED. This should be the next sequential number
+   listed within the `SEED index`_'s ``toctree`` table. (We will use 5309 for
+   our example.)
+
+   .. _SEED index: https://cs.opensource.google/pigweed/pigweed/+/main:seed/0000-index.rst
+
+#. Create a new RST file for your SEED. Name the file with the number of your
+   SEED followed by the lowercase title of the proposal, with words separated by
    hyphens.
 
    .. code-block:: sh
 
-      cp seed/0002-template.rst seed/XXXX-pw_rpc-over-smoke-signals.rst
+      touch seed/5309-pw_rpc-over-smoke-signals.rst
 
-#. Push up the template to Gerrit, marking it as a Work-In-Progress change.
-   From here, you may fill the template out with the content of your proposal
-   at your convenience.
+   Include your document in the GN build by modifying ``seed/BUILD.gn``:
 
-#. At any point, you may claim a SEED number by opening the
-   `SEED index`_ and taking the next available number by inserting
-   a row into the ``toctree`` table. Link the entry to the WIP change for your
-   SEED.
+   .. code-block::
 
-   .. _SEED index: https://cs.opensource.google/pigweed/pigweed/+/main:seed/0000-index.rst
+      # Insert your dependency to the doc group at the top of the file.
+      pw_doc_group("docs") {
+        group_deps = [
+          ":0001",
+          ...
+          ":5308",
+          ":5309",
+        ]
+      }
+
+      # Define a doc group target for your SEED.
+      pw_doc_group("5309") {
+        sources = [ "5309-pw_rpc-over-smoke-signals.rst" ]
+      }
+
+#. Push up your document to Gerrit, marking it as a Work-In-Progress change,
+   following the :ref:`docs-contributing` guide.
+
+#. Update the ``toctree`` in the SEED index adding a row for your SEED. The
+   entry should be labeled with the title of your SEED and link to your work
+   in progress change.
 
    .. code-block:: rst
 
@@ -130,13 +150,26 @@ Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
       git add seed/0000-index.rst
       git commit -m "SEED-5309: Claim SEED number"
 
-#. Push up a changelist (CL) to Gerrit following the :ref:`docs-contributing`
-   guide and add GWSQ as a reviewer. Set ``Pigweed-Auto-Submit`` to +1.
+#. Push a separate change to Gerrit with your SEED index modification and add
+   GWSQ as a reviewer. Set ``Pigweed-Auto-Submit`` to +1.
 
    .. image:: 0001-the-seed-process/seed-index-gerrit.png
 
-#. Once your CL has been reviewed and submitted, the SEED number belongs to you.
-   Update your document's template and filename with this number.
+#. Fill out your proposal document, using the :ref:`SEED template<seed-0002>` as
+   a guide.
+
+   If your SEED requires additional resources such as images, place them within
+   a subdirectory named identically to your document without the ``.rst``
+   extension. These should be listed as ``inputs`` in your SEED's GN doc group
+   target.
+
+   .. code-block::
+
+      seed/
+        ...
+        5309-pw_rpc-over-smoke-signals.rst
+        5309-pw_rpc-over-smoke-signals/
+          state-diagram.svg
 
 #. When you feel you have enough substantive content in your proposal to be
    reviewed, push it up to Gerrit and switch the change from WIP to Active.
@@ -207,15 +240,19 @@ for comments.**
 - The SEED remains open for as long as necessary. Internally, Pigweed's review
   committee will regularly meet to consider active SEEDs and determine when to
   advance to them the next stage.
+- Open SEEDs are assigned owners in the core Pigweed team, who are primarily
+  responsible for engaging with the author to move the SEED through its review
+  process.
 
 :bdg-warning:`Last Call` **A tentative decision has been reached, but
 commenters may raise final objections.**
 
 - A tentative decision on the SEED has been made. The decision is issued at the
-  best judgement of Pigweed's review committee when they feel there has been
-  sufficient discussion on the tradeoffs of the proposal to do so.
-- Transition is triggered manually by a member of the Pigweed team, with a
-  comment on the likely outcome of the SEED (acceptance / rejection).
+  best judgement of the SEED's owner within the Pigweed team when they feel
+  there has been sufficient discussion on the tradeoffs of the proposal to do
+  so.
+- Transition is triggered manually by its owner, with a comment on the likely
+  outcome of the SEED (acceptance / rejection).
 - On entering Last Call, the visibility of the SEED is widely boosted through
   Pigweed's communication channels (Discord, mailing list, Pigweed Live, etc.)
   to solicit any strong objections from stakeholders.
