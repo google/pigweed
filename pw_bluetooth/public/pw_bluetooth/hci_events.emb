@@ -832,3 +832,33 @@ struct ReadBdAddrCommandCompleteEvent:
   0     [+hdr_size]                   hci.CommandCompleteEvent  command_complete
   $next [+1]                          hci.StatusCode            status
   $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                bd_addr
+
+
+struct ReadBufferSizeCommandCompleteEvent:
+  -- Read Buffer Size Command (v1.1)
+
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+
+  $next [+1]         hci.StatusCode            status
+
+  $next [+2]         UInt                      acl_data_packet_length
+    -- Maximum length (in octets) of the data portion of each HCI ACL Data
+    -- packet that the Controller is able to accept.
+    [requires: 0x0001 <= this <= 0xFFFF]
+
+  $next [+1]         UInt                      synchronous_data_packet_length
+    -- Maximum length (in octets) of the data portion of each HCI Synchronous
+    -- Data packet that the Controller is able to accept.
+    [requires: 0x01 <= this <= 0xFF]
+
+  $next [+2]         UInt                      total_num_acl_data_packets
+    -- Total number of HCI ACL Data packets that can be stored in the data
+    -- buffers of the Controller.
+    [requires: 0x0001 <= this <= 0xFFFF]
+
+  $next [+2]         UInt                      total_num_synchronous_data_packets
+    -- Total number of HCI Synchronous Data packets that can be stored in the
+    -- data buffers of the Controller. A value of 0 indicates that the
+    -- Controller does not support SCO or eSCO over HCI.
