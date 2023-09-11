@@ -862,3 +862,12 @@ struct ReadBufferSizeCommandCompleteEvent:
     -- Total number of HCI Synchronous Data packets that can be stored in the
     -- data buffers of the Controller. A value of 0 indicates that the
     -- Controller does not support SCO or eSCO over HCI.
+
+
+struct LEReadLocalSupportedFeaturesCommandCompleteEvent:
+  -- LE Read Local Supported Features Command (v4.0) (LE)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]                      hci.CommandCompleteEvent  command_complete
+  $next [+1]                             hci.StatusCode            status
+  $next [+8]  bits:
+    0     [+LEFeatureSet.$size_in_bits]  LEFeatureSet              le_features
