@@ -145,14 +145,18 @@ extern "C" size_t pw_Base64Decode(const char* base64,
   return static_cast<size_t>(binary - static_cast<uint8_t*>(output)) - pad;
 }
 
+extern "C" bool pw_Base64IsValidChar(char base64_char) {
+  return !(base64_char < kMinValidChar || base64_char > kMaxValidChar ||
+           CharToBits(base64_char) == kX /* invalid char */);
+}
+
 extern "C" bool pw_Base64IsValid(const char* base64_data, size_t base64_size) {
   if (base64_size % kEncodedGroupSize != 0) {
     return false;
   }
 
   for (size_t i = 0; i < base64_size; ++i) {
-    if (base64_data[i] < kMinValidChar || base64_data[i] > kMaxValidChar ||
-        CharToBits(base64_data[i]) == kX /* invalid char */) {
+    if (!pw_Base64IsValidChar(base64_data[i])) {
       return false;
     }
   }

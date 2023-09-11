@@ -91,8 +91,11 @@ pw_add_library(pw_tokenizer.decoder STATIC
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_log_tokenized.config
     pw_span
+    pw_string
     pw_tokenizer
+    pw_tokenizer.base64
   SOURCES
     decode.cc
     detokenize.cc

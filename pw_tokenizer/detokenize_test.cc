@@ -26,6 +26,13 @@ using namespace std::literals::string_view_literals;
 // Use a shorter name for the error string macro.
 #define ERR PW_TOKENIZER_ARG_DECODING_ERROR
 
+using Case = std::pair<std::string_view, std::string_view>;
+
+template <typename... Args>
+auto TestCases(Args... args) {
+  return std::array<Case, sizeof...(Args)>{args...};
+}
+
 // Use alignas to ensure that the data is properly aligned to be read from a
 // token database entry struct. This avoids unaligned memory reads.
 constexpr char kBasicData[] =
@@ -102,6 +109,20 @@ TEST_F(Detokenize, BestStringWithErrors_UnknownToken_ErrorMessage) {
             ERR("unknown token fedcba98"));
 }
 
+TEST_F(Detokenize, Base64) {
+  for (auto [data, expected] : TestCases(
+           Case{"$AQAAAA=="sv, "One"},
+           Case{"$BQAAAA=="sv, "TWO"},
+           Case{"$/wAAAA=="sv, "333"},
+           Case{"$/+7u3Q=="sv, "FOUR"},
+           Case{"$/+7u3Q==$AQAAAA==$AQAAAA=="sv, "FOUROneOne"},
+           Case{"$AQAAAA==$BQAAAA==$/wAAAA==$/+7u3Q=="sv, "OneTWO333FOUR"},
+           Case{"$AQAAAA==\r\n$BQAAAA==\r\n$/wAAAA==\r\n$/+7u3Q==\r\n"sv,
+                "OneTWO333FOUR"})) {
+    EXPECT_EQ(detok_.DetokenizeBase64(data), expected);
+  }
+}
+
 constexpr char kDataWithArguments[] =
     "TOKENS\0\0"
     "\x09\x00\x00\x00"
@@ -126,14 +147,6 @@ constexpr char kDataWithArguments[] =
     "%llu!";   // FF
 
 constexpr TokenDatabase kWithArgs = TokenDatabase::Create<kDataWithArguments>();
-
-using Case = std::pair<std::string_view, std::string_view>;
-
-template <typename... Args>
-auto TestCases(Args... args) {
-  return std::array<Case, sizeof...(Args)>{args...};
-}
-
 class DetokenizeWithArgs : public ::testing::Test {
  protected:
   DetokenizeWithArgs() : detok_(kWithArgs) {}

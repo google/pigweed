@@ -19,6 +19,10 @@
 
 #include "pw_bytes/bit.h"
 #include "pw_bytes/endian.h"
+#include "pw_log_tokenized/config.h"
+#include "pw_string/string.h"
+#include "pw_string/string_builder.h"
+#include "pw_tokenizer/base64.h"
 #include "pw_tokenizer/internal/decode.h"
 
 namespace pw::tokenizer {
@@ -124,6 +128,42 @@ DetokenizedString Detokenizer::Detokenize(
                                 : span(result->second),
       encoded.size() < sizeof(token) ? span<const uint8_t>()
                                      : encoded.subspan(sizeof(token)));
+}
+
+DetokenizedString Detokenizer::DetokenizeBase64Message(
+    const std::string_view& encoded) const {
+  std::array<std::byte, log_tokenized::kEncodingBufferSizeBytes> token;
+  size_t token_size = PrefixedBase64Decode(encoded, token);
+
+  return Detokenize(token.data(), token_size);
+}
+
+std::string Detokenizer::DetokenizeBase64(
+    const std::string_view& encoded) const {
+  std::string b64_buffer_;
+  std::string message;
+  tokenizer::DetokenizedString temp;
+
+  for (const auto& x : encoded) {
+    if (base64::IsValidChar(x)) {
+      b64_buffer_.push_back(x);
+    } else {
+      temp = DetokenizeBase64Message(b64_buffer_);
+      message += temp.BestString();
+      b64_buffer_.clear();
+      // Store prefix of next base64 message.
+      if (x == kBase64Prefix) {
+        b64_buffer_.push_back(x);
+      }
+    }
+  }
+
+  if (!b64_buffer_.empty()) {
+    temp = DetokenizeBase64Message(b64_buffer_);
+    message += temp.BestString();
+  }
+
+  return message;
 }
 
 }  // namespace pw::tokenizer
