@@ -75,8 +75,6 @@ class ScoDataChannelImpl final : public ScoDataChannel {
   Controller* hci_;
   DataBufferInfo buffer_info_;
 
-  async_dispatcher_t* dispatcher_;
-
   std::unordered_map<hci_spec::ConnectionHandle, ConnectionData> connections_;
 
   // Only 1 connection may send packets at a time.
@@ -95,10 +93,7 @@ class ScoDataChannelImpl final : public ScoDataChannel {
 
 ScoDataChannelImpl::ScoDataChannelImpl(const DataBufferInfo& buffer_info,
                                        CommandChannel* command_channel, Controller* hci)
-    : command_channel_(command_channel),
-      hci_(hci),
-      buffer_info_(buffer_info),
-      dispatcher_(async_get_default_dispatcher()) {
+    : command_channel_(command_channel), hci_(hci), buffer_info_(buffer_info) {
   // ScoDataChannel shouldn't be used if the buffer is unavailable (implying the controller
   // doesn't support SCO).
   BT_ASSERT(buffer_info_.IsAvailable());

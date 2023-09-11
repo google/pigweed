@@ -112,8 +112,6 @@ class FakeL2cap final : public ChannelManager {
     bt::LinkType type;
     bool link_error_signaled = false;
 
-    async_dispatcher_t* dispatcher;
-
     // Dual-mode callbacks
     LinkErrorCallback link_error_cb;
     std::unordered_map<PSM, std::queue<ChannelData>> expected_outbound_conns;

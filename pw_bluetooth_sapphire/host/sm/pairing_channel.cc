@@ -16,7 +16,6 @@ namespace bt::sm {
 PairingChannel::PairingChannel(l2cap::Channel::WeakPtr chan, fit::closure timer_resetter)
     : chan_(std::move(chan)), reset_timer_(std::move(timer_resetter)), weak_self_(this) {
   BT_ASSERT(chan_);
-  BT_ASSERT(async_get_default_dispatcher());
   if (chan_->link_type() == bt::LinkType::kLE) {
     BT_ASSERT(chan_->id() == l2cap::kLESMPChannelId);
   } else if (chan_->link_type() == bt::LinkType::kACL) {
