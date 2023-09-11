@@ -5,57 +5,50 @@
 #include "expiring_set.h"
 
 #include <gtest/gtest.h>
+#include <pw_async/fake_dispatcher_fixture.h>
 #include <pw_async_fuchsia/dispatcher.h>
 #include <pw_async_fuchsia/util.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt {
 
 namespace {
 
-class ExpiringSetTest : public ::gtest::TestLoopFixture {
- public:
-  zx::time now() { return pw_async_fuchsia::TimepointToZxTime(pw_dispatcher_.now()); }
-  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
-
- private:
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
-};
+using ExpiringSetTest = pw::async::test::FakeDispatcherFixture;
 
 TEST_F(ExpiringSetTest, Expiration) {
-  ExpiringSet<std::string> set(pw_dispatcher());
+  ExpiringSet<std::string> set(dispatcher());
 
-  set.add_until("Expired", now() - zx::msec(1));
+  set.add_until("Expired", now() - std::chrono::milliseconds(1));
   EXPECT_FALSE(set.contains("Expired"));
 
-  set.add_until("Just a minute", now() + zx::min(1));
-  set.add_until("Two minutes", now() + zx::min(2));
+  set.add_until("Just a minute", now() + std::chrono::minutes(1));
+  set.add_until("Two minutes", now() + std::chrono::minutes(2));
   EXPECT_TRUE(set.contains("Just a minute"));
   EXPECT_TRUE(set.contains("Two minutes"));
 
-  RunLoopFor(zx::sec(1));
+  RunFor(std::chrono::seconds(1));
   EXPECT_TRUE(set.contains("Just a minute"));
   EXPECT_TRUE(set.contains("Two minutes"));
 
-  RunLoopFor(zx::min(1));
+  RunFor(std::chrono::minutes(1));
   EXPECT_FALSE(set.contains("Just a minute"));
   EXPECT_TRUE(set.contains("Two minutes"));
 
-  RunLoopFor(zx::min(1));
+  RunFor(std::chrono::minutes(1));
   EXPECT_FALSE(set.contains("Just a minute"));
   EXPECT_FALSE(set.contains("Two minutes"));
 }
 
 TEST_F(ExpiringSetTest, Remove) {
-  ExpiringSet<std::string> set(pw_dispatcher());
+  ExpiringSet<std::string> set(dispatcher());
 
-  set.add_until("Expired", now() - zx::msec(1));
+  set.add_until("Expired", now() - std::chrono::milliseconds(1));
   EXPECT_FALSE(set.contains("Expired"));
   set.remove("Expired");
 
-  set.add_until("Temporary", now() + zx::sec(1000));
+  set.add_until("Temporary", now() + std::chrono::seconds(1000));
   EXPECT_TRUE(set.contains("Temporary"));
 
   set.remove("Temporary");

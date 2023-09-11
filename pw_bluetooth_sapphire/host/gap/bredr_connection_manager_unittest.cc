@@ -3055,7 +3055,9 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectCooldownIncoming) {
   EXPECT_TRUE(IsNotConnected(peer));
 
   // After the cooldown time, a successful incoming connection can happen.
-  RunLoopFor(BrEdrConnectionManager::kLocalDisconnectCooldownDuration);
+  RunLoopFor(zx::sec(std::chrono::duration_cast<std::chrono::seconds>(
+                         BrEdrConnectionManager::kLocalDisconnectCooldownDuration)
+                         .count()));
 
   QueueRepeatIncomingConn(kTestDevAddr);
   test_device()->SendCommandChannelPacket(kConnectionRequest);

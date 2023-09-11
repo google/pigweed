@@ -403,10 +403,11 @@ bool BrEdrConnectionManager::Disconnect(PeerId peer_id, DisconnectReason reason)
 
   const DeviceAddress& peer_addr = connection->link().peer_address();
   if (reason == DisconnectReason::kApiRequest) {
-    bt_log(DEBUG, "gap-bredr", "requested disconnect from peer, cooldown for %lds (addr: %s)",
-           kLocalDisconnectCooldownDuration.to_secs(), bt_str(peer_addr));
-    deny_incoming_.add_until(peer_addr, pw_async_fuchsia::TimepointToZxTime(pw_dispatcher_.now()) +
-                                            kLocalDisconnectCooldownDuration);
+    bt_log(
+        DEBUG, "gap-bredr", "requested disconnect from peer, cooldown for %llds (addr: %s)",
+        std::chrono::duration_cast<std::chrono::seconds>(kLocalDisconnectCooldownDuration).count(),
+        bt_str(peer_addr));
+    deny_incoming_.add_until(peer_addr, pw_dispatcher_.now() + kLocalDisconnectCooldownDuration);
   }
 
   CleanUpConnection(handle, std::move(connections_.extract(handle).mapped()), reason);

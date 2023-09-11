@@ -157,7 +157,8 @@ class BrEdrConnectionManager final {
 
   // If `reason` is DisconnectReason::kApiRequest, then incoming connections from `peer_id` are
   // rejected for kLocalDisconnectCooldownDuration
-  static constexpr zx::duration kLocalDisconnectCooldownDuration = zx::sec(30);
+  static constexpr pw::chrono::SystemClock::duration kLocalDisconnectCooldownDuration =
+      std::chrono::seconds(30);
 
   // Attach Inspect node as child of |parent| named |name|.
   // Only connections established after a call to AttachInspect are tracked.

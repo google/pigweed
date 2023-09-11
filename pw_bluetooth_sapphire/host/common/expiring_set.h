@@ -24,7 +24,7 @@ class ExpiringSet {
 
   // Add an item with the key `k` to the set, until the `expiration` passes.
   // If the key is already in the set, the expiration is updated, even if it changes the expiration.
-  void add_until(Key k, zx::time expiration) { elems_[k] = expiration; }
+  void add_until(Key k, pw::chrono::SystemClock::time_point expiration) { elems_[k] = expiration; }
 
   // Remove an item from the set. Idempotent.
   void remove(const Key& k) { elems_.erase(k); }
@@ -36,7 +36,7 @@ class ExpiringSet {
     if (it == elems_.end()) {
       return false;
     }
-    if (it->second <= pw_async_fuchsia::TimepointToZxTime(pw_dispatcher_.now())) {
+    if (it->second <= pw_dispatcher_.now()) {
       elems_.erase(it);
       return false;
     }
@@ -44,7 +44,7 @@ class ExpiringSet {
   }
 
  private:
-  std::unordered_map<Key, zx::time> elems_;
+  std::unordered_map<Key, pw::chrono::SystemClock::time_point> elems_;
   pw::async::Dispatcher& pw_dispatcher_;
 };
 
