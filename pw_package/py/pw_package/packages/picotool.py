@@ -46,7 +46,10 @@ class Picotool(pw_package.package_manager.Package):
 
         self._pico_tool_repo = pw_package.git_repo.GitRepo(
             name='picotool',
-            url='https://github.com/raspberrypi/picotool.git',
+            url=(
+                'https://pigweed.googlesource.com/third_party/'
+                'github/raspberrypi/picotool.git'
+            ),
             commit='f6fe6b7c321a2def8950d2a440335dfba19e2eab',
         )
 
