@@ -57,6 +57,7 @@ source_set("sources") {
     "//src/connectivity/bluetooth/fidl:host_hlcpp",
     "//src/connectivity/bluetooth/lib/fidl",
     "//src/lib/ddk",
+    "//zircon/system/ulib/async-loop:async-loop-cpp",
     "//zircon/system/ulib/fbl",
     "//zircon/system/ulib/trace",
     "//zircon/system/ulib/zx",

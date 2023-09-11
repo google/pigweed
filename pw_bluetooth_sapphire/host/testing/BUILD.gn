@@ -84,8 +84,6 @@ source_set("controller_test_double_base") {
     "//src/connectivity/bluetooth/core/bt-host/hci",
     "//third_party/pigweed:pw_async_heap_dispatcher",
     "//third_party/pigweed:pw_bluetooth",
-    "//zircon/system/ulib/async:async-cpp",
-    "//zircon/system/ulib/async-default",
   ]
 }
 
@@ -144,8 +142,6 @@ source_set("fake_controller") {
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/connectivity/bluetooth/core/bt-host/sdp",
     "//third_party/pigweed/src/pw_bluetooth:emboss_hci_group",
-    "//zircon/system/ulib/async:async-cpp",
-    "//zircon/system/ulib/async-default",
   ]
 }
 

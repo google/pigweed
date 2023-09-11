@@ -42,8 +42,6 @@ static_library("transport") {
     "//third_party/pigweed:pw_bluetooth",
     "//third_party/pigweed/backends/pw_async_fuchsia:dispatcher",
     "//third_party/pigweed/src/pw_bluetooth:emboss_hci_group",
-    "//zircon/system/ulib/async-loop:async-loop-cpp",
-    "//zircon/system/ulib/async-loop:async-loop-default",
     "//zircon/system/ulib/trace",
   ]
 }

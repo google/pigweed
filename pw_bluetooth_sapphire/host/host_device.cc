@@ -4,6 +4,7 @@
 
 #include "host_device.h"
 
+#include <lib/async-loop/default.h>
 #include <zircon/status.h>
 
 #include "host.h"

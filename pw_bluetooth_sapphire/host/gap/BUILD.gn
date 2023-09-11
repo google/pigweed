@@ -140,7 +140,6 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//src/lib/testing/loop_fixture",
     "//third_party/googletest:gtest",
-    "//zircon/system/ulib/async:async-cpp",
   ]
 }
 
@@ -156,5 +155,6 @@ fuchsia_library_fuzzer("peer_cache_fuzzer") {
     "//src/connectivity/bluetooth/core/bt-host/testing:fuzzing",
     "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
     "//third_party/pigweed:pw_random_fuzzer_generator",
+    "//zircon/system/ulib/async-loop:async-loop-cpp",
   ]
 }

@@ -86,7 +86,6 @@ source_set("adapter_test_fixture") {
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//src/connectivity/bluetooth/core/bt-host/testing:fake_controller",
-    "//zircon/system/ulib/async:async-cpp",
     "//zircon/system/ulib/fbl",
   ]
 }
@@ -118,8 +117,6 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/testing:fake_controller",
     "//third_party/googletest:gmock",
     "//third_party/googletest:gtest",
-    "//zircon/system/ulib/async:async-cpp",
-    "//zircon/system/ulib/fbl",
   ]
 }
 
