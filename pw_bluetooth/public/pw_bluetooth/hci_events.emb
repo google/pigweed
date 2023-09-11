@@ -252,6 +252,428 @@ bits LEExtendedAdvertisingEventType:
   $next [+1]  Flag                     legacy
   $next [+2]  LEAdvertisingDataStatus  data_status
 
+
+bits SupportedCommands(octet: UInt:8):
+  [requires: octet <= 47]
+  if octet == 0:
+    0 [+1]  Flag  inquiry
+    1 [+1]  Flag  inquiry_cancel
+    2 [+1]  Flag  periodic_inquiry_mode
+    3 [+1]  Flag  exit_periodic_inquiry_mode
+    4 [+1]  Flag  create_connection
+    5 [+1]  Flag  disconnect
+    7 [+1]  Flag  create_connection_cancel
+
+  if octet == 1:
+    0 [+1]  Flag  accept_connection_request
+    1 [+1]  Flag  reject_connection_request
+    2 [+1]  Flag  link_key_request_reply
+    3 [+1]  Flag  link_key_request_negative_reply
+    4 [+1]  Flag  pin_code_request_reply
+    5 [+1]  Flag  pin_code_request_negative_reply
+    6 [+1]  Flag  change_connection_packet_type
+    7 [+1]  Flag  authentication_requested
+
+  if octet == 2:
+    0 [+1]  Flag  set_connection_encryption
+    1 [+1]  Flag  change_connection_link_key
+    2 [+1]  Flag  link_key_selection
+    3 [+1]  Flag  remote_name_request
+    4 [+1]  Flag  remote_name_request_cancel
+    5 [+1]  Flag  read_remote_supported_features
+    6 [+1]  Flag  read_remote_extended_features
+    7 [+1]  Flag  read_remote_version_information
+
+  if octet == 3:
+    0 [+1]  Flag  read_clock_offset
+    1 [+1]  Flag  read_lmp_handle
+
+  if octet == 4:
+    1 [+1]  Flag  hold_mode
+    2 [+1]  Flag  sniff_mode
+    3 [+1]  Flag  exit_sniff_mode
+    6 [+1]  Flag  qos_setup
+    7 [+1]  Flag  role_discovery
+
+  if octet == 5:
+    0 [+1]  Flag  switch_role
+    1 [+1]  Flag  read_link_policy_settings
+    2 [+1]  Flag  write_link_policy_settings
+    3 [+1]  Flag  read_default_link_policy_settings
+    4 [+1]  Flag  write_default_link_policy_settings
+    5 [+1]  Flag  flow_specification
+    6 [+1]  Flag  set_event_mask
+    7 [+1]  Flag  reset
+
+  if octet == 6:
+    0 [+1]  Flag  set_event_filter
+    1 [+1]  Flag  flush
+    2 [+1]  Flag  read_pin_type
+    3 [+1]  Flag  write_pin_type
+    5 [+1]  Flag  read_stored_link_key
+    6 [+1]  Flag  write_stored_link_key
+    7 [+1]  Flag  deleted_stored_link_key
+
+  if octet == 7:
+    0 [+1]  Flag  write_local_name
+    1 [+1]  Flag  read_local_name
+    2 [+1]  Flag  read_connection_attempt_timeout
+    3 [+1]  Flag  write_connection_attempt_timeout
+    4 [+1]  Flag  read_page_timeout
+    5 [+1]  Flag  write_page_timeout
+    6 [+1]  Flag  read_scan_enable
+    7 [+1]  Flag  write_scan_enable
+
+  if octet == 8:
+    0 [+1]  Flag  read_page_scan_activity
+    1 [+1]  Flag  write_page_scan_activity
+    2 [+1]  Flag  read_inquiry_scan_activity
+    3 [+1]  Flag  write_inquiry_scan_activity
+    4 [+1]  Flag  read_authentication_enable
+    5 [+1]  Flag  write_authentication_enable
+
+  if octet == 9:
+    0 [+1]  Flag  read_class_of_device
+    1 [+1]  Flag  write_class_of_device
+    2 [+1]  Flag  read_voice_setting
+    3 [+1]  Flag  write_voice_setting
+    4 [+1]  Flag  read_automatic_flush_timeout
+    5 [+1]  Flag  write_automatic_flush_timeout
+    6 [+1]  Flag  read_num_broadcast_retransmissions
+    7 [+1]  Flag  write_num_broadcast_retransmissions
+
+  if octet == 10:
+    0 [+1]  Flag  read_hold_mode_activity
+    1 [+1]  Flag  write_hold_mode_activity
+    2 [+1]  Flag  read_transmit_power_level
+    3 [+1]  Flag  read_synchronous_flow_control_enable
+    4 [+1]  Flag  write_synchronous_flow_control_enable
+    5 [+1]  Flag  set_controller_to_host_flow_control
+    6 [+1]  Flag  host_buffer_size
+    7 [+1]  Flag  host_number_of_completed_packets
+
+  if octet == 11:
+    0 [+1]  Flag  read_link_supervision_timeout
+    1 [+1]  Flag  write_link_supervision_timeout
+    2 [+1]  Flag  read_number_of_supported_iac
+    3 [+1]  Flag  read_current_iaclap
+    4 [+1]  Flag  write_current_iaclap
+
+  if octet == 12:
+    1 [+1]  Flag  set_afh_host_channel_classification
+    4 [+1]  Flag  read_inquiry_scan_type
+    5 [+1]  Flag  write_inquiry_scan_type
+    6 [+1]  Flag  read_inquiry_mode
+    7 [+1]  Flag  write_inquiry_mode
+
+  if octet == 13:
+    0 [+1]  Flag  read_page_scan_type
+    1 [+1]  Flag  write_page_scan_type
+    2 [+1]  Flag  read_afh_channel_assessment_mode
+    3 [+1]  Flag  write_afh_channel_assessment_mode
+
+  if octet == 14:
+    3 [+1]  Flag  read_local_version_information
+    5 [+1]  Flag  read_local_supported_features
+    6 [+1]  Flag  read_local_extended_features
+    7 [+1]  Flag  read_buffer_size
+
+  if octet == 15:
+    1 [+1]  Flag  read_bdaddr
+    2 [+1]  Flag  read_failed_contact_counter
+    3 [+1]  Flag  reset_failed_contact_c_ounter
+    4 [+1]  Flag  read_link_quality
+    5 [+1]  Flag  read_rssi
+    6 [+1]  Flag  read_afh_channel_map
+    7 [+1]  Flag  read_clock
+
+  if octet == 16:
+    0 [+1]  Flag  read_loopback_mode
+    1 [+1]  Flag  write_loopback_mode
+    2 [+1]  Flag  enable_device_under_test_mode
+    3 [+1]  Flag  setup_synchronous_connection_request
+    4 [+1]  Flag  accept_synchronous_connection_request
+    5 [+1]  Flag  reject_synchronous_connection_request
+
+  if octet == 17:
+    0 [+1]  Flag  read_extended_inquiry_response
+    1 [+1]  Flag  write_extended_inquiry_response
+    2 [+1]  Flag  refresh_encryption_key
+    4 [+1]  Flag  sniff_subrating
+    5 [+1]  Flag  read_simple_pairing_mode
+    6 [+1]  Flag  write_simple_pairing_mode
+    7 [+1]  Flag  read_local_oob_data
+
+  if octet == 18:
+    0 [+1]  Flag  read_inquiry_response_transmit_power_level
+    1 [+1]  Flag  write_inquiry_transmit_power_level
+    2 [+1]  Flag  read_default_erroneous_data_reporting
+    3 [+1]  Flag  write_default_erroneous_data_reporting
+    7 [+1]  Flag  io_capability_request_reply
+
+  if octet == 19:
+    0 [+1]  Flag  user_confirmation_request_reply
+    1 [+1]  Flag  user_confirmation_request_negative_reply
+    2 [+1]  Flag  user_passkey_request_reply
+    3 [+1]  Flag  user_passkey_request_negative_reply
+    4 [+1]  Flag  remote_oob_data_request_reply
+    5 [+1]  Flag  write_simple_pairing_debug_mode
+    6 [+1]  Flag  enhanced_flush
+    7 [+1]  Flag  remote_oob_data_request_negative_reply
+
+  if octet == 20:
+    2 [+1]  Flag  send_keypress_notification
+    3 [+1]  Flag  io_capability_request_negative_reply
+    4 [+1]  Flag  read_encryption_key_size
+
+  if octet == 21:
+    0 [+1]  Flag  create_physical_link
+    1 [+1]  Flag  accept_physical_link
+    2 [+1]  Flag  disconnect_physical_link
+    3 [+1]  Flag  create_logical_link
+    4 [+1]  Flag  accept_logical_link
+    5 [+1]  Flag  disconnect_logical_link
+    6 [+1]  Flag  logical_link_cancel
+    7 [+1]  Flag  flow_spec_modify
+
+  if octet == 22:
+    0 [+1]  Flag  read_logical_link_accept_timeout
+    1 [+1]  Flag  write_logical_link_accept_timeout
+    2 [+1]  Flag  set_event_mask_page_2
+    3 [+1]  Flag  read_location_data
+    4 [+1]  Flag  write_location_data
+    5 [+1]  Flag  read_local_amp_info
+    6 [+1]  Flag  read_local_ampassoc
+    7 [+1]  Flag  write_remote_ampassoc
+
+  if octet == 23:
+    0 [+1]  Flag  read_flow_control_mode
+    1 [+1]  Flag  write_flow_control_mode
+    2 [+1]  Flag  read_data_block_size
+
+  if octet == 24:
+    0 [+1]  Flag  read_enhanced_transmit_power_level
+    2 [+1]  Flag  read_best_effort_flush_timeout
+    3 [+1]  Flag  write_best_effort_flush_timeout
+    4 [+1]  Flag  short_range_mode
+    5 [+1]  Flag  read_le_host_supported
+    6 [+1]  Flag  write_le_host_support
+
+  if octet == 25:
+    0 [+1]  Flag  le_set_event_mask
+    1 [+1]  Flag  le_read_buffer_size_v1
+    2 [+1]  Flag  le_read_local_supported_features
+    4 [+1]  Flag  le_set_random_address
+    5 [+1]  Flag  le_set_advertising_parameters
+    6 [+1]  Flag  le_read_advertising_channel_tx_power
+    7 [+1]  Flag  le_set_advertising_data
+
+  if octet == 26:
+    0 [+1]  Flag  le_set_scan_response_data
+    1 [+1]  Flag  le_set_advertising_enable
+    2 [+1]  Flag  le_set_scan_parameters
+    3 [+1]  Flag  le_set_scan_enable
+    4 [+1]  Flag  le_create_connection
+    5 [+1]  Flag  le_create_connection_cancel
+    6 [+1]  Flag  le_read_filter_accept_list_size
+    7 [+1]  Flag  le_clear_filter_accept_list
+
+  if octet == 27:
+    0 [+1]  Flag  le_add_device_to_filter_accept_list
+    1 [+1]  Flag  le_remove_device_from_filter_accept_list
+    2 [+1]  Flag  le_connection_update
+    3 [+1]  Flag  le_set_host_channel_classification
+    4 [+1]  Flag  le_read_channel_map
+    5 [+1]  Flag  le_read_remote_features
+    6 [+1]  Flag  le_encrypt
+    7 [+1]  Flag  le_rand
+
+  if octet == 28:
+    0 [+1]  Flag  le_start_encryption
+    1 [+1]  Flag  le_long_term_key_request_reply
+    2 [+1]  Flag  le_long_term_key_request_negative_reply
+    3 [+1]  Flag  le_read_supported_states
+    4 [+1]  Flag  le_receiver_test_v1
+    5 [+1]  Flag  le_transmitter_test_v1
+    6 [+1]  Flag  le_test_end
+
+  if octet == 29:
+    3 [+1]  Flag  enhanced_setup_synchronous_connection
+    4 [+1]  Flag  enhanced_accept_synchronous_connection
+    5 [+1]  Flag  read_local_supported_codecs
+    6 [+1]  Flag  set_mws_channel_parameters
+    7 [+1]  Flag  set_external_frame_configuration
+
+  if octet == 30:
+    0 [+1]  Flag  set_mws_signaling
+    1 [+1]  Flag  set_mws_transport_layer
+    2 [+1]  Flag  set_mws_scan_frequency_table
+    3 [+1]  Flag  get_mws_transport_layer_configuration
+    4 [+1]  Flag  set_mws_pattern_configuration
+    5 [+1]  Flag  set_triggered_clock_capture
+    6 [+1]  Flag  truncated_page
+    7 [+1]  Flag  truncated_page_cancel
+
+  if octet == 31:
+    0 [+1]  Flag  set_connectionless_peripheral_broadcast
+    1 [+1]  Flag  set_connectionless_peripheral_broadcast_receive
+    2 [+1]  Flag  start_synchronization_train
+    3 [+1]  Flag  receive_synchronization_train
+    4 [+1]  Flag  set_reserved_ltaddr
+    5 [+1]  Flag  delete_reserved_ltaddr
+    6 [+1]  Flag  set_connectionless_peripheral_broadcast_data
+    7 [+1]  Flag  read_synchronization_train_parameters
+
+  if octet == 32:
+    0 [+1]  Flag  write_synchronization_train_parameters
+    1 [+1]  Flag  remote_oob_extended_data_request_reply
+    2 [+1]  Flag  read_secure_connections_host_support
+    3 [+1]  Flag  write_secure_connections_host_support
+    4 [+1]  Flag  read_authenticated_payload_timeout
+    5 [+1]  Flag  write_authenticated_payload_timeout
+    6 [+1]  Flag  read_local_oob_extended_data
+    7 [+1]  Flag  write_secure_connections_test_mode
+
+  if octet == 33:
+    0 [+1]  Flag  read_extended_page_timeout
+    1 [+1]  Flag  write_extended_page_timeout
+    2 [+1]  Flag  read_extended_inquiry_length
+    3 [+1]  Flag  write_extended_inquiry_length
+    4 [+1]  Flag  le_remote_connection_parameter_request_reply
+    5 [+1]  Flag  le_remote_connection_parameter_request_negative_reply
+    6 [+1]  Flag  le_set_data_length
+    7 [+1]  Flag  le_read_suggested_default_data_length
+
+  if octet == 34:
+    0 [+1]  Flag  le_write_suggested_default_data_length
+    1 [+1]  Flag  le_read_local_p256_public_key
+    2 [+1]  Flag  le_generate_dh_key_v1
+    3 [+1]  Flag  le_add_device_to_resolving_list
+    4 [+1]  Flag  le_remove_device_from_resolving_list
+    5 [+1]  Flag  le_clear_resolving_list
+    6 [+1]  Flag  le_read_resolving_list_size
+    7 [+1]  Flag  le_read_peer_resolvable_address
+
+  if octet == 35:
+    0 [+1]  Flag  le_read_local_resolvable_address
+    1 [+1]  Flag  le_set_address_resolution_enable
+    2 [+1]  Flag  le_set_resolvable_private_address_timeout
+    3 [+1]  Flag  le_read_maximum_data_length
+    4 [+1]  Flag  le_read_phy
+    5 [+1]  Flag  le_set_default_phy
+    6 [+1]  Flag  le_set_phy
+    7 [+1]  Flag  le_enhanced_receiver_test_v2
+
+  if octet == 36:
+    0 [+1]  Flag  le_enhanced_transmitter_test_v2
+    1 [+1]  Flag  le_set_advertising_set_random_address
+    2 [+1]  Flag  le_set_extended_advertising_parameters
+    3 [+1]  Flag  le_set_extended_advertising_data
+    4 [+1]  Flag  le_set_extended_scan_response_data
+    5 [+1]  Flag  le_set_extended_advertising_enable
+    6 [+1]  Flag  le_read_maximum_advertising_data_length
+    7 [+1]  Flag  le_read_number_of_supported_advertising_sets
+
+  if octet == 37:
+    0 [+1]  Flag  le_remove_advertising_set
+    1 [+1]  Flag  le_clear_advertising_sets
+    2 [+1]  Flag  le_set_periodic_advertising_parameters
+    3 [+1]  Flag  le_set_periodic_advertising_data
+    4 [+1]  Flag  le_set_periodic_advertising_enable
+    5 [+1]  Flag  le_set_extended_scan_parameters
+    6 [+1]  Flag  le_set_extended_scan_enable
+    7 [+1]  Flag  le_extended_create_connection
+
+  if octet == 38:
+    0 [+1]  Flag  le_periodic_advertising_create_sync
+    1 [+1]  Flag  le_periodic_advertising_create_sync_cancel
+    2 [+1]  Flag  le_periodic_advertising_terminate_sync
+    3 [+1]  Flag  le_add_device_to_periodic_advertiser_list
+    4 [+1]  Flag  le_remove_device_from_periodic_advertiser_list
+    5 [+1]  Flag  le_clear_periodic_advertiser_list
+    6 [+1]  Flag  le_read_periodic_advertiser_list_size
+    7 [+1]  Flag  le_read_transmit_power
+
+  if octet == 39:
+    0 [+1]  Flag  le_read_rf_path_compensation
+    1 [+1]  Flag  le_write_rf_path_compensation
+    2 [+1]  Flag  le_set_privacy_mode
+    3 [+1]  Flag  le_receiver_test_v3
+    4 [+1]  Flag  le_transmitter_test_v3
+    5 [+1]  Flag  le_set_connectionless_cte_transmit_parameters
+    6 [+1]  Flag  le_set_connectionless_cte_transmit_enable
+    7 [+1]  Flag  le_set_connectionless_iq_sampling_enable
+
+  if octet == 40:
+    0 [+1]  Flag  le_set_connection_cte_receive_parameters
+    1 [+1]  Flag  le_set_connection_cte_transmit_parameters
+    2 [+1]  Flag  le_connection_cte_request_enable
+    3 [+1]  Flag  le_connection_cte_response_enable
+    4 [+1]  Flag  le_read_antenna_information
+    5 [+1]  Flag  le_set_periodic_advertising_receive_enable
+    6 [+1]  Flag  le_periodic_advertising_sync_transfer
+    7 [+1]  Flag  le_periodic_advertising_set_info_transfer
+
+  if octet == 41:
+    0 [+1]  Flag  le_set_periodic_advertising_sync_transfer_parameters
+    1 [+1]  Flag  le_set_default_periodic_advertising_sync_transfer_parameters
+    2 [+1]  Flag  le_generate_dh_key_v3
+    3 [+1]  Flag  read_local_simple_pairing_options
+    4 [+1]  Flag  le_modify_sleep_clock_accuracy
+    5 [+1]  Flag  le_read_buffer_size_v2
+    6 [+1]  Flag  le_read_isotx_sync
+    7 [+1]  Flag  le_set_cig_parameters
+
+  if octet == 42:
+    0 [+1]  Flag  le_set_cig_parameters_test
+    1 [+1]  Flag  le_create_cis
+    2 [+1]  Flag  le_remove_cig
+    3 [+1]  Flag  le_accept_cis_request
+    4 [+1]  Flag  le_reject_cis_request
+    5 [+1]  Flag  le_create_big
+    6 [+1]  Flag  le_create_big_test
+    7 [+1]  Flag  le_terminate_big
+
+  if octet == 43:
+    0 [+1]  Flag  le_big_create_sync
+    1 [+1]  Flag  le_big_terminate_sync
+    2 [+1]  Flag  le_request_peer_sca
+    3 [+1]  Flag  le_setup_iso_data_path
+    4 [+1]  Flag  le_remove_iso_data_path
+    5 [+1]  Flag  le_iso_transmit_test
+    6 [+1]  Flag  le_iso_receive_test
+    7 [+1]  Flag  le_iso_read_test_counters
+
+  if octet == 44:
+    0 [+1]  Flag  le_iso_test_end
+    1 [+1]  Flag  le_set_host_feature
+    2 [+1]  Flag  le_read_iso_link_quality
+    3 [+1]  Flag  le_enhanced_read_transmit_power_level
+    4 [+1]  Flag  le_read_remote_transmit_power_level
+    5 [+1]  Flag  le_set_path_loss_reporting_parameters
+    6 [+1]  Flag  le_set_path_loss_reporting_enable
+    7 [+1]  Flag  le_set_transmit_power_reporting_enable
+
+  if octet == 45:
+    0 [+1]  Flag  le_transmitter_test_v4
+    1 [+1]  Flag  set_ecosystem_base_interval
+    2 [+1]  Flag  read_local_supported_codecs_v2
+    3 [+1]  Flag  read_local_supported_codec_capabilities
+    4 [+1]  Flag  read_local_supported_controller_delay
+    5 [+1]  Flag  configure_data_path
+
+  if octet == 46:
+    0 [+1]  Flag  le_set_default_subrate
+    1 [+1]  Flag  le_subrate_request
+    2 [+1]  Flag  le_set_extended_advertising_parameters_v2
+    5 [+1]  Flag  le_set_periodic_advertising_subevent_data
+    6 [+1]  Flag  le_set_periodic_advertising_response_data
+    7 [+1]  Flag  le_set_periodic_sync_subevent
+
+  if octet == 47:
+    0 [+1]  Flag  le_extended_create_connection_v2
+    1 [+1]  Flag  le_set_periodic_advertising_parameters_v2
+
 # ========================= HCI Event packets ===========================
 # Core Spec v5.3 Vol 4, Part E, Section 7.7
 
@@ -871,3 +1293,58 @@ struct LEReadLocalSupportedFeaturesCommandCompleteEvent:
   $next [+1]                             hci.StatusCode            status
   $next [+8]  bits:
     0     [+LEFeatureSet.$size_in_bits]  LEFeatureSet              le_features
+
+
+struct ReadLocalSupportedCommandsCommandCompleteEvent:
+  -- Read Local Supported Commands Command (v1.2)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  $next [+1]         hci.StatusCode            status
+  $next [+1]         SupportedCommands(0)      supported_commands_0
+  $next [+1]         SupportedCommands(1)      supported_commands_1
+  $next [+1]         SupportedCommands(2)      supported_commands_2
+  $next [+1]         SupportedCommands(3)      supported_commands_3
+  $next [+1]         SupportedCommands(4)      supported_commands_4
+  $next [+1]         SupportedCommands(5)      supported_commands_5
+  $next [+1]         SupportedCommands(6)      supported_commands_6
+  $next [+1]         SupportedCommands(7)      supported_commands_7
+  $next [+1]         SupportedCommands(8)      supported_commands_8
+  $next [+1]         SupportedCommands(9)      supported_commands_9
+  $next [+1]         SupportedCommands(10)     supported_commands_10
+  $next [+1]         SupportedCommands(11)     supported_commands_11
+  $next [+1]         SupportedCommands(12)     supported_commands_12
+  $next [+1]         SupportedCommands(13)     supported_commands_13
+  $next [+1]         SupportedCommands(14)     supported_commands_14
+  $next [+1]         SupportedCommands(15)     supported_commands_15
+  $next [+1]         SupportedCommands(16)     supported_commands_16
+  $next [+1]         SupportedCommands(17)     supported_commands_17
+  $next [+1]         SupportedCommands(18)     supported_commands_18
+  $next [+1]         SupportedCommands(19)     supported_commands_19
+  $next [+1]         SupportedCommands(20)     supported_commands_20
+  $next [+1]         SupportedCommands(21)     supported_commands_21
+  $next [+1]         SupportedCommands(22)     supported_commands_22
+  $next [+1]         SupportedCommands(23)     supported_commands_23
+  $next [+1]         SupportedCommands(24)     supported_commands_24
+  $next [+1]         SupportedCommands(25)     supported_commands_25
+  $next [+1]         SupportedCommands(26)     supported_commands_26
+  $next [+1]         SupportedCommands(27)     supported_commands_27
+  $next [+1]         SupportedCommands(28)     supported_commands_28
+  $next [+1]         SupportedCommands(29)     supported_commands_29
+  $next [+1]         SupportedCommands(30)     supported_commands_30
+  $next [+1]         SupportedCommands(31)     supported_commands_31
+  $next [+1]         SupportedCommands(32)     supported_commands_32
+  $next [+1]         SupportedCommands(33)     supported_commands_33
+  $next [+1]         SupportedCommands(34)     supported_commands_34
+  $next [+1]         SupportedCommands(35)     supported_commands_35
+  $next [+1]         SupportedCommands(36)     supported_commands_36
+  $next [+1]         SupportedCommands(37)     supported_commands_37
+  $next [+1]         SupportedCommands(38)     supported_commands_38
+  $next [+1]         SupportedCommands(39)     supported_commands_39
+  $next [+1]         SupportedCommands(40)     supported_commands_40
+  $next [+1]         SupportedCommands(41)     supported_commands_41
+  $next [+1]         SupportedCommands(42)     supported_commands_42
+  $next [+1]         SupportedCommands(43)     supported_commands_43
+  $next [+1]         SupportedCommands(44)     supported_commands_44
+  $next [+1]         SupportedCommands(45)     supported_commands_45
+  $next [+1]         SupportedCommands(46)     supported_commands_46
+  $next [+1]         SupportedCommands(47)     supported_commands_47
