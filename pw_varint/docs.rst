@@ -17,6 +17,8 @@ Compatibility
 API Reference
 -------------
 
+.. _module-pw_varint-api-c:
+
 C
 =
 .. doxygendefine:: PW_VARINT_MAX_INT32_SIZE_BYTES

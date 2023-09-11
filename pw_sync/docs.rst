@@ -742,6 +742,8 @@ versions, including:
 * :cpp:func:`pw::sync::VirtualTimedMutex`
 * :cpp:func:`pw::sync::VirtualInterruptSpinLock`
 
+.. _module-pw_sync-genericbasiclockable:
+
 GenericBasicLockable
 --------------------
 ``GenericBasicLockable`` is a helper construct that can be used to declare

@@ -285,6 +285,8 @@ Design
 :cpp:type:`pw::Callback` is an alias of
 `fit::callback <https://cs.opensource.google/fuchsia/fuchsia/+/main:sdk/lib/fit/include/lib/fit/function.h;drc=f66f54fca0c11a1168d790bcc3d8a5a3d940218d>`_.
 
+.. _module-pw_function-non-literal:
+
 Why pw::Function is not a literal
 =================================
 The default constructor for ``pw::Function`` is ``constexpr`` but
