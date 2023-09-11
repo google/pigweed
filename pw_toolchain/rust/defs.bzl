@@ -11,7 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Utilities for declaring Rust toolchains that are compatible with @bazel_embedded"""
+"""Utilities for declaring Rust toolchains that are compatible with Arm gcc."""
 
 load("@rules_rust//rust:toolchain.bzl", "rust_analyzer_toolchain", "rust_toolchain")
 load("//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl", "cipd_repository")
@@ -146,7 +146,6 @@ def pw_rust_declare_toolchain_targets():
                 ],
                 target_compatible_with = [
                     "@platforms//cpu:{}".format(target["cpu"]),
-                    "@bazel_embedded//constraints/fpu:none",
                 ],
             )
 

@@ -49,9 +49,11 @@ constraint_value(
 platform(
     name = "platform",
     constraint_values = [
-        ":freertos_config_cv",
+        "@pw_toolchain//constraints/arm_mcpu:cortex-m4",
         "//pw_build/constraints/rtos:freertos",
+        ":freertos_config_cv",
         "@freertos//:port_ARM_CM4F",
+        "@platforms//cpu:armv7e-m",
     ],
     parents = ["@bazel_embedded//platforms:cortex_m4_fpu"],
 )

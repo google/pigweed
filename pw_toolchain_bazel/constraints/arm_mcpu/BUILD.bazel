@@ -1,0 +1,65 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+# The target Arm processor.
+#
+# The values of this constraint_setting correspond to valid values of the -mcpu
+# flag for Arm gcc. See
+# https://gcc.gnu.org/onlinedocs/gcc/ARM-Options.html#index-mcpu-2. These
+# values are intended to be used in `target_compatible_with` attributes of
+# toolchains which specify the corresponding value of -mcpu.
+#
+# The constraint_values are not currently exhaustively enumerated (only a few
+# of the legal -mcpu values have corresponding constraint_values). The intent
+# is for additional values to be added when needed.
+#
+# The intent is to support only (processor type + optional architectural
+# extensions) forms of -mcpu (e.g., cortex-m4 or cortex-m4+nofp), not march
+# values (e.g., armv7e-m). This is because it is recommended to use (processor
+# type + optional architectural extensions) when configuring Arm GCC (see
+# https://community.arm.com/arm-community-blogs/b/tools-software-ides-blog/posts/compiler-flags-across-architectures-march-mtune-and-mcpu).
+# In addition, the march values can already be captured using @platforms//cpu.
+constraint_setting(
+    name = "mcpu",
+    default_constraint_value = "none",
+)
+
+constraint_value(
+    name = "none",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "cortex-m0",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "cortex-m3",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "cortex-m4",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "cortex-m4+nofp",
+    constraint_setting = ":mcpu",
+)

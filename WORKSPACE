@@ -90,6 +90,22 @@ register_toolchains(
     "//pw_toolchain/host_clang:host_cc_toolchain_macos",
 )
 
+# Fetch gcc-arm-none-eabi toolchain.
+# Required by: pigweed.
+# Used in modules: //pw_toolchain.
+cipd_repository(
+    name = "gcc_arm_none_eabi_toolchain",
+    path = "fuchsia/third_party/armgcc/${os}-${arch}",
+    tag = "version:2@12.2.mpacbti-rel1.1",
+)
+
+register_toolchains(
+    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m0",
+    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m3",
+    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m4",
+    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m4+nofp",
+)
+
 # Set up Starlark library.
 # Required by: io_bazel_rules_go, com_google_protobuf, rules_python
 # Used in modules: None.

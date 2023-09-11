@@ -96,17 +96,21 @@ platform(
 platform(
     name = "lm3s6965evb",
     constraint_values = [
+        "@pw_toolchain//constraints/arm_mcpu:cortex-m3",
         "//pw_build/constraints/chipset:lm3s6965evb",
-        "@rust_crates//:no_std",
         "//pw_sys_io_baremetal_lm3s6965evb:backend",
+        "@platforms//cpu:armv7-m",
+        "@rust_crates//:no_std",
     ],
-    parents = [":cortex_m3"],
 )
 
 platform(
     name = "nrf52833",
-    constraint_values = ["//pw_build/constraints/chipset:nrf52833"],
-    parents = [":cortex_m0"],
+    constraint_values = [
+        "@pw_toolchain//constraints/arm_mcpu:cortex-m0",
+        "//pw_build/constraints/chipset:nrf52833",
+        "@platforms//cpu:armv6-m",
+    ],
 )
 
 # --- Boards ---
@@ -153,7 +157,7 @@ platform(
         # Linux, or Mac). The pw_sys_io_baremetal_stm32f429 backend is only
         # compatible with os:none.
         "@platforms//os:none",
+        # For toolchain resolution.
+        "@pw_toolchain//constraints/arm_mcpu:cortex-m4",
     ],
-    # Inherit from cortex_m4_fpu to use the appropriate Arm toolchain.
-    parents = [":cortex_m4_fpu"],
 )
