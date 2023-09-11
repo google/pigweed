@@ -9,6 +9,7 @@
 #include <lib/fit/defer.h>
 #include <lib/stdcompat/functional.h>
 
+#include "pw_async_fuchsia/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
@@ -68,11 +69,12 @@ BrEdrDiscoverableSession::BrEdrDiscoverableSession(BrEdrDiscoveryManager::WeakPt
 
 BrEdrDiscoverableSession::~BrEdrDiscoverableSession() { manager_->RemoveDiscoverableSession(this); }
 
-BrEdrDiscoveryManager::BrEdrDiscoveryManager(hci::CommandChannel::WeakPtr cmd,
+BrEdrDiscoveryManager::BrEdrDiscoveryManager(pw::async::Dispatcher& pw_dispatcher,
+                                             hci::CommandChannel::WeakPtr cmd,
                                              pw::bluetooth::emboss::InquiryMode mode,
                                              PeerCache* peer_cache)
     : cmd_(std::move(cmd)),
-      dispatcher_(async_get_default_dispatcher()),
+      pw_dispatcher_(pw_dispatcher),
       cache_(peer_cache),
       result_handler_id_(0u),
       desired_inquiry_mode_(mode),
@@ -80,7 +82,6 @@ BrEdrDiscoveryManager::BrEdrDiscoveryManager(hci::CommandChannel::WeakPtr cmd,
       weak_self_(this) {
   BT_DEBUG_ASSERT(cache_);
   BT_DEBUG_ASSERT(cmd_.is_alive());
-  BT_DEBUG_ASSERT(dispatcher_);
 
   result_handler_id_ =
       cmd_->AddEventHandler(hci_spec::kInquiryResultEventCode,
@@ -387,7 +388,8 @@ void BrEdrDiscoveryManager::InspectProperties::Update(size_t discoverable_count,
 
 void BrEdrDiscoveryManager::UpdateInspectProperties() {
   inspect_properties_.Update(discoverable_.size(), pending_discoverable_.size(),
-                             discovering_.size(), async_now(dispatcher_));
+                             discovering_.size(),
+                             pw_async_fuchsia::TimepointToZxTime(pw_dispatcher_.now()).get());
 }
 
 void BrEdrDiscoveryManager::NotifyPeersUpdated(const std::unordered_set<Peer*>& peers) {

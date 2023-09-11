@@ -1069,7 +1069,7 @@ void AdapterImpl::InitializeStep4() {
     }
 
     bredr_discovery_manager_ = std::make_unique<BrEdrDiscoveryManager>(
-        hci_->command_channel()->AsWeakPtr(), mode, &peer_cache_);
+        pw_dispatcher_, hci_->command_channel()->AsWeakPtr(), mode, &peer_cache_);
     bredr_discovery_manager_->AttachInspect(adapter_node_, kInspectBrEdrDiscoveryManagerNodeName);
 
     sdp_server_ = std::make_unique<sdp::Server>(l2cap_.get());

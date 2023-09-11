@@ -43,8 +43,8 @@ class BrEdrDiscoverableSession;
 class BrEdrDiscoveryManager final {
  public:
   // |peer_cache| MUST out-live this BrEdrDiscoveryManager.
-  BrEdrDiscoveryManager(hci::CommandChannel::WeakPtr cmd, pw::bluetooth::emboss::InquiryMode mode,
-                        PeerCache* peer_cache);
+  BrEdrDiscoveryManager(pw::async::Dispatcher& pw_dispatcher, hci::CommandChannel::WeakPtr cmd,
+                        pw::bluetooth::emboss::InquiryMode mode, PeerCache* peer_cache);
 
   ~BrEdrDiscoveryManager();
 
@@ -162,7 +162,7 @@ class BrEdrDiscoveryManager final {
   InspectProperties inspect_properties_;
 
   // The dispatcher that we use for invoking callbacks asynchronously.
-  async_dispatcher_t* dispatcher_;
+  pw::async::Dispatcher& pw_dispatcher_;
 
   // Peer cache to use.
   // We hold a raw pointer is because it must out-live us.

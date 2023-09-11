@@ -8,10 +8,12 @@
 
 namespace bt::gap::testing {
 
-FakeAdapter::FakeAdapter()
+FakeAdapter::FakeAdapter(pw::async::Dispatcher& pw_dispatcher)
     : init_state_(InitState::kNotInitialized),
       fake_le_(std::make_unique<FakeLowEnergy>(this)),
       fake_bredr_(std::make_unique<FakeBrEdr>()),
+      heap_dispatcher_(pw_dispatcher),
+      peer_cache_(pw_dispatcher),
       weak_self_(this) {}
 
 bool FakeAdapter::Initialize(InitializeCallback callback, fit::closure transport_closed_callback) {

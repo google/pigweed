@@ -18,7 +18,9 @@ class FakeAdapterTestFixture : public ::gtest::TestLoopFixture {
   FakeAdapterTestFixture() = default;
   ~FakeAdapterTestFixture() override = default;
 
-  void SetUp() override { adapter_ = std::make_unique<bt::gap::testing::FakeAdapter>(); }
+  void SetUp() override {
+    adapter_ = std::make_unique<bt::gap::testing::FakeAdapter>(pw_dispatcher());
+  }
 
   void TearDown() override { adapter_ = nullptr; }
 

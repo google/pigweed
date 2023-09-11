@@ -16,7 +16,7 @@ namespace bt::gap::testing {
 // FIDL tests).
 class FakeAdapter final : public Adapter {
  public:
-  FakeAdapter();
+  explicit FakeAdapter(pw::async::Dispatcher& pw_dispatcher);
   ~FakeAdapter() override = default;
 
   AdapterState& mutable_state() { return state_; }
@@ -269,9 +269,8 @@ class FakeAdapter final : public Adapter {
   DeviceClass device_class_;
   LESecurityMode le_security_mode_;
 
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{async_get_default_dispatcher()};
-  pw::async::HeapDispatcher heap_dispatcher_{pw_dispatcher_};
-  PeerCache peer_cache_{pw_dispatcher_};
+  pw::async::HeapDispatcher heap_dispatcher_;
+  PeerCache peer_cache_;
   WeakSelf<Adapter> weak_self_;
 };
 
