@@ -5,6 +5,8 @@
 #ifndef LIB_FIT_FUNCTION_H_
 #define LIB_FIT_FUNCTION_H_
 
+#include <cstddef>
+#include <memory>
 #include <type_traits>
 
 #include "internal/function.h"
@@ -13,14 +15,14 @@
 
 namespace fit {
 
-template <size_t inline_target_size, bool require_inline, typename FunctionType>
+template <size_t inline_target_size, bool require_inline, typename FunctionType, typename Allocator>
 class function_impl {
   static_assert(std::is_function<FunctionType>::value,
                 "fit::function must be instantiated with a function type, such as void() or "
                 "int(char*, bool)");
 };
 
-template <size_t inline_target_size, bool require_inline, typename FunctionType>
+template <size_t inline_target_size, bool require_inline, typename FunctionType, typename Allocator>
 class callback_impl {
   static_assert(std::is_function<FunctionType>::value,
                 "fit::callback must be instantiated with a function type, such as void() or "
@@ -32,6 +34,10 @@ class callback_impl {
 // as big as two pointers, such as an object pointer and a pointer to a member
 // function.
 constexpr size_t default_inline_target_size = sizeof(void*) * 2;
+
+// The default allocator used for allocating callables on the heap. Its `value_type` is irrelevant,
+// since it must support rebinding.
+using default_callable_allocator = std::allocator<std::byte>;
 
 // A |fit::function| is a move-only polymorphic function wrapper.
 //
@@ -61,6 +67,9 @@ constexpr size_t default_inline_target_size = sizeof(void*) * 2;
 // fit within a function without requiring heap allocation.
 // Defaults to |default_inline_target_size|.
 //
+// |Allocator| is the Allocator used for heap allocation, if required. Its `value_type` is
+// irrelevant, since it must support rebinding.
+//
 // Class members are documented in |fit::function_impl|, below.
 //
 // EXAMPLES
@@ -70,9 +79,10 @@ constexpr size_t default_inline_target_size = sizeof(void*) * 2;
 // -
 // https://fuchsia.googlesource.com/fuchsia/+/HEAD/sdk/lib/fit/test/examples/function_example2.cc
 //
-template <typename T, size_t inline_target_size = default_inline_target_size>
+template <typename T, size_t inline_target_size = default_inline_target_size,
+          typename Allocator = default_callable_allocator>
 using function = function_impl<internal::RoundUpToWord(inline_target_size),
-                               /*require_inline=*/false, T>;
+                               /*require_inline=*/false, T, Allocator>;
 
 // A move-only callable object wrapper that forces callables to be stored inline
 // and never performs heap allocation.
@@ -82,7 +92,7 @@ using function = function_impl<internal::RoundUpToWord(inline_target_size),
 // compile.
 template <typename T, size_t inline_target_size = default_inline_target_size>
 using inline_function = function_impl<internal::RoundUpToWord(inline_target_size),
-                                      /*require_inline=*/true, T>;
+                                      /*require_inline=*/true, T, default_callable_allocator>;
 
 // Synonym for a function which takes no arguments and produces no result.
 using closure = function<void()>;
@@ -153,11 +163,15 @@ using closure = function<void()>;
 // fit within a callback without requiring heap allocation.
 // Defaults to |default_inline_target_size|.
 //
+// |Allocator| is the Allocator used for heap allocation, if required. Its `value_type` is
+// irrelevant, since it must support rebinding.
+//
 // Class members are documented in |fit::callback_impl|, below.
 //
-template <typename T, size_t inline_target_size = default_inline_target_size>
-using callback =
-    callback_impl<internal::RoundUpToWord(inline_target_size), /*require_inline=*/false, T>;
+template <typename T, size_t inline_target_size = default_inline_target_size,
+          typename Allocator = default_callable_allocator>
+using callback = callback_impl<internal::RoundUpToWord(inline_target_size),
+                               /*require_inline=*/false, T, Allocator>;
 
 // A move-only, run-once, callable object wrapper that forces callables to be
 // stored inline and never performs heap allocation.
@@ -167,19 +181,22 @@ using callback =
 // compile.
 template <typename T, size_t inline_target_size = default_inline_target_size>
 using inline_callback = callback_impl<internal::RoundUpToWord(inline_target_size),
-                                      /*require_inline=*/true, T>;
+                                      /*require_inline=*/true, T, default_callable_allocator>;
 
-template <size_t inline_target_size, bool require_inline, typename Result, typename... Args>
-class function_impl<inline_target_size, require_inline, Result(Args...)> final
-    : private ::fit::internal::function_base<inline_target_size, require_inline, Result(Args...)> {
-  using base = ::fit::internal::function_base<inline_target_size, require_inline, Result(Args...)>;
+template <size_t inline_target_size, bool require_inline, typename Allocator, typename Result,
+          typename... Args>
+class function_impl<inline_target_size, require_inline, Result(Args...), Allocator> final
+    : private ::fit::internal::function_base<inline_target_size, require_inline, Result(Args...),
+                                             Allocator> {
+  using base = ::fit::internal::function_base<inline_target_size, require_inline, Result(Args...),
+                                              Allocator>;
 
   // function_base requires private access during share()
-  friend class ::fit::internal::function_base<inline_target_size, require_inline, Result(Args...)>;
+  friend base;
 
   // supports target() for shared functions
   friend const void* ::fit::internal::get_target_type_id<>(
-      const function_impl<inline_target_size, require_inline, Result(Args...)>&);
+      const function_impl<inline_target_size, require_inline, Result(Args...), Allocator>&);
 
   template <typename U>
   using not_self_type = ::fit::internal::not_same_type<function_impl, U>;
@@ -228,10 +245,9 @@ class function_impl<inline_target_size, require_inline, Result(Args...)> final
   // unexpected behavior of a |fit::function| that would otherwise fail after
   // one call. To explicitly allow this, simply wrap the |fit::callback| in a
   // pass-through lambda before passing it to the |fit::function|.
-  template <size_t other_inline_target_size, bool other_require_inline>
-  function_impl(
-      ::fit::callback_impl<other_inline_target_size, other_require_inline, Result(Args...)>) =
-      delete;
+  template <size_t other_inline_target_size, bool other_require_inline, typename OtherAllocator>
+  function_impl(::fit::callback_impl<other_inline_target_size, other_require_inline,
+                                     Result(Args...), OtherAllocator>) = delete;
 
   // Creates a function with a target moved from another function,
   // leaving the other function with an empty target.
@@ -273,10 +289,9 @@ class function_impl<inline_target_size, require_inline, Result(Args...)> final
   // fail after one call. To explicitly allow this, simply wrap the
   // |fit::callback| in a pass-through lambda before assigning it to the
   // |fit::function|.
-  template <size_t other_inline_target_size, bool other_require_inline>
-  function_impl& operator=(
-      ::fit::callback_impl<other_inline_target_size, other_require_inline, Result(Args...)>) =
-      delete;
+  template <size_t other_inline_target_size, bool other_require_inline, typename OtherAllocator>
+  function_impl& operator=(::fit::callback_impl<other_inline_target_size, other_require_inline,
+                                                Result(Args...), OtherAllocator>) = delete;
 
   // Move assignment
   function_impl& operator=(function_impl&& other) noexcept {
@@ -313,44 +328,49 @@ class function_impl<inline_target_size, require_inline, Result(Args...)> final
   }
 };
 
-template <size_t inline_target_size, bool require_inline, typename FunctionType>
-void swap(function_impl<inline_target_size, require_inline, FunctionType>& a,
-          function_impl<inline_target_size, require_inline, FunctionType>& b) {
+template <size_t inline_target_size, bool require_inline, typename FunctionType, typename Allocator>
+void swap(function_impl<inline_target_size, require_inline, FunctionType, Allocator>& a,
+          function_impl<inline_target_size, require_inline, FunctionType, Allocator>& b) {
   a.swap(b);
 }
 
-template <size_t inline_target_size, bool require_inline, typename FunctionType>
-bool operator==(const function_impl<inline_target_size, require_inline, FunctionType>& f,
+template <size_t inline_target_size, bool require_inline, typename FunctionType, typename Allocator>
+bool operator==(const function_impl<inline_target_size, require_inline, FunctionType, Allocator>& f,
                 decltype(nullptr)) {
   return !f;
 }
-template <size_t inline_target_size, bool require_inline, typename FunctionType>
-bool operator==(decltype(nullptr),
-                const function_impl<inline_target_size, require_inline, FunctionType>& f) {
+template <size_t inline_target_size, bool require_inline, typename FunctionType, typename Allocator>
+bool operator==(
+    decltype(nullptr),
+    const function_impl<inline_target_size, require_inline, FunctionType, Allocator>& f) {
   return !f;
 }
-template <size_t inline_target_size, bool require_inline, typename FunctionType>
-bool operator!=(const function_impl<inline_target_size, require_inline, FunctionType>& f,
+template <size_t inline_target_size, bool require_inline, typename FunctionType, typename Allocator>
+bool operator!=(const function_impl<inline_target_size, require_inline, FunctionType, Allocator>& f,
                 decltype(nullptr)) {
   return !!f;
 }
-template <size_t inline_target_size, bool require_inline, typename FunctionType>
-bool operator!=(decltype(nullptr),
-                const function_impl<inline_target_size, require_inline, FunctionType>& f) {
+template <size_t inline_target_size, bool require_inline, typename FunctionType, typename Allocator>
+bool operator!=(
+    decltype(nullptr),
+    const function_impl<inline_target_size, require_inline, FunctionType, Allocator>& f) {
   return !!f;
 }
 
-template <size_t inline_target_size, bool require_inline, typename Result, typename... Args>
-class callback_impl<inline_target_size, require_inline, Result(Args...)> final
-    : private ::fit::internal::function_base<inline_target_size, require_inline, Result(Args...)> {
-  using base = ::fit::internal::function_base<inline_target_size, require_inline, Result(Args...)>;
+template <size_t inline_target_size, bool require_inline, typename Allocator, typename Result,
+          typename... Args>
+class callback_impl<inline_target_size, require_inline, Result(Args...), Allocator> final
+    : private ::fit::internal::function_base<inline_target_size, require_inline, Result(Args...),
+                                             Allocator> {
+  using base = ::fit::internal::function_base<inline_target_size, require_inline, Result(Args...),
+                                              Allocator>;
 
   // function_base requires private access during share()
-  friend class ::fit::internal::function_base<inline_target_size, require_inline, Result(Args...)>;
+  friend base;
 
   // supports target() for shared functions
   friend const void* ::fit::internal::get_target_type_id<>(
-      const callback_impl<inline_target_size, require_inline, Result(Args...)>&);
+      const callback_impl<inline_target_size, require_inline, Result(Args...), Allocator>&);
 
   template <typename U>
   using not_self_type = ::fit::internal::not_same_type<callback_impl, U>;
@@ -469,30 +489,32 @@ class callback_impl<inline_target_size, require_inline, Result(Args...)> final
   }
 };
 
-template <size_t inline_target_size, bool require_inline, typename FunctionType>
-void swap(callback_impl<inline_target_size, require_inline, FunctionType>& a,
-          callback_impl<inline_target_size, require_inline, FunctionType>& b) {
+template <size_t inline_target_size, bool require_inline, typename FunctionType, typename Allocator>
+void swap(callback_impl<inline_target_size, require_inline, FunctionType, Allocator>& a,
+          callback_impl<inline_target_size, require_inline, FunctionType, Allocator>& b) {
   a.swap(b);
 }
 
-template <size_t inline_target_size, bool require_inline, typename FunctionType>
-bool operator==(const callback_impl<inline_target_size, require_inline, FunctionType>& f,
+template <size_t inline_target_size, bool require_inline, typename FunctionType, typename Allocator>
+bool operator==(const callback_impl<inline_target_size, require_inline, FunctionType, Allocator>& f,
                 decltype(nullptr)) {
   return !f;
 }
-template <size_t inline_target_size, bool require_inline, typename FunctionType>
-bool operator==(decltype(nullptr),
-                const callback_impl<inline_target_size, require_inline, FunctionType>& f) {
+template <size_t inline_target_size, bool require_inline, typename FunctionType, typename Allocator>
+bool operator==(
+    decltype(nullptr),
+    const callback_impl<inline_target_size, require_inline, FunctionType, Allocator>& f) {
   return !f;
 }
-template <size_t inline_target_size, bool require_inline, typename FunctionType>
-bool operator!=(const callback_impl<inline_target_size, require_inline, FunctionType>& f,
+template <size_t inline_target_size, bool require_inline, typename FunctionType, typename Allocator>
+bool operator!=(const callback_impl<inline_target_size, require_inline, FunctionType, Allocator>& f,
                 decltype(nullptr)) {
   return !!f;
 }
-template <size_t inline_target_size, bool require_inline, typename FunctionType>
-bool operator!=(decltype(nullptr),
-                const callback_impl<inline_target_size, require_inline, FunctionType>& f) {
+template <size_t inline_target_size, bool require_inline, typename FunctionType, typename Allocator>
+bool operator!=(
+    decltype(nullptr),
+    const callback_impl<inline_target_size, require_inline, FunctionType, Allocator>& f) {
   return !!f;
 }
 

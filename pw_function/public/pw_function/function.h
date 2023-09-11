@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <cstddef>
+
 #include "lib/fit/function.h"
 #include "pw_function/config.h"
 
@@ -46,13 +48,19 @@ namespace pw {
 ///   }
 ///
 /// @endcode
+///
+/// @tparam Allocator The Allocator used to dynamically allocate the callable,
+/// if it exceeds `inline_target_size` and dynamic allocation is enabled. Its
+/// `value_type` is irrelevant, since it must support rebinding.
 template <typename FunctionType,
-          size_t inline_target_size =
-              function_internal::config::kInlineCallableSize>
+          std::size_t inline_target_size =
+              function_internal::config::kInlineCallableSize,
+          typename Allocator = fit::default_callable_allocator>
 using Function = fit::function_impl<
     inline_target_size,
     /*require_inline=*/!function_internal::config::kEnableDynamicAllocation,
-    FunctionType>;
+    FunctionType,
+    Allocator>;
 
 /// Version of `pw::Function` that exclusively uses inline storage.
 ///
@@ -63,7 +71,7 @@ using Function = fit::function_impl<
 // TODO(b/252852651): Remove warning above when conversion from
 // `fit::inline_function` to `fit::function` doesn't allocate anymore.
 template <typename FunctionType,
-          size_t inline_target_size =
+          std::size_t inline_target_size =
               function_internal::config::kInlineCallableSize>
 using InlineFunction = fit::inline_function<FunctionType, inline_target_size>;
 
@@ -80,16 +88,18 @@ using Closure = Function<void()>;
 /// A `pw::Callback` in the "already called" state has the same state as a
 /// `pw::Callback` that has been assigned to `nullptr`.
 template <typename FunctionType,
-          size_t inline_target_size =
-              function_internal::config::kInlineCallableSize>
+          std::size_t inline_target_size =
+              function_internal::config::kInlineCallableSize,
+          typename Allocator = fit::default_callable_allocator>
 using Callback = fit::callback_impl<
     inline_target_size,
     /*require_inline=*/!function_internal::config::kEnableDynamicAllocation,
-    FunctionType>;
+    FunctionType,
+    Allocator>;
 
 /// Version of `pw::Callback` that exclusively uses inline storage.
 template <typename FunctionType,
-          size_t inline_target_size =
+          std::size_t inline_target_size =
               function_internal::config::kInlineCallableSize>
 using InlineCallback = fit::inline_callback<FunctionType, inline_target_size>;
 

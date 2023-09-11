@@ -114,8 +114,9 @@ is a compile-time error unless dynamic allocation is enabled.
 
    When ``PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION`` is enabled, a ``Function``
    will use dynamic allocation to store callables that exceed the inline size.
-   When it is enabled but a compile-time check for the inlining is still required
-   ``pw::InlineFunction`` can be used.
+   An Allocator can be optionally supplied as a template argument. When dynamic
+   allocation is enabled but a compile-time check for the inlining is still
+   required ``pw::InlineFunction`` can be used.
 
 .. warning::
 
@@ -280,10 +281,10 @@ be used as a reference when sizing external buffers for ``Function`` objects.
 Design
 ------
 :cpp:type:`pw::Function` is an alias of
-`fit::function <https://cs.opensource.google/fuchsia/fuchsia/+/main:sdk/lib/fit/include/lib/fit/function.h;drc=f66f54fca0c11a1168d790bcc3d8a5a3d940218d>`_.
+`fit::function_impl <https://cs.opensource.google/fuchsia/fuchsia/+/main:sdk/lib/fit/include/lib/fit/function.h>`_.
 
 :cpp:type:`pw::Callback` is an alias of
-`fit::callback <https://cs.opensource.google/fuchsia/fuchsia/+/main:sdk/lib/fit/include/lib/fit/function.h;drc=f66f54fca0c11a1168d790bcc3d8a5a3d940218d>`_.
+`fit::callback_impl <https://cs.opensource.google/fuchsia/fuchsia/+/main:sdk/lib/fit/include/lib/fit/function.h>`_.
 
 .. _module-pw_function-non-literal:
 
