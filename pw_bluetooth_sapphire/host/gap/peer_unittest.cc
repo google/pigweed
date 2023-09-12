@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 #include <pw_async_fuchsia/dispatcher.h>
 
+#include "pw_async/fake_dispatcher_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/manufacturer_names.h"
@@ -52,20 +53,16 @@ const bt::sm::LTK kSecureBrEdrKey(sm::SecurityProperties(/*encrypted=*/true, /*a
                                                          sm::kMaxEncryptionKeySize),
                                   hci_spec::LinkKey(UInt128{4}, 5, 6));
 
-class PeerTest : public ::gtest::TestLoopFixture {
+class PeerTest : public pw::async::test::FakeDispatcherFixture {
  public:
   PeerTest() = default;
 
   void SetUp() override {
-    TestLoopFixture::SetUp();
     // Set up a default peer.
     SetUpPeer(/*address=*/kAddrLePublic, /*connectable=*/true);
   }
 
-  void TearDown() override {
-    peer_.reset();
-    TestLoopFixture::TearDown();
-  }
+  void TearDown() override { peer_.reset(); }
 
  protected:
   // Can be used to override or reset the default peer. Resets metrics to prevent interference
@@ -76,7 +73,7 @@ class PeerTest : public ::gtest::TestLoopFixture {
                                    fit::bind_member<&PeerTest::UpdateExpiryCallback>(this),
                                    fit::bind_member<&PeerTest::DualModeCallback>(this),
                                    fit::bind_member<&PeerTest::StoreLowEnergyBondCallback>(this),
-                                   PeerId(1), address_, connectable, &metrics_, pw_dispatcher_);
+                                   PeerId(1), address_, connectable, &metrics_, dispatcher());
     peer_->AttachInspect(peer_inspector_.GetRoot());
     // Reset metrics as they should only apply to the new peer under test.
     metrics_.AttachInspect(metrics_inspector_.GetRoot());
@@ -189,7 +186,6 @@ class PeerTest : public ::gtest::TestLoopFixture {
   inspect::Inspector metrics_inspector_;
   PeerMetrics metrics_;
   inspect::Inspector peer_inspector_;
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
 };
 
 class PeerDeathTest : public PeerTest {};
@@ -370,7 +366,7 @@ TEST_F(PeerTest, SettingLowEnergyAdvertisingDataUpdatesLastUpdated) {
     notify_count++;
   });
 
-  RunLoopFor(zx::duration(2));
+  RunFor(pw::chrono::SystemClock::duration(2));
   peer().MutLe().SetAdvertisingData(/*rssi=*/0, kAdvData, zx::time(1));
   EXPECT_EQ(peer().last_updated(), zx::time(2));
   EXPECT_GE(notify_count, 1);
@@ -385,7 +381,7 @@ TEST_F(PeerTest, RegisteringLowEnergyInitializingConnectionUpdatesLastUpdated) {
     notify_count++;
   });
 
-  RunLoopFor(zx::duration(2));
+  RunFor(pw::chrono::SystemClock::duration(2));
   Peer::InitializingConnectionToken token = peer().MutLe().RegisterInitializingConnection();
   EXPECT_EQ(peer().last_updated(), zx::time(2));
   EXPECT_GE(notify_count, 1);
@@ -400,7 +396,7 @@ TEST_F(PeerTest, SettingLowEnergyBondDataUpdatesLastUpdated) {
     notify_count++;
   });
 
-  RunLoopFor(zx::duration(2));
+  RunFor(pw::chrono::SystemClock::duration(2));
   sm::PairingData data;
   data.peer_ltk = kLTK;
   data.local_ltk = kLTK;
@@ -418,7 +414,7 @@ TEST_F(PeerTest, RegisteringBrEdrInitializingConnectionUpdatesLastUpdated) {
     notify_count++;
   });
 
-  RunLoopFor(zx::duration(2));
+  RunFor(pw::chrono::SystemClock::duration(2));
   Peer::InitializingConnectionToken token = peer().MutBrEdr().RegisterInitializingConnection();
   EXPECT_EQ(peer().last_updated(), zx::time(2));
   EXPECT_GE(notify_count, 1);
@@ -434,7 +430,7 @@ TEST_F(PeerTest, SettingInquiryDataUpdatesLastUpdated) {
     notify_count++;
   });
 
-  RunLoopFor(zx::duration(2));
+  RunFor(pw::chrono::SystemClock::duration(2));
   StaticPacket<pw::bluetooth::emboss::InquiryResultWriter> ir;
   ir.view().bd_addr().CopyFrom(kAddrLeAlias.value().view());
   peer().MutBrEdr().SetInquiryData(ir.view());
@@ -451,7 +447,7 @@ TEST_F(PeerTest, SettingBrEdrBondDataUpdatesLastUpdated) {
     notify_count++;
   });
 
-  RunLoopFor(zx::duration(2));
+  RunFor(pw::chrono::SystemClock::duration(2));
   peer().MutBrEdr().SetBondData(kSecureBrEdrKey);
   EXPECT_EQ(peer().last_updated(), zx::time(2));
   EXPECT_GE(notify_count, 1);
@@ -466,7 +462,7 @@ TEST_F(PeerTest, SettingAddingBrEdrServiceUpdatesLastUpdated) {
     notify_count++;
   });
 
-  RunLoopFor(zx::duration(2));
+  RunFor(pw::chrono::SystemClock::duration(2));
   peer().MutBrEdr().AddService(UUID(uint16_t{0x110b}));
   EXPECT_EQ(peer().last_updated(), zx::time(2));
   EXPECT_GE(notify_count, 1);
@@ -481,7 +477,7 @@ TEST_F(PeerTest, RegisteringNameUpdatesLastUpdated) {
     notify_count++;
   });
 
-  RunLoopFor(zx::duration(2));
+  RunFor(pw::chrono::SystemClock::duration(2));
   peer().RegisterName("name");
   EXPECT_EQ(peer().last_updated(), zx::time(2));
   EXPECT_GE(notify_count, 1);
