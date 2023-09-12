@@ -1,0 +1,26 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+declare_args() {
+  # If compiling backends with chre, this variable is set to the path to the
+  # chre installation. When set, a pw_source_set for the chre library is
+  # created at "$dir_pw_third_party/chre".
+  dir_pw_third_party_chre = ""
+
+  # The configuration for building CHRE.
+  pw_chre_CONFIG = "//third_party/chre:default_chre_config"
+
+  # CHRE's platform backend. The default is the pigweed backend.
+  pw_chre_PLATFORM_BACKEND = "//pw_chre:chre_backend"
+}

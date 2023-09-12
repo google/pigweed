@@ -38,6 +38,7 @@ from pw_package.packages import re2
 from pw_package.packages import smartfusion_mss
 from pw_package.packages import stm32cube
 from pw_package.packages import zephyr
+from pw_package.packages import chre
 
 # pylint: enable=unused-import
 

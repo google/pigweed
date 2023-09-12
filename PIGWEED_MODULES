@@ -24,6 +24,7 @@ pw_build_info
 pw_build_mcuxpresso
 pw_bytes
 pw_checksum
+pw_chre
 pw_chrono
 pw_chrono_embos
 pw_chrono_freertos

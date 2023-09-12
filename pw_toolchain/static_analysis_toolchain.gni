@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_compilation_testing/negative_compilation_test.gni")
 import("$dir_pw_third_party/boringssl/boringssl.gni")
+import("$dir_pw_third_party/chre/chre.gni")
 import("$dir_pw_third_party/googletest/googletest.gni")
 import("$dir_pw_third_party/mbedtls/mbedtls.gni")
 import("$dir_pw_toolchain/universal_tools.gni")
@@ -53,6 +54,7 @@ _excluded_third_party_dirs = [
   dir_pw_third_party_mbedtls,
   dir_pw_third_party_boringssl,
   dir_pw_third_party_googletest,
+  dir_pw_third_party_chre,
 ]
 
 # Creates a toolchain target for static analysis.
@@ -97,6 +99,7 @@ template("pw_static_analysis_toolchain") {
       ]
     }
   }
+
   _skipped_regexps += pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_RES
   _skipped_include_paths += pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS
 

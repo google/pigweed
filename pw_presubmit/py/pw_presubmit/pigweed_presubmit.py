@@ -249,6 +249,19 @@ gn_nanopb_build = build.GnGenNinja(
     ),
 )
 
+gn_chre_build = build.GnGenNinja(
+    name='gn_chre_build',
+    path_filter=_BUILD_FILE_FILTER,
+    packages=('chre',),
+    gn_args=dict(
+        dir_pw_third_party_chre=lambda ctx: '"{}"'.format(
+            ctx.package_root / 'chre'
+        ),
+        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
+    ),
+    ninja_targets=(*_at_all_optimization_levels('host_clang'),),
+)
+
 gn_emboss_nanopb_build = build.GnGenNinja(
     name='gn_emboss_nanopb_build',
     path_filter=_BUILD_FILE_FILTER,
@@ -1183,6 +1196,7 @@ INTERNAL = (gn_mimxrt595_build, gn_mimxrt595_freertos_build)
 # program block CQ on Linux.
 MISC = (
     # keep-sorted: start
+    gn_chre_build,
     gn_emboss_nanopb_build,
     gn_googletest_build,
     # keep-sorted: end

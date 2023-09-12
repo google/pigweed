@@ -1,0 +1,188 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+import("$dir_pw_build/error.gni")
+import("$dir_pw_build/target_types.gni")
+import("$dir_pw_chrono/backend.gni")
+import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_unit_test/test.gni")
+import("chre.gni")
+
+# This file defines a GN source_set for an external installation of chre.
+# To use, checkout the chre source into a directory, then set the build arg
+# dir_pw_third_party_chre to point to that directory. The chre library
+# will be available in GN at "$dir_pw_third_party/chre".
+if (dir_pw_third_party_chre == "") {
+} else {
+  config("disable_warnings") {
+    cflags = [
+      "-Wno-cast-qual",
+      "-Wno-int-in-bool-context",
+      "-Wno-thread-safety-analysis",
+    ]
+
+    # TODO(b/294106526): Fill out the rest of the implementation and remove this.
+    cflags += [ "-Wno-unused-parameter" ]
+    visibility = [ ":*" ]
+  }
+
+  config("default_chre_config_defines") {
+    cflags = [
+      "-DCHRE_MESSAGE_TO_HOST_MAX_SIZE=2048",
+      "-DCHRE_MINIMUM_LOG_LEVEL=CHRE_LOG_LEVEL_DEBUG",
+      "-DCHRE_ASSERTIONS_DISABLED",
+      "-DCHRE_FILENAME=__FILE__",
+      "-DCHRE_PATCH_VERSION=1",
+      "-DCHRE_PLATFORM_ID=1",
+      "-DCHRE_FIRST_SUPPORTED_API_VERSION=CHRE_API_VERSION_1_1",
+      "-DCHRE_VARIANT_SUPPLIES_STATIC_NANOAPP_LIST",
+      "-DCHRE_NANOAPP_INTERNAL",
+    ]
+  }
+
+  pw_source_set("default_chre_config") {
+    public_configs = [ ":default_chre_config_defines" ]
+  }
+
+  pw_source_set("config") {
+    public_deps = [ pw_chre_CONFIG ]
+  }
+
+  config("public_includes") {
+    include_dirs = [
+      "$dir_pw_third_party_chre/core/include",
+      "$dir_pw_third_party_chre/chre_api/include",
+      "$dir_pw_third_party_chre/chre_api/include/chre_api",
+      "$dir_pw_third_party_chre/pal/include",
+      "$dir_pw_third_party_chre/platform/include",
+      "$dir_pw_third_party_chre/platform/shared/include",
+      "$dir_pw_third_party_chre/util/include",
+      "$dir_pw_third_party_chre/apps/include",
+    ]
+    visibility = [ ":*" ]
+  }
+
+  pw_source_set("chre_headers") {
+    public_configs = [ ":public_includes" ]
+    public_deps = [ ":config" ]
+  }
+
+  pw_source_set("chre") {
+    public_configs = [ ":disable_warnings" ]
+    sources = [
+      "$dir_pw_third_party_chre/core/debug_dump_manager.cc",
+      "$dir_pw_third_party_chre/core/event.cc",
+      "$dir_pw_third_party_chre/core/event_loop.cc",
+      "$dir_pw_third_party_chre/core/event_loop_manager.cc",
+      "$dir_pw_third_party_chre/core/event_ref_queue.cc",
+      "$dir_pw_third_party_chre/core/host_comms_manager.cc",
+      "$dir_pw_third_party_chre/core/host_notifications.cc",
+      "$dir_pw_third_party_chre/core/init.cc",
+      "$dir_pw_third_party_chre/core/log.cc",
+      "$dir_pw_third_party_chre/core/nanoapp.cc",
+      "$dir_pw_third_party_chre/core/settings.cc",
+      "$dir_pw_third_party_chre/core/static_nanoapps.cc",
+      "$dir_pw_third_party_chre/core/timer_pool.cc",
+      "$dir_pw_third_party_chre/platform/shared/assert.cc",
+      "$dir_pw_third_party_chre/platform/shared/chre_api_core.cc",
+      "$dir_pw_third_party_chre/platform/shared/chre_api_re.cc",
+      "$dir_pw_third_party_chre/platform/shared/chre_api_user_settings.cc",
+      "$dir_pw_third_party_chre/platform/shared/chre_api_version.cc",
+      "$dir_pw_third_party_chre/platform/shared/memory_manager.cc",
+      "$dir_pw_third_party_chre/platform/shared/nanoapp/nanoapp_dso_util.cc",
+      "$dir_pw_third_party_chre/platform/shared/pal_system_api.cc",
+      "$dir_pw_third_party_chre/platform/shared/system_time.cc",
+      "$dir_pw_third_party_chre/platform/shared/version.cc",
+      "$dir_pw_third_party_chre/util/buffer_base.cc",
+      "$dir_pw_third_party_chre/util/dynamic_vector_base.cc",
+      "$dir_pw_third_party_chre/util/nanoapp/audio.cc",
+      "$dir_pw_third_party_chre/util/nanoapp/callbacks.cc",
+      "$dir_pw_third_party_chre/util/nanoapp/debug.cc",
+      "$dir_pw_third_party_chre/util/nanoapp/wifi.cc",
+      "$dir_pw_third_party_chre/util/system/debug_dump.cc",
+    ]
+
+    public_deps = [
+      ":chre_headers",
+      "$pw_chre_PLATFORM_BACKEND",
+    ]
+    remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
+  }
+
+  pw_source_set("example_apps") {
+    sources = [
+      "$dir_pw_third_party_chre/apps/debug_dump_world/debug_dump_world.cc",
+      "$dir_pw_third_party_chre/apps/hello_world/hello_world.cc",
+      "$dir_pw_third_party_chre/apps/message_world/message_world.cc",
+      "$dir_pw_third_party_chre/apps/spammer/spammer.cc",
+      "$dir_pw_third_party_chre/apps/timer_world/timer_world.cc",
+      "$dir_pw_third_party_chre/apps/unload_tester/unload_tester.cc",
+    ]
+    public_deps = [ ":chre" ]
+  }
+
+  config("test_includes") {
+    include_dirs = [
+      "$dir_pw_third_party_chre/platform/shared",
+      "$dir_pw_third_party_chre/test/simulation/inc",
+    ]
+    visibility = [ ":*" ]
+  }
+
+  config("tests_disable_warnings") {
+    cflags = [ "-Wno-sign-compare" ]
+    visibility = [ ":*" ]
+  }
+
+  pw_test("unit_tests") {
+    enable_if =
+        dir_pw_third_party_chre != "" && pw_chrono_SYSTEM_CLOCK_BACKEND != ""
+    sources = [
+      "$dir_pw_third_party_chre/util/tests/blocking_queue_test.cc",
+      "$dir_pw_third_party_chre/util/tests/buffer_test.cc",
+      "$dir_pw_third_party_chre/util/tests/conditional_lock_guard_test.cc",
+      "$dir_pw_third_party_chre/util/tests/debug_dump_test.cc",
+      "$dir_pw_third_party_chre/util/tests/lock_guard_test.cc",
+      "$dir_pw_third_party_chre/util/tests/memory_pool_test.cc",
+      "$dir_pw_third_party_chre/util/tests/optional_test.cc",
+      "$dir_pw_third_party_chre/util/tests/ref_base_test.cc",
+      "$dir_pw_third_party_chre/util/tests/shared_ptr_test.cc",
+      "$dir_pw_third_party_chre/util/tests/singleton_test.cc",
+      "$dir_pw_third_party_chre/util/tests/time_test.cc",
+      "$dir_pw_third_party_chre/util/tests/unique_ptr_test.cc",
+    ]
+    public_deps = [ ":chre" ]
+    public_configs = [ ":tests_disable_warnings" ]
+    remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
+  }
+
+  pw_test("integration_tests") {
+    enable_if =
+        dir_pw_third_party_chre != "" && pw_chrono_SYSTEM_CLOCK_BACKEND != ""
+    sources = [
+      "$dir_pw_third_party_chre/test/simulation/memory_test.cc",
+      "$dir_pw_third_party_chre/test/simulation/test_util.cc",
+      "$dir_pw_third_party_chre/test/simulation/timer_test.cc",
+      "integration_test.cc",
+    ]
+
+    public_deps = [ ":chre" ]
+    public_configs = [
+      ":test_includes",
+      ":tests_disable_warnings",
+    ]
+    remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
+  }
+}

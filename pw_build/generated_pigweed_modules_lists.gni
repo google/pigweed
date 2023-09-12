@@ -54,6 +54,7 @@ declare_args() {
   dir_pw_build_mcuxpresso = get_path_info("../pw_build_mcuxpresso", "abspath")
   dir_pw_bytes = get_path_info("../pw_bytes", "abspath")
   dir_pw_checksum = get_path_info("../pw_checksum", "abspath")
+  dir_pw_chre = get_path_info("../pw_chre", "abspath")
   dir_pw_chrono = get_path_info("../pw_chrono", "abspath")
   dir_pw_chrono_embos = get_path_info("../pw_chrono_embos", "abspath")
   dir_pw_chrono_freertos = get_path_info("../pw_chrono_freertos", "abspath")
@@ -217,6 +218,7 @@ declare_args() {
     dir_pw_build_mcuxpresso,
     dir_pw_bytes,
     dir_pw_checksum,
+    dir_pw_chre,
     dir_pw_chrono,
     dir_pw_chrono_embos,
     dir_pw_chrono_freertos,
@@ -365,6 +367,7 @@ declare_args() {
     "$dir_pw_build_mcuxpresso:tests",
     "$dir_pw_bytes:tests",
     "$dir_pw_checksum:tests",
+    "$dir_pw_chre:tests",
     "$dir_pw_chrono:tests",
     "$dir_pw_chrono_embos:tests",
     "$dir_pw_chrono_freertos:tests",
@@ -513,6 +516,7 @@ declare_args() {
     "$dir_pw_build_mcuxpresso:docs",
     "$dir_pw_bytes:docs",
     "$dir_pw_checksum:docs",
+    "$dir_pw_chre:docs",
     "$dir_pw_chrono:docs",
     "$dir_pw_chrono_embos:docs",
     "$dir_pw_chrono_freertos:docs",

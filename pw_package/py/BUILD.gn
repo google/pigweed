@@ -29,6 +29,7 @@ pw_python_package("py") {
     "pw_package/packages/abseil_cpp.py",
     "pw_package/packages/arduino_core.py",
     "pw_package/packages/boringssl.py",
+    "pw_package/packages/chre.py",
     "pw_package/packages/chromium_verifier.py",
     "pw_package/packages/crlset.py",
     "pw_package/packages/emboss.py",

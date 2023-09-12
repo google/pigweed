@@ -1,0 +1,135 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/module_config.gni")
+import("$dir_pw_build/target_types.gni")
+import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_third_party/chre/chre.gni")
+import("$dir_pw_unit_test/test.gni")
+
+config("disable_warnings") {
+  cflags = [
+    "-Wno-nested-anon-types",
+    "-Wno-gnu-anonymous-struct",
+    "-Wno-thread-safety-analysis",
+  ]
+  visibility = [ ":*" ]
+}
+
+config("public_overrides") {
+  include_dirs = [ "include" ]
+}
+
+pw_source_set("chre_empty_host_link") {
+  sources = [ "chre_empty_host_link.cc" ]
+  deps = [ ":chre" ]
+}
+
+pw_source_set("chre_backend") {
+  sources = [
+    "chre_api_re.cc",
+    "context.cc",
+    "host_link.cc",
+    "memory.cc",
+    "memory_manager.cc",
+    "platform_debug_dump_manager.cc",
+    "platform_nanoapp.cc",
+    "platform_pal.cc",
+    "power_control_manager.cc",
+    "system_time.cc",
+    "system_timer.cc",
+  ]
+  public = [
+    "include/chre/target_platform/atomic_base.h",
+    "include/chre/target_platform/atomic_base_impl.h",
+    "include/chre/target_platform/condition_variable_base.h",
+    "include/chre/target_platform/condition_variable_impl.h",
+    "include/chre/target_platform/fatal_error.h",
+    "include/chre/target_platform/host_link_base.h",
+    "include/chre/target_platform/log.h",
+    "include/chre/target_platform/mutex_base.h",
+    "include/chre/target_platform/mutex_base_impl.h",
+    "include/chre/target_platform/platform_nanoapp_base.h",
+    "include/chre/target_platform/platform_sensor_base.h",
+    "include/chre/target_platform/platform_sensor_manager_base.h",
+    "include/chre/target_platform/platform_sensor_type_helpers_base.h",
+    "include/chre/target_platform/power_control_manager_base.h",
+    "include/chre/target_platform/static_nanoapp_init.h",
+    "include/chre/target_platform/system_timer_base.h",
+  ]
+  deps = [
+    "$dir_pw_string:format",
+    "$dir_pw_third_party/chre:chre_headers",
+  ]
+  public_deps = [
+    "$dir_pw_chrono:system_timer",
+    "$dir_pw_log",
+    "$dir_pw_sync:mutex",
+    "$dir_pw_sync:timed_thread_notification",
+  ]
+
+  public_configs = [
+    ":public_include_path",
+    ":public_overrides",
+    ":disable_warnings",
+  ]
+  remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
+}
+
+config("public_include_path") {
+  include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("chre") {
+  public_configs = [ ":public_include_path" ]
+  public = [
+    "public/pw_chre/chre.h",
+    "public/pw_chre/host_link.h",
+  ]
+  sources = [ "chre.cc" ]
+  deps = [ "$dir_pw_third_party/chre" ]
+}
+
+pw_executable("chre_example") {
+  sources = [
+    "example_init.cc",
+    "static_nanoapps.cc",
+  ]
+
+  deps = [
+    ":chre",
+    ":chre_empty_host_link",
+    "$dir_pw_system",
+    "$dir_pw_third_party/chre:example_apps",
+  ]
+}
+
+group("host_example") {
+  deps = [ ":chre_example($dir_pigweed/targets/host_device_simulator:host_device_simulator.speed_optimized)" ]
+}
+
+pw_test_group("tests") {
+  enable_if = dir_pw_third_party_chre != ""
+  tests = [
+    "//third_party/chre:unit_tests",
+    "//third_party/chre:integration_tests",
+  ]
+}
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
+}
