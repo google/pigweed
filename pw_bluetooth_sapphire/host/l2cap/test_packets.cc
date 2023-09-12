@@ -166,8 +166,8 @@ DynamicByteBuffer AclConfigRsp(l2cap::CommandId id, hci_spec::ConnectionHandle l
           // MTU option: (ID: 1, length: 2, mtu)
           0x01, 0x02, LowerBits(mtu), UpperBits(mtu)));
     case l2cap::ChannelMode::kEnhancedRetransmission: {
-      const auto rtx_timeout = kErtmReceiverReadyPollTimerDuration.to_msecs();
-      const auto monitor_timeout = kErtmMonitorTimerDuration.to_msecs();
+      const auto rtx_timeout = kErtmReceiverReadyPollTimerMsecs;
+      const auto monitor_timeout = kErtmMonitorTimerMsecs;
       return DynamicByteBuffer(StaticByteBuffer(
           // ACL data header (handle: |link_handle|, length: 29 bytes)
           LowerBits(link_handle), UpperBits(link_handle), 0x1d, 0x00,

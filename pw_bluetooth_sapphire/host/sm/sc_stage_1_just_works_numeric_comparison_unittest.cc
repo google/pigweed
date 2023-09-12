@@ -56,7 +56,7 @@ class ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeChanne
           last_packet_.emplace(maybe_reader.value());
           last_packet_internal_ = std::move(sent_packet);
         },
-        pw_dispatcher());
+        dispatcher());
     stage_1_ = std::make_unique<ScStage1JustWorksNumericComparison>(
         listener_->as_weak_ptr(), args.role, args.local_pub_key_x, args.peer_pub_key_x, args.method,
         sm_chan_->GetWeakPtr(),
@@ -124,7 +124,7 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, InitiatorJustWorks) {
 
   stage_1()->Run();
   stage_1()->OnPairingConfirm(vals.confirm);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(last_packet().has_value());
   EXPECT_EQ(kPairingRandom, last_packet()->code());
   expected_results.initiator_rand = last_packet()->payload<PairingRandomValue>();
@@ -153,7 +153,7 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, InitiatorNumericComparison) {
 
   stage_1()->Run();
   stage_1()->OnPairingConfirm(vals.confirm);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(last_packet().has_value());
   EXPECT_EQ(kPairingRandom, last_packet()->code());
   expected_results.initiator_rand = last_packet()->payload<PairingRandomValue>();
@@ -212,7 +212,7 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, InitiatorMismatchedConfirmAndRand
 
   stage_1()->Run();
   stage_1()->OnPairingConfirm(vals.confirm);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   vals.random[0] -= 1;
   ASSERT_FALSE(last_results().has_value());
   stage_1()->OnPairingRandom(vals.random);
@@ -229,13 +229,13 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderJustWorks) {
       .initiator_r = {0}, .responder_r = {0}, .initiator_rand = kPeerRand};
 
   stage_1()->Run();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(last_packet().has_value());
   EXPECT_EQ(kPairingConfirm, last_packet()->code());
   UInt128 sent_confirm = last_packet()->payload<PairingConfirmValue>();
 
   stage_1()->OnPairingRandom(kPeerRand);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(last_packet().has_value());
   EXPECT_EQ(kPairingRandom, last_packet()->code());
   expected_results.responder_rand = last_packet()->payload<PairingRandomValue>();
@@ -262,13 +262,13 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderNumericComparison) {
       .initiator_r = {0}, .responder_r = {0}, .initiator_rand = kPeerRand};
 
   stage_1()->Run();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(last_packet().has_value());
   EXPECT_EQ(kPairingConfirm, last_packet()->code());
   UInt128 sent_confirm = last_packet()->payload<PairingConfirmValue>();
 
   stage_1()->OnPairingRandom(kPeerRand);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(last_packet().has_value());
   EXPECT_EQ(kPairingRandom, last_packet()->code());
   expected_results.responder_rand = last_packet()->payload<PairingRandomValue>();
@@ -284,7 +284,7 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderNumericComparison) {
   EXPECT_EQ(kExpectedCompare, compare);
 
   user_confirm(true);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(last_results()->is_ok());
   EXPECT_EQ(expected_results, last_results()->value());
 }
@@ -362,7 +362,7 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, StageDestroyedWhileWaitingForJust
   DestroyStage1();
   // No results should be reported after Stage 1 is destroyed.
   user_confirm(true);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(last_results().has_value());
 }
 
@@ -385,7 +385,7 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, StageDestroyedWhileWaitingForNume
   DestroyStage1();
   // No results should be reported after Stage 1 is destroyed.
   user_confirm(true);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(last_results().has_value());
 }
 

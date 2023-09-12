@@ -67,7 +67,7 @@ class SecurityRequestPhaseTest : public l2cap::testing::FakeChannelTest {
 
   std::optional<PairingRequestParams> last_pairing_req_;
 
-  pw::async::HeapDispatcher heap_dispatcher_{pw_dispatcher()};
+  pw::async::HeapDispatcher heap_dispatcher_{dispatcher()};
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SecurityRequestPhaseTest);
 };
@@ -117,7 +117,7 @@ TEST_F(SecurityRequestPhaseTest, MakeSecureAuthenticatedBondableSecurityRequest)
 
 TEST_F(SecurityRequestPhaseTest, HandlesChannelClosedGracefully) {
   fake_chan()->Close();
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(SecurityRequestPhaseTest, PairingRequestAsResponderPassedThrough) {
@@ -127,7 +127,7 @@ TEST_F(SecurityRequestPhaseTest, PairingRequestAsResponderPassedThrough) {
   *writer.mutable_payload<PairingRequestParams>() = generic_preq;
   ASSERT_FALSE(last_pairing_req().has_value());
   fake_chan()->Receive(preq_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(last_pairing_req().has_value());
   PairingRequestParams last_preq = last_pairing_req().value();
   ASSERT_EQ(0, memcmp(&last_preq, &generic_preq, sizeof(PairingRequestParams)));
@@ -145,10 +145,10 @@ TEST_F(SecurityRequestPhaseTest, InboundSecurityRequestFails) {
         ASSERT_EQ(reader.code(), kPairingFailed);
         message_sent = true;
       },
-      pw_dispatcher());
+      dispatcher());
 
   fake_chan()->Receive(pres_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_FALSE(last_pairing_req().has_value());
   ASSERT_TRUE(message_sent);
 }
@@ -163,10 +163,10 @@ TEST_F(SecurityRequestPhaseTest, DropsInvalidPacket) {
         ASSERT_EQ(reader.code(), kPairingFailed);
         message_sent = true;
       },
-      pw_dispatcher());
+      dispatcher());
 
   fake_chan()->Receive(bad_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_FALSE(last_pairing_req().has_value());
   ASSERT_TRUE(message_sent);
 }

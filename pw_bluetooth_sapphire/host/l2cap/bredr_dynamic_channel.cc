@@ -16,8 +16,8 @@ namespace {
 
 ChannelConfiguration::RetransmissionAndFlowControlOption WriteRfcOutboundTimeouts(
     ChannelConfiguration::RetransmissionAndFlowControlOption rfc_option) {
-  rfc_option.set_rtx_timeout(kErtmReceiverReadyPollTimerDuration.to_msecs());
-  rfc_option.set_monitor_timeout(kErtmMonitorTimerDuration.to_msecs());
+  rfc_option.set_rtx_timeout(kErtmReceiverReadyPollTimerMsecs);
+  rfc_option.set_monitor_timeout(kErtmMonitorTimerMsecs);
   return rfc_option;
 }
 

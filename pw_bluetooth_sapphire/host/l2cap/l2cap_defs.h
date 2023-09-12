@@ -7,6 +7,7 @@
 
 // clang-format off
 
+#include <chrono>
 #include <cstdint>
 #include <limits>
 #include <string>
@@ -22,25 +23,24 @@ namespace bt::l2cap {
 
 // See Core Spec v5.0, Volume 3, Part A, Sec 8.6.2.1. Note that we assume there is no flush timeout
 // on the underlying logical link.
-static constexpr auto kErtmReceiverReadyPollTimerDuration = zx::sec(2);
-static_assert(kErtmReceiverReadyPollTimerDuration <= zx::msec(std::numeric_limits<uint16_t>::max()));
-static constexpr pw::chrono::SystemClock::duration  kPwErtmReceiverReadyPollTimerDuration = std::chrono::seconds(2);
+static constexpr auto kErtmReceiverReadyPollTimerDuration = std::chrono::seconds(2);
+static_assert(kErtmReceiverReadyPollTimerDuration <= std::chrono::milliseconds(std::numeric_limits<uint16_t>::max()));
+static constexpr uint16_t kErtmReceiverReadyPollTimerMsecs = static_cast<uint16_t>(std::chrono::duration_cast<std::chrono::milliseconds>(kErtmReceiverReadyPollTimerDuration).count());
 
 // See Core Spec v5.0, Volume 3, Part A, Sec 8.6.2.1. Note that we assume there is no flush timeout
 // on the underlying logical link. If the link _does_ have a flush timeout, then our implementation
 // will be slower to trigger the monitor timeout than the specification recommends.
-static constexpr auto kErtmMonitorTimerDuration = zx::sec(12);
-static_assert(kErtmMonitorTimerDuration <= zx::msec(std::numeric_limits<uint16_t>::max()));
-static constexpr pw::chrono::SystemClock::duration kPwErtmMonitorTimerDuration = std::chrono::seconds(12);
+static constexpr auto kErtmMonitorTimerDuration = std::chrono::seconds(12);
+static_assert(kErtmMonitorTimerDuration <= std::chrono::milliseconds(std::numeric_limits<uint16_t>::max()));
+static constexpr uint16_t kErtmMonitorTimerMsecs = static_cast<uint16_t>(std::chrono::duration_cast<std::chrono::milliseconds>(kErtmMonitorTimerDuration).count());
 
 // See Core Spec v5.0, Volume 3, Part A, Sec 6.2.1. This is the initial value of the timeout duration.
 // Although Signaling Channel packets are not sent as automatically flushable, Signaling Channel packets
 // may not receive a response for reasons other than packet loss (e.g. peer is slow to respond due to pairing).
 // As such, L2CAP uses the "at least double" back-off scheme to increase this timeout after retransmissions.
-static constexpr auto kSignalingChannelResponseTimeout = zx::sec(1);
-static_assert(kSignalingChannelResponseTimeout >= zx::sec(1));
-static_assert(kSignalingChannelResponseTimeout <= zx::sec(60));
-static constexpr pw::chrono::SystemClock::duration kPwSignalingChannelResponseTimeout = std::chrono::seconds(1);
+static constexpr auto kSignalingChannelResponseTimeout = std::chrono::seconds(1);
+static_assert(kSignalingChannelResponseTimeout >= std::chrono::seconds(1));
+static_assert(kSignalingChannelResponseTimeout <= std::chrono::seconds(60));
 
 // Selected so that total time between initial transmission and last retransmission timout is less
 // than 60 seconds when using the exponential back-off scheme.
@@ -49,9 +49,9 @@ static constexpr size_t kMaxSignalingChannelTransmissions = 5;
 // See Core Spec v5.0, Volume 3, Part A, Sec 6.2.2. This initial value is the only timeout duration
 // used because Signaling Channel packets are not to be sent as automatically flushable and thus
 // requests will not be retransmitted at the L2CAP level per its "at least double" back-off scheme.
-static constexpr auto kSignalingChannelExtendedResponseTimeout = zx::sec(60);
-static_assert(kSignalingChannelExtendedResponseTimeout >= zx::sec(60));
-static_assert(kSignalingChannelExtendedResponseTimeout <= zx::sec(300));
+static constexpr auto kSignalingChannelExtendedResponseTimeout = std::chrono::seconds(60);
+static_assert(kSignalingChannelExtendedResponseTimeout >= std::chrono::seconds(60));
+static_assert(kSignalingChannelExtendedResponseTimeout <= std::chrono::seconds(300));
 static constexpr pw::chrono::SystemClock::duration kPwSignalingChannelExtendedResponseTimeout = std::chrono::seconds(60);
 
 // L2CAP channel identifier uniquely identifies fixed and connection-oriented

@@ -7,13 +7,13 @@
 
 #include <memory>
 
+#include <pw_async/fake_dispatcher_fixture.h>
 #include <pw_async_fuchsia/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::l2cap::testing {
 
@@ -22,7 +22,7 @@ namespace bt::l2cap::testing {
 //
 //   * A simple way to initialize and access a FakeChannel.
 //   * Basic command<->response expectation.
-class FakeChannelTest : public ::gtest::TestLoopFixture {
+class FakeChannelTest : public pw::async::test::FakeDispatcherFixture {
  public:
   FakeChannelTest() = default;
   ~FakeChannelTest() override = default;
@@ -42,8 +42,6 @@ class FakeChannelTest : public ::gtest::TestLoopFixture {
   };
 
   void SetUp() override;
-
-  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
 
   // Creates a new FakeChannel and returns it. A WeakPtr to the returned
   // channel is stored internally so that the returned channel can be accessed
@@ -77,8 +75,6 @@ class FakeChannelTest : public ::gtest::TestLoopFixture {
   // Helper that sets a reception expectation callback with |expected| then sends |packet| if it is
   // not std::nullopt, returning whether |expected| was received when the test loop run until idle.
   bool ExpectAfterMaybeReceiving(std::optional<BufferView> packet, const ByteBuffer& expected);
-
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
 
   FakeChannel::WeakPtr fake_chan_;
 

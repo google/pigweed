@@ -47,7 +47,7 @@ class FakeClient : public Client {
   fit::closure destroyed_cb_;
 };
 
-class ServiceDiscovererTest : public ::gtest::TestLoopFixture {
+class ServiceDiscovererTest : public pw::async::test::FakeDispatcherFixture {
  public:
   ServiceDiscovererTest() = default;
   ~ServiceDiscovererTest() = default;
@@ -74,8 +74,7 @@ class ServiceDiscovererTest : public ::gtest::TestLoopFixture {
 
  private:
   size_t clients_created_, clients_destroyed_;
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
-  pw::async::HeapDispatcher heap_dispatcher_{pw_dispatcher_};
+  pw::async::HeapDispatcher heap_dispatcher_{dispatcher()};
 };
 
 // When there are no searches registered, it just disconnects the client.
@@ -85,7 +84,7 @@ TEST_F(ServiceDiscovererTest, NoSearches) {
 
   discoverer.StartServiceDiscovery(kDeviceOne, GetFakeClient());
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_EQ(1u, clients_destroyed());
 }
@@ -121,7 +120,7 @@ TEST_F(ServiceDiscovererTest, NoResults) {
 
   discoverer.StartServiceDiscovery(kDeviceOne, std::move(client));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_EQ(1u, searches.size());
   ASSERT_EQ(0u, cb_count);
@@ -148,7 +147,7 @@ TEST_F(ServiceDiscovererTest, SynchronousErrorResult) {
       });
 
   discoverer.StartServiceDiscovery(kDeviceOne, std::move(client));
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_EQ(1u, searches.size());
   ASSERT_EQ(0u, cb_count);
   ASSERT_EQ(1u, clients_destroyed());
@@ -200,7 +199,7 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
 
   discoverer.StartServiceDiscovery(kDeviceOne, std::move(client));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_EQ(2u, searches.size());
   ASSERT_EQ(0u, results.size());
@@ -254,7 +253,7 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
 
   discoverer.StartServiceDiscovery(kDeviceTwo, std::move(client));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_EQ(2u, searches.size());
   ASSERT_EQ(2u, results.size());
@@ -302,7 +301,7 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
 
   discoverer.StartServiceDiscovery(kDeviceThree, std::move(client));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_EQ(1u, searches.size());
   ASSERT_EQ(2u, results.size());
@@ -357,7 +356,7 @@ TEST_F(ServiceDiscovererTest, SingleSearchDifferentPeers) {
   discoverer.SingleSearch(search_id, PeerId(1), std::move(client));
   discoverer.SingleSearch(search_id, PeerId(2), std::move(client2));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_EQ(2u, searches.size());
   ASSERT_EQ(2u, cb_count);
@@ -409,7 +408,7 @@ TEST_F(ServiceDiscovererTest, SingleSearchSamePeer) {
   discoverer.SingleSearch(search_id, PeerId(1), std::move(client));
   discoverer.SingleSearch(search_id, PeerId(1), nullptr);
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_EQ(2u, searches.size());
   ASSERT_EQ(2u, cb_count);
@@ -455,7 +454,7 @@ TEST_F(ServiceDiscovererTest, Disconnected) {
 
   discoverer.StartServiceDiscovery(kDeviceOne, std::move(client));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_EQ(1u, searches.size());
   ASSERT_EQ(0u, cb_count);
@@ -526,7 +525,7 @@ TEST_F(ServiceDiscovererTest, UnregisterInProgress) {
 
   discoverer.StartServiceDiscovery(kDeviceOne, std::move(client));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_EQ(1u, searches.size());
 

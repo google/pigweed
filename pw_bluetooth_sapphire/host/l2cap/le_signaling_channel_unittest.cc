@@ -28,7 +28,7 @@ class LESignalingChannelTestBase : public testing::FakeChannelTest {
     options.conn_handle = kTestHandle;
 
     fake_sig_chan_ = CreateFakeChannel(options);
-    sig_ = std::make_unique<LESignalingChannel>(fake_sig_chan_->GetWeakPtr(), Role, pw_dispatcher_);
+    sig_ = std::make_unique<LESignalingChannel>(fake_sig_chan_->GetWeakPtr(), Role, dispatcher());
   }
 
   void TearDown() override { sig_ = nullptr; }
@@ -36,7 +36,6 @@ class LESignalingChannelTestBase : public testing::FakeChannelTest {
   LESignalingChannel* sig() const { return sig_.get(); }
 
  private:
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
   std::unique_ptr<testing::FakeChannel> fake_sig_chan_;
   std::unique_ptr<LESignalingChannel> sig_;
 
@@ -52,10 +51,10 @@ TEST_F(LESignalingChannelTest, IgnoreEmptyFrame) {
   bool send_cb_called = false;
   auto send_cb = [&send_cb_called](auto) { send_cb_called = true; };
 
-  fake_chan()->SetSendCallback(std::move(send_cb), pw_dispatcher());
+  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
   fake_chan()->Receive(BufferView());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(send_cb_called);
 }
 

@@ -4,6 +4,9 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/sdp/client.h"
 
+#include <chrono>
+#include <ratio>
+
 #include <gtest/gtest.h>
 #include <pw_async_fuchsia/dispatcher.h>
 
@@ -32,10 +35,7 @@ class ClientTest : public TestingBase {
 
   void TearDown() override { channel_ = nullptr; }
 
-  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
-
  private:
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
   std::unique_ptr<l2cap::testing::FakeChannel> channel_;
 };
 
@@ -46,7 +46,7 @@ class ClientTest : public TestingBase {
 //  - closes SDP channel when client is deallocated
 TEST_F(ClientTest, ConnectAndQuery) {
   {
-    auto client = Client::Create(fake_chan()->GetWeakPtr(), pw_dispatcher());
+    auto client = Client::Create(fake_chan()->GetWeakPtr(), dispatcher());
 
     EXPECT_TRUE(fake_chan()->activated());
 
@@ -99,7 +99,7 @@ TEST_F(ClientTest, ConnectAndQuery) {
           request_tid = ((*packet)[1] << 8) != 0 || (*packet)[2];
           success = true;
         },
-        pw_dispatcher());
+        dispatcher());
 
     // Search for all A2DP sinks, get the:
     //  - Service Class ID list
@@ -108,7 +108,7 @@ TEST_F(ClientTest, ConnectAndQuery) {
     client->ServiceSearchAttributes(
         {profile::kAudioSink},
         {kServiceClassIdList, kProtocolDescriptorList, kBluetoothProfileDescriptorList}, result_cb);
-    RunLoopUntilIdle();
+    RunUntilIdle();
     EXPECT_TRUE(success);
 
     // Receive the response
@@ -132,7 +132,7 @@ TEST_F(ClientTest, ConnectAndQuery) {
         rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, kResponseMaxSize, BufferView());
     fake_chan()->Receive(*rsp_ptr);
 
-    RunLoopUntilIdle();
+    RunUntilIdle();
 
     EXPECT_EQ(3u, cb_count);
   }
@@ -141,7 +141,7 @@ TEST_F(ClientTest, ConnectAndQuery) {
 
 TEST_F(ClientTest, TwoQueriesSubsequent) {
   {
-    auto client = Client::Create(fake_chan()->GetWeakPtr(), pw_dispatcher());
+    auto client = Client::Create(fake_chan()->GetWeakPtr(), dispatcher());
 
     EXPECT_TRUE(fake_chan()->activated());
 
@@ -178,12 +178,12 @@ TEST_F(ClientTest, TwoQueriesSubsequent) {
           request_tid = ((*packet)[1] << 8) != 0 || (*packet)[2];
           success = true;
         },
-        pw_dispatcher());
+        dispatcher());
 
     // Search for all A2DP sinks, get the:
     //  - Service Class ID list
     client->ServiceSearchAttributes({profile::kAudioSink}, {kServiceClassIdList}, result_cb);
-    RunLoopUntilIdle();
+    RunUntilIdle();
     EXPECT_TRUE(success);
 
     // Receive the response (empty response)
@@ -193,21 +193,21 @@ TEST_F(ClientTest, TwoQueriesSubsequent) {
         rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, kResponseMaxSize, BufferView());
     fake_chan()->Receive(*rsp_ptr);
 
-    RunLoopUntilIdle();
+    RunUntilIdle();
 
     EXPECT_EQ(1u, cb_count);
 
     // Twice
     success = false;
     client->ServiceSearchAttributes({profile::kAudioSink}, {kServiceClassIdList}, result_cb);
-    RunLoopUntilIdle();
+    RunUntilIdle();
     EXPECT_TRUE(success);
 
     rsp_ptr =
         rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, kResponseMaxSize, BufferView());
     fake_chan()->Receive(*rsp_ptr);
 
-    RunLoopUntilIdle();
+    RunUntilIdle();
 
     EXPECT_EQ(2u, cb_count);
   }
@@ -216,7 +216,7 @@ TEST_F(ClientTest, TwoQueriesSubsequent) {
 
 TEST_F(ClientTest, TwoQueriesQueued) {
   {
-    auto client = Client::Create(fake_chan()->GetWeakPtr(), pw_dispatcher());
+    auto client = Client::Create(fake_chan()->GetWeakPtr(), dispatcher());
 
     EXPECT_TRUE(fake_chan()->activated());
 
@@ -253,14 +253,14 @@ TEST_F(ClientTest, TwoQueriesQueued) {
           request_tid = ((*packet)[1] << 8) != 0 || (*packet)[2];
           sent_packets++;
         },
-        pw_dispatcher());
+        dispatcher());
 
     // Search for all A2DP sinks, get the:
     //  - Service Class ID list
     client->ServiceSearchAttributes({profile::kAudioSink}, {kServiceClassIdList}, result_cb);
     // Twice (without waiting)
     client->ServiceSearchAttributes({profile::kAudioSink}, {kServiceClassIdList}, result_cb);
-    RunLoopUntilIdle();
+    RunUntilIdle();
     // Only one request should have been sent.
     EXPECT_EQ(1u, sent_packets);
 
@@ -271,7 +271,7 @@ TEST_F(ClientTest, TwoQueriesQueued) {
         rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, kResponseMaxSize, BufferView());
     fake_chan()->Receive(*rsp_ptr);
 
-    RunLoopUntilIdle();
+    RunUntilIdle();
 
     EXPECT_EQ(1u, cb_count);
     // The second request should have been sent when the first completed.
@@ -282,7 +282,7 @@ TEST_F(ClientTest, TwoQueriesQueued) {
         rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, kResponseMaxSize, BufferView());
     fake_chan()->Receive(*rsp_ptr);
 
-    RunLoopUntilIdle();
+    RunUntilIdle();
 
     EXPECT_EQ(2u, cb_count);
     EXPECT_EQ(2u, sent_packets);
@@ -298,7 +298,7 @@ TEST_F(ClientTest, TwoQueriesQueued) {
 //  - responds with the results
 //  - gives up when callback returns false
 TEST_F(ClientTest, ContinuingResponseRequested) {
-  auto client = Client::Create(fake_chan()->GetWeakPtr(), pw_dispatcher());
+  auto client = Client::Create(fake_chan()->GetWeakPtr(), dispatcher());
 
   size_t cb_count = 0;
   auto result_cb =
@@ -356,7 +356,7 @@ TEST_F(ClientTest, ContinuingResponseRequested) {
                                   packet->view(5 + kSearchExpectedParams.size() + 1));
         fake_chan()->Receive(*rsp_ptr);
       },
-      pw_dispatcher());
+      dispatcher());
 
   // Search for all A2DP sinks, get the:
   //  - Service Class ID list
@@ -364,7 +364,7 @@ TEST_F(ClientTest, ContinuingResponseRequested) {
   //  - Bluetooth Profile Descriptor List
   client->ServiceSearchAttributes({profile::kAudioSink},
                                   {kServiceClassIdList, kProtocolDescriptorList}, result_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(3u, cb_count);
   EXPECT_EQ(4u, requests_made);
 }
@@ -374,7 +374,7 @@ TEST_F(ClientTest, ContinuingResponseRequested) {
 //  - receives response with no results
 //  - callback with no results (kNotFound right away)
 TEST_F(ClientTest, NoResults) {
-  auto client = Client::Create(fake_chan()->GetWeakPtr(), pw_dispatcher());
+  auto client = Client::Create(fake_chan()->GetWeakPtr(), dispatcher());
 
   size_t cb_count = 0;
   auto result_cb =
@@ -409,7 +409,7 @@ TEST_F(ClientTest, NoResults) {
         request_tid = ((*packet)[1] << 8) != 0 || (*packet)[2];
         success = true;
       },
-      pw_dispatcher());
+      dispatcher());
 
   // Search for all A2DP sinks, get the:
   //  - Service Class ID list
@@ -417,7 +417,7 @@ TEST_F(ClientTest, NoResults) {
   //  - Bluetooth Profile Descriptor List
   client->ServiceSearchAttributes({profile::kAudioSink},
                                   {kServiceClassIdList, kProtocolDescriptorList}, result_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(success);
 
   // Receive an empty response
@@ -426,7 +426,7 @@ TEST_F(ClientTest, NoResults) {
       rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, kResponseMaxSize, BufferView());
   fake_chan()->Receive(*rsp_ptr);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1u, cb_count);
 }
@@ -436,7 +436,7 @@ TEST_F(ClientTest, NoResults) {
 //  - remote end disconnects
 //  - result should be called with kLinkDisconnected
 TEST_F(ClientTest, Disconnected) {
-  auto client = Client::Create(fake_chan()->GetWeakPtr(), pw_dispatcher());
+  auto client = Client::Create(fake_chan()->GetWeakPtr(), dispatcher());
 
   size_t cb_count = 0;
   auto result_cb =
@@ -469,7 +469,7 @@ TEST_F(ClientTest, Disconnected) {
         ASSERT_EQ(kSearchExpectedParams, packet->view(5));
         requested = true;
       },
-      pw_dispatcher());
+      dispatcher());
 
   // Search for all A2DP sinks, get the:
   //  - Service Class ID list
@@ -477,14 +477,14 @@ TEST_F(ClientTest, Disconnected) {
   //  - Bluetooth Profile Descriptor List
   client->ServiceSearchAttributes({profile::kAudioSink},
                                   {kServiceClassIdList, kProtocolDescriptorList}, result_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(requested);
   EXPECT_EQ(0u, cb_count);
 
   // Remote end closes the channel.
   fake_chan()->Close();
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1u, cb_count);
 }
@@ -494,7 +494,7 @@ TEST_F(ClientTest, Disconnected) {
 //  - remote end sends invalid response
 //  - callback receives no response with a malformed packet error
 TEST_F(ClientTest, InvalidResponse) {
-  auto client = Client::Create(fake_chan()->GetWeakPtr(), pw_dispatcher());
+  auto client = Client::Create(fake_chan()->GetWeakPtr(), dispatcher());
 
   size_t cb_count = 0;
   auto result_cb =
@@ -529,7 +529,7 @@ TEST_F(ClientTest, InvalidResponse) {
         request_tid = ((*packet)[1] << 8) != 0 || (*packet)[2];
         requested = true;
       },
-      pw_dispatcher());
+      dispatcher());
 
   // Search for all A2DP sinks, get the:
   //  - Service Class ID list
@@ -537,7 +537,7 @@ TEST_F(ClientTest, InvalidResponse) {
   //  - Bluetooth Profile Descriptor List
   client->ServiceSearchAttributes({profile::kAudioSink},
                                   {kServiceClassIdList, kProtocolDescriptorList}, result_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(requested);
   EXPECT_EQ(0u, cb_count);
 
@@ -545,7 +545,7 @@ TEST_F(ClientTest, InvalidResponse) {
   fake_chan()->Receive(StaticByteBuffer(0x07, UpperBits(request_tid), LowerBits(request_tid), 0x00,
                                         0x03, 0x05, 0x06, 0x07));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1u, cb_count);
 }
@@ -553,7 +553,7 @@ TEST_F(ClientTest, InvalidResponse) {
 // Time out (or possibly dropped packets that were malformed)
 TEST_F(ClientTest, Timeout) {
   constexpr uint32_t kTimeoutMs = 10000;
-  auto client = Client::Create(fake_chan()->GetWeakPtr(), pw_dispatcher());
+  auto client = Client::Create(fake_chan()->GetWeakPtr(), dispatcher());
 
   size_t cb_count = 0;
   auto result_cb =
@@ -586,7 +586,7 @@ TEST_F(ClientTest, Timeout) {
         ASSERT_EQ(kSearchExpectedParams, packet->view(5));
         requested = true;
       },
-      pw_dispatcher());
+      dispatcher());
 
   // Search for all A2DP sinks, get the:
   //  - Service Class ID list
@@ -594,19 +594,19 @@ TEST_F(ClientTest, Timeout) {
   //  - Bluetooth Profile Descriptor List
   client->ServiceSearchAttributes({profile::kAudioSink},
                                   {kServiceClassIdList, kProtocolDescriptorList}, result_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(requested);
   EXPECT_EQ(0u, cb_count);
 
   // Wait until the timeout happens
-  RunLoopFor(zx::msec(kTimeoutMs + 1));
+  RunFor(std::chrono::milliseconds(kTimeoutMs + 1));
 
   EXPECT_EQ(1u, cb_count);
 }
 
 TEST_F(ClientTest, DestroyClientInErrorResultCallbackDoesNotCrash) {
   constexpr uint32_t kTimeoutMs = 10000;
-  auto client = Client::Create(fake_chan()->GetWeakPtr(), pw_dispatcher());
+  auto client = Client::Create(fake_chan()->GetWeakPtr(), dispatcher());
 
   size_t cb_count = 0;
   auto result_cb =
@@ -619,22 +619,22 @@ TEST_F(ClientTest, DestroyClientInErrorResultCallbackDoesNotCrash) {
       };
 
   bool requested = false;
-  fake_chan()->SetSendCallback([&](auto packet) { requested = true; }, pw_dispatcher());
+  fake_chan()->SetSendCallback([&](auto packet) { requested = true; }, dispatcher());
 
   client->ServiceSearchAttributes({profile::kAudioSink},
                                   {kServiceClassIdList, kProtocolDescriptorList}, result_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(requested);
   EXPECT_EQ(0u, cb_count);
 
   // Wait until the timeout happens
-  RunLoopFor(zx::msec(kTimeoutMs + 1));
+  RunFor(std::chrono::milliseconds(kTimeoutMs + 1));
 
   EXPECT_EQ(1u, cb_count);
 }
 
 TEST_F(ClientTest, DestroyClientInDisconnectedResultCallback) {
-  auto client = Client::Create(fake_chan()->GetWeakPtr(), pw_dispatcher());
+  auto client = Client::Create(fake_chan()->GetWeakPtr(), dispatcher());
 
   size_t cb_count = 0;
   auto result_cb =
@@ -647,18 +647,18 @@ TEST_F(ClientTest, DestroyClientInDisconnectedResultCallback) {
       };
 
   bool requested = false;
-  fake_chan()->SetSendCallback([&](auto packet) { requested = true; }, pw_dispatcher());
+  fake_chan()->SetSendCallback([&](auto packet) { requested = true; }, dispatcher());
 
   client->ServiceSearchAttributes({profile::kAudioSink},
                                   {kServiceClassIdList, kProtocolDescriptorList}, result_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(requested);
   EXPECT_EQ(0u, cb_count);
 
   // Remote end closes the channel.
   fake_chan()->Close();
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1u, cb_count);
 }

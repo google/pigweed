@@ -267,13 +267,13 @@ void Engine::StartReceiverReadyPollTimer() {
   BT_DEBUG_ASSERT(!monitor_task_.is_pending());
   n_receiver_ready_polls_sent_ = 0;
   receiver_ready_poll_task_.Cancel();
-  receiver_ready_poll_task_.PostAfter(kPwErtmReceiverReadyPollTimerDuration);
+  receiver_ready_poll_task_.PostAfter(kErtmReceiverReadyPollTimerDuration);
 }
 
 void Engine::StartMonitorTimer() {
   BT_DEBUG_ASSERT(!receiver_ready_poll_task_.is_pending());
   monitor_task_.Cancel();
-  monitor_task_.PostAfter(kPwErtmMonitorTimerDuration);
+  monitor_task_.PostAfter(kErtmMonitorTimerDuration);
 }
 
 void Engine::SendReceiverReadyPoll() {

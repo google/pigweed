@@ -126,18 +126,18 @@ class Phase2SecureConnectionsTest : public l2cap::testing::FakeChannelTest {
             ADD_FAILURE() << "unexpected packet code " << reader.code();
           }
         },
-        pw_dispatcher());
+        dispatcher());
 
     if (phase_2_sc_->role() == Role::kInitiator) {
       phase_2_sc_->Start();
-      RunLoopUntilIdle();
+      RunUntilIdle();
       BT_ASSERT_MSG(local_key_.has_value(), "initiator did not send ecdh key upon starting");
       ReceiveCmd(kPairingPublicKey, peer_key_.GetSerializedPublicKey());
-      RunLoopUntilIdle();
+      RunUntilIdle();
     } else {
       phase_2_sc_->Start();
       ReceiveCmd(kPairingPublicKey, peer_key_.GetSerializedPublicKey());
-      RunLoopUntilIdle();
+      RunUntilIdle();
       BT_ASSERT_MSG(local_key_.has_value(), "responder did not send ecdh key upon peer key");
       if (features_.method == PairingMethod::kJustWorks ||
           features_.method == PairingMethod::kNumericComparison) {
@@ -221,14 +221,14 @@ class Phase2SecureConnectionsTest : public l2cap::testing::FakeChannelTest {
         [&](ByteBufferPtr sdu) {
           std::tie(sent_code, initiator_rand) = ExtractCodeAnd128BitCmd(std::move(sdu));
         },
-        pw_dispatcher());
+        dispatcher());
     MatchingPair stage1_vals = GenerateMatchingConfirmAndRandom();
     ReceiveCmd<PairingConfirmValue>(kPairingConfirm, stage1_vals.confirm);
-    RunLoopUntilIdle();
+    RunUntilIdle();
     BT_ASSERT_MSG(kPairingRandom == sent_code, "did not send pairing random when expected!");
 
     ReceiveCmd(kPairingRandom, stage1_vals.random);
-    RunLoopUntilIdle();
+    RunUntilIdle();
     return GenerateLtkAndChecks(initiator_rand, stage1_vals.random);
   }
 
@@ -240,10 +240,10 @@ class Phase2SecureConnectionsTest : public l2cap::testing::FakeChannelTest {
         [&](ByteBufferPtr sdu) {
           std::tie(sent_code, rsp_rand) = ExtractCodeAnd128BitCmd(std::move(sdu));
         },
-        pw_dispatcher());
+        dispatcher());
     PairingRandomValue initiator_rand{1};
     ReceiveCmd(kPairingRandom, initiator_rand);
-    RunLoopUntilIdle();
+    RunUntilIdle();
 
     BT_ASSERT_MSG(kPairingRandom == sent_code, "did not send pairing random when expected!");
     BT_ASSERT_MSG(GenerateConfirmValue(rsp_rand, /*gen_initiator_confirm=*/false) == rsp_confirm,
@@ -283,7 +283,7 @@ TEST_F(Phase2SecureConnectionsTest, ReceivePairingFailed) {
   phase_2_sc()->Start();
   fake_chan()->Receive(
       StaticByteBuffer<PacketSize<ErrorCode>()>{kPairingFailed, ErrorCode::kPairingNotSupported});
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(Error(ErrorCode::kPairingNotSupported), listener()->last_error());
 }
@@ -338,10 +338,10 @@ TEST_F(Phase2SecureConnectionsTest, RejectsPublicKeyIdenticalToLocalKey) {
           mut_local_key() = EcdhKey::ParseFromPublicKey(reader.payload<PairingPublicKeyParams>());
         }
       },
-      pw_dispatcher());
+      dispatcher());
 
   phase_2_sc()->Start();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(local_key().has_value());
 
   // Mirror back local key as the peer's public key
@@ -433,10 +433,10 @@ TEST_F(Phase2SecureConnectionsTest, Stage1JustWorksErrorPropagates) {
       [&](ByteBufferPtr sdu) {
         std::tie(sent_code, std::ignore) = ExtractCodeAnd128BitCmd(std::move(sdu));
       },
-      pw_dispatcher());
+      dispatcher());
   MatchingPair stage1_vals = GenerateMatchingConfirmAndRandom();
   ReceiveCmd<PairingConfirmValue>(kPairingConfirm, stage1_vals.confirm);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(kPairingRandom, sent_code);
   UInt128 mismatched_random = stage1_vals.random;
   mismatched_random[0] += 1;
@@ -468,9 +468,9 @@ TEST_F(Phase2SecureConnectionsTest, Stage1PasskeyErrorPropagates) {
         ASSERT_TRUE(ContainersEqual(kExpectedFailure, *sdu));
         failure_sent = true;
       },
-      pw_dispatcher());
+      dispatcher());
   confirm_cb(false);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(1, listener()->pairing_error_count());
   ASSERT_TRUE(failure_sent);
 }
@@ -487,9 +487,9 @@ TEST_F(Phase2SecureConnectionsTest, InitiatorReceiveWrongDhKeyCheckFails) {
       [&](ByteBufferPtr sdu) {
         std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
       },
-      pw_dispatcher());
+      dispatcher());
   confirm_cb(true);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(kPairingDHKeyCheck, sent_code);
   // As initiator, we expect the dhkey_check_b value, not the a.
   const auto kPairingDHKeyCheckCmd =
@@ -513,25 +513,25 @@ TEST_F(Phase2SecureConnectionsTest, InitiatorFlowSuccessJustWorks) {
       [&](ByteBufferPtr sdu) {
         std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
       },
-      pw_dispatcher());
+      dispatcher());
   MatchingPair stage1_vals = GenerateMatchingConfirmAndRandom();
   ReceiveCmd<PairingConfirmValue>(kPairingConfirm, stage1_vals.confirm);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(kPairingRandom, sent_code);
   UInt128 local_rand = sent_payload;
   ASSERT_FALSE(confirm_cb);
   ReceiveCmd(kPairingRandom, stage1_vals.random);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(confirm_cb);
 
   LtkAndChecks expected_stage2_vals = GenerateLtkAndChecks(local_rand, stage1_vals.random);
   confirm_cb(true);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   // After receiving user confirmation, we should send (the correct) DHKey Check Ea
   ASSERT_EQ(kPairingDHKeyCheck, sent_code);
   ASSERT_EQ(expected_stage2_vals.dhkey_check_a, sent_payload);
   ReceiveCmd(kPairingDHKeyCheck, expected_stage2_vals.dhkey_check_b);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(1, phase_2_complete_count());
   // We should generate the same LTK on "both sides"
   ASSERT_EQ(expected_stage2_vals.ltk, ltk());
@@ -553,24 +553,24 @@ TEST_F(Phase2SecureConnectionsTest, InitiatorFlowSuccessNumericComparison) {
       [&](ByteBufferPtr sdu) {
         std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
       },
-      pw_dispatcher());
+      dispatcher());
   MatchingPair stage1_vals = GenerateMatchingConfirmAndRandom();
   ReceiveCmd(kPairingConfirm, stage1_vals.confirm);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(kPairingRandom, sent_code);
   UInt128 initiator_random = sent_payload;
   ASSERT_FALSE(confirm_cb);
 
   ReceiveCmd(kPairingRandom, stage1_vals.random);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(confirm_cb);
   confirm_cb(true);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   LtkAndChecks vals = GenerateLtkAndChecks(initiator_random, stage1_vals.random);
   EXPECT_EQ(kPairingDHKeyCheck, sent_code);
   EXPECT_EQ(vals.dhkey_check_a, sent_payload);
   ReceiveCmd(kPairingDHKeyCheck, vals.dhkey_check_b);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(vals.ltk, ltk());
 }
 
@@ -592,19 +592,19 @@ TEST_F(Phase2SecureConnectionsTest, InitiatorFlowSuccessPasskeyEntryDisplay) {
       [&](ByteBufferPtr sdu) {
         std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
       },
-      pw_dispatcher());
+      dispatcher());
   confirm_cb(true);
   MatchingPair stage1_vals;
   UInt128 last_sent_rand;
   for (size_t i = 0; i < 20; ++i) {
     const uint8_t r = (passkey & (1 << i)) ? 0x81 : 0x80;
     stage1_vals = GenerateMatchingConfirmAndRandom(r);
-    RunLoopUntilIdle();
+    RunUntilIdle();
 
     ASSERT_EQ(kPairingConfirm, sent_code);
     PairingConfirmValue init_confirm = sent_payload;
     ReceiveCmd(kPairingConfirm, stage1_vals.confirm);
-    RunLoopUntilIdle();
+    RunUntilIdle();
 
     ASSERT_EQ(kPairingRandom, sent_code);
     last_sent_rand = sent_payload;
@@ -612,11 +612,11 @@ TEST_F(Phase2SecureConnectionsTest, InitiatorFlowSuccessPasskeyEntryDisplay) {
     ReceiveCmd(kPairingRandom, stage1_vals.random);
   }
   LtkAndChecks vals = GenerateLtkAndChecks(last_sent_rand, stage1_vals.random, uint64_t{passkey});
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(kPairingDHKeyCheck, sent_code);
   EXPECT_EQ(vals.dhkey_check_a, sent_payload);
   ReceiveCmd(kPairingDHKeyCheck, vals.dhkey_check_b);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(vals.ltk, ltk());
 }
 
@@ -633,7 +633,7 @@ TEST_F(Phase2SecureConnectionsTest, InitiatorFlowSuccessPasskeyEntryInput) {
       [&](ByteBufferPtr sdu) {
         std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
       },
-      pw_dispatcher());
+      dispatcher());
   const int64_t passkey = 123456;
   passkey_cb(passkey);
   MatchingPair stage1_vals;
@@ -641,12 +641,12 @@ TEST_F(Phase2SecureConnectionsTest, InitiatorFlowSuccessPasskeyEntryInput) {
   for (size_t i = 0; i < 20; ++i) {
     const uint8_t r = (passkey & (1 << i)) ? 0x81 : 0x80;
     stage1_vals = GenerateMatchingConfirmAndRandom(r);
-    RunLoopUntilIdle();
+    RunUntilIdle();
 
     ASSERT_EQ(kPairingConfirm, sent_code);
     PairingConfirmValue init_confirm = sent_payload;
     ReceiveCmd(kPairingConfirm, stage1_vals.confirm);
-    RunLoopUntilIdle();
+    RunUntilIdle();
 
     ASSERT_EQ(kPairingRandom, sent_code);
     last_sent_rand = sent_payload;
@@ -654,11 +654,11 @@ TEST_F(Phase2SecureConnectionsTest, InitiatorFlowSuccessPasskeyEntryInput) {
     ReceiveCmd(kPairingRandom, stage1_vals.random);
   }
   LtkAndChecks vals = GenerateLtkAndChecks(last_sent_rand, stage1_vals.random, uint64_t{passkey});
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(kPairingDHKeyCheck, sent_code);
   EXPECT_EQ(vals.dhkey_check_a, sent_payload);
   ReceiveCmd(kPairingDHKeyCheck, vals.dhkey_check_b);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(vals.ltk, ltk());
 }
 
@@ -674,9 +674,9 @@ TEST_F(Phase2SecureConnectionsTest, ResponderReceiveWrongDhKeyCheckFails) {
       [&](ByteBufferPtr sdu) {
         std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
       },
-      pw_dispatcher());
+      dispatcher());
   confirm_cb(true);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   // As responder, we expect the dhkey_check_a value, not the b.
   const auto kPairingDHKeyCheckCmdWithBValue =
       MakeCmd(kPairingDHKeyCheck, expected_stage2_vals.dhkey_check_b);
@@ -699,11 +699,11 @@ TEST_F(Phase2SecureConnectionsTest, ResponderFlowSuccessJustWorks) {
       [&](ByteBufferPtr sdu) {
         std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
       },
-      pw_dispatcher());
+      dispatcher());
   ASSERT_FALSE(confirm_cb);
   const PairingRandomValue kInitiatorRand{1};
   ReceiveCmd(kPairingRandom, kInitiatorRand);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_EQ(kPairingRandom, sent_code);
   UInt128 responder_rand = sent_payload;
@@ -714,7 +714,7 @@ TEST_F(Phase2SecureConnectionsTest, ResponderFlowSuccessJustWorks) {
   // After receiving user confirmation & the peer dhkey check, we should send the DHKey Check Eb.
   confirm_cb(true);
   ReceiveCmd(kPairingDHKeyCheck, expected_stage2_vals.dhkey_check_a);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(kPairingDHKeyCheck, sent_code);
   ASSERT_EQ(expected_stage2_vals.dhkey_check_b, sent_payload);
   ASSERT_EQ(1, phase_2_complete_count());
@@ -734,13 +734,13 @@ TEST_F(Phase2SecureConnectionsTest, ResponderReceiveDhKeyCheckWhileWaitingForCon
       [&](ByteBufferPtr sdu) {
         std::tie(sent_code, sent_dhkey_check) = ExtractCodeAnd128BitCmd(std::move(sdu));
       },
-      pw_dispatcher());
+      dispatcher());
   ASSERT_TRUE(confirm_cb);
   // Receiving the peer DHKey check before user confirmation should work as responder.
   ReceiveCmd(kPairingDHKeyCheck, expected_stage2_vals.dhkey_check_a);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   confirm_cb(true);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_EQ(kPairingDHKeyCheck, sent_code);
   ASSERT_EQ(expected_stage2_vals.dhkey_check_b, sent_dhkey_check);

@@ -6,22 +6,16 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <pw_async/fake_dispatcher_fixture.h>
 #include <pw_async_fuchsia/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fragmenter.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::l2cap::internal {
 namespace {
 
-class EnhancedRetransmissionModeEnginesTest : public ::gtest::TestLoopFixture {
- public:
-  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
-
- private:
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
-};
+using EnhancedRetransmissionModeEnginesTest = pw::async::test::FakeDispatcherFixture;
 
 constexpr size_t kMaxTransmissions = 2;
 constexpr size_t kTxWindow = 63;
@@ -40,7 +34,7 @@ void NoOpFailureCallback() {}
 TEST_F(EnhancedRetransmissionModeEnginesTest, MakeLinkedERTMEngines) {
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
       kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, NoOpTxCallback,
-      NoOpFailureCallback, pw_dispatcher());
+      NoOpFailureCallback, dispatcher());
   EXPECT_TRUE(rx_engine);
   EXPECT_TRUE(tx_engine);
 }
@@ -74,7 +68,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
   };
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
       kTestChannelId, kDefaultMTU, kMaxTransmissions, /*n_frames_in_tx_window=*/1, tx_callback,
-      NoOpFailureCallback, pw_dispatcher());
+      NoOpFailureCallback, dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
@@ -119,7 +113,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest, SignalFailureAfterMonitorTimerExpi
   auto failure_cb = [&failure_cb_called] { failure_cb_called = true; };
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
       kTestChannelId, kDefaultMTU, /*max_transmissions=*/1, kTxWindow, tx_callback, failure_cb,
-      pw_dispatcher());
+      dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
@@ -127,12 +121,12 @@ TEST_F(EnhancedRetransmissionModeEnginesTest, SignalFailureAfterMonitorTimerExpi
   EXPECT_EQ(1, tx_count);
 
   // Send a poll request after timer expiry waiting for peer acknowledgment.
-  RETURN_IF_FATAL(RunLoopFor(kErtmReceiverReadyPollTimerDuration));
+  RETURN_IF_FATAL(RunFor(kErtmReceiverReadyPollTimerDuration));
   EXPECT_EQ(2, tx_count);
 
   // Monitor Timer expires without a response from the peer, signaling a channel failure.
   EXPECT_FALSE(failure_cb_called);
-  RETURN_IF_FATAL(RunLoopFor(kErtmMonitorTimerDuration));
+  RETURN_IF_FATAL(RunFor(kErtmMonitorTimerDuration));
   EXPECT_TRUE(failure_cb_called);
 }
 
@@ -162,7 +156,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest, SignalFailureAfterMaxTransmitExhau
   auto failure_cb = [&failure_cb_called] { failure_cb_called = true; };
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
       kTestChannelId, kDefaultMTU, /*max_transmissions=*/1, kTxWindow, tx_callback, failure_cb,
-      pw_dispatcher());
+      dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
@@ -170,7 +164,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest, SignalFailureAfterMaxTransmitExhau
   EXPECT_EQ(1, tx_count);
 
   // Send a poll request after timer expiry waiting for peer acknowledgment.
-  RETURN_IF_FATAL(RunLoopFor(kErtmReceiverReadyPollTimerDuration));
+  RETURN_IF_FATAL(RunFor(kErtmReceiverReadyPollTimerDuration));
   EXPECT_EQ(2, tx_count);
 
   // Peer response doesn't acknowledge the I-Frame's TxSeq and we already used up MaxTransmit,
@@ -205,7 +199,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest, RetransmitAfterReceivingRejectSFra
   };
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
       kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback, NoOpFailureCallback,
-      pw_dispatcher());
+      dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
@@ -249,7 +243,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
   };
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
       kTestChannelId, kDefaultMTU, kMaxTransmissions, /*n_frames_in_tx_window=*/3, tx_callback,
-      NoOpFailureCallback, pw_dispatcher());
+      NoOpFailureCallback, dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
@@ -291,7 +285,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest, RetransmitAfterReceivingSelectiveR
   };
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
       kTestChannelId, kDefaultMTU, kMaxTransmissions, /*n_frames_in_tx_window=*/3, tx_callback,
-      NoOpFailureCallback, pw_dispatcher());
+      NoOpFailureCallback, dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
@@ -353,14 +347,14 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
   };
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
       kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback, NoOpFailureCallback,
-      pw_dispatcher());
+      dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
   tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(StaticByteBuffer{'a'}));
   EXPECT_EQ(1, tx_count);
 
-  ASSERT_TRUE(RunLoopFor(kErtmReceiverReadyPollTimerDuration));
+  RunFor(kErtmReceiverReadyPollTimerDuration);
   EXPECT_EQ(2, tx_count);
 
   // Receive an S-frame containing an acknowledgment not including the frame that we transmitted. F
@@ -399,7 +393,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
   };
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
       kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback, NoOpFailureCallback,
-      pw_dispatcher());
+      dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
@@ -407,7 +401,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
   EXPECT_EQ(1, tx_count);
 
   // Send a poll request after timer expiry waiting for peer acknowledgment.
-  RETURN_IF_FATAL(RunLoopFor(kErtmReceiverReadyPollTimerDuration));
+  RETURN_IF_FATAL(RunFor(kErtmReceiverReadyPollTimerDuration));
   EXPECT_EQ(2, tx_count);
 
   // Receive an Receiver Not Ready containing an acknowledgment not including the frame that we
@@ -453,7 +447,7 @@ TEST_F(
   };
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
       kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback, NoOpFailureCallback,
-      pw_dispatcher());
+      dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
@@ -463,7 +457,7 @@ TEST_F(
   EXPECT_EQ(1, iframe_0_tx_count);
   EXPECT_EQ(1, iframe_1_tx_count);
 
-  ASSERT_TRUE(RunLoopFor(kErtmReceiverReadyPollTimerDuration));
+  RunFor(kErtmReceiverReadyPollTimerDuration);
   EXPECT_EQ(3, tx_count);
 
   // Receive an S-frame containing a retransmission request for I-Frame 0. See Core Spec v5.0, Vol
@@ -523,7 +517,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
   };
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
       kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback, NoOpFailureCallback,
-      pw_dispatcher());
+      dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
@@ -533,7 +527,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
   EXPECT_EQ(1, iframe_0_tx_count);
   EXPECT_EQ(1, iframe_1_tx_count);
 
-  ASSERT_TRUE(RunLoopFor(kErtmReceiverReadyPollTimerDuration));
+  RunFor(kErtmReceiverReadyPollTimerDuration);
   EXPECT_EQ(3, tx_count);
 
   // Receive an S-frame containing a retransmission request starting at seq = 0. See Core Spec v5.0,
@@ -604,7 +598,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
   };
   auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
       kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback, NoOpFailureCallback,
-      pw_dispatcher());
+      dispatcher());
   ASSERT_TRUE(rx_engine);
   ASSERT_TRUE(tx_engine);
 
@@ -614,7 +608,7 @@ TEST_F(EnhancedRetransmissionModeEnginesTest,
   EXPECT_EQ(1, iframe_0_tx_count);
   EXPECT_EQ(1, iframe_1_tx_count);
 
-  ASSERT_TRUE(RunLoopFor(kErtmReceiverReadyPollTimerDuration));
+  RunFor(kErtmReceiverReadyPollTimerDuration);
   EXPECT_EQ(3, tx_count);
 
   // Receive an S-frame containing a retransmission request starting at seq = 0. See Core Spec v5.0,

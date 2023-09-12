@@ -97,7 +97,7 @@ void SignalingChannel::EnqueueResponse(const ByteBuffer& request_packet, Command
       OnResponseTimeout(id, /*retransmit=*/true);
     }
   });
-  iter->second.timer_duration = kPwSignalingChannelResponseTimeout;
+  iter->second.timer_duration = kSignalingChannelResponseTimeout;
   rtx_task.PostAfter(iter->second.timer_duration);
 }
 

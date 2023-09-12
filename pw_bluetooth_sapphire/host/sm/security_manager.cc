@@ -780,7 +780,7 @@ void SecurityManagerImpl::StartNewTimer() {
   if (timeout_task_.is_pending()) {
     BT_ASSERT(timeout_task_.Cancel());
   }
-  timeout_task_.PostAfter(kPwPairingTimeout);
+  timeout_task_.PostAfter(kPairingTimeout);
 }
 
 void SecurityManagerImpl::StopTimer() {

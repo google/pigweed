@@ -175,8 +175,6 @@ auto OutboundConfigurationResponse(CommandId id, uint16_t mtu = kDefaultMTU,
   const uint8_t kConfigLength = 10 + (mode.has_value() ? 11 : 0);
   const uint16_t kL2capLength = kConfigLength + 4;
   const uint16_t kAclLength = kL2capLength + 4;
-  const uint16_t kErtmReceiverReadyPollTimerMsecs = kErtmReceiverReadyPollTimerDuration.to_msecs();
-  const uint16_t kErtmMonitorTimerMsecs = kErtmMonitorTimerDuration.to_msecs();
 
   if (mode.has_value()) {
     return DynamicByteBuffer(StaticByteBuffer(

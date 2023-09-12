@@ -123,6 +123,7 @@ source_set("testing") {
     "//third_party/googletest:gtest",
     "//third_party/pigweed:pw_async_heap_dispatcher",
     "//third_party/pigweed:pw_bluetooth",
+    "//third_party/pigweed/backends/pw_async_fuchsia:fake_dispatcher_fixture",
   ]
 }
 
@@ -168,6 +169,7 @@ source_set("tests") {
     "//src/lib/testing/loop_fixture",
     "//third_party/googletest:gmock",
     "//third_party/googletest:gtest",
+    "//third_party/pigweed/backends/pw_async_fuchsia:fake_dispatcher_fixture",
   ]
 }
 

@@ -56,7 +56,7 @@ class ScStage1PasskeyTest : public l2cap::testing::FakeChannelTest {
           last_packet_.emplace(maybe_reader.value());
           last_packet_internal_ = std::move(sent_packet);
         },
-        pw_dispatcher());
+        dispatcher());
     stage_1_ = std::make_unique<ScStage1Passkey>(
         listener_->as_weak_ptr(), args.role, args.local_pub_key_x, args.peer_pub_key_x, args.method,
         sm_chan_->GetWeakPtr(),
@@ -133,7 +133,7 @@ TEST_F(ScStage1PasskeyTest, InitiatorPasskeyEntryDisplay) {
   stage_1()->Run();
   ASSERT_TRUE(confirm_cb);
   confirm_cb(true);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   MatchingPair vals;
   UInt128 last_rand;
@@ -143,13 +143,13 @@ TEST_F(ScStage1PasskeyTest, InitiatorPasskeyEntryDisplay) {
     vals = GenerateMatchingConfirmAndRandom(r);
     PairingConfirmValue init_confirm = last_packet()->payload<PairingConfirmValue>();
     stage_1()->OnPairingConfirm(vals.confirm);
-    RunLoopUntilIdle();
+    RunUntilIdle();
 
     ASSERT_EQ(kPairingRandom, last_packet()->code());
     last_rand = last_packet()->payload<PairingRandomValue>();
     ASSERT_EQ(GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/true, r), init_confirm);
     stage_1()->OnPairingRandom(vals.random);
-    RunLoopUntilIdle();
+    RunUntilIdle();
   }
   UInt128 passkey_array{0};
   // Copy little-endian uint64 passkey to the UInt128 array needed for Stage 2
@@ -174,7 +174,7 @@ TEST_F(ScStage1PasskeyTest, InitiatorPasskeyEntryInput) {
   stage_1()->Run();
   ASSERT_TRUE(passkey_cb);
   passkey_cb(kPasskey);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   MatchingPair vals;
   UInt128 last_rand;
@@ -184,13 +184,13 @@ TEST_F(ScStage1PasskeyTest, InitiatorPasskeyEntryInput) {
     vals = GenerateMatchingConfirmAndRandom(r);
     PairingConfirmValue init_confirm = last_packet()->payload<PairingConfirmValue>();
     stage_1()->OnPairingConfirm(vals.confirm);
-    RunLoopUntilIdle();
+    RunUntilIdle();
 
     ASSERT_EQ(kPairingRandom, last_packet()->code());
     last_rand = last_packet()->payload<PairingRandomValue>();
     ASSERT_EQ(GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/true, r), init_confirm);
     stage_1()->OnPairingRandom(vals.random);
-    RunLoopUntilIdle();
+    RunUntilIdle();
   }
   UInt128 passkey_array{0};
   // Copy little-endian uint32 kPasskey to the UInt128 array needed for Stage 2
@@ -230,7 +230,7 @@ TEST_F(ScStage1PasskeyTest, ReceiveRandomBeforePeerConfirm) {
   const uint64_t kPasskey = 123456;
   listener()->set_request_passkey_delegate([=](PasskeyResponseCallback cb) { cb(kPasskey); });
   stage_1()->Run();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(kPairingConfirm, last_packet()->code());
 
   const uint8_t r = (kPasskey & 1) ? 0x81 : 0x80;
@@ -338,12 +338,12 @@ TEST_F(ScStage1PasskeyTest, ResponderPasskeyEntryDisplay) {
     const uint8_t r = (passkey & (1 << i)) ? 0x81 : 0x80;
     vals = GenerateMatchingConfirmAndRandom(r);
     stage_1()->OnPairingConfirm(vals.confirm);
-    RunLoopUntilIdle();
+    RunUntilIdle();
     ASSERT_EQ(kPairingConfirm, last_packet()->code());
     PairingConfirmValue init_confirm = last_packet()->payload<PairingConfirmValue>();
 
     stage_1()->OnPairingRandom(vals.random);
-    RunLoopUntilIdle();
+    RunUntilIdle();
     ASSERT_EQ(kPairingRandom, last_packet()->code());
     last_rand = last_packet()->payload<PairingRandomValue>();
     ASSERT_EQ(GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/false, r), init_confirm);
@@ -378,12 +378,12 @@ TEST_F(ScStage1PasskeyTest, ResponderPasskeyEntryInput) {
     const uint8_t r = (kPasskey & (1 << i)) ? 0x81 : 0x80;
     vals = GenerateMatchingConfirmAndRandom(r);
     stage_1()->OnPairingConfirm(vals.confirm);
-    RunLoopUntilIdle();
+    RunUntilIdle();
     ASSERT_EQ(kPairingConfirm, last_packet()->code());
     PairingConfirmValue init_confirm = last_packet()->payload<PairingConfirmValue>();
 
     stage_1()->OnPairingRandom(vals.random);
-    RunLoopUntilIdle();
+    RunUntilIdle();
     ASSERT_EQ(kPairingRandom, last_packet()->code());
     last_rand = last_packet()->payload<PairingRandomValue>();
     ASSERT_EQ(GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/false, r), init_confirm);
@@ -418,12 +418,12 @@ TEST_F(ScStage1PasskeyTest, ResponderPeerConfirmBeforeUserInputOk) {
   ASSERT_FALSE(last_packet().has_value());
 
   passkey_cb(kPasskey);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(kPairingConfirm, last_packet()->code());
   PairingConfirmValue init_confirm = last_packet()->payload<PairingConfirmValue>();
 
   stage_1()->OnPairingRandom(vals.random);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(kPairingRandom, last_packet()->code());
   UInt128 last_rand = last_packet()->payload<PairingRandomValue>();
   ASSERT_EQ(GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/false, r), init_confirm);
@@ -431,12 +431,12 @@ TEST_F(ScStage1PasskeyTest, ResponderPeerConfirmBeforeUserInputOk) {
     r = (kPasskey & (1 << i)) ? 0x81 : 0x80;
     vals = GenerateMatchingConfirmAndRandom(r);
     stage_1()->OnPairingConfirm(vals.confirm);
-    RunLoopUntilIdle();
+    RunUntilIdle();
     ASSERT_EQ(kPairingConfirm, last_packet()->code());
     init_confirm = last_packet()->payload<PairingConfirmValue>();
 
     stage_1()->OnPairingRandom(vals.random);
-    RunLoopUntilIdle();
+    RunUntilIdle();
     ASSERT_EQ(kPairingRandom, last_packet()->code());
     last_rand = last_packet()->payload<PairingRandomValue>();
     ASSERT_EQ(GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/false, r), init_confirm);
@@ -464,7 +464,7 @@ TEST_F(ScStage1PasskeyTest, ReceiveTwoPairingConfirmsFails) {
   const uint8_t r = (kPasskey & 1) ? 0x81 : 0x80;
   MatchingPair vals = GenerateMatchingConfirmAndRandom(r);
   stage_1()->OnPairingConfirm(vals.confirm);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(kPairingConfirm, last_packet()->code());
 
   stage_1()->OnPairingConfirm(vals.confirm);
@@ -484,11 +484,11 @@ TEST_F(ScStage1PasskeyTest, ReceiveTwoPairingRandomsFails) {
   const uint8_t r = (kPasskey & 1) ? 0x81 : 0x80;
   MatchingPair vals = GenerateMatchingConfirmAndRandom(r);
   stage_1()->OnPairingConfirm(vals.confirm);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(kPairingConfirm, last_packet()->code());
 
   stage_1()->OnPairingRandom(vals.random);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(kPairingRandom, last_packet()->code());
 
   stage_1()->OnPairingRandom(vals.confirm);
@@ -514,7 +514,7 @@ TEST_F(ScStage1PasskeyTest, ReceiveMismatchedPairingConfirmFails) {
   uint8_t r = (kPasskey & 1) ? 0x80 : 0x81;
   MatchingPair vals = GenerateMatchingConfirmAndRandom(r);
   stage_1()->OnPairingConfirm(vals.confirm);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(kPairingConfirm, last_packet()->code());
 
   stage_1()->OnPairingRandom(vals.random);

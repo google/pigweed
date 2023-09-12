@@ -99,7 +99,7 @@ TEST_F(PairingPhaseDeathTest, CallMethodOnFailedPhaseDies) {
 TEST_F(PairingPhaseTest, ChannelClosedNotifiesListener) {
   ASSERT_EQ(listener()->pairing_error_count(), 0);
   fake_chan()->Close();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(listener()->pairing_error_count(), 1);
   EXPECT_EQ(Error(HostError::kLinkDisconnected), listener()->last_error());
 }
@@ -108,7 +108,7 @@ TEST_F(PairingPhaseTest, OnFailureNotifiesListener) {
   auto ecode = ErrorCode::kDHKeyCheckFailed;
   ASSERT_EQ(listener()->pairing_error_count(), 0);
   pairing_phase()->OnFailure(Error(ecode));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(listener()->pairing_error_count(), 1);
   EXPECT_EQ(Error(ecode), listener()->last_error());
 }
@@ -116,11 +116,11 @@ TEST_F(PairingPhaseTest, OnFailureNotifiesListener) {
 TEST_F(PairingPhaseTest, AbortSendsFailureMessageAndNotifiesListener) {
   ByteBufferPtr msg_sent = nullptr;
   fake_chan()->SetSendCallback([&msg_sent](ByteBufferPtr sdu) { msg_sent = std::move(sdu); },
-                               pw_dispatcher());
+                               dispatcher());
   ASSERT_EQ(0, listener()->pairing_error_count());
 
   pairing_phase()->Abort(ErrorCode::kDHKeyCheckFailed);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Check the PairingFailed message was sent to the channel
   ASSERT_TRUE(msg_sent);
