@@ -90,7 +90,6 @@ pw_test("microvolt_input_test") {
 pw_doc_group("docs") {
   sources = [
     "docs.rst",
-    "public/pw_analog/analog_input.h",
     "public/pw_analog/analog_input_gmock.h",
     "public/pw_analog/microvolt_input.h",
     "public/pw_analog/microvolt_input_gmock.h",

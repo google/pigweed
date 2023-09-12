@@ -18,56 +18,58 @@
 
 namespace pw::analog {
 
-// Base interface for getting ADC samples from one ADC channel in a thread
-// safe manner.
-//
-// The ADC backend interface is up to the user to define and implement for now.
-// This gives the flexibility for the ADC driver implementation.
-//
-// AnalogInput controls a specific input/channel where the ADC peripheral may be
-// shared across multiple channels that may be controlled by multiple threads.
-// The implementer of this pure virtual interface is responsible for ensuring
-// thread safety and access at the driver level.
+/// Base interface for getting analog-to-digital (ADC) samples from one ADC
+/// channel in a thread-safe manner.
+///
+/// The ADC backend interface is up to the user to define and implement for now.
+/// This gives flexibility for the ADC driver implementation.
+///
+/// `AnalogInput` controls a specific input / channel where the ADC peripheral
+/// may be shared across multiple channels that may be controlled by multiple
+/// threads. The implementer of this pure virtual interface is responsible for
+/// ensuring thread safety and access at the driver level.
 class AnalogInput {
  public:
-  // Limits struct that specifies the min and max of the sample range.
-  // These values do not change at run time.
+  /// Specifies the sample range.
+  /// These values do not change at runtime.
   struct Limits {
+    /// The minimum of the sample range.
     int32_t min;
+    /// The maximum of the sample range.
     int32_t max;
   };
 
   virtual ~AnalogInput() = default;
 
-  // Blocks until the specified timeout duration has elapsed or the ADC sample
-  // has been returned, whichever comes first.
-  //
-  // This method is thread safe.
-  //
-  // Returns:
-  //   Sample.
-  //   ResourceExhuasted: ADC peripheral in use.
-  //   DeadlineExceedded: Timed out waiting for a sample.
-  //   Other statuses left up to the implementer.
+  /// Blocks until the specified timeout duration has elapsed or the ADC sample
+  /// has been returned, whichever comes first.
+  ///
+  /// This method is thread safe.
+  ///
+  /// @returns
+  /// * A sample on success.
+  /// * @pw_status{RESOURCE_EXHAUSTED} - ADC peripheral in use.
+  /// * @pw_status{DEADLINE_EXCEEDED} - Timed out waiting for a sample.
+  /// * Other statuses left up to the implementer.
   Result<int32_t> TryReadFor(chrono::SystemClock::duration timeout) {
     return TryReadUntil(chrono::SystemClock::TimePointAfterAtLeast(timeout));
   }
 
-  // Blocks until the deadline time has been reached or the ADC sample
-  // has been returned, whichever comes first.
-  //
-  // This method is thread safe.
-  //
-  // Returns:
-  //   Sample.
-  //   ResourceExhuasted: ADC peripheral in use.
-  //   DeadlineExceedded: Timed out waiting for a sample.
-  //   Other statuses left up to the implementer.
+  /// Blocks until the deadline time has been reached or the ADC sample
+  /// has been returned, whichever comes first.
+  ///
+  /// This method is thread safe.
+  ///
+  /// @returns
+  /// * A sample on success.
+  /// * @pw_status{RESOURCE_EXHAUSTED} - ADC peripheral in use.
+  /// * @pw_status{DEADLINE_EXCEEDED} - Timed out waiting for a sample.
+  /// * Other statuses left up to the implementer.
   virtual Result<int32_t> TryReadUntil(
       chrono::SystemClock::time_point deadline) = 0;
 
-  // Returns the range of the ADC sample.
-  // These values do not change at run time.
+  /// @returns The range of the ADC sample. These values do not change at
+  /// runtime.
   virtual Limits GetLimits() const = 0;
 };
 
