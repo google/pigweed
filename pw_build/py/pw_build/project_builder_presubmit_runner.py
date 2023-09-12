@@ -17,7 +17,7 @@ import argparse
 import fnmatch
 import logging
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 
 
 import pw_cli.log
@@ -34,7 +34,7 @@ from pw_presubmit.presubmit import (
     fetch_file_lists,
 )
 import pw_presubmit.pigweed_presubmit
-from pw_presubmit.build import GnGenNinja, gn_args
+from pw_presubmit.build import GnGenNinja, gn_args, write_gn_args_file
 from pw_presubmit.presubmit_context import get_check_traces, PresubmitCheckTrace
 from pw_presubmit.tools import file_summary
 
@@ -82,6 +82,23 @@ def should_gn_gen(out: Path) -> bool:
         out / 'args.gn',
     ]
     return any(not gen_file.is_file() for gen_file in expected_files)
+
+
+def should_gn_gen_with_args(gn_arg_dict: Dict[str, str]) -> Callable:
+    """Returns a callable which writes an args.gn file prior to checks.
+
+    Returns:
+      Callable which takes a single Path argument and returns a bool
+      for True if the gn gen command should be run.
+    """
+
+    def _write_args_and_check(out: Path) -> bool:
+        # Always re-write the args.gn file.
+        write_gn_args_file(out / 'args.gn', **gn_arg_dict)
+
+        return should_gn_gen(out)
+
+    return _write_args_and_check
 
 
 def _pw_package_install_command(package_name: str) -> BuildCommand:

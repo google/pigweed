@@ -133,8 +133,8 @@ def _gn_value(value) -> str:
     return str(value)
 
 
-def gn_args(**kwargs) -> str:
-    """Builds a string to use for the --args argument to gn gen.
+def gn_args_list(**kwargs) -> List[str]:
+    """Return a list of formatted strings to use as gn args.
 
     Currently supports bool, int, and str values. In the case of str values,
     quotation marks will be added automatically, unless the string already
@@ -146,10 +146,48 @@ def gn_args(**kwargs) -> str:
         transformed_args.append(f'{arg}={_gn_value(val)}')
 
     # Use ccache if available for faster repeat presubmit runs.
-    if which('ccache'):
+    if which('ccache') and 'pw_command_launcher' not in kwargs:
         transformed_args.append('pw_command_launcher="ccache"')
 
-    return '--args=' + ' '.join(transformed_args)
+    return transformed_args
+
+
+def gn_args(**kwargs) -> str:
+    """Builds a string to use for the --args argument to gn gen.
+
+    Currently supports bool, int, and str values. In the case of str values,
+    quotation marks will be added automatically, unless the string already
+    contains one or more double quotation marks, or starts with a { or [
+    character, in which case it will be passed through as-is.
+    """
+    return '--args=' + ' '.join(gn_args_list(**kwargs))
+
+
+def write_gn_args_file(destination_file: Path, **kwargs) -> str:
+    """Write gn args to a file.
+
+    Currently supports bool, int, and str values. In the case of str values,
+    quotation marks will be added automatically, unless the string already
+    contains one or more double quotation marks, or starts with a { or [
+    character, in which case it will be passed through as-is.
+
+    Returns:
+      The contents of the written file.
+    """
+    contents = '\n'.join(gn_args_list(**kwargs))
+    # Add a trailing linebreak
+    contents += '\n'
+    destination_file.parent.mkdir(exist_ok=True, parents=True)
+
+    if (
+        destination_file.is_file()
+        and destination_file.read_text(encoding='utf-8') == contents
+    ):
+        # File is identical, don't re-write.
+        return contents
+
+    destination_file.write_text(contents, encoding='utf-8')
+    return contents
 
 
 def gn_gen(
