@@ -43,7 +43,7 @@ export default function generateTemplate(
     const moduleName = 'proto_' + i;
     imports.push(`import * as ${moduleName} from '${modulePath}';`);
     const key = file.getName()!;
-    moduleDictionary.push(`['${key}', ${moduleName}],`);
+    moduleDictionary.push(`'${key}': ${moduleName},`);
   }
 
   template = template.replace(

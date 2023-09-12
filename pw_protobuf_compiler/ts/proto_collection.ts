@@ -21,16 +21,22 @@ import {
 } from 'google-protobuf/google/protobuf/descriptor_pb';
 
 export type MessageCreator = new () => Message;
-class MessageMap extends Map<string, MessageCreator> {}
-class MessageDescriptorMap extends Map<string, DescriptorProto> {}
-export class ModuleMap extends Map<string, any> {}
+interface MessageMap {
+  [key: string | number]: MessageCreator;
+}
+interface MessageDescriptorMap {
+  [key: string | number]: DescriptorProto;
+}
+export interface ModuleMap {
+  [key: string | number]: any;
+}
 
 /**
  * A wrapper class of protocol buffer modules to provide convenience methods.
  */
 export class ProtoCollection {
-  private messages: MessageMap = new MessageMap();
-  private messageDescriptors: MessageDescriptorMap = new MessageDescriptorMap();
+  private readonly messages: MessageMap = {};
+  private readonly messageDescriptors: MessageDescriptorMap = {};
 
   constructor(
     readonly fileDescriptorSet: FileDescriptorSet,
@@ -45,13 +51,13 @@ export class ProtoCollection {
    */
   private mapMessages(set: FileDescriptorSet, mods: ModuleMap): void {
     for (const fileDescriptor of set.getFileList()) {
-      const mod = mods.get(fileDescriptor.getName()!)!;
+      const mod = mods[fileDescriptor.getName()];
       for (const messageType of fileDescriptor.getMessageTypeList()) {
         const fullName =
-          fileDescriptor.getPackage()! + '.' + messageType.getName();
-        const message = mod[messageType.getName()!];
-        this.messages.set(fullName, message);
-        this.messageDescriptors.set(fullName, messageType);
+          fileDescriptor.getPackage() + '.' + messageType.getName();
+        const message = mod[messageType.getName()];
+        this.messages[fullName] = message;
+        this.messageDescriptors[fullName] = messageType;
       }
     }
   }
@@ -63,7 +69,7 @@ export class ProtoCollection {
    *  "{packageName}.{messageName}" i.e: "pw.rpc.test.NewMessage".
    */
   getMessageCreator(identifier: string): MessageCreator | undefined {
-    return this.messages.get(identifier);
+    return this.messages[identifier];
   }
 
   /**
@@ -73,6 +79,6 @@ export class ProtoCollection {
    *  "{packageName}.{messageName}" i.e: "pw.rpc.test.NewMessage".
    */
   getDescriptorProto(identifier: string): DescriptorProto | undefined {
-    return this.messageDescriptors.get(identifier);
+    return this.messageDescriptors[identifier];
   }
 }
