@@ -21,7 +21,7 @@ import {
   state,
 } from 'lit/decorators.js';
 import { styles } from './log-view-controls.styles';
-import { State } from '../../shared/interfaces';
+import { State, TableColumn } from '../../shared/interfaces';
 import { StateStore, LocalStorageState } from '../../shared/state';
 
 /**
@@ -38,16 +38,12 @@ export class LogViewControls extends LitElement {
   @property({ type: String })
   viewId = '';
 
-  /** The field keys (column values) for the incoming log entries. */
   @property({ type: Array })
-  fieldKeys: string[] = [];
+  columnData: TableColumn[] = [];
 
   /** Indicates whether to enable the button for closing the current log view. */
   @property({ type: Boolean })
   hideCloseButton = false;
-
-  @property({ type: Array })
-  colsHidden: (boolean | undefined)[] = [];
 
   /** A StateStore object that stores state of views */
   @state()
@@ -60,7 +56,7 @@ export class LogViewControls extends LitElement {
   _viewTitle = 'Log View';
 
   @state()
-  _settingsMenuOpen = false;
+  _moreActionsMenuOpen = false;
 
   @query('.field-menu') _fieldMenu!: HTMLMenuElement;
 
@@ -70,15 +66,13 @@ export class LogViewControls extends LitElement {
 
   @queryAll('.item-checkboxes') _itemCheckboxes!: HTMLCollection[];
 
-  private firstCheckboxLoad = false;
-
   /** The timer identifier for debouncing search input. */
   private _inputDebounceTimer: number | null = null;
 
   /** The delay (in ms) used for debouncing search input. */
   private readonly INPUT_DEBOUNCE_DELAY = 50;
 
-  @query('.settings-menu-button') settingsMenuButtonEl!: HTMLElement;
+  @query('.more-actions-button') moreActionsButtonEl!: HTMLElement;
 
   constructor() {
     super();
@@ -101,17 +95,6 @@ export class LogViewControls extends LitElement {
 
     this._inputFacade.textContent = searchText;
     this._inputFacade.dispatchEvent(new CustomEvent('input'));
-  }
-
-  protected updated(): void {
-    const checkboxItems = Array.from(this._itemCheckboxes);
-    if (checkboxItems.length > 0 && !this.firstCheckboxLoad) {
-      for (const i in checkboxItems) {
-        const checkboxEl = checkboxItems[i] as unknown as HTMLInputElement;
-        checkboxEl.checked = !this.colsHidden[Number(i) + 1];
-      }
-      this.firstCheckboxLoad = !this.firstCheckboxLoad;
-    }
   }
 
   /**
@@ -164,8 +147,8 @@ export class LogViewControls extends LitElement {
 
   /**
    * Dispatches a custom event for clearing logs. This event includes a
-   * `timestamp` object indicating the date/time in which the 'clear-logs'
-   * event was dispatched.
+   * `timestamp` object indicating the date/time in which the 'clear-logs' event
+   * was dispatched.
    */
   private handleClearLogsClick() {
     const timestamp = new Date();
@@ -179,9 +162,7 @@ export class LogViewControls extends LitElement {
     this.dispatchEvent(clearLogs);
   }
 
-  /**
-   * Dispatches a custom event for toggling wrapping.
-   */
+  /** Dispatches a custom event for toggling wrapping. */
   private handleWrapToggle() {
     const wrapToggle = new CustomEvent('wrap-toggle', {
       bubbles: true,
@@ -192,8 +173,8 @@ export class LogViewControls extends LitElement {
   }
 
   /**
-   * Dispatches a custom event for closing the parent view. This event
-   * includes a `viewId` object indicating the `id` of the parent log view.
+   * Dispatches a custom event for closing the parent view. This event includes
+   * a `viewId` object indicating the `id` of the parent log view.
    */
   private handleCloseViewClick() {
     const closeView = new CustomEvent('close-view', {
@@ -208,10 +189,9 @@ export class LogViewControls extends LitElement {
   }
 
   /**
-   * Dispatches a custom event for showing or hiding a column in the table.
-   * This event includes a `field` string indicating the affected column's
-   * field name and an `isChecked` boolean indicating whether to show or hide
-   * the column.
+   * Dispatches a custom event for showing or hiding a column in the table. This
+   * event includes a `field` string indicating the affected column's field name
+   * and an `isChecked` boolean indicating whether to show or hide the column.
    *
    * @param {Event} event - The click event object.
    */
@@ -227,6 +207,15 @@ export class LogViewControls extends LitElement {
     });
 
     this.dispatchEvent(columnToggle);
+  }
+
+  private handleAddView() {
+    const addView = new CustomEvent('add-view', {
+      bubbles: true,
+      composed: true,
+    });
+
+    this.dispatchEvent(addView);
   }
 
   /**
@@ -250,23 +239,19 @@ export class LogViewControls extends LitElement {
     this.dispatchEvent(downloadLogs);
   }
 
-  /**
-   * Opens and closes the column visibility dropdown menu.
-   */
+  /** Opens and closes the column visibility dropdown menu. */
   private toggleColumnVisibilityMenu() {
     this._fieldMenu.hidden = !this._fieldMenu.hidden;
   }
 
-  /**
-   * Opens and closes the Settings menu.
-   */
-  private toggleSettingsMenu() {
-    this._settingsMenuOpen = !this._settingsMenuOpen;
+  /** Opens and closes the More Actions menu. */
+  private toggleMoreActionsMenu() {
+    this._moreActionsMenuOpen = !this._moreActionsMenuOpen;
   }
 
   render() {
     return html`
-      <p class="host-name"> ${this._viewTitle}</p>
+      <p class="host-name">${this._viewTitle}</p>
 
       <div class="input-container">
         <div class="input-facade" contenteditable="plaintext-only" @input="${
@@ -305,18 +290,18 @@ export class LogViewControls extends LitElement {
             <md-icon>view_column</md-icon>
           </md-icon-button>
           <menu class='field-menu' hidden>
-            ${Array.from(this.fieldKeys).map(
-              (field) => html`
+            ${this.columnData.map(
+              (column) => html`
                 <li class="field-menu-item">
                   <input
                     class="item-checkboxes"
                     @click=${this.handleColumnToggle}
-                    checked
+                    ?checked=${column.isVisible}
                     type="checkbox"
-                    value=${field}
-                    id=${field}
+                    value=${column.fieldName}
+                    id=${column.fieldName}
                   />
-                  <label for=${field}>${field}</label>
+                  <label for=${column.fieldName}>${column.fieldName}</label>
                 </li>
               `,
             )}
@@ -325,20 +310,27 @@ export class LogViewControls extends LitElement {
 
         <span class="action-button" title="Toggle fields">
           <md-icon-button @click=${
-            this.toggleSettingsMenu
-          } class="settings-menu-button">
+            this.toggleMoreActionsMenu
+          } class="more-actions-button">
             <md-icon >more_vert</md-icon>
           </md-icon-button>
 
           <md-menu quick fixed
-            ?open=${this._settingsMenuOpen}
-            .anchor=${this.settingsMenuButtonEl}
+            ?open=${this._moreActionsMenuOpen}
+            .anchor=${this.moreActionsButtonEl}
             @closed=${() => {
-              this._settingsMenuOpen = false;
+              this._moreActionsMenuOpen = false;
             }}>
+
+            <md-menu-item headline="Add view" @click=${
+              this.handleAddView
+            } role="button" title="Add a view">
+              <md-icon slot="start" data-variant="icon">new_window</md-icon>
+            </md-menu-item>
+
             <md-menu-item headline="Download logs (.txt)" @click=${
               this.handleDownloadLogs
-            } role="button">
+            } role="button" title="Download current logs as a plaintext file">
               <md-icon slot="start" data-variant="icon">download</md-icon>
             </md-menu-item>
           </md-menu>

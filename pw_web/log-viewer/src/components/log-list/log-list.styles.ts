@@ -40,10 +40,10 @@ export const styles = css`
 
   table {
     border-collapse: collapse;
+    display: block;
     height: 100%;
-    min-width: 100vw;
     table-layout: fixed;
-    width: auto;
+    width: 100%;
   }
 
   thead,
@@ -56,6 +56,8 @@ export const styles = css`
   thead {
     background-color: var(--sys-log-viewer-color-table-header-bg);
     color: var(--sys-log-viewer-color-table-header-text);
+    display: block;
+    width: 100%;
   }
 
   tr {
@@ -63,6 +65,7 @@ export const styles = css`
     display: grid;
     justify-content: flex-start;
     width: 100%;
+    will-change: transform;
   }
 
   .log-row--warning {
@@ -98,13 +101,29 @@ export const styles = css`
     color: var(--text-color);
   }
 
-  .log-row--nowrap .cell-content {
+  .log-row .cell-content {
     overflow: hidden;
-    white-space: nowrap;
     text-overflow: ellipsis;
   }
 
-  tr:hover > td {
+  .log-row--nowrap .cell-content {
+    white-space: nowrap;
+  }
+
+  tbody tr::before {
+    background-color: transparent;
+    bottom: 0;
+    content: '';
+    display: block;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 100%;
+    z-index: -1;
+  }
+
+  tbody tr:hover::before {
     background-color: rgba(var(--md-sys-inverse-surface-rgb), 0.05);
   }
 
@@ -129,6 +148,10 @@ export const styles = css`
     white-space: nowrap;
   }
 
+  th[title='severity'] {
+    visibility: hidden;
+  }
+
   td {
     display: inline-flex;
     position: relative;
@@ -139,8 +162,8 @@ export const styles = css`
   .jump-to-bottom-btn {
     --md-filled-button-container-elevation: 4;
     --md-filled-button-hover-container-elevation: 4;
-    bottom: 2rem;
-    font-family: 'Google Sans', sans-serif;
+    bottom: 2.25rem;
+    font-family: 'Roboto Flex', sans-serif;
     left: 50%;
     position: absolute;
     transform: translate(-50%);

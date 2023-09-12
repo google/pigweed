@@ -17,10 +17,11 @@ export interface FieldData {
   value: string | boolean | number | object;
 }
 
-export interface LogColumnState {
-  hidden: boolean;
-  name: string;
-  width?: string;
+export interface TableColumn {
+  fieldName: string;
+  characterLength: number;
+  manualWidth: number | null;
+  isVisible: boolean;
 }
 
 export interface LogEntry {
@@ -30,7 +31,7 @@ export interface LogEntry {
 }
 
 export interface LogViewConfig {
-  columns: LogColumnState[];
+  columnData: TableColumn[];
   search: string;
   viewID: string;
   viewTitle: string;

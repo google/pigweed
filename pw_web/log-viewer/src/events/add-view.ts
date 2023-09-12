@@ -12,35 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { css } from 'lit';
+interface AddViewEvent extends CustomEvent {}
 
-export const styles = css`
-  * {
-    box-sizing: border-box;
+declare global {
+  interface GlobalEventHandlersEventMap {
+    'add-view': AddViewEvent;
   }
+}
 
-  :host {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-    height: var(--sys-log-viewer-height);
-    width: 100%;
-  }
-
-  .grid-container {
-    display: grid;
-    grid-gap: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(27rem, 1fr));
-    height: 100%;
-    overflow: hidden;
-  }
-
-  .add-button {
-    width: 8rem;
-    height: 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-`;
+export default AddViewEvent;

@@ -10,7 +10,7 @@
         "lint": "eslint --max-warnings=0 src"
     },
     "dependencies": {
-        "@lit-labs/virtualizer": "^2.0.3",
+        "@lit-labs/virtualizer": "^2.0.7",
         "@material/web": "^1.0.0-pre.16",
         "date-fns": "^2.30.0",
         "lit": "^3.0.0-pre.0",

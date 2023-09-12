@@ -45,9 +45,11 @@ export function createLogViewer(
     if (lastUpdateTimeoutId) {
       clearTimeout(lastUpdateTimeoutId);
     }
+
     // Call requestUpdate at most once every 100 milliseconds.
     lastUpdateTimeoutId = setTimeout(() => {
-      logViewer.requestUpdate('logs', []);
+      const updatedLogs = [...logs];
+      logViewer.logs = updatedLogs;
     }, 100);
   };
 

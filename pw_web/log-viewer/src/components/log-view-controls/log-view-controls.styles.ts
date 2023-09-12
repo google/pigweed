@@ -18,6 +18,8 @@ export const styles = css`
   :host {
     align-items: center;
     background-color: var(--sys-log-viewer-color-controls-bg);
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    box-sizing: border-box;
     color: var(--sys-log-viewer-color-controls-text);
     display: flex;
     flex-shrink: 0;
@@ -32,7 +34,10 @@ export const styles = css`
     display: flex;
   }
 
-  p {
+  .host-name {
+    font-size: 1.125rem;
+    font-weight: 300;
+    margin: 0;
     white-space: nowrap;
   }
 
@@ -64,6 +69,7 @@ export const styles = css`
   }
 
   .input-container {
+    justify-content: flex-end;
     width: 100%;
   }
 
@@ -74,14 +80,13 @@ export const styles = css`
     border-radius: 1.5rem;
     cursor: text;
     display: inline-flex;
-    font-family: 'Google Sans';
-    font-size: 14px;
-    height: 1rem;
-    line-height: 1;
+    font-size: 1rem;
+    height: 0.75rem;
+    line-height: 0.75;
     max-width: 100%;
-    min-width: 20rem;
+    overflow: hidden;
     padding: 0.5rem 1rem;
-    width: fit-content;
+    width: 25rem;
   }
 
   input[type='text'] {

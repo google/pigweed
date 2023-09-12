@@ -16,7 +16,7 @@ import { LitElement, PropertyValues, html } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { styles } from './log-view.styles';
 import { LogList } from '../log-list/log-list';
-import { LogColumnState, LogEntry, State } from '../../shared/interfaces';
+import { TableColumn, LogEntry, State } from '../../shared/interfaces';
 import { LocalStorageState, StateStore } from '../../shared/state';
 import { LogFilter } from '../../utils/log-filter/log-filter';
 import '../log-list/log-list';
@@ -37,8 +37,8 @@ export class LogView extends LitElement {
   static styles = styles;
 
   /**
-   * The component's global `id` attribute. This unique value is set whenever
-   * a view is created in a log viewer instance.
+   * The component's global `id` attribute. This unique value is set whenever a
+   * view is created in a log viewer instance.
    */
   @property({ type: String })
   id = `${this.localName}-${crypto.randomUUID()}`;
@@ -56,15 +56,15 @@ export class LogView extends LitElement {
   _lineWrap = false;
 
   /**
-   * An array containing the logs that remain after the current filter has
-   * been applied.
+   * An array containing the logs that remain after the current filter has been
+   * applied.
    */
   @state()
   private _filteredLogs: LogEntry[] = [];
 
   /** The field keys (column values) for the incoming log entries. */
   @state()
-  private _fieldKeys: string[] = [];
+  private _columnData: TableColumn[] = [];
 
   /** A function used for filtering rows that contain a certain substring. */
   @state()
@@ -88,15 +88,14 @@ export class LogView extends LitElement {
   @state()
   _state: State;
 
-  @state()
-  _colsHidden: (boolean | undefined)[] = [];
-
   @query('log-list') _logList!: LogList;
 
   private _debounceTimeout: NodeJS.Timeout | null = null;
 
   /** The amount of time, in ms, before the filter expression is executed. */
   private readonly FILTER_DELAY = 100;
+  /** The number of elements in the `logs` array since last updated. */
+  private lastKnownLogLength: number = 0;
 
   constructor() {
     super();
@@ -104,19 +103,13 @@ export class LogView extends LitElement {
   }
 
   protected firstUpdated(): void {
-    this._colsHidden = [];
+    const viewConfigArr = this._state.logViewConfig;
+    const index = viewConfigArr.findIndex((i) => this.id === i.viewID);
 
-    if (this._state) {
-      const viewConfigArr = this._state.logViewConfig;
-      const index = viewConfigArr.findIndex((i) => this.id === i.viewID);
-
-      if (index !== -1) {
-        viewConfigArr[index].search = this.searchText;
-        viewConfigArr[index].columns.map((i: LogColumnState) => {
-          this._colsHidden.push(i.hidden);
-        });
-        this._colsHidden.unshift(undefined);
-      }
+    // Get column data from local storage, if it exists
+    if (index !== -1) {
+      const storedColumnData = viewConfigArr[index].columnData;
+      this._columnData = storedColumnData;
     }
   }
 
@@ -124,21 +117,31 @@ export class LogView extends LitElement {
     super.updated(changedProperties);
 
     if (changedProperties.has('logs')) {
-      this._fieldKeys = this.getFieldsFromLogs(this.logs);
+      const newLogs = this.logs.slice(this.lastKnownLogLength);
+      this.lastKnownLogLength = this.logs.length;
+
+      this.updateFieldsFromNewLogs(newLogs);
       this.filterLogs();
+    }
+
+    if (changedProperties.has('_columnData')) {
+      this._state = { logViewConfig: this._state.logViewConfig };
+      this._stateStore.setState({
+        logViewConfig: this._state.logViewConfig,
+      });
     }
   }
 
   /**
    * Updates the log filter based on the provided event type.
    *
-   * @param {CustomEvent} event - The custom event containing the information
-   *   to update the filter.
+   * @param {CustomEvent} event - The custom event containing the information to
+   *   update the filter.
    */
   private updateFilter(event: CustomEvent) {
     this.searchText = event.detail.inputValue;
-    const viewConfigArr = this._state.logViewConfig;
-    const index = viewConfigArr.findIndex((i) => this.id === i.viewID);
+    const logViewConfig = this._state.logViewConfig;
+    const index = logViewConfig.findIndex((i) => this.id === i.viewID);
 
     switch (event.type) {
       case 'input-change':
@@ -147,9 +150,9 @@ export class LogView extends LitElement {
         }
 
         if (index !== -1) {
-          viewConfigArr[index].search = this.searchText;
-          this._state = { logViewConfig: viewConfigArr };
-          this._stateStore.setState({ logViewConfig: viewConfigArr });
+          logViewConfig[index].search = this.searchText;
+          this._state = { logViewConfig: logViewConfig };
+          this._stateStore.setState({ logViewConfig: logViewConfig });
         }
 
         if (!this.searchText) {
@@ -184,25 +187,29 @@ export class LogView extends LitElement {
     this.requestUpdate();
   }
 
-  /**
-   * Retrieves the field keys from the first entry in the log array.
-   *
-   * @param {LogEntry[]} logs - The array of log entries from which to
-   *   retrieve the field keys.
-   * @returns {string[]} An array containing the field keys from the log
-   *   entries.
-   */
-  public getFieldsFromLogs(logs: LogEntry[]): string[] {
-    const logEntry = logs[0];
-    const logFields = [] as string[];
-
-    if (logEntry != undefined) {
-      logEntry.fields.forEach((field) => {
-        logFields.push(field.key);
-      });
+  private updateFieldsFromNewLogs(newLogs: LogEntry[]): void {
+    if (!this._columnData) {
+      this._columnData = [];
     }
 
-    return logFields.filter((field) => field !== 'severity');
+    newLogs.forEach((log) => {
+      log.fields.forEach((field) => {
+        if (!this._columnData.some((col) => col.fieldName === field.key)) {
+          this._columnData.push({
+            fieldName: field.key,
+            characterLength: 0,
+            manualWidth: null,
+            isVisible: true,
+          });
+        }
+      });
+    });
+  }
+
+  public getFields(): string[] {
+    return this._columnData
+      .filter((column) => column.isVisible)
+      .map((column) => column.fieldName);
   }
 
   /**
@@ -213,32 +220,37 @@ export class LogView extends LitElement {
    *   toggled.
    */
   private toggleColumns(event: CustomEvent) {
-    const viewConfigArr = this._state.logViewConfig;
-    let colIndex = -1;
+    const logViewConfig = this._state.logViewConfig;
+    const index = logViewConfig.findIndex((i) => this.id === i.viewID);
 
-    this._colsHidden = [];
-    const index = viewConfigArr
-      .map((i) => {
-        return i.viewID;
-      })
-      .indexOf(this.id);
-    viewConfigArr[index].columns.map((i: LogColumnState) => {
-      this._colsHidden.push(i.hidden);
-    });
-    this._colsHidden.unshift(undefined);
+    if (index === -1) {
+      return;
+    }
 
-    this._fieldKeys.forEach((field: string, i: number) => {
-      if (field == event.detail.field) {
-        colIndex = i;
-        viewConfigArr[index].columns[colIndex].hidden = !event.detail.isChecked;
-      }
-    });
+    // Find the relevant column in _columnData
+    const column = this._columnData.find(
+      (col) => col.fieldName === event.detail.field,
+    );
 
-    this._colsHidden[colIndex + 1] = !event.detail.isChecked; // Exclude first column (severity)
-    this._logList.colsHidden = [...this._colsHidden];
+    if (!column) {
+      return;
+    }
 
-    this._state = { logViewConfig: viewConfigArr };
-    this._stateStore.setState({ logViewConfig: viewConfigArr });
+    // Toggle the column's visibility
+    column.isVisible = event.detail.isChecked;
+
+    // Clear the manually-set width of the last visible column
+    const lastVisibleColumn = this._columnData
+      .slice()
+      .reverse()
+      .find((col) => col.isVisible);
+    if (lastVisibleColumn) {
+      lastVisibleColumn.manualWidth = null;
+    }
+
+    // Trigger the change in column data and request an update
+    this._columnData = [...this._columnData];
+    this._logList.requestUpdate();
   }
 
   /**
@@ -251,8 +263,8 @@ export class LogView extends LitElement {
   }
 
   /**
-   * Combines constituent filter expressions and filters the logs. The
-   * filtered logs are stored in the `_filteredLogs` state property.
+   * Combines constituent filter expressions and filters the logs. The filtered
+   * logs are stored in the `_filteredLogs` state property.
    */
   private filterLogs() {
     const combinedFilter = (logEntry: LogEntry) =>
@@ -261,6 +273,10 @@ export class LogView extends LitElement {
     this._filteredLogs = JSON.parse(
       JSON.stringify(this.logs.filter(combinedFilter)),
     );
+  }
+
+  private updateColumnData(event: CustomEvent) {
+    this._columnData = event.detail;
   }
 
   /**
@@ -306,9 +322,8 @@ export class LogView extends LitElement {
 
   render() {
     return html` <log-view-controls
-        .colsHidden=${[...this._colsHidden]}
+        .columnData=${[...this._columnData]}
         .viewId=${this.id}
-        .fieldKeys=${this._fieldKeys}
         .hideCloseButton=${!this.isOneOfMany}
         .stateStore=${this._stateStore}
         @input-change="${this.updateFilter}"
@@ -321,11 +336,12 @@ export class LogView extends LitElement {
       </log-view-controls>
 
       <log-list
-        .colsHidden=${[...this._colsHidden]}
+        .columnData=${[...this._columnData]}
         .lineWrap=${this._lineWrap}
         .viewId=${this.id}
         .logs=${this._filteredLogs}
         .searchText=${this.searchText}
+        @update-column-data="${this.updateColumnData}"
       >
       </log-list>`;
   }

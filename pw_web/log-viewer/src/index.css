@@ -14,12 +14,12 @@
  * the License.
  */
 
- @import url('https://fonts.googleapis.com/css2?family=Google+Sans&family=Roboto+Mono:wght@400;500&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block');
+ @import url('https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,300;8..144,400;8..144,500;8..144,600&family=Roboto+Mono:wght@400;500&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block');
 
 :root {
     background-color: var(--sys-log-viewer-color-bg);
     color-scheme: light dark;
-    font-family: "Google Sans", Arial, sans-serif;
+    font-family: "Roboto Flex", Arial, sans-serif;
     font-synthesis: none;
     font-weight: 400;
     line-height: 1.5;
@@ -34,13 +34,13 @@
     /* Material component properties */
     --md-icon-font: 'Material Symbols Rounded';
     --md-icon-size: 1.25rem;
-    --md-filled-button-label-text-type: "Google Sans", Arial, sans-serif;
-    --md-outlined-button-label-text-type: "Google Sans", Arial, sans-serif;
+    --md-filled-button-label-text-type: "Roboto Flex", Arial, sans-serif;
+    --md-outlined-button-label-text-type: "Roboto Flex", Arial, sans-serif;
     --md-icon-button-unselected-icon-color: var(--md-sys-color-on-surface-variant);
     --md-icon-button-unselected-hover-icon-color: var(--md-sys-color-on-primary-container);
 
     /* Log View */
-    --sys-log-viewer-height: 100vh;
+    --sys-log-viewer-height: 100%;
     --sys-log-viewer-view-outline-width: 1px;
     --sys-log-viewer-view-corner-radius: 0.5rem;
 }
@@ -50,12 +50,13 @@
 }
 
 button {
-    font-family: "Google Sans";
+    font-family: "Roboto Flex";
 }
 
 main {
     height: 100vh;
     padding: 2rem;
+    width: 100vw;
 }
 
 a {

@@ -16,7 +16,7 @@ import { LitElement, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import {
-  LogColumnState,
+  TableColumn,
   LogEntry,
   LogViewConfig,
   State,
@@ -98,18 +98,20 @@ export class LogViewer extends LitElement {
   /** Creates a new log view state to store in the state object. */
   private addLogViewState(view: LogView): LogViewConfig {
     const fieldColumns = [];
-    const fields = view.getFieldsFromLogs(this.logs);
+    const fields = view.getFields();
 
     for (const i in fields) {
-      const col: LogColumnState = {
-        hidden: false,
-        name: fields[i],
+      const col: TableColumn = {
+        isVisible: true,
+        fieldName: fields[i],
+        characterLength: 0,
+        manualWidth: null,
       };
       fieldColumns.push(col);
     }
 
     const obj = {
-      columns: fieldColumns,
+      columnData: fieldColumns,
       search: '',
       viewID: view.id,
       viewTitle: 'Log View',
@@ -136,14 +138,6 @@ export class LogViewer extends LitElement {
 
   render() {
     return html`
-      <md-outlined-button
-        class="add-button"
-        @click="${this.addLogView}"
-        title="Add a view"
-      >
-        Add View
-      </md-outlined-button>
-
       <div class="grid-container">
         ${repeat(
           this._logViews,
@@ -154,6 +148,7 @@ export class LogViewer extends LitElement {
               .logs=${[...this.logs]}
               .isOneOfMany=${this._logViews.length > 1}
               .stateStore=${this._stateStore}
+              @add-view="${this.addLogView}"
             ></log-view>
           `,
         )}
