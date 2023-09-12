@@ -11,6 +11,7 @@
 #include <gtest/gtest.h>
 #include <pw_async_fuchsia/dispatcher.h>
 
+#include "pw_async/fake_dispatcher_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_dynamic_channel.h"
@@ -455,7 +456,7 @@ const ByteBuffer& kExtendedFeaturesInfoRsp =
 const ByteBuffer& kExtendedFeaturesInfoRspWithERTM = MakeExtendedFeaturesInfoRsp(
     InformationResult::kSuccess, kExtendedFeaturesBitEnhancedRetransmission);
 
-class BrEdrDynamicChannelTest : public ::gtest::TestLoopFixture {
+class BrEdrDynamicChannelTest : public pw::async::test::FakeDispatcherFixture {
  public:
   BrEdrDynamicChannelTest() = default;
   ~BrEdrDynamicChannelTest() override = default;
@@ -467,10 +468,9 @@ class BrEdrDynamicChannelTest : public ::gtest::TestLoopFixture {
 
   // TestLoopFixture overrides
   void SetUp() override {
-    TestLoopFixture::SetUp();
     channel_close_cb_ = nullptr;
     service_request_cb_ = nullptr;
-    signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(pw_dispatcher_);
+    signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(dispatcher());
 
     ext_info_transaction_id_ =
         EXPECT_OUTBOUND_REQ(*sig(), kInformationRequest, kExtendedFeaturesInfoReq.view());
@@ -482,12 +482,11 @@ class BrEdrDynamicChannelTest : public ::gtest::TestLoopFixture {
   }
 
   void TearDown() override {
-    RunLoopUntilIdle();
+    RunUntilIdle();
     registry_ = nullptr;
     signaling_channel_ = nullptr;
     service_request_cb_ = nullptr;
     channel_close_cb_ = nullptr;
-    TestLoopFixture::TearDown();
   }
 
   testing::FakeSignalingChannel* sig() const { return signaling_channel_.get(); }
@@ -526,7 +525,6 @@ class BrEdrDynamicChannelTest : public ::gtest::TestLoopFixture {
   std::unique_ptr<testing::FakeSignalingChannel> signaling_channel_;
   std::unique_ptr<BrEdrDynamicChannelRegistry> registry_;
   testing::FakeSignalingChannel::TransactionId ext_info_transaction_id_;
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDynamicChannelTest);
 };
@@ -559,7 +557,7 @@ TEST_F(BrEdrDynamicChannelTest,
 
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   RETURN_IF_FATAL(
       sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
@@ -575,7 +573,7 @@ TEST_F(BrEdrDynamicChannelTest,
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -607,7 +605,7 @@ TEST_F(BrEdrDynamicChannelTest,
 
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   RETURN_IF_FATAL(
       sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
@@ -633,7 +631,7 @@ TEST_F(BrEdrDynamicChannelTest,
   int open_cb_count2 = 0;
   channel->Open([&open_cb_count2] { open_cb_count2++; });
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_FALSE(channel->IsConnected());
   EXPECT_FALSE(channel->IsOpen());
@@ -644,7 +642,7 @@ TEST_F(BrEdrDynamicChannelTest,
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -676,7 +674,7 @@ TEST_F(BrEdrDynamicChannelTest,
 
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   RETURN_IF_FATAL(
       sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
@@ -698,7 +696,7 @@ TEST_F(BrEdrDynamicChannelTest,
 
   registry()->OpenOutbound(kPsm, kChannelParams, [&open_cb_count2](auto) { open_cb_count2++; });
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_EQ(open_cb_count2, 1);
   // A failed-to-open channel should not invoke the close callback.
@@ -708,7 +706,7 @@ TEST_F(BrEdrDynamicChannelTest,
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -738,17 +736,17 @@ TEST_F(BrEdrDynamicChannelTest,
 
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   RETURN_IF_FATAL(sig()->ReceiveResponses(
       conn_rsp_id, {{SignalingChannel::Status::kSuccess, kOkConnRsp.view()}}));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   RETURN_IF_FATAL(
       sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_EQ(open_cb_count, 1);
   EXPECT_EQ(close_cb_count, 0);
@@ -757,7 +755,7 @@ TEST_F(BrEdrDynamicChannelTest,
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -772,7 +770,7 @@ TEST_F(BrEdrDynamicChannelTest, ChannelDeletedBeforeConnectionResponse) {
   int open_result_cb_count = 0;
   channel->Open([&open_result_cb_count] { open_result_cb_count++; });
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   channel = nullptr;
   RETURN_IF_FATAL(sig()->ReceiveResponses(
@@ -808,7 +806,7 @@ TEST_F(BrEdrDynamicChannelTest, FailConnectChannel) {
 
   channel->Open(std::move(open_result_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_EQ(1, open_result_cb_count);
   EXPECT_FALSE(channel->IsConnected());
@@ -848,7 +846,7 @@ TEST_F(BrEdrDynamicChannelTest, ConnectChannelFailConfig) {
   set_channel_close_cb([&close_cb_count](auto) { close_cb_count++; });
 
   channel->Open(std::move(open_result_cb));
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel->IsConnected());
 
   // A connected channel should have a valid remote channel ID.
@@ -885,7 +883,7 @@ TEST_F(BrEdrDynamicChannelTest, ConnectChannelFailInvalidResponse) {
   set_channel_close_cb([&close_cb_count](auto) { close_cb_count++; });
 
   channel->Open(std::move(open_result_cb));
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_FALSE(channel->IsConnected());
   EXPECT_FALSE(channel->IsOpen());
   EXPECT_EQ(1, open_result_cb_count);
@@ -910,7 +908,7 @@ TEST_F(BrEdrDynamicChannelTest, OutboundFailsAfterRtxExpiryForConnectionResponse
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
   // FakeSignalingChannel doesn't need to be clocked in order to simulate a timeout.
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_EQ(1, open_cb_count);
 }
@@ -931,7 +929,7 @@ TEST_F(BrEdrDynamicChannelTest, OutboundFailsAfterErtxExpiryForConnectionRespons
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
   // FakeSignalingChannel doesn't need to be clocked in order to simulate a timeout.
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_EQ(1, open_cb_count);
 }
@@ -956,7 +954,7 @@ TEST_F(BrEdrDynamicChannelTest, OutboundFailsAndDisconnectsAfterRtxExpiryForConf
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
   // FakeSignalingChannel doesn't need to be clocked in order to simulate a timeout.
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_EQ(1, open_cb_count);
 }
@@ -983,7 +981,7 @@ TEST_F(BrEdrDynamicChannelTest,
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
   // FakeSignalingChannel doesn't need to be clocked in order to simulate a timeout.
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_EQ(1, open_cb_count);
 }
@@ -1017,7 +1015,7 @@ TEST_F(BrEdrDynamicChannelTest, OpenAndLocalCloseChannel) {
 
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   RETURN_IF_FATAL(
       sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
@@ -1027,7 +1025,7 @@ TEST_F(BrEdrDynamicChannelTest, OpenAndLocalCloseChannel) {
 
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_EQ(1, open_cb_count);
 
@@ -1041,7 +1039,7 @@ TEST_F(BrEdrDynamicChannelTest, OpenAndLocalCloseChannel) {
   channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
   EXPECT_TRUE(channel_close_cb_called);
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_EQ(1, open_cb_count);
   EXPECT_EQ(0, close_cb_count);
@@ -1068,7 +1066,7 @@ TEST_F(BrEdrDynamicChannelTest, OpenAndRemoteCloseChannel) {
 
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   RETURN_IF_FATAL(
       sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
@@ -1100,7 +1098,7 @@ TEST_F(BrEdrDynamicChannelTest, OpenChannelWithPendingConn) {
     EXPECT_EQ(kRemoteCId, chan->remote_cid());
   });
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   RETURN_IF_FATAL(
       sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
@@ -1111,7 +1109,7 @@ TEST_F(BrEdrDynamicChannelTest, OpenChannelWithPendingConn) {
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -1132,7 +1130,7 @@ TEST_F(BrEdrDynamicChannelTest, OpenChannelMismatchConnRsp) {
     EXPECT_EQ(kRemoteCId, chan->remote_cid());
   });
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   RETURN_IF_FATAL(
       sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
@@ -1143,7 +1141,7 @@ TEST_F(BrEdrDynamicChannelTest, OpenChannelMismatchConnRsp) {
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -1162,7 +1160,7 @@ TEST_F(BrEdrDynamicChannelTest, OpenChannelConfigPending) {
     EXPECT_EQ(kRemoteCId, chan->remote_cid());
   });
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   RETURN_IF_FATAL(
       sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
@@ -1173,7 +1171,7 @@ TEST_F(BrEdrDynamicChannelTest, OpenChannelConfigPending) {
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -1188,7 +1186,7 @@ TEST_F(BrEdrDynamicChannelTest, OpenChannelRemoteDisconnectWhileConfiguring) {
     EXPECT_FALSE(chan);
   });
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   RETURN_IF_FATAL(
       sig()->ReceiveExpect(kDisconnectionRequest, kInboundDisconReq, kInboundDisconRsp));
@@ -1224,7 +1222,7 @@ TEST_F(BrEdrDynamicChannelTest, ChannelIdNotReusedUntilDisconnectionCompletes) {
 
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   // Complete opening the channel.
   RETURN_IF_FATAL(
@@ -1235,7 +1233,7 @@ TEST_F(BrEdrDynamicChannelTest, ChannelIdNotReusedUntilDisconnectionCompletes) {
 
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   // Disconnection Response hasn't been received yet so the second channel
   // should use a different channel ID.
@@ -1278,7 +1276,7 @@ TEST_F(BrEdrDynamicChannelTest, DisconnectDoneCallbackCalledAfterDisconnectRespo
   ASSERT_TRUE(channel);
   channel->Open([] {});
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_TRUE(channel->IsConnected());
 
@@ -1289,7 +1287,7 @@ TEST_F(BrEdrDynamicChannelTest, DisconnectDoneCallbackCalledAfterDisconnectRespo
   channel->Disconnect([&disconnect_done_cb_called] { disconnect_done_cb_called = true; });
   EXPECT_FALSE(channel->IsConnected());
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_TRUE(disconnect_done_cb_called);
 }
@@ -1308,7 +1306,7 @@ TEST_F(BrEdrDynamicChannelTest, OpenChannelConfigWrongId) {
     EXPECT_FALSE(chan);
   });
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   RETURN_IF_FATAL(sig()->ReceiveExpectRejectInvalidChannelId(
       kConfigurationRequest, kInboundConfigReq, kLocalCId, kInvalidChannelId));
@@ -1349,7 +1347,7 @@ TEST_F(BrEdrDynamicChannelTest, InboundConnectionOk) {
   set_channel_close_cb([&close_cb_count](auto chan) { close_cb_count++; });
 
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConnectionRequest, kInboundConnReq, kInboundOkConnRsp));
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_EQ(1, service_request_cb_count);
   EXPECT_EQ(0, open_cb_count);
@@ -1388,7 +1386,7 @@ TEST_F(BrEdrDynamicChannelTest, InboundConnectionRemoteDisconnectWhileConfigurin
   set_service_request_cb(std::move(service_request_cb));
 
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConnectionRequest, kInboundConnReq, kInboundOkConnRsp));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1, service_request_cb_count);
   EXPECT_EQ(0, open_cb_count);
@@ -1424,7 +1422,7 @@ TEST_F(BrEdrDynamicChannelTest, InboundConnectionInvalidPsm) {
 
   RETURN_IF_FATAL(
       sig()->ReceiveExpect(kConnectionRequest, kInboundInvalidPsmConnReq, kInboundBadPsmConnRsp));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(BrEdrDynamicChannelTest, InboundConnectionUnsupportedPsm) {
@@ -1441,7 +1439,7 @@ TEST_F(BrEdrDynamicChannelTest, InboundConnectionUnsupportedPsm) {
   set_service_request_cb(std::move(service_request_cb));
 
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConnectionRequest, kInboundConnReq, kInboundBadPsmConnRsp));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1, service_request_cb_count);
 }
@@ -1462,7 +1460,7 @@ TEST_F(BrEdrDynamicChannelTest, InboundConnectionInvalidSrcCId) {
 
   RETURN_IF_FATAL(
       sig()->ReceiveExpect(kConnectionRequest, kInboundBadCIdConnReq, kInboundBadCIdConnRsp));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(BrEdrDynamicChannelTest, RejectConfigReqWithUnknownOptions) {
@@ -1479,7 +1477,7 @@ TEST_F(BrEdrDynamicChannelTest, RejectConfigReqWithUnknownOptions) {
 
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   const StaticByteBuffer kInboundConfigReqUnknownOption(
       // Destination CID
@@ -1509,7 +1507,7 @@ TEST_F(BrEdrDynamicChannelTest, RejectConfigReqWithUnknownOptions) {
 
   EXPECT_EQ(0u, open_cb_count);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(BrEdrDynamicChannelTest, ClampErtmChannelInfoMaxTxSduSizeToMaxPduPayloadSize) {
@@ -1536,7 +1534,7 @@ TEST_F(BrEdrDynamicChannelTest, ClampErtmChannelInfoMaxTxSduSizeToMaxPduPayloadS
   sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
                                                        kExtendedFeaturesInfoRspWithERTM.view()}});
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   const auto kInboundConfigReq =
       MakeConfigReqWithMtuAndRfc(kLocalCId, kPeerMtu, ChannelMode::kEnhancedRetransmission,
@@ -1554,7 +1552,7 @@ TEST_F(BrEdrDynamicChannelTest, ClampErtmChannelInfoMaxTxSduSizeToMaxPduPayloadS
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -1583,7 +1581,7 @@ TEST_P(ReceivedMtuTest, ResponseMtuAndStatus) {
 
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   const auto kOutboundConfigRsp =
       MakeConfigRspWithMtu(kRemoteCId, GetParam().response_mtu, GetParam().response_status);
@@ -1603,7 +1601,7 @@ TEST_P(ReceivedMtuTest, ResponseMtuAndStatus) {
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -1645,7 +1643,7 @@ TEST_P(ConfigRspWithMtuTest, ConfiguredLocalMtu) {
   };
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   RETURN_IF_FATAL(
       sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
@@ -1656,7 +1654,7 @@ TEST_P(ConfigRspWithMtuTest, ConfiguredLocalMtu) {
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -1688,7 +1686,7 @@ TEST_P(ConfigRspWithMtuTest, ConfiguredLocalMtuWithPendingRsp) {
   };
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   RETURN_IF_FATAL(
       sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
@@ -1699,7 +1697,7 @@ TEST_P(ConfigRspWithMtuTest, ConfiguredLocalMtuWithPendingRsp) {
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -1757,7 +1755,7 @@ TEST_P(InformationResultTest,
   registry()->OpenOutbound(kPsm, kERTMChannelParams, std::move(open_cb));
 
   // Config request should not be sent.
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
@@ -1766,7 +1764,7 @@ TEST_P(InformationResultTest,
   sig()->ReceiveResponses(ext_info_transaction_id(),
                           {{SignalingChannel::Status::kSuccess, kExtendedFeaturesInfoRsp.view()}});
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   RETURN_IF_FATAL(
       sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
@@ -1778,7 +1776,7 @@ TEST_P(InformationResultTest,
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -1792,25 +1790,25 @@ TEST_F(BrEdrDynamicChannelTest, ERTChannelDoesNotSendConfigReqBeforeConnRspRecei
 
   registry()->OpenOutbound(kPsm, kERTMChannelParams, {});
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   // Channel will be notified that extended features received.
   sig()->ReceiveResponses(ext_info_transaction_id(),
                           {{SignalingChannel::Status::kSuccess, kExtendedFeaturesInfoRsp.view()}});
 
   // Config request should not be sent before connection response received.
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
   sig()->ReceiveResponses(conn_id, {{SignalingChannel::Status::kSuccess, kOkConnRsp.view()}});
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -1853,7 +1851,7 @@ TEST_F(BrEdrDynamicChannelTest, SendAndReceiveERTMConfigReq) {
                            {ChannelMode::kEnhancedRetransmission, kPreferredMtu, std::nullopt},
                            std::move(open_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
                                                        kExtendedFeaturesInfoRspWithERTM.view()}});
@@ -1861,14 +1859,14 @@ TEST_F(BrEdrDynamicChannelTest, SendAndReceiveERTMConfigReq) {
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM,
                                        kOutboundOkConfigRspWithErtm));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1, open_cb_count);
 
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -1897,7 +1895,7 @@ TEST_F(BrEdrDynamicChannelTest, PeerRejectsERTM) {
 
   registry()->OpenOutbound(kPsm, kERTMChannelParams, std::move(open_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
                                                        kExtendedFeaturesInfoRspWithERTM.view()}});
@@ -1905,14 +1903,14 @@ TEST_F(BrEdrDynamicChannelTest, PeerRejectsERTM) {
   RETURN_IF_FATAL(
       sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1, open_cb_count);
 
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -1937,16 +1935,16 @@ TEST_F(BrEdrDynamicChannelTest, RenegotiateChannelModeAfterPeerRequestsBasicMode
 
   registry()->OpenOutbound(kPsm, kERTMChannelParams, std::move(open_cb));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
                                                        kExtendedFeaturesInfoRspWithERTM.view()}});
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Peer requests basic mode.
   RETURN_IF_FATAL(
       sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // New config request requesting basic mode should be sent in response to unacceptable params
   // response.
@@ -1956,14 +1954,14 @@ TEST_F(BrEdrDynamicChannelTest, RenegotiateChannelModeAfterPeerRequestsBasicMode
                           {{SignalingChannel::Status::kSuccess,
                             kInboundUnacceptableParamsWithRfcBasicConfigRsp.view()}});
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1, open_cb_count);
 
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -1978,7 +1976,7 @@ TEST_F(BrEdrDynamicChannelTest, PreferredModeIsERTMButERTMIsNotInPeerFeatureMask
 
   registry()->OpenOutbound(kPsm, kERTMChannelParams, {});
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   // Receive features mask without ERTM bit set.
   sig()->ReceiveResponses(ext_info_transaction_id(),
@@ -1988,7 +1986,7 @@ TEST_F(BrEdrDynamicChannelTest, PreferredModeIsERTMButERTMIsNotInPeerFeatureMask
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -2000,7 +1998,7 @@ TEST_F(BrEdrDynamicChannelTest, RejectERTMRequestWhenPreferredModeIsBasic) {
 
   registry()->OpenOutbound(kPsm, kChannelParams, {});
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   // Peer requests ERTM. Local device should reject with unacceptable params.
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM,
@@ -2010,7 +2008,7 @@ TEST_F(BrEdrDynamicChannelTest, RejectERTMRequestWhenPreferredModeIsBasic) {
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -2045,7 +2043,7 @@ TEST_F(
 
   registry()->OpenOutbound(kPsm, kERTMChannelParams, std::move(open_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   // Receive inbound config request.
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM,
@@ -2054,7 +2052,7 @@ TEST_F(
   sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
                                                        kExtendedFeaturesInfoRspWithERTM.view()}});
   // Send outbound config request.
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1, open_cb_count);
 }
 
@@ -2085,12 +2083,12 @@ TEST_F(
   params.mode = ChannelMode::kEnhancedRetransmission;
   registry()->OpenOutbound(kPsm, params, std::move(open_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
                                                        kExtendedFeaturesInfoRspWithERTM.view()}});
   // Send outbound config request.
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Receive inbound config request.
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM,
@@ -2099,7 +2097,7 @@ TEST_F(
   sig()->ReceiveResponses(outbound_config_req_id,
                           {{SignalingChannel::Status::kSuccess,
                             kInboundUnacceptableParamsWithRfcBasicConfigRsp.view()}});
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1, open_cb_count);
 }
 
@@ -2121,14 +2119,14 @@ TEST_F(BrEdrDynamicChannelTest, DisconnectAfterReceivingTwoConfigRequestsWithout
 
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM,
                                        kOutboundUnacceptableParamsWithRfcBasicConfigRsp));
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM,
                                        kOutboundUnacceptableParamsWithRfcBasicConfigRsp));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1, open_cb_count);
 }
 
@@ -2149,7 +2147,7 @@ TEST_F(BrEdrDynamicChannelTest, RetryWhenPeerRejectsConfigReqWithBasicMode) {
 
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_EQ(0, open_cb_count);
 }
@@ -2174,7 +2172,7 @@ TEST_F(BrEdrDynamicChannelTest, RetryNTimesWhenPeerRejectsConfigReqWithBasicMode
 
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_EQ(1, open_cb_count);
 }
@@ -2202,7 +2200,7 @@ TEST_F(BrEdrDynamicChannelTest, RetryNTimesWhenPeerRejectsERTMConfigReqWithBasic
 
   registry()->OpenOutbound(kPsm, kERTMChannelParams, std::move(open_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
                                                        kExtendedFeaturesInfoRspWithERTM.view()}});
@@ -2210,7 +2208,7 @@ TEST_F(BrEdrDynamicChannelTest, RetryNTimesWhenPeerRejectsERTMConfigReqWithBasic
   RETURN_IF_FATAL(
       sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1, open_cb_count);
 }
 
@@ -2221,7 +2219,7 @@ TEST_F(BrEdrDynamicChannelTest,
 
   registry()->OpenOutbound(kPsm, kERTMChannelParams, {});
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   // Retransmission mode is not supported.
   const auto kInboundConfigReqWithRetransmissionMode =
@@ -2234,7 +2232,7 @@ TEST_F(BrEdrDynamicChannelTest,
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -2246,12 +2244,12 @@ TEST_F(BrEdrDynamicChannelTest,
 
   registry()->OpenOutbound(kPsm, kERTMChannelParams, {});
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
                                                        kExtendedFeaturesInfoRspWithERTM.view()}});
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   // Retransmission mode is not supported.
   const auto kInboundConfigReqWithRetransmissionMode =
@@ -2264,7 +2262,7 @@ TEST_F(BrEdrDynamicChannelTest,
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -2276,12 +2274,12 @@ TEST_F(BrEdrDynamicChannelTest, SendUnacceptableParamsResponseWhenPeerRequestErt
 
   registry()->OpenOutbound(kPsm, kERTMChannelParams, {});
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
                                                        kExtendedFeaturesInfoRspWithERTM.view()}});
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   constexpr uint8_t kMaxTransmit = 31;
   constexpr auto kMps = kMaxTxPduPayloadSize;
@@ -2308,12 +2306,12 @@ TEST_F(BrEdrDynamicChannelTest,
 
   registry()->OpenOutbound(kPsm, kERTMChannelParams, {});
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
                                                        kExtendedFeaturesInfoRspWithERTM.view()}});
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   constexpr uint8_t kMaxTransmit = 31;
   constexpr auto kMps = kMaxTxPduPayloadSize;
@@ -2334,7 +2332,7 @@ TEST_F(BrEdrDynamicChannelTest,
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -2346,12 +2344,12 @@ TEST_F(BrEdrDynamicChannelTest, SendUnacceptableParamsResponseWhenPeerRequestErt
 
   registry()->OpenOutbound(kPsm, kERTMChannelParams, {});
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
                                                        kExtendedFeaturesInfoRspWithERTM.view()}});
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   constexpr uint8_t kMaxTransmit = 31;
   constexpr uint8_t kTxWindow = kErtmMaxUnackedInboundFrames;
@@ -2372,7 +2370,7 @@ TEST_F(BrEdrDynamicChannelTest, SendUnacceptableParamsResponseWhenPeerRequestErt
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -2397,27 +2395,27 @@ TEST_F(BrEdrDynamicChannelTest, OpenBasicModeChannelAfterPeerAcceptsErtmThenPeer
 
   registry()->OpenOutbound(kPsm, kERTMChannelParams, std::move(open_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
                                                        kExtendedFeaturesInfoRspWithERTM.view()}});
 
   // Request ERTM.
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Peer requests basic mode.
   RETURN_IF_FATAL(
       sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
 
   // Disconnect
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1, open_cb_count);
 
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -2440,7 +2438,7 @@ TEST_F(BrEdrDynamicChannelTest, OpenBasicModeChannelAfterPeerRequestsBasicModeTh
 
   registry()->OpenOutbound(kPsm, kERTMChannelParams, std::move(open_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   // Peer requests basic mode.
   RETURN_IF_FATAL(
@@ -2450,14 +2448,14 @@ TEST_F(BrEdrDynamicChannelTest, OpenBasicModeChannelAfterPeerRequestsBasicModeTh
   sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
                                                        kExtendedFeaturesInfoRspWithERTM.view()}});
   // Request ERTM & Disconnect
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1, open_cb_count);
 
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -2481,17 +2479,17 @@ TEST_F(BrEdrDynamicChannelTest, MtuChannelParameterSentInConfigReq) {
   };
 
   registry()->OpenOutbound(kPsm, {ChannelMode::kBasic, kPreferredMtu, std::nullopt}, open_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1, open_cb_count);
 
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -2515,17 +2513,17 @@ TEST_F(BrEdrDynamicChannelTest, UseMinMtuWhenMtuChannelParameterIsBelowMin) {
   };
 
   registry()->OpenOutbound(kPsm, {ChannelMode::kBasic, kMtu, std::nullopt}, open_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1, open_cb_count);
 
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -2555,7 +2553,7 @@ TEST_F(BrEdrDynamicChannelTest, UseMaxPduPayloadSizeWhenMtuChannelParameterExcee
                            {ChannelMode::kEnhancedRetransmission, kPreferredMtu, std::nullopt},
                            std::move(open_cb));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
                                                        kExtendedFeaturesInfoRspWithERTM.view()}});
@@ -2563,14 +2561,14 @@ TEST_F(BrEdrDynamicChannelTest, UseMaxPduPayloadSizeWhenMtuChannelParameterExcee
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM,
                                        kOutboundOkConfigRspWithErtm));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1, open_cb_count);
 
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -2597,18 +2595,18 @@ TEST_F(BrEdrDynamicChannelTest, BasicModeChannelReportsChannelInfoWithBasicModeA
   };
 
   registry()->OpenOutbound(kPsm, {ChannelMode::kBasic, kPreferredMtu, std::nullopt}, open_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   const ByteBuffer& kExpectedOutboundOkConfigRsp = MakeConfigRspWithMtu(kRemoteCId, kPeerMtu);
   sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kExpectedOutboundOkConfigRsp);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1, open_cb_count);
 
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -2639,22 +2637,22 @@ TEST_F(BrEdrDynamicChannelTest, Receive2ConfigReqsWithContinuationFlagInFirstReq
   sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
                                                        kExtendedFeaturesInfoRspWithERTM.view()}});
   registry()->OpenOutbound(kPsm, kERTMChannelParams, open_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq0,
                        kOutboundEmptyContinuationConfigRsp);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(0u, open_cb_count);
 
   sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM, kOutboundConfigRsp1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1u, open_cb_count);
 
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
   bool channel_close_cb_called = false;
   registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(channel_close_cb_called);
 }
 
@@ -2702,15 +2700,15 @@ TEST_F(BrEdrDynamicChannelTest,
   };
 
   registry()->OpenOutbound(kPsm, kChannelParams, open_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq0,
                        kOutboundEmptyContinuationConfigRsp);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(0u, open_cb_count);
 
   sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq1, kOutboundUnknownOptionsConfigRsp);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(0u, open_cb_count);
 }
 
