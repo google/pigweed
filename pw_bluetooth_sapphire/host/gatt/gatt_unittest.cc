@@ -4,6 +4,8 @@
 
 #include "gatt.h"
 
+#include <pw_async/fake_dispatcher_fixture.h>
+
 #include "fake_client.h"
 #include "mock_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
@@ -14,7 +16,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::gatt::internal {
 namespace {
@@ -31,7 +32,7 @@ std::unique_ptr<Server> CreateMockServer(PeerId peer_id,
   return std::make_unique<testing::MockServer>(peer_id, std::move(local_services));
 }
 
-class GattTest : public ::gtest::TestLoopFixture {
+class GattTest : public pw::async::test::FakeDispatcherFixture {
  public:
   GattTest() = default;
   ~GattTest() override = default;
@@ -45,7 +46,7 @@ class GattTest : public ::gtest::TestLoopFixture {
   };
 
   void SetUp() override {
-    auto client = std::make_unique<testing::FakeClient>(pw_dispatcher());
+    auto client = std::make_unique<testing::FakeClient>(dispatcher());
     fake_client_weak_ = client->AsFakeWeakPtr();
     client_ = std::move(client);
     gatt_ = GATT::Create();
@@ -57,8 +58,6 @@ class GattTest : public ::gtest::TestLoopFixture {
     fake_client()->set_write_request_callback({});
     gatt_.reset();
   }
-
-  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
 
   // Register an arbitrary service with a single characteristic of id |kChrcId|, e.g. for sending
   // notifications. Returns the internal IdType of the registered service.
@@ -80,7 +79,7 @@ class GattTest : public ::gtest::TestLoopFixture {
     };
     gatt()->RegisterService(std::move(svc), std::move(id_cb), NopReadHandler, NopWriteHandler,
                             NopCCCallback);
-    RunLoopUntilIdle();
+    RunUntilIdle();
     EXPECT_TRUE(svc_id.has_value());
     return *svc_id;
   }
@@ -94,7 +93,6 @@ class GattTest : public ::gtest::TestLoopFixture {
   std::unique_ptr<GATT> gatt_;
   std::unique_ptr<Client> client_;
   testing::FakeClient::WeakPtr fake_client_weak_;
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GattTest);
 };
@@ -136,11 +134,11 @@ TEST_F(GattTest, RemoteServiceWatcherNotifiesAddedModifiedAndRemovedService) {
       });
 
   gatt()->AddConnection(kPeerId, take_client(), CreateMockServer);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(write_request_count, 0);
 
   gatt()->InitializeClient(kPeerId, /*service_uuids=*/{});
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(write_request_count, 1);
   ASSERT_EQ(1u, svc_watcher_data.size());
   ASSERT_EQ(1u, svc_watcher_data[0].added.size());
@@ -163,7 +161,7 @@ TEST_F(GattTest, RemoteServiceWatcherNotifiesAddedModifiedAndRemovedService) {
   );
   fake_client()->SendNotification(/*indicate=*/true, kSvcChangedChrcValueHandle,
                                   svc_changed_range_buffer, /*maybe_truncated=*/false);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(2u, svc_watcher_data.size());
   ASSERT_EQ(1u, svc_watcher_data[1].added.size());
   EXPECT_EQ(0u, svc_watcher_data[1].removed.size());
@@ -176,7 +174,7 @@ TEST_F(GattTest, RemoteServiceWatcherNotifiesAddedModifiedAndRemovedService) {
   // Send a notification that svc1 has been modified.
   fake_client()->SendNotification(/*indicate=*/true, kSvcChangedChrcValueHandle,
                                   svc_changed_range_buffer, /*maybe_truncated=*/false);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(original_service_removed);
   ASSERT_EQ(3u, svc_watcher_data.size());
   EXPECT_EQ(0u, svc_watcher_data[2].added.size());
@@ -193,7 +191,7 @@ TEST_F(GattTest, RemoteServiceWatcherNotifiesAddedModifiedAndRemovedService) {
   // Send a notification that svc1 has been removed.
   fake_client()->SendNotification(/*indicate=*/true, kSvcChangedChrcValueHandle,
                                   svc_changed_range_buffer, /*maybe_truncated=*/false);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(modified_service_removed);
   ASSERT_EQ(4u, svc_watcher_data.size());
   EXPECT_EQ(0u, svc_watcher_data[3].added.size());
@@ -210,7 +208,7 @@ TEST_F(GattTest, MultipleRegisterRemoteServiceWatcherForPeers) {
   const att::Handle kSvcStartHandle0(42);
   const att::Handle kSvcEndHandle0(kSvcStartHandle0);
   ServiceData svc_data_0(ServiceKind::PRIMARY, kSvcStartHandle0, kSvcEndHandle0, kTestServiceUuid0);
-  auto client_0 = std::make_unique<testing::FakeClient>(pw_dispatcher());
+  auto client_0 = std::make_unique<testing::FakeClient>(dispatcher());
   client_0->set_services({svc_data_0});
 
   gatt()->AddConnection(kPeerId0, std::move(client_0), CreateMockServer);
@@ -236,7 +234,7 @@ TEST_F(GattTest, MultipleRegisterRemoteServiceWatcherForPeers) {
                                           kSvcChangedChrcValueHandle,
                                           types::kServiceChangedCharacteristic);
   DescriptorData ccc_descriptor(kCCCDescriptorHandle, types::kClientCharacteristicConfig);
-  auto client_1 = std::make_unique<testing::FakeClient>(pw_dispatcher());
+  auto client_1 = std::make_unique<testing::FakeClient>(dispatcher());
   auto client_1_weak = client_1.get();
   client_1->set_services({gatt_svc});
   client_1->set_characteristics({service_changed_chrc});
@@ -272,7 +270,7 @@ TEST_F(GattTest, MultipleRegisterRemoteServiceWatcherForPeers) {
   // Service discovery should complete and all service watchers should be notified.
   gatt()->InitializeClient(kPeerId0, /*service_uuids=*/{});
   gatt()->InitializeClient(kPeerId1, /*service_uuids=*/{});
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(watcher_data_0.size(), 1u);
   ASSERT_EQ(watcher_data_0[0].added.size(), 1u);
   EXPECT_EQ(watcher_data_0[0].added[0]->handle(), kSvcStartHandle0);
@@ -300,7 +298,7 @@ TEST_F(GattTest, MultipleRegisterRemoteServiceWatcherForPeers) {
   );
   client_1_weak->SendNotification(/*indicate=*/true, kSvcChangedChrcValueHandle,
                                   svc_changed_range_buffer, /*maybe_truncated=*/false);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   // Unregistered handlers should not be notified.
   ASSERT_EQ(watcher_data_0.size(), 1u);
   ASSERT_EQ(watcher_data_1.size(), 1u);
@@ -325,7 +323,7 @@ TEST_F(GattTest, ServiceDiscoveryFailureShutsDownConnection) {
   ASSERT_TRUE(mock_server.is_alive());
   EXPECT_FALSE(mock_server->was_shut_down());
   gatt()->InitializeClient(kPeerId, std::vector<UUID>{});
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(mock_server->was_shut_down());
 }
 
@@ -368,7 +366,7 @@ TEST_P(GattTestBoolParam, SendIndicationReceiveResponse) {
   std::optional<att::Result<>> indicate_status;
   auto indicate_cb = [&](att::Result<> status) { indicate_status = status; };
   gatt()->SendUpdate(svc_id, kChrcId, kPeerId, kIndicateVal, std::move(indicate_cb));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(mock_ind_cb);
   EXPECT_FALSE(indicate_status.has_value());
   if (GetParam()) {
@@ -390,7 +388,7 @@ TEST_F(GattTest, NotifyConnectedPeersNoneConnectedDoesntCrash) {
 
   const std::vector<uint8_t> kNotifyVal{12u};
   gatt()->UpdateConnectedPeers(svc_id, kChrcId, kNotifyVal, /*indicate_cb=*/nullptr);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(GattTest, NotifyConnectedPeerWithConnectionDoesntCrash) {
@@ -417,7 +415,7 @@ TEST_F(GattTest, NotifyConnectedPeerWithConnectionDoesntCrash) {
   };
   mock_server->set_update_handler(std::move(handler));
   gatt()->UpdateConnectedPeers(svc_id, kChrcId, kNotifyVal, /*indicate_cb=*/nullptr);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(nullptr, mock_ind_cb);
 }
 
@@ -457,7 +455,7 @@ TEST_F(GattTest, UpdateMtuListenersNotified) {
   // Add connection, initialize, and verify that MTU exchange succeeds
   gatt()->AddConnection(kPeerId0, take_client(), CreateMockServer);
   gatt()->InitializeClient(kPeerId0, {});
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(listener_1_results.has_value());
   EXPECT_EQ(kPeerId0, listener_1_results->peer_id);
@@ -470,12 +468,12 @@ TEST_F(GattTest, UpdateMtuListenersNotified) {
   listener_1_results.reset();
   listener_2_results.reset();
   EXPECT_TRUE(gatt()->UnregisterPeerMtuListener(listener_2_id));
-  auto client_2 = std::make_unique<testing::FakeClient>(pw_dispatcher());
+  auto client_2 = std::make_unique<testing::FakeClient>(dispatcher());
   const uint16_t kNewExpectedMtu = kExpectedMtu + 1;
   client_2->set_server_mtu(kNewExpectedMtu);
   gatt()->AddConnection(kPeerId1, std::move(client_2), CreateMockServer);
   gatt()->InitializeClient(kPeerId1, {});
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(listener_1_results.has_value());
   EXPECT_EQ(kPeerId1, listener_1_results->peer_id);
@@ -502,7 +500,7 @@ TEST_F(GattTest, MtuExchangeServerNotSupportedListenersNotifiedDefaultMtu) {
   fake_client()->set_exchange_mtu_status(ToResult(att::ErrorCode::kRequestNotSupported));
   gatt()->AddConnection(kPeerId0, take_client(), CreateMockServer);
   gatt()->InitializeClient(kPeerId0, {});
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(listener_1_results.has_value());
   EXPECT_EQ(kPeerId0, listener_1_results->peer_id);
@@ -533,7 +531,7 @@ TEST_F(GattTest, MtuExchangeFailsListenersNotNotifiedConnectionShutdown) {
   // Add connection, initialize, and verify that MTU exchange failure causes connection shutdown.
   gatt()->AddConnection(kPeerId0, take_client(), std::move(mock_server_factory));
   gatt()->InitializeClient(kPeerId0, {});
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(listener_invoked);
   ASSERT_TRUE(mock_server.is_alive());
   EXPECT_TRUE(mock_server->was_shut_down());
@@ -554,7 +552,7 @@ class GattIndicateMultipleConnectedPeersTest : public GattTest {
       mock_server_0_ = unique_mock_server->AsMockWeakPtr();
       return unique_mock_server;
     };
-    gatt()->AddConnection(kPeerId0, std::make_unique<testing::FakeClient>(pw_dispatcher()),
+    gatt()->AddConnection(kPeerId0, std::make_unique<testing::FakeClient>(dispatcher()),
                           std::move(mock_server_factory_0));
     ASSERT_TRUE(mock_server_0_.is_alive());
 
@@ -565,7 +563,7 @@ class GattIndicateMultipleConnectedPeersTest : public GattTest {
       mock_server_1_ = unique_mock_server->AsMockWeakPtr();
       return unique_mock_server;
     };
-    gatt()->AddConnection(kPeerId1, std::make_unique<testing::FakeClient>(pw_dispatcher()),
+    gatt()->AddConnection(kPeerId1, std::make_unique<testing::FakeClient>(dispatcher()),
                           std::move(mock_server_factory_1));
     ASSERT_TRUE(mock_server_1_.is_alive());
 
@@ -597,17 +595,17 @@ TEST_F(GattIndicateMultipleConnectedPeersTest, UpdateConnectedPeersWaitsTillAllC
   att::Result<> res = ToResult(att::ErrorCode::kInvalidPDU);  // arbitrary error code
   IndicationCallback indication_cb = [&res](att::Result<> cb_res) { res = cb_res; };
   gatt()->UpdateConnectedPeers(svc_id_, kChrcId, kIndicateVal, indication_cb.share());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(indication_ack_cb_0_);
   ASSERT_TRUE(indication_ack_cb_1_);
 
   // The UpdateConnectedPeers callback shouldn't resolved when the first indication is ACKed.
   indication_ack_cb_0_(fit::ok());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(att::ErrorCode::kInvalidPDU), res);
 
   indication_ack_cb_1_(fit::ok());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), res);
 }
 
@@ -615,7 +613,7 @@ TEST_F(GattIndicateMultipleConnectedPeersTest, OneFailsNextSucceedsOnlyFailureNo
   std::optional<att::Result<>> res;
   IndicationCallback indication_cb = [&res](att::Result<> cb_res) { res = cb_res; };
   gatt()->UpdateConnectedPeers(svc_id_, kChrcId, kIndicateVal, indication_cb.share());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(std::nullopt, res);
   ASSERT_TRUE(indication_ack_cb_0_);
   ASSERT_TRUE(indication_ack_cb_1_);
