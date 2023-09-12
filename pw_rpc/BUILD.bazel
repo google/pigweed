@@ -302,6 +302,7 @@ pw_cc_test(
     ],
     deps = [
         ":pw_rpc",
+        "//pw_fuzzer:fuzztest",
     ],
 )
 
@@ -312,6 +313,7 @@ pw_cc_test(
     ],
     deps = [
         ":pw_rpc",
+        "//pw_fuzzer:fuzztest",
     ],
 )
 

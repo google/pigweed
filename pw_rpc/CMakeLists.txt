@@ -331,6 +331,7 @@ pw_add_test(pw_rpc.packet_test
     packet_test.cc
   PRIVATE_DEPS
     pw_bytes
+    pw_fuzzer.fuzztest
     pw_protobuf
     pw_rpc.server
   GROUPS
@@ -343,6 +344,7 @@ pw_add_test(pw_rpc.packet_meta_test
     packet_meta_test.cc
   PRIVATE_DEPS
     pw_bytes
+    pw_fuzzer.fuzztest
     pw_rpc.server
   GROUPS
     modules

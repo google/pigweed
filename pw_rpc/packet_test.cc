@@ -16,6 +16,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_bytes/array.h"
+#include "pw_fuzzer/fuzztest.h"
 #include "pw_protobuf/wire_format.h"
 
 namespace pw::rpc::internal {
@@ -24,6 +25,7 @@ namespace {
 using protobuf::FieldKey;
 using ::pw::rpc::internal::pwpb::PacketType;
 using std::byte;
+using namespace fuzzer;
 
 constexpr auto kPayload = bytes::Array<0x82, 0x02, 0xff, 0xff>();
 
@@ -116,16 +118,19 @@ TEST(Packet, Decode_InvalidPacket) {
   EXPECT_EQ(Status::DataLoss(), Packet::FromBuffer(bad_data).status());
 }
 
-TEST(Packet, EncodeDecode) {
-  constexpr byte payload[]{byte(0x00), byte(0x01), byte(0x02), byte(0x03)};
-
+void EncodeDecode(uint32_t channel_id,
+                  uint32_t service_id,
+                  uint32_t method_id,
+                  uint32_t call_id,
+                  ConstByteSpan payload,
+                  Status status) {
   Packet packet;
-  packet.set_channel_id(12);
-  packet.set_service_id(0xdeadbeef);
-  packet.set_method_id(0x03a82921);
-  packet.set_call_id(33);
+  packet.set_channel_id(channel_id);
+  packet.set_service_id(service_id);
+  packet.set_method_id(method_id);
+  packet.set_call_id(call_id);
   packet.set_payload(payload);
-  packet.set_status(Status::Unavailable());
+  packet.set_status(status);
 
   byte buffer[128];
   Result result = packet.Encode(buffer);
@@ -146,8 +151,21 @@ TEST(Packet, EncodeDecode) {
                         packet.payload().data(),
                         packet.payload().size()),
             0);
-  EXPECT_EQ(decoded.status(), Status::Unavailable());
+  EXPECT_EQ(decoded.status(), status);
 }
+
+TEST(Packet, EncodeDecodeFixed) {
+  constexpr byte payload[]{byte(0x00), byte(0x01), byte(0x02), byte(0x03)};
+  EncodeDecode(12, 0xdeadbeef, 0x03a82921, 33, payload, Status::Unavailable());
+}
+
+FUZZ_TEST(Packet, EncodeDecode)
+    .WithDomains(NonZero<uint32_t>(),
+                 NonZero<uint32_t>(),
+                 NonZero<uint32_t>(),
+                 NonZero<uint32_t>(),
+                 VectorOf<100>(Arbitrary<byte>()),
+                 Arbitrary<Status>());
 
 constexpr size_t kReservedSize = 2 /* type */ + 2 /* channel */ +
                                  5 /* service */ + 5 /* method */ +
