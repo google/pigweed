@@ -32,12 +32,16 @@ cc_library_headers {
     generated_headers: [
         "google_protobuf_descriptor_pwpb_h",
         "pw_log_log_proto_pwpb_h",
+        "pw_log_log_rpc_pwpb_h",
+        "pw_log_log_raw_rpc_h",
         "pw_protobuf_protos_common_pwpb_h",
         "pw_tokenizer_proto_options_pwpb_h",
     ],
     export_generated_headers: [
         "google_protobuf_descriptor_pwpb_h",
         "pw_log_log_proto_pwpb_h",
+        "pw_log_log_rpc_pwpb_h",
+        "pw_log_log_raw_rpc_h",
         "pw_protobuf_protos_common_pwpb_h",
         "pw_tokenizer_proto_options_pwpb_h",
     ],
@@ -70,10 +74,11 @@ genrule {
          "--proto-path=external/pigweed/pw_protobuf/ " +
          // Requires the generated pw_tokenizer/proto/options.proto filepath.
          "--proto-path=$$(dirname $$(dirname $$(dirname $(location :pw_tokenizer_proto_options_proto)))) " +
+         "--proto-path=$$(dirname $$(dirname $$(dirname $(location :pw_log_log_proto_with_prefix)))) " +
          "--proto-path=external/protobuf/src/ " +
-         "--out-dir=$$(dirname $(location pw_log/proto/log.pwpb.h)) " +
+         "--out-dir=$(genDir) " +
          "--plugin-path=$(location pw_protobuf_plugin_py) " +
-         "--compile-dir=$$(dirname $(in)) " +
+         "--compile-dir=$(genDir) " +
          "--sources $(in) " +
          "--language pwpb " +
          "--no-experimental-proto3-optional " +
@@ -88,6 +93,64 @@ genrule {
         "aprotoc",
         "pw_protobuf_plugin_py",
         "pw_protobuf_compiler_py",
+    ],
+}
+
+genrule {
+    name: "pw_log_log_rpc_pwpb_h",
+    srcs: [":pw_log_log_proto_with_prefix",],
+    cmd: "python3 $(location pw_protobuf_compiler_py) " +
+         "--proto-path=external/pigweed/pw_protobuf/ " +
+         // Requires the generated pw_tokenizer/proto/options.proto filepath.
+         "--proto-path=$$(dirname $$(dirname $$(dirname $(location :pw_tokenizer_proto_options_proto)))) " +
+         "--proto-path=$$(dirname $$(dirname $$(dirname $(location :pw_log_log_proto_with_prefix)))) " +
+         "--proto-path=external/protobuf/src/ " +
+         "--out-dir=$(genDir) " +
+         "--plugin-path=$(location pw_rpc_plugin_pwpb_py) " +
+         "--compile-dir=$(genDir) " +
+         "--sources $(in) " +
+         "--language pwpb_rpc " +
+         "--no-experimental-proto3-optional " +
+         "--protoc=$(location aprotoc) ",
+    out: [
+        "pw_log/proto/log.rpc.pwpb.h",
+    ],
+    tool_files: [
+      ":pw_tokenizer_proto_options_proto",
+    ],
+    tools: [
+        "aprotoc",
+        "pw_protobuf_compiler_py",
+        "pw_rpc_plugin_pwpb_py",
+    ],
+}
+
+genrule {
+    name: "pw_log_log_raw_rpc_h",
+    srcs: [":pw_log_log_proto_with_prefix",],
+    cmd: "python3 $(location pw_protobuf_compiler_py) " +
+         "--proto-path=external/pigweed/pw_protobuf/ " +
+         // Requires the generated pw_tokenizer/proto/options.proto filepath.
+         "--proto-path=$$(dirname $$(dirname $$(dirname $(location :pw_tokenizer_proto_options_proto)))) " +
+         "--proto-path=$$(dirname $$(dirname $$(dirname $(location :pw_log_log_proto_with_prefix)))) " +
+         "--proto-path=external/protobuf/src/ " +
+         "--out-dir=$(genDir) " +
+         "--plugin-path=$(location pw_rpc_plugin_rawpb_py) " +
+         "--compile-dir=$(genDir) " +
+         "--sources $(in) " +
+         "--language raw_rpc " +
+         "--no-experimental-proto3-optional " +
+         "--protoc=$(location aprotoc) ",
+    out: [
+        "pw_log/proto/log.raw_rpc.pb.h",
+    ],
+    tool_files: [
+      ":pw_tokenizer_proto_options_proto",
+    ],
+    tools: [
+        "aprotoc",
+        "pw_protobuf_compiler_py",
+        "pw_rpc_plugin_rawpb_py",
     ],
 }
 
