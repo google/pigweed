@@ -13,7 +13,7 @@ All pending, active, and resolved SEEDs are listed below.
   0101-pigweed.json
   0102-module-docs
   0103: pw_protobuf: Past, present, and future<https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/133971>
-  0104: display support<https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/150793>
+  0104-display-support
   0105: Nested Tokens and Tokenized Args <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/154190>
   0106: Project Template <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/155430>
   0107-communications
