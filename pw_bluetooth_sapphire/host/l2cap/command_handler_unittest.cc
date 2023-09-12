@@ -6,6 +6,7 @@
 
 #include <pw_async_fuchsia/dispatcher.h>
 
+#include "pw_async/fake_dispatcher_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_signaling_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
@@ -44,7 +45,7 @@ class TestCommandHandler final : public CommandHandler {
   }
 };
 
-class CommandHandlerTest : public ::gtest::TestLoopFixture {
+class CommandHandlerTest : public pw::async::test::FakeDispatcherFixture {
  public:
   CommandHandlerTest() = default;
   ~CommandHandlerTest() override = default;
@@ -53,8 +54,7 @@ class CommandHandlerTest : public ::gtest::TestLoopFixture {
  protected:
   // TestLoopFixture overrides
   void SetUp() override {
-    TestLoopFixture::SetUp();
-    signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(pw_dispatcher_);
+    signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(dispatcher());
     command_handler_ = std::make_unique<TestCommandHandler>(
         fake_sig(), fit::bind_member<&CommandHandlerTest::OnRequestFail>(this));
     request_fail_callback_ = nullptr;
@@ -65,7 +65,6 @@ class CommandHandlerTest : public ::gtest::TestLoopFixture {
     request_fail_callback_ = nullptr;
     signaling_channel_ = nullptr;
     command_handler_ = nullptr;
-    TestLoopFixture::TearDown();
   }
 
   testing::FakeSignalingChannel* fake_sig() const { return signaling_channel_.get(); }
@@ -89,7 +88,6 @@ class CommandHandlerTest : public ::gtest::TestLoopFixture {
   std::unique_ptr<TestCommandHandler> command_handler_;
   fit::closure request_fail_callback_;
   size_t failed_requests_;
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
 };
 
 TEST_F(CommandHandlerTest, OutboundDisconReqRspOk) {
@@ -120,7 +118,7 @@ TEST_F(CommandHandlerTest, OutboundDisconReqRspOk) {
 
   EXPECT_TRUE(
       cmd_handler()->SendDisconnectionRequest(kRemoteCId, kLocalCId, std::move(on_discon_rsp)));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cb_called);
 }
 
@@ -160,7 +158,7 @@ TEST_F(CommandHandlerTest, OutboundDisconReqRej) {
 
   EXPECT_TRUE(
       cmd_handler()->SendDisconnectionRequest(kRemoteCId, kLocalCId, std::move(on_discon_rsp)));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cb_called);
 }
 
@@ -188,7 +186,7 @@ TEST_F(CommandHandlerTest, OutboundDisconReqRejNotEnoughBytes) {
 
   EXPECT_TRUE(
       cmd_handler()->SendDisconnectionRequest(kRemoteCId, kBadLocalCId, std::move(on_discon_rsp)));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(cb_called);
 }
 
@@ -219,7 +217,7 @@ TEST_F(CommandHandlerTest, OutboundDisconReqRejInvalidCIDNotEnoughBytes) {
 
   EXPECT_TRUE(
       cmd_handler()->SendDisconnectionRequest(kRemoteCId, kBadLocalCId, std::move(on_discon_rsp)));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(cb_called);
 }
 
@@ -294,7 +292,7 @@ TEST_F(CommandHandlerTest, OutboundDisconReqRspPayloadNotEnoughBytes) {
 
   EXPECT_TRUE(
       cmd_handler()->SendDisconnectionRequest(kRemoteCId, kLocalCId, std::move(on_discon_cb)));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(cb_called);
 }
 
@@ -310,7 +308,7 @@ TEST_F(CommandHandlerTest, OutboundReqRspDecodeError) {
 
   EXPECT_TRUE(cmd_handler()->SendRequestWithUndecodableResponse(kDisconnectionRequest, payload,
                                                                 std::move(on_rsp_cb)));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(cb_called);
 }
 
@@ -340,7 +338,7 @@ TEST_F(CommandHandlerTest, OutboundDisconReqRspTimeOut) {
       cmd_handler()->SendDisconnectionRequest(kRemoteCId, kLocalCId, std::move(on_discon_rsp)));
 
   ASSERT_EQ(0u, failed_requests());
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_EQ(1u, failed_requests());
 }
 
