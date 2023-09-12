@@ -4,6 +4,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/low_energy_command_handler.h"
 
+#include <pw_async/fake_dispatcher_fixture.h>
 #include <pw_async_fuchsia/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_signaling_channel.h"
@@ -12,7 +13,7 @@
 
 namespace bt::l2cap::internal {
 
-class LowEnergyCommandHandlerTest : public ::gtest::TestLoopFixture {
+class LowEnergyCommandHandlerTest : public pw::async::test::FakeDispatcherFixture {
  public:
   LowEnergyCommandHandlerTest() = default;
   ~LowEnergyCommandHandlerTest() override = default;
@@ -21,8 +22,7 @@ class LowEnergyCommandHandlerTest : public ::gtest::TestLoopFixture {
  protected:
   // TestLoopFixture overrides
   void SetUp() override {
-    TestLoopFixture::SetUp();
-    signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(pw_dispatcher_);
+    signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(dispatcher());
     command_handler_ = std::make_unique<LowEnergyCommandHandler>(
         fake_sig(), fit::bind_member<&LowEnergyCommandHandlerTest::OnRequestFail>(this));
     request_fail_callback_ = nullptr;
@@ -33,7 +33,6 @@ class LowEnergyCommandHandlerTest : public ::gtest::TestLoopFixture {
     request_fail_callback_ = nullptr;
     signaling_channel_ = nullptr;
     command_handler_ = nullptr;
-    TestLoopFixture::TearDown();
   }
 
   testing::FakeSignalingChannel* fake_sig() const { return signaling_channel_.get(); }
@@ -57,7 +56,6 @@ class LowEnergyCommandHandlerTest : public ::gtest::TestLoopFixture {
   std::unique_ptr<LowEnergyCommandHandler> command_handler_;
   fit::closure request_fail_callback_;
   size_t failed_requests_;
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
 };
 
 TEST_F(LowEnergyCommandHandlerTest, OutboundConnParamUpdateReqRspOk) {
@@ -92,7 +90,7 @@ TEST_F(LowEnergyCommandHandlerTest, OutboundConnParamUpdateReqRspOk) {
 
   EXPECT_TRUE(cmd_handler()->SendConnectionParameterUpdateRequest(
       kIntervalMin, kIntervalMax, kPeripheralLatency, kTimeoutMult, std::move(rsp_cb)));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cb_called);
 }
 
