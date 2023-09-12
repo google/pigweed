@@ -12,6 +12,7 @@
 
 #include <pw_async_fuchsia/dispatcher.h>
 
+#include "pw_async/fake_dispatcher_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_configuration.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_signaling_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
@@ -25,7 +26,7 @@ constexpr uint16_t kPsm = 0x0001;
 constexpr ChannelId kLocalCId = 0x0040;
 constexpr ChannelId kRemoteCId = 0x60a3;
 
-class BrEdrCommandHandlerTest : public ::gtest::TestLoopFixture {
+class BrEdrCommandHandlerTest : public pw::async::test::FakeDispatcherFixture {
  public:
   BrEdrCommandHandlerTest() = default;
   ~BrEdrCommandHandlerTest() override = default;
@@ -34,8 +35,7 @@ class BrEdrCommandHandlerTest : public ::gtest::TestLoopFixture {
  protected:
   // TestLoopFixture overrides
   void SetUp() override {
-    TestLoopFixture::SetUp();
-    signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(pw_dispatcher_);
+    signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(dispatcher());
     command_handler_ = std::make_unique<BrEdrCommandHandler>(
         fake_sig(), fit::bind_member<&BrEdrCommandHandlerTest::OnRequestFail>(this));
     request_fail_callback_ = nullptr;
@@ -46,7 +46,6 @@ class BrEdrCommandHandlerTest : public ::gtest::TestLoopFixture {
     request_fail_callback_ = nullptr;
     signaling_channel_ = nullptr;
     command_handler_ = nullptr;
-    TestLoopFixture::TearDown();
   }
 
   testing::FakeSignalingChannel* fake_sig() const { return signaling_channel_.get(); }
@@ -70,7 +69,6 @@ class BrEdrCommandHandlerTest : public ::gtest::TestLoopFixture {
   std::unique_ptr<BrEdrCommandHandler> command_handler_;
   fit::closure request_fail_callback_;
   size_t failed_requests_;
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
 };
 
 TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRej) {
@@ -109,7 +107,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRej) {
   };
 
   EXPECT_TRUE(cmd_handler()->SendConnectionRequest(kPsm, kBadLocalCId, std::move(on_conn_rsp)));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cb_called);
 }
 
@@ -140,7 +138,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRejNotEnoughBytesInRejection) {
   };
 
   EXPECT_TRUE(cmd_handler()->SendConnectionRequest(kPsm, kBadLocalCId, std::move(on_conn_rsp)));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(cb_called);
 }
 
@@ -181,7 +179,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRspOk) {
   };
 
   EXPECT_TRUE(cmd_handler()->SendConnectionRequest(kPsm, kLocalCId, std::move(on_conn_rsp)));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cb_called);
 }
 
@@ -243,7 +241,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRspPendingAuthThenOk) {
   };
 
   EXPECT_TRUE(cmd_handler()->SendConnectionRequest(kPsm, kLocalCId, std::move(on_conn_rsp)));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(2, cb_count);
 }
 
@@ -266,7 +264,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRspTimeOut) {
     return SignalingChannel::ResponseHandlerAction::kCompleteOutboundTransaction;
   };
   EXPECT_TRUE(cmd_handler()->SendConnectionRequest(kPsm, kLocalCId, std::move(on_conn_rsp)));
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_EQ(1u, failed_requests());
 }
 
@@ -460,7 +458,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundConfigReqRspPendingEmpty) {
 
   EXPECT_TRUE(cmd_handler()->SendConfigurationRequest(kRemoteCId, 0x0001, config.Options(),
                                                       std::move(on_config_rsp)));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cb_called);
 }
 
@@ -510,7 +508,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundConfigReqRspTimeOut) {
 
   EXPECT_TRUE(cmd_handler()->SendConfigurationRequest(kRemoteCId, 0xf001, config.Options(),
                                                       std::move(on_config_rsp)));
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_EQ(1u, failed_requests());
 }
 TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspOk) {
@@ -548,7 +546,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspOk) {
 
   EXPECT_TRUE(cmd_handler()->SendInformationRequest(InformationType::kExtendedFeaturesSupported,
                                                     std::move(on_info_cb)));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cb_called);
 }
 
@@ -583,7 +581,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspNotSupported) {
 
   EXPECT_TRUE(cmd_handler()->SendInformationRequest(InformationType::kConnectionlessMTU,
                                                     std::move(on_info_cb)));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cb_called);
 }
 
@@ -608,7 +606,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspHeaderNotEnoughBytes) {
 
   EXPECT_TRUE(cmd_handler()->SendInformationRequest(InformationType::kExtendedFeaturesSupported,
                                                     std::move(on_info_cb)));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(cb_called);
 }
 
@@ -641,7 +639,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspPayloadNotEnoughBytes) {
 
   EXPECT_TRUE(cmd_handler()->SendInformationRequest(InformationType::kExtendedFeaturesSupported,
                                                     std::move(on_info_cb)));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(cb_called);
 }
 
@@ -682,7 +680,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspWrongType) {
 
   EXPECT_TRUE(cmd_handler()->SendInformationRequest(InformationType::kExtendedFeaturesSupported,
                                                     std::move(on_info_cb)));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cb_called);
 }
 
@@ -719,7 +717,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqUnknownType) {
 
   EXPECT_TRUE(cmd_handler()->SendInformationRequest(static_cast<InformationType>(0x04),
                                                     std::move(on_info_cb)));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cb_called);
 }
 
