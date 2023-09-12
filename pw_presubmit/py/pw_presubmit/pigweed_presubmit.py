@@ -492,7 +492,20 @@ gn_fuzz_build = build.GnGenNinja(
 oss_fuzz_build = build.GnGenNinja(
     name='oss_fuzz_build',
     path_filter=_BUILD_FILE_FILTER,
+    packages=('abseil-cpp', 'fuzztest', 'googletest', 're2'),
     gn_args={
+        'dir_pw_third_party_abseil_cpp': lambda ctx: '"{}"'.format(
+            ctx.package_root / 'abseil-cpp'
+        ),
+        'dir_pw_third_party_fuzztest': lambda ctx: '"{}"'.format(
+            ctx.package_root / 'fuzztest'
+        ),
+        'dir_pw_third_party_googletest': lambda ctx: '"{}"'.format(
+            ctx.package_root / 'googletest'
+        ),
+        'dir_pw_third_party_re2': lambda ctx: '"{}"'.format(
+            ctx.package_root / 're2'
+        ),
         'pw_toolchain_OSS_FUZZ_ENABLED': True,
     },
     ninja_targets=('oss_fuzz',),

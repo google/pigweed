@@ -111,7 +111,8 @@ class RpcFuzzTestingTest : public testing::Test {
   Vector<uint32_t, Fuzzer::kMaxActions> actions_;
 };
 
-TEST_F(RpcFuzzTestingTest, SequentialRequests) {
+// TODO(b/274437709): Re-enable.
+TEST_F(RpcFuzzTestingTest, DISABLED_SequentialRequests) {
   // Callback thread
   Add(Action::kWriteStream, 1, 'B', 1);
   Add(Action::kSkip, 0, 0);

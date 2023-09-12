@@ -45,5 +45,5 @@ config("internal_disabled_warnings") {
 # toolchain, and `public_configs` do not propagate across toolchain boundaries
 # by default.
 config("public_include_path") {
-  include_dirs = [ "$dir_pw_third_party_re2" ]
+  include_dirs = [ dir_pw_third_party_re2 ]
 }

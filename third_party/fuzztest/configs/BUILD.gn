@@ -20,6 +20,8 @@ import("$dir_pw_third_party/fuzztest/fuzztest.gni")
 config("disabled_warnings") {
   cflags = [
     "-Wno-sign-compare",
+    "-Wno-sign-conversion",
+    "-Wno-shorten-64-to-32",
     "-Wno-unused-parameter",
     "-Wno-missing-field-initializers",
   ]
@@ -31,5 +33,5 @@ config("disabled_warnings") {
 # This is needed as FuzzTest is built in a dedicated toolchain, and
 # `public_configs` do not propagate across toolchain boundaries by default.
 config("public_include_path") {
-  include_dirs = [ "$dir_pw_third_party_fuzztest" ]
+  include_dirs = [ dir_pw_third_party_fuzztest ]
 }
