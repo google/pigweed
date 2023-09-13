@@ -143,6 +143,7 @@ template("pw_system_target") {
       pw_boot_BACKEND = "$dir_pw_boot_cortex_m:pw_boot_cortex_m"
       pw_interrupt_CONTEXT_BACKEND = "$dir_pw_interrupt_cortex_m:context"
     }
+    _link_deps += [ "$dir_pw_toolchain/arm_gcc:arm_none_eabi_gcc_support" ]
 
     if (defined(invoker.system_toolchain)) {
       _system_toolchain = invoker.system_toolchain
@@ -174,6 +175,7 @@ template("pw_system_target") {
       pw_boot_BACKEND = "$dir_pw_boot_cortex_m:armv7m"
       pw_interrupt_CONTEXT_BACKEND = "$dir_pw_interrupt_cortex_m:context_armv7m"
     }
+    _link_deps += [ "$dir_pw_toolchain/arm_gcc:arm_none_eabi_gcc_support" ]
 
     if (defined(invoker.system_toolchain)) {
       _system_toolchain = invoker.system_toolchain
@@ -205,6 +207,7 @@ template("pw_system_target") {
       pw_boot_BACKEND = "$dir_pw_boot_cortex_m:armv7m"
       pw_interrupt_CONTEXT_BACKEND = "$dir_pw_interrupt_cortex_m:context_armv7m"
     }
+    _link_deps += [ "$dir_pw_toolchain/arm_gcc:arm_none_eabi_gcc_support" ]
 
     if (defined(invoker.system_toolchain)) {
       _system_toolchain = invoker.system_toolchain
@@ -235,6 +238,7 @@ template("pw_system_target") {
       pw_boot_BACKEND = "$dir_pw_boot_cortex_m:armv7m"
       pw_interrupt_CONTEXT_BACKEND = "$dir_pw_interrupt_cortex_m:context_armv7m"
     }
+    _link_deps += [ "$dir_pw_toolchain/arm_gcc:arm_none_eabi_gcc_support" ]
 
     if (defined(invoker.system_toolchain)) {
       _system_toolchain = invoker.system_toolchain
@@ -265,6 +269,7 @@ template("pw_system_target") {
       pw_boot_BACKEND = "$dir_pw_boot_cortex_m:armv7m"
       pw_interrupt_CONTEXT_BACKEND = "$dir_pw_interrupt_cortex_m:context_armv7m"
     }
+    _link_deps += [ "$dir_pw_toolchain/arm_gcc:arm_none_eabi_gcc_support" ]
 
     if (defined(invoker.system_toolchain)) {
       _system_toolchain = invoker.system_toolchain
