@@ -7,7 +7,8 @@
 #include <memory>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/host_error.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager_mock_controller_test_fixture.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
 namespace bt::l2cap {
@@ -64,7 +65,7 @@ A2dpOffloadManager::Configuration BuildConfiguration(
   return config;
 }
 
-using TestingBase = ControllerTest<MockController>;
+using TestingBase = FakeDispatcherControllerTest<MockController>;
 
 class A2dpOffloadTest : public TestingBase {
  public:
@@ -106,7 +107,7 @@ TEST_P(StartA2dpOffloadTest, StartA2dpOffloadSuccess) {
         EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
         start_result = res;
       });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   ASSERT_TRUE(start_result.has_value());
@@ -135,7 +136,7 @@ TEST_F(A2dpOffloadTest, StartA2dpOffloadInvalidConfiguration) {
         EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS), res);
         start_result = res;
       });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   ASSERT_TRUE(start_result.has_value());
   EXPECT_TRUE(start_result->is_error());
@@ -156,7 +157,7 @@ TEST_F(A2dpOffloadTest, StartAndStopA2dpOffloadSuccess) {
         EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
         start_result = res;
       });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   ASSERT_TRUE(start_result.has_value());
@@ -169,7 +170,7 @@ TEST_F(A2dpOffloadTest, StartAndStopA2dpOffloadSuccess) {
     EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
     stop_result = res;
   });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   ASSERT_TRUE(stop_result.has_value());
@@ -191,7 +192,7 @@ TEST_F(A2dpOffloadTest, StartA2dpOffloadAlreadyStarted) {
         EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
         start_result = res;
       });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   ASSERT_TRUE(start_result.has_value());
@@ -203,7 +204,7 @@ TEST_F(A2dpOffloadTest, StartA2dpOffloadAlreadyStarted) {
                                     EXPECT_EQ(ToResult(HostError::kInProgress), res);
                                     start_result = res;
                                   });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   ASSERT_TRUE(start_result.has_value());
   EXPECT_TRUE(start_result->is_error());
@@ -231,7 +232,7 @@ TEST_F(A2dpOffloadTest, StartA2dpOffloadStillStarting) {
                                     EXPECT_EQ(ToResult(HostError::kInProgress), res);
                                     start_result = res;
                                   });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   ASSERT_TRUE(start_result.has_value());
@@ -253,7 +254,7 @@ TEST_F(A2dpOffloadTest, StartA2dpOffloadStillStopping) {
         EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
         start_result = res;
       });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   ASSERT_TRUE(start_result.has_value());
@@ -274,7 +275,7 @@ TEST_F(A2dpOffloadTest, StartA2dpOffloadStillStopping) {
                                     EXPECT_EQ(ToResult(HostError::kInProgress), res);
                                     start_result = res;
                                   });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   ASSERT_TRUE(start_result.has_value());
@@ -307,7 +308,7 @@ TEST_F(A2dpOffloadTest, StopA2dpOffloadStillStarting) {
     EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
     stop_result = res;
   });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   ASSERT_TRUE(start_result.has_value());
@@ -331,7 +332,7 @@ TEST_F(A2dpOffloadTest, StopA2dpOffloadStillStopping) {
         EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
         start_result = res;
       });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   ASSERT_TRUE(start_result.has_value());
@@ -350,7 +351,7 @@ TEST_F(A2dpOffloadTest, StopA2dpOffloadStillStopping) {
     EXPECT_EQ(ToResult(HostError::kInProgress), res);
     stop_result = res;
   });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   ASSERT_TRUE(stop_result.has_value());
@@ -363,7 +364,7 @@ TEST_F(A2dpOffloadTest, StopA2dpOffloadAlreadyStopped) {
     EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
     stop_result = res;
   });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   ASSERT_TRUE(stop_result.has_value());
   EXPECT_TRUE(stop_result->is_ok());
@@ -384,7 +385,7 @@ TEST_F(A2dpOffloadTest, A2dpOffloadOnlyOneChannel) {
         EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
         start_result_0 = res;
       });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   ASSERT_TRUE(start_result_0.has_value());
@@ -396,7 +397,7 @@ TEST_F(A2dpOffloadTest, A2dpOffloadOnlyOneChannel) {
                                     EXPECT_EQ(ToResult(HostError::kInProgress), res);
                                     start_result_1 = res;
                                   });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   EXPECT_FALSE(offload_mgr()->IsChannelOffloaded(kLocalId + 1, kTestHandle1));
   ASSERT_TRUE(start_result_1.has_value());
@@ -418,7 +419,7 @@ TEST_F(A2dpOffloadTest, DifferentChannelCannotStopA2dpOffloading) {
         EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
         start_result = res;
       });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   ASSERT_TRUE(start_result.has_value());
@@ -429,7 +430,7 @@ TEST_F(A2dpOffloadTest, DifferentChannelCannotStopA2dpOffloading) {
     EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
     stop_result = res;
   });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   ASSERT_TRUE(stop_result.has_value());
   EXPECT_TRUE(stop_result->is_ok());
@@ -442,7 +443,7 @@ TEST_F(A2dpOffloadTest, DifferentChannelCannotStopA2dpOffloading) {
     EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
     stop_result = res;
   });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   ASSERT_TRUE(stop_result.has_value());
   EXPECT_TRUE(stop_result->is_ok());

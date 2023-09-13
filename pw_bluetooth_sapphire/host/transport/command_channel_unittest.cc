@@ -4,8 +4,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 
-#include <lib/async/cpp/task.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
@@ -27,9 +25,9 @@ using bt::LowerBits;
 using bt::UpperBits;
 using EventCallbackResult = CommandChannel::EventCallbackResult;
 
-constexpr zx::duration kCommandTimeout = zx::sec(12);
+constexpr pw::chrono::SystemClock::duration kCommandTimeout = std::chrono::seconds(12);
 
-using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
+using TestingBase = bt::testing::FakeDispatcherControllerTest<bt::testing::MockController>;
 
 // A reference counted object used to verify that HCI command completion and
 // status callbacks are properly cleaned up after the end of a transaction.
@@ -54,7 +52,7 @@ class CommandChannelTest : public TestingBase {
   inspect::Inspector inspector_;
 
  private:
-  pw::async::HeapDispatcher heap_dispatcher_{pw_dispatcher()};
+  pw::async::HeapDispatcher heap_dispatcher_{dispatcher()};
 };
 
 EmbossCommandPacket MakeReadRemoteSupportedFeatures(uint16_t connection_handle) {
@@ -109,7 +107,7 @@ TEST_F(CommandChannelTest, SingleRequestResponse) {
 
   test_obj = nullptr;
   EXPECT_FALSE(test_obj_deleted);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Make sure that the I/O thread is no longer holding on to |test_obj|.
   TearDown();
@@ -168,7 +166,7 @@ TEST_F(CommandChannelTest, SingleAsynchronousRequest) {
   view.num_responses().Write(0);
 
   id = cmd_channel()->SendCommand(std::move(packet), cb, hci_spec::kInquiryCompleteEventCode);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(2, cb_count);
 }
 
@@ -206,7 +204,7 @@ TEST_F(CommandChannelTest, SingleRequestWithStatusResponse) {
   auto reset =
       hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ResetCommandWriter>(hci_spec::kReset);
   id = cmd_channel()->SendCommand(std::move(reset), complete_cb, hci_spec::kCommandStatusEventCode);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 // Tests:
@@ -270,14 +268,14 @@ TEST_F(CommandChannelTest, OneSentUntilStatus) {
   auto inquiry = CommandPacket::New(hci_spec::kInquiryCancel);
   [[maybe_unused]] auto inquiry_id = cmd_channel()->SendCommand(std::move(inquiry), cb);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1u, transaction_count);
   EXPECT_EQ(1u, cb_event_count);
 
   test_device()->SendCommandChannelPacket(rsp_commandsavail);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(2u, transaction_count);
   EXPECT_EQ(2u, cb_event_count);
@@ -356,14 +354,14 @@ TEST_F(CommandChannelTest, QueuedCommands) {
       hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ResetCommandWriter>(hci_spec::kReset);
   cmd_channel()->SendCommand(std::move(reset), cb);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Different opcodes can be sent without a reply
   EXPECT_EQ(2u, transaction_count);
 
   // Even if we get a response to one, the duplicate opcode is still queued.
   test_device()->SendCommandChannelPacket(rsp_inqcancel);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(2u, transaction_count);
   EXPECT_EQ(1u, cancel_count);
@@ -371,7 +369,7 @@ TEST_F(CommandChannelTest, QueuedCommands) {
 
   // Once we get a reset back, the second can be sent (and replied to)
   test_device()->SendCommandChannelPacket(rsp_reset);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(3u, transaction_count);
   EXPECT_EQ(1u, cancel_count);
@@ -442,7 +440,7 @@ TEST_F(CommandChannelTest, AsynchronousCommands) {
       hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ResetCommandWriter>(hci_spec::kReset);
   id1 = cmd_channel()->SendCommand(std::move(packet), cb, kTestEventCode0);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Should have received the Status but not the result.
   EXPECT_EQ(1u, cb_count);
@@ -452,13 +450,13 @@ TEST_F(CommandChannelTest, AsynchronousCommands) {
   packet = hci::EmbossCommandPacket::New<pw::bluetooth::emboss::InquiryCancelCommandWriter>(
       hci_spec::kInquiryCancel);
   id2 = cmd_channel()->SendCommand(std::move(packet), cb, kTestEventCode0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1u, cb_count);
 
   // Sending the complete will release the queue and send the next command.
   test_device()->SendCommandChannelPacket(rsp_bogocomplete);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(3u, cb_count);
 
@@ -470,7 +468,7 @@ TEST_F(CommandChannelTest, AsynchronousCommands) {
 
   // Finish out the commands.
   test_device()->SendCommandChannelPacket(rsp_bogocomplete);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(4u, cb_count);
 }
@@ -520,7 +518,7 @@ TEST_F(CommandChannelTest, AsyncQueueWhenBlocked) {
 
   test_device()->SendCommandChannelPacket(rsp_nocommandsavail);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   CommandChannel::TransactionId id;
   size_t cb_count = 0;
@@ -542,7 +540,7 @@ TEST_F(CommandChannelTest, AsyncQueueWhenBlocked) {
       hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ResetCommandWriter>(hci_spec::kReset);
   id = cmd_channel()->SendCommand(std::move(packet), cb, kTestEventCode0);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_NE(0u, id);
   ASSERT_EQ(0u, transaction_count);
@@ -551,14 +549,14 @@ TEST_F(CommandChannelTest, AsyncQueueWhenBlocked) {
   auto invalid_id = cmd_channel()->AddEventHandler(
       kTestEventCode0, [](const EventPacket&) { return EventCallbackResult::kContinue; });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_EQ(0u, invalid_id);
 
   // Commands become available and the whole transaction finishes.
   test_device()->SendCommandChannelPacket(rsp_commandsavail);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_EQ(1u, transaction_count);
   ASSERT_EQ(2u, cb_count);
@@ -624,7 +622,7 @@ TEST_F(CommandChannelTest, EventHandlerBasic) {
   test_device()->SendCommandChannelPacket(cmd_status);
   test_device()->SendCommandChannelPacket(event1);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(3, event_count0);
   EXPECT_EQ(3, event_count1);
@@ -646,7 +644,7 @@ TEST_F(CommandChannelTest, EventHandlerBasic) {
   test_device()->SendCommandChannelPacket(event0);
   test_device()->SendCommandChannelPacket(event1);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(0, event_count0);
   EXPECT_EQ(7, event_count1);
@@ -665,7 +663,7 @@ TEST_F(CommandChannelTest, EventHandlerBasic) {
   test_device()->SendCommandChannelPacket(event1);
   test_device()->SendCommandChannelPacket(event1);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(0, event_count0);
   EXPECT_EQ(0, event_count1);
@@ -721,7 +719,7 @@ TEST_F(CommandChannelTest, EventHandlerEventWhileTransactionPending) {
   id = cmd_channel()->SendCommand(std::move(reset), nullptr);
   EXPECT_NE(0u, id);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(2, event_count);
 }
@@ -753,13 +751,13 @@ TEST_F(CommandChannelTest, RemoveQueuedSyncCommandPendingStatus) {
   auto cmd_id = cmd_channel()->SendCommand(std::move(cmd), std::move(cmd_cb));
   EXPECT_NE(0u, cmd_id);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1, transaction_count);
   EXPECT_FALSE(cmd_channel()->RemoveQueuedCommand(cmd_id));
   test_device()->SendCommandChannelPacket(rsp_reset);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1, transaction_count);
   EXPECT_EQ(1, cmd_cb_count);
@@ -804,17 +802,17 @@ TEST_F(CommandChannelTest, RemoveQueuedQueuedSyncCommand) {
       cmd_channel()->SendCommand(std::move(reset), std::bind(event_cb, _1, _2, &event_count1));
   EXPECT_NE(0u, id1);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1, transaction_count);
   EXPECT_TRUE(cmd_channel()->RemoveQueuedCommand(id1));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(0, event_count0);
   test_device()->SendCommandChannelPacket(rsp_reset);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Only one command should have been sent.
   EXPECT_EQ(1, transaction_count);
@@ -881,18 +879,18 @@ TEST_F(CommandChannelTest, RemoveQueuedQueuedAsyncCommand) {
                                  hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode);
   EXPECT_NE(0u, id1);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1, transaction_count);
   EXPECT_TRUE(cmd_channel()->RemoveQueuedCommand(id1));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(0, event_count0);
   test_device()->SendCommandChannelPacket(kReadRemoteSupportedFeaturesRsp);
   test_device()->SendCommandChannelPacket(kReadRemoteSupportedFeaturesComplete);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Only one command should have been sent.
   EXPECT_EQ(1, transaction_count);
@@ -923,12 +921,12 @@ TEST_F(CommandChannelTest, RemoveQueuedCompletedAsyncCommand) {
                                        hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode);
   EXPECT_NE(0u, id);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(2, event_count);
   EXPECT_FALSE(cmd_channel()->RemoveQueuedCommand(id));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Only one command should have been sent.
   EXPECT_EQ(1, transaction_count);
@@ -961,17 +959,17 @@ TEST_F(CommandChannelTest, RemoveQueuedAsyncCommandPendingUpdate) {
                                       hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode);
   EXPECT_NE(0u, cmd_id);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(0, cmd_events);
   EXPECT_FALSE(cmd_channel()->RemoveQueuedCommand(cmd_id));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   test_device()->SendCommandChannelPacket(kReadRemoteSupportedFeaturesRsp);
   test_device()->SendCommandChannelPacket(kReadRemoteSupportedFeaturesComplete);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1, transaction_count);
   // The command should have gotten update and complete events.
@@ -1004,16 +1002,16 @@ TEST_F(CommandChannelTest, RemoveQueuedAsyncCommandPendingCompletion) {
                                       hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode);
   EXPECT_NE(0u, cmd_id);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1, cmd_events);
   EXPECT_FALSE(cmd_channel()->RemoveQueuedCommand(cmd_id));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   test_device()->SendCommandChannelPacket(kReadRemoteSupportedFeaturesComplete);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1, transaction_count);
   // The command should have gotten update and complete events.
@@ -1058,17 +1056,17 @@ TEST_F(CommandChannelTest, VendorEventHandler) {
   EXPECT_NE(0u, id2);
 
   test_device()->SendCommandChannelPacket(vendor_event_bytes0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(2, event_count0);
   EXPECT_EQ(0, event_count1);
 
   test_device()->SendCommandChannelPacket(vendor_event_bytes0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(4, event_count0);
   EXPECT_EQ(0, event_count1);
 
   test_device()->SendCommandChannelPacket(vendor_event_bytes1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(4, event_count0);
   EXPECT_EQ(1, event_count1);
 
@@ -1076,7 +1074,7 @@ TEST_F(CommandChannelTest, VendorEventHandler) {
   cmd_channel()->RemoveEventHandler(id0);
   test_device()->SendCommandChannelPacket(vendor_event_bytes0);
   test_device()->SendCommandChannelPacket(vendor_event_bytes1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(5, event_count0);
   EXPECT_EQ(2, event_count1);
 }
@@ -1118,17 +1116,17 @@ TEST_F(CommandChannelTest, LEMetaEventHandler) {
   EXPECT_NE(0u, id2);
 
   test_device()->SendCommandChannelPacket(le_meta_event_bytes0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(2, event_count0);
   EXPECT_EQ(0, event_count1);
 
   test_device()->SendCommandChannelPacket(le_meta_event_bytes0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(4, event_count0);
   EXPECT_EQ(0, event_count1);
 
   test_device()->SendCommandChannelPacket(le_meta_event_bytes1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(4, event_count0);
   EXPECT_EQ(1, event_count1);
 
@@ -1136,7 +1134,7 @@ TEST_F(CommandChannelTest, LEMetaEventHandler) {
   cmd_channel()->RemoveEventHandler(id0);
   test_device()->SendCommandChannelPacket(le_meta_event_bytes0);
   test_device()->SendCommandChannelPacket(le_meta_event_bytes1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(5, event_count0);
   EXPECT_EQ(2, event_count1);
 }
@@ -1229,7 +1227,7 @@ TEST_F(CommandChannelTest, AsyncEventHandlersAndLeMetaEventHandlersDoNotInterfer
   test_device()->SendCommandChannelPacket(le_event_bytes);
 
   // Process the async command expectation.
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // End the asynchronous transaction. This should NOT unregister the LE event handler.
   test_device()->SendCommandChannelPacket(event_bytes);
@@ -1238,7 +1236,7 @@ TEST_F(CommandChannelTest, AsyncEventHandlersAndLeMetaEventHandlersDoNotInterfer
   test_device()->SendCommandChannelPacket(le_event_bytes);
   test_device()->SendCommandChannelPacket(le_event_bytes);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Should have received 3 LE events.
   EXPECT_EQ(3, le_event_count);
@@ -1258,7 +1256,7 @@ TEST_F(CommandChannelTest, TransportClosedCallback) {
       test_device()->Stop();
     }
   });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(error_cb_called);
 }
 
@@ -1289,11 +1287,11 @@ TEST_F(CommandChannelTest, CommandTimeoutCallback) {
   ASSERT_NE(0u, id2);
 
   // Run the loop until the command timeout task gets scheduled.
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(0u, timeout_cb_count);
   EXPECT_EQ(0u, cmd_cb_count);
 
-  RunLoopFor(kCommandTimeout);
+  RunFor(kCommandTimeout);
 
   EXPECT_EQ(1u, timeout_cb_count);
   EXPECT_EQ(0u, cmd_cb_count);
@@ -1331,7 +1329,7 @@ TEST_F(CommandChannelTest, DestroyChannelInTimeoutCallback) {
   CommandChannel::TransactionId id2 = cmd_channel()->SendCommand(std::move(packet), cb);
   ASSERT_NE(0u, id2);
 
-  RunLoopFor(kCommandTimeout);
+  RunFor(kCommandTimeout);
   EXPECT_EQ(1u, timeout_cb_count);
 }
 
@@ -1355,9 +1353,9 @@ TEST_F(CommandChannelTest, CommandsAndEventsIgnoredAfterCommandTimeout) {
   ASSERT_NE(0u, id1);
 
   // Run the loop until the command timeout task gets scheduled.
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(0u, timeout_cb_count);
-  RunLoopFor(kCommandTimeout);
+  RunFor(kCommandTimeout);
   EXPECT_EQ(1u, timeout_cb_count);
   EXPECT_EQ(0u, cmd_cb_count);
 
@@ -1367,12 +1365,12 @@ TEST_F(CommandChannelTest, CommandsAndEventsIgnoredAfterCommandTimeout) {
   CommandChannel::TransactionId id2 = cmd_channel()->SendCommand(std::move(packet), cb);
   EXPECT_EQ(0u, id2);
   // No command should be sent.
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Events should be ignored.
   test_device()->SendCommandChannelPacket(bt::testing::CommandCompletePacket(
       hci_spec::kReset, pw::bluetooth::emboss::StatusCode::SUCCESS));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(0u, cmd_cb_count);
 }
 
@@ -1447,20 +1445,20 @@ TEST_F(CommandChannelTest, AsynchronousCommandChaining) {
       hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ResetCommandWriter>(hci_spec::kReset);
   id1 = cmd_channel()->SendCommand(std::move(packet), cb.share(), kTestEventCode0);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Should have received the Status but not the result.
   EXPECT_EQ(1u, cb_count);
 
   // Sending the complete will finish the command and add the next command.
   test_device()->SendCommandChannelPacket(rsp_bogocomplete);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(3u, cb_count);
 
   // Finish out the command.
   test_device()->SendCommandChannelPacket(rsp_bogocomplete);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(4u, cb_count);
 }
@@ -1610,7 +1608,7 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
   id1 = cmd_channel()->SendExclusiveCommand(CommandPacket::New(kExclusiveOne), exclusive_cb.share(),
                                             kExclOneCompleteEvent, {kExclusiveTwo});
   cmd_channel()->SendCommand(CommandPacket::New(kNonExclusive), nonexclusive_cb.share());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   // Should have received the ExclusiveOne status but not the complete. ExclusiveTwo should be
   // queued.
   EXPECT_EQ(1u, exclusive_cb_count);
@@ -1622,7 +1620,7 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
   EXPECT_CMD_PACKET_OUT(test_device(), excl_two_cmd, &rsp_excl_two_status);
   EXPECT_CMD_PACKET_OUT(test_device(), nonexclusive_cmd, &nonexclusive_complete);
   test_device()->SendCommandChannelPacket(rsp_one_complete);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(3u, exclusive_cb_count);     // +2: rsp_one_complete, rsp_excl_two_status
   EXPECT_EQ(2u, nonexclusive_cb_count);  // +1: nonexclusive_complete
 
@@ -1631,13 +1629,13 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
   EXPECT_CMD_PACKET_OUT(test_device(), excl_one_cmd, &rsp_excl_one_status);
   test_device()->SendCommandChannelPacket(rsp_two_complete);
   cmd_channel()->SendCommand(CommandPacket::New(kNonExclusive), nonexclusive_cb.share());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(5u, exclusive_cb_count);     // +2: rsp_two_complete, rsp_excl_one_status
   EXPECT_EQ(3u, nonexclusive_cb_count);  // +1: nonexclusive_complete
 
   // Finish the second ExclusiveOne
   test_device()->SendCommandChannelPacket(rsp_one_complete);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(6u, exclusive_cb_count);  // +1: rsp_one_complete
   EXPECT_EQ(3u, nonexclusive_cb_count);
 }
@@ -1682,7 +1680,7 @@ TEST_F(CommandChannelTest, EventHandlerResults) {
   test_device()->SendCommandChannelPacket(event0);
   test_device()->SendCommandChannelPacket(event0);
   test_device()->SendCommandChannelPacket(event0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(2, event_count);
 }
 
@@ -1730,17 +1728,17 @@ TEST_F(CommandChannelTest, SendCommandWithLEMetaEventSubeventRsp) {
       cmd_channel()->SendLeAsyncCommand(std::move(cmd_packet), std::move(event_cb), kSubeventCode);
   EXPECT_NE(0u, id);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1u, event_count);
 
   // Handler should be removed when subevent received.
   test_device()->SendCommandChannelPacket(cmd_complete_subevent);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(2u, event_count);
 
   // This seconod complete event should be ignored because the handler should have been removed.
   test_device()->SendCommandChannelPacket(cmd_complete_subevent);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(2u, event_count);
 }
 
@@ -1762,7 +1760,7 @@ TEST_F(
   EXPECT_CMD_PACKET_OUT(test_device(), std::move(cmd), );
   EXPECT_NE(0u, cmd_channel()->SendLeAsyncCommand(
                     CommandPacket::New(kOpCode), [](auto, const auto&) {}, kSubeventCode + 1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(CommandChannelTest, SendingSecondLECommandWithSameSubeventShouldWaitForFirstToComplete) {
@@ -1820,7 +1818,7 @@ TEST_F(CommandChannelTest, SendingSecondLECommandWithSameSubeventShouldWaitForFi
                                                 kSubeventCode);
   EXPECT_NE(0u, id_0);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1u, event_count_0);
 
   size_t event_count_1 = 0;
@@ -1844,19 +1842,19 @@ TEST_F(CommandChannelTest, SendingSecondLECommandWithSameSubeventShouldWaitForFi
   auto id_1 = cmd_channel()->SendLeAsyncCommand(CommandPacket::New(kOpCode1), std::move(event_cb_1),
                                                 kSubeventCode);
   EXPECT_NE(0u, id_1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(0u, event_count_1);
 
   // When first command complete event is received, second command should be sent.
   EXPECT_CMD_PACKET_OUT(test_device(), cmd1, &cmd1_status_event);
   test_device()->SendCommandChannelPacket(cmd_complete_subevent);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(2u, event_count_0);
   EXPECT_EQ(1u, event_count_1);
 
   // Second complete event should be received by second command event handler only.
   test_device()->SendCommandChannelPacket(cmd_complete_subevent);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(2u, event_count_0);
   EXPECT_EQ(2u, event_count_1);
 }
@@ -1889,7 +1887,7 @@ TEST_F(
   auto id = cmd_channel()->SendLeAsyncCommand(CommandPacket::New(kOpCode), std::move(event_cb),
                                               kSubeventCode);
   EXPECT_NE(0u, id);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1u, event_count);
 
   // Async LE command for subevent is already pending, so registering event handler should fail by

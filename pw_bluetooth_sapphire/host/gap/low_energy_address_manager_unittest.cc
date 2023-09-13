@@ -4,8 +4,6 @@
 
 #include "low_energy_address_manager.h"
 
-#include <lib/fit/function.h>
-
 #include "gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
@@ -17,7 +15,7 @@ namespace {
 using testing::CommandTransaction;
 using testing::MockController;
 
-using TestingBase = testing::ControllerTest<MockController>;
+using TestingBase = testing::FakeDispatcherControllerTest<MockController>;
 
 const DeviceAddress kPublic(DeviceAddress::Type::kLEPublic, {0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA});
 
@@ -31,7 +29,7 @@ class LowEnergyAddressManagerTest : public TestingBase {
     TestingBase::SetUp();
     addr_mgr_ = std::make_unique<LowEnergyAddressManager>(
         kPublic, [this] { return IsRandomAddressChangeAllowed(); }, cmd_channel()->AsWeakPtr(),
-        pw_dispatcher_);
+        dispatcher());
     ASSERT_EQ(kPublic, addr_mgr()->identity_address());
     ASSERT_FALSE(addr_mgr()->irk());
     addr_mgr_->register_address_changed_callback([&](auto) { address_changed_cb_count_++; });
@@ -49,7 +47,7 @@ class LowEnergyAddressManagerTest : public TestingBase {
       result = addr;
       called = true;
     });
-    RunLoopUntilIdle();
+    RunUntilIdle();
     EXPECT_TRUE(called);
     return result;
   }
@@ -64,7 +62,6 @@ class LowEnergyAddressManagerTest : public TestingBase {
   size_t address_changed_cb_count() const { return address_changed_cb_count_; }
 
  private:
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
   std::unique_ptr<LowEnergyAddressManager> addr_mgr_;
   bool random_address_change_allowed_ = true;
   size_t address_changed_cb_count_ = 0;
@@ -105,7 +102,7 @@ TEST_F(LowEnergyAddressManagerTest, EnablePrivacy) {
   EXPECT_EQ(address_changed_cb_count(), 0u);
   // Further requests to enable should not trigger additional HCI commands.
   addr_mgr()->EnablePrivacy(true);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(addr_mgr()->PrivacyEnabled());
   // We should have received a HCI command with a RPA resolvable using |kIrk|.
@@ -134,7 +131,7 @@ TEST_F(LowEnergyAddressManagerTest, EnablePrivacy) {
   // Disabling Privacy should result in the Public address being used so we expect a notification.
   EXPECT_EQ(address_changed_cb_count(), 2u);
   addr_mgr()->EnablePrivacy(true);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(addr, EnsureLocalAddress());
   EXPECT_TRUE(addr.IsResolvablePrivate());
@@ -167,7 +164,7 @@ TEST_F(LowEnergyAddressManagerTest, EnablePrivacyNoIrk) {
   // trigger additional HCI commands.
   EXPECT_EQ(address_changed_cb_count(), 0u);
   addr_mgr()->EnablePrivacy(true);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // We should have received a HCI command with a NRPA.
   EXPECT_EQ(1, hci_cmd_count);
@@ -234,7 +231,7 @@ TEST_F(LowEnergyAddressManagerTest, EnablePrivacyWhileAddressChangeIsDisallowed)
 
   // No HCI commands should be sent while disallowed.
   addr_mgr()->EnablePrivacy(true);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(0, hci_count);
 
   EXPECT_TRUE(addr_mgr()->PrivacyEnabled());
@@ -282,7 +279,7 @@ TEST_F(LowEnergyAddressManagerTest, AddressExpiration) {
 
   // A new address should be generated and configured after the random address
   // interval.
-  RunLoopFor(kPrivateAddressTimeout);
+  RunFor(kPrivateAddressTimeout);
   EXPECT_EQ(1, hci_count);
   // Address has changed due to timeout.
   EXPECT_EQ(address_changed_cb_count(), 2u);
@@ -323,7 +320,7 @@ TEST_F(LowEnergyAddressManagerTest, AddressExpirationWhileAddressChangeIsDisallo
   // After the interval ends, the address should be marked as expired but should
   // not send an HCI command while the command is disallowed.
   set_random_address_change_allowed(false);
-  RunLoopFor(kPrivateAddressTimeout);
+  RunFor(kPrivateAddressTimeout);
   EXPECT_EQ(addr1, EnsureLocalAddress());
   EXPECT_EQ(0, hci_count);
 
@@ -361,7 +358,7 @@ TEST_F(LowEnergyAddressManagerTest, DisablePrivacy) {
   // No HCI commands should get sent after private address interval expires.
   int hci_count = 0;
   test_device()->SetTransactionCallback([&] { hci_count++; });
-  RunLoopFor(kPrivateAddressTimeout);
+  RunFor(kPrivateAddressTimeout);
   EXPECT_EQ(0, hci_count);
   EXPECT_EQ(DeviceAddress::Type::kLEPublic, EnsureLocalAddress().type());
 }
@@ -385,7 +382,7 @@ TEST_F(LowEnergyAddressManagerTest, DisablePrivacyDuringAddressChange) {
   EXPECT_EQ(1, hci_count);
 
   // No HCI commands should get sent after private address interval expires.
-  RunLoopFor(kPrivateAddressTimeout);
+  RunFor(kPrivateAddressTimeout);
   EXPECT_EQ(1, hci_count);
   EXPECT_EQ(DeviceAddress::Type::kLEPublic, EnsureLocalAddress().type());
 }

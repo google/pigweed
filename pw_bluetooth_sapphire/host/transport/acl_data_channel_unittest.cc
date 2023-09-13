@@ -10,7 +10,6 @@
 
 #include <gmock/gmock.h>
 
-#include "gtest/gtest.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
@@ -51,7 +50,7 @@ std::array<std::pair<DataBufferInfo, DataBufferInfo>, 3> all_buffer_options = {{
 }};
 
 using pw::bluetooth::AclPriority;
-using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
+using TestingBase = testing::FakeDispatcherControllerTest<bt::testing::MockController>;
 
 class AclDataChannelTest : public TestingBase {
  public:
@@ -82,7 +81,7 @@ class AclDataChannelTest : public TestingBase {
           /*payload_size=*/1);
       packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(i);
       connection.QueuePacket(std::move(packet));
-      RunLoopUntilIdle();
+      RunUntilIdle();
     }
   }
 
@@ -160,7 +159,7 @@ TEST_F(AclDataChannelTest, InspectHierarchyContainsOutboundQueueState) {
           /*payload_size=*/1);
       packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(i);
       connection->QueuePacket(std::move(packet));
-      RunLoopUntilIdle();
+      RunUntilIdle();
     }
   }
 
@@ -220,7 +219,7 @@ TEST_P(AclPriorityTest, RequestAclPriority) {
     EXPECT_EQ(kExpectSuccess, result.is_ok());
   });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(request_cb_count, 1u);
   ASSERT_TRUE(connection);
   EXPECT_EQ(connection.value(), kConnectionHandle1);
@@ -246,7 +245,7 @@ TEST_F(AclDataChannelTest, RequestAclPriorityEncodeFails) {
                                            EXPECT_TRUE(result.is_error());
                                          });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(request_cb_count, 1u);
 }
 
@@ -266,7 +265,7 @@ TEST_F(AclDataChannelTest, RequestAclPriorityEncodeReturnsTooSmallBuffer) {
                                            EXPECT_TRUE(result.is_error());
                                          });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(request_cb_count, 1u);
 }
 
@@ -308,7 +307,7 @@ TEST_F(AclDataChannelOnlyBREDRBufferAvailable, NumberOfCompletedPacketsExceedsPe
                             static_cast<uint8_t>(kBufferMaxNumPackets)));
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle0, kBufferMaxNumPackets + 1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(connection_0.queued_packets().size(), 0u);
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
@@ -339,7 +338,7 @@ TEST_F(AclDataChannelOnlyBREDRBufferAvailable, UnregisterLinkDropsFutureSentPack
                          /*payload_size=*/1);
   packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(1);
   connection_0.QueuePacket(std::move(packet));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(connection_0.queued_packets().size(), 0u);
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
@@ -348,7 +347,7 @@ TEST_F(AclDataChannelOnlyBREDRBufferAvailable, UnregisterLinkDropsFutureSentPack
 
   // Attempt to send packet on an unregistered link
   connection_0.QueuePacket(std::move(packet));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Second packet should not have been sent
   EXPECT_EQ(connection_0.queued_packets().size(), 1u);
@@ -380,7 +379,7 @@ TEST_F(AclDataChannelOnlyLEBufferAvailable, UnregisterLinkDropsFutureSentPackets
                          /*payload_size=*/1);
   packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(1);
   connection_0.QueuePacket(std::move(packet));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(connection_0.queued_packets().size(), 0u);
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
@@ -389,7 +388,7 @@ TEST_F(AclDataChannelOnlyLEBufferAvailable, UnregisterLinkDropsFutureSentPackets
 
   // Attempt to send packet on an unregistered link
   connection_0.QueuePacket(std::move(packet));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Second packet should not have been sent
   EXPECT_EQ(connection_0.queued_packets().size(), 1u);
@@ -409,7 +408,7 @@ TEST_F(AclDataChannelOnlyBREDRBufferAvailable,
   // |kConnectionHandle1| is not registered so this event is ignored (no packets should be sent)
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle1, 1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(connection_0.queued_packets().size(), 1u);
 }
@@ -427,7 +426,7 @@ TEST_F(AclDataChannelOnlyLEBufferAvailable,
   // |kConnectionHandle1| is not registered so this event is ignored (no packets should be sent)
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle1, 1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(connection_0.queued_packets().size(), 1u);
 }
@@ -454,7 +453,7 @@ TEST_P(AclDataChannelBREDRAndBothBuffers, SendMoreBREDRPacketsThanMaximumBufferS
                             static_cast<uint8_t>(kBufferMaxNumPackets)));
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle0, 1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(connection_0.queued_packets().size(), 0u);
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
@@ -472,7 +471,7 @@ TEST_F(AclDataChannelOnlyLEBufferAvailable, SendMoreBREDRPacketsThanMaximumBuffe
                          /*payload_size=*/1);
   packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(1);
   connection_0.QueuePacket(std::move(packet));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // No packet should be sent since the controller's BR/EDR buffer has no availabity
   EXPECT_EQ(connection_0.queued_packets().size(), 1u);
@@ -501,7 +500,7 @@ TEST_P(AclDataChannelAllBufferCombinations, SendMoreLEPacketsThanMaximumBufferSp
                             static_cast<uint8_t>(kBufferMaxNumPackets)));
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle0, 1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(connection_0.queued_packets().size(), 0u);
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
@@ -541,14 +540,14 @@ TEST_P(AclDataChannelBREDRAndBothBuffers, RegisterTwoBREDRConnectionsAndUnregist
   out_packet_0->mutable_view()->mutable_data().Write(kPacket0);
   out_packet_0->InitializeFromBuffer();
   connection_0.QueuePacket(std::move(out_packet_0));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
   // Sending a NumberOfCompletedPackets event is necessary because since |kBufferMaxNumPackets| is
   // 2, the controller buffer is full and we won't be able to send any more packets until at least
   // 1 is ACKed by the controller to free up the buffer space
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle0, 1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_ACL_PACKET_OUT(test_device(), kPacket1);
   // Create packet to send
@@ -556,14 +555,14 @@ TEST_P(AclDataChannelBREDRAndBothBuffers, RegisterTwoBREDRConnectionsAndUnregist
   out_packet_1->mutable_view()->mutable_data().Write(kPacket1);
   out_packet_1->InitializeFromBuffer();
   connection_1.QueuePacket(std::move(out_packet_1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle1, 1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   acl_data_channel()->UnregisterConnection(kConnectionHandle0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_ACL_PACKET_OUT(test_device(), kPacket1);
   // Create packet to send
@@ -571,7 +570,7 @@ TEST_P(AclDataChannelBREDRAndBothBuffers, RegisterTwoBREDRConnectionsAndUnregist
   out_packet_1->mutable_view()->mutable_data().Write(kPacket1);
   out_packet_1->InitializeFromBuffer();
   connection_1.QueuePacket(std::move(out_packet_1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   acl_data_channel()->UnregisterConnection(kConnectionHandle1);
@@ -616,7 +615,7 @@ TEST_P(AclDataChannelBREDRAndBothBuffers,
   out_packet_0->mutable_view()->mutable_data().Write(kPacket0);
   out_packet_0->InitializeFromBuffer();
   connection_0.QueuePacket(std::move(out_packet_0));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   // The second packet should fill up the controller buffer (kBufferMaxNumPackets)
@@ -626,33 +625,33 @@ TEST_P(AclDataChannelBREDRAndBothBuffers,
   out_packet_1->mutable_view()->mutable_data().Write(kPacket1);
   out_packet_1->InitializeFromBuffer();
   connection_0.QueuePacket(std::move(out_packet_1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   ACLDataPacketPtr out_packet_2 = ACLDataPacket::New(/*payload_size=*/1);
   out_packet_2->mutable_view()->mutable_data().Write(kPacket2);
   out_packet_2->InitializeFromBuffer();
   connection_1.QueuePacket(std::move(out_packet_2));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // |out_packet_2| should not be sent because the controller buffer is full
   EXPECT_EQ(connection_1.queued_packets().size(), 1u);
 
   // |UnregisterConnection| should not free up any buffer space, so next packet should not be sent
   acl_data_channel()->UnregisterConnection(kConnectionHandle0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Clearing the pending packet count for |connection_0| should result in |out_packet_2| being
   // sent
   EXPECT_ACL_PACKET_OUT(test_device(), kPacket2);
   acl_data_channel()->ClearControllerPacketCount(kConnectionHandle0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   // There are no active connections now
   acl_data_channel()->UnregisterConnection(kConnectionHandle1);
   acl_data_channel()->ClearControllerPacketCount(kConnectionHandle1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_P(AclDataChannelAllBufferCombinations, RegisterTwoLEConnectionsAndUnregisterFirstConnection) {
@@ -686,14 +685,14 @@ TEST_P(AclDataChannelAllBufferCombinations, RegisterTwoLEConnectionsAndUnregiste
   out_packet_0->mutable_view()->mutable_data().Write(kPacket0);
   out_packet_0->InitializeFromBuffer();
   connection_0.QueuePacket(std::move(out_packet_0));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
   // Sending a NumberOfCompletedPackets event is necessary because since |kBufferMaxNumPackets| is
   // 2, the controller buffer is full and we won't be able to send any more packets until at least
   // 1 is ACKed by the controller to free up the buffer space
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle0, 1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_ACL_PACKET_OUT(test_device(), kPacket1);
   // Create packet to send
@@ -701,14 +700,14 @@ TEST_P(AclDataChannelAllBufferCombinations, RegisterTwoLEConnectionsAndUnregiste
   out_packet_1->mutable_view()->mutable_data().Write(kPacket1);
   out_packet_1->InitializeFromBuffer();
   connection_1.QueuePacket(std::move(out_packet_1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle1, 1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   acl_data_channel()->UnregisterConnection(kConnectionHandle0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_ACL_PACKET_OUT(test_device(), kPacket1);
   // Create packet to send
@@ -716,7 +715,7 @@ TEST_P(AclDataChannelAllBufferCombinations, RegisterTwoLEConnectionsAndUnregiste
   out_packet_1->mutable_view()->mutable_data().Write(kPacket1);
   out_packet_1->InitializeFromBuffer();
   connection_1.QueuePacket(std::move(out_packet_1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   acl_data_channel()->UnregisterConnection(kConnectionHandle1);
@@ -761,7 +760,7 @@ TEST_P(AclDataChannelAllBufferCombinations,
   out_packet_0->mutable_view()->mutable_data().Write(kPacket0);
   out_packet_0->InitializeFromBuffer();
   connection_0.QueuePacket(std::move(out_packet_0));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   // The second packet should fill up the controller buffer (kBufferMaxNumPackets)
@@ -771,33 +770,33 @@ TEST_P(AclDataChannelAllBufferCombinations,
   out_packet_1->mutable_view()->mutable_data().Write(kPacket1);
   out_packet_1->InitializeFromBuffer();
   connection_0.QueuePacket(std::move(out_packet_1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   ACLDataPacketPtr out_packet_2 = ACLDataPacket::New(/*payload_size=*/1);
   out_packet_2->mutable_view()->mutable_data().Write(kPacket2);
   out_packet_2->InitializeFromBuffer();
   connection_1.QueuePacket(std::move(out_packet_2));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // |out_packet_2| should not be sent because the controller buffer is full
   EXPECT_EQ(connection_1.queued_packets().size(), 1u);
 
   // |UnregisterConnection| should not free up any buffer space, so next packet should not be sent
   acl_data_channel()->UnregisterConnection(kConnectionHandle0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Clearing the pending packet count for |connection_0| should result in |out_packet_2| being
   // sent
   EXPECT_ACL_PACKET_OUT(test_device(), kPacket2);
   acl_data_channel()->ClearControllerPacketCount(kConnectionHandle0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   // There are no active connections now
   acl_data_channel()->UnregisterConnection(kConnectionHandle1);
   acl_data_channel()->ClearControllerPacketCount(kConnectionHandle1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(AclDataChannelTest, SendMoreBREDRAndLEPacketsThanMaximumBREDRBufferSpace) {
@@ -834,7 +833,7 @@ TEST_F(AclDataChannelTest, SendMoreBREDRAndLEPacketsThanMaximumBREDRBufferSpace)
         /*payload_size=*/1);
     packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(i);
     connection->QueuePacket(std::move(packet));
-    RunLoopUntilIdle();
+    RunUntilIdle();
   }
 
   // Since |kBufferMaxNumPackets| is 5, the controller should have received 3 packets on
@@ -849,7 +848,7 @@ TEST_F(AclDataChannelTest, SendMoreBREDRAndLEPacketsThanMaximumBREDRBufferSpace)
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle0, 3));
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle1, 2));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Since we're alternating between |connection_0| and |connection_1|, the controller should have
   // received 2 more packets on |connection_0| and 3 more packets on |connection_1|
@@ -863,7 +862,7 @@ TEST_F(AclDataChannelTest, SendMoreBREDRAndLEPacketsThanMaximumBREDRBufferSpace)
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle0, 2));
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle1, 3));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(connection_0.queued_packets().size(), 0u);
   EXPECT_EQ(connection_1.queued_packets().size(), 0u);
@@ -904,7 +903,7 @@ TEST_F(AclDataChannelTest, SendMoreBREDRAndLEPacketsThanMaximumLEBufferSpace) {
         /*payload_size=*/1);
     packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(i);
     connection->QueuePacket(std::move(packet));
-    RunLoopUntilIdle();
+    RunUntilIdle();
   }
 
   // Since |kBufferMaxNumPackets| is 3 and no BR/EDR packets should have been sent, the controller
@@ -915,7 +914,7 @@ TEST_F(AclDataChannelTest, SendMoreBREDRAndLEPacketsThanMaximumLEBufferSpace) {
 
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle0, 3));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(connection_0.queued_packets().size(), 0u);
   EXPECT_EQ(connection_1.queued_packets().size(), 6u);
@@ -952,7 +951,7 @@ TEST_F(AclDataChannelTest, SendMoreBREDRAndLEPacketsThanMaximumSharedBufferSpace
                            /*payload_size=*/1);
     packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(i);
     connection_0.QueuePacket(std::move(packet));
-    RunLoopUntilIdle();
+    RunUntilIdle();
   }
   EXPECT_EQ(connection_0.queued_packets().size(), 1u);
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
@@ -977,7 +976,7 @@ TEST_F(AclDataChannelTest, SendMoreBREDRAndLEPacketsThanMaximumSharedBufferSpace
                            /*payload_size=*/1);
     packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(i);
     connection_1.QueuePacket(std::move(packet));
-    RunLoopUntilIdle();
+    RunUntilIdle();
   }
   EXPECT_EQ(connection_1.queued_packets().size(), 1u);
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
@@ -993,7 +992,7 @@ TEST_F(AclDataChannelTest, SendMoreBREDRAndLEPacketsThanMaximumSharedBufferSpace
                             static_cast<uint8_t>(kBufferMaxNumPackets)));
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle0, 1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Send out last packet on LE link
   EXPECT_ACL_PACKET_OUT(test_device(),
@@ -1006,7 +1005,7 @@ TEST_F(AclDataChannelTest, SendMoreBREDRAndLEPacketsThanMaximumSharedBufferSpace
                             static_cast<uint8_t>(kBufferMaxNumPackets)));
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle1, 1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(connection_0.queued_packets().size(), 0u);
   EXPECT_EQ(connection_1.queued_packets().size(), 0u);

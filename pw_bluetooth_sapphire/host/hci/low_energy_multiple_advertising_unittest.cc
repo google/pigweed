@@ -15,7 +15,7 @@ namespace bt::hci {
 namespace {
 
 using bt::testing::FakeController;
-using TestingBase = bt::testing::ControllerTest<FakeController>;
+using TestingBase = bt::testing::FakeDispatcherControllerTest<FakeController>;
 using AdvertisingOptions = LowEnergyAdvertiser::AdvertisingOptions;
 using LEAdvertisingState = FakeController::LEAdvertisingState;
 
@@ -129,7 +129,7 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, AdvertisingHandlesExhausted) {
     this->advertiser()->StartAdvertising(DeviceAddress(DeviceAddress::Type::kLEPublic, {i}), ad,
                                          scan_data, options, /*connect_callback=*/nullptr,
                                          this->MakeExpectSuccessCallback());
-    this->RunLoopUntilIdle();
+    this->RunUntilIdle();
   }
 
   ASSERT_TRUE(this->GetLastStatus());
@@ -140,7 +140,7 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, AdvertisingHandlesExhausted) {
       DeviceAddress(DeviceAddress::Type::kLEPublic, {hci_spec::kAdvertisingHandleMax + 1}), ad,
       scan_data, options, /*connect_callback=*/nullptr, this->MakeExpectErrorCallback());
 
-  this->RunLoopUntilIdle();
+  this->RunUntilIdle();
   ASSERT_TRUE(this->GetLastStatus());
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
   EXPECT_EQ(this->max_advertisements(), this->advertiser()->NumAdvertisements());
@@ -158,7 +158,7 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, SimultaneousAdvertisements) {
   this->advertiser()->StartAdvertising(kPublicAddress, ad, scan_data, public_options,
                                        /*connect_callback=*/nullptr,
                                        this->MakeExpectSuccessCallback());
-  this->RunLoopUntilIdle();
+  this->RunUntilIdle();
   std::optional<hci_spec::AdvertisingHandle> handle_public_addr =
       this->advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle_public_addr);
@@ -171,7 +171,7 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, SimultaneousAdvertisements) {
   this->advertiser()->StartAdvertising(kRandomAddress, ad, scan_data, random_options,
                                        /*connect_callback=*/nullptr,
                                        this->MakeExpectSuccessCallback());
-  this->RunLoopUntilIdle();
+  this->RunUntilIdle();
   std::optional<hci_spec::AdvertisingHandle> handle_random_addr =
       this->advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle_random_addr);
@@ -209,7 +209,7 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, StopAdvertisingAllAdvertisementsSto
   this->advertiser()->StartAdvertising(kPublicAddress, ad, scan_data, public_options,
                                        /*connect_callback=*/nullptr,
                                        this->MakeExpectSuccessCallback());
-  this->RunLoopUntilIdle();
+  this->RunUntilIdle();
   std::optional<hci_spec::AdvertisingHandle> handle_public_addr =
       this->advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle_public_addr);
@@ -222,7 +222,7 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, StopAdvertisingAllAdvertisementsSto
   this->advertiser()->StartAdvertising(kRandomAddress, ad, scan_data, random_options,
                                        /*connect_callback=*/nullptr,
                                        this->MakeExpectSuccessCallback());
-  this->RunLoopUntilIdle();
+  this->RunUntilIdle();
   std::optional<hci_spec::AdvertisingHandle> handle_random_addr =
       this->advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle_random_addr);
@@ -235,7 +235,7 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, StopAdvertisingAllAdvertisementsSto
 
   // Stop advertising
   this->advertiser()->StopAdvertising();
-  this->RunLoopUntilIdle();
+  this->RunUntilIdle();
 
   // Check that advertiser and controller both report not advertising
   EXPECT_EQ(0u, this->advertiser()->NumAdvertisements());
@@ -275,7 +275,7 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, StopAdvertisingSingleAdvertisement)
   this->advertiser()->StartAdvertising(kPublicAddress, ad, scan_data, public_options,
                                        /*connect_callback=*/nullptr,
                                        this->MakeExpectSuccessCallback());
-  this->RunLoopUntilIdle();
+  this->RunUntilIdle();
   std::optional<hci_spec::AdvertisingHandle> handle_public_addr =
       this->advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle_public_addr);
@@ -288,7 +288,7 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, StopAdvertisingSingleAdvertisement)
   this->advertiser()->StartAdvertising(kRandomAddress, ad, scan_data, random_options,
                                        /*connect_callback=*/nullptr,
                                        this->MakeExpectSuccessCallback());
-  this->RunLoopUntilIdle();
+  this->RunUntilIdle();
   std::optional<hci_spec::AdvertisingHandle> handle_random_addr =
       this->advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle_random_addr);
@@ -301,7 +301,7 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, StopAdvertisingSingleAdvertisement)
 
   // Stop advertising the random address
   this->advertiser()->StopAdvertising(kRandomAddress);
-  this->RunLoopUntilIdle();
+  this->RunUntilIdle();
 
   // Check that advertiser and controller both report the same advertising state
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
@@ -332,7 +332,7 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, StopAdvertisingSingleAdvertisement)
 
   // stop advertising the public address
   this->advertiser()->StopAdvertising(kPublicAddress);
-  this->RunLoopUntilIdle();
+  this->RunUntilIdle();
 
   {
     const LEAdvertisingState& public_addr_state =
@@ -375,7 +375,7 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, SuccessiveAdvertisingCalls) {
                                        /*connect_callback=*/nullptr,
                                        this->MakeExpectSuccessCallback());
 
-  this->RunLoopUntilIdle();
+  this->RunUntilIdle();
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
   EXPECT_EQ(2u, this->advertiser()->NumAdvertisements());
   EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress));
@@ -384,7 +384,7 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, SuccessiveAdvertisingCalls) {
   this->advertiser()->StopAdvertising(kPublicAddress);
   this->advertiser()->StopAdvertising(kRandomAddress);
 
-  this->RunLoopUntilIdle();
+  this->RunUntilIdle();
   EXPECT_FALSE(this->advertiser()->IsAdvertising());
   EXPECT_EQ(0u, this->advertiser()->NumAdvertisements());
   EXPECT_FALSE(this->advertiser()->IsAdvertising(kPublicAddress));
@@ -407,7 +407,7 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, InterleavedAdvertisingCalls) {
                                        /*connect_callback=*/nullptr,
                                        this->MakeExpectSuccessCallback());
 
-  this->RunLoopUntilIdle();
+  this->RunUntilIdle();
   EXPECT_TRUE(this->advertiser()->IsAdvertising());
   EXPECT_EQ(1u, this->advertiser()->NumAdvertisements());
   EXPECT_TRUE(this->advertiser()->IsAdvertising(kPublicAddress));
@@ -425,7 +425,7 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, StopWhileStarting) {
                                        this->MakeExpectSuccessCallback());
   this->advertiser()->StopAdvertising(kPublicAddress);
 
-  this->RunLoopUntilIdle();
+  this->RunUntilIdle();
   EXPECT_TRUE(this->GetLastStatus());
 
   std::optional<hci_spec::AdvertisingHandle> handle =

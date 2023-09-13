@@ -78,7 +78,7 @@ EscoConnectionParams() {
   return params;
 }
 
-using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
+using TestingBase = bt::testing::FakeDispatcherControllerTest<bt::testing::MockController>;
 
 // Activate a SCO connection and set the close handler to call Deactivate()
 void activate_connection(OpenConnectionResult& result) {
@@ -105,7 +105,7 @@ class ScoConnectionManagerTest : public TestingBase {
 
   void TearDown() override {
     manager_.reset();
-    RunLoopUntilIdle();
+    RunUntilIdle();
     TestingBase::TearDown();
   }
 
@@ -138,7 +138,7 @@ TEST_F(ScoConnectionManagerTest, OpenConnectionSuccess) {
 
   auto req_handle = manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result.has_value());
   ASSERT_TRUE(conn_result->is_ok());
   ASSERT_TRUE(conn_result->value().is_alive());
@@ -146,7 +146,7 @@ TEST_F(ScoConnectionManagerTest, OpenConnectionSuccess) {
 
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));
   conn_result->value()->Close();
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ScoConnectionManagerTest, OpenConnectionAndReceiveFailureStatusEvent) {
@@ -166,7 +166,7 @@ TEST_F(ScoConnectionManagerTest, OpenConnectionAndReceiveFailureStatusEvent) {
 
   auto req_handle = manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn.has_value());
   ASSERT_TRUE(conn->is_error());
   EXPECT_EQ(conn->error_value(), HostError::kFailed);
@@ -191,7 +191,7 @@ TEST_F(ScoConnectionManagerTest, OpenConnectionAndReceiveFailureCompleteEvent) {
 
   auto req_handle = manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn.has_value());
   ASSERT_TRUE(conn->is_error());
   EXPECT_EQ(conn->error_value(), HostError::kFailed);
@@ -222,7 +222,7 @@ TEST_F(ScoConnectionManagerTest,
       testing::EnhancedAcceptSynchronousConnectionRequestPacket(kPeerAddress, kConnectionParams),
       &accept_status_packet, &conn_complete_packet);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn.has_value());
   ASSERT_TRUE(conn->is_error());
   EXPECT_EQ(conn->error_value(), HostError::kParametersRejected);
@@ -249,7 +249,7 @@ TEST_F(ScoConnectionManagerTest, IgnoreWrongAddressInConnectionComplete) {
 
   auto req_handle = manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(conn_result.has_value());
 
   // Ensure subsequent correct complete packet completes request.
@@ -257,7 +257,7 @@ TEST_F(ScoConnectionManagerTest, IgnoreWrongAddressInConnectionComplete) {
       kScoConnectionHandle, kPeerAddress, hci_spec::LinkType::kExtendedSCO,
       pw::bluetooth::emboss::StatusCode::SUCCESS);
   test_device()->SendCommandChannelPacket(conn_complete_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result.has_value());
   ASSERT_TRUE(conn_result->is_ok());
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));
@@ -269,7 +269,7 @@ TEST_F(ScoConnectionManagerTest, UnexpectedConnectionCompleteDisconnectsConnecti
       pw::bluetooth::emboss::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));
   test_device()->SendCommandChannelPacket(conn_complete_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ScoConnectionManagerTest, DestroyingManagerClosesConnections) {
@@ -291,14 +291,14 @@ TEST_F(ScoConnectionManagerTest, DestroyingManagerClosesConnections) {
 
   auto req_handle = manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result.has_value());
   ASSERT_TRUE(conn_result->is_ok());
   EXPECT_TRUE(conn_result->value().is_alive());
 
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));
   DestroyManager();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   // WeakPtr should become invalid.
   EXPECT_FALSE(conn_result->value().is_alive());
 }
@@ -336,7 +336,7 @@ TEST_F(ScoConnectionManagerTest, QueueThreeRequestsCancelsSecond) {
   };
   auto req_handle_2 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_2));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(conn_result_0.has_value());
   EXPECT_FALSE(conn_result_2.has_value());
   ASSERT_TRUE(conn_result_1.has_value());
@@ -352,7 +352,7 @@ TEST_F(ScoConnectionManagerTest, QueueThreeRequestsCancelsSecond) {
       handle_0, kPeerAddress, hci_spec::LinkType::kExtendedSCO,
       pw::bluetooth::emboss::StatusCode::SUCCESS);
   test_device()->SendCommandChannelPacket(conn_complete_packet_0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result_0.has_value());
   ASSERT_TRUE(conn_result_0->is_ok());
   EXPECT_FALSE(conn_result_2.has_value());
@@ -361,7 +361,7 @@ TEST_F(ScoConnectionManagerTest, QueueThreeRequestsCancelsSecond) {
       handle_2, kPeerAddress, hci_spec::LinkType::kExtendedSCO,
       pw::bluetooth::emboss::StatusCode::SUCCESS);
   test_device()->SendCommandChannelPacket(conn_complete_packet_2);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result_2.has_value());
   ASSERT_TRUE(conn_result_2->is_ok());
 
@@ -374,7 +374,7 @@ TEST_F(ScoConnectionManagerTest, QueueThreeRequestsCancelsSecond) {
   conn_result_0.value()->Deactivate();
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(handle_2));
   conn_result_2.value()->Deactivate();
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ScoConnectionManagerTest, HandleReuse) {
@@ -396,7 +396,7 @@ TEST_F(ScoConnectionManagerTest, HandleReuse) {
 
   auto req_handle_0 = manager()->OpenConnection(kConnectionParams, conn_cb);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result.has_value());
   ASSERT_TRUE(conn_result->is_ok());
   ScoConnection::WeakPtr conn = conn_result->value();
@@ -417,7 +417,7 @@ TEST_F(ScoConnectionManagerTest, HandleReuse) {
 
   auto req_handle_1 = manager()->OpenConnection(kConnectionParams, conn_cb);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result.has_value());
   ASSERT_TRUE(conn_result->is_ok());
   EXPECT_EQ(conn_result->value()->handle(), kScoConnectionHandle);
@@ -443,14 +443,14 @@ TEST_F(ScoConnectionManagerTest, AcceptConnectionSuccess) {
       test_device(),
       testing::EnhancedAcceptSynchronousConnectionRequestPacket(kPeerAddress, kConnectionParams),
       &accept_status_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(conn_result.has_value());
 
   test_device()->SendCommandChannelPacket(testing::SynchronousConnectionCompletePacket(
       kScoConnectionHandle, kPeerAddress, hci_spec::LinkType::kSCO,
       pw::bluetooth::emboss::StatusCode::SUCCESS));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result.has_value());
   ASSERT_TRUE(conn_result->is_ok());
   EXPECT_EQ(conn_result->value().first->handle(), kScoConnectionHandle);
@@ -474,14 +474,14 @@ TEST_F(ScoConnectionManagerTest, AcceptConnectionAndReceiveStatusAndCompleteEven
       test_device(),
       testing::EnhancedAcceptSynchronousConnectionRequestPacket(kPeerAddress, kConnectionParams),
       &accept_status_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(conn_result.has_value());
 
   test_device()->SendCommandChannelPacket(testing::SynchronousConnectionCompletePacket(
       kScoConnectionHandle, kPeerAddress, hci_spec::LinkType::kSCO,
       pw::bluetooth::emboss::StatusCode::CONNECTION_ACCEPT_TIMEOUT_EXCEEDED));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result.has_value());
   ASSERT_TRUE(conn_result->is_error());
   EXPECT_EQ(conn_result->error_value(), HostError::kParametersRejected);
@@ -503,14 +503,14 @@ TEST_F(ScoConnectionManagerTest, AcceptConnectionAndReceiveCompleteEventWithFail
       test_device(),
       testing::EnhancedAcceptSynchronousConnectionRequestPacket(kPeerAddress, kConnectionParams),
       &accept_status_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(conn_result.has_value());
 
   test_device()->SendCommandChannelPacket(testing::SynchronousConnectionCompletePacket(
       kScoConnectionHandle, kPeerAddress, hci_spec::LinkType::kSCO,
       pw::bluetooth::emboss::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result.has_value());
   ASSERT_TRUE(conn_result->is_error());
   EXPECT_EQ(conn_result->error_value(), HostError::kParametersRejected);
@@ -542,7 +542,7 @@ TEST_F(ScoConnectionManagerTest, RejectInboundRequestWhileInitiatorRequestPendin
       testing::RejectSynchronousConnectionRequest(
           kPeerAddress, pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR),
       &reject_status_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(conn_cb_count, 0u);
   // Destroy manager so that callback gets called before callback reference is invalid.
   DestroyManager();
@@ -560,20 +560,20 @@ TEST_F(ScoConnectionManagerTest, RejectInboundRequestWhenNoRequestsPending) {
       testing::RejectSynchronousConnectionRequest(
           kPeerAddress, pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR),
       &reject_status_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ScoConnectionManagerTest, IgnoreInboundAclRequest) {
   auto conn_req_packet = testing::ConnectionRequestPacket(kPeerAddress, hci_spec::LinkType::kACL);
   test_device()->SendCommandChannelPacket(conn_req_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ScoConnectionManagerTest, IgnoreInboundRequestWrongPeerAddress) {
   const DeviceAddress address(DeviceAddress::Type::kBREDR, {0x00, 0x00, 0x00, 0x00, 0x00, 0x05});
   auto conn_req_packet = testing::ConnectionRequestPacket(address, hci_spec::LinkType::kACL);
   test_device()->SendCommandChannelPacket(conn_req_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ScoConnectionManagerTest, QueueTwoAcceptConnectionRequestsCancelsFirstRequest) {
@@ -602,14 +602,14 @@ TEST_F(ScoConnectionManagerTest, QueueTwoAcceptConnectionRequestsCancelsFirstReq
       test_device(),
       testing::EnhancedAcceptSynchronousConnectionRequestPacket(kPeerAddress, second_conn_params),
       &accept_status_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(conn_result_1.has_value());
 
   test_device()->SendCommandChannelPacket(testing::SynchronousConnectionCompletePacket(
       kScoConnectionHandle, kPeerAddress, hci_spec::LinkType::kSCO,
       pw::bluetooth::emboss::StatusCode::SUCCESS));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result_1.has_value());
   ASSERT_TRUE(conn_result_1->is_ok());
   EXPECT_EQ(conn_result_1->value().first->handle(), kScoConnectionHandle);
@@ -649,14 +649,14 @@ TEST_F(
       test_device(),
       testing::EnhancedAcceptSynchronousConnectionRequestPacket(kPeerAddress, second_conn_params),
       &accept_status_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(conn_result_1.has_value());
 
   test_device()->SendCommandChannelPacket(testing::SynchronousConnectionCompletePacket(
       kScoConnectionHandle, kPeerAddress, hci_spec::LinkType::kSCO,
       pw::bluetooth::emboss::StatusCode::SUCCESS));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result_1.has_value());
   ASSERT_TRUE(conn_result_1->is_ok());
   EXPECT_EQ(conn_result_1->value().first->handle(), kScoConnectionHandle);
@@ -674,7 +674,7 @@ TEST_F(ScoConnectionManagerTest, QueueSecondAcceptRequestAfterFirstRequestReceiv
 
   EXPECT_CMD_PACKET_OUT(test_device(), testing::EnhancedAcceptSynchronousConnectionRequestPacket(
                                            kPeerAddress, kConnectionParams));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   std::optional<AcceptConnectionResult> conn_result_1;
   auto req_handle_1 = manager()->AcceptConnection(
@@ -690,7 +690,7 @@ TEST_F(ScoConnectionManagerTest, QueueSecondAcceptRequestAfterFirstRequestReceiv
   test_device()->SendCommandChannelPacket(testing::SynchronousConnectionCompletePacket(
       kScoConnectionHandle, kPeerAddress, hci_spec::LinkType::kSCO,
       pw::bluetooth::emboss::StatusCode::CONNECTION_ACCEPT_TIMEOUT_EXCEEDED));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result_0.has_value());
   ASSERT_TRUE(conn_result_0->is_error());
   EXPECT_EQ(conn_result_0->error_value(), HostError::kParametersRejected);
@@ -705,14 +705,14 @@ TEST_F(ScoConnectionManagerTest, QueueSecondAcceptRequestAfterFirstRequestReceiv
       test_device(),
       testing::EnhancedAcceptSynchronousConnectionRequestPacket(kPeerAddress, kConnectionParams),
       &accept_status_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(conn_result_1.has_value());
 
   test_device()->SendCommandChannelPacket(testing::SynchronousConnectionCompletePacket(
       kScoConnectionHandle, kPeerAddress, hci_spec::LinkType::kSCO,
       pw::bluetooth::emboss::StatusCode::SUCCESS));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result_1.has_value());
   ASSERT_TRUE(conn_result_1->is_ok());
   EXPECT_EQ(conn_result_1->value().first->handle(), kScoConnectionHandle);
@@ -742,7 +742,7 @@ TEST_F(ScoConnectionManagerTest, RequestsCancelledOnManagerDestruction) {
   };
   auto req_handle_1 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_1));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   DestroyManager();
   ASSERT_TRUE(conn_result_0.has_value());
@@ -773,7 +773,7 @@ TEST_F(ScoConnectionManagerTest, AcceptConnectionExplicitlyCancelledByClient) {
       testing::RejectSynchronousConnectionRequest(
           kPeerAddress, pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR),
       &reject_status_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result->is_error());
   EXPECT_EQ(conn_result->error_value(), HostError::kCanceled);
 }
@@ -798,7 +798,7 @@ TEST_F(ScoConnectionManagerTest, AcceptConnectionCancelledByClientDestroyingHand
       testing::RejectSynchronousConnectionRequest(
           kPeerAddress, pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR),
       &reject_status_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result->is_error());
   EXPECT_EQ(conn_result->error_value(), HostError::kCanceled);
 }
@@ -823,18 +823,18 @@ TEST_F(ScoConnectionManagerTest, OpenConnectionCantBeCancelledOnceInProgress) {
   auto req_handle = manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
   req_handle.Cancel();
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(conn_result.has_value());
   test_device()->SendCommandChannelPacket(conn_complete_packet);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result.has_value());
   ASSERT_TRUE(conn_result->is_ok());
   EXPECT_EQ(conn_result->value()->handle(), kScoConnectionHandle);
 
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));
   conn_result.value()->Close();
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ScoConnectionManagerTest, QueueTwoRequestsAndCancelSecond) {
@@ -863,7 +863,7 @@ TEST_F(ScoConnectionManagerTest, QueueTwoRequestsAndCancelSecond) {
   };
   auto req_handle_1 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_1));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(conn_result_0.has_value());
 
   req_handle_1.Cancel();
@@ -876,7 +876,7 @@ TEST_F(ScoConnectionManagerTest, QueueTwoRequestsAndCancelSecond) {
       handle_0, kPeerAddress, hci_spec::LinkType::kExtendedSCO,
       pw::bluetooth::emboss::StatusCode::SUCCESS);
   test_device()->SendCommandChannelPacket(conn_complete_packet_0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result_0.has_value());
   ASSERT_TRUE(conn_result_0->is_ok());
   EXPECT_EQ(cb_count_1, 1u);
@@ -887,7 +887,7 @@ TEST_F(ScoConnectionManagerTest, QueueTwoRequestsAndCancelSecond) {
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(handle_0),
                         &disconn_status_packet_0, &disconn_complete_0);
   conn_result_0.value()->Deactivate();
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ScoConnectionManagerTest,
@@ -922,7 +922,7 @@ TEST_F(ScoConnectionManagerTest,
   };
   auto req_handle_2 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_2));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(conn_result_0.has_value());
   EXPECT_FALSE(conn_result_2.has_value());
   ASSERT_TRUE(conn_result_1.has_value());
@@ -930,7 +930,7 @@ TEST_F(ScoConnectionManagerTest,
   EXPECT_EQ(conn_result_1->error_value(), HostError::kCanceled);
 
   DestroyManager();
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ScoConnectionManagerTest,
@@ -953,7 +953,7 @@ TEST_F(ScoConnectionManagerTest,
 
   auto req_handle_0 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_0));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result_0.has_value());
   ASSERT_TRUE(conn_result_0->is_ok());
   ASSERT_TRUE(conn_result_0->value().is_alive());
@@ -961,7 +961,7 @@ TEST_F(ScoConnectionManagerTest,
 
   test_device()->SendCommandChannelPacket(testing::DisconnectionCompletePacket(
       kScoConnectionHandle, pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_CMD_PACKET_OUT(
       test_device(),
@@ -976,7 +976,7 @@ TEST_F(ScoConnectionManagerTest,
 
   auto req_handle_1 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_1));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result_1.has_value());
   ASSERT_TRUE(conn_result_1->is_ok());
   ASSERT_TRUE(conn_result_1->value().is_alive());
@@ -984,7 +984,7 @@ TEST_F(ScoConnectionManagerTest,
 
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));
   conn_result_1.value()->Close();
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ScoConnectionManagerTest,
@@ -997,10 +997,10 @@ TEST_F(ScoConnectionManagerTest,
   };
 
   req_handle = manager()->AcceptConnection({kConnectionParams}, std::move(conn_cb));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   DestroyManager();
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(conn.has_value());
   ASSERT_TRUE(conn->is_error());
@@ -1032,7 +1032,7 @@ TEST_F(ScoConnectionManagerTest,
   };
   req_handle_1 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_1));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(conn_result_0.has_value());
 
   DestroyManager();
@@ -1067,14 +1067,14 @@ TEST_F(ScoConnectionManagerTest, AcceptConnectionFirstParametersRejectedSecondPa
       test_device(),
       testing::EnhancedAcceptSynchronousConnectionRequestPacket(kPeerAddress, esco_params_0),
       &accept_status_packet_0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(conn_result.has_value());
 
   test_device()->SendCommandChannelPacket(testing::SynchronousConnectionCompletePacket(
       kScoConnectionHandle, kPeerAddress, hci_spec::LinkType::kExtendedSCO,
       pw::bluetooth::emboss::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(conn_result.has_value());
 
   auto conn_req_packet_1 =
@@ -1088,14 +1088,14 @@ TEST_F(ScoConnectionManagerTest, AcceptConnectionFirstParametersRejectedSecondPa
       test_device(),
       testing::EnhancedAcceptSynchronousConnectionRequestPacket(kPeerAddress, esco_params_1),
       &accept_status_packet_1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(conn_result.has_value());
 
   test_device()->SendCommandChannelPacket(testing::SynchronousConnectionCompletePacket(
       kScoConnectionHandle, kPeerAddress, hci_spec::LinkType::kExtendedSCO,
       pw::bluetooth::emboss::StatusCode::SUCCESS));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result.has_value());
   ASSERT_TRUE(conn_result->is_ok());
   EXPECT_EQ(conn_result->value().first->handle(), kScoConnectionHandle);
@@ -1123,14 +1123,14 @@ TEST_F(
                         testing::EnhancedAcceptSynchronousConnectionRequestPacket(
                             kPeerAddress, ScoConnectionParams()),
                         &accept_status_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(conn_result.has_value());
 
   test_device()->SendCommandChannelPacket(testing::SynchronousConnectionCompletePacket(
       kScoConnectionHandle, kPeerAddress, hci_spec::LinkType::kSCO,
       pw::bluetooth::emboss::StatusCode::SUCCESS));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result.has_value());
   ASSERT_TRUE(conn_result->is_ok());
   EXPECT_EQ(conn_result->value().first->handle(), kScoConnectionHandle);
@@ -1162,14 +1162,14 @@ TEST_F(
                         testing::EnhancedAcceptSynchronousConnectionRequestPacket(
                             kPeerAddress, EscoConnectionParams()),
                         &accept_status_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(conn_result.has_value());
 
   test_device()->SendCommandChannelPacket(testing::SynchronousConnectionCompletePacket(
       kScoConnectionHandle, kPeerAddress, hci_spec::LinkType::kExtendedSCO,
       pw::bluetooth::emboss::StatusCode::SUCCESS));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result.has_value());
   ASSERT_TRUE(conn_result->is_ok());
   EXPECT_EQ(conn_result->value().first->handle(), kScoConnectionHandle);
@@ -1199,13 +1199,13 @@ TEST_F(ScoConnectionManagerTest, AcceptScoConnectionWithEscoParametersFailsAndSe
       testing::RejectSynchronousConnectionRequest(
           kPeerAddress, pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_LIMITED_RESOURCES),
       &reject_status_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   // The AcceptConnection request should not be completed until the connection complete event is
   // received.
   EXPECT_FALSE(conn_result.has_value());
 
   test_device()->SendCommandChannelPacket(conn_complete_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result.has_value());
   ASSERT_TRUE(conn_result->is_error());
   EXPECT_EQ(conn_result->error_value(), HostError::kParametersRejected);
@@ -1242,7 +1242,7 @@ TEST_F(
       test_device(),
       testing::EnhancedAcceptSynchronousConnectionRequestPacket(kPeerAddress, kConnectionParams),
       &accept_status_packet_0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(conn_result_0.has_value());
 
   // Second request should cancel first request when connection complete event is received.
@@ -1255,7 +1255,7 @@ TEST_F(
       kScoConnectionHandle, kPeerAddress, hci_spec::LinkType::kExtendedSCO,
       pw::bluetooth::emboss::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result_0.has_value());
   ASSERT_TRUE(conn_result_0->is_error());
   EXPECT_EQ(conn_result_0->error_value(), HostError::kCanceled);
@@ -1272,14 +1272,14 @@ TEST_F(
       test_device(),
       testing::EnhancedAcceptSynchronousConnectionRequestPacket(kPeerAddress, kConnectionParams),
       &accept_status_packet_1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(conn_result_1.has_value());
 
   test_device()->SendCommandChannelPacket(testing::SynchronousConnectionCompletePacket(
       kScoConnectionHandle, kPeerAddress, hci_spec::LinkType::kExtendedSCO,
       pw::bluetooth::emboss::StatusCode::SUCCESS));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result_1.has_value());
   ASSERT_TRUE(conn_result_1->is_ok());
   EXPECT_EQ(conn_result_1->value().first->handle(), kScoConnectionHandle);

@@ -13,10 +13,11 @@
 
 namespace bt::l2cap {
 
+using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
+
 // ChannelManager test fixture that uses a real AclDataChannel and uses MockController
 // for HCI packet expectations.
-class ChannelManagerMockControllerTest
-    : public bt::testing::ControllerTest<bt::testing::MockController> {
+class ChannelManagerMockControllerTest : public TestingBase {
  public:
   static constexpr size_t kMaxDataPacketLength = 64;
   // High enough so that most tests don't need to worry about HCI flow control.
@@ -31,42 +32,39 @@ class ChannelManagerMockControllerTest
   static void DoNothing() {}
   static void NopRxCallback(ByteBufferPtr) {}
 
-  ChannelManagerMockControllerTest() = default;
-  ~ChannelManagerMockControllerTest() override = default;
+  ChannelManagerMockControllerTest(pw::async::Dispatcher& dispatcher)
+      : TestingBase(dispatcher), dispatcher_(dispatcher) {}
+  ~ChannelManagerMockControllerTest() = default;
 
  protected:
-  void SetUp() override {
-    bt::testing::ControllerTest<bt::testing::MockController>::SetUp();
+  void Initialize() {
+    TestingBase::Initialize(pw::bluetooth::Controller::FeaturesBits::kHciSco);
     const auto bredr_buffer_info = hci::DataBufferInfo(kMaxDataPacketLength, kBufferMaxNumPackets);
     InitializeACLDataChannel(bredr_buffer_info);
 
     // TODO(63074): Remove assumptions about channel ordering so we can turn random ids on.
     channel_manager_ =
         ChannelManager::Create(transport()->acl_data_channel(), transport()->command_channel(),
-                               /*random_channel_ids=*/false, pw_dispatcher());
+                               /*random_channel_ids=*/false, dispatcher_);
 
     next_command_id_ = 1;
   }
 
-  void SetUp(size_t max_acl_payload_size, size_t max_le_payload_size,
-             size_t max_acl_packets = kBufferMaxNumPackets,
-             size_t max_le_packets = kBufferMaxNumPackets) {
-    bt::testing::ControllerTest<bt::testing::MockController>::SetUp();
+  void Initialize(size_t max_acl_payload_size, size_t max_le_payload_size, size_t max_acl_packets,
+                  size_t max_le_packets) {
+    TestingBase::Initialize(pw::bluetooth::Controller::FeaturesBits::kHciSco);
 
     InitializeACLDataChannel(hci::DataBufferInfo(max_acl_payload_size, max_acl_packets),
                              hci::DataBufferInfo(max_le_payload_size, max_le_packets));
 
     channel_manager_ =
         ChannelManager::Create(transport()->acl_data_channel(), transport()->command_channel(),
-                               /*random_channel_ids=*/false, pw_dispatcher());
+                               /*random_channel_ids=*/false, dispatcher_);
 
     next_command_id_ = 1;
   }
 
-  void TearDown() override {
-    channel_manager_ = nullptr;
-    bt::testing::ControllerTest<bt::testing::MockController>::TearDown();
-  }
+  void DeleteChannelManager() { channel_manager_ = nullptr; }
 
   l2cap::CommandId NextCommandId() { return next_command_id_++; }
 
@@ -175,8 +173,31 @@ class ChannelManagerMockControllerTest
  private:
   std::unique_ptr<ChannelManager> channel_manager_;
   l2cap::CommandId next_command_id_;
+  pw::async::Dispatcher& dispatcher_;
 
   BT_DISALLOW_COPY_ASSIGN_AND_MOVE(ChannelManagerMockControllerTest);
+};
+
+class FakeDispatcherChannelManagerMockControllerTest
+    : public pw::async::test::FakeDispatcherFixture,
+      public ChannelManagerMockControllerTest {
+ protected:
+  FakeDispatcherChannelManagerMockControllerTest()
+      : ChannelManagerMockControllerTest(dispatcher()) {}
+
+  void SetUp() override { Initialize(); }
+
+  void SetUp(size_t max_acl_payload_size, size_t max_le_payload_size,
+             size_t max_acl_packets = kBufferMaxNumPackets,
+             size_t max_le_packets = kBufferMaxNumPackets) {
+    Initialize(max_acl_payload_size, max_le_payload_size, max_acl_packets, max_le_packets);
+  }
+
+  void TearDown() override {
+    DeleteChannelManager();
+    RunUntilIdle();
+    DeleteTransport();
+  }
 };
 
 }  // namespace bt::l2cap

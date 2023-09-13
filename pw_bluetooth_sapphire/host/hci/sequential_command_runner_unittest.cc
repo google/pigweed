@@ -19,7 +19,7 @@ constexpr hci_spec::OpCode kTestOpCode2 = 0xF00F;
 
 using bt::testing::CommandTransaction;
 
-using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
+using TestingBase = bt::testing::FakeDispatcherControllerTest<bt::testing::MockController>;
 
 class SequentialCommandRunnerTest : public TestingBase {
  public:
@@ -101,7 +101,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
 
   cmd_runner.RunCommands(status_cb);
   EXPECT_FALSE(cmd_runner.IsReady());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cmd_runner.IsReady());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(1, cb_called);
@@ -119,7 +119,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
 
   cmd_runner.RunCommands(status_cb);
   EXPECT_FALSE(cmd_runner.IsReady());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cmd_runner.IsReady());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(1, cb_called);
@@ -138,7 +138,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
 
   cmd_runner.RunCommands(status_cb);
   EXPECT_FALSE(cmd_runner.IsReady());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cmd_runner.IsReady());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(2, cb_called);
@@ -155,7 +155,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
 
   cmd_runner.RunCommands(status_cb);
   EXPECT_FALSE(cmd_runner.IsReady());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cmd_runner.IsReady());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(2, cb_called);
@@ -173,7 +173,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
 
   cmd_runner.RunCommands(status_cb);
   EXPECT_FALSE(cmd_runner.IsReady());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cmd_runner.IsReady());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(0, cb_called);
@@ -233,7 +233,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   EXPECT_FALSE(cmd_runner.IsReady());
   cmd_runner.Cancel();
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cmd_runner.IsReady());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(0, cb_called);
@@ -260,7 +260,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   EXPECT_FALSE(cmd_runner.IsReady());
 
   // |status_cb| is expected to get called with kCanceled
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cmd_runner.IsReady());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
 
@@ -297,7 +297,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   cmd_runner.RunCommands(status_cb);
   EXPECT_FALSE(cmd_runner.IsReady());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(cmd_runner.IsReady());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
@@ -388,14 +388,14 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
   cmd_runner.RunCommands(status_cb);
   EXPECT_FALSE(cmd_runner.IsReady());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   // The first two commands should have been sent but no responses are back yet.
   EXPECT_EQ(0, cb_called);
 
   // It should not matter if they get answered in opposite order.
   test_device()->SendCommandChannelPacket(command2_cmpl_success_bytes);
   test_device()->SendCommandChannelPacket(command_cmpl_success_bytes);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(5, cb_called);
   EXPECT_EQ(fit::ok(), status);
@@ -422,7 +422,7 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
   cmd_runner.RunCommands(status_cb);
   EXPECT_FALSE(cmd_runner.IsReady());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   // The first two commands should have been sent but no responses are back yet.
   EXPECT_EQ(0, cb_0_called);
   EXPECT_EQ(0, cb_1_called);
@@ -430,7 +430,7 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
 
   test_device()->SendCommandChannelPacket(command_status_error_bytes);
   test_device()->SendCommandChannelPacket(command2_cmpl_success_bytes);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Only the first command's callback should be called, as further callbacks will be canceled due
   // to the error status.
@@ -475,7 +475,7 @@ TEST_F(SequentialCommandRunnerTest, CommandCompletesOnStatusEvent) {
 
   cmd_runner.RunCommands(status_cb);
   EXPECT_FALSE(cmd_runner.IsReady());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cmd_runner.IsReady());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(2, cb_called);
@@ -532,7 +532,7 @@ TEST_F(SequentialCommandRunnerTest, AsyncCommands) {
   cmd_runner.RunCommands(status_cb);
   EXPECT_FALSE(cmd_runner.IsReady());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   // Command 2 should wait on command 0 & command 1 complete events.
   EXPECT_FALSE(cmd_runner.IsReady());
   EXPECT_TRUE(cmd_runner.HasQueuedCommands());
@@ -541,7 +541,7 @@ TEST_F(SequentialCommandRunnerTest, AsyncCommands) {
   test_device()->SendCommandChannelPacket(command0_cmpl_event);
 
   EXPECT_CMD_PACKET_OUT(test_device(), command2, &command2_status_event, &command2_cmpl_event);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cmd_runner.IsReady());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(3, cb_called);
@@ -588,7 +588,7 @@ TEST_F(SequentialCommandRunnerTest, ExclusiveAsyncCommands) {
 
   cmd_runner.RunCommands(status_cb);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(cmd_runner.IsReady());
   // Command 1 is "sent" but queued in CommandChannel.
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
@@ -596,7 +596,7 @@ TEST_F(SequentialCommandRunnerTest, ExclusiveAsyncCommands) {
   test_device()->SendCommandChannelPacket(command0_cmpl_event);
 
   EXPECT_CMD_PACKET_OUT(test_device(), command1, &command1_status_event, &command1_cmpl_event);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cmd_runner.IsReady());
   EXPECT_EQ(2, cb_called);
   EXPECT_EQ(1, status_cb_called);
@@ -650,7 +650,7 @@ TEST_F(SequentialCommandRunnerTest, CommandRunnerDestroyedBeforeSecondEventCallb
   cmd_runner->RunCommands(status_cb);
   EXPECT_FALSE(cmd_runner->IsReady());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(cmd_runner.has_value());
   EXPECT_EQ(1, cb_called);
   EXPECT_EQ(0, status_cb_called);
@@ -679,7 +679,7 @@ TEST_F(SequentialCommandRunnerTest,
   EXPECT_FALSE(cmd_runner->IsReady());
   cmd_runner->Cancel();
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(cmd_runner);
   EXPECT_EQ(0, cb_called);
   EXPECT_EQ(1, status_cb_called);
@@ -741,7 +741,7 @@ TEST_F(SequentialCommandRunnerTest, QueueCommandsWhileAlreadyRunning) {
   cmd_runner.RunCommands(status_cb);
   EXPECT_FALSE(cmd_runner.IsReady());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cmd_runner.IsReady());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(1, name_cb_called);
@@ -781,7 +781,7 @@ TEST_F(SequentialCommandRunnerTest, EmbossEventHandler) {
   EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_success_bytes);
   cmd_runner.RunCommands(status_cb);
   EXPECT_FALSE(cmd_runner.IsReady());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cmd_runner.IsReady());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(1, cb_called);

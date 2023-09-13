@@ -2,16 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "pw_async/fake_dispatcher_fixture.h"
 #ifndef NINSPECT
 
-#include "windowed_inspect_numeric_property.h"
-
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
 #include <pw_async_fuchsia/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
+#include "windowed_inspect_numeric_property.h"
 
 namespace bt {
 
@@ -46,46 +44,40 @@ class TestProperty {
 };
 
 using WindowedProperty = WindowedInspectNumericProperty<TestProperty<int>, int>;
-class WindowedInspectNumericPropertyTest : public ::gtest::TestLoopFixture {
- public:
-  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
-
- private:
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
-};
+using WindowedInspectNumericPropertyTest = pw::async::test::FakeDispatcherFixture;
 
 TEST_F(WindowedInspectNumericPropertyTest, AddTwoValues) {
-  constexpr zx::duration kExpiryDuration = zx::min(3);
-  WindowedProperty windowed_prop(pw_dispatcher(), kExpiryDuration);
+  constexpr pw::chrono::SystemClock::duration kExpiryDuration = std::chrono::minutes(3);
+  WindowedProperty windowed_prop(dispatcher(), kExpiryDuration);
   int value = 0;
   auto value_cb = [&](auto val) { value = val; };
   windowed_prop.SetProperty(TestProperty<int>(0, value_cb));
 
   windowed_prop.Add(1);
   EXPECT_EQ(value, 1);
-  RunLoopFor(zx::min(1));
+  RunFor(std::chrono::minutes(1));
   EXPECT_EQ(value, 1);
 
   windowed_prop.Add(2);
   EXPECT_EQ(value, 3);
-  RunLoopFor(zx::min(1));
+  RunFor(std::chrono::minutes(1));
   EXPECT_EQ(value, 3);
 
   // Let first value expire.
-  RunLoopFor(zx::min(1));
+  RunFor(std::chrono::minutes(1));
   EXPECT_EQ(value, 2);
   // Let second value expire.
-  RunLoopFor(zx::min(1));
+  RunFor(std::chrono::minutes(1));
   EXPECT_EQ(value, 0);
 
   // Ensure timer doesn't fire again.
-  RunLoopFor(kExpiryDuration);
+  RunFor(kExpiryDuration);
   EXPECT_EQ(value, 0);
 }
 
 TEST_F(WindowedInspectNumericPropertyTest, AddTwoValuesAtSameTime) {
-  constexpr zx::duration kExpiryDuration = zx::min(3);
-  WindowedProperty windowed_prop(pw_dispatcher(), kExpiryDuration);
+  constexpr pw::chrono::SystemClock::duration kExpiryDuration = std::chrono::minutes(3);
+  WindowedProperty windowed_prop(dispatcher(), kExpiryDuration);
   int value = 0;
   auto value_cb = [&](auto val) { value = val; };
   windowed_prop.SetProperty(TestProperty<int>(0, value_cb));
@@ -93,73 +85,73 @@ TEST_F(WindowedInspectNumericPropertyTest, AddTwoValuesAtSameTime) {
   windowed_prop.Add(1);
   windowed_prop.Add(2);
   EXPECT_EQ(value, 3);
-  RunLoopFor(zx::min(1));
+  RunFor(std::chrono::minutes(1));
   EXPECT_EQ(value, 3);
-  RunLoopFor(zx::min(2));
+  RunFor(std::chrono::minutes(2));
   EXPECT_EQ(value, 0);
 
   // Ensure timer doesn't fire again.
-  RunLoopFor(kExpiryDuration);
+  RunFor(kExpiryDuration);
   EXPECT_EQ(value, 0);
 }
 
 TEST_F(WindowedInspectNumericPropertyTest, AddValueThenExpireThenAddValue) {
-  constexpr zx::duration kExpiryDuration = zx::min(3);
-  WindowedProperty windowed_prop(pw_dispatcher(), kExpiryDuration);
+  constexpr pw::chrono::SystemClock::duration kExpiryDuration = std::chrono::minutes(3);
+  WindowedProperty windowed_prop(dispatcher(), kExpiryDuration);
   int value = 0;
   auto value_cb = [&](auto val) { value = val; };
   windowed_prop.SetProperty(TestProperty<int>(0, value_cb));
 
   windowed_prop.Add(1);
   EXPECT_EQ(value, 1);
-  RunLoopFor(kExpiryDuration);
+  RunFor(kExpiryDuration);
   EXPECT_EQ(value, 0);
 
   windowed_prop.Add(2);
   EXPECT_EQ(value, 2);
-  RunLoopFor(kExpiryDuration);
+  RunFor(kExpiryDuration);
   EXPECT_EQ(value, 0);
 
   // Ensure timer doesn't fire again.
-  RunLoopFor(kExpiryDuration);
+  RunFor(kExpiryDuration);
   EXPECT_EQ(value, 0);
 }
 
 TEST_F(WindowedInspectNumericPropertyTest,
        AddTwoValuesWithinResolutionIntervalExpiresBothSimultaneously) {
-  constexpr zx::duration kExpiryDuration = zx::min(3);
-  constexpr zx::duration kResolution = zx::sec(3);
-  WindowedProperty windowed_prop(pw_dispatcher(), kExpiryDuration, kResolution);
+  constexpr pw::chrono::SystemClock::duration kExpiryDuration = std::chrono::minutes(3);
+  constexpr pw::chrono::SystemClock::duration kResolution = std::chrono::seconds(3);
+  WindowedProperty windowed_prop(dispatcher(), kExpiryDuration, kResolution);
   int value = 0;
   auto value_cb = [&](auto val) { value = val; };
   windowed_prop.SetProperty(TestProperty<int>(0, value_cb));
 
   // First two values are within kResolution of each other in time.
   windowed_prop.Add(1);
-  constexpr zx::duration kTinyDuration = zx::msec(1);
-  RunLoopFor(kTinyDuration);
+  constexpr pw::chrono::SystemClock::duration kTinyDuration = std::chrono::milliseconds(1);
+  RunFor(kTinyDuration);
   windowed_prop.Add(1);
   EXPECT_EQ(value, 2);
 
   // Third value is spaced kResolution apart from the first value.
-  RunLoopFor(kResolution - kTinyDuration);
+  RunFor(kResolution - kTinyDuration);
   windowed_prop.Add(1);
   EXPECT_EQ(value, 3);
 
   // Let first value expire.
-  RunLoopFor(kExpiryDuration - kResolution);
+  RunFor(kExpiryDuration - kResolution);
 
   // First and second values should have expired because they were merged.
   EXPECT_EQ(value, 1);
 
   // Let third value expire.
-  RunLoopFor(kResolution);
+  RunFor(kResolution);
   EXPECT_EQ(value, 0);
 }
 
 TEST_F(WindowedInspectNumericPropertyTest, SetPropertyClearsValueAndTimer) {
-  constexpr zx::duration kExpiryDuration = zx::min(3);
-  WindowedProperty windowed_prop(pw_dispatcher(), kExpiryDuration);
+  constexpr pw::chrono::SystemClock::duration kExpiryDuration = std::chrono::minutes(3);
+  WindowedProperty windowed_prop(dispatcher(), kExpiryDuration);
   int value_0 = 0;
   auto value_cb_0 = [&](auto val) { value_0 = val; };
   windowed_prop.SetProperty(TestProperty<int>(0, value_cb_0));
@@ -170,7 +162,7 @@ TEST_F(WindowedInspectNumericPropertyTest, SetPropertyClearsValueAndTimer) {
   auto value_cb_1 = [&](auto val) { value_1 = val; };
   windowed_prop.SetProperty(TestProperty<int>(0, value_cb_1));
   // Ensure timer doesn't fire.
-  RunLoopFor(kExpiryDuration);
+  RunFor(kExpiryDuration);
   EXPECT_EQ(value_0, 1);
   EXPECT_EQ(value_1, 0);
 
@@ -178,7 +170,7 @@ TEST_F(WindowedInspectNumericPropertyTest, SetPropertyClearsValueAndTimer) {
   windowed_prop.Add(3);
   EXPECT_EQ(value_0, 1);
   EXPECT_EQ(value_1, 3);
-  RunLoopFor(kExpiryDuration);
+  RunFor(kExpiryDuration);
   EXPECT_EQ(value_0, 1);
   EXPECT_EQ(value_1, 0);
 }
@@ -187,8 +179,8 @@ TEST_F(WindowedInspectNumericPropertyTest, AttachInspectRealIntProperty) {
   ::inspect::Inspector inspector;
   auto& root = inspector.GetRoot();
 
-  constexpr zx::duration kExpiryDuration = zx::min(3);
-  WindowedInspectIntProperty windowed_property(pw_dispatcher(), kExpiryDuration);
+  constexpr pw::chrono::SystemClock::duration kExpiryDuration = std::chrono::minutes(3);
+  WindowedInspectIntProperty windowed_property(dispatcher(), kExpiryDuration);
   windowed_property.AttachInspect(root, "windowed");
 
   auto hierarchy = ::inspect::ReadFromVmo(inspector.DuplicateVmo());

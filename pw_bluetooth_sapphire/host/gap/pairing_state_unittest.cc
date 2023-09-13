@@ -4,8 +4,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_state.h"
 
-#include <gtest/gtest.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/gap/fake_pairing_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_bredr_connection.h"
@@ -16,7 +14,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::gap {
 namespace {
@@ -73,7 +70,7 @@ class NoOpPairingDelegate final : public PairingDelegate {
   WeakSelf<PairingDelegate> weak_self_;
 };
 
-using TestBase = testing::ControllerTest<testing::MockController>;
+using TestBase = testing::FakeDispatcherControllerTest<testing::MockController>;
 class PairingStateTest : public TestBase {
  public:
   PairingStateTest() = default;
@@ -83,7 +80,7 @@ class PairingStateTest : public TestBase {
     TestBase::SetUp();
     InitializeACLDataChannel();
 
-    peer_cache_ = std::make_unique<PeerCache>(pw_dispatcher());
+    peer_cache_ = std::make_unique<PeerCache>(dispatcher());
     peer_ = peer_cache_->NewPeer(kPeerAddress, /*connectable=*/true);
 
     auth_request_count_ = 0;

@@ -42,7 +42,7 @@ class FuzzerController : public ControllerTestDoubleBase, public WeakSelf<Fuzzer
 };
 
 // Reuse ControllerTest test fixture code even though we're not using gtest.
-using TestingBase = ControllerTest<FuzzerController>;
+using TestingBase = FakeDispatcherControllerTest<FuzzerController>;
 class DataFuzzTest : public TestingBase {
  public:
   DataFuzzTest(const uint8_t* data, size_t size) : data_(data, size), rng_(&data_) {
@@ -53,7 +53,7 @@ class DataFuzzTest : public TestingBase {
 
     channel_manager_ = l2cap::ChannelManager::Create(transport()->acl_data_channel(),
                                                      transport()->command_channel(),
-                                                     /*random_channel_ids=*/true, pw_dispatcher());
+                                                     /*random_channel_ids=*/true, dispatcher());
   }
 
   ~DataFuzzTest() override {
@@ -67,7 +67,7 @@ class DataFuzzTest : public TestingBase {
     while (data_.remaining_bytes() > 0) {
       bool run_loop = data_.ConsumeBool();
       if (run_loop) {
-        RunLoopUntilIdle();
+        RunUntilIdle();
       }
 
       if (!SendAclPacket()) {
@@ -79,7 +79,7 @@ class DataFuzzTest : public TestingBase {
       }
     }
 
-    RunLoopUntilIdle();
+    RunUntilIdle();
   }
 
   bool SendAclPacket() {

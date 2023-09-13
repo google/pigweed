@@ -27,7 +27,7 @@ static constexpr size_t kMaxScoPacketLength = 255;
 static constexpr size_t kMaxScoPacketCount = 1;
 const hci::DataBufferInfo kDataBufferInfo(kMaxScoPacketLength, kMaxScoPacketCount);
 
-using TestingBase = testing::ControllerTest<testing::MockController>;
+using TestingBase = testing::FakeDispatcherControllerTest<testing::MockController>;
 class ScoConnectionTest : public TestingBase {
  public:
   ScoConnectionTest() = default;
@@ -211,7 +211,7 @@ TEST_F(ScoConnectionTest, ActivateAndPeerDisconnectDeactivates) {
 
   test_device()->SendCommandChannelPacket(
       bt::testing::DisconnectionCompletePacket(kConnectionHandle));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(close_count, 1u);
   EXPECT_EQ(deactivated_count(), 0u);
   EXPECT_FALSE(hci_conn().is_alive());
@@ -355,7 +355,7 @@ TEST_F(HciScoConnectionTest, ControllerPacketCountClearedOnPeerDisconnect) {
       packet_buffer_0.view(/*pos=*/sizeof(hci_spec::SynchronousDataHeader));
   EXPECT_SCO_PACKET_OUT(test_device(), packet_buffer_0);
   sco_conn()->Send(std::make_unique<DynamicByteBuffer>(packet_0_payload));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
 
   // Queue a packet on a second connection.
@@ -373,21 +373,21 @@ TEST_F(HciScoConnectionTest, ControllerPacketCountClearedOnPeerDisconnect) {
   const BufferView packet_1_payload =
       packet_buffer_1.view(/*pos=*/sizeof(hci_spec::SynchronousDataHeader));
   sco_conn_1->Send(std::make_unique<DynamicByteBuffer>(packet_1_payload));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Disconnecting the first connection should clear the controller packet count and allow
   // packet_buffer_1 to be sent.
   test_device()->SendCommandChannelPacket(
       bt::testing::DisconnectionCompletePacket(kConnectionHandle));
   EXPECT_SCO_PACKET_OUT(test_device(), packet_buffer_1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(close_count_0, 1u);
   EXPECT_FALSE(hci_conn().is_alive());
   EXPECT_EQ(close_count_1, 0u);
 
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kConnectionHandle2));
   sco_conn_1.reset();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(close_count_1, 0u);
 }
 

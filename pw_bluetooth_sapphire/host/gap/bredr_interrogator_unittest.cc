@@ -4,8 +4,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_interrogator.h"
 
-#include <lib/async/default.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
@@ -37,7 +35,7 @@ const auto kReadRemoteExtendedFeaturesRsp = testing::CommandStatusPacket(
 
 using bt::testing::CommandTransaction;
 
-using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
+using TestingBase = bt::testing::FakeDispatcherControllerTest<bt::testing::MockController>;
 
 class BrEdrInterrogatorTest : public TestingBase {
  public:
@@ -47,7 +45,7 @@ class BrEdrInterrogatorTest : public TestingBase {
   void SetUp() override {
     TestingBase::SetUp();
 
-    peer_cache_ = std::make_unique<PeerCache>(pw_dispatcher());
+    peer_cache_ = std::make_unique<PeerCache>(dispatcher());
     peer_ = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
     EXPECT_FALSE(peer_->name());
     EXPECT_FALSE(peer_->version());
@@ -60,7 +58,7 @@ class BrEdrInterrogatorTest : public TestingBase {
   }
 
   void TearDown() override {
-    RunLoopUntilIdle();
+    RunUntilIdle();
     test_device()->Stop();
     interrogator_ = nullptr;
     peer_cache_ = nullptr;
@@ -137,7 +135,7 @@ TEST_F(BrEdrInterrogatorTest, InterrogationFailsWithMalformedRemoteNameRequestCo
 
   hci::Result<> status = fit::ok();
   interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(status.is_error());
 }
 
@@ -146,7 +144,7 @@ TEST_F(BrEdrInterrogatorTest, SuccessfulInterrogation) {
 
   std::optional<hci::Result<>> status;
   interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(fit::ok(), *status);
@@ -163,7 +161,7 @@ TEST_F(BrEdrInterrogatorTest, SuccessfulReinterrogation) {
 
   std::optional<hci::Result<>> status;
   interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(fit::ok(), *status);
@@ -171,7 +169,7 @@ TEST_F(BrEdrInterrogatorTest, SuccessfulReinterrogation) {
 
   QueueSuccessfulReadRemoteExtendedFeatures(kConnectionHandle);
   interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(fit::ok(), *status);
 }
@@ -187,7 +185,7 @@ TEST_F(BrEdrInterrogatorTest, InterrogationFailedToGetName) {
 
   std::optional<hci::Result<>> status;
   interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(status.has_value());
   EXPECT_FALSE(status->is_ok());
@@ -208,7 +206,7 @@ TEST_F(BrEdrInterrogatorTest, Cancel) {
   result.reset();
 
   // Events should be ignored.
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(result.has_value());
 }
 
@@ -220,7 +218,7 @@ TEST_F(BrEdrInterrogatorTest, InterrogatorDestroyedInCompleteCallback) {
     status = cb_status;
     DestroyInterrogator();
   });
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(status.has_value());
   EXPECT_TRUE(status->is_ok());

@@ -15,7 +15,7 @@ namespace bt::hci {
 
 namespace {
 
-using TransportTest = bt::testing::ControllerTest<bt::testing::MockController>;
+using TransportTest = bt::testing::FakeDispatcherControllerTest<bt::testing::MockController>;
 using TransportDeathTest = TransportTest;
 
 TEST_F(TransportTest, CommandChannelTimeoutShutsDownChannelAndNotifiesClosedCallback) {
@@ -24,7 +24,7 @@ TEST_F(TransportTest, CommandChannelTimeoutShutsDownChannelAndNotifiesClosedCall
   size_t closed_cb_count = 0;
   transport()->SetTransportErrorCallback([&] { closed_cb_count++; });
 
-  constexpr zx::duration kCommandTimeout = zx::sec(12);
+  constexpr pw::chrono::SystemClock::duration kCommandTimeout = std::chrono::seconds(12);
 
   StaticByteBuffer req_reset(LowerBits(hci_spec::kReset),
                              UpperBits(hci_spec::kReset),  // HCI_Reset opcode
@@ -52,11 +52,11 @@ TEST_F(TransportTest, CommandChannelTimeoutShutsDownChannelAndNotifiesClosedCall
   ASSERT_NE(0u, id2);
 
   // Run the loop until the command timeout task gets scheduled.
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(0u, cb_count);
   EXPECT_EQ(0u, closed_cb_count);
 
-  RunLoopFor(kCommandTimeout);
+  RunFor(kCommandTimeout);
   EXPECT_EQ(0u, cb_count);
   EXPECT_EQ(1u, closed_cb_count);
   EXPECT_TRUE(cmd_chan_weak.is_alive());
@@ -73,10 +73,10 @@ TEST_F(TransportTest, HciErrorClosesTransportWithSco) {
 
   EXPECT_TRUE(transport()->InitializeScoDataChannel(
       DataBufferInfo(/*max_data_length=*/1, /*max_num_packets=*/1)));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   test_device()->Stop();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(closed_cb_count, 1u);
 }
 
@@ -93,7 +93,7 @@ TEST_F(TransportTestWithoutSco, GetScoChannelFailure) {
   transport()->SetTransportErrorCallback([&] { closed_cb_count++; });
   EXPECT_FALSE(transport()->InitializeScoDataChannel(
       DataBufferInfo(/*max_data_length=*/1, /*max_num_packets=*/1)));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(closed_cb_count, 0u);
 }
 

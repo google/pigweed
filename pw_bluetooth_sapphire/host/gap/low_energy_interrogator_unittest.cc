@@ -26,7 +26,7 @@ const auto kReadRemoteVersionInfoRsp = testing::CommandStatusPacket(
 const auto kLEReadRemoteFeaturesRsp = testing::CommandStatusPacket(
     hci_spec::kLEReadRemoteFeatures, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
-using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
+using TestingBase = bt::testing::FakeDispatcherControllerTest<bt::testing::MockController>;
 
 class LowEnergyInterrogatorTest : public TestingBase {
  public:
@@ -36,7 +36,7 @@ class LowEnergyInterrogatorTest : public TestingBase {
   void SetUp() override {
     TestingBase::SetUp();
 
-    peer_cache_ = std::make_unique<PeerCache>(pw_dispatcher());
+    peer_cache_ = std::make_unique<PeerCache>(dispatcher());
 
     peer_ = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
     ASSERT_TRUE(peer_->le());
@@ -48,7 +48,7 @@ class LowEnergyInterrogatorTest : public TestingBase {
   }
 
   void TearDown() override {
-    RunLoopUntilIdle();
+    RunUntilIdle();
     test_device()->Stop();
     interrogator_ = nullptr;
     peer_cache_ = nullptr;
@@ -93,7 +93,7 @@ TEST_F(LowEnergyInterrogatorTest, SuccessfulInterrogation) {
 
   std::optional<hci::Result<>> status;
   interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(fit::ok(), *status);
@@ -116,7 +116,7 @@ TEST_F(LowEnergyInterrogatorTest, SuccessfulInterrogationPeerAlreadyHasLEFeature
 
   std::optional<hci::Result<>> status;
   interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(fit::ok(), *status);
   ASSERT_TRUE(peer()->le()->features());
@@ -128,7 +128,7 @@ TEST_F(LowEnergyInterrogatorTest, SuccessfulReinterrogation) {
 
   std::optional<hci::Result<>> status;
   interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(fit::ok(), *status);
@@ -142,7 +142,7 @@ TEST_F(LowEnergyInterrogatorTest, SuccessfulReinterrogation) {
 
   interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(fit::ok(), *status);
 }
@@ -159,7 +159,7 @@ TEST_F(LowEnergyInterrogatorTest, LEReadRemoteFeaturesErrorStatus) {
 
   std::optional<hci::Result<>> status;
   interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_FALSE(status->is_ok());
   EXPECT_FALSE(peer()->le()->features().has_value());
@@ -177,7 +177,7 @@ TEST_F(LowEnergyInterrogatorTest, ReadRemoteVersionErrorStatus) {
 
   std::optional<hci::Result<>> status;
   interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_FALSE(status->is_ok());
   EXPECT_FALSE(peer()->version());
@@ -196,18 +196,18 @@ TEST_F(LowEnergyInterrogatorTest, ReadLERemoteFeaturesCallbackHandlesCanceledInt
 
   std::optional<hci::Result<>> result;
   interrogator()->Start([&result](hci::Result<> cb_result) { result = cb_result; });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(result.has_value());
 
   interrogator()->Cancel();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(result.has_value());
   EXPECT_TRUE(result->is_error());
   EXPECT_EQ(result.value(), ToResult(HostError::kCanceled));
   result.reset();
 
   test_device()->SendCommandChannelPacket(le_remote_features_complete_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(result.has_value());
   // The read remote features handler should not update the features of a canceled interrogation.
   EXPECT_FALSE(peer()->le()->features().has_value());
@@ -226,18 +226,18 @@ TEST_F(LowEnergyInterrogatorTest, ReadRemoteVersionCallbackHandlesCanceledInterr
 
   std::optional<hci::Result<>> result;
   interrogator()->Start([&result](hci::Result<> cb_result) { result = cb_result; });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(result.has_value());
 
   interrogator()->Cancel();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(result.has_value());
   EXPECT_TRUE(result->is_error());
   EXPECT_EQ(result.value(), ToResult(HostError::kCanceled));
   result.reset();
 
   test_device()->SendCommandChannelPacket(remote_version_complete_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(result.has_value());
   // The read remote version handler should not update the version after a canceled interrogation.
   EXPECT_FALSE(peer()->version());
@@ -253,7 +253,7 @@ TEST_F(LowEnergyInterrogatorTest, DestroyInterrogatorInCompleteCallback) {
     status = cb_status;
     DestroyInterrogator();
   });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_TRUE(status->is_ok());
 }

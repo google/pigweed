@@ -4,14 +4,11 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/transport/sco_data_channel.h"
 
-#include <gtest/gtest.h>
-
 #include "pw_bluetooth/controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::hci {
 namespace {
@@ -164,7 +161,7 @@ class FakeScoConnection : public ScoDataChannel::ConnectionInterface {
   WeakSelf<ConnectionInterface> weak_interface_;
 };
 
-using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
+using TestingBase = bt::testing::FakeDispatcherControllerTest<bt::testing::MockController>;
 class ScoDataChannelTest : public TestingBase {
  public:
   void SetUp() override {
@@ -234,7 +231,7 @@ TEST_F(ScoDataChannelSingleConnectionTest, SendManyMsbcPackets) {
                                                             static_cast<uint8_t>(i)));
     }
     connection()->QueuePacket(std::move(packet));
-    RunLoopUntilIdle();
+    RunUntilIdle();
   }
 
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
@@ -245,7 +242,7 @@ TEST_F(ScoDataChannelSingleConnectionTest, SendManyMsbcPackets) {
                                       static_cast<uint8_t>(kBufferMaxNumPackets)));
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle0, 1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
 }
 
@@ -257,7 +254,7 @@ TEST_F(ScoDataChannelSingleConnectionTest, ReceiveManyPackets) {
                             i      // payload
     );
     test_device()->SendScoDataChannelPacket(packet);
-    RunLoopUntilIdle();
+    RunUntilIdle();
     ASSERT_EQ(connection()->received_packets().size(), static_cast<size_t>(i) + 1);
     EXPECT_TRUE(ContainersEqual(connection()->received_packets()[i]->view().data(), packet));
   }
@@ -292,7 +289,7 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndUnregisterFirstConnection) {
                             0x00   // payload
   );
   test_device()->SendScoDataChannelPacket(packet_0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(connection_0.received_packets().size(), 1u);
   ASSERT_EQ(connection_1.received_packets().size(), 0u);
 
@@ -301,7 +298,7 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndUnregisterFirstConnection) {
                             0x01   // payload
   );
   test_device()->SendScoDataChannelPacket(packet_1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(connection_0.received_packets().size(), 1u);
   // The packet should be received even though connection_1 isn't the active connection.
   ASSERT_EQ(connection_1.received_packets().size(), 1u);
@@ -311,7 +308,7 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndUnregisterFirstConnection) {
   out_packet_0->mutable_view()->mutable_data().Write(packet_0);
   out_packet_0->InitializeFromBuffer();
   connection_0.QueuePacket(std::move(out_packet_0));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle0, 1));
@@ -322,7 +319,7 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndUnregisterFirstConnection) {
   // The packet should be sent even though connection_1 isn't the active connection.
   EXPECT_SCO_PACKET_OUT(test_device(), packet_1);
   connection_1.QueuePacket(std::move(out_packet_1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
   // This is necessary because kBufferMaxNumPackets is 2, so we won't be able to send
   // any more packets until at least 1 is ACKed by the controller.
@@ -333,7 +330,7 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndUnregisterFirstConnection) {
   sco_data_channel()->UnregisterConnection(connection_0.handle());
   EXPECT_EQ(config_count, 2);
   EXPECT_EQ(reset_count, 0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   out_packet_1 = ScoDataPacket::New(/*payload_size=*/1);
   out_packet_1->mutable_view()->mutable_data().Write(packet_1);
@@ -341,7 +338,7 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndUnregisterFirstConnection) {
   // Now that connection_1 is the active connection, packets should still be sent.
   EXPECT_SCO_PACKET_OUT(test_device(), packet_1);
   connection_1.QueuePacket(std::move(out_packet_1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
 
   // There are no active connections now (+1 to reset_count).
@@ -379,7 +376,7 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndClearControllerPacketCountOf
   out_packet_0->mutable_view()->mutable_data().Write(packet_0);
   out_packet_0->InitializeFromBuffer();
   connection_0.QueuePacket(std::move(out_packet_0));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
 
   // The second packet should fill up the controller buffer (kBufferMaxNumPackets).
@@ -389,7 +386,7 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndClearControllerPacketCountOf
   out_packet_1->mutable_view()->mutable_data().Write(packet_1);
   out_packet_1->InitializeFromBuffer();
   connection_0.QueuePacket(std::move(out_packet_1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
 
   std::unique_ptr<ScoDataPacket> out_packet_2 = ScoDataPacket::New(/*payload_size=*/1);
@@ -397,23 +394,23 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndClearControllerPacketCountOf
   out_packet_2->InitializeFromBuffer();
   // The packet should NOT be sent because the controller buffer is full.
   connection_1.QueuePacket(std::move(out_packet_2));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // connection_1 should become the active connection, but out_packet_2 can't be sent yet.
   sco_data_channel()->UnregisterConnection(connection_0.handle());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(connection_1.queued_packets().size(), 1u);
 
   // Clearing the pending packet count for connection_0 should result in packet_2 being sent.
   EXPECT_SCO_PACKET_OUT(test_device(), packet_2);
   sco_data_channel()->ClearControllerPacketCount(connection_0.handle());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
 
   // There are no active connections now.
   sco_data_channel()->UnregisterConnection(connection_1.handle());
   sco_data_channel()->ClearControllerPacketCount(connection_1.handle());
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ScoDataChannelSingleConnectionTest, IgnoreInboundPacketForUnknownConnectionHandle) {
@@ -423,7 +420,7 @@ TEST_F(ScoDataChannelSingleConnectionTest, IgnoreInboundPacketForUnknownConnecti
                                  0x07   // payload
   );
   test_device()->SendScoDataChannelPacket(packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(connection()->received_packets().size(), 0u);
 }
 
@@ -443,7 +440,7 @@ TEST_F(ScoDataChannelSingleConnectionTest,
                                                             static_cast<uint8_t>(i)));
     }
     connection()->QueuePacket(std::move(packet));
-    RunLoopUntilIdle();
+    RunUntilIdle();
   }
   EXPECT_EQ(connection()->queued_packets().size(), 1u);
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
@@ -452,14 +449,14 @@ TEST_F(ScoDataChannelSingleConnectionTest,
   // sent).
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle1, 1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(connection()->queued_packets().size(), 1u);
 }
 
 TEST_F(ScoDataChannelSingleConnectionTest, ReceiveTooSmallPacket) {
   StaticByteBuffer invalid_packet(LowerBits(kConnectionHandle0), UpperBits(kConnectionHandle0));
   test_device()->SendScoDataChannelPacket(invalid_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   // Packet should be ignored.
   EXPECT_EQ(connection()->received_packets().size(), 0u);
 
@@ -469,7 +466,7 @@ TEST_F(ScoDataChannelSingleConnectionTest, ReceiveTooSmallPacket) {
                                        0x01   // payload
   );
   test_device()->SendScoDataChannelPacket(valid_packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(connection()->received_packets().size(), 1u);
 }
 
@@ -479,7 +476,7 @@ TEST_F(ScoDataChannelSingleConnectionTest, ReceivePacketWithIncorrectHeaderLengt
                                  0x00   // payload
   );
   test_device()->SendScoDataChannelPacket(packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   // Packet should be ignored.
   EXPECT_EQ(connection()->received_packets().size(), 0u);
 
@@ -489,7 +486,7 @@ TEST_F(ScoDataChannelSingleConnectionTest, ReceivePacketWithIncorrectHeaderLengt
                             0x01   // payload
   );
   test_device()->SendScoDataChannelPacket(packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(connection()->received_packets().size(), 1u);
 }
 
@@ -633,11 +630,11 @@ TEST_F(ScoDataChannelTest, ConfigureCallbackCalledAfterTransportDestroyedDoesNot
   EXPECT_EQ(reset_count, 0);
 
   DeleteTransport();
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Callback should not use-after-free.
   config_cb(PW_STATUS_OK);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ScoDataChannelTest,
@@ -673,16 +670,16 @@ TEST_F(ScoDataChannelTest,
   sco_data_channel()->RegisterConnection(connection_1.GetWeakPtr());
   EXPECT_EQ(config_callbacks.size(), 2u);
   // sco_packet should not be sent yet.
-  RunLoopUntilIdle();
+  RunUntilIdle();
   // The first callback completing should not complete the second connection configuration.
   config_callbacks[0](PW_STATUS_OK);
   // sco_packet should not be sent yet.
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(connection_1.queued_packets().size(), 1u);
   // Queued packet should be sent after second callback called.
   config_callbacks[1](PW_STATUS_OK);
   EXPECT_SCO_PACKET_OUT(test_device(), packet);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
 }
 
@@ -702,7 +699,7 @@ TEST_F(ScoDataChannelSingleConnectionTest,
                                                             static_cast<uint8_t>(i)));
     }
     connection()->QueuePacket(std::move(packet));
-    RunLoopUntilIdle();
+    RunUntilIdle();
   }
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
 
@@ -721,7 +718,7 @@ TEST_F(ScoDataChannelSingleConnectionTest,
                          LowerBits(num_packets),
                          UpperBits(num_packets)};
   test_device()->SendCommandChannelPacket(event);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
 }
 
@@ -757,7 +754,7 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndFirstConfigurationFails) {
 
   // The first configuration error should be processed & the configuration of connection_1 should
   // succeed.
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(connection_0.hci_error_count(), 1);
   EXPECT_EQ(config_count, 2);
   EXPECT_EQ(reset_count, 0);
@@ -767,7 +764,7 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndFirstConfigurationFails) {
                                    0x00   // payload
   );
   test_device()->SendScoDataChannelPacket(packet_0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   // packet_0 should not be received since connection_0 failed configuration and was unregistered.
   ASSERT_EQ(connection_0.received_packets().size(), 0u);
 
@@ -776,7 +773,7 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndFirstConfigurationFails) {
                                    0x01   // payload
   );
   test_device()->SendScoDataChannelPacket(packet_1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(connection_1.received_packets().size(), 1u);
 
   // There are no active connections now (+1 to reset_count).
@@ -827,7 +824,7 @@ TEST_F(ScoDataChannelSingleConnectionTest, NumberOfCompletedPacketsExceedsPendin
                                                             static_cast<uint8_t>(i)));
     }
     connection()->QueuePacket(std::move(packet));
-    RunLoopUntilIdle();
+    RunUntilIdle();
   }
 
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
@@ -838,7 +835,7 @@ TEST_F(ScoDataChannelSingleConnectionTest, NumberOfCompletedPacketsExceedsPendin
                                       static_cast<uint8_t>(kBufferMaxNumPackets)));
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle0, kBufferMaxNumPackets + 1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
 }
 

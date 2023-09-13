@@ -5,20 +5,18 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_CONTROLLER_TEST_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_CONTROLLER_TEST_H_
 
-#include <lib/async/cpp/task.h>
-
 #include <memory>
 
 #include <pw_async/heap_dispatcher.h>
 #include <pw_async_fuchsia/dispatcher.h>
 
+#include "pw_async/fake_dispatcher_fixture.h"
 #include "pw_bluetooth/controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/sco_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::testing {
 
@@ -39,7 +37,7 @@ class ControllerTestDoubleBase;
 //     can respond to HCI commands the way a real controller would (albeit in a
 //     contrived fashion), emulate discovery and connection events, etc.
 template <class ControllerTestDoubleType>
-class ControllerTest : public ::gtest::TestLoopFixture {
+class ControllerTest {
  public:
   // Default data buffer information used by ACLDataChannel.
   static constexpr size_t kDefaultMaxAclDataPacketLength = 1024;
@@ -49,36 +47,23 @@ class ControllerTest : public ::gtest::TestLoopFixture {
   static constexpr size_t kDefaultMaxScoPacketLength = 255;
   static constexpr size_t kDefaultMaxScoPacketCount = 5;
 
-  ControllerTest() = default;
-  ~ControllerTest() override = default;
-
-  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
+  ControllerTest(pw::async::Dispatcher& dispatcher) : dispatcher_(dispatcher) {}
+  ~ControllerTest() = default;
 
  protected:
-  void SetUp(pw::bluetooth::Controller::FeaturesBits features, bool initialize_transport = true) {
+  void Initialize(pw::bluetooth::Controller::FeaturesBits features,
+                  bool initialize_transport = true) {
     std::unique_ptr<pw::bluetooth::Controller> controller =
         ControllerTest<ControllerTestDoubleType>::SetUpTestController();
     test_device_->set_features(features);
-    transport_ = std::make_unique<hci::Transport>(std::move(controller), pw_dispatcher_);
+    transport_ = std::make_unique<hci::Transport>(std::move(controller), dispatcher_);
 
     if (initialize_transport) {
       std::optional<bool> init_result;
       transport_->Initialize([&init_result](bool success) { init_result = success; });
-      RunLoopUntilIdle();
       ASSERT_TRUE(init_result.has_value());
       ASSERT_TRUE(init_result.value());
     }
-  }
-
-  void SetUp() override { SetUp(pw::bluetooth::Controller::FeaturesBits::kHciSco); }
-
-  void TearDown() override {
-    if (!transport_) {
-      return;
-    }
-
-    RunLoopUntilIdle();
-    transport_ = nullptr;
   }
 
   // Directly initializes the ACL data channel and wires up its data rx
@@ -123,7 +108,6 @@ class ControllerTest : public ::gtest::TestLoopFixture {
 
   // Deletes |test_device_| and resets the pointer.
   void DeleteTestDevice() { test_device_ = nullptr; }
-
   void DeleteTransport() { transport_ = nullptr; }
 
   // Getters for internal fields frequently used by tests.
@@ -132,7 +116,7 @@ class ControllerTest : public ::gtest::TestLoopFixture {
  private:
   std::unique_ptr<pw::bluetooth::Controller> SetUpTestController() {
     std::unique_ptr<ControllerTestDoubleType> controller =
-        std::make_unique<ControllerTestDoubleType>(pw_dispatcher());
+        std::make_unique<ControllerTestDoubleType>(dispatcher_);
     test_device_ = controller->GetWeakPtr();
     return controller;
   }
@@ -151,8 +135,8 @@ class ControllerTest : public ::gtest::TestLoopFixture {
     });
   }
 
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
-  pw::async::HeapDispatcher heap_dispatcher_{pw_dispatcher_};
+  pw::async::Dispatcher& dispatcher_;
+  pw::async::HeapDispatcher heap_dispatcher_{dispatcher_};
   typename ControllerTestDoubleType::WeakPtr test_device_;
   std::unique_ptr<hci::Transport> transport_;
   hci::ACLPacketHandler data_received_callback_;
@@ -160,6 +144,32 @@ class ControllerTest : public ::gtest::TestLoopFixture {
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ControllerTest);
   static_assert(std::is_base_of<ControllerTestDoubleBase, ControllerTestDoubleType>::value,
                 "TestBase must be used with a derivative of ControllerTestDoubleBase");
+};
+
+// FakeDispatcherControllerTest is a convenience test fixture that initializes ControllerTest with a
+// pw_async FakeDispatcherFixture backend. Only if a different underlying dispatcher is desired
+// (e.g. Zircon TestLoopFixture) should ControllerTest be referenced directly and passed the desired
+// dispatcher, which must implement the pw_async Dispatcher interface.
+//
+// To properly "TearDown" ControllerTest, the Dispatcher must be driven, then DeleteTransport()
+// called.
+template <typename ControllerTestDoubleType>
+class FakeDispatcherControllerTest : public pw::async::test::FakeDispatcherFixture,
+                                     public ControllerTest<ControllerTestDoubleType> {
+ protected:
+  FakeDispatcherControllerTest() : ControllerTest<ControllerTestDoubleType>(dispatcher()) {}
+
+  void SetUp() override { SetUp(pw::bluetooth::Controller::FeaturesBits::kHciSco); }
+
+  void SetUp(pw::bluetooth::Controller::FeaturesBits features, bool initialize_transport = true) {
+    ControllerTest<ControllerTestDoubleType>::Initialize(features, initialize_transport);
+    RunUntilIdle();
+  }
+
+  void TearDown() override {
+    RunUntilIdle();
+    ControllerTest<ControllerTestDoubleType>::DeleteTransport();
+  }
 };
 
 }  // namespace bt::testing

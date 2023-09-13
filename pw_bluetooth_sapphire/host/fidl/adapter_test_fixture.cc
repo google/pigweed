@@ -7,7 +7,7 @@
 namespace bthost::testing {
 
 using bt::testing::FakeController;
-using TestingBase = bt::testing::ControllerTest<FakeController>;
+using TestingBase = bt::testing::ControllerTest<bt::testing::FakeController>;
 
 void AdapterTestFixture::SetUp() {
   FakeController::Settings settings;
@@ -17,7 +17,7 @@ void AdapterTestFixture::SetUp() {
 
 void AdapterTestFixture::SetUp(FakeController::Settings settings,
                                pw::bluetooth::Controller::FeaturesBits features) {
-  TestingBase::SetUp(features, /*initialize_transport=*/false);
+  TestingBase::Initialize(features, /*initialize_transport=*/false);
 
   auto l2cap = std::make_unique<bt::l2cap::testing::FakeL2cap>(pw_dispatcher());
   l2cap_ = l2cap.get();
@@ -45,7 +45,6 @@ void AdapterTestFixture::TearDown() {
   RunLoopUntilIdle();
 
   gatt_ = nullptr;
-  TestingBase::TearDown();
 }
 
 }  // namespace bthost::testing

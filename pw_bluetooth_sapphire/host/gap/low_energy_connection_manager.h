@@ -64,7 +64,8 @@ enum class LowEnergyDisconnectReason : uint8_t {
 class LowEnergyConnectionManager final {
  public:
   // Duration after which connection failures are removed from Inspect.
-  static constexpr zx::duration kInspectRecentConnectionFailuresExpiryDuration = zx::min(10);
+  static constexpr pw::chrono::SystemClock::duration
+      kInspectRecentConnectionFailuresExpiryDuration = std::chrono::minutes(10);
 
   // |hci|: The HCI transport used to track link layer connection events from
   //        the controller.

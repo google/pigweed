@@ -10,8 +10,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager_mock_controller_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/test_packets.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
+#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::socket {
 namespace {
@@ -21,20 +21,22 @@ using namespace bt::testing;
 using TestingBase = l2cap::ChannelManagerMockControllerTest;
 
 // This test harness provides test cases for interations between SocketFactory and the L2cap layer.
-class SocketFactoryL2capIntegrationTest : public TestingBase {
+class SocketFactoryL2capIntegrationTest : public ::gtest::TestLoopFixture, public TestingBase {
  public:
-  SocketFactoryL2capIntegrationTest() = default;
+  SocketFactoryL2capIntegrationTest() : TestingBase(dispatcher_), dispatcher_(dispatcher()) {}
   ~SocketFactoryL2capIntegrationTest() override = default;
 
  protected:
   void SetUp() override {
-    TestingBase::SetUp();
+    TestingBase::Initialize();
     socket_factory_ = std::make_unique<socket::SocketFactory<l2cap::Channel>>();
   }
 
   void TearDown() override {
     socket_factory_.reset();
-    TestingBase::TearDown();
+    TestingBase::DeleteChannelManager();
+    RunLoopUntilIdle();
+    DeleteTransport();
   }
 
   zx::socket MakeSocketForChannel(l2cap::Channel::WeakPtr channel) {
@@ -43,6 +45,7 @@ class SocketFactoryL2capIntegrationTest : public TestingBase {
 
  private:
   std::unique_ptr<socket::SocketFactory<l2cap::Channel>> socket_factory_;
+  pw::async::fuchsia::FuchsiaDispatcher dispatcher_;
 
   BT_DISALLOW_COPY_ASSIGN_AND_MOVE(SocketFactoryL2capIntegrationTest);
 };

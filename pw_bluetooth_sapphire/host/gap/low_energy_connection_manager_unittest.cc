@@ -11,9 +11,6 @@
 #include <memory>
 #include <vector>
 
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
@@ -56,7 +53,7 @@ using bt::sm::BondableMode;
 using bt::testing::FakeController;
 using bt::testing::FakePeer;
 
-using TestingBase = bt::testing::ControllerTest<FakeController>;
+using TestingBase = bt::testing::FakeDispatcherControllerTest<FakeController>;
 using l2cap::testing::FakeChannel;
 using TestSm = sm::testing::TestSecurityManager;
 using TestSmFactory = sm::testing::TestSecurityManagerFactory;
@@ -74,7 +71,8 @@ const DeviceAddress kAdapterAddress(DeviceAddress::Type::kLEPublic, {9});
 const size_t kLEMaxNumPackets = 10;
 const hci::DataBufferInfo kLEDataBufferInfo(hci_spec::kMaxACLPayloadSize, kLEMaxNumPackets);
 
-constexpr std::array kConnectDelays = {zx::sec(0), zx::sec(2), zx::sec(4)};
+constexpr std::array kConnectDelays = {std::chrono::seconds(0), std::chrono::seconds(2),
+                                       std::chrono::seconds(4)};
 
 const LowEnergyConnectionOptions kConnectionOptions{};
 
@@ -94,28 +92,28 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     settings.ApplyLegacyLEConfig();
     test_device()->set_settings(settings);
 
-    peer_cache_ = std::make_unique<PeerCache>(pw_dispatcher());
-    l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>(pw_dispatcher());
+    peer_cache_ = std::make_unique<PeerCache>(dispatcher());
+    l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>(dispatcher());
 
     const hci::CommandChannel::WeakPtr cmd_weak = cmd_channel()->AsWeakPtr();
 
     connector_ = std::make_unique<hci::LowEnergyConnector>(
-        transport()->GetWeakPtr(), &addr_delegate_, pw_dispatcher(),
+        transport()->GetWeakPtr(), &addr_delegate_, dispatcher(),
         fit::bind_member<&LowEnergyConnectionManagerTest::OnIncomingConnection>(this));
 
-    gatt_ = std::make_unique<gatt::testing::FakeLayer>(pw_dispatcher());
+    gatt_ = std::make_unique<gatt::testing::FakeLayer>(dispatcher());
     sm_factory_ = std::make_unique<TestSmFactory>();
 
     address_manager_ = std::make_unique<LowEnergyAddressManager>(
-        kAdapterAddress, /*delegate=*/[] { return false; }, cmd_weak, pw_dispatcher());
+        kAdapterAddress, /*delegate=*/[] { return false; }, cmd_weak, dispatcher());
     scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(
-        address_manager_.get(), transport()->GetWeakPtr(), pw_dispatcher());
+        address_manager_.get(), transport()->GetWeakPtr(), dispatcher());
     discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(
-        scanner_.get(), peer_cache_.get(), pw_dispatcher());
+        scanner_.get(), peer_cache_.get(), dispatcher());
     conn_mgr_ = std::make_unique<LowEnergyConnectionManager>(
         cmd_weak, &addr_delegate_, connector_.get(), peer_cache_.get(), l2cap_.get(),
         gatt_->GetWeakPtr(), discovery_manager_->GetWeakPtr(),
-        fit::bind_member<&TestSmFactory::CreateSm>(sm_factory_.get()), pw_dispatcher());
+        fit::bind_member<&TestSmFactory::CreateSm>(sm_factory_.get()), dispatcher());
 
     test_device()->set_connection_state_callback(
         fit::bind_member<&LowEnergyConnectionManagerTest::OnConnectionStateChanged>(this));
@@ -194,7 +192,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
   }
 
   std::unique_ptr<l2cap::testing::FakeL2cap> l2cap_;
-  hci::FakeLocalAddressDelegate addr_delegate_{pw_dispatcher()};
+  hci::FakeLocalAddressDelegate addr_delegate_{dispatcher()};
   std::unique_ptr<PeerCache> peer_cache_;
   std::unique_ptr<hci::LowEnergyConnector> connector_;
   std::unique_ptr<gatt::testing::FakeLayer> gatt_;
@@ -245,7 +243,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectNonConnectablePeer) {
 // An error is received via the HCI Command cb_status event
 TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerErrorStatus) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   fake_peer->set_connect_status(
       pw::bluetooth::emboss::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
   test_device()->AddPeer(std::move(fake_peer));
@@ -259,7 +257,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerErrorStatus) {
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(result.is_error());
   EXPECT_EQ(HostError::kFailed, result.error_value());
@@ -269,7 +267,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerErrorStatus) {
 // LE Connection Complete event reports error
 TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerFailure) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   fake_peer->set_connect_response(
       pw::bluetooth::emboss::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
   test_device()->AddPeer(std::move(fake_peer));
@@ -281,7 +279,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerFailure) {
   ASSERT_TRUE(peer->le());
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(result.is_error());
   EXPECT_EQ(HostError::kFailed, result.error_value());
@@ -300,7 +298,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerScanTimeout) {
   ASSERT_TRUE(peer->le());
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
-  RunLoopFor(kLEGeneralCepScanTimeout);
+  RunFor(kLEGeneralCepScanTimeout);
 
   ASSERT_TRUE(result.is_error());
   EXPECT_EQ(HostError::kTimedOut, result.error_value());
@@ -309,31 +307,31 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerScanTimeout) {
 
 TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerAlreadyInScanCache) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   // Ensure peer is in scan cache by doing active discovery.
   LowEnergyDiscoverySessionPtr session;
   discovery_mgr()->StartDiscovery(/*active=*/true,
                                   [&session](auto cb_session) { session = std::move(cb_session); });
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ConnectionResult result = fit::ok(nullptr);
   auto callback = [&result](auto res) { result = std::move(res); };
 
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(fit::ok(), result);
 }
 
 TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerRequestTimeout) {
-  constexpr zx::duration kTestRequestTimeout = zx::sec(20);
+  constexpr pw::chrono::SystemClock::duration kTestRequestTimeout = std::chrono::seconds(20);
   constexpr pw::chrono::SystemClock::duration kPwTestRequestTimeout = std::chrono::seconds(20);
 
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
 
   // Add a fake peer so that scan succeeds but connect stalls.
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   fake_peer->set_force_pending_connect(true);
   test_device()->AddPeer(std::move(fake_peer));
 
@@ -345,8 +343,8 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerRequestTimeout) {
   ASSERT_TRUE(peer->le());
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
-  RunLoopFor(kTestRequestTimeout);
-  RunLoopUntilIdle();
+  RunFor(kTestRequestTimeout);
+  RunUntilIdle();
 
   ASSERT_TRUE(result.is_error());
   EXPECT_EQ(HostError::kTimedOut, result.error_value());
@@ -360,7 +358,8 @@ TEST_F(LowEnergyConnectionManagerTest, PeerDoesNotExpireDuringTimeout) {
   // timeout.
   // TODO(fxbug.dev/1418): Consider configuring the cache timeout explicitly rather than
   // relying on the kCacheTimeout constant.
-  constexpr zx::duration kTestRequestTimeout = kCacheTimeout + zx::sec(1);
+  constexpr pw::chrono::SystemClock::duration kTestRequestTimeout =
+      kCacheTimeout + std::chrono::seconds(1);
   constexpr pw::chrono::SystemClock::duration kPwTestRequestTimeout =
       kPwCacheTimeout + std::chrono::seconds(1);
   conn_mgr()->set_request_timeout_for_testing(kPwTestRequestTimeout);
@@ -377,7 +376,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeerDoesNotExpireDuringTimeout) {
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
   EXPECT_FALSE(peer->temporary());
 
-  RunLoopFor(kTestRequestTimeout);
+  RunFor(kTestRequestTimeout);
   ASSERT_TRUE(result.is_error());
   EXPECT_EQ(HostError::kTimedOut, result.error_value());
   EXPECT_EQ(peer, peer_cache()->FindByAddress(kAddress1));
@@ -388,19 +387,20 @@ TEST_F(LowEnergyConnectionManagerTest, PeerDoesNotExpireDuringTimeout) {
 TEST_F(LowEnergyConnectionManagerTest, PeerDoesNotExpireDuringDelayedConnect) {
   // Make the connection resolve after a delay that is longer than the cache
   // timeout.
-  constexpr zx::duration kConnectionDelay = kCacheTimeout + zx::sec(1);
+  constexpr pw::chrono::SystemClock::duration kConnectionDelay =
+      kCacheTimeout + std::chrono::seconds(1);
   constexpr pw::chrono::SystemClock::duration kPwConnectionDelay =
       kPwCacheTimeout + std::chrono::seconds(1);
   FakeController::Settings settings;
   settings.ApplyLegacyLEConfig();
-  settings.le_connection_delay = std::chrono::seconds(kConnectionDelay.to_secs());
+  settings.le_connection_delay = kConnectionDelay;
   test_device()->set_settings(settings);
 
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   auto id = peer->identifier();
   EXPECT_TRUE(peer->temporary());
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   // Make sure the connection request doesn't time out while waiting for a
@@ -418,7 +418,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeerDoesNotExpireDuringDelayedConnect) {
   ASSERT_TRUE(peer->le());
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
-  RunLoopFor(kConnectionDelay);
+  RunFor(kConnectionDelay);
   ASSERT_TRUE(conn_handle);
 
   // The peer should not have expired during this time.
@@ -434,7 +434,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeer) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   // Use a StaticPacket so that the packet is copied.
@@ -457,7 +457,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeer) {
   ASSERT_TRUE(peer->le());
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1u, connected_peers().size());
   EXPECT_EQ(1u, connected_peers().count(kAddress0));
@@ -485,7 +485,7 @@ struct TestObject final {
 
 TEST_F(LowEnergyConnectionManagerTest, DeleteRefInClosedCallback) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
 
   bool deleted = false;
   auto obj = std::make_shared<TestObject>(&deleted);
@@ -506,14 +506,14 @@ TEST_F(LowEnergyConnectionManagerTest, DeleteRefInClosedCallback) {
   };
 
   conn_mgr()->Connect(peer->identifier(), success_cb, kConnectionOptions);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(conn_handle);
   ASSERT_TRUE(conn_handle->active());
 
   // This will trigger the closed callback.
   EXPECT_TRUE(conn_mgr()->Disconnect(peer->identifier()));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1, closed_count);
   EXPECT_TRUE(connected_peers().empty());
@@ -525,7 +525,7 @@ TEST_F(LowEnergyConnectionManagerTest, DeleteRefInClosedCallback) {
 
 TEST_F(LowEnergyConnectionManagerTest, ReleaseRef) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
@@ -538,7 +538,7 @@ TEST_F(LowEnergyConnectionManagerTest, ReleaseRef) {
   EXPECT_TRUE(connected_peers().empty());
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1u, connected_peers().size());
   ASSERT_TRUE(peer->le());
@@ -547,7 +547,7 @@ TEST_F(LowEnergyConnectionManagerTest, ReleaseRef) {
   ASSERT_TRUE(conn_handle);
   conn_handle = nullptr;
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(connected_peers().empty());
   EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
@@ -557,7 +557,7 @@ TEST_F(LowEnergyConnectionManagerTest, OnePeerTwoPendingRequestsBothFail) {
   constexpr size_t kRequestCount = 2;
 
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   fake_peer->set_connect_response(
       pw::bluetooth::emboss::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
   test_device()->AddPeer(std::move(fake_peer));
@@ -570,7 +570,7 @@ TEST_F(LowEnergyConnectionManagerTest, OnePeerTwoPendingRequestsBothFail) {
     conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
   }
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(kRequestCount, results.size());
   for (size_t i = 0; i < results.size(); ++i) {
@@ -583,7 +583,7 @@ TEST_F(LowEnergyConnectionManagerTest, OnePeerManyPendingRequests) {
   constexpr size_t kRequestCount = 50;
 
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   std::vector<std::unique_ptr<LowEnergyConnectionHandle>> conn_handles;
@@ -596,7 +596,7 @@ TEST_F(LowEnergyConnectionManagerTest, OnePeerManyPendingRequests) {
     conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
   }
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1u, connected_peers().size());
   EXPECT_EQ(1u, connected_peers().count(kAddress0));
@@ -621,7 +621,7 @@ TEST_F(LowEnergyConnectionManagerTest, OnePeerManyPendingRequests) {
   // Drop the last reference.
   conn_handles[kRequestCount - 1] = nullptr;
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(connected_peers().empty());
 }
@@ -630,7 +630,7 @@ TEST_F(LowEnergyConnectionManagerTest, AddRefAfterConnection) {
   constexpr size_t kRefCount = 50;
 
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   std::vector<std::unique_ptr<LowEnergyConnectionHandle>> conn_handles;
@@ -641,7 +641,7 @@ TEST_F(LowEnergyConnectionManagerTest, AddRefAfterConnection) {
 
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1u, connected_peers().size());
   EXPECT_EQ(1u, connected_peers().count(kAddress0));
@@ -650,7 +650,7 @@ TEST_F(LowEnergyConnectionManagerTest, AddRefAfterConnection) {
   // Add new references.
   for (size_t i = 1; i < kRefCount; ++i) {
     conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
-    RunLoopUntilIdle();
+    RunUntilIdle();
   }
 
   EXPECT_EQ(1u, connected_peers().size());
@@ -660,7 +660,7 @@ TEST_F(LowEnergyConnectionManagerTest, AddRefAfterConnection) {
   // Disconnect.
   conn_handles.clear();
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(connected_peers().empty());
 }
@@ -669,8 +669,8 @@ TEST_F(LowEnergyConnectionManagerTest, PendingRequestsOnTwoPeers) {
   auto* peer0 = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   auto* peer1 = peer_cache()->NewPeer(kAddress1, /*connectable=*/true);
 
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1, dispatcher()));
 
   std::vector<std::unique_ptr<LowEnergyConnectionHandle>> conn_handles;
   auto callback = [&conn_handles](auto result) {
@@ -681,7 +681,7 @@ TEST_F(LowEnergyConnectionManagerTest, PendingRequestsOnTwoPeers) {
   conn_mgr()->Connect(peer0->identifier(), callback, kConnectionOptions);
   conn_mgr()->Connect(peer1->identifier(), callback, kConnectionOptions);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(2u, connected_peers().size());
   EXPECT_EQ(1u, connected_peers().count(kAddress0));
@@ -696,14 +696,14 @@ TEST_F(LowEnergyConnectionManagerTest, PendingRequestsOnTwoPeers) {
   // |peer1| should disconnect first.
   conn_handles[1] = nullptr;
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1u, connected_peers().size());
   EXPECT_EQ(1u, connected_peers().count(kAddress0));
 
   conn_handles.clear();
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(connected_peers().empty());
 }
 
@@ -711,11 +711,11 @@ TEST_F(LowEnergyConnectionManagerTest, PendingRequestsOnTwoPeersOneFails) {
   auto* peer0 = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   auto* peer1 = peer_cache()->NewPeer(kAddress1, /*connectable=*/true);
 
-  auto fake_peer0 = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer0 = std::make_unique<FakePeer>(kAddress0, dispatcher());
   fake_peer0->set_connect_response(
       pw::bluetooth::emboss::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
   test_device()->AddPeer(std::move(fake_peer0));
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1, dispatcher()));
 
   std::vector<ConnectionResult> conn_results;
   auto callback = [&conn_results](auto result) { conn_results.emplace_back(std::move(result)); };
@@ -723,7 +723,7 @@ TEST_F(LowEnergyConnectionManagerTest, PendingRequestsOnTwoPeersOneFails) {
   conn_mgr()->Connect(peer0->identifier(), callback, kConnectionOptions);
   conn_mgr()->Connect(peer1->identifier(), callback, kConnectionOptions);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1u, connected_peers().size());
   EXPECT_EQ(1u, connected_peers().count(kAddress1));
@@ -736,7 +736,7 @@ TEST_F(LowEnergyConnectionManagerTest, PendingRequestsOnTwoPeersOneFails) {
   // Both connections should disconnect.
   conn_results.clear();
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(connected_peers().empty());
 }
 
@@ -745,10 +745,10 @@ TEST_F(LowEnergyConnectionManagerTest, Destructor) {
   auto* peer1 = peer_cache()->NewPeer(kAddress1, /*connectable=*/true);
 
   // Connecting to this peer will succeed.
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
 
   // Connecting to this peer will remain pending.
-  auto pending_peer = std::make_unique<FakePeer>(kAddress1, pw_dispatcher());
+  auto pending_peer = std::make_unique<FakePeer>(kAddress1, dispatcher());
   pending_peer->set_force_pending_connect(true);
   test_device()->AddPeer(std::move(pending_peer));
 
@@ -762,7 +762,7 @@ TEST_F(LowEnergyConnectionManagerTest, Destructor) {
   };
 
   conn_mgr()->Connect(peer0->identifier(), success_cb, kConnectionOptions);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(conn_handle);
   bool conn_closed = false;
@@ -779,12 +779,12 @@ TEST_F(LowEnergyConnectionManagerTest, Destructor) {
   // connection manager before a connection event gets received which should
   // cancel the connection.
   conn_mgr()->Connect(peer1->identifier(), error_cb, kConnectionOptions);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(error_cb_called);
 
   DeleteConnMgr();
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(error_cb_called);
   EXPECT_TRUE(conn_closed);
@@ -795,7 +795,7 @@ TEST_F(LowEnergyConnectionManagerTest, Destructor) {
 TEST_F(LowEnergyConnectionManagerTest, DisconnectPendingConnectionWhileAwaitingScanStart) {
   auto peer_0 = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   auto peer_1 = peer_cache()->NewPeer(kAddress1, /*connectable=*/true);
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1, dispatcher()));
 
   int conn_cb_0_count = 0;
   auto conn_cb_0 = [&](auto result) {
@@ -819,7 +819,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectPendingConnectionWhileAwaitingS
   // Do NOT wait for scanning to start asynchronously before calling Disconnect synchronously.
   // After peer_0's connection request is cancelled, peer_1's connection request should succeed.
   EXPECT_TRUE(conn_mgr()->Disconnect(peer_0->identifier()));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(conn_cb_0_count, 1);
   ASSERT_TRUE(conn_handle);
   EXPECT_EQ(conn_handle->peer_identifier(), peer_1->identifier());
@@ -831,7 +831,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectPendingConnectionDuringScan) {
   // Don't add FakePeer for peer_0 in order to stall during scanning.
   auto peer_0 = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   auto peer_1 = peer_cache()->NewPeer(kAddress1, /*connectable=*/true);
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1, dispatcher()));
 
   int conn_cb_0_count = 0;
   auto conn_cb_0 = [&](auto result) {
@@ -851,13 +851,13 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectPendingConnectionDuringScan) {
   conn_mgr()->Connect(peer_1->identifier(), conn_cb_1, kConnectionOptions);
 
   // Wait for scanning to start & OnScanStart callback to be called.
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer_0->le()->connection_state());
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer_1->le()->connection_state());
 
   // After peer_0's connection request is cancelled, peer_1's connection request should succeed.
   EXPECT_TRUE(conn_mgr()->Disconnect(peer_0->identifier()));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(conn_cb_0_count, 1);
   ASSERT_TRUE(conn_handle);
   EXPECT_EQ(conn_handle->peer_identifier(), peer_1->identifier());
@@ -867,12 +867,12 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectPendingConnectionDuringScan) {
 
 TEST_F(LowEnergyConnectionManagerTest, LocalDisconnectWhileConnectorPending) {
   auto peer_0 = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  auto fake_peer_0 = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer_0 = std::make_unique<FakePeer>(kAddress0, dispatcher());
   fake_peer_0->set_force_pending_connect(true);
   test_device()->AddPeer(std::move(fake_peer_0));
 
   auto peer_1 = peer_cache()->NewPeer(kAddress1, /*connectable=*/true);
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1, dispatcher()));
 
   int conn_cb_0_count = 0;
   auto conn_cb_0 = [&](auto result) {
@@ -893,11 +893,11 @@ TEST_F(LowEnergyConnectionManagerTest, LocalDisconnectWhileConnectorPending) {
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer_1->le()->connection_state());
 
   // Wait for peer_0 scanning to complete and kLECreateConnection command to be sent.
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // After peer_0's connection request is cancelled, peer_1's connection request should succeed.
   EXPECT_TRUE(conn_mgr()->Disconnect(peer_0->identifier()));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(conn_cb_0_count, 1);
   ASSERT_TRUE(conn_handle);
   EXPECT_EQ(conn_handle->peer_identifier(), peer_1->identifier());
@@ -908,12 +908,12 @@ TEST_F(LowEnergyConnectionManagerTest, LocalDisconnectWhileConnectorPending) {
 TEST_F(LowEnergyConnectionManagerTest,
        DisconnectQueuedPendingConnectionAndThenPendingConnectionWithPendingConnector) {
   auto peer_0 = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  auto fake_peer_0 = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer_0 = std::make_unique<FakePeer>(kAddress0, dispatcher());
   fake_peer_0->set_force_pending_connect(true);
   test_device()->AddPeer(std::move(fake_peer_0));
 
   auto peer_1 = peer_cache()->NewPeer(kAddress1, /*connectable=*/true);
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1, dispatcher()));
 
   int conn_cb_0_count = 0;
   auto conn_cb_0 = [&](auto result) {
@@ -937,14 +937,14 @@ TEST_F(LowEnergyConnectionManagerTest,
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer_1->le()->connection_state());
 
   EXPECT_TRUE(conn_mgr()->Disconnect(peer_1->identifier()));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(conn_cb_0_count, 0);
   EXPECT_EQ(conn_cb_1_count, 1);
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer_0->le()->connection_state());
   EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer_1->le()->connection_state());
 
   EXPECT_TRUE(conn_mgr()->Disconnect(peer_0->identifier()));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(conn_cb_0_count, 1);
   EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer_0->le()->connection_state());
   EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer_1->le()->connection_state());
@@ -957,7 +957,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectUnknownPeer) {
 
 TEST_F(LowEnergyConnectionManagerTest, DisconnectUnconnectedPeer) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
 
   // This returns true so long the peer is not connected.
   EXPECT_TRUE(conn_mgr()->Disconnect(peer->identifier()));
@@ -965,7 +965,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectUnconnectedPeer) {
 
 TEST_F(LowEnergyConnectionManagerTest, Disconnect) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
 
   int closed_count = 0;
   auto closed_cb = [&closed_count] { closed_count++; };
@@ -982,7 +982,7 @@ TEST_F(LowEnergyConnectionManagerTest, Disconnect) {
   conn_mgr()->Connect(peer->identifier(), success_cb, kConnectionOptions);
   conn_mgr()->Connect(peer->identifier(), success_cb, kConnectionOptions);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_EQ(2u, conn_handles.size());
 
@@ -991,19 +991,19 @@ TEST_F(LowEnergyConnectionManagerTest, Disconnect) {
   bool peer_removed = peer_cache()->RemoveDisconnectedPeer(peer->identifier());
   EXPECT_TRUE(peer_removed);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(2, closed_count);
   EXPECT_TRUE(connected_peers().empty());
   EXPECT_TRUE(canceled_peers().empty());
 
   // The central pause timeout handler should not run.
-  RunLoopFor(kLEConnectionPauseCentral);
+  RunFor(kLEConnectionPauseCentral);
 }
 
 TEST_F(LowEnergyConnectionManagerTest, IntentionalDisconnectDisablesAutoConnectBehavior) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
 
   std::vector<std::unique_ptr<LowEnergyConnectionHandle>> conn_handles;
   auto success_cb = [&conn_handles](auto result) {
@@ -1018,25 +1018,25 @@ TEST_F(LowEnergyConnectionManagerTest, IntentionalDisconnectDisablesAutoConnectB
 
   // Issue connection ref.
   conn_mgr()->Connect(peer->identifier(), success_cb, kConnectionOptions);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Bonded peer should have auto-connection enabled.
   EXPECT_TRUE(peer->le()->should_auto_connect());
 
   // Explicit disconnect should disable the auto-connection property.
   EXPECT_TRUE(conn_mgr()->Disconnect(peer->identifier()));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(peer->le()->should_auto_connect());
 
   // Intentional re-connection should re-enable the auto-connection property.
   conn_mgr()->Connect(peer->identifier(), success_cb, kConnectionOptions);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(peer->le()->should_auto_connect());
 }
 
 TEST_F(LowEnergyConnectionManagerTest, IncidentalDisconnectDoesNotAffectAutoConnectBehavior) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
 
   std::vector<std::unique_ptr<LowEnergyConnectionHandle>> conn_handles;
   auto success_cb = [&conn_handles](auto result) {
@@ -1051,7 +1051,7 @@ TEST_F(LowEnergyConnectionManagerTest, IncidentalDisconnectDoesNotAffectAutoConn
 
   // Issue connection ref.
   conn_mgr()->Connect(peer->identifier(), success_cb, kConnectionOptions);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Bonded peer should have auto-connection enabled.
   EXPECT_TRUE(peer->le()->should_auto_connect());
@@ -1059,13 +1059,13 @@ TEST_F(LowEnergyConnectionManagerTest, IncidentalDisconnectDoesNotAffectAutoConn
   // Incidental disconnect should NOT disable the auto-connection property.
   ASSERT_TRUE(conn_handles.size());
   conn_handles[0] = nullptr;
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(peer->le()->should_auto_connect());
 }
 
 TEST_F(LowEnergyConnectionManagerTest, DisconnectThrice) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
 
   int closed_count = 0;
   auto closed_cb = [&closed_count] { closed_count++; };
@@ -1080,14 +1080,14 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectThrice) {
 
   conn_mgr()->Connect(peer->identifier(), success_cb, kConnectionOptions);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(conn_mgr()->Disconnect(peer->identifier()));
 
   // Try to disconnect again while the first disconnection is in progress.
   EXPECT_TRUE(conn_mgr()->Disconnect(peer->identifier()));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // The single ref should get only one "closed" call.
   EXPECT_EQ(1, closed_count);
@@ -1102,7 +1102,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectThrice) {
 TEST_F(LowEnergyConnectionManagerTest, DisconnectEvent) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
 
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
 
   int closed_count = 0;
   auto closed_cb = [&closed_count] { closed_count++; };
@@ -1119,21 +1119,21 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectEvent) {
   conn_mgr()->Connect(peer->identifier(), success_cb, kConnectionOptions);
   conn_mgr()->Connect(peer->identifier(), success_cb, kConnectionOptions);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_EQ(2u, conn_handles.size());
 
   // This makes FakeController send us HCI Disconnection Complete events.
   test_device()->Disconnect(kAddress0);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(2, closed_count);
 }
 
 TEST_F(LowEnergyConnectionManagerTest, DisconnectAfterRefsReleased) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto success_cb = [&conn_handle](auto result) {
@@ -1143,7 +1143,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectAfterRefsReleased) {
 
   conn_mgr()->Connect(peer->identifier(), success_cb, kConnectionOptions);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(conn_handle);
   conn_handle.reset();
@@ -1151,7 +1151,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectAfterRefsReleased) {
   // Try to disconnect while the zero-refs connection is being disconnected.
   EXPECT_TRUE(conn_mgr()->Disconnect(peer->identifier()));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(connected_peers().empty());
   EXPECT_TRUE(canceled_peers().empty());
@@ -1159,7 +1159,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectAfterRefsReleased) {
 
 TEST_F(LowEnergyConnectionManagerTest, DisconnectAfterSecondConnectionRequestInvalidatesRefs) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle_0;
   auto success_cb = [&conn_handle_0](auto result) {
@@ -1170,7 +1170,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectAfterSecondConnectionRequestInv
   };
 
   conn_mgr()->Connect(peer->identifier(), success_cb, kConnectionOptions);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_handle_0);
   EXPECT_TRUE(conn_handle_0->active());
 
@@ -1190,7 +1190,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectAfterSecondConnectionRequestInv
   EXPECT_FALSE(conn_handle_1->active());
   EXPECT_FALSE(conn_handle_0->active());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 // This tests that a connection reference callback succeeds if a HCI
@@ -1198,7 +1198,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectAfterSecondConnectionRequestInv
 // immediately after the callback gets run.
 TEST_F(LowEnergyConnectionManagerTest, DisconnectCompleteEventAfterConnect) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto success_cb = [&conn_handle](auto result) {
@@ -1208,7 +1208,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectCompleteEventAfterConnect) {
   };
 
   conn_mgr()->Connect(peer->identifier(), success_cb, kConnectionOptions);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_handle);
 
   // Request a new reference. Disconnect the link before the reference is
@@ -1233,7 +1233,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectCompleteEventAfterConnect) {
 
   test_device()->SendDisconnectionCompleteEvent(conn_handle->handle());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1u, ref_cb_count);
   EXPECT_EQ(1u, disconn_cb_count);
@@ -1241,7 +1241,7 @@ TEST_F(LowEnergyConnectionManagerTest, DisconnectCompleteEventAfterConnect) {
 
 TEST_F(LowEnergyConnectionManagerTest, RemovePeerFromPeerCacheDuringDisconnection) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto success_cb = [&conn_handle](auto result) {
@@ -1251,7 +1251,7 @@ TEST_F(LowEnergyConnectionManagerTest, RemovePeerFromPeerCacheDuringDisconnectio
   };
 
   conn_mgr()->Connect(peer->identifier(), success_cb, kConnectionOptions);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_handle);
 
   // This should invalidate the ref that was bound to |ref_cb|.
@@ -1262,7 +1262,7 @@ TEST_F(LowEnergyConnectionManagerTest, RemovePeerFromPeerCacheDuringDisconnectio
 
   EXPECT_TRUE(peer_cache()->RemoveDisconnectedPeer(id));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_FALSE(peer_cache()->FindById(id));
   EXPECT_FALSE(peer_cache()->FindByAddress(kAddress0));
@@ -1270,12 +1270,12 @@ TEST_F(LowEnergyConnectionManagerTest, RemovePeerFromPeerCacheDuringDisconnectio
 
 // Listener receives remote initiated connection ref.
 TEST_F(LowEnergyConnectionManagerTest, RegisterRemoteInitiatedLink) {
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
 
   // First create a fake incoming connection.
   test_device()->ConnectLowEnergy(kAddress0);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   auto link = MoveLastRemoteInitiated();
   ASSERT_TRUE(link);
@@ -1290,7 +1290,7 @@ TEST_F(LowEnergyConnectionManagerTest, RegisterRemoteInitiatedLink) {
   auto* peer = peer_cache()->FindByAddress(kAddress0);
   EXPECT_EQ(peer->le()->connection_state(), Peer::ConnectionState::kInitializing);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(conn_handle);
   EXPECT_TRUE(conn_handle->active());
@@ -1303,20 +1303,20 @@ TEST_F(LowEnergyConnectionManagerTest, RegisterRemoteInitiatedLink) {
 
   conn_handle = nullptr;
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(connected_peers().empty());
 }
 
 TEST_F(LowEnergyConnectionManagerTest,
        RegisterRemoteInitiatedLinkDuringLocalInitiatedLinkConnecting) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   fake_peer->set_force_pending_connect(true);
   test_device()->AddPeer(std::move(fake_peer));
 
   // Create a fake incoming connection.
   test_device()->ConnectLowEnergy(kAddress0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   auto link = MoveLastRemoteInitiated();
   ASSERT_TRUE(link);
 
@@ -1331,12 +1331,12 @@ TEST_F(LowEnergyConnectionManagerTest,
                                             ASSERT_EQ(fit::ok(), result);
                                             conn_handle = std::move(result).value();
                                           });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_handle);
 
   // Local connector result handler should not crash when it finds that connection to peer already
   // exists.
-  RunLoopFor(kLECreateConnectionTimeout);
+  RunFor(kLECreateConnectionTimeout);
   // An error should be returned if the connection complete was incorrectly not matched to the
   // pending connection request (see fxbug.dev/68969).
   // In the future it may make sense to return success because a link to the peer already exists.
@@ -1347,13 +1347,13 @@ TEST_F(LowEnergyConnectionManagerTest,
 TEST_F(LowEnergyConnectionManagerTest,
        RegisterRemoteInitiatedLinkDuringLocalInitiatedConnectionScanning) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   fake_peer->set_advertising_enabled(false);
   test_device()->AddPeer(std::move(fake_peer));
 
   // Create a fake incoming connection.
   test_device()->ConnectLowEnergy(kAddress0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   auto link = MoveLastRemoteInitiated();
   ASSERT_TRUE(link);
 
@@ -1368,12 +1368,12 @@ TEST_F(LowEnergyConnectionManagerTest,
                                             ASSERT_EQ(fit::ok(), result);
                                             conn_handle = std::move(result).value();
                                           });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_handle);
 
   // Local connector result handler should not crash when it finds that connection to peer already
   // exists.
-  RunLoopFor(kLEGeneralCepScanTimeout);
+  RunFor(kLEGeneralCepScanTimeout);
   ASSERT_TRUE(result.is_error());
   EXPECT_TRUE(peer->le()->connected());
 }
@@ -1386,12 +1386,12 @@ TEST_F(LowEnergyConnectionManagerTest, IncomingConnectionUpgradesKnownBrEdrPeerT
   ASSERT_EQ(peer, peer_cache()->FindByAddress(kAddress0));
   ASSERT_EQ(TechnologyType::kClassic, peer->technology());
 
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
 
   // First create a fake incoming connection.
   test_device()->ConnectLowEnergy(kAddress0);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   auto link = MoveLastRemoteInitiated();
   ASSERT_TRUE(link);
@@ -1402,7 +1402,7 @@ TEST_F(LowEnergyConnectionManagerTest, IncomingConnectionUpgradesKnownBrEdrPeerT
                                             ASSERT_EQ(fit::ok(), result);
                                             conn_handle = std::move(result).value();
                                           });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_handle);
 
   EXPECT_EQ(peer->identifier(), conn_handle->peer_identifier());
@@ -1423,7 +1423,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectAndDisconnectDualModeDeviceWithBrE
   ASSERT_EQ(DeviceAddress::Type::kBREDR, peer->address().type());
 
   // Only the LE transport connects in this test, so only add an LE FakePeer to FakeController.
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto callback = [&conn_handle](auto result) {
@@ -1435,7 +1435,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectAndDisconnectDualModeDeviceWithBrE
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1u, connected_peers().size());
   EXPECT_EQ(1u, connected_peers().count(kAddress0));
@@ -1447,7 +1447,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectAndDisconnectDualModeDeviceWithBrE
   EXPECT_EQ(Peer::ConnectionState::kConnected, peer->le()->connection_state());
 
   conn_handle = nullptr;
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(0u, connected_peers().size());
 }
 
@@ -1456,7 +1456,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectAndDisconnectDualModeDeviceWithBrE
 TEST_F(LowEnergyConnectionManagerTest, CentralAppliesL2capConnectionParameterUpdateRequestParams) {
   // Set up a fake peer and a connection over which to process the L2CAP
   // request.
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
@@ -1467,7 +1467,7 @@ TEST_F(LowEnergyConnectionManagerTest, CentralAppliesL2capConnectionParameterUpd
   };
   conn_mgr()->Connect(peer->identifier(), conn_cb, kConnectionOptions);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_handle);
 
   hci_spec::LEPreferredConnectionParameters preferred(
@@ -1487,12 +1487,12 @@ TEST_F(LowEnergyConnectionManagerTest, CentralAppliesL2capConnectionParameterUpd
   hci_spec::LEConnectionParameters wrong_handle_conn_params(0, 1, 2);
   test_device()->SendLEConnectionUpdateCompleteSubevent(conn_handle->handle() + 1,
                                                         wrong_handle_conn_params);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   test_device()->SendLEConnectionUpdateCompleteSubevent(conn_handle->handle() + 1,
                                                         wrong_handle_conn_params);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(actual.has_value());
   ASSERT_TRUE(peer->le());
@@ -1503,7 +1503,7 @@ TEST_F(LowEnergyConnectionManagerTest, CentralAppliesL2capConnectionParameterUpd
 TEST_F(LowEnergyConnectionManagerTest, L2CAPSignalLinkError) {
   // Set up a fake peer and a connection over which to process the L2CAP
   // request.
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
@@ -1518,7 +1518,7 @@ TEST_F(LowEnergyConnectionManagerTest, L2CAPSignalLinkError) {
   };
   conn_mgr()->Connect(peer->identifier(), conn_cb, kConnectionOptions);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_handle);
   ASSERT_TRUE(smp_chan.is_alive());
   ASSERT_EQ(1u, connected_peers().size());
@@ -1526,14 +1526,14 @@ TEST_F(LowEnergyConnectionManagerTest, L2CAPSignalLinkError) {
   // Signaling a link error through the channel should disconnect the link.
   smp_chan->SignalLinkError();
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(connected_peers().empty());
 }
 
 TEST_F(LowEnergyConnectionManagerTest, AttBearerSignalsLinkError) {
   // Set up a fake peer and a connection over which to process the L2CAP
   // request.
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
@@ -1552,7 +1552,7 @@ TEST_F(LowEnergyConnectionManagerTest, AttBearerSignalsLinkError) {
   };
   conn_mgr()->Connect(peer->identifier(), conn_cb, kConnectionOptions);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_handle);
   ASSERT_TRUE(att_chan.is_alive());
   ASSERT_EQ(1u, connected_peers().size());
@@ -1562,13 +1562,13 @@ TEST_F(LowEnergyConnectionManagerTest, AttBearerSignalsLinkError) {
   too_large_att_sdu.Fill(0x00);
   att_chan->Receive(too_large_att_sdu);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_FALSE(att_chan.is_alive());
   EXPECT_TRUE(connected_peers().empty());
 }
 
 TEST_F(LowEnergyConnectionManagerTest, OutboundConnectATTChannelActivateFails) {
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
@@ -1588,7 +1588,7 @@ TEST_F(LowEnergyConnectionManagerTest, OutboundConnectATTChannelActivateFails) {
   };
   conn_mgr()->Connect(peer->identifier(), conn_cb, kConnectionOptions);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(att_chan.has_value());
   // The link should have been closed due to the error, invalidating the channel.
   EXPECT_FALSE(att_chan.value().is_alive());
@@ -1598,7 +1598,7 @@ TEST_F(LowEnergyConnectionManagerTest, OutboundConnectATTChannelActivateFails) {
 }
 
 TEST_F(LowEnergyConnectionManagerTest, InboundConnectionATTChannelActivateFails) {
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
@@ -1617,13 +1617,13 @@ TEST_F(LowEnergyConnectionManagerTest, InboundConnectionATTChannelActivateFails)
     result = std::move(cb_result);
   };
   test_device()->ConnectLowEnergy(kAddress0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   auto link = MoveLastRemoteInitiated();
   ASSERT_TRUE(link);
   conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable,
                                           std::move(conn_cb));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(att_chan.has_value());
   // The link should have been closed due to the error, invalidating the channel.
   EXPECT_FALSE(att_chan.value().is_alive());
@@ -1633,7 +1633,7 @@ TEST_F(LowEnergyConnectionManagerTest, InboundConnectionATTChannelActivateFails)
 }
 
 TEST_F(LowEnergyConnectionManagerTest, LinkErrorDuringInterrogation) {
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
@@ -1656,13 +1656,13 @@ TEST_F(LowEnergyConnectionManagerTest, LinkErrorDuringInterrogation) {
   };
   conn_mgr()->Connect(peer->identifier(), conn_cb, kConnectionOptions);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(chan.is_alive());
   fake_l2cap()->TriggerLinkError(chan->link_handle());
 
   send_read_remote_features_rsp();
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(result.has_value());
   ASSERT_TRUE(result->is_error());
   EXPECT_EQ(HostError::kFailed, result->error_value());
@@ -1688,7 +1688,7 @@ TEST_F(LowEnergyConnectionManagerTest, PairWithBondableModes) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
@@ -1702,7 +1702,7 @@ TEST_F(LowEnergyConnectionManagerTest, PairWithBondableModes) {
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
   ASSERT_TRUE(peer->le());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   TestSm::WeakPtr mock_sm = TestSmByHandle(conn_handle->handle());
   ASSERT_TRUE(mock_sm.is_alive());
 
@@ -1711,14 +1711,14 @@ TEST_F(LowEnergyConnectionManagerTest, PairWithBondableModes) {
   EXPECT_FALSE(mock_sm->last_requested_upgrade().has_value());
   conn_mgr()->Pair(peer->identifier(), sm::SecurityLevel::kEncrypted, sm::BondableMode::Bondable,
                    [](sm::Result<> cb_status) {});
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(BondableMode::Bondable, mock_sm->bondable_mode());
   EXPECT_EQ(sm::SecurityLevel::kEncrypted, mock_sm->last_requested_upgrade());
 
   conn_mgr()->Pair(peer->identifier(), sm::SecurityLevel::kAuthenticated,
                    sm::BondableMode::NonBondable, [](sm::Result<> cb_status) {});
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(BondableMode::NonBondable, mock_sm->bondable_mode());
   EXPECT_EQ(sm::SecurityLevel::kAuthenticated, mock_sm->last_requested_upgrade());
@@ -1734,7 +1734,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectAndDiscoverByServiceWithoutUUID) {
   };
   fake_gatt()->SetInitializeClientCallback(expect_uuids);
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
@@ -1748,7 +1748,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectAndDiscoverByServiceWithoutUUID) {
   LowEnergyConnectionOptions connection_options{.service_uuid = std::nullopt};
   conn_mgr()->Connect(peer->identifier(), callback, connection_options);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(cb_called);
 }
@@ -1766,7 +1766,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectAndDiscoverByServiceUuid) {
   };
   fake_gatt()->SetInitializeClientCallback(expect_uuid);
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
@@ -1780,7 +1780,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectAndDiscoverByServiceUuid) {
   LowEnergyConnectionOptions connection_options{.service_uuid = std::optional(kConnectUuid)};
   conn_mgr()->Connect(peer->identifier(), callback, connection_options);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(cb_called);
 }
@@ -1791,7 +1791,7 @@ class ReadDeviceNameParameterizedFixture : public LowEnergyConnectionManagerTest
 
 TEST_P(ReadDeviceNameParameterizedFixture, ReadDeviceNameParameterized) {
   Peer* peer = peer_cache()->NewPeer(kAddress0, true);
-  std::unique_ptr<FakePeer> fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  std::unique_ptr<FakePeer> fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   // Set up GAP service
@@ -1823,7 +1823,7 @@ TEST_P(ReadDeviceNameParameterizedFixture, ReadDeviceNameParameterized) {
 
   conn_mgr()->Connect(peer->identifier(), callback, LowEnergyConnectionOptions());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(conn_ref);
   ASSERT_TRUE(peer->name());
   EXPECT_EQ(peer->name_source(), Peer::NameSource::kGenericAccessService);
@@ -1838,7 +1838,7 @@ INSTANTIATE_TEST_SUITE_P(ReadDeviceNameTest, ReadDeviceNameParameterizedFixture,
 
 TEST_F(LowEnergyConnectionManagerTest, ReadDeviceNameLong) {
   Peer* peer = peer_cache()->NewPeer(kAddress0, true);
-  std::unique_ptr<FakePeer> fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  std::unique_ptr<FakePeer> fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   // Set up GAP service
@@ -1872,7 +1872,7 @@ TEST_F(LowEnergyConnectionManagerTest, ReadDeviceNameLong) {
 
   conn_mgr()->Connect(peer->identifier(), callback, LowEnergyConnectionOptions());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(conn_ref);
   ASSERT_TRUE(peer->name());
   EXPECT_EQ(peer->name_source(), Peer::NameSource::kGenericAccessService);
@@ -1882,7 +1882,7 @@ TEST_F(LowEnergyConnectionManagerTest, ReadDeviceNameLong) {
 
 TEST_F(LowEnergyConnectionManagerTest, ReadAppearance) {
   Peer* peer = peer_cache()->NewPeer(kAddress0, true);
-  std::unique_ptr<FakePeer> fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  std::unique_ptr<FakePeer> fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   // Set up GAP service
@@ -1913,7 +1913,7 @@ TEST_F(LowEnergyConnectionManagerTest, ReadAppearance) {
 
   conn_mgr()->Connect(peer->identifier(), callback, LowEnergyConnectionOptions());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(conn_ref);
   ASSERT_TRUE(peer->appearance());
   uint16_t device_appearance = peer->appearance().value();
@@ -1922,7 +1922,7 @@ TEST_F(LowEnergyConnectionManagerTest, ReadAppearance) {
 
 TEST_F(LowEnergyConnectionManagerTest, ReadAppearanceInvalidSize) {
   Peer* peer = peer_cache()->NewPeer(kAddress0, true);
-  std::unique_ptr<FakePeer> fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  std::unique_ptr<FakePeer> fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   // Set up GAP service
@@ -1953,7 +1953,7 @@ TEST_F(LowEnergyConnectionManagerTest, ReadAppearanceInvalidSize) {
 
   conn_mgr()->Connect(peer->identifier(), callback, LowEnergyConnectionOptions());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(conn_ref);
   EXPECT_FALSE(peer->appearance());
 }
@@ -1961,7 +1961,7 @@ TEST_F(LowEnergyConnectionManagerTest, ReadAppearanceInvalidSize) {
 TEST_F(LowEnergyConnectionManagerTest,
        ReadPeripheralPreferredConnectionParametersCharacteristicAndUpdateConnectionParameters) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   // Set up GAP service
@@ -1998,7 +1998,7 @@ TEST_F(LowEnergyConnectionManagerTest,
 
   conn_mgr()->Connect(peer->identifier(), callback, LowEnergyConnectionOptions());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(conn_ref);
   ASSERT_TRUE(peer->le()->preferred_connection_parameters());
   auto params = peer->le()->preferred_connection_parameters().value();
@@ -2011,7 +2011,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   test_device()->set_le_connection_parameters_callback(
       [&](auto address, auto parameters) { conn_params = parameters; });
 
-  RunLoopFor(kLEConnectionPauseCentral);
+  RunFor(kLEConnectionPauseCentral);
   ASSERT_TRUE(conn_params.has_value());
   EXPECT_EQ(conn_params->interval(), 1u);  // FakeController will use min interval
   EXPECT_EQ(conn_params->latency(), 3u);
@@ -2021,7 +2021,7 @@ TEST_F(LowEnergyConnectionManagerTest,
 TEST_F(LowEnergyConnectionManagerTest,
        ReadPeripheralPreferredConnectionParametersCharacteristicInvalidValueSize) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   // Set up GAP service
@@ -2052,14 +2052,14 @@ TEST_F(LowEnergyConnectionManagerTest,
 
   conn_mgr()->Connect(peer->identifier(), callback, LowEnergyConnectionOptions());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(conn_ref);
   EXPECT_FALSE(peer->le()->preferred_connection_parameters());
 }
 
 TEST_F(LowEnergyConnectionManagerTest, GapServiceCharacteristicDiscoveryError) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   // Set up GAP service
@@ -2083,14 +2083,14 @@ TEST_F(LowEnergyConnectionManagerTest, GapServiceCharacteristicDiscoveryError) {
 
   conn_mgr()->Connect(peer->identifier(), callback, LowEnergyConnectionOptions());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(conn_ref);
   EXPECT_FALSE(peer->le()->preferred_connection_parameters());
 }
 
 TEST_F(LowEnergyConnectionManagerTest, GapServiceListServicesError) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   fake_gatt()->set_list_services_status(ToResult(HostError::kFailed));
@@ -2103,14 +2103,14 @@ TEST_F(LowEnergyConnectionManagerTest, GapServiceListServicesError) {
 
   conn_mgr()->Connect(peer->identifier(), callback, LowEnergyConnectionOptions());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(conn_ref);
   EXPECT_FALSE(peer->le()->preferred_connection_parameters());
 }
 
 TEST_F(LowEnergyConnectionManagerTest, PeerGapServiceMissingConnectionParameterCharacteristic) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   // Set up GAP service
@@ -2126,19 +2126,19 @@ TEST_F(LowEnergyConnectionManagerTest, PeerGapServiceMissingConnectionParameterC
 
   conn_mgr()->Connect(peer->identifier(), callback, LowEnergyConnectionOptions());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(conn_ref);
   EXPECT_FALSE(peer->le()->preferred_connection_parameters());
 }
 
 // Listener receives remote initiated connection ref.
 TEST_F(LowEnergyConnectionManagerTest, PassBondableThroughRemoteInitiatedLink) {
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
 
   // First create a fake incoming connection.
   test_device()->ConnectLowEnergy(kAddress0);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   auto link = MoveLastRemoteInitiated();
   ASSERT_TRUE(link);
@@ -2149,7 +2149,7 @@ TEST_F(LowEnergyConnectionManagerTest, PassBondableThroughRemoteInitiatedLink) {
                                             ASSERT_EQ(fit::ok(), result);
                                             conn_handle = std::move(result).value();
                                           });
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(conn_handle);
   EXPECT_TRUE(conn_handle->active());
@@ -2157,12 +2157,12 @@ TEST_F(LowEnergyConnectionManagerTest, PassBondableThroughRemoteInitiatedLink) {
 }
 
 TEST_F(LowEnergyConnectionManagerTest, PassNonBondableThroughRemoteInitiatedLink) {
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
 
   // First create a fake incoming connection.
   test_device()->ConnectLowEnergy(kAddress0);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   auto link = MoveLastRemoteInitiated();
   ASSERT_TRUE(link);
@@ -2173,7 +2173,7 @@ TEST_F(LowEnergyConnectionManagerTest, PassNonBondableThroughRemoteInitiatedLink
                                             ASSERT_EQ(fit::ok(), result);
                                             conn_handle = std::move(result).value();
                                           });
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(conn_handle);
   EXPECT_TRUE(conn_handle->active());
@@ -2185,7 +2185,7 @@ TEST_F(LowEnergyConnectionManagerTest, PassBondableThroughConnect) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
@@ -2199,7 +2199,7 @@ TEST_F(LowEnergyConnectionManagerTest, PassBondableThroughConnect) {
   EXPECT_TRUE(connected_peers().empty());
   conn_mgr()->Connect(peer->identifier(), callback, {.bondable_mode = BondableMode::Bondable});
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(conn_handle);
   EXPECT_EQ(conn_handle->bondable_mode(), BondableMode::Bondable);
@@ -2210,7 +2210,7 @@ TEST_F(LowEnergyConnectionManagerTest, PassNonBondableThroughConnect) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
@@ -2224,7 +2224,7 @@ TEST_F(LowEnergyConnectionManagerTest, PassNonBondableThroughConnect) {
   EXPECT_TRUE(connected_peers().empty());
   conn_mgr()->Connect(peer->identifier(), callback, {.bondable_mode = BondableMode::NonBondable});
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(conn_handle);
   EXPECT_EQ(conn_handle->bondable_mode(), BondableMode::NonBondable);
@@ -2237,7 +2237,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectionCleanUpFollowingEncryptionFailu
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   std::unique_ptr<LowEnergyConnectionHandle> conn;
@@ -2248,7 +2248,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectionCleanUpFollowingEncryptionFailu
         conn = std::move(result).value();
       },
       kConnectionOptions);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn);
 
   hci_spec::ConnectionHandle handle = conn->handle();
@@ -2264,7 +2264,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectionCleanUpFollowingEncryptionFailu
       handle, pw::bluetooth::emboss::StatusCode::CONNECTION_TERMINATED_MIC_FAILURE,
       pw::bluetooth::emboss::EncryptionStatus::OFF);
   test_device()->SendDisconnectionCompleteEvent(handle);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(ref_cleaned_up);
   EXPECT_TRUE(disconnected);
@@ -2278,7 +2278,7 @@ TEST_F(LowEnergyConnectionManagerTest, SuccessfulInterrogationSetsPeerVersionAnd
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   ASSERT_TRUE(peer->le());
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   fake_peer->set_le_features(kLEFeatures);
   test_device()->AddPeer(std::move(fake_peer));
 
@@ -2293,7 +2293,7 @@ TEST_F(LowEnergyConnectionManagerTest, SuccessfulInterrogationSetsPeerVersionAnd
 
   EXPECT_FALSE(peer->version().has_value());
   EXPECT_FALSE(peer->le()->features().has_value());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(conn);
   EXPECT_TRUE(peer->version().has_value());
   EXPECT_TRUE(peer->le()->features().has_value());
@@ -2306,7 +2306,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectInterrogationFailure) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   ASSERT_TRUE(peer->le());
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   std::optional<HostError> error;
@@ -2323,7 +2323,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectInterrogationFailure) {
   test_device()->set_le_read_remote_features_callback(
       [this]() { test_device()->RemovePeer(kAddress0); });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(error.has_value());
   EXPECT_FALSE(peer->connected());
   EXPECT_FALSE(peer->le()->connected());
@@ -2331,12 +2331,12 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectInterrogationFailure) {
 }
 
 TEST_F(LowEnergyConnectionManagerTest, RemoteInitiatedLinkInterrogationFailure) {
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
 
   // First create a fake incoming connection.
   test_device()->ConnectLowEnergy(kAddress0);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   auto link = MoveLastRemoteInitiated();
   ASSERT_TRUE(link);
@@ -2352,7 +2352,7 @@ TEST_F(LowEnergyConnectionManagerTest, RemoteInitiatedLinkInterrogationFailure) 
   test_device()->set_le_read_remote_features_callback(
       [this]() { test_device()->RemovePeer(kAddress0); });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(error.has_value());
 
   // A Peer should now exist in the cache.
@@ -2370,14 +2370,14 @@ TEST_F(LowEnergyConnectionManagerTest, L2capRequestConnParamUpdateAfterInterroga
 
   // Connection Parameter Update procedure NOT supported.
   constexpr hci_spec::LESupportedFeatures kLEFeatures{0};
-  auto peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   peer->set_le_features(kLEFeatures);
   test_device()->AddPeer(std::move(peer));
 
   // First create a fake incoming connection as peripheral.
   test_device()->ConnectLowEnergy(kAddress0, pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   auto link = MoveLastRemoteInitiated();
   ASSERT_TRUE(link);
@@ -2400,13 +2400,13 @@ TEST_F(LowEnergyConnectionManagerTest, L2capRequestConnParamUpdateAfterInterroga
   test_device()->set_le_connection_parameters_callback(
       [&](auto address, auto parameters) { hci_update_conn_param_count++; });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_handle);
   EXPECT_TRUE(conn_handle->active());
   EXPECT_EQ(0u, l2cap_conn_param_update_count);
   EXPECT_EQ(0u, hci_update_conn_param_count);
 
-  RunLoopFor(kLEConnectionPausePeripheral);
+  RunFor(kLEConnectionPausePeripheral);
   EXPECT_EQ(1u, l2cap_conn_param_update_count);
   EXPECT_EQ(0u, hci_update_conn_param_count);
 }
@@ -2419,8 +2419,8 @@ TEST_F(LowEnergyConnectionManagerTest, L2capRequestConnParamUpdateAfterInterroga
 // Test that this behavior is followed for 2 concurrent connections in order to ensure correct
 // command/event handling.
 TEST_F(LowEnergyConnectionManagerTest, PeripheralsRetryLLConnectionUpdateWithL2capRequest) {
-  auto peer0 = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
-  auto peer1 = std::make_unique<FakePeer>(kAddress1, pw_dispatcher());
+  auto peer0 = std::make_unique<FakePeer>(kAddress0, dispatcher());
+  auto peer1 = std::make_unique<FakePeer>(kAddress1, dispatcher());
 
   // Connection Parameter Update procedure supported by controller.
   constexpr hci_spec::LESupportedFeatures kLEFeatures{
@@ -2439,7 +2439,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeripheralsRetryLLConnectionUpdateWithL2c
 
   // First create fake incoming connections with local host as peripheral.
   test_device()->ConnectLowEnergy(kAddress0, pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   auto link0 = MoveLastRemoteInitiated();
   ASSERT_TRUE(link0);
 
@@ -2451,7 +2451,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeripheralsRetryLLConnectionUpdateWithL2c
                                           });
 
   test_device()->ConnectLowEnergy(kAddress1, pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   auto link1 = MoveLastRemoteInitiated();
   ASSERT_TRUE(link1);
 
@@ -2494,7 +2494,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeripheralsRetryLLConnectionUpdateWithL2c
     }
   });
 
-  RunLoopFor(kLEConnectionPausePeripheral);
+  RunFor(kLEConnectionPausePeripheral);
   ASSERT_TRUE(conn_handle0);
   EXPECT_TRUE(conn_handle0->active());
   ASSERT_TRUE(conn_handle1);
@@ -2509,7 +2509,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeripheralsRetryLLConnectionUpdateWithL2c
   test_device()->SendLEConnectionUpdateCompleteSubevent(
       conn_handle1->handle(), hci_spec::LEConnectionParameters(),
       pw::bluetooth::emboss::StatusCode::UNSUPPORTED_REMOTE_FEATURE);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1u, l2cap_conn_param_update_count0);
   EXPECT_EQ(1u, l2cap_conn_param_update_count1);
 }
@@ -2520,7 +2520,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeripheralsRetryLLConnectionUpdateWithL2c
 // Parameter Update Request after receiving this kUnsupportedRemoteFeature command status.
 TEST_F(LowEnergyConnectionManagerTest,
        PeripheralSendsL2capConnParamReqAfterConnUpdateCommandStatusUnsupportedRemoteFeature) {
-  auto peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
 
   // Connection Parameter Update procedure supported by controller.
   constexpr hci_spec::LESupportedFeatures kLEFeatures{
@@ -2530,7 +2530,7 @@ TEST_F(LowEnergyConnectionManagerTest,
 
   // First create a fake incoming connection with local host as peripheral.
   test_device()->ConnectLowEnergy(kAddress0, pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   auto link = MoveLastRemoteInitiated();
   ASSERT_TRUE(link);
@@ -2556,7 +2556,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   test_device()->SetDefaultCommandStatus(
       hci_spec::kLEConnectionUpdate, pw::bluetooth::emboss::StatusCode::UNSUPPORTED_REMOTE_FEATURE);
 
-  RunLoopFor(kLEConnectionPausePeripheral);
+  RunFor(kLEConnectionPausePeripheral);
   ASSERT_TRUE(conn_handle);
   EXPECT_TRUE(conn_handle->active());
   EXPECT_EQ(0u, hci_update_conn_param_count);
@@ -2569,7 +2569,7 @@ TEST_F(LowEnergyConnectionManagerTest,
       conn_handle->handle(), hci_spec::LEConnectionParameters(),
       pw::bluetooth::emboss::StatusCode::UNSUPPORTED_REMOTE_FEATURE);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1u, l2cap_conn_param_update_count);
 }
 
@@ -2577,7 +2577,7 @@ TEST_F(LowEnergyConnectionManagerTest,
 // status of the LE Connection Update command is not success.
 TEST_F(LowEnergyConnectionManagerTest,
        PeripheralDoesNotSendL2capConnParamReqAfterConnUpdateCommandStatusError) {
-  auto peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
 
   // Connection Parameter Update procedure supported by controller.
   constexpr hci_spec::LESupportedFeatures kLEFeatures{
@@ -2587,7 +2587,7 @@ TEST_F(LowEnergyConnectionManagerTest,
 
   // First create a fake incoming connection with local host as peripheral.
   test_device()->ConnectLowEnergy(kAddress0, pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   auto link = MoveLastRemoteInitiated();
   ASSERT_TRUE(link);
@@ -2613,7 +2613,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   test_device()->SetDefaultCommandStatus(hci_spec::kLEConnectionUpdate,
                                          pw::bluetooth::emboss::StatusCode::UNSPECIFIED_ERROR);
 
-  RunLoopFor(kLEConnectionPausePeripheral);
+  RunFor(kLEConnectionPausePeripheral);
   ASSERT_TRUE(conn_handle);
   EXPECT_TRUE(conn_handle->active());
   EXPECT_EQ(0u, hci_update_conn_param_count);
@@ -2626,7 +2626,7 @@ TEST_F(LowEnergyConnectionManagerTest,
       conn_handle->handle(), hci_spec::LEConnectionParameters(),
       pw::bluetooth::emboss::StatusCode::UNSUPPORTED_REMOTE_FEATURE);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(0u, l2cap_conn_param_update_count);
 }
 
@@ -2634,14 +2634,14 @@ TEST_F(LowEnergyConnectionManagerTest, HciUpdateConnParamsAfterInterrogation) {
   constexpr hci_spec::LESupportedFeatures kLEFeatures{
       static_cast<uint64_t>(hci_spec::LESupportedFeature::kConnectionParametersRequestProcedure)};
 
-  auto peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   peer->set_le_features(kLEFeatures);
   test_device()->AddPeer(std::move(peer));
 
   // First create a fake incoming connection.
   test_device()->ConnectLowEnergy(kAddress0, pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   auto link = MoveLastRemoteInitiated();
   ASSERT_TRUE(link);
@@ -2671,13 +2671,13 @@ TEST_F(LowEnergyConnectionManagerTest, HciUpdateConnParamsAfterInterrogation) {
         hci_update_conn_param_count++;
       });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_handle);
   EXPECT_TRUE(conn_handle->active());
   EXPECT_EQ(0u, l2cap_conn_param_update_count);
   EXPECT_EQ(0u, hci_update_conn_param_count);
 
-  RunLoopFor(kLEConnectionPausePeripheral);
+  RunFor(kLEConnectionPausePeripheral);
   EXPECT_EQ(0u, l2cap_conn_param_update_count);
   EXPECT_EQ(1u, hci_update_conn_param_count);
 }
@@ -2688,7 +2688,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   ASSERT_TRUE(peer->le());
 
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
 
   size_t hci_update_conn_param_count = 0;
   test_device()->set_le_connection_parameters_callback(
@@ -2710,10 +2710,10 @@ TEST_F(LowEnergyConnectionManagerTest,
       },
       kConnectionOptions);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(0u, hci_update_conn_param_count);
 
-  RunLoopFor(kLEConnectionPauseCentral);
+  RunFor(kLEConnectionPauseCentral);
   EXPECT_EQ(1u, hci_update_conn_param_count);
   EXPECT_TRUE(conn);
 }
@@ -2723,7 +2723,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectCalledForPeerBeingInterrogated) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   ASSERT_TRUE(peer->le());
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   // Prevent remote features event from being received.
@@ -2733,7 +2733,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectCalledForPeerBeingInterrogated) {
   conn_mgr()->Connect(
       peer->identifier(), [&](auto result) { ASSERT_TRUE(result.is_error()); }, kConnectionOptions);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   // Interrogation should not complete.
   EXPECT_FALSE(peer->le()->features().has_value());
 
@@ -2741,7 +2741,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectCalledForPeerBeingInterrogated) {
   // No asserts should fail.
   conn_mgr()->Connect(
       peer->identifier(), [&](auto result) { ASSERT_TRUE(result.is_error()); }, kConnectionOptions);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 LowEnergyConnectionManager::ConnectionResultCallback MakeConnectionResultCallback(
@@ -2760,9 +2760,9 @@ TEST_F(LowEnergyConnectionManagerTest, SecureConnectionsOnlyDisconnectsInsuffici
   Peer* encrypted_peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   Peer* unencrypted_peer = peer_cache()->NewPeer(kAddress1, /*connectable=*/true);
   Peer* secure_authenticated_peer = peer_cache()->NewPeer(kAddress3, /*connectable=*/true);
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1, pw_dispatcher()));
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress3, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1, dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress3, dispatcher()));
 
   std::unique_ptr<LowEnergyConnectionHandle> unencrypted_conn_handle, encrypted_conn_handle,
       secure_authenticated_conn_handle;
@@ -2774,7 +2774,7 @@ TEST_F(LowEnergyConnectionManagerTest, SecureConnectionsOnlyDisconnectsInsuffici
   conn_mgr()->Connect(secure_authenticated_peer->identifier(),
                       MakeConnectionResultCallback(secure_authenticated_conn_handle),
                       kConnectionOptions);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   std::function<void(sm::Result<>)> pair_cb = [](sm::Result<> s) { EXPECT_EQ(fit::ok(), s); };
   EXPECT_EQ(3u, connected_peers().size());
   ASSERT_TRUE(unencrypted_conn_handle);
@@ -2789,7 +2789,7 @@ TEST_F(LowEnergyConnectionManagerTest, SecureConnectionsOnlyDisconnectsInsuffici
                    sm::BondableMode::Bondable, pair_cb);
   conn_mgr()->Pair(secure_authenticated_peer->identifier(), sm::SecurityLevel::kSecureAuthenticated,
                    sm::BondableMode::Bondable, pair_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(sm::SecurityLevel::kNoSecurity, unencrypted_conn_handle->security().level());
   EXPECT_EQ(sm::SecurityLevel::kEncrypted, encrypted_conn_handle->security().level());
   EXPECT_EQ(sm::SecurityLevel::kSecureAuthenticated,
@@ -2799,7 +2799,7 @@ TEST_F(LowEnergyConnectionManagerTest, SecureConnectionsOnlyDisconnectsInsuffici
   // disconnected (in this case, `encrypted_peer` is encrypted, SC-generated, and with max
   // encryption key size, but not authenticated).
   conn_mgr()->SetSecurityMode(LESecurityMode::SecureConnectionsOnly);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(LESecurityMode::SecureConnectionsOnly, conn_mgr()->security_mode());
   EXPECT_EQ(2u, connected_peers().size());
   EXPECT_TRUE(unencrypted_conn_handle->active());
@@ -2814,31 +2814,31 @@ TEST_F(LowEnergyConnectionManagerTest, SetSecureConnectionsOnlyModeWorks) {
 
   // This peer will already be connected when we set LE Secure Connections Only mode.
   Peer* existing_peer = peer_cache()->NewPeer(kAddress1, /*connectable=*/true);
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1, dispatcher()));
   std::unique_ptr<LowEnergyConnectionHandle> existing_conn_handle;
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   conn_mgr()->Connect(existing_peer->identifier(),
                       MakeConnectionResultCallback(existing_conn_handle), kConnectionOptions);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   TestSm::WeakPtr existing_peer_sm = TestSmByHandle(existing_conn_handle->handle());
   ASSERT_TRUE(existing_peer_sm.is_alive());
   EXPECT_EQ(LESecurityMode::Mode1, existing_peer_sm->security_mode());
   EXPECT_EQ(1u, connected_peers().size());
 
   conn_mgr()->SetSecurityMode(LESecurityMode::SecureConnectionsOnly);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(LESecurityMode::SecureConnectionsOnly, existing_peer_sm->security_mode());
 
   // This peer is connected after setting LE Secure Connections Only mode.
   Peer* new_peer = peer_cache()->NewPeer(kAddress3, /*connectable=*/true);
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress3, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress3, dispatcher()));
   std::unique_ptr<LowEnergyConnectionHandle> new_conn_handle;
 
   conn_mgr()->Connect(new_peer->identifier(), MakeConnectionResultCallback(new_conn_handle),
                       kConnectionOptions);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   TestSm::WeakPtr new_peer_sm = TestSmByHandle(new_conn_handle->handle());
   ASSERT_TRUE(new_peer_sm.is_alive());
   EXPECT_EQ(2u, connected_peers().size());
@@ -2851,7 +2851,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   auto* peer_0 = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   ASSERT_TRUE(peer_0->le());
 
-  auto fake_peer_0 = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer_0 = std::make_unique<FakePeer>(kAddress0, dispatcher());
   auto fake_peer_0_ptr = fake_peer_0.get();
   test_device()->AddPeer(std::move(fake_peer_0));
 
@@ -2869,7 +2869,7 @@ TEST_F(LowEnergyConnectionManagerTest,
       },
       kConnectionOptions);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   // Interrogation should not complete.
   EXPECT_FALSE(peer_0->le()->connected());
   EXPECT_FALSE(conn_0);
@@ -2877,7 +2877,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   auto* peer_1 = peer_cache()->NewPeer(kAddress1, /*connectable=*/true);
   ASSERT_TRUE(peer_1->le());
 
-  auto fake_peer_1 = std::make_unique<FakePeer>(kAddress1, pw_dispatcher());
+  auto fake_peer_1 = std::make_unique<FakePeer>(kAddress1, dispatcher());
   auto fake_peer_1_ptr = fake_peer_1.get();
   test_device()->AddPeer(std::move(fake_peer_1));
 
@@ -2891,7 +2891,7 @@ TEST_F(LowEnergyConnectionManagerTest,
         ASSERT_TRUE(conn_1);
       },
       kConnectionOptions);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Complete interrogation of peer_0
   ASSERT_FALSE(fake_peer_0_ptr->logical_links().empty());
@@ -2906,7 +2906,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
   view.le_features().BackingStorage().WriteUInt(0u);
   test_device()->SendCommandChannelPacket(response.data());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(conn_0);
   EXPECT_TRUE(peer_0->le()->connected());
 
@@ -2915,7 +2915,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   auto handle_1 = *fake_peer_0_ptr->logical_links().begin();
   view.connection_handle().Write(handle_1);
   test_device()->SendCommandChannelPacket(response.data());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(conn_1);
   EXPECT_TRUE(peer_1->le()->connected());
 }
@@ -2924,7 +2924,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSecondPeerDuringInterrogationOfFir
   auto* peer_0 = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   ASSERT_TRUE(peer_0->le());
 
-  auto fake_peer_0 = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer_0 = std::make_unique<FakePeer>(kAddress0, dispatcher());
   auto fake_peer_0_ptr = fake_peer_0.get();
   test_device()->AddPeer(std::move(fake_peer_0));
 
@@ -2941,7 +2941,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSecondPeerDuringInterrogationOfFir
       },
       kConnectionOptions);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   // Interrogation should not complete.
   EXPECT_FALSE(peer_0->le()->connected());
   EXPECT_FALSE(conn_0);
@@ -2954,14 +2954,14 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSecondPeerDuringInterrogationOfFir
   auto* peer_1 = peer_cache()->NewPeer(kAddress1, /*connectable=*/true);
   ASSERT_TRUE(peer_1->le());
 
-  auto fake_peer_1 = std::make_unique<FakePeer>(kAddress1, pw_dispatcher());
+  auto fake_peer_1 = std::make_unique<FakePeer>(kAddress1, dispatcher());
   test_device()->AddPeer(std::move(fake_peer_1));
 
   // Connect to different peer, before interrogation has completed.
   conn_mgr()->Connect(
       peer_1->identifier(), [&](auto result) { EXPECT_TRUE(result.is_error()); },
       kConnectionOptions);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Complete interrogation of peer_0. No asserts should fail.
   ASSERT_FALSE(fake_peer_0_ptr->logical_links().empty());
@@ -2975,7 +2975,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSecondPeerDuringInterrogationOfFir
   view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
   view.le_features().BackingStorage().WriteUInt(0u);
   test_device()->SendCommandChannelPacket(response.data());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(conn_0);
   EXPECT_TRUE(peer_0->le()->connected());
 }
@@ -2984,7 +2984,7 @@ TEST_F(LowEnergyConnectionManagerTest, SynchonousInterrogationAndNoCallbackRetai
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   ASSERT_TRUE(peer->le());
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   std::unique_ptr<LowEnergyConnectionHandle> conn;
@@ -2996,13 +2996,13 @@ TEST_F(LowEnergyConnectionManagerTest, SynchonousInterrogationAndNoCallbackRetai
       },
       kConnectionOptions);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(peer->le()->connected());
   EXPECT_TRUE(conn);
 
   // Disconnect
   conn = nullptr;
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Second interrogation will complete synchronously because peer has already been interrogated.
   bool conn_cb_called = false;
@@ -3015,7 +3015,7 @@ TEST_F(LowEnergyConnectionManagerTest, SynchonousInterrogationAndNoCallbackRetai
       },
       kConnectionOptions);
   // Wait for connect complete event.
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(conn_cb_called);
 }
 
@@ -3023,7 +3023,7 @@ TEST_F(LowEnergyConnectionManagerTest, AutoConnectSkipsScanning) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   size_t scan_cb_count = 0;
@@ -3042,7 +3042,7 @@ TEST_F(LowEnergyConnectionManagerTest, AutoConnectSkipsScanning) {
   ASSERT_TRUE(peer->le());
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(1u, connected_peers().size());
   EXPECT_EQ(1u, connected_peers().count(kAddress0));
@@ -3059,7 +3059,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerStartDiscoveryFailed) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   size_t connect_cb_count = 0;
@@ -3077,7 +3077,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerStartDiscoveryFailed) {
   ASSERT_TRUE(peer->le());
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(connect_cb_count, 1u);
   EXPECT_FALSE(peer->temporary());
   EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
@@ -3099,13 +3099,13 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerDiscoveryFailedDuringSca
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
   ASSERT_TRUE(peer->le());
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(connect_cb_count, 0u);
 
   // Cause discovery to fail when attempting to restart scan after scan period ends.
   test_device()->SetDefaultCommandStatus(hci_spec::kLESetScanEnable,
                                          pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED);
-  RunLoopFor(kLEGeneralDiscoveryScanMin);
+  RunFor(kLEGeneralDiscoveryScanMin);
   EXPECT_EQ(connect_cb_count, 1u);
   EXPECT_FALSE(peer->temporary());
   EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
@@ -3115,7 +3115,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeerDisconnectBeforeInterrogationComplete
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   auto fake_peer_ptr = fake_peer.get();
   test_device()->AddPeer(std::move(fake_peer));
 
@@ -3134,14 +3134,14 @@ TEST_F(LowEnergyConnectionManagerTest, PeerDisconnectBeforeInterrogationComplete
   ASSERT_TRUE(peer->le());
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_FALSE(fake_peer_ptr->logical_links().empty());
   auto handle = *fake_peer_ptr->logical_links().begin();
 
   test_device()->Disconnect(peer->address());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Complete interrogation so that callback gets called.
   auto response =
@@ -3152,7 +3152,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeerDisconnectBeforeInterrogationComplete
   view.connection_handle().Write(handle);
   test_device()->SendCommandChannelPacket(response.data());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(0u, connected_peers().size());
   EXPECT_EQ(1, connect_count);
   EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
@@ -3162,7 +3162,7 @@ TEST_F(LowEnergyConnectionManagerTest, LocalDisconnectBeforeInterrogationComplet
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   auto fake_peer_ptr = fake_peer.get();
   test_device()->AddPeer(std::move(fake_peer));
 
@@ -3181,14 +3181,14 @@ TEST_F(LowEnergyConnectionManagerTest, LocalDisconnectBeforeInterrogationComplet
   ASSERT_TRUE(peer->le());
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_FALSE(fake_peer_ptr->logical_links().empty());
   auto handle = *fake_peer_ptr->logical_links().begin();
 
   conn_mgr()->Disconnect(peer->identifier());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Complete interrogation so that callback gets called.
   auto response =
@@ -3199,7 +3199,7 @@ TEST_F(LowEnergyConnectionManagerTest, LocalDisconnectBeforeInterrogationComplet
   view.connection_handle().Write(handle);
   test_device()->SendCommandChannelPacket(response.data());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(0u, connected_peers().size());
   EXPECT_EQ(1, connect_count);
   EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
@@ -3209,7 +3209,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectionFailedToBeEstablishedRetriesTwi
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   size_t connected_count = 0;
@@ -3240,23 +3240,23 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectionFailedToBeEstablishedRetriesTwi
   for (size_t i = 0; i < kConnectDelays.size(); i++) {
     SCOPED_TRACE(i);
     if (i != 0) {
-      RunLoopFor(kConnectDelays[i] - zx::nsec(1));
+      RunFor(kConnectDelays[i] - std::chrono::nanoseconds(1));
       EXPECT_EQ(connected_count, i);
-      RunLoopFor(zx::nsec(1));
+      RunFor(std::chrono::nanoseconds(1));
     } else {
-      RunLoopFor(kConnectDelays[i]);
+      RunFor(kConnectDelays[i]);
     }
     EXPECT_EQ(connected_count, i + 1);
     EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
     test_device()->Disconnect(
         kAddress0, pw::bluetooth::emboss::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
-    RunLoopUntilIdle();
+    RunUntilIdle();
     EXPECT_EQ(connected_count, i + 1);
     // A connect command should be sent in connect_delays[i+1]
   }
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(connected_peers().empty());
   EXPECT_EQ(connect_cb_count, 1);
   EXPECT_FALSE(peer->temporary());
@@ -3267,7 +3267,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectionFailedToBeEstablishedRetriesAnd
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
@@ -3288,7 +3288,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectionFailedToBeEstablishedRetriesAnd
   ASSERT_TRUE(peer->le());
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
   EXPECT_FALSE(conn_handle);
 
@@ -3298,7 +3298,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectionFailedToBeEstablishedRetriesAnd
   // Disconnect should initiate retry #2 after a pause.
   test_device()->Disconnect(kAddress0,
                             pw::bluetooth::emboss::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
-  RunLoopFor(zx::sec(2));
+  RunFor(std::chrono::seconds(2));
   EXPECT_EQ(1u, connected_peers().size());
   EXPECT_EQ(1u, connected_peers().count(kAddress0));
   ASSERT_TRUE(conn_handle);
@@ -3312,7 +3312,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   int connect_cb_count = 0;
@@ -3333,7 +3333,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   ASSERT_TRUE(peer->le());
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
   EXPECT_EQ(connect_cb_count, 0);
 
@@ -3343,11 +3343,13 @@ TEST_F(LowEnergyConnectionManagerTest,
   // Peer disconnection during interrogation should also cause retry (after a pause)
   test_device()->Disconnect(kAddress0,
                             pw::bluetooth::emboss::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   // Disconnect will cancel request.
   conn_mgr()->Disconnect(peer->identifier());
   // Ensure timer is canceled.
-  RunLoopRepeatedlyFor(zx::sec(1));
+  // TODO(saeedali): run repeatedly?
+  // RunLoopRepeatedlyFor(std::chrono::seconds(1));
+  RunFor(std::chrono::seconds(1));
   EXPECT_EQ(connect_cb_count, 1);
   EXPECT_EQ(0u, connected_peers().size());
   EXPECT_FALSE(peer->temporary());
@@ -3361,7 +3363,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   int connect_cb_count = 0;
@@ -3382,7 +3384,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   ASSERT_TRUE(peer->le());
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
   EXPECT_EQ(connect_cb_count, 0);
 
@@ -3392,7 +3394,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   // Peer disconnection during interrogation should also cause retry (after a pause).
   test_device()->Disconnect(kAddress0,
                             pw::bluetooth::emboss::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Complete interrogation with an error that will be received after the disconnect event.
   // Event params other than status will be ignored because status is an error.
@@ -3403,12 +3405,12 @@ TEST_F(LowEnergyConnectionManagerTest,
   view.status().Write(pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID);
   test_device()->SendCommandChannelPacket(response.data());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
   EXPECT_EQ(connect_cb_count, 0);
 
   // Wait for retry.
-  RunLoopFor(kConnectDelays[1]);
+  RunFor(kConnectDelays[1]);
   EXPECT_EQ(connect_cb_count, 1);
   EXPECT_TRUE(conn_handle);
   EXPECT_EQ(1u, connected_peers().size());
@@ -3441,7 +3443,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSucceedsThenAutoConnectFailsDisabl
     SCOPED_TRACE(hci_spec::StatusCodeToString(statuses_that_disable_autoconnect[i]));
     const DeviceAddress kAddressI(DeviceAddress::Type::kLEPublic, {i});
     auto* peer = peer_cache()->NewPeer(kAddressI, /*connectable=*/true);
-    auto fake_peer = std::make_unique<FakePeer>(kAddressI, pw_dispatcher());
+    auto fake_peer = std::make_unique<FakePeer>(kAddressI, dispatcher());
     test_device()->AddPeer(std::move(fake_peer));
 
     std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
@@ -3452,7 +3454,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSucceedsThenAutoConnectFailsDisabl
     };
 
     conn_mgr()->Connect(peer->identifier(), success_cb, kConnectionOptions);
-    RunLoopUntilIdle();
+    RunUntilIdle();
     // Peer needs to be bonded to set auto connect
     peer->MutLe().SetBondData(sm::PairingData{});
 
@@ -3466,7 +3468,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSucceedsThenAutoConnectFailsDisabl
     // unset auto connect behavior.
     test_device()->Disconnect(peer->address());
 
-    RunLoopUntilIdle();
+    RunUntilIdle();
 
     EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
     EXPECT_TRUE(peer->le()->should_auto_connect());
@@ -3480,19 +3482,19 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSucceedsThenAutoConnectFailsDisabl
     auto failure_cb = [&result](auto res) { result = std::move(res); };
     // Create an inbound HCI connection and try to register it with the LECM
     test_device()->ConnectLowEnergy(kAddressI);
-    RunLoopUntilIdle();
+    RunUntilIdle();
     auto link = MoveLastRemoteInitiated();
     ASSERT_TRUE(link);
     result = fit::ok(nullptr);
     conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable, failure_cb);
-    RunLoopUntilIdle();
+    RunUntilIdle();
     // We always wait until the peer disconnects to relay connection failure when dealing with
     // the 0x3e kConnectionFailedToBeEstablished error.
     if (statuses_that_disable_autoconnect[i] ==
         pw::bluetooth::emboss::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED) {
       test_device()->Disconnect(
           kAddressI, pw::bluetooth::emboss::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
-      RunLoopUntilIdle();
+      RunUntilIdle();
     }
     // Remote-initiated connection attempts that fail should not disable the auto-connect flag.
     ASSERT_TRUE(result.is_error());
@@ -3509,7 +3511,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSucceedsThenAutoConnectFailsDisabl
     // User-initiated connection attempts that fail should not disable the auto-connect flag.
     const LowEnergyConnectionOptions kNotAutoConnectOptions{.auto_connect = false};
     conn_mgr()->Connect(peer->identifier(), failure_cb, kNotAutoConnectOptions);
-    RunLoopUntilIdle();
+    RunUntilIdle();
 
     ASSERT_TRUE(result.is_error());
     EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
@@ -3524,7 +3526,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSucceedsThenAutoConnectFailsDisabl
     ASSERT_TRUE(peer->le());
     EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
-    RunLoopUntilIdle();
+    RunUntilIdle();
 
     ASSERT_TRUE(result.is_error());
     EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
@@ -3540,7 +3542,7 @@ TEST_F(LowEnergyConnectionManagerTest, Inspect) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
@@ -3583,7 +3585,7 @@ TEST_F(LowEnergyConnectionManagerTest, Inspect) {
   EXPECT_THAT(hierarchy.value(), ChildrenMatch(ElementsAre(conn_mgr_during_connecting_matcher)));
 
   // Finish connecting.
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   auto empty_requests_matcher =
       AllOf(NodeMatches(NameMatches("pending_requests")), ChildrenMatch(::testing::IsEmpty()));
@@ -3626,13 +3628,13 @@ TEST_F(LowEnergyConnectionManagerTest, InspectFailedConnection) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   fake_peer->set_connect_status(pw::bluetooth::emboss::StatusCode::CONNECTION_LIMIT_EXCEEDED);
   test_device()->AddPeer(std::move(fake_peer));
 
   auto callback = [](auto result) { ASSERT_TRUE(result.is_error()); };
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   auto conn_mgr_property_matcher = PropertyList(UnorderedElementsAre(
       UintIs("disconnect_explicit_disconnect_count", 0), UintIs("disconnect_link_error_count", 0),
@@ -3646,14 +3648,14 @@ TEST_F(LowEnergyConnectionManagerTest, InspectFailedConnection) {
   EXPECT_THAT(hierarchy.value(),
               ChildrenMatch(ElementsAre(NodeMatches(conn_mgr_property_matcher))));
 
-  RunLoopFor(LowEnergyConnectionManager::kInspectRecentConnectionFailuresExpiryDuration -
-             zx::nsec(1));
+  RunFor(LowEnergyConnectionManager::kInspectRecentConnectionFailuresExpiryDuration -
+         std::chrono::nanoseconds(1));
   hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   EXPECT_THAT(hierarchy.value(),
               ChildrenMatch(ElementsAre(NodeMatches(conn_mgr_property_matcher))));
 
   // Failures should revert to 0 after expiry duration.
-  RunLoopFor(zx::nsec(1));
+  RunFor(std::chrono::nanoseconds(1));
   conn_mgr_property_matcher = PropertyList(UnorderedElementsAre(
       UintIs("disconnect_explicit_disconnect_count", 0), UintIs("disconnect_link_error_count", 0),
       UintIs("disconnect_remote_disconnection_count", 0), UintIs("disconnect_zero_ref_count", 0),
@@ -3684,9 +3686,9 @@ TEST_F(LowEnergyConnectionManagerTest,
   EXPECT_TRUE(peer_cache()->StoreLowEnergyBond(peer->identifier(), data));
   EXPECT_EQ(peer->address(), kIdentityAddress);
 
-  test_device()->AddPeer(std::make_unique<FakePeer>(kRandomAddress, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kRandomAddress, dispatcher()));
   test_device()->ConnectLowEnergy(kRandomAddress);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   auto link = MoveLastRemoteInitiated();
   ASSERT_TRUE(link);
@@ -3699,7 +3701,7 @@ TEST_F(LowEnergyConnectionManagerTest,
                                           });
   EXPECT_EQ(peer->le()->connection_state(), Peer::ConnectionState::kInitializing);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(conn_handle);
   EXPECT_TRUE(conn_handle->active());
@@ -3712,7 +3714,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   EXPECT_TRUE(peer->temporary());
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   // Cause interrogation to stall so that we can expire the central pause timeout.
@@ -3737,19 +3739,19 @@ TEST_F(LowEnergyConnectionManagerTest,
   ASSERT_TRUE(peer->le());
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1u, connected_peers().size());
   EXPECT_EQ(1u, connected_peers().count(kAddress0));
   EXPECT_FALSE(conn_handle);
   EXPECT_EQ(hci_update_conn_param_count, 0u);
 
-  RunLoopFor(kLEConnectionPausePeripheral);
+  RunFor(kLEConnectionPausePeripheral);
   EXPECT_FALSE(conn_handle);
   EXPECT_EQ(hci_update_conn_param_count, 0u);
 
   // Allow interrogation to complete.
   send_read_remote_features_rsp();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(hci_update_conn_param_count, 1u);
   ASSERT_TRUE(conn_handle);
   EXPECT_TRUE(conn_handle->active());
@@ -3760,7 +3762,7 @@ TEST_F(LowEnergyConnectionManagerTest,
        RegisterRemoteInitiatedLinkWithInterrogationLongerThanPeripheralPauseTimeout) {
   // A FakePeer does not support the HCI connection parameter update procedure by default, so the
   // L2CAP procedure will be used.
-  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher()));
 
   // Cause interrogation to stall so that we can expire the peripheral pause timeout.
   fit::closure send_read_remote_features_rsp;
@@ -3776,7 +3778,7 @@ TEST_F(LowEnergyConnectionManagerTest,
 
   // First create a fake incoming connection.
   test_device()->ConnectLowEnergy(kAddress0);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   auto link = MoveLastRemoteInitiated();
   ASSERT_TRUE(link);
 
@@ -3792,19 +3794,19 @@ TEST_F(LowEnergyConnectionManagerTest,
   ASSERT_TRUE(peer);
   EXPECT_EQ(peer->le()->connection_state(), Peer::ConnectionState::kInitializing);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1u, connected_peers().size());
   EXPECT_EQ(1u, connected_peers().count(kAddress0));
   EXPECT_FALSE(conn_handle);
   EXPECT_EQ(l2cap_conn_param_update_count, 0u);
 
-  RunLoopFor(kLEConnectionPausePeripheral);
+  RunFor(kLEConnectionPausePeripheral);
   EXPECT_FALSE(conn_handle);
   EXPECT_EQ(l2cap_conn_param_update_count, 0u);
 
   // Allow interrogation to complete.
   send_read_remote_features_rsp();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(l2cap_conn_param_update_count, 1u);
   ASSERT_TRUE(conn_handle);
   EXPECT_TRUE(conn_handle->active());
@@ -3826,11 +3828,11 @@ class PendingPacketsTest : public LowEnergyConnectionManagerTest {
 
     peer0_ = peer_cache()->NewPeer(kPeerAddr0, /*connectable=*/true);
     EXPECT_TRUE(peer0_->temporary());
-    test_device()->AddPeer(std::make_unique<FakePeer>(kPeerAddr0, pw_dispatcher()));
+    test_device()->AddPeer(std::make_unique<FakePeer>(kPeerAddr0, dispatcher()));
 
     peer1_ = peer_cache()->NewPeer(kPeerAddr1, /*connectable=*/true);
     EXPECT_TRUE(peer1_->temporary());
-    test_device()->AddPeer(std::make_unique<FakePeer>(kPeerAddr1, pw_dispatcher()));
+    test_device()->AddPeer(std::make_unique<FakePeer>(kPeerAddr1, dispatcher()));
 
     // Connect |peer0|
     conn_handle0_.reset();
@@ -3840,7 +3842,7 @@ class PendingPacketsTest : public LowEnergyConnectionManagerTest {
       EXPECT_TRUE(conn_handle0_->active());
     };
     conn_mgr()->Connect(peer0_->identifier(), callback0, kConnectionOptions);
-    RunLoopUntilIdle();
+    RunUntilIdle();
 
     // Connect |peer1|
     conn_handle1_.reset();
@@ -3850,10 +3852,10 @@ class PendingPacketsTest : public LowEnergyConnectionManagerTest {
       EXPECT_TRUE(conn_handle1_->active());
     };
     conn_mgr()->Connect(peer1_->identifier(), callback1, kConnectionOptions);
-    RunLoopUntilIdle();
+    RunUntilIdle();
 
     packet_count_ = 0;
-    test_device()->SetDataCallback([&](const auto&) { packet_count_++; }, pw_dispatcher());
+    test_device()->SetDataCallback([&](const auto&) { packet_count_++; }, dispatcher());
     test_device()->set_auto_completed_packets_event_enabled(false);
     test_device()->set_auto_disconnection_complete_event_enabled(false);
   }
@@ -3899,7 +3901,7 @@ TEST_F(LowEnergyConnectionManagerPendingPacketsTest, Disconnect) {
         hci_spec::ACLBroadcastFlag::kPointToPoint,
         /*payload_size=*/1);
     connection_0.QueuePacket(std::move(packet));
-    RunLoopUntilIdle();
+    RunUntilIdle();
   }
 
   // Queue packet for |peer1|
@@ -3908,7 +3910,7 @@ TEST_F(LowEnergyConnectionManagerPendingPacketsTest, Disconnect) {
       hci_spec::ACLBroadcastFlag::kPointToPoint,
       /*payload_size=*/1);
   connection_1.QueuePacket(std::move(packet));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Packet for |peer1| should not have been sent because controller buffer is full
   EXPECT_EQ(connection_0.queued_packets().size(), 0u);
@@ -3919,7 +3921,7 @@ TEST_F(LowEnergyConnectionManagerPendingPacketsTest, Disconnect) {
   // Send HCI Disconnect to controller
   EXPECT_TRUE(conn_mgr()->Disconnect(peer0()->identifier()));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Packet for |peer1| should not have been sent before Disconnection Complete event
   EXPECT_EQ(connection_0.queued_packets().size(), 0u);
@@ -3929,7 +3931,7 @@ TEST_F(LowEnergyConnectionManagerPendingPacketsTest, Disconnect) {
 
   // FakeController send us the HCI Disconnection Complete event
   test_device()->SendDisconnectionCompleteEvent(handle0_);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // |peer0|'s link should have been unregistered and packet for |peer1| should have been sent
   EXPECT_EQ(connection_0.queued_packets().size(), 0u);
@@ -3952,7 +3954,7 @@ TEST_F(LowEnergyConnectionManagerPendingPacketsTest, ReleaseRef) {
         hci_spec::ACLBroadcastFlag::kPointToPoint,
         /*payload_size=*/1);
     connection_0.QueuePacket(std::move(packet));
-    RunLoopUntilIdle();
+    RunUntilIdle();
   }
 
   // Queue packet for |peer1|
@@ -3961,7 +3963,7 @@ TEST_F(LowEnergyConnectionManagerPendingPacketsTest, ReleaseRef) {
       hci_spec::ACLBroadcastFlag::kPointToPoint,
       /*payload_size=*/1);
   connection_1.QueuePacket(std::move(packet));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Packet for |peer1| should not have been sent before Disconnection Complete event
   EXPECT_EQ(connection_0.queued_packets().size(), 0u);
@@ -3972,7 +3974,7 @@ TEST_F(LowEnergyConnectionManagerPendingPacketsTest, ReleaseRef) {
   // Releasing ref should send HCI Disconnect to controller
   conn_handle0().reset();
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Packet for |peer1| should not have been sent before Disconnection Complete event
   EXPECT_EQ(connection_0.queued_packets().size(), 0u);
@@ -3982,7 +3984,7 @@ TEST_F(LowEnergyConnectionManagerPendingPacketsTest, ReleaseRef) {
 
   // FakeController send us the HCI Disconnection Complete event
   test_device()->SendDisconnectionCompleteEvent(handle0_);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // |peer0|'s link should have been unregistered and packet for |peer1| should have been sent
   EXPECT_EQ(connection_0.queued_packets().size(), 0u);

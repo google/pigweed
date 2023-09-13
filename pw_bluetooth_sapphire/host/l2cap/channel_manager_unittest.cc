@@ -273,7 +273,7 @@ A2dpOffloadManager::Configuration BuildConfiguration(
   return config;
 }
 
-using TestingBase = ControllerTest<MockController>;
+using TestingBase = FakeDispatcherControllerTest<MockController>;
 
 // ChannelManager test fixture that uses MockAclDataChannel to inject inbound data and test outbound
 // data. Unexpected outbound packets will cause test failures.
@@ -296,7 +296,7 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
 
     // TODO(63074): Make these tests not depend on strict channel ID ordering.
     chanmgr_ = ChannelManager::Create(&acl_data_channel_, transport()->command_channel(),
-                                      /*random_channel_ids=*/false, pw_dispatcher());
+                                      /*random_channel_ids=*/false, dispatcher());
 
     packet_rx_handler_ = [this](std::unique_ptr<hci::ACLDataPacket> packet) {
       acl_data_channel_.ReceivePacket(std::move(packet));
@@ -414,7 +414,7 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
 
     ActivateOutboundChannel(kTestPsm, channel_params, std::move(channel_cb), kTestHandle1,
                             std::move(closed_cb));
-    RunLoopUntilIdle();
+    RunUntilIdle();
 
     ReceiveAclDataPacket(testing::AclConnectionRsp(conn_req_id, kTestHandle1, local_id, remote_id));
     ReceiveAclDataPacket(
@@ -422,7 +422,7 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
     ReceiveAclDataPacket(
         testing::AclConfigRsp(config_req_id, kTestHandle1, local_id, kChannelParams));
 
-    RunLoopUntilIdle();
+    RunUntilIdle();
     EXPECT_TRUE(AllExpectedPacketsSent());
   }
 
@@ -532,7 +532,7 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
 
 // ChannelManager test fixture that uses a real AclDataChannel and uses MockController for HCI
 // packet expectations
-using ChannelManagerRealAclChannelTest = ChannelManagerMockControllerTest;
+using ChannelManagerRealAclChannelTest = FakeDispatcherChannelManagerMockControllerTest;
 
 TEST_F(ChannelManagerRealAclChannelTest, OpenFixedChannelErrorNoConn) {
   // This should fail as the ChannelManager has no entry for |kTestHandle1|.
@@ -550,7 +550,7 @@ TEST_F(ChannelManagerRealAclChannelTest, OpenFixedChannelErrorDisallowedId) {
 
   // ACL-U link
   QueueAclConnection(kTestHandle2);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   // This should fail as kSMPChannelId is ACL-U only.
@@ -562,7 +562,7 @@ TEST_F(ChannelManagerRealAclChannelTest, OpenFixedChannelErrorDisallowedId) {
 
 TEST_F(ChannelManagerRealAclChannelTest, DeactivateDynamicChannelInvalidatesChannelPointer) {
   QueueAclConnection(kTestHandle1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   Channel::WeakPtr channel;
@@ -572,7 +572,7 @@ TEST_F(ChannelManagerRealAclChannelTest, DeactivateDynamicChannelInvalidatesChan
   };
   QueueOutboundL2capConnection(kTestHandle1, kTestPsm, kLocalId, kRemoteId, std::move(chan_cb));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
   EXPECT_TRUE(channel.is_alive());
   ASSERT_TRUE(channel->Activate(NopRxCallback, DoNothing));
@@ -581,7 +581,7 @@ TEST_F(ChannelManagerRealAclChannelTest, DeactivateDynamicChannelInvalidatesChan
                                            NextCommandId(), kTestHandle1, kLocalId, kRemoteId));
 
   channel->Deactivate();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_FALSE(channel.is_alive());
 }
 
@@ -607,7 +607,7 @@ TEST_F(ChannelManagerRealAclChannelTest, OpenFixedChannelAndUnregisterLink) {
   // This should notify the channel.
   chanmgr()->RemoveConnection(kTestHandle1);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // |closed_cb| will be called synchronously since it was registered using the current thread's
   // task runner.
@@ -628,7 +628,7 @@ TEST_F(ChannelManagerRealAclChannelTest, OpenFixedChannelAndCloseChannel) {
   fixed_channels.att->Deactivate();
   chanmgr()->RemoveConnection(kTestHandle1);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_FALSE(closed_called);
 }
@@ -656,7 +656,7 @@ TEST_F(ChannelManagerRealAclChannelTest, OpenAndCloseWithLinkMultipleFixedChanne
   fixed_channels.smp->Deactivate();
   chanmgr()->RemoveConnection(kTestHandle1);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(att_closed);
   EXPECT_FALSE(smp_closed);
@@ -682,7 +682,7 @@ TEST_F(ChannelManagerRealAclChannelTest,
                          0x02, 0x00, LowerBits(kATTChannelId), UpperBits(kATTChannelId), 'h', 'i'));
 
   EXPECT_TRUE(chan->Send(NewBuffer('h', 'i')));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   chanmgr()->RemoveConnection(kTestHandle1);
@@ -690,7 +690,7 @@ TEST_F(ChannelManagerRealAclChannelTest,
   // The L2CAP channel should have been notified of closure immediately.
   EXPECT_TRUE(closed_called);
   EXPECT_FALSE(chan.is_alive());
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 // Tests that destroying the ChannelManager cleanly shuts down all channels.
@@ -714,7 +714,7 @@ TEST_F(ChannelManagerRealAclChannelTest, DestroyingChannelManagerCleansUpChannel
 
   // Send a packet. This should be processed immediately.
   EXPECT_TRUE(chan->Send(NewBuffer('h', 'i')));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   TearDown();
@@ -722,7 +722,7 @@ TEST_F(ChannelManagerRealAclChannelTest, DestroyingChannelManagerCleansUpChannel
   EXPECT_TRUE(closed_called);
   EXPECT_FALSE(chan.is_alive());
   // No outbound packet expectations were set, so this test will fail if it sends any data.
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ChannelManagerRealAclChannelTest, DeactivateDoesNotCrashOrHang) {
@@ -735,18 +735,18 @@ TEST_F(ChannelManagerRealAclChannelTest, DeactivateDoesNotCrashOrHang) {
   fixed_channels.att->Deactivate();
 
   // Loop until the clean up task runs.
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ChannelManagerRealAclChannelTest, CallingDeactivateFromClosedCallbackDoesNotCrashOrHang) {
   BrEdrFixedChannels fixed_channels = QueueAclConnection(kTestHandle1).fixed_channels;
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   auto chan = std::move(fixed_channels.smp);
   chan->Activate(NopRxCallback, [chan] { chan->Deactivate(); });
   chanmgr()->RemoveConnection(kTestHandle1);  // Triggers ClosedCallback.
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ChannelManagerMockAclChannelTest, ReceiveData) {
@@ -799,7 +799,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ReceiveData) {
       // L2CAP B-frame (empty)
       0x00, 0x00, 0x06, 0x00));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(smp_cb_called);
   ASSERT_EQ(2u, sdus.size());
@@ -842,14 +842,14 @@ TEST_F(ChannelManagerMockAclChannelTest, ReceiveDataBeforeRegisteringLink) {
   Channel::WeakPtr att_chan, smp_chan;
 
   // Run the loop so all packets are received.
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   LEFixedChannels fixed_channels =
       RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   ASSERT_TRUE(fixed_channels.att->Activate(att_rx_cb, DoNothing));
   ASSERT_TRUE(fixed_channels.smp->Activate(smp_rx_cb, DoNothing));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(smp_cb_called);
   EXPECT_EQ(kPacketCount, packet_count);
 }
@@ -860,7 +860,7 @@ TEST_F(ChannelManagerRealAclChannelTest, ReceiveDataBeforeCreatingFixedChannel) 
 
   // Register an ACL connection because LE connections create fixed channels immediately.
   QueueAclConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   StaticByteBuffer<255> buffer;
 
@@ -874,12 +874,12 @@ TEST_F(ChannelManagerRealAclChannelTest, ReceiveDataBeforeCreatingFixedChannel) 
         0x00, 0x00, LowerBits(kConnectionlessChannelId), UpperBits(kConnectionlessChannelId)));
   }
   // Run the loop so all packets are received.
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   auto chan =
       ActivateNewFixedChannel(kConnectionlessChannelId, kTestHandle1, DoNothing, std::move(rx_cb));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(kPacketCount, packet_count);
 }
 
@@ -921,12 +921,12 @@ TEST_F(ChannelManagerRealAclChannelTest, ReceiveDataBeforeSettingRxHandler) {
       0x00, 0x00, LowerBits(kLESMPChannelId), UpperBits(kLESMPChannelId)));
 
   // Run the loop so all packets are received.
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   fixed_channels.att->Activate(att_rx_cb, DoNothing);
   fixed_channels.smp->Activate(smp_rx_cb, DoNothing);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(smp_cb_called);
   EXPECT_EQ(kPacketCount, packet_count);
@@ -974,7 +974,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ActivateChannelProcessesCallbacksSynchr
   // already routed the data to the Channels.
   EXPECT_EQ(1, att_rx_cb_count);
   EXPECT_EQ(1, smp_rx_cb_count);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1, att_rx_cb_count);
   EXPECT_EQ(1, smp_rx_cb_count);
 
@@ -1004,7 +1004,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SendBasicSDU) {
                                            0x04, 0x00, 0x04, 0x00, 'T', 'e', 's', 't'));
 
   EXPECT_TRUE(fixed_channels.att->Send(NewBuffer('T', 'e', 's', 't')));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 // Tests that fragmentation of BR/EDR packets uses the BR/EDR buffer size
@@ -1076,7 +1076,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SendBREDRFragmentedSDUs) {
   // Due to the BR/EDR buffer size, this should be sent over a 6-byte then a 5-byte fragment.
   EXPECT_TRUE(sm_chan->Send(NewBuffer('G', 'o', 'o', 'd', 'b', 'y', 'e')));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ChannelManagerRealAclChannelTest, SendBREDRFragmentedSDUsOverTwoDynamicChannels) {
@@ -1096,7 +1096,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SendBREDRFragmentedSDUsOverTwoDynamicCh
   constexpr size_t kChannelCreationPacketCount = 3;
 
   QueueAclConnection(kTestHandle1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   l2cap::Channel::WeakPtr channel0;
@@ -1106,7 +1106,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SendBREDRFragmentedSDUsOverTwoDynamicCh
   };
   QueueOutboundL2capConnection(kTestHandle1, kPSM0, kLocalId0, kRemoteId0, std::move(chan_cb0));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
   ASSERT_TRUE(channel0.is_alive());
   ASSERT_TRUE(channel0->Activate(NopRxCallback, DoNothing));
@@ -1121,7 +1121,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SendBREDRFragmentedSDUsOverTwoDynamicCh
   // Free up the buffer space from packets sent while creating |channel0|
   test_device()->SendCommandChannelPacket(
       NumberOfCompletedPacketsPacket(kTestHandle1, kChannelCreationPacketCount));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
   EXPECT_TRUE(channel1.is_alive());
@@ -1130,7 +1130,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SendBREDRFragmentedSDUsOverTwoDynamicCh
   // Free up the buffer space from packets sent while creating |channel1|
   test_device()->SendCommandChannelPacket(NumberOfCompletedPacketsPacket(
       kTestHandle1, kConnectionCreationPacketCount + kChannelCreationPacketCount));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Queue size should be equal to or larger than |num_queued_packets| to ensure that all packets
   // get queued and sent
@@ -1163,14 +1163,14 @@ TEST_F(ChannelManagerRealAclChannelTest, SendBREDRFragmentedSDUsOverTwoDynamicCh
     // Due to the BR/EDR buffer size, this should be sent over a 18-byte then a 6-byte fragment.
     EXPECT_TRUE(channel->Send(NewBuffer('G', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o',
                                         'o', 'o', 'o', 'o', 'd', 'b', 'y', 'e')));
-    RunLoopUntilIdle();
+    RunUntilIdle();
   }
   EXPECT_FALSE(test_device()->AllExpectedDataPacketsSent());
 
   // Notify the processed packets with a Number Of Completed Packet HCI event
   // This should cause the remaining 6 fragmented packets to be sent
   test_device()->SendCommandChannelPacket(NumberOfCompletedPacketsPacket(kTestHandle1, 6));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 }
 
@@ -1201,7 +1201,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SendLEFragmentedSDUs) {
   // 4-byte fragment.
   EXPECT_TRUE(fixed_channels.att->Send(NewBuffer('H', 'e', 'l', 'l', 'o')));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ChannelManagerMockAclChannelTest, ACLChannelSignalLinkError) {
@@ -1211,7 +1211,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLChannelSignalLinkError) {
       QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL, link_error_cb);
   acl.fixed_channels.smp->Activate(NopRxCallback, DoNothing);
   acl.fixed_channels.smp->SignalLinkError();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(link_error);
 }
 
@@ -1225,7 +1225,7 @@ TEST_F(ChannelManagerMockAclChannelTest, LEChannelSignalLinkError) {
   fixed_channels.att->Activate(NopRxCallback, DoNothing);
   fixed_channels.att->SignalLinkError();
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(link_error);
 }
@@ -1263,7 +1263,7 @@ TEST_F(ChannelManagerMockAclChannelTest, SignalLinkErrorDisconnectsChannels) {
   ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId));
   ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   // The channel on kTestHandle1 should be open.
@@ -1281,7 +1281,7 @@ TEST_F(ChannelManagerMockAclChannelTest, SignalLinkErrorDisconnectsChannels) {
   ASSERT_FALSE(link_error);
   acl.fixed_channels.smp->SignalLinkError();
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   // link_error_cb is not called until Disconnection Response is received for each dynamic channel
   EXPECT_FALSE(link_error);
@@ -1295,7 +1295,7 @@ TEST_F(ChannelManagerMockAclChannelTest, SignalLinkErrorDisconnectsChannels) {
       testing::AclDisconnectionRsp(disconn_req_id, kTestHandle1, kLocalId, kRemoteId);
   ReceiveAclDataPacket(disconnection_rsp);
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
+  RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_TRUE(link_error);
 }
@@ -1336,12 +1336,12 @@ TEST_F(ChannelManagerRealAclChannelTest, LEConnectionParameterUpdateRequest) {
       0x80, 0x0C));
   // clang-format on
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelLocalDisconnect) {
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   Channel::WeakPtr channel;
   auto channel_cb = [&channel](l2cap::Channel::WeakPtr activated_chan) {
@@ -1359,13 +1359,13 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelLocalDisconnec
 
   ActivateOutboundChannel(kTestPsm, kChannelParams, std::move(channel_cb), kTestHandle1,
                           std::move(closed_cb));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ReceiveAclDataPacket(InboundConnectionResponse(conn_req_id));
   ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId));
   ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(AllExpectedPacketsSent());
   ASSERT_TRUE(channel.is_alive());
@@ -1386,7 +1386,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelLocalDisconnec
 
   EXPECT_TRUE(channel->Send(NewBuffer('T', 'e', 's', 't')));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   const auto disconn_req_id = NextCommandId();
@@ -1395,7 +1395,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelLocalDisconnec
   // Explicit deactivation should not res in |closed_cb| being called.
   channel->Deactivate();
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   // Ensure callback is not called after the channel has disconnected
@@ -1413,14 +1413,14 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelLocalDisconnec
       LowerBits(kRemoteId), UpperBits(kRemoteId), LowerBits(kLocalId), UpperBits(kLocalId)));
   // clang-format on
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_FALSE(closed_cb_called);
 }
 
 TEST_F(ChannelManagerRealAclChannelTest, ACLOutboundDynamicChannelRemoteDisconnect) {
   QueueAclConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   Channel::WeakPtr channel;
@@ -1430,7 +1430,7 @@ TEST_F(ChannelManagerRealAclChannelTest, ACLOutboundDynamicChannelRemoteDisconne
   };
   QueueOutboundL2capConnection(kTestHandle1, kTestPsm, kLocalId, kRemoteId, std::move(chan_cb));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
   EXPECT_TRUE(channel.is_alive());
   bool dynamic_channel_closed = false;
@@ -1449,7 +1449,7 @@ TEST_F(ChannelManagerRealAclChannelTest, ACLOutboundDynamicChannelRemoteDisconne
       // L2CAP B-frame: (length: 4, channel-id)
       0x04, 0x00, LowerBits(kLocalId), UpperBits(kLocalId), 'T', 'e', 's', 't'));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_ACL_PACKET_OUT(test_device(), OutboundDisconnectionResponse(7));
 
@@ -1472,7 +1472,7 @@ TEST_F(ChannelManagerRealAclChannelTest, ACLOutboundDynamicChannelRemoteDisconne
       // L2CAP B-frame: (length: 1, channel-id: 0x0040)
       0x01, 0x00, 0x40, 0x00, '!'));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(dynamic_channel_closed);
 }
@@ -1505,7 +1505,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelDataNotBuffere
 
   ActivateOutboundChannel(kTestPsm, kChannelParams, std::move(channel_cb), kTestHandle1,
                           std::move(closed_cb), std::move(data_rx_cb));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ReceiveAclDataPacket(InboundConnectionResponse(conn_req_id));
 
@@ -1522,7 +1522,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelDataNotBuffere
   ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId));
   ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_TRUE(channel.is_alive());
@@ -1542,7 +1542,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelDataNotBuffere
       LowerBits(kLocalId), UpperBits(kLocalId), LowerBits(kRemoteId), UpperBits(kRemoteId)));
   // clang-format on
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelRemoteRefused) {
@@ -1572,7 +1572,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelRemoteRefused)
       0x04, 0x00, 0x00, 0x00));
   // clang-format on
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_TRUE(channel_cb_called);
 }
@@ -1621,7 +1621,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelFailedConfigur
       LowerBits(kRemoteId), UpperBits(kRemoteId), LowerBits(kLocalId), UpperBits(kLocalId)));
   // clang-format on
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_TRUE(channel_cb_called);
 }
@@ -1655,7 +1655,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLInboundDynamicChannelLocalDisconnect
   ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId));
   ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(AllExpectedPacketsSent());
   ASSERT_TRUE(channel.is_alive());
@@ -1675,7 +1675,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLInboundDynamicChannelLocalDisconnect
 
   EXPECT_TRUE(channel->Send(NewBuffer('T', 'e', 's', 't')));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   const auto disconn_req_id = NextCommandId();
@@ -1684,7 +1684,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLInboundDynamicChannelLocalDisconnect
   // Explicit deactivation should not res in |closed_cb| being called.
   channel->Deactivate();
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   // clang-format off
@@ -1698,7 +1698,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLInboundDynamicChannelLocalDisconnect
       LowerBits(kRemoteId), UpperBits(kRemoteId), LowerBits(kLocalId), UpperBits(kLocalId)));
   // clang-format on
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_FALSE(dynamic_channel_closed);
 }
@@ -1734,7 +1734,7 @@ TEST_F(ChannelManagerRealAclChannelTest, AssignLinkSecurityPropertiesOnClosedLin
   ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
 
   chanmgr()->RemoveConnection(kTestHandle1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(fixed_channels.att.is_alive());
 
   // Assign a new security level.
@@ -1773,7 +1773,7 @@ TEST_F(ChannelManagerMockAclChannelTest, UpgradeSecurity) {
 
   // Requesting security at or below the current level should succeed without doing anything.
   att->UpgradeSecurity(sm::SecurityLevel::kNoSecurity, status_callback);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(0, security_request_count);
   EXPECT_EQ(1, security_status_count);
   EXPECT_EQ(fit::ok(), received_status);
@@ -1781,14 +1781,14 @@ TEST_F(ChannelManagerMockAclChannelTest, UpgradeSecurity) {
   // Test reporting an error.
   delivered_status = ToResult(HostError::kNotSupported);
   att->UpgradeSecurity(sm::SecurityLevel::kEncrypted, status_callback);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1, security_request_count);
   EXPECT_EQ(2, security_status_count);
   EXPECT_EQ(delivered_status, received_status);
   EXPECT_EQ(sm::SecurityLevel::kEncrypted, last_requested_level);
 
   chanmgr()->RemoveConnection(kTestHandle1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(att.is_alive());
   EXPECT_EQ(1, security_request_count);
   EXPECT_EQ(2, security_status_count);
@@ -1820,7 +1820,7 @@ TEST_F(ChannelManagerMockAclChannelTest, MtuOutboundChannelConfiguration) {
   ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId, kRemoteMtu));
   ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_TRUE(channel.is_alive());
@@ -1854,7 +1854,7 @@ TEST_F(ChannelManagerMockAclChannelTest, MtuInboundChannelConfiguration) {
   ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId, kRemoteMtu));
   ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_TRUE(channel.is_alive());
   EXPECT_EQ(kRemoteMtu, channel->max_tx_sdu_size());
@@ -1894,7 +1894,7 @@ TEST_F(ChannelManagerMockAclChannelTest, OutboundChannelConfigurationUsesChannel
       InboundConfigurationRequest(kPeerConfigRequestId, kInboundMtu, chan_params.mode));
   ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_TRUE(channel.is_alive());
@@ -1911,7 +1911,7 @@ TEST_F(ChannelManagerMockAclChannelTest, OutboundChannelConfigurationUsesChannel
                                                        /*is_poll_request=*/true,
                                                        /*is_poll_response=*/false));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 }
 
@@ -1949,7 +1949,7 @@ TEST_F(ChannelManagerMockAclChannelTest, InboundChannelConfigurationUsesChannelP
       InboundConfigurationRequest(kPeerConfigRequestId, kInboundMtu, chan_params.mode));
   ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_TRUE(channel.is_alive());
   EXPECT_EQ(*chan_params.max_rx_sdu_size, channel->max_rx_sdu_size());
@@ -1965,7 +1965,7 @@ TEST_F(ChannelManagerMockAclChannelTest, InboundChannelConfigurationUsesChannelP
                                                        /*is_poll_request=*/true,
                                                        /*is_poll_response=*/false));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 }
 
@@ -1977,7 +1977,7 @@ TEST_F(ChannelManagerMockAclChannelTest,
 
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   // Since pending connection request packet was cleared, no response should be sent.
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ChannelManagerMockAclChannelTest,
@@ -2028,7 +2028,7 @@ TEST_F(ChannelManagerMockAclChannelTest,
   // Handler should check for res and not crash from reading mask or type.
   ReceiveAclDataPacket(testing::AclNotSupportedInformationResponse(
       cmd_ids.fixed_channels_supported_id, kTestHandle1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ChannelManagerMockAclChannelTest, ReceiveFixedChannelsInformationResponseWithInvalidResult) {
@@ -2048,7 +2048,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ReceiveFixedChannelsInformationResponse
       // Invalid Result
       0xFF, 0xFF);
   ReceiveAclDataPacket(kPacket);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ChannelManagerMockAclChannelTest, ReceiveFixedChannelsInformationResponseWithIncorrectType) {
@@ -2057,7 +2057,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ReceiveFixedChannelsInformationResponse
   // Handler should check type and not attempt to read fixed channel mask.
   ReceiveAclDataPacket(
       testing::AclExtFeaturesInfoRsp(cmd_ids.fixed_channels_supported_id, kTestHandle1, 0));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ChannelManagerMockAclChannelTest, ReceiveFixedChannelsInformationResponseWithRejectStatus) {
@@ -2066,7 +2066,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ReceiveFixedChannelsInformationResponse
   // Handler should check status and not attempt to read fields.
   ReceiveAclDataPacket(
       testing::AclCommandRejectNotUnderstoodRsp(cmd_ids.fixed_channels_supported_id, kTestHandle1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ChannelManagerMockAclChannelTest,
@@ -2093,7 +2093,7 @@ TEST_F(ChannelManagerMockAclChannelTest,
 
   ReceiveAclDataPacket(testing::AclConnectionParameterUpdateReq(
       kParamReqId, kTestHandle1, kIntervalMin, kIntervalMax, kPeripheralLatency, kTimeoutMult));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(params.has_value());
   EXPECT_EQ(kIntervalMin, params->min_interval());
@@ -2127,7 +2127,7 @@ TEST_F(ChannelManagerMockAclChannelTest,
 
   ReceiveAclDataPacket(testing::AclConnectionParameterUpdateReq(
       kParamReqId, kTestHandle1, kIntervalMin, kIntervalMax, kPeripheralLatency, kTimeoutMult));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_FALSE(params.has_value());
 }
@@ -2180,14 +2180,14 @@ TEST_F(ChannelManagerMockAclChannelTest,
                          kHighPriority);
     ReceiveAclDataPacket(req);
   }
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ChannelManagerMockAclChannelTest, RequestConnParamUpdateForUnknownLinkIsNoOp) {
   auto update_cb = [](auto) { ADD_FAILURE(); };
   chanmgr()->RequestConnectionParameterUpdate(
       kTestHandle1, hci_spec::LEPreferredConnectionParameters(), std::move(update_cb));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ChannelManagerMockAclChannelTest,
@@ -2214,12 +2214,12 @@ TEST_F(ChannelManagerMockAclChannelTest,
                                                kIntervalMax, kPeripheralLatency, kTimeoutMult),
       kHighPriority);
   chanmgr()->RequestConnectionParameterUpdate(kTestHandle1, kParams, request_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(accepted.has_value());
 
   ReceiveAclDataPacket(testing::AclConnectionParameterUpdateRsp(
       param_update_req_id, kTestHandle1, ConnectionParameterUpdateResult::kAccepted));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(accepted.has_value());
   EXPECT_TRUE(accepted.value());
   accepted.reset();
@@ -2232,12 +2232,12 @@ TEST_F(ChannelManagerMockAclChannelTest,
                                                kIntervalMax, kPeripheralLatency, kTimeoutMult),
       kHighPriority);
   chanmgr()->RequestConnectionParameterUpdate(kTestHandle1, kParams, std::move(request_cb));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(accepted.has_value());
 
   ReceiveAclDataPacket(testing::AclConnectionParameterUpdateRsp(
       param_update_req_id, kTestHandle1, ConnectionParameterUpdateResult::kRejected));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(accepted.has_value());
   EXPECT_FALSE(accepted.value());
 }
@@ -2263,12 +2263,12 @@ TEST_F(ChannelManagerMockAclChannelTest, ConnParamUpdateRequestRejected) {
                                                kIntervalMax, kPeripheralLatency, kTimeoutMult),
       kHighPriority);
   chanmgr()->RequestConnectionParameterUpdate(kTestHandle1, kParams, request_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(accepted.has_value());
 
   ReceiveAclDataPacket(testing::AclCommandRejectNotUnderstoodRsp(kParamUpdateReqId, kTestHandle1,
                                                                  kLESignalingChannelId));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(accepted.has_value());
   EXPECT_FALSE(accepted.value());
 }
@@ -2276,7 +2276,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ConnParamUpdateRequestRejected) {
 TEST_F(ChannelManagerRealAclChannelTest,
        DestroyingChannelManagerReleasesLogicalLinkAndClosesChannels) {
   QueueAclConnection(kTestHandle1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   auto link = chanmgr()->LogicalLinkForTesting(kTestHandle1);
@@ -2290,21 +2290,21 @@ TEST_F(ChannelManagerRealAclChannelTest,
   ASSERT_FALSE(closed);
 
   TearDown();  // Destroys channel manager
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(closed);
   // If link is still valid, there may be a memory leak.
   EXPECT_FALSE(link.is_alive());
 
   // If the above fails, check if the channel was holding a strong reference to the link.
   chan = Channel::WeakPtr();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(closed);
   EXPECT_FALSE(link.is_alive());
 }
 
 TEST_F(ChannelManagerMockAclChannelTest, RequestAclPriorityNormal) {
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   auto channel = SetUpOutboundChannel();
 
@@ -2334,7 +2334,7 @@ TEST_F(ChannelManagerMockAclChannelTest, RequestAclPriorityNormal) {
 
 TEST_F(ChannelManagerMockAclChannelTest, RequestAclPrioritySinkThenNormal) {
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   auto channel = SetUpOutboundChannel();
 
@@ -2377,7 +2377,7 @@ TEST_F(ChannelManagerMockAclChannelTest, RequestAclPrioritySinkThenNormal) {
 
 TEST_F(ChannelManagerMockAclChannelTest, RequestAclPrioritySinkThenDeactivateChannelAfterResult) {
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   auto channel = SetUpOutboundChannel();
 
@@ -2409,7 +2409,7 @@ TEST_F(ChannelManagerMockAclChannelTest, RequestAclPrioritySinkThenDeactivateCha
 
 TEST_F(ChannelManagerMockAclChannelTest, RequestAclPrioritySinkThenReceiveDisconnectRequest) {
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   auto channel = SetUpOutboundChannel();
 
@@ -2438,7 +2438,7 @@ TEST_F(ChannelManagerMockAclChannelTest, RequestAclPrioritySinkThenReceiveDiscon
   EXPECT_ACL_PACKET_OUT_(OutboundDisconnectionResponse(kPeerDisconReqId), kHighPriority);
   ReceiveAclDataPacket(
       testing::AclDisconnectionReq(kPeerDisconReqId, kTestHandle1, kRemoteId, kLocalId));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(requested_priority.has_value());
   EXPECT_EQ(*requested_priority, AclPriority::kNormal);
 }
@@ -2446,7 +2446,7 @@ TEST_F(ChannelManagerMockAclChannelTest, RequestAclPrioritySinkThenReceiveDiscon
 TEST_F(ChannelManagerMockAclChannelTest,
        RequestAclPrioritySinkThenDeactivateChannelBeforeResultShouldResetPriorityOnDeactivate) {
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   auto channel = SetUpOutboundChannel();
 
@@ -2480,7 +2480,7 @@ TEST_F(ChannelManagerMockAclChannelTest,
 
 TEST_F(ChannelManagerMockAclChannelTest, RequestAclPrioritySinkFails) {
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   auto channel = SetUpOutboundChannel();
 
@@ -2504,7 +2504,7 @@ TEST_F(ChannelManagerMockAclChannelTest, RequestAclPrioritySinkFails) {
 
 TEST_F(ChannelManagerMockAclChannelTest, TwoChannelsRequestAclPrioritySinkAndDeactivate) {
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   const auto kChannelIds0 = std::make_pair(ChannelId(0x40), ChannelId(0x41));
   const auto kChannelIds1 = std::make_pair(ChannelId(0x41), ChannelId(0x42));
@@ -2556,7 +2556,7 @@ TEST_F(ChannelManagerMockAclChannelTest, TwoChannelsRequestAclPrioritySinkAndDea
 
 TEST_F(ChannelManagerMockAclChannelTest, TwoChannelsRequestConflictingAclPriorities) {
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   const auto kChannelIds0 = std::make_pair(ChannelId(0x40), ChannelId(0x41));
   const auto kChannelIds1 = std::make_pair(ChannelId(0x41), ChannelId(0x42));
@@ -2609,7 +2609,7 @@ TEST_F(ChannelManagerMockAclChannelTest, TwoChannelsRequestConflictingAclPriorit
 // responses as if they were handled strictly sequentially.
 TEST_F(ChannelManagerMockAclChannelTest, TwoChannelsRequestAclPrioritiesAtSameTime) {
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   const auto kChannelIds0 = std::make_pair(ChannelId(0x40), ChannelId(0x41));
   const auto kChannelIds1 = std::make_pair(ChannelId(0x41), ChannelId(0x42));
@@ -2654,7 +2654,7 @@ TEST_F(ChannelManagerMockAclChannelTest, TwoChannelsRequestAclPrioritiesAtSameTi
 
 TEST_F(ChannelManagerMockAclChannelTest, QueuedSinkAclPriorityForClosedChannelIsIgnored) {
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   auto channel = SetUpOutboundChannel();
 
@@ -2719,7 +2719,7 @@ TEST_F(ChannelManagerMockAclChannelTest, InspectHierarchy) {
                 NameMatches("service_0x0"), PropertyList(ElementsAre(StringIs("psm", "SDP"))))))));
 
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   const auto conn_req_id = NextCommandId();
   const auto config_req_id = NextCommandId();
@@ -2774,7 +2774,7 @@ TEST_F(ChannelManagerMockAclChannelTest, InspectHierarchy) {
 TEST_F(ChannelManagerMockAclChannelTest,
        OutboundChannelWithFlushTimeoutInChannelParametersAndDelayedFlushTimeoutCallback) {
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_CMD_PACKET_OUT(test_device(),
                         WriteAutomaticFlushTimeoutPacket(kTestHandle1, kExpectedFlushTimeoutParam));
@@ -2788,7 +2788,7 @@ TEST_F(ChannelManagerMockAclChannelTest,
   };
   SetUpOutboundChannelWithCallback(kLocalId, kRemoteId, /*closed_cb=*/DoNothing, chan_params,
                                    channel_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   // Channel should not be returned yet because setting flush timeout has not completed yet.
   EXPECT_FALSE(channel.is_alive());
@@ -2797,7 +2797,7 @@ TEST_F(ChannelManagerMockAclChannelTest,
   const auto kCommandComplete = CommandCompletePacket(hci_spec::kWriteAutomaticFlushTimeout,
                                                       pw::bluetooth::emboss::StatusCode::SUCCESS);
   test_device()->SendCommandChannelPacket(kCommandComplete);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(channel.is_alive());
   ASSERT_TRUE(channel->info().flush_timeout.has_value());
   EXPECT_EQ(channel->info().flush_timeout.value(), kFlushTimeout);
@@ -2817,7 +2817,7 @@ TEST_F(ChannelManagerMockAclChannelTest,
 TEST_F(ChannelManagerMockAclChannelTest,
        OutboundChannelWithFlushTimeoutInChannelParametersFailure) {
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   const auto kCommandCompleteError = CommandCompletePacket(
       hci_spec::kWriteAutomaticFlushTimeout, pw::bluetooth::emboss::StatusCode::UNSPECIFIED_ERROR);
@@ -2829,7 +2829,7 @@ TEST_F(ChannelManagerMockAclChannelTest,
   chan_params.flush_timeout = kFlushTimeout;
 
   auto channel = SetUpOutboundChannel(kLocalId, kRemoteId, /*closed_cb=*/DoNothing, chan_params);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   // Flush timeout should not be set in channel info because setting a flush timeout failed.
   EXPECT_FALSE(channel->info().flush_timeout.has_value());
@@ -2849,7 +2849,7 @@ TEST_F(ChannelManagerMockAclChannelTest,
 
 TEST_F(ChannelManagerMockAclChannelTest, InboundChannelWithFlushTimeoutInChannelParameters) {
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   const auto kCommandComplete = CommandCompletePacket(hci_spec::kWriteAutomaticFlushTimeout,
                                                       pw::bluetooth::emboss::StatusCode::SUCCESS);
@@ -2879,7 +2879,7 @@ TEST_F(ChannelManagerMockAclChannelTest, InboundChannelWithFlushTimeoutInChannel
   ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId));
   ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   ASSERT_TRUE(channel.is_alive());
@@ -2901,7 +2901,7 @@ TEST_F(ChannelManagerMockAclChannelTest, InboundChannelWithFlushTimeoutInChannel
 
 TEST_F(ChannelManagerMockAclChannelTest, FlushableChannelAndNonFlushableChannelOnSameLink) {
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   auto nonflushable_channel = SetUpOutboundChannel();
   auto flushable_channel = SetUpOutboundChannel(kLocalId + 1, kRemoteId + 1);
 
@@ -2913,7 +2913,7 @@ TEST_F(ChannelManagerMockAclChannelTest, FlushableChannelAndNonFlushableChannelO
 
   flushable_channel->SetBrEdrAutomaticFlushTimeout(kFlushTimeout,
                                                    [](auto res) { EXPECT_EQ(fit::ok(), res); });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   EXPECT_FALSE(nonflushable_channel->info().flush_timeout.has_value());
   ASSERT_TRUE(flushable_channel->info().flush_timeout.has_value());
@@ -2946,7 +2946,7 @@ TEST_F(ChannelManagerMockAclChannelTest, FlushableChannelAndNonFlushableChannelO
 
 TEST_F(ChannelManagerMockAclChannelTest, SettingFlushTimeoutFails) {
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   auto channel = SetUpOutboundChannel();
 
   const auto kCommandComplete =
@@ -2959,7 +2959,7 @@ TEST_F(ChannelManagerMockAclChannelTest, SettingFlushTimeoutFails) {
   channel->SetBrEdrAutomaticFlushTimeout(kFlushTimeout, [](auto res) {
     EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID), res);
   });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
 
   EXPECT_ACL_PACKET_OUT_(
@@ -2976,7 +2976,7 @@ TEST_F(ChannelManagerMockAclChannelTest, SettingFlushTimeoutFails) {
 
 TEST_F(ChannelManagerMockAclChannelTest, StartAndStopA2dpOffloadSuccess) {
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   A2dpOffloadManager::Configuration config = BuildConfiguration();
   Channel::WeakPtr channel = SetUpOutboundChannel();
@@ -2993,7 +2993,7 @@ TEST_F(ChannelManagerMockAclChannelTest, StartAndStopA2dpOffloadSuccess) {
     EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
     result = res;
   });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   ASSERT_TRUE(result.has_value());
   EXPECT_TRUE(result->is_ok());
@@ -3005,7 +3005,7 @@ TEST_F(ChannelManagerMockAclChannelTest, StartAndStopA2dpOffloadSuccess) {
     EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
     result = res;
   });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   ASSERT_TRUE(result.has_value());
   EXPECT_TRUE(result->is_ok());
@@ -3020,7 +3020,7 @@ TEST_F(ChannelManagerMockAclChannelTest, StartAndStopA2dpOffloadSuccess) {
     EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
     result = res;
   });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   ASSERT_TRUE(result.has_value());
   EXPECT_TRUE(result->is_ok());
@@ -3031,7 +3031,7 @@ TEST_F(ChannelManagerMockAclChannelTest, StartAndStopA2dpOffloadSuccess) {
 
 TEST_F(ChannelManagerMockAclChannelTest, DisconnectChannelAfterA2dpOffloadStarted) {
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   A2dpOffloadManager::Configuration config = BuildConfiguration();
   Channel::WeakPtr channel = SetUpOutboundChannel();
@@ -3048,7 +3048,7 @@ TEST_F(ChannelManagerMockAclChannelTest, DisconnectChannelAfterA2dpOffloadStarte
     EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
     result = res;
   });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   ASSERT_TRUE(result.has_value());
   EXPECT_TRUE(result->is_ok());
@@ -3061,13 +3061,13 @@ TEST_F(ChannelManagerMockAclChannelTest, DisconnectChannelAfterA2dpOffloadStarte
   channel->Deactivate();
   ASSERT_FALSE(channel.is_alive());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
 }
 
 TEST_F(ChannelManagerMockAclChannelTest, DisconnectChannelWhileA2dpOffloadStarting) {
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   A2dpOffloadManager::Configuration config = BuildConfiguration();
   Channel::WeakPtr channel = SetUpOutboundChannel();
@@ -3094,7 +3094,7 @@ TEST_F(ChannelManagerMockAclChannelTest, DisconnectChannelWhileA2dpOffloadStarti
   channel->Deactivate();
   ASSERT_FALSE(channel.is_alive());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
 }
 
@@ -3123,7 +3123,7 @@ TEST_F(ChannelManagerMockAclChannelTest, SignalLinkErrorStopsDeliveryOfBufferedR
       LowerBits(kATTChannelId), UpperBits(kATTChannelId),
       // Payload
       0x01));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   bool closed_called = false;
   auto closed_cb = [&closed_called] { closed_called = true; };
@@ -3139,13 +3139,13 @@ TEST_F(ChannelManagerMockAclChannelTest, SignalLinkErrorStopsDeliveryOfBufferedR
     }
   };
   ASSERT_TRUE(fixed_channels.att->Activate(std::move(rx_callback), closed_cb));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(rx_count, 1);
   EXPECT_TRUE(closed_called);
 
   // Ensure the link is removed.
   chanmgr()->RemoveConnection(kTestHandle1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ChannelManagerRealAclChannelTest, InboundRfcommChannelFailsWithPsmNotSupported) {
@@ -3153,7 +3153,7 @@ TEST_F(ChannelManagerRealAclChannelTest, InboundRfcommChannelFailsWithPsmNotSupp
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
 
   QueueAclConnection(kTestHandle1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   const l2cap::CommandId kPeerConnReqId = 1;
@@ -3167,7 +3167,7 @@ TEST_F(ChannelManagerRealAclChannelTest, InboundRfcommChannelFailsWithPsmNotSupp
   test_device()->SendACLDataChannelPacket(
       l2cap::testing::AclConnectionReq(kPeerConnReqId, kTestHandle1, kRemoteId, kPSM));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(ChannelManagerRealAclChannelTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
@@ -3176,7 +3176,7 @@ TEST_F(ChannelManagerRealAclChannelTest, InboundPacketQueuedAfterChannelOpenIsNo
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
 
   QueueAclConnection(kTestHandle1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   Channel::WeakPtr channel;
@@ -3186,7 +3186,7 @@ TEST_F(ChannelManagerRealAclChannelTest, InboundPacketQueuedAfterChannelOpenIsNo
   };
 
   chanmgr()->RegisterService(kPSM, kChannelParameters, std::move(chan_cb));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   constexpr l2cap::CommandId kConnectionReqId = 1;
   constexpr l2cap::CommandId kPeerConfigReqId = 6;
@@ -3199,7 +3199,7 @@ TEST_F(ChannelManagerRealAclChannelTest, InboundPacketQueuedAfterChannelOpenIsNo
       l2cap::testing::AclConnectionReq(kConnectionReqId, kTestHandle1, kRemoteId, kPSM));
 
   // Config negotiation will not complete yet.
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Remaining config negotiation will be added to dispatch loop.
   EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclConfigRsp(kPeerConfigReqId, kTestHandle1,
@@ -3220,13 +3220,13 @@ TEST_F(ChannelManagerRealAclChannelTest, InboundPacketQueuedAfterChannelOpenIsNo
       0x04, 0x00, 0x40, 0x00, 0xf0, 0x9f, 0x94, 0xb0));
 
   // Run until the channel opens and the packet is written to the socket buffer.
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(channel.is_alive());
 
   std::vector<ByteBufferPtr> rx_packets;
   auto rx_cb = [&rx_packets](ByteBufferPtr sdu) { rx_packets.push_back(std::move(sdu)); };
   ASSERT_TRUE(channel->Activate(rx_cb, DoNothing));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(rx_packets.size(), 1u);
   ASSERT_EQ(rx_packets[0]->size(), 4u);
   EXPECT_EQ("🔰", rx_packets[0]->view(0, 4u).AsString());
@@ -3243,7 +3243,7 @@ TEST_F(ChannelManagerRealAclChannelTest, NegotiateChannelParametersOnOutboundL2c
   chan_params.max_rx_sdu_size = kMtu;
 
   QueueAclConnection(kTestHandle1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   Channel::WeakPtr channel;
@@ -3255,7 +3255,7 @@ TEST_F(ChannelManagerRealAclChannelTest, NegotiateChannelParametersOnOutboundL2c
   QueueOutboundL2capConnection(kTestHandle1, kPSM, kLocalId, kRemoteId, chan_cb, chan_params,
                                chan_params);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
   ASSERT_TRUE(channel.is_alive());
   EXPECT_EQ(kTestHandle1, channel->link_handle());
@@ -3273,7 +3273,7 @@ TEST_F(ChannelManagerRealAclChannelTest, NegotiateChannelParametersOnInboundChan
   chan_params.max_rx_sdu_size = l2cap::kMinACLMTU;
 
   QueueAclConnection(kTestHandle1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   Channel::WeakPtr channel;
@@ -3285,7 +3285,7 @@ TEST_F(ChannelManagerRealAclChannelTest, NegotiateChannelParametersOnInboundChan
 
   QueueInboundL2capConnection(kTestHandle1, kPSM, kLocalId, kRemoteId, chan_params, chan_params);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
   ASSERT_TRUE(channel.is_alive());
   EXPECT_EQ(*chan_params.max_rx_sdu_size, channel->max_rx_sdu_size());
@@ -3312,12 +3312,12 @@ TEST_F(ChannelManagerRealAclChannelTest, RequestConnectionParameterUpdateAndRece
                                            param_update_req_id, kTestHandle1, kIntervalMin,
                                            kIntervalMax, kPeripheralLatency, kTimeoutMult));
   chanmgr()->RequestConnectionParameterUpdate(kTestHandle1, kParams, request_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(accepted.has_value());
 
   test_device()->SendACLDataChannelPacket(l2cap::testing::AclConnectionParameterUpdateRsp(
       param_update_req_id, kTestHandle1, l2cap::ConnectionParameterUpdateResult::kAccepted));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(accepted.has_value());
   EXPECT_TRUE(accepted.value());
   accepted.reset();
@@ -3344,7 +3344,7 @@ TEST_F(ChannelManagerRealAclChannelTest, OutboundChannelIsInvalidWhenL2capFailsT
 
   chanmgr()->OpenL2capChannel(kTestHandle1, kPSM, kChannelParameters, std::move(chan_cb));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(chan_cb_called);
 }
@@ -3358,7 +3358,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SignalingChannelAndOneDynamicChannel) {
   constexpr size_t kChannelCreationPacketCount = 3;
 
   QueueAclConnection(kTestHandle1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   l2cap::Channel::WeakPtr channel;
@@ -3368,7 +3368,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SignalingChannelAndOneDynamicChannel) {
   };
   QueueOutboundL2capConnection(kTestHandle1, kPSM, kLocalId, kRemoteId, std::move(chan_cb));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
   EXPECT_TRUE(channel.is_alive());
   channel->Activate(NopRxCallback, DoNothing);
@@ -3392,7 +3392,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SignalingChannelAndOneDynamicChannel) {
     }
     // Create PDU to send on dynamic channel
     EXPECT_TRUE(channel->Send(NewBuffer(0x01)));
-    RunLoopUntilIdle();
+    RunUntilIdle();
   }
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
@@ -3406,7 +3406,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SignalingChannelAndOneDynamicChannel) {
                                            0x01));
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kTestHandle1, 1));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 }
@@ -3424,7 +3424,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SignalingChannelAndTwoDynamicChannels) 
   constexpr size_t kChannelCreationPacketCount = 3;
 
   QueueAclConnection(kTestHandle1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   l2cap::Channel::WeakPtr channel0;
@@ -3434,7 +3434,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SignalingChannelAndTwoDynamicChannels) 
   };
   QueueOutboundL2capConnection(kTestHandle1, kPSM0, kLocalId0, kRemoteId0, std::move(chan_cb0));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
   ASSERT_TRUE(channel0.is_alive());
   ASSERT_TRUE(channel0->Activate(NopRxCallback, DoNothing));
@@ -3449,7 +3449,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SignalingChannelAndTwoDynamicChannels) 
   // Free up the buffer space from packets sent while creating |channel0|
   test_device()->SendCommandChannelPacket(
       NumberOfCompletedPacketsPacket(kTestHandle1, kChannelCreationPacketCount));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
   EXPECT_TRUE(channel1.is_alive());
@@ -3458,7 +3458,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SignalingChannelAndTwoDynamicChannels) 
   // Free up the buffer space from packets sent while creating |channel1|
   test_device()->SendCommandChannelPacket(NumberOfCompletedPacketsPacket(
       kTestHandle1, kConnectionCreationPacketCount + kChannelCreationPacketCount));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Queue size should be equal to or larger than |num_queued_packets| to ensure that all packets
   // get queued and sent
@@ -3482,14 +3482,14 @@ TEST_F(ChannelManagerRealAclChannelTest, SignalingChannelAndTwoDynamicChannels) 
 
     // Create PDU to send on dynamic channel
     EXPECT_TRUE(channel->Send(NewBuffer(0x01)));
-    RunLoopUntilIdle();
+    RunUntilIdle();
   }
   EXPECT_FALSE(test_device()->AllExpectedDataPacketsSent());
 
   // Notify the processed packets with a Number Of Completed Packet HCI event
   // This should cause the remaining 5 packets to be sent
   test_device()->SendCommandChannelPacket(NumberOfCompletedPacketsPacket(kTestHandle1, 5));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 }
 
@@ -3502,7 +3502,7 @@ TEST_F(ChannelManagerRealAclChannelTest, ChannelMaximumQueueSize) {
   constexpr size_t kChannelCreationPacketCount = 3;
 
   QueueAclConnection(kTestHandle1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   l2cap::Channel::WeakPtr channel;
@@ -3512,7 +3512,7 @@ TEST_F(ChannelManagerRealAclChannelTest, ChannelMaximumQueueSize) {
   };
   QueueOutboundL2capConnection(kTestHandle1, kPSM, kLocalId, kRemoteId, std::move(chan_cb));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
   EXPECT_TRUE(channel.is_alive());
   channel->Activate(NopRxCallback, DoNothing);
@@ -3544,7 +3544,7 @@ TEST_F(ChannelManagerRealAclChannelTest, ChannelMaximumQueueSize) {
 
     // Create PDU to send on dynamic channel
     EXPECT_TRUE(channel->Send(NewBuffer(0x01)));
-    RunLoopUntilIdle();
+    RunUntilIdle();
   }
   EXPECT_FALSE(test_device()->AllExpectedDataPacketsSent());
 
@@ -3552,7 +3552,7 @@ TEST_F(ChannelManagerRealAclChannelTest, ChannelMaximumQueueSize) {
   // This should cause the remaining 10 packets to be sent
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kTestHandle1, 10));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 }
 
@@ -3587,7 +3587,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
       });
 
   QueueAclConnection(kTestHandle1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   Channel::WeakPtr channel;
@@ -3598,7 +3598,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
 
   QueueOutboundL2capConnection(kTestHandle1, kPSM, kLocalId, kRemoteId, std::move(chan_cb));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
   // We should have opened a channel successfully.
   ASSERT_TRUE(channel.is_alive());
@@ -3617,7 +3617,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
     EXPECT_EQ(kExpectSuccess, res.is_ok());
   });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(request_cb_count, 1u);
   if (kPriority == AclPriority::kNormal) {
     EXPECT_FALSE(connection_handle_from_encode_cb);
@@ -3641,7 +3641,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   // Deactivating channel should send priority command to revert priority back to normal if it was
   // changed.
   channel->Deactivate();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   if (kPriority != AclPriority::kNormal && kExpectSuccess) {

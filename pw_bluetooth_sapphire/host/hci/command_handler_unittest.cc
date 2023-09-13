@@ -4,8 +4,6 @@
 
 #include "command_handler.h"
 
-#include <gtest/gtest.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
@@ -89,7 +87,7 @@ const StaticByteBuffer kTestCommandPacket(LowerBits(kOpCode), UpperBits(kOpCode)
                                           0x01,  // param length
                                           kEncodedTestCommandParam);
 
-using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
+using TestingBase = bt::testing::FakeDispatcherControllerTest<bt::testing::MockController>;
 class CommandHandlerTest : public TestingBase {
  public:
   void SetUp() override {
@@ -115,7 +113,7 @@ TEST_F(CommandHandlerTest, SuccessfulSendCommandWithSyncEvent) {
     event = result.value();
   });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(event.has_value());
   EXPECT_EQ(event->test_param, kTestEventParam);
 }
@@ -131,7 +129,7 @@ TEST_F(CommandHandlerTest, SendCommandReceiveFailEvent) {
     error = std::move(result).error_value();
   });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(error.has_value());
   EXPECT_TRUE(error->is(pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED));
 }
@@ -147,7 +145,7 @@ TEST_F(CommandHandlerTest, SendCommandWithSyncEventFailsToDecode) {
     error = std::move(result).error_value();
   });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(error.has_value());
   EXPECT_TRUE(error->is(HostError::kPacketMalformed));
 }
@@ -166,7 +164,7 @@ TEST_F(CommandHandlerTest, SuccessfulSendCommandWithAsyncEvent) {
     cb_count++;
   });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(cb_count, 1u);
   ASSERT_TRUE(event.has_value());
   EXPECT_EQ(event->test_param, kTestEventParam);
@@ -182,7 +180,7 @@ TEST_F(CommandHandlerTest, AddEventHandlerSuccess) {
   });
   test_device()->SendCommandChannelPacket(MakeTestEventPacket());
   test_device()->SendCommandChannelPacket(MakeTestEventPacket());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(cb_count, 2u);
   ASSERT_TRUE(event.has_value());
   EXPECT_EQ(event->test_param, kTestEventParam);
@@ -196,7 +194,7 @@ TEST_F(CommandHandlerTest, AddEventHandlerDecodeError) {
   });
   test_device()->SendCommandChannelPacket(MakeTestEventPacket());
   test_device()->SendCommandChannelPacket(MakeTestEventPacket());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(cb_count, 0u);
 }
 
@@ -211,7 +209,7 @@ TEST_F(CommandHandlerTest, SendCommandFinishOnStatus) {
     cb_count++;
   });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(cb_count, 1u);
 }
 

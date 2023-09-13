@@ -11,7 +11,7 @@ namespace bt::hci {
 namespace {
 
 using bt::testing::FakeController;
-using TestingBase = bt::testing::ControllerTest<FakeController>;
+using TestingBase = bt::testing::FakeDispatcherControllerTest<FakeController>;
 using AdvertisingOptions = LowEnergyAdvertiser::AdvertisingOptions;
 using LEAdvertisingState = FakeController::LEAdvertisingState;
 
@@ -101,7 +101,7 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, TxPowerLevelRetrieved) {
 
   this->advertiser()->StartAdvertising(kPublicAddress, ad, scan_data, options, conn_cb,
                                        this->MakeExpectSuccessCallback());
-  this->RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(this->GetLastStatus());
   EXPECT_EQ(1u, this->advertiser()->NumAdvertisements());
   EXPECT_TRUE(this->advertiser()->IsAdvertising());

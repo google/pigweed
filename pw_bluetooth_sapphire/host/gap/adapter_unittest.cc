@@ -4,12 +4,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 
-#include <lib/async/cpp/task.h>
-#include <lib/zx/channel.h>
-
 #include <memory>
-
-#include <gmock/gmock.h>
 
 #include "bredr_discovery_manager.h"
 #include "low_energy_address_manager.h"
@@ -29,7 +24,7 @@ namespace {
 using namespace inspect::testing;
 using testing::FakeController;
 using testing::FakePeer;
-using TestingBase = testing::ControllerTest<FakeController>;
+using TestingBase = testing::FakeDispatcherControllerTest<FakeController>;
 
 using FeaturesBits = pw::bluetooth::Controller::FeaturesBits;
 
@@ -53,9 +48,9 @@ class AdapterTest : public TestingBase {
 
     transport_closed_called_ = false;
 
-    auto l2cap = std::make_unique<l2cap::testing::FakeL2cap>(pw_dispatcher());
-    gatt_ = std::make_unique<gatt::testing::FakeLayer>(pw_dispatcher());
-    adapter_ = Adapter::Create(pw_dispatcher(), transport()->GetWeakPtr(), gatt_->GetWeakPtr(),
+    auto l2cap = std::make_unique<l2cap::testing::FakeL2cap>(dispatcher());
+    gatt_ = std::make_unique<gatt::testing::FakeLayer>(dispatcher());
+    adapter_ = Adapter::Create(dispatcher(), transport()->GetWeakPtr(), gatt_->GetWeakPtr(),
                                std::move(l2cap));
   }
 
@@ -71,7 +66,7 @@ class AdapterTest : public TestingBase {
 
   void InitializeAdapter(Adapter::InitializeCallback callback) {
     adapter_->Initialize(std::move(callback), [this] { transport_closed_called_ = true; });
-    RunLoopUntilIdle();
+    RunUntilIdle();
   }
 
   bool EnsureInitialized() {
@@ -304,7 +299,7 @@ TEST_F(AdapterTest, TransportClosedCallback) {
   EXPECT_FALSE(transport_closed_called());
 
   test_device()->SignalError(pw::Status::Aborted());
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(transport_closed_called());
   EXPECT_EQ(1, init_cb_count);
@@ -336,7 +331,7 @@ TEST_F(AdapterTest, ShutDownDuringInitialize) {
 
   // Further calls to ShutDown() should have no effect.
   adapter()->ShutDown();
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(AdapterTest, SetNameError) {
@@ -355,7 +350,7 @@ TEST_F(AdapterTest, SetNameError) {
 
   adapter()->SetLocalName(kNewName, name_cb);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE), result);
 }
@@ -372,7 +367,7 @@ TEST_F(AdapterTest, SetNameSuccess) {
   auto name_cb = [&result](const auto& status) { result = status; };
   adapter()->SetLocalName(kNewName, name_cb);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(fit::ok(), result);
   EXPECT_EQ(kNewName, test_device()->local_name());
@@ -392,7 +387,7 @@ TEST_F(AdapterTest, SetNameLargerThanMax) {
   auto name_cb = [&result](const auto& status) { result = status; };
   adapter()->SetLocalName(long_name, name_cb);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(fit::ok(), result);
   EXPECT_EQ(long_name, adapter()->state().local_name);
@@ -412,7 +407,7 @@ TEST_F(AdapterTest, SetLocalNameCallsBrEdrUpdateLocalName) {
   auto name_cb = [&result](const auto& status) { result = status; };
   adapter()->SetLocalName(kNewName, name_cb);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(fit::ok(), result);
   EXPECT_EQ(kNewName, adapter()->state().local_name);
@@ -434,7 +429,7 @@ TEST_F(AdapterTest, BrEdrUpdateLocalNameLargerThanMax) {
   auto name_cb = [&result](const auto& status) { result = status; };
   adapter()->SetLocalName(long_name, name_cb);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(fit::ok(), result);
   // Both the adapter & discovery manager local name should be the original (untruncated) name.
@@ -460,7 +455,7 @@ TEST_F(AdapterTest, BrEdrUpdateEIRResponseError) {
 
   adapter()->SetLocalName(kNewName, name_cb);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // kWriteLocalName will succeed, but kWriteExtendedInquiryResponse will fail
   EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::CONNECTION_TERMINATED_BY_LOCAL_HOST),
@@ -492,7 +487,7 @@ TEST_F(AdapterTest, DefaultName) {
 TEST_F(AdapterTest, PeerCacheReturnsNonNull) { EXPECT_TRUE(adapter()->peer_cache()); }
 
 TEST_F(AdapterTest, LeAutoConnect) {
-  constexpr zx::duration kTestScanPeriod = zx::sec(10);
+  constexpr pw::chrono::SystemClock::duration kTestScanPeriod = std::chrono::seconds(10);
   constexpr pw::chrono::SystemClock::duration kPwTestScanPeriod = std::chrono::seconds(10);
   constexpr PeerId kPeerId(1234);
 
@@ -503,7 +498,7 @@ TEST_F(AdapterTest, LeAutoConnect) {
   InitializeAdapter([](bool) {});
   adapter()->le()->set_scan_period_for_testing(kPwTestScanPeriod);
 
-  auto fake_peer = std::make_unique<FakePeer>(kTestAddr, pw_dispatcher(), true, false);
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddr, dispatcher(), true, false);
   fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
 
@@ -515,7 +510,7 @@ TEST_F(AdapterTest, LeAutoConnect) {
   std::unique_ptr<LowEnergyDiscoverySession> session;
   adapter()->le()->StartDiscovery(/*active=*/false,
                                   [&session](auto cb_session) { session = std::move(cb_session); });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(conn);
   EXPECT_EQ(0u, adapter()->peer_cache()->count());
 
@@ -529,7 +524,7 @@ TEST_F(AdapterTest, LeAutoConnect) {
 
   // FakeController only sends advertising reports at the start of scan periods, so we need to start
   // a second period.
-  RunLoopFor(kTestScanPeriod);
+  RunFor(kTestScanPeriod);
 
   // The peer should have been auto-connected.
   ASSERT_TRUE(conn);
@@ -537,7 +532,7 @@ TEST_F(AdapterTest, LeAutoConnect) {
 }
 
 TEST_F(AdapterTest, LeSkipAutoConnectBehavior) {
-  constexpr zx::duration kTestScanPeriod = zx::sec(10);
+  constexpr pw::chrono::SystemClock::duration kTestScanPeriod = std::chrono::seconds(10);
   constexpr pw::chrono::SystemClock::duration kPwTestScanPeriod = std::chrono::seconds(10);
   constexpr PeerId kPeerId(1234);
 
@@ -548,7 +543,7 @@ TEST_F(AdapterTest, LeSkipAutoConnectBehavior) {
   InitializeAdapter([](bool) {});
   adapter()->le()->set_scan_period_for_testing(kPwTestScanPeriod);
 
-  auto fake_peer = std::make_unique<FakePeer>(kTestAddr, pw_dispatcher(), true, false);
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddr, dispatcher(), true, false);
   fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
 
@@ -560,7 +555,7 @@ TEST_F(AdapterTest, LeSkipAutoConnectBehavior) {
   std::unique_ptr<LowEnergyDiscoverySession> session;
   adapter()->le()->StartDiscovery(/*active=*/false,
                                   [&session](auto cb_session) { session = std::move(cb_session); });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(conn);
   EXPECT_EQ(0u, adapter()->peer_cache()->count());
 
@@ -576,20 +571,20 @@ TEST_F(AdapterTest, LeSkipAutoConnectBehavior) {
   adapter()->peer_cache()->SetAutoConnectBehaviorForIntentionalDisconnect(kPeerId);
 
   // Advance the scan period.
-  RunLoopFor(kTestScanPeriod);
+  RunFor(kTestScanPeriod);
 
   // The peer should NOT have been auto-connected.
   ASSERT_FALSE(conn);
 
   // The peer should still not auto-connect after a subsequent scan period.
-  RunLoopFor(kTestScanPeriod);
+  RunFor(kTestScanPeriod);
   ASSERT_FALSE(conn);
 
   // Fake a manual connection to reset auto-connect behavior.
   adapter()->peer_cache()->SetAutoConnectBehaviorForSuccessfulConnection(kPeerId);
 
   // Advance the scan period.
-  RunLoopFor(kTestScanPeriod);
+  RunFor(kTestScanPeriod);
 
   // The peer SHOULD have been auto-connected.
   ASSERT_TRUE(conn);
@@ -614,7 +609,7 @@ TEST_F(AdapterTest, LocalAddressForLegacyAdvertising) {
   adapter()->le()->StartAdvertising(
       AdvertisingData(), AdvertisingData(), AdvertisingInterval::FAST1, /*anonymous=*/false,
       /*include_tx_power_level=*/false, /*connectable=*/std::nullopt, adv_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
   EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
             test_device()->legacy_advertising_state().own_address_type);
@@ -622,12 +617,12 @@ TEST_F(AdapterTest, LocalAddressForLegacyAdvertising) {
   // Enable privacy. The random address should not get configured while
   // advertising is in progress.
   adapter()->le()->EnablePrivacy(true);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(test_device()->legacy_advertising_state().random_address);
 
   // Stop advertising.
   adapter()->le()->StopAdvertising(instance.id());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(test_device()->legacy_advertising_state().enabled);
   EXPECT_FALSE(test_device()->legacy_advertising_state().random_address);
 
@@ -636,7 +631,7 @@ TEST_F(AdapterTest, LocalAddressForLegacyAdvertising) {
   adapter()->le()->StartAdvertising(
       AdvertisingData(), AdvertisingData(), AdvertisingInterval::FAST1, /*anonymous=*/false,
       /*include_tx_power_level=*/false, /*connectable=*/std::nullopt, adv_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->legacy_advertising_state().random_address);
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
   EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::RANDOM,
@@ -645,7 +640,7 @@ TEST_F(AdapterTest, LocalAddressForLegacyAdvertising) {
   // Advance time to force the random address to refresh. The update should be
   // deferred while advertising.
   auto last_random_addr = *test_device()->legacy_advertising_state().random_address;
-  RunLoopFor(kPrivateAddressTimeout);
+  RunFor(kPrivateAddressTimeout);
   EXPECT_EQ(last_random_addr, *test_device()->legacy_advertising_state().random_address);
 
   // Restarting advertising should refresh the controller address.
@@ -653,7 +648,7 @@ TEST_F(AdapterTest, LocalAddressForLegacyAdvertising) {
   adapter()->le()->StartAdvertising(
       AdvertisingData(), AdvertisingData(), AdvertisingInterval::FAST1, /*anonymous=*/false,
       /*include_tx_power_level=*/false, /*connectable=*/std::nullopt, adv_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
   EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::RANDOM,
             test_device()->legacy_advertising_state().own_address_type);
@@ -667,7 +662,7 @@ TEST_F(AdapterTest, LocalAddressForLegacyAdvertising) {
   adapter()->le()->StartAdvertising(
       AdvertisingData(), AdvertisingData(), AdvertisingInterval::FAST1, /*anonymous=*/false,
       /*include_tx_power_level=*/false, /*connectable=*/std::nullopt, adv_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
   EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
             test_device()->legacy_advertising_state().own_address_type);
@@ -683,9 +678,9 @@ TEST_F(AdapterTest, LocalAddressForDiscovery) {
 
   // Set a scan period that is longer than the private address timeout, for
   // testing.
-  constexpr zx::duration kTestDelay = zx::sec(5);
+  constexpr pw::chrono::SystemClock::duration kTestDelay = std::chrono::seconds(5);
   constexpr pw::chrono::SystemClock::duration kPwTestDelay = std::chrono::seconds(5);
-  constexpr zx::duration kTestScanPeriod = kPrivateAddressTimeout + kTestDelay;
+  constexpr pw::chrono::SystemClock::duration kTestScanPeriod = kPrivateAddressTimeout + kTestDelay;
   constexpr pw::chrono::SystemClock::duration kPwTestScanPeriod =
       kPwPrivateAddressTimeout + kPwTestDelay;
   adapter()->le()->set_scan_period_for_testing(kPwTestScanPeriod);
@@ -694,7 +689,7 @@ TEST_F(AdapterTest, LocalAddressForDiscovery) {
   LowEnergyDiscoverySessionPtr session;
   auto cb = [&](auto s) { session = std::move(s); };
   adapter()->le()->StartDiscovery(/*active=*/true, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(session);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
@@ -703,19 +698,19 @@ TEST_F(AdapterTest, LocalAddressForDiscovery) {
   // Enable privacy. The random address should not get configured while a scan
   // is in progress.
   adapter()->le()->EnablePrivacy(true);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(test_device()->legacy_advertising_state().random_address);
 
   // Stop discovery.
   session = nullptr;
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
   EXPECT_FALSE(test_device()->legacy_advertising_state().random_address);
 
   // Restart discovery. This should configure the LE random address and scan
   // using it.
   adapter()->le()->StartDiscovery(/*active=*/true, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(session);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::RANDOM,
@@ -725,12 +720,12 @@ TEST_F(AdapterTest, LocalAddressForDiscovery) {
   // deferred while still scanning.
   ASSERT_TRUE(test_device()->legacy_advertising_state().random_address);
   auto last_random_addr = *test_device()->legacy_advertising_state().random_address;
-  RunLoopFor(kPrivateAddressTimeout);
+  RunFor(kPrivateAddressTimeout);
   EXPECT_EQ(last_random_addr, *test_device()->legacy_advertising_state().random_address);
 
   // Let the scan period expire. This should restart scanning and refresh the
   // random address.
-  RunLoopFor(kTestDelay);
+  RunFor(kTestDelay);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::RANDOM,
             test_device()->le_scan_state().own_address_type);
@@ -740,7 +735,7 @@ TEST_F(AdapterTest, LocalAddressForDiscovery) {
   // Disable privacy. The next time scanning gets started it should use a
   // public address.
   adapter()->le()->EnablePrivacy(false);
-  RunLoopFor(kTestScanPeriod);
+  RunFor(kTestScanPeriod);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
             test_device()->le_scan_state().own_address_type);
@@ -754,7 +749,7 @@ TEST_F(AdapterTest, LocalAddressForConnections) {
 
   // Set-up a device for testing.
   auto* peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
-  auto fake_peer = std::make_unique<FakePeer>(kTestAddr, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddr, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
 
   std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn_ref;
@@ -769,7 +764,7 @@ TEST_F(AdapterTest, LocalAddressForConnections) {
   // Enable privacy. The random address should not get configured while a
   // connection attempt is in progress.
   adapter()->le()->EnablePrivacy(true);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(test_device()->legacy_advertising_state().random_address);
   ASSERT_TRUE(conn_ref);
   ASSERT_TRUE(test_device()->le_connect_params());
@@ -780,7 +775,7 @@ TEST_F(AdapterTest, LocalAddressForConnections) {
   // re-enabled.
   conn_ref = nullptr;
   adapter()->le()->Connect(peer->identifier(), connect_cb, LowEnergyConnectionOptions());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->legacy_advertising_state().random_address);
   ASSERT_TRUE(conn_ref);
   ASSERT_TRUE(test_device()->le_connect_params());
@@ -795,7 +790,7 @@ TEST_F(AdapterTest, LocalAddressForConnections) {
   adapter()->le()->EnablePrivacy(false);
   conn_ref = nullptr;
   adapter()->le()->Connect(peer->identifier(), connect_cb, LowEnergyConnectionOptions());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
             test_device()->le_connect_params()->own_address_type);
 }
@@ -811,13 +806,13 @@ TEST_F(AdapterTest, LocalAddressDuringHangingConnect) {
   auto* peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
 
   // Cause scanning to succeed and the connection request to hang.
-  auto fake_peer = std::make_unique<FakePeer>(kTestAddr, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddr, dispatcher());
   fake_peer->set_force_pending_connect(true);
   test_device()->AddPeer(std::move(fake_peer));
 
-  constexpr zx::duration kTestDelay = zx::sec(5);
+  constexpr pw::chrono::SystemClock::duration kTestDelay = std::chrono::seconds(5);
   constexpr pw::chrono::SystemClock::duration kPwTestDelay = std::chrono::seconds(5);
-  constexpr zx::duration kTestTimeout = kPrivateAddressTimeout + kTestDelay;
+  constexpr pw::chrono::SystemClock::duration kTestTimeout = kPrivateAddressTimeout + kTestDelay;
   constexpr pw::chrono::SystemClock::duration kPwTestTimeout =
       kPwPrivateAddressTimeout + kPwTestDelay;
 
@@ -839,7 +834,7 @@ TEST_F(AdapterTest, LocalAddressDuringHangingConnect) {
     error = result.error_value();
   };
   adapter()->le()->Connect(peer->identifier(), connect_cb, LowEnergyConnectionOptions());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(test_device()->le_connect_params());
   EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
             test_device()->le_connect_params()->own_address_type);
@@ -847,11 +842,11 @@ TEST_F(AdapterTest, LocalAddressDuringHangingConnect) {
   // Enable privacy. The random address should not get configured while a
   // connection request is outstanding.
   adapter()->le()->EnablePrivacy(true);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(test_device()->legacy_advertising_state().random_address);
 
   // Let the connection request timeout.
-  RunLoopFor(kTestTimeout);
+  RunFor(kTestTimeout);
   ASSERT_TRUE(error.has_value());
   EXPECT_EQ(HostError::kTimedOut, error.value()) << "Error: " << HostErrorToString(error.value());
   EXPECT_EQ(1, connect_cb_calls);
@@ -859,7 +854,7 @@ TEST_F(AdapterTest, LocalAddressDuringHangingConnect) {
   // The peer should not have expired.
   ASSERT_EQ(peer, adapter()->peer_cache()->FindByAddress(kTestAddr));
   adapter()->le()->Connect(peer->identifier(), connect_cb, LowEnergyConnectionOptions());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(test_device()->legacy_advertising_state().random_address);
   // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
   // connections. Change this test to expect a random address once RPAs for central connections are
@@ -870,21 +865,21 @@ TEST_F(AdapterTest, LocalAddressDuringHangingConnect) {
   // Advance the time to cause the random address to refresh. The update should
   // be deferred while a connection request is outstanding.
   auto last_random_addr = *test_device()->legacy_advertising_state().random_address;
-  RunLoopFor(kPrivateAddressTimeout);
+  RunFor(kPrivateAddressTimeout);
   EXPECT_EQ(last_random_addr, *test_device()->legacy_advertising_state().random_address);
 
   ASSERT_EQ(peer, adapter()->peer_cache()->FindByAddress(kTestAddr));
 
   // The address should refresh after the pending request expires and before the
   // next connection attempt.
-  RunLoopFor(kTestDelay);
+  RunFor(kTestDelay);
   ASSERT_EQ(2, connect_cb_calls);
 
   // This will be notified when LowEnergyConnectionManager is destroyed.
   auto noop_connect_cb = [](auto) {};
   adapter()->le()->Connect(peer->identifier(), std::move(noop_connect_cb),
                            LowEnergyConnectionOptions());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_NE(last_random_addr, *test_device()->legacy_advertising_state().random_address);
   // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
   // connections. Change this test to expect a random address once RPAs for central connections are
@@ -910,10 +905,10 @@ TEST_F(AdapterTest, ExistingConnectionDoesNotPreventLocalAddressChange) {
   };
 
   auto* peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
-  auto fake_peer = std::make_unique<FakePeer>(kTestAddr, pw_dispatcher());
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddr, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
   adapter()->le()->Connect(peer->identifier(), connect_cb, LowEnergyConnectionOptions());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
   // connections. Change this test to expect a random address once RPAs for central connections are
   // re-enabled.
@@ -924,7 +919,7 @@ TEST_F(AdapterTest, ExistingConnectionDoesNotPreventLocalAddressChange) {
   // from the ongoing connection.
   ASSERT_TRUE(test_device()->legacy_advertising_state().random_address);
   auto last_random_addr = *test_device()->legacy_advertising_state().random_address;
-  RunLoopFor(kPrivateAddressTimeout);
+  RunFor(kPrivateAddressTimeout);
   ASSERT_TRUE(test_device()->legacy_advertising_state().random_address);
   EXPECT_NE(last_random_addr, *test_device()->legacy_advertising_state().random_address);
 }
@@ -945,11 +940,11 @@ TEST_F(AdapterTest, IsDiscoverableLowEnergy) {
                                       ASSERT_EQ(fit::ok(), status);
                                       instance = std::move(i);
                                     });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(adapter()->IsDiscoverable());
 
   instance = {};
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(adapter()->IsDiscoverable());
 }
 
@@ -963,11 +958,11 @@ TEST_F(AdapterTest, IsDiscoverableBredr) {
 
   std::unique_ptr<BrEdrDiscoverableSession> session;
   adapter()->bredr()->RequestDiscoverable([&](auto, auto s) { session = std::move(s); });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(adapter()->IsDiscoverable());
 
   session = nullptr;
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(adapter()->IsDiscoverable());
 }
 
@@ -989,12 +984,12 @@ TEST_F(AdapterTest, IsDiscoverableLowEnergyPrivacyEnabled) {
                                       ASSERT_EQ(fit::ok(), status);
                                       instance = std::move(i);
                                     });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   // Even though we are advertising over LE, we are not discoverable since Privacy is enabled.
   EXPECT_FALSE(adapter()->IsDiscoverable());
 
   instance = {};
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(adapter()->IsDiscoverable());
 }
 
@@ -1122,7 +1117,7 @@ TEST_F(AdapterTest, LowEnergyStartAdvertisingConnectCallbackReceivesConnection) 
                                     bt::gap::Adapter::LowEnergy::ConnectableAdvertisingParameters{
                                         std::move(connect_cb), sm::BondableMode::NonBondable},
                                     adv_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(conn_result);
 
   fit::closure complete_interrogation;
@@ -1131,14 +1126,14 @@ TEST_F(AdapterTest, LowEnergyStartAdvertisingConnectCallbackReceivesConnection) 
       bt::hci_spec::kReadRemoteVersionInfo,
       [&](fit::closure trigger) { complete_interrogation = std::move(trigger); });
 
-  test_device()->AddPeer(std::make_unique<FakePeer>(kTestAddr, pw_dispatcher()));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kTestAddr, dispatcher()));
   test_device()->ConnectLowEnergy(kTestAddr);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_FALSE(conn_result);
   ASSERT_TRUE(complete_interrogation);
 
   complete_interrogation();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(conn_result);
   ASSERT_EQ(fit::ok(), *conn_result);
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle = std::move(*conn_result).value();
@@ -1158,8 +1153,8 @@ class AdapterConstructorTest : public TestingBase {
   void SetUp() override {
     TestingBase::SetUp();
 
-    l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>(pw_dispatcher());
-    gatt_ = std::make_unique<gatt::testing::FakeLayer>(pw_dispatcher());
+    l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>(dispatcher());
+    gatt_ = std::make_unique<gatt::testing::FakeLayer>(dispatcher());
   }
 
   void TearDown() override {
@@ -1193,7 +1188,7 @@ TEST_F(AdapterConstructorTest, GattCallbacks) {
   EXPECT_EQ(set_persist_cb_count, 0);
   EXPECT_EQ(set_retrieve_cb_count, 0);
 
-  auto adapter = Adapter::Create(pw_dispatcher(), transport()->GetWeakPtr(), gatt_->GetWeakPtr(),
+  auto adapter = Adapter::Create(dispatcher(), transport()->GetWeakPtr(), gatt_->GetWeakPtr(),
                                  std::move(l2cap_));
 
   EXPECT_EQ(set_persist_cb_count, 1);

@@ -30,7 +30,7 @@ using bt::testing::FakeController;
 using bt::testing::FakePeer;
 using PauseToken = LowEnergyDiscoveryManager::PauseToken;
 
-using TestingBase = bt::testing::ControllerTest<FakeController>;
+using TestingBase = bt::testing::FakeDispatcherControllerTest<FakeController>;
 
 const DeviceAddress kAddress0(DeviceAddress::Type::kLEPublic, {0});
 const DeviceAddress kAddrAlias0(DeviceAddress::Type::kBREDR, kAddress0.value());
@@ -42,7 +42,7 @@ const DeviceAddress kAddress5(DeviceAddress::Type::kLEPublic, {5});
 
 constexpr uint16_t kServiceDataUuid = 0x1234;
 
-constexpr zx::duration kTestScanPeriod = zx::sec(10);
+constexpr pw::chrono::SystemClock::duration kTestScanPeriod = std::chrono::seconds(10);
 constexpr pw::chrono::SystemClock::duration kPwTestScanPeriod = std::chrono::seconds(10);
 
 const char* kInspectNodeName = "low_energy_discovery_manager";
@@ -66,9 +66,9 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
     // could be injected directly. Consider providing fake behavior here in this
     // harness rather than using a FakeController.
     scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(
-        &fake_address_delegate_, transport()->GetWeakPtr(), pw_dispatcher());
+        &fake_address_delegate_, transport()->GetWeakPtr(), dispatcher());
     discovery_manager_ =
-        std::make_unique<LowEnergyDiscoveryManager>(scanner_.get(), &peer_cache_, pw_dispatcher());
+        std::make_unique<LowEnergyDiscoveryManager>(scanner_.get(), &peer_cache_, dispatcher());
     discovery_manager_->AttachInspect(inspector_.GetRoot(), kInspectNodeName);
 
     test_device()->set_scan_state_callback(
@@ -168,7 +168,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
         // Complete local name
         0x09, 0x09, 'D', 'e', 'v', 'i', 'c', 'e', ' ', '0');
-    auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher(), true, true);
+    auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher(), true, true);
     fake_peer->SetAdvertisingData(kAdvData0);
     test_device()->AddPeer(std::move(fake_peer));
 
@@ -179,7 +179,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
         // Complete 16-bit service UUIDs
         0x03, 0x03, 0x0d, 0x18);
-    fake_peer = std::make_unique<FakePeer>(kAddress1, pw_dispatcher(), true, true);
+    fake_peer = std::make_unique<FakePeer>(kAddress1, dispatcher(), true, true);
     fake_peer->SetAdvertisingData(kAdvData1);
     test_device()->AddPeer(std::move(fake_peer));
 
@@ -190,7 +190,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
         // Complete local name
         0x09, 0x09, 'D', 'e', 'v', 'i', 'c', 'e', ' ', '2');
-    fake_peer = std::make_unique<FakePeer>(kAddress2, pw_dispatcher(), false, false);
+    fake_peer = std::make_unique<FakePeer>(kAddress2, dispatcher(), false, false);
     fake_peer->SetAdvertisingData(kAdvData2);
     test_device()->AddPeer(std::move(fake_peer));
 
@@ -201,7 +201,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
         // Complete local name
         0x09, 0x09, 'D', 'e', 'v', 'i', 'c', 'e', ' ', '3');
-    fake_peer = std::make_unique<FakePeer>(kAddress3, pw_dispatcher(), false, false);
+    fake_peer = std::make_unique<FakePeer>(kAddress3, dispatcher(), false, false);
     fake_peer->SetAdvertisingData(kAdvData3);
     test_device()->AddPeer(std::move(fake_peer));
   }
@@ -214,14 +214,14 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
       session = std::move(cb_session);
     });
 
-    RunLoopUntilIdle();
+    RunUntilIdle();
     BT_ASSERT(session);
     return session;
   }
 
  private:
-  PeerCache peer_cache_{pw_dispatcher()};
-  hci::FakeLocalAddressDelegate fake_address_delegate_{pw_dispatcher()};
+  PeerCache peer_cache_{dispatcher()};
+  hci::FakeLocalAddressDelegate fake_address_delegate_{dispatcher()};
   std::unique_ptr<hci::LegacyLowEnergyScanner> scanner_;
   std::unique_ptr<LowEnergyDiscoveryManager> discovery_manager_;
 
@@ -241,12 +241,12 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryAndStop) {
   discovery_manager()->StartDiscovery(
       /*active=*/true, [&session](auto cb_session) { session = std::move(cb_session); });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // The test fixture will be notified of the change in scan state before we
   // receive the session.
   EXPECT_TRUE(scan_enabled());
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(session);
   EXPECT_TRUE(session->alive());
@@ -254,7 +254,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryAndStop) {
   session->Stop();
   EXPECT_FALSE(session->alive());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(scan_enabled());
 }
 
@@ -265,19 +265,19 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryAndStopByDeleting) {
   discovery_manager()->StartDiscovery(
       /*active=*/true, [&session](auto cb_session) { session = std::move(cb_session); });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // The test fixture will be notified of the change in scan state before we
   // receive the session.
   EXPECT_TRUE(scan_enabled());
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(session);
   EXPECT_TRUE(session->alive());
 
   session = nullptr;
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(scan_enabled());
 }
 
@@ -288,7 +288,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, Destructor) {
   discovery_manager()->StartDiscovery(
       /*active=*/true, [&session](auto cb_session) { session = std::move(cb_session); });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(scan_enabled());
 
@@ -309,7 +309,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryAndStopInCallback) {
   // should terminate the session when |session| goes out of scope.
   discovery_manager()->StartDiscovery(/*active=*/true, [](auto session) {});
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(2u, scan_states().size());
   EXPECT_TRUE(scan_states()[0]);
   EXPECT_FALSE(scan_states()[1]);
@@ -322,7 +322,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryFailure) {
   // |session| should contain nullptr.
   discovery_manager()->StartDiscovery(/*active=*/true, [](auto session) { EXPECT_FALSE(session); });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(scan_enabled());
 }
 
@@ -338,7 +338,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWhileScanning) {
 
   discovery_manager()->StartDiscovery(/*active=*/true, cb);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(scan_enabled());
   EXPECT_EQ(1u, sessions.size());
 
@@ -348,24 +348,24 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWhileScanning) {
     discovery_manager()->StartDiscovery(/*active=*/true, cb);
   }
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(scan_enabled());
   EXPECT_EQ(kExpectedSessionCount, sessions.size());
 
   // Remove one session from the list. Scan should continue.
   sessions.pop_back();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(scan_enabled());
 
   // Remove all but one session from the list. Scan should continue.
   sessions.erase(sessions.begin() + 1, sessions.end());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(scan_enabled());
   EXPECT_EQ(1u, sessions.size());
 
   // Remove the last session.
   sessions.clear();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(scan_enabled());
 }
 
@@ -383,13 +383,13 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStart) {
     discovery_manager()->StartDiscovery(/*active=*/true, cb);
   }
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(scan_enabled());
   EXPECT_EQ(kExpectedSessionCount, sessions.size());
 
   // Remove all sessions. This should stop the scan.
   sessions.clear();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(scan_enabled());
 }
 
@@ -410,17 +410,17 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStartAndStopInCa
     discovery_manager()->StartDiscovery(/*active=*/true, cb);
   }
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(scan_enabled());
   EXPECT_TRUE(session);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(kExpectedSessionCount, cb_count);
   EXPECT_TRUE(scan_enabled());
 
   // Deleting the only remaning session should stop the scan.
   session = nullptr;
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(scan_enabled());
 }
 
@@ -430,7 +430,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStop) {
   discovery_manager()->StartDiscovery(
       /*active=*/true, [&session](auto cb_session) { session = std::move(cb_session); });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(scan_enabled());
   EXPECT_TRUE(session);
 
@@ -444,7 +444,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStop) {
       /*active=*/true, [&session](auto cb_session) { session = std::move(cb_session); });
 
   // Discovery should stop and start again.
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(3u, scan_states().size());
   EXPECT_TRUE(scan_states()[0]);
   EXPECT_FALSE(scan_states()[1]);
@@ -467,7 +467,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryFailureManyPending) {
     discovery_manager()->StartDiscovery(/*active=*/true, cb);
   }
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(scan_enabled());
 }
 
@@ -481,11 +481,11 @@ TEST_F(LowEnergyDiscoveryManagerTest, ScanPeriodRestart) {
       /*active=*/true, [&session](auto cb_session) { session = std::move(cb_session); });
 
   // We should observe the scan state become enabled -> disabled -> enabled.
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(scan_enabled());
 
   // End the scan period.
-  RunLoopFor(kTestScanPeriod);
+  RunFor(kTestScanPeriod);
   ASSERT_EQ(kNumScanStates, scan_states().size());
   EXPECT_TRUE(scan_states()[0]);
   EXPECT_FALSE(scan_states()[1]);
@@ -512,11 +512,11 @@ TEST_F(LowEnergyDiscoveryManagerTest, ScanPeriodRestartFailure) {
                                             pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED);
   });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(scan_enabled());
 
   // End the scan period. The scan should not restart.
-  RunLoopFor(kTestScanPeriod);
+  RunFor(kTestScanPeriod);
 
   ASSERT_EQ(kNumScanStates, scan_states().size());
   EXPECT_TRUE(scan_states()[0]);
@@ -545,11 +545,11 @@ TEST_F(LowEnergyDiscoveryManagerTest, ScanPeriodRestartRemoveSession) {
     session->Stop();
   });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(scan_enabled());
 
   // End the scan period.
-  RunLoopFor(kTestScanPeriod);
+  RunFor(kTestScanPeriod);
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true, false));
 }
 
@@ -575,11 +575,11 @@ TEST_F(LowEnergyDiscoveryManagerTest, ScanPeriodRemoveSessionDuringRestart) {
     session->Stop();
   });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(scan_enabled());
 
   // End the scan period.
-  RunLoopFor(kTestScanPeriod);
+  RunFor(kTestScanPeriod);
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false));
 }
 
@@ -608,11 +608,11 @@ TEST_F(LowEnergyDiscoveryManagerTest, ScanPeriodRestartRemoveAndAddSession) {
     discovery_manager()->StartDiscovery(/*active=*/true, cb);
   });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(scan_enabled());
 
   // End the scan period.
-  RunLoopFor(kTestScanPeriod);
+  RunFor(kTestScanPeriod);
 
   // Scan should have been disabled and re-enabled.
   ASSERT_EQ(kTotalNumStates, scan_states().size());
@@ -678,7 +678,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
   sessions[5]->filter()->set_service_data_uuids({UUID(kServiceDataUuid)});
   sessions[5]->SetResultCallback(std::move(result_cb));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(6u, sessions.size());
 
@@ -734,7 +734,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWithFiltersCachedPeerNotific
   sessions[0]->filter()->SetGeneralDiscoveryFlags();
   sessions[0]->SetResultCallback(std::move(result_cb));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(3u, peers_session0.size());
 
   // Session 1 is interested in performing limited discovery.
@@ -805,7 +805,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWithFiltersCachedPeerNotific
 }
 
 TEST_F(LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromUnknownPeer) {
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher(), /*connectable=*/true,
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher(), /*connectable=*/true,
                                               /*scannable=*/false);
   fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
@@ -822,7 +822,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromUnknownPeer) {
   int passive_count = 0;
   passive_session->SetResultCallback([&](auto& peer) { passive_count++; });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(active_session);
   ASSERT_TRUE(passive_session);
   EXPECT_EQ(0, connectable_count);
@@ -831,7 +831,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromUnknownPeer) {
 }
 
 TEST_F(LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromKnownNonConnectablePeer) {
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher(), /*connectable=*/false,
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher(), /*connectable=*/false,
                                               /*scannable=*/false);
   fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
@@ -850,7 +850,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromKnownNonConnec
   int passive_count = 0;
   passive_session->SetResultCallback([&](auto& peer) { passive_count++; });
 
-  RunLoopFor(kTestScanPeriod);
+  RunFor(kTestScanPeriod);
   ASSERT_TRUE(active_session);
   ASSERT_TRUE(passive_session);
   EXPECT_EQ(0, connectable_count);
@@ -859,7 +859,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromKnownNonConnec
 }
 
 TEST_F(LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromKnownConnectablePeer) {
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher(), /*connectable=*/true,
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher(), /*connectable=*/true,
                                               /*scannable=*/false);
   fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
@@ -883,7 +883,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromKnownConnectab
   int passive_count = 0;
   passive_session->SetResultCallback([&](auto& peer) { passive_count++; });
 
-  RunLoopFor(kTestScanPeriod);
+  RunFor(kTestScanPeriod);
   ASSERT_TRUE(active_session);
   ASSERT_TRUE(passive_session);
   // Connectable callback will be notified at the start of each scan period.
@@ -910,7 +910,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, ScanResultUpgradesKnownBrEdrPeerToDualMode
   session->filter()->SetGeneralDiscoveryFlags();
   session->SetResultCallback(std::move(result_cb));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_EQ(3u, addresses_found.size());
   EXPECT_TRUE(addresses_found.find(kAddrAlias0) != addresses_found.end());
@@ -921,13 +921,13 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartAndDisablePassiveScan) {
   ASSERT_FALSE(test_device()->le_scan_state().enabled);
 
   auto session = StartDiscoverySession(/*active=*/false);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(pw::bluetooth::emboss::LEScanType::PASSIVE, test_device()->le_scan_state().scan_type);
   EXPECT_FALSE(discovery_manager()->discovering());
 
   session.reset();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
 }
 
@@ -937,7 +937,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartAndDisablePassiveScanQuickly) {
   // Session will be destroyed in callback, stopping scan.
   discovery_manager()->StartDiscovery(/*active=*/false,
                                       [&](auto cb_session) { BT_ASSERT(cb_session); });
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(2u, scan_states().size());
@@ -951,7 +951,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartAndDisablePassiveScanQuickly) {
     BT_ASSERT(cb_session);
     session = std::move(cb_session);
   });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(3u, scan_states().size());
 
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
@@ -970,14 +970,14 @@ TEST_F(LowEnergyDiscoveryManagerTest,
 
   // Enabling passive scans should not disable the active scan.
   auto passive_session = StartDiscoverySession(false);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(pw::bluetooth::emboss::LEScanType::ACTIVE, test_device()->le_scan_state().scan_type);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(1u, scan_states().size());
 
   // Stopping the active session should fall back to passive scan.
   active_session = nullptr;
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(pw::bluetooth::emboss::LEScanType::PASSIVE, test_device()->le_scan_state().scan_type);
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));
@@ -995,28 +995,28 @@ TEST_F(LowEnergyDiscoveryManagerTest, DisablePassiveScanDuringActiveScan) {
 
   // Enabling passive scans should not disable the active scan.
   auto passive_session = StartDiscoverySession(false);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(pw::bluetooth::emboss::LEScanType::ACTIVE, test_device()->le_scan_state().scan_type);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(1u, scan_states().size());
 
   // Disabling the passive scan should not disable the active scan.
   passive_session.reset();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(pw::bluetooth::emboss::LEScanType::ACTIVE, test_device()->le_scan_state().scan_type);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(1u, scan_states().size());
 
   // Stopping the active session should stop scans.
   active_session = nullptr;
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false));
 }
 
 TEST_F(LowEnergyDiscoveryManagerTest, StartActiveScanDuringPassiveScan) {
   auto passive_session = StartDiscoverySession(false);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(test_device()->le_scan_state().enabled);
   ASSERT_EQ(pw::bluetooth::emboss::LEScanType::PASSIVE, test_device()->le_scan_state().scan_type);
 
@@ -1054,7 +1054,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartActiveScanWhileStartingPassiveScan) {
 
   // Process all the requests. We should observe multiple state transitions:
   // -> enabled (passive) -> disabled -> enabled (active)
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(pw::bluetooth::emboss::LEScanType::ACTIVE, test_device()->le_scan_state().scan_type);
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));
@@ -1067,19 +1067,19 @@ TEST_F(LowEnergyDiscoveryManagerTest,
        PeerConnectableCallbackOnlyHandlesEventsFromKnownConnectableDevices) {
   // Address 0: undirected connectable; added to cache below
   {
-    auto peer = std::make_unique<FakePeer>(kAddress0, pw_dispatcher(), /*connectable=*/true,
+    auto peer = std::make_unique<FakePeer>(kAddress0, dispatcher(), /*connectable=*/true,
                                            /*scannable=*/true);
     test_device()->AddPeer(std::move(peer));
   }
   // Address 1: undirected connectable; NOT in cache
   {
-    auto peer = std::make_unique<FakePeer>(kAddress1, pw_dispatcher(), /*connectable=*/true,
+    auto peer = std::make_unique<FakePeer>(kAddress1, dispatcher(), /*connectable=*/true,
                                            /*scannable=*/true);
     test_device()->AddPeer(std::move(peer));
   }
   // Address 2: not connectable; added to cache below
   {
-    auto peer = std::make_unique<FakePeer>(kAddress2, pw_dispatcher(), /*connectable=*/false,
+    auto peer = std::make_unique<FakePeer>(kAddress2, dispatcher(), /*connectable=*/false,
                                            /*scannable=*/false);
     test_device()->AddPeer(std::move(peer));
   }
@@ -1089,21 +1089,21 @@ TEST_F(LowEnergyDiscoveryManagerTest,
   //
   // added to cache below
   {
-    auto peer = std::make_unique<FakePeer>(kAddress3, pw_dispatcher(), /*connectable=*/false,
+    auto peer = std::make_unique<FakePeer>(kAddress3, dispatcher(), /*connectable=*/false,
                                            /*scannable=*/false);
     peer->enable_directed_advertising(true);
     test_device()->AddPeer(std::move(peer));
   }
   // Address 4: directed connectable; added to cache below
   {
-    auto peer = std::make_unique<FakePeer>(kAddress4, pw_dispatcher(), /*connectable=*/true,
+    auto peer = std::make_unique<FakePeer>(kAddress4, dispatcher(), /*connectable=*/true,
                                            /*scannable=*/false);
     peer->enable_directed_advertising(true);
     test_device()->AddPeer(std::move(peer));
   }
   // Address 5: directed connectable; NOT in cache
   {
-    auto peer = std::make_unique<FakePeer>(kAddress5, pw_dispatcher(), /*connectable=*/true,
+    auto peer = std::make_unique<FakePeer>(kAddress5, dispatcher(), /*connectable=*/true,
                                            /*scannable=*/false);
     peer->enable_directed_advertising(true);
     test_device()->AddPeer(std::move(peer));
@@ -1125,7 +1125,7 @@ TEST_F(LowEnergyDiscoveryManagerTest,
     EXPECT_TRUE(id == address0_id || id == address4_id) << id.ToString();
   });
   auto session = StartDiscoverySession(/*active=*/false);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(2, count);
 
   // No new remote peer cache entries should have been created.
@@ -1137,13 +1137,13 @@ TEST_F(LowEnergyDiscoveryManagerTest, PassiveScanPeriodRestart) {
   auto session = StartDiscoverySession(/*active=*/false);
 
   // The scan state should transition to enabled.
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(scan_enabled());
   ASSERT_EQ(1u, scan_states().size());
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
 
   // End the scan period by advancing time.
-  RunLoopFor(kTestScanPeriod);
+  RunFor(kTestScanPeriod);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(pw::bluetooth::emboss::LEScanType::PASSIVE, test_device()->le_scan_state().scan_type);
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));
@@ -1155,57 +1155,57 @@ TEST_F(LowEnergyDiscoveryManagerTest,
   EXPECT_TRUE(scan_enabled());
 
   std::optional<PauseToken> pause_0 = discovery_manager()->PauseDiscovery();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(scan_enabled());
   EXPECT_TRUE(discovery_manager()->discovering());
 
   std::optional<PauseToken> pause_1 = discovery_manager()->PauseDiscovery();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(scan_enabled());
   EXPECT_TRUE(discovery_manager()->discovering());
 
   pause_0.reset();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(scan_enabled());
   EXPECT_TRUE(discovery_manager()->discovering());
 
   pause_1.reset();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(scan_enabled());
   EXPECT_TRUE(discovery_manager()->discovering());
 }
 
 TEST_F(LowEnergyDiscoveryManagerTest, EnablePassiveScanAfterPausing) {
   std::optional<PauseToken> pause = discovery_manager()->PauseDiscovery();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(scan_enabled());
 
   std::unique_ptr<LowEnergyDiscoverySession> session;
   discovery_manager()->StartDiscovery(/*active=*/false,
                                       [&](auto cb_session) { session = std::move(cb_session); });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(scan_enabled());
   EXPECT_FALSE(session);
 
   pause.reset();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(scan_enabled());
 }
 
 TEST_F(LowEnergyDiscoveryManagerTest, StartActiveScanAfterPausing) {
   std::optional<PauseToken> pause = discovery_manager()->PauseDiscovery();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(scan_enabled());
 
   std::unique_ptr<LowEnergyDiscoverySession> session;
   discovery_manager()->StartDiscovery(/*active=*/true,
                                       [&](auto cb_session) { session = std::move(cb_session); });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(scan_enabled());
   EXPECT_FALSE(session);
 
   pause.reset();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(scan_enabled());
   EXPECT_TRUE(session);
 }
@@ -1222,7 +1222,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, PauseDiscoveryJustBeforeScanComplete) {
   std::optional<PauseToken> pause;
   set_scan_state_handler(2, [this, &pause]() { pause = discovery_manager()->PauseDiscovery(); });
 
-  RunLoopFor(kTestScanPeriod);
+  RunFor(kTestScanPeriod);
   EXPECT_TRUE(pause.has_value());
   EXPECT_EQ(scan_states().size(), 2u);
   EXPECT_FALSE(scan_enabled());
@@ -1239,7 +1239,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, PauseDiscoveryJustBeforeScanStopped) {
   set_scan_state_handler(2, [this, &pause]() { pause = discovery_manager()->PauseDiscovery(); });
 
   session.reset();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(pause.has_value());
   EXPECT_EQ(scan_states().size(), 2u);
   EXPECT_FALSE(scan_enabled());
@@ -1256,7 +1256,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, PauseJustBeforeScanActive) {
                                       [&](auto cb_session) { session = std::move(cb_session); });
 
   // The scan should be canceled.
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(session);
   EXPECT_TRUE(pause.has_value());
   EXPECT_EQ(scan_states().size(), 2u);
@@ -1265,7 +1265,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, PauseJustBeforeScanActive) {
 
   // Resume discovery.
   pause.reset();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(session);
   EXPECT_TRUE(scan_enabled());
   EXPECT_TRUE(discovery_manager()->discovering());
@@ -1282,7 +1282,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, PauseJustBeforeScanPassive) {
                                       [&](auto cb_session) { session = std::move(cb_session); });
 
   // The scan should be canceled.
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_FALSE(session);
   EXPECT_TRUE(pause.has_value());
   EXPECT_EQ(scan_states().size(), 2u);
@@ -1290,7 +1290,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, PauseJustBeforeScanPassive) {
 
   // Resume scan.
   pause.reset();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(scan_enabled());
 }
 
@@ -1304,7 +1304,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartActiveScanWhilePassiveScanStoppingBet
     discovery_manager()->StartDiscovery(
         /*active=*/true, [&active_session](auto session) { active_session = std::move(session); });
   });
-  RunLoopFor(kTestScanPeriod);
+  RunFor(kTestScanPeriod);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(pw::bluetooth::emboss::LEScanType::ACTIVE, test_device()->le_scan_state().scan_type);
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));
@@ -1314,21 +1314,21 @@ TEST_F(LowEnergyDiscoveryManagerTest, StopSessionInsideOfResultCallbackDoesNotCr
   auto session = StartDiscoverySession(/*active=*/false);
   auto result_cb = [&session](const auto& peer) { session->Stop(); };
   session->SetResultCallback(std::move(result_cb));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   AddFakePeers();
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(LowEnergyDiscoveryManagerTest, PeerChangesFromNonConnectableToConnectable) {
   test_device()->AddPeer(
-      std::make_unique<FakePeer>(kAddress0, pw_dispatcher(), /*connectable=*/false));
+      std::make_unique<FakePeer>(kAddress0, dispatcher(), /*connectable=*/false));
 
   std::unique_ptr<LowEnergyDiscoverySession> session;
   discovery_manager()->StartDiscovery(
       /*active=*/true, [&session](auto cb_session) { session = std::move(cb_session); });
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(scan_enabled());
   auto peer = peer_cache()->FindByAddress(kAddress0);
   ASSERT_TRUE(peer);
@@ -1336,10 +1336,9 @@ TEST_F(LowEnergyDiscoveryManagerTest, PeerChangesFromNonConnectableToConnectable
 
   // Make peer connectable.
   test_device()->RemovePeer(kAddress0);
-  test_device()->AddPeer(
-      std::make_unique<FakePeer>(kAddress0, pw_dispatcher(), /*connectable=*/true));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, dispatcher(), /*connectable=*/true));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   peer = peer_cache()->FindByAddress(kAddress0);
   ASSERT_TRUE(peer);
   EXPECT_TRUE(peer->connectable());
@@ -1347,9 +1346,9 @@ TEST_F(LowEnergyDiscoveryManagerTest, PeerChangesFromNonConnectableToConnectable
   // Ensure peer stays connectable after non-connectable advertisement.
   test_device()->RemovePeer(kAddress0);
   test_device()->AddPeer(
-      std::make_unique<FakePeer>(kAddress0, pw_dispatcher(), /*connectable=*/false));
+      std::make_unique<FakePeer>(kAddress0, dispatcher(), /*connectable=*/false));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   peer = peer_cache()->FindByAddress(kAddress0);
   ASSERT_TRUE(peer);
   EXPECT_TRUE(peer->connectable());
@@ -1375,7 +1374,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, Inspect) {
                                        DoubleIs("scan_interval_ms", ::testing::Gt(0.0)),
                                        DoubleIs("scan_window_ms", ::testing::Gt(0.0))}));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_THAT(InspectProperties(),
               ::testing::IsSupersetOf({StringIs("state", "Passive"),
                                        DoubleIs("scan_interval_ms", ::testing::Gt(0.0)),
@@ -1396,25 +1395,25 @@ TEST_F(LowEnergyDiscoveryManagerTest, Inspect) {
   passive_session.reset();
   active_session.reset();
   EXPECT_THAT(InspectProperties(), ::testing::IsSupersetOf({StringIs("state", "Stopping")}));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_THAT(InspectProperties(), ::testing::IsSupersetOf({StringIs("state", "Idle")}));
 
   // Cause discovery to fail.
   test_device()->SetDefaultResponseStatus(hci_spec::kLESetScanEnable,
                                           pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED);
   discovery_manager()->StartDiscovery(/*active=*/true, [](auto session) { EXPECT_FALSE(session); });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_THAT(InspectProperties(), ::testing::IsSupersetOf({UintIs("failed_count", 1u)}));
 }
 #endif  // NINSPECT
 
 TEST_F(LowEnergyDiscoveryManagerTest, SetResultCallbackIgnoresRemovedPeers) {
-  auto fake_peer_0 = std::make_unique<FakePeer>(kAddress0, pw_dispatcher());
+  auto fake_peer_0 = std::make_unique<FakePeer>(kAddress0, dispatcher());
   test_device()->AddPeer(std::move(fake_peer_0));
   Peer* peer_0 = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   PeerId peer_id_0 = peer_0->identifier();
 
-  auto fake_peer_1 = std::make_unique<FakePeer>(kAddress1, pw_dispatcher());
+  auto fake_peer_1 = std::make_unique<FakePeer>(kAddress1, dispatcher());
   test_device()->AddPeer(std::move(fake_peer_1));
   Peer* peer_1 = peer_cache()->NewPeer(kAddress1, /*connectable=*/true);
   PeerId peer_id_1 = peer_1->identifier();
@@ -1424,7 +1423,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, SetResultCallbackIgnoresRemovedPeers) {
 
   std::unordered_map<PeerId, int> result_counts;
   session->SetResultCallback([&](const Peer& peer) { result_counts[peer.identifier()]++; });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(result_counts[peer_id_0], 1);
   EXPECT_EQ(result_counts[peer_id_1], 1);
 
@@ -1432,7 +1431,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, SetResultCallbackIgnoresRemovedPeers) {
   // for peer_0.
   ASSERT_TRUE(peer_cache()->RemoveDisconnectedPeer(peer_0->identifier()));
   session->SetResultCallback([&](const Peer& peer) { result_counts[peer.identifier()]++; });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(result_counts[peer_id_0], 1);
   EXPECT_EQ(result_counts[peer_id_1], 2);
 }
