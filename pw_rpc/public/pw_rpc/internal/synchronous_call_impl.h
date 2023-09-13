@@ -80,12 +80,14 @@ inline bool AcquireNotification(sync::TimedThreadNotification& notification,
   return notification.try_acquire_until(timeout);
 }
 
-template <auto kRpcMethod, typename DoCall, typename... TimeoutArg>
-SynchronousCallResult<typename MethodInfo<kRpcMethod>::Response>
-StructSynchronousCall(DoCall&& do_call, TimeoutArg... timeout_arg) {
+template <auto kRpcMethod,
+          typename Response = typename MethodInfo<kRpcMethod>::Response,
+          typename DoCall,
+          typename... TimeoutArg>
+SynchronousCallResult<Response> StructSynchronousCall(
+    DoCall&& do_call, TimeoutArg... timeout_arg) {
   static_assert(MethodInfo<kRpcMethod>::kType == MethodType::kUnary,
                 "Only unary methods can be used with synchronous calls");
-  using Response = typename MethodInfo<kRpcMethod>::Response;
 
   SynchronousCallState<Response> call_state;
 
@@ -126,11 +128,13 @@ Status RawSynchronousCall(Function<void(ConstByteSpan, Status)>&& on_completed,
 }
 
 // Choose which call state object to use (raw or struct).
-template <auto kRpcMethod>
+template <auto kRpcMethod,
+          typename Response =
+              typename internal::MethodInfo<kRpcMethod>::Response>
 using CallState = std::conditional_t<
     std::is_same_v<typename MethodInfo<kRpcMethod>::Request, void>,
     RawSynchronousCallState,
-    SynchronousCallState<typename MethodInfo<kRpcMethod>::Response>>;
+    SynchronousCallState<Response>>;
 
 // Invokes the RPC method free function using a call_state.
 template <auto kRpcMethod, typename Request>
@@ -143,6 +147,29 @@ constexpr auto CallFreeFunction(Client& client,
                       request,
                       call_state.OnCompletedCallback(),
                       call_state.OnRpcErrorCallback());
+  };
+}
+
+// Invokes the RPC method free function using a call_state and a custom
+// response.
+template <
+    auto kRpcMethod,
+    typename Response = typename internal::MethodInfo<kRpcMethod>::Response,
+    typename Request>
+constexpr auto CallFreeFunctionWithCustomResponse(Client& client,
+                                                  uint32_t channel_id,
+                                                  const Request& request) {
+  return [&client, channel_id, &request](
+             CallState<kRpcMethod, Response>& call_state) {
+    constexpr auto kMemberFunction =
+        MethodInfo<kRpcMethod>::template FunctionTemplate<
+            typename MethodInfo<kRpcMethod>::ServiceClass,
+            Response>();
+    return (*kMemberFunction)(client,
+                              channel_id,
+                              request,
+                              call_state.OnCompletedCallback(),
+                              call_state.OnRpcErrorCallback());
   };
 }
 

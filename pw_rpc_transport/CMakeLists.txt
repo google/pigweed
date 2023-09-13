@@ -178,6 +178,7 @@ pw_add_library(pw_rpc_transport.egress_ingress STATIC
     pw_metric
     pw_rpc.client
     pw_status
+    pw_sync.mutex
   PRIVATE_DEPS
     pw_log
 )

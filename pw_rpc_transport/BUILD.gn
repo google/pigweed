@@ -189,6 +189,7 @@ pw_source_set("egress_ingress") {
     "$dir_pw_metric",
     "$dir_pw_rpc:client",
     "$dir_pw_status",
+    "$dir_pw_sync:mutex",
   ]
   deps = [ "$dir_pw_log" ]
 }

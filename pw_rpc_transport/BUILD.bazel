@@ -193,6 +193,7 @@ pw_cc_library(
         "//pw_metric:metric",
         "//pw_rpc:client_server",
         "//pw_status",
+        "//pw_sync:mutex",
     ],
 )
 

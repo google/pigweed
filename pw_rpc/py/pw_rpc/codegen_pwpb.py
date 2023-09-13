@@ -14,7 +14,7 @@
 """This module generates the code for pw_protobuf pw_rpc services."""
 
 import os
-from typing import Iterable
+from typing import Iterable, Optional
 
 from pw_protobuf.output_file import OutputFile
 from pw_protobuf.proto_tree import ProtoServiceMethod
@@ -52,26 +52,41 @@ def _serde(method: ProtoServiceMethod) -> str:
     )
 
 
-def _client_call(method: ProtoServiceMethod) -> str:
+def _client_call(
+    method: ProtoServiceMethod, response: Optional[str] = None
+) -> str:
     template_args = []
 
     if method.client_streaming():
         template_args.append(method.request_type().pwpb_struct())
 
-    template_args.append(method.response_type().pwpb_struct())
+    if response is None:
+        response = method.response_type().pwpb_struct()
+
+    template_args.append(response)
 
     return f'{client_call_type(method, "Pwpb")}<{", ".join(template_args)}>'
 
 
-def _function(method: ProtoServiceMethod) -> str:
-    return f'{_client_call(method)} {method.name()}'
+def _function(
+    method: ProtoServiceMethod,
+    response: Optional[str] = None,
+    name: Optional[str] = None,
+) -> str:
+    if name is None:
+        name = method.name()
+
+    return f'{_client_call(method, response)} {name}'
 
 
-def _user_args(method: ProtoServiceMethod) -> Iterable[str]:
+def _user_args(
+    method: ProtoServiceMethod, response: Optional[str] = None
+) -> Iterable[str]:
     if not method.client_streaming():
         yield f'const {method.request_type().pwpb_struct()}& request'
 
-    response = method.response_type().pwpb_struct()
+    if response is None:
+        response = method.response_type().pwpb_struct()
 
     if method.server_streaming():
         yield f'::pw::Function<void(const {response}&)>&& on_next = nullptr'
@@ -135,20 +150,28 @@ class PwpbCodeGenerator(CodeGenerator):
             self.line(f'{get_id(method)},  // Hash of "{method.name()}"')
             self.line(f'{_serde(method)}),')
 
-    def client_member_function(self, method: ProtoServiceMethod) -> None:
-        """Outputs client code for a single RPC method."""
+    def _client_member_function(
+        self,
+        method: ProtoServiceMethod,
+        response: Optional[str] = None,
+        name: Optional[str] = None,
+    ) -> None:
+        if response is None:
+            response = method.response_type().pwpb_struct()
 
-        self.line(f'{_function(method)}(')
-        self.indented_list(*_user_args(method), end=') const {')
+        if name is None:
+            name = method.name()
+
+        self.line(f'{_function(method, response, name)}(')
+        self.indented_list(*_user_args(method, response), end=') const {')
 
         with self.indent():
-            client_call = _client_call(method)
+            client_call = _client_call(method, response)
             base = 'Stream' if method.server_streaming() else 'Unary'
             self.line(
                 f'return {RPC_NAMESPACE}::internal::'
-                f'Pwpb{base}ResponseClientCall<'
-                f'{method.response_type().pwpb_struct()}>::'
-                f'Start<{client_call}>('
+                f'Pwpb{base}ResponseClientCall<{response}>::'
+                f'template Start<{client_call}>('
             )
 
             service_client = RPC_NAMESPACE + '::internal::ServiceClient'
@@ -173,17 +196,40 @@ class PwpbCodeGenerator(CodeGenerator):
 
         self.line('}')
 
-    def client_static_function(self, method: ProtoServiceMethod) -> None:
-        self.line(f'static {_function(method)}(')
+    def client_member_function(self, method: ProtoServiceMethod) -> None:
+        """Outputs client code for a single RPC method."""
+        self._client_member_function(method)
+
+        self.line(
+            'template <typename Response ='
+            + f'{method.response_type().pwpb_struct()}>'
+        )
+        self._client_member_function(
+            method, 'Response', method.name() + 'Template'
+        )
+
+    def _client_static_function(
+        self,
+        method: ProtoServiceMethod,
+        response: Optional[str] = None,
+        name: Optional[str] = None,
+    ) -> None:
+        if response is None:
+            response = method.response_type().pwpb_struct()
+
+        if name is None:
+            name = method.name()
+
+        self.line(f'static {_function(method, response, name)}(')
         self.indented_list(
             f'{RPC_NAMESPACE}::Client& client',
             'uint32_t channel_id',
-            *_user_args(method),
+            *_user_args(method, response),
             end=') {',
         )
 
         with self.indent():
-            self.line(f'return Client(client, channel_id).{method.name()}(')
+            self.line(f'return Client(client, channel_id).{name}(')
 
             args = []
 
@@ -201,6 +247,17 @@ class PwpbCodeGenerator(CodeGenerator):
             )
 
         self.line('}')
+
+    def client_static_function(self, method: ProtoServiceMethod) -> None:
+        self._client_static_function(method)
+
+        self.line(
+            'template <typename Response ='
+            + f'{method.response_type().pwpb_struct()}>'
+        )
+        self._client_static_function(
+            method, 'Response', method.name() + 'Template'
+        )
 
     def method_info_specialization(self, method: ProtoServiceMethod) -> None:
         self.line()

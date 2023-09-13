@@ -72,6 +72,32 @@
 ///   }
 /// @endcode
 ///
+/// `SynchronousCall<RpcMethod>` also supports using an optional custom response
+/// message class, `SynchronousCall<RpcMethod, Response>`. This enables the use
+/// of response messages with variable-length fields.
+///
+/// @code{.cpp}
+///  pw_rpc_MyMethodRequestMessage request{};
+///  class CustomResponse : public pw_rpc_MyMethodResponseMessage {
+///   public:
+///    CustomResponse() {
+///      repeated_field.SetDecoder([this](
+///        MyMethodResponse::StreamDecoder& decoder) {
+///          return decoder.ReadRepeatedField(values);
+///        }
+///    }
+///    pw::Vector<uint32_t, 4> values();
+///   };
+///   pw::rpc::SynchronousCallResult<CustomResponse> result =
+///     pw::rpc::SynchronousCall<EchoService::Echo, CustomResponse>(rpc_client,
+///                                                                 channel_id,
+///                                                                 request);
+///   if (result.ok()) {
+///     PW_LOG_INFO("%d", result.response().values[0]);
+///   }
+///  };
+/// @endcode
+///
 /// The raw API works similarly to the Nanopb API, but takes a
 /// @cpp_type{pw::Function} and returns a @cpp_class{pw::Status}. If the RPC
 /// completes, the @cpp_type{pw::Function} is called with the response and
@@ -100,14 +126,16 @@ namespace pw::rpc {
 /// @param client The `pw::rpc::Client` to use for the call
 /// @param channel_id The ID of the RPC channel to make the call on
 /// @param request The proto struct to send as the request
-template <auto kRpcMethod>
-SynchronousCallResult<typename internal::MethodInfo<kRpcMethod>::Response>
-SynchronousCall(
+template <
+    auto kRpcMethod,
+    typename Response = typename internal::MethodInfo<kRpcMethod>::Response>
+SynchronousCallResult<Response> SynchronousCall(
     Client& client,
     uint32_t channel_id,
     const typename internal::MethodInfo<kRpcMethod>::Request& request) {
-  return internal::StructSynchronousCall<kRpcMethod>(
-      internal::CallFreeFunction<kRpcMethod>(client, channel_id, request));
+  return internal::StructSynchronousCall<kRpcMethod, Response>(
+      internal::CallFreeFunctionWithCustomResponse<kRpcMethod, Response>(
+          client, channel_id, request));
 }
 
 /// Invokes a unary RPC synchronously using Nanopb or pwpb. Blocks indefinitely

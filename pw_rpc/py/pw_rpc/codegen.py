@@ -324,10 +324,26 @@ def _generate_info(
 
             gen.line('}')
 
+            if gen.name() in ['pwpb', 'nanopb']:
+                gen.line('template <typename ServiceImpl, typename Response>')
+                gen.line('static constexpr auto FunctionTemplate() {')
+
+                with gen.indent():
+                    template_name = method.name() + 'Template<Response>'
+                    gen.line(f'return &ServiceImpl::template {template_name};')
+
+                gen.line('}')
+
             gen.line(
                 'using GeneratedClient = '
                 f'{"::" + namespace if namespace else ""}'
                 f'::pw_rpc::{gen.name()}::{service.name()}::Client;'
+            )
+
+            gen.line(
+                'using ServiceClass = '
+                f'{"::" + namespace if namespace else ""}'
+                f'::pw_rpc::{gen.name()}::{service.name()};'
             )
 
             gen.method_info_specialization(method)
