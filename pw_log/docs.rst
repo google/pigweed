@@ -1,6 +1,6 @@
-.. _module-pw_log:
-
 :tocdepth: 4
+
+.. _module-pw_log:
 
 ======
 pw_log
