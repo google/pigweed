@@ -33,7 +33,7 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/internal/funct
 
  namespace fit {
  namespace internal {
-@@ -87,7 +89,7 @@ inline const void* unshared_target_type_id(void* /*bits*/, const void* impl_ops)
+@@ -88,7 +90,7 @@ inline const void* unshared_target_type_id(void* /*bits*/, const void* impl_ops)
  // elsewhere in the header as an inline variable.
  template <typename Unused = void>
  struct null_target {
@@ -42,7 +42,7 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/internal/funct
 
    static const target_ops<void> ops;
 
-@@ -493,7 +495,8 @@ class function_base<inline_target_size, require_inline, Result(Args...)>
+@@ -507,7 +509,8 @@ class function_base<inline_target_size, require_inline, Result(Args...), Allocat
    // Note that fit::callback will release the target immediately after
    // invoke() (also affecting any share()d copies).
    // Aborts if the function's target is empty.
@@ -52,7 +52,7 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/internal/funct
      // Down cast the ops to the derived type that this function was instantiated
      // with, which includes the invoke function.
      //
-@@ -523,7 +526,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)>
+@@ -537,7 +540,7 @@ class function_base<inline_target_size, require_inline, Result(Args...), Allocat
    template <typename SharedFunction>
    void copy_shared_target_to(SharedFunction& copy) {
      copy.destroy_target();
@@ -61,7 +61,7 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/internal/funct
      shared_target_type<SharedFunction>::copy_shared_ptr(base::bits(), copy.bits());
      copy.set_ops(base::ops());
    }
-@@ -553,7 +556,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)>
+@@ -567,7 +570,7 @@ class function_base<inline_target_size, require_inline, Result(Args...), Allocat
    void check_target_type() const {
      if (target_type<Callable>::ops.target_type_id(nullptr, &target_type<Callable>::ops) !=
          base::target_type_id()) {
