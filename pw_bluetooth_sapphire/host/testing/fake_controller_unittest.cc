@@ -4,12 +4,14 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 
 #include <gtest/gtest.h>
 #include <pw_async_fuchsia/dispatcher.h>
 
+#include "pw_async/fake_dispatcher_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
@@ -17,16 +19,10 @@
 
 namespace bt::testing {
 
-class FakeControllerTest : public ::gtest::TestLoopFixture {
- public:
-  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
-
- private:
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
-};
+using FakeControllerTest = pw::async::test::FakeDispatcherFixture;
 
 TEST_F(FakeControllerTest, TestInquiryCommand) {
-  FakeController controller(pw_dispatcher());
+  FakeController controller(dispatcher());
 
   int event_cb_count = 0;
   controller.SetEventFunction([&event_cb_count](pw::span<const std::byte> packet_bytes) {
@@ -68,7 +64,7 @@ TEST_F(FakeControllerTest, TestInquiryCommand) {
   // The maximum amount of time before Inquiry is halted is calculated as inquiry_length * 1.28 s.
   // FakeController:OnInquiry simulates this by posting the InquiryCompleteEvent to be returned
   // after this duration.
-  RunLoopFor(zx::msec(static_cast<int64_t>(view.inquiry_length().Read()) * 1280));
+  RunFor(std::chrono::milliseconds(static_cast<int64_t>(view.inquiry_length().Read()) * 1280));
 
   EXPECT_EQ(event_cb_count, 2);
 }
