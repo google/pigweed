@@ -27,11 +27,9 @@ class Emboss(pw_package.git_repo.GitRepo):
         super().__init__(
             *args,
             name="emboss",
-            url="".join(
-                [
-                    "https://fuchsia.googlesource.com",
-                    "/third_party/github.com/google/emboss",
-                ]
+            url=(
+                "https://pigweed.googlesource.com"
+                "/third_party/github/google/emboss"
             ),
             commit="b02439aeecb9cc8621c7aea9fc206f65da45c9be",
             **kwargs,
