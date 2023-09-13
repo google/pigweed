@@ -7,6 +7,7 @@
 
 #include <pw_async_fuchsia/dispatcher.h>
 
+#include "pw_async/fake_dispatcher_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
@@ -24,7 +25,7 @@ namespace bt::l2cap::testing {
 // foo.Start();
 // EXPECT_TRUE(AllExpectedPacketsSent());
 // fake_chan()->Receive(kRequest_2); // Simulate inbound packet
-class MockChannelTest : public ::gtest::TestLoopFixture {
+class MockChannelTest : public pw::async::test::FakeDispatcherFixture {
  public:
   struct ExpectationMetadata {
     const char* file;
@@ -81,7 +82,6 @@ class MockChannelTest : public ::gtest::TestLoopFixture {
 
   void TearDown() override;
 
-  pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
   pw::async::HeapDispatcher& heap_dispatcher() { return heap_dispatcher_; }
 
   // Queues a transaction into the MockChannelTest's expected packet queue. Each packet received
@@ -109,8 +109,7 @@ class MockChannelTest : public ::gtest::TestLoopFixture {
   std::queue<Transaction> transactions_;
   std::unique_ptr<FakeChannel> fake_chan_;
   PacketCallback packet_callback_;
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
-  pw::async::HeapDispatcher heap_dispatcher_{pw_dispatcher_};
+  pw::async::HeapDispatcher heap_dispatcher_{dispatcher()};
 };
 
 // Helper macro for expecting a packet and receiving a variable number of responses.

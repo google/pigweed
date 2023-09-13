@@ -148,7 +148,7 @@ TEST_F(Phase1Test, FeatureExchangePairingFailed) {
   fake_chan()->Receive(StaticByteBuffer(0x05,  // code: Pairing Failed
                                         0x05   // reason: Pairing Not Supported
                                         ));
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(Error(ErrorCode::kPairingNotSupported), listener()->last_error());
   EXPECT_EQ(1, listener()->pairing_error_count());
@@ -181,7 +181,7 @@ TEST_F(Phase1Test, FeatureExchangeLocalRejectsUnsupportedInitiatorKeys) {
   // We should receive a pairing response and reply back with Pairing Failed.
   EXPECT_PACKET_OUT(kFailure);
   fake_chan()->Receive(kResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(1, listener()->pairing_error_count());
@@ -213,13 +213,13 @@ TEST_F(Phase1Test, FeatureExchangeLocalRejectsUnsupportedResponderKeys) {
 
   EXPECT_PACKET_OUT(kRequest);
   phase_1()->Start();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(AllExpectedPacketsSent());
 
   // We should receive a pairing response and reply back with Pairing Failed.
   EXPECT_PACKET_OUT(kFailure);
   fake_chan()->Receive(kResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(1, listener()->pairing_error_count());
@@ -258,7 +258,7 @@ TEST_F(Phase1Test, FeatureExchangeFailureAuthenticationRequirements) {
   // We should receive a pairing response and reply back with Pairing Failed.
   EXPECT_PACKET_OUT(kFailure);
   fake_chan()->Receive(kResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(1, listener()->pairing_error_count());
@@ -282,7 +282,7 @@ TEST_F(Phase1Test, FeatureExchangeFailureMalformedRequest) {
 
   EXPECT_PACKET_OUT(kFailure);
   fake_chan()->Receive(kMalformedResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(1, listener()->pairing_error_count());
@@ -316,7 +316,7 @@ TEST_F(Phase1Test, FeatureExchangeBothSupportSCFeaturesHaveSC) {
   ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(0, listener()->pairing_error_count());
   EXPECT_EQ(1, feature_exchange_count());
@@ -356,7 +356,7 @@ TEST_F(Phase1Test, FeatureExchangeScIgnoresEncKeyBit) {
   ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(0, listener()->pairing_error_count());
   EXPECT_EQ(1, feature_exchange_count());
@@ -400,7 +400,7 @@ TEST_F(Phase1Test, FeatureExchangeLocalSCRemoteNoSCFeaturesNoSc) {
   ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(0, listener()->pairing_error_count());
   EXPECT_EQ(1, feature_exchange_count());
@@ -436,7 +436,7 @@ TEST_F(Phase1Test, FeatureExchangePairingResponseLegacyJustWorks) {
   ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(0, listener()->pairing_error_count());
   EXPECT_EQ(1, feature_exchange_count());
@@ -478,7 +478,7 @@ TEST_F(Phase1Test, FeatureExchangePairingResponseLegacyMITM) {
   ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(0, listener()->pairing_error_count());
   EXPECT_EQ(1, feature_exchange_count());
@@ -521,7 +521,7 @@ TEST_F(Phase1Test, FeatureExchangeEncryptionKeySize) {
 
   EXPECT_PACKET_OUT(kFailure);
   fake_chan()->Receive(kResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(0, feature_exchange_count());
@@ -562,7 +562,7 @@ TEST_F(Phase1Test, FeatureExchangeSecureAuthenticatedEncryptionKeySize) {
   // encryption keys are 16 bytes when `level` is set to SecureAuthenticated.
   EXPECT_PACKET_OUT(kFailure);
   fake_chan()->Receive(kResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(0, feature_exchange_count());
@@ -602,7 +602,7 @@ TEST_F(Phase1Test, FeatureExchangeSecureConnectionsRequiredNotPresent) {
   // Secure Connections is used when `level` is set to SecureAuthenticated.
   EXPECT_PACKET_OUT(kFailure);
   fake_chan()->Receive(kResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(0, feature_exchange_count());
@@ -636,7 +636,7 @@ TEST_F(Phase1Test, FeatureExchangeBothSupportScLinkKeyAndCt2GenerateH7CtKey) {
   ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1, feature_exchange_count());
   ASSERT_TRUE(features().generate_ct_key.has_value());
   EXPECT_EQ(CrossTransportKeyAlgo::kUseH7, features().generate_ct_key);
@@ -668,7 +668,7 @@ TEST_F(Phase1Test, FeatureExchangePeerDoesntSupportCt2GenerateH6CtKey) {
   ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1, feature_exchange_count());
   ASSERT_TRUE(features().generate_ct_key.has_value());
   EXPECT_EQ(CrossTransportKeyAlgo::kUseH6, features().generate_ct_key);
@@ -699,7 +699,7 @@ TEST_F(Phase1Test, FeatureExchangePeerDoesntSupportScDoNotGenerateCtKey) {
   ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1, feature_exchange_count());
   EXPECT_FALSE(features().generate_ct_key.has_value());
 }
@@ -732,7 +732,7 @@ TEST_F(Phase1Test, FeatureExchangePeerSupportsCt2ButNotLinkKeyDoNotGenerateCtKey
   ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1, feature_exchange_count());
   EXPECT_FALSE(features().generate_ct_key.has_value());
 }
@@ -765,7 +765,7 @@ TEST_F(Phase1Test, FeatureExchangePeerOnlyIndicatesOneLinkKeyDoNotGenerateCtKey)
   ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(1, feature_exchange_count());
   EXPECT_FALSE(features().generate_ct_key.has_value());
 }
@@ -786,7 +786,7 @@ TEST_F(Phase1Test, FeatureExchangeResponderErrorCentral) {
   NewPhase1(Role::kInitiator);
   EXPECT_PACKET_OUT(kFailure);
   fake_chan()->Receive(kRequest);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(AllExpectedPacketsSent());
   EXPECT_EQ(1, listener()->pairing_error_count());
 }
@@ -808,7 +808,7 @@ TEST_F(Phase1Test, Phase1ResponderRejectsPairingRequest) {
   NewPhase1(Role::kResponder);
   EXPECT_PACKET_OUT(kFailure);
   fake_chan()->Receive(kRequest);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(AllExpectedPacketsSent());
   EXPECT_EQ(1, listener()->pairing_error_count());
 }
@@ -837,7 +837,7 @@ TEST_F(Phase1Test, FeatureExchangeResponderBothSupportSCFeaturesHaveSC) {
   phase_1()->Start();
   ASSERT_TRUE(AllExpectedPacketsSent());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(0, listener()->pairing_error_count());
   EXPECT_EQ(1, feature_exchange_count());
@@ -870,7 +870,7 @@ TEST_F(Phase1Test, FeatureExchangeResponderLocalSCRemoteNoSCFeaturesNoSC) {
   phase_1()->Start();
   ASSERT_TRUE(AllExpectedPacketsSent());
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(0, listener()->pairing_error_count());
   EXPECT_EQ(1, feature_exchange_count());
@@ -1309,7 +1309,7 @@ TEST_F(Phase1Test, UnsupportedCommandDuringPairing) {
   );
   EXPECT_PACKET_OUT(kFailed);
   fake_chan()->Receive(StaticByteBuffer(0xFF));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(1, listener()->pairing_error_count());
@@ -1337,7 +1337,7 @@ TEST_F(Phase1Test, OnSecurityRequestWhilePairing) {
   );
   EXPECT_PACKET_OUT(kFailed);
   fake_chan()->Receive(kSecurityRequest);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // The security request while pairing should cause pairing to fail.
   EXPECT_EQ(1, listener()->pairing_error_count());
@@ -1368,7 +1368,7 @@ TEST_F(Phase1Test, FeatureExchangeInitiatorReqBondResNoBond) {
   ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Should be in non-bondable mode even though the Initiator specifies bonding, as kResponse
   // indicated that the peer follower does not support bonding.
@@ -1403,7 +1403,7 @@ TEST_F(Phase1Test, FeatureExchangeInitiatorReqNoBondResBond) {
   ASSERT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Although kResponse is bondable, features should not bond as local device is non-bondable.
   ASSERT_EQ(1, feature_exchange_count());
@@ -1504,7 +1504,7 @@ TEST_F(Phase1Test, FeatureExchangeResponderReqNoBondWithKeys) {
   );
   EXPECT_PACKET_OUT(kFailed);
   phase_1()->Start();
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // Check that we fail with invalid parameters when a peer requests nonbondable mode
   // with a non-zero KeyDistGen field

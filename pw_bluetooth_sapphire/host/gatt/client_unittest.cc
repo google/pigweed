@@ -69,7 +69,7 @@ class ClientTest : public l2cap::testing::MockChannelTest {
   void SetUp() override {
     ChannelOptions options(l2cap::kATTChannelId);
     auto fake_chan = CreateFakeChannel(options);
-    att_ = att::Bearer::Create(fake_chan->GetWeakPtr(), pw_dispatcher_);
+    att_ = att::Bearer::Create(fake_chan->GetWeakPtr(), dispatcher());
     client_ = Client::Create(att_->GetWeakPtr());
   }
 
@@ -89,7 +89,6 @@ class ClientTest : public l2cap::testing::MockChannelTest {
   Client* client() const { return client_.get(); }
 
  private:
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
   std::unique_ptr<att::Bearer> att_;
   std::unique_ptr<Client> client_;
 
@@ -118,7 +117,7 @@ TEST_F(ClientTest, ExchangeMTUMalformedResponse) {
                                         30     // server rx mtu is one octet too short
                                         ));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(MtuResultFromHostErrCode(HostError::kPacketMalformed), *result);
@@ -152,7 +151,7 @@ TEST_F(ClientTest, ExchangeMTUErrorNotSupported) {
                                         0x00, 0x00,                // handle: 0
                                         att::ErrorCode::kRequestNotSupported));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(MtuResultFromErrCode(att::ErrorCode::kRequestNotSupported), *result);
@@ -182,7 +181,7 @@ TEST_F(ClientTest, ExchangeMTUErrorOther) {
                                         0x00, 0x00,                // handle: 0
                                         att::ErrorCode::kUnlikelyError));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(MtuResultFromErrCode(att::ErrorCode::kUnlikelyError), *result);
@@ -214,7 +213,7 @@ TEST_F(ClientTest, ExchangeMTUSelectLocal) {
                                         kServerRxMTU, 0x00  // server rx mtu
                                         ));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(att::Result<uint16_t>(fit::ok(kPreferredMTU)), *result);
   EXPECT_EQ(kPreferredMTU, att()->mtu());
@@ -245,7 +244,7 @@ TEST_F(ClientTest, ExchangeMTUSelectRemote) {
                                         kServerRxMTU, 0x00  // server rx mtu
                                         ));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(att::Result<uint16_t>(fit::ok(kServerRxMTU)), *result);
@@ -277,7 +276,7 @@ TEST_F(ClientTest, ExchangeMTUSelectDefault) {
                                         kServerRxMTU, 0x00  // server rx mtu
                                         ));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(att::Result<uint16_t>(fit::ok(att::kLEMinMTU)), *result);
@@ -295,7 +294,7 @@ TEST_F(ClientTest, DiscoverPrimaryResponseTooShort) {
   // Respond back with a malformed payload.
   fake_chan()->Receive(StaticByteBuffer(0x11));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
@@ -317,7 +316,7 @@ TEST_F(ClientTest, DiscoverPrimaryMalformedDataLength) {
                                         6  // one entry of length 7, which will be ignored
                                         ));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
@@ -336,7 +335,7 @@ TEST_F(ClientTest, DiscoverPrimaryMalformedAttrDataList) {
                                         0, 1, 2, 3, 4      // entry 2: incorrect size
                                         ));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
@@ -359,7 +358,7 @@ TEST_F(ClientTest, DiscoverPrimaryResultsOutOfOrder) {
                                         0xAD, 0xDE   // svc 1 uuid: 0xDEAD
                                         ));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
@@ -380,7 +379,7 @@ TEST_F(ClientTest, DiscoverPrimaryEmptyDataList) {
                                                // data list is empty
                                         ));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
 }
 
@@ -399,7 +398,7 @@ TEST_F(ClientTest, DiscoverPrimaryAttributeNotFound) {
                                         0x0A         // error: Attribute Not Found
                                         ));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // The procedure succeeds with no services.
   EXPECT_EQ(fit::ok(), status);
@@ -420,7 +419,7 @@ TEST_F(ClientTest, DiscoverPrimaryError) {
                                         0x06         // error: Request Not Supported
                                         ));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status);
 }
@@ -440,7 +439,7 @@ TEST_F(ClientTest, DiscoverPrimaryMalformedServiceRange) {
                                         0x01, 0x00   // svc 1 end: 0x0001
                                         ));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // The procedure should be over since the last service in the payload has
   // end handle 0xFFFF.
@@ -468,7 +467,7 @@ TEST_F(ClientTest, DiscoverPrimary16BitResultsSingleRequest) {
                                         0xEF, 0xBE   // svc 2 uuid: 0xBEEF
                                         ));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // The procedure should be over since the last service in the payload has
   // end handle 0xFFFF.
@@ -501,7 +500,7 @@ TEST_F(ClientTest, DiscoverPrimary128BitResultSingleRequest) {
                                         // UUID matches |kTestUuid3| declared above.
                                         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // The procedure should be over since the last service in the payload has
   // end handle 0xFFFF.
@@ -562,7 +561,7 @@ TEST_F(ClientTest, DiscoverAllPrimaryMultipleRequests) {
   EXPECT_PACKET_OUT(kExpectedRequest1, &kResponse1);
   EXPECT_PACKET_OUT(kExpectedRequest2, &kResponse2);
   client()->DiscoverServices(ServiceKind::PRIMARY, svc_cb, res_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   // The procedure should be over since the last service in the payload has
@@ -640,7 +639,7 @@ TEST_F(ClientTest, DiscoverServicesInRangeMultipleRequests) {
   EXPECT_PACKET_OUT(kExpectedRequest1, &kResponse1);
   EXPECT_PACKET_OUT(kExpectedRequest2, &kNotFoundResponse2);
   client()->DiscoverServicesInRange(ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb, res_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_EQ(fit::ok(), status);
   EXPECT_EQ(3u, services.size());
@@ -690,7 +689,7 @@ TEST_F(ClientTest, DiscoverServicesInRangeFailsIfServiceResultIsOutOfRange) {
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), *status);
   EXPECT_EQ(0u, services.size());
@@ -705,7 +704,7 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsByResponseTooShort) {
   EXPECT_PACKET_OUT(kDiscoverPrimary16ByUUID, &kResponse);
   client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
   EXPECT_TRUE(AllExpectedPacketsSent());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
@@ -722,7 +721,7 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsEmptyDataList) {
   EXPECT_PACKET_OUT(kDiscoverPrimary16ByUUID, &kResponse);
   client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
   EXPECT_TRUE(AllExpectedPacketsSent());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(status.is_error());
 }
 
@@ -740,7 +739,7 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsAttributeNotFound) {
   EXPECT_PACKET_OUT(kDiscoverPrimary16ByUUID, &kResponse);
   client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
   EXPECT_TRUE(AllExpectedPacketsSent());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   // The procedure succeeds with no services.
   EXPECT_EQ(fit::ok(), status);
 }
@@ -759,7 +758,7 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsError) {
   EXPECT_PACKET_OUT(kDiscoverPrimary16ByUUID, &kResponse);
   client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
   EXPECT_TRUE(AllExpectedPacketsSent());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status);
 }
 
@@ -774,7 +773,7 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsMalformedServiceRange) {
   );
   EXPECT_PACKET_OUT(kDiscoverPrimary16ByUUID, &kResponse);
   client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
   // The procedure should be over since the last service in the payload has
   // end handle 0xFFFF.
@@ -794,7 +793,7 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsServicesOutOfOrder) {
   );
   EXPECT_PACKET_OUT(kDiscoverPrimary16ByUUID, &kResponse);
   client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), *status);
@@ -816,7 +815,7 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuids16BitResultsSingleRequest) {
 
   EXPECT_PACKET_OUT(kDiscoverPrimary16ByUUID, &kResponse);
   client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, svc_cb, res_cb, {kTestUuid1});
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   // The procedure should be over since the last service in the payload has
@@ -845,7 +844,7 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuids128BitResultSingleRequest) {
   EXPECT_PACKET_OUT(kDiscoverPrimary128ByUUID, &kResponse);
   client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, svc_cb, res_cb, {kTestUuid3});
   EXPECT_TRUE(AllExpectedPacketsSent());
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   // The procedure should be over since the last service in the payload has
   // end handle 0xFFFF.
@@ -903,7 +902,7 @@ TEST_F(ClientTest, DiscoverAllPrimaryWithUuidsMultipleRequests) {
   EXPECT_PACKET_OUT(kExpectedRequest1, &kResponse1);
   EXPECT_PACKET_OUT(kExpectedRequest2, &kResponse2);
   client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, svc_cb, res_cb, {kTestUuid1});
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   // The procedure should be over since the last service in the payload has end handle 0xFFFF.
@@ -979,7 +978,7 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsMultipleUuids) {
   EXPECT_PACKET_OUT(kExpectedRequest3, &kNotFoundResponse3);
   client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, svc_cb, res_cb,
                                       {kTestUuid2, kTestUuid1});
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(fit::ok(), status);
@@ -1056,7 +1055,7 @@ TEST_F(ClientTest, DiscoverServicesWithUuidsInRangeMultipleUuids) {
   EXPECT_PACKET_OUT(kExpectedRequest3, &kNotFoundResponse3);
   client()->DiscoverServicesWithUuidsInRange(ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb,
                                              res_cb, {kTestUuid2, kTestUuid1});
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(fit::ok(), status);
@@ -1099,7 +1098,7 @@ TEST_F(ClientTest, DiscoverServicesWithUuidsInRangeFailsOnResultNotInRequestedRa
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->DiscoverServicesWithUuidsInRange(ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb,
                                              res_cb, {kTestUuid1});
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), *status);
   EXPECT_EQ(0u, services.size());
@@ -1133,7 +1132,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryResponseTooShort) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kMalformedResponse);
   client()->DiscoverCharacteristics(kStart, kEnd, NopChrcCallback, res_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
@@ -1160,7 +1159,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryMalformedDataLength) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->DiscoverCharacteristics(kStart, kEnd, NopChrcCallback, res_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
@@ -1189,7 +1188,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryMalformedAttrDataList) {
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->DiscoverCharacteristics(kStart, kEnd, NopChrcCallback, res_cb);
   EXPECT_TRUE(AllExpectedPacketsSent());
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
@@ -1212,7 +1211,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryEmptyDataList) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->DiscoverCharacteristics(kStart, kEnd, NopChrcCallback, res_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(status, ToResult(HostError::kPacketMalformed));
 }
 
@@ -1236,7 +1235,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryAttributeNotFound) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->DiscoverCharacteristics(kStart, kEnd, NopChrcCallback, res_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   // Attribute Not Found error means the procedure is over.
   EXPECT_EQ(fit::ok(), status);
 }
@@ -1261,7 +1260,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryError) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->DiscoverCharacteristics(kStart, kEnd, NopChrcCallback, res_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status);
 }
 
@@ -1295,7 +1294,7 @@ TEST_F(ClientTest, CharacteristicDiscovery16BitResultsSingleRequest) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
   ASSERT_EQ(2u, chrcs.size());
   EXPECT_EQ(0x0003, chrcs[0].handle);
@@ -1334,7 +1333,7 @@ TEST_F(ClientTest, CharacteristicDiscovery128BitResultsSingleRequest) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
   EXPECT_EQ(1u, chrcs.size());
   EXPECT_EQ(0x0005, chrcs[0].handle);
@@ -1398,7 +1397,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryMultipleRequests) {
   EXPECT_PACKET_OUT(kExpectedRequest1, &kResponse1);
   EXPECT_PACKET_OUT(kExpectedRequest2, &kResponse2);
   client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_EQ(fit::ok(), status);
@@ -1448,7 +1447,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryResultsBeforeRange) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
   EXPECT_TRUE(chrcs.empty());
 }
@@ -1481,7 +1480,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryResultsBeyondRange) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
   EXPECT_TRUE(chrcs.empty());
 }
@@ -1513,7 +1512,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryValueNotContiguous) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
   EXPECT_TRUE(chrcs.empty());
 }
@@ -1547,7 +1546,7 @@ TEST_F(ClientTest, CharacteristicDiscoveryHandlesNotIncreasing) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
   // No Characteristics should be reported.
   EXPECT_EQ(0u, chrcs.size());
@@ -1570,7 +1569,7 @@ TEST_F(ClientTest, DescriptorDiscoveryResponseTooShort) {
   const StaticByteBuffer kResponse(0x05);
   EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
@@ -1581,7 +1580,7 @@ TEST_F(ClientTest, DescriptorDiscoveryMalformedDataLength) {
   );
   EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
@@ -1592,7 +1591,7 @@ TEST_F(ClientTest, DescriptorDiscoveryMalformedAttrDataList16) {
                                    1, 2, 3, 4, 5);
   EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
@@ -1603,7 +1602,7 @@ TEST_F(ClientTest, DescriptorDiscoveryMalformedAttrDataList128) {
                                    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17);
   EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
@@ -1615,7 +1614,7 @@ TEST_F(ClientTest, DescriptorDiscoveryEmptyDataList) {
   );
   EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
 }
 
@@ -1628,7 +1627,7 @@ TEST_F(ClientTest, DescriptorDiscoveryAttributeNotFound) {
   );
   EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
 }
 
@@ -1641,7 +1640,7 @@ TEST_F(ClientTest, DescriptorDiscoveryError) {
   );
   EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status);
 }
 
@@ -1665,7 +1664,7 @@ TEST_F(ClientTest, DescriptorDiscovery16BitResultsSingleRequest) {
   att::Result<> status = ToResult(HostError::kFailed);
   EXPECT_PACKET_OUT(MakeFindInformation(kStart, kEnd), &kResponse);
   SendDiscoverDescriptors(&status, std::move(desc_cb), kStart, kEnd);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
   ASSERT_EQ(3u, descrs.size());
   EXPECT_EQ(0x0001, descrs[0].handle);
@@ -1698,7 +1697,7 @@ TEST_F(ClientTest, DescriptorDiscovery128BitResultsSingleRequest) {
 
   EXPECT_PACKET_OUT(MakeFindInformation(kStart, kEnd), &kResponse);
   SendDiscoverDescriptors(&status, std::move(desc_cb), kStart, kEnd);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
   ASSERT_EQ(2u, descrs.size());
   EXPECT_EQ(0x0001, descrs[0].handle);
@@ -1745,7 +1744,7 @@ TEST_F(ClientTest, DescriptorDiscoveryMultipleRequests) {
   EXPECT_PACKET_OUT(kRequest1, &kResponse1);
   EXPECT_PACKET_OUT(kRequest2, &kResponse2);
   SendDiscoverDescriptors(&status, std::move(desc_cb), kStart0, kEnd);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_EQ(fit::ok(), status);
   ASSERT_EQ(3u, descrs.size());
@@ -1767,7 +1766,7 @@ TEST_F(ClientTest, DescriptorDiscoveryResultsBeforeRange) {
   att::Result<> status = fit::ok();
   EXPECT_PACKET_OUT(MakeFindInformation(kStart), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback, kStart);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
@@ -1782,7 +1781,7 @@ TEST_F(ClientTest, DescriptorDiscoveryResultsBeyondRange) {
   att::Result<> status = fit::ok();
   EXPECT_PACKET_OUT(MakeFindInformation(kStart, kEnd), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback, kStart, kEnd);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
@@ -1797,7 +1796,7 @@ TEST_F(ClientTest, DescriptorDiscoveryHandlesNotIncreasing) {
   );
   EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
@@ -1819,7 +1818,7 @@ TEST_F(ClientTest, WriteRequestMalformedResponse) {
   ASSERT_FALSE(fake_chan()->link_error());
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->WriteRequest(kHandle, kValue, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
   EXPECT_TRUE(fake_chan()->link_error());
 }
@@ -1841,7 +1840,7 @@ TEST_F(ClientTest, WriteRequestExceedsMtu) {
 
   client()->WriteRequest(kHandle, kValue, cb);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
@@ -1864,7 +1863,7 @@ TEST_F(ClientTest, WriteRequestError) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->WriteRequest(kHandle, kValue, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -1882,7 +1881,7 @@ TEST_F(ClientTest, WriteRequestSuccess) {
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->WriteRequest(kHandle, kValue, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -1906,7 +1905,7 @@ TEST_F(ClientTest, PrepareWriteRequestExceedsMtu) {
 
   client()->PrepareWriteRequest(kHandle, kOffset, kValue, cb);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
@@ -1929,7 +1928,7 @@ TEST_F(ClientTest, PrepareWriteRequestError) {
   auto cb = [&status](att::Result<> cb_status, const ByteBuffer& value) { status = cb_status; };
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->PrepareWriteRequest(kHandle, kOffset, kValue, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status.value());
   EXPECT_FALSE(fake_chan()->link_error());
@@ -1953,7 +1952,7 @@ TEST_F(ClientTest, PrepareWriteRequestSuccess) {
   auto cb = [&status](att::Result<> cb_status, const ByteBuffer& value) { status = cb_status; };
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->PrepareWriteRequest(kHandle, kOffset, kValue, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -1968,7 +1967,7 @@ TEST_F(ClientTest, ExecuteWriteRequestPendingSuccess) {
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->ExecuteWriteRequest(kFlag, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -1983,7 +1982,7 @@ TEST_F(ClientTest, ExecuteWriteRequestCancelSuccess) {
   auto cb = [&status](att::Result<> cb_status) { status = cb_status; };
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->ExecuteWriteRequest(kFlag, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -2032,7 +2031,7 @@ TEST_F(ClientTest, ExecutePrepareWritesSuccess) {
   EXPECT_PACKET_OUT(kExpectedPrep2, &kResponse2);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
   client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kDisabled, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
@@ -2084,7 +2083,7 @@ TEST_F(ClientTest, ExecutePrepareWritesMalformedFailure) {
   EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
   client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kDisabled, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
@@ -2124,7 +2123,7 @@ TEST_F(ClientTest, ExecutePrepareWritesErrorFailure) {
   EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
   client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kDisabled, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -2202,7 +2201,7 @@ TEST_F(ClientTest, ExecutePrepareWritesEnqueueRequestSuccess) {
 
   EXPECT_PACKET_OUT(kExpectedPrep2, &kResponse2);
   EXPECT_PACKET_OUT(kExpectedExec);  // Delay sending response so the status can be checked
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
   // The first request should be fully complete now, and should trigger the
   // second.
@@ -2213,7 +2212,7 @@ TEST_F(ClientTest, ExecutePrepareWritesEnqueueRequestSuccess) {
   EXPECT_PACKET_OUT(kExpectedExec, &kExecuteWriteResponse);
   // Responding to the first execute request should start the second write request.
   fake_chan()->Receive(kExecuteWriteResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status2);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -2265,7 +2264,7 @@ TEST_F(ClientTest, ExecutePrepareWritesDifferingResponseSuccess) {
   client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kDisabled, cb);
   EXPECT_PACKET_OUT(kExpectedPrep2, &kResponse2);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -2316,7 +2315,7 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableWriteSuccess) {
   client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
   EXPECT_PACKET_OUT(kExpectedPrep2, &kResponse2);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -2351,7 +2350,7 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableEmptyBufSuccess) {
   EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
   client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -2392,7 +2391,7 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableDifferingResponseError) {
   EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
   client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kNotReliable), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -2432,7 +2431,7 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableMalformedResponseError) {
   EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
   client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kNotReliable), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -2471,7 +2470,7 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableOffsetMismatchError) {
   EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
   client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kNotReliable), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -2509,7 +2508,7 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableEmptyValueError) {
   EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
   client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kNotReliable), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -2529,7 +2528,7 @@ TEST_F(ClientTest, WriteWithoutResponseExceedsMtu) {
   // No packet should be sent.
   client()->WriteWithoutResponse(kHandle, kValue,
                                  [&](att::Result<> cb_status) { status = cb_status; });
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(ToResult(HostError::kFailed), *status);
 }
@@ -2568,7 +2567,7 @@ TEST_F(ClientTest, ReadRequestEmptyResponse) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->ReadRequest(kHandle, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -2592,7 +2591,7 @@ TEST_F(ClientTest, ReadRequestSuccess) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kExpectedResponse);
   client()->ReadRequest(kHandle, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -2616,7 +2615,7 @@ TEST_F(ClientTest, ReadRequestSuccessMaybeTruncatedDueToMtu) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &expected_response);
   client()->ReadRequest(kHandle, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -2641,7 +2640,7 @@ TEST_F(ClientTest, ReadRequestSuccessNotTruncatedWhenMtuAllowsMaxValueLength) {
                                         LowerBits(kServerRxMTU),
                                         UpperBits(kServerRxMTU)  // server rx mtu
                                         ));
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(att::Result<uint16_t>(fit::ok(kPreferredMTU)), *result);
   EXPECT_EQ(kPreferredMTU, att()->mtu());
@@ -2665,7 +2664,7 @@ TEST_F(ClientTest, ReadRequestSuccessNotTruncatedWhenMtuAllowsMaxValueLength) {
 
   EXPECT_PACKET_OUT(kExpectedReadRequest, &expected_response);
   client()->ReadRequest(kHandle, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -2692,7 +2691,7 @@ TEST_F(ClientTest, ReadRequestError) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kErrorResponse);
   client()->ReadRequest(kHandle, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -2733,7 +2732,7 @@ TEST_F(ClientTest, ReadByTypeRequestSuccess16BitUUID) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kExpectedResponse);
   client()->ReadByTypeRequest(kUuid16, kStartHandle, kEndHandle, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cb_called);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -2772,7 +2771,7 @@ TEST_F(ClientTest, ReadByTypeRequestSuccess128BitUUID) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kExpectedResponse);
   client()->ReadByTypeRequest(kUuid128, kStartHandle, kEndHandle, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cb_called);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -2804,7 +2803,7 @@ TEST_F(ClientTest, ReadByTypeRequestError) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kErrorResponse);
   client()->ReadByTypeRequest(kTestUuid3, kStartHandle, kEndHandle, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(error.has_value());
   EXPECT_EQ(att::Error(att::ErrorCode::kAttributeNotFound), *error);
   ASSERT_TRUE(handle.has_value());
@@ -2888,7 +2887,7 @@ TEST_F(ClientTest, ReadByTypeRequestInvalidResponses) {
 
     EXPECT_PACKET_OUT(kExpectedRequest, &invalid_rsp);
     client()->ReadByTypeRequest(kTestUuid3, kStartHandle, kEndHandle, cb);
-    RunLoopUntilIdle();
+    RunUntilIdle();
     ASSERT_TRUE(error.has_value());
     EXPECT_EQ(Error(HostError::kPacketMalformed), *error);
     EXPECT_FALSE(fake_chan()->link_error());
@@ -2916,7 +2915,7 @@ TEST_F(ClientTest, ReadBlobRequestEmptyResponse) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->ReadBlobRequest(kHandle, kOffset, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -2943,7 +2942,7 @@ TEST_F(ClientTest, ReadBlobRequestSuccess) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kExpectedResponse);
   client()->ReadBlobRequest(kHandle, kOffset, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -2969,7 +2968,7 @@ TEST_F(ClientTest, ReadBlobRequestMaybeTruncated) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &expected_response);
   client()->ReadBlobRequest(kHandle, kOffset, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -2996,7 +2995,7 @@ TEST_F(ClientTest, ReadBlobRequestSuccessNotTruncatedWhenOffsetPlusMtuEqualsMaxV
 
   EXPECT_PACKET_OUT(kExpectedRequest, &expected_response);
   client()->ReadBlobRequest(kHandle, kOffset, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -3025,7 +3024,7 @@ TEST_F(ClientTest, ReadBlobRequestError) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kErrorResponse);
   client()->ReadBlobRequest(kHandle, kOffset, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_EQ(ToResult(att::ErrorCode::kInvalidOffset), status);
   EXPECT_FALSE(fake_chan()->link_error());
 }
@@ -3049,7 +3048,7 @@ TEST_F(ClientTest, EmptyNotification) {
       ));
   // clang-format on
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(called);
 }
 
@@ -3074,7 +3073,7 @@ TEST_F(ClientTest, Notification) {
   ));
   // clang-format on
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(called);
 }
 
@@ -3099,7 +3098,7 @@ TEST_F(ClientTest, NotificationTruncated) {
       });
   fake_chan()->Receive(pdu);
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(called);
 }
 
@@ -3178,7 +3177,7 @@ TEST_F(ClientTest, ReadByTypeRequestSuccessValueTruncatedByMtu) {
 
   EXPECT_PACKET_OUT(kExpectedRequest, &expected_response);
   client()->ReadByTypeRequest(kUuid16, kStartHandle, kEndHandle, cb);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(cb_called);
   EXPECT_FALSE(fake_chan()->link_error());
 }

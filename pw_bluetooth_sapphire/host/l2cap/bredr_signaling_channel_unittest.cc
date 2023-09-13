@@ -32,18 +32,17 @@ class BrEdrSignalingChannelTest : public testing::MockChannelTest {
 
     fake_chan_ = CreateFakeChannel(options);
     sig_ = std::make_unique<BrEdrSignalingChannel>(fake_chan_->GetWeakPtr(), kDeviceRole,
-                                                   pw_dispatcher_);
+                                                   dispatcher());
   }
 
   void TearDown() override {
-    RunLoopUntilIdle();
+    RunUntilIdle();
     sig_ = nullptr;
   }
 
   BrEdrSignalingChannel* sig() const { return sig_.get(); }
 
  private:
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
   testing::FakeChannel::WeakPtr fake_chan_;
   std::unique_ptr<BrEdrSignalingChannel> sig_;
 };
@@ -176,7 +175,7 @@ TEST_F(BrEdrSignalingChannelTest, SendAndReceiveEcho) {
     rx_success = ContainersEqual(rsp_data, data);
   }));
 
-  RunLoopUntilIdle();
+  RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   // Remote sends back an echo response with a different payload than in local

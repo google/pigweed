@@ -96,7 +96,7 @@ TEST_F(PairingChannelTest, SendMessageWorks) {
   set_timer_resetter([&]() { timer_reset = true; });
   EXPECT_PACKET_OUT(kExpectedPacket);
   sm_chan()->SendMessage(kPairingRandom, kExpectedPayload);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_TRUE(timer_reset);
 }
 
@@ -106,10 +106,10 @@ TEST_F(PairingChannelTest, NoHandlerSetDataDropped) {
   const StaticByteBuffer kSmPacket(kPairingFailed, ErrorCode::kPairingNotSupported);
 
   fake_chan()->Receive(kSmPacket);
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   fake_chan()->Close();
-  RunLoopUntilIdle();
+  RunUntilIdle();
 }
 
 TEST_F(PairingChannelTest, SetHandlerReceivesData) {
@@ -122,19 +122,19 @@ TEST_F(PairingChannelTest, SetHandlerReceivesData) {
   ASSERT_EQ(handler.frames_received(), 0);
 
   fake_chan()->Receive(kSmPacket1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_NE(handler.last_rx_data(), nullptr);
   EXPECT_TRUE(ContainersEqual(*handler.last_rx_data(), kSmPacket1));
   ASSERT_EQ(handler.frames_received(), 1);
 
   fake_chan()->Receive(kSmPacket2);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_NE(handler.last_rx_data(), nullptr);
   EXPECT_TRUE(ContainersEqual(*handler.last_rx_data(), kSmPacket2));
   ASSERT_EQ(handler.frames_received(), 2);
 
   fake_chan()->Close();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(handler.channel_closed_count(), 1);
 }
 
@@ -148,7 +148,7 @@ TEST_F(PairingChannelTest, ChangeHandlerNewHandlerReceivesData) {
   ASSERT_EQ(handler.frames_received(), 0);
 
   fake_chan()->Receive(kSmPacket1);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_NE(handler.last_rx_data(), nullptr);
   EXPECT_TRUE(ContainersEqual(*handler.last_rx_data(), kSmPacket1));
   ASSERT_EQ(handler.frames_received(), 1);
@@ -157,7 +157,7 @@ TEST_F(PairingChannelTest, ChangeHandlerNewHandlerReceivesData) {
   ASSERT_EQ(new_handler.last_rx_data(), nullptr);
   sm_chan()->SetChannelHandler(new_handler.as_weak_handler());
   fake_chan()->Receive(kSmPacket2);
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_NE(new_handler.last_rx_data(), nullptr);
   EXPECT_TRUE(ContainersEqual(*new_handler.last_rx_data(), kSmPacket2));
   ASSERT_EQ(new_handler.frames_received(), 1);
@@ -166,7 +166,7 @@ TEST_F(PairingChannelTest, ChangeHandlerNewHandlerReceivesData) {
   ASSERT_EQ(handler.frames_received(), 1);
 
   fake_chan()->Close();
-  RunLoopUntilIdle();
+  RunUntilIdle();
   ASSERT_EQ(new_handler.channel_closed_count(), 1);
   ASSERT_EQ(handler.channel_closed_count(), 0);
 }
