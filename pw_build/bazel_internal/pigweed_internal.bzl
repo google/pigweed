@@ -153,3 +153,26 @@ pw_linker_script = rule(
     toolchains = use_cpp_toolchain(),
     fragments = ["cpp"],
 )
+
+def _print_platform_impl(_, ctx):
+    if hasattr(ctx.rule.attr, "constraint_values"):
+        for cv in ctx.rule.attr.constraint_values:
+            # buildifier: disable=print
+            print(str(ctx.rule.attr.name) + " specifies " + str(cv))
+    return []
+
+print_platform = aspect(
+    implementation = _print_platform_impl,
+    attr_aspects = ["parents"],
+    doc = """
+        This is a little debug utility that traverses the platform inheritance
+        hierarchy and prints all the constraint values.
+
+        Example usage:
+
+        bazel build \
+          //pw_build/platforms:lm3s6965evb \
+          --aspects \
+          pw_build/bazel_internal/pigweed_internal.bzl%print_platform
+    """,
+)
