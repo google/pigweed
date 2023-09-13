@@ -73,7 +73,7 @@ cipd_repository(
 cipd_repository(
     name = "llvm_toolchain",
     path = "fuchsia/third_party/clang/${os}-${arch}",
-    tag = "git_revision:ebd0b8a0472b865b7eb6e1a32af97ae31d829033",
+    tag = "git_revision:8475d0a2b853f6184948b428ec679edf84ed2688",
 )
 
 # Fetch linux sysroot for host builds.
