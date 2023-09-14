@@ -28,7 +28,7 @@ namespace pw {
 ///
 ///   template <typename T>
 ///   bool All(const pw::Vector<T>& items,
-///            pw::Function<bool(const T& item)> predicate) {
+///            const pw::Function<bool(const T& item)>& predicate) {
 ///     for (const T& item : items) {
 ///       if (!predicate(item)) {
 ///         return false;
