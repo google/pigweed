@@ -102,12 +102,14 @@ export const styles = css`
   }
 
   .log-row .cell-content {
+    display: inline-flex;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: pre-wrap;
   }
 
   .log-row--nowrap .cell-content {
-    white-space: nowrap;
+    white-space: pre;
   }
 
   tbody tr::before {
@@ -157,6 +159,12 @@ export const styles = css`
     position: relative;
     vertical-align: top;
     align-items: flex-start;
+  }
+
+  .cell-text {
+    line-height: normal;
+    text-overflow: ellipsis;
+    overflow: hidden;
   }
 
   .jump-to-bottom-btn {
@@ -265,6 +273,7 @@ export const styles = css`
   }
 
   ::-webkit-scrollbar {
+    box-shadow: inset 0 0 2rem 2rem var(--md-sys-color-surface-container-low);
     -webkit-appearance: auto;
   }
 
@@ -273,30 +282,25 @@ export const styles = css`
   }
 
   ::-webkit-scrollbar-thumb {
-    min-height: 3rem;
-  }
-
-  ::-webkit-scrollbar-thumb:horizontal {
     border-radius: 20px;
     box-shadow: inset 0 0 2rem 2rem var(--md-sys-color-outline-variant);
     border: inset 3px transparent;
+  }
+
+  ::-webkit-scrollbar-thumb:horizontal {
     border-top: inset 4px transparent;
   }
 
   ::-webkit-scrollbar-thumb:vertical {
-    border-radius: 20px;
-    box-shadow: inset 0 0 2rem 2rem var(--md-sys-color-outline-variant);
-    border: inset 3px transparent;
     border-left: inset 4px transparent;
+    height: calc(100% / 3);
   }
 
   ::-webkit-scrollbar-track:horizontal {
-    box-shadow: inset 0 0 2rem 2rem var(--md-sys-color-surface-container-low);
     border-top: solid 1px var(--md-sys-color-outline-variant);
   }
 
   ::-webkit-scrollbar-track:vertical {
-    box-shadow: inset 0 0 2rem 2rem var(--md-sys-color-surface-container-low);
     border-left: solid 1px var(--md-sys-color-outline-variant);
   }
 `;

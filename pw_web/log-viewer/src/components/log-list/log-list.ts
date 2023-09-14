@@ -279,11 +279,12 @@ export class LogList extends LitElement {
    * @param {string} text - The table cell text to be processed.
    */
   private highlightMatchedText(text: string): TemplateResult[] {
-    if (!this.searchText) {
+    const noQuotesText = this.searchText.replace(/(^"|')|("|'$)/g, '');
+    if (!noQuotesText) {
       return [html`${text}`];
     }
 
-    const escapedsearchText = this.searchText.replace(
+    const escapedsearchText = noQuotesText.replace(
       /[.*+?^${}()|[\]\\]/g,
       '\\$&',
     );
@@ -578,7 +579,9 @@ export class LogList extends LitElement {
     return html`
       <td ?hidden=${!isVisible}>
         <div class="cell-content">
-          ${this.highlightMatchedText(field.value.toString())}
+          <span class="cell-text"
+            >${this.highlightMatchedText(field.value.toString())}</span
+          >
         </div>
         ${columnIndex > 0 ? this.resizeHandle(columnIndex - 1) : html``}
       </td>
