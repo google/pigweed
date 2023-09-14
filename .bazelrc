@@ -39,15 +39,6 @@ build --repo_env=JAVA_HOME=../bazel_tools/jdk
 # (https://github.com/bazelembedded/rules_cc_toolchain/issues/46).
 build --features=external_include_paths
 
-# TODO(b/269204725): Move the following flags to the toolchain configuration.
-# By default build with C++17.
-build --cxxopt='-std=c++17'
-build --linkopt='-std=c++17'
-build --cxxopt="-fno-rtti"
-build --cxxopt="-Wnon-virtual-dtor"
-# Allow uses of the register keyword, which may appear in C headers.
-build --cxxopt="-Wno-register"
-
 # This feature can't be enabled until __unordtf2 and __letf2 are implemented by
 # compiler-rt. See https://reviews.llvm.org/D53608.
 # build --features=fully_static_link
