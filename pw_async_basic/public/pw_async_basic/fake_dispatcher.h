@@ -34,11 +34,11 @@ class NativeFakeDispatcher final {
 
   bool Cancel(Task& task);
 
-  void RunUntilIdle();
+  bool RunUntilIdle();
 
-  void RunUntil(chrono::SystemClock::time_point end_time);
+  bool RunUntil(chrono::SystemClock::time_point end_time);
 
-  void RunFor(chrono::SystemClock::duration duration);
+  bool RunFor(chrono::SystemClock::duration duration);
 
   chrono::SystemClock::time_point now() { return now_; }
 
@@ -49,11 +49,13 @@ class NativeFakeDispatcher final {
                         chrono::SystemClock::time_point time_due);
 
   // Dequeue and run each task that is due.
-  void ExecuteDueTasks();
+  // Returns true iff any tasks were invoked during the run.
+  bool ExecuteDueTasks();
 
   // Dequeue each task and run each TaskFunction with a PW_STATUS_CANCELLED
   // status.
-  void DrainTaskQueue();
+  // Returns true iff any tasks were invoked during the run.
+  bool DrainTaskQueue();
 
   Dispatcher& dispatcher_;
   bool stop_requested_ = false;

@@ -29,35 +29,39 @@ NativeFakeDispatcher::~NativeFakeDispatcher() {
   DrainTaskQueue();
 }
 
-void NativeFakeDispatcher::RunUntilIdle() {
-  ExecuteDueTasks();
+bool NativeFakeDispatcher::RunUntilIdle() {
+  bool tasks_ran = ExecuteDueTasks();
   if (stop_requested_) {
-    DrainTaskQueue();
+    tasks_ran |= DrainTaskQueue();
   }
+  return tasks_ran;
 }
 
-void NativeFakeDispatcher::RunUntil(chrono::SystemClock::time_point end_time) {
+bool NativeFakeDispatcher::RunUntil(chrono::SystemClock::time_point end_time) {
+  bool tasks_ran = false;
   while (!task_queue_.empty() && task_queue_.front().due_time() <= end_time &&
          !stop_requested_) {
     now_ = task_queue_.front().due_time();
-    ExecuteDueTasks();
+    tasks_ran |= ExecuteDueTasks();
   }
 
   if (stop_requested_) {
-    DrainTaskQueue();
-    return;
+    tasks_ran |= DrainTaskQueue();
+    return tasks_ran;
   }
 
   if (now_ < end_time) {
     now_ = end_time;
   }
+  return tasks_ran;
 }
 
-void NativeFakeDispatcher::RunFor(chrono::SystemClock::duration duration) {
-  RunUntil(now() + duration);
+bool NativeFakeDispatcher::RunFor(chrono::SystemClock::duration duration) {
+  return RunUntil(now() + duration);
 }
 
-void NativeFakeDispatcher::ExecuteDueTasks() {
+bool NativeFakeDispatcher::ExecuteDueTasks() {
+  bool task_ran = false;
   while (!task_queue_.empty() && task_queue_.front().due_time() <= now() &&
          !stop_requested_) {
     ::pw::async::backend::NativeTask& task = task_queue_.front();
@@ -65,7 +69,10 @@ void NativeFakeDispatcher::ExecuteDueTasks() {
 
     Context ctx{&dispatcher_, &task.task_};
     task(ctx, OkStatus());
+
+    task_ran = true;
   }
+  return task_ran;
 }
 
 void NativeFakeDispatcher::RequestStop() {
@@ -73,7 +80,8 @@ void NativeFakeDispatcher::RequestStop() {
   stop_requested_ = true;
 }
 
-void NativeFakeDispatcher::DrainTaskQueue() {
+bool NativeFakeDispatcher::DrainTaskQueue() {
+  bool task_ran = false;
   while (!task_queue_.empty()) {
     ::pw::async::backend::NativeTask& task = task_queue_.front();
     task_queue_.pop_front();
@@ -81,7 +89,10 @@ void NativeFakeDispatcher::DrainTaskQueue() {
     PW_LOG_DEBUG("running cancelled task");
     Context ctx{&dispatcher_, &task.task_};
     task(ctx, Status::Cancelled());
+
+    task_ran = true;
   }
+  return task_ran;
 }
 
 void NativeFakeDispatcher::Post(Task& task) { PostAt(task, now()); }

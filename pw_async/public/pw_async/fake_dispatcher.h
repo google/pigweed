@@ -36,18 +36,21 @@ class FakeDispatcher final : public Dispatcher {
   FakeDispatcher() : native_dispatcher_(*this) {}
 
   /// Execute all runnable tasks and return without advancing simulated time.
-  void RunUntilIdle() { native_dispatcher_.RunUntilIdle(); }
+  /// Returns true iff any tasks were invoked during the run.
+  bool RunUntilIdle() { return native_dispatcher_.RunUntilIdle(); }
 
   /// Run the dispatcher until Now() has reached `end_time`, executing all tasks
   /// that come due before then.
-  void RunUntil(chrono::SystemClock::time_point end_time) {
-    native_dispatcher_.RunUntil(end_time);
+  /// Returns true iff any tasks were invoked during the run.
+  bool RunUntil(chrono::SystemClock::time_point end_time) {
+    return native_dispatcher_.RunUntil(end_time);
   }
 
   /// Run the Dispatcher until `duration` has elapsed, executing all tasks that
   /// come due in that period.
-  void RunFor(chrono::SystemClock::duration duration) {
-    native_dispatcher_.RunFor(duration);
+  /// Returns true iff any tasks were invoked during the run.
+  bool RunFor(chrono::SystemClock::duration duration) {
+    return native_dispatcher_.RunFor(duration);
   }
 
   /// Stop processing tasks. After calling RequestStop(), the next time the

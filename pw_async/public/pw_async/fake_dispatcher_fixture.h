@@ -28,11 +28,11 @@ namespace pw::async::test {
 ///    MyClass obj(dispatcher());
 ///
 ///    obj.ScheduleSomeTasks();
-///    RunUntilIdle();
+///    EXPECT_TRUE(RunUntilIdle());
 ///    EXPECT_TRUE(some condition);
 ///
 ///    obj.ScheduleTaskToRunIn30Seconds();
-///    RunFor(30s);
+///    EXPECT_TRUE(RunFor(30s));
 ///    EXPECT_TRUE(task ran);
 ///  }
 /// @endcode
@@ -45,18 +45,21 @@ class FakeDispatcherFixture : public ::testing::Test {
   chrono::SystemClock::time_point now() { return dispatcher_.now(); }
 
   /// Dispatches all tasks with due times up until `now()`.
-  void RunUntilIdle() { dispatcher_.RunUntilIdle(); }
+  /// Returns true iff any tasks were invoked during the run.
+  bool RunUntilIdle() { return dispatcher_.RunUntilIdle(); }
 
   /// Dispatches all tasks with due times up to `end_time`, progressively
   /// advancing the fake clock.
-  void RunUntil(chrono::SystemClock::time_point end_time) {
-    dispatcher_.RunUntil(end_time);
+  /// Returns true iff any tasks were invoked during the run.
+  bool RunUntil(chrono::SystemClock::time_point end_time) {
+    return dispatcher_.RunUntil(end_time);
   }
 
   /// Dispatches all tasks with due times up to `now() + duration`,
   /// progressively advancing the fake clock.
-  void RunFor(chrono::SystemClock::duration duration) {
-    dispatcher_.RunFor(duration);
+  /// Returns true iff any tasks were invoked during the run.
+  bool RunFor(chrono::SystemClock::duration duration) {
+    return dispatcher_.RunFor(duration);
   }
 
  private:

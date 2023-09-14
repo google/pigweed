@@ -13,6 +13,8 @@
 // the License.
 #include "pw_async/fake_dispatcher_fixture.h"
 
+#include <chrono>
+
 #include "gtest/gtest.h"
 
 namespace pw::async {
@@ -20,7 +22,7 @@ namespace {
 
 using FakeDispatcherFixture = test::FakeDispatcherFixture;
 
-TEST_F(FakeDispatcherFixture, PostTasks) {
+TEST_F(FakeDispatcherFixture, PostTasksAndStop) {
   int count = 0;
   auto inc_count = [&count](Context& /*c*/, Status /*status*/) { ++count; };
 
@@ -28,8 +30,25 @@ TEST_F(FakeDispatcherFixture, PostTasks) {
   dispatcher().Post(task);
 
   ASSERT_EQ(count, 0);
-  RunUntilIdle();
+  EXPECT_TRUE(RunUntilIdle());
   ASSERT_EQ(count, 1);
+  EXPECT_FALSE(RunUntilIdle());
+
+  dispatcher().Post(task);
+  EXPECT_TRUE(RunUntil(dispatcher().now()));
+  ASSERT_EQ(count, 2);
+  EXPECT_FALSE(RunUntilIdle());
+
+  dispatcher().Post(task);
+  EXPECT_TRUE(RunFor(std::chrono::seconds(1)));
+  ASSERT_EQ(count, 3);
+  EXPECT_FALSE(RunUntilIdle());
+
+  dispatcher().PostAfter(task, std::chrono::minutes(1));
+  dispatcher().RequestStop();
+  ASSERT_EQ(count, 3);
+  EXPECT_TRUE(RunUntilIdle());
+  ASSERT_EQ(count, 4);
 }
 
 }  // namespace
