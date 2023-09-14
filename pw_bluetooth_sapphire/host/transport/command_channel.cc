@@ -89,7 +89,7 @@ void CommandChannel::TransactionData::StartTimer() {
       chan->OnCommandTimeout(tid);
     }
   });
-  timeout_task_.PostAfter(hci_spec::kPwCommandTimeout);
+  timeout_task_.PostAfter(hci_spec::kCommandTimeout);
 }
 
 void CommandChannel::TransactionData::Complete(std::unique_ptr<EventPacket> event) {

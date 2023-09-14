@@ -794,8 +794,7 @@ enum class EncryptionStatus : uint8_t {
 // TODO(fxbug.dev/1196,fxbug.dev/1197) This was increased to handle flaking integration tests.
 // We may want to reduce this to something lower again once we have a better
 // resolution to this issue.
-constexpr zx::duration kCommandTimeout = zx::sec(10);
-constexpr pw::chrono::SystemClock::duration kPwCommandTimeout = std::chrono::seconds(10);
+constexpr pw::chrono::SystemClock::duration kCommandTimeout = std::chrono::seconds(10);
 
 // The minimum and maximum range values for the LE advertising interval
 // parameters.
