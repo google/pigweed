@@ -275,3 +275,34 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/result.h b/thi
    }
 
    // Maps a result<E, T> to a result<E2, T> by transforming the error through
+diff --git a/third_party/fuchsia/repo/sdk/lib/fit/test/function_tests.cc b/third_party/fuchsia/repo/sdk/lib/fit/test/function_tests.cc
+--- a/third_party/fuchsia/repo/sdk/lib/fit/test/function_tests.cc
++++ b/third_party/fuchsia/repo/sdk/lib/fit/test/function_tests.cc
+@@ -4,7 +4,6 @@
+
+ #include <lib/fit/function.h>
+ #include <lib/stdcompat/bit.h>
+-#include <zircon/compiler.h>
+
+ #include <algorithm>
+ #include <array>
+@@ -15,6 +14,8 @@
+
+ #include <zxtest/zxtest.h>
+
++#include "pw_polyfill/language_feature_macros.h"
++
+ namespace {
+
+ using ::std::size_t;
+@@ -1029,8 +1030,8 @@ TEST(FunctionTests, callback_with_custom_allocator) {
+   EXPECT_EQ(1, cbheapdestroy);
+ }
+
+-__CONSTINIT const fit::function<void()> kDefaultConstructed;
+-__CONSTINIT const fit::function<void()> kNullptrConstructed(nullptr);
++PW_CONSTINIT const fit::function<void()> kDefaultConstructed;
++PW_CONSTINIT const fit::function<void()> kNullptrConstructed(nullptr);
+
+ TEST(FunctionTests, null_constructors_are_constexpr) {
+   EXPECT_EQ(kDefaultConstructed, nullptr);

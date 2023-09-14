@@ -30,7 +30,10 @@ group("fit") {
 
 pw_test("function_tests") {
   sources = [ "repo/sdk/lib/fit/test/function_tests.cc" ]
-  deps = [ ":fit" ]
+  deps = [
+    ":fit",
+    dir_pw_polyfill,
+  ]
 
   # Define EXPECT_NULL(), which Pigweed's test framework does not have
   defines = [ "EXPECT_NULL(arg)=EXPECT_EQ((arg), nullptr)" ]
