@@ -511,7 +511,7 @@ void Bearer::TryStartNextTransaction(TransactionQueue* tq) {
           ShutDownInternal(/*due_to_timeout=*/true);
         }
       },
-      kPwTransactionTimeout);
+      kTransactionTimeout);
 }
 
 void Bearer::SendErrorResponse(OpCode request_opcode, Handle attribute_handle,

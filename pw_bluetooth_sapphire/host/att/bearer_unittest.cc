@@ -140,7 +140,7 @@ TEST_F(BearerTest, RequestTimeout) {
   EXPECT_PACKET_OUT(*request);
   bearer()->StartTransaction(std::move(request), cb);
 
-  RunFor(kPwTransactionTimeout);
+  RunFor(kTransactionTimeout);
 
   EXPECT_TRUE(closed);
   EXPECT_TRUE(err_cb_called);
@@ -186,7 +186,7 @@ TEST_F(BearerTest, RequestTimeoutMany) {
   EXPECT_EQ(0u, err_cb_count);
 
   // Make the request timeout.
-  RunFor(kPwTransactionTimeout);
+  RunFor(kTransactionTimeout);
 
   EXPECT_TRUE(closed);
   EXPECT_EQ(kTransactionCount, err_cb_count);
@@ -214,7 +214,7 @@ TEST_F(BearerTest, IndicationTimeout) {
   EXPECT_PACKET_OUT(*request);
   bearer()->StartTransaction(std::move(request), cb);
 
-  RunFor(kPwTransactionTimeout);
+  RunFor(kTransactionTimeout);
 
   EXPECT_TRUE(closed);
   EXPECT_TRUE(err_cb_called);
@@ -262,7 +262,7 @@ TEST_F(BearerTest, IndicationTimeoutMany) {
   EXPECT_EQ(0u, err_cb_count);
 
   // Make the request timeout.
-  RunFor(kPwTransactionTimeout);
+  RunFor(kTransactionTimeout);
 
   EXPECT_TRUE(closed);
   EXPECT_EQ(kTransactionCount, err_cb_count);
