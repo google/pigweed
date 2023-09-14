@@ -307,7 +307,7 @@ value are final, and can't be referenced or modified as a later step in the
 encode process.
 
 Casting between generated StreamEncoder types
-=============================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 pw_protobuf guarantees that all generated ``StreamEncoder`` classes can be
 converted among each other. It's also safe to convert any ``MemoryEncoder`` to
 any other ``StreamEncoder``.
