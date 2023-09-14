@@ -17,6 +17,8 @@
 
 #include <cstddef>
 
+#include "lib/fit/function.h"
+
 // The maximum size of a callable that can be inlined within a function. This is
 // also the size of the Function object itself. Callables larger than this are
 // stored externally to the function.
@@ -35,6 +37,16 @@ static_assert(PW_FUNCTION_INLINE_CALLABLE_SIZE > 0 &&
 #ifndef PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION
 #define PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION 0
 #endif  // PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION
+
+// The default Allocator used to dynamically allocate the callable, if dynamic
+// allocation is enabled. Its `value_type` is irrelevant, since it must support
+// rebinding.
+//
+// This definition is useful to ensure that a project can specify an Allocator
+// that will be used even by Pigweed source code.
+#ifndef PW_FUNCTION_DEFAULT_ALLOCATOR_TYPE
+#define PW_FUNCTION_DEFAULT_ALLOCATOR_TYPE fit::default_callable_allocator
+#endif  // PW_FUNCTION_DEFAULT_ALLOCATOR_TYPE
 
 namespace pw::function_internal::config {
 

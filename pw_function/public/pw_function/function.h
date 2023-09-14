@@ -55,7 +55,7 @@ namespace pw {
 template <typename FunctionType,
           std::size_t inline_target_size =
               function_internal::config::kInlineCallableSize,
-          typename Allocator = fit::default_callable_allocator>
+          typename Allocator = PW_FUNCTION_DEFAULT_ALLOCATOR_TYPE>
 using Function = fit::function_impl<
     inline_target_size,
     /*require_inline=*/!function_internal::config::kEnableDynamicAllocation,
@@ -90,7 +90,7 @@ using Closure = Function<void()>;
 template <typename FunctionType,
           std::size_t inline_target_size =
               function_internal::config::kInlineCallableSize,
-          typename Allocator = fit::default_callable_allocator>
+          typename Allocator = PW_FUNCTION_DEFAULT_ALLOCATOR_TYPE>
 using Callback = fit::callback_impl<
     inline_target_size,
     /*require_inline=*/!function_internal::config::kEnableDynamicAllocation,

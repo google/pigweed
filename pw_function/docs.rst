@@ -74,9 +74,8 @@ constructors and in ``constinit`` expressions.
 Storage
 =======
 By default, a ``Function`` stores its callable inline within the object. The
-inline storage size defaults to the size of two pointers, but is configurable
-through the build system. The size of a ``Function`` object is equivalent to its
-inline storage size.
+inline storage size defaults to the size of one pointer, but is configurable
+through the build system.
 
 The :cpp:type:`pw::InlineFunction` alias is similar to :cpp:type:`pw::Function`,
 but is always inlined. That is, even if dynamic allocation is enabled for
@@ -88,7 +87,7 @@ is a compile-time error unless dynamic allocation is enabled.
 
 .. admonition:: Inline storage size
 
-   The default inline size of two pointers is sufficient to store most common
+   The default inline size of one pointer is sufficient to store most common
    callable objects, including function pointers, simple non-capturing and
    capturing lambdas, and lightweight custom classes.
 
@@ -114,9 +113,12 @@ is a compile-time error unless dynamic allocation is enabled.
 
    When ``PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION`` is enabled, a ``Function``
    will use dynamic allocation to store callables that exceed the inline size.
-   An Allocator can be optionally supplied as a template argument. When dynamic
-   allocation is enabled but a compile-time check for the inlining is still
-   required ``pw::InlineFunction`` can be used.
+   An Allocator type can be optionally supplied as a template argument. The
+   default Allocator type can also be changed by overriding
+   ``PW_FUNCTION_DEFAULT_ALLOCATOR_TYPE`` (the ``value_type`` of the Allocator
+   is irrelevant, since it must support rebinding). When dynamic allocation is
+   enabled but a compile-time check for the inlining is still required
+   ``pw::InlineFunction`` can be used.
 
 .. warning::
 

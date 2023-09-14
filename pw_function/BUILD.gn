@@ -35,7 +35,10 @@ config("public_include_path") {
 pw_source_set("config") {
   public = [ "public/pw_function/config.h" ]
   public_configs = [ ":public_include_path" ]
-  public_deps = [ pw_function_CONFIG ]
+  public_deps = [
+    "$dir_pw_third_party/fuchsia:fit",
+    pw_function_CONFIG,
+  ]
   visibility = [ ":*" ]
 }
 
