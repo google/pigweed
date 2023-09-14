@@ -5,15 +5,14 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_RETIRE_LOG_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_RETIRE_LOG_H_
 
-#include <lib/async/cpp/time.h>
-
 #include <algorithm>
 #include <array>
 #include <functional>
 #include <optional>
-#include <tuple>
 #include <utility>
 #include <vector>
+
+#include <pw_chrono/system_clock.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 
@@ -36,7 +35,7 @@ class RetireLog final {
 
   // Add an entry to the log. If depth() is less than max_depth, the log is expanded. Otherwise, the
   // oldest entry is replaced. This is a fast operation that does not allocate.
-  void Retire(size_t byte_count, zx::duration age);
+  void Retire(size_t byte_count, pw::chrono::SystemClock::duration age);
 
   // The current number of log entries.
   [[nodiscard]] size_t depth() const { return buffer_.size(); }
@@ -61,15 +60,15 @@ class RetireLog final {
 
   // Similar to ComputeByteCountQuantiles, but for the |age| durations logged in |Retire|.
   template <size_t NumQuantiles>
-  [[nodiscard]] std::optional<std::array<zx::duration, NumQuantiles>> ComputeAgeQuantiles(
-      std::array<double, NumQuantiles> partitions) const {
+  [[nodiscard]] std::optional<std::array<pw::chrono::SystemClock::duration, NumQuantiles>>
+  ComputeAgeQuantiles(std::array<double, NumQuantiles> partitions) const {
     return ComputeQuantiles(partitions, &Retired::age);
   }
 
  private:
   struct Retired {
     size_t byte_count;
-    zx::duration age;
+    pw::chrono::SystemClock::duration age;
   };
 
   // Helper function to build the index_sequence
@@ -141,7 +140,8 @@ class RetireLog final {
   // Used by ComputeQuantilesImpl to store type-dependent k-selection computation working data. We
   // could probably save memory by using the same scratchpad for both byte_count and age, but it's
   // not worth the extra code complexity at this time.
-  mutable std::tuple<std::vector<size_t>, std::vector<zx::duration>> quantile_scratchpads_;
+  mutable std::tuple<std::vector<size_t>, std::vector<pw::chrono::SystemClock::duration>>
+      quantile_scratchpads_;
 };
 
 }  // namespace bt::internal

@@ -21,7 +21,7 @@ RetireLog::RetireLog(size_t min_depth, size_t max_depth)
              quantile_scratchpads_);
 }
 
-void RetireLog::Retire(size_t byte_count, zx::duration age) {
+void RetireLog::Retire(size_t byte_count, pw::chrono::SystemClock::duration age) {
   if (depth() < max_depth_) {
     buffer_.push_back({byte_count, age});
     return;

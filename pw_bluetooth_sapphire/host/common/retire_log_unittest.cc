@@ -11,8 +11,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "lib/zx/time.h"
-
 namespace bt::internal {
 namespace {
 
@@ -23,7 +21,7 @@ void Retire101Elements(RetireLog& retire_log, int starting_value = 0) {
   constexpr int kSeed = 4;
   std::shuffle(values.begin(), values.end(), std::default_random_engine(kSeed));
   for (auto value : values) {
-    retire_log.Retire(value, zx::msec(value));
+    retire_log.Retire(value, std::chrono::milliseconds(value));
   }
 }
 
@@ -35,7 +33,7 @@ TEST(RetireLogDeathTest, InitializationLimits) {
 
 TEST(RetireLogDeathTest, ComputeQuantileLimits) {
   RetireLog retire_log(1, 100);
-  retire_log.Retire(1, zx::sec(1));
+  retire_log.Retire(1, std::chrono::seconds(1));
   ASSERT_DEATH_IF_SUPPORTED(
       { [[maybe_unused]] auto _ = retire_log.ComputeByteCountQuantiles(std::array{-1.}); }, "0");
   ASSERT_DEATH_IF_SUPPORTED(
@@ -51,7 +49,7 @@ TEST(RetireLogTest, QuantileCallBeforeRetiringYieldsNothing) {
 
 TEST(RetireLogTest, QuantileCallsAfterDepthOneYieldsTheResult) {
   RetireLog retire_log(1, 100);
-  constexpr zx::duration kTestDuration = zx::msec(10);
+  constexpr pw::chrono::SystemClock::duration kTestDuration = std::chrono::milliseconds(10);
   retire_log.Retire(0, kTestDuration);
   auto result = retire_log.ComputeAgeQuantiles(std::array{.5});
   ASSERT_TRUE(result.has_value());
