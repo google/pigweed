@@ -53,7 +53,7 @@ bt::l2cap::ChannelParameters FidlToChannelParameters(const fidlbredr::ChannelPar
     params.max_rx_sdu_size = fidl.max_rx_sdu_size();
   }
   if (fidl.has_flush_timeout()) {
-    params.flush_timeout = zx::duration(fidl.flush_timeout());
+    params.flush_timeout = std::chrono::nanoseconds(fidl.flush_timeout());
   }
   return params;
 }
@@ -77,7 +77,7 @@ fidlbredr::ChannelParameters ChannelInfoToFidlChannelParameters(
   params.set_channel_mode(ChannelModeToFidl(info.mode));
   params.set_max_rx_sdu_size(info.max_rx_sdu_size);
   if (info.flush_timeout) {
-    params.set_flush_timeout(info.flush_timeout.value().get());
+    params.set_flush_timeout(info.flush_timeout->count());
   }
   return params;
 }
@@ -232,7 +232,7 @@ void ProfileServer::L2capParametersExt::RequestParameters(
     fuchsia::bluetooth::bredr::ChannelParameters requested, RequestParametersCallback callback) {
   if (requested.has_flush_timeout()) {
     channel_->SetBrEdrAutomaticFlushTimeout(
-        zx::duration(requested.flush_timeout()),
+        std::chrono::nanoseconds(requested.flush_timeout()),
         [chan = channel_, cb = std::move(callback)](auto result) {
           if (result.is_ok()) {
             bt_log(DEBUG, "fidl",
@@ -907,7 +907,7 @@ fuchsia::bluetooth::bredr::Channel ProfileServer::ChannelToFidl(
   fidl_chan.set_channel_mode(ChannelModeToFidl(channel->mode()));
   fidl_chan.set_max_tx_sdu_size(channel->max_tx_sdu_size());
   if (channel->info().flush_timeout) {
-    fidl_chan.set_flush_timeout(channel->info().flush_timeout->get());
+    fidl_chan.set_flush_timeout(channel->info().flush_timeout->count());
   }
 
   if (adapter()->state().IsControllerFeatureSupported(FeaturesBits::kSetAclPriorityCommand)) {

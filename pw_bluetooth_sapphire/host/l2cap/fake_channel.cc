@@ -136,7 +136,7 @@ void FakeChannel::RequestAclPriority(pw::bluetooth::AclPriority priority,
   cb(fit::ok());
 }
 
-void FakeChannel::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
+void FakeChannel::SetBrEdrAutomaticFlushTimeout(pw::chrono::SystemClock::duration flush_timeout,
                                                 hci::ResultCallback<> callback) {
   if (!flush_timeout_succeeds_) {
     callback(ToResult(pw::bluetooth::emboss::StatusCode::UNSPECIFIED_ERROR));

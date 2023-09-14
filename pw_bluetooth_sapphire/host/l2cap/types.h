@@ -7,6 +7,7 @@
 
 #include <lib/fit/function.h>
 
+#include <chrono>
 #include <optional>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
@@ -52,7 +53,7 @@ struct ChannelParameters {
   // MTU
   std::optional<uint16_t> max_rx_sdu_size;
 
-  std::optional<zx::duration> flush_timeout;
+  std::optional<pw::chrono::SystemClock::duration> flush_timeout;
 
   bool operator==(const ChannelParameters& rhs) const {
     return mode == rhs.mode && max_rx_sdu_size == rhs.max_rx_sdu_size &&
@@ -67,8 +68,11 @@ struct ChannelParameters {
                           ? bt_lib_cpp_string::StringPrintf("%hu", *max_rx_sdu_size)
                           : std::string("nullopt");
     auto flush_timeout_string =
-        flush_timeout ? bt_lib_cpp_string::StringPrintf("%ldms", flush_timeout->to_msecs())
-                      : std::string("nullopt");
+        flush_timeout
+            ? bt_lib_cpp_string::StringPrintf(
+                  "%lldms",
+                  std::chrono::duration_cast<std::chrono::milliseconds>(*flush_timeout).count())
+            : std::string("nullopt");
     return bt_lib_cpp_string::StringPrintf(
         "ChannelParameters{mode: %s, max_rx_sdu_size: %s, flush_timeout: %s}", mode_string.c_str(),
         sdu_string.c_str(), flush_timeout_string.c_str());
@@ -80,9 +84,9 @@ struct ChannelParameters {
 struct ChannelInfo {
   ChannelInfo() = default;
 
-  static ChannelInfo MakeBasicMode(uint16_t max_rx_sdu_size, uint16_t max_tx_sdu_size,
-                                   std::optional<PSM> psm = std::nullopt,
-                                   std::optional<zx::duration> flush_timeout = std::nullopt) {
+  static ChannelInfo MakeBasicMode(
+      uint16_t max_rx_sdu_size, uint16_t max_tx_sdu_size, std::optional<PSM> psm = std::nullopt,
+      std::optional<pw::chrono::SystemClock::duration> flush_timeout = std::nullopt) {
     return ChannelInfo(ChannelMode::kBasic, max_rx_sdu_size, max_tx_sdu_size, 0, 0, 0, psm,
                        flush_timeout);
   }
@@ -91,7 +95,7 @@ struct ChannelInfo {
       uint16_t max_rx_sdu_size, uint16_t max_tx_sdu_size, uint8_t n_frames_in_tx_window,
       uint8_t max_transmissions, uint16_t max_tx_pdu_payload_size,
       std::optional<PSM> psm = std::nullopt,
-      std::optional<zx::duration> flush_timeout = std::nullopt) {
+      std::optional<pw::chrono::SystemClock::duration> flush_timeout = std::nullopt) {
     return ChannelInfo(ChannelMode::kEnhancedRetransmission, max_rx_sdu_size, max_tx_sdu_size,
                        n_frames_in_tx_window, max_transmissions, max_tx_pdu_payload_size, psm,
                        flush_timeout);
@@ -100,7 +104,7 @@ struct ChannelInfo {
   ChannelInfo(ChannelMode mode, uint16_t max_rx_sdu_size, uint16_t max_tx_sdu_size,
               uint8_t n_frames_in_tx_window, uint8_t max_transmissions,
               uint16_t max_tx_pdu_payload_size, std::optional<PSM> psm = std::nullopt,
-              std::optional<zx::duration> flush_timeout = std::nullopt)
+              std::optional<pw::chrono::SystemClock::duration> flush_timeout = std::nullopt)
       : mode(mode),
         max_rx_sdu_size(max_rx_sdu_size),
         max_tx_sdu_size(max_tx_sdu_size),
@@ -125,7 +129,7 @@ struct ChannelInfo {
 
   // If present, the channel's packets will be marked as flushable. The value will be used to
   // configure the link's automatic flush timeout.
-  std::optional<zx::duration> flush_timeout;
+  std::optional<pw::chrono::SystemClock::duration> flush_timeout;
 };
 
 // Data stored for services registered by higher layers.

@@ -1327,7 +1327,7 @@ constexpr float kFlushTimeoutMsToCommandParameterConversionFactor = 1.0f / kFlus
 
 // See Core Spec v5.2, Vol 4, Part E, Sec 7.3.30
 constexpr uint16_t kMaxAutomaticFlushTimeoutCommandParameterValue = 0x07FF;
-constexpr zx::duration kMaxAutomaticFlushTimeoutDuration = zx::msec(static_cast<int64_t>(kMaxAutomaticFlushTimeoutCommandParameterValue * kFlushTimeoutCommandParameterToMillisecondsConversionFactor));
+constexpr pw::chrono::SystemClock::duration kMaxAutomaticFlushTimeoutDuration = std::chrono::milliseconds(static_cast<int64_t>(kMaxAutomaticFlushTimeoutCommandParameterValue * kFlushTimeoutCommandParameterToMillisecondsConversionFactor));
 
 // Page Timeout = N * 0.625 ms (Core Spec v5.2, Vol 4, Part E, Sec 7.3.16).
 // The default is 5.12 sec.

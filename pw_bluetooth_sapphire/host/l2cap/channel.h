@@ -197,9 +197,9 @@ class Channel : public WeakSelf<Channel> {
   // Sets an automatic flush timeout with duration |flush_timeout|. |callback| will be called with
   // the result of the operation. This is only supported if the link type is kACL (BR/EDR).
   // |flush_timeout| must be in the range [1ms - hci_spec::kMaxAutomaticFlushTimeoutDuration]. A
-  // flush timeout of zx::duration::infinite() indicates an infinite flush timeout (packets will be
-  // marked flushable, but there will be no automatic flush timeout).
-  virtual void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
+  // flush timeout of pw::chrono::SystemClock::duration::max() indicates an infinite flush timeout
+  // (packets will be marked flushable, but there will be no automatic flush timeout).
+  virtual void SetBrEdrAutomaticFlushTimeout(pw::chrono::SystemClock::duration flush_timeout,
                                              hci::ResultCallback<> callback) = 0;
 
   // Attach this channel as a child node of |parent| with the given |name|.
@@ -286,7 +286,7 @@ class ChannelImpl : public Channel {
   void UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback) override;
   void RequestAclPriority(pw::bluetooth::AclPriority priority,
                           fit::callback<void(fit::result<fit::failed>)> callback) override;
-  void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
+  void SetBrEdrAutomaticFlushTimeout(pw::chrono::SystemClock::duration flush_timeout,
                                      hci::ResultCallback<> callback) override;
   void AttachInspect(inspect::Node& parent, std::string name) override;
   void StartA2dpOffload(const A2dpOffloadManager::Configuration& config,

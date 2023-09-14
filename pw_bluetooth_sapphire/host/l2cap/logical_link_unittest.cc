@@ -136,7 +136,7 @@ TEST_F(LogicalLinkTest, DropsBroadcastPackets) {
 
 // LE links are unsupported, so result should be an error. No command should be sent.
 TEST_F(LogicalLinkTest, SetBrEdrAutomaticFlushTimeoutFailsForLELink) {
-  constexpr zx::duration kTimeout(zx::msec(100));
+  constexpr std::chrono::milliseconds kTimeout(100);
   ResetAndCreateNewLogicalLink(LinkType::kLE);
 
   bool cb_called = false;
@@ -175,7 +175,7 @@ TEST_F(LogicalLinkTest, SetAutomaticFlushTimeoutSuccess) {
   EXPECT_CMD_PACKET_OUT(test_device(),
                         bt::testing::WriteAutomaticFlushTimeoutPacket(link()->handle(), 0),
                         &kCommandCompleteError);
-  link()->SetBrEdrAutomaticFlushTimeout(zx::duration::infinite(), result_cb);
+  link()->SetBrEdrAutomaticFlushTimeout(pw::chrono::SystemClock::duration::max(), result_cb);
   RunUntilIdle();
   ASSERT_TRUE(cb_status.has_value());
   ASSERT_TRUE(cb_status->is_error());
@@ -183,7 +183,7 @@ TEST_F(LogicalLinkTest, SetAutomaticFlushTimeoutSuccess) {
   cb_status.reset();
 
   // Test flush timeout = 0 (no command should be sent)
-  link()->SetBrEdrAutomaticFlushTimeout(zx::msec(0), result_cb);
+  link()->SetBrEdrAutomaticFlushTimeout(std::chrono::milliseconds(0), result_cb);
   RunUntilIdle();
   ASSERT_TRUE(cb_status.has_value());
   EXPECT_TRUE(cb_status->is_error());
@@ -196,7 +196,7 @@ TEST_F(LogicalLinkTest, SetAutomaticFlushTimeoutSuccess) {
   EXPECT_CMD_PACKET_OUT(test_device(),
                         bt::testing::WriteAutomaticFlushTimeoutPacket(link()->handle(), 0),
                         &kCommandComplete);
-  link()->SetBrEdrAutomaticFlushTimeout(zx::duration::infinite(), result_cb);
+  link()->SetBrEdrAutomaticFlushTimeout(pw::chrono::SystemClock::duration::max(), result_cb);
   RunUntilIdle();
   ASSERT_TRUE(cb_status.has_value());
   EXPECT_EQ(fit::ok(), *cb_status);
@@ -214,8 +214,8 @@ TEST_F(LogicalLinkTest, SetAutomaticFlushTimeoutSuccess) {
   cb_status.reset();
 
   // Test too large flush timeout (no command should be sent).
-  link()->SetBrEdrAutomaticFlushTimeout(hci_spec::kMaxAutomaticFlushTimeoutDuration + zx::msec(1),
-                                        result_cb);
+  link()->SetBrEdrAutomaticFlushTimeout(
+      hci_spec::kMaxAutomaticFlushTimeoutDuration + std::chrono::milliseconds(1), result_cb);
   RunUntilIdle();
   ASSERT_TRUE(cb_status.has_value());
   EXPECT_TRUE(cb_status->is_error());

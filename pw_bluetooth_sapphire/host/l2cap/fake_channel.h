@@ -82,7 +82,7 @@ class FakeChannel : public Channel {
   void UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback) override;
   void RequestAclPriority(pw::bluetooth::AclPriority priority,
                           fit::callback<void(fit::result<fit::failed>)> cb) override;
-  void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
+  void SetBrEdrAutomaticFlushTimeout(pw::chrono::SystemClock::duration flush_timeout,
                                      hci::ResultCallback<> callback) override;
   void AttachInspect(inspect::Node& parent, std::string name) override {}
   void StartA2dpOffload(const A2dpOffloadManager::Configuration& config,

@@ -2,9 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <lib/async-testing/test_loop.h>
-
 #include <fuzzer/FuzzedDataProvider.h>
+#include <pw_async/fake_dispatcher.h>
 #include <pw_async_fuchsia/dispatcher.h>
 #include <pw_random/fuzzer.h>
 
@@ -35,16 +34,15 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   pw::random::FuzzerRandomGenerator rng(&provider);
   bt::set_random_generator(&rng);
 
-  // Sets dispatcher needed for signaling channel response timeout.
-  async::TestLoop loop;
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher(loop.dispatcher());
+  // Dispatcher needed for signaling channel response timeout.
+  pw::async::test::FakeDispatcher dispatcher;
 
   auto fake_chan = std::make_unique<bt::l2cap::testing::FakeChannel>(
       bt::l2cap::kSignalingChannelId, bt::l2cap::kSignalingChannelId, kTestHandle,
       bt::LinkType::kACL);
 
   bt::l2cap::internal::BrEdrSignalingChannel sig_chan(
-      fake_chan->GetWeakPtr(), pw::bluetooth::emboss::ConnectionRole::CENTRAL, pw_dispatcher);
+      fake_chan->GetWeakPtr(), pw::bluetooth::emboss::ConnectionRole::CENTRAL, dispatcher);
 
   auto open_cb = [](auto chan) {};
   auto close_cb = [](auto chan) {};
@@ -74,7 +72,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     }
 
     if (provider.ConsumeBool()) {
-      loop.RunFor(zx::sec(1));
+      dispatcher.RunFor(std::chrono::seconds(1));
     }
   }
 

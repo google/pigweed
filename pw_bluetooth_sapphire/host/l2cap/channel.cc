@@ -255,7 +255,7 @@ void ChannelImpl::RequestAclPriority(AclPriority priority,
       });
 }
 
-void ChannelImpl::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
+void ChannelImpl::SetBrEdrAutomaticFlushTimeout(pw::chrono::SystemClock::duration flush_timeout,
                                                 hci::ResultCallback<> callback) {
   BT_ASSERT(link_type_ == bt::LinkType::kACL);
 

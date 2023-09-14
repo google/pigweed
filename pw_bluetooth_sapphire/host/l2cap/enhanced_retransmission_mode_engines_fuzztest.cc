@@ -2,12 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <lib/async-testing/test_loop.h>
-
 #include <algorithm>
 #include <limits>
 
 #include <fuzzer/FuzzedDataProvider.h>
+#include <pw_async/fake_dispatcher.h>
 #include <pw_async_fuchsia/dispatcher.h>
 
 #include "enhanced_retransmission_mode_engines.h"
@@ -23,9 +22,7 @@ void NoOpTxCallback(bt::ByteBufferPtr) {}
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   FuzzedDataProvider provider(data, size);
 
-  // Sets default dispatcher needed for timeouts.
-  async::TestLoop loop;
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher(loop.dispatcher());
+  pw::async::test::FakeDispatcher dispatcher;
 
   uint8_t tx_window = std::max(provider.ConsumeIntegral<uint8_t>(), static_cast<uint8_t>(1u));
 
@@ -37,7 +34,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 
   auto [rx_engine, tx_engine] = bt::l2cap::internal::MakeLinkedEnhancedRetransmissionModeEngines(
       kTestChannelId, max_tx_sdu_size, max_transmissions, tx_window, NoOpTxCallback, failure_cb,
-      pw_dispatcher);
+      dispatcher);
 
   // In the real stack, the engines are shut down on failure, so we do the same here.
   while (provider.remaining_bytes() > 0 && !failure) {
@@ -64,8 +61,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     }
 
     // Run for 0-255 seconds, which is enough to trigger poll timer and monitor timer.
-    auto run_duration = zx::sec(provider.ConsumeIntegral<uint8_t>());
-    loop.RunFor(run_duration);
+    auto run_duration = std::chrono::seconds(provider.ConsumeIntegral<uint8_t>());
+    dispatcher.RunFor(run_duration);
   }
 
   return 0;

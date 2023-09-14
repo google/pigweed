@@ -43,7 +43,7 @@ constexpr hci::AclDataChannel::PacketPriority kHighPriority =
     hci::AclDataChannel::PacketPriority::kHigh;
 constexpr ChannelParameters kChannelParams;
 
-constexpr zx::duration kFlushTimeout = zx::msec(10);
+constexpr pw::chrono::SystemClock::duration kFlushTimeout = std::chrono::milliseconds(10);
 constexpr uint16_t kExpectedFlushTimeoutParam =
     16;  // 10ms * kFlushTimeoutMsToCommandParameterConversionFactor(1.6)
 
@@ -2753,10 +2753,13 @@ TEST_F(ChannelManagerMockAclChannelTest, InspectHierarchy) {
   auto link_matcher = AllOf(
       NodeMatches(NameMatches("logical_links")),
       ChildrenMatch(ElementsAre(AllOf(
-          NodeMatches(AllOf(NameMatches("logical_link_0x1"),
-                            PropertyList(UnorderedElementsAre(
-                                StringIs("handle", "0x0001"), StringIs("link_type", "ACL"),
-                                UintIs("flush_timeout_ms", zx::duration::infinite().to_msecs()))))),
+          NodeMatches(AllOf(
+              NameMatches("logical_link_0x1"),
+              PropertyList(UnorderedElementsAre(
+                  StringIs("handle", "0x0001"), StringIs("link_type", "ACL"),
+                  UintIs("flush_timeout_ms", std::chrono::duration_cast<std::chrono::milliseconds>(
+                                                 pw::chrono::SystemClock::duration::max())
+                                                 .count()))))),
           ChildrenMatch(ElementsAre(channels_matcher))))));
 
   auto l2cap_node_matcher =

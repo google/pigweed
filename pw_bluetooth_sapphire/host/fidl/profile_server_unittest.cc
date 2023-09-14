@@ -1122,14 +1122,14 @@ class ProfileServerTestFakeAdapter : public bt::gap::testing::FakeAdapterTestFix
 TEST_F(ProfileServerTestFakeAdapter, ConnectChannelParametersContainsFlushTimeout) {
   const bt::PeerId kPeerId;
   const fuchsia::bluetooth::PeerId kFidlPeerId{kPeerId.value()};
-  const zx::duration kFlushTimeout(zx::msec(100));
+  const pw::chrono::SystemClock::duration kFlushTimeout(std::chrono::milliseconds(100));
 
   FakeChannel::WeakPtr last_channel;
   adapter()->fake_bredr()->set_l2cap_channel_callback(
       [&](auto chan) { last_channel = std::move(chan); });
 
   fidlbredr::ChannelParameters chan_params;
-  chan_params.set_flush_timeout(kFlushTimeout.get());
+  chan_params.set_flush_timeout(kFlushTimeout.count());
   fidlbredr::L2capParameters l2cap_params;
   l2cap_params.set_psm(fidlbredr::PSM_AVDTP);
   l2cap_params.set_parameters(std::move(chan_params));
@@ -1147,17 +1147,17 @@ TEST_F(ProfileServerTestFakeAdapter, ConnectChannelParametersContainsFlushTimeou
   EXPECT_EQ(last_channel->info().flush_timeout, std::optional(kFlushTimeout));
   ASSERT_TRUE(response_channel.has_value());
   ASSERT_TRUE(response_channel->has_flush_timeout());
-  ASSERT_EQ(response_channel->flush_timeout(), kFlushTimeout.get());
+  ASSERT_EQ(response_channel->flush_timeout(), kFlushTimeout.count());
 }
 
 TEST_F(ProfileServerTestFakeAdapter, AdvertiseChannelParametersContainsFlushTimeout) {
-  const zx::duration kFlushTimeout(zx::msec(100));
+  const pw::chrono::SystemClock::duration kFlushTimeout(std::chrono::milliseconds(100));
   const bt::hci_spec::ConnectionHandle kHandle(1);
 
   std::vector<fidlbredr::ServiceDefinition> services;
   services.emplace_back(MakeFIDLServiceDefinition());
   fidlbredr::ChannelParameters chan_params;
-  chan_params.set_flush_timeout(kFlushTimeout.get());
+  chan_params.set_flush_timeout(kFlushTimeout.count());
 
   fidl::InterfaceHandle<fidlbredr::ConnectionReceiver> connect_receiver_handle;
   FakeConnectionReceiver connect_receiver(connect_receiver_handle.NewRequest(), dispatcher());
@@ -1180,7 +1180,7 @@ TEST_F(ProfileServerTestFakeAdapter, AdvertiseChannelParametersContainsFlushTime
   ASSERT_TRUE(connect_receiver.channel().has_value());
   fidlbredr::Channel fidl_channel = connect_receiver.take_channel();
   ASSERT_TRUE(fidl_channel.has_flush_timeout());
-  EXPECT_EQ(fidl_channel.flush_timeout(), kFlushTimeout.get());
+  EXPECT_EQ(fidl_channel.flush_timeout(), kFlushTimeout.count());
 
   channel->Close();
   RunLoopUntilIdle();

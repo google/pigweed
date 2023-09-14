@@ -124,9 +124,10 @@ class LogicalLink : public hci::AclDataChannel::ConnectionInterface {
   // Sets an automatic flush timeout with duration |flush_timeout|. |callback| will be called with
   // the result of the operation. This is only supported if the link type is kACL (BR/EDR).
   // |flush_timeout| must be in the range [1ms - hci_spec::kMaxAutomaticFlushTimeoutDuration]. A
-  // flush timeout of zx::duration::infinite() indicates an infinite flush timeout (no automatic
-  // flush), the default.
-  void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout, hci::ResultCallback<> callback);
+  // flush timeout of pw::chrono::SystemClock::duration::max() indicates an infinite flush timeout
+  // (no automatic flush), the default.
+  void SetBrEdrAutomaticFlushTimeout(pw::chrono::SystemClock::duration flush_timeout,
+                                     hci::ResultCallback<> callback);
 
   // Attach LogicalLink's inspect node as a child of |parent| with the given |name|.
   void AttachInspect(inspect::Node& parent, std::string name);
@@ -235,8 +236,8 @@ class LogicalLink : public hci::AclDataChannel::ConnectionInterface {
   uint16_t max_acl_payload_size_;
 
   // The duration after which BR/EDR packets are flushed from the controller.
-  // By default, the flush timeout is infinite (no automatic flush).
-  UintInspectable<zx::duration> flush_timeout_;
+  // By default, the flush timeout is pw::chrono::SystemClock::duration::max() (no automatic flush).
+  UintInspectable<pw::chrono::SystemClock::duration> flush_timeout_;
 
   fit::closure link_error_cb_;
 
