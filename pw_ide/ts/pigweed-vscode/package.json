@@ -1,15 +1,24 @@
 {
-  "name": "pigweed-ide",
-  "displayName": "Pigweed IDE",
-  "description": "IDE features for Pigweed projects",
+  "publisher": "pigweed-authors",
+  "name": "pigweed-vscode",
+  "displayName": "Pigweed Visual Studio Code Extension",
+  "description": "Visual Studio Code support for Pigweed projects",
   "version": "0.0.1",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.64.0"
   },
   "categories": [
-    "Other"
+    "Debuggers",
+    "Formatters",
+    "Linters",
+    "Programming Languages",
+    "Other",
+    "Testing"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "workspaceContains:**/pigweed.json"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
