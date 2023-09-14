@@ -21,7 +21,7 @@ BrEdrConnection::BrEdrConnection(Peer::WeakPtr peer, std::unique_ptr<hci::BrEdrC
                                  fit::callback<void()> disconnect_cb,
                                  fit::closure on_peer_disconnect_cb, l2cap::ChannelManager* l2cap,
                                  hci::Transport::WeakPtr transport, std::optional<Request> request,
-                                 pw::async::Dispatcher& pw_dispatcher)
+                                 pw::async::Dispatcher& dispatcher)
     : peer_id_(peer->identifier()),
       peer_(std::move(peer)),
       link_(std::move(link)),
@@ -35,11 +35,11 @@ BrEdrConnection::BrEdrConnection(Peer::WeakPtr peer, std::unique_ptr<hci::BrEdrC
           peer_id_, link_->handle(), link_->peer_address(), link_->local_address(), transport)),
       interrogator_(
           new BrEdrInterrogator(peer_, link_->handle(), transport->command_channel()->AsWeakPtr())),
-      create_time_(pw_async_fuchsia::TimepointToZxTime(pw_dispatcher.now())),
+      create_time_(dispatcher.now()),
       disconnect_cb_(std::move(disconnect_cb)),
       peer_init_token_(request_->take_peer_init_token()),
       peer_conn_token_(peer_->MutBrEdr().RegisterConnection()),
-      pw_dispatcher_(pw_dispatcher) {
+      dispatcher_(dispatcher) {
   link_->set_peer_disconnect_callback(
       [peer_disconnect_cb = std::move(on_peer_disconnect_cb)](const auto& conn, auto /*reason*/) {
         peer_disconnect_cb();
@@ -130,8 +130,8 @@ void BrEdrConnection::OnPairingStateStatus(hci_spec::ConnectionHandle handle,
   peer_init_token_.reset();
 }
 
-zx::duration BrEdrConnection::duration() const {
-  return pw_async_fuchsia::TimepointToZxTime(pw_dispatcher_.now()) - create_time_;
+pw::chrono::SystemClock::duration BrEdrConnection::duration() const {
+  return dispatcher_.now() - create_time_;
 }
 
 }  // namespace bt::gap

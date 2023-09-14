@@ -326,7 +326,6 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerAlreadyInScanCache) {
 
 TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerRequestTimeout) {
   constexpr pw::chrono::SystemClock::duration kTestRequestTimeout = std::chrono::seconds(20);
-  constexpr pw::chrono::SystemClock::duration kPwTestRequestTimeout = std::chrono::seconds(20);
 
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
 
@@ -338,7 +337,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerRequestTimeout) {
   ConnectionResult result = fit::ok(nullptr);
   auto callback = [&result](auto res) { result = std::move(res); };
 
-  conn_mgr()->set_request_timeout_for_testing(kPwTestRequestTimeout);
+  conn_mgr()->set_request_timeout_for_testing(kTestRequestTimeout);
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
   ASSERT_TRUE(peer->le());
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
@@ -360,9 +359,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeerDoesNotExpireDuringTimeout) {
   // relying on the kCacheTimeout constant.
   constexpr pw::chrono::SystemClock::duration kTestRequestTimeout =
       kCacheTimeout + std::chrono::seconds(1);
-  constexpr pw::chrono::SystemClock::duration kPwTestRequestTimeout =
-      kPwCacheTimeout + std::chrono::seconds(1);
-  conn_mgr()->set_request_timeout_for_testing(kPwTestRequestTimeout);
+  conn_mgr()->set_request_timeout_for_testing(kTestRequestTimeout);
 
   // Note: Use a random address so that the peer becomes temporary upon failure.
   auto* peer = peer_cache()->NewPeer(kAddress1, /*connectable=*/true);
@@ -389,8 +386,6 @@ TEST_F(LowEnergyConnectionManagerTest, PeerDoesNotExpireDuringDelayedConnect) {
   // timeout.
   constexpr pw::chrono::SystemClock::duration kConnectionDelay =
       kCacheTimeout + std::chrono::seconds(1);
-  constexpr pw::chrono::SystemClock::duration kPwConnectionDelay =
-      kPwCacheTimeout + std::chrono::seconds(1);
   FakeController::Settings settings;
   settings.ApplyLegacyLEConfig();
   settings.le_connection_delay = kConnectionDelay;
@@ -405,7 +400,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeerDoesNotExpireDuringDelayedConnect) {
 
   // Make sure the connection request doesn't time out while waiting for a
   // response.
-  conn_mgr()->set_request_timeout_for_testing(kPwConnectionDelay + std::chrono::seconds(1));
+  conn_mgr()->set_request_timeout_for_testing(kConnectionDelay + std::chrono::seconds(1));
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto callback = [&conn_handle](auto result) {

@@ -151,7 +151,7 @@ BrEdrConnectionManager::BrEdrConnectionManager(hci::Transport::WeakPtr hci, Peer
       page_scan_window_(0),
       use_interlaced_scan_(use_interlaced_scan),
       local_secure_connections_supported_(local_secure_connections_supported),
-      pw_dispatcher_(dispatcher),
+      dispatcher_(dispatcher),
       weak_self_(this) {
   BT_DEBUG_ASSERT(hci_.is_alive());
   BT_DEBUG_ASSERT(cache_);
@@ -337,7 +337,7 @@ BrEdrConnectionManager::SearchId BrEdrConnectionManager::AddServiceSearch(
             self->discoverer_.SingleSearch(search_id, peer_id, nullptr);
             return;
           }
-          auto client = sdp::Client::Create(std::move(channel), self->pw_dispatcher_);
+          auto client = sdp::Client::Create(std::move(channel), self->dispatcher_);
           self->discoverer_.SingleSearch(search_id, peer_id, std::move(client));
         });
   }
@@ -407,7 +407,7 @@ bool BrEdrConnectionManager::Disconnect(PeerId peer_id, DisconnectReason reason)
         DEBUG, "gap-bredr", "requested disconnect from peer, cooldown for %llds (addr: %s)",
         std::chrono::duration_cast<std::chrono::seconds>(kLocalDisconnectCooldownDuration).count(),
         bt_str(peer_addr));
-    deny_incoming_.add_until(peer_addr, pw_dispatcher_.now() + kLocalDisconnectCooldownDuration);
+    deny_incoming_.add_until(peer_addr, dispatcher_.now() + kLocalDisconnectCooldownDuration);
   }
 
   CleanUpConnection(handle, std::move(connections_.extract(handle).mapped()), reason);
@@ -483,7 +483,8 @@ void BrEdrConnectionManager::AttachInspect(inspect::Node& parent, std::string na
       inspect_node_, kInspectPeerDisconnectionCountNodeName);
 }
 
-void BrEdrConnectionManager::WritePageTimeout(zx::duration page_timeout, hci::ResultFunction<> cb) {
+void BrEdrConnectionManager::WritePageTimeout(pw::chrono::SystemClock::duration page_timeout,
+                                              hci::ResultFunction<> cb) {
   BT_ASSERT(page_timeout >= hci_spec::kMinPageTimeoutDuration);
   BT_ASSERT(page_timeout <= hci_spec::kMaxPageTimeoutDuration);
 
@@ -621,7 +622,7 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
   auto [conn_iter, success] = connections_.try_emplace(
       handle, peer->GetWeakPtr(), std::move(link), std::move(send_auth_request_cb),
       std::move(disconnect_cb), std::move(on_peer_disconnect_cb), l2cap_, hci_, std::move(request),
-      pw_dispatcher_);
+      dispatcher_);
   BT_ASSERT(success);
 
   BrEdrConnection& connection = conn_iter->second;
@@ -711,7 +712,7 @@ void BrEdrConnectionManager::CompleteConnectionSetup(Peer::WeakPtr peer,
                    bt_str(peer_id));
             return;
           }
-          auto client = sdp::Client::Create(std::move(channel), self->pw_dispatcher_);
+          auto client = sdp::Client::Create(std::move(channel), self->dispatcher_);
           self->discoverer_.StartServiceDiscovery(peer_id, std::move(client));
         });
   }
@@ -799,7 +800,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnConnectionReq
   // Register that we're in the middle of an incoming request for this peer - create a new
   // request if one doesn't already exist
   auto [request, _] = connection_requests_.try_emplace(
-      peer_id, pw_dispatcher_, addr, peer_id, peer->MutBrEdr().RegisterInitializingConnection());
+      peer_id, dispatcher_, addr, peer_id, peer->MutBrEdr().RegisterInitializingConnection());
 
   inspect_properties_.incoming_.connection_attempts_.Add(1);
 
@@ -1303,7 +1304,7 @@ bool BrEdrConnectionManager::Connect(PeerId peer_id, ConnectResultCallback on_co
   }
   // If we are not already connected or pending, initiate a new connection
   auto [request_iter, _] = connection_requests_.try_emplace(
-      peer_id, pw_dispatcher_, peer->address(), peer_id,
+      peer_id, dispatcher_, peer->address(), peer_id,
       peer->MutBrEdr().RegisterInitializingConnection(), std::move(on_connection_result));
   request_iter->second.AttachInspect(
       inspect_properties_.requests_node_,
@@ -1355,7 +1356,7 @@ void BrEdrConnectionManager::InitiatePendingConnection(CreateConnectionParams pa
       self->OnRequestTimeout();
   };
   BrEdrConnectionRequest& pending_gap_req = connection_requests_.find(params.peer_id)->second;
-  pending_request_.emplace(params.peer_id, params.addr, on_timeout, pw_dispatcher_);
+  pending_request_.emplace(params.peer_id, params.addr, on_timeout, dispatcher_);
   pending_request_->CreateConnection(hci_->command_channel(), params.clock_offset,
                                      params.page_scan_repetition_mode, request_timeout_,
                                      on_failure);
@@ -1573,12 +1574,12 @@ void BrEdrConnectionManager::RecordDisconnectInspect(const BrEdrConnection& conn
   auto& inspect_item = inspect_properties_.last_disconnected_list.CreateItem();
   inspect_item.node.RecordString(kInspectLastDisconnectedItemPeerPropertyName,
                                  conn.peer_id().ToString());
-  inspect_item.node.RecordUint(kInspectLastDisconnectedItemDurationPropertyName,
-                               conn.duration().to_secs());
-  inspect_item.node.RecordInt(
-      kInspectTimestampPropertyName,
-      std::chrono::duration_cast<std::chrono::nanoseconds>(pw_dispatcher_.now().time_since_epoch())
-          .count());
+  uint64_t conn_duration_s =
+      std::chrono::duration_cast<std::chrono::seconds>(conn.duration()).count();
+  inspect_item.node.RecordUint(kInspectLastDisconnectedItemDurationPropertyName, conn_duration_s);
+
+  int64_t time_ns = dispatcher_.now().time_since_epoch().count();
+  inspect_item.node.RecordInt(kInspectTimestampPropertyName, time_ns);
 
   switch (reason) {
     case DisconnectReason::kApiRequest:

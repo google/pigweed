@@ -75,7 +75,7 @@ BrEdrDiscoveryManager::BrEdrDiscoveryManager(pw::async::Dispatcher& pw_dispatche
                                              pw::bluetooth::emboss::InquiryMode mode,
                                              PeerCache* peer_cache)
     : cmd_(std::move(cmd)),
-      pw_dispatcher_(pw_dispatcher),
+      dispatcher_(pw_dispatcher),
       cache_(peer_cache),
       result_handler_id_(0u),
       desired_inquiry_mode_(mode),
@@ -390,7 +390,7 @@ void BrEdrDiscoveryManager::InspectProperties::Update(size_t discoverable_count,
 void BrEdrDiscoveryManager::UpdateInspectProperties() {
   inspect_properties_.Update(discoverable_.size(), pending_discoverable_.size(),
                              discovering_.size(),
-                             pw_async_fuchsia::TimepointToZxTime(pw_dispatcher_.now()).get());
+                             pw_async_fuchsia::TimepointToZxTime(dispatcher_.now()).get());
 }
 
 void BrEdrDiscoveryManager::NotifyPeersUpdated(const std::unordered_set<Peer*>& peers) {

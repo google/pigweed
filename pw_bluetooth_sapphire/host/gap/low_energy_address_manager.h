@@ -122,7 +122,7 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
   // Notifies all address changed listeners of the change in device address.
   void NotifyAddressUpdate();
 
-  pw::async::Dispatcher& pw_dispatcher_;
+  pw::async::Dispatcher& dispatcher_;
 
   StateQueryDelegate delegate_;
   hci::CommandChannel::WeakPtr cmd_;
@@ -158,7 +158,7 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
 
   // The task that executes when a random address expires and needs to be
   // refreshed.
-  SmartTask random_address_expiry_task_{pw_dispatcher_};
+  SmartTask random_address_expiry_task_{dispatcher_};
 
   WeakSelf<LowEnergyAddressManager> weak_self_;
 

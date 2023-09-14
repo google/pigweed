@@ -86,7 +86,7 @@ LowEnergyDiscoveryManager::LowEnergyDiscoveryManager(hci::LowEnergyScanner* scan
                                                      PeerCache* peer_cache,
                                                      pw::async::Dispatcher& dispatcher)
     : WeakSelf(this),
-      pw_dispatcher_(dispatcher),
+      dispatcher_(dispatcher),
       state_(State::kIdle, StateToString),
       peer_cache_(peer_cache),
       paused_count_(0),
@@ -271,8 +271,7 @@ void LowEnergyDiscoveryManager::OnPeerFound(const hci::LowEnergyScanResult& resu
     peer->set_connectable(true);
   }
 
-  peer->MutLe().SetAdvertisingData(result.rssi, data,
-                                   pw_async_fuchsia::TimepointToZxTime(pw_dispatcher_.now()));
+  peer->MutLe().SetAdvertisingData(result.rssi, data, dispatcher_.now());
 
   cached_scan_results_.insert(peer->identifier());
 
@@ -466,7 +465,7 @@ void LowEnergyDiscoveryManager::StartScan(bool active) {
       .filter_duplicates = true,
       .filter_policy = pw::bluetooth::emboss::LEScanFilterPolicy::BASIC_UNFILTERED,
       .period = scan_period_,
-      .scan_response_timeout = kPwLEScanResponseTimeout,
+      .scan_response_timeout = kLEScanResponseTimeout,
   };
 
   // See Vol 3, Part C, 9.3.11 "Connection Establishment Timing Parameters".

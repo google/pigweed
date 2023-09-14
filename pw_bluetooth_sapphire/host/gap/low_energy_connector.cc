@@ -38,7 +38,7 @@ LowEnergyConnector::LowEnergyConnector(PeerId peer_id, LowEnergyConnectionOption
                                        WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
                                        l2cap::ChannelManager* l2cap, gatt::GATT::WeakPtr gatt,
                                        pw::async::Dispatcher& dispatcher)
-    : pw_dispatcher_(dispatcher),
+    : dispatcher_(dispatcher),
       peer_id_(peer_id),
       peer_cache_(peer_cache),
       l2cap_(l2cap),
@@ -225,8 +225,7 @@ void LowEnergyConnector::OnScanStart(LowEnergyDiscoverySessionPtr session) {
   state_.Set(State::kScanning);
 
   auto self = weak_self_.GetWeakPtr();
-  scan_timeout_task_.emplace(pw_dispatcher_, [this](pw::async::Context& /*ctx*/,
-                                                    pw::Status status) {
+  scan_timeout_task_.emplace(dispatcher_, [this](pw::async::Context& /*ctx*/, pw::Status status) {
     if (!status.ok()) {
       return;
     }
@@ -235,7 +234,7 @@ void LowEnergyConnector::OnScanStart(LowEnergyDiscoverySessionPtr session) {
     NotifyFailure(ToResult(HostError::kTimedOut));
   });
   // The scan timeout may include time during which scanning is paused.
-  scan_timeout_task_->PostAfter(kPwLEGeneralCepScanTimeout);
+  scan_timeout_task_->PostAfter(kLEGeneralCepScanTimeout);
 
   discovery_session_ = std::move(session);
   discovery_session_->filter()->set_connectable(true);
@@ -322,7 +321,7 @@ bool LowEnergyConnector::InitializeConnection(std::unique_ptr<hci::LowEnergyConn
   BT_ASSERT(peer);
   auto connection = LowEnergyConnection::Create(
       peer->GetWeakPtr(), std::move(link), options_, peer_disconnect_cb, error_cb,
-      le_connection_manager_, l2cap_, gatt_, cmd_, pw_dispatcher_);
+      le_connection_manager_, l2cap_, gatt_, cmd_, dispatcher_);
   if (!connection) {
     bt_log(WARN, "gap-le", "connection initialization failed (peer: %s)", bt_str(peer_id_));
     NotifyFailure();

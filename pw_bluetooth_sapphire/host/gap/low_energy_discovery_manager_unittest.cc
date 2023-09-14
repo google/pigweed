@@ -43,7 +43,6 @@ const DeviceAddress kAddress5(DeviceAddress::Type::kLEPublic, {5});
 constexpr uint16_t kServiceDataUuid = 0x1234;
 
 constexpr pw::chrono::SystemClock::duration kTestScanPeriod = std::chrono::seconds(10);
-constexpr pw::chrono::SystemClock::duration kPwTestScanPeriod = std::chrono::seconds(10);
 
 const char* kInspectNodeName = "low_energy_discovery_manager";
 
@@ -474,7 +473,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryFailureManyPending) {
 TEST_F(LowEnergyDiscoveryManagerTest, ScanPeriodRestart) {
   constexpr size_t kNumScanStates = 3;
 
-  discovery_manager()->set_scan_period(kPwTestScanPeriod);
+  discovery_manager()->set_scan_period(kTestScanPeriod);
 
   std::unique_ptr<LowEnergyDiscoverySession> session;
   discovery_manager()->StartDiscovery(
@@ -495,7 +494,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, ScanPeriodRestart) {
 TEST_F(LowEnergyDiscoveryManagerTest, ScanPeriodRestartFailure) {
   constexpr size_t kNumScanStates = 2;
 
-  discovery_manager()->set_scan_period(kPwTestScanPeriod);
+  discovery_manager()->set_scan_period(kTestScanPeriod);
 
   std::unique_ptr<LowEnergyDiscoverySession> session;
   bool session_error = false;
@@ -527,7 +526,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, ScanPeriodRestartFailure) {
 TEST_F(LowEnergyDiscoveryManagerTest, ScanPeriodRestartRemoveSession) {
   constexpr size_t kNumScanStates = 4;
 
-  discovery_manager()->set_scan_period(kPwTestScanPeriod);
+  discovery_manager()->set_scan_period(kTestScanPeriod);
 
   std::unique_ptr<LowEnergyDiscoverySession> session;
   discovery_manager()->StartDiscovery(
@@ -557,7 +556,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, ScanPeriodRemoveSessionDuringRestart) {
   constexpr size_t kNumScanStates = 2;
 
   // Set a very short scan period for the sake of the test.
-  discovery_manager()->set_scan_period(kPwTestScanPeriod);
+  discovery_manager()->set_scan_period(kTestScanPeriod);
 
   std::unique_ptr<LowEnergyDiscoverySession> session;
   discovery_manager()->StartDiscovery(
@@ -588,7 +587,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, ScanPeriodRestartRemoveAndAddSession) {
   constexpr size_t kTotalNumStates = 5;
 
   // Set a very short scan period for the sake of the test.
-  discovery_manager()->set_scan_period(kPwTestScanPeriod);
+  discovery_manager()->set_scan_period(kTestScanPeriod);
 
   std::unique_ptr<LowEnergyDiscoverySession> session;
   auto cb = [&session](auto cb_session) { session = std::move(cb_session); };
@@ -812,7 +811,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromUnknownPeer) {
 
   int connectable_count = 0;
   discovery_manager()->set_peer_connectable_callback([&](auto) { connectable_count++; });
-  discovery_manager()->set_scan_period(kPwTestScanPeriod);
+  discovery_manager()->set_scan_period(kTestScanPeriod);
 
   auto active_session = StartDiscoverySession();
   int active_count = 0;
@@ -840,7 +839,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromKnownNonConnec
 
   int connectable_count = 0;
   discovery_manager()->set_peer_connectable_callback([&](auto) { connectable_count++; });
-  discovery_manager()->set_scan_period(kPwTestScanPeriod);
+  discovery_manager()->set_scan_period(kTestScanPeriod);
 
   auto active_session = StartDiscoverySession();
   int active_count = 0;
@@ -873,7 +872,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromKnownConnectab
     EXPECT_EQ(peer, callback_peer);
     connectable_count++;
   });
-  discovery_manager()->set_scan_period(kPwTestScanPeriod);
+  discovery_manager()->set_scan_period(kTestScanPeriod);
 
   auto active_session = StartDiscoverySession();
   int active_count = 0;
@@ -900,7 +899,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, ScanResultUpgradesKnownBrEdrPeerToDualMode
 
   AddFakePeers();
 
-  discovery_manager()->set_scan_period(kPwTestScanPeriod);
+  discovery_manager()->set_scan_period(kTestScanPeriod);
 
   std::unordered_set<DeviceAddress> addresses_found;
   LowEnergyDiscoverySession::PeerFoundCallback result_cb = [&addresses_found](const auto& peer) {
@@ -1133,7 +1132,7 @@ TEST_F(LowEnergyDiscoveryManagerTest,
 }
 
 TEST_F(LowEnergyDiscoveryManagerTest, PassiveScanPeriodRestart) {
-  discovery_manager()->set_scan_period(kPwTestScanPeriod);
+  discovery_manager()->set_scan_period(kTestScanPeriod);
   auto session = StartDiscoverySession(/*active=*/false);
 
   // The scan state should transition to enabled.
@@ -1211,7 +1210,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartActiveScanAfterPausing) {
 }
 
 TEST_F(LowEnergyDiscoveryManagerTest, PauseDiscoveryJustBeforeScanComplete) {
-  discovery_manager()->set_scan_period(kPwTestScanPeriod);
+  discovery_manager()->set_scan_period(kTestScanPeriod);
 
   auto session = StartDiscoverySession();
   EXPECT_TRUE(scan_enabled());
@@ -1295,7 +1294,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, PauseJustBeforeScanPassive) {
 }
 
 TEST_F(LowEnergyDiscoveryManagerTest, StartActiveScanWhilePassiveScanStoppingBetweenScanPeriods) {
-  discovery_manager()->set_scan_period(kPwTestScanPeriod);
+  discovery_manager()->set_scan_period(kTestScanPeriod);
 
   auto passive_session = StartDiscoverySession(/*active=*/false);
 

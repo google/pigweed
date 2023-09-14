@@ -9,9 +9,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <pw_async/fake_dispatcher.h>
+#include <pw_async/fake_dispatcher_fixture.h>
 #include <pw_async_fuchsia/dispatcher.h>
 
-#include "pw_async/fake_dispatcher_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_class.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
@@ -24,7 +24,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::gap {
 namespace {
@@ -194,13 +193,13 @@ TEST_F(PeerCacheTest, LookUp) {
   // Adding a peer with the same address should return nullptr.
   EXPECT_FALSE(cache()->NewPeer(kAddrLePublic, true));
 
-  peer->MutLe().SetAdvertisingData(kTestRSSI, kAdvData1, zx::time());
+  peer->MutLe().SetAdvertisingData(kTestRSSI, kAdvData1, pw::chrono::SystemClock::time_point());
   EXPECT_TRUE(peer->le()->parsed_advertising_data().has_value());
   EXPECT_EQ(kTestRSSI, peer->rssi());
   ASSERT_TRUE(peer->name().has_value());
   EXPECT_EQ(peer->name().value(), "Test Device");
 
-  peer->MutLe().SetAdvertisingData(kTestRSSI, kAdvData0, zx::time());
+  peer->MutLe().SetAdvertisingData(kTestRSSI, kAdvData0, pw::chrono::SystemClock::time_point());
   EXPECT_TRUE(peer->le()->parsed_advertising_data().has_value());
   EXPECT_EQ(kTestRSSI, peer->rssi());
   ASSERT_TRUE(peer->name().has_value());
@@ -361,7 +360,7 @@ TEST_F(PeerCacheTest, BrEdrPeerBecomesDualModeWithAdvertisingData) {
   ASSERT_TRUE(peer()->bredr());
   ASSERT_FALSE(peer()->le());
 
-  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, zx::time());
+  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, pw::chrono::SystemClock::time_point());
   EXPECT_TRUE(peer()->le());
   EXPECT_EQ(TechnologyType::kDualMode, peer()->technology());
 
@@ -930,7 +929,7 @@ TEST_F(PeerCacheTestBondingTest, StoreBondsForBothTech) {
   ASSERT_TRUE(peer()->temporary());
   ASSERT_FALSE(peer()->bonded());
 
-  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, zx::time());
+  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, pw::chrono::SystemClock::time_point());
   ASSERT_EQ(TechnologyType::kDualMode, peer()->technology());
 
   // Without Secure Connections cross-transport key generation, bonding on one
@@ -1086,7 +1085,7 @@ TEST_F(PeerCacheLowEnergyUpdateCallbackTest, ChangingLEConnectionStateTriggersUp
 }
 
 TEST_F(PeerCacheLowEnergyUpdateCallbackTest, SetAdvertisingDataTriggersUpdateCallbackOnNameSet) {
-  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, zx::time());
+  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, pw::chrono::SystemClock::time_point());
   EXPECT_TRUE(was_called());
   ASSERT_TRUE(peer()->name());
   EXPECT_EQ("Test", *peer()->name());
@@ -1102,16 +1101,16 @@ TEST_F(PeerCacheLowEnergyUpdateCallbackTest,
     EXPECT_EQ(updated_peer.name().value(), "Test");
     EXPECT_EQ(updated_peer.rssi(), kTestRSSI);
   });
-  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, zx::time());
+  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, pw::chrono::SystemClock::time_point());
 }
 
 TEST_F(PeerCacheLowEnergyUpdateCallbackTest,
        SetAdvertisingDataTriggersUpdateCallbackOnSameNameAndRssi) {
-  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, zx::time());
+  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, pw::chrono::SystemClock::time_point());
   ASSERT_TRUE(was_called());
 
   ClearWasCalled();
-  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, zx::time());
+  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, pw::chrono::SystemClock::time_point());
   EXPECT_TRUE(was_called());
 }
 
@@ -1352,7 +1351,7 @@ TEST_F(PeerCacheBrEdrUpdateCallbackTest, BecomingDualModeTriggersUpdateCallBack)
   // Calling MutLe again doesn't trigger additional callbacks.
   peer()->MutLe();
   EXPECT_EQ(call_count, 1U);
-  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, zx::time());
+  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData, pw::chrono::SystemClock::time_point());
   EXPECT_EQ(call_count, 2U);
 }
 
@@ -1394,53 +1393,53 @@ class PeerCacheExpirationTest : public pw::async::test::FakeDispatcherFixture {
 };
 
 TEST_F(PeerCacheExpirationTest, TemporaryDiesSixtySecondsAfterBirth) {
-  RunFor(kPwCacheTimeout);
+  RunFor(kCacheTimeout);
   EXPECT_FALSE(IsDefaultPeerPresent());
   EXPECT_EQ(1, peers_removed());
 }
 
 TEST_F(PeerCacheExpirationTest, TemporaryLivesForSixtySecondsAfterBirth) {
-  RunFor(kPwCacheTimeout - std::chrono::milliseconds(1));
+  RunFor(kCacheTimeout - std::chrono::milliseconds(1));
   EXPECT_TRUE(IsDefaultPeerPresent());
   EXPECT_EQ(0, peers_removed());
 }
 
 TEST_F(PeerCacheExpirationTest, TemporaryLivesForSixtySecondsSinceLastSeen) {
-  RunFor(kPwCacheTimeout - std::chrono::milliseconds(1));
+  RunFor(kCacheTimeout - std::chrono::milliseconds(1));
   ASSERT_TRUE(IsDefaultPeerPresent());
 
   // Tickle peer, and verify it sticks around for another cache timeout.
   GetDefaultPeer()->RegisterName("nombre");
-  RunFor(kPwCacheTimeout - std::chrono::milliseconds(1));
+  RunFor(kCacheTimeout - std::chrono::milliseconds(1));
   EXPECT_TRUE(IsDefaultPeerPresent());
 }
 
 TEST_F(PeerCacheExpirationTest, TemporaryDiesSixtySecondsAfterLastSeen) {
-  RunFor(kPwCacheTimeout - std::chrono::milliseconds(1));
+  RunFor(kCacheTimeout - std::chrono::milliseconds(1));
   ASSERT_TRUE(IsDefaultPeerPresent());
 
   // Tickle peer, and verify it expires after cache timeout.
   GetDefaultPeer()->RegisterName("nombre");
-  RunFor(kPwCacheTimeout);
+  RunFor(kCacheTimeout);
   EXPECT_FALSE(IsDefaultPeerPresent());
 }
 
 TEST_F(PeerCacheExpirationTest, CanMakeNonTemporaryJustBeforeSixtySeconds) {
   // At last possible moment, make peer non-temporary,
-  RunFor(kPwCacheTimeout - std::chrono::milliseconds(1));
+  RunFor(kCacheTimeout - std::chrono::milliseconds(1));
   ASSERT_TRUE(IsDefaultPeerPresent());
   Peer::ConnectionToken conn_token = GetDefaultPeer()->MutLe().RegisterConnection();
   ASSERT_FALSE(GetDefaultPeer()->temporary());
 
   // Verify that the peer survives.
-  RunFor(kPwCacheTimeout * 10);
+  RunFor(kCacheTimeout * 10);
   EXPECT_TRUE(IsDefaultPeerPresent());
 }
 
 TEST_F(PeerCacheExpirationTest, LEConnectedPeerLivesMuchMoreThanSixtySeconds) {
   ASSERT_TRUE(IsDefaultPeerPresent());
   Peer::ConnectionToken conn_token = GetDefaultPeer()->MutLe().RegisterConnection();
-  RunFor(kPwCacheTimeout * 10);
+  RunFor(kCacheTimeout * 10);
   ASSERT_TRUE(IsDefaultPeerPresent());
   EXPECT_FALSE(GetDefaultPeer()->temporary());
 }
@@ -1448,7 +1447,7 @@ TEST_F(PeerCacheExpirationTest, LEConnectedPeerLivesMuchMoreThanSixtySeconds) {
 TEST_F(PeerCacheExpirationTest, BREDRConnectedPeerLivesMuchMoreThanSixtySeconds) {
   ASSERT_TRUE(IsDefaultPeerPresent());
   Peer::ConnectionToken token = GetDefaultPeer()->MutBrEdr().RegisterConnection();
-  RunFor(kPwCacheTimeout * 10);
+  RunFor(kCacheTimeout * 10);
   ASSERT_TRUE(IsDefaultPeerPresent());
   EXPECT_FALSE(GetDefaultPeer()->temporary());
 }
@@ -1462,7 +1461,7 @@ TEST_F(PeerCacheExpirationTest, LePeerBecomesNonTemporaryWhenConnecting) {
       GetDefaultPeer()->MutLe().RegisterInitializingConnection();
   EXPECT_FALSE(GetDefaultPeer()->temporary());
 
-  RunFor(kPwCacheTimeout);
+  RunFor(kCacheTimeout);
   ASSERT_TRUE(IsDefaultPeerPresent());
 }
 
@@ -1473,14 +1472,14 @@ TEST_F(PeerCacheExpirationTest, LEPublicPeerRemainsNonTemporaryOnDisconnect) {
     Peer::ConnectionToken conn_token = GetDefaultPeer()->MutLe().RegisterConnection();
     ASSERT_FALSE(GetDefaultPeer()->temporary());
 
-    RunFor(kPwCacheTimeout + std::chrono::seconds(1));
+    RunFor(kCacheTimeout + std::chrono::seconds(1));
     ASSERT_TRUE(IsDefaultPeerPresent());
     ASSERT_TRUE(GetDefaultPeer()->identity_known());
     // Destroy conn_token at end of scope
   }
   EXPECT_FALSE(GetDefaultPeer()->temporary());
 
-  RunFor(kPwCacheTimeout);
+  RunFor(kCacheTimeout);
   EXPECT_TRUE(IsDefaultPeerPresent());
 }
 
@@ -1536,7 +1535,7 @@ TEST_F(PeerCacheExpirationTest, BrEdrPeerRemainsNonTemporaryOnDisconnect) {
   // Then disconnect the peer, in preparation for the next stage of our test.
   {
     EXPECT_EQ(0, peers_removed());
-    RunFor(kPwCacheTimeout * 10);
+    RunFor(kCacheTimeout * 10);
     EXPECT_EQ(1, peers_removed());  // Default peer timed out.
     auto* custom_peer = GetPeerById(custom_peer_id);
     ASSERT_TRUE(custom_peer);
@@ -1551,7 +1550,7 @@ TEST_F(PeerCacheExpirationTest, BrEdrPeerRemainsNonTemporaryOnDisconnect) {
   // Verify that the disconnected peer does _not_ expire out of the cache.
   // We expect the peer to remain, because BrEdr peers are non-temporary
   // even when disconnected.
-  RunFor(kPwCacheTimeout);
+  RunFor(kCacheTimeout);
   EXPECT_TRUE(GetPeerById(custom_peer_id));
   EXPECT_EQ(1, peers_removed());
 }
@@ -1559,19 +1558,21 @@ TEST_F(PeerCacheExpirationTest, BrEdrPeerRemainsNonTemporaryOnDisconnect) {
 TEST_F(PeerCacheExpirationTest, ExpirationUpdatesAddressMap) {
   ASSERT_TRUE(IsDefaultPeerAddressInCache());
   ASSERT_TRUE(IsOtherTransportAddressInCache());
-  RunFor(kPwCacheTimeout);
+  RunFor(kCacheTimeout);
   EXPECT_FALSE(IsDefaultPeerAddressInCache());
   EXPECT_FALSE(IsOtherTransportAddressInCache());
 }
 
 TEST_F(PeerCacheExpirationTest, SetAdvertisingDataUpdatesExpiration) {
-  RunFor(kPwCacheTimeout - std::chrono::milliseconds(1));
+  RunFor(kCacheTimeout - std::chrono::milliseconds(1));
   ASSERT_TRUE(IsDefaultPeerPresent());
-  GetDefaultPeer()->MutLe().SetAdvertisingData(kTestRSSI, StaticByteBuffer<1>{}, zx::time());
-  RunFor(kPwCacheTimeout - std::chrono::milliseconds(1));
+  GetDefaultPeer()->MutLe().SetAdvertisingData(kTestRSSI, StaticByteBuffer<1>{},
+                                               pw::chrono::SystemClock::time_point());
+  RunFor(kCacheTimeout - std::chrono::milliseconds(1));
   EXPECT_TRUE(IsDefaultPeerPresent());
   // Setting advertising data with the same rssi & name should also update the expiry.
-  GetDefaultPeer()->MutLe().SetAdvertisingData(kTestRSSI, StaticByteBuffer<1>{}, zx::time());
+  GetDefaultPeer()->MutLe().SetAdvertisingData(kTestRSSI, StaticByteBuffer<1>{},
+                                               pw::chrono::SystemClock::time_point());
   RunFor(std::chrono::milliseconds(1));
   EXPECT_TRUE(IsDefaultPeerPresent());
 }
@@ -1581,7 +1582,7 @@ TEST_F(PeerCacheExpirationTest, SetBrEdrInquiryDataFromInquiryResultUpdatesExpir
   ASSERT_TRUE(IsDefaultPeerPresent());
   ir.view().bd_addr().CopyFrom(GetDefaultPeer()->address().value().view());
 
-  RunFor(kPwCacheTimeout - std::chrono::milliseconds(1));
+  RunFor(kCacheTimeout - std::chrono::milliseconds(1));
   ASSERT_TRUE(IsDefaultPeerPresent());
   GetDefaultPeer()->MutBrEdr().SetInquiryData(ir.view());
 
@@ -1594,7 +1595,7 @@ TEST_F(PeerCacheExpirationTest, SetBrEdrInquiryDataFromInquiryResultRSSIUpdatesE
   ASSERT_TRUE(IsDefaultPeerPresent());
   irr.view().bd_addr().CopyFrom(GetDefaultPeer()->address().value().view());
 
-  RunFor(kPwCacheTimeout - std::chrono::milliseconds(1));
+  RunFor(kCacheTimeout - std::chrono::milliseconds(1));
   ASSERT_TRUE(IsDefaultPeerPresent());
   GetDefaultPeer()->MutBrEdr().SetInquiryData(irr.view());
 
@@ -1608,7 +1609,7 @@ TEST_F(PeerCacheExpirationTest,
   ASSERT_TRUE(IsDefaultPeerPresent());
   event.view().bd_addr().CopyFrom(GetDefaultPeer()->address().value().view());
 
-  RunFor(kPwCacheTimeout - std::chrono::milliseconds(1));
+  RunFor(kCacheTimeout - std::chrono::milliseconds(1));
   ASSERT_TRUE(IsDefaultPeerPresent());
   GetDefaultPeer()->MutBrEdr().SetInquiryData(event.view());
 
@@ -1617,7 +1618,7 @@ TEST_F(PeerCacheExpirationTest,
 }
 
 TEST_F(PeerCacheExpirationTest, RegisterNameUpdatesExpiration) {
-  RunFor(kPwCacheTimeout - std::chrono::milliseconds(1));
+  RunFor(kCacheTimeout - std::chrono::milliseconds(1));
   ASSERT_TRUE(IsDefaultPeerPresent());
   GetDefaultPeer()->RegisterName({});
   RunFor(std::chrono::milliseconds(1));

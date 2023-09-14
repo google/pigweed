@@ -78,7 +78,7 @@ class PeerFuzzer final {
     peer_.MutLe().SetAdvertisingData(
         fdp().ConsumeIntegral<uint8_t>(),
         DynamicByteBuffer(BufferView(fdp().ConsumeBytes<uint8_t>(kMaxLeAdvDataLength))),
-        zx::time());
+        pw::chrono::SystemClock::time_point());
   }
 
   void LEDataRegisterInitializingConnection() {

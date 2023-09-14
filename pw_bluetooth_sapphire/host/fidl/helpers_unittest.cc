@@ -792,7 +792,7 @@ TEST(HelpersTest, PeerToFidlOptionalFields) {
   bt::gap::PeerCache cache(pw_dispatcher);
   bt::DeviceAddress addr(bt::DeviceAddress::Type::kLEPublic, {0, 1, 2, 3, 4, 5});
   auto* peer = cache.NewPeer(addr, /*connectable=*/true);
-  peer->MutLe().SetAdvertisingData(kRssi, kAdv, zx::time());
+  peer->MutLe().SetAdvertisingData(kRssi, kAdv, pw::chrono::SystemClock::time_point());
   bt::StaticPacket<pw::bluetooth::emboss::InquiryResultWriter> inquiry_result;
   auto view = inquiry_result.view();
   view.bd_addr().CopyFrom(bt::DeviceAddressBytes{{0, 1, 2, 3, 4, 5}}.view());
@@ -1455,7 +1455,8 @@ TEST(HelpersTest, DiscoveryFilterFromFidlFilter) {
 
 TEST(HelpersTest, EmptyAdvertisingDataToFidlScanData) {
   bt::AdvertisingData input;
-  fble::ScanData output = AdvertisingDataToFidlScanData(input, zx::time(1));
+  fble::ScanData output = AdvertisingDataToFidlScanData(
+      input, pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(1)));
   EXPECT_FALSE(output.has_tx_power());
   EXPECT_FALSE(output.has_appearance());
   EXPECT_FALSE(output.has_service_uuids());
@@ -1485,7 +1486,8 @@ TEST(HelpersTest, AdvertisingDataToFidlScanData) {
   const char* const kUri = "http://fuchsia.cl/461435";
   EXPECT_TRUE(input.AddUri(kUri));
 
-  fble::ScanData output = AdvertisingDataToFidlScanData(input, zx::time(1));
+  fble::ScanData output = AdvertisingDataToFidlScanData(
+      input, pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(1)));
   EXPECT_EQ(4, output.tx_power());
   EXPECT_EQ(fbt::Appearance{kAppearance}, output.appearance());
   ASSERT_EQ(1u, output.service_uuids().size());
@@ -1509,12 +1511,14 @@ TEST(HelpersTest, AdvertisingDataToFidlScanDataOmitsNonEnumeratedAppearance) {
   bt::AdvertisingData input;
   input.SetAppearance(kNonEnumeratedAppearance);
 
-  EXPECT_FALSE(AdvertisingDataToFidlScanData(input, zx::time()).has_appearance());
+  EXPECT_FALSE(
+      AdvertisingDataToFidlScanData(input, pw::chrono::SystemClock::time_point()).has_appearance());
 
   const uint16_t kKnownAppearance = 832u;  // HEART_RATE_SENSOR
   input.SetAppearance(kKnownAppearance);
 
-  EXPECT_TRUE(AdvertisingDataToFidlScanData(input, zx::time()).has_appearance());
+  EXPECT_TRUE(
+      AdvertisingDataToFidlScanData(input, pw::chrono::SystemClock::time_point()).has_appearance());
 }
 
 TEST_F(HelpersTestWithLoop, PeerToFidlLeWithAllFields) {
@@ -1531,7 +1535,8 @@ TEST_F(HelpersTestWithLoop, PeerToFidlLeWithAllFields) {
   auto adv_bytes = bt::StaticByteBuffer(
       // Uri: "https://abc.xyz"
       0x0B, bt::DataType::kURI, 0x17, '/', '/', 'a', 'b', 'c', '.', 'x', 'y', 'z');
-  peer.MutLe().SetAdvertisingData(kRssi, adv_bytes, zx::time(1));
+  peer.MutLe().SetAdvertisingData(kRssi, adv_bytes,
+                                  pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(1)));
 
   fble::Peer fidl_peer = PeerToFidlLe(peer);
   ASSERT_TRUE(fidl_peer.has_id());

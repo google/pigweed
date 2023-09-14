@@ -466,7 +466,7 @@ class AdapterImpl final : public Adapter {
   // Callback to propagate ownership of an auto-connected LE link.
   AutoConnectCallback auto_conn_cb_;
 
-  pw::async::Dispatcher& pw_dispatcher_;
+  pw::async::Dispatcher& dispatcher_;
 
   // This must remain the last member to make sure that all weak pointers are
   // invalidating before other members are destroyed.
@@ -484,7 +484,7 @@ AdapterImpl::AdapterImpl(pw::async::Dispatcher& pw_dispatcher, hci::Transport::W
       peer_cache_(pw_dispatcher),
       l2cap_(std::move(l2cap)),
       gatt_(std::move(gatt)),
-      pw_dispatcher_(pw_dispatcher),
+      dispatcher_(pw_dispatcher),
       weak_self_(this),
       weak_self_adapter_(this) {
   BT_DEBUG_ASSERT(hci_.is_alive());
@@ -970,7 +970,7 @@ void AdapterImpl::InitializeStep3() {
     // Initialize ChannelManager to make it available for the next initialization step. The
     // AclDataChannel must be initialized before creating ChannelManager.
     l2cap_ = l2cap::ChannelManager::Create(hci_->acl_data_channel(), hci_->command_channel(),
-                                           /*random_channel_ids=*/true, pw_dispatcher_);
+                                           /*random_channel_ids=*/true, dispatcher_);
     l2cap_->AttachInspect(adapter_node_, l2cap::ChannelManager::kInspectNodeName);
   }
 
@@ -1024,19 +1024,19 @@ void AdapterImpl::InitializeStep4() {
   // Initialize the LE local address manager.
   le_address_manager_ = std::make_unique<LowEnergyAddressManager>(
       adapter_identity, fit::bind_member<&AdapterImpl::IsLeRandomAddressChangeAllowed>(this),
-      hci_->command_channel()->AsWeakPtr(), pw_dispatcher_);
+      hci_->command_channel()->AsWeakPtr(), dispatcher_);
 
   // Initialize the HCI adapters.
   hci_le_advertiser_ = CreateAdvertiser();
   hci_le_connector_ = std::make_unique<hci::LowEnergyConnector>(
-      hci_, le_address_manager_.get(), pw_dispatcher_,
+      hci_, le_address_manager_.get(), dispatcher_,
       fit::bind_member<&hci::LowEnergyAdvertiser::OnIncomingConnection>(hci_le_advertiser_.get()));
-  hci_le_scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(le_address_manager_.get(), hci_,
-                                                                  pw_dispatcher_);
+  hci_le_scanner_ =
+      std::make_unique<hci::LegacyLowEnergyScanner>(le_address_manager_.get(), hci_, dispatcher_);
 
   // Initialize the LE manager objects
-  le_discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(hci_le_scanner_.get(),
-                                                                      &peer_cache_, pw_dispatcher_);
+  le_discovery_manager_ =
+      std::make_unique<LowEnergyDiscoveryManager>(hci_le_scanner_.get(), &peer_cache_, dispatcher_);
   le_discovery_manager_->AttachInspect(adapter_node_, kInspectLowEnergyDiscoveryManagerNodeName);
   le_discovery_manager_->set_peer_connectable_callback(
       fit::bind_member<&AdapterImpl::OnLeAutoConnectRequest>(this));
@@ -1044,7 +1044,7 @@ void AdapterImpl::InitializeStep4() {
   le_connection_manager_ = std::make_unique<LowEnergyConnectionManager>(
       hci_->command_channel()->AsWeakPtr(), le_address_manager_.get(), hci_le_connector_.get(),
       &peer_cache_, l2cap_.get(), gatt_, le_discovery_manager_->GetWeakPtr(),
-      sm::SecurityManager::Create, pw_dispatcher_);
+      sm::SecurityManager::Create, dispatcher_);
   le_connection_manager_->AttachInspect(adapter_node_, kInspectLowEnergyConnectionManagerNodeName);
 
   le_advertising_manager_ = std::make_unique<LowEnergyAdvertisingManager>(
@@ -1058,7 +1058,7 @@ void AdapterImpl::InitializeStep4() {
     bredr_connection_manager_ = std::make_unique<BrEdrConnectionManager>(
         hci_, &peer_cache_, local_bredr_address, l2cap_.get(),
         state_.features.HasBit(/*page=*/0, hci_spec::LMPFeature::kInterlacedPageScan),
-        state_.IsLocalSecureConnectionsSupported(), pw_dispatcher_);
+        state_.IsLocalSecureConnectionsSupported(), dispatcher_);
     bredr_connection_manager_->AttachInspect(adapter_node_, kInspectBrEdrConnectionManagerNodeName);
 
     pw::bluetooth::emboss::InquiryMode mode = pw::bluetooth::emboss::InquiryMode::STANDARD;
@@ -1069,7 +1069,7 @@ void AdapterImpl::InitializeStep4() {
     }
 
     bredr_discovery_manager_ = std::make_unique<BrEdrDiscoveryManager>(
-        pw_dispatcher_, hci_->command_channel()->AsWeakPtr(), mode, &peer_cache_);
+        dispatcher_, hci_->command_channel()->AsWeakPtr(), mode, &peer_cache_);
     bredr_discovery_manager_->AttachInspect(adapter_node_, kInspectBrEdrDiscoveryManagerNodeName);
 
     sdp_server_ = std::make_unique<sdp::Server>(l2cap_.get());

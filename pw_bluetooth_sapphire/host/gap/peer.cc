@@ -4,11 +4,6 @@
 
 #include "peer.h"
 
-#include <lib/async/cpp/time.h>
-#include <lib/async/default.h>
-
-#include <iomanip>
-
 #include "pw_async_fuchsia/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
@@ -90,7 +85,7 @@ void Peer::LowEnergyData::AttachInspect(inspect::Node& parent, std::string name)
 }
 
 void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi, const ByteBuffer& data,
-                                             zx::time timestamp) {
+                                             pw::chrono::SystemClock::time_point timestamp) {
   // Prolong this peer's expiration in case it is temporary.
   peer_->UpdateExpiry();
 
@@ -456,7 +451,7 @@ void Peer::BrEdrData::AddService(UUID uuid) {
 Peer::Peer(NotifyListenersCallback notify_listeners_callback, PeerCallback update_expiry_callback,
            PeerCallback dual_mode_callback, StoreLowEnergyBondCallback store_le_bond_callback,
            PeerId identifier, const DeviceAddress& address, bool connectable,
-           PeerMetrics* peer_metrics, pw::async::Dispatcher& pw_dispatcher)
+           PeerMetrics* peer_metrics, pw::async::Dispatcher& dispatcher)
     : notify_listeners_callback_(std::move(notify_listeners_callback)),
       update_expiry_callback_(std::move(update_expiry_callback)),
       dual_mode_callback_(std::move(dual_mode_callback)),
@@ -483,8 +478,8 @@ Peer::Peer(NotifyListenersCallback notify_listeners_callback, PeerCallback updat
       temporary_(true),
       rssi_(hci_spec::kRSSIInvalid),
       peer_metrics_(peer_metrics),
-      last_updated_(pw_async_fuchsia::TimepointToZxTime(pw_dispatcher.now())),
-      pw_dispatcher_(pw_dispatcher),
+      last_updated_(dispatcher.now()),
+      dispatcher_(dispatcher),
       weak_self_(this) {
   BT_DEBUG_ASSERT(notify_listeners_callback_);
   BT_DEBUG_ASSERT(update_expiry_callback_);
@@ -660,9 +655,7 @@ void Peer::MakeDualMode() {
   dual_mode_callback_(*this);
 }
 
-void Peer::OnPeerUpdate() {
-  last_updated_ = pw_async_fuchsia::TimepointToZxTime(pw_dispatcher_.now());
-}
+void Peer::OnPeerUpdate() { last_updated_ = dispatcher_.now(); }
 
 void Peer::UpdatePeerAndNotifyListeners(NotifyListenersChange change) {
   OnPeerUpdate();

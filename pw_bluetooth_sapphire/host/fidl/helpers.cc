@@ -1206,8 +1206,8 @@ fble::AdvertisingDataDeprecated AdvertisingDataToFidlDeprecated(const bt::Advert
   return output;
 }
 
-fuchsia::bluetooth::le::ScanData AdvertisingDataToFidlScanData(const bt::AdvertisingData& input,
-                                                               zx::time timestamp) {
+fuchsia::bluetooth::le::ScanData AdvertisingDataToFidlScanData(
+    const bt::AdvertisingData& input, pw::chrono::SystemClock::time_point timestamp) {
   // Reuse bt::AdvertisingData -> fble::AdvertisingData utility, since most fields are the same as
   // fble::ScanData.
   fble::AdvertisingData fidl_adv_data = AdvertisingDataToFidl(input);
@@ -1230,7 +1230,8 @@ fuchsia::bluetooth::le::ScanData AdvertisingDataToFidlScanData(const bt::Adverti
   if (fidl_adv_data.has_uris()) {
     out.set_uris(std::move(*fidl_adv_data.mutable_uris()));
   }
-  out.set_timestamp(timestamp.get());
+  zx_time_t timestamp_ns = timestamp.time_since_epoch().count();
+  out.set_timestamp(timestamp_ns);
   return out;
 }
 
@@ -1248,7 +1249,8 @@ fble::Peer PeerToFidlLe(const bt::gap::Peer& peer) {
   const std::optional<std::reference_wrapper<const bt::AdvertisingData>> advertising_data =
       peer.le()->parsed_advertising_data();
   if (advertising_data.has_value()) {
-    std::optional<zx::time> timestamp = peer.le()->parsed_advertising_data_timestamp();
+    std::optional<pw::chrono::SystemClock::time_point> timestamp =
+        peer.le()->parsed_advertising_data_timestamp();
     output.set_advertising_data(AdvertisingDataToFidl(advertising_data.value()));
     output.set_data(AdvertisingDataToFidlScanData(advertising_data.value(), timestamp.value()));
   }
@@ -1258,7 +1260,8 @@ fble::Peer PeerToFidlLe(const bt::gap::Peer& peer) {
   }
 
   output.set_bonded(peer.bonded());
-  output.set_last_updated(peer.last_updated().get());
+  zx_time_t last_updated_ns = peer.last_updated().time_since_epoch().count();
+  output.set_last_updated(last_updated_ns);
 
   return output;
 }

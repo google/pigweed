@@ -87,11 +87,11 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(
     hci::LowEnergyConnector* connector, PeerCache* peer_cache, l2cap::ChannelManager* l2cap,
     gatt::GATT::WeakPtr gatt, LowEnergyDiscoveryManager::WeakPtr discovery_manager,
     sm::SecurityManagerFactory sm_creator, pw::async::Dispatcher& dispatcher)
-    : pw_dispatcher_(dispatcher),
+    : dispatcher_(dispatcher),
       cmd_(std::move(cmd_channel)),
       security_mode_(LESecurityMode::Mode1),
       sm_factory_func_(std::move(sm_creator)),
-      request_timeout_(kPwLECreateConnectionTimeout),
+      request_timeout_(kLECreateConnectionTimeout),
       peer_cache_(peer_cache),
       l2cap_(l2cap),
       gatt_(gatt),
@@ -349,7 +349,7 @@ void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(
   std::unique_ptr<internal::LowEnergyConnector> connector =
       std::make_unique<internal::LowEnergyConnector>(peer_id, connection_options, cmd_, peer_cache_,
                                                      weak_self_.GetWeakPtr(), l2cap_, gatt_,
-                                                     pw_dispatcher_);
+                                                     dispatcher_);
   auto [conn_iter, _] = remote_connectors_.emplace(
       peer_id, RequestAndConnector{std::move(request), std::move(connector)});
   // Wait until the connector is in the map to start in case the result callback is called
@@ -417,7 +417,7 @@ void LowEnergyConnectionManager::TryCreateNextConnection() {
       std::unique_ptr<internal::LowEnergyConnector> connector =
           std::make_unique<internal::LowEnergyConnector>(peer_id, request.connection_options(),
                                                          cmd_, peer_cache_, weak_self_.GetWeakPtr(),
-                                                         l2cap_, gatt_, pw_dispatcher_);
+                                                         l2cap_, gatt_, dispatcher_);
       connector->AttachInspect(inspect_node_, kInspectOutboundConnectorNodeName);
 
       current_request_ = RequestAndConnector{std::move(request), std::move(connector)};

@@ -56,7 +56,7 @@ class Peer final {
   Peer(NotifyListenersCallback notify_listeners_callback, PeerCallback update_expiry_callback,
        PeerCallback dual_mode_callback, StoreLowEnergyBondCallback store_le_bond_callback,
        PeerId identifier, const DeviceAddress& address, bool connectable, PeerMetrics* peer_metrics,
-       pw::async::Dispatcher& pw_dispatcher);
+       pw::async::Dispatcher& dispatcher);
 
   // Connection state as considered by the GAP layer. This may not correspond
   // exactly with the presence or absence of a link at the link layer. For
@@ -186,7 +186,9 @@ class Peer final {
       return std::cref(parsed_adv_data_.value());
     }
     // Returns the timestamp associated with the most recently successfully parsed AdvertisingData.
-    std::optional<zx::time> parsed_advertising_data_timestamp() const { return adv_timestamp_; }
+    std::optional<pw::chrono::SystemClock::time_point> parsed_advertising_data_timestamp() const {
+      return adv_timestamp_;
+    }
 
     // Returns the error, if any, encountered when parsing the advertising data from the peer.
     std::optional<AdvertisingData::ParseError> advertising_data_error() const {
@@ -218,7 +220,8 @@ class Peer final {
 
     // Overwrites the stored advertising and scan response data with the contents of |data|
     // and updates the known RSSI and timestamp with the given values.
-    void SetAdvertisingData(int8_t rssi, const ByteBuffer& data, zx::time timestamp);
+    void SetAdvertisingData(int8_t rssi, const ByteBuffer& data,
+                            pw::chrono::SystemClock::time_point timestamp);
 
     // Register a connection that is in the request/initializing state. A token is returned that
     // should be owned until the initialization is complete or canceled. The connection state may be
@@ -290,7 +293,7 @@ class Peer final {
     // data supercede those in the original advertising data when processing fields in order.
     DynamicByteBuffer adv_data_buffer_;
     // Time when advertising data was last updated and successfully parsed.
-    std::optional<zx::time> adv_timestamp_;
+    std::optional<pw::chrono::SystemClock::time_point> adv_timestamp_;
     // AdvertisingData parsed from the peer's advertising data, if parsed correctly.
     AdvertisingData::ParseResult parsed_adv_data_ =
         fit::error(AdvertisingData::ParseError::kMissing);
@@ -576,7 +579,7 @@ class Peer final {
   // * BR/EDR bond data updated
   // * BR/EDR services updated
   // * name is updated
-  zx::time last_updated() const { return last_updated_; }
+  pw::chrono::SystemClock::time_point last_updated() const { return last_updated_; }
 
   using WeakPtr = WeakSelf<Peer>::WeakPtr;
   Peer::WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
@@ -670,9 +673,9 @@ class Peer final {
   PeerMetrics* peer_metrics_;
 
   // The time when the most recent update occurred.
-  zx::time last_updated_;
+  pw::chrono::SystemClock::time_point last_updated_;
 
-  pw::async::Dispatcher& pw_dispatcher_;
+  pw::async::Dispatcher& dispatcher_;
 
   WeakSelf<Peer> weak_self_;
 

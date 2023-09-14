@@ -181,7 +181,7 @@ class BrEdrConnectionManager final {
   // Writes page timeout duration to the controller.
   // |page_timeout| must be in the range [PageTimeout::MIN (0x0001), PageTimeout::MAX (0xFFFF)]
   // |cb| will be called with the resulting return parameter status.
-  void WritePageTimeout(zx::duration page_timeout, hci::ResultFunction<> cb);
+  void WritePageTimeout(pw::chrono::SystemClock::duration page_timeout, hci::ResultFunction<> cb);
 
   // Reads the controller page scan settings.
   void ReadPageScanSettings();
@@ -356,7 +356,7 @@ class BrEdrConnectionManager final {
   std::optional<hci::BrEdrConnectionRequest> pending_request_;
 
   // Time after which a connection attempt is considered to have timed out.
-  pw::chrono::SystemClock::duration request_timeout_{kPwBrEdrCreateConnectionTimeout};
+  pw::chrono::SystemClock::duration request_timeout_{kBrEdrCreateConnectionTimeout};
 
   struct InspectProperties {
     BoundedInspectListNode last_disconnected_list = BoundedInspectListNode(/*capacity=*/5);
@@ -386,7 +386,7 @@ class BrEdrConnectionManager final {
   InspectProperties inspect_properties_;
   inspect::Node inspect_node_;
 
-  pw::async::Dispatcher& pw_dispatcher_;
+  pw::async::Dispatcher& dispatcher_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

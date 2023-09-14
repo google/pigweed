@@ -263,7 +263,7 @@ class LowEnergyConnection final : public sm::Delegate {
                       ConfirmCallback confirm) override;
   void RequestPasskey(PasskeyResponseCallback respond) override;
 
-  pw::async::Dispatcher& pw_dispatcher_;
+  pw::async::Dispatcher& dispatcher_;
 
   // Notifies Peer of connection destruction. This should be ordered first so that it is
   // destroyed last.

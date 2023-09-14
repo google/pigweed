@@ -14,7 +14,7 @@ LowEnergyAddressManager::LowEnergyAddressManager(const DeviceAddress& public_add
                                                  StateQueryDelegate delegate,
                                                  hci::CommandChannel::WeakPtr cmd_channel,
                                                  pw::async::Dispatcher& dispatcher)
-    : pw_dispatcher_(dispatcher),
+    : dispatcher_(dispatcher),
       delegate_(std::move(delegate)),
       cmd_(std::move(cmd_channel)),
       privacy_enabled_(false),
@@ -121,7 +121,7 @@ void LowEnergyAddressManager::TryRefreshRandomAddress() {
               TryRefreshRandomAddress();
             }
           });
-      random_address_expiry_task_.PostAfter(kPwPrivateAddressTimeout);
+      random_address_expiry_task_.PostAfter(kPrivateAddressTimeout);
 
       // Notify any listeners of the change in device address.
       NotifyAddressUpdate();

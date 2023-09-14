@@ -223,8 +223,8 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate,
   void DeactivateAndNotifySessions();
 
   // The dispatcher that we use for invoking callbacks asynchronously.
-  pw::async::Dispatcher& pw_dispatcher_;
-  pw::async::HeapDispatcher heap_dispatcher_{pw_dispatcher_};
+  pw::async::Dispatcher& dispatcher_;
+  pw::async::HeapDispatcher heap_dispatcher_{dispatcher_};
 
   InspectProperties inspect_;
 
@@ -263,7 +263,7 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate,
   std::unordered_set<PeerId> cached_scan_results_;
 
   // The value (in ms) that we use for the duration of each scan period.
-  pw::chrono::SystemClock::duration scan_period_ = kPwLEGeneralDiscoveryScanMin;
+  pw::chrono::SystemClock::duration scan_period_ = kLEGeneralDiscoveryScanMin;
 
   // Count of the number of outstanding PauseTokens. When |paused_count_| is 0, discovery is
   // unpaused.

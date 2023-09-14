@@ -488,7 +488,6 @@ TEST_F(AdapterTest, PeerCacheReturnsNonNull) { EXPECT_TRUE(adapter()->peer_cache
 
 TEST_F(AdapterTest, LeAutoConnect) {
   constexpr pw::chrono::SystemClock::duration kTestScanPeriod = std::chrono::seconds(10);
-  constexpr pw::chrono::SystemClock::duration kPwTestScanPeriod = std::chrono::seconds(10);
   constexpr PeerId kPeerId(1234);
 
   FakeController::Settings settings;
@@ -496,7 +495,7 @@ TEST_F(AdapterTest, LeAutoConnect) {
   test_device()->set_settings(settings);
 
   InitializeAdapter([](bool) {});
-  adapter()->le()->set_scan_period_for_testing(kPwTestScanPeriod);
+  adapter()->le()->set_scan_period_for_testing(kTestScanPeriod);
 
   auto fake_peer = std::make_unique<FakePeer>(kTestAddr, dispatcher(), true, false);
   fake_peer->enable_directed_advertising(true);
@@ -533,7 +532,6 @@ TEST_F(AdapterTest, LeAutoConnect) {
 
 TEST_F(AdapterTest, LeSkipAutoConnectBehavior) {
   constexpr pw::chrono::SystemClock::duration kTestScanPeriod = std::chrono::seconds(10);
-  constexpr pw::chrono::SystemClock::duration kPwTestScanPeriod = std::chrono::seconds(10);
   constexpr PeerId kPeerId(1234);
 
   FakeController::Settings settings;
@@ -541,7 +539,7 @@ TEST_F(AdapterTest, LeSkipAutoConnectBehavior) {
   test_device()->set_settings(settings);
 
   InitializeAdapter([](bool) {});
-  adapter()->le()->set_scan_period_for_testing(kPwTestScanPeriod);
+  adapter()->le()->set_scan_period_for_testing(kTestScanPeriod);
 
   auto fake_peer = std::make_unique<FakePeer>(kTestAddr, dispatcher(), true, false);
   fake_peer->enable_directed_advertising(true);
@@ -679,11 +677,8 @@ TEST_F(AdapterTest, LocalAddressForDiscovery) {
   // Set a scan period that is longer than the private address timeout, for
   // testing.
   constexpr pw::chrono::SystemClock::duration kTestDelay = std::chrono::seconds(5);
-  constexpr pw::chrono::SystemClock::duration kPwTestDelay = std::chrono::seconds(5);
   constexpr pw::chrono::SystemClock::duration kTestScanPeriod = kPrivateAddressTimeout + kTestDelay;
-  constexpr pw::chrono::SystemClock::duration kPwTestScanPeriod =
-      kPwPrivateAddressTimeout + kPwTestDelay;
-  adapter()->le()->set_scan_period_for_testing(kPwTestScanPeriod);
+  adapter()->le()->set_scan_period_for_testing(kTestScanPeriod);
 
   // Discovery should use the public address by default.
   LowEnergyDiscoverySessionPtr session;
@@ -811,10 +806,7 @@ TEST_F(AdapterTest, LocalAddressDuringHangingConnect) {
   test_device()->AddPeer(std::move(fake_peer));
 
   constexpr pw::chrono::SystemClock::duration kTestDelay = std::chrono::seconds(5);
-  constexpr pw::chrono::SystemClock::duration kPwTestDelay = std::chrono::seconds(5);
   constexpr pw::chrono::SystemClock::duration kTestTimeout = kPrivateAddressTimeout + kTestDelay;
-  constexpr pw::chrono::SystemClock::duration kPwTestTimeout =
-      kPwPrivateAddressTimeout + kPwTestDelay;
 
   // Some of the behavior below stems from the fact that kTestTimeout is longer
   // than kCacheTimeout. This assertion is here to catch regressions in this
@@ -823,7 +815,7 @@ TEST_F(AdapterTest, LocalAddressDuringHangingConnect) {
   // remove some of the unnecessary invariants from this test case.
   static_assert(kTestTimeout > kCacheTimeout, "expected a shorter device cache timeout");
 
-  adapter()->le()->set_request_timeout_for_testing(kPwTestTimeout);
+  adapter()->le()->set_request_timeout_for_testing(kTestTimeout);
 
   // The connection request should use a public address.
   std::optional<HostError> error;

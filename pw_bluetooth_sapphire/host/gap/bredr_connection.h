@@ -79,7 +79,7 @@ class BrEdrConnection final {
   PairingState& pairing_state() { return *pairing_state_; }
 
   // Returns the duration that this connection has been alive.
-  zx::duration duration() const;
+  pw::chrono::SystemClock::duration duration() const;
 
   sm::SecurityProperties security_properties() const {
     ZX_ASSERT(pairing_state_);
@@ -109,7 +109,7 @@ class BrEdrConnection final {
   std::unique_ptr<sco::ScoConnectionManager> sco_manager_;
   std::unique_ptr<BrEdrInterrogator> interrogator_;
   // Time this object was constructed.
-  zx::time create_time_;
+  pw::chrono::SystemClock::time_point create_time_;
   // Called when an error occurs and this connection should be disconnected.
   fit::callback<void()> disconnect_cb_;
 
@@ -124,7 +124,7 @@ class BrEdrConnection final {
   // Unregisters the connection from PeerCache when this connection is destroyed.
   Peer::ConnectionToken peer_conn_token_;
 
-  pw::async::Dispatcher& pw_dispatcher_;
+  pw::async::Dispatcher& dispatcher_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnection);
 };

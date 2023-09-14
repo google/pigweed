@@ -57,7 +57,7 @@ LowEnergyConnection::LowEnergyConnection(
     ErrorCallback error_cb, WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
     l2cap::ChannelManager* l2cap, gatt::GATT::WeakPtr gatt,
     hci::CommandChannel::WeakPtr cmd_channel, pw::async::Dispatcher& dispatcher)
-    : pw_dispatcher_(dispatcher),
+    : dispatcher_(dispatcher),
       peer_(std::move(peer)),
       link_(std::move(link)),
       connection_options_(connection_options),
@@ -237,7 +237,7 @@ void LowEnergyConnection::RegisterEventHandlers() {
 // procedures have completed.
 void LowEnergyConnection::StartConnectionPausePeripheralTimeout() {
   BT_ASSERT(!conn_pause_peripheral_timeout_.has_value());
-  conn_pause_peripheral_timeout_.emplace(pw_dispatcher_,
+  conn_pause_peripheral_timeout_.emplace(dispatcher_,
                                          [this](pw::async::Context /*ctx*/, pw::Status status) {
                                            if (!status.ok()) {
                                              return;
@@ -248,7 +248,7 @@ void LowEnergyConnection::StartConnectionPausePeripheralTimeout() {
                                            conn_pause_peripheral_timeout_.reset();
                                            self->MaybeUpdateConnectionParameters();
                                          });
-  conn_pause_peripheral_timeout_->PostAfter(kPwLEConnectionPausePeripheral);
+  conn_pause_peripheral_timeout_->PostAfter(kLEConnectionPausePeripheral);
 }
 
 // Connection parameter updates by the central are not allowed until the central is idle and the
@@ -258,7 +258,7 @@ void LowEnergyConnection::StartConnectionPausePeripheralTimeout() {
 // procedures have completed.
 void LowEnergyConnection::StartConnectionPauseCentralTimeout() {
   BT_ASSERT(!conn_pause_central_timeout_.has_value());
-  conn_pause_central_timeout_.emplace(pw_dispatcher_,
+  conn_pause_central_timeout_.emplace(dispatcher_,
                                       [this](pw::async::Context /*ctx*/, pw::Status status) {
                                         if (!status.ok()) {
                                           return;
@@ -269,7 +269,7 @@ void LowEnergyConnection::StartConnectionPauseCentralTimeout() {
                                         conn_pause_central_timeout_.reset();
                                         self->MaybeUpdateConnectionParameters();
                                       });
-  conn_pause_central_timeout_->PostAfter(kPwLEConnectionPauseCentral);
+  conn_pause_central_timeout_->PostAfter(kLEConnectionPauseCentral);
 }
 
 bool LowEnergyConnection::OnL2capFixedChannelsOpened(
@@ -299,7 +299,7 @@ bool LowEnergyConnection::OnL2capFixedChannelsOpened(
   LESecurityMode security_mode = conn_mgr_->security_mode();
   sm_ = conn_mgr_->sm_factory_func()(link_->GetWeakPtr(), std::move(smp), io_cap,
                                      weak_delegate_.GetWeakPtr(), connection_options.bondable_mode,
-                                     security_mode, pw_dispatcher_);
+                                     security_mode, dispatcher_);
 
   // Provide SMP with the correct LTK from a previous pairing with the peer, if it exists. This
   // will start encryption if the local device is the link-layer central.
@@ -507,7 +507,7 @@ void LowEnergyConnection::MaybeUpdateConnectionParameters() {
 
 bool LowEnergyConnection::InitializeGatt(l2cap::Channel::WeakPtr att_channel,
                                          std::optional<UUID> service_uuid) {
-  att_bearer_ = att::Bearer::Create(std::move(att_channel), pw_dispatcher_);
+  att_bearer_ = att::Bearer::Create(std::move(att_channel), dispatcher_);
   if (!att_bearer_) {
     // This can happen if the link closes before the Bearer activates the
     // channel.

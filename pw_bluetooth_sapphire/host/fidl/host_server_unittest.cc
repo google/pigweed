@@ -766,7 +766,7 @@ TEST_F(HostServerTest, WatchPeersHandlesNonEnumeratedAppearanceInPeer) {
   adv_data.SetAppearance(0xFFFFu);
   bt::DynamicByteBuffer write_buf(adv_data.CalculateBlockSize(/*include_flags=*/true));
   ASSERT_TRUE(adv_data.WriteBlock(&write_buf, bt::AdvFlag::kLEGeneralDiscoverableMode));
-  peer->MutLe().SetAdvertisingData(/*rssi=*/0, write_buf, zx::time());
+  peer->MutLe().SetAdvertisingData(/*rssi=*/0, write_buf, pw::chrono::SystemClock::time_point());
 
   ResetHostServer();
 

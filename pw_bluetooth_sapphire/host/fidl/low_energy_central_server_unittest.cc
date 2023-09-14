@@ -793,7 +793,7 @@ TEST_F(LowEnergyCentralServerTest, ScanResultWatcherMeasureTape) {
   adv_data.CalculateBlockSize();
   bt::DynamicByteBuffer adv_buffer(adv_data.CalculateBlockSize());
   adv_data.WriteBlock(&adv_buffer, std::nullopt);
-  peer_0->MutLe().SetAdvertisingData(/*rssi=*/0, adv_buffer, zx::time());
+  peer_0->MutLe().SetAdvertisingData(/*rssi=*/0, adv_buffer, pw::chrono::SystemClock::time_point());
 
   const size_t kMaxPeersPerChannel = MaxPeersPerScanResultWatcherChannel(*peer_0);
 
@@ -808,7 +808,7 @@ TEST_F(LowEnergyCentralServerTest, ScanResultWatcherMeasureTape) {
                           {static_cast<uint8_t>(i), 0, 0, 0, 0, 0}),
         /*connectable=*/false);
     ASSERT_TRUE(peer);
-    peer->MutLe().SetAdvertisingData(/*rssi=*/0, adv_buffer, zx::time());
+    peer->MutLe().SetAdvertisingData(/*rssi=*/0, adv_buffer, pw::chrono::SystemClock::time_point());
   }
 
   fidl::InterfaceHandle<fble::ScanResultWatcher> result_watcher_handle;
@@ -860,7 +860,7 @@ TEST_F(LowEnergyCentralServerTest, ScanResultsMatchPeerFromAnyFilter) {
   const auto kAdvData0 = bt::StaticByteBuffer(0x02,  // Length
                                               0x09,  // AD type: Complete Local Name
                                               '0');
-  peer_0->MutLe().SetAdvertisingData(kRssi, kAdvData0, zx::time());
+  peer_0->MutLe().SetAdvertisingData(kRssi, kAdvData0, pw::chrono::SystemClock::time_point());
   // Peer that matches filter_1
   bt::gap::Peer* peer_1 = adapter()->peer_cache()->NewPeer(
       bt::DeviceAddress(bt::DeviceAddress::Type::kLEPublic, {2, 0, 0, 0, 0, 0}),
@@ -869,7 +869,7 @@ TEST_F(LowEnergyCentralServerTest, ScanResultsMatchPeerFromAnyFilter) {
   const auto kAdvData1 = bt::StaticByteBuffer(0x02,  // Length
                                               0x09,  // AD type: Complete Local Name
                                               '1');
-  peer_1->MutLe().SetAdvertisingData(kRssi, kAdvData1, zx::time());
+  peer_1->MutLe().SetAdvertisingData(kRssi, kAdvData1, pw::chrono::SystemClock::time_point());
 
   fble::ScanOptions options;
   fble::Filter filter_0;

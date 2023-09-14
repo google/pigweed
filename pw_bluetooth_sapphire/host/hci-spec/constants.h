@@ -1331,10 +1331,10 @@ constexpr zx::duration kMaxAutomaticFlushTimeoutDuration = zx::msec(static_cast<
 
 // Page Timeout = N * 0.625 ms (Core Spec v5.2, Vol 4, Part E, Sec 7.3.16).
 // The default is 5.12 sec.
-constexpr zx::duration kDurationPerPageTimeoutUnit = zx::usec(625);
-constexpr zx::duration kMinPageTimeoutDuration = kDurationPerPageTimeoutUnit * static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::MIN);
-constexpr zx::duration kDefaultPageTimeoutDuration = kDurationPerPageTimeoutUnit * static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::DEFAULT);
-constexpr zx::duration kMaxPageTimeoutDuration = kDurationPerPageTimeoutUnit * static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::MAX);
+constexpr pw::chrono::SystemClock::duration kDurationPerPageTimeoutUnit = std::chrono::microseconds(625);
+constexpr pw::chrono::SystemClock::duration kMinPageTimeoutDuration = kDurationPerPageTimeoutUnit * static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::MIN);
+constexpr pw::chrono::SystemClock::duration kDefaultPageTimeoutDuration = kDurationPerPageTimeoutUnit * static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::DEFAULT);
+constexpr pw::chrono::SystemClock::duration kMaxPageTimeoutDuration = kDurationPerPageTimeoutUnit * static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::MAX);
 
 }  // namespace bt::hci_spec
 

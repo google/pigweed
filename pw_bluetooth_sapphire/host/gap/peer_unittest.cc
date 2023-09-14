@@ -14,7 +14,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/manufacturer_names.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/inspect_util.h"
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::gap {
 namespace {
@@ -299,7 +298,7 @@ TEST_F(PeerTest, LowEnergyDataSetAdvDataWithInvalidUtf8NameDoesNotUpdatePeerName
                                   0xFF  // 0xFF should not appear in a valid UTF-8 string
   );
 
-  peer().MutLe().SetAdvertisingData(/*rssi=*/0, kAdvData, zx::time());
+  peer().MutLe().SetAdvertisingData(/*rssi=*/0, kAdvData, pw::chrono::SystemClock::time_point());
   EXPECT_TRUE(listener_notified);  // Fresh AD still results in an update
   EXPECT_FALSE(peer().name().has_value());
 }
@@ -342,57 +341,73 @@ TEST_F(PeerTest, RegisterNameWithInvalidUtf8NameDoesNotUpdatePeerName) {
 
 TEST_F(PeerTest, LowEnergyAdvertisingDataTimestamp) {
   EXPECT_FALSE(peer().MutLe().parsed_advertising_data_timestamp());
-  peer().MutLe().SetAdvertisingData(/*rssi=*/0, kAdvData, zx::time(1));
+  peer().MutLe().SetAdvertisingData(
+      /*rssi=*/0, kAdvData, pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(1)));
   ASSERT_TRUE(peer().MutLe().parsed_advertising_data_timestamp());
-  EXPECT_EQ(peer().MutLe().parsed_advertising_data_timestamp().value(), zx::time(1));
+  EXPECT_EQ(peer().MutLe().parsed_advertising_data_timestamp().value(),
+            pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(1)));
 
-  peer().MutLe().SetAdvertisingData(/*rssi=*/0, kAdvData, zx::time(2));
+  peer().MutLe().SetAdvertisingData(
+      /*rssi=*/0, kAdvData, pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(2)));
   ASSERT_TRUE(peer().MutLe().parsed_advertising_data_timestamp());
-  EXPECT_EQ(peer().MutLe().parsed_advertising_data_timestamp().value(), zx::time(2));
+  EXPECT_EQ(peer().MutLe().parsed_advertising_data_timestamp().value(),
+            pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(2)));
 
   // SetAdvertisingData with data that fails to parse should not update the advertising data
   // timestamp.
-  peer().MutLe().SetAdvertisingData(/*rssi=*/0, kInvalidAdvData, zx::time(3));
+  peer().MutLe().SetAdvertisingData(
+      /*rssi=*/0, kInvalidAdvData,
+      pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(3)));
   ASSERT_TRUE(peer().MutLe().parsed_advertising_data_timestamp());
-  EXPECT_EQ(peer().MutLe().parsed_advertising_data_timestamp().value(), zx::time(2));
+  EXPECT_EQ(peer().MutLe().parsed_advertising_data_timestamp().value(),
+            pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(2)));
 }
 
 TEST_F(PeerTest, SettingLowEnergyAdvertisingDataUpdatesLastUpdated) {
-  EXPECT_EQ(peer().last_updated(), zx::time(0));
+  EXPECT_EQ(peer().last_updated(),
+            pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(0)));
 
   int notify_count = 0;
   set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) {
-    EXPECT_EQ(peer().last_updated(), zx::time(2));
+    EXPECT_EQ(peer().last_updated(),
+              pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(2)));
     notify_count++;
   });
 
   RunFor(pw::chrono::SystemClock::duration(2));
-  peer().MutLe().SetAdvertisingData(/*rssi=*/0, kAdvData, zx::time(1));
-  EXPECT_EQ(peer().last_updated(), zx::time(2));
+  peer().MutLe().SetAdvertisingData(
+      /*rssi=*/0, kAdvData, pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(1)));
+  EXPECT_EQ(peer().last_updated(),
+            pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(2)));
   EXPECT_GE(notify_count, 1);
 }
 
 TEST_F(PeerTest, RegisteringLowEnergyInitializingConnectionUpdatesLastUpdated) {
-  EXPECT_EQ(peer().last_updated(), zx::time(0));
+  EXPECT_EQ(peer().last_updated(),
+            pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(0)));
 
   int notify_count = 0;
   set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) {
-    EXPECT_EQ(peer().last_updated(), zx::time(2));
+    EXPECT_EQ(peer().last_updated(),
+              pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(2)));
     notify_count++;
   });
 
   RunFor(pw::chrono::SystemClock::duration(2));
   Peer::InitializingConnectionToken token = peer().MutLe().RegisterInitializingConnection();
-  EXPECT_EQ(peer().last_updated(), zx::time(2));
+  EXPECT_EQ(peer().last_updated(),
+            pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(2)));
   EXPECT_GE(notify_count, 1);
 }
 
 TEST_F(PeerTest, SettingLowEnergyBondDataUpdatesLastUpdated) {
-  EXPECT_EQ(peer().last_updated(), zx::time(0));
+  EXPECT_EQ(peer().last_updated(),
+            pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(0)));
 
   int notify_count = 0;
   set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) {
-    EXPECT_EQ(peer().last_updated(), zx::time(2));
+    EXPECT_EQ(peer().last_updated(),
+              pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(2)));
     notify_count++;
   });
 
@@ -401,32 +416,38 @@ TEST_F(PeerTest, SettingLowEnergyBondDataUpdatesLastUpdated) {
   data.peer_ltk = kLTK;
   data.local_ltk = kLTK;
   peer().MutLe().SetBondData(data);
-  EXPECT_EQ(peer().last_updated(), zx::time(2));
+  EXPECT_EQ(peer().last_updated(),
+            pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(2)));
   EXPECT_GE(notify_count, 1);
 }
 
 TEST_F(PeerTest, RegisteringBrEdrInitializingConnectionUpdatesLastUpdated) {
-  EXPECT_EQ(peer().last_updated(), zx::time(0));
+  EXPECT_EQ(peer().last_updated(),
+            pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(0)));
 
   int notify_count = 0;
   set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) {
-    EXPECT_EQ(peer().last_updated(), zx::time(2));
+    EXPECT_EQ(peer().last_updated(),
+              pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(2)));
     notify_count++;
   });
 
   RunFor(pw::chrono::SystemClock::duration(2));
   Peer::InitializingConnectionToken token = peer().MutBrEdr().RegisterInitializingConnection();
-  EXPECT_EQ(peer().last_updated(), zx::time(2));
+  EXPECT_EQ(peer().last_updated(),
+            pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(2)));
   EXPECT_GE(notify_count, 1);
 }
 
 TEST_F(PeerTest, SettingInquiryDataUpdatesLastUpdated) {
   SetUpPeer(/*address=*/kAddrLeAlias, /*connectable=*/true);
-  EXPECT_EQ(peer().last_updated(), zx::time(0));
+  EXPECT_EQ(peer().last_updated(),
+            pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(0)));
 
   int notify_count = 0;
   set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) {
-    EXPECT_EQ(peer().last_updated(), zx::time(2));
+    EXPECT_EQ(peer().last_updated(),
+              pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(2)));
     notify_count++;
   });
 
@@ -434,52 +455,62 @@ TEST_F(PeerTest, SettingInquiryDataUpdatesLastUpdated) {
   StaticPacket<pw::bluetooth::emboss::InquiryResultWriter> ir;
   ir.view().bd_addr().CopyFrom(kAddrLeAlias.value().view());
   peer().MutBrEdr().SetInquiryData(ir.view());
-  EXPECT_EQ(peer().last_updated(), zx::time(2));
+  EXPECT_EQ(peer().last_updated(),
+            pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(2)));
   EXPECT_GE(notify_count, 1);
 }
 
 TEST_F(PeerTest, SettingBrEdrBondDataUpdatesLastUpdated) {
-  EXPECT_EQ(peer().last_updated(), zx::time(0));
+  EXPECT_EQ(peer().last_updated(),
+            pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(0)));
 
   int notify_count = 0;
   set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) {
-    EXPECT_EQ(peer().last_updated(), zx::time(2));
+    EXPECT_EQ(peer().last_updated(),
+              pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(2)));
     notify_count++;
   });
 
   RunFor(pw::chrono::SystemClock::duration(2));
   peer().MutBrEdr().SetBondData(kSecureBrEdrKey);
-  EXPECT_EQ(peer().last_updated(), zx::time(2));
+  EXPECT_EQ(peer().last_updated(),
+            pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(2)));
   EXPECT_GE(notify_count, 1);
 }
 
 TEST_F(PeerTest, SettingAddingBrEdrServiceUpdatesLastUpdated) {
-  EXPECT_EQ(peer().last_updated(), zx::time(0));
+  EXPECT_EQ(peer().last_updated(),
+            pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(0)));
 
   int notify_count = 0;
   set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) {
-    EXPECT_EQ(peer().last_updated(), zx::time(2));
+    EXPECT_EQ(peer().last_updated(),
+              pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(2)));
     notify_count++;
   });
 
   RunFor(pw::chrono::SystemClock::duration(2));
   peer().MutBrEdr().AddService(UUID(uint16_t{0x110b}));
-  EXPECT_EQ(peer().last_updated(), zx::time(2));
+  EXPECT_EQ(peer().last_updated(),
+            pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(2)));
   EXPECT_GE(notify_count, 1);
 }
 
 TEST_F(PeerTest, RegisteringNameUpdatesLastUpdated) {
-  EXPECT_EQ(peer().last_updated(), zx::time(0));
+  EXPECT_EQ(peer().last_updated(),
+            pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(0)));
 
   int notify_count = 0;
   set_notify_listeners_cb([&](const Peer&, Peer::NotifyListenersChange) {
-    EXPECT_EQ(peer().last_updated(), zx::time(2));
+    EXPECT_EQ(peer().last_updated(),
+              pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(2)));
     notify_count++;
   });
 
   RunFor(pw::chrono::SystemClock::duration(2));
   peer().RegisterName("name");
-  EXPECT_EQ(peer().last_updated(), zx::time(2));
+  EXPECT_EQ(peer().last_updated(),
+            pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(2)));
   EXPECT_GE(notify_count, 1);
 }
 
@@ -770,7 +801,7 @@ TEST_F(PeerTest, SetValidAdvertisingData) {
       kLocalName[0], kLocalName[1],
       kLocalName[2], kLocalName[3],
   };
-  peer().MutLe().SetAdvertisingData(/*rssi=*/32, raw_data, zx::time());
+  peer().MutLe().SetAdvertisingData(/*rssi=*/32, raw_data, pw::chrono::SystemClock::time_point());
   // Setting an AdvertisingData with a local name field should update the peer's local name.
   ASSERT_TRUE(peer().name().has_value());
   EXPECT_EQ(kLocalName, peer().name().value());
@@ -789,14 +820,15 @@ TEST_F(PeerTest, SetShortenedLocalName) {
       kLocalName[0], kLocalName[1],
       kLocalName[2], kLocalName[3],
   };
-  peer().MutLe().SetAdvertisingData(/*rssi=*/32, raw_data, zx::time());
+  peer().MutLe().SetAdvertisingData(/*rssi=*/32, raw_data, pw::chrono::SystemClock::time_point());
   ASSERT_TRUE(peer().name().has_value());
   EXPECT_EQ(kLocalName, peer().name().value());
   EXPECT_EQ(Peer::NameSource::kAdvertisingDataShortened, peer().name_source());
 }
 
 TEST_F(PeerTest, SetInvalidAdvertisingData) {
-  peer().MutLe().SetAdvertisingData(/*rssi=*/32, kInvalidAdvData, zx::time());
+  peer().MutLe().SetAdvertisingData(/*rssi=*/32, kInvalidAdvData,
+                                    pw::chrono::SystemClock::time_point());
 
 #ifndef NINSPECT
   EXPECT_EQ(1, InspectAdvertisingDataParseFailureCount());
@@ -1104,7 +1136,8 @@ TEST_F(PeerTest, SettingLeAdvertisingDataOfBondedPeerDoesNotUpdateName) {
   const StaticByteBuffer kAdvData(0x08,  // Length
                                   0x09,  // AD type: Complete Local Name
                                   'M', 'a', 'l', 'l', 'o', 'r', 'y');
-  peer().MutLe().SetAdvertisingData(/*rssi=*/0, kAdvData, zx::time(0));
+  peer().MutLe().SetAdvertisingData(
+      /*rssi=*/0, kAdvData, pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(0)));
 
   ASSERT_TRUE(peer().name().has_value());
   EXPECT_EQ(peer().name().value(), "alice");

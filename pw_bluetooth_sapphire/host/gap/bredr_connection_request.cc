@@ -4,9 +4,6 @@
 
 #include "bredr_connection_request.h"
 
-#include "lib/async/cpp/time.h"
-#include "lib/async/default.h"
-
 namespace bt::gap {
 
 namespace {
@@ -16,7 +13,8 @@ const char* const kInspectCallbacksPropertyName = "callbacks";
 const char* const kInspectFirstCreateConnectionReqMadeName =
     "first_create_connection_request_timestamp";
 const char* const kInspectPeerIdPropertyName = "peer_id";
-constexpr zx::duration kRetryWindowAfterFirstCreateConn = zx::sec(30);
+constexpr pw::chrono::SystemClock::duration kRetryWindowAfterFirstCreateConn =
+    std::chrono::seconds(30);
 
 }  // namespace
 
@@ -26,11 +24,8 @@ BrEdrConnectionRequest::BrEdrConnectionRequest(pw::async::Dispatcher& pw_dispatc
     : peer_id_(peer_id),
       address_(addr),
       callbacks_(/*convert=*/[](auto& c) { return c.size(); }),
-      has_incoming_(false),
-      first_create_connection_req_made_(
-          std::nullopt, [](const std::optional<zx::time>& t) { return t ? t->get() : -1; }),
       peer_init_conn_token_(std::move(token)),
-      pw_dispatcher_(pw_dispatcher) {}
+      dispatcher_(pw_dispatcher) {}
 
 BrEdrConnectionRequest::BrEdrConnectionRequest(pw::async::Dispatcher& pw_dispatcher,
                                                const DeviceAddress& addr, PeerId peer_id,
@@ -62,14 +57,14 @@ void BrEdrConnectionRequest::AttachInspect(inspect::Node& parent, std::string na
 
 void BrEdrConnectionRequest::RecordHciCreateConnectionAttempt() {
   if (!first_create_connection_req_made_.value()) {
-    first_create_connection_req_made_.Set(
-        pw_async_fuchsia::TimepointToZxTime(pw_dispatcher_.now()));
+    first_create_connection_req_made_.Set(dispatcher_.now());
   }
 }
 
 bool BrEdrConnectionRequest::ShouldRetry(hci::Error failure_mode) {
-  zx::time now = pw_async_fuchsia::TimepointToZxTime(pw_dispatcher_.now());
-  std::optional<zx::time> first_create_conn_req_made = first_create_connection_req_made_.value();
+  pw::chrono::SystemClock::time_point now = dispatcher_.now();
+  std::optional<pw::chrono::SystemClock::time_point> first_create_conn_req_made =
+      first_create_connection_req_made_.value();
   return failure_mode.is(pw::bluetooth::emboss::StatusCode::PAGE_TIMEOUT) &&
          first_create_conn_req_made.has_value() &&
          now - *first_create_conn_req_made < kRetryWindowAfterFirstCreateConn;

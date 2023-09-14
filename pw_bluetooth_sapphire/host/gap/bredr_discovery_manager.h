@@ -162,7 +162,7 @@ class BrEdrDiscoveryManager final {
   InspectProperties inspect_properties_;
 
   // The dispatcher that we use for invoking callbacks asynchronously.
-  pw::async::Dispatcher& pw_dispatcher_;
+  pw::async::Dispatcher& dispatcher_;
 
   // Peer cache to use.
   // We hold a raw pointer is because it must out-live us.

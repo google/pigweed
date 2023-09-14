@@ -4002,13 +4002,12 @@ TEST_F(BrEdrConnectionManagerTest, Inspect) {
       AllOf(NodeMatches(NameMatches("connection_requests")), ChildrenMatch(::testing::IsEmpty()));
   auto connections_after_disconnect_matcher =
       AllOf(NodeMatches(NameMatches("connections")), ChildrenMatch(::testing::IsEmpty()));
-  auto recent_conn_list_after_disconnect_matcher =
-      AllOf(NodeMatches(NameMatches("last_disconnected")),
-            ChildrenMatch(ElementsAre(NodeMatches(
-                AllOf(NameMatches("0"),
-                      PropertyList(UnorderedElementsAre(
-                          StringIs("peer_id", peer->identifier().ToString()),
-                          UintIs("duration_s", 1u), IntIs("@time", zx::sec(1).to_nsecs()))))))));
+  auto recent_conn_list_after_disconnect_matcher = AllOf(
+      NodeMatches(NameMatches("last_disconnected")),
+      ChildrenMatch(ElementsAre(NodeMatches(AllOf(
+          NameMatches("0"), PropertyList(UnorderedElementsAre(
+                                StringIs("peer_id", peer->identifier().ToString()),
+                                UintIs("duration_s", 1u), IntIs("@time", 1'000'000'000))))))));
 
   auto conn_mgr_after_disconnect_matcher = AllOf(
       NodeMatches(AllOf(

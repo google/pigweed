@@ -320,7 +320,7 @@ Peer* PeerCache::InsertPeerRecord(PeerId identifier, const DeviceAddress& addres
                                       fit::bind_member<&PeerCache::UpdateExpiry>(this),
                                       fit::bind_member<&PeerCache::MakeDualMode>(this),
                                       std::move(store_le_bond_cb), identifier, address, connectable,
-                                      &peer_metrics_, pw_dispatcher_));
+                                      &peer_metrics_, dispatcher_));
   if (node_) {
     peer->AttachInspect(node_, node_.UniqueName("peer_"));
   }
@@ -328,8 +328,7 @@ Peer* PeerCache::InsertPeerRecord(PeerId identifier, const DeviceAddress& addres
   // Note: we must construct the PeerRecord in-place, because it doesn't
   // support copy or move.
   auto [iter, inserted] = peers_.try_emplace(
-      peer->identifier(), std::move(peer), [this, p = peer.get()] { RemovePeer(p); },
-      pw_dispatcher_);
+      peer->identifier(), std::move(peer), [this, p = peer.get()] { RemovePeer(p); }, dispatcher_);
   if (!inserted) {
     bt_log(WARN, "gap", "tried to insert peer with existing ID: %s", bt_str(identifier));
     return nullptr;
@@ -379,7 +378,7 @@ void PeerCache::UpdateExpiry(const Peer& peer) {
   // Previous expiry task has been canceled. Re-schedule only if the peer is
   // temporary.
   if (peer.temporary()) {
-    peer_record.removal_task()->PostAfter(kPwCacheTimeout);
+    peer_record.removal_task()->PostAfter(kCacheTimeout);
   }
 }
 

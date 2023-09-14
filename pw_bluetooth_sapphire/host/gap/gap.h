@@ -9,7 +9,6 @@
 
 #include <pw_chrono/system_clock.h>
 
-#include "lib/zx/time.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 
@@ -72,10 +71,9 @@ constexpr uint16_t kInquiryScanWindow = 0x0012;    // 11.25 ms
 
 constexpr pw::chrono::SystemClock::duration kLEGeneralDiscoveryScanMin =
     std::chrono::milliseconds(10240);
-constexpr pw::chrono::SystemClock::duration kPwLEGeneralDiscoveryScanMin =
-    std::chrono::milliseconds(10240);
-constexpr zx::duration kLEGeneralDiscoveryScanMinCoded = zx::msec(30720);
-constexpr zx::duration kLEScanFastPeriod = zx::msec(30720);
+constexpr pw::chrono::SystemClock::duration kLEGeneralDiscoveryScanMinCoded =
+    std::chrono::milliseconds(30720);
+constexpr pw::chrono::SystemClock::duration kLEScanFastPeriod = std::chrono::milliseconds(30720);
 
 // The HCI spec defines the time conversion as follows: Time =  N * 0.625 ms,
 // where N is the value of the constant.
@@ -123,29 +121,23 @@ constexpr uint16_t kLEAdvertisingSlowIntervalCodedMax = 0x1680;  // 3.6 s
 
 // Timeout used for the LE Create Connection command.
 constexpr pw::chrono::SystemClock::duration kLECreateConnectionTimeout = std::chrono::seconds(20);
-constexpr pw::chrono::SystemClock::duration kPwLECreateConnectionTimeout = std::chrono::seconds(20);
 // Timeout used for the Br/Edr Create Connection command.
 constexpr pw::chrono::SystemClock::duration kBrEdrCreateConnectionTimeout =
-    std::chrono::seconds(20);
-constexpr pw::chrono::SystemClock::duration kPwBrEdrCreateConnectionTimeout =
     std::chrono::seconds(20);
 
 // Timeout used for scanning during LE General CEP. Selected to be longer than the scan period.
 constexpr pw::chrono::SystemClock::duration kLEGeneralCepScanTimeout = std::chrono::seconds(20);
-constexpr pw::chrono::SystemClock::duration kPwLEGeneralCepScanTimeout = std::chrono::seconds(20);
 
 // Connection Interval Timing Parameters (see v5.0, Vol 3, Part C,
 // Section 9.3.12 and Appendix A)
-constexpr zx::duration kLEConnectionParameterTimeout = zx::sec(30);
+constexpr pw::chrono::SystemClock::duration kLEConnectionParameterTimeout =
+    std::chrono::seconds(30);
 // Recommended minimum time upon connection establishment before the central starts a connection
 // update procedure.
 constexpr pw::chrono::SystemClock::duration kLEConnectionPauseCentral = std::chrono::seconds(1);
-constexpr pw::chrono::SystemClock::duration kPwLEConnectionPauseCentral = std::chrono::seconds(1);
 // Recommended minimum time upon connection establishment before the peripheral starts a connection
 // update procedure.
 constexpr pw::chrono::SystemClock::duration kLEConnectionPausePeripheral = std::chrono::seconds(5);
-constexpr pw::chrono::SystemClock::duration kPwLEConnectionPausePeripheral =
-    std::chrono::seconds(5);
 
 constexpr uint16_t kLEInitialConnIntervalMin = 0x0018;       // 30 ms
 constexpr uint16_t kLEInitialConnIntervalMax = 0x0028;       // 50 ms
@@ -155,12 +147,10 @@ constexpr uint16_t kLEInitialConnIntervalCodedMax = 0x0078;  // 150 ms
 // Time interval that must expire before a temporary device is removed from the
 // cache.
 constexpr pw::chrono::SystemClock::duration kCacheTimeout = std::chrono::seconds(60);
-constexpr pw::chrono::SystemClock::duration kPwCacheTimeout = std::chrono::seconds(60);
 
 // Time interval between random address changes when privacy is enabled (see
 // T_GAP(private_addr_int) in 5.0 Vol 3, Part C, Appendix A)
 constexpr pw::chrono::SystemClock::duration kPrivateAddressTimeout = std::chrono::minutes(15);
-constexpr pw::chrono::SystemClock::duration kPwPrivateAddressTimeout = std::chrono::minutes(15);
 
 // Maximum duration for which a scannable advertisement will be stored and not reported to
 // clients until a corresponding scan response is received.
@@ -169,8 +159,7 @@ constexpr pw::chrono::SystemClock::duration kPwPrivateAddressTimeout = std::chro
 // Core Spec. v5.2 Vol 6, Part B, Section 4.4 and in practice, the typical gap between the two
 // events from the same peer is <=10ms. However in practice it's possible to see gaps as high as
 // 1.5 seconds or more.
-constexpr zx::duration kLEScanResponseTimeout = zx::sec(2);
-constexpr pw::chrono::SystemClock::duration kPwLEScanResponseTimeout = std::chrono::seconds(2);
+constexpr pw::chrono::SystemClock::duration kLEScanResponseTimeout = std::chrono::seconds(2);
 
 // GATT types used in the GAP service.
 constexpr UUID kGenericAccessService(uint16_t{0x1800});

@@ -257,7 +257,7 @@ class LowEnergyConnectionManager final {
   // the returned value.
   ConnectionMap::iterator FindConnection(hci_spec::ConnectionHandle handle);
 
-  pw::async::Dispatcher& pw_dispatcher_;
+  pw::async::Dispatcher& dispatcher_;
 
   hci::CommandChannel::WeakPtr cmd_;
 
@@ -341,7 +341,7 @@ class LowEnergyConnectionManager final {
     UintMetricCounter disconnect_zero_ref_count_;
     UintMetricCounter disconnect_remote_disconnection_count_;
   };
-  InspectProperties inspect_properties_{pw_dispatcher_};
+  InspectProperties inspect_properties_{dispatcher_};
   inspect::Node inspect_node_;
   // Container node for pending request nodes.
   inspect::Node inspect_pending_requests_node_;

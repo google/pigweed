@@ -111,7 +111,7 @@ class LowEnergyConnector final {
   // Set is_outbound_ and its Inspect property.
   void set_is_outbound(bool is_outbound);
 
-  pw::async::Dispatcher& pw_dispatcher_;
+  pw::async::Dispatcher& dispatcher_;
 
   StringInspectable<State> state_{State::kDefault,
                                   /*convert=*/[](auto s) { return StateToString(s); }};
@@ -148,7 +148,7 @@ class LowEnergyConnector final {
   // is on.
   IntInspectable<int> connection_attempt_{0};
 
-  SmartTask request_create_connection_task_{pw_dispatcher_};
+  SmartTask request_create_connection_task_{dispatcher_};
 
   // Task called after the scan attempt times out.
   std::optional<SmartTask> scan_timeout_task_;

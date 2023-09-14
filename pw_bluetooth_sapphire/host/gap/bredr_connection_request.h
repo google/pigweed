@@ -6,7 +6,6 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_CONNECTION_REQUEST_H_
 
 #include <lib/fit/function.h>
-#include <lib/zx/time.h>
 
 #include <list>
 
@@ -86,19 +85,21 @@ class BrEdrConnectionRequest final {
   PeerId peer_id_;
   DeviceAddress address_;
   UintInspectable<std::list<OnComplete>> callbacks_;
-  BoolInspectable<bool> has_incoming_;
+  BoolInspectable<bool> has_incoming_{false};
   std::optional<pw::bluetooth::emboss::ConnectionRole> role_change_;
   // Used to determine whether an outbound connection request should be retried. If empty, no HCI
   // Create Connection Requests associated with this object have been made, otherwise stores the
   // time at which the first HCI request associated with this object was made.
-  IntInspectable<std::optional<zx::time>> first_create_connection_req_made_;
+  IntInspectable<std::optional<pw::chrono::SystemClock::time_point>>
+      first_create_connection_req_made_{
+          std::nullopt, [](auto& t) { return t ? t->time_since_epoch().count() : -1; }};
 
   inspect::StringProperty peer_id_property_;
   inspect::Node inspect_node_;
 
   std::optional<Peer::InitializingConnectionToken> peer_init_conn_token_;
 
-  pw::async::Dispatcher& pw_dispatcher_;
+  pw::async::Dispatcher& dispatcher_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnectionRequest);
 };

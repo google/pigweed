@@ -39,7 +39,7 @@ class PeerCache final {
   using PeerCallback = fit::function<void(const Peer& peer)>;
   using PeerIdCallback = fit::function<void(PeerId identifier)>;
 
-  PeerCache(pw::async::Dispatcher& dispatcher) : pw_dispatcher_(dispatcher) {}
+  PeerCache(pw::async::Dispatcher& dispatcher) : dispatcher_(dispatcher) {}
 
   // Creates a new peer entry using the given parameters, and returns a
   // (non-owning) pointer to that peer. The caller must not retain the pointer
@@ -220,7 +220,7 @@ class PeerCache final {
   // otherwise returns std::nullopt.
   std::optional<PeerId> FindIdByAddress(const DeviceAddress& address) const;
 
-  pw::async::Dispatcher& pw_dispatcher_;
+  pw::async::Dispatcher& dispatcher_;
 
   // Mapping from unique peer IDs to PeerRecords.
   // Owns the corresponding Peers.
