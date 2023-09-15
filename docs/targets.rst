@@ -104,3 +104,8 @@ The following is a list of targets used for upstream Pigweed development.
   :glob:
 
   targets/*/target_docs
+
+Work-in-progress targets
+------------------------
+You can see a list of hardware targets that are under development but not
+yet landed `here <https://issues.pigweed.dev/issues/300646347/dependencies>`_.
