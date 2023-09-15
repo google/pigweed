@@ -217,6 +217,11 @@ here.
   use ``PW_PROJECT_ROOT`` instead. (That variable will be set regardless of
   whether this is provided.)
 
+``pw.pw_env_setup.relative_pigweed_root``
+  Location of the Pigweed submodule within the source tree. Optional—environment
+  setup will work correctly without this. If present, will confirm that it's
+  correct. May be used by other tooling.
+
 ``pw.pw_env_setup.cipd_package_files``
   CIPD package file. JSON file consisting of a list of additional CIPD package
   files to import and a list of dictionaries with "path", "platforms", "subdir",

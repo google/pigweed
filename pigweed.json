@@ -55,6 +55,7 @@
     },
     "pw_env_setup": {
       "root_variable": "PW_ROOT",
+      "relative_pigweed_root": ".",
       "rosetta": "allow",
       "gni_file": "build_overrides/pigweed_environment.gni",
       "cipd_package_files": [

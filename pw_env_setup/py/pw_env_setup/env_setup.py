@@ -295,6 +295,20 @@ class EnvSetup(object):
 
         self._root_variable = config.pop('root_variable', None)
 
+        # This variable is not used by env setup since we already have it.
+        # However, other tools may use it, so we double-check that it's correct.
+        pigweed_root = os.path.join(
+            self._project_root,
+            config.pop('relative_pigweed_root', self._pw_root),
+        )
+        if os.path.abspath(self._pw_root) != os.path.abspath(pigweed_root):
+            raise ValueError(
+                'expected Pigweed root {!r} in config but found {!r}'.format(
+                    os.path.relpath(self._pw_root, self._project_root),
+                    os.path.relpath(pigweed_root, self._project_root),
+                )
+            )
+
         rosetta = config.pop('rosetta', 'allow')
         if rosetta not in ('never', 'allow', 'force'):
             raise ValueError(rosetta)
