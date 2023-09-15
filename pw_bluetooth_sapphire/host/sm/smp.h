@@ -9,7 +9,6 @@
 
 #include <pw_chrono/system_clock.h>
 
-#include "lib/zx/time.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 

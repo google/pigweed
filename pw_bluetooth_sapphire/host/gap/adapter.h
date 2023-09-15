@@ -7,7 +7,6 @@
 
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
-#include <lib/zx/vmo.h>
 
 #include <memory>
 #include <string>

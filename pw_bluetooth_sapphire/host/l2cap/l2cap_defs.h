@@ -11,12 +11,10 @@
 #include <cstdint>
 #include <limits>
 #include <string>
+
 #include <pw_chrono/system_clock.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
-
-
-#include "lib/zx/time.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/frame_headers.h"
 
 namespace bt::l2cap {

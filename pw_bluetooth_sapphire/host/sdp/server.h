@@ -6,10 +6,9 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVER_H_
 
 #include <lib/fit/function.h>
-#include <lib/zx/socket.h>
 
-#include <map>
 #include <optional>
+#include <unordered_map>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"

@@ -5,11 +5,10 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_ENHANCED_RETRANSMISSION_MODE_TX_ENGINE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_ENHANCED_RETRANSMISSION_MODE_TX_ENGINE_H_
 
+#include <lib/fit/function.h>
+
 #include <list>
 
-#include "lib/async/cpp/task.h"
-#include "lib/fit/function.h"
-#include "lib/zx/time.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/smart_task.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/tx_engine.h"
 
