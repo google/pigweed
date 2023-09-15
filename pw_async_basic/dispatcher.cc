@@ -19,8 +19,6 @@ using namespace std::chrono_literals;
 
 namespace pw::async {
 
-const chrono::SystemClock::duration SLEEP_DURATION = 5s;
-
 BasicDispatcher::~BasicDispatcher() {
   RequestStop();
   lock_.lock();
@@ -68,12 +66,16 @@ void BasicDispatcher::MaybeSleep() {
     // Sleep until a notification is received or until the due time of the
     // next task. Notifications are sent when tasks are posted or 'stop' is
     // requested.
-    chrono::SystemClock::time_point wake_time =
-        task_queue_.empty() ? now() + SLEEP_DURATION
-                            : task_queue_.front().due_time_;
-
+    std::optional<chrono::SystemClock::time_point> wake_time = std::nullopt;
+    if (!task_queue_.empty()) {
+      wake_time = task_queue_.front().due_time_;
+    }
     lock_.unlock();
-    timed_notification_.try_acquire_until(wake_time);
+    if (wake_time.has_value()) {
+      timed_notification_.try_acquire_until(*wake_time);
+    } else {
+      timed_notification_.acquire();
+    }
     lock_.lock();
   }
 }
