@@ -43,56 +43,6 @@ platform(
     constraint_values = ["@platforms//os:none"],
 )
 
-# --- CPU's ---
-platform(
-    name = "cortex_m0",
-    constraint_values = ["@pigweed_config//:target_rtos"],
-    parents = ["@bazel_embedded//platforms:cortex_m0"],
-)
-
-platform(
-    name = "cortex_m1",
-    constraint_values = ["@pigweed_config//:target_rtos"],
-    parents = ["@bazel_embedded//platforms:cortex_m1"],
-)
-
-platform(
-    name = "cortex_m3",
-    constraint_values = ["@pigweed_config//:target_rtos"],
-    parents = ["@bazel_embedded//platforms:cortex_m3"],
-)
-
-platform(
-    name = "cortex_m4",
-    constraint_values = ["@pigweed_config//:target_rtos"],
-    parents = ["@bazel_embedded//platforms:cortex_m4"],
-)
-
-platform(
-    name = "cortex_m4_fpu",
-    constraint_values = ["@pigweed_config//:target_rtos"],
-    parents = ["@bazel_embedded//platforms:cortex_m4_fpu"],
-)
-
-platform(
-    name = "cortex_m7",
-    constraint_values = ["@pigweed_config//:target_rtos"],
-    parents = ["@bazel_embedded//platforms:cortex_m7"],
-)
-
-platform(
-    name = "cortex_m7_fpu",
-    constraint_values = ["@pigweed_config//:target_rtos"],
-    parents = ["@bazel_embedded//platforms:cortex_m7_fpu"],
-)
-
-# --- Chipsets ---
-platform(
-    name = "stm32f429",
-    constraint_values = ["//pw_build/constraints/chipset:stm32f429"],
-    parents = [":cortex_m4"],
-)
-
 platform(
     name = "lm3s6965evb",
     constraint_values = [
@@ -111,13 +61,6 @@ platform(
         "//pw_build/constraints/chipset:nrf52833",
         "@platforms//cpu:armv6-m",
     ],
-)
-
-# --- Boards ---
-platform(
-    name = "stm32f429i-disc1",
-    constraint_values = ["//pw_build/constraints/board:stm32f429i-disc1"],
-    parents = [":stm32f429"],
 )
 
 # Primarily a QEMU supported m0 target for rust development, based on the

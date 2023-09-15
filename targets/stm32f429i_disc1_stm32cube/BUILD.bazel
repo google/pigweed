@@ -55,7 +55,6 @@ platform(
         "@freertos//:port_ARM_CM4F",
         "@platforms//cpu:armv7e-m",
     ],
-    parents = ["@bazel_embedded//platforms:cortex_m4_fpu"],
 )
 
 pw_cc_library(
