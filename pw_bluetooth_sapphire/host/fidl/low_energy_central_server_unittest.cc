@@ -13,8 +13,8 @@
 #include "fuchsia/bluetooth/gatt/cpp/fidl.h"
 #include "fuchsia/bluetooth/le/cpp/fidl.h"
 #include "lib/fidl/cpp/interface_request.h"
+#include "src/connectivity/bluetooth/core/bt-host/fidl/fake_adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/fake_adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
@@ -116,10 +116,10 @@ class LowEnergyCentralServerTest : public TestingBase {
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyCentralServerTest);
 };
 
-class LowEnergyCentralServerTestFakeAdapter : public bt::gap::testing::FakeAdapterTestFixture {
+class LowEnergyCentralServerTestFakeAdapter : public bt::fidl::testing::FakeAdapterTestFixture {
  public:
   void SetUp() override {
-    bt::gap::testing::FakeAdapterTestFixture::SetUp();
+    bt::fidl::testing::FakeAdapterTestFixture::SetUp();
 
     // Create a LowEnergyCentralServer and bind it to a local client.
     fidl::InterfaceHandle<fble::Central> handle;

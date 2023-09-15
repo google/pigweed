@@ -91,7 +91,6 @@ source_set("testing") {
   sources = [
     "fake_adapter.cc",
     "fake_adapter.h",
-    "fake_adapter_test_fixture.h",
     "fake_pairing_delegate.cc",
     "fake_pairing_delegate.h",
   ]
@@ -99,7 +98,6 @@ source_set("testing") {
   public_deps = [
     ":gap",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
-    "//src/lib/testing/loop_fixture",
     "//third_party/googletest:gtest",
   ]
 }

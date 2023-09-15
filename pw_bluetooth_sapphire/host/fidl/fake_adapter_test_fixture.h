@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_FAKE_ADAPTER_TEST_FIXTURE_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_FAKE_ADAPTER_TEST_FIXTURE_H_
+#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_FAKE_ADAPTER_TEST_FIXTURE_H_
+#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_FAKE_ADAPTER_TEST_FIXTURE_H_
 
 #include <gtest/gtest.h>
 
-#include "fake_adapter.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/fake_adapter.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
-namespace bt::gap::testing {
+namespace bt::fidl::testing {
 
 class FakeAdapterTestFixture : public ::gtest::TestLoopFixture {
  public:
@@ -36,6 +36,6 @@ class FakeAdapterTestFixture : public ::gtest::TestLoopFixture {
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeAdapterTestFixture);
 };
 
-}  // namespace bt::gap::testing
+}  // namespace bt::fidl::testing
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_FAKE_ADAPTER_TEST_FIXTURE_H_
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_FAKE_ADAPTER_TEST_FIXTURE_H_

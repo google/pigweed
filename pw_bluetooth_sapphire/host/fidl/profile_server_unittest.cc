@@ -15,8 +15,8 @@
 #include "lib/zx/socket.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/host_error.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/adapter_test_fixture.h"
+#include "src/connectivity/bluetooth/core/bt-host/fidl/fake_adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/fake_adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/fake_pairing_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_l2cap.h"
@@ -1095,7 +1095,7 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectScoInitiatorAndCloseReceiverBefore
   EXPECT_FALSE(receiver.connection().is_bound());
 }
 
-class ProfileServerTestFakeAdapter : public bt::gap::testing::FakeAdapterTestFixture {
+class ProfileServerTestFakeAdapter : public bt::fidl::testing::FakeAdapterTestFixture {
  public:
   ProfileServerTestFakeAdapter() = default;
   ~ProfileServerTestFakeAdapter() override = default;

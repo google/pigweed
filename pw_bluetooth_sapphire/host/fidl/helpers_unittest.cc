@@ -22,7 +22,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/adapter_test_fixture.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/fake_adapter_test_fixture.h"
+#include "src/connectivity/bluetooth/core/bt-host/fidl/fake_adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sco/sco.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
@@ -1345,7 +1345,7 @@ TEST_F(HelpersAdapterTest, FidlToScoParameters) {
   EXPECT_EQ(view.input_pcm_sample_payload_msb_position().Read(), 0u);
 }
 
-class HelpersTestFakeAdapter : public bt::gap::testing::FakeAdapterTestFixture {
+class HelpersTestFakeAdapter : public bt::fidl::testing::FakeAdapterTestFixture {
  public:
   HelpersTestFakeAdapter() = default;
   ~HelpersTestFakeAdapter() override = default;

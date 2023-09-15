@@ -9,7 +9,7 @@
 #include "fuchsia/bluetooth/le/cpp/fidl.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/fake_adapter_test_fixture.h"
+#include "src/connectivity/bluetooth/core/bt-host/fidl/fake_adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_advertising_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
@@ -31,13 +31,13 @@ const bt::DeviceAddress kTestAddr2(bt::DeviceAddress::Type::kLEPublic, {0x02, 0,
 using bt::testing::FakePeer;
 using FidlAdvHandle = fidl::InterfaceHandle<fble::AdvertisingHandle>;
 
-class LowEnergyPeripheralServerTestFakeAdapter : public bt::gap::testing::FakeAdapterTestFixture {
+class LowEnergyPeripheralServerTestFakeAdapter : public bt::fidl::testing::FakeAdapterTestFixture {
  public:
   LowEnergyPeripheralServerTestFakeAdapter() = default;
   ~LowEnergyPeripheralServerTestFakeAdapter() override = default;
 
   void SetUp() override {
-    bt::gap::testing::FakeAdapterTestFixture::SetUp();
+    bt::fidl::testing::FakeAdapterTestFixture::SetUp();
 
     fake_gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>(pw_dispatcher());
 
@@ -53,7 +53,7 @@ class LowEnergyPeripheralServerTestFakeAdapter : public bt::gap::testing::FakeAd
 
     peripheral_client_ = nullptr;
     server_ = nullptr;
-    bt::gap::testing::FakeAdapterTestFixture::TearDown();
+    bt::fidl::testing::FakeAdapterTestFixture::TearDown();
   }
 
   LowEnergyPeripheralServer* server() const { return server_.get(); }

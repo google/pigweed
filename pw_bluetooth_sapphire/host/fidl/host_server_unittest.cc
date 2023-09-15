@@ -17,8 +17,8 @@
 #include "helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/fidl/fake_adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/fake_adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_address_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
@@ -1241,7 +1241,7 @@ TEST_F(HostServerTest, EnableBackgroundScanFailsToStart) {
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
 }
 
-class HostServerTestFakeAdapter : public bt::gap::testing::FakeAdapterTestFixture {
+class HostServerTestFakeAdapter : public bt::fidl::testing::FakeAdapterTestFixture {
  public:
   HostServerTestFakeAdapter() = default;
   ~HostServerTestFakeAdapter() override = default;
