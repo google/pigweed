@@ -57,8 +57,8 @@ static_library("sm") {
     "//src/connectivity/bluetooth/core/bt-host/gap:definitions",
     "//src/connectivity/bluetooth/core/bt-host/hci",
     "//src/connectivity/bluetooth/core/bt-host/l2cap",
-    "//third_party/pigweed:pw_string",
-    "//third_party/pigweed:pw_third_party_boringssl",
+    "//third_party/pigweed/src/pw_string",
+    "//third_party/pigweed/src/third_party/boringssl",
   ]
 }
 

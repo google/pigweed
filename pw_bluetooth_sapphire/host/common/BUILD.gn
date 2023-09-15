@@ -61,16 +61,16 @@ source_set("common") {
     "//sdk/lib/sys/inspect/cpp",
     "//src/connectivity/bluetooth/lib/cpp-string",
     "//src/connectivity/bluetooth/lib/cpp-type",
-    "//third_party/pigweed:pw_assert",
     "//third_party/pigweed:pw_async_dispatcher",
     "//third_party/pigweed:pw_async_task",
-    "//third_party/pigweed:pw_intrusive_ptr",
-    "//third_party/pigweed:pw_log",
-    "//third_party/pigweed:pw_random",
-    "//third_party/pigweed:pw_span",
-    "//third_party/pigweed:pw_string",
     "//third_party/pigweed/backends/pw_async_fuchsia:util",
+    "//third_party/pigweed/src/pw_assert",
     "//third_party/pigweed/src/pw_bluetooth:emboss_hci_group",
+    "//third_party/pigweed/src/pw_intrusive_ptr",
+    "//third_party/pigweed/src/pw_log",
+    "//third_party/pigweed/src/pw_random",
+    "//third_party/pigweed/src/pw_span",
+    "//third_party/pigweed/src/pw_string",
   ]
 }
 

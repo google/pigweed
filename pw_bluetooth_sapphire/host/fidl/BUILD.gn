@@ -146,6 +146,6 @@ fuchsia_library_fuzzer("host_server_watch_peers_fuzzer") {
     "//src/connectivity/bluetooth/core/bt-host:sources",
     "//src/connectivity/bluetooth/core/bt-host/testing:fuzzing",
     "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
-    "//third_party/pigweed:pw_random_fuzzer_generator",
+    "//third_party/pigweed/src/pw_random:fuzzer_generator",
   ]
 }

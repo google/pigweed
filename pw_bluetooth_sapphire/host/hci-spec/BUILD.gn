@@ -21,8 +21,8 @@ static_library("hci-spec") {
 
   public_deps = [
     "//src/connectivity/bluetooth/core/bt-host/common",
-    "//third_party/pigweed:pw_chrono_system_clock",
     "//third_party/pigweed/src/pw_bluetooth:emboss_hci_group",
+    "//third_party/pigweed/src/pw_chrono:system_clock",
   ]
 }
 

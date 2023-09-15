@@ -20,7 +20,7 @@ source_set("helpers") {
   ]
 
   public_deps = [
-    "//third_party/pigweed:pw_bluetooth",
+    "//third_party/pigweed/src/pw_bluetooth",
     "//zircon/system/ulib/zx",
   ]
 }
@@ -44,7 +44,7 @@ source_set("banjo_controller") {
   public_deps = [
     "//sdk/banjo/fuchsia.hardware.bt.hci:fuchsia.hardware.bt.hci_banjo_cpp",
     "//sdk/banjo/fuchsia.hardware.bt.vendor:fuchsia.hardware.bt.vendor_banjo_cpp",
-    "//third_party/pigweed:pw_bluetooth",
+    "//third_party/pigweed/src/pw_bluetooth",
     "//zircon/system/ulib/async",
   ]
 }
@@ -66,7 +66,7 @@ source_set("fidl_controller") {
 
   public_deps = [
     "//sdk/fidl/fuchsia.hardware.bluetooth:fuchsia.hardware.bluetooth_hlcpp",
-    "//third_party/pigweed:pw_bluetooth",
+    "//third_party/pigweed/src/pw_bluetooth",
     "//zircon/system/ulib/async",
   ]
 }

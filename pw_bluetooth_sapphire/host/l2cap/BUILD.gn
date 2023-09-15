@@ -122,8 +122,8 @@ source_set("testing") {
     "//src/lib/testing/loop_fixture",
     "//third_party/googletest:gtest",
     "//third_party/pigweed:pw_async_heap_dispatcher",
-    "//third_party/pigweed:pw_bluetooth",
     "//third_party/pigweed/backends/pw_async_fuchsia:fake_dispatcher_fixture",
+    "//third_party/pigweed/src/pw_bluetooth",
   ]
 }
 
@@ -201,7 +201,7 @@ fuchsia_library_fuzzer("bredr_dynamic_channel_registry_fuzzer") {
     ":l2cap",
     ":testing",
     "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
-    "//third_party/pigweed:pw_random_fuzzer_generator",
+    "//third_party/pigweed/src/pw_random:fuzzer_generator",
   ]
 }
 
@@ -229,6 +229,6 @@ fuchsia_library_fuzzer("l2cap_fuzzer") {
     ":l2cap",
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
-    "//third_party/pigweed:pw_random_fuzzer_generator",
+    "//third_party/pigweed/src/pw_random:fuzzer_generator",
   ]
 }

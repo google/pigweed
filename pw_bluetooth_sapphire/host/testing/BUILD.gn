@@ -83,7 +83,7 @@ source_set("controller_test_double_base") {
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/connectivity/bluetooth/core/bt-host/hci",
     "//third_party/pigweed:pw_async_heap_dispatcher",
-    "//third_party/pigweed:pw_bluetooth",
+    "//third_party/pigweed/src/pw_bluetooth",
   ]
 }
 

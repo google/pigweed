@@ -80,8 +80,8 @@ static_library("gap") {
     "//src/connectivity/bluetooth/core/bt-host/sdp",
     "//src/connectivity/bluetooth/core/bt-host/sm",
     "//third_party/pigweed:pw_async_heap_dispatcher",
-    "//third_party/pigweed:pw_bluetooth",
     "//third_party/pigweed/backends/pw_async_fuchsia:util",
+    "//third_party/pigweed/src/pw_bluetooth",
   ]
 }
 
@@ -152,7 +152,7 @@ fuchsia_library_fuzzer("peer_cache_fuzzer") {
     ":gap",
     "//src/connectivity/bluetooth/core/bt-host/testing:fuzzing",
     "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
-    "//third_party/pigweed:pw_random_fuzzer_generator",
+    "//third_party/pigweed/src/pw_random:fuzzer_generator",
     "//zircon/system/ulib/async-loop:async-loop-cpp",
   ]
 }

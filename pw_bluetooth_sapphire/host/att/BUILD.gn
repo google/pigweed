@@ -43,7 +43,7 @@ static_library("att") {
     "//src/connectivity/bluetooth/core/bt-host/sm:definitions",
   ]
 
-  deps = [ "//third_party/pigweed:pw_string" ]
+  deps = [ "//third_party/pigweed/src/pw_string" ]
 }
 
 source_set("tests") {
