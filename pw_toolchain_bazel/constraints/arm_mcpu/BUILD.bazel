@@ -63,3 +63,13 @@ constraint_value(
     name = "cortex-m4+nofp",
     constraint_setting = ":mcpu",
 )
+
+constraint_value(
+    name = "cortex-m33",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "cortex-m33+nofp",
+    constraint_setting = ":mcpu",
+)

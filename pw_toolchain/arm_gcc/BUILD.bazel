@@ -90,6 +90,8 @@ _MCPU = [
     "cortex-m3",
     "cortex-m4",
     "cortex-m4+nofp",
+    "cortex-m33",
+    "cortex-m33+nofp",
 ]
 
 pw_cc_toolchain_feature(
@@ -136,6 +138,30 @@ pw_cc_toolchain_feature(
     ],
     linkopts = [
         "-mcpu=cortex-m4+nofp",
+        "-mfloat-abi=soft",
+    ],
+)
+
+pw_cc_toolchain_feature(
+    name = "cortex-m33",
+    copts = [
+        "-mcpu=cortex-m33",
+        "-mfloat-abi=hard",
+    ],
+    linkopts = [
+        "-mcpu=cortex-m33",
+        "-mfloat-abi=hard",
+    ],
+)
+
+pw_cc_toolchain_feature(
+    name = "cortex-m33+nofp",
+    copts = [
+        "-mcpu=cortex-m33+nofp",
+        "-mfloat-abi=soft",
+    ],
+    linkopts = [
+        "-mcpu=cortex-m33+nofp",
         "-mfloat-abi=soft",
     ],
 )
@@ -216,5 +242,23 @@ toolchain(
         "@pw_toolchain//constraints/arm_mcpu:cortex-m4+nofp",
     ],
     toolchain = ":arm_gcc_toolchain_cortex-m4+nofp",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "arm_gcc_cc_toolchain_cortex-m33",
+    target_compatible_with = [
+        "@pw_toolchain//constraints/arm_mcpu:cortex-m33",
+    ],
+    toolchain = ":arm_gcc_toolchain_cortex-m33",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "arm_gcc_cc_toolchain_cortex-m33+nofp",
+    target_compatible_with = [
+        "@pw_toolchain//constraints/arm_mcpu:cortex-m33+nofp",
+    ],
+    toolchain = ":arm_gcc_toolchain_cortex-m33+nofp",
     toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
 )
