@@ -36,11 +36,11 @@
 #endif  // __cpp_consteval >= 201811L
 
 // Mark functions as constinit if supported by the compiler.
-#if defined(__cpp_constinit)
+#if defined(__cpp_constinit) && __cpp_constinit >= 201907L
 #define PW_CONSTINIT constinit
 #elif defined(__clang__)
 #define PW_CONSTINIT [[clang::require_constant_initialization]]
-#elif defined(__GNUC__) && __GNUC__ >= 10
+#elif defined(__GNUC__) && __GNUC__ >= 13
 #define PW_CONSTINIT __constinit
 #else
 #define PW_CONSTINIT
