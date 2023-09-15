@@ -20,5 +20,6 @@ filegroup(
     name = "chre",
     srcs = [
         "integration_test.cc",
+        "version.cc",
     ],
 )

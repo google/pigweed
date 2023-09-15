@@ -104,7 +104,6 @@ if (dir_pw_third_party_chre == "") {
       "$dir_pw_third_party_chre/platform/shared/nanoapp/nanoapp_dso_util.cc",
       "$dir_pw_third_party_chre/platform/shared/pal_system_api.cc",
       "$dir_pw_third_party_chre/platform/shared/system_time.cc",
-      "$dir_pw_third_party_chre/platform/shared/version.cc",
       "$dir_pw_third_party_chre/util/buffer_base.cc",
       "$dir_pw_third_party_chre/util/dynamic_vector_base.cc",
       "$dir_pw_third_party_chre/util/nanoapp/audio.cc",
@@ -113,6 +112,13 @@ if (dir_pw_third_party_chre == "") {
       "$dir_pw_third_party_chre/util/nanoapp/wifi.cc",
       "$dir_pw_third_party_chre/util/system/debug_dump.cc",
     ]
+
+    # TODO(b/300633363): Use CHRE's version when it compiles on MacOS.
+    if (current_os == "mac") {
+      sources += [ "version.cc" ]
+    } else {
+      sources += [ "$dir_pw_third_party_chre/platform/shared/version.cc" ]
+    }
 
     public_deps = [
       ":chre_headers",
