@@ -5,21 +5,14 @@
 #include "weak_self.h"
 
 #include <gtest/gtest.h>
+#include <pw_async/fake_dispatcher_fixture.h>
 #include <pw_async/heap_dispatcher.h>
 #include <pw_async_fuchsia/dispatcher.h>
-
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt {
 namespace {
 
-class WeakSelfTest : public ::gtest::TestLoopFixture {
- public:
-  pw::async::Dispatcher &pw_dispatcher() { return pw_dispatcher_; }
-
- private:
-  pw::async::fuchsia::FuchsiaDispatcher pw_dispatcher_{dispatcher()};
-};
+using WeakSelfTest = pw::async::test::FakeDispatcherFixture;
 
 class FunctionTester : public WeakSelf<FunctionTester> {
  public:
@@ -56,12 +49,12 @@ TEST_F(WeakSelfTest, InvalidatingSelf) {
   };
 
   {
-    FunctionTester test(0xBA, pw_dispatcher());
+    FunctionTester test(0xBA, dispatcher());
 
     test.callback_later_with_weak(cb);
 
     // Run the loop until we're called back.
-    RunLoopUntilIdle();
+    RunUntilIdle();
 
     EXPECT_TRUE(called);
     EXPECT_TRUE(ptr.is_alive());
@@ -75,7 +68,7 @@ TEST_F(WeakSelfTest, InvalidatingSelf) {
   }
 
   // Run the loop until we're called back.
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(called);
   EXPECT_FALSE(ptr.is_alive());
@@ -94,12 +87,12 @@ TEST_F(WeakSelfTest, InvalidatePtrs) {
     ptr = weakptr;
   };
 
-  FunctionTester test(0xBA, pw_dispatcher());
+  FunctionTester test(0xBA, dispatcher());
 
   test.callback_later_with_weak(cb);
 
   // Run the loop until we're called back.
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(called);
   EXPECT_TRUE(ptr.is_alive());
@@ -113,7 +106,7 @@ TEST_F(WeakSelfTest, InvalidatePtrs) {
   test.InvalidatePtrs();
 
   // Run the loop until we're called back.
-  RunLoopUntilIdle();
+  RunUntilIdle();
 
   EXPECT_TRUE(called);
   EXPECT_FALSE(ptr.is_alive());
