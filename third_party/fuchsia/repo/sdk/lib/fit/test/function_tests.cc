@@ -6,10 +6,19 @@
 #include <lib/stdcompat/bit.h>
 
 #include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <type_traits>
 
 #include "gtest/gtest.h"
 
+#include "pw_polyfill/language_feature_macros.h"
+
 namespace {
+
+using ::std::size_t;
 
 using Closure = void();
 using ClosureWrongReturnType = int();
@@ -50,6 +59,12 @@ struct EmptyFunction<R(Args...)> {
   (Args...) = nullptr;
 };
 
+struct alignas(4 * alignof(void*)) LargeAlignedCallable {
+  void operator()() { calls += 1; }
+
+  int8_t calls = 0;
+};
+
 // An object whose state we can examine from the outside.
 struct SlotMachine {
   void operator()() { value++; }
@@ -86,6 +101,92 @@ class DestructionObserver {
 
  private:
   int* counter_;
+};
+
+// Simple Allocator that only allows 1 object to be allocated/deallocated per call. All template
+// instantiations share the same resources.
+template <typename T>
+class SingleObjectAllocator;
+
+// Shared resources for SingleObjectAllocator template instantiations.
+class SingleObjectAllocatorResources final {
+ private:
+  template <typename T>
+  friend class SingleObjectAllocator;
+
+  // Tuned to current tests. May need to be changed if test requirements change.
+  static constexpr size_t kObjectSize{HugeCallableSize};
+  static constexpr size_t kObjectAlignment{alignof(LargeAlignedCallable)};
+  static constexpr size_t kMaxNumObjects{2u};
+
+  struct Obj {
+    alignas(kObjectAlignment) std::byte obj[kObjectSize];
+  };
+
+  inline static std::array<Obj, kMaxNumObjects> heap_;
+  // Store `bool`s separately instead of in `Obj`, so there doesn't end up being a large amount of
+  // padding from the aligned `obj` arrays in the `Obj` structs.
+  inline static std::array<bool, kMaxNumObjects> in_use_{};
+};
+
+template <typename T>
+class SingleObjectAllocator final {
+ public:
+  using value_type = T;
+  using pointer = value_type*;
+  using size_type = size_t;
+
+  struct is_always_equal : public std::true_type {};
+
+  constexpr SingleObjectAllocator() = default;
+  template <typename U>
+  constexpr SingleObjectAllocator(const SingleObjectAllocator<U>&) {}
+  template <typename U>
+  constexpr SingleObjectAllocator(SingleObjectAllocator<U>&&) {}
+
+  pointer allocate(size_type n) {
+    if (n != 1u) {
+      return nullptr;
+    }
+    for (size_t index{0u}; index < in_use_.size(); ++index) {
+      if (!in_use_.at(index)) {
+        in_use_.at(index) = true;
+        return reinterpret_cast<pointer>(&heap_.at(index).obj);
+      }
+    }
+    return nullptr;
+  }
+
+  void deallocate(pointer p, size_type n) {
+    ASSERT_EQ(n, 1u);
+    for (size_t index{0u}; index < heap_.size(); ++index) {
+      if (reinterpret_cast<pointer>(&heap_.at(index).obj) == p) {
+        ASSERT_TRUE(in_use_.at(index));
+        in_use_.at(index) = false;
+        return;
+      }
+    }
+    FAIL();
+  }
+
+  constexpr size_type max_size() const { return 1u; }
+
+  template <typename U>
+  constexpr bool operator==(const SingleObjectAllocator<U>&) const {
+    return true;
+  }
+  template <typename U>
+  constexpr bool operator!=(const SingleObjectAllocator<U>&) const {
+    return false;
+  }
+
+ private:
+  // Shared resources.
+  static_assert(sizeof(value_type) <= SingleObjectAllocatorResources::kObjectSize);
+  static_assert(alignof(value_type) <= SingleObjectAllocatorResources::kObjectAlignment);
+  inline static auto& heap_ = SingleObjectAllocatorResources::heap_;
+  inline static auto& in_use_ = SingleObjectAllocatorResources::in_use_;
+  static_assert(heap_.size() == in_use_.size());
 };
 
 template <typename ClosureFunction>
@@ -676,6 +777,44 @@ TEST(FunctionTests, sharing) {
 #endif
 }
 
+TEST(FunctionTests, sharing_with_custom_allocator) {
+  int fheapvalue = 1;
+  int fheapdestroy = 0;
+  fit::function<Closure, fit::default_inline_target_size, SingleObjectAllocator<std::byte>> fheap =
+      [&fheapvalue, big = Big(), d = DestructionObserver(&fheapdestroy)] { fheapvalue++; };
+  fit::function<Closure, fit::default_inline_target_size, SingleObjectAllocator<std::byte>>
+      fheapshare1 = fheap.share();
+  fit::function<Closure, fit::default_inline_target_size, SingleObjectAllocator<std::byte>>
+      fheapshare2 = fheap.share();
+  fit::function<Closure, fit::default_inline_target_size, SingleObjectAllocator<std::byte>>
+      fheapshare3 = fheapshare1.share();
+  EXPECT_TRUE(!!fheap);
+  EXPECT_TRUE(!!fheapshare1);
+  EXPECT_TRUE(!!fheapshare2);
+  EXPECT_TRUE(!!fheapshare3);
+  fheap();
+  EXPECT_EQ(2, fheapvalue);
+  fheapshare1();
+  EXPECT_EQ(3, fheapvalue);
+  fheapshare2();
+  EXPECT_EQ(4, fheapvalue);
+  fheapshare3();
+  EXPECT_EQ(5, fheapvalue);
+  fheapshare2();
+  EXPECT_EQ(6, fheapvalue);
+  fheap();
+  EXPECT_EQ(7, fheapvalue);
+  EXPECT_EQ(0, fheapdestroy);
+  fheap = nullptr;
+  EXPECT_EQ(0, fheapdestroy);
+  fheapshare3 = nullptr;
+  EXPECT_EQ(0, fheapdestroy);
+  fheapshare2 = nullptr;
+  EXPECT_EQ(0, fheapdestroy);
+  fheapshare1 = nullptr;
+  EXPECT_EQ(1, fheapdestroy);
+}
+
 struct Obj {
   void Call() { calls++; }
 
@@ -874,18 +1013,25 @@ TEST(FunctionTests, callback_once) {
 #endif
 }
 
-#if defined(__cpp_constinit)
-#define CONSTINIT constinit
-#elif defined(__clang__)
-#define CONSTINIT [[clang::require_constant_initialization]]
-#else
-#define CONSTINIT
-#endif  // __cpp_constinit
+TEST(FunctionTests, callback_with_custom_allocator) {
+  int cbheapvalue = 1;
+  int cbheapdestroy = 0;
+  fit::callback<Closure, fit::default_inline_target_size, SingleObjectAllocator<std::byte>> cbheap =
+      [&cbheapvalue, big = Big(), d = DestructionObserver(&cbheapdestroy)] { cbheapvalue++; };
 
-CONSTINIT const fit::function<void()> kDefaultConstructed;
-CONSTINIT const fit::function<void()> kNullptrConstructed(nullptr);
+  EXPECT_TRUE(!!cbheap);
+  EXPECT_FALSE(cbheap == nullptr);
+  EXPECT_EQ(1, cbheapvalue);
+  EXPECT_EQ(0, cbheapdestroy);
+  cbheap();
+  EXPECT_FALSE(!!cbheap);
+  EXPECT_TRUE(cbheap == nullptr);
+  EXPECT_EQ(2, cbheapvalue);
+  EXPECT_EQ(1, cbheapdestroy);
+}
 
-#undef CONSTINIT
+PW_CONSTINIT const fit::function<void()> kDefaultConstructed;
+PW_CONSTINIT const fit::function<void()> kNullptrConstructed(nullptr);
 
 TEST(FunctionTests, null_constructors_are_constexpr) {
   EXPECT_EQ(kDefaultConstructed, nullptr);
@@ -893,17 +1039,27 @@ TEST(FunctionTests, null_constructors_are_constexpr) {
 }
 
 TEST(FunctionTests, function_with_callable_aligned_larger_than_inline_size) {
-  struct alignas(4 * alignof(void*)) LargeAlignedCallable {
-    void operator()() { calls += 1; }
-
-    char calls = 0;
-  };
-
-  static_assert(sizeof(LargeAlignedCallable) > sizeof(void*), "Should not fit inline in function");
+  static_assert(sizeof(LargeAlignedCallable) > sizeof(void*), "Should not fit inline in function.");
 
   fit::function<void(), sizeof(void*)> function = LargeAlignedCallable();
 
-  static_assert(alignof(LargeAlignedCallable) > alignof(decltype(function)), "");
+  static_assert(alignof(LargeAlignedCallable) > alignof(decltype(function)));
+
+  // Verify that the allocated target is aligned correctly.
+  LargeAlignedCallable* callable_ptr = function.target<LargeAlignedCallable>();
+  EXPECT_EQ(cpp20::bit_cast<uintptr_t>(callable_ptr) % alignof(LargeAlignedCallable), 0u);
+
+  function();
+  EXPECT_EQ(callable_ptr->calls, 1);
+}
+
+TEST(FunctionTests, function_with_callable_aligned_larger_than_inline_size_with_custom_allocator) {
+  static_assert(sizeof(LargeAlignedCallable) > sizeof(void*), "Should not fit inline in function.");
+
+  fit::function<void(), sizeof(void*), SingleObjectAllocator<std::byte>> function =
+      LargeAlignedCallable();
+
+  static_assert(alignof(LargeAlignedCallable) > alignof(decltype(function)));
 
   // Verify that the allocated target is aligned correctly.
   LargeAlignedCallable* callable_ptr = function.target<LargeAlignedCallable>();
@@ -1024,8 +1180,6 @@ template class assert_move_only<fit::callback<void()>>;
 
 }  // namespace test_copy_move_constructions
 
-}  // namespace
-
 namespace test_conversions {
 static_assert(std::is_convertible<Closure, fit::function<Closure>>::value, "");
 static_assert(std::is_convertible<BinaryOp, fit::function<BinaryOp>>::value, "");
@@ -1075,6 +1229,14 @@ TEST(FunctionTests, closure_fit_inline_function_Closure_HugeCallableSize) {
 TEST(FunctionTests, binary_op_fit_inline_function_BinaryOp_HugeCallableSize) {
   binary_op<fit::inline_function<BinaryOp, HugeCallableSize>>();
 }
+TEST(FunctionTests, closure_fit_function_Closure_SingleObjectAllocator) {
+  closure<
+      fit::function<Closure, fit::default_inline_target_size, SingleObjectAllocator<std::byte>>>();
+}
+TEST(FunctionTests, binary_op_fit_function_BinaryOp_SingleObjectAllocator) {
+  binary_op<
+      fit::function<BinaryOp, fit::default_inline_target_size, SingleObjectAllocator<std::byte>>>();
+}
 
 TEST(FunctionTests, bind_return_reference) {
   struct TestClass {
@@ -1090,3 +1252,5 @@ TEST(FunctionTests, bind_return_reference) {
   fit::function<int&()> func_deprecated = fit::bind_member(&instance, &TestClass::member);
   EXPECT_EQ(&func_deprecated(), &instance.member_);
 }
+
+}  // namespace
