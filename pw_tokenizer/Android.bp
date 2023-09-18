@@ -26,6 +26,7 @@ cc_library_static {
         "fuchsia_sdk_lib_stdcompat",
         "pw_assert_headers",
         "pw_log_headers",
+        "pw_log_tokenized_headers",
         "pw_log_null_headers",
         "pw_polyfill_headers",
         "pw_preprocessor_headers",

@@ -25,16 +25,18 @@ cc_library_static {
         "pw_assert_log_defaults",
     ],
     header_libs: [
+        "fuchsia_sdk_lib_stdcompat",
         "pw_assert_headers",
         "pw_log_headers",
         "pw_log_null_headers",
-        "pw_preprocessor_headers",
         "pw_polyfill_headers",
-        "pw_span_headers",
+        "pw_preprocessor_headers",
         "pw_result_headers",
+        "pw_span_headers",
     ],
     export_header_lib_headers: [
-      "pw_polyfill_headers",
+        "fuchsia_sdk_lib_stdcompat",
+        "pw_polyfill_headers",
     ],
     static_libs: [
         "pw_bytes",
@@ -43,6 +45,7 @@ cc_library_static {
     ],
     srcs: [
         "stream.cc",
+        "varint_c.c",
         "varint.cc",
     ],
     host_supported: true,
