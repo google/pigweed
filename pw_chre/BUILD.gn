@@ -38,20 +38,7 @@ pw_source_set("chre_empty_host_link") {
   deps = [ ":chre" ]
 }
 
-pw_source_set("chre_backend") {
-  sources = [
-    "chre_api_re.cc",
-    "context.cc",
-    "host_link.cc",
-    "memory.cc",
-    "memory_manager.cc",
-    "platform_debug_dump_manager.cc",
-    "platform_nanoapp.cc",
-    "platform_pal.cc",
-    "power_control_manager.cc",
-    "system_time.cc",
-    "system_timer.cc",
-  ]
+pw_source_set("chre_backend_headers") {
   public = [
     "include/chre/target_platform/atomic_base.h",
     "include/chre/target_platform/atomic_base_impl.h",
@@ -70,11 +57,35 @@ pw_source_set("chre_backend") {
     "include/chre/target_platform/static_nanoapp_init.h",
     "include/chre/target_platform/system_timer_base.h",
   ]
+  public_configs = [ ":public_overrides" ]
+  public_deps = [
+    "$dir_pw_chrono:system_timer",
+    "$dir_pw_log",
+    "$dir_pw_sync:mutex",
+    "$dir_pw_sync:timed_thread_notification",
+  ]
+}
+
+pw_source_set("pw_chre_backend") {
+  sources = [
+    "chre_api_re.cc",
+    "context.cc",
+    "host_link.cc",
+    "memory.cc",
+    "memory_manager.cc",
+    "platform_debug_dump_manager.cc",
+    "platform_nanoapp.cc",
+    "platform_pal.cc",
+    "power_control_manager.cc",
+    "system_time.cc",
+    "system_timer.cc",
+  ]
   deps = [
     "$dir_pw_string:format",
     "$dir_pw_third_party/chre:chre_headers",
   ]
   public_deps = [
+    ":chre_backend_headers",
     "$dir_pw_chrono:system_timer",
     "$dir_pw_log",
     "$dir_pw_sync:mutex",
@@ -87,6 +98,13 @@ pw_source_set("chre_backend") {
     ":disable_warnings",
   ]
   remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
+}
+
+pw_source_set("chre_backend") {
+  public_deps = [
+    ":pw_chre_backend",
+    "$dir_pw_third_party/chre:shared_platform",
+  ]
 }
 
 config("public_include_path") {

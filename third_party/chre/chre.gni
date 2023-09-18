@@ -21,6 +21,9 @@ declare_args() {
   # The configuration for building CHRE.
   pw_chre_CONFIG = "//third_party/chre:default_chre_config"
 
-  # CHRE's platform backend. The default is the pigweed backend.
+  # CHRE's platform backend headers. The default is the Pigweed backend.
+  pw_chre_PLATFORM_BACKEND_HEADERS = "//pw_chre:chre_backend_headers"
+
+  # CHRE's platform backend implementation. The default is the Pigweed backend.
   pw_chre_PLATFORM_BACKEND = "//pw_chre:chre_backend"
 }
