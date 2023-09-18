@@ -140,8 +140,7 @@ export const styles = css`
   }
 
   th[hidden],
-  td[hidden],
-  .jump-to-bottom-btn[hidden] {
+  td[hidden] {
     display: none;
   }
 
@@ -172,9 +171,9 @@ export const styles = css`
     --md-filled-button-hover-container-elevation: 4;
     bottom: 2.25rem;
     font-family: 'Roboto Flex', sans-serif;
-    left: 50%;
     position: absolute;
-    transform: translate(-50%);
+    place-self: center;
+    transform: translateY(15%) scale(0.9);
   }
 
   .resize-handle {
@@ -270,6 +269,27 @@ export const styles = css`
     border-radius: 2px;
     color: var(--md-sys-color-on-primary-container);
     outline: 1px solid var(--sys-log-viewer-color-table-mark);
+  }
+
+  .jump-to-bottom-btn,
+  .bottom-indicator {
+    opacity: 0;
+    transition:
+      opacity 100ms ease,
+      transform 100ms ease,
+      visibility 100ms ease;
+    visibility: hidden;
+  }
+
+  .jump-to-bottom-btn[data-visible='true'],
+  .bottom-indicator[data-visible='true'] {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    transition:
+      opacity 250ms ease,
+      transform 250ms ease,
+      250ms ease;
+    visibility: visible;
   }
 
   ::-webkit-scrollbar {

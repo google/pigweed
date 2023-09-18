@@ -63,10 +63,6 @@ export class LogList extends LitElement {
   @state()
   private _scrollPercentageLeft = 0;
 
-  /** A number representing visibility of vertical scroll indicator. */
-  @state()
-  private _scrollDownOpacity = 0;
-
   /** Indicates whether to enable autosizing of incoming log entries. */
   @state()
   private _autosizeLocked = false;
@@ -82,7 +78,6 @@ export class LogList extends LitElement {
   @query('table') private _table!: HTMLTableElement;
   @query('tbody') private _tableBody!: HTMLTableSectionElement;
   @queryAll('tr') private _tableRows!: HTMLTableRowElement[];
-  @query('.jump-to-bottom-btn') private _jumpBottomBtn!: HTMLButtonElement;
 
   /**
    * Data used for column resizing including the column index, the starting
@@ -102,11 +97,13 @@ export class LogList extends LitElement {
   private readonly AUTOSIZE_LIMIT: number = 8;
   /** The minimum width (in px) for table columns. */
   private readonly MIN_COL_WIDTH: number = 52;
+  /** The last known vertical scroll position of the table container. */
+  private lastScrollTop: number = 0;
 
   firstUpdated() {
     setInterval(() => this.updateHorizontalOverflowState(), 1000);
 
-    window.addEventListener('scroll', this.handleTableScroll);
+    this._tableContainer.addEventListener('scroll', this.handleTableScroll);
     this._tableBody.addEventListener('rangeChanged', this.onRangeChanged);
 
     const newRowObserver = new MutationObserver(this.onTableRowAdded);
@@ -189,9 +186,6 @@ export class LogList extends LitElement {
     setTimeout(() => {
       container.scrollTop = container.scrollHeight;
     }, 0); // Complete any rendering tasks before scrolling
-
-    this._scrollDownOpacity = 0;
-    this._jumpBottomBtn.hidden = true;
   }
 
   /**
@@ -309,15 +303,31 @@ export class LogList extends LitElement {
    */
   private handleTableScroll = () => {
     const container = this._tableContainer;
+    const currentScrollTop = container.scrollTop;
     const containerWidth = container.offsetWidth;
     const scrollLeft = container.scrollLeft;
     const scrollY =
-      container.scrollHeight - container.scrollTop - container.clientHeight;
+      container.scrollHeight - currentScrollTop - container.clientHeight;
     const maxScrollLeft = container.scrollWidth - containerWidth;
     const rowHeight = this._tableRows[0].offsetHeight;
 
-    this._scrollPercentageLeft = scrollLeft / maxScrollLeft || 0;
+    // Determine scroll direction and update the last known scroll position
+    const isScrollingVertically = currentScrollTop !== this.lastScrollTop;
+    const isScrollingUp = currentScrollTop < this.lastScrollTop;
+    this.lastScrollTop = currentScrollTop;
 
+    // Only run autoscroll logic if the user is scrolling vertically
+    if (!isScrollingVertically) {
+      return;
+    }
+
+    // User is scrolling up, disable autoscroll
+    if (isScrollingUp) {
+      this._autoscrollIsEnabled = false;
+      return;
+    }
+
+    // User is scrolling down, enable autoscroll if they're near the bottom
     if (Math.abs(scrollY) <= 1) {
       this._autoscrollIsEnabled = true;
       return;
@@ -327,20 +337,7 @@ export class LogList extends LitElement {
       this._autoscrollIsEnabled = false;
     }
 
-    let debounceTimer: NodeJS.Timer | null = null;
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
-    }
-
-    debounceTimer = setTimeout(() => {
-      if (Math.round(scrollY - rowHeight) >= 1) {
-        this._jumpBottomBtn.hidden = false;
-        this._scrollDownOpacity = 1;
-      } else {
-        this._jumpBottomBtn.hidden = true;
-        this._scrollDownOpacity = 0;
-      }
-    }, 100);
+    this._scrollPercentageLeft = scrollLeft / maxScrollLeft || 0;
   };
 
   /**
@@ -454,18 +451,8 @@ export class LogList extends LitElement {
             })}
           </tbody>
         </table>
-        ${this.overflowIndicators()}
+        ${this.overflowIndicators()} ${this.jumpToBottomButton()}
       </div>
-      <md-filled-button
-        class="jump-to-bottom-btn"
-        title="Jump to Bottom"
-        @click="${this.scrollTableToBottom}"
-        leading-icon
-        hidden
-      >
-        <md-icon slot="icon" aria-hidden="true">arrow_downward</md-icon>
-        Jump to Bottom
-      </md-filled-button>
     `;
   }
 
@@ -591,7 +578,7 @@ export class LogList extends LitElement {
   private overflowIndicators = () => html`
     <div
       class="bottom-indicator"
-      style="opacity: ${this._scrollDownOpacity}"
+      data-visible="${this._autoscrollIsEnabled ? 'false' : 'true'}"
     ></div>
 
     <div
@@ -605,5 +592,18 @@ export class LogList extends LitElement {
       style="opacity: ${1 - this._scrollPercentageLeft}"
       ?hidden="${!this._isOverflowingToRight}"
     ></div>
+  `;
+
+  private jumpToBottomButton = () => html`
+    <md-filled-button
+      class="jump-to-bottom-btn"
+      title="Jump to Bottom"
+      @click="${this.scrollTableToBottom}"
+      leading-icon
+      data-visible="${this._autoscrollIsEnabled ? 'false' : 'true'}"
+    >
+      <md-icon slot="icon" aria-hidden="true">arrow_downward</md-icon>
+      Jump to Bottom
+    </md-filled-button>
   `;
 }
