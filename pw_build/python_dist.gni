@@ -147,7 +147,7 @@ template("pw_python_zip_with_setup") {
 
     output = _zip_path
 
-    # TODO(b/235245034): Remove the plumbing-through of invoker's public_deps.
+    # TODO: b/235245034 - Remove the plumbing-through of invoker's public_deps.
     public_deps = _public_deps + [ ":${_outer_name}.wheels" ]
 
     if (defined(invoker.venv)) {
@@ -470,7 +470,7 @@ template("pw_python_distribution") {
   }
 }
 
-# TODO(b/232800695): Remove this template when all projects no longer use it.
+# TODO: b/232800695 - Remove this template when all projects no longer use it.
 template("pw_create_python_source_tree") {
   pw_python_distribution("$target_name") {
     forward_variables_from(invoker, "*")
@@ -640,7 +640,7 @@ template("pw_python_pip_install") {
   }
 }
 
-# TODO(b/232800695): Remove this template when all projects no longer use it.
+# TODO: b/232800695 - Remove this template when all projects no longer use it.
 template("pw_internal_pip_install") {
   pw_python_pip_install("$target_name") {
     forward_variables_from(invoker, "*")

@@ -31,7 +31,7 @@ ENTRY(Reset)
 
 MEMORY
 {
-  /* TODO(b/234892223): Make it possible for projects to freely customize
+  /* TODO: b/234892223 - Make it possible for projects to freely customize
    * memory regions.
    */
 

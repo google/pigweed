@@ -31,7 +31,7 @@ pw_source_set("pw_base64") {
   ]
   sources = [ "base64.cc" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 

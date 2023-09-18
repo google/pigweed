@@ -32,4 +32,4 @@ TEST(Fuzzer, EmptyInput) {
   EXPECT_EQ(LLVMFuzzerTestOneInput(nullptr, 0), 0);
 }
 
-// TODO(b/234883542): Add support for testing a seed corpus.
+// TODO: b/234883542 - Add support for testing a seed corpus.

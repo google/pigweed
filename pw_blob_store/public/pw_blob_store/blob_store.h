@@ -68,7 +68,7 @@ class BlobStore {
     BlobWriter& operator=(const BlobWriter&) = delete;
     ~BlobWriter() override {
       if (open_) {
-        Close().IgnoreError();  // TODO(b/242598609): Handle Status properly
+        Close().IgnoreError();  // TODO: b/242598609 - Handle Status properly
       }
     }
 

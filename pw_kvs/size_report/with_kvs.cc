@@ -49,17 +49,17 @@ int main() {
       std::memset((void*)working_buffer, 0x55, sizeof(working_buffer));
   is_set = (result != nullptr);
 
-  kvs.Init().IgnoreError();  // TODO(b/242598609): Handle Status properly
+  kvs.Init().IgnoreError();  // TODO: b/242598609 - Handle Status properly
 
   unsigned kvs_value = 42;
   kvs.Put("example_key", kvs_value)
-      .IgnoreError();  // TODO(b/242598609): Handle Status properly
+      .IgnoreError();  // TODO: b/242598609 - Handle Status properly
 
   kvs_entry_count = kvs.size();
 
   unsigned read_value = 0;
   kvs.Get("example_key", &read_value)
-      .IgnoreError();  // TODO(b/242598609): Handle Status properly
+      .IgnoreError();  // TODO: b/242598609 - Handle Status properly
 
   return 0;
 }

@@ -25,7 +25,7 @@ unnumbered information frame.
 
       Example:
 
-      .. TODO(b/279648188): Share this code between api.rst and guide.rst.
+      .. TODO: b/279648188 - Share this code between api.rst and guide.rst.
 
       .. code-block:: cpp
 
@@ -52,7 +52,7 @@ unnumbered information frame.
 
       Example:
 
-      .. TODO(b/279648188): Share this code between api.rst and guide.rst.
+      .. TODO: b/279648188 - Share this code between api.rst and guide.rst.
 
       .. code-block:: python
 
@@ -91,7 +91,7 @@ Decoder
 
       Example:
 
-      .. TODO(b/279648188): Share this code between api.rst and guide.rst.
+      .. TODO: b/279648188 - Share this code between api.rst and guide.rst.
 
       .. code-block:: cpp
 
@@ -122,7 +122,7 @@ Decoder
 
       Example:
 
-      .. TODO(b/279648188): Share this code between api.rst and guide.rst.
+      .. TODO: b/279648188 - Share this code between api.rst and guide.rst.
 
       .. code-block:: python
 

@@ -185,7 +185,7 @@ export class LogList extends LitElement {
   private scrollTableToBottom() {
     const container = this._tableContainer;
 
-    // TODO(b/298097109): Refactor `setTimeout` usage
+    // TODO: b/298097109 - Refactor `setTimeout` usage
     setTimeout(() => {
       container.scrollTop = container.scrollHeight;
     }, 0); // Complete any rendering tasks before scrolling

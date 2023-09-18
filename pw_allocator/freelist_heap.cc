@@ -29,7 +29,7 @@ FreeListHeap::FreeListHeap(span<std::byte> region, FreeList& freelist)
       "Failed to initialize FreeListHeap region; misaligned or too small");
 
   freelist_.AddChunk(BlockToSpan(block))
-      .IgnoreError();  // TODO(b/242598609): Handle Status properly
+      .IgnoreError();  // TODO: b/242598609 - Handle Status properly
 
   region_ = region;
   heap_stats_.total_bytes = region.size();
@@ -44,7 +44,7 @@ void* FreeListHeap::Allocate(size_t size) {
     return nullptr;
   }
   freelist_.RemoveChunk(chunk)
-      .IgnoreError();  // TODO(b/242598609): Handle Status properly
+      .IgnoreError();  // TODO: b/242598609 - Handle Status properly
 
   Block* chunk_block = Block::FromUsableSpace(chunk.data());
 
@@ -55,7 +55,7 @@ void* FreeListHeap::Allocate(size_t size) {
   auto status = chunk_block->Split(size, &leftover);
   if (status == PW_STATUS_OK) {
     freelist_.AddChunk(BlockToSpan(leftover))
-        .IgnoreError();  // TODO(b/242598609): Handle Status properly
+        .IgnoreError();  // TODO: b/242598609 - Handle Status properly
   }
 
   chunk_block->MarkUsed();
@@ -96,9 +96,9 @@ void FreeListHeap::Free(void* ptr) {
   if (prev != nullptr && !prev->Used()) {
     // Remove from freelist and merge
     freelist_.RemoveChunk(BlockToSpan(prev))
-        .IgnoreError();  // TODO(b/242598609): Handle Status properly
+        .IgnoreError();  // TODO: b/242598609 - Handle Status properly
     chunk_block->MergePrev()
-        .IgnoreError();  // TODO(b/242598609): Handle Status properly
+        .IgnoreError();  // TODO: b/242598609 - Handle Status properly
 
     // chunk_block is now invalid; prev now encompasses it.
     chunk_block = prev;
@@ -106,13 +106,13 @@ void FreeListHeap::Free(void* ptr) {
 
   if (next != nullptr && !next->Used()) {
     freelist_.RemoveChunk(BlockToSpan(next))
-        .IgnoreError();  // TODO(b/242598609): Handle Status properly
+        .IgnoreError();  // TODO: b/242598609 - Handle Status properly
     chunk_block->MergeNext()
-        .IgnoreError();  // TODO(b/242598609): Handle Status properly
+        .IgnoreError();  // TODO: b/242598609 - Handle Status properly
   }
   // Add back to the freelist
   freelist_.AddChunk(BlockToSpan(chunk_block))
-      .IgnoreError();  // TODO(b/242598609): Handle Status properly
+      .IgnoreError();  // TODO: b/242598609 - Handle Status properly
 
   heap_stats_.bytes_allocated -= size_freed;
   heap_stats_.cumulative_freed += size_freed;

@@ -82,7 +82,7 @@ def _transform_lcov_file_paths(lcov_file: Path, repo_root: Path) -> str:
         file_string = line[3:].rstrip()
         source_file_path = Path(file_string)
 
-        # TODO(b/248257406) Remove once we drop support for Python 3.8.
+        # TODO: b/248257406 - Remove once we drop support for Python 3.8.
         def is_relative_to(path: Path, other: Path) -> bool:
             try:
                 path.relative_to(other)

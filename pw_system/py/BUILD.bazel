@@ -16,7 +16,7 @@ load("@rules_python//python:defs.bzl", "py_binary", "py_library")
 
 package(default_visibility = ["//visibility:public"])
 
-# TODO(b/241456982): The following deps are required to build :pw_system_lib
+# TODO: b/241456982 - The following deps are required to build :pw_system_lib
 # deps = [
 #     "//pw_thread/py:pw_thread",
 #     "//pw_log:log_proto_py_pb2",

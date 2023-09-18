@@ -64,7 +64,7 @@ public class Service {
     return name();
   }
 
-  // TODO(b/293361955): Remove deprecated methods.
+  // TODO: b/293361955 - Remove deprecated methods.
 
   /**
    * Declares a unary service method.

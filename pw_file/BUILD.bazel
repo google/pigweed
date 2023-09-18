@@ -43,7 +43,7 @@ pw_proto_library(
 py_proto_library(
     name = "file_proto_py_pb2",
     srcs = ["file.proto"],
-    # TODO(b/241456982): Get this target to build.
+    # TODO: b/241456982 - Get this target to build.
     tags = ["manual"],
 )
 

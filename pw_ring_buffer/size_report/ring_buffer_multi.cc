@@ -36,7 +36,7 @@ int main() {
   pw::ring_buffer::PrefixedEntryRingBufferMulti::Reader readers[kReaderCount];
   for (auto& reader : readers) {
     ring.AttachReader(reader)
-        .IgnoreError();  // TODO(b/242598609): Handle Status properly
+        .IgnoreError();  // TODO: b/242598609 - Handle Status properly
   }
 
   // Push entries until the buffer is full.
@@ -94,7 +94,7 @@ int main() {
 
   for (auto& reader : readers) {
     ring.DetachReader(reader)
-        .IgnoreError();  // TODO(b/242598609): Handle Status properly
+        .IgnoreError();  // TODO: b/242598609 - Handle Status properly
   }
   ring.Clear();
   return 0;

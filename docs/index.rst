@@ -1,7 +1,7 @@
 .. _docs-root:
 .. highlight:: sh
 
-.. TODO(b/256680603) Remove query string from issue tracker link.
+.. TODO: b/256680603 - Remove query string from issue tracker link.
 
 .. toctree::
   :maxdepth: 1

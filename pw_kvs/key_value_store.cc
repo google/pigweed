@@ -507,7 +507,7 @@ void KeyValueStore::Item::ReadKey() {
   Entry entry;
   if (kvs_.ReadEntry(*iterator_, entry).ok()) {
     entry.ReadKey(key_buffer_)
-        .IgnoreError();  // TODO(b/242598609): Handle Status properly
+        .IgnoreError();  // TODO: b/242598609 - Handle Status properly
   }
 }
 
@@ -1299,7 +1299,7 @@ Status KeyValueStore::Repair() {
 
   PW_LOG_DEBUG("Reinitialize KVS metadata");
   InitializeMetadata()
-      .IgnoreError();  // TODO(b/242598609): Handle Status properly
+      .IgnoreError();  // TODO: b/242598609 - Handle Status properly
 
   return FixErrors();
 }

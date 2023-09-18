@@ -1849,7 +1849,7 @@ TEST(InlineString, Compare) {
 #endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 }
 
-// TODO(b/239996007): Test other pw::InlineString functions:
+// TODO: b/239996007 - Test other pw::InlineString functions:
 //
 //   - starts_with
 //   - ends_with
@@ -1920,16 +1920,16 @@ TEST(InlineString, ResizeAndOverwrite) {
 #endif  // PW_NC_TEST
 }
 
-// TODO(b/239996007): Test other pw::InlineString functions:
+// TODO: b/239996007 - Test other pw::InlineString functions:
 //   - swap
 
 //
 // Search
 //
 
-// TODO(b/239996007): Test search functions.
+// TODO: b/239996007 - Test search functions.
 
-// TODO(b/239996007): Test operator+.
+// TODO: b/239996007 - Test operator+.
 
 TEST(InlineString, ComparisonOperators_InlineString) {
   EXPECT_EQ(InlineString<10>("a"), InlineString<10>("a"));

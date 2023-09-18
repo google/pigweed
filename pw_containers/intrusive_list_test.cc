@@ -450,7 +450,7 @@ TEST(IntrusiveList, ConstIteratorModify) {
 }
 #endif  // PW_NC_TEST
 
-// TODO(b/235289499): These tests should trigger a CHECK failure. This requires
+// TODO: b/235289499 - These tests should trigger a CHECK failure. This requires
 // using a testing version of pw_assert.
 #define TESTING_CHECK_FAILURES_IS_SUPPORTED 0
 #if TESTING_CHECK_FAILURES_IS_SUPPORTED

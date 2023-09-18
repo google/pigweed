@@ -48,7 +48,7 @@ PW_MODIFY_DIAGNOSTIC_GCC(ignored, "-Wmaybe-uninitialized");
 // WARNING: Unlike a DoubleBufferedPersistent, a Persistent will be lost if a
 // write/set operation is interrupted or otherwise not completed.
 //
-// TODO(b/235277454): Consider a different integrity check implementation which
+// TODO: b/235277454 - Consider a different integrity check implementation which
 // does not use a 512B lookup table.
 template <typename T>
 class Persistent {

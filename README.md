@@ -10,7 +10,7 @@ For more information please see our website: https://pigweed.dev/.
 
 ## Links
 
-<!-- TODO(b/256680603) Remove query string from issue tracker link. -->
+<!-- TODO: b/256680603 - Remove query string from issue tracker link. -->
 
 - [Documentation](https://pigweed.dev/)
 - [Source Code](https://cs.pigweed.dev/pigweed)

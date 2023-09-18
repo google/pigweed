@@ -37,7 +37,7 @@ pw_facade("handler") {
   public = [ "public/pw_assert_basic/handler.h" ]
 }
 
-# TODO(b/235149326): This backend implements pw_assert's check backend and the
+# TODO: b/235149326 - This backend implements pw_assert's check backend and the
 # temporary compatibility C ABI (pw_assert_HandleFailure()).
 #
 # pw_assert_basic only provides the backend's interface. The implementation is

@@ -205,7 +205,7 @@ if (dir_pw_third_party_micro_ecc != "") {
 
   # This test targets the micro_ecc little endian backend specifically.
   #
-  # TODO(b/273819841) deduplicate all backend tests.
+  # TODO: b/273819841 - deduplicate all backend tests.
   pw_test("ecdsa_uecc_little_endian_test") {
     sources = [ "ecdsa_test.cc" ]
     deps = [ ":ecdsa_uecc_little_endian" ]

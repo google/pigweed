@@ -48,14 +48,14 @@ pw_source_set("check_backend") {
     "$dir_pw_preprocessor",
   ]
   sources = [
-    # TODO(b/235149326): assert_log.cc implements the assert compatibility
+    # TODO: b/235149326 - assert_log.cc implements the assert compatibility
     #     backend, but nothing for check_backend.
     "assert_log.cc",
     "public/pw_assert_log/check_log.h",
   ]
 }
 
-# TODO(b/235149326): Remove this deprecated alias.
+# TODO: b/235149326 - Remove this deprecated alias.
 group("pw_assert_log") {
   public_deps = [ ":check_backend" ]
 }

@@ -154,7 +154,7 @@ public class TransferClient {
   }
 
   // Functions for test use only.
-  // TODO(b/279808806): These could be annotated with test-only visibility.
+  // TODO: b/279808806 - These could be annotated with test-only visibility.
 
   final void waitUntilEventsAreProcessedForTest() {
     transferEventHandler.waitUntilEventsAreProcessedForTest();

@@ -1145,7 +1145,7 @@ def filter_paths(
                 'endswith/exclude args, not both'
             )
     else:
-        # TODO(b/238426363): Remove these arguments and use FileFilter only.
+        # TODO: b/238426363 - Remove these arguments and use FileFilter only.
         real_file_filter = FileFilter(
             endswith=_make_str_tuple(endswith), exclude=exclude
         )

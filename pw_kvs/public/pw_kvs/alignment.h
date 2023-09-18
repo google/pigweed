@@ -61,7 +61,7 @@ class AlignedWriter {
   AlignedWriter& operator=(const AlignedWriter&) = delete;
 
   ~AlignedWriter() {
-    Flush().IgnoreError();  // TODO(b/242598609): Handle Status properly
+    Flush().IgnoreError();  // TODO: b/242598609 - Handle Status properly
   }
 
   // Writes bytes to the AlignedWriter. The output may be called if the internal

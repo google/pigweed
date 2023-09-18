@@ -39,7 +39,7 @@ namespace {
 Result<bool> VerifyEcdsaSignature(protobuf::Bytes public_key,
                                   ConstByteSpan digest,
                                   protobuf::Bytes signature) {
-  // TODO(b/237580538): Move this logic into an variant of the API in
+  // TODO: b/237580538 - Move this logic into an variant of the API in
   // pw_crypto:ecdsa that takes readers as inputs.
   std::byte public_key_bytes[65];
   std::byte signature_bytes[64];
@@ -446,7 +446,7 @@ Status UpdateBundleAccessor::UpgradeRoot() {
     return OkStatus();
   }
 
-  // TODO(b/237580538): Check whether the bundle contains a root metadata that
+  // TODO: b/237580538 - Check whether the bundle contains a root metadata that
   // is different from the on-device trusted root.
 
   // Verify the signatures against the trusted root metadata.
@@ -457,7 +457,8 @@ Status UpdateBundleAccessor::UpgradeRoot() {
     return Status::Unauthenticated();
   }
 
-  // TODO(b/237580538): Verifiy the content of the new root metadata, including:
+  // TODO: b/237580538 - Verifiy the content of the new root metadata,
+  // including:
   //    1) Check role magic field.
   //    2) Check signature requirement. Specifically, check that no key is
   //       reused across different roles and keys are unique in the same
@@ -515,7 +516,7 @@ Status UpdateBundleAccessor::UpgradeRoot() {
     }
   }
 
-  // TODO(b/237580538): Implement key change detection to determine whether
+  // TODO: b/237580538 - Implement key change detection to determine whether
   // rotation has occured or not. Delete the persisted targets metadata version
   // if any of the targets keys has been rotated.
 

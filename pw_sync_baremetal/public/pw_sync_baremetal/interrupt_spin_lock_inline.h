@@ -24,7 +24,7 @@ constexpr InterruptSpinLock::InterruptSpinLock() : native_type_() {}
 inline void InterruptSpinLock::lock() { PW_ASSERT(try_lock()); }
 
 inline bool InterruptSpinLock::try_lock() {
-  // TODO(b/235352722): Use the pw_interrupt API here to disable interrupts.
+  // TODO: b/235352722 - Use the pw_interrupt API here to disable interrupts.
   return !native_type_.test_and_set(std::memory_order_acquire);
 }
 

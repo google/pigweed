@@ -39,7 +39,7 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:embos",
     ],
-    # TODO(b/290366523): This should depend on embOS.
+    # TODO: b/290366523 - This should depend on embOS.
     deps = [
         "//pw_chrono:epoch",
         "//pw_chrono:system_clock_facade",
@@ -64,7 +64,7 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:embos",
     ],
-    # TODO(b/290366523): This should depend on embOS.
+    # TODO: b/290366523 - This should depend on embOS.
     deps = [
         "//pw_assert",
         "//pw_chrono:system_clock",

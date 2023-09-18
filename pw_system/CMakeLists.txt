@@ -177,7 +177,7 @@ pw_add_library(pw_system.freertos_target_hooks STATIC
   PRIVATE_DEPS
     pw_thread.thread
     pw_thread_freertos.thread
-    # TODO(b/234876414): This should depend on FreeRTOS but our third parties
+    # TODO: b/234876414 - This should depend on FreeRTOS but our third parties
     # currently do not have CMake support.
 )
 

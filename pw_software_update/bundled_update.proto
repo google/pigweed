@@ -134,7 +134,7 @@ message StartRequest {
   optional string bundle_filename = 1;
 }
 
-// TODO(b/235273688): Add documentation and details of the API contract.
+// TODO: b/235273688 - Add documentation and details of the API contract.
 service BundledUpdate {
   // TODO(keir): Offer GetCurrentManifest & GetStagedManifest() methods that
   // leverage pw_transfer to upload the manifest off the device, to enable host

@@ -98,7 +98,7 @@ class RpcCaller {
 };
 
 TEST(PwpbClientServerTestContextThreaded, ReceivesUnaryRpcResponseThreaded) {
-  // TODO(b/290860904): Replace TestOptionsThread0 with TestThreadContext.
+  // TODO: b/290860904 - Replace TestOptionsThread0 with TestThreadContext.
   PwpbClientServerTestContextThreaded<> ctx(thread::test::TestOptionsThread0());
   test::TestService service;
   ctx.server().RegisterService(service);

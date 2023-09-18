@@ -64,7 +64,7 @@ void BenchmarkService::BidirectionalEcho(
         Status status = reader_writer->second.Write(request);
         if (!status.ok()) {
           reader_writer->second.Finish(status)
-              .IgnoreError();  // TODO(b/242598609): Handle Status properly
+              .IgnoreError();  // TODO: b/242598609 - Handle Status properly
           reader_writers.erase(rw_id);
         }
       });

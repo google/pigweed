@@ -75,7 +75,7 @@ FAKE_BUILDER_PUBLIC_KEY = textwrap.dedent(
 # inclusive-language: enable
 
 
-# TODO(b/235240430): Improve unit test coverage.
+# TODO: b/235240430 - Improve unit test coverage.
 class PathSigningTest(unittest.TestCase):
     """Tests the signing of bundles by path."""
 

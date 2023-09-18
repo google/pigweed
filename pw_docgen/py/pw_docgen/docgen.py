@@ -157,8 +157,8 @@ def main() -> int:
     if os.path.exists(args.sphinx_build_dir):
         shutil.rmtree(args.sphinx_build_dir)
 
-    # TODO(b/235349854): Printing the header causes unicode problems on Windows.
-    # Disabled for now; re-enable once the root issue is fixed.
+    # TODO: b/235349854 - Printing the header causes unicode problems on
+    # Windows. Disabled for now; re-enable once the root issue is fixed.
     # print(SCRIPT_HEADER)
     copy_doc_tree(args)
 

@@ -199,7 +199,7 @@ class RegisterCallbackWhenCreated {
       : callbacks_(callbacks) {
     callbacks_
         .RegisterEventCallback(event_callback, called_on_every_event, user_data)
-        .IgnoreError();  // TODO(b/242598609): Handle Status properly
+        .IgnoreError();  // TODO: b/242598609 - Handle Status properly
   }
   RegisterCallbackWhenCreated(Callbacks& callbacks,
                               Callbacks::SinkStartBlock sink_start,
@@ -208,7 +208,7 @@ class RegisterCallbackWhenCreated {
                               void* user_data = nullptr)
       : callbacks_(callbacks) {
     callbacks_.RegisterSink(sink_start, sink_add_bytes, sink_end, user_data)
-        .IgnoreError();  // TODO(b/242598609): Handle Status properly
+        .IgnoreError();  // TODO: b/242598609 - Handle Status properly
   }
 
  private:

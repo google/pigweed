@@ -23,7 +23,7 @@ py_library(
     imports = ["."],
     tags = ["manual"],
     deps = [
-        # TODO(b/241456982): Add this dep back in
+        # TODO: b/241456982 - Add this dep back in
         # "//pw_chrono:chrono_proto_pb2",
     ],
 )
@@ -36,7 +36,7 @@ py_test(
     tags = ["manual"],
     deps = [
         ":pw_chrono",
-        # TODO(b/241456982): Add this dep back in
+        # TODO: b/241456982 - Add this dep back in
         # "//pw_chrono:chrono_proto_pb2",
     ],
 )

@@ -70,7 +70,7 @@ class PwpbMethod : public Method {
   }
 
   // Creates a PwpbMethod for a synchronous unary RPC.
-  // TODO(b/234874001): Find a way to reduce the number of monomorphized copies
+  // TODO: b/234874001 - Find a way to reduce the number of monomorphized copies
   // of this method.
   template <auto kMethod>
   static constexpr PwpbMethod SynchronousUnary(uint32_t id,
@@ -97,7 +97,7 @@ class PwpbMethod : public Method {
   }
 
   // Creates a PwpbMethod for an asynchronous unary RPC.
-  // TODO(b/234874001): Find a way to reduce the number of monomorphized copies
+  // TODO: b/234874001 - Find a way to reduce the number of monomorphized copies
   // of this method.
   template <auto kMethod>
   static constexpr PwpbMethod AsynchronousUnary(uint32_t id,
@@ -365,7 +365,7 @@ class PwpbMethod : public Method {
 };
 
 // MethodTraits specialization for a static synchronous unary method.
-// TODO(b/234874320): Further qualify this (and nanopb) definition so that they
+// TODO: b/234874320 - Further qualify this (and nanopb) definition so that they
 // can co-exist in the same project.
 template <typename Req, typename Res>
 struct MethodTraits<PwpbSynchronousUnary<Req, Res>*> {

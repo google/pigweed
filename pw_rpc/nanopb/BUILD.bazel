@@ -146,7 +146,7 @@ pw_cc_test(
     ],
 )
 
-# TODO(b/242059613): Enable this library when logging_event_handler can be used.
+# TODO: b/242059613 - Enable this library when logging_event_handler can be used.
 filegroup(
     name = "client_integration_test",
     srcs = [
@@ -284,7 +284,7 @@ pw_cc_test(
     ],
 )
 
-# TODO(b/234874064): Requires nanopb options file support to compile.
+# TODO: b/234874064 - Requires nanopb options file support to compile.
 filegroup(
     name = "echo_service_test",
     srcs = ["echo_service_test.cc"],

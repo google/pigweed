@@ -117,7 +117,7 @@ class Channel {
   // Creates a dynamically assignable channel without a set ID or output.
   constexpr Channel() : id_(kUnassignedChannelId), output_(nullptr) {}
 
-  // TODO(b/234876441): Remove the Configure and set_channel_output functions.
+  // TODO: b/234876441 - Remove the Configure and set_channel_output functions.
   //     Users should call CloseChannel() / OpenChannel() to change a channel.
   //     This ensures calls are properly update and works consistently between
   //     static and dynamic channel allocation.

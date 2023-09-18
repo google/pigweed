@@ -39,7 +39,7 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:embos",
     ],
-    # TODO(b/234876414): This should depend on embOS but our third parties
+    # TODO: b/234876414 - This should depend on embOS but our third parties
     # currently do not have Bazel support.
     deps = [
         "//pw_chrono:system_clock",
@@ -66,7 +66,7 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:embos",
     ],
-    # TODO(b/234876414): This should depend on embOS but our third parties
+    # TODO: b/234876414 - This should depend on embOS but our third parties
     # currently do not have Bazel support.
     deps = [
         "//pw_chrono:system_clock",
@@ -90,7 +90,7 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:embos",
     ],
-    # TODO(b/234876414): This should depend on embOS but our third parties
+    # TODO: b/234876414 - This should depend on embOS but our third parties
     # currently do not have Bazel support.
     deps = [
         ":mutex_headers",
@@ -114,7 +114,7 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:embos",
     ],
-    # TODO(b/234876414): This should depend on embOS but our third parties
+    # TODO: b/234876414 - This should depend on embOS but our third parties
     # currently do not have Bazel support.
     deps = [
         "//pw_chrono:system_clock",
@@ -148,7 +148,7 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:embos",
     ],
-    # TODO(b/234876414): This should depend on embOS but our third parties
+    # TODO: b/234876414 - This should depend on embOS but our third parties
     # currently do not have Bazel support.
     deps = [
         "//pw_sync:interrupt_spin_lock_facade",

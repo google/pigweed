@@ -39,7 +39,7 @@ pw_cc_library(
     deps = [
         "//pw_thread:id_facade",
     ],
-    # TODO(b/234876414): This should depend on embOS but our third parties
+    # TODO: b/234876414 - This should depend on embOS but our third parties
     # currently do not have Bazel support.
 )
 
@@ -64,7 +64,7 @@ pw_cc_library(
         "//pw_chrono:system_clock",
         "//pw_thread:sleep_facade",
     ],
-    # TODO(b/234876414): This should depend on embOS but our third parties
+    # TODO: b/234876414 - This should depend on embOS but our third parties
     # currently do not have Bazel support.
 )
 
@@ -92,7 +92,7 @@ pw_cc_library(
         "//pw_string",
         "//pw_thread:thread_facade",
     ],
-    # TODO(b/234876414): This should depend on embOS but our third parties
+    # TODO: b/234876414 - This should depend on embOS but our third parties
     # currently do not have Bazel support.
 )
 
@@ -102,7 +102,7 @@ pw_cc_library(
         "test_threads.cc",
     ],
     includes = ["public"],
-    # TODO(b/260637734): This target doesn't build
+    # TODO: b/260637734 - This target doesn't build
     tags = ["manual"],
     deps = [
         "//pw_chrono:system_clock",
@@ -125,7 +125,7 @@ pw_cc_library(
     deps = [
         "//pw_thread:yield_facade",
     ],
-    # TODO(b/234876414): This should depend on embOS but our third parties
+    # TODO: b/234876414 - This should depend on embOS but our third parties
     # currently do not have Bazel support.
 )
 
@@ -138,13 +138,13 @@ pw_cc_library(
         "public/pw_thread_embos/util.h",
     ],
     includes = ["public"],
-    # TODO(b/260637734): This target doesn't build
+    # TODO: b/260637734 - This target doesn't build
     tags = ["manual"],
     deps = [
         "//pw_function",
         "//pw_status",
     ],
-    # TODO(b/234876414): This should depend on embOS but our third parties
+    # TODO: b/234876414 - This should depend on embOS but our third parties
     # currently do not have Bazel support.
 )
 
@@ -157,7 +157,7 @@ pw_cc_library(
         "public/pw_thread_embos/snapshot.h",
     ],
     includes = ["public"],
-    # TODO(b/260637734): This target doesn't build
+    # TODO: b/260637734 - This target doesn't build
     tags = ["manual"],
     deps = [
         ":util",
@@ -168,6 +168,6 @@ pw_cc_library(
         "//pw_status",
         "//pw_thread:snapshot",
     ],
-    # TODO(b/234876414): This should depend on embOS but our third parties
+    # TODO: b/234876414 - This should depend on embOS but our third parties
     # currently do not have Bazel support.
 )

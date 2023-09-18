@@ -80,7 +80,7 @@ size_t FlatFileSystemBlobStoreEntry::SizeBytes() {
   return reader.ConservativeReadLimit();
 }
 
-// TODO(b/234888404): This file can be deleted even though it is read-only.
+// TODO: b/234888404 - This file can be deleted even though it is read-only.
 // This type of behavior should be possible to express via the FileSystem RPC
 // service.
 Status FlatFileSystemBlobStoreEntry::Delete() {

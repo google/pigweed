@@ -59,7 +59,7 @@ TEST(CountingSemaphore, EmptyInitialState) {
   EXPECT_FALSE(semaphore.try_acquire());
 }
 
-// TODO(b/235284163): Add real concurrency tests once we have pw::thread.
+// TODO: b/235284163 - Add real concurrency tests once we have pw::thread.
 
 TEST(CountingSemaphore, SingleRelease) {
   CountingSemaphore semaphore;

@@ -96,7 +96,7 @@ pw_cc_library(
     srcs = [
         "build_time.cc",
     ],
-    # TODO(b/257527057): Get this to build.
+    # TODO: b/257527057 - Get this to build.
     tags = ["manual"],
 )
 
@@ -114,7 +114,7 @@ pw_cc_library(
     srcs = ["test_server.cc"],
     hdrs = ["public/pw_tls_client/test/test_server.h"],
     includes = ["public"],
-    # TODO(b/257527057): Get this to build.
+    # TODO: b/257527057 - Get this to build.
     tags = ["manual"],
     deps = [
         "//pw_bytes",
@@ -128,7 +128,7 @@ pw_cc_library(
 pw_cc_test(
     name = "test_server_test",
     srcs = ["test_server_test.cc"],
-    # TODO(b/257527057): Get this to build.
+    # TODO: b/257527057 - Get this to build.
     tags = ["manual"],
     deps = [":test_server"],
 )

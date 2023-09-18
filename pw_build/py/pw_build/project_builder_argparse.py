@@ -133,7 +133,7 @@ def add_project_builder_arguments(
 
     output_group = parser.add_argument_group(title='Display Output Options')
 
-    # TODO(b/248257406) Use argparse.BooleanOptionalAction when Python 3.8 is
+    # TODO: b/248257406 - Use argparse.BooleanOptionalAction when Python 3.8 is
     # no longer supported.
     output_group.add_argument(
         '--banners',
@@ -148,7 +148,7 @@ def add_project_builder_arguments(
         help='Hide pass/fail banners.',
     )
 
-    # TODO(b/248257406) Use argparse.BooleanOptionalAction when Python 3.8 is
+    # TODO: b/248257406 - Use argparse.BooleanOptionalAction when Python 3.8 is
     # no longer supported.
     output_group.add_argument(
         '--colors',

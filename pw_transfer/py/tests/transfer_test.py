@@ -1425,7 +1425,7 @@ class ProgressStatsTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    # TODO(b/265975025): Only run this test in upstream Pigweed until the
+    # TODO: b/265975025 - Only run this test in upstream Pigweed until the
     #     occasional hangs are fixed.
     if os.environ.get('PW_ROOT') and os.environ.get(
         'PW_ROOT'

@@ -164,7 +164,7 @@ pw_cc_library(
     ],
 )
 
-# TODO(b/228998350): Figure out how to conditionally enable this test like GN
+# TODO: b/228998350 - Figure out how to conditionally enable this test like GN
 # pw_cc_test(
 #     name = "condition_variable_test",
 #     deps = [

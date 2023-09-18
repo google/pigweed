@@ -28,7 +28,7 @@ config_setting(
     },
 )
 
-# TODO(b/238339027): Run cc_blob_library_test when pw_cc_blob_library is
+# TODO: b/238339027 - Run cc_blob_library_test when pw_cc_blob_library is
 #     supported in Bazel.
 filegroup(
     name = "cc_blob_library_test",

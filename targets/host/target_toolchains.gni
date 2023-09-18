@@ -338,7 +338,7 @@ pw_target_toolchain_host_list = [
 _pigweed_internal = {
   pw_status_CONFIG = "$dir_pw_status:check_if_used"
 
-  # TODO(b/241565082): Enable NC testing in GN Windows when it is fixed.
+  # TODO: b/241565082 - Enable NC testing in GN Windows when it is fixed.
   pw_compilation_testing_NEGATIVE_COMPILATION_ENABLED = host_os != "win"
 }
 

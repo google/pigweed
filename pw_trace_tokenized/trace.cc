@@ -223,7 +223,7 @@ pw::Status Callbacks::UnregisterSink(SinkHandle handle) {
 pw::Status Callbacks::UnregisterAllSinks() {
   for (size_t sink_idx = 0; sink_idx < PW_TRACE_CONFIG_MAX_SINKS; sink_idx++) {
     UnregisterSink(sink_idx)
-        .IgnoreError();  // TODO(b/242598609): Handle Status properly
+        .IgnoreError();  // TODO: b/242598609 - Handle Status properly
   }
   return PW_STATUS_OK;
 }
@@ -276,7 +276,7 @@ pw::Status Callbacks::UnregisterEventCallback(EventCallbackHandle handle) {
 pw::Status Callbacks::UnregisterAllEventCallbacks() {
   for (size_t i = 0; i < PW_TRACE_CONFIG_MAX_EVENT_CALLBACKS; i++) {
     UnregisterEventCallback(i)
-        .IgnoreError();  // TODO(b/242598609): Handle Status properly
+        .IgnoreError();  // TODO: b/242598609 - Handle Status properly
   }
   return PW_STATUS_OK;
 }

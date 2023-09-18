@@ -13,7 +13,7 @@
 // the License.
 #pragma once
 
-// TODO(b/234887943): arch.h should be refactored out of pw_preprocessor as the
+// TODO: b/234887943 - arch.h should be refactored out of pw_preprocessor as the
 // scope is outside of the module. The intended scope of arch.h is only to
 // provide architecture targeting and not any added utilities and capabilities.
 // Perhaps it should be placed under pw_compiler along with b/234877280, e.g.

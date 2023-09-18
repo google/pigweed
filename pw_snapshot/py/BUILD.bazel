@@ -14,7 +14,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-# TODO(b/241456982): Not expected to build yet due to the dependency on
+# TODO: b/241456982 - Not expected to build yet due to the dependency on
 # snapshot_proto_py_pb2.
 py_library(
     name = "pw_snapshot",
@@ -35,7 +35,7 @@ py_library(
     ],
 )
 
-# TODO(b/241456982): Not expected to build yet due to the dependency on
+# TODO: b/241456982 - Not expected to build yet due to the dependency on
 # metadata_proto_py_pb2.
 py_library(
     name = "pw_snapshot_metadata",
@@ -51,7 +51,7 @@ py_library(
     ],
 )
 
-# TODO(b/241456982): Not expected to build yet due to the dependency on
+# TODO: b/241456982 - Not expected to build yet due to the dependency on
 # snapshot_proto_py_pb2.
 py_test(
     name = "metadata_test",

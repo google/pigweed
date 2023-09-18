@@ -67,7 +67,7 @@ pw_source_set("builder") {
     dir_pw_status,
   ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -82,7 +82,7 @@ pw_source_set("format") {
     dir_pw_status,
   ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -98,7 +98,7 @@ pw_source_set("string") {
     dir_pw_polyfill,
   ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -118,7 +118,7 @@ pw_source_set("to_string") {
   ]
   deps = [ "$dir_pw_third_party/fuchsia:stdcompat" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -154,7 +154,7 @@ pw_test("format_test") {
   deps = [ ":format" ]
   sources = [ "format_test.cc" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -163,7 +163,7 @@ pw_test("string_test") {
   sources = [ "string_test.cc" ]
   negative_compilation_tests = true
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -171,7 +171,7 @@ pw_test("string_builder_test") {
   deps = [ ":builder" ]
   sources = [ "string_builder_test.cc" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -182,7 +182,7 @@ pw_test("to_string_test") {
   ]
   sources = [ "to_string_test.cc" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -190,7 +190,7 @@ pw_test("type_to_string_test") {
   deps = [ ":to_string" ]
   sources = [ "type_to_string_test.cc" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -198,7 +198,7 @@ pw_test("util_test") {
   deps = [ ":util" ]
   sources = [ "util_test.cc" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 

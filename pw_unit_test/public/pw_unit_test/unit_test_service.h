@@ -41,7 +41,7 @@ class UnitTestService final
     event_writer(event);
     if (event.status().ok()) {
       writer_.Write(event)
-          .IgnoreError();  // TODO(b/242598609): Handle Status properly
+          .IgnoreError();  // TODO: b/242598609 - Handle Status properly
     }
   }
 

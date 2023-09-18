@@ -24,7 +24,7 @@
 
 namespace pw::rpc {
 
-// TODO(b/234878467): Document the client testing APIs.
+// TODO: b/234878467 - Document the client testing APIs.
 
 // Sends packets to an RPC client as if it were a pw_rpc server. Accepts
 // payloads as pw_protobuf message structs.

@@ -31,7 +31,7 @@ pw_cc_library(
     srcs = [
         "sys_io.cc",
     ],
-    # TODO(b/261603269): Get this to build.
+    # TODO: b/261603269 - Get this to build.
     tags = ["manual"],
     deps = [
         "//pw_status",

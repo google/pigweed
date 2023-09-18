@@ -24,7 +24,7 @@ py_library(
 
 # This test attempts to run subprocesses directly in the source tree, which is
 # incompatible with sandboxing.
-# TODO(b/241307309): Update this test to work with bazel.
+# TODO: b/241307309 - Update this test to work with bazel.
 filegroup(
     name = "build_id_test",
     # size = "small",

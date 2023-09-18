@@ -509,7 +509,7 @@ class function_base<inline_target_size, require_inline, Result(Args...), Allocat
   // Note that fit::callback will release the target immediately after
   // invoke() (also affecting any share()d copies).
   // Aborts if the function's target is empty.
-  // TODO(b/241567321): Remove "no sanitize" after pw_protobuf is fixed.
+  // TODO: b/241567321 - Remove "no sanitize" after pw_protobuf is fixed.
   Result invoke(Args... args) const PW_NO_SANITIZE("function") {
     // Down cast the ops to the derived type that this function was instantiated
     // with, which includes the invoke function.

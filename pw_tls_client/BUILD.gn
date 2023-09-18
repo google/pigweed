@@ -104,7 +104,7 @@ pw_source_set("build_time") {
   ]
 }
 
-# TODO(b/235290724): Add a python target to generate source file from the
+# TODO: b/235290724 - Add a python target to generate source file from the
 # specified CRLSet file in `pw_tls_client_CRLSET_FILE`
 
 pw_source_set("crlset") {
@@ -112,7 +112,7 @@ pw_source_set("crlset") {
   public = [ "public/pw_tls_client/crlset.h" ]
   public_deps = [ dir_pw_bytes ]
 
-  # TODO(b/235290724): Add sources generated from a CRLSet file to build.
+  # TODO: b/235290724 - Add sources generated from a CRLSet file to build.
 }
 
 pw_source_set("test_server") {

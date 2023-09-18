@@ -16,7 +16,7 @@
 
 namespace chre {
 
-// TODO(b/294106526): Implement these, possibly by adding a facade.
+// TODO: b/294106526 - Implement these, possibly by adding a facade.
 void PowerControlManager::preEventLoopProcess(size_t) {}
 void PowerControlManager::postEventLoopProcess(size_t) {}
 

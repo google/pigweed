@@ -70,7 +70,7 @@ pw_cc_library(
     name = "metric_service_nanopb",
     srcs = ["metric_service_nanopb.cc"],
     hdrs = ["public/pw_metric/metric_service_nanopb.h"],
-    # TODO(b/258078909): Get this target to build.
+    # TODO: b/258078909 - Get this target to build.
     tags = ["manual"],
     deps = [
         ":metric",
@@ -110,7 +110,7 @@ proto_library(
     ],
 )
 
-# TODO(b/241456982): Not expected to build yet.
+# TODO: b/241456982 - Not expected to build yet.
 py_proto_library(
     name = "metric_proto_py_pb2",
     tags = ["manual"],
@@ -147,7 +147,7 @@ pw_cc_test(
     srcs = [
         "metric_service_nanopb_test.cc",
     ],
-    # TODO(b/258078909): Get this target to build.
+    # TODO: b/258078909 - Get this target to build.
     tags = ["manual"],
     deps = [
         ":metric_service_nanopb",

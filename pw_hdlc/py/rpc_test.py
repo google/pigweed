@@ -210,7 +210,7 @@ def _get_client(file) -> RpcClient:
 
 
 def _wait_for_reader_thread_exit(client: RpcClient) -> None:
-    # TODO(b/294858483): Joining the thread should be done by RpcClient itself.
+    # TODO: b/294858483 - Joining the thread should be done by RpcClient itself.
     thread = client._reader._reader_thread  # pylint: disable=protected-access
 
     # This should take <10ms but we'll wait up to 1000x longer.
@@ -280,7 +280,7 @@ class HdlcRpcClientTest(unittest.TestCase):
         logger = logging.getLogger('pw_hdlc.rpc')
         sentinel = Sentinel()
         with self.assertLogs(logger, level=logging.ERROR) as ctx:
-            # TODO(b/294861320) use assertNoLogs() in Python 3.10+
+            # TODO: b/294861320 - use assertNoLogs() in Python 3.10+
             # We actually want to assert there are no errors, but
             # TestCase.assertNoLogs() is not available until Python 3.10.
             # So we log one error to keep the test from failing and manually

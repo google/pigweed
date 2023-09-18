@@ -18,7 +18,7 @@
 
 #include <assert.h>
 
-// TODO(b/234877280): compiler.h should be refactored out of pw_preprocessor as
+// TODO: b/234877280 - compiler.h should be refactored out of pw_preprocessor as
 // the scope is outside of the module. Perhaps it should be split up and placed
 // under pw_compiler, e.g. pw_compiler/attributes.h & pw_compiler/builtins.h.
 

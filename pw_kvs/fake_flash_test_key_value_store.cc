@@ -72,7 +72,8 @@ sync::Borrowable<KeyValueStore> borrowable_kvs(test_kvs,
 
 sync::Borrowable<KeyValueStore>& TestKvs() {
   if (!test_kvs.initialized()) {
-    test_kvs.Init().IgnoreError();  // TODO(b/242598609): Handle Status properly
+    test_kvs.Init()
+        .IgnoreError();  // TODO: b/242598609 - Handle Status properly
   }
 
   return borrowable_kvs;

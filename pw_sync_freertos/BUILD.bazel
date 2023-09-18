@@ -213,7 +213,7 @@ pw_cc_library(
     ],
 )
 
-# TODO(b/228998350): Figure out how to conditionally enable this test like GN
+# TODO: b/228998350 - Figure out how to conditionally enable this test like GN
 #
 # You can instantiate this with your own implementation of
 # "//pw_thread:non_portable_test_thread_options", see
@@ -226,7 +226,7 @@ pw_cc_library(
 #     target_compatible_with = [
 #         "//pw_build/constraints/rtos:freertos",
 #     ],
-#     # TODO(b/234876414): This should depend on FreeRTOS but our third parties
+#     # TODO: b/234876414 - This should depend on FreeRTOS but our third parties
 #     # currently do not have Bazel support.
 #     deps = [
 #         "//pw_chrono:system_clock",
@@ -245,7 +245,7 @@ filegroup(
     ],
 )
 
-# TODO(b/228998350): Figure out how to conditionally enable this test like GN
+# TODO: b/228998350 - Figure out how to conditionally enable this test like GN
 # with:
 #    enable_if = pw_sync_THREAD_NOTIFICATION_BACKEND ==
 #                "$dir_pw_sync_freertos:thread_notification" &&
@@ -263,7 +263,7 @@ filegroup(
 #     ],
 # )
 
-# TODO(b/228998350): Figure out how to conditionally enable this test like GN
+# TODO: b/228998350 - Figure out how to conditionally enable this test like GN
 #
 # You can instantiate this with your own implementation of
 # "//pw_thread:non_portable_test_thread_options", see
@@ -273,7 +273,7 @@ filegroup(
 #    srcs = [
 #        "timed_thread_notification_test.cc",
 #    ],
-#    # TODO(b/234876414): This should depend on FreeRTOS but our third parties
+#    # TODO: b/234876414 - This should depend on FreeRTOS but our third parties
 #    # currently do not have Bazel support.
 #    deps = [
 #        "//pw_chrono:system_clock",
@@ -291,7 +291,7 @@ filegroup(
     ],
 )
 
-# TODO(b/228998350): Figure out how to conditionally enable this test like GN
+# TODO: b/228998350 - Figure out how to conditionally enable this test like GN
 # with:
 #    enable_if = pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND ==
 #                "$dir_pw_sync_freertos:timed_thread_notification" &&

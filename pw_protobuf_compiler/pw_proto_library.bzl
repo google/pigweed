@@ -104,7 +104,7 @@ def raw_rpc_proto_library(name, deps, tags = None, visibility = None):
         visibility = visibility,
     )
 
-# TODO(b/234873954) Enable unused variable check.
+# TODO: b/234873954 - Enable unused variable check.
 # buildifier: disable=unused-variable
 def nanopb_proto_library(name, deps, tags = [], visibility = None, options = None):
     """A C++ proto library generated using pw_protobuf.
@@ -532,7 +532,7 @@ def _impl_pw_proto_library(ctx):
     # in srcs. We don't perform layering_check in Pigweed, so this is not a big
     # deal.
     #
-    # TODO(b/234873954): Tidy this up.
+    # TODO: b/234873954 - Tidy this up.
     all_srcs = []
     all_hdrs = []
     all_includes = []

@@ -28,7 +28,7 @@ pw_cc_library(
     ],
     hdrs = [
     ],
-    # TODO(b/259149817): pw_sys_io_arduino cannot find "Arduino.h"
+    # TODO: b/259149817 - pw_sys_io_arduino cannot find "Arduino.h"
     tags = ["manual"],
     deps = [
         "//pw_arduino_build:pw_arduino_build_header",

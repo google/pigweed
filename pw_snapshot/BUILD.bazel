@@ -53,7 +53,7 @@ proto_library(
     ],
 )
 
-# TODO(b/241456982): Not expected to build yet.
+# TODO: b/241456982 - Not expected to build yet.
 py_proto_library(
     name = "metadata_proto_py_pb2",
     tags = ["manual"],
@@ -76,7 +76,7 @@ proto_library(
     ],
 )
 
-# TODO(b/241456982): Not expected to build yet.
+# TODO: b/241456982 - Not expected to build yet.
 py_proto_library(
     name = "snapshot_proto_py_pb2",
     tags = ["manual"],

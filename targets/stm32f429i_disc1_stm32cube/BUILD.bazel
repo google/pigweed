@@ -44,7 +44,7 @@ constraint_value(
     constraint_setting = "//third_party/freertos:freertos_config_setting",
 )
 
-# TODO(b/261506064): Additional constraint values for configuring stm32cube
+# TODO: b/261506064 - Additional constraint values for configuring stm32cube
 # need to be added here, once constraint settings for stm32cube are defined.
 platform(
     name = "platform",

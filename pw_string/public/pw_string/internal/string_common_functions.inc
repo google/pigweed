@@ -428,9 +428,9 @@ constexpr int compare(const T* other) const {
       string_impl::BoundedStringLength(other, max_size()));
 }
 
-// TODO(b/239996007): Implement other compare overloads.
+// TODO: b/239996007 - Implement other compare overloads.
 
-// TODO(b/239996007): Implement other std::string functions:
+// TODO: b/239996007 - Implement other std::string functions:
 //
 //   - starts_with
 //   - ends_with
@@ -454,11 +454,11 @@ constexpr void resize_and_overwrite(Operation operation) {
   SetSizeAndTerminate(data(), new_size);
 }
 
-// TODO(b/239996007): Implement swap
+// TODO: b/239996007 - Implement swap
 
 // Search
 
-// TODO(b/239996007): Implement std::string search functions:
+// TODO: b/239996007 - Implement std::string search functions:
 //
 // - find
 // - rfind

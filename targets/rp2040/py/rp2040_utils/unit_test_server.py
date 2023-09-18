@@ -85,7 +85,7 @@ def generate_server_config() -> IO[bytes]:
     _LOG.debug('Generating test server config at %s', config_file.name)
     _LOG.debug('Found %d attached devices', len(boards))
 
-    # TODO(b/290245354): Multi-device flashing doesn't work due to limitations
+    # TODO: b/290245354 - Multi-device flashing doesn't work due to limitations
     # of picotool. Limit to one device even if multiple are connected.
     if boards:
         boards = boards[:1]

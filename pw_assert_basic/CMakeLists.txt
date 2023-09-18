@@ -26,7 +26,7 @@ pw_add_facade(pw_assert_basic.handler INTERFACE
     pw_preprocessor
 )
 
-# TODO(b/235149326): This backend implements pw_assert's check backend and the
+# TODO: b/235149326 - This backend implements pw_assert's check backend and the
 # temporary compatibility C ABI (pw_assert_HandleFailure()).
 pw_add_library(pw_assert_basic.check_backend STATIC
   HEADERS

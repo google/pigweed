@@ -126,7 +126,7 @@ cases of recoverable security bugs, over the supported lifetime of a product.
   updates."
 
 ..
-  TODO(b/273583461): Document these topics.
+  TODO: b/273583461 - Document these topics.
   * How to integrate with verified boot
   * How to do A/B updates
   * How to manage delta updates

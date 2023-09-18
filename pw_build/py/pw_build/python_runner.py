@@ -41,7 +41,7 @@ except (ImportError, ModuleNotFoundError):
 if sys.platform != 'win32':
     import fcntl  # pylint: disable=import-error
 
-    # TODO(b/227670947): Support Windows.
+    # TODO: b/227670947 - Support Windows.
 
 _LOG = logging.getLogger(__name__)
 _LOCK_ACQUISITION_TIMEOUT = 30 * 60  # 30 minutes in seconds
@@ -145,7 +145,7 @@ def acquire_lock(lockfile: Path, exclusive: bool):
     """
     if sys.platform == 'win32':
         # No-op on Windows, which doesn't have POSIX file locking.
-        # TODO(b/227670947): Get this working on Windows, too.
+        # TODO: b/227670947 - Get this working on Windows, too.
         return
 
     start_time = time.monotonic()
@@ -337,7 +337,7 @@ def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-local
     if working_directory:
         run_args['cwd'] = working_directory
 
-    # TODO(b/235239674): Deprecate the --lockfile option as part of the Python
+    # TODO: b/235239674 - Deprecate the --lockfile option as part of the Python
     # GN template refactor.
     if lockfile:
         try:

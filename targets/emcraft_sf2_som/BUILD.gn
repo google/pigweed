@@ -45,7 +45,7 @@ if (current_toolchain != default_toolchain) {
       # (256K - Bootloader - InSystemProgrammer = 192K)
       "PW_BOOT_CODE_SIZE=0x30000",
 
-      # TODO(b/235348465): Currently "pw_tokenizer/detokenize_test" requires at
+      # TODO: b/235348465 - Currently "pw_tokenizer/detokenize_test" requires at
       # least 6K bytes in heap when using pw_malloc_freelist. The heap size
       # required for tests should be investigated.
       "PW_BOOT_HEAP_SIZE=4M",
@@ -74,7 +74,7 @@ if (current_toolchain != default_toolchain) {
       # (256K - Bootloader - InSystemProgrammer = 192K)
       "PW_BOOT_FLASH_SIZE=0x30000",
 
-      # TODO(b/235348465): Currently "pw_tokenizer/detokenize_test" requires at
+      # TODO: b/235348465 - Currently "pw_tokenizer/detokenize_test" requires at
       # least 6K bytes in heap when using pw_malloc_freelist. The heap size
       # required for tests should be investigated.
       "PW_BOOT_HEAP_SIZE=4M",

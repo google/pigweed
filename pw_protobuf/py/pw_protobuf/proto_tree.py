@@ -46,7 +46,7 @@ T = TypeVar('T')  # pylint: disable=invalid-name
 # `::pw::pwpb_codegen_private::my::external::package:ProtoMsg::SubMsg` to refer
 # to the pw_protobuf generated code, when package name info is not available.
 #
-# TODO(b/258832150) Explore removing this if possible
+# TODO: b/258832150 - Explore removing this if possible
 EXTERNAL_SYMBOL_WORKAROUND_NAMESPACE = 'pw::pwpb_codegen_private'
 
 
@@ -153,14 +153,15 @@ class ProtoNode(abc.ABC):
                 # Can't figure out where the namespace cutoff is. Punt to using
                 # the external symbol workaround.
                 #
-                # TODO(b/250945489) Investigate removing this limitation / hack
+                # TODO: b/250945489 - Investigate removing this limitation /
+                # hack
                 return itertools.chain(
                     [EXTERNAL_SYMBOL_WORKAROUND_NAMESPACE],
                     self._attr_hierarchy(ProtoNode.cpp_name, root=None),
                 )
 
             if root is None or root_pkg_or_ext is None:  # extra check for mypy
-                # TODO(b/250945489): maybe elide "::{codegen_subnamespace}"
+                # TODO: b/250945489 - maybe elide "::{codegen_subnamespace}"
                 # here, if this node doesn't have any package?
                 same_package = False
             else:

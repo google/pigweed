@@ -104,7 +104,7 @@ template("pw_internal_build_target") {
   }
 
   target(invoker.underlying_target_type, target_name) {
-    # TODO(b/260111641): This import is terrible, and breaks typical Pigweed GN
+    # TODO: b/260111641 - This import is terrible, and breaks typical Pigweed GN
     # build arg naming patterns.
     import("$dir_pw_build/defaults.gni")
     forward_variables_from(

@@ -136,7 +136,7 @@ pw_cc_library(
     ],
 )
 
-# TODO(b/242059613): Enable this library when logging_event_handler can be used.
+# TODO: b/242059613 - Enable this library when logging_event_handler can be used.
 filegroup(
     name = "client_integration_test",
     srcs = [

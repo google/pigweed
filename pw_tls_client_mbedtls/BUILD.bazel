@@ -33,7 +33,7 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
-    # TODO(b/258068735): Get this target to build. Requires adding mbedtls
+    # TODO: b/258068735 - Get this target to build. Requires adding mbedtls
     # build targets.
     tags = ["manual"],
     deps = [
@@ -47,7 +47,7 @@ pw_cc_test(
     srcs = [
         "tls_client_mbedtls_test.cc",
     ],
-    # TODO(b/258068735): Get this target to build. Requires adding mbedtls
+    # TODO: b/258068735 - Get this target to build. Requires adding mbedtls
     # build targets.
     tags = ["manual"],
     deps = [

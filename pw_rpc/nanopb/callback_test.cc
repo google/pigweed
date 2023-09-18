@@ -48,7 +48,7 @@ class CallbacksTest : public ::testing::Test {
  protected:
   CallbacksTest()
       : callback_thread_(
-            // TODO(b/290860904): Replace TestOptionsThread0 with
+            // TODO: b/290860904 - Replace TestOptionsThread0 with
             // TestThreadContext.
             thread::test::TestOptionsThread0(),
             [](void* arg) {

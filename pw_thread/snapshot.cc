@@ -32,7 +32,7 @@ namespace pw::thread {
 Status SnapshotStack(const StackContext& stack,
                      proto::pwpb::Thread::StreamEncoder& encoder,
                      const ProcessThreadStackCallback& thread_stack_callback) {
-  // TODO(b/234890430): Add support for ascending stacks.
+  // TODO: b/234890430 - Add support for ascending stacks.
   encoder.WriteStackStartPointer(stack.stack_high_addr).IgnoreError();
   encoder.WriteStackEndPointer(stack.stack_low_addr).IgnoreError();
   encoder.WriteStackPointer(stack.stack_pointer).IgnoreError();

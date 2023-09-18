@@ -39,7 +39,7 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:threadx",
     ],
-    # TODO(b/290364219): Add threadx as a dependency.
+    # TODO: b/290364219 - Add threadx as a dependency.
     deps = [
         "//pw_chrono:system_clock",
         "//pw_interrupt:context",
@@ -65,7 +65,7 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:threadx",
     ],
-    # TODO(b/290364219): Add threadx as a dependency.
+    # TODO: b/290364219 - Add threadx as a dependency.
     deps = [
         "//pw_chrono:system_clock",
         "//pw_interrupt:context",
@@ -88,7 +88,7 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:threadx",
     ],
-    # TODO(b/290364219): Add threadx as a dependency.
+    # TODO: b/290364219 - Add threadx as a dependency.
     deps = [
         "//pw_sync:mutex_facade",
     ],
@@ -110,7 +110,7 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:threadx",
     ],
-    # TODO(b/290364219): Add threadx as a dependency.
+    # TODO: b/290364219 - Add threadx as a dependency.
     deps = [
         "//pw_chrono:system_clock",
         "//pw_interrupt:context",
@@ -136,7 +136,7 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:threadx",
     ],
-    # TODO(b/290364219): Add threadx as a dependency.
+    # TODO: b/290364219 - Add threadx as a dependency.
     deps = [
         "//pw_sync:interrupt_spin_lock_facade",
     ],

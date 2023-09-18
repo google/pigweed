@@ -100,7 +100,7 @@ class RpcCaller {
 
 TEST(NanopbClientServerTestContextThreaded, ReceivesUnaryRpcResponseThreaded) {
   NanopbClientServerTestContextThreaded<> ctx(
-      // TODO(b/290860904): Replace TestOptionsThread0 with TestThreadContext.
+      // TODO: b/290860904 - Replace TestOptionsThread0 with TestThreadContext.
       thread::test::TestOptionsThread0());
   TestService service;
   ctx.server().RegisterService(service);

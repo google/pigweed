@@ -72,7 +72,7 @@ static const char* kCrashBanner[] = {
 
 static void WriteLine(const std::string_view& s) {
   pw::sys_io::WriteLine(s)
-      .IgnoreError();  // TODO(b/242598609): Handle Status properly
+      .IgnoreError();  // TODO: b/242598609 - Handle Status properly
 }
 
 typedef pw::StringBuffer<150> Buffer;

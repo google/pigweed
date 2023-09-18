@@ -162,7 +162,7 @@ Status Block::MergePrev() {
   return prev_->MergeNext();
 }
 
-// TODO(b/234875269): Add stack tracing to locate which call to the heap
+// TODO: b/234875269 - Add stack tracing to locate which call to the heap
 // operation caused the corruption.
 // TODO(jgarside): Add detailed information to log report and leave succinct
 // messages in the crash message.

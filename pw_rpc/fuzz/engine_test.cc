@@ -76,7 +76,7 @@ class FuzzerContext : public FuzzerContextBase {
   explicit FuzzerContext(
       TestPacketProcessor&& server_packet_processor = nullptr,
       TestPacketProcessor&& client_packet_processor = nullptr)
-      // TODO(b/290860904): Replace TestOptionsThread0 with TestThreadContext.
+      // TODO: b/290860904 - Replace TestOptionsThread0 with TestThreadContext.
       : FuzzerContextBase(thread::test::TestOptionsThread0(),
                           std::move(server_packet_processor),
                           std::move(client_packet_processor)) {}
@@ -111,7 +111,7 @@ class RpcFuzzTestingTest : public testing::Test {
   Vector<uint32_t, Fuzzer::kMaxActions> actions_;
 };
 
-// TODO(b/274437709): Re-enable.
+// TODO: b/274437709 - Re-enable.
 TEST_F(RpcFuzzTestingTest, DISABLED_SequentialRequests) {
   // Callback thread
   Add(Action::kWriteStream, 1, 'B', 1);
@@ -140,7 +140,7 @@ TEST_F(RpcFuzzTestingTest, DISABLED_SequentialRequests) {
   Run();
 }
 
-// TODO(b/274437709): Re-enable.
+// TODO: b/274437709 - Re-enable.
 TEST_F(RpcFuzzTestingTest, DISABLED_SimultaneousRequests) {
   // Callback thread
   NextThread();
@@ -163,7 +163,7 @@ TEST_F(RpcFuzzTestingTest, DISABLED_SimultaneousRequests) {
   Run();
 }
 
-// TODO(b/274437709) This test currently does not pass as it exhausts the fake
+// TODO: b/274437709 - This test currently does not pass as it exhausts the fake
 // channel. It will be re-enabled when the underlying stream is swapped for
 // a pw_ring_buffer-based approach.
 TEST_F(RpcFuzzTestingTest, DISABLED_CanceledRequests) {
@@ -191,7 +191,7 @@ TEST_F(RpcFuzzTestingTest, DISABLED_CanceledRequests) {
   Run();
 }
 
-// TODO(b/274437709) This test currently does not pass as it exhausts the fake
+// TODO: b/274437709 - This test currently does not pass as it exhausts the fake
 // channel. It will be re-enabled when the underlying stream is swapped for
 // a pw_ring_buffer-based approach.
 TEST_F(RpcFuzzTestingTest, DISABLED_AbandonedRequests) {
@@ -219,7 +219,7 @@ TEST_F(RpcFuzzTestingTest, DISABLED_AbandonedRequests) {
   Run();
 }
 
-// TODO(b/274437709) This test currently does not pass as it exhausts the fake
+// TODO: b/274437709 - This test currently does not pass as it exhausts the fake
 // channel. It will be re-enabled when the underlying stream is swapped for
 // a pw_ring_buffer-based approach.
 TEST_F(RpcFuzzTestingTest, DISABLED_SwappedRequests) {
@@ -246,7 +246,7 @@ TEST_F(RpcFuzzTestingTest, DISABLED_SwappedRequests) {
   Run();
 }
 
-// TODO(b/274437709) This test currently does not pass as it exhausts the fake
+// TODO: b/274437709 - This test currently does not pass as it exhausts the fake
 // channel. It will be re-enabled when the underlying stream is swapped for
 // a pw_ring_buffer-based approach.
 TEST_F(RpcFuzzTestingTest, DISABLED_DestroyedRequests) {

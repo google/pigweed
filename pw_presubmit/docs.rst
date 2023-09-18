@@ -297,9 +297,9 @@ example, the following is already sorted. This can be disabled with
 .. code-block:: python
 
    # keep-sorted: start
-   # TODO(b/1234) Fix this.
+   # TODO: b/1234 - Fix this.
    bar,
-   # TODO(b/5678) Also fix this.
+   # TODO: b/5678 - Also fix this.
    foo,
    # keep-sorted: end
 
@@ -387,7 +387,7 @@ allow the following formats by default.
    # TODO: b/1234 - Explanation.
    # TODO: username@ - Explanation.
    # TODO: username@example.com - Explanation.
-   # TODO(b/1234): Explanation.
+   # TODO: b/1234 - Explanation.
    # TODO(username) Explanation.
 
 .. todo-check: enable

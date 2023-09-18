@@ -363,7 +363,7 @@ def _target_objects(paths: GnPaths, expr: _Expression) -> _Actions:
         yield _ArgAction.EMIT_NEW, str(obj)
 
 
-# TODO(b/234886742): Replace expressions with native GN features when possible.
+# TODO: b/234886742 - Replace expressions with native GN features when possible.
 _FUNCTIONS: Dict['str', Callable[[GnPaths, _Expression], _Actions]] = {
     'TARGET_FILE': _target_file,
     'TARGET_FILE_IF_EXISTS': _target_file_if_exists,

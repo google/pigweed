@@ -471,7 +471,7 @@ function(pw_add_library NAME TYPE)
     HEADERS
       ${arg_HEADERS}
     PUBLIC_DEPS
-      # TODO(b/232141950): Apply compilation options that affect ABI
+      # TODO: b/232141950 - Apply compilation options that affect ABI
       # globally in the CMake build instead of injecting them into libraries.
       pw_build
       ${arg_PUBLIC_DEPS}
@@ -533,7 +533,7 @@ function(pw_add_facade NAME TYPE)
     HEADERS
       ${arg_HEADERS}
     PUBLIC_DEPS
-      # TODO(b/232141950): Apply compilation options that affect ABI
+      # TODO: b/232141950 - Apply compilation options that affect ABI
       # globally in the CMake build instead of injecting them into libraries.
       pw_build
       ${arg_PUBLIC_DEPS}

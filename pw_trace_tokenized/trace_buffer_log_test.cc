@@ -23,7 +23,7 @@ namespace pw::trace {
 namespace {
 
 TEST(TokenizedTrace, DumpSmallBuffer) {
-  // TODO(b/235283406): This test only verifies that the dump function does not
+  // TODO: b/235283406 - This test only verifies that the dump function does not
   // crash, and requires manual inspection to confirm that the log output is
   // correct. When there is support to mock and verify the calls to pw_log,
   // these tests should be improved to validate the output.
@@ -34,7 +34,7 @@ TEST(TokenizedTrace, DumpSmallBuffer) {
 }
 
 TEST(TokenizedTrace, DumpLargeBuffer) {
-  // TODO(b/235283406): This test only verifies that the dump function does not
+  // TODO: b/235283406 - This test only verifies that the dump function does not
   // crash, and requires manual inspection to confirm that the log output is
   // correct. When there is support to mock and verify the calls to pw_log,
   // these tests should be improved to validate the output.

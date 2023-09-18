@@ -466,7 +466,7 @@ def check_bazel_build_for_files(
     if bazel_dirs:
         for path in (p for p in files if p.suffix in bazel_extensions_to_check):
             if path not in bazel_builds:
-                # TODO(b/234883555) Replace this workaround for fuzzers.
+                # TODO: b/234883555 - Replace this workaround for fuzzers.
                 if 'fuzz' not in str(path):
                     missing.append(path)
 

@@ -83,7 +83,7 @@ _clang_target_default_configs = [
   "$dir_pw_build:extra_strict_warnings",
   "$dir_pw_toolchain/arm_clang:enable_float_printf",
 
-  # TODO(b/232587313): Disable lock annotations for this target because the
+  # TODO: b/232587313 - Disable lock annotations for this target because the
   # clang toolchain currently relies on the standard library headers provided by
   # arm-none-eabi-gcc, and thus do not have thread safety lock annotations on
   # things like std::lock_guard. Thread safety checks will not work until

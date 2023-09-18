@@ -85,7 +85,7 @@ constexpr uint32_t kXpsrIpsrMask = 0b1'1111'1111;
 constexpr uint32_t kControlThreadModeStackMask = 0x1u << 1;  // 0=MSP, 1=PSP
 
 // Memory mapped registers. (ARMv7-M Section B3.2.2, Table B3-4)
-// TODO(b/234891073): Only some of these are supported on ARMv6-M.
+// TODO: b/234891073 - Only some of these are supported on ARMv6-M.
 inline volatile uint32_t& cortex_m_cfsr =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED28u);
 inline volatile uint32_t& cortex_m_mmfar =

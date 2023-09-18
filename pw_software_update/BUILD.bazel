@@ -62,18 +62,18 @@ proto_library(
     ],
 )
 
-# TODO(b/241456982): Not expected to build yet.
+# TODO: b/241456982 - Not expected to build yet.
 py_proto_library(
     name = "bundled_update_py_pb2",
     srcs = ["bundled_update.proto"],
     tags = ["manual"],
 )
 
-# TODO(b/258074401): Depends on the `any` proto, which doesn't build under
+# TODO: b/258074401 - Depends on the `any` proto, which doesn't build under
 # nanopb.
 # pw_proto_library(
 #     name = "bundled_update_proto_cc",
-#     # TODO(b/258074760): Adding this tag breaks the pw_proto_library rule.
+#     # TODO: b/258074760 - Adding this tag breaks the pw_proto_library rule.
 #     tags = ["manual"],
 #     deps = [":bundled_update_proto"],
 # )
@@ -111,7 +111,7 @@ pw_cc_library(
         "public/pw_software_update/update_bundle_accessor.h",
     ],
     includes = ["public"],
-    tags = ["manual"],  # TODO(b/236321905): Depends on pw_crypto.
+    tags = ["manual"],  # TODO: b/236321905 - Depends on pw_crypto.
     deps = [
         ":blob_store_openable_reader",
         ":openable_reader",
@@ -128,7 +128,7 @@ pw_cc_library(
     ],
 )
 
-# TODO(b/258074401): Depends on bundled_update_proto_cc.nanopb_rpc, which
+# TODO: b/258074401 - Depends on bundled_update_proto_cc.nanopb_rpc, which
 # doesn't build yet.
 pw_cc_library(
     name = "bundled_update_service",
@@ -153,7 +153,7 @@ pw_cc_library(
     ],
 )
 
-# TODO(b/258074401): Depends on bundled_update_proto_cc.nanopb_rpc, which
+# TODO: b/258074401 - Depends on bundled_update_proto_cc.nanopb_rpc, which
 # doesn't build yet.
 pw_cc_library(
     name = "bundled_update_service_pwpb",
@@ -179,7 +179,7 @@ pw_cc_library(
     ],
 )
 
-# TODO(b/258222107): pw_python_action doesn't exist yet.
+# TODO: b/258222107 - pw_python_action doesn't exist yet.
 # pw_python_action(
 #     name = "generate_test_bundle",
 #     outputs = ["$target_gen_dir/generate_test_bundle/test_bundles.h"],

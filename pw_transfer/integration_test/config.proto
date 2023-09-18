@@ -49,7 +49,7 @@ message TransferAction {
 
   // Expected final status of transfer operation.
   //
-  // TODO(b/241456982): This should be a pw.protobuf.StatusCode, but importing
+  // TODO: b/241456982 - This should be a pw.protobuf.StatusCode, but importing
   // other Pigweed protos doesn't work in Bazel.
   uint32 expected_status = 4;
 

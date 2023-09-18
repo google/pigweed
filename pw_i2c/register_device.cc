@@ -28,7 +28,7 @@ void PutRegisterAddressInByteBuilder(
     const uint32_t register_address,
     const endian order,
     RegisterAddressSize register_address_size) {
-  // TODO(b/185952662): Simplify the call site by extending the byte builder
+  // TODO: b/185952662 - Simplify the call site by extending the byte builder
   //                   and endian API.
   switch (register_address_size) {
     case RegisterAddressSize::k1Byte:
@@ -112,7 +112,7 @@ Status RegisterDevice::WriteRegisters(const uint32_t register_address,
 
     case 4:
       PutRegisterData32InByteBuilder(builder, register_data, data_order_)
-          .IgnoreError();  // TODO(b/242598609): Handle Status properly
+          .IgnoreError();  // TODO: b/242598609 - Handle Status properly
       break;
 
     default:

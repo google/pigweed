@@ -33,7 +33,7 @@ if (dir_pw_third_party_chre == "") {
       "-Wno-thread-safety-analysis",
     ]
 
-    # TODO(b/294106526): Fill out the rest of the implementation and remove this.
+    # TODO: b/294106526 - Fill out the rest of the implementation and remove this.
     cflags += [ "-Wno-unused-parameter" ]
     visibility = [ ":*" ]
   }

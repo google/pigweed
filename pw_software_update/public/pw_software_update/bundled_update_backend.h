@@ -25,7 +25,7 @@
 
 namespace pw::software_update {
 
-// TODO(b/235273688): update documentation for backend api contract
+// TODO: b/235273688 - update documentation for backend api contract
 class BundledUpdateBackend {
  public:
   virtual ~BundledUpdateBackend() = default;

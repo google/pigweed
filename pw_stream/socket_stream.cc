@@ -49,7 +49,7 @@ void ConfigureSocket([[maybe_unused]] int socket) {
 
 }  // namespace
 
-// TODO(b/240982565): Implement SocketStream for Windows.
+// TODO: b/240982565 - Implement SocketStream for Windows.
 
 Status SocketStream::SocketStream::Connect(const char* host, uint16_t port) {
   if (host == nullptr) {

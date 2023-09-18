@@ -249,7 +249,7 @@ def fix_go_format(ctx: _Context) -> Dict[Path, str]:
     return {}
 
 
-# TODO(b/259595799) Remove yapf support.
+# TODO: b/259595799 - Remove yapf support.
 def _yapf(*args, **kwargs) -> subprocess.CompletedProcess:
     return log_run(
         ['python', '-m', 'yapf', '--parallel', *args],
@@ -515,7 +515,7 @@ class CodeFormat(NamedTuple):
 
     @property
     def extensions(self):
-        # TODO(b/23842636): Switch calls of this to using 'filter' and remove.
+        # TODO: b/23842636 - Switch calls of this to using 'filter' and remove.
         return self.filter.endswith
 
 
@@ -589,7 +589,7 @@ COPYBARA_FORMAT: CodeFormat = CodeFormat(
     fix_bazel_format,
 )
 
-# TODO(b/234881054): Add real code formatting support for CMake
+# TODO: b/234881054 - Add real code formatting support for CMake
 CMAKE_FORMAT: CodeFormat = CodeFormat(
     'CMake',
     FileFilter(endswith=['.cmake'], name=['^CMakeLists.txt$']),
@@ -643,7 +643,7 @@ CODE_FORMATS: Tuple[CodeFormat, ...] = tuple(
 )
 
 
-# TODO(b/264578594) Remove these lines when these globals aren't referenced.
+# TODO: b/264578594 - Remove these lines when these globals aren't referenced.
 CODE_FORMATS_WITH_BLACK: Tuple[CodeFormat, ...] = CODE_FORMATS
 CODE_FORMATS_WITH_YAPF: Tuple[CodeFormat, ...] = CODE_FORMATS
 

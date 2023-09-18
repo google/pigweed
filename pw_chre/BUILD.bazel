@@ -16,7 +16,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-# TODO(b/298660977): Add bazel support for CHRE.
+# TODO: b/298660977 - Add bazel support for CHRE.
 filegroup(
     name = "chre",
     srcs = [

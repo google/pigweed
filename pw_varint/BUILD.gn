@@ -37,7 +37,7 @@ pw_source_set("pw_varint") {
   ]
   public = [ "public/pw_varint/varint.h" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -69,7 +69,7 @@ pw_fuzz_test("varint_test") {
     "varint_test_c.c",
   ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -81,7 +81,7 @@ pw_test("stream_test") {
   ]
   sources = [ "stream_test.cc" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 

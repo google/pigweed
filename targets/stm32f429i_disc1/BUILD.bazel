@@ -58,7 +58,7 @@ pw_cc_library(
         "//pw_preprocessor",
         "//pw_sys_io_baremetal_stm32f429",
     ],
-    # TODO(b/251939135): Remove the need for alwayslink by rethinking how
+    # TODO: b/251939135 - Remove the need for alwayslink by rethinking how
     # pw_boot_cortex_m is structured in the build system.
     alwayslink = 1,
 )

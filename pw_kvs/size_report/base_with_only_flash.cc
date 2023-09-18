@@ -40,20 +40,20 @@ int main() {
   is_set = (result != nullptr);
 
   test_partition.Erase()
-      .IgnoreError();  // TODO(b/242598609): Handle Status properly
+      .IgnoreError();  // TODO: b/242598609 - Handle Status properly
 
   std::memset((void*)working_buffer, 0x55, sizeof(working_buffer));
 
   test_partition.Write(0, pw::as_bytes(pw::span(working_buffer)))
-      .IgnoreError();  // TODO(b/242598609): Handle Status properly
+      .IgnoreError();  // TODO: b/242598609 - Handle Status properly
 
   bool tmp_bool;
   test_partition.IsErased(&tmp_bool)
-      .IgnoreError();  // TODO(b/242598609): Handle Status properly
+      .IgnoreError();  // TODO: b/242598609 - Handle Status properly
   is_erased = tmp_bool;
 
   test_partition.Read(0, as_writable_bytes(pw::span(working_buffer)))
-      .IgnoreError();  // TODO(b/242598609): Handle Status properly
+      .IgnoreError();  // TODO: b/242598609 - Handle Status properly
 
   return 0;
 }

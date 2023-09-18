@@ -116,7 +116,7 @@ class DataReaderAndExecutor:
 
         self._reader_thread = threading.Thread(
             target=self._run,
-            # TODO(b/294858483): When we are confident that we can cancel the
+            # TODO: b/294858483 - When we are confident that we can cancel the
             # blocking read(), this no longer needs to be a daemon thread.
             daemon=True,
         )
@@ -134,7 +134,7 @@ class DataReaderAndExecutor:
         operation completes or raises an exception.
         """
         self._reader_stop.set()
-        # TODO(b/294858483): When we are confident that we can cancel the
+        # TODO: b/294858483 - When we are confident that we can cancel the
         # blocking read(), wait for the thread to exit.
         # self._reader_thread.join()
 

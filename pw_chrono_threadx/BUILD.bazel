@@ -39,7 +39,7 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:threadx",
     ],
-    # TODO(b/290362542): This should depend on ThreadX.
+    # TODO: b/290362542 - This should depend on ThreadX.
     deps = [
         "//pw_chrono:epoch",
         "//pw_chrono:system_clock_facade",

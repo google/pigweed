@@ -68,7 +68,7 @@
 #endif  // PW_LOG_FLAGS
 
 // DEPRECATED: Use PW_LOG_FLAGS.
-// TODO(b/234876701): Remove this macro after migration.
+// TODO: b/234876701 - Remove this macro after migration.
 #ifndef PW_LOG_DEFAULT_FLAGS
 #define PW_LOG_DEFAULT_FLAGS PW_LOG_FLAGS
 #endif  // PW_LOG_DEFAULT_FLAGS

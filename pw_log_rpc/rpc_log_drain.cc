@@ -73,7 +73,7 @@ Status RpcLogDrain::Open(rpc::RawServerWriter& writer) {
   // Set a callback to close the drain when RequestCompletion() is requested by
   // the reader. This callback is only set and invoked if
   // PW_RPC_REQUEST_COMPLETION_CALLBACK is enabled.
-  // TODO(b/274936558) : Add unit tests to check that when this callback is
+  // TODO: b/274936558 - : Add unit tests to check that when this callback is
   // invoked, the stream is closed gracefully without dropping logs.
   server_writer_.set_on_completion_requested_if_enabled(
       [this]() { Close().IgnoreError(); });
@@ -134,7 +134,7 @@ RpcLogDrain::LogDrainState RpcLogDrain::SendLogs(size_t max_num_bundles,
     }
 
     encoder.WriteFirstEntrySequenceId(sequence_id_)
-        .IgnoreError();  // TODO(b/242598609): Handle Status properly
+        .IgnoreError();  // TODO: b/242598609 - Handle Status properly
     sequence_id_ += packed_entry_count;
     const Status status = server_writer_.Write(encoder);
     sent_bundle_count++;

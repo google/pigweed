@@ -378,7 +378,7 @@ inline Status RegisterDevice::ReadRegisters32(
   PW_TRY(
       ReadRegisters(register_address, as_writable_bytes(return_data), timeout));
 
-  // TODO(b/185952662): Extend endian in pw_byte to support this conversion
+  // TODO: b/185952662 - Extend endian in pw_byte to support this conversion
   //                    as optimization.
   // Post process endian information.
   for (uint32_t& register_value : return_data) {

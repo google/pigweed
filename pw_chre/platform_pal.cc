@@ -16,7 +16,7 @@
 
 namespace chre {
 
-// TODO(b/294106526): Implement this.
+// TODO: b/294106526 - Implement this.
 void PlatformPal::prePalApiCall(PalType) const {}
 
 }  // namespace chre

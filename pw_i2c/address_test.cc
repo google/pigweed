@@ -39,10 +39,10 @@ TEST(Address, TenBitRuntimeChecked) {
   EXPECT_EQ(ten_bit.GetTenBit(), Address::kMaxTenBitAddress);
 }
 
-// TODO(b/235289499): Verify assert behaviour when trying to get a 7bit address
+// TODO: b/235289499 - Verify assert behaviour when trying to get a 7bit address
 // out of a 10bit address.
 
-// TODO(b/234882063): Add tests to ensure the constexpr constructors fail to
+// TODO: b/234882063 - Add tests to ensure the constexpr constructors fail to
 // compile with invalid addresses once no-copmile tests are set up in Pigweed.
 
 }  // namespace pw::i2c

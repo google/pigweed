@@ -63,7 +63,7 @@ pw_cc_test(
     srcs = [
         "freelist_malloc_test.cc",
     ],
-    # TODO(b/257530518): Get this test to work with Bazel.
+    # TODO: b/257530518 - Get this test to work with Bazel.
     tags = ["manual"],
     deps = [
         ":headers",

@@ -43,7 +43,7 @@ class FlashMemory {
   // The flash address is in the range of: 0 to FlashSize.
   typedef uint32_t Address;
 
-  // TODO(b/235149326): This can be constexpr when tokenized asserts are fixed.
+  // TODO: b/235149326 - This can be constexpr when tokenized asserts are fixed.
   FlashMemory(size_t sector_size,
               size_t sector_count,
               size_t alignment,

@@ -97,7 +97,7 @@ function(pw_add_test NAME)
     HEADERS
       ${arg_HEADERS}
     PRIVATE_DEPS
-      # TODO(b/232141950): Apply compilation options that affect ABI
+      # TODO: b/232141950 - Apply compilation options that affect ABI
       # globally in the CMake build instead of injecting them into libraries.
       pw_build
       ${arg_PRIVATE_DEPS}

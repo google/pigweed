@@ -27,7 +27,7 @@ pw_executable("noop_checksum") {
   ]
   defines = [ "USE_NOOP_CHECKSUM=1" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -42,7 +42,7 @@ pw_executable("crc32_8bit_checksum") {
   ]
   defines = [ "USE_CRC32_8BIT_CHECKSUM=1" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -57,7 +57,7 @@ pw_executable("crc32_4bit_checksum") {
   ]
   defines = [ "USE_CRC32_4BIT_CHECKSUM=1" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -72,7 +72,7 @@ pw_executable("crc32_1bit_checksum") {
   ]
   defines = [ "USE_CRC32_1BIT_CHECKSUM=1" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -87,7 +87,7 @@ pw_executable("crc16_checksum") {
   ]
   defines = [ "USE_CRC16_CHECKSUM=1" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -102,6 +102,6 @@ pw_executable("fletcher16_checksum") {
   ]
   defines = [ "USE_FLETCHER16_CHECKSUM=1" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }

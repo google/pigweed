@@ -340,7 +340,7 @@ pw_add_test(pw_rpc.nanopb.stub_generation_test
     pw_rpc.nanopb
 )
 
-# TODO(b/231950909) Test disabled as pw_work_queue lacks CMakeLists.txt
+# TODO: b/231950909 - Test disabled as pw_work_queue lacks CMakeLists.txt
 if((TARGET pw_work_queue.pw_work_queue) AND
    ("${pw_thread.thread_BACKEND}" STREQUAL "pw_thread_stl.thread") AND
    (NOT "${pw_sync.timed_thread_notification_BACKEND}" STREQUAL ""))

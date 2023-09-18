@@ -65,7 +65,7 @@ class PrefixedEntryRingBufferMulti {
    public:
     constexpr Reader() : buffer_(nullptr), read_idx_(0), entry_count_(0) {}
 
-    // TODO(b/235351035): Add locking to the internal functions. Who owns the
+    // TODO: b/235351035 - Add locking to the internal functions. Who owns the
     // lock? This class? Does this class need a lock if it's not a multi-reader?
     // (One doesn't exist today but presumably nothing prevents push + pop
     // operations from happening on two different threads).
@@ -103,7 +103,7 @@ class PrefixedEntryRingBufferMulti {
 
     // Same as PeekFront but includes the entry's preamble of optional user
     // value and the varint of the data size.
-    // TODO(b/235351847): Move all other APIs to passing bytes_read by
+    // TODO: b/235351847 - Move all other APIs to passing bytes_read by
     // reference, as it is required to determine the length populated in the
     // span.
     Status PeekFrontWithPreamble(span<std::byte> data,
@@ -251,7 +251,7 @@ class PrefixedEntryRingBufferMulti {
   const_iterator cbegin() { return begin(); }
   const_iterator cend() { return end(); }
 
-  // TODO(b/235351861): Consider changing bool to an enum, to explicitly
+  // TODO: b/235351861 - Consider changing bool to an enum, to explicitly
   // enumerate what this variable means in clients.
   PrefixedEntryRingBufferMulti(bool user_preamble = false)
       : buffer_(nullptr),
@@ -515,7 +515,7 @@ class PrefixedEntryRingBuffer : public PrefixedEntryRingBufferMulti,
   PrefixedEntryRingBuffer(bool user_preamble = false)
       : PrefixedEntryRingBufferMulti(user_preamble) {
     AttachReader(*this)
-        .IgnoreError();  // TODO(b/242598609): Handle Status properly
+        .IgnoreError();  // TODO: b/242598609 - Handle Status properly
   }
 };
 

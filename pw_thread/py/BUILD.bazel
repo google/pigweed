@@ -14,7 +14,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-# TODO(b/241456982): Not expected to build. We need a dependency on a
+# TODO: b/241456982 - Not expected to build. We need a dependency on a
 # py_proto_library built from thread_proto, but that in turn depends on
 # creating a py_proto_library for tokenizer_proto.
 py_library(
@@ -31,7 +31,7 @@ py_library(
     ],
 )
 
-# TODO(b/241456982): Not expected to build. We need a dependency on a
+# TODO: b/241456982 - Not expected to build. We need a dependency on a
 # py_proto_library built from thread_proto, but that in turn depends on
 # creating a py_proto_library for tokenizer_proto.
 py_test(

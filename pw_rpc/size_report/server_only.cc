@@ -46,12 +46,12 @@ int main() {
 
   std::byte packet_buffer[128];
   pw::sys_io::ReadBytes(packet_buffer)
-      .IgnoreError();  // TODO(b/242598609): Handle Status properly
+      .IgnoreError();  // TODO: b/242598609 - Handle Status properly
   pw::sys_io::WriteBytes(packet_buffer)
-      .IgnoreError();  // TODO(b/242598609): Handle Status properly
+      .IgnoreError();  // TODO: b/242598609 - Handle Status properly
 
   my_product::server.ProcessPacket(packet_buffer)
-      .IgnoreError();  // TODO(b/242598609): Handle Status properly
+      .IgnoreError();  // TODO: b/242598609 - Handle Status properly
 
   return static_cast<int>(packet_buffer[92]);
 }

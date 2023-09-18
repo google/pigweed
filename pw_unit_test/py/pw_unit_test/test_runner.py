@@ -285,7 +285,7 @@ class TestRunner:
                     # Need to decode the bytes back to ASCII or they will not be
                     # encodable by json.dumps.
                     #
-                    # TODO(b/248349219): Instead of stripping the ANSI color
+                    # TODO: b/248349219 - Instead of stripping the ANSI color
                     # codes, convert them to HTML.
                     "contents": base64.b64encode(
                         _strip_ansi(process.output)

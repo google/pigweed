@@ -141,7 +141,7 @@ pw_test("decoder_test") {
   deps = [ ":pw_protobuf" ]
   sources = [ "decoder_test.cc" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -149,7 +149,7 @@ pw_test("encoder_test") {
   deps = [ ":pw_protobuf" ]
   sources = [ "encoder_test.cc" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -160,7 +160,7 @@ pw_test("find_test") {
   ]
   sources = [ "find_test.cc" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -168,7 +168,7 @@ pw_test("codegen_decoder_test") {
   deps = [ ":codegen_test_protos.pwpb" ]
   sources = [ "codegen_decoder_test.cc" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -176,7 +176,7 @@ pw_test("codegen_encoder_test") {
   deps = [ ":codegen_test_protos.pwpb" ]
   sources = [ "codegen_encoder_test.cc" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -187,7 +187,7 @@ pw_test("codegen_message_test") {
   ]
   sources = [ "codegen_message_test.cc" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -195,7 +195,7 @@ pw_test("serialized_size_test") {
   deps = [ ":pw_protobuf" ]
   sources = [ "serialized_size_test.cc" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -203,7 +203,7 @@ pw_test("stream_decoder_test") {
   deps = [ ":pw_protobuf" ]
   sources = [ "stream_decoder_test.cc" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -211,7 +211,7 @@ pw_test("map_utils_test") {
   deps = [ ":pw_protobuf" ]
   sources = [ "map_utils_test.cc" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -219,7 +219,7 @@ pw_test("message_test") {
   deps = [ ":pw_protobuf" ]
   sources = [ "message_test.cc" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -232,7 +232,7 @@ pw_perf_test("encoder_perf_test") {
   deps = [ ":pw_protobuf" ]
   sources = [ "encoder_perf_test.cc" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -253,7 +253,7 @@ pw_facade_test("varint_size_test") {
   deps = [ ":pw_protobuf" ]
   sources = [ "varint_size_test.cc" ]
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -298,7 +298,7 @@ pw_proto_library("codegen_test_protos") {
 }
 
 # The tests below have a large amount of global and static data.
-# TODO(b/234883746): Replace this with a better size-based check.
+# TODO: b/234883746 - Replace this with a better size-based check.
 _small_executable_target_types = [
   "stm32f429i_executable",
   "lm3s6965evb_executable",
@@ -319,7 +319,7 @@ pw_fuzzer("encoder_fuzzer") {
   ]
   enable_test_if = _supports_large_tests
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
@@ -336,6 +336,6 @@ pw_fuzzer("decoder_fuzzer") {
   ]
   enable_test_if = _supports_large_tests
 
-  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }

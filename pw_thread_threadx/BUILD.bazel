@@ -34,7 +34,7 @@ pw_cc_library(
         "id_public_overrides",
         "public",
     ],
-    # TODO(b/257321712): Add ThreadX dependency.
+    # TODO: b/257321712 - Add ThreadX dependency.
     deps = [
         "//pw_thread:id_facade",
     ],
@@ -58,7 +58,7 @@ pw_cc_library(
         "public",
         "thread_public_overrides",
     ],
-    # TODO(b/257321712): Add ThreadX dependency.
+    # TODO: b/257321712 - Add ThreadX dependency.
     tags = ["manual"],
     deps = [
         ":id",
@@ -73,7 +73,7 @@ pw_cc_library(
     srcs = [
         "test_threads.cc",
     ],
-    # TODO(b/257321712): This target doesn't build.
+    # TODO: b/257321712 - This target doesn't build.
     tags = ["manual"],
     deps = [
         "//pw_chrono:system_clock",
@@ -85,7 +85,7 @@ pw_cc_library(
 
 pw_cc_test(
     name = "thread_backend_test",
-    # TODO(b/257321712): This target doesn't build.
+    # TODO: b/257321712 - This target doesn't build.
     tags = ["manual"],
     deps = [
         ":non_portable_test_thread_options",
@@ -106,7 +106,7 @@ pw_cc_library(
         "public",
         "sleep_public_overrides",
     ],
-    # TODO(b/257321712): This target doesn't build.
+    # TODO: b/257321712 - This target doesn't build.
     tags = ["manual"],
     deps = [
         ":sleep_headers",
@@ -127,7 +127,7 @@ pw_cc_library(
         "public",
         "yield_public_overrides",
     ],
-    # TODO(b/257321712): This target doesn't build.
+    # TODO: b/257321712 - This target doesn't build.
     tags = ["manual"],
     deps = [
         "//pw_thread:yield_facade",
@@ -143,7 +143,7 @@ pw_cc_library(
         "public/pw_thread_threadx/util.h",
     ],
     includes = ["public"],
-    # TODO(b/257321712): This target doesn't build.
+    # TODO: b/257321712 - This target doesn't build.
     tags = ["manual"],
     deps = [
         "//pw_function",
@@ -159,7 +159,7 @@ pw_cc_library(
     hdrs = [
         "public/pw_thread_threadx/snapshot.h",
     ],
-    # TODO(b/257321712): This target doesn't build.
+    # TODO: b/257321712 - This target doesn't build.
     tags = ["manual"],
     deps = [
         ":util",

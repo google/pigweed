@@ -432,7 +432,7 @@ pw_cc_facade(
     ],
 )
 
-# TODO(b/228998350): This needs to be instantiated for each platform that
+# TODO: b/228998350 - This needs to be instantiated for each platform that
 # provides an implementation of $dir_pw_thread:test_threads and
 # $dir_pw_sync:condition_variable.
 # pw_cc_library(

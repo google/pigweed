@@ -84,7 +84,7 @@ def _clone_fuchsia(temp_path: Path) -> Path:
     return temp_path / 'fuchsia'
 
 
-# TODO(b/248257406): Replace typing.List with list.  # pylint: disable=fixme
+# TODO: b/248257406 - Replace typing.List with list.  # pylint: disable=fixme
 def _read_files(script: Path) -> List[Path]:
     with script.open() as file:
         paths_list: List[str] = eval(  # pylint: disable=eval-used
@@ -129,7 +129,7 @@ def _patch_constinit(text: str) -> str:
 
 _INVOKE_PATCH = (
     '\n'
-    '  // TODO(b/241567321): Remove "no sanitize" after pw_protobuf is fixed.\n'
+    '  // TODO: b/241567321 - Remove "no sanitize" after pw_protobuf is fixed.\n'
     '  Result invoke(Args... args) const PW_NO_SANITIZE("function") {'
 )
 

@@ -22,7 +22,7 @@
 
 namespace chre {
 
-// TODO(b/294106526): Implement these, possibly by adding a facade.
+// TODO: b/294106526 - Implement these, possibly by adding a facade.
 void HostLink::flushMessagesSentByNanoapp(uint64_t) {}
 
 bool HostLink::sendMessage(const MessageToHost* message) {

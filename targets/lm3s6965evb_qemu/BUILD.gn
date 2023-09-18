@@ -23,7 +23,7 @@ generate_toolchains("target_toolchains") {
   toolchains = pw_target_toolchain_lm3s6965evb_qemu_list
 }
 
-# TODO(b/232587313): This config is only used in the clang build for this
+# TODO: b/232587313 - This config is only used in the clang build for this
 # target, see target_toolchains.gni or the associated bug for more details.
 config("disable_lock_annotations") {
   cflags = [ "-Wno-thread-safety-analysis" ]

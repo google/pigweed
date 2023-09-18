@@ -128,7 +128,7 @@ def execute_integration_test(
             client_cmdline += [*common_args]
 
         server_process = subprocess.Popen(server_cmdline)
-        # TODO(b/234879791): Replace this delay with some sort of IPC.
+        # TODO: b/234879791 - Replace this delay with some sort of IPC.
         time.sleep(setup_time_s)
 
         result = subprocess.run(client_cmdline).returncode

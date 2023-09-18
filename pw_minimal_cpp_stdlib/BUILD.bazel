@@ -73,7 +73,7 @@ pw_cc_library(
     name = "minimal_cpp_stdlib_isolated_test",
     srcs = ["isolated_test.cc"],
     copts = ["-nostdinc++"],
-    tags = ["manual"],  # TODO(b/257529911): Fix build failures.
+    tags = ["manual"],  # TODO: b/257529911 - Fix build failures.
     deps = [
         ":pw_minimal_cpp_stdlib",
         "//pw_polyfill",
@@ -86,7 +86,7 @@ pw_cc_test(
     srcs = [
         "test.cc",
     ],
-    tags = ["manual"],  # TODO(b/257529911): Fix build failures.
+    tags = ["manual"],  # TODO: b/257529911 - Fix build failures.
     deps = [
         ":minimal_cpp_stdlib_isolated_test",
         "//pw_unit_test",

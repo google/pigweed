@@ -55,7 +55,7 @@ pw::Status DumpTraceBufferToLog() {
   while (trace_buffer->PeekFront(span(entry_buffer).subspan(1), &bytes_read) !=
          pw::Status::OutOfRange()) {
     trace_buffer->PopFront()
-        .IgnoreError();  // TODO(b/242598609): Handle Status properly
+        .IgnoreError();  // TODO: b/242598609 - Handle Status properly
     entry_buffer[0] = static_cast<std::byte>(bytes_read);
     // The entry buffer is formatted as (size, entry) with an extra byte as
     // a header to the entry. The calcuation of bytes_read + 1 represents

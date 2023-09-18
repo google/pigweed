@@ -71,7 +71,7 @@ template("pw_cipd_static_library") {
     # might work but is redundant, so serialize calls.
     pool = "$dir_pw_build/pool:copy_from_cipd($default_toolchain)"
 
-    # TODO(b/234884827): This should somehow track the actual .a for changes as
+    # TODO: b/234884827 - This should somehow track the actual .a for changes as
     # well.
     inputs = [ invoker.manifest ]
     outputs = [ _out_file ]

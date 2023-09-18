@@ -91,7 +91,7 @@ class AlignedChecksum : public ChecksumAlgorithm {
  public:
   void Update(span<const std::byte> data) final {
     writer_.Write(data)
-        .IgnoreError();  // TODO(b/242598609): Handle Status properly
+        .IgnoreError();  // TODO: b/242598609 - Handle Status properly
   }
 
  protected:
@@ -106,7 +106,8 @@ class AlignedChecksum : public ChecksumAlgorithm {
   static_assert(kBufferSize >= kAlignmentBytes);
 
   void Finalize() final {
-    writer_.Flush().IgnoreError();  // TODO(b/242598609): Handle Status properly
+    writer_.Flush()
+        .IgnoreError();  // TODO: b/242598609 - Handle Status properly
     FinalizeAligned();
   }
 

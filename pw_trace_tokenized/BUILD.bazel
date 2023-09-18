@@ -68,7 +68,7 @@ pw_cc_library(
     includes = [
         "public",
     ],
-    # TODO(b/260641850): Get pw_trace_tokenized building in Bazel.
+    # TODO: b/260641850 - Get pw_trace_tokenized building in Bazel.
     tags = ["manual"],
     deps = [
         ":buffer",
@@ -89,7 +89,7 @@ pw_cc_library(
     includes = [
         "public",
     ],
-    # TODO(b/260641850): Get pw_trace_tokenized building in Bazel.
+    # TODO: b/260641850 - Get pw_trace_tokenized building in Bazel.
     tags = ["manual"],
     deps = [
         ":pw_trace_tokenized",
@@ -106,7 +106,7 @@ pw_cc_library(
     hdrs = [
         "public/pw_trace_tokenized/trace_buffer_log.h",
     ],
-    # TODO(b/260641850): Get pw_trace_tokenized building in Bazel.
+    # TODO: b/260641850 - Get pw_trace_tokenized building in Bazel.
     tags = ["manual"],
     deps = [
         ":buffer",
@@ -151,7 +151,7 @@ pw_cc_test(
         "pw_trace_test",
         "pw_trace_test/public_overrides",
     ],
-    # TODO(b/260641850): Get pw_trace_tokenized building in Bazel.
+    # TODO: b/260641850 - Get pw_trace_tokenized building in Bazel.
     tags = ["manual"],
     deps = [
         ":pw_trace_tokenized",
@@ -165,7 +165,7 @@ pw_cc_test(
     srcs = [
         "trace_buffer_test.cc",
     ],
-    # TODO(b/260641850): Get pw_trace_tokenized building in Bazel.
+    # TODO: b/260641850 - Get pw_trace_tokenized building in Bazel.
     tags = ["manual"],
     deps = [
         ":buffer",
@@ -180,7 +180,7 @@ pw_cc_test(
     srcs = [
         "trace_buffer_log_test.cc",
     ],
-    # TODO(b/260641850): Get pw_trace_tokenized building in Bazel.
+    # TODO: b/260641850 - Get pw_trace_tokenized building in Bazel.
     tags = ["manual"],
     deps = [
         ":buffer_log",
@@ -210,7 +210,7 @@ pw_cc_library(
 pw_cc_binary(
     name = "trace_tokenized_example_basic",
     srcs = ["example/basic.cc"],
-    # TODO(b/258071921): Fix puzzling compiler errors
+    # TODO: b/258071921 - Fix puzzling compiler errors
     tags = ["manual"],
     deps = [
         ":pw_trace_example_to_file",
@@ -223,7 +223,7 @@ pw_cc_binary(
 pw_cc_binary(
     name = "trace_tokenized_example_trigger",
     srcs = ["example/trigger.cc"],
-    # TODO(b/258071921): Fix puzzling compiler errors
+    # TODO: b/258071921 - Fix puzzling compiler errors
     tags = ["manual"],
     deps = [
         ":pw_trace_example_to_file",
@@ -236,7 +236,7 @@ pw_cc_binary(
 pw_cc_binary(
     name = "trace_tokenized_example_filter",
     srcs = ["example/filter.cc"],
-    # TODO(b/258071921): Fix puzzling compiler errors
+    # TODO: b/258071921 - Fix puzzling compiler errors
     tags = ["manual"],
     deps = [
         ":pw_trace_example_to_file",
@@ -249,7 +249,7 @@ pw_cc_binary(
 pw_cc_library(
     name = "trace_tokenized_example_rpc",
     srcs = ["example/rpc.cc"],
-    # TODO(b/258071921): Fix puzzling compiler errors
+    # TODO: b/258071921 - Fix puzzling compiler errors
     tags = ["manual"],
     deps = [
         "//pw_hdlc",
@@ -264,7 +264,7 @@ pw_cc_library(
 pw_cc_library(
     name = "trace_tokenized_example_linux_group_by_tid",
     srcs = ["example/linux_group_by_tid.cc"],
-    # TODO(b/258071921): Fix puzzling compiler errors
+    # TODO: b/258071921 - Fix puzzling compiler errors
     tags = ["manual"],
     deps = [
         ":pw_trace_example_to_file",

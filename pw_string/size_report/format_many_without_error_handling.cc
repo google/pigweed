@@ -28,7 +28,7 @@
 
 #define FORMAT_CASE(...)                  \
   pw::string::Format(buffer, __VA_ARGS__) \
-      .IgnoreError()  // TODO(b/242598609): Handle Status properly
+      .IgnoreError()  // TODO: b/242598609 - Handle Status properly
 
 #else  // std::snprintf
 

@@ -93,7 +93,7 @@ class Device {
           (behavior_ == ChipSelectBehavior::kPerTransaction) &&
           (!first_write_read_)) {
         selector_->Deactivate()
-            .IgnoreError();  // TODO(b/242598609): Handle Status properly
+            .IgnoreError();  // TODO: b/242598609 - Handle Status properly
       }
     }
 

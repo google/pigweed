@@ -336,7 +336,7 @@ class OwnersFile:
             path = self.__complete_path(file_str)
             if ":" in file_str and not path.is_file():
                 _LOG.warning(
-                    "TODO(b/254322931): This check does not yet support "
+                    "TODO: b/254322931 - This check does not yet support "
                     "<project> or <branch> in a file: rule"
                 )
                 _LOG.warning(

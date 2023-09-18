@@ -55,7 +55,7 @@ _host_clang_toolchain = {
 
 # Common default scope shared by all host Clang toolchains.
 _defaults = {
-  # TODO(b/234888755) amend toolchain declaration process to
+  # TODO: b/234888755 - amend toolchain declaration process to
   # remove this hack.
   default_configs = []
   default_configs = [

@@ -69,7 +69,7 @@ class TimedNotificationAcquirer : public thread::ThreadCore {
 
 TEST(TimedThreadNotification, AcquireWithoutSuspend) {
   TimedNotificationAcquirer notification_acquirer;
-  // TODO(b/290860904): Replace TestOptionsThread0 with TestThreadContext.
+  // TODO: b/290860904 - Replace TestOptionsThread0 with TestThreadContext.
   Thread thread =
       Thread(thread::test::TestOptionsThread0(), notification_acquirer);
 

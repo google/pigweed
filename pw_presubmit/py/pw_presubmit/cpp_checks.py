@@ -190,6 +190,6 @@ def runtime_sanitizers(ctx: PresubmitContext) -> None:
 
 
 def all_sanitizers():
-    # TODO(b/234876100): msan will not work until the C++ standard library
+    # TODO: b/234876100 - msan will not work until the C++ standard library
     # included in the sysroot has a variant built with msan.
     return [asan, tsan, ubsan, runtime_sanitizers]

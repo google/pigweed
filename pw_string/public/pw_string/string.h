@@ -440,7 +440,7 @@ InlineBasicString(const T (&)[kCharArraySize])
 
 // Operators
 
-// TODO(b/239996007): Implement operator+
+// TODO: b/239996007 - Implement operator+
 
 template <typename T, size_t kLhsCapacity, size_t kRhsCapacity>
 constexpr bool operator==(
@@ -556,7 +556,7 @@ constexpr bool operator>=(const T* lhs,
   return rhs.compare(lhs) <= 0;
 }
 
-// TODO(b/239996007): Implement other comparison operator overloads.
+// TODO: b/239996007 - Implement other comparison operator overloads.
 
 // Aliases
 

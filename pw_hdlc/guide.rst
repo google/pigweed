@@ -18,7 +18,7 @@ Encoding
    .. tab-item:: C++
 
       ..
-        TODO(b/279648188): Share this code between api.rst and guide.rst.
+        TODO: b/279648188 - Share this code between api.rst and guide.rst.
 
       .. code-block:: cpp
 
@@ -40,7 +40,7 @@ Encoding
    .. tab-item:: Python
 
       ..
-        TODO(b/279648188): Share this code between api.rst and guide.rst.
+        TODO: b/279648188 - Share this code between api.rst and guide.rst.
 
       .. code-block:: python
 
@@ -91,7 +91,7 @@ Decoding
    .. tab-item:: C++
 
       ..
-        TODO(b/279648188): Share this code between api.rst and guide.rst.
+        TODO: b/279648188 - Share this code between api.rst and guide.rst.
 
       .. code-block:: cpp
 
@@ -117,7 +117,7 @@ Decoding
    .. tab-item:: Python
 
       ..
-        TODO(b/279648188): Share this code between api.rst and guide.rst.
+        TODO: b/279648188 - Share this code between api.rst and guide.rst.
 
       .. code-block:: python
 

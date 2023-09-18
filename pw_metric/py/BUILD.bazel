@@ -28,12 +28,12 @@ py_library(
     deps = [
         "//pw_rpc/py:pw_rpc",
         "//pw_tokenizer/py:pw_tokenizer",
-        # TODO(b/241456982): Add this dep back in
+        # TODO: b/241456982 - Add this dep back in
         # "//pw_metric:metric_proto_py_pb2",
     ],
 )
 
-# TODO(b/241456982): Not expected to build yet.
+# TODO: b/241456982 - Not expected to build yet.
 py_test(
     name = "metric_parser_test",
     size = "small",

@@ -28,7 +28,7 @@ class Packet {
  public:
   static constexpr uint32_t kUnassignedId = 0;
 
-  // TODO(b/236156534): This can use the pwpb generated
+  // TODO: b/236156534 - This can use the pwpb generated
   // pw::rpc::internal::pwpb::RpcPacket::kMaxEncodedSizeBytes once the max value
   // of enums is properly accounted for and when `status` is changed from a
   // uint32 to a StatusCode.

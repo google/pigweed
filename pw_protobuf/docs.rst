@@ -633,7 +633,7 @@ order to avoid clashes for projects that link against multiple C++ proto
 libraries in the same library.
 
 ..
-  TODO(b/258832150) Remove this section, if possible
+  TODO: b/258832150 - Remove this section, if possible
 
 In some cases, pw_protobuf codegen may encounter external message references
 during parsing, where it is unable to resolve the package name of the message.

@@ -210,7 +210,7 @@ pw_test_group("tests") {
   tests = [ ":cpu_exception_entry_test" ]
 }
 
-# TODO(b/234888156): Add ARMv8-M mainline coverage.
+# TODO: b/234888156 - Add ARMv8-M mainline coverage.
 pw_test("cpu_exception_entry_test") {
   enable_if = pw_cpu_exception_ENTRY_BACKEND ==
               "$dir_pw_cpu_exception_cortex_m:cpu_exception"

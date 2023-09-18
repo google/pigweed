@@ -85,7 +85,7 @@ const char* GetFileBasename(const char* filename) {
 
 void (*write_log)(std::string_view) = [](std::string_view log) {
   sys_io::WriteLine(log)
-      .IgnoreError();  // TODO(b/242598609): Handle Status properly
+      .IgnoreError();  // TODO: b/242598609 - Handle Status properly
 };
 
 }  // namespace

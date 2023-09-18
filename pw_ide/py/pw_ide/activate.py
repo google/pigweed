@@ -146,7 +146,7 @@ def _sanitize_path(
     user_home = Path.home().resolve()
     resolved_path = Path(path).resolve()
 
-    # TODO(b/248257406) Remove once we drop support for Python 3.8.
+    # TODO: b/248257406 - Remove once we drop support for Python 3.8.
     def is_relative_to(path: Path, other: Path) -> bool:
         try:
             path.relative_to(other)

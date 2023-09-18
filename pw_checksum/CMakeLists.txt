@@ -28,7 +28,7 @@ pw_add_library(pw_checksum STATIC
     crc32.cc
 )
 
-# TODO(b/284002266): Unresolved linker error when using pw_checksum above.
+# TODO: b/284002266 - Unresolved linker error when using pw_checksum above.
 # Created this crc32 library and linker error is resolved.
 pw_add_library(pw_checksum.crc32 STATIC
   HEADERS

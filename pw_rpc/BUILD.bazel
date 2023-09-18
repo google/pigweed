@@ -44,7 +44,7 @@ pw_cc_library(
     ],
 )
 
-# TODO(b/242059613): Build this as a cc_binary and use it in integration tests.
+# TODO: b/242059613 - Build this as a cc_binary and use it in integration tests.
 filegroup(
     name = "test_rpc_server",
     srcs = ["test_rpc_server.cc"],
@@ -245,7 +245,7 @@ pw_cc_library(
     ],
 )
 
-# TODO(b/242059613): Add the client integration test to the build.
+# TODO: b/242059613 - Add the client integration test to the build.
 filegroup(
     name = "client_integration_test",
     srcs = ["client_integration_test.cc"],

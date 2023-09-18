@@ -139,7 +139,7 @@ being foundational infrastructure.
          "PW_BOOT_FLASH_BEGIN=0x00000200",
          "PW_BOOT_FLASH_SIZE=200K",
 
-         # TODO(b/235348465): Currently "pw_tokenizer/detokenize_test" requires at
+         # TODO: b/235348465 - Currently "pw_tokenizer/detokenize_test" requires at
          # least 6K bytes in heap when using pw_malloc_freelist. The heap size
          # required for tests should be investigated.
          "PW_BOOT_HEAP_SIZE=7K",

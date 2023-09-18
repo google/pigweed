@@ -21,7 +21,7 @@ namespace pw::async {
 
 namespace {
 
-// TODO(b/277793223): Optimize to avoid double virtual indirection and double
+// TODO: b/277793223 - Optimize to avoid double virtual indirection and double
 // allocation.  In situations in which pw::Function is large enough and the
 // captures are small enough, we could eliminate this by reshaping the task as
 // just a pw::Function.

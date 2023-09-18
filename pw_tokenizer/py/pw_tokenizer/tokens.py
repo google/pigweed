@@ -575,7 +575,7 @@ class _BinaryDatabase(DatabaseFile):
     def add_and_discard_temporary(
         self, entries: Iterable[TokenizedStringEntry], commit: str
     ) -> None:
-        # TODO(b/241471465): Implement adding new tokens and removing
+        # TODO: b/241471465 - Implement adding new tokens and removing
         # temporary entries for binary databases.
         raise NotImplementedError(
             '--discard-temporary is currently only '
@@ -597,7 +597,7 @@ class _CSVDatabase(DatabaseFile):
     def add_and_discard_temporary(
         self, entries: Iterable[TokenizedStringEntry], commit: str
     ) -> None:
-        # TODO(b/241471465): Implement adding new tokens and removing
+        # TODO: b/241471465 - Implement adding new tokens and removing
         # temporary entries for CSV databases.
         raise NotImplementedError(
             '--discard-temporary is currently only '

@@ -47,7 +47,7 @@ py_binary(
 
 # This test attempts to directly access files in the source tree, which is
 # incompatible with sandboxing.
-# TODO(b/241307309): Fix this test.
+# TODO: b/241307309 - Fix this test.
 filegroup(
     name = "database_test",
     srcs = ["database_test.py"],
@@ -84,7 +84,7 @@ proto_library(
     ],
 )
 
-# TODO(b/241456982): This target can't be built due to limitations of
+# TODO: b/241456982 - This target can't be built due to limitations of
 # py_proto_library.
 # py_proto_library(
 #  name = "detokenize_proto_test_pb2",

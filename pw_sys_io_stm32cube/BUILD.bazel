@@ -33,7 +33,7 @@ pw_cc_library(
         "sys_io.cc",
     ],
     hdrs = ["public/pw_sys_io_stm32cube/init.h"],
-    # TODO(b/259151566): Get this to build.
+    # TODO: b/259151566 - Get this to build.
     tags = ["manual"],
     deps = [
         "//pw_preprocessor",

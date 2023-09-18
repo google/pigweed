@@ -34,7 +34,7 @@ except ImportError:
 
 def rst_to_doctree(rst: str) -> Iterable[docutils.nodes.Node]:
     """Convert raw reStructuredText into doctree nodes."""
-    # TODO(b/288127315): Properly resolve references within the rst so that
+    # TODO: b/288127315 - Properly resolve references within the rst so that
     # links are generated more robustly.
     while ':ref:`module-' in rst:
         rst = re.sub(
@@ -108,7 +108,7 @@ def process_node(
                 process_node(node.list, symbol_section)
             symbol_section += create_source_paragraph(node.item.name_and_loc)
             parent += symbol_section
-        # TODO(b/288127315): Render choices?
+        # TODO: b/288127315 - Render choices?
         # elif isinstance(node.item, kconfiglib.Choice):
         node = node.next
 

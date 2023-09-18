@@ -19,7 +19,7 @@
 
 namespace pw::system {
 
-// TODO(b/234876895): Consider switching this to a "NoDestroy" wrapped type to
+// TODO: b/234876895 - Consider switching this to a "NoDestroy" wrapped type to
 // allow the static destructor to be optimized out.
 work_queue::WorkQueue& GetWorkQueue() {
   static constexpr size_t kMaxWorkQueueEntries =

@@ -68,7 +68,7 @@ using Function = fit::function_impl<
 /// any attempt to convert `pw::InlineFunction` to `pw::Function` will ALWAYS
 /// allocate.
 ///
-// TODO(b/252852651): Remove warning above when conversion from
+// TODO: b/252852651 - Remove warning above when conversion from
 // `fit::inline_function` to `fit::function` doesn't allocate anymore.
 template <typename FunctionType,
           std::size_t inline_target_size =

@@ -19,7 +19,7 @@ namespace pw::tls_client {
 namespace backend {
 
 SessionImplementation::SessionImplementation(SessionOptions) {
-  // TODO(b/235291139): To implement
+  // TODO: b/235291139 - To implement
 }
 
 SessionImplementation::~SessionImplementation() = default;
@@ -27,33 +27,33 @@ SessionImplementation::~SessionImplementation() = default;
 }  // namespace backend
 
 Session::Session(const SessionOptions& options) : session_impl_(options) {
-  // TODO(b/235291139): To implement
+  // TODO: b/235291139 - To implement
 }
 
 Session::~Session() = default;
 
 Result<Session*> Session::Create(const SessionOptions&) {
-  // TODO(b/235291139): To implement
+  // TODO: b/235291139 - To implement
   return PW_STATUS_UNIMPLEMENTED;
 }
 
 Status Session::Open() {
-  // TODO(b/235291139): To implement
+  // TODO: b/235291139 - To implement
   return PW_STATUS_UNIMPLEMENTED;
 }
 
 Status Session::Close() {
-  // TODO(b/235291139): To implement
+  // TODO: b/235291139 - To implement
   return PW_STATUS_UNIMPLEMENTED;
 }
 
 StatusWithSize Session::DoRead(ByteSpan) {
-  // TODO(b/235291139): To implement
+  // TODO: b/235291139 - To implement
   return StatusWithSize(PW_STATUS_UNIMPLEMENTED, 0);
 }
 
 Status Session::DoWrite(ConstByteSpan) {
-  // TODO(b/235291139): To implement
+  // TODO: b/235291139 - To implement
   return PW_STATUS_UNIMPLEMENTED;
 }
 

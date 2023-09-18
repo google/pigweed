@@ -32,7 +32,7 @@ Status ReadAndProcessPackets(rpc::Server& server,
       Frame& frame = result.value();
       if (frame.address() == rpc_address) {
         server.ProcessPacket(frame.data())
-            .IgnoreError();  // TODO(b/242598609): Handle Status properly
+            .IgnoreError();  // TODO: b/242598609 - Handle Status properly
       }
     }
   }

@@ -21,7 +21,8 @@
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 
-// TODO(b/259746255): Remove this manual application of -Wconversion when all of
+// TODO: b/259746255 - Remove this manual application of -Wconversion when all
+// of
 //     Pigweed builds with it.
 PW_MODIFY_DIAGNOSTICS_PUSH();
 PW_MODIFY_DIAGNOSTIC(error, "-Wconversion");
@@ -165,7 +166,7 @@ class MessageField {
   uint32_t field_number_;
   uint32_t field_info_;
   size_t field_offset_;
-  // TODO(b/234875722): Could be replaced by a class MessageDescriptor*
+  // TODO: b/234875722 - Could be replaced by a class MessageDescriptor*
   const span<const MessageField>* nested_message_fields_;
 };
 static_assert(sizeof(MessageField) <= sizeof(size_t) * 4,

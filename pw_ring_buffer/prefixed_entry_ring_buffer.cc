@@ -174,7 +174,7 @@ Status PrefixedEntryRingBufferMulti::InternalPeekFrontPreamble(
   return OkStatus();
 }
 
-// TODO(b/235351046): Consider whether this internal templating is required, or
+// TODO: b/235351046 - Consider whether this internal templating is required, or
 // if we can simply promote GetOutput to a static function and remove the
 // template. T should be similar to Status (*read_output)(span<const byte>)
 template <typename T>
@@ -228,7 +228,7 @@ void PrefixedEntryRingBufferMulti::InternalPopFrontAll() {
   for (Reader& reader : readers_) {
     if (reader.entry_count_ == entry_count) {
       reader.PopFront()
-          .IgnoreError();  // TODO(b/242598609): Handle Status properly
+          .IgnoreError();  // TODO: b/242598609 - Handle Status properly
     }
   }
 }

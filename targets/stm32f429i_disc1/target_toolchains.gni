@@ -28,7 +28,7 @@ declare_args() {
 }
 
 _target_config = {
-  # TODO(b/241565082): Enable NC testing in GN Windows when it is fixed.
+  # TODO: b/241565082 - Enable NC testing in GN Windows when it is fixed.
   pw_compilation_testing_NEGATIVE_COMPILATION_ENABLED = host_os != "win"
 
   # Use the logging main.
@@ -73,7 +73,7 @@ _target_config = {
     "PW_BOOT_FLASH_BEGIN=0x08000200",
     "PW_BOOT_FLASH_SIZE=1024K",
 
-    # TODO(b/235348465): Currently "pw_tokenizer/detokenize_test" requires at
+    # TODO: b/235348465 - Currently "pw_tokenizer/detokenize_test" requires at
     # least 6K bytes in heap when using pw_malloc_freelist. The heap size
     # required for tests should be investigated.
     #

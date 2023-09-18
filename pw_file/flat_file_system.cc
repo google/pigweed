@@ -73,12 +73,12 @@ void FlatFileSystemService::EnumerateAllFiles(RawServerWriter& writer) {
     Status write_status = writer.Write(encoder);
     if (!write_status.ok()) {
       writer.Finish(write_status)
-          .IgnoreError();  // TODO(b/242598609): Handle Status properly
+          .IgnoreError();  // TODO: b/242598609 - Handle Status properly
       return;
     }
   }
   writer.Finish(OkStatus())
-      .IgnoreError();  // TODO(b/242598609): Handle Status properly
+      .IgnoreError();  // TODO: b/242598609 - Handle Status properly
 }
 
 void FlatFileSystemService::List(ConstByteSpan request,
@@ -95,7 +95,7 @@ void FlatFileSystemService::List(ConstByteSpan request,
     if (!decoder.ReadString(&file_name_view).ok() ||
         file_name_view.length() == 0) {
       writer.Finish(Status::DataLoss())
-          .IgnoreError();  // TODO(b/242598609): Handle Status properly
+          .IgnoreError();  // TODO: b/242598609 - Handle Status properly
       return;
     }
 
@@ -103,7 +103,7 @@ void FlatFileSystemService::List(ConstByteSpan request,
     Result<Entry*> result = FindFile(file_name_view);
     if (!result.ok()) {
       writer.Finish(result.status())
-          .IgnoreError();  // TODO(b/242598609): Handle Status properly
+          .IgnoreError();  // TODO: b/242598609 - Handle Status properly
       return;
     }
 
@@ -111,12 +111,12 @@ void FlatFileSystemService::List(ConstByteSpan request,
     Status proto_encode_status = EnumerateFile(*result.value(), encoder);
     if (!proto_encode_status.ok()) {
       writer.Finish(proto_encode_status)
-          .IgnoreError();  // TODO(b/242598609): Handle Status properly
+          .IgnoreError();  // TODO: b/242598609 - Handle Status properly
       return;
     }
 
     writer.Finish(writer.Write(encoder))
-        .IgnoreError();  // TODO(b/242598609): Handle Status properly
+        .IgnoreError();  // TODO: b/242598609 - Handle Status properly
     return;
   }
 

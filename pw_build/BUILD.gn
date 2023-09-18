@@ -141,7 +141,7 @@ config("internal_strict_warnings") {
   cflags = [ "-Wswitch-enum" ]
   cflags_cc = [ "-Wextra-semi" ]
 
-  # TODO(b/243069432): Enable pedantic warnings on Windows when they pass.
+  # TODO: b/243069432 - Enable pedantic warnings on Windows when they pass.
   if (host_os != "win") {
     configs = [ ":pedantic_warnings" ]
   }
@@ -174,7 +174,7 @@ config("pedantic_warnings") {
 #
 # b/259746255 tracks converting everything to build with this warning.
 config("conversion_warnings") {
-  # TODO(b/260629756): Remove Windows restriction once fixed for Windows + GCC.
+  # TODO: b/260629756 - Remove Windows restriction once fixed for Windows + GCC.
   if (host_os != "win") {
     cflags = [ "-Wconversion" ]
   }
@@ -249,7 +249,7 @@ config("relative_paths") {
   # due to storing them in a std::map (that reorders lexicogrpahically by key):
   # https://github.com/llvm/llvm-project/blob/main/clang/include/clang/Basic/CodeGenOptions.h#L209.
   #
-  # TODO(b/278906020): Tracks merging in an upstream change to LLVM to that will
+  # TODO: b/278906020 - Tracks merging in an upstream change to LLVM to that will
   # enforce clang applying these transformations in order. Until then, there
   # will be issues with the debug and coverage information while using build
   # directories that are more than a single directory from the root project

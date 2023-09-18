@@ -144,7 +144,7 @@ Status SessionImplementation::Setup() {
   // The API does not fail.
   mbedtls_ssl_conf_authmode(&ssl_config_, MBEDTLS_SSL_VERIFY_REQUIRED);
 
-  // TODO(b/235289501): Add logic for loading trust anchors.
+  // TODO: b/235289501 - Add logic for loading trust anchors.
 
   // Load configuration to SSL.
   ret = mbedtls_ssl_setup(&ssl_ctx_, &ssl_config_);
@@ -186,7 +186,7 @@ Result<Session*> Session::Create(const SessionOptions& options) {
   auto setup_status = sess->session_impl_.Setup();
   if (!setup_status.ok()) {
     PW_LOG_DEBUG("Failed to setup");
-    // TODO(b/235289501): `tls_status_` may be set, but the session object will
+    // TODO: b/235289501 - `tls_status_` may be set, but the session object will
     // be released. Map `tls_stauts_` to string and print out here so that
     // the information can be catched.
     delete sess;
@@ -197,22 +197,22 @@ Result<Session*> Session::Create(const SessionOptions& options) {
 }
 
 Status Session::Open() {
-  // TODO(b/235289501): To implement
+  // TODO: b/235289501 - To implement
   return Status::Unimplemented();
 }
 
 Status Session::Close() {
-  // TODO(b/235289501): To implement
+  // TODO: b/235289501 - To implement
   return Status::Unimplemented();
 }
 
 StatusWithSize Session::DoRead(ByteSpan) {
-  // TODO(b/235289501): To implement
+  // TODO: b/235289501 - To implement
   return StatusWithSize(Status::Unimplemented(), 0);
 }
 
 Status Session::DoWrite(ConstByteSpan) {
-  // TODO(b/235289501): To implement
+  // TODO: b/235289501 - To implement
   return Status::Unimplemented();
 }
 

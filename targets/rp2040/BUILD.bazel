@@ -25,7 +25,7 @@ licenses(["notice"])
 # is missing from the bazel build. There's no plans yet to do a Bazel build for
 # the Pi Pico.
 #
-# TODO(b/260639642): Support Pico in the Bazel build.
+# TODO: b/260639642 - Support Pico in the Bazel build.
 pw_cc_library(
     name = "pico_logging_test_main",
     srcs = [

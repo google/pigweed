@@ -130,7 +130,7 @@ Status SnapshotThread(
 
   CaptureThreadState(thread_state, encoder);
 
-  // TODO(b/234890430): Update this once we add support for ascending stacks.
+  // TODO: b/234890430 - Update this once we add support for ascending stacks.
   static_assert(portSTACK_GROWTH < 0, "Ascending stacks are not yet supported");
 
   // If the thread is active, the stack pointer in the TCB is stale.

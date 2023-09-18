@@ -245,7 +245,7 @@ if (pw_arduino_build_CORE_PATH != "") {
   }
 }
 
-# TODO(b/244604080): Inline string tests are too big to fit in the QEMU firmware
+# TODO: b/244604080 - Inline string tests are too big to fit in the QEMU firmware
 # except under a size-optimized build. For now, only build size-optimized.
 #
 # _build_pigweed_default_at_all_optimization_levels("qemu_gcc") {
@@ -370,10 +370,10 @@ group("asan") {
   }
 }
 
-# TODO(b/234876100): msan will not work without false positives until the C++
+# TODO: b/234876100 - msan will not work without false positives until the C++
 # standard library included in the sysroot has a variant built with msan.
 group("msan") {
-  # TODO(b/259695498): msan doesn't work on macOS yet.
+  # TODO: b/259695498 - msan doesn't work on macOS yet.
   deps = [ ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_msan)" ]
 }
 
@@ -384,7 +384,7 @@ group("tsan") {
 }
 
 group("ubsan") {
-  # TODO(b/259695498): ubsan doesn't work on macOS yet.
+  # TODO: b/259695498 - ubsan doesn't work on macOS yet.
   if (host_os != "win" && host_os != "mac") {
     deps =
         [ ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_ubsan)" ]
@@ -392,7 +392,7 @@ group("ubsan") {
 }
 
 group("ubsan_heuristic") {
-  # TODO(b/259695498): ubsan_heuristic doesn't work on macOS yet.
+  # TODO: b/259695498 - ubsan_heuristic doesn't work on macOS yet.
   if (host_os != "win" && host_os != "mac") {
     deps = [ ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_ubsan_heuristic)" ]
   }
@@ -405,7 +405,7 @@ group("runtime_sanitizers") {
       ":tsan",
       ":ubsan",
 
-      # TODO(b/234876100): msan will not work until the C++ standard library
+      # TODO: b/234876100 - msan will not work until the C++ standard library
       # included in the sysroot has a variant built with msan.
       # ":msan",
 
@@ -535,7 +535,7 @@ if (current_toolchain != default_toolchain) {
         pw_toolchain_SCOPE.is_host_toolchain) {
       deps += [ "$dir_pw_tool" ]
 
-      # TODO(b/240982565): Build integration tests on Windows and macOS when
+      # TODO: b/240982565 - Build integration tests on Windows and macOS when
       #     SocketStream supports those platforms.
       if (host_os == "linux") {
         # Build the integration test binaries, but don't run them by default.
@@ -587,7 +587,7 @@ if (current_toolchain != default_toolchain) {
   # Fuzzers not based on a fuzzing engine. Engine-based fuzzers should be
   # included in `pw_module_tests`.
   pw_test_group("pw_custom_fuzzers") {
-    # TODO(b/274437709): The RPC client_fuzzer encounters build errors on macos.
+    # TODO: b/274437709 - The RPC client_fuzzer encounters build errors on macos.
     # Limit it to Linux hosts for now.
     if (host_os == "linux") {
       tests = [ "$dir_pw_rpc/fuzz:client_fuzzer" ]

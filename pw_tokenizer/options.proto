@@ -29,7 +29,7 @@ enum Tokenization {
 extend google.protobuf.FieldOptions {
   // The field number was randomly selected from the reserved, internal use
   // field numbers (50000-99999).
-  // TODO(b/234886465): Register with the Protobuf Global Extension Registry:
+  // TODO: b/234886465 - Register with the Protobuf Global Extension Registry:
   //     https://github.com/protocolbuffers/protobuf/blob/HEAD/docs/options.md
   Tokenization format = 78576;
 }

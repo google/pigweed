@@ -29,7 +29,7 @@ void pw_sync_RecursiveMutex_CallUnlock(pw_sync_RecursiveMutex* mutex);
 
 }  // extern "C"
 
-// TODO(b/235284163): Add real concurrency tests once we have pw::thread.
+// TODO: b/235284163 - Add real concurrency tests once we have pw::thread.
 
 TEST(RecursiveMutex, LockUnlock) PW_NO_LOCK_SAFETY_ANALYSIS {
   pw::sync::RecursiveMutex mutex;

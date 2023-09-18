@@ -117,7 +117,7 @@ def _archiver_flags_feature(is_mac):
         The archiver_flags feature.
     """
 
-    # TODO(b/297413805): Remove this implementation.
+    # TODO: b/297413805 - Remove this implementation.
     return feature(
         name = "archiver_flags",
         flag_sets = [

@@ -144,7 +144,7 @@ def visualize(
     pointer_size=4,
 ):
     """Visualization of heap usage."""
-    # TODO(b/235282507): Add standarized mechanisms to produce dump file and
+    # TODO: b/235282507 - Add standarized mechanisms to produce dump file and
     # read heap information from dump file.
     aligned_bytes = pointer_size
     header_size = pointer_size * 2

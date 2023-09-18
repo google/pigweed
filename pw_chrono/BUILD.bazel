@@ -113,7 +113,7 @@ proto_library(
     strip_import_prefix = "/pw_chrono",
 )
 
-# TODO(b/241456982): Not expected to build yet.
+# TODO: b/241456982 - Not expected to build yet.
 py_proto_library(
     name = "chrono_proto_pb2",
     # Once b/241456982 is fixed srcs here should be replaced with:

@@ -50,7 +50,7 @@ class TestTodoCheck(unittest.TestCase):
         self._run(todo_check.BUGS_ONLY, contents)
 
     def test_one_bug_legacy(self) -> None:
-        contents = 'TODO(b/123): foo\n'
+        contents = 'TODO: b/123 - foo\n'
         self._run_bugs_users(contents)
         self.ctx.fail.assert_not_called()
         self._run_bugs(contents)
@@ -192,7 +192,7 @@ class TestTodoCheck(unittest.TestCase):
         self.ctx.fail.assert_called()
 
     def test_missing_explanation_bugsonly_legacy(self) -> None:
-        self._run_bugs('TODO(b/123)\n')
+        self._run_bugs('TODO: b/123 -\n')
         self.ctx.fail.assert_called()
 
     def test_missing_explanation_bugsonly_new(self) -> None:
@@ -200,7 +200,7 @@ class TestTodoCheck(unittest.TestCase):
         self.ctx.fail.assert_called()
 
     def test_missing_explanation_bugsusers_legacy(self) -> None:
-        self._run_bugs_users('TODO(b/123)\n')
+        self._run_bugs_users('TODO: b/123 -\n')
         self.ctx.fail.assert_called()
 
     def test_missing_explanation_bugsusers_new(self) -> None:

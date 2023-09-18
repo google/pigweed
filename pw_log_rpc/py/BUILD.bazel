@@ -22,7 +22,7 @@ py_library(
     ],
     imports = ["."],
     deps = [
-        # TODO(b/241456982): Add this dep back in
+        # TODO: b/241456982 - Add this dep back in
         # "//pw_log:log_proto_py_pb2",
         "//pw_log/py:pw_log",
         "//pw_rpc/py:pw_rpc",
@@ -30,7 +30,7 @@ py_library(
     ],
 )
 
-# TODO(b/241456982): Not expected to build yet.
+# TODO: b/241456982 - Not expected to build yet.
 py_test(
     name = "rpc_log_stream_test",
     srcs = [

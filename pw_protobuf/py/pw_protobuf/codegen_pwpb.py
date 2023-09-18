@@ -3290,7 +3290,7 @@ def generate_code_for_package(
             output.write_line(f'using namespace ::{package.cpp_namespace()};')
             output.write_line(f'}}  // namespace {legacy_namespace}')
 
-        # TODO(b/250945489) Remove this if possible
+        # TODO: b/250945489 - Remove this if possible
         output.write_line()
         output.write_line(
             '// Codegen implementation detail; do not use this namespace!'

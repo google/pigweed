@@ -119,7 +119,7 @@ pw_cc_library(
 
 pw_cc_test(
     name = "dynamic_thread_backend_test",
-    # TODO(b/271465588): Get this test to build.
+    # TODO: b/271465588 - Get this test to build.
     tags = ["manual"],
     deps = [
         ":dynamic_test_threads",
@@ -145,7 +145,7 @@ pw_cc_library(
 
 pw_cc_test(
     name = "static_thread_backend_test",
-    # TODO(b/271465588): Get this test to build.
+    # TODO: b/271465588 - Get this test to build.
     tags = ["manual"],
     deps = [
         ":static_test_threads",
@@ -195,7 +195,7 @@ pw_cc_test(
         "pw_thread_freertos_private/thread_iteration.h",
         "thread_iteration_test.cc",
     ],
-    # TODO(b/271465588): Get this test to build.
+    # TODO: b/271465588 - Get this test to build.
     tags = ["manual"],
     deps = [
         ":freertos_tasktcb",
@@ -242,7 +242,7 @@ pw_cc_library(
     hdrs = [
         "public/pw_thread_freertos/snapshot.h",
     ],
-    # TODO(b/269204725): Put this in the toolchain configuration instead.  I
+    # TODO: b/269204725 - Put this in the toolchain configuration instead.  I
     # would like to say `copts = ["-Wno-c++20-designator"]`, but arm-gcc tells
     # me that's an "unrecognized command line option"; I think it may be a
     # clang-only flag.

@@ -44,14 +44,14 @@ class PwpbSerde {
   // actually encoding it.
   template <typename Message>
   StatusWithSize EncodedSizeBytes(const Message& message) const {
-    // TODO(b/269515470): Use kScratchBufferSizeBytes instead of a fixed size.
+    // TODO: b/269515470 - Use kScratchBufferSizeBytes instead of a fixed size.
     std::array<std::byte, 64> scratch_buffer;
 
     stream::CountingNullStream output;
     StreamEncoder encoder(output, scratch_buffer);
     const Status result = encoder.Write(as_bytes(span(&message, 1)), *table_);
 
-    // TODO(b/269633514): Add 16 to the encoded size because pw_protobuf
+    // TODO: b/269633514 - Add 16 to the encoded size because pw_protobuf
     //     sometimes fails to encode to buffers that exactly fit the output.
     return StatusWithSize(result, output.bytes_written() + 16);
   }

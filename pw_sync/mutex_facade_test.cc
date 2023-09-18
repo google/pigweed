@@ -30,12 +30,12 @@ void pw_sync_Mutex_CallUnlock(pw_sync_Mutex* mutex);
 
 }  // extern "C"
 
-// TODO(b/235284163): Add real concurrency tests once we have pw::thread.
+// TODO: b/235284163 - Add real concurrency tests once we have pw::thread.
 
 TEST(Mutex, LockUnlock) {
   Mutex mutex;
   mutex.lock();
-  // TODO(b/235284163): Ensure it fails to lock when already held.
+  // TODO: b/235284163 - Ensure it fails to lock when already held.
   // EXPECT_FALSE(mutex.try_lock());
   mutex.unlock();
 }
@@ -43,7 +43,7 @@ TEST(Mutex, LockUnlock) {
 Mutex static_mutex;
 TEST(Mutex, LockUnlockStatic) {
   static_mutex.lock();
-  // TODO(b/235284163): Ensure it fails to lock when already held.
+  // TODO: b/235284163 - Ensure it fails to lock when already held.
   // EXPECT_FALSE(static_mutex.try_lock());
   static_mutex.unlock();
 }
@@ -53,7 +53,7 @@ TEST(Mutex, TryLockUnlock) {
   const bool locked = mutex.try_lock();
   EXPECT_TRUE(locked);
   if (locked) {
-    // TODO(b/235284163): Ensure it fails to lock when already held.
+    // TODO: b/235284163 - Ensure it fails to lock when already held.
     // EXPECT_FALSE(mutex.try_lock());
     mutex.unlock();
   }
@@ -64,7 +64,7 @@ PW_SYNC_ADD_BORROWABLE_LOCK_NAMED_TESTS(BorrowableMutex, Mutex);
 TEST(VirtualMutex, LockUnlock) {
   VirtualMutex mutex;
   mutex.lock();
-  // TODO(b/235284163): Ensure it fails to lock when already held.
+  // TODO: b/235284163 - Ensure it fails to lock when already held.
   // EXPECT_FALSE(mutex.try_lock());
   mutex.unlock();
 }
@@ -72,7 +72,7 @@ TEST(VirtualMutex, LockUnlock) {
 VirtualMutex static_virtual_mutex;
 TEST(VirtualMutex, LockUnlockStatic) {
   static_virtual_mutex.lock();
-  // TODO(b/235284163): Ensure it fails to lock when already held.
+  // TODO: b/235284163 - Ensure it fails to lock when already held.
   // EXPECT_FALSE(static_virtual_mutex.try_lock());
   static_virtual_mutex.unlock();
 }
@@ -81,7 +81,7 @@ TEST(VirtualMutex, LockUnlockExternal) {
   VirtualMutex virtual_mutex;
   auto& mutex = virtual_mutex.mutex();
   mutex.lock();
-  // TODO(b/235284163): Ensure it fails to lock when already held.
+  // TODO: b/235284163 - Ensure it fails to lock when already held.
   // EXPECT_FALSE(mutex.try_lock());
   mutex.unlock();
 }
@@ -97,7 +97,7 @@ TEST(Mutex, LockUnlockInC) {
 TEST(Mutex, TryLockUnlockInC) {
   Mutex mutex;
   ASSERT_TRUE(pw_sync_Mutex_CallTryLock(&mutex));
-  // TODO(b/235284163): Ensure it fails to lock when already held.
+  // TODO: b/235284163 - Ensure it fails to lock when already held.
   // EXPECT_FALSE(pw_sync_Mutex_CallTryLock(&mutex));
   pw_sync_Mutex_CallUnlock(&mutex);
 }

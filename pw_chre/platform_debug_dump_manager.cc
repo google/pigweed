@@ -19,7 +19,7 @@ PlatformDebugDumpManagerBase::PlatformDebugDumpManagerBase() {}
 
 PlatformDebugDumpManagerBase::~PlatformDebugDumpManagerBase() {}
 
-// TODO(b/294106526): Implement these.
+// TODO: b/294106526 - Implement these.
 void PlatformDebugDumpManager::sendDebugDump(const char*, bool) {}
 
 void PlatformDebugDumpManager::logStateToBuffer(DebugDumpWrapper&) {}
