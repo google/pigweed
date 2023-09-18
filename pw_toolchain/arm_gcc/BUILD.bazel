@@ -94,76 +94,76 @@ _MCPU = [
     "cortex-m33+nofp",
 ]
 
+_CORTEX_M0_OPTS = [
+    "-mcpu=cortex-m0",
+    "-mfloat-abi=soft",
+]
+
 pw_cc_toolchain_feature(
     name = "cortex-m0",
-    copts = [
-        "-mcpu=cortex-m0",
-        "-mfloat-abi=soft",
-    ],
-    linkopts = [
-        "-mcpu=cortex-m0",
-        "-mfloat-abi=soft",
-    ],
+    asmopts = _CORTEX_M0_OPTS,
+    copts = _CORTEX_M0_OPTS,
+    linkopts = _CORTEX_M0_OPTS,
 )
+
+_CORTEX_M3_OPTS = [
+    "-mcpu=cortex-m3",
+    "-mfloat-abi=soft",
+]
 
 pw_cc_toolchain_feature(
     name = "cortex-m3",
-    copts = [
-        "-mcpu=cortex-m3",
-        "-mfloat-abi=soft",
-    ],
-    linkopts = [
-        "-mcpu=cortex-m3",
-        "-mfloat-abi=soft",
-    ],
+    asmopts = _CORTEX_M3_OPTS,
+    copts = _CORTEX_M3_OPTS,
+    linkopts = _CORTEX_M3_OPTS,
 )
+
+_CORTEX_M4_OPTS = [
+    "-mcpu=cortex-m4",
+    "-mfloat-abi=hard",
+]
 
 pw_cc_toolchain_feature(
     name = "cortex-m4",
-    copts = [
-        "-mcpu=cortex-m4",
-        "-mfloat-abi=hard",
-    ],
-    linkopts = [
-        "-mcpu=cortex-m4",
-        "-mfloat-abi=hard",
-    ],
+    asmopts = _CORTEX_M4_OPTS,
+    copts = _CORTEX_M4_OPTS,
+    linkopts = _CORTEX_M4_OPTS,
 )
+
+_CORTEX_M4_NOFP_OPTS = [
+    "-mcpu=cortex-m4+nofp",
+    "-mfloat-abi=soft",
+]
 
 pw_cc_toolchain_feature(
     name = "cortex-m4+nofp",
-    copts = [
-        "-mcpu=cortex-m4+nofp",
-        "-mfloat-abi=soft",
-    ],
-    linkopts = [
-        "-mcpu=cortex-m4+nofp",
-        "-mfloat-abi=soft",
-    ],
+    asmopts = _CORTEX_M4_NOFP_OPTS,
+    copts = _CORTEX_M4_NOFP_OPTS,
+    linkopts = _CORTEX_M4_NOFP_OPTS,
 )
+
+_CORTEX_M33_OPTS = [
+    "-mcpu=cortex-m33",
+    "-mfloat-abi=hard",
+]
 
 pw_cc_toolchain_feature(
     name = "cortex-m33",
-    copts = [
-        "-mcpu=cortex-m33",
-        "-mfloat-abi=hard",
-    ],
-    linkopts = [
-        "-mcpu=cortex-m33",
-        "-mfloat-abi=hard",
-    ],
+    asmopts = _CORTEX_M33_OPTS,
+    copts = _CORTEX_M33_OPTS,
+    linkopts = _CORTEX_M33_OPTS,
 )
+
+_CORTEX_M33_NOFP_OPTS = [
+    "-mcpu=cortex-m33+nofp",
+    "-mfloat-abi=soft",
+]
 
 pw_cc_toolchain_feature(
     name = "cortex-m33+nofp",
-    copts = [
-        "-mcpu=cortex-m33+nofp",
-        "-mfloat-abi=soft",
-    ],
-    linkopts = [
-        "-mcpu=cortex-m33+nofp",
-        "-mfloat-abi=soft",
-    ],
+    asmopts = _CORTEX_M33_NOFP_OPTS,
+    copts = _CORTEX_M33_NOFP_OPTS,
+    linkopts = _CORTEX_M33_NOFP_OPTS,
 )
 
 # Using a list comprehension here to avoid the mind-numbing boilerplate.
