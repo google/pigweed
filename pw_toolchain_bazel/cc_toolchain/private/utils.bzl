@@ -44,6 +44,7 @@ ALL_AR_ACTIONS = [
 ]
 
 ACTION_MAP = {
+    "aropts": ALL_AR_ACTIONS,
     "asmopts": ALL_ASM_ACTIONS,
     "copts": ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS,
     "conlyopts": ALL_C_COMPILER_ACTIONS,

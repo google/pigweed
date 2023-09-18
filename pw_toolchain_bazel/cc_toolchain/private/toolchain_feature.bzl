@@ -26,6 +26,7 @@ load(
 load("//cc_toolchain/private:utils.bzl", "ACTION_MAP")
 
 TOOLCHAIN_FEATURE_INFO_ATTRS = {
+    "aropts": "List[str]: Flags to pass to all archive actions",
     "asmopts": "List[str]: Flags to pass to assembler actions",
     "copts": "List[str]: Flags to pass to all C/C++ compile actions",
     "conlyopts": "List[str]: Flags to pass to C compile actions",
@@ -186,6 +187,7 @@ def _pw_cc_toolchain_feature_impl(ctx):
     """
     return build_toolchain_feature_info(
         ctx = ctx,
+        aropts = ctx.attr.aropts,
         asmopts = ctx.attr.asmopts,
         copts = ctx.attr.copts,
         conlyopts = ctx.attr.conlyopts,
@@ -199,6 +201,7 @@ def _pw_cc_toolchain_feature_impl(ctx):
 pw_cc_toolchain_feature = rule(
     implementation = _pw_cc_toolchain_feature_impl,
     attrs = {
+        "aropts": attr.string_list(),
         "asmopts": attr.string_list(),
         "copts": attr.string_list(),
         "conlyopts": attr.string_list(),
