@@ -44,6 +44,7 @@ template("pw_libc_source_set") {
 
     defines = [
       "LIBC_COPT_PUBLIC_PACKAGING=1",
+      "LIBC_COPT_USE_C_ASSERT=1",
       "LIBC_INLINE=inline",
     ]
 
@@ -81,7 +82,10 @@ template("pw_libc_source_set") {
     not_needed([ dir ])
 
     include_dirs = [ dir_pw_third_party_llvm_libc ]
-    defines = [ "LIBC_COPT_TEST_USE_PIGWEED" ]
+    defines = [
+      "LIBC_COPT_TEST_USE_PIGWEED",
+      "LIBC_COPT_USE_C_ASSERT=1",
+    ]
 
     if (defined(invoker.defines)) {
       defines += invoker.defines
