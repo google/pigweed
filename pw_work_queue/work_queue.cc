@@ -21,8 +21,10 @@
 namespace pw::work_queue {
 
 void WorkQueue::RequestStop() {
-  std::lock_guard lock(lock_);
-  stop_requested_ = true;
+  {
+    std::lock_guard lock(lock_);
+    stop_requested_ = true;
+  }  // Release lock before calling .release() on the semaphore.
   work_notification_.release();
 }
 
@@ -65,29 +67,30 @@ void WorkQueue::CheckPushWork(WorkItem&& work_item) {
 }
 
 Status WorkQueue::InternalPushWork(WorkItem&& work_item) {
-  std::lock_guard lock(lock_);
+  {
+    std::lock_guard lock(lock_);
 
-  if (stop_requested_) {
-    // Entries are not permitted to be enqueued once stop has been requested.
-    return Status::FailedPrecondition();
-  }
+    if (stop_requested_) {
+      // Entries are not permitted to be enqueued once stop has been requested.
+      return Status::FailedPrecondition();
+    }
 
-  if (queue_.full()) {
-    return Status::ResourceExhausted();
-  }
+    if (queue_.full()) {
+      return Status::ResourceExhausted();
+    }
 
-  queue_.emplace(std::move(work_item));
+    queue_.emplace(std::move(work_item));
 
-  // Update the watermarks for the queue.
-  const uint32_t queue_entries = queue_.size();
-  if (queue_entries > max_queue_used_.value()) {
-    max_queue_used_.Set(queue_entries);
-  }
-  const uint32_t queue_remaining = queue_.capacity() - queue_entries;
-  if (queue_remaining < min_queue_remaining_.value()) {
-    min_queue_remaining_.Set(queue_entries);
-  }
-
+    // Update the watermarks for the queue.
+    const uint32_t queue_entries = queue_.size();
+    if (queue_entries > max_queue_used_.value()) {
+      max_queue_used_.Set(queue_entries);
+    }
+    const uint32_t queue_remaining = queue_.capacity() - queue_entries;
+    if (queue_remaining < min_queue_remaining_.value()) {
+      min_queue_remaining_.Set(queue_entries);
+    }
+  }  // Release lock before calling .release() on the semaphore.
   work_notification_.release();
   return OkStatus();
 }
