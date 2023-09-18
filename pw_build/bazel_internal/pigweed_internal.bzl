@@ -39,15 +39,10 @@ STRICT_WARNINGS_COPTS = [
     "-Wno-error=deprecated-declarations",  # [[deprecated]] attribute
 ]
 
-DISABLE_PENDING_WORKAROUND_COPTS = [
-    "-Wno-private-header",
-]
-
 PW_DEFAULT_COPTS = (
     DEBUGGING +
     REDUCED_SIZE_COPTS +
-    STRICT_WARNINGS_COPTS +
-    DISABLE_PENDING_WORKAROUND_COPTS
+    STRICT_WARNINGS_COPTS
 )
 
 KYTHE_COPTS = [
