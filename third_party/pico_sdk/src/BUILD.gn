@@ -39,11 +39,8 @@ config("elf2uf2_configs") {
 pw_executable("elf2uf2") {
   configs = [
     ":elf2uf2_configs",
+    "${PICO_ROOT}/gn:disable_elf2uf2_warnings",
     "${PICO_ROOT}/gn:disable_warnings",
   ]
   sources = [ "$PICO_SRC_DIR/tools/elf2uf2/main.cpp" ]
-
-  if (host_os == "win") {
-    remove_configs = [ "$dir_pw_build:strict_warnings" ]
-  }
 }

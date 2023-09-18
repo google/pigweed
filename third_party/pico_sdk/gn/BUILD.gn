@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("//build_overrides/pi_pico.gni")
+
 # These warnings need to be disabled when using strict warnings.
 config("disable_warnings") {
   cflags = [
@@ -20,4 +22,13 @@ config("disable_warnings") {
     "-Wno-ignored-qualifiers",
   ]
   asmflags = cflags
+}
+
+config("disable_elf2uf2_warnings") {
+  cflags = [
+    "-Wno-shadow",
+    "-Wno-reorder",
+    "-Wno-type-limits",
+  ]
+  visibility = [ "${PICO_ROOT}/src:elf2uf2" ]
 }
