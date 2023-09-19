@@ -16,12 +16,13 @@
 from pathlib import Path
 import re
 import sys
+from typing import List
 
 
 def parse_bazel_stdout(bazel_stdout: Path) -> str:
     """Extracts a concise error from a bazel log."""
-    seen_error = False
-    error_lines = []
+    seen_error: bool = False
+    error_lines: List[str] = []
 
     with bazel_stdout.open() as ins:
         for line in ins:
@@ -30,7 +31,7 @@ def parse_bazel_stdout(bazel_stdout: Path) -> str:
             # be significant, especially for compiler error messages.
             line = line.rstrip()
 
-            if re.match(r'^ERROR:', line):
+            if re.match(r'^(ERROR|FAIL):', line):
                 seen_error = True
 
             if seen_error:
@@ -48,9 +49,16 @@ def parse_bazel_stdout(bazel_stdout: Path) -> str:
                 if line.strip().startswith('# Configuration'):
                     continue
 
-                # An "<ALLCAPS>:" line usually means compiler output is done
-                # and useful compiler errors are complete.
-                if re.match(r'^(?!ERROR)[A-Z]+:', line):
+                # Ignore passing and skipped tests.
+                if 'PASSED' in line or 'SKIPPED' in line:
+                    continue
+
+                # Ignore intermixed lines from other build steps.
+                if re.match(r'\[\s*[\d,]+\s*/\s*[\d,]+\s*\]', line):
+                    continue
+
+                if re.match(r'Executed \d+ out of \d+ tests', line):
+                    error_lines.append(line)
                     break
 
                 error_lines.append(line)
