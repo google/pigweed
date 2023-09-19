@@ -36,6 +36,10 @@ load(
     "check_deps",
 )
 
+# TODO(b/301004620): Remove when bazel 7 is released and this constant exists in
+# ACTION_NAMES
+OBJ_COPY_ACTION_NAME = "objcopy_embed_data"
+
 PW_CC_TOOLCHAIN_CONFIG_ATTRS = {
     "feature_deps": "pw_cc_toolchain_feature labels that provide features for this toolchain",
     "ar": "Path to the tool to use for ar (static link) actions",
@@ -44,6 +48,7 @@ PW_CC_TOOLCHAIN_CONFIG_ATTRS = {
     "gcov": "Pah to the tool to use for generating code coverag data",
     "ld": "Path to the tool to use for link actions",
     "strip": "Path to the tool to use for strip actions",
+    "objcopy": "Path to the tool to use for objcopy actions",
 
     # Attributes originally part of create_cc_toolchain_config_info.
     "toolchain_identifier": "See documentation for cc_common.create_cc_toolchain_config_info()",
@@ -208,6 +213,14 @@ def _pw_cc_toolchain_config_impl(ctx):
             ],
         ),
         action_config(
+            action_name = OBJ_COPY_ACTION_NAME,
+            tools = [
+                tool(
+                    tool = ctx.executable.objcopy,
+                ),
+            ],
+        ),
+        action_config(
             action_name = ACTION_NAMES.strip,
             tools = [
                 tool(
@@ -258,6 +271,7 @@ pw_cc_toolchain_config = rule(
         "ar": attr.label(allow_single_file = True, executable = True, cfg = "exec"),
         "cpp": attr.label(allow_single_file = True, executable = True, cfg = "exec"),
         "gcov": attr.label(allow_single_file = True, executable = True, cfg = "exec"),
+        "objcopy": attr.label(allow_single_file = True, executable = True, cfg = "exec"),
         "strip": attr.label(allow_single_file = True, executable = True, cfg = "exec"),
 
         # Attributes from create_cc_toolchain_config_info.

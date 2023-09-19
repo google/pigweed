@@ -199,6 +199,7 @@ pw_cc_toolchain_feature(
     host_system_name = "unknown",
     ld = "@gcc_arm_none_eabi_toolchain//:bin/arm-none-eabi-ld",
     linker_files = "@gcc_arm_none_eabi_toolchain//:all",
+    objcopy = "@gcc_arm_none_eabi_toolchain//:bin/arm-none-eabi-objcopy",
     objcopy_files = "@gcc_arm_none_eabi_toolchain//:all",
     strip = "@gcc_arm_none_eabi_toolchain//:bin/arm-none-eabi-strip",
     strip_files = "@gcc_arm_none_eabi_toolchain//:all",
