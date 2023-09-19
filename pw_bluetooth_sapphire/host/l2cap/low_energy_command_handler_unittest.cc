@@ -9,7 +9,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_signaling_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::l2cap::internal {
 

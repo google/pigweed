@@ -13,7 +13,6 @@
 
 #include "pw_async/fake_dispatcher_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 #include <pw_bluetooth/hci_events.emb.h>
 

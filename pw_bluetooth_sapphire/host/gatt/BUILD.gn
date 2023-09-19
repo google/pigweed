@@ -54,8 +54,6 @@ source_set("testing") {
     "fake_client.h",
     "fake_layer.cc",
     "fake_layer.h",
-    "fake_layer_test.cc",
-    "fake_layer_test.h",
     "mock_server.cc",
     "mock_server.h",
   ]
@@ -63,7 +61,7 @@ source_set("testing") {
   public_deps = [
     ":gatt",
     "//src/connectivity/bluetooth/core/bt-host/common",
-    "//src/lib/testing/loop_fixture",
+    "//third_party/googletest:gtest",
     "//third_party/pigweed:pw_async_heap_dispatcher",
   ]
 }
@@ -86,7 +84,6 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/att",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/connectivity/bluetooth/core/bt-host/testing",
-    "//src/lib/testing/loop_fixture",
     "//third_party/googletest:gmock",
     "//third_party/googletest:gtest",
   ]

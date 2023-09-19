@@ -11,7 +11,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_signaling_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::testing {
 namespace {

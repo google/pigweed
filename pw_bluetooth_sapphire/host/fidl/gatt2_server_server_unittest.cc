@@ -16,7 +16,7 @@
 #include "fuchsia/bluetooth/cpp/fidl.h"
 #include "fuchsia/bluetooth/gatt2/cpp/fidl.h"
 #include "lib/fidl/cpp/interface_handle.h"
-#include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/fidl/fake_gatt_fixture.h"
 
 namespace bthost {
 namespace {
@@ -122,7 +122,7 @@ class MockLocalService final : private ServerBase<fbg::LocalService> {
   std::optional<zx_status_t> error_;
 };
 
-class Gatt2ServerServerTest : public bt::gatt::testing::FakeLayerTest {
+class Gatt2ServerServerTest : public bt::fidl::testing::FakeGattFixture {
  public:
   ~Gatt2ServerServerTest() override = default;
 

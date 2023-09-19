@@ -7,19 +7,17 @@
 #include <gtest/gtest.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::testing {
 
 hci_spec::ConnectionHandle kConnectionHandle = 0x01;
 
-class FakeL2capTest : public gtest::TestLoopFixture {
+class FakeL2capTest : public ::testing::Test {
  public:
   FakeL2capTest() = default;
   ~FakeL2capTest() override = default;
 
   void SetUp() override {
-    TestLoopFixture::SetUp();
     auto send_cb = [this](auto kConnectionHandle, auto cid, auto& buffer) {
       if (this->send_frame_callback_) {
         send_frame_callback_(kConnectionHandle, cid, buffer);

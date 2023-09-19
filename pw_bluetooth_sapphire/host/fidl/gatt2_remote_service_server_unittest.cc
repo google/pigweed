@@ -11,7 +11,7 @@
 
 #include "fuchsia/bluetooth/gatt2/cpp/fidl.h"
 #include "gtest/gtest.h"
-#include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/fidl/fake_gatt_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 
@@ -28,7 +28,7 @@ const bt::UUID kServiceUuid(uint16_t{0x180D});
 const bt::UUID kCharacteristicUuid(uint16_t{0x180E});
 const bt::UUID kDescriptorUuid(uint16_t{0x180F});
 
-class Gatt2RemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
+class Gatt2RemoteServiceServerTest : public bt::fidl::testing::FakeGattFixture {
  public:
   Gatt2RemoteServiceServerTest() = default;
   ~Gatt2RemoteServiceServerTest() override = default;
@@ -53,7 +53,7 @@ class Gatt2RemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
     // so that write requests sent during RemoteService::ShutDown() are ignored.
     fake_client()->set_write_request_callback({});
 
-    bt::gatt::testing::FakeLayerTest::TearDown();
+    bt::fidl::testing::FakeGattFixture::TearDown();
   }
 
   pw::async::HeapDispatcher& heap_dispatcher() { return heap_dispatcher_; }

@@ -7,18 +7,16 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/test_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::testing {
 
-class FakeSignalingServerTest : public gtest::TestLoopFixture {
+class FakeSignalingServerTest : public ::testing::Test {
  public:
   FakeSignalingServerTest() = default;
   ~FakeSignalingServerTest() override = default;
 
   // Each test sets up its own FakeL2cap and FakeSignalingServer, so only
   // instantiate constants here.
-  void SetUp() override { TestLoopFixture::SetUp(); }
   hci_spec::ConnectionHandle kConnectionHandle = 0x01;
   l2cap::CommandId kCommandId = 0x02;
 

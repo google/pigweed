@@ -5,7 +5,7 @@
 #include "gatt2_client_server.h"
 
 #include "fuchsia/bluetooth/gatt2/cpp/fidl.h"
-#include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/fidl/fake_gatt_fixture.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bthost {
@@ -20,7 +20,7 @@ constexpr bt::UUID kTestServiceUuid0(uint16_t{0xdead});
 constexpr bt::UUID kTestServiceUuid1(uint16_t{0xbeef});
 constexpr bt::UUID kTestServiceUuid3(uint16_t{0xbaad});
 
-class Gatt2ClientServerTest : public bt::gatt::testing::FakeLayerTest {
+class Gatt2ClientServerTest : public bt::fidl::testing::FakeGattFixture {
  public:
   Gatt2ClientServerTest() = default;
   ~Gatt2ClientServerTest() override = default;

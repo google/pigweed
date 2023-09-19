@@ -4,7 +4,7 @@
 
 #include "gatt_client_server.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/fidl/fake_gatt_fixture.h"
 
 namespace bthost {
 namespace {
@@ -15,7 +15,7 @@ constexpr bt::PeerId kPeerId(1);
 constexpr bt::UUID kHeartRate(uint16_t{0x180D});
 constexpr bt::UUID kHid(uint16_t{0x1812});
 
-class GattClientServerTest : public bt::gatt::testing::FakeLayerTest {
+class GattClientServerTest : public bt::fidl::testing::FakeGattFixture {
  public:
   GattClientServerTest() = default;
   ~GattClientServerTest() override = default;

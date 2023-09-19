@@ -7,11 +7,10 @@
 #include "gtest/gtest.h"
 #include "helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/fidl/fake_gatt_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bthost {
 namespace {
@@ -24,7 +23,7 @@ constexpr bt::att::Handle kServiceStartHandle = 0x0021;
 constexpr bt::att::Handle kServiceEndHandle = 0x002C;
 const bt::UUID kServiceUuid(uint16_t{0x180D});
 
-class GattRemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
+class GattRemoteServiceServerTest : public bt::fidl::testing::FakeGattFixture {
  public:
   GattRemoteServiceServerTest() = default;
   ~GattRemoteServiceServerTest() override = default;
@@ -49,7 +48,7 @@ class GattRemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
     // so that write requests sent during RemoteService::ShutDown() are ignored.
     fake_client()->set_write_request_callback({});
 
-    bt::gatt::testing::FakeLayerTest::TearDown();
+    bt::fidl::testing::FakeGattFixture::TearDown();
   }
 
  protected:

@@ -8,7 +8,6 @@
 
 #include <gtest/gtest.h>
 
-#include "lib/async/default.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
@@ -20,7 +19,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/sc_stage_1.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::sm {
 namespace {

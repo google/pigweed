@@ -15,7 +15,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::gatt::internal {
 namespace {

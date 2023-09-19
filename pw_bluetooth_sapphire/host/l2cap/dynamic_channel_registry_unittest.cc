@@ -4,12 +4,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/dynamic_channel_registry.h"
 
-#include <lib/async/cpp/task.h>
-
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_dynamic_channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_signaling_channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
+#include <gtest/gtest.h>
 
 namespace bt::l2cap::internal {
 namespace {

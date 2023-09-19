@@ -18,7 +18,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/sc_stage_1.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::sm {
 namespace {

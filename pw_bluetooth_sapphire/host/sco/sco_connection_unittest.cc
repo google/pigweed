@@ -12,7 +12,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/fake_sco_data_channel.h"
-#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::sco {
 namespace {

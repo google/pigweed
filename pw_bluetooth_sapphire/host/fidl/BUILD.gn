@@ -103,6 +103,22 @@ source_set("fake_adapter_test_fixture") {
   ]
 }
 
+source_set("fake_gatt_test_fixture") {
+  testonly = true
+
+  sources = [
+    "fake_gatt_fixture.cc",
+    "fake_gatt_fixture.h",
+  ]
+
+  public_deps = [
+    "//src/connectivity/bluetooth/core/bt-host/common",
+    "//src/connectivity/bluetooth/core/bt-host/gatt",
+    "//src/connectivity/bluetooth/core/bt-host/gatt:testing",
+    "//src/lib/testing/loop_fixture",
+  ]
+}
+
 source_set("tests") {
   testonly = true
 
@@ -123,6 +139,7 @@ source_set("tests") {
   deps = [
     ":adapter_test_fixture",
     ":fake_adapter_test_fixture",
+    ":fake_gatt_test_fixture",
     ":fidl",
     "//sdk/fidl/fuchsia.bluetooth.le:hlcpp_measure_tape_for_peer",
     "//src/connectivity/bluetooth/core/bt-host/gap:testing",
