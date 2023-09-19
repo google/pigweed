@@ -37,7 +37,7 @@ class CustomCallableClass {
   void operator()() {}
 
  private:
-  std::array<std::byte, 16> data_;
+  [[maybe_unused]] std::array<std::byte, 16> data_;
 };
 
 }  // namespace
@@ -61,9 +61,14 @@ int main() {
 #elif defined(_SIMPLE_LAMBDA)
   static CallableSize callable_size([]() {});
 #elif defined(_CAPTURING_LAMBDA)
-  static CallableSize callable_size([a]() {});
+  static CallableSize callable_size([a]() { static_cast<void>(a); });
 #elif defined(_MULTI_CAPTURING_LAMBDA)
-  static CallableSize callable_size([a, b, c, d]() {});
+  static CallableSize callable_size([a, b, c, d]() {
+    static_cast<void>(a);
+    static_cast<void>(b);
+    static_cast<void>(c);
+    static_cast<void>(d);
+  });
 #elif defined(_CUSTOM_CLASS)
   static CallableSize callable_size((CustomCallableClass()));
 #endif

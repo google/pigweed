@@ -49,7 +49,7 @@ inline constexpr DurationUnit kDurationUnit = DurationUnit::kClockCycle;
 }
 
 // Disables the DWT clock
-inline void TimerCleanup() { kDwtCtrl &= ~0x00000001; }
+inline void TimerCleanup() { kDwtCtrl &= ~0x00000001u; }
 
 inline Timestamp GetCurrentTimestamp() { return kDwtCcynt; }
 

@@ -82,7 +82,9 @@ class Fletcher16 {
     }
   }
   PW_NO_INLINE void Update(std::byte) {}
-  PW_NO_INLINE uint32_t value() const { return (sum2_ << 8) | sum1_; };
+  PW_NO_INLINE uint32_t value() const {
+    return static_cast<uint32_t>(sum2_) << 8 | sum1_;
+  };
   void clear() {}
 
  private:
@@ -96,7 +98,7 @@ char buffer[128];
 char* volatile get_buffer = buffer;
 volatile unsigned get_size;
 
-unsigned RunChecksum() {
+int RunChecksum() {
   // Trick the optimizer and also satisfy the type checker.
   get_size = sizeof(buffer);
   char* local_buffer = get_buffer;
