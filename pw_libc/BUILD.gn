@@ -89,6 +89,17 @@ if (dir_pw_third_party_llvm_libc != "") {
     functions = [ "isprint" ]
   }
 
+  pw_libc_source_set("time") {
+    functions = [ "gmtime" ]
+    additional_srcs = [ "time_utils.cpp" ]
+
+    # gmtime requires gtest matchers which pw_unit_test doesn't support.
+    # Moreover, the matches in llvm-libc don't have the same internal API that
+    # gtest does, so it isn't possible to enable this tests when using gtest
+    # either.
+    no_test_functions = [ "gmtime" ]
+  }
+
   pw_libc_source_set("math") {
     non_cpu_dir = "generic"
 
@@ -131,6 +142,7 @@ if (dir_pw_third_party_llvm_libc != "") {
       ":stdio",
       ":stdlib",
       ":string",
+      ":time",
     ]
   }
 
@@ -141,6 +153,7 @@ if (dir_pw_third_party_llvm_libc != "") {
       ":stdio_tests",
       ":stdlib_tests",
       ":string_tests",
+      ":time_tests",
     ]
   }
 } else {
