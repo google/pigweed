@@ -23,6 +23,40 @@ declare_args() {
   dir_pw_third_party_llvm_libc = ""
 }
 
+# Creates a source set from llvm-libc functions.
+#
+# This template creates both pw_source_set and pw_test targets pulling in the
+# necessary files to build the functions listed in the `functions` argument.
+# The target name should be the name of the standard header file the functions
+# are found in. For example, the source set that pulls in `printf` should be
+# called `stdio`. This is important because the `target_name` tells this
+# template where to look in the llvm-libc source tree for the functions.
+#
+# Args:
+#  defines: A list of defines to be passed to both the implementation and test
+#    sources.
+#
+#  functions: This is a list of strings for the functions to include in the
+#    source set. Additionally their tests will also be pulled in.
+#
+#  no_test_functions: This is a list of functions from `functions` which should
+#    not be tested. This is useful when the upstream tests either don't exist
+#    or are not suitable for whatever reason.
+#
+#  additional_srcs: This is a list of additional sources which should be added
+#    to the source set. Some functions have their implementation split across
+#    multiple source files, and not entirely in $function.cpp. In this case
+#    `additional_srcs` should be used to pull those files in.
+#
+#  non_cpu_dir: This tells the template which subdirectory to find the default
+#    implementations of functions. For example, some direcotries like math/
+#    have cpu specific implementations in their respective directories for
+#    certain functions. `non_cpu_dir` describes where those functions can be
+#    found. Note, at present upstream llvm-libc only has implementations for
+#    x86 and arm64, so this template doesn't bother looking for the cpu
+#    specific version, and will exclusively use the generic versions found in
+#    `non_cpu_dir`.
+#
 template("pw_libc_source_set") {
   source_set_target_name = target_name
 
