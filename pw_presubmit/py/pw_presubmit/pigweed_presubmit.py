@@ -701,11 +701,6 @@ def bazel_build(ctx: PresubmitContext) -> None:
     build.bazel(
         ctx,
         'build',
-        # Designated initializers produce a warning-treated-as-error when
-        # compiled with -std=c++17.
-        #
-        # TODO: b/271299438 - Remove this.
-        '--copt=-Wno-pedantic',
         '--platforms=//pw_build/platforms:testonly_freertos',
         '//pw_sync/...',
         '//pw_thread/...',
