@@ -143,8 +143,8 @@ group("host_example") {
 pw_test_group("tests") {
   enable_if = dir_pw_third_party_chre != ""
   tests = [
-    "//third_party/chre:unit_tests",
-    "//third_party/chre:integration_tests",
+    "$dir_pw_third_party/chre:unit_tests",
+    "$dir_pw_third_party/chre:integration_tests",
   ]
 }
 
