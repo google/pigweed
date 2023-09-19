@@ -13,3 +13,4 @@
 // the License.
 
 export { Manager } from './client';
+export { ProgressStats, ProgressCallback } from './transfer';

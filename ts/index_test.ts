@@ -71,6 +71,10 @@ describe('Pigweed Bundle', () => {
     expect(WebSerial.WebSerialTransport).toBeDefined();
   });
 
+  it('has ProgressStats defined', () => {
+    expect(pw_transfer.ProgressStats).toBeDefined();
+  });
+
   it('has log viewer exports defined', () => {
     expect(createLogViewer).toBeDefined();
     expect(typeof createLogViewer).toBe('function');
