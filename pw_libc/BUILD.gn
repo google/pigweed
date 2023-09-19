@@ -105,7 +105,6 @@ if (dir_pw_third_party_llvm_libc != "") {
     functions = [ "snprintf" ]
 
     additional_srcs = [
-      "printf_core/string_writer.cpp",
       "printf_core/printf_main.cpp",
       "printf_core/writer.cpp",
       "printf_core/parser.cpp",
