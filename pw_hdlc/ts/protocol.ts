@@ -13,6 +13,7 @@
 // the License.
 
 /** Low-level HDLC protocol features. */
+import { Buffer } from 'buffer';
 import { crc32 } from './crc32';
 
 /** Special flag character for delimiting HDLC frames. */
