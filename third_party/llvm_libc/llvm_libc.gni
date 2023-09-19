@@ -63,15 +63,15 @@ template("pw_libc_source_set") {
   target_dir = "$dir_pw_third_party_llvm_libc/src/$source_set_target_name"
 
   pw_source_set(target_name) {
-    dir = target_dir
-    src_dir = dir
+    _dir = target_dir
+    _src_dir = _dir
     if (defined(invoker.non_cpu_dir)) {
-      src_dir += "/${invoker.non_cpu_dir}"
+      _src_dir += "/${invoker.non_cpu_dir}"
     }
 
-    additional_srcs = []
+    _additional_srcs = []
     if (defined(invoker.additional_srcs)) {
-      additional_srcs = invoker.additional_srcs
+      _additional_srcs = invoker.additional_srcs
     }
 
     include_dirs = [ dir_pw_third_party_llvm_libc ]
@@ -100,20 +100,20 @@ template("pw_libc_source_set") {
     sources = []
 
     foreach(function, invoker.functions) {
-      public += [ "$dir/$function.h" ]
-      sources += [ "$src_dir/$function.cpp" ]
+      public += [ "$_dir/$function.h" ]
+      sources += [ "$_src_dir/$function.cpp" ]
     }
 
-    foreach(src, additional_srcs) {
-      sources += [ "$dir/$src" ]
+    foreach(_src, _additional_srcs) {
+      sources += [ "$_dir/$_src" ]
     }
   }
 
   pw_test("${source_set_target_name}_tests") {
-    dir = "$dir_pw_third_party_llvm_libc/test/src/$source_set_target_name"
+    _dir = "$dir_pw_third_party_llvm_libc/test/src/$source_set_target_name"
 
     # This might not be used if all test functions are in no_test_functions
-    not_needed([ dir ])
+    not_needed([ _dir ])
 
     include_dirs = [ dir_pw_third_party_llvm_libc ]
     defines = [
@@ -137,12 +137,12 @@ template("pw_libc_source_set") {
 
     sources = []
 
-    no_test_functions = []
+    _no_test_functions = []
     if (defined(invoker.no_test_functions)) {
-      no_test_functions = invoker.no_test_functions
+      _no_test_functions = invoker.no_test_functions
     }
-    foreach(function, invoker.functions - no_test_functions) {
-      sources += [ "$dir/${function}_test.cpp" ]
+    foreach(function, invoker.functions - _no_test_functions) {
+      sources += [ "$_dir/${function}_test.cpp" ]
     }
 
     deps = [ ":$source_set_target_name" ]
