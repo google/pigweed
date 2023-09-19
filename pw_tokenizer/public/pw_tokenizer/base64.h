@@ -156,6 +156,10 @@ inline size_t PrefixedBase64DecodeInPlace(span<std::byte> buffer) {
       buffer.data(), buffer.size(), buffer.data(), buffer.size());
 }
 
+inline size_t PrefixedBase64DecodeInPlace(span<char> buffer) {
+  return PrefixedBase64DecodeInPlace(as_writable_bytes(buffer));
+}
+
 // Decodes a prefixed Base64 tokenized message to binary in place. Resizes the
 // string to fit the decoded binary data.
 template <typename CharT>

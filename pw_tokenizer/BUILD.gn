@@ -121,10 +121,8 @@ pw_source_set("decoder") {
   deps = [
     ":base64",
     "$dir_pw_bytes:bit",
-    "$dir_pw_log_tokenized:config",
     dir_pw_base64,
     dir_pw_bytes,
-    dir_pw_string,
     dir_pw_varint,
   ]
   public = [

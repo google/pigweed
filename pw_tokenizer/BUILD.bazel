@@ -96,9 +96,7 @@ pw_cc_library(
     deps = [
         ":base64",
         "//pw_bytes",
-        "//pw_log_tokenized:headers",
         "//pw_span",
-        "//pw_string",
         "//pw_varint",
     ],
 )

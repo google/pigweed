@@ -19,14 +19,74 @@
 
 #include "pw_bytes/bit.h"
 #include "pw_bytes/endian.h"
-#include "pw_log_tokenized/config.h"
-#include "pw_string/string.h"
-#include "pw_string/string_builder.h"
 #include "pw_tokenizer/base64.h"
 #include "pw_tokenizer/internal/decode.h"
 
 namespace pw::tokenizer {
 namespace {
+
+class NestedMessageDetokenizer {
+ public:
+  NestedMessageDetokenizer(const Detokenizer& detokenizer)
+      : detokenizer_(detokenizer) {}
+
+  void Detokenize(std::string_view chunk) {
+    for (char next_char : chunk) {
+      Detokenize(next_char);
+    }
+  }
+
+  void Detokenize(char next_char) {
+    switch (state_) {
+      case kNonMessage:
+        if (next_char == kBase64Prefix) {
+          message_buffer_.push_back(next_char);
+          state_ = kMessage;
+        } else {
+          output_.push_back(next_char);
+        }
+        break;
+      case kMessage:
+        if (base64::IsValidChar(next_char)) {
+          message_buffer_.push_back(next_char);
+        } else {
+          HandleEndOfMessage();
+          if (next_char == kBase64Prefix) {
+            message_buffer_.push_back(next_char);
+          } else {
+            output_.push_back(next_char);
+            state_ = kNonMessage;
+          }
+        }
+        break;
+    }
+  }
+
+  std::string Flush() {
+    if (state_ == kMessage) {
+      HandleEndOfMessage();
+      state_ = kNonMessage;
+    }
+    return std::move(output_);
+  }
+
+ private:
+  void HandleEndOfMessage() {
+    if (auto result = detokenizer_.DetokenizeBase64Message(message_buffer_);
+        result.ok()) {
+      output_ += result.BestString();
+    } else {
+      output_ += message_buffer_;  // Keep the original if it doesn't decode.
+    }
+    message_buffer_.clear();
+  }
+
+  const Detokenizer& detokenizer_;
+  std::string output_;
+  std::string message_buffer_;
+
+  enum { kNonMessage, kMessage } state_ = kNonMessage;
+};
 
 std::string UnknownTokenMessage(uint32_t value) {
   std::string output(PW_TOKENIZER_ARG_DECODING_ERROR_PREFIX "unknown token ");
@@ -131,39 +191,16 @@ DetokenizedString Detokenizer::Detokenize(
 }
 
 DetokenizedString Detokenizer::DetokenizeBase64Message(
-    const std::string_view& encoded) const {
-  std::array<std::byte, log_tokenized::kEncodingBufferSizeBytes> token;
-  size_t token_size = PrefixedBase64Decode(encoded, token);
-
-  return Detokenize(token.data(), token_size);
+    std::string_view text) const {
+  std::string buffer(text);
+  buffer.resize(PrefixedBase64DecodeInPlace(buffer));
+  return Detokenize(buffer);
 }
 
-std::string Detokenizer::DetokenizeBase64(
-    const std::string_view& encoded) const {
-  std::string b64_buffer_;
-  std::string message;
-  tokenizer::DetokenizedString temp;
-
-  for (const auto& x : encoded) {
-    if (base64::IsValidChar(x)) {
-      b64_buffer_.push_back(x);
-    } else {
-      temp = DetokenizeBase64Message(b64_buffer_);
-      message += temp.BestString();
-      b64_buffer_.clear();
-      // Store prefix of next base64 message.
-      if (x == kBase64Prefix) {
-        b64_buffer_.push_back(x);
-      }
-    }
-  }
-
-  if (!b64_buffer_.empty()) {
-    temp = DetokenizeBase64Message(b64_buffer_);
-    message += temp.BestString();
-  }
-
-  return message;
+std::string Detokenizer::DetokenizeBase64(std::string_view text) const {
+  NestedMessageDetokenizer nested_detokenizer(*this);
+  nested_detokenizer.Detokenize(text);
+  return nested_detokenizer.Flush();
 }
 
 }  // namespace pw::tokenizer

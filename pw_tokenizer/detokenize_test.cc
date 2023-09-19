@@ -33,8 +33,13 @@ auto TestCases(Args... args) {
   return std::array<Case, sizeof...(Args)>{args...};
 }
 
-// Use alignas to ensure that the data is properly aligned to be read from a
-// token database entry struct. This avoids unaligned memory reads.
+// Database with the following entries:
+// {
+//   0x00000001: "One",
+//   0x00000005: "TWO",
+//   0x000000ff: "333",
+//   0xDDEEEEFF: "One",
+// }
 constexpr char kBasicData[] =
     "TOKENS\0\0"
     "\x04\x00\x00\x00"
@@ -109,16 +114,28 @@ TEST_F(Detokenize, BestStringWithErrors_UnknownToken_ErrorMessage) {
             ERR("unknown token fedcba98"));
 }
 
-TEST_F(Detokenize, Base64) {
+// Base64 versions of the four tokens
+#define ONE "$AQAAAA=="
+#define TWO "$BQAAAA=="
+#define THREE "$/wAAAA=="
+#define FOUR "$/+7u3Q=="
+
+TEST_F(Detokenize, Base64_NoArguments) {
   for (auto [data, expected] : TestCases(
-           Case{"$AQAAAA=="sv, "One"},
-           Case{"$BQAAAA=="sv, "TWO"},
-           Case{"$/wAAAA=="sv, "333"},
-           Case{"$/+7u3Q=="sv, "FOUR"},
-           Case{"$/+7u3Q==$AQAAAA==$AQAAAA=="sv, "FOUROneOne"},
-           Case{"$AQAAAA==$BQAAAA==$/wAAAA==$/+7u3Q=="sv, "OneTWO333FOUR"},
-           Case{"$AQAAAA==\r\n$BQAAAA==\r\n$/wAAAA==\r\n$/+7u3Q==\r\n"sv,
-                "OneTWO333FOUR"})) {
+           Case{ONE, "One"},
+           Case{TWO, "TWO"},
+           Case{THREE, "333"},
+           Case{FOUR, "FOUR"},
+           Case{FOUR ONE ONE, "FOUROneOne"},
+           Case{ONE TWO THREE FOUR, "OneTWO333FOUR"},
+           Case{ONE "\r\n" TWO "\r\n" THREE "\r\n" FOUR "\r\n",
+                "One\r\nTWO\r\n333\r\nFOUR\r\n"},
+           Case{"123" FOUR, "123FOUR"},
+           Case{"123" FOUR ", 56", "123FOUR, 56"},
+           Case{"12" THREE FOUR ", 56", "12333FOUR, 56"},
+           Case{"$0" ONE, "$0One"},
+           Case{"$/+7u3Q=", "$/+7u3Q="},  // incomplete message (missing "=")
+           Case{"$123456==" FOUR, "$123456==FOUR"})) {
     EXPECT_EQ(detok_.DetokenizeBase64(data), expected);
   }
 }
