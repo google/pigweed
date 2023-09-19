@@ -109,7 +109,7 @@ template("pw_libc_source_set") {
     }
   }
 
-  pw_test("${source_set_target_name}_tests") {
+  pw_test("${source_set_target_name}.test") {
     _dir = "$dir_pw_third_party_llvm_libc/test/src/$source_set_target_name"
 
     # This might not be used if all test functions are in no_test_functions

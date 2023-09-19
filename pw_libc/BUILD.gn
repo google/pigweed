@@ -148,12 +148,12 @@ if (dir_pw_third_party_llvm_libc != "") {
 
   pw_test_group("llvm_libc_tests") {
     tests = [
-      ":ctype_tests",
-      ":math_tests",
-      ":stdio_tests",
-      ":stdlib_tests",
-      ":string_tests",
-      ":time_tests",
+      ":ctype.test",
+      ":math.test",
+      ":stdio.test",
+      ":stdlib.test",
+      ":string.test",
+      ":time.test",
     ]
   }
 } else {
