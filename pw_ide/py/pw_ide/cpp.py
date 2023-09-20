@@ -54,6 +54,7 @@ from pathlib import Path
 import platform
 import random
 import re
+import sys
 from typing import (
     Any,
     cast,
@@ -1135,8 +1136,13 @@ class ClangdSettings:
     def __init__(self, settings: PigweedIdeSettings):
         state = CppIdeFeaturesState(settings)
 
+        clangd_bin = "clangd"
+
+        if sys.platform.lower() == "windows":
+            clangd_bin += ".exe"
+
         self.clangd_path: Path = (
-            Path(env.PW_PIGWEED_CIPD_INSTALL_DIR) / 'bin' / 'clangd'
+            Path(env.PW_PIGWEED_CIPD_INSTALL_DIR) / 'bin' / clangd_bin
         )
 
         compile_commands_dir = env.PW_PROJECT_ROOT
