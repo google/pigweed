@@ -53,6 +53,16 @@ pw_source_set("pw_function") {
   public = [ "public/pw_function/function.h" ]
 }
 
+config("enable_dynamic_allocation_config") {
+  defines = [ "PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION=1" ]
+  visibility = [ ":*" ]
+}
+
+# Use this for pw_function_CONFIG to enable dynamic allocation.
+pw_source_set("enable_dynamic_allocation") {
+  public_configs = [ ":enable_dynamic_allocation_config" ]
+}
+
 pw_source_set("pointer") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_function/pointer.h" ]

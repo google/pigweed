@@ -60,6 +60,16 @@ group("use_global_mutex") {
   public_configs = [ ":global_mutex_config" ]
 }
 
+config("dynamic_allocation_config") {
+  defines = [ "PW_RPC_DYNAMIC_ALLOCATION=1" ]
+  visibility = [ ":*" ]
+}
+
+# Use this for pw_rpc_CONFIG to enable dynamic allocation.
+pw_source_set("use_dynamic_allocation") {
+  public_configs = [ ":dynamic_allocation_config" ]
+}
+
 pw_source_set("config") {
   sources = [ "public/pw_rpc/internal/config.h" ]
   public_configs = [ ":public_include_path" ]

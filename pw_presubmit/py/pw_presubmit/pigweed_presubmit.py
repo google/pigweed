@@ -178,6 +178,10 @@ def _gn_combined_build_check_targets() -> Sequence[str]:
     if sys.platform.startswith('linux'):
         build_targets.append('integration_tests')
 
+    # TODO: b/269354373 - clang is not supported on windows yet
+    if sys.platform != 'win32':
+        build_targets.append('host_clang_debug_dynamic_allocation')
+
     return build_targets
 
 

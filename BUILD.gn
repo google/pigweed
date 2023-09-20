@@ -521,6 +521,12 @@ group("build_with_pw_minimal_cpp_stdlib") {
   ]
 }
 
+group("host_clang_debug_dynamic_allocation") {
+  _toolchain =
+      "$_internal_toolchains:pw_strict_host_clang_debug_dynamic_allocation"
+  deps = [ ":pigweed_default($_toolchain)" ]
+}
+
 # The default toolchain is not used for compiling C/C++ code.
 if (current_toolchain != default_toolchain) {
   group("apps") {
