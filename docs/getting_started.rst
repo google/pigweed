@@ -140,7 +140,7 @@ To start using Pigweed on Windows, you'll need to do the following:
 * Enable long file paths. This can be done using ``regedit`` or by running the
   following command as an administrator:
 
-  .. code:: bat
+  .. code-block:: bat
 
      REG ADD HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem /v LongPathsEnabled /t REG_DWORD /d 1 /f
 

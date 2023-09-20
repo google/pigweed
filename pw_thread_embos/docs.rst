@@ -193,7 +193,7 @@ the most up-to-date information is captured, the stack pointer for the currently
 running thread must be provided for cases where the running thread is being
 captured. For ARM Cortex-M CPUs, you can do something like this:
 
-.. Code:: cpp
+.. code-block:: cpp
 
   // Capture PSP.
   void* stack_ptr = 0;
