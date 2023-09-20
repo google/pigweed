@@ -61,10 +61,10 @@ values for the following settings:
     file (see next section). This setting has only two possible values, also
     defined in ``third_party/freertos/BUILD.bazel``.
 
-In addition, you need to set the ``@pigweed_config//:freertos_config`` label
+In addition, you need to set the ``@pigweed//targets:freertos_config`` label
 flag to point to the library target providing the FreeRTOS config header.  See
 :ref:`docs-build_system-bazel_configuration` for a discussion of how to work
-with ``@pigweed_config``.
+with our label flags.
 
 
 .. _third_party-freertos_disable_task_statics:

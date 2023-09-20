@@ -65,14 +65,14 @@ pw_cc_library(
 config_setting(
     name = "light_setting",
     flag_values = {
-        "@pigweed_config//:pw_unit_test_googletest_backend": "@pigweed//pw_unit_test:light",
+        "@pigweed//targets:pw_unit_test_googletest_backend": "@pigweed//pw_unit_test:light",
     },
 )
 
 config_setting(
     name = "gtest_setting",
     flag_values = {
-        "@pigweed_config//:pw_unit_test_googletest_backend": "@com_google_googletest//:gtest",
+        "@pigweed//targets:pw_unit_test_googletest_backend": "@com_google_googletest//:gtest",
     },
 )
 

@@ -512,11 +512,11 @@ Bazel
 -----
 In Bazel, assert backends may break dependency cycles by placing the full
 implementation in an ``impl`` target, like ``//pw_assert_basic:impl`` or
-``//pw_assert_tokenized:impl``. The ``@pigweed_config//pw_assert_backend_impl``
+``//pw_assert_tokenized:impl``. The ``//targets:pw_assert_backend_impl``
 label flag should be set to the ``impl`` target required by the assert backend
 used by the platform.
 
-You must add a dependency on the ``@pigweed_config//:pw_assert_backend_impl``
+You must add a dependency on the ``@pigweed//targets:pw_assert_backend_impl``
 target to any binary using ``pw_assert``.  You can do this in a few ways:
 
 1.  Use ``pw_cc_binary``, one of the :ref:`module-pw_build-bazel-wrapper-rules`
@@ -526,11 +526,11 @@ target to any binary using ``pw_assert``.  You can do this in a few ways:
 1.  Use `link_extra_lib
     <https://bazel.build/reference/be/c-cpp#cc_binary.link_extra_lib>`_: set
     the ``@bazel_tools//tools/cpp:link_extra_lib`` label flag to point to
-    ``@pigweed_config//:pw_assert_backend_impl``, probably using `bazelrc
+    ``@pigweed//targets:pw_assert_backend_impl``, probably using `bazelrc
     <https://bazel.build/run/bazelrc>`_. Note that this is only supported in
     Bazel 7.0.0 or newer.
 
-1.  Add ``@pigweed_config//:pw_assert_backend_impl`` directly to the ``deps``
+1.  Add ``@pigweed//targets:pw_assert_backend_impl`` directly to the ``deps``
     of every embedded ``cc_binary`` in your project.
 
 .. _module-pw_assert-backend_api:

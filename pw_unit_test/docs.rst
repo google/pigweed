@@ -597,7 +597,7 @@ test code.
 pw_cc_test rule
 ```````````````
 ``pw_cc_test`` is a wrapper for `cc_test`_ that provides some defaults,
-such as a dep on ``@pigweed_config//:pw_unit_test_main``. It supports and passes
+such as a dep on ``@pigweed//targets:pw_unit_test_main``. It supports and passes
 through all the arguments recognized by ``cc_test``. Notably, tests can be
 enabled or disabled using ``target_compatible_with``. For example, the following
 test is skipped when `using upstream GoogleTest`_:

@@ -41,6 +41,8 @@ rule for handling linker scripts with Bazel. e.g.
     linkopts = ["-T $(location :some_linker_script)"],
   )
 
+.. _module-pw_build-bazel-pw_cc_facade:
+
 pw_cc_facade
 ------------
 In Bazel, a :ref:`facade <docs-module-structure-facades>` module has a few
@@ -95,7 +97,7 @@ components:
              "//pw_chrono:system_clock",
              "//pw_preprocessor",
              # The backend, hidden behind a label_flag.
-             "@pigweed_config//:pw_sync_binary_semaphore_backend",
+             "@pigweed//targets:pw_sync_binary_semaphore_backend",
          ],
      )
 
@@ -111,7 +113,7 @@ components:
    <https://bazel.build/extending/config#label-typed-build-settings>`_: a
    dependency edge in the build graph that can be overridden by downstream projects.
    For facades defined in upstream Pigweed, the ``label_flags`` are collected in
-   the :ref:`pigweed_config <docs-build_system-bazel_configuration>`.
+   ``//targets/BUILD.bazel``.
 
 #. The **backend target** implements a particular backend for a facade. It's
    just a plain ``pw_cc_library``, with a dependency on the facade target. For example,

@@ -75,7 +75,7 @@ Add FuzzTest to your workspace with the following command.
       .. code-block:: sh
 
          bazel test //... \
-            --@pigweed_config//:pw_fuzzer_fuzztest_backend=@com_google_fuzztest//fuzztest
+            --@pigweed//targets:pw_fuzzer_fuzztest_backend=@com_google_fuzztest//fuzztest
 
 .. _target config: :ref:`_docs-build_system-bazel_configuration`
 .. _label flags: :ref:`_docs-build_system-bazel_flags`

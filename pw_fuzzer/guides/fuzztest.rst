@@ -88,7 +88,7 @@ See the following:
 
          # Include FuzzTest build configurations.
          try-import %workspace%/third_party/fuzztest/fuzztest.bazelrc
-         build:fuzztest --@pigweed_config//:fuzztest_config=//pw_fuzzer:fuzztest
+         build:fuzztest --@pigweed//targets:fuzztest_config=//pw_fuzzer:fuzztest
 
 ----------------------------------------
 Step 1: Write a unit test for the target

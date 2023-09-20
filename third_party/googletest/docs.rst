@@ -66,8 +66,8 @@ Configure ``pw_unit_test`` to use upstream GoogleTest/GoogleMock.
       .. code-block:: sh
 
          bazel test //... \
-            --@pigweed_config//:pw_unit_test_googletest_backend=@com_google_googletest//:gtest \
-            --@pigweed_config//:pw_unit_test_main=@com_google_googletest//:gtest_main
+            --@pigweed//targets:pw_unit_test_googletest_backend=@com_google_googletest//:gtest \
+            --@pigweed//targets:pw_unit_test_main=@com_google_googletest//:gtest_main
 
 .. note::
 
