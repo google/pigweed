@@ -42,8 +42,9 @@ large changes. See :ref:`SEED-0001` for a description of this process; but
 please discuss with us before writing a full SEED. Let us know of any
 priorities, timelines, requirements, and limitations ahead of time.
 
-For minor changes that don't fit the SEED process, follow the `Small changes`_
-guidance and the `Change submission process`_.
+For minor changes that don't fit the SEED process, follow the
+:ref:`docs-code_reviews-small-changes` guidance and the `Change submission
+process`_.
 
 .. warning::
    Skipping communicating with us before doing large amounts of work risks
@@ -57,7 +58,7 @@ Change submission process
    short.
 
 .. tip::
-   Follow `Small changes`_ for a smooth submission process.
+   Follow :ref:`docs-code_reviews-small-changes` for a smooth submission process
 
 #. Go through the `Presubmission process`_ and review this document's guidance.
 #. Ensure all files include the correct copyright and license headers.
@@ -152,90 +153,7 @@ doesn't have any other documentation.
 
 Code Reviews
 ------------
-All Pigweed development happens on Gerrit, following the `typical Gerrit
-development workflow <http://ceres-solver.org/contributing.html>`_. Consult the
-`Gerrit User Guide
-<https://gerrit-documentation.storage.googleapis.com/Documentation/2.12.3/intro-user.html>`_
-for more information on using Gerrit.
-
-You may add the special address
-``gwsq-pigweed@pigweed.google.com.iam.gserviceaccount.com`` as a reviewer to
-have Gerrit automatically choose an appropriate person to review your change.
-
-In the future we may support GitHub pull requests, but until that time we will
-close GitHub pull requests and ask that the changes be uploaded to Gerrit
-instead.
-
-Small changes
-^^^^^^^^^^^^^
-Small changes are encouraged because they:
-
-* Get reviewed more quickly, easily, and thoroughly.
-* Are less likely to introduce bugs.
-* Create less wasted work if they are rejected.
-* Are easier to merge.
-* Are easier to design well.
-* Block work less since work can continued while the change is reviewed.
-* Are simpler to roll back.
-
-A small change can be defined as one self-contained change, which means it
-makes a mininimal change addressing one thing, without breaking other users. It
-is not necessarily defined by the number of lines changed. However, as a rule of
-thumb, 100 changed lines is considered a small change while 1000 lines is too
-large.
-
-A small change includes related tests, sample usage, and documentation where
-applicable. It includes everything the reviewer needs to understand the change
-except for future development.
-
-While reviewers have the discretion to reject a large change, you can work with
-your reviewer to figure out how to proceed breaking changes apart.
-
-Large changes aren't bad when deleting or moving files, moving large contents
-without modifications, adding generated code, or an agreement is reached with
-the reviewer in advance.
-
-.. tip::
-   One way to split up a large change is to split it up by groupings of files
-   in smaller but self-contained changes. See `Splitting by Files
-   <https://google.github.io/eng-practices/review/developer/small-cls.html#splitting-files>`_
-   for examples.
-
-.. tip::
-   Separating functional changes from formatting cleanup changes helps create
-   small changes.
-
-.. tip::
-   Separating refactoring from features and bug fixes also helps create small
-   changes.
-
-Read `Google's Eng-Practices Small CLs
-<https://google.github.io/eng-practices/review/developer/small-cls.html>`_ for
-more details.
-
-Instructions for reviewers
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-#.  Get the `Gerrit Monitor extension
-    <https://chrome.google.com/webstore/detail/gerrit-monitor/leakcdjcdifiihdgalplgkghidmfafoh?hl=en>`_.
-#.  When added to the attention set for a change, respond within 1 business day:
-
-    * Review the change if possible, OR
-    * If you will not be able to review the change within 1 business day (e.g.
-      due to handling P0s), comment on the change stating so, and reassign to
-      another reviewer if possible.
-    * The response time expectation only applies to Googlers working full-time
-      on Pigweed.
-#. Remove yourself from the `attention set
-   <https://gerrit-review.googlesource.com/Documentation/user-attention-set.html>`_
-   for changes where another person (author or reviewer) must take action
-   before you can continue to review. You are encouraged, but not required, to
-   leave a comment when doing so, especially for changes by external
-   contributors who may not be familiar with our process.
-
-SLO
-^^^
-90% of changes on which a Googler working on Pigweed full-time is added to the
-attention set as a reviewer get triaged within 1 business day.
+See :ref:`docs-code_reviews` for information about the code review process.
 
 Community Guidelines
 --------------------
@@ -428,3 +346,4 @@ Presubmit flags
 
   embedded_cpp_guide
   style_guide
+  code_reviews

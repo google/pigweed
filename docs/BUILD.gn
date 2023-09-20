@@ -47,6 +47,7 @@ pw_doc_group("core_docs") {
   ]
   sources = [
     "code_of_conduct.rst",
+    "code_reviews.rst",
     "concepts/index.rst",
     "contributing.rst",
     "editors.rst",
