@@ -26,7 +26,6 @@ void Init() {
   ::chre::init();
   ::chre::EventLoopManagerSingleton::get()->lateInit();
   ::chre::loadStaticNanoapps();
-  ::chre::EventLoopManagerSingleton::get()->getEventLoop().run();
 }
 
 void Deinit() { ::chre::deinit(); }
@@ -39,15 +38,14 @@ void StopEventLoop() {
   ::chre::EventLoopManagerSingleton::get()->getEventLoop().stop();
 }
 
-void SendMessageToNanoapp(uint64_t nano_app_id,
-                          uint32_t message_type,
-                          uint16_t host_endpoint,
-                          const uint8_t* data,
-                          size_t len) {
+void SendMessageToNanoapp(pw::chre::NanoappMessage message) {
   ::chre::HostCommsManager& manager =
       ::chre::EventLoopManagerSingleton::get()->getHostCommsManager();
-  manager.sendMessageToNanoappFromHost(
-      nano_app_id, message_type, host_endpoint, data, len);
+  manager.sendMessageToNanoappFromHost(message.nano_app_id,
+                                       message.message_type,
+                                       message.host_endpoint,
+                                       message.data,
+                                       message.length);
 }
 
 void FreeMessageToAp(MessageToApContext context) {

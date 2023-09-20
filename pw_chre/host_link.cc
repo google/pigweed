@@ -31,6 +31,7 @@ bool HostLink::sendMessage(const MessageToHost* message) {
       .message_type = message->toHostData.messageType,
       .app_permissions = message->toHostData.appPermissions,
       .message_permissions = message->toHostData.messagePermissions,
+      .host_endpoint = message->toHostData.hostEndpoint,
       .woke_host = message->toHostData.wokeHost,
       .data = message->message.data(),
       .length = message->message.size(),
