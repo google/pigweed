@@ -25,6 +25,7 @@
 
 #include "pw_assert/assert.h"
 #include "pw_containers/internal/raw_storage.h"
+#include "pw_preprocessor/compiler.h"
 #include "pw_span/span.h"
 
 namespace pw {
@@ -252,11 +253,11 @@ class BasicInlineDeque<ValueType, SizeType, containers::internal::kGenericSized>
 
   reference back() {
     PW_DASSERT(!empty());
-    return data()[AbsoluteIndex(count_ - 1)];
+    return data()[AbsoluteIndex(size() - 1)];
   }
   const_reference back() const {
     PW_DASSERT(!empty());
-    return data()[AbsoluteIndex(count_ - 1)];
+    return data()[AbsoluteIndex(size() - 1)];
   }
 
   // Provides access to the valid data in a contiguous form.
@@ -297,15 +298,21 @@ class BasicInlineDeque<ValueType, SizeType, containers::internal::kGenericSized>
 
   // Size
 
-  [[nodiscard]] bool empty() const noexcept { return count_ == 0; }
+  [[nodiscard]] bool empty() const noexcept { return size() == 0; }
 
   [[nodiscard]] bool full() const noexcept { return size() == max_size(); }
 
-  size_type size() const noexcept { return count_; }
+  // Returns the number of elements in the `InlineDeque`. Disable MSAN since it
+  // thinks `count_` is uninitialized in the destructor.
+  size_type size() const noexcept PW_NO_SANITIZE("memory") { return count_; }
 
   size_type max_size() const noexcept { return capacity(); }
 
-  size_type capacity() const noexcept { return capacity_; }
+  // Returns the maximum number of elements in the `InlineDeque`. Disable MSAN
+  // since it thinks `capacity_` is uninitialized in the destructor.
+  size_type capacity() const noexcept PW_NO_SANITIZE("memory") {
+    return capacity_;
+  }
 
   // Modify
 
@@ -380,7 +387,10 @@ class BasicInlineDeque<ValueType, SizeType, containers::internal::kGenericSized>
   // head offset.
   //
   // Precondition: The relative index must be valid, i.e. < size().
-  size_type AbsoluteIndex(const size_type relative_index) const {
+  //
+  // Disable MSAN since it thinks `head_` is uninitialized in the destructor.
+  size_type AbsoluteIndex(const size_type relative_index) const
+      PW_NO_SANITIZE("memory") {
     const size_type absolute_index = head_ + relative_index;
     if (absolute_index < max_size()) {
       return absolute_index;
@@ -411,7 +421,7 @@ BasicInlineDeque<ValueType, SizeType>::contiguous_data() const {
   if (tail_ > head_) {
     // If the newest entry is after the oldest entry, we have not wrapped:
     //     [  |head_|...more_entries...|tail_|  ]
-    return std::make_pair(span<const value_type>(&data()[head_], count_),
+    return std::make_pair(span<const value_type>(&data()[head_], size()),
                           span<const value_type>());
   } else {
     // If the newest entry is before or at the oldest entry and we know we are
@@ -599,14 +609,14 @@ class InlineDequeIterator {
 
   constexpr reference operator*() const {
     PW_DASSERT(pos_ != kEnd);
-    PW_DASSERT(pos_ < container_->count_);
+    PW_DASSERT(pos_ < container_->size());
 
     return container_->at(pos_);
   }
 
   constexpr pointer operator->() const {
     PW_DASSERT(pos_ != kEnd);
-    PW_DASSERT(pos_ < container_->count_);
+    PW_DASSERT(pos_ < container_->size());
 
     return &**this;
   }

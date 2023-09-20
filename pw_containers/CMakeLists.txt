@@ -59,6 +59,7 @@ pw_add_library(pw_containers.inline_deque INTERFACE
   PUBLIC_DEPS
     pw_assert.assert
     pw_containers._raw_storage
+    pw_preprocessor
     pw_span
 )
 

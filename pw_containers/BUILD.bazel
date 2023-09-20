@@ -74,6 +74,7 @@ pw_cc_library(
     deps = [
         ":raw_storage",
         "//pw_assert",
+        "//pw_preprocessor",
         "//pw_span",
     ],
 )

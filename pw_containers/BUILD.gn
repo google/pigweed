@@ -63,6 +63,7 @@ pw_source_set("inline_deque") {
   public_deps = [
     ":raw_storage",
     dir_pw_assert,
+    dir_pw_preprocessor,
     dir_pw_span,
   ]
   public = [ "public/pw_containers/inline_deque.h" ]
