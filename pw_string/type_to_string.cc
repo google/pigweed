@@ -138,9 +138,10 @@ StatusWithSize IntToString(int64_t value, span<char> buffer) {
   }
 
   // Write as an unsigned number, but leave room for the leading minus sign.
-  auto result =
-      IntToString<uint64_t>(static_cast<uint64_t>(std::abs(value)),
-                            buffer.empty() ? buffer : buffer.subspan(1));
+  // Do not use std::abs since it fails for the minimum value integer.
+  const uint64_t absolute_value = -static_cast<uint64_t>(value);
+  auto result = IntToString<uint64_t>(
+      absolute_value, buffer.empty() ? buffer : buffer.subspan(1));
 
   if (result.ok()) {
     buffer[0] = '-';
