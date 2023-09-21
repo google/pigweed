@@ -58,7 +58,10 @@ if (dir_pw_third_party_llvm_libc != "") {
       "rand",
       "srand",
     ]
-    additional_srcs = [ "rand_util.cpp" ]
+    additional_srcs = [
+      "baremetal/abort.cpp",
+      "rand_util.cpp",
+    ]
 
     # srand and rand are both tested in rand_test.cpp.
     no_test_functions = [ "srand" ]
