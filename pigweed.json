@@ -5,7 +5,11 @@
         "python_formatter": "black",
         "black_config_file": "$pw_env{PW_ROOT}/.black.toml",
         "exclude": [
-          "\\bthird_party/fuchsia/repo"
+          "\\bthird_party/fuchsia/repo",
+          "\\bthird_party/.*\\.json$",
+          "\\bpackage\\.lock$",
+          "\\bpw_ide/ts/pigweed-vscode/\\.vscode/.*",
+          "\\bpw_web/log-viewer/package(-lock)?\\.json"
         ]
       }
     },
@@ -62,7 +66,9 @@
         "pw_env_setup/py/pw_env_setup/cipd_setup/upstream.json"
       ],
       "virtualenv": {
-        "gn_targets": ["python.install"],
+        "gn_targets": [
+          "python.install"
+        ],
         "gn_root": ".",
         "requirements": [
           "pw_env_setup/py/pw_env_setup/virtualenv_setup/pigweed_upstream_requirements.txt"

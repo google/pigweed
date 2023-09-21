@@ -22,6 +22,7 @@ code. These tools must be available on the path when this script is invoked!
 import argparse
 import collections
 import difflib
+import json
 import logging
 import os
 from pathlib import Path
@@ -447,6 +448,47 @@ def _check_trailing_space(paths: Iterable[Path], fix: bool) -> Dict[Path, str]:
     return errors
 
 
+def _format_json(contents: bytes) -> bytes:
+    return json.dumps(json.loads(contents), indent=2).encode() + b'\n'
+
+
+def _json_error(exc: json.JSONDecodeError, path: Path) -> str:
+    return f'{path}: {exc.msg} {exc.lineno}:{exc.colno}\n'
+
+
+def check_json_format(ctx: _Context) -> Dict[Path, str]:
+    errors = {}
+
+    for path in ctx.paths:
+        orig = path.read_bytes()
+        try:
+            formatted = _format_json(orig)
+        except json.JSONDecodeError as exc:
+            errors[path] = _json_error(exc, path)
+            continue
+
+        if orig != formatted:
+            errors[path] = _diff(path, orig, formatted)
+
+    return errors
+
+
+def fix_json_format(ctx: _Context) -> Dict[Path, str]:
+    errors = {}
+    for path in ctx.paths:
+        orig = path.read_bytes()
+        try:
+            formatted = _format_json(orig)
+        except json.JSONDecodeError as exc:
+            errors[path] = _json_error(exc, path)
+            continue
+
+        if orig != formatted:
+            path.write_bytes(formatted)
+
+    return errors
+
+
 def check_trailing_space(ctx: _Context) -> Dict[Path, str]:
     return _check_trailing_space(ctx.paths, fix=False)
 
@@ -626,6 +668,13 @@ OWNERS_CODE_FORMAT = CodeFormat(
     fix=fix_owners_format,
 )
 
+JSON_FORMAT: CodeFormat = CodeFormat(
+    'JSON',
+    FileFilter(endswith=['.json']),
+    check=check_json_format,
+    fix=fix_json_format,
+)
+
 CODE_FORMATS: Tuple[CodeFormat, ...] = tuple(
     filter(
         None,
@@ -639,6 +688,7 @@ CODE_FORMATS: Tuple[CodeFormat, ...] = tuple(
             GO_FORMAT,
             JAVASCRIPT_FORMAT if shutil.which('npx') else None,
             JAVA_FORMAT,
+            JSON_FORMAT,
             MARKDOWN_FORMAT,
             OWNERS_CODE_FORMAT,
             PROTO_FORMAT,
