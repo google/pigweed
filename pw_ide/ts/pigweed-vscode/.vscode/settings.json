@@ -1,12 +1,12 @@
 {
-    "files.exclude": {
-        "out": false
-    },
-    "search.exclude": {
-        "out": true
-    },
-    "typescript.tsc.autoDetect": "off",
-    "editor.rulers": [
-        80
-    ]
+  "files.exclude": {
+    "out": false
+  },
+  "search.exclude": {
+    "out": true
+  },
+  "typescript.tsc.autoDetect": "off",
+  "editor.rulers": [
+    80
+  ]
 }

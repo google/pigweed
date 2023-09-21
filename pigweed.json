@@ -8,7 +8,6 @@
           "\\bthird_party/fuchsia/repo",
           "\\bthird_party/.*\\.json$",
           "\\bpackage\\.lock$",
-          "\\bpw_ide/ts/pigweed-vscode/\\.vscode/.*",
           "\\bpw_web/log-viewer/package(-lock)?\\.json"
         ]
       }
