@@ -80,7 +80,15 @@ _DEFAULT_PATH = Path('out', 'format')
 _Context = Union[PresubmitContext, FormatContext]
 
 
+def _ensure_newline(orig: bytes) -> bytes:
+    if orig.endswith(b'\n'):
+        return orig
+    return orig + b'\nNo newline at end of file\n'
+
+
 def _diff(path, original: bytes, formatted: bytes) -> str:
+    original = _ensure_newline(original)
+    formatted = _ensure_newline(formatted)
     return ''.join(
         difflib.unified_diff(
             original.decode(errors='replace').splitlines(True),
