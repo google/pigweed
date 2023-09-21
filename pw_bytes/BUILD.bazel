@@ -28,6 +28,7 @@ pw_cc_library(
         "byte_builder.cc",
     ],
     hdrs = [
+        "public/pw_bytes/alignment.h",
         "public/pw_bytes/array.h",
         "public/pw_bytes/byte_builder.h",
         "public/pw_bytes/endian.h",
@@ -50,6 +51,15 @@ pw_cc_library(
     hdrs = ["public/pw_bytes/bit.h"],
     includes = ["public"],
     deps = ["//third_party/fuchsia:stdcompat"],
+)
+
+pw_cc_test(
+    name = "alignment_test",
+    srcs = ["alignment_test.cc"],
+    deps = [
+        ":pw_bytes",
+        "//pw_unit_test",
+    ],
 )
 
 pw_cc_test(

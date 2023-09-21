@@ -21,6 +21,10 @@ Dependencies
 Features
 --------
 
+pw_bytes/alignment.h
+====================
+Functions for aligning sizes and addresses to memory alignment boundaries.
+
 pw_bytes/array.h
 ================
 Functions for working with byte arrays, primarily for building fixed-size byte

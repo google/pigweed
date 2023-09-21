@@ -19,27 +19,13 @@
 #include <initializer_list>
 #include <utility>
 
+#include "pw_bytes/alignment.h"
 #include "pw_bytes/span.h"
 #include "pw_kvs/io.h"
 #include "pw_span/span.h"
 #include "pw_status/status_with_size.h"
 
 namespace pw {
-
-// Returns the value rounded down to the nearest multiple of alignment.
-constexpr size_t AlignDown(size_t value, size_t alignment) {
-  return (value / alignment) * alignment;
-}
-
-// Returns the value rounded up to the nearest multiple of alignment.
-constexpr size_t AlignUp(size_t value, size_t alignment) {
-  return (value + alignment - 1) / alignment * alignment;
-}
-
-// Returns the number of padding bytes required to align the provided length.
-constexpr size_t Padding(size_t length, size_t alignment) {
-  return AlignUp(length, alignment) - length;
-}
 
 // Class for managing aligned writes. Stores data in an intermediate buffer and
 // calls an output function with aligned data as the buffer becomes full. Any
