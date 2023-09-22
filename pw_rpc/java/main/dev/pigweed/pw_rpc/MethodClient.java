@@ -26,9 +26,9 @@ import javax.annotation.Nullable;
  *
  * Invoking an RPC with a method client may throw exceptions:
  *
- * TODO(hepler): This class should be split into four types -- one for each method type. The call
- *     type checks should be done when the object is created. Also, the client should be typed on
- *     the request/response.
+ * TODO: b/301644223 - This class should be split into four types -- one for each method type. The
+ *     call type checks should be done when the object is created. Also, the client should be typed
+ *     on the request/response.
  */
 public class MethodClient {
   private final Client client;
