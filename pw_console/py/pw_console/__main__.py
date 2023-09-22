@@ -69,11 +69,13 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main() -> int:
+def main(args: Optional[argparse.Namespace] = None) -> int:
     """Pigweed Console."""
 
     parser = _build_argument_parser()
-    args = parser.parse_args()
+
+    if args is None:
+        args = parser.parse_args()
 
     if not args.logfile:
         # Create a temp logfile to prevent logs from appearing over stdout. This

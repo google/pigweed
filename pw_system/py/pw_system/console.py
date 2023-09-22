@@ -238,8 +238,11 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _parse_args():
+def _parse_args(args: Optional[argparse.Namespace] = None):
     """Parses and returns the command line arguments."""
+    if args is not None:
+        return args
+
     parser = get_parser()
     return parser.parse_args()
 
@@ -540,12 +543,14 @@ def console(
     return 0
 
 
-def main() -> int:
-    return console(**vars(_parse_args()))
+def main(args: Optional[argparse.Namespace] = None) -> int:
+    return console(**vars(_parse_args(args)))
 
 
-def main_with_compiled_protos(compiled_protos):
-    return console(**vars(_parse_args()), compiled_protos=compiled_protos)
+def main_with_compiled_protos(
+    compiled_protos, args: Optional[argparse.Namespace] = None
+):
+    return console(**vars(_parse_args(args)), compiled_protos=compiled_protos)
 
 
 if __name__ == '__main__':
