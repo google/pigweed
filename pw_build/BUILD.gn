@@ -138,8 +138,10 @@ config("extra_strict_warnings") {
 # This config MUST NOT be used downstream to allow for warnings to be
 # added in the future without breaking downstream.
 config("internal_strict_warnings") {
-  cflags = [ "-Wswitch-enum" ]
-  cflags_cc = [ "-Wextra-semi" ]
+  cflags = [
+    "-Wextra-semi",
+    "-Wswitch-enum",
+  ]
 
   # TODO: b/243069432 - Enable pedantic warnings on Windows when they pass.
   if (host_os != "win") {
