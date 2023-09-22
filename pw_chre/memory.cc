@@ -18,7 +18,7 @@
 
 namespace chre {
 
-// TODO: b/294106526 - Today these APIs call the system malloc and free, but
+// TODO: b/301477067 - Today these APIs call the system malloc and free, but
 // they should be updated to use pw_allocator.
 void* memoryAlloc(size_t size) { return malloc(size); }
 

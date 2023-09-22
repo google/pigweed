@@ -16,7 +16,8 @@
 
 namespace chre {
 
-// TODO: b/294106526 - Implement this.
+// TODO: b/301477951 - Implement this when we have PALs implemented. It is
+// unclear without more examples what this API would be used for.
 void PlatformPal::prePalApiCall(PalType) const {}
 
 }  // namespace chre

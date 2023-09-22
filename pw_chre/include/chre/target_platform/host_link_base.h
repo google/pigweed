@@ -15,7 +15,7 @@
 #pragma once
 namespace chre {
 
-// TODO: b/294106526 - This class will likely need a facade since this will be
+// TODO: b/301477662 - This class will likely need a facade since this will be
 // implemented in downstream products.
 class HostLinkBase {
  public:
