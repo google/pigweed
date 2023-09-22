@@ -12,7 +12,6 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { format } from 'date-fns';
 import { LogSource } from '../log-source';
 import { LogEntry, Severity } from '../shared/interfaces';
 
@@ -78,6 +77,20 @@ export class MockLogSource extends LogSource {
     return randomValue;
   }
 
+  private formattedTS = () => {
+    const date = new Date();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const year = date.getFullYear().toString().padStart(4, '0');
+    const hour = date.getHours().toString().padStart(2, '0');
+    const minute = date.getMinutes().toString().padStart(2, '0');
+    const second = date.getSeconds().toString().padStart(2, '0');
+    const millisecond = date.getMilliseconds().toString().padStart(3, '0');
+
+    const formattedDate = `${month}-${day}-${year} ${hour}:${minute}:${second}.${millisecond}`;
+    return formattedDate;
+  };
+
   readLogEntryFromHost(): LogEntry {
     // Emulate reading log data from a host device
     const sources = ['application', 'server', 'database', 'network'];
@@ -96,10 +109,8 @@ export class MockLogSource extends LogSource {
     ];
     const severity = this.getSeverity();
     const timestamp: Date = new Date();
-    const formattedTimestamp: string = format(
-      timestamp,
-      'MM-dd-yyyy HH:mm:ss.SSS',
-    );
+
+    const formattedTimestamp: string = this.formattedTS();
     const getRandomValue = (values: string[]) => {
       const randomIndex = Math.floor(Math.random() * values.length);
       return values[randomIndex];
