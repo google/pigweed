@@ -56,6 +56,9 @@ pw_source_set("socket_stream") {
   ]
   sources = [ "socket_stream.cc" ]
   public = [ "public/pw_stream/socket_stream.h" ]
+  if (current_os == "win") {
+    libs = [ "ws2_32" ]
+  }
 }
 
 pw_source_set("sys_io_stream") {

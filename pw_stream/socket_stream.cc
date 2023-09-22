@@ -14,12 +14,17 @@
 
 #include "pw_stream/socket_stream.h"
 
+#if defined(_WIN32) && _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#endif  // defined(_WIN32) && _WIN32
 
 #include <cerrno>
 #include <cstring>
@@ -47,9 +52,27 @@ void ConfigureSocket([[maybe_unused]] int socket) {
 #endif  // defined(__APPLE__)
 }
 
-}  // namespace
+#if defined(_WIN32) && _WIN32
+int close(SOCKET s) { return closesocket(s); }
 
-// TODO: b/240982565 - Implement SocketStream for Windows.
+class WinsockInitializer {
+ public:
+  WinsockInitializer() {
+    WSADATA data = {};
+    PW_CHECK_INT_EQ(
+        WSAStartup(MAKEWORD(2, 2), &data), 0, "Failed to initialize winsock");
+  }
+  ~WinsockInitializer() {
+    // TODO: b/301545011 - This currently fails, probably a cleanup race.
+    WSACleanup();
+  }
+};
+
+[[maybe_unused]] WinsockInitializer initializer;
+
+#endif  // defined(_WIN32) && _WIN32
+
+}  // namespace
 
 Status SocketStream::SocketStream::Connect(const char* host, uint16_t port) {
   if (host == nullptr) {
@@ -111,8 +134,10 @@ Status SocketStream::DoWrite(span<const std::byte> data) {
   send_flags |= MSG_NOSIGNAL;
 #endif  // defined(__linux__)
 
-  ssize_t bytes_sent =
-      send(connection_fd_, data.data(), data.size_bytes(), send_flags);
+  ssize_t bytes_sent = send(connection_fd_,
+                            reinterpret_cast<const char*>(data.data()),
+                            data.size_bytes(),
+                            send_flags);
 
   if (bytes_sent < 0 || static_cast<size_t>(bytes_sent) != data.size()) {
     if (errno == EPIPE) {
@@ -127,7 +152,10 @@ Status SocketStream::DoWrite(span<const std::byte> data) {
 }
 
 StatusWithSize SocketStream::DoRead(ByteSpan dest) {
-  ssize_t bytes_rcvd = recv(connection_fd_, dest.data(), dest.size_bytes(), 0);
+  ssize_t bytes_rcvd = recv(connection_fd_,
+                            reinterpret_cast<char*>(dest.data()),
+                            dest.size_bytes(),
+                            0);
   if (bytes_rcvd == 0) {
     // Remote peer has closed the connection.
     Close();
@@ -156,7 +184,11 @@ Status ServerSocket::Listen(uint16_t port) {
 
   // Allow binding to an address that may still be in use by a closed socket.
   constexpr int value = 1;
-  setsockopt(socket_fd_, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(int));
+  setsockopt(socket_fd_,
+             SOL_SOCKET,
+             SO_REUSEADDR,
+             reinterpret_cast<const char*>(&value),
+             sizeof(int));
 
   if (port != 0) {
     struct sockaddr_in6 addr = {};

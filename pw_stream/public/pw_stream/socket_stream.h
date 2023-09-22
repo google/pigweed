@@ -13,8 +13,6 @@
 // the License.
 #pragma once
 
-#include <netinet/in.h>
-
 #include <cstdint>
 
 #include "pw_result/result.h"

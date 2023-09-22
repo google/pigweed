@@ -41,7 +41,7 @@ class SocketClient:
         self._connection_type: int
         self._interface: Union[str, Tuple[str, int]]
         if config == 'default':
-            self._connection_type = socket.AF_INET
+            self._connection_type = socket.AF_INET6
             self._interface = (
                 self.DEFAULT_SOCKET_SERVER,
                 self.DEFAULT_SOCKET_PORT,
@@ -61,7 +61,7 @@ class SocketClient:
                 )
                 self._interface = socket_port_or_file
             else:
-                self._connection_type = socket.AF_INET
+                self._connection_type = socket.AF_INET6
                 self._interface = (socket_server, int(socket_port_or_file))
 
         self._on_disconnect = on_disconnect
