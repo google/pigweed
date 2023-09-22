@@ -122,7 +122,13 @@ if exist "%shell_file%" (
 )
 
 :activate_shell
-call "%shell_file%"
+if exist "%shell_file%" (
+  call "%shell_file%"
+) else (
+  echo.
+  echo  [31mBootstrap failed! See output above for the culprit.[0m
+  echo.
+)
 
 :finish
 ::WINDOWS_ONLY
