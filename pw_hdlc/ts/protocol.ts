@@ -13,7 +13,6 @@
 // the License.
 
 /** Low-level HDLC protocol features. */
-import { Buffer } from 'buffer';
 import { crc32 } from './crc32';
 
 /** Special flag character for delimiting HDLC frames. */
@@ -47,9 +46,16 @@ function bitwiseOr(x: number, y: number) {
   return highOr * highMask + lowOr;
 }
 
+function getUint8ArraySubset(array: Uint8Array, start: number, end: number) {
+  const subset = new Uint8Array(array.buffer, start, end - start);
+  return subset;
+}
+
 /** Calculates the CRC32 of |data| */
 export function frameCheckSequence(data: Uint8Array): Uint8Array {
-  const crc = crc32(Buffer.from(data.buffer, data.byteOffset, data.byteLength));
+  const crc = crc32(
+    getUint8ArraySubset(data, data.byteOffset, data.byteLength),
+  );
   const arr = new ArrayBuffer(4);
   const view = new DataView(arr);
   view.setUint32(0, crc, true); // litteEndian = true
