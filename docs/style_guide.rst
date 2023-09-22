@@ -1346,9 +1346,10 @@ syntatic elements that may be needed.
 Common Doxygen commands for use within a comment block:
 
 - ``@rst`` To start a reStructuredText block. This is a custom alias for
-  ``\verbatim embed:rst:leading-asterisk``.
+  ``\verbatim embed:rst:leading-asterisk``. This must be paired with
+  ``@endrst``.
 - `@code <https://www.doxygen.nl/manual/commands.html#cmdcode>`_ Start a code
-  block.
+  block. This must be paired with ``@endcode``.
 - `@param <https://www.doxygen.nl/manual/commands.html#cmdparam>`_ Document
   parameters, this may be repeated.
 - `@pre <https://www.doxygen.nl/manual/commands.html#cmdpre>`_ Starts a
@@ -1362,6 +1363,13 @@ Common Doxygen commands for use within a comment block:
 - `@note <https://www.doxygen.nl/manual/commands.html#cmdnote>`_ Add a note
   admonition to the end of documentation.
 - `@b <https://www.doxygen.nl/manual/commands.html#cmdb>`_ To bold one word.
+
+.. tip:
+
+   Did you add Doxygen comments and now your build is failing because Doxygen
+   says it can't find the class you decorated? Make sure your ``@code`` blocks
+   are paired with ``@endcode`` blocks and your ``@rst`` blocks are paired
+   with ``@endrst`` blocks!
 
 Doxygen provides `structural commands
 <https://doxygen.nl/manual/docblocks.html#structuralcommands>`_ that associate a
