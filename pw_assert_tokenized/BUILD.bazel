@@ -25,9 +25,9 @@ licenses(["notice"])
 # for pw_assert_tokenized. The source file and its dependencies are in the separate
 # ":impl" target.
 #
-# If you point the @pigweed_config//pw_assert_backend to //pw_assert_tokenized,
-# then @pigweed_config//pw_assert_backend_impl should point to
-# //pw_assert_tokenized:impl.
+# If you point the @pigweed//targets:pw_assert_backend to
+# //pw_assert_tokenized, then @pigweed//targets:pw_assert_backend_impl should
+# point to //pw_assert_tokenized:impl.
 pw_cc_library(
     name = "pw_assert_tokenized",
     hdrs = [

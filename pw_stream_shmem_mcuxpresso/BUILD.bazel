@@ -34,7 +34,7 @@ pw_cc_library(
         "//pw_preprocessor",
         "//pw_stream",
         "//pw_sync:binary_semaphore",
-        "@pigweed_config//:mcuxpresso_sdk",
+        "@pigweed//targets:mcuxpresso_sdk",
     ],
 )
 

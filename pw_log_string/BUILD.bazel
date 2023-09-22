@@ -57,13 +57,13 @@ pw_cc_library(
     deps = [
         ":handler_facade",
         "//pw_preprocessor",
-        "@pigweed_config//:pw_log_string_handler_backend",
+        "@pigweed//targets:pw_log_string_handler_backend",
     ],
 )
 
 pw_cc_library(
     name = "handler_backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
     # TODO: b/257539200 - This probably should default to
     # //pw_system:log_backend, but that target does not yet build in Bazel.
     # deps = ["//pw_system:log_backend"],

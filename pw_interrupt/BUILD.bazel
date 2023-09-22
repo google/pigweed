@@ -41,7 +41,7 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
-        "@pigweed_config//:pw_interrupt_backend",
+        "@pigweed//targets:pw_interrupt_backend",
     ],
 )
 
@@ -52,5 +52,5 @@ alias(
         "//pw_interrupt_xtensa:backend": "//pw_interrupt_xtensa:context",
         "//conditions:default": "//pw_build:unspecified_backend",
     }),
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
 )

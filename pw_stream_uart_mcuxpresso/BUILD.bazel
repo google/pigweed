@@ -33,7 +33,7 @@ pw_cc_library(
     deps = [
         "//pw_preprocessor",
         "//pw_stream",
-        "@pigweed_config//:mcuxpresso_sdk",
+        "@pigweed//targets:mcuxpresso_sdk",
     ],
 )
 

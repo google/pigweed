@@ -59,7 +59,7 @@ pw_cc_library(
 
 pw_cc_library(
     name = "test_backend",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
 )
 
 pw_cc_library(

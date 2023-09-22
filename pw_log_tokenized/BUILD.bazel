@@ -85,14 +85,14 @@ pw_cc_library(
     name = "handler",
     deps = [
         ":handler_facade",
-        "@pigweed_config//:pw_log_tokenized_handler_backend",
+        "@pigweed//targets:pw_log_tokenized_handler_backend",
     ],
 )
 
 # There is no default backend for now.
 pw_cc_library(
     name = "backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
 )
 
 pw_cc_library(

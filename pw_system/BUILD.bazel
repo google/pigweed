@@ -193,7 +193,7 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         "//pw_thread:thread",
-        "@pigweed_config//:pw_system_target_hooks_backend",
+        "@pigweed//targets:pw_system_target_hooks_backend",
     ],
 )
 
@@ -202,7 +202,7 @@ pw_cc_library(
 # projects. For now, assume the pre-baked OS-specific hooks are good enough.
 pw_cc_library(
     name = "target_hooks_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:freertos": [":freertos_target_hooks"],
         "//conditions:default": [":stl_target_hooks"],

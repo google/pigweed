@@ -39,7 +39,7 @@ pw_cc_library(
         "//pw_digital_io",
         "//pw_preprocessor",
         "//pw_sync:borrow",
-        "@pigweed_config//:mcuxpresso_sdk",
+        "@pigweed//targets:mcuxpresso_sdk",
     ],
 )
 

@@ -54,7 +54,7 @@ pw_cc_library(
     deps = [
         "//pw_bytes",
         "//pw_status",
-        "@pigweed_config//:pw_sys_io_backend",
+        "@pigweed//targets:pw_sys_io_backend",
     ],
 )
 
@@ -71,7 +71,7 @@ alias(
         "//pw_sys_io_stdio:backend": "@pigweed//pw_sys_io_stdio",
         "//conditions:default": ":unspecified_backend",
     }),
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
 )
 
 host_backend_alias(

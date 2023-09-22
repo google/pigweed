@@ -59,7 +59,7 @@ pw_cc_library(
         "//pw_chrono:system_clock",
         "//pw_function",
         "//pw_status",
-        "@pigweed_config//:pw_async_task_backend",
+        "@pigweed//targets:pw_async_task_backend",
     ],
 )
 
@@ -89,7 +89,7 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         ":dispatcher",
-        "@pigweed_config//:pw_async_fake_dispatcher_backend",
+        "@pigweed//targets:pw_async_fake_dispatcher_backend",
     ],
 )
 

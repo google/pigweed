@@ -40,13 +40,13 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
-        "@pigweed_config//:pw_thread_id_backend",
+        "@pigweed//targets:pw_thread_id_backend",
     ],
 )
 
 pw_cc_library(
     name = "id_backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:embos": ["//pw_thread_embos:id"],
         "//pw_build/constraints/rtos:freertos": ["//pw_thread_freertos:id"],
@@ -91,13 +91,13 @@ pw_cc_library(
         ":thread_info",
         "//pw_function",
         "//pw_status",
-        "@pigweed_config//:pw_thread_iteration_backend",
+        "@pigweed//targets:pw_thread_iteration_backend",
     ],
 )
 
 pw_cc_library(
     name = "iteration_backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:embos": ["//pw_thread_embos:thread_iteration"],
         "//pw_build/constraints/rtos:freertos": ["//pw_thread_freertos:thread_iteration"],
@@ -131,13 +131,13 @@ pw_cc_library(
         ":id",
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
-        "@pigweed_config//:pw_thread_sleep_backend",
+        "@pigweed//targets:pw_thread_sleep_backend",
     ],
 )
 
 pw_cc_library(
     name = "sleep_backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:embos": ["//pw_thread_embos:sleep"],
         "//pw_build/constraints/rtos:freertos": ["//pw_thread_freertos:sleep"],
@@ -173,13 +173,13 @@ pw_cc_library(
     deps = [
         ":id",
         ":thread_core",
-        "@pigweed_config//:pw_thread_thread_backend",
+        "@pigweed//targets:pw_thread_thread_backend",
     ],
 )
 
 pw_cc_library(
     name = "thread_backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:embos": ["//pw_thread_embos:thread"],
         "//pw_build/constraints/rtos:freertos": ["//pw_thread_freertos:thread"],
@@ -226,7 +226,7 @@ pw_cc_library(
 
 pw_cc_library(
     name = "test_thread_context_backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
         "//conditions:default": ["//pw_thread_stl:test_thread_context"],
     }),
@@ -247,7 +247,7 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
-        "@pigweed_config//:pw_thread_test_thread_context_backend",
+        "@pigweed//targets:pw_thread_test_thread_context_backend",
     ],
 )
 
@@ -274,13 +274,13 @@ pw_cc_library(
     deps = [
         ":id",
         "//pw_preprocessor",
-        "@pigweed_config//:pw_thread_yield_backend",
+        "@pigweed//targets:pw_thread_yield_backend",
     ],
 )
 
 pw_cc_library(
     name = "yield_backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:embos": ["//pw_thread_embos:yield"],
         "//pw_build/constraints/rtos:freertos": ["//pw_thread_freertos:yield"],

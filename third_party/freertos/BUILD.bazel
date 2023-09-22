@@ -112,7 +112,7 @@ pw_cc_library(
         ":freertos_malloc",
         ":freertos_port_headers",
         ":pigweed_tasks_c",
-        "@pigweed_config//:freertos_config",
+        "@pigweed//targets:freertos_config",
     ],
     # Required because breaking out tasks_c results in the dependencies between
     # the libraries not being quite correct: to link pigweed_tasks_c you
@@ -170,7 +170,7 @@ pw_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":freertos_port_headers",
-        "@pigweed_config//:freertos_config",
+        "@pigweed//targets:freertos_config",
     ],
 )
 

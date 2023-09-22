@@ -37,12 +37,12 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
-        "@pigweed_config//:pw_malloc_backend",
+        "@pigweed//targets:pw_malloc_backend",
     ],
 )
 
 pw_cc_library(
     name = "backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
     deps = ["//pw_malloc_freelist"],
 )

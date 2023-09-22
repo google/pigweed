@@ -272,14 +272,6 @@ git_repository(
 # Registers platforms for use with toolchain resolution
 register_execution_platforms("@local_config_platform//:host", "//pw_build/platforms:all")
 
-load("//pw_build:target_config.bzl", "pigweed_config")
-
-# Configure Pigweeds backend.
-pigweed_config(
-    name = "pigweed_config",
-    build_file = "//targets:default_config.BUILD",
-)
-
 # Required by: rules_fuzzing, fuzztest
 #
 # Provided here explicitly to override an old version of absl that

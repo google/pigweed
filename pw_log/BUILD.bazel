@@ -54,7 +54,7 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         "//pw_preprocessor",
-        "@pigweed_config//:pw_log_backend",
+        "@pigweed//targets:pw_log_backend",
     ],
 )
 
@@ -124,7 +124,7 @@ pw_proto_library(
 
 pw_cc_library(
     name = "backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
     deps = ["//pw_log_basic"],
 )
 

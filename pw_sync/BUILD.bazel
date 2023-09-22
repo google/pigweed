@@ -50,13 +50,13 @@ pw_cc_library(
     deps = [
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
-        "@pigweed_config//:pw_sync_binary_semaphore_backend",
+        "@pigweed//targets:pw_sync_binary_semaphore_backend",
     ],
 )
 
 pw_cc_library(
     name = "binary_semaphore_backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:embos": ["//pw_sync_embos:binary_semaphore"],
         "//pw_build/constraints/rtos:freertos": ["//pw_sync_freertos:binary_semaphore"],
@@ -88,13 +88,13 @@ pw_cc_library(
     deps = [
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
-        "@pigweed_config//:pw_sync_counting_semaphore_backend",
+        "@pigweed//targets:pw_sync_counting_semaphore_backend",
     ],
 )
 
 pw_cc_library(
     name = "counting_semaphore_backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:embos": ["//pw_sync_embos:counting_semaphore"],
         "//pw_build/constraints/rtos:freertos": ["//pw_sync_freertos:counting_semaphore"],
@@ -187,13 +187,13 @@ pw_cc_library(
         ":lock_annotations",
         ":virtual_basic_lockable",
         "//pw_preprocessor",
-        "@pigweed_config//:pw_sync_mutex_backend",
+        "@pigweed//targets:pw_sync_mutex_backend",
     ],
 )
 
 pw_cc_library(
     name = "mutex_backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:embos": ["//pw_sync_embos:mutex"],
         "//pw_build/constraints/rtos:freertos": ["//pw_sync_freertos:mutex"],
@@ -231,13 +231,13 @@ pw_cc_library(
         ":virtual_basic_lockable",
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
-        "@pigweed_config//:pw_sync_timed_mutex_backend",
+        "@pigweed//targets:pw_sync_timed_mutex_backend",
     ],
 )
 
 pw_cc_library(
     name = "timed_mutex_backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:embos": ["//pw_sync_embos:timed_mutex"],
         "//pw_build/constraints/rtos:freertos": ["//pw_sync_freertos:timed_mutex"],
@@ -262,13 +262,13 @@ pw_cc_library(
     visibility = ["//pw_sync_baremetal:__pkg__"],
     deps = [
         ":recursive_mutex_facade",
-        "@pigweed_config//:pw_sync_recursive_mutex_backend",
+        "@pigweed//targets:pw_sync_recursive_mutex_backend",
     ],
 )
 
 pw_cc_library(
     name = "recursive_mutex_backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
         "@platforms//os:none": ["//pw_sync_baremetal:recursive_mutex"],
         "//conditions:default": ["//pw_sync_stl:recursive_mutex"],
@@ -300,13 +300,13 @@ pw_cc_library(
         ":lock_annotations",
         ":virtual_basic_lockable",
         "//pw_preprocessor",
-        "@pigweed_config//:pw_sync_interrupt_spin_lock_backend",
+        "@pigweed//targets:pw_sync_interrupt_spin_lock_backend",
     ],
 )
 
 pw_cc_library(
     name = "interrupt_spin_lock_backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:embos": ["//pw_sync_embos:interrupt_spin_lock"],
         "//pw_build/constraints/rtos:freertos": ["//pw_sync_freertos:interrupt_spin_lock"],
@@ -329,13 +329,13 @@ pw_cc_library(
         "public/pw_sync/thread_notification.h",
     ],
     deps = [
-        "@pigweed_config//:pw_sync_thread_notification_backend",
+        "@pigweed//targets:pw_sync_thread_notification_backend",
     ],
 )
 
 pw_cc_library(
     name = "thread_notification_backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:freertos": ["//pw_sync_freertos:thread_notification"],
         "//conditions:default": [":binary_semaphore_thread_notification_backend"],
@@ -362,13 +362,13 @@ pw_cc_library(
     deps = [
         ":thread_notification",
         "//pw_chrono:system_clock",
-        "@pigweed_config//:pw_sync_timed_thread_notification_backend",
+        "@pigweed//targets:pw_sync_timed_thread_notification_backend",
     ],
 )
 
 pw_cc_library(
     name = "timed_thread_notification_backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:freertos": ["//pw_sync_freertos:timed_thread_notification"],
         "//conditions:default": ["//pw_sync:binary_semaphore_timed_thread_notification_backend"],

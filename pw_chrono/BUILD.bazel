@@ -59,13 +59,13 @@ pw_cc_library(
     deps = [
         ":epoch",
         "//pw_preprocessor",
-        "@pigweed_config//:pw_chrono_system_clock_backend",
+        "@pigweed//targets:pw_chrono_system_clock_backend",
     ],
 )
 
 pw_cc_library(
     name = "system_clock_backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:freertos": ["//pw_chrono_freertos:system_clock"],
         "//pw_build/constraints/rtos:embos": ["//pw_chrono_embos:system_clock"],
@@ -90,13 +90,13 @@ pw_cc_library(
     name = "system_timer",
     deps = [
         ":system_timer_facade",
-        "@pigweed_config//:pw_chrono_system_timer_backend",
+        "@pigweed//targets:pw_chrono_system_timer_backend",
     ],
 )
 
 pw_cc_library(
     name = "system_timer_backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:freertos": ["//pw_chrono_freertos:system_timer"],
         "//pw_build/constraints/rtos:embos": ["//pw_chrono_embos:system_timer"],

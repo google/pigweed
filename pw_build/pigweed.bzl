@@ -43,7 +43,7 @@ def pw_cc_binary(**kwargs):
     # TODO: b/234877642 - Remove this implicit dependency once we have a better
     # way to handle the facades without introducing a circular dependency into
     # the build.
-    kwargs["deps"] = kwargs["deps"] + ["@pigweed_config//:pw_assert_backend_impl"]
+    kwargs["deps"] = kwargs["deps"] + ["@pigweed//targets:pw_assert_backend_impl"]
     _add_defaults(kwargs)
     native.cc_binary(**kwargs)
 
@@ -84,12 +84,12 @@ def pw_cc_test(**kwargs):
       **kwargs: Passed to cc_test.
     """
     kwargs["deps"] = kwargs.get("deps", []) + \
-                     ["@pigweed_config//:pw_unit_test_main"]
+                     ["@pigweed//targets:pw_unit_test_main"]
 
     # TODO: b/234877642 - Remove this implicit dependency once we have a better
     # way to handle the facades without introducing a circular dependency into
     # the build.
-    kwargs["deps"] = kwargs["deps"] + ["@pigweed_config//:pw_assert_backend_impl"]
+    kwargs["deps"] = kwargs["deps"] + ["@pigweed//targets:pw_assert_backend_impl"]
     _add_defaults(kwargs)
 
     # Some tests may include FuzzTest, which includes headers that trigger
@@ -142,7 +142,7 @@ def pw_cc_perf_test(**kwargs):
     """
     kwargs["deps"] = kwargs.get("deps", []) + \
                      ["@pigweed//pw_perf_test:logging_main"]
-    kwargs["deps"] = kwargs["deps"] + ["@pigweed_config//:pw_assert_backend_impl"]
+    kwargs["deps"] = kwargs["deps"] + ["@pigweed//targets:pw_assert_backend_impl"]
     _add_defaults(kwargs)
     native.cc_binary(**kwargs)
 

@@ -38,7 +38,7 @@ pw_cc_library(
     deps = [
         "//pw_digital_io:facade",
         "//pw_preprocessor",
-        "@pigweed_config//:mcuxpresso_sdk",
+        "@pigweed//targets:mcuxpresso_sdk",
     ],
 )
 

@@ -59,7 +59,7 @@ pw_cc_library(
         "//pw_boot_cortex_m",
         "//pw_preprocessor",
         "//pw_sys_io_mcuxpresso",
-        "@pigweed_config//:mcuxpresso_sdk",
+        "@pigweed//targets:mcuxpresso_sdk",
     ],
     alwayslink = 1,
 )

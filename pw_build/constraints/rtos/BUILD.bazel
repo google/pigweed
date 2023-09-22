@@ -29,7 +29,7 @@ constraint_value(
 config_setting(
     name = "none_setting",
     flag_values = {
-        "@pigweed_config//:target_rtos": ":none",
+        "@pigweed//targets:target_rtos": ":none",
     },
 )
 
@@ -41,7 +41,7 @@ constraint_value(
 config_setting(
     name = "embos_setting",
     flag_values = {
-        "@pigweed_config//:target_rtos": ":embos",
+        "@pigweed//targets:target_rtos": ":embos",
     },
 )
 
@@ -53,7 +53,7 @@ constraint_value(
 config_setting(
     name = "freertos_setting",
     flag_values = {
-        "@pigweed_config//:target_rtos": ":freertos",
+        "@pigweed//targets:target_rtos": ":freertos",
     },
 )
 
@@ -65,6 +65,6 @@ constraint_value(
 config_setting(
     name = "threadx_setting",
     flag_values = {
-        "@pigweed_config//:target_rtos": ":threadx",
+        "@pigweed//targets:target_rtos": ":threadx",
     },
 )

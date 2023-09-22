@@ -58,7 +58,7 @@ pw_cc_library(
     deps = [
         ":config",
         "//pw_preprocessor",
-        "@pigweed_config//:pw_assert_backend",
+        "@pigweed//targets:pw_assert_backend",
     ],
 )
 
@@ -113,7 +113,7 @@ pw_cc_library(
 
 pw_cc_library(
     name = "backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
     deps = [
         "@pigweed//pw_assert_basic",
     ],
@@ -122,7 +122,7 @@ pw_cc_library(
 alias(
     name = "backend_impl_multiplexer",
     actual = "@pigweed//pw_assert_basic:impl",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
 )
 
 pw_cc_test(

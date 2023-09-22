@@ -36,7 +36,7 @@ pw_cc_library(
 
 alias(
     name = "pw_unit_test",
-    actual = "@pigweed_config//:pw_unit_test_googletest_backend",
+    actual = "@pigweed//targets:pw_unit_test_googletest_backend",
 )
 
 pw_cc_library(

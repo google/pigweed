@@ -44,13 +44,13 @@ pw_cc_library(
         "//pw_span",
         "//pw_status",
         "//pw_stream",
-        "@pigweed_config//:pw_rpc_system_server_backend",
+        "@pigweed//targets:pw_rpc_system_server_backend",
     ],
 )
 
 pw_cc_library(
     name = "system_server_backend_multiplexer",
-    visibility = ["@pigweed_config//:__pkg__"],
+    visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
         "//pw_build/constraints/board:stm32f429i-disc1": ["//pw_hdlc:hdlc_sys_io_system_server"],
         "//pw_build/constraints/board:mimxrt595_evk": ["//pw_hdlc:hdlc_sys_io_system_server"],
