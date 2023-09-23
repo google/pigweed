@@ -11,6 +11,7 @@ for a dynamic allocator. This is composed of the following parts:
   splitting and merging of blocks.
 - ``freelist``: A freelist, suitable for fast lookups of available memory chunks
   (i.e. ``block`` s).
+- ``allocator``: An interface for memory allocators.
 
 Heap Integrity Check
 ====================
@@ -22,6 +23,11 @@ The ``Block`` class provides two check functions:
 FreeList
 ========
 .. doxygenclass:: pw::allocator::FreeList
+   :members:
+
+Allocator
+=========
+.. doxygenclass:: pw::allocator::Allocator
    :members:
 
 Heap Poisoning

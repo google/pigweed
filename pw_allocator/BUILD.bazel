@@ -23,6 +23,22 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
+    name = "allocator",
+    srcs = [
+        "allocator.cc",
+    ],
+    hdrs = [
+        "public/pw_allocator/allocator.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_status",
+    ],
+)
+
+pw_cc_library(
     name = "block",
     srcs = [
         "block.cc",
@@ -67,6 +83,34 @@ pw_cc_library(
         ":block",
         ":freelist",
         "//pw_log",
+    ],
+)
+
+pw_cc_library(
+    name = "allocator_testing",
+    srcs = [
+        "allocator_testing.cc",
+    ],
+    hdrs = [
+        "pw_allocator_private/allocator_testing.h",
+    ],
+    deps = [
+        ":allocator",
+        ":block",
+        "//pw_bytes",
+    ],
+)
+
+pw_cc_test(
+    name = "allocator_test",
+    srcs = [
+        "allocator_test.cc",
+    ],
+    deps = [
+        ":allocator",
+        ":allocator_testing",
+        "//pw_bytes",
+        "//pw_unit_test",
     ],
 )
 

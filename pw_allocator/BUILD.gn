@@ -34,10 +34,23 @@ config("enable_heap_poison") {
 
 group("pw_allocator") {
   public_deps = [
+    ":allocator",
     ":block",
     ":freelist",
     ":freelist_heap",
   ]
+}
+
+pw_source_set("allocator") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_allocator/allocator.h" ]
+  public_deps = [ dir_pw_result ]
+  deps = [
+    dir_pw_assert,
+    dir_pw_bytes,
+    dir_pw_status,
+  ]
+  sources = [ "allocator.cc" ]
 }
 
 pw_source_set("block") {
@@ -82,10 +95,30 @@ pw_source_set("freelist_heap") {
 
 pw_test_group("tests") {
   tests = [
+    ":allocator_test",
     ":block_test",
     ":freelist_test",
     ":freelist_heap_test",
   ]
+}
+
+pw_source_set("allocator_testing") {
+  public = [ "pw_allocator_private/allocator_testing.h" ]
+  public_deps = [
+    ":allocator",
+    ":block",
+    dir_pw_bytes,
+  ]
+  sources = [ "allocator_testing.cc" ]
+}
+
+pw_test("allocator_test") {
+  deps = [
+    ":allocator",
+    ":allocator_testing",
+    dir_pw_bytes,
+  ]
+  sources = [ "allocator_test.cc" ]
 }
 
 pw_test("block_test") {
