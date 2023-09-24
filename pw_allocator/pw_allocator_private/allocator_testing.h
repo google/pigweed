@@ -29,17 +29,22 @@ namespace pw::allocator::test {
 /// `Allocator` interface methods, and returns them via accessors.
 class FakeAllocator : public Allocator {
  public:
-  Status Initialize(ByteSpan buffer);
+  constexpr FakeAllocator() = default;
 
   size_t allocate_size() const { return allocate_size_; }
-
   void* deallocate_ptr() const { return deallocate_ptr_; }
   size_t deallocate_size() const { return deallocate_size_; }
-
   void* resize_ptr() const { return resize_ptr_; }
   size_t resize_old_size() const { return resize_old_size_; }
   size_t resize_new_size() const { return resize_new_size_; }
 
+  /// Provides memory for the allocator to allocate from.
+  Status Initialize(ByteSpan buffer);
+
+  /// Allocates all the memory from this object.
+  void Exhaust();
+
+  /// Resets the recorded parameters to an initial state.
   void ResetParameters();
 
  private:
@@ -59,12 +64,12 @@ class FakeAllocator : public Allocator {
                 size_t new_size) override;
 
   Block* head_ = nullptr;
-  size_t allocate_size_;
-  void* deallocate_ptr_;
-  size_t deallocate_size_;
-  void* resize_ptr_;
-  size_t resize_old_size_;
-  size_t resize_new_size_;
+  size_t allocate_size_ = 0;
+  void* deallocate_ptr_ = nullptr;
+  size_t deallocate_size_ = 0;
+  void* resize_ptr_ = nullptr;
+  size_t resize_old_size_ = 0;
+  size_t resize_new_size_ = 0;
 };
 
 }  // namespace pw::allocator::test

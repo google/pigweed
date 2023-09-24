@@ -26,6 +26,9 @@ void* Allocator::DoReallocate(void* ptr,
                               size_t old_size,
                               size_t old_alignment,
                               size_t new_size) {
+  if (new_size == 0) {
+    return nullptr;
+  }
   if (DoResize(ptr, old_size, old_alignment, new_size)) {
     return ptr;
   }

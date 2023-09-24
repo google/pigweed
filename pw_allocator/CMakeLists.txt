@@ -40,6 +40,19 @@ pw_add_library(pw_allocator.block STATIC
     block.cc
 )
 
+pw_add_library(pw_allocator.fallback_allocator STATIC
+  HEADERS
+    public/pw_allocator/fallback_allocator.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.allocator
+    pw_assert
+    pw_status
+  SOURCES
+    fallback_allocator.cc
+)
+
 pw_add_library(pw_allocator.freelist STATIC
   HEADERS
     public/pw_allocator/freelist.h
@@ -75,6 +88,7 @@ pw_add_library(pw_allocator.allocator_testing STATIC
   PUBLIC_DEPS
     pw_allocator.allocator
     pw_allocator.block
+    pw_assert
     pw_bytes
   SOURCES
     allocator_testing.cc
@@ -98,6 +112,18 @@ pw_add_test(pw_allocator.block_test
   PRIVATE_DEPS
     pw_allocator.block
     pw_span
+  GROUPS
+    modules
+    pw_allocator
+)
+
+pw_add_test(pw_allocator.fallback_allocator_test
+  PRIVATE_DEPS
+    pw_allocator.allocator_testing
+    pw_allocator.fallback_allocator
+    pw_status
+  SOURCES
+    fallback_allocator_test.cc
   GROUPS
     modules
     pw_allocator

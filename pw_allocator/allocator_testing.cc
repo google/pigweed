@@ -14,6 +14,7 @@
 
 #include "pw_allocator_private/allocator_testing.h"
 
+#include "pw_assert/check.h"
 #include "pw_bytes/alignment.h"
 
 namespace pw::allocator::test {
@@ -30,6 +31,12 @@ Status FakeAllocator::Initialize(ByteSpan buffer) {
   return OkStatus();
 }
 
+void FakeAllocator::Exhaust() {
+  for (Block* block = head_; block != nullptr; block = NextBlock(block)) {
+    block->MarkUsed();
+  }
+}
+
 void FakeAllocator::ResetParameters() {
   allocate_size_ = 0;
   deallocate_ptr_ = nullptr;
@@ -40,9 +47,7 @@ void FakeAllocator::ResetParameters() {
 }
 
 Status FakeAllocator::DoQuery(const void* ptr, size_t size, size_t) const {
-  if (head_ == nullptr) {
-    return Status::FailedPrecondition();
-  }
+  PW_CHECK(head_ != nullptr);
   if (size == 0 || ptr == nullptr) {
     return Status::OutOfRange();
   }
@@ -61,10 +66,8 @@ Status FakeAllocator::DoQuery(const void* ptr, size_t size, size_t) const {
 }
 
 void* FakeAllocator::DoAllocate(size_t size, size_t) {
+  PW_CHECK(head_ != nullptr);
   allocate_size_ = size;
-  if (head_ == nullptr || size == 0) {
-    return nullptr;
-  }
   for (Block* block = head_; block != nullptr; block = NextBlock(block)) {
     Block* fragment = nullptr;
     if (!block->Used() && block->Split(size, &fragment).ok()) {
@@ -76,6 +79,7 @@ void* FakeAllocator::DoAllocate(size_t size, size_t) {
 }
 
 void FakeAllocator::DoDeallocate(void* ptr, size_t size, size_t alignment) {
+  PW_CHECK(head_ != nullptr);
   deallocate_ptr_ = ptr;
   deallocate_size_ = size;
   if (!DoQuery(ptr, size, alignment).ok()) {
@@ -91,6 +95,7 @@ bool FakeAllocator::DoResize(void* ptr,
                              size_t old_size,
                              size_t old_alignment,
                              size_t new_size) {
+  PW_CHECK(head_ != nullptr);
   resize_ptr_ = ptr;
   resize_old_size_ = old_size;
   resize_new_size_ = new_size;
@@ -105,7 +110,7 @@ bool FakeAllocator::DoResize(void* ptr,
   block->MarkFree();
   block->MergeNext().IgnoreError();
   Block* fragment = nullptr;
-  if (block->Split(new_size, &fragment) != Status::OutOfRange()) {
+  if (block->Split(new_size, &fragment) == Status::OutOfRange()) {
     block->Split(old_size, &fragment).IgnoreError();
   }
   block->MarkUsed();

@@ -11,7 +11,8 @@ for a dynamic allocator. This is composed of the following parts:
   splitting and merging of blocks.
 - ``freelist``: A freelist, suitable for fast lookups of available memory chunks
   (i.e. ``block`` s).
-- ``allocator``: An interface for memory allocators.
+- ``allocator``: An interface for memory allocators. Several concrete
+  implementations are also provided.
 
 Heap Integrity Check
 ====================
@@ -29,6 +30,11 @@ Allocator
 =========
 .. doxygenclass:: pw::allocator::Allocator
    :members:
+
+Provided implementations of the ``Allocator`` interface include:
+
+- ``FallbackAllocator``: Dispatches first to a primary allocator, and, if that
+  fails, to a secondary alloator.
 
 Heap Poisoning
 ==============

@@ -55,6 +55,22 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "fallback_allocator",
+    srcs = [
+        "fallback_allocator.cc",
+    ],
+    hdrs = [
+        "public/pw_allocator/fallback_allocator.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":allocator",
+        "//pw_assert",
+        "//pw_status",
+    ],
+)
+
+pw_cc_library(
     name = "freelist",
     srcs = [
         "freelist.cc",
@@ -97,6 +113,7 @@ pw_cc_library(
     deps = [
         ":allocator",
         ":block",
+        "//pw_assert",
         "//pw_bytes",
     ],
 )
@@ -122,6 +139,19 @@ pw_cc_test(
     deps = [
         ":block",
         "//pw_span",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "fallback_allocator_test",
+    srcs = [
+        "fallback_allocator_test.cc",
+    ],
+    deps = [
+        ":allocator_testing",
+        ":fallback_allocator",
+        "//pw_status",
         "//pw_unit_test",
     ],
 )

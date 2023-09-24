@@ -44,11 +44,10 @@ group("pw_allocator") {
 pw_source_set("allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/allocator.h" ]
-  public_deps = [ dir_pw_result ]
+  public_deps = [ dir_pw_status ]
   deps = [
     dir_pw_assert,
     dir_pw_bytes,
-    dir_pw_status,
   ]
   sources = [ "allocator.cc" ]
 }
@@ -63,6 +62,17 @@ pw_source_set("block") {
     dir_pw_status,
   ]
   sources = [ "block.cc" ]
+}
+
+pw_source_set("fallback_allocator") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_allocator/fallback_allocator.h" ]
+  public_deps = [
+    ":allocator",
+    dir_pw_assert,
+    dir_pw_status,
+  ]
+  sources = [ "fallback_allocator.cc" ]
 }
 
 pw_source_set("freelist") {
@@ -97,6 +107,7 @@ pw_test_group("tests") {
   tests = [
     ":allocator_test",
     ":block_test",
+    ":fallback_allocator_test",
     ":freelist_test",
     ":freelist_heap_test",
   ]
@@ -107,6 +118,7 @@ pw_source_set("allocator_testing") {
   public_deps = [
     ":allocator",
     ":block",
+    dir_pw_assert,
     dir_pw_bytes,
   ]
   sources = [ "allocator_testing.cc" ]
@@ -128,6 +140,15 @@ pw_test("block_test") {
     dir_pw_span,
   ]
   sources = [ "block_test.cc" ]
+}
+
+pw_test("fallback_allocator_test") {
+  deps = [
+    ":allocator_testing",
+    ":fallback_allocator",
+    dir_pw_status,
+  ]
+  sources = [ "fallback_allocator_test.cc" ]
 }
 
 pw_test("freelist_test") {

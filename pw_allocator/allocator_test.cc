@@ -23,27 +23,22 @@
 namespace pw::allocator {
 namespace {
 
-using test::FakeAllocator;
-
 // Test fixtures.
 
 struct AllocatorTest : ::testing::Test {
-  FakeAllocator allocator;
-  std::array<std::byte, 256> buffer;
+ private:
+  std::array<std::byte, 256> buffer = {};
+
+ public:
+  test::FakeAllocator allocator;
 
   void SetUp() override { EXPECT_EQ(allocator.Initialize(buffer), OkStatus()); }
-};
-
-struct TestStruct {
-  uint32_t a;
-  uint32_t b;
-  uint32_t c;
 };
 
 // Unit tests
 
 TEST_F(AllocatorTest, ReallocateNull) {
-  Layout old_layout = Layout::Of<uint32_t>();
+  constexpr Layout old_layout = Layout::Of<uint32_t>();
   size_t new_size = old_layout.size();
   void* new_ptr = allocator.Reallocate(nullptr, old_layout, new_size);
 
@@ -64,23 +59,20 @@ TEST_F(AllocatorTest, ReallocateNull) {
 }
 
 TEST_F(AllocatorTest, ReallocateZeroNewSize) {
-  Layout old_layout = Layout::Of<TestStruct>();
+  constexpr Layout old_layout = Layout::Of<uint32_t[3]>();
   void* ptr = allocator.Allocate(old_layout);
   ASSERT_EQ(allocator.allocate_size(), old_layout.size());
   ASSERT_NE(ptr, nullptr);
+  allocator.ResetParameters();
 
   size_t new_size = 0;
   void* new_ptr = allocator.Reallocate(ptr, old_layout, new_size);
 
-  // Reallocate should call Resize.
-  EXPECT_EQ(allocator.resize_ptr(), ptr);
-  EXPECT_EQ(allocator.resize_old_size(), old_layout.size());
-  EXPECT_EQ(allocator.resize_new_size(), new_size);
-
-  // Resize should fail and Reallocate should call Allocate.
-  EXPECT_EQ(allocator.allocate_size(), new_size);
-
-  // Deallocate should not be called.
+  // Reallocate does not call Resize, Allocate, or Deallocate.
+  EXPECT_EQ(allocator.resize_ptr(), nullptr);
+  EXPECT_EQ(allocator.resize_old_size(), 0U);
+  EXPECT_EQ(allocator.resize_new_size(), 0U);
+  EXPECT_EQ(allocator.allocate_size(), 0U);
   EXPECT_EQ(allocator.deallocate_ptr(), nullptr);
   EXPECT_EQ(allocator.deallocate_size(), 0U);
 
@@ -89,7 +81,7 @@ TEST_F(AllocatorTest, ReallocateZeroNewSize) {
 }
 
 TEST_F(AllocatorTest, ReallocateSame) {
-  Layout layout = Layout::Of<TestStruct>();
+  constexpr Layout layout = Layout::Of<uint32_t[3]>();
   void* ptr = allocator.Allocate(layout);
   ASSERT_EQ(allocator.allocate_size(), layout.size());
   ASSERT_NE(ptr, nullptr);
@@ -114,7 +106,7 @@ TEST_F(AllocatorTest, ReallocateSame) {
 }
 
 TEST_F(AllocatorTest, ReallocateSmaller) {
-  Layout old_layout = Layout::Of<TestStruct>();
+  constexpr Layout old_layout = Layout::Of<uint32_t[3]>();
   void* ptr = allocator.Allocate(old_layout);
   ASSERT_EQ(allocator.allocate_size(), old_layout.size());
   ASSERT_NE(ptr, nullptr);
@@ -140,7 +132,7 @@ TEST_F(AllocatorTest, ReallocateSmaller) {
 }
 
 TEST_F(AllocatorTest, ReallocateLarger) {
-  Layout old_layout = Layout::Of<uint32_t>();
+  constexpr Layout old_layout = Layout::Of<uint32_t>();
   void* ptr = allocator.Allocate(old_layout);
   ASSERT_EQ(allocator.allocate_size(), old_layout.size());
   ASSERT_NE(ptr, nullptr);
@@ -154,7 +146,7 @@ TEST_F(AllocatorTest, ReallocateLarger) {
   ASSERT_NE(next, nullptr);
   allocator.ResetParameters();
 
-  size_t new_size = sizeof(TestStruct);
+  size_t new_size = sizeof(uint32_t[3]);
   void* new_ptr = allocator.Reallocate(ptr, old_layout, new_size);
 
   // Reallocate should call Resize.
