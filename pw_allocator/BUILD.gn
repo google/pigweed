@@ -103,6 +103,20 @@ pw_source_set("freelist_heap") {
   sources = [ "freelist_heap.cc" ]
 }
 
+pw_source_set("split_free_list_allocator") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_allocator/split_free_list_allocator.h" ]
+  public_deps = [
+    ":allocator",
+    dir_pw_status,
+  ]
+  deps = [
+    dir_pw_assert,
+    dir_pw_bytes,
+  ]
+  sources = [ "split_free_list_allocator.cc" ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":allocator_test",
@@ -110,6 +124,7 @@ pw_test_group("tests") {
     ":fallback_allocator_test",
     ":freelist_test",
     ":freelist_heap_test",
+    ":split_free_list_allocator_test",
   ]
 }
 
@@ -165,6 +180,15 @@ pw_test("freelist_heap_test") {
   configs = [ ":enable_heap_poison" ]
   deps = [ ":freelist_heap" ]
   sources = [ "freelist_heap_test.cc" ]
+}
+
+pw_test("split_free_list_allocator_test") {
+  deps = [
+    ":split_free_list_allocator",
+    "$dir_pw_containers:vector",
+    dir_pw_bytes,
+  ]
+  sources = [ "split_free_list_allocator_test.cc" ]
 }
 
 pw_doc_group("docs") {

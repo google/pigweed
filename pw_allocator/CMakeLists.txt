@@ -82,6 +82,21 @@ pw_add_library(pw_allocator.freelist_heap STATIC
     freelist_heap.cc
 )
 
+pw_add_library(pw_allocator.split_free_list_allocator STATIC
+  SOURCES
+    split_free_list_allocator.cc
+  HEADERS
+    public/pw_allocator/split_free_list_allocator.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.allocator
+    pw_status
+  PRIVATE_DEPS
+    pw_assert
+    pw_bytes
+)
+
 pw_add_library(pw_allocator.allocator_testing STATIC
   HEADERS
     pw_allocator_private/allocator_testing.h
@@ -146,6 +161,19 @@ pw_add_test(pw_allocator.freelist_heap_test
     freelist_heap_test.cc
   PRIVATE_DEPS
     pw_allocator.freelist_heap
+  GROUPS
+    modules
+    pw_allocator
+)
+
+pw_add_test(pw_allocator.split_free_list_allocator_test
+  SOURCES
+    split_free_list_allocator_test.cc
+  PRIVATE_DEPS
+    pw_allocator.split_free_list_allocator
+    pw_containers.vector
+    pw_bytes
+    pw_unit_test
   GROUPS
     modules
     pw_allocator

@@ -103,6 +103,23 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "split_free_list_allocator",
+    srcs = [
+        "split_free_list_allocator.cc",
+    ],
+    hdrs = [
+        "public/pw_allocator/split_free_list_allocator.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":allocator",
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_status",
+    ],
+)
+
+pw_cc_library(
     name = "allocator_testing",
     srcs = [
         "allocator_testing.cc",
@@ -176,5 +193,18 @@ pw_cc_test(
     ],
     deps = [
         ":freelist_heap",
+    ],
+)
+
+pw_cc_test(
+    name = "split_free_list_allocator_test",
+    srcs = [
+        "split_free_list_allocator_test.cc",
+    ],
+    deps = [
+        ":split_free_list_allocator",
+        "//pw_bytes",
+        "//pw_containers:vector",
+        "//pw_unit_test",
     ],
 )
