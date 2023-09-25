@@ -109,8 +109,6 @@ void Metric::Dump(IntrusiveList<Metric>& metrics, int level) {
   }
 }
 
-Group::Group(Token name) : name_(name) {}
-
 Group::Group(Token name, IntrusiveList<Group>& groups) : name_(name) {
   groups.push_front(*this);
 }

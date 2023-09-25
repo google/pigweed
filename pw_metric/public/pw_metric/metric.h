@@ -65,10 +65,10 @@ class Metric : public IntrusiveList<Metric>::Item {
   void operator=(const Metric&) = delete;
 
  protected:
-  Metric(Token name, float value)
+  constexpr Metric(Token name, float value)
       : name_and_type_((name & kTokenMask) | kTypeFloat), float_(value) {}
 
-  Metric(Token name, uint32_t value)
+  constexpr Metric(Token name, uint32_t value)
       : name_and_type_((name & kTokenMask) | kTypeInt), uint_(value) {}
 
   Metric(Token name, float value, IntrusiveList<Metric>& metrics);
@@ -112,7 +112,7 @@ class TypedMetric;
 template <>
 class TypedMetric<float> : public Metric {
  public:
-  TypedMetric(Token name, float value) : Metric(name, value) {}
+  constexpr TypedMetric(Token name, float value) : Metric(name, value) {}
   TypedMetric(Token name, float value, IntrusiveList<Metric>& metrics)
       : Metric(name, value, metrics) {}
 
@@ -129,7 +129,7 @@ class TypedMetric<float> : public Metric {
 template <>
 class TypedMetric<uint32_t> : public Metric {
  public:
-  TypedMetric(Token name, uint32_t value) : Metric(name, value) {}
+  constexpr TypedMetric(Token name, uint32_t value) : Metric(name, value) {}
   TypedMetric(Token name, uint32_t value, IntrusiveList<Metric>& metrics)
       : Metric(name, value, metrics) {}
 
@@ -148,7 +148,7 @@ class TypedMetric<uint32_t> : public Metric {
 // Size: 16 bytes/128 bits - next, name, metrics, children.
 class Group : public IntrusiveList<Group>::Item {
  public:
-  Group(Token name);
+  constexpr Group(Token name) : name_(name) {}
   Group(Token name, IntrusiveList<Group>& groups);
 
   Token name() const { return name_; }
