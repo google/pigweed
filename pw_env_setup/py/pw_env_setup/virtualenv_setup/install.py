@@ -227,12 +227,15 @@ def install(  # pylint: disable=too-many-arguments,too-many-locals,too-many-stat
     else:
         env = contextlib.nullcontext()
 
-    # Delete activation scripts. Typically they're created read-only and venv
-    # will complain when trying to write over them fails.
-    if os.path.isdir(venv_bin):
-        for entry in os.listdir(venv_bin):
-            if entry.lower().startswith('activate'):
-                os.unlink(os.path.join(venv_bin, entry))
+    # Virtual environments may contain read-only files (notably activate
+    # scripts).  `venv` calls below will fail if they are not writeable.
+    if os.path.isdir(venv_path):
+        for root, _dirs, files in os.walk(venv_path):
+            for file in files:
+                path = os.path.join(root, file)
+                mode = os.lstat(path).st_mode
+                if not (stat.S_ISLNK(mode) or (mode & stat.S_IWRITE)):
+                    os.chmod(path, mode | stat.S_IWRITE)
 
     pyvenv_cfg = os.path.join(venv_path, 'pyvenv.cfg')
 
@@ -251,7 +254,7 @@ def install(  # pylint: disable=too-many-arguments,too-many-locals,too-many-stat
         # TODO(spang): Pass --upgrade-deps and remove pip & setuptools
         # upgrade below. This can only be done once the minimum python
         # version is at least 3.9.
-        cmd = [python, '-m', 'venv', '--upgrade']
+        cmd = [python, '-m', 'venv']
 
         # Windows requires strange wizardry, and must follow symlinks
         # starting with 3.11.
@@ -262,8 +265,15 @@ def install(  # pylint: disable=too-many-arguments,too-many-locals,too-many-stat
         # This file doesn't exist in Python 3.11 on Windows and may be a bug
         # in venv. Pigweed already uses symlinks on Windows for the GN build,
         # so adding this option is not an issue.
+        #
+        # Further excitement is had when trying to update a virtual environment
+        # that is created using symlinks under Windows.  `venv` will fail with
+        # and error that the source and destination are the same file.  To work
+        # around this, we run `venv` in `--clear` mode under Windows.
         if _is_windows() and version >= (3, 11):
-            cmd += ['--symlinks']
+            cmd += ['--clear', '--symlinks']
+        else:
+            cmd += ['--upgrade']
 
         cmd += ['--system-site-packages'] if system_packages else []
         cmd += [venv_path]
