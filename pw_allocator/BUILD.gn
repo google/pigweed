@@ -103,6 +103,17 @@ pw_source_set("freelist_heap") {
   sources = [ "freelist_heap.cc" ]
 }
 
+pw_source_set("libc_allocator") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_allocator/libc_allocator.h" ]
+  public_deps = [ ":allocator" ]
+  deps = [
+    dir_pw_assert,
+    dir_pw_bytes,
+  ]
+  sources = [ "libc_allocator.cc" ]
+}
+
 pw_source_set("null_allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/null_allocator.h" ]
@@ -130,6 +141,7 @@ pw_test_group("tests") {
     ":fallback_allocator_test",
     ":freelist_test",
     ":freelist_heap_test",
+    ":libc_allocator_test",
     ":null_allocator_test",
     ":split_free_list_allocator_test",
   ]
@@ -187,6 +199,11 @@ pw_test("freelist_heap_test") {
   configs = [ ":enable_heap_poison" ]
   deps = [ ":freelist_heap" ]
   sources = [ "freelist_heap_test.cc" ]
+}
+
+pw_test("libc_allocator_test") {
+  deps = [ ":libc_allocator" ]
+  sources = [ "libc_allocator_test.cc" ]
 }
 
 pw_test("null_allocator_test") {

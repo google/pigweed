@@ -120,6 +120,23 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "libc_allocator",
+    srcs = [
+        "libc_allocator.cc",
+    ],
+    hdrs = [
+        "public/pw_allocator/libc_allocator.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":allocator",
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_status",
+    ],
+)
+
+pw_cc_library(
     name = "null_allocator",
     hdrs = [
         "public/pw_allocator/null_allocator.h",
@@ -204,6 +221,17 @@ pw_cc_test(
     ],
     deps = [
         ":freelist_heap",
+    ],
+)
+
+pw_cc_test(
+    name = "libc_allocator_test",
+    srcs = [
+        "libc_allocator_test.cc",
+    ],
+    deps = [
+        ":libc_allocator",
+        "//pw_unit_test",
     ],
 )
 
