@@ -120,6 +120,17 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "null_allocator",
+    hdrs = [
+        "public/pw_allocator/null_allocator.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":allocator",
+    ],
+)
+
+pw_cc_library(
     name = "allocator_testing",
     srcs = [
         "allocator_testing.cc",
@@ -193,6 +204,17 @@ pw_cc_test(
     ],
     deps = [
         ":freelist_heap",
+    ],
+)
+
+pw_cc_test(
+    name = "null_allocator_test",
+    srcs = [
+        "null_allocator_test.cc",
+    ],
+    deps = [
+        ":null_allocator",
+        "//pw_unit_test",
     ],
 )
 

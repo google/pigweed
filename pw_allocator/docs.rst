@@ -35,6 +35,8 @@ Provided implementations of the ``Allocator`` interface include:
 
 - ``FallbackAllocator``: Dispatches first to a primary allocator, and, if that
   fails, to a secondary alloator.
+- ``NullAllocator``: Always fails. This may be useful if allocations should be
+  disallowed under specific circumstances.
 - ``SplitFreeListAllocator``: Tracks free blocks using a free list, and splits
   large and small allocations between the front and back, respectively, of its
   memory region in order to reduce fragmentation.
