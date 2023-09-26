@@ -63,6 +63,7 @@ template("pw_cc_negative_compilation_test") {
 
     # Create a group of the generated NC test targets.
     group(target_name) {
+      forward_variables_from(invoker, [ "testonly" ])
       deps = []
       foreach(test, _tests) {
         deps += [ "$_out_dir:$target_name.$test.negative_compilation_test" ]
@@ -73,6 +74,7 @@ template("pw_cc_negative_compilation_test") {
     # negative compilation test targets depend on. Use an action for this target
     # so that depending on it will not link in any source files.
     pw_python_action(target_name) {
+      forward_variables_from(invoker, [ "testonly" ])
       script = "$dir_pw_build/py/pw_build/nop.py"
       stamp = true
       deps = [ ":$target_name._base" ]

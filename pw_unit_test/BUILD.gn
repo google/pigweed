@@ -58,6 +58,7 @@ pw_source_set("config") {
 
 # pw_unit_test facade. This provides a GoogleTest-compatible test framework.
 pw_source_set("pw_unit_test") {
+  testonly = pw_unit_test_TESTONLY
   public_deps = [ pw_unit_test_GOOGLETEST_BACKEND ]
 }
 
@@ -129,6 +130,7 @@ pw_source_set("simple_printing_event_handler") {
 # framework. Unit test files can link against this library to build runnable
 # unit test executables.
 pw_source_set("simple_printing_main") {
+  testonly = pw_unit_test_TESTONLY
   deps = [
     ":pw_unit_test",
     ":simple_printing_event_handler",
@@ -147,6 +149,7 @@ pw_source_set("printf_event_handler") {
 }
 
 pw_source_set("printf_main") {
+  testonly = pw_unit_test_TESTONLY
   deps = [
     ":printf_event_handler",
     ":pw_unit_test",
@@ -174,6 +177,7 @@ group("logging") {
 }
 
 pw_source_set("logging_main") {
+  testonly = pw_unit_test_TESTONLY
   deps = [
     ":logging",
     ":pw_unit_test",
@@ -190,6 +194,7 @@ config("rpc_service_backend_gtest") {
 }
 
 pw_source_set("rpc_service") {
+  testonly = pw_unit_test_TESTONLY
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":event_handler",
@@ -215,6 +220,7 @@ pw_source_set("rpc_service") {
 }
 
 pw_source_set("rpc_main") {
+  testonly = pw_unit_test_TESTONLY
   public_deps = [ ":pw_unit_test" ]
   deps = [
     ":rpc_service",
@@ -232,6 +238,7 @@ pw_source_set("static_library_support") {
 }
 
 pw_executable("test_rpc_server") {
+  testonly = pw_unit_test_TESTONLY
   sources = [ "test_rpc_server.cc" ]
   deps = [
     ":pw_unit_test",
@@ -264,6 +271,7 @@ pw_test_group("metadata_only_group") {
 }
 
 pw_python_action_test("test_group_metadata_test") {
+  testonly = pw_unit_test_TESTONLY
   sources = [ "py/test_group_metadata_test.py" ]
   args = [
     "--stamp-path",
@@ -279,6 +287,7 @@ pw_test("framework_test") {
 }
 
 pw_static_library("tests_in_archive") {
+  testonly = pw_unit_test_TESTONLY
   sources = [
     "static_library_archived_tests.cc",
     "static_library_missing_archived_tests.cc",

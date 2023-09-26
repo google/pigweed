@@ -28,6 +28,7 @@ template("fake_dispatcher_fixture") {
   assert(defined(invoker.backend))
 
   pw_source_set(target_name) {
+    testonly = pw_unit_test_TESTONLY
     public = [ "$dir_pw_async/public/pw_async/fake_dispatcher_fixture.h" ]
     public_deps = [
       "$dir_pw_unit_test",

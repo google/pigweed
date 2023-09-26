@@ -830,6 +830,7 @@ template("pw_python_script") {
   if (defined(invoker.action)) {
     pw_python_action("$target_name.action") {
       forward_variables_from(invoker.action, "*", [ "python_deps" ])
+      forward_variables_from(invoker, [ "testonly" ])
       python_deps = [ ":${invoker.target_name}" ]
 
       if (!defined(script) && !defined(module) && defined(invoker.sources)) {

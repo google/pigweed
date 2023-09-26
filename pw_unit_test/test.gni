@@ -100,6 +100,11 @@ declare_args() {
   # Type: string (path to a .gni file)
   # Usage: toolchain-controlled only
   pw_unit_test_EXECUTABLE_TARGET_TYPE_FILE = ""
+
+  # If true, the pw_unit_test target, pw_test targets, and pw_test_group targets
+  # will define `testonly = true`.  This is false by default for backwards
+  # compatibility.
+  pw_unit_test_TESTONLY = false
 }
 
 if (pw_unit_test_EXECUTABLE_TARGET_TYPE != "pw_executable" &&
@@ -238,6 +243,7 @@ template("pw_test") {
   pw_internal_disableable_target("$target_name.lib") {
     target_type = "pw_source_set"
     enable_if = _test_is_enabled
+    testonly = pw_unit_test_TESTONLY
 
     # It is possible that the executable target type has been overriden by
     # pw_unit_test_EXECUTABLE_TARGET_TYPE, which may allow for additional
@@ -284,7 +290,6 @@ template("pw_test") {
       "public",
       "sources",
       "source_gen_deps",
-      "testonly",
       "visibility",
 
       # pw_source_set variables
@@ -324,6 +329,7 @@ template("pw_test") {
   pw_internal_disableable_target(_test_target_name) {
     target_type = pw_unit_test_EXECUTABLE_TARGET_TYPE
     enable_if = _test_is_enabled
+    testonly = pw_unit_test_TESTONLY
 
     # Include configs, deps, etc. from the pw_test in the executable as well as
     # the library to ensure that linker flags propagate to the executable.
@@ -368,6 +374,7 @@ template("pw_test") {
       invoker.negative_compilation_tests) {
     pw_cc_negative_compilation_test("$target_name.nc_test") {
       forward_variables_from(invoker, "*")
+      testonly = pw_unit_test_TESTONLY
 
       # Add a dependency on pw_unit_test since it is implied for pw_unit_test
       # targets.
@@ -389,6 +396,7 @@ template("pw_test") {
 
       # Create a placeholder .run target for the regular version of the test.
       group(_test_target_name + ".run") {
+        testonly = pw_unit_test_TESTONLY
         deps = [ ":$_test_target_name" ]
       }
     }
@@ -456,10 +464,12 @@ template("pw_test") {
     }
 
     group(_test_to_run + ".run") {
+      testonly = pw_unit_test_TESTONLY
       public_deps = [ ":$_test_to_run._run" ]
     }
   } else {
     group(_test_target_name + ".run") {
+      testonly = pw_unit_test_TESTONLY
       public_deps = [ ":$_test_target_name" ]
     }
   }
@@ -501,6 +511,7 @@ template("pw_test_group") {
     }
 
     group(_group_target + ".lib") {
+      testonly = pw_unit_test_TESTONLY
       deps = []
       foreach(_target, _deps) {
         _dep_target = get_label_info(_target, "label_no_toolchain")
@@ -521,6 +532,7 @@ template("pw_test_group") {
       }
     }
     pw_test_info(_test_group_metadata) {
+      testonly = pw_unit_test_TESTONLY
       build_label = _group_target
       test_type = "test_group"
       test_name = rebase_path(get_label_info(_group_target, "dir"), "//")
@@ -530,6 +542,7 @@ template("pw_test_group") {
 
     if (defined(invoker.output_metadata) && invoker.output_metadata) {
       generated_file(_group_target) {
+        testonly = pw_unit_test_TESTONLY
         outputs = [ "$target_out_dir/$target_name.testinfo.json" ]
         data_keys = [
           "test_groups",
@@ -544,6 +557,7 @@ template("pw_test_group") {
       }
     } else {
       group(_group_target) {
+        testonly = pw_unit_test_TESTONLY
         deps = [ ":$_test_group_metadata" ]
       }
     }
@@ -552,6 +566,7 @@ template("pw_test_group") {
     # all of the individual *.run targets and groups.
     if (pw_unit_test_AUTOMATIC_RUNNER != "") {
       group(_group_target + ".run") {
+        testonly = pw_unit_test_TESTONLY
         deps = [ ":$_group_target" ]
         foreach(_target, _deps) {
           _dep_target = get_label_info(_target, "label_no_toolchain")

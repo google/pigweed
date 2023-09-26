@@ -218,6 +218,7 @@ pw_source_set("libfuzzer") {
 # This can be linked against fuzz target functions to create unit tests for
 # them.
 pw_source_set("libfuzzer_test") {
+  testonly = pw_unit_test_TESTONLY
   sources = [ "pw_fuzzer_disabled.cc" ]
   public_deps = [ ":libfuzzer" ]
   deps = [ dir_pw_unit_test ]

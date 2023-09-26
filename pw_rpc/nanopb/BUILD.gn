@@ -135,6 +135,7 @@ pw_source_set("echo_service") {
 }
 
 pw_source_set("client_integration_test") {
+  testonly = pw_unit_test_TESTONLY
   public_configs = [ ":public" ]
   public_deps = [
     "$dir_pw_sync:binary_semaphore",

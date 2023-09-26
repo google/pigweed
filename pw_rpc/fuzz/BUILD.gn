@@ -108,6 +108,7 @@ pw_test("engine_test") {
 }
 
 pw_executable("client_fuzzer") {
+  testonly = pw_unit_test_TESTONLY
   sources = [ "client_fuzzer.cc" ]
   deps = [
     ":argparse",
@@ -118,6 +119,7 @@ pw_executable("client_fuzzer") {
 }
 
 pw_python_action("cpp_client_server_fuzz_test") {
+  testonly = pw_unit_test_TESTONLY
   script = "../py/pw_rpc/testing.py"
   args = [
     "--server",

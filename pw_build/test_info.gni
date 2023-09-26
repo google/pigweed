@@ -70,6 +70,7 @@ template("pw_test_info") {
   }
 
   group(target_name) {
+    forward_variables_from(invoker, [ "testonly" ])
     if (_type == "test_group") {
       metadata = {
         test_groups = [ _metadata ]

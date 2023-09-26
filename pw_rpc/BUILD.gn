@@ -321,6 +321,7 @@ pw_source_set("test_utils") {
 }
 
 pw_source_set("integration_testing") {
+  testonly = pw_unit_test_TESTONLY
   public = [
     "public/pw_rpc/integration_test_socket_client.h",
     "public/pw_rpc/integration_testing.h",
@@ -351,6 +352,7 @@ pw_executable("test_rpc_server") {
 }
 
 pw_executable("client_integration_test") {
+  testonly = pw_unit_test_TESTONLY
   sources = [ "client_integration_test.cc" ]
   deps = [
     ":client",
@@ -369,6 +371,7 @@ pw_executable("client_integration_test") {
 }
 
 pw_python_action_test("cpp_client_server_integration_test") {
+  testonly = pw_unit_test_TESTONLY
   script = "py/pw_rpc/testing.py"
   args = [
     "--server",

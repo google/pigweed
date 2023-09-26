@@ -376,6 +376,7 @@ pw_test("timed_thread_notification_facade_test") {
 # an implementation of $dir_pw_thread:test_threads and
 # $dir_pw_sync:condition_variable.
 pw_source_set("condition_variable_test") {
+  testonly = pw_unit_test_TESTONLY
   sources = [ "condition_variable_test.cc" ]
   deps = [
     ":condition_variable",

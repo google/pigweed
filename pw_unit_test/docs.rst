@@ -429,6 +429,13 @@ Build arguments
    Controls whether to build and run facade tests. Facade tests add considerably
    to build time, so they are disabled by default.
 
+.. option:: pw_unit_test_TESTONLY <boolean>
+
+   Controls the `testonly` variable in pw_test, pw_test_group, and
+   miscellaneous testing targets. This is useful if your test libraries (e.g.
+   GoogleTest) used by pw_unit_test have the `testonly` flag set. False by
+   default for backwards compatibility.
+
 CMake
 -----
 pw_add_test function

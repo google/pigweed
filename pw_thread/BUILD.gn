@@ -219,6 +219,7 @@ pw_source_set("non_portable_test_thread_options") {
 # pw_source_set and a pw_source_set which provides the implementation of
 # test_threads. See "$dir_pw_thread_stl:thread_backend_test" as an example.
 pw_source_set("thread_facade_test") {
+  testonly = pw_unit_test_TESTONLY
   sources = [ "thread_facade_test.cc" ]
   deps = [
     ":id",

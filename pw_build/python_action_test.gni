@@ -118,6 +118,7 @@ template("pw_python_action_test") {
                                  "other_deps",
                                  "inputs",
                                  "static_analysis",
+                                 "testonly",
                                  "pylintrc",
                                  "mypy_ini",
                                ])
@@ -169,14 +170,17 @@ template("pw_python_action_test") {
 
   # For compatibility with `pw_test_group`.
   group(_test_target_name + ".lib") {
+    forward_variables_from(invoker, [ "testonly" ])
   }
 
   # For compatibility with `pw_test_group`.
   group(_test_target_name + ".run") {
+    forward_variables_from(invoker, [ "testonly" ])
     deps = _run_deps
   }
 
   group(_test_target_name) {
+    forward_variables_from(invoker, [ "testonly" ])
     deps = _deps
     metadata = _metadata
   }
