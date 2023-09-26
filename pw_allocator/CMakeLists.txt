@@ -20,11 +20,27 @@ pw_add_library(pw_allocator.allocator STATIC
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_status
+  PRIVATE_DEPS
     pw_assert
     pw_bytes
-    pw_status
   SOURCES
     allocator.cc
+)
+
+pw_add_library(pw_allocator.allocator_metric_proxy STATIC
+  HEADERS
+    public/pw_allocator/allocator_metric_proxy.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.allocator
+    pw_metric
+    pw_status
+  PRIVATE_DEPS
+    pw_assert
+  SOURCES
+    allocator_metric_proxy.cc
 )
 
 pw_add_library(pw_allocator.block STATIC
@@ -140,6 +156,17 @@ pw_add_test(pw_allocator.allocator_test
     pw_allocator.allocator
     pw_allocator.allocator_testing
     pw_bytes
+  GROUPS
+    modules
+    pw_allocator
+)
+
+pw_add_test(pw_allocator.allocator_metric_proxy_test
+  SOURCES
+    allocator_metric_proxy_test.cc
+  PRIVATE_DEPS
+    pw_allocator.allocator_metric_proxy
+    pw_allocator.allocator_testing
   GROUPS
     modules
     pw_allocator

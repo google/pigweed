@@ -52,6 +52,18 @@ pw_source_set("allocator") {
   sources = [ "allocator.cc" ]
 }
 
+pw_source_set("allocator_metric_proxy") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_allocator/allocator_metric_proxy.h" ]
+  public_deps = [
+    ":allocator",
+    dir_pw_metric,
+    dir_pw_status,
+  ]
+  deps = [ dir_pw_assert ]
+  sources = [ "allocator_metric_proxy.cc" ]
+}
+
 pw_source_set("block") {
   public_configs = [ ":default_config" ]
   configs = [ ":enable_heap_poison" ]
@@ -137,6 +149,7 @@ pw_source_set("split_free_list_allocator") {
 pw_test_group("tests") {
   tests = [
     ":allocator_test",
+    ":allocator_metric_proxy_test",
     ":block_test",
     ":fallback_allocator_test",
     ":freelist_test",
@@ -165,6 +178,14 @@ pw_test("allocator_test") {
     dir_pw_bytes,
   ]
   sources = [ "allocator_test.cc" ]
+}
+
+pw_test("allocator_metric_proxy_test") {
+  deps = [
+    ":allocator_metric_proxy",
+    ":allocator_testing",
+  ]
+  sources = [ "allocator_metric_proxy_test.cc" ]
 }
 
 pw_test("block_test") {

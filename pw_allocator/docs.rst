@@ -33,6 +33,7 @@ Allocator
 
 Provided implementations of the ``Allocator`` interface include:
 
+- ``AllocatorMetricProxy``: Wraps another allocator and records its usage.
 - ``FallbackAllocator``: Dispatches first to a primary allocator, and, if that
   fails, to a secondary alloator.
 - ``LibCAllocator``: Uses ``malloc``, ``realloc``, and ``free``. This should
