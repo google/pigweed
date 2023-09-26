@@ -254,26 +254,6 @@ pw_doc_group("docs") {
   ]
 }
 
-pw_proto_library("test_server_proto") {
-  sources = [ "test_server.proto" ]
-  prefix = "pw_transfer_test"
-  deps = [ "$dir_pw_protobuf:common_protos" ]
-}
-
-pw_executable("test_rpc_server") {
-  sources = [ "test_rpc_server.cc" ]
-  deps = [
-    ":atomic_file_transfer_handler",
-    ":pw_transfer",
-    ":test_server_proto.raw_rpc",
-    "$dir_pw_rpc/system_server",
-    "$dir_pw_rpc/system_server:socket",
-    "$dir_pw_stream:std_file_stream",
-    "$dir_pw_thread:thread",
-    dir_pw_log,
-  ]
-}
-
 pw_executable("integration_test_server") {
   sources = [ "integration_test/server.cc" ]
   deps = [

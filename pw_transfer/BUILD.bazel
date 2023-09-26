@@ -14,7 +14,7 @@
 
 load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("//pw_build:pigweed.bzl", "pw_cc_binary", "pw_cc_library", "pw_cc_test")
+load("//pw_build:pigweed.bzl", "pw_cc_library", "pw_cc_test")
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -227,21 +227,6 @@ pw_cc_test(
     ],
 )
 
-pw_cc_binary(
-    name = "test_rpc_server",
-    srcs = ["test_rpc_server.cc"],
-    deps = [
-        ":atomic_file_transfer_handler",
-        ":pw_transfer",
-        ":test_server_pwpb.raw_rpc",
-        "//pw_log",
-        "//pw_rpc/system_server",
-        "//pw_stream:std_file_stream",
-        "//pw_thread:thread",
-        "//pw_work_queue",
-    ],
-)
-
 proto_library(
     name = "transfer_proto",
     srcs = [
@@ -262,21 +247,4 @@ py_proto_library(
 java_lite_proto_library(
     name = "transfer_proto_java_lite",
     deps = [":transfer_proto"],
-)
-
-proto_library(
-    name = "test_server",
-    srcs = [
-        "test_server.proto",
-    ],
-    import_prefix = "pw_transfer_test",
-    strip_import_prefix = "/pw_transfer",
-    deps = [
-        "//pw_protobuf:common_proto",
-    ],
-)
-
-pw_proto_library(
-    name = "test_server_pwpb",
-    deps = [":test_server"],
 )
