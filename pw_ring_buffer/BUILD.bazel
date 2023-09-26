@@ -42,9 +42,7 @@ pw_cc_library(
 
 pw_cc_test(
     name = "prefixed_entry_ring_buffer_test",
-    srcs = [
-        "prefixed_entry_ring_buffer_test.cc",
-    ],
+    srcs = ["prefixed_entry_ring_buffer_test.cc"],
     deps = [
         ":pw_ring_buffer",
         "//pw_unit_test",

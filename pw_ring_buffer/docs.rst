@@ -1,22 +1,25 @@
 .. _module-pw_ring_buffer:
 
---------------
+==============
 pw_ring_buffer
---------------
+==============
 The ``pw_ring_buffer`` module will eventually provide several ring buffer
 implementations, each with different tradeoffs.
 
 This documentation is incomplete :)
 
-Compatibility
-=============
-* C++14
+-----------------------
+PrefixedEntryRingBuffer
+-----------------------
+:cpp:class:`pw::ring_buffer::PrefixedEntryRingBuffer` is a circular buffer for
+arbitrary length data entries with an optional user-defined preamble byte. It
+supports multiple independent readers.
 
 Iterator
 ========
 In crash contexts, it may be useful to scan through a ring buffer that may
 have a mix of valid (yet to be read), stale (read), and invalid entries. The
-`PrefixedEntryRingBufferMulti::iterator` class can be used to walk through
+``PrefixedEntryRingBufferMulti::iterator`` class can be used to walk through
 entries in the provided buffer.
 
 .. code-block:: cpp
@@ -50,8 +53,8 @@ entries in the provided buffer.
 
 In cases where a crash has caused the ring buffer to have corrupted data, the
 iterator will progress until it sees the corrupted section and instead move to
-`iterator::end()`. The `iterator::status()` function returns a `pw::Status`
-indicating the reason the iterator reached it's end.
+``iterator::end()``. The ``iterator::status()`` function returns a
+:cpp:class:`pw::Status` indicating the reason the iterator reached it's end.
 
 .. code-block:: cpp
 
@@ -80,8 +83,3 @@ entry to delimit the size of the entry. Unlike the iterator, the methods in
 When these methods encounter data corruption, there is no generic way to
 recover, and thus, the application crashes. Data corruption is indicative of
 other issues.
-
-Dependencies
-============
-* ``pw_span``
-* ``pw_containers`` - for tests only
