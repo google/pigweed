@@ -301,9 +301,10 @@ using Token = ::pw_tokenizer_Token;
 #else
 
 #define _PW_TOKENIZER_CONST const
+#define _PW_ALIGNAS(alignment) __attribute__((aligned(alignment)))
 
 #define _PW_TOKENIZER_RECORD_ORIGINAL_STRING(token, domain, string) \
-  _Alignas(1) static const _PW_TOKENIZER_STRING_ENTRY(token, domain, string)
+  _PW_ALIGNAS(1) static const _PW_TOKENIZER_STRING_ENTRY(token, domain, string)
 
 #endif  // __cplusplus
 

@@ -263,6 +263,26 @@ pw_cc_test(
     ],
 )
 
+pw_cc_test(
+    name = "tokenize_c99_test",
+    srcs = ["tokenize_c99_test_entry_point.cc"],
+    deps = [
+        ":tokenize_c99_test_c",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_library(
+    name = "tokenize_c99_test_c",
+    srcs = ["tokenize_c99_test.c"],
+    copts = ["-std=c99"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":pw_tokenizer",
+        "//pw_containers:variable_length_entry_deque",
+    ],
+)
+
 # Create a shared library for the tokenizer JNI wrapper. The include paths for
 # the JNI headers must be available in the system or provided with the
 # pw_java_native_interface_include_dirs variable.

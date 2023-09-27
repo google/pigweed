@@ -171,6 +171,7 @@ pw_test_group("tests") {
     ":simple_tokenize_test",
     ":token_database_test",
     ":tokenize_test",
+    ":tokenize_c99_test",
   ]
   group_deps = [
     ":fuzzers",
@@ -263,6 +264,18 @@ pw_test("tokenize_test") {
   deps = [
     ":pw_tokenizer",
     "$dir_pw_varint",
+  ]
+}
+
+pw_test("tokenize_c99_test") {
+  cflags_c = [ "-std=c99" ]
+  sources = [
+    "tokenize_c99_test.c",
+    "tokenize_c99_test_entry_point.cc",
+  ]
+  deps = [
+    ":pw_tokenizer",
+    "$dir_pw_containers:variable_length_entry_deque",
   ]
 }
 
