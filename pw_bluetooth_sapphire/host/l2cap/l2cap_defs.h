@@ -248,6 +248,9 @@ enum class LECreditBasedConnectionResult : uint16_t {
 // including those dynamically-assigned/-obtained
 using PSM = uint16_t;
 constexpr PSM kInvalidPSM = 0x0000;
+// The minimum PSM value in the dynamic range of PSMs.
+// Defined in 5.2, Vol 3, Part A, 4.2.
+constexpr PSM kMinDynamicPSM = 0x1001;
 
 // Well-known Protocol and Service Multiplexer values defined by the Bluetooth
 // SIG in Logical Link Control Assigned Numbers

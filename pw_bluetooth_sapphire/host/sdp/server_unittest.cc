@@ -117,6 +117,22 @@ class ServerTest : public TestingBase {
     return handle;
   }
 
+  void TriggerInboundL2capChannelsForAllocated(size_t expected_psm_count) {
+    auto allocated = server()->AllocatedPsmsForTest();
+    // The SDP PSM is special and will always exist. Not connectable.
+    EXPECT_TRUE(allocated.erase(l2cap::kSDP));
+    EXPECT_EQ(expected_psm_count, allocated.size());
+
+    // Trigger inbound L2CAP channels for the remaining. |id|, |remote_id| aren't important.
+    auto id = 0x40;
+    for (auto it = allocated.begin(); it != allocated.end(); it++) {
+      EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, *it, id, id));
+      id++;
+    }
+
+    RunUntilIdle();
+  }
+
  private:
   l2cap::testing::FakeChannel::WeakPtr channel_;
   std::unique_ptr<l2cap::testing::FakeL2cap> l2cap_;
@@ -634,7 +650,7 @@ TEST_F(ServerTest, RegisterObexService) {
   // It also has additional L2CAP protocols for Browsing & OBEX.
   record.AddProtocolDescriptor(1, protocol::kL2CAP, DataElement(uint16_t{l2cap::kAVCTP_Browse}));
   record.AddProtocolDescriptor(1, protocol::kAVCTP, DataElement(uint16_t{0x0104}));
-  record.AddProtocolDescriptor(2, protocol::kL2CAP, DataElement(uint16_t{57}));
+  record.AddProtocolDescriptor(2, protocol::kL2CAP, DataElement(uint16_t{Server::kDynamicPsm}));
   record.AddProtocolDescriptor(2, protocol::kOBEX, DataElement());
 
   std::vector<ServiceRecord> records;
@@ -646,11 +662,12 @@ TEST_F(ServerTest, RegisterObexService) {
   auto handle = server()->RegisterService(std::move(records), kChannelParams, std::move(cb));
   EXPECT_TRUE(handle);
 
-  EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kAVCTP, 0x40, 0x41));
-  EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kAVCTP_Browse, 0x44, 0x44));
-  EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, 57, 0x42, 0x43));
-  RunUntilIdle();
-  // Expect all 3 PSMs to be registered and connectable.
+  // We expect 3 PSMs to be allocated for this service.
+  // The dynamic PSM is generated randomly and is not known in advance - therefore we trigger L2CAP
+  // channels for all allocated PSMs.
+  TriggerInboundL2capChannelsForAllocated(/*expected_psm_count=*/3);
+
+  // Expect the 3 service-specific PSMs to be connectable.
   EXPECT_EQ(3u, cb_count);
   EXPECT_TRUE(server()->UnregisterService(handle));
 }
@@ -665,7 +682,7 @@ TEST_F(ServerTest, RegisterObexServiceWithAttribute) {
                                DataElement(uint8_t{8}));
   record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kOBEX, DataElement());
   // The MNS protocol also specifies an L2CAP protocol in the attributes section.
-  record.SetAttribute(kGoepL2capPsm, DataElement(uint16_t(55)));
+  record.SetAttribute(kGoepL2capPsm, DataElement(uint16_t(Server::kDynamicPsm)));
 
   std::vector<ServiceRecord> records;
   records.emplace_back(std::move(record));
@@ -676,10 +693,38 @@ TEST_F(ServerTest, RegisterObexServiceWithAttribute) {
   auto handle = server()->RegisterService(std::move(records), kChannelParams, std::move(cb));
   EXPECT_TRUE(handle);
 
-  EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kRFCOMM, 0x40, 0x41));
-  EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, 55, 0x42, 0x43));
-  RunUntilIdle();
+  // We expect 2 PSMs to be allocated and connectable for this service (RFCOMM & Dynamic).
+  TriggerInboundL2capChannelsForAllocated(/*expected_psm_count=*/2);
   EXPECT_EQ(2u, cb_count);
+  EXPECT_TRUE(server()->UnregisterService(handle));
+}
+
+TEST_F(ServerTest, RegisterServiceWithMultipleDynamicPSMs) {
+  // This service is not defined in any Bluetooth specification.
+  ServiceRecord record;
+  record.SetServiceClassUUIDs({profile::kMessageNotificationServer});
+  // Fictional MNS service with a primary protocol with dynamic PSM.
+  record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
+                               DataElement(uint16_t{Server::kDynamicPsm}));
+  record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kOBEX, DataElement());
+  // Fictional protocol also contains a dynamic PSM in the GoepL2capAttribute.
+  record.SetAttribute(kGoepL2capPsm, DataElement(uint16_t(Server::kDynamicPsm)));
+  // Additional protocol has dynamic PSM as well.
+  record.AddProtocolDescriptor(1, protocol::kL2CAP, DataElement(uint16_t{Server::kDynamicPsm}));
+  record.AddProtocolDescriptor(1, protocol::kOBEX, DataElement());
+
+  std::vector<ServiceRecord> records;
+  records.emplace_back(std::move(record));
+
+  size_t cb_count = 0;
+  auto cb = [&](auto /*channel*/, auto& protocol_list) { cb_count++; };
+
+  auto handle = server()->RegisterService(std::move(records), kChannelParams, std::move(cb));
+  EXPECT_TRUE(handle);
+
+  // The dynamic PSMs should all be unique and allocated. Can connect.
+  TriggerInboundL2capChannelsForAllocated(/*expected_psm_count=*/3);
+  EXPECT_EQ(3u, cb_count);
   EXPECT_TRUE(server()->UnregisterService(handle));
 }
 

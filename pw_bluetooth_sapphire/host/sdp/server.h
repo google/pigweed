@@ -10,7 +10,6 @@
 #include <optional>
 #include <unordered_map>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
@@ -28,6 +27,10 @@ namespace bt::sdp {
 class Server final {
  public:
   static constexpr const char* kInspectNodeName = "sdp_server";
+  // A placeholder value for a dynamic PSM.
+  // Note: This is not a valid PSM value itself. It is used to request a randomly
+  // generated dynamic PSM.
+  static constexpr uint16_t kDynamicPsm = 0xffff;
 
   // A new SDP server, which starts with just a ServiceDiscoveryService record.
   // Registers itself with |l2cap| when created.
@@ -77,6 +80,10 @@ class Server final {
   // handle most errors by returning a valid packet with an ErrorResponse.
   std::optional<ByteBufferPtr> HandleRequest(ByteBufferPtr sdu, uint16_t max_tx_sdu_size);
 
+  // Returns the set of allocated L2CAP PSMs in the SDP server.
+  // This is a TEST ONLY hook and should not be used otherwise.
+  std::set<l2cap::PSM> AllocatedPsmsForTest() const;
+
  private:
   // Returns the next unused Service Handle, or 0 if none are available.
   ServiceHandle GetNextHandle();
@@ -100,17 +107,27 @@ class Server final {
   // the services that need to be registered in Server::QueueService.
   using ProtocolQueue = std::vector<std::pair<l2cap::PSM, ServiceHandle>>;
 
+  /// Returns true if the |psm| is allocated in the SDP server.
+  bool IsAllocated(l2cap::PSM psm) const { return psm_to_service_.count(psm); }
+
   // Attempts to add the |psm| to the queue of protocols to be registered.
   // Returns true if the PSM was successfully added to the queue, false otherwise.
-  bool AddPsmToProtocol(ProtocolQueue* protocols_to_register, l2cap::PSM psm, ServiceHandle handle);
+  bool AddPsmToProtocol(ProtocolQueue* protocols_to_register, l2cap::PSM psm,
+                        ServiceHandle handle) const;
 
-  // Given a complete ServiceRecord, extracts the PSM, ProtocolDescriptorList, and
-  // any AdditionalProtocolDescriptorList information.
+  // Returns the next available dynamic PSM. A PSM is considered available if it has not been
+  // allocated already nor reserved in |queued_psms|.
+  // Returns |kInvalidPsm| if no PSM is available.
+  l2cap::PSM GetDynamicPsm(const ProtocolQueue* queued_psms) const;
+
+  // Given a complete ServiceRecord, extracts the PSM, ProtocolDescriptorList,
+  // and any AdditionalProtocolDescriptorList information. Allocates any dynamic
+  // PSMs that were requested in the aforementioned protocol lists.
   // Inserts the extracted info into |psm_to_register|.
   //
   // Returns |true| if the protocols are successfully validated and queued,
   // |false| otherwise.
-  bool QueueService(const ServiceRecord* record, ProtocolQueue* protocols_to_register);
+  bool QueueService(ServiceRecord* record, ProtocolQueue* protocols_to_register);
 
   // l2cap::Channel callbacks
   void OnChannelClosed(l2cap::Channel::UniqueId channel_id);
