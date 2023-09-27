@@ -68,9 +68,10 @@ def colors(enabled: Optional[bool] = None) -> Union[_Color, _NoColor]:
     """
     if enabled is None:
         env = pw_cli.env.pigweed_environment()
-        enabled = env.PW_USE_COLOR or (
-            sys.stdout.isatty() and sys.stderr.isatty()
-        )
+        if 'PW_USE_COLOR' in os.environ:
+            enabled = env.PW_USE_COLOR
+        else:
+            enabled = sys.stdout.isatty() and sys.stderr.isatty()
 
     if enabled and os.name == 'nt':
         # Enable ANSI color codes in Windows cmd.exe.
