@@ -155,45 +155,58 @@ void pw_VariableLengthEntryDeque_PopFront(
   PopFrontNonEmpty(deque);
 }
 
-static pw_VariableLengthEntryDeque_Iterator GetIterator(
-    pw_VariableLengthEntryDeque_ConstHandle deque, uint32_t offset) {
-  if (offset == TAIL(deque)) {
-    return pw_VariableLengthEntryDeque_End(deque);
-  }
+void pw_VariableLengthEntryDeque_Iterator_Advance(
+    pw_VariableLengthEntryDeque_Iterator* iterator) {
+  iterator->_pw_offset = WrapIndex(
+      iterator->_pw_deque,
+      iterator->_pw_offset +
+          ReadEncodedEntrySize(iterator->_pw_deque, iterator->_pw_offset));
+}
 
-  pw_VariableLengthEntryDeque_Iterator iterator;
-  EntrySize size = ReadEntrySize(deque, offset);
-  uint32_t offset_1 = WrapIndex(deque, offset + size.prefix);
+pw_VariableLengthEntryDeque_Entry pw_VariableLengthEntryDeque_GetEntry(
+    const pw_VariableLengthEntryDeque_Iterator* iterator) {
+  pw_VariableLengthEntryDeque_ConstHandle deque = iterator->_pw_deque;
+
+  pw_VariableLengthEntryDeque_Entry entry;
+  EntrySize size = ReadEntrySize(deque, iterator->_pw_offset);
+  uint32_t offset_1 = WrapIndex(deque, iterator->_pw_offset + size.prefix);
 
   const uint32_t first_chunk = BufferSize(deque) - offset_1;
 
   if (size.data <= first_chunk) {
-    iterator.size_1 = size.data;
-    iterator.size_2 = 0;
+    entry.size_1 = size.data;
+    entry.size_2 = 0;
   } else {
-    iterator.size_1 = first_chunk;
-    iterator.size_2 = size.data - first_chunk;
+    entry.size_1 = first_chunk;
+    entry.size_2 = size.data - first_chunk;
   }
 
-  iterator.data_1 = Data(deque) + offset_1;
-  iterator.data_2 = Data(deque) + WrapIndex(deque, offset_1 + iterator.size_1);
-
-  iterator._pw_deque = deque;
-  return iterator;
+  entry.data_1 = Data(deque) + offset_1;
+  entry.data_2 = Data(deque) + WrapIndex(deque, offset_1 + entry.size_1);
+  return entry;
 }
 
-pw_VariableLengthEntryDeque_Iterator pw_VariableLengthEntryDeque_Begin(
-    pw_VariableLengthEntryDeque_ConstHandle deque) {
-  return GetIterator(deque, HEAD(deque));
-}
+uint32_t pw_VariableLengthEntryDeque_Entry_Copy(
+    const pw_VariableLengthEntryDeque_Entry* entry,
+    void* dest,
+    uint32_t count) {
+  PW_DCHECK(dest != NULL || count == 0u);
 
-void pw_VariableLengthEntryDeque_Iterator_Advance(
-    pw_VariableLengthEntryDeque_Iterator* iterator) {
-  *iterator =
-      GetIterator(iterator->_pw_deque,
-                  WrapIndex(iterator->_pw_deque,
-                            (uint32_t)(iterator->data_2 + iterator->size_2 -
-                                       Data(iterator->_pw_deque))));
+  const uint32_t entry_size = entry->size_1 + entry->size_2;
+  const uint32_t to_copy = count < entry_size ? count : entry_size;
+
+  if (to_copy == 0u) {
+    return 0u;
+  }
+
+  memcpy(dest, entry->data_1, entry->size_1);
+
+  const uint32_t remaining = to_copy - entry->size_1;
+  if (remaining != 0u) {
+    memcpy((uint8_t*)dest + entry->size_1, entry->data_2, remaining);
+  }
+
+  return to_copy;
 }
 
 uint32_t pw_VariableLengthEntryDeque_Size(

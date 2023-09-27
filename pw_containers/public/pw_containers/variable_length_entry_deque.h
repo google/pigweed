@@ -142,25 +142,30 @@ void pw_VariableLengthEntryDeque_PushBackOverwrite(
 void pw_VariableLengthEntryDeque_PopFront(
     pw_VariableLengthEntryDeque_Handle deque);
 
-/// Iterator object for a `VariableLengthEntryDeque`. Entries may be stored in
-/// up to two segments, so this iterator includes pointers to both portions of
-/// the entry. Iterators are checked for equality with
-/// @cpp_func{pw_VariableLengthEntryDeque_Iterator_Equals}.
+/// Iterator object for a `VariableLengthEntryDeque`. Iterators are checked for
+/// equality with
+/// @cpp_func{pw_VariableLengthEntryDeque_Iterator_Equal}.
 ///
 /// Iterators are invalidated by any operations that change the container or
 /// its underlying data (push/pop/init).
+typedef struct {
+  // Private: do not access these fields directly!
+  pw_VariableLengthEntryDeque_ConstHandle _pw_deque;
+  uint32_t _pw_offset;
+} pw_VariableLengthEntryDeque_Iterator;
+
+// An entry in the deque. Entries may be stored in up to two segments, so this
+// struct includes pointers to both portions of the entry.
 typedef struct {
   const uint8_t* data_1;
   uint32_t size_1;
   const uint8_t* data_2;
   uint32_t size_2;
-
-  // Private: do not access this field directly!
-  pw_VariableLengthEntryDeque_ConstHandle _pw_deque;
-} pw_VariableLengthEntryDeque_Iterator;
+} pw_VariableLengthEntryDeque_Entry;
 
 /// Returns an iterator to the start of the `VariableLengthEntryDeque`.
-pw_VariableLengthEntryDeque_Iterator pw_VariableLengthEntryDeque_Begin(
+static inline pw_VariableLengthEntryDeque_Iterator
+pw_VariableLengthEntryDeque_Begin(
     pw_VariableLengthEntryDeque_ConstHandle deque);
 
 /// Returns an iterator to entry following the last entry, which is not valid.
@@ -173,9 +178,23 @@ void pw_VariableLengthEntryDeque_Iterator_Advance(
     pw_VariableLengthEntryDeque_Iterator* iterator);
 
 /// Compares two iterators for equality.
-static inline bool pw_VariableLengthEntryDeque_Iterator_Equals(
+static inline bool pw_VariableLengthEntryDeque_Iterator_Equal(
     const pw_VariableLengthEntryDeque_Iterator* lhs,
     const pw_VariableLengthEntryDeque_Iterator* rhs);
+
+/// Dereferences an iterator, loading the entry it points to.
+pw_VariableLengthEntryDeque_Entry pw_VariableLengthEntryDeque_GetEntry(
+    const pw_VariableLengthEntryDeque_Iterator* iterator);
+
+/// Copies the contents of the entry to the provided buffer. The entry may be
+/// split into two regions; this serializes it into one buffer.
+///
+/// @param entry The entry whose contents to copy
+/// @param dest The buffer into which to copy the serialized entry
+/// @param count Copy up to this many bytes; must not be larger than the `dest`
+///     buffer, but may be larger than the entry
+uint32_t pw_VariableLengthEntryDeque_Entry_Copy(
+    const pw_VariableLengthEntryDeque_Entry* entry, void* dest, uint32_t count);
 
 /// Returns the number of variable-length entries in the deque. This is O(n) in
 /// the number of entries in the deque.
@@ -239,16 +258,22 @@ static inline void pw_VariableLengthEntryDeque_Init(uint32_t array[],
 }
 
 static inline pw_VariableLengthEntryDeque_Iterator
+pw_VariableLengthEntryDeque_Begin(
+    pw_VariableLengthEntryDeque_ConstHandle deque) {
+  pw_VariableLengthEntryDeque_Iterator begin = {deque, _PW_VAR_DEQUE_HEAD};
+  return begin;
+}
+
+static inline pw_VariableLengthEntryDeque_Iterator
 pw_VariableLengthEntryDeque_End(pw_VariableLengthEntryDeque_ConstHandle deque) {
-  pw_VariableLengthEntryDeque_Iterator end = {
-      &_PW_VAR_DEQUE_DATA[_PW_VAR_DEQUE_TAIL], 0, NULL, 0, deque};  // NOLINT
+  pw_VariableLengthEntryDeque_Iterator end = {deque, _PW_VAR_DEQUE_TAIL};
   return end;
 }
 
-static inline bool pw_VariableLengthEntryDeque_Iterator_Equals(
+static inline bool pw_VariableLengthEntryDeque_Iterator_Equal(
     const pw_VariableLengthEntryDeque_Iterator* lhs,
     const pw_VariableLengthEntryDeque_Iterator* rhs) {
-  return lhs->data_1 == rhs->data_1;
+  return lhs->_pw_offset == rhs->_pw_offset && lhs->_pw_deque == rhs->_pw_deque;
 }
 
 static inline uint32_t pw_VariableLengthEntryDeque_RawSizeBytes(

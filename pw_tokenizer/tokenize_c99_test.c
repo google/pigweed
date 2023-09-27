@@ -104,24 +104,31 @@ const char* RunTestAndReturnPassed(void) {
 
   pw_VariableLengthEntryDeque_Iterator it =
       pw_VariableLengthEntryDeque_Begin(buffer);
+  pw_VariableLengthEntryDeque_Entry entry =
+      pw_VariableLengthEntryDeque_GetEntry(&it);
 
-  ASSERT_EQ(it.size_1, sizeof(uint32_t) + 0);
-  ASSERT_EQ(it.size_2, 0u);
-
-  pw_VariableLengthEntryDeque_Iterator_Advance(&it);
-  ASSERT_EQ(it.size_1, sizeof(uint32_t) + 1);
-  ASSERT_EQ(it.size_2, 0u);
+  ASSERT_EQ(entry.size_1, sizeof(uint32_t) + 0);
+  ASSERT_EQ(entry.size_2, 0u);
 
   pw_VariableLengthEntryDeque_Iterator_Advance(&it);
-  ASSERT_EQ(it.size_1, sizeof(uint32_t) + 5);
-  ASSERT_EQ(it.size_2, 0u);
+  entry = pw_VariableLengthEntryDeque_GetEntry(&it);
+  ASSERT_EQ(entry.size_1, sizeof(uint32_t) + 1);
+  ASSERT_EQ(entry.size_2, 0u);
 
   pw_VariableLengthEntryDeque_Iterator_Advance(&it);
-  ASSERT_EQ(it.size_1, sizeof(uint32_t) + 4);
-  ASSERT_EQ(it.size_2, 0u);
+  entry = pw_VariableLengthEntryDeque_GetEntry(&it);
+  ASSERT_EQ(entry.size_1, sizeof(uint32_t) + 5);
+  ASSERT_EQ(entry.size_2, 0u);
 
   pw_VariableLengthEntryDeque_Iterator_Advance(&it);
-  ASSERT_EQ(it.data_1, pw_VariableLengthEntryDeque_End(buffer).data_1);
+  entry = pw_VariableLengthEntryDeque_GetEntry(&it);
+  ASSERT_EQ(entry.size_1, sizeof(uint32_t) + 4);
+  ASSERT_EQ(entry.size_2, 0u);
+
+  pw_VariableLengthEntryDeque_Iterator_Advance(&it);
+  pw_VariableLengthEntryDeque_Iterator end =
+      pw_VariableLengthEntryDeque_End(buffer);
+  ASSERT_EQ(pw_VariableLengthEntryDeque_Iterator_Equal(&it, &end), true);
 
   return "passed";
 }
