@@ -1365,6 +1365,8 @@ instantiate as:
    implementation that copies the bytes under the span instead of copying just
    the span.
 
+.. _module-pw_rpc-client-sync-call-wrappers:
+
 Client synchronous call wrappers
 ================================
 .. doxygenfile:: pw_rpc/synchronous_call.h
