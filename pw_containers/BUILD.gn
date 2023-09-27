@@ -98,6 +98,17 @@ pw_source_set("to_array") {
   public = [ "public/pw_containers/to_array.h" ]
 }
 
+pw_source_set("variable_length_entry_deque") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ dir_pw_varint ]
+  deps = [ dir_pw_assert ]
+  public = [ "public/pw_containers/variable_length_entry_deque.h" ]
+  sources = [ "variable_length_entry_deque.c" ]
+
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
+  configs = [ "$dir_pw_build:conversion_warnings" ]
+}
+
 pw_source_set("vector") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
@@ -133,6 +144,7 @@ pw_test_group("tests") {
     ":intrusive_list_test",
     ":raw_storage_test",
     ":to_array_test",
+    ":variable_length_entry_deque_test",
     ":vector_test",
     ":wrapped_iterator_test",
   ]
@@ -217,6 +229,20 @@ pw_test("raw_storage_test") {
 pw_test("to_array_test") {
   sources = [ "to_array_test.cc" ]
   deps = [ ":to_array" ]
+
+  # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
+  configs = [ "$dir_pw_build:conversion_warnings" ]
+}
+
+pw_test("variable_length_entry_deque_test") {
+  sources = [
+    "pw_containers_private/variable_length_entry_deque_test_oracle.h",
+    "variable_length_entry_deque_test.cc",
+  ]
+  deps = [
+    ":variable_length_entry_deque",
+    dir_pw_bytes,
+  ]
 
   # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]

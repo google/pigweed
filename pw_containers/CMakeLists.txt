@@ -100,6 +100,19 @@ pw_add_library(pw_containers.to_array INTERFACE
     public
 )
 
+pw_add_library(pw_containers.variable_length_entry_deque STATIC
+  HEADERS
+    public/pw_containers/variable_length_entry_deque.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_varint
+  PRIVATE_DEPS
+    pw_assert
+  SOURCES
+    variable_length_entry_deque.c
+)
+
 pw_add_library(pw_containers.vector INTERFACE
   HEADERS
     public/pw_containers/vector.h
@@ -215,6 +228,15 @@ pw_add_test(pw_containers.to_array_test
   GROUPS
     modules
     pw_containers
+)
+
+pw_add_test(pw_containers.variable_length_entry_deque_test
+  SOURCES
+    pw_containers_private/variable_length_entry_deque_test_oracle.h
+    variable_length_entry_deque_test.cc
+  PRIVATE_DEPS
+    pw_bytes
+    pw_containers.variable_length_entry_deque
 )
 
 pw_add_test(pw_containers.vector_test

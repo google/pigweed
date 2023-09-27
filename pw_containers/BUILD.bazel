@@ -91,6 +91,17 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "variable_length_entry_deque",
+    srcs = ["variable_length_entry_deque.c"],
+    hdrs = ["public/pw_containers/variable_length_entry_deque.h"],
+    includes = ["public"],
+    deps = [
+        "//pw_assert",
+        "//pw_varint",
+    ],
+)
+
+pw_cc_library(
     name = "vector",
     hdrs = [
         "public/pw_containers/vector.h",
@@ -180,6 +191,18 @@ pw_cc_test(
         ":pw_containers",
         "//pw_polyfill",
         "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "variable_length_entry_deque_test",
+    srcs = [
+        "pw_containers_private/variable_length_entry_deque_test_oracle.h",
+        "variable_length_entry_deque_test.cc",
+    ],
+    deps = [
+        ":variable_length_entry_deque",
+        "//pw_bytes",
     ],
 )
 

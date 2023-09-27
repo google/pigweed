@@ -29,6 +29,23 @@ pw::InlineQueue
 ---------------
 .. doxygentypedef:: pw::InlineQueue
 
+----------------------------
+pw::VariableLengthEntryDeque
+----------------------------
+.. doxygenfile:: pw_containers/variable_length_entry_deque.h
+   :sections: detaileddescription
+
+API Reference
+===============
+C
+-
+.. doxygengroup:: variable_length_entry_deque_c_api
+   :content-only:
+
+Python
+------
+.. automodule:: pw_containers.variable_length_entry_deque
+
 -----------------
 pw::IntrusiveList
 -----------------
