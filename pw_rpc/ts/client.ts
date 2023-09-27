@@ -290,10 +290,10 @@ export class Client {
 
     if (packet.getType() === PacketType.SERVER_ERROR) {
       if (status === Status.OK) {
-        throw 'Unexpected OK status on SERVER_ERROR';
+        throw new Error('Unexpected OK status on SERVER_ERROR');
       }
       if (status === undefined) {
-        throw 'Missing status on SERVER_ERROR';
+        throw new Error('Missing status on SERVER_ERROR');
       }
       console.warn(`${rpc}: invocation failed with status: ${Status[status]}`);
       call.handleError(status);
