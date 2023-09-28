@@ -112,6 +112,9 @@ class SocketClient:
         if self._on_disconnect:
             self._on_disconnect(self)
 
+    def fileno(self) -> int:
+        return self.socket.fileno()
+
 
 class SocketClientWithLogging(SocketClient):
     """Socket with read and write wrappers for logging."""

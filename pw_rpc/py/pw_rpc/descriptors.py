@@ -85,7 +85,11 @@ class ChannelManipulator(abc.ABC):
       channels = tuple(Channel(_DEFAULT_CHANNEL, packet_logger))
 
       # Create a RPC client.
-      client = HdlcRpcClient(socket.read, protos, channels, stdout)
+      reader = SocketReader(socket)
+      with reader:
+          client = HdlcRpcClient(reader, protos, channels, stdout)
+          with client:
+            # Do something with client
     """
 
     def __init__(self) -> None:

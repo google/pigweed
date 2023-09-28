@@ -26,7 +26,10 @@ pw_python_package("py") {
       version = "0.0.1"
     }
     options = {
-      install_requires = [ "protobuf" ]
+      install_requires = [
+        "protobuf",
+        "pyserial",
+      ]
     }
   }
 

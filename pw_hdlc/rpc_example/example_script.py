@@ -20,7 +20,11 @@ from pathlib import Path
 
 import serial
 
-from pw_hdlc.rpc import HdlcRpcClient, default_channels
+from pw_hdlc.rpc import (
+    HdlcRpcClient,
+    default_channels,
+    SerialReader,
+)
 
 # Point the script to the .proto file with our RPC services.
 PROTO = Path(os.environ['PW_ROOT'], 'pw_rpc/echo.proto')
@@ -29,25 +33,25 @@ PROTO = Path(os.environ['PW_ROOT'], 'pw_rpc/echo.proto')
 def script(device: str, baud: int) -> None:
     # Set up a pw_rpc client that uses HDLC.
     ser = serial.Serial(device, baud, timeout=0.01)
-    client = HdlcRpcClient(
-        lambda: ser.read(4096), [PROTO], default_channels(ser.write)
-    )
+    reader = SerialReader(ser, 4096)
+    with reader:
+        client = HdlcRpcClient(reader, [PROTO], default_channels(ser.write))
+        with client:
+            # Make a shortcut to the EchoService.
+            echo_service = client.rpcs().pw.rpc.EchoService
 
-    # Make a shortcut to the EchoService.
-    echo_service = client.rpcs().pw.rpc.EchoService
+            # Call some RPCs and check the results.
+            status, payload = echo_service.Echo(msg='Hello')
 
-    # Call some RPCs and check the results.
-    status, payload = echo_service.Echo(msg='Hello')
+            if status.ok():
+                print('The status was', status)
+                print('The payload was', payload)
+            else:
+                print('Uh oh, this RPC returned', status)
 
-    if status.ok():
-        print('The status was', status)
-        print('The payload was', payload)
-    else:
-        print('Uh oh, this RPC returned', status)
+            status, payload = echo_service.Echo(msg='Goodbye!')
 
-    status, payload = echo_service.Echo(msg='Goodbye!')
-
-    print('The device says:', payload.msg)
+            print('The device says:', payload.msg)
 
 
 def main():

@@ -281,5 +281,6 @@ py_binary(
         "//pw_transfer:transfer_proto_pb2",
         "//pw_transfer/py:pw_transfer",
         "@com_google_protobuf//:protobuf_python",
+        "@python_packages_pyserial//:pkg",
     ],
 )

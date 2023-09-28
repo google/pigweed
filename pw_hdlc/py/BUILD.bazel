@@ -32,6 +32,7 @@ py_library(
         "//pw_protobuf_compiler/py:pw_protobuf_compiler",
         "//pw_rpc/py:pw_rpc",
         "//pw_status/py:pw_status",
+        "@python_packages_pyserial//:pkg",
     ],
 )
 

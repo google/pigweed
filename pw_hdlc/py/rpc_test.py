@@ -21,7 +21,7 @@ import threading
 import time
 import unittest
 
-from pw_hdlc.rpc import RpcClient, HdlcRpcClient
+from pw_hdlc.rpc import RpcClient, HdlcRpcClient, CancellableReader
 
 
 class QueueFile:
@@ -201,20 +201,17 @@ class Sentinel:
         return 'Sentinel'
 
 
+class _QueueReader(CancellableReader):
+    def cancel_read(self) -> None:
+        self._base_obj.close()
+
+
 def _get_client(file) -> RpcClient:
     return HdlcRpcClient(
-        read=file.read,
+        _QueueReader(file),
         paths_or_modules=[],
         channels=[],
     )
-
-
-def _wait_for_reader_thread_exit(client: RpcClient) -> None:
-    # TODO: b/294858483 - Joining the thread should be done by RpcClient itself.
-    thread = client._reader._reader_thread  # pylint: disable=protected-access
-
-    # This should take <10ms but we'll wait up to 1000x longer.
-    thread.join(10.0)
 
 
 # This should take <10ms but we'll wait up to 1000x longer.
@@ -235,7 +232,7 @@ class HdlcRpcClientTest(unittest.TestCase):
 
         with self.assert_no_hdlc_rpc_error_logs():
             with file:
-                with _get_client(file) as rpc_client:
+                with _get_client(file):
                     # We want to make sure the reader thread is blocked on
                     # read() and doesn't exit immediately.
                     file.put_read_data(b'')
@@ -247,7 +244,6 @@ class HdlcRpcClientTest(unittest.TestCase):
             # QueueFile.close() is called, triggering an exception in the
             # blocking read() (by implementation choice). The reader should
             # handle it by *not* logging it and exiting immediately.
-            _wait_for_reader_thread_exit(rpc_client)
 
         self.assert_no_background_threads_running()
 
@@ -259,12 +255,11 @@ class HdlcRpcClientTest(unittest.TestCase):
         logger = logging.getLogger('pw_hdlc.rpc')
         test_exc = Exception('boom')
         with self.assertLogs(logger, level=logging.ERROR) as ctx:
-            with _get_client(file) as rpc_client:
+            with _get_client(file):
                 # Cause read() to raise an exception. The reader should
                 # handle it by logging it and exiting immediately.
                 file.cause_read_exc(test_exc)
                 file.wait_for_drain(_QUEUE_DRAIN_TIMEOUT)
-                _wait_for_reader_thread_exit(rpc_client)
 
         # Assert one exception was raised
         self.assertEqual(len(ctx.records), 1)

@@ -194,3 +194,30 @@ RPC
       currently configured max RPC payload size (dictated by pw_rpc's static encode
       buffer) will always fit safely within the limits of the fixed HDLC MTU *after*
       HDLC encoding.
+
+.. _module-pw_hdlc-py:
+
+----------------------
+pw_hdlc Python package
+----------------------
+The ``pw_hdlc`` Python package includes utilities to HDLC-encode and decode RPC
+packets, with examples of RPC Client implementations in Python. It also provides
+abstractions for interfaces used to receive RPC Packets.
+
+pw_hdlc.rpc
+===========
+.. automodule:: pw_hdlc.rpc
+  :members:
+    channel_output,
+    CancellableReader,
+    SelectableReader,
+    SocketReader,
+    SerialReader,
+    DataReaderAndExecutor,
+    default_channels,
+    RpcClient,
+    HdlcRpcClient,
+    NoEncodingSingleChannelRpcClient,
+    SocketSubprocess,
+    HdlcRpcLocalServerAndClient
+

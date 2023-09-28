@@ -13,10 +13,14 @@
 # the License.
 """Utilities for using HDLC with pw_rpc."""
 
+from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 import io
 import logging
-from queue import SimpleQueue
+import os
+import platform
+import queue
+import select
 import sys
 import threading
 import time
@@ -34,6 +38,9 @@ from typing import (
     TypeVar,
     Union,
 )
+import warnings
+
+import serial
 
 from pw_protobuf_compiler import python_protos
 import pw_rpc
@@ -79,6 +86,148 @@ FrameHandlers = Dict[int, Callable[[Frame], Any]]
 FrameTypeT = TypeVar('FrameTypeT')
 
 
+class CancellableReader(ABC):
+    """Wraps communication interfaces used for reading incoming data with the
+    guarantee that the read request can be cancelled. Derived classes must
+    implement the :py:func:`cancel_read()` method.
+
+    Cancelling a read invalidates ongoing and future reads. The
+    :py:func:`cancel_read()` method can only be called once.
+    """
+
+    def __init__(self, base_obj: Any, *read_args, **read_kwargs):
+        """
+        Args:
+            base_obj: Object that offers a ``read()`` method with optional args
+                and kwargs.
+            read_args: Arguments for ``base_obj.read()`` function.
+            read_kwargs: Keyword arguments for ``base_obj.read()`` function.
+        """
+        self._base_obj = base_obj
+        self._read_args = read_args
+        self._read_kwargs = read_kwargs
+
+    def __enter__(self) -> 'CancellableReader':
+        return self
+
+    def __exit__(self, *exc_info) -> None:
+        self.cancel_read()
+
+    def read(self) -> bytes:
+        """Reads bytes that contain parts of or full RPC packets."""
+        return self._base_obj.read(*self._read_args, **self._read_kwargs)
+
+    @abstractmethod
+    def cancel_read(self) -> None:
+        """Cancels a blocking read request and all future reads.
+
+        Can only be called once.
+        """
+
+
+class SelectableReader(CancellableReader):
+    """
+    Wraps interfaces that work with select() to signal when data is received.
+
+    These interfaces must provide a ``fileno()`` method.
+    WINDOWS ONLY: Only sockets that originate from WinSock can be wrapped. File
+    objects are not acceptable.
+    """
+
+    _STOP_CMD = b'STOP'
+
+    def __init__(self, base_obj: Any, *read_args, **read_kwargs):
+        assert hasattr(base_obj, 'fileno')
+        if platform.system() == 'Windows' and not isinstance(
+            base_obj, socket.socket
+        ):
+            raise ValueError('Only socket objects are selectable on Windows')
+        super().__init__(base_obj, *read_args, **read_kwargs)
+        self._cancel_signal_pipe_r_fd, self._cancel_signal_pipe_w_fd = os.pipe()
+        self._waiting_for_read_or_cancel_lock = threading.Lock()
+
+    def __exit__(self, *exc_info) -> None:
+        self.cancel_read()
+        with self._waiting_for_read_or_cancel_lock:
+            if self._cancel_signal_pipe_r_fd > 0:
+                os.close(self._cancel_signal_pipe_r_fd)
+                self._cancel_signal_pipe_r_fd = -1
+
+    def read(self) -> bytes:
+        if self._wait_for_read_or_cancel():
+            return super().read()
+        return b''
+
+    def _wait_for_read_or_cancel(self) -> bool:
+        """Returns True when ready to read."""
+        with self._waiting_for_read_or_cancel_lock:
+            if self._base_obj.fileno() < 0 or self._cancel_signal_pipe_r_fd < 0:
+                # The interface might've been closed already.
+                return False
+            ready_to_read, _, exception_list = select.select(
+                [self._cancel_signal_pipe_r_fd, self._base_obj],
+                [],
+                [self._base_obj],
+            )
+            if self._cancel_signal_pipe_r_fd in ready_to_read:
+                # A signal to stop the reading process was received.
+                os.read(self._cancel_signal_pipe_r_fd, len(self._STOP_CMD))
+                os.close(self._cancel_signal_pipe_r_fd)
+                self._cancel_signal_pipe_r_fd = -1
+                return False
+
+            if exception_list:
+                _LOG.error('Error reading interface')
+                return False
+        return True
+
+    def cancel_read(self) -> None:
+        if self._cancel_signal_pipe_w_fd > 0:
+            os.write(self._cancel_signal_pipe_w_fd, self._STOP_CMD)
+            os.close(self._cancel_signal_pipe_w_fd)
+            self._cancel_signal_pipe_w_fd = -1
+
+
+class SocketReader(SelectableReader):
+    """Wraps a socket ``recv()`` function."""
+
+    def __init__(self, base_obj: socket.socket, *read_args, **read_kwargs):
+        super().__init__(base_obj, *read_args, **read_kwargs)
+
+    def read(self) -> bytes:
+        if self._wait_for_read_or_cancel():
+            return self._base_obj.recv(*self._read_args, **self._read_kwargs)
+        return b''
+
+    def __exit__(self, *exc_info) -> None:
+        self.cancel_read()
+        self._base_obj.close()
+
+
+class SerialReader(CancellableReader):
+    """Wraps a :py:class:`serial.Serial` object."""
+
+    def __init__(self, base_obj: serial.Serial, *read_args, **read_kwargs):
+        super().__init__(base_obj, *read_args, **read_kwargs)
+
+    def cancel_read(self) -> None:
+        self._base_obj.cancel_read()
+
+    def __exit__(self, *exc_info) -> None:
+        self.cancel_read()
+        self._base_obj.close()
+
+
+# TODO: b/301496598 - Remove this class once a callable is deprecated from the
+# RpcClient objects.
+class _StubReader(CancellableReader):
+    def read(self) -> bytes:
+        return self._base_obj()
+
+    def cancel_read(self) -> None:
+        pass
+
+
 class DataReaderAndExecutor:
     """Reads incoming bytes, data processor that delegates frame handling.
 
@@ -89,7 +238,7 @@ class DataReaderAndExecutor:
 
     def __init__(
         self,
-        read: Callable[[], bytes],
+        reader: CancellableReader,
         on_read_error: Callable[[Exception], None],
         data_processor: Callable[[bytes], Iterable[FrameTypeT]],
         frame_handler: Callable[[FrameTypeT], None],
@@ -98,7 +247,7 @@ class DataReaderAndExecutor:
         """Creates the data reader and frame delegator.
 
         Args:
-            read: Reads incoming bytes from the given transport, blocking until
+            reader: Reads incoming bytes from the given transport, blocks until
               data is available or an exception is raised. Otherwise the reader
               will exit.
             on_read_error: Called when there is an error reading incoming bytes.
@@ -108,47 +257,56 @@ class DataReaderAndExecutor:
             handler_threads: The number of threads in the executor pool.
         """
 
-        self._read = read
+        self._reader = reader
         self._on_read_error = on_read_error
         self._data_processor = data_processor
         self._frame_handler = frame_handler
         self._handler_threads = handler_threads
 
+        # TODO: b/301496598 - Make thread non-daemon when RpcClients stop
+        # accepting reader's Callable type.
         self._reader_thread = threading.Thread(
-            target=self._run,
-            # TODO: b/294858483 - When we are confident that we can cancel the
-            # blocking read(), this no longer needs to be a daemon thread.
-            daemon=True,
+            target=self._run, daemon=isinstance(self._reader, _StubReader)
         )
-        self._reader_stop = threading.Event()
+        self._reader_thread_stop = threading.Event()
 
     def start(self) -> None:
         """Starts the reading process."""
-        self._reader_stop.clear()
+        _LOG.debug('Starting read process')
+        self._reader_thread_stop.clear()
         self._reader_thread.start()
 
     def stop(self) -> None:
-        """Requests that the reading process stop.
+        """Stops the reading process.
 
-        The thread will not stop immediately, but only after the ongoing read()
-        operation completes or raises an exception.
+        This requests that the reading process stop and waits
+        for the background thread to exit.
+
+        NOTE: Currently the thread is not joined when providing a ``read()``
+        callback instead of a :py:class:`CancellableReader` through a
+        :py:class:`RpcClient` or :py:class:`Device` object. This will be
+        deprecated in b/301496598.
         """
-        self._reader_stop.set()
-        # TODO: b/294858483 - When we are confident that we can cancel the
-        # blocking read(), wait for the thread to exit.
-        # self._reader_thread.join()
+        _LOG.debug('Stopping read process')
+        self._reader_thread_stop.set()
+        self._reader.cancel_read()
+
+        # TODO: b/301496598 - Unconditionally join the thread when RpcClients
+        # stop accepting reader's Callable type.
+        if not isinstance(self._reader, _StubReader):
+            self._reader_thread.join()
 
     def _run(self) -> None:
         """Reads raw data in a background thread."""
         with ThreadPoolExecutor(max_workers=self._handler_threads) as executor:
-            while not self._reader_stop.is_set():
+            while not self._reader_thread_stop.is_set():
                 try:
-                    data = self._read()
+                    data = self._reader.read()
                 except Exception as exc:  # pylint: disable=broad-except
                     # Don't report the read error if the thread is stopping.
                     # The stream or device backing _read was likely closed,
                     # so errors are expected.
-                    if not self._reader_stop.is_set():
+                    if not self._reader_thread_stop.is_set():
                         self._on_read_error(exc)
                     _LOG.debug(
                         'DataReaderAndExecutor thread exiting due to exception',
@@ -191,7 +349,7 @@ class RpcClient:
 
     def __init__(
         self,
-        reader: DataReaderAndExecutor,
+        reader_and_executor: DataReaderAndExecutor,
         paths_or_modules: PathsModulesOrProtoLibrary,
         channels: Iterable[pw_rpc.Channel],
         client_impl: Optional[pw_rpc.client.ClientImpl] = None,
@@ -199,7 +357,7 @@ class RpcClient:
         """Creates an RPC client.
 
         Args:
-          read: Function that reads bytes; e.g serial_device.read.
+          reader_and_executor: DataReaderAndExecutor instance.
           paths_or_modules: paths to .proto files or proto modules.
           channels: RPC channels to use for output.
           client_impl: The RPC Client implementation. Defaults to the callback
@@ -218,8 +376,8 @@ class RpcClient:
         )
 
         # Start background thread that reads and processes RPC packets.
-        self._reader = reader
-        self._reader.start()
+        self._reader_and_executor = reader_and_executor
+        self._reader_and_executor.start()
 
     def __enter__(self):
         return self
@@ -228,7 +386,7 @@ class RpcClient:
         self.close()
 
     def close(self) -> None:
-        self._reader.stop()
+        self._reader_and_executor.stop()
 
     def rpcs(self, channel_id: Optional[int] = None) -> Any:
         """Returns object for accessing services on the specified channel.
@@ -254,9 +412,11 @@ class HdlcRpcClient(RpcClient):
     payloads.
     """
 
+    # TODO: b/301496598 - Deprecate reader's Callable type and accept only
+    # CancellableReader classes in downstream projects.
     def __init__(
         self,
-        read: Callable[[], bytes],
+        reader: Union[CancellableReader, Callable[[], bytes]],
         paths_or_modules: PathsModulesOrProtoLibrary,
         channels: Iterable[pw_rpc.Channel],
         output: Callable[[bytes], Any] = write_to_file,
@@ -272,7 +432,7 @@ class HdlcRpcClient(RpcClient):
         """Creates an RPC client configured to communicate using HDLC.
 
         Args:
-          read: Function that reads bytes; e.g serial_device.read.
+          reader: Readable object used to receive RPC packets.
           paths_or_modules: paths to .proto files or proto modules.
           channels: RPC channels to use for output.
           output: where to write "stdout" output from the device.
@@ -323,10 +483,20 @@ class HdlcRpcClient(RpcClient):
         def on_read_error(exc: Exception) -> None:
             _LOG.error('data reader encountered an error', exc_info=exc)
 
-        reader = DataReaderAndExecutor(
-            read, on_read_error, decoder.process_valid_frames, handle_frame
+        if not isinstance(reader, CancellableReader):
+            warnings.warn(
+                'The reader as Callablle is deprecated. Use CancellableReader'
+                'instead.',
+                DeprecationWarning,
+            )
+            reader = _StubReader(reader)
+
+        reader_and_executor = DataReaderAndExecutor(
+            reader, on_read_error, decoder.process_valid_frames, handle_frame
         )
-        super().__init__(reader, paths_or_modules, channels, client_impl)
+        super().__init__(
+            reader_and_executor, paths_or_modules, channels, client_impl
+        )
 
 
 class NoEncodingSingleChannelRpcClient(RpcClient):
@@ -335,9 +505,11 @@ class NoEncodingSingleChannelRpcClient(RpcClient):
     The caveat is that the provided read function must read entire frames.
     """
 
+    # TODO: b/301496598 - Deprecate reader's Callable type and accept only
+    # CancellableReader classes in downstream projects.
     def __init__(
         self,
-        read: Callable[[], bytes],
+        reader: Union[CancellableReader, Callable[[], bytes]],
         paths_or_modules: PathsModulesOrProtoLibrary,
         channel: pw_rpc.Channel,
         client_impl: Optional[pw_rpc.client.ClientImpl] = None,
@@ -345,7 +517,7 @@ class NoEncodingSingleChannelRpcClient(RpcClient):
         """Creates an RPC client over a single channel with no frame encoding.
 
         Args:
-          read: Function that reads bytes; e.g serial_device.read.
+          reader: Readable object used to receive RPC packets.
           paths_or_modules: paths to .proto files or proto modules.
           channel: RPC channel to use for output.
           client_impl: The RPC Client implementation. Defaults to the callback
@@ -358,10 +530,20 @@ class NoEncodingSingleChannelRpcClient(RpcClient):
         def on_read_error(exc: Exception) -> None:
             _LOG.error('data reader encountered an error', exc_info=exc)
 
-        reader = DataReaderAndExecutor(
-            read, on_read_error, process_data, self.handle_rpc_packet
+        if not isinstance(reader, CancellableReader):
+            warnings.warn(
+                'The reader as Callablle is deprecated. Use CancellableReader'
+                'instead.',
+                DeprecationWarning,
+            )
+            reader = _StubReader(reader)
+
+        reader_and_executor = DataReaderAndExecutor(
+            reader, on_read_error, process_data, self.handle_rpc_packet
         )
-        super().__init__(reader, paths_or_modules, [channel], client_impl)
+        super().__init__(
+            reader_and_executor, paths_or_modules, [channel], client_impl
+        )
 
 
 def _try_connect(port: int, attempts: int = 10) -> socket.socket:
@@ -436,7 +618,7 @@ class HdlcRpcLocalServerAndClient:
 
         self.server = SocketSubprocess(server_command, port)
 
-        self._bytes_queue: 'SimpleQueue[bytes]' = SimpleQueue()
+        self._bytes_queue: 'queue.SimpleQueue[bytes]' = queue.SimpleQueue()
         self._read_thread = threading.Thread(target=self._read_from_socket)
         self._read_thread.start()
 
@@ -449,13 +631,24 @@ class HdlcRpcLocalServerAndClient:
             outgoing_processor.send_packet = self.channel_output
             self.channel_output = outgoing_processor
 
-        self.client = HdlcRpcClient(
-            self._bytes_queue.get,
+        class QueueReader(CancellableReader):
+            def read(self) -> bytes:
+                try:
+                    return self._base_obj.get(timeout=3)
+                except queue.Empty:
+                    return b''
+
+            def cancel_read(self) -> None:
+                pass
+
+        self._rpc_client = HdlcRpcClient(
+            QueueReader(self._bytes_queue),
             protos,
             default_channels(self.channel_output),
             self.output.write,
             _incoming_packet_filter_for_testing=incoming_processor,
-        ).client
+        )
+        self.client = self._rpc_client.client
 
     def _read_from_socket(self):
         while True:
@@ -467,6 +660,7 @@ class HdlcRpcLocalServerAndClient:
     def close(self):
         self.server.close()
         self.output.close()
+        self._rpc_client.close()
         self._read_thread.join()
 
     def __enter__(self) -> 'HdlcRpcLocalServerAndClient':

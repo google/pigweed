@@ -19,7 +19,7 @@ import socket
 import sys
 
 from google.protobuf import text_format
-from pw_hdlc.rpc import HdlcRpcClient, default_channels
+from pw_hdlc.rpc import HdlcRpcClient, default_channels, SocketReader
 from pw_status import Status
 import pw_transfer
 from pigweed.pw_transfer import transfer_pb2
@@ -30,6 +30,74 @@ _LOG.level = logging.DEBUG
 _LOG.addHandler(logging.StreamHandler(sys.stdout))
 
 HOSTNAME: str = "localhost"
+
+
+def _perform_transfer_action(
+    action: config_pb2.TransferAction, transfer_manager: pw_transfer.Manager
+) -> bool:
+    """Performs the transfer action and returns Truen on success."""
+    protocol_version = pw_transfer.ProtocolVersion(int(action.protocol_version))
+
+    # Default to the latest protocol version if none is specified.
+    if protocol_version == pw_transfer.ProtocolVersion.UNKNOWN:
+        protocol_version = pw_transfer.ProtocolVersion.LATEST
+
+    if (
+        action.transfer_type
+        == config_pb2.TransferAction.TransferType.WRITE_TO_SERVER
+    ):
+        try:
+            with open(action.file_path, 'rb') as f:
+                data = f.read()
+        except:
+            _LOG.critical("Failed to read input file '%s'", action.file_path)
+            return False
+
+        try:
+            transfer_manager.write(
+                action.resource_id,
+                data,
+                protocol_version=protocol_version,
+            )
+        except pw_transfer.client.Error as e:
+            if e.status != Status(action.expected_status):
+                _LOG.exception(
+                    "Unexpected error encountered during write transfer"
+                )
+                return False
+        except:
+            _LOG.exception("Transfer (write to server) failed")
+            return False
+    elif (
+        action.transfer_type
+        == config_pb2.TransferAction.TransferType.READ_FROM_SERVER
+    ):
+        try:
+            data = transfer_manager.read(
+                action.resource_id,
+                protocol_version=protocol_version,
+            )
+        except pw_transfer.client.Error as e:
+            if e.status != Status(action.expected_status):
+                _LOG.exception(
+                    "Unexpected error encountered during read transfer"
+                )
+                return False
+            return True
+        except:
+            _LOG.exception("Transfer (read from server) failed")
+            return False
+
+        try:
+            with open(action.file_path, 'wb') as f:
+                f.write(data)
+        except:
+            _LOG.critical("Failed to write output file '%s'", action.file_path)
+            return False
+    else:
+        _LOG.critical("Unknown transfer type: %d", action.transfer_type)
+        return False
+    return True
 
 
 def _main() -> int:
@@ -60,93 +128,36 @@ def _main() -> int:
         _LOG.critical("Failed to connect to server at %s:%d", HOSTNAME, port)
         return 1
 
-    # Initialize an RPC client over the socket and set up the pw_transfer manager.
-    rpc_client = HdlcRpcClient(
-        lambda: rpc_socket.recv(4096),
-        [transfer_pb2],
-        default_channels(lambda data: rpc_socket.sendall(data)),
-        lambda data: _LOG.info("%s", str(data)),
-    )
-    transfer_service = rpc_client.rpcs().pw.transfer.Transfer
-    transfer_manager = pw_transfer.Manager(
-        transfer_service,
-        default_response_timeout_s=config.chunk_timeout_ms / 1000,
-        initial_response_timeout_s=config.initial_chunk_timeout_ms / 1000,
-        max_retries=config.max_retries,
-        max_lifetime_retries=config.max_lifetime_retries,
-        default_protocol_version=pw_transfer.ProtocolVersion.LATEST,
-    )
-
-    transfer_logger = logging.getLogger('pw_transfer')
-    transfer_logger.setLevel(logging.DEBUG)
-    transfer_logger.addHandler(logging.StreamHandler(sys.stdout))
-
-    # Perform the requested transfer actions.
-    for action in config.transfer_actions:
-        protocol_version = pw_transfer.ProtocolVersion(
-            int(action.protocol_version)
+    # Initialize an RPC client using a socket reader and set up the
+    # pw_transfer manager.
+    reader = SocketReader(rpc_socket, 4096)
+    with reader:
+        rpc_client = HdlcRpcClient(
+            reader,
+            [transfer_pb2],
+            default_channels(lambda data: rpc_socket.sendall(data)),
+            lambda data: _LOG.info("%s", str(data)),
         )
+        with rpc_client:
+            transfer_service = rpc_client.rpcs().pw.transfer.Transfer
+            transfer_manager = pw_transfer.Manager(
+                transfer_service,
+                default_response_timeout_s=config.chunk_timeout_ms / 1000,
+                initial_response_timeout_s=config.initial_chunk_timeout_ms
+                / 1000,
+                max_retries=config.max_retries,
+                max_lifetime_retries=config.max_lifetime_retries,
+                default_protocol_version=pw_transfer.ProtocolVersion.LATEST,
+            )
 
-        # Default to the latest protocol version if none is specified.
-        if protocol_version == pw_transfer.ProtocolVersion.UNKNOWN:
-            protocol_version = pw_transfer.ProtocolVersion.LATEST
+            transfer_logger = logging.getLogger('pw_transfer')
+            transfer_logger.setLevel(logging.DEBUG)
+            transfer_logger.addHandler(logging.StreamHandler(sys.stdout))
 
-        if (
-            action.transfer_type
-            == config_pb2.TransferAction.TransferType.WRITE_TO_SERVER
-        ):
-            try:
-                with open(action.file_path, 'rb') as f:
-                    data = f.read()
-            except:
-                _LOG.critical(
-                    "Failed to read input file '%s'", action.file_path
-                )
-                return 1
-
-            try:
-                transfer_manager.write(
-                    action.resource_id, data, protocol_version=protocol_version
-                )
-            except pw_transfer.client.Error as e:
-                if e.status != Status(action.expected_status):
-                    _LOG.exception(
-                        "Unexpected error encountered during write transfer"
-                    )
+            # Perform the requested transfer actions.
+            for action in config.transfer_actions:
+                if not _perform_transfer_action(action, transfer_manager):
                     return 1
-            except:
-                _LOG.exception("Transfer (write to server) failed")
-                return 1
-        elif (
-            action.transfer_type
-            == config_pb2.TransferAction.TransferType.READ_FROM_SERVER
-        ):
-            try:
-                data = transfer_manager.read(
-                    action.resource_id, protocol_version=protocol_version
-                )
-            except pw_transfer.client.Error as e:
-                if e.status != Status(action.expected_status):
-                    _LOG.exception(
-                        "Unexpected error encountered during read transfer"
-                    )
-                    return 1
-                continue
-            except:
-                _LOG.exception("Transfer (read from server) failed")
-                return 1
-
-            try:
-                with open(action.file_path, 'wb') as f:
-                    f.write(data)
-            except:
-                _LOG.critical(
-                    "Failed to write output file '%s'", action.file_path
-                )
-                return 1
-        else:
-            _LOG.critical("Unknown transfer type: %d", action.transfer_type)
-            return 1
 
     _LOG.info("All transfers completed successfully")
     return 0
