@@ -48,11 +48,11 @@ Pigweed enables you to use modern C++ and software development best practices in
 your embedded project without compromising performance or increasing memory use
 compared to conventional embedded C.
 
-We provide libraries (modules) for :ref:`strings<module-pw_string>`,
-:ref:`time<module-pw_chrono>`, :ref:`assertions<module-pw_assert>`,
-:ref:`logging<module-pw_log>`, :ref:`serial communication<module-pw_spi>`,
-:ref:`remote procedure calls (RPC)<module-pw_rpc>`, and
-:ref:`much more<docs-module-guides>`.
+We provide libraries (:ref:`modules <docs-glossary-module>`) for
+:ref:`strings<module-pw_string>`, :ref:`time<module-pw_chrono>`,
+:ref:`assertions<module-pw_assert>`, :ref:`logging<module-pw_log>`,
+:ref:`serial communication<module-pw_spi>`, :ref:`remote procedure calls (RPC)
+<module-pw_rpc>`, and :ref:`much more<docs-module-guides>`.
 
 These modules are designed to work both on your host machine and on a wide
 variety of target devices. We achieve this by writing them in an inherently

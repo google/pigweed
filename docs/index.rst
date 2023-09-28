@@ -14,6 +14,7 @@
   Modules <module_guides>
   docs/module_structure
   changelog
+  glossary
   Mailing List <https://groups.google.com/forum/#!forum/pigweed>
   Chat Room <https://discord.gg/M9NSeTA>
   docs/os/index
@@ -34,10 +35,10 @@
 Pigweed
 =======
 Pigweed is an open source collection of embedded-targeted libraries--or as we
-like to call them, modules. These modules are building blocks and
-infrastructure that enable faster and more reliable development on
-small-footprint MMU-less 32-bit microcontrollers like the STMicroelectronics
-STM32L452 or the Nordic nRF52832.
+like to call them, :ref:`modules <docs-glossary-module>`. These modules are
+building blocks and infrastructure that enable faster and more reliable
+development on small-footprint MMU-less 32-bit microcontrollers like the
+STMicroelectronics STM32L452 or the Nordic nRF52832.
 
 .. attention::
 

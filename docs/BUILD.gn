@@ -225,6 +225,7 @@ pw_doc_gen("docs") {
     "automated_analysis.rst",
     "build_system.rst",
     "changelog.rst",
+    "glossary.rst",
     "index.rst",
     "module_guides.rst",
     "python_build.rst",

@@ -3,9 +3,10 @@
 ----------------
 Module Structure
 ----------------
-The Pigweed module structure is designed to keep as much code as possible for a
-particular slice of functionality in one place. That means including the code
-from multiple languages, as well as all the related documentation and tests.
+The Pigweed :ref:`module <docs-glossary-module>` structure is designed to keep
+as much code as possible for a particular slice of functionality in one place.
+That means including the code from multiple languages, as well as all the
+related documentation and tests.
 
 Additionally, the structure is designed to limit the number of places a file
 could go, so that when reading callsites it is obvious where a header is from.
