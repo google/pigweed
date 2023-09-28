@@ -26,7 +26,7 @@
       -Ipw_varint/public \
       pw_tokenizer/tokenize_c99_test.c \
       pw_varint/varint_c.c \
-      pw_containers/variable_length_entry_deque.c
+      pw_containers/variable_length_entry_queue.c
  */
 
 #include <inttypes.h>
@@ -34,7 +34,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "pw_containers/variable_length_entry_deque.h"
+#include "pw_containers/variable_length_entry_queue.h"
 #include "pw_tokenizer/encode_args.h"
 #include "pw_tokenizer/tokenize.h"
 #include "pw_varint/varint.h"

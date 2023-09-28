@@ -12,14 +12,14 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_containers/variable_length_entry_deque.h"
+#include "pw_containers/variable_length_entry_queue.h"
 
 #include <cstring>
 #include <string_view>
 #include <variant>
 
 #include "gtest/gtest.h"
-#include "pw_containers_private/variable_length_entry_deque_test_oracle.h"
+#include "pw_containers_private/variable_length_entry_queue_test_oracle.h"
 
 namespace {
 

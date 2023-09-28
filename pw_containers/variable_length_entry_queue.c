@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_containers/variable_length_entry_deque.h"
+#include "pw_containers/variable_length_entry_queue.h"
 
 #include <string.h>
 

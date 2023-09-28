@@ -20,7 +20,7 @@
 #include "pw_preprocessor/util.h"
 #include "pw_varint/varint.h"
 
-/// @file pw_containers/variable_length_entry_deque.h
+/// @file pw_containers/variable_length_entry_queue.h
 ///
 /// A `VariableLengthEntryDeque` is a double-ended queue of variable-length
 /// binary entries. It is implemented as a ring (circular) buffer and supports
@@ -86,7 +86,7 @@
 extern "C" {
 #endif  // __cplusplus
 
-/// @defgroup variable_length_entry_deque_c_api VariableLengthEntryDeque C API
+/// @defgroup variable_length_entry_queue_c_api VariableLengthEntryDeque C API
 /// @{
 
 /// Handle that refers to a `VariableLengthEntryDeque`. In memory, the deque

@@ -144,7 +144,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_containers/public/pw_containers/filtered_view.h",
   "$dir_pw_containers/public/pw_containers/inline_deque.h",
   "$dir_pw_containers/public/pw_containers/inline_queue.h",
-  "$dir_pw_containers/public/pw_containers/variable_length_entry_deque.h",
+  "$dir_pw_containers/public/pw_containers/variable_length_entry_queue.h",
   "$dir_pw_crypto/public/pw_crypto/ecdsa.h",
   "$dir_pw_crypto/public/pw_crypto/sha256.h",
   "$dir_pw_digital_io/public/pw_digital_io/digital_io.h",

@@ -275,7 +275,7 @@ pw_test("tokenize_c99_test") {
   ]
   deps = [
     ":pw_tokenizer",
-    "$dir_pw_containers:variable_length_entry_deque",
+    "$dir_pw_containers:variable_length_entry_queue",
   ]
 }
 

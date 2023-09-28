@@ -15,7 +15,7 @@
 
 import unittest
 
-from pw_containers import variable_length_entry_deque
+from pw_containers import variable_length_entry_queue
 
 
 def _buffer(head: int, tail: int, data: bytes) -> bytes:
@@ -29,7 +29,7 @@ class TestEncodeTokenized(unittest.TestCase):
     def test_one_entry(self) -> None:
         self.assertEqual(
             list(
-                variable_length_entry_deque.parse(
+                variable_length_entry_queue.parse(
                     _buffer(1, 6, b'?\0041234?890')
                 )
             ),
@@ -39,7 +39,7 @@ class TestEncodeTokenized(unittest.TestCase):
     def test_two_entries(self) -> None:
         self.assertEqual(
             list(
-                variable_length_entry_deque.parse(
+                variable_length_entry_queue.parse(
                     _buffer(1, 7, b'?\00212\00234?90')
                 )
             ),
@@ -49,7 +49,7 @@ class TestEncodeTokenized(unittest.TestCase):
     def test_two_entries_wrapped(self) -> None:
         self.assertEqual(
             list(
-                variable_length_entry_deque.parse(
+                variable_length_entry_queue.parse(
                     _buffer(6, 4, b'4\00212?x\004123')
                 )
             ),
