@@ -101,6 +101,56 @@ group("default") {
   ]
 }
 
+# This group tries to collect together most build steps in Pigweed's build.
+# Some targets in this group are not included in the main build to keep the
+# default build time down, while others are excluded from the main build because
+# they require additional configuration or don't work on every OS.
+#
+# To increase coverage, use `pw package` to install these packages:
+#   boringssl
+#   freertos
+#   mbedtls
+#   micro-ecc
+#   nanopb
+#   pico_sdk
+#   protobuf
+#   stm32cube_f4
+#   teensy
+group("extended_default") {
+  deps = [
+    ":cpp14_compatibility",
+    ":cpp20_compatibility",
+    ":default",
+    ":host_clang_debug_dynamic_allocation",
+    ":pw_system_demo",
+    ":stm32f429i_size_optimized",
+  ]
+
+  if (host_os != "win") {
+    deps += [
+      ":qemu_clang",
+      ":qemu_gcc",
+    ]
+  }
+
+  if (host_os == "linux") {
+    deps += [
+      ":integration_tests",
+      ":runtime_sanitizers",
+    ]
+  }
+
+  # Requires setting pw_arduino_build_CORE_PATH.
+  if (pw_arduino_build_CORE_PATH != "") {
+    deps += [ ":arduino" ]
+  }
+
+  # Requires setting pw_third_party_mcuxpresso_SDK.
+  if (pw_third_party_mcuxpresso_SDK != "") {
+    deps += [ ":mimxrt595" ]
+  }
+}
+
 # Verify that this BUILD.gn file is only used by Pigweed itself.
 assert(get_path_info("//", "abspath") == get_path_info(".", "abspath"),
        "Pigweed's top-level BUILD.gn may only be used when building upstream " +

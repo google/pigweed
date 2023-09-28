@@ -11,6 +11,27 @@ compiler defaults. (See Pigweed's ``//BUILDCONFIG.gn``)
 ``pw_build`` also provides several useful GN templates that are used throughout
 Pigweed.
 
+Building upstream Pigweed
+-------------------------
+See Pigweed's :ref:`docs-getting-started` guide for a high-level introduction
+to using the GN build.
+
+Pigweed's root ``BUILD.gn`` file contains a variety of groups to help you
+control what parts of the project you'd like to build.
+
+* ``default``: Same as just calling ``ninja -C out``. Builds Pigweed's
+  documentation, recommended tests, and python linting, and static analysis.
+* ``extended_default``: Everything in ``default``, plus some other useful
+  configurations that are tested in CQ.
+* ``docs``: Only build Pigweed's documentation.
+* ``stm32f429i``: Only build for the STMicroelectronics STM32F429I-DISC1 board.
+* ``host``: Only build for the host.
+
+Note that the implicit ``all`` target is not actively maintained by Pigweed.
+There are a variety of other groups in the root ``BUILD.gn`` file that may be
+helpful for covering more areas of the build, or for reducing iteration time
+by only building a subset of the default build.
+
 Build system philosophies
 -------------------------
 While Pigweed's GN build is not hermetic, it strives to adhere to principles of
