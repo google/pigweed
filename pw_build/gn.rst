@@ -23,14 +23,19 @@ control what parts of the project you'd like to build.
   documentation, recommended tests, and python linting, and static analysis.
 * ``extended_default``: Everything in ``default``, plus some other useful
   configurations that are tested in CQ.
+* ``all``: Attempts to build everything in Pigweed. Note that ``pw package`` may
+  need to be used to enable some branches of the build.
 * ``docs``: Only build Pigweed's documentation.
 * ``stm32f429i``: Only build for the STMicroelectronics STM32F429I-DISC1 board.
 * ``host``: Only build for the host.
 
-Note that the implicit ``all`` target is not actively maintained by Pigweed.
 There are a variety of other groups in the root ``BUILD.gn`` file that may be
 helpful for covering more areas of the build, or for reducing iteration time
 by only building a subset of the default build.
+
+Some currently broken groups are gated behind the ``pw_BUILD_BROKEN_GROUPS``
+build argument. You can set this to ``true`` using ``gn args out`` to try to
+build and debug known broken build configurations.
 
 Build system philosophies
 -------------------------

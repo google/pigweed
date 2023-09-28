@@ -90,6 +90,14 @@ def _at_all_optimization_levels(target):
 #
 # Build presubmit checks
 #
+gn_all = build.GnGenNinja(
+    name='gn_all',
+    path_filter=_BUILD_FILE_FILTER,
+    gn_args=dict(pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS),
+    ninja_targets=('all',),
+)
+
+
 def gn_clang_build(ctx: PresubmitContext):
     """Checks all compile targets that rely on LLVM tooling."""
     build_targets = [
@@ -1179,6 +1187,7 @@ OTHER_CHECKS = (
     cpp_checks.msan,
     docs_build,
     gitmodules.create(gitmodules.Config(allow_submodules=False)),
+    gn_all,
     gn_clang_build,
     gn_combined_build_check,
     module_owners.presubmit_check(),

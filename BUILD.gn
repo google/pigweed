@@ -25,6 +25,7 @@ import("$dir_pw_perf_test/perf_test.gni")
 import("$dir_pw_rpc/config.gni")
 import("$dir_pw_rust/rust.gni")
 import("$dir_pw_third_party/ambiq/ambiq.gni")
+import("$dir_pw_third_party/fuzztest/fuzztest.gni")
 import("$dir_pw_third_party/mcuxpresso/mcuxpresso.gni")
 import("$dir_pw_toolchain/c_optimization.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
@@ -50,6 +51,10 @@ declare_args() {
 
   # List of application image GN targets specific to the Pigweed target.
   pw_TARGET_APPLICATIONS = []
+
+  # Gates known broken configurations from building. This is what allows the
+  # implicit `all` target to work even though there are known broken targets.
+  pw_BUILD_BROKEN_GROUPS = false
 }
 
 # This toolchain is used to force some dependencies to not be parsed by the
@@ -297,15 +302,16 @@ if (pw_arduino_build_CORE_PATH != "") {
 
 # TODO: b/244604080 - Inline string tests are too big to fit in the QEMU firmware
 # except under a size-optimized build. For now, only build size-optimized.
-#
-# _build_pigweed_default_at_all_optimization_levels("qemu_gcc") {
-#   toolchain_prefix =
-#       "$dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_gcc_"
-# }
-# _build_pigweed_default_at_all_optimization_levels("qemu_clang") {
-#   toolchain_prefix =
-#       "$dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_"
-# }
+if (pw_BUILD_BROKEN_GROUPS) {
+  _build_pigweed_default_at_all_optimization_levels("qemu_gcc") {
+    toolchain_prefix =
+        "$dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_gcc_"
+  }
+  _build_pigweed_default_at_all_optimization_levels("qemu_clang") {
+    toolchain_prefix =
+        "$dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_"
+  }
+}
 group("qemu_gcc_size_optimized") {
   deps = [ ":pigweed_default($dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_gcc_size_optimized)" ]
 }
@@ -391,7 +397,7 @@ group("pip_vendor_wheels") {
 group("fuzzers") {
   deps = []
 
-  if (host_os != "win") {
+  if (host_os != "win" && dir_pw_third_party_fuzztest != "") {
     # Coverage-guided fuzzing is only supported on Linux and MacOS using clang.
     # Fuzztest-based fuzzers will run in unit test mode. libFuzzer-based fuzzers
     # will only build.
@@ -415,6 +421,7 @@ group("oss_fuzz") {
 }
 
 group("asan") {
+  # TODO: b/302181521 - asan doesn't work on Windows yet.
   if (host_os != "win") {
     deps = [ ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_asan)" ]
   }
@@ -424,10 +431,14 @@ group("asan") {
 # standard library included in the sysroot has a variant built with msan.
 group("msan") {
   # TODO: b/259695498 - msan doesn't work on macOS yet.
-  deps = [ ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_msan)" ]
+  # TODO: b/302181521 - msan doesn't work on Windows yet.
+  if (pw_BUILD_BROKEN_GROUPS) {
+    deps = [ ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_msan)" ]
+  }
 }
 
 group("tsan") {
+  # TODO: b/302181521 - tsan doesn't work on Windows yet.
   if (host_os != "win") {
     deps = [ ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_tsan)" ]
   }
@@ -435,7 +446,8 @@ group("tsan") {
 
 group("ubsan") {
   # TODO: b/259695498 - ubsan doesn't work on macOS yet.
-  if (host_os != "win" && host_os != "mac") {
+  # TODO: b/302181521 - ubsan doesn't work on Windows yet.
+  if ((host_os != "win" && host_os != "mac") || pw_BUILD_BROKEN_GROUPS) {
     deps =
         [ ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_ubsan)" ]
   }
@@ -443,24 +455,28 @@ group("ubsan") {
 
 group("ubsan_heuristic") {
   # TODO: b/259695498 - ubsan_heuristic doesn't work on macOS yet.
-  if (host_os != "win" && host_os != "mac") {
+  # TODO: b/302181521 - ubsan doesn't work on Windows yet.
+  if ((host_os != "win" && host_os != "mac") || pw_BUILD_BROKEN_GROUPS) {
     deps = [ ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_ubsan_heuristic)" ]
   }
 }
 
 group("runtime_sanitizers") {
-  if (host_os != "win") {
+  if (host_os != "win" || pw_BUILD_BROKEN_GROUPS) {
     deps = [
       ":asan",
       ":tsan",
       ":ubsan",
+    ]
 
+    if (pw_BUILD_BROKEN_GROUPS) {
       # TODO: b/234876100 - msan will not work until the C++ standard library
       # included in the sysroot has a variant built with msan.
-      # ":msan",
+      deps += [ ":msan" ]
 
       # No ubsan_heuristic, which may have false positives.
-    ]
+      deps += [ ":ubsan_heuristic" ]
+    }
   }
 }
 
@@ -561,14 +577,17 @@ group("cpp20_compatibility") {
   deps = [ ":pigweed_default($_cpp20_tc)" ]
 }
 
-group("build_with_pw_minimal_cpp_stdlib") {
-  _toolchain = "$_internal_toolchains:pw_strict_host_clang_size_optimized_minimal_cpp_stdlib"
+# TODO: b/302175933 - This is currently broken.
+if (pw_BUILD_BROKEN_GROUPS) {
+  group("build_with_pw_minimal_cpp_stdlib") {
+    _toolchain = "$_internal_toolchains:pw_strict_host_clang_size_optimized_minimal_cpp_stdlib"
 
-  # This list of supported modules is incomplete.
-  deps = [
-    "$dir_pw_status($_toolchain)",
-    "$dir_pw_tokenizer($_toolchain)",
-  ]
+    # This list of supported modules is incomplete.
+    deps = [
+      "$dir_pw_status($_toolchain)",
+      "$dir_pw_tokenizer($_toolchain)",
+    ]
+  }
 }
 
 group("host_clang_debug_dynamic_allocation") {
