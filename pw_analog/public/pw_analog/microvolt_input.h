@@ -19,52 +19,52 @@
 
 namespace pw::analog {
 
-// The common interface for obtaining voltage samples in microvolts. This
-// interface represents a single voltage input or channel. Users will need to
-// supply their own ADC driver implementation in order to configure and enable
-// the ADC peripheral in order to provide the reference voltages and to
-// configure and enable the ADC peripheral where needed. Users are responsible
-// for managing multithreaded access to the ADC driver if the ADC services
-// multiple channels.
+/// The common interface for obtaining voltage samples in microvolts. This
+/// interface represents a single voltage input or channel. Users will need to
+/// supply their own ADC driver implementation in order to provide the reference
+/// voltages and to configure and enable the ADC peripheral where needed. Users
+/// are responsible for managing multi-threaded access to the ADC driver if the
+/// ADC services multiple channels.
 class MicrovoltInput : public AnalogInput {
  public:
-  // Specifies the max and min microvolt range the analog input can measure.
-  // The reference voltage difference cannot be bigger than sizeof(int32_t)
-  // which should be just above 2000V.
-  // * These values do not change at run time.
-  // * Inversion of min/max is supported.
+  /// Specifies the maximum and minimum microvolt range the analog input can
+  /// measure. The reference voltage difference cannot be bigger than
+  /// `sizeof(int32_t)` which should be just above 2000V. These values do not
+  /// change at run time. Inversion of `min` or `max` is supported.
   struct References {
-    int32_t max_voltage_uv;  // Microvolts at AnalogInput::Limits::max
-    int32_t min_voltage_uv;  // Microvolts at AnalogInput::Limits::min.
+    /// Microvolts at `AnalogInput::Limits::max`.
+    int32_t max_voltage_uv;
+    /// Microvolts at `AnalogInput::Limits::min`.
+    int32_t min_voltage_uv;
   };
 
   ~MicrovoltInput() override = default;
 
-  // Blocks until the specified timeout duration has elapsed or the voltage
-  // sample has been returned, whichever comes first.
-  //
-  // This method is thread safe.
-  //
-  // Returns:
-  //   Microvolts (uV).
-  //   ResourceExhuasted: ADC peripheral in use.
-  //   DeadlineExceedded: Timed out waiting for a sample.
-  //   Other statuses left up to the implementer.
+  /// Blocks until the specified timeout duration has elapsed or the voltage
+  /// sample has been returned, whichever comes first.
+  ///
+  /// This method is thread-safe.
+  ///
+  /// @returns
+  /// * A voltage sample in microvolts (uV) on success.
+  /// * @pw_status{RESOURCE_EXHAUSTED} - ADC peripheral in use.
+  /// * @pw_status{DEADLINE_EXCEEDED} - Timed out waiting for a sample.
+  /// * Other statuses left up to the implementer.
   Result<int32_t> TryReadMicrovoltsFor(chrono::SystemClock::duration timeout) {
     return TryReadMicrovoltsUntil(
         chrono::SystemClock::TimePointAfterAtLeast(timeout));
   }
 
-  // Blocks until the deadline time has been reached or the voltage sample has
-  // been returned, whichever comes first.
-  //
-  // This method is thread safe.
-  //
-  // Returns:
-  //   Microvolts (uV).
-  //   ResourceExhuasted: ADC peripheral in use.
-  //   DeadlineExceedded: Timed out waiting for a sample.
-  //   Other statuses left up to the implementer.
+  /// Blocks until the deadline time has been reached or the voltage sample has
+  /// been returned, whichever comes first.
+  ///
+  /// This method is thread-safe.
+  ///
+  /// @returns
+  /// * A voltage sample in microvolts (uV) on success.
+  /// * @pw_status{RESOURCE_EXHAUSTED} - ADC peripheral in use.
+  /// * @pw_status{DEADLINE_EXCEEDED} - Timed out waiting for a sample.
+  /// * Other statuses left up to the implementer.
   Result<int32_t> TryReadMicrovoltsUntil(
       chrono::SystemClock::time_point deadline) {
     PW_TRY_ASSIGN(const int32_t sample, TryReadUntil(deadline));

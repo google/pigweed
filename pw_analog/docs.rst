@@ -55,9 +55,8 @@ pw::analog::GmockAnalogInput
 
 pw::analog::MicrovoltInput
 ==========================
-.. literalinclude:: public/pw_analog/microvolt_input.h
-   :start-after: #pragma once
-   :end-before: }  // namespace pw::analog
+.. doxygenclass:: pw::analog::MicrovoltInput
+   :members:
 
 pw::analog::GmockMicrovoltInput
 ===============================
