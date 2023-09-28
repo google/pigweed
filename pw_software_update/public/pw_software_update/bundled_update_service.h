@@ -30,6 +30,8 @@ namespace pw::software_update {
 class BundledUpdateService
     : public pw_rpc::nanopb::BundledUpdate::Service<BundledUpdateService> {
  public:
+  PW_MODIFY_DIAGNOSTICS_PUSH();
+  PW_MODIFY_DIAGNOSTIC(ignored, "-Wmissing-field-initializers");
   BundledUpdateService(UpdateBundleAccessor& bundle,
                        BundledUpdateBackend& backend,
                        work_queue::WorkQueue& work_queue)
@@ -41,6 +43,7 @@ class BundledUpdateService
         bundle_open_(false),
         work_queue_(work_queue),
         work_enqueued_(false) {}
+  PW_MODIFY_DIAGNOSTICS_POP();
 
   Status GetStatus(const pw_protobuf_Empty& request,
                    pw_software_update_BundledUpdateStatus& response);

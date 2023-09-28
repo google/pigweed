@@ -463,8 +463,11 @@ Status BundledUpdateService::Reset(const pw_protobuf_Empty&,
   }
 
   {
+    PW_MODIFY_DIAGNOSTICS_PUSH();
+    PW_MODIFY_DIAGNOSTIC(ignored, "-Wmissing-field-initializers");
     *status_.acquire() = {
         .state = pw_software_update_BundledUpdateState_Enum_INACTIVE};
+    PW_MODIFY_DIAGNOSTICS_POP();
   }
 
   // Reset the bundle.
