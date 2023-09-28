@@ -92,7 +92,9 @@ void Phase1::RespondToPairingRequest(const PairingRequestParams& req_params) {
   pres_ = PairingResponseParams{.io_capability = pres_values.io_capability,
                                 .oob_data_flag = pres_values.oob_data_flag,
                                 .auth_req = pres_values.auth_req,
-                                .max_encryption_key_size = pres_values.max_encryption_key_size};
+                                .max_encryption_key_size = pres_values.max_encryption_key_size,
+                                .initiator_key_dist_gen = 0,
+                                .responder_key_dist_gen = 0};
   // The keys that will be exchanged correspond to the intersection of what the
   // initiator requests and we support.
   pres_->initiator_key_dist_gen = pres_values.remote_keys & req_params.initiator_key_dist_gen;

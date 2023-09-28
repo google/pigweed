@@ -2,9 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
+import("//build_overrides/pigweed.gni")
+import("$dir_pw_unit_test/test.gni")
 
-static_library("hci") {
+pw_source_set("hci") {
   sources = [
     "acl_connection.cc",
     "acl_connection.h",
@@ -44,14 +45,14 @@ static_library("hci") {
   ]
 
   public_deps = [
-    "//sdk/lib/fit",
+    "$dir_pw_bluetooth:emboss_hci_group",
+    "$dir_pw_third_party/fuchsia:fit",
     "//src/connectivity/bluetooth/core/bt-host/transport",
     "//third_party/pigweed:pw_async_heap_dispatcher",
-    "//third_party/pigweed/src/pw_bluetooth:emboss_hci_group",
   ]
 }
 
-source_set("testing") {
+pw_source_set("testing") {
   testonly = true
 
   sources = [
@@ -70,9 +71,7 @@ source_set("testing") {
   public_deps = [ ":hci" ]
 }
 
-source_set("tests") {
-  testonly = true
-
+pw_test("tests") {
   sources = [
     "advertising_handle_map_unittest.cc",
     "advertising_report_parser_unittest.cc",
@@ -90,13 +89,7 @@ source_set("tests") {
 
   deps = [
     ":testing",
+    "$dir_pw_bluetooth:emboss_hci_test",
     "//src/connectivity/bluetooth/core/bt-host/testing",
-    "//third_party/googletest:gtest",
-    "//third_party/pigweed/src/pw_bluetooth:emboss_hci_test",
   ]
-}
-
-bt_gtest_package("bt-host-hci-tests") {
-  with_death_tests = true
-  deps = [ ":tests" ]
 }

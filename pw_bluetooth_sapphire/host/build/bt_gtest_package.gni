@@ -37,11 +37,14 @@ template("bt_gtest_package") {
   with_death_tests =
       defined(invoker.with_death_tests) && invoker.with_death_tests
 
-  executable("tests_executable") {
+  executable("${target_name}_tests_executable") {
     testonly = true
     output_name = package_name
     deps = invoker.deps
-    deps += [ "//src/connectivity/bluetooth/core/bt-host/testing:gtest_main" ]
+    deps += [
+      "//src/connectivity/bluetooth/core/bt-host/testing:gtest_main",
+      "//third_party/pigweed/backends/pw_log:printf",
+    ]
     if (with_death_tests) {
       metadata = {
         # Used by the fuchsia_test_component_manifest() template in v2.
@@ -62,6 +65,6 @@ template("bt_gtest_package") {
   fuchsia_unittest_package(package_name) {
     # Use the ELF test runner instead of the GTest test runner.
     deprecated_legacy_test_execution = true
-    deps = [ ":tests_executable" ]
+    deps = [ ":${target_name}_tests_executable" ]
   }
 }

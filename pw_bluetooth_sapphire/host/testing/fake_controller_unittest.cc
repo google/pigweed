@@ -9,9 +9,8 @@
 #include <cstdint>
 
 #include <gtest/gtest.h>
-#include <pw_async_fuchsia/dispatcher.h>
+#include <pw_async/fake_dispatcher_fixture.h>
 
-#include "pw_async/fake_dispatcher_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 
 #include <pw_bluetooth/hci_events.emb.h>

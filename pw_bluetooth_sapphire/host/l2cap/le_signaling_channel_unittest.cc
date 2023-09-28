@@ -4,8 +4,6 @@
 
 #include "le_signaling_channel.h"
 
-#include <pw_async_fuchsia/dispatcher.h>
-
 #include "fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 

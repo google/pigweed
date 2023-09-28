@@ -4,7 +4,6 @@
 
 #include <fuzzer/FuzzedDataProvider.h>
 #include <pw_async/fake_dispatcher.h>
-#include <pw_async_fuchsia/dispatcher.h>
 #include <pw_random/fuzzer.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"

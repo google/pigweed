@@ -8,7 +8,6 @@
 
 #include <gtest/gtest.h>
 
-#include "lib/async/cpp/task.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -123,7 +122,12 @@ TEST_F(SecurityRequestPhaseTest, HandlesChannelClosedGracefully) {
 TEST_F(SecurityRequestPhaseTest, PairingRequestAsResponderPassedThrough) {
   StaticByteBuffer<util::PacketSize<PairingRequestParams>()> preq_packet;
   PacketWriter writer(kPairingRequest, &preq_packet);
-  PairingRequestParams generic_preq{.auth_req = AuthReq::kBondingFlag};
+  PairingRequestParams generic_preq{.io_capability = IOCapability::kDisplayOnly,
+                                    .oob_data_flag = OOBDataFlag::kNotPresent,
+                                    .auth_req = AuthReq::kBondingFlag,
+                                    .max_encryption_key_size = 0,
+                                    .initiator_key_dist_gen = 0,
+                                    .responder_key_dist_gen = 0};
   *writer.mutable_payload<PairingRequestParams>() = generic_preq;
   ASSERT_FALSE(last_pairing_req().has_value());
   fake_chan()->Receive(preq_packet);

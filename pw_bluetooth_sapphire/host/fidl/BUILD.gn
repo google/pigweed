@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import("//build/fuzz.gni")
+import("//build_overrides/pigweed.gni")
 import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
 
 static_library("fidl") {
@@ -86,6 +87,8 @@ source_set("adapter_test_fixture") {
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//src/connectivity/bluetooth/core/bt-host/testing:fake_controller",
+    "//src/lib/testing/loop_fixture:gtest",
+    "//third_party/pigweed/backends/pw_async_fuchsia:dispatcher",
     "//zircon/system/ulib/fbl",
   ]
 }
@@ -116,6 +119,7 @@ source_set("fake_gatt_test_fixture") {
     "//src/connectivity/bluetooth/core/bt-host/gatt",
     "//src/connectivity/bluetooth/core/bt-host/gatt:testing",
     "//src/lib/testing/loop_fixture",
+    "//third_party/pigweed/backends/pw_async_fuchsia:dispatcher",
   ]
 }
 
@@ -160,9 +164,9 @@ fuchsia_library_fuzzer("host_server_watch_peers_fuzzer") {
   sources = [ "host_server_watch_peers_fuzztest.cc" ]
   deps = [
     ":adapter_test_fixture",
+    "$dir_pw_random:fuzzer_generator",
     "//src/connectivity/bluetooth/core/bt-host:sources",
     "//src/connectivity/bluetooth/core/bt-host/testing:fuzzing",
     "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
-    "//third_party/pigweed/src/pw_random:fuzzer_generator",
   ]
 }

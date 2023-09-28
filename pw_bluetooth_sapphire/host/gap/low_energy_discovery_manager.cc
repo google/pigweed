@@ -6,8 +6,6 @@
 
 #include <lib/fit/function.h>
 
-#include <pw_async_fuchsia/util.h>
-
 #include "peer.h"
 #include "peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"

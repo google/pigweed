@@ -5,14 +5,13 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_BEARER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_BEARER_H_
 
-#include <lib/async/cpp/task.h>
 #include <lib/fit/function.h>
 
 #include <map>
 #include <memory>
 #include <unordered_map>
 
-#include <pw_async_fuchsia/dispatcher.h>
+#include <pw_async/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/error.h"

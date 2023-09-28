@@ -44,6 +44,7 @@ source_set("sources") {
 
   deps = [
     "//src/devices/lib/driver",
+    "//third_party/pigweed/backends/pw_async_fuchsia:dispatcher",
     "//third_party/pigweed/backends/pw_random:zircon_random_generator",
     "//zircon/system/ulib/inspect",
   ]
@@ -187,25 +188,80 @@ bt_gtest_package("bt-host-device-tests") {
   deps = [ ":device_tests" ]
 }
 
+bt_gtest_package("bt-host-transport-tests") {
+  with_death_tests = true
+  deps = [ "transport:tests.lib" ]
+}
+
+bt_gtest_package("bt-host-gap-tests") {
+  with_death_tests = true
+  deps = [ "gap:tests.lib" ]
+}
+
+bt_gtest_package("bt-host-gatt-tests") {
+  deps = [ "gatt:tests.lib" ]
+}
+
+bt_gtest_package("bt-host-common-tests") {
+  with_death_tests = true
+  deps = [ "common:tests.lib" ]
+}
+
+bt_gtest_package("bt-host-l2cap-tests") {
+  with_death_tests = true
+  deps = [ "l2cap:tests.lib" ]
+}
+
+bt_gtest_package("bt-host-att-tests") {
+  with_death_tests = true
+  deps = [ "att:tests.lib" ]
+}
+
+bt_gtest_package("bt-host-hci-tests") {
+  with_death_tests = true
+  deps = [ "hci:tests.lib" ]
+}
+
+bt_gtest_package("bt-host-hci-spec-tests") {
+  deps = [ "hci-spec:tests.lib" ]
+}
+
+bt_gtest_package("bt-host-sco-tests") {
+  deps = [ "sco:tests.lib" ]
+}
+
+bt_gtest_package("bt-host-sdp-tests") {
+  deps = [ "sdp:tests.lib" ]
+}
+
+bt_gtest_package("bt-host-sm-tests") {
+  with_death_tests = true
+  deps = [ "sm:tests.lib" ]
+}
+
+bt_gtest_package("bt-host-testing-tests") {
+  deps = [ "testing:tests.lib" ]
+}
+
 group("tests") {
   testonly = true
   deps = [
+    ":bt-host-att-tests",
+    ":bt-host-common-tests",
     ":bt-host-device-tests",
+    ":bt-host-gap-tests",
+    ":bt-host-gatt-tests",
+    ":bt-host-hci-spec-tests",
+    ":bt-host-hci-tests",
+    ":bt-host-l2cap-tests",
+    ":bt-host-sco-tests",
+    ":bt-host-sdp-tests",
+    ":bt-host-sm-tests",
+    ":bt-host-testing-tests",
+    ":bt-host-transport-tests",
     ":fuzzers",
-    "att:bt-host-att-tests",
-    "common:bt-host-common-tests",
     "controllers:bt-host-controllers-tests",
     "fidl:bt-host-fidl-tests",
-    "gap:bt-host-gap-tests",
-    "gatt:bt-host-gatt-tests",
-    "hci:bt-host-hci-tests",
-    "hci-spec:bt-host-hci-spec-tests",
-    "l2cap:bt-host-l2cap-tests",
-    "sco:bt-host-sco-tests",
-    "sdp:bt-host-sdp-tests",
-    "sm:bt-host-sm-tests",
     "socket:bt-host-socket-tests",
-    "testing:bt-host-testing-tests",
-    "transport:bt-host-transport-tests",
   ]
 }

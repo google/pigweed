@@ -517,8 +517,12 @@ TEST_F(AdapterTest, LeAutoConnect) {
   sm::PairingData pdata;
   pdata.peer_ltk = sm::LTK();
   pdata.local_ltk = sm::LTK();
-  adapter()->peer_cache()->AddBondedPeer(
-      BondingData{.identifier = kPeerId, .address = kTestAddr, .le_pairing_data = pdata});
+  adapter()->peer_cache()->AddBondedPeer(BondingData{.identifier = kPeerId,
+                                                     .address = kTestAddr,
+                                                     .name = std::nullopt,
+                                                     .le_pairing_data = pdata,
+                                                     .bredr_link_key = std::nullopt,
+                                                     .bredr_services = {}});
   EXPECT_EQ(1u, adapter()->peer_cache()->count());
 
   // FakeController only sends advertising reports at the start of scan periods, so we need to start
@@ -561,8 +565,12 @@ TEST_F(AdapterTest, LeSkipAutoConnectBehavior) {
   sm::PairingData pdata;
   pdata.peer_ltk = sm::LTK();
   pdata.local_ltk = sm::LTK();
-  adapter()->peer_cache()->AddBondedPeer(
-      BondingData{.identifier = kPeerId, .address = kTestAddr, .le_pairing_data = pdata});
+  adapter()->peer_cache()->AddBondedPeer(BondingData{.identifier = kPeerId,
+                                                     .address = kTestAddr,
+                                                     .name = std::nullopt,
+                                                     .le_pairing_data = pdata,
+                                                     .bredr_link_key = std::nullopt,
+                                                     .bredr_services = {}});
   EXPECT_EQ(1u, adapter()->peer_cache()->count());
 
   // Fake a manual disconnect to skip auto-connect behavior.

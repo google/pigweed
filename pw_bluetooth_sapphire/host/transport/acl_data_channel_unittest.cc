@@ -4,8 +4,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 
-#include <lib/async/cpp/task.h>
-
 #include <unordered_map>
 
 #include <gmock/gmock.h>

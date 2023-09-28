@@ -1221,7 +1221,7 @@ void FakeController::OnReadLocalName() {
   hci_spec::ReadLocalNameReturnParams params;
   params.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
   auto mut_view = MutableBufferView(params.local_name, hci_spec::kMaxNameLength);
-  mut_view.Write((uint8_t*)(local_name_.c_str()),
+  mut_view.Write((const uint8_t*)(local_name_.c_str()),
                  std::min(local_name_.length() + 1, hci_spec::kMaxNameLength));
   RespondWithCommandComplete(hci_spec::kReadLocalName, BufferView(&params, sizeof(params)));
 }

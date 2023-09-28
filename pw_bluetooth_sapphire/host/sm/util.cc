@@ -435,7 +435,7 @@ std::optional<F5Results> F5(const UInt256& dhkey, const UInt128& initiator_nonce
   if (!maybe_cmac.has_value()) {
     return std::nullopt;
   }
-  F5Results results{.mac_key = *maybe_cmac};
+  F5Results results{.mac_key = *maybe_cmac, .ltk = {0}};
 
   // Overwrite counter value only for LTK calculation.
   counter = 0x01;

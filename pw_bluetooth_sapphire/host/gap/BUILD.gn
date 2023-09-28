@@ -3,9 +3,11 @@
 # found in the LICENSE file.
 
 import("//build/fuzz.gni")
-import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
+import("//build_overrides/pigweed.gni")
+import("$dir_pw_fuzzer/fuzzer.gni")
+import("$dir_pw_unit_test/test.gni")
 
-source_set("definitions") {
+pw_source_set("definitions") {
   sources = [
     "gap.cc",
     "gap.h",
@@ -13,7 +15,7 @@ source_set("definitions") {
   deps = [ "//src/connectivity/bluetooth/core/bt-host/common" ]
 }
 
-static_library("gap") {
+pw_source_set("gap") {
   sources = [
     "adapter.cc",
     "adapter.h",
@@ -71,7 +73,8 @@ static_library("gap") {
 
   public_deps = [
     ":definitions",
-    "//sdk/lib/fit",
+    "$dir_pw_bluetooth",
+    "$dir_pw_third_party/fuchsia:fit",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/connectivity/bluetooth/core/bt-host/gatt",
     "//src/connectivity/bluetooth/core/bt-host/hci",
@@ -80,12 +83,10 @@ static_library("gap") {
     "//src/connectivity/bluetooth/core/bt-host/sdp",
     "//src/connectivity/bluetooth/core/bt-host/sm",
     "//third_party/pigweed:pw_async_heap_dispatcher",
-    "//third_party/pigweed/backends/pw_async_fuchsia:util",
-    "//third_party/pigweed/src/pw_bluetooth",
   ]
 }
 
-source_set("testing") {
+pw_source_set("testing") {
   testonly = true
 
   sources = [
@@ -97,14 +98,12 @@ source_set("testing") {
 
   public_deps = [
     ":gap",
+    "$dir_pw_unit_test",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
-    "//third_party/googletest:gtest",
   ]
 }
 
-source_set("tests") {
-  testonly = true
-
+pw_test("tests") {
   sources = [
     "adapter_unittest.cc",
     "android_vendor_capabilities_unittest.cc",
@@ -136,23 +135,26 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/sm:testing",
     "//src/connectivity/bluetooth/core/bt-host/socket",
     "//src/connectivity/bluetooth/core/bt-host/testing",
-    "//src/lib/testing/loop_fixture",
-    "//third_party/googletest:gtest",
   ]
-}
-
-bt_gtest_package("bt-host-gap-tests") {
-  with_death_tests = true
-  deps = [ ":tests" ]
 }
 
 fuchsia_library_fuzzer("peer_cache_fuzzer") {
   sources = [ "peer_cache_fuzztest.cc" ]
   deps = [
     ":gap",
+    "$dir_pw_random:fuzzer_generator",
     "//src/connectivity/bluetooth/core/bt-host/testing:fuzzing",
     "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
-    "//third_party/pigweed/src/pw_random:fuzzer_generator",
-    "//zircon/system/ulib/async-loop:async-loop-cpp",
+    "//third_party/pigweed/backends/pw_async_fuchsia:fake_dispatcher",
+  ]
+}
+
+pw_fuzzer("pw_peer_cache_fuzzer") {
+  sources = [ "peer_cache_fuzztest.cc" ]
+  deps = [
+    ":gap",
+    "$dir_pw_random:fuzzer_generator",
+    "//src/connectivity/bluetooth/core/bt-host/testing:fuzzing",
+    "//third_party/pigweed/backends/pw_async_fuchsia:fake_dispatcher",
   ]
 }

@@ -118,7 +118,7 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, InitiatorJustWorks) {
   NewScStage1JustWorksNumericComparison(args);
   MatchingPair vals = GenerateMatchingConfirmAndRandom();
   ScStage1::Output expected_results{
-      .initiator_r = {0}, .responder_r = {0}, .responder_rand = vals.random};
+      .initiator_r = {0}, .responder_r = {0}, .initiator_rand = {0}, .responder_rand = vals.random};
 
   stage_1()->Run();
   stage_1()->OnPairingConfirm(vals.confirm);
@@ -147,7 +147,7 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, InitiatorNumericComparison) {
       });
   MatchingPair vals = GenerateMatchingConfirmAndRandom();
   ScStage1::Output expected_results{
-      .initiator_r = {0}, .responder_r = {0}, .responder_rand = vals.random};
+      .initiator_r = {0}, .responder_r = {0}, .initiator_rand = {0}, .responder_rand = vals.random};
 
   stage_1()->Run();
   stage_1()->OnPairingConfirm(vals.confirm);
@@ -224,7 +224,7 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderJustWorks) {
   NewScStage1JustWorksNumericComparison(args);
   UInt128 kPeerRand = Random<PairingRandomValue>();
   ScStage1::Output expected_results{
-      .initiator_r = {0}, .responder_r = {0}, .initiator_rand = kPeerRand};
+      .initiator_r = {0}, .responder_r = {0}, .initiator_rand = kPeerRand, .responder_rand = {0}};
 
   stage_1()->Run();
   RunUntilIdle();
@@ -257,7 +257,7 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderNumericComparison) {
       });
   UInt128 kPeerRand = Random<PairingRandomValue>();
   ScStage1::Output expected_results{
-      .initiator_r = {0}, .responder_r = {0}, .initiator_rand = kPeerRand};
+      .initiator_r = {0}, .responder_r = {0}, .initiator_rand = kPeerRand, .responder_rand = {0}};
 
   stage_1()->Run();
   RunUntilIdle();

@@ -167,7 +167,7 @@ class Phase2SecureConnectionsTest : public l2cap::testing::FakeChannelTest {
     UInt128 random;
   };
   MatchingPair GenerateMatchingConfirmAndRandom(uint8_t r = 0) const {
-    MatchingPair pair{.random = {1, 2, 3, 4}};
+    MatchingPair pair{.confirm = {}, .random = {1, 2, 3, 4}};
     pair.confirm = GenerateConfirmValue(pair.random, phase_2_sc_->role() == Role::kResponder, r);
     return pair;
   }

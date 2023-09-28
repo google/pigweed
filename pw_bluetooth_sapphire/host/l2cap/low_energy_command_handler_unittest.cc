@@ -5,7 +5,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/low_energy_command_handler.h"
 
 #include <pw_async/fake_dispatcher_fixture.h>
-#include <pw_async_fuchsia/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_signaling_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"

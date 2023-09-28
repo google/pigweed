@@ -8,7 +8,6 @@
 
 #include <gmock/gmock.h>
 #include <pw_async/fake_dispatcher_fixture.h>
-#include <pw_async_fuchsia/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/retire_log.h"
 

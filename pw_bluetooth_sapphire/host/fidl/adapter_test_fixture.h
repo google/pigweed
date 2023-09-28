@@ -5,6 +5,8 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_ADAPTER_TEST_FIXTURE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_ADAPTER_TEST_FIXTURE_H_
 
+#include <pw_async_fuchsia/dispatcher.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"

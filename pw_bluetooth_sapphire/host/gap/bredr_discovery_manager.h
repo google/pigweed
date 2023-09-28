@@ -151,12 +151,12 @@ class BrEdrDiscoveryManager final {
     inspect::UintProperty inquiry_sessions_count;
     inspect::UintProperty last_inquiry_length_sec;
 
-    std::optional<zx_time_t> discoverable_started_time;
-    std::optional<zx_time_t> inquiry_started_time;
+    std::optional<pw::chrono::SystemClock::time_point> discoverable_started_time;
+    std::optional<pw::chrono::SystemClock::time_point> inquiry_started_time;
 
     void Initialize(inspect::Node node);
     void Update(size_t discoverable_count, size_t pending_discoverable_count,
-                size_t discovery_count, zx_time_t now);
+                size_t discovery_count, pw::chrono::SystemClock::time_point now);
   };
 
   InspectProperties inspect_properties_;

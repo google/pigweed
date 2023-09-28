@@ -8,7 +8,7 @@
 #include <ratio>
 
 #include <gtest/gtest.h>
-#include <pw_async_fuchsia/dispatcher.h>
+#include <pw_async/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"

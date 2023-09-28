@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include <gtest/gtest.h>
+#include <pw_async_fuchsia/dispatcher.h>
 
 #include "socket_factory.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"

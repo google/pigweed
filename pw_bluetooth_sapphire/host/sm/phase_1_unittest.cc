@@ -826,6 +826,7 @@ TEST_F(Phase1Test, FeatureExchangeResponderBothSupportSCFeaturesHaveSC) {
   Phase1Args args{.preq =
                       PairingRequestParams{
                           .io_capability = IOCapability::kNoInputNoOutput,
+                          .oob_data_flag = OOBDataFlag::kNotPresent,
                           .auth_req = AuthReq::kBondingFlag | AuthReq::kSC,
                           .max_encryption_key_size = 0x10,  // 16, default max
                           .initiator_key_dist_gen = 0x00,
@@ -859,6 +860,7 @@ TEST_F(Phase1Test, FeatureExchangeResponderLocalSCRemoteNoSCFeaturesNoSC) {
   Phase1Args args{.preq =
                       PairingRequestParams{
                           .io_capability = IOCapability::kNoInputNoOutput,
+                          .oob_data_flag = OOBDataFlag::kNotPresent,
                           .auth_req = AuthReq::kBondingFlag,
                           .max_encryption_key_size = 0x10,  // 16, default max
                           .initiator_key_dist_gen = 0x00,
@@ -883,6 +885,7 @@ TEST_F(Phase1Test, FeatureExchangeResponderLocalSCRemoteNoSCFeaturesNoSC) {
 TEST_F(Phase1Test, FeatureExchangeLocalResponderDoesNotRequestUnsupportedKeys) {
   auto phase_args = Phase1Args{.preq = PairingRequestParams{
                                    .io_capability = IOCapability::kNoInputNoOutput,
+                                   .oob_data_flag = OOBDataFlag::kNotPresent,
                                    .auth_req = AuthReq::kBondingFlag,
                                    .max_encryption_key_size = 16,
                                    .initiator_key_dist_gen = 0x04,  // sign key only
@@ -914,8 +917,10 @@ TEST_F(Phase1Test, FeatureExchangeLocalResponderDoesNotRequestUnsupportedKeys) {
 TEST_F(Phase1Test, FeatureExchangeResponderDistributesIdKey) {
   auto phase_args =
       Phase1Args{.preq = PairingRequestParams{.io_capability = IOCapability::kNoInputNoOutput,
+                                              .oob_data_flag = OOBDataFlag::kNotPresent,
                                               .auth_req = 0x01,                 // bondable mode
                                               .max_encryption_key_size = 0x10,  // 16, default max
+                                              .initiator_key_dist_gen = 0x00,
                                               .responder_key_dist_gen = KeyDistGen::kIdKey}};
   const StaticByteBuffer kResponse(0x02,  // code: Pairing Response
                                    0x03,  // IO cap.: NoInputNoOutput
@@ -944,6 +949,7 @@ TEST_F(Phase1Test, FeatureExchangeResponderRespectsInitiatorForIdKey) {
   auto phase_args =
       Phase1Args{.preq = PairingRequestParams{
                      .io_capability = IOCapability::kNoInputNoOutput,
+                     .oob_data_flag = OOBDataFlag::kNotPresent,
                      .auth_req = 0x01,                 // bondable mode
                      .max_encryption_key_size = 0x10,  // 16, default max
                      .initiator_key_dist_gen = 0x00,

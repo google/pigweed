@@ -68,6 +68,8 @@ class Request {
 //    multiple response PDUs
 class Response {
  public:
+  virtual ~Response() = default;
+
   // Returns true if these parameters represent a complete response.
   virtual bool complete() const = 0;
 

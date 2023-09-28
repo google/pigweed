@@ -2,11 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
+import("//build_overrides/pigweed.gni")
+import("$dir_pw_build/target_types.gni")
+import("$dir_pw_unit_test/test.gni")
 
 # Basic target with protocol definitions and no logic, suitable for test
 # emulation.
-source_set("definitions") {
+pw_source_set("definitions") {
   sources = [
     "gatt_defs.cc",
     "gatt_defs.h",
@@ -15,7 +17,7 @@ source_set("definitions") {
   public_deps = [ "//src/connectivity/bluetooth/core/bt-host/att:definitions" ]
 }
 
-static_library("gatt") {
+pw_source_set("gatt") {
   sources = [
     "client.cc",
     "client.h",
@@ -41,12 +43,12 @@ static_library("gatt") {
 
   public_deps = [
     ":definitions",
-    "//sdk/lib/fit",
+    "$dir_pw_third_party/fuchsia:fit",
     "//src/connectivity/bluetooth/core/bt-host/att",
   ]
 }
 
-source_set("testing") {
+pw_source_set("testing") {
   testonly = true
 
   sources = [
@@ -60,15 +62,13 @@ source_set("testing") {
 
   public_deps = [
     ":gatt",
+    "$dir_pw_unit_test",
     "//src/connectivity/bluetooth/core/bt-host/common",
-    "//third_party/googletest:gtest",
     "//third_party/pigweed:pw_async_heap_dispatcher",
   ]
 }
 
-source_set("tests") {
-  testonly = true
-
+pw_test("tests") {
   sources = [
     "client_unittest.cc",
     "gatt_unittest.cc",
@@ -84,11 +84,5 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/att",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/connectivity/bluetooth/core/bt-host/testing",
-    "//third_party/googletest:gmock",
-    "//third_party/googletest:gtest",
   ]
-}
-
-bt_gtest_package("bt-host-gatt-tests") {
-  deps = [ ":tests" ]
 }

@@ -125,7 +125,7 @@ std::string DecodeUri(const std::string& uri) {
 
 template <typename T>
 inline size_t BufferWrite(MutableByteBuffer* buffer, size_t pos, const T& var) {
-  buffer->Write((uint8_t*)&var, sizeof(T), pos);
+  buffer->Write((const uint8_t*)(uintptr_t)(&var), sizeof(T), pos);
   return sizeof(T);
 }
 

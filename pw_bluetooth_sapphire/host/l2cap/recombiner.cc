@@ -53,7 +53,7 @@ Recombiner::Result Recombiner::ConsumeFragment(hci::ACLDataPacketPtr fragment) {
     ClearRecombination();
 
     // Drop |fragment| since a continuing fragment cannot begin a sequence.
-    return {.frames_dropped = true};
+    return {.pdu = {}, .frames_dropped = true};
   }
 
   if (recombination_->accumulated_length == recombination_->expected_frame_length) {
@@ -64,7 +64,7 @@ Recombiner::Result Recombiner::ConsumeFragment(hci::ACLDataPacketPtr fragment) {
   }
 
   // The frame is not complete yet.
-  return {.frames_dropped = false};
+  return {.pdu = {}, .frames_dropped = false};
 }
 
 Recombiner::Result Recombiner::ProcessFirstFragment(hci::ACLDataPacketPtr fragment) {
@@ -77,7 +77,7 @@ Recombiner::Result Recombiner::ProcessFirstFragment(hci::ACLDataPacketPtr fragme
   if (fragment->packet_boundary_flag() == hci_spec::ACLPacketBoundaryFlag::kContinuingFragment ||
       current_length < sizeof(BasicHeader)) {
     bt_log(DEBUG, "l2cap", "bad first fragment (size: %zu)", current_length);
-    return {.frames_dropped = true};
+    return {.pdu = {}, .frames_dropped = true};
   }
 
   // TODO(armansito): Also validate that the controller honors the HCI packet boundary flag contract
@@ -89,7 +89,7 @@ Recombiner::Result Recombiner::ProcessFirstFragment(hci::ACLDataPacketPtr fragme
     bt_log(DEBUG, "l2cap",
            "fragment malformed: payload too long (expected length: %zu, fragment length: %zu)",
            expected_frame_length, current_length);
-    return {.frames_dropped = true};
+    return {.pdu = {}, .frames_dropped = true};
   }
 
   // We can start building a PDU.
@@ -108,7 +108,7 @@ Recombiner::Result Recombiner::ProcessFirstFragment(hci::ACLDataPacketPtr fragme
       .expected_frame_length = expected_frame_length,
       .accumulated_length = current_length,
   };
-  return {.frames_dropped = false};
+  return {.pdu = {}, .frames_dropped = false};
 }
 
 void Recombiner::ClearRecombination() {

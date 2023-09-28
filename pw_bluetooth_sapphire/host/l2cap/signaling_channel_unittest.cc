@@ -6,7 +6,7 @@
 
 #include <chrono>
 
-#include <pw_async_fuchsia/dispatcher.h>
+#include <pw_async/dispatcher.h>
 
 #include "fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"

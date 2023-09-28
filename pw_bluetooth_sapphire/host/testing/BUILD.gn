@@ -2,9 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
+import("//build_overrides/pigweed.gni")
+import("$dir_pw_unit_test/test.gni")
 
-source_set("testing") {
+pw_source_set("testing") {
   testonly = true
 
   sources = [
@@ -18,38 +19,36 @@ source_set("testing") {
     "test_packets.h",
   ]
 
-  deps = [ "//third_party/googletest:gtest" ]
+  deps = [ "$dir_pw_unit_test" ]
 
   public_deps = [
     ":fake_controller",
     ":mock_controller",
     ":test_helpers",
-    "//sdk/lib/inspect/testing/cpp",
     "//src/connectivity/bluetooth/core/bt-host/transport",
     "//src/connectivity/bluetooth/core/bt-host/transport:testing",
-    "//src/lib/testing/loop_fixture",
-    "//third_party/pigweed/backends/pw_log:printf",
   ]
+
+  if (current_os == "fuchsia") {
+    public_deps += [ "//sdk/lib/inspect/testing/cpp" ]
+  }
 }
 
 # test_helpers is separate from :testing to fix dependency cycles.
-source_set("test_helpers") {
+pw_source_set("test_helpers") {
   testonly = true
 
   sources = [ "test_helpers.h" ]
 
-  deps = [
-    "//src/connectivity/bluetooth/core/bt-host/common",
-    "//src/connectivity/bluetooth/lib/cpp-string",
-    "//third_party/googletest:gtest",
-  ]
+  deps = [ "//src/connectivity/bluetooth/lib/cpp-string" ]
 
-  public_deps = [ "//third_party/googletest:gmock" ]
+  public_deps = [
+    "$dir_pw_unit_test",
+    "//src/connectivity/bluetooth/core/bt-host/common",
+  ]
 }
 
-source_set("tests") {
-  testonly = true
-
+pw_test("tests") {
   sources = [
     "fake_controller_unittest.cc",
     "fake_dynamic_channel_unittest.cc",
@@ -66,11 +65,7 @@ source_set("tests") {
   ]
 }
 
-bt_gtest_package("bt-host-testing-tests") {
-  deps = [ ":tests" ]
-}
-
-source_set("controller_test_double_base") {
+pw_source_set("controller_test_double_base") {
   testonly = true
 
   sources = [
@@ -79,15 +74,15 @@ source_set("controller_test_double_base") {
   ]
 
   public_deps = [
-    "//sdk/lib/fit",
+    "$dir_pw_bluetooth",
+    "$dir_pw_third_party/fuchsia:fit",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/connectivity/bluetooth/core/bt-host/hci",
     "//third_party/pigweed:pw_async_heap_dispatcher",
-    "//third_party/pigweed/src/pw_bluetooth",
   ]
 }
 
-source_set("mock_controller") {
+pw_source_set("mock_controller") {
   testonly = true
 
   sources = [
@@ -95,21 +90,19 @@ source_set("mock_controller") {
     "mock_controller.h",
   ]
 
-  deps = [ "//third_party/googletest:gtest" ]
-
   public_deps = [
     ":controller_test_double_base",
     ":test_helpers",
+    "$dir_pw_unit_test",
     "//src/connectivity/bluetooth/core/bt-host/transport",
     "//src/connectivity/bluetooth/core/bt-host/transport:testing",
-    "//src/lib/testing/loop_fixture",
     "//third_party/pigweed:pw_async_heap_dispatcher",
   ]
 }
 
 # Target that includes Fake HCI emulation support. This should NOT depend on
 # gtest.
-source_set("fake_controller") {
+pw_source_set("fake_controller") {
   testonly = true
 
   sources = [
@@ -132,7 +125,8 @@ source_set("fake_controller") {
   public_deps = [
     ":controller_test_double_base",
     ":test_helpers",
-    "//sdk/lib/fit",
+    "$dir_pw_bluetooth:emboss_hci_group",
+    "$dir_pw_third_party/fuchsia:fit",
     "//src/connectivity/bluetooth/core/bt-host/att:definitions",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/connectivity/bluetooth/core/bt-host/gap",
@@ -141,12 +135,11 @@ source_set("fake_controller") {
     "//src/connectivity/bluetooth/core/bt-host/l2cap:definitions",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/connectivity/bluetooth/core/bt-host/sdp",
-    "//third_party/pigweed/src/pw_bluetooth:emboss_hci_group",
   ]
 }
 
 # Main entry point for host library unittests.
-source_set("gtest_main") {
+pw_source_set("gtest_main") {
   testonly = true
 
   sources = [ "run_all_unittests.cc" ]
@@ -156,10 +149,10 @@ source_set("gtest_main") {
     "//src/connectivity/bluetooth/core/bt-host/common",
   ]
 
-  public_deps = [ "//third_party/googletest:gtest" ]
+  public_deps = [ "$dir_pw_unit_test" ]
 }
 
-source_set("fuzzing") {
+pw_source_set("fuzzing") {
   testonly = true
   sources = [ "peer_fuzzer.h" ]
   deps = [ "//src/connectivity/bluetooth/core/bt-host/gap" ]

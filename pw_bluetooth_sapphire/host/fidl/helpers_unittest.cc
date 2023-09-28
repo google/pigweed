@@ -9,7 +9,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <pw_async_fuchsia/dispatcher.h>
+#include <pw_async/dispatcher.h>
 
 #include "fuchsia/bluetooth/bredr/cpp/fidl.h"
 #include "fuchsia/bluetooth/cpp/fidl.h"

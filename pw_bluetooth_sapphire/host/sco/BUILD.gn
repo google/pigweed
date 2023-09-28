@@ -2,9 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
+import("//build_overrides/pigweed.gni")
+import("$dir_pw_unit_test/test.gni")
 
-static_library("sco") {
+pw_source_set("sco") {
   sources = [
     "sco.h",
     "sco_connection.cc",
@@ -14,16 +15,14 @@ static_library("sco") {
   ]
 
   public_deps = [
-    "//sdk/lib/fit",
+    "$dir_pw_third_party/fuchsia:fit",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/connectivity/bluetooth/core/bt-host/hci",
     "//src/connectivity/bluetooth/core/bt-host/transport",
   ]
 }
 
-source_set("tests") {
-  testonly = true
-
+pw_test("tests") {
   sources = [
     "sco_connection_manager_unittest.cc",
     "sco_connection_unittest.cc",
@@ -34,11 +33,5 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/hci:testing",
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//src/connectivity/bluetooth/core/bt-host/transport:testing",
-    "//src/lib/testing/loop_fixture",
-    "//third_party/googletest:gtest",
   ]
-}
-
-bt_gtest_package("bt-host-sco-tests") {
-  deps = [ ":tests" ]
 }

@@ -7,7 +7,6 @@
 #include <gtest/gtest.h>
 #include <pw_async/fake_dispatcher_fixture.h>
 #include <pw_async/heap_dispatcher.h>
-#include <pw_async_fuchsia/dispatcher.h>
 
 namespace bt {
 namespace {

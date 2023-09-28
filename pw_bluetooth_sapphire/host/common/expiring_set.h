@@ -5,13 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_EXPIRING_SET_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_EXPIRING_SET_H_
 
-#include <lib/async/cpp/time.h>
-#include <lib/async/default.h>
-
 #include <unordered_map>
 
 #include <pw_async/dispatcher.h>
-#include <pw_async_fuchsia/util.h>
 
 namespace bt {
 

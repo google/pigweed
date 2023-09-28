@@ -5,9 +5,8 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_MOCK_CHANNEL_TEST_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_MOCK_CHANNEL_TEST_H_
 
-#include <pw_async_fuchsia/dispatcher.h>
+#include <pw_async/fake_dispatcher_fixture.h>
 
-#include "pw_async/fake_dispatcher_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 
 namespace bt::l2cap::testing {

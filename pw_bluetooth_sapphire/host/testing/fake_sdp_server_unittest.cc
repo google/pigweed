@@ -5,7 +5,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_sdp_server.h"
 
 #include <pw_async/fake_dispatcher_fixture.h>
-#include <pw_async_fuchsia/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"

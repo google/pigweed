@@ -8,7 +8,7 @@
 #include <functional>
 #include <optional>
 
-#include <pw_async_fuchsia/dispatcher.h>
+#include <pw_async/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/bounded_inspect_list_node.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/expiring_set.h"

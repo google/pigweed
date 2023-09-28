@@ -1178,8 +1178,12 @@ TEST_F(BrEdrConnectionManagerTest, LinkKeyRequestAndNegativeReply) {
 
 // Test: replies to Link Key Requests for bonded peer
 TEST_F(BrEdrConnectionManagerTest, RecallLinkKeyForBondedPeer) {
-  ASSERT_TRUE(peer_cache()->AddBondedPeer(
-      BondingData{.identifier = PeerId(999), .address = kTestDevAddr, .bredr_link_key = kLinkKey}));
+  ASSERT_TRUE(peer_cache()->AddBondedPeer(BondingData{.identifier = PeerId(999),
+                                                      .address = kTestDevAddr,
+                                                      .name = std::nullopt,
+                                                      .le_pairing_data = {},
+                                                      .bredr_link_key = kLinkKey,
+                                                      .bredr_services = {}}));
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
   ASSERT_TRUE(IsNotConnected(peer));
@@ -1989,8 +1993,12 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
 // Test: when the peer is already bonded, the link key gets stored when it is provided to the
 // connection.
 TEST_F(BrEdrConnectionManagerTest, OpenL2capEncryptsForBondedPeerThenRetries) {
-  ASSERT_TRUE(peer_cache()->AddBondedPeer(
-      BondingData{.identifier = PeerId(999), .address = kTestDevAddr, .bredr_link_key = kLinkKey}));
+  ASSERT_TRUE(peer_cache()->AddBondedPeer(BondingData{.identifier = PeerId(999),
+                                                      .address = kTestDevAddr,
+                                                      .name = std::nullopt,
+                                                      .le_pairing_data = {},
+                                                      .bredr_link_key = kLinkKey,
+                                                      .bredr_services = {}}));
   auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
   ASSERT_TRUE(IsNotConnected(peer));

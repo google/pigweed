@@ -6,8 +6,6 @@
 
 #include <utility>
 
-#include <pw_async_fuchsia/util.h>
-
 namespace bt::gap {
 
 namespace {

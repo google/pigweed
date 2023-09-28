@@ -3,9 +3,11 @@
 # found in the LICENSE file.
 
 import("//build/fuzz.gni")
-import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
+import("//build_overrides/pigweed.gni")
+import("$dir_pw_fuzzer/fuzzer.gni")
+import("$dir_pw_unit_test/test.gni")
 
-source_set("common") {
+pw_source_set("common") {
   sources = [
     "advertising_data.cc",
     "advertising_data.h",
@@ -57,26 +59,29 @@ source_set("common") {
   ]
 
   public_deps = [
-    "//sdk/lib/fit",
-    "//sdk/lib/sys/inspect/cpp",
+    "$dir_pw_assert",
+    "$dir_pw_bluetooth:emboss_hci_group",
+    "$dir_pw_intrusive_ptr",
+    "$dir_pw_log",
+    "$dir_pw_random",
+    "$dir_pw_span",
+    "$dir_pw_string",
+    "$dir_pw_third_party/fuchsia:fit",
     "//src/connectivity/bluetooth/lib/cpp-string",
     "//src/connectivity/bluetooth/lib/cpp-type",
     "//third_party/pigweed:pw_async_dispatcher",
     "//third_party/pigweed:pw_async_task",
-    "//third_party/pigweed/backends/pw_async_fuchsia:util",
-    "//third_party/pigweed/src/pw_assert",
-    "//third_party/pigweed/src/pw_bluetooth:emboss_hci_group",
-    "//third_party/pigweed/src/pw_intrusive_ptr",
-    "//third_party/pigweed/src/pw_log",
-    "//third_party/pigweed/src/pw_random",
-    "//third_party/pigweed/src/pw_span",
-    "//third_party/pigweed/src/pw_string",
   ]
+
+  if (current_os == "fuchsia") {
+    public_deps += [
+      "//sdk/lib/sys/inspect/cpp",
+      "//zircon/system/ulib/trace",
+    ]
+  }
 }
 
-source_set("tests") {
-  testonly = true
-
+pw_test("tests") {
   sources = [
     "advertising_data_unittest.cc",
     "bounded_inspect_list_node_unittest.cc",
@@ -102,15 +107,8 @@ source_set("tests") {
   deps = [
     ":common",
     "//src/connectivity/bluetooth/core/bt-host/testing",
-    "//src/lib/testing/loop_fixture",
-    "//third_party/googletest:gtest",
     "//third_party/pigweed/backends/pw_async_fuchsia:fake_dispatcher_fixture",
   ]
-}
-
-bt_gtest_package("bt-host-common-tests") {
-  with_death_tests = true
-  deps = [ ":tests" ]
 }
 
 fuchsia_library_fuzzer("advertising_data_fuzzer") {
@@ -119,4 +117,9 @@ fuchsia_library_fuzzer("advertising_data_fuzzer") {
     ":common",
     "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
   ]
+}
+
+pw_fuzzer("pw_advertising_data_fuzzer") {
+  sources = [ "advertising_data_fuzztest.cc" ]
+  deps = [ ":common" ]
 }

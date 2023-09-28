@@ -2,11 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
+import("//build_overrides/pigweed.gni")
+import("$dir_pw_unit_test/test.gni")
 
 # Basic target with protocol definitions and no logic, suitable for test
 # emulation.
-source_set("definitions") {
+pw_source_set("definitions") {
   sources = [
     "att.h",
     "packet.cc",
@@ -20,7 +21,7 @@ source_set("definitions") {
   ]
 }
 
-static_library("att") {
+pw_source_set("att") {
   sources = [
     "attribute.cc",
     "attribute.h",
@@ -38,17 +39,15 @@ static_library("att") {
 
   public_deps = [
     ":definitions",
-    "//sdk/lib/fit",
+    "$dir_pw_third_party/fuchsia:fit",
     "//src/connectivity/bluetooth/core/bt-host/l2cap",
     "//src/connectivity/bluetooth/core/bt-host/sm:definitions",
   ]
 
-  deps = [ "//third_party/pigweed/src/pw_string" ]
+  deps = [ "$dir_pw_string" ]
 }
 
-source_set("tests") {
-  testonly = true
-
+pw_test("tests") {
   sources = [
     "attribute_unittest.cc",
     "bearer_unittest.cc",
@@ -60,11 +59,5 @@ source_set("tests") {
   deps = [
     ":att",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
-    "//third_party/googletest:gtest",
   ]
-}
-
-bt_gtest_package("bt-host-att-tests") {
-  with_death_tests = true
-  deps = [ ":tests" ]
 }

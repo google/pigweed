@@ -261,7 +261,8 @@ bool ChannelManagerImpl::RegisterService(PSM psm, ChannelParameters params, Chan
     return false;
   }
 
-  ServiceData service{.info = ServiceInfo(params, std::move(cb)), .psm = psm};
+  ServiceData service{
+      .info = ServiceInfo(params, std::move(cb)), .psm = psm, .node = {}, .psm_property = {}};
   service.AttachInspect(services_node_);
   services_.emplace(psm, std::move(service));
   return true;

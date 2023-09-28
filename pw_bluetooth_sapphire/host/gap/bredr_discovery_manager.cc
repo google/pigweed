@@ -4,12 +4,8 @@
 
 #include "bredr_discovery_manager.h"
 
-#include <lib/async/default.h>
-#include <lib/async/time.h>
 #include <lib/fit/defer.h>
 #include <lib/stdcompat/functional.h>
-
-#include <pw_async_fuchsia/util.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
@@ -359,7 +355,8 @@ void BrEdrDiscoveryManager::InspectProperties::Initialize(inspect::Node new_node
 
 void BrEdrDiscoveryManager::InspectProperties::Update(size_t discoverable_count,
                                                       size_t pending_discoverable_count,
-                                                      size_t discovery_count, zx_time_t now) {
+                                                      size_t discovery_count,
+                                                      pw::chrono::SystemClock::time_point now) {
   if (!node) {
     return;
   }
@@ -368,8 +365,9 @@ void BrEdrDiscoveryManager::InspectProperties::Update(size_t discoverable_count,
     discoverable_started_time.emplace(now);
   } else if (discoverable_started_time.has_value() && discoverable_count == 0) {
     discoverable_sessions_count.Add(1);
-    zx_duration_t length = now - discoverable_started_time.value();
-    last_discoverable_length_sec.Set(length / zx_duration_from_sec(1));
+    pw::chrono::SystemClock::duration length = now - discoverable_started_time.value();
+    last_discoverable_length_sec.Set(
+        std::chrono::duration_cast<std::chrono::seconds>(length).count());
     discoverable_started_time.reset();
   }
 
@@ -377,8 +375,8 @@ void BrEdrDiscoveryManager::InspectProperties::Update(size_t discoverable_count,
     inquiry_started_time.emplace(now);
   } else if (inquiry_started_time.has_value() && discovery_count == 0) {
     inquiry_sessions_count.Add(1);
-    zx_duration_t length = now - inquiry_started_time.value();
-    last_inquiry_length_sec.Set(length / zx_duration_from_sec(1));
+    pw::chrono::SystemClock::duration length = now - inquiry_started_time.value();
+    last_inquiry_length_sec.Set(std::chrono::duration_cast<std::chrono::seconds>(length).count());
     inquiry_started_time.reset();
   }
 
@@ -389,8 +387,7 @@ void BrEdrDiscoveryManager::InspectProperties::Update(size_t discoverable_count,
 
 void BrEdrDiscoveryManager::UpdateInspectProperties() {
   inspect_properties_.Update(discoverable_.size(), pending_discoverable_.size(),
-                             discovering_.size(),
-                             pw_async_fuchsia::TimepointToZxTime(dispatcher_.now()).get());
+                             discovering_.size(), dispatcher_.now());
 }
 
 void BrEdrDiscoveryManager::NotifyPeersUpdated(const std::unordered_set<Peer*>& peers) {

@@ -15,6 +15,7 @@ template <typename property_t>
 class MetricCounter {
  public:
   MetricCounter() = default;
+  virtual ~MetricCounter() = default;
 
   // Attach peer inspect node as a child node of |parent|.
   virtual void AttachInspect(inspect::Node& parent, const std::string& name);

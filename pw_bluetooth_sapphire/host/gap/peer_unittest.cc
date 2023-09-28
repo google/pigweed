@@ -6,9 +6,8 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <pw_async_fuchsia/dispatcher.h>
+#include <pw_async/fake_dispatcher_fixture.h>
 
-#include "pw_async/fake_dispatcher_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/manufacturer_names.h"

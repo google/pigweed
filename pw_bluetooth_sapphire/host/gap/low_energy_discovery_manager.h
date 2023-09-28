@@ -13,7 +13,6 @@
 #include <unordered_set>
 
 #include <pw_async/heap_dispatcher.h>
-#include <pw_async_fuchsia/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"

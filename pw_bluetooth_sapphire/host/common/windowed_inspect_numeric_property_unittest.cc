@@ -2,10 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "pw_async/fake_dispatcher_fixture.h"
-#ifndef NINSPECT
+#include <pw_async/fake_dispatcher_fixture.h>
 
-#include <pw_async_fuchsia/dispatcher.h>
+#ifndef NINSPECT
 
 #include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 #include "windowed_inspect_numeric_property.h"

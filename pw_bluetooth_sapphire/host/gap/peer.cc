@@ -4,7 +4,6 @@
 
 #include "peer.h"
 
-#include "pw_async_fuchsia/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/manufacturer_names.h"

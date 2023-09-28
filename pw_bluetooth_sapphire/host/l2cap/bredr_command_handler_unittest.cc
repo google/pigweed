@@ -4,15 +4,12 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_command_handler.h"
 
-#include <lib/async/cpp/task.h>
-
 #include <memory>
 #include <unordered_map>
 #include <vector>
 
-#include <pw_async_fuchsia/dispatcher.h>
+#include <pw_async/fake_dispatcher_fixture.h>
 
-#include "pw_async/fake_dispatcher_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_configuration.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_signaling_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"

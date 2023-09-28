@@ -494,7 +494,8 @@ void RemoteServiceManager::MaybeHandleNextServiceChangedNotification(
 
   bt_log(DEBUG, "gatt", "handling next Service Changed notification");
 
-  current_service_change_ = ServiceChangedState{.value = queued_service_changes_.front()};
+  current_service_change_ =
+      ServiceChangedState{.value = queued_service_changes_.front(), .services = {}};
   queued_service_changes_.pop();
 
   auto self = weak_self_.GetWeakPtr();

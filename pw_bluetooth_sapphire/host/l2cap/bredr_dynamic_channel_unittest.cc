@@ -4,14 +4,11 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_dynamic_channel.h"
 
-#include <lib/async/cpp/task.h>
-
 #include <vector>
 
 #include <gtest/gtest.h>
-#include <pw_async_fuchsia/dispatcher.h>
+#include <pw_async/fake_dispatcher_fixture.h>
 
-#include "pw_async/fake_dispatcher_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_dynamic_channel.h"
