@@ -30,7 +30,7 @@ pw::InlineQueue
 .. doxygentypedef:: pw::InlineQueue
 
 ----------------------------
-pw::VariableLengthEntryDeque
+pw::VariableLengthEntryQueue
 ----------------------------
 .. doxygenfile:: pw_containers/variable_length_entry_queue.h
    :sections: detaileddescription

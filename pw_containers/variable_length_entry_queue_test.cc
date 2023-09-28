@@ -40,69 +40,69 @@ using TestStep = std::variant<PushOverwrite, Push, Pop, SizeEquals>;
 
 // Copies an entry, which might be wrapped, to a single std::vector.
 std::vector<std::byte> ReadEntry(
-    const pw_VariableLengthEntryDeque_Iterator& it) {
-  auto entry = pw_VariableLengthEntryDeque_GetEntry(&it);
+    const pw_VariableLengthEntryQueue_Iterator& it) {
+  auto entry = pw_VariableLengthEntryQueue_GetEntry(&it);
   std::vector<std::byte> value(entry.size_1 + entry.size_2);
   EXPECT_EQ(value.size(),
-            pw_VariableLengthEntryDeque_Entry_Copy(
+            pw_VariableLengthEntryQueue_Entry_Copy(
                 &entry, value.data(), entry.size_1 + entry.size_2));
   return value;
 }
 
-#define ASSERT_CONTENTS_EQ(oracle, deque)                                      \
+#define ASSERT_CONTENTS_EQ(oracle, queue)                                      \
   auto oracle_it = oracle.begin();                                             \
-  auto deque_it = pw_VariableLengthEntryDeque_Begin(deque);                    \
-  const auto deque_end = pw_VariableLengthEntryDeque_End(deque);               \
+  auto queue_it = pw_VariableLengthEntryQueue_Begin(queue);                    \
+  const auto queue_end = pw_VariableLengthEntryQueue_End(queue);               \
   uint32_t entries_compared = 0;                                               \
   while (oracle_it != oracle.end() &&                                          \
-         !pw_VariableLengthEntryDeque_Iterator_Equal(&deque_it, &deque_end)) { \
-    ASSERT_EQ(*oracle_it++, ReadEntry(deque_it));                              \
-    pw_VariableLengthEntryDeque_Iterator_Advance(&deque_it);                   \
+         !pw_VariableLengthEntryQueue_Iterator_Equal(&queue_it, &queue_end)) { \
+    ASSERT_EQ(*oracle_it++, ReadEntry(queue_it));                              \
+    pw_VariableLengthEntryQueue_Iterator_Advance(&queue_it);                   \
     entries_compared += 1;                                                     \
   }                                                                            \
   ASSERT_EQ(entries_compared, oracle.size())
 
 // Declares a test that performs a series of operations on a
-// VariableLengthEntryDeque and the "oracle" class, and checks that they match
+// VariableLengthEntryQueue and the "oracle" class, and checks that they match
 // after every step.
 #define DATA_DRIVEN_TEST(program, max_entry_size)                              \
-  TEST(VariableLengthEntryDeque,                                               \
+  TEST(VariableLengthEntryQueue,                                               \
        DataDrivenTest_##program##_MaxEntrySize##max_entry_size) {              \
-    pw::containers::VariableLengthEntryDequeTestOracle oracle(max_entry_size); \
-    PW_VARIABLE_LENGTH_ENTRY_DEQUE_DECLARE(c_deque, max_entry_size);           \
+    pw::containers::VariableLengthEntryQueueTestOracle oracle(max_entry_size); \
+    PW_VARIABLE_LENGTH_ENTRY_QUEUE_DECLARE(c_queue, max_entry_size);           \
                                                                                \
     for (const TestStep& step : program) {                                     \
       /* Take the action */                                                    \
       if (auto ow = std::get_if<PushOverwrite>(&step); ow != nullptr) {        \
-        pw_VariableLengthEntryDeque_PushBackOverwrite(                         \
-            c_deque, ow->data.data(), static_cast<uint32_t>(ow->data.size())); \
-        oracle.push_back_overwrite(pw::as_bytes(pw::span(ow->data)));          \
+        pw_VariableLengthEntryQueue_PushOverwrite(                             \
+            c_queue, ow->data.data(), static_cast<uint32_t>(ow->data.size())); \
+        oracle.push_overwrite(pw::as_bytes(pw::span(ow->data)));               \
       } else if (auto push = std::get_if<Push>(&step); push != nullptr) {      \
-        pw_VariableLengthEntryDeque_PushBack(                                  \
-            c_deque,                                                           \
+        pw_VariableLengthEntryQueue_Push(                                      \
+            c_queue,                                                           \
             push->data.data(),                                                 \
             static_cast<uint32_t>(push->data.size()));                         \
-        oracle.push_back(pw::as_bytes(pw::span(push->data)));                  \
+        oracle.push(pw::as_bytes(pw::span(push->data)));                       \
       } else if (auto pop = std::get_if<Pop>(&step); pop != nullptr) {         \
-        pw_VariableLengthEntryDeque_PopFront(c_deque);                         \
-        oracle.pop_front();                                                    \
+        pw_VariableLengthEntryQueue_Pop(c_queue);                              \
+        oracle.pop();                                                          \
       } else if (auto size = std::get_if<SizeEquals>(&step);                   \
                  size != nullptr) {                                            \
-        size_t actual = pw_VariableLengthEntryDeque_Size(c_deque);             \
+        size_t actual = pw_VariableLengthEntryQueue_Size(c_queue);             \
         ASSERT_EQ(oracle.size(), actual);                                      \
         ASSERT_EQ(size->expected, actual);                                     \
       } else {                                                                 \
         FAIL() << "Unhandled case";                                            \
       }                                                                        \
       /* Check size and other functions */                                     \
-      ASSERT_EQ(pw_VariableLengthEntryDeque_Size(c_deque), oracle.size());     \
-      ASSERT_EQ(pw_VariableLengthEntryDeque_RawSizeBytes(c_deque),             \
+      ASSERT_EQ(pw_VariableLengthEntryQueue_Size(c_queue), oracle.size());     \
+      ASSERT_EQ(pw_VariableLengthEntryQueue_RawSizeBytes(c_queue),             \
                 oracle.raw_size_bytes());                                      \
-      ASSERT_EQ(pw_VariableLengthEntryDeque_RawCapacityBytes(c_deque),         \
+      ASSERT_EQ(pw_VariableLengthEntryQueue_RawCapacityBytes(c_queue),         \
                 oracle.raw_capacity_bytes());                                  \
-      ASSERT_EQ(pw_VariableLengthEntryDeque_MaxEntrySizeBytes(c_deque),        \
+      ASSERT_EQ(pw_VariableLengthEntryQueue_MaxEntrySizeBytes(c_queue),        \
                 oracle.max_entry_size_bytes());                                \
-      ASSERT_CONTENTS_EQ(oracle, c_deque);                                     \
+      ASSERT_CONTENTS_EQ(oracle, c_queue);                                     \
     }                                                                          \
   }                                                                            \
   static_assert(true, "use a semicolon")
@@ -188,68 +188,68 @@ constexpr TestStep kTwoBytePrefix[] = {
 };
 DATA_DRIVEN_TEST(kTwoBytePrefix, 130);
 
-TEST(VariableLengthEntryDeque, DeclareMacro) {
-  PW_VARIABLE_LENGTH_ENTRY_DEQUE_DECLARE(deque, 123);
+TEST(VariableLengthEntryQueue, DeclareMacro) {
+  PW_VARIABLE_LENGTH_ENTRY_QUEUE_DECLARE(queue, 123);
 
   constexpr size_t kArraySizeBytes =
       123 + 1 /*prefix*/ + 1 /* end */ + 3 /* round up */ +
-      PW_VARIABLE_LENGTH_ENTRY_DEQUE_HEADER_SIZE_UINT32 * 4;
-  static_assert(sizeof(deque) == kArraySizeBytes);
-  EXPECT_EQ(pw_VariableLengthEntryDeque_RawStorageSizeBytes(deque),
+      PW_VARIABLE_LENGTH_ENTRY_QUEUE_HEADER_SIZE_UINT32 * 4;
+  static_assert(sizeof(queue) == kArraySizeBytes);
+  EXPECT_EQ(pw_VariableLengthEntryQueue_RawStorageSizeBytes(queue),
             kArraySizeBytes - 3 /* padding isn't included */);
 
-  EXPECT_EQ(pw_VariableLengthEntryDeque_MaxEntrySizeBytes(deque), 123u);
-  EXPECT_EQ(pw_VariableLengthEntryDeque_RawSizeBytes(deque), 0u);
-  EXPECT_TRUE(pw_VariableLengthEntryDeque_Empty(deque));
+  EXPECT_EQ(pw_VariableLengthEntryQueue_MaxEntrySizeBytes(queue), 123u);
+  EXPECT_EQ(pw_VariableLengthEntryQueue_RawSizeBytes(queue), 0u);
+  EXPECT_TRUE(pw_VariableLengthEntryQueue_Empty(queue));
 }
 
-TEST(VariableLengthEntryDeque, InitializeExistingBuffer) {
+TEST(VariableLengthEntryQueue, InitializeExistingBuffer) {
   constexpr size_t kArraySize =
-      10 + PW_VARIABLE_LENGTH_ENTRY_DEQUE_HEADER_SIZE_UINT32;
-  uint32_t deque[kArraySize];
-  pw_VariableLengthEntryDeque_Init(deque, kArraySize);
+      10 + PW_VARIABLE_LENGTH_ENTRY_QUEUE_HEADER_SIZE_UINT32;
+  uint32_t queue[kArraySize];
+  pw_VariableLengthEntryQueue_Init(queue, kArraySize);
 
-  EXPECT_EQ(pw_VariableLengthEntryDeque_RawStorageSizeBytes(deque),
-            sizeof(deque));
-  EXPECT_EQ(pw_VariableLengthEntryDeque_MaxEntrySizeBytes(deque),
+  EXPECT_EQ(pw_VariableLengthEntryQueue_RawStorageSizeBytes(queue),
+            sizeof(queue));
+  EXPECT_EQ(pw_VariableLengthEntryQueue_MaxEntrySizeBytes(queue),
             sizeof(uint32_t) * 10u - 1 /*prefix*/ - 1 /*end*/);
-  EXPECT_EQ(pw_VariableLengthEntryDeque_RawSizeBytes(deque), 0u);
-  EXPECT_EQ(pw_VariableLengthEntryDeque_Size(deque), 0u);
-  EXPECT_TRUE(pw_VariableLengthEntryDeque_Empty(deque));
+  EXPECT_EQ(pw_VariableLengthEntryQueue_RawSizeBytes(queue), 0u);
+  EXPECT_EQ(pw_VariableLengthEntryQueue_Size(queue), 0u);
+  EXPECT_TRUE(pw_VariableLengthEntryQueue_Empty(queue));
 }
 
-TEST(VariableLengthEntryDeque, MaxSizeElement) {
+TEST(VariableLengthEntryQueue, MaxSizeElement) {
   // Test max size elements for a few sizes. Commented out statements fail an
   // assert because the elements are too large.
-  PW_VARIABLE_LENGTH_ENTRY_DEQUE_DECLARE(dq16, 126);
-  PW_VARIABLE_LENGTH_ENTRY_DEQUE_DECLARE(dq17, 127);
-  PW_VARIABLE_LENGTH_ENTRY_DEQUE_DECLARE(dq18, 128);
-  PW_VARIABLE_LENGTH_ENTRY_DEQUE_DECLARE(dq19, 129);
+  PW_VARIABLE_LENGTH_ENTRY_QUEUE_DECLARE(q16, 126);
+  PW_VARIABLE_LENGTH_ENTRY_QUEUE_DECLARE(q17, 127);
+  PW_VARIABLE_LENGTH_ENTRY_QUEUE_DECLARE(q18, 128);
+  PW_VARIABLE_LENGTH_ENTRY_QUEUE_DECLARE(q19, 129);
 
-  pw_VariableLengthEntryDeque_PushBackOverwrite(dq16, kBigEntryBytes, 126);
-  pw_VariableLengthEntryDeque_PushBackOverwrite(dq17, kBigEntryBytes, 126);
-  pw_VariableLengthEntryDeque_PushBackOverwrite(dq18, kBigEntryBytes, 126);
-  pw_VariableLengthEntryDeque_PushBackOverwrite(dq19, kBigEntryBytes, 126);
+  pw_VariableLengthEntryQueue_PushOverwrite(q16, kBigEntryBytes, 126);
+  pw_VariableLengthEntryQueue_PushOverwrite(q17, kBigEntryBytes, 126);
+  pw_VariableLengthEntryQueue_PushOverwrite(q18, kBigEntryBytes, 126);
+  pw_VariableLengthEntryQueue_PushOverwrite(q19, kBigEntryBytes, 126);
 
-  // pw_VariableLengthEntryDeque_PushBackOverwrite(dq16, kBigEntryBytes, 127);
-  pw_VariableLengthEntryDeque_PushBackOverwrite(dq17, kBigEntryBytes, 127);
-  pw_VariableLengthEntryDeque_PushBackOverwrite(dq18, kBigEntryBytes, 127);
-  pw_VariableLengthEntryDeque_PushBackOverwrite(dq19, kBigEntryBytes, 127);
+  // pw_VariableLengthEntryQueue_PushOverwrite(q16, kBigEntryBytes, 127);
+  pw_VariableLengthEntryQueue_PushOverwrite(q17, kBigEntryBytes, 127);
+  pw_VariableLengthEntryQueue_PushOverwrite(q18, kBigEntryBytes, 127);
+  pw_VariableLengthEntryQueue_PushOverwrite(q19, kBigEntryBytes, 127);
 
-  // pw_VariableLengthEntryDeque_PushBackOverwrite(dq16, kBigEntryBytes, 128);
-  // pw_VariableLengthEntryDeque_PushBackOverwrite(dq17, kBigEntryBytes, 128);
-  pw_VariableLengthEntryDeque_PushBackOverwrite(dq18, kBigEntryBytes, 128);
-  pw_VariableLengthEntryDeque_PushBackOverwrite(dq19, kBigEntryBytes, 128);
+  // pw_VariableLengthEntryQueue_PushOverwrite(q16, kBigEntryBytes, 128);
+  // pw_VariableLengthEntryQueue_PushOverwrite(q17, kBigEntryBytes, 128);
+  pw_VariableLengthEntryQueue_PushOverwrite(q18, kBigEntryBytes, 128);
+  pw_VariableLengthEntryQueue_PushOverwrite(q19, kBigEntryBytes, 128);
 
-  // pw_VariableLengthEntryDeque_PushBackOverwrite(dq16, kBigEntryBytes, 129);
-  // pw_VariableLengthEntryDeque_PushBackOverwrite(dq17, kBigEntryBytes, 129);
-  // pw_VariableLengthEntryDeque_PushBackOverwrite(dq18, kBigEntryBytes, 129);
-  pw_VariableLengthEntryDeque_PushBackOverwrite(dq19, kBigEntryBytes, 129);
+  // pw_VariableLengthEntryQueue_PushOverwrite(q16, kBigEntryBytes, 129);
+  // pw_VariableLengthEntryQueue_PushOverwrite(q17, kBigEntryBytes, 129);
+  // pw_VariableLengthEntryQueue_PushOverwrite(q18, kBigEntryBytes, 129);
+  pw_VariableLengthEntryQueue_PushOverwrite(q19, kBigEntryBytes, 129);
 
-  EXPECT_EQ(pw_VariableLengthEntryDeque_Size(dq16), 1u);
-  EXPECT_EQ(pw_VariableLengthEntryDeque_Size(dq17), 1u);
-  EXPECT_EQ(pw_VariableLengthEntryDeque_Size(dq18), 1u);
-  EXPECT_EQ(pw_VariableLengthEntryDeque_Size(dq19), 1u);
+  EXPECT_EQ(pw_VariableLengthEntryQueue_Size(q16), 1u);
+  EXPECT_EQ(pw_VariableLengthEntryQueue_Size(q17), 1u);
+  EXPECT_EQ(pw_VariableLengthEntryQueue_Size(q18), 1u);
+  EXPECT_EQ(pw_VariableLengthEntryQueue_Size(q19), 1u);
 }
 
 }  // namespace

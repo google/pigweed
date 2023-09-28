@@ -22,18 +22,18 @@
 
 /// @file pw_containers/variable_length_entry_queue.h
 ///
-/// A `VariableLengthEntryDeque` is a double-ended queue of variable-length
+/// A `VariableLengthEntryQueue` is a ended queue of inline variable-length
 /// binary entries. It is implemented as a ring (circular) buffer and supports
 /// operations to append entries and overwrite if necessary. Entries may be zero
-/// bytes up to the maximum size supported by the deque.
+/// bytes up to the maximum size supported by the queue.
 ///
-/// The `VariableLengthEntryDeque` a few interesting properties.
+/// The `VariableLengthEntryQueue` has a few interesting properties.
 ///
 /// - Data and metadata are stored inline in a contiguous block of
 ///   `uint32_t`-aligned memory.
-/// - All data structure state changes are accomplished with a single update to
-///   a `uint32_t`. The memory is always in a valid state and may be parsed
-///   offline.
+/// - The data structure is trivially copyable.
+/// - All state changes are accomplished with a single update to a `uint32_t`.
+///   The memory is always in a valid state and may be parsed offline.
 ///
 /// This data structure is a much simpler version of
 /// @cpp_class{pw::ring_buffer::PrefixedEntryRingBuffer}. Prefer this
@@ -45,40 +45,40 @@
 /// - A consistent, parsable, in-memory representation is required (e.g. to
 ///   decode the buffer from a block of memory).
 ///
-/// A `VariableLengthEntryDeque` may be declared and initialized in C with the
-/// @c_macro{PW_VARIABLE_LENGTH_ENTRY_DEQUE_DECLARE} macro.
+/// A `VariableLengthEntryQueue` may be declared and initialized in C with the
+/// @c_macro{PW_VARIABLE_LENGTH_ENTRY_QUEUE_DECLARE} macro.
 ///
 /// @code{c}
 ///
-///   // Declares a deque with a maximum entry size of 10 bytes.
-///   PW_VARIABLE_LENGTH_ENTRY_DEQUE_DECLARE(deque, 10);
+///   // Declares a queue with a maximum single entry size of 10 bytes.
+///   PW_VARIABLE_LENGTH_ENTRY_QUEUE_DECLARE(queue, 10);
 ///
 ///   // Write some data
-///   pw_VariableLengthEntryDeque_PushBackOverwrite(deque, "123", 3);
-///   pw_VariableLengthEntryDeque_PushBackOverwrite(deque, "456", 3);
+///   pw_VariableLengthEntryQueue_PushOverwrite(queue, "123", 3);
+///   pw_VariableLengthEntryQueue_PushOverwrite(queue, "456", 3);
 ///
-///   assert(pw_VariableLengthEntryDeque_Size(deque) == 2u);
+///   assert(pw_VariableLengthEntryQueue_Size(queue) == 2u);
 ///
 ///   // Remove the entries
-///   pw_VariableLengthEntryDeque_PopFront(deque);
-///   pw_VariableLengthEntryDeque_PopFront(deque);
+///   pw_VariableLengthEntryQueue_Pop(queue);
+///   pw_VariableLengthEntryQueue_Pop(queue);
 ///
 /// @endcode
 ///
-/// Alternately, a `VariableLengthEntryDeque` may also be initialized in an
+/// Alternately, a `VariableLengthEntryQueue` may also be initialized in an
 /// existing ``uint32_t`` array.
 ///
 /// @code{c}
 ///
-///   // Initialize a VariableLengthEntryDeque.
+///   // Initialize a VariableLengthEntryQueue.
 ///   uint32_t buffer[32];
-///   pw_VariableLengthEntryDeque_Init(buffer, 32);
+///   pw_VariableLengthEntryQueue_Init(buffer, 32);
 ///
 ///   // Largest supported entry works out to 114 B (13 B overhead + 1 B prefix)
-///   assert(pw_VariableLengthEntryDeque_MaxEntrySizeBytes(buffer) == 114u);
+///   assert(pw_VariableLengthEntryQueue_MaxEntrySizeBytes(buffer) == 114u);
 ///
 ///   // Write some data
-///   pw_VariableLengthEntryDeque_PushBackOverwrite(buffer, "123", 3);
+///   pw_VariableLengthEntryQueue_PushOverwrite(buffer, "123", 3);
 ///
 /// @endcode
 
@@ -86,105 +86,103 @@
 extern "C" {
 #endif  // __cplusplus
 
-/// @defgroup variable_length_entry_queue_c_api VariableLengthEntryDeque C API
+/// @defgroup variable_length_entry_queue_c_api VariableLengthEntryQueue C API
 /// @{
 
-/// Handle that refers to a `VariableLengthEntryDeque`. In memory, the deque
+/// Handle that refers to a `VariableLengthEntryQueue`. In memory, the queue
 /// is a `uint32_t` array.
-typedef uint32_t* pw_VariableLengthEntryDeque_Handle;
-typedef const uint32_t* pw_VariableLengthEntryDeque_ConstHandle;
+typedef uint32_t* pw_VariableLengthEntryQueue_Handle;
+typedef const uint32_t* pw_VariableLengthEntryQueue_ConstHandle;
 
-/// Declares and initializes a `VariableLengthEntryDeque` that can hold an entry
+/// Declares and initializes a `VariableLengthEntryQueue` that can hold an entry
 /// of up to `max_entry_size_bytes`. Attempting to store larger entries is
 /// invalid and will fail an assertion.
-#define PW_VARIABLE_LENGTH_ENTRY_DEQUE_DECLARE(variable, max_entry_size_bytes) \
-  uint32_t variable[PW_VARIABLE_LENGTH_ENTRY_DEQUE_HEADER_SIZE_UINT32 +        \
-                    _PW_VAR_DEQUE_DATA_SIZE_UINT32(max_entry_size_bytes)] = {  \
-      _PW_VAR_DEQUE_DATA_SIZE_BYTES(max_entry_size_bytes),                     \
+#define PW_VARIABLE_LENGTH_ENTRY_QUEUE_DECLARE(variable, max_entry_size_bytes) \
+  uint32_t variable[PW_VARIABLE_LENGTH_ENTRY_QUEUE_HEADER_SIZE_UINT32 +        \
+                    _PW_VAR_QUEUE_DATA_SIZE_UINT32(max_entry_size_bytes)] = {  \
+      _PW_VAR_QUEUE_DATA_SIZE_BYTES(max_entry_size_bytes),                     \
       /*head=*/0u,                                                             \
       /*tail=*/0u}
 
-/// The size of the `VariableLengthEntryDeque` header, in `uint32_t` elements.
+/// The size of the `VariableLengthEntryQueue` header, in `uint32_t` elements.
 /// This header stores the buffer length and head and tail offsets.
 ///
-/// The underlying `uint32_t` array of a `VariableLengthEntryDeque` must be
+/// The underlying `uint32_t` array of a `VariableLengthEntryQueue` must be
 /// larger than this size.
-#define PW_VARIABLE_LENGTH_ENTRY_DEQUE_HEADER_SIZE_UINT32 (3)
+#define PW_VARIABLE_LENGTH_ENTRY_QUEUE_HEADER_SIZE_UINT32 (3)
 
-/// Initializes a `VariableLengthEntryDeque` in place in a `uint32_t` array. The
+/// Initializes a `VariableLengthEntryQueue` in place in a `uint32_t` array. The
 /// array MUST be larger than
-/// @c_macro{PW_VARIABLE_LENGTH_ENTRY_DEQUE_HEADER_SIZE_UINT32} (3) elements.
-static inline void pw_VariableLengthEntryDeque_Init(uint32_t array[],
+/// @c_macro{PW_VARIABLE_LENGTH_ENTRY_QUEUE_HEADER_SIZE_UINT32} (3) elements.
+static inline void pw_VariableLengthEntryQueue_Init(uint32_t array[],
                                                     size_t array_size_uint32);
 
-/// Appends an entry to the end of the deque.
+/// Appends an entry to the end of the queue.
 ///
 /// @pre The entry MUST not be larger than
-/// @cpp_func{pw_VariableLengthEntryDeque_MaxEntrySizeBytes}; asserts if it is.
-void pw_VariableLengthEntryDeque_PushBack(
-    pw_VariableLengthEntryDeque_Handle deque,
-    const void* data,
-    uint32_t data_size_bytes);
+/// @cpp_func{pw_VariableLengthEntryQueue_MaxEntrySizeBytes}; asserts if it is.
+void pw_VariableLengthEntryQueue_Push(pw_VariableLengthEntryQueue_Handle queue,
+                                      const void* data,
+                                      uint32_t data_size_bytes);
 
-/// Appends an entry to the end of the deque, removing entries with `PopFront`
+/// Appends an entry to the end of the queue, removing entries with `Pop`
 /// as necessary to make room.
 ///
 /// @pre The entry MUST not be larger than
-/// @cpp_func{pw_VariableLengthEntryDeque_MaxEntrySizeBytes}; asserts if it is.
-void pw_VariableLengthEntryDeque_PushBackOverwrite(
-    pw_VariableLengthEntryDeque_Handle deque,
+/// @cpp_func{pw_VariableLengthEntryQueue_MaxEntrySizeBytes}; asserts if it is.
+void pw_VariableLengthEntryQueue_PushOverwrite(
+    pw_VariableLengthEntryQueue_Handle queue,
     const void* data,
     uint32_t data_size_bytes);
 
 /// Removes the first entry from the ring buffer.
 ///
-/// @pre The deque MUST have at least one entry.
-void pw_VariableLengthEntryDeque_PopFront(
-    pw_VariableLengthEntryDeque_Handle deque);
+/// @pre The queue MUST have at least one entry.
+void pw_VariableLengthEntryQueue_Pop(pw_VariableLengthEntryQueue_Handle queue);
 
-/// Iterator object for a `VariableLengthEntryDeque`. Iterators are checked for
+/// Iterator object for a `VariableLengthEntryQueue`. Iterators are checked for
 /// equality with
-/// @cpp_func{pw_VariableLengthEntryDeque_Iterator_Equal}.
+/// @cpp_func{pw_VariableLengthEntryQueue_Iterator_Equal}.
 ///
 /// Iterators are invalidated by any operations that change the container or
 /// its underlying data (push/pop/init).
 typedef struct {
   // Private: do not access these fields directly!
-  pw_VariableLengthEntryDeque_ConstHandle _pw_deque;
+  pw_VariableLengthEntryQueue_ConstHandle _pw_queue;
   uint32_t _pw_offset;
-} pw_VariableLengthEntryDeque_Iterator;
+} pw_VariableLengthEntryQueue_Iterator;
 
-// An entry in the deque. Entries may be stored in up to two segments, so this
+// An entry in the queue. Entries may be stored in up to two segments, so this
 // struct includes pointers to both portions of the entry.
 typedef struct {
   const uint8_t* data_1;
   uint32_t size_1;
   const uint8_t* data_2;
   uint32_t size_2;
-} pw_VariableLengthEntryDeque_Entry;
+} pw_VariableLengthEntryQueue_Entry;
 
-/// Returns an iterator to the start of the `VariableLengthEntryDeque`.
-static inline pw_VariableLengthEntryDeque_Iterator
-pw_VariableLengthEntryDeque_Begin(
-    pw_VariableLengthEntryDeque_ConstHandle deque);
+/// Returns an iterator to the start of the `VariableLengthEntryQueue`.
+static inline pw_VariableLengthEntryQueue_Iterator
+pw_VariableLengthEntryQueue_Begin(
+    pw_VariableLengthEntryQueue_ConstHandle queue);
 
 /// Returns an iterator to entry following the last entry, which is not valid.
-static inline pw_VariableLengthEntryDeque_Iterator
-pw_VariableLengthEntryDeque_End(pw_VariableLengthEntryDeque_ConstHandle deque);
+static inline pw_VariableLengthEntryQueue_Iterator
+pw_VariableLengthEntryQueue_End(pw_VariableLengthEntryQueue_ConstHandle queue);
 
-/// Advances an iterator to point to the next entry in the deque. It is
+/// Advances an iterator to point to the next entry in the queue. It is
 /// invalid to call `Advance` on an iterator equal to the `End` iterator.
-void pw_VariableLengthEntryDeque_Iterator_Advance(
-    pw_VariableLengthEntryDeque_Iterator* iterator);
+void pw_VariableLengthEntryQueue_Iterator_Advance(
+    pw_VariableLengthEntryQueue_Iterator* iterator);
 
 /// Compares two iterators for equality.
-static inline bool pw_VariableLengthEntryDeque_Iterator_Equal(
-    const pw_VariableLengthEntryDeque_Iterator* lhs,
-    const pw_VariableLengthEntryDeque_Iterator* rhs);
+static inline bool pw_VariableLengthEntryQueue_Iterator_Equal(
+    const pw_VariableLengthEntryQueue_Iterator* lhs,
+    const pw_VariableLengthEntryQueue_Iterator* rhs);
 
 /// Dereferences an iterator, loading the entry it points to.
-pw_VariableLengthEntryDeque_Entry pw_VariableLengthEntryDeque_GetEntry(
-    const pw_VariableLengthEntryDeque_Iterator* iterator);
+pw_VariableLengthEntryQueue_Entry pw_VariableLengthEntryQueue_GetEntry(
+    const pw_VariableLengthEntryQueue_Iterator* iterator);
 
 /// Copies the contents of the entry to the provided buffer. The entry may be
 /// split into two regions; this serializes it into one buffer.
@@ -193,126 +191,126 @@ pw_VariableLengthEntryDeque_Entry pw_VariableLengthEntryDeque_GetEntry(
 /// @param dest The buffer into which to copy the serialized entry
 /// @param count Copy up to this many bytes; must not be larger than the `dest`
 ///     buffer, but may be larger than the entry
-uint32_t pw_VariableLengthEntryDeque_Entry_Copy(
-    const pw_VariableLengthEntryDeque_Entry* entry, void* dest, uint32_t count);
+uint32_t pw_VariableLengthEntryQueue_Entry_Copy(
+    const pw_VariableLengthEntryQueue_Entry* entry, void* dest, uint32_t count);
 
-/// Returns the number of variable-length entries in the deque. This is O(n) in
-/// the number of entries in the deque.
-uint32_t pw_VariableLengthEntryDeque_Size(
-    pw_VariableLengthEntryDeque_ConstHandle deque);
+/// Returns the number of variable-length entries in the queue. This is O(n) in
+/// the number of entries in the queue.
+uint32_t pw_VariableLengthEntryQueue_Size(
+    pw_VariableLengthEntryQueue_ConstHandle queue);
 
 /// Returns the number of bytes stored in the buffer, including entry metadata.
 /// This can be used with `RawCapacityBytes` to gauge available space for
 /// entries.
-static inline uint32_t pw_VariableLengthEntryDeque_RawSizeBytes(
-    pw_VariableLengthEntryDeque_ConstHandle deque);
+static inline uint32_t pw_VariableLengthEntryQueue_RawSizeBytes(
+    pw_VariableLengthEntryQueue_ConstHandle queue);
 
 /// Returns the maximum number of bytes that can be stored in the buffer,
 /// including per-entry metadata. This can be used with `RawSizeBytes` to gauge
 /// available space for entries.
-static inline uint32_t pw_VariableLengthEntryDeque_RawCapacityBytes(
-    pw_VariableLengthEntryDeque_ConstHandle deque);
+static inline uint32_t pw_VariableLengthEntryQueue_RawCapacityBytes(
+    pw_VariableLengthEntryQueue_ConstHandle queue);
 
-/// Returns the size of the raw underlying `VariableLengthEntryDeque` storage.
-/// This size may be used to copy a `VariableLengthEntryDeque` into another
+/// Returns the size of the raw underlying `VariableLengthEntryQueue` storage.
+/// This size may be used to copy a `VariableLengthEntryQueue` into another
 /// 32-bit aligned memory location.
-static inline uint32_t pw_VariableLengthEntryDeque_RawStorageSizeBytes(
-    pw_VariableLengthEntryDeque_ConstHandle deque);
+static inline uint32_t pw_VariableLengthEntryQueue_RawStorageSizeBytes(
+    pw_VariableLengthEntryQueue_ConstHandle queue);
 
-/// Returns the size of the largest entry this `VariableLengthEntryDeque` can
+/// Returns the size of the largest entry this `VariableLengthEntryQueue` can
 /// hold. Attempting to store a larger entry is invalid and fails an assert.
-static inline uint32_t pw_VariableLengthEntryDeque_MaxEntrySizeBytes(
-    pw_VariableLengthEntryDeque_ConstHandle deque);
+static inline uint32_t pw_VariableLengthEntryQueue_MaxEntrySizeBytes(
+    pw_VariableLengthEntryQueue_ConstHandle queue);
 
-/// Returns true if the `VariableLengthEntryDeque` is empty, false if it has at
+/// Returns true if the `VariableLengthEntryQueue` is empty, false if it has at
 /// least one entry.
-static inline bool pw_VariableLengthEntryDeque_Empty(
-    pw_VariableLengthEntryDeque_ConstHandle deque);
+static inline bool pw_VariableLengthEntryQueue_Empty(
+    pw_VariableLengthEntryQueue_ConstHandle queue);
 
 /// @}
 
 // Implementation details.
 
-#define _PW_VAR_DEQUE_DATA_SIZE_UINT32(max_entry_size_bytes) \
-  ((_PW_VAR_DEQUE_DATA_SIZE_BYTES(max_entry_size_bytes) + 3 /* round up */) / 4)
+#define _PW_VAR_QUEUE_DATA_SIZE_UINT32(max_entry_size_bytes) \
+  ((_PW_VAR_QUEUE_DATA_SIZE_BYTES(max_entry_size_bytes) + 3 /* round up */) / 4)
 
-#define _PW_VAR_DEQUE_DATA_SIZE_BYTES(max_entry_size_bytes)                    \
+#define _PW_VAR_QUEUE_DATA_SIZE_BYTES(max_entry_size_bytes)                    \
   (PW_VARINT_ENCODED_SIZE_BYTES(max_entry_size_bytes) + max_entry_size_bytes + \
    1 /*end byte*/)
 
-#define _PW_VAR_DEQUE_ARRAY_SIZE_BYTES deque[0]
-#define _PW_VAR_DEQUE_HEAD deque[1]
-#define _PW_VAR_DEQUE_TAIL deque[2]  // points after the last byte
-#define _PW_VAR_DEQUE_DATA ((const uint8_t*)&deque[3])
+#define _PW_VAR_QUEUE_ARRAY_SIZE_BYTES queue[0]
+#define _PW_VAR_QUEUE_HEAD queue[1]
+#define _PW_VAR_QUEUE_TAIL queue[2]  // points after the last byte
+#define _PW_VAR_QUEUE_DATA ((const uint8_t*)&queue[3])
 
-#define _PW_VAR_DEQUE_GET_ARRAY_SIZE_BYTES(array_size_uint32)     \
+#define _PW_VAR_QUEUE_GET_ARRAY_SIZE_BYTES(array_size_uint32)     \
   (uint32_t)(array_size_uint32 -                                  \
-             PW_VARIABLE_LENGTH_ENTRY_DEQUE_HEADER_SIZE_UINT32) * \
+             PW_VARIABLE_LENGTH_ENTRY_QUEUE_HEADER_SIZE_UINT32) * \
       sizeof(uint32_t)
 
-static inline void pw_VariableLengthEntryDeque_Init(uint32_t array[],
+static inline void pw_VariableLengthEntryQueue_Init(uint32_t array[],
                                                     size_t array_size_uint32) {
-  array[0] = _PW_VAR_DEQUE_GET_ARRAY_SIZE_BYTES(array_size_uint32);
+  array[0] = _PW_VAR_QUEUE_GET_ARRAY_SIZE_BYTES(array_size_uint32);
   array[1] = 0;  // head
   array[2] = 0;  // tail
 }
 
-static inline pw_VariableLengthEntryDeque_Iterator
-pw_VariableLengthEntryDeque_Begin(
-    pw_VariableLengthEntryDeque_ConstHandle deque) {
-  pw_VariableLengthEntryDeque_Iterator begin = {deque, _PW_VAR_DEQUE_HEAD};
+static inline pw_VariableLengthEntryQueue_Iterator
+pw_VariableLengthEntryQueue_Begin(
+    pw_VariableLengthEntryQueue_ConstHandle queue) {
+  pw_VariableLengthEntryQueue_Iterator begin = {queue, _PW_VAR_QUEUE_HEAD};
   return begin;
 }
 
-static inline pw_VariableLengthEntryDeque_Iterator
-pw_VariableLengthEntryDeque_End(pw_VariableLengthEntryDeque_ConstHandle deque) {
-  pw_VariableLengthEntryDeque_Iterator end = {deque, _PW_VAR_DEQUE_TAIL};
+static inline pw_VariableLengthEntryQueue_Iterator
+pw_VariableLengthEntryQueue_End(pw_VariableLengthEntryQueue_ConstHandle queue) {
+  pw_VariableLengthEntryQueue_Iterator end = {queue, _PW_VAR_QUEUE_TAIL};
   return end;
 }
 
-static inline bool pw_VariableLengthEntryDeque_Iterator_Equal(
-    const pw_VariableLengthEntryDeque_Iterator* lhs,
-    const pw_VariableLengthEntryDeque_Iterator* rhs) {
-  return lhs->_pw_offset == rhs->_pw_offset && lhs->_pw_deque == rhs->_pw_deque;
+static inline bool pw_VariableLengthEntryQueue_Iterator_Equal(
+    const pw_VariableLengthEntryQueue_Iterator* lhs,
+    const pw_VariableLengthEntryQueue_Iterator* rhs) {
+  return lhs->_pw_offset == rhs->_pw_offset && lhs->_pw_queue == rhs->_pw_queue;
 }
 
-static inline uint32_t pw_VariableLengthEntryDeque_RawSizeBytes(
-    pw_VariableLengthEntryDeque_ConstHandle deque) {
-  uint32_t tail = _PW_VAR_DEQUE_TAIL;
-  if (tail < _PW_VAR_DEQUE_HEAD) {
-    tail += _PW_VAR_DEQUE_ARRAY_SIZE_BYTES;
+static inline uint32_t pw_VariableLengthEntryQueue_RawSizeBytes(
+    pw_VariableLengthEntryQueue_ConstHandle queue) {
+  uint32_t tail = _PW_VAR_QUEUE_TAIL;
+  if (tail < _PW_VAR_QUEUE_HEAD) {
+    tail += _PW_VAR_QUEUE_ARRAY_SIZE_BYTES;
   }
-  return tail - _PW_VAR_DEQUE_HEAD;
+  return tail - _PW_VAR_QUEUE_HEAD;
 }
 
-static inline uint32_t pw_VariableLengthEntryDeque_RawCapacityBytes(
-    pw_VariableLengthEntryDeque_ConstHandle deque) {
-  return _PW_VAR_DEQUE_ARRAY_SIZE_BYTES - 1;
+static inline uint32_t pw_VariableLengthEntryQueue_RawCapacityBytes(
+    pw_VariableLengthEntryQueue_ConstHandle queue) {
+  return _PW_VAR_QUEUE_ARRAY_SIZE_BYTES - 1;
 }
 
-static inline uint32_t pw_VariableLengthEntryDeque_RawStorageSizeBytes(
-    pw_VariableLengthEntryDeque_ConstHandle deque) {
-  return PW_VARIABLE_LENGTH_ENTRY_DEQUE_HEADER_SIZE_UINT32 * sizeof(uint32_t) +
-         _PW_VAR_DEQUE_ARRAY_SIZE_BYTES;
+static inline uint32_t pw_VariableLengthEntryQueue_RawStorageSizeBytes(
+    pw_VariableLengthEntryQueue_ConstHandle queue) {
+  return PW_VARIABLE_LENGTH_ENTRY_QUEUE_HEADER_SIZE_UINT32 * sizeof(uint32_t) +
+         _PW_VAR_QUEUE_ARRAY_SIZE_BYTES;
 }
 
-static inline uint32_t pw_VariableLengthEntryDeque_MaxEntrySizeBytes(
-    pw_VariableLengthEntryDeque_ConstHandle deque) {
-  return _PW_VAR_DEQUE_ARRAY_SIZE_BYTES - 1 -
-         (uint32_t)pw_varint_EncodedSizeBytes(_PW_VAR_DEQUE_ARRAY_SIZE_BYTES -
+static inline uint32_t pw_VariableLengthEntryQueue_MaxEntrySizeBytes(
+    pw_VariableLengthEntryQueue_ConstHandle queue) {
+  return _PW_VAR_QUEUE_ARRAY_SIZE_BYTES - 1 -
+         (uint32_t)pw_varint_EncodedSizeBytes(_PW_VAR_QUEUE_ARRAY_SIZE_BYTES -
                                               1);
 }
 
-static inline bool pw_VariableLengthEntryDeque_Empty(
-    pw_VariableLengthEntryDeque_ConstHandle deque) {
-  return _PW_VAR_DEQUE_HEAD == _PW_VAR_DEQUE_TAIL;
+static inline bool pw_VariableLengthEntryQueue_Empty(
+    pw_VariableLengthEntryQueue_ConstHandle queue) {
+  return _PW_VAR_QUEUE_HEAD == _PW_VAR_QUEUE_TAIL;
 }
 
 // These macros are not part of the public API, so undefine them.
-#undef _PW_VAR_DEQUE_ARRAY_SIZE_BYTES
-#undef _PW_VAR_DEQUE_HEAD
-#undef _PW_VAR_DEQUE_TAIL
-#undef _PW_VAR_DEQUE_DATA
+#undef _PW_VAR_QUEUE_ARRAY_SIZE_BYTES
+#undef _PW_VAR_QUEUE_HEAD
+#undef _PW_VAR_QUEUE_TAIL
+#undef _PW_VAR_QUEUE_DATA
 
 #ifdef __cplusplus
 }       // extern "C"

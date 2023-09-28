@@ -24,26 +24,26 @@
 
 namespace pw::containers {
 
-// Behaves like a VariableLengthEntryDeque should, but with a std::deque-based
+// Behaves like a VariableLengthEntryQueue should, but with a std::deque-based
 // implementation.
-class VariableLengthEntryDequeTestOracle {
+class VariableLengthEntryQueueTestOracle {
  public:
-  VariableLengthEntryDequeTestOracle(uint32_t max_entry_size_bytes)
+  VariableLengthEntryQueueTestOracle(uint32_t max_entry_size_bytes)
       : max_entry_size_bytes_(max_entry_size_bytes),
         raw_size_bytes_(0),
         raw_capacity_bytes_(
             static_cast<uint32_t>(varint::EncodedSize(max_entry_size_bytes)) +
             max_entry_size_bytes) {}
 
-  void push_back_overwrite(ConstByteSpan data) {
+  void push_overwrite(ConstByteSpan data) {
     size_t encoded_size = varint::EncodedSize(data.size()) + data.size();
     while (encoded_size > (raw_capacity_bytes_ - raw_size_bytes_)) {
-      pop_front();
+      pop();
     }
-    push_back(data);
+    push(data);
   }
 
-  void push_back(ConstByteSpan data) {
+  void push(ConstByteSpan data) {
     PW_ASSERT(data.size() <= max_entry_size_bytes_);
 
     size_t encoded_size = varint::EncodedSize(data.size()) + data.size();
@@ -53,7 +53,7 @@ class VariableLengthEntryDequeTestOracle {
     raw_size_bytes_ += encoded_size;
   }
 
-  void pop_front() {
+  void pop() {
     PW_ASSERT(!q_.empty());
     raw_size_bytes_ -=
         varint::EncodedSize(q_.front().size()) + q_.front().size();
