@@ -38,20 +38,28 @@ declare_args() {
   pw_build_DEFAULT_VISIBILITY = "*"
 }
 
+# These are the default configs automatically applied to every pw_* C/C++ build
+# step regardless of toolchain. If you want to omit one of these from your
+# toolchain, add the undesired config to pw_build_REMOVE_DEFAULT_CONFIGS.
+#
+# This is not the default value of pw_build_DEFAULT_CONFIGS because it would
+# be too easy to accidentally clobber.
+pigweed_default_configs = [
+  "$dir_pw_build:colorize_output",
+  "$dir_pw_build:debugging",
+  "$dir_pw_build:reduced_size",
+  "$dir_pw_build:strict_warnings",
+  "$dir_pw_build:toolchain_cpp_standard",
+  "$dir_pw_build:relative_paths",
+]
+
 # Combine target-specifc and target-agnostic default variables.
 _pw_build_defaults = {
   configs = default_configs
   public_deps = default_public_deps
 
   # The target-agnostic defaults.
-  configs += [
-    "$dir_pw_build:colorize_output",
-    "$dir_pw_build:debugging",
-    "$dir_pw_build:reduced_size",
-    "$dir_pw_build:strict_warnings",
-    "$dir_pw_build:toolchain_cpp_standard",
-    "$dir_pw_build:relative_paths",
-  ]
+  configs += pigweed_default_configs
 
   if (pw_build_DEFAULT_VISIBILITY != "*") {
     visibility = pw_build_DEFAULT_VISIBILITY
