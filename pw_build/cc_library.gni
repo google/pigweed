@@ -40,7 +40,9 @@ import("$dir_pw_build/gn_internal/build_target.gni")
 template("pw_source_set") {
   pw_internal_build_target(target_name) {
     forward_variables_from(invoker, "*")
-    add_global_link_deps = false
+    if (!defined(add_global_link_deps)) {
+      add_global_link_deps = false
+    }
     underlying_target_type = "source_set"
   }
 }
@@ -48,7 +50,9 @@ template("pw_source_set") {
 template("pw_static_library") {
   pw_internal_build_target(target_name) {
     forward_variables_from(invoker, "*")
-    add_global_link_deps = true
+    if (!defined(add_global_link_deps)) {
+      add_global_link_deps = false
+    }
     underlying_target_type = "static_library"
   }
 }
@@ -56,7 +60,9 @@ template("pw_static_library") {
 template("pw_shared_library") {
   pw_internal_build_target(target_name) {
     forward_variables_from(invoker, "*")
-    add_global_link_deps = true
+    if (!defined(add_global_link_deps)) {
+      add_global_link_deps = false
+    }
     underlying_target_type = "shared_library"
   }
 }
