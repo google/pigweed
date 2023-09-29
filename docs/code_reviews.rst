@@ -112,3 +112,10 @@ See :ref:`docs-contributing` for instructions, and consult the `Gerrit User
 Guide
 <https://gerrit-documentation.storage.googleapis.com/Documentation/2.12.3/intro-user.html>`_
 for more information on using Gerrit.
+
+.. _docs-code_reviews-incomplete-docs-changes:
+
+Docs-Only Changes Do Not Need To Be Complete
+============================================
+Documentation-only changes should generally be accepted if they make the docs
+better or more complete, even if the documentation change itself is incomplete.
