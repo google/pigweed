@@ -69,6 +69,8 @@ _defaults = {
   if (!pw_toolchain_OSS_FUZZ_ENABLED) {
     default_configs += [ "$dir_pw_toolchain/host_clang:linux_sysroot" ]
   }
+
+  pw_build_LINK_DEPS = [ dir_pw_libc ]
 }
 
 pw_toolchain_host_clang = {
