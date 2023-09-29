@@ -139,6 +139,7 @@ if (dir_pw_third_party_llvm_libc != "") {
 
   pw_static_library("pw_libc") {
     complete_static_lib = true
+    add_global_link_deps = false
     deps = [
       ":ctype",
       ":math",
@@ -161,6 +162,7 @@ if (dir_pw_third_party_llvm_libc != "") {
   }
 } else {
   pw_static_library("pw_libc") {
+    add_global_link_deps = false
   }
 
   pw_test_group("llvm_libc_tests") {
