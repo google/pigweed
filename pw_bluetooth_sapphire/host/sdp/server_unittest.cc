@@ -98,7 +98,7 @@ class ServerTest : public TestingBase {
     return handle;
   }
 
-  RegistrationHandle AddL2capService(l2cap::PSM channel,
+  RegistrationHandle AddL2capService(l2cap::Psm channel,
                                      l2cap::ChannelParameters chan_params = kChannelParams,
                                      sdp::Server::ConnectCallback cb = NopConnectCallback) {
     ServiceRecord record;
@@ -237,7 +237,7 @@ TEST_F(ServerTest, RegisterService) {
 // - Tests callback correctness when inbound l2cap channels are connected.
 TEST_F(ServerTest, RegisterProtocolOnlyService) {
   ServiceRecord protocol_only;
-  l2cap::PSM test_psm = 500;
+  l2cap::Psm test_psm = 500;
   protocol_only.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
                                       DataElement(uint16_t{test_psm}));
 
@@ -385,7 +385,7 @@ TEST_F(ServerTest, RegisterProtocolOnlyService) {
 // - Tests registration and removal are successful.
 // - Tests callback correctness when inbound l2cap channels are connected.
 TEST_F(ServerTest, RegisterServiceWithAdditionalProtocol) {
-  std::vector<l2cap::PSM> psms{500, 27, 29};
+  std::vector<l2cap::Psm> psms{500, 27, 29};
 
   ServiceRecord psm_additional;
   psm_additional.SetServiceClassUUIDs({profile::kAVRemoteControl});
@@ -456,7 +456,7 @@ TEST_F(ServerTest, RegisterServiceWithIncompleteAdditionalProtocol) {
   EXPECT_FALSE(server()->UnregisterService(handle));
 }
 
-TEST_F(ServerTest, PSMVerification) {
+TEST_F(ServerTest, PsmVerification) {
   ServiceRecord no_psm;
   no_psm.SetServiceClassUUIDs({profile::kAVRemoteControl});
   no_psm.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
@@ -581,7 +581,7 @@ TEST_F(ServerTest, RegisterServiceMultipleRecordsSuccess) {
 // - Inbound L2CAP connections on the registered PSMs trigger the same callback.
 // - Attempting to register a record with an already taken PSM will fail, and not
 // register any of the other records in the set of records.
-TEST_F(ServerTest, RegisterServiceMultipleRecordsSamePSM) {
+TEST_F(ServerTest, RegisterServiceMultipleRecordsSamePsm) {
   ServiceRecord target_browse_record;
   target_browse_record.SetServiceClassUUIDs({profile::kAVRemoteControlTarget});
   target_browse_record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
@@ -699,7 +699,7 @@ TEST_F(ServerTest, RegisterObexServiceWithAttribute) {
   EXPECT_TRUE(server()->UnregisterService(handle));
 }
 
-TEST_F(ServerTest, RegisterServiceWithMultipleDynamicPSMs) {
+TEST_F(ServerTest, RegisterServiceWithMultipleDynamicPsms) {
   // This service is not defined in any Bluetooth specification.
   ServiceRecord record;
   record.SetServiceClassUUIDs({profile::kMessageNotificationServer});
@@ -1391,7 +1391,7 @@ TEST_F(ServerTest, BrowseGroup) {
 // Channels created for a service registered with channel parameters should be configured with that
 // service's channel parameters.
 TEST_F(ServerTest, RegisterServiceWithChannelParameters) {
-  l2cap::PSM kPSM = l2cap::kAVDTP;
+  l2cap::Psm kPsm = l2cap::kAVDTP;
 
   l2cap::ChannelParameters preferred_params;
   preferred_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
@@ -1399,12 +1399,12 @@ TEST_F(ServerTest, RegisterServiceWithChannelParameters) {
 
   std::optional<l2cap::ChannelInfo> params;
   size_t chan_cb_count = 0;
-  ASSERT_TRUE(AddL2capService(kPSM, preferred_params, [&](auto chan, auto& /*protocol*/) {
+  ASSERT_TRUE(AddL2capService(kPsm, preferred_params, [&](auto chan, auto& /*protocol*/) {
     chan_cb_count++;
     params = chan->info();
   }));
 
-  EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, kPSM, 0x40, 0x41));
+  EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, kPsm, 0x40, 0x41));
   RunUntilIdle();
   EXPECT_EQ(1u, chan_cb_count);
   ASSERT_TRUE(params);

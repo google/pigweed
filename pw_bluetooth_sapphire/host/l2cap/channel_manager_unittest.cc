@@ -33,7 +33,7 @@ using AclPriority = pw::bluetooth::AclPriority;
 
 constexpr hci_spec::ConnectionHandle kTestHandle1 = 0x0001;
 constexpr hci_spec::ConnectionHandle kTestHandle2 = 0x0002;
-constexpr PSM kTestPsm = 0x0001;
+constexpr Psm kTestPsm = 0x0001;
 constexpr ChannelId kLocalId = 0x0040;
 constexpr ChannelId kRemoteId = 0x9042;
 constexpr CommandId kPeerConfigRequestId = 153;
@@ -382,7 +382,7 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
 
   // |activated_cb| will be called with opened and activated Channel if successful and nullptr
   // otherwise.
-  void ActivateOutboundChannel(PSM psm, ChannelParameters chan_params, ChannelCallback activated_cb,
+  void ActivateOutboundChannel(Psm psm, ChannelParameters chan_params, ChannelCallback activated_cb,
                                hci_spec::ConnectionHandle conn_handle = kTestHandle1,
                                Channel::ClosedCallback closed_cb = DoNothing,
                                Channel::RxCallback rx_cb = NopRxCallback) {
@@ -1084,11 +1084,11 @@ TEST_F(ChannelManagerRealAclChannelTest, SendBREDRFragmentedSDUsOverTwoDynamicCh
   TearDown();
   SetUp(/*max_acl_payload_size=*/18, /*max_le_payload_size=*/0);
 
-  constexpr l2cap::PSM kPSM0 = l2cap::kAVCTP;
+  constexpr l2cap::Psm kPsm0 = l2cap::kAVCTP;
   constexpr l2cap::ChannelId kLocalId0 = 0x0040;
   constexpr l2cap::ChannelId kRemoteId0 = 0x9042;
 
-  constexpr l2cap::PSM kPSM1 = l2cap::kAVDTP;
+  constexpr l2cap::Psm kPsm1 = l2cap::kAVDTP;
   constexpr l2cap::ChannelId kLocalId1 = 0x0041;
   constexpr l2cap::ChannelId kRemoteId1 = 0x9043;
 
@@ -1104,7 +1104,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SendBREDRFragmentedSDUsOverTwoDynamicCh
     EXPECT_EQ(kTestHandle1, activated_chan->link_handle());
     channel0 = std::move(activated_chan);
   };
-  QueueOutboundL2capConnection(kTestHandle1, kPSM0, kLocalId0, kRemoteId0, std::move(chan_cb0));
+  QueueOutboundL2capConnection(kTestHandle1, kPsm0, kLocalId0, kRemoteId0, std::move(chan_cb0));
 
   RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
@@ -1116,7 +1116,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SendBREDRFragmentedSDUsOverTwoDynamicCh
     EXPECT_EQ(kTestHandle1, activated_chan->link_handle());
     channel1 = std::move(activated_chan);
   };
-  QueueOutboundL2capConnection(kTestHandle1, kPSM1, kLocalId1, kRemoteId1, std::move(chan_cb1));
+  QueueOutboundL2capConnection(kTestHandle1, kPsm1, kLocalId1, kRemoteId1, std::move(chan_cb1));
 
   // Free up the buffer space from packets sent while creating |channel0|
   test_device()->SendCommandChannelPacket(
@@ -1627,8 +1627,8 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelFailedConfigur
 }
 
 TEST_F(ChannelManagerMockAclChannelTest, ACLInboundDynamicChannelLocalDisconnect) {
-  constexpr PSM kBadPsm0 = 0x0004;
-  constexpr PSM kBadPsm1 = 0x0103;
+  constexpr Psm kBadPsm0 = 0x0004;
+  constexpr Psm kBadPsm1 = 0x0103;
 
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
@@ -3152,7 +3152,7 @@ TEST_F(ChannelManagerMockAclChannelTest, SignalLinkErrorStopsDeliveryOfBufferedR
 }
 
 TEST_F(ChannelManagerRealAclChannelTest, InboundRfcommChannelFailsWithPsmNotSupported) {
-  constexpr l2cap::PSM kPSM = l2cap::kRFCOMM;
+  constexpr l2cap::Psm kPsm = l2cap::kRFCOMM;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
 
   QueueAclConnection(kTestHandle1);
@@ -3165,16 +3165,16 @@ TEST_F(ChannelManagerRealAclChannelTest, InboundRfcommChannelFailsWithPsmNotSupp
   EXPECT_ACL_PACKET_OUT(
       test_device(),
       l2cap::testing::AclConnectionRsp(kPeerConnReqId, kTestHandle1, kRemoteId, /*dst_id=*/0x0000,
-                                       l2cap::ConnectionResult::kPSMNotSupported));
+                                       l2cap::ConnectionResult::kPsmNotSupported));
 
   test_device()->SendACLDataChannelPacket(
-      l2cap::testing::AclConnectionReq(kPeerConnReqId, kTestHandle1, kRemoteId, kPSM));
+      l2cap::testing::AclConnectionReq(kPeerConnReqId, kTestHandle1, kRemoteId, kPsm));
 
   RunUntilIdle();
 }
 
 TEST_F(ChannelManagerRealAclChannelTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
-  constexpr l2cap::PSM kPSM = l2cap::kSDP;
+  constexpr l2cap::Psm kPsm = l2cap::kSDP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
 
@@ -3188,7 +3188,7 @@ TEST_F(ChannelManagerRealAclChannelTest, InboundPacketQueuedAfterChannelOpenIsNo
     channel = std::move(activated_chan);
   };
 
-  chanmgr()->RegisterService(kPSM, kChannelParameters, std::move(chan_cb));
+  chanmgr()->RegisterService(kPsm, kChannelParameters, std::move(chan_cb));
   RunUntilIdle();
 
   constexpr l2cap::CommandId kConnectionReqId = 1;
@@ -3199,7 +3199,7 @@ TEST_F(ChannelManagerRealAclChannelTest, InboundPacketQueuedAfterChannelOpenIsNo
   EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclConfigReq(kConfigReqId, kTestHandle1,
                                                                     kRemoteId, kChannelParameters));
   test_device()->SendACLDataChannelPacket(
-      l2cap::testing::AclConnectionReq(kConnectionReqId, kTestHandle1, kRemoteId, kPSM));
+      l2cap::testing::AclConnectionReq(kConnectionReqId, kTestHandle1, kRemoteId, kPsm));
 
   // Config negotiation will not complete yet.
   RunUntilIdle();
@@ -3236,7 +3236,7 @@ TEST_F(ChannelManagerRealAclChannelTest, InboundPacketQueuedAfterChannelOpenIsNo
 }
 
 TEST_F(ChannelManagerRealAclChannelTest, NegotiateChannelParametersOnOutboundL2capChannel) {
-  constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
+  constexpr l2cap::Psm kPsm = l2cap::kAVDTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
   constexpr uint16_t kMtu = l2cap::kMinACLMTU;
@@ -3255,7 +3255,7 @@ TEST_F(ChannelManagerRealAclChannelTest, NegotiateChannelParametersOnOutboundL2c
     channel = std::move(activated_chan);
   };
 
-  QueueOutboundL2capConnection(kTestHandle1, kPSM, kLocalId, kRemoteId, chan_cb, chan_params,
+  QueueOutboundL2capConnection(kTestHandle1, kPsm, kLocalId, kRemoteId, chan_cb, chan_params,
                                chan_params);
 
   RunUntilIdle();
@@ -3267,7 +3267,7 @@ TEST_F(ChannelManagerRealAclChannelTest, NegotiateChannelParametersOnOutboundL2c
 }
 
 TEST_F(ChannelManagerRealAclChannelTest, NegotiateChannelParametersOnInboundChannel) {
-  constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
+  constexpr l2cap::Psm kPsm = l2cap::kAVDTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
 
@@ -3284,9 +3284,9 @@ TEST_F(ChannelManagerRealAclChannelTest, NegotiateChannelParametersOnInboundChan
     EXPECT_EQ(kTestHandle1, activated_chan->link_handle());
     channel = std::move(activated_chan);
   };
-  chanmgr()->RegisterService(kPSM, chan_params, chan_cb);
+  chanmgr()->RegisterService(kPsm, chan_params, chan_cb);
 
-  QueueInboundL2capConnection(kTestHandle1, kPSM, kLocalId, kRemoteId, chan_params, chan_params);
+  QueueInboundL2capConnection(kTestHandle1, kPsm, kLocalId, kRemoteId, chan_params, chan_params);
 
   RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
@@ -3336,7 +3336,7 @@ TEST_F(ChannelManagerRealAclChannelTest, AddLEConnectionReturnsFixedChannels) {
 }
 
 TEST_F(ChannelManagerRealAclChannelTest, OutboundChannelIsInvalidWhenL2capFailsToOpenChannel) {
-  constexpr l2cap::PSM kPSM = l2cap::kAVCTP;
+  constexpr l2cap::Psm kPsm = l2cap::kAVCTP;
 
   // Don't register any links. This should cause outbound channels to fail.
   bool chan_cb_called = false;
@@ -3345,7 +3345,7 @@ TEST_F(ChannelManagerRealAclChannelTest, OutboundChannelIsInvalidWhenL2capFailsT
     EXPECT_FALSE(chan.is_alive());
   };
 
-  chanmgr()->OpenL2capChannel(kTestHandle1, kPSM, kChannelParameters, std::move(chan_cb));
+  chanmgr()->OpenL2capChannel(kTestHandle1, kPsm, kChannelParameters, std::move(chan_cb));
 
   RunUntilIdle();
 
@@ -3353,7 +3353,7 @@ TEST_F(ChannelManagerRealAclChannelTest, OutboundChannelIsInvalidWhenL2capFailsT
 }
 
 TEST_F(ChannelManagerRealAclChannelTest, SignalingChannelAndOneDynamicChannel) {
-  constexpr l2cap::PSM kPSM = l2cap::kSDP;
+  constexpr l2cap::Psm kPsm = l2cap::kSDP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
 
@@ -3369,7 +3369,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SignalingChannelAndOneDynamicChannel) {
     EXPECT_EQ(kTestHandle1, activated_chan->link_handle());
     channel = std::move(activated_chan);
   };
-  QueueOutboundL2capConnection(kTestHandle1, kPSM, kLocalId, kRemoteId, std::move(chan_cb));
+  QueueOutboundL2capConnection(kTestHandle1, kPsm, kLocalId, kRemoteId, std::move(chan_cb));
 
   RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
@@ -3415,11 +3415,11 @@ TEST_F(ChannelManagerRealAclChannelTest, SignalingChannelAndOneDynamicChannel) {
 }
 
 TEST_F(ChannelManagerRealAclChannelTest, SignalingChannelAndTwoDynamicChannels) {
-  constexpr l2cap::PSM kPSM0 = l2cap::kAVCTP;
+  constexpr l2cap::Psm kPsm0 = l2cap::kAVCTP;
   constexpr l2cap::ChannelId kLocalId0 = 0x0040;
   constexpr l2cap::ChannelId kRemoteId0 = 0x9042;
 
-  constexpr l2cap::PSM kPSM1 = l2cap::kAVDTP;
+  constexpr l2cap::Psm kPsm1 = l2cap::kAVDTP;
   constexpr l2cap::ChannelId kLocalId1 = 0x0041;
   constexpr l2cap::ChannelId kRemoteId1 = 0x9043;
 
@@ -3435,7 +3435,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SignalingChannelAndTwoDynamicChannels) 
     EXPECT_EQ(kTestHandle1, activated_chan->link_handle());
     channel0 = std::move(activated_chan);
   };
-  QueueOutboundL2capConnection(kTestHandle1, kPSM0, kLocalId0, kRemoteId0, std::move(chan_cb0));
+  QueueOutboundL2capConnection(kTestHandle1, kPsm0, kLocalId0, kRemoteId0, std::move(chan_cb0));
 
   RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
@@ -3447,7 +3447,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SignalingChannelAndTwoDynamicChannels) 
     EXPECT_EQ(kTestHandle1, activated_chan->link_handle());
     channel1 = std::move(activated_chan);
   };
-  QueueOutboundL2capConnection(kTestHandle1, kPSM1, kLocalId1, kRemoteId1, std::move(chan_cb1));
+  QueueOutboundL2capConnection(kTestHandle1, kPsm1, kLocalId1, kRemoteId1, std::move(chan_cb1));
 
   // Free up the buffer space from packets sent while creating |channel0|
   test_device()->SendCommandChannelPacket(
@@ -3497,7 +3497,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SignalingChannelAndTwoDynamicChannels) 
 }
 
 TEST_F(ChannelManagerRealAclChannelTest, ChannelMaximumQueueSize) {
-  constexpr l2cap::PSM kPSM = l2cap::kSDP;
+  constexpr l2cap::Psm kPsm = l2cap::kSDP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
 
@@ -3513,7 +3513,7 @@ TEST_F(ChannelManagerRealAclChannelTest, ChannelMaximumQueueSize) {
     EXPECT_EQ(kTestHandle1, activated_chan->link_handle());
     channel = std::move(activated_chan);
   };
-  QueueOutboundL2capConnection(kTestHandle1, kPSM, kLocalId, kRemoteId, std::move(chan_cb));
+  QueueOutboundL2capConnection(kTestHandle1, kPsm, kLocalId, kRemoteId, std::move(chan_cb));
 
   RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
@@ -3572,7 +3572,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
                                          0x04,                                    // parameter size
                                          0x00, 0x01, 0x02, 0x03);                 // test parameter
 
-  constexpr l2cap::PSM kPSM = l2cap::kAVCTP;
+  constexpr l2cap::Psm kPsm = l2cap::kAVCTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
 
@@ -3599,7 +3599,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
     channel = std::move(activated_chan);
   };
 
-  QueueOutboundL2capConnection(kTestHandle1, kPSM, kLocalId, kRemoteId, std::move(chan_cb));
+  QueueOutboundL2capConnection(kTestHandle1, kPsm, kLocalId, kRemoteId, std::move(chan_cb));
 
   RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());

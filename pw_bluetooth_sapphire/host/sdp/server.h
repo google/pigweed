@@ -82,7 +82,7 @@ class Server final {
 
   // Returns the set of allocated L2CAP PSMs in the SDP server.
   // This is a TEST ONLY hook and should not be used otherwise.
-  std::set<l2cap::PSM> AllocatedPsmsForTest() const;
+  std::set<l2cap::Psm> AllocatedPsmsForTest() const;
 
  private:
   // Returns the next unused Service Handle, or 0 if none are available.
@@ -105,20 +105,20 @@ class Server final {
 
   // An array of PSM to ServiceHandle assignments that are used to represent
   // the services that need to be registered in Server::QueueService.
-  using ProtocolQueue = std::vector<std::pair<l2cap::PSM, ServiceHandle>>;
+  using ProtocolQueue = std::vector<std::pair<l2cap::Psm, ServiceHandle>>;
 
   /// Returns true if the |psm| is allocated in the SDP server.
-  bool IsAllocated(l2cap::PSM psm) const { return psm_to_service_.count(psm); }
+  bool IsAllocated(l2cap::Psm psm) const { return psm_to_service_.count(psm); }
 
   // Attempts to add the |psm| to the queue of protocols to be registered.
   // Returns true if the PSM was successfully added to the queue, false otherwise.
-  bool AddPsmToProtocol(ProtocolQueue* protocols_to_register, l2cap::PSM psm,
+  bool AddPsmToProtocol(ProtocolQueue* protocols_to_register, l2cap::Psm psm,
                         ServiceHandle handle) const;
 
   // Returns the next available dynamic PSM. A PSM is considered available if it has not been
   // allocated already nor reserved in |queued_psms|.
   // Returns |kInvalidPsm| if no PSM is available.
-  l2cap::PSM GetDynamicPsm(const ProtocolQueue* queued_psms) const;
+  l2cap::Psm GetDynamicPsm(const ProtocolQueue* queued_psms) const;
 
   // Given a complete ServiceRecord, extracts the PSM, ProtocolDescriptorList,
   // and any AdditionalProtocolDescriptorList information. Allocates any dynamic
@@ -148,7 +148,7 @@ class Server final {
 
     // Each ServiceRecord has it's record and nodes associated wth the registered PSMs.
     struct InspectServiceRecordProperties {
-      InspectServiceRecordProperties(std::string record, std::unordered_set<l2cap::PSM> psms);
+      InspectServiceRecordProperties(std::string record, std::unordered_set<l2cap::Psm> psms);
       void AttachInspect(inspect::Node& parent, std::string name);
       inspect::Node node;
       // The record description.
@@ -157,7 +157,7 @@ class Server final {
       // The node for the registered PSMs.
       inspect::Node psms_node;
       // The currently registered PSMs.
-      const std::unordered_set<l2cap::PSM> psms;
+      const std::unordered_set<l2cap::Psm> psms;
       std::vector<std::pair<inspect::Node, inspect::StringProperty>> psm_nodes;
     };
 
@@ -174,9 +174,9 @@ class Server final {
 
   // Which PSMs are registered to services. Multiple ServiceHandles can be registered
   // to a single PSM.
-  std::unordered_map<l2cap::PSM, std::unordered_set<ServiceHandle>> psm_to_service_;
+  std::unordered_map<l2cap::Psm, std::unordered_set<ServiceHandle>> psm_to_service_;
   // The set of PSMs that are registered to a service.
-  std::unordered_map<ServiceHandle, std::unordered_set<l2cap::PSM>> service_to_psms_;
+  std::unordered_map<ServiceHandle, std::unordered_set<l2cap::Psm>> service_to_psms_;
 
   // The next available ServiceHandle.
   ServiceHandle next_handle_;

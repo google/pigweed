@@ -31,12 +31,12 @@ class BrEdrDynamicChannelRegistry final : public DynamicChannelRegistry {
 
  private:
   // DynamicChannelRegistry override
-  DynamicChannelPtr MakeOutbound(PSM psm, ChannelId local_cid, ChannelParameters params) override;
-  DynamicChannelPtr MakeInbound(PSM psm, ChannelId local_cid, ChannelId remote_cid,
+  DynamicChannelPtr MakeOutbound(Psm psm, ChannelId local_cid, ChannelParameters params) override;
+  DynamicChannelPtr MakeInbound(Psm psm, ChannelId local_cid, ChannelId remote_cid,
                                 ChannelParameters params) override;
 
   // Signaling channel request handlers
-  void OnRxConnReq(PSM psm, ChannelId remote_cid,
+  void OnRxConnReq(Psm psm, ChannelId remote_cid,
                    BrEdrCommandHandler::ConnectionResponder* responder);
   void OnRxConfigReq(ChannelId local_cid, uint16_t flags, ChannelConfiguration config,
                      BrEdrCommandHandler::ConfigurationResponder* responder);
@@ -115,12 +115,12 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   using ResponseHandlerAction = SignalingChannel::ResponseHandlerAction;
 
   static BrEdrDynamicChannelPtr MakeOutbound(DynamicChannelRegistry* registry,
-                                             SignalingChannelInterface* signaling_channel, PSM psm,
+                                             SignalingChannelInterface* signaling_channel, Psm psm,
                                              ChannelId local_cid, ChannelParameters params,
                                              std::optional<bool> peer_supports_ertm);
 
   static BrEdrDynamicChannelPtr MakeInbound(DynamicChannelRegistry* registry,
-                                            SignalingChannelInterface* signaling_channel, PSM psm,
+                                            SignalingChannelInterface* signaling_channel, Psm psm,
                                             ChannelId local_cid, ChannelId remote_cid,
                                             ChannelParameters params,
                                             std::optional<bool> peer_supports_ertm);
@@ -200,7 +200,7 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   // controller configuration)
 
   BrEdrDynamicChannel(DynamicChannelRegistry* registry,
-                      SignalingChannelInterface* signaling_channel, PSM psm, ChannelId local_cid,
+                      SignalingChannelInterface* signaling_channel, Psm psm, ChannelId local_cid,
                       ChannelId remote_cid, ChannelParameters params,
                       std::optional<bool> peer_supports_ertm);
 

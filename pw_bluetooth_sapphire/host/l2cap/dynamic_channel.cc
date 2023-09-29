@@ -12,7 +12,7 @@
 
 namespace bt::l2cap::internal {
 
-DynamicChannel::DynamicChannel(DynamicChannelRegistry* registry, PSM psm, ChannelId local_cid,
+DynamicChannel::DynamicChannel(DynamicChannelRegistry* registry, Psm psm, ChannelId local_cid,
                                ChannelId remote_cid)
     : registry_(registry),
       psm_(psm),

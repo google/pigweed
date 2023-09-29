@@ -249,7 +249,7 @@ class Adapter {
     //
     // |cb| will be called with the channel created to the peer, or nullptr if the channel creation
     // resulted in an error.
-    virtual void OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
+    virtual void OpenL2capChannel(PeerId peer_id, l2cap::Psm psm,
                                   BrEdrSecurityRequirements security_requirements,
                                   l2cap::ChannelParameters params, l2cap::ChannelCallback cb) = 0;
 

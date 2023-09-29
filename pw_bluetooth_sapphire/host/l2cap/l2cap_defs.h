@@ -154,7 +154,7 @@ enum class RejectReason : uint16_t {
 enum class ConnectionResult : uint16_t {
   kSuccess = 0x0000,
   kPending = 0x0001,
-  kPSMNotSupported = 0x0002,
+  kPsmNotSupported = 0x0002,
   kSecurityBlock = 0x0003,
   kNoResources = 0x0004,
   kControllerNotSupported = 0x0005,  // for Create Channel only
@@ -233,7 +233,7 @@ enum class ConnectionParameterUpdateResult : uint16_t {
 
 enum class LECreditBasedConnectionResult : uint16_t {
   kSuccess = 0x0000,
-  kPSMNotSupported = 0x0002,
+  kPsmNotSupported = 0x0002,
   kNoResources = 0x0004,
   kInsufficientAuthentication = 0x0005,
   kInsufficientAuthorization = 0x0006,
@@ -246,36 +246,36 @@ enum class LECreditBasedConnectionResult : uint16_t {
 
 // Type used for all Protocol and Service Multiplexer (PSM) identifiers,
 // including those dynamically-assigned/-obtained
-using PSM = uint16_t;
-constexpr PSM kInvalidPSM = 0x0000;
+using Psm = uint16_t;
+constexpr Psm kInvalidPsm = 0x0000;
 // The minimum PSM value in the dynamic range of PSMs.
 // Defined in 5.2, Vol 3, Part A, 4.2.
-constexpr PSM kMinDynamicPSM = 0x1001;
+constexpr Psm kMinDynamicPsm = 0x1001;
 
 // Well-known Protocol and Service Multiplexer values defined by the Bluetooth
 // SIG in Logical Link Control Assigned Numbers
 // https://www.bluetooth.com/specifications/assigned-numbers/logical-link-control
-constexpr PSM kSDP = 0x0001;
-constexpr PSM kRFCOMM = 0x0003;
-constexpr PSM kTCSBIN = 0x0005; // Telephony Control Specification
-constexpr PSM kTCSBINCordless = 0x0007;
-constexpr PSM kBNEP = 0x0009; // Bluetooth Network Encapsulation Protocol
-constexpr PSM kHIDControl = 0x0011; // Human Interface Device
-constexpr PSM kHIDInteerup = 0x0013; // Human Interface Device
-constexpr PSM kAVCTP = 0x0017; // Audio/Video Control Transport Protocol
-constexpr PSM kAVDTP = 0x0019; // Audio/Video Distribution Transport Protocol
-constexpr PSM kAVCTP_Browse = 0x001B; // Audio/Video Remote Control Profile (Browsing)
-constexpr PSM kATT = 0x001F; // ATT
-constexpr PSM k3DSP = 0x0021; // 3D Synchronization Profile
-constexpr PSM kLE_IPSP = 0x0023; // Internet Protocol Support Profile
-constexpr PSM kOTS = 0x0025; // Object Transfer Service
+constexpr Psm kSDP = 0x0001;
+constexpr Psm kRFCOMM = 0x0003;
+constexpr Psm kTCSBIN = 0x0005; // Telephony Control Specification
+constexpr Psm kTCSBINCordless = 0x0007;
+constexpr Psm kBNEP = 0x0009; // Bluetooth Network Encapsulation Protocol
+constexpr Psm kHIDControl = 0x0011; // Human Interface Device
+constexpr Psm kHIDInteerup = 0x0013; // Human Interface Device
+constexpr Psm kAVCTP = 0x0017; // Audio/Video Control Transport Protocol
+constexpr Psm kAVDTP = 0x0019; // Audio/Video Distribution Transport Protocol
+constexpr Psm kAVCTP_Browse = 0x001B; // Audio/Video Remote Control Profile (Browsing)
+constexpr Psm kATT = 0x001F; // ATT
+constexpr Psm k3DSP = 0x0021; // 3D Synchronization Profile
+constexpr Psm kLE_IPSP = 0x0023; // Internet Protocol Support Profile
+constexpr Psm kOTS = 0x0025; // Object Transfer Service
 
 // Convenience function for visualizing a PSM. Used for Inspect and logging.
 // Returns string formatted |psm| if not recognized.
-inline std::string PsmToString(l2cap::PSM psm) {
+inline std::string PsmToString(l2cap::Psm psm) {
   switch (psm) {
-    case kInvalidPSM:
-      return "InvalidPSM";
+    case kInvalidPsm:
+      return "InvalidPsm";
     case kSDP:
       return "SDP";
     case kRFCOMM:

@@ -79,7 +79,7 @@ void BrEdrConnection::AddRequestCallback(BrEdrConnection::Request::OnComplete cb
   request_->AddCallback(std::move(cb));
 }
 
-void BrEdrConnection::OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters params,
+void BrEdrConnection::OpenL2capChannel(l2cap::Psm psm, l2cap::ChannelParameters params,
                                        l2cap::ChannelCallback cb) {
   if (!interrogation_complete()) {
     // Connection is not yet ready for L2CAP; return a null channel.

@@ -58,7 +58,7 @@ class BrEdrConnection final {
 
   // If |OnInterrogationComplete| has been called, opens an L2CAP channel using the preferred
   // parameters |params| on the L2cap provided. Otherwise, calls |cb| with a nullptr.
-  void OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters params, l2cap::ChannelCallback cb);
+  void OpenL2capChannel(l2cap::Psm psm, l2cap::ChannelParameters params, l2cap::ChannelCallback cb);
 
   // See ScoConnectionManager for documentation.
   using ScoRequestHandle = sco::ScoConnectionManager::RequestHandle;

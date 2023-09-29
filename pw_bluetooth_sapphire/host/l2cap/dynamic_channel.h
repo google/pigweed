@@ -82,7 +82,7 @@ class DynamicChannel {
   virtual ChannelInfo info() const = 0;
 
   // Service identifier provided by the endpoint requesting the channel.
-  PSM psm() const { return psm_; }
+  Psm psm() const { return psm_; }
 
   // Identifies the local device's endpoint of this channel. Will be unique on
   // this device as long as this channel remains open.
@@ -100,7 +100,7 @@ class DynamicChannel {
  protected:
   // |registry| points to the registry that created and owns this channel. It
   // must be valid for the duration of this object.
-  DynamicChannel(DynamicChannelRegistry* registry, PSM psm, ChannelId local_cid,
+  DynamicChannel(DynamicChannelRegistry* registry, Psm psm, ChannelId local_cid,
                  ChannelId remote_cid);
 
   // Signal the registry of a remote-requested closure.
@@ -119,7 +119,7 @@ class DynamicChannel {
   // Must be valid for the duration of this object.
   DynamicChannelRegistry* const registry_;
 
-  const PSM psm_;
+  const Psm psm_;
   const ChannelId local_cid_;
   ChannelId remote_cid_;
   bool opened_;

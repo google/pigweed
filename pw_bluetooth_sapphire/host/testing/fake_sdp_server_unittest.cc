@@ -21,7 +21,7 @@ namespace {
 l2cap::ChannelParameters kChannelParams;
 hci_spec::ConnectionHandle kConnectionHandle = 0x01;
 l2cap::CommandId kCommandId = 0x02;
-l2cap::PSM kPsm = l2cap::kSDP;
+l2cap::Psm kPsm = l2cap::kSDP;
 l2cap::ChannelId src_id = l2cap::kFirstDynamicChannelId;
 
 auto SdpErrorResponse(uint16_t t_id, sdp::ErrorCode code) {

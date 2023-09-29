@@ -39,7 +39,7 @@ void FakeL2cap::TriggerLEConnectionParameterUpdate(
   link_data.le_conn_param_cb(params);
 }
 
-void FakeL2cap::ExpectOutboundL2capChannel(hci_spec::ConnectionHandle handle, l2cap::PSM psm,
+void FakeL2cap::ExpectOutboundL2capChannel(hci_spec::ConnectionHandle handle, l2cap::Psm psm,
                                            l2cap::ChannelId id, l2cap::ChannelId remote_id,
                                            l2cap::ChannelParameters params) {
   LinkData& link_data = GetLinkData(handle);
@@ -50,7 +50,7 @@ void FakeL2cap::ExpectOutboundL2capChannel(hci_spec::ConnectionHandle handle, l2
   link_data.expected_outbound_conns[psm].push(chan_data);
 }
 
-bool FakeL2cap::TriggerInboundL2capChannel(hci_spec::ConnectionHandle handle, l2cap::PSM psm,
+bool FakeL2cap::TriggerInboundL2capChannel(hci_spec::ConnectionHandle handle, l2cap::Psm psm,
                                            l2cap::ChannelId id, l2cap::ChannelId remote_id,
                                            uint16_t max_tx_sdu_size) {
   LinkData& link_data = ConnectedLinkData(handle);
@@ -140,7 +140,7 @@ void FakeL2cap::RequestConnectionParameterUpdate(
   });
 }
 
-void FakeL2cap::OpenL2capChannel(hci_spec::ConnectionHandle handle, l2cap::PSM psm,
+void FakeL2cap::OpenL2capChannel(hci_spec::ConnectionHandle handle, l2cap::Psm psm,
                                  l2cap::ChannelParameters params, l2cap::ChannelCallback cb) {
   LinkData& link_data = ConnectedLinkData(handle);
   auto psm_it = link_data.expected_outbound_conns.find(psm);
@@ -182,14 +182,14 @@ void FakeL2cap::OpenL2capChannel(hci_spec::ConnectionHandle handle, l2cap::PSM p
       });
 }
 
-bool FakeL2cap::RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
+bool FakeL2cap::RegisterService(l2cap::Psm psm, l2cap::ChannelParameters params,
                                 l2cap::ChannelCallback channel_callback) {
   BT_DEBUG_ASSERT(registered_services_.count(psm) == 0);
   registered_services_.emplace(psm, ServiceInfo(params, std::move(channel_callback)));
   return true;
 }
 
-void FakeL2cap::UnregisterService(l2cap::PSM psm) { registered_services_.erase(psm); }
+void FakeL2cap::UnregisterService(l2cap::Psm psm) { registered_services_.erase(psm); }
 
 FakeL2cap::~FakeL2cap() {
   for (auto& link_it : links_) {

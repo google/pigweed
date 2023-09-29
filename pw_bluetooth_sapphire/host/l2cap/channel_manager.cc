@@ -51,11 +51,11 @@ class ChannelManagerImpl final : public ChannelManager {
   Channel::WeakPtr OpenFixedChannel(hci_spec::ConnectionHandle connection_handle,
                                     ChannelId channel_id) override;
 
-  void OpenL2capChannel(hci_spec::ConnectionHandle handle, PSM psm, ChannelParameters params,
+  void OpenL2capChannel(hci_spec::ConnectionHandle handle, Psm psm, ChannelParameters params,
                         ChannelCallback cb) override;
 
-  bool RegisterService(PSM psm, ChannelParameters params, ChannelCallback cb) override;
-  void UnregisterService(PSM psm) override;
+  bool RegisterService(Psm psm, ChannelParameters params, ChannelCallback cb) override;
+  void UnregisterService(Psm psm) override;
 
   void RequestConnectionParameterUpdate(
       hci_spec::ConnectionHandle handle, hci_spec::LEPreferredConnectionParameters params,
@@ -84,7 +84,7 @@ class ChannelManagerImpl final : public ChannelManager {
   // registrant. The callback may be called repeatedly to pass multiple channels for |psm|, but
   // should not be stored because the service may be unregistered at a later time. Calls for
   // unregistered services return null.
-  std::optional<ServiceInfo> QueryService(hci_spec::ConnectionHandle handle, PSM psm);
+  std::optional<ServiceInfo> QueryService(hci_spec::ConnectionHandle handle, Psm psm);
 
   pw::async::Dispatcher& pw_dispatcher_;
 
@@ -113,11 +113,11 @@ class ChannelManagerImpl final : public ChannelManager {
   struct ServiceData {
     void AttachInspect(inspect::Node& parent);
     ServiceInfo info;
-    PSM psm;
+    Psm psm;
     inspect::Node node;
     inspect::StringProperty psm_property;
   };
-  using ServiceMap = std::unordered_map<PSM, ServiceData>;
+  using ServiceMap = std::unordered_map<Psm, ServiceData>;
   ServiceMap services_;
   inspect::Node services_node_;
   inspect::Node node_;
@@ -237,7 +237,7 @@ Channel::WeakPtr ChannelManagerImpl::OpenFixedChannel(hci_spec::ConnectionHandle
   return iter->second->OpenFixedChannel(channel_id);
 }
 
-void ChannelManagerImpl::OpenL2capChannel(hci_spec::ConnectionHandle handle, PSM psm,
+void ChannelManagerImpl::OpenL2capChannel(hci_spec::ConnectionHandle handle, Psm psm,
                                           ChannelParameters params, ChannelCallback cb) {
   auto iter = ll_map_.find(handle);
   if (iter == ll_map_.end()) {
@@ -249,7 +249,7 @@ void ChannelManagerImpl::OpenL2capChannel(hci_spec::ConnectionHandle handle, PSM
   iter->second->OpenChannel(psm, params, std::move(cb));
 }
 
-bool ChannelManagerImpl::RegisterService(PSM psm, ChannelParameters params, ChannelCallback cb) {
+bool ChannelManagerImpl::RegisterService(Psm psm, ChannelParameters params, ChannelCallback cb) {
   // v5.0 Vol 3, Part A, Sec 4.2: PSMs shall be odd and the least significant
   // bit of the most significant byte shall be zero
   if (((psm & 0x0001) != 0x0001) || ((psm & 0x0100) != 0x0000)) {
@@ -268,7 +268,7 @@ bool ChannelManagerImpl::RegisterService(PSM psm, ChannelParameters params, Chan
   return true;
 }
 
-void ChannelManagerImpl::UnregisterService(PSM psm) { services_.erase(psm); }
+void ChannelManagerImpl::UnregisterService(Psm psm) { services_.erase(psm); }
 
 void ChannelManagerImpl::RequestConnectionParameterUpdate(
     hci_spec::ConnectionHandle handle, hci_spec::LEPreferredConnectionParameters params,
@@ -378,7 +378,7 @@ internal::LogicalLink* ChannelManagerImpl::RegisterInternal(
 }
 
 std::optional<ChannelManager::ServiceInfo> ChannelManagerImpl::QueryService(
-    hci_spec::ConnectionHandle handle, PSM psm) {
+    hci_spec::ConnectionHandle handle, Psm psm) {
   auto iter = services_.find(psm);
   if (iter == services_.end()) {
     return std::nullopt;

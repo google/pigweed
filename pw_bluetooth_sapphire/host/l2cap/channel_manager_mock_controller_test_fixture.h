@@ -85,7 +85,7 @@ class ChannelManagerMockControllerTest : public TestingBase {
                                                                       remote_cid, peer_params));
   }
 
-  void QueueInboundL2capConnection(hci_spec::ConnectionHandle handle, l2cap::PSM psm,
+  void QueueInboundL2capConnection(hci_spec::ConnectionHandle handle, l2cap::Psm psm,
                                    l2cap::ChannelId local_cid, l2cap::ChannelId remote_cid,
                                    l2cap::ChannelParameters local_params = kChannelParameters,
                                    l2cap::ChannelParameters peer_params = kChannelParameters) {
@@ -101,7 +101,7 @@ class ChannelManagerMockControllerTest : public TestingBase {
         l2cap::testing::AclConnectionReq(kPeerConnReqId, handle, remote_cid, psm));
   }
 
-  void QueueOutboundL2capConnection(hci_spec::ConnectionHandle handle, l2cap::PSM psm,
+  void QueueOutboundL2capConnection(hci_spec::ConnectionHandle handle, l2cap::Psm psm,
                                     l2cap::ChannelId local_cid, l2cap::ChannelId remote_cid,
                                     ChannelCallback open_cb,
                                     l2cap::ChannelParameters local_params = kChannelParameters,

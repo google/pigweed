@@ -48,19 +48,19 @@ BrEdrDynamicChannelRegistry::BrEdrDynamicChannelRegistry(SignalingChannelInterfa
   SendInformationRequests();
 }
 
-DynamicChannelPtr BrEdrDynamicChannelRegistry::MakeOutbound(PSM psm, ChannelId local_cid,
+DynamicChannelPtr BrEdrDynamicChannelRegistry::MakeOutbound(Psm psm, ChannelId local_cid,
                                                             ChannelParameters params) {
   return BrEdrDynamicChannel::MakeOutbound(this, sig_, psm, local_cid, params, PeerSupportsERTM());
 }
 
-DynamicChannelPtr BrEdrDynamicChannelRegistry::MakeInbound(PSM psm, ChannelId local_cid,
+DynamicChannelPtr BrEdrDynamicChannelRegistry::MakeInbound(Psm psm, ChannelId local_cid,
                                                            ChannelId remote_cid,
                                                            ChannelParameters params) {
   return BrEdrDynamicChannel::MakeInbound(this, sig_, psm, local_cid, remote_cid, params,
                                           PeerSupportsERTM());
 }
 
-void BrEdrDynamicChannelRegistry::OnRxConnReq(PSM psm, ChannelId remote_cid,
+void BrEdrDynamicChannelRegistry::OnRxConnReq(Psm psm, ChannelId remote_cid,
                                               BrEdrCommandHandler::ConnectionResponder* responder) {
   bt_log(TRACE, "l2cap-bredr", "Got Connection Request for PSM %#.4x from channel %#.4x", psm,
          remote_cid);
@@ -96,7 +96,7 @@ void BrEdrDynamicChannelRegistry::OnRxConnReq(PSM psm, ChannelId remote_cid,
   if (!dyn_chan) {
     bt_log(DEBUG, "l2cap-bredr",
            "Rejecting connection for unsupported PSM %#.4x from channel %#.4x", psm, remote_cid);
-    responder->Send(kInvalidChannelId, ConnectionResult::kPSMNotSupported,
+    responder->Send(kInvalidChannelId, ConnectionResult::kPsmNotSupported,
                     ConnectionStatus::kNoInfoAvailable);
     return;
   }
@@ -246,14 +246,14 @@ std::optional<bool> BrEdrDynamicChannelRegistry::PeerSupportsERTM() const {
 }
 
 BrEdrDynamicChannelPtr BrEdrDynamicChannel::MakeOutbound(
-    DynamicChannelRegistry* registry, SignalingChannelInterface* signaling_channel, PSM psm,
+    DynamicChannelRegistry* registry, SignalingChannelInterface* signaling_channel, Psm psm,
     ChannelId local_cid, ChannelParameters params, std::optional<bool> peer_supports_ertm) {
   return std::unique_ptr<BrEdrDynamicChannel>(new BrEdrDynamicChannel(
       registry, signaling_channel, psm, local_cid, kInvalidChannelId, params, peer_supports_ertm));
 }
 
 BrEdrDynamicChannelPtr BrEdrDynamicChannel::MakeInbound(
-    DynamicChannelRegistry* registry, SignalingChannelInterface* signaling_channel, PSM psm,
+    DynamicChannelRegistry* registry, SignalingChannelInterface* signaling_channel, Psm psm,
     ChannelId local_cid, ChannelId remote_cid, ChannelParameters params,
     std::optional<bool> peer_supports_ertm) {
   auto channel = std::unique_ptr<BrEdrDynamicChannel>(new BrEdrDynamicChannel(
@@ -588,7 +588,7 @@ void BrEdrDynamicChannel::CompleteInboundConnection(
 }
 
 BrEdrDynamicChannel::BrEdrDynamicChannel(DynamicChannelRegistry* registry,
-                                         SignalingChannelInterface* signaling_channel, PSM psm,
+                                         SignalingChannelInterface* signaling_channel, Psm psm,
                                          ChannelId local_cid, ChannelId remote_cid,
                                          ChannelParameters params,
                                          std::optional<bool> peer_supports_ertm)

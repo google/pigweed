@@ -52,7 +52,7 @@ class SocketFactoryL2capIntegrationTest : public ::gtest::TestLoopFixture, publi
 };
 
 TEST_F(SocketFactoryL2capIntegrationTest, InboundL2capSocket) {
-  constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
+  constexpr l2cap::Psm kPsm = l2cap::kAVDTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
   constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
@@ -64,10 +64,10 @@ TEST_F(SocketFactoryL2capIntegrationTest, InboundL2capSocket) {
     EXPECT_EQ(kLinkHandle, cb_chan->link_handle());
     channel = std::move(cb_chan);
   };
-  chanmgr()->RegisterService(kPSM, kChannelParameters, std::move(chan_cb));
+  chanmgr()->RegisterService(kPsm, kChannelParameters, std::move(chan_cb));
   RunLoopUntilIdle();
 
-  QueueInboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId);
+  QueueInboundL2capConnection(kLinkHandle, kPsm, kLocalId, kRemoteId);
 
   RunLoopUntilIdle();
   ASSERT_TRUE(channel.is_alive());
@@ -151,7 +151,7 @@ TEST_F(SocketFactoryL2capIntegrationTest, InboundL2capSocket) {
 }
 
 TEST_F(SocketFactoryL2capIntegrationTest, OutboundL2capSocket) {
-  constexpr l2cap::PSM kPSM = l2cap::kAVCTP;
+  constexpr l2cap::Psm kPsm = l2cap::kAVCTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
   constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
@@ -166,7 +166,7 @@ TEST_F(SocketFactoryL2capIntegrationTest, OutboundL2capSocket) {
     EXPECT_EQ(kLinkHandle, cb_chan->link_handle());
     chan = std::move(cb_chan);
   };
-  QueueOutboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId, std::move(chan_cb));
+  QueueOutboundL2capConnection(kLinkHandle, kPsm, kLocalId, kRemoteId, std::move(chan_cb));
 
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());

@@ -85,7 +85,7 @@ struct ChannelInfo {
   ChannelInfo() = default;
 
   static ChannelInfo MakeBasicMode(
-      uint16_t max_rx_sdu_size, uint16_t max_tx_sdu_size, std::optional<PSM> psm = std::nullopt,
+      uint16_t max_rx_sdu_size, uint16_t max_tx_sdu_size, std::optional<Psm> psm = std::nullopt,
       std::optional<pw::chrono::SystemClock::duration> flush_timeout = std::nullopt) {
     return ChannelInfo(ChannelMode::kBasic, max_rx_sdu_size, max_tx_sdu_size, 0, 0, 0, psm,
                        flush_timeout);
@@ -94,7 +94,7 @@ struct ChannelInfo {
   static ChannelInfo MakeEnhancedRetransmissionMode(
       uint16_t max_rx_sdu_size, uint16_t max_tx_sdu_size, uint8_t n_frames_in_tx_window,
       uint8_t max_transmissions, uint16_t max_tx_pdu_payload_size,
-      std::optional<PSM> psm = std::nullopt,
+      std::optional<Psm> psm = std::nullopt,
       std::optional<pw::chrono::SystemClock::duration> flush_timeout = std::nullopt) {
     return ChannelInfo(ChannelMode::kEnhancedRetransmission, max_rx_sdu_size, max_tx_sdu_size,
                        n_frames_in_tx_window, max_transmissions, max_tx_pdu_payload_size, psm,
@@ -103,7 +103,7 @@ struct ChannelInfo {
 
   ChannelInfo(ChannelMode mode, uint16_t max_rx_sdu_size, uint16_t max_tx_sdu_size,
               uint8_t n_frames_in_tx_window, uint8_t max_transmissions,
-              uint16_t max_tx_pdu_payload_size, std::optional<PSM> psm = std::nullopt,
+              uint16_t max_tx_pdu_payload_size, std::optional<Psm> psm = std::nullopt,
               std::optional<pw::chrono::SystemClock::duration> flush_timeout = std::nullopt)
       : mode(mode),
         max_rx_sdu_size(max_rx_sdu_size),
@@ -125,7 +125,7 @@ struct ChannelInfo {
   uint16_t max_tx_pdu_payload_size;
 
   // PSM of the service the channel is used for.
-  std::optional<PSM> psm;
+  std::optional<Psm> psm;
 
   // If present, the channel's packets will be marked as flushable. The value will be used to
   // configure the link's automatic flush timeout.

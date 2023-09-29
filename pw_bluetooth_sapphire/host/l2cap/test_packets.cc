@@ -191,7 +191,7 @@ DynamicByteBuffer AclConfigRsp(l2cap::CommandId id, hci_spec::ConnectionHandle l
 }
 
 DynamicByteBuffer AclConnectionReq(l2cap::CommandId id, hci_spec::ConnectionHandle link_handle,
-                                   l2cap::ChannelId src_id, l2cap::PSM psm) {
+                                   l2cap::ChannelId src_id, l2cap::Psm psm) {
   return DynamicByteBuffer(StaticByteBuffer(
       // ACL data header (handle: |link_handle|, length: 12 bytes)
       LowerBits(link_handle), UpperBits(link_handle), 0x0c, 0x00,

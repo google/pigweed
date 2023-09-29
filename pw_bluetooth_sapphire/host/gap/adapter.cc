@@ -183,7 +183,7 @@ class AdapterImpl final : public Adapter {
       return adapter_->bredr_connection_manager_->Disconnect(peer_id, reason);
     }
 
-    void OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
+    void OpenL2capChannel(PeerId peer_id, l2cap::Psm psm,
                           BrEdrSecurityRequirements security_requirements,
                           l2cap::ChannelParameters params, l2cap::ChannelCallback cb) override {
       adapter_->metrics_.bredr.open_l2cap_channel_requests.Add();

@@ -38,7 +38,7 @@ class DynamicChannelRegistry : public WeakSelf<DynamicChannelRegistry> {
   // Used to query the upper layers for the presence of a service that is
   // accepting channels. If the service exists, it should return a callback
   // that accepts the inbound dynamic channel opened.
-  using ServiceRequestCallback = fit::function<std::optional<ServiceInfo>(PSM psm)>;
+  using ServiceRequestCallback = fit::function<std::optional<ServiceInfo>(Psm psm)>;
 
   virtual ~DynamicChannelRegistry() = default;
 
@@ -47,7 +47,7 @@ class DynamicChannelRegistry : public WeakSelf<DynamicChannelRegistry> {
   // transfer, with a nullptr if unsuccessful. The DynamicChannel passed will
   // contain the local and remote channel IDs to be used for user data transfer
   // over the new channel. Preferred channel parameters can be set in |params|.
-  void OpenOutbound(PSM psm, ChannelParameters params, DynamicChannelCallback open_cb);
+  void OpenOutbound(Psm psm, ChannelParameters params, DynamicChannelCallback open_cb);
 
   // Disconnect and remove the channel identified by |local_cid|. After this call completes,
   // incoming PDUs with |local_cid| should be discarded as in error or considered to belong to a
@@ -81,18 +81,18 @@ class DynamicChannelRegistry : public WeakSelf<DynamicChannelRegistry> {
 
   // Factory method for a DynamicChannel implementation that represents an
   // outbound channel with an endpoint on this device identified by |local_cid|.
-  virtual DynamicChannelPtr MakeOutbound(PSM psm, ChannelId local_cid,
+  virtual DynamicChannelPtr MakeOutbound(Psm psm, ChannelId local_cid,
                                          ChannelParameters params) = 0;
 
   // Factory method for a DynamicChannel implementation that represents an
   // inbound channel from a remote endpoint identified by |remote_cid| to an
   // endpoint on this device identified by |local_cid|.
-  virtual DynamicChannelPtr MakeInbound(PSM psm, ChannelId local_cid, ChannelId remote_cid,
+  virtual DynamicChannelPtr MakeInbound(Psm psm, ChannelId local_cid, ChannelId remote_cid,
                                         ChannelParameters params) = 0;
 
   // Open an inbound channel for a service |psm| from the remote endpoint
   // identified by |remote_cid| to the local endpoint by |local_cid|.
-  DynamicChannel* RequestService(PSM psm, ChannelId local_cid, ChannelId remote_cid);
+  DynamicChannel* RequestService(Psm psm, ChannelId local_cid, ChannelId remote_cid);
 
   // In the range starting at kFirstDynamicChannelId with |max_num_channels_|, pick a dynamic
   // channel ID that is available on this link.

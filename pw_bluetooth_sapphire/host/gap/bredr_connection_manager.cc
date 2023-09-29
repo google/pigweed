@@ -278,7 +278,7 @@ void BrEdrConnectionManager::Pair(PeerId peer_id, BrEdrSecurityRequirements secu
   connection->pairing_state().InitiatePairing(security, std::move(pairing_callback));
 }
 
-void BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
+void BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::Psm psm,
                                               BrEdrSecurityRequirements security_reqs,
                                               l2cap::ChannelParameters params,
                                               l2cap::ChannelCallback cb) {

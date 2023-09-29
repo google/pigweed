@@ -47,7 +47,7 @@ class LogicalLink : public hci::AclDataChannel::ConnectionInterface {
   // |psm| on a given connection identified by |handle|, or nullptr if there is no service
   // registered for that PSM.
   using QueryServiceCallback = fit::function<std::optional<ChannelManager::ServiceInfo>(
-      hci_spec::ConnectionHandle handle, PSM psm)>;
+      hci_spec::ConnectionHandle handle, Psm psm)>;
 
   // Constructs a new LogicalLink and initializes the signaling fixed channel.
   // |max_payload_size| shall be the maximum "host to controller" data packet payload size for the
@@ -84,7 +84,7 @@ class LogicalLink : public hci::AclDataChannel::ConnectionInterface {
   // returns a channel asynchronously via |callback|.
   //
   // The link MUST not be closed when this is called.
-  void OpenChannel(PSM psm, ChannelParameters params, ChannelCallback callback);
+  void OpenChannel(Psm psm, ChannelParameters params, ChannelCallback callback);
 
   // Takes ownership of |packet| for PDU processing and routes it to its target
   // channel. This must be called on this object's creation thread.
@@ -174,7 +174,7 @@ class LogicalLink : public hci::AclDataChannel::ConnectionInterface {
   // return nullptr.
   //
   // This MUST not be called on a closed link.
-  std::optional<DynamicChannelRegistry::ServiceInfo> OnServiceRequest(PSM psm);
+  std::optional<DynamicChannelRegistry::ServiceInfo> OnServiceRequest(Psm psm);
 
   // Called by |dynamic_registry_| when the peer requests the closure of a
   // dynamic channel using a signaling PDU.

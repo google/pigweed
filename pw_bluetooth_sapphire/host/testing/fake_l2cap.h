@@ -84,7 +84,7 @@ class FakeL2cap final {
   // operates over a Protocol Service Multiplexer |psm|. When
   // RegisterDynamicChannelWithPsm() will call this FakeDynamicChannelCallback
   // if the channel is open.
-  void RegisterService(l2cap::PSM psm, FakeDynamicChannelCallback callback);
+  void RegisterService(l2cap::Psm psm, FakeDynamicChannelCallback callback);
 
   // The following methods are generally for use by the FakeSignalingServer when
   // creating and managing individual FakeDynamicChannel instances.
@@ -99,7 +99,7 @@ class FakeL2cap final {
   // Return status of if the registration was successful.
   // This should only be used for registering dynamic channels - use
   // RegisterHandler for fixed channel management.
-  bool RegisterDynamicChannel(hci_spec::ConnectionHandle conn, l2cap::PSM psm,
+  bool RegisterDynamicChannel(hci_spec::ConnectionHandle conn, l2cap::Psm psm,
                               l2cap::ChannelId local_cid, l2cap::ChannelId remote_cid);
 
   // Call the DynamicChannelCallback associated with the service operating
@@ -113,7 +113,7 @@ class FakeL2cap final {
 
   // Return true if there is a FakeDynamicChannelCallback registered for
   // Protocol Service Multiplexer |psm|, return false otherwise.
-  bool ServiceRegisteredForPsm(l2cap::PSM psm);
+  bool ServiceRegisteredForPsm(l2cap::Psm psm);
 
   // Methods to observe and manipulate L2CAP channel states:
 
@@ -172,7 +172,7 @@ class FakeL2cap final {
 
   // Map of individual channel configuration callbacks associated with
   // individual services
-  std::unordered_map<l2cap::PSM, FakeDynamicChannelCallback> registered_services_;
+  std::unordered_map<l2cap::Psm, FakeDynamicChannelCallback> registered_services_;
 
   // Function provided by the device that instantiates the FakeL2cap instance
   // that adds PDU header information and actually sends the packet.

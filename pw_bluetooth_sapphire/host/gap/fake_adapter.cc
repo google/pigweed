@@ -36,7 +36,7 @@ FakeAdapter::FakeBrEdr::~FakeBrEdr() {
   }
 }
 
-void FakeAdapter::FakeBrEdr::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
+void FakeAdapter::FakeBrEdr::OpenL2capChannel(PeerId peer_id, l2cap::Psm psm,
                                               BrEdrSecurityRequirements security_requirements,
                                               l2cap::ChannelParameters params,
                                               l2cap::ChannelCallback cb) {

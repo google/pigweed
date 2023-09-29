@@ -169,7 +169,7 @@ class FakeAdapter final : public Adapter {
 
     bool Disconnect(PeerId peer_id, DisconnectReason reason) override { return false; }
 
-    void OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
+    void OpenL2capChannel(PeerId peer_id, l2cap::Psm psm,
                           BrEdrSecurityRequirements security_requirements,
                           l2cap::ChannelParameters params, l2cap::ChannelCallback cb) override;
 

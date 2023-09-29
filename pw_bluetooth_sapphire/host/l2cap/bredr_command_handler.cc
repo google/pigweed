@@ -217,7 +217,7 @@ void BrEdrCommandHandler::ServeConnectionRequest(ConnectionRequestCallback cb) {
     }
 
     const auto& conn_req = request_payload.To<ConnectionRequestPayload>();
-    const PSM psm = letoh16(conn_req.psm);
+    const Psm psm = letoh16(conn_req.psm);
     const ChannelId remote_cid = letoh16(conn_req.src_cid);
 
     ConnectionResponder responder(sig_responder, remote_cid);
@@ -227,7 +227,7 @@ void BrEdrCommandHandler::ServeConnectionRequest(ConnectionRequestCallback cb) {
     if (((psm & 0x0001) != 0x0001) || ((psm & 0x0100) != 0x0000)) {
       bt_log(DEBUG, "l2cap-bredr", "Rejecting connection for invalid PSM %#.4x from channel %#.4x",
              psm, remote_cid);
-      responder.Send(kInvalidChannelId, ConnectionResult::kPSMNotSupported,
+      responder.Send(kInvalidChannelId, ConnectionResult::kPsmNotSupported,
                      ConnectionStatus::kNoInfoAvailable);
       return;
     }

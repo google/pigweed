@@ -27,14 +27,14 @@ void FakeL2cap::RegisterHandler(l2cap::ChannelId cid, ChannelReceiveCallback cal
   callbacks_.insert_or_assign(cid, std::move(callback));
 }
 
-void FakeL2cap::RegisterService(l2cap::PSM psm, FakeDynamicChannelCallback callback) {
+void FakeL2cap::RegisterService(l2cap::Psm psm, FakeDynamicChannelCallback callback) {
   if (callbacks_.find(psm) != callbacks_.end()) {
     bt_log(WARN, "fake-hci", "Overwriting previous handler for PSM %.4hu", psm);
   }
   registered_services_.insert_or_assign(psm, std::move(callback));
 }
 
-bool FakeL2cap::RegisterDynamicChannel(hci_spec::ConnectionHandle conn, l2cap::PSM psm,
+bool FakeL2cap::RegisterDynamicChannel(hci_spec::ConnectionHandle conn, l2cap::Psm psm,
                                        l2cap::ChannelId local_cid, l2cap::ChannelId remote_cid) {
   BT_ASSERT(local_cid >= l2cap::kFirstDynamicChannelId);
   auto channel_map = dynamic_channels_.find(conn);
@@ -83,7 +83,7 @@ bool FakeL2cap::RegisterDynamicChannelWithPsm(hci_spec::ConnectionHandle conn,
   return false;
 }
 
-bool FakeL2cap::ServiceRegisteredForPsm(l2cap::PSM psm) {
+bool FakeL2cap::ServiceRegisteredForPsm(l2cap::Psm psm) {
   auto iter = registered_services_.find(psm);
   if (iter == registered_services_.end()) {
     return false;

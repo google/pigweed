@@ -152,7 +152,7 @@ Channel::WeakPtr LogicalLink::OpenFixedChannel(ChannelId id) {
   return channels_[id]->GetWeakPtr();
 }
 
-void LogicalLink::OpenChannel(PSM psm, ChannelParameters params, ChannelCallback callback) {
+void LogicalLink::OpenChannel(Psm psm, ChannelParameters params, ChannelCallback callback) {
   BT_DEBUG_ASSERT(!closed_);
 
   // TODO(fxbug.dev/968): Implement channels for LE credit-based connections
@@ -437,7 +437,7 @@ void LogicalLink::Close() {
   dynamic_registry_.reset();
 }
 
-std::optional<DynamicChannelRegistry::ServiceInfo> LogicalLink::OnServiceRequest(PSM psm) {
+std::optional<DynamicChannelRegistry::ServiceInfo> LogicalLink::OnServiceRequest(Psm psm) {
   BT_DEBUG_ASSERT(!closed_);
 
   // Query upper layer for a service handler attached to this PSM.

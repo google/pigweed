@@ -3427,7 +3427,7 @@ TEST_F(BrEdrConnectionManagerTest, PairTwice) {
 }
 
 TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelCreatesChannelWithChannelParameters) {
-  constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
+  constexpr l2cap::Psm kPsm = l2cap::kAVDTP;
   constexpr l2cap::ChannelId kLocalId = l2cap::kFirstDynamicChannelId;
   l2cap::ChannelParameters params;
   params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
@@ -3453,7 +3453,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelCreatesChannelWithChannelPara
   QueueSuccessfulPairing();
   RunUntilIdle();
 
-  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, kPSM, kLocalId, 0x41, params);
+  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, kPsm, kLocalId, 0x41, params);
 
   std::optional<l2cap::ChannelInfo> chan_info;
   size_t sock_cb_count = 0;
@@ -3462,7 +3462,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelCreatesChannelWithChannelPara
     ASSERT_TRUE(chan.is_alive());
     chan_info = chan->info();
   };
-  connmgr()->OpenL2capChannel(peer->identifier(), kPSM, kNoSecurityRequirements, params, sock_cb);
+  connmgr()->OpenL2capChannel(peer->identifier(), kPsm, kNoSecurityRequirements, params, sock_cb);
 
   RunUntilIdle();
   EXPECT_EQ(1u, sock_cb_count);
@@ -3538,12 +3538,12 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelUpgradesLinkKey) {
   // Pairing caused by missing link key.
   QueueSuccessfulUnauthenticatedPairing();
 
-  constexpr auto kPSM0 = l2cap::kHIDControl;
+  constexpr auto kPsm0 = l2cap::kHIDControl;
   constexpr l2cap::ChannelId kLocalId0 = l2cap::kFirstDynamicChannelId;
   constexpr l2cap::ChannelId kRemoteId0 = 0x41;
-  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, kPSM0, kLocalId0, kRemoteId0,
+  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, kPsm0, kLocalId0, kRemoteId0,
                                       l2cap::ChannelParameters());
-  connmgr()->OpenL2capChannel(peer->identifier(), kPSM0, kNoSecurityRequirements,
+  connmgr()->OpenL2capChannel(peer->identifier(), kPsm0, kNoSecurityRequirements,
                               l2cap::ChannelParameters(), sock_cb);
 
   RunUntilIdle();
@@ -3560,12 +3560,12 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelUpgradesLinkKey) {
   // Pairing caused by insufficient link key.
   QueueSuccessfulPairing();
 
-  constexpr auto kPSM1 = l2cap::kHIDInteerup;
+  constexpr auto kPsm1 = l2cap::kHIDInteerup;
   constexpr l2cap::ChannelId kLocalId1 = kLocalId0 + 1;
   constexpr l2cap::ChannelId kRemoteId1 = kRemoteId0 + 1;
-  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, kPSM1, kLocalId1, kRemoteId1,
+  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, kPsm1, kLocalId1, kRemoteId1,
                                       l2cap::ChannelParameters());
-  connmgr()->OpenL2capChannel(peer->identifier(), kPSM1, kAuthSecurityRequirements,
+  connmgr()->OpenL2capChannel(peer->identifier(), kPsm1, kAuthSecurityRequirements,
                               l2cap::ChannelParameters(), sock_cb);
 
   RunUntilIdle();
@@ -3608,12 +3608,12 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelUpgradeLinkKeyFails) {
   // Initial pairing.
   QueueSuccessfulUnauthenticatedPairing();
 
-  constexpr auto kPSM0 = l2cap::kHIDControl;
+  constexpr auto kPsm0 = l2cap::kHIDControl;
   constexpr l2cap::ChannelId kLocalId = l2cap::kFirstDynamicChannelId;
   constexpr l2cap::ChannelId kRemoteId = 0x41;
-  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, kPSM0, kLocalId, kRemoteId,
+  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, kPsm0, kLocalId, kRemoteId,
                                       l2cap::ChannelParameters());
-  connmgr()->OpenL2capChannel(peer->identifier(), kPSM0, kNoSecurityRequirements,
+  connmgr()->OpenL2capChannel(peer->identifier(), kPsm0, kNoSecurityRequirements,
                               l2cap::ChannelParameters(), sock_cb);
 
   RunUntilIdle();
@@ -3622,9 +3622,9 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelUpgradeLinkKeyFails) {
   // Pairing caused by insufficient link key.
   QueueSuccessfulUnauthenticatedPairing();
 
-  constexpr auto kPSM1 = l2cap::kHIDInteerup;
+  constexpr auto kPsm1 = l2cap::kHIDInteerup;
 
-  connmgr()->OpenL2capChannel(peer->identifier(), kPSM1, kAuthSecurityRequirements,
+  connmgr()->OpenL2capChannel(peer->identifier(), kPsm1, kAuthSecurityRequirements,
                               l2cap::ChannelParameters(), sock_cb);
 
   RunUntilIdle();

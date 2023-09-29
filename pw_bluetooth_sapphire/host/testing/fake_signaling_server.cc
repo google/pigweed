@@ -64,7 +64,7 @@ void FakeSignalingServer::ProcessConnectionRequest(hci_spec::ConnectionHandle co
                                                    l2cap::CommandId id,
                                                    const ByteBuffer& connection_req) {
   const auto& conn_req = connection_req.To<l2cap::ConnectionRequestPayload>();
-  const l2cap::PSM psm = letoh16(conn_req.psm);
+  const l2cap::Psm psm = letoh16(conn_req.psm);
   const l2cap::ChannelId remote_cid = letoh16(conn_req.src_cid);
 
   // Validate the remote channel ID prior to assigning it a local ID.
@@ -89,7 +89,7 @@ void FakeSignalingServer::ProcessConnectionRequest(hci_spec::ConnectionHandle co
   if (fake_l2cap_->ServiceRegisteredForPsm(psm) == false) {
     bt_log(ERROR, "l2cap-bredr", "No service registered for PSM %#.4x", psm);
     SendConnectionResponse(conn, id, l2cap::kInvalidChannelId, remote_cid,
-                           l2cap::ConnectionResult::kPSMNotSupported,
+                           l2cap::ConnectionResult::kPsmNotSupported,
                            l2cap::ConnectionStatus::kNoInfoAvailable);
     return;
   }

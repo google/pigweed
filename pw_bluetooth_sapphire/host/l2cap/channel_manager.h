@@ -136,7 +136,7 @@ class ChannelManager {
   //
   // |cb| will be called with the channel created to the remote, or nullptr if the channel creation
   // resulted in an error.
-  virtual void OpenL2capChannel(hci_spec::ConnectionHandle handle, l2cap::PSM psm,
+  virtual void OpenL2capChannel(hci_spec::ConnectionHandle handle, l2cap::Psm psm,
                                 l2cap::ChannelParameters params, l2cap::ChannelCallback cb) = 0;
 
   // Registers a handler for peer-initiated dynamic channel requests that have the Protocol/Service
@@ -152,13 +152,13 @@ class ChannelManager {
   // Inbound connection requests with a PSM that has no registered handler will be rejected.
   //
   // TODO(fxbug.dev/99390): Dynamic PSMs may need their routing space (ACL or LE) identified
-  virtual bool RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
+  virtual bool RegisterService(l2cap::Psm psm, l2cap::ChannelParameters params,
                                l2cap::ChannelCallback callback) = 0;
 
   // Removes the handler for inbound channel requests for the previously- registered service
   // identified by |psm|. This only prevents new inbound channels from being opened but does not
   // close already-open channels.
-  virtual void UnregisterService(l2cap::PSM psm) = 0;
+  virtual void UnregisterService(l2cap::Psm psm) = 0;
 
   // Returns a pointer to the internal LogicalLink with the corresponding link |handle|, or nullptr
   // if none exists.

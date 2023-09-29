@@ -718,7 +718,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqUnknownType) {
 }
 
 TEST_F(BrEdrCommandHandlerTest, InboundConnReqRspPending) {
-  BrEdrCommandHandler::ConnectionRequestCallback cb = [](PSM psm, ChannelId remote_cid,
+  BrEdrCommandHandler::ConnectionRequestCallback cb = [](Psm psm, ChannelId remote_cid,
                                                          auto responder) {
     EXPECT_EQ(kPsm, psm);
     EXPECT_EQ(kRemoteCId, remote_cid);
@@ -759,7 +759,7 @@ TEST_F(BrEdrCommandHandlerTest, InboundConnReqBadPsm) {
   // Request callback shouldn't even be called for an invalid PSM.
   bool req_cb_called = false;
   BrEdrCommandHandler::ConnectionRequestCallback cb =
-      [&req_cb_called](PSM psm, ChannelId remote_cid, auto responder) { req_cb_called = true; };
+      [&req_cb_called](Psm psm, ChannelId remote_cid, auto responder) { req_cb_called = true; };
   cmd_handler()->ServeConnectionRequest(std::move(cb));
 
   // Connection Request payload
@@ -779,8 +779,8 @@ TEST_F(BrEdrCommandHandlerTest, InboundConnReqBadPsm) {
       LowerBits(kRemoteCId), UpperBits(kRemoteCId),
 
       // Connection Result
-      LowerBits(static_cast<uint16_t>(ConnectionResult::kPSMNotSupported)),
-      UpperBits(static_cast<uint16_t>(ConnectionResult::kPSMNotSupported)),
+      LowerBits(static_cast<uint16_t>(ConnectionResult::kPsmNotSupported)),
+      UpperBits(static_cast<uint16_t>(ConnectionResult::kPsmNotSupported)),
 
       // Connection Status
       LowerBits(static_cast<uint16_t>(ConnectionStatus::kNoInfoAvailable)),
@@ -794,7 +794,7 @@ TEST_F(BrEdrCommandHandlerTest, InboundConnReqNonDynamicSrcCId) {
   // Request callback shouldn't even be called for an invalid Source Channel ID.
   bool req_cb_called = false;
   BrEdrCommandHandler::ConnectionRequestCallback cb =
-      [&req_cb_called](PSM psm, ChannelId remote_cid, auto responder) { req_cb_called = true; };
+      [&req_cb_called](Psm psm, ChannelId remote_cid, auto responder) { req_cb_called = true; };
   cmd_handler()->ServeConnectionRequest(std::move(cb));
 
   // Connection Request payload

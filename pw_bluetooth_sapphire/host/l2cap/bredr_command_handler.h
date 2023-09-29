@@ -138,7 +138,7 @@ class BrEdrCommandHandler final : public CommandHandler {
   };
 
   using ConnectionRequestCallback =
-      fit::function<void(PSM psm, ChannelId remote_cid, ConnectionResponder* responder)>;
+      fit::function<void(Psm psm, ChannelId remote_cid, ConnectionResponder* responder)>;
   using ConfigurationRequestCallback =
       fit::function<void(ChannelId local_cid, uint16_t flags, ChannelConfiguration config,
                          ConfigurationResponder* responder)>;

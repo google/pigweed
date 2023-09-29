@@ -17,7 +17,7 @@ namespace {
 
 hci_spec::ConnectionHandle kConnectionHandle = 0x01;
 l2cap::CommandId kCommandId = 0x02;
-l2cap::PSM kPsm = l2cap::kSDP;
+l2cap::Psm kPsm = l2cap::kSDP;
 
 TEST(FakeDynamicChannelTest, ConnectOpenDisconnectChannel) {
   std::unique_ptr<ByteBuffer> received_packet;
@@ -168,7 +168,7 @@ TEST(FakeDynamicChannelTest, FailToRegisterChannelWithoutRegisteredService) {
   // As this is an isolated test case, assume that src_id and dst_id are the same.
   auto expected_acl_response = l2cap::testing::AclConnectionRsp(
       kCommandId, kConnectionHandle, src_id, l2cap::kInvalidChannelId,
-      l2cap::ConnectionResult::kPSMNotSupported);
+      l2cap::ConnectionResult::kPsmNotSupported);
   auto expected_response =
       expected_acl_response.view(sizeof(hci_spec::ACLDataHeader) + sizeof(l2cap::CommandHeader));
   EXPECT_TRUE(ContainersEqual(expected_response, *received_packet));

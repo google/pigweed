@@ -49,7 +49,7 @@ const StaticByteBuffer kConnReq(
     // Source CID
     LowerBits(kLocalCId), UpperBits(kLocalCId));
 
-auto MakeConnectionRequest(ChannelId src_id, PSM psm) {
+auto MakeConnectionRequest(ChannelId src_id, Psm psm) {
   return StaticByteBuffer(
       // PSM
       LowerBits(psm), UpperBits(psm),
@@ -509,7 +509,7 @@ class BrEdrDynamicChannelTest : public pw::async::test::FakeDispatcherFixture {
   }
 
   // Default to rejecting all service requests if no test callback is set.
-  std::optional<DynamicChannelRegistry::ServiceInfo> OnServiceRequest(PSM psm) {
+  std::optional<DynamicChannelRegistry::ServiceInfo> OnServiceRequest(Psm psm) {
     if (service_request_cb_) {
       return service_request_cb_(psm);
     }
@@ -1328,7 +1328,7 @@ TEST_F(BrEdrDynamicChannelTest, InboundConnectionOk) {
   int service_request_cb_count = 0;
   auto service_request_cb =
       [&service_request_cb_count, open_cb = std::move(open_cb)](
-          PSM psm) mutable -> std::optional<DynamicChannelRegistry::ServiceInfo> {
+          Psm psm) mutable -> std::optional<DynamicChannelRegistry::ServiceInfo> {
     service_request_cb_count++;
     EXPECT_EQ(kPsm, psm);
     if (psm == kPsm) {
@@ -1370,7 +1370,7 @@ TEST_F(BrEdrDynamicChannelTest, InboundConnectionRemoteDisconnectWhileConfigurin
   int service_request_cb_count = 0;
   auto service_request_cb =
       [&service_request_cb_count, open_cb = std::move(open_cb)](
-          PSM psm) mutable -> std::optional<DynamicChannelRegistry::ServiceInfo> {
+          Psm psm) mutable -> std::optional<DynamicChannelRegistry::ServiceInfo> {
     service_request_cb_count++;
     EXPECT_EQ(kPsm, psm);
     if (psm == kPsm) {
@@ -1403,7 +1403,7 @@ TEST_F(BrEdrDynamicChannelTest, InboundConnectionRemoteDisconnectWhileConfigurin
 }
 
 TEST_F(BrEdrDynamicChannelTest, InboundConnectionInvalidPsm) {
-  auto service_request_cb = [](PSM psm) -> std::optional<DynamicChannelRegistry::ServiceInfo> {
+  auto service_request_cb = [](Psm psm) -> std::optional<DynamicChannelRegistry::ServiceInfo> {
     // Write user code that accepts the invalid PSM, but control flow may not
     // reach here.
     EXPECT_EQ(kInvalidPsm, psm);
@@ -1424,7 +1424,7 @@ TEST_F(BrEdrDynamicChannelTest, InboundConnectionInvalidPsm) {
 TEST_F(BrEdrDynamicChannelTest, InboundConnectionUnsupportedPsm) {
   int service_request_cb_count = 0;
   auto service_request_cb =
-      [&service_request_cb_count](PSM psm) -> std::optional<DynamicChannelRegistry::ServiceInfo> {
+      [&service_request_cb_count](Psm psm) -> std::optional<DynamicChannelRegistry::ServiceInfo> {
     service_request_cb_count++;
     EXPECT_EQ(kPsm, psm);
 
@@ -1441,7 +1441,7 @@ TEST_F(BrEdrDynamicChannelTest, InboundConnectionUnsupportedPsm) {
 }
 
 TEST_F(BrEdrDynamicChannelTest, InboundConnectionInvalidSrcCId) {
-  auto service_request_cb = [](PSM psm) -> std::optional<DynamicChannelRegistry::ServiceInfo> {
+  auto service_request_cb = [](Psm psm) -> std::optional<DynamicChannelRegistry::ServiceInfo> {
     // Control flow may not reach here.
     EXPECT_EQ(kPsm, psm);
     if (psm == kPsm) {
