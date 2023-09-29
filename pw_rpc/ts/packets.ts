@@ -28,9 +28,8 @@ export function decode(data: Uint8Array): RpcPacket {
   return RpcPacket.deserializeBinary(data);
 }
 
-export function decodePayload(payload: Uint8Array, payloadType: any): Message {
-  const message = payloadType.deserializeBinary(payload);
-  return message;
+export function decodePayload(payload: Uint8Array, payloadType: any): any {
+  return payloadType['deserializeBinary'](payload);
 }
 
 export function forServer(packet: RpcPacket): boolean {
@@ -56,7 +55,8 @@ export function encodeClientStream(ids: idSet, message: Message): Uint8Array {
   streamPacket.setChannelId(ids[0]);
   streamPacket.setServiceId(ids[1]);
   streamPacket.setMethodId(ids[2]);
-  streamPacket.setPayload((message as any).serializeBinary());
+  const msgSerialized = (message as any)['serializeBinary']();
+  streamPacket.setPayload(msgSerialized);
   return streamPacket.serializeBinary();
 }
 
@@ -72,7 +72,7 @@ export function encodeClientStreamEnd(ids: idSet): Uint8Array {
 export function encodeRequest(ids: idSet, request?: Message): Uint8Array {
   const payload: Uint8Array =
     typeof request !== 'undefined'
-      ? (request as any).serializeBinary()
+      ? (request as any)['serializeBinary']()
       : new Uint8Array(0);
 
   const packet = new RpcPacket();
@@ -90,7 +90,8 @@ export function encodeResponse(ids: idSet, response: Message): Uint8Array {
   packet.setChannelId(ids[0]);
   packet.setServiceId(ids[1]);
   packet.setMethodId(ids[2]);
-  packet.setPayload((response as any).serializeBinary());
+  const msgSerialized = (response as any)['serializeBinary']();
+  packet.setPayload(msgSerialized);
   return packet.serializeBinary();
 }
 

@@ -140,7 +140,7 @@ export abstract class Transfer {
 
   /** Sends the initial chunk of the transfer. */
   begin(): void {
-    this.sendChunk(this.initialChunk);
+    this.sendChunk(this.initialChunk as any);
     this.responseTimer?.start();
   }
 
@@ -245,12 +245,12 @@ export class ReadTransfer extends Transfer {
     this.windowEndOffset = maxBytesToReceive;
   }
 
-  protected get initialChunk(): Chunk {
+  protected get initialChunk(): any {
     return this.transferParameters(Chunk.Type.START);
   }
 
   /** Builds an updated transfer parameters chunk to send the server. */
-  private transferParameters(type: Chunk.TypeMap[keyof Chunk.TypeMap]): Chunk {
+  private transferParameters(type: any): Chunk {
     this.pendingBytes = this.maxBytesToReceive;
     this.windowEndOffset = this.offset + this.maxBytesToReceive;
 
@@ -393,7 +393,7 @@ export class WriteTransfer extends Transfer {
     this.lastChunk = this.initialChunk;
   }
 
-  protected get initialChunk(): Chunk {
+  protected get initialChunk(): any {
     // TODO(frolv): The session ID should not be set here but assigned by the
     // server during an initial handshake.
     const chunk = new Chunk();
