@@ -26,6 +26,11 @@ namespace pw::allocator {
 /// In order for this object to record memory usage metrics correctly, all calls
 /// to, e.g., `Allocate`, `Deallocate`, etc. must be made through it and not the
 /// allocator it wraps.
+///
+/// As a rule, the wrapped allocator is always invoked before any conditions are
+/// asserted by this class, with the exception of checking that a wrapped
+/// allocator has been set via `Initialize`. This allows the wrapped allocator
+/// to issue a more detailed error in case of misuse.
 class AllocatorMetricProxy : public Allocator {
  public:
   constexpr explicit AllocatorMetricProxy(metric::Token token)
