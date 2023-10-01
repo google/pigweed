@@ -51,6 +51,9 @@ class SplitFreeListAllocator : public Allocator {
   SplitFreeListAllocator(const SplitFreeListAllocator&) = delete;
   SplitFreeListAllocator& operator=(const SplitFreeListAllocator&) = delete;
 
+  uintptr_t addr() const { return addr_; }
+  uintptr_t size() const { return size_; }
+
   /// Sets the memory region to be used by this allocator, and the threshold at
   /// which allocations are considerd "large" or "small". Large and small
   /// allocations return lower and higher addresses, respectively.
