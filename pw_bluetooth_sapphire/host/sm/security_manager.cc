@@ -4,9 +4,6 @@
 
 #include "security_manager.h"
 
-// TODO(fxbug.dev/100594): Remove once migration to pw_async is complete.
-#include <zircon/status.h>
-
 #include <memory>
 #include <optional>
 #include <type_traits>
@@ -784,11 +781,8 @@ void SecurityManagerImpl::StartNewTimer() {
 }
 
 void SecurityManagerImpl::StopTimer() {
-  if (timeout_task_.is_pending()) {
-    zx_status_t status = timeout_task_.Cancel();
-    if (status != ZX_OK) {
-      bt_log(TRACE, "sm", "smp: failed to stop timer: %s", zx_status_get_string(status));
-    }
+  if (timeout_task_.is_pending() && !timeout_task_.Cancel()) {
+    bt_log(TRACE, "sm", "smp: failed to stop timer");
   }
 }
 
