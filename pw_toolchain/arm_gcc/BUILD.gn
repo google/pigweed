@@ -151,7 +151,6 @@ pw_source_set("newlib_os_interface_stubs") {
   all_dependent_configs = [ ":wrap_newlib_stdio_functions" ]
   sources = [ "newlib_os_interface_stubs.cc" ]
   deps = [ dir_pw_assert ]
-  visibility = [ ":*" ]
 }
 
 # Basic libraries any arm-none-eabi-gcc target should use. This library should

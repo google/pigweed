@@ -33,7 +33,7 @@ pw_cc_library(
         "-Wl,--wrap=__sseek",
         "-Wl,--wrap=__sclose",
     ],
-    visibility = ["//visibility:private"],
+    visibility = ["//visibility:public"],
     deps = ["//pw_assert"],
 )
 

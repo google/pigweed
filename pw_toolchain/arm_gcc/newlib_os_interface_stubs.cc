@@ -86,6 +86,7 @@ PW_DISABLE_NEWLIB_FUNCTION(getpid, void)
 // documentation since isatty is called indirectly by snprintf.
 extern "C" int _isatty(int) { return 1; }
 
+PW_DISABLE_NEWLIB_FUNCTION(gettimeofday, struct timeval*, struct timezone*)
 PW_DISABLE_NEWLIB_FUNCTION(kill, int, int)
 PW_DISABLE_NEWLIB_FUNCTION(link, char*, char*)
 PW_DISABLE_NEWLIB_FUNCTION(lseek, int, int, int)

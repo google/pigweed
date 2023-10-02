@@ -221,9 +221,12 @@ results in linker warnings like the following:
 Most of the OS interface functions should never be called in embedded builds.
 The ``pw_toolchain/arg_gcc:newlib_os_interface_stubs`` library, which is
 provided through ``pw_toolchain/arm_gcc:arm_none_eabi_gcc_support``, implements
-these functions and forces a linker error if they are used. It also wraps some
-functions related to use of ``stdout`` and ``stderr`` that abort if they are
-called.
+these functions and forces a linker error if they are used. It also
+automatically includes a wrapper for ``abort`` for use of ``stdout`` and
+``stderr`` which abort if they are called.
+
+If you need to use your own wrapper for ``abort``, include the library directly
+using ``pw_toolchain/arm_gcc:newlib_os_interface_stubs``.
 
 pw_toolchain/no_destructor.h
 ============================
