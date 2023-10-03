@@ -64,6 +64,16 @@ pw_source_set("service_registry") {
   ]
 }
 
+pw_source_set("test_loopback_service_registry") {
+  public = [ "public/pw_rpc_transport/test_loopback_service_registry.h" ]
+  public_deps = [
+    ":egress_ingress",
+    ":service_registry",
+    "$dir_pw_work_queue:pw_work_queue",
+    "$dir_pw_work_queue:test_thread",
+  ]
+}
+
 pw_source_set("packet_buffer_queue") {
   public = [ "public/pw_rpc_transport/internal/packet_buffer_queue.h" ]
   public_configs = [ ":public_include_path" ]

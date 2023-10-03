@@ -347,8 +347,7 @@ if((TARGET pw_work_queue.pw_work_queue) AND
       pw_rpc.pwpb.test_method_context
       pw_rpc.synchronous_client_api
       pw_rpc.test_protos.pwpb_rpc
-      pw_rpc_transport.egress_ingress
-      pw_rpc_transport.service_registry
+      pw_rpc_transport.test_loopback_service_registry
       pw_thread.thread
       pw_work_queue.pw_work_queue
       pw_work_queue.stl_test_thread

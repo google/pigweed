@@ -15,7 +15,6 @@
 #include "pw_rpc/synchronous_call.h"
 
 #include <chrono>
-#include <queue>
 
 #include "gtest/gtest.h"
 #include "pw_chrono/system_clock.h"
@@ -23,8 +22,7 @@
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/pwpb/fake_channel_output.h"
 #include "pw_rpc_test_protos/test.rpc.pwpb.h"
-#include "pw_rpc_transport/egress_ingress.h"
-#include "pw_rpc_transport/service_registry.h"
+#include "pw_rpc_transport/test_loopback_service_registry.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_thread/thread.h"
@@ -64,67 +62,6 @@ class TestServiceImpl final
   void TestClientStreamRpc(RawServerReader&) {}
   void TestBidirectionalStreamRpc(
       ServerReaderWriter<TestRequest::Message, TestStreamResponse::Message>&) {}
-};
-
-// A transport that loops back all received frames to a given ingress.
-class TestLoopbackTransport : public RpcFrameSender {
- public:
-  explicit TestLoopbackTransport(size_t mtu) : mtu_(mtu) {
-    work_thread_ =
-        thread::Thread(work_queue::test::WorkQueueThreadOptions(), work_queue_);
-  }
-
-  ~TestLoopbackTransport() override {
-    work_queue_.RequestStop();
-#if PW_THREAD_JOINING_ENABLED
-    work_thread_.join();
-#else
-    work_thread_.detach();
-#endif  // PW_THREAD_JOINING_ENABLED
-  }
-
-  size_t MaximumTransmissionUnit() const override { return mtu_; }
-
-  Status Send(RpcFrame frame) override {
-    buffer_queue_.emplace();
-    std::vector<std::byte>& buffer = buffer_queue_.back();
-    std::copy(
-        frame.header.begin(), frame.header.end(), std::back_inserter(buffer));
-    std::copy(
-        frame.payload.begin(), frame.payload.end(), std::back_inserter(buffer));
-
-    // Defer processing frame on ingress to avoid deadlocks.
-    return work_queue_.PushWork([this]() {
-      ingress_->ProcessIncomingData(buffer_queue_.front()).IgnoreError();
-      buffer_queue_.pop();
-    });
-  }
-
-  void set_ingress(RpcIngressHandler& ingress) { ingress_ = &ingress; }
-
- private:
-  size_t mtu_;
-  std::queue<std::vector<std::byte>> buffer_queue_;
-  RpcIngressHandler* ingress_ = nullptr;
-  thread::Thread work_thread_;
-  work_queue::WorkQueueWithBuffer<1> work_queue_;
-};
-
-// An egress handler that passes the received RPC packet to the service
-// registry.
-class TestLocalEgress : public RpcEgressHandler {
- public:
-  Status SendRpcPacket(ConstByteSpan packet) override {
-    if (!registry_) {
-      return Status::FailedPrecondition();
-    }
-    return registry_->ProcessRpcPacket(packet);
-  }
-
-  void set_registry(ServiceRegistry& registry) { registry_ = &registry; }
-
- private:
-  ServiceRegistry* registry_ = nullptr;
 };
 
 class SynchronousCallTest : public ::testing::Test {
@@ -267,27 +204,9 @@ TEST_F(SynchronousCallTest, SynchronousCallUntilTimeoutError) {
 }
 
 TEST_F(SynchronousCallTest, SynchronousCallCustomResponse) {
-  constexpr int kTestChannelId = 1;
-  constexpr size_t kMaxPacketSize = 256;
-  constexpr size_t kMtu = 512;
-
-  TestRequest::Message request{.integer = 5, .status_code = 0};
-
-  TestLoopbackTransport transport(kMtu);
-
-  SimpleRpcEgress<kMaxPacketSize> egress("egress", transport);
-  std::array tx_channels = {rpc::Channel::Create<kTestChannelId>(&egress)};
-
-  rpc::ServiceRegistry service_registry(tx_channels);
   TestServiceImpl test_service;
+  TestLoopbackServiceRegistry service_registry;
   service_registry.RegisterService(test_service);
-
-  TestLocalEgress local_egress;
-  local_egress.set_registry(service_registry);
-
-  std::array rx_channels = {rpc::ChannelEgress{kTestChannelId, local_egress}};
-  SimpleRpcIngress<kMaxPacketSize> ingress(rx_channels);
-  transport.set_ingress(ingress);
 
   class CustomResponse : public TestResponse::Message {
    public:
@@ -300,7 +219,9 @@ TEST_F(SynchronousCallTest, SynchronousCallCustomResponse) {
   };
 
   auto result = SynchronousCall<TestService::TestUnaryRpc, CustomResponse>(
-      service_registry.client_server().client(), kTestChannelId, request);
+      service_registry.client_server().client(),
+      service_registry.channel_id(),
+      {.integer = 5, .status_code = 0});
   EXPECT_EQ(result.status(), OkStatus());
 
   EXPECT_EQ(3u, result.response().values.size());

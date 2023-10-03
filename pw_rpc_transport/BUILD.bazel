@@ -53,6 +53,18 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "test_loopback_service_registry",
+    hdrs = ["public/pw_rpc_transport/test_loopback_service_registry.h"],
+    includes = ["public"],
+    deps = [
+        ":egress_ingress",
+        ":service_registry",
+        "//pw_work_queue",
+        "//pw_work_queue:test_thread_header",
+    ],
+)
+
+pw_cc_library(
     name = "packet_buffer_queue",
     hdrs = ["public/pw_rpc_transport/internal/packet_buffer_queue.h"],
     includes = ["public"],
