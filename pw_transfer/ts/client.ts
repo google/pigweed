@@ -49,8 +49,8 @@ const DEFAULT_INITIAL_RESPONSE_TIMEOUT = 4;
  */
 export class Manager {
   // Ongoing transfers in the service by ID
-  private readTransfers: TransferDict = {};
-  private writeTransfers: TransferDict = {};
+  readTransfers: TransferDict = {};
+  writeTransfers: TransferDict = {};
 
   // RPC streams for read and write transfers. These are shareable by
   // multiple transfers of the same type.
