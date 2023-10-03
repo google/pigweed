@@ -27,13 +27,16 @@ For more see http://go/pigweed-ci-cq-intro.
 """
 
 import argparse
+import dataclasses
 import json
 import logging
+import os
 from pathlib import Path
 import re
 import subprocess
 import sys
 import tempfile
+from typing import Callable, Dict, IO, List, Sequence
 import uuid
 
 HELPER_GERRIT = 'pigweed-internal'
@@ -59,6 +62,42 @@ remote:
 _LOG = logging.getLogger(__name__)
 
 
+@dataclasses.dataclass
+class Change:
+    gerrit_name: str
+    number: int
+
+
+class EnhancedJSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if dataclasses.is_dataclass(o):
+            return dataclasses.asdict(o)
+        return super().default(o)
+
+
+def dump_json_patches(obj: Sequence[Change], outs: IO):
+    json.dump(obj, outs, indent=2, cls=EnhancedJSONEncoder)
+
+
+def log_entry_exit(func: Callable) -> Callable:
+    def wrapper(*args, **kwargs):
+        _LOG.debug('entering %s()', func.__name__)
+        _LOG.debug('args %r', args)
+        _LOG.debug('kwargs %r', kwargs)
+        try:
+            res = func(*args, **kwargs)
+            _LOG.debug('return value %r', res)
+            return res
+        except Exception as exc:
+            _LOG.debug('exception %r', exc)
+            raise
+        finally:
+            _LOG.debug('exiting %s()', func.__name__)
+
+    return wrapper
+
+
+@log_entry_exit
 def parse_args() -> argparse.Namespace:
     """Creates an argument parser and parses arguments."""
 
@@ -78,7 +117,8 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _run_command(*args, **kwargs):
+@log_entry_exit
+def _run_command(*args, **kwargs) -> subprocess.CompletedProcess:
     kwargs.setdefault('capture_output', True)
     _LOG.debug('%s', args)
     _LOG.debug('%s', kwargs)
@@ -89,6 +129,7 @@ def _run_command(*args, **kwargs):
     return res
 
 
+@log_entry_exit
 def check_status() -> bool:
     res = subprocess.run(['git', 'status'], capture_output=True)
     if res.returncode:
@@ -97,34 +138,40 @@ def check_status() -> bool:
     return True
 
 
+@log_entry_exit
 def clone(requires_dir: Path) -> None:
     _LOG.info('cloning helper repository into %s', requires_dir)
     _run_command(['git', 'clone', HELPER_REPO, '.'], cwd=requires_dir)
 
 
-def create_commit(requires_dir: Path, requirements) -> None:
+@log_entry_exit
+def create_commit(
+    requires_dir: Path, requirement_strings: Sequence[str]
+) -> None:
     """Create a commit in the local tree with the given requirements."""
     change_id = str(uuid.uuid4()).replace('-', '00')
     _LOG.debug('change_id %s', change_id)
 
-    reqs = []
-    for req in requirements:
+    requirement_objects: List[Change] = []
+    for req in requirement_strings:
         gerrit_name, number = req.split(':', 1)
-        reqs.append({'gerrit_name': gerrit_name, 'number': number})
+        requirement_objects.append(Change(gerrit_name, int(number)))
 
     path = requires_dir / 'patches.json'
     _LOG.debug('path %s', path)
     with open(path, 'w') as outs:
-        json.dump(reqs, outs)
+        dump_json_patches(requirement_objects, outs)
+        outs.write('\n')
 
     _run_command(['git', 'add', path], cwd=requires_dir)
 
+    # TODO: b/232234662 - Don't add 'Requires:' lines to commit messages.
     commit_message = [
         f'{_DNS} {change_id[0:10]}\n\n',
         '',
         f'Change-Id: I{change_id}',
     ]
-    for req in requirements:
+    for req in requirement_strings:
         commit_message.append(f'Requires: {req}')
 
     _LOG.debug('message %s', commit_message)
@@ -137,8 +184,18 @@ def create_commit(requires_dir: Path, requirements) -> None:
     _run_command(['git', 'show'], cwd=requires_dir)
 
 
-def push_commit(requires_dir: Path, push=True) -> str:
-    output = DEFAULT_OUTPUT
+@log_entry_exit
+def push_commit(requires_dir: Path, push=True) -> Change:
+    """Push a commit to the helper repository.
+
+    Args:
+        requires_dir: Local checkout of the helper repository.
+        push: Whether to actually push or if this is a local-only test.
+
+    Returns a Change object referencing the pushed commit.
+    """
+
+    output: str = DEFAULT_OUTPUT
     if push:
         res = _run_command(
             ['git', 'push', HELPER_REPO, '+HEAD:refs/for/main'],
@@ -157,22 +214,46 @@ def push_commit(requires_dir: Path, push=True) -> str:
     match = regex.search(output)
     if not match:
         raise ValueError(f"invalid output from 'git push': {output}")
-    change_num = match.group('num')
+    change_num = int(match.group('num'))
     _LOG.info('created %s change %s', HELPER_PROJECT, change_num)
-    return f'{HELPER_GERRIT}:{change_num}'
+    return Change(HELPER_GERRIT, change_num)
 
 
-def amend_existing_change(change: str) -> None:
-    res = _run_command(['git', 'log', '-1', '--pretty=%B'])
-    original = res.stdout.rstrip().decode()
+@log_entry_exit
+def amend_existing_change(dependency: Dict[str, str]) -> None:
+    """Amend the current change to depend on the dependency
 
-    addition = f'Requires: {change}'
-    _LOG.info('adding "%s" to current commit message', addition)
-    message = '\n'.join((original, addition))
-    _run_command(['git', 'commit', '--amend', '--message', message])
+    Args:
+        dependency: The change on which the top of the current checkout now
+            depends.
+    """
+    git_root = Path(
+        subprocess.run(
+            ['git', 'rev-parse', '--show-toplevel'],
+            capture_output=True,
+        )
+        .stdout.decode()
+        .rstrip('\n')
+    )
+    patches_json = git_root / 'patches.json'
+    _LOG.info('%s %d', patches_json, os.path.isfile(patches_json))
+
+    patches = []
+    if os.path.isfile(patches_json):
+        with open(patches_json, 'r') as ins:
+            patches = json.load(ins)
+
+    patches.append(dependency)
+    with open(patches_json, 'w') as outs:
+        dump_json_patches(patches, outs)
+        outs.write('\n')
+    _LOG.info('%s %d', patches_json, os.path.isfile(patches_json))
+
+    _run_command(['git', 'add', patches_json])
+    _run_command(['git', 'commit', '--amend', '--no-edit'])
 
 
-def run(requirements, push=True) -> int:
+def run(requirements: Sequence[str], push: bool = True) -> int:
     """Entry point for requires."""
 
     if not check_status():

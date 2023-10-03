@@ -826,6 +826,7 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\brequirements.txt$',
     r'\byarn.lock$',
     r'^docker/tag$',
+    r'^patches.json$',
     # keep-sorted: end
     # Data files
     # keep-sorted: start
