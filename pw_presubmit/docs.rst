@@ -125,73 +125,26 @@ such as a quick program for local use and a full program for automated use. The
 :ref:`example script <example-script>` uses ``pw_presubmit.Programs`` to define
 ``quick`` and ``full`` programs.
 
-``PresubmitContext`` has the following members:
-
-* ``root``: Source checkout root directory
-* ``repos``: Repositories (top-level and submodules) processed by
-  ``pw presubmit``
-* ``output_dir``: Output directory for this specific presubmit step
-* ``failure_summary_log``: File path where steps should write a brief summary
-  of any failures
-* ``paths``: Modified files for the presubmit step to check (often used in
-  formatting steps but ignored in compile steps)
-* ``all_paths``: All files in the repository tree.
-* ``package_root``: Root directory for ``pw package`` installations
-* ``override_gn_args``: Additional GN args processed by ``build.gn_gen()``
-* ``luci``: Information about the LUCI build or None if not running in LUCI
-* ``num_jobs``: Number of jobs to run in parallel
-* ``continue_after_build_error``: For steps that compile, don't exit on the
-  first compilation error
-* ``rng_seed``: Seed from ``--rng-seed`` or 1, for the few steps that need to
-  seed a random number generator
-
-The ``luci`` member is of type ``LuciContext`` and has the following members:
-
-* ``buildbucket_id``: The globally-unique buildbucket id of the build
-* ``build_number``: The builder-specific incrementing build number, if
-  configured for this builder
-* ``project``: The LUCI project under which this build is running (often
-  ``pigweed`` or ``pigweed-internal``)
-* ``bucket``: The LUCI bucket under which this build is running (often ends
-  with ``ci`` or ``try``)
-* ``builder``: The builder being run
-* ``swarming_server``: The swarming server on which this build is running
-* ``swarming_task_id``: The swarming task id of this build
-* ``cas_instance``: The CAS instance accessible from this build
-* ``pipeline``: Information about the build pipeline, if applicable.
-* ``triggers``: Information about triggering commits, if applicable.
-* ``is_try``: True if the bucket is a try bucket.
-* ``is_ci``: True if the bucket is a ci bucket.
-* ``is_dev``: True if the bucket is a dev bucket.
-
-The ``pipeline`` member, if present, is of type ``LuciPipeline`` and has the
-following members:
-
-* ``round``: The zero-indexed round number.
-* ``builds_from_previous_iteration``: A list of the buildbucket ids from the
-  previous round, if any, encoded as strs.
-
-The ``triggers`` member is a sequence of ``LuciTrigger`` objects, which have the
-following members:
-
-* ``number``: The number of the change in Gerrit.
-* ``patchset``: The number of the patchset of the change.
-* ``remote``: The full URL of the remote.
-* ``project``: The name of the project in Gerrit.
-* ``branch``: The name of the branch on which this change is being/was
-  submitted.
-* ``ref``: The ``refs/changes/..`` path that can be used to reference the
-  patch for unsubmitted changes and the hash for submitted changes.
-* ``gerrit_name``: The name of the googlesource.com Gerrit host.
-* ``submitted``: Whether the change has been submitted or is still pending.
-* ``gerrit_host``: The scheme and hostname of the googlesource.com Gerrit host.
-* ``gerrit_url``: The full URL to this change on the Gerrit host.
-* ``gitiles_url``: The full URL to this commit in Gitiles.
+.. autoclass:: pw_presubmit.presubmit_context.PresubmitContext
+   :members:
+   :noindex:
 
 Additional members can be added by subclassing ``PresubmitContext`` and
 ``Presubmit``. Then override ``Presubmit._create_presubmit_context()`` to
 return the subclass of ``PresubmitContext``. Finally, add
 ``presubmit_class=PresubmitSubClass`` when calling ``cli.run()``.
+
+.. autoclass:: pw_presubmit.presubmit_context.LuciContext
+   :members:
+   :noindex:
+
+.. autoclass:: pw_presubmit.presubmit_context.LuciPipeline
+   :members:
+   :noindex:
+
+.. autoclass:: pw_presubmit.presubmit_context.LuciTrigger
+   :members:
+   :noindex:
 
 Substeps
 --------

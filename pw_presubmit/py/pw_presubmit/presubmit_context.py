@@ -91,6 +91,14 @@ def get_buildbucket_info(bbid) -> Dict[str, Any]:
 
 @dataclasses.dataclass
 class LuciPipeline:
+    """Details of previous builds in this pipeline, if applicable.
+
+    Attributes:
+        round: The zero-indexed round number.
+        builds_from_previous_iteration: A list of the buildbucket ids from the
+            previous round, if any.
+    """
+
     round: int
     builds_from_previous_iteration: Sequence[int]
 
@@ -122,7 +130,24 @@ class LuciPipeline:
 
 @dataclasses.dataclass
 class LuciTrigger:
-    """Details the pending change or submitted commit triggering the build."""
+    """Details the pending change or submitted commit triggering the build.
+
+    Attributes:
+        number: The number of the change in Gerrit.
+        patchset: The number of the patchset of the change.
+        remote: The full URL of the remote.
+        project: The name of the project in Gerrit.
+        branch: The name of the branch on which this change is being/was
+            submitted.
+        ref: The "refs/changes/.." path that can be used to reference the
+            patch for unsubmitted changes and the hash for submitted changes.
+        gerrit_name: The name of the googlesource.com Gerrit host.
+        submitted: Whether the change has been submitted or is still pending.
+        gerrit_host: The scheme and hostname of the googlesource.com Gerrit
+            host.
+        gerrit_url: The full URL to this change on the Gerrit host.
+        gitiles_url: The full URL to this commit in Gitiles.
+    """
 
     number: int
     patchset: int
@@ -202,7 +227,26 @@ class LuciTrigger:
 
 @dataclasses.dataclass
 class LuciContext:
-    """LUCI-specific information about the environment."""
+    """LUCI-specific information about the environment.
+
+    Attributes:
+        buildbucket_id: The globally-unique buildbucket id of the build.
+        build_number: The builder-specific incrementing build number, if
+            configured for this builder.
+        project: The LUCI project under which this build is running (often
+            "pigweed" or "pigweed-internal").
+        bucket: The LUCI bucket under which this build is running (often ends
+            with "ci" or "try").
+        builder: The builder being run.
+        swarming_server: The swarming server on which this build is running.
+        swarming_task_id: The swarming task id of this build.
+        cas_instance: The CAS instance accessible from this build.
+        pipeline: Information about the build pipeline, if applicable.
+        triggers: Information about triggering commits, if applicable.
+        is_try: True if the bucket is a try bucket.
+        is_ci: True if the bucket is a ci bucket.
+        is_dev: True if the bucket is a dev bucket.
+    """
 
     buildbucket_id: int
     build_number: int
@@ -303,13 +347,14 @@ class FormatContext:
     For full documentation on the members see the PresubmitContext section of
     pw_presubmit/docs.rst.
 
-    Args:
+    Attributes:
         root: Source checkout root directory
-        output_dir: Output directory for this specific language
+        output_dir: Output directory for this specific language.
         paths: Modified files for the presubmit step to check (often used in
-            formatting steps but ignored in compile steps)
-        package_root: Root directory for pw package installations
-        format_options: Formatting options, derived from pigweed.json
+            formatting steps but ignored in compile steps).
+        package_root: Root directory for pw package installations.
+        format_options: Formatting options, derived from pigweed.json.
+        dry_run: Whether to just report issues or also fix them.
     """
 
     root: Optional[Path]
@@ -346,26 +391,28 @@ class PresubmitContext:  # pylint: disable=too-many-instance-attributes
 
     For full documentation on the members see pw_presubmit/docs.rst.
 
-    Args:
-        root: Source checkout root directory
+    Attributes:
+        root: Source checkout root directory.
         repos: Repositories (top-level and submodules) processed by
-            pw presubmit
-        output_dir: Output directory for this specific presubmit step
+            `pw presubmit`.
+        output_dir: Output directory for this specific presubmit step.
         failure_summary_log: Path where steps should write a brief summary of
             any failures encountered for use by other tooling.
         paths: Modified files for the presubmit step to check (often used in
-            formatting steps but ignored in compile steps)
+            formatting steps but ignored in compile steps).
         all_paths: All files in the tree.
-        package_root: Root directory for pw package installations
-        override_gn_args: Additional GN args processed by build.gn_gen()
-        luci: Information about the LUCI build or None if not running in LUCI
-        format_options: Formatting options, derived from pigweed.json
-        num_jobs: Number of jobs to run in parallel
+        package_root: Root directory for pw package installations.
+        override_gn_args: Additional GN args processed by `build.gn_gen()`.
+        luci: Information about the LUCI build or None if not running in LUCI.
+        format_options: Formatting options, derived from pigweed.json.
+        num_jobs: Number of jobs to run in parallel.
         continue_after_build_error: For steps that compile, don't exit on the
-            first compilation error
+            first compilation error.
         rng_seed: Seed for a random number generator, for the few steps that
-            need one
-        full: Whether this is a full or incremental presubmit run
+            need one.
+        _failed: Whether the presubmit step in question has failed. Set to True
+            by calling ctx.fail().
+        full: Whether this is a full or incremental presubmit run.
     """
 
     root: Path
