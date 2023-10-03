@@ -1,0 +1,38 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# DO NOT IMPORT THIS .gni FILE DIRECTLY! Use "$dir_pw_build/defaults.gni"!
+#
+# When these variables were originally created, Pigweed did not have a widely
+# adopted naming pattern for build arguments declared by GN. For backwards
+# compatibility, these arguments will retain their naming.
+#
+# Unfortunately, there's two problems with this:
+#
+#   1. It's not clear these variables come from Pigweed since they don't follow
+#      the established naming patterns.
+#   2. The names conflict with the attributes of pw_* wrapped targets, which
+#      means you'll get confusing behavior if this declare_args() block gets
+#      imported into the context of a regular build file. That is why this
+#      .gni file is imported into a scope rather than handled like a regular
+#      import. It truly is an amusing workaround, but it works.
+#
+# While it's possible to migrate away from these names, it's unlikely that will
+# ever happen.
+declare_args() {
+  default_configs = []
+  default_public_deps = []
+  remove_default_configs = []
+  remove_default_public_deps = []
+}

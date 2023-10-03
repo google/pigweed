@@ -14,18 +14,38 @@
 
 import("//build_overrides/pigweed.gni")
 
-declare_args() {
-  # Default configs and dependencies targets provided by the toolchain. These
-  # are applied to all of the pw_* target types. They are set from a toolchain's
-  # toolchain_args for cross-toolchain deps, e.g. for
-  #
-  #   `deps = [ //pw_some_module(//pw_toolchain:not_default) ]`
-  #
-  # The default toolchain is never used.
-  default_configs = []
-  default_public_deps = []
-  remove_default_configs = []
+# Default configs and dependencies provided by the toolchain. These
+# are applied to all of the pw_* target types. These are set from a toolchain's
+# toolchain_args scope with the following argument names:
+#
+#   default_configs
+#   default_public_deps
+#   remove_default_configs
+#   remove_default_public_deps
+#
+# Because of how GN handles default vs non-default toolchains, these only apply
+# for for non-default toolchains. A non-default toolchain invocation occurs
+# when a toolchain is specified in parenthesis after the name of a build target
+# in a dependency list. For example:
+#
+#   group("foo_group") {
+#     deps = [ //pw_some_module(//pw_toolchain:not_default) ]
+#   }
+#
+# The default toolchain is never used by Pigweed to build C/C++ since
+# toolchain_args of that toolchain are ignored by GN.
+#
+# DO NOT RELY ON THIS: Use pw_build_defaults instead!
+# This is exposed as public because it is needed by both defaults.gni and
+# build_target.gni, and it helps surface the design of the GN build
+# architecture.
+pw_build_INTERNAL_DEFAULTS = {
+  # This is a little odd, but it's done for backwards compatibility. See the
+  # referenced .gni file if you want more information.
+  import("$dir_pw_build/gn_internal/defaults.gni")
+}
 
+declare_args() {
   # Controls the default visibility of C/C++ libraries and executables
   # (pw_source_set, pw_static_library, pw_shared_library pw_executable). This
   # can be "*" or a list of paths.
@@ -35,7 +55,7 @@ declare_args() {
   # at least include the Pigweed repository ("$dir_pigweed/*").
   #
   # Explicitly setting a target's visibility overrides this default.
-  pw_build_DEFAULT_VISIBILITY = "*"
+  pw_build_DEFAULT_VISIBILITY = [ "*" ]
 }
 
 # These are the default configs automatically applied to every pw_* C/C++ build
@@ -53,26 +73,23 @@ pigweed_default_configs = [
   "$dir_pw_build:relative_paths",
 ]
 
-# Combine target-specifc and target-agnostic default variables.
-_pw_build_defaults = {
-  configs = default_configs
-  public_deps = default_public_deps
-
-  # The target-agnostic defaults.
-  configs += pigweed_default_configs
-
-  if (pw_build_DEFAULT_VISIBILITY != "*") {
-    visibility = pw_build_DEFAULT_VISIBILITY
-  }
-}
-
-# One more pass, to remove configs
+# Some Projects rely on this, so it is being retained for backwards
+# compatibilty. Using these is not recommended; prefer to use the pw_* target
+# types directly.
 pw_build_defaults = {
-  configs = []
-  forward_variables_from(_pw_build_defaults, "*")
-  if (remove_default_configs != []) {
+  configs = pw_build_INTERNAL_DEFAULTS.default_configs + pigweed_default_configs
+  public_deps = pw_build_INTERNAL_DEFAULTS.default_public_deps
+  if (pw_build_INTERNAL_DEFAULTS.remove_default_configs != []) {
     # Add them first to ensure they are present to be removed.
-    configs += remove_default_configs
-    configs -= remove_default_configs
+    configs += pw_build_INTERNAL_DEFAULTS.remove_default_configs
+    configs -= pw_build_INTERNAL_DEFAULTS.remove_default_configs
+  }
+  if (pw_build_INTERNAL_DEFAULTS.remove_default_public_deps != []) {
+    # Add them first to ensure they are present to be removed.
+    public_deps += pw_build_INTERNAL_DEFAULTS.remove_default_public_deps
+    public_deps -= pw_build_INTERNAL_DEFAULTS.remove_default_public_deps
+  }
+  if (pw_build_DEFAULT_VISIBILITY != [ "*" ]) {
+    visibility = pw_build_DEFAULT_VISIBILITY
   }
 }
