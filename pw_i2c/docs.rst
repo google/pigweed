@@ -51,7 +51,7 @@ list. An example of this is shown below:
 .. code-block:: cpp
 
   using pw::i2c::Address;
-  using pw::i2c::MakeExpectedTransactionlist;
+  using pw::i2c::MakeExpectedTransactionArray;
   using pw::i2c::MockInitiator;
   using pw::i2c::WriteTransaction;
   using std::literals::chrono_literals::ms;
