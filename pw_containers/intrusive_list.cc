@@ -14,6 +14,8 @@
 
 #include "pw_containers/intrusive_list.h"
 
+#include <utility>
+
 #include "pw_assert/check.h"
 
 namespace pw::intrusive_list_impl {
