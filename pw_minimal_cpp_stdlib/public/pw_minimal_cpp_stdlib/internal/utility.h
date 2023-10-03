@@ -24,6 +24,16 @@ constexpr remove_reference_t<T>&& move(T&& object) {
   return (remove_reference_t<T>&&)object;
 }
 
+template <typename T>
+constexpr T&& forward(remove_reference_t<T>& value) {
+  return static_cast<T&&>(value);
+}
+
+template <typename T>
+constexpr T&& forward(remove_reference_t<T>&& value) {
+  return static_cast<T&&>(value);
+}
+
 // Forward declare these classes, which are specialized in other headers.
 template <decltype(sizeof(0)), typename>
 struct tuple_element;

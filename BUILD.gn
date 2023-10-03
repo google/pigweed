@@ -577,17 +577,16 @@ group("cpp20_compatibility") {
   deps = [ ":pigweed_default($_cpp20_tc)" ]
 }
 
-# TODO: b/302175933 - This is currently broken.
-if (pw_BUILD_BROKEN_GROUPS) {
-  group("build_with_pw_minimal_cpp_stdlib") {
-    _toolchain = "$_internal_toolchains:pw_strict_host_clang_size_optimized_minimal_cpp_stdlib"
+group("build_with_pw_minimal_cpp_stdlib") {
+  _toolchain = "$_internal_toolchains:pw_strict_host_clang_size_optimized_minimal_cpp_stdlib"
 
-    # This list of supported modules is incomplete.
-    deps = [
-      "$dir_pw_status($_toolchain)",
-      "$dir_pw_tokenizer($_toolchain)",
-    ]
-  }
+  # This list of supported modules is incomplete.
+  deps = [
+    "$dir_pw_containers:variable_length_entry_queue($_toolchain)",
+    "$dir_pw_status($_toolchain)",
+    "$dir_pw_tokenizer($_toolchain)",
+    "$dir_pw_varint($_toolchain)",
+  ]
 }
 
 group("host_clang_debug_dynamic_allocation") {

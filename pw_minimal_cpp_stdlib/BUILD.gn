@@ -27,16 +27,11 @@ config("no_cpp_includes") {
   cflags = [ "-nostdinc++" ]
 }
 
-config("use_minimal_cpp_stdlib") {
-  configs = [
+pw_source_set("pw_minimal_cpp_stdlib") {
+  public_configs = [
     ":public_include_path",
     ":no_cpp_includes",
   ]
-}
-
-pw_source_set("pw_minimal_cpp_stdlib") {
-  public_configs = [ ":public_include_path" ]
-  configs = [ ":no_cpp_includes" ]
   public = [
     "public/algorithm",
     "public/array",
@@ -48,9 +43,11 @@ pw_source_set("pw_minimal_cpp_stdlib") {
     "public/cstdint",
     "public/cstdio",
     "public/cstring",
+    "public/functional",
     "public/initializer_list",
     "public/iterator",
     "public/limits",
+    "public/memory",
     "public/new",
     "public/string_view",
     "public/type_traits",
@@ -67,15 +64,18 @@ pw_source_set("pw_minimal_cpp_stdlib") {
     "public/pw_minimal_cpp_stdlib/internal/cstdint.h",
     "public/pw_minimal_cpp_stdlib/internal/cstdio.h",
     "public/pw_minimal_cpp_stdlib/internal/cstring.h",
+    "public/pw_minimal_cpp_stdlib/internal/functional.h",
     "public/pw_minimal_cpp_stdlib/internal/initializer_list.h",
     "public/pw_minimal_cpp_stdlib/internal/iterator.h",
     "public/pw_minimal_cpp_stdlib/internal/limits.h",
+    "public/pw_minimal_cpp_stdlib/internal/memory.h",
     "public/pw_minimal_cpp_stdlib/internal/new.h",
     "public/pw_minimal_cpp_stdlib/internal/string_view.h",
     "public/pw_minimal_cpp_stdlib/internal/type_traits.h",
     "public/pw_minimal_cpp_stdlib/internal/utility.h",
   ]
   public_deps = [ dir_pw_polyfill ]
+  remove_public_deps = [ "$dir_pw_minimal_cpp_stdlib" ]
 }
 
 pw_test_group("tests") {

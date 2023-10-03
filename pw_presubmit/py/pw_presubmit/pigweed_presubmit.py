@@ -164,6 +164,11 @@ def _gn_combined_build_check_targets() -> Sequence[str]:
         'pigweed_pypi_distribution',
     ]
 
+    # C headers seem to be missing when building with pw_minimal_cpp_stdlib, so
+    # skip it on Windows.
+    if sys.platform != 'win32':
+        build_targets.append('build_with_pw_minimal_cpp_stdlib')
+
     # TODO: b/234645359 - Re-enable on Windows when compatibility tests build.
     if sys.platform != 'win32':
         build_targets.append('cpp14_compatibility')

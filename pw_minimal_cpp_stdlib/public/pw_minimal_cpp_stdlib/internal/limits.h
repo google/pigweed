@@ -22,29 +22,42 @@ _PW_POLYFILL_BEGIN_NAMESPACE_STD
 template <typename T>
 struct numeric_limits {
   static constexpr bool is_specialized = false;
+  static constexpr int digits = 0;
 };
 
 // Only a few of the numeric_limits methods are implemented.
-#define _PW_LIMITS_SPECIALIZATION(                               \
-    type, val_signed, val_int, min_value, max_value)             \
-  template <>                                                    \
-  struct numeric_limits<type> {                                  \
-    static constexpr bool is_specialized = true;                 \
-                                                                 \
-    static constexpr bool is_signed = (val_signed);              \
-    static constexpr bool is_integer = (val_int);                \
-                                                                 \
-    static constexpr type min() noexcept { return (min_value); } \
-    static constexpr type max() noexcept { return (max_value); } \
+#define _PW_LIMITS_SPECIALIZATION(                                 \
+    type, val_signed, val_int, min_value, max_value, digits_value) \
+  template <>                                                      \
+  struct numeric_limits<type> {                                    \
+    static constexpr bool is_specialized = true;                   \
+                                                                   \
+    static constexpr bool is_signed = (val_signed);                \
+    static constexpr bool is_integer = (val_int);                  \
+                                                                   \
+    static constexpr int digits = (digits_value);                  \
+                                                                   \
+    static constexpr type min() noexcept { return (min_value); }   \
+    static constexpr type max() noexcept { return (max_value); }   \
   }
 
-#define _PW_INTEGRAL_LIMIT(type, sname, uname)            \
-  _PW_LIMITS_SPECIALIZATION(                              \
-      signed type, true, true, sname##_MIN, sname##_MAX); \
-  _PW_LIMITS_SPECIALIZATION(unsigned type, false, true, 0u, uname##_MAX)
+#define _PW_INTEGRAL_LIMIT(type, sname, uname)        \
+  _PW_LIMITS_SPECIALIZATION(signed type,              \
+                            true,                     \
+                            true,                     \
+                            sname##_MIN,              \
+                            sname##_MAX,              \
+                            CHAR_BIT * sizeof(type)); \
+  _PW_LIMITS_SPECIALIZATION(unsigned type,            \
+                            false,                    \
+                            true,                     \
+                            0u,                       \
+                            uname##_MAX,              \
+                            CHAR_BIT * sizeof(type) - 1)
 
-_PW_LIMITS_SPECIALIZATION(bool, false, true, false, true);
-_PW_LIMITS_SPECIALIZATION(char, char(-1) < char(0), true, CHAR_MIN, CHAR_MAX);
+_PW_LIMITS_SPECIALIZATION(bool, false, true, false, true, 1);
+_PW_LIMITS_SPECIALIZATION(
+    char, char(-1) < char(0), true, CHAR_MIN, CHAR_MAX, 1);
 
 _PW_INTEGRAL_LIMIT(char, SCHAR, UCHAR);
 _PW_INTEGRAL_LIMIT(short, SHRT, USHRT);

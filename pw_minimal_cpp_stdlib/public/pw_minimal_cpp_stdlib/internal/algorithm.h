@@ -13,8 +13,6 @@
 // the License.
 #pragma once
 
-#include <type_traits>
-
 #include "pw_polyfill/standard_library/namespace.h"
 
 _PW_POLYFILL_BEGIN_NAMESPACE_STD
@@ -49,16 +47,6 @@ constexpr InputIterator find(InputIterator first,
     }
   }
   return last;
-}
-
-template <typename T>
-constexpr T&& forward(remove_reference_t<T>& value) {
-  return static_cast<T&&>(value);
-}
-
-template <typename T>
-constexpr T&& forward(remove_reference_t<T>&& value) {
-  return static_cast<T&&>(value);
 }
 
 template <class LhsIterator, class RhsIterator>

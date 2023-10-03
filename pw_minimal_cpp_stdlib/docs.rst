@@ -3,20 +3,37 @@
 =====================
 pw_minimal_cpp_stdlib
 =====================
-The ``pw_minimal_cpp_stdlib`` module provides an extremely limited
-implementation of the C++ Standard Library. This module falls far, far short of
-providing a complete C++ Standard Library and should only be used for testing
-and development when compiling with C++17 or newer without a C++ Standard
-Library. Production code should use a real C++ Standard Library implementation,
-such as `libc++ <https://libcxx.llvm.org/>`_ or
-`libstdc++ <https://gcc.gnu.org/onlinedocs/libstdc++/>`_.
+.. admonition:: 🛑 Stop 🛑
+
+   **Do not use this module** unless you have consulted with the Pigweed team.
+
+The ``pw_minimal_cpp_stdlib`` module provides an extremely limited, incomplete
+implementation of the C++ Standard Library. This module is only intended for
+testing and development when compiling with C++17 or newer, but without access
+to the C++ Standard Library (``-nostdinc++``).
+
+Production code should use a real C++ Standard Library implementation, such as
+`libc++ <https://libcxx.llvm.org/>`_ or `libstdc++
+<https://gcc.gnu.org/onlinedocs/libstdc++/>`_.
 
 .. warning::
 
   ``pw_minimal_cpp_stdlib`` was created for a very specific purpose. It is NOT a
   general purpose C++ Standard Library implementation and should not be used as
-  one. Many features are missing, some features non-functioning stubs, and some
-  features may not match the C++ standard.
+  one.
+
+  - Many library features are **missing**.
+  - Many features are **non-functioning stubs**.
+  - Some features **do not match the C++ standard**.
+  - Test coverage is **extremely limited**.
+
+-----------------
+Build integration
+-----------------
+The top-level ``build_with_minimal_cpp_stdlib`` GN group builds a few supported
+modules with ``pw_minimal_cpp_stdlib`` swapped in for the C++ library at the
+toolchain level. Notably, ``pw_minimal_cpp_stdlib`` does not support
+``pw_unit_test``, so this group does NOT run any tests.
 
 -----------
 Code layout
@@ -33,11 +50,6 @@ defined in ``public/``. These files are symlinks to their implementations in
   .. code-block:: bash
 
     for f in $(ls pw_minimal_cpp_stdlib/internal/); do ln -s pw_minimal_cpp_stdlib/internal/$f ${f%.h}; done
-
-The top-level ``build_with_minimal_cpp_stdlib`` GN group builds a few supported
-modules with ``pw_minimal_cpp_stdlib`` swapped in for the C++ library at the
-toolchain level. Notably, ``pw_minimal_cpp_stdlib`` does not support
-``pw_unit_test``, so this group does not run any tests.
 
 ------------
 Requirements

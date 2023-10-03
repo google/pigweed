@@ -55,29 +55,40 @@ using true_type = bool_constant<true>;
 using false_type = bool_constant<false>;
 
 template <typename T>
-struct is_array : false_type {};
+struct is_aggregate : bool_constant<__is_aggregate(T)> {};
 
 template <typename T>
-struct is_array<T[]> : true_type {};
+static constexpr bool is_aggregate_v = is_aggregate<T>::value;
 
+template <typename T>
+struct is_array : false_type {};
+template <typename T>
+struct is_array<T[]> : true_type {};
 template <typename T, decltype(sizeof(int)) kSize>
 struct is_array<T[kSize]> : true_type {};
-
 template <typename T>
 inline constexpr bool is_array_v = is_array<T>::value;
 
 template <typename T>
 struct is_const : false_type {};
-
 template <typename T>
 struct is_const<const T> : true_type {};
-
-// NOT IMPLEMENTED: is_enum requires compiler builtins.
 template <typename T>
-struct is_enum : false_type {};
+inline constexpr bool is_const_v = is_const<T>::value;
 
 template <typename T>
-inline constexpr bool is_enum_v = is_enum<T>::value;
+struct is_lvalue_reference : false_type {};
+template <typename T>
+struct is_lvalue_reference<T&> : true_type {};
+template <typename T>
+inline constexpr bool is_lvalue_reference_v = is_lvalue_reference<T>::value;
+
+template <typename T>
+struct is_rvalue_reference : false_type {};
+template <typename T>
+struct is_rvalue_reference<T&&> : true_type {};
+template <typename T>
+inline constexpr bool is_rvalue_reference_v = is_rvalue_reference<T>::value;
 
 template <typename T>
 struct remove_cv;  // Forward declaration
@@ -395,7 +406,7 @@ struct type_identity {
 template <typename T>
 using type_identity_t = typename type_identity<T>::type;
 
-#define __cpp_lib_void_t void_t 201411L
+#define __cpp_lib_void_t 201411L
 
 template <typename...>
 using void_t = void;
@@ -514,27 +525,129 @@ struct is_convertible
 template <typename T, typename U>
 inline constexpr bool is_convertible_v = is_convertible<T, U>::value;
 
+template <typename T>
+struct alignment_of : integral_constant<decltype(sizeof(int)), alignof(T)> {};
+template <typename T>
+inline constexpr decltype(sizeof(int)) alignment_of_v = alignment_of<T>::value;
+
+#define PW_STDLIB_UNIMPLEMENTED(name) \
+  [[deprecated(#name " is NOT IMPLEMENTED in pw_minimal_cpp_stdlib!")]]
+
 // NOT IMPLEMENTED: Stubs are provided for these traits classes, but they do not
 // return useful values. Many of these would require compiler builtins.
-template <typename T>
-struct is_function : false_type {};
-template <typename T>
-struct is_trivially_copyable : true_type {};
-template <typename T>
-struct is_polymorphic : false_type {};
-template <typename T, typename U>
-struct is_base_of : false_type {};
+#define PW_BOOLEAN_TRAIT_NOT_SUPPORTED(name) \
+  template <typename T>                      \
+  struct name : false_type {};               \
+  template <typename T>                      \
+  PW_STDLIB_UNIMPLEMENTED(name)              \
+  inline constexpr bool name##_v = name<T>::value
+
+#define PW_BOOLEAN_TRAIT_NOT_SUPPORTED_2(name) \
+  template <typename T, typename U>            \
+  struct name : false_type {};                 \
+  template <typename T, typename U>            \
+  PW_STDLIB_UNIMPLEMENTED(name)                \
+  inline constexpr bool name##_v = name<T, U>::value
+
+#define PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS(name) \
+  template <typename T, typename... Args>            \
+  struct name : false_type {};                       \
+  template <typename T, typename... Args>            \
+  PW_STDLIB_UNIMPLEMENTED(name)                      \
+  inline constexpr bool name##_v = name<T, Args...>::value
+
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_class);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_enum);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_function);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_member_function_pointer);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_member_object_pointer);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_union);
+
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_compound);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_fundamental);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_member_pointer);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_object);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_reference);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_scalar);
+
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_abstract);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_empty);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_final);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_pod);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_polymorphic);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_standard_layout);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_trivial);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_trivially_copyable);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_volatile);
+
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS(is_constructible);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS(is_nothrow_constructible);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS(is_trivially_constructible);
+
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS(is_default_constructible);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS(is_nothrow_default_constructible);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS(is_trivially_default_constructible);
+
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS(is_copy_constructible);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS(is_nothrow_copy_constructible);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS(is_trivially_copy_constructible);
+
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS(is_move_constructible);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS(is_nothrow_move_constructible);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS(is_trivially_move_constructible);
+
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS(is_assignable);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS(is_nothrow_assignable);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS(is_trivially_assignable);
+
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS(is_copy_assignable);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS(is_nothrow_copy_assignable);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS(is_trivially_copy_assignable);
+
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS(is_move_assignable);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS(is_nothrow_move_assignable);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS(is_trivially_move_assignable);
+
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_destructible);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_nothrow_destructible);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_trivially_destructible);
+
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(has_virtual_destructor);
+
 template <typename T>
 struct extent : integral_constant<decltype(sizeof(int)), 1> {};
 template <typename T>
-inline constexpr bool extent_v = extent<T>::value;
+PW_STDLIB_UNIMPLEMENTED(extent)
+inline constexpr decltype(sizeof(int)) extent_v = extent<T>::value;
+
+template <typename T>
+struct rank : integral_constant<decltype(sizeof(int)), 1> {};
+template <typename T>
+PW_STDLIB_UNIMPLEMENTED(rank)
+inline constexpr decltype(sizeof(int)) rank_v = extent<T>::value;
+
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED_2(is_base_of);
+
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_invocable_r);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_invocable);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_nothrow_invocable_r);
+PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_nothrow_invocable);
+
+template <typename T>
+struct invoke_result {};
+template <typename T>
+using invoke_result_t = typename invoke_result<T>::type;
+
 template <typename T>
 struct underlying_type {
   using type = T;
 };
 template <typename T>
 using underlying_type_t = typename underlying_type<T>::type;
-template <typename T>
-inline constexpr bool is_trivially_copyable_v = is_trivially_copyable<T>::value;
+
+#undef PW_BOOLEAN_TRAIT_NOT_SUPPORTED
+#undef PW_BOOLEAN_TRAIT_NOT_SUPPORTED_2
+#undef PW_BOOLEAN_TRAIT_NOT_SUPPORTED_VARARGS
+#undef PW_STDLIB_UNIMPLEMENTED
 
 _PW_POLYFILL_END_NAMESPACE_STD

@@ -488,7 +488,7 @@ pw_internal_host_toolchains = [
       forward_variables_from(_pigweed_internal, "*")
       forward_variables_from(_os_specific_config, "*")
       default_configs += _internal_clang_default_configs
-      default_configs += [ "$dir_pw_minimal_cpp_stdlib:use_minimal_cpp_stdlib" ]
+      default_public_deps = [ "$dir_pw_minimal_cpp_stdlib" ]
     }
   },
   {

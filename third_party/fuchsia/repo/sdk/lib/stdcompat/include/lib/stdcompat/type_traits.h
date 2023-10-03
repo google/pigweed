@@ -6,8 +6,8 @@
 #define LIB_STDCOMPAT_TYPE_TRAITS_H_
 
 #include <cstddef>
-#include <tuple>
 #include <type_traits>
+#include <utility>
 
 #include "internal/type_traits.h"
 #include "version.h"

@@ -5,6 +5,7 @@
 #ifndef LIB_STDCOMPAT_INTERNAL_TYPE_TRAITS_H_
 #define LIB_STDCOMPAT_INTERNAL_TYPE_TRAITS_H_
 
+#include <functional>
 #include <type_traits>
 
 namespace cpp17 {
