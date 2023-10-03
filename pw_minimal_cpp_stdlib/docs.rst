@@ -32,7 +32,7 @@ defined in ``public/``. These files are symlinks to their implementations in
 
   .. code-block:: bash
 
-    for f in $(ls internal/); do ln -s internal/$f ${f%.h}; done
+    for f in $(ls pw_minimal_cpp_stdlib/internal/); do ln -s pw_minimal_cpp_stdlib/internal/$f ${f%.h}; done
 
 The top-level ``build_with_minimal_cpp_stdlib`` GN group builds a few supported
 modules with ``pw_minimal_cpp_stdlib`` swapped in for the C++ library at the
