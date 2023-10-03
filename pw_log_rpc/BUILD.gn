@@ -151,6 +151,9 @@ pw_source_set("rpc_log_drain_thread") {
 }
 
 pw_source_set("test_utils") {
+  # TODO: b/303282642 - Remove this testonly
+  testonly = pw_unit_test_TESTONLY
+
   public_deps = [
     "$dir_pw_bytes",
     "$dir_pw_containers:vector",

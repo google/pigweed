@@ -250,6 +250,9 @@ group("pw_system") {
 }
 
 pw_executable("system_example") {
+  # TODO: b/303282642 - Remove this testonly
+  testonly = pw_unit_test_TESTONLY
+
   sources = [ "example_user_app_init.cc" ]
   deps = [
     ":pw_system",
@@ -264,6 +267,9 @@ pw_executable("system_example") {
 }
 
 group("system_examples") {
+  # TODO: b/303282642 - Remove this testonly
+  testonly = pw_unit_test_TESTONLY
+
   deps = [ ":system_example($dir_pigweed/targets/host_device_simulator:host_device_simulator.speed_optimized)" ]
   if (dir_pw_third_party_stm32cube_f4 != "" &&
       dir_pw_third_party_freertos != "") {

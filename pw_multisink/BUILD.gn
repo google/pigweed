@@ -87,6 +87,9 @@ pw_source_set("test_thread") {
 # that depends on this pw_source_set and a pw_source_set that provides the
 # implementaiton of test_thread. See :stl_multisink_test as an example.
 pw_source_set("multisink_threaded_test") {
+  # TODO: b/303282642 - Remove this testonly
+  testonly = pw_unit_test_TESTONLY
+
   sources = [ "multisink_threaded_test.cc" ]
   deps = [
     ":pw_multisink",
