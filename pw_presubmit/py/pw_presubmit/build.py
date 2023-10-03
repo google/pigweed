@@ -99,7 +99,6 @@ def bazel(ctx: PresubmitContext, cmd: str, *args: str) -> None:
                 *keep_going,
                 *args,
                 cwd=ctx.root,
-                env=env_with_clang_vars(),
                 tee=outs,
                 call_annotation={'build_system': 'bazel'},
             )
