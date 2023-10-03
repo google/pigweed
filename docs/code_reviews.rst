@@ -87,7 +87,7 @@ author is no longer actively working on the change.
 For any change that's not seen activity for 3 months, the Pigweed team will,
 
 #. `File a bug <https://issues.pigweed.dev/issues?q=status:open>`_ for the
-   feature or bug that the change was addressing, referncing the change.
+   feature or bug that the change was addressing, referencing the change.
 #. Mark the change Abandoned in Gerrit.
 
 This does *not* mean the change is rejected! It just indicates no further
