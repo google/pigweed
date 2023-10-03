@@ -70,7 +70,7 @@ from pw_presubmit.tools import (
 _LOG = logging.getLogger(__name__)
 
 
-def bazel(ctx: PresubmitContext, cmd: str, *args: str) -> None:
+def bazel(ctx: PresubmitContext, cmd: str, *args: str, **kwargs) -> None:
     """Invokes Bazel with some common flags set.
 
     Intended for use with bazel build and test. May not work with others.
@@ -101,6 +101,7 @@ def bazel(ctx: PresubmitContext, cmd: str, *args: str) -> None:
                 cwd=ctx.root,
                 tee=outs,
                 call_annotation={'build_system': 'bazel'},
+                **kwargs,
             )
 
     except PresubmitFailure as exc:
