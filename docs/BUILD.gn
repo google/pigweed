@@ -46,6 +46,7 @@ pw_doc_group("core_docs") {
     "run_doxygen.py",
   ]
   sources = [
+    "ci_cq_intro.rst",
     "code_of_conduct.rst",
     "code_reviews.rst",
     "concepts/index.rst",
