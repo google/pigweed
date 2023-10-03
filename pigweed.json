@@ -8,7 +8,8 @@
           "\\bthird_party/fuchsia/repo",
           "\\bthird_party/.*\\.json$",
           "\\bpackage\\.lock$",
-          "\\bpw_web/log-viewer/package(-lock)?\\.json"
+          "\\bpw_web/log-viewer/package(-lock)?\\.json",
+          "^patches\\.json$"
         ]
       }
     },
