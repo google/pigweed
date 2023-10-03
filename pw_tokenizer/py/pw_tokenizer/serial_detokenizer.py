@@ -59,7 +59,7 @@ def _parse_args():
     parser.add_argument(
         '-p',
         '--prefix',
-        default=detokenize.BASE64_PREFIX,
+        default=detokenize.NESTED_TOKEN_PREFIX,
         help=(
             'The one-character prefix that signals the start of a '
             'Base64-encoded message. (default: $)'

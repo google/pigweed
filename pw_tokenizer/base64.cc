@@ -32,7 +32,7 @@ extern "C" size_t pw_tokenizer_PrefixedBase64Encode(
     return 0;
   }
 
-  output[0] = kBase64Prefix;
+  output[0] = PW_TOKENIZER_NESTED_PREFIX;
   base64::Encode(
       span(static_cast<const std::byte*>(binary_message), binary_size_bytes),
       &output[1]);
@@ -42,7 +42,7 @@ extern "C" size_t pw_tokenizer_PrefixedBase64Encode(
 
 void PrefixedBase64Encode(span<const std::byte> binary_message,
                           InlineString<>& output) {
-  output.push_back(kBase64Prefix);
+  output.push_back(PW_TOKENIZER_NESTED_PREFIX);
   base64::Encode(binary_message, output);
 }
 
@@ -52,7 +52,7 @@ extern "C" size_t pw_tokenizer_PrefixedBase64Decode(const void* base64_message,
                                                     size_t output_buffer_size) {
   const char* base64 = static_cast<const char*>(base64_message);
 
-  if (base64_size_bytes == 0 || base64[0] != kBase64Prefix) {
+  if (base64_size_bytes == 0 || base64[0] != PW_TOKENIZER_NESTED_PREFIX) {
     return 0;
   }
 

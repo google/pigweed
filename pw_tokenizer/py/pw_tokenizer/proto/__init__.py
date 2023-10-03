@@ -36,7 +36,7 @@ def _tokenized_fields(proto: Message) -> Iterator[FieldDescriptor]:
 def decode_optionally_tokenized(
     detokenizer: detokenize.Detokenizer,
     data: bytes,
-    prefix: str = encode.BASE64_PREFIX,
+    prefix: str = encode.NESTED_TOKEN_PREFIX,
 ) -> str:
     """Decodes data that may be plain text or binary / Base64 tokenized text."""
     # Try detokenizing as binary.
@@ -70,7 +70,7 @@ def decode_optionally_tokenized(
 def detokenize_fields(
     detokenizer: detokenize.Detokenizer,
     proto: Message,
-    prefix: str = encode.BASE64_PREFIX,
+    prefix: str = encode.NESTED_TOKEN_PREFIX,
 ) -> None:
     """Detokenizes fields annotated as tokenized in the given proto.
 

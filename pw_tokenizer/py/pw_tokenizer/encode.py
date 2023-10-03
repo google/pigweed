@@ -23,7 +23,8 @@ from pw_tokenizer import tokens
 
 _INT32_MAX = 2**31 - 1
 _UINT32_MAX = 2**32 - 1
-BASE64_PREFIX = '$'
+NESTED_TOKEN_PREFIX = '$'
+NESTED_TOKEN_BASE_PREFIX = '#'
 
 
 def _zig_zag_encode(value: int) -> int:

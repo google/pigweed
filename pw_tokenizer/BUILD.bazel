@@ -44,6 +44,7 @@ pw_cc_library(
     hdrs = [
         "public/pw_tokenizer/encode_args.h",
         "public/pw_tokenizer/hash.h",
+        "public/pw_tokenizer/nested_tokenization.h",
         "public/pw_tokenizer/tokenize.h",
     ],
     includes = ["public"],

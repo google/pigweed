@@ -31,11 +31,7 @@
 
 #include "pw_preprocessor/util.h"
 #include "pw_tokenizer/config.h"
-
-// This character is used to mark the start of a Base64-encoded tokenized
-// message. For consistency, it is recommended to always use $ if possible.
-// If required, a different non-Base64 character may be used as a prefix.
-#define PW_TOKENIZER_BASE64_PREFIX '$'
+#include "pw_tokenizer/nested_tokenization.h"
 
 PW_EXTERN_C_START
 
@@ -74,15 +70,11 @@ PW_EXTERN_C_END
 
 namespace pw::tokenizer {
 
-inline constexpr char kBase64Prefix = PW_TOKENIZER_BASE64_PREFIX;
-
-#undef PW_TOKENIZER_BASE64_PREFIX  // In C++, use the variable, not the macro.
-
 // Returns the size of a tokenized message (token + arguments) when encoded as
 // prefixed Base64. Includes room for the prefix character ($) and encoded
 // message. This value is the capacity needed to encode to a pw::InlineString.
 constexpr size_t Base64EncodedStringSize(size_t message_size) {
-  return sizeof(kBase64Prefix) + base64::EncodedSize(message_size);
+  return sizeof(PW_TOKENIZER_NESTED_PREFIX) + base64::EncodedSize(message_size);
 }
 
 // Same as Base64EncodedStringSize(), but for sizing char buffers. Includes room
@@ -127,7 +119,7 @@ template <size_t kMaxBinaryMessageSizeBytes>
 auto PrefixedBase64Encode(span<const std::byte> binary_message) {
   static_assert(kMaxBinaryMessageSizeBytes >= 1, "Messages cannot be empty");
   InlineString<Base64EncodedStringSize(kMaxBinaryMessageSizeBytes)> string(
-      1, kBase64Prefix);
+      1, PW_TOKENIZER_NESTED_PREFIX);
   base64::Encode(binary_message, string);
   return string;
 }

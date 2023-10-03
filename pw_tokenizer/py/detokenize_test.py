@@ -780,6 +780,58 @@ class NestedMessageParserTest(unittest.TestCase):
                     self.assertEqual(bytes([byte]), piece)
 
 
+class DetokenizeNested(unittest.TestCase):
+    """Tests detokenizing nested tokens"""
+
+    def test_nested_hashed_arg(self):
+        detok = detokenize.Detokenizer(
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(0xA, 'tokenized argument'),
+                    tokens.TokenizedStringEntry(
+                        2,
+                        'This is a ' + '$#%08x',
+                    ),
+                ]
+            )
+        )
+        self.assertEqual(
+            str(detok.detokenize(b'\x02\0\0\0\x14')),
+            'This is a tokenized argument',
+        )
+
+    def test_nested_base64_arg(self):
+        detok = detokenize.Detokenizer(
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(1, 'base64 argument'),
+                    tokens.TokenizedStringEntry(2, 'This is a %s'),
+                ]
+            )
+        )
+        self.assertEqual(
+            str(detok.detokenize(b'\x02\0\0\0\x09$AQAAAA==')),  # token for 1
+            'This is a base64 argument',
+        )
+
+    def test_deeply_nested_arg(self):
+        detok = detokenize.Detokenizer(
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(1, '$10#0000000005'),
+                    tokens.TokenizedStringEntry(2, 'This is a $#%08x'),
+                    tokens.TokenizedStringEntry(3, 'deeply nested argument'),
+                    tokens.TokenizedStringEntry(4, '$AQAAAA=='),
+                    tokens.TokenizedStringEntry(5, '$AwAAAA=='),
+                ]
+            )
+        )
+        self.assertEqual(
+            str(detok.detokenize(b'\x02\0\0\0\x08')),  # token for 4
+            'This is a deeply nested argument',
+        )
+
+
 class DetokenizeBase64(unittest.TestCase):
     """Tests detokenizing Base64 messages."""
 
@@ -857,6 +909,52 @@ class DetokenizeBase64(unittest.TestCase):
             )
 
 
+class DetokenizeInfiniteRecursion(unittest.TestCase):
+    """Tests that infinite Base64 token recursion resolves."""
+
+    def setUp(self):
+        super().setUp()
+        self.detok = detokenize.Detokenizer(
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(0, '$AAAAAA=='),  # token for 0
+                    tokens.TokenizedStringEntry(1, '$AgAAAA=='),  # token for 2
+                    tokens.TokenizedStringEntry(2, '$#00000003'),  # token for 3
+                    tokens.TokenizedStringEntry(3, '$AgAAAA=='),  # token for 2
+                ]
+            )
+        )
+
+    def test_detokenize_self_recursion(self):
+        for depth in range(5):
+            self.assertEqual(
+                self.detok.detokenize_text(
+                    b'This one is deep: $AAAAAA==', recursion=depth
+                ),
+                b'This one is deep: $AAAAAA==',
+            )
+
+    def test_detokenize_self_recursion_default(self):
+        self.assertEqual(
+            self.detok.detokenize_text(
+                b'This one is deep: $AAAAAA==',
+            ),
+            b'This one is deep: $AAAAAA==',
+        )
+
+    def test_detokenize_cyclic_recursion_even(self):
+        self.assertEqual(
+            self.detok.detokenize_text(b'I said "$AQAAAA=="', recursion=6),
+            b'I said "$AgAAAA=="',
+        )
+
+    def test_detokenize_cyclic_recursion_odd(self):
+        self.assertEqual(
+            self.detok.detokenize_text(b'I said "$AQAAAA=="', recursion=7),
+            b'I said "$#00000003"',
+        )
+
+
 class DetokenizeBase64InfiniteRecursion(unittest.TestCase):
     """Tests that infinite Bas64 token recursion resolves."""
 
@@ -884,7 +982,7 @@ class DetokenizeBase64InfiniteRecursion(unittest.TestCase):
 
     def test_detokenize_self_recursion_default(self):
         self.assertEqual(
-            self.detok.detokenize_base64(b'This one is deep: $AAAAAA=='),
+            self.detok.detokenize_base64(b'This one is deep: $64#AAAAAA=='),
             b'This one is deep: $AAAAAA==',
         )
 

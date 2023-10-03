@@ -190,6 +190,53 @@ Tokenize a message with arguments to a buffer
    logging macro, because it will result in larger code size than passing the
    tokenized data to a function.
 
+.. _module-pw_tokenizer-tokenized-strings-as-args:
+
+Tokenize strings as arguments
+=============================
+Encoding ``%s`` string arguments is inefficient, since ``%s`` strings are
+encoded 1:1, with no tokenization. A string token can be sent as an integer or
+Base64 string argument with a prefix recognized by the detokenization tools.
+The detokenizer expands the argument to the string represented by the integer
+and removes the delimiter analogously to base64 detokenization.
+
+Nested tokens have the following format within strings:
+
+.. code-block::
+
+   $[BASE#]TOKEN
+
+The ``$`` is a common prefix required for all nested tokens. It is possible to
+configure a different common prefix if necessary, but using the default ``$``
+character is strongly recommended.
+
+The optional ``BASE`` defines the numeric base encoding of the token. Accepted
+values are 8, 10, 16, and 64. If the hash symbol ``#`` is used without
+specifying a number, the base is assumed to be 16. If the base option is
+omitted entirely, the base defaults to 64 for backward compatibility. All
+encodings except Base64 are not case sensitive. This may be expanded to support
+other bases in the future.
+
+Non-Base64 tokens are encoded strictly as 32-bit integers (with padding).
+Base64 data may additionally encode string arguments for the detokenized token,
+and therefore does not have a maximum width.
+
+This feature is currently only supported by the Python backend.
+
+Example tokens:
+---------------
+
+.. code-block::
+
+   // Base-10 token
+   $10#0086025943
+
+   // Base-16 token
+   $#0000001A
+
+   // Base64 token
+   $QA19pfEQ
+
 .. _module-pw_tokenizer-custom-macro:
 
 Tokenize a message with arguments in a custom macro
@@ -510,36 +557,6 @@ this character array changes, which means the same static variable is defined
 with different sizes. It should be safe to suppress these warnings, but, when
 possible, code that tokenizes strings with macros that can change value should
 be moved to source files rather than headers.
-
-.. _module-pw_tokenizer-tokenized-strings-as-args:
-
-Tokenized strings as ``%s`` arguments
--------------------------------------
-Encoding ``%s`` string arguments is inefficient, since ``%s`` strings are
-encoded 1:1, with no tokenization. It would be better to send a tokenized string
-literal as an integer instead of a string argument, but this is not yet
-supported.
-
-A string token could be sent by marking an integer % argument in a way
-recognized by the detokenization tools. The detokenizer would expand the
-argument to the string represented by the integer.
-
-.. code-block:: cpp
-
-   #define PW_TOKEN_ARG PRIx32 "<PW_TOKEN]"
-
-   constexpr uint32_t answer_token = PW_TOKENIZE_STRING("Uh, who is there");
-
-   PW_TOKENIZE_STRING("Knock knock: %" PW_TOKEN_ARG "?", answer_token);
-
-Strings with arguments could be encoded to a buffer, but since printf strings
-are null-terminated, a binary encoding would not work. These strings can be
-prefixed Base64-encoded and sent as ``%s`` instead. See
-:ref:`module-pw_tokenizer-base64-format`.
-
-Another possibility: encode strings with arguments to a ``uint64_t`` and send
-them as an integer. This would be efficient and simple, but only support a small
-number of arguments.
 
 ----------------------
 Tokenization in Python

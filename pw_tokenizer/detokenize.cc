@@ -21,6 +21,7 @@
 #include "pw_bytes/endian.h"
 #include "pw_tokenizer/base64.h"
 #include "pw_tokenizer/internal/decode.h"
+#include "pw_tokenizer/nested_tokenization.h"
 
 namespace pw::tokenizer {
 namespace {
@@ -39,7 +40,7 @@ class NestedMessageDetokenizer {
   void Detokenize(char next_char) {
     switch (state_) {
       case kNonMessage:
-        if (next_char == kBase64Prefix) {
+        if (next_char == PW_TOKENIZER_NESTED_PREFIX) {
           message_buffer_.push_back(next_char);
           state_ = kMessage;
         } else {
@@ -51,7 +52,7 @@ class NestedMessageDetokenizer {
           message_buffer_.push_back(next_char);
         } else {
           HandleEndOfMessage();
-          if (next_char == kBase64Prefix) {
+          if (next_char == PW_TOKENIZER_NESTED_PREFIX) {
             message_buffer_.push_back(next_char);
           } else {
             output_.push_back(next_char);
