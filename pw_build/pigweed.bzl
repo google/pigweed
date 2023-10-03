@@ -14,9 +14,12 @@
 """Pigweed build environment for bazel."""
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "use_cpp_toolchain")
 load(
     "//pw_build/bazel_internal:pigweed_internal.bzl",
+    "PW_DEFAULT_COPTS",
     _add_defaults = "add_defaults",
+    _compile_cc = "compile_cc",
 )
 
 # Used by `pw_cc_test`.
@@ -174,3 +177,139 @@ def host_backend_alias(name, backend):
             "//conditions:default": "@pigweed//pw_build:unspecified_backend",
         }),
     )
+
+CcBlobInfo = provider(
+    "Input to pw_cc_blob_library",
+    fields = {
+        "symbol_name": "The C++ symbol for the byte array.",
+        "file_path": "The file path for the binary blob.",
+        "linker_section": "If present, places the byte array in the specified " +
+                          "linker section.",
+        "alignas": "If present, the byte array is aligned as specified. The " +
+                   "value of this argument is used verbatim in an alignas() " +
+                   "specifier for the blob byte array.",
+    },
+)
+
+def _pw_cc_blob_info_impl(ctx):
+    return [CcBlobInfo(
+        symbol_name = ctx.attr.symbol_name,
+        file_path = ctx.file.file_path,
+        linker_section = ctx.attr.linker_section,
+        alignas = ctx.attr.alignas,
+    )]
+
+pw_cc_blob_info = rule(
+    implementation = _pw_cc_blob_info_impl,
+    attrs = {
+        "symbol_name": attr.string(),
+        "file_path": attr.label(allow_single_file = True),
+        "linker_section": attr.string(default = ""),
+        "alignas": attr.string(default = ""),
+    },
+    provides = [CcBlobInfo],
+)
+
+def _pw_cc_blob_library_impl(ctx):
+    # Python tool takes a json file with info about blobs to generate.
+    blobs = []
+    blob_paths = []
+    for blob in ctx.attr.blobs:
+        blob_info = blob[CcBlobInfo]
+        blob_paths.append(blob_info.file_path)
+        blob_dict = {
+            "file_path": blob_info.file_path.path,
+            "symbol_name": blob_info.symbol_name,
+            "linker_section": blob_info.linker_section,
+        }
+        if (blob_info.alignas):
+            blob_dict["alignas"] = blob_info.alignas
+        blobs.append(blob_dict)
+    blob_json = ctx.actions.declare_file(ctx.label.name + "_blob.json")
+    ctx.actions.write(blob_json, json.encode(blobs))
+
+    hdr = ctx.actions.declare_file(ctx.attr.out_header)
+    src = ctx.actions.declare_file(ctx.attr.out_header.removesuffix(".h") + ".cc")
+
+    if (not ctx.attr.namespace):
+        fail("namespace required for pw_cc_blob_library")
+
+    args = ctx.actions.args()
+    args.add("--blob-file={}".format(blob_json.path))
+    args.add("--namespace={}".format(ctx.attr.namespace))
+    args.add("--header-include={}".format(ctx.attr.out_header))
+    args.add("--out-header={}".format(hdr.path))
+    args.add("--out-source={}".format(src.path))
+
+    ctx.actions.run(
+        inputs = depset(direct = blob_paths + [blob_json]),
+        progress_message = "Generating cc blob library for %s" % (ctx.label.name),
+        tools = [
+            ctx.executable._generate_cc_blob_library,
+            ctx.executable._python_runtime,
+        ],
+        outputs = [hdr, src],
+        executable = ctx.executable._generate_cc_blob_library,
+        arguments = [args],
+    )
+
+    return _compile_cc(
+        ctx,
+        [src],
+        [hdr],
+        deps = ctx.attr.deps,
+        includes = [ctx.bin_dir.path + "/" + ctx.label.package],
+        defines = [],
+        user_compile_flags = PW_DEFAULT_COPTS,
+    )
+
+pw_cc_blob_library = rule(
+    implementation = _pw_cc_blob_library_impl,
+    doc = """Turns binary blobs into a C++ library of hard-coded byte arrays.
+
+    The byte arrays are constant initialized and are safe to access at any time,
+    including before main().
+
+    Args:
+        ctx: Rule context.
+        blobs: A list of CcBlobInfo where each entry corresponds to a binary
+               blob to be transformed from file to byte array. This is a
+               required field. Blob fields include:
+
+               symbol_name [required]: The C++ symbol for the byte array.
+
+               file_path [required]: The file path for the binary blob.
+
+               linker_section [optional]: If present, places the byte array
+                in the specified linker section.
+
+               alignas [optional]: If present, the byte array is aligned as
+                specified. The value of this argument is used verbatim
+                in an alignas() specifier for the blob byte array.
+
+        out_header: The header file to generate. Users will include this file
+                    exactly as it is written here to reference the byte arrays.
+
+        namespace: The C++ namespace in which to place the generated blobs.
+    """,
+    attrs = {
+        "blobs": attr.label_list(providers = [CcBlobInfo]),
+        "out_header": attr.string(),
+        "namespace": attr.string(),
+        "_python_runtime": attr.label(
+            default = Label("//:python3_interpreter"),
+            allow_single_file = True,
+            executable = True,
+            cfg = "exec",
+        ),
+        "_generate_cc_blob_library": attr.label(
+            default = Label("//pw_build/py:generate_cc_blob_library"),
+            executable = True,
+            cfg = "exec",
+        ),
+        "deps": attr.label_list(default = [Label("//pw_preprocessor")]),
+    },
+    provides = [CcInfo],
+    fragments = ["cpp"],
+    toolchains = use_cpp_toolchain(),
+)

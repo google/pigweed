@@ -217,6 +217,105 @@ components:
          }),
      )
 
+pw_cc_blob_library
+------------------
+The ``pw_cc_blob_library`` rule is useful for embedding binary data into a
+program. The rule takes in a mapping of symbol names to file paths, and
+generates a set of C++ source and header files that embed the contents of the
+passed-in files as arrays of ``std::byte``.
+
+The blob byte arrays are constant initialized and are safe to access at any
+time, including before ``main()``.
+
+``pw_cc_blob_library`` is also available in the :ref:`GN <module-pw_build-cc_blob_library>`
+and CMake builds.
+
+Arguments
+^^^^^^^^^
+* ``blobs``: A list of ``pw_cc_blob_info`` targets, where each target
+  corresponds to a binary blob to be transformed from file to byte array. This
+  is a required field. ``pw_cc_blob_info`` attributes include:
+
+  * ``symbol_name``: The C++ symbol for the byte array.
+  * ``file_path``: The file path for the binary blob.
+  * ``linker_section``: If present, places the byte array in the specified
+    linker section.
+  * ``alignas``: If present, uses the specified string verbatim in
+    the ``alignas()`` specifier for the byte array.
+
+* ``out_header``: The header file to generate. Users will include this file
+  exactly as it is written here to reference the byte arrays.
+* ``namespace``: C++ namespace to place the generated blobs within.
+
+Example
+^^^^^^^
+**BUILD.bazel**
+
+.. code-block::
+
+   pw_cc_blob_info(
+     name = "foo_blob",
+     file_path = "foo.bin",
+     symbol_name = "kFooBlob",
+   )
+
+   pw_cc_blob_info(
+     name = "bar_blob",
+     file_path = "bar.bin",
+     symbol_name = "kBarBlob",
+     linker_section = ".bar_section",
+   )
+
+   pw_cc_blob_library(
+     name = "foo_bar_blobs",
+     blobs = [
+       ":foo_blob",
+       ":bar_blob",
+     ],
+     out_header = "my/stuff/foo_bar_blobs.h",
+     namespace = "my::stuff",
+   )
+
+.. note:: If the binary blobs are generated as part of the build, be sure to
+          list them as deps to the pw_cc_blob_library target.
+
+**Generated Header**
+
+.. code-block::
+
+   #pragma once
+
+   #include <array>
+   #include <cstddef>
+
+   namespace my::stuff {
+
+   extern const std::array<std::byte, 100> kFooBlob;
+
+   extern const std::array<std::byte, 50> kBarBlob;
+
+   }  // namespace my::stuff
+
+**Generated Source**
+
+.. code-block::
+
+   #include "my/stuff/foo_bar_blobs.h"
+
+   #include <array>
+   #include <cstddef>
+
+   #include "pw_preprocessor/compiler.h"
+
+   namespace my::stuff {
+
+   const std::array<std::byte, 100> kFooBlob = { ... };
+
+   PW_PLACE_IN_SECTION(".bar_section")
+   const std::array<std::byte, 50> kBarBlob = { ... };
+
+   }  // namespace my::stuff
+
 Toolchains and platforms
 ------------------------
 Pigweed provides clang-based host toolchains for Linux and Mac Arm gcc

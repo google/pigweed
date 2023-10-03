@@ -39,8 +39,12 @@ _proto_compiler_aspect.
 """
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
-load("@pigweed//pw_build/bazel_internal:pigweed_internal.bzl", "PW_DEFAULT_COPTS")
+load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "use_cpp_toolchain")
+load(
+    "@pigweed//pw_build/bazel_internal:pigweed_internal.bzl",
+    "PW_DEFAULT_COPTS",
+    _compile_cc = "compile_cc",
+)
 load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 
 # For Copybara use only
@@ -459,62 +463,6 @@ def _proto_compiler_aspect(extensions, protoc_plugin, plugin_options = []):
         implementation = _proto_compiler_aspect_impl,
         provides = [PwProtoInfo],
     )
-
-def _compile_cc(
-        ctx,
-        srcs,
-        hdrs,
-        deps,
-        includes = [],
-        defines = [],
-        user_compile_flags = []):
-    """Compiles a list C++ source files.
-
-    Returns:
-      A CcInfo provider.
-    """
-    cc_toolchain = find_cpp_toolchain(ctx)
-    feature_configuration = cc_common.configure_features(
-        ctx = ctx,
-        cc_toolchain = cc_toolchain,
-        requested_features = ctx.features,
-        unsupported_features = ctx.disabled_features,
-    )
-
-    compilation_contexts = [dep[CcInfo].compilation_context for dep in deps]
-    compilation_context, compilation_outputs = cc_common.compile(
-        name = ctx.label.name,
-        actions = ctx.actions,
-        feature_configuration = feature_configuration,
-        cc_toolchain = cc_toolchain,
-        srcs = srcs,
-        includes = includes,
-        defines = defines,
-        public_hdrs = hdrs,
-        user_compile_flags = user_compile_flags,
-        compilation_contexts = compilation_contexts,
-    )
-
-    linking_contexts = [dep[CcInfo].linking_context for dep in deps]
-    linking_context, _ = cc_common.create_linking_context_from_compilation_outputs(
-        actions = ctx.actions,
-        feature_configuration = feature_configuration,
-        cc_toolchain = cc_toolchain,
-        compilation_outputs = compilation_outputs,
-        linking_contexts = linking_contexts,
-        disallow_dynamic_library = True,
-        name = ctx.label.name,
-    )
-
-    transitive_output_files = [dep[DefaultInfo].files for dep in deps]
-    output_files = depset(
-        compilation_outputs.pic_objects + compilation_outputs.objects,
-        transitive = transitive_output_files,
-    )
-    return [DefaultInfo(files = output_files), CcInfo(
-        compilation_context = compilation_context,
-        linking_context = linking_context,
-    )]
 
 def _impl_pw_proto_library(ctx):
     """Implementation of the proto codegen rule.

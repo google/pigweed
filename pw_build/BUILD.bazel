@@ -14,6 +14,8 @@
 
 load(
     "//pw_build:pigweed.bzl",
+    "pw_cc_blob_info",
+    "pw_cc_blob_library",
     "pw_cc_test",
 )
 
@@ -28,11 +30,33 @@ config_setting(
     },
 )
 
-# TODO: b/238339027 - Run cc_blob_library_test when pw_cc_blob_library is
-#     supported in Bazel.
-filegroup(
+pw_cc_blob_info(
+    name = "test_blob_aligned",
+    alignas = "512",
+    file_path = "test_blob_0123.bin",
+    symbol_name = "kFirstBlob0123",
+)
+
+pw_cc_blob_info(
+    name = "test_blob_unaligned",
+    file_path = "test_blob_0123.bin",
+    symbol_name = "kSecondBlob0123",
+)
+
+pw_cc_blob_library(
+    name = "test_blob",
+    blobs = [
+        ":test_blob_aligned",
+        ":test_blob_unaligned",
+    ],
+    namespace = "test::ns",
+    out_header = "pw_build/test_blob.h",
+)
+
+pw_cc_test(
     name = "cc_blob_library_test",
     srcs = ["cc_blob_library_test.cc"],
+    deps = [":test_blob"],
 )
 
 # Bazel produces root-relative file paths without the -ffile-prefix-map option.

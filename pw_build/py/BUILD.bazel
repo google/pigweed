@@ -28,3 +28,10 @@ py_library(
     ],
     imports = ["."],
 )
+
+py_binary(
+    name = "generate_cc_blob_library",
+    srcs = [
+        "pw_build/generate_cc_blob_library.py",
+    ],
+)
