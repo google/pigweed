@@ -558,23 +558,12 @@ Building a custom executable/app image
 
       out/stm32f429i_disc1_debug/obj/foo/bin/foo
 
-CMake
------
+The CMake build
+===============
 A well-known name in C/C++ development, `CMake`_ is widely used by all kinds of
 projects, including embedded devices. Pigweed's CMake support is provided
 primarily for projects that have an existing CMake build and wish to integrate
 Pigweed modules.
-
-Bazel
------
-The open source version of Google's internal build system. `Bazel`_ has been
-growing in popularity within the open source world, as well as being adopted by
-various proprietary projects. Its modular structure makes it a great fit for
-à la carte usage.
-
-.. note::
-  Bazel support is experimental and only for the brave for now. If you are
-  looking for stable set of build API's please use GN.
 
 .. _docs-build-system-bazel:
 
@@ -604,17 +593,17 @@ commonly used commands used in bazel are;
 
 Building
 ^^^^^^^^
-When it comes to building/testing your Bazel target for a specific Pigweed
-target (e.g. stm32f429i-discovery) a slight variation is required.
+When it comes to building/testing your build target for a specific target
+platform (e.g. stm32f429i-discovery) a slight variation is required.
 
 .. code-block:: sh
 
   bazel build //your:target \
-    --platforms=@pigweed//pw_build/platforms:stm32f429i-disc1
+    --platforms=@pigweed//pw_build/platforms:lm3s6965evb
 
 For more information on how to create your own platforms refer to the official
 `Bazel platforms reference`_. You may also find helpful examples of constraints
-and platforms in the '//pw_build/platforms' and '//pw_build/constraints'
+and platforms in the ``//pw_build/platforms`` and ``//pw_build/constraints``
 directories.
 
 .. _Bazel platforms reference: https://docs.bazel.build/versions/main/platforms.html
@@ -623,8 +612,8 @@ Testing
 ^^^^^^^
 Running tests on an embedded target with Bazel is possible although support for
 this is experimental. The easiest way of achieving this at the moment is to use
-Bazel's '--run_under' flag. To make this work create a Bazel target
-('//your_handler') that;
+Bazel's ``--run_under`` flag. To make this work create a Bazel target
+(``//your_handler``) that:
 
 1. Takes a single argument (the path to the elf) and uploads the elf to your
    Pigweed target.
@@ -633,7 +622,8 @@ Bazel's '--run_under' flag. To make this work create a Bazel target
    and returns (0, 1) respectively if one of the keywords is intercepted. (This
    step assumes you are using the pw_unit_test package and it is configured for
    your target).
-4. Run;
+
+Then, run:
 
    .. code-block:: sh
 
@@ -732,7 +722,7 @@ and the build will continue. e.g.
 
 .. code-block:: sh
 
-  bazel build //... --platforms=@pigweed//pw_build/platforms:cortex_m0
+  bazel build //... --platforms=@pigweed//pw_build/platforms:lm3s6965evb
 
 This allows for you to easily create compatibility matricies without adversely
 affecting your ability build your entire repo for a given Pigweed target.
