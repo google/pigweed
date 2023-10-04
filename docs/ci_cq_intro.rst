@@ -9,55 +9,75 @@ CI/CQ Intro
 ----------
 Essentials
 ----------
-#. The Gerrit ``Submit`` button is hidden, replaced by the ``Submit to CQ``
-   button. The ``Submit`` button is still accessible behind the "..." button in
-   the top right corner of the Gerrit UI, but in some cases requires elevated
-   permissions.
-#. Presubmits are not automatically run when a patch set is uploaded. Click
-   ``CQ Dry Run`` to trigger them.
+**Submitting CLs**
+  The Gerrit ``Submit`` button is hidden, replaced by the ``Submit to CQ``
+  button. The ``Submit`` button is still accessible behind the ``...`` button
+  in the top right corner of the Gerrit UI, but in some cases requires elevated
+  permissions.
 
-   *  You can also use ``git push origin +HEAD:refs/for/main%l=Commit-Queue``.
-   *  CQ is enabled for all branches. If you upload to an individual
-      repository branch X and the manifest or superproject also has a branch
-      X, that branch of the manifest will be used.
+**Triggering Presubmits**
+  Presubmits are not automatically run when a patch set is uploaded. Click
+  ``CQ Dry Run`` to trigger them. (You can also use
+  ``git push origin +HEAD:refs/for/main%l=Commit-Queue``).
 
-#. If you don't have recent passing results from a ``CQ Dry Run`` (within 24
-   hours) then ``Submit to CQ`` will run presubmits. After any newly run
-   presubmits pass this will submit the change.
-#. If a presubmit fails you'll get a Gerrit comment with a link to the failing
-   build. The status of tryjobs (pending, running, failed, passed, etc.) is
-   shown directly in the Gerrit UI (see :ref:`tryjobs`).
-#. If you want your change to be automatically submitted when all requirements
-   are met (``Code-Review +2``, ``OWNERS``-approval, all comments resolved,
-   etc.) set the ``Auto-Submit`` label to +1.
+**Presubmit Validity Duration**
+  If you don't have recent passing results from a ``CQ Dry Run`` (within 24
+  hours) then ``Submit to CQ`` will run presubmits. After any newly run
+  presubmits pass this will submit the change.
+
+**User Interface**
+  If a presubmit fails you'll get a Gerrit comment with a link to the failing
+  build. The status of tryjobs (pending, running, failed, passed, etc.) is
+  shown directly in the Gerrit UI (see :ref:`tryjobs`).
+
+**Auto-Submit**
+  If you want your change to be automatically submitted when all requirements
+  are met (``Code-Review +2``, ``OWNERS``-approval, all comments resolved,
+  etc.) set the ``Auto-Submit`` label to +1.
 
 .. _further-details:
 
 ---------------
 Further Details
 ---------------
-#. Changes are always rebased on the most recent commit when tested. If they
-   fail to rebase the build fails.
-#. ``CQ Dry Run`` is the same as voting ``Commit-Queue +1`` label and
-   ``Submit to CQ`` is the same as voting ``Commit-Queue +2``. If you vote both
-   ``Code-Review +2`` and ``Commit-Queue +2`` on somebody's change you are
-   submitting it for them.
-#. Jobs are run post-submission too and can be seen at
-   https://ci.chromium.org/p/pigweed (for public projects) and
-   https://ci.chromium.org/p/pigweed-internal (for internal projects).
-#. You can vote ``Pigweed-Auto-Submit +1`` (perhaps with a slightly different
-   label name on different Gerrit hosts) and within a few minutes of
-   getting the required code reviews your change will automatically be
-   submitted. If this submission fails it will be retried a couple times with
-   backoff and then the auto submit job will give up.
-#. Just because a change has been submitted doesn't mean it's live in the
-   project. Submodules and Android Repo Tool projects often need to be
-   `rolled (internal-only link) <http://go/pw-rollers>`_ before they're in the
-   most recent checkout of the project.
-#. The ``Presubmit-Verified`` label is set at the completion of CQ runs. It does
-   not block submission, but can be used by Copybara to see if CQ has passed.
-   If it looks incorrect, do another CQ run and it will be updated.
-#. All builders can be viewed from Pigweed's "Builder Viz":
+**Applying Changes in Testing**
+  Changes are always rebased on the most recent commit when tested. If they
+  fail to rebase the build fails.
+  ``CQ Dry Run`` is the same as voting ``Commit-Queue +1`` label and
+  ``Submit to CQ`` is the same as voting ``Commit-Queue +2``. If you vote both
+  ``Code-Review +2`` and ``Commit-Queue +2`` on somebody's change you are
+  submitting it for them.
+
+**Post-Submit Builders**
+  Jobs are run post-submission too and can be seen at
+  https://ci.chromium.org/p/pigweed (for public projects) and
+  https://ci.chromium.org/p/pigweed-internal (for internal projects).
+
+**Auto-Submit**
+  You can vote ``Pigweed-Auto-Submit +1`` (perhaps with a slightly different
+  label name on different Gerrit hosts) and within a few minutes of
+  getting the required code reviews your change will automatically be
+  submitted. If this submission fails it will be retried a couple times with
+  backoff and then the auto submit job will give up.
+
+**Non-main Branches**
+  CQ is enabled for all branches. If you upload to an individual repository
+  branch X and the manifest or superproject also has a branch X, that branch of
+  the manifest will be used.
+
+**Rollers**
+  Just because a change has been submitted doesn't mean it's live in the
+  project. Submodules and Android Repo Tool projects often need to be
+  `rolled (internal-only link) <http://go/pw-rollers>`_ before they're in the
+  most recent checkout of the project.
+
+**Presubmit Result**
+  The ``Presubmit-Verified`` label is set at the completion of CQ runs. It does
+  not block submission, but can be used by Copybara to see if CQ has passed.
+  If it looks incorrect, do another CQ run and it will be updated.
+
+**List of Builders**
+  All builders can be viewed from Pigweed's "Builder Viz":
 
    *  `Builder Viz link for external contributors <https://pigweed.googlesource.com/infra/config/+/main/generated/pigweed/for_review_only/viz/index.md>`_
    *  `Builder Viz link for Googlers <https://pigweed-internal.googlesource.com/infra/config/+/main/generated/pigweed/for_review_only/viz/index.md>`_
