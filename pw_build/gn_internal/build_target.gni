@@ -130,8 +130,14 @@ template("pw_internal_build_target") {
       remove_configs = []
     }
 
+    # Check if configs is already defined.
+    # configs will already exist if set_defaults() is used.
+    if (!defined(configs)) {
+      configs = []
+    }
+
     # `configs` was not forwarded initially to support flag ordering.
-    configs = filter_exclude(_default_configs, remove_configs)
+    configs += filter_exclude(_default_configs, remove_configs)
 
     # Add the public_deps from the actual target last so they are prioritized.
     # This set of public_deps MUST be added last because it affects flag
