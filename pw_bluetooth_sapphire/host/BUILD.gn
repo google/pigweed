@@ -53,7 +53,7 @@ source_set("sources") {
     ":stack",
     "fidl",
     "//sdk/banjo/fuchsia.hardware.bt.vendor:fuchsia.hardware.bt.vendor_banjo_cpp",
-    "//sdk/fidl/fuchsia.hardware.bluetooth:fuchsia.hardware.bluetooth_cpp_wire",
+    "//sdk/fidl/fuchsia.hardware.bluetooth:fuchsia.hardware.bluetooth_cpp",
     "//sdk/lib/fit",
     "//src/connectivity/bluetooth/fidl:host_hlcpp",
     "//src/connectivity/bluetooth/lib/fidl",
