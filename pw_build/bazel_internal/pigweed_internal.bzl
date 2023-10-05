@@ -111,7 +111,7 @@ def _preprocess_linker_script_impl(ctx):
             # not pulled in here the flag must be explicitly added.
             "-no-canonical-prefixes",
             "-xc",
-            ctx.file.linker_script.short_path,
+            ctx.file.linker_script.path,
             "-o",
             output_script.path,
         ] + [
