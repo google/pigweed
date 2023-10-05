@@ -347,4 +347,3 @@ Presubmit flags
   embedded_cpp_guide
   style_guide
   code_reviews
-  ci_cq_intro

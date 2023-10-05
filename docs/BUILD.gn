@@ -46,7 +46,6 @@ pw_doc_group("core_docs") {
     "run_doxygen.py",
   ]
   sources = [
-    "ci_cq_intro.rst",
     "code_of_conduct.rst",
     "code_reviews.rst",
     "concepts/index.rst",
@@ -55,6 +54,8 @@ pw_doc_group("core_docs") {
     "embedded_cpp_guide.rst",
     "faq.rst",
     "getting_started.rst",
+    "infra/ci_cq_intro.rst",
+    "infra/index.rst",
     "module_structure.rst",
     "os/index.rst",
     "os/zephyr/index.rst",
