@@ -70,6 +70,7 @@ generate_toolchain("rp2040") {
 
     pw_sync_INTERRUPT_SPIN_LOCK_BACKEND =
         "$dir_pw_sync_baremetal:interrupt_spin_lock"
+    pw_chrono_SYSTEM_CLOCK_BACKEND = "$dir_pw_chrono_rp2040:system_clock"
     pw_sync_MUTEX_BACKEND = "$dir_pw_sync_baremetal:mutex"
     pw_rpc_CONFIG = "$dir_pw_rpc:disable_global_mutex"
 

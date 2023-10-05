@@ -28,6 +28,7 @@ pw_chre
 pw_chrono
 pw_chrono_embos
 pw_chrono_freertos
+pw_chrono_rp2040
 pw_chrono_stl
 pw_chrono_threadx
 pw_chrono_zephyr

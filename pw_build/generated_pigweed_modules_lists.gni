@@ -58,6 +58,7 @@ declare_args() {
   dir_pw_chrono = get_path_info("../pw_chrono", "abspath")
   dir_pw_chrono_embos = get_path_info("../pw_chrono_embos", "abspath")
   dir_pw_chrono_freertos = get_path_info("../pw_chrono_freertos", "abspath")
+  dir_pw_chrono_rp2040 = get_path_info("../pw_chrono_rp2040", "abspath")
   dir_pw_chrono_stl = get_path_info("../pw_chrono_stl", "abspath")
   dir_pw_chrono_threadx = get_path_info("../pw_chrono_threadx", "abspath")
   dir_pw_chrono_zephyr = get_path_info("../pw_chrono_zephyr", "abspath")
@@ -222,6 +223,7 @@ declare_args() {
     dir_pw_chrono,
     dir_pw_chrono_embos,
     dir_pw_chrono_freertos,
+    dir_pw_chrono_rp2040,
     dir_pw_chrono_stl,
     dir_pw_chrono_threadx,
     dir_pw_chrono_zephyr,
@@ -371,6 +373,7 @@ declare_args() {
     "$dir_pw_chrono:tests",
     "$dir_pw_chrono_embos:tests",
     "$dir_pw_chrono_freertos:tests",
+    "$dir_pw_chrono_rp2040:tests",
     "$dir_pw_chrono_stl:tests",
     "$dir_pw_chrono_threadx:tests",
     "$dir_pw_chrono_zephyr:tests",
@@ -520,6 +523,7 @@ declare_args() {
     "$dir_pw_chrono:docs",
     "$dir_pw_chrono_embos:docs",
     "$dir_pw_chrono_freertos:docs",
+    "$dir_pw_chrono_rp2040:docs",
     "$dir_pw_chrono_stl:docs",
     "$dir_pw_chrono_threadx:docs",
     "$dir_pw_chrono_zephyr:docs",
