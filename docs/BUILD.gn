@@ -56,6 +56,7 @@ pw_doc_group("core_docs") {
     "getting_started.rst",
     "infra/ci_cq_intro.rst",
     "infra/index.rst",
+    "infra/rollers.rst",
     "module_structure.rst",
     "os/index.rst",
     "os/zephyr/index.rst",
