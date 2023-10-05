@@ -125,7 +125,7 @@ pw_test("timer_facade_test") {
 }
 
 pw_test("chrono_timer_test") {
-  enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
+  enable_if = pw_chrono_SYSTEM_TIMER_BACKEND != ""
   sources = [ "chrono_test.cc" ]
   public_deps = [
     ":chrono_timer",
