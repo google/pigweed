@@ -28,7 +28,7 @@ from typing import Iterable, Optional
 import pw_cli.log
 
 from pw_bloat.bloaty_config import generate_bloaty_config
-from pw_bloat.label import DataSourceMap, Label
+from pw_bloat.label import DataSourceMap
 from pw_bloat.label_output import (
     BloatTableOutput,
     LineCharset,
@@ -56,6 +56,17 @@ def parse_args() -> argparse.Namespace:
         '--single-report',
         action="store_true",
         help='Determine if calling single size report',
+    )
+    parser.add_argument(
+        '--json-key-prefix',
+        type=str,
+        help='Prefix for json keys in size report, default = target name',
+        default=None,
+    )
+    parser.add_argument(
+        '--full-json-summary',
+        action="store_true",
+        help='Include all levels of data sources in json binary report',
     )
 
     return parser.parse_args()
@@ -166,19 +177,35 @@ def write_file(filename: str, contents: str, out_dir_file: str) -> None:
     _LOG.debug('Output written to %s', path)
 
 
-def create_binary_sizes_json(binary_name: str, labels: Iterable[Label]) -> str:
+def create_binary_sizes_json(
+    key_prefix: str,
+    data_source_map: DataSourceMap,
+    full_json: bool,
+) -> str:
     """Creates a binary_sizes.json file content from a list of labels.
 
     Args:
-      binary_name: the single binary name to attribute segment sizes to.
-      labels: the label.Label content to include
+      key_prefix: Prefix for the json keys.
+      data_source_map: Hierarchical structure containing size of sources.
+      full_json: Report contains all sources, otherwise just top level.
 
     Returns:
-      a string of content to write to binary_sizes.json file.
+      A string of content to write to binary_sizes.json file.
     """
-    json_content = {
-        f'{binary_name} {label.name}': label.size for label in labels
-    }
+    if full_json:
+        *ds_parents, last = data_source_map.get_ds_names()
+        json_content = {}
+        for label in data_source_map.labels():
+            key = f'{key_prefix}.'
+            for ds_parent, label_parent in zip(ds_parents, label.parents):
+                key += f'{ds_parent}.{label_parent}.'
+            key += f'{last}.{label.name}'
+            json_content[key] = label.size
+    else:
+        json_content = {
+            f'{key_prefix}.{label.name}': label.size
+            for label in data_source_map.labels(ds_index=0)
+        }
     return json.dumps(json_content, sort_keys=True, indent=2)
 
 
@@ -189,8 +216,27 @@ def single_target_output(
     out_dir: str,
     data_sources: Iterable[str],
     extra_args: Iterable[str],
+    json_key_prefix: str,
+    full_json: bool,
 ) -> int:
-    """TODO(frolv) Add docstring."""
+    """Generates size report for a single target.
+
+    Args:
+      target: The ELF binary on which to run.
+      bloaty_config: Path to Bloaty config file.
+      target_out_file: Output file name for the generated reports.
+      out_dir: Path to write size reports to.
+      data_sources: Hierarchical data sources to display.
+      extra_args: Additional command-line arguments to pass to Bloaty.
+      json_key_prefix: Prefix for the json keys, uses target name by default.
+      full_json: Json report contains all hierarchical data source totals.
+
+    Returns:
+        Zero on success.
+
+    Raises:
+        subprocess.CalledProcessError: The Bloaty invocation failed.
+    """
 
     try:
         single_output = run_bloaty(
@@ -219,9 +265,9 @@ def single_target_output(
 
     single_report_table = single_report.create_table()
 
-    # Generates contents for top level summary for binary_sizes.json
+    # Generates contents for summary printed to binary_sizes.json
     binary_json_content = create_binary_sizes_json(
-        target, data_source_map.labels(ds_index=0)
+        json_key_prefix, data_source_map, full_json
     )
 
     print(single_report_table)
@@ -245,6 +291,7 @@ def main() -> int:
     gn_arg_dict = {}
     json_file = open(args.gn_arg_path)
     gn_arg_dict = json.load(json_file)
+    json_key_prefix = args.json_key_prefix
 
     if args.single_report:
         single_binary_args = gn_arg_dict['binaries'][0]
@@ -255,6 +302,10 @@ def main() -> int:
         if single_binary_args['data_sources']:
             data_sources = single_binary_args['data_sources']
 
+        # Use target binary name as json key prefix if none given
+        if not json_key_prefix:
+            json_key_prefix = single_binary_args['target']
+
         return single_target_output(
             single_binary_args['target'],
             single_binary_args['bloaty_config'],
@@ -262,6 +313,8 @@ def main() -> int:
             gn_arg_dict['out_dir'],
             data_sources,
             extra_args,
+            json_key_prefix,
+            args.full_json_summary,
         )
 
     default_data_sources = ['segment_names', 'symbols']

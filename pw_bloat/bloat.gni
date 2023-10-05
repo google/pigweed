@@ -49,12 +49,19 @@ declare_args() {
 #     output. Optional.
 #     github.com/google/bloaty/blob/a1bbc93f5f6f969242046dffd9deb379f6735020/doc/using.md
 #   source_filter: Regex to filter data source names in Bloaty. Optional.
+#   json_key_prefix: Prefix for the key names in json size report. Defaults to
+#     target name. Optional.
+#   full_json_summary: If true, json report includes size breakdown per source
+#     hierarchy. Otherwise, defaults to only include the top-level data source
+#     type in size report. Optional.
 #
 # Example:
 #   pw_size_report("foo_bloat") {
 #      target = ":foo_static"
 #      datasources = "symbols,segment_names"
 #      source_filter = "foo"
+#      json_key_prefix = "foo"
+#      full_json_summary = true
 #   }
 #
 template("pw_size_report") {
@@ -116,6 +123,19 @@ template("pw_size_report") {
       rebase_path(_args_path, root_build_dir),
       "--single-report",
     ]
+
+    if (defined(invoker.json_key_prefix)) {
+      _bloat_script_args += [
+        "--json-key-prefix",
+        invoker.json_key_prefix,
+      ]
+    }
+
+    if (defined(invoker.full_json_summary)) {
+      if (invoker.full_json_summary) {
+        _bloat_script_args += [ "--full-json-summary" ]
+      }
+    }
 
     _doc_rst_output = "$target_gen_dir/${target_name}"
     _binary_sizes_output = "$target_gen_dir/${target_name}.binary_sizes.json"

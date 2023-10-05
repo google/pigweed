@@ -168,6 +168,9 @@ a size report for a single binary. The template requires a target binary.
 * ``target``: Binary target to run size report on.
 * ``data_sources``: Optional list of data sources to organize outputs.
 * ``source_filter``: Optional regex to filter labels in the output.
+* ``json_key_prefix``: Optional prefix for key names in json size report.
+* ``full_json_summary``: Optional boolean to print json size report by label
+*  level hierarchy. Defaults to only use top-level label in size report.
 
 .. code-block::
 
@@ -177,11 +180,13 @@ a size report for a single binary. The template requires a target binary.
      sources = [ "hello_iostream.cc" ]
    }
 
-   pw_size_report("hello_world_iostream_size_report") {
-     target = ":hello_iostream"
-     data_sources = "segments,symbols"
-     source_filter = "pw::hello"
-   }
+  pw_size_report("hello_world_iostream_size_report") {
+    target = ":hello_iostream"
+    data_sources = "segments,symbols"
+    source_filter = "pw::hello"
+    json_key_prefix = "hello_world_iostream"
+    full_json_summary = true
+  }
 
 Sample Single Binary ASCII Table Generated
 
@@ -235,10 +240,11 @@ Collecting size report data
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Each ``pw_size_report`` target outputs a JSON file containing the sizes of all
 top-level labels in the binary. (By default, this represents "segments", i.e.
-ELF program headers.) If a build produces multiple images, it may be useful to
-collect all of their sizes into a single file to provide a snapshot of sizes at
-some point in time --- for example, to display per-commit size deltas through
-CI.
+ELF program headers.) If ``full_json_summary`` is set to true, sizes for all
+label levels are reported (i.e. Default labels would show size of each symbol
+per segment). If a build produces multiple images, it may be useful to collect
+all of their sizes into a single file to provide a snapshot of sizes at some
+point in time --- for example, to display per-commit size deltas through CI.
 
 The ``pw_size_report_aggregation`` template is provided to collect multiple size
 reports' data into a single JSON file.
