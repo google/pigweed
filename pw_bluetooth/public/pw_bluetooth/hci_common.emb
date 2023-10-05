@@ -273,7 +273,7 @@ enum GenericEnableParam:
 enum GenericPresenceParam:
   [maximum_bits: 8]
   NOT_PRESENT = 0x00
-  PRESENT = 0x01
+  PRESENT     = 0x01
 
 
 struct BdAddr:
@@ -418,7 +418,6 @@ enum IoCapability:
   DISPLAY_YES_NO     = 0x01
   KEYBOARD_ONLY      = 0x02
   NO_INPUT_NO_OUTPUT = 0x03
-
 
 # inclusive-language: disable
 

@@ -798,7 +798,6 @@ struct ChangeConnectionLinkKeyCompleteEvent:
   $next [+2]         UInt             connection_handle
     [requires: 0x0000 <= this <= 0x0EFF]
 
-
 # 7.7.10 Link Key Type Changed event
 # HCI_Link_Key_Type_Changed
 # TODO: b/265052417 - Definition needs to be added
@@ -835,7 +834,6 @@ struct ReadRemoteVersionInfoCompleteEvent:
   $next [+2]         UInt                      subversion
     -- Revision of the LMP or Link Layer implementation in the remote Controller. This value is vendor-specific.
 
-
 # 7.7.13 QoS Setup Complete event
 # HCI_QoS_Setup_Complete
 # TODO: b/265052417 - Definition needs to be added
@@ -854,6 +852,7 @@ struct SimpleCommandCompleteEvent:
 
 struct ReadLocalVersionInfoCommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.4.1 Read Local Version Information command)
+
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
 
   0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
@@ -992,7 +991,6 @@ struct CommandStatusEvent:
   $next [+1]         UInt             num_hci_command_packets
   $next [+2]         hci.OpCodeBits   command_opcode
 
-
 # 7.7.16 Hardware Error event
 # HCI_Hardware_Error
 # TODO: b/265052417 - Definition needs to be added
@@ -1014,7 +1012,6 @@ struct RoleChangeEvent:
 
   $next [+1]                          hci.ConnectionRole  role
     -- The new role for the specified address.
-
 
 # 7.7.19 Number Of Completed Packets event
 # HCI_Number_Of_Completed_Packets
@@ -1059,7 +1056,6 @@ struct LinkKeyNotificationEvent:
   $next [+1]                           KeyType          key_type
     -- Type of key used when pairing.
 
-
 # 7.7.25 Loopback Command event
 # HCI_Loopback_Command
 # TODO: b/265052417 - Definition needs to be added
@@ -1071,7 +1067,6 @@ struct DataBufferOverflowEvent:
   let hdr_size = hci.EventHeader.$size_in_bytes
   0     [+hdr_size]  hci.EventHeader  header
   $next [+1]         LinkType         ll_type
-
 
 # 7.7.27 Max Slots Change event
 # HCI_Max_Slots_Change
@@ -1192,7 +1187,6 @@ struct SynchronousConnectionCompleteEvent:
 
   $next [+1]                          hci.CodingFormat  air_mode
 
-
 # 7.7.36 Synchronous Connection Changed event
 # HCI_Synchronous_Connection_Changed
 # TODO: b/265052417 - Definition needs to be added
@@ -1292,7 +1286,6 @@ struct UserPasskeyRequestEvent:
   $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr       bd_addr
     -- Address of the device involved in simple pairing process
 
-
 # 7.7.44 Remote OOB Data Request event
 # HCI_Remote_OOB_Data_Request
 # TODO: b/265052417 - Definition needs to be added
@@ -1306,7 +1299,6 @@ struct SimplePairingCompleteEvent:
   $next [+1]                          hci.StatusCode   status
   $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr       bd_addr
     -- Address of the device involved in simple pairing process
-
 
 # 7.7.46 Link Supervision Timeout Changed event
 # HCI_Link_Supervision_Timeout_Changed
@@ -1329,7 +1321,6 @@ struct UserPasskeyNotificationEvent:
   $next [+4]                          UInt             passkey
     -- Numeric value (passkey) entered by user.
     [requires: 0 <= this <= 999999]
-
 
 # 7.7.49 Keypress Notification event
 # HCI_Keypress_Notification
@@ -1357,6 +1348,7 @@ struct LEMetaEvent:
 struct LEConnectionCompleteSubevent:
   -- 7.7.65.1 LE Connection Complete event
   -- HCI_LE_Connection_Complete
+
   0     [+LEMetaEvent.$size_in_bytes]  LEMetaEvent            le_meta_event
 
   $next [+1]                           hci.StatusCode         status
@@ -1388,7 +1380,6 @@ struct LEConnectionCompleteSubevent:
   $next [+1]                           LEClockAccuracy        central_clock_accuracy
     -- Only valid for a peripheral. On a central, this parameter shall be set to 0x00.
 
-
 # 7.7.65.2 LE Advertising Report event
 # HCI_LE_Advertising_Report
 # TODO: b/265052417 - Definition needs to be added
@@ -1397,6 +1388,7 @@ struct LEConnectionCompleteSubevent:
 struct LEConnectionUpdateCompleteSubevent:
   -- 7.7.65.3 LE Connection Update Complete event
   -- HCI_LE_Connection_Update_Complete
+
   0     [+LEMetaEvent.$size_in_bytes]  LEMetaEvent     le_meta_event
 
   $next [+1]                           hci.StatusCode  status
@@ -1441,7 +1433,6 @@ struct LELongTermKeyRequestSubevent:
 
   $next [+8]                           UInt         random_number
   $next [+2]                           UInt         encrypted_diversifier
-
 
 # 7.7.65.6 LE Remote Connection Parameter Request event
 # HCI_LE_Remote_Connection_Parameter_Request
@@ -1543,7 +1534,6 @@ struct LEExtendedAdvertisingReportSubevent(reports_size: UInt:8):
 
   $next [+reports_size]                UInt:8[reports_size]  reports
     -- Since each report has a variable length, they are stored in a UInt:8 array.
-
 
 # 7.7.65.14 LE Periodic Advertising Sync Established event
 # HCI_LE_Periodic_Advertising_Sync_Established
