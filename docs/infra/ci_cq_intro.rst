@@ -39,7 +39,9 @@ Auto-Submit
 ===========
 If you want your change to be automatically submitted when all requirements
 are met (``Code-Review +2``, ``OWNERS``-approval, all comments resolved,
-etc.) set the ``Auto-Submit`` label to +1.
+etc.) set the ``Auto-Submit`` label to +1. If submission fails it will be
+retried a couple times with backoff and then the auto submit job will give up.
+
 
 .. _further-details:
 
@@ -61,14 +63,6 @@ Post-Submit builders
 Jobs are run post-submission too and can be seen at
 https://ci.chromium.org/p/pigweed (for public projects) and
 https://ci.chromium.org/p/pigweed-internal (for internal projects).
-
-Auto-Submit
-===========
-You can vote ``Pigweed-Auto-Submit +1`` (perhaps with a slightly different
-label name on different Gerrit hosts) and within a few minutes of
-getting the required code reviews your change will automatically be
-submitted. If this submission fails it will be retried a couple times with
-backoff and then the auto submit job will give up.
 
 Non-``main`` branches
 =====================
