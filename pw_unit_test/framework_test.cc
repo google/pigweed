@@ -283,13 +283,13 @@ TEST(TestSuiteTearDown, MakeSureItRan) {
   EXPECT_EQ(SetUpAndTearDown::value, 8);
 }
 
-TEST(UnknownTypeToString, SmallObjectDisplaysFullContents) {
+TEST(UnknownTypeToString, SmallObject) {
   struct {
     char a = 0xa1;
   } object;
 
   StringBuffer<64> expected;
-  expected << "<1-byte object at 0x" << &object << " | a1>";
+  expected << "<1-byte object at 0x" << &object << '>';
   ASSERT_EQ(OkStatus(), expected.status());
 
   StringBuffer<64> actual;
@@ -298,14 +298,13 @@ TEST(UnknownTypeToString, SmallObjectDisplaysFullContents) {
   EXPECT_STREQ(expected.c_str(), actual.c_str());
 }
 
-TEST(UnknownTypeToString, MaxSizeToDisplayFullContents) {
+TEST(UnknownTypeToString, NineByteObject) {
   struct {
     char a[9] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
   } object;
 
   StringBuffer<64> expected;
-  expected << "<9-byte object at 0x" << &object
-           << " | 01 02 03 04 05 06 07 08 09>";
+  expected << "<9-byte object at 0x" << &object << '>';
   ASSERT_EQ(OkStatus(), expected.status());
 
   StringBuffer<64> actual;
@@ -314,14 +313,13 @@ TEST(UnknownTypeToString, MaxSizeToDisplayFullContents) {
   EXPECT_STREQ(expected.c_str(), actual.c_str());
 }
 
-TEST(UnknownTypeToString, TruncatedContents) {
+TEST(UnknownTypeToString, TenByteObject) {
   struct {
     char a[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
   } object;
 
   StringBuffer<72> expected;
-  expected << "<10-byte object at 0x" << &object
-           << " | 01 02 03 04 05 06 07 08 …>";
+  expected << "<10-byte object at 0x" << &object << '>';
   ASSERT_EQ(OkStatus(), expected.status());
 
   StringBuffer<72> actual;

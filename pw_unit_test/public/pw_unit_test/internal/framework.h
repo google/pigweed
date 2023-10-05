@@ -164,23 +164,36 @@ namespace string {
 template <typename T>
 StatusWithSize UnknownTypeToString(const T& value, span<char> buffer) {
   StringBuilder sb(buffer);
-  sb << '<' << sizeof(value) << "-byte object at 0x" << &value << " |";
+  sb << '<' << sizeof(value) << "-byte object at 0x" << &value;
 
-  // Always show the first 8 bytes of the object.
-  constexpr size_t kBytesToPrint = std::min(sizeof(value), size_t{8});
+  // How many bytes of the object to print.
+  //
+  // WARNING: Printing the contents of an object may be undefined behavior!
+  // Accessing unintialized memory is undefined behavior, and objects sometimes
+  // contiain uninitialized regions, such as padding bytes or unalloacted
+  // storage (e.g. std::optional). kPrintMaybeUnintializedBytes MUST stay at 0,
+  // except when changed locally to help with debugging.
+  constexpr size_t kPrintMaybeUnintializedBytes = 0;
 
-  // reinterpret_cast to std::byte is permitted by C++'s type aliasing rules.
-  const std::byte* bytes = reinterpret_cast<const std::byte*>(&value);
+  constexpr size_t kBytesToPrint =
+      std::min(sizeof(value), kPrintMaybeUnintializedBytes);
 
-  for (size_t i = 0; i < kBytesToPrint; ++i) {
-    sb << ' ' << bytes[i];
-  }
+  if (kBytesToPrint != 0u) {
+    sb << " |";
 
-  // If there's just one more byte, output it. Otherwise, output ellipsis.
-  if (sizeof(value) == kBytesToPrint + 1) {
-    sb << ' ' << bytes[sizeof(value) - 1];
-  } else if (sizeof(value) > kBytesToPrint) {
-    sb << " …";
+    // reinterpret_cast to std::byte is permitted by C++'s type aliasing rules.
+    const std::byte* bytes = reinterpret_cast<const std::byte*>(&value);
+
+    for (size_t i = 0; i < kBytesToPrint; ++i) {
+      sb << ' ' << bytes[i];
+    }
+
+    // If there's just one more byte, output it. Otherwise, output ellipsis.
+    if (sizeof(value) == kBytesToPrint + 1) {
+      sb << ' ' << bytes[sizeof(value) - 1];
+    } else if (sizeof(value) > kBytesToPrint) {
+      sb << " …";
+    }
   }
 
   sb << '>';
