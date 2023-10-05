@@ -242,6 +242,23 @@ TEST_F(SynchronousCallTest, GeneratedClientSynchronousCallSuccess) {
   EXPECT_EQ(result.response().value, 42);
 }
 
+#if PW_RPC_DYNAMIC_ALLOCATION
+
+TEST_F(SynchronousCallTest, GeneratedDynamicClientSynchronousCallSuccess) {
+  TestRequest::Message request{.integer = 5, .status_code = 0};
+  TestResponse::Message response{.value = 42, .repeated_field{}};
+
+  set_response(response, OkStatus());
+
+  TestService::DynamicClient dynamic_client(client(), channel().id());
+  auto result =
+      SynchronousCall<TestService::TestUnaryRpc>(dynamic_client, request);
+  EXPECT_TRUE(result.ok());
+  EXPECT_EQ(result.response().value, 42);
+}
+
+#endif  // PW_RPC_DYNAMIC_ALLOCATION
+
 TEST_F(SynchronousCallTest, GeneratedClientSynchronousCallServerError) {
   TestRequest::Message request{.integer = 5, .status_code = 0};
   TestResponse::Message response{.value = 42, .repeated_field{}};

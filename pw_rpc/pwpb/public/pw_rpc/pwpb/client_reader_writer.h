@@ -21,7 +21,12 @@
 #include "pw_function/function.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/client_call.h"
+#include "pw_rpc/internal/config.h"
 #include "pw_rpc/pwpb/internal/common.h"
+
+#if PW_RPC_DYNAMIC_ALLOCATION
+#include PW_RPC_MAKE_UNIQUE_PTR_INCLUDE
+#endif  // PW_RPC_DYNAMIC_ALLOCATION
 
 namespace pw::rpc {
 namespace internal {
@@ -47,17 +52,38 @@ class PwpbUnaryResponseClientCall : public UnaryResponseClientCall {
     rpc_lock().lock();
     CallType call(
         client.ClaimLocked(), channel_id, service_id, method_id, serde);
+    SetCallbacksAndSendRequest(call,
+                               client,
+                               serde,
+                               std::move(on_completed),
+                               std::move(on_error),
+                               request...);
+    return call;
+  }
 
-    call.set_pwpb_on_completed_locked(std::move(on_completed));
-    call.set_on_error_locked(std::move(on_error));
-
-    if constexpr (sizeof...(Request) == 0u) {
-      call.SendInitialClientRequest({});
-    } else {
-      PwpbSendInitialRequest(call, serde.request(), request...);
-    }
-
-    client.CleanUpCalls();
+  template <typename CallType, typename... Request>
+  static auto StartDynamic(
+      Endpoint& client,
+      uint32_t channel_id,
+      uint32_t service_id,
+      uint32_t method_id,
+      const PwpbMethodSerde& serde,
+      Function<void(const Response&, Status)>&& on_completed,
+      Function<void(Status)>&& on_error,
+      const Request&... request) PW_LOCKS_EXCLUDED(rpc_lock()) {
+    rpc_lock().lock();
+    auto call = PW_RPC_MAKE_UNIQUE_PTR(CallType,
+                                       client.ClaimLocked(),
+                                       channel_id,
+                                       service_id,
+                                       method_id,
+                                       serde);
+    SetCallbacksAndSendRequest(*call,
+                               client,
+                               serde,
+                               std::move(on_completed),
+                               std::move(on_error),
+                               request...);
     return call;
   }
 
@@ -125,6 +151,26 @@ class PwpbUnaryResponseClientCall : public UnaryResponseClientCall {
   }
 
  private:
+  template <typename CallType, typename... Request>
+  static void SetCallbacksAndSendRequest(
+      CallType& call,
+      Endpoint& client,
+      const PwpbMethodSerde& serde,
+      Function<void(const Response&, Status)>&& on_completed,
+      Function<void(Status)>&& on_error,
+      const Request&... request) PW_UNLOCK_FUNCTION(rpc_lock()) {
+    call.set_pwpb_on_completed_locked(std::move(on_completed));
+    call.set_on_error_locked(std::move(on_error));
+
+    if constexpr (sizeof...(Request) == 0u) {
+      call.SendInitialClientRequest({});
+    } else {
+      PwpbSendInitialRequest(call, serde.request(), request...);
+    }
+
+    client.CleanUpCalls();
+  }
+
   void set_pwpb_on_completed_locked(
       Function<void(const Response& response, Status)>&& on_completed)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
@@ -165,17 +211,41 @@ class PwpbStreamResponseClientCall : public StreamResponseClientCall {
     rpc_lock().lock();
     CallType call(
         client.ClaimLocked(), channel_id, service_id, method_id, serde);
+    SetCallbacksAndSendRequest(call,
+                               client,
+                               serde,
+                               std::move(on_next),
+                               std::move(on_completed),
+                               std::move(on_error),
+                               request...);
+    return call;
+  }
 
-    call.set_pwpb_on_next_locked(std::move(on_next));
-    call.set_on_completed_locked(std::move(on_completed));
-    call.set_on_error_locked(std::move(on_error));
-
-    if constexpr (sizeof...(Request) == 0u) {
-      call.SendInitialClientRequest({});
-    } else {
-      PwpbSendInitialRequest(call, serde.request(), request...);
-    }
-    client.CleanUpCalls();
+  template <typename CallType, typename... Request>
+  static auto StartDynamic(Endpoint& client,
+                           uint32_t channel_id,
+                           uint32_t service_id,
+                           uint32_t method_id,
+                           const PwpbMethodSerde& serde,
+                           Function<void(const Response&)>&& on_next,
+                           Function<void(Status)>&& on_completed,
+                           Function<void(Status)>&& on_error,
+                           const Request&... request)
+      PW_LOCKS_EXCLUDED(rpc_lock()) {
+    rpc_lock().lock();
+    auto call = PW_RPC_MAKE_UNIQUE_PTR(CallType,
+                                       client.ClaimLocked(),
+                                       channel_id,
+                                       service_id,
+                                       method_id,
+                                       serde);
+    SetCallbacksAndSendRequest(*call,
+                               client,
+                               serde,
+                               std::move(on_next),
+                               std::move(on_completed),
+                               std::move(on_error),
+                               request...);
     return call;
   }
 
@@ -242,6 +312,27 @@ class PwpbStreamResponseClientCall : public StreamResponseClientCall {
   }
 
  private:
+  template <typename CallType, typename... Request>
+  static void SetCallbacksAndSendRequest(
+      CallType& call,
+      Endpoint& client,
+      const PwpbMethodSerde& serde,
+      Function<void(const Response&)>&& on_next,
+      Function<void(Status)>&& on_completed,
+      Function<void(Status)>&& on_error,
+      const Request&... request) PW_UNLOCK_FUNCTION(rpc_lock()) {
+    call.set_pwpb_on_next_locked(std::move(on_next));
+    call.set_on_completed_locked(std::move(on_completed));
+    call.set_on_error_locked(std::move(on_error));
+
+    if constexpr (sizeof...(Request) == 0u) {
+      call.SendInitialClientRequest({});
+    } else {
+      PwpbSendInitialRequest(call, serde.request(), request...);
+    }
+    client.CleanUpCalls();
+  }
+
   void set_pwpb_on_next_locked(
       Function<void(const Response& response)>&& on_next)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {

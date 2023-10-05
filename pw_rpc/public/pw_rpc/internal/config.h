@@ -199,6 +199,22 @@ static_assert(
 #define PW_RPC_DYNAMIC_CONTAINER_INCLUDE <vector>
 #endif  // PW_RPC_DYNAMIC_CONTAINER_INCLUDE
 
+/// If @c_macro{PW_RPC_DYNAMIC_ALLOCATION} is enabled, this macro must expand to
+/// a statement that creates a `std::unique_ptr`-like smart pointer.
+/// @param type The type of the object to construct (e.g. with `new`)
+/// @param ... Arguments to pass to the constructor, if any
+#ifndef PW_RPC_MAKE_UNIQUE_PTR
+#define PW_RPC_MAKE_UNIQUE_PTR(type, ...) \
+  std::unique_ptr<type>(new type(__VA_ARGS__))
+#endif  // PW_RPC_DYNAMIC_CONTAINER
+
+/// If @c_macro{PW_RPC_DYNAMIC_ALLOCATION} is enabled, this header file is
+/// included in files that use @c_macro{PW_RPC_MAKE_UNIQUE_PTR}. Defaults to
+/// `<memory>` for `std::make_unique`.
+#ifndef PW_RPC_MAKE_UNIQUE_PTR_INCLUDE
+#define PW_RPC_MAKE_UNIQUE_PTR_INCLUDE <memory>
+#endif  // PW_RPC_MAKE_UNIQUE_PTR_INCLUDE
+
 /// Size of the global RPC packet encoding buffer in bytes. If dynamic
 /// allocation is enabled, this value is only used for test helpers that
 /// allocate RPC encoding buffers.

@@ -15,9 +15,14 @@
 
 #include <utility>
 
+#include "pw_rpc/internal/config.h"
 #include "pw_rpc/internal/method_info.h"
 #include "pw_rpc/synchronous_call_result.h"
 #include "pw_sync/timed_thread_notification.h"
+
+#if PW_RPC_DYNAMIC_ALLOCATION
+#include PW_RPC_MAKE_UNIQUE_PTR_INCLUDE
+#endif  // PW_RPC_DYNAMIC_ALLOCATION
 
 namespace pw::rpc::internal {
 
@@ -89,7 +94,13 @@ SynchronousCallResult<Response> StructSynchronousCall(
   static_assert(MethodInfo<kRpcMethod>::kType == MethodType::kUnary,
                 "Only unary methods can be used with synchronous calls");
 
+  // If dynamic allocation is enabled, heap-allocate the call_state.
+#if PW_RPC_DYNAMIC_ALLOCATION
+  auto call_state_ptr = PW_RPC_MAKE_UNIQUE_PTR(SynchronousCallState<Response>);
+  SynchronousCallState<Response>& call_state(*call_state_ptr);
+#else
   SynchronousCallState<Response> call_state;
+#endif  // PW_RPC_DYNAMIC_ALLOCATION
 
   auto call = std::forward<DoCall>(do_call)(call_state);
 
@@ -174,13 +185,12 @@ constexpr auto CallFreeFunctionWithCustomResponse(Client& client,
 }
 
 // Invokes the RPC function on the generated service client using a call_state.
-template <auto kRpcMethod, typename Request>
-constexpr auto CallGeneratedClient(
-    const typename MethodInfo<kRpcMethod>::GeneratedClient& client,
-    const Request& request) {
+template <auto kRpcMethod, typename GeneratedClient, typename Request>
+constexpr auto CallGeneratedClient(const GeneratedClient& client,
+                                   const Request& request) {
   return [&client, &request](CallState<kRpcMethod>& call_state) {
-    constexpr auto kMemberFunction = MethodInfo<kRpcMethod>::template Function<
-        typename MethodInfo<kRpcMethod>::GeneratedClient>();
+    constexpr auto kMemberFunction =
+        MethodInfo<kRpcMethod>::template Function<GeneratedClient>();
     return (client.*kMemberFunction)(request,
                                      call_state.OnCompletedCallback(),
                                      call_state.OnRpcErrorCallback());

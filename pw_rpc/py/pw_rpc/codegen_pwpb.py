@@ -70,13 +70,9 @@ def _client_call(
 
 def _function(
     method: ProtoServiceMethod,
-    response: Optional[str] = None,
     name: Optional[str] = None,
 ) -> str:
-    if name is None:
-        name = method.name()
-
-    return f'{_client_call(method, response)} {name}'
+    return f'auto {name or method.name()}'
 
 
 def _user_args(
@@ -153,8 +149,10 @@ class PwpbCodeGenerator(CodeGenerator):
     def _client_member_function(
         self,
         method: ProtoServiceMethod,
+        *,
         response: Optional[str] = None,
         name: Optional[str] = None,
+        dynamic: bool,
     ) -> None:
         if response is None:
             response = method.response_type().pwpb_struct()
@@ -162,7 +160,7 @@ class PwpbCodeGenerator(CodeGenerator):
         if name is None:
             name = method.name()
 
-        self.line(f'{_function(method, response, name)}(')
+        self.line(f'{_function(method, name)}(')
         self.indented_list(*_user_args(method, response), end=') const {')
 
         with self.indent():
@@ -171,7 +169,8 @@ class PwpbCodeGenerator(CodeGenerator):
             self.line(
                 f'return {RPC_NAMESPACE}::internal::'
                 f'Pwpb{base}ResponseClientCall<{response}>::'
-                f'template Start<{client_call}>('
+                f'template Start{"Dynamic" if dynamic else ""}'
+                f'<{client_call}>('
             )
 
             service_client = RPC_NAMESPACE + '::internal::ServiceClient'
@@ -196,16 +195,25 @@ class PwpbCodeGenerator(CodeGenerator):
 
         self.line('}')
 
-    def client_member_function(self, method: ProtoServiceMethod) -> None:
+    def client_member_function(
+        self, method: ProtoServiceMethod, *, dynamic: bool
+    ) -> None:
         """Outputs client code for a single RPC method."""
-        self._client_member_function(method)
+        self._client_member_function(method, dynamic=dynamic)
 
+        if dynamic:  # Skip custom response overload
+            return
+
+        # Generate functions that allow specifying a custom response struct.
         self.line(
             'template <typename Response ='
             + f'{method.response_type().pwpb_struct()}>'
         )
         self._client_member_function(
-            method, 'Response', method.name() + 'Template'
+            method,
+            response='Response',
+            name=method.name() + 'Template',
+            dynamic=dynamic,
         )
 
     def _client_static_function(
@@ -220,7 +228,7 @@ class PwpbCodeGenerator(CodeGenerator):
         if name is None:
             name = method.name()
 
-        self.line(f'static {_function(method, response, name)}(')
+        self.line(f'static {_function(method, name)}(')
         self.indented_list(
             f'{RPC_NAMESPACE}::Client& client',
             'uint32_t channel_id',

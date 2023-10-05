@@ -93,7 +93,13 @@ class RawCodeGenerator(CodeGenerator):
         )
         self.line(f'    {get_id(method)}),  // Hash of "{method.name()}"')
 
-    def client_member_function(self, method: ProtoServiceMethod) -> None:
+    def client_member_function(
+        self, method: ProtoServiceMethod, *, dynamic: bool
+    ) -> None:
+        if dynamic:
+            self.line('// DynamicClient is not implemented for raw RPC')
+            return
+
         self.line(f'{_function(method)}(')
         self.indented_list(*_user_args(method), end=') const {')
 

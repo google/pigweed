@@ -166,6 +166,19 @@ the type of RPC. Each method returns a client call object which stores the
 context of the ongoing RPC call. For more information on call objects, refer to
 the :ref:`core RPC docs <module-pw_rpc-making-calls>`.
 
+If dynamic allocation is enabled (:c:macro:`PW_RPC_DYNAMIC_ALLOCATION` is 1), a
+``DynamicClient`` is generated, which dynamically allocates the call object with
+:c:macro:`PW_RPC_MAKE_UNIQUE_PTR`. For example:
+
+.. code-block:: c++
+
+  my_namespace::pw_rpc::pwpb::ServiceName::DynamicClient dynamic_client(
+      client, channel_id);
+  auto call = dynamic_client.TestUnaryRpc(request, response_callback);
+
+  if (call->active()) {  // Access the call as a std::unique_ptr
+    // ...
+
 .. admonition:: Callback invocation
 
   RPC callbacks are invoked synchronously from ``Client::ProcessPacket``.

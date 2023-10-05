@@ -195,8 +195,14 @@ class NanopbCodeGenerator(CodeGenerator):
 
         self.line('}')
 
-    def client_member_function(self, method: ProtoServiceMethod) -> None:
+    def client_member_function(
+        self, method: ProtoServiceMethod, *, dynamic: bool
+    ) -> None:
         """Outputs client code for a single RPC method."""
+        if dynamic:
+            self.line('// DynamicClient is not implemented for Nanopb')
+            return
+
         self._client_member_function(method)
 
         self.line(
