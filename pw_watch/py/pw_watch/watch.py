@@ -723,6 +723,8 @@ def _serve_docs(
         _LOG.info('Install httpwatcher and restart for automatic docs reload.')
         server_thread = _simple_docs_server(address, port, docs_path)
 
+    _LOG.info('Serving docs at http://%s:%d', address, port)
+
     # Spin up server in a new thread since it blocks
     threading.Thread(None, server_thread, 'pw_docs_server').start()
 
