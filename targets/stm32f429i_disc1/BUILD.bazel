@@ -15,9 +15,6 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
-)
-load(
-    "//pw_build/bazel_internal:pigweed_internal.bzl",
     "pw_linker_script",
 )
 

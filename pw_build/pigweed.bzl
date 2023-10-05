@@ -20,6 +20,7 @@ load(
     "PW_DEFAULT_COPTS",
     _add_defaults = "add_defaults",
     _compile_cc = "compile_cc",
+    _pw_linker_script = "pw_linker_script",
 )
 
 # Used by `pw_cc_test`.
@@ -313,3 +314,5 @@ pw_cc_blob_library = rule(
     fragments = ["cpp"],
     toolchains = use_cpp_toolchain(),
 )
+
+pw_linker_script = _pw_linker_script
