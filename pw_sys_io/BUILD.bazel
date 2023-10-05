@@ -66,7 +66,7 @@ alias(
         "//pw_sys_io_baremetal_stm32f429:backend": "@pigweed//pw_sys_io_baremetal_stm32f429",
         "//pw_sys_io_emcraft_sf2:backend": "@pigweed//pw_sys_io_emcraft_sf2",
         "//pw_sys_io_mcuxpresso:backend": "@pigweed//pw_sys_io_mcuxpresso",
-        "//pw_sys_io_pico:backend": "@pigweed//pw_sys_io_pico",
+        "//pw_sys_io_rp2040:backend": "@pigweed//pw_sys_io_rp2040",
         "//pw_sys_io_stm32cube:backend": "@pigweed//pw_sys_io_stm32cube",
         "//pw_sys_io_stdio:backend": "@pigweed//pw_sys_io_stdio",
         "//conditions:default": ":unspecified_backend",
