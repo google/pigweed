@@ -102,8 +102,9 @@ struct SystemClock {
   /// The now() function can be invoked at any time.
   static constexpr bool is_always_enabled = true;
 
-  /// The now() function may work in non-masking interrupts, depending on the
-  /// backend. This must be provided by the backend.
+  /// The now() function may work in non-maskable interrupt contexts (e.g.
+  /// exception/fault handlers), depending on the backend. This must be provided
+  /// by the backend.
   static constexpr bool is_nmi_safe = backend::kSystemClockNmiSafe;
 
   /// This is thread and IRQ safe. This must be provided by the backend.
