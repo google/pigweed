@@ -128,7 +128,7 @@ group("extended_default") {
     ":default",
     ":host_clang_debug_dynamic_allocation",
     ":pw_system_demo",
-    ":stm32f429i_size_optimized",
+    ":stm32f429i",
   ]
 
   if (host_os != "win") {
