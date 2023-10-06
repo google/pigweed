@@ -122,8 +122,15 @@ pw_test("dispatcher_test") {
   sources = [ "dispatcher_test.cc" ]
 }
 
-pw_async_heap_dispatcher_source_set("heap_dispatcher") {
+# This target cannot be labeled "heap_dispatcher" or else the outpath Ninja uses
+# for heap_dispatcher.cc will collide with $dir_pw_async:heap_dispatcher.
+pw_async_heap_dispatcher_source_set("heap_dispatcher_basic") {
   task_backend = ":task"
+  visibility = [ ":*" ]
+}
+
+group("heap_dispatcher") {
+  public_deps = [ ":heap_dispatcher_basic" ]
   visibility = [ ":*" ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
 }
 
