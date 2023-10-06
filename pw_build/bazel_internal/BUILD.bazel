@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(":pigweed_internal.bzl", "pw_linker_script")
+load("//pw_build:pigweed.bzl", "pw_linker_script")
 
 pw_linker_script(
     name = "linker_script_test",
