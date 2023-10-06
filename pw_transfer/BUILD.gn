@@ -246,7 +246,10 @@ pw_test("client_test") {
 }
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "api.rst",
+    "docs.rst",
+  ]
   inputs = [
     "transfer.proto",
     "read.svg",

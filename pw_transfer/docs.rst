@@ -688,3 +688,7 @@ change by adding to following line to the commit message footer:
 
    Cq-Include-Trybots: luci.pigweed.try:pigweed-integration-transfer
 
+.. toctree::
+   :hidden:
+
+   API reference <api>

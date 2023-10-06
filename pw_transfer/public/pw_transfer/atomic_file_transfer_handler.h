@@ -24,12 +24,15 @@
 
 namespace pw::transfer {
 
-// The AtomicFileTransferHandler is intended to be used as a transfer
-// handler for files. It ensures that the target file of the transfer is always
-// in a correct state. In particular, the transfer is first done to a temporary
-// file and once complete, the original targeted file is updated.
+/// `AtomicFileTransferHandler` is intended to be used as a transfer handler for
+/// files. It ensures that the target file of the transfer is always in a
+/// correct state. In particular, the transfer is first done to a temporary file
+/// and once complete, the original targeted file is updated.
 class AtomicFileTransferHandler : public ReadWriteHandler {
  public:
+  /// @param[in] resource_id An ID for the resource that's being transferred.
+  ///
+  /// @param[in] file_path The target file to update.
   AtomicFileTransferHandler(uint32_t resource_id, std::string_view file_path)
       : ReadWriteHandler(resource_id), path_(file_path) {}
 
@@ -38,15 +41,36 @@ class AtomicFileTransferHandler : public ReadWriteHandler {
       delete;
   ~AtomicFileTransferHandler() override = default;
 
-  // Function called prior to initializing a read transfer.
+  /// Prepares `AtomicFileTransferHandler` for a read transfer.
+  ///
+  /// @pre The read transfer has not been initialized before the call to this
+  /// method.
+  ///
+  /// @returns A `pw::Status` object indicating whether
+  /// `AtomicFileTransferHandler` is ready for the transfer.
   Status PrepareRead() override;
-  // Function called after a read transfer is done.
-  // Status indicates whether transfer was done successfully.
+  /// Handler function that is called by the transfer thread after a read
+  /// transfer completes.
+  ///
+  /// @param[in] Status A `pw::Status` object provided by the transfer thread
+  /// indicating whether the transfer succeeded.
+  ///
+  /// @pre The read transfer is done before the call to this method.
   void FinalizeRead(Status) override;
-  // Function called prior to initializing a write transfer.
+  /// Prepares `AtomicFileTransferHandler` for a write transfer.
+  ///
+  /// @pre The write transfer has not been initialized before the call to this
+  /// method.
+  ///
+  /// @returns A `pw::Status` object indicating whether
+  /// `AtomicFileTransferHandler` is ready for the transfer.
   Status PrepareWrite() override;
-  // Function called after a write transfer is done.
-  // Status indicates whether transfer was done successfully.
+  /// Indicates whether the write transfer was successful.
+  ///
+  /// @pre The write transfer is done.
+  ///
+  /// @returns A `pw::Status` object indicating whether the transfer data was
+  /// successfully written.
   Status FinalizeWrite(Status) override;
 
  private:
