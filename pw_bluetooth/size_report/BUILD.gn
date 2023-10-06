@@ -23,6 +23,7 @@ if (dir_pw_third_party_emboss != "") {
     deps = [
       "$dir_pw_bloat:bloat_this_binary",
       "$dir_pw_bluetooth:emboss_hci_group",
+      "$dir_pw_bluetooth:emboss_hci_test",
     ]
   }
 
@@ -31,6 +32,7 @@ if (dir_pw_third_party_emboss != "") {
     deps = [
       "$dir_pw_bloat:bloat_this_binary",
       "$dir_pw_bluetooth:emboss_hci_group",
+      "$dir_pw_bluetooth:emboss_hci_test",
     ]
   }
 }

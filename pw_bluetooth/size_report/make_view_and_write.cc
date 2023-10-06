@@ -13,7 +13,7 @@
 // the License.
 
 #include "pw_bloat/bloat_this_binary.h"
-#include "pw_bluetooth/hci.emb.h"
+#include "pw_bluetooth/hci_test.emb.h"
 
 int main() {
   pw::bloat::BloatThisBinary();
