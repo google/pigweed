@@ -18,7 +18,7 @@ package{
 
 cc_library {
     name: "pw_router_static_router",
-    cpp_std: "c++2a",
+    cpp_std: "c++20",
     export_include_dirs: ["public"],
     srcs: [
         "static_router.cc",
@@ -50,7 +50,7 @@ cc_library {
 
 cc_library_headers {
     name: "pw_router_egress_headers",
-    cpp_std: "c++2a",
+    cpp_std: "c++20",
     export_include_dirs: ["public"],
     host_supported: true,
     vendor_available: true,
@@ -64,7 +64,7 @@ cc_library_headers {
 
 cc_library_headers {
     name: "pw_router_packet_parser_headers",
-    cpp_std: "c++2a",
+    cpp_std: "c++20",
     export_include_dirs: ["public"],
     host_supported: true,
     vendor_available: true,

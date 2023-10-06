@@ -18,8 +18,8 @@ package {
 
 cc_library {
     name: "libpw_log_android",
+    cpp_std: "c++20",
     vendor_available: true,
-    cpp_std: "c++2a",
     export_include_dirs: [
         "public",
         "public_overrides",

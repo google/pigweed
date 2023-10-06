@@ -18,6 +18,7 @@ package {
 
 cc_library_headers {
     name: "fuchsia_sdk_lib_fit",
+    cpp_std: "c++20",
     vendor_available: true,
     export_include_dirs: [
         "fuchsia/repo/sdk/lib/fit/include",
@@ -30,6 +31,7 @@ cc_library_headers {
 
 cc_library_headers {
     name: "fuchsia_sdk_lib_stdcompat",
+    cpp_std: "c++20",
     vendor_available: true,
     export_include_dirs: [
         "fuchsia/repo/sdk/lib/stdcompat/include",

@@ -18,6 +18,7 @@ package {
 
 cc_library {
     name: "pw_allocator",
+    cpp_std: "c++20",
     vendor_available: true,
     export_include_dirs: ["public"],
     header_libs: [

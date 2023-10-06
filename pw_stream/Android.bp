@@ -18,6 +18,7 @@ package {
 
 cc_library_static {
     name: "pw_stream",
+    cpp_std: "c++20",
     vendor_available: true,
     export_include_dirs: ["public"],
     header_libs: [
@@ -42,6 +43,7 @@ cc_library_static {
 
 cc_library_static {
     name: "pw_stream_std_file_stream",
+    cpp_std: "c++20",
     vendor_available: true,
     host_supported: true,
     header_libs: [

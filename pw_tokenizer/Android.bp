@@ -18,7 +18,7 @@ package {
 
 cc_library_static {
     name: "pw_detokenizer",
-    cpp_std: "c++2a",
+    cpp_std: "c++20",
     vendor_available: true,
     host_supported: true,
     export_include_dirs: ["public"],
@@ -62,7 +62,7 @@ cc_library_static {
 
 cc_library_static {
     name: "pw_tokenizer",
-    cpp_std: "c++2a",
+    cpp_std: "c++20",
     host_supported: true,
     vendor_available: true,
     export_include_dirs: ["public"],
@@ -93,7 +93,7 @@ cc_library_static {
 
 cc_library_static {
     name: "pw_tokenizer_base64",
-    cpp_std: "c++2a",
+    cpp_std: "c++20",
     host_supported: true,
     vendor_available: true,
     export_include_dirs: ["public"],
@@ -124,7 +124,7 @@ cc_library_static {
 
 cc_library_headers {
     name: "pw_tokenizer_pwpb_headers",
-    cpp_std: "c++2a",
+    cpp_std: "c++20",
     vendor_available: true,
     host_supported: true,
     generated_headers: [

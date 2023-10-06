@@ -18,6 +18,7 @@ package {
 
 cc_library_static {
     name: "pw_protobuf",
+    cpp_std: "c++20",
     vendor_available: true,
     export_include_dirs: ["public"],
     header_libs: [
@@ -71,6 +72,7 @@ cc_library_static {
 
 cc_library_headers {
     name: "pw_protobuf_pwpb_headers",
+    cpp_std: "c++20",
     vendor_available: true,
     host_supported: true,
     generated_headers: [

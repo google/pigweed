@@ -18,6 +18,7 @@ package {
 
 cc_library_headers {
     name: "pw_chrono_include_dirs",
+    cpp_std: "c++20",
     export_include_dirs: [
         "public",
     ],
@@ -26,8 +27,8 @@ cc_library_headers {
 }
 
 cc_defaults {
-   name: "pw_chrono_defaults",
-    cpp_std: "c++2a",
+    name: "pw_chrono_defaults",
+    cpp_std: "c++20",
     header_libs: [
       "pw_chrono_include_dirs",
     ],

@@ -18,7 +18,7 @@ package {
 
 cc_library_headers {
     name: "pw_log_tokenized_headers",
-    cpp_std: "c++2a",
+    cpp_std: "c++20",
     vendor_available: true,
     export_include_dirs: ["public"],
     host_supported: true,

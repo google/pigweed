@@ -106,7 +106,7 @@ cc_library_headers {
 // see pw_rpc_nanopb_defaults, pw_rpc_raw_defaults
 cc_defaults {
     name: "pw_rpc_defaults",
-    cpp_std: "c++2a",
+    cpp_std: "c++20",
     header_libs: [
         "fuchsia_sdk_lib_fit",
         "fuchsia_sdk_lib_stdcompat",
@@ -489,7 +489,7 @@ genrule {
 
 cc_library_static {
     name: "pw_rpc_echo_service_nanopb",
-    cpp_std: "c++2a",
+    cpp_std: "c++20",
     vendor_available: true,
     host_supported: true,
     export_include_dirs: ["public/pw_rpc"],
@@ -523,7 +523,7 @@ genrule {
 
 cc_library_static {
     name: "pw_rpc_echo_service_pwpb",
-    cpp_std: "c++2a",
+    cpp_std: "c++20",
     vendor_available: true,
     host_supported: true,
     export_include_dirs: ["public/pw_rpc"],

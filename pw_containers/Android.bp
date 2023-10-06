@@ -18,7 +18,7 @@ package {
 
 cc_library_static {
     name: "pw_containers",
-    cpp_std: "c++2a",
+    cpp_std: "c++20",
     vendor_available: true,
     export_include_dirs: ["public"],
     header_libs: [

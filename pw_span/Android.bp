@@ -19,7 +19,7 @@ package {
 cc_library_headers {
     name: "pw_span_headers",
     vendor_available: true,
-    cpp_std: "c++2a",
+    cpp_std: "c++20",
     export_include_dirs: ["public"],
     header_libs: [],
     host_supported: true,

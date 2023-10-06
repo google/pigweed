@@ -18,6 +18,7 @@ package {
 
 cc_library_headers {
     name: "pw_polyfill_headers",
+    cpp_std: "c++20",
     vendor_available: true,
     export_include_dirs: ["public"],
     host_supported: true,

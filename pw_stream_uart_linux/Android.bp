@@ -14,6 +14,7 @@
 
 cc_library_static {
     name: "pw_stream_uart_linux",
+    cpp_std: "c++20",
     export_include_dirs: ["public"],
     vendor_available: true,
     host_supported: true,

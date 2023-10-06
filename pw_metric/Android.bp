@@ -18,7 +18,7 @@ package{
 
 cc_library {
     name: "pw_metric",
-    cpp_std: "c++2a",
+    cpp_std: "c++20",
     export_include_dirs: ["public"],
     header_libs: [
         "pw_assert_headers",
