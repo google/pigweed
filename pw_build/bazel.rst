@@ -34,9 +34,19 @@ rule for handling linker scripts with Bazel. e.g.
     ],
   )
 
-  pw_cc_binary(
+  # You can include the linker script in the deps.
+  cc_binary(
     name = "some_binary",
-    srcs = ["some_source.c"],
+    srcs = ["some_source.cc"],
+    deps = [":some_linker_script"],
+  )
+
+  # Alternatively, you can use additional_linker_inputs and linkopts. This
+  # allows you to explicitly specify the command line order of linker scripts,
+  # and may be useful if your project defines more than one.
+  cc_binary(
+    name = "some_binary",
+    srcs = ["some_source.cc"],
     additional_linker_inputs = [":some_linker_script"],
     linkopts = ["-T $(location :some_linker_script)"],
   )
