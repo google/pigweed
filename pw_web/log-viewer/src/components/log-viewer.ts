@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { LitElement, html } from 'lit';
+import { LitElement, PropertyValues, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import {
@@ -23,8 +23,12 @@ import {
 } from '../shared/interfaces';
 import { StateStore } from '../shared/state';
 import { styles } from './log-viewer.styles';
+import { themeDark } from '../themes/dark';
+import { themeLight } from '../themes/light';
 import { LogView } from './log-view/log-view';
 import CloseViewEvent from '../events/close-view';
+
+type ColorScheme = 'dark' | 'light';
 
 /**
  * The root component which renders one or more log views for displaying
@@ -34,11 +38,14 @@ import CloseViewEvent from '../events/close-view';
  */
 @customElement('log-viewer')
 export class LogViewer extends LitElement {
-  static styles = styles;
+  static styles = [styles, themeDark, themeLight];
 
   /** An array of log entries to be displayed. */
   @property({ type: Array })
   logs: LogEntry[] = [];
+
+  @property({ type: String, reflect: true })
+  colorScheme?: ColorScheme;
 
   /** An array of rendered log view instances. */
   @state()
@@ -77,6 +84,29 @@ export class LogViewer extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     this.addEventListener('close-view', this.handleCloseView);
+
+    // If color scheme isn't set manually, retrieve it from localStorage
+    if (!this.colorScheme) {
+      const storedScheme = localStorage.getItem(
+        'colorScheme',
+      ) as ColorScheme | null;
+      if (storedScheme) {
+        this.colorScheme = storedScheme;
+      }
+    }
+  }
+
+  updated(changedProperties: PropertyValues) {
+    super.updated(changedProperties);
+
+    if (changedProperties.has('colorScheme') && this.colorScheme) {
+      // Only store in localStorage if color scheme is 'dark' or 'light'
+      if (this.colorScheme === 'light' || this.colorScheme === 'dark') {
+        localStorage.setItem('colorScheme', this.colorScheme);
+      } else {
+        localStorage.removeItem('colorScheme');
+      }
+    }
   }
 
   disconnectedCallback() {

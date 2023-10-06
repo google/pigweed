@@ -126,7 +126,10 @@ export const styles = css`
   }
 
   tbody tr:hover::before {
-    background-color: rgba(var(--md-sys-inverse-surface-rgb), 0.05);
+    background-color: rgba(
+      var(--sys-log-viewer-color-table-row-highlight),
+      0.05
+    );
   }
 
   th,
@@ -167,8 +170,6 @@ export const styles = css`
   }
 
   .jump-to-bottom-btn {
-    --md-filled-button-container-elevation: 4;
-    --md-filled-button-hover-container-elevation: 4;
     bottom: 2.25rem;
     font-family: 'Roboto Flex', sans-serif;
     position: absolute;
@@ -195,9 +196,9 @@ export const styles = css`
   }
 
   .resize-handle:hover {
-    background-color: var(--md-sys-color-primary);
+    background-color: var(--sys-log-viewer-color-primary);
     mix-blend-mode: unset;
-    outline: 1px solid var(--md-sys-color-primary);
+    outline: 1px solid var(--sys-log-viewer-color-primary);
   }
 
   .resize-handle::before {
@@ -267,7 +268,7 @@ export const styles = css`
   mark {
     background-color: var(--sys-log-viewer-color-table-mark);
     border-radius: 2px;
-    color: var(--md-sys-color-on-primary-container);
+    color: var(--sys-log-viewer-color-table-mark);
     outline: 1px solid var(--sys-log-viewer-color-table-mark);
   }
 
@@ -283,13 +284,10 @@ export const styles = css`
 
   .jump-to-bottom-btn[data-visible='true'],
   .bottom-indicator[data-visible='true'] {
-    opacity: 1;
-    transform: translateY(0) scale(1);
     transition:
       opacity 250ms ease,
       transform 250ms ease,
       250ms ease;
-    visibility: visible;
   }
 
   ::-webkit-scrollbar {

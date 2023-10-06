@@ -273,12 +273,12 @@ export class LogList extends LitElement {
    * @param {string} text - The table cell text to be processed.
    */
   private highlightMatchedText(text: string): TemplateResult[] {
-    const noQuotesText = this.searchText.replace(/(^"|')|("|'$)/g, '');
-    if (!noQuotesText) {
+    const searchPhrase = this.searchText?.replace(/(^"|')|("|'$)/g, '');
+    if (!searchPhrase) {
       return [html`${text}`];
     }
 
-    const escapedsearchText = noQuotesText.replace(
+    const escapedsearchText = searchPhrase.replace(
       /[.*+?^${}()|[\]\\]/g,
       '\\$&',
     );
@@ -318,6 +318,7 @@ export class LogList extends LitElement {
 
     // Only run autoscroll logic if the user is scrolling vertically
     if (!isScrollingVertically) {
+      this._scrollPercentageLeft = scrollLeft / maxScrollLeft || 0;
       return;
     }
 
@@ -336,8 +337,6 @@ export class LogList extends LitElement {
     if (Math.round(scrollY - rowHeight) >= 1) {
       this._autoscrollIsEnabled = false;
     }
-
-    this._scrollPercentageLeft = scrollLeft / maxScrollLeft || 0;
   };
 
   /**

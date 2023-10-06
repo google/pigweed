@@ -25,6 +25,24 @@ export const styles = css`
     gap: 2rem;
     height: var(--sys-log-viewer-height);
     width: 100%;
+
+    /* Material Web properties */
+    --md-icon-font: 'Material Symbols Rounded';
+    --md-icon-size: 1.25rem;
+    --md-filled-button-label-text-type: 'Roboto Flex', Arial, sans-serif;
+    --md-outlined-button-label-text-type: 'Roboto Flex', Arial, sans-serif;
+    --md-icon-button-unselected-icon-color: var(
+      --md-sys-color-on-surface-variant
+    );
+    --md-icon-button-unselected-hover-icon-color: var(
+      --md-sys-color-on-primary-container
+    );
+    --md-filled-button-container-color: var(--sys-log-viewer-color-primary);
+
+    /* Log View */
+    --sys-log-viewer-height: 100%;
+    --sys-log-viewer-view-outline-width: 1px;
+    --sys-log-viewer-view-corner-radius: 0.5rem;
   }
 
   .grid-container {

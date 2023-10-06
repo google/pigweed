@@ -295,3 +295,26 @@ After this, you just need to pass your custom log source object
 to `createLogViewer()`. See implementation of
 `PigweedRPCLogSource <https://cs.opensource.google/pigweed/pigweed/+/main:ts/logging_source_rpc.ts>`_
 for reference.
+
+Color Scheme
+------------
+
+The log viewer web component provides the ability to set the color scheme manually, overriding any default or system preferences.
+
+To set the color scheme, first obtain a reference to the ``log-viewer`` element in the DOM. A common way to do this is by using ``querySelector()``:
+
+.. code-block:: javascript
+
+  const logViewer = document.querySelector('log-viewer');
+
+You can then set the color scheme dynamically by updating the component's `colorScheme` property or by setting a value for the `colorscheme` HTML attribute.
+
+.. code-block:: javascript
+
+  logViewer.colorScheme = 'dark';
+
+.. code-block:: javascript
+
+  logViewer.setAttribute('colorscheme', 'dark');
+
+The color scheme can be set to ``'dark'``, ``'light'``, or the default ``'auto'`` which allows the component to adapt to the preferences in the operating system settings.
