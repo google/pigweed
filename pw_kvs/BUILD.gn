@@ -120,6 +120,13 @@ pw_source_set("fake_flash") {
   ]
 }
 
+pw_source_set("flash_partition_with_logical_sectors") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_kvs/flash_partition_with_logical_sectors.h" ]
+  public_deps = [ dir_pw_kvs ]
+  deps = [ ":config" ]
+}
+
 pw_source_set("fake_flash_12_byte_partition") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_kvs/flash_test_partition.h" ]
@@ -197,6 +204,24 @@ pw_source_set("fake_flash_256_aligned_partition") {
     "PW_FLASH_TEST_SECTORS=6U",
     "PW_FLASH_TEST_SECTOR_SIZE=4096U",
     "PW_FLASH_TEST_ALIGNMENT=256U",
+  ]
+}
+
+pw_source_set("fake_flash_1_aligned_4_logical_partition") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_kvs/flash_test_partition.h" ]
+  sources = [ "fake_flash_test_logical_sector_partition.cc" ]
+  public_deps = [ ":flash_test_partition" ]
+  deps = [
+    ":fake_flash",
+    ":flash_partition_with_logical_sectors",
+    dir_pw_kvs,
+  ]
+  defines = [
+    "PW_FLASH_TEST_SECTORS=24U",
+    "PW_FLASH_TEST_SECTOR_SIZE=4096U",
+    "PW_FLASH_TEST_ALIGNMENT=1U",
+    "PW_FLASH_TEST_SECTORS_PER_LOGICAL_SECTOR=4U",
   ]
 }
 
@@ -368,13 +393,17 @@ pw_test_group("tests") {
       ":entry_test",
       ":entry_cache_test",
       ":flash_partition_1_stream_test",
+      ":flash_partition_4_logical_stream_test",
       ":flash_partition_1_alignment_test",
+      ":flash_partition_1_alignment_4_logical_test",
       ":flash_partition_16_alignment_test",
       ":flash_partition_64_alignment_test",
       ":flash_partition_256_alignment_test",
       ":flash_partition_256_write_size_test",
+      ":flash_partition_4_logical_256_write_size_test",
       ":key_value_store_test",
       ":key_value_store_1_alignment_flash_test",
+      ":key_value_store_1_alignment_4_logical_flash_test",
       ":key_value_store_16_alignment_flash_test",
       ":key_value_store_64_alignment_flash_test",
       ":key_value_store_256_alignment_flash_test",
@@ -437,11 +466,29 @@ pw_test("flash_partition_1_stream_test") {
   ]
 }
 
+pw_test("flash_partition_4_logical_stream_test") {
+  deps = [
+    ":fake_flash",
+    ":fake_flash_1_aligned_4_logical_partition",
+    ":flash_partition_stream_test",
+    dir_pw_log,
+  ]
+}
+
 pw_test("flash_partition_1_alignment_test") {
   deps = [
     ":fake_flash",
     ":fake_flash_1_aligned_partition",
     ":flash_partition_test_100_iterations",
+    dir_pw_log,
+  ]
+}
+
+pw_test("flash_partition_1_alignment_4_logical_test") {
+  deps = [
+    ":fake_flash",
+    ":fake_flash_1_aligned_4_logical_partition",
+    ":flash_partition_test_2_iterations",
     dir_pw_log,
   ]
 }
@@ -482,6 +529,15 @@ pw_test("flash_partition_256_write_size_test") {
   ]
 }
 
+pw_test("flash_partition_4_logical_256_write_size_test") {
+  deps = [
+    ":fake_flash",
+    ":fake_flash_1_aligned_4_logical_partition",
+    ":flash_partition_test_2_iterations_256_write",
+    dir_pw_log,
+  ]
+}
+
 pw_test("key_value_store_test") {
   deps = [
     ":config",
@@ -499,6 +555,13 @@ pw_test("key_value_store_test") {
 pw_test("key_value_store_1_alignment_flash_test") {
   deps = [
     ":fake_flash_1_aligned_partition",
+    ":key_value_store_initialized_test",
+  ]
+}
+
+pw_test("key_value_store_1_alignment_4_logical_flash_test") {
+  deps = [
+    ":fake_flash_1_aligned_4_logical_partition",
     ":key_value_store_initialized_test",
   ]
 }

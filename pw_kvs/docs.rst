@@ -88,6 +88,13 @@ reader defaults to the full size of the partition but can optionally be limited
 to a smaller range.
 
 
+FlashMemory has a variant FakeFlashMemory that uses RAM rather than flash as
+the storage media. This is helpful for unit tests and development without wear
+on the phyisical flash of a device.
+
+FlashPartition has several variants (FlashPartitionWithStats and
+FlashPartitionWithLogicalSectors) that are helpful in some situations.
+
 Size report
 ===========
 The following size report showcases the memory usage of the KVS and

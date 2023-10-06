@@ -109,6 +109,15 @@ pw_add_library(pw_kvs.fake_flash STATIC
     pw_log
 )
 
+pw_add_library(pw_kvs.flash_partition_with_logical_sectors INTERFACE
+  HEADERS
+    public/pw_kvs/flash_partition_with_logical_sectors.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_kvs
+)
+
 pw_add_library(pw_kvs.fake_flash_12_byte_partition STATIC
   HEADERS
     public/pw_kvs/flash_test_partition.h
@@ -143,6 +152,26 @@ pw_add_library(pw_kvs.fake_flash_1_aligned_partition STATIC
     PW_FLASH_TEST_SECTORS=6U
     PW_FLASH_TEST_SECTOR_SIZE=4096U
     PW_FLASH_TEST_ALIGNMENT=1U
+)
+
+pw_add_library(pw_kvs.fake_flash_1_aligned_4_logical_partition STATIC
+  HEADERS
+    public/pw_kvs/flash_test_partition.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_kvs.flash_test_partition
+  SOURCES
+    fake_flash_test_logical_sector_partition.cc
+  PRIVATE_DEPS
+    pw_kvs.fake_flash
+    pw_kvs.flash_partition_with_logical_sectors
+    pw_kvs
+  PRIVATE_DEFINES
+    PW_FLASH_TEST_SECTORS=24U
+    PW_FLASH_TEST_SECTOR_SIZE=4096U
+    PW_FLASH_TEST_ALIGNMENT=1U
+    PW_FLASH_TEST_SECTORS_PER_LOGICAL_SECTOR=4U
 )
 
 pw_add_library(pw_kvs.fake_flash_16_aligned_partition STATIC
@@ -424,6 +453,17 @@ pw_add_test(pw_kvs.flash_partition_1_alignment_test
     pw_kvs
 )
 
+pw_add_test(pw_kvs.flash_partition_1_alignment_4_logical_test
+  PRIVATE_DEPS
+    pw_kvs.fake_flash
+    pw_kvs.fake_flash_1_aligned_4_logical_partition
+    pw_kvs.flash_partition_test_100_iterations
+    pw_log
+  GROUPS
+    modules
+    pw_kvs
+)
+
 pw_add_test(pw_kvs.flash_partition_16_alignment_test
   PRIVATE_DEPS
     pw_kvs.fake_flash
@@ -468,6 +508,17 @@ pw_add_test(pw_kvs.flash_partition_256_write_size_test
     pw_kvs
 )
 
+pw_add_test(pw_kvs.flash_partition_4_logical_256_write_size_test
+  PRIVATE_DEPS
+    pw_kvs.fake_flash
+    pw_kvs.fake_flash_1_aligned_4_logical_partition
+    pw_kvs.flash_partition_test_2_iterations_256_write
+    pw_log
+  GROUPS
+    modules
+    pw_kvs
+)
+
 pw_add_test(pw_kvs.key_value_store_test
   SOURCES
     key_value_store_test.cc
@@ -488,6 +539,15 @@ pw_add_test(pw_kvs.key_value_store_test
 pw_add_test(pw_kvs.key_value_store_1_alignment_flash_test
   PRIVATE_DEPS
     pw_kvs.fake_flash_1_aligned_partition
+    pw_kvs.key_value_store_initialized_test
+  GROUPS
+    modules
+    pw_kvs
+)
+
+pw_add_test(pw_kvs.key_value_store_1_alignment_4_logical_flash_test
+  PRIVATE_DEPS
+    pw_kvs.fake_flash_1_aligned_4_logical_partition
     pw_kvs.key_value_store_initialized_test
   GROUPS
     modules

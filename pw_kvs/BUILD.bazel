@@ -104,6 +104,17 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "flash_partition_with_logical_sectors",
+    hdrs = [
+        "public/pw_kvs/flash_partition_with_logical_sectors.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":pw_kvs",
+    ],
+)
+
+pw_cc_library(
     name = "fake_flash_1_aligned_partition",
     srcs = [
         "fake_flash_test_partition.cc",
@@ -118,6 +129,27 @@ pw_cc_library(
     ],
     deps = [
         ":fake_flash",
+        ":pw_kvs",
+    ],
+)
+
+pw_cc_library(
+    name = "fake_flash_1_aligned_4_logical_partition",
+    srcs = [
+        "fake_flash_test_logical_sector_partition.cc",
+    ],
+    hdrs = [
+        "public/pw_kvs/flash_test_partition.h",
+    ],
+    defines = [
+        "PW_FLASH_TEST_SECTORS=24U",
+        "PW_FLASH_TEST_SECTOR_SIZE=4096U",
+        "PW_FLASH_TEST_ALIGNMENT=1U",
+        "PW_FLASH_TEST_SECTORS_PER_LOGICAL_SECTOR=4U",
+    ],
+    deps = [
+        ":fake_flash",
+        ":flash_partition_with_logical_sectors",
         ":pw_kvs",
     ],
 )
@@ -313,6 +345,21 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "flash_partition_1_alignment_4_logical_test",
+    srcs = ["flash_partition_test.cc"],
+    defines = [
+        "PW_FLASH_TEST_ITERATIONS=2",
+        "PW_FLASH_TEST_WRITE_SIZE=1",
+    ],
+    deps = [
+        ":fake_flash_1_aligned_4_logical_partition",
+        ":pw_kvs",
+        "//pw_log",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
     name = "flash_partition_16_alignment_test",
     srcs = ["flash_partition_test.cc"],
     defines = [
@@ -373,6 +420,21 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "flash_partition_4_logical_256_write_size_test",
+    srcs = ["flash_partition_test.cc"],
+    defines = [
+        "PW_FLASH_TEST_ITERATIONS=2",
+        "PW_FLASH_TEST_WRITE_SIZE=256",
+    ],
+    deps = [
+        ":fake_flash_1_aligned_4_logical_partition",
+        ":pw_kvs",
+        "//pw_log",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
     name = "key_test",
     srcs = [
         "key_test.cc",
@@ -407,6 +469,23 @@ pw_cc_test(
     deps = [
         ":crc16",
         ":fake_flash_1_aligned_partition",
+        ":pw_kvs",
+        "//pw_checksum",
+        "//pw_log",
+        "//pw_log:facade",
+        "//pw_span",
+        "//pw_status",
+        "//pw_string:builder",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "key_value_store_1_alignment_4_logical_flash_test",
+    srcs = ["key_value_store_initialized_test.cc"],
+    deps = [
+        ":crc16",
+        ":fake_flash_1_aligned_4_logical_partition",
         ":pw_kvs",
         "//pw_checksum",
         "//pw_log",
