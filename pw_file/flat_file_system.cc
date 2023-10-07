@@ -92,8 +92,7 @@ void FlatFileSystemService::List(ConstByteSpan request,
     }
 
     std::string_view file_name_view;
-    if (!decoder.ReadString(&file_name_view).ok() ||
-        file_name_view.length() == 0) {
+    if (!decoder.ReadString(&file_name_view).ok() || file_name_view.empty()) {
       writer.Finish(Status::DataLoss())
           .IgnoreError();  // TODO: b/242598609 - Handle Status properly
       return;

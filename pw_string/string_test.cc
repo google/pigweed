@@ -1209,7 +1209,7 @@ TEST(InlineString, Size) {
 
   static_assert(kEmptyCapacity10.size() == 0u, "0");  // NOLINT
   static_assert(kSize5Capacity10.size() == 5u, "5");
-  static_assert(kEmptyCapacity10.length() == 0u, "0");
+  static_assert(kEmptyCapacity10.length() == 0u, "0");  // NOLINT
   static_assert(kSize5Capacity10.length() == 5u, "5");
 }
 
