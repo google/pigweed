@@ -49,7 +49,7 @@ STMicroelectronics STM32L452 or the Nordic nRF52832.
    <https://groups.google.com/forum/#!forum/pigweed>`_.
 
 ---------------------
-What's new in Pigweed
+What's New In Pigweed
 ---------------------
 .. include:: changelog.rst
    :start-after: .. changelog_highlights_start
