@@ -24,6 +24,7 @@ Highlights (Sep 21, 2023 to Oct 6, 2023):
   <docs-changelog-20231009-pw_rpc>` when dynamic allocation is enabled.
 * The Python backend for ``pw_tokenizer`` now supports :ref:`tokenizing strings as
   arguments <docs-changelog-20231009-pw_tokenizer>`.
+* The ``pigweed_config`` mechanism in Bazel is now officially retired.
 
 Please join us at the next Pigweed Live on **Monday, Oct 9 1PM PST** to
 discuss these changes and anything else on your mind. Join our
