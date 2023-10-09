@@ -193,22 +193,20 @@ Thread::Thread(const thread::Options& facade_options,
 void Thread::detach() {
   PW_CHECK(joinable());
 
-  if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) {
-#if (INCLUDE_vTaskSuspend == 1)
-    // No need to suspend extra tasks.
-    vTaskSuspend(native_type_->task_handle());
-#else
+  // xTaskResumeAll() can only be used after the scheduler has been started.
+  const bool scheduler_initialized =
+      xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED;
+
+  if (scheduler_initialized) {
+    // We don't want to individually suspend and resume this task using
+    // vTaskResume() as that can cause tasks to prematurely wake up and return
+    // from blocking APIs (b/303885539).
     vTaskSuspendAll();
-#endif  // INCLUDE_vTaskSuspend == 1
   }
   native_type_->set_detached();
   const bool thread_done = native_type_->thread_done();
-  if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) {
-#if (INCLUDE_vTaskSuspend == 1)
-    vTaskResume(native_type_->task_handle());
-#else
+  if (scheduler_initialized) {
     xTaskResumeAll();
-#endif  // INCLUDE_vTaskSuspend == 1
   }
 
   if (thread_done) {
