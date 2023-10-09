@@ -156,6 +156,10 @@ add_subdirectory(third_party/googletest EXCLUDE_FROM_ALL)
 
 if(CONFIG_ZEPHYR_PIGWEED_MODULE)
   add_subdirectory(zephyr)
+  if(CONFIG_PIGWEED_MINIMAL_CPP_STDLIB)
+    # Add include path to pw_minimal_cpp_stdlib to compiler
+    zephyr_compile_options(-isystem ${ZEPHYR_PIGWEED_MODULE_DIR}/pw_minimal_cpp_stdlib/public)
+  endif()
 else()
   add_subdirectory(targets/host EXCLUDE_FROM_ALL)
 

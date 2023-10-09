@@ -13,7 +13,6 @@
 # the License.
 
 config ZEPHYR_PIGWEED_MODULE
-    select REQUIRES_FULL_LIBCPP
     depends on STD_CPP17 || STD_CPP2A || STD_CPP20 || STD_CPP2B
 
 if ZEPHYR_PIGWEED_MODULE
@@ -28,6 +27,7 @@ rsource "pw_function/Kconfig"
 rsource "pw_hdlc/Kconfig"
 rsource "pw_interrupt_zephyr/Kconfig"
 rsource "pw_log_zephyr/Kconfig"
+rsource "pw_minimal_cpp_stdlib/Kconfig"
 rsource "pw_multisink/Kconfig"
 rsource "pw_polyfill/Kconfig"
 rsource "pw_preprocessor/Kconfig"
