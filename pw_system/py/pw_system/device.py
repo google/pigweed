@@ -46,6 +46,7 @@ _LOG = logging.getLogger('tools')
 DEFAULT_DEVICE_LOGGER = logging.getLogger('rpc_device')
 
 
+# pylint: disable=too-many-arguments
 class Device:
     """Represents an RPC Client for a device running a Pigweed target.
 
@@ -67,13 +68,14 @@ class Device:
         rpc_timeout_s: float = 5,
         use_rpc_logging: bool = True,
         use_hdlc_encoding: bool = True,
+        logger: logging.Logger = DEFAULT_DEVICE_LOGGER,
     ):
         self.channel_id = channel_id
         self.protos = proto_library
         self.detokenizer = detokenizer
         self.rpc_timeout_s = rpc_timeout_s
 
-        self.logger = DEFAULT_DEVICE_LOGGER
+        self.logger = logger
         self.logger.setLevel(logging.DEBUG)  # Allow all device logs through.
 
         callback_client_impl = callback_client.Impl(
