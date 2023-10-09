@@ -41,10 +41,15 @@ void SplitFreeListAllocator::Initialize(void* base,
                                         size_t threshold) {
   PW_CHECK(base != nullptr);
   auto addr = reinterpret_cast<uintptr_t>(base);
-  addr_ = AlignUp(addr, alignof(FreeBlock));
-  PW_CHECK(alignof(FreeBlock) <= size, "size underflow on alignment");
-  size_ = AlignDown(size - (addr_ - addr), alignof(FreeBlock));
+
+  // See `Normalize` below. All addresses, including the start and end of the
+  // overall memory region, must be a multiple of and aligned to
+  // `sizeof(FreeBlock)`.
+  addr_ = AlignUp(addr, sizeof(FreeBlock));
+  PW_CHECK(sizeof(FreeBlock) <= size, "size underflow on alignment");
+  size_ = AlignDown(size - (addr_ - addr), sizeof(FreeBlock));
   PW_CHECK(sizeof(FreeBlock) <= size_, "region is smaller than a single block");
+
   head_ = reinterpret_cast<FreeBlock*>(addr_);
   head_->next = nullptr;
   head_->size = size_;
@@ -59,11 +64,17 @@ namespace {
 ///
 /// This functions will modify `size` and `alignment` to represent a memory
 /// region that is a multiple of `sizeof(FreeBlock)`, aligned on
-/// `sizeof(FreeBlock)` boundaries. This potentially wastes a few bytes for
-/// allocations that could have been aligned on `alignof(FreeBlock)` boundaries,
-/// but it greatly simplifies ensuring that any fragments can hold a `FreeBlock`
-/// as well as reconstructing the `FreeBlock` from a pointer and `Layout` in
-/// `Deallocate`.
+/// `sizeof(FreeBlock)` boundaries.
+///
+/// The use of such minimum sizes and alignments eliminates several conditions
+/// and edge cases that would need to checked and addressed if more granular
+/// sizes and alignments were used. It also greatly simplifies ensuring that any
+/// fragments can hold a `FreeBlock` as well as reconstructing the `FreeBlock`
+/// from a pointer and `Layout` in `Deallocate`.
+///
+/// These simplifications allow de/allocation to be quicker, at the potential
+/// cost of a few bytes wasted for small and/or less strictly aligned
+/// allocations.
 void Normalize(size_t& size, size_t& alignment) {
   alignment = std::max(alignment, sizeof(FreeBlock));
   size = AlignUp(std::max(size, sizeof(FreeBlock)), alignment);

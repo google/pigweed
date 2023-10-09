@@ -101,6 +101,22 @@ TEST_F(SplitFreeListAllocatorTest, AllocateDeallocateLargeAlignment) {
   allocator.DeallocateUnchecked(ptr2, sizeof(uint32_t), 64);
 }
 
+TEST_F(SplitFreeListAllocatorTest, AllocateFromUnaligned) {
+  alignas(16) std::array<std::byte, 256> buf;
+  SplitFreeListAllocator unaligned;
+  unaligned.Initialize(buf.data() + 1, buf.size() - 1, 64);
+
+  EXPECT_EQ(unaligned.addr() % sizeof(SplitFreeListAllocator::FreeBlock), 0U);
+  EXPECT_EQ(unaligned.size() % sizeof(SplitFreeListAllocator::FreeBlock), 0U);
+
+  constexpr Layout layout = Layout::Of<std::byte[72]>();
+  EXPECT_EQ(layout.size(), 72U);
+  EXPECT_EQ(layout.alignment(), 1U);
+
+  void* ptr = unaligned.Allocate(layout);
+  unaligned.Deallocate(ptr, layout);
+}
+
 TEST_F(SplitFreeListAllocatorTest, AllocateAlignmentFailure) {
   // Find a valid address aligned to 128 bytes.
   auto base = reinterpret_cast<uintptr_t>(buffer.data());
