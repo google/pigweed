@@ -48,9 +48,6 @@ menuconfig PIGWEED_LOG_TOKENIZED
 
 config PIGWEED_LOG_TOKENIZED_LIB
     bool "Tokenize logging and implement your own pw_log_tokenized_HandleLog"
-    select PIGWEED_PREPROCESSOR
-    select PIGWEED_SYNC_INTERRUPT_SPIN_LOCK
-    select PIGWEED_SYS_IO
     select PIGWEED_TOKENIZER
     select LOG_CUSTOM_HEADER
     help
