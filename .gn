@@ -44,6 +44,9 @@ default_args = {
     # Exclude GoogleTest, which fails some clang-tidy checks.
     ".*/googletest/src/.*",
     ".*/googlemock/src/.*",
+
+    # Exclude Boringssl, which fails some clang-tidy checks.
+    ".*/boringssl/src/.*",
   ]
 
   pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS = [
@@ -56,5 +59,8 @@ default_args = {
     # Exclude GoogleTest, which fails some clang-tidy checks.
     ".*/googletest/include.*",
     ".*/googlemock/include.*",
+
+    # Exclude Boringssl, which fails some clang-tidy checks.
+    ".*/boringssl/src/include.*",
   ]
 }

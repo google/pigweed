@@ -38,7 +38,7 @@ class BoringSSL(pw_package.package_manager.Package):
                     '/third_party/boringssl/boringssl',
                 ]
             ),
-            commit='9f55d972854d0b34dae39c7cd3679d6ada3dfd5b',
+            commit='6d3db84c47643271cb553593ee67362be3820874',
         )
         self._allow_use_in_downstream = False
 
