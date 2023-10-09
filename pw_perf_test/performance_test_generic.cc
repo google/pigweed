@@ -43,7 +43,6 @@ PW_PERF_TEST(LambdaFunction, [](pw::perf_test::State& state_) {
 });
 
 PW_PERF_TEST_SIMPLE(SimpleTest, TestSimple, 2, 4);
-PW_PERF_TEST_SIMPLE(
-    SimpleLambda, [](int a, int b) { return a + b; }, 1, 3);
+PW_PERF_TEST_SIMPLE(SimpleLambda, [](int a, int b) { return a + b; }, 1, 3);
 }  // namespace
 }  // namespace pw::perf_test
