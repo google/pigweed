@@ -110,6 +110,20 @@
         "latest"
       ],
       "version_file": ".versions/logdog.cipd_version"
+    },
+    {
+      "path": "infra/tools/prpc/${platform}",
+      "platforms": [
+        "linux-amd64",
+        "linux-arm64",
+        "mac-amd64",
+        "mac-arm64",
+        "windows-amd64"
+      ],
+      "tags": [
+        "latest"
+      ],
+      "version_file": ".versions/prpc.cipd_version"
     }
   ]
 }
