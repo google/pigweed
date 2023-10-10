@@ -74,7 +74,7 @@ Rollers
 =======
 Just because a change has been submitted doesn't mean it's live in the
 project. Submodules and Android Repo Tool projects often need to be
-`rolled <docs-rollers>` before they're in the most recent checkout of the
+:ref:`rolled <docs-rollers>` before they're in the most recent checkout of the
 project.
 
 Presubmit result
