@@ -90,7 +90,7 @@ if (dir_pw_third_party_chre == "") {
       "$dir_pw_third_party_chre/platform/shared/system_time.cc",
     ]
 
-    # TODO(b/300633363): Use CHRE's version when it compiles on MacOS.
+    # CHRE does not compile on MacOS, so work around this.
     if (current_os == "mac") {
       sources += [ "version.cc" ]
     } else {

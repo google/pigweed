@@ -20,7 +20,6 @@
 
 namespace chre {
 
-// TODO(b/300633363): Use CHRE's version when it compiles on MacOS.
 const char* getChreVersionString() { return CHRE_VERSION_STRING; }
 
 }  // namespace chre
