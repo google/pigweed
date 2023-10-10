@@ -24,6 +24,7 @@ pw_doc_group("docs") {
     ":0101",
     ":0102",
     ":0104",
+    ":0105",
     ":0107",
     ":0108",
     ":0109",
@@ -49,6 +50,10 @@ pw_doc_group("0102") {
 
 pw_doc_group("0104") {
   sources = [ "0104-display-support.rst" ]
+}
+
+pw_doc_group("0105") {
+  sources = [ "0105-pw_tokenizer-pw_log-nested-tokens.rst" ]
 }
 
 pw_doc_group("0107") {
