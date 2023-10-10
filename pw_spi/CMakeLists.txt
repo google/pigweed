@@ -44,3 +44,16 @@ pw_add_library(pw_spi.chip_selector INTERFACE
   PUBLIC_DEPS
     pw_status
 )
+
+pw_add_library(pw_spi.device INTERFACE
+  HEADERS
+    public/pw_spi/device.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_bytes
+    pw_spi.chip_selector
+    pw_spi.initiator
+    pw_status
+    pw_sync.borrow
+)
