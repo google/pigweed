@@ -42,7 +42,7 @@ constexpr auto data(const C& container) -> decltype(container.data()) {
   return container.data();
 }
 
-template <typename T, decltype(sizeof(int)) kSize>
+template <typename T, decltype(sizeof(0)) kSize>
 constexpr T* data(T (&array)[kSize]) noexcept {
   return array;
 }
@@ -62,8 +62,8 @@ constexpr auto size(const C& container) -> decltype(container.size()) {
   return container.size();
 }
 
-template <typename T, decltype(sizeof(int)) kSize>
-constexpr decltype(sizeof(int)) size(const T (&)[kSize]) noexcept {
+template <typename T, decltype(sizeof(0)) kSize>
+constexpr decltype(sizeof(0)) size(const T (&)[kSize]) noexcept {
   return kSize;
 }
 

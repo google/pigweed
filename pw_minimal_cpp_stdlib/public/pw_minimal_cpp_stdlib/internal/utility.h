@@ -44,8 +44,8 @@ struct tuple_size;
 template <typename T, T... kSequence>
 class integer_sequence;
 
-template <size_t... kSequence>
-using index_sequence = integer_sequence<decltype(sizeof(int)), kSequence...>;
+template <decltype(sizeof(0))... kSequence>
+using index_sequence = integer_sequence<decltype(sizeof(0)), kSequence...>;
 
 template <typename T, T kEnd>
 #if __has_builtin(__make_integer_seq)
@@ -54,8 +54,8 @@ using make_integer_sequence = __make_integer_seq<integer_sequence, T, kEnd>;
 using make_integer_sequence = integer_sequence<T, __integer_pack(kEnd)...>;
 #endif  // make_integer_sequence
 
-template <size_t kEnd>
-using make_index_sequence = make_integer_sequence<size_t, kEnd>;
+template <decltype(sizeof(0)) kEnd>
+using make_index_sequence = make_integer_sequence<decltype(sizeof(0)), kEnd>;
 
 struct in_place_t {
   explicit constexpr in_place_t() = default;

@@ -36,7 +36,7 @@ class basic_string_view {
   using iterator = const_iterator;
   using const_reverse_iterator = ::std::reverse_iterator<const_iterator>;
   using reverse_iterator = const_reverse_iterator;
-  using size_type = size_t;
+  using size_type = decltype(sizeof(0));
   using difference_type = ptrdiff_t;
 
   static constexpr size_type npos = size_type(-1);
@@ -80,7 +80,7 @@ class basic_string_view {
   constexpr size_type size() const noexcept { return size_; }
   constexpr size_type length() const noexcept { return size(); }
 
-  constexpr size_type max_size() const noexcept { return ~size_t{0}; }
+  constexpr size_type max_size() const noexcept { return ~size_type{0}; }
 
   [[nodiscard]] constexpr bool empty() const noexcept { return size() == 0u; }
 

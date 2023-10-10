@@ -64,7 +64,7 @@ template <typename T>
 struct is_array : false_type {};
 template <typename T>
 struct is_array<T[]> : true_type {};
-template <typename T, decltype(sizeof(int)) kSize>
+template <typename T, decltype(sizeof(0)) kSize>
 struct is_array<T[kSize]> : true_type {};
 template <typename T>
 inline constexpr bool is_array_v = is_array<T>::value;
@@ -526,9 +526,9 @@ template <typename T, typename U>
 inline constexpr bool is_convertible_v = is_convertible<T, U>::value;
 
 template <typename T>
-struct alignment_of : integral_constant<decltype(sizeof(int)), alignof(T)> {};
+struct alignment_of : integral_constant<decltype(sizeof(0)), alignof(T)> {};
 template <typename T>
-inline constexpr decltype(sizeof(int)) alignment_of_v = alignment_of<T>::value;
+inline constexpr decltype(sizeof(0)) alignment_of_v = alignment_of<T>::value;
 
 #define PW_STDLIB_UNIMPLEMENTED(name) \
   [[deprecated(#name " is NOT IMPLEMENTED in pw_minimal_cpp_stdlib!")]]
@@ -615,16 +615,16 @@ PW_BOOLEAN_TRAIT_NOT_SUPPORTED(is_trivially_destructible);
 PW_BOOLEAN_TRAIT_NOT_SUPPORTED(has_virtual_destructor);
 
 template <typename T>
-struct extent : integral_constant<decltype(sizeof(int)), 1> {};
+struct extent : integral_constant<decltype(sizeof(0)), 1> {};
 template <typename T>
 PW_STDLIB_UNIMPLEMENTED(extent)
-inline constexpr decltype(sizeof(int)) extent_v = extent<T>::value;
+inline constexpr decltype(sizeof(0)) extent_v = extent<T>::value;
 
 template <typename T>
-struct rank : integral_constant<decltype(sizeof(int)), 1> {};
+struct rank : integral_constant<decltype(sizeof(0)), 1> {};
 template <typename T>
 PW_STDLIB_UNIMPLEMENTED(rank)
-inline constexpr decltype(sizeof(int)) rank_v = extent<T>::value;
+inline constexpr decltype(sizeof(0)) rank_v = extent<T>::value;
 
 PW_BOOLEAN_TRAIT_NOT_SUPPORTED_2(is_base_of);
 

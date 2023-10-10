@@ -28,6 +28,7 @@
 #include <limits>
 #include <memory>
 #include <new>
+#include <string>
 #include <string_view>
 #include <type_traits>
 #include <utility>
@@ -83,6 +84,20 @@ SimpleTest* SimpleTest::all_tests = nullptr;
 #define EXPECT_NE(lhs, rhs) \
   do {                      \
     if ((lhs) == (rhs)) {   \
+      RecordTestFailure();  \
+    }                       \
+  } while (0)
+
+#define EXPECT_LT(lhs, rhs) \
+  do {                      \
+    if ((lhs) < (rhs)) {    \
+      RecordTestFailure();  \
+    }                       \
+  } while (0)
+
+#define EXPECT_GT(lhs, rhs) \
+  do {                      \
+    if ((lhs) > (rhs)) {    \
       RecordTestFailure();  \
     }                       \
   } while (0)
@@ -418,6 +433,12 @@ TEST(Memory, AddressOf) {
 
   EXPECT_EQ(&nullptr_address, nullptr);
   EXPECT_NE(std::addressof(nullptr_address), nullptr);
+}
+
+TEST(String, CharTraits) {
+  static_assert(std::char_traits<char>::compare("1234a", "1234z", 4) == 0);
+  static_assert(std::char_traits<char>::compare("1234a", "1234z", 5) < 0);
+  static_assert(std::char_traits<char>::compare("1234z", "1234a", 5) > 0);
 }
 
 }  // namespace
