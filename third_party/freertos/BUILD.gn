@@ -150,6 +150,7 @@ if (dir_pw_third_party_freertos == "") {
     visibility = [ ":arm_cm7" ]
   }
 
+  # NB: Use :arm_cm7_after_r0p1 instead if you can
   pw_source_set("arm_cm7") {
     public_configs = [
       ":arm_cm7_includes",
@@ -161,6 +162,14 @@ if (dir_pw_third_party_freertos == "") {
     sources =
         [ "$dir_pw_third_party_freertos/portable/GCC/ARM_CM7/r0p1/port.c" ]
     configs = [ ":disable_warnings" ]
+  }
+
+  # CM7 r0p0 and r0p1 cores have errata that requires workarounds. Freertos
+  # recommends using the CM4F port on newer CM7 core revisions for better
+  # performance.
+  # See Freertos' ARM_CM7/ReadMe.txt.
+  pw_source_set("arm_cm7_after_r0p1") {
+    public_deps = [ ":arm_cm4f" ]
   }
 
   # ARM CM4F port of FreeRTOS.
