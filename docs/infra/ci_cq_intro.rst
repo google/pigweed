@@ -62,7 +62,8 @@ Post-Submit builders
 ====================
 Jobs are run post-submission too and can be seen at
 https://ci.chromium.org/p/pigweed (for public projects) and
-https://ci.chromium.org/p/pigweed-internal (for internal projects).
+https://ci.chromium.org/p/pigweed-internal (for internal projects). Builders can
+also be viewed from Pigweed's :ref:`builder visualization <docs-builder-viz>`.
 
 Non-``main`` branches
 =====================
@@ -83,9 +84,14 @@ The ``Presubmit-Verified`` label is set at the completion of CQ runs. It does
 not block submission, but can be used by Copybara to see if CQ has passed.
 If it looks incorrect, do another CQ run and it will be updated.
 
-List of builders
-================
-All builders can be viewed from Pigweed's "Builder Viz":
+.. _docs-builder-viz:
+
+Builder Visualization
+=====================
+
+Pigweed's builder visualization simplifies the process of browsing, viewing, and
+triggering builders. The source-of-truth for it is Google-internal, but there's
+a public version without the Google-internal bits.
 
  *  `Builder Viz link for external contributors <https://pigweed.googlesource.com/infra/config/+/main/generated/pigweed/for_review_only/viz/index.md>`_
  *  `Builder Viz link for Googlers <https://pigweed-internal.googlesource.com/infra/config/+/main/generated/pigweed/for_review_only/viz/index.md>`_

@@ -22,10 +22,8 @@ Many more rollers are visible when logged in using an @google.com account than
 when not.
 
 Rollers specific to individual downstream projects can be found by browsing
-the "Builder Viz" and looking under the "roll" column.
-
- *  `Builder Viz link for external contributors <https://pigweed.googlesource.com/infra/config/+/main/generated/pigweed/for_review_only/viz/index.md>`_
- *  `Builder Viz link for Googlers <https://pigweed-internal.googlesource.com/infra/config/+/main/generated/pigweed/for_review_only/viz/index.md>`_
+the :ref:`builder visualization <docs-builder-viz>` and looking under the
+"roll" columns.
 
 --------------------
 How do rollers work?
