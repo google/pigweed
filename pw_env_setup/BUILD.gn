@@ -98,6 +98,8 @@ pw_python_group("python") {
 
     # Standalone scripts
     # These targets are included here in order to ensure they are linted.
+    "$dir_pw_emu/py:mock_emu",
+    "$dir_pw_emu/py:mock_emu_frontend",
     "$dir_pw_third_party/fuchsia:generate_fuchsia_patch",
     "$dir_pw_third_party/nanopb:generate_nanopb_proto",
   ]

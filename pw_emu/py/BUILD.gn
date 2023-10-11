@@ -22,9 +22,39 @@ pw_python_package("py") {
     "setup.cfg",
     "setup.py",
   ]
-  sources = [ "pw_emu/__init__.py" ]
-  tests = [ "tests/__init__.py" ]
+  sources = [
+    "pw_emu/__init__.py",
+    "pw_emu/core.py",
+    "pw_emu/pigweed_emulators.py",
+  ]
+  tests = [
+    "tests/__init__.py",
+    "tests/common.py",
+    "tests/core_test.py",
+  ]
   pylintrc = "$dir_pigweed/.pylintrc"
   mypy_ini = "$dir_pigweed/.mypy.ini"
-  python_deps = [ "$dir_pw_build/py" ]
+  python_deps = [
+    "$dir_pw_build/py",
+    "$dir_pw_env_setup/py",
+  ]
+}
+
+pw_python_script("mock_emu") {
+  sources = [ "mock_emu.py" ]
+  pylintrc = "$dir_pigweed/.pylintrc"
+  mypy_ini = "$dir_pigweed/.mypy.ini"
+  action = {
+    stamp = true
+  }
+}
+
+pw_python_script("mock_emu_frontend") {
+  sources = [ "mock_emu_frontend.py" ]
+  python_deps = [ "$dir_pw_env_setup/py" ]
+  pylintrc = "$dir_pigweed/.pylintrc"
+  mypy_ini = "$dir_pigweed/.mypy.ini"
+  action = {
+    stamp = true
+  }
 }
