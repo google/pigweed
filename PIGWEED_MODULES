@@ -44,6 +44,7 @@ pw_digital_io_mcuxpresso
 pw_digital_io_rp2040
 pw_docgen
 pw_doctor
+pw_emu
 pw_env_setup
 pw_file
 pw_function

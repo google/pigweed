@@ -28,6 +28,8 @@ twister-out*/
 *flycheck_*
 *_flymake.*
 .#*
+*~
+\#*#
 
 # Python
 *.pyc
@@ -68,3 +70,6 @@ build_overrides/pigweed_environment.gni
 # Web Tools
 node_modules
 yarn-error.log
+
+# pw_emu
+.pw_emu

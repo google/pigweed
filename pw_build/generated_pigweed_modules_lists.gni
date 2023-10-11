@@ -77,6 +77,7 @@ declare_args() {
   dir_pw_digital_io_rp2040 = get_path_info("../pw_digital_io_rp2040", "abspath")
   dir_pw_docgen = get_path_info("../pw_docgen", "abspath")
   dir_pw_doctor = get_path_info("../pw_doctor", "abspath")
+  dir_pw_emu = get_path_info("../pw_emu", "abspath")
   dir_pw_env_setup = get_path_info("../pw_env_setup", "abspath")
   dir_pw_file = get_path_info("../pw_file", "abspath")
   dir_pw_function = get_path_info("../pw_function", "abspath")
@@ -240,6 +241,7 @@ declare_args() {
     dir_pw_digital_io_rp2040,
     dir_pw_docgen,
     dir_pw_doctor,
+    dir_pw_emu,
     dir_pw_env_setup,
     dir_pw_file,
     dir_pw_function,
@@ -391,6 +393,7 @@ declare_args() {
     "$dir_pw_digital_io_rp2040:tests",
     "$dir_pw_docgen:tests",
     "$dir_pw_doctor:tests",
+    "$dir_pw_emu:tests",
     "$dir_pw_env_setup:tests",
     "$dir_pw_file:tests",
     "$dir_pw_function:tests",
@@ -542,6 +545,7 @@ declare_args() {
     "$dir_pw_digital_io_rp2040:docs",
     "$dir_pw_docgen:docs",
     "$dir_pw_doctor:docs",
+    "$dir_pw_emu:docs",
     "$dir_pw_env_setup:docs",
     "$dir_pw_file:docs",
     "$dir_pw_function:docs",
