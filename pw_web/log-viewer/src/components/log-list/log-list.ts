@@ -129,7 +129,7 @@ export class LogList extends LitElement {
     }
 
     if (changedProperties.has('columnData')) {
-      this.updateColumnWidths();
+      this.updateColumnWidths(this.generateGridTemplateColumns());
     }
   }
 
@@ -139,36 +139,18 @@ export class LogList extends LitElement {
     this._tableBody.removeEventListener('rangeChanged', this.onRangeChanged);
   }
 
-  private onTableRowAdded = (mutations: MutationRecord[]) => {
-    mutations.forEach((mutation) => {
-      // Check for added nodes
-      if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-        const addedRows = Array.from(mutation.addedNodes).filter(
-          (node) => node.nodeName === 'TR',
-        ) as HTMLTableRowElement[];
+  private onTableRowAdded = () => {
+    if (!this._autosizeLocked) {
+      this.autosizeColumns();
+    }
 
-        if (addedRows.length <= 0) {
-          return;
-        }
-
-        // Force repaint to prevent flickering
-        this._table.offsetTop;
-
-        // Update header row alongside newly-added rows
-        const rowsToUpdate = [this._tableRows[0], ...addedRows];
-
-        if (!this._autosizeLocked) {
-          this.autosizeColumns();
-        } else {
-          this.updateColumnWidths(rowsToUpdate);
-        }
-
-        // Disable auto-sizing once a certain number of updates to the logs array have been made
-        if (this.logUpdateCount >= this.AUTOSIZE_LIMIT) {
-          this._autosizeLocked = true;
-        }
-      }
-    });
+    // Disable auto-sizing once a certain number of updates to the logs array have been made
+    if (this.logUpdateCount >= this.AUTOSIZE_LIMIT) {
+      this._autosizeLocked = true;
+    }
+    if (!this._autosizeLocked) {
+      this.autosizeColumns();
+    }
   };
 
   /** Called when the Lit virtualizer updates its range of entries. */
@@ -223,8 +205,6 @@ export class LogList extends LitElement {
         }
       });
     });
-
-    this.updateColumnWidths(rows);
   };
 
   private generateGridTemplateColumns(
@@ -258,12 +238,8 @@ export class LogList extends LitElement {
     return gridTemplateColumns.trim();
   }
 
-  private updateColumnWidths(rows: HTMLTableRowElement[] = this._tableRows) {
-    const gridTemplateColumns = this.generateGridTemplateColumns();
-
-    for (const row of rows) {
-      row.style.gridTemplateColumns = gridTemplateColumns;
-    }
+  private updateColumnWidths(gridTemplateColumns: string) {
+    this.style.setProperty('--column-widths', gridTemplateColumns);
   }
 
   /**
@@ -423,10 +399,7 @@ export class LogList extends LitElement {
       columnIndex,
     );
 
-    // Update the grid layout for each row
-    this._tableRows.forEach((row) => {
-      row.style.gridTemplateColumns = gridTemplateColumns;
-    });
+    this.updateColumnWidths(gridTemplateColumns);
   }
 
   render() {

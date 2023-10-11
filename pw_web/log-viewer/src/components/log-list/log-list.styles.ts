@@ -63,6 +63,7 @@ export const styles = css`
   tr {
     border-bottom: 1px solid var(--sys-log-viewer-color-table-cell-outline);
     display: grid;
+    grid-template-columns: var(--column-widths);
     justify-content: flex-start;
     width: 100%;
     will-change: transform;
@@ -284,10 +285,13 @@ export const styles = css`
 
   .jump-to-bottom-btn[data-visible='true'],
   .bottom-indicator[data-visible='true'] {
+    opacity: 1;
+    transform: translateY(0) scale(1);
     transition:
       opacity 250ms ease,
       transform 250ms ease,
       250ms ease;
+    visibility: visible;
   }
 
   ::-webkit-scrollbar {
