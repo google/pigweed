@@ -125,6 +125,12 @@ such as a quick program for local use and a full program for automated use. The
 :ref:`example script <example-script>` uses ``pw_presubmit.Programs`` to define
 ``quick`` and ``full`` programs.
 
+By default, presubmit steps are only run on files changed since ``@{upstream}``.
+If all such files are filtered out by ``filter_paths``, then that step will be
+skipped. This can be overridden with the ``--base`` and ``--full`` arguments to
+``pw presubmit``. In automated testing ``--full`` is recommended, except for
+lint/format checks where ``--base HEAD~1`` is recommended.
+
 .. autoclass:: pw_presubmit.presubmit_context.PresubmitContext
    :members:
    :noindex:
