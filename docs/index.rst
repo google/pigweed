@@ -48,6 +48,11 @@ STMicroelectronics STM32L452 or the Nordic nRF52832.
    in our `chat room <https://discord.gg/M9NSeTA>`_ or on the `mailing list
    <https://groups.google.com/forum/#!forum/pigweed>`_.
 
+--------------------------
+Talk to us at Pigweed Live
+--------------------------
+.. pigweed-live::
+
 ---------------------
 What's New In Pigweed
 ---------------------
