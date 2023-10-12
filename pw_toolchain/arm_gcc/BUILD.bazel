@@ -185,6 +185,7 @@ pw_cc_toolchain_feature(
     cpp = "@gcc_arm_none_eabi_toolchain//:bin/arm-none-eabi-gcc",
     dwp_files = "@gcc_arm_none_eabi_toolchain//:all",
     feature_deps = [
+        "@pw_toolchain//features:o2",
         "@pw_toolchain//features:c++17",
         "@pw_toolchain//features:no_canonical_prefixes",
         "@pw_toolchain//features:no_rtti",

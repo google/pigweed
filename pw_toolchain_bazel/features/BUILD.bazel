@@ -18,6 +18,13 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+# Optimization level option
+pw_cc_toolchain_feature(
+    name = "o2",
+    copts = ["-O2"],
+    linkopts = ["-O2"],
+)
+
 # Disables linking of the default C++ standard library to allow linking of a
 # different version.
 pw_cc_toolchain_feature(
