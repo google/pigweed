@@ -17,6 +17,7 @@ load(
     "pw_cc_binary",
     "pw_cc_library",
     "pw_cc_test",
+    "pw_linker_script",
 )
 load("//pw_build/bazel_internal:py_proto_library.bzl", "py_proto_library")
 load("//pw_fuzzer:fuzzer.bzl", "pw_cc_fuzz_test")
@@ -56,6 +57,11 @@ pw_cc_library(
         "//pw_span",
         "//pw_varint",
     ],
+)
+
+pw_linker_script(
+    name = "linker_script",
+    linker_script = "pw_tokenizer_linker_sections.ld",
 )
 
 pw_cc_library(

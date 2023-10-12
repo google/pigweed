@@ -47,8 +47,18 @@ These steps can be adapted as needed.
    BUILD.gn's ``pw_tokenizer`` target to the build.
 #. Use the tokenization macros in your code. See
    :ref:`module-pw_tokenizer-tokenization`.
-#. Add the contents of ``pw_tokenizer_linker_sections.ld`` to your project's
-   linker script. In GN and CMake, this step is done automatically.
+#. Ensure the ``.pw_tokenizer.*`` sections are included in your output ELF file:
+
+   * In GN and CMake, this is done automatically.
+   * In Bazel, include ``"@pigweed//pw_tokenizer:linker_script"`` in the
+     ``deps`` of your main binary rule (assuming you're already overriding the
+     default linker script).
+   * If your binary does not use a custom linker script, you can pass
+     ``add_tokenizer_sections_to_default_script.ld`` to the linker which will
+     augment the default linker script (rather than override it).
+   * Alternatively, add the contents of ``pw_tokenizer_linker_sections.ld`` to
+     your project's linker script.
+
 #. Compile your code to produce an ELF file.
 #. Run ``database.py create`` on the ELF file to generate a CSV token
    database. See :ref:`module-pw_tokenizer-managing-token-databases`.
