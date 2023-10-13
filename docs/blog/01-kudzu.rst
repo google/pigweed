@@ -31,7 +31,7 @@ The Pigweed team is taking a field trip to the
 unsurprisingly, that's the kind of good time we're up for! While discussing
 the plans at a team meeting I suggested: "We should make PCB badges that run
 Pigweed and wear that to the Faire!" I've always wanted to make a PCB badge
-and this seemed like the perfect opportunity to make a simple PCB the we could
+and this seemed like the perfect opportunity to make a simple PCB that we could
 do a little bit of hacking on.
 
 --------
@@ -102,9 +102,9 @@ LiPo Battery with `charger <https://www.microchip.com/en-us/product/mcp73831>`_ 
   portrait instead of landscape. We solve this by rotating the buffers once
   they're rendered. The second is that a single 16-bit x 320 x 240 frame buffer
   is ~150K which is over half of the 264K of SRAM in the RP2040. Instead, we're
-  rendering at 160x120 and using the PIO module to pixel double the buffer as
-  we're sending it to the display. As an added bonus, the chunkier pixels
-  gives Kudzu a nice retro feel.
+  rendering at 160x120 and using the PIO module to `pixel double
+  <https://github.com/32blit/32blit-sdk>`_ the buffer as we're sending it to the
+  display. As an added bonus, the chunkier pixels gives Kudzu a nice retro feel.
 
 Directional Pad and Buttons
   Here we're leaning on off-the-shelf buttons and silicone pads. Game
