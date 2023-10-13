@@ -23,6 +23,10 @@
           "module": "pw_system.console",
           "function": "main"
         },
+        "emu": {
+          "module": "pw_emu.__main__",
+          "function": "main"
+        },
         "format": {
           "module": "pw_presubmit.format_code",
           "function": "main"

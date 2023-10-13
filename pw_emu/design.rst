@@ -19,6 +19,8 @@ how to access the emulator channels (e.g. socket ports, pty paths)
 .. mermaid::
 
    graph TD;
+       TemporaryEmulator & pw_emu_cli[pw emu cli] <--> Emulator
+       Emulator <--> Launcher & Connector
        Launcher  <--> Handles
        Connector <--> Handles
        Launcher <--> Config
@@ -27,6 +29,8 @@ how to access the emulator channels (e.g. socket ports, pty paths)
 
 
 The implementation uses the following classes:
+
+* :py:class:`pw_emu.frontend.Emulator`: the user visible API
 
 * :py:class:`pw_emu.core.Launcher`: an abstract class that starts an
   emulator instance for a given configuration and target

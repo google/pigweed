@@ -7,6 +7,9 @@ API reference
    :name: pw_emu
    :tagline: Emulators frontend
 
+.. automodule:: pw_emu.frontend
+   :members:
+
 .. automodule:: pw_emu.core
    :noindex:
    :members:

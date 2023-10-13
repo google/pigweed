@@ -19,7 +19,10 @@ import os
 import tempfile
 import unittest
 
+from pathlib import Path
 from typing import Any, Optional, Dict
+
+from pw_emu.frontend import Emulator
 
 
 class ConfigHelper(unittest.TestCase):
@@ -39,3 +42,11 @@ class ConfigHelper(unittest.TestCase):
     def tearDown(self) -> None:
         self._wdir.cleanup()
         os.unlink(self._config_file)
+
+
+class ConfigHelperWithEmulator(ConfigHelper):
+    """Helper that setups and tears down the configuration file"""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._emu = Emulator(Path(self._wdir.name), Path(self._config_file))

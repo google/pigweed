@@ -24,13 +24,17 @@ pw_python_package("py") {
   ]
   sources = [
     "pw_emu/__init__.py",
+    "pw_emu/__main__.py",
     "pw_emu/core.py",
+    "pw_emu/frontend.py",
     "pw_emu/pigweed_emulators.py",
   ]
   tests = [
     "tests/__init__.py",
+    "tests/cli_test.py",
     "tests/common.py",
     "tests/core_test.py",
+    "tests/frontend_test.py",
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
   mypy_ini = "$dir_pigweed/.mypy.ini"
