@@ -46,6 +46,8 @@ pw_doc_group("core_docs") {
     "run_doxygen.py",
   ]
   sources = [
+    "blog/01-kudzu.rst",
+    "blog/index.rst",
     "code_of_conduct.rst",
     "code_reviews.rst",
     "concepts/index.rst",
@@ -246,6 +248,7 @@ pw_doc_gen("docs") {
     ":target_docs",
     ":templates",
     ":third_party_docs",
+    "$dir_pigweed/kudzu:docs",
     "$dir_pigweed/seed:docs",
     "$dir_pw_env_setup:python.install",
   ]

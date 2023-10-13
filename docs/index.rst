@@ -31,6 +31,8 @@
   Automated Analysis <automated_analysis>
   Build System <build_system>
   SEEDs <seed/0000-index>
+  kudzu/docs
+  Eng Blog <docs/blog/index>
 
 =======
 Pigweed
