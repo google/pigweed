@@ -13,6 +13,8 @@
 // the License.
 #include "pw_async_basic/dispatcher.h"
 
+#include <mutex>
+
 #include "pw_chrono/system_clock.h"
 
 using namespace std::chrono_literals;
