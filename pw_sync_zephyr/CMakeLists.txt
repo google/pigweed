@@ -80,7 +80,7 @@ pw_add_library(pw_sync_zephyr.thread_notification_backend INTERFACE
     public
     public_overrides/thread_notification
   PUBLIC_DEPS
-    pw_sync.binary_semaphore.facade
+    pw_sync.binary_semaphore
     pw_sync.thread_notification.facade
 )
 pw_zephyrize_libraries_ifdef(
@@ -96,7 +96,7 @@ pw_add_library(pw_sync_zephyr.timed_thread_notification_backend INTERFACE
     public
     public_overrides/timed_thread_notification
   PUBLIC_DEPS
-    pw_sync.binary_semaphore.facade
+    pw_sync.binary_semaphore
     pw_sync.timed_thread_notification.facade
 )
 
