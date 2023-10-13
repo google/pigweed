@@ -131,19 +131,21 @@ std::string ChannelConfiguration::MtuOption::ToString() const {
 
 ChannelConfiguration::RetransmissionAndFlowControlOption
 ChannelConfiguration::RetransmissionAndFlowControlOption::MakeBasicMode() {
-  return RetransmissionAndFlowControlOption(ChannelMode::kBasic, 0, 0, 0, 0, 0);
+  return RetransmissionAndFlowControlOption(RetransmissionAndFlowControlMode::kBasic, 0, 0, 0, 0,
+                                            0);
 }
 
 ChannelConfiguration::RetransmissionAndFlowControlOption
 ChannelConfiguration::RetransmissionAndFlowControlOption::MakeEnhancedRetransmissionMode(
     uint8_t tx_window_size, uint8_t max_transmit, uint16_t rtx_timeout, uint16_t monitor_timeout,
     uint16_t mps) {
-  return RetransmissionAndFlowControlOption(ChannelMode::kEnhancedRetransmission, tx_window_size,
-                                            max_transmit, rtx_timeout, monitor_timeout, mps);
+  return RetransmissionAndFlowControlOption(
+      RetransmissionAndFlowControlMode::kEnhancedRetransmission, tx_window_size, max_transmit,
+      rtx_timeout, monitor_timeout, mps);
 }
 ChannelConfiguration::RetransmissionAndFlowControlOption::RetransmissionAndFlowControlOption(
-    ChannelMode mode, uint8_t tx_window_size, uint8_t max_transmit, uint16_t rtx_timeout,
-    uint16_t monitor_timeout, uint16_t mps)
+    RetransmissionAndFlowControlMode mode, uint8_t tx_window_size, uint8_t max_transmit,
+    uint16_t rtx_timeout, uint16_t monitor_timeout, uint16_t mps)
     : mode_(mode),
       tx_window_size_(tx_window_size),
       max_transmit_(max_transmit),

@@ -31,8 +31,8 @@ constexpr ChannelId kRemoteCId = 0x60a3;
 constexpr ChannelId kBadCId = 0x003f;  // Not a dynamic channel.
 
 constexpr ChannelParameters kChannelParams;
-constexpr ChannelParameters kERTMChannelParams{ChannelMode::kEnhancedRetransmission, std::nullopt,
-                                               std::nullopt};
+constexpr ChannelParameters kERTMChannelParams{
+    RetransmissionAndFlowControlMode::kEnhancedRetransmission, std::nullopt, std::nullopt};
 
 // Commands Reject
 
@@ -252,10 +252,10 @@ const ByteBuffer& kDisconRsp = kDisconReq;
 
 // Configuration Requests
 
-auto MakeConfigReqWithMtuAndRfc(ChannelId dest_cid, uint16_t mtu, ChannelMode mode,
-                                uint8_t tx_window, uint8_t max_transmit,
-                                uint16_t retransmission_timeout, uint16_t monitor_timeout,
-                                uint16_t mps) {
+auto MakeConfigReqWithMtuAndRfc(ChannelId dest_cid, uint16_t mtu,
+                                RetransmissionAndFlowControlMode mode, uint8_t tx_window,
+                                uint8_t max_transmit, uint16_t retransmission_timeout,
+                                uint16_t monitor_timeout, uint16_t mps) {
   return StaticByteBuffer(
       // Destination CID
       LowerBits(dest_cid), UpperBits(dest_cid),
@@ -287,8 +287,9 @@ auto MakeConfigReqWithMtu(ChannelId dest_cid, uint16_t mtu = kMaxMTU, uint16_t f
 const ByteBuffer& kOutboundConfigReq = MakeConfigReqWithMtu(kRemoteCId);
 
 const ByteBuffer& kOutboundConfigReqWithErtm = MakeConfigReqWithMtuAndRfc(
-    kRemoteCId, kMaxInboundPduPayloadSize, ChannelMode::kEnhancedRetransmission,
-    kErtmMaxUnackedInboundFrames, kErtmMaxInboundRetransmissions, 0, 0, kMaxInboundPduPayloadSize);
+    kRemoteCId, kMaxInboundPduPayloadSize,
+    RetransmissionAndFlowControlMode::kEnhancedRetransmission, kErtmMaxUnackedInboundFrames,
+    kErtmMaxInboundRetransmissions, 0, 0, kMaxInboundPduPayloadSize);
 
 const StaticByteBuffer kInboundConfigReq(
     // Destination CID
@@ -362,8 +363,9 @@ auto MakeConfigRspWithMtu(ChannelId source_cid, uint16_t mtu,
 
 const ByteBuffer& kOutboundOkConfigRsp = MakeConfigRspWithMtu(kRemoteCId, kDefaultMTU);
 
-auto MakeConfigRspWithRfc(ChannelId source_cid, ConfigurationResult result, ChannelMode mode,
-                          uint8_t tx_window, uint8_t max_transmit, uint16_t retransmission_timeout,
+auto MakeConfigRspWithRfc(ChannelId source_cid, ConfigurationResult result,
+                          RetransmissionAndFlowControlMode mode, uint8_t tx_window,
+                          uint8_t max_transmit, uint16_t retransmission_timeout,
                           uint16_t monitor_timeout, uint16_t mps) {
   return StaticByteBuffer(
       // Source CID
@@ -381,18 +383,21 @@ auto MakeConfigRspWithRfc(ChannelId source_cid, ConfigurationResult result, Chan
       LowerBits(monitor_timeout), UpperBits(monitor_timeout), LowerBits(mps), UpperBits(mps));
 }
 
-const ByteBuffer& kInboundUnacceptableParamsWithRfcBasicConfigRsp = MakeConfigRspWithRfc(
-    kLocalCId, ConfigurationResult::kUnacceptableParameters, ChannelMode::kBasic, 0, 0, 0, 0, 0);
+const ByteBuffer& kInboundUnacceptableParamsWithRfcBasicConfigRsp =
+    MakeConfigRspWithRfc(kLocalCId, ConfigurationResult::kUnacceptableParameters,
+                         RetransmissionAndFlowControlMode::kBasic, 0, 0, 0, 0, 0);
 
-const ByteBuffer& kOutboundUnacceptableParamsWithRfcBasicConfigRsp = MakeConfigRspWithRfc(
-    kRemoteCId, ConfigurationResult::kUnacceptableParameters, ChannelMode::kBasic, 0, 0, 0, 0, 0);
+const ByteBuffer& kOutboundUnacceptableParamsWithRfcBasicConfigRsp =
+    MakeConfigRspWithRfc(kRemoteCId, ConfigurationResult::kUnacceptableParameters,
+                         RetransmissionAndFlowControlMode::kBasic, 0, 0, 0, 0, 0);
 
 const ByteBuffer& kOutboundUnacceptableParamsWithRfcERTMConfigRsp =
     MakeConfigRspWithRfc(kRemoteCId, ConfigurationResult::kUnacceptableParameters,
-                         ChannelMode::kEnhancedRetransmission, 0, 0, 0, 0, 0);
+                         RetransmissionAndFlowControlMode::kEnhancedRetransmission, 0, 0, 0, 0, 0);
 
-auto MakeConfigRspWithMtuAndRfc(ChannelId source_cid, ConfigurationResult result, ChannelMode mode,
-                                uint16_t mtu, uint8_t tx_window, uint8_t max_transmit,
+auto MakeConfigRspWithMtuAndRfc(ChannelId source_cid, ConfigurationResult result,
+                                RetransmissionAndFlowControlMode mode, uint16_t mtu,
+                                uint8_t tx_window, uint8_t max_transmit,
                                 uint16_t retransmission_timeout, uint16_t monitor_timeout,
                                 uint16_t mps) {
   return StaticByteBuffer(
@@ -416,8 +421,9 @@ auto MakeConfigRspWithMtuAndRfc(ChannelId source_cid, ConfigurationResult result
 
 // Corresponds to kInboundConfigReqWithERTM
 const ByteBuffer& kOutboundOkConfigRspWithErtm = MakeConfigRspWithMtuAndRfc(
-    kRemoteCId, ConfigurationResult::kSuccess, ChannelMode::kEnhancedRetransmission, kDefaultMTU,
-    kErtmNFramesInTxWindow, kErtmMaxTransmissions, 2000, 12000, kMaxTxPduPayloadSize);
+    kRemoteCId, ConfigurationResult::kSuccess,
+    RetransmissionAndFlowControlMode::kEnhancedRetransmission, kDefaultMTU, kErtmNFramesInTxWindow,
+    kErtmMaxTransmissions, 2000, 12000, kMaxTxPduPayloadSize);
 
 // Information Requests
 
@@ -998,7 +1004,7 @@ TEST_F(BrEdrDynamicChannelTest, OpenAndLocalCloseChannel) {
       EXPECT_TRUE(chan->IsConnected());
       EXPECT_EQ(kLocalCId, chan->local_cid());
       EXPECT_EQ(kRemoteCId, chan->remote_cid());
-      EXPECT_EQ(ChannelMode::kBasic, chan->info().mode);
+      EXPECT_EQ(RetransmissionAndFlowControlMode::kBasic, chan->info().mode);
     }
     open_cb_count++;
   };
@@ -1532,12 +1538,13 @@ TEST_F(BrEdrDynamicChannelTest, ClampErtmChannelInfoMaxTxSduSizeToMaxPduPayloadS
 
   RETURN_IF_FATAL(RunUntilIdle());
 
-  const auto kInboundConfigReq =
-      MakeConfigReqWithMtuAndRfc(kLocalCId, kPeerMtu, ChannelMode::kEnhancedRetransmission,
-                                 kErtmNFramesInTxWindow, kErtmMaxTransmissions, 0, 0, kPeerMps);
+  const auto kInboundConfigReq = MakeConfigReqWithMtuAndRfc(
+      kLocalCId, kPeerMtu, RetransmissionAndFlowControlMode::kEnhancedRetransmission,
+      kErtmNFramesInTxWindow, kErtmMaxTransmissions, 0, 0, kPeerMps);
   const auto kOutboundConfigRsp = MakeConfigRspWithMtuAndRfc(
-      kRemoteCId, ConfigurationResult::kSuccess, ChannelMode::kEnhancedRetransmission, kPeerMtu,
-      kErtmNFramesInTxWindow, kErtmMaxTransmissions, 2000, 12000, kPeerMps);
+      kRemoteCId, ConfigurationResult::kSuccess,
+      RetransmissionAndFlowControlMode::kEnhancedRetransmission, kPeerMtu, kErtmNFramesInTxWindow,
+      kErtmMaxTransmissions, 2000, 12000, kPeerMps);
 
   RETURN_IF_FATAL(
       sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundConfigRsp));
@@ -1811,8 +1818,9 @@ TEST_F(BrEdrDynamicChannelTest, ERTChannelDoesNotSendConfigReqBeforeConnRspRecei
 TEST_F(BrEdrDynamicChannelTest, SendAndReceiveERTMConfigReq) {
   constexpr uint16_t kPreferredMtu = kDefaultMTU + 1;
   const auto kExpectedOutboundConfigReq = MakeConfigReqWithMtuAndRfc(
-      kRemoteCId, kPreferredMtu, ChannelMode::kEnhancedRetransmission, kErtmMaxUnackedInboundFrames,
-      kErtmMaxInboundRetransmissions, 0, 0, kMaxInboundPduPayloadSize);
+      kRemoteCId, kPreferredMtu, RetransmissionAndFlowControlMode::kEnhancedRetransmission,
+      kErtmMaxUnackedInboundFrames, kErtmMaxInboundRetransmissions, 0, 0,
+      kMaxInboundPduPayloadSize);
 
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
@@ -1827,7 +1835,7 @@ TEST_F(BrEdrDynamicChannelTest, SendAndReceiveERTMConfigReq) {
       EXPECT_EQ(kLocalCId, chan->local_cid());
 
       // Check values of ChannelInfo fields.
-      EXPECT_EQ(ChannelMode::kEnhancedRetransmission, chan->info().mode);
+      EXPECT_EQ(RetransmissionAndFlowControlMode::kEnhancedRetransmission, chan->info().mode);
 
       // Receive capability even under ERTM is based on MTU option, not on the MPS in R&FC option.
       EXPECT_EQ(kPreferredMtu, chan->info().max_rx_sdu_size);
@@ -1843,9 +1851,10 @@ TEST_F(BrEdrDynamicChannelTest, SendAndReceiveERTMConfigReq) {
     open_cb_count++;
   };
 
-  registry()->OpenOutbound(kPsm,
-                           {ChannelMode::kEnhancedRetransmission, kPreferredMtu, std::nullopt},
-                           std::move(open_cb));
+  registry()->OpenOutbound(
+      kPsm,
+      {RetransmissionAndFlowControlMode::kEnhancedRetransmission, kPreferredMtu, std::nullopt},
+      std::move(open_cb));
 
   RETURN_IF_FATAL(RunUntilIdle());
 
@@ -2076,7 +2085,7 @@ TEST_F(
   };
 
   ChannelParameters params;
-  params.mode = ChannelMode::kEnhancedRetransmission;
+  params.mode = RetransmissionAndFlowControlMode::kEnhancedRetransmission;
   registry()->OpenOutbound(kPsm, params, std::move(open_cb));
 
   RETURN_IF_FATAL(RunUntilIdle());
@@ -2218,8 +2227,8 @@ TEST_F(BrEdrDynamicChannelTest,
   RETURN_IF_FATAL(RunUntilIdle());
 
   // Retransmission mode is not supported.
-  const auto kInboundConfigReqWithRetransmissionMode =
-      MakeConfigReqWithMtuAndRfc(kLocalCId, kMaxMTU, ChannelMode::kRetransmission, 0, 0, 0, 0, 0);
+  const auto kInboundConfigReqWithRetransmissionMode = MakeConfigReqWithMtuAndRfc(
+      kLocalCId, kMaxMTU, RetransmissionAndFlowControlMode::kRetransmission, 0, 0, 0, 0, 0);
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest,
                                        kInboundConfigReqWithRetransmissionMode,
                                        kOutboundUnacceptableParamsWithRfcBasicConfigRsp));
@@ -2248,8 +2257,8 @@ TEST_F(BrEdrDynamicChannelTest,
   RETURN_IF_FATAL(RunUntilIdle());
 
   // Retransmission mode is not supported.
-  const auto kInboundConfigReqWithRetransmissionMode =
-      MakeConfigReqWithMtuAndRfc(kLocalCId, kMaxMTU, ChannelMode::kRetransmission, 0, 0, 0, 0, 0);
+  const auto kInboundConfigReqWithRetransmissionMode = MakeConfigReqWithMtuAndRfc(
+      kLocalCId, kMaxMTU, RetransmissionAndFlowControlMode::kRetransmission, 0, 0, 0, 0, 0);
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest,
                                        kInboundConfigReqWithRetransmissionMode,
                                        kOutboundUnacceptableParamsWithRfcERTMConfigRsp));
@@ -2281,14 +2290,15 @@ TEST_F(BrEdrDynamicChannelTest, SendUnacceptableParamsResponseWhenPeerRequestErt
   constexpr auto kMps = kMaxTxPduPayloadSize;
 
   // TxWindow of zero is out of range.
-  const auto kInboundConfigReqWithZeroTxWindow =
-      MakeConfigReqWithMtuAndRfc(kLocalCId, kDefaultMTU, ChannelMode::kEnhancedRetransmission,
-                                 /*tx_window=*/0, /*max_transmit=*/kMaxTransmit,
-                                 /*retransmission_timeout=*/0, /*monitor_timeout=*/0, /*mps=*/kMps);
-  const auto kOutboundConfigRsp = MakeConfigRspWithRfc(
-      kRemoteCId, ConfigurationResult::kUnacceptableParameters,
-      ChannelMode::kEnhancedRetransmission, /*tx_window=*/1, /*max_transmit=*/kMaxTransmit,
+  const auto kInboundConfigReqWithZeroTxWindow = MakeConfigReqWithMtuAndRfc(
+      kLocalCId, kDefaultMTU, RetransmissionAndFlowControlMode::kEnhancedRetransmission,
+      /*tx_window=*/0, /*max_transmit=*/kMaxTransmit,
       /*retransmission_timeout=*/0, /*monitor_timeout=*/0, /*mps=*/kMps);
+  const auto kOutboundConfigRsp =
+      MakeConfigRspWithRfc(kRemoteCId, ConfigurationResult::kUnacceptableParameters,
+                           RetransmissionAndFlowControlMode::kEnhancedRetransmission,
+                           /*tx_window=*/1, /*max_transmit=*/kMaxTransmit,
+                           /*retransmission_timeout=*/0, /*monitor_timeout=*/0, /*mps=*/kMps);
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithZeroTxWindow,
                                        kOutboundConfigRsp));
 }
@@ -2313,14 +2323,15 @@ TEST_F(BrEdrDynamicChannelTest,
   constexpr auto kMps = kMaxTxPduPayloadSize;
 
   // TxWindow of 200 is out of range.
-  const auto kInboundConfigReqWithOversizeTxWindow =
-      MakeConfigReqWithMtuAndRfc(kLocalCId, kDefaultMTU, ChannelMode::kEnhancedRetransmission,
-                                 /*tx_window=*/200, /*max_transmit=*/kMaxTransmit,
-                                 /*retransmission_timeout=*/0, /*monitor_timeout=*/0, /*mps=*/kMps);
-  const auto kOutboundConfigRsp = MakeConfigRspWithRfc(
-      kRemoteCId, ConfigurationResult::kUnacceptableParameters,
-      ChannelMode::kEnhancedRetransmission, /*tx_window=*/63, /*max_transmit=*/kMaxTransmit,
+  const auto kInboundConfigReqWithOversizeTxWindow = MakeConfigReqWithMtuAndRfc(
+      kLocalCId, kDefaultMTU, RetransmissionAndFlowControlMode::kEnhancedRetransmission,
+      /*tx_window=*/200, /*max_transmit=*/kMaxTransmit,
       /*retransmission_timeout=*/0, /*monitor_timeout=*/0, /*mps=*/kMps);
+  const auto kOutboundConfigRsp =
+      MakeConfigRspWithRfc(kRemoteCId, ConfigurationResult::kUnacceptableParameters,
+                           RetransmissionAndFlowControlMode::kEnhancedRetransmission,
+                           /*tx_window=*/63, /*max_transmit=*/kMaxTransmit,
+                           /*retransmission_timeout=*/0, /*monitor_timeout=*/0, /*mps=*/kMps);
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithOversizeTxWindow,
                                        kOutboundConfigRsp));
 
@@ -2351,14 +2362,15 @@ TEST_F(BrEdrDynamicChannelTest, SendUnacceptableParamsResponseWhenPeerRequestErt
   constexpr uint8_t kTxWindow = kErtmMaxUnackedInboundFrames;
 
   // MPS of 16 would not be able to fit a 48-byte (minimum MTU) SDU without segmentation.
-  const auto kInboundConfigReqWithUndersizeMps =
-      MakeConfigReqWithMtuAndRfc(kLocalCId, kDefaultMTU, ChannelMode::kEnhancedRetransmission,
-                                 /*tx_window=*/kTxWindow, /*max_transmit=*/kMaxTransmit,
-                                 /*retransmission_timeout=*/0, /*monitor_timeout=*/0, /*mps=*/16);
-  const auto kOutboundConfigRsp = MakeConfigRspWithRfc(
-      kRemoteCId, ConfigurationResult::kUnacceptableParameters,
-      ChannelMode::kEnhancedRetransmission, /*tx_window=*/kTxWindow, /*max_transmit=*/kMaxTransmit,
-      /*retransmission_timeout=*/0, /*monitor_timeout=*/0, /*mps=*/kMinACLMTU);
+  const auto kInboundConfigReqWithUndersizeMps = MakeConfigReqWithMtuAndRfc(
+      kLocalCId, kDefaultMTU, RetransmissionAndFlowControlMode::kEnhancedRetransmission,
+      /*tx_window=*/kTxWindow, /*max_transmit=*/kMaxTransmit,
+      /*retransmission_timeout=*/0, /*monitor_timeout=*/0, /*mps=*/16);
+  const auto kOutboundConfigRsp =
+      MakeConfigRspWithRfc(kRemoteCId, ConfigurationResult::kUnacceptableParameters,
+                           RetransmissionAndFlowControlMode::kEnhancedRetransmission,
+                           /*tx_window=*/kTxWindow, /*max_transmit=*/kMaxTransmit,
+                           /*retransmission_timeout=*/0, /*monitor_timeout=*/0, /*mps=*/kMinACLMTU);
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithUndersizeMps,
                                        kOutboundConfigRsp));
 
@@ -2384,7 +2396,7 @@ TEST_F(BrEdrDynamicChannelTest, OpenBasicModeChannelAfterPeerAcceptsErtmThenPeer
     if (open_cb_count == 0) {
       ASSERT_TRUE(chan);
       EXPECT_EQ(kLocalCId, chan->local_cid());
-      EXPECT_EQ(ChannelMode::kBasic, chan->info().mode);
+      EXPECT_EQ(RetransmissionAndFlowControlMode::kBasic, chan->info().mode);
     }
     open_cb_count++;
   };
@@ -2427,7 +2439,7 @@ TEST_F(BrEdrDynamicChannelTest, OpenBasicModeChannelAfterPeerRequestsBasicModeTh
     if (open_cb_count == 0) {
       ASSERT_TRUE(chan);
       EXPECT_EQ(kLocalCId, chan->local_cid());
-      EXPECT_EQ(ChannelMode::kBasic, chan->info().mode);
+      EXPECT_EQ(RetransmissionAndFlowControlMode::kBasic, chan->info().mode);
     }
     open_cb_count++;
   };
@@ -2474,7 +2486,8 @@ TEST_F(BrEdrDynamicChannelTest, MtuChannelParameterSentInConfigReq) {
     open_cb_count++;
   };
 
-  registry()->OpenOutbound(kPsm, {ChannelMode::kBasic, kPreferredMtu, std::nullopt}, open_cb);
+  registry()->OpenOutbound(
+      kPsm, {RetransmissionAndFlowControlMode::kBasic, kPreferredMtu, std::nullopt}, open_cb);
   RunUntilIdle();
 
   sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp);
@@ -2508,7 +2521,8 @@ TEST_F(BrEdrDynamicChannelTest, UseMinMtuWhenMtuChannelParameterIsBelowMin) {
     open_cb_count++;
   };
 
-  registry()->OpenOutbound(kPsm, {ChannelMode::kBasic, kMtu, std::nullopt}, open_cb);
+  registry()->OpenOutbound(kPsm, {RetransmissionAndFlowControlMode::kBasic, kMtu, std::nullopt},
+                           open_cb);
   RunUntilIdle();
 
   sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp);
@@ -2525,10 +2539,10 @@ TEST_F(BrEdrDynamicChannelTest, UseMinMtuWhenMtuChannelParameterIsBelowMin) {
 
 TEST_F(BrEdrDynamicChannelTest, UseMaxPduPayloadSizeWhenMtuChannelParameterExceedsItWithErtm) {
   constexpr uint16_t kPreferredMtu = kMaxInboundPduPayloadSize + 1;
-  const auto kExpectedOutboundConfigReq =
-      MakeConfigReqWithMtuAndRfc(kRemoteCId, kMaxInboundPduPayloadSize,
-                                 ChannelMode::kEnhancedRetransmission, kErtmMaxUnackedInboundFrames,
-                                 kErtmMaxInboundRetransmissions, 0, 0, kMaxInboundPduPayloadSize);
+  const auto kExpectedOutboundConfigReq = MakeConfigReqWithMtuAndRfc(
+      kRemoteCId, kMaxInboundPduPayloadSize,
+      RetransmissionAndFlowControlMode::kEnhancedRetransmission, kErtmMaxUnackedInboundFrames,
+      kErtmMaxInboundRetransmissions, 0, 0, kMaxInboundPduPayloadSize);
 
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
@@ -2545,9 +2559,10 @@ TEST_F(BrEdrDynamicChannelTest, UseMaxPduPayloadSizeWhenMtuChannelParameterExcee
     open_cb_count++;
   };
 
-  registry()->OpenOutbound(kPsm,
-                           {ChannelMode::kEnhancedRetransmission, kPreferredMtu, std::nullopt},
-                           std::move(open_cb));
+  registry()->OpenOutbound(
+      kPsm,
+      {RetransmissionAndFlowControlMode::kEnhancedRetransmission, kPreferredMtu, std::nullopt},
+      std::move(open_cb));
 
   RETURN_IF_FATAL(RunUntilIdle());
 
@@ -2584,13 +2599,14 @@ TEST_F(BrEdrDynamicChannelTest, BasicModeChannelReportsChannelInfoWithBasicModeA
   auto open_cb = [&](const DynamicChannel* chan) {
     ASSERT_TRUE(chan);
     EXPECT_EQ(kLocalCId, chan->local_cid());
-    EXPECT_EQ(ChannelMode::kBasic, chan->info().mode);
+    EXPECT_EQ(RetransmissionAndFlowControlMode::kBasic, chan->info().mode);
     EXPECT_EQ(kPreferredMtu, chan->info().max_rx_sdu_size);
     EXPECT_EQ(kPeerMtu, chan->info().max_tx_sdu_size);
     open_cb_count++;
   };
 
-  registry()->OpenOutbound(kPsm, {ChannelMode::kBasic, kPreferredMtu, std::nullopt}, open_cb);
+  registry()->OpenOutbound(
+      kPsm, {RetransmissionAndFlowControlMode::kBasic, kPreferredMtu, std::nullopt}, open_cb);
   RunUntilIdle();
 
   const ByteBuffer& kExpectedOutboundOkConfigRsp = MakeConfigRspWithMtu(kRemoteCId, kPeerMtu);
@@ -2616,8 +2632,9 @@ TEST_F(BrEdrDynamicChannelTest, Receive2ConfigReqsWithContinuationFlagInFirstReq
   const auto kInboundConfigReq0 =
       MakeConfigReqWithMtu(kLocalCId, kTxMtu, kConfigurationContinuation);
   const auto kOutboundConfigRsp1 = MakeConfigRspWithMtuAndRfc(
-      kRemoteCId, ConfigurationResult::kSuccess, ChannelMode::kEnhancedRetransmission, kTxMtu,
-      kErtmNFramesInTxWindow, kErtmMaxTransmissions, 2000, 12000, kMaxTxPduPayloadSize);
+      kRemoteCId, ConfigurationResult::kSuccess,
+      RetransmissionAndFlowControlMode::kEnhancedRetransmission, kTxMtu, kErtmNFramesInTxWindow,
+      kErtmMaxTransmissions, 2000, 12000, kMaxTxPduPayloadSize);
 
   size_t open_cb_count = 0;
   auto open_cb = [&](const DynamicChannel* chan) {
@@ -2625,7 +2642,7 @@ TEST_F(BrEdrDynamicChannelTest, Receive2ConfigReqsWithContinuationFlagInFirstReq
       ASSERT_TRUE(chan);
       EXPECT_EQ(kLocalCId, chan->local_cid());
       EXPECT_EQ(kTxMtu, chan->info().max_tx_sdu_size);
-      EXPECT_EQ(ChannelMode::kEnhancedRetransmission, chan->info().mode);
+      EXPECT_EQ(RetransmissionAndFlowControlMode::kEnhancedRetransmission, chan->info().mode);
     }
     open_cb_count++;
   };

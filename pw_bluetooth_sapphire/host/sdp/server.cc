@@ -197,7 +197,7 @@ Server::Server(l2cap::ChannelManager* l2cap)
 
   // Register SDP
   l2cap::ChannelParameters sdp_chan_params;
-  sdp_chan_params.mode = l2cap::ChannelMode::kBasic;
+  sdp_chan_params.mode = l2cap::RetransmissionAndFlowControlMode::kBasic;
   l2cap_->RegisterService(l2cap::kSDP, sdp_chan_params,
                           [self = weak_ptr_factory_.GetWeakPtr()](auto channel) {
                             if (self.is_alive())

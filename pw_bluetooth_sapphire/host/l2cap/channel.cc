@@ -89,11 +89,12 @@ ChannelImpl::ChannelImpl(pw::async::Dispatcher& dispatcher, ChannelId id, Channe
       a2dp_offload_manager_(a2dp_offload_manager),
       weak_self_(this) {
   BT_ASSERT(link_.is_alive());
-  BT_ASSERT_MSG(
-      info_.mode == ChannelMode::kBasic || info_.mode == ChannelMode::kEnhancedRetransmission,
-      "Channel constructed with unsupported mode: %hhu\n", static_cast<unsigned char>(info.mode));
+  BT_ASSERT_MSG(info_.mode == RetransmissionAndFlowControlMode::kBasic ||
+                    info_.mode == RetransmissionAndFlowControlMode::kEnhancedRetransmission,
+                "Channel constructed with unsupported mode: %s\n",
+                AnyChannelModeToString(info_.mode).c_str());
 
-  if (info_.mode == ChannelMode::kBasic) {
+  if (info_.mode == RetransmissionAndFlowControlMode::kBasic) {
     rx_engine_ = std::make_unique<BasicModeRxEngine>();
     tx_engine_ = std::make_unique<BasicModeTxEngine>(
         id, max_tx_sdu_size(), fit::bind_member<&ChannelImpl::SendFrame>(this));
@@ -205,9 +206,10 @@ std::unique_ptr<hci::ACLDataPacket> ChannelImpl::GetNextOutboundPacket() {
   // Channel's next packet is a starting fragment
   if (!HasFragments() && HasPDUs()) {
     // B-frames for Basic Mode contain only an "Information payload" (v5.0 Vol 3, Part A, Sec 3.1)
-    FrameCheckSequenceOption fcs_option = info().mode == ChannelMode::kEnhancedRetransmission
-                                              ? FrameCheckSequenceOption::kIncludeFcs
-                                              : FrameCheckSequenceOption::kNoFcs;
+    FrameCheckSequenceOption fcs_option =
+        info().mode == RetransmissionAndFlowControlMode::kEnhancedRetransmission
+            ? FrameCheckSequenceOption::kIncludeFcs
+            : FrameCheckSequenceOption::kNoFcs;
     // Get new PDU and release fragments
     auto pdu = fragmenter_.BuildFrame(remote_id(), *pending_tx_pdus_.front(), fcs_option,
                                       /*flushable=*/info().flush_timeout.has_value());

@@ -23,8 +23,8 @@ class ChannelManagerMockControllerTest : public TestingBase {
   // High enough so that most tests don't need to worry about HCI flow control.
   static constexpr size_t kBufferMaxNumPackets = 10;
 
-  static constexpr l2cap::ChannelParameters kChannelParameters{l2cap::ChannelMode::kBasic,
-                                                               l2cap::kMaxMTU, std::nullopt};
+  static constexpr l2cap::ChannelParameters kChannelParameters{
+      l2cap::RetransmissionAndFlowControlMode::kBasic, l2cap::kMaxMTU, std::nullopt};
 
   static constexpr l2cap::ExtendedFeatures kExtendedFeatures =
       l2cap::kExtendedFeaturesBitEnhancedRetransmission;

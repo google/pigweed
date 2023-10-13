@@ -114,11 +114,14 @@ DynamicByteBuffer AclNotSupportedInformationResponse(l2cap::CommandId id,
 
 DynamicByteBuffer AclConfigReq(l2cap::CommandId id, hci_spec::ConnectionHandle handle,
                                l2cap::ChannelId dst_id, l2cap::ChannelParameters params) {
-  const auto mode = params.mode.value_or(l2cap::ChannelMode::kBasic);
+  const auto any_mode = params.mode.value_or(l2cap::RetransmissionAndFlowControlMode::kBasic);
   const auto mtu = params.max_rx_sdu_size.value_or(l2cap::kMaxMTU);
 
+  BT_ASSERT_MSG(std::holds_alternative<l2cap::RetransmissionAndFlowControlMode>(any_mode),
+                "Channel mode is unsupported for configuration request.");
+  const auto mode = std::get<l2cap::RetransmissionAndFlowControlMode>(any_mode);
   switch (mode) {
-    case l2cap::ChannelMode::kBasic:
+    case l2cap::RetransmissionAndFlowControlMode::kBasic:
       return DynamicByteBuffer(StaticByteBuffer(
           // ACL data header (handle, length: 16 bytes)
           LowerBits(handle), UpperBits(handle), 0x10, 0x00,
@@ -128,7 +131,7 @@ DynamicByteBuffer AclConfigReq(l2cap::CommandId id, hci_spec::ConnectionHandle h
           0x04, id, 0x08, 0x00, LowerBits(dst_id), UpperBits(dst_id), 0x00, 0x00,
           // MTU option: (ID: 1, length: 2, mtu)
           0x01, 0x02, LowerBits(mtu), UpperBits(mtu)));
-    case l2cap::ChannelMode::kEnhancedRetransmission:
+    case l2cap::RetransmissionAndFlowControlMode::kEnhancedRetransmission:
       return DynamicByteBuffer(StaticByteBuffer(
           // ACL data header (handle, length: 27 bytes)
           LowerBits(handle), UpperBits(handle), 0x1b, 0x00,
@@ -150,11 +153,14 @@ DynamicByteBuffer AclConfigReq(l2cap::CommandId id, hci_spec::ConnectionHandle h
 
 DynamicByteBuffer AclConfigRsp(l2cap::CommandId id, hci_spec::ConnectionHandle link_handle,
                                l2cap::ChannelId src_id, l2cap::ChannelParameters params) {
-  const auto mode = params.mode.value_or(l2cap::ChannelMode::kBasic);
+  const auto any_mode = params.mode.value_or(l2cap::RetransmissionAndFlowControlMode::kBasic);
   const auto mtu = params.max_rx_sdu_size.value_or(l2cap::kMaxMTU);
 
+  BT_ASSERT_MSG(std::holds_alternative<l2cap::RetransmissionAndFlowControlMode>(any_mode),
+                "Channel mode is unsupported for configuration response.");
+  const auto mode = std::get<l2cap::RetransmissionAndFlowControlMode>(any_mode);
   switch (mode) {
-    case l2cap::ChannelMode::kBasic:
+    case l2cap::RetransmissionAndFlowControlMode::kBasic:
       return DynamicByteBuffer(StaticByteBuffer(
           // ACL data header (handle: |link_handle|, length: 18 bytes)
           LowerBits(link_handle), UpperBits(link_handle), 0x12, 0x00,
@@ -165,7 +171,7 @@ DynamicByteBuffer AclConfigRsp(l2cap::CommandId id, hci_spec::ConnectionHandle l
           0x05, id, 0x0a, 0x00, LowerBits(src_id), UpperBits(src_id), 0x00, 0x00, 0x00, 0x00,
           // MTU option: (ID: 1, length: 2, mtu)
           0x01, 0x02, LowerBits(mtu), UpperBits(mtu)));
-    case l2cap::ChannelMode::kEnhancedRetransmission: {
+    case l2cap::RetransmissionAndFlowControlMode::kEnhancedRetransmission: {
       const auto rtx_timeout = kErtmReceiverReadyPollTimerMsecs;
       const auto monitor_timeout = kErtmMonitorTimerMsecs;
       return DynamicByteBuffer(StaticByteBuffer(

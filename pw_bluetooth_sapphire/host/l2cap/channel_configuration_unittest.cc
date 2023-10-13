@@ -40,8 +40,8 @@ TEST_F(ChannelConfigurationTest, ReadAllOptionTypes) {
       // Rtx Option
       static_cast<uint8_t>(OptionType::kRetransmissionAndFlowControl),
       RetransmissionAndFlowControlOption::kPayloadLength,
-      static_cast<uint8_t>(ChannelMode::kRetransmission), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00,
+      static_cast<uint8_t>(RetransmissionAndFlowControlMode::kRetransmission), 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00,
       // Flush Timeout option (timeout = 200)
       static_cast<uint8_t>(OptionType::kFlushTimeout), FlushTimeoutOption::kPayloadLength, 0xc8,
       0x00,
@@ -56,7 +56,8 @@ TEST_F(ChannelConfigurationTest, ReadAllOptionTypes) {
   EXPECT_EQ(kMinACLMTU, config.mtu_option()->mtu());
 
   EXPECT_TRUE(config.retransmission_flow_control_option());
-  EXPECT_EQ(ChannelMode::kRetransmission, config.retransmission_flow_control_option()->mode());
+  EXPECT_EQ(RetransmissionAndFlowControlMode::kRetransmission,
+            config.retransmission_flow_control_option()->mode());
 
   EXPECT_TRUE(config.flush_timeout_option());
   EXPECT_EQ(200u, config.flush_timeout_option()->flush_timeout());
@@ -134,7 +135,7 @@ TEST_F(ChannelConfigurationTest, MtuOptionDecodeEncode) {
 }
 
 TEST_F(ChannelConfigurationTest, RetransmissionAndFlowControlOptionDecodeEncode) {
-  const auto kMode = ChannelMode::kRetransmission;
+  const auto kMode = RetransmissionAndFlowControlMode::kRetransmission;
   const uint8_t kTxWindow = 32;
   const uint8_t kMaxTransmit = 1;
   const uint16_t kRtxTimeout = 512;
@@ -252,7 +253,7 @@ TEST_F(ChannelConfigurationTest, MergingConfigurations) {
   // Test overwriting options
   constexpr uint16_t kMtu = 96;
   config0.set_mtu_option(MtuOption(kMtu));
-  constexpr auto kMode = ChannelMode::kEnhancedRetransmission;
+  constexpr auto kMode = RetransmissionAndFlowControlMode::kEnhancedRetransmission;
   config0.set_retransmission_flow_control_option(
       RetransmissionAndFlowControlOption::MakeEnhancedRetransmissionMode(0, 0, 0, 0, 0));
   constexpr uint16_t kTimeout = 150;
@@ -302,8 +303,8 @@ TEST_F(ChannelConfigurationTest, ReadOptions) {
       OptionType::kMTU, MtuOption::kPayloadLength, LowerBits(kMinACLMTU), UpperBits(kMinACLMTU),
       // Rtx Option
       OptionType::kRetransmissionAndFlowControl, RetransmissionAndFlowControlOption::kPayloadLength,
-      static_cast<uint8_t>(ChannelMode::kRetransmission), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00,
+      static_cast<uint8_t>(RetransmissionAndFlowControlMode::kRetransmission), 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00,
       // Flush Timeout option (timeout = 200)
       static_cast<uint8_t>(OptionType::kFlushTimeout), FlushTimeoutOption::kPayloadLength, 0xc8,
       0x00,
@@ -318,7 +319,8 @@ TEST_F(ChannelConfigurationTest, ReadOptions) {
   EXPECT_EQ(kMinACLMTU, config.mtu_option()->mtu());
 
   EXPECT_TRUE(config.retransmission_flow_control_option().has_value());
-  EXPECT_EQ(ChannelMode::kRetransmission, config.retransmission_flow_control_option()->mode());
+  EXPECT_EQ(RetransmissionAndFlowControlMode::kRetransmission,
+            config.retransmission_flow_control_option()->mode());
 
   EXPECT_TRUE(config.flush_timeout_option().has_value());
   EXPECT_EQ(200u, config.flush_timeout_option()->flush_timeout());
@@ -339,8 +341,8 @@ TEST_F(ChannelConfigurationTest, ConfigToString) {
       // Rtx Option
       static_cast<uint8_t>(OptionType::kRetransmissionAndFlowControl),
       RetransmissionAndFlowControlOption::kPayloadLength,
-      static_cast<uint8_t>(ChannelMode::kRetransmission), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00,
+      static_cast<uint8_t>(RetransmissionAndFlowControlMode::kRetransmission), 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00,
       // Flush Timeout option (timeout = 200)
       static_cast<uint8_t>(OptionType::kFlushTimeout), FlushTimeoutOption::kPayloadLength, 0xc8,
       0x00,

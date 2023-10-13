@@ -87,7 +87,7 @@ auto MakeExtendedFeaturesInformationRequest(CommandId id, hci_spec::ConnectionHa
 }
 
 auto ConfigurationRequest(CommandId id, ChannelId dst_id, uint16_t mtu = kDefaultMTU,
-                          std::optional<ChannelMode> mode = std::nullopt,
+                          std::optional<RetransmissionAndFlowControlMode> mode = std::nullopt,
                           uint8_t max_inbound_transmissions = 0) {
   if (mode.has_value()) {
     return DynamicByteBuffer(StaticByteBuffer(
@@ -124,9 +124,10 @@ auto InboundConnectionResponse(CommandId id) {
   return testing::AclConnectionRsp(id, kTestHandle1, kLocalId, kRemoteId);
 }
 
-auto InboundConfigurationRequest(CommandId id, uint16_t mtu = kDefaultMTU,
-                                 std::optional<ChannelMode> mode = std::nullopt,
-                                 uint8_t max_inbound_transmissions = 0) {
+auto InboundConfigurationRequest(
+    CommandId id, uint16_t mtu = kDefaultMTU,
+    std::optional<RetransmissionAndFlowControlMode> mode = std::nullopt,
+    uint8_t max_inbound_transmissions = 0) {
   return ConfigurationRequest(id, kLocalId, mtu, mode, max_inbound_transmissions);
 }
 
@@ -162,16 +163,18 @@ auto OutboundConnectionRequest(CommandId id) {
       UpperBits(kLocalId));
 }
 
-auto OutboundConfigurationRequest(CommandId id, uint16_t mtu = kMaxMTU,
-                                  std::optional<ChannelMode> mode = std::nullopt) {
+auto OutboundConfigurationRequest(
+    CommandId id, uint16_t mtu = kMaxMTU,
+    std::optional<RetransmissionAndFlowControlMode> mode = std::nullopt) {
   return ConfigurationRequest(id, kRemoteId, mtu, mode, kErtmMaxInboundRetransmissions);
 }
 
 // |max_transmissions| is ignored per Core Spec v5.0 Vol 3, Part A, Sec 5.4 but still parameterized
 // because this needs to match the value that is sent by our L2CAP configuration logic.
-auto OutboundConfigurationResponse(CommandId id, uint16_t mtu = kDefaultMTU,
-                                   std::optional<ChannelMode> mode = std::nullopt,
-                                   uint8_t max_transmissions = 0) {
+auto OutboundConfigurationResponse(
+    CommandId id, uint16_t mtu = kDefaultMTU,
+    std::optional<RetransmissionAndFlowControlMode> mode = std::nullopt,
+    uint8_t max_transmissions = 0) {
   const uint8_t kConfigLength = 10 + (mode.has_value() ? 11 : 0);
   const uint16_t kL2capLength = kConfigLength + 4;
   const uint16_t kAclLength = kL2capLength + 4;
@@ -457,25 +460,26 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
                                    Channel::ClosedCallback closed_cb = DoNothing,
                                    Channel::RxCallback rx_cb = NopRxCallback) {
     l2cap::ChannelParameters chan_params;
-    chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
+    auto config_mode = l2cap::RetransmissionAndFlowControlMode::kEnhancedRetransmission;
+    chan_params.mode = config_mode;
 
     const auto conn_req_id = NextCommandId();
     const auto config_req_id = NextCommandId();
     EXPECT_ACL_PACKET_OUT_(OutboundConnectionRequest(conn_req_id), kHighPriority);
     EXPECT_ACL_PACKET_OUT_(
-        OutboundConfigurationRequest(config_req_id, kMaxInboundPduPayloadSize, *chan_params.mode),
+        OutboundConfigurationRequest(config_req_id, kMaxInboundPduPayloadSize, config_mode),
         kHighPriority);
     const auto kInboundMtu = kDefaultMTU;
     EXPECT_ACL_PACKET_OUT_(OutboundConfigurationResponse(kPeerConfigRequestId, kInboundMtu,
-                                                         chan_params.mode, max_outbound_transmit),
+                                                         config_mode, max_outbound_transmit),
                            kHighPriority);
 
     ActivateOutboundChannel(kTestPsm, chan_params, std::move(activated_cb), conn_handle,
                             std::move(closed_cb), std::move(rx_cb));
 
     ReceiveAclDataPacket(InboundConnectionResponse(conn_req_id));
-    ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId, kInboundMtu,
-                                                     chan_params.mode, max_outbound_transmit));
+    ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId, kInboundMtu, config_mode,
+                                                     max_outbound_transmit));
     ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
   }
 
@@ -637,7 +641,7 @@ TEST_F(ChannelManagerRealAclChannelTest, FixedChannelsUseBasicMode) {
   LEFixedChannels fixed_channels =
       QueueLEConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
-  EXPECT_EQ(ChannelMode::kBasic, fixed_channels.att->mode());
+  EXPECT_EQ(RetransmissionAndFlowControlMode::kBasic, fixed_channels.att->mode());
 }
 
 TEST_F(ChannelManagerRealAclChannelTest, OpenAndCloseWithLinkMultipleFixedChannels) {
@@ -1372,7 +1376,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelLocalDisconnec
   EXPECT_FALSE(closed_cb_called);
   EXPECT_EQ(kLocalId, channel->id());
   EXPECT_EQ(kRemoteId, channel->remote_id());
-  EXPECT_EQ(ChannelMode::kBasic, channel->mode());
+  EXPECT_EQ(RetransmissionAndFlowControlMode::kBasic, channel->mode());
 
   // Test SDU transmission.
   // SDU must have remote channel ID (unlike for fixed channels).
@@ -1440,7 +1444,7 @@ TEST_F(ChannelManagerRealAclChannelTest, ACLOutboundDynamicChannelRemoteDisconne
   EXPECT_FALSE(dynamic_channel_closed);
   EXPECT_EQ(kLocalId, channel->id());
   EXPECT_EQ(kRemoteId, channel->remote_id());
-  EXPECT_EQ(ChannelMode::kBasic, channel->mode());
+  EXPECT_EQ(RetransmissionAndFlowControlMode::kBasic, channel->mode());
 
   // Test SDU reception.
   test_device()->SendACLDataChannelPacket(StaticByteBuffer(
@@ -1863,7 +1867,8 @@ TEST_F(ChannelManagerMockAclChannelTest, MtuInboundChannelConfiguration) {
 
 TEST_F(ChannelManagerMockAclChannelTest, OutboundChannelConfigurationUsesChannelParameters) {
   l2cap::ChannelParameters chan_params;
-  chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
+  auto config_mode = l2cap::RetransmissionAndFlowControlMode::kEnhancedRetransmission;
+  chan_params.mode = config_mode;
   chan_params.max_rx_sdu_size = l2cap::kMinACLMTU;
 
   const auto cmd_ids =
@@ -1880,18 +1885,16 @@ TEST_F(ChannelManagerMockAclChannelTest, OutboundChannelConfigurationUsesChannel
   const auto config_req_id = NextCommandId();
   EXPECT_ACL_PACKET_OUT_(OutboundConnectionRequest(conn_req_id), kHighPriority);
   EXPECT_ACL_PACKET_OUT_(
-      OutboundConfigurationRequest(config_req_id, *chan_params.max_rx_sdu_size, *chan_params.mode),
+      OutboundConfigurationRequest(config_req_id, *chan_params.max_rx_sdu_size, config_mode),
       kHighPriority);
   const auto kInboundMtu = kDefaultMTU;
   EXPECT_ACL_PACKET_OUT_(
-      OutboundConfigurationResponse(kPeerConfigRequestId, kInboundMtu, chan_params.mode),
-      kHighPriority);
+      OutboundConfigurationResponse(kPeerConfigRequestId, kInboundMtu, config_mode), kHighPriority);
 
   ActivateOutboundChannel(kTestPsm, chan_params, std::move(channel_cb), kTestHandle1);
 
   ReceiveAclDataPacket(InboundConnectionResponse(conn_req_id));
-  ReceiveAclDataPacket(
-      InboundConfigurationRequest(kPeerConfigRequestId, kInboundMtu, chan_params.mode));
+  ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId, kInboundMtu, config_mode));
   ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
 
   RunUntilIdle();
@@ -1899,7 +1902,7 @@ TEST_F(ChannelManagerMockAclChannelTest, OutboundChannelConfigurationUsesChannel
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_TRUE(channel.is_alive());
   EXPECT_EQ(*chan_params.max_rx_sdu_size, channel->max_rx_sdu_size());
-  EXPECT_EQ(*chan_params.mode, channel->mode());
+  EXPECT_EQ(config_mode, channel->mode());
 
   // Receiver Ready poll request should elicit a response if ERTM has been set up.
   EXPECT_ACL_PACKET_OUT_(
@@ -1919,7 +1922,8 @@ TEST_F(ChannelManagerMockAclChannelTest, InboundChannelConfigurationUsesChannelP
   CommandId kPeerConnReqId = 3;
 
   l2cap::ChannelParameters chan_params;
-  chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
+  auto config_mode = l2cap::RetransmissionAndFlowControlMode::kEnhancedRetransmission;
+  chan_params.mode = config_mode;
   chan_params.max_rx_sdu_size = l2cap::kMinACLMTU;
 
   const auto cmd_ids =
@@ -1937,23 +1941,21 @@ TEST_F(ChannelManagerMockAclChannelTest, InboundChannelConfigurationUsesChannelP
   const auto config_req_id = NextCommandId();
   EXPECT_ACL_PACKET_OUT_(OutboundConnectionResponse(kPeerConnReqId), kHighPriority);
   EXPECT_ACL_PACKET_OUT_(
-      OutboundConfigurationRequest(config_req_id, *chan_params.max_rx_sdu_size, *chan_params.mode),
+      OutboundConfigurationRequest(config_req_id, *chan_params.max_rx_sdu_size, config_mode),
       kHighPriority);
   const auto kInboundMtu = kDefaultMTU;
   EXPECT_ACL_PACKET_OUT_(
-      OutboundConfigurationResponse(kPeerConfigRequestId, kInboundMtu, chan_params.mode),
-      kHighPriority);
+      OutboundConfigurationResponse(kPeerConfigRequestId, kInboundMtu, config_mode), kHighPriority);
 
   ReceiveAclDataPacket(InboundConnectionRequest(kPeerConnReqId));
-  ReceiveAclDataPacket(
-      InboundConfigurationRequest(kPeerConfigRequestId, kInboundMtu, chan_params.mode));
+  ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId, kInboundMtu, config_mode));
   ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
 
   RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_TRUE(channel.is_alive());
   EXPECT_EQ(*chan_params.max_rx_sdu_size, channel->max_rx_sdu_size());
-  EXPECT_EQ(*chan_params.mode, channel->mode());
+  EXPECT_EQ(config_mode, channel->mode());
 
   // Receiver Ready poll request should elicit a response if ERTM has been set up.
   EXPECT_ACL_PACKET_OUT_(
@@ -3242,7 +3244,7 @@ TEST_F(ChannelManagerRealAclChannelTest, NegotiateChannelParametersOnOutboundL2c
   constexpr uint16_t kMtu = l2cap::kMinACLMTU;
 
   l2cap::ChannelParameters chan_params;
-  chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
+  chan_params.mode = l2cap::RetransmissionAndFlowControlMode::kEnhancedRetransmission;
   chan_params.max_rx_sdu_size = kMtu;
 
   QueueAclConnection(kTestHandle1);
@@ -3272,7 +3274,7 @@ TEST_F(ChannelManagerRealAclChannelTest, NegotiateChannelParametersOnInboundChan
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
 
   l2cap::ChannelParameters chan_params;
-  chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
+  chan_params.mode = l2cap::RetransmissionAndFlowControlMode::kEnhancedRetransmission;
   chan_params.max_rx_sdu_size = l2cap::kMinACLMTU;
 
   QueueAclConnection(kTestHandle1);

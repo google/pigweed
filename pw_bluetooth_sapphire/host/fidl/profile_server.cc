@@ -40,10 +40,10 @@ bt::l2cap::ChannelParameters FidlToChannelParameters(const fidlbredr::ChannelPar
   if (fidl.has_channel_mode()) {
     switch (fidl.channel_mode()) {
       case fidlbredr::ChannelMode::BASIC:
-        params.mode = bt::l2cap::ChannelMode::kBasic;
+        params.mode = bt::l2cap::RetransmissionAndFlowControlMode::kBasic;
         break;
       case fidlbredr::ChannelMode::ENHANCED_RETRANSMISSION:
-        params.mode = bt::l2cap::ChannelMode::kEnhancedRetransmission;
+        params.mode = bt::l2cap::RetransmissionAndFlowControlMode::kEnhancedRetransmission;
         break;
       default:
         BT_PANIC("FIDL channel parameter contains invalid mode");
@@ -58,17 +58,21 @@ bt::l2cap::ChannelParameters FidlToChannelParameters(const fidlbredr::ChannelPar
   return params;
 }
 
-fidlbredr::ChannelMode ChannelModeToFidl(bt::l2cap::ChannelMode mode) {
-  switch (mode) {
-    case bt::l2cap::ChannelMode::kBasic:
-      return fidlbredr::ChannelMode::BASIC;
-      break;
-    case bt::l2cap::ChannelMode::kEnhancedRetransmission:
-      return fidlbredr::ChannelMode::ENHANCED_RETRANSMISSION;
-      break;
-    default:
-      BT_PANIC("Could not convert channel parameter mode to unsupported FIDL mode");
+fidlbredr::ChannelMode ChannelModeToFidl(const bt::l2cap::AnyChannelMode& mode) {
+  if (auto* flow_control_mode = std::get_if<bt::l2cap::RetransmissionAndFlowControlMode>(&mode)) {
+    switch (*flow_control_mode) {
+      case bt::l2cap::RetransmissionAndFlowControlMode::kBasic:
+        return fidlbredr::ChannelMode::BASIC;
+        break;
+      case bt::l2cap::RetransmissionAndFlowControlMode::kEnhancedRetransmission:
+        return fidlbredr::ChannelMode::ENHANCED_RETRANSMISSION;
+        break;
+      default:
+        // Intentionally unhandled, fall through to PANIC.
+        break;
+    }
   }
+  BT_PANIC("Could not convert channel parameter mode to unsupported FIDL mode");
 }
 
 fidlbredr::ChannelParameters ChannelInfoToFidlChannelParameters(

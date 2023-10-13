@@ -73,6 +73,7 @@ pw_source_set("l2cap") {
     "signaling_channel.cc",
     "signaling_channel.h",
     "tx_engine.h",
+    "types.cc",
     "types.h",
   ]
 
@@ -81,6 +82,7 @@ pw_source_set("l2cap") {
     "$dir_pw_third_party/fuchsia:fit",
     "//src/connectivity/bluetooth/core/bt-host/hci",
     "//src/connectivity/bluetooth/core/bt-host/transport",
+    "//third_party/pigweed/src/pw_string",
   ]
 }
 
@@ -154,6 +156,7 @@ pw_test("tests") {
     "recombiner_unittest.cc",
     "scoped_channel_unittest.cc",
     "signaling_channel_unittest.cc",
+    "types_unittest.cc",
   ]
 
   deps = [

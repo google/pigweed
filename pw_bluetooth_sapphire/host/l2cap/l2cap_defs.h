@@ -180,12 +180,24 @@ enum class ConfigurationResult : uint16_t {
   kFlowSpecRejected = 0x0005,
 };
 
-enum class ChannelMode : uint8_t {
+// Channel modes available in a L2CAP_CONFIGURATION_REQ packet. These are not
+// the full set of possible channel modes, see CreditBasedFlowControlMode.
+enum class RetransmissionAndFlowControlMode : uint8_t {
   kBasic = 0x00,
   kRetransmission = 0x01,
   kFlowControl = 0x02,
   kEnhancedRetransmission = 0x03,
-  kStreaming = 0x04
+  kStreaming = 0x04,
+};
+
+// Channel modes defined by an associated channel establishment packet rather
+// than an L2CAP_CONFIGURATION_REQ packet. The values here are the signaling
+// packet code of the connection establishment request packet associated with
+// the mode. These are not the full set of possible channel modes, see
+// RetransmissionAndFlowControlMode.
+enum class CreditBasedFlowControlMode : uint8_t {
+  kLeCreditBasedFlowControl = 0x14,
+  kEnhancedCreditBasedFlowControl = 0x17,
 };
 
 enum class InformationType : uint16_t {
@@ -381,7 +393,7 @@ struct FlushTimeoutOptionPayload {
 
 // Payload of Configuration Option (see Vol 3, Part A, Section 5.4)
 struct RetransmissionAndFlowControlOptionPayload {
-  ChannelMode mode;
+  RetransmissionAndFlowControlMode mode;
   uint8_t tx_window_size;
   uint8_t max_transmit;
   uint16_t rtx_timeout;

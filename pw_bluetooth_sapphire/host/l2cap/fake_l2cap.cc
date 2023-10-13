@@ -63,10 +63,10 @@ bool FakeL2cap::TriggerInboundL2capChannel(hci_spec::ConnectionHandle handle, l2
 
   l2cap::ChannelCallback& cb = cb_iter->second.channel_cb;
   auto chan_params = cb_iter->second.channel_params;
-  auto mode = chan_params.mode.value_or(l2cap::ChannelMode::kBasic);
+  auto mode = chan_params.mode.value_or(l2cap::RetransmissionAndFlowControlMode::kBasic);
   auto max_rx_sdu_size = chan_params.max_rx_sdu_size.value_or(l2cap::kDefaultMTU);
   auto channel_info = l2cap::ChannelInfo::MakeBasicMode(max_rx_sdu_size, max_tx_sdu_size);
-  if (mode == l2cap::ChannelMode::kEnhancedRetransmission) {
+  if (mode == l2cap::RetransmissionAndFlowControlMode::kEnhancedRetransmission) {
     channel_info = l2cap::ChannelInfo::MakeEnhancedRetransmissionMode(
         max_rx_sdu_size, max_tx_sdu_size, /*n_frames_in_tx_window=*/kErtmNFramesInTxWindow,
         /*max_transmissions=*/kErtmMaxTransmissions,
@@ -151,7 +151,7 @@ void FakeL2cap::OpenL2capChannel(hci_spec::ConnectionHandle handle, l2cap::Psm p
   auto chan_data = psm_it->second.front();
   psm_it->second.pop();
 
-  auto mode = params.mode.value_or(l2cap::ChannelMode::kBasic);
+  auto mode = params.mode.value_or(l2cap::RetransmissionAndFlowControlMode::kBasic);
   auto max_rx_sdu_size = params.max_rx_sdu_size.value_or(l2cap::kMaxMTU);
 
   BT_ASSERT_MSG(chan_data.params == params,
@@ -159,7 +159,7 @@ void FakeL2cap::OpenL2capChannel(hci_spec::ConnectionHandle handle, l2cap::Psm p
                 bt_str(chan_data.params), bt_str(params));
 
   auto channel_info = l2cap::ChannelInfo::MakeBasicMode(max_rx_sdu_size, l2cap::kDefaultMTU);
-  if (mode == l2cap::ChannelMode::kEnhancedRetransmission) {
+  if (mode == l2cap::RetransmissionAndFlowControlMode::kEnhancedRetransmission) {
     channel_info = l2cap::ChannelInfo::MakeEnhancedRetransmissionMode(
         max_rx_sdu_size, l2cap::kDefaultMTU, /*n_frames_in_tx_window=*/kErtmNFramesInTxWindow,
         /*max_transmissions=*/kErtmMaxTransmissions,

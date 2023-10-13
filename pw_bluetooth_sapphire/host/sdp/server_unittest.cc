@@ -1394,7 +1394,7 @@ TEST_F(ServerTest, RegisterServiceWithChannelParameters) {
   l2cap::Psm kPsm = l2cap::kAVDTP;
 
   l2cap::ChannelParameters preferred_params;
-  preferred_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
+  preferred_params.mode = l2cap::RetransmissionAndFlowControlMode::kEnhancedRetransmission;
   preferred_params.max_rx_sdu_size = l2cap::kMinACLMTU;
 
   std::optional<l2cap::ChannelInfo> params;

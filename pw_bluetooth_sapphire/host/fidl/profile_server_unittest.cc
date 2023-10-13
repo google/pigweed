@@ -549,7 +549,7 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectL2capChannelParameters) {
       [&](bt::PeerId, bt::sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
 
   bt::l2cap::ChannelParameters expected_params;
-  expected_params.mode = bt::l2cap::ChannelMode::kEnhancedRetransmission;
+  expected_params.mode = bt::l2cap::RetransmissionAndFlowControlMode::kEnhancedRetransmission;
   expected_params.max_rx_sdu_size = bt::l2cap::kMinACLMTU;
   l2cap()->ExpectOutboundL2capChannel(connection()->link().handle(), kPsm, 0x40, 0x41,
                                       expected_params);
@@ -638,7 +638,7 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectEmptyChannelResponse) {
   l2cap()->set_simulate_open_channel_failure(true);
 
   bt::l2cap::ChannelParameters expected_params;
-  expected_params.mode = bt::l2cap::ChannelMode::kEnhancedRetransmission;
+  expected_params.mode = bt::l2cap::RetransmissionAndFlowControlMode::kEnhancedRetransmission;
   expected_params.max_rx_sdu_size = bt::l2cap::kMinACLMTU;
   l2cap()->ExpectOutboundL2capChannel(connection()->link().handle(), kPsm, 0x40, 0x41,
                                       expected_params);

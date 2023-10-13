@@ -3430,7 +3430,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capChannelCreatesChannelWithChannelPara
   constexpr l2cap::Psm kPsm = l2cap::kAVDTP;
   constexpr l2cap::ChannelId kLocalId = l2cap::kFirstDynamicChannelId;
   l2cap::ChannelParameters params;
-  params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
+  params.mode = l2cap::RetransmissionAndFlowControlMode::kEnhancedRetransmission;
   params.max_rx_sdu_size = l2cap::kMinACLMTU;
 
   QueueSuccessfulIncomingConn(kTestDevAddr, kConnectionHandle);

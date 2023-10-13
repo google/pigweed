@@ -22,8 +22,9 @@ bt::l2cap::ChannelParameters ConsumeChannelParameters(FuzzedDataProvider& provid
     return params;
   }
 
-  params.mode = provider.ConsumeBool() ? bt::l2cap::ChannelMode::kBasic
-                                       : bt::l2cap::ChannelMode::kEnhancedRetransmission;
+  params.mode = provider.ConsumeBool()
+                    ? bt::l2cap::RetransmissionAndFlowControlMode::kBasic
+                    : bt::l2cap::RetransmissionAndFlowControlMode::kEnhancedRetransmission;
   params.max_rx_sdu_size = provider.ConsumeIntegral<uint16_t>();
   return params;
 }

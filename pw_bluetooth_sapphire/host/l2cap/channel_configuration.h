@@ -111,7 +111,7 @@ class ChannelConfiguration final {
     // be initialized with the decoded fields.
     explicit RetransmissionAndFlowControlOption(const ByteBuffer& data_buf);
 
-    ChannelMode mode() const { return mode_; }
+    RetransmissionAndFlowControlMode mode() const { return mode_; }
 
     // TxWindow: receiver capability in request and transmit capability in response (ERTM)
     uint8_t tx_window_size() const { return tx_window_size_; }
@@ -151,11 +151,12 @@ class ChannelConfiguration final {
 
    private:
     // If |mode| is kBasic, all other parameters are ignored.
-    RetransmissionAndFlowControlOption(ChannelMode mode, uint8_t tx_window_size,
-                                       uint8_t max_transmit, uint16_t rtx_timeout,
-                                       uint16_t monitor_timeout, uint16_t mps);
+    RetransmissionAndFlowControlOption(RetransmissionAndFlowControlMode mode,
+                                       uint8_t tx_window_size, uint8_t max_transmit,
+                                       uint16_t rtx_timeout, uint16_t monitor_timeout,
+                                       uint16_t mps);
 
-    ChannelMode mode_;
+    RetransmissionAndFlowControlMode mode_;
     uint8_t tx_window_size_;
     uint8_t max_transmit_;
     uint16_t rtx_timeout_;

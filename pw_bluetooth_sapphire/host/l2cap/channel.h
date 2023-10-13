@@ -102,7 +102,7 @@ class Channel : public WeakSelf<Channel> {
     return (link_handle() << (sizeof(ChannelId) * CHAR_BIT)) | id();
   }
 
-  ChannelMode mode() const { return info().mode; }
+  const AnyChannelMode& mode() const { return info().mode; }
 
   // These accessors define the concept of a Maximum Transmission Unit (MTU) as a maximum inbound
   // (rx) and outbound (tx) packet size for the L2CAP implementation (see v5.2, Vol. 3, Part A
@@ -117,7 +117,7 @@ class Channel : public WeakSelf<Channel> {
   uint16_t max_tx_sdu_size() const { return info().max_tx_sdu_size; }
 
   // Returns the current configuration parameters for this channel.
-  ChannelInfo info() const { return info_; }
+  const ChannelInfo& info() const { return info_; }
 
   uint16_t max_tx_queued() const { return max_tx_queued_; }
   void set_max_tx_queued(uint16_t count) { max_tx_queued_ = count; }
