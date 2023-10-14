@@ -25,4 +25,9 @@ inline bool TimedThreadNotification::try_acquire_for(
   return native_handle().try_acquire_for(timeout);
 }
 
+inline bool TimedThreadNotification::try_acquire_until(
+    chrono::SystemClock::time_point deadline) {
+  return try_acquire_for(deadline - chrono::SystemClock::now());
+}
+
 }  // namespace pw::sync
