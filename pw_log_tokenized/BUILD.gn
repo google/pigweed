@@ -51,7 +51,10 @@ pw_source_set("pw_log_tokenized") {
     ":handler.facade",  # Depend on the facade to avoid circular dependencies.
     ":headers",
   ]
-  public = [ "public_overrides/pw_log_backend/log_backend.h" ]
+  public = [
+    "public_overrides/pw_log_backend/log_backend.h",
+    "public_overrides/pw_log_backend/log_backend_uses_pw_tokenizer.h",
+  ]
 
   sources = [ "log_tokenized.cc" ]
 }

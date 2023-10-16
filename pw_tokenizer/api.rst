@@ -34,6 +34,7 @@ Tokenization
       .. doxygenclass:: pw::tokenizer::EncodedMessage
          :members:
       .. doxygenfunction:: pw::tokenizer::MinEncodingBufferSizeBytes
+      .. doxygendefine:: PW_TOKEN_FMT
       .. doxygendefine:: PW_TOKENIZE_FORMAT_STRING
       .. doxygendefine:: PW_TOKENIZE_FORMAT_STRING_ANY_ARG_COUNT
       .. doxygendefine:: PW_TOKENIZE_STRING

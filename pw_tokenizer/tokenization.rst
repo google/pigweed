@@ -59,7 +59,7 @@ Arguments are encoded as follows:
    ``%s`` arguments can quickly fill a tokenization buffer. Keep ``%s``
    arguments short or avoid encoding them as strings (e.g. encode an enum as an
    integer instead of a string). See also
-   :ref:`module-pw_tokenizer-tokenized-strings-as-args`.
+   :ref:`module-pw_tokenizer-nested-arguments`.
 
 .. _module-pw_tokenizer-proto:
 
@@ -190,16 +190,37 @@ Tokenize a message with arguments to a buffer
    logging macro, because it will result in larger code size than passing the
    tokenized data to a function.
 
-.. _module-pw_tokenizer-tokenized-strings-as-args:
+.. _module-pw_tokenizer-nested-arguments:
 
-Tokenize strings as arguments
-=============================
+Tokenize nested arguments
+=========================
 Encoding ``%s`` string arguments is inefficient, since ``%s`` strings are
-encoded 1:1, with no tokenization. A string token can be sent as an integer or
-Base64 string argument with a prefix recognized by the detokenization tools.
-The detokenizer expands the argument to the string represented by the integer
-and removes the delimiter analogously to base64 detokenization.
+encoded 1:1, with no tokenization. Tokens can therefore be used to replace
+string arguments to tokenized format strings.
 
+* :c:macro:`PW_TOKEN_FMT`
+
+.. admonition:: Logging nested tokens
+
+  Users will typically interact with nested token arguments during logging.
+  In this case there is a slightly different interface described by
+  :ref:`module-pw_log-tokenized-args` that does not generally invoke
+  ``PW_TOKEN_FMT`` directly.
+
+The format specifier for a token is given by PRI-style macro ``PW_TOKEN_FMT()``,
+which is concatenated to the rest of the format string by the C preprocessor.
+
+.. code-block:: cpp
+
+  PW_TOKENIZE_FORMAT_STRING("margarine_domain",
+                            UINT32_MAX,
+                            "I can't believe it's not " PW_TOKEN_FMT() "!",
+                            PW_TOKENIZE_STRING_EXPR("butter"));
+
+This feature is currently only supported by the Python detokenizer.
+
+Nested token format
+-------------------
 Nested tokens have the following format within strings:
 
 .. code-block::
@@ -217,25 +238,38 @@ omitted entirely, the base defaults to 64 for backward compatibility. All
 encodings except Base64 are not case sensitive. This may be expanded to support
 other bases in the future.
 
-Non-Base64 tokens are encoded strictly as 32-bit integers (with padding).
+Non-Base64 tokens are encoded strictly as 32-bit integers with padding.
 Base64 data may additionally encode string arguments for the detokenized token,
 and therefore does not have a maximum width.
 
-This feature is currently only supported by the Python backend.
+The meaning of ``TOKEN`` depends on the current phase of transformation for the
+current tokenized format string. Within the format string's entry in the token
+database, when the actual value of the token argument is not known, ``TOKEN`` is
+a printf argument specifier (e.g. ``%08x`` for a base-16 token with correct
+padding). The actual tokens that will be used as arguments have separate
+entries in the token database.
 
-Example tokens:
----------------
+After the top-level format string has been detokenized and formatted, ``TOKEN``
+should be the value of the token argument in the specified base, with any
+necessary padding. This is the final format of a nested token if it cannot be
+tokenized.
 
-.. code-block::
+.. list-table:: Example tokens
+   :widths: 10 25 25
 
-   // Base-10 token
-   $10#0086025943
-
-   // Base-16 token
-   $#0000001A
-
-   // Base64 token
-   $QA19pfEQ
+   * - Base
+     - | Token database
+       | (within format string entry)
+     - Partially detokenized
+   * - 10
+     - ``$10#%010d``
+     - ``$10#0086025943``
+   * - 16
+     - ``$#%08x``
+     - ``$#0000001A``
+   * - 64
+     - ``%s``
+     - ``$QA19pfEQ``
 
 .. _module-pw_tokenizer-custom-macro:
 

@@ -26,5 +26,5 @@
 #define PW_TOKENIZER_NESTED_PREFIX_STR "$"
 #define PW_TOKENIZER_NESTED_PREFIX PW_TOKENIZER_NESTED_PREFIX_STR[0]
 
-/// Format specifier for a token argument
+/// Format specifier for a token argument.
 #define PW_TOKEN_FMT() PW_TOKENIZER_NESTED_PREFIX_STR "#%08" PRIx32

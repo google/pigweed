@@ -50,6 +50,7 @@ pw_cc_library(
         "public/pw_log/options.h",
         "public/pw_log/short.h",
         "public/pw_log/shorter.h",
+        "public/pw_log/tokenized_args.h",
     ],
     includes = ["public"],
     deps = [

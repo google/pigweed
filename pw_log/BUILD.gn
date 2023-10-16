@@ -59,6 +59,12 @@ pw_facade("pw_log") {
   require_link_deps = [ ":impl" ]
 }
 
+pw_source_set("args") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ dir_pw_tokenizer ]
+  public = [ "public/pw_log/tokenized_args.h" ]
+}
+
 pw_source_set("glog_adapter") {
   public_configs = [ ":public_include_path" ]
   public = [
@@ -169,6 +175,7 @@ pw_doc_group("docs") {
   sources = [
     "docs.rst",
     "protobuf.rst",
+    "tokenized_args.rst",
   ]
   inputs = [
     "example_layer_diagram.svg",

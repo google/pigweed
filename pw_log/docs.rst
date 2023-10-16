@@ -20,6 +20,7 @@ service for efficiently storing and transmitting log messages. See
    :hidden:
 
    protobuf
+   tokenized_args
 
 --------------
 Usage examples
@@ -67,6 +68,10 @@ names and go for shorter log macros. Include ``pw_log/short.h`` or
      }
      INF("Successfully booted");
    }
+
+The ``pw_log`` facade also exposes a handful of macros that only apply
+specifically to tokenized logging. See :ref:`module-pw_log-tokenized-args` for
+details.
 
 Layer diagram example: ``stm32f429i-disc1``
 ===========================================

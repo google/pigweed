@@ -31,6 +31,7 @@ pw_add_library(pw_log_tokenized.config INTERFACE
 pw_add_library(pw_log_tokenized STATIC
   HEADERS
     public_overrides/pw_log_backend/log_backend.h
+    public_overrides/pw_log_backend/log_backend_uses_pw_tokenizer.h
   PUBLIC_INCLUDES
     public_overrides
   PUBLIC_DEPS

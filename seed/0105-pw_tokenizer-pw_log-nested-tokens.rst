@@ -120,7 +120,7 @@ types in sync when switching between other ``pw_log`` backends like
 .. code-block:: cpp
 
   #include "pw_log/log.h"
-  #include "pw_log_tokenized/args.h"
+  #include "pw_log/tokenized_args.h"
 
   // token with default options base-16 and empty domain
   // token database literal: "The sun will come out $#%08x!"
@@ -307,18 +307,18 @@ functionality to support tokenized arguments. The proposed API is fully
 backward-compatible with non-nested tokenized logging.
 
 Token arguments are indicated in log format strings via PRI-style macros that
-are exposed by a new ``pw_log_tokenized/args.h`` header. ``PW_LOG_TOKEN_FMT``
+are exposed by a new ``pw_log/tokenized_args.h`` header. ``PW_LOG_TOKEN_FMT``
 supplies the ``$`` token prefix, brackets around the domain, the base specifier,
 and the printf-style specifier including padding and width, i.e. ``%011o`` for
 base-8, ``%010u`` for base-10, and ``%08X`` for base-16.
 
 For free-standing string arguments such as those where the literals are defined
 in the log statements themselves, tokenization is performed with macros from
-``pw_log_tokenized/args.h``. With the tokenized logging backend, these macros
+``pw_log/tokenized_args.h``. With the tokenized logging backend, these macros
 simply alias the corresponding ``PW_TOKENIZE`` macros, but they also revert to
 basic string formatting for other backends. This is achieved by placing an
 empty header file in the local ``public_overrides`` directory of
-``pw_log_tokenized`` and checking for it in ``pw_log_tokenized/args.h`` using
+``pw_log_tokenized`` and checking for it in ``pw_log/tokenized_args.h`` using
 the ``__has_include`` directive.
 
 For variable string arguments, the API is split across locations. The string
@@ -355,7 +355,7 @@ single byte for most enums.
   .. code:: cpp
 
     #include "pw_log/log.h"
-    #include "pw_log_tokenized/args.h"
+    #include "pw_log/tokenized_args.h"
     #include "pw_status/status.h"
 
     pw::Status status = pw::Status::NotFound();

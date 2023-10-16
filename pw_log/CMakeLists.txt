@@ -38,6 +38,7 @@ pw_add_facade(pw_log INTERFACE
     public/pw_log/options.h
     public/pw_log/short.h
     public/pw_log/shorter.h
+    public/pw_log/tokenized_args.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS

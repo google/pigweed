@@ -245,7 +245,7 @@ pw_sys_io_rp2040
 pw_tokenizer
 ------------
 The Python backend now supports nested hashing tokenization. See
-:ref:`module-pw_tokenizer-tokenized-strings-as-args`.
+:ref:`module-pw_tokenizer-nested-arguments`.
 
 * `Support nested hashing tokenization (python backend) <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/145339>`__
   (issue `#278890205 <https://issues.pigweed.dev/issues/278890205>`__)
