@@ -28,6 +28,7 @@ pw_doc_group("docs") {
     ":0107",
     ":0108",
     ":0109",
+    ":0111",
   ]
 }
 
@@ -66,4 +67,8 @@ pw_doc_group("0108") {
 
 pw_doc_group("0109") {
   sources = [ "0109-comms-buffers.rst" ]
+}
+
+pw_doc_group("0111") {
+  sources = [ "0111-build-systems.rst" ]
 }
