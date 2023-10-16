@@ -6,7 +6,7 @@
 .. seed::
    :number: 111
    :name: Make Bazel Pigweed's Primary Build System
-   :status: last_call
+   :status: Accepted
    :proposal_date: 2023-09-26
    :cl: 171695
 
@@ -231,7 +231,9 @@ Open questions
 Additional SEEDs related to Bazel support are anticipated but have not yet been
 written. They will be linked from here once they exist.
 
-* SEED-????: pw_toolchain for Bazel
+* `SEED-0113
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/173453>`_:
+  Modular Bazel C/C++ toolchain API
 * SEED-????: Pigweed CI/CQ for Bazel
 
 ----------------------------
