@@ -18,7 +18,6 @@ import json
 import logging
 import os
 import re
-import signal
 import socket
 import subprocess
 import sys
@@ -901,14 +900,6 @@ class Launcher(ABC):
 
         _LAUNCHER_LOG.debug('starting emulator with command: %s', ' '.join(cmd))
 
-        def cleanup(_sig, _stack):
-            self._stop_procs()
-            sys.exit(1)
-
-        if foreground:
-            signal.signal(signal.SIGTERM, cleanup)
-            signal.signal(signal.SIGINT, cleanup)
-
         try:
             self._start_procs('pre-start-cmds')
             proc = self._start_proc(self._emu, cmd, foreground)
@@ -922,8 +913,6 @@ class Launcher(ABC):
 
         if proc:
             proc.wait()
-            signal.signal(signal.SIGTERM, signal.SIG_DFL)
-            signal.signal(signal.SIGINT, signal.SIG_DFL)
             self._stop_procs()
 
         return self._get_connector(self._wdir)
