@@ -20,7 +20,6 @@ load(
 
 pw_cc_library(
     name = "sysdeps",
-    srcs = ["crypto_sysrand.cc"],
     hdrs = ["sysdeps/sys/socket.h"],
     copts = ["-Wno-unused-parameter"],
     includes = ["sysdeps"],

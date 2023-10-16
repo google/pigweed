@@ -77,7 +77,7 @@ if (pw_third_party_boringssl_ALIAS != "") {
   ]
 
   pw_source_set("boringssl") {
-    sources = [ "crypto_sysrand.cc" ]
+    sources = []
     foreach(source, crypto_sources - excluded_sources + ssl_sources) {
       sources += [ "$dir_pw_third_party_boringssl/$source" ]
     }
