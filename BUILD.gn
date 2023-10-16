@@ -311,18 +311,19 @@ if (pw_BUILD_BROKEN_GROUPS) {
     toolchain_prefix =
         "$dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_"
   }
-}
-group("qemu_gcc_size_optimized") {
-  deps = [ ":pigweed_default($dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_gcc_size_optimized)" ]
-}
-group("qemu_gcc") {
-  deps = [ ":qemu_gcc_size_optimized" ]
-}
-group("qemu_clang_size_optimized") {
-  deps = [ ":pigweed_default($dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_size_optimized)" ]
-}
-group("qemu_clang") {
-  deps = [ ":qemu_clang_size_optimized" ]
+} else {
+  group("qemu_gcc_size_optimized") {
+    deps = [ ":pigweed_default($dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_gcc_size_optimized)" ]
+  }
+  group("qemu_gcc") {
+    deps = [ ":qemu_gcc_size_optimized" ]
+  }
+  group("qemu_clang_size_optimized") {
+    deps = [ ":pigweed_default($dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_size_optimized)" ]
+  }
+  group("qemu_clang") {
+    deps = [ ":qemu_clang_size_optimized" ]
+  }
 }
 
 # Run clang-tidy on pigweed_default with pw_strict_host_clang_debug toolchain options.
