@@ -33,6 +33,41 @@ Overview
 For background on why the module exists and some of the design
 choices see :ref:`seed-0108`.
 
+.. _module-pw_emu-get-started:
+
+-----------
+Get started
+-----------
+Include the desired emulator target files in the ``pigweed.json`` configuration
+file, e.g.:
+
+.. code-block::
+
+   ...
+   "pw_emu": {
+      "target_files": [
+
+        "pw_emu/qemu-lm3s6965evb.json",
+        "pw_emu/qemu-stm32vldiscovery.json",
+        "pw_emu/qemu-netduinoplus2.json",
+        "renode-stm32f4_discovery.json"
+      ]
+    }
+    ...
+
+
+Build the ``qemu_gcc`` target and use ``pw emu run`` command to run the target
+binaries on the host using the ``qemu-lm3s6965evb`` emulation target:
+
+.. code:: bash
+
+   ninja -C out qemu_gcc
+   pw emu run --args=-no-reboot qemu-lm3s6965evb out/lm3s6965evb_qemu_gcc_size_optimized/obj/pw_snapshot/test/cpp_compile_test
+
+See :ref:`module-pw_emu-guide` for more examples,
+:ref:`module-pw_emu-config` for detailed configuration information,
+:ref:`module-pw_emu-cli` for detailed CLI usage information and
+:ref:`module-pw_emu-api` for managing emulators with Python APIs.
 
 .. toctree::
    :hidden:

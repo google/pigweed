@@ -16,6 +16,7 @@
 
 import json
 import os
+import subprocess
 import tempfile
 import unittest
 
@@ -23,6 +24,20 @@ from pathlib import Path
 from typing import Any, Optional, Dict
 
 from pw_emu.frontend import Emulator
+
+
+def check_prog(prog: str) -> tuple:
+    msg = f'running {prog}'
+    try:
+        proc = subprocess.run([prog, '--help'], capture_output=True)
+        if proc.returncode != 0:
+            output = proc.stdout.decode('ascii') + proc.stderr.decode('ascii')
+            msg = f'error {msg}: {output}'
+            return (False, msg)
+    except OSError as err:
+        msg = f'error {msg}: {str(err)}'
+        return (False, msg)
+    return (True, msg)
 
 
 class ConfigHelper(unittest.TestCase):

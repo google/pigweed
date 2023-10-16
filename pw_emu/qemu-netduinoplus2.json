@@ -1,0 +1,20 @@
+{
+  "targets": {
+    "qemu-netduinoplus2": {
+      "gdb": [
+        "arm-none-eabi-gdb"
+      ],
+      "qemu": {
+        "executable": "qemu-system-arm",
+        "machine": "netduinoplus2",
+        "channels": {
+          "chardevs": {
+            "serial0": {
+              "id": "serial0"
+            }
+          }
+        }
+      }
+    }
+  }
+}

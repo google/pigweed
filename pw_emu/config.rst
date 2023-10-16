@@ -34,6 +34,34 @@ Configuration reference
   target configuration should be placed under a ``target`` key; if paths are
   relative they are interpreted relative to the project root directory
 
+* ``qemu``: options for the QEMU emulator:
+
+  * ``executable`: command used to start QEMU (e.g. `system-arm-qemu``); this
+    can be overridden at the target level
+
+  * ``args``: list of command line options to pass directly to QEMU
+    when starting an emulator instance; can be *extended* at the
+    target level
+
+  * ``channels``: options for channel configuration:
+
+    * ``type``: optional type for channels, see channel types below
+
+    * ``gdb``, ``qmp``, ``monitor``: optional channel configuration entries
+
+      * ``type``: channel type, see channel types below
+
+* ``renode``: options for the renode emulator:
+
+  * ``executable``: command used to start renode (e.g. "system-arm-qemu"); this
+    can be overridden at the target level
+
+  * ``channels``: options for channel configuration:
+
+    * ``terminals``: exposed terminal devices (serial ports) generic options:
+
+      * ``type``: optional type for channels, see channel types below
+
 * ``targets``: target configurations with target names as keys:
 
   * ``<target-name>``: target options:
@@ -47,6 +75,32 @@ Configuration reference
     * ``post-start-cmds``: processes to run after the emulator is started
 
       * ``<name>``: command for starting the process as a list of strings
+
+    * ``qemu``: options for the QEMU emulator:
+
+      * ``executable``: command used to start QEMU (e.g. ``system-arm-qemu``)
+
+      * ``args``: list of command line options passed directly to QEMU when
+        starting this target
+
+      * ``machine``: QEMU machine name; passed to the QEMU ``-machine`` command
+        line argument
+
+      * ``channels``: exposed channels:
+
+	* ``chardevs``: exposed QEMU chardev devices (typically serial
+          ports):
+
+	  * ``<channel-name>``: channel options:
+
+	    * ``id``: the id of the QEMU chardev
+
+	    * ``type``: optional type of the channel see channel types below
+
+	* ``gdb``, ``qmp`, ``monitor``: optional channel configuration
+          entries
+
+	  * ``type``: channel type, see channel types below
 
 The following channel types are currently supported:
 

@@ -56,3 +56,20 @@ properties. The frontend does not abstract properties in a way that is emulator
 or even emulator target independent, other than mandating that each property is
 identified by a path. Note that the format of the path is also emulator specific
 and not standardized.
+
+----
+QEMU
+----
+The QEMU frontend is using `QMP <https://wiki.qemu.org/Documentation/QMP>`_ to
+communicate with the running QEMU process and implement emulator specific
+functionality like reset, list or reading properties, etc.
+
+QMP is exposed to the host through two channels: a temporary one to establish
+the initial connection that is used to read the dynamic configuration (e.g. TCP
+ports, pty paths) and a permanent one that can be used thought the life of the
+QEMU processes. The frontend is configuring QEMU to expose QMP to a
+``localhost`` TCP port reserved by the frontend and then waiting for QEMU to
+establish the connection on that port. Once the connection is established the
+frontend will read the configuration of the permanent QMP channel (which can be
+either a TCP port or a PTY path) and save it as a channel named ``qmp`` in the
+:py:class:`pw_emu.core.Handles` object.

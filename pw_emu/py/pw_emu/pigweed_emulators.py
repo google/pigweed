@@ -15,4 +15,9 @@
 
 from typing import Dict
 
-pigweed_emulators: Dict[str, Dict[str, str]] = {}
+pigweed_emulators: Dict[str, Dict[str, str]] = {
+    'qemu': {
+        'connector': 'pw_emu.qemu.QemuConnector',
+        'launcher': 'pw_emu.qemu.QemuLauncher',
+    },
+}

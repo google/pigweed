@@ -1,0 +1,20 @@
+{
+  "targets": {
+    "qemu-stm32vldiscovery": {
+      "gdb": [
+        "arm-none-eabi-gdb"
+      ],
+      "qemu": {
+        "executable": "qemu-system-arm",
+        "machine": "stm32vldiscovery",
+        "channels": {
+          "chardevs": {
+            "serial0": {
+              "id": "serial0"
+            }
+          }
+        }
+      }
+    }
+  }
+}

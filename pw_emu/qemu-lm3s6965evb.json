@@ -1,0 +1,20 @@
+{
+  "targets": {
+    "qemu-lm3s6965evb": {
+      "gdb": [
+        "arm-none-eabi-gdb"
+      ],
+      "qemu": {
+        "executable": "qemu-system-arm",
+        "machine": "lm3s6965evb",
+        "channels": {
+          "chardevs": {
+            "serial0": {
+              "id": "serial0"
+            }
+          }
+        }
+      }
+    }
+  }
+}
