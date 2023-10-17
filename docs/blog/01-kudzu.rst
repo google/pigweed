@@ -18,10 +18,11 @@ Pigweed Eng Blog #1: Kudzu
    code <https://pigweed.googlesource.com/pigweed/kudzu/+/refs/heads/main>`_
    to be a helpful example of a complex Pigweed integration.
 
-.. figure:: https://storage.googleapis.com/pigweed-media/kudzu-badges.jpg
-   :alt: A photo of 6 of the Kudzu badges
-
-   Kudzu badges for Maker Faire 2023
+.. card::
+    :img-background: https://storage.googleapis.com/pigweed-media/kudzu-finished-photo-diagonal.jpg
+    :link: https://storage.googleapis.com/pigweed-media/kudzu-finished-photo-diagonal.jpg
+    :img-alt: A single Kudzu badge face-up on a table viewed at a diagonal.
+    :class-card: sd-text-black
 
 ----------------------------
 It all started so innocently
@@ -133,12 +134,6 @@ Gameboy Advance Link Port
   for now. My hope is that adding it to the board now may keep these boards from
   becoming landfill when we decide to tackle wireless.
 
-.. figure:: https://storage.googleapis.com/pigweed-media/kudzu-display-connector.jpeg
-   :alt: Explanation
-
-   The reworked display connector and the unpopulated footprint for the "one more thing"
-   that "we'll get to eventually"
-
 --------------------------
 Design, build, and rollout
 --------------------------
@@ -148,8 +143,12 @@ functionality and usability in the past few years. It comes with a high-quality
 library of symbols and footprint which is supplemented by community-maintained
 open source libraries.
 
-.. figure:: https://storage.googleapis.com/pigweed-media/kudzu-schematic.png
-   :alt: A screenshot of Kudzu's schematic
+.. card::
+   :img-top: https://storage.googleapis.com/pigweed-media/kudzu-schematic.png
+   :link: https://storage.googleapis.com/pigweed-media/kudzu-schematic.png
+   :img-alt: A screenshot of Kudzu's schematic.
+   :class-card: sd-text-black
+   :text-align: center
 
    Kudzu schematic
 
@@ -159,6 +158,16 @@ sent off the board to get fabbed and "patiently" waited for it to be delivered.
 An EE at a previous company I worked at had a saying: "If you haven't found
 three problems with your board, you're not done looking". The three problems
 we found in order from least to most crushing are:
+
+.. card::
+   :img-top: https://storage.googleapis.com/pigweed-media/kudzu-display-connector.jpeg
+   :link: https://storage.googleapis.com/pigweed-media/kudzu-display-connector.jpeg
+   :img-alt: The reworked display connector with many bodge wires.
+   :class-card: sd-text-black
+   :text-align: center
+
+   The reworked display connector and the unpopulated footprint for the "one more thing"
+   that "we'll get to eventually"
 
 #. **The BOOT and RESET labels were reversed.** This led to some initial
    confusion on why the boards would not come up in bootloader mode.
@@ -182,14 +191,58 @@ the evening preparing for a build party. On Tuesday, with some
 `robotic help <https://www.opulo.io/>`_, we managed to build and test 8 boards
 and get them in team members' hands on Wednesday.
 
-.. figure:: https://storage.googleapis.com/pigweed-media/kudzu-pnp.jpg
-   :alt: A photo of the Opulo LumenPnP
+.. card::
+   :img-top: https://storage.googleapis.com/pigweed-media/kudzu-pnp.jpg
+   :link: https://storage.googleapis.com/pigweed-media/kudzu-pnp.jpg
+   :img-alt: A photo of the Opulo LumenPnP
+   :class-card: sd-text-black
+   :text-align: center
 
    Our robotic help (Opulo LumenPnP)
 
 Thankfully, because Pigweed is modular and portable, we were able to get our
 software working on it quickly, freeing us to spend the next couple days hacking
 together some simple fun demos for Maker Faire!
+
+------
+Photos
+------
+.. grid:: 1 1 2 2
+
+   .. grid-item-card::
+      :img-background: https://storage.googleapis.com/pigweed-media/kudzu-finished-photo-diagonal.jpg
+      :link: https://storage.googleapis.com/pigweed-media/kudzu-finished-photo-diagonal.jpg
+      :img-alt: A single Kudzu badge face-up on a table viewed at a diagonal.
+      :class-card: sd-text-black
+
+   .. grid-item-card::
+      :img-background: https://storage.googleapis.com/pigweed-media/kudzu-finished-photo-back.jpg
+      :link: https://storage.googleapis.com/pigweed-media/kudzu-finished-photo-back.jpg
+      :img-alt: A single Kudzu badge face-down on a table viewed at a diagonal.
+      :class-card: sd-text-black
+
+.. grid:: 1 1 2 2
+
+   .. grid-item-card::
+      :img-background: https://storage.googleapis.com/pigweed-media/kudzu-finished-photo-top-down.jpg
+      :link: https://storage.googleapis.com/pigweed-media/kudzu-finished-photo-top-down.jpg
+      :img-alt: A single Kudzu badge face-up on a table viewed from above.
+      :class-card: sd-text-black
+
+   .. grid-item-card::
+      :img-background: https://storage.googleapis.com/pigweed-media/kudzu-finished-photo-front-standing.jpg
+      :link: https://storage.googleapis.com/pigweed-media/kudzu-finished-photo-front-standing.jpg
+      :img-alt: A single Kudzu badge standing up on a table viewed from the front.
+      :class-card: sd-text-black
+
+.. card::
+   :img-top: https://storage.googleapis.com/pigweed-media/kudzu-badges.jpg
+   :link: https://storage.googleapis.com/pigweed-media/kudzu-badges.jpg
+   :img-alt: A photo of 6 of the Kudzu badges
+   :class-card: sd-text-black
+   :text-align: center
+
+   Six Kudzu badges for Maker Faire 2023
 
 ----------
 Learn more
