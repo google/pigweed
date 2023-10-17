@@ -45,7 +45,7 @@ genrule {
 
 cc_library_headers {
     name: "pw_i2c_service_pwpb_headers",
-    cpp_std: "c++2a",
+    cpp_std: "c++20",
     vendor_available: true,
     host_supported: true,
     generated_headers: [
