@@ -2504,7 +2504,7 @@ struct LESetExtendedScanParametersData:
     [requires: 0x0004 <= this]
 
 
-struct LESetExtendedScanParametersCommand(num_entries: UInt:8):
+struct LESetExtendedScanParametersCommand:
   -- 7.8.64 LE Set Extended Scan Parameters command (v5.0) (LE)
   -- HCI_LE_Set_Extended_Scan_Parameters
   -- num_entries corresponds to the number of bits set in the |scanning_phys| field
@@ -2514,9 +2514,9 @@ struct LESetExtendedScanParametersCommand(num_entries: UInt:8):
   $next [+1]                   LEScanFilterPolicy                            scanning_filter_policy
   $next [+1]                   LEScanPHYBits                                 scanning_phys
   let single_entry_size = LESetExtendedScanParametersData.$size_in_bytes
+  let num_entries = (scanning_phys.le_1m ? 1 : 0)+(scanning_phys.le_coded ? 1 : 0)
   let total_entries_size = num_entries*single_entry_size
   $next [+total_entries_size]  LESetExtendedScanParametersData[num_entries]  data
-    -- Indicates the type of address being used in the scan request packets (for active scanning).
 
 
 struct LESetExtendedScanEnableCommand:
