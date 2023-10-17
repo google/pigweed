@@ -1,0 +1,20 @@
+{
+  "targets": {
+    "renode-stm32f4_discovery": {
+      "gdb": [
+        "arm-none-eabi-gdb"
+      ],
+      "renode": {
+        "executable": "renode",
+        "machine": "platforms/boards/stm32f4_discovery-kit.repl",
+        "channels": {
+          "terminals": {
+            "serial0": {
+              "device-path": "sysbus.usart1"
+            }
+          }
+        }
+      }
+    }
+  }
+}

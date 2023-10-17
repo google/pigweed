@@ -29,6 +29,7 @@ pw_python_package("py") {
     "pw_emu/frontend.py",
     "pw_emu/pigweed_emulators.py",
     "pw_emu/qemu.py",
+    "pw_emu/renode.py",
   ]
   tests = [
     "tests/__init__.py",
@@ -37,6 +38,7 @@ pw_python_package("py") {
     "tests/core_test.py",
     "tests/frontend_test.py",
     "tests/qemu_test.py",
+    "tests/renode_test.py",
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
   mypy_ini = "$dir_pigweed/.mypy.ini"

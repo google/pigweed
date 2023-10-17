@@ -73,3 +73,31 @@ establish the connection on that port. Once the connection is established the
 frontend will read the configuration of the permanent QMP channel (which can be
 either a TCP port or a PTY path) and save it as a channel named ``qmp`` in the
 :py:class:`pw_emu.core.Handles` object.
+
+------
+renode
+------
+The renode frontend is using `renode's robot port
+<https://renode.readthedocs.io/en/latest/introduction/testing.html>`_ to
+interact with the renode process. Although the robot interface is designed for
+testing and not as a control interface, it is more robust and better suited to
+be used as a machine interface than the alternative ``monitor`` interface which
+is user oriented, ANSI colored, echoed, log mixed, telnet interface.
+
+Bugs
+====
+While renode allows passing 0 for ports to allocate a dynamic port, it does not
+have APIs to retrieve the allocated port. Until support for such a feature is
+added upstream, the implementation is using the following technique to allocate
+a port dynamically:
+
+.. code-block:: python
+
+   sock = socket.socket(socket.SOCK_INET, socket.SOCK_STREAM)
+   sock.bind(('', 0))
+   _, port = socket.getsockname()
+   sock.close()
+
+There is a race condition that allows another program to fetch the same port,
+but it should work in most light use cases until the issue is properly resolved
+upstream.

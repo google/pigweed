@@ -20,4 +20,8 @@ pigweed_emulators: Dict[str, Dict[str, str]] = {
         'connector': 'pw_emu.qemu.QemuConnector',
         'launcher': 'pw_emu.qemu.QemuLauncher',
     },
+    'renode': {
+        'connector': 'pw_emu.renode.RenodeConnector',
+        'launcher': 'pw_emu.renode.RenodeLauncher',
+    },
 }

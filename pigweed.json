@@ -95,7 +95,8 @@
       "target_files": [
         "pw_emu/qemu-lm3s6965evb.json",
         "pw_emu/qemu-stm32vldiscovery.json",
-        "pw_emu/qemu-netduinoplus2.json"
+        "pw_emu/qemu-netduinoplus2.json",
+        "pw_emu/renode-stm32f4_discovery.json"
       ]
     }
   }

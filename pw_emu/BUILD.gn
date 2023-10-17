@@ -18,7 +18,10 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 pw_doc_group("docs") {
-  inputs = [ "qemu-lm3s6965evb.json" ]
+  inputs = [
+    "qemu-lm3s6965evb.json",
+    "renode-stm32f4_discovery.json",
+  ]
   sources = [
     "api.rst",
     "cli.rst",

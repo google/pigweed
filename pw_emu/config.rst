@@ -102,6 +102,22 @@ Configuration reference
 
 	  * ``type``: channel type, see channel types below
 
+    * ``renode``: options for the renode emulator:
+
+      * ``executable``: command used to start renode
+
+      * ``machine``: machine script to use when running this target
+
+      * ``channels``: exposed channels:
+
+	* ``terminals``: exposed terminal devices (serial ports):
+
+	  * ``<channel-name>``: channel options:
+
+	    * ``device-path``: device path
+
+	    * ``type``: optional type of the channel see channel types below
+
 The following channel types are currently supported:
 
 * ``pty``: supported on Mac and Linux; renode only supports ptys for

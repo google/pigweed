@@ -130,6 +130,15 @@
       "tags": [
         "git_revision:d342388843734b6c5c50fb7e18cd3a76476b93aa"
       ]
+    },
+    {
+      "path": "infra/3pp/tools/renode/${platform}",
+      "platforms": [
+        "linux-amd64"
+      ],
+      "tags": [
+        "version:2@renode-1.14.0"
+      ]
     }
   ]
 }

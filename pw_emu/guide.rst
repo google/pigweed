@@ -74,6 +74,22 @@ configuration defines a ``serial0`` channel to be the QEMU **chardev** with the
 supported by all platforms. The user can change the type by adding a ``type`` key
 set to the desired type (e.g. ``pty``)
 
+renode targets
+==============
+The following configuration fragment defines a target that uses renode:
+
+.. literalinclude:: renode-stm32f4_discovery.json
+
+Note that ``machine`` is used to identify which renode script to use for the
+machine definitions and ``terminals`` to define which UART devices to expose to
+the host.
+
+This target emulates the `ST 32F429I Discovery
+kit <https://www.st.com/en/evaluation-tools/32f429idiscovery.html>`_ and is
+compatible with the :ref:`target-stm32f429i-disc1` Pigweed target. The
+configuration defines a ``serial0`` channel as the serial port identified as
+``sysbus.usart1`` in the renode machine definition script.
+
 -------------------
 Run target binaries
 -------------------
