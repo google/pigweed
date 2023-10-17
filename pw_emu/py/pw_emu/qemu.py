@@ -155,7 +155,7 @@ class QemuLauncher(Launcher):
                     raise InvalidChannelType(chan_type)
                 backend = 'pty'
             elif chan_type == 'tcp':
-                backend = 'tcp:localhost:0,server=on,wait=off'
+                backend = 'tcp:localhost:0,ipv4=on,server=on,wait=off'
             else:
                 raise InvalidChannelType(chan_type)
             self._start_cmd.extend([f'-{chan}', backend])
@@ -195,7 +195,7 @@ class QemuLauncher(Launcher):
                 if chan_type == 'pty':
                     backend = 'pty'
                 elif chan_type == 'tcp':
-                    backend = 'tcp:localhost:0,server=on,wait=off'
+                    backend = 'tcp:localhost:0,ipv4=on,server=on,wait=off'
                 else:
                     raise InvalidChannelType(chan_type)
                 self._start_cmd.extend(['-serial', backend])
@@ -274,7 +274,7 @@ class QemuLauncher(Launcher):
             self._start_cmd.extend(args.split(' '))
 
         # initial/bootstrap qmp connection
-        self._qmp_init_sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        self._qmp_init_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._qmp_init_sock.bind(('localhost', 0))
         port = self._qmp_init_sock.getsockname()[1]
         self._qmp_init_sock.listen()

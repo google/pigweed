@@ -164,7 +164,7 @@ class TestQemuChannelsTcp(TestQemu):
 
     def test_get_channel_addr(self) -> None:
         host, port = self._emu.get_channel_addr('test_uart')
-        sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((host, port))
         sock.close()
 
@@ -251,13 +251,13 @@ class TestQemuTargetChannelsMixed(ConfigHelperWithEmulator):
 
     def test_uart0_addr(self) -> None:
         host, port = self._emu.get_channel_addr('test_uart0')
-        sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((host, port))
         sock.close()
 
     def test_uart1_addr(self) -> None:
         host, port = self._emu.get_channel_addr('test_uart1')
-        sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((host, port))
         sock.close()
 
