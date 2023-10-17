@@ -122,7 +122,7 @@ Most changes to Pigweed should have an associated documentation change.
 Building
 ^^^^^^^^
 To build the documentation, follow the :ref:`getting
-started<docs-getting-started>` guide so you can build Pigweed. Then:
+started<docs-get-started-upstream>` guide so you can build Pigweed. Then:
 
 #. Change to your checkout directory and ``. activate.sh`` if necessary
 #. Run ``pw watch out`` to build the code, run tests, and build docs

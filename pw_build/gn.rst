@@ -13,7 +13,7 @@ Pigweed.
 
 Building upstream Pigweed
 -------------------------
-See Pigweed's :ref:`docs-getting-started` guide for a high-level introduction
+See Pigweed's :ref:`docs-get-started-upstream` guide for a high-level introduction
 to using the GN build.
 
 Pigweed's root ``BUILD.gn`` file contains a variety of groups to help you

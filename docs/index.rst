@@ -8,7 +8,7 @@
   :hidden:
 
   Home <self>
-  docs/getting_started
+  docs/get_started/index
   docs/concepts/index
   targets
   Modules <module_guides>
@@ -70,7 +70,7 @@ Getting Started
 Check out `Pigweed Sample Project <https://pigweed.googlesource.com/pigweed/sample_project/+/main/README.md>`_
 to see how to use Pigweed as a library in your broader project.
 
-Visit the :ref:`docs-getting-started` guide to learn how to bootstrap and
+Visit the :ref:`docs-get-started-upstream` guide to learn how to bootstrap and
 activate a Pigweed environment, build Pigweed for a specific host or device,
 run tests, and more.
 

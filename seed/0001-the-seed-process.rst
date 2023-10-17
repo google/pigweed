@@ -91,7 +91,7 @@ Process
 Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
 
 #. If you haven't already, clone the Pigweed repository and set it up locally,
-   following the :ref:`docs-getting-started` guide.
+   following the :ref:`docs-get-started-upstream` guide.
 
 #. Claim a number for your SEED. This should be the next sequential number
    listed within the `SEED index`_'s ``toctree`` table. (We will use 5309 for

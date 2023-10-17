@@ -1,8 +1,8 @@
-.. _docs-getting-started:
+.. _docs-get-started-upstream:
 
-===============
-Getting Started
-===============
+=============================================
+Get Started With Upstream Pigweed Development
+=============================================
 This guide will walk you through the typical upstream development workflow.
 
 .. note::
@@ -174,7 +174,7 @@ bootstrap may take several minutes to complete, so please be patient.
 
 Below is a real-time demo with roughly what you should expect to see as output:
 
-.. image:: images/pw_env_setup_demo.gif
+.. image:: ../images/pw_env_setup_demo.gif
   :width: 800
   :alt: build example using pw watch
 
@@ -260,7 +260,7 @@ save the file.
 
 See below for a demo of this in action:
 
-.. image:: images/pw_watch_build_demo.gif
+.. image:: ../images/pw_watch_build_demo.gif
   :width: 800
   :alt: build example using pw watch
 
@@ -274,7 +274,7 @@ failure.
 To see a test failure, modify ``pw_status/status_test.cc`` to fail by changing
 one of the strings in the "KnownString" test.
 
-.. image:: images/pw_watch_test_demo.gif
+.. image:: ../images/pw_watch_test_demo.gif
   :width: 800
   :alt: example test failure using pw watch
 
@@ -330,7 +330,7 @@ updates to ensure you have permissions to use the USB device. For example, on
 Linux you may need to update your udev rules and ensure you're in the plugdev
 and dialout groups.
 
-.. image:: images/stm32f429i-disc1_connected.jpg
+.. image:: ../images/stm32f429i-disc1_connected.jpg
   :width: 800
   :alt: development boards connected via USB
 
@@ -367,7 +367,7 @@ will be run across the attached boards!
 
 See the demo below for an example of what this all looks like put together:
 
-.. image:: images/pw_watch_on_device_demo.gif
+.. image:: ../images/pw_watch_on_device_demo.gif
   :width: 800
   :alt: pw watch running on-device tests
 
