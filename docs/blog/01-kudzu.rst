@@ -22,7 +22,6 @@ Pigweed Eng Blog #1: Kudzu
     :img-background: https://storage.googleapis.com/pigweed-media/kudzu-finished-photo-diagonal.jpg
     :link: https://storage.googleapis.com/pigweed-media/kudzu-finished-photo-diagonal.jpg
     :img-alt: A single Kudzu badge face-up on a table viewed at a diagonal.
-    :class-card: sd-text-black
 
 ----------------------------
 It all started so innocently
@@ -147,7 +146,6 @@ open source libraries.
    :img-top: https://storage.googleapis.com/pigweed-media/kudzu-schematic.png
    :link: https://storage.googleapis.com/pigweed-media/kudzu-schematic.png
    :img-alt: A screenshot of Kudzu's schematic.
-   :class-card: sd-text-black
    :text-align: center
 
    Kudzu schematic
@@ -163,7 +161,6 @@ we found in order from least to most crushing are:
    :img-top: https://storage.googleapis.com/pigweed-media/kudzu-display-connector.jpeg
    :link: https://storage.googleapis.com/pigweed-media/kudzu-display-connector.jpeg
    :img-alt: The reworked display connector with many bodge wires.
-   :class-card: sd-text-black
    :text-align: center
 
    The reworked display connector and the unpopulated footprint for the "one more thing"
@@ -195,7 +192,6 @@ and get them in team members' hands on Wednesday.
    :img-top: https://storage.googleapis.com/pigweed-media/kudzu-pnp.jpg
    :link: https://storage.googleapis.com/pigweed-media/kudzu-pnp.jpg
    :img-alt: A photo of the Opulo LumenPnP
-   :class-card: sd-text-black
    :text-align: center
 
    Our robotic help (Opulo LumenPnP)
@@ -213,13 +209,11 @@ Photos
       :img-background: https://storage.googleapis.com/pigweed-media/kudzu-finished-photo-diagonal.jpg
       :link: https://storage.googleapis.com/pigweed-media/kudzu-finished-photo-diagonal.jpg
       :img-alt: A single Kudzu badge face-up on a table viewed at a diagonal.
-      :class-card: sd-text-black
 
    .. grid-item-card::
       :img-background: https://storage.googleapis.com/pigweed-media/kudzu-finished-photo-back.jpg
       :link: https://storage.googleapis.com/pigweed-media/kudzu-finished-photo-back.jpg
       :img-alt: A single Kudzu badge face-down on a table viewed at a diagonal.
-      :class-card: sd-text-black
 
 .. grid:: 1 1 2 2
 
@@ -227,19 +221,16 @@ Photos
       :img-background: https://storage.googleapis.com/pigweed-media/kudzu-finished-photo-top-down.jpg
       :link: https://storage.googleapis.com/pigweed-media/kudzu-finished-photo-top-down.jpg
       :img-alt: A single Kudzu badge face-up on a table viewed from above.
-      :class-card: sd-text-black
 
    .. grid-item-card::
       :img-background: https://storage.googleapis.com/pigweed-media/kudzu-finished-photo-front-standing.jpg
       :link: https://storage.googleapis.com/pigweed-media/kudzu-finished-photo-front-standing.jpg
       :img-alt: A single Kudzu badge standing up on a table viewed from the front.
-      :class-card: sd-text-black
 
 .. card::
    :img-top: https://storage.googleapis.com/pigweed-media/kudzu-badges.jpg
    :link: https://storage.googleapis.com/pigweed-media/kudzu-badges.jpg
    :img-alt: A photo of 6 of the Kudzu badges
-   :class-card: sd-text-black
    :text-align: center
 
    Six Kudzu badges for Maker Faire 2023
