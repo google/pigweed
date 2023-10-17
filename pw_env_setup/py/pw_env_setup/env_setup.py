@@ -864,11 +864,19 @@ def parse(argv=None):
         required=not project_root,
     )
 
+    default_cipd_cache_dir = os.environ.get(
+        'CIPD_CACHE_DIR', os.path.expanduser('~/.cipd-cache-dir')
+    )
+    if 'PW_NO_CIPD_CACHE_DIR' in os.environ:
+        default_cipd_cache_dir = None
+
+    parser.add_argument('--cipd-cache-dir', default=default_cipd_cache_dir)
+
     parser.add_argument(
-        '--cipd-cache-dir',
-        default=os.environ.get(
-            'CIPD_CACHE_DIR', os.path.expanduser('~/.cipd-cache-dir')
-        ),
+        '--no-cipd-cache-dir',
+        action='store_const',
+        const=None,
+        dest='cipd_cache_dir',
     )
 
     parser.add_argument(

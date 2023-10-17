@@ -307,7 +307,8 @@ def update(  # pylint: disable=too-many-locals
     if env_vars:
         env_vars.prepend('PATH', root_install_dir)
         env_vars.set('PW_CIPD_INSTALL_DIR', root_install_dir)
-        env_vars.set('CIPD_CACHE_DIR', cache_dir)
+        if cache_dir:
+            env_vars.set('CIPD_CACHE_DIR', cache_dir)
 
     pw_root = None
 
@@ -334,11 +335,12 @@ def update(  # pylint: disable=too-many-locals
         'debug',
         '-json-output',
         os.path.join(root_install_dir, 'packages.json'),
-        '-cache-dir',
-        cache_dir,
         '-max-threads',
         '0',  # 0 means use CPU count.
     ]
+
+    if cache_dir:
+        cmd.extend(('-cache-dir', cache_dir))
 
     cipd_service_account = None
     if env_vars:

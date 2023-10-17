@@ -69,6 +69,7 @@ def pigweed_environment_parser() -> envparse.EnvironmentParser:
     parser.add_var('PW_CONSOLE_CONFIG_FILE')
     parser.add_var('PW_ENVIRONMENT_NO_ERROR_ON_UNRECOGNIZED')
 
+    parser.add_var('PW_NO_CIPD_CACHE_DIR')
     parser.add_var('PW_CIPD_SERVICE_ACCOUNT_JSON')
 
     # RBE environment variables

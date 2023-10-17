@@ -548,6 +548,9 @@ never need to set these.
   Location of CIPD cache dir. Read by CIPD, but if unset will be defaulted to
   ``$HOME/.cipd-cache-dir``.
 
+``PW_NO_CIPD_CACHE_DIR``
+  Disables the CIPD cache.
+
 ``PW_ACTIVATE_SKIP_CHECKS``
   If set, skip running ``pw doctor`` at end of bootstrap/activate. Intended to
   be used by automated tools but not interactively.
