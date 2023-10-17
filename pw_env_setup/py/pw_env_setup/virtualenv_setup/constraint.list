@@ -79,6 +79,7 @@ sphinxcontrib-qthelp==1.0.3
 sphinxcontrib-serializinghtml==1.1.5
 sphinx-copybutton==0.5.1
 sphinx-design==0.5.0
+sphinx-sitemap==2.5.1
 toml==0.10.2
 tomlkit==0.11.6
 traitlets==5.1.1
