@@ -1472,54 +1472,54 @@ struct LELongTermKeyRequestSubevent:
 struct LEExtendedAdvertisingReportData:
   0     [+2]  bits:
 
-    0     [+7]                        LEExtendedAdvertisingEventType  event_type
+    0     [+LEExtendedAdvertisingEventType.$size_in_bits]  LEExtendedAdvertisingEventType  event_type
 
-  $next [+1]                          hci.LEAddressType               address_type
+  $next [+1]                                               hci.LEAddressType               address_type
     -- Address type of the advertiser.
 
-  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                      address
+  $next [+hci.BdAddr.$size_in_bytes]                       hci.BdAddr                      address
     -- Public Device Address, Random Device Address, Public Identity Address or
     -- Random (static) Identity Address of the advertising device.
 
-  $next [+1]                          hci.LEPrimaryAdvertisingPHY     primary_phy
+  $next [+1]                                               hci.LEPrimaryAdvertisingPHY     primary_phy
     -- Indicates the PHY used to send the advertising PDU on the primary advertising
     -- channel. Legacy PDUs always use LE_1M. NONE, LE_2M, and LE_CODED_S2 are excluded.
 
-  $next [+1]                          hci.LESecondaryAdvertisingPHY   secondary_phy
+  $next [+1]                                               hci.LESecondaryAdvertisingPHY   secondary_phy
     -- Indicates the PHY used to send the advertising PDU(s), if any, on the secondary
     -- advertising channel. A value of NONE means that no packets were received on the
     -- secondary advertising channel.
 
-  $next [+1]                          UInt                            advertising_sid
+  $next [+1]                                               UInt                            advertising_sid
     -- Value of the Advertising SID subfield in the ADI field of the PDU. A value of
     -- 0xFF means no ADI field provided.
     [requires: 0x00 <= this <= 0x0F || this == 0xFF]
 
-  $next [+1]                          UInt                            tx_power
+  $next [+1]                                               UInt                            tx_power
     -- Units: dBm. A value of 0x7F means Tx Power information is not available.
     [requires: -127 <= this <= 20 || this == 0x7F]
 
-  $next [+1]                          Int                             rssi
+  $next [+1]                                               Int                             rssi
     -- Units: dBm. A value of 0x7F means RSSI is not available.
     [requires: -127 <= this <= 20 || this == 0x7F]
 
-  $next [+2]                          UInt                            periodic_advertising_interval
+  $next [+2]                                               UInt                            periodic_advertising_interval
     -- 0x0000: No periodic advertising.
     -- 0xXXXX:
     --   Time = N * 1.25 ms
     --   Time Range: 7.5 ms to 81,918.75 s
     [requires: 0x0006 <= this <= 0xFFFF || this == 0x0000]
 
-  $next [+1]                          LEDirectAddressType             direct_address_type
+  $next [+1]                                               LEDirectAddressType             direct_address_type
 
-  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                      direct_address
+  $next [+hci.BdAddr.$size_in_bytes]                       hci.BdAddr                      direct_address
     -- TargetA field in the advertisement or either Public Identity Address or Random (static)
     -- Identity Address of the target device.
 
-  $next [+1]                          UInt                            data_length
+  $next [+1]                                               UInt                            data_length
     -- Length of the |data| field.
 
-  $next [+data_length]                UInt:8[data_length]             data
+  $next [+data_length]                                     UInt:8[data_length]             data
     -- |data_length| octets of advertising or scan response data formatted as defined in
     -- [Vol 3] Part C, Section 11. Note: Each element of this array has a variable length.
 
