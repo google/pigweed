@@ -24,7 +24,6 @@ from threading import Thread
 
 
 def _tcp_thread(sock: socket.socket) -> None:
-    sock.listen()
     conn, _ = sock.accept()
     while True:
         data = conn.recv(1)
@@ -84,6 +83,7 @@ def main() -> None:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.bind(('localhost', 0))
         port = sock.getsockname()[1]
+        sock.listen()
         with open(os.path.join(args.working_dir, chan), 'w') as file:
             file.write(str(port))
         thread = Thread(target=_tcp_thread, args=(sock,))
