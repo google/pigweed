@@ -22,6 +22,7 @@ from typing import (
     Generic,
     IO,
     List,
+    Literal,
     Mapping,
     Optional,
     TypeVar,
@@ -205,9 +206,7 @@ def strict_bool(value: str) -> bool:
     )
 
 
-# TODO(mohrr) Switch to Literal when no longer supporting Python 3.7.
-# OpenMode = Literal['r', 'rb', 'w', 'wb']
-OpenMode = str
+OpenMode = Literal['r', 'rb', 'w', 'wb']
 
 
 class FileType:
