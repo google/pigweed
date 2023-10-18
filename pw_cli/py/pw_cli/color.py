@@ -78,4 +78,11 @@ def colors(enabled: Optional[bool] = None) -> Union[_Color, _NoColor]:
         kernel32 = ctypes.windll.kernel32  # type: ignore
         kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
 
+    # These are semi-standard ways to turn colors off or on for many projects.
+    # See https://bixense.com/clicolors/ and https://no-color.org/ for more.
+    if 'NO_COLOR' in os.environ:
+        enabled = False
+    elif 'CLICOLOR_FORCE' in os.environ:
+        enabled = True
+
     return _Color() if enabled else _NoColor()
