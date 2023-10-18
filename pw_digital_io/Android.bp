@@ -1,0 +1,53 @@
+// Copyright 2023 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+
+package {
+    default_applicable_licenses: ["external_pigweed_license"],
+}
+
+genrule {
+    name: "pw_digital_io_proto_with_prefix",
+    defaults: ["pw_rpc_add_prefix_to_proto"],
+    srcs: [ "digital_io.proto" ],
+    out: [ "pw_digital_io/digital_io.proto" ],
+}
+
+genrule {
+    name: "pw_digital_io_pwpb_rpc_header",
+    defaults: ["pw_rpc_generate_pwpb_rpc_header_with_prefix"],
+    srcs: [":pw_digital_io_proto_with_prefix"],
+    out: ["pw_digital_io/digital_io.rpc.pwpb.h"],
+}
+
+genrule {
+    name: "pw_digital_io_pwpb_proto_header",
+    defaults: ["pw_rpc_generate_pwpb_proto_with_prefix"],
+    srcs: [":pw_digital_io_proto_with_prefix"],
+    out: ["pw_digital_io/digital_io.pwpb.h"],
+}
+
+cc_library_headers {
+    name: "pw_digital_io_service_pwpb_headers",
+    cpp_std: "c++20",
+    vendor_available: true,
+    host_supported: true,
+    generated_headers: [
+        "pw_digital_io_pwpb_proto_header",
+        "pw_digital_io_pwpb_rpc_header",
+    ],
+    export_generated_headers: [
+        "pw_digital_io_pwpb_proto_header",
+        "pw_digital_io_pwpb_rpc_header",
+    ],
+}
