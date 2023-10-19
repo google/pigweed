@@ -24,3 +24,4 @@ All pending, active, and resolved SEEDs are listed below.
   0112: Async Poll Model <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168337>
   0113: Modular Bazel C/C++ toolchain API <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/173453>
   0114: Channels <http://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175471>
+  0115: pw_sensor Sensors <http://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175479>
