@@ -13,6 +13,7 @@
   targets
   Modules <module_guides>
   docs/module_structure
+  docs/facades
   changelog
   glossary
   Mailing List <https://groups.google.com/forum/#!forum/pigweed>

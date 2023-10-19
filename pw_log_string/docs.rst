@@ -20,6 +20,8 @@ as the backend for ``pw_log`` via ``pw_log_string``. For example it can be
 useful to mix tokenized and string based logging in case you have a C ABI where
 tokenization can not be used on the other side.
 
+.. _module-pw_log_string-get-started-gn:
+
 ----------------
 Get started (GN)
 ----------------

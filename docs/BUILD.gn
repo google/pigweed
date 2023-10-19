@@ -54,6 +54,7 @@ pw_doc_group("core_docs") {
     "contributing.rst",
     "editors.rst",
     "embedded_cpp_guide.rst",
+    "facades.rst",
     "faq.rst",
     "get_started/bazel.rst",
     "get_started/index.rst",
