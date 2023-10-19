@@ -140,7 +140,7 @@ class RenodeLauncher(Launcher):
         assert isinstance(robot, Handles.TcpChannel)
 
         # renode is slow to start especially during host load
-        deadline = time.monotonic() + 60
+        deadline = time.monotonic() + 120
         connected = False
         while time.monotonic() < deadline:
             try:
