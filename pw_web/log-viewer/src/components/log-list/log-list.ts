@@ -223,7 +223,7 @@ export class LogList extends LitElement {
           columnValue = `${col.manualWidth}px`;
         } else {
           if (i === 0) {
-            columnValue = '3.25rem';
+            columnValue = '3rem';
           } else {
             const chWidth = col.characterLength;
             const padding = 34;
@@ -523,7 +523,7 @@ export class LogList extends LitElement {
 
       return html`
         <td ?hidden=${!isVisible}>
-          <div class="cell-content cell-content--icon">
+          <div class="cell-content">
             <md-icon
               class="cell-icon"
               title="${toTitleCase(field.value.toString())}"

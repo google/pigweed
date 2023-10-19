@@ -88,9 +88,9 @@ export const styles = css`
     --icon-color: var(--sys-log-viewer-color-debug);
   }
 
-  .log-row--warning .cell-content--icon,
-  .log-row--error .cell-content--icon,
-  .log-row--critical .cell-content--icon {
+  .log-row--warning .cell-icon,
+  .log-row--error .cell-icon,
+  .log-row--critical .cell-icon {
     color: var(--icon-color);
   }
 
@@ -138,7 +138,7 @@ export const styles = css`
     display: block;
     grid-row: 1;
     overflow: hidden;
-    padding: 0.5rem 1rem;
+    padding: var(--sys-log-viewer-table-cell-padding);
     text-align: left;
     text-overflow: ellipsis;
   }
@@ -212,10 +212,6 @@ export const styles = css`
     width: 1rem;
   }
 
-  .cell-content--icon {
-    padding-top: 0.125rem;
-  }
-
   .cell-icon {
     display: block;
     font-variation-settings:
@@ -223,8 +219,11 @@ export const styles = css`
       'wght' 400,
       'GRAD' 200,
       'opsz' 58;
-    font-size: 1.25rem;
+    font-size: var(--sys-log-viewer-table-cell-icon-size);
     user-select: none;
+    display: grid;
+    place-content: center;
+    place-items: center;
   }
 
   .overflow-indicator {
@@ -268,8 +267,8 @@ export const styles = css`
 
   mark {
     background-color: var(--sys-log-viewer-color-table-mark);
-    border-radius: 2px;
-    color: var(--sys-log-viewer-color-table-mark);
+    border-radius: 4px;
+    color: var(--sys-log-viewer-color-table-mark-text);
     outline: 1px solid var(--sys-log-viewer-color-table-mark);
   }
 

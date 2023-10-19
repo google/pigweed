@@ -43,6 +43,10 @@ export const styles = css`
     --sys-log-viewer-height: 100%;
     --sys-log-viewer-view-outline-width: 1px;
     --sys-log-viewer-view-corner-radius: 0.5rem;
+
+    /* Log List */
+    --sys-log-viewer-table-cell-padding: 0.375rem 0.75rem;
+    --sys-log-viewer-table-cell-icon-size: 1.125rem;
   }
 
   .grid-container {
