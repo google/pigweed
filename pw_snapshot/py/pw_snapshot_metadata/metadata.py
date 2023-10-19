@@ -75,7 +75,7 @@ class MetadataProcessor:
     def __init__(
         self,
         metadata: snapshot_metadata_pb2.Metadata,
-        tokenizer_db: Optional[pw_tokenizer.Detokenizer],
+        tokenizer_db: Optional[pw_tokenizer.Detokenizer] = None,
     ):
         self._metadata = metadata
         self._tokenizer_db = (

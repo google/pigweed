@@ -147,6 +147,22 @@ class MetadataProcessorTest(unittest.TestCase):
         )
         self.assertEqual(expected, str(meta))
 
+    def test_no_token_db(self):
+        meta = MetadataProcessor(self.snapshot.metadata)
+        expected = '\n'.join(
+            (
+                'Snapshot capture reason:',
+                '    $w8SbOg==',
+                '',
+                'Reason token:      0x3a9bc4c3',
+                'Project name:      $IwkXAQ==',
+                'Device:            hyper-fast-gshoe',
+                'Device FW version: gShoe-debug-1.2.1-6f23412b+',
+                'Snapshot UUID:     00000001',
+            )
+        )
+        self.assertEqual(expected, str(meta))
+
     def test_serialized_snapshot(self):
         self.snapshot.tags['type'] = 'obviously a crash'
         expected = '\n'.join(

@@ -17,6 +17,8 @@
 import unittest
 from pw_thread.thread_analyzer import ThreadInfo, ThreadSnapshotAnalyzer
 from pw_thread_protos import thread_pb2
+import pw_tokenizer
+from pw_tokenizer import tokens
 
 
 class ThreadInfoTest(unittest.TestCase):
@@ -291,6 +293,91 @@ class ThreadSnapshotAnalyzerTest(unittest.TestCase):
         # Ensure the active thread is found.
         self.assertEqual(analyzer.active_thread(), temp_thread)
         self.assertEqual(str(ThreadSnapshotAnalyzer(snapshot)), expected)
+
+    def test_tokenized_thread_name(self):
+        """Ensures a tokenized thread name is detokenized."""
+        snapshot = thread_pb2.SnapshotThreadInfo()
+        detokenizer = pw_tokenizer.Detokenizer(
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(
+                        0x46BE7497, 'The thread for Kuzco'
+                    ),
+                ]
+            )
+        )
+
+        temp_thread = thread_pb2.Thread()
+        temp_thread.name = b'\x97\x74\xBE\x46'
+        snapshot.threads.append(temp_thread)
+        temp_thread.name = b'\x5D\xA8\x66\xAE'
+        snapshot.threads.append(temp_thread)
+
+        # pylint: disable=line-too-long
+        expected = '\n'.join(
+            (
+                'Thread State',
+                '  2 threads running.',
+                '',
+                'Thread (UNKNOWN): The thread for Kuzco',
+                'Est CPU usage: unknown',
+                'Stack info',
+                '  Current usage:   0x???????? - 0x???????? (size unknown)',
+                '  Est peak usage:  size unknown',
+                '  Stack limits:    0x???????? - 0x???????? (size unknown)',
+                '',
+                'Thread (UNKNOWN): $Xahmrg==',
+                'Est CPU usage: unknown',
+                'Stack info',
+                '  Current usage:   0x???????? - 0x???????? (size unknown)',
+                '  Est peak usage:  size unknown',
+                '  Stack limits:    0x???????? - 0x???????? (size unknown)',
+                '',
+            )
+        )
+        # pylint: enable=line-too-long
+        analyzer = ThreadSnapshotAnalyzer(snapshot, tokenizer_db=detokenizer)
+
+        # Ensure text dump matches expected contents.
+        self.assertEqual(str(analyzer), expected)
+
+    def test_no_db_tokenized_thread_name(self):
+        """Ensures a tokenized thread name is detokenized."""
+        snapshot = thread_pb2.SnapshotThreadInfo()
+
+        temp_thread = thread_pb2.Thread()
+        temp_thread.name = b'\x97\x74\xBE\x46'
+        snapshot.threads.append(temp_thread)
+        temp_thread.name = b'\x5D\xA8\x66\xAE'
+        snapshot.threads.append(temp_thread)
+
+        # pylint: disable=line-too-long
+        expected = '\n'.join(
+            (
+                'Thread State',
+                '  2 threads running.',
+                '',
+                'Thread (UNKNOWN): $l3S+Rg==',
+                'Est CPU usage: unknown',
+                'Stack info',
+                '  Current usage:   0x???????? - 0x???????? (size unknown)',
+                '  Est peak usage:  size unknown',
+                '  Stack limits:    0x???????? - 0x???????? (size unknown)',
+                '',
+                'Thread (UNKNOWN): $Xahmrg==',
+                'Est CPU usage: unknown',
+                'Stack info',
+                '  Current usage:   0x???????? - 0x???????? (size unknown)',
+                '  Est peak usage:  size unknown',
+                '  Stack limits:    0x???????? - 0x???????? (size unknown)',
+                '',
+            )
+        )
+        # pylint: enable=line-too-long
+        analyzer = ThreadSnapshotAnalyzer(snapshot)
+
+        # Ensure text dump matches expected contents.
+        self.assertEqual(str(analyzer), expected)
 
 
 if __name__ == '__main__':
