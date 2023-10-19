@@ -1550,10 +1550,10 @@ struct LEExtendedAdvertisingReportSubevent(reports_size: UInt:8):
 # TODO: b/265052417 - Definition needs to be added
 
 
-# 7.7.65.17 LE Scan Timeout event
-# HCI_LE_Scan_Timeout
-# TODO: b/265052417 - Definition needs to be added
-
+struct LEScanTimeoutSubevent:
+  -- 7.7.65.17 LE Scan Timeout event
+  -- HCI_LE_Scan_Timeout
+  0 [+LEMetaEvent.$size_in_bytes]  LEMetaEvent  le_meta_event
 
 # 7.7.65.18 LE Advertising Set Terminated event
 # HCI_LE_Advertising_Set_Terminated
