@@ -755,8 +755,11 @@ class Launcher(ABC):
             os._exit(0)
 
         try:
-            with open(self._path(f'{name}.pid'), 'w') as file:
+            # Make the pid file create and pid write operations atomic to avoid
+            # races with readers.
+            with open(self._path(f'{name}.pid.tmp'), 'w') as file:
                 file.write(f'{os.getpid()}')
+            os.rename(self._path(f'{name}.pid.tmp'), self._path(f'{name}.pid'))
             os.execvp(cmd[0], cmd)
         finally:
             os._exit(1)
