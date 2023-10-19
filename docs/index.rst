@@ -67,16 +67,10 @@ See :ref:`docs-changelog-latest` in our changelog for details.
 ---------------
 Getting Started
 ---------------
-Check out `Pigweed Sample Project <https://pigweed.googlesource.com/pigweed/sample_project/+/main/README.md>`_
-to see how to use Pigweed as a library in your broader project.
-
-Visit the :ref:`docs-get-started-upstream` guide to learn how to bootstrap and
-activate a Pigweed environment, build Pigweed for a specific host or device,
-run tests, and more.
-
-Zephyr
-======
-See :ref:`docs-os-zephyr-get-started`.
+Check out our :ref:`docs-get-started` landing page. We've got a guide that
+shows you how to use Pigweed in a new, Bazel-based project (the recommended
+path), sample code for GN-based projects, a tutorial on getting set up to
+contribute to upstream Pigweed, and more.
 
 ------------------------
 What does Pigweed offer?

@@ -55,6 +55,7 @@ pw_doc_group("core_docs") {
     "editors.rst",
     "embedded_cpp_guide.rst",
     "faq.rst",
+    "get_started/bazel.rst",
     "get_started/index.rst",
     "get_started/upstream.rst",
     "infra/ci_cq_intro.rst",
