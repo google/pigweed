@@ -674,6 +674,12 @@ bits SupportedCommands(octet: UInt:8):
     0 [+1]  Flag  le_extended_create_connection_v2
     1 [+1]  Flag  le_set_periodic_advertising_parameters_v2
 
+
+enum LEChannelSelectionAlgorithm:
+  [maximum_bits: 8]
+  ALGORITHM1 = 0x00
+  ALGORITHM2 = 0x01
+
 # ========================= HCI Event packets ===========================
 # Core Spec v5.3 Vol 4, Part E, Section 7.7
 
@@ -1565,10 +1571,15 @@ struct LEScanTimeoutSubevent:
 # TODO: b/265052417 - Definition needs to be added
 
 
-# 7.7.65.20 LE Channel Selection Algorithm event
-# HCI_LE_Channel_Selection_Algorithm
-# TODO: b/265052417 - Definition needs to be added
+struct LEChannelSelectionAlgorithmSubevent:
+  -- 7.7.65.20 LE Channel Selection Algorithm event
+  -- HCI_LE_Channel_Selection_Algorithm
+  0     [+LEMetaEvent.$size_in_bytes]  LEMetaEvent                  le_meta_event
+  $next [+2]                           UInt                         connection_handle
+    -- Only the lower 12-bits are meaningful.
+    [requires: 0x0000 <= this <= 0x0EFF]
 
+  $next [+1]                           LEChannelSelectionAlgorithm  channel_selection_algorithm
 
 # 7.7.65.21 LE Connectionless IQ Report event
 # HCI_LE_Connectionless_IQ_Report
