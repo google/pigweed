@@ -59,6 +59,7 @@ pw_doc_group("core_docs") {
     "get_started/bazel.rst",
     "get_started/index.rst",
     "get_started/upstream.rst",
+    "glossary.rst",
     "infra/ci_cq_intro.rst",
     "infra/index.rst",
     "infra/rollers.rst",
@@ -66,6 +67,7 @@ pw_doc_group("core_docs") {
     "os/index.rst",
     "os/zephyr/index.rst",
     "os/zephyr/kconfig.rst",
+    "overview.rst",
     "size_optimizations.rst",
     "style_guide.rst",
   ]
@@ -237,7 +239,6 @@ pw_doc_gen("docs") {
     "automated_analysis.rst",
     "build_system.rst",
     "changelog.rst",
-    "glossary.rst",
     "index.rst",
     "module_guides.rst",
     "python_build.rst",

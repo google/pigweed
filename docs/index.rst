@@ -8,20 +8,18 @@
   :hidden:
 
   Home <self>
+  docs/overview
   docs/get_started/index
   docs/concepts/index
   targets
   Modules <module_guides>
   docs/module_structure
-  docs/facades
   changelog
-  glossary
   Mailing List <https://groups.google.com/forum/#!forum/pigweed>
   Chat Room <https://discord.gg/M9NSeTA>
   docs/os/index
   docs/size_optimizations
   Code Editor Support <docs/editors>
-  FAQ <docs/faq>
   third_party_support
   Source Code <https://cs.pigweed.dev/pigweed>
   Code Reviews <https://pigweed-review.googlesource.com>
