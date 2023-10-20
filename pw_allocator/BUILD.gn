@@ -157,6 +157,7 @@ pw_test_group("tests") {
     ":libc_allocator_test",
     ":null_allocator_test",
     ":split_free_list_allocator_test",
+    ":unique_ptr_test",
   ]
 }
 
@@ -239,6 +240,11 @@ pw_test("split_free_list_allocator_test") {
     dir_pw_bytes,
   ]
   sources = [ "split_free_list_allocator_test.cc" ]
+}
+
+pw_test("unique_ptr_test") {
+  deps = [ ":allocator_testing" ]
+  sources = [ "unique_ptr_test.cc" ]
 }
 
 pw_doc_group("docs") {

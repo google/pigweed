@@ -251,3 +251,14 @@ pw_add_test(pw_allocator.split_free_list_allocator_test
     modules
     pw_allocator
 )
+
+pw_add_test(pw_allocator.unique_ptr_test
+  SOURCES
+    unique_ptr_test.cc
+  PRIVATE_DEPS
+    pw_allocator.allocator
+    pw_allocator.allocator_testing
+  GROUPS
+    modules
+    pw_allocator
+)

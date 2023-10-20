@@ -287,3 +287,15 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+pw_cc_test(
+    name = "unique_ptr_test",
+    srcs = [
+        "unique_ptr_test.cc",
+    ],
+    deps = [
+        ":allocator",
+        ":allocator_testing",
+        "//pw_unit_test",
+    ],
+)

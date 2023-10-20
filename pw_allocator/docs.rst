@@ -44,6 +44,11 @@ Provided implementations of the ``Allocator`` interface include:
   large and small allocations between the front and back, respectively, of its
   memory region in order to reduce fragmentation.
 
+UniquePtr
+=========
+.. doxygenclass:: pw::allocator::UniquePtr
+   :members:
+
 Heap Poisoning
 ==============
 
