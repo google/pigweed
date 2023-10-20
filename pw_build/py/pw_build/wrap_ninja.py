@@ -249,7 +249,7 @@ class Ninja:
         self.lock = threading.Lock()
 
         # Launch ninja and configure pseudo-tty.
-        # pylint: disable-next=no-member,undefined-variable
+        # pylint: disable-next=no-member,undefined-variable,used-before-assignment
         ptty_parent, ptty_child = pty.openpty()  # type: ignore
         ptty_file = os.fdopen(ptty_parent, 'r')
         env = dict(os.environ)
