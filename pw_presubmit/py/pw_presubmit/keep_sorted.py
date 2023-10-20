@@ -181,7 +181,7 @@ class _FileSorter:
         if not block.allow_dupes:
             lines = list({x.full: x for x in lines}.values())
 
-        StrLinePair = Tuple[str, _Line]
+        StrLinePair = Tuple[str, _Line]  # pylint: disable=invalid-name
         sort_key_funcs: List[Callable[[StrLinePair], StrLinePair]] = []
 
         if block.ignored_prefixes:

@@ -508,8 +508,9 @@ def run_doctor(strict=False, checks=None):
         doctor.log.info(
             "Your environment setup has completed, but something isn't right "
             'and some things may not work correctly. You may continue with '
-            f'development, but please seek support at {new_bug_url} or by '
-            'reaching out to your team.'
+            'development, but please seek support at %s or by '
+            'reaching out to your team.',
+            new_bug_url,
         )
     else:
         doctor.log.info('Environment passes all checks!')
