@@ -21,7 +21,7 @@ All pending, active, and resolved SEEDs are listed below.
   0109-comms-buffers
   0110: Memory Allocation Interfaces <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168772>
   0111-build-systems
-  0112: Async Poll Model <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168337>
+  0112-async-poll
   0113: Modular Bazel C/C++ toolchain API <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/173453>
   0114: Channels <http://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175471>
   0115: pw_sensor Sensors <http://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175479>

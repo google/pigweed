@@ -29,6 +29,7 @@ pw_doc_group("docs") {
     ":0108",
     ":0109",
     ":0111",
+    ":0112",
   ]
 }
 
@@ -71,4 +72,8 @@ pw_doc_group("0109") {
 
 pw_doc_group("0111") {
   sources = [ "0111-build-systems.rst" ]
+}
+
+pw_doc_group("0112") {
+  sources = [ "0112-async-poll.rst" ]
 }
