@@ -26,7 +26,6 @@
   Issue Tracker <https://issues.pigweed.dev/issues?q=status:open>
   docs/contributing
   docs/infra/index
-  docs/code_of_conduct
   Automated Analysis <automated_analysis>
   Build System <build_system>
   SEEDs <seed/0000-index>

@@ -347,3 +347,4 @@ Presubmit flags
   embedded_cpp_guide
   style_guide
   code_reviews
+  code_of_conduct
