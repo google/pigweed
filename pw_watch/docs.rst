@@ -31,7 +31,7 @@ Our solution
 tooling but is focused around embedded development use cases. After changing
 source code, ``pw_watch`` can instantly  compile, flash, and run tests.
 
-.. figure:: doc_resources/pw_watch_test_demo2.gif
+.. figure:: https://storage.googleapis.com/pigweed-media/pw_watch_test_demo2.gif
    :width: 1420
    :alt: ``pw watch`` running in fullscreen mode and displaying errors
 
@@ -46,7 +46,7 @@ and verifying the test runs as expected. Once this is set up, you can attach
 multiple devices to run tests in a distributed manner to reduce the time it
 takes to run tests.
 
-.. image:: doc_resources/pw_watch_on_device_demo.gif
+.. figure:: https://storage.googleapis.com/pigweed-media/pw_watch_on_device_demo.gif
    :width: 800
    :alt: pw_watch running on-device tests
 

@@ -93,7 +93,7 @@ and verifying the test runs as expected. Once this is set up, you can attach
 multiple devices to run tests in a distributed manner to reduce the time it
 takes to run tests.
 
-.. image:: docs/images/pw_watch_on_device_demo.gif
+.. image:: https://storage.googleapis.com/pigweed-media/pw_watch_on_device_demo.gif
   :width: 800
   :alt: pw watch running on-device tests
 
@@ -111,7 +111,7 @@ With ``pw format``, you can format C, C++, Python, GN, and Go code according to
 configurations defined by your project. ``pw format`` leverages existing tools
 like ``clang-format``, and it’s simple to add support for new languages.
 
-.. image:: pw_presubmit/docs/pw_presubmit_demo.gif
+.. image:: https://storage.googleapis.com/pigweed-media/pw_presubmit_demo.gif
   :width: 800
   :alt: pw presubmit demo
 
@@ -142,7 +142,7 @@ turn inflates a virtual environment. The tooling is installed into your
 workspace, and makes no changes to your system. This tooling is designed to be
 reused by any project.
 
-.. image:: docs/images/pw_env_setup_demo.gif
+.. image:: https://storage.googleapis.com/pigweed-media/pw_env_setup_demo.gif
    :width: 800
    :alt: pw environment setup demo
 
@@ -162,7 +162,7 @@ build, the result is a flexible and powerful setup that enables easily
 developing code on your desktop (with tests), then running the same tests
 on-device.
 
-.. image:: docs/images/pw_status_test.png
+.. image:: https://storage.googleapis.com/pigweed-media/pw_status_test.png
    :width: 800
    :alt: pw_status test run natively on host
 

@@ -35,13 +35,6 @@ pw_doc_group("core_docs") {
     "$dir_pw_build/py/pw_build/generate_python_wheel_cache.py",
     "$dir_pw_build/python.gni",
     "$dir_pw_build/python_gn_args.gni",
-    "images/pw_env_setup_demo.gif",
-    "images/pw_status_test.png",
-    "images/pw_watch_build_demo.gif",
-    "images/pw_watch_on_device_demo.gif",
-    "images/pw_watch_test_demo.gif",
-    "images/pw_watch_test_demo2.gif",
-    "images/stm32f429i-disc1_connected.jpg",
     "layout/page.html",
     "run_doxygen.py",
   ]
