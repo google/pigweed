@@ -95,6 +95,8 @@ path is ``out/presubmit``.  A subdirectory is created for each presubmit step.
 This directory persists between presubmit runs and can be cleaned by deleting it
 or running ``pw presubmit --clean``.
 
+.. _module-pw_presubmit-presubmit-checks:
+
 Presubmit checks
 ================
 A presubmit check is defined as a function or other callable. The function must

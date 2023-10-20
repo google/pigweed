@@ -1,3 +1,5 @@
+.. _module-pw_build-bazel:
+
 Bazel
 =====
 Bazel is currently very experimental, and only builds for host and ARM Cortex-M
@@ -11,6 +13,8 @@ The common configuration for Bazel for all modules is in the ``pigweed.bzl``
 file. The built-in Bazel rules ``cc_binary``, ``cc_library``, and ``cc_test``
 are wrapped with ``pw_cc_binary``, ``pw_cc_library``, and ``pw_cc_test``.
 These wrappers add parameters to calls to the compiler and linker.
+
+.. _module-pw_build-bazel-pw_linker_script:
 
 pw_linker_script
 ----------------

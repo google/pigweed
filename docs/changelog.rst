@@ -5,16 +5,301 @@
 =====================
 What's New In Pigweed
 =====================
+
+----------------------------------------
+Discuss what's new with the Pigweed team
+----------------------------------------
+.. pigweed-live::
+
 .. _docs-changelog-latest:
+
+------------
+Oct 20, 2023
+------------
+
+.. changelog_highlights_start
+
+Highlights (Oct 5, 2023 to Oct 20, 2023):
+
+* ``pw_emu`` has launched! Check out :ref:`module-pw_emu` to get started.
+  See :ref:`seed-0108` for background.
+* :ref:`module-pw_log-tokenized-args` are now supported. See :ref:`seed-0105`
+  for background.
+* The new :cpp:class:`pw::allocator::UniquePtr` class offers a safer, simpler
+  RAII API for allocating individual values within an allocator.
+* A few SEEDs were accepted: :ref:`seed-0105`, :ref:`seed-0109`, and
+  :ref:`seed-0111`.
+* Lots of new docs, including a guide for
+  :ref:`getting started with Bazel <docs-get-started-bazel>`, a
+  conceptual explanation of :ref:`facades and backends <docs-facades>`,
+  and an eng blog post detailing :ref:`Kudzu <docs-blog-01-kudzu>`, an
+  electronic badge that the Pigweed team made for Maker Faire 2023.
+
+.. changelog_highlights_end
+
+Active SEEDs
+============
+Help shape the future of Pigweed! Please leave feedback on the following active RFCs (SEEDs):
+
+* `SEED-0103: pw_protobuf Object Model <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/133971>`__
+* `SEED-0106: Project Template <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/155430>`__
+* `SEED-0110: Memory Allocation Interfaces <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168772>`__
+* `SEED-0113: Modular Bazel C/C++ Toolchain API <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/173453>`__
+* `SEED-0114: Channels <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175471>`__
+* `SEED-0115: Sensors <http://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176760>`__
+
+Modules
+=======
+
+pw_allocator
+------------
+The new :cpp:class:`pw::allocator::UniquePtr` class offers a safer, simpler
+RAII API for allocating individual values within an allocator.
+
+* `Fix SplitFreeListAllocator region alignment <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175232>`__
+* `Add UniquePtr\<T\> <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176781>`__
+
+pw_async
+--------
+* `Add CMake support <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175475>`__
+
+pw_async_basic
+--------------
+* `Add missing include <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175476>`__
+* `Fix build error when using pw_async:heap_dispatcher <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/173480>`__
+
+pw_bluetooth
+------------
+* `Define LEChannelSelectionAlgorithmSubevent <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176577>`__
+* `Define LEScanTimeoutSubevent <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176575>`__
+  (issue `#265052417 <https://issues.pigweed.dev/issues/265052417>`__)
+* `Use $size_in_bits instead of hardcoding size <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176573>`__
+* `Switch from parameterized value to determining at run time <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176572>`__
+  (issue `#305975969 <https://issues.pigweed.dev/issues/305975969>`__)
+* `Fix size reports <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/173620>`__
+
+pw_build
+--------
+:ref:`module-pw_build-bazel-pw_linker_script` now describes how to work
+with linker scripts.
+
+* `Update pw_linker_script docs <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/174848>`__
+* `Move pw_linker_script rule definition <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/174872>`__
+
+pw_chre
+-------
+* `Remove TODOs for CHRE MacOS support <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175490>`__
+
+pw_cli
+------
+* `Honor NO_COLOR and CLICOLOR_FORCE <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176860>`__
+* `Use typing.Literal <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176778>`__
+
+pw_digital_io
+-------------
+* `Add Android.bp for proto/rpc <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176270>`__
+
+pw_emu
+------
+The module has launched! Check out :ref:`module-pw_emu` to get started.
+
+* `renode: Increase start timeout to 120s <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176865>`__
+* `Fix pid file race condition <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176782>`__
+* `mock_emu: start listening before making the port available <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176856>`__
+  (issue `#306155313 <https://issues.pigweed.dev/issues/306155313>`__)
+* `qemu: Force using IPv4 <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176430>`__
+  (issue `#305810466 <https://issues.pigweed.dev/issues/305810466>`__)
+* `Add renode support <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/173613>`__
+* `Add QEMU support <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/173612>`__
+* `core: Let the OS terminate foreground emulator processes <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175638>`__
+* `Add user APIs and the command line interface <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/173611>`__
+* `Add core components <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/173610>`__
+* `Add Emulators Frontend module boilerplate <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162096>`__
+
+pw_env_setup
+------------
+* `Allow disabling CIPD cache <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176650>`__
+* `Add prpc <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175236>`__
+
+pw_function
+-----------
+* `Move pw_function_CONFIG to .gni <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/173652>`__
+
+pw_hdlc
+-------
+:ref:`module-pw_hdlc-api-rpc` now has much more information on how to use
+``pw_hdlc`` for RPC in Python.
+
+* `Update Python RPC documents <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/174825>`__
+
+pw_i2c
+------
+* `Fix accidental c++2a <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176511>`__
+* `Add Android.bp for i2c proto/rpc <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176070>`__
+
+pw_kvs
+------
+The new ``FlashPartitionWithLogicalSectors`` variant of ``FlashPartition``
+supports combining multiple physical ``FlashMemory`` sectors into a single
+logical ``FlashPartition`` sector.
+
+* `Add FlashPartitionWithLogicalSectors <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/106917>`__
+
+pw_log_tokenized
+----------------
+:ref:`module-pw_log-tokenized-args` are now supported. See :ref:`seed-0105` for background.
+
+* `Add tokenized string args support to log backend <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/164514>`__
+
+pw_log_zephyr
+-------------
+* `Clean-up unused dependencies from TOKENIZED_LIB <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/174813>`__
+
+pw_minimal_cpp_stdlib
+---------------------
+* `Support additional libraries <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/173814>`__
+* `Add Zephyr Kconfig to enable include path <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/173653>`__
+
+pw_package
+----------
+* `Update boringssl commit & skip clang-tidy <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175016>`__
+* `Update Emboss commit <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/173619>`__
+
+pw_presubmit
+------------
+:ref:`module-pw_presubmit-presubmit-checks` has more guidance on when to use
+``--base`` and ``--full``.
+
+* `Add note about --full and --base <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175633>`__
+
+pw_snapshot
+-----------
+* `More detokenization tests <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176759>`__
+
+pw_spi
+------
+* `Fix cmake integration <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175190>`__
+
+pw_sync_zephyr
+--------------
+* `Add TimedThreadNotification::try_acquire_until <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175478>`__
+
+pw_system
+---------
+The ``Device`` class's constructor now accepts a ``logger`` argument
+that enables you to specify which logger should be used.
+
+* `Add option to pass logger to Device <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175075>`__
+
+pw_third_party_freertos
+-----------------------
+* `Add arm_cm7_not_r0p1 <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/172382>`__
+
+pw_thread
+---------
+* `More detokenization tests <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176759>`__
+
+pw_thread_freertos
+------------------
+* `Fix extra wakeups when detaching threads <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175310>`__
+  (issue `#303885539 <https://issues.pigweed.dev/issues/303885539>`__)
+
+pw_tokenizer
+------------
+:ref:`module-pw_tokenizer-get-started-integration` has new guidance around
+configuring linker scripts in Bazel.
+
+* `Expose linker_script in BUILD.bazel <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175590>`__
+
+pw_toolchain
+------------
+* `Exclude googletest from static analysis <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/173482>`__
+
+pw_transfer
+-----------
+* `Start the API reference <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/170011>`__
+  (issue `#299147635 <https://issues.pigweed.dev/issues/299147635>`__)
+
+pw_web
+------
+* `Reduce table cell padding <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176690>`__
+  (issue `#305022558 <https://issues.pigweed.dev/issues/305022558>`__)
+* `Fix invisible jump button <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175330>`__
+* `Enable manual color scheme setting <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/173630>`__
+  (issue `#301498553 <https://issues.pigweed.dev/issues/301498553>`__)
+
+Build
+=====
+* `Fix pw_BUILD_BROKEN_GROUPS <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176114>`__
+* `Update Android.bp <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175631>`__
+  (issue `#277108894 <https://issues.pigweed.dev/issues/277108894>`__)
+
+Bazel
+-----
+* `Don't autodetect C++ toolchain <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175613>`__
+  (issue `#304880653 <https://issues.pigweed.dev/issues/304880653>`__)
+* `Add O2 to arm_gcc toolchain <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175536>`__
+  (issue `#299994234 <https://issues.pigweed.dev/issues/299994234>`__)
+
+Targets
+=======
+* (rp2040_pw_system) `Enable time slicing <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175074>`__
+
+OS support
+==========
+* (zephyr) `Allow direct CMake inclusions <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175477>`__
+
+Docs
+====
+* `Move CoC to Contributors section of sitenav <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/177071>`__
+* `Create concepts section in sitenav <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/177037>`__
+* `Add facades and backends page <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/170602>`__
+* `Add Bazel getting started tutorial <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176319>`__
+* `Remove css class on Kudzu image captions <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176770>`__
+* `Kudzu photos <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176710>`__
+* `Refactor the getting started section <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176331>`__
+* `Add sitemap <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176492>`__
+* `Add hat tip for pixel doubling technique <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175639>`__
+* `Start eng blog and add Kudzu page <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175619>`__
+* `Add Pigweed Live directive <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/174892>`__
+* `Add builder viz to CI/CQ intro <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175414>`__
+  (issue `#302680656 <https://issues.pigweed.dev/issues/302680656>`__)
+* `Fix link <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175415>`__
+  (issue `#302680656 <https://issues.pigweed.dev/issues/302680656>`__)
+* `Add changelog highlight <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175231>`__
+* `Update changelog <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/174818>`__
+
+SEEDs
+=====
+A few SEEDs were accepted and a few more started.
+
+* (SEED-0105) `Add nested tokens to pw_tokenizer and pw_log <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/154190>`__
+* (SEED-0109) `Communication Buffers <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168357>`__
+* (SEED-0111) `Update status, add link to SEED-0113 <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176254>`__
+* (SEED-0111) `Make Bazel Pigweed's Primary Build System <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/171695>`__
+* (SEED-0113) `Claim SEED number (Modular Bazel C/C++ Toolchain API) <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175510>`__
+* (SEED-0114) `Claim SEED number (Channels) <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175412>`__
+* (SEED-0115) `Clain SEED number (Sensors) <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176763>`__
+
+Third party
+===========
+* (boringssl) `Remove crypto_sysrand.cc <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175017>`__
+* (fuchsia) `Copybara import <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/173651>`__
+* (fuchsia) `Update copybara with fit/defer.h <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/173481>`__
+
+Miscellaneous
+=============
+* `Update formatting for new clang version <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175311>`__
+* `Use C++20 everywhere <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/174630>`__
+  (issue `#303371098 <https://issues.pigweed.dev/issues/303371098>`__)
+* (revert) `Use .test convention" <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/171793>`__
+* `Add generated Emboss code <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176571>`__
 
 -----------
 Oct 6, 2023
 -----------
-.. changelog_highlights_start
-
 Highlights (Sep 21, 2023 to Oct 6, 2023):
 
-* ``pw_allocator`` got :ref:`a bunch of new APIs <docs-changelog-20231009-pw_allocator>`!
 * We expanded our RP2040 support. See the new :ref:`module-pw_chrono_rp2040`
   and :ref:`module-pw_digital_io_rp2040` modules.
 * The :ref:`new CancellableReader class in pw_hdlc <docs-changelog-20231009-pw_hdlc>`
@@ -25,13 +310,6 @@ Highlights (Sep 21, 2023 to Oct 6, 2023):
 * The Python backend for ``pw_tokenizer`` now supports :ref:`tokenizing strings as
   arguments <docs-changelog-20231009-pw_tokenizer>`.
 * The ``pigweed_config`` mechanism in Bazel is now officially retired.
-
-Please join us at the next Pigweed Live on **Monday, Oct 9 1PM PST** to
-discuss these changes and anything else on your mind. Join our
-`Discord <https://discord.gg/M9NSeTA>`_ and head over to the ``#pigweed-live``
-channel to get a link to the video meeting.
-
-.. changelog_highlights_end
 
 Active SEEDs
 ============
@@ -347,11 +625,6 @@ Highlights (Sep 07, 2023 to Sep 22, 2023):
   <docs-changelog-pw_varint-20230922>`.
 * The new :ref:`docs-code_reviews` document outlines the upstream Pigweed code
   review process.
-
-Please join us at the next Pigweed Live on **Monday, Sep 25 1PM PST** to
-discuss these changes and anything else on your mind. Join our
-`Discord <https://discord.gg/M9NSeTA>`_ and head over to the ``#pigweed-live``
-channel to get a link to the video meeting.
 
 Active SEEDs
 ============
@@ -747,10 +1020,6 @@ Highlights (Aug 25, 2023 to Sep 8, 2023):
 * SEED :ref:`seed-0108` has also been approved! Coming soon, the new ``pw_emu``
   module will make it easier to work with emulators.
 
-Please join us at the next `Pigweed Live <https://discord.gg/M9NSeTA>`_ on
-**Mon, Sep 11 1PM PST** to discuss All Things Pigweed. Go to the
-``#pigweed-live`` channel to get a link to the video meeting.
-
 Active SEEDs
 ============
 Help shape the future of Pigweed! Please leave feedback on the following active RFCs (SEEDs):
@@ -1041,11 +1310,6 @@ Highlights (Aug 11, 2023 to Aug 25, 2023):
   about the test run.
 * A new Ambiq Apollo4 target that uses the Ambiq Suite SDK and FreeRTOS
   has been added.
-
-Please join us at the next Pigweed Live on **Monday, Aug 28 1PM PST** to
-discuss these changes and anything else on your mind. Join our
-`Discord <https://discord.gg/M9NSeTA>`_ and head over to the ``#pigweed-live``
-channel to get a link to the video meeting.
 
 Active SEEDs
 ============
@@ -1350,11 +1614,6 @@ Highlights (Jul 27, 2023 to Aug 11, 2023):
   :ref:`module-pw_tokenizer` docs, migrating API references to Doxygen,
   fixing `longstanding docs site UI issues <https://issues.pigweed.dev/issues/292273650>`_,
   and more.
-
-Please join us at the next Pigweed Live on Monday, Aug 14 1PM PST to
-discuss these changes and anything else on your mind. Join our
-`Discord <https://discord.gg/M9NSeTA>`_ and head over to the ``#pigweed-live``
-channel to get a link to the video meeting.
 
 Active SEEDs
 ============

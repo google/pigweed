@@ -36,6 +36,8 @@ Here's an overview of what happens when ``pw_tokenizer`` is used:
 6. Off-device, the detokenizer tools use the token database to decode the
    strings to human-readable form.
 
+.. _module-pw_tokenizer-get-started-integration:
+
 Integrating with Bazel / GN / CMake projects
 ============================================
 Integrating ``pw_tokenizer`` requires a few steps beyond building the code. This
