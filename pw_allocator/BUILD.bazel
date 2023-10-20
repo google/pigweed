@@ -57,17 +57,18 @@ pw_cc_library(
 
 pw_cc_library(
     name = "block",
-    srcs = [
-        "block.cc",
-    ],
+    srcs = ["block.cc"],
     hdrs = [
         "public/pw_allocator/block.h",
     ],
     includes = ["public"],
     deps = [
         "//pw_assert",
+        "//pw_bytes",
+        "//pw_result",
         "//pw_span",
         "//pw_status",
+        "//third_party/fuchsia:stdcompat",
     ],
 )
 

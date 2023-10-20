@@ -69,10 +69,13 @@ pw_source_set("block") {
   configs = [ ":enable_heap_poison" ]
   public = [ "public/pw_allocator/block.h" ]
   public_deps = [
-    dir_pw_assert,
+    "$dir_pw_third_party/fuchsia:stdcompat",
+    dir_pw_bytes,
+    dir_pw_result,
     dir_pw_span,
     dir_pw_status,
   ]
+  deps = [ dir_pw_assert ]
   sources = [ "block.cc" ]
 }
 

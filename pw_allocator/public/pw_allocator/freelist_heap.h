@@ -24,6 +24,8 @@ namespace pw::allocator {
 
 class FreeListHeap {
  public:
+  using BlockType = Block<>;
+
   template <size_t kNumBuckets>
   friend class FreeListHeapBuffer;
   struct HeapStats {
@@ -44,7 +46,7 @@ class FreeListHeap {
   void LogHeapStats();
 
  private:
-  span<std::byte> BlockToSpan(Block* block) {
+  span<std::byte> BlockToSpan(BlockType* block) {
     return span<std::byte>(block->UsableSpace(), block->InnerSize());
   }
 

@@ -7,17 +7,15 @@ pw_allocator
 This module provides various building blocks
 for a dynamic allocator. This is composed of the following parts:
 
-- ``block``: An implementation of a linked list of memory blocks, supporting
-  splitting and merging of blocks.
+- ``block``: An implementation of a doubly-linked list of memory blocks,
+  supporting splitting and merging of blocks.
 - ``freelist``: A freelist, suitable for fast lookups of available memory chunks
   (i.e. ``block`` s).
 - ``allocator``: An interface for memory allocators. Several concrete
   implementations are also provided.
 
-Heap Integrity Check
-====================
-The ``Block`` class provides two check functions:
-
+Block
+=====
 .. doxygenclass:: pw::allocator::Block
    :members:
 

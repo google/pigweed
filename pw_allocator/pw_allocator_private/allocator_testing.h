@@ -48,6 +48,8 @@ class FakeAllocator : public Allocator {
   void ResetParameters();
 
  private:
+  using BlockType = Block<>;
+
   /// @copydoc Allocator::Query
   Status DoQuery(const void* ptr, size_t size, size_t alignment) const override;
 
@@ -63,7 +65,8 @@ class FakeAllocator : public Allocator {
                 size_t old_alignment,
                 size_t new_size) override;
 
-  Block* head_ = nullptr;
+  BlockType* begin_ = nullptr;
+  BlockType* end_ = nullptr;
   size_t allocate_size_ = 0;
   void* deallocate_ptr_ = nullptr;
   size_t deallocate_size_ = 0;

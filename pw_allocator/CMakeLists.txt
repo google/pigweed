@@ -49,9 +49,13 @@ pw_add_library(pw_allocator.block STATIC
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_assert
+    pw_bytes
+    pw_result
     pw_span
     pw_status
+    pw_third_party.fuchsia.stdcompat
+  PRIVATE_DEPS
+    pw_assert
   SOURCES
     block.cc
 )

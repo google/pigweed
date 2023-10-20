@@ -19,20 +19,19 @@
 
 namespace pw::allocator::test {
 
-static Block* NextBlock(Block* block) {
-  return block->Last() ? nullptr : block->Next();
-}
-
 Status FakeAllocator::Initialize(ByteSpan buffer) {
-  if (auto status = Block::Init(buffer, &head_); !status.ok()) {
-    return status;
+  auto result = BlockType::Init(buffer);
+  if (!result.ok()) {
+    return result.status();
   }
+  begin_ = *result;
+  end_ = begin_->Next();
   ResetParameters();
   return OkStatus();
 }
 
 void FakeAllocator::Exhaust() {
-  for (Block* block = head_; block != nullptr; block = NextBlock(block)) {
+  for (BlockType* block = begin_; block != end_; block = block->Next()) {
     block->MarkUsed();
   }
 }
@@ -47,18 +46,18 @@ void FakeAllocator::ResetParameters() {
 }
 
 Status FakeAllocator::DoQuery(const void* ptr, size_t size, size_t) const {
-  PW_CHECK(head_ != nullptr);
+  PW_CHECK(begin_ != nullptr);
   if (size == 0 || ptr == nullptr) {
     return Status::OutOfRange();
   }
   const auto* bytes = static_cast<const std::byte*>(ptr);
-  Block* block = Block::FromUsableSpace(const_cast<std::byte*>(bytes));
-  if (!block->IsValid()) {
+  BlockType* target = BlockType::FromUsableSpace(const_cast<std::byte*>(bytes));
+  if (!target->IsValid()) {
     return Status::OutOfRange();
   }
-  size = AlignUp(size, alignof(Block));
-  for (Block* curr = head_; curr != nullptr; curr = NextBlock(curr)) {
-    if (curr == block && curr->InnerSize() == size) {
+  size = AlignUp(size, BlockType::kAlignment);
+  for (BlockType* block = begin_; block != end_; block = block->Next()) {
+    if (block == target && block->InnerSize() == size) {
       return OkStatus();
     }
   }
@@ -66,36 +65,42 @@ Status FakeAllocator::DoQuery(const void* ptr, size_t size, size_t) const {
 }
 
 void* FakeAllocator::DoAllocate(size_t size, size_t) {
-  PW_CHECK(head_ != nullptr);
+  PW_CHECK(begin_ != nullptr);
   allocate_size_ = size;
-  for (Block* block = head_; block != nullptr; block = NextBlock(block)) {
-    Block* fragment = nullptr;
-    if (!block->Used() && block->Split(size, &fragment).ok()) {
-      block->MarkUsed();
-      return block->UsableSpace();
+  for (BlockType* block = begin_; block != end_; block = block->Next()) {
+    if (block->Used() || block->InnerSize() < size) {
+      continue;
     }
+    Result<BlockType*> result = BlockType::Split(block, size);
+    if (result.ok()) {
+      BlockType* next = *result;
+      BlockType::MergeNext(next).IgnoreError();
+    }
+    block->MarkUsed();
+    return block->UsableSpace();
   }
   return nullptr;
 }
 
 void FakeAllocator::DoDeallocate(void* ptr, size_t size, size_t alignment) {
-  PW_CHECK(head_ != nullptr);
+  PW_CHECK(begin_ != nullptr);
   deallocate_ptr_ = ptr;
   deallocate_size_ = size;
   if (!DoQuery(ptr, size, alignment).ok()) {
     return;
   }
-  Block* block = Block::FromUsableSpace(static_cast<std::byte*>(ptr));
+  BlockType* block = BlockType::FromUsableSpace(static_cast<std::byte*>(ptr));
   block->MarkFree();
-  block->MergeNext().IgnoreError();
-  block->MergePrev().IgnoreError();
+  BlockType::MergeNext(block).IgnoreError();
+  BlockType* prev = block->Prev();
+  BlockType::MergeNext(prev).IgnoreError();
 }
 
 bool FakeAllocator::DoResize(void* ptr,
                              size_t old_size,
                              size_t old_alignment,
                              size_t new_size) {
-  PW_CHECK(head_ != nullptr);
+  PW_CHECK(begin_ != nullptr);
   resize_ptr_ = ptr;
   resize_old_size_ = old_size;
   resize_new_size_ = new_size;
@@ -106,12 +111,13 @@ bool FakeAllocator::DoResize(void* ptr,
   if (old_size == new_size) {
     return true;
   }
-  Block* block = Block::FromUsableSpace(static_cast<std::byte*>(ptr));
+  BlockType* block = BlockType::FromUsableSpace(static_cast<std::byte*>(ptr));
   block->MarkFree();
-  block->MergeNext().IgnoreError();
-  Block* fragment = nullptr;
-  if (block->Split(new_size, &fragment) == Status::OutOfRange()) {
-    block->Split(old_size, &fragment).IgnoreError();
+  BlockType::MergeNext(block).IgnoreError();
+
+  Result<BlockType*> result = BlockType::Split(block, new_size);
+  if (!result.ok()) {
+    BlockType::Split(block, old_size).IgnoreError();
   }
   block->MarkUsed();
   return block->InnerSize() >= new_size;

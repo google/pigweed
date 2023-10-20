@@ -23,10 +23,12 @@ namespace pw::allocator {
 
 FreeListHeap::FreeListHeap(span<std::byte> region, FreeList& freelist)
     : freelist_(freelist), heap_stats_() {
-  Block* block;
+  auto result = BlockType::Init(region);
   PW_CHECK_OK(
-      Block::Init(region, &block),
+      result.status(),
       "Failed to initialize FreeListHeap region; misaligned or too small");
+  BlockType* block = *result;
+  block->CrashIfInvalid();
 
   freelist_.AddChunk(BlockToSpan(block))
       .IgnoreError();  // TODO: b/242598609 - Handle Status properly
@@ -46,15 +48,14 @@ void* FreeListHeap::Allocate(size_t size) {
   freelist_.RemoveChunk(chunk)
       .IgnoreError();  // TODO: b/242598609 - Handle Status properly
 
-  Block* chunk_block = Block::FromUsableSpace(chunk.data());
+  BlockType* chunk_block = BlockType::FromUsableSpace(chunk.data());
 
   chunk_block->CrashIfInvalid();
 
   // Split that chunk. If there's a leftover chunk, add it to the freelist
-  Block* leftover;
-  auto status = chunk_block->Split(size, &leftover);
-  if (status == PW_STATUS_OK) {
-    freelist_.AddChunk(BlockToSpan(leftover))
+  Result<BlockType*> result = BlockType::Split(chunk_block, size);
+  if (result.ok()) {
+    freelist_.AddChunk(BlockToSpan(*result))
         .IgnoreError();  // TODO: b/242598609 - Handle Status properly
   }
 
@@ -75,7 +76,7 @@ void FreeListHeap::Free(void* ptr) {
     return;
   }
 
-  Block* chunk_block = Block::FromUsableSpace(bytes);
+  BlockType* chunk_block = BlockType::FromUsableSpace(bytes);
   chunk_block->CrashIfInvalid();
 
   size_t size_freed = chunk_block->InnerSize();
@@ -86,8 +87,8 @@ void FreeListHeap::Free(void* ptr) {
   }
   chunk_block->MarkFree();
   // Can we combine with the left or right blocks?
-  Block* prev = chunk_block->Prev();
-  Block* next = nullptr;
+  BlockType* prev = chunk_block->Prev();
+  BlockType* next = nullptr;
 
   if (!chunk_block->Last()) {
     next = chunk_block->Next();
@@ -97,17 +98,15 @@ void FreeListHeap::Free(void* ptr) {
     // Remove from freelist and merge
     freelist_.RemoveChunk(BlockToSpan(prev))
         .IgnoreError();  // TODO: b/242598609 - Handle Status properly
-    chunk_block->MergePrev()
+    chunk_block = chunk_block->Prev();
+    BlockType::MergeNext(chunk_block)
         .IgnoreError();  // TODO: b/242598609 - Handle Status properly
-
-    // chunk_block is now invalid; prev now encompasses it.
-    chunk_block = prev;
   }
 
   if (next != nullptr && !next->Used()) {
     freelist_.RemoveChunk(BlockToSpan(next))
         .IgnoreError();  // TODO: b/242598609 - Handle Status properly
-    chunk_block->MergeNext()
+    BlockType::MergeNext(chunk_block)
         .IgnoreError();  // TODO: b/242598609 - Handle Status properly
   }
   // Add back to the freelist
@@ -139,7 +138,7 @@ void* FreeListHeap::Realloc(void* ptr, size_t size) {
     return nullptr;
   }
 
-  Block* chunk_block = Block::FromUsableSpace(bytes);
+  BlockType* chunk_block = BlockType::FromUsableSpace(bytes);
   if (!chunk_block->Used()) {
     return nullptr;
   }
