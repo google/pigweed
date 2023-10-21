@@ -18,6 +18,7 @@ import("$dir_pw_build/cc_blob_library.gni")
 import("$dir_pw_build/python.gni")
 import("$dir_pw_build/relative_source_file_names.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_toolchain/generate_toolchain.gni")
 import("$dir_pw_toolchain/traits.gni")
 import("$dir_pw_unit_test/test.gni")
 import("target_types.gni")
@@ -138,10 +139,16 @@ config("extra_strict_warnings") {
 # This config MUST NOT be used downstream to allow for warnings to be
 # added in the future without breaking downstream.
 config("internal_strict_warnings") {
-  cflags = [
-    "-Wextra-semi",
-    "-Wswitch-enum",
-  ]
+  cflags = [ "-Wswitch-enum" ]
+
+  # TODO: b/301262374 - Provide a better way to detect the compiler type.
+  if (defined(pw_toolchain_SCOPE.cc) &&
+      get_path_info(pw_toolchain_SCOPE.cc, "file") == "clang") {
+    cflags += [ "-Wextra-semi" ]
+  } else {
+    # TODO: b/306734552 - On GCC, this only works as a C++ flag.
+    cflags_cc = [ "-Wextra-semi" ]
+  }
 
   # TODO: b/243069432 - Enable pedantic warnings on Windows when they pass.
   if (host_os != "win") {
