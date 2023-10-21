@@ -11,7 +11,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "version:2@6.3.2.6"
+        "version:2@6.4.0.6"
       ],
       "version_file": ".versions/bazel.cipd_version"
     },
