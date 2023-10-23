@@ -110,6 +110,7 @@ declare_args() {
   dir_pw_minimal_cpp_stdlib =
       get_path_info("../pw_minimal_cpp_stdlib", "abspath")
   dir_pw_module = get_path_info("../pw_module", "abspath")
+  dir_pw_multibuf = get_path_info("../pw_multibuf", "abspath")
   dir_pw_multisink = get_path_info("../pw_multisink", "abspath")
   dir_pw_package = get_path_info("../pw_package", "abspath")
   dir_pw_perf_test = get_path_info("../pw_perf_test", "abspath")
@@ -272,6 +273,7 @@ declare_args() {
     dir_pw_metric,
     dir_pw_minimal_cpp_stdlib,
     dir_pw_module,
+    dir_pw_multibuf,
     dir_pw_multisink,
     dir_pw_package,
     dir_pw_perf_test,
@@ -424,6 +426,7 @@ declare_args() {
     "$dir_pw_metric:tests",
     "$dir_pw_minimal_cpp_stdlib:tests",
     "$dir_pw_module:tests",
+    "$dir_pw_multibuf:tests",
     "$dir_pw_multisink:tests",
     "$dir_pw_package:tests",
     "$dir_pw_perf_test:tests",
@@ -576,6 +579,7 @@ declare_args() {
     "$dir_pw_metric:docs",
     "$dir_pw_minimal_cpp_stdlib:docs",
     "$dir_pw_module:docs",
+    "$dir_pw_multibuf:docs",
     "$dir_pw_multisink:docs",
     "$dir_pw_package:docs",
     "$dir_pw_perf_test:docs",

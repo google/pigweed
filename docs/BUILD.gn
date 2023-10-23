@@ -164,6 +164,8 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_log_tokenized/public/pw_log_tokenized/base64.h",
   "$dir_pw_log_tokenized/public/pw_log_tokenized/handler.h",
   "$dir_pw_log_tokenized/public/pw_log_tokenized/metadata.h",
+  "$dir_pw_multibuf/public/pw_multibuf/chunk.h",
+  "$dir_pw_multibuf/public/pw_multibuf/multibuf.h",
   "$dir_pw_protobuf/public/pw_protobuf/find.h",
   "$dir_pw_random/public/pw_random/random.h",
   "$dir_pw_random/public/pw_random/xor_shift.h",

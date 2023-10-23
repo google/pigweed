@@ -1,0 +1,344 @@
+// Copyright 2023 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+#pragma once
+
+#include <optional>
+
+#include "pw_assert/assert.h"
+#include "pw_bytes/span.h"
+#include "pw_sync/mutex.h"
+
+namespace pw::multibuf {
+
+class ChunkRegionTracker;
+class OwnedChunk;
+
+/// A handle to a contiguous slice of data.
+///
+/// A ``Chunk`` is similar to a ``ByteSpan``, but is aware of the underlying
+/// memory allocation, and is able to split, shrink, and grow into neighboring
+/// empty space.
+///
+/// This class is optimized to allow multiple owners to write into neighboring
+/// regions of the same allocation. One important usecase for this is
+/// communication protocols which want to reserve space at the front or rear of
+/// a buffer for headers or footers.
+///
+/// In order to support zero-copy DMA of communications buffers, allocators can
+/// create properly-aligned ``Chunk`` regions in appropriate memory. The driver
+/// can then ``DiscardFront`` in order to reserve bytes for headers,
+/// ``Truncate`` in order to reserve bytes for footers, and then pass the
+/// ``Chunk`` to the user to fill in. The header and footer space can then
+/// be reclaimed using the ``ClaimPrefix`` and ``ClaimSuffix`` methods.
+class Chunk {
+ public:
+  Chunk() = delete;
+  // Not copyable or movable.
+  Chunk(Chunk&) = delete;
+  Chunk& operator=(Chunk&) = delete;
+  Chunk(Chunk&&) = delete;
+  Chunk& operator=(Chunk&&) = delete;
+
+  /// Creates the first ``Chunk`` referencing a whole region of memory.
+  ///
+  /// This must only be called once per ``ChunkRegionTracker``, when the region
+  /// is first created. Multiple calls will result in undefined behavior.
+  ///
+  /// Returns ``std::nullopt`` if ``AllocateChunkStorage`` returns ``nullptr``.
+  static std::optional<OwnedChunk> CreateFirstForRegion(
+      ChunkRegionTracker& region_tracker);
+
+  std::byte* data() { return span_.data(); }
+  const std::byte* data() const { return span_.data(); }
+  size_t size() const { return span_.size(); }
+  ByteSpan span() { return span_; }
+  ConstByteSpan span() const { return span_; }
+
+  std::byte& operator[](size_t index) { return span_[index]; }
+  std::byte operator[](size_t index) const { return span_[index]; }
+
+  // Iterator declarations
+  using element_type = std::byte;
+  using value_type = std::byte;
+  using size_type = size_t;
+  using difference_type = ptrdiff_t;
+  using pointer = std::byte*;
+  using const_pointer = const std::byte*;
+  using reference = std::byte&;
+  using const_reference = const std::byte&;
+  using iterator = std::byte*;
+  using const_iterator = const std::byte*;
+  using reverse_iterator = std::byte*;
+  using const_reverse_iterator = const std::byte*;
+
+  std::byte* begin() { return span_.data(); }
+  const std::byte* cbegin() const { return span_.data(); }
+  std::byte* end() { return span_.data() + span_.size(); }
+  const std::byte* cend() const { return span_.data() + span_.size(); }
+
+  /// Attempts to add ``bytes_to_claim`` to the front of this buffer by
+  /// advancing its range backwards in memory. Returns ``true`` if the operation
+  /// succeeded.
+  ///
+  /// This will only succeed if this ``Chunk`` points to a section of a region
+  /// that has unreferenced bytes preceeding it. For example, a ``Chunk`` which
+  /// has been shrunk using ``DiscardFront`` can be re-expanded using
+  /// ``ClaimPrefix``.
+  ///
+  /// This method will acquire a mutex and is not IRQ safe.
+  [[nodiscard]] bool ClaimPrefix(size_t bytes_to_claim);
+
+  /// Attempts to add ``bytes_to_claim`` to the front of this buffer by
+  /// advancing its range forwards in memory. Returns ``true`` if the operation
+  /// succeeded.
+  ///
+  /// This will only succeed if this ``Chunk`` points to a section of a region
+  /// that has unreferenced bytes following it. For example, a ``Chunk`` which
+  /// has been shrunk using ``Truncate`` can be re-expanded using
+  ///
+  /// This method will acquire a mutex and is not IRQ safe. /// ``ClaimSuffix``.
+  [[nodiscard]] bool ClaimSuffix(size_t bytes_to_claim);
+
+  /// Shrinks this handle to refer to the data beginning at offset
+  /// ``bytes_to_discard``.
+  ///
+  /// Does not modify the underlying data.
+  ///
+  /// This method will acquire a mutex and is not IRQ safe.
+  void DiscardFront(size_t bytes_to_discard);
+
+  /// Shrinks this handle to refer to data in the range ``begin..<end``.
+  ///
+  /// Does not modify the underlying data.
+  ///
+  /// This method will acquire a mutex and is not IRQ safe.
+  void Slice(size_t begin, size_t end);
+
+  /// Shrinks this handle to refer to only the first ``len`` bytes.
+  ///
+  /// Does not modify the underlying data.
+  ///
+  /// This method will acquire a mutex and is not IRQ safe.
+  void Truncate(size_t len);
+
+  /// Attempts to shrink this handle to refer to the data beginning at
+  /// offset ``bytes_to_take``, returning the first ``bytes_to_take`` bytes as
+  /// a new ``OwnedChunk``.
+  ///
+  /// If the inner call to ``AllocateChunkClass`` fails, this function
+  /// will return ``std::nullopt` and this handle's span will not change.
+  ///
+  /// This method will acquire a mutex and is not IRQ safe.
+  std::optional<OwnedChunk> TakeFront(size_t bytes_to_take);
+
+  /// Attempts to shrink this handle to refer only the first
+  /// ``len - bytes_to_take`` bytes, returning the last ``bytes_to_take``
+  /// bytes as a new ``OwnedChunk``.
+  ///
+  /// If the inner call to ``AllocateChunkClass`` fails, this function
+  /// will return ``std::nullopt`` and this handle's span will not change.
+  ///
+  /// This method will acquire a mutex and is not IRQ safe.
+  std::optional<OwnedChunk> TakeTail(size_t bytes_to_take);
+
+ private:
+  Chunk(ChunkRegionTracker* region_tracker, ByteSpan span)
+      : region_tracker_(region_tracker),
+        next_in_region_(nullptr),
+        prev_in_region_(nullptr),
+        span_(span) {}
+
+  // NOTE: these functions are logically
+  // `PW_EXCLUSIVE_LOCKS_REQUIRED(region_tracker_->lock_)`, however this
+  // annotation cannot be applied due to the forward declaration of
+  // `region_tracker_`.
+  void InsertAfterInRegionList(Chunk* new_chunk);
+  void InsertBeforeInRegionList(Chunk* new_chunk);
+  void RemoveFromRegionList();
+
+  /// Frees this ``Chunk``. Future accesses to this class after calls to
+  /// ``Free`` are undefined behavior.
+  ///
+  /// Decrements the reference count on the underlying chunk of data.
+  ///
+  /// Does not modify the underlying data, but may cause it to be deallocated
+  /// if this was the only remaining ``Chunk`` referring to its region.
+  ///
+  /// This method will acquire a mutex and is not IRQ safe.
+  void Free();
+
+  /// The region_tracker_ for this chunk.
+  ChunkRegionTracker* const region_tracker_;
+
+  /// Pointer to the next chunk in the same ``region_tracker_``.
+  ///
+  /// Guarded by ``region_tracker_->lock_`` (but not annotated as such due to
+  /// the fact that annotations aren't smart enough to understand that all
+  /// chunks within a region share a tracker + lock).
+  ///
+  /// ``nullptr`` if this is the last ``Chunk`` in its ``region_tracker_``.
+  Chunk* next_in_region_;
+
+  /// Pointer to the previous chunk in the same ``region_tracker_``.
+  ///
+  /// Guarded by ``region_tracker_->lock_`` (but not annotated as such due to
+  /// the fact that annotations aren't smart enough to understand that all
+  /// chunks within a region share a tracker + lock).
+  ///
+  /// ``nullptr`` if this is the first ``Chunk`` in its ``region_tracker_``.
+  Chunk* prev_in_region_;
+
+  /// Pointer to the next chunk in a ``MultiBuf``.
+  ///
+  /// This is ``nullptr`` if this chunk is not in a ``MultiBuf``, or is the
+  /// last element of a ``MultiBuf``.
+  //
+  // reserved for use by the MultiBuf class.
+  // Chunk* next_in_buf_;
+
+  /// Pointer to the sub-region to which this chunk has exclusive access.
+  ///
+  /// This ``span_`` is conceptually owned by this ``Chunk`` object, and
+  /// may be read or written to by a ``Chunk`` user (the normal rules of
+  /// thread compatibility apply-- `const` methods may be called
+  /// concurrently, non-`const` methods may not).
+  ///
+  /// Neighboring ``Chunk`` objects in this region looking to expand via
+  /// ``ClaimPrefix`` or ``ClaimSuffix`` may read this span's
+  /// boundaries. These other ``Chunk``s must acquire
+  /// ``region_tracker_->lock_`` before reading, and this ``Chunk`` must
+  /// acquire ``region_tracker_->lock_`` before changing ``span_``.
+  ByteSpan span_;
+
+  friend class OwnedChunk;  // for ``Free``.
+};
+
+/// An object that manages a single allocated region which is referenced by one
+/// or more ``Chunk`` objects.
+///
+/// This class is typically implemented by ``MultiBufAllocator``
+/// implementations in order to customize the behavior of region deallocation.
+///
+/// ``ChunkRegionTracker`` s have three responsibilities:
+///
+/// - Tracking the region of memory into which ``Chunk`` s can expand.
+///   This is reported via the ``Region`` method. ``Chunk`` s in this region
+///   can refer to memory within this region sparsely, but they can grow or
+///   shrink so long as they stay within the bounds of the ``Region``.
+///
+/// - Deallocating the region and the ``ChunkRegionTracker`` itself.
+///   This is implemented via the ``Destroy`` method, which is called once all
+///   of the ``Chunk`` s in a region have been released.
+///
+/// - Allocating and deallocating space for ``Chunk`` classes. This is merely
+///   allocating space for the ``Chunk`` object itself, not the memory to which
+///   it refers. This can be implemented straightforwardly by delegating to an
+///   existing generic allocator such as ``malloc`` or a
+///   ``pw::allocator::Allocator`` implementation.
+class ChunkRegionTracker {
+ protected:
+  ChunkRegionTracker() = default;
+  virtual ~ChunkRegionTracker() = default;
+
+  /// Destroys the ``ChunkRegionTracker``.
+  ///
+  /// Typical implementations will call ``std::destroy_at(this)`` and then free
+  /// the memory associated with the region and the tracker.
+  virtual void Destroy() = 0;
+
+  /// Returns the entire span of the region being managed.
+  ///
+  /// ``Chunk`` s referencing this tracker will not expand beyond this region,
+  /// nor into one another's portions of the region.
+  ///
+  /// This region must not change for the lifetime of this
+  /// ``ChunkRegionTracker``.
+  virtual ByteSpan Region() const = 0;
+
+  /// Returns a pointer to ``sizeof(Chunk)`` bytes.
+  /// Returns ``nullptr`` on failure.
+  virtual void* AllocateChunkClass() = 0;
+
+  /// Deallocates a pointer returned by ``AllocateChunkClass``.
+  virtual void DeallocateChunkClass(void*) = 0;
+
+ private:
+  /// A lock used to manage an internal linked-list of ``Chunk``s.
+  ///
+  /// This allows chunks to:
+  /// - know whether they can expand to fill neighboring regions of memory.
+  /// - know when the last chunk has been destructed, triggering `Destroy`.
+  pw::sync::Mutex lock_;
+  friend Chunk;
+};
+
+/// An RAII handle to a contiguous slice of data.
+///
+/// Note: ``OwnedChunk`` may acquire a ``pw::sync::Mutex`` during destruction,
+/// and so must not be destroyed within ISR contexts.
+class OwnedChunk {
+ public:
+  OwnedChunk() : inner_(nullptr) {}
+  OwnedChunk(OwnedChunk&& other) noexcept : inner_(other.inner_) {
+    other.inner_ = nullptr;
+  }
+  OwnedChunk& operator=(OwnedChunk&& other) noexcept {
+    inner_ = other.inner_;
+    other.inner_ = nullptr;
+    return *this;
+  }
+  /// This method will acquire a mutex and is not IRQ safe.
+  ~OwnedChunk() { Release(); }
+
+  std::byte* data() { return span().data(); }
+  const std::byte* data() const { return span().data(); }
+  size_t size() const { return span().size(); }
+  ByteSpan span() { return inner_ == nullptr ? ByteSpan() : inner_->span(); }
+  ConstByteSpan span() const {
+    return inner_ == nullptr ? ConstByteSpan() : inner_->span();
+  }
+
+  std::byte& operator[](size_t index) { return span()[index]; }
+  std::byte operator[](size_t index) const { return span()[index]; }
+
+  Chunk& operator*() { return *inner_; }
+  const Chunk& operator*() const { return *inner_; }
+  Chunk* operator->() { return inner_; }
+  const Chunk* operator->() const { return inner_; }
+
+  /// Decrements the reference count on the underlying chunk of data and
+  /// empties this handle so that `span()` now returns an empty (zero-sized)
+  /// span.
+  ///
+  /// Does not modify the underlying data, but may cause it to be deallocated
+  /// if this was the only remaining ``Chunk`` referring to its region.
+  ///
+  /// This method is equivalent to ``{ Chunk _unused = std::move(chunk_ref); }``
+  ///
+  /// This method will acquire a mutex and is not IRQ safe.
+  void Release();
+
+ private:
+  /// Constructs a new ``OwnedChunk`` from an existing ``Chunk*``.
+  OwnedChunk(Chunk* inner) : inner_(inner) {}
+
+  /// A pointer to the owned ``Chunk``.
+  Chunk* inner_;
+
+  /// Allow ``Chunk`` to create an ``OwnedChunk`` using the private constructor
+  /// above.
+  friend class Chunk;
+};
+
+}  // namespace pw::multibuf
