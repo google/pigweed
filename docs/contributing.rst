@@ -10,6 +10,10 @@ Before participating in our community, please take a moment to review our
 :ref:`docs-code-of-conduct`. We expect everyone who interacts with the project
 to respect these guidelines.
 
+Get started
+-----------
+See :ref:`docs-get-started-upstream`.
+
 Pigweed contribution overview
 -----------------------------
 .. note::
