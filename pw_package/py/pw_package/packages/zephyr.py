@@ -36,7 +36,7 @@ class Zephyr(pw_package.git_repo.GitRepo):
             *args,
             name='zephyr',
             url=(
-                'https://pigweed.git.corp.google.com/third_party/'
+                'https://pigweed.googlesource.com/third_party/'
                 'github/zephyrproject-rtos/zephyr'
             ),
             commit='356c8cbe63ae01b3ab438382639d25bb418a0213',  # v3.4 release
