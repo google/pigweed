@@ -6,6 +6,19 @@ Glossary
 This glossary defines terms that have specific meanings in the context of
 Pigweed.
 
+.. _docs-glossary-facade:
+
+------
+Facade
+------
+A facade is an API contract of a module that must be satisfied at compile-time,
+i.e. a swappable dependency that changes the implementation of an API at
+compile-time.
+
+Learn more:
+
+* :ref:`docs-facades`
+
 .. _docs-glossary-module:
 
 ------
