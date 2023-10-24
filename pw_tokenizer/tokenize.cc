@@ -27,6 +27,9 @@ namespace pw {
 namespace tokenizer {
 namespace {
 
+static_assert(sizeof(PW_TOKENIZER_NESTED_PREFIX_STR) == 2,
+              "The nested prefix must be a single character string");
+
 // Store metadata about this compilation's string tokenization in the ELF.
 //
 // The tokenizer metadata will not go into the on-device executable binary code.

@@ -17,13 +17,8 @@
 
 #include <inttypes.h>
 
-// This character is used to mark the start of all tokenized messages. For
-// consistency, it is recommended to always use $ if possible.
-// If required, a different non-Base64 character may be used as a prefix.
-//
-// A string version of the character is required for format-string-literal
-// concatenation.
-#define PW_TOKENIZER_NESTED_PREFIX_STR "$"
+#include "pw_tokenizer/config.h"
+
 #define PW_TOKENIZER_NESTED_PREFIX PW_TOKENIZER_NESTED_PREFIX_STR[0]
 
 /// Format specifier for a token argument.

@@ -58,3 +58,13 @@
 #ifndef PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES
 #define PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES 52
 #endif  // PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES
+
+// This character is used to mark the start of all tokenized messages. For
+// consistency, it is recommended to always use $ if possible.
+// If required, a different non-Base64 character may be used as a prefix.
+//
+// A string version of the character is required for format-string-literal
+// concatenation.
+#ifndef PW_TOKENIZER_NESTED_PREFIX_STR
+#define PW_TOKENIZER_NESTED_PREFIX_STR "$"
+#endif  // PW_TOKENIZER_NESTED_PREFIX_STR
