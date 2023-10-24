@@ -163,6 +163,7 @@ class TestRunner:
         tests: Iterable[Test],
         env: Optional[Dict[str, str]] = None,
         timeout: Optional[float] = None,
+        verbose: bool = False,
     ) -> None:
         self._executable: str = executable
         self._args: Sequence[str] = args
@@ -170,6 +171,7 @@ class TestRunner:
         self._env: Dict[str, str] = env or {}
         self._timeout = timeout
         self._result_sink: Optional[Dict[str, str]] = None
+        self.verbose = verbose
 
         # Access go/result-sink, if available.
         ctx_path = Path(os.environ.get("LUCI_CONTEXT", ''))
@@ -203,7 +205,10 @@ class TestRunner:
             start_time = time.monotonic()
             try:
                 process = await pw_cli.process.run_async(
-                    *command, env=self._env, timeout=self._timeout
+                    *command,
+                    env=self._env,
+                    timeout=self._timeout,
+                    log_output=self.verbose,
                 )
             except subprocess.CalledProcessError as err:
                 _LOG.error(err)
@@ -487,6 +492,7 @@ async def find_and_run_tests(
     timeout: Optional[float] = None,
     group: Optional[Sequence[str]] = None,
     test: Optional[Sequence[str]] = None,
+    verbose: bool = False,
 ) -> int:
     """Runs some unit tests."""
 
@@ -497,7 +503,9 @@ async def find_and_run_tests(
 
     envvars = parse_env(env)
 
-    test_runner = TestRunner(runner, runner_args, tests, envvars, timeout)
+    test_runner = TestRunner(
+        runner, runner_args, tests, envvars, timeout, verbose
+    )
     await test_runner.run_tests()
 
     return 0 if test_runner.all_passed() else 1
@@ -516,7 +524,6 @@ def main() -> int:
     )
 
     args_as_dict = dict(vars(parser.parse_args()))
-    del args_as_dict['verbose']
     return asyncio.run(find_and_run_tests(**args_as_dict))
 
 

@@ -702,14 +702,20 @@ the results of the test run.
 
 .. code-block:: python
 
-   from pw_hdlc.rpc import HdlcRpcClient
+   import serial
+
+   from pw_hdlc import rpc
    from pw_unit_test.rpc import run_tests
 
    PROTO = Path(os.environ['PW_ROOT'],
                 'pw_unit_test/pw_unit_test_proto/unit_test.proto')
-
-   client = HdlcRpcClient(serial.Serial(device, baud), PROTO)
-   run_tests(client.rpcs())
+   serial_device = serial.Serial(device, baud)
+   with rpc.SerialReader(serial_device) as reader:
+     with rpc.HdlcRpcClient(
+         reader,
+         PROTO,
+         rpc.default_channels(serial_device.write)) as client:
+      run_tests(client.rpcs())
 
 pw_unit_test.rpc
 ----------------
