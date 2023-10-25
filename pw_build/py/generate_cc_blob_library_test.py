@@ -261,8 +261,8 @@ class TestSourceFromBlobs(unittest.TestCase):
             '\n'
             f'alignas(64) {FOO_BLOB}'
             '\n'
-            'PW_PLACE_IN_SECTION(".abc")\n'
-            f'alignas(int) {BAR_BLOB}'
+            'alignas(int) PW_PLACE_IN_SECTION(".abc")\n'
+            f'{BAR_BLOB}'
         )
 
         self.assertEqual(expected_source, source)

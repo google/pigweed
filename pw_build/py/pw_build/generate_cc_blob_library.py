@@ -78,8 +78,9 @@ BLOB_DECLARATION_TEMPLATE = Template(
 LINKER_SECTION_TEMPLATE = Template('PW_PLACE_IN_SECTION("${linker_section}")\n')
 
 BLOB_DEFINITION_MULTI_LINE = Template(
-    '\n${section_attr}'
-    '${alignas}constexpr std::array<std::byte, ${size_bytes}> ${symbol_name}'
+    '\n${alignas}'
+    '${section_attr}constexpr std::array<std::byte, ${size_bytes}>'
+    ' ${symbol_name}'
     ' = {\n${bytes_lines}\n};\n'
 )
 
