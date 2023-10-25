@@ -277,9 +277,10 @@ well-defined semantics for a communications channel, but applications do not
 need to know how data is sent and received. The same API can be used to exchange
 data with another process on the same machine or with a device across the world.
 
-.. admonition:: Sockets SEED
+.. admonition:: Sockets SEEDs
 
-   The Pigweed sockets API will be explored in an upcoming SEED.
+   The Pigweed sockets API is described in SEED-0116. The sockets API is based
+   on ``pw_channel``, which is proposed in SEED-0114.
 
 Socket types
 ------------
@@ -333,7 +334,7 @@ network. Any application can open a socket to communicate across the network.
 A future revision of ``pw_rpc`` will use the sockets API in place of its current
 ``Channel`` API.
 
-The sockets API will support both synchronous and :ref:`asynchonous
+The sockets API will support both synchronous and :ref:`asynchronous
 <seed-0107-async>` use. The synchronous API may be built using the async API.
 It will also support :ref:`zero-copy <seed-0107-buffers>` data transmission.
 
@@ -536,7 +537,7 @@ asynchronous APIs. Network protocols themselves are heavily asynchronous.
 
 .. admonition:: Async SEED
 
-   Pigweed's async pattern will be explored in an upcoming SEED.
+   Pigweed's async pattern is proposed in :ref:`SEED-0112 <seed-0112>`.
 
 .. _seed-0107-buffers:
 
@@ -576,7 +577,8 @@ power on constrained systems.
 
 .. admonition:: Buffer management SEED
 
-   Pigweed's buffer management system will be explored in an upcoming SEED.
+   Pigweed's buffer management system is proposed in :ref:`SEED-0109
+   <seed-0109>`.
 
 Vectored I/O
 ------------
@@ -604,9 +606,9 @@ Pigweed's communications revamp will proceed loosely as follows:
 * Write SEEDs to explore existing solutions, distill requirements, and propose
   new Pigweed features for these areas:
 
-  - Sockets API
-  - Async pattern
-  - Buffer management
+  - Sockets API (SEED-0116)
+  - Async pattern (:ref:`SEED-0112 <seed-0112>`).
+  - Buffer management (:ref:`SEED-0109 <seed-0109>`)
   - Network protocol stack
 
 * Implement the Sockets API.
