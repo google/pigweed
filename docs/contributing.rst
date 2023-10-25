@@ -345,10 +345,29 @@ Presubmit flags
 
 .. inclusive-language: enable
 
-.. toctree::
-  :maxdepth: 1
+.. _docs-contributing-presubmit-virtualenv-hashes:
 
-  embedded_cpp_guide
-  style_guide
-  code_reviews
-  code_of_conduct
+Updating Python dependencies in the virtualenv_setup directory
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+If you update any of the requirements or constraints files in
+``//pw_env_setup/py/pw_env_setup/virtualenv_setup``, you must run this command
+to ensure that all of the hashes are updated:
+
+.. code-block:: console
+
+   pw presubmit --step update_upstream_python_constraints --full
+
+For Python packages that have native extensions, the command needs to be run 3
+times: once on Linux, once on macOS, and once on Windows. Please run it on the
+OSes that are available to you; a core Pigweed teammate will run it on the rest.
+See the warning about caching Python packages for multiple platforms in
+:ref:`docs-python-build-downloading-packages`.
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   embedded_cpp_guide
+   style_guide
+   code_reviews
+   code_of_conduct

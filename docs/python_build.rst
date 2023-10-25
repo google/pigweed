@@ -325,6 +325,8 @@ template.
 Caching Python Packages for Offline Installation
 ------------------------------------------------
 
+.. _docs-python-build-downloading-packages:
+
 Downloading Packages
 ^^^^^^^^^^^^^^^^^^^^
 The :ref:`module-pw_build-pw_python_venv` target adds an optional sub target
