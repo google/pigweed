@@ -23,7 +23,6 @@
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 
-// TODO(b/306686936): Investigate moving `Block` to an internal namespace.
 namespace pw::allocator {
 
 /// Representation-independent base class of Block.
@@ -93,6 +92,57 @@ class BaseBlock {
   static void CrashNextMismatched(uintptr_t addr, uintptr_t next_prev);
   static void CrashPrevMismatched(uintptr_t addr, uintptr_t prev_next);
   static void CrashPoisonCorrupted(uintptr_t addr);
+
+  // Associated types
+
+  /// Iterator for a list of blocks.
+  ///
+  /// This class is templated both on the concrete block type, as well as on a
+  /// function that can advance the iterator to the next element. This class
+  /// cannot be instantiated directly. Instead, use the `begin` and `end`
+  /// methods of `Block::Range` or `Block::ReverseRange`.
+  template <typename BlockType, BlockType* (*Advance)(const BlockType*)>
+  class BaseIterator {
+   public:
+    BaseIterator& operator++() {
+      if (block_ != nullptr) {
+        block_ = Advance(block_);
+      }
+      return *this;
+    }
+
+    bool operator!=(const BaseIterator& other) {
+      return block_ != other.block_;
+    }
+
+    BlockType* operator*() { return block_; }
+
+   protected:
+    BaseIterator(BlockType* block) : block_(block) {}
+
+   private:
+    BlockType* block_;
+  };
+
+  /// Represents a range of blocks in a list.
+  ///
+  /// This class is templated both on the concrete block and iterator types.
+  /// This class cannot be instantiated directly. Instead, use `Block::Range` or
+  /// `Block::ReverseRange`.
+  template <typename BlockType, typename IteratorType>
+  class BaseRange {
+   public:
+    IteratorType& begin() { return begin_; }
+    IteratorType& end() { return end_; }
+
+   protected:
+    BaseRange(BlockType* begin_inclusive, BlockType* end_exclusive)
+        : begin_(begin_inclusive), end_(end_exclusive) {}
+
+   private:
+    IteratorType begin_;
+    IteratorType end_;
+  };
 };
 
 /// @brief Represents a region of memory as an element of a doubly linked list.
@@ -270,6 +320,70 @@ class Block final : public BaseBlock {
     return reinterpret_cast<std::byte*>(this) + kHeaderSize;
   }
 
+  /// Splits an aligned block from the start of the block, and marks it as used.
+  ///
+  /// If successful, `block` will be replaced by a block that has an inner
+  /// size of at least `inner_size`, and whose starting address is aligned to an
+  /// `alignment` boundary. If unsuccessful, `block` will be unmodified.
+  ///
+  /// This method is static in order to consume and replace the given block
+  /// pointer with a pointer to the new, smaller block. In total, up to two
+  /// additional blocks may be created: one to pad the returned block to an
+  /// alignment boundary and one for the trailing space.
+  ///
+  /// @pre The block must not be in use.
+  ///
+  /// @retval   OK                  The split completed successfully.
+  /// @retval   FAILED_PRECONDITION This block is in use and cannot be split.
+  /// @retval   OUT_OF_RANGE        The requested size plus padding needed for
+  ///                               alignment is greater than the current size.
+  static Status AllocFirst(Block*& block, size_t inner_size, size_t alignment);
+
+  /// Splits an aligned block from the end of the block, and marks it as used.
+  ///
+  /// If successful, `block` will be replaced by a block that has an inner
+  /// size of at least `inner_size`, and whose starting address is aligned to an
+  /// `alignment` boundary. If unsuccessful, `block` will be unmodified.
+  ///
+  /// This method is static in order to consume and replace the given block
+  /// pointer with a pointer to the new, smaller block. An additional block may
+  /// be created for the leading space.
+  ///
+  /// @pre The block must not be in use.v
+  ///
+  /// @retval   OK                  The split completed successfully.
+  /// @retval   FAILED_PRECONDITION This block is in use and cannot be split.
+  /// @retval   OUT_OF_RANGE        The requested size is greater than the
+  ///                               current size.
+  /// @retval   RESOURCE_EXHAUSTED  The remaining space is too small to hold a
+  ///                               new block.
+  static Status AllocLast(Block*& block, size_t inner_size, size_t alignment);
+
+  /// Marks the block as free and merges it with any free neighbors.
+  ///
+  /// This method is static in order to consume and replace the given block
+  /// pointer. If neither member is free, the returned pointer will point to the
+  /// original block. Otherwise, it will point to the new, larger block created
+  /// by merging adjacent free blocks together.
+  static void Free(Block*& block);
+
+  /// Grows or shrinks the block.
+  ///
+  /// If successful, `block` may be merged with the block after it in order to
+  /// provide additional memory (when growing) or to merge released memory (when
+  /// shrinking). If unsuccessful, `block` will be unmodified.
+  ///
+  /// This method is static in order to consume and replace the given block
+  /// pointer with a pointer to the new, smaller block.
+  ///
+  /// @pre The block must be in use.
+  ///
+  /// @retval   OK                  The resize completed successfully.
+  /// @retval   FAILED_PRECONDITION This block is not in use.
+  /// @retval   OUT_OF_RANGE        The requested size is greater than the
+  ///                               available space.
+  static Status Resize(Block*& block, size_t new_inner_size);
+
   /// Attempts to split this block.
   ///
   /// If successful, the block will have an inner size of `new_inner_size`,
@@ -324,9 +438,15 @@ class Block final : public BaseBlock {
   /// @endcode
   Block* Next() const;
 
+  /// @copydoc `Next`.
+  static Block* NextBlock(const Block* block) { return block->Next(); }
+
   /// @returns The block immediately before this one, or a null pointer if this
   /// is the first block.
   Block* Prev() const;
+
+  /// @copydoc `Prev`.
+  static Block* PrevBlock(const Block* block) { return block->Prev(); }
 
   /// Indicates whether the block is in use.
   ///
@@ -426,6 +546,62 @@ class Block final : public BaseBlock {
 
   UintType next_ = 0;
   UintType prev_ = 0;
+
+ public:
+  // Associated types.
+
+  /// Represents an iterator that moves forward through a list of blocks.
+  ///
+  /// This class is not typically instantiated directly, but rather using a
+  /// range-based for-loop using `Block::Range`.
+  class Iterator : public BaseIterator<Block, NextBlock> {
+   public:
+    Iterator(Block* block) : BaseIterator<Block, NextBlock>(block) {}
+  };
+
+  /// Represents an iterator that moves forward through a list of blocks.
+  ///
+  /// This class is not typically instantiated directly, but rather using a
+  /// range-based for-loop using `Block::ReverseRange`.
+  class ReverseIterator : public BaseIterator<Block, PrevBlock> {
+   public:
+    ReverseIterator(Block* block) : BaseIterator<Block, PrevBlock>(block) {}
+  };
+
+  /// Represents a range of blocks that can be iterated over.
+  ///
+  /// The typical usage of this class is in a range-based for-loop, e.g.
+  /// @code{.cpp}
+  ///   for (auto* block : Range(first, last)) { ... }
+  /// @endcode
+  class Range : public BaseRange<Block, Iterator> {
+   public:
+    /// Constructs a range including `begin` and all valid following blocks.
+    explicit Range(Block* begin) : BaseRange<Block, Iterator>(begin, nullptr) {}
+
+    /// Constructs a range of blocks from `begin` to `end`, inclusively.
+    Range(Block* begin_inclusive, Block* end_inclusive)
+        : BaseRange<Block, Iterator>(begin_inclusive, end_inclusive->Next()) {}
+  };
+
+  /// Represents a range of blocks that can be iterated over in the reverse
+  /// direction.
+  ///
+  /// The typical usage of this class is in a range-based for-loop, e.g.
+  /// @code{.cpp}
+  ///   for (auto* block : ReverseRange(last, first)) { ... }
+  /// @endcode
+  class ReverseRange : public BaseRange<Block, ReverseIterator> {
+   public:
+    /// Constructs a range including `rbegin` and all valid preceding blocks.
+    explicit ReverseRange(Block* rbegin)
+        : BaseRange<Block, ReverseIterator>(rbegin, nullptr) {}
+
+    /// Constructs a range of blocks from `rbegin` to `rend`, inclusively.
+    ReverseRange(Block* rbegin_inclusive, Block* rend_inclusive)
+        : BaseRange<Block, ReverseIterator>(rbegin_inclusive,
+                                            rend_inclusive->Prev()) {}
+  };
 };
 
 // Public template method implementations.
@@ -446,6 +622,108 @@ Result<Block<UintType, kMaxSize>*> Block<UintType, kMaxSize>::Init(
   block->MarkLast();
   BaseBlock::Poison(block, kHeaderSize, block->OuterSize());
   return block;
+}
+
+template <typename UintType, size_t kMaxSize>
+Status Block<UintType, kMaxSize>::AllocFirst(Block*& block,
+                                             size_t inner_size,
+                                             size_t alignment) {
+  // Check if padding will be needed at the front to align the usable space.
+  size_t pad_outer_size = 0;
+  auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
+  if (addr % alignment != 0) {
+    pad_outer_size = AlignUp(addr + kBlockOverhead, alignment) - addr;
+    inner_size += pad_outer_size;
+  }
+
+  // Split the block to get the requested usable space. It is not an error if
+  // the block is too small to split off a new trailing block.
+  Result<Block*> result = Block::Split(block, inner_size);
+  if (!result.ok() && result.status() != Status::ResourceExhausted()) {
+    return result.status();
+  }
+
+  // If present, split the padding off the front. Since this space was included
+  // in the previous split, it should always succeed.
+  if (pad_outer_size != 0) {
+    result = Block::Split(block, pad_outer_size - kBlockOverhead);
+    block = *result;
+  }
+
+  block->MarkUsed();
+  return OkStatus();
+}
+
+template <typename UintType, size_t kMaxSize>
+Status Block<UintType, kMaxSize>::AllocLast(Block*& block,
+                                            size_t inner_size,
+                                            size_t alignment) {
+  // Find the last address that is aligned and is followed by enough space for
+  // block overhead and the requested size.
+  if (block->InnerSize() < inner_size) {
+    return Status::OutOfRange();
+  }
+  alignment = std::max(alignment, kAlignment);
+  auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
+  uintptr_t next =
+      AlignDown(addr + (block->InnerSize() - inner_size), alignment);
+  if (next != addr) {
+    if (next < addr + kBlockOverhead) {
+      // A split is needed, but no block will fit.
+      return Status::ResourceExhausted();
+    }
+    size_t pad_inner_size = next - (addr + kBlockOverhead);
+    Result<Block*> result = Block::Split(block, pad_inner_size);
+    if (!result.ok()) {
+      return result.status();
+    }
+    block = *result;
+  }
+  block->MarkUsed();
+  return OkStatus();
+}
+
+template <typename UintType, size_t kMaxSize>
+void Block<UintType, kMaxSize>::Free(Block*& block) {
+  block->MarkFree();
+  Block* prev = block->Prev();
+  if (Block::MergeNext(prev).ok()) {
+    block = prev;
+  }
+  Block::MergeNext(block).IgnoreError();
+}
+
+template <typename UintType, size_t kMaxSize>
+Status Block<UintType, kMaxSize>::Resize(Block*& block, size_t new_inner_size) {
+  if (!block->Used()) {
+    return Status::FailedPrecondition();
+  }
+  size_t old_inner_size = block->InnerSize();
+  size_t aligned_inner_size = AlignUp(new_inner_size, kAlignment);
+  if (old_inner_size == aligned_inner_size) {
+    return OkStatus();
+  }
+
+  // Treat the block as free and try to combine it with the next block. At most
+  // one free block is expecte to follow this block.
+  block->MarkFree();
+  MergeNext(block).IgnoreError();
+
+  // Try to split off a block of the requested size.
+  Status status = Block::Split(block, aligned_inner_size).status();
+
+  // It is not an error if the split fails because the remainder is too small
+  // for a block.
+  if (status == Status::ResourceExhausted()) {
+    status = OkStatus();
+  }
+
+  // Otherwise, restore the original block on failure.
+  if (!status.ok()) {
+    Split(block, old_inner_size).IgnoreError();
+  }
+  block->MarkUsed();
+  return status;
 }
 
 template <typename UintType, size_t kMaxSize>
@@ -511,7 +789,7 @@ Status Block<UintType, kMaxSize>::MergeNext(Block*& block) {
 template <typename UintType, size_t kMaxSize>
 Block<UintType, kMaxSize>* Block<UintType, kMaxSize>::Next() const {
   size_t offset = GetOffset(next_);
-  uintptr_t addr = reinterpret_cast<uintptr_t>(this) + offset;
+  uintptr_t addr = Last() ? 0 : reinterpret_cast<uintptr_t>(this) + offset;
   // See the note in `FromUsableSpace` about memory laundering.
   return std::launder(reinterpret_cast<Block*>(addr));
 }

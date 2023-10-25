@@ -168,7 +168,7 @@ class Allocator {
   /// allocation; otherwise returns false.
   ///
   /// In particular, it always returns true if the `old_layout.size()` equals
-  /// `new_szie`, and always returns false if the given pointer is null, the
+  /// `new_size`, and always returns false if the given pointer is null, the
   /// `old_layout.size()` is 0, or the `new_size` is 0.
   ///
   /// @param[in]  ptr           Pointer to previously-allocated memory.

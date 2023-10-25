@@ -38,9 +38,9 @@ Provided implementations of the ``Allocator`` interface include:
   only be used if the ``libc`` in use provides those functions.
 - ``NullAllocator``: Always fails. This may be useful if allocations should be
   disallowed under specific circumstances.
-- ``SplitFreeListAllocator``: Tracks free blocks using a free list, and splits
-  large and small allocations between the front and back, respectively, of its
-  memory region in order to reduce fragmentation.
+- ``SplitFreeListAllocator``: Tracks memory using ``Block``, and splits large
+  and small allocations between the front and back, respectively, of it memory
+  region in order to reduce fragmentation.
 
 UniquePtr
 =========

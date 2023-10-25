@@ -131,8 +131,10 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         ":allocator",
+        ":block",
         "//pw_assert",
         "//pw_bytes",
+        "//pw_result",
         "//pw_status",
     ],
 )

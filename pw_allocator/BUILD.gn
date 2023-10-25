@@ -140,12 +140,12 @@ pw_source_set("split_free_list_allocator") {
   public = [ "public/pw_allocator/split_free_list_allocator.h" ]
   public_deps = [
     ":allocator",
+    ":block",
+    dir_pw_bytes,
+    dir_pw_result,
     dir_pw_status,
   ]
-  deps = [
-    dir_pw_assert,
-    dir_pw_bytes,
-  ]
+  deps = [ dir_pw_assert ]
   sources = [ "split_free_list_allocator.cc" ]
 }
 

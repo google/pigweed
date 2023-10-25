@@ -103,18 +103,20 @@ pw_add_library(pw_allocator.freelist_heap STATIC
 )
 
 pw_add_library(pw_allocator.split_free_list_allocator STATIC
-  SOURCES
-    split_free_list_allocator.cc
   HEADERS
     public/pw_allocator/split_free_list_allocator.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
     pw_allocator.allocator
+    pw_allocator.block
+    pw_bytes
+    pw_result
     pw_status
   PRIVATE_DEPS
     pw_assert
-    pw_bytes
+  SOURCES
+    split_free_list_allocator.cc
 )
 
 pw_add_library(pw_allocator.libc_allocator STATIC

@@ -30,7 +30,8 @@ namespace {
 class TrackingAllocator : public pw::allocator::Allocator {
  public:
   TrackingAllocator(ByteSpan span) : alloc_stats_(kFakeToken) {
-    alloc_.Initialize(span.data(), span.size(), kFakeThreshold);
+    Status status = alloc_.Init(span, kFakeThreshold);
+    EXPECT_EQ(status, OkStatus());
     alloc_stats_.Initialize(alloc_);
   }
 
@@ -55,7 +56,7 @@ class TrackingAllocator : public pw::allocator::Allocator {
   const size_t kFakeThreshold = 0;
   const int32_t kFakeToken = 0;
 
-  pw::allocator::SplitFreeListAllocator alloc_;
+  pw::allocator::SplitFreeListAllocator<> alloc_;
   pw::allocator::AllocatorMetricProxy alloc_stats_;
 };
 
