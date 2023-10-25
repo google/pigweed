@@ -444,5 +444,100 @@ TEST(Chunk, ClaimSuffixReclaimsFollowingChunksDiscardedPrefix) {
   EXPECT_FALSE(split->ClaimSuffix(1));
 }
 
+TEST(Chunk, MergeReturnsFalseForChunksFromDifferentRegions) {
+  TrackingAllocatorWithMemory<kArbitraryAllocatorSize> alloc;
+  std::optional<OwnedChunk> chunk_1_opt =
+      HeaderChunkRegionTracker::AllocateRegionAsChunk(&alloc,
+                                                      kArbitraryChunkSize);
+  ASSERT_TRUE(chunk_1_opt.has_value());
+  OwnedChunk& chunk_1 = *chunk_1_opt;
+  std::optional<OwnedChunk> chunk_2_opt =
+      HeaderChunkRegionTracker::AllocateRegionAsChunk(&alloc,
+                                                      kArbitraryChunkSize);
+  ASSERT_TRUE(chunk_2_opt.has_value());
+  OwnedChunk& chunk_2 = *chunk_2_opt;
+  EXPECT_FALSE(chunk_1->CanMerge(*chunk_2));
+  EXPECT_FALSE(chunk_1->Merge(chunk_2));
+  // Ensure that neither chunk was modified
+  EXPECT_EQ(chunk_1.size(), kArbitraryChunkSize);
+  EXPECT_EQ(chunk_2.size(), kArbitraryChunkSize);
+}
+
+TEST(Chunk, MergeReturnsFalseForNonAdjacentChunksFromSameRegion) {
+  const size_t kTakenFromOne = 8;
+  const size_t kTakenFromTwo = 4;
+
+  TrackingAllocatorWithMemory<kArbitraryAllocatorSize> alloc;
+  std::optional<OwnedChunk> chunk_1_opt =
+      HeaderChunkRegionTracker::AllocateRegionAsChunk(&alloc,
+                                                      kArbitraryChunkSize);
+  ASSERT_TRUE(chunk_1_opt.has_value());
+  OwnedChunk& chunk_1 = *chunk_1_opt;
+
+  std::optional<OwnedChunk> chunk_2_opt = chunk_1->TakeTail(kTakenFromOne);
+  ASSERT_TRUE(chunk_2_opt.has_value());
+  OwnedChunk& chunk_2 = *chunk_2_opt;
+
+  std::optional<OwnedChunk> chunk_3_opt = chunk_2->TakeTail(kTakenFromTwo);
+  ASSERT_TRUE(chunk_3_opt.has_value());
+  OwnedChunk& chunk_3 = *chunk_3_opt;
+
+  EXPECT_FALSE(chunk_1->CanMerge(*chunk_3));
+  EXPECT_FALSE(chunk_1->Merge(chunk_3));
+  EXPECT_EQ(chunk_1.size(), kArbitraryChunkSize - kTakenFromOne);
+  EXPECT_EQ(chunk_2.size(), kTakenFromOne - kTakenFromTwo);
+  EXPECT_EQ(chunk_3.size(), kTakenFromTwo);
+}
+
+TEST(Chunk, MergeJoinsMultipleAdjacentChunksFromSameRegion) {
+  const size_t kTakenFromOne = 8;
+  const size_t kTakenFromTwo = 4;
+
+  TrackingAllocatorWithMemory<kArbitraryAllocatorSize> alloc;
+  std::optional<OwnedChunk> chunk_1_opt =
+      HeaderChunkRegionTracker::AllocateRegionAsChunk(&alloc,
+                                                      kArbitraryChunkSize);
+  ASSERT_TRUE(chunk_1_opt.has_value());
+  OwnedChunk& chunk_1 = *chunk_1_opt;
+
+  std::optional<OwnedChunk> chunk_2_opt = chunk_1->TakeTail(kTakenFromOne);
+  ASSERT_TRUE(chunk_2_opt.has_value());
+  OwnedChunk& chunk_2 = *chunk_2_opt;
+
+  std::optional<OwnedChunk> chunk_3_opt = chunk_2->TakeTail(kTakenFromTwo);
+  ASSERT_TRUE(chunk_3_opt.has_value());
+  OwnedChunk& chunk_3 = *chunk_3_opt;
+
+  EXPECT_TRUE(chunk_1->CanMerge(*chunk_2));
+  EXPECT_TRUE(chunk_1->Merge(chunk_2));
+  EXPECT_TRUE(chunk_1->CanMerge(*chunk_3));
+  EXPECT_TRUE(chunk_1->Merge(chunk_3));
+
+  EXPECT_EQ(chunk_1.size(), kArbitraryChunkSize);
+  EXPECT_EQ(chunk_2.size(), 0_size);
+  EXPECT_EQ(chunk_3.size(), 0_size);
+}
+
+TEST(Chunk, MergeJoinsAdjacentChunksFromSameRegion) {
+  const size_t kTaken = 4;
+
+  TrackingAllocatorWithMemory<kArbitraryAllocatorSize> alloc;
+  std::optional<OwnedChunk> chunk_1_opt =
+      HeaderChunkRegionTracker::AllocateRegionAsChunk(&alloc,
+                                                      kArbitraryChunkSize);
+  ASSERT_TRUE(chunk_1_opt.has_value());
+  OwnedChunk& chunk_1 = *chunk_1_opt;
+  std::optional<OwnedChunk> chunk_2_opt = chunk_1->TakeTail(kTaken);
+  ASSERT_TRUE(chunk_2_opt.has_value());
+  OwnedChunk& chunk_2 = *chunk_2_opt;
+  EXPECT_EQ(chunk_1.size(), kArbitraryChunkSize - kTaken);
+  EXPECT_EQ(chunk_2.size(), kTaken);
+
+  EXPECT_TRUE(chunk_1->CanMerge(*chunk_2));
+  EXPECT_TRUE(chunk_1->Merge(chunk_2));
+  EXPECT_EQ(chunk_1.size(), kArbitraryChunkSize);
+  EXPECT_EQ(chunk_2.size(), 0_size);
+}
+
 }  // namespace
 }  // namespace pw::multibuf

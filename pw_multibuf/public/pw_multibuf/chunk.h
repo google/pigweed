@@ -87,6 +87,24 @@ class Chunk {
   std::byte* end() { return span_.data() + span_.size(); }
   const std::byte* cend() const { return span_.data() + span_.size(); }
 
+  /// Returns if ``next_chunk`` is mergeable into the end of this ``Chunk``.
+  ///
+  /// This will only succeed when the two ``Chunk`` s are adjacent in
+  /// memory and originated from the same allocation.
+  [[nodiscard]] bool CanMerge(const Chunk& next_chunk) const;
+
+  /// Attempts to merge ``next_chunk`` into the end of this ``Chunk``.
+  ///
+  /// If the chunks are successfully merged, this ``Chunk`` will be extended
+  /// forwards to encompass the space of ``next_chunk``, and ``next_chunk``
+  /// will be emptied and ``Release``d.
+  ///
+  /// This will only succeed when the two ``Chunk`` s are adjacent in
+  /// memory and originated from the same allocation.
+  ///
+  /// If the chunks are not mergeable, neither ``Chunk`` will be modified.
+  bool Merge(OwnedChunk& next_chunk);
+
   /// Attempts to add ``bytes_to_claim`` to the front of this buffer by
   /// advancing its range backwards in memory. Returns ``true`` if the operation
   /// succeeded.

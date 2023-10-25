@@ -42,6 +42,30 @@ std::byte* EndPtr(ByteSpan span) { return span.data() + span.size(); }
 
 }  // namespace
 
+bool Chunk::CanMerge(const Chunk& next_chunk) const {
+  return region_tracker_ == next_chunk.region_tracker_ &&
+         EndPtr(span_) == BeginPtr(next_chunk.span_);
+}
+
+bool Chunk::Merge(OwnedChunk& next_chunk_owned) {
+  if (!CanMerge(*next_chunk_owned)) {
+    return false;
+  }
+  Chunk* next_chunk = next_chunk_owned.inner_;
+  next_chunk_owned.inner_ = nullptr;
+
+  // Note: Both chunks have the same ``region_tracker_``.
+  //
+  // We lock the one from `next_chunk` to satisfy the automatic
+  // checker that ``RemoveFromRegionList`` is safe to call.
+  std::lock_guard lock(next_chunk->region_tracker_->lock_);
+  PW_DCHECK(next_in_region_ == next_chunk);
+  span_ = ByteSpan(data(), size() + next_chunk->size());
+  next_chunk->RemoveFromRegionList();
+  region_tracker_->DeallocateChunkClass(next_chunk);
+  return true;
+}
+
 void Chunk::InsertAfterInRegionList(Chunk* new_chunk)
     PW_EXCLUSIVE_LOCKS_REQUIRED(region_tracker_ -> lock_) {
   new_chunk->next_in_region_ = next_in_region_;
@@ -70,6 +94,8 @@ void Chunk::RemoveFromRegionList()
   if (next_in_region_ != nullptr) {
     next_in_region_->prev_in_region_ = prev_in_region_;
   }
+  prev_in_region_ = nullptr;
+  next_in_region_ = nullptr;
 }
 
 std::optional<OwnedChunk> Chunk::CreateFirstForRegion(
