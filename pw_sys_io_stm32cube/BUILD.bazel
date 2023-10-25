@@ -38,6 +38,7 @@ pw_cc_library(
     deps = [
         "//pw_preprocessor",
         "//pw_status",
+        "//pw_sys_io:default_putget_bytes",
         "//pw_sys_io:facade",
         "//third_party/stm32cube",
     ],
