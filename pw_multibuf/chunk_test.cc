@@ -60,12 +60,27 @@ class TrackingAllocator : public pw::allocator::Allocator {
 };
 
 template <auto NumBytes>
-class TrackingAllocatorWithMemory : public TrackingAllocator {
+class TrackingAllocatorWithMemory : public pw::allocator::Allocator {
  public:
-  TrackingAllocatorWithMemory() : TrackingAllocator(mem_) {}
+  TrackingAllocatorWithMemory() : mem_(), alloc_(mem_) {}
+  size_t count() const { return alloc_.count(); }
+  size_t used() const { return alloc_.used(); }
+  void* DoAllocate(size_t size, size_t alignment) override {
+    return alloc_.AllocateUnchecked(size, alignment);
+  }
+  bool DoResize(void* ptr,
+                size_t old_size,
+                size_t old_align,
+                size_t new_size) override {
+    return alloc_.ResizeUnchecked(ptr, old_size, old_align, new_size);
+  }
+  void DoDeallocate(void* ptr, size_t size, size_t alignment) override {
+    alloc_.DeallocateUnchecked(ptr, size, alignment);
+  }
 
  private:
   std::array<std::byte, NumBytes> mem_;
+  TrackingAllocator alloc_;
 };
 
 class HeaderChunkRegionTracker final : public ChunkRegionTracker {
