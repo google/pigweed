@@ -89,8 +89,8 @@ CommandChannel::EventCallbackResult AclConnection::OnEncryptionChangeEvent(
   }
 
   Result<> result = event.ToResult();
-  pw::bluetooth::emboss::EncryptionStatus encryption_status = params.encryption_enabled().Read();
-  bool encryption_enabled = encryption_status != pw::bluetooth::emboss::EncryptionStatus::OFF;
+  encryption_status_ = params.encryption_enabled().Read();
+  bool encryption_enabled = encryption_status_ != pw::bluetooth::emboss::EncryptionStatus::OFF;
 
   bt_log(DEBUG, "hci", "encryption change (%s) %s", encryption_enabled ? "enabled" : "disabled",
          bt_str(result));
@@ -98,7 +98,7 @@ CommandChannel::EventCallbackResult AclConnection::OnEncryptionChangeEvent(
   // If peer and local Secure Connections support are present, the pairing logic needs to verify
   // that the status received in the Encryption Changed event is for AES encryption.
   if (use_secure_connections_ &&
-      encryption_status != pw::bluetooth::emboss::EncryptionStatus::ON_WITH_AES_FOR_BREDR) {
+      encryption_status_ != pw::bluetooth::emboss::EncryptionStatus::ON_WITH_AES_FOR_BREDR) {
     bt_log(DEBUG, "hci", "BR/EDR Secure Connection must use AES encryption. Closing connection...");
     HandleEncryptionStatus(fit::error(Error(HostError::kInsufficientSecurity)),
                            /*key_refreshed=*/false);

@@ -317,7 +317,7 @@ class Peer final {
    public:
     static constexpr const char* kInspectNodeName = "bredr_data";
     static constexpr const char* kInspectConnectionStateName = "connection_state";
-    static constexpr const char* kInspectLinkKeyName = "bonded";
+    static constexpr const char* kInspectLinkKeyName = "link_key";
     static constexpr const char* kInspectServicesName = "services";
 
     explicit BrEdrData(Peer* owner);
@@ -338,7 +338,7 @@ class Peer final {
     bool connected() const { return !initializing() && connection_tokens_count_ > 0; }
     bool initializing() const { return initializing_tokens_count_ > 0; }
 
-    bool bonded() const { return link_key_->has_value(); }
+    bool bonded() const { return link_key_.has_value(); }
 
     // Returns the peer's BD_ADDR.
     const DeviceAddress& address() const { return address_; }
@@ -357,7 +357,7 @@ class Peer final {
     // hci_spec::kClockOffsetFlagBit in hci/hci_constants.h).
     const std::optional<uint16_t>& clock_offset() const { return clock_offset_; }
 
-    const std::optional<sm::LTK>& link_key() const { return *link_key_; }
+    const std::optional<sm::LTK>& link_key() const { return link_key_; }
 
     const std::unordered_set<UUID>& services() const { return *services_; }
 
@@ -426,7 +426,9 @@ class Peer final {
     std::optional<DeviceClass> device_class_;
     std::optional<pw::bluetooth::emboss::PageScanRepetitionMode> page_scan_rep_mode_;
     std::optional<uint16_t> clock_offset_;
-    BoolInspectable<std::optional<sm::LTK>> link_key_;
+
+    std::optional<sm::LTK> link_key_;
+
     StringInspectable<std::unordered_set<UUID>> services_;
   };
 

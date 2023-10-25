@@ -22,11 +22,12 @@ std::string HCIVersionToString(pw::bluetooth::emboss::CoreSpecificationVersion v
 std::string StatusCodeToString(pw::bluetooth::emboss::StatusCode code);
 
 // Returns a user-friendly string representation of |link_type|.
-std::string LinkTypeToString(hci_spec::LinkType link_type);
-
-// Returns a user-friendly string representation of |link_type|.
 const char* LinkTypeToString(pw::bluetooth::emboss::LinkType link_type);
 
+// Returns a user-friendly string representation of |key_type|.
+const char* LinkKeyTypeToString(hci_spec::LinkKeyType key_type);
+
+// Returns a user-friendly string representation of |role|.
 std::string ConnectionRoleToString(pw::bluetooth::emboss::ConnectionRole role);
 
 // Convert a LEAdvertisingType's properties (e.g. connectable, scannable, directed, etc) to the

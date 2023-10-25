@@ -121,19 +121,6 @@ std::string StatusCodeToString(pw::bluetooth::emboss::StatusCode code) {
 }
 // clang-format on
 
-std::string LinkTypeToString(hci_spec::LinkType link_type) {
-  switch (link_type) {
-    case LinkType::kSCO:
-      return "SCO";
-    case LinkType::kACL:
-      return "ACL";
-    case LinkType::kExtendedSCO:
-      return "eSCO";
-    default:
-      return "<Unknown LinkType>";
-  };
-}
-
 const char* LinkTypeToString(pw::bluetooth::emboss::LinkType link_type) {
   switch (link_type) {
     case pw::bluetooth::emboss::LinkType::SCO:
@@ -145,6 +132,33 @@ const char* LinkTypeToString(pw::bluetooth::emboss::LinkType link_type) {
     default:
       return "<Unknown LinkType>";
   };
+}
+
+const char* LinkKeyTypeToString(hci_spec::LinkKeyType key_type) {
+  switch (key_type) {
+    case hci_spec::LinkKeyType::kCombination:
+      return "kCombination";
+    case hci_spec::LinkKeyType::kLocalUnit:
+      return "kLocalUnit";
+    case hci_spec::LinkKeyType::kRemoteUnit:
+      return "kRemoteUnit";
+    case hci_spec::LinkKeyType::kDebugCombination:
+      return "kDebugCombination";
+    case hci_spec::LinkKeyType::kUnauthenticatedCombination192:
+      return "kUnauthenticatedCombination192";
+    case hci_spec::LinkKeyType::kAuthenticatedCombination192:
+      return "kAuthenticatedCombination192";
+    case hci_spec::LinkKeyType::kChangedCombination:
+      return "kChangedCombination";
+    case hci_spec::LinkKeyType::kUnauthenticatedCombination256:
+      return "kUnauthenticatedCombination256";
+    case hci_spec::LinkKeyType::kAuthenticatedCombination256:
+      return "kAuthenticatedCombination256";
+    default:
+      break;
+  }
+
+  return "(Unknown)";
 }
 
 std::string ConnectionRoleToString(pw::bluetooth::emboss::ConnectionRole role) {

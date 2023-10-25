@@ -8,6 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/expiring_set.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_interrogator.h"
@@ -30,6 +31,7 @@ namespace {
 
 const char* const kInspectRequestsNodeName = "connection_requests";
 const char* const kInspectRequestNodeNamePrefix = "request_";
+const char* const kInspectSecurityModeName = "security_mode";
 const char* const kInspectConnectionsNodeName = "connections";
 const char* const kInspectConnectionNodeNamePrefix = "connection_";
 const char* const kInspectLastDisconnectedListName = "last_disconnected";
@@ -415,7 +417,7 @@ bool BrEdrConnectionManager::Disconnect(PeerId peer_id, DisconnectReason reason)
 }
 
 void BrEdrConnectionManager::SetSecurityMode(BrEdrSecurityMode mode) {
-  security_mode_ = mode;
+  security_mode_.Set(mode);
 
   if (mode == BrEdrSecurityMode::SecureConnectionsOnly) {
     // `Disconnect`ing the peer must not be done while iterating through `connections_` as it
@@ -441,6 +443,8 @@ void BrEdrConnectionManager::SetSecurityMode(BrEdrSecurityMode mode) {
 
 void BrEdrConnectionManager::AttachInspect(inspect::Node& parent, std::string name) {
   inspect_node_ = parent.CreateChild(name);
+
+  security_mode_.AttachInspect(inspect_node_, kInspectSecurityModeName);
 
   inspect_properties_.connections_node_ = inspect_node_.CreateChild(kInspectConnectionsNodeName);
   inspect_properties_.last_disconnected_list.AttachInspect(inspect_node_,
@@ -627,7 +631,7 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
 
   BrEdrConnection& connection = conn_iter->second;
   connection.pairing_state().SetPairingDelegate(pairing_delegate_);
-  connection.set_security_mode(security_mode_);
+  connection.set_security_mode(security_mode());
   connection.AttachInspect(
       inspect_properties_.connections_node_,
       inspect_properties_.connections_node_.UniqueName(kInspectConnectionNodeNamePrefix));

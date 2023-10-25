@@ -9,10 +9,13 @@
 #include <gtest/gtest.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
-#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/inspect_util.h"
 
 namespace bt::sm {
 namespace {
+
+using namespace inspect::testing;
+using bt::testing::ReadInspect;
 
 TEST(TypesTest, LinkKeyTypeToSecurityProperties) {
   SecurityProperties props(hci_spec::LinkKeyType::kCombination);
@@ -220,6 +223,72 @@ TEST(TypesTest, SecurityPropertiesComparisonWorks) {
     ASSERT_FALSE(kAuthenticatedLegacy.IsAsSecureAs(props));
   }
 }
+
+#ifndef NINSPECT
+TEST(TypesTest, InspectSecurityProperties) {
+  inspect::Inspector inspector;
+
+  SecurityProperties kInsecure(SecurityLevel::kNoSecurity, kMinEncryptionKeySize,
+                               /*secure_connections=*/false),
+      kEncryptedLegacy(SecurityLevel::kEncrypted, kMaxEncryptionKeySize,
+                       /*secure_connections=*/false),
+      kEncryptedSecure(SecurityLevel::kEncrypted, kMaxEncryptionKeySize,
+                       /*secure_connections=*/true),
+      kAuthenticatedLegacy(SecurityLevel::kAuthenticated, kMaxEncryptionKeySize,
+                           /*secure_connections=*/false),
+      kAuthenticatedSecure(SecurityLevel::kAuthenticated, kMaxEncryptionKeySize,
+                           /*secure_connections=*/true);
+
+  // kInsecure
+  kInsecure.AttachInspect(inspector.GetRoot(), "security_properties");
+  auto insecure_matcher = AllOf(NodeMatches(AllOf(
+      NameMatches("security_properties"),
+      PropertyList(UnorderedElementsAre(StringIs("level", "not secure"), BoolIs("encrypted", false),
+                                        BoolIs("secure_connections", false),
+                                        BoolIs("authenticated", false))))));
+
+  // kEncryptedLegacy
+  kEncryptedLegacy.AttachInspect(inspector.GetRoot(), "security_properties");
+  auto encrypted_legacy_matcher = AllOf(
+      NodeMatches(AllOf(NameMatches("security_properties"),
+                        PropertyList(UnorderedElementsAre(
+                            StringIs("level", "encrypted"), BoolIs("encrypted", true),
+                            BoolIs("secure_connections", false), BoolIs("authenticated", false),
+                            StringIs("key_type", "kUnauthenticatedCombination192"))))));
+
+  // kEncryptedSecure
+  kEncryptedSecure.AttachInspect(inspector.GetRoot(), "security_properties");
+  auto encrypted_secure_matcher = AllOf(
+      NodeMatches(AllOf(NameMatches("security_properties"),
+                        PropertyList(UnorderedElementsAre(
+                            StringIs("level", "encrypted"), BoolIs("encrypted", true),
+                            BoolIs("secure_connections", true), BoolIs("authenticated", false),
+                            StringIs("key_type", "kUnauthenticatedCombination256"))))));
+
+  // kAuthenticatedLegacy
+  kAuthenticatedLegacy.AttachInspect(inspector.GetRoot(), "security_properties");
+  auto authenticated_legacy_matcher = AllOf(
+      NodeMatches(AllOf(NameMatches("security_properties"),
+                        PropertyList(UnorderedElementsAre(
+                            StringIs("level", "Authenticated"), BoolIs("encrypted", true),
+                            BoolIs("secure_connections", false), BoolIs("authenticated", true),
+                            StringIs("key_type", "kAuthenticatedCombination192"))))));
+
+  // kAuthenticatedSecure
+  kAuthenticatedSecure.AttachInspect(inspector.GetRoot(), "security_properties");
+  auto authenticated_secure_matcher = AllOf(NodeMatches(AllOf(
+      NameMatches("security_properties"),
+      PropertyList(UnorderedElementsAre(
+          StringIs("level", "Authenticated with Secure Connections and 128-bit key"),
+          BoolIs("encrypted", true), BoolIs("secure_connections", true),
+          BoolIs("authenticated", true), StringIs("key_type", "kAuthenticatedCombination256"))))));
+
+  inspect::Hierarchy hierarchy = ReadInspect(inspector);
+  EXPECT_THAT(hierarchy, AllOf(ChildrenMatch(UnorderedElementsAre(
+                             insecure_matcher, encrypted_legacy_matcher, encrypted_secure_matcher,
+                             authenticated_legacy_matcher, authenticated_secure_matcher))));
+}
+#endif  // NINSPECT
 
 }  // namespace
 }  // namespace bt::sm

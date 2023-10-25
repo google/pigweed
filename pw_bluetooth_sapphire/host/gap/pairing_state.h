@@ -257,16 +257,19 @@ class PairingState final {
   void OnEncryptionChange(hci::Result<bool> result);
 
   void set_security_properties(sm::SecurityProperties& security) { bredr_security_ = security; }
-  const sm::SecurityProperties& security_properties() const { return bredr_security_; }
+  sm::SecurityProperties& security_properties() { return bredr_security_; }
 
   // Sets the BR/EDR Security Mode of the pairing state - see enum definition for details of each
   // mode. If a security upgrade is in-progress, only takes effect on the next security upgrade.
   void set_security_mode(gap::BrEdrSecurityMode mode) { security_mode_ = mode; }
   gap::BrEdrSecurityMode security_mode() const { return security_mode_; }
 
+  // Attach pairing state inspect node named |name| as a child of |parent|.
+  void AttachInspect(inspect::Node& parent, std::string name);
+
  private:
   // Current security properties of the ACL-U link.
-  sm::SecurityProperties bredr_security_ = sm::SecurityProperties();
+  sm::SecurityProperties bredr_security_;
 
   enum class State {
     // Wait for initiator's IO Capability Response, Link Key Request, or for locally-initiated
@@ -457,6 +460,12 @@ class PairingState final {
   // Cleanup work that should occur only once per connection; uniqueness is guaranteed by being
   // moved with PairingState. |self| shall be a pointer to the moved-to instance being cleaned up.
   fit::callback<void(PairingState* self)> cleanup_cb_;
+
+  struct InspectProperties {
+    inspect::StringProperty encryption_status;
+  };
+  InspectProperties inspect_properties_;
+  inspect::Node inspect_node_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingState);
 };

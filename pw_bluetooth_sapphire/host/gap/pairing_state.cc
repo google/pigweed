@@ -18,6 +18,13 @@ using pw::bluetooth::emboss::AuthenticationRequirements;
 using pw::bluetooth::emboss::IoCapability;
 using sm::util::IOCapabilityForHci;
 
+namespace {
+
+const char* const kInspectEncryptionStatusPropertyName = "encryption_status";
+const char* const kInspectSecurityPropertiesPropertyName = "security_properties";
+
+}  // namespace
+
 PairingState::PairingState(Peer::WeakPtr peer, hci::BrEdrConnection* link, bool link_initiated,
                            fit::closure auth_cb, StatusCallback status_cb)
     : peer_id_(peer->identifier()),
@@ -500,6 +507,10 @@ void PairingState::OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode st
 }
 
 void PairingState::OnEncryptionChange(hci::Result<bool> result) {
+  // Update inspect properties
+  pw::bluetooth::emboss::EncryptionStatus encryption_status = link_->encryption_status();
+  inspect_properties_.encryption_status.Set(EncryptionStatusToString(encryption_status));
+
   if (state() != State::kWaitEncryption) {
     // Ignore encryption changes when not expecting them because they may be triggered by the peer
     // at any time (v5.0 Vol 2, Part F, Sec 4.4).
@@ -733,6 +744,15 @@ bool PairingState::IsPeerSecureConnectionsSupported() const {
                                   hci_spec::LMPFeature::kSecureConnectionsHostSupport) &&
          peer_->features().HasBit(/*page=*/2,
                                   hci_spec::LMPFeature::kSecureConnectionsControllerSupport);
+}
+
+void PairingState::AttachInspect(inspect::Node& parent, std::string name) {
+  inspect_node_ = parent.CreateChild(name);
+
+  inspect_properties_.encryption_status = inspect_node_.CreateString(
+      kInspectEncryptionStatusPropertyName, EncryptionStatusToString(link_->encryption_status()));
+
+  security_properties().AttachInspect(inspect_node_, kInspectSecurityPropertiesPropertyName);
 }
 
 PairingAction GetInitiatorPairingAction(IoCapability initiator_cap, IoCapability responder_cap) {

@@ -136,8 +136,14 @@ adapter:
             manufacturer
             bredr_data:
                 connection_state
-                bonded
                 services
+                link_key:
+                    security_properties:
+                        encrypted
+                        secure_connections
+                        authenticated
+                        level
+                        key_type
             le_data:
                 connection_state
                 bonded
@@ -180,6 +186,7 @@ adapter:
                 peer_address
                 ref_count
     bredr_connection_manager:
+        security_mode
         disconnect_acl_link_error_count
         disconnect_interrogation_failed_count
         disconnect_local_api_request_count
@@ -202,6 +209,14 @@ adapter:
         connections:
             connection_0x0:
                 peer_id
+                pairing_state:
+                    encryption_status
+                    security_properties:
+                        encrypted
+                        secure_connections
+                        authenticated
+                        level
+                        key_type
         last_disconnected:
             0:
                 peer_id

@@ -4,12 +4,20 @@
 
 #include "types.h"
 
+#include <utility>
+
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt::sm {
 namespace {
+const char* const kInspectLevelPropertyName = "level";
+const char* const kInspectEncryptedPropertyName = "encrypted";
+const char* const kInspectSecureConnectionsPropertyName = "secure_connections";
+const char* const kInspectAuthenticatedPropertyName = "authenticated";
+const char* const kInspectKeyTypePropertyName = "key_type";
 
 bool IsEncryptedKey(hci_spec::LinkKeyType lk_type) {
   return (lk_type == hci_spec::LinkKeyType::kDebugCombination ||
@@ -41,9 +49,9 @@ const char* LevelToString(SecurityLevel level) {
     case SecurityLevel::kEncrypted:
       return "encrypted";
     case SecurityLevel::kAuthenticated:
-      return "encrypted (MITM)";
+      return "Authenticated";
     case SecurityLevel::kSecureAuthenticated:
-      return "encrypted (MITM) with Secure Connections and 128-bit key";
+      return "Authenticated with Secure Connections and 128-bit key";
     default:
       break;
   }
@@ -75,6 +83,14 @@ SecurityProperties::SecurityProperties(hci_spec::LinkKeyType lk_type)
                          IsSecureConnectionsKey(lk_type), kMaxEncryptionKeySize) {
   BT_DEBUG_ASSERT_MSG(lk_type != hci_spec::LinkKeyType::kChangedCombination,
                       "Can't infer security information from a Changed Combination Key");
+}
+
+SecurityProperties::SecurityProperties(const SecurityProperties& other) { *this = other; }
+
+SecurityProperties& SecurityProperties::operator=(const SecurityProperties& other) {
+  properties_ = other.properties_;
+  enc_key_size_ = other.enc_key_size_;
+  return *this;
 }
 
 SecurityLevel SecurityProperties::level() const {
@@ -130,8 +146,29 @@ bool SecurityProperties::IsAsSecureAs(const SecurityProperties& other) const {
   // clang-format on
 }
 
+void SecurityProperties::AttachInspect(inspect::Node& parent, std::string name) {
+  inspect_node_ = parent.CreateChild(name);
+
+  inspect_properties_.level =
+      inspect_node_.CreateString(kInspectLevelPropertyName, LevelToString(level()));
+  inspect_properties_.encrypted =
+      inspect_node_.CreateBool(kInspectEncryptedPropertyName, encrypted());
+  inspect_properties_.secure_connections =
+      inspect_node_.CreateBool(kInspectSecureConnectionsPropertyName, secure_connections());
+  inspect_properties_.authenticated =
+      inspect_node_.CreateBool(kInspectAuthenticatedPropertyName, authenticated());
+  if (GetLinkKeyType().has_value()) {
+    inspect_properties_.key_type = inspect_node_.CreateString(
+        kInspectKeyTypePropertyName, hci_spec::LinkKeyTypeToString(GetLinkKeyType().value()));
+  }
+}
+
 LTK::LTK(const SecurityProperties& security, const hci_spec::LinkKey& key)
     : security_(security), key_(key) {}
+
+void LTK::AttachInspect(inspect::Node& parent, std::string name) {
+  security_.AttachInspect(parent, std::move(name));
+}
 
 Key::Key(const SecurityProperties& security, const UInt128& value)
     : security_(security), value_(value) {}

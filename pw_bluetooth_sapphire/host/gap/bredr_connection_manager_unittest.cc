@@ -602,6 +602,8 @@ class BrEdrConnectionManagerTest : public TestingBase {
     TestingBase::TearDown();
   }
 
+  inspect::Inspector inspector() { return inspector_; }
+
  protected:
   static constexpr const int kShortInterrogationTransactions = 3;
   static constexpr const int kInterrogationTransactions = kShortInterrogationTransactions + 2;
@@ -785,6 +787,8 @@ class BrEdrConnectionManagerTest : public TestingBase {
   std::unique_ptr<PeerCache> peer_cache_;
   std::unique_ptr<l2cap::testing::FakeL2cap> l2cap_;
   int transaction_count_ = 0;
+
+  inspect::Inspector inspector_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnectionManagerTest);
 };
@@ -3929,8 +3933,7 @@ TEST_F(BrEdrConnectionManagerTest, IncomingRequestInitializesPeer) {
 
 #ifndef NINSPECT
 TEST_F(BrEdrConnectionManagerTest, Inspect) {
-  inspect::Inspector inspector;
-  connmgr()->AttachInspect(inspector.GetRoot(), "bredr_connection_manager");
+  connmgr()->AttachInspect(inspector().GetRoot(), "bredr_connection_manager");
 
   // Don't receive connection complete yet in order to keep request pending.
   EXPECT_CMD_PACKET_OUT(test_device(), testing::AcceptConnectionRequestPacket(kTestDevAddr),
@@ -3946,7 +3949,7 @@ TEST_F(BrEdrConnectionManagerTest, Inspect) {
       AllOf(NodeMatches(NameMatches("bredr_connection_manager")),
             ChildrenMatch(::testing::IsSupersetOf({requests_one_request_matcher})));
 
-  EXPECT_THAT(inspect::ReadFromVmo(inspector.DuplicateVmo()).value(),
+  EXPECT_THAT(inspect::ReadFromVmo(inspector().DuplicateVmo()).value(),
               ChildrenMatch(ElementsAre(conn_mgr_with_request_matcher)));
 
   QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
@@ -3960,11 +3963,14 @@ TEST_F(BrEdrConnectionManagerTest, Inspect) {
 
   auto empty_requests_matcher =
       AllOf(NodeMatches(NameMatches("connection_requests")), ChildrenMatch(::testing::IsEmpty()));
+
   auto connection_matcher = NodeMatches(
       AllOf(NameMatches("connection_0x1"),
             PropertyList(ElementsAre(StringIs("peer_id", peer->identifier().ToString())))));
+
   auto connections_matcher = AllOf(NodeMatches(NameMatches("connections")),
                                    ChildrenMatch(ElementsAre(connection_matcher)));
+
   auto recent_conn_list_matcher =
       AllOf(NodeMatches(NameMatches("last_disconnected")), ChildrenMatch(::testing::IsEmpty()));
 
@@ -3973,11 +3979,13 @@ TEST_F(BrEdrConnectionManagerTest, Inspect) {
                               PropertyList(UnorderedElementsAre(
                                   UintIs("connection_attempts", 1), UintIs("failed_connections", 0),
                                   UintIs("successful_connections", 0))))));
+
   auto outgoing_matcher =
       AllOf(NodeMatches(AllOf(NameMatches("outgoing"),
                               PropertyList(UnorderedElementsAre(
                                   UintIs("connection_attempts", 0), UintIs("failed_connections", 0),
                                   UintIs("successful_connections", 0))))));
+
   auto conn_mgr_matcher = AllOf(
       NodeMatches(AllOf(
           NameMatches("bredr_connection_manager"),
@@ -3986,12 +3994,13 @@ TEST_F(BrEdrConnectionManagerTest, Inspect) {
                                             UintIs("disconnect_local_api_request_count", 0),
                                             UintIs("disconnect_pairing_failed_count", 0),
                                             UintIs("disconnect_peer_disconnection_count", 0),
-                                            UintIs("interrogation_complete_count", 1))))),
+                                            UintIs("interrogation_complete_count", 1),
+                                            StringIs("security_mode", "Mode 4"))))),
       ChildrenMatch(UnorderedElementsAre(empty_requests_matcher, connections_matcher,
                                          recent_conn_list_matcher, incoming_matcher,
                                          outgoing_matcher)));
 
-  auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
+  auto hierarchy = inspect::ReadFromVmo(inspector().DuplicateVmo());
   EXPECT_THAT(hierarchy.value(), ChildrenMatch(ElementsAre(conn_mgr_matcher)));
 
   // Delay disconnect so connection has non-zero duration.
@@ -4008,6 +4017,7 @@ TEST_F(BrEdrConnectionManagerTest, Inspect) {
 
   auto requests_matcher =
       AllOf(NodeMatches(NameMatches("connection_requests")), ChildrenMatch(::testing::IsEmpty()));
+
   auto connections_after_disconnect_matcher =
       AllOf(NodeMatches(NameMatches("connections")), ChildrenMatch(::testing::IsEmpty()));
   auto recent_conn_list_after_disconnect_matcher = AllOf(
@@ -4025,12 +4035,13 @@ TEST_F(BrEdrConnectionManagerTest, Inspect) {
                                             UintIs("disconnect_local_api_request_count", 1),
                                             UintIs("disconnect_pairing_failed_count", 0),
                                             UintIs("disconnect_peer_disconnection_count", 0),
-                                            UintIs("interrogation_complete_count", 1))))),
+                                            UintIs("interrogation_complete_count", 1),
+                                            StringIs("security_mode", "Mode 4"))))),
       ChildrenMatch(UnorderedElementsAre(
           empty_requests_matcher, connections_after_disconnect_matcher, outgoing_matcher,
           incoming_matcher_after_disconnect, recent_conn_list_after_disconnect_matcher)));
 
-  hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
+  hierarchy = inspect::ReadFromVmo(inspector().DuplicateVmo());
   EXPECT_THAT(hierarchy.value(), ChildrenMatch(ElementsAre(conn_mgr_after_disconnect_matcher)));
 }
 #endif  // NINSPECT

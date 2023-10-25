@@ -11,6 +11,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/link_key.h"
@@ -126,6 +127,12 @@ class SecurityProperties final {
   // policies regarding debug keys.
   explicit SecurityProperties(hci_spec::LinkKeyType lk_type);
 
+  ~SecurityProperties() = default;
+
+  // Copy constructors that ignore InspectProperties
+  SecurityProperties(const SecurityProperties& other);
+  SecurityProperties& operator=(const SecurityProperties& other);
+
   SecurityLevel level() const;
   size_t enc_key_size() const { return enc_key_size_; }
   bool encrypted() const { return properties_ & Property::kEncrypted; }
@@ -149,6 +156,9 @@ class SecurityProperties final {
   // |other| did, and that `this` encryption key size is at least as large as |others|.
   bool IsAsSecureAs(const SecurityProperties& other) const;
 
+  // Attach pairing state inspect node named |name| as a child of |parent|.
+  void AttachInspect(inspect::Node& parent, std::string name);
+
   // Compare two properties for equality.
   bool operator==(const SecurityProperties& other) const {
     return properties_ == other.properties_ && enc_key_size_ == other.enc_key_size_;
@@ -157,6 +167,16 @@ class SecurityProperties final {
   bool operator!=(const SecurityProperties& other) const { return !(*this == other); }
 
  private:
+  struct InspectProperties {
+    inspect::StringProperty level;
+    inspect::BoolProperty encrypted;
+    inspect::BoolProperty secure_connections;
+    inspect::BoolProperty authenticated;
+    inspect::StringProperty key_type;
+  };
+  InspectProperties inspect_properties_;
+  inspect::Node inspect_node_;
+
   // Possible security properties for a link.
   enum Property : uint8_t {
     kEncrypted = (1 << 0),
@@ -182,6 +202,9 @@ class LTK final {
   }
 
   bool operator!=(const LTK& other) const { return !(*this == other); }
+
+  // Attach |security_| as child node of |parent| with specified |name|.
+  void AttachInspect(inspect::Node& parent, std::string name);
 
  private:
   SecurityProperties security_;

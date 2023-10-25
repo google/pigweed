@@ -11,6 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/utf_codecs.h"
 
@@ -72,9 +73,8 @@ Peer::LowEnergyData::LowEnergyData(Peer* owner)
 
 void Peer::LowEnergyData::AttachInspect(inspect::Node& parent, std::string name) {
   node_ = parent.CreateChild(name);
-  inspect_properties_.connection_state =
-      node_.CreateString(LowEnergyData::kInspectConnectionStateName,
-                         Peer::ConnectionStateToString(connection_state()));
+  inspect_properties_.connection_state = node_.CreateString(
+      LowEnergyData::kInspectConnectionStateName, ConnectionStateToString(connection_state()));
   inspect_properties_.last_adv_data_parse_failure =
       node_.CreateString(LowEnergyData::kInspectLastAdvertisingDataParseFailureName, "");
   adv_data_parse_failure_count_.AttachInspect(
@@ -241,9 +241,7 @@ void Peer::LowEnergyData::OnConnectionStateMaybeChanged(ConnectionState previous
 }
 
 Peer::BrEdrData::BrEdrData(Peer* owner)
-    : peer_(owner),
-      link_key_(std::nullopt, [](const std::optional<sm::LTK>& l) { return l.has_value(); }),
-      services_({}, MakeContainerOfToStringConvertFunction()) {
+    : peer_(owner), services_({}, MakeContainerOfToStringConvertFunction()) {
   BT_DEBUG_ASSERT(peer_);
   BT_DEBUG_ASSERT(peer_->identity_known());
 
@@ -258,7 +256,10 @@ void Peer::BrEdrData::AttachInspect(inspect::Node& parent, std::string name) {
   node_ = parent.CreateChild(name);
   inspect_properties_.connection_state = node_.CreateString(
       BrEdrData::kInspectConnectionStateName, ConnectionStateToString(connection_state()));
-  link_key_.AttachInspect(node_, BrEdrData::kInspectLinkKeyName);
+
+  if (bonded()) {
+    link_key_.value().AttachInspect(node_, BrEdrData::kInspectLinkKeyName);
+  }
   services_.AttachInspect(node_, BrEdrData::kInspectServicesName);
 }
 
@@ -427,15 +428,16 @@ void Peer::BrEdrData::SetBondData(const sm::LTK& link_key) {
   peer_->TryMakeNonTemporary();
 
   // Storing the key establishes the bond.
-  link_key_.Set(link_key);
+  link_key_ = link_key;
+  link_key_.value().AttachInspect(node_, BrEdrData::kInspectLinkKeyName);
 
   // PeerCache notifies listeners of new bonds, so no need to request that here.
   peer_->UpdatePeerAndNotifyListeners(NotifyListenersChange::kBondNotUpdated);
 }
 
 void Peer::BrEdrData::ClearBondData() {
-  BT_ASSERT(link_key_->has_value());
-  link_key_.Set(std::nullopt);
+  BT_ASSERT(link_key_.has_value());
+  link_key_ = std::nullopt;
 }
 
 void Peer::BrEdrData::AddService(UUID uuid) {

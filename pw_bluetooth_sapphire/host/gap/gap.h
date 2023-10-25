@@ -12,6 +12,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 
+#include <pw_bluetooth/hci_events.emb.h>
+
 // This file contains constants and numbers that are part of the Generic Access
 // Profile specification.
 
@@ -53,6 +55,8 @@ enum class LESecurityMode {
   SecureConnectionsOnly,
 };
 const char* LeSecurityModeToString(LESecurityMode mode);
+
+const char* EncryptionStatusToString(pw::bluetooth::emboss::EncryptionStatus status);
 
 // Placeholder assigned as the local name when gap::Adapter is initialized.
 constexpr char kDefaultLocalName[] = "fuchsia";

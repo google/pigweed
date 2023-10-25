@@ -153,7 +153,7 @@ class BrEdrConnectionManager final {
   // Security Mode 4 Level 4 will be disconnected.
   void SetSecurityMode(BrEdrSecurityMode mode);
 
-  BrEdrSecurityMode security_mode() { return security_mode_; }
+  BrEdrSecurityMode security_mode() { return *security_mode_; }
 
   // If `reason` is DisconnectReason::kApiRequest, then incoming connections from `peer_id` are
   // rejected for kLocalDisconnectCooldownDuration
@@ -332,7 +332,9 @@ class BrEdrConnectionManager final {
   ConnectionMap connections_;
 
   // Current security mode
-  BrEdrSecurityMode security_mode_ = BrEdrSecurityMode::Mode4;
+  StringInspectable<BrEdrSecurityMode> security_mode_{
+      BrEdrSecurityMode::Mode4,
+      /*convert=*/[](auto mode) { return BrEdrSecurityModeToString(mode); }};
 
   // Holds a denylist with cooldowns for locally requested disconnects.
   ExpiringSet<DeviceAddress> deny_incoming_;

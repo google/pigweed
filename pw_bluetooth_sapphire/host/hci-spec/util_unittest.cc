@@ -36,5 +36,38 @@ TEST(UtilTest, AdvertisingTypeToEventBits) {
   EXPECT_EQ(0b00010000, bits.value());
 }
 
+TEST(UtilTest, LinkKeyTypeToString) {
+  std::string link_key_type = LinkKeyTypeToString(hci_spec::LinkKeyType::kCombination);
+  EXPECT_EQ("kCombination", link_key_type);
+
+  link_key_type = LinkKeyTypeToString(hci_spec::LinkKeyType::kLocalUnit);
+  EXPECT_EQ("kLocalUnit", link_key_type);
+
+  link_key_type = LinkKeyTypeToString(hci_spec::LinkKeyType::kRemoteUnit);
+  EXPECT_EQ("kRemoteUnit", link_key_type);
+
+  link_key_type = LinkKeyTypeToString(hci_spec::LinkKeyType::kDebugCombination);
+  EXPECT_EQ("kDebugCombination", link_key_type);
+
+  link_key_type = LinkKeyTypeToString(hci_spec::LinkKeyType::kUnauthenticatedCombination192);
+  EXPECT_EQ("kUnauthenticatedCombination192", link_key_type);
+
+  link_key_type = LinkKeyTypeToString(hci_spec::LinkKeyType::kAuthenticatedCombination192);
+  EXPECT_EQ("kAuthenticatedCombination192", link_key_type);
+
+  link_key_type = LinkKeyTypeToString(hci_spec::LinkKeyType::kChangedCombination);
+  EXPECT_EQ("kChangedCombination", link_key_type);
+
+  link_key_type = LinkKeyTypeToString(hci_spec::LinkKeyType::kUnauthenticatedCombination256);
+  EXPECT_EQ("kUnauthenticatedCombination256", link_key_type);
+
+  link_key_type = LinkKeyTypeToString(hci_spec::LinkKeyType::kAuthenticatedCombination256);
+  EXPECT_EQ("kAuthenticatedCombination256", link_key_type);
+
+  // Unknown link key type
+  link_key_type = LinkKeyTypeToString(static_cast<hci_spec::LinkKeyType>(0xFF));
+  EXPECT_EQ("(Unknown)", link_key_type);
+}
+
 }  // namespace
 }  // namespace bt::hci_spec

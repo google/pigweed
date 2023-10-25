@@ -202,6 +202,66 @@ TEST_F(PeerTest, InspectHierarchy) {
 
   peer().MutBrEdr().AddService(UUID(uint16_t{0x110b}));
 
+  auto bredr_data_matcher = AllOf(NodeMatches(
+      AllOf(NameMatches(Peer::BrEdrData::kInspectNodeName),
+            PropertyList(UnorderedElementsAre(
+                StringIs(Peer::BrEdrData::kInspectConnectionStateName,
+                         Peer::ConnectionStateToString(peer().bredr()->connection_state())),
+                StringIs(Peer::BrEdrData::kInspectServicesName,
+                         "{ 0000110b-0000-1000-8000-00805f9b34fb }"))))));
+
+  auto le_data_matcher = AllOf(NodeMatches(
+      AllOf(NameMatches(Peer::LowEnergyData::kInspectNodeName),
+            PropertyList(UnorderedElementsAre(
+                StringIs(Peer::LowEnergyData::kInspectConnectionStateName,
+                         Peer::ConnectionStateToString(peer().le()->connection_state())),
+                IntIs(Peer::LowEnergyData::kInspectAdvertisingDataParseFailureCountName, 0),
+                StringIs(Peer::LowEnergyData::kInspectLastAdvertisingDataParseFailureName, ""),
+                BoolIs(Peer::LowEnergyData::kInspectBondDataName, peer().le()->bonded()),
+                StringIs(Peer::LowEnergyData::kInspectFeaturesName, "0x0000000000000001"))))));
+
+  auto peer_matcher = AllOf(
+      NodeMatches(PropertyList(UnorderedElementsAre(
+          StringIs(Peer::kInspectPeerIdName, peer().identifier().ToString()),
+          StringIs(Peer::kInspectPeerNameName,
+                   peer().name().value() + " [source: " +
+                       Peer::NameSourceToString(Peer::NameSource::kGenericAccessService) + "]"),
+          StringIs(Peer::kInspectTechnologyName, TechnologyTypeToString(peer().technology())),
+          StringIs(Peer::kInspectAddressName, peer().address().ToString()),
+          BoolIs(Peer::kInspectConnectableName, peer().connectable()),
+          BoolIs(Peer::kInspectTemporaryName, peer().temporary()),
+          StringIs(Peer::kInspectFeaturesName, peer().features().ToString()),
+          StringIs(Peer::kInspectVersionName,
+                   hci_spec::HCIVersionToString(peer().version().value())),
+          StringIs(Peer::kInspectManufacturerName, GetManufacturerName(kManufacturer))))),
+      ChildrenMatch(UnorderedElementsAre(bredr_data_matcher, le_data_matcher)));
+  // clang-format on
+  inspect::Hierarchy hierarchy = ReadPeerInspect();
+  EXPECT_THAT(hierarchy, AllOf(ChildrenMatch(UnorderedElementsAre(peer_matcher))));
+}
+#endif  // NINSPECT
+
+#ifndef NINSPECT
+TEST_F(PeerTest, SetBrEdrBondDataUpdatesInspectProperties) {
+  const char* const kInspectLevelPropertyName = "level";
+  const char* const kInspectEncryptedPropertyName = "encrypted";
+  const char* const kInspectSecureConnectionsPropertyName = "secure_connections";
+  const char* const kInspectAuthenticatedPropertyName = "authenticated";
+  const char* const kInspectKeyTypePropertyName = "key_type";
+
+  peer().set_version(pw::bluetooth::emboss::CoreSpecificationVersion::V5_0, kManufacturer,
+                     kSubversion);
+
+  peer().RegisterName("Sapphire💖", Peer::NameSource::kGenericAccessService);
+
+  peer().MutLe();
+  ASSERT_TRUE(peer().le().has_value());
+
+  peer().MutLe().SetFeatures(hci_spec::LESupportedFeatures{0x0000000000000001});
+
+  peer().MutBrEdr().AddService(UUID(uint16_t{0x110b}));
+  peer().MutBrEdr().SetBondData(kLTK);
+
   // clang-format off
   auto bredr_data_matcher = AllOf(
     NodeMatches(AllOf(
@@ -209,7 +269,6 @@ TEST_F(PeerTest, InspectHierarchy) {
       PropertyList(UnorderedElementsAre(
         StringIs(Peer::BrEdrData::kInspectConnectionStateName,
                  Peer::ConnectionStateToString(peer().bredr()->connection_state())),
-        BoolIs(Peer::BrEdrData::kInspectLinkKeyName, peer().bredr()->bonded()),
         StringIs(Peer::BrEdrData::kInspectServicesName, "{ 0000110b-0000-1000-8000-00805f9b34fb }")
         )))));
 
@@ -242,6 +301,59 @@ TEST_F(PeerTest, InspectHierarchy) {
   // clang-format on
   inspect::Hierarchy hierarchy = ReadPeerInspect();
   EXPECT_THAT(hierarchy, AllOf(ChildrenMatch(UnorderedElementsAre(peer_matcher))));
+
+  peer().MutBrEdr().SetBondData(kSecureBrEdrKey);
+
+  const sm::SecurityProperties security_properties = peer().bredr()->link_key().value().security();
+  auto link_key_matcher = AllOf(NodeMatches(AllOf(
+      NameMatches("link_key"),
+      PropertyList(UnorderedElementsAre(
+          StringIs(kInspectLevelPropertyName, LevelToString(security_properties.level())),
+          BoolIs(kInspectEncryptedPropertyName, security_properties.encrypted()),
+          BoolIs(kInspectSecureConnectionsPropertyName, security_properties.secure_connections()),
+          BoolIs(kInspectAuthenticatedPropertyName, security_properties.authenticated()),
+          StringIs(
+              kInspectKeyTypePropertyName,
+              hci_spec::LinkKeyTypeToString(security_properties.GetLinkKeyType().value())))))));
+
+  auto bredr_data_matcher2 =
+      AllOf(NodeMatches(AllOf(
+                NameMatches(Peer::BrEdrData::kInspectNodeName),
+                PropertyList(UnorderedElementsAre(
+                    StringIs(Peer::BrEdrData::kInspectConnectionStateName,
+                             Peer::ConnectionStateToString(peer().bredr()->connection_state())),
+                    StringIs(Peer::BrEdrData::kInspectServicesName,
+                             "{ 0000110b-0000-1000-8000-00805f9b34fb }"))))),
+            ChildrenMatch(UnorderedElementsAre(link_key_matcher)));
+
+  auto le_data_matcher2 = AllOf(NodeMatches(
+      AllOf(NameMatches(Peer::LowEnergyData::kInspectNodeName),
+            PropertyList(UnorderedElementsAre(
+                StringIs(Peer::LowEnergyData::kInspectConnectionStateName,
+                         Peer::ConnectionStateToString(peer().le()->connection_state())),
+                IntIs(Peer::LowEnergyData::kInspectAdvertisingDataParseFailureCountName, 0),
+                StringIs(Peer::LowEnergyData::kInspectLastAdvertisingDataParseFailureName, ""),
+                BoolIs(Peer::LowEnergyData::kInspectBondDataName, peer().le()->bonded()),
+                StringIs(Peer::LowEnergyData::kInspectFeaturesName, "0x0000000000000001"))))));
+
+  auto peer_matcher2 = AllOf(
+      NodeMatches(PropertyList(UnorderedElementsAre(
+          StringIs(Peer::kInspectPeerIdName, peer().identifier().ToString()),
+          StringIs(Peer::kInspectPeerNameName,
+                   peer().name().value() + " [source: " +
+                       Peer::NameSourceToString(Peer::NameSource::kGenericAccessService) + "]"),
+          StringIs(Peer::kInspectTechnologyName, TechnologyTypeToString(peer().technology())),
+          StringIs(Peer::kInspectAddressName, peer().address().ToString()),
+          BoolIs(Peer::kInspectConnectableName, peer().connectable()),
+          BoolIs(Peer::kInspectTemporaryName, peer().temporary()),
+          StringIs(Peer::kInspectFeaturesName, peer().features().ToString()),
+          StringIs(Peer::kInspectVersionName,
+                   hci_spec::HCIVersionToString(peer().version().value())),
+          StringIs(Peer::kInspectManufacturerName, GetManufacturerName(kManufacturer))))),
+      ChildrenMatch(UnorderedElementsAre(bredr_data_matcher2, le_data_matcher2)));
+  // clang-format on
+  hierarchy = ReadPeerInspect();
+  EXPECT_THAT(hierarchy, AllOf(ChildrenMatch(UnorderedElementsAre(peer_matcher2))));
 }
 #endif  // NINSPECT
 

@@ -11,8 +11,9 @@ namespace bt::gap {
 namespace {
 
 const char* const kInspectPeerIdPropertyName = "peer_id";
+const char* const kInspectPairingStateNodeName = "pairing_state";
 
-}
+}  // namespace
 
 BrEdrConnection::BrEdrConnection(Peer::WeakPtr peer, std::unique_ptr<hci::BrEdrConnection> link,
                                  fit::closure send_auth_request_cb,
@@ -111,6 +112,8 @@ void BrEdrConnection::AttachInspect(inspect::Node& parent, std::string name) {
   inspect_node_ = parent.CreateChild(name);
   inspect_properties_.peer_id =
       inspect_node_.CreateString(kInspectPeerIdPropertyName, peer_id_.ToString());
+
+  pairing_state_->AttachInspect(inspect_node_, kInspectPairingStateNodeName);
 }
 
 void BrEdrConnection::OnPairingStateStatus(hci_spec::ConnectionHandle handle,
