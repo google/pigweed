@@ -26,9 +26,17 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import List
 
-from pw_arduino_build import core_installer, log
-from pw_arduino_build.builder import ArduinoBuilder
-from pw_arduino_build.file_operations import decode_file_json
+try:
+    from pw_arduino_build import core_installer, log
+    from pw_arduino_build.builder import ArduinoBuilder
+    from pw_arduino_build.file_operations import decode_file_json
+
+except ImportError:
+    # Load from this directory if pw_arduino_build is not available.
+    import core_installer  # type: ignore
+    import log  # type: ignore
+    from builder import ArduinoBuilder  # type: ignore
+    from file_operations import decode_file_json  # type: ignore
 
 _LOG = logging.getLogger(__name__)
 

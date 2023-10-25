@@ -23,7 +23,12 @@ import platform
 import shutil
 from typing import Dict
 
-from pw_arduino_build import file_operations
+try:
+    from pw_arduino_build import file_operations
+
+except ImportError:
+    # Load this directory if pw_arduino_build is not available.
+    import file_operations  # type: ignore
 
 _LOG = logging.getLogger(__name__)
 
@@ -128,10 +133,10 @@ _ARDUINO_CORE_ARTIFACTS: Dict[str, Dict] = {
     "stm32duino": {
         "all": {
             "core": {
-                "version": "1.9.0",
-                "url": "https://github.com/stm32duino/Arduino_Core_STM32/archive/1.9.0.tar.gz",
-                "file_name": "stm32duino-1.9.0.tar.gz",
-                "sha256": "4f75ba7a117d90392e8f67c58d31d22393749b9cdd3279bc21e7261ec06c62bf",
+                "version": "2.6.0",
+                "url": "https://github.com/stm32duino/Arduino_Core_STM32/archive/2.6.0.tar.gz",
+                "file_name": "stm32duino-2.6.0.tar.gz",
+                "sha256": "53f37df1202b1bccfb353e4775200f63b36d487fe734fdb8ca9bfa00c2f3429f",
             }
         },
         "Linux": {},

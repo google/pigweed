@@ -26,7 +26,12 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import List
 
-from pw_arduino_build import file_operations
+try:
+    from pw_arduino_build import file_operations
+
+except ImportError:
+    # Load from this directory if pw_arduino_build is not available.
+    import file_operations  # type: ignore
 
 _LOG = logging.getLogger(__name__)
 
@@ -249,6 +254,19 @@ class ArduinoBuilder:
             if not self.library_names:
                 self.library_names = []
             self.library_names.append("SrcWrapper")
+
+            # Surround args in quotes if they contain any quote characters.
+            # Example:
+            #   before: -DVARIANT_H="variant_generic.h"
+            #   after:  "-DVARIANT_H=\"variant_generic.h\""
+            build_info_args = []
+            for arg in self.platform["build.info.flags"].split():
+                if '"' not in arg:
+                    build_info_args.append(arg)
+                    continue
+                new_arg = arg.replace('"', '\\"')
+                build_info_args.append(f'"{new_arg}"')
+            self.platform["build.info.flags"] = ' '.join(build_info_args)
 
     def _copy_default_menu_options_to_build_variables(self):
         # Clear existing options
@@ -571,8 +589,10 @@ class ArduinoBuilder:
             self.build_variant_path = bvp
             self.board[self.selected_board]["build.variant.path"] = bvp
             # Add the variant folder as an include directory
-            # (used in stm32l4 core)
-            self.variant_includes = "-I{}".format(bvp)
+            # This is used in the stm32l4 and stm32duino cores. Include
+            # directories should be surrounded in quotes in case they contain
+            # spaces or parens.
+            self.variant_includes = "\"-I{}\"".format(bvp)
 
         _LOG.debug("PLATFORM INITIAL: %s", _pretty_format(self.platform))
 
