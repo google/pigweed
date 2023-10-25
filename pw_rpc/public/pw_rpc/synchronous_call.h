@@ -201,10 +201,10 @@ SynchronousCallFor(
 /// @param client The generated service client to use for the call
 /// @param request The proto struct to send as the request
 /// @param timeout Duration to block for before returning with Timeout
-template <auto kRpcMethod>
+template <auto kRpcMethod, typename GeneratedClient>
 SynchronousCallResult<typename internal::MethodInfo<kRpcMethod>::Response>
 SynchronousCallFor(
-    const typename internal::MethodInfo<kRpcMethod>::GeneratedClient& client,
+    const GeneratedClient& client,
     const typename internal::MethodInfo<kRpcMethod>::Request& request,
     chrono::SystemClock::duration timeout) {
   return internal::StructSynchronousCall<kRpcMethod>(
