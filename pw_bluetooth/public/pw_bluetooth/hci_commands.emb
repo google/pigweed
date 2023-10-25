@@ -261,6 +261,12 @@ bits LEScanPHYBits:
     -- Scan advertisements on the LE Coded PHY
 
 
+bits LEInitiatingPHYBits:
+  0 [+1]  Flag  le_1m
+  1 [+1]  Flag  le_2m
+  2 [+1]  Flag  le_coded
+
+
 enum LEPrivacyMode:
   -- Possible values for the |privacy_mode| parameter in an LE Set Privacy Mode
   -- command
@@ -2526,8 +2532,55 @@ struct LESetExtendedScanEnableCommand:
     --     Time = N * 1.28 sec
     --     Time Range: 1.28 s to 83,884.8 s
 
-# 7.8.66 LE Extended Create Connection command
-# HCI_LE_Extended_Create_Connection [v1] [v2]
+
+struct LEExtendedCreateConnectionV1:
+  -- 7.8.66 LE Extended Create Connection command version 1
+  -- HCI_LE_Extended_Create_Connection v1
+  let hdr_size = hci.CommandHeader.$size_in_bytes
+  0     [+hdr_size]                             hci.CommandHeader       header
+  $next [+1]                                    hci.GenericEnableParam  initiator_filter_policy
+  $next [+1]                                    LEOwnAddressType        own_address_type
+  $next [+1]                                    hci.LEPeerAddressType   peer_address_type
+  $next [+hci.BdAddr.$size_in_bytes]            hci.BdAddr              peer_address
+  $next [+1]  bits:
+    0     [+LEInitiatingPHYBits.$size_in_bits]  LEInitiatingPHYBits     initiating_phys
+
+  let num_entries = (initiating_phys.le_1m ? 1 : 0)+(initiating_phys.le_2m ? 1 : 0)+(initiating_phys.le_coded ? 1 : 0)
+  $next [+2*num_entries]                        UInt:16[num_entries]    scan_interval
+    -- Time interval from when the Controller started its last scan until it begins the subsequent
+    -- scan on the primary advertising physical channel.
+    -- Time = N × 0.625 ms
+    -- Time Range: 2.5 ms to 40.959375 s
+
+  $next [+2*num_entries]                        UInt:16[num_entries]    scan_window
+    -- Duration of the scan on the primary advertising physical channel.
+    -- Time = N × 0.625 ms
+    -- Time Range: 2.5 ms to 40.959375 s
+
+  $next [+2*num_entries]                        UInt:16[num_entries]    connection_interval_min
+    -- Time: N * 1.25 ms
+    -- Time Range: 7.5 ms to 4 s.
+
+  $next [+2*num_entries]                        UInt:16[num_entries]    connection_interval_max
+    -- Time: N * 1.25 ms
+    -- Time Range: 7.5 ms to 4 s.
+
+  $next [+2*num_entries]                        UInt:16[num_entries]    max_latency
+    -- Maximum Peripheral latency for the connection in number of connection events.
+
+  $next [+2*num_entries]                        UInt:16[num_entries]    supervision_timeout
+    -- See Core Spec v5.3, Vol 6, Part B, Section 4.5.2.
+    -- Time: N * 10 ms
+    -- Time Range: 100 ms to 32 s
+
+  $next [+2*num_entries]                        UInt:16[num_entries]    min_connection_event_length
+    -- Time: N * 0.625 ms
+
+  $next [+2*num_entries]                        UInt:16[num_entries]    max_connection_event_length
+    -- Time: N * 0.625 ms
+
+# 7.8.66 LE Extended Create Connection command version 2
+# HCI_LE_Extended_Create_Connection v2
 # TODO: b/265052417 - Definition needs to be added
 
 
