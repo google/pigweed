@@ -50,7 +50,32 @@ pw_proto_library(pw_third_party.nanopb.proto
 # Generates nanopb_pb2.py, which is needed to compile protobufs with Nanopb.
 add_custom_command(
   COMMAND
-    python3 "${CMAKE_CURRENT_LIST_DIR}/generate_nanopb_proto.py" "${dir_pw_third_party_nanopb}"
+    python3
+    "${CMAKE_CURRENT_LIST_DIR}/generate_nanopb_proto.py"
+    --nanopb-root "${dir_pw_third_party_nanopb}"
+    --protoc-binary "$ENV{PW_PIGWEED_CIPD_INSTALL_DIR}/bin/protoc"
+  DEPENDS
+    "${CMAKE_CURRENT_LIST_DIR}/generate_nanopb_proto.py"
+    "${dir_pw_third_party_nanopb}/pb.h"
+    "${dir_pw_third_party_nanopb}/pb_common.h"
+    "${dir_pw_third_party_nanopb}/pb_decode.h"
+    "${dir_pw_third_party_nanopb}/pb_encode.h"
+    "${dir_pw_third_party_nanopb}/pb_common.c"
+    "${dir_pw_third_party_nanopb}/pb_decode.c"
+    "${dir_pw_third_party_nanopb}/pb_encode.c"
+    "${dir_pw_third_party_nanopb}/generator/nanopb_generator.py"
+    "${dir_pw_third_party_nanopb}/generator/proto/google/protobuf"
+    "${dir_pw_third_party_nanopb}/generator/proto/google/protobuf/descriptor.proto"
+    "${dir_pw_third_party_nanopb}/generator/proto/__init__.py"
+    "${dir_pw_third_party_nanopb}/generator/proto/nanopb.proto"
+    "${dir_pw_third_party_nanopb}/generator/proto/_utils.py"
+    "${dir_pw_third_party_nanopb}/generator/protoc-gen-nanopb"
+    "${dir_pw_third_party_nanopb}/generator/nanopb_generator.py2"
+    "${dir_pw_third_party_nanopb}/generator/protoc-gen-nanopb-py2"
+    "${dir_pw_third_party_nanopb}/generator/protoc"
+    "${dir_pw_third_party_nanopb}/generator/protoc-gen-nanopb.bat"
+    "${dir_pw_third_party_nanopb}/generator/protoc.bat"
+    "$ENV{PW_PIGWEED_CIPD_INSTALL_DIR}/bin/protoc"
   OUTPUT
     "${dir_pw_third_party_nanopb}/generator/proto/nanopb_pb2.py"
 )

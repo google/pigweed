@@ -60,8 +60,56 @@ if (dir_pw_third_party_nanopb != "") {
     sources = [ "generate_nanopb_proto.py" ]
     pylintrc = "$dir_pigweed/.pylintrc"
     mypy_ini = "$dir_pigweed/.mypy.ini"
+
+    # Path to protoc binary. This variable is relative to the build directory,
+    # so it must be rebased as a source-tree-absolute path.
+    _protoc_binary_path =
+        "//" +
+        rebase_path(pw_protobuf_compiler_PROTOC_BINARY, "//", root_build_dir)
+
+    if (host_os == "win") {
+      if (get_path_info(_protoc_binary_path, "extension") != "exe" &&
+          get_path_info(_protoc_binary_path, "extension") != "bat") {
+        _protoc_binary_path += ".exe"
+      }
+    }
+
+    inputs = [
+      "$dir_pw_third_party_nanopb/pb.h",
+      "$dir_pw_third_party_nanopb/pb_common.h",
+      "$dir_pw_third_party_nanopb/pb_decode.h",
+      "$dir_pw_third_party_nanopb/pb_encode.h",
+      "$dir_pw_third_party_nanopb/pb_common.c",
+      "$dir_pw_third_party_nanopb/pb_decode.c",
+      "$dir_pw_third_party_nanopb/pb_encode.c",
+      "$dir_pw_third_party_nanopb/generator/nanopb_generator.py",
+      "$dir_pw_third_party_nanopb/generator/proto/google/protobuf",
+      "$dir_pw_third_party_nanopb/generator/proto/google/protobuf/descriptor.proto",
+      "$dir_pw_third_party_nanopb/generator/proto/__init__.py",
+      "$dir_pw_third_party_nanopb/generator/proto/nanopb.proto",
+      "$dir_pw_third_party_nanopb/generator/proto/_utils.py",
+      "$dir_pw_third_party_nanopb/generator/protoc-gen-nanopb",
+      "$dir_pw_third_party_nanopb/generator/nanopb_generator.py2",
+      "$dir_pw_third_party_nanopb/generator/protoc-gen-nanopb-py2",
+      "$dir_pw_third_party_nanopb/generator/protoc",
+      "$dir_pw_third_party_nanopb/generator/protoc-gen-nanopb.bat",
+      "$dir_pw_third_party_nanopb/generator/protoc.bat",
+      _protoc_binary_path,
+    ]
     action = {
-      args = [ rebase_path(dir_pw_third_party_nanopb, root_build_dir) ]
+      args = [
+        "--nanopb-root=" +
+            rebase_path(dir_pw_third_party_nanopb, root_build_dir),
+        "--protoc-binary=" + pw_protobuf_compiler_PROTOC_BINARY,
+      ]
+      if (pw_third_party_nanopb_AGGRESSIVE_NANOPB_PB2_REGEN) {
+        args += [ "--aggressive-regen" ]
+      }
+
+      # Nanopb writes a file to:
+      #   $dir_pw_third_party_nanopb/generator/proto/nanopb_pb2.py
+      # Since this is in the source tree, we can't track it as an output. 😒
+      # Use a stamp instead.
       stamp = true
     }
   }

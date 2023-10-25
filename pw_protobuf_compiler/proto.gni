@@ -13,6 +13,7 @@
 # the License.
 
 import("//build_overrides/pigweed.gni")
+import("//build_overrides/pigweed_environment.gni")
 
 import("$dir_pw_build/error.gni")
 import("$dir_pw_build/input_group.gni")
@@ -32,11 +33,26 @@ _forwarded_vars = [
 ]
 
 declare_args() {
-  # To override the protobuf compiler used set this to the GN target that builds the protobuf compiler.
+  # To override the protobuf compiler used set this to the GN target that builds
+  # the protobuf compiler.
   pw_protobuf_compiler_PROTOC_TARGET = ""
+}
 
-  # To override the protobuf compiler used set this to the path, relative to the root_build_dir, to the protoc binary.
-  pw_protobuf_compiler_PROTOC_BINARY = ""
+if (pw_protobuf_compiler_PROTOC_TARGET == "" &&
+    defined(pw_env_setup_CIPD_PIGWEED)) {
+  _default_protc =
+      rebase_path("$pw_env_setup_CIPD_PIGWEED/bin/protoc", root_build_dir)
+  if (host_os == "win") {
+    _default_protc += ".exe"
+  }
+} else {
+  _default_protc = ""
+}
+
+declare_args() {
+  # To override the protobuf compiler used set this to the path, relative to the
+  # root_build_dir, to the protoc binary.
+  pw_protobuf_compiler_PROTOC_BINARY = _default_protc
 }
 
 # Internal template that invokes protoc with a pw_python_action. This should not

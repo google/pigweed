@@ -25,4 +25,13 @@ declare_args() {
   # module. This should point to a source set that provides defines through a
   # public config (which may -include a file or add defines directly).
   pw_third_party_nanopb_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
+
+  # Regenerates `$dir_pw_third_party_nanopb/generator/proto/nanopb_pb2.py`
+  # whenever the `generate_nanopb_proto` action is run. If this is set to false,
+  # the file will only be regenerated if `protoc` is newer than the generated
+  # `nanopb_pb2.py`.
+  #
+  # Aggressive regeneration is NOT safe if this build will run in parallel with
+  # other build systems that try to read `nanopb_pb2.py`.
+  pw_third_party_nanopb_AGGRESSIVE_NANOPB_PB2_REGEN = true
 }
