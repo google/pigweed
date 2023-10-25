@@ -69,3 +69,19 @@ pw_cc_toolchain_feature(
     name = "wnon_virtual_dtor",
     cxxopts = ["-Wnon-virtual-dtor"],
 )
+
+# Standard compiler flags to reduce output binary size.
+pw_cc_toolchain_feature(
+    name = "reduced_size",
+    copts = [
+        "-fno-common",
+        "-fno-exceptions",
+        "-ffunction-sections",
+        "-fdata-sections",
+    ],
+)
+
+pw_cc_toolchain_feature(
+    name = "debugging",
+    copts = ["-g"],
+)

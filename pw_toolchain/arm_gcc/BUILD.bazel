@@ -68,7 +68,6 @@ pw_cc_toolchain_feature(
     ],
     copts = [
         "-ffreestanding",
-        "-fno-common",
         "-Wno-psabi",
         "-specs=nano.specs",
         "-specs=nosys.specs",
@@ -187,6 +186,8 @@ pw_cc_toolchain_feature(
     feature_deps = [
         "@pw_toolchain//features:o2",
         "@pw_toolchain//features:c++17",
+        "@pw_toolchain//features:debugging",
+        "@pw_toolchain//features:reduced_size",
         "@pw_toolchain//features:no_canonical_prefixes",
         "@pw_toolchain//features:no_rtti",
         "@pw_toolchain//features:wno_register",

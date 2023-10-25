@@ -17,18 +17,6 @@
 
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 
-DEBUGGING = [
-    "-g",
-]
-
-# Standard compiler flags to reduce output binary size.
-REDUCED_SIZE_COPTS = [
-    "-fno-common",
-    "-fno-exceptions",
-    "-ffunction-sections",
-    "-fdata-sections",
-]
-
 STRICT_WARNINGS_COPTS = [
     "-Wall",
     "-Wextra",
@@ -38,11 +26,7 @@ STRICT_WARNINGS_COPTS = [
     "-Wno-error=deprecated-declarations",  # [[deprecated]] attribute
 ]
 
-PW_DEFAULT_COPTS = (
-    DEBUGGING +
-    REDUCED_SIZE_COPTS +
-    STRICT_WARNINGS_COPTS
-)
+PW_DEFAULT_COPTS = STRICT_WARNINGS_COPTS
 
 KYTHE_COPTS = [
     "-Wno-unknown-warning-option",
