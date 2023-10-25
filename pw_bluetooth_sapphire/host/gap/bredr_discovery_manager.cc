@@ -24,6 +24,19 @@ namespace bt::gap {
 
 namespace {
 
+// Make an existing peer connectable, or add a connectable peer if one does not
+// already exist.
+Peer* AddOrUpdateConnectablePeer(PeerCache* cache, const DeviceAddress& addr) {
+  Peer* peer = cache->FindByAddress(addr);
+  if (!peer) {
+    peer = cache->NewPeer(addr, /*connectable=*/true);
+  } else {
+    peer->set_connectable(true);
+  }
+  BT_ASSERT(peer);
+  return peer;
+}
+
 std::unordered_set<Peer*> ProcessInquiryResultEvent(
     PeerCache* cache, const pw::bluetooth::emboss::InquiryResultWithRssiEventView& event) {
   bt_log(TRACE, "gap-bredr", "inquiry result received");
@@ -31,11 +44,7 @@ std::unordered_set<Peer*> ProcessInquiryResultEvent(
   auto responses = event.responses();
   for (auto response : responses) {
     DeviceAddress addr(DeviceAddress::Type::kBREDR, DeviceAddressBytes(response.bd_addr()));
-    Peer* peer = cache->FindByAddress(addr);
-    if (!peer) {
-      peer = cache->NewPeer(addr, /*connectable=*/true);
-    }
-    BT_ASSERT(peer);
+    Peer* peer = AddOrUpdateConnectablePeer(cache, addr);
     peer->MutBrEdr().SetInquiryData(response);
     updated.insert(peer);
   }
@@ -229,12 +238,7 @@ hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::InquiryResult(
   for (int i = 0; i < view.num_responses().Read(); i++) {
     const auto response = view.responses()[i];
     DeviceAddress addr(DeviceAddress::Type::kBREDR, DeviceAddressBytes{response.bd_addr()});
-    Peer* peer = cache_->FindByAddress(addr);
-    if (!peer) {
-      peer = cache_->NewPeer(addr, /*connectable=*/true);
-    }
-    BT_ASSERT(peer);
-
+    Peer* peer = AddOrUpdateConnectablePeer(cache_, addr);
     peer->MutBrEdr().SetInquiryData(response);
     peers.insert(peer);
   }
@@ -258,12 +262,7 @@ hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::ExtendedInquiryR
   const auto result = event.view<pw::bluetooth::emboss::ExtendedInquiryResultEventView>();
 
   DeviceAddress addr(DeviceAddress::Type::kBREDR, DeviceAddressBytes(result.bd_addr()));
-  Peer* peer = cache_->FindByAddress(addr);
-  if (!peer) {
-    peer = cache_->NewPeer(addr, /*connectable=*/true);
-  }
-  BT_DEBUG_ASSERT(peer);
-
+  Peer* peer = AddOrUpdateConnectablePeer(cache_, addr);
   peer->MutBrEdr().SetInquiryData(result);
 
   NotifyPeersUpdated({peer});

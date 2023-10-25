@@ -146,6 +146,8 @@ const DeviceAddress kLeAliasAddress2(DeviceAddress::Type::kLEPublic,
                                      kDeviceAddress2.value());
 const DeviceAddress kDeviceAddress3(DeviceAddress::Type::kBREDR,
                                     {BD_ADDR(0x03)});
+const DeviceAddress kLeAliasAddress3(DeviceAddress::Type::kLEPublic,
+                                     kDeviceAddress3.value());
 
 const StaticByteBuffer kInquiryResult(
   hci_spec::kInquiryResultEventCode,
@@ -1055,9 +1057,12 @@ TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiry) {
   EXPECT_FALSE(discovery_manager()->discovering());
 }
 
-TEST_F(BrEdrDiscoveryManagerTest, InquiryResultUpgradesKnownLowEnergyPeerToDualMode) {
-  Peer* peer = peer_cache()->NewPeer(kLeAliasAddress1, /*connectable=*/true);
+// Verify that receiving a inquiry response for a known LE non-connectable peer results in the
+// peer being changed to DualMode and connectable.
+TEST_F(BrEdrDiscoveryManagerTest, InquiryResultUpgradesKnownLowEnergyPeer) {
+  Peer* peer = peer_cache()->NewPeer(kLeAliasAddress1, /*connectable=*/false);
   ASSERT_TRUE(peer);
+  ASSERT_FALSE(peer->connectable());
   ASSERT_EQ(TechnologyType::kLowEnergy, peer->technology());
 
   EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kInquiryResult);
@@ -1078,22 +1083,59 @@ TEST_F(BrEdrDiscoveryManagerTest, InquiryResultUpgradesKnownLowEnergyPeerToDualM
   EXPECT_EQ(1u, peers_found);
   ASSERT_EQ(peer, peer_cache()->FindByAddress(kDeviceAddress1));
   EXPECT_EQ(TechnologyType::kDualMode, peer->technology());
+  EXPECT_TRUE(peer->connectable());
 
   test_device()->SendCommandChannelPacket(kInquiryComplete);
 
   RunUntilIdle();
 }
 
-TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiryResultUpgradesKnownLowEnergyPeerToDualMode) {
-  Peer* peer = peer_cache()->NewPeer(kLeAliasAddress2, /*connectable=*/true);
+// Verify that receiving an extended inquiry response for a known LE non-connectable peer results in
+// the peer being changed to DualMode and connectable.
+TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiryResultUpgradesKnownLowEnergyPeer) {
+  Peer* peer = peer_cache()->NewPeer(kLeAliasAddress3, /*connectable=*/false);
   ASSERT_TRUE(peer);
+  ASSERT_FALSE(peer->connectable());
   ASSERT_EQ(TechnologyType::kLowEnergy, peer->technology());
 
   NewDiscoveryManager(pw::bluetooth::emboss::InquiryMode::EXTENDED);
 
   EXPECT_CMD_PACKET_OUT(test_device(), kSetExtendedMode, &kSetExtendedModeRsp);
-  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kExtendedInquiryResult,
-                        &kRSSIInquiryResult);
+  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kExtendedInquiryResult);
+
+  std::unique_ptr<BrEdrDiscoverySession> session;
+  size_t peers_found = 0u;
+
+  discovery_manager()->RequestDiscovery([&session, &peers_found](auto status, auto cb_session) {
+    EXPECT_EQ(fit::ok(), status);
+    cb_session->set_result_callback([&peers_found](auto&) { peers_found++; });
+    session = std::move(cb_session);
+  });
+  RunUntilIdle();
+  session = nullptr;
+
+  EXPECT_EQ(1u, peers_found);
+  ASSERT_EQ(peer, peer_cache()->FindByAddress(kDeviceAddress3));
+  EXPECT_EQ(TechnologyType::kDualMode, peer->technology());
+  EXPECT_TRUE(peer->connectable());
+
+  test_device()->SendCommandChannelPacket(kInquiryComplete);
+
+  RunUntilIdle();
+}
+
+// Verify that receiving an extended inquiry response with RSSI for a known LE non-connectable peer
+// results in the peer being changed to DualMode and connectable.
+TEST_F(BrEdrDiscoveryManagerTest, RSSIInquiryResultUpgradesKnownLowEnergyPeer) {
+  Peer* peer = peer_cache()->NewPeer(kLeAliasAddress2, /*connectable=*/false);
+  ASSERT_TRUE(peer);
+  ASSERT_FALSE(peer->connectable());
+  ASSERT_EQ(TechnologyType::kLowEnergy, peer->technology());
+
+  NewDiscoveryManager(pw::bluetooth::emboss::InquiryMode::EXTENDED);
+
+  EXPECT_CMD_PACKET_OUT(test_device(), kSetExtendedMode, &kSetExtendedModeRsp);
+  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kRSSIInquiryResult);
   EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest2, &kRemoteNameRequestRsp,
                         &kRemoteNameRequestComplete2);
 
@@ -1108,9 +1150,10 @@ TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiryResultUpgradesKnownLowEnergyPee
   RunUntilIdle();
   session = nullptr;
 
-  EXPECT_EQ(2u, peers_found);
+  EXPECT_EQ(1u, peers_found);
   ASSERT_EQ(peer, peer_cache()->FindByAddress(kDeviceAddress2));
   EXPECT_EQ(TechnologyType::kDualMode, peer->technology());
+  EXPECT_TRUE(peer->connectable());
 
   test_device()->SendCommandChannelPacket(kInquiryComplete);
 
