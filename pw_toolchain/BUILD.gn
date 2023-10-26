@@ -45,6 +45,10 @@ config("public_include_path") {
   include_dirs = [ "public" ]
 }
 
+group("builtins") {
+  deps = [ "$dir_pw_third_party/llvm_builtins" ]
+}
+
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }

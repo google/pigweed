@@ -231,3 +231,10 @@ using ``pw_toolchain/arm_gcc:newlib_os_interface_stubs``.
 pw_toolchain/no_destructor.h
 ============================
 .. doxygenclass:: pw::NoDestructor
+
+builtins
+========
+builtins are LLVM's equivalent of libgcc, the compiler will insert calls to
+these routines. Setting the ``dir_pw_third_party_builtins`` gn var to your
+compiler-rt/builtins checkout will enable building builtins from source instead
+of relying of the shipped libgcc.
