@@ -96,6 +96,7 @@ declare_args() {
   dir_pw_intrusive_ptr = get_path_info("../pw_intrusive_ptr", "abspath")
   dir_pw_kvs = get_path_info("../pw_kvs", "abspath")
   dir_pw_libc = get_path_info("../pw_libc", "abspath")
+  dir_pw_libcxx = get_path_info("../pw_libcxx", "abspath")
   dir_pw_log = get_path_info("../pw_log", "abspath")
   dir_pw_log_android = get_path_info("../pw_log_android", "abspath")
   dir_pw_log_basic = get_path_info("../pw_log_basic", "abspath")
@@ -260,6 +261,7 @@ declare_args() {
     dir_pw_intrusive_ptr,
     dir_pw_kvs,
     dir_pw_libc,
+    dir_pw_libcxx,
     dir_pw_log,
     dir_pw_log_android,
     dir_pw_log_basic,
@@ -413,6 +415,7 @@ declare_args() {
     "$dir_pw_intrusive_ptr:tests",
     "$dir_pw_kvs:tests",
     "$dir_pw_libc:tests",
+    "$dir_pw_libcxx:tests",
     "$dir_pw_log:tests",
     "$dir_pw_log_android:tests",
     "$dir_pw_log_basic:tests",
@@ -566,6 +569,7 @@ declare_args() {
     "$dir_pw_intrusive_ptr:docs",
     "$dir_pw_kvs:docs",
     "$dir_pw_libc:docs",
+    "$dir_pw_libcxx:docs",
     "$dir_pw_log:docs",
     "$dir_pw_log_android:docs",
     "$dir_pw_log_basic:docs",

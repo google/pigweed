@@ -62,6 +62,7 @@ pw_interrupt_zephyr
 pw_intrusive_ptr
 pw_kvs
 pw_libc
+pw_libcxx
 pw_log
 pw_log_android
 pw_log_basic
