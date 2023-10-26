@@ -30,6 +30,22 @@
 #define _PW_ASSERT_ABORT_FUNCTION __func__
 #endif  // __GNUC__
 
+// clang-format off
+#define _PW_ASSERT_CRASH_BANNER                                   \
+  "\n"                                                            \
+  "   ▄████▄      ██▀███      ▄▄▄           ██████     ██░ ██ \n" \
+  "  ▒██▀ ▀█     ▓██ ▒ ██▒   ▒████▄       ▒██    ▒    ▓██░ ██▒\n" \
+  "  ▒▓█ 💥 ▄    ▓██ ░▄█ ▒   ▒██  ▀█▄     ░ ▓██▄      ▒██▀▀██░\n" \
+  "  ▒▓▓▄ ▄██▒   ▒██▀▀█▄     ░██▄▄▄▄██      ▒   ██▒   ░▓█ ░██ \n" \
+  "  ▒ ▓███▀ ░   ░██▓ ▒██▒    ▓█   ▓██▒   ▒██████▒▒   ░▓█▒░██▓\n" \
+  "  ░ ░▒ ▒  ░   ░ ▒▓ ░▒▓░    ▒▒   ▓▒█░   ▒ ▒▓▒ ▒ ░    ▒ ░░▒░▒\n" \
+  "    ░  ▒        ░▒ ░ ▒░     ▒   ▒▒ ░   ░ ░▒  ░ ░    ▒ ░▒░ ░\n" \
+  "  ░             ░░   ░      ░   ▒      ░  ░  ░      ░  ░░ ░\n" \
+  "  ░ ░            ░              ░  ░         ░      ░  ░  ░\n" \
+  "  ░\n"                                                         \
+  "\n"
+// clang-format on
+
 // This assert implementation prints the file path, line number, and assert
 // expression using printf. Uses ANSI escape codes for colors.
 //
@@ -39,19 +55,20 @@
   fflush(stderr);                                   \
   abort()
 
-#define PW_ASSERT_PRINT_EXPRESSION(macro, expression) \
-  fflush(stdout);                                     \
+#define PW_ASSERT_PRINT_EXPRESSION(macro, expression)            \
+  fflush(stdout);                                                \
+  fprintf(stderr, "\033[31m" _PW_ASSERT_CRASH_BANNER "\033[0m"); \
   fprintf(stderr,                                     \
           "\033[41m\033[37m\033[1m%s:%d:\033[0m "     \
           "\033[1m"                                   \
           _PW_ASSERT_MACRO(macro)                     \
           " "                                         \
           "\033[31mFAILED!\033[0m\n\n"                \
-          "  FAILED ASSERTION\n\n"                    \
+          "  \033[33mFAILED ASSERTION\033[0m\n\n"                    \
           "    %s\n\n"                                \
-          "  FILE & LINE\n\n"                         \
+          "  \033[33mFILE & LINE\033[0m\n\n"                         \
           "    %s:%d\n\n"                             \
-          "  FUNCTION\n\n"                            \
+          "  \033[33mFUNCTION\033[0m\n\n"                            \
           "    %s\n\n",                               \
           __FILE__,                                   \
           __LINE__,                                   \

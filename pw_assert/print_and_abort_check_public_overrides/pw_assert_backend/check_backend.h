@@ -37,16 +37,16 @@
   PW_ASSERT_PRINT_EXPRESSION("CHECK",                                        \
                              arg_a_str " " comparison_op_str " " arg_b_str); \
   fprintf(stderr,                                                            \
-          "  EVALUATED CONDITION\n\n    " arg_a_str " (=" type_fmt           \
-          ") " comparison_op_str " " arg_b_str " (=" type_fmt                \
+          "  \033[33mEVALUATED CONDITION\033[0m\n\n    " arg_a_str           \
+          " (=" type_fmt ") " comparison_op_str " " arg_b_str " (=" type_fmt \
           ")"                                                                \
           ".\n\n",                                                           \
           arg_a_val,                                                         \
           arg_b_val);                                                        \
   _PW_ASSERT_PRINT_MESSAGE_AND_ABORT(__VA_ARGS__)
 
-#define _PW_ASSERT_PRINT_MESSAGE_AND_ABORT(...)     \
-  fprintf(stderr, "  MESSAGE\n\n    " __VA_ARGS__); \
-  fprintf(stderr, "\n\n");                          \
-  fflush(stderr);                                   \
+#define _PW_ASSERT_PRINT_MESSAGE_AND_ABORT(...)                    \
+  fprintf(stderr, "  \033[33mMESSAGE\033[0m\n\n    " __VA_ARGS__); \
+  fprintf(stderr, "\n\n");                                         \
+  fflush(stderr);                                                  \
   abort()
