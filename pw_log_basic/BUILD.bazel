@@ -49,3 +49,9 @@ pw_cc_library(
         "//pw_sys_io",
     ],
 )
+
+# The impl of pw_log_basic is an empty library: it's so basic that there's no
+# risk of circular dependencies.
+cc_library(
+    name = "impl",
+)

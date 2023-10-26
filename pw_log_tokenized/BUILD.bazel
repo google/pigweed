@@ -14,6 +14,7 @@
 
 load(
     "//pw_build:pigweed.bzl",
+    "pw_cc_facade",
     "pw_cc_library",
     "pw_cc_test",
 )
@@ -46,11 +47,10 @@ pw_cc_library(
         "public_overrides/pw_log_backend/log_backend_uses_pw_tokenizer.h",
     ],
     includes = [
-        "public",
         "public_overrides",
     ],
     deps = [
-        ":handler",
+        ":handler_facade",
         ":headers",
         "//pw_log:facade",
     ],
@@ -75,7 +75,12 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+alias(
+    name = "impl",
+    actual = ":handler",
+)
+
+pw_cc_facade(
     name = "handler_facade",
     hdrs = ["public/pw_log_tokenized/handler.h"],
     includes = ["public"],
@@ -84,9 +89,11 @@ pw_cc_library(
 
 pw_cc_library(
     name = "handler",
+    hdrs = ["public/pw_log_tokenized/handler.h"],
+    includes = ["public"],
     deps = [
-        ":handler_facade",
-        "@pigweed//targets:pw_log_tokenized_handler_backend",
+        "//pw_preprocessor",
+        "//targets:pw_log_tokenized_handler_backend",
     ],
 )
 

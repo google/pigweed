@@ -59,6 +59,11 @@ pw_cc_library(
     ],
 )
 
+label_flag(
+    name = "backend_impl",
+    build_setting_default = "//pw_log_basic:impl",
+)
+
 pw_cc_library(
     name = "glog_adapter",
     hdrs = [

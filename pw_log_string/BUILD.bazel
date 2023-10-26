@@ -46,6 +46,11 @@ pw_cc_facade(
     deps = ["//pw_preprocessor"],
 )
 
+alias(
+    name = "impl",
+    actual = ":handler",
+)
+
 pw_cc_library(
     name = "handler",
     srcs = ["handler.cc"],

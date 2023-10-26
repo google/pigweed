@@ -48,6 +48,7 @@ def pw_cc_binary(**kwargs):
     # way to handle the facades without introducing a circular dependency into
     # the build.
     kwargs["deps"] = kwargs["deps"] + ["@pigweed//targets:pw_assert_backend_impl"]
+    kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_log:backend_impl"]
     _add_defaults(kwargs)
     native.cc_binary(**kwargs)
 

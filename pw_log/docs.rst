@@ -311,6 +311,8 @@ common for the ``pw_log`` backend to cause circular dependencies. Because of
 this, log backends may avoid declaring explicit dependencies, instead relying
 on include paths to access header files.
 
+GN
+==
 In GN, the ``pw_log`` backend's full implementation with true dependencies is
 made available through the ``$dir_pw_log:impl`` group. When ``pw_log_BACKEND``
 is set, ``$dir_pw_log:impl`` must be listed in the ``pw_build_LINK_DEPS``
@@ -326,6 +328,16 @@ In order to break dependency cycles, the ``pw_log_BACKEND`` target may need
 to directly provide dependencies through include paths only, rather than GN
 ``public_deps``. In this case, GN header checking can be disabled with
 ``check_includes = false``.
+
+Bazel
+=====
+In Bazel, log backends may avoid cyclic dependencies by placing the full
+implementation in an ``impl`` target, like ``//pw_log_tokenized:impl``. The
+``//pw_log:backend_impl`` label flag should be set to the ``impl`` target
+required by the log backend used by the platform.
+
+You must add a dependency on the ``@pigweed//pw_log:backend_impl`` target to
+any binary using ``pw_log``.
 
 ----------------------
 Google Logging Adapter
