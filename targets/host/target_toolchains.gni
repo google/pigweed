@@ -38,7 +38,7 @@ _host_common = {
   pw_perf_test_MAIN_FUNCTION = "$dir_pw_perf_test:log_perf_handler_main"
 
   # Configure backend for assert facade.
-  pw_assert_BACKEND = "$dir_pw_assert_basic"
+  pw_assert_BACKEND = "$dir_pw_assert:print_and_abort_check_backend"
   pw_assert_LITE_BACKEND = "$dir_pw_assert:print_and_abort_assert_backend"
 
   # Configure backend for async facade.

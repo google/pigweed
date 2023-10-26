@@ -61,6 +61,7 @@ static const int z = 10;
 
 static int Add3(int a, int b, int c) { return a + b + c; }
 
+// NOLINTNEXTLINE(google-readability-function-size)
 void AssertBackendCompileTestsInC(void) {
   {  // TEST(Crash, WithAndWithoutMessageArguments)
     MAYBE_SKIP_TEST;
