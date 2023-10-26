@@ -31,56 +31,19 @@ pw_cc_library(
     includes = ["public"],
 )
 
-# Provides <cstddef>'s std::byte for C++14.
-pw_cc_library(
-    name = "cstddef",
-    hdrs = [
-        "cstddef_public_overrides/cstddef",
-        "standard_library_public/pw_polyfill/standard_library/cstddef.h",
-    ],
-    includes = [
-        "public_overrides",
-        "standard_library_public",
-    ],
-    # Polyfills aren't supported in the Bazel build, so disallow use.
-    visibility = ["//visibility:private"],
-    deps = [":standard_library"],
-)
-
-# Provides <iterator>'s std::data and std::size for C++14.
-pw_cc_library(
-    name = "iterator",
-    hdrs = [
-        "iterator_public_overrides/iterator",
-        "standard_library_public/pw_polyfill/standard_library/iterator.h",
-    ],
-    includes = [
-        "public_overrides",
-        "standard_library_public",
-    ],
-    # Polyfills aren't supported in the Bazel build, so disallow use.
-    visibility = ["//visibility:private"],
-    deps = [":standard_library"],
-)
-
 pw_cc_library(
     name = "standard_library",
     hdrs = [
         "standard_library_public/pw_polyfill/standard_library/namespace.h",
     ],
     includes = ["standard_library_public"],
-    visibility = [
-        "//pw_minimal_cpp_stdlib:__pkg__",
-        "//pw_span:__pkg__",
-    ],
+    visibility = ["//pw_minimal_cpp_stdlib:__pkg__"],
 )
 
 pw_cc_test(
     name = "test",
     srcs = ["test.cc"],
     deps = [
-        ":cstddef",
-        ":iterator",
         ":pw_polyfill",
         ":standard_library",
         "//pw_unit_test",

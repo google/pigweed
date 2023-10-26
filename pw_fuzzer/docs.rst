@@ -7,7 +7,7 @@ pw_fuzzer
    :name: pw_fuzzer
    :tagline: Better C++ code through easier fuzzing
    :status: unstable
-   :languages: C++14, C++17, C++20
+   :languages: C++17, C++20
 
 Use state of the art tools to automatically find bugs in your C++ code with 5
 lines of code or less!

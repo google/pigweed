@@ -10,7 +10,7 @@ pw_varint
 Compatibility
 -------------
 * C
-* C++14 (with :doc:`../pw_polyfill/docs`)
+* C++
 * `Rust </rustdoc/pw_varint>`_
 
 -------------

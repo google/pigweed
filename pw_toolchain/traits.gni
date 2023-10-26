@@ -53,5 +53,5 @@ assert(
         "unsupported value. The toolchain must set it to one of the " +
         "pw_toolchain_STANDARD constants (e.g. pw_toolchain_STANDARD.CXX17).")
 
-assert(pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX14,
-       "Pigweed requires at least C++14.")
+assert(pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX17,
+       "Pigweed requires at least C++17.")

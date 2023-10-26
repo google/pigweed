@@ -184,8 +184,8 @@ Here is a selection of interesting modules:
       :link: module-pw_polyfill
       :link-type: ref
 
-      Similar to JavaScript “polyfill” libraries, this module provides selected
-      C++17 standard library components that are compatible with C++14.
+      This module makes it easier to work with different C++ standards in one
+      codebase.
 
    .. grid-item-card:: :octicon:`container` pw_tokenizer
       :link: module-pw_tokenizer

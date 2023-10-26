@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-// pw::span is an implementation of std::span for C++14 or newer. The
+// pw::span is an implementation of std::span for C++17 or newer. The
 // implementation is shared with the std::span polyfill class.
 #pragma once
 

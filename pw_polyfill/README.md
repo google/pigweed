@@ -1,1 +1,1 @@
-# pw\_polyfill: Backports C++17 features to C++14
+# pw\_polyfill: Supports writing code against different C++ standards

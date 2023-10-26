@@ -196,7 +196,7 @@ example:
       :name: pw_string
       :tagline: Efficient, easy, and safe string manipulation
       :status: stable
-      :languages: C++14, C++17, Rust
+      :languages: C++17, Rust
       :code-size-impact: 500 to 1500 bytes
 
       Module sales pitch goes here!

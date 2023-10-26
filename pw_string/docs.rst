@@ -7,7 +7,7 @@ pw_string
    :name: pw_string
    :tagline: Efficient, easy, and safe string manipulation
    :status: stable
-   :languages: C++14, C++17
+   :languages: C++17
    :code-size-impact: 500 to 1500 bytes
 
    - **Efficient**: No memory allocation, no pointer indirection.

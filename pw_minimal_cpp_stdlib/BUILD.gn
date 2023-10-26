@@ -76,7 +76,7 @@ pw_source_set("pw_minimal_cpp_stdlib") {
     "public/pw_minimal_cpp_stdlib/internal/type_traits.h",
     "public/pw_minimal_cpp_stdlib/internal/utility.h",
   ]
-  public_deps = [ dir_pw_polyfill ]
+  public_deps = [ "$dir_pw_polyfill:standard_library" ]
   remove_public_deps = [ "$dir_pw_minimal_cpp_stdlib" ]
 }
 

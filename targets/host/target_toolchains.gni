@@ -435,30 +435,6 @@ pw_internal_host_toolchains = [
     }
   },
   {
-    name = "pw_strict_host_clang_debug_cpp14"
-    _toolchain_base = pw_toolchain_host_clang.debug
-    forward_variables_from(_toolchain_base, "*", _excluded_members)
-    defaults = {
-      forward_variables_from(_toolchain_base.defaults, "*")
-      forward_variables_from(_host_common, "*")
-      forward_variables_from(_pigweed_internal, "*")
-      forward_variables_from(_os_specific_config, "*")
-      default_configs += _internal_clang_default_configs
-
-      # Set the C++ standard to C++14 instead of the default (C++17).
-      pw_toolchain_CXX_STANDARD = pw_toolchain_STANDARD.CXX14
-
-      # Do not do negative compilation testing with C++14 since the code may
-      # fail to compile for different reasons than in C++17 or newer.
-      pw_compilation_testing_NEGATIVE_COMPILATION_ENABLED = false
-
-      # Select C++14-compatible backends.
-      pw_assert_BACKEND = "$dir_pw_assert:print_and_abort_check_backend"
-      pw_log_BACKEND = "$dir_pw_log_null"
-      pw_unit_test_MAIN = "$dir_pw_unit_test:printf_main"
-    }
-  },
-  {
     name = "pw_strict_host_clang_size_optimized_cpp20"
     _toolchain_base = pw_toolchain_host_clang.size_optimized
     forward_variables_from(_toolchain_base, "*", _excluded_members)

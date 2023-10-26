@@ -49,9 +49,7 @@ build argument defined in Pigweed. Some notable arguments include:
   template. This is typically used to set compiler flags, optimization levels,
   global #defines, etc.
 * ``default_public_deps``: List of GN targets which are added as a dependency
-  to all ``pw_*`` GN targets. This is used to add global module dependencies;
-  for example, in upstream, ``pw_polyfill`` is added here to provide C++17
-  features in C++14 code.
+  to all ``pw_*`` GN targets. This is used to add global module dependencies.
 * Facade backends: Pigweed defines facades to provide a common interface for
   core system features such as logging without assuming an implementation.
   When building a Pigweed target, the implementations for each of these must be

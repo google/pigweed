@@ -14,3 +14,7 @@
 
 add_library(pw_minimal_cpp_stdlib INTERFACE)
 target_include_directories(pw_minimal_cpp_stdlib INTERFACE public)
+target_link_libraries(pw_minimal_cpp_stdlib
+  INTERFACE
+    pw_polyfill._standard_library_public
+)

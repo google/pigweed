@@ -123,7 +123,6 @@ group("default") {
 #   teensy
 group("extended_default") {
   deps = [
-    ":cpp14_compatibility",
     ":cpp20_compatibility",
     ":default",
     ":host_clang_debug_dynamic_allocation",
@@ -562,14 +561,6 @@ group("pigweed_default") {
   }
 }
 
-group("cpp14_compatibility") {
-  _cpp14_toolchain = "$_internal_toolchains:pw_strict_host_clang_debug_cpp14"
-  deps = [
-    ":cpp14_modules($_cpp14_toolchain)",
-    ":cpp14_tests.run($_cpp14_toolchain)",
-  ]
-}
-
 # Build Pigweed with -std=c++20 to ensure compatibility. Compile with
 # optimizations since the compiler tends to catch more errors with optimizations
 # enabled than without.
@@ -669,31 +660,6 @@ if (current_toolchain != default_toolchain) {
     if (host_os == "linux") {
       tests = [ "$dir_pw_rpc/fuzz:client_fuzzer" ]
     }
-    output_metadata = true
-  }
-
-  # Modules that support C++14.
-  # TODO(hepler): pw_kvs is supposed to compile as C++14, but does not.
-  group("cpp14_modules") {
-    public_deps = [
-      dir_pw_polyfill,
-      dir_pw_preprocessor,
-      dir_pw_tokenizer,
-      dir_pw_varint,
-    ]
-  }
-
-  # Tests that support C++14.
-  pw_test_group("cpp14_tests") {
-    group_deps = [
-      "$dir_pw_polyfill:tests",
-      "$dir_pw_span:tests",
-    ]
-    tests = [
-      "$dir_pw_tokenizer:simple_tokenize_test",
-      "$dir_pw_containers:to_array_test",
-      "$dir_pw_string:string_test",
-    ]
     output_metadata = true
   }
 

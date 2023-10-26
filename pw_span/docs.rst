@@ -88,8 +88,7 @@ more details.
 -------------
 Compatibility
 -------------
-Works with C++14, but some features require C++17. In C++20, use ``std::span``
-instead.
+Works with C++17. In C++20, use ``std::span`` instead.
 
 ------
 Zephyr

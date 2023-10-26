@@ -4,7 +4,7 @@
 pw_polyfill
 ===========
 The ``pw_polyfill`` module supports compiling code against different C++
-standards. It also supports backporting a few C++17 features to C++14.
+standards.
 
 ----------------------------------------------------
 Adapt code to compile with different versions of C++
@@ -61,12 +61,7 @@ Pigweed backports a few C++ features to older C++ standards. These features
 are provided in the ``pw`` namespace. If the features are provided by the
 toolchain, the ``pw`` versions are aliases of the ``std`` versions.
 
-``pw_polyfill`` also backports a few C++17 library features to C++14 by wrapping
-the standard C++ and C headers. The wrapper headers include the original header
-using `#include_next
-<https://gcc.gnu.org/onlinedocs/cpp/Wrapper-Headers.html>`_, then add missing
-features. The backported features are only defined if they aren't provided by
-the standard header and can only be used when compiling with C++14 in GN.
+These features are documented here, but are not implemented in ``pw_polyfill``.
 
 Backported features
 ===================
@@ -91,24 +86,12 @@ Backported features
     - :ref:`module-pw_bytes`
     - ``pw_bytes/bit.h``
     - ``pw::endian``
-  * - ``<cstdlib>``
-    - ``std::byte``
-    - ``__cpp_lib_byte``
-    - pw_polyfill
-    - ``<cstdlib>``
-    - ``std::byte``
   * - ``<expected>``
     - ``std::expected``
     - ``__cpp_lib_expected``
     - :ref:`module-pw_result`
     - ``pw_result/expected.h``
     - ``pw::expected``
-  * - ``<iterator>``
-    - ``std::data``, ``std::size``
-    - ``__cpp_lib_nonmember_container_access``
-    - pw_polyfill
-    - ``<iterator>``
-    - ``std::data``, ``std::size``
   * - ``<span>``
     - ``std::span``
     - ``__cpp_lib_span``
@@ -116,12 +99,8 @@ Backported features
     - ``pw_span/span.h``
     - ``pw::span``
 
--------------
-Compatibility
--------------
-C++14
-
+------
 Zephyr
-======
+------
 To enable ``pw_polyfill`` for Zephyr add ``CONFIG_PIGWEED_POLYFILL=y`` to the
 project's configuration.

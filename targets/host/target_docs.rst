@@ -49,14 +49,12 @@ downstream projects.
 
 Toolchains for other C++ standards
 ==================================
-Most Pigweed code requires C++17, but a few modules, such as ``pw_tokenizer``,
-work with C++14. All Pigweed code is compatible with C++20. Pigweed defines
-toolchains for testing with C++14 and C++20.
+Pigweed code requires C++17 or newer and is fully compatible with C++20. Pigweed
+defines a toolchain for testing with C++20.
 
-* ``pw_strict_host_clang_debug_cpp14`` -- Builds with ``-std=c++14``.
 * ``pw_strict_host_clang_size_optimized_cpp20`` -- Builds with ``-std=c++20``.
 
-These toolchains are only permitted for use in upstream pigweed, but downstream
+This toolchains is only permitted for use in upstream pigweed, but downstream
 users may create similar toolchains as needed.
 
 --------

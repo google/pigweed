@@ -22,7 +22,7 @@ pw_add_library(pw_polyfill INTERFACE
     public
 )
 
-pw_add_library(pw_polyfill.standard_library INTERFACE
+pw_add_library(pw_polyfill._standard_library INTERFACE
   HEADERS
     standard_library_public/pw_polyfill/standard_library/namespace.h
   PUBLIC_INCLUDES

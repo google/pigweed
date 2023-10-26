@@ -102,7 +102,6 @@ def gn_clang_build(ctx: PresubmitContext):
     """Checks all compile targets that rely on LLVM tooling."""
     build_targets = [
         *_at_all_optimization_levels('host_clang'),
-        'cpp14_compatibility',
         'cpp20_compatibility',
         'asan',
         'tsan',
@@ -171,7 +170,6 @@ def _gn_combined_build_check_targets() -> Sequence[str]:
 
     # TODO: b/234645359 - Re-enable on Windows when compatibility tests build.
     if sys.platform != 'win32':
-        build_targets.append('cpp14_compatibility')
         build_targets.append('cpp20_compatibility')
 
     # clang-tidy doesn't run on Windows.

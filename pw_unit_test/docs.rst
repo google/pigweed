@@ -116,8 +116,7 @@ GoogleTest-style output using the shared
 
 .. cpp:class:: PrintfEventHandler : public GoogleTestStyleEventHandler
 
-   A C++14-compatible event handler that uses ``std::printf`` to output test
-   results.
+   Event handler that uses ``std::printf`` to output test results.
 
 .. cpp:namespace-pop::
 
