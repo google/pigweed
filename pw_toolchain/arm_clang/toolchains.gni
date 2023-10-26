@@ -14,6 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/defaults.gni")
 import("$dir_pw_toolchain/clang_tools.gni")
 
 # Specifies the tools used by host Clang toolchains.
@@ -75,168 +76,192 @@ pw_toolchain_arm_clang = {
     name = "arm_clang_cortex_m0plus_debug"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m0plus + [ "$dir_pw_build:optimize_debugging" ]
+      default_configs = pigweed_default_configs + _cortex_m0plus +
+                        [ "$dir_pw_build:optimize_debugging" ]
     }
   }
   cortex_m0plus_speed_optimized = {
     name = "arm_clang_cortex_m0plus_speed_optimized"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m0plus + [ "$dir_pw_build:optimize_speed" ]
+      default_configs = pigweed_default_configs + _cortex_m0plus +
+                        [ "$dir_pw_build:optimize_speed" ]
     }
   }
   cortex_m0plus_size_optimized = {
     name = "arm_clang_cortex_m0plus_size_optimized"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m0plus + [ "$dir_pw_build:optimize_size_clang" ]
+      default_configs = pigweed_default_configs + _cortex_m0plus +
+                        [ "$dir_pw_build:optimize_size_clang" ]
     }
   }
   cortex_m3_debug = {
     name = "arm_clang_cortex_m3_debug"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m3 + [ "$dir_pw_build:optimize_debugging" ]
+      default_configs = pigweed_default_configs + _cortex_m3 +
+                        [ "$dir_pw_build:optimize_debugging" ]
     }
   }
   cortex_m3_speed_optimized = {
     name = "arm_clang_cortex_m3_speed_optimized"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m3 + [ "$dir_pw_build:optimize_speed" ]
+      default_configs = pigweed_default_configs + _cortex_m3 +
+                        [ "$dir_pw_build:optimize_speed" ]
     }
   }
   cortex_m3_size_optimized = {
     name = "arm_clang_cortex_m3_size_optimized"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m3 + [ "$dir_pw_build:optimize_size_clang" ]
+      default_configs = pigweed_default_configs + _cortex_m3 +
+                        [ "$dir_pw_build:optimize_size_clang" ]
     }
   }
   cortex_m4_debug = {
     name = "arm_clang_cortex_m4_debug"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m4 + [ "$dir_pw_build:optimize_debugging" ]
+      default_configs = pigweed_default_configs + _cortex_m4 +
+                        [ "$dir_pw_build:optimize_debugging" ]
     }
   }
   cortex_m4_speed_optimized = {
     name = "arm_clang_cortex_m4_speed_optimized"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m4 + [ "$dir_pw_build:optimize_speed" ]
+      default_configs = pigweed_default_configs + _cortex_m4 +
+                        [ "$dir_pw_build:optimize_speed" ]
     }
   }
   cortex_m4_size_optimized = {
     name = "arm_clang_cortex_m4_size_optimized"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m4 + [ "$dir_pw_build:optimize_size_clang" ]
+      default_configs = pigweed_default_configs + _cortex_m4 +
+                        [ "$dir_pw_build:optimize_size_clang" ]
     }
   }
   cortex_m4f_debug = {
     name = "arm_clang_cortex_m4f_debug"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m4f + [ "$dir_pw_build:optimize_debugging" ]
+      default_configs = pigweed_default_configs + _cortex_m4f +
+                        [ "$dir_pw_build:optimize_debugging" ]
     }
   }
   cortex_m4f_speed_optimized = {
     name = "arm_clang_cortex_m4f_speed_optimized"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m4f + [ "$dir_pw_build:optimize_speed" ]
+      default_configs = pigweed_default_configs + _cortex_m4f +
+                        [ "$dir_pw_build:optimize_speed" ]
     }
   }
   cortex_m4f_size_optimized = {
     name = "arm_clang_cortex_m4f_size_optimized"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m4f + [ "$dir_pw_build:optimize_size_clang" ]
+      default_configs = pigweed_default_configs + _cortex_m4f +
+                        [ "$dir_pw_build:optimize_size_clang" ]
     }
   }
   cortex_m7_debug = {
     name = "arm_clang_cortex_m7_debug"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m7 + [ "$dir_pw_build:optimize_debugging" ]
+      default_configs = pigweed_default_configs + _cortex_m7 +
+                        [ "$dir_pw_build:optimize_debugging" ]
     }
   }
   cortex_m7_speed_optimized = {
     name = "arm_clang_cortex_m7_speed_optimized"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m7 + [ "$dir_pw_build:optimize_speed" ]
+      default_configs = pigweed_default_configs + _cortex_m7 +
+                        [ "$dir_pw_build:optimize_speed" ]
     }
   }
   cortex_m7_size_optimized = {
     name = "arm_clang_cortex_m7_size_optimized"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m7 + [ "$dir_pw_build:optimize_size_clang" ]
+      default_configs = pigweed_default_configs + _cortex_m7 +
+                        [ "$dir_pw_build:optimize_size_clang" ]
     }
   }
   cortex_m7f_debug = {
     name = "arm_clang_cortex_m7f_debug"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m7f + [ "$dir_pw_build:optimize_debugging" ]
+      default_configs = pigweed_default_configs + _cortex_m7f +
+                        [ "$dir_pw_build:optimize_debugging" ]
     }
   }
   cortex_m7f_speed_optimized = {
     name = "arm_clang_cortex_m7f_speed_optimized"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m7f + [ "$dir_pw_build:optimize_speed" ]
+      default_configs = pigweed_default_configs + _cortex_m7f +
+                        [ "$dir_pw_build:optimize_speed" ]
     }
   }
   cortex_m7f_size_optimized = {
     name = "arm_clang_cortex_m7f_size_optimized"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m7f + [ "$dir_pw_build:optimize_size_clang" ]
+      default_configs = pigweed_default_configs + _cortex_m7f +
+                        [ "$dir_pw_build:optimize_size_clang" ]
     }
   }
   cortex_m33_debug = {
     name = "arm_clang_cortex_m33_debug"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m33 + [ "$dir_pw_build:optimize_debugging" ]
+      default_configs = pigweed_default_configs + _cortex_m33 +
+                        [ "$dir_pw_build:optimize_debugging" ]
     }
   }
   cortex_m33_speed_optimized = {
     name = "arm_clang_cortex_m33_speed_optimized"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m33 + [ "$dir_pw_build:optimize_speed" ]
+      default_configs = pigweed_default_configs + _cortex_m33 +
+                        [ "$dir_pw_build:optimize_speed" ]
     }
   }
   cortex_m33_size_optimized = {
     name = "arm_clang_cortex_m33_size_optimized"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m33 + [ "$dir_pw_build:optimize_size_clang" ]
+      default_configs = pigweed_default_configs + _cortex_m33 +
+                        [ "$dir_pw_build:optimize_size_clang" ]
     }
   }
   cortex_m33f_debug = {
     name = "arm_clang_cortex_m33f_debug"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m33f + [ "$dir_pw_build:optimize_debugging" ]
+      default_configs = pigweed_default_configs + _cortex_m33f +
+                        [ "$dir_pw_build:optimize_debugging" ]
     }
   }
   cortex_m33f_speed_optimized = {
     name = "arm_clang_cortex_m33f_speed_optimized"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m33f + [ "$dir_pw_build:optimize_speed" ]
+      default_configs = pigweed_default_configs + _cortex_m33f +
+                        [ "$dir_pw_build:optimize_speed" ]
     }
   }
   cortex_m33f_size_optimized = {
     name = "arm_clang_cortex_m33f_size_optimized"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = _cortex_m33f + [ "$dir_pw_build:optimize_size_clang" ]
+      default_configs = pigweed_default_configs + _cortex_m33f +
+                        [ "$dir_pw_build:optimize_size_clang" ]
     }
   }
 }

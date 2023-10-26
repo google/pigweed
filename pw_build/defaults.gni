@@ -58,6 +58,10 @@ declare_args() {
   pw_build_DEFAULT_VISIBILITY = [ "*" ]
 }
 
+# TODO: b/260111641 - This variable is intended to smooth over a transition and
+# will be deleted shortly.
+pw_build_default_configs_in_toolchain = true
+
 # These are the default configs automatically applied to every pw_* C/C++ build
 # step regardless of toolchain. If you want to omit one of these from your
 # toolchain, add the undesired config to pw_build_REMOVE_DEFAULT_CONFIGS.
@@ -77,7 +81,7 @@ pigweed_default_configs = [
 # compatibilty. Using these is not recommended; prefer to use the pw_* target
 # types directly.
 pw_build_defaults = {
-  configs = pw_build_INTERNAL_DEFAULTS.default_configs + pigweed_default_configs
+  configs = pw_build_INTERNAL_DEFAULTS.default_configs
   public_deps = pw_build_INTERNAL_DEFAULTS.default_public_deps
   if (pw_build_INTERNAL_DEFAULTS.remove_default_configs != []) {
     # Add them first to ensure they are present to be removed.

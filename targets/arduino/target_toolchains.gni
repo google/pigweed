@@ -14,6 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/defaults.gni")
 import("$dir_pw_sys_io/backend.gni")
 import("$dir_pw_toolchain/arm_gcc/toolchains.gni")
 
@@ -65,10 +66,10 @@ _toolchain_properties = {
   final_binary_extension = ".elf"
 }
 
-_target_default_configs = [
-  "$dir_pw_toolchain/arm_gcc:enable_float_printf",
-  "$dir_pigweed/targets/arduino:arduino_build",
-]
+_target_default_configs = pigweed_default_configs + [
+                            "$dir_pw_toolchain/arm_gcc:enable_float_printf",
+                            "$dir_pigweed/targets/arduino:arduino_build",
+                          ]
 
 pw_target_toolchain_arduino = {
   _excluded_members = [

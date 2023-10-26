@@ -44,6 +44,10 @@ generate_toolchain("docs") {
                            "defaults",
                            "name",
                          ])
+
+  # Docs assume output binary location, and don't support extensions.
+  final_binary_extension = ""
+
   defaults = {
     forward_variables_from(_base_toolchain.defaults, "*")
 

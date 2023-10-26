@@ -14,6 +14,8 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/defaults.gni")
+
 # Specifies the tools used by host GCC toolchains.
 _host_gcc_toolchain = {
   ar = "ar"
@@ -34,7 +36,8 @@ pw_toolchain_host_gcc = {
     name = "host_gcc_debug"
     forward_variables_from(_host_gcc_toolchain, "*")
     defaults = {
-      default_configs = _configs + [ "$dir_pw_build:optimize_debugging" ]
+      default_configs = pigweed_default_configs + _configs +
+                        [ "$dir_pw_build:optimize_debugging" ]
     }
   }
 
@@ -42,7 +45,8 @@ pw_toolchain_host_gcc = {
     name = "host_gcc_speed_optimized"
     forward_variables_from(_host_gcc_toolchain, "*")
     defaults = {
-      default_configs = _configs + [ "$dir_pw_build:optimize_speed" ]
+      default_configs = pigweed_default_configs + _configs +
+                        [ "$dir_pw_build:optimize_speed" ]
     }
   }
 
@@ -50,7 +54,8 @@ pw_toolchain_host_gcc = {
     name = "host_gcc_size_optimized"
     forward_variables_from(_host_gcc_toolchain, "*")
     defaults = {
-      default_configs = _configs + [ "$dir_pw_build:optimize_size" ]
+      default_configs =
+          pigweed_default_configs + _configs + [ "$dir_pw_build:optimize_size" ]
     }
   }
 }

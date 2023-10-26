@@ -120,11 +120,8 @@ template("pw_internal_build_target") {
       }
     }
 
-    # Eventually, pigweed_default_configs should not be added here. Instead,
-    # pigweed_default_configs should live inside of the toolchain declaration.
     _default_configs =
-        filter_exclude(pigweed_default_configs +
-                           pw_build_INTERNAL_DEFAULTS.default_configs,
+        filter_exclude(pw_build_INTERNAL_DEFAULTS.default_configs,
                        pw_build_INTERNAL_DEFAULTS.remove_default_configs)
     if (!defined(remove_configs)) {
       remove_configs = []
