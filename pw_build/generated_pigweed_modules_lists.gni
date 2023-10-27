@@ -80,6 +80,7 @@ declare_args() {
   dir_pw_emu = get_path_info("../pw_emu", "abspath")
   dir_pw_env_setup = get_path_info("../pw_env_setup", "abspath")
   dir_pw_file = get_path_info("../pw_file", "abspath")
+  dir_pw_format = get_path_info("../pw_format", "abspath")
   dir_pw_function = get_path_info("../pw_function", "abspath")
   dir_pw_fuzzer = get_path_info("../pw_fuzzer", "abspath")
   dir_pw_hdlc = get_path_info("../pw_hdlc", "abspath")
@@ -246,6 +247,7 @@ declare_args() {
     dir_pw_emu,
     dir_pw_env_setup,
     dir_pw_file,
+    dir_pw_format,
     dir_pw_function,
     dir_pw_fuzzer,
     dir_pw_hdlc,
@@ -400,6 +402,7 @@ declare_args() {
     "$dir_pw_emu:tests",
     "$dir_pw_env_setup:tests",
     "$dir_pw_file:tests",
+    "$dir_pw_format:tests",
     "$dir_pw_function:tests",
     "$dir_pw_fuzzer:tests",
     "$dir_pw_hdlc:tests",
@@ -554,6 +557,7 @@ declare_args() {
     "$dir_pw_emu:docs",
     "$dir_pw_env_setup:docs",
     "$dir_pw_file:docs",
+    "$dir_pw_format:docs",
     "$dir_pw_function:docs",
     "$dir_pw_fuzzer:docs",
     "$dir_pw_hdlc:docs",

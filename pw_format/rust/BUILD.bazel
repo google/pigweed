@@ -1,4 +1,4 @@
-# Copyright 2022 The Pigweed Authors
+# Copyright 2023 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,22 +12,32 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_rust//rust:defs.bzl", "rust_docs")
+load("@rules_rust//rust:defs.bzl", "rust_doc", "rust_doc_test", "rust_library", "rust_test")
 
-rust_docs(
-    name = "docs",
-
-    # These need to be kept in dependency order for inter-crate linking to
-    # work.
-    #
-    # TODO: b/295227522 - Add support to `rust_docs` to automatically processs
-    # crates in topological order.
-    crates = [
-        "//pw_format/rust:pw_format",
-        "//pw_status/rust:pw_status",
-        "//pw_stream/rust:pw_stream",
-        "//pw_varint/rust:pw_varint",
-        "//pw_tokenizer/rust:pw_tokenizer_core",
-        "//pw_tokenizer/rust:pw_tokenizer",
+rust_library(
+    name = "pw_format",
+    srcs = [
+        "pw_format/lib.rs",
+        "pw_format/tests.rs",
     ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pw_status/rust:pw_status",
+        "@rust_crates//:nom",
+    ],
+)
+
+rust_test(
+    name = "pw_format_test",
+    crate = ":pw_format",
+)
+
+rust_doc_test(
+    name = "pw_format_doc_test",
+    crate = ":pw_format",
+)
+
+rust_doc(
+    name = "pw_format_doc",
+    crate = ":pw_format",
 )

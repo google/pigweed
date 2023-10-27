@@ -28,7 +28,6 @@ use syn::{
 };
 
 use pw_tokenizer_core::{hash_string, TOKENIZER_ENTRY_MAGIC};
-use pw_tokenizer_printf as printf;
 
 type TokenStream2 = proc_macro2::TokenStream;
 
@@ -145,7 +144,7 @@ impl Parse for TokenizeToBuffer {
 }
 
 // Grab the next argument returning a descriptive error if no more args are left.
-fn next_arg(spec: &printf::ConversionSpec, args: &mut VecDeque<Expr>) -> Result<Expr> {
+fn next_arg(spec: &pw_format::ConversionSpec, args: &mut VecDeque<Expr>) -> Result<Expr> {
     args.pop_front()
         .ok_or_else(|| Error::new(&format!("No argument given for {spec:?}")))
 }
@@ -155,39 +154,39 @@ fn next_arg(spec: &printf::ConversionSpec, args: &mut VecDeque<Expr>) -> Result<
 // to marshal the arguments into the buffer declared in `_tokenize_to_buffer`.
 // Returns an error if args is too short of if a format specifier is unsupported.
 fn handle_conversion(
-    spec: &printf::ConversionSpec,
+    spec: &pw_format::ConversionSpec,
     args: &mut VecDeque<Expr>,
 ) -> Result<TokenStream2> {
     match spec.specifier {
-        printf::Specifier::Decimal
-        | printf::Specifier::Integer
-        | printf::Specifier::Octal
-        | printf::Specifier::Unsigned
-        | printf::Specifier::Hex
-        | printf::Specifier::UpperHex => {
+        pw_format::Specifier::Decimal
+        | pw_format::Specifier::Integer
+        | pw_format::Specifier::Octal
+        | pw_format::Specifier::Unsigned
+        | pw_format::Specifier::Hex
+        | pw_format::Specifier::UpperHex => {
             // TODO: b/281862660 - Support Width::Variable and Precision::Variable.
-            if spec.min_field_width == printf::MinFieldWidth::Variable {
+            if spec.min_field_width == pw_format::MinFieldWidth::Variable {
                 return Err(Error::new(
                     "Variable width '*' integer formats are not supported.",
                 ));
             }
 
-            if spec.precision == printf::Precision::Variable {
+            if spec.precision == pw_format::Precision::Variable {
                 return Err(Error::new(
                     "Variable precision '*' integer formats are not supported.",
                 ));
             }
 
             let arg = next_arg(spec, args)?;
-            let bits = match spec.length.unwrap_or(printf::Length::Long) {
-                printf::Length::Char => 8,
-                printf::Length::Short => 16,
-                printf::Length::Long => 32,
-                printf::Length::LongLong => 64,
-                printf::Length::IntMax => 64,
-                printf::Length::Size => 32,
-                printf::Length::PointerDiff => 32,
-                printf::Length::LongDouble => {
+            let bits = match spec.length.unwrap_or(pw_format::Length::Long) {
+                pw_format::Length::Char => 8,
+                pw_format::Length::Short => 16,
+                pw_format::Length::Long => 32,
+                pw_format::Length::LongLong => 64,
+                pw_format::Length::IntMax => 64,
+                pw_format::Length::Size => 32,
+                pw_format::Length::PointerDiff => 32,
+                pw_format::Length::LongDouble => {
                     return Err(Error::new(
                         "Long double length parameter invalid for integer formats",
                     ))
@@ -199,15 +198,15 @@ fn handle_conversion(
               cursor.write_signed_varint(#ty::from(#arg) as i64)?;
             })
         }
-        printf::Specifier::String => {
+        pw_format::Specifier::String => {
             // TODO: b/281862660 - Support Width::Variable and Precision::Variable.
-            if spec.min_field_width == printf::MinFieldWidth::Variable {
+            if spec.min_field_width == pw_format::MinFieldWidth::Variable {
                 return Err(Error::new(
                     "Variable width '*' string formats are not supported.",
                 ));
             }
 
-            if spec.precision == printf::Precision::Variable {
+            if spec.precision == pw_format::Precision::Variable {
                 return Err(Error::new(
                     "Variable precision '*' string formats are not supported.",
                 ));
@@ -218,25 +217,25 @@ fn handle_conversion(
               let mut buffer = __pw_tokenizer_crate::internal::encode_string(&mut cursor, #arg)?;
             })
         }
-        printf::Specifier::Char => {
+        pw_format::Specifier::Char => {
             let arg = next_arg(spec, args)?;
             Ok(quote! {
               cursor.write_u8_le(&u8::from(#arg))?;
             })
         }
 
-        printf::Specifier::Double
-        | printf::Specifier::UpperDouble
-        | printf::Specifier::Exponential
-        | printf::Specifier::UpperExponential
-        | printf::Specifier::SmallDouble
-        | printf::Specifier::UpperSmallDouble => {
+        pw_format::Specifier::Double
+        | pw_format::Specifier::UpperDouble
+        | pw_format::Specifier::Exponential
+        | pw_format::Specifier::UpperExponential
+        | pw_format::Specifier::SmallDouble
+        | pw_format::Specifier::UpperSmallDouble => {
             // TODO: b/281862328 - Support floating point numbers.
             Err(Error::new("Floating point numbers are not supported."))
         }
 
         // TODO: b/281862333 - Support pointers.
-        printf::Specifier::Pointer => Err(Error::new("Pointer types are not supported.")),
+        pw_format::Specifier::Pointer => Err(Error::new("Pointer types are not supported.")),
     }
 }
 
@@ -253,7 +252,7 @@ pub fn _tokenize_to_buffer(tokens: TokenStream) -> TokenStream {
 
     let format_string = input.format_string.value();
 
-    let format = match printf::FormatString::parse(&format_string) {
+    let format = match pw_format::FormatString::parse(&format_string) {
         Ok(format) => format,
         Err(e) => {
             return syn::Error::new_spanned(
@@ -270,7 +269,7 @@ pub fn _tokenize_to_buffer(tokens: TokenStream) -> TokenStream {
     let mut errors = Vec::new();
 
     for fragment in format.fragments {
-        if let printf::FormatFragment::Conversion(spec) = fragment {
+        if let pw_format::FormatFragment::Conversion(spec) = fragment {
             match handle_conversion(&spec, &mut args) {
                 Ok(encoding) => arg_encodings.push(encoding),
                 Err(e) => errors.push(syn::Error::new_spanned(

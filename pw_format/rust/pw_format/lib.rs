@@ -25,7 +25,7 @@
 //! # Example
 //!
 //! ```
-//! use pw_tokenizer_printf::{
+//! use pw_format::{
 //!     ConversionSpec, Flag, FormatFragment, FormatString, Length, Precision, Specifier, MinFieldWidth,
 //! };
 //!

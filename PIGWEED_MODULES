@@ -47,6 +47,7 @@ pw_doctor
 pw_emu
 pw_env_setup
 pw_file
+pw_format
 pw_function
 pw_fuzzer
 pw_hdlc
