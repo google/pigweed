@@ -368,7 +368,25 @@ enum LESecondaryAdvertisingPHY:
 
 
 enum LEAddressType:
-  -- Possible values that can be reported for various |*_address_type| parameters in various LE packets.
+  -- Possible values that can be reported for various |*_address_type| parameters in various LE
+  -- packets.
+  [maximum_bits: 8]
+  PUBLIC          = 0x00
+    -- Public Device Address (default)
+
+  RANDOM          = 0x01
+    -- Random Device Address
+
+  PUBLIC_IDENTITY = 0x02
+    -- Public Identity Address (corresponds to Resolved Private Address)
+
+  RANDOM_IDENTITY = 0x03
+    -- Random (static) Identity Address (corresponds to Resolved Private Address)
+
+
+enum LEExtendedAddressType:
+  -- Possible values that can be reported for various |*_address_type| parameters in various LE
+  -- packets.
   [maximum_bits: 8]
   PUBLIC          = 0x00
     -- Public Device Address (default)

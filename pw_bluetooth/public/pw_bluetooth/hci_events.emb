@@ -63,7 +63,8 @@ enum LEAdvertisingDataStatus:
 
 
 enum LEDirectAddressType:
-  -- Possible values that can be reported for the |direct_address_type| parameter in LE Advertising Report events.
+  -- Possible values that can be reported for the |direct_address_type| parameter in LE Advertising
+  -- Report events.
   [maximum_bits: 8]
   PUBLIC                                = 0x00
     -- Public Device Address
@@ -1509,7 +1510,7 @@ struct LEExtendedAdvertisingReportData:
 
     0     [+LEExtendedAdvertisingEventType.$size_in_bits]  LEExtendedAdvertisingEventType  event_type
 
-  $next [+1]                                               hci.LEAddressType               address_type
+  $next [+1]                                               hci.LEExtendedAddressType       address_type
     -- Address type of the advertiser.
 
   $next [+hci.BdAddr.$size_in_bytes]                       hci.BdAddr                      address

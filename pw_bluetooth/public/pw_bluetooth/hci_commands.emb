@@ -2600,7 +2600,7 @@ struct LEPeriodicAdvertisingCreateSyncCommand:
     -- Advertising SID subfield in the ADI field used to identify the Periodic Advertising
     [requires: 0x00 <= this <= 0x0F]
 
-  $next [+1]                                                       LEPeriodicAdvertisingAddressType        advertiser_address_type
+  $next [+1]                                                       hci.LEPeerAddressTypeNoAnon             advertiser_address_type
 
   $next [+hci.BdAddr.$size_in_bytes]                               hci.BdAddr                              advertiser_address
     -- Public Device Address, Random Device Address, Public Identity Address, or Random (static)
