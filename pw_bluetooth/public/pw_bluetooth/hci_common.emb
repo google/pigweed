@@ -339,7 +339,6 @@ enum LEPeerAddressTypeNoAnon:
   [maximum_bits: 8]
   PUBLIC    = 0x00
   RANDOM    = 0x01
-  ANONYMOUS = 0xFF
 
 
 bits ClockOffset:
