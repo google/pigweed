@@ -110,7 +110,10 @@ class Stm32Cube(pw_package.package_manager.Package):
     def __init__(self, family, tags, *args, **kwargs):
         super().__init__(*args, name=f'stm32cube_{family}', **kwargs)
 
-        st_github_url = 'https://github.com/STMicroelectronics'
+        st_github_url = (
+            'https://pigweed.googlesource.com/'
+            'third_party/github/STMicroelectronics'
+        )
 
         self._hal_driver = pw_package.git_repo.GitRepo(
             name='hal_driver',
