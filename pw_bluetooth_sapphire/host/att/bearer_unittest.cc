@@ -1119,6 +1119,82 @@ TEST_F(BearerTest, RemotePDUWithoutResponse) {
   EXPECT_EQ(1, not_count);
 }
 
+// Verify proper operation if a transaction callback frees the bearer
+TEST_F(BearerTest, ResponseShutsDownBearer) {
+  StaticByteBuffer response(kTestResponse, 'T', 'e', 's', 't');
+
+  bool chan_cb_called = false;
+  auto chan_cb = [this, &chan_cb_called, &response](auto cb_packet) {
+    ASSERT_FALSE(chan_cb_called);
+    EXPECT_EQ(kTestRequest, (*cb_packet)[0]);
+
+    chan_cb_called = true;
+    fake_chan()->Receive(response);
+  };
+  fake_chan()->SetSendCallback(chan_cb, dispatcher());
+
+  bool cb_called = false;
+  auto cb = [this, &cb_called, &response](Bearer::TransactionResult result) {
+    ASSERT_FALSE(cb_called);
+    if (result.is_error()) {
+      return;
+    }
+
+    cb_called = true;
+    EXPECT_TRUE(ContainersEqual(response, result.value().data()));
+    DeleteBearer();
+  };
+  bearer()->StartTransaction(NewBuffer(kTestRequest), cb);
+
+  RunUntilIdle();
+  EXPECT_TRUE(chan_cb_called);
+  EXPECT_TRUE(cb_called);
+}
+
+// Verify proper operation if a transaction error callback frees the bearer
+TEST_F(BearerTest, ErrorResponseShutsDownBearer) {
+  StaticByteBuffer error_rsp(
+      // Opcode: error response
+      kErrorResponse,
+
+      // request opcode
+      kTestRequest,
+
+      // handle (0x0001)
+      0x01, 0x00,
+
+      // error code:
+      ErrorCode::kRequestNotSupported);
+
+  bool chan_cb_called = false;
+  auto chan_cb = [this, &chan_cb_called, &error_rsp](auto cb_packet) {
+    ASSERT_FALSE(chan_cb_called);
+    EXPECT_EQ(kTestRequest, (*cb_packet)[0]);
+
+    chan_cb_called = true;
+    fake_chan()->Receive(error_rsp);
+  };
+  fake_chan()->SetSendCallback(chan_cb, dispatcher());
+
+  bool err_cb_called = false;
+  auto cb = [this, &err_cb_called](Bearer::TransactionResult result) {
+    if (result.is_ok()) {
+      return;
+    }
+    const auto& [error, handle] = result.error_value();
+    EXPECT_EQ(Error(ErrorCode::kRequestNotSupported), error);
+    EXPECT_EQ(0x0001, handle);
+
+    err_cb_called = true;
+    DeleteBearer();
+  };
+  bearer()->StartTransaction(NewBuffer(kTestRequest), cb);
+
+  RunUntilIdle();
+  EXPECT_TRUE(err_cb_called);
+  EXPECT_TRUE(chan_cb_called);
+}
+
 class BearerTestSecurity : public BearerTest {
  protected:
   void SetUp() override {

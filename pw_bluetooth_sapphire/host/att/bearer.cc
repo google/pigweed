@@ -578,6 +578,9 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
                         : sm::SecurityLevel::kNoSecurity;
   if (transaction->security_retry_level >= security_requirement ||
       security_requirement <= chan_->security().level()) {
+    // The transaction callback may result in our connection being closed.
+    auto self = weak_self_.GetWeakPtr();
+
     // Resolve the transaction.
     if (error.has_value()) {
       transaction->callback(fit::error(error.value()));
@@ -585,8 +588,10 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
       transaction->callback(fit::ok(packet));
     }
 
-    // Send out the next queued transaction
-    TryStartNextTransaction(tq);
+    if (self.is_alive()) {
+      // Send out the next queued transaction
+      TryStartNextTransaction(tq);
+    }
     return;
   }
 
