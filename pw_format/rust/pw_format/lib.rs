@@ -12,12 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-//! The `pw_tokenizer_printf` crate is a parser used by `pw_tokenizer`'s
-//! proc macros to:
+//! The `pw_format` crate is a parser used to implement proc macros that:
 //! * Understand tokenization argument types at compile time.
 //! * Syntax check format strings.
 //!
-//! `pw_tokenizer_printf` is written against `std` and is not intended to be
+//! `pw_format` is written against `std` and is not intended to be
 //! used in an embedded context.  Some efficiency and memory is traded for a
 //! more expressive interface that exposes the format string's "syntax tree"
 //! to the API client.
