@@ -61,6 +61,8 @@ class BaseSplitFreeListAllocator : public Allocator {
 template <typename BlockType = Block<>>
 class SplitFreeListAllocator : public BaseSplitFreeListAllocator {
  public:
+  using Range = typename BlockType::Range;
+
   constexpr SplitFreeListAllocator() = default;
   ~SplitFreeListAllocator() override;
 
@@ -81,8 +83,10 @@ class SplitFreeListAllocator : public BaseSplitFreeListAllocator {
   /// @retval     OUT_OF_RANGE        The region too large for `BlockType`.
   Status Init(ByteSpan region, size_t threshold);
 
+  /// Returns an iterable range of blocks tracking the memory of this allocator.
+  Range blocks() const;
+
  private:
-  using Range = typename BlockType::Range;
   using ReverseRange = typename BlockType::ReverseRange;
 
   /// @copydoc Allocator::Dispatch
@@ -144,6 +148,12 @@ SplitFreeListAllocator<BlockType>::~SplitFreeListAllocator() {
       CrashOnAllocated(block);
     }
   }
+}
+
+template <typename BlockType>
+typename BlockType::Range SplitFreeListAllocator<BlockType>::blocks() const {
+  auto* begin = BlockType::FromUsableSpace(static_cast<std::byte*>(begin_));
+  return Range(begin);
 }
 
 template <typename BlockType>
@@ -253,7 +263,7 @@ void SplitFreeListAllocator<BlockType>::DoDeallocate(void* ptr,
   if (block < first_free_) {
     first_free_ = block;
   }
-  if (last_free_ < block) {
+  if (block->Last() || last_free_ < block->Next()) {
     last_free_ = block;
   }
 }

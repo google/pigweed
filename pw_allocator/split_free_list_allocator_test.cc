@@ -199,6 +199,41 @@ TEST_F(SplitFreeListAllocatorTest, DeallocateShuffled) {
   }
 }
 
+TEST_F(SplitFreeListAllocatorTest, IterateOverBlocks) {
+  constexpr Layout layout1 = Layout::Of<std::byte[32]>();
+  constexpr Layout layout2 = Layout::Of<std::byte[16]>();
+
+  // Allocate eight blocks of alternating sizes. After this, the will also be a
+  // ninth, unallocated block of the remaining memory.
+  for (size_t i = 0; i < 4; ++i) {
+    ptrs_[i] = allocator_.Allocate(layout1);
+    ASSERT_NE(ptrs_[i], nullptr);
+    ptrs_[i + 4] = allocator_.Allocate(layout2);
+    ASSERT_NE(ptrs_[i + 4], nullptr);
+  }
+
+  // Deallocate every other block. After this there will be four more
+  // unallocated blocks, for a total of five.
+  for (size_t i = 0; i < 4; ++i) {
+    allocator_.Deallocate(ptrs_[i], layout1);
+  }
+
+  // Count the blocks. The unallocated ones vary in size, but the allocated ones
+  // should all be the same.
+  size_t free_count = 0;
+  size_t used_count = 0;
+  for (auto* block : allocator_.blocks()) {
+    if (block->Used()) {
+      EXPECT_GE(block->InnerSize(), layout2.size());
+      ++used_count;
+    } else {
+      ++free_count;
+    }
+  }
+  EXPECT_EQ(used_count, 4U);
+  EXPECT_EQ(free_count, 5U);
+}
+
 TEST_F(SplitFreeListAllocatorTest, QueryLargeValid) {
   constexpr Layout layout = Layout::Of<std::byte[kThreshold * 2]>();
   ptrs_[0] = allocator_.Allocate(layout);

@@ -628,6 +628,9 @@ template <typename UintType, size_t kMaxSize>
 Status Block<UintType, kMaxSize>::AllocFirst(Block*& block,
                                              size_t inner_size,
                                              size_t alignment) {
+  if (block->Used()) {
+    return Status::FailedPrecondition();
+  }
   // Check if padding will be needed at the front to align the usable space.
   size_t pad_outer_size = 0;
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
@@ -658,6 +661,9 @@ template <typename UintType, size_t kMaxSize>
 Status Block<UintType, kMaxSize>::AllocLast(Block*& block,
                                             size_t inner_size,
                                             size_t alignment) {
+  if (block->Used()) {
+    return Status::FailedPrecondition();
+  }
   // Find the last address that is aligned and is followed by enough space for
   // block overhead and the requested size.
   if (block->InnerSize() < inner_size) {
