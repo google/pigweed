@@ -21,6 +21,7 @@ pw_add_library(pw_bytes STATIC
     public/pw_bytes/byte_builder.h
     public/pw_bytes/endian.h
     public/pw_bytes/span.h
+    public/pw_bytes/suffix.h
     public/pw_bytes/units.h
   PUBLIC_INCLUDES
     public
@@ -87,6 +88,16 @@ pw_add_test(pw_bytes.byte_builder_test
 pw_add_test(pw_bytes.endian_test
   SOURCES
     endian_test.cc
+  PRIVATE_DEPS
+    pw_bytes
+  GROUPS
+    modules
+    pw_bytes
+)
+
+pw_add_test(pw_bytes.suffix_test
+  SOURCES
+    suffix_test.cc
   PRIVATE_DEPS
     pw_bytes
   GROUPS

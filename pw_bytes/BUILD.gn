@@ -32,6 +32,7 @@ pw_source_set("pw_bytes") {
     "public/pw_bytes/byte_builder.h",
     "public/pw_bytes/endian.h",
     "public/pw_bytes/span.h",
+    "public/pw_bytes/suffix.h",
     "public/pw_bytes/units.h",
   ]
   sources = [ "byte_builder.cc" ]
@@ -57,6 +58,7 @@ pw_test_group("tests") {
     ":bit_test",
     ":byte_builder_test",
     ":endian_test",
+    ":suffix_test",
     ":units_test",
   ]
   group_deps = [
@@ -88,6 +90,11 @@ pw_test("byte_builder_test") {
 pw_test("endian_test") {
   deps = [ ":pw_bytes" ]
   sources = [ "endian_test.cc" ]
+}
+
+pw_test("suffix_test") {
+  deps = [ ":pw_bytes" ]
+  sources = [ "suffix_test.cc" ]
 }
 
 pw_test("units_test") {

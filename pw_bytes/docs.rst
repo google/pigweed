@@ -58,6 +58,13 @@ pw_bytes/endian.h
 =================
 Functions for converting the endianness of integral values.
 
+pw_bytes/suffix.h
+=================
+This module exports a single ``_b`` literal, making it easier to create
+``std::byte`` values for tests.
+
+.. cpp:function:: constexpr std::byte operator"" _b(unsigned long long value)
+
 pw_bytes/units.h
 ================
 Constants, functions and user-defined literals for specifying a number of bytes

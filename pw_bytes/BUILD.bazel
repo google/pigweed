@@ -33,6 +33,7 @@ pw_cc_library(
         "public/pw_bytes/byte_builder.h",
         "public/pw_bytes/endian.h",
         "public/pw_bytes/span.h",
+        "public/pw_bytes/suffix.h",
         "public/pw_bytes/units.h",
     ],
     includes = ["public"],
@@ -95,6 +96,14 @@ pw_cc_test(
     deps = [
         ":pw_bytes",
         "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "suffix_test",
+    srcs = ["suffix_test.cc"],
+    deps = [
+        ":pw_bytes",
     ],
 )
 
