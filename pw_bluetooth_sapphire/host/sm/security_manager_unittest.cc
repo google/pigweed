@@ -496,16 +496,16 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
   int central_ident_count_ = 0;
 
   // Values that have we have sent to the peer.
-  AuthReqField security_auth_req_;
+  AuthReqField security_auth_req_ = 0;
   std::optional<EcdhKey> public_ecdh_key_;
-  UInt128 pairing_confirm_;
-  UInt128 pairing_random_;
-  UInt128 pairing_dhkey_check_;
-  UInt128 enc_info_;
-  UInt128 id_info_;
+  UInt128 pairing_confirm_ = {};
+  UInt128 pairing_random_ = {};
+  UInt128 pairing_dhkey_check_ = {};
+  UInt128 enc_info_ = {};
+  UInt128 id_info_ = {};
   DeviceAddress id_addr_info_;
-  uint16_t ediv_;
-  uint64_t rand_;
+  uint16_t ediv_ = 0;
+  uint64_t rand_ = 0;
 
   std::optional<ErrorCode> received_error_code_;
 
@@ -627,6 +627,7 @@ class InitiatorPairingTest : public SecurityManagerTest {
     ASSERT_EQ(1, pairing_request_count());
     PairingRequestParams pres;
     pres.io_capability = IOCapability::kDisplayYesNo;
+    pres.oob_data_flag = OOBDataFlag::kNotPresent;
     AuthReqField bondable_flag = (bondable == BondableMode::Bondable) ? AuthReq::kBondingFlag : 0;
     AuthReqField mitm_flag = (level >= SecurityLevel::kAuthenticated) ? AuthReq::kMITM : 0;
     pres.auth_req = AuthReq::kSC | mitm_flag | bondable_flag;
@@ -809,6 +810,7 @@ class ResponderPairingTest : public SecurityManagerTest {
                           BondableMode bondable = BondableMode::Bondable) {
     PairingRequestParams preq;
     preq.io_capability = IOCapability::kDisplayYesNo;
+    preq.oob_data_flag = OOBDataFlag::kNotPresent;
     AuthReqField bondable_flag = (bondable == BondableMode::Bondable) ? AuthReq::kBondingFlag : 0;
     AuthReqField mitm_flag = (level >= SecurityLevel::kAuthenticated) ? AuthReq::kMITM : 0;
     preq.auth_req = AuthReq::kSC | mitm_flag | bondable_flag;
