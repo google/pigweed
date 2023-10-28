@@ -1,22 +1,103 @@
 .. _module-pw_string-guide:
 
-================
-pw_string: Guide
-================
+====================
+Get Started & Guides
+====================
 .. pigweed-module-subpage::
    :name: pw_string
-   :tagline: Efficient, easy, and safe string manipulation
+   :tagline: pw_string: Efficient, easy, and safe string manipulation
 
-InlineString and StringBuilder?
-===============================
-Use :cpp:type:`pw::InlineString` if you need:
+.. _module-pw_string-get-started:
+
+Get Started
+===========
+.. tab-set::
+
+   .. tab-item:: Bazel
+
+      Add ``@pigweed//pw_string`` to the ``deps`` list in your Bazel target:
+
+      .. code-block::
+
+         cc_library("...") {
+           # ...
+           deps = [
+             # ...
+             "@pigweed//pw_string",
+             # ...
+           ]
+         }
+
+      If only one part of the module is needed, depend only on it; for example
+      ``@pigweed//pw_string:format``.
+
+      This assumes ``@pigweed`` is the name you pulled Pigweed into your Bazel
+      ``WORKSPACE`` as.
+
+   .. tab-item:: GN
+
+      Add ``$dir_pw_string`` to the ``deps`` list in your ``pw_executable()``
+      build target:
+
+      .. code-block::
+
+         pw_executable("...") {
+           # ...
+           deps = [
+             # ...
+             "$dir_pw_string",
+             # ...
+           ]
+         }
+
+      See `//source/BUILD.gn <https://pigweed.googlesource.com/pigweed/sample_project/+/refs/heads/main/source/BUILD.gn>`_
+      in the Pigweed Sample Project for an example.
+
+   .. tab-item:: CMake
+
+      Add ``pw_string`` to your ``pw_add_library`` or similar CMake target:
+
+      .. code-block::
+
+         pw_add_library(my_library STATIC
+           HEADERS
+             ...
+           PRIVATE_DEPS
+             # ...
+             pw_string
+             # ...
+         )
+
+      For a narrower dependency, depend on subtargets like
+      ``pw_string.builder``, etc.
+
+   .. tab-item:: Zephyr
+
+      There are two ways to use ``pw_string`` from a Zephyr project:
+
+      #. Depend on ``pw_string`` in your CMake target (see CMake tab). This is
+         Pigweed Team's suggested approach since it enables precise CMake
+         dependency analysis.
+
+      #. Add ``CONFIG_PIGWEED_STRING=y`` to the Zephyr project's configuration,
+         which causes ``pw_string`` to become a global dependency and have the
+         includes exposed to all targets. Pigweed team does not recommend this
+         approach, though it is the typical Zephyr solution.
+
+Choose between pw::InlineString and pw::StringBuilder
+=====================================================
+`pw::InlineString` is intended to replace typical null terminated character
+arrays in embedded data structures. Use :cpp:type:`pw::InlineString` if you
+need:
 
 * Compatibility with ``std::string``
 * Storage internal to the object
 * A string object to persist in other data structures
 * Lower code size overhead
 
-Use :cpp:class:`pw::StringBuilder` if you need:
+`pw::StringBuilder` is intended to ease constructing strings in external data;
+typically created on the stack and disposed of in the same function. Use
+:cpp:class:`pw::StringBuilder` if you need:
 
 * Compatibility with ``std::ostringstream``, including custom object support
 * Storage external to the object
@@ -63,8 +144,8 @@ constructing a string for external use.
   }
 
 
-Building strings with pw::StringBuilder
-=======================================
+Build a string with pw::StringBuilder
+=====================================
 The following shows basic use of a :cpp:class:`pw::StringBuilder`.
 
 .. code-block:: cpp
@@ -93,8 +174,8 @@ The following shows basic use of a :cpp:class:`pw::StringBuilder`.
     return sb.status();
   }
 
-Building strings with pw::InlineString
-======================================
+Build a string with pw::InlineString
+====================================
 :cpp:type:`pw::InlineString` objects must be constructed by specifying a fixed
 capacity for the string.
 
@@ -130,8 +211,8 @@ capacity for the string.
 
    FunctionThatTakesAnInlineString(std::string_view("1234", 4));
 
-Building strings inside InlineString with a StringBuilder
-=========================================================
+Build a string inside an pw::InlineString with a pw::StringBuilder
+==================================================================
 :cpp:class:`pw::StringBuilder` can build a string in a
 :cpp:type:`pw::InlineString`:
 
@@ -146,8 +227,8 @@ Building strings inside InlineString with a StringBuilder
      // inline_str contains "456"
    }
 
-Passing InlineStrings as parameters
-===================================
+Pass an pw::InlineString object as a parameter
+==============================================
 :cpp:type:`pw::InlineString` objects can be passed to non-templated functions
 via type erasure. This saves code size in most cases, since it avoids template
 expansions triggered by string size differences.
@@ -196,8 +277,8 @@ Known size strings
      return string;
    }();
 
-Compact initialization of InlineStrings
-=======================================
+Initialization of pw::InlineString objects
+===========================================
 :cpp:type:`pw::InlineBasicString` supports class template argument deduction
 (CTAD) in C++17 and newer. Since :cpp:type:`pw::InlineString` is an alias, CTAD
 is not supported until C++20.
@@ -211,9 +292,9 @@ is not supported until C++20.
    // In C++20, CTAD may be used with the pw::InlineString alias.
    pw::InlineString my_other_string("123456789");
 
-Supporting custom types with StringBuilder
-==========================================
-As with ``std::ostream``, StringBuilder supports printing custom types by
+Custom types with pw::StringBuilder
+===================================
+As with ``std::ostream``, pw::StringBuilder supports printing custom types by
 overriding the ``<<`` operator. This is is done by defining ``operator<<`` in
 the same namespace as the custom type. For example:
 
@@ -249,37 +330,3 @@ This example shows how to specialize ``pw::ToString``:
   }
 
   }  // namespace pw
-
-.. _module-pw_string-size-reports:
-
-Saving code space by replacing ``snprintf``
-===========================================
-The C standard library function ``snprintf`` is commonly used for string
-formatting. However, it isn't optimized for embedded systems, and using it will
-bring in a lot of other standard library code that will inflate your binary
-size.
-
-Size comparison: snprintf versus pw::StringBuilder
---------------------------------------------------
-The fixed code size cost of :cpp:type:`pw::StringBuilder` is smaller than
-that of ``std::snprintf``. Using only :cpp:type:`pw::StringBuilder`'s ``<<`` and
-``append`` methods instead of ``snprintf`` leads to significant code size
-reductions.
-
-However, there are cases when the incremental code size cost of
-:cpp:type:`pw::StringBuilder` is similar to that of ``snprintf``. For example,
-each argument to :cpp:type:`pw::StringBuilder`'s ``<<`` method expands to a
-function call, but one or two :cpp:type:`pw::StringBuilder` appends may still
-have a smaller code size impact than a single ``snprintf`` call. Using
-:cpp:type:`pw::StringBuilder` error handling will also impact code size in a
-way that is comparable to ``snprintf``.
-
-.. include:: string_builder_size_report
-
-Size comparison: snprintf versus pw::string::Format
----------------------------------------------------
-The ``pw::string::Format`` functions have a small, fixed code size
-cost. However, relative to equivalent ``std::snprintf`` calls, there is no
-incremental code size cost to using ``pw::string::Format``.
-
-.. include:: format_size_report

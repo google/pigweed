@@ -86,48 +86,43 @@ meets your needs.
    gives you the flexibility to move to smaller platforms later with much less
    rework.
 
-.. _module-pw_string-get-started:
-
----------------
-Getting Started
----------------
-
-.. tab-set::
-
-   .. tab-item:: GN
-
-      Add ``$dir_pw_string`` to the ``deps`` list in your ``pw_executable()``
-      build target:
-
-      .. code-block::
-
-         pw_executable("...") {
-           # ...
-           deps = [
-             # ...
-             "$dir_pw_string",
-             # ...
-           ]
-         }
-
-      See `//source/BUILD.gn <https://pigweed.googlesource.com/pigweed/sample_project/+/refs/heads/main/source/BUILD.gn>`_
-      in the Pigweed Sample Project for an example.
-
-   .. tab-item:: Zephyr
-
-      Add ``CONFIG_PIGWEED_STRING=y`` to the Zephyr project's configuration.
-
--------
-Roadmap
--------
-* The fixed size cost of :cpp:type:`pw::StringBuilder` can be dramatically
-  reduced by limiting support for 64-bit integers.
-* ``pw_string`` may be integrated with :ref:`module-pw_tokenizer`.
-
 .. toctree::
    :hidden:
    :maxdepth: 1
 
-   design
    guide
    api
+   design
+   code_size
+
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`rocket` Get Started & Guides
+      :link: module-pw_string-get-started
+      :link-type: ref
+      :class-item: sales-pitch-cta-primary
+
+      Integrate pw_string into your project and learn common use cases
+
+   .. grid-item-card:: :octicon:`code-square` API Reference
+      :link: module-pw_string-api
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Detailed description of the pw_string's classes and methods
+
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`code-square` Design & Roadmap
+      :link: module-pw_string-design
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Learn why pw_string is designed the way it is, and upcoming plans
+
+   .. grid-item-card:: :octicon:`code-square` Code Size Analysis
+      :link: module-pw_string-size-reports
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Understand pw_string's code footprint and savings potential

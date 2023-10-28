@@ -205,6 +205,7 @@ pw_test("util_test") {
 pw_doc_group("docs") {
   sources = [
     "api.rst",
+    "code_size.rst",
     "design.rst",
     "docs.rst",
     "guide.rst",

@@ -1,20 +1,20 @@
 .. _module-pw_string-design:
 
 ================
-pw_string design
+Design & Roadmap
 ================
 .. pigweed-module-subpage::
    :name: pw_string
-   :tagline: Efficient, easy, and safe string manipulation
+   :tagline: pw_string: Efficient, easy, and safe string manipulation
 
 ``pw_string`` provides string classes and utility functions designed to
 prioritize safety and static allocation. The APIs are broadly similar to those
 of the string classes in the C++ standard library, so familiarity with those
 classes will provide some context around ``pw_string`` design decisions.
 
-------------
-InlineString
-------------
+--------------------------
+Design of pw::InlineString
+--------------------------
 :cpp:type:`pw::InlineString` / :cpp:class:`pw::InlineBasicString` are designed
 to match the ``std::string`` / ``std::basic_string<T>`` API as closely as
 possible, but with key differences to improve performance on embedded systems:
@@ -60,9 +60,9 @@ fail an assertion, resulting in a crash. Helpers are provided in
 ``pw_string/util.h`` that return ``pw::Status::ResourceExhausted()`` instead of
 failing an assert when the capacity would be exceeded.
 
-------------------------
-String utility functions
-------------------------
+----------------------------------
+Design of string utility functions
+----------------------------------
 
 Safe length checking
 ====================
@@ -77,3 +77,10 @@ null-termination.
 Second, a constexpr specialized form is offered where null termination is
 required through :cpp:func:`pw::string::NullTerminatedLength`. This will only
 return a length if the string is null-terminated.
+
+-------
+Roadmap
+-------
+* The fixed size cost of :cpp:type:`pw::StringBuilder` can be dramatically
+  reduced by limiting support for 64-bit integers.
+* ``pw_string`` may be integrated with :ref:`module-pw_tokenizer`.

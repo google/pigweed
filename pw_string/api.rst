@@ -5,12 +5,12 @@ API Reference
 =============
 .. pigweed-module-subpage::
    :name: pw_string
-   :tagline: Efficient, easy, and safe string manipulation
+   :tagline: pw_string: Efficient, easy, and safe string manipulation
 
 --------
 Overview
 --------
-This module provides two types of strings, and utility functions for working
+This module provides two types of strings and utility functions for working
 with strings.
 
 **pw::StringBuilder**
@@ -88,7 +88,6 @@ pw::string::Format()
 .. doxygenfunction:: pw::string::FormatVaList(InlineString<>& string, const char* format, va_list args)
 .. doxygenfunction:: pw::string::FormatOverwrite(InlineString<>& string, const char* format, ...)
 .. doxygenfunction:: pw::string::FormatOverwriteVaList(InlineString<>& string, const char* format, va_list args)
-
 
 pw::string::NullTerminatedLength()
 ----------------------------------
