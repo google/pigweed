@@ -727,6 +727,14 @@ def bazel_build(ctx: PresubmitContext) -> None:
         '//pw_cpu_exception/...',
     )
 
+    # Build the pw_system example for the Discovery board using STM32Cube.
+    build.bazel(
+        ctx,
+        'build',
+        '--config=stm32f429i',
+        '//pw_system:system_example',
+    )
+
 
 def pw_transfer_integration_test(ctx: PresubmitContext) -> None:
     """Runs the pw_transfer cross-language integration test only.

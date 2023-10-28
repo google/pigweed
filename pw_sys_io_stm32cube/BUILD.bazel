@@ -33,8 +33,9 @@ pw_cc_library(
         "sys_io.cc",
     ],
     hdrs = ["public/pw_sys_io_stm32cube/init.h"],
-    # TODO: b/259151566 - Get this to build.
-    tags = ["manual"],
+    copts = ["-Wno-unused-parameter"],
+    includes = ["public"],
+    target_compatible_with = [":backend"],
     deps = [
         "//pw_preprocessor",
         "//pw_status",

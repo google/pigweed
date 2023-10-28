@@ -63,6 +63,24 @@ build:fuzztest \
 build:fuzztest \
     --@pigweed//targets:pw_unit_test_main=@com_google_fuzztest//fuzztest:fuzztest_gtest_main
 
+# We use non-default labels for the STM32Cube repositories upstream (to reserve
+# the option of building for more than one MCU family down the road), so need to
+# override the three labels below.
+common --//third_party/stm32cube:hal_driver=@stm32f4xx_hal_driver//:hal_driver
+common --@stm32f4xx_hal_driver//:cmsis_device=@cmsis_device_f4//:cmsis_device
+common --@stm32f4xx_hal_driver//:cmsis_init=@cmsis_device_f4//:default_cmsis_init
+
+# Config for the stm32f429i_disc1_stm32cube platform.
+#
+# TODO: b/301334234 - Make the platform set the flags below.
+build:stm32f429i --platforms=//targets/stm32f429i_disc1_stm32cube:platform
+build:stm32f429i --copt="-DSTM32CUBE_HEADER=\"stm32f4xx.h\""
+build:stm32f429i --copt="-DSTM32F429xx"
+build:stm32f429i --@stm32f4xx_hal_driver//:hal_config=//targets/stm32f429i_disc1_stm32cube:hal_config
+build:stm32f429i --//pw_log:backend_impl=@pigweed//pw_log_tokenized:impl
+build:stm32f429i --//targets:pw_log_backend=@pigweed//pw_log_tokenized
+build:stm32f429i --//targets:pw_log_tokenized_handler_backend=@pigweed//pw_system:log_backend
+
 # Specifies desired output mode for running tests.
 # Valid values are
 #   'summary' to output only test status summary

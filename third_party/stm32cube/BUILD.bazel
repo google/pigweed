@@ -21,10 +21,24 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+# NOTE: To depend on this target, you must set the STM32CUBE_HEADER
+# preprocessor variable, perhaps using copts associated with the target
+# platform. See the module documentation for details.
 pw_cc_library(
     name = "stm32cube",
     hdrs = [
         "public/stm32cube/init.h",
         "public/stm32cube/stm32cube.h",
     ],
+    includes = ["public"],
+    deps = [
+        ":hal_driver",
+    ],
+)
+
+# This label_flag introduces a layer of indirection useful when building a
+# project that requires more than one STM32Cube MCU Package.
+label_flag(
+    name = "hal_driver",
+    build_setting_default = "@hal_driver",
 )

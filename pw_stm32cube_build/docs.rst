@@ -1,9 +1,8 @@
 .. _module-pw_stm32cube_build:
 
-------------------
+==================
 pw_stm32cube_build
-------------------
-
+==================
 The ``pw_stm32cube_build`` module provides helper utilities for building a
 target with the stm32cube HAL and/or the stm32cube initialization code.
 
@@ -12,13 +11,29 @@ are documented here. The rationale for keeping the build files in `third_party`
 is that code depending on stm32cube can clearly see that their dependency is on
 third party, not pigweed code.
 
-STM32Cube directory setup
-=========================
+.. _module-pw_stm32cube_build-components:
+
+------------------------
+STM32Cube MCU Components
+------------------------
 Each stm32 product family (ex. F4, L5, etc.) has its own stm32cube libraries.
 This integration depends on ST's 3 core  `MCU Components`_ instead of their
 monolithic `MCU Package`. The components are the hal_driver, cmsis_core, and
 cmsis_device. All of these repos exist on `ST's GitHub page`_. Compatible
 version tags are specified on the ``README.md`` of each MCU component.
+
+To use Pigweed's STM32Cube integration, you will need to acquire the three
+components. The details are build-system dependent.
+
+--------
+GN build
+--------
+The primary ``pw_source_set`` for this integration is
+``$dir_pw_third_party/stm32cube:stm32cube``. This source set includes all of
+the HAL, init code, and templates, depending on the value of the `GN args`_.
+
+Directory setup
+===============
 Within a single directory, the following directory/file names are required.
 
 =============== =============================================
@@ -40,26 +55,20 @@ generate the ``files.txt``.
 
   pw package install stm32cube_{family}
 
-GN build
-========
-The primary ``pw_source_set`` for this integration is
-``$dir_pw_third_party/stm32cube:stm32cube``. This source set includes all of
-the HAL, init code, and templates, depending on value of the `GN args`_.
-
 Headers
--------
+=======
 ``$dir_pw_third_party/stm32cube:stm32cube`` contains the following primary
 headers that external targets / applications would care about.
 
 ``{family}.h``
-^^^^^^^^^^^^^^
+--------------
 ex. ``stm32f4xx.h``, ``stm32l5xx.h``
 
 This is the primary HAL header provided by stm32cube. It includes the entire
 HAL and all product specific defines.
 
 ``stm32cube/stm32cube.h``
-^^^^^^^^^^^^^^^^^^^^^^^^^
+-------------------------
 This is a convenience define provided by this integration. It simply includes
 ``{family}.h``.
 
@@ -70,7 +79,7 @@ header allows for stm32 family agnostic modules (ex. ``pw_sys_io_stm32``, which
 could work with most, if not all families).
 
 ``stm32cube/init.h``
-^^^^^^^^^^^^^^^^^^^^
+--------------------
 As described in the inject_init_ section, if you decide to use the built in
 init functionality, a pre main init function call, ``pw_stm32cube_Init()``, is
 injected into ST's startup scripts.
@@ -79,18 +88,18 @@ This header contains the ``pw_stm32cube_Init()`` function declaration. It
 should be included and implemented by target init code.
 
 GN args
--------
+=======
 The stm32cube GN build arguments are defined in
 ``$dir_pw_third_party/stm32cube/stm32cube.gni``.
 
 ``dir_pw_third_party_stm32cube_xx``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------------
 These should be set to point to the stm32cube directory for each family that
 you need to build for. These are optional to set and are only provided for
 convenience if you need to build for multiple families in the same project.
 
 ``dir_pw_third_party_stm32cube``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------------
 This needs to point to the stm32cube directory for the current build.
 
 For multi target projects, the standard practice to set this for each target:
@@ -101,35 +110,36 @@ For multi target projects, the standard practice to set this for each target:
 
 
 ``pw_third_party_stm32cube_PRODUCT``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------------------
 The product specified in as much detail as possible.
 ex. ``stm32f429zit``, ``stm32l552ze``, ``stm32f207zg``, etc.
 
 ``pw_third_party_stm32cube_CONFIG``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------------------
 The pw_source_set that provides ``stm32{family}xx_hal_conf.h``. The default
 uses the in-tree ``stm32{family}xx_hal_conf_template.h``.
 
 ``pw_third_party_stm32cube_TIMEBASE``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-------------------------------------
 The pw_source_set containing the timebase. The default uses the in-tree
 ``stm32{family}xx_hal_timebase_tim_template.c``.
 
 ``pw_third_party_stm32cube_CMSIS_INIT``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------------------
 The pw_source_set containing the cmsis init logic. The default uses the in-tree
 ``system_stm32{family}xx.c``.
 
 ``pw_third_party_stm32cube_CORE_INIT``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+--------------------------------------
 pw_source_set containing the core initialization logic. This normally includes
 a ``startup_stm32{...}.s`` + a dependent ``pw_linker_script``. The default
 ``core_init_template`` uses the upstream startup and linker script matching
 ``pw_third_party_stm32cube_PRODUCT``. If set to "", you must provide your own
 linker/startup logic somewhere else in the build.
 
+-----------------
 stm32cube_builder
-=================
+-----------------
 ``stm32cube_builder`` is utility that contains the backend scripts used by
 ``pw_package/stm32cube`` and the GN build scripts in ``third_party/stm32cube``
 to interact with the stm32cube repos. You should only need to interact with
@@ -138,7 +148,7 @@ using git submodules instead of pw_package, forking the stm32cube libraries,
 interfacing with a different build system, or using your own init.
 
 gen_file_list
--------------
+=============
 Build systems like GN are unable to depend on arbitrary directories. Instead,
 they must have dependencies on specific files. The HAL for each stm32 product
 family has different filenames, so ``files.txt`` was created as a workaround.
@@ -154,7 +164,7 @@ directories.
   stm32cube_builder gen_file_list /path/to/stm32cube_dir
 
 find_files
-----------
+==========
 Within each stm32 family, there are specific products. Although most of the
 HAL is common between products, the init code is almost always different.
 ``find_files`` looks for all of the files relevant to a particular product
@@ -179,7 +189,7 @@ The following variables are output: ``family``, ``product_define``,
   stm32cube_builder find_files /path/to/stm32cube_dir stm32{family}{product} [--init]
 
 inject_init
------------
+=============
 ST provides init assembly files for every product in ``cmsis_device``. This is
 helpful for getting up and running quickly, but they directly call into
 ``main()`` before initializing the hardware / peripherals. This is because they
@@ -200,7 +210,7 @@ the pre main init call. The output is printed to stdout, or to the specified
   stm32cube_builder inject_init /path/to/startup.s [--out-startup-path /path/to/new_startup.s]
 
 icf_to_ld
----------
+=========
 Pigweed primarily uses GCC for its Cortex-M builds. However, ST only provides
 IAR linker scripts in ``cmsis_device`` for most product families. This script
 converts from ST's IAR linker script format (.icf) to a basic GCC linker
@@ -217,3 +227,131 @@ stdout or the specified ``--ld-path``.
 
 .. _`MCU Components`: https://github.com/STMicroelectronics/STM32Cube_MCU_Overall_Offer#stm32cube-mcu-components
 .. _`ST's GitHub page`: https://github.com/STMicroelectronics
+
+.. _module-pw_stm32cube_build-bazel:
+
+-----------
+Bazel build
+-----------
+
+External dependencies
+=====================
+As discussed above in :ref:`module-pw_stm32cube_build-components`, you need the
+three STM32Cube Components for your MCU family to use Pigweed's STM32Cube
+integration. You need to add the following git repositories to your workspace:
+
+*  ``stm32{family}xx_hal_driver`` (e.g., `HAL driver repo for the F4 family
+   <https://github.com/STMicroelectronics/stm32f4xx_hal_driver/>`_). We provide
+   a Bazel build file which works for any family at
+   ``@pigweed//third_party/stm32cube/stm32_hal_driver.BUILD.bazel``. By default,
+   we assume this repository will be named ``@hal_driver``, but this can be
+   overriden with a label flag (discussed below).
+*  ``cmsis_device_{family}`` (e.g., `CMSIS device repo for the F4 family
+   <https://github.com/STMicroelectronics/cmsis_device_f4>`_). We provide a
+   Bazel build file which works for any family at
+   ``@pigweed//third_party/stm32cube/cmsis_device.BUILD.bazel``. By default, we
+   assume this repository will be named ``@cmsis_device``, but this can be
+   overriden with a label flag (discussed below).
+*  ``cmsis_core``, at https://github.com/STMicroelectronics/cmsis_core. We
+   provide a Bazel build file for it at
+   ``@pigweed//third_party/stm32cube/cmsis_core.BUILD.bazel``. By
+   default, we assume this repository will be named ``@cmsis_core``, but this
+   can be overriden with a label flag (discussed below).
+
+.. _module-pw_stm32cube_build-bazel-multifamily:
+
+Building for more than one MCU family
+-------------------------------------
+Different MCU families require different HAL driver and CMSIS device packages
+from STM. So, if your project builds firmware for more than one MCU family, you
+will need to configure separate sets of the three [#]_ STM repositories for each MCU
+family. To do so,
+
+1.  Add the appropriate repositories to your WORKSPACE under different names,
+    eg. ``@stm32f4xx_hal_driver`` and ``@stm32h7xx_hal_driver``.
+2.  Set the corresponding :ref:`module-pw_stm32cube_build-bazel-label-flags` as
+    part of the platform configuration for your embedded target platforms.
+    Currently, the best way to do this is via a `bazelrc config
+    <https://bazel.build/run/bazelrc#config>`_, which would look like this:
+
+    .. code-block::
+
+       build:stm32f429i --platforms=//targets/stm32f429i_disc1_stm32cube:platform
+       build:stm32f429i --@pigweed//third_party/stm32cube:stm32_hal_driver=@stm32f4xx_hal_driver//:hal_driver
+       build:stm32f429i --@stm32f4xx_hal_driver//:cmsis_device=@cmsis_device_f4//:cmsis_device
+       build:stm32f429i --@stm32f4xx_hal_driver//:cmsis_init=@cmsis_device_f4//:default_cmsis_init
+
+    However, once `platform-based flags
+    <https://github.com/bazelbuild/proposals/blob/main/designs/2023-06-08-platform-based-flags.md>`_
+    are implemented in Bazel, it will be possible to set these flags directly
+    in the platform definition.
+
+.. [#] Although CMSIS core is shared by all MCU families, different CMSIS
+   device repositories may not be compatible with the same version of CMSIS
+   core. In this case, you may need to use separate versions of CMSIS core,
+   too.
+
+Defines
+=======
+
+``STM32CUBE_HEADER``
+--------------------
+Upstream Pigweed modules that depend on the STM32Cube HAL, like
+:ref:`module-pw_sys_io_stm32cube`, include the HAL through the family-agnostic
+header ``stm32cube/stm32cube.h``. This header expects the family to be set
+through a define of ``STM32CUBE_HEADER``. So, to use these Pigweed modules, you
+need to set that define to the correct value (e.g., ``\"stm32f4xx.h\"``; note
+the backslashes) as part of your build. This is most conveniently done through
+``copts`` associated with the target platform.
+
+.. _module-pw_stm32cube_build-bazel-label-flags:
+
+Label flags
+===========
+Required
+--------
+``@hal_driver//:hal_config``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Points to the ``cc_library`` target providing a header with the HAL
+configuration. Note that this header needs an appropriate, family-specific name
+(e.g., ``stm32f4xx_hal_conf.h`` for the F4 family).
+
+Optional
+--------
+These label flags can be used to further customize the behavior of STM32Cube.
+
+``//third_party/stm32cube:stm32_hal_driver``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This label_flag introduces a layer of indirection useful when building a
+project that requires more than one STM32Cube package (see
+:ref:`module-pw_stm32cube_build-bazel-multifamily`). It should point to the
+repository containing the HAL driver.
+
+The default value is ``@hal_driver``.
+
+``@cmsis_device//:cmsis_core``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This label flag should point to the repository containing the CMSIS core build
+target.
+
+The default value is ``@cmsis_core``.
+
+``@hal_driver//:cmsis_device``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This label flag should point to the repository containing the CMSIS device
+build target.
+
+The default value is ``@cmsis_device``.
+
+``@hal_driver//:cmsis_init``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This label flag should point to the CMSIS initialization code. By default it
+points to the ``system_{family}.c`` template provided in the CMSIS device
+repository.
+
+``@hal_driver//:timebase``
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+This label flag should point to a ``cc_library`` providing a timebase
+implementation. By default it points to the template included with STM's HAL
+repository.
+

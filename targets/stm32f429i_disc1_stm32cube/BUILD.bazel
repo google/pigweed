@@ -16,6 +16,7 @@ load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
     "pw_cc_library",
+    "pw_linker_script",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -49,12 +50,23 @@ constraint_value(
 platform(
     name = "platform",
     constraint_values = [
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m4",
-        "//pw_build/constraints/rtos:freertos",
         ":freertos_config_cv",
+        "//pw_build/constraints/rtos:freertos",
+        "//pw_interrupt_cortex_m:backend",
+        "//pw_sys_io_stm32cube:backend",
         "@freertos//:port_ARM_CM4F",
+        "@freertos//:disable_task_statics",
         "@platforms//cpu:armv7e-m",
+        "@pw_toolchain//constraints/arm_mcpu:cortex-m4",
     ],
+)
+
+pw_cc_library(
+    name = "hal_config",
+    hdrs = [
+        "config/stm32f4xx_hal_conf.h",
+    ],
+    includes = ["config"],
 )
 
 pw_cc_library(
@@ -63,21 +75,42 @@ pw_cc_library(
         "boot.cc",
         "vector_table.c",
     ],
-    hdrs = [
-        "config/stm32f4xx_hal_conf.h",
-    ],
+    copts = ["-Wno-return-type"],
+    defines = ["PW_MALLOC_ACTIVE=1"],
     target_compatible_with = [":freertos_config_cv"],
     deps = [
         ":freertos_config",
+        "//pw_assert",
         "//pw_boot",
         "//pw_boot_cortex_m",
         "//pw_malloc",
         "//pw_preprocessor",
         "//pw_string",
         "//pw_sys_io_stm32cube",
+        "//pw_system:init",
         "//third_party/stm32cube",
         "@freertos",
     ],
+    alwayslink = 1,
+)
+
+pw_linker_script(
+    name = "linker_script",
+    defines = [
+        "PW_BOOT_FLASH_BEGIN=0x08000200",
+        "PW_BOOT_FLASH_SIZE=2048K",
+
+        # TODO(b/235348465): Currently "pw_tokenizer/detokenize_test" requires at
+        # least 6K bytes in heap when using pw_malloc_freelist. The heap size
+        # required for tests should be investigated.
+        "PW_BOOT_HEAP_SIZE=7K",
+        "PW_BOOT_MIN_STACK_SIZE=1K",
+        "PW_BOOT_RAM_BEGIN=0x20000000",
+        "PW_BOOT_RAM_SIZE=192K",
+        "PW_BOOT_VECTOR_TABLE_BEGIN=0x08000000",
+        "PW_BOOT_VECTOR_TABLE_SIZE=512",
+    ],
+    linker_script = "//pw_boot_cortex_m:basic_cortex_m.ld",
 )
 
 pw_cc_binary(

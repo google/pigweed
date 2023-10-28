@@ -17,6 +17,7 @@
 #include <array>
 
 #include "FreeRTOS.h"
+#include "pw_assert/check.h"
 #include "pw_boot_cortex_m/boot.h"
 #include "pw_malloc/malloc.h"
 #include "pw_preprocessor/compiler.h"

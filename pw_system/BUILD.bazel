@@ -72,6 +72,12 @@ pw_cc_library(
         "//pw_sync:lock_annotations",
         "//pw_tokenizer",
     ],
+    # Log backends, like assert backends, generally need to be alwayslink'ed
+    # because we don't inform Bazel correctly about dependencies on them. We
+    # only add them as deps of binary targets, not intermediate library targets,
+    # to avoid circular dependencies. But this may lead the linker to eagerly
+    # remove some symbols defined here as unused.
+    alwayslink = 1,
 )
 
 pw_cc_library(
@@ -249,7 +255,11 @@ pw_cc_binary(
         "//pw_stream:sys_io_stream",
         "//pw_unit_test:rpc_service",
     ] + select({
-        "//pw_build/constraints/rtos:freertos": [],
+        "//pw_build/constraints/rtos:freertos": [
+            "//pw_tokenizer:linker_script",
+            "//targets/stm32f429i_disc1_stm32cube:linker_script",
+            "//targets/stm32f429i_disc1_stm32cube:pre_init",
+        ],
         "//conditions:default": ["//targets/host_device_simulator:boot"],
     }),
 )

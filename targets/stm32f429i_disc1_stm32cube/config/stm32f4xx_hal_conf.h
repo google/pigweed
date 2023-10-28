@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <stdint.h>
+
 /* Clock setup */
 #define HSI_VALUE 16000000U
 #define LSI_VALUE 32000U

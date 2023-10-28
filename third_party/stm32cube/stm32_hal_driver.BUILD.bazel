@@ -1,0 +1,117 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# BUILD.bazel file for stm32xxx_hal_driver.
+
+# buildifier: disable=module-docstring
+# Must point to a cc_library exposing a header named stm32f4xx_hal_conf.h (or
+# similar for other families) that contains the HAL configuration
+label_flag(
+    name = "hal_config",
+    build_setting_default = ":unspecified",
+)
+
+# May point to a non-default implementation of timebase.
+label_flag(
+    name = "timebase",
+    build_setting_default = ":default_timebase",
+)
+
+# Should point to the corresponding cmsis_device library. Hidden behind a label
+# flag so that it can be overriden in projects that build for more than one
+# family of STM processors.
+label_flag(
+    name = "cmsis_device",
+    build_setting_default = "@cmsis_device",
+)
+
+label_flag(
+    name = "cmsis_init",
+    build_setting_default = "@cmsis_device//:default_cmsis_init",
+)
+
+# Special target used as a default value of the hal_config label_flag. It's not
+# compatible with any platform: To use Pigweed's STM32Cube integration, you
+# must provide a hal_config.
+cc_library(
+    name = "unspecified",
+    target_compatible_with = ["@platforms//:incompatible"],
+)
+
+cc_library(
+    name = "default_timebase",
+    srcs = glob(["Src/*_hal_timebase_tim_template.c"]),
+    deps = [":hal_driver_without_timebase"],
+)
+
+_DISABLED_WARNINGS = [
+    "-Wno-unused-parameter",
+    "-Wno-redundant-decls",
+    "-Wno-sign-compare",
+    "-Wno-undef",
+    "-Wno-implicit-function-declaration",
+    "-Wno-switch-enum",
+]
+
+cc_library(
+    name = "hal_driver",
+    deps = [
+        ":hal_driver_without_timebase",
+        ":timebase",
+    ],
+    copts = _DISABLED_WARNINGS,
+)
+
+cc_library(
+    name = "hal_driver_without_timebase",
+    srcs = glob(
+        [
+            "Src/*.c",
+            "Src/Legacy/*.c",
+        ],
+        exclude = ["Src/*_template.c"],
+    ),
+    deps = [
+        ":cmsis_device",
+        ":cmsis_init",
+        ":hal_headers",
+    ],
+    copts = _DISABLED_WARNINGS,
+)
+
+cc_library(
+    name = "hal_headers",
+    hdrs = glob(
+        [
+            "Inc/*.h",
+            "Inc/Legacy/*.h",
+        ],
+        exclude = [
+            # Excluded because implementers may want to override this template.
+            "Inc/*_hal_conf_template.h",
+        ],
+    ),
+    includes = [
+        "Inc",
+        "Inc/Legacy",
+    ],
+    deps = [
+        ":cmsis_device",
+        ":hal_config",
+    ],
+    defines = [
+        "USE_HAL_DRIVER",
+    ],
+    copts = _DISABLED_WARNINGS,
+)
