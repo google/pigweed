@@ -10,7 +10,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "git_revision:5d8727f3fbf420538ff753ebc3ce96da28e12c22"
+        "git_revision:e4702d7409069c4f12d45ea7b7f0890717ca3f4b"
       ],
       "version_file": ".versions/gn.cipd_version"
     },
