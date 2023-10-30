@@ -15,10 +15,12 @@
 
 import base64
 import contextlib
+from dataclasses import dataclass
 import itertools
 import json
 import logging
 import os
+import posixpath
 from pathlib import Path
 import re
 import subprocess
@@ -693,6 +695,26 @@ _INCREMENTAL_COVERAGE_TOOL = 'cloud_client'
 _ABSOLUTE_COVERAGE_TOOL = 'raw_coverage_cloud_uploader'
 
 
+@dataclass(frozen=True)
+class CoverageOptions:
+    """Coverage collection configuration.
+
+    For Google use only. See go/kalypsi-abs and go/kalypsi-inc for documentation
+    of the metadata fields.
+    """
+
+    target_bucket_root: str
+    target_bucket_project: str
+    project: str
+    trace_type: str
+    ref: str
+    source: str
+    owner: str
+    bug_component: str
+    trim_prefix: str = ''
+    add_prefix: str = ''
+
+
 class _NinjaBase(Check):
     """Thin wrapper of Check for steps that call ninja."""
 
@@ -702,7 +724,7 @@ class _NinjaBase(Check):
         packages: Sequence[str] = (),
         ninja_contexts: Sequence[_CtxMgrOrLambda] = (),
         ninja_targets: Union[str, Sequence[str], Sequence[Sequence[str]]] = (),
-        coverage: bool = False,
+        coverage_options: Optional[CoverageOptions] = None,
         **kwargs,
     ):
         """Initializes a _NinjaBase object.
@@ -715,7 +737,8 @@ class _NinjaBase(Check):
             ninja_targets: Single ninja target, list of Ninja targets, or list
                 of list of ninja targets. If a list of a list, ninja will be
                 called multiple times with the same build directory.
-            coverage: Whether to collect coverage data.
+            coverage_options: Coverage collection options (or None, if not
+                collecting coverage data).
             **kwargs: Passed on to superclass.
         """
         super().__init__(*args, **kwargs)
@@ -723,7 +746,7 @@ class _NinjaBase(Check):
         self._ninja_contexts: Tuple[_CtxMgrOrLambda, ...] = tuple(
             ninja_contexts
         )
-        self._collect_coverage = coverage
+        self._coverage_options = coverage_options
 
         if isinstance(ninja_targets, str):
             ninja_targets = (ninja_targets,)
@@ -772,7 +795,9 @@ class _NinjaBase(Check):
             ninja(ctx, *targets)
         return PresubmitResult.PASS
 
-    def _coverage(self, ctx: PresubmitContext) -> PresubmitResult:
+    def _coverage(
+        self, ctx: PresubmitContext, options: CoverageOptions
+    ) -> PresubmitResult:
         """Archive and (on LUCI) upload coverage reports."""
         reports = ctx.output_dir / 'coverage_reports'
         os.makedirs(reports, exist_ok=True)
@@ -806,47 +831,24 @@ class _NinjaBase(Check):
                 return PresubmitResult.PASS
 
             with self._context(ctx):
-                assert len(ctx.luci.triggers) == 1
-                change = ctx.luci.triggers[0]
-
-                common_args = [
-                    f'--host={change.gerrit_host}',
-                    f'--project={change.project}',
-                    f'--uploader_name={ctx.luci.builder}',
-                    f'--uploader_id={ctx.luci.buildbucket_id}',
-                    '--format=LLVM',
-                    f'--coverage_file={coverage_json}',
-                    f'--insert_dir_prefix={ctx.output_dir}',
-                ]
-
-                if ctx.luci.is_try:
-                    cmd = [
-                        _INCREMENTAL_COVERAGE_TOOL,
-                        '--env=prod',
-                        f'--change_id={change.number}',
-                        f'--patchset={change.patchset}',
-                        *common_args,
-                    ]
-
-                else:
-                    requests_log = (
-                        ctx.output_dir / 'coverage-upload-requests.log'
-                    )
-
-                    cmd = [
-                        _ABSOLUTE_COVERAGE_TOOL,
-                        '--absolute_coverage_service_env=prod',
-                        f'--ref={change.branch}',
-                        f'--commit_id={change.ref}',
-                        f'--requests_log={requests_log}',
-                        '--timeout=5m',
-                        *common_args,
-                    ]
-
-                upload_stdout = ctx.output_dir / 'coverage-upload.stdout'
-                ctx.output_dir.mkdir(exist_ok=True, parents=True)
-                with upload_stdout.open('w') as outs:
-                    call(*cmd, tee=outs)
+                # GCS bucket paths are POSIX-like.
+                coverage_gcs_path = posixpath.join(
+                    options.target_bucket_root,
+                    'incremental' if ctx.luci.is_try else 'absolute',
+                    options.target_bucket_project,
+                    str(ctx.luci.buildbucket_id),
+                )
+                _copy_to_gcs(
+                    ctx,
+                    coverage_json,
+                    posixpath.join(coverage_gcs_path, 'report.json'),
+                )
+                metadata_json = _write_coverage_metadata(ctx, options)
+                _copy_to_gcs(
+                    ctx,
+                    metadata_json,
+                    posixpath.join(coverage_gcs_path, 'metadata.json'),
+                )
 
                 return PresubmitResult.PASS
 
@@ -873,8 +875,71 @@ class _NinjaBase(Check):
             yield SubStep(f'ninja {targets_part}', self._ninja, (targets,))
 
     def _coverage_substeps(self) -> Iterator[SubStep]:
-        if self._collect_coverage:
-            yield SubStep('coverage', self._coverage)
+        if self._coverage_options is not None:
+            yield SubStep('coverage', self._coverage, (self._coverage_options,))
+
+
+def _copy_to_gcs(ctx: PresubmitContext, filepath: Path, gcs_dst: str):
+    cmd = [
+        "gsutil",
+        "cp",
+        filepath,
+        gcs_dst,
+    ]
+
+    upload_stdout = ctx.output_dir / (filepath.name + '.stdout')
+    with upload_stdout.open('w') as outs:
+        call(*cmd, tee=outs)
+
+
+def _write_coverage_metadata(
+    ctx: PresubmitContext, options: CoverageOptions
+) -> Path:
+    """Write out Kalypsi coverage metadata and return the path to it."""
+    assert ctx.luci is not None
+    assert len(ctx.luci.triggers) == 1
+    change = ctx.luci.triggers[0]
+
+    metadata = {
+        'host': change.gerrit_host,
+        'project': options.project,
+        'trace_type': options.trace_type,
+        'trim_prefix': options.trim_prefix,
+        'patchset_num': change.patchset,
+        'change_id': change.number,
+        'owner': options.owner,
+        'bug_component': options.bug_component,
+    }
+
+    if ctx.luci.is_try:
+        # Running in CQ: uploading incremental coverage
+        metadata.update(
+            {
+                # Note: no `add_prefix`. According to the documentation, that's
+                # only supported for absolute coverage.
+                #
+                # TODO(tpudlik): Follow up with Kalypsi team, since this is
+                # surprising (given that trim_prefix is supported for both types
+                # of coverage). This might be an error in the docs.
+                'patchset_num': change.patchset,
+                'change_id': change.number,
+            }
+        )
+    else:
+        # Running in CI: uploading absolute coverage
+        metadata.update(
+            {
+                'add_prefix': options.add_prefix,
+                'commit_id': change.ref,
+                'ref': options.ref,
+                'source': options.source,
+            }
+        )
+
+    metadata_json = ctx.output_dir / "metadata.json"
+    with metadata_json.open('w') as metadata_file:
+        json.dump(metadata, metadata_file)
+    return metadata_json
 
 
 class GnGenNinja(_NinjaBase):
@@ -907,7 +972,7 @@ class GnGenNinja(_NinjaBase):
 
     def _gn_gen(self, ctx: PresubmitContext) -> PresubmitResult:
         args: Dict[str, Any] = {}
-        if self._collect_coverage:
+        if self._coverage_options is not None:
             args['pw_toolchain_COVERAGE_ENABLED'] = True
             args['pw_build_PYTHON_TEST_COVERAGE'] = True
             args['pw_C_OPTIMIZATION_LEVELS'] = ('debug',)

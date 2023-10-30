@@ -124,6 +124,18 @@
         "latest"
       ],
       "version_file": ".versions/prpc.cipd_version"
+    },
+    {
+      "path": "infra/3pp/tools/gsutil",
+      "platforms": [
+        "linux-amd64",
+        "mac-amd64",
+        "mac-arm64"
+      ],
+      "tags": [
+        "latest"
+      ],
+      "version_file": ".versions/gsutil.cipd_version"
     }
   ]
 }

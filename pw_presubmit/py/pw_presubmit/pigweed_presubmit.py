@@ -212,7 +212,17 @@ coverage = build.GnGenNinja(
     doc='Run coverage for the host build.',
     path_filter=_BUILD_FILE_FILTER,
     ninja_targets=('coverage',),
-    coverage=True,
+    coverage_options=build.CoverageOptions(
+        target_bucket_root='gs://ng3-metrics/ng3-pigweed-coverage',
+        target_bucket_project='pigweed',
+        project='codesearch',
+        trace_type='LLVM',
+        trim_prefix='/b/s/w/ir/x/w/co',
+        ref='main',
+        source='infra:main',
+        owner='pigweed-infra@google.com',
+        bug_component='503634',
+    ),
 )
 
 
