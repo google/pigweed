@@ -50,6 +50,9 @@ if (pw_third_party_boringssl_ALIAS != "") {
       # The ARM assembly code is only for cortex-A.
       "OPENSSL_NO_ASM",
 
+      # socklen_t is not defined
+      "OPENSSL_NO_SOCK",
+
       # Disable assert, which may additionally link in unwanted binaries via
       # argument evaluation.
       "NDEBUG",

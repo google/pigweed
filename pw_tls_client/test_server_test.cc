@@ -90,7 +90,8 @@ void CreateSSLClient(bssl::UniquePtr<SSL_CTX>* ctx,
 
   // Load trust anchors to client
   auto store = SSL_CTX_get_cert_store(ctx->get());
-  X509_VERIFY_PARAM_clear_flags(store->param, X509_V_FLAG_USE_CHECK_TIME);
+  X509_VERIFY_PARAM_clear_flags(X509_STORE_get0_param(store),
+                                X509_V_FLAG_USE_CHECK_TIME);
   const pw::ConstByteSpan kTrustAnchors[] = {kRootACert, kRootBCert};
   for (auto cert : kTrustAnchors) {
     auto res = ParseDerCertificate(cert);
