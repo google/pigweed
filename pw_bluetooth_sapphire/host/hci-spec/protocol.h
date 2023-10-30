@@ -1288,15 +1288,6 @@ struct LEScanRequestReceivedSubeventParams {
 // LE Channel Selection Algorithm Event (v5.0) (LE)
 constexpr EventCode kLEChannelSelectionAlgorithmSubeventCode = 0x014;
 
-struct LEChannelSelectionAlgorithmSubeventParams {
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // Channel selection algorithm is used on the data channel connection.
-  LEChannelSelectionAlgorithm channel_selection_algorithm;
-} __attribute__((packed));
-
 // ================================================================
 // Number Of Completed Data Blocks Event (v3.0 + HS) (BR/EDR & AMP)
 constexpr EventCode kNumberOfCompletedDataBlocksEventCode = 0x48;
