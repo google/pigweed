@@ -234,7 +234,7 @@ group("fuzzers") {
 
 # Add flags for adding LLVM sanitizer coverage for fuzzing. This is added by
 # the host_clang_fuzz toolchains.
-config("fuzz_instrumentation") {
+config("instrumentation") {
   cflags = [ "-fsanitize=fuzzer-no-link" ]
 }
 

@@ -142,9 +142,9 @@ pw_toolchain_host_clang = {
 
       pw_toolchain_FUZZING_ENABLED = true
       if (pw_toolchain_OSS_FUZZ_ENABLED) {
-        default_configs += [ "$dir_pw_fuzzer:fuzz_instrumentation" ]
-      } else {
         default_configs += [ "$dir_pw_fuzzer:oss_fuzz_instrumentation" ]
+      } else {
+        default_configs += [ "$dir_pw_fuzzer:instrumentation" ]
       }
 
       # Fuzz faster.
