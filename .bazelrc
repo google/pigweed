@@ -12,6 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+# Silence all C/C++ warnings in external code.
+#
+# Note that this will not silence warnings from external headers #include'd in
+# first-party code.
+common --per_file_copt=external/.*@-w
+
 # Required for new toolchain resolution API.
 build --incompatible_enable_cc_toolchain_resolution
 
