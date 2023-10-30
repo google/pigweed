@@ -66,6 +66,54 @@ class LowEnergyScanner : public LocalAddressClient {
     kPassiveScanning,
   };
 
+  enum class ScanStatus {
+    // Reported when the scan could not be started.
+    kFailed,
+
+    // Reported when an active scan was started and is currently in progress.
+    kActive,
+
+    // Reported when a passive scan was started and is currently in progress.
+    kPassive,
+
+    // Called when the scan was terminated naturally at the end of the scan period.
+    kComplete,
+
+    // Called when the scan was terminated due to a call to StopScan().
+    kStopped,
+  };
+
+  struct ScanOptions {
+    // Perform an active scan if true. During an active scan, scannable advertisements are reported
+    // alongside their corresponding scan response.
+    bool active = false;
+
+    // When enabled, the controller will filter out duplicate advertising reports. This means that
+    // Delegate::OnPeerFound will be called only once per device address during the scan period.
+    //
+    // When disabled, Delegate::OnPeerFound will get called once for every observed advertisement
+    // (depending on |filter_policy|).
+    bool filter_duplicates = false;
+
+    // Determines the type of filtering the controller should perform to limit the number of
+    // advertising reports.
+    pw::bluetooth::emboss::LEScanFilterPolicy filter_policy =
+        pw::bluetooth::emboss::LEScanFilterPolicy::BASIC_UNFILTERED;
+
+    // Determines the length of the software defined scan period. If the value is kPeriodInfinite,
+    // then the scan will remain enabled until StopScan() gets called. For all other values, the
+    // scan will be disabled after the duration expires.
+    pw::chrono::SystemClock::duration period;
+
+    // Maximum time duration during an active scan for which a scannable advertisement will be
+    // stored and not reported to clients until a corresponding scan response is received.
+    pw::chrono::SystemClock::duration scan_response_timeout;
+
+    // Scan parameters.
+    uint16_t interval = hci_spec::defaults::kLEScanInterval;
+    uint16_t window = hci_spec::defaults::kLEScanWindow;
+  };
+
   // Interface for receiving events related to Low Energy scan.
   class Delegate {
    public:
@@ -134,54 +182,6 @@ class LowEnergyScanner : public LocalAddressClient {
   //
   // (For more information about passive and active scanning, see Core Spec. v5.2, Vol 6, Part
   // B, 4.4.3.1 and 4.4.3.2).
-  enum class ScanStatus {
-    // Reported when the scan could not be started.
-    kFailed,
-
-    // Reported when an active scan was started and is currently in progress.
-    kActive,
-
-    // Reported when a passive scan was started and is currently in progress.
-    kPassive,
-
-    // Called when the scan was terminated naturally at the end of the scan period.
-    kComplete,
-
-    // Called when the scan was terminated due to a call to StopScan().
-    kStopped,
-  };
-
-  struct ScanOptions {
-    // Perform an active scan if true. During an active scan, scannable advertisements are reported
-    // alongside their corresponding scan response.
-    bool active = false;
-
-    // When enabled, the controller will filter out duplicate advertising reports. This means that
-    // Delegate::OnPeerFound will be called only once per device address during the scan period.
-    //
-    // When disabled, Delegate::OnPeerFound will get called once for every observed advertisement
-    // (depending on |filter_policy|).
-    bool filter_duplicates = false;
-
-    // Determines the type of filtering the controller should perform to limit the number of
-    // advertising reports.
-    pw::bluetooth::emboss::LEScanFilterPolicy filter_policy =
-        pw::bluetooth::emboss::LEScanFilterPolicy::BASIC_UNFILTERED;
-
-    // Determines the length of the software defined scan period. If the value is kPeriodInfinite,
-    // then the scan will remain enabled until StopScan() gets called. For all other values, the
-    // scan will be disabled after the duration expires.
-    pw::chrono::SystemClock::duration period;
-
-    // Maximum time duration during an active scan for which a scannable advertisement will be
-    // stored and not reported to clients until a corresponding scan response is received.
-    pw::chrono::SystemClock::duration scan_response_timeout;
-
-    // Scan parameters.
-    uint16_t interval = hci_spec::defaults::kLEScanInterval;
-    uint16_t window = hci_spec::defaults::kLEScanWindow;
-  };
-
   using ScanStatusCallback = fit::function<void(ScanStatus)>;
   virtual bool StartScan(const ScanOptions& options, ScanStatusCallback callback) = 0;
 
