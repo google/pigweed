@@ -72,7 +72,9 @@ static uint32_t EncodePrefix(pw_VariableLengthEntryQueue_ConstHandle queue,
       data_size_bytes, prefix, PW_VARINT_MAX_INT32_SIZE_BYTES);
 
   // Check that the ring buffer is capable of holding entries of this size.
-  PW_CHECK_UINT_LE(prefix_size + data_size_bytes, Capacity(queue));
+  PW_CHECK_UINT_LE(prefix_size + data_size_bytes,
+                   Capacity(queue),
+                   "Entry is too large for this VariableLengthEntryQueue");
   return prefix_size;
 }
 
@@ -120,14 +122,23 @@ static void AppendEntryKnownToFit(pw_VariableLengthEntryQueue_Handle queue,
   TAIL(queue) = CopyAndWrap(queue, tail, data, size);
 }
 
+static inline uint32_t AvailableBytes(
+    pw_VariableLengthEntryQueue_ConstHandle queue) {
+  uint32_t tail = TAIL(queue);
+  if (tail < HEAD(queue)) {
+    tail += BufferSize(queue);
+  }
+  return Capacity(queue) - (tail - HEAD(queue));
+}
+
 void pw_VariableLengthEntryQueue_Push(pw_VariableLengthEntryQueue_Handle queue,
                                       const void* data,
                                       const uint32_t data_size_bytes) {
   uint8_t prefix[PW_VARINT_MAX_INT32_SIZE_BYTES];
   uint32_t prefix_size = EncodePrefix(queue, prefix, data_size_bytes);
 
-  PW_CHECK(prefix_size + data_size_bytes <=
-           Capacity(queue) - pw_VariableLengthEntryQueue_RawSizeBytes(queue));
+  PW_CHECK(prefix_size + data_size_bytes <= AvailableBytes(queue),
+           "Insufficient remaining space for entry");
 
   AppendEntryKnownToFit(queue, prefix, prefix_size, data, data_size_bytes);
 }
@@ -139,8 +150,7 @@ void pw_VariableLengthEntryQueue_PushOverwrite(
   uint8_t prefix[PW_VARINT_MAX_INT32_SIZE_BYTES];
   uint32_t prefix_size = EncodePrefix(queue, prefix, data_size_bytes);
 
-  uint32_t available_bytes =
-      Capacity(queue) - pw_VariableLengthEntryQueue_RawSizeBytes(queue);
+  uint32_t available_bytes = AvailableBytes(queue);
   while (data_size_bytes + prefix_size > available_bytes) {
     available_bytes += PopNonEmpty(queue);
   }
@@ -207,6 +217,12 @@ uint32_t pw_VariableLengthEntryQueue_Entry_Copy(
   return to_copy;
 }
 
+const uint8_t* _pw_VariableLengthEntryQueue_Entry_GetPointerChecked(
+    const pw_VariableLengthEntryQueue_Entry* entry, size_t index) {
+  PW_CHECK_UINT_LT(index, entry->size_1 + entry->size_2);
+  return _pw_VariableLengthEntryQueue_Entry_GetPointer(entry, index);
+}
+
 uint32_t pw_VariableLengthEntryQueue_Size(
     pw_VariableLengthEntryQueue_ConstHandle queue) {
   uint32_t entry_count = 0;
@@ -217,4 +233,17 @@ uint32_t pw_VariableLengthEntryQueue_Size(
     entry_count += 1;
   }
   return entry_count;
+}
+
+uint32_t pw_VariableLengthEntryQueue_SizeBytes(
+    pw_VariableLengthEntryQueue_ConstHandle queue) {
+  uint32_t total_entry_size_bytes = 0;
+  uint32_t offset = HEAD(queue);
+
+  while (offset != TAIL(queue)) {
+    const EntrySize size = ReadEntrySize(queue, offset);
+    offset = WrapIndex(queue, offset + size.prefix + size.data);
+    total_entry_size_bytes += size.data;
+  }
+  return total_entry_size_bytes;
 }

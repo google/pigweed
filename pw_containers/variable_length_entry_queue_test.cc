@@ -23,8 +23,6 @@
 
 namespace {
 
-using std::string_view_literals::operator""sv;
-
 struct PushOverwrite {
   std::string_view data;
 };
@@ -32,11 +30,12 @@ struct Push {
   std::string_view data;
 };
 struct Pop {};
+struct Clear {};
 struct SizeEquals {
   size_t expected;
 };
 
-using TestStep = std::variant<PushOverwrite, Push, Pop, SizeEquals>;
+using TestStep = std::variant<PushOverwrite, Push, Pop, Clear, SizeEquals>;
 
 // Copies an entry, which might be wrapped, to a single std::vector.
 std::vector<std::byte> ReadEntry(
@@ -67,7 +66,7 @@ std::vector<std::byte> ReadEntry(
 // after every step.
 #define DATA_DRIVEN_TEST(program, max_entry_size)                              \
   TEST(VariableLengthEntryQueue,                                               \
-       DataDrivenTest_##program##_MaxEntrySize##max_entry_size) {              \
+       DataDrivenTest_##program##_MaxSizeBytes##max_entry_size) {              \
     pw::containers::VariableLengthEntryQueueTestOracle oracle(max_entry_size); \
     PW_VARIABLE_LENGTH_ENTRY_QUEUE_DECLARE(c_queue, max_entry_size);           \
                                                                                \
@@ -83,7 +82,7 @@ std::vector<std::byte> ReadEntry(
             push->data.data(),                                                 \
             static_cast<uint32_t>(push->data.size()));                         \
         oracle.push(pw::as_bytes(pw::span(push->data)));                       \
-      } else if (auto pop = std::get_if<Pop>(&step); pop != nullptr) {         \
+      } else if (std::holds_alternative<Pop>(step)) {                          \
         pw_VariableLengthEntryQueue_Pop(c_queue);                              \
         oracle.pop();                                                          \
       } else if (auto size = std::get_if<SizeEquals>(&step);                   \
@@ -91,17 +90,18 @@ std::vector<std::byte> ReadEntry(
         size_t actual = pw_VariableLengthEntryQueue_Size(c_queue);             \
         ASSERT_EQ(oracle.size(), actual);                                      \
         ASSERT_EQ(size->expected, actual);                                     \
+      } else if (std::holds_alternative<Clear>(step)) {                        \
+        pw_VariableLengthEntryQueue_Clear(c_queue);                            \
+        oracle.clear();                                                        \
       } else {                                                                 \
         FAIL() << "Unhandled case";                                            \
       }                                                                        \
       /* Check size and other functions */                                     \
       ASSERT_EQ(pw_VariableLengthEntryQueue_Size(c_queue), oracle.size());     \
-      ASSERT_EQ(pw_VariableLengthEntryQueue_RawSizeBytes(c_queue),             \
-                oracle.raw_size_bytes());                                      \
-      ASSERT_EQ(pw_VariableLengthEntryQueue_RawCapacityBytes(c_queue),         \
-                oracle.raw_capacity_bytes());                                  \
-      ASSERT_EQ(pw_VariableLengthEntryQueue_MaxEntrySizeBytes(c_queue),        \
-                oracle.max_entry_size_bytes());                                \
+      ASSERT_EQ(pw_VariableLengthEntryQueue_SizeBytes(c_queue),                \
+                oracle.size_bytes());                                          \
+      ASSERT_EQ(pw_VariableLengthEntryQueue_MaxSizeBytes(c_queue),             \
+                oracle.max_size_bytes());                                      \
       ASSERT_CONTENTS_EQ(oracle, c_queue);                                     \
     }                                                                          \
   }                                                                            \
@@ -109,84 +109,100 @@ std::vector<std::byte> ReadEntry(
 
 constexpr TestStep kPop[] = {
     SizeEquals{0},
-    PushOverwrite{""sv},
+    PushOverwrite{""},
     SizeEquals{1},
     Pop{},
     SizeEquals{0},
 };
 
+DATA_DRIVEN_TEST(kPop, 0);  // Only holds one empty entry.
 DATA_DRIVEN_TEST(kPop, 1);
 DATA_DRIVEN_TEST(kPop, 6);
 
 constexpr TestStep kOverwriteLargeEntriesWithSmall[] = {
-    TestStep{PushOverwrite{"12345"sv}},  // 6-byte entry
-    TestStep{PushOverwrite{"abcde"sv}},
-    TestStep{PushOverwrite{""sv}},
-    TestStep{PushOverwrite{""sv}},
-    TestStep{PushOverwrite{""sv}},
-    TestStep{PushOverwrite{""sv}},
-    TestStep{PushOverwrite{""sv}},
-    TestStep{PushOverwrite{""sv}},
-    TestStep{SizeEquals{6}},
-    TestStep{Pop{}},
-    TestStep{Pop{}},
-    TestStep{Pop{}},
-    TestStep{Pop{}},
-    TestStep{Pop{}},
-    TestStep{Pop{}},
-    TestStep{SizeEquals{0}},
+    PushOverwrite{"12345"},
+    PushOverwrite{"abcde"},
+    PushOverwrite{""},
+    PushOverwrite{""},
+    PushOverwrite{""},
+    PushOverwrite{""},
+    PushOverwrite{""},
+    PushOverwrite{""},
+    SizeEquals{6},
+    Pop{},
+    Pop{},
+    Pop{},
+    Pop{},
+    Pop{},
+    Pop{},
+    SizeEquals{0},
 };
+DATA_DRIVEN_TEST(kOverwriteLargeEntriesWithSmall, 5);
 DATA_DRIVEN_TEST(kOverwriteLargeEntriesWithSmall, 6);
 DATA_DRIVEN_TEST(kOverwriteLargeEntriesWithSmall, 7);
 
-constexpr TestStep kOverwriteVaryingSizesUpTo3[] = {
-    TestStep{PushOverwrite{""sv}},   TestStep{PushOverwrite{""sv}},
-    TestStep{PushOverwrite{""sv}},   TestStep{PushOverwrite{""sv}},
-    TestStep{PushOverwrite{""sv}},   TestStep{PushOverwrite{"1"sv}},
-    TestStep{PushOverwrite{"2"sv}},  TestStep{PushOverwrite{""sv}},
-    TestStep{PushOverwrite{"3"sv}},  TestStep{PushOverwrite{"4"sv}},
-    TestStep{PushOverwrite{""sv}},   TestStep{PushOverwrite{"5"sv}},
-    TestStep{PushOverwrite{"6"sv}},  TestStep{PushOverwrite{"ab"sv}},
-    TestStep{PushOverwrite{"cd"sv}}, TestStep{PushOverwrite{""sv}},
-    TestStep{PushOverwrite{"ef"sv}}, TestStep{PushOverwrite{"gh"sv}},
-    TestStep{PushOverwrite{"ij"sv}},
+constexpr TestStep kOverwriteVaryingSizes012[] = {
+    PushOverwrite{""},   PushOverwrite{""},   PushOverwrite{""},
+    PushOverwrite{""},   PushOverwrite{""},   PushOverwrite{"1"},
+    PushOverwrite{"2"},  PushOverwrite{""},   PushOverwrite{"3"},
+    PushOverwrite{"4"},  PushOverwrite{""},   PushOverwrite{"5"},
+    PushOverwrite{"6"},  PushOverwrite{"ab"}, PushOverwrite{"cd"},
+    PushOverwrite{""},   PushOverwrite{"ef"}, PushOverwrite{"gh"},
+    PushOverwrite{"ij"},
 };
-DATA_DRIVEN_TEST(kOverwriteVaryingSizesUpTo3, 3);
-DATA_DRIVEN_TEST(kOverwriteVaryingSizesUpTo3, 4);
+DATA_DRIVEN_TEST(kOverwriteVaryingSizes012, 2);
+DATA_DRIVEN_TEST(kOverwriteVaryingSizes012, 3);
 
-constexpr TestStep kOverwriteVaryingSizesUpTo5[] = {
-    TestStep{PushOverwrite{""sv}},
-    TestStep{PushOverwrite{""sv}},
-    TestStep{PushOverwrite{""sv}},
-    TestStep{PushOverwrite{"1"sv}},
-    TestStep{PushOverwrite{"2"sv}},
-    TestStep{PushOverwrite{"3"sv}},
-    TestStep{PushOverwrite{"ab"sv}},
-    TestStep{PushOverwrite{"cd"sv}},
-    TestStep{PushOverwrite{"ef"sv}},
-    TestStep{PushOverwrite{"123"sv}},
-    TestStep{PushOverwrite{"456"sv}},
-    TestStep{PushOverwrite{"789"sv}},
-    TestStep{PushOverwrite{"abcd"sv}},
-    TestStep{PushOverwrite{"efgh"sv}},
-    TestStep{PushOverwrite{"ijkl"sv}},
-    TestStep{Pop{}},
-    TestStep{SizeEquals{0}},
+constexpr TestStep kOverwriteVaryingSizesUpTo4[] = {
+    PushOverwrite{""},
+    PushOverwrite{""},
+    PushOverwrite{""},
+    PushOverwrite{"1"},
+    PushOverwrite{"2"},
+    PushOverwrite{"3"},
+    PushOverwrite{"ab"},
+    PushOverwrite{"cd"},
+    PushOverwrite{"ef"},
+    PushOverwrite{"123"},
+    PushOverwrite{"456"},
+    PushOverwrite{"789"},
+    PushOverwrite{"abcd"},
+    PushOverwrite{"efgh"},
+    PushOverwrite{"ijkl"},
+    Pop{},
+    SizeEquals{0},
 };
-DATA_DRIVEN_TEST(kOverwriteVaryingSizesUpTo5, 5);
-DATA_DRIVEN_TEST(kOverwriteVaryingSizesUpTo5, 6);
-DATA_DRIVEN_TEST(kOverwriteVaryingSizesUpTo5, 7);
+DATA_DRIVEN_TEST(kOverwriteVaryingSizesUpTo4, 4);
+DATA_DRIVEN_TEST(kOverwriteVaryingSizesUpTo4, 5);
+DATA_DRIVEN_TEST(kOverwriteVaryingSizesUpTo4, 6);
 
 constexpr char kBigEntryBytes[196]{};
 
 constexpr TestStep kTwoBytePrefix[] = {
-    TestStep{PushOverwrite{std::string_view(kBigEntryBytes, 128)}},
-    TestStep{PushOverwrite{std::string_view(kBigEntryBytes, 128)}},
-    TestStep{PushOverwrite{std::string_view(kBigEntryBytes, 127)}},
-    TestStep{PushOverwrite{std::string_view(kBigEntryBytes, 128)}},
-    TestStep{PushOverwrite{std::string_view(kBigEntryBytes, 127)}},
+    PushOverwrite{std::string_view(kBigEntryBytes, 128)},
+    PushOverwrite{std::string_view(kBigEntryBytes, 128)},
+    PushOverwrite{std::string_view(kBigEntryBytes, 127)},
+    PushOverwrite{std::string_view(kBigEntryBytes, 128)},
+    PushOverwrite{std::string_view(kBigEntryBytes, 127)},
+    SizeEquals{1},
+    Pop{},
+    SizeEquals{0},
 };
-DATA_DRIVEN_TEST(kTwoBytePrefix, 130);
+DATA_DRIVEN_TEST(kTwoBytePrefix, 128);
+DATA_DRIVEN_TEST(kTwoBytePrefix, 129);
+
+constexpr TestStep kClear[] = {
+    Push{"abcdefg"},
+    PushOverwrite{""},
+    PushOverwrite{""},
+    PushOverwrite{"a"},
+    PushOverwrite{"b"},
+    Clear{},
+    SizeEquals{0},
+    Clear{},
+};
+DATA_DRIVEN_TEST(kClear, 7);
+DATA_DRIVEN_TEST(kClear, 100);
 
 TEST(VariableLengthEntryQueue, DeclareMacro) {
   PW_VARIABLE_LENGTH_ENTRY_QUEUE_DECLARE(queue, 123);
@@ -198,8 +214,8 @@ TEST(VariableLengthEntryQueue, DeclareMacro) {
   EXPECT_EQ(pw_VariableLengthEntryQueue_RawStorageSizeBytes(queue),
             kArraySizeBytes - 3 /* padding isn't included */);
 
-  EXPECT_EQ(pw_VariableLengthEntryQueue_MaxEntrySizeBytes(queue), 123u);
-  EXPECT_EQ(pw_VariableLengthEntryQueue_RawSizeBytes(queue), 0u);
+  EXPECT_EQ(pw_VariableLengthEntryQueue_MaxSizeBytes(queue), 123u);
+  EXPECT_EQ(pw_VariableLengthEntryQueue_SizeBytes(queue), 0u);
   EXPECT_TRUE(pw_VariableLengthEntryQueue_Empty(queue));
 }
 
@@ -211,9 +227,9 @@ TEST(VariableLengthEntryQueue, InitializeExistingBuffer) {
 
   EXPECT_EQ(pw_VariableLengthEntryQueue_RawStorageSizeBytes(queue),
             sizeof(queue));
-  EXPECT_EQ(pw_VariableLengthEntryQueue_MaxEntrySizeBytes(queue),
+  EXPECT_EQ(pw_VariableLengthEntryQueue_MaxSizeBytes(queue),
             sizeof(uint32_t) * 10u - 1 /*prefix*/ - 1 /*end*/);
-  EXPECT_EQ(pw_VariableLengthEntryQueue_RawSizeBytes(queue), 0u);
+  EXPECT_EQ(pw_VariableLengthEntryQueue_SizeBytes(queue), 0u);
   EXPECT_EQ(pw_VariableLengthEntryQueue_Size(queue), 0u);
   EXPECT_TRUE(pw_VariableLengthEntryQueue_Empty(queue));
 }

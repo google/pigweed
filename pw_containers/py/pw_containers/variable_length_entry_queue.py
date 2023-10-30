@@ -40,25 +40,25 @@ def _decode_leb128(
     raise ValueError(f'Unterminated varint {data[offset:]!r}')
 
 
-def parse(ring_buffer: bytes) -> Iterable[bytes]:
-    """Decodes the in-memory representation of a sized-entry ring buffer.
+def parse(queue: bytes) -> Iterable[bytes]:
+    """Decodes the in-memory representation of a variable-length entry queue.
 
     Args:
-      ring_buffer: The bytes representation of a sized-entry ring buffer.
+      queue: The bytes representation of a variable-length entry queue.
 
     Yields:
       Each entry in the buffer as bytes.
     """
-    array_size_bytes, head, tail = _HEADER.unpack_from(ring_buffer)
+    array_size_bytes, head, tail = _HEADER.unpack_from(queue)
 
     total_encoded_size = _HEADER.size + array_size_bytes
-    if len(ring_buffer) < total_encoded_size:
+    if len(queue) < total_encoded_size:
         raise ValueError(
-            f'Ring buffer data ({len(ring_buffer)} B) is smaller than the '
-            f'encoded size ({total_encoded_size} B)'
+            f'Ring buffer data ({len(queue)} B) is smaller than the encoded '
+            f'size ({total_encoded_size} B)'
         )
 
-    data = ring_buffer[_HEADER.size : total_encoded_size]
+    data = queue[_HEADER.size : total_encoded_size]
 
     if tail < head:
         data = data[head:] + data[:tail]

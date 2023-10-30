@@ -28,12 +28,17 @@ namespace pw::containers {
 // implementation.
 class VariableLengthEntryQueueTestOracle {
  public:
-  VariableLengthEntryQueueTestOracle(uint32_t max_entry_size_bytes)
-      : max_entry_size_bytes_(max_entry_size_bytes),
+  VariableLengthEntryQueueTestOracle(uint32_t max_size_bytes)
+      : max_size_bytes_(max_size_bytes),
         raw_size_bytes_(0),
         raw_capacity_bytes_(
-            static_cast<uint32_t>(varint::EncodedSize(max_entry_size_bytes)) +
-            max_entry_size_bytes) {}
+            static_cast<uint32_t>(varint::EncodedSize(max_size_bytes)) +
+            max_size_bytes) {}
+
+  void clear() {
+    q_.clear();
+    raw_size_bytes_ = 0;
+  }
 
   void push_overwrite(ConstByteSpan data) {
     size_t encoded_size = varint::EncodedSize(data.size()) + data.size();
@@ -44,7 +49,7 @@ class VariableLengthEntryQueueTestOracle {
   }
 
   void push(ConstByteSpan data) {
-    PW_ASSERT(data.size() <= max_entry_size_bytes_);
+    PW_ASSERT(data.size() <= max_size_bytes_);
 
     size_t encoded_size = varint::EncodedSize(data.size()) + data.size();
     PW_ASSERT(encoded_size <= raw_capacity_bytes_ - raw_size_bytes_);
@@ -61,9 +66,14 @@ class VariableLengthEntryQueueTestOracle {
   }
 
   uint32_t size() const { return static_cast<uint32_t>(q_.size()); }
-  uint32_t raw_size_bytes() const { return raw_size_bytes_; }
-  uint32_t raw_capacity_bytes() const { return raw_capacity_bytes_; }
-  uint32_t max_entry_size_bytes() const { return max_entry_size_bytes_; }
+  uint32_t size_bytes() const {
+    uint32_t total_bytes = 0;
+    for (const auto& entry : q_) {
+      total_bytes += static_cast<uint32_t>(entry.size());
+    }
+    return total_bytes;
+  }
+  uint32_t max_size_bytes() const { return max_size_bytes_; }
 
   std::deque<std::vector<std::byte>>::const_iterator begin() const {
     return q_.begin();
@@ -75,7 +85,7 @@ class VariableLengthEntryQueueTestOracle {
 
  private:
   std::deque<std::vector<std::byte>> q_;
-  const uint32_t max_entry_size_bytes_;
+  const uint32_t max_size_bytes_;
   uint32_t raw_size_bytes_;
   const uint32_t raw_capacity_bytes_;
 };

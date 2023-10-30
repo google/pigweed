@@ -94,15 +94,17 @@ extern "C" {
 typedef uint32_t* pw_VariableLengthEntryQueue_Handle;
 typedef const uint32_t* pw_VariableLengthEntryQueue_ConstHandle;
 
-/// Declares and initializes a `VariableLengthEntryQueue` that can hold an entry
-/// of up to `max_entry_size_bytes`. Attempting to store larger entries is
-/// invalid and will fail an assertion.
-#define PW_VARIABLE_LENGTH_ENTRY_QUEUE_DECLARE(variable, max_entry_size_bytes) \
-  uint32_t variable[PW_VARIABLE_LENGTH_ENTRY_QUEUE_HEADER_SIZE_UINT32 +        \
-                    _PW_VAR_QUEUE_DATA_SIZE_UINT32(max_entry_size_bytes)] = {  \
-      _PW_VAR_QUEUE_DATA_SIZE_BYTES(max_entry_size_bytes),                     \
-      /*head=*/0u,                                                             \
-      /*tail=*/0u}
+/// Declares and initializes a `VariableLengthEntryQueue` that can hold up to
+/// `max_size_bytes` bytes. `max_size_bytes` is the largest supported size for a
+/// single entry; attempting to store larger entries is invalid and will fail an
+/// assertion.
+///
+/// @param variable variable name for the queue
+/// @param max_size_bytes the capacity of the queue
+#define PW_VARIABLE_LENGTH_ENTRY_QUEUE_DECLARE(variable, max_size_bytes) \
+  uint32_t variable[PW_VARIABLE_LENGTH_ENTRY_QUEUE_HEADER_SIZE_UINT32 +  \
+                    _PW_VAR_QUEUE_DATA_SIZE_UINT32(max_size_bytes)] = {  \
+      _PW_VAR_QUEUE_DATA_SIZE_BYTES(max_size_bytes), /*head=*/0u, /*tail=*/0u}
 
 /// The size of the `VariableLengthEntryQueue` header, in `uint32_t` elements.
 /// This header stores the buffer length and head and tail offsets.
@@ -117,10 +119,13 @@ typedef const uint32_t* pw_VariableLengthEntryQueue_ConstHandle;
 static inline void pw_VariableLengthEntryQueue_Init(uint32_t array[],
                                                     size_t array_size_uint32);
 
+/// Empties the queue.
+static inline void pw_VariableLengthEntryQueue_Clear(
+    pw_VariableLengthEntryQueue_Handle queue);
+
 /// Appends an entry to the end of the queue.
 ///
-/// @pre The entry MUST not be larger than
-/// @cpp_func{pw_VariableLengthEntryQueue_MaxEntrySizeBytes}; asserts if it is.
+/// @pre The entry MUST NOT be larger than `max_size_bytes()`.
 void pw_VariableLengthEntryQueue_Push(pw_VariableLengthEntryQueue_Handle queue,
                                       const void* data,
                                       uint32_t data_size_bytes);
@@ -128,14 +133,13 @@ void pw_VariableLengthEntryQueue_Push(pw_VariableLengthEntryQueue_Handle queue,
 /// Appends an entry to the end of the queue, removing entries with `Pop`
 /// as necessary to make room.
 ///
-/// @pre The entry MUST not be larger than
-/// @cpp_func{pw_VariableLengthEntryQueue_MaxEntrySizeBytes}; asserts if it is.
+/// @pre The entry MUST NOT be larger than `max_size_bytes()`.
 void pw_VariableLengthEntryQueue_PushOverwrite(
     pw_VariableLengthEntryQueue_Handle queue,
     const void* data,
     uint32_t data_size_bytes);
 
-/// Removes the first entry from the ring buffer.
+/// Removes the first entry from queue.
 ///
 /// @pre The queue MUST have at least one entry.
 void pw_VariableLengthEntryQueue_Pop(pw_VariableLengthEntryQueue_Handle queue);
@@ -152,8 +156,8 @@ typedef struct {
   uint32_t _pw_offset;
 } pw_VariableLengthEntryQueue_Iterator;
 
-// An entry in the queue. Entries may be stored in up to two segments, so this
-// struct includes pointers to both portions of the entry.
+/// An entry in the queue. Entries may be stored in up to two segments, so this
+/// struct includes pointers to both portions of the entry.
 typedef struct {
   const uint8_t* data_1;
   uint32_t size_1;
@@ -166,7 +170,7 @@ static inline pw_VariableLengthEntryQueue_Iterator
 pw_VariableLengthEntryQueue_Begin(
     pw_VariableLengthEntryQueue_ConstHandle queue);
 
-/// Returns an iterator to entry following the last entry, which is not valid.
+/// Returns an iterator that points past the end of the queue.
 static inline pw_VariableLengthEntryQueue_Iterator
 pw_VariableLengthEntryQueue_End(pw_VariableLengthEntryQueue_ConstHandle queue);
 
@@ -194,32 +198,32 @@ pw_VariableLengthEntryQueue_Entry pw_VariableLengthEntryQueue_GetEntry(
 uint32_t pw_VariableLengthEntryQueue_Entry_Copy(
     const pw_VariableLengthEntryQueue_Entry* entry, void* dest, uint32_t count);
 
+/// Returns the byte at the specified index in the entry. Asserts if index is
+/// out-of-bounds.
+static inline uint8_t pw_VariableLengthEntryQueue_Entry_At(
+    const pw_VariableLengthEntryQueue_Entry* entry, size_t index);
+
 /// Returns the number of variable-length entries in the queue. This is O(n) in
 /// the number of entries in the queue.
 uint32_t pw_VariableLengthEntryQueue_Size(
     pw_VariableLengthEntryQueue_ConstHandle queue);
 
-/// Returns the number of bytes stored in the buffer, including entry metadata.
-/// This can be used with `RawCapacityBytes` to gauge available space for
-/// entries.
-static inline uint32_t pw_VariableLengthEntryQueue_RawSizeBytes(
+/// Returns the combined size in bytes of all entries in the queue, excluding
+/// metadata. This is O(n) in the number of entries in the queue.
+uint32_t pw_VariableLengthEntryQueue_SizeBytes(
     pw_VariableLengthEntryQueue_ConstHandle queue);
 
-/// Returns the maximum number of bytes that can be stored in the buffer,
-/// including per-entry metadata. This can be used with `RawSizeBytes` to gauge
-/// available space for entries.
-static inline uint32_t pw_VariableLengthEntryQueue_RawCapacityBytes(
+/// Returns the the maximum number of bytes that can be stored in the queue.
+/// This is largest possible value of `size_bytes()`, and the size of the
+/// largest single entry that can be stored in this queue. Attempting to store a
+/// larger entry is invalid and results in a crash.
+static inline uint32_t pw_VariableLengthEntryQueue_MaxSizeBytes(
     pw_VariableLengthEntryQueue_ConstHandle queue);
 
 /// Returns the size of the raw underlying `VariableLengthEntryQueue` storage.
 /// This size may be used to copy a `VariableLengthEntryQueue` into another
 /// 32-bit aligned memory location.
 static inline uint32_t pw_VariableLengthEntryQueue_RawStorageSizeBytes(
-    pw_VariableLengthEntryQueue_ConstHandle queue);
-
-/// Returns the size of the largest entry this `VariableLengthEntryQueue` can
-/// hold. Attempting to store a larger entry is invalid and fails an assert.
-static inline uint32_t pw_VariableLengthEntryQueue_MaxEntrySizeBytes(
     pw_VariableLengthEntryQueue_ConstHandle queue);
 
 /// Returns true if the `VariableLengthEntryQueue` is empty, false if it has at
@@ -231,11 +235,11 @@ static inline bool pw_VariableLengthEntryQueue_Empty(
 
 // Implementation details.
 
-#define _PW_VAR_QUEUE_DATA_SIZE_UINT32(max_entry_size_bytes) \
-  ((_PW_VAR_QUEUE_DATA_SIZE_BYTES(max_entry_size_bytes) + 3 /* round up */) / 4)
+#define _PW_VAR_QUEUE_DATA_SIZE_UINT32(max_size_bytes) \
+  ((_PW_VAR_QUEUE_DATA_SIZE_BYTES(max_size_bytes) + 3 /* round up */) / 4)
 
-#define _PW_VAR_QUEUE_DATA_SIZE_BYTES(max_entry_size_bytes)                    \
-  (PW_VARINT_ENCODED_SIZE_BYTES(max_entry_size_bytes) + max_entry_size_bytes + \
+#define _PW_VAR_QUEUE_DATA_SIZE_BYTES(max_size_bytes)              \
+  (PW_VARINT_ENCODED_SIZE_BYTES(max_size_bytes) + max_size_bytes + \
    1 /*end byte*/)
 
 #define _PW_VAR_QUEUE_ARRAY_SIZE_BYTES queue[0]
@@ -253,6 +257,12 @@ static inline void pw_VariableLengthEntryQueue_Init(uint32_t array[],
   array[0] = _PW_VAR_QUEUE_GET_ARRAY_SIZE_BYTES(array_size_uint32);
   array[1] = 0;  // head
   array[2] = 0;  // tail
+}
+
+static inline void pw_VariableLengthEntryQueue_Clear(
+    pw_VariableLengthEntryQueue_Handle queue) {
+  _PW_VAR_QUEUE_HEAD = 0;  // head
+  _PW_VAR_QUEUE_TAIL = 0;  // tail
 }
 
 static inline pw_VariableLengthEntryQueue_Iterator
@@ -274,18 +284,21 @@ static inline bool pw_VariableLengthEntryQueue_Iterator_Equal(
   return lhs->_pw_offset == rhs->_pw_offset && lhs->_pw_queue == rhs->_pw_queue;
 }
 
-static inline uint32_t pw_VariableLengthEntryQueue_RawSizeBytes(
-    pw_VariableLengthEntryQueue_ConstHandle queue) {
-  uint32_t tail = _PW_VAR_QUEUE_TAIL;
-  if (tail < _PW_VAR_QUEUE_HEAD) {
-    tail += _PW_VAR_QUEUE_ARRAY_SIZE_BYTES;
+// Private function that returns a pointer to the specified index in the Entry.
+static inline const uint8_t* _pw_VariableLengthEntryQueue_Entry_GetPointer(
+    const pw_VariableLengthEntryQueue_Entry* entry, size_t index) {
+  if (index < entry->size_1) {
+    return &entry->data_1[index];
   }
-  return tail - _PW_VAR_QUEUE_HEAD;
+  return &entry->data_2[index - entry->size_1];
 }
 
-static inline uint32_t pw_VariableLengthEntryQueue_RawCapacityBytes(
-    pw_VariableLengthEntryQueue_ConstHandle queue) {
-  return _PW_VAR_QUEUE_ARRAY_SIZE_BYTES - 1;
+const uint8_t* _pw_VariableLengthEntryQueue_Entry_GetPointerChecked(
+    const pw_VariableLengthEntryQueue_Entry* entry, size_t index);
+
+static inline uint8_t pw_VariableLengthEntryQueue_Entry_At(
+    const pw_VariableLengthEntryQueue_Entry* entry, size_t index) {
+  return *_pw_VariableLengthEntryQueue_Entry_GetPointerChecked(entry, index);
 }
 
 static inline uint32_t pw_VariableLengthEntryQueue_RawStorageSizeBytes(
@@ -294,7 +307,7 @@ static inline uint32_t pw_VariableLengthEntryQueue_RawStorageSizeBytes(
          _PW_VAR_QUEUE_ARRAY_SIZE_BYTES;
 }
 
-static inline uint32_t pw_VariableLengthEntryQueue_MaxEntrySizeBytes(
+static inline uint32_t pw_VariableLengthEntryQueue_MaxSizeBytes(
     pw_VariableLengthEntryQueue_ConstHandle queue) {
   return _PW_VAR_QUEUE_ARRAY_SIZE_BYTES - 1 -
          (uint32_t)pw_varint_EncodedSizeBytes(_PW_VAR_QUEUE_ARRAY_SIZE_BYTES -

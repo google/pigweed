@@ -45,6 +45,7 @@ C
 Python
 ------
 .. automodule:: pw_containers.variable_length_entry_queue
+   :members:
 
 -----------------
 pw::IntrusiveList
