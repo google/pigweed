@@ -2229,58 +2229,6 @@ constexpr OpCode kLESetExtendedScanEnable = LEControllerCommandOpCode(0x0042);
 // LE Extended Create Connection Command (v5.0) (LE)
 constexpr OpCode kLEExtendedCreateConnection = LEControllerCommandOpCode(0x0043);
 
-struct LEExtendedCreateConnectionData {
-  // Range: see kLEExtendedScanInterval[Min|Max] in hci_constants.h
-  // Time: N * 0.625 ms
-  // Time Range: 2.5 ms to 40.959375 s
-  uint16_t scan_interval;
-  uint16_t scan_window;
-
-  // Range: see kLEConnectionInterval[Min|Max] in hci_constants.h
-  // Time: N * 1.25 ms
-  // Time Range: 7.5 ms to 4 s.
-  uint16_t conn_interval_min;
-  uint16_t conn_interval_max;
-
-  // Range: 0x0000 to kLEConnectionLatencyMax in hci_constants.h
-  uint16_t conn_latency;
-
-  // Range: see kLEConnectionSupervisionTimeout[Min|Max] in hci_constants.h
-  // Time: N * 10 ms
-  // Time Range: 100 ms to 32 s
-  uint16_t supervision_timeout;
-
-  // Range: 0x0000 - 0xFFFF
-  // Time: N * 0x625 ms
-  uint16_t minimum_ce_length;
-  uint16_t maximum_ce_length;
-} __attribute__((packed));
-
-struct LEExtendedCreateConnectionCommandParams {
-  LEExtendedCreateConnectionCommandParams() = delete;
-  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LEExtendedCreateConnectionCommandParams);
-
-  GenericEnableParam initiator_filter_policy;
-  pw::bluetooth::emboss::LEOwnAddressType own_address_type;
-  LEPeerAddressType peer_address_type;
-
-  // Public Device Address, Random Device Address, Public Identity Address, or
-  // Random (static) Identity Address of the device to be connected.
-  DeviceAddressBytes peer_address;
-
-  // See the kLEPHYBit* constants in hci_constants.h for possible bitfield
-  // values.
-  uint8_t initiating_phys;
-
-  // The number of array elements is determined by the number of bits set in the
-  // |initiating_phys| parameter.
-  LEExtendedCreateConnectionData data[];
-} __attribute__((packed));
-
-// NOTE on ReturnParams: No Command Complete event is sent by the Controller to
-// indicate that this command has been completed. Instead, the LE Enhanced
-// Connection Complete event indicates that this command has been completed.
-
 // =======================================================
 // LE Periodic Advertising Create Sync Command (v5.0) (LE)
 constexpr OpCode kLEPeriodicAdvertisingCreateSync = LEControllerCommandOpCode(0x0044);
