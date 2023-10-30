@@ -346,7 +346,7 @@ class AdapterImpl final : public Adapter {
     constexpr hci_spec::LESupportedFeature feature =
         hci_spec::LESupportedFeature::kLEExtendedAdvertising;
     if (state().low_energy_state.IsFeatureSupported(feature)) {
-      bt_log(INFO, "gap", "controller supports extended advertising, using extended LE commands");
+      bt_log(INFO, "gap", "controller supports extended advertising, using extended LE advertiser");
       return std::make_unique<hci::ExtendedLowEnergyAdvertiser>(hci_);
     }
 
@@ -359,7 +359,7 @@ class AdapterImpl final : public Adapter {
       return std::make_unique<hci::AndroidExtendedLowEnergyAdvertiser>(hci_, max_advt);
     }
 
-    bt_log(INFO, "gap", "controller supports only legacy advertising, using legacy LE commands");
+    bt_log(INFO, "gap", "controller supports only legacy advertising, using legacy LE advertiser");
     return std::make_unique<hci::LegacyLowEnergyAdvertiser>(hci_);
   }
 
@@ -444,8 +444,7 @@ class AdapterImpl final : public Adapter {
   // for service discovery.
   gatt::GATT::WeakPtr gatt_;
 
-  // Objects that abstract the controller for connection and advertising
-  // procedures.
+  // Objects that abstract the controller for connection and advertising procedures.
   std::unique_ptr<hci::LowEnergyAdvertiser> hci_le_advertiser_;
   std::unique_ptr<hci::LowEnergyConnector> hci_le_connector_;
   std::unique_ptr<hci::LowEnergyScanner> hci_le_scanner_;
