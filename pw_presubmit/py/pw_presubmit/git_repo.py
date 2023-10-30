@@ -26,6 +26,7 @@ PatternOrStr = Union[Pattern, str]
 
 TRACKING_BRANCH_ALIAS = '@{upstream}'
 _TRACKING_BRANCH_ALIASES = TRACKING_BRANCH_ALIAS, '@{u}'
+_NON_TRACKING_FALLBACK = 'HEAD~10'
 
 
 def git_stdout(
@@ -74,7 +75,10 @@ def _diff_names(
             yield full_path
 
 
-def tracking_branch(repo_path: Optional[Path] = None) -> Optional[str]:
+def tracking_branch(
+    repo_path: Optional[Path] = None,
+    fallback: Optional[str] = None,
+) -> Optional[str]:
     """Returns the tracking branch of the current branch.
 
     Since most callers of this function can safely handle a return value of
@@ -106,7 +110,7 @@ def tracking_branch(repo_path: Optional[Path] = None) -> Optional[str]:
         )
 
     except subprocess.CalledProcessError:
-        return None
+        return fallback
 
 
 def list_files(
@@ -128,7 +132,7 @@ def list_files(
         repo_path = Path.cwd()
 
     if commit in _TRACKING_BRANCH_ALIASES:
-        commit = tracking_branch(repo_path)
+        commit = tracking_branch(repo_path, fallback=_NON_TRACKING_FALLBACK)
 
     if commit:
         try:
