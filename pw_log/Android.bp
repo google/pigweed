@@ -69,7 +69,11 @@ genrule {
 
 genrule {
     name: "pw_log_log_proto_pwpb_h",
-    srcs: [":pw_log_log_proto_with_prefix",],
+    srcs: [
+        ":libprotobuf-internal-protos",
+        ":pw_log_log_proto_with_prefix",
+        ":pw_protobuf_common_proto",
+    ],
     cmd: "python3 $(location pw_protobuf_compiler_py) " +
          "--proto-path=external/pigweed/pw_protobuf/ " +
          // Requires the generated pw_tokenizer/proto/options.proto filepath.
@@ -79,10 +83,14 @@ genrule {
          "--out-dir=$(genDir) " +
          "--plugin-path=$(location pw_protobuf_plugin_py) " +
          "--compile-dir=$(genDir) " +
-         "--sources $(in) " +
+         "--sources $(location :pw_log_log_proto_with_prefix) " +
          "--language pwpb " +
          "--no-experimental-proto3-optional " +
-         "--protoc=$(location aprotoc) ",
+         "--protoc=$(location aprotoc) && " +
+         // TODO(b/308678575) - Ideally the previous command would create the file at the right location,
+         // but following all the layers of pigweed wrappers around protoc is too difficult.
+         "python3 -c \"import os; import shutil; " +
+         "shutil.copy2(os.path.splitext('$(location :pw_log_log_proto_with_prefix)')[0]+'.pwpb.h', '$(out)')\"",
     out: [
         "pw_log/proto/log.pwpb.h",
     ],
@@ -98,7 +106,11 @@ genrule {
 
 genrule {
     name: "pw_log_log_rpc_pwpb_h",
-    srcs: [":pw_log_log_proto_with_prefix",],
+    srcs: [
+        ":libprotobuf-internal-protos",
+        ":pw_log_log_proto_with_prefix",
+        ":pw_protobuf_common_proto",
+    ],
     cmd: "python3 $(location pw_protobuf_compiler_py) " +
          "--proto-path=external/pigweed/pw_protobuf/ " +
          // Requires the generated pw_tokenizer/proto/options.proto filepath.
@@ -108,10 +120,14 @@ genrule {
          "--out-dir=$(genDir) " +
          "--plugin-path=$(location pw_rpc_plugin_pwpb_py) " +
          "--compile-dir=$(genDir) " +
-         "--sources $(in) " +
+         "--sources $(location :pw_log_log_proto_with_prefix) " +
          "--language pwpb_rpc " +
          "--no-experimental-proto3-optional " +
-         "--protoc=$(location aprotoc) ",
+         "--protoc=$(location aprotoc) && " +
+         // TODO(b/308678575) - Ideally the previous command would create the file at the right location,
+         // but following all the layers of pigweed wrappers around protoc is too difficult.
+         "python3 -c \"import os; import shutil; " +
+         "shutil.copy2(os.path.splitext('$(location :pw_log_log_proto_with_prefix)')[0]+'.rpc.pwpb.h', '$(out)')\"",
     out: [
         "pw_log/proto/log.rpc.pwpb.h",
     ],
@@ -127,7 +143,11 @@ genrule {
 
 genrule {
     name: "pw_log_log_raw_rpc_h",
-    srcs: [":pw_log_log_proto_with_prefix",],
+    srcs: [
+        ":libprotobuf-internal-protos",
+        ":pw_log_log_proto_with_prefix",
+        ":pw_protobuf_common_proto",
+    ],
     cmd: "python3 $(location pw_protobuf_compiler_py) " +
          "--proto-path=external/pigweed/pw_protobuf/ " +
          // Requires the generated pw_tokenizer/proto/options.proto filepath.
@@ -137,10 +157,14 @@ genrule {
          "--out-dir=$(genDir) " +
          "--plugin-path=$(location pw_rpc_plugin_rawpb_py) " +
          "--compile-dir=$(genDir) " +
-         "--sources $(in) " +
+         "--sources $(location :pw_log_log_proto_with_prefix) " +
          "--language raw_rpc " +
          "--no-experimental-proto3-optional " +
-         "--protoc=$(location aprotoc) ",
+         "--protoc=$(location aprotoc) && " +
+         // TODO(b/308678575) - Ideally the previous command would create the file at the right location,
+         // but following all the layers of pigweed wrappers around protoc is too difficult.
+         "python3 -c \"import os; import shutil; " +
+         "shutil.copy2(os.path.splitext('$(location :pw_log_log_proto_with_prefix)')[0]+'.raw_rpc.pb.h', '$(out)')\"",
     out: [
         "pw_log/proto/log.raw_rpc.pb.h",
     ],

@@ -167,14 +167,17 @@ filegroup {
 
 genrule {
     name: "pw_tokenizer_proto_options_pwpb_h",
-    srcs: [":pw_tokenizer_options_proto_with_prefix",],
+    srcs: [
+        ":libprotobuf-internal-protos",
+        ":pw_tokenizer_options_proto_with_prefix",
+    ],
     cmd: "python3 $(location pw_protobuf_compiler_py) " +
          "--proto-path=external/pigweed/pw_tokenizer/ " +
          "--proto-path=external/protobuf/src/ " +
          "--out-dir=$$(dirname $(location pw_tokenizer/proto/options.pwpb.h)) " +
          "--plugin-path=$(location pw_protobuf_plugin_py) " +
-         "--compile-dir=$$(dirname $(in)) " +
-         "--sources $(in) " +
+         "--compile-dir=$$(dirname $(location :pw_tokenizer_options_proto_with_prefix)) " +
+         "--sources $(location :pw_tokenizer_options_proto_with_prefix) " +
          "--language pwpb " +
          "--no-experimental-proto3-optional " +
          "--protoc=$(location aprotoc) ",

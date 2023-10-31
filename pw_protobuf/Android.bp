@@ -94,6 +94,13 @@ genrule_defaults {
          "mkdir -p $${prefix}; cp -t $${prefix} $(in);"
 }
 
+filegroup {
+    name: "pw_protobuf_common_proto",
+    srcs: [
+        "pw_protobuf_protos/common.proto",
+    ],
+}
+
 genrule {
     name: "pw_protobuf_common_proto_with_prefix",
     defaults: ["pw_protobuf_add_prefix_to_proto"],
