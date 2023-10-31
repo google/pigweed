@@ -127,5 +127,9 @@ Options include the following:
 - ``--pointer-size <integer of pointer size>``: The size of a pointer on the
   machine where ``malloc/free`` is called. The default value is ``4``.
 
-Note, this module, and its documentation, is currently incomplete and
-experimental.
+Size report
+===========
+``pw_allocator`` provides some of its own implementations of the ``Allocator``
+interface, whos costs are shown below.
+
+.. include:: allocator_size_report

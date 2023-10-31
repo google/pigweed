@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2023 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -14,6 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
@@ -149,6 +150,27 @@ pw_source_set("split_free_list_allocator") {
   sources = [ "split_free_list_allocator.cc" ]
 }
 
+pw_size_diff("allocator_size_report") {
+  title = "Sizes of various pw_allocator implementations"
+  binaries = [
+    {
+      target = "size_report:split_free_list_allocator"
+      base = "$dir_pw_bloat:bloat_base"
+      label = "SplitFreeListAllocator"
+    },
+    {
+      target = "size_report:split_free_list_allocator_with_unique_ptr"
+      base = "size_report:split_free_list_allocator"
+      label = "Allocator::MakeUnique and UniquePtr"
+    },
+    {
+      target = "size_report:split_free_list_allocator_with_metric_proxy"
+      base = "size_report:split_free_list_allocator"
+      label = "AllocatorMetricProxy wrapping another allocator"
+    },
+  ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":allocator_test",
@@ -253,4 +275,5 @@ pw_test("unique_ptr_test") {
 pw_doc_group("docs") {
   inputs = [ "doc_resources/pw_allocator_heap_visualizer_demo.png" ]
   sources = [ "docs.rst" ]
+  report_deps = [ ":allocator_size_report" ]
 }
