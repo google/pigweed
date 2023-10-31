@@ -26,11 +26,8 @@
 namespace pw::digital_io {
 namespace {
 
-constexpr size_t kRt595ClockNum = 8;
-constexpr size_t kRt595ResetNum = 8;
-
-constexpr std::array<clock_ip_name_t, kRt595ClockNum> kGpioClocks = GPIO_CLOCKS;
-constexpr std::array<reset_ip_name_t, kRt595ResetNum> kGpioResets = GPIO_RSTS_N;
+constexpr std::array kGpioClocks = GPIO_CLOCKS;
+constexpr std::array kGpioResets = GPIO_RSTS_N;
 
 }  // namespace
 
