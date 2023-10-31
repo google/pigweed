@@ -113,6 +113,16 @@ board, you can run the project on that hardware.
    supports the :ref:`target-host` target, you can run everything
    on your Linux development host.
 
+#. Ensure your udev rules are set up to allow the user running the commands
+   below to access the Discovery Board.  For example, you may want to add the
+   following rule as ``/etc/udev/rules.d/99-stm32f329i-disc1.rules``:
+
+   .. code-block:: console
+
+      ATTRS{idVendor}=="0483", ATTRS{idProduct}=="374b", MODE="664", GROUP="plugdev"
+
+   The user running the commands needs to be in the group ``plugdev``.
+
 #. Connect the Discovery board to your development host with a USB
    cable. **Use the Mini-B USB port on the Discovery board, not the
    Micro-B port**.
