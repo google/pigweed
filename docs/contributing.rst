@@ -159,6 +159,39 @@ Code Reviews
 ------------
 See :ref:`docs-code_reviews` for information about the code review process.
 
+Experimental Repository and Where to Land Code
+----------------------------------------------
+Pigweed's has an `Experimental Repository
+<https://pigweed.googlesource.com/pigweed/experimental>`_ which differs from
+our main repository in a couple key ways:
+
+* Code is not expected to become production grade.
+* Code review standards are relaxed to allow experimentation.
+* In general the value of the code in the repository is the knowledge gained
+  from the experiment, not the code itself.
+
+Good uses of the repo include:
+
+* Experimenting with using an API (ex. C++20 coroutines) with no plans to
+  turn it into production code.
+* One-off test programs to gather data.
+
+We would like to avoid large pieces of code being developed in the experimental
+repository then imported into the Pigweed repository. If large amounts of code
+end up needing to migrate from experimental to main, then it must be landed
+incrementally as a series of reviewable patches, typically no
+`larger than 500 lines each
+<https://google.github.io/eng-practices/review/developer/small-cls.html>`_.
+This creates a large code review burden that often results in poorer reviews.
+Therefore, if the eventual location of the code will be the main Pigweed
+repository, it is **strongly encouraged** that the code be developed in the
+**main repository under an experimental flag**.
+
+.. note::
+   The current organization of the experimental repository does not reflect
+   this policy. This will be re-organized once we have concrete recommendations
+   on its organization.
+
 Community Guidelines
 --------------------
 This project follows `Google's Open Source Community Guidelines
