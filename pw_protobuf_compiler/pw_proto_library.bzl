@@ -42,7 +42,6 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "use_cpp_toolchain")
 load(
     "@pigweed//pw_build/bazel_internal:pigweed_internal.bzl",
-    "PW_DEFAULT_COPTS",
     _compile_cc = "compile_cc",
 )
 load("@rules_proto//proto:defs.bzl", "ProtoInfo")
@@ -499,7 +498,6 @@ def _impl_pw_proto_library(ctx):
         ctx.attr.deps,
         all_includes,
         defines = [],
-        user_compile_flags = PW_DEFAULT_COPTS,
     )
 
 # Instantiate the aspects and rules for generating code using specific plugins.

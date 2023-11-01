@@ -12,7 +12,6 @@ Wrapper rules
 The common configuration for Bazel for all modules is in the ``pigweed.bzl``
 file. The built-in Bazel rules ``cc_binary``, ``cc_library``, and ``cc_test``
 are wrapped with ``pw_cc_binary``, ``pw_cc_library``, and ``pw_cc_test``.
-These wrappers add parameters to calls to the compiler and linker.
 
 .. _module-pw_build-bazel-pw_linker_script:
 

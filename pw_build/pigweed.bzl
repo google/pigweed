@@ -18,7 +18,6 @@ load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_c
 load("@rules_cc//cc:action_names.bzl", "C_COMPILE_ACTION_NAME")
 load(
     "//pw_build/bazel_internal:pigweed_internal.bzl",
-    "PW_DEFAULT_COPTS",
     _add_defaults = "add_defaults",
     _compile_cc = "compile_cc",
 )
@@ -262,7 +261,6 @@ def _pw_cc_blob_library_impl(ctx):
         deps = ctx.attr.deps,
         includes = [ctx.bin_dir.path + "/" + ctx.label.package],
         defines = [],
-        user_compile_flags = PW_DEFAULT_COPTS,
     )
 
 pw_cc_blob_library = rule(

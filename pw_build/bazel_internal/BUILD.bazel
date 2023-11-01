@@ -34,6 +34,7 @@ pw_linker_script(
 cc_binary(
     name = "test_linker_script",
     srcs = ["test.cc"],
+    copts = ["-Wno-unused-variable"],
     # Only compatible with platforms that support linker scripts.
     target_compatible_with = select({
         "@platforms//os:macos": ["@platforms//:incompatible"],
@@ -53,6 +54,7 @@ cc_library(
 cc_binary(
     name = "test_transitive_linker_script",
     srcs = ["test.cc"],
+    copts = ["-Wno-unused-variable"],
     # Only compatible with platforms that support linker scripts.
     target_compatible_with = select({
         "@platforms//os:macos": ["@platforms//:incompatible"],
@@ -67,6 +69,7 @@ cc_binary(
     name = "test_direct_linker_script",
     srcs = ["test.cc"],
     additional_linker_inputs = [":linker_script_test"],
+    copts = ["-Wno-unused-variable"],
     linkopts = ["-T $(location :linker_script_test)"],
     # Only compatible with platforms that support linker scripts.
     target_compatible_with = select({

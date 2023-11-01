@@ -17,17 +17,6 @@
 
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 
-STRICT_WARNINGS_COPTS = [
-    "-Wall",
-    "-Wextra",
-    # Make all warnings errors, except for the exemptions below.
-    "-Werror",
-    "-Wno-error=cpp",  # preprocessor #warning statement
-    "-Wno-error=deprecated-declarations",  # [[deprecated]] attribute
-]
-
-PW_DEFAULT_COPTS = STRICT_WARNINGS_COPTS
-
 KYTHE_COPTS = [
     "-Wno-unknown-warning-option",
 ]
@@ -39,7 +28,7 @@ def add_defaults(kwargs):
         kwargs: cc_* arguments to be modified.
     """
 
-    copts = PW_DEFAULT_COPTS + kwargs.get("copts", [])
+    copts = kwargs.get("copts", [])
     kwargs["copts"] = select({
         "@pigweed//pw_build:kythe": copts + KYTHE_COPTS,
         "//conditions:default": copts,

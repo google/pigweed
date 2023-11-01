@@ -53,6 +53,21 @@ pw_cc_toolchain_feature(
     ],
 )
 
+# Although we use similar warnings for clang and arm_gcc, we don't have one
+# centralized list, since we might want to use different warnings based on the
+# compiler in the future.
+pw_cc_toolchain_feature(
+    name = "warnings",
+    copts = [
+        "-Wall",
+        "-Wextra",
+        # Make all warnings errors, except for the exemptions below.
+        "-Werror",
+        "-Wno-error=cpp",  # preprocessor #warning statement
+        "-Wno-error=deprecated-declarations",  # [[deprecated]] attribute
+    ],
+)
+
 filegroup(
     name = "all_linux_files",
     srcs = [
@@ -75,6 +90,7 @@ pw_cc_toolchain(
     cpp = "@llvm_toolchain//:bin/clang++",
     dwp_files = "@llvm_toolchain//:all",
     feature_deps = [
+        ":warnings",
         "@pw_toolchain//features:no_default_cpp_stdlib",
         ":macos_stdlib",
         "@pw_toolchain//features/macos:macos_sysroot",
@@ -131,6 +147,7 @@ pw_cc_toolchain(
     cpp = "@llvm_toolchain//:bin/clang++",
     dwp_files = ":all_linux_files",
     feature_deps = [
+        ":warnings",
         ":linux_sysroot",
         "@pw_toolchain//features:c++17",
         "@pw_toolchain//features:debugging",

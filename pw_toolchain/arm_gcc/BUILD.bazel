@@ -46,6 +46,21 @@ pw_cc_library(
     ],
 )
 
+# Although we use similar warnings for clang and arm_gcc, we don't have one
+# centralized list, since we might want to use different warnings based on the
+# compiler in the future.
+pw_cc_toolchain_feature(
+    name = "warnings",
+    copts = [
+        "-Wall",
+        "-Wextra",
+        # Make all warnings errors, except for the exemptions below.
+        "-Werror",
+        "-Wno-error=cpp",  # preprocessor #warning statement
+        "-Wno-error=deprecated-declarations",  # [[deprecated]] attribute
+    ],
+)
+
 pw_cc_toolchain_feature(
     name = "sysroot",
     builtin_sysroot = "external/gcc_arm_none_eabi_toolchain",
@@ -195,6 +210,7 @@ pw_cc_toolchain_feature(
         ":" + mcpu,
         ":sysroot",
         ":cortex_common",
+        ":warnings",
     ],
     gcc = "@gcc_arm_none_eabi_toolchain//:bin/arm-none-eabi-gcc",
     gcov = "@gcc_arm_none_eabi_toolchain//:bin/arm-none-eabi-gcov",
