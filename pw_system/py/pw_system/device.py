@@ -17,7 +17,6 @@ import logging
 from pathlib import Path
 from types import ModuleType
 from typing import Any, Callable, List, Union, Optional
-import warnings
 
 from pw_hdlc.rpc import (
     HdlcRpcClient,
@@ -54,13 +53,10 @@ class Device:
     Note: use this class as a base for specialized device representations.
     """
 
-    # TODO: b/301496598 - Deprecate read Callable type and accept only
-    # StoppableReadable classes in downstream projects. Then change the argument
-    # name to "reader".
     def __init__(
         self,
         channel_id: int,
-        read: Union[CancellableReader, Callable[[], bytes]],
+        reader: CancellableReader,
         write,
         proto_library: List[Union[ModuleType, Path]],
         detokenizer: Optional[detokenize.Detokenizer] = None,
@@ -96,17 +92,11 @@ class Device:
             for line in log_messages.splitlines():
                 self.logger.info(line)
 
-        if not isinstance(read, CancellableReader):
-            warnings.warn(
-                'The read as Callablle is deprecated. Use CancellableReader'
-                'instead.',
-                DeprecationWarning,
-            )
         self.client: RpcClient
         if use_hdlc_encoding:
             channels = [Channel(self.channel_id, channel_output(write))]
             self.client = HdlcRpcClient(
-                read,
+                reader,
                 self.protos,
                 channels,
                 detokenize_and_log_output,
@@ -115,7 +105,7 @@ class Device:
         else:
             channel = Channel(self.channel_id, write)
             self.client = NoEncodingSingleChannelRpcClient(
-                read,
+                reader,
                 self.protos,
                 channel,
                 client_impl=callback_client_impl,

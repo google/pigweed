@@ -217,14 +217,6 @@ RPC
              # The serial_device object is closed, and reader thread stopped.
              return 0
 
-      .. warning::
-         The ``pw_hdlc.rpc.RpcClient`` derived classes, and
-         ``pw_system.device.Device`` accept a read callback type for legacy
-         reasons and will be deprecated in 2023 Q4. Passing a read callback is
-         unsafe because the read thread can be leaked on exit if the callback is
-         blocking. Using a ``CancellableReader`` guarantees safe thread
-         destruction by cancelling the read process.
-
       .. autoclass:: pw_hdlc.rpc.channel_output
          :members:
          :noindex:

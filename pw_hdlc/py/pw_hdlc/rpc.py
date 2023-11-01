@@ -218,16 +218,6 @@ class SerialReader(CancellableReader):
         self._base_obj.close()
 
 
-# TODO: b/301496598 - Remove this class once a callable is deprecated from the
-# RpcClient objects.
-class _StubReader(CancellableReader):
-    def read(self) -> bytes:
-        return self._base_obj()
-
-    def cancel_read(self) -> None:
-        pass
-
-
 class DataReaderAndExecutor:
     """Reads incoming bytes, data processor that delegates frame handling.
 
@@ -263,11 +253,7 @@ class DataReaderAndExecutor:
         self._frame_handler = frame_handler
         self._handler_threads = handler_threads
 
-        # TODO: b/301496598 - Make thread non-daemon when RpcClients stop
-        # accepting reader's Callable type.
-        self._reader_thread = threading.Thread(
-            target=self._run, daemon=isinstance(self._reader, _StubReader)
-        )
+        self._reader_thread = threading.Thread(target=self._run)
         self._reader_thread_stop = threading.Event()
 
     def start(self) -> None:
@@ -281,20 +267,16 @@ class DataReaderAndExecutor:
 
         This requests that the reading process stop and waits
         for the background thread to exit.
-
-        NOTE: Currently the thread is not joined when providing a ``read()``
-        callback instead of a :py:class:`CancellableReader` through a
-        :py:class:`RpcClient` or :py:class:`Device` object. This will be
-        deprecated in b/301496598.
         """
         _LOG.debug('Stopping read process')
         self._reader_thread_stop.set()
         self._reader.cancel_read()
-
-        # TODO: b/301496598 - Unconditionally join the thread when RpcClients
-        # stop accepting reader's Callable type.
-        if not isinstance(self._reader, _StubReader):
-            self._reader_thread.join()
+        self._reader_thread.join(30)
+        if self._reader_thread.is_alive():
+            warnings.warn(
+                'Timed out waiting for read thread to terminate.\n'
+                'Tip: Use a `CancellableReader` to cancel reads.'
+            )
 
     def _run(self) -> None:
         """Reads raw data in a background thread."""
@@ -412,11 +394,9 @@ class HdlcRpcClient(RpcClient):
     payloads.
     """
 
-    # TODO: b/301496598 - Deprecate reader's Callable type and accept only
-    # CancellableReader classes in downstream projects.
     def __init__(
         self,
-        reader: Union[CancellableReader, Callable[[], bytes]],
+        reader: CancellableReader,
         paths_or_modules: PathsModulesOrProtoLibrary,
         channels: Iterable[pw_rpc.Channel],
         output: Callable[[bytes], Any] = write_to_file,
@@ -483,14 +463,6 @@ class HdlcRpcClient(RpcClient):
         def on_read_error(exc: Exception) -> None:
             _LOG.error('data reader encountered an error', exc_info=exc)
 
-        if not isinstance(reader, CancellableReader):
-            warnings.warn(
-                'The reader as Callablle is deprecated. Use CancellableReader'
-                'instead.',
-                DeprecationWarning,
-            )
-            reader = _StubReader(reader)
-
         reader_and_executor = DataReaderAndExecutor(
             reader, on_read_error, decoder.process_valid_frames, handle_frame
         )
@@ -505,11 +477,9 @@ class NoEncodingSingleChannelRpcClient(RpcClient):
     The caveat is that the provided read function must read entire frames.
     """
 
-    # TODO: b/301496598 - Deprecate reader's Callable type and accept only
-    # CancellableReader classes in downstream projects.
     def __init__(
         self,
-        reader: Union[CancellableReader, Callable[[], bytes]],
+        reader: CancellableReader,
         paths_or_modules: PathsModulesOrProtoLibrary,
         channel: pw_rpc.Channel,
         client_impl: Optional[pw_rpc.client.ClientImpl] = None,
@@ -529,14 +499,6 @@ class NoEncodingSingleChannelRpcClient(RpcClient):
 
         def on_read_error(exc: Exception) -> None:
             _LOG.error('data reader encountered an error', exc_info=exc)
-
-        if not isinstance(reader, CancellableReader):
-            warnings.warn(
-                'The reader as Callablle is deprecated. Use CancellableReader'
-                'instead.',
-                DeprecationWarning,
-            )
-            reader = _StubReader(reader)
 
         reader_and_executor = DataReaderAndExecutor(
             reader, on_read_error, process_data, self.handle_rpc_packet

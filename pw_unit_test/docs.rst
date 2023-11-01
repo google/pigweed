@@ -706,15 +706,16 @@ the results of the test run.
    from pw_hdlc import rpc
    from pw_unit_test.rpc import run_tests
 
-   PROTO = Path(os.environ['PW_ROOT'],
-                'pw_unit_test/pw_unit_test_proto/unit_test.proto')
+   PROTO = Path(
+       os.environ['PW_ROOT'],
+       'pw_unit_test/pw_unit_test_proto/unit_test.proto'
+   )
    serial_device = serial.Serial(device, baud)
    with rpc.SerialReader(serial_device) as reader:
-     with rpc.HdlcRpcClient(
-         reader,
-         PROTO,
-         rpc.default_channels(serial_device.write)) as client:
-      run_tests(client.rpcs())
+       with rpc.HdlcRpcClient(
+           reader, PROTO, rpc.default_channels(serial_device.write)
+       ) as client:
+           run_tests(client.rpcs())
 
 pw_unit_test.rpc
 ----------------
