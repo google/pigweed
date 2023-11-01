@@ -55,27 +55,9 @@ export class LogView extends LitElement {
   @state()
   _lineWrap = false;
 
-  /**
-   * An array containing the logs that remain after the current filter has been
-   * applied.
-   */
-  @state()
-  private _filteredLogs: LogEntry[] = [];
-
   /** The field keys (column values) for the incoming log entries. */
   @state()
   private _columnData: TableColumn[] = [];
-
-  /** A function used for filtering rows that contain a certain substring. */
-  @state()
-  private _stringFilter: FilterFunction = () => true;
-
-  /**
-   * A function used for filtering rows that contain a timestamp within a
-   * certain window.
-   */
-  @state()
-  private _timeFilter: FilterFunction = () => true;
 
   /** A string representing the value contained in the search field. */
   @state()
@@ -85,17 +67,32 @@ export class LogView extends LitElement {
   @state()
   _stateStore: StateStore = new LocalStorageState();
 
-  @state()
-  _state: State;
-
   @query('log-list') _logList!: LogList;
+
+  /**
+   * An array containing the logs that remain after the current filter has been
+   * applied.
+   */
+  private _filteredLogs: LogEntry[] = [];
+
+  /** A function used for filtering rows that contain a certain substring. */
+  private _stringFilter: FilterFunction = () => true;
+
+  /**
+   * A function used for filtering rows that contain a timestamp within a
+   * certain window.
+   */
+  private _timeFilter: FilterFunction = () => true;
+
+  private _state: State;
 
   private _debounceTimeout: NodeJS.Timeout | null = null;
 
+  /** The number of elements in the `logs` array since last updated. */
+  private _lastKnownLogLength: number = 0;
+
   /** The amount of time, in ms, before the filter expression is executed. */
   private readonly FILTER_DELAY = 100;
-  /** The number of elements in the `logs` array since last updated. */
-  private lastKnownLogLength: number = 0;
 
   constructor() {
     super();
@@ -117,10 +114,13 @@ export class LogView extends LitElement {
     super.updated(changedProperties);
 
     if (changedProperties.has('logs')) {
-      const newLogs = this.logs.slice(this.lastKnownLogLength);
-      this.lastKnownLogLength = this.logs.length;
+      const newLogs = this.logs.slice(this._lastKnownLogLength);
+      this._lastKnownLogLength = this.logs.length;
 
       this.updateFieldsFromNewLogs(newLogs);
+    }
+
+    if (changedProperties.has('logs') || changedProperties.has('searchText')) {
       this.filterLogs();
     }
 
@@ -263,16 +263,20 @@ export class LogView extends LitElement {
   }
 
   /**
-   * Combines constituent filter expressions and filters the logs. The filtered
-   * logs are stored in the `_filteredLogs` state property.
+   * Combines filter expressions and filters the logs. The filtered
+   * logs are stored in the `_filteredLogs` property.
    */
   private filterLogs() {
     const combinedFilter = (logEntry: LogEntry) =>
       this._timeFilter(logEntry) && this._stringFilter(logEntry);
 
-    this._filteredLogs = JSON.parse(
-      JSON.stringify(this.logs.filter(combinedFilter)),
-    );
+    const newFilteredLogs = this.logs.filter(combinedFilter);
+
+    if (
+      JSON.stringify(newFilteredLogs) !== JSON.stringify(this._filteredLogs)
+    ) {
+      this._filteredLogs = newFilteredLogs;
+    }
   }
 
   private updateColumnData(event: CustomEvent) {
@@ -322,7 +326,7 @@ export class LogView extends LitElement {
 
   render() {
     return html` <log-view-controls
-        .columnData=${[...this._columnData]}
+        .columnData=${this._columnData}
         .viewId=${this.id}
         .hideCloseButton=${!this.isOneOfMany}
         .stateStore=${this._stateStore}

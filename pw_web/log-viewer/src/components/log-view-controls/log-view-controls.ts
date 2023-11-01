@@ -50,9 +50,6 @@ export class LogViewControls extends LitElement {
   _stateStore: StateStore = new LocalStorageState();
 
   @state()
-  _state: State;
-
-  @state()
   _viewTitle = 'Log View';
 
   @state()
@@ -65,6 +62,8 @@ export class LogViewControls extends LitElement {
   @query('.input-facade') _inputFacade!: HTMLDivElement;
 
   @queryAll('.item-checkboxes') _itemCheckboxes!: HTMLCollection[];
+
+  private _state: State;
 
   /** The timer identifier for debouncing search input. */
   private _inputDebounceTimer: number | null = null;

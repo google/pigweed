@@ -59,14 +59,6 @@ export class LogList extends LitElement {
   @state()
   private _isOverflowingToRight = false;
 
-  /** A number representing the scroll percentage in the horizontal direction. */
-  @state()
-  private _scrollPercentageLeft = 0;
-
-  /** Indicates whether to enable autosizing of incoming log entries. */
-  @state()
-  private _autosizeLocked = false;
-
   /**
    * Indicates whether to automatically scroll the table container to the bottom
    * when new log entries are added.
@@ -74,10 +66,32 @@ export class LogList extends LitElement {
   @state()
   private _autoscrollIsEnabled = true;
 
+  /** A number representing the scroll percentage in the horizontal direction. */
+  @state()
+  private _scrollPercentageLeft = 0;
+
   @query('.table-container') private _tableContainer!: HTMLDivElement;
   @query('table') private _table!: HTMLTableElement;
   @query('tbody') private _tableBody!: HTMLTableSectionElement;
   @queryAll('tr') private _tableRows!: HTMLTableRowElement[];
+
+  /** Indicates whether to enable autosizing of incoming log entries. */
+  private _autosizeLocked = false;
+
+  /** The number of times the `logs` array has been updated. */
+  private logUpdateCount: number = 0;
+
+  /** The last known vertical scroll position of the table container. */
+  private lastScrollTop: number = 0;
+
+  /** The maximum number of log entries to render in the list. */
+  private readonly MAX_ENTRIES = 100_000;
+
+  /** The maximum number of log updates until autosize is disabled. */
+  private readonly AUTOSIZE_LIMIT: number = 8;
+
+  /** The minimum width (in px) for table columns. */
+  private readonly MIN_COL_WIDTH: number = 52;
 
   /**
    * Data used for column resizing including the column index, the starting
@@ -88,17 +102,6 @@ export class LogList extends LitElement {
     startX: number;
     startWidth: number;
   } | null = null;
-
-  /** The number of times the `logs` array has been updated. */
-  private logUpdateCount: number = 0;
-  /** The maximum number of log entries to render in the list. */
-  private readonly MAX_ENTRIES = 100_000;
-  /** The maximum number of log updates until autosize is disabled. */
-  private readonly AUTOSIZE_LIMIT: number = 8;
-  /** The minimum width (in px) for table columns. */
-  private readonly MIN_COL_WIDTH: number = 52;
-  /** The last known vertical scroll position of the table container. */
-  private lastScrollTop: number = 0;
 
   firstUpdated() {
     setInterval(() => this.updateHorizontalOverflowState(), 1000);
@@ -148,9 +151,6 @@ export class LogList extends LitElement {
     if (this.logUpdateCount >= this.AUTOSIZE_LIMIT) {
       this._autosizeLocked = true;
     }
-    if (!this._autosizeLocked) {
-      this.autosizeColumns();
-    }
   };
 
   /** Called when the Lit virtualizer updates its range of entries. */
@@ -168,6 +168,11 @@ export class LogList extends LitElement {
     setTimeout(() => {
       container.scrollTop = container.scrollHeight;
     }, 0); // Complete any rendering tasks before scrolling
+  }
+
+  private onJumpToBottomButtonClick() {
+    this._autoscrollIsEnabled = true;
+    this.scrollTableToBottom();
   }
 
   /**
@@ -285,7 +290,6 @@ export class LogList extends LitElement {
     const scrollY =
       container.scrollHeight - currentScrollTop - container.clientHeight;
     const maxScrollLeft = container.scrollWidth - containerWidth;
-    const rowHeight = this._tableRows[0].offsetHeight;
 
     // Determine scroll direction and update the last known scroll position
     const isScrollingVertically = currentScrollTop !== this.lastScrollTop;
@@ -308,10 +312,6 @@ export class LogList extends LitElement {
     if (Math.abs(scrollY) <= 1) {
       this._autoscrollIsEnabled = true;
       return;
-    }
-
-    if (Math.round(scrollY - rowHeight) >= 1) {
-      this._autoscrollIsEnabled = false;
     }
   };
 
@@ -570,7 +570,7 @@ export class LogList extends LitElement {
     <md-filled-button
       class="jump-to-bottom-btn"
       title="Jump to Bottom"
-      @click="${this.scrollTableToBottom}"
+      @click="${this.onJumpToBottomButtonClick}"
       leading-icon
       data-visible="${this._autoscrollIsEnabled ? 'false' : 'true'}"
     >

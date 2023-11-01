@@ -51,12 +51,11 @@ export class LogViewer extends LitElement {
   @state()
   _logViews: LogView[] = [];
 
-  /** A StateStore object that stores state of views */
+  /** An object that stores the state of log views */
   @state()
   _stateStore: StateStore;
 
-  @state()
-  _state: State;
+  private _state: State;
 
   constructor(state: StateStore) {
     super();
@@ -175,7 +174,7 @@ export class LogViewer extends LitElement {
           (view) => html`
             <log-view
               id=${view.id}
-              .logs=${[...this.logs]}
+              .logs=${this.logs}
               .isOneOfMany=${this._logViews.length > 1}
               .stateStore=${this._stateStore}
               @add-view="${this.addLogView}"
