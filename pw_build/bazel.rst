@@ -330,6 +330,21 @@ Example
 
    }  // namespace my::stuff
 
+Miscellaneous utilities
+-----------------------
+empty_cc_library
+^^^^^^^^^^^^^^^^
+This empty library is used as a placeholder for label flags that need to point
+to a library of some kind, but don't actually need the dependency to amount to
+anything.
+
+unspecified_backend
+^^^^^^^^^^^^^^^^^^^
+A special target used instead of a cc_library as the default condition in
+backend multiplexer select statements to signal that a facade is in an
+unconfigured state. This produces better error messages than e.g. using an
+invalid label.
+
 Toolchains and platforms
 ------------------------
 Pigweed provides clang-based host toolchains for Linux and Mac Arm gcc
