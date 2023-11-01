@@ -142,17 +142,20 @@ class RenodeLauncher(Launcher):
         # renode is slow to start especially during host load
         deadline = time.monotonic() + 120
         connected = False
+        err = None
         while time.monotonic() < deadline:
             try:
                 sock.connect((robot.host, robot.port))
                 connected = True
                 break
-            except OSError:
-                pass
+            except OSError as exc:
+                err = exc
             time.sleep(1)
 
         if not connected:
-            raise RenodeRobotError('failed to connect to robot channel')
+            msg = 'failed to connect to robot channel'
+            msg += f'({robot.host}:{robot.port}): {err}'
+            raise RenodeRobotError(msg)
 
         sock.close()
 
