@@ -943,6 +943,7 @@ struct CodecId:
 
 struct SynchronousConnectionParameters:
   -- Enhanced Setup Synchronous Connection Command (CSA2) (BR/EDR)
+  -- TODO: b/308794058 - Use CodecId instead of VendorCodingFormat
   struct VendorCodingFormat:
     0     [+1]  hci.CodingFormat  coding_format
     $next [+2]  UInt              company_id
