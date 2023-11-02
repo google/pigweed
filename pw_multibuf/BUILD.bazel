@@ -36,13 +36,24 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "test_utils",
+    hdrs = ["public/pw_multibuf/internal/test_utils.h"],
+    includes = ["public"],
+    visibility = [":__subpackages__"],
+    deps = [
+        ":chunk",
+        "//pw_allocator:allocator_metric_proxy",
+        "//pw_allocator:split_free_list_allocator",
+    ],
+)
+
 pw_cc_test(
     name = "chunk_test",
     srcs = ["chunk_test.cc"],
     deps = [
         ":chunk",
-        "//pw_allocator:allocator_metric_proxy",
-        "//pw_allocator:split_free_list_allocator",
+        ":test_utils",
         "//pw_unit_test",
     ],
 )
@@ -59,6 +70,7 @@ pw_cc_test(
     srcs = ["multibuf_test.cc"],
     deps = [
         ":pw_multibuf",
+        ":test_utils",
         "//pw_unit_test",
     ],
 )

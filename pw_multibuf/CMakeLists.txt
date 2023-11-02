@@ -31,12 +31,22 @@ pw_add_library(pw_multibuf.chunk STATIC
     chunk.cc
 )
 
-pw_add_test(pw_multibuf.chunk
+pw_add_library(pw_multibuf.test_utils STATIC
+  HEADERS
+    public/pw_multibuf/internal/test_utils.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_multibuf.chunk
+    pw_allocator.allocator_metric_proxy
+    pw_allocator.split_free_list_allocator
+
+pw_add_test(pw_multibuf.chunk_test STATIC
   SOURCES
     chunk_test.cc
   PRIVATE_DEPS
-    pw_allocator.allocator_metric_proxy
-    pw_allocator.split_free_list_allocator
+    pw_multibuf.chunk
+    pw_multibuf.test_utils
   GROUPS
     modules
     pw_multibuf
@@ -58,6 +68,7 @@ pw_add_test(pw_multibuf.multibuf_test STATIC
     multibuf_test.cc
   PRIVATE_DEPS
     pw_multibuf.multibuf
+    pw_multibuf.test_utils
   GROUPS
     modules
     pw_multibuf

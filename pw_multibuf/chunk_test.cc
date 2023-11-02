@@ -21,126 +21,13 @@
 #endif  // __cplusplus >= 202002L
 
 #include "gtest/gtest.h"
-#include "pw_allocator/allocator_metric_proxy.h"
-#include "pw_allocator/split_free_list_allocator.h"
+#include "pw_multibuf/internal/test_utils.h"
 
 namespace pw::multibuf {
 namespace {
 
-class TrackingAllocator : public pw::allocator::Allocator {
- public:
-  TrackingAllocator(ByteSpan span) : alloc_stats_(kFakeToken) {
-    Status status = alloc_.Init(span, kFakeThreshold);
-    EXPECT_EQ(status, OkStatus());
-    alloc_stats_.Initialize(alloc_);
-  }
-
-  size_t count() const { return alloc_stats_.count(); }
-  size_t used() const { return alloc_stats_.used(); }
-
- protected:
-  void* DoAllocate(size_t size, size_t alignment) override {
-    return alloc_stats_.AllocateUnchecked(size, alignment);
-  }
-  bool DoResize(void* ptr,
-                size_t old_size,
-                size_t old_align,
-                size_t new_size) override {
-    return alloc_stats_.ResizeUnchecked(ptr, old_size, old_align, new_size);
-  }
-  void DoDeallocate(void* ptr, size_t size, size_t alignment) override {
-    alloc_stats_.DeallocateUnchecked(ptr, size, alignment);
-  }
-
- private:
-  const size_t kFakeThreshold = 0;
-  const int32_t kFakeToken = 0;
-
-  pw::allocator::SplitFreeListAllocator<> alloc_;
-  pw::allocator::AllocatorMetricProxy alloc_stats_;
-};
-
-template <auto NumBytes>
-class TrackingAllocatorWithMemory : public pw::allocator::Allocator {
- public:
-  TrackingAllocatorWithMemory() : mem_(), alloc_(mem_) {}
-  size_t count() const { return alloc_.count(); }
-  size_t used() const { return alloc_.used(); }
-  void* DoAllocate(size_t size, size_t alignment) override {
-    return alloc_.AllocateUnchecked(size, alignment);
-  }
-  bool DoResize(void* ptr,
-                size_t old_size,
-                size_t old_align,
-                size_t new_size) override {
-    return alloc_.ResizeUnchecked(ptr, old_size, old_align, new_size);
-  }
-  void DoDeallocate(void* ptr, size_t size, size_t alignment) override {
-    alloc_.DeallocateUnchecked(ptr, size, alignment);
-  }
-
- private:
-  std::array<std::byte, NumBytes> mem_;
-  TrackingAllocator alloc_;
-};
-
-class HeaderChunkRegionTracker final : public ChunkRegionTracker {
- public:
-  static std::optional<OwnedChunk> AllocateRegionAsChunk(
-      pw::allocator::Allocator* alloc, size_t size) {
-    HeaderChunkRegionTracker* tracker = AllocateRegion(alloc, size);
-    if (tracker == nullptr) {
-      return std::nullopt;
-    }
-    std::optional<OwnedChunk> chunk = Chunk::CreateFirstForRegion(*tracker);
-    if (!chunk.has_value()) {
-      tracker->Destroy();
-      return std::nullopt;
-    }
-    return chunk;
-  }
-
-  static HeaderChunkRegionTracker* AllocateRegion(
-      pw::allocator::Allocator* alloc, size_t size) {
-    size_t alloc_size = size + sizeof(HeaderChunkRegionTracker);
-    size_t align = alignof(HeaderChunkRegionTracker);
-    void* ptr = alloc->AllocateUnchecked(alloc_size, align);
-    if (ptr == nullptr) {
-      return nullptr;
-    }
-    std::byte* data =
-        reinterpret_cast<std::byte*>(ptr) + sizeof(HeaderChunkRegionTracker);
-    return new (ptr) HeaderChunkRegionTracker(ByteSpan(data, size), alloc);
-  }
-
-  ByteSpan Region() const final { return region_; }
-  ~HeaderChunkRegionTracker() final {}
-
- protected:
-  void Destroy() final {
-    std::byte* ptr = reinterpret_cast<std::byte*>(this);
-    size_t size = sizeof(HeaderChunkRegionTracker) + region_.size();
-    size_t align = alignof(HeaderChunkRegionTracker);
-    auto alloc = alloc_;
-    std::destroy_at(this);
-    alloc->DeallocateUnchecked(ptr, size, align);
-  }
-  void* AllocateChunkClass() final {
-    return alloc_->Allocate(pw::allocator::Layout::Of<Chunk>());
-  }
-  void DeallocateChunkClass(void* ptr) final {
-    alloc_->Deallocate(ptr, pw::allocator::Layout::Of<Chunk>());
-  }
-
- private:
-  ByteSpan region_;
-  pw::allocator::Allocator* alloc_;
-
-  // NOTE: `region` must directly follow this `FakeChunkRegionTracker`
-  // in memory allocated by allocated by `alloc`.
-  HeaderChunkRegionTracker(ByteSpan region, pw::allocator::Allocator* alloc)
-      : region_(region), alloc_(alloc) {}
-};
+using ::pw::multibuf::internal::HeaderChunkRegionTracker;
+using ::pw::multibuf::internal::TrackingAllocatorWithMemory;
 
 /// Returns literal with ``_size`` suffix as a ``size_t``.
 ///

@@ -37,11 +37,20 @@ pw_source_set("chunk") {
   deps = [ "$dir_pw_assert:check" ]
 }
 
-pw_test("chunk_test") {
-  deps = [
+pw_source_set("test_utils") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_multibuf/internal/test_utils.h" ]
+  public_deps = [
     ":chunk",
     "$dir_pw_allocator:allocator_metric_proxy",
     "$dir_pw_allocator:split_free_list_allocator",
+  ]
+}
+
+pw_test("chunk_test") {
+  deps = [
+    ":chunk",
+    ":test_utils",
   ]
   sources = [ "chunk_test.cc" ]
 }
@@ -54,7 +63,10 @@ pw_source_set("pw_multibuf") {
 }
 
 pw_test("multibuf_test") {
-  deps = [ ":pw_multibuf" ]
+  deps = [
+    ":pw_multibuf",
+    ":test_utils",
+  ]
   sources = [ "multibuf_test.cc" ]
 }
 

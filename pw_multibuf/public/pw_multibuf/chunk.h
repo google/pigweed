@@ -66,9 +66,9 @@ class Chunk {
   ConstByteSpan span() const { return span_; }
 
   std::byte& operator[](size_t index) { return span_[index]; }
-  std::byte operator[](size_t index) const { return span_[index]; }
+  const std::byte& operator[](size_t index) const { return span_[index]; }
 
-  // Iterator declarations
+  // Container declarations
   using element_type = std::byte;
   using value_type = std::byte;
   using size_type = size_t;
@@ -223,7 +223,7 @@ class Chunk {
   /// last element of a ``MultiBuf``.
   //
   // reserved for use by the MultiBuf class.
-  // Chunk* next_in_buf_;
+  Chunk* next_in_buf_;
 
   /// Pointer to the sub-region to which this chunk has exclusive access.
   ///
@@ -240,6 +240,7 @@ class Chunk {
   ByteSpan span_;
 
   friend class OwnedChunk;  // for ``Free``.
+  friend class MultiBuf;    // for ``Free`` and ``next_in_buf_``.
 };
 
 /// An object that manages a single allocated region which is referenced by one
@@ -347,6 +348,14 @@ class OwnedChunk {
   /// This method will acquire a mutex and is not IRQ safe.
   void Release();
 
+  /// Returns the contained ``Chunk*`` and empties this ``OwnedChunk`` without
+  /// releasing the underlying ``Chunk``.
+  Chunk* Take() && {
+    Chunk* result = inner_;
+    inner_ = nullptr;
+    return result;
+  }
+
  private:
   /// Constructs a new ``OwnedChunk`` from an existing ``Chunk*``.
   OwnedChunk(Chunk* inner) : inner_(inner) {}
@@ -354,9 +363,10 @@ class OwnedChunk {
   /// A pointer to the owned ``Chunk``.
   Chunk* inner_;
 
-  /// Allow ``Chunk`` to create an ``OwnedChunk`` using the private constructor
-  /// above.
+  /// Allow ``Chunk`` and ``MultiBuf`` to create ``OwnedChunk``s using the
+  /// private constructor above.
   friend class Chunk;
+  friend class MultiBuf;
 };
 
 }  // namespace pw::multibuf

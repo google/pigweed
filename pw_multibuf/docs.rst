@@ -55,7 +55,8 @@ a ``MultiBufAllocator`` class.
 
 ``MultiBuf`` s consist of a number of ``Chunk`` s of contiguous memory.
 These ``Chunk`` s can be grown, shrunk, modified, or extracted from the
-``MultiBuf``.
+``MultiBuf``. ``MultiBuf`` exposes an ``std::byte`` iterator interface as well
+as a ``Chunk`` iterator available through the ``Chunks()`` method.
 
 An RAII-style ``OwnedChunk`` is also provided, and manages the lifetime of
 ``Chunk`` s which are not currently stored inside of a ``MultiBuf``.
