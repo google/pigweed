@@ -44,7 +44,8 @@ pw_doc_group("core_docs") {
     "code_of_conduct.rst",
     "code_reviews.rst",
     "concepts/index.rst",
-    "contributing.rst",
+    "contributing/index.rst",
+    "contributing/module_docs.rst",
     "editors.rst",
     "embedded_cpp_guide.rst",
     "facades.rst",
@@ -63,19 +64,6 @@ pw_doc_group("core_docs") {
     "overview.rst",
     "size_optimizations.rst",
     "style_guide.rst",
-  ]
-}
-
-pw_doc_group("templates") {
-  sources = [
-    "templates/docs/api.rst",
-    "templates/docs/cli.rst",
-    "templates/docs/concepts.rst",
-    "templates/docs/design.rst",
-    "templates/docs/docs.rst",
-    "templates/docs/gui.rst",
-    "templates/docs/guides.rst",
-    "templates/docs/tutorials/index.rst",
   ]
 }
 
@@ -247,7 +235,6 @@ pw_doc_gen("docs") {
     ":module_docs",
     ":static_assets",
     ":target_docs",
-    ":templates",
     ":third_party_docs",
     "$dir_pigweed/kudzu:docs",
     "$dir_pigweed/seed:docs",

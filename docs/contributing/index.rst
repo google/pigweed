@@ -309,7 +309,7 @@ This will be effectively the same as running the following command before every
   $ pw presubmit
 
 
-.. image:: ../pw_presubmit/docs/pw_presubmit_demo.gif
+.. image:: ../../pw_presubmit/docs/pw_presubmit_demo.gif
   :width: 800
   :alt: pw presubmit demo
 
@@ -400,7 +400,8 @@ See the warning about caching Python packages for multiple platforms in
    :maxdepth: 1
    :hidden:
 
-   embedded_cpp_guide
-   style_guide
-   code_reviews
-   code_of_conduct
+   ../embedded_cpp_guide
+   ../style_guide
+   ../code_reviews
+   ../code_of_conduct
+   module_docs

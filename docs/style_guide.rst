@@ -1223,6 +1223,7 @@ directive. Example:
       :nodescription:
       :noepilog:
 
+.. _documentation-style-doxygen:
 
 Doxygen
 -------
@@ -1594,6 +1595,8 @@ Background:
 * `Second fix <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162990>`_
 * `Third fix <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168555>`_
 * `Fourth fix <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178591>`_
+
+.. _docs-pw-style-cta:
 
 Call-to-action buttons on sales pitch pages (docs.rst)
 ======================================================

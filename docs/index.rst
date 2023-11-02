@@ -24,7 +24,7 @@
   Source Code <https://cs.pigweed.dev/pigweed>
   Code Reviews <https://pigweed-review.googlesource.com>
   Issue Tracker <https://issues.pigweed.dev/issues?q=status:open>
-  docs/contributing
+  docs/contributing/index
   docs/infra/index
   Automated Analysis <automated_analysis>
   Build System <build_system>

@@ -12,6 +12,8 @@ prioritize safety and static allocation. The APIs are broadly similar to those
 of the string classes in the C++ standard library, so familiarity with those
 classes will provide some context around ``pw_string`` design decisions.
 
+.. _module-pw_string-design-inlinestring:
+
 --------------------------
 Design of pw::InlineString
 --------------------------
@@ -77,6 +79,8 @@ null-termination.
 Second, a constexpr specialized form is offered where null termination is
 required through :cpp:func:`pw::string::NullTerminatedLength`. This will only
 return a length if the string is null-terminated.
+
+.. _module-pw_string-roadmap:
 
 -------
 Roadmap

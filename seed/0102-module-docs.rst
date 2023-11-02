@@ -10,6 +10,20 @@
    :proposal_date: 2023-02-10
    :cl: 128811, 130410
 
+---------------------
+Status (October 2023)
+---------------------
+If you're looking for guidelines on how to author module docs, use these:
+:ref:`docs-contrib-moduledocs`
+
+.. caution::
+
+   SEED-0102 is still considered accepted because we are still using some parts
+   of it in our current module docs guidelines. However, over the course of
+   2023 we discovered that other parts of the SEED-0102 plan didn't achieve our
+   goals. Therefore, at this point you should only read SEED-0102 for historical
+   context on how our docs guidelines have evolved.
+
 -------
 Summary
 -------

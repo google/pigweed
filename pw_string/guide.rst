@@ -143,6 +143,7 @@ constructing a string for external use.
     return sb.status();
   }
 
+.. _module-pw_string-guide-stringbuilder:
 
 Build a string with pw::StringBuilder
 =====================================
