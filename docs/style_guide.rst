@@ -1547,20 +1547,53 @@ Why is the changelog organized by category / module? Why not the usual
   how we annotate our commits. We will not be able to publish changelog updates
   every 2 weeks if there is too much manual work involved.
 
+.. _docs-site-scroll:
+
 Site nav scrolling
 ==================
-The site nav was customized (`change #162410`_) to scroll on initial page load
-so that the current page is visible in the site nav. The scrolling logic is
-handled in ``//docs/_static/js/pigweed.js``.
+We have had recurring issues with scrolling on pigweed.dev. This section
+provides context on the issue and fix(es).
 
-The site nav scrolling logic runs on a 1-second delay after the ``load`` event
-to protect against a race condition between our scrolling logic and Sphinx's
-scrolling logic. For example, if the user visits
-``https://pigweed.dev/pw_tokenizer/design.html#bit-tokenization``, the page
-should first scroll to the ``#bit-tokenization`` section and then the site
-nav can scroll to the current page.
+The behavior we want:
 
-.. _change #162410: https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162410
+* The page that you're currently on should be visible in the site nav.
+* URLs with deep links (e.g. ``pigweed.dev/pw_allocator/#size-report``) should
+  instantly jump to the target section (e.g. ``#size-report``).
+* There should be no scrolling animations anywhere on the site. Scrolls should
+  happen instantly.
+
+.. _furo.js: https://github.com/pradyunsg/furo/blob/main/src/furo/assets/scripts/furo.js
+
+A few potential issues at play:
+
+* Our theme (Furo) has non-configurable scrolling logic. See `furo.js`_.
+* There seems to be a race condition between Furo's scrolling behavior and our
+  text-to-diagram tool, Mermaid, which uses JavaScript to render the diagrams
+  on page load. However, we also saw issues on pages that didn't have any
+  diagrams, so that can't be the site-wide root cause.
+
+.. _scrollTop: https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollTop
+.. _scrollIntoView: https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollIntoView
+.. _scroll-behavior: https://developer.mozilla.org/en-US/docs/Web/CSS/scroll-behavior
+
+Our current fix:
+
+* In ``//docs/_static/js/pigweed.js`` we manually scroll the site nav and main
+  content via `scrollTop`_. Note that we previously tried `scrollIntoView`_
+  but it was not an acceptable fix because the main content would always scroll
+  down about 50 pixels, even when a deep link was not present in the URL.
+  We also manually control when Mermaid renders its diagrams.
+* In ``//docs/_static/css/pigweed.css`` we use an aggressive CSS rule
+  to ensure that `scroll-behavior`_ is set to ``auto`` (i.e. instant scrolling)
+  for all elements on the site.
+
+Background:
+
+* `Tracking issue <https://issues.pigweed.dev/issues/303261476>`_
+* `First fix <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162410>`_
+* `Second fix <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/162990>`_
+* `Third fix <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168555>`_
+* `Fourth fix <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178591>`_
 
 Call-to-action buttons on sales pitch pages (docs.rst)
 ======================================================

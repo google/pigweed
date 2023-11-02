@@ -30,6 +30,17 @@
   text-align: center;
 }
 
+/********** Scrolling behavior ***********/
+
+/*
+ * All nodes across the site should scroll instantly. This rule is intentionally
+ * broad and agressive. Context:
+ * https://pigweed.dev/docs/style_guide.html#site-nav-scrolling
+ */
+* {
+  scroll-behavior: auto !important;
+}
+
 /********** General document coloring ***********/
 
 /* Code blocks inside block quotes end up getting italicized. */
