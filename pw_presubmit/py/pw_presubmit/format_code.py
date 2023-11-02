@@ -610,6 +610,14 @@ TYPESCRIPT_FORMAT: CodeFormat = CodeFormat(
     typescript_format_fix,
 )
 
+# TODO: b/308948504 - Add real code formatting support for CSS
+CSS_FORMAT: CodeFormat = CodeFormat(
+    'css',
+    FileFilter(endswith=['.css']),
+    check_trailing_space,
+    fix_trailing_space,
+)
+
 GO_FORMAT: CodeFormat = CodeFormat(
     'Go', FileFilter(endswith=['.go']), check_go_format, fix_go_format
 )
@@ -683,6 +691,7 @@ CODE_FORMATS: Tuple[CodeFormat, ...] = tuple(
             BAZEL_FORMAT,
             CMAKE_FORMAT,
             COPYBARA_FORMAT,
+            CSS_FORMAT,
             C_FORMAT,
             GN_FORMAT,
             GO_FORMAT,
