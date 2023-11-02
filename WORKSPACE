@@ -85,7 +85,11 @@ cipd_repository(
     tag = "git_revision:d342388843734b6c5c50fb7e18cd3a76476b93aa",
 )
 
+# Note that the order of registration matters: Bazel will use the first
+# toolchain compatible with the target platform. So, they should be listed from
+# most-restrive to least-restrictive.
 register_toolchains(
+    "//pw_toolchain/host_clang:host_cc_toolchain_linux_kythe",
     "//pw_toolchain/host_clang:host_cc_toolchain_linux",
     "//pw_toolchain/host_clang:host_cc_toolchain_macos",
 )

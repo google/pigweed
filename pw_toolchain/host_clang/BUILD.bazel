@@ -68,6 +68,13 @@ pw_cc_toolchain_feature(
     ],
 )
 
+pw_cc_toolchain_feature(
+    name = "no_unknown_warning_option",
+    copts = [
+        "-Wno-unknown-warning-option",
+    ],
+)
+
 filegroup(
     name = "all_linux_files",
     srcs = [
@@ -173,6 +180,49 @@ pw_cc_toolchain(
     toolchain_identifier = "host-toolchain-linux",
 )
 
+# A toolchain for Kythe. Identical to the regular Linux toolchain except for
+# one extra feature, ":no_unknown_warning_option".
+pw_cc_toolchain(
+    name = "host_toolchain_linux_kythe",
+    abi_libc_version = "unknown",
+    abi_version = "unknown",
+    all_files = ":all_linux_files",
+    ar = "@llvm_toolchain//:bin/llvm-ar",
+    ar_files = ":all_linux_files",
+    as_files = ":all_linux_files",
+    compiler = "unknown",
+    compiler_files = ":all_linux_files",
+    coverage_files = ":all_linux_files",
+    cpp = "@llvm_toolchain//:bin/clang++",
+    dwp_files = ":all_linux_files",
+    feature_deps = [
+        ":warnings",
+        ":no_unknown_warning_option",
+        ":linux_sysroot",
+        "@pw_toolchain//features:c++17",
+        "@pw_toolchain//features:debugging",
+        "@pw_toolchain//features:reduced_size",
+        "@pw_toolchain//features:no_canonical_prefixes",
+        "@pw_toolchain//features:no_rtti",
+        "@pw_toolchain//features:wno_register",
+        "@pw_toolchain//features:wnon_virtual_dtor",
+    ],
+    gcc = "@llvm_toolchain//:bin/clang",
+    gcov = "@llvm_toolchain//:bin/llvm-cov",
+    host_system_name = "unknown",
+    ld = "@llvm_toolchain//:bin/clang++",
+    linker_files = ":all_linux_files",
+    objcopy = "@llvm_toolchain//:bin/llvm-objcopy",
+    objcopy_files = ":all_linux_files",
+    strip = "@llvm_toolchain//:bin/llvm-strip",
+    strip_files = ":all_linux_files",
+    supports_param_files = 0,
+    target_cpu = "unknown",
+    target_libc = "unknown",
+    target_system_name = "unknown",
+    toolchain_identifier = "host-toolchain-linux",
+)
+
 toolchain(
     name = "host_cc_toolchain_linux",
     exec_compatible_with = [
@@ -182,5 +232,20 @@ toolchain(
         "@platforms//os:linux",
     ],
     toolchain = ":host_toolchain_linux",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "host_cc_toolchain_linux_kythe",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+    ],
+    target_compatible_with = [
+        "@platforms//os:linux",
+    ],
+    # This toolchain will only be selected in toolchain resolution if this
+    # config_setting is active.
+    target_settings = ["//pw_build:kythe"],
+    toolchain = ":host_toolchain_linux_kythe",
     toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
 )

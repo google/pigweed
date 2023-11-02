@@ -17,22 +17,12 @@
 
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 
-KYTHE_COPTS = [
-    "-Wno-unknown-warning-option",
-]
-
 def add_defaults(kwargs):
     """Adds default arguments suitable for both C and C++ code to kwargs.
 
     Args:
         kwargs: cc_* arguments to be modified.
     """
-
-    copts = kwargs.get("copts", [])
-    kwargs["copts"] = select({
-        "@pigweed//pw_build:kythe": copts + KYTHE_COPTS,
-        "//conditions:default": copts,
-    })
 
     # Set linkstatic to avoid building .so files.
     kwargs["linkstatic"] = True
