@@ -190,9 +190,11 @@ public class Service {
       return (Parser<? extends MessageLite>) messageType.getMethod("parser").invoke(null);
     } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
       throw new LinkageError(
-          String.format("Service method was created with %s, which does not have parser() method; "
-                  + "either the class is not a generated protobuf class "
-                  + "or the parser() method was optimized out (see b/293361955)",
+          String.format(
+              "Service method created with %s is missing parser() method, likely optimized out. "
+                  + "Pass MyMessage.parser() instead of MyMessage.class in service declarations. "
+                  + "The class-based API is deprecated and will be removed. "
+                  + "See b/293361955.",
               messageType),
           e);
     }
