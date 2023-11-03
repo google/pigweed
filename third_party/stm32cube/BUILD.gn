@@ -117,7 +117,7 @@ if (dir_pw_third_party_stm32cube == "") {
     inputs = [ "$dir_pw_third_party_stm32cube/hal_driver/Inc/${files.family}_hal_conf_template.h" ]
   }
 
-  config("flags") {
+  config("header_flags") {
     cflags = [ "-Wno-unused-parameter" ]
     cflags_c = [
       "-Wno-redundant-decls",
@@ -126,6 +126,8 @@ if (dir_pw_third_party_stm32cube == "") {
       "-Wno-implicit-function-declaration",
       "-Wno-switch-enum",
     ]
+
+    # TODO: b/301262374 - Provide a better way to detect the compiler type.
     if (get_path_info(pw_toolchain_SCOPE.cc, "file") == "clang") {
       cflags += [ "-Wno-deprecated-volatile" ]
       cflags_c += [ "-Wno-parentheses-equality" ]
@@ -146,6 +148,14 @@ if (dir_pw_third_party_stm32cube == "") {
     visibility = [ ":*" ]
   }
 
+  config("sources_flags") {
+    if (get_path_info(pw_toolchain_SCOPE.cc, "file") == "clang") {
+      cflags_c = [ "-Wno-unused-but-set-variable" ]
+    }
+
+    visibility = [ ":*" ]
+  }
+
   config("public_include_paths") {
     include_dirs = files.include_dirs
     include_dirs += [ "public" ]
@@ -156,7 +166,7 @@ if (dir_pw_third_party_stm32cube == "") {
   # this. If you just want to depend on the hal, depend on stm32cube directly.
   pw_source_set("stm32cube_headers") {
     public_configs = [
-      ":flags",
+      ":header_flags",
       ":public_include_paths",
     ]
     public = [
@@ -172,6 +182,7 @@ if (dir_pw_third_party_stm32cube == "") {
   }
 
   pw_source_set("stm32cube") {
+    configs = [ ":sources_flags" ]
     public_deps = [ ":stm32cube_headers" ]
     sources = files.sources
     deps = [

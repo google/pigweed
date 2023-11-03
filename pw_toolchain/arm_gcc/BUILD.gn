@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 import("//build_overrides/pigweed_environment.gni")
 
 import("$dir_pw_build/target_types.gni")
+import("$dir_pw_toolchain/generate_toolchain.gni")
 
 # Disable obnoxious ABI warning.
 #
@@ -156,8 +157,13 @@ pw_source_set("newlib_os_interface_stubs") {
 # Basic libraries any arm-none-eabi-gcc target should use. This library should
 # be included in pw_build_LINK_DEPS.
 group("arm_none_eabi_gcc_support") {
-  deps = [
-    ":newlib_os_interface_stubs",
-    "$dir_pw_toolchain:wrap_abort",
-  ]
+  deps = [ "$dir_pw_toolchain:wrap_abort" ]
+
+  # TODO: b/301079199 - Stubs are not yet usable on clang.
+  # AttempedToInvokeUnsupportedNewlibOsInterfaceFunction (write_) is triggering,
+  # but not sure why yet.
+  # TODO: b/301262374 - Provide a better way to detect the compiler type.
+  if (get_path_info(pw_toolchain_SCOPE.cc, "file") != "clang") {
+    deps += [ ":newlib_os_interface_stubs" ]
+  }
 }

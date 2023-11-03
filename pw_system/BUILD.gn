@@ -274,6 +274,7 @@ group("system_examples") {
   if (dir_pw_third_party_stm32cube_f4 != "" &&
       dir_pw_third_party_freertos != "") {
     deps += [ ":system_example($dir_pigweed/targets/stm32f429i_disc1_stm32cube:stm32f429i_disc1_stm32cube.size_optimized)" ]
+    deps += [ ":system_example($dir_pigweed/targets/stm32f429i_disc1_stm32cube:stm32f429i_disc1_stm32cube_clang.size_optimized)" ]
   }
   if (dir_pw_third_party_smartfusion_mss != "" &&
       dir_pw_third_party_freertos != "") {
