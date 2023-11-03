@@ -116,8 +116,8 @@ of your Pigweed repository.
 
 Commit Message
 --------------
-See the :ref:`commit message section of the style guide<commit-style>` for how
-commit messages should look.
+See the :ref:`commit message section of the style
+guide<docs-pw-style-commit-message>` for how commit messages should look.
 
 Documentation
 -------------
