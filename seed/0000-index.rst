@@ -19,7 +19,7 @@ All pending, active, and resolved SEEDs are listed below.
   0107-communications
   0108-pw_emu-emulators-frontend
   0109-comms-buffers
-  0110: Memory Allocation Interfaces <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168772>
+  0110-memory-allocation-interfaces
   0111-build-systems
   0112-async-poll
   0113: Modular Bazel C/C++ toolchain API <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/173453>

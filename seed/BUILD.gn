@@ -28,6 +28,7 @@ pw_doc_group("docs") {
     ":0107",
     ":0108",
     ":0109",
+    ":0110",
     ":0111",
     ":0112",
   ]
@@ -68,6 +69,10 @@ pw_doc_group("0108") {
 
 pw_doc_group("0109") {
   sources = [ "0109-comms-buffers.rst" ]
+}
+
+pw_doc_group("0110") {
+  sources = [ "0110-memory-allocation-interfaces.rst" ]
 }
 
 pw_doc_group("0111") {
