@@ -239,8 +239,8 @@ API reference
 =============
 The API reference should:
 
-* Be auto-generated from :ref:`documentation-style-doxygen` (for C++ / C APIs)
-  or autodoc (for Python APIs).
+* Be auto-generated from :ref:`docs-pw-style-doxygen` (for C++ / C APIs) or
+  autodoc (for Python APIs).
 * Provide a code example demonstrating how to use class, at minimum. Consider
   whether it's also helpful to provide more granular examples demonstrating
   how to use each method, variable, etc.

@@ -65,6 +65,8 @@ pw_doc_group("core_docs") {
     "size_optimizations.rst",
     "style/commit_message.rst",
     "style/cpp.rst",
+    "style/doxygen.rst",
+    "style/sphinx.rst",
     "style_guide.rst",
   ]
 }
