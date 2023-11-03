@@ -42,7 +42,7 @@ def _cmd_load(emu: Emulator, args: argparse.Namespace) -> None:
     """Load an executable image via gdb start executing it if pause is
     not set"""
 
-    args.command = ['load']
+    args.gdb_cmd = ['load']
     _cmd_gdb_cmds(emu, args)
 
 
@@ -163,8 +163,7 @@ def _cmd_gdb(emu: Emulator, args: argparse.Namespace) -> None:
 
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     try:
-        cmd = [
-            emu.get_gdb_cmd(),
+        cmd = emu.get_gdb_cmd() + [
             '-ex',
             f'target remote {emu.get_gdb_remote()}',
             executable,

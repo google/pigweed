@@ -37,17 +37,6 @@ from tests.common import ConfigHelper
 _cli_path = Path(
     os.path.join(os.environ['PW_ROOT'], 'pw_emu', 'py', 'pw_emu', '__main__.py')
 ).resolve()
-# Run the arm_gdb.py wrapper directly.
-_arm_none_eabi_gdb_path = Path(
-    os.path.join(
-        os.environ['PW_ROOT'],
-        'pw_env_setup',
-        'py',
-        'pw_env_setup',
-        'entry_points',
-        'arm_gdb.py',
-    )
-).resolve()
 
 
 class TestCli(ConfigHelper):
@@ -160,6 +149,9 @@ class TestNonInteractive(TestCli):
         self.assertEqual(self._run(['reset']).returncode, 0)
         self.assertTrue(os.path.exists(os.path.join(self._wdir.name, 'reset')))
 
+    def test_load(self) -> None:
+        self.assertEqual(self._run(['load', 'executable']).returncode, 0)
+
 
 class TestForeground(TestCli):
     """Test starting in foreground"""
@@ -268,6 +260,13 @@ class TestInteractive(TestCli):
                     break
             self.assertEqual(wait_pid, pid)
             self.assertEqual(ret, 0)
+
+    def test_gdb(self) -> None:
+        res = self._run(['gdb', '-e', 'executable'], stdout=subprocess.PIPE)
+        self.assertEqual(res.returncode, 0)
+        output = res.stdout.decode('ascii')
+        self.assertTrue('target remote' in output, output)
+        self.assertTrue('executable' in output, output)
 
 
 if __name__ == '__main__':
