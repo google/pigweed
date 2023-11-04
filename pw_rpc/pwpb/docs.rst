@@ -127,6 +127,9 @@ Bidirectional streaming RPC
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. attention:: Supported, but the documentation is still under construction.
 
+
+.. _module-pw_rpc_pw_protobuf-client:
+
 Client-side
 -----------
 A corresponding client class is generated for every service defined in the proto

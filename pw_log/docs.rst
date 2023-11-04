@@ -329,6 +329,8 @@ to directly provide dependencies through include paths only, rather than GN
 ``public_deps``. In this case, GN header checking can be disabled with
 ``check_includes = false``.
 
+.. _module-pw_log-bazel-backend_impl:
+
 Bazel
 =====
 In Bazel, log backends may avoid cyclic dependencies by placing the full

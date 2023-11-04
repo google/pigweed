@@ -331,6 +331,9 @@ Example
 
 Miscellaneous utilities
 -----------------------
+
+.. _module-pw_build-bazel-empty_cc_library:
+
 empty_cc_library
 ^^^^^^^^^^^^^^^^
 This empty library is used as a placeholder for label flags that need to point
