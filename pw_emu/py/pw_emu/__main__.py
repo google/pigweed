@@ -207,6 +207,12 @@ def _cmd_term(emu: Emulator, args: argparse.Namespace) -> None:
         raise Error(f'error connecting to channel `{args.channel}`: {err}')
 
 
+def _cmd_resume(emu: Emulator, _args: argparse.Namespace) -> None:
+    """Resume the execution of a paused emulator."""
+
+    emu.cont()
+
+
 def get_parser() -> argparse.ArgumentParser:
     """Command line parser"""
 
@@ -398,6 +404,8 @@ def get_parser() -> argparse.ArgumentParser:
         help='channel name',
     )
 
+    resume = add_cmd('resume', _cmd_resume)
+
     parser.epilog = f"""commands usage:
         {start.format_usage().strip()}
         {restart.format_usage().strip()}
@@ -411,6 +419,7 @@ def get_parser() -> argparse.ArgumentParser:
         {prop_set.format_usage().strip()}
         {gdb_cmds.format_usage().strip()}
         {term.format_usage().strip()}
+        {resume.format_usage().strip()}
     """
 
     return parser

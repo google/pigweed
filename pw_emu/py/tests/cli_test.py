@@ -152,6 +152,9 @@ class TestNonInteractive(TestCli):
     def test_load(self) -> None:
         self.assertEqual(self._run(['load', 'executable']).returncode, 0)
 
+    def test_resume(self) -> None:
+        self.assertEqual(self._run(['resume']).returncode, 0)
+
 
 class TestForeground(TestCli):
     """Test starting in foreground"""
