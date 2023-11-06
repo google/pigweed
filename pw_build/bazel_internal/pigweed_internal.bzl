@@ -27,13 +27,6 @@ def add_defaults(kwargs):
     # Set linkstatic to avoid building .so files.
     kwargs["linkstatic"] = True
 
-    kwargs.setdefault("features", [])
-
-    # Crosstool--adding this line to features disables header modules, which
-    # don't work with -fno-rtti. Note: this is not a command-line argument,
-    # it's "minus use_header_modules".
-    kwargs["features"].append("-use_header_modules")
-
 def _print_platform_impl(_, ctx):
     if hasattr(ctx.rule.attr, "constraint_values"):
         for cv in ctx.rule.attr.constraint_values:
