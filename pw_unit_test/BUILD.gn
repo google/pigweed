@@ -116,6 +116,22 @@ pw_source_set("googletest_handler_adapter") {
   sources = [ "googletest_handler_adapter.cc" ]
 }
 
+pw_source_set("googletest_test_matchers") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_unit_test/googletest_test_matchers.h" ]
+  public_deps = [
+    "$dir_pw_third_party/googletest",
+    dir_pw_result,
+    dir_pw_status,
+  ]
+}
+
+pw_test("googletest_test_matchers_test") {
+  enable_if = pw_unit_test_GOOGLETEST_BACKEND != ""
+  sources = [ "googletest_test_matchers_test.cc" ]
+  deps = [ ":googletest_test_matchers" ]
+}
+
 # Library providing an event handler which outputs human-readable text.
 pw_source_set("simple_printing_event_handler") {
   public_deps = [
@@ -311,4 +327,7 @@ pw_test_group("tests") {
     ":framework_test",
     ":static_library_support_test",
   ]
+  if (dir_pw_third_party_googletest != "") {
+    tests += [ ":googletest_test_matchers_test" ]
+  }
 }

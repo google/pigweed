@@ -105,6 +105,28 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "googletest_test_matchers",
+    hdrs = ["public/pw_unit_test/googletest_test_matchers.h"],
+    includes = ["public"],
+    deps = [
+        "//pw_result",
+        "//pw_status",
+        "@com_google_googletest//:gtest",
+    ],
+)
+
+pw_cc_test(
+    name = "googletest_test_matchers_test",
+    srcs = ["googletest_test_matchers_test.cc"],
+    target_compatible_with = select({
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        ":googletest_test_matchers",
+    ],
+)
+
+pw_cc_library(
     name = "simple_printing_event_handler",
     srcs = ["simple_printing_event_handler.cc"],
     hdrs = [

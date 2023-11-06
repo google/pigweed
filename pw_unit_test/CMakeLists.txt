@@ -74,6 +74,27 @@ pw_add_library(pw_unit_test.googletest_style_event_handler STATIC
     googletest_style_event_handler.cc
 )
 
+if(NOT ${pw_unit_test_GOOGLETEST_BACKEND} STREQUAL "")
+  pw_add_library(pw_unit_test.googletest_test_matchers INTERFACE
+    HEADERS
+      public/pw_unit_test/googletest_test_matchers.h
+    PUBLIC_INCLUDES
+      public
+    PUBLIC_DEPS
+      pw_result
+      pw_status
+      ${pw_unit_test_GOOGLETEST_BACKEND}
+  )
+  pw_add_test(pw_unit_test.googletest_test_matchers_test
+    SOURCES
+      googletest_test_matchers_test.cc
+    PRIVATE_DEPS
+      pw_unit_test.googletest_test_matchers
+    GROUPS
+      pw_unit_test
+  )
+endif()
+
 pw_add_library(pw_unit_test.simple_printing_main STATIC
   SOURCES
     simple_printing_main.cc
