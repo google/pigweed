@@ -40,7 +40,11 @@ pw_unit_test implements a subset of GoogleTest. Supported features include:
 * Test and test suite declarations.
 * Most ``EXPECT`` and ``ASSERT`` macros, including ``EXPECT_OK`` and
   ``ASSERT_OK`` for functions returning a status.
-* ``StatusIs`` matcher to expect a specific ``pw::Status`` other that `OK`.
+* ``ASSERT_OK_AND_ASSIGN`` to test assigning a value when status is ``OK`` or
+  fail the test.
+* ``StatusIs`` matcher to expect a specific ``pw::Status`` other that ``OK``.
+* ``IsOkAndHolds`` matcher to expect an object's status is ``OK`` and the value
+  matches an expected value.
 * Stream-style expectation messages, such as
   ``EXPECT_EQ(val, 5) << "Inputs: " << input``. Messages are currently ignored.
 

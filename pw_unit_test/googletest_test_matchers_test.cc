@@ -20,6 +20,9 @@
 namespace pw::unit_test {
 namespace {
 
+using ::testing::Eq;
+using ::testing::Not;
+
 TEST(TestMatchers, AssertOk) { ASSERT_OK(OkStatus()); }
 TEST(TestMatchers, AssertOkStatusWithSize) { ASSERT_OK(StatusWithSize(123)); }
 TEST(TestMatchers, AssertOkResult) { ASSERT_OK(Result<int>(123)); }
@@ -110,6 +113,52 @@ TEST(TestMatchers, StatusIsSuccessResult) {
   EXPECT_THAT(Result<int>(Status::DataLoss()), StatusIs(Status::DataLoss()));
   EXPECT_THAT(Result<int>(Status::Unauthenticated()),
               StatusIs(Status::Unauthenticated()));
+}
+
+TEST(IsOkAndHoldsTest, StatusWithSize) {
+  const auto status_with_size = StatusWithSize{OkStatus(), 42};
+  EXPECT_THAT(status_with_size, IsOkAndHolds(Eq(42u)));
+}
+
+TEST(IsOkAndHoldsTest, Result) {
+  auto value = Result<int>{42};
+  EXPECT_THAT(value, IsOkAndHolds(Eq(42)));
+}
+
+TEST(IsOkAndHoldsTest, BadStatusWithSize) {
+  const auto status_with_size = StatusWithSize{Status::InvalidArgument(), 0};
+  EXPECT_THAT(status_with_size, Not(IsOkAndHolds(Eq(42u))));
+}
+
+TEST(IsOkAndHoldsTest, WrongStatusWithSize) {
+  const auto status_with_size = StatusWithSize{OkStatus(), 100};
+  EXPECT_THAT(status_with_size, IsOkAndHolds(Not(Eq(42u))));
+  EXPECT_THAT(status_with_size, Not(IsOkAndHolds(Eq(42u))));
+}
+
+TEST(IsOkAndHoldsTest, BadResult) {
+  const auto value = Result<int>{Status::InvalidArgument()};
+  EXPECT_THAT(value, Not(IsOkAndHolds(Eq(42))));
+}
+
+TEST(IsOkAndHoldsTest, WrongResult) {
+  const auto value = Result<int>{100};
+  EXPECT_THAT(value, IsOkAndHolds(Not(Eq(42))));
+  EXPECT_THAT(value, Not(IsOkAndHolds(Eq(42))));
+}
+
+TEST(AssertOkAndAssignTest, OkResult) {
+  const auto value = Result<int>(5);
+
+  int existing_value = 0;
+  ASSERT_OK_AND_ASSIGN(existing_value, value);
+  EXPECT_EQ(5, existing_value);
+
+  ASSERT_OK_AND_ASSIGN(int declare_and_assign, value);
+  EXPECT_EQ(5, declare_and_assign);
+
+  ASSERT_OK_AND_ASSIGN(auto& declare_auto_ref_and_assign, value);
+  EXPECT_EQ(5, declare_auto_ref_and_assign);
 }
 
 // The following test is commented out and is only for checking what
