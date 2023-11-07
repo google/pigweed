@@ -6,7 +6,7 @@
 .. seed::
    :number: 110
    :name: Memory Allocation Interfaces
-   :status: Open for Comments
+   :status: Accepted
    :proposal_date: 2023-09-06
    :cl: 168772
 
