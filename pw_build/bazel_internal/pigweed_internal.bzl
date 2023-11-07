@@ -17,16 +17,6 @@
 
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 
-def add_defaults(kwargs):
-    """Adds default arguments suitable for both C and C++ code to kwargs.
-
-    Args:
-        kwargs: cc_* arguments to be modified.
-    """
-
-    # Set linkstatic to avoid building .so files.
-    kwargs["linkstatic"] = True
-
 def _print_platform_impl(_, ctx):
     if hasattr(ctx.rule.attr, "constraint_values"):
         for cv in ctx.rule.attr.constraint_values:

@@ -14,10 +14,6 @@
 """Utilities for fuzzing."""
 
 load("@rules_fuzzing//fuzzing:cc_defs.bzl", "cc_fuzz_test")
-load(
-    "//pw_build/bazel_internal:pigweed_internal.bzl",
-    _add_defaults = "add_defaults",
-)
 
 def pw_cc_fuzz_test(**kwargs):
     """Wrapper for cc_fuzz_test that adds required Pigweed dependencies.
@@ -34,5 +30,4 @@ def pw_cc_fuzz_test(**kwargs):
 
     # TODO: b/292628774 - Only linux is supported for now.
     kwargs["target_compatible_with"] = ["@platforms//os:linux"]
-    _add_defaults(kwargs)
     cc_fuzz_test(**kwargs)

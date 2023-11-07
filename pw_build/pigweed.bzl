@@ -18,7 +18,6 @@ load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_c
 load("@rules_cc//cc:action_names.bzl", "C_COMPILE_ACTION_NAME")
 load(
     "//pw_build/bazel_internal:pigweed_internal.bzl",
-    _add_defaults = "add_defaults",
     _compile_cc = "compile_cc",
 )
 
@@ -31,12 +30,8 @@ FUZZTEST_OPTS = [
 def pw_cc_binary(**kwargs):
     """Wrapper for cc_binary providing some defaults.
 
-    Specifically, this wrapper,
-
-    *  Adds default copts.
-    *  Adds a dep on the pw_assert backend.
-    *  Sets "linkstatic" to True.
-    *  Disables header modules (via the feature -use_header_modules).
+    Specifically, this wrapper adds deps on backend_impl targets for pw_assert
+    and pw_log.
 
     Args:
       **kwargs: Passed to cc_binary.
@@ -48,22 +43,17 @@ def pw_cc_binary(**kwargs):
     # the build.
     kwargs["deps"] = kwargs["deps"] + ["@pigweed//targets:pw_assert_backend_impl"]
     kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_log:backend_impl"]
-    _add_defaults(kwargs)
     native.cc_binary(**kwargs)
 
 def pw_cc_library(**kwargs):
-    """Wrapper for cc_library providing some defaults.
+    """Wrapper for cc_library.
 
-    Specifically, this wrapper,
-
-    *  Adds default copts.
-    *  Sets "linkstatic" to True.
-    *  Disables header modules (via the feature -use_header_modules).
+    TODO: b/267498492 - This wrapper no longer does anything. Remove it once
+    all projects have been migrated off of it.
 
     Args:
       **kwargs: Passed to cc_library.
     """
-    _add_defaults(kwargs)
     native.cc_library(**kwargs)
 
 def pw_cc_test(**kwargs):
@@ -71,11 +61,8 @@ def pw_cc_test(**kwargs):
 
     Specifically, this wrapper,
 
-    *  Adds default copts.
     *  Adds a dep on the pw_assert backend.
     *  Adds a dep on //pw_unit_test:simple_printing_main
-    *  Sets "linkstatic" to True.
-    *  Disables header modules (via the feature -use_header_modules).
 
     In addition, a .lib target is created that's a cc_library with the same
     kwargs. Such library targets can be used as dependencies of firmware images
@@ -94,7 +81,6 @@ def pw_cc_test(**kwargs):
     # way to handle the facades without introducing a circular dependency into
     # the build.
     kwargs["deps"] = kwargs["deps"] + ["@pigweed//targets:pw_assert_backend_impl"]
-    _add_defaults(kwargs)
 
     # Some tests may include FuzzTest, which includes headers that trigger
     # warnings. This check must be done here and not in `add_defaults`, since
@@ -135,11 +121,8 @@ def pw_cc_perf_test(**kwargs):
 
     This macro produces a cc_binary and,
 
-    *  Adds default copts.
     *  Adds a dep on the pw_assert backend.
     *  Adds a dep on //pw_perf_test:logging_main
-    *  Sets "linkstatic" to True.
-    *  Disables header modules (via the feature -use_header_modules).
 
     Args:
       **kwargs: Passed to cc_binary.
@@ -147,7 +130,6 @@ def pw_cc_perf_test(**kwargs):
     kwargs["deps"] = kwargs.get("deps", []) + \
                      ["@pigweed//pw_perf_test:logging_main"]
     kwargs["deps"] = kwargs["deps"] + ["@pigweed//targets:pw_assert_backend_impl"]
-    _add_defaults(kwargs)
     native.cc_binary(**kwargs)
 
 def pw_cc_facade(**kwargs):
@@ -160,7 +142,6 @@ def pw_cc_facade(**kwargs):
     if "srcs" in kwargs.keys():
         fail("'srcs' attribute does not exist in pw_cc_facade, please use \
         main implementing target.")
-    _add_defaults(kwargs)
     native.cc_library(**kwargs)
 
 def host_backend_alias(name, backend):
