@@ -180,7 +180,6 @@ _DEFAULT_SETTINGS: EditorSettingsDict = OrderedDict(
         "gulp.autoDetect": "off",
         "jake.autoDetect": "off",
         "npm.autoDetect": "off",
-        "clangd.onConfigChanged": "restart",
         "C_Cpp.intelliSenseEngine": "Disabled",
         "[cpp]": OrderedDict(
             {"editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"}
