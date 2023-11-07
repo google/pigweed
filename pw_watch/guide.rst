@@ -131,9 +131,7 @@ Automatically reload docs
 -------------------------
 When using ``--serve-docs``, by default the docs will be rebuilt when changed,
 just like code files. However, you will need to manually reload the page in
-your browser to see changes. If you install the ``httpwatcher`` Python package
-into your Pigweed environment (``pip install httpwatcher``), docs pages will
-automatically reload when changed.
+your browser to see changes.
 
 Disable automatic rebuilds
 --------------------------

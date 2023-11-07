@@ -64,11 +64,6 @@ from typing import (
     Tuple,
 )
 
-try:
-    import httpwatcher  # type: ignore[import]
-except ImportError:
-    httpwatcher = None
-
 from watchdog.events import FileSystemEventHandler  # type: ignore[import]
 from watchdog.observers import Observer  # type: ignore[import]
 
@@ -691,19 +686,6 @@ def _simple_docs_server(
     return simple_http_server_thread
 
 
-def _httpwatcher_docs_server(
-    address: str, port: int, path: Path
-) -> Callable[[], None]:
-    def httpwatcher_thread():
-        # Disable logs from httpwatcher and deps
-        logging.getLogger('httpwatcher').setLevel(logging.CRITICAL)
-        logging.getLogger('tornado').setLevel(logging.CRITICAL)
-
-        httpwatcher.watch(path, host=address, port=port)
-
-    return httpwatcher_thread
-
-
 def _serve_docs(
     build_dir: Path,
     docs_path: Path,
@@ -712,17 +694,7 @@ def _serve_docs(
 ) -> None:
     address = '127.0.0.1'
     docs_path = build_dir.joinpath(docs_path.joinpath('html'))
-
-    if httpwatcher is not None:
-        _LOG.info('Using httpwatcher. Docs will reload when changed.')
-        server_thread = _httpwatcher_docs_server(address, port, docs_path)
-    else:
-        _LOG.info(
-            'Using simple HTTP server. Docs will not reload when changed.'
-        )
-        _LOG.info('Install httpwatcher and restart for automatic docs reload.')
-        server_thread = _simple_docs_server(address, port, docs_path)
-
+    server_thread = _simple_docs_server(address, port, docs_path)
     _LOG.info('Serving docs at http://%s:%d', address, port)
 
     # Spin up server in a new thread since it blocks
