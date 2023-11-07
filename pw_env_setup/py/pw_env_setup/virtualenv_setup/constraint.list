@@ -41,7 +41,7 @@ mccabe==0.6.1
 mypy==1.6.1
 mypy-extensions==1.0.0
 mypy-protobuf==3.5.0
-parameterized==0.8.1
+parameterized==0.9.0
 parso==0.8.3
 pathspec==0.11.1
 pexpect==4.8.0
