@@ -349,6 +349,34 @@ class Config:
     def get_targets(self) -> List[str]:
         return list(self.get(['targets'], entry_type=dict).keys())
 
+    def _subst(self, string: str) -> str:
+        """Substitutes $pw_<subst_type>{arg} statements."""
+
+        match = re.search(r'\$pw_([^{]+){([^}]+)}', string)
+        if not match:
+            return string
+
+        subst_type = match.group(1)
+        arg = match.group(2)
+
+        if subst_type == 'env':
+            value = os.environ.get(arg)
+            if value is None:
+                msg = f'Environment variable `{arg}` not set'
+                raise ConfigError(self.path, msg)
+            return string.replace(f'$pw_{subst_type}{{{arg}}}', value)
+
+        raise ConfigError(self.path, f'Invalid substitution type: {subst_type}')
+
+    def _subst_list(self, items: List[Any]) -> List[Any]:
+        new_list = []
+        for item in items:
+            if isinstance(item, str):
+                new_list.append(self._subst(item))
+            else:
+                new_list.append(item)
+        return new_list
+
     def get(
         self,
         keys: List[str],
@@ -383,14 +411,21 @@ class Config:
                 raise ConfigError(self.path, f'{keys_str}: not found')
             entry = entry.get(key)
 
-        if not entry:
-            if entry_type:
-                return entry_type()
-            return entry
+        if entry is None:
+            if optional:
+                if entry_type:
+                    return entry_type()
+                return None
+            raise ConfigError(self.path, f'{keys_str}: not found')
 
         if entry_type and not isinstance(entry, entry_type):
             msg = f'{keys_str}: expected entry of type `{entry_type}`'
             raise ConfigError(self.path, msg)
+
+        if isinstance(entry, str):
+            entry = self._subst(entry)
+        elif isinstance(entry, list):
+            entry = self._subst_list(entry)
 
         return entry
 

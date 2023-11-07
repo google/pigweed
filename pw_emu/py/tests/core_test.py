@@ -26,9 +26,12 @@ import unittest
 from pathlib import Path
 from typing import Any, Dict
 
+from unittest.mock import patch
+
 from pw_emu.core import (
     AlreadyRunning,
     Config,
+    ConfigError,
     Handles,
     InvalidTarget,
     InvalidChannelName,
@@ -389,6 +392,88 @@ class TestHandles(unittest.TestCase):
         self.assertEqual(handles.target, 'test-target')
         self.assertEqual(handles.config, 'test-config')
         tmp.cleanup()
+
+
+class TestConfig(ConfigHelper):
+    """Stop tests for valid config."""
+
+    _config: Dict[str, Any] = {
+        'top': 'entry',
+        'multi': {
+            'level': {
+                'entry': 0,
+            },
+        },
+        'subst': 'a/$pw_env{PW_EMU_TEST_ENV_SUBST}/c',
+        'targets': {
+            'test-target': {
+                'entry': [1, 2, 3],
+                'mock-emu': {
+                    'entry': 'test',
+                },
+            }
+        },
+        'mock-emu': {
+            'executable': _mock_emu,
+        },
+        'list': ['a', '$pw_env{PW_EMU_TEST_ENV_SUBST}', 'c'],
+        'bad-subst-type': '$pw_bad_subst_type{test}',
+    }
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._cfg = Config(Path(self._config_file), 'test-target', 'mock-emu')
+
+    def test_top_entry(self) -> None:
+        self.assertEqual(self._cfg.get(['top']), 'entry')
+
+    def test_empty_subst(self) -> None:
+        with self.assertRaises(ConfigError):
+            self._cfg.get(['subst'])
+
+    def test_subst(self) -> None:
+        with patch.dict('os.environ', {'PW_EMU_TEST_ENV_SUBST': 'b'}):
+            self.assertEqual(self._cfg.get(['subst']), 'a/b/c')
+
+    def test_multi_level_entry(self) -> None:
+        self.assertEqual(self._cfg.get(['multi', 'level', 'entry']), 0)
+
+    def test_get_target(self) -> None:
+        self.assertEqual(self._cfg.get_targets(), ['test-target'])
+
+    def test_target(self) -> None:
+        self.assertEqual(self._cfg.get_target(['entry']), [1, 2, 3])
+
+    def test_target_emu(self) -> None:
+        self.assertEqual(self._cfg.get_target_emu(['entry']), 'test')
+
+    def test_type_checking(self) -> None:
+        with self.assertRaises(ConfigError):
+            self._cfg.get(['top'], entry_type=int)
+        self._cfg.get(['top'], entry_type=str)
+        self._cfg.get_target(['entry'], entry_type=list)
+        self._cfg.get_target_emu(['entry'], entry_type=str)
+        self._cfg.get(['targets'], entry_type=dict)
+
+    def test_non_optional(self) -> None:
+        with self.assertRaises(ConfigError):
+            self._cfg.get(['non-existing'], optional=False)
+
+    def test_optional(self) -> None:
+        self.assertEqual(self._cfg.get(['non-existing']), None)
+        self.assertEqual(self._cfg.get(['non-existing'], entry_type=int), 0)
+        self.assertEqual(self._cfg.get(['non-existing'], entry_type=str), '')
+        self.assertEqual(self._cfg.get(['non-existing'], entry_type=list), [])
+
+    def test_list(self) -> None:
+        with self.assertRaises(ConfigError):
+            self._cfg.get(['list'])
+        with patch.dict('os.environ', {'PW_EMU_TEST_ENV_SUBST': 'b'}):
+            self.assertEqual(self._cfg.get(['list']), ['a', 'b', 'c'])
+
+    def test_bad_subst(self) -> None:
+        with self.assertRaises(ConfigError):
+            self._cfg.get(['bad-subst-type'])
 
 
 if __name__ == '__main__':

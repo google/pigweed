@@ -11,8 +11,9 @@ The emulators configuration is part of the Pigweed root configuration file
 (``pigweed.json``) and reside in the ``pw:pw_emu`` namespace.
 
 Projects can define emulation targets in the Pigweed root configuration file and
-can also import predefined targets from other files. The ``pw_emu`` module
-provides a set of targets as examples and to promote reusability.
+can also import predefined targets from other files (configuration
+fragments). The ``pw_emu`` module provides a set of targets as examples and to
+promote reusability.
 
 The target configuration allows users to start other programs before
 or after starting the main emulator process. This allows extending the
@@ -144,3 +145,11 @@ The following expressions are substituted in the ``pre-start-cmd`` and
 
 * ``$pw_emu_channel_path{channel-name}``: replaces the statement with the path
   for the given channel name; the channel type should be ``pty``
+
+
+The followng expressions are substituted in configuration strings, including
+configuration framents:
+
+* ``$pw_env{envvar}``: replaces statement with the value of the ``envar``
+  environment variable; if the variable does not exists in the environment a
+  configuration error is raised
