@@ -45,8 +45,8 @@ constraint_value(
     constraint_setting = "//third_party/freertos:freertos_config_setting",
 )
 
-# TODO: b/261506064 - Additional constraint values for configuring stm32cube
-# need to be added here, once constraint settings for stm32cube are defined.
+# TODO: b/301334234 - Set the flags currently in the stm32f429i config in
+# .bazelrc using this platform, once that's supported.
 platform(
     name = "platform",
     constraint_values = [
