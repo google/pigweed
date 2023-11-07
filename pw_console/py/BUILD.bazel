@@ -201,6 +201,17 @@ py_test(
 )
 
 py_test(
+    name = "socket_client_test",
+    size = "small",
+    srcs = [
+        "socket_client_test.py",
+    ],
+    deps = [
+        ":pw_console",
+    ],
+)
+
+py_test(
     name = "repl_pane_test",
     size = "small",
     srcs = [

@@ -87,6 +87,7 @@ pw_python_package("py") {
     "log_store_test.py",
     "log_view_test.py",
     "repl_pane_test.py",
+    "socket_client_test.py",
     "table_test.py",
     "text_formatting_test.py",
     "window_manager_test.py",
