@@ -1,9 +1,13 @@
 # Change Log
 
-All notable changes to the "pigweed-ide" extension will be documented in this file.
+## [0.1.1]
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+- Fixes cases where "Pigweed: Check Extensions" was not running on startup.
 
-## [Unreleased]
+## [0.1.0]
 
-- Initial release
+- Adds the "Pigweed: Check Extensions" command, which prompts the user to
+  install all recommended extensions and disable all unwanted extensions, as
+  defined by the project's `extensions.json`. This makes "recommended"
+  extensions required, and "unwanted" extensions forbidden, allowing Pigweed
+  projects to define more consistent development environments for their teams.

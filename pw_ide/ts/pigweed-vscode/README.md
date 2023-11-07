@@ -23,11 +23,3 @@ This is highly experimental!
 - Install the build tool: `npm install -g @vscode/vsce`
 
 - Build the VSIX: `vsce package`
-
-## Changelog
-
-### 0.0.1
-
-- Adds the "Pigweed: Check Extensions" command, which prompts the user to
-  install all recommended extensions and disable all unwanted extensions, as
-  defined by the project's `extensions.json`.

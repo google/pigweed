@@ -210,7 +210,7 @@ async function disableUnwantedExtensions(unwanted: string[]) {
   );
 }
 
-async function checkExtensions(context: vscode.ExtensionContext) {
+async function checkExtensions() {
   const extensions = await getExtensionsJson();
 
   const num_recommendations = extensions.recommendations?.length ?? 0;
@@ -230,10 +230,11 @@ async function checkExtensions(context: vscode.ExtensionContext) {
 export function activate(context: vscode.ExtensionContext) {
   const pwCheckExtensions = vscode.commands.registerCommand(
     'pigweed.check-extensions',
-    () => checkExtensions(context),
+    () => checkExtensions(),
   );
 
   context.subscriptions.push(pwCheckExtensions);
+  checkExtensions();
 }
 
 export function deactivate() {

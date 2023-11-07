@@ -6,8 +6,10 @@
     "lib": [
       "ES2020"
     ],
+    "exclude": [
+      "*.js"
+    ],
     "sourceMap": true,
-    "rootDir": "src",
     "strict": true
   }
 }

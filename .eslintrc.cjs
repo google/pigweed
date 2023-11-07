@@ -31,6 +31,7 @@ module.exports = {
     "bazel-pigweed",
     "bazel-testlogs",
     "node-modules",
+    "pw_ide/ts/pigweed-vscode/webpack.config.js",
     "pw_web/log-viewer/src/assets/**",
     "pw_web/log-viewer/src/legacy/**/*",
     "pw_web/log-viewer/src/models/**",
