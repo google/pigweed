@@ -49,6 +49,9 @@
 
 namespace pw::fuzzer {
 
+template <typename T>
+using Domain = fuzztest::Domain<T>;
+
 ////////////////////////////////////////////////////////////////
 // Arbitrary domains
 // Additional specializations are provided with the Pigweed domains.

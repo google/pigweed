@@ -55,7 +55,6 @@
       fuzztest::internal::TypeCheckFuzzTest(test_name).IgnoreFunction()
 
 namespace fuzztest {
-namespace internal {
 
 /// Stub for a FuzzTest domain that produces values.
 ///
@@ -70,6 +69,8 @@ template <typename T>
 struct Domain {
   using value_type = T;
 };
+
+namespace internal {
 
 /// Stub for a FuzzTest domain that produces containers of values.
 ///
@@ -149,7 +150,7 @@ namespace internal_no_adl {
 
 template <typename T>
 auto Arbitrary() {
-  return internal::Domain<T>{};
+  return Domain<T>{};
 }
 
 ////////////////////////////////////////////////////////////////
@@ -159,20 +160,20 @@ auto Arbitrary() {
 
 // https://github.com/google/fuzztest/blob/main/doc/domains-reference.md#oneof
 template <int&... ExplicitArgumentBarrier, typename T, typename... Domains>
-auto OneOf(internal::Domain<T>, Domains...) {
-  return internal::Domain<T>{};
+auto OneOf(Domain<T>, Domains...) {
+  return Domain<T>{};
 }
 
 // https://github.com/google/fuzztest/blob/main/doc/domains-reference.md#oneof
 template <typename T>
 auto Just(T) {
-  return internal::Domain<T>{};
+  return Domain<T>{};
 }
 
 // https://github.com/google/fuzztest/blob/main/doc/domains-reference.md#map
 template <int&... ExplicitArgumentBarrier, typename Mapper, typename... Inner>
 auto Map(Mapper, Inner...) {
-  return internal::Domain<std::decay_t<
+  return Domain<std::decay_t<
       std::invoke_result_t<Mapper, typename Inner::value_type&...>>>{};
 }
 
@@ -184,14 +185,14 @@ template <int&... ExplicitArgumentBarrier,
           typename FlatMapper,
           typename... Inner>
 auto FlatMap(FlatMapper, Inner...) {
-  return internal::Domain<
+  return Domain<
       typename FlatMapOutputDomain<FlatMapper, Inner...>::value_type>{};
 }
 
 // https://github.com/google/fuzztest/blob/main/doc/domains-reference.md#filter
 template <int&... ExplicitArgumentBarrier, typename T, typename Pred>
-auto Filter(Pred, internal::Domain<T>) {
-  return internal::Domain<T>{};
+auto Filter(Pred, Domain<T>) {
+  return Domain<T>{};
 }
 
 ////////////////////////////////////////////////////////////////
@@ -271,7 +272,7 @@ inline auto PrintableAsciiChar() { return InRange<char>(32, 126); }
 // TODO: b/285775246 - Add support for `fuzztest::InRegexp`.
 // https://github.com/google/fuzztest/blob/main/doc/domains-reference.md#inregexp-domains
 // inline auto InRegexp(std::string_view) {
-//   return internal::Domain<std::string_view>{};
+//   return Domain<std::string_view>{};
 // }
 
 ////////////////////////////////////////////////////////////////
@@ -280,12 +281,12 @@ inline auto PrintableAsciiChar() { return InRange<char>(32, 126); }
 
 template <typename T>
 auto ElementOf(std::initializer_list<T>) {
-  return internal::Domain<T>{};
+  return Domain<T>{};
 }
 
 template <typename T>
 auto BitFlagCombinationOf(std::initializer_list<T>) {
-  return internal::Domain<T>{};
+  return Domain<T>{};
 }
 
 ////////////////////////////////////////////////////////////////
@@ -293,19 +294,19 @@ auto BitFlagCombinationOf(std::initializer_list<T>) {
 // https://github.com/google/fuzztest/blob/main/doc/domains-reference.md#container-combinators
 
 template <typename T, int&... ExplicitArgumentBarrier, typename U>
-auto ContainerOf(internal::Domain<U>) {
+auto ContainerOf(Domain<U>) {
   return internal::ContainerDomain<T>{};
 }
 
 template <template <typename, typename...> class T,
           int&... ExplicitArgumentBarrier,
           typename U>
-auto ContainerOf(internal::Domain<U>) {
+auto ContainerOf(Domain<U>) {
   return internal::ContainerDomain<T<U>>{};
 }
 
 template <typename T, int&... ExplicitArgumentBarrier, typename U>
-auto UniqueElementsContainerOf(internal::Domain<U>) {
+auto UniqueElementsContainerOf(Domain<U>) {
   return internal::ContainerDomain<T>{};
 }
 
@@ -319,62 +320,62 @@ auto NonEmpty(internal::ContainerDomain<T> inner) {
 // https://github.com/google/fuzztest/blob/main/doc/domains-reference.md#container-combinators
 
 template <int&... ExplicitArgumentBarrier, typename T, typename... Domains>
-auto ArrayOf(internal::Domain<T>, Domains... others) {
-  return internal::Domain<std::array<T, 1 + sizeof...(others)>>{};
+auto ArrayOf(Domain<T>, Domains... others) {
+  return Domain<std::array<T, 1 + sizeof...(others)>>{};
 }
 
 template <int N, int&... ExplicitArgumentBarrier, typename T>
-auto ArrayOf(const internal::Domain<T>&) {
-  return internal::Domain<std::array<T, N>>{};
+auto ArrayOf(const Domain<T>&) {
+  return Domain<std::array<T, N>>{};
 }
 
 template <typename T, int&... ExplicitArgumentBarrier, typename... Inner>
 auto StructOf(Inner...) {
-  return internal::Domain<T>{};
+  return Domain<T>{};
 }
 
 template <typename T, int&... ExplicitArgumentBarrier>
 auto ConstructorOf() {
-  return internal::Domain<T>{};
+  return Domain<T>{};
 }
 
 template <typename T,
           int&... ExplicitArgumentBarrier,
           typename U,
           typename... Inner>
-auto ConstructorOf(internal::Domain<U>, Inner... inner) {
+auto ConstructorOf(Domain<U>, Inner... inner) {
   return ConstructorOf<T>(inner...);
 }
 
 template <int&... ExplicitArgumentBarrier, typename T1, typename T2>
-auto PairOf(internal::Domain<T1>, internal::Domain<T2>) {
-  return internal::Domain<std::pair<T1, T2>>{};
+auto PairOf(Domain<T1>, Domain<T2>) {
+  return Domain<std::pair<T1, T2>>{};
 }
 
 template <int&... ExplicitArgumentBarrier, typename... Inner>
 auto TupleOf(Inner...) {
-  return internal::Domain<std::tuple<typename Inner::value_type...>>{};
+  return Domain<std::tuple<typename Inner::value_type...>>{};
 }
 
 template <typename T, int&... ExplicitArgumentBarrier, typename... Inner>
 auto VariantOf(Inner...) {
-  return internal::Domain<T>{};
+  return Domain<T>{};
 }
 
 template <int&... ExplicitArgumentBarrier, typename... Inner>
 auto VariantOf(Inner...) {
-  return internal::Domain<std::variant<typename Inner::value_type...>>{};
+  return Domain<std::variant<typename Inner::value_type...>>{};
 }
 
 template <template <typename> class Optional,
           int&... ExplicitArgumentBarrier,
           typename T>
-auto OptionalOf(internal::Domain<T>) {
+auto OptionalOf(Domain<T>) {
   return internal::OptionalDomain<Optional<T>>{};
 }
 
 template <int&... ExplicitArgumentBarrier, typename T>
-auto OptionalOf(internal::Domain<T> inner) {
+auto OptionalOf(Domain<T> inner) {
   return OptionalOf<std::optional>(inner);
 }
 
