@@ -22,7 +22,8 @@ namespace pw::allocator {
 
 // Test fixtures.
 
-struct LibCAllocatorTest : ::testing::Test {
+class LibCAllocatorTest : public ::testing::Test {
+ protected:
   LibCAllocator allocator;
 };
 

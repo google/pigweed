@@ -121,25 +121,6 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "split_free_list_allocator",
-    srcs = [
-        "split_free_list_allocator.cc",
-    ],
-    hdrs = [
-        "public/pw_allocator/split_free_list_allocator.h",
-    ],
-    includes = ["public"],
-    deps = [
-        ":allocator",
-        ":block",
-        "//pw_assert",
-        "//pw_bytes",
-        "//pw_result",
-        "//pw_status",
-    ],
-)
-
-pw_cc_library(
     name = "libc_allocator",
     srcs = [
         "libc_allocator.cc",
@@ -168,18 +149,53 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "allocator_testing",
+    name = "simple_allocator",
+    hdrs = [
+        "public/pw_allocator/simple_allocator.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":allocator",
+        ":block",
+        "//pw_bytes",
+    ],
+)
+
+pw_cc_library(
+    name = "split_free_list_allocator",
     srcs = [
-        "allocator_testing.cc",
+        "split_free_list_allocator.cc",
     ],
     hdrs = [
-        "pw_allocator_private/allocator_testing.h",
+        "public/pw_allocator/split_free_list_allocator.h",
     ],
+    includes = ["public"],
     deps = [
         ":allocator",
         ":block",
         "//pw_assert",
         "//pw_bytes",
+        "//pw_result",
+        "//pw_status",
+    ],
+)
+
+pw_cc_library(
+    name = "allocator_testing",
+    srcs = [
+        "allocator_testing.cc",
+    ],
+    hdrs = [
+        "public/pw_allocator/allocator_testing.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":allocator",
+        ":block",
+        ":simple_allocator",
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_unit_test",
     ],
 )
 
@@ -279,11 +295,23 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "simple_allocator_test",
+    srcs = [
+        "simple_allocator_test.cc",
+    ],
+    deps = [
+        ":allocator_testing",
+        ":simple_allocator",
+    ],
+)
+
+pw_cc_test(
     name = "split_free_list_allocator_test",
     srcs = [
         "split_free_list_allocator_test.cc",
     ],
     deps = [
+        ":allocator_testing",
         ":split_free_list_allocator",
         "//pw_bytes",
         "//pw_containers:vector",

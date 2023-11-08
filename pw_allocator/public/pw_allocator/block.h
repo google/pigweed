@@ -151,53 +151,8 @@ class BaseBlock {
 /// contiguous region of memory returned from a call to `Init`. This block can
 /// be split into smaller blocks that refer to their neighbors. Neighboring
 /// blocks can be merged. These behaviors allows ``Allocator``s to track
-/// allocated memory with a small amount of overhead.
-///
-/// For example, the following is a simple but functional ``Allocator`` using
-/// ``Block``:
-///
-/// @code{.cpp}
-/// // TODO(b/306686936): Consider moving this to a standalone example.
-/// class SimpleAllocator {
-/// public:
-///   Status Init(ByteSpan region) {
-///     auto result = Block<>::Init(region);
-///     if (!result.ok()) { return result.status(); }
-///     begin_ = *result;
-///     end_ = begin_->Next();
-///     return OkStatus();
-///   }
-///
-/// private:
-///   void* DoAllocate(Layout layout) override {
-///     for (auto* block = begin_; block != end_; block = block->Next()) {
-///       if (block->InnerSize() >= layout.size()) {
-///         if (auto result=Block<>::Split(block, layout.size()); result.ok()) {
-///           // Try to merge the leftovers with the next block.
-///           Block<>::MergeNext(*result).IgnoreError();
-///         }
-///         block->MarkUsed();
-///         return block->UsableSpace();
-///      }
-///     }
-///     return nullptr;
-///   }
-///
-///   void DoDeallocate(void* ptr, Layout) override {
-///     Block<>* block = Block<>::FromUsableSpace(ptr);
-///     block->MarkFree();
-///     // Try to merge the released block with its neighbors.
-///     Block<>::MergeNext(block).IgnoreError();
-///     block = block->Prev();
-///     Block<>::MergeNext(block).IgnoreError();
-///   }
-///
-///   bool DoResize(void*, Layout, size_t) {
-///     // Always reallocate.
-///     return false;
-///   }
-/// };
-/// @endcode
+/// allocated memory with a small amount of overhead. See
+/// pw_allocator_private/simple_allocator.h for an example.
 ///
 /// Blocks will always be aligned to a `kAlignment boundary. Block sizes will
 /// always be rounded up to a multiple of `kAlignment`.

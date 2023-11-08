@@ -15,27 +15,23 @@
 #include "pw_allocator/allocator_metric_proxy.h"
 
 #include "gtest/gtest.h"
-#include "pw_allocator_private/allocator_testing.h"
+#include "pw_allocator/allocator_testing.h"
 
 namespace pw::allocator {
 namespace {
 
 // Test fixtures.
 
-struct AllocatorMetricProxyTest : ::testing::Test {
- private:
-  std::array<std::byte, 256> buffer = {};
-  test::FakeAllocator wrapped;
-
- public:
-  AllocatorMetricProxy allocator;
-
+class AllocatorMetricProxyTest : public ::testing::Test {
+ protected:
   AllocatorMetricProxyTest() : allocator(0) {}
 
-  void SetUp() override {
-    EXPECT_TRUE(wrapped.Initialize(buffer).ok());
-    allocator.Initialize(wrapped);
-  }
+  void SetUp() override { allocator.Initialize(*wrapped); }
+
+  AllocatorMetricProxy allocator;
+
+ private:
+  test::AllocatorForTestWithBuffer<256> wrapped;
 };
 
 // Unit tests.

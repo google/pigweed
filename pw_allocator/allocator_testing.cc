@@ -12,31 +12,35 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator_private/allocator_testing.h"
+#include "pw_allocator/allocator_testing.h"
 
 #include "pw_assert/check.h"
-#include "pw_bytes/alignment.h"
 
 namespace pw::allocator::test {
 
-Status FakeAllocator::Initialize(ByteSpan buffer) {
-  auto result = BlockType::Init(buffer);
-  if (!result.ok()) {
-    return result.status();
+AllocatorForTest::~AllocatorForTest() {
+  for (auto* block : allocator_.blocks()) {
+    PW_DCHECK(
+        !block->Used(),
+        "The block at %p was still in use when its allocator was "
+        "destroyed. All memory allocated by an allocator must be released "
+        "before the allocator goes out of scope.",
+        static_cast<void*>(block));
   }
-  begin_ = *result;
-  end_ = begin_->Next();
-  ResetParameters();
-  return OkStatus();
 }
 
-void FakeAllocator::Exhaust() {
-  for (BlockType* block = begin_; block != end_; block = block->Next()) {
+Status AllocatorForTest::Init(ByteSpan bytes) {
+  ResetParameters();
+  return allocator_.Init(bytes);
+}
+
+void AllocatorForTest::Exhaust() {
+  for (auto* block : allocator_.blocks()) {
     block->MarkUsed();
   }
 }
 
-void FakeAllocator::ResetParameters() {
+void AllocatorForTest::ResetParameters() {
   allocate_size_ = 0;
   deallocate_ptr_ = nullptr;
   deallocate_size_ = 0;
@@ -45,82 +49,38 @@ void FakeAllocator::ResetParameters() {
   resize_new_size_ = 0;
 }
 
-Status FakeAllocator::DoQuery(const void* ptr, size_t size, size_t) const {
-  PW_CHECK(begin_ != nullptr);
-  if (size == 0 || ptr == nullptr) {
-    return Status::OutOfRange();
+void AllocatorForTest::DeallocateAll() {
+  for (auto* block : allocator_.blocks()) {
+    BlockType::Free(block);
   }
-  const auto* bytes = static_cast<const std::byte*>(ptr);
-  BlockType* target = BlockType::FromUsableSpace(const_cast<std::byte*>(bytes));
-  if (!target->IsValid()) {
-    return Status::OutOfRange();
-  }
-  size = AlignUp(size, BlockType::kAlignment);
-  for (BlockType* block = begin_; block != end_; block = block->Next()) {
-    if (block == target && block->InnerSize() == size) {
-      return OkStatus();
-    }
-  }
-  return Status::OutOfRange();
+  ResetParameters();
 }
 
-void* FakeAllocator::DoAllocate(size_t size, size_t) {
-  PW_CHECK(begin_ != nullptr);
+Status AllocatorForTest::DoQuery(const void* ptr,
+                                 size_t size,
+                                 size_t alignment) const {
+  return allocator_.QueryUnchecked(ptr, size, alignment);
+}
+
+void* AllocatorForTest::DoAllocate(size_t size, size_t alignment) {
   allocate_size_ = size;
-  for (BlockType* block = begin_; block != end_; block = block->Next()) {
-    if (block->Used() || block->InnerSize() < size) {
-      continue;
-    }
-    Result<BlockType*> result = BlockType::Split(block, size);
-    if (result.ok()) {
-      BlockType* next = *result;
-      BlockType::MergeNext(next).IgnoreError();
-    }
-    block->MarkUsed();
-    return block->UsableSpace();
-  }
-  return nullptr;
+  return allocator_.AllocateUnchecked(size, alignment);
 }
 
-void FakeAllocator::DoDeallocate(void* ptr, size_t size, size_t alignment) {
-  PW_CHECK(begin_ != nullptr);
+void AllocatorForTest::DoDeallocate(void* ptr, size_t size, size_t alignment) {
   deallocate_ptr_ = ptr;
   deallocate_size_ = size;
-  if (!DoQuery(ptr, size, alignment).ok()) {
-    return;
-  }
-  BlockType* block = BlockType::FromUsableSpace(static_cast<std::byte*>(ptr));
-  block->MarkFree();
-  BlockType::MergeNext(block).IgnoreError();
-  BlockType* prev = block->Prev();
-  BlockType::MergeNext(prev).IgnoreError();
+  return allocator_.DeallocateUnchecked(ptr, size, alignment);
 }
 
-bool FakeAllocator::DoResize(void* ptr,
-                             size_t old_size,
-                             size_t old_alignment,
-                             size_t new_size) {
-  PW_CHECK(begin_ != nullptr);
+bool AllocatorForTest::DoResize(void* ptr,
+                                size_t old_size,
+                                size_t old_alignment,
+                                size_t new_size) {
   resize_ptr_ = ptr;
   resize_old_size_ = old_size;
   resize_new_size_ = new_size;
-  if (!DoQuery(ptr, old_size, old_alignment).ok() || old_size == 0 ||
-      new_size == 0) {
-    return false;
-  }
-  if (old_size == new_size) {
-    return true;
-  }
-  BlockType* block = BlockType::FromUsableSpace(static_cast<std::byte*>(ptr));
-  block->MarkFree();
-  BlockType::MergeNext(block).IgnoreError();
-
-  Result<BlockType*> result = BlockType::Split(block, new_size);
-  if (!result.ok()) {
-    BlockType::Split(block, old_size).IgnoreError();
-  }
-  block->MarkUsed();
-  return block->InnerSize() >= new_size;
+  return allocator_.ResizeUnchecked(ptr, old_size, old_alignment, new_size);
 }
 
 }  // namespace pw::allocator::test

@@ -29,6 +29,19 @@ Allocator
 .. doxygenclass:: pw::allocator::Allocator
    :members:
 
+Example
+-------
+As an example, the following implements a simple allocator that tracks memory
+using ``Block``.
+
+.. literalinclude:: public/pw_allocator/simple_allocator.h
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator_examples_simple_allocator]
+   :end-before: [pw_allocator_examples_simple_allocator]
+
+Other Implemetations
+--------------------
 Provided implementations of the ``Allocator`` interface include:
 
 - ``AllocatorMetricProxy``: Wraps another allocator and records its usage.

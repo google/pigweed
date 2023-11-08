@@ -16,18 +16,12 @@
 
 #include "gtest/gtest.h"
 #include "pw_allocator/allocator.h"
-#include "pw_allocator_private/allocator_testing.h"
+#include "pw_allocator/allocator_testing.h"
 
 namespace pw::allocator {
 namespace {
 
-class FakeAllocWithBuffer : public test::FakeAllocator {
- public:
-  FakeAllocWithBuffer() { EXPECT_EQ(Initialize(buffer_), OkStatus()); }
-
- private:
-  std::array<std::byte, 256> buffer_ = {};
-};
+using FakeAllocWithBuffer = test::AllocatorForTestWithBuffer<256>;
 
 TEST(UniquePtr, DefaultInitializationIsNullptr) {
   UniquePtr<int> empty;
@@ -42,7 +36,7 @@ TEST(UniquePtr, OperatorEqNullptrOnEmptyUniquePtrSucceeds) {
 
 TEST(UniquePtr, OperatorEqNullptrAfterMakeUniqueFails) {
   FakeAllocWithBuffer alloc;
-  std::optional<UniquePtr<int>> ptr_opt = alloc.MakeUnique<int>(5);
+  std::optional<UniquePtr<int>> ptr_opt = alloc->MakeUnique<int>(5);
   ASSERT_TRUE(ptr_opt.has_value());
   UniquePtr<int> ptr = std::move(*ptr_opt);
   EXPECT_TRUE(ptr != nullptr);
@@ -52,7 +46,7 @@ TEST(UniquePtr, OperatorEqNullptrAfterMakeUniqueFails) {
 TEST(UniquePtr, OperatorEqNullptrAfterMakeUniqueNullptrTypeFails) {
   FakeAllocWithBuffer alloc;
   std::optional<UniquePtr<std::nullptr_t>> ptr_opt =
-      alloc.MakeUnique<std::nullptr_t>(nullptr);
+      alloc->MakeUnique<std::nullptr_t>(nullptr);
   ASSERT_TRUE(ptr_opt.has_value());
   UniquePtr<std::nullptr_t> ptr = std::move(*ptr_opt);
   EXPECT_TRUE(ptr != nullptr);
@@ -86,7 +80,7 @@ TEST(UniquePtr, MakeUniqueForwardsConstructorArguments) {
   FakeAllocWithBuffer alloc;
   MoveOnly mo(6);
   std::optional<UniquePtr<BuiltWithMoveOnly>> ptr =
-      alloc.MakeUnique<BuiltWithMoveOnly>(std::move(mo));
+      alloc->MakeUnique<BuiltWithMoveOnly>(std::move(mo));
   ASSERT_TRUE(ptr.has_value());
   EXPECT_EQ((*ptr)->Value(), 6);
 }
@@ -97,17 +91,17 @@ TEST(UniquePtr, MoveConstructsFromSubClassAndFreesTotalSize) {
     std::array<std::byte, 128> mem;
   };
   FakeAllocWithBuffer alloc;
-  std::optional<UniquePtr<LargerSub>> ptr_opt = alloc.MakeUnique<LargerSub>();
+  std::optional<UniquePtr<LargerSub>> ptr_opt = alloc->MakeUnique<LargerSub>();
   ASSERT_TRUE(ptr_opt.has_value());
-  EXPECT_EQ(alloc.allocate_size(), 128ul);
+  EXPECT_EQ(alloc->allocate_size(), 128ul);
   UniquePtr<LargerSub> ptr = std::move(*ptr_opt);
   UniquePtr<Base> base_ptr(std::move(ptr));
 
-  EXPECT_EQ(alloc.deallocate_size(), 0ul);
+  EXPECT_EQ(alloc->deallocate_size(), 0ul);
   // The size that is deallocated here should be the size of the larger
   // subclass, not the size of the smaller base class.
   base_ptr.Reset();
-  EXPECT_EQ(alloc.deallocate_size(), 128ul);
+  EXPECT_EQ(alloc->deallocate_size(), 128ul);
 }
 
 TEST(UniquePtr, MoveAssignsFromSubClassAndFreesTotalSize) {
@@ -116,17 +110,17 @@ TEST(UniquePtr, MoveAssignsFromSubClassAndFreesTotalSize) {
     std::array<std::byte, 128> mem;
   };
   FakeAllocWithBuffer alloc;
-  std::optional<UniquePtr<LargerSub>> ptr_opt = alloc.MakeUnique<LargerSub>();
+  std::optional<UniquePtr<LargerSub>> ptr_opt = alloc->MakeUnique<LargerSub>();
   ASSERT_TRUE(ptr_opt.has_value());
-  EXPECT_EQ(alloc.allocate_size(), 128ul);
+  EXPECT_EQ(alloc->allocate_size(), 128ul);
   UniquePtr<LargerSub> ptr = std::move(*ptr_opt);
   UniquePtr<Base> base_ptr = std::move(ptr);
 
-  EXPECT_EQ(alloc.deallocate_size(), 0ul);
+  EXPECT_EQ(alloc->deallocate_size(), 0ul);
   // The size that is deallocated here should be the size of the larger
   // subclass, not the size of the smaller base class.
   base_ptr.Reset();
-  EXPECT_EQ(alloc.deallocate_size(), 128ul);
+  EXPECT_EQ(alloc->deallocate_size(), 128ul);
 }
 
 TEST(UniquePtr, DestructorDestroysAndFrees) {
@@ -141,14 +135,14 @@ TEST(UniquePtr, DestructorDestroysAndFrees) {
   };
   FakeAllocWithBuffer alloc;
   std::optional<UniquePtr<DestructorCounter>> ptr_opt =
-      alloc.MakeUnique<DestructorCounter>(count);
+      alloc->MakeUnique<DestructorCounter>(count);
   ASSERT_TRUE(ptr_opt.has_value());
 
   EXPECT_EQ(count, 0);
-  EXPECT_EQ(alloc.deallocate_size(), 0ul);
+  EXPECT_EQ(alloc->deallocate_size(), 0ul);
   ptr_opt.reset();  // clear the optional, destroying the UniquePtr
   EXPECT_EQ(count, 1);
-  EXPECT_EQ(alloc.deallocate_size(), sizeof(DestructorCounter));
+  EXPECT_EQ(alloc->deallocate_size(), sizeof(DestructorCounter));
 }
 
 }  // namespace

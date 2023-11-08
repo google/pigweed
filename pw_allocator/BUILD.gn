@@ -136,6 +136,16 @@ pw_source_set("null_allocator") {
   public_deps = [ ":allocator" ]
 }
 
+pw_source_set("simple_allocator") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_allocator/simple_allocator.h" ]
+  public_deps = [
+    ":allocator",
+    ":block",
+    dir_pw_bytes,
+  ]
+}
+
 pw_source_set("split_free_list_allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/split_free_list_allocator.h" ]
@@ -181,19 +191,22 @@ pw_test_group("tests") {
     ":freelist_heap_test",
     ":libc_allocator_test",
     ":null_allocator_test",
+    ":simple_allocator_test",
     ":split_free_list_allocator_test",
     ":unique_ptr_test",
   ]
 }
 
 pw_source_set("allocator_testing") {
-  public = [ "pw_allocator_private/allocator_testing.h" ]
+  public = [ "public/pw_allocator/allocator_testing.h" ]
   public_deps = [
     ":allocator",
     ":block",
-    dir_pw_assert,
+    ":simple_allocator",
     dir_pw_bytes,
+    dir_pw_unit_test,
   ]
+  deps = [ dir_pw_assert ]
   sources = [ "allocator_testing.cc" ]
 }
 
@@ -258,8 +271,19 @@ pw_test("null_allocator_test") {
   sources = [ "null_allocator_test.cc" ]
 }
 
-pw_test("split_free_list_allocator_test") {
+pw_test("simple_allocator_test") {
+  configs = [ ":enable_heap_poison" ]
   deps = [
+    ":allocator_testing",
+    ":simple_allocator",
+  ]
+  sources = [ "simple_allocator_test.cc" ]
+}
+
+pw_test("split_free_list_allocator_test") {
+  configs = [ ":enable_heap_poison" ]
+  deps = [
+    ":allocator_testing",
     ":split_free_list_allocator",
     "$dir_pw_containers:vector",
     dir_pw_bytes,
@@ -273,7 +297,10 @@ pw_test("unique_ptr_test") {
 }
 
 pw_doc_group("docs") {
-  inputs = [ "doc_resources/pw_allocator_heap_visualizer_demo.png" ]
+  inputs = [
+    "doc_resources/pw_allocator_heap_visualizer_demo.png",
+    "public/pw_allocator/simple_allocator.h",
+  ]
   sources = [ "docs.rst" ]
   report_deps = [ ":allocator_size_report" ]
 }
