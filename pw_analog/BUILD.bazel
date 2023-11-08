@@ -50,6 +50,7 @@ pw_cc_library(
 
 pw_cc_library(
     name = "microvolt_input_gmock",
+    testonly = True,
     hdrs = [
         "public/pw_analog/microvolt_input_gmock.h",
     ],
@@ -62,6 +63,7 @@ pw_cc_library(
 
 pw_cc_library(
     name = "analog_input_gmock",
+    testonly = True,
     hdrs = [
         "public/pw_analog/analog_input_gmock.h",
     ],
