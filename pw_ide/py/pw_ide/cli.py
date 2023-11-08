@@ -262,6 +262,14 @@ def _build_argument_parser() -> argparse.ArgumentParser:
         func=lambda *_args, **_kwargs: parser_root.print_help()
     )
 
+    parser_root.add_argument(
+        '-o',
+        '--output',
+        choices=['stdout', 'log'],
+        default='pretty',
+        help='where program output should go',
+    )
+
     subcommand_parser = parser_root.add_subparsers(help='Subcommands')
     add_parser = _parser_adder(subcommand_parser)
 

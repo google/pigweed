@@ -47,7 +47,7 @@ from pw_ide.settings import (
     SupportedEditor,
 )
 
-from pw_ide.status_reporter import StatusReporter
+from pw_ide.status_reporter import LoggingStatusReporter, StatusReporter
 
 from pw_ide import vscode
 from pw_ide.vscode import (
@@ -58,6 +58,22 @@ from pw_ide.vscode import (
 
 _LOG = logging.getLogger(__package__)
 env = pigweed_environment()
+
+
+def _inject_reporter(func):
+    """Inject a status reporter instance based on selected output type."""
+
+    def wrapped(*args, **kwargs):
+        output = kwargs.pop('output', 'stdout')
+        reporter = StatusReporter()
+
+        if output == 'log':
+            reporter = LoggingStatusReporter(_LOG)
+
+        kwargs['reporter'] = reporter
+        return func(*args, **kwargs)
+
+    return wrapped
 
 
 def _make_working_dir(
@@ -79,6 +95,7 @@ def _report_unrecognized_editor(reporter: StatusReporter, editor: str) -> None:
     reporter.wrn(f'Automatically-supported editors: {supported_editors}')
 
 
+@_inject_reporter
 def cmd_sync(
     reporter: StatusReporter = StatusReporter(),
     pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings(),
@@ -109,6 +126,7 @@ def cmd_sync(
     reporter.info('Done')
 
 
+@_inject_reporter
 def cmd_setup(
     reporter: StatusReporter = StatusReporter(),
     pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings(),
@@ -120,6 +138,7 @@ def cmd_setup(
     cmd_sync(reporter, pw_ide_settings)
 
 
+@_inject_reporter
 def cmd_vscode(
     include: Optional[List[VscSettingsType]] = None,
     exclude: Optional[List[VscSettingsType]] = None,
@@ -496,6 +515,7 @@ def _process_compdbs(  # pylint: disable=too-many-locals
     return False
 
 
+@_inject_reporter
 def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements
     should_list_targets: bool,
     should_get_target: bool,
@@ -756,6 +776,7 @@ def install_py_module_as_editable(
     reporter.wrn('Note that running bootstrap or building will reverse this.')
 
 
+@_inject_reporter
 def cmd_python(
     should_print_venv: bool,
     install_editable: Optional[str] = None,
