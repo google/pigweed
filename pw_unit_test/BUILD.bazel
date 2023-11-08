@@ -94,6 +94,7 @@ pw_cc_library(
 
 pw_cc_library(
     name = "googletest_handler_adapter",
+    testonly = True,
     srcs = ["googletest_handler_adapter.cc"],
     hdrs = ["public/pw_unit_test/googletest_handler_adapter.h"],
     includes = ["public"],
@@ -106,6 +107,7 @@ pw_cc_library(
 
 pw_cc_library(
     name = "googletest_test_matchers",
+    testonly = True,
     hdrs = ["public/pw_unit_test/googletest_test_matchers.h"],
     includes = ["public"],
     deps = [
