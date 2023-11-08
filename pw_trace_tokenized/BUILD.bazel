@@ -18,6 +18,7 @@ load(
     "pw_cc_library",
     "pw_cc_test",
 )
+load("//pw_build/bazel_internal:py_proto_library.bzl", "py_proto_library")
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -54,6 +55,43 @@ pw_cc_library(
         "//pw_tokenizer",
         "//pw_trace:facade",
         "//pw_varint",
+    ],
+)
+
+pw_cc_library(
+    name = "base_trace_service",
+    srcs = [
+        "base_trace_service.cc",
+    ],
+    hdrs = [
+        "public/pw_trace_tokenized/base_trace_service.h",
+    ],
+    includes = [
+        "public",
+    ],
+    deps = [
+        ":buffer",
+        ":pw_trace_tokenized",
+        "//pw_ring_buffer",
+        "//pw_stream",
+    ],
+)
+
+pw_cc_library(
+    name = "trace_service_pwpb",
+    srcs = [
+        "trace_service_pwpb.cc",
+    ],
+    hdrs = [
+        "public/pw_trace_tokenized/trace_service_pwpb.h",
+    ],
+    includes = [
+        "public",
+    ],
+    deps = [
+        ":base_trace_service",
+        ":protos_cc.pwpb_rpc",
+        "//pw_chrono:system_clock",
     ],
 )
 
@@ -121,14 +159,25 @@ proto_library(
     srcs = [
         "pw_trace_protos/trace.proto",
         "pw_trace_protos/trace_rpc.proto",
+        "pw_trace_protos/trace_service.proto",
+    ],
+    deps = [
+        "//pw_chrono:chrono_proto",
     ],
     # TODO(tpudlik): We should provide trace_rpc.options to nanopb here, but the
     # current proto codegen implementation provides no mechanism for doing so.
-    # inputs = [ "pw_trace_protos/trace_rpc.options" ]
+    # inputs = [ "pw_trace_protos/trace_rpc.options",  "pw_trace_protos/trace_service.options"]
 )
 
 pw_proto_library(
     name = "protos_cc",
+    deps = [":protos"],
+)
+
+py_proto_library(
+    name = "proto_py",
+    # TODO(b/241456982): Get this target to build.
+    tags = ["manual"],
     deps = [":protos"],
 )
 
@@ -187,6 +236,22 @@ pw_cc_test(
         ":pw_trace_tokenized",
         "//pw_preprocessor",
         "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "trace_service_pwpb_test",
+    srcs = [
+        "trace_service_pwpb_test.cc",
+    ],
+    # TODO(b/260641850): Get pw_trace_tokenized building in Bazel.
+    tags = ["manual"],
+    deps = [
+        ":pw_trace_host_trace_time",
+        ":trace_service_pwpb",
+        "//pw_chrono:system_clock",
+        "//pw_rpc/pwpb:test_method_context",
+        "//pw_trace",
     ],
 )
 

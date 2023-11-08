@@ -69,8 +69,12 @@ pw_add_library(pw_trace_tokenized.trace_buffer STATIC
 pw_proto_library(pw_trace_tokenized.protos
   SOURCES
     pw_trace_protos/trace_rpc.proto
+    pw_trace_protos/trace_service.proto
   INPUTS
     pw_trace_protos/trace_rpc.options
+    pw_trace_protos/trace_service.options
+  DEPS
+    pw_chrono.protos
 )
 
 pw_add_library(pw_trace_tokenized.rpc_service STATIC
@@ -86,4 +90,26 @@ pw_add_library(pw_trace_tokenized.rpc_service STATIC
   PUBLIC_DEPS
     pw_tokenizer
     pw_status
+)
+
+pw_add_library(pw_trace_tokenized.base_trace_service STATIC
+  SOURCES
+    base_trace_service.cc
+  PRIVATE_DEPS
+    pw_log
+    pw_stream
+    pw_ring_buffer
+  PUBLIC_DEPS
+    pw_trace_tokenized
+    pw_trace_tokenized.trace_buffer
+)
+
+pw_add_library(pw_trace_tokenized.trace_service_pwpb STATIC
+  SOURCES
+    trace_service_pwpb.cc
+  PRIVATE_DEPS
+    pw_chrono.system_clock
+  PUBLIC_DEPS
+    pw_trace_tokenized.base_trace_service
+    pw_trace_tokenized.protos.pwpb_rpc
 )

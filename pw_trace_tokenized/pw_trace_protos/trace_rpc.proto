@@ -15,6 +15,10 @@ syntax = "proto3";
 
 package pw.trace;
 
+// TODO: b/309643763 - This service has been deprecated in favor of the tracing
+// service defined in trace_service.proto
+// This service will be deleted once existing clients have been migrated awaw
+// from it, so please don't use this for any new projects.
 service TraceService {
   rpc Enable(TraceEnableMessage) returns (TraceEnableMessage) {}
   rpc IsEnabled(Empty) returns (TraceEnableMessage) {}

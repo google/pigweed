@@ -62,6 +62,7 @@ pw_test_group("tests") {
     ":trace_tokenized_test",
     ":tokenized_trace_buffer_test",
     ":tokenized_trace_buffer_log_test",
+    ":trace_service_pwpb_test",
   ]
 }
 
@@ -101,8 +102,14 @@ pw_proto_library("protos") {
   sources = [
     "pw_trace_protos/trace.proto",
     "pw_trace_protos/trace_rpc.proto",
+    "pw_trace_protos/trace_service.proto",
   ]
-  inputs = [ "pw_trace_protos/trace_rpc.options" ]
+  inputs = [
+    "pw_trace_protos/trace_rpc.options",
+    "pw_trace_protos/trace_service.options",
+  ]
+  python_package = "py"
+  deps = [ "$dir_pw_chrono:protos" ]
 }
 
 pw_source_set("trace_rpc_service") {
@@ -118,6 +125,46 @@ pw_source_set("trace_rpc_service") {
     "public/pw_trace_tokenized/trace_rpc_service_nanopb.h",
     "trace_rpc_service_nanopb.cc",
   ]
+}
+
+pw_source_set("base_trace_service") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":core",
+    ":tokenized_trace_buffer",
+  ]
+  deps = [
+    "$dir_pw_ring_buffer",
+    "$dir_pw_stream",
+  ]
+  sources = [
+    "base_trace_service.cc",
+    "public/pw_trace_tokenized/base_trace_service.h",
+  ]
+}
+
+pw_source_set("trace_service_pwpb") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":base_trace_service",
+    ":protos.pwpb_rpc",
+  ]
+  deps = [ "$dir_pw_chrono:system_clock" ]
+  sources = [
+    "public/pw_trace_tokenized/trace_service_pwpb.h",
+    "trace_service_pwpb.cc",
+  ]
+}
+
+pw_test("trace_service_pwpb_test") {
+  enable_if = _pw_trace_tokenized_is_selected
+  deps = [
+    ":trace_service_pwpb",
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_rpc/pwpb:test_method_context",
+    "$dir_pw_trace",
+  ]
+  sources = [ "trace_service_pwpb_test.cc" ]
 }
 
 pw_source_set("tokenized_trace_buffer") {

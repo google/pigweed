@@ -1,0 +1,53 @@
+// Copyright 2023 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+syntax = "proto3";
+
+package pw.trace.proto;
+
+import "pw_chrono_protos/chrono.proto";
+
+// TODO: b/309643763 - This is the prefered service for tracing, and the service
+// defined in trace_rpc.proto has been deprecated and will be removed once
+// existings clients migrate to this service.
+service TraceService {
+  // Start will enable tracing, populating the trace ring buffer.
+  rpc Start(StartRequest) returns (StartResponse) {}
+
+  // On stop the ring buffer will be written to the configured
+  // stream.  No data is written to the stream until Stop is called.
+  rpc Stop(StopRequest) returns (StopResponse) {}
+
+  // Returns the clock paramaters of the system.
+  rpc GetClockParameters(ClockParametersRequest)
+      returns (ClockParametersResponse) {}
+}
+
+message StartRequest {}
+
+message StartResponse {}
+
+message StopRequest {}
+
+message StopResponse {
+  // as a convenience, the file id is returned on stop which can be
+  // used to start a transfer directly, rather that requiring a user
+  // list the files to obtain the file id.
+  optional uint32 file_id = 1;
+}
+
+message ClockParametersRequest {}
+
+message ClockParametersResponse {
+  pw.chrono.ClockParameters clock_parameters = 1;
+}
