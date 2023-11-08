@@ -17,5 +17,6 @@ load("//pw_fuzzer:fuzzer.bzl", "pw_cc_fuzz_test")
 pw_cc_fuzz_test(
     name = "toy_fuzzer",
     srcs = ["toy_fuzzer.cc"],
+    tags = ["no-oss-fuzz"],
     deps = ["//pw_status"],
 )

@@ -142,6 +142,8 @@ load("@rules_python//python:repositories.bzl", "python_register_toolchains")
 # Use Python 3.10 for bazel Python rules.
 python_register_toolchains(
     name = "python3_10",
+    # Allows building as root in a docker container. Required by oss-fuzz.
+    ignore_root_user_error = True,
     python_version = "3.10",
 )
 
