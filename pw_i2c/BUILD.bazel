@@ -117,6 +117,7 @@ pw_cc_library(
 
 pw_cc_library(
     name = "initiator_gmock",
+    testonly = True,
     hdrs = [
         "public/pw_i2c/initiator_gmock.h",
     ],
