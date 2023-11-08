@@ -57,6 +57,46 @@ TEST(PigweedTest, ExpectBasicComparisons) {
   ASSERT_LE(-2, -2);
 }
 
+TEST(PigweedTest, ExpectNearComparisons) {
+  EXPECT_NEAR(1, 2, 1);
+  ASSERT_NEAR(1, 2, 1);
+
+  EXPECT_NEAR(-5, 5, 10);
+  ASSERT_NEAR(-5, 5, 10);
+
+  int x = 17;
+  int epsilon = 5;
+
+  EXPECT_NEAR(x, 15, epsilon);
+  ASSERT_NEAR(x, 15, epsilon);
+}
+
+TEST(PigweedTest, ExpectFloatComparisons) {
+  EXPECT_FLOAT_EQ(5.0f, 10.0f / 2);
+  ASSERT_FLOAT_EQ(5.0f, 10.0f / 2);
+
+  EXPECT_FLOAT_EQ(-0.5f, -5.0f / 10);
+  ASSERT_FLOAT_EQ(-0.5f, -5.0f / 10);
+
+  float x = 17.0f / 20.0f;
+
+  EXPECT_FLOAT_EQ(x, 17.0f / 20.0f);
+  ASSERT_FLOAT_EQ(x, 17.0f / 20.0f);
+}
+
+TEST(PigweedTest, ExpectDoubleComparisons) {
+  EXPECT_DOUBLE_EQ(5.0, 10.0 / 2);
+  ASSERT_DOUBLE_EQ(5.0, 10.0 / 2);
+
+  EXPECT_DOUBLE_EQ(-0.5, -5.0 / 10);
+  ASSERT_DOUBLE_EQ(-0.5, -5.0 / 10);
+
+  double x = 17.0 / 20.0;
+
+  EXPECT_DOUBLE_EQ(x, 17.0 / 20.0);
+  ASSERT_DOUBLE_EQ(x, 17.0 / 20.0);
+}
+
 TEST(PigweedTest, ExpectStringEquality) {
   EXPECT_STREQ("", "");
   EXPECT_STREQ("Yes", "Yes");

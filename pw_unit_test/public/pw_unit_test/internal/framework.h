@@ -60,6 +60,14 @@
 #define EXPECT_GE(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_OP(lhs, rhs, >=))
 #define EXPECT_LT(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_OP(lhs, rhs, <))
 #define EXPECT_LE(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_OP(lhs, rhs, <=))
+#define EXPECT_NEAR(lhs, rhs, epsilon) \
+  _PW_TEST_EXPECT(_PW_TEST_NEAR(lhs, rhs, epsilon))
+#define EXPECT_FLOAT_EQ(lhs, rhs) \
+  _PW_TEST_EXPECT(                \
+      _PW_TEST_NEAR(lhs, rhs, 4 * std::numeric_limits<float>::epsilon()))
+#define EXPECT_DOUBLE_EQ(lhs, rhs) \
+  _PW_TEST_EXPECT(                 \
+      _PW_TEST_NEAR(lhs, rhs, 4 * std::numeric_limits<double>::epsilon()))
 #define EXPECT_STREQ(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_C_STR(lhs, rhs, ==))
 #define EXPECT_STRNE(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_C_STR(lhs, rhs, !=))
 
@@ -71,6 +79,14 @@
 #define ASSERT_GE(lhs, rhs) _PW_TEST_ASSERT(_PW_TEST_OP(lhs, rhs, >=))
 #define ASSERT_LT(lhs, rhs) _PW_TEST_ASSERT(_PW_TEST_OP(lhs, rhs, <))
 #define ASSERT_LE(lhs, rhs) _PW_TEST_ASSERT(_PW_TEST_OP(lhs, rhs, <=))
+#define ASSERT_NEAR(lhs, rhs, epsilon) \
+  _PW_TEST_ASSERT(_PW_TEST_NEAR(lhs, rhs, epsilon))
+#define ASSERT_FLOAT_EQ(lhs, rhs) \
+  _PW_TEST_ASSERT(                \
+      _PW_TEST_NEAR(lhs, rhs, 4 * std::numeric_limits<float>::epsilon()))
+#define ASSERT_DOUBLE_EQ(lhs, rhs) \
+  _PW_TEST_ASSERT(                 \
+      _PW_TEST_NEAR(lhs, rhs, 4 * std::numeric_limits<double>::epsilon()))
 #define ASSERT_STREQ(lhs, rhs) _PW_TEST_ASSERT(_PW_TEST_C_STR(lhs, rhs, ==))
 #define ASSERT_STRNE(lhs, rhs) _PW_TEST_ASSERT(_PW_TEST_C_STR(lhs, rhs, !=))
 
@@ -307,6 +323,37 @@ class Framework {
     framework.TearDownTestSuiteIfNeeded(TestInstance::TearDownTestSuite);
 
     framework.EndCurrentTest();
+  }
+
+  template <typename Expectation, typename Lhs, typename Rhs, typename Epsilon>
+  bool CurrentTestExpect(Expectation expectation,
+                         const Lhs& lhs,
+                         const Rhs& rhs,
+                         const Epsilon& epsilon,
+                         const char* expression,
+                         int line) {
+    // Size of the buffer into which to write the string with the evaluated
+    // version of the arguments. This buffer is allocated on the unit test's
+    // stack, so it shouldn't be too large.
+    // TODO(hepler): Make this configurable.
+    [[maybe_unused]] constexpr size_t kExpectationBufferSizeBytes = 192;
+
+    const bool success = expectation(lhs, rhs, epsilon);
+    CurrentTestExpectSimple(
+        expression,
+#if PW_CXX_STANDARD_IS_SUPPORTED(17)
+        MakeString<kExpectationBufferSizeBytes>(ConvertForPrint(lhs),
+                                                " within ",
+                                                ConvertForPrint(epsilon),
+                                                " of ",
+                                                ConvertForPrint(rhs))
+            .c_str(),
+#else
+        "(evaluation requires C++17)",
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
+        line,
+        success);
+    return success;
   }
 
   // Runs an expectation function for the currently active test case.
@@ -623,6 +670,17 @@ inline void SetTestSuitesToRun(span<std::string_view> test_suites) {
       (rhs),                                                     \
       #op,                                                       \
       #lhs " " #op " " #rhs,                                     \
+      __LINE__)
+
+#define _PW_TEST_NEAR(lhs, rhs, epsilon)                                      \
+  ::pw::unit_test::internal::Framework::Get().CurrentTestExpect(              \
+      [](const auto& _pw_lhs, const auto& _pw_rhs, const auto& _pw_epsilon) { \
+        return std::abs(_pw_lhs - _pw_rhs) <= _pw_epsilon;                    \
+      },                                                                      \
+      (lhs),                                                                  \
+      (rhs),                                                                  \
+      (epsilon),                                                              \
+      #lhs " within " #epsilon " of " #rhs,                                   \
       __LINE__)
 
 #define _PW_TEST_C_STR(lhs, rhs, op)                             \
