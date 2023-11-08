@@ -3,7 +3,6 @@
 ---------
 pw_web
 ---------
-
 Pigweed provides an NPM package with modules to build web apps for Pigweed
 devices.
 
@@ -29,7 +28,6 @@ After installing, you can import modules from ``pigweedjs`` in this way:
 
 Import Directly in HTML
 ^^^^^^^^^^^^^^^^^^^^^^^
-
 If you don't want to set up a bundler, you can also load Pigweed directly in
 your HTML page by:
 
@@ -149,7 +147,6 @@ Device has following public API:
 
 WebSerialTransport
 ------------------
-
 To help with connecting to WebSerial and listening for serial data, a helper
 class is also included under ``WebSerial.WebSerialTransport``. Here is an
 example usage:
@@ -192,7 +189,6 @@ Following Pigweed modules are included in the NPM package:
 
 Web Console
 ===========
-
 Pigweed includes a web console that demonstrates `pigweedjs` usage in a
 React-based web app. Web console includes a log viewer and a REPL that supports
 autocomplete. Here's how to run the web console locally:
@@ -205,7 +201,6 @@ autocomplete. Here's how to run the web console locally:
 
 Log viewer component
 ====================
-
 The NPM package also includes a log viewer component that can be embedded in any
 webapp. The component works with Pigweed's RPC stack out-of-the-box but also
 supports defining your own log source.
@@ -260,7 +255,6 @@ example app using that:
 
 Custom Log Source
 -----------------
-
 You can define a custom log source that works with the log viewer component by
 just extending the abstract `LogSource` class and emitting the `logEntry` events
 like this:
@@ -298,7 +292,6 @@ for reference.
 
 Color Scheme
 ------------
-
 The log viewer web component provides the ability to set the color scheme manually, overriding any default or system preferences.
 
 To set the color scheme, first obtain a reference to the ``log-viewer`` element in the DOM. A common way to do this is by using ``querySelector()``:
@@ -318,3 +311,11 @@ You can then set the color scheme dynamically by updating the component's `color
   logViewer.setAttribute('colorscheme', 'dark');
 
 The color scheme can be set to ``'dark'``, ``'light'``, or the default ``'auto'`` which allows the component to adapt to the preferences in the operating system settings.
+
+Guides
+======
+
+.. toctree::
+  :maxdepth: 1
+
+  testing
