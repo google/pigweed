@@ -27,7 +27,6 @@ pw_add_library_generic(pw_build INTERFACE
     $<$<CXX_COMPILER_ID:GNU>:-fdiagnostics-color=always>
   PUBLIC_DEPS
     pw_build.reduced_size
-    pw_build.cpp17
 )
 if(ZEPHYR_PIGWEED_MODULE_DIR)
   target_link_libraries(pw_build INTERFACE zephyr_interface)

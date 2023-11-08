@@ -29,6 +29,8 @@ include($ENV{PW_ROOT}/pw_trace/backend.cmake)
 set(CMAKE_C_COMPILER gcc)
 set(CMAKE_CXX_COMPILER g++)
 
+pw_add_global_compile_options(-std=c++20 LANGUAGES CXX)
+
 # Configure backend for assert facade.
 pw_set_backend(pw_assert.check pw_assert.print_and_abort_check_backend)
 pw_set_backend(pw_assert.assert pw_assert.print_and_abort_assert_backend)
