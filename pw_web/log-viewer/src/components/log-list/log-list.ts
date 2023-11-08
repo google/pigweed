@@ -254,11 +254,11 @@ export class LogList extends LitElement {
    * @param {string} text - The table cell text to be processed.
    */
   private highlightMatchedText(text: string): TemplateResult[] {
-    const searchPhrase = this.searchText?.replace(/(^"|')|("|'$)/g, '');
-    if (!searchPhrase) {
+    if (!this.searchText) {
       return [html`${text}`];
     }
 
+    const searchPhrase = this.searchText?.replace(/(^"|')|("|'$)/g, '');
     const escapedsearchText = searchPhrase.replace(
       /[.*+?^${}()|[\]\\]/g,
       '\\$&',

@@ -9,8 +9,8 @@ to address situations where automated tests are not able to cover.
 Test Sections
 =============
 
-Log View
-^^^^^^^^
+Log View Controls
+^^^^^^^^^^^^^^^^^
 
 .. list-table::
    :widths: 5 45 45 5
@@ -22,14 +22,15 @@ Log View
      - ✅
 
    * - 1
-     -
-     -
+     - | Input bar is empty
+       | Press the :guilabel:`clear logs` button  (trash can with lines)
+     - | Logs are cleared and entries after time of button press are addded.
      - |checkbox|
 
    * - 2
-     -
-     - |
-       |
+     - | Input bar has a single word filter
+       | Press the :guilabel:`clear logs` button  (trash can with lines)
+     - | Logs are cleared and filtered entries after time of button press are addded.
      - |checkbox|
 
 Add note to the commit message
