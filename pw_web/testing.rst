@@ -33,6 +33,16 @@ Log View Controls
      - | Logs are cleared and filtered entries after time of button press are addded.
      - |checkbox|
 
+   * - 3
+     - | Table is autoscrolling, scroll up
+     - | Autoscroll is disabled and :guilabel:`jump to bottom` button is visible.
+     - |checkbox|
+
+   * - 4
+     - | Press :guilabel:`clear logs` button  (trash can with lines)
+     - | Autoscroll is enabled and :guilabel:`jump to bottom` button is not visible.
+     - |checkbox|
+
 Add note to the commit message
 ==============================
 Add a ``Testing:`` line to your commit message and mention the steps

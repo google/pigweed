@@ -296,19 +296,26 @@ export class LogList extends LitElement {
     const isScrollingUp = currentScrollTop < this.lastScrollTop;
     this.lastScrollTop = currentScrollTop;
 
-    // Only run autoscroll logic if the user is scrolling vertically
+    const logsAreCleared = this.logs.length == 0;
+
+    if (logsAreCleared) {
+      this._autoscrollIsEnabled = true;
+      return;
+    }
+
+    // Run autoscroll logic if scrolling vertically
     if (!isScrollingVertically) {
       this._scrollPercentageLeft = scrollLeft / maxScrollLeft || 0;
       return;
     }
 
-    // User is scrolling up, disable autoscroll
+    // Scroll direction up, disable autoscroll
     if (isScrollingUp) {
       this._autoscrollIsEnabled = false;
       return;
     }
 
-    // User is scrolling down, enable autoscroll if they're near the bottom
+    // Scroll direction down, enable autoscroll if near the bottom
     if (Math.abs(scrollY) <= 1) {
       this._autoscrollIsEnabled = true;
       return;
