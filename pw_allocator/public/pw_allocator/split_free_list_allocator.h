@@ -90,10 +90,10 @@ class SplitFreeListAllocator : public BaseSplitFreeListAllocator {
   using ReverseRange = typename BlockType::ReverseRange;
 
   /// @copydoc Allocator::Dispatch
-  Status DoQuery(const void* ptr, size_t size, size_t alignment) const override;
+  Status DoQuery(const void* ptr, Layout layout) const override;
 
   /// @copydoc Allocator::Allocate
-  void* DoAllocate(size_t size, size_t alignment) override;
+  void* DoAllocate(Layout layout) override;
 
   /// Allocate a large chunk of memory.
   ///
@@ -101,9 +101,8 @@ class SplitFreeListAllocator : public BaseSplitFreeListAllocator {
   /// addresses. If a block needs to be fragmented, the returned pointer will be
   /// from the lower-addressed part of the block.
   ///
-  /// @param[in]  size                Length of requested memory.
-  /// @param[in]  alignment           Boundary to align the returned memory to.
-  void* DoAllocateLarge(size_t size, size_t alignment);
+  /// @param[in]  layout      Describes the memory to be allocated.
+  void* DoAllocateLarge(Layout layout);
 
   /// Allocate a small chunk of memory.
   ///
@@ -111,18 +110,14 @@ class SplitFreeListAllocator : public BaseSplitFreeListAllocator {
   /// addresses. If a block needs to be fragmented, the returned pointer will be
   /// from the higher-addressed part of the block.
   ///
-  /// @param[in]  size                Length of requested memory.
-  /// @param[in]  alignment           Boundary to align the returned memory to.
-  void* DoAllocateSmall(size_t size, size_t alignment);
+  /// @param[in]  layout      Describes the memory to be allocated.
+  void* DoAllocateSmall(Layout layout);
 
   /// @copydoc Allocator::Deallocate
-  void DoDeallocate(void* ptr, size_t size, size_t alignment) override;
+  void DoDeallocate(void* ptr, Layout layout) override;
 
   /// @copydoc Allocator::Resize
-  bool DoResize(void* ptr,
-                size_t old_size,
-                size_t old_alignment,
-                size_t new_size) override;
+  bool DoResize(void* ptr, Layout layout, size_t new_size) override;
 
   // Represents the entire memory region for this allocator.
   void* begin_ = nullptr;
@@ -189,34 +184,30 @@ Status SplitFreeListAllocator<BlockType>::Init(ByteSpan region,
 
 template <typename BlockType>
 Status SplitFreeListAllocator<BlockType>::DoQuery(const void* ptr,
-                                                  size_t,
-                                                  size_t) const {
+                                                  Layout) const {
   return (ptr < begin_ || end_ <= ptr) ? Status::OutOfRange() : OkStatus();
 }
 
 template <typename BlockType>
-void* SplitFreeListAllocator<BlockType>::DoAllocate(size_t size,
-                                                    size_t alignment) {
-  if (begin_ == nullptr || size == 0) {
+void* SplitFreeListAllocator<BlockType>::DoAllocate(Layout layout) {
+  if (begin_ == nullptr || layout.size() == 0) {
     return nullptr;
   }
-  void* ptr = size < threshold_ ? DoAllocateSmall(size, alignment)
-                                : DoAllocateLarge(size, alignment);
-
-  // Update the first and last free blocks.
-  return ptr;
+  size_t size = layout.size();
+  size_t alignment = std::max(layout.alignment(), BlockType::kAlignment);
+  layout = Layout(size, alignment);
+  return size < threshold_ ? DoAllocateSmall(layout) : DoAllocateLarge(layout);
 }
 
 template <typename BlockType>
-void* SplitFreeListAllocator<BlockType>::DoAllocateSmall(size_t size,
-                                                         size_t alignment) {
+void* SplitFreeListAllocator<BlockType>::DoAllocateSmall(Layout layout) {
   // Update the cached last free block.
   while (last_free_->Used() && first_free_ != last_free_) {
     last_free_ = last_free_->Prev();
   }
   // Search backwards for the first block that can hold this allocation.
   for (auto* block : ReverseRange(last_free_, first_free_)) {
-    if (BlockType::AllocLast(block, size, alignment).ok()) {
+    if (BlockType::AllocLast(block, layout.size(), layout.alignment()).ok()) {
       return block->UsableSpace();
     }
   }
@@ -225,15 +216,14 @@ void* SplitFreeListAllocator<BlockType>::DoAllocateSmall(size_t size,
 }
 
 template <typename BlockType>
-void* SplitFreeListAllocator<BlockType>::DoAllocateLarge(size_t size,
-                                                         size_t alignment) {
+void* SplitFreeListAllocator<BlockType>::DoAllocateLarge(Layout layout) {
   // Update the cached first free block.
   while (first_free_->Used() && first_free_ != last_free_) {
     first_free_ = first_free_->Next();
   }
   // Search forwards for the first block that can hold this allocation.
   for (auto* block : Range(first_free_, last_free_)) {
-    if (BlockType::AllocFirst(block, size, alignment).ok()) {
+    if (BlockType::AllocFirst(block, layout.size(), layout.alignment()).ok()) {
       // A new last free block may be split off the end of the allocated block.
       if (last_free_ <= block) {
         last_free_ = block->Last() ? block : block->Next();
@@ -246,9 +236,7 @@ void* SplitFreeListAllocator<BlockType>::DoAllocateLarge(size_t size,
 }
 
 template <typename BlockType>
-void SplitFreeListAllocator<BlockType>::DoDeallocate(void* ptr,
-                                                     size_t,
-                                                     size_t) {
+void SplitFreeListAllocator<BlockType>::DoDeallocate(void* ptr, Layout) {
   // Do nothing if uninitialized or no memory block pointer.
   if (begin_ == nullptr || ptr < begin_ || end_ <= ptr) {
     return;
@@ -270,12 +258,10 @@ void SplitFreeListAllocator<BlockType>::DoDeallocate(void* ptr,
 
 template <typename BlockType>
 bool SplitFreeListAllocator<BlockType>::DoResize(void* ptr,
-                                                 size_t old_size,
-                                                 size_t old_alignment,
+                                                 Layout layout,
                                                  size_t new_size) {
   // Fail to resize is uninitialized or invalid parameters.
-  if (begin_ == nullptr || ptr == nullptr || old_size == 0 || new_size == 0 ||
-      !DoQuery(ptr, old_size, old_alignment).ok()) {
+  if (begin_ == nullptr || !DoQuery(ptr, layout).ok()) {
     return false;
   }
 

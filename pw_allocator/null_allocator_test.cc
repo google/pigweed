@@ -23,7 +23,7 @@ TEST(NullAllocatorTest, Allocate) {
   // Allocate should fail, regardless of size and alignment.
   for (size_t size = 1; size < 0x100; size <<= 1) {
     for (size_t alignment = 1; alignment < 0x100; alignment <<= 1) {
-      EXPECT_EQ(allocator.AllocateUnchecked(size, alignment), nullptr);
+      EXPECT_EQ(allocator.Allocate(Layout(size, alignment)), nullptr);
     }
   }
 }

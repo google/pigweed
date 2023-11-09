@@ -24,27 +24,26 @@
 
 namespace pw::allocator {
 
-void* LibCAllocator::DoAllocate(size_t size, size_t alignment) {
+void* LibCAllocator::DoAllocate(Layout layout) {
   // TODO: b/301930507 - `aligned_alloc` is not portable. Return null for larger
   // allocations for now.
-  return alignment <= alignof(std::max_align_t) ? std::malloc(size) : nullptr;
+  return layout.alignment() <= alignof(std::max_align_t)
+             ? std::malloc(layout.size())
+             : nullptr;
 }
 
-void LibCAllocator::DoDeallocate(void* ptr, size_t, size_t) { std::free(ptr); }
+void LibCAllocator::DoDeallocate(void* ptr, Layout) { std::free(ptr); }
 
-bool LibCAllocator::DoResize(void*, size_t old_size, size_t, size_t new_size) {
+bool LibCAllocator::DoResize(void*, Layout layout, size_t new_size) {
   // `realloc` may move memory, even when shrinking. Only return true if no
   // change is needed.
-  return old_size == new_size;
+  return layout.size() == new_size;
 }
 
-void* LibCAllocator::DoReallocate(void* ptr,
-                                  size_t,
-                                  size_t old_alignment,
-                                  size_t new_size) {
+void* LibCAllocator::DoReallocate(void* ptr, Layout layout, size_t new_size) {
   // TODO: b/301930507 - `aligned_alloc` is not portable. Return null for larger
   // allocations for now.
-  return old_alignment <= alignof(std::max_align_t)
+  return layout.alignment() <= alignof(std::max_align_t)
              ? std::realloc(ptr, new_size)
              : nullptr;
 }

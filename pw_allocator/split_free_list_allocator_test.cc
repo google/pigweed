@@ -118,15 +118,15 @@ TEST_F(SplitFreeListAllocatorTest, AllocateTooLarge) {
 TEST_F(SplitFreeListAllocatorTest, AllocateLargeAlignment) {
   constexpr size_t kSize = sizeof(uint32_t);
   constexpr size_t kAlignment = 64;
-  ptrs_[0] = allocator_->AllocateUnchecked(kSize, kAlignment);
+  ptrs_[0] = allocator_->Allocate(Layout(kSize, kAlignment));
   ASSERT_NE(ptrs_[0], nullptr);
   EXPECT_EQ(reinterpret_cast<uintptr_t>(ptrs_[0]) % kAlignment, 0U);
   UseMemory(ptrs_[0], kSize);
 
-  ptrs_[1] = allocator_->AllocateUnchecked(kSize, kAlignment);
+  ptrs_[1] = allocator_->Allocate(Layout(kSize, kAlignment));
   ASSERT_NE(ptrs_[1], nullptr);
   EXPECT_EQ(reinterpret_cast<uintptr_t>(ptrs_[1]) % kAlignment, 0U);
-  UseMemory(ptrs_[0], kSize);
+  UseMemory(ptrs_[1], kSize);
 }
 
 TEST_F(SplitFreeListAllocatorTest, AllocateFromUnaligned) {
@@ -165,26 +165,27 @@ TEST_F(SplitFreeListAllocatorTest, AllocateAlignmentFailure) {
       outer_size - (BlockType::kBlockOverhead * 3 + inner_size1 + inner_size2);
 
   // Allocate all the blocks.
-  ptrs_[0] = allocator_->AllocateUnchecked(inner_size1, 1);
+  ptrs_[0] = allocator_->Allocate(Layout(inner_size1, 1));
   ASSERT_NE(ptrs_[0], nullptr);
 
-  ptrs_[1] = allocator_->AllocateUnchecked(inner_size2, 1);
+  ptrs_[1] = allocator_->Allocate(Layout(inner_size2, 1));
   ASSERT_NE(ptrs_[1], nullptr);
 
-  ptrs_[2] = allocator_->AllocateUnchecked(inner_size3, 1);
+  ptrs_[2] = allocator_->Allocate(Layout(inner_size3, 1));
   ASSERT_NE(ptrs_[2], nullptr);
 
   // If done correctly, the second block's usable space should be unaligned.
   EXPECT_NE(reinterpret_cast<uintptr_t>(ptrs_[1]) % kAlignment, 0U);
 
   // Free the second region. This leaves an unaligned region available.
-  allocator_->DeallocateUnchecked(ptrs_[1], inner_size2, 1);
+  allocator_->Deallocate(ptrs_[1], Layout(inner_size2, 1));
   ptrs_[1] = nullptr;
 
   // The allocator should be unable to create an aligned region..
-  ptrs_[3] = allocator_->AllocateUnchecked(inner_size2, kAlignment);
+  ptrs_[3] = allocator_->Allocate(Layout(inner_size2, kAlignment));
   EXPECT_EQ(ptrs_[3], nullptr);
 }
+
 TEST_F(SplitFreeListAllocatorTest, DeallocateNull) {
   constexpr Layout layout = Layout::Of<uint8_t>();
   allocator_->Deallocate(nullptr, layout);

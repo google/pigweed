@@ -29,13 +29,13 @@ class NullAllocator : public Allocator {
 
  private:
   /// @copydoc Allocator::Allocate
-  void* DoAllocate(size_t, size_t) override { return nullptr; }
+  void* DoAllocate(Layout) override { return nullptr; }
 
   /// @copydoc Allocator::Deallocate
-  void DoDeallocate(void*, size_t, size_t) override {}
+  void DoDeallocate(void*, Layout) override {}
 
   /// @copydoc Allocator::Resize
-  bool DoResize(void*, size_t, size_t, size_t) override { return false; }
+  bool DoResize(void*, Layout, size_t) override { return false; }
 };
 
 }  // namespace pw::allocator

@@ -27,22 +27,16 @@ class LibCAllocator : public Allocator {
 
  private:
   /// @copydoc Allocator::Allocate
-  void* DoAllocate(size_t size, size_t alignment) override;
+  void* DoAllocate(Layout layout) override;
 
   /// @copydoc Allocator::Deallocate
-  void DoDeallocate(void* ptr, size_t size, size_t alignment) override;
+  void DoDeallocate(void* ptr, Layout layout) override;
 
   /// @copydoc Allocator::Resize
-  bool DoResize(void* ptr,
-                size_t old_size,
-                size_t old_alignment,
-                size_t new_size) override;
+  bool DoResize(void* ptr, Layout layout, size_t new_size) override;
 
   /// @copydoc Allocator::Reallocate
-  void* DoReallocate(void* ptr,
-                     size_t old_size,
-                     size_t old_alignment,
-                     size_t new_size) override;
+  void* DoReallocate(void* ptr, Layout layout, size_t new_size) override;
 };
 
 }  // namespace pw::allocator

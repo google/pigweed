@@ -36,19 +36,23 @@ namespace pw::allocator {
 /// @endcode
 class Layout {
  public:
+  constexpr Layout(size_t size, size_t alignment = alignof(std::max_align_t))
+      : size_(size), alignment_(alignment) {}
+
   /// Creates a Layout for the given type.
   template <typename T>
   static constexpr Layout Of() {
     return Layout(sizeof(T), alignof(T));
   }
 
+  constexpr Layout Extend(size_t size) {
+    return Layout(size_ + size, alignment_);
+  }
+
   size_t size() const { return size_; }
   size_t alignment() const { return alignment_; }
 
  private:
-  constexpr Layout(size_t size, size_t alignment)
-      : size_(size), alignment_(alignment) {}
-
   size_t size_;
   size_t alignment_;
 };
@@ -97,15 +101,7 @@ class Allocator {
   ///                               object.
   /// @retval OK                    This object can re/deallocate the pointer.
   Status Query(const void* ptr, Layout layout) const {
-    return DoQuery(ptr, layout.size(), layout.alignment());
-  }
-
-  /// Like `Query`, but takes its parameters directly instead of as a `Layout`.
-  ///
-  /// Callers should almost always prefer `Query`. This method is meant for use
-  /// by tests and other allocators implementing the virtual functions below.
-  Status QueryUnchecked(const void* ptr, size_t size, size_t alignment) const {
-    return DoQuery(ptr, size, alignment);
+    return DoQuery(ptr, layout);
   }
 
   /// Allocates a block of memory with the specified size and alignment.
@@ -114,9 +110,7 @@ class Allocator {
   /// size of 0.
   ///
   /// @param[in]  layout      Describes the memory to be allocated.
-  void* Allocate(Layout layout) {
-    return DoAllocate(layout.size(), layout.alignment());
-  }
+  void* Allocate(Layout layout) { return DoAllocate(layout); }
 
   template <typename T, typename... Args>
   std::optional<UniquePtr<T>> MakeUnique(Args&&... args) {
@@ -130,16 +124,6 @@ class Allocator {
         UniquePtr<T>::kPrivateConstructor, ptr, &kStaticLayout, this);
   }
 
-  /// Like `Allocate`, but takes its parameters directly instead of as a
-  /// `Layout`.
-  ///
-  /// Callers should almost always prefer `Allocate`. This method is meant for
-  /// use by tests and other allocators implementing the virtual functions
-  /// below.
-  void* AllocateUnchecked(size_t size, size_t alignment) {
-    return DoAllocate(size, alignment);
-  }
-
   /// Releases a previously-allocated block of memory.
   ///
   /// The given pointer must have been previously obtained from a call to either
@@ -148,17 +132,7 @@ class Allocator {
   /// @param[in]  ptr           Pointer to previously-allocated memory.
   /// @param[in]  layout        Describes the memory to be deallocated.
   void Deallocate(void* ptr, Layout layout) {
-    return DoDeallocate(ptr, layout.size(), layout.alignment());
-  }
-
-  /// Like `Deallocate`, but takes its parameters directly instead of as a
-  /// `Layout`.
-  ///
-  /// Callers should almost always prefer `Deallocate`. This method is meant for
-  /// use by tests and other allocators implementing the virtual functions
-  /// below.
-  void DeallocateUnchecked(void* ptr, size_t size, size_t alignment) {
-    return DoDeallocate(ptr, size, alignment);
+    return DoDeallocate(ptr, layout);
   }
 
   /// Modifies the size of an previously-allocated block of memory without
@@ -174,19 +148,11 @@ class Allocator {
   /// @param[in]  ptr           Pointer to previously-allocated memory.
   /// @param[in]  old_layout    Describes the previously-allocated memory.
   /// @param[in]  new_size      Requested new size for the memory allocation.
-  bool Resize(void* ptr, Layout old_layout, size_t new_size) {
-    return DoResize(ptr, old_layout.size(), old_layout.alignment(), new_size);
-  }
-
-  /// Like `Resize`, but takes its parameters directly instead of as a `Layout`.
-  ///
-  /// Callers should almost always prefer `Resize`. This method is meant for use
-  /// by tests and other allocators implementing the virtual functions below.
-  bool ResizeUnchecked(void* ptr,
-                       size_t old_size,
-                       size_t old_alignment,
-                       size_t new_size) {
-    return DoResize(ptr, old_size, old_alignment, new_size);
+  bool Resize(void* ptr, Layout layout, size_t new_size) {
+    if (ptr == nullptr || layout.size() == 0 || new_size == 0) {
+      return false;
+    }
+    return DoResize(ptr, layout, new_size);
   }
 
   /// Modifies the size of a previously-allocated block of memory.
@@ -206,24 +172,10 @@ class Allocator {
   /// 0 will return a new allocation.
   ///
   /// @param[in]  ptr         Pointer to previously-allocated memory.
-  /// @param[in]  old_layout  Describes the previously-allocated memory.
+  /// @param[in]  layout  Describes the previously-allocated memory.
   /// @param[in]  new_size    Requested new size for the memory allocation.
-  void* Reallocate(void* ptr, Layout old_layout, size_t new_size) {
-    return DoReallocate(
-        ptr, old_layout.size(), old_layout.alignment(), new_size);
-  }
-
-  /// Like `Reallocate`, but takes its parameters directly instead of as a
-  /// `Layout`.
-  ///
-  /// Callers should almost always prefer `Reallocate`. This method is meant for
-  /// use by tests and other allocators implementing the virtual functions
-  /// below.
-  void* ReallocateUnchecked(void* ptr,
-                            size_t old_size,
-                            size_t old_alignment,
-                            size_t new_size) {
-    return DoReallocate(ptr, old_size, old_alignment, new_size);
+  void* Reallocate(void* ptr, Layout layout, size_t new_size) {
+    return DoReallocate(ptr, layout, new_size);
   }
 
  private:
@@ -233,31 +185,30 @@ class Allocator {
   /// Allocators which dispatch to other allocators need to override this method
   /// in order to be able to direct reallocations and deallocations to
   /// appropriate allocator.
-  virtual Status DoQuery(const void*, size_t, size_t) const {
+  virtual Status DoQuery(const void*, Layout) const {
     return Status::Unimplemented();
   }
 
   /// Virtual `Allocate` function implemented by derived classes.
-  virtual void* DoAllocate(size_t size, size_t alignment) = 0;
+  virtual void* DoAllocate(Layout layout) = 0;
 
   /// Virtual `Deallocate` function implemented by derived classes.
-  virtual void DoDeallocate(void* ptr, size_t size, size_t alignment) = 0;
+  virtual void DoDeallocate(void* ptr, Layout layout) = 0;
 
   /// Virtual `Resize` function implemented by derived classes.
-  virtual bool DoResize(void* ptr,
-                        size_t old_size,
-                        size_t old_alignment,
-                        size_t new_size) = 0;
+  ///
+  /// The default implementation simply returns `false`, indicating that
+  /// resizing is not supported.
+  virtual bool DoResize(void* /*ptr*/, Layout /*layout*/, size_t /*new_size*/) {
+    return false;
+  }
 
   /// Virtual `Reallocate` function that can be overridden by derived classes.
   ///
   /// The default implementation will first try to `Resize` the data. If that is
   /// unsuccessful, it will allocate an entirely new block, copy existing data,
   /// and deallocate the given block.
-  virtual void* DoReallocate(void* ptr,
-                             size_t old_size,
-                             size_t old_alignment,
-                             size_t new_size);
+  virtual void* DoReallocate(void* ptr, Layout layout, size_t new_size);
 };
 
 /// An RAII pointer to a value of type ``T`` stored within an ``Allocator``.

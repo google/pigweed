@@ -24,39 +24,32 @@ void FallbackAllocator::Initialize(Allocator& primary, Allocator& secondary) {
   secondary_ = &secondary;
 }
 
-Status FallbackAllocator::DoQuery(const void* ptr,
-                                  size_t size,
-                                  size_t alignment) const {
+Status FallbackAllocator::DoQuery(const void* ptr, Layout layout) const {
   PW_DCHECK(primary_ != nullptr && secondary_ != nullptr);
-  auto status = primary_->QueryUnchecked(ptr, size, alignment);
-  return status.ok() ? status
-                     : secondary_->QueryUnchecked(ptr, size, alignment);
+  auto status = primary_->Query(ptr, layout);
+  return status.ok() ? status : secondary_->Query(ptr, layout);
 }
 
-void* FallbackAllocator::DoAllocate(size_t size, size_t alignment) {
+void* FallbackAllocator::DoAllocate(Layout layout) {
   PW_DCHECK(primary_ != nullptr && secondary_ != nullptr);
-  void* ptr = primary_->AllocateUnchecked(size, alignment);
-  return ptr != nullptr ? ptr : secondary_->AllocateUnchecked(size, alignment);
+  void* ptr = primary_->Allocate(layout);
+  return ptr != nullptr ? ptr : secondary_->Allocate(layout);
 }
 
-void FallbackAllocator::DoDeallocate(void* ptr, size_t size, size_t alignment) {
+void FallbackAllocator::DoDeallocate(void* ptr, Layout layout) {
   PW_DCHECK(primary_ != nullptr && secondary_ != nullptr);
-  if (primary_->QueryUnchecked(ptr, size, alignment).ok()) {
-    primary_->DeallocateUnchecked(ptr, size, alignment);
+  if (primary_->Query(ptr, layout).ok()) {
+    primary_->Deallocate(ptr, layout);
   } else {
-    secondary_->DeallocateUnchecked(ptr, size, alignment);
+    secondary_->Deallocate(ptr, layout);
   }
 }
 
-bool FallbackAllocator::DoResize(void* ptr,
-                                 size_t old_size,
-                                 size_t old_alignment,
-                                 size_t new_size) {
+bool FallbackAllocator::DoResize(void* ptr, Layout layout, size_t new_size) {
   PW_DCHECK(primary_ != nullptr && secondary_ != nullptr);
-  return primary_->QueryUnchecked(ptr, old_size, old_alignment).ok()
-             ? primary_->ResizeUnchecked(ptr, old_size, old_alignment, new_size)
-             : secondary_->ResizeUnchecked(
-                   ptr, old_size, old_alignment, new_size);
+  return primary_->Query(ptr, layout).ok()
+             ? primary_->Resize(ptr, layout, new_size)
+             : secondary_->Resize(ptr, layout, new_size);
 }
 
 }  // namespace pw::allocator

@@ -31,20 +31,18 @@ void AllocatorMetricProxy::Initialize(Allocator& allocator) {
   memusage_.Add(count_);
 }
 
-Status AllocatorMetricProxy::DoQuery(const void* ptr,
-                                     size_t size,
-                                     size_t alignment) const {
+Status AllocatorMetricProxy::DoQuery(const void* ptr, Layout layout) const {
   PW_DCHECK_NOTNULL(allocator_);
-  return allocator_->QueryUnchecked(ptr, size, alignment);
+  return allocator_->Query(ptr, layout);
 }
 
-void* AllocatorMetricProxy::DoAllocate(size_t size, size_t alignment) {
+void* AllocatorMetricProxy::DoAllocate(Layout layout) {
   PW_DCHECK_NOTNULL(allocator_);
-  void* ptr = allocator_->AllocateUnchecked(size, alignment);
+  void* ptr = allocator_->Allocate(layout);
   if (ptr == nullptr) {
     return nullptr;
   }
-  used_.Increment(size);
+  used_.Increment(layout.size());
   if (used_.value() > peak_.value()) {
     peak_.Set(used_.value());
   }
@@ -52,30 +50,25 @@ void* AllocatorMetricProxy::DoAllocate(size_t size, size_t alignment) {
   return ptr;
 }
 
-void AllocatorMetricProxy::DoDeallocate(void* ptr,
-                                        size_t size,
-                                        size_t alignment) {
+void AllocatorMetricProxy::DoDeallocate(void* ptr, Layout layout) {
   PW_DCHECK_NOTNULL(allocator_);
-  allocator_->DeallocateUnchecked(ptr, size, alignment);
+  allocator_->Deallocate(ptr, layout);
   if (ptr == nullptr) {
     return;
   }
-  PW_DCHECK_UINT_GE(used_.value(), size);
+  PW_DCHECK_UINT_GE(used_.value(), layout.size());
   PW_DCHECK_UINT_NE(count_.value(), 0);
-  used_.Set(used_.value() - size);
+  used_.Set(used_.value() - layout.size());
   count_.Set(count_.value() - 1);
 }
 
-bool AllocatorMetricProxy::DoResize(void* ptr,
-                                    size_t old_size,
-                                    size_t old_alignment,
-                                    size_t new_size) {
+bool AllocatorMetricProxy::DoResize(void* ptr, Layout layout, size_t new_size) {
   PW_DCHECK_NOTNULL(allocator_);
-  if (!allocator_->ResizeUnchecked(ptr, old_size, old_alignment, new_size)) {
+  if (!allocator_->Resize(ptr, layout, new_size)) {
     return false;
   }
-  PW_DCHECK_UINT_GE(used_.value(), old_size);
-  used_.Set(used_.value() - old_size + new_size);
+  PW_DCHECK_UINT_GE(used_.value(), layout.size());
+  used_.Set(used_.value() - layout.size() + new_size);
   if (used_.value() > peak_.value()) {
     peak_.Set(used_.value());
   }

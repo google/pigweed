@@ -56,31 +56,26 @@ void AllocatorForTest::DeallocateAll() {
   ResetParameters();
 }
 
-Status AllocatorForTest::DoQuery(const void* ptr,
-                                 size_t size,
-                                 size_t alignment) const {
-  return allocator_.QueryUnchecked(ptr, size, alignment);
+Status AllocatorForTest::DoQuery(const void* ptr, Layout layout) const {
+  return allocator_.Query(ptr, layout);
 }
 
-void* AllocatorForTest::DoAllocate(size_t size, size_t alignment) {
-  allocate_size_ = size;
-  return allocator_.AllocateUnchecked(size, alignment);
+void* AllocatorForTest::DoAllocate(Layout layout) {
+  allocate_size_ = layout.size();
+  return allocator_.Allocate(layout);
 }
 
-void AllocatorForTest::DoDeallocate(void* ptr, size_t size, size_t alignment) {
+void AllocatorForTest::DoDeallocate(void* ptr, Layout layout) {
   deallocate_ptr_ = ptr;
-  deallocate_size_ = size;
-  return allocator_.DeallocateUnchecked(ptr, size, alignment);
+  deallocate_size_ = layout.size();
+  return allocator_.Deallocate(ptr, layout);
 }
 
-bool AllocatorForTest::DoResize(void* ptr,
-                                size_t old_size,
-                                size_t old_alignment,
-                                size_t new_size) {
+bool AllocatorForTest::DoResize(void* ptr, Layout layout, size_t new_size) {
   resize_ptr_ = ptr;
-  resize_old_size_ = old_size;
+  resize_old_size_ = layout.size();
   resize_new_size_ = new_size;
-  return allocator_.ResizeUnchecked(ptr, old_size, old_alignment, new_size);
+  return allocator_.Resize(ptr, layout, new_size);
 }
 
 }  // namespace pw::allocator::test

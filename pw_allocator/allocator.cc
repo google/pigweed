@@ -22,23 +22,20 @@
 
 namespace pw::allocator {
 
-void* Allocator::DoReallocate(void* ptr,
-                              size_t old_size,
-                              size_t old_alignment,
-                              size_t new_size) {
+void* Allocator::DoReallocate(void* ptr, Layout layout, size_t new_size) {
   if (new_size == 0) {
     return nullptr;
   }
-  if (DoResize(ptr, old_size, old_alignment, new_size)) {
+  if (Resize(ptr, layout, new_size)) {
     return ptr;
   }
-  void* new_ptr = DoAllocate(new_size, old_alignment);
+  void* new_ptr = DoAllocate(Layout(new_size, layout.alignment()));
   if (new_ptr == nullptr) {
     return nullptr;
   }
-  if (ptr != nullptr && old_size != 0) {
-    std::memcpy(new_ptr, ptr, old_size);
-    DoDeallocate(ptr, old_size, old_alignment);
+  if (ptr != nullptr && layout.size() != 0) {
+    std::memcpy(new_ptr, ptr, layout.size());
+    DoDeallocate(ptr, layout);
   }
   return new_ptr;
 }

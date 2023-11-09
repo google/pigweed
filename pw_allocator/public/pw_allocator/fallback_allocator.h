@@ -33,19 +33,16 @@ class FallbackAllocator : public Allocator {
 
  private:
   /// @copydoc Allocator::Query
-  Status DoQuery(const void* ptr, size_t size, size_t alignment) const override;
+  Status DoQuery(const void* ptr, Layout layout) const override;
 
   /// @copydoc Allocator::Allocate
-  void* DoAllocate(size_t size, size_t alignment) override;
+  void* DoAllocate(Layout layout) override;
 
   /// @copydoc Allocator::Deallocate
-  void DoDeallocate(void* ptr, size_t size, size_t alignment) override;
+  void DoDeallocate(void* ptr, Layout layout) override;
 
   /// @copydoc Allocator::Resize
-  bool DoResize(void* ptr,
-                size_t old_size,
-                size_t alignment,
-                size_t new_size) override;
+  bool DoResize(void* ptr, Layout layout, size_t new_size) override;
 
   Allocator* primary_ = nullptr;
   Allocator* secondary_ = nullptr;

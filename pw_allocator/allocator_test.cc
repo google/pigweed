@@ -43,11 +43,6 @@ TEST_F(AllocatorTest, ReallocateNull) {
   size_t new_size = old_layout.size();
   void* new_ptr = allocator.Reallocate(nullptr, old_layout, new_size);
 
-  // Reallocate should call Resize.
-  EXPECT_EQ(allocator.resize_ptr(), nullptr);
-  EXPECT_EQ(allocator.resize_old_size(), old_layout.size());
-  EXPECT_EQ(allocator.resize_new_size(), new_size);
-
   // Resize should fail and Reallocate should call Allocate.
   EXPECT_EQ(allocator.allocate_size(), new_size);
 

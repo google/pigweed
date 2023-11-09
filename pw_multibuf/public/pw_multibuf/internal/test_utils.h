@@ -41,17 +41,16 @@ class TrackingAllocator : public pw::allocator::Allocator {
   size_t used() const { return alloc_stats_.used(); }
 
  protected:
-  void* DoAllocate(size_t size, size_t alignment) override {
-    return alloc_stats_.AllocateUnchecked(size, alignment);
+  void* DoAllocate(allocator::Layout layout) override {
+    return alloc_stats_.Allocate(layout);
   }
   bool DoResize(void* ptr,
-                size_t old_size,
-                size_t old_align,
+                allocator::Layout old_layout,
                 size_t new_size) override {
-    return alloc_stats_.ResizeUnchecked(ptr, old_size, old_align, new_size);
+    return alloc_stats_.Resize(ptr, old_layout, new_size);
   }
-  void DoDeallocate(void* ptr, size_t size, size_t alignment) override {
-    alloc_stats_.DeallocateUnchecked(ptr, size, alignment);
+  void DoDeallocate(void* ptr, allocator::Layout layout) override {
+    alloc_stats_.Deallocate(ptr, layout);
   }
 
  private:
@@ -70,17 +69,16 @@ class TrackingAllocatorWithMemory : public pw::allocator::Allocator {
   TrackingAllocatorWithMemory() : mem_(), alloc_(mem_) {}
   size_t count() const { return alloc_.count(); }
   size_t used() const { return alloc_.used(); }
-  void* DoAllocate(size_t size, size_t alignment) override {
-    return alloc_.AllocateUnchecked(size, alignment);
+  void* DoAllocate(allocator::Layout layout) override {
+    return alloc_.Allocate(layout);
   }
   bool DoResize(void* ptr,
-                size_t old_size,
-                size_t old_align,
+                allocator::Layout old_layout,
                 size_t new_size) override {
-    return alloc_.ResizeUnchecked(ptr, old_size, old_align, new_size);
+    return alloc_.Resize(ptr, old_layout, new_size);
   }
-  void DoDeallocate(void* ptr, size_t size, size_t alignment) override {
-    alloc_.DeallocateUnchecked(ptr, size, alignment);
+  void DoDeallocate(void* ptr, allocator::Layout layout) override {
+    alloc_.Deallocate(ptr, layout);
   }
 
  private:
@@ -121,9 +119,9 @@ class HeaderChunkRegionTracker final : public ChunkRegionTracker {
   /// or ``nullptr`` if the allocation failed.
   static HeaderChunkRegionTracker* AllocateRegion(
       pw::allocator::Allocator* alloc, size_t size) {
-    const size_t alloc_size = size + sizeof(HeaderChunkRegionTracker);
-    const size_t align = alignof(HeaderChunkRegionTracker);
-    void* ptr = alloc->AllocateUnchecked(alloc_size, align);
+    auto layout =
+        allocator::Layout::Of<HeaderChunkRegionTracker>().Extend(size);
+    void* ptr = alloc->Allocate(layout);
     if (ptr == nullptr) {
       return nullptr;
     }
@@ -138,11 +136,11 @@ class HeaderChunkRegionTracker final : public ChunkRegionTracker {
  protected:
   void Destroy() final {
     std::byte* ptr = reinterpret_cast<std::byte*>(this);
-    const size_t size = sizeof(HeaderChunkRegionTracker) + region_.size();
-    const size_t align = alignof(HeaderChunkRegionTracker);
+    auto layout = allocator::Layout::Of<HeaderChunkRegionTracker>().Extend(
+        region_.size());
     auto alloc = alloc_;
     std::destroy_at(this);
-    alloc->DeallocateUnchecked(ptr, size, align);
+    alloc->Deallocate(ptr, layout);
   }
   void* AllocateChunkClass() final {
     return alloc_->Allocate(pw::allocator::Layout::Of<Chunk>());

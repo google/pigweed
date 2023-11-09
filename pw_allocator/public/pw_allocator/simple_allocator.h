@@ -41,7 +41,7 @@ class SimpleAllocator : public Allocator {
 
  private:
   /// @copydoc Allocator::Query
-  Status DoQuery(const void* ptr, size_t, size_t) const override {
+  Status DoQuery(const void* ptr, Layout) const override {
     for (auto* block : Range(blocks_)) {
       if (block->UsableSpace() == ptr) {
         return OkStatus();
@@ -51,9 +51,9 @@ class SimpleAllocator : public Allocator {
   }
 
   /// @copydoc Allocator::Allocate
-  void* DoAllocate(size_t size, size_t alignment) override {
+  void* DoAllocate(Layout layout) override {
     for (auto* block : Range(blocks_)) {
-      if (Block::AllocFirst(block, size, alignment).ok()) {
+      if (Block::AllocFirst(block, layout.size(), layout.alignment()).ok()) {
         return block->UsableSpace();
       }
     }
@@ -61,7 +61,7 @@ class SimpleAllocator : public Allocator {
   }
 
   /// @copydoc Allocator::Deallocate
-  void DoDeallocate(void* ptr, size_t, size_t) override {
+  void DoDeallocate(void* ptr, Layout) override {
     if (ptr == nullptr) {
       return;
     }
@@ -71,7 +71,7 @@ class SimpleAllocator : public Allocator {
   }
 
   /// @copydoc Allocator::Resize
-  bool DoResize(void* ptr, size_t, size_t, size_t new_size) override {
+  bool DoResize(void* ptr, Layout, size_t new_size) override {
     if (ptr == nullptr) {
       return false;
     }
