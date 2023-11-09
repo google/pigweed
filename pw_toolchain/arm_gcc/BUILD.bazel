@@ -219,6 +219,7 @@ pw_cc_toolchain_feature(
     linker_files = "@gcc_arm_none_eabi_toolchain//:all",
     objcopy = "@gcc_arm_none_eabi_toolchain//:bin/arm-none-eabi-objcopy",
     objcopy_files = "@gcc_arm_none_eabi_toolchain//:all",
+    objdump = "@gcc_arm_none_eabi_toolchain//:bin/arm-none-eabi-objdump",
     strip = "@gcc_arm_none_eabi_toolchain//:bin/arm-none-eabi-strip",
     strip_files = "@gcc_arm_none_eabi_toolchain//:all",
     supports_param_files = 0,
