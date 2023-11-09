@@ -1146,6 +1146,7 @@ _EXCLUDE_FROM_TODO_CHECK = (
     r'.gitignore$',
     r'.pylintrc$',
     r'\bdocs/build_system.rst',
+    r'\bdocs/code_reviews.rst',
     r'\bpw_assert_basic/basic_handler.cc',
     r'\bpw_assert_basic/public/pw_assert_basic/handler.h',
     r'\bpw_blob_store/public/pw_blob_store/flat_file_system_entry.h',

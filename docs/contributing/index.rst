@@ -91,6 +91,25 @@ You generally only need to submit a CLA once, so if you've already submitted one
 (even if it was for a different project), you probably don't need to do it
 again.
 
+.. _docs-contributing-contribution-standards:
+
+Contribution Standards
+----------------------
+Contributions, i.e. CLs, are expected to be complete solutions, accompanied by
+documentation and unit tests when merited, e.g. new code, bug fixes, or code
+that changes some behavior. This also means that code changes must be tested.
+Tests will avoid or minimize any negative impact to Pigweed users, while
+documentation will help others learn about the new changes.
+
+We understand that you may have different priorities or not know the best way to
+complete your contribution. In that case, reach out via our `chat room
+<https://discord.gg/M9NSeTA>`_ or on the `mailing list
+<https://groups.google.com/forum/#!forum/pigweed>`_ for help or `File a bug
+<https://issues.pigweed.dev/issues?q=status:open>`_
+requesting fixes describing how this may be blocking you. Otherwise you risk
+working on a CL that does not match our vision and could be rejected. To keep
+our focus, we cannot adopt incomplete CLs.
+
 .. _gerrit-commit-hook:
 
 Gerrit Commit Hook
