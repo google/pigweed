@@ -83,10 +83,10 @@ export const styles = css`
     font-size: 1rem;
     height: 0.75rem;
     line-height: 0.75;
-    max-width: 100%;
+    max-width: 30rem;
     overflow: hidden;
     padding: 0.5rem 1rem;
-    width: 25rem;
+    width: 100%;
   }
 
   input[type='text'] {
