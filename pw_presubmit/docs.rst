@@ -182,6 +182,13 @@ others. All of these checks can be included by adding
 ``pw_presubmit.format_code.presubmit_checks()`` to a presubmit program. These
 all use language-specific formatters like clang-format or black.
 
+Example changes demonstrating how to add formatters:
+
+* `CSS <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178810>`_
+* `JSON <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/171991>`_
+* `reStructuredText <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168541>`_
+* `TypeScript <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/164825>`_
+
 These will suggest fixes using ``pw format --fix``.
 
 Options for code formatting can be specified in the ``pigweed.json`` file
