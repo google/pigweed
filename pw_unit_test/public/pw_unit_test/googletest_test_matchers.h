@@ -16,7 +16,7 @@
 #include <type_traits>
 #include <utility>
 
-#include "gmock/gmock.h"
+#include "gmock/gmock-matchers.h"
 #include "gtest/gtest.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
