@@ -63,6 +63,49 @@ To request a feature addition, please `let us know
 See `Using upstream GoogleTest`_ below for information
 about using upstream GoogleTest instead.
 
+API Reference
+-------------
+
+Expectations
+````````````
+Expectations perform a check that when fails continues the test's execution
+while still marking the test as a failure. They're particularly handy when
+verifying multiple dimensions of the same feature so we can see all the errors
+at the same time.
+
+.. doxygendefine:: EXPECT_TRUE
+.. doxygendefine:: EXPECT_FALSE
+.. doxygendefine:: EXPECT_EQ
+.. doxygendefine:: EXPECT_NE
+.. doxygendefine:: EXPECT_GT
+.. doxygendefine:: EXPECT_GE
+.. doxygendefine:: EXPECT_LT
+.. doxygendefine:: EXPECT_LE
+.. doxygendefine:: EXPECT_NEAR
+.. doxygendefine:: EXPECT_FLOAT_EQ
+.. doxygendefine:: EXPECT_DOUBLE_EQ
+.. doxygendefine:: EXPECT_STREQ
+.. doxygendefine:: EXPECT_STRNE
+
+Assertions
+``````````
+Assertions work exactly the same as expectations, but stop the execution of the
+test as soon as a failed condition is met.
+
+.. doxygendefine:: ASSERT_TRUE
+.. doxygendefine:: ASSERT_FALSE
+.. doxygendefine:: ASSERT_EQ
+.. doxygendefine:: ASSERT_NE
+.. doxygendefine:: ASSERT_GT
+.. doxygendefine:: ASSERT_GE
+.. doxygendefine:: ASSERT_LT
+.. doxygendefine:: ASSERT_LE
+.. doxygendefine:: ASSERT_NEAR
+.. doxygendefine:: ASSERT_FLOAT_EQ
+.. doxygendefine:: ASSERT_DOUBLE_EQ
+.. doxygendefine:: ASSERT_STREQ
+.. doxygendefine:: ASSERT_STRNE
+
 The EventHandler interface
 ==========================
 The ``EventHandler`` class in ``public/pw_unit_test/event_handler.h`` defines

@@ -190,6 +190,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_tokenizer/public/pw_tokenizer/tokenize.h",
   "$dir_pw_toolchain/public/pw_toolchain/no_destructor.h",
   "$dir_pw_transfer/public/pw_transfer/atomic_file_transfer_handler.h",
+  "$dir_pw_unit_test/public/pw_unit_test/internal/framework.h",
   "$dir_pw_varint/public/pw_varint/stream.h",
   "$dir_pw_varint/public/pw_varint/varint.h",
   "$dir_pw_work_queue/public/pw_work_queue/work_queue.h",

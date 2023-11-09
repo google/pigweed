@@ -52,42 +52,163 @@
 #define FRIEND_TEST(test_suite_name, test_name) \
   friend class test_suite_name##_##test_name##_Test
 
+/// @def EXPECT_TRUE
+/// Verifies that @p expr evaluates to true.
+/// @param expr Condition to evaluate
 #define EXPECT_TRUE(expr) _PW_TEST_EXPECT(_PW_TEST_BOOL(expr, true))
+
+/// @def EXPECT_FALSE
+/// Verifies that @p expr evaluates to false.
+/// @param expr Condition to evaluate
 #define EXPECT_FALSE(expr) _PW_TEST_EXPECT(_PW_TEST_BOOL(expr, false))
+
+/// @def EXPECT_EQ
+/// Verifies that @p lhs == @p rhs
+/// <p>
+/// Does pointer equality on pointers. If used on two C strings, it tests if
+/// they are in the same memory location, not if they have the same value. Use
+/// #EXPECT_STREQ to compare C strings (e.g. <code>const char*</code>) by value.
+/// <p>
+/// When comparing a pointer to <code>NULL</code> use
+/// <code>EXPECT_EQ(ptr, nullptr)</code> instead of
+/// <code>EXPECT_EQ(ptr, NULL)</code>.
+/// @param lhs The left side of the equality comparison
+/// @param rhs The right side of the equality comparison
 #define EXPECT_EQ(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_OP(lhs, rhs, ==))
+
+/// @def EXPECT_NE
+/// Verifies that @p lhs != @p rhs
+/// <p>
+/// Does pointer equality on pointers. If used on two C strings, it tests if
+/// they are in different memory locations, not if they have different values.
+/// Use #EXPECT_STRNE to compare C strings (e.g. <code>const char*</code>) by
+/// value.
+/// <p>
+/// When comparing a pointer to <code>NULL</code>, use
+/// <code>EXPECT_NE(ptr, nullptr)</code> instead of
+/// <code>EXPECT_NE(ptr, NULL)</code>.
+/// @param lhs The left side of the inequality comparison
+/// @param rhs The right side of the inequality comparison
 #define EXPECT_NE(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_OP(lhs, rhs, !=))
+
+/// @def EXPECT_GT
+/// Verifies that @p lhs > @p rhs
+/// @param lhs The left side of the comparison
+/// @param rhs The right side of the comparison
 #define EXPECT_GT(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_OP(lhs, rhs, >))
+
+/// @def EXPECT_GE
+/// Verifies that @p lhs >= @p rhs
+/// @param lhs The left side of the comparison
+/// @param rhs The right side of the comparison
 #define EXPECT_GE(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_OP(lhs, rhs, >=))
+
+/// @def EXPECT_LT
+/// Verifies that @p lhs < @p rhs
+/// @param lhs The left side of the comparison
+/// @param rhs The right side of the comparison
 #define EXPECT_LT(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_OP(lhs, rhs, <))
+
+/// @def EXPECT_LE
+/// Verifies that @p lhs <= @p rhs
+/// @param lhs The left side of the comparison
+/// @param rhs The right side of the comparison
 #define EXPECT_LE(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_OP(lhs, rhs, <=))
+
+/// @def EXPECT_NEAR
+/// Verifies that the difference between @p lhs and @p rhs does not exceed the
+/// absolute error bound @p epsilon.
+/// @param lhs The left side of the comparison
+/// @param rhs The right side of the comparison
+/// @param epsilon The maximum difference between @p lhs and @p rhs
 #define EXPECT_NEAR(lhs, rhs, epsilon) \
   _PW_TEST_EXPECT(_PW_TEST_NEAR(lhs, rhs, epsilon))
+
+/// @def EXPECT_FLOAT_EQ
+/// Verifies that the two float values @p rhs and @p lhs are approximately
+/// equal, to within 4 ULPs from each other.
+/// @param lhs The left side of the equality comparison
+/// @param rhs The right side of the equality comparison
 #define EXPECT_FLOAT_EQ(lhs, rhs) \
   _PW_TEST_EXPECT(                \
       _PW_TEST_NEAR(lhs, rhs, 4 * std::numeric_limits<float>::epsilon()))
+
+/// @def EXPECT_DOUBLE_EQ
+/// Verifies that the two double values @p rhs and @p lhs are approximately
+/// equal, to within 4 ULPs from each other.
+/// @param lhs The left side of the equality comparison
+/// @param rhs The right side of the equality comparison
 #define EXPECT_DOUBLE_EQ(lhs, rhs) \
   _PW_TEST_EXPECT(                 \
       _PW_TEST_NEAR(lhs, rhs, 4 * std::numeric_limits<double>::epsilon()))
+
+/// @def EXPECT_STREQ
+/// Verifies that the two C strings @p lhs and @p rhs have the same contents.
+/// @param lhs The left side of the equality comparison
+/// @param rhs The right side of the equality comparison
 #define EXPECT_STREQ(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_C_STR(lhs, rhs, ==))
+
+/// @def EXPECT_STRNE
+/// Verifies that the two C strings @p lhs and @p rhs have different content
+/// @param lhs The left side of the inequality comparison
+/// @param rhs The right side of the inequality comparison
 #define EXPECT_STRNE(lhs, rhs) _PW_TEST_EXPECT(_PW_TEST_C_STR(lhs, rhs, !=))
 
+/// @def ASSERT_TRUE
+/// @see EXPECT_TRUE
 #define ASSERT_TRUE(expr) _PW_TEST_ASSERT(_PW_TEST_BOOL(expr, true))
+
+/// @def ASSERT_FALSE
+/// @see EXPECT_FALSE
 #define ASSERT_FALSE(expr) _PW_TEST_ASSERT(_PW_TEST_BOOL(expr, false))
+
+/// @def ASSERT_EQ
+/// @see EXPECT_EQ
 #define ASSERT_EQ(lhs, rhs) _PW_TEST_ASSERT(_PW_TEST_OP(lhs, rhs, ==))
+
+/// @def ASSERT_NE
+/// @see EXPECT_NE
 #define ASSERT_NE(lhs, rhs) _PW_TEST_ASSERT(_PW_TEST_OP(lhs, rhs, !=))
+
+/// @def ASSERT_GT
+/// @see EXPECT_GT
 #define ASSERT_GT(lhs, rhs) _PW_TEST_ASSERT(_PW_TEST_OP(lhs, rhs, >))
+
+/// @def ASSERT_GE
+/// @see EXPECT_GE
 #define ASSERT_GE(lhs, rhs) _PW_TEST_ASSERT(_PW_TEST_OP(lhs, rhs, >=))
+
+/// @def ASSERT_LT
+/// @see EXPECT_LT
 #define ASSERT_LT(lhs, rhs) _PW_TEST_ASSERT(_PW_TEST_OP(lhs, rhs, <))
+
+/// @def ASSERT_LE
+/// @see EXPECT_LE
 #define ASSERT_LE(lhs, rhs) _PW_TEST_ASSERT(_PW_TEST_OP(lhs, rhs, <=))
+
+/// @def ASSERT_NEAR
+/// @see EXPECT_NEAR
 #define ASSERT_NEAR(lhs, rhs, epsilon) \
   _PW_TEST_ASSERT(_PW_TEST_NEAR(lhs, rhs, epsilon))
+
+/// @def ASSERT_FLOAT_EQ
+/// @see EXPECT_FLOAT_EQ
 #define ASSERT_FLOAT_EQ(lhs, rhs) \
   _PW_TEST_ASSERT(                \
       _PW_TEST_NEAR(lhs, rhs, 4 * std::numeric_limits<float>::epsilon()))
+
+/// @def ASSERT_DOUBLE_EQ
+/// @see EXPECT_DOUBLE_EQ
 #define ASSERT_DOUBLE_EQ(lhs, rhs) \
   _PW_TEST_ASSERT(                 \
       _PW_TEST_NEAR(lhs, rhs, 4 * std::numeric_limits<double>::epsilon()))
+
+/// @def ASSERT_STREQ
+/// @see EXPECT_STREQ
 #define ASSERT_STREQ(lhs, rhs) _PW_TEST_ASSERT(_PW_TEST_C_STR(lhs, rhs, ==))
+
+/// @def ASSERT_STRNE
+/// @see EXPECT_STRNE
 #define ASSERT_STRNE(lhs, rhs) _PW_TEST_ASSERT(_PW_TEST_C_STR(lhs, rhs, !=))
 
 // Generates a non-fatal failure with a generic message.
