@@ -258,11 +258,23 @@ follow the instructions below.
 
 First, get both changes passing CQ with ``patches.json`` files.
 
-If one of the codependent changes is a submodule and another is the parent
-project, update the submodule change to no longer include the ``patches.json``
-file. Then directly submit the submodule change, bypassing CQ. This will break
-the roller, but not the source tree, so others on your team are unaffected. Once
-it's submitted do the following:
+Second, if one of the codependent changes is a submodule and another is the
+parent project, update the submodule change to no longer include the
+``patches.json`` file. Then directly submit the change that lives in the child
+submodule, bypassing CQ. This will break the roller, but not the source tree, so
+others on your team are unaffected.
+
+.. admonition:: Note
+
+   For the main Pigweed repository, only core Pigweed team members can force
+   submit, and they must first
+   `request a temporary ACL <http://go/pwi-cookbook#bypass-cq>`_ to do so. This
+   process requires an associated bug, so have one on hand before reaching out
+   with a force submission request.
+
+
+Finally, once the change has merged into the child project, update the submodule
+pointer in the parent project:
 
 .. admonition:: Note
    :class: warning
