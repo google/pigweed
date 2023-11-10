@@ -22,7 +22,7 @@ All pending, active, and resolved SEEDs are listed below.
   0110-memory-allocation-interfaces
   0111-build-systems
   0112-async-poll
-  0113: Modular Bazel C/C++ toolchain API <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/173453>
+  0113-bazel-cc-toolchain-api
   0114: Channels <http://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175471>
   0115: pw_sensor Sensors <http://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176760>
   0116: pw_net Sockets <http://pigweed-review.googlesource.com/c/pigweed/pigweed/+/177696>

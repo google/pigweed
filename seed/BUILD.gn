@@ -31,6 +31,7 @@ pw_doc_group("docs") {
     ":0110",
     ":0111",
     ":0112",
+    ":0113",
   ]
 }
 
@@ -81,4 +82,8 @@ pw_doc_group("0111") {
 
 pw_doc_group("0112") {
   sources = [ "0112-async-poll.rst" ]
+}
+
+pw_doc_group("0113") {
+  sources = [ "0113-bazel-cc-toolchain-api.rst" ]
 }
