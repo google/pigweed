@@ -21,7 +21,6 @@
 #include "pw_bytes/array.h"
 #include "pw_rpc/raw/client_testing.h"
 #include "pw_rpc/test_helpers.h"
-#include "pw_thread/sleep.h"
 #include "pw_thread/thread.h"
 #include "pw_thread_stl/options.h"
 #include "pw_transfer_private/chunk_testing.h"
@@ -611,8 +610,8 @@ TEST_F(ReadTransfer, ResendsParametersIfSentRepeatedChunkDuringRecovery) {
   EXPECT_EQ(transfer_status, OkStatus());
 }
 
-constexpr chrono::SystemClock::duration kTestTimeout =
-    std::chrono::milliseconds(50);
+// Use a long timeout to avoid accidentally triggering timeouts.
+constexpr chrono::SystemClock::duration kTestTimeout = std::chrono::seconds(30);
 constexpr uint8_t kTestRetries = 3;
 
 TEST_F(ReadTransfer, Timeout_ResendsCurrentParameters) {
@@ -780,7 +779,7 @@ TEST_F(ReadTransfer, Timeout_EndsTransferAfterMaxRetries) {
     EXPECT_EQ(transfer_status, Status::Unknown());
   }
 
-  // Sleep one more time after the final retry. The client should cancel the
+  // Time out one more time after the final retry. The client should cancel the
   // transfer at this point. As no packets were received from the server, no
   // final status chunk should be sent.
   transfer_thread_.SimulateClientTimeout(14);
@@ -788,9 +787,10 @@ TEST_F(ReadTransfer, Timeout_EndsTransferAfterMaxRetries) {
 
   EXPECT_EQ(transfer_status, Status::DeadlineExceeded());
 
-  // After finishing the transfer, nothing else should be sent. Verify this by
-  // waiting for a bit.
-  this_thread::sleep_for(kTestTimeout * 4);
+  // After finishing the transfer, nothing else should be sent.
+  transfer_thread_.SimulateClientTimeout(14);
+  transfer_thread_.SimulateClientTimeout(14);
+  transfer_thread_.SimulateClientTimeout(14);
   ASSERT_EQ(payloads.size(), 4u);
 }
 
@@ -1466,7 +1466,7 @@ TEST_F(WriteTransfer, Timeout_EndsTransferAfterMaxRetries) {
     EXPECT_EQ(transfer_status, Status::Unknown());
   }
 
-  // Sleep one more time after the final retry. The client should cancel the
+  // Time out one more time after the final retry. The client should cancel the
   // transfer at this point. As no packets were received from the server, no
   // final status chunk should be sent.
   transfer_thread_.SimulateClientTimeout(13);
@@ -1474,9 +1474,10 @@ TEST_F(WriteTransfer, Timeout_EndsTransferAfterMaxRetries) {
 
   EXPECT_EQ(transfer_status, Status::DeadlineExceeded());
 
-  // After finishing the transfer, nothing else should be sent. Verify this by
-  // waiting for a bit.
-  this_thread::sleep_for(kTestTimeout * 4);
+  // After finishing the transfer, nothing else should be sent.
+  transfer_thread_.SimulateClientTimeout(13);
+  transfer_thread_.SimulateClientTimeout(13);
+  transfer_thread_.SimulateClientTimeout(13);
   ASSERT_EQ(payloads.size(), 4u);
 
   // Ensure we don't leave a dangling reference to transfer_status.
