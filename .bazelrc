@@ -19,6 +19,15 @@
 common --per_file_copt=external/.*@-w
 common --host_per_file_copt=external/.*@-w
 
+# Don't automatically create __init__.py files.
+#
+# This prevents spurious package name collisions at import time, and should be
+# the default (https://github.com/bazelbuild/bazel/issues/7386). It's
+# particularly helpful for Pigweed, because we have many potential package name
+# collisions due to a profusion of stuttering paths like
+# pw_transfer/py/pw_transfer.
+common --incompatible_default_to_explicit_init_py
+
 # Required for new toolchain resolution API.
 build --incompatible_enable_cc_toolchain_resolution
 
