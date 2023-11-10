@@ -12,9 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_perf_test/state.h"
+
 #include "gtest/gtest.h"
 #include "pw_perf_test/event_handler.h"
-#include "pw_perf_test/perf_test.h"
 
 namespace pw::perf_test {
 namespace {

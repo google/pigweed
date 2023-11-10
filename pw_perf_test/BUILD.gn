@@ -26,61 +26,49 @@ config("public_include_path") {
   visibility = [ ":*" ]
 }
 
-config("arm_config") {
-  include_dirs = [ "arm_cortex_cyccnt_public_overrides" ]
-  visibility = [ ":*" ]
-}
-
-config("chrono_config") {
-  include_dirs = [ "chrono_public_overrides" ]
-  visibility = [ ":*" ]
-}
-
-pw_test_group("tests") {
-  tests = [
-    ":perf_test_test",
-    ":timer_facade_test",
-    ":chrono_timer_test",
-    ":state_test",
+pw_source_set("pw_perf_test") {
+  public_configs = [ ":public_include_path" ]
+  public = [
+    "public/pw_perf_test/internal/framework.h",
+    "public/pw_perf_test/internal/test_info.h",
+    "public/pw_perf_test/perf_test.h",
+  ]
+  public_deps = [
+    ":event_handler",
+    ":state",
+    ":timer_interface",
+    dir_pw_preprocessor,
+  ]
+  sources = [
+    "framework.cc",
+    "perf_test.cc",
+    "test_info.cc",
   ]
 }
 
-group("perf_test_tests_test") {
-  deps = [ ":generic_perf_test" ]
-}
-
-# Timing interface variables
-
-pw_source_set("duration_unit") {
-  public = [ "public/pw_perf_test/internal/duration_unit.h" ]
+pw_source_set("state") {
   public_configs = [ ":public_include_path" ]
-  visibility = [ ":*" ]
-}
-
-pw_facade("timer_interface") {
-  backend = pw_perf_test_TIMER_INTERFACE_BACKEND
-  public = [ "public/pw_perf_test/internal/timer.h" ]
-  public_deps = [ ":duration_unit" ]
-  visibility = [ ":*" ]
-}
-
-# Event Handler Configurations
-
-pw_source_set("event_handler") {
-  public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_perf_test/event_handler.h" ]
-}
-
-pw_source_set("pw_perf_test") {
-  public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_perf_test/perf_test.h" ]
+  public = [ "public/pw_perf_test/state.h" ]
   public_deps = [
     ":event_handler",
     ":timer_interface",
     dir_pw_assert,
   ]
   deps = [ dir_pw_log ]
-  sources = [ "perf_test.cc" ]
+  sources = [ "state.cc" ]
+}
+
+pw_test("state_test") {
+  enable_if = pw_perf_test_TIMER_INTERFACE_BACKEND != ""
+  sources = [ "state_test.cc" ]
+  deps = [ ":state" ]
+}
+
+# Event handlers
+
+pw_source_set("event_handler") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_perf_test/event_handler.h" ]
 }
 
 pw_source_set("googletest_style_event_handler") {
@@ -105,48 +93,34 @@ pw_source_set("log_perf_handler_main") {
   sources = [ "log_perf_handler_main.cc" ]
 }
 
-pw_perf_test("generic_perf_test") {
-  enable_if = pw_perf_test_TIMER_INTERFACE_BACKEND != ""
-  sources = [ "performance_test_generic.cc" ]
+# Timer facade
+
+pw_source_set("duration_unit") {
+  public = [ "public/pw_perf_test/internal/duration_unit.h" ]
+  public_configs = [ ":public_include_path" ]
+  visibility = [ ":*" ]
 }
 
-# Declaring module tests
-
-pw_test("perf_test_test") {
-  enable_if = pw_perf_test_TIMER_INTERFACE_BACKEND != ""
-  sources = [ "perf_test_test.cc" ]
-  deps = [ ":pw_perf_test" ]
+pw_facade("timer_interface") {
+  backend = pw_perf_test_TIMER_INTERFACE_BACKEND
+  public = [ "public/pw_perf_test/internal/timer.h" ]
+  public_deps = [ ":duration_unit" ]
+  visibility = [ ":*" ]
 }
 
 pw_test("timer_facade_test") {
   enable_if = pw_perf_test_TIMER_INTERFACE_BACKEND != ""
   sources = [ "timer_test.cc" ]
-  public_deps = [ ":timer_interface" ]
+  deps = [ ":timer_interface" ]
 }
 
-pw_test("chrono_timer_test") {
-  enable_if = pw_chrono_SYSTEM_TIMER_BACKEND != ""
-  sources = [ "chrono_test.cc" ]
-  public_deps = [
-    ":chrono_timer",
-    "$dir_pw_chrono:system_timer",
-    "$dir_pw_thread:sleep",
-  ]
+# Chrono timer facade implementation
+
+config("chrono_config") {
+  include_dirs = [ "chrono_public_overrides" ]
+  visibility = [ ":*" ]
 }
 
-pw_test("state_test") {
-  enable_if = pw_perf_test_TIMER_INTERFACE_BACKEND != ""
-  sources = [ "state_test.cc" ]
-  public_deps = [ ":pw_perf_test" ]
-}
-
-# Documentation declaration
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-}
-
-# Chrono Implementation
 pw_source_set("pw_perf_test_chrono") {
   public_configs = [ ":chrono_config" ]
   public = [ "chrono_public_overrides/pw_perf_test_timer_backend/timer.h" ]
@@ -166,7 +140,22 @@ pw_source_set("chrono_timer") {
   visibility = [ ":*" ]
 }
 
-# ARM Cortex Implementation
+pw_test("chrono_timer_test") {
+  enable_if = pw_chrono_SYSTEM_TIMER_BACKEND != ""
+  sources = [ "chrono_test.cc" ]
+  deps = [
+    ":chrono_timer",
+    "$dir_pw_chrono:system_timer",
+    "$dir_pw_thread:sleep",
+  ]
+}
+
+# ARM Cortex timer facade implementation
+
+config("arm_config") {
+  include_dirs = [ "arm_cortex_cyccnt_public_overrides" ]
+  visibility = [ ":*" ]
+}
 
 pw_source_set("arm_cortex_timer") {
   public_configs = [
@@ -184,4 +173,27 @@ pw_source_set("pw_perf_test_arm_cortex") {
     "arm_cortex_cyccnt_public_overrides/pw_perf_test_timer_backend/timer.h",
   ]
   public_deps = [ ":arm_cortex_timer" ]
+}
+
+# Module-level targets
+
+pw_perf_test("example_perf_test") {
+  enable_if = pw_perf_test_TIMER_INTERFACE_BACKEND != ""
+  sources = [ "examples/example_perf_test.cc" ]
+}
+
+group("examples") {
+  deps = [ ":example_perf_test" ]
+}
+
+pw_test_group("tests") {
+  tests = [
+    ":chrono_timer_test",
+    ":state_test",
+    ":timer_facade_test",
+  ]
+}
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
 }
