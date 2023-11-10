@@ -18,24 +18,32 @@
 #include "pw_result/result.h"
 #include "pw_span/span.h"
 #include "pw_stream/stream.h"
+#include "pw_sync/mutex.h"
 
 namespace pw::stream {
 
 class SocketStream : public NonSeekableReaderWriter {
  public:
-  constexpr SocketStream() = default;
+  SocketStream() = default;
   // Construct a SocketStream directly from a file descriptor.
-  explicit SocketStream(int connection_fd) : connection_fd_(connection_fd) {}
+  explicit SocketStream(int connection_fd) : connection_fd_(connection_fd) {
+    // Take ownership of the connection fd by this object.
+    TakeConnectionFd();
+  }
 
   // SocketStream objects are moveable but not copyable.
   SocketStream& operator=(SocketStream&& other) {
     connection_fd_ = other.connection_fd_;
     other.connection_fd_ = kInvalidFd;
+    connection_fd_own_count_ = other.connection_fd_own_count_;
+    other.connection_fd_own_count_ = 0;
     return *this;
   }
   SocketStream(SocketStream&& other) noexcept
       : connection_fd_(other.connection_fd_) {
     other.connection_fd_ = kInvalidFd;
+    connection_fd_own_count_ = other.connection_fd_own_count_;
+    other.connection_fd_own_count_ = 0;
   }
   SocketStream(const SocketStream&) = delete;
   SocketStream& operator=(const SocketStream&) = delete;
@@ -66,7 +74,20 @@ class SocketStream : public NonSeekableReaderWriter {
 
   StatusWithSize DoRead(ByteSpan dest) override;
 
+  // Take ownership of the connection fd. There may be multiple owners. Each
+  // time TakeConnectionFd is called, ReleaseConnectionFd must be called to
+  // release ownership, even if the connection fd is invalid.
+  //
+  // Returns the connection fd.
+  int TakeConnectionFd();
+
+  // Release ownership of the connection fd. If no owners remain, close and
+  // clear the connection fd.
+  void ReleaseConnectionFd();
+
+  sync::Mutex connection_fd_mutex_;
   int connection_fd_ = kInvalidFd;
+  int connection_fd_own_count_ = 0;
 };
 
 /// `ServerSocket` wraps a POSIX-style server socket, producing a `SocketStream`
@@ -100,8 +121,21 @@ class ServerSocket {
  private:
   static constexpr int kInvalidFd = -1;
 
+  // Take ownership of the socket fd. There may be multiple owners. Each time
+  // TakeSocketFd is called, ReleaseReleaseFd must be called to release
+  // ownership, even if the socket fd is invalid.
+  //
+  // Returns the socket fd.
+  int TakeSocketFd();
+
+  // Release ownership of the socket fd. If no owners remain, close and clear
+  // the socket fd.
+  void ReleaseSocketFd();
+
   uint16_t port_ = -1;
+  sync::Mutex socket_fd_mutex_;
   int socket_fd_ = kInvalidFd;
+  int socket_fd_own_count_ = 0;
 };
 
 }  // namespace pw::stream

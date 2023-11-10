@@ -120,12 +120,6 @@ TEST(RpcIntegrationTest, SocketTransport) {
   a.transport.Stop();
   b.transport.Stop();
 
-  // Unblock socket transports by sending terminator packets.
-  const std::array<std::byte, 1> terminator_bytes{std::byte{0x42}};
-  RpcFrame terminator{.header = {}, .payload = terminator_bytes};
-  EXPECT_EQ(a.transport.Send(terminator), OkStatus());
-  EXPECT_EQ(b.transport.Send(terminator), OkStatus());
-
   a_local_egress_thread.join();
   b_local_egress_thread.join();
   a_transport_thread.join();

@@ -48,7 +48,10 @@ pw_source_set("pw_stream") {
 
 pw_source_set("socket_stream") {
   public_configs = [ ":public_include_path" ]
-  public_deps = [ ":pw_stream" ]
+  public_deps = [
+    ":pw_stream",
+    "$dir_pw_sync:mutex",
+  ]
   deps = [
     dir_pw_assert,
     dir_pw_log,
