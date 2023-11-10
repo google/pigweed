@@ -41,7 +41,7 @@ from google.protobuf import text_format
 
 from pigweed.pw_transfer.integration_test import config_pb2
 from pigweed.pw_protobuf.pw_protobuf_protos import status_pb2
-import test_fixture
+from pigweed.pw_transfer.integration_test import test_fixture
 from test_fixture import TransferIntegrationTestHarness, TransferConfig
 
 

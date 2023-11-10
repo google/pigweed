@@ -34,7 +34,7 @@ from parameterized import parameterized
 import random
 from typing import List
 
-import test_fixture
+from pigweed.pw_transfer.integration_test import test_fixture
 from test_fixture import TransferIntegrationTestHarness, BasicTransfer
 from pigweed.pw_transfer.integration_test import config_pb2
 

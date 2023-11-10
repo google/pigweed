@@ -33,7 +33,7 @@ import itertools
 from parameterized import parameterized
 
 from pigweed.pw_transfer.integration_test import config_pb2
-import test_fixture
+from pigweed.pw_transfer.integration_test import test_fixture
 from test_fixture import TransferIntegrationTestHarness
 
 _ALL_LANGUAGES = ("cpp", "java", "python")

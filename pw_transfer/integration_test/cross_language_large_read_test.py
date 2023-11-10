@@ -35,7 +35,7 @@ import random
 
 from google.protobuf import text_format
 
-import test_fixture
+from pigweed.pw_transfer.integration_test import test_fixture
 from test_fixture import (
     TransferConfig,
     TransferIntegrationTest,
