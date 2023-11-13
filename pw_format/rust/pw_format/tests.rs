@@ -172,7 +172,7 @@ fn test_format_string() {
             "",
             FormatString {
                 fragments: vec![
-                    FormatFragment::Literal("long double "),
+                    FormatFragment::Literal("long double ".to_string()),
                     FormatFragment::Conversion(ConversionSpec {
                         flags: [Flag::ForceSign, Flag::SpaceSign].into_iter().collect(),
                         min_field_width: MinFieldWidth::Fixed(4),
@@ -180,7 +180,7 @@ fn test_format_string() {
                         length: Some(Length::LongDouble),
                         specifier: Specifier::SmallDouble
                     }),
-                    FormatFragment::Literal(" is "),
+                    FormatFragment::Literal(" is ".to_string()),
                     FormatFragment::Conversion(ConversionSpec {
                         flags: [Flag::LeftJustify, Flag::LeadingZeros]
                             .into_iter()
@@ -191,7 +191,7 @@ fn test_format_string() {
                         specifier: Specifier::Decimal
                     }),
                     FormatFragment::Percent,
-                    FormatFragment::Literal("."),
+                    FormatFragment::Literal(".".to_string()),
                 ]
             }
         ))
@@ -204,7 +204,7 @@ fn test_parse() {
         FormatString::parse("long double %+ 4.2Lg is %-03hd%%."),
         Ok(FormatString {
             fragments: vec![
-                FormatFragment::Literal("long double "),
+                FormatFragment::Literal("long double ".to_string()),
                 FormatFragment::Conversion(ConversionSpec {
                     flags: [Flag::ForceSign, Flag::SpaceSign].into_iter().collect(),
                     min_field_width: MinFieldWidth::Fixed(4),
@@ -212,7 +212,7 @@ fn test_parse() {
                     length: Some(Length::LongDouble),
                     specifier: Specifier::SmallDouble
                 }),
-                FormatFragment::Literal(" is "),
+                FormatFragment::Literal(" is ".to_string()),
                 FormatFragment::Conversion(ConversionSpec {
                     flags: [Flag::LeftJustify, Flag::LeadingZeros]
                         .into_iter()
@@ -223,7 +223,7 @@ fn test_parse() {
                     specifier: Specifier::Decimal
                 }),
                 FormatFragment::Percent,
-                FormatFragment::Literal("."),
+                FormatFragment::Literal(".".to_string()),
             ]
         })
     );

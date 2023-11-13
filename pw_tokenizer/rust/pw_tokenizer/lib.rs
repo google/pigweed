@@ -56,6 +56,7 @@ pub mod internal;
 // name.
 pub mod __private {
     pub use crate::*;
+    pub use pw_status::Result;
     pub use pw_stream::{Cursor, Seek, WriteInteger, WriteVarint};
     pub use pw_tokenizer_macro::{_token, _tokenize_to_buffer};
 }
@@ -200,7 +201,16 @@ mod tests {
     fn test_misc_integer_format() {
         // %d, %i, %o, %u, %x, %X all encode integers the same.
         tokenize_to_buffer_test!(
-            &[0x57, 0x88, 0xc5, 0xd8, 0x2], // expected buffer
+            &[0x52, 0x1c, 0xb0, 0x4c, 0x2], // expected buffer
+            64,                             // buffer size
+            "The answer is %d!",
+            1
+        );
+
+        // Because %i is an alias for %d, it gets converted to a %d by the
+        // `pw_format` macro infrastructure.
+        tokenize_to_buffer_test!(
+            &[0x52, 0x1c, 0xb0, 0x4c, 0x2], // expected buffer
             64,                             // buffer size
             "The answer is %i!",
             1
@@ -210,28 +220,28 @@ mod tests {
             &[0x5d, 0x70, 0x12, 0xb4, 0x2], // expected buffer
             64,                             // buffer size
             "The answer is %o!",
-            1
+            1u32
         );
 
         tokenize_to_buffer_test!(
             &[0x63, 0x58, 0x5f, 0x8f, 0x2], // expected buffer
             64,                             // buffer size
             "The answer is %u!",
-            1
+            1u32
         );
 
         tokenize_to_buffer_test!(
             &[0x66, 0xcc, 0x05, 0x7d, 0x2], // expected buffer
             64,                             // buffer size
             "The answer is %x!",
-            1
+            1u32
         );
 
         tokenize_to_buffer_test!(
             &[0x46, 0x4c, 0x16, 0x96, 0x2], // expected buffer
             64,                             // buffer size
             "The answer is %X!",
-            1
+            1u32
         );
     }
 

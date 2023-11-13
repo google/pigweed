@@ -13,13 +13,18 @@
 // the License.
 
 //! The `pw_format` crate is a parser used to implement proc macros that:
-//! * Understand tokenization argument types at compile time.
+//! * Understand format string argument types at compile time.
 //! * Syntax check format strings.
 //!
 //! `pw_format` is written against `std` and is not intended to be
 //! used in an embedded context.  Some efficiency and memory is traded for a
 //! more expressive interface that exposes the format string's "syntax tree"
 //! to the API client.
+//!
+//! # Proc Macros
+//!
+//! The [`macros`] module provides infrastructure for implementing proc macros
+//! that take format strings as arguments.
 //!
 //! # Example
 //!
@@ -33,7 +38,7 @@
 //!
 //! assert_eq!(format_string, FormatString {
 //!   fragments: vec![
-//!       FormatFragment::Literal("long double "),
+//!       FormatFragment::Literal("long double ".to_string()),
 //!       FormatFragment::Conversion(ConversionSpec {
 //!           flags: [Flag::ForceSign, Flag::SpaceSign].into_iter().collect(),
 //!           min_field_width: MinFieldWidth::Fixed(4),
@@ -41,7 +46,7 @@
 //!           length: Some(Length::LongDouble),
 //!           specifier: Specifier::SmallDouble
 //!       }),
-//!       FormatFragment::Literal(" is "),
+//!       FormatFragment::Literal(" is ".to_string()),
 //!       FormatFragment::Conversion(ConversionSpec {
 //!           flags: [Flag::LeftJustify, Flag::LeadingZeros]
 //!               .into_iter()
@@ -52,7 +57,7 @@
 //!           specifier: Specifier::Decimal
 //!       }),
 //!       FormatFragment::Percent,
-//!       FormatFragment::Literal("."),
+//!       FormatFragment::Literal(".".to_string()),
 //!   ]
 //! });
 //! ```
@@ -69,6 +74,8 @@ use nom::{
     multi::many0,
     IResult,
 };
+
+pub mod macros;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// A printf specifier (the 'd' in %d).
@@ -252,9 +259,9 @@ pub struct ConversionSpec {
 
 #[derive(Debug, PartialEq, Eq)]
 /// A fragment of a printf format string.
-pub enum FormatFragment<'a> {
+pub enum FormatFragment {
     /// A literal string value.
-    Literal(&'a str),
+    Literal(String),
 
     /// A conversion specification (i.e. %d).
     Conversion(ConversionSpec),
@@ -265,9 +272,9 @@ pub enum FormatFragment<'a> {
 
 #[derive(Debug, PartialEq, Eq)]
 /// A parsed printf format string.
-pub struct FormatString<'a> {
+pub struct FormatString {
     /// The [FormatFragment]s that comprise the [FormatString].
-    pub fragments: Vec<FormatFragment<'a>>,
+    pub fragments: Vec<FormatFragment>,
 }
 
 fn specifier(input: &str) -> IResult<&str, Specifier> {
@@ -359,7 +366,9 @@ fn conversion_spec(input: &str) -> IResult<&str, ConversionSpec> {
 }
 
 fn literal_fragment(input: &str) -> IResult<&str, FormatFragment> {
-    map(take_till1(|c| c == '%'), FormatFragment::Literal)(input)
+    map(take_till1(|c| c == '%'), |s: &str| {
+        FormatFragment::Literal(s.to_string())
+    })(input)
 }
 
 fn percent_fragment(input: &str) -> IResult<&str, FormatFragment> {
@@ -380,9 +389,9 @@ fn format_string(input: &str) -> IResult<&str, FormatString> {
     Ok((input, FormatString { fragments }))
 }
 
-impl<'a> FormatString<'a> {
+impl FormatString {
     /// Parses a printf style format string.
-    pub fn parse(s: &'a str) -> Result<Self, String> {
+    pub fn parse(s: &str) -> Result<Self, String> {
         // TODO: b/281858500 - Add better errors to failed parses.
         let (rest, result) =
             format_string(s).map_err(|e| format!("Failed to parse format string \"{s}\": {e}"))?;

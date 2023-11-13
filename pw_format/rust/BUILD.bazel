@@ -12,18 +12,22 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_rust//rust:defs.bzl", "rust_doc", "rust_doc_test", "rust_library", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_doc", "rust_doc_test", "rust_library", "rust_proc_macro", "rust_test")
 
 rust_library(
     name = "pw_format",
     srcs = [
         "pw_format/lib.rs",
+        "pw_format/macros.rs",
         "pw_format/tests.rs",
     ],
     visibility = ["//visibility:public"],
     deps = [
         "//pw_status/rust:pw_status",
         "@rust_crates//:nom",
+        "@rust_crates//:proc-macro2",
+        "@rust_crates//:quote",
+        "@rust_crates//:syn",
     ],
 )
 
@@ -40,4 +44,35 @@ rust_doc_test(
 rust_doc(
     name = "pw_format_doc",
     crate = ":pw_format",
+)
+
+rust_proc_macro(
+    name = "pw_format_example_macro",
+    srcs = [
+        "pw_format_example_macro.rs",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":pw_format",
+        "//pw_status/rust:pw_status",
+        "@rust_crates//:proc-macro2",
+        "@rust_crates//:quote",
+        "@rust_crates//:syn",
+    ],
+)
+
+rust_library(
+    name = "pw_format_example_macro_test",
+    srcs = [
+        "pw_format_example_macro_test.rs",
+    ],
+    proc_macro_deps = [
+        ":pw_format_example_macro",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+rust_test(
+    name = "pw_format_example_macro_test_test",
+    crate = ":pw_format_example_macro_test",
 )
