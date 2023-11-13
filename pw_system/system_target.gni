@@ -30,6 +30,8 @@ import("$dir_pw_toolchain/arm_gcc/toolchains.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
 import("$dir_pw_toolchain/host_clang/toolchains.gni")
 import("$dir_pw_toolchain/host_gcc/toolchains.gni")
+import("$dir_pw_trace/backend.gni")
+import("$dir_pw_trace_tokenized/config.gni")
 import("$dir_pw_unit_test/test.gni")
 import("backend.gni")
 import("freertos_backends.gni")
@@ -125,6 +127,8 @@ template("pw_system_target") {
     # TODO(amontanez): This should be set to a "$dir_pw_unit_test:rpc_main"
     # when RPC is working.
     pw_unit_test_MAIN = "$dir_pw_unit_test:logging_main"
+
+    pw_trace_BACKEND = "$dir_pw_trace_tokenized"
 
     if (pw_system_USE_MULTI_ENDPOINT_CONFIG) {
       pw_system_CONFIG = "$dir_pw_system:multi_endpoint_rpc_config"

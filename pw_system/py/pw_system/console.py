@@ -64,6 +64,7 @@ from pw_console.socket_client import SocketClient, SocketClientWithLogging
 from pw_hdlc import rpc
 from pw_rpc.console_tools.console import flattened_rpc_completions
 from pw_system.device import Device
+from pw_system.device_tracing import DeviceWithTracing
 from pw_tokenizer.detokenize import AutoUpdatingDetokenizer
 
 # Default proto imports:
@@ -71,6 +72,9 @@ from pw_log.proto import log_pb2
 from pw_metric_proto import metric_service_pb2
 from pw_thread_protos import thread_snapshot_service_pb2
 from pw_unit_test_proto import unit_test_pb2
+from pw_file import file_pb2
+from pw_trace_protos import trace_service_pb2
+from pw_transfer import transfer_pb2
 
 _LOG = logging.getLogger('tools')
 _DEVICE_LOG = logging.getLogger('rpc_device')
@@ -182,6 +186,13 @@ def get_parser() -> argparse.ArgumentParser:
         nargs='+',
         default=[],
         help='glob pattern for .proto files.',
+    )
+    parser.add_argument(
+        '-f',
+        '--ticks_per_second',
+        type=int,
+        dest='ticks_per_second',
+        help=('The clock rate of the trace events.'),
     )
     parser.add_argument(
         '-v',
@@ -351,6 +362,7 @@ def console(
     device: str,
     baudrate: int,
     proto_globs: Collection[str],
+    ticks_per_second: Optional[int],
     token_databases: Collection[Path],
     socket_addr: str,
     logfile: str,
@@ -438,7 +450,11 @@ def console(
 
     detokenizer = None
     if token_databases:
-        detokenizer = AutoUpdatingDetokenizer(*token_databases)
+        token_databases_with_domains = [] * len(token_databases)
+        for token_database in token_databases:
+            token_databases_with_domains.append(str(token_database) + "#trace")
+
+        detokenizer = AutoUpdatingDetokenizer(*token_databases_with_domains)
         detokenizer.show_errors = True
 
     protos: List[Union[ModuleType, Path]] = list(_expand_globs(proto_globs))
@@ -455,6 +471,9 @@ def console(
     protos.extend(compiled_protos)
     protos.append(metric_service_pb2)
     protos.append(thread_snapshot_service_pb2)
+    protos.append(file_pb2)
+    protos.append(trace_service_pb2)
+    protos.append(transfer_pb2)
 
     if not protos:
         _LOG.critical(
@@ -516,7 +535,8 @@ def console(
             return 1
 
     with reader:
-        device_client = Device(
+        device_client = DeviceWithTracing(
+            ticks_per_second,
             channel_id,
             reader,
             write,

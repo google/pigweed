@@ -22,11 +22,25 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+constraint_setting(
+    name = "system_example_tracing_setting",
+)
+
+constraint_value(
+    name = "system_example_tracing",
+    constraint_setting = ":system_example_tracing_setting",
+)
+
 pw_cc_library(
     name = "config",
     hdrs = [
         "public/pw_system/config.h",
     ],
+    defines = select({
+        "//conditions:default": [
+            "PW_SYSTEM_ENABLE_TRACE_SERVICE=0",
+        ],
+    }),
 )
 
 pw_cc_library(
@@ -98,6 +112,7 @@ pw_cc_library(
         "//pw_hdlc:rpc_channel_output",
         "//pw_sync:mutex",
         "//pw_thread:thread_core",
+        "//pw_trace",
     ],
 )
 
@@ -136,16 +151,26 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":file_manager",
         ":log",
         ":rpc_server",
         ":target_hooks",
         ":thread_snapshot_service",
+        ":transfer_service",
         ":work_queue",
         "//pw_metric:global",
         "//pw_metric:metric_service_pwpb",
         "//pw_rpc/pwpb:echo_service",
         "//pw_thread:thread",
-    ],
+    ] + select({
+        ":system_example_tracing": [
+            ":file_service",
+            ":trace_service",
+            "//pw_trace",
+        ],
+        "//conditions:default": [
+        ],
+    }),
 )
 
 pw_cc_library(
@@ -192,6 +217,90 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "transfer_handlers",
+    srcs = [
+        "transfer_handlers.cc",
+    ],
+    hdrs = [
+        "public/pw_system/transfer_handlers.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_persistent_ram",
+        "//pw_trace_tokenized:config",
+        "//pw_transfer",
+    ],
+)
+
+pw_cc_library(
+    name = "file_manager",
+    srcs = [
+        "file_manager.cc",
+    ],
+    hdrs = [
+        "public/pw_system/file_manager.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":config",
+        ":transfer_handlers",
+        "//pw_file:flat_file_system",
+        "//pw_persistent_ram:flat_file_system_entry",
+    ] + select({
+        ":system_example_tracing": [
+            ":trace_service",
+        ],
+        "//conditions:default": [
+        ],
+    }),
+)
+
+pw_cc_library(
+    name = "transfer_service",
+    srcs = [
+        "transfer_service.cc",
+    ],
+    hdrs = [
+        "public/pw_system/transfer_service.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":file_manager",
+        "//pw_transfer",
+    ],
+)
+
+pw_cc_library(
+    name = "file_service",
+    srcs = [
+        "file_service.cc",
+    ],
+    hdrs = [
+        "public/pw_system/file_service.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":file_manager",
+    ],
+)
+
+pw_cc_library(
+    name = "trace_service",
+    srcs = [
+        "trace_service.cc",
+    ],
+    hdrs = [
+        "public/pw_system/trace_service.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":transfer_handlers",
+        "//pw_persistent_ram",
+        "//pw_trace_tokenized:trace_service_pwpb",
+    ],
+)
+
+pw_cc_library(
     name = "target_hooks",
     hdrs = [
         "public/pw_system/target_hooks.h",
@@ -220,7 +329,9 @@ pw_cc_library(
     srcs = [
         "stl_target_hooks.cc",
     ],
+    includes = ["public"],
     deps = [
+        ":config",
         "//pw_thread:thread",
         "//pw_thread_stl:thread",
     ],
@@ -239,6 +350,7 @@ pw_cc_library(
         "//pw_build/constraints/rtos:freertos",
     ],
     deps = [
+        ":config",
         "//pw_thread:thread",
         "//pw_thread_freertos:thread",
     ],

@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -13,23 +13,25 @@
 // the License.
 #pragma once
 
-#include "pw_thread/thread.h"
+#include "pw_persistent_ram/persistent_buffer.h"
+#include "pw_trace_tokenized/config.h"
+#include "pw_transfer/transfer.h"
 
 namespace pw::system {
 
-const thread::Options& LogThreadOptions();
+using TracePersistentBuffer =
+    persistent_ram::PersistentBuffer<PW_TRACE_BUFFER_SIZE_BYTES>;
 
-const thread::Options& RpcThreadOptions();
+class TracePersistentBufferTransfer : public transfer::ReadOnlyHandler {
+ public:
+  TracePersistentBufferTransfer(uint32_t id,
+                                TracePersistentBuffer& persistent_buffer);
 
-const thread::Options& TransferThreadOptions();
+  Status PrepareRead() final;
 
-const thread::Options& WorkQueueThreadOptions();
-
-// This will run once after pw::system::Init() completes. This callback must
-// return or it will block the work queue.
-//
-// This is the first thing run in a threaded context (specifically on the work
-// queue thread).
-void UserAppInit();
+ private:
+  TracePersistentBuffer& persistent_buffer_;
+  stream::MemoryReader reader_;
+};
 
 }  // namespace pw::system

@@ -18,6 +18,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any, Callable, List, Union, Optional
 
+from pw_thread_protos import thread_pb2
 from pw_hdlc.rpc import (
     HdlcRpcClient,
     channel_output,
@@ -35,7 +36,6 @@ from pw_log_rpc.rpc_log_stream import LogStreamHandler
 from pw_metric import metric_parser
 from pw_rpc import callback_client, Channel, console_tools
 from pw_thread.thread_analyzer import ThreadSnapshotAnalyzer
-from pw_thread_protos import thread_pb2
 from pw_tokenizer import detokenize
 from pw_tokenizer.proto import decode_optionally_tokenized
 from pw_unit_test.rpc import run_tests as pw_unit_test_run_tests, TestRecord
@@ -53,7 +53,9 @@ class Device:
     Note: use this class as a base for specialized device representations.
     """
 
+    # pylint: disable=too-many-instance-attributes
     def __init__(
+        # pylint: disable=too-many-arguments
         self,
         channel_id: int,
         reader: CancellableReader,
@@ -62,6 +64,7 @@ class Device:
         detokenizer: Optional[detokenize.Detokenizer] = None,
         timestamp_decoder: Optional[Callable[[int], str]] = None,
         rpc_timeout_s: float = 5,
+        time_offset: int = 0,
         use_rpc_logging: bool = True,
         use_hdlc_encoding: bool = True,
         logger: logging.Logger = DEFAULT_DEVICE_LOGGER,
@@ -70,6 +73,7 @@ class Device:
         self.protos = proto_library
         self.detokenizer = detokenizer
         self.rpc_timeout_s = rpc_timeout_s
+        self.time_offset = time_offset
 
         self.logger = logger
         self.logger.setLevel(logging.DEBUG)  # Allow all device logs through.

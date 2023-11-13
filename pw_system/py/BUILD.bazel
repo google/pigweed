@@ -33,6 +33,7 @@ py_library(
         "pw_system/__init__.py",
         "pw_system/console.py",
         "pw_system/device.py",
+        "pw_system/device_tracing.py",
     ],
     imports = ["."],
     tags = ["manual"],

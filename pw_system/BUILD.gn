@@ -142,15 +142,20 @@ pw_source_set("init") {
   public = [ "public/pw_system/init.h" ]
   sources = [ "init.cc" ]
   deps = [
+    ":file_manager",
+    ":file_service",
     ":log",
     ":rpc_server",
     ":target_hooks.facade",
     ":thread_snapshot_service",
+    ":trace_service",
+    ":transfer_service",
     ":work_queue",
     "$dir_pw_metric:global",
     "$dir_pw_metric:metric_service_pwpb",
     "$dir_pw_rpc/pwpb:echo_service",
     "$dir_pw_thread:thread",
+    "$dir_pw_trace",
   ]
 }
 
@@ -165,6 +170,7 @@ pw_source_set("hdlc_rpc_server") {
     "$dir_pw_hdlc:rpc_channel_output",
     "$dir_pw_log",
     "$dir_pw_sync:mutex",
+    "$dir_pw_trace",
   ]
 }
 
@@ -196,6 +202,58 @@ pw_source_set("socket_target_io") {
   ]
 }
 
+pw_source_set("transfer_handlers") {
+  public = [ "public/pw_system/transfer_handlers.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    "$dir_pw_persistent_ram",
+    "$dir_pw_trace_tokenized:config",
+    "$dir_pw_transfer",
+  ]
+  sources = [ "transfer_handlers.cc" ]
+  deps = []
+}
+
+pw_source_set("file_manager") {
+  public = [ "public/pw_system/file_manager.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":config",
+    ":transfer_handlers",
+    "$dir_pw_file:flat_file_system",
+    "$dir_pw_persistent_ram:flat_file_system_entry",
+  ]
+  sources = [ "file_manager.cc" ]
+  deps = [ ":trace_service" ]
+}
+
+pw_source_set("transfer_service") {
+  public = [ "public/pw_system/transfer_service.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ "$dir_pw_transfer" ]
+  sources = [ "transfer_service.cc" ]
+  deps = [ ":file_manager" ]
+}
+
+pw_source_set("file_service") {
+  public = [ "public/pw_system/file_service.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = []
+  sources = [ "file_service.cc" ]
+  deps = [ ":file_manager" ]
+}
+
+pw_source_set("trace_service") {
+  public = [ "public/pw_system/trace_service.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ ":transfer_handlers" ]
+  sources = [ "trace_service.cc" ]
+  deps = [
+    "$dir_pw_persistent_ram",
+    "$dir_pw_trace_tokenized:trace_service_pwpb",
+  ]
+}
+
 pw_source_set("thread_snapshot_service") {
   public = [ "public/pw_system/thread_snapshot_service.h" ]
   public_configs = [ ":public_include_path" ]
@@ -219,6 +277,7 @@ if (pw_system_TARGET_HOOKS_BACKEND == "") {
            get_label_info(":stl_target_hooks", "label_no_toolchain")) {
   pw_source_set("stl_target_hooks") {
     deps = [
+      ":config",
       "$dir_pw_thread:thread",
       "$dir_pw_thread_stl:thread",
     ]
@@ -229,6 +288,7 @@ if (pw_system_TARGET_HOOKS_BACKEND == "") {
            get_label_info(":freertos_target_hooks", "label_no_toolchain")) {
   pw_source_set("freertos_target_hooks") {
     deps = [
+      ":config",
       ":init",
       "$dir_pw_third_party/freertos",
       "$dir_pw_thread:thread",
@@ -258,6 +318,7 @@ pw_executable("system_example") {
     ":pw_system",
     "$dir_pw_log",
     "$dir_pw_thread:sleep",
+    "$dir_pw_trace",
     "$dir_pw_unit_test:rpc_service",
 
     # Adds a test that the test server can run.

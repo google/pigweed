@@ -26,6 +26,18 @@
 #include "pw_system_private/log.h"
 #include "pw_thread/detached_thread.h"
 
+#if PW_SYSTEM_ENABLE_TRANSFER_SERVICE
+#include "pw_system/transfer_service.h"
+#endif  // PW_SYSTEM_ENABLE_TRANSFER_SERVICE
+
+#if PW_SYSTEM_ENABLE_TRACE_SERVICE
+#include "pw_system/file_service.h"
+#include "pw_system/trace_service.h"
+#include "pw_trace/trace.h"
+#endif  // PW_SYSTEM_ENABLE_TRACE_SERVICE
+
+#include "pw_system/file_manager.h"
+
 #if PW_SYSTEM_ENABLE_THREAD_SNAPSHOT_SERVICE
 #include "pw_system/thread_snapshot_service.h"
 #endif  // PW_SYSTEM_ENABLE_THREAD_SNAPSHOT_SERVICE
@@ -38,6 +50,12 @@ metric::MetricService metric_service(metric::global_metrics,
 rpc::EchoService echo_service;
 
 void InitImpl() {
+#if PW_SYSTEM_ENABLE_TRACE_SERVICE
+  // tracing is off by default, requring a user to enable it through
+  // the trace service
+  PW_TRACE_SET_ENABLED(false);
+#endif
+
   PW_LOG_INFO("System init");
 
   // Setup logging.
@@ -52,6 +70,16 @@ void InitImpl() {
   GetRpcServer().RegisterService(echo_service);
   GetRpcServer().RegisterService(GetLogService());
   GetRpcServer().RegisterService(metric_service);
+
+#if PW_SYSTEM_ENABLE_TRANSFER_SERVICE
+  RegisterTransferService(GetRpcServer());
+#endif  // PW_SYSTEM_ENABLE_TRANSFER_SERVICE
+
+#if PW_SYSTEM_ENABLE_TRACE_SERVICE
+  RegisterFileService(GetRpcServer());
+  RegisterTraceService(GetRpcServer(), FileManager::kTraceTransferHandlerId);
+#endif  // PW_SYSTEM_ENABLE_TRACE_SERVICE
+
 #if PW_SYSTEM_ENABLE_THREAD_SNAPSHOT_SERVICE
   RegisterThreadSnapshotService(GetRpcServer());
 #endif  // PW_SYSTEM_ENABLE_THREAD_SNAPSHOT_SERVICE
@@ -60,6 +88,11 @@ void InitImpl() {
   // Start threads.
   thread::DetachedThread(system::LogThreadOptions(), GetLogThread());
   thread::DetachedThread(system::RpcThreadOptions(), GetRpcDispatchThread());
+
+#if PW_SYSTEM_ENABLE_TRANSFER_SERVICE
+  thread::DetachedThread(system::TransferThreadOptions(), GetTransferThread());
+  InitTransferService();
+#endif  // PW_SYSTEM_ENABLE_TRANSFER_SERVICE
 
   GetWorkQueue().CheckPushWork(UserAppInit);
 }

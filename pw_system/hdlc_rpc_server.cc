@@ -28,6 +28,7 @@
 #include "pw_system/config.h"
 #include "pw_system/io.h"
 #include "pw_system/rpc_server.h"
+#include "pw_trace/trace.h"
 
 #if PW_SYSTEM_DEFAULT_CHANNEL_ID != PW_SYSTEM_LOGGING_CHANNEL_ID && \
     PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS == PW_SYSTEM_LOGGING_RPC_HDLC_ADDRESS
@@ -117,6 +118,7 @@ class RpcDispatchThread final : public thread::ThreadCore {
         for (std::byte byte : ret_val.value()) {
           if (auto result = decoder.Process(byte); result.ok()) {
             hdlc::Frame& frame = result.value();
+            PW_TRACE_SCOPE("RPC process frame");
             if (frame.address() == PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS ||
                 frame.address() == PW_SYSTEM_LOGGING_RPC_HDLC_ADDRESS) {
               server.ProcessPacket(frame.data());

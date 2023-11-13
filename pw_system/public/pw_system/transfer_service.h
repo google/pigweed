@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -13,23 +13,15 @@
 // the License.
 #pragma once
 
-#include "pw_thread/thread.h"
+#include "pw_rpc/server.h"
+#include "pw_transfer/transfer_thread.h"
 
 namespace pw::system {
 
-const thread::Options& LogThreadOptions();
+void RegisterTransferService(rpc::Server& rpc_server);
 
-const thread::Options& RpcThreadOptions();
+void InitTransferService();
 
-const thread::Options& TransferThreadOptions();
-
-const thread::Options& WorkQueueThreadOptions();
-
-// This will run once after pw::system::Init() completes. This callback must
-// return or it will block the work queue.
-//
-// This is the first thing run in a threaded context (specifically on the work
-// queue thread).
-void UserAppInit();
+transfer::TransferThread& GetTransferThread();
 
 }  // namespace pw::system

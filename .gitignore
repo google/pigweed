@@ -76,3 +76,7 @@ yarn-error.log
 
 # Emboss
 *.emb.h
+
+# Console Logs
+pw_console-logs.txt
+pw_console-device-logs.txt

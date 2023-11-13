@@ -68,6 +68,21 @@
 #define PW_SYSTEM_LOGGING_RPC_HDLC_ADDRESS PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS
 #endif  // PW_SYSTEM_LOGGING_RPC_HDLC_ADDRESS
 
+// PW_SYSTEM_ENABLE_TRACE_SERVICE specifies if the trace RPC service is enabled.
+//
+// Defaults to 1.
+#ifndef PW_SYSTEM_ENABLE_TRACE_SERVICE
+#define PW_SYSTEM_ENABLE_TRACE_SERVICE 1
+#endif  // PW_SYSTEM_ENABLE_TRACE_SERVICE
+
+// PW_SYSTEM_ENABLE_TRANSFER_SERVICE specifies if the transfer RPC service is
+// enabled.
+//
+// Defaults to 1.
+#ifndef PW_SYSTEM_ENABLE_TRANSFER_SERVICE
+#define PW_SYSTEM_ENABLE_TRANSFER_SERVICE 1
+#endif  // PW_SYSTEM_ENABLE_TRANSFER_SERVICE
+
 // PW_SYSTEM_ENABLE_THREAD_SNAPSHOT_SERVICE specifies if the thread snapshot
 // RPC service is enabled.
 //

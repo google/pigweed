@@ -87,9 +87,11 @@ inline constexpr uint16_t kDefaultMaxLifetimeRetries =
     PW_TRANSFER_DEFAULT_MAX_LIFETIME_RETRIES;
 
 inline constexpr chrono::SystemClock::duration kDefaultChunkTimeout =
-    std::chrono::milliseconds(PW_TRANSFER_DEFAULT_TIMEOUT_MS);
+    chrono::SystemClock::for_at_least(
+        std::chrono::milliseconds(PW_TRANSFER_DEFAULT_TIMEOUT_MS));
 inline constexpr chrono::SystemClock::duration kDefaultInitialChunkTimeout =
-    std::chrono::milliseconds(PW_TRANSFER_DEFAULT_INITIAL_TIMEOUT_MS);
+    chrono::SystemClock::for_at_least(
+        std::chrono::milliseconds(PW_TRANSFER_DEFAULT_INITIAL_TIMEOUT_MS));
 
 inline constexpr uint32_t kDefaultExtendWindowDivisor =
     PW_TRANSFER_DEFAULT_EXTEND_WINDOW_DIVISOR;

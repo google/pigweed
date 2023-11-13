@@ -348,7 +348,7 @@ class Context {
   // status chunk will be re-sent for every non-ACK chunk received,
   // continually notifying the other end that the transfer is over.
   static constexpr chrono::SystemClock::duration kFinalChunkAckTimeout =
-      std::chrono::milliseconds(5000);
+      chrono::SystemClock::for_at_least(std::chrono::milliseconds(5000));
 
   static constexpr chrono::SystemClock::time_point kNoTimeout =
       chrono::SystemClock::time_point(chrono::SystemClock::duration(0));

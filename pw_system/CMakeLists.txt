@@ -101,6 +101,73 @@ pw_add_library(pw_system.thread_snapshot_service STATIC
     thread_snapshot_service.cc
 )
 
+pw_add_library(pw_system.transfer_handlers STATIC
+  HEADERS
+    public/pw_system/transfer_handlers.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_persistent_ram
+    pw_trace_tokenized.config
+    pw_transfer
+    pw_transfer.proto.pwpb
+  SOURCES
+    transfer_handlers.cc
+)
+
+pw_add_library(pw_system.file_manager STATIC
+  HEADERS
+    public/pw_system/file_manager.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_system.config
+    pw_system.transfer_handlers
+    pw_persistent_ram.flat_file_system_entry
+  PRIVATE_DEPS
+    pw_system.trace_service
+  SOURCES
+    file_manager.cc
+)
+
+pw_add_library(pw_system.transfer_service STATIC
+  HEADERS
+    public/pw_system/transfer_service.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_transfer
+  PRIVATE_DEPS
+    pw_system.file_manager
+  SOURCES
+    transfer_service.cc
+)
+
+pw_add_library(pw_system.file_service STATIC
+  HEADERS
+    public/pw_system/file_service.h
+  PUBLIC_INCLUDES
+    public
+  PRIVATE_DEPS
+    pw_system.file_manager
+  SOURCES
+    file_service.cc
+)
+
+pw_add_library(pw_system.trace_service STATIC
+  HEADERS
+    public/pw_system/trace_service.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_system.transfer_handlers
+  PRIVATE_DEPS
+    pw_persistent_ram
+    pw_trace_tokenized.trace_service_pwpb
+  SOURCES
+    trace_service.cc
+)
+
 pw_add_library(pw_system.io INTERFACE
   HEADERS
     public/pw_system/io.h
@@ -118,14 +185,19 @@ pw_add_library(pw_system.init STATIC
   SOURCES
     init.cc
   PRIVATE_DEPS
+    pw_system.file_service
     pw_system.log
     pw_system.rpc_server
     pw_system.target_hooks
     pw_system.thread_snapshot_service
+    pw_system.trace_service
+    pw_system.transfer_service
+    pw_system.file_manager
     pw_system.work_queue
     pw_rpc.pwpb.echo_service
     pw_metric.metric_service_pwpb
     pw_thread.thread
+    pw_trace
 )
 
 pw_add_library(pw_system.work_queue STATIC
@@ -163,10 +235,10 @@ pw_add_facade(pw_system.target_hooks INTERFACE
 
 pw_add_library(pw_system.stl_target_hooks STATIC
   PRIVATE_DEPS
+    pw_system.config
     pw_thread.sleep
     pw_thread.thread
     pw_thread_stl.thread
-
   SOURCES
     stl_target_hooks.cc
 )
@@ -175,6 +247,7 @@ pw_add_library(pw_system.freertos_target_hooks STATIC
   SOURCES
     freertos_target_hooks.cc
   PRIVATE_DEPS
+    pw_system.config
     pw_thread.thread
     pw_thread_freertos.thread
     # TODO: b/234876414 - This should depend on FreeRTOS but our third parties

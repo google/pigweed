@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_system/config.h"
 #include "pw_thread/thread.h"
 #include "pw_thread_stl/options.h"
 
@@ -26,6 +27,13 @@ const thread::Options& RpcThreadOptions() {
   static thread::stl::Options rpc_thread_options;
   return rpc_thread_options;
 }
+
+#if PW_SYSTEM_ENABLE_TRANSFER_SERVICE
+const thread::Options& TransferThreadOptions() {
+  static thread::stl::Options transfer_thread_options;
+  return transfer_thread_options;
+}
+#endif  // PW_SYSTEM_ENABLE_TRANSFER_SERVICE
 
 const thread::Options& WorkQueueThreadOptions() {
   static thread::stl::Options work_queue_thread_options;

@@ -36,4 +36,5 @@ PW_SYSTEM_STL_BACKENDS = {
   pw_thread_THREAD_ITERATION_BACKEND = "$dir_pw_thread_stl:thread_iteration"
   pw_thread_YIELD_BACKEND = "$dir_pw_thread_stl:yield"
   pw_system_TARGET_HOOKS_BACKEND = "$dir_pw_system:stl_target_hooks"
+  pw_trace_tokenizer_time = "$dir_pw_trace_tokenized:host_trace_time"
 }

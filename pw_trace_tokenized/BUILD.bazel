@@ -32,12 +32,21 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "config",
+    hdrs = [
+        "public/pw_trace_tokenized/config.h",
+    ],
+    includes = [
+        "public",
+    ],
+)
+
+pw_cc_library(
     name = "pw_trace_tokenized",
     srcs = [
         "trace.cc",
     ],
     hdrs = [
-        "public/pw_trace_tokenized/config.h",
         "public/pw_trace_tokenized/internal/trace_tokenized_internal.h",
         "public/pw_trace_tokenized/trace_callback.h",
         "public/pw_trace_tokenized/trace_tokenized.h",
@@ -48,6 +57,7 @@ pw_cc_library(
         "public_overrides",
     ],
     deps = [
+        ":config",
         "//pw_assert",
         "//pw_log",
         "//pw_preprocessor",

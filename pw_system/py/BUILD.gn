@@ -25,10 +25,13 @@ pw_python_package("py") {
     "pw_system/__init__.py",
     "pw_system/console.py",
     "pw_system/device.py",
+    "pw_system/device_tracing.py",
+    "pw_system/trace_client.py",
   ]
   python_deps = [
     "$dir_pw_cli/py",
     "$dir_pw_console/py",
+    "$dir_pw_file/py",
     "$dir_pw_hdlc/py",
     "$dir_pw_log:protos.python",
     "$dir_pw_log/py",
@@ -40,6 +43,8 @@ pw_python_package("py") {
     "$dir_pw_thread:protos.python",
     "$dir_pw_thread/py",
     "$dir_pw_tokenizer/py",
+    "$dir_pw_trace_tokenized:protos.python",
+    "$dir_pw_transfer:proto.python",
     "$dir_pw_unit_test:unit_test_proto.python",
     "$dir_pw_unit_test/py",
   ]

@@ -33,6 +33,7 @@ PW_SYSTEM_FREERTOS_BACKENDS = {
       "$dir_pw_thread_freertos:thread_iteration"
   pw_thread_YIELD_BACKEND = "$dir_pw_thread_freertos:yield"
   pw_system_TARGET_HOOKS_BACKEND = "$dir_pw_system:freertos_target_hooks"
+  pw_trace_tokenizer_time = "$dir_pw_trace_tokenized:fake_trace_time"
 
   # Enable pw_third_party_freertos_DISABLE_TASKS_STATICS so thread iteration
   # works out-of-the-box.
