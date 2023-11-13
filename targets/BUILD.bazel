@@ -14,7 +14,8 @@
 
 # Bazel build flags.
 #
-# See for how these flags are used.
+# See https://pigweed.dev/build_system.html#facades-and-backends-tutorial for
+# how these flags are used.
 #
 # Please keep this list sorted by name, i.e. the following command should yield
 # no output:
