@@ -2859,6 +2859,95 @@ void FakeController::OnVendorCommand(const PacketView<hci_spec::CommandHeader>& 
   }
 }
 
+void FakeController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) {
+  if (acl_data_callback_) {
+    BT_DEBUG_ASSERT(data_dispatcher_);
+    DynamicByteBuffer packet_copy(acl_data_packet);
+    data_dispatcher_->Post([packet_copy = std::move(packet_copy), cb = acl_data_callback_.share()](
+                               pw::async::Context /*ctx*/, pw::Status status) mutable {
+      if (status.ok()) {
+        cb(packet_copy);
+      }
+    });
+  }
+
+  if (acl_data_packet.size() < sizeof(hci_spec::ACLDataHeader)) {
+    bt_log(WARN, "fake-hci", "malformed ACL packet!");
+    return;
+  }
+
+  const auto& header = acl_data_packet.To<hci_spec::ACLDataHeader>();
+  hci_spec::ConnectionHandle handle = le16toh(header.handle_and_flags) & 0x0FFFF;
+  FakePeer* peer = FindByConnHandle(handle);
+  if (!peer) {
+    bt_log(WARN, "fake-hci", "ACL data received for unknown handle!");
+    return;
+  }
+
+  if (auto_completed_packets_event_enabled_) {
+    SendNumberOfCompletedPacketsEvent(handle, 1);
+  }
+  peer->OnRxL2CAP(handle, acl_data_packet.view(sizeof(hci_spec::ACLDataHeader)));
+}
+
+void FakeController::OnScoDataPacketReceived(const ByteBuffer& sco_data_packet) {
+  if (sco_data_callback_) {
+    sco_data_callback_(sco_data_packet);
+  }
+
+  if (sco_data_packet.size() < sizeof(hci_spec::SynchronousDataHeader)) {
+    bt_log(WARN, "fake-hci", "malformed SCO packet!");
+    return;
+  }
+
+  const auto& header = sco_data_packet.To<hci_spec::SynchronousDataHeader>();
+  hci_spec::ConnectionHandle handle = le16toh(header.handle_and_flags) & 0x0FFFF;
+  FakePeer* peer = FindByConnHandle(handle);
+  if (!peer) {
+    bt_log(WARN, "fake-hci", "SCO data received for unknown handle!");
+    return;
+  }
+
+  if (auto_completed_packets_event_enabled_) {
+    SendNumberOfCompletedPacketsEvent(handle, 1);
+  }
+}
+
+void FakeController::SetDataCallback(DataCallback callback, pw::async::Dispatcher& pw_dispatcher) {
+  BT_DEBUG_ASSERT(callback);
+  BT_DEBUG_ASSERT(!acl_data_callback_);
+  BT_DEBUG_ASSERT(!data_dispatcher_);
+
+  acl_data_callback_ = std::move(callback);
+  data_dispatcher_.emplace(pw_dispatcher);
+}
+
+void FakeController::ClearDataCallback() {
+  // Leave dispatcher set (if already set) to preserve its write-once-ness (this catches bugs with
+  // setting multiple data callbacks in class hierarchies).
+  acl_data_callback_ = nullptr;
+}
+
+bool FakeController::LEAdvertisingState::IsDirectedAdvertising() const {
+  return adv_type ==
+             pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_HIGH_DUTY_CYCLE_DIRECTED ||
+         adv_type == pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_LOW_DUTY_CYCLE_DIRECTED;
+}
+
+bool FakeController::LEAdvertisingState::IsScannableAdvertising() const {
+  return adv_type ==
+             pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_AND_SCANNABLE_UNDIRECTED ||
+         adv_type == pw::bluetooth::emboss::LEAdvertisingType::SCANNABLE_UNDIRECTED;
+}
+
+bool FakeController::LEAdvertisingState::IsConnectableAdvertising() const {
+  return adv_type ==
+             pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_AND_SCANNABLE_UNDIRECTED ||
+         adv_type ==
+             pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_HIGH_DUTY_CYCLE_DIRECTED ||
+         adv_type == pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_LOW_DUTY_CYCLE_DIRECTED;
+}
+
 void FakeController::HandleReceivedCommandPacket(
     const PacketView<hci_spec::CommandHeader>& command_packet) {
   hci_spec::OpCode opcode = le16toh(command_packet.header().opcode);
@@ -2967,54 +3056,54 @@ void FakeController::HandleReceivedCommandPacket(
       OnLEReadAdvertisingChannelTxPower();
       break;
     }
-    case hci_spec::kInquiry:
-    case hci_spec::kEnhancedAcceptSynchronousConnectionRequest:
-    case hci_spec::kEnhancedSetupSynchronousConnection:
+    case hci_spec::kAuthenticationRequested:
     case hci_spec::kCreateConnection:
     case hci_spec::kDisconnect:
-    case hci_spec::kLinkKeyRequestNegativeReply:
-    case hci_spec::kLESetAdvertisingEnable:
-    case hci_spec::kLESetExtendedAdvertisingEnable:
-    case hci_spec::kAuthenticationRequested:
-    case hci_spec::kSetConnectionEncryption:
-    case hci_spec::kRemoteNameRequest:
-    case hci_spec::kReadRemoteSupportedFeatures:
-    case hci_spec::kReadRemoteExtendedFeatures:
-    case hci_spec::kReadRemoteVersionInfo:
+    case hci_spec::kEnhancedAcceptSynchronousConnectionRequest:
+    case hci_spec::kEnhancedSetupSynchronousConnection:
     case hci_spec::kIOCapabilityRequestReply:
-    case hci_spec::kSetEventMask:
-    case hci_spec::kWriteLocalName:
-    case hci_spec::kWriteScanEnable:
-    case hci_spec::kWritePageScanActivity:
-    case hci_spec::kUserConfirmationRequestReply:
-    case hci_spec::kUserConfirmationRequestNegativeReply:
-    case hci_spec::kWriteSynchronousFlowControlEnable:
-    case hci_spec::kWriteExtendedInquiryResponse:
-    case hci_spec::kWriteSimplePairingMode:
-    case hci_spec::kWriteClassOfDevice:
-    case hci_spec::kWriteInquiryMode:
-    case hci_spec::kWritePageScanType:
-    case hci_spec::kWriteLEHostSupport:
-    case hci_spec::kWriteSecureConnectionsHostSupport:
-    case hci_spec::kReadEncryptionKeySize:
-    case hci_spec::kLESetEventMask:
-    case hci_spec::kLESetRandomAddress:
-    case hci_spec::kLESetAdvertisingData:
-    case hci_spec::kLESetScanResponseData:
-    case hci_spec::kLESetScanParameters:
-    case hci_spec::kLESetScanEnable:
-    case hci_spec::kLECreateConnection:
+    case hci_spec::kInquiry:
+    case hci_spec::kLEClearAdvertisingSets:
     case hci_spec::kLEConnectionUpdate:
-    case hci_spec::kLEStartEncryption:
-    case hci_spec::kReadLocalExtendedFeatures:
-    case hci_spec::kLESetAdvertisingParameters:
+    case hci_spec::kLECreateConnection:
     case hci_spec::kLEReadMaxAdvertisingDataLength:
     case hci_spec::kLEReadNumSupportedAdvertisingSets:
-    case hci_spec::kLEClearAdvertisingSets:
-    case hci_spec::kLESetExtendedAdvertisingData:
-    case hci_spec::kLESetExtendedScanResponseData:
+    case hci_spec::kLESetAdvertisingData:
+    case hci_spec::kLESetAdvertisingEnable:
+    case hci_spec::kLESetAdvertisingParameters:
     case hci_spec::kLESetAdvertisingSetRandomAddress:
-    case hci_spec::kLESetExtendedAdvertisingParameters: {
+    case hci_spec::kLESetEventMask:
+    case hci_spec::kLESetExtendedAdvertisingData:
+    case hci_spec::kLESetExtendedAdvertisingEnable:
+    case hci_spec::kLESetExtendedAdvertisingParameters:
+    case hci_spec::kLESetExtendedScanResponseData:
+    case hci_spec::kLESetRandomAddress:
+    case hci_spec::kLESetScanEnable:
+    case hci_spec::kLESetScanParameters:
+    case hci_spec::kLESetScanResponseData:
+    case hci_spec::kLEStartEncryption:
+    case hci_spec::kLinkKeyRequestNegativeReply:
+    case hci_spec::kReadEncryptionKeySize:
+    case hci_spec::kReadLocalExtendedFeatures:
+    case hci_spec::kReadRemoteExtendedFeatures:
+    case hci_spec::kReadRemoteSupportedFeatures:
+    case hci_spec::kReadRemoteVersionInfo:
+    case hci_spec::kRemoteNameRequest:
+    case hci_spec::kSetConnectionEncryption:
+    case hci_spec::kSetEventMask:
+    case hci_spec::kUserConfirmationRequestNegativeReply:
+    case hci_spec::kUserConfirmationRequestReply:
+    case hci_spec::kWriteClassOfDevice:
+    case hci_spec::kWriteExtendedInquiryResponse:
+    case hci_spec::kWriteInquiryMode:
+    case hci_spec::kWriteLEHostSupport:
+    case hci_spec::kWriteLocalName:
+    case hci_spec::kWritePageScanActivity:
+    case hci_spec::kWritePageScanType:
+    case hci_spec::kWriteScanEnable:
+    case hci_spec::kWriteSecureConnectionsHostSupport:
+    case hci_spec::kWriteSimplePairingMode:
+    case hci_spec::kWriteSynchronousFlowControlEnable: {
       // This case is for packet types that have been migrated to the new Emboss architecture.
       // Their old version can be still be assembled from the HciEmulator channel, so here we
       // repackage and forward them as Emboss packets.
@@ -3341,94 +3430,5 @@ void FakeController::HandleReceivedCommandPacket(const hci::EmbossCommandPacket&
       break;
     }
   }
-}
-
-void FakeController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) {
-  if (acl_data_callback_) {
-    BT_DEBUG_ASSERT(data_dispatcher_);
-    DynamicByteBuffer packet_copy(acl_data_packet);
-    data_dispatcher_->Post([packet_copy = std::move(packet_copy), cb = acl_data_callback_.share()](
-                               pw::async::Context /*ctx*/, pw::Status status) mutable {
-      if (status.ok()) {
-        cb(packet_copy);
-      }
-    });
-  }
-
-  if (acl_data_packet.size() < sizeof(hci_spec::ACLDataHeader)) {
-    bt_log(WARN, "fake-hci", "malformed ACL packet!");
-    return;
-  }
-
-  const auto& header = acl_data_packet.To<hci_spec::ACLDataHeader>();
-  hci_spec::ConnectionHandle handle = le16toh(header.handle_and_flags) & 0x0FFFF;
-  FakePeer* peer = FindByConnHandle(handle);
-  if (!peer) {
-    bt_log(WARN, "fake-hci", "ACL data received for unknown handle!");
-    return;
-  }
-
-  if (auto_completed_packets_event_enabled_) {
-    SendNumberOfCompletedPacketsEvent(handle, 1);
-  }
-  peer->OnRxL2CAP(handle, acl_data_packet.view(sizeof(hci_spec::ACLDataHeader)));
-}
-
-void FakeController::OnScoDataPacketReceived(const ByteBuffer& sco_data_packet) {
-  if (sco_data_callback_) {
-    sco_data_callback_(sco_data_packet);
-  }
-
-  if (sco_data_packet.size() < sizeof(hci_spec::SynchronousDataHeader)) {
-    bt_log(WARN, "fake-hci", "malformed SCO packet!");
-    return;
-  }
-
-  const auto& header = sco_data_packet.To<hci_spec::SynchronousDataHeader>();
-  hci_spec::ConnectionHandle handle = le16toh(header.handle_and_flags) & 0x0FFFF;
-  FakePeer* peer = FindByConnHandle(handle);
-  if (!peer) {
-    bt_log(WARN, "fake-hci", "SCO data received for unknown handle!");
-    return;
-  }
-
-  if (auto_completed_packets_event_enabled_) {
-    SendNumberOfCompletedPacketsEvent(handle, 1);
-  }
-}
-
-void FakeController::SetDataCallback(DataCallback callback, pw::async::Dispatcher& pw_dispatcher) {
-  BT_DEBUG_ASSERT(callback);
-  BT_DEBUG_ASSERT(!acl_data_callback_);
-  BT_DEBUG_ASSERT(!data_dispatcher_);
-
-  acl_data_callback_ = std::move(callback);
-  data_dispatcher_.emplace(pw_dispatcher);
-}
-
-void FakeController::ClearDataCallback() {
-  // Leave dispatcher set (if already set) to preserve its write-once-ness (this catches bugs with
-  // setting multiple data callbacks in class hierarchies).
-  acl_data_callback_ = nullptr;
-}
-
-bool FakeController::LEAdvertisingState::IsDirectedAdvertising() const {
-  return adv_type ==
-             pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_HIGH_DUTY_CYCLE_DIRECTED ||
-         adv_type == pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_LOW_DUTY_CYCLE_DIRECTED;
-}
-
-bool FakeController::LEAdvertisingState::IsScannableAdvertising() const {
-  return adv_type ==
-             pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_AND_SCANNABLE_UNDIRECTED ||
-         adv_type == pw::bluetooth::emboss::LEAdvertisingType::SCANNABLE_UNDIRECTED;
-}
-
-bool FakeController::LEAdvertisingState::IsConnectableAdvertising() const {
-  return adv_type ==
-             pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_AND_SCANNABLE_UNDIRECTED ||
-         adv_type ==
-             pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_HIGH_DUTY_CYCLE_DIRECTED ||
-         adv_type == pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_LOW_DUTY_CYCLE_DIRECTED;
 }
 }  // namespace bt::testing
