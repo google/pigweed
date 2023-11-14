@@ -204,11 +204,11 @@ protobuf_deps()
 # Setup Nanopb protoc plugin.
 # Required by: Pigweed.
 # Used in modules: pw_protobuf.
-git_repository(
+http_archive(
     name = "com_github_nanopb_nanopb",
-    commit = "444aca1c4b1d782ee62168232d7b466a837c609e",
-    remote = "https://github.com/nanopb/nanopb.git",
-    shallow_since = "1641373017 +0800",
+    sha256 = "3f78bf63722a810edb6da5ab5f0e76c7db13a961c2aad4ab49296e3095d0d830",
+    strip_prefix = "nanopb-0.4.8",
+    url = "https://github.com/nanopb/nanopb/archive/refs/tags/0.4.8.tar.gz",
 )
 
 load("@com_github_nanopb_nanopb//extra/bazel:nanopb_deps.bzl", "nanopb_deps")
