@@ -42,4 +42,5 @@ pw_cc_library(
     srcs = ["wrap_abort.cc"],
     linkopts = ["-Wl,--wrap=abort"],
     deps = ["//pw_assert"],
+    alwayslink = 1,
 )

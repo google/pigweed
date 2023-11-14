@@ -35,6 +35,7 @@ pw_cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = ["//pw_assert"],
+    alwayslink = 1,
 )
 
 pw_cc_library(
