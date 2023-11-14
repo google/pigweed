@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@python3//:defs.bzl", "interpreter")
+load("@python3_10//:defs.bzl", "interpreter")
 
 licenses(["notice"])
 

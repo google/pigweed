@@ -139,15 +139,15 @@ http_archive(
 
 load("@rules_python//python:repositories.bzl", "python_register_toolchains")
 
-# Use Python 3.11 for bazel Python rules.
+# Use Python 3.10 for bazel Python rules.
 python_register_toolchains(
-    name = "python3",
+    name = "python3_10",
     # Allows building as root in a docker container. Required by oss-fuzz.
     ignore_root_user_error = True,
-    python_version = "3.11",
+    python_version = "3.10",
 )
 
-load("@python3//:defs.bzl", "interpreter")
+load("@python3_10//:defs.bzl", "interpreter")
 load("@rules_python//python:pip.bzl", "pip_parse")
 
 # Specify third party Python package versions with pip_parse.
