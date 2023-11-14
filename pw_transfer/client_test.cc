@@ -1581,12 +1581,14 @@ TEST_F(WriteTransfer, ManualCancel) {
   EXPECT_EQ(chunk.type(), Chunk::Type::kStart);
 
   // Get a response from the server, then cancel the transfer.
+  // This must request a smaller chunk than the entire available write data to
+  // prevent the client from trying to send an additional finish chunk.
   context_.server().SendServerStream<Transfer::Write>(EncodeChunk(
       Chunk(ProtocolVersion::kLegacy, Chunk::Type::kParametersRetransmit)
           .set_session_id(15)
           .set_offset(0)
-          .set_window_end_offset(64)
-          .set_max_chunk_size_bytes(32)));
+          .set_window_end_offset(16)
+          .set_max_chunk_size_bytes(16)));
   transfer_thread_.WaitUntilEventIsProcessed();
   ASSERT_EQ(payloads.size(), 2u);
 
