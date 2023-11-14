@@ -397,10 +397,12 @@ TEST_F(ReadTransfer, MaxChunkSize_Client) {
 }
 
 TEST_F(ReadTransfer, HandlerIsClearedAfterTransfer) {
+  // Request an end offset smaller than the data size to prevent the server
+  // from sending a final chunk.
   ctx_.SendClientStream(
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kStart)
                       .set_session_id(3)
-                      .set_window_end_offset(64)
+                      .set_window_end_offset(16)
                       .set_offset(0)));
   ctx_.SendClientStream(
       EncodeChunk(Chunk::Final(ProtocolVersion::kLegacy, 3, OkStatus())));
@@ -416,10 +418,12 @@ TEST_F(ReadTransfer, HandlerIsClearedAfterTransfer) {
   handler_.prepare_read_called = false;
   handler_.finalize_read_called = false;
 
+  // Request an end offset smaller than the data size to prevent the server
+  // from sending a final chunk.
   ctx_.SendClientStream(
       EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kStart)
                       .set_session_id(3)
-                      .set_window_end_offset(64)
+                      .set_window_end_offset(16)
                       .set_offset(0)));
   transfer_thread_.WaitUntilEventIsProcessed();
 
