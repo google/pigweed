@@ -40,7 +40,7 @@ class PigweedLiveDirective(Directive):
         '2023-10-09 13:00:00',
         '2023-10-23 13:00:00',
         '2023-11-06 13:00:00',
-        '2023-11-20 13:00:00',
+        # 2023-11-20 skipped since it's a holiday(ish)
         '2023-12-04 13:00:00',
         '2023-12-18 13:00:00',
         # 2024-01-01 and 2024-01-15 are skipped because they're holidays.
