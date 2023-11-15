@@ -1261,6 +1261,8 @@ SECURITY = (
     # keep-sorted: end
 )
 
+FUZZ = (gn_fuzz_build, oss_fuzz_build)
+
 # Avoid running all checks on specific paths.
 PATH_EXCLUSIONS = FormatOptions.load().exclude
 
@@ -1325,6 +1327,7 @@ PROGRAMS = Programs(
     # keep-sorted: start
     arduino_pico=ARDUINO_PICO,
     full=FULL,
+    fuzz=FUZZ,
     internal=INTERNAL,
     lintformat=LINTFORMAT,
     misc=MISC,
