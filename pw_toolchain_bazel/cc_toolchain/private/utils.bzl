@@ -15,6 +15,10 @@
 
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 load(
+    "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
+    "FlagSetInfo",
+)
+load(
     "//cc_toolchain/private:providers.bzl",
     "ToolchainFeatureInfo",
 )
@@ -52,12 +56,18 @@ ACTION_MAP = {
     "linkopts": ALL_LINK_ACTIONS,
 }
 
+def _check_dep_provides(ctx_label, dep, provider, what_provides):
+    if provider not in dep:
+        fail(
+            "{} listed as a dependency of {}, but it's not a {}".format(
+                dep.label,
+                ctx_label,
+                what_provides,
+            ),
+        )
+
 def check_deps(ctx):
     for dep in ctx.attr.feature_deps:
-        if ToolchainFeatureInfo not in dep:
-            fail(
-                "{} listed as a dependency of {}, but it's not a pw_cc_toolchain_feature".format(
-                    dep.label,
-                    ctx.label,
-                ),
-            )
+        _check_dep_provides(ctx.label, dep, ToolchainFeatureInfo, "pw_cc_toolchain_feature")
+    for dep in ctx.attr.action_config_flag_sets:
+        _check_dep_provides(ctx.label, dep, FlagSetInfo, "pw_cc_flag_set")

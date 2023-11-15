@@ -14,6 +14,9 @@
 
 load(
     "@pw_toolchain//cc_toolchain:defs.bzl",
+    "ALL_CPP_COMPILER_ACTIONS",
+    "ALL_C_COMPILER_ACTIONS",
+    "pw_cc_flag_set",
     "pw_cc_toolchain",
     "pw_cc_toolchain_feature",
 )
@@ -56,9 +59,10 @@ pw_cc_toolchain_feature(
 # Although we use similar warnings for clang and arm_gcc, we don't have one
 # centralized list, since we might want to use different warnings based on the
 # compiler in the future.
-pw_cc_toolchain_feature(
+pw_cc_flag_set(
     name = "warnings",
-    copts = [
+    actions = ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS,
+    flags = [
         "-Wall",
         "-Wextra",
         # Make all warnings errors, except for the exemptions below.
@@ -68,9 +72,10 @@ pw_cc_toolchain_feature(
     ],
 )
 
-pw_cc_toolchain_feature(
+pw_cc_flag_set(
     name = "no_unknown_warning_option",
-    copts = [
+    actions = ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS,
+    flags = [
         "-Wno-unknown-warning-option",
     ],
 )
@@ -87,6 +92,9 @@ pw_cc_toolchain(
     name = "host_toolchain_macos",
     abi_libc_version = "unknown",
     abi_version = "unknown",
+    action_config_flag_sets = [
+        ":warnings",
+    ],
     all_files = "@llvm_toolchain//:all",
     ar = "@llvm_toolchain//:bin/llvm-ar",
     ar_files = "@llvm_toolchain//:all",
@@ -97,7 +105,6 @@ pw_cc_toolchain(
     cpp = "@llvm_toolchain//:bin/clang++",
     dwp_files = "@llvm_toolchain//:all",
     feature_deps = [
-        ":warnings",
         "@pw_toolchain//features:no_default_cpp_stdlib",
         ":macos_stdlib",
         "@pw_toolchain//features/macos:macos_sysroot",
@@ -145,6 +152,9 @@ pw_cc_toolchain(
     name = "host_toolchain_linux",
     abi_libc_version = "unknown",
     abi_version = "unknown",
+    action_config_flag_sets = [
+        ":warnings",
+    ],
     all_files = ":all_linux_files",
     ar = "@llvm_toolchain//:bin/llvm-ar",
     ar_files = ":all_linux_files",
@@ -155,7 +165,6 @@ pw_cc_toolchain(
     cpp = "@llvm_toolchain//:bin/clang++",
     dwp_files = ":all_linux_files",
     feature_deps = [
-        ":warnings",
         ":linux_sysroot",
         "@pw_toolchain//features:c++17",
         "@pw_toolchain//features:debugging",
@@ -188,6 +197,10 @@ pw_cc_toolchain(
     name = "host_toolchain_linux_kythe",
     abi_libc_version = "unknown",
     abi_version = "unknown",
+    action_config_flag_sets = [
+        ":warnings",
+        ":no_unknown_warning_option",
+    ],
     all_files = ":all_linux_files",
     ar = "@llvm_toolchain//:bin/llvm-ar",
     ar_files = ":all_linux_files",
@@ -198,8 +211,6 @@ pw_cc_toolchain(
     cpp = "@llvm_toolchain//:bin/clang++",
     dwp_files = ":all_linux_files",
     feature_deps = [
-        ":warnings",
-        ":no_unknown_warning_option",
         ":linux_sysroot",
         "@pw_toolchain//features:c++17",
         "@pw_toolchain//features:debugging",

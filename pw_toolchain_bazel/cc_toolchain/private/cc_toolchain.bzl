@@ -16,6 +16,7 @@
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 load(
     "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
+    "FlagSetInfo",
     "action_config",
     "feature",
     "flag_group",
@@ -42,15 +43,16 @@ OBJ_COPY_ACTION_NAME = "objcopy_embed_data"
 OBJ_DUMP_ACTION_NAME = "objdump_embed_data"
 
 PW_CC_TOOLCHAIN_CONFIG_ATTRS = {
-    "feature_deps": "pw_cc_toolchain_feature labels that provide features for this toolchain",
-    "ar": "Path to the tool to use for ar (static link) actions",
+    "feature_deps": "`pw_cc_toolchain_feature` labels that provide features for this toolchain",
+    "ar": "Path to the tool to use for `ar` (static link) actions",
     "cpp": "Path to the tool to use for C++ compile actions",
     "gcc": "Path to the tool to use for C compile actions",
-    "gcov": "Pah to the tool to use for generating code coverag data",
+    "gcov": "Path to the tool to use for generating code coverage data",
     "ld": "Path to the tool to use for link actions",
     "strip": "Path to the tool to use for strip actions",
     "objcopy": "Path to the tool to use for objcopy actions",
     "objdump": "Path to the tool to use for objdump actions",
+    "action_config_flag_sets": "List of flag sets to apply to the respective `action_config`s",
 
     # Attributes originally part of create_cc_toolchain_config_info.
     "toolchain_identifier": "See documentation for cc_common.create_cc_toolchain_config_info()",
@@ -77,12 +79,13 @@ PW_CC_TOOLCHAIN_BLOCKED_ATTRS = {
     "builtin_sysroot": "Use a pw_cc_toolchain_feature to add a builtin_sysroot",
 }
 
-def _action_configs(action_tool, action_list):
+def _action_configs(action_tool, action_list, flag_sets_by_action):
     """Binds a tool to an action.
 
     Args:
         action_tool (File): Tool to bind to the specified actions.
         action_list (List[str]): List of actions to bind to the specified tool.
+        flag_sets_by_action: Dictionary mapping action names to lists of applicable flag sets.
 
     Returns:
         action_config: A action_config binding the provided tool to the
@@ -96,6 +99,7 @@ def _action_configs(action_tool, action_list):
                     tool = action_tool,
                 ),
             ],
+            flag_sets = flag_sets_by_action.get(action, default = []),
         )
         for action in action_list
     ]
@@ -180,6 +184,40 @@ def _archiver_flags(is_mac):
     else:
         return ["rcsD"]
 
+def _strip_actions(flag_set_to_copy):
+    """Copies a flag_set, stripping `actions`.
+
+    Args:
+        flag_set_to_copy: The base flag_set to copy.
+    Returns:
+        flag_set with empty `actions` list.
+    """
+    return flag_set(
+        with_features = flag_set_to_copy.with_features,
+        flag_groups = flag_set_to_copy.flag_groups,
+    )
+
+def _create_action_flag_set_map(flag_sets):
+    """Creates a mapping of action names to flag sets.
+
+    Args:
+        flag_sets: the flag sets to expand.
+    Returns:
+        Dictionary mapping action names to lists of FlagSetInfo providers.
+    """
+    flag_sets_by_action = {}
+    for fs in flag_sets:
+        handled_actions = {}
+        for action in fs.actions:
+            if action not in flag_sets_by_action:
+                flag_sets_by_action[action] = []
+
+            # Dedupe action set list.
+            if action not in handled_actions:
+                handled_actions[action] = True
+                flag_sets_by_action[action].append(_strip_actions(fs))
+    return flag_sets_by_action
+
 def _pw_cc_toolchain_config_impl(ctx):
     """Rule that provides a CcToolchainConfigInfo.
 
@@ -190,11 +228,14 @@ def _pw_cc_toolchain_config_impl(ctx):
         CcToolchainConfigInfo
     """
     check_deps(ctx)
+
+    flag_sets_by_action = _create_action_flag_set_map([dep[FlagSetInfo] for dep in ctx.attr.action_config_flag_sets])
+
     all_actions = []
-    all_actions += _action_configs(ctx.executable.gcc, ALL_ASM_ACTIONS)
-    all_actions += _action_configs(ctx.executable.gcc, ALL_C_COMPILER_ACTIONS)
-    all_actions += _action_configs(ctx.executable.cpp, ALL_CPP_COMPILER_ACTIONS)
-    all_actions += _action_configs(ctx.executable.cpp, ALL_LINK_ACTIONS)
+    all_actions += _action_configs(ctx.executable.gcc, ALL_ASM_ACTIONS, flag_sets_by_action)
+    all_actions += _action_configs(ctx.executable.gcc, ALL_C_COMPILER_ACTIONS, flag_sets_by_action)
+    all_actions += _action_configs(ctx.executable.cpp, ALL_CPP_COMPILER_ACTIONS, flag_sets_by_action)
+    all_actions += _action_configs(ctx.executable.cpp, ALL_LINK_ACTIONS, flag_sets_by_action)
 
     all_actions += [
         action_config(
@@ -205,6 +246,7 @@ def _pw_cc_toolchain_config_impl(ctx):
                     tool = ctx.executable.ar,
                 ),
             ],
+            flag_sets = flag_sets_by_action.get(ACTION_NAMES.cpp_link_static_library, default = []),
         ),
         action_config(
             action_name = ACTION_NAMES.llvm_cov,
@@ -213,6 +255,7 @@ def _pw_cc_toolchain_config_impl(ctx):
                     tool = ctx.executable.gcov,
                 ),
             ],
+            flag_sets = flag_sets_by_action.get(ACTION_NAMES.llvm_cov, default = []),
         ),
         action_config(
             action_name = OBJ_COPY_ACTION_NAME,
@@ -221,6 +264,7 @@ def _pw_cc_toolchain_config_impl(ctx):
                     tool = ctx.executable.objcopy,
                 ),
             ],
+            flag_sets = flag_sets_by_action.get(OBJ_COPY_ACTION_NAME, default = []),
         ),
         action_config(
             action_name = OBJ_DUMP_ACTION_NAME,
@@ -229,6 +273,7 @@ def _pw_cc_toolchain_config_impl(ctx):
                     tool = ctx.executable.objdump,
                 ),
             ],
+            flag_sets = flag_sets_by_action.get(OBJ_DUMP_ACTION_NAME, default = []),
         ),
         action_config(
             action_name = ACTION_NAMES.strip,
@@ -237,6 +282,7 @@ def _pw_cc_toolchain_config_impl(ctx):
                     tool = ctx.executable.strip,
                 ),
             ],
+            flag_sets = flag_sets_by_action.get(ACTION_NAMES.strip, default = []),
         ),
     ]
 
@@ -284,6 +330,7 @@ pw_cc_toolchain_config = rule(
         "objcopy": attr.label(allow_single_file = True, executable = True, cfg = "exec"),
         "objdump": attr.label(allow_single_file = True, executable = True, cfg = "exec"),
         "strip": attr.label(allow_single_file = True, executable = True, cfg = "exec"),
+        "action_config_flag_sets": attr.label_list(),
 
         # Attributes from create_cc_toolchain_config_info.
         "toolchain_identifier": attr.string(),
