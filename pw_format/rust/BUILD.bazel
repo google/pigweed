@@ -76,3 +76,37 @@ rust_test(
     name = "pw_format_example_macro_test_test",
     crate = ":pw_format_example_macro_test",
 )
+
+rust_proc_macro(
+    name = "pw_format_test_macros",
+    srcs = [
+        "pw_format_test_macros.rs",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":pw_format",
+        "//pw_status/rust:pw_status",
+        "@rust_crates//:proc-macro2",
+        "@rust_crates//:quote",
+        "@rust_crates//:syn",
+    ],
+)
+
+rust_library(
+    name = "pw_format_test_macros_test",
+    srcs = [
+        "pw_format_test_macros_test.rs",
+    ],
+    proc_macro_deps = [
+        ":pw_format_test_macros",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":pw_format",
+    ],
+)
+
+rust_test(
+    name = "pw_format_test_macros_test_test",
+    crate = ":pw_format_test_macros_test",
+)

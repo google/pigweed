@@ -36,7 +36,7 @@
 use std::collections::VecDeque;
 
 use proc_macro2::Ident;
-use quote::{format_ident, ToTokens};
+use quote::{format_ident, quote, ToTokens};
 use syn::{
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
@@ -75,7 +75,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 ///
 /// In order to maintain compatibility with `printf` style systems, sign
 /// and base are combined.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum IntegerDisplayType {
     /// Signed integer
     Signed,
@@ -101,6 +101,24 @@ impl TryFrom<crate::Specifier> for IntegerDisplayType {
             Specifier::UpperHex => Ok(Self::UpperHex),
             _ => Err(Error::new("No valid IntegerDisplayType for {value:?}.")),
         }
+    }
+}
+
+/// Implemented for testing through the pw_format_test_macros crate.
+impl ToTokens for IntegerDisplayType {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        let new_tokens = match self {
+            IntegerDisplayType::Signed => quote!(pw_format::macros::IntegerDisplayType::Signed),
+            IntegerDisplayType::Unsigned => {
+                quote!(pw_format::macros::IntegerDisplayType::Unsigned)
+            }
+            IntegerDisplayType::Octal => quote!(pw_format::macros::IntegerDisplayType::Octal),
+            IntegerDisplayType::Hex => quote!(pw_format::macros::IntegerDisplayType::Hex),
+            IntegerDisplayType::UpperHex => {
+                quote!(pw_format::macros::IntegerDisplayType::UpperHex)
+            }
+        };
+        new_tokens.to_tokens(tokens);
     }
 }
 
