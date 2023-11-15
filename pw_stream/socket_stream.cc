@@ -96,8 +96,6 @@ Status SocketStream::SocketStream::Connect(const char* host, uint16_t port) {
   for (rp = res; rp != nullptr; rp = rp->ai_next) {
     connection_fd_ = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
     if (connection_fd_ != kInvalidFd) {
-      // Take ownership of the connection fd by this object.
-      TakeConnectionFd();
       break;
     }
   }
@@ -110,8 +108,8 @@ Status SocketStream::SocketStream::Connect(const char* host, uint16_t port) {
 
   ConfigureSocket(connection_fd_);
   if (connect(connection_fd_, rp->ai_addr, rp->ai_addrlen) == -1) {
-    // Release ownership of the connection fd by this object.
-    ReleaseConnectionFd();
+    close(connection_fd_);
+    connection_fd_ = kInvalidFd;
     PW_LOG_ERROR(
         "Failed to connect to %s:%d: %s", host, port, std::strerror(errno));
     freeaddrinfo(res);
@@ -123,15 +121,10 @@ Status SocketStream::SocketStream::Connect(const char* host, uint16_t port) {
 }
 
 void SocketStream::Close() {
-  int fd = TakeConnectionFd();
-  if (fd != kInvalidFd) {
-    // Shutdown the connection to cancel any blocking calls.
-    shutdown(fd, SHUT_RDWR);
-
-    // Release ownership of the connection fd by this object.
-    ReleaseConnectionFd();
+  if (connection_fd_ != kInvalidFd) {
+    close(connection_fd_);
+    connection_fd_ = kInvalidFd;
   }
-  ReleaseConnectionFd();
 }
 
 Status SocketStream::DoWrite(span<const std::byte> data) {
@@ -142,16 +135,10 @@ Status SocketStream::DoWrite(span<const std::byte> data) {
   send_flags |= MSG_NOSIGNAL;
 #endif  // defined(__linux__)
 
-  int fd = TakeConnectionFd();
-  if (fd == kInvalidFd) {
-    ReleaseConnectionFd();
-    return Status::Unknown();
-  }
-  ssize_t bytes_sent = send(fd,
+  ssize_t bytes_sent = send(connection_fd_,
                             reinterpret_cast<const char*>(data.data()),
                             data.size_bytes(),
                             send_flags);
-  ReleaseConnectionFd();
 
   if (bytes_sent < 0 || static_cast<size_t>(bytes_sent) != data.size()) {
     if (errno == EPIPE) {
@@ -166,14 +153,10 @@ Status SocketStream::DoWrite(span<const std::byte> data) {
 }
 
 StatusWithSize SocketStream::DoRead(ByteSpan dest) {
-  int fd = TakeConnectionFd();
-  if (fd == kInvalidFd) {
-    ReleaseConnectionFd();
-    return StatusWithSize::Unknown();
-  }
-  ssize_t bytes_rcvd =
-      recv(fd, reinterpret_cast<char*>(dest.data()), dest.size_bytes(), 0);
-  ReleaseConnectionFd();
+  ssize_t bytes_rcvd = recv(connection_fd_,
+                            reinterpret_cast<char*>(dest.data()),
+                            dest.size_bytes(),
+                            0);
   if (bytes_rcvd == 0) {
     // Remote peer has closed the connection.
     Close();
@@ -191,23 +174,6 @@ StatusWithSize SocketStream::DoRead(ByteSpan dest) {
   return StatusWithSize(bytes_rcvd);
 }
 
-int SocketStream::TakeConnectionFd() {
-  std::lock_guard lock(connection_fd_mutex_);
-  int fd = connection_fd_;
-  ++connection_fd_own_count_;
-  return fd;
-}
-
-void SocketStream::ReleaseConnectionFd() {
-  std::lock_guard lock(connection_fd_mutex_);
-  int fd = connection_fd_;
-  --connection_fd_own_count_;
-  if ((connection_fd_own_count_ <= 0) && (fd != kInvalidFd)) {
-    connection_fd_ = kInvalidFd;
-    close(fd);
-  }
-}
-
 // Listen for connections on the given port.
 // If port is 0, a random unused port is chosen and can be retrieved with
 // port().
@@ -216,8 +182,6 @@ Status ServerSocket::Listen(uint16_t port) {
   if (socket_fd_ == kInvalidFd) {
     return Status::Unknown();
   }
-  // Take ownership of the socket fd by this object.
-  TakeSocketFd();
 
   // Allow binding to an address that may still be in use by a closed socket.
   constexpr int value = 1;
@@ -248,8 +212,7 @@ Status ServerSocket::Listen(uint16_t port) {
   if (getsockname(socket_fd_, reinterpret_cast<sockaddr*>(&addr), &addr_len) <
           0 ||
       static_cast<size_t>(addr_len) > sizeof(addr)) {
-    // Release ownership of the socket fd by this object.
-    ReleaseSocketFd();
+    close(socket_fd_);
     return Status::Unknown();
   }
 
@@ -264,49 +227,23 @@ Result<SocketStream> ServerSocket::Accept() {
   struct sockaddr_in6 sockaddr_client_ = {};
   socklen_t len = sizeof(sockaddr_client_);
 
-  int fd = TakeSocketFd();
-  if (fd == kInvalidFd) {
-    ReleaseSocketFd();
-    return Status::Unknown();
-  }
   int connection_fd =
-      accept(fd, reinterpret_cast<sockaddr*>(&sockaddr_client_), &len);
-  ReleaseSocketFd();
+      accept(socket_fd_, reinterpret_cast<sockaddr*>(&sockaddr_client_), &len);
   if (connection_fd == kInvalidFd) {
     return Status::Unknown();
   }
   ConfigureSocket(connection_fd);
 
-  return SocketStream(connection_fd);
+  SocketStream client_stream;
+  client_stream.connection_fd_ = connection_fd;
+  return client_stream;
 }
 
 // Close the server socket, preventing further connections.
 void ServerSocket::Close() {
-  int fd = TakeSocketFd();
-  if (fd != kInvalidFd) {
-    // Shutdown the connection to cancel any blocking calls.
-    shutdown(fd, SHUT_RDWR);
-
-    // Release ownership of the socket fd by this object.
-    ReleaseSocketFd();
-  }
-  ReleaseSocketFd();
-}
-
-int ServerSocket::TakeSocketFd() {
-  std::lock_guard lock(socket_fd_mutex_);
-  int fd = socket_fd_;
-  ++socket_fd_own_count_;
-  return fd;
-}
-
-void ServerSocket::ReleaseSocketFd() {
-  std::lock_guard lock(socket_fd_mutex_);
-  int fd = socket_fd_;
-  --socket_fd_own_count_;
-  if ((socket_fd_own_count_ <= 0) && (fd != kInvalidFd)) {
+  if (socket_fd_ != kInvalidFd) {
+    close(socket_fd_);
     socket_fd_ = kInvalidFd;
-    close(fd);
   }
 }
 

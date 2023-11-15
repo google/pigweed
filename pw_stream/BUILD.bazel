@@ -52,7 +52,6 @@ pw_cc_library(
         ":pw_stream",
         "//pw_log",
         "//pw_string",
-        "//pw_sync:mutex",
         "//pw_sys_io",
     ],
 )

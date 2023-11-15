@@ -106,10 +106,6 @@ class SocketRpcTransport : public RpcFrameSender, public thread::ThreadCore {
 
       while (!stopped_) {
         const auto read_status = ReadData();
-        // Break if ReadData was cancelled after the transport was stopped.
-        if (stopped_) {
-          break;
-        }
         if (!read_status.ok()) {
           internal::LogSocketReadError(read_status);
         }
@@ -126,11 +122,7 @@ class SocketRpcTransport : public RpcFrameSender, public thread::ThreadCore {
     }
   }
 
-  void Stop() {
-    stopped_ = true;
-    socket_stream_.Close();
-    server_socket_.Close();
-  }
+  void Stop() { stopped_ = true; }
 
  private:
   enum class ClientServerRole { kClient, kServer };
@@ -164,11 +156,6 @@ class SocketRpcTransport : public RpcFrameSender, public thread::ThreadCore {
     NotifyReady();
 
     Result<stream::SocketStream> stream = server_socket_.Accept();
-    // If Accept was cancelled due to stopping the transport, return without
-    // error.
-    if (stopped_) {
-      return OkStatus();
-    }
     if (!stream.ok()) {
       internal::LogSocketAcceptError(stream.status());
       return stream.status();

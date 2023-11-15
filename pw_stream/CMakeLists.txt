@@ -40,7 +40,6 @@ pw_add_library(pw_stream.socket_stream STATIC
     public
   PUBLIC_DEPS
     pw_stream
-    pw_sync.mutex
   SOURCES
     socket_stream.cc
   PRIVATE_DEPS
