@@ -6,6 +6,10 @@ Overview
 
 Why Build Pigweed?
 ==================
+.. note::
+
+   See our :ref:`docs-mission` for more details.
+
 Our goal is to make embedded software development efficient, robust, and
 heck, even delightful, for projects ranging from weekend Arduino experiements
 to commercial products selling in the millions.
@@ -126,3 +130,9 @@ can be configured using the `--cxxopt flag
 Python
 ------
 Pigweed officially supports Python 3.8, 3.9, 3.10, and 3.11.
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   mission

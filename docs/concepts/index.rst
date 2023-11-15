@@ -3,7 +3,7 @@
 ========
 Concepts
 ========
-.. grid:: 2
+.. grid:: 1
 
    .. grid-item-card:: :octicon:`info` Facades & Backends
       :link: docs-facades
@@ -14,13 +14,6 @@ Concepts
       modules extensively in complex ways or contributing to upstream Pigweed,
       you'll probably need to understand these ideas.
 
-   .. grid-item-card:: :octicon:`info` Glossary
-      :link: docs-glossary
-      :link-type: ref
-      :class-item: sales-pitch-cta-secondary
-
-      Concise definitions of key Pigweed terms.
-
 .. grid:: 2
 
    .. grid-item-card:: :octicon:`info` FAQs
@@ -29,6 +22,13 @@ Concepts
       :class-item: sales-pitch-cta-secondary
 
       Answers to general, frequently asked questions about Pigweed.
+
+   .. grid-item-card:: :octicon:`info` Glossary
+      :link: docs-glossary
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Concise definitions of key Pigweed terms.
 
 .. toctree::
    :maxdepth: 1
