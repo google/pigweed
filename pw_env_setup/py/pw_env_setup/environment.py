@@ -447,8 +447,8 @@ class Environment(object):
         for action in self._actions:
             action.accept(visitor)
 
-    def gni(self, outs, project_root):
-        gni_visitor.GNIVisitor(project_root).serialize(self, outs)
+    def gni(self, outs, project_root, gni_file):
+        gni_visitor.GNIVisitor(project_root, gni_file).serialize(self, outs)
 
     def json(self, outs):
         json_visitor.JSONVisitor().serialize(self, outs)

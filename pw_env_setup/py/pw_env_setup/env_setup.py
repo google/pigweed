@@ -486,7 +486,7 @@ class EnvSetup(object):
             gni_file = os.path.join(self._project_root, self._gni_file)
 
         with open(gni_file, 'w') as outs:
-            self._env.gni(outs, self._project_root)
+            self._env.gni(outs, self._project_root, gni_file)
         shutil.copy(gni_file, os.path.join(self._install_dir, 'logs'))
 
     def _log(self, *args, **kwargs):
