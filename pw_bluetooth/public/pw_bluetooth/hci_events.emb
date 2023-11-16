@@ -245,6 +245,24 @@ bits LEFeatureSet:
   $next [+1]  Flag  periodic_advertising_with_responses_scanner
 
 
+enum LEAdvertisingEventType:
+  [maximum_bits: 8]
+  CONNECTABLE_AND_SCANNABLE_UNDIRECTED = 0x00
+    -- ADV_IND
+
+  CONNECTABLE_DIRECTED                 = 0x01
+    -- ADV_DIRECT_IND
+
+  SCANNABLE_UNDIRECTED                 = 0x02
+    --  ADV_SCAN_IND
+
+  NON_CONNECTABLE_UNDIRECTED           = 0x03
+    -- ADV_NONCONN_IND
+
+  SCAN_RESPONSE                        = 0x04
+    -- SCAN_RSP
+
+
 bits LEExtendedAdvertisingEventType:
   0     [+1]  Flag                     connectable
   $next [+1]  Flag                     scannable
@@ -1390,6 +1408,34 @@ struct LEConnectionCompleteSubevent:
 # 7.7.65.2 LE Advertising Report event
 # HCI_LE_Advertising_Report
 # TODO: b/265052417 - Definition needs to be added
+
+
+struct LEAdvertisingReportData:
+  0     [+1]                          LEAdvertisingEventType  event_type
+  $next [+1]                          hci.LEAddressType       address_type
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr              address
+  $next [+1]                          UInt                    data_length
+    -- Length of the |data| field for the device which responded.
+    [requires: 0 <= this <= 0x1F]
+
+  $next [+data_length]                UInt:8[data_length]     data
+    -- |data_length| octets of advertising or scan response data formatted as defined in Core
+    -- Spec [Vol 3] Part C, Section 11. Note: Each element of this array has a variable length.
+
+  $next [+1]                          Int                     rssi
+    -- Units: dBm. A value of 0x7F means RSSI is not available.
+    [requires: -127 <= this <= 20 || this == 0x7F]
+
+
+struct LEAdvertisingReportSubevent:
+  0     [+LEMetaEvent.$size_in_bytes]  LEMetaEvent           le_meta_event
+  $next [+1]                           UInt                  num_reports
+    [requires: this <= 0x19]
+
+  # The -1 at the end is sizeof(num_reports).
+  let reports_size = le_meta_event.header.parameter_total_size-(LEMetaEvent.$size_in_bytes-hci.EventHeader.$size_in_bytes)-1
+  $next [+reports_size]                UInt:8[reports_size]  reports
+    -- Since each report has a variable length, they are stored in a UInt:8 array.
 
 
 struct LEConnectionUpdateCompleteSubevent:
