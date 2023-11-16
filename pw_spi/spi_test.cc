@@ -70,7 +70,16 @@ class SpiResponderTestDevice : public ::testing::Test {
 
  private:
   // Stub SPI Responder, used to exercise public API surface.
-  class TestResponder : public Responder {};
+  class TestResponder : public Responder {
+   private:
+    void DoSetCompletionHandler(
+        Function<void(ByteSpan, Status)> /* callback */) override {}
+    Status DoWriteReadAsync(ConstByteSpan /* tx_data */,
+                            ByteSpan /* rx_data */) override {
+      return OkStatus();
+    }
+    void DoCancel() override {}
+  };
 
   TestResponder responder_;
 };
