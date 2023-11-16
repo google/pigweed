@@ -1255,9 +1255,7 @@ SECURITY = (
     # keep-sorted: start
     gn_crypto_mbedtls_build,
     gn_crypto_micro_ecc_build,
-    gn_fuzz_build,
     gn_software_update_build,
-    oss_fuzz_build,
     # keep-sorted: end
 )
 
