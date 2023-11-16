@@ -19,10 +19,7 @@ use pw_format::macros::{
     PrintfFormatMacroGenerator, Result,
 };
 use quote::quote;
-use syn::{
-    parse::{Parse, ParseStream},
-    parse_macro_input, Expr, Token,
-};
+use syn::{parse_macro_input, Expr};
 
 type TokenStream2 = proc_macro2::TokenStream;
 
@@ -77,14 +74,14 @@ impl FormatMacroGenerator for TestGenerator {
         Ok(())
     }
 
-    fn string_conversion(&mut self, expression: Expr) -> Result<()> {
+    fn string_conversion(&mut self, _expression: Expr) -> Result<()> {
         self.code_fragments.push(quote! {
             ops.push(TestGeneratorOps::StringConversion);
         });
         Ok(())
     }
 
-    fn char_conversion(&mut self, expression: Expr) -> Result<()> {
+    fn char_conversion(&mut self, _expression: Expr) -> Result<()> {
         self.code_fragments.push(quote! {
             ops.push(TestGeneratorOps::CharConversion);
         });
@@ -105,7 +102,6 @@ pub fn generator_test_macro(tokens: TokenStream) -> TokenStream {
 // Generator for testing `generate_printf()`.  Allows control over the return
 // value of the conversion functions.
 struct PrintfTestGenerator {
-    format_string: Option<String>,
     code_fragments: Vec<TokenStream2>,
     integer_specifier_override: Option<String>,
     string_specifier_override: Option<String>,
@@ -115,7 +111,6 @@ struct PrintfTestGenerator {
 impl PrintfTestGenerator {
     pub fn new() -> Self {
         Self {
-            format_string: Some(String::new()),
             code_fragments: Vec::new(),
             integer_specifier_override: None,
             string_specifier_override: None,
