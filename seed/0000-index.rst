@@ -26,3 +26,4 @@ All pending, active, and resolved SEEDs are listed below.
   0114: Channels <http://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175471>
   0115: pw_sensor Sensors <http://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176760>
   0116: pw_net Sockets <http://pigweed-review.googlesource.com/c/pigweed/pigweed/+/177696>
+  0117: pw_i3c <http://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178350>
