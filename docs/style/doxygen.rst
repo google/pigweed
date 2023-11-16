@@ -6,10 +6,21 @@ Doxygen documentation style
 Doxygen comments in C, C++, and Java are surfaced in Sphinx using `Breathe
 <https://breathe.readthedocs.io/en/latest/index.html>`_.
 
-.. note::
+.. caution::
 
    Sources with doxygen comment blocks must be added to the
    ``_doxygen_input_files`` list in ``//docs/BUILD.gn`` to be processed.
+
+.. note::
+
+   We are moving to the `Google Developer Documentation Style Guide (GDDSG)
+   <https://developers.google.com/style>`_ for the English language conventions
+   (rather than technical style for Doxygen and RST usage). Currently, most of
+   our documentation does not adhere to the GDDSG.
+
+   See the `GDDSG section on API reference code comments
+   <https://developers.google.com/style/api-reference-comments>`_ for English
+   style that applies to Pigweed's Doxygen content.
 
 Breathe provides various `directives
 <https://breathe.readthedocs.io/en/latest/directives.html>`_ for bringing

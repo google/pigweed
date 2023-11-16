@@ -6,8 +6,15 @@ Sphinx documentation style
 .. note::
 
    Pigweed's documentation style guide came after much of the documentation was
-   written, so Pigweed's docs don't yet 100% conform to this style guide. When
+   written, so Pigweed doesn't entirely conform to our own style guide. When
    updating docs, please update them to match the style guide.
+
+.. note::
+
+   We are moving to the `Google Developer Documentation Style Guide (GDDSG)
+   <https://developers.google.com/style>`_ for the English language conventions
+   (rather than technical style for RST usage, etc). Currently, most of our
+   documentation does not adhere.
 
 Pigweed documentation is written using the `reStructuredText
 <https://docutils.sourceforge.io/rst.html>`_ markup language and processed by
