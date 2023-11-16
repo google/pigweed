@@ -30,16 +30,14 @@ Pigweed has ports for the following systems:
     - **✔ Supported**
   * - `FreeRTOS <https://www.freertos.org/>`_
     - **✔ Supported**
+  * - :ref:`Zephyr <docs-os-zephyr>`
+    - **✔ Supported**
   * - `Azure RTOS (formerly ThreadX) <https://azure.microsoft.com/en-us/services/rtos/>`_
     - **✔ Supported**
   * - `SEGGER embOS <https://www.segger.com/products/rtos/embos/>`_
     - **✔ Supported**
   * - Baremetal
     - *In Progress*
-  * - :ref:`Zephyr <docs-os-zephyr>`
-    - *In Progress*
-  * - `CMSIS-RTOS API v2 & RTX5 <https://www.keil.com/pack/doc/CMSIS/RTOS2/html/index.html>`_
-    - Planned
 
 Pigweed's OS abstraction layers are divided by the **functional grouping of the
 primitives**. Many of our APIs are similar or **nearly identical to C++'s
@@ -64,16 +62,14 @@ that this module is optional and bare metal targets may opt not to use this.
     - **SystemClock**
   * - FreeRTOS
     - :ref:`module-pw_chrono_freertos`
+  * - Zephyr
+    - :ref:`module-pw_chrono_zephyr`
   * - ThreadX
     - :ref:`module-pw_chrono_threadx`
   * - embOS
     - :ref:`module-pw_chrono_embos`
   * - STL
     - :ref:`module-pw_chrono_stl`
-  * - Zephyr
-    - Planned
-  * - CMSIS-RTOS API v2 & RTX5
-    - Planned
   * - Baremetal
     - Planned
 
@@ -131,6 +127,10 @@ RAII helpers.
     - :ref:`module-pw_sync_freertos`
     - :ref:`module-pw_sync_freertos`
     - :ref:`module-pw_sync_freertos`
+  * - Zephyr
+    - :ref:`module-pw_sync_zephyr`
+    - Planned
+    - :ref:`module-pw_sync_zephyr`
   * - ThreadX
     - :ref:`module-pw_sync_threadx`
     - :ref:`module-pw_sync_threadx`
@@ -143,14 +143,6 @@ RAII helpers.
     - :ref:`module-pw_sync_stl`
     - :ref:`module-pw_sync_stl`
     - :ref:`module-pw_sync_stl`
-  * - Zephyr
-    - Planned
-    - Planned
-    - Planned
-  * - CMSIS-RTOS API v2 & RTX5
-    - Planned
-    - Planned
-    - Planned
   * - Baremetal
     - Planned, not ready for use
     - ✗
@@ -225,6 +217,11 @@ portability efficiency tradeoff does not have to be made up front.
     - :ref:`module-pw_sync_freertos`
     - :ref:`module-pw_sync_freertos`
     - :ref:`module-pw_sync_freertos`
+  * - Zephyr
+    - :ref:`module-pw_sync_stl`
+    - :ref:`module-pw_sync_stl`
+    - Planned
+    - :ref:`module-pw_sync_stl`
   * - ThreadX
     - :ref:`module-pw_sync_threadx`
     - :ref:`module-pw_sync_threadx`
@@ -240,16 +237,6 @@ portability efficiency tradeoff does not have to be made up front.
     - :ref:`module-pw_sync_stl`
     - :ref:`module-pw_sync_stl`
     - :ref:`module-pw_sync_stl`
-  * - Zephyr
-    - Planned
-    - Planned
-    - Planned
-    - Planned
-  * - CMSIS-RTOS API v2 & RTX5
-    - Planned
-    - Planned
-    - Planned
-    - Planned
   * - Baremetal
     - Planned
     - ✗
@@ -321,6 +308,9 @@ using threads including yielding and sleeping.
   * - FreeRTOS
     - :ref:`module-pw_thread_freertos`
     - :ref:`module-pw_thread_freertos`
+  * - Zephyr
+    - :ref:`module-pw_thread_zephyr`
+    - :ref:`module-pw_thread_zephyr`
   * - ThreadX
     - :ref:`module-pw_thread_threadx`
     - :ref:`module-pw_thread_threadx`
@@ -330,12 +320,6 @@ using threads including yielding and sleeping.
   * - STL
     - :ref:`module-pw_thread_stl`
     - :ref:`module-pw_thread_stl`
-  * - Zephyr
-    - Planned
-    - Planned
-  * - CMSIS-RTOS API v2 & RTX5
-    - Planned
-    - Planned
   * - Baremetal
     - ✗
     - ✗
