@@ -316,8 +316,6 @@ filegroup(
         "lib/cpp-type/public/cpp-type/member_pointer_traits.h",
         "lib/cpp-type/public/cpp-type/to_std_array.h",
         "lib/cpp-type/to_std_array_unittest.cc",
-        "lib/icu/icu_utf.cc",
-        "lib/icu/public/icu/icu_utf.h",
         "public/pw_bluetooth_sapphire/config.h",
         "public/pw_bluetooth_sapphire/internal/host/att/att.h",
         "public/pw_bluetooth_sapphire/internal/host/att/attribute.h",
