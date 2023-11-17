@@ -40,12 +40,17 @@ py_library(
     deps = [
         "//pw_cli/py:pw_cli",
         "//pw_console/py:pw_console",
+        "//pw_file:file_proto_py_pb2",
         "//pw_hdlc/py:pw_hdlc",
         "//pw_log/py:pw_log",
         "//pw_log_rpc/py:pw_log_rpc",
         "//pw_metric/py:pw_metric",
         "//pw_rpc/py:pw_rpc",
         "//pw_tokenizer/py:pw_tokenizer",
+        "//pw_trace/py:pw_trace",
+        "//pw_trace_tokenized:proto_py",
+        "//pw_trace_tokenized/py:pw_trace_tokenized",
+        "//pw_transfer/py:pw_transfer",
     ],
 )
 
