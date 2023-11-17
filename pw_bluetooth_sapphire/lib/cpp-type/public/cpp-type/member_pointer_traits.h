@@ -12,8 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_LIB_CPP_TYPE_MEMBER_POINTER_TRAITS_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_LIB_CPP_TYPE_MEMBER_POINTER_TRAITS_H_
+#pragma once
 
 #include <cstddef>
 #include <memory>
@@ -67,5 +66,3 @@ class MemberPointerTraits<PointerToMember> {
 };
 
 }  // namespace bt_lib_cpp_type
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_LIB_CPP_TYPE_MEMBER_POINTER_TRAITS_H_

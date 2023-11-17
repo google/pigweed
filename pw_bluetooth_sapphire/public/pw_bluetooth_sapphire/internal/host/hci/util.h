@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_UTIL_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_UTIL_H_
-
+#pragma once
 #include <string>
 
 #include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
@@ -32,5 +30,3 @@ bool DeviceAddressFromAdvReport(const hci_spec::LEAdvertisingReportData& report,
                                 bool* out_resolved);
 
 }  // namespace bt::hci
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_UTIL_H_

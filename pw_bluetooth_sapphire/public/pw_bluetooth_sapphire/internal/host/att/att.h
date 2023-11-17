@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_ATT_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_ATT_H_
-
+#pragma once
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
@@ -353,5 +351,3 @@ constexpr OpCode kConfirmation = 0x1E;
 using IndicationParams = NotificationParams;
 
 }  // namespace bt::att
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_ATT_H_

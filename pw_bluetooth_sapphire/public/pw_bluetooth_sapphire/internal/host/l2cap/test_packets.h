@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_TEST_PACKETS_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_TEST_PACKETS_H_
-
+#pragma once
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/frame_headers.h"
@@ -127,5 +125,3 @@ DynamicByteBuffer AclIFrame(hci_spec::ConnectionHandle link_handle,
                             const ByteBuffer& payload);
 
 }  // namespace bt::l2cap::testing
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_TEST_PACKETS_H_

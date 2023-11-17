@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOCAL_ADDRESS_DELEGATE_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOCAL_ADDRESS_DELEGATE_H_
-
+#pragma once
 #include <lib/fit/function.h>
 
 #include <optional>
@@ -66,5 +64,3 @@ class LocalAddressClient {
 };
 
 }  // namespace bt::hci
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOCAL_ADDRESS_DELEGATE_H_

@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_CONNECTION_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_CONNECTION_H_
-
+#pragma once
 #include <optional>
 
 #include "pw_bluetooth_sapphire/internal/host/common/identifier.h"
@@ -153,5 +151,3 @@ class BrEdrConnection final {
 };
 
 }  // namespace bt::gap
-
-#endif  //  SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_CONNECTION_H_

@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_GATT_DEFS_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_GATT_DEFS_H_
-
+#pragma once
 #include <lib/fit/result.h>
 
 #include "pw_bluetooth_sapphire/internal/host/att/att.h"
@@ -247,5 +245,3 @@ struct hash<bt::gatt::DescriptorHandle> {
 };
 
 }  // namespace std
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_GATT_DEFS_H_

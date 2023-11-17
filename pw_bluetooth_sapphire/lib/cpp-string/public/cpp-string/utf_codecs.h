@@ -12,8 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_LIB_CPP_STRING_UTF_CODECS_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_LIB_CPP_STRING_UTF_CODECS_H_
+#pragma once
 
 #include <stddef.h>
 #include <stdint.h>
@@ -63,5 +62,3 @@ bool ReadUnicodeCharacter(const char* src,
 size_t WriteUnicodeCharacter(uint32_t code_point, std::string* output);
 
 }  // namespace bt_lib_cpp_string
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_LIB_CPP_STRING_UTF_CODECS_H_

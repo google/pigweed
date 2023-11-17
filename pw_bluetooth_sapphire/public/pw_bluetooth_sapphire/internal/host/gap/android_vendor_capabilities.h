@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ANDROID_VENDOR_CAPABILITIES_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ANDROID_VENDOR_CAPABILITIES_H_
-
+#pragma once
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h"
 
 namespace bt::gap {
@@ -124,5 +122,3 @@ class AndroidVendorCapabilities final {
   uint32_t supports_dynamic_audio_buffer_ = 0;
 };
 }  // namespace bt::gap
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ANDROID_VENDOR_CAPABILITIES_H_

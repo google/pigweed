@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_SMART_TASK_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_SMART_TASK_H_
-
+#pragma once
 #include <pw_async/dispatcher.h>
 #include <pw_async/task.h>
 
@@ -76,5 +74,3 @@ class SmartTask {
 };
 
 }  // namespace bt
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_SMART_TASK_H_

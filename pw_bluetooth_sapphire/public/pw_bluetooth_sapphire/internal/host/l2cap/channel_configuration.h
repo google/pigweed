@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_CONFIGURATION_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_CONFIGURATION_H_
-
+#pragma once
 #include <list>
 #include <optional>
 
@@ -337,5 +335,3 @@ class ChannelConfiguration final {
 };  // ChannelConfiguration
 
 }  // namespace bt::l2cap::internal
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_CONFIGURATION_H_

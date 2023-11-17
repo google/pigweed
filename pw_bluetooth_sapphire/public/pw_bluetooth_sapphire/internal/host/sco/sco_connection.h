@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SCO_SCO_CONNECTION_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SCO_SCO_CONNECTION_H_
-
+#pragma once
 #include <lib/fit/function.h>
 
 #include <queue>
@@ -133,5 +131,3 @@ class ScoConnection final : public hci::ScoDataChannel::ConnectionInterface {
 };
 
 }  // namespace bt::sco
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SCO_SCO_CONNECTION_H_

@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_UUID_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_UUID_H_
-
+#pragma once
 #include <string>
 #include <unordered_set>
 
@@ -246,5 +244,3 @@ struct hash<bt::UUID> {
 };
 
 }  // namespace std
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_UUID_H_

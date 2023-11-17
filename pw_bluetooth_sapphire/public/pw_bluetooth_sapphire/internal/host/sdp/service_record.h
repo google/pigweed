@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVICE_RECORD_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVICE_RECORD_H_
-
+#pragma once
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
@@ -138,5 +136,3 @@ class ServiceRecord {
 };
 
 }  // namespace bt::sdp
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVICE_RECORD_H_

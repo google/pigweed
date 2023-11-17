@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_UINT256_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_UINT256_H_
-
+#pragma once
 #include <array>
 #include <cstdint>
 
@@ -29,5 +27,3 @@ static_assert(UInt256().size() == kUInt256Size,
               "UInt256 must take up exactly 32 bytes");
 
 }  // namespace bt
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_UINT256_H_

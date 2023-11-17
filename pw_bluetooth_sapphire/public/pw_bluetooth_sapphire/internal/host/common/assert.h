@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_ASSERT_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_ASSERT_H_
-
+#pragma once
 #include "pw_assert/check.h"
 
 #define BT_PANIC(msg, ...) PW_CRASH(msg, ##__VA_ARGS__)
@@ -22,5 +20,3 @@
 #define BT_ASSERT_MSG(x, msg, ...) PW_CHECK(x, msg, ##__VA_ARGS__)
 #define BT_DEBUG_ASSERT(x) PW_DCHECK(x)
 #define BT_DEBUG_ASSERT_MSG(x, msg, ...) PW_DCHECK(x, msg, ##__VA_ARGS__)
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_ASSERT_H_

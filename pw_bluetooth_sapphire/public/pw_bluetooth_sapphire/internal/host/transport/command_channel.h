@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_COMMAND_CHANNEL_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_COMMAND_CHANNEL_H_
-
+#pragma once
 #include <lib/fit/function.h>
 #include <pw_async/dispatcher.h>
 #include <pw_async/task.h>
@@ -487,5 +485,3 @@ class CommandChannel final {
 };
 
 }  // namespace bt::hci
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_COMMAND_CHANNEL_H_

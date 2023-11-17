@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_MOCK_ACL_DATA_CHANNEL_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_MOCK_ACL_DATA_CHANNEL_H_
-
+#pragma once
 #include "pw_bluetooth_sapphire/internal/host/common/inspect.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/acl_data_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/acl_data_packet.h"
@@ -88,5 +86,3 @@ class MockAclDataChannel final : public AclDataChannel {
 };
 
 }  // namespace bt::hci::testing
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_MOCK_ACL_DATA_CHANNEL_H_

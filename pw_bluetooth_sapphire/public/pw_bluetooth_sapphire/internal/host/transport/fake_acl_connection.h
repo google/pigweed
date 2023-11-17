@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#pragma once
+
 #include "pw_bluetooth_sapphire/internal/host/transport/acl_data_channel.h"
 
 namespace bt::hci {

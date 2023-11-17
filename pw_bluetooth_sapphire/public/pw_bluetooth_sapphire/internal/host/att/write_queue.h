@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_WRITE_QUEUE_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_WRITE_QUEUE_H_
-
+#pragma once
 #include <queue>
 
 #include "pw_bluetooth_sapphire/internal/host/att/att.h"
@@ -52,5 +50,3 @@ class QueuedWrite {
 using PrepareWriteQueue = std::queue<QueuedWrite>;
 
 }  // namespace bt::att
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_WRITE_QUEUE_H_

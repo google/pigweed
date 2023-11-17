@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_CONSTANTS_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_CONSTANTS_H_
-
+#pragma once
 // clang-format off
 
 #include <array>
@@ -1346,4 +1344,3 @@ constexpr pw::chrono::SystemClock::duration kMaxPageTimeoutDuration = kDurationP
 
 }  // namespace bt::hci_spec
 
-#endif // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_CONSTANTS_H_

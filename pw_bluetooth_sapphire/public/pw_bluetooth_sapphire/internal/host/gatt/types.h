@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_TYPES_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_TYPES_H_
-
+#pragma once
 #include <vector>
 
 #include "pw_bluetooth_sapphire/internal/host/att/attribute.h"
@@ -156,5 +154,3 @@ class Descriptor final {
 };
 
 }  // namespace bt::gatt
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_TYPES_H_

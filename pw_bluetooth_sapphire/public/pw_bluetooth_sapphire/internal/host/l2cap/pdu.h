@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_PDU_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_PDU_H_
-
+#pragma once
 #include <endian.h>
 
 #include <list>
@@ -114,5 +112,3 @@ class PDU final {
 };
 
 }  // namespace bt::l2cap
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_PDU_H_

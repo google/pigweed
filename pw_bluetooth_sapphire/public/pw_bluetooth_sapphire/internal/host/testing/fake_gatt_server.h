@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_GATT_SERVER_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_GATT_SERVER_H_
-
+#pragma once
 #include <map>
 
 #include "fake_l2cap.h"
@@ -67,5 +65,3 @@ class FakeGattServer final {
 };
 
 }  // namespace bt::testing
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_GATT_SERVER_H_

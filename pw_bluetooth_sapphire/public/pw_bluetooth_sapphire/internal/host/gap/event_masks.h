@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_EVENT_MASKS_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_EVENT_MASKS_H_
-
+#pragma once
 #include <cstdint>
 
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
@@ -87,5 +85,3 @@ constexpr uint64_t BuildLEEventMask() {
 }
 
 }  // namespace bt::gap
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_EVENT_MASKS_H_

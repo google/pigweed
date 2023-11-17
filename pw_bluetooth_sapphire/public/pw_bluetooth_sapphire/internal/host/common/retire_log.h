@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_RETIRE_LOG_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_RETIRE_LOG_H_
-
+#pragma once
 #include <pw_chrono/system_clock.h>
 
 #include <algorithm>
@@ -180,5 +178,3 @@ class RetireLog final {
 };
 
 }  // namespace bt::internal
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_RETIRE_LOG_H_

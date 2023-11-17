@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_SLAB_ALLOCATOR_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_SLAB_ALLOCATOR_H_
-
+#pragma once
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 
 namespace bt {
@@ -39,5 +37,3 @@ constexpr size_t kSlabSize = 32767;
 [[nodiscard]] MutableByteBufferPtr NewBuffer(size_t size);
 
 }  // namespace bt
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_SLAB_ALLOCATOR_H_

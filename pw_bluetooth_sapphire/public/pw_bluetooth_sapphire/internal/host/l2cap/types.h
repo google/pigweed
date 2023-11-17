@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_TYPES_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_TYPES_H_
-
+#pragma once
 #include <lib/fit/function.h>
 #include <pw_string/to_string.h>
 
@@ -230,5 +228,3 @@ template <>
 StatusWithSize ToString(const bt::l2cap::AnyChannelMode& mode,
                         span<char> buffer);
 }  // namespace pw
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_TYPES_H_

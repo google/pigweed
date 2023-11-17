@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SCO_SCO_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SCO_SCO_H_
-
+#pragma once
 #include <pw_bluetooth/hci_commands.emb.h>
 
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
@@ -126,5 +124,3 @@ constexpr ParameterSet kParameterSetD1{
     .retransmission_effort = hci_spec::ScoRetransmissionEffort::kDontCare};
 
 }  // namespace bt::sco
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SCO_SCO_H_

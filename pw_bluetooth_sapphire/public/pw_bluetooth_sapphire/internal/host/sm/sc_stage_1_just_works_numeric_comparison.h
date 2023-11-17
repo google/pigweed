@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SC_STAGE_1_JUST_WORKS_NUMERIC_COMPARISON_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SC_STAGE_1_JUST_WORKS_NUMERIC_COMPARISON_H_
-
+#pragma once
 #include <lib/fit/function.h>
 
 #include <cstdint>
@@ -79,5 +77,3 @@ class ScStage1JustWorksNumericComparison final : public ScStage1 {
   WeakSelf<ScStage1JustWorksNumericComparison> weak_self_;
 };
 }  // namespace bt::sm
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SC_STAGE_1_JUST_WORKS_NUMERIC_COMPARISON_H_

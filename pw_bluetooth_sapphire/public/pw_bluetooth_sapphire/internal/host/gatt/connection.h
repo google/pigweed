@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_CONNECTION_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_CONNECTION_H_
-
+#pragma once
 #include <memory>
 
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
@@ -79,5 +77,3 @@ class Connection final {
 }  // namespace internal
 }  // namespace gatt
 }  // namespace bt
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_CONNECTION_H_

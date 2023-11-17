@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_INSPECT_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_INSPECT_H_
-
+#pragma once
 #include "pw_bluetooth_sapphire/config.h"
 
 #ifdef NINSPECT
@@ -23,5 +21,3 @@ namespace inspect::testing {}
 #else
 #include <lib/inspect/testing/cpp/inspect.h>
 #endif
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_INSPECT_H_

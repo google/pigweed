@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_IDENTIFIER_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_IDENTIFIER_H_
-
+#pragma once
 #include <cpp-string/string_printf.h>
 
 #include <cstdint>
@@ -103,5 +101,3 @@ struct hash<bt::PeerId> {
 };
 
 }  // namespace std
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_IDENTIFIER_H_

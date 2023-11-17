@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_BREDR_SIGNALING_CHANNEL_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_BREDR_SIGNALING_CHANNEL_H_
-
+#pragma once
 #include <unordered_map>
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/signaling_channel.h"
@@ -50,5 +48,3 @@ class BrEdrSignalingChannel final : public SignalingChannel {
 };
 
 }  // namespace bt::l2cap::internal
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_BREDR_SIGNALING_CHANNEL_H_

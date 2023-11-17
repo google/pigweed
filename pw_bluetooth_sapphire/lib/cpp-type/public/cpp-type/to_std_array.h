@@ -12,8 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_LIB_CPP_TYPE_TO_STD_ARRAY_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_LIB_CPP_TYPE_TO_STD_ARRAY_H_
+#pragma once
 
 #include <array>
 #include <cstddef>
@@ -52,5 +51,3 @@ template <typename T>
 using ToStdArrayT = typename ToStdArray<T>::type;
 
 }  // namespace bt_lib_cpp_type
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_LIB_CPP_TYPE_TO_STD_ARRAY_H_

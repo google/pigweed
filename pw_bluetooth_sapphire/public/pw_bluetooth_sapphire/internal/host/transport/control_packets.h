@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_CONTROL_PACKETS_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_CONTROL_PACKETS_H_
-
+#pragma once
 #include <endian.h>
 
 #include <memory>
@@ -142,5 +140,3 @@ class Packet<hci_spec::EventHeader>
 // Evaluate to true if the event status is not success.
 #define hci_is_error(event, flag, tag, fmt...) \
   bt_is_error(event.ToResult(), flag, tag, fmt)
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_CONTROL_PACKETS_H_

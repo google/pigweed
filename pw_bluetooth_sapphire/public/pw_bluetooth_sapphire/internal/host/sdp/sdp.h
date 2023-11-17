@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SDP_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SDP_H_
-
+#pragma once
 #include <list>
 #include <map>
 #include <optional>
@@ -312,5 +310,3 @@ constexpr AttributeId kA2DP_SupportedFeatures = 0x0311;
 constexpr AttributeId kGoepL2capPsm = 0x0200;
 
 }  // namespace bt::sdp
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SDP_H_

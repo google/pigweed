@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_CHANNEL_TEST_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_CHANNEL_TEST_H_
-
+#pragma once
 #include <pw_async/fake_dispatcher_fixture.h>
 
 #include <memory>
@@ -94,5 +92,3 @@ class FakeChannelTest : public pw::async::test::FakeDispatcherFixture {
 };
 
 }  // namespace bt::l2cap::testing
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_CHANNEL_TEST_H_

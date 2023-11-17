@@ -14,8 +14,7 @@
 
 // |printf()|-like formatting functions that output/append to C++ strings.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_LIB_CPP_STRING_STRING_PRINTF_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_LIB_CPP_STRING_STRING_PRINTF_H_
+#pragma once
 
 #include <stdarg.h>
 
@@ -39,5 +38,3 @@ namespace bt_lib_cpp_string {
 void StringVAppendf(std::string* dest, const char* format, va_list ap);
 
 }  // namespace bt_lib_cpp_string
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_LIB_CPP_STRING_STRING_PRINTF_H_

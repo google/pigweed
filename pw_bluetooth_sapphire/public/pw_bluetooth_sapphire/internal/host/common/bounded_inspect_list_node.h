@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_BOUNDED_INSPECT_LIST_NODE_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_BOUNDED_INSPECT_LIST_NODE_H_
-
+#pragma once
 #include <cstddef>
 #include <queue>
 
@@ -79,5 +77,3 @@ class BoundedInspectListNode {
 };
 
 }  // namespace bt
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_BOUNDED_INSPECT_LIST_NODE_H_

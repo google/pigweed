@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_IDENTITY_RESOLVING_LIST_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_IDENTITY_RESOLVING_LIST_H_
-
+#pragma once
 #include <optional>
 #include <unordered_map>
 
@@ -54,5 +52,3 @@ class IdentityResolvingList final {
 };
 
 }  // namespace bt::gap
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_IDENTITY_RESOLVING_LIST_H_

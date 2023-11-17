@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_LE_CONNECTION_PARAMETERS_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_LE_CONNECTION_PARAMETERS_H_
-
+#pragma once
 #include <cpp-string/string_printf.h>
 
 #include <cstdint>
@@ -106,5 +104,3 @@ class LEPreferredConnectionParameters final {
 };
 
 }  // namespace bt::hci_spec
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_LE_CONNECTION_PARAMETERS_H_

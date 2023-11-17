@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_INTERROGATOR_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_INTERROGATOR_H_
-
+#pragma once
 #include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/sequential_command_runner.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
@@ -74,5 +72,3 @@ class LowEnergyInterrogator final {
 
 }  // namespace gap
 }  // namespace bt
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_INTERROGATOR_H_

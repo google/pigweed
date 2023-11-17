@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_TRACE_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_TRACE_H_
-
+#pragma once
 #include <cstdint>
 
 #include "pw_bluetooth_sapphire/config.h"
@@ -29,5 +27,3 @@ typedef uint64_t trace_flow_id_t;
 #define TRACE_FLOW_END(...)
 #define TRACE_DURATION(...)
 #endif  // NTRACE
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_TRACE_H_

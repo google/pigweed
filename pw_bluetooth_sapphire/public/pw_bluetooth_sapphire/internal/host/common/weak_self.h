@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_WEAK_SELF_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_WEAK_SELF_H_
-
+#pragma once
 #include <pw_intrusive_ptr/intrusive_ptr.h>
 
 #include <optional>
@@ -264,5 +262,3 @@ class WeakSelf {
  private:
   WeakPtrManager manager_;
 };
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_WEAK_SELF_H_

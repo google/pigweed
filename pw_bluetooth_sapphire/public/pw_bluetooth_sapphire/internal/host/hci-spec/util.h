@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_UTIL_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_UTIL_H_
-
+#pragma once
 #include <string>
 
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
@@ -49,5 +47,3 @@ std::optional<AdvertisingEventBits> AdvertisingTypeToEventBits(
     pw::bluetooth::emboss::LEAdvertisingType type);
 
 }  // namespace bt::hci_spec
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_UTIL_H_

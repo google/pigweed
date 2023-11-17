@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_L2CAP_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_L2CAP_H_
-
+#pragma once
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel.h"
@@ -184,5 +182,3 @@ class FakeL2cap final : public ChannelManager {
 };
 
 }  // namespace bt::l2cap::testing
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_L2CAP_H_

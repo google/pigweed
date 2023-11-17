@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOW_ENERGY_CONNECTION_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOW_ENERGY_CONNECTION_H_
-
+#pragma once
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/le_connection_parameters.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/link_key.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/acl_connection.h"
@@ -69,5 +67,3 @@ class LowEnergyConnection : public AclConnection,
 };
 
 }  // namespace bt::hci
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOW_ENERGY_CONNECTION_H_

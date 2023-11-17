@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_ENHANCED_RETRANSMISSION_MODE_ENGINES_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_ENHANCED_RETRANSMISSION_MODE_ENGINES_H_
-
+#pragma once
 #include <memory>
 #include <utility>
 
@@ -42,5 +40,3 @@ MakeLinkedEnhancedRetransmissionModeEngines(
     pw::async::Dispatcher& dispatcher);
 
 }  // namespace bt::l2cap::internal
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_ENHANCED_RETRANSMISSION_MODE_ENGINES_H_

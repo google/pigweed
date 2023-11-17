@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SC_STAGE_1_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SC_STAGE_1_H_
-
+#pragma once
 #include <lib/fit/function.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/uint256.h"
@@ -79,5 +77,3 @@ class ScStage1 {
 };
 
 }  // namespace bt::sm
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SC_STAGE_1_H_

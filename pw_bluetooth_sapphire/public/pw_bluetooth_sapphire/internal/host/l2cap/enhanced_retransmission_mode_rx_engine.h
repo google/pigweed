@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_ENHANCED_RETRANSMISSION_MODE_RX_ENGINE_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_ENHANCED_RETRANSMISSION_MODE_RX_ENGINE_H_
-
+#pragma once
 #include <variant>
 
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
@@ -131,5 +129,3 @@ class EnhancedRetransmissionModeRxEngine final : public RxEngine {
 };
 
 }  // namespace bt::l2cap::internal
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_ENHANCED_RETRANSMISSION_MODE_RX_ENGINE_H_

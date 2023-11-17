@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_MANAGER_MOCK_CONTROLLER_TEST_FIXTURE_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_MANAGER_MOCK_CONTROLLER_TEST_FIXTURE_H_
-
+#pragma once
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/test_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/types.h"
@@ -258,5 +256,3 @@ class FakeDispatcherChannelManagerMockControllerTest
 };
 
 }  // namespace bt::l2cap
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_MANAGER_MOCK_CONTROLLER_TEST_FIXTURE_H_

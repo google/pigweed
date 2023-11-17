@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_MOCK_CHANNEL_TEST_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_MOCK_CHANNEL_TEST_H_
-
+#pragma once
 #include <pw_async/fake_dispatcher_fixture.h>
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel.h"
@@ -135,5 +133,3 @@ class MockChannelTest : public pw::async::test::FakeDispatcherFixture {
                        __FILE__, __LINE__, #expected})
 
 }  // namespace bt::l2cap::testing
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_MOCK_CHANNEL_TEST_H_

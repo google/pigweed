@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_ACL_DATA_PACKET_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_ACL_DATA_PACKET_H_
-
+#pragma once
 #include <lib/fit/function.h>
 
 #include <memory>
@@ -76,5 +74,3 @@ class Packet<hci_spec::ACLDataHeader>
 };
 
 }  // namespace bt::hci
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_ACL_DATA_PACKET_H_

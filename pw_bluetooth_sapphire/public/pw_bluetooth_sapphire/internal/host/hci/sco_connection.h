@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SCO_CONNECTION_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SCO_CONNECTION_H_
-
+#pragma once
 #include "pw_bluetooth_sapphire/internal/host/hci/connection.h"
 
 namespace bt::hci {
@@ -33,5 +31,3 @@ class ScoConnection : public Connection, public WeakSelf<ScoConnection> {
 };
 
 }  // namespace bt::hci
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SCO_CONNECTION_H_

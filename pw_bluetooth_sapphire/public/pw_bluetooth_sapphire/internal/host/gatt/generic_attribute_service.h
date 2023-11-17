@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_GENERIC_ATTRIBUTE_SERVICE_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_GENERIC_ATTRIBUTE_SERVICE_H_
-
+#pragma once
 #include <lib/fit/function.h>
 
 #include <unordered_set>
@@ -92,5 +90,3 @@ class GenericAttributeService final {
 };
 
 }  // namespace bt::gatt
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_GENERIC_ATTRIBUTE_SERVICE_H_

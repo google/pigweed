@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_HOST_ERROR_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_HOST_ERROR_H_
-
+#pragma once
 #include <string>
 
 namespace bt {
@@ -76,5 +74,3 @@ enum class HostError : uint8_t {
 std::string HostErrorToString(HostError error);
 
 }  // namespace bt
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_HOST_ERROR_H_

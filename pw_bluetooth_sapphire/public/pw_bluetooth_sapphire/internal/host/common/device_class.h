@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_DEVICE_CLASS_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_DEVICE_CLASS_H_
-
+#pragma once
 #include <array>
 #include <initializer_list>
 #include <string>
@@ -105,5 +103,3 @@ static_assert(sizeof(DeviceClass) == 3,
               "DeviceClass must take up exactly 3 bytes");
 
 }  // namespace bt
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_DEVICE_CLASS_H_

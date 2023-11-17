@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_INSPECT_UTIL_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_INSPECT_UTIL_H_
-
+#pragma once
 #include <gmock/gmock.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
@@ -60,5 +58,3 @@ std::optional<typename PropertyValue::value_type> GetInspectValue(
 }  // namespace bt::testing
 
 #endif  // NINSPECT
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_INSPECT_UTIL_H_

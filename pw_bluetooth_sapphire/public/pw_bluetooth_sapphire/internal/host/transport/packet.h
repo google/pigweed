@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_PACKET_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_PACKET_H_
-
+#pragma once
 #include <memory>
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
@@ -125,5 +123,3 @@ class Packet : public PacketBase<HeaderType, Packet<HeaderType>> {
 };
 
 }  // namespace bt::hci
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_PACKET_H_

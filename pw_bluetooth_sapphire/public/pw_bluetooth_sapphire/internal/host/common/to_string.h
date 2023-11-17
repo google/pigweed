@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_TO_STRING_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_TO_STRING_H_
-
+#pragma once
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -98,5 +96,3 @@ auto& operator<<(OStream& os, const T& t) {
 // This library provides an ToString() overload that forwards to .ToString()
 // method if it exists.
 #define bt_str(id) (::bt::internal::ToString(id).c_str())
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_TO_STRING_H_

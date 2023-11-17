@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_DEFAULTS_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_DEFAULTS_H_
-
+#pragma once
 #include <cstdint>
 
 // This file contains default values that are listed in the HCI specification
@@ -39,5 +37,3 @@ constexpr uint16_t kLEScanWindow = 0x0030;
 constexpr uint16_t kLESupervisionTimeout = 0x002A;
 
 }  // namespace bt::hci_spec::defaults
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_DEFAULTS_H_

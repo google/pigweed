@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_DYNAMIC_CHANNEL_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_DYNAMIC_CHANNEL_H_
-
+#pragma once
 #include <lib/fit/function.h>
 
 #include <memory>
@@ -144,5 +142,3 @@ using DynamicChannelPtr = std::unique_ptr<DynamicChannel>;
 
 }  // namespace internal
 }  // namespace bt::l2cap
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_DYNAMIC_CHANNEL_H_

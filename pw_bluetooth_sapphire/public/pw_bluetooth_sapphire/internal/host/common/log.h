@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_LOG_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_LOG_H_
-
+#pragma once
 #include <cstddef>
 #include <string>
 
@@ -147,5 +145,3 @@ constexpr void CheckFormat([[maybe_unused]] const char* fmt, ...) {}
          GetPwLogFlags(bt::LogSeverity::level),    \
          fmt);                                     \
   ::bt::internal::CheckFormat(tag)
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_LOG_H_

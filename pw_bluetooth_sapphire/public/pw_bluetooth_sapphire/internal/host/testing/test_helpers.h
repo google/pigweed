@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_TEST_HELPERS_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_TEST_HELPERS_H_
-
+#pragma once
 #include <cpp-string/string_printf.h>
 
 #include <algorithm>
@@ -145,5 +143,3 @@ MATCHER_P(BufferEq, b, "") {
 }
 
 }  // namespace bt
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_TEST_HELPERS_H_

@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_PAIRING_CHANNEL_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_PAIRING_CHANNEL_H_
-
+#pragma once
 #include <unordered_map>
 
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
@@ -114,5 +112,3 @@ class PairingChannel {
 };
 
 }  // namespace bt::sm
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_PAIRING_CHANNEL_H_

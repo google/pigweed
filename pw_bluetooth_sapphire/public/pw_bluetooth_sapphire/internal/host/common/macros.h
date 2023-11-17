@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_MACROS_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_MACROS_H_
-
+#pragma once
 // Macro used to simplify the task of deleting all of the default copy
 // constructors and assignment operators.
 #define BT_DISALLOW_COPY_ASSIGN_AND_MOVE(_class_name)  \
@@ -28,5 +26,3 @@
 #define BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(_class_name) \
   _class_name(const _class_name&) = delete;                 \
   _class_name& operator=(const _class_name&) = delete
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_MACROS_H_

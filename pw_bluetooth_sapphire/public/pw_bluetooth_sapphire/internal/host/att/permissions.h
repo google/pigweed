@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_PERMISSIONS_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_PERMISSIONS_H_
-
+#pragma once
 #include "pw_bluetooth_sapphire/internal/host/att/attribute.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 
@@ -26,5 +24,3 @@ fit::result<ErrorCode> CheckWritePermissions(const AccessRequirements&,
                                              const sm::SecurityProperties&);
 
 }  // namespace bt::att
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_PERMISSIONS_H_

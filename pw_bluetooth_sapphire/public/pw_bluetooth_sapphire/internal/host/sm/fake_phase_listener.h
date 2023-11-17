@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_FAKE_PHASE_LISTENER_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_FAKE_PHASE_LISTENER_H_
-
+#pragma once
 #include <gtest/gtest.h>
 
 #include "pw_bluetooth_sapphire/internal/host/sm/pairing_phase.h"
@@ -116,5 +114,3 @@ class FakeListener : public PairingPhase::Listener {
 };
 
 }  // namespace bt::sm
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_FAKE_PHASE_LISTENER_H_

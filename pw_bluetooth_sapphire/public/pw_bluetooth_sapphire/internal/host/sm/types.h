@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_TYPES_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_TYPES_H_
-
+#pragma once
 #include <lib/fit/function.h>
 
 #include <optional>
@@ -350,5 +348,3 @@ using OnPhase2KeyGeneratedCallback = fit::function<void(const UInt128&)>;
 using PairingRequestCallback = fit::function<void(PairingRequestParams)>;
 
 }  // namespace bt::sm
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_TYPES_H_

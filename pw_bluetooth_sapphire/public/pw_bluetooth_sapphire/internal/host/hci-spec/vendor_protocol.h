@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_VENDOR_PROTOCOL_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_VENDOR_PROTOCOL_H_
-
+#pragma once
 // This file contains general opcode/number and static packet definitions for
 // extensions to the Bluetooth Host-Controller interface. These extensions
 // aren't standardized through the Bluetooth SIG and their documentation is
@@ -372,5 +370,3 @@ struct LEMultiAdvtEnableReturnParams {
 constexpr EventCode kLEMultiAdvtStateChangeSubeventCode = 0x55;
 
 }  // namespace bt::hci_spec::vendor::android
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_VENDOR_PROTOCOL_H_

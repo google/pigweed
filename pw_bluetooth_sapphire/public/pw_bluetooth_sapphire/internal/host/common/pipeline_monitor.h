@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_PIPELINE_MONITOR_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_PIPELINE_MONITOR_H_
-
+#pragma once
 #include <lib/fit/function.h>
 #include <lib/stdcompat/type_traits.h>
 #include <pw_async/dispatcher.h>
@@ -352,5 +350,3 @@ class PipelineMonitor final {
 };
 
 }  // namespace bt
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_PIPELINE_MONITOR_H_

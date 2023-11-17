@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_FAKE_LAYER_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_FAKE_LAYER_H_
-
+#pragma once
 #include "pw_async/dispatcher.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/fake_client.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/gatt.h"
@@ -189,5 +187,3 @@ class FakeLayer final : public GATT {
 };
 
 }  // namespace bt::gatt::testing
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_FAKE_LAYER_H_

@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_PERSISTED_DATA_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_PERSISTED_DATA_H_
-
+#pragma once
 #include <lib/fit/function.h>
 
 #include <optional>
@@ -39,5 +37,3 @@ using RetrieveServiceChangedCCCCallback =
     fit::function<std::optional<ServiceChangedCCCPersistedData>(PeerId)>;
 
 }  // namespace bt::gatt
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_PERSISTED_DATA_H_

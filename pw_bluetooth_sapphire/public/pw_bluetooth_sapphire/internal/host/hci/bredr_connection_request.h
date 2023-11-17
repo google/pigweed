@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_BREDR_CONNECTION_REQUEST_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_BREDR_CONNECTION_REQUEST_H_
-
+#pragma once
 #include "pw_bluetooth_sapphire/internal/host/common/identifier.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/error.h"
@@ -124,4 +122,3 @@ class BrEdrConnectionRequest final {
 };
 
 }  // namespace bt::hci
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_BREDR_CONNECTION_REQUEST_H_

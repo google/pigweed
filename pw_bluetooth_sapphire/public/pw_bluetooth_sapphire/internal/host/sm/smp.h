@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SMP_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SMP_H_
-
+#pragma once
 #include <pw_chrono/system_clock.h>
 
 #include <cstdint>
@@ -324,5 +322,3 @@ constexpr Code kKeypressNotification = 0x0E;
 // See enum KeypressNotificationType above for parameters.
 
 }  // namespace bt::sm
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SMP_H_

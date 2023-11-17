@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_FAKE_BREDR_CONNECTION_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_FAKE_BREDR_CONNECTION_H_
-
+#pragma once
 #include "pw_bluetooth_sapphire/internal/host/hci/bredr_connection.h"
 
 namespace bt::hci::testing {
@@ -50,5 +48,3 @@ class FakeBrEdrConnection final : public BrEdrConnection {
 };
 
 }  // namespace bt::hci::testing
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_FAKE_BREDR_CONNECTION_H_

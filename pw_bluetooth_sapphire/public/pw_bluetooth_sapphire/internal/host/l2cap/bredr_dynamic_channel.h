@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_BREDR_DYNAMIC_CHANNEL_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_BREDR_DYNAMIC_CHANNEL_H_
-
+#pragma once
 #include <lib/fit/function.h>
 
 #include <unordered_map>
@@ -370,5 +368,3 @@ class BrEdrDynamicChannel final : public DynamicChannel {
 };
 
 }  // namespace bt::l2cap::internal
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_BREDR_DYNAMIC_CHANNEL_H_

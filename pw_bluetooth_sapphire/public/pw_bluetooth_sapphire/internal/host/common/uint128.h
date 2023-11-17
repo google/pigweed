@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_UINT128_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_UINT128_H_
-
+#pragma once
 #include <array>
 #include <cstdint>
 
@@ -29,5 +27,3 @@ static_assert(sizeof(UInt128) == kUInt128Size,
               "UInt128 must take up exactly 16 bytes");
 
 }  // namespace bt
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_UINT128_H_

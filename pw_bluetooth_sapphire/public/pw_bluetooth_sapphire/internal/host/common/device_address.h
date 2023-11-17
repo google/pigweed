@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_DEVICE_ADDRESS_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_DEVICE_ADDRESS_H_
-
+#pragma once
 #include <pw_bluetooth/hci_common.emb.h>
 
 #include <array>
@@ -191,5 +189,3 @@ struct hash<bt::DeviceAddress> {
 };
 
 }  // namespace std
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_DEVICE_ADDRESS_H_

@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_PEER_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_PEER_H_
-
+#pragma once
 #include <unordered_set>
 
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
@@ -258,5 +256,3 @@ class FakePeer {
 };
 
 }  // namespace bt::testing
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_PEER_H_

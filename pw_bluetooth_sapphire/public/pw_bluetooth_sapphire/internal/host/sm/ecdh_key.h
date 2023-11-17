@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_ECDH_KEY_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_ECDH_KEY_H_
-
+#pragma once
 #include <openssl/base.h>
 
 #include <cstdint>
@@ -88,5 +86,3 @@ class LocalEcdhKey : public EcdhKey {
 };
 
 }  // namespace bt::sm
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_ECDH_KEY_H_

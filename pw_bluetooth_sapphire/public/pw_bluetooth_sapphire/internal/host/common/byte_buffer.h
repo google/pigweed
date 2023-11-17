@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_BYTE_BUFFER_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_BYTE_BUFFER_H_
-
+#pragma once
 #include <cpp-type/member_pointer_traits.h>
 #include <cpp-type/to_std_array.h>
 
@@ -572,5 +570,3 @@ class MutableBufferView final : public MutableByteBuffer {
 };
 
 }  // namespace bt
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_BYTE_BUFFER_H_

@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_GENERIC_ACCESS_CLIENT_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_GENERIC_ACCESS_CLIENT_H_
-
+#pragma once
 #include "pw_bluetooth_sapphire/internal/host/common/weak_self.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/remote_service.h"
 
@@ -53,5 +51,3 @@ class GenericAccessClient : private WeakSelf<GenericAccessClient> {
 };
 
 }  // namespace bt::gap::internal
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_GENERIC_ACCESS_CLIENT_H_

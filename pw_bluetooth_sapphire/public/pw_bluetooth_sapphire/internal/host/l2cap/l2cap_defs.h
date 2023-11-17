@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_L2CAP_DEFS_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_L2CAP_DEFS_H_
-
+#pragma once
 // clang-format off
 
 #include <chrono>
@@ -508,4 +506,3 @@ struct LEFlowControlCreditParams {
 
 }  // namespace bt::l2cap
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_L2CAP_DEFS_H_

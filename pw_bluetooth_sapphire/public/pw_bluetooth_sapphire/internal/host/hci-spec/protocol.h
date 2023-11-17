@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_PROTOCOL_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_PROTOCOL_H_
-
+#pragma once
 #include <pw_bluetooth/hci_common.emb.h>
 #include <pw_bluetooth/hci_events.emb.h>
 
@@ -2381,5 +2379,3 @@ constexpr OpCode VendorOpCode(const uint16_t ocf) {
 }
 
 }  // namespace bt::hci_spec
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_PROTOCOL_H_

@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVICE_DISCOVERER_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVICE_DISCOVERER_H_
-
+#pragma once
 #include <lib/fit/function.h>
 
 #include <map>
@@ -120,5 +118,3 @@ class ServiceDiscoverer final {
 };
 
 }  // namespace bt::sdp
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVICE_DISCOVERER_H_

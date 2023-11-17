@@ -15,6 +15,8 @@
 // This file contains a minimal fake implementation of Inspect to enable code to
 // compile when Inspect is not supported.
 
+#pragma once
+
 #include <string>
 
 namespace inspect {

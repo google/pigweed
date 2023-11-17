@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_CONNECTOR_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_CONNECTOR_H_
-
+#pragma once
 #include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_connection.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_connection_request.h"
@@ -205,5 +203,3 @@ class LowEnergyConnector final {
 };
 
 }  // namespace bt::gap::internal
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_CONNECTOR_H_

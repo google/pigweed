@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_PARSE_ARGS_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_PARSE_ARGS_H_
-
+#pragma once
 #include <charconv>
 #include <optional>
 #include <string_view>
@@ -28,5 +26,3 @@ std::optional<std::string_view> GetArgValue(std::string_view arg_name,
                                             char** argv);
 
 }  // namespace bt::testing
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_PARSE_ARGS_H_

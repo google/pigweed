@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_FAKE_ADAPTER_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_FAKE_ADAPTER_H_
-
+#pragma once
 #include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/adapter.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
@@ -330,5 +328,3 @@ class FakeAdapter final : public Adapter {
 };
 
 }  // namespace bt::gap::testing
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_FAKE_ADAPTER_H_

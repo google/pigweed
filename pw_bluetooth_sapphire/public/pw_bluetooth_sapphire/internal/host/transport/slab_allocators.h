@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_SLAB_ALLOCATORS_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_SLAB_ALLOCATORS_H_
-
+#pragma once
 #include <memory>
 
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
@@ -104,5 +102,3 @@ class FixedSizePacket : public FixedSizePacketStorage<BufferSize>,
 }  // namespace internal
 
 }  // namespace bt::hci::allocators
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_SLAB_ALLOCATORS_H_

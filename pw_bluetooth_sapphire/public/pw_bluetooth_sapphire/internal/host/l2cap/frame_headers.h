@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FRAME_HEADERS_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FRAME_HEADERS_H_
-
+#pragma once
 #include <endian.h>
 
 #include <cstdint>
@@ -197,5 +195,3 @@ struct SimpleReceiverReadyFrame : public SimpleSupervisoryFrame {
 } __attribute__((packed));
 
 }  // namespace bt::l2cap::internal
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FRAME_HEADERS_H_

@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_EMBOSS_CONTROL_PACKETS_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_EMBOSS_CONTROL_PACKETS_H_
-
+#pragma once
 #include <pw_bluetooth/hci_common.emb.h>
 
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
@@ -173,5 +171,3 @@ class EmbossEventPacketT : public EmbossEventPacket {
 };
 
 }  // namespace bt::hci
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_EMBOSS_CONTROL_PACKETS_H_

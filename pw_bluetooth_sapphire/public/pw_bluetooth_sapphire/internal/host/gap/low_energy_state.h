@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_STATE_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_STATE_H_
-
+#pragma once
 #include <cstdint>
 
 #include "pw_bluetooth_sapphire/internal/host/transport/acl_data_channel.h"
@@ -54,5 +52,3 @@ class LowEnergyState final {
 };
 
 }  // namespace bt::gap
-
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_STATE_H_
