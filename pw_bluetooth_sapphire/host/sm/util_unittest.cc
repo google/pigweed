@@ -28,6 +28,8 @@
 #include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
+// inclusive-language: disable
+
 namespace bt::sm::util {
 namespace {
 

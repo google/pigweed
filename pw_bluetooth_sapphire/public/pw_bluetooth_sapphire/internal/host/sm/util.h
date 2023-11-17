@@ -66,6 +66,7 @@ std::pair<T, T> MapToRoles(const T& local_value,
   return {peer_value, local_value};
 }
 
+// inclusive-language: disable
 // Used to select the key generation method as described in Vol 3, Part H,
 // 2.3.5.1 based on local and peer authentication parameters:
 //   - |secure_connections|: True if Secure Connections pairing is used. False
@@ -84,6 +85,7 @@ PairingMethod SelectPairingMethod(bool secure_connections,
                                   IOCapability local_ioc,
                                   IOCapability peer_ioc,
                                   bool local_initiator);
+// inclusive-language: enable
 
 // Implements the "Security Function 'e'" defined in Vol 3, Part H, 2.2.1.
 void Encrypt(const UInt128& key,

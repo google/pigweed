@@ -357,7 +357,7 @@ const char* kManufacturers[] = {
     /* 0x0148 */ "Ambimat Electronics",
     /* 0x0149 */ "Perytons Ltd.",
     /* 0x014A */ "Tivoli Audio, LLC",
-    /* 0x014B */ "Master Lock",
+    /* 0x014B */ "Master Lock",  // inclusive-language: ignore
     /* 0x014C */ "Mesh-Net Ltd",
     /* 0x014D */ "HUIZHOU DESAY SV AUTOMOTIVE CO., LTD.",
     /* 0x014E */ "Tangerine, Inc.",
@@ -1036,7 +1036,7 @@ const char* kManufacturers[] = {
     /* 0x03EF */ "foolography GmbH",
     /* 0x03F0 */ "CLINK",
     /* 0x03F1 */ "Hestan Smart Cooking Inc.",
-    /* 0x03F2 */ "WindowMaster A/S",
+    /* 0x03F2 */ "WindowMaster A/S",  // inclusive-language: ignore
     /* 0x03F3 */ "Flowscape AB",
     /* 0x03F4 */ "PAL Technologies Ltd",
     /* 0x03F5 */ "WHERE, Inc.",

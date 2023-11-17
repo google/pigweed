@@ -122,7 +122,7 @@ class Channel : public WeakSelf<Channel> {
   // a maximum inbound (rx) and outbound (tx) packet size for the L2CAP
   // implementation (see v5.2, Vol. 3, Part A 5.1). L2CAP requires that channel
   // MTUs are at least 23 bytes for LE-U links and 48 bytes for ACL-U links. A
-  // further requirement is that "[t]he minimum MTU for a channel is the larger
+  // further requirement is that "the minimum MTU for a channel is the larger
   // of the L2CAP minimum [...] and any MTU explicitly required by the protocols
   // and profiles using that channel." `max_rx_sdu_size` is always determined by
   // the capabilities of the local implementation. For dynamic channels,

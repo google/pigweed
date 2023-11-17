@@ -309,6 +309,7 @@ void SecurityManagerImpl::OnSecurityRequest(AuthReqField auth_req) {
   }
 
   SecurityLevel requested_level;
+  // inclusive-language: ignore
   if (auth_req & AuthReq::kMITM) {
     requested_level = SecurityLevel::kAuthenticated;
   } else {

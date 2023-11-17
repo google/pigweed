@@ -177,20 +177,23 @@ MutableByteBufferPtr NewPdu(size_t param_size) {
   return std::make_unique<DynamicByteBuffer>(sizeof(Header) + param_size);
 }
 
-PairingMethod SelectPairingMethod(bool sec_conn,
-                                  bool local_oob,
-                                  bool peer_oob,
-                                  bool mitm_required,
-                                  IOCapability local_ioc,
-                                  IOCapability peer_ioc,
-                                  bool local_initiator) {
+PairingMethod SelectPairingMethod(
+    bool sec_conn,
+    bool local_oob,
+    bool peer_oob,
+    bool mitm_required,  // inclusive-language: ignore
+    IOCapability local_ioc,
+    IOCapability peer_ioc,
+    bool local_initiator) {
   if ((sec_conn && (local_oob || peer_oob)) ||
       (!sec_conn && local_oob && peer_oob)) {
     return PairingMethod::kOutOfBand;
   }
 
+  // inclusive-language: ignore
   // If neither device requires MITM protection or if the peer has not I/O
   // capable, we select Just Works.
+  // inclusive-language: ignore
   if (!mitm_required || peer_ioc == IOCapability::kNoInputNoOutput) {
     return PairingMethod::kJustWorks;
   }

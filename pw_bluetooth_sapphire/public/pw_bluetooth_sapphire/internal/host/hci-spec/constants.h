@@ -1260,6 +1260,7 @@ constexpr uint8_t kMinEncryptionKeySize = 7;
 // and deprecated in Section 3.1).
 //
 // Authenticated keys were generated using a challenge-response scheme described
+// inclusive-language: ignore
 // in v5.0 Vol 2, Part H, Section 5 to protect against man-in-the-middle (MITM)
 // attacks.
 //

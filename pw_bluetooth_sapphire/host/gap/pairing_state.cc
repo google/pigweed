@@ -522,6 +522,7 @@ void PairingState::OnLinkKeyNotification(
     return;
   }
 
+  // inclusive-language: ignore
   // If we performed an association procedure for MITM protection then expect
   // the controller to produce a corresponding "authenticated" link key.
   // Inversely, do not accept a link key reported as authenticated if we haven't
@@ -840,6 +841,7 @@ std::vector<fit::closure> PairingState::CompletePairingRequests(
   // an error status if the individual request security requirements are not
   // satisfied.
   // TODO(fxbug.dev/1249): Only notify failure to callbacks of requests that
+  // inclusive-language: ignore
   // have the same (or none) MITM requirements as the current pairing.
   bool link_key_received = current_pairing_->security_properties.has_value();
   if (link_key_received) {
@@ -1002,12 +1004,14 @@ AuthenticationRequirements GetInitiatorAuthenticationRequirements(
   if (local_cap == IoCapability::NO_INPUT_NO_OUTPUT) {
     return AuthenticationRequirements::GENERAL_BONDING;
   }
+  // inclusive-language: ignore
   return AuthenticationRequirements::MITM_GENERAL_BONDING;
 }
 
 AuthenticationRequirements GetResponderAuthenticationRequirements(
     IoCapability local_cap, IoCapability peer_cap) {
   if (IsPairingAuthenticated(local_cap, peer_cap)) {
+    // inclusive-language: ignore
     return AuthenticationRequirements::MITM_GENERAL_BONDING;
   }
   return AuthenticationRequirements::GENERAL_BONDING;

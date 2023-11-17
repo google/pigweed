@@ -47,6 +47,7 @@ void SecurityRequestPhase::MakeSecurityRequest(SecurityLevel desired_level,
   BT_ASSERT(desired_level >= SecurityLevel::kEncrypted);
   AuthReqField security_req_payload = 0u;
   if (desired_level >= SecurityLevel::kAuthenticated) {
+    // inclusive-language: ignore
     security_req_payload |= AuthReq::kMITM;
   }
   if (bondable_mode == BondableMode::Bondable) {

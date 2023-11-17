@@ -105,12 +105,15 @@ enum class SecurityLevel {
   // No encryption
   kNoSecurity = 1,
 
+  // inclusive-language: ignore
   // Encrypted without MITM protection (unauthenticated)
   kEncrypted = 2,
 
+  // inclusive-language: ignore
   // Encrypted with MITM protection (authenticated)
   kAuthenticated = 3,
 
+  // inclusive-language: ignore
   // Encrypted with MITM protection, Secure Connections, and a 128-bit
   // encryption key.
   kSecureAuthenticated = 4,

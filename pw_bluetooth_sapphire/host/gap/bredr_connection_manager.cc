@@ -1268,7 +1268,7 @@ BrEdrConnectionManager::OnIoCapabilityRequest(
       io_capability == pw::bluetooth::emboss::IoCapability::NO_INPUT_NO_OUTPUT
           ? pw::bluetooth::emboss::AuthenticationRequirements::GENERAL_BONDING
           : pw::bluetooth::emboss::AuthenticationRequirements::
-                MITM_GENERAL_BONDING;
+                MITM_GENERAL_BONDING;  // inclusive-language: ignore
 
   SendIoCapabilityRequestReply(
       addr, io_capability, oob_data_present, auth_requirements);

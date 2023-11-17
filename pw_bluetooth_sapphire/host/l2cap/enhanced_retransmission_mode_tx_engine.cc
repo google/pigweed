@@ -423,7 +423,7 @@ bool Engine::RetransmitUnackedData(std::optional<uint8_t> only_with_seq,
       cur_frame->buf.AsMutable<EnhancedControlField>()->set_is_poll_response();
 
       // Per "Retransmit-I-frames" of Core Spec v5.0 Vol 3, Part A, Sec 8.6.5.6,
-      // "[t]he F-bit of all other [than the first] unacknowledged I-frames sent
+      // "the F-bit of all other [than the first] unacknowledged I-frames sent
       // shall be 0," so clear this for subsequent iterations.
       set_is_poll_response = false;
     }

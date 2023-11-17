@@ -111,6 +111,7 @@ TEST_F(SecurityRequestPhaseTest, MakeAuthenticatedNonBondableSecurityRequest) {
   NewSecurityRequestPhase(
       SecurityRequestOptions{.requested_level = SecurityLevel::kAuthenticated,
                              .bondable = BondableMode::NonBondable});
+  // inclusive-language: ignore
   StaticByteBuffer kExpectedReq(kSecurityRequest, AuthReq::kMITM);
   (void)heap_dispatcher().Post(
       [this](pw::async::Context /*ctx*/, pw::Status status) {
@@ -127,8 +128,12 @@ TEST_F(SecurityRequestPhaseTest,
        MakeSecureAuthenticatedBondableSecurityRequest) {
   NewSecurityRequestPhase(SecurityRequestOptions{
       .requested_level = SecurityLevel::kSecureAuthenticated});
+
+  // inclusive-language: disable
   StaticByteBuffer kExpectedReq(
       kSecurityRequest, AuthReq::kBondingFlag | AuthReq::kMITM | AuthReq::kSC);
+  // inclusive-language: enable
+
   (void)heap_dispatcher().Post(
       [this](pw::async::Context /*ctx*/, pw::Status status) {
         if (status.ok()) {

@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+// inclusive-language: disable
+
 #include "pw_bluetooth_sapphire/internal/host/att/bearer.h"
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/mock_channel_test.h"
@@ -1211,7 +1213,8 @@ TEST_F(BearerTest, ErrorResponseShutsDownBearer) {
       kTestRequest,
 
       // handle (0x0001)
-      0x01, 0x00,
+      0x01,
+      0x00,
 
       // error code:
       ErrorCode::kRequestNotSupported);

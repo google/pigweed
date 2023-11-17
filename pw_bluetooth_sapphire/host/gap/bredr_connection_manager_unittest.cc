@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+// inclusive-language: disable
+
 #include "pw_bluetooth_sapphire/internal/host/gap/bredr_connection_manager.h"
 
 #include <cpp-string/string_printf.h>

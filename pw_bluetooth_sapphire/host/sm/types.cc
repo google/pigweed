@@ -157,12 +157,14 @@ std::string SecurityProperties::ToString() const {
   if (level() == SecurityLevel::kNoSecurity) {
     return "[no security]";
   }
+  // inclusive-language: disable
   return bt_lib_cpp_string::StringPrintf(
       "[%s%s%skey size: %lu]",
       encrypted() ? "encrypted " : "",
       authenticated() ? "authenticated (MITM) " : "",
       secure_connections() ? "secure connections " : "legacy authentication ",
       enc_key_size());
+  // inclusive-language: enable
 }
 
 bool SecurityProperties::IsAsSecureAs(const SecurityProperties& other) const {

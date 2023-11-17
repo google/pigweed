@@ -789,7 +789,7 @@ const StaticByteBuffer kWriteExtInquiryResponseMaxLen(
 TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameShortenedSuccess) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalNameMaxLen, );
 
-  // Set the status to be a dummy invalid status.
+  // Set the status to be an arbitrary invalid status.
   hci::Result<> result =
       ToResult(pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED);
   size_t callback_count = 0u;
@@ -835,7 +835,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameShortenedSuccess) {
 TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameSuccess) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalName, );
 
-  // Set the status to be a dummy invalid status.
+  // Set the status to be an arbitrary invalid status.
   hci::Result<> result =
       ToResult(pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED);
   size_t callback_count = 0u;
@@ -877,7 +877,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameSuccess) {
 TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameError) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalName, );
 
-  // Set the status to be a dummy invalid status.
+  // Set the status to be an arbitrary invalid status.
   hci::Result<> result =
       ToResult(pw::bluetooth::emboss::StatusCode::UNSUPPORTED_REMOTE_FEATURE);
   size_t callback_count = 0u;
@@ -913,7 +913,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameError) {
 TEST_F(BrEdrDiscoveryManagerTest, UpdateEIRResponseDataError) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalName, );
 
-  // Set the status to be a dummy invalid status.
+  // Set the status to be an arbitrary invalid status.
   hci::Result<> result =
       ToResult(pw::bluetooth::emboss::StatusCode::UNSUPPORTED_REMOTE_FEATURE);
   size_t callback_count = 0u;

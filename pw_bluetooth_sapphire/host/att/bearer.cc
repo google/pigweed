@@ -37,6 +37,7 @@ namespace {
 // in v5.0, Vol 3, Part C, 10.3.2 (table 10.2). A security upgrade is not
 // required if the returned value equals sm::SecurityLevel::kNoSecurity.
 // TODO(armansito): Supporting requesting Secure Connections in addition to the
+// inclusive-language: ignore
 // encrypted/MITM dimensions.
 sm::SecurityLevel CheckSecurity(ErrorCode ecode,
                                 const sm::SecurityProperties& security) {

@@ -644,6 +644,7 @@ void Peer::StoreBrEdrCrossTransportKey(sm::LTK ct_key) {
              ct_key.security().IsAsSecureAs(
                  bredr_data_->link_key()->security())) {
     // "The devices shall not overwrite that existing key with a key that is
+    // inclusive-language: ignore
     // weaker in either strength or MITM protection." (v5.2 Vol. 3 Part C 14.1).
     bredr_data_->SetBondData(ct_key);
   }

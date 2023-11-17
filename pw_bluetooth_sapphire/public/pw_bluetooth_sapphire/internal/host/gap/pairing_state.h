@@ -385,6 +385,7 @@ class PairingState final {
     // HCI event to respond to in order to complete or reject pairing.
     hci_spec::EventCode expected_event;
 
+    // inclusive-language: ignore
     // True if this pairing is expected to be resistant to MITM attacks.
     bool authenticated;
 
@@ -536,6 +537,7 @@ GetInitiatorAuthenticationRequirements(
     pw::bluetooth::emboss::IoCapability local_cap);
 
 // Get the Authentication Requirements for a peer-initiated pairing. This will
+// inclusive-language: ignore
 // request MITM protection whenever possible to obtain an "authenticated" link
 // encryption key.
 //

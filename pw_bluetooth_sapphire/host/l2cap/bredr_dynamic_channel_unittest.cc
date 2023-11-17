@@ -420,7 +420,7 @@ const StaticByteBuffer kInboundConfigReqWithERTM(
     0x00,
 
     // Retransmission & Flow Control option (Type, Length = 9, mode = ERTM,
-    // dummy parameters)
+    // arbitrary parameters)
     0x04,
     0x09,
     0x03,

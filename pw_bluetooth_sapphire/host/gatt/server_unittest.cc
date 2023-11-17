@@ -3243,6 +3243,7 @@ class ServerTestSecurity : public ServerTest {
         authorization_required_attr()->handle(),
         fit::error(att::ErrorCode::kInsufficientAuthentication)));
 
+    // inclusive-language: ignore
     // Link encrypted w/ MITM.
     fake_chan()->set_security(
         sm::SecurityProperties(sm::SecurityLevel::kAuthenticated,

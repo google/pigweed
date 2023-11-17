@@ -41,6 +41,7 @@ constexpr uint8_t kMaxEncryptionKeySize = 16;
 
 // These are the sample ltk and random from (Core Spec v5.3, Vol 6, Part C, 1),
 // they are declared so that SecurityManager can reject any peers using them and
+// inclusive-language: disable
 // prevent a mitm.
 constexpr UInt128 kSpecSampleLtk = {0xBF,
                                     0x01,

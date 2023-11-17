@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+// inclusive-language: disable
+
 #include "pw_bluetooth_sapphire/internal/host/sm/phase_1.h"
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
