@@ -13,11 +13,325 @@ Discuss what's new with the Pigweed team
 
 .. _docs-changelog-latest:
 
+------------
+Nov 15, 2023
+------------
+
+.. changelog_highlights_start
+
+Highlights (Nov 02, 2023 to Nov 15, 2023):
+
+* The API for writing proc macros with pw_format was simplified.
+* ``pw_emu`` added a command for resuming the execution of paused emulators
+  and now has limited support for inserting environment variables into
+  configuration entries.
+* ``pw_ide`` can now output logs to files.
+* ``pw_unit_test`` added support for GoogleTest's
+  ``ASSERT_OK_AND_ASSIGN``, ``StatusIs``, and ``IsOkAndHolds``.
+* Pigweed's :ref:`docs-mission` are now documented.
+
+.. changelog_highlights_end
+
+Active SEEDs
+============
+Help shape the future of Pigweed! Please leave feedback on the following active RFCs (SEEDs):
+
+* `SEED-0114: Channels
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175471>`__
+* `SEED-0115: Sensors
+  <http://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176760>`__
+* `SEED-0116: Sockets
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/177696>`__
+
+Modules
+=======
+
+pw_allocator
+------------
+The ``...Unchecked`` methods have been removed from the
+``pw::allocator::Allocator`` interface and the NVI-style ``Do...`` methods
+have been modified to take ``Layout`` parameters.
+
+* `Update interface based on final SEED-0110 design
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176754>`__
+* `Refactor test support and example allocator
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/177653>`__
+  (issue `#306686936 <https://issues.pigweed.dev/issues/306686936>`__)
+
+pw_analog
+---------
+* `Mark libs as test only in bazel
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179612>`__
+  (issue `#309665550 <https://issues.pigweed.dev/issues/309665550>`__)
+
+pw_console
+----------
+``SocketClient`` has been updated to support both IPv4 and IPv6 addresses
+in addition to Unix sockets.
+
+* `Add docs banner
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/180824>`__
+* `Improve SocketClient addressing
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178921>`__
+
+pw_emu
+------
+There is now limited supported for inserting environment variable values
+into configuration entries. A command for resuming the execution
+of a paused emulator was added.
+
+* `Add support for substitutions in config entries
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179150>`__
+  (issue `#308793747 <https://issues.pigweed.dev/issues/308793747>`__)
+* `Add resume command to CLI
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179030>`__
+  (issue `#308793747 <https://issues.pigweed.dev/issues/308793747>`__)
+* `Fix CLI gdb and load commands
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178922>`__
+  (issue `#308793747 <https://issues.pigweed.dev/issues/308793747>`__)
+
+pw_env_setup
+------------
+* `Make pigweed_environment.gni content gni-relative
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/180991>`__
+* `Update Bazel to 7.0.0 pre-release
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178950>`__
+
+pw_format
+---------
+The API for writing `proc macros </rustdoc/pw_format/#proc-macros>`__ that take
+format strings and arguments was simplified.
+
+* `Add tests for macro helpers
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/181030>`__
+* `Generalize format macro handling
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178132>`__
+
+pw_fuzzer
+---------
+* `Move \`Domain\` from fuzztest::internal to fuzztest
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178213>`__
+* `Switch oss-fuzz build to Bazel
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175618>`__
+
+pw_i2c
+------
+* `Mark libs as test only in bazel
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179836>`__
+  (issue `#309665550 <https://issues.pigweed.dev/issues/309665550>`__)
+
+pw_ide
+------
+Logs can now be output to files.
+
+* `Set 3-space tabs in VS Code
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179671>`__
+* `Support output to logs
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/163573>`__
+* `Remove redundant licence
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179613>`__
+* `Remove clangd auto-restart
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/171691>`__
+* `Make Sphinx extensions upstream-only
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/171690>`__
+* `VSC extension 0.1.1 release
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/171070>`__
+
+pw_perf_test
+------------
+* `Reogranize source files
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178914>`__
+
+pw_presubmit
+------------
+* `Create new fuzz program
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/181134>`__
+  (issue `#311215681 <https://issues.pigweed.dev/issues/311215681>`__)
+* `Add examples showing how to create formatters
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/180310>`__
+* `Correct coverage ref
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179452>`__
+  (issue `#279161371 <https://issues.pigweed.dev/issues/279161371>`__)
+
+pw_stream
+---------
+* `Fix use of shutdown on Windows
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/180401>`__
+  (issue `#309680612 <https://issues.pigweed.dev/issues/309680612>`__)
+
+pw_system
+---------
+* `Add tracing to the demo system
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168834>`__
+
+pw_system_demo
+--------------
+* `Add clang to default stm32f4 build
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178930>`__
+  (issue `#301079199 <https://issues.pigweed.dev/issues/301079199>`__)
+
+pw_tokenizer
+------------
+* `Add Java to supported languages list
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179251>`__
+
+pw_toolchain
+------------
+* `Set alwayslink = 1 when using --wrap
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/180930>`__
+* `Add objdump
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/175810>`__
+
+pw_toolchain_bazel
+------------------
+Core building blocks from the :ref:`seed-0113` plan were implemented:
+:py:class:`pw_cc_flag_set` and :py:class:`pw_cc_flag_group`.
+
+* `Introduce pw_cc_flag_set and pw_cc_flag_group
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179932>`__
+  (issue `#309533028 <https://issues.pigweed.dev/issues/309533028>`__)
+
+pw_trace_tokenized
+------------------
+* `Add a transfer based trace service
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168833>`__
+
+pw_transfer
+-----------
+There's been a concerted effort to reduce ``pw_transfer`` test flakiness.
+
+* `Limit data sent in handler clear test
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/180951>`__
+  (issue `#297355578 <https://issues.pigweed.dev/issues/297355578>`__)
+* `Limit data sent in manual cancel test
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/180826>`__
+* `Use project-absolute imports for test fixture
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/180390>`__
+  (issue `#310038737 <https://issues.pigweed.dev/issues/310038737>`__)
+* `Prevent accidental timeouts in unit tests
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/180274>`__
+
+pw_unit_test
+------------
+The :ref:`module-pw_unit_test-api-expect` and
+:ref:`module-pw_unit_test-api-assert` APIs were documented. Support for
+GoogleTest's ``ASSERT_OK_AND_ASSIGN``, ``StatusIs``, and ``IsOkAndHolds`` was
+added.
+
+* `Document ASSERT_ and EXPECT_ macros
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179873>`__
+* `Include the right gmock header
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/180030>`__
+  (issue `#309665550 <https://issues.pigweed.dev/issues/309665550>`__)
+* `Mark libs as test only in bazel
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179874>`__
+  (issue `#309665550 <https://issues.pigweed.dev/issues/309665550>`__)
+* `Support *_NEAR, *_FLOAT_EQ, *_DOUBLE_EQ
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179770>`__
+* `Allow googletest_test_matchers_test to run
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179450>`__
+* `Add more googletest test matchers
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179151>`__
+* `Add googletest test matchers
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/177878>`__
+
+pw_watch
+--------
+Support for ``httpwatcher`` was removed because it's not supported on modern
+versions of Python.
+
+* `Remove httpwatcher support
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179250>`__
+  (issue `#304603192 <https://issues.pigweed.dev/issues/304603192>`__)
+
+pw_web
+------
+The log viewer has been polished and testing has been enhanced.
+
+* `Fix LogViewControls responsive behavior
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179470>`__
+  (issue `#308993282 <https://issues.pigweed.dev/issues/308993282>`__)
+* `Resume autoscroll with clear logs event
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179252>`__
+* `Fix clear logs due to error thrown handling input text
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176867>`__
+* `Add manual testing page in docs
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178923>`__
+  (issue `#288587657 <https://issues.pigweed.dev/issues/288587657>`__)
+
+Build
+=====
+* `Update the default C++ standard
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178913>`__
+
+Bazel
+-----
+* `Upgrade nanopb version
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/180871>`__
+* `Update comment
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/180815>`__
+* `Set --incompatible_default_to_explicit_init_py
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/180454>`__
+  (issue `#266950138 <https://issues.pigweed.dev/issues/266950138>`__)
+* `Make pw_cc_library an alias for cc_library
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178924>`__
+  (issue `#267498492 <https://issues.pigweed.dev/issues/267498492>`__)
+* `Don't disable use_header_modules
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178565>`__
+  (issue `#267498492 <https://issues.pigweed.dev/issues/267498492>`__)
+
+Targets
+=======
+.. todo-check: disable
+
+* (``stm32f429i_disc1_stm32cube``)
+  `Update TODO
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179172>`__
+
+.. todo-check: enable
+
+Language support
+================
+* (Python) `Update constraint.list
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179614>`__
+* (Python) `Upgrade parameterized package
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179451>`__
+
+Docs
+====
+A document about Pigweed's :ref:`docs-mission` was added. The
+:ref:`style guide <docs-pw-style>` was split into multiple pages.
+
+* `Update Pigweed Live dates
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/181031>`__
+* `Add mission & philosophies
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178910>`__
+* `Add Contribution Standards section
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179171>`__
+* `Add details to codependent docs
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179879>`__
+* `Update changelog
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178911>`__
+  (issue `#292247409 <https://issues.pigweed.dev/issues/292247409>`__)
+* `Split the style guide: Doxygen & Sphinx
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178912>`__
+* `Split the style guide: C++
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178952>`__
+* `Split the style guide: commit style
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178490>`__
+
+SEEDs
+=====
+* (SEED-0110) `Correct status
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/179436>`__
+* (SEED-0110) `Memory Allocation Interfaces
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/168772>`__
+* (SEED-0113) `Add modular Bazel C/C++ toolchain API
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/173453>`__
+
 -----------
 Nov 3, 2023
 -----------
-.. changelog_highlights_start
-
 Highlights (Oct 19, 2023 to Nov 3, 2023):
 
 * A lot more of the :cpp:class:`pw::multibuf::Chunk` API was implemented.
@@ -40,7 +354,6 @@ Highlights (Oct 19, 2023 to Nov 3, 2023):
   feedback on the new guidelines (and module docs updated to follow the
   guidelines) in `issue #309123039 <https://issues.pigweed.dev/issues/309123039>`__.
 
-.. changelog_highlights_end
 
 Active SEEDs
 ============

@@ -66,6 +66,8 @@ about using upstream GoogleTest instead.
 API Reference
 -------------
 
+.. _module-pw_unit_test-api-expect:
+
 Expectations
 ````````````
 Expectations perform a check that when fails continues the test's execution
@@ -86,6 +88,8 @@ at the same time.
 .. doxygendefine:: EXPECT_DOUBLE_EQ
 .. doxygendefine:: EXPECT_STREQ
 .. doxygendefine:: EXPECT_STRNE
+
+.. _module-pw_unit_test-api-assert:
 
 Assertions
 ``````````
