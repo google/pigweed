@@ -163,6 +163,7 @@ def _pw_rust_toolchain(
         binary_ext = "",
         default_edition = "2021",
         dylib_ext = dylib_ext,
+        exec_compatible_with = exec_compatible_with,
         exec_triple = exec_triple,
         rust_doc = "{}//:bin/rustdoc".format(toolchain_repo),
         rust_std = "{}//:rust_std".format(target_repo),
@@ -170,6 +171,7 @@ def _pw_rust_toolchain(
         rustc_lib = "{}//:rustc_lib".format(toolchain_repo),
         staticlib_ext = ".a",
         stdlib_linkflags = [],
+        target_compatible_with = target_compatible_with,
         target_triple = target_triple,
     )
     native.toolchain(
@@ -201,9 +203,11 @@ def _pw_rust_host_toolchain(
 
     rust_analyzer_toolchain(
         name = "{}_rust_analyzer_toolchain".format(analyzer_toolchain_name),
+        exec_compatible_with = compatible_with,
         proc_macro_srv = "{}//:libexec/rust-analyzer-proc-macro-srv".format(toolchain_repo),
         rustc = "{}//:bin/rustc".format(toolchain_repo),
         rustc_srcs = "{}//:rustc_srcs".format(toolchain_repo),
+        target_compatible_with = compatible_with,
         visibility = ["//visibility:public"],
     )
 
