@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "database.h"
+#include "pw_bluetooth_sapphire/internal/host/att/database.h"
 
 #include <gtest/gtest.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
 namespace bt::att {
 namespace {
@@ -19,9 +19,11 @@ constexpr UUID kTestType1(uint16_t{1});
 constexpr UUID kTestType2(uint16_t{2});
 constexpr UUID kTestType3(uint16_t{3});
 
-const AccessRequirements kAllowed(/*encryption=*/false, /*authentication=*/false,
+const AccessRequirements kAllowed(/*encryption=*/false,
+                                  /*authentication=*/false,
                                   /*authorization=*/false);
-const sm::SecurityProperties kNoSecurity(sm::SecurityLevel::kNoSecurity, 16,
+const sm::SecurityProperties kNoSecurity(sm::SecurityLevel::kNoSecurity,
+                                         16,
                                          /*secure_connections=*/false);
 
 // Values with different lengths
@@ -201,7 +203,8 @@ TEST(DatabaseTest, FindAttributeIndexIntoGrouping) {
   auto db = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd);
 
   auto* grp = db->NewGrouping(kTestType1, 1, kTestValue1);
-  auto* attr = grp->AddAttribute(kTestType2, AccessRequirements(), AccessRequirements());
+  auto* attr =
+      grp->AddAttribute(kTestType2, AccessRequirements(), AccessRequirements());
   grp->set_active(true);
 
   EXPECT_EQ(attr, db->FindAttribute(grp->end_handle()));
@@ -223,8 +226,8 @@ TEST(DatabaseTest, IteratorGroupOnlySingleInactive) {
   db->NewGrouping(kTestType1, 0, kTestValue1);
 
   // |grp| is not active
-  auto iter =
-      db->GetIterator(kTestRangeStart, kTestRangeEnd, /*type=*/nullptr, /*groups_only=*/true);
+  auto iter = db->GetIterator(
+      kTestRangeStart, kTestRangeEnd, /*type=*/nullptr, /*groups_only=*/true);
   EXPECT_TRUE(iter.AtEnd());
   EXPECT_FALSE(iter.get());
 }
@@ -235,12 +238,15 @@ TEST(DatabaseTest, IteratorGroupOnlySingle) {
   grp->set_active(true);
 
   // Not within range.
-  auto iter = db->GetIterator(grp->start_handle() + 1, kTestRangeEnd, /*type=*/nullptr,
+  auto iter = db->GetIterator(grp->start_handle() + 1,
+                              kTestRangeEnd,
+                              /*type=*/nullptr,
                               /*groups_only=*/true);
   EXPECT_TRUE(iter.AtEnd());
   EXPECT_FALSE(iter.get());
 
-  iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, /*type=*/nullptr, /*groups_only=*/true);
+  iter = db->GetIterator(
+      kTestRangeStart, kTestRangeEnd, /*type=*/nullptr, /*groups_only=*/true);
   EXPECT_FALSE(iter.AtEnd());
 
   auto handles = IterHandles(&iter);
@@ -260,8 +266,8 @@ TEST(DatabaseTest, IteratorGroupOnlyMultiple) {
   grp3->set_active(true);
   grp4->set_active(true);
 
-  auto iter =
-      db->GetIterator(kTestRangeStart, kTestRangeEnd, /*type=*/nullptr, /*groups_only=*/true);
+  auto iter = db->GetIterator(
+      kTestRangeStart, kTestRangeEnd, /*type=*/nullptr, /*groups_only=*/true);
   EXPECT_FALSE(iter.AtEnd());
 
   // |grp2| should be omitted.
@@ -274,7 +280,9 @@ TEST(DatabaseTest, IteratorGroupOnlyMultiple) {
   grp2->set_active(true);
 
   // Pick a narrow range that excludes |grp1| and |grp4|.
-  iter = db->GetIterator(grp2->start_handle(), grp3->end_handle(), /*type=*/nullptr,
+  iter = db->GetIterator(grp2->start_handle(),
+                         grp3->end_handle(),
+                         /*type=*/nullptr,
                          /*groups_only=*/true);
   handles = IterHandles(&iter);
   ASSERT_EQ(2u, handles.size());
@@ -289,10 +297,12 @@ TEST(DatabaseTest, IteratorGroupOnlySingleWithFilter) {
   grp->set_active(true);
 
   // No match.
-  auto iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType2, /*groups_only=*/true);
+  auto iter = db->GetIterator(
+      kTestRangeStart, kTestRangeEnd, &kTestType2, /*groups_only=*/true);
   EXPECT_TRUE(iter.AtEnd());
 
-  iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType1, /*groups_only=*/true);
+  iter = db->GetIterator(
+      kTestRangeStart, kTestRangeEnd, &kTestType1, /*groups_only=*/true);
   EXPECT_FALSE(iter.AtEnd());
 
   auto handles = IterHandles(&iter);
@@ -304,7 +314,7 @@ TEST(DatabaseTest, IteratorGroupOnlyManyWithFilter) {
   auto db = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd);
 
   auto grp1 = db->NewGrouping(kTestType1, 1, kTestValue1);  // match
-  grp1->AddAttribute(kTestType1);                           // match but skipped - not group decl.
+  grp1->AddAttribute(kTestType1);  // match but skipped - not group decl.
   grp1->set_active(true);
 
   // Matching but inactive.
@@ -322,7 +332,8 @@ TEST(DatabaseTest, IteratorGroupOnlyManyWithFilter) {
   grp6->set_active(true);
 
   // Filter by |kTestType1|
-  auto iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType1, /*groups_only=*/true);
+  auto iter = db->GetIterator(
+      kTestRangeStart, kTestRangeEnd, &kTestType1, /*groups_only=*/true);
   EXPECT_FALSE(iter.AtEnd());
 
   auto handles = IterHandles(&iter);
@@ -332,7 +343,8 @@ TEST(DatabaseTest, IteratorGroupOnlyManyWithFilter) {
   EXPECT_EQ(grp6->start_handle(), handles[2]);
 
   // Filter by |kTestType2|
-  iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType2, /*groups_only=*/true);
+  iter = db->GetIterator(
+      kTestRangeStart, kTestRangeEnd, &kTestType2, /*groups_only=*/true);
   EXPECT_FALSE(iter.AtEnd());
 
   handles = IterHandles(&iter);
@@ -342,7 +354,10 @@ TEST(DatabaseTest, IteratorGroupOnlyManyWithFilter) {
   EXPECT_EQ(grp5->start_handle(), handles[2]);
 
   // Search narrower range.
-  iter = db->GetIterator(grp1->end_handle(), grp5->end_handle(), &kTestType1, /*groups_only=*/true);
+  iter = db->GetIterator(grp1->end_handle(),
+                         grp5->end_handle(),
+                         &kTestType1,
+                         /*groups_only=*/true);
   EXPECT_FALSE(iter.AtEnd());
 
   handles = IterHandles(&iter);
@@ -428,7 +443,8 @@ TEST_F(DatabaseIteratorManyTest, NoFilter) {
   auto handles = IterHandles(&iter);
 
   // All active attribute handles.
-  const std::array<Handle, kActiveAttrCount> kExpected = {1, 2, 3, 4, 5, 6, 7, 10};
+  const std::array<Handle, kActiveAttrCount> kExpected = {
+      1, 2, 3, 4, 5, 6, 7, 10};
   ASSERT_EQ(kExpected.size(), handles.size());
 
   for (size_t i = 0; i < handles.size(); i++) {
@@ -529,11 +545,16 @@ class DatabaseExecuteWriteQueueTest : public ::testing::Test {
     Attribute::WriteResultCallback result_callback;
   };
 
-  void SetUp() override { db_ = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd); }
+  void SetUp() override {
+    db_ = std::make_unique<Database>(kTestRangeStart, kTestRangeEnd);
+  }
 
-  void ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue wq,
+  void ExecuteWriteQueue(PeerId peer_id,
+                         PrepareWriteQueue wq,
                          const sm::SecurityProperties& security = kNoSecurity) {
-    db_->ExecuteWriteQueue(peer_id, std::move(wq), security,
+    db_->ExecuteWriteQueue(peer_id,
+                           std::move(wq),
+                           security,
                            [this](Database::WriteQueueResult result) {
                              callback_count_++;
                              result_.emplace(result);
@@ -545,7 +566,8 @@ class DatabaseExecuteWriteQueueTest : public ::testing::Test {
     auto* grp = db()->NewGrouping(kTestType1, 3, kTestValue1);  // handle: 1
     group_decl_handle_ = grp->start_handle();
 
-    auto* attr = grp->AddAttribute(kTestType2, kAllowed, kAllowed);  // handle: 2
+    auto* attr =
+        grp->AddAttribute(kTestType2, kAllowed, kAllowed);  // handle: 2
     SetAttributeWriteHandler(attr);
     test_handle1_ = attr->handle();
 
@@ -581,12 +603,17 @@ class DatabaseExecuteWriteQueueTest : public ::testing::Test {
         fit::bind_member<&DatabaseExecuteWriteQueueTest::WriteHandler>(this));
   }
 
-  const std::queue<PendingWrite>& pending_writes() const { return pending_writes_; }
+  const std::queue<PendingWrite>& pending_writes() const {
+    return pending_writes_;
+  }
 
   Database::WeakPtr db() { return db_->GetWeakPtr(); }
 
  private:
-  void WriteHandler(PeerId peer_id, Handle handle, uint16_t offset, const ByteBuffer& value,
+  void WriteHandler(PeerId peer_id,
+                    Handle handle,
+                    uint16_t offset,
+                    const ByteBuffer& value,
                     Attribute::WriteResultCallback result_callback) {
     PendingWrite pw;
     pw.peer_id = peer_id;
@@ -628,7 +655,8 @@ TEST_F(DatabaseExecuteWriteQueueTest, InvalidHandle) {
   ExecuteWriteQueue(kPeerId, std::move(wq));
   EXPECT_EQ(1, callback_count());
   ASSERT_EQ(fit::failed(), result());
-  EXPECT_EQ(std::tuple(kHandle, ErrorCode::kInvalidHandle), result()->error_value());
+  EXPECT_EQ(std::tuple(kHandle, ErrorCode::kInvalidHandle),
+            result()->error_value());
 }
 
 TEST_F(DatabaseExecuteWriteQueueTest, ValueLength) {
@@ -637,7 +665,8 @@ TEST_F(DatabaseExecuteWriteQueueTest, ValueLength) {
   grp->set_active(true);
 
   PrepareWriteQueue wq;
-  wq.push(QueuedWrite(attr->handle(), 0, DynamicByteBuffer(kMaxAttributeValueLength + 1)));
+  wq.push(QueuedWrite(
+      attr->handle(), 0, DynamicByteBuffer(kMaxAttributeValueLength + 1)));
 
   ExecuteWriteQueue(kPeerId, std::move(wq));
   EXPECT_EQ(1, callback_count());
@@ -657,15 +686,19 @@ TEST_F(DatabaseExecuteWriteQueueTest, WritingStaticValueNotPermitted) {
   ExecuteWriteQueue(kPeerId, std::move(wq));
   EXPECT_EQ(1, callback_count());
   ASSERT_EQ(fit::failed(), result());
-  EXPECT_EQ(std::tuple(attr->handle(), ErrorCode::kWriteNotPermitted), result()->error_value());
+  EXPECT_EQ(std::tuple(attr->handle(), ErrorCode::kWriteNotPermitted),
+            result()->error_value());
 }
 
 TEST_F(DatabaseExecuteWriteQueueTest, SecurityChecks) {
   auto* grp = db()->NewGrouping(kTestType1, 1, kTestValue1);
   auto* attr = grp->AddAttribute(
-      kTestType2, att::AccessRequirements(),
-      att::AccessRequirements(/*encryption=*/true, /*authentication=*/false,
-                              /*authorization=*/false));  // write requires encryption
+      kTestType2,
+      att::AccessRequirements(),
+      att::AccessRequirements(
+          /*encryption=*/true,
+          /*authentication=*/false,
+          /*authorization=*/false));  // write requires encryption
   SetAttributeWriteHandler(attr);
   grp->set_active(true);
 
@@ -683,8 +716,10 @@ TEST_F(DatabaseExecuteWriteQueueTest, SecurityChecks) {
 
   // Request should succeed with an encrypted link.
   ExecuteWriteQueue(
-      kPeerId, std::move(wq),
-      sm::SecurityProperties(sm::SecurityLevel::kEncrypted, 16, /*secure_connections=*/false));
+      kPeerId,
+      std::move(wq),
+      sm::SecurityProperties(
+          sm::SecurityLevel::kEncrypted, 16, /*secure_connections=*/false));
   ResolveNextPendingWrite(fit::ok());
   EXPECT_EQ(2, callback_count());
   EXPECT_EQ(fit::ok(), result());
@@ -772,7 +807,8 @@ TEST_F(DatabaseExecuteWriteQueueTest, ErrorInMultipleQueuedWrites) {
     ResolveNextPendingWrite(fit::error(ErrorCode::kUnlikelyError));
     EXPECT_EQ(1, callback_count());
     ASSERT_EQ(fit::failed(), result());
-    EXPECT_EQ(std::tuple(test_handle2(), ErrorCode::kUnlikelyError), result()->error_value());
+    EXPECT_EQ(std::tuple(test_handle2(), ErrorCode::kUnlikelyError),
+              result()->error_value());
   }
 
   // Resolving the remaining writes should have no effect.

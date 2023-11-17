@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef NINSPECT
+#include "pw_bluetooth_sapphire/internal/host/testing/inspect_util.h"
 
-#include "inspect_util.h"
+#ifndef NINSPECT
 
 #include <lib/fpromise/single_threaded_executor.h>
 
@@ -14,7 +14,9 @@ inspect::Hierarchy ReadInspect(const inspect::Inspector& inspector) {
   fpromise::single_threaded_executor executor;
   fpromise::result<inspect::Hierarchy> hierarchy;
   executor.schedule_task(inspect::ReadFromInspector(inspector).then(
-      [&](fpromise::result<inspect::Hierarchy>& res) { hierarchy = std::move(res); }));
+      [&](fpromise::result<inspect::Hierarchy>& res) {
+        hierarchy = std::move(res);
+      }));
   executor.run();
   BT_ASSERT(hierarchy.is_ok());
   return hierarchy.take_value();

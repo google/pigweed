@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
+#include "pw_bluetooth_sapphire/internal/host/common/slab_allocator.h"
 
 #include <gtest/gtest.h>
 

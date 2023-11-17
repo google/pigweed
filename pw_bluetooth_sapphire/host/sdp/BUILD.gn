@@ -2,47 +2,56 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//build/fuzz.gni")
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_unit_test/test.gni")
 
+dir_public_sdp = "../../public/pw_bluetooth_sapphire/internal/host/sdp"
+
 # Basic target with protocol definitions and no logic, suitable for test
 # emulation.
 pw_source_set("definitions") {
-  sources = [
-    "data_element.cc",
-    "data_element.h",
-    "error.cc",
-    "error.h",
-    "sdp.h",
-    "service_record.cc",
-    "service_record.h",
+  public = [
+    "$dir_public_sdp/data_element.h",
+    "$dir_public_sdp/error.h",
+    "$dir_public_sdp/sdp.h",
+    "$dir_public_sdp/service_record.h",
   ]
 
-  public_deps = [ "//src/connectivity/bluetooth/core/bt-host/common" ]
+  sources = [
+    "data_element.cc",
+    "error.cc",
+    "service_record.cc",
+  ]
+
+  public_deps = [ "$dir_pw_bluetooth_sapphire/host/common" ]
 }
 
 pw_source_set("sdp") {
+  public = [
+    "$dir_public_sdp/client.h",
+    "$dir_public_sdp/pdu.h",
+    "$dir_public_sdp/server.h",
+    "$dir_public_sdp/service_discoverer.h",
+  ]
+
   sources = [
     "client.cc",
-    "client.h",
     "pdu.cc",
-    "pdu.h",
     "server.cc",
-    "server.h",
     "service_discoverer.cc",
-    "service_discoverer.h",
   ]
 
   public_deps = [
     ":definitions",
+    "$dir_pw_bluetooth_sapphire/host/l2cap",
     "$dir_pw_third_party/fuchsia:stdcompat",
-    "//src/connectivity/bluetooth/core/bt-host/l2cap",
   ]
+
+  public_configs = [ "$dir_pw_bluetooth_sapphire:public_include_path" ]
 }
 
-pw_test("tests") {
+pw_test("sdp_tests") {
   sources = [
     "client_unittest.cc",
     "data_element_unittest.cc",
@@ -54,34 +63,28 @@ pw_test("tests") {
 
   deps = [
     ":sdp",
-    "//src/connectivity/bluetooth/core/bt-host/common",
-    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
-    "//src/connectivity/bluetooth/core/bt-host/testing",
+    "$dir_pw_bluetooth_sapphire/host/common",
+    "$dir_pw_bluetooth_sapphire/host/l2cap:testing",
+    "$dir_pw_bluetooth_sapphire/host/testing",
   ]
+
+  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
 }
 
-fuchsia_library_fuzzer("data_element_fuzzer") {
-  sources = [ "data_element_fuzztest.cc" ]
-  deps = [
-    ":definitions",
-    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
-  ]
-}
-
-pw_fuzzer("pw_data_element_fuzzer") {
+pw_fuzzer("data_element_fuzzer") {
   sources = [ "data_element_fuzztest.cc" ]
   deps = [ ":definitions" ]
 }
 
-fuchsia_library_fuzzer("pdu_fuzzer") {
-  sources = [ "pdu_fuzztest.cc" ]
-  deps = [
-    ":sdp",
-    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
-  ]
-}
-
-pw_fuzzer("pw_pdu_fuzzer") {
+pw_fuzzer("pdu_fuzzer") {
   sources = [ "pdu_fuzztest.cc" ]
   deps = [ ":sdp" ]
+}
+
+pw_test_group("tests") {
+  tests = [
+    ":sdp_tests",
+    ":data_element_fuzzer_test",
+    ":pdu_fuzzer_test",
+  ]
 }

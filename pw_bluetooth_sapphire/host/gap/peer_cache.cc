@@ -2,17 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "peer_cache.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
 
 #include <lib/fit/function.h>
 
-#include "lib/async/default.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/random.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/peer.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/connection.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/low_energy_scanner.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 
 namespace bt::gap {
 
@@ -50,27 +49,35 @@ void PeerCache::ForEach(PeerCallback f) {
 bool PeerCache::AddBondedPeer(BondingData bd) {
   BT_DEBUG_ASSERT(bd.address.type() != DeviceAddress::Type::kLEAnonymous);
 
-  const bool bond_le =
-      bd.le_pairing_data.peer_ltk || bd.le_pairing_data.local_ltk || bd.le_pairing_data.csrk;
+  const bool bond_le = bd.le_pairing_data.peer_ltk ||
+                       bd.le_pairing_data.local_ltk || bd.le_pairing_data.csrk;
   const bool bond_bredr = bd.bredr_link_key.has_value();
 
-  // |bd.le_pairing_data| must contain either a LTK or CSRK for LE Security Mode 1 or 2.
+  // |bd.le_pairing_data| must contain either a LTK or CSRK for LE Security Mode
+  // 1 or 2.
   //
-  // TODO(fxbug.dev/2761): the address type checks here don't add much value because the address
-  // type is derived from the presence of FIDL bredr_bond and le_bond fields, so the check really
-  // should be whether at least one of the mandatory bond secrets is present.
+  // TODO(fxbug.dev/2761): the address type checks here don't add much value
+  // because the address type is derived from the presence of FIDL bredr_bond
+  // and le_bond fields, so the check really should be whether at least one of
+  // the mandatory bond secrets is present.
   if (bd.address.IsLowEnergy() && !bond_le) {
-    bt_log(ERROR, "gap-le", "mandatory keys missing: no LTK or CSRK (id: %s)",
+    bt_log(ERROR,
+           "gap-le",
+           "mandatory keys missing: no LTK or CSRK (id: %s)",
            bt_str(bd.identifier));
     return false;
   }
 
   if (bd.address.IsBrEdr() && !bond_bredr) {
-    bt_log(ERROR, "gap-bredr", "mandatory link key missing (id: %s)", bt_str(bd.identifier));
+    bt_log(ERROR,
+           "gap-bredr",
+           "mandatory link key missing (id: %s)",
+           bt_str(bd.identifier));
     return false;
   }
 
-  auto* peer = InsertPeerRecord(bd.identifier, bd.address, /*connectable=*/true);
+  auto* peer =
+      InsertPeerRecord(bd.identifier, bd.address, /*connectable=*/true);
   if (!peer) {
     return false;
   }
@@ -110,7 +117,10 @@ bool PeerCache::AddBondedPeer(BondingData bd) {
 
   BT_DEBUG_ASSERT(!peer->temporary());
   BT_DEBUG_ASSERT(peer->bonded());
-  bt_log(TRACE, "gap", "restored bonded peer: %s, id: %s", bt_str(bd.address),
+  bt_log(TRACE,
+         "gap",
+         "restored bonded peer: %s, id: %s",
+         bt_str(bd.address),
          bt_str(bd.identifier));
 
   // Don't call UpdateExpiry(). Since a bonded peer starts out as
@@ -119,21 +129,30 @@ bool PeerCache::AddBondedPeer(BondingData bd) {
   return true;
 }
 
-bool PeerCache::StoreLowEnergyBond(PeerId identifier, const sm::PairingData& bond_data) {
-  BT_ASSERT(bond_data.irk.has_value() == bond_data.identity_address.has_value());
+bool PeerCache::StoreLowEnergyBond(PeerId identifier,
+                                   const sm::PairingData& bond_data) {
+  BT_ASSERT(bond_data.irk.has_value() ==
+            bond_data.identity_address.has_value());
 
-  auto log_bond_failure = fit::defer([this] { peer_metrics_.LogLeBondFailureEvent(); });
+  auto log_bond_failure =
+      fit::defer([this] { peer_metrics_.LogLeBondFailureEvent(); });
 
   auto* peer = FindById(identifier);
   if (!peer) {
-    bt_log(WARN, "gap-le", "failed to store bond for unknown peer (peer: %s)", bt_str(identifier));
+    bt_log(WARN,
+           "gap-le",
+           "failed to store bond for unknown peer (peer: %s)",
+           bt_str(identifier));
     return false;
   }
 
   // Either a LTK or CSRK is mandatory for bonding (the former is needed for LE
   // Security Mode 1 and the latter is needed for Mode 2).
   if (!bond_data.peer_ltk && !bond_data.local_ltk && !bond_data.csrk) {
-    bt_log(WARN, "gap-le", "mandatory keys missing: no LTK or CSRK (peer: %s)", bt_str(identifier));
+    bt_log(WARN,
+           "gap-le",
+           "mandatory keys missing: no LTK or CSRK (peer: %s)",
+           bt_str(identifier));
     return false;
   }
 
@@ -146,16 +165,20 @@ bool PeerCache::StoreLowEnergyBond(PeerId identifier, const sm::PairingData& bon
       // TODO(armansito): Maybe expire the old address after a while?
       address_map_[*bond_data.identity_address] = identifier;
     } else if (*existing_id != identifier) {
-      bt_log(WARN, "gap-le", "identity address %s for peer %s belongs to another peer %s!",
-             bt_str(*bond_data.identity_address), bt_str(identifier), bt_str(*existing_id));
+      bt_log(WARN,
+             "gap-le",
+             "identity address %s for peer %s belongs to another peer %s!",
+             bt_str(*bond_data.identity_address),
+             bt_str(identifier),
+             bt_str(*existing_id));
       return false;
     }
     // We have either created a new mapping or the identity address already
     // maps to this peer.
   }
 
-  // TODO(fxbug.dev/1212): Check that we're not downgrading the security level before
-  // overwriting the bond.
+  // TODO(fxbug.dev/1212): Check that we're not downgrading the security level
+  // before overwriting the bond.
   peer->MutLe().SetBondData(bond_data);
   BT_DEBUG_ASSERT(!peer->temporary());
   BT_DEBUG_ASSERT(peer->le()->bonded());
@@ -179,17 +202,20 @@ bool PeerCache::StoreLowEnergyBond(PeerId identifier, const sm::PairingData& bon
   return true;
 }
 
-bool PeerCache::StoreBrEdrBond(const DeviceAddress& address, const sm::LTK& link_key) {
+bool PeerCache::StoreBrEdrBond(const DeviceAddress& address,
+                               const sm::LTK& link_key) {
   BT_DEBUG_ASSERT(address.type() == DeviceAddress::Type::kBREDR);
   auto* peer = FindByAddress(address);
   if (!peer) {
-    bt_log(WARN, "gap-bredr", "failed to store bond for unknown peer (address: %s)",
+    bt_log(WARN,
+           "gap-bredr",
+           "failed to store bond for unknown peer (address: %s)",
            bt_str(address));
     return false;
   }
 
-  // TODO(fxbug.dev/1212): Check that we're not downgrading the security level before
-  // overwriting the bond.
+  // TODO(fxbug.dev/1212): Check that we're not downgrading the security level
+  // before overwriting the bond.
   peer->MutBrEdr().SetBondData(link_key);
   BT_DEBUG_ASSERT(!peer->temporary());
   BT_DEBUG_ASSERT(peer->bredr()->bonded());
@@ -201,21 +227,27 @@ bool PeerCache::StoreBrEdrBond(const DeviceAddress& address, const sm::LTK& link
 bool PeerCache::SetAutoConnectBehaviorForIntentionalDisconnect(PeerId peer_id) {
   Peer* const peer = FindById(peer_id);
   if (!peer) {
-    bt_log(WARN, "gap-le",
-           "failed to update auto-connect behavior to kSkipUntilNextConnection for "
+    bt_log(WARN,
+           "gap-le",
+           "failed to update auto-connect behavior to kSkipUntilNextConnection "
+           "for "
            "unknown peer: %s",
            bt_str(peer_id));
     return false;
   }
 
-  bt_log(DEBUG, "gap-le", "updated auto-connect behavior to kSkipUntilNextConnection (peer: %s)",
+  bt_log(DEBUG,
+         "gap-le",
+         "updated auto-connect behavior to kSkipUntilNextConnection (peer: %s)",
          bt_str(peer_id));
 
-  peer->MutLe().set_auto_connect_behavior(Peer::AutoConnectBehavior::kSkipUntilNextConnection);
+  peer->MutLe().set_auto_connect_behavior(
+      Peer::AutoConnectBehavior::kSkipUntilNextConnection);
 
-  // TODO(fxbug.dev/37584): When implementing auto-connect behavior tracking for classic bluetooth,
-  // consider tracking this policy for the peer as a whole unless we think this policy should be
-  // applied separately for each transport (per armansito@).
+  // TODO(fxbug.dev/37584): When implementing auto-connect behavior tracking for
+  // classic bluetooth, consider tracking this policy for the peer as a whole
+  // unless we think this policy should be applied separately for each transport
+  // (per armansito@).
 
   return true;
 }
@@ -223,16 +255,23 @@ bool PeerCache::SetAutoConnectBehaviorForIntentionalDisconnect(PeerId peer_id) {
 bool PeerCache::SetAutoConnectBehaviorForSuccessfulConnection(PeerId peer_id) {
   Peer* const peer = FindById(peer_id);
   if (!peer) {
-    bt_log(WARN, "gap-le", "failed to update auto-connect behavior to kAlways for unknown peer: %s",
+    bt_log(WARN,
+           "gap-le",
+           "failed to update auto-connect behavior to kAlways for unknown "
+           "peer: %s",
            bt_str(peer_id));
     return false;
   }
 
-  bt_log(DEBUG, "gap-le", "updated auto-connect behavior to kAlways (peer: %s)", bt_str(peer_id));
+  bt_log(DEBUG,
+         "gap-le",
+         "updated auto-connect behavior to kAlways (peer: %s)",
+         bt_str(peer_id));
 
   peer->MutLe().set_auto_connect_behavior(Peer::AutoConnectBehavior::kAlways);
 
-  // TODO(fxbug.dev/37584): Implement auto-connect behavior tracking for classic bluetooth.
+  // TODO(fxbug.dev/37584): Implement auto-connect behavior tracking for classic
+  // bluetooth.
 
   return true;
 }
@@ -292,8 +331,10 @@ void PeerCache::AttachInspect(inspect::Node& parent, std::string name) {
   }
 }
 
-PeerCache::CallbackId PeerCache::add_peer_updated_callback(PeerCallback callback) {
-  auto [iter, success] = peer_updated_callbacks_.emplace(next_callback_id_++, std::move(callback));
+PeerCache::CallbackId PeerCache::add_peer_updated_callback(
+    PeerCallback callback) {
+  auto [iter, success] =
+      peer_updated_callbacks_.emplace(next_callback_id_++, std::move(callback));
   BT_ASSERT(success);
   return iter->first;
 }
@@ -304,10 +345,13 @@ bool PeerCache::remove_peer_updated_callback(CallbackId id) {
 
 // Private methods below.
 
-Peer* PeerCache::InsertPeerRecord(PeerId identifier, const DeviceAddress& address,
+Peer* PeerCache::InsertPeerRecord(PeerId identifier,
+                                  const DeviceAddress& address,
                                   bool connectable) {
   if (FindIdByAddress(address)) {
-    bt_log(WARN, "gap", "tried to insert peer with existing address: %s",
+    bt_log(WARN,
+           "gap",
+           "tried to insert peer with existing address: %s",
            address.ToString().c_str());
     return nullptr;
   }
@@ -316,11 +360,16 @@ Peer* PeerCache::InsertPeerRecord(PeerId identifier, const DeviceAddress& addres
     return StoreLowEnergyBond(identifier, data);
   };
 
-  std::unique_ptr<Peer> peer(new Peer(fit::bind_member<&PeerCache::NotifyPeerUpdated>(this),
-                                      fit::bind_member<&PeerCache::UpdateExpiry>(this),
-                                      fit::bind_member<&PeerCache::MakeDualMode>(this),
-                                      std::move(store_le_bond_cb), identifier, address, connectable,
-                                      &peer_metrics_, dispatcher_));
+  std::unique_ptr<Peer> peer(
+      new Peer(fit::bind_member<&PeerCache::NotifyPeerUpdated>(this),
+               fit::bind_member<&PeerCache::UpdateExpiry>(this),
+               fit::bind_member<&PeerCache::MakeDualMode>(this),
+               std::move(store_le_bond_cb),
+               identifier,
+               address,
+               connectable,
+               &peer_metrics_,
+               dispatcher_));
   if (node_) {
     peer->AttachInspect(node_, node_.UniqueName("peer_"));
   }
@@ -328,9 +377,15 @@ Peer* PeerCache::InsertPeerRecord(PeerId identifier, const DeviceAddress& addres
   // Note: we must construct the PeerRecord in-place, because it doesn't
   // support copy or move.
   auto [iter, inserted] = peers_.try_emplace(
-      peer->identifier(), std::move(peer), [this, p = peer.get()] { RemovePeer(p); }, dispatcher_);
+      peer->identifier(),
+      std::move(peer),
+      [this, p = peer.get()] { RemovePeer(p); },
+      dispatcher_);
   if (!inserted) {
-    bt_log(WARN, "gap", "tried to insert peer with existing ID: %s", bt_str(identifier));
+    bt_log(WARN,
+           "gap",
+           "tried to insert peer with existing ID: %s",
+           bt_str(identifier));
     return nullptr;
   }
 
@@ -341,7 +396,8 @@ Peer* PeerCache::InsertPeerRecord(PeerId identifier, const DeviceAddress& addres
 void PeerCache::NotifyPeerBonded(const Peer& peer) {
   BT_DEBUG_ASSERT(peers_.find(peer.identifier()) != peers_.end());
   BT_DEBUG_ASSERT(peers_.at(peer.identifier()).peer() == &peer);
-  BT_DEBUG_ASSERT_MSG(peer.identity_known(), "peers not allowed to bond with unknown identity!");
+  BT_DEBUG_ASSERT_MSG(peer.identity_known(),
+                      "peers not allowed to bond with unknown identity!");
 
   bt_log(INFO, "gap", "successfully bonded (peer: %s)", bt_str(peer));
   if (peer_bonded_callback_) {
@@ -349,7 +405,8 @@ void PeerCache::NotifyPeerBonded(const Peer& peer) {
   }
 }
 
-void PeerCache::NotifyPeerUpdated(const Peer& peer, Peer::NotifyListenersChange change) {
+void PeerCache::NotifyPeerUpdated(const Peer& peer,
+                                  Peer::NotifyListenersChange change) {
   BT_DEBUG_ASSERT(peers_.find(peer.identifier()) != peers_.end());
   BT_DEBUG_ASSERT(peers_.at(peer.identifier()).peer() == &peer);
 
@@ -385,12 +442,19 @@ void PeerCache::UpdateExpiry(const Peer& peer) {
 void PeerCache::MakeDualMode(const Peer& peer) {
   BT_ASSERT(address_map_.at(peer.address()) == peer.identifier());
   const auto address_alias = GetAliasAddress(peer.address());
-  auto [iter, inserted] = address_map_.try_emplace(address_alias, peer.identifier());
+  auto [iter, inserted] =
+      address_map_.try_emplace(address_alias, peer.identifier());
   BT_ASSERT_MSG(inserted || iter->second == peer.identifier(),
-                "%s can't become dual-mode because %s maps to %s", bt_str(peer.identifier()),
-                bt_str(address_alias), bt_str(iter->second));
-  bt_log(INFO, "gap", "peer became dual mode (peer: %s, address: %s, alias: %s)",
-         bt_str(peer.identifier()), bt_str(peer.address()), bt_str(address_alias));
+                "%s can't become dual-mode because %s maps to %s",
+                bt_str(peer.identifier()),
+                bt_str(address_alias),
+                bt_str(iter->second));
+  bt_log(INFO,
+         "gap",
+         "peer became dual mode (peer: %s, address: %s, alias: %s)",
+         bt_str(peer.identifier()),
+         bt_str(peer.address()),
+         bt_str(address_alias));
 
   // The peer became dual mode in lieu of adding a new peer but is as
   // significant, so notify listeners of the change.
@@ -426,7 +490,8 @@ void PeerCache::RemovePeer(Peer* peer) {
   }
 }
 
-std::optional<PeerId> PeerCache::FindIdByAddress(const DeviceAddress& address) const {
+std::optional<PeerId> PeerCache::FindIdByAddress(
+    const DeviceAddress& address) const {
   auto iter = address_map_.find(address);
   if (iter == address_map_.end()) {
     // Search again using the other technology's address. This is necessary when

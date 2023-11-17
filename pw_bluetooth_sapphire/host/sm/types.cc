@@ -2,14 +2,17 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "types.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/types.h"
+
+#include <cpp-string/string_printf.h>
 
 #include <utility>
 
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
-#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/util.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
+
+#pragma clang diagnostic ignored "-Wswitch-enum"
 
 namespace bt::sm {
 namespace {
@@ -59,10 +62,14 @@ const char* LevelToString(SecurityLevel level) {
 }
 
 SecurityProperties::SecurityProperties()
-    : SecurityProperties(/*encrypted=*/false, /*authenticated=*/false, /*secure_connections=*/false,
+    : SecurityProperties(/*encrypted=*/false,
+                         /*authenticated=*/false,
+                         /*secure_connections=*/false,
                          0u) {}
 
-SecurityProperties::SecurityProperties(bool encrypted, bool authenticated, bool secure_connections,
+SecurityProperties::SecurityProperties(bool encrypted,
+                                       bool authenticated,
+                                       bool secure_connections,
                                        size_t enc_key_size)
     : properties_(0u), enc_key_size_(enc_key_size) {
   properties_ |= (encrypted ? Property::kEncrypted : 0u);
@@ -70,24 +77,32 @@ SecurityProperties::SecurityProperties(bool encrypted, bool authenticated, bool 
   properties_ |= (secure_connections ? Property::kSecureConnections : 0u);
 }
 
-SecurityProperties::SecurityProperties(SecurityLevel level, size_t enc_key_size,
+SecurityProperties::SecurityProperties(SecurityLevel level,
+                                       size_t enc_key_size,
                                        bool secure_connections)
     : SecurityProperties((level >= SecurityLevel::kEncrypted),
-                         (level >= SecurityLevel::kAuthenticated), secure_connections,
+                         (level >= SecurityLevel::kAuthenticated),
+                         secure_connections,
                          enc_key_size) {}
 // All BR/EDR link keys, even those from legacy pairing or based on 192-bit EC
 // points, are stored in 128 bits, according to Core Spec v5.0, Vol 2, Part H
 // Section 3.1 "Key Types."
 SecurityProperties::SecurityProperties(hci_spec::LinkKeyType lk_type)
-    : SecurityProperties(IsEncryptedKey(lk_type), IsAuthenticatedKey(lk_type),
-                         IsSecureConnectionsKey(lk_type), kMaxEncryptionKeySize) {
-  BT_DEBUG_ASSERT_MSG(lk_type != hci_spec::LinkKeyType::kChangedCombination,
-                      "Can't infer security information from a Changed Combination Key");
+    : SecurityProperties(IsEncryptedKey(lk_type),
+                         IsAuthenticatedKey(lk_type),
+                         IsSecureConnectionsKey(lk_type),
+                         kMaxEncryptionKeySize) {
+  BT_DEBUG_ASSERT_MSG(
+      lk_type != hci_spec::LinkKeyType::kChangedCombination,
+      "Can't infer security information from a Changed Combination Key");
 }
 
-SecurityProperties::SecurityProperties(const SecurityProperties& other) { *this = other; }
+SecurityProperties::SecurityProperties(const SecurityProperties& other) {
+  *this = other;
+}
 
-SecurityProperties& SecurityProperties::operator=(const SecurityProperties& other) {
+SecurityProperties& SecurityProperties::operator=(
+    const SecurityProperties& other) {
   properties_ = other.properties_;
   enc_key_size_ = other.enc_key_size_;
   return *this;
@@ -99,7 +114,8 @@ SecurityLevel SecurityProperties::level() const {
     level = SecurityLevel::kEncrypted;
     if (properties_ & Property::kAuthenticated) {
       level = SecurityLevel::kAuthenticated;
-      if (enc_key_size_ == kMaxEncryptionKeySize && (properties_ & Property::kSecureConnections)) {
+      if (enc_key_size_ == kMaxEncryptionKeySize &&
+          (properties_ & Property::kSecureConnections)) {
         level = SecurityLevel::kSecureAuthenticated;
       }
     }
@@ -107,7 +123,8 @@ SecurityLevel SecurityProperties::level() const {
   return level;
 }
 
-std::optional<hci_spec::LinkKeyType> SecurityProperties::GetLinkKeyType() const {
+std::optional<hci_spec::LinkKeyType> SecurityProperties::GetLinkKeyType()
+    const {
   if (level() == SecurityLevel::kNoSecurity) {
     return std::nullopt;
   }
@@ -131,9 +148,11 @@ std::string SecurityProperties::ToString() const {
     return "[no security]";
   }
   return bt_lib_cpp_string::StringPrintf(
-      "[%s%s%skey size: %lu]", encrypted() ? "encrypted " : "",
+      "[%s%s%skey size: %lu]",
+      encrypted() ? "encrypted " : "",
       authenticated() ? "authenticated (MITM) " : "",
-      secure_connections() ? "secure connections " : "legacy authentication ", enc_key_size());
+      secure_connections() ? "secure connections " : "legacy authentication ",
+      enc_key_size());
 }
 
 bool SecurityProperties::IsAsSecureAs(const SecurityProperties& other) const {
@@ -146,20 +165,22 @@ bool SecurityProperties::IsAsSecureAs(const SecurityProperties& other) const {
   // clang-format on
 }
 
-void SecurityProperties::AttachInspect(inspect::Node& parent, std::string name) {
+void SecurityProperties::AttachInspect(inspect::Node& parent,
+                                       std::string name) {
   inspect_node_ = parent.CreateChild(name);
 
-  inspect_properties_.level =
-      inspect_node_.CreateString(kInspectLevelPropertyName, LevelToString(level()));
+  inspect_properties_.level = inspect_node_.CreateString(
+      kInspectLevelPropertyName, LevelToString(level()));
   inspect_properties_.encrypted =
       inspect_node_.CreateBool(kInspectEncryptedPropertyName, encrypted());
-  inspect_properties_.secure_connections =
-      inspect_node_.CreateBool(kInspectSecureConnectionsPropertyName, secure_connections());
-  inspect_properties_.authenticated =
-      inspect_node_.CreateBool(kInspectAuthenticatedPropertyName, authenticated());
+  inspect_properties_.secure_connections = inspect_node_.CreateBool(
+      kInspectSecureConnectionsPropertyName, secure_connections());
+  inspect_properties_.authenticated = inspect_node_.CreateBool(
+      kInspectAuthenticatedPropertyName, authenticated());
   if (GetLinkKeyType().has_value()) {
     inspect_properties_.key_type = inspect_node_.CreateString(
-        kInspectKeyTypePropertyName, hci_spec::LinkKeyTypeToString(GetLinkKeyType().value()));
+        kInspectKeyTypePropertyName,
+        hci_spec::LinkKeyTypeToString(GetLinkKeyType().value()));
   }
 }
 

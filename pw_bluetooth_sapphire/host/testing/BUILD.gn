@@ -5,18 +5,21 @@
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_unit_test/test.gni")
 
+dir_public_testing = "../../public/pw_bluetooth_sapphire/internal/host/testing"
+
 pw_source_set("testing") {
-  testonly = true
+  public = [
+    "$dir_public_testing/controller_test.h",
+    "$dir_public_testing/inspect.h",
+    "$dir_public_testing/inspect_util.h",
+    "$dir_public_testing/parse_args.h",
+    "$dir_public_testing/test_packets.h",
+  ]
 
   sources = [
-    "controller_test.h",
-    "inspect.h",
     "inspect_util.cc",
-    "inspect_util.h",
     "parse_args.cc",
-    "parse_args.h",
     "test_packets.cc",
-    "test_packets.h",
   ]
 
   deps = [ "$dir_pw_unit_test" ]
@@ -25,27 +28,29 @@ pw_source_set("testing") {
     ":fake_controller",
     ":mock_controller",
     ":test_helpers",
-    "//src/connectivity/bluetooth/core/bt-host/transport",
-    "//src/connectivity/bluetooth/core/bt-host/transport:testing",
+    "$dir_pw_bluetooth_sapphire/host/transport",
+    "$dir_pw_bluetooth_sapphire/host/transport:testing",
   ]
 
   if (current_os == "fuchsia") {
     public_deps += [ "//sdk/lib/inspect/testing/cpp" ]
   }
+
+  public_configs = [ "$dir_pw_bluetooth_sapphire:public_include_path" ]
 }
 
 # test_helpers is separate from :testing to fix dependency cycles.
 pw_source_set("test_helpers") {
-  testonly = true
+  public = [ "$dir_public_testing/test_helpers.h" ]
 
-  sources = [ "test_helpers.h" ]
-
-  deps = [ "//src/connectivity/bluetooth/lib/cpp-string" ]
+  deps = [ "$dir_pw_bluetooth_sapphire/lib/cpp-string" ]
 
   public_deps = [
+    "$dir_pw_bluetooth_sapphire/host/common",
     "$dir_pw_unit_test",
-    "//src/connectivity/bluetooth/core/bt-host/common",
   ]
+
+  public_configs = [ "$dir_pw_bluetooth_sapphire:public_include_path" ]
 }
 
 pw_test("tests") {
@@ -61,108 +66,101 @@ pw_test("tests") {
 
   deps = [
     ":testing",
-    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
+    "$dir_pw_bluetooth_sapphire/host/l2cap:testing",
   ]
+
+  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
 }
 
 pw_source_set("controller_test_double_base") {
-  testonly = true
+  public = [ "$dir_public_testing/controller_test_double_base.h" ]
 
-  sources = [
-    "controller_test_double_base.cc",
-    "controller_test_double_base.h",
-  ]
+  sources = [ "controller_test_double_base.cc" ]
 
   public_deps = [
+    "$dir_pw_async:heap_dispatcher",
     "$dir_pw_bluetooth",
+    "$dir_pw_bluetooth_sapphire/host/common",
+    "$dir_pw_bluetooth_sapphire/host/hci",
     "$dir_pw_third_party/fuchsia:fit",
-    "//src/connectivity/bluetooth/core/bt-host/common",
-    "//src/connectivity/bluetooth/core/bt-host/hci",
-    "//third_party/pigweed:pw_async_heap_dispatcher",
   ]
 }
 
 pw_source_set("mock_controller") {
-  testonly = true
+  public = [ "$dir_public_testing/mock_controller.h" ]
 
-  sources = [
-    "mock_controller.cc",
-    "mock_controller.h",
-  ]
+  sources = [ "mock_controller.cc" ]
 
   public_deps = [
     ":controller_test_double_base",
     ":test_helpers",
+    "$dir_pw_async:heap_dispatcher",
+    "$dir_pw_bluetooth_sapphire/host/transport",
+    "$dir_pw_bluetooth_sapphire/host/transport:testing",
     "$dir_pw_unit_test",
-    "//src/connectivity/bluetooth/core/bt-host/transport",
-    "//src/connectivity/bluetooth/core/bt-host/transport:testing",
-    "//third_party/pigweed:pw_async_heap_dispatcher",
   ]
 }
 
 # Target that includes Fake HCI emulation support. This should NOT depend on
 # gtest.
 pw_source_set("fake_controller") {
-  testonly = true
+  public = [
+    "$dir_public_testing/fake_controller.h",
+    "$dir_public_testing/fake_dynamic_channel.h",
+    "$dir_public_testing/fake_gatt_server.h",
+    "$dir_public_testing/fake_l2cap.h",
+    "$dir_public_testing/fake_peer.h",
+    "$dir_public_testing/fake_sdp_server.h",
+    "$dir_public_testing/fake_signaling_server.h",
+  ]
 
   sources = [
     "fake_controller.cc",
-    "fake_controller.h",
     "fake_dynamic_channel.cc",
-    "fake_dynamic_channel.h",
     "fake_gatt_server.cc",
-    "fake_gatt_server.h",
     "fake_l2cap.cc",
-    "fake_l2cap.h",
     "fake_peer.cc",
-    "fake_peer.h",
     "fake_sdp_server.cc",
-    "fake_sdp_server.h",
     "fake_signaling_server.cc",
-    "fake_signaling_server.h",
   ]
 
   public_deps = [
     ":controller_test_double_base",
     ":test_helpers",
     "$dir_pw_bluetooth:emboss_hci_group",
+    "$dir_pw_bluetooth_sapphire/host/att:definitions",
+    "$dir_pw_bluetooth_sapphire/host/common",
+    "$dir_pw_bluetooth_sapphire/host/gap",
+    "$dir_pw_bluetooth_sapphire/host/gatt:definitions",
+    "$dir_pw_bluetooth_sapphire/host/hci",
+    "$dir_pw_bluetooth_sapphire/host/l2cap:definitions",
+    "$dir_pw_bluetooth_sapphire/host/l2cap:testing",
+    "$dir_pw_bluetooth_sapphire/host/sdp",
     "$dir_pw_third_party/fuchsia:fit",
-    "//src/connectivity/bluetooth/core/bt-host/att:definitions",
-    "//src/connectivity/bluetooth/core/bt-host/common",
-    "//src/connectivity/bluetooth/core/bt-host/gap",
-    "//src/connectivity/bluetooth/core/bt-host/gatt:definitions",
-    "//src/connectivity/bluetooth/core/bt-host/hci",
-    "//src/connectivity/bluetooth/core/bt-host/l2cap:definitions",
-    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
-    "//src/connectivity/bluetooth/core/bt-host/sdp",
   ]
 }
 
 # Main entry point for host library unittests.
 pw_source_set("gtest_main") {
-  testonly = true
-
   sources = [ "run_all_unittests.cc" ]
 
   deps = [
     ":testing",
-    "//src/connectivity/bluetooth/core/bt-host/common",
+    "$dir_pw_bluetooth_sapphire/host/common",
   ]
 
   public_deps = [ "$dir_pw_unit_test" ]
 }
 
 pw_source_set("fuzzing") {
-  testonly = true
-  sources = [ "peer_fuzzer.h" ]
-  deps = [ "//src/connectivity/bluetooth/core/bt-host/gap" ]
+  public = [ "$dir_public_testing/peer_fuzzer.h" ]
+  deps = [ "$dir_pw_bluetooth_sapphire/host/gap" ]
 }
 
 source_set("fuzztest_driver") {
-  testonly = true
   sources = [ "fuzztest_driver.cc" ]
   deps = [
-    "//src/connectivity/bluetooth/core/bt-host/common",
+    "$dir_pw_bluetooth_sapphire/host/common",
     "//third_party/pigweed/backends/pw_log:printf",
   ]
 }

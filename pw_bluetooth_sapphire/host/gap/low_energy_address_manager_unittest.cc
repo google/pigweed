@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "low_energy_address_manager.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/low_energy_address_manager.h"
 
-#include "gap.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/util.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/mock_controller.h"
 
 namespace bt::gap {
 namespace {
@@ -17,7 +17,8 @@ using testing::MockController;
 
 using TestingBase = testing::FakeDispatcherControllerTest<MockController>;
 
-const DeviceAddress kPublic(DeviceAddress::Type::kLEPublic, {0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA});
+const DeviceAddress kPublic(DeviceAddress::Type::kLEPublic,
+                            {0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA});
 
 class LowEnergyAddressManagerTest : public TestingBase {
  public:
@@ -28,11 +29,14 @@ class LowEnergyAddressManagerTest : public TestingBase {
   void SetUp() override {
     TestingBase::SetUp();
     addr_mgr_ = std::make_unique<LowEnergyAddressManager>(
-        kPublic, [this] { return IsRandomAddressChangeAllowed(); }, cmd_channel()->AsWeakPtr(),
+        kPublic,
+        [this] { return IsRandomAddressChangeAllowed(); },
+        cmd_channel()->AsWeakPtr(),
         dispatcher());
     ASSERT_EQ(kPublic, addr_mgr()->identity_address());
     ASSERT_FALSE(addr_mgr()->irk());
-    addr_mgr_->register_address_changed_callback([&](auto) { address_changed_cb_count_++; });
+    addr_mgr_->register_address_changed_callback(
+        [&](auto) { address_changed_cb_count_++; });
   }
 
   void TearDown() override {
@@ -53,11 +57,15 @@ class LowEnergyAddressManagerTest : public TestingBase {
   }
 
   // Called by |addr_mgr_|.
-  bool IsRandomAddressChangeAllowed() const { return random_address_change_allowed_; }
+  bool IsRandomAddressChangeAllowed() const {
+    return random_address_change_allowed_;
+  }
 
   LowEnergyAddressManager* addr_mgr() const { return addr_mgr_.get(); }
 
-  void set_random_address_change_allowed(bool value) { random_address_change_allowed_ = value; }
+  void set_random_address_change_allowed(bool value) {
+    random_address_change_allowed_ = value;
+  }
 
   size_t address_changed_cb_count() const { return address_changed_cb_count_; }
 
@@ -69,16 +77,21 @@ class LowEnergyAddressManagerTest : public TestingBase {
   BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LowEnergyAddressManagerTest);
 };
 
-TEST_F(LowEnergyAddressManagerTest, DefaultState) { EXPECT_EQ(kPublic, EnsureLocalAddress()); }
+TEST_F(LowEnergyAddressManagerTest, DefaultState) {
+  EXPECT_EQ(kPublic, EnsureLocalAddress());
+}
 
 TEST_F(LowEnergyAddressManagerTest, EnablePrivacy) {
   // Respond with success.
-  const StaticByteBuffer kResponse(0x0E, 4,     // Command Complete, 4 bytes,
-                                   1,           // 1 allowed packet
-                                   0x05, 0x20,  // opcode: HCI_LE_Set_Random_Address
-                                   0x00         // status: success
+  const StaticByteBuffer kResponse(0x0E,
+                                   4,  // Command Complete, 4 bytes,
+                                   1,  // 1 allowed packet
+                                   0x05,
+                                   0x20,  // opcode: HCI_LE_Set_Random_Address
+                                   0x00   // status: success
   );
-  EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kLESetRandomAddress, &kResponse);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), hci_spec::kLESetRandomAddress, &kResponse);
 
   const UInt128 kIrk{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}};
   int hci_cmd_count = 0;
@@ -88,7 +101,8 @@ TEST_F(LowEnergyAddressManagerTest, EnablePrivacy) {
 
     const auto addr_bytes = rx.view(sizeof(hci_spec::CommandHeader));
     ASSERT_EQ(6u, addr_bytes.size());
-    addr = DeviceAddress(DeviceAddress::Type::kLERandom, DeviceAddressBytes(addr_bytes));
+    addr = DeviceAddress(DeviceAddress::Type::kLERandom,
+                         DeviceAddressBytes(addr_bytes));
   });
 
   addr_mgr()->set_irk(kIrk);
@@ -98,7 +112,8 @@ TEST_F(LowEnergyAddressManagerTest, EnablePrivacy) {
 
   addr_mgr()->EnablePrivacy(true);
   // Privacy is now considered enabled.
-  // Even though Privacy is enabled, the LE address has not been changed so no notifications.
+  // Even though Privacy is enabled, the LE address has not been changed so no
+  // notifications.
   EXPECT_EQ(address_changed_cb_count(), 0u);
   // Further requests to enable should not trigger additional HCI commands.
   addr_mgr()->EnablePrivacy(true);
@@ -126,9 +141,11 @@ TEST_F(LowEnergyAddressManagerTest, EnablePrivacy) {
   EXPECT_FALSE(sm::util::IrkCanResolveRpa(kIrk2, addr));
 
   // Re-enable privacy to trigger a refresh.
-  EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kLESetRandomAddress, &kResponse);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), hci_spec::kLESetRandomAddress, &kResponse);
   addr_mgr()->EnablePrivacy(false);
-  // Disabling Privacy should result in the Public address being used so we expect a notification.
+  // Disabling Privacy should result in the Public address being used so we
+  // expect a notification.
   EXPECT_EQ(address_changed_cb_count(), 2u);
   addr_mgr()->EnablePrivacy(true);
   RunUntilIdle();
@@ -141,12 +158,15 @@ TEST_F(LowEnergyAddressManagerTest, EnablePrivacy) {
 
 TEST_F(LowEnergyAddressManagerTest, EnablePrivacyNoIrk) {
   // Respond with success.
-  const StaticByteBuffer kResponse(0x0E, 4,     // Command Complete, 4 bytes,
-                                   1,           // 1 allowed packet
-                                   0x05, 0x20,  // opcode: HCI_LE_Set_Random_Address
-                                   0x00         // status: success
+  const StaticByteBuffer kResponse(0x0E,
+                                   4,  // Command Complete, 4 bytes,
+                                   1,  // 1 allowed packet
+                                   0x05,
+                                   0x20,  // opcode: HCI_LE_Set_Random_Address
+                                   0x00   // status: success
   );
-  EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kLESetRandomAddress, &kResponse);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), hci_spec::kLESetRandomAddress, &kResponse);
 
   int hci_cmd_count = 0;
   DeviceAddress addr;
@@ -155,7 +175,8 @@ TEST_F(LowEnergyAddressManagerTest, EnablePrivacyNoIrk) {
 
     const auto addr_bytes = rx.view(sizeof(hci_spec::CommandHeader));
     ASSERT_EQ(6u, addr_bytes.size());
-    addr = DeviceAddress(DeviceAddress::Type::kLERandom, DeviceAddressBytes(addr_bytes));
+    addr = DeviceAddress(DeviceAddress::Type::kLERandom,
+                         DeviceAddressBytes(addr_bytes));
   });
 
   addr_mgr()->EnablePrivacy(true);
@@ -177,19 +198,27 @@ TEST_F(LowEnergyAddressManagerTest, EnablePrivacyNoIrk) {
 
 TEST_F(LowEnergyAddressManagerTest, EnablePrivacyHciError) {
   // Respond with error.
-  const StaticByteBuffer kErrorResponse(0x0E, 4,     // Command Complete, 4 bytes,
-                                        1,           // 1 allowed packet
-                                        0x05, 0x20,  // opcode: HCI_LE_Set_Random_Address
-                                        0x0C         // status: Command Disallowed
+  const StaticByteBuffer kErrorResponse(
+      0x0E,
+      4,  // Command Complete, 4 bytes,
+      1,  // 1 allowed packet
+      0x05,
+      0x20,  // opcode: HCI_LE_Set_Random_Address
+      0x0C   // status: Command Disallowed
   );
   // The second time respond with success.
-  const StaticByteBuffer kSuccessResponse(0x0E, 4,     // Command Complete, 4 bytes,
-                                          1,           // 1 allowed packet
-                                          0x05, 0x20,  // opcode: HCI_LE_Set_Random_Address
-                                          0x00         // status: success
+  const StaticByteBuffer kSuccessResponse(
+      0x0E,
+      4,  // Command Complete, 4 bytes,
+      1,  // 1 allowed packet
+      0x05,
+      0x20,  // opcode: HCI_LE_Set_Random_Address
+      0x00   // status: success
   );
-  EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kLESetRandomAddress, &kErrorResponse);
-  EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kLESetRandomAddress, &kSuccessResponse);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), hci_spec::kLESetRandomAddress, &kErrorResponse);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), hci_spec::kLESetRandomAddress, &kSuccessResponse);
 
   addr_mgr()->EnablePrivacy(true);
 
@@ -217,13 +246,18 @@ TEST_F(LowEnergyAddressManagerTest, EnablePrivacyHciError) {
   EXPECT_EQ(address_changed_cb_count(), 1u);
 }
 
-TEST_F(LowEnergyAddressManagerTest, EnablePrivacyWhileAddressChangeIsDisallowed) {
-  const auto kSuccessResponse = StaticByteBuffer(0x0E, 4,     // Command Complete, 4 bytes,
-                                                 1,           // 1 allowed packet
-                                                 0x05, 0x20,  // opcode: HCI_LE_Set_Random_Address
-                                                 0x00         // status: success
-  );
-  EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kLESetRandomAddress, &kSuccessResponse);
+TEST_F(LowEnergyAddressManagerTest,
+       EnablePrivacyWhileAddressChangeIsDisallowed) {
+  const auto kSuccessResponse =
+      StaticByteBuffer(0x0E,
+                       4,  // Command Complete, 4 bytes,
+                       1,  // 1 allowed packet
+                       0x05,
+                       0x20,  // opcode: HCI_LE_Set_Random_Address
+                       0x00   // status: success
+      );
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), hci_spec::kLESetRandomAddress, &kSuccessResponse);
 
   int hci_count = 0;
   test_device()->SetTransactionCallback([&] { hci_count++; });
@@ -250,13 +284,18 @@ TEST_F(LowEnergyAddressManagerTest, EnablePrivacyWhileAddressChangeIsDisallowed)
 }
 
 TEST_F(LowEnergyAddressManagerTest, AddressExpiration) {
-  const auto kSuccessResponse = StaticByteBuffer(0x0E, 4,     // Command Complete, 4 bytes,
-                                                 1,           // 1 allowed packet
-                                                 0x05, 0x20,  // opcode: HCI_LE_Set_Random_Address
-                                                 0x00         // status: success
-  );
-  EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kLESetRandomAddress, &kSuccessResponse);
-  EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kLESetRandomAddress, &kSuccessResponse);
+  const auto kSuccessResponse =
+      StaticByteBuffer(0x0E,
+                       4,  // Command Complete, 4 bytes,
+                       1,  // 1 allowed packet
+                       0x05,
+                       0x20,  // opcode: HCI_LE_Set_Random_Address
+                       0x00   // status: success
+      );
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), hci_spec::kLESetRandomAddress, &kSuccessResponse);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), hci_spec::kLESetRandomAddress, &kSuccessResponse);
 
   addr_mgr()->EnablePrivacy(true);
   auto addr1 = EnsureLocalAddress();
@@ -289,18 +328,25 @@ TEST_F(LowEnergyAddressManagerTest, AddressExpiration) {
   EXPECT_TRUE(addr2.IsNonResolvablePrivate());
   EXPECT_NE(addr1, addr2);
   EXPECT_EQ(1, hci_count);
-  // The new address was already reported after timeout so no other notification.
+  // The new address was already reported after timeout so no other
+  // notification.
   EXPECT_EQ(address_changed_cb_count(), 2u);
 }
 
-TEST_F(LowEnergyAddressManagerTest, AddressExpirationWhileAddressChangeIsDisallowed) {
-  const auto kSuccessResponse = StaticByteBuffer(0x0E, 4,     // Command Complete, 4 bytes,
-                                                 1,           // 1 allowed packet
-                                                 0x05, 0x20,  // opcode: HCI_LE_Set_Random_Address
-                                                 0x00         // status: success
-  );
-  EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kLESetRandomAddress, &kSuccessResponse);
-  EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kLESetRandomAddress, &kSuccessResponse);
+TEST_F(LowEnergyAddressManagerTest,
+       AddressExpirationWhileAddressChangeIsDisallowed) {
+  const auto kSuccessResponse =
+      StaticByteBuffer(0x0E,
+                       4,  // Command Complete, 4 bytes,
+                       1,  // 1 allowed packet
+                       0x05,
+                       0x20,  // opcode: HCI_LE_Set_Random_Address
+                       0x00   // status: success
+      );
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), hci_spec::kLESetRandomAddress, &kSuccessResponse);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), hci_spec::kLESetRandomAddress, &kSuccessResponse);
 
   addr_mgr()->EnablePrivacy(true);
   auto addr1 = EnsureLocalAddress();
@@ -335,12 +381,16 @@ TEST_F(LowEnergyAddressManagerTest, AddressExpirationWhileAddressChangeIsDisallo
 
 TEST_F(LowEnergyAddressManagerTest, DisablePrivacy) {
   // Enable privacy.
-  const auto kSuccessResponse = StaticByteBuffer(0x0E, 4,     // Command Complete, 4 bytes,
-                                                 1,           // 1 allowed packet
-                                                 0x05, 0x20,  // opcode: HCI_LE_Set_Random_Address
-                                                 0x00         // status: success
-  );
-  EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kLESetRandomAddress, &kSuccessResponse);
+  const auto kSuccessResponse =
+      StaticByteBuffer(0x0E,
+                       4,  // Command Complete, 4 bytes,
+                       1,  // 1 allowed packet
+                       0x05,
+                       0x20,  // opcode: HCI_LE_Set_Random_Address
+                       0x00   // status: success
+      );
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), hci_spec::kLESetRandomAddress, &kSuccessResponse);
 
   addr_mgr()->EnablePrivacy(true);
   EXPECT_TRUE(EnsureLocalAddress().IsNonResolvablePrivate());
@@ -364,12 +414,16 @@ TEST_F(LowEnergyAddressManagerTest, DisablePrivacy) {
 }
 
 TEST_F(LowEnergyAddressManagerTest, DisablePrivacyDuringAddressChange) {
-  const auto kSuccessResponse = StaticByteBuffer(0x0E, 4,     // Command Complete, 4 bytes,
-                                                 1,           // 1 allowed packet
-                                                 0x05, 0x20,  // opcode: HCI_LE_Set_Random_Address
-                                                 0x00         // status: success
-  );
-  EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kLESetRandomAddress, &kSuccessResponse);
+  const auto kSuccessResponse =
+      StaticByteBuffer(0x0E,
+                       4,  // Command Complete, 4 bytes,
+                       1,  // 1 allowed packet
+                       0x05,
+                       0x20,  // opcode: HCI_LE_Set_Random_Address
+                       0x00   // status: success
+      );
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), hci_spec::kLESetRandomAddress, &kSuccessResponse);
 
   int hci_count = 0;
   test_device()->SetTransactionCallback([&] { hci_count++; });
@@ -387,19 +441,24 @@ TEST_F(LowEnergyAddressManagerTest, DisablePrivacyDuringAddressChange) {
   EXPECT_EQ(DeviceAddress::Type::kLEPublic, EnsureLocalAddress().type());
 }
 
-TEST_F(LowEnergyAddressManagerTest, MultipleAddressChangedCallbacksAreNotified) {
-  // The |LowEnergyAddressManagerTest| registers an address changed callback on construction.
-  // Register another.
+TEST_F(LowEnergyAddressManagerTest,
+       MultipleAddressChangedCallbacksAreNotified) {
+  // The |LowEnergyAddressManagerTest| registers an address changed callback on
+  // construction. Register another.
   size_t cb_count2 = 0;
   addr_mgr()->register_address_changed_callback([&](auto) { cb_count2++; });
 
   // Enable privacy.
-  const auto kSuccessResponse = StaticByteBuffer(0x0E, 4,     // Command Complete, 4 bytes,
-                                                 1,           // 1 allowed packet
-                                                 0x05, 0x20,  // opcode: HCI_LE_Set_Random_Address
-                                                 0x00         // status: success
-  );
-  EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kLESetRandomAddress, &kSuccessResponse);
+  const auto kSuccessResponse =
+      StaticByteBuffer(0x0E,
+                       4,  // Command Complete, 4 bytes,
+                       1,  // 1 allowed packet
+                       0x05,
+                       0x20,  // opcode: HCI_LE_Set_Random_Address
+                       0x00   // status: success
+      );
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), hci_spec::kLESetRandomAddress, &kSuccessResponse);
 
   addr_mgr()->EnablePrivacy(true);
   EXPECT_TRUE(EnsureLocalAddress().IsNonResolvablePrivate());

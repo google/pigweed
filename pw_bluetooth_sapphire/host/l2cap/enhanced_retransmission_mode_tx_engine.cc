@@ -2,14 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/enhanced_retransmission_mode_tx_engine.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/enhanced_retransmission_mode_tx_engine.h"
 
 #include <limits>
 
-#include "lib/async/default.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/frame_headers.h"
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/frame_headers.h"
 
 namespace bt::l2cap::internal {
 
@@ -28,11 +27,14 @@ uint8_t NumFramesBetween(uint8_t low, uint8_t high) {
 
 }  // namespace
 
-Engine::EnhancedRetransmissionModeTxEngine(ChannelId channel_id, uint16_t max_tx_sdu_size,
-                                           uint8_t max_transmissions, uint8_t n_frames_in_tx_window,
-                                           SendFrameCallback send_frame_callback,
-                                           ConnectionFailureCallback connection_failure_callback,
-                                           pw::async::Dispatcher& dispatcher)
+Engine::EnhancedRetransmissionModeTxEngine(
+    ChannelId channel_id,
+    uint16_t max_tx_sdu_size,
+    uint8_t max_transmissions,
+    uint8_t n_frames_in_tx_window,
+    SendFrameCallback send_frame_callback,
+    ConnectionFailureCallback connection_failure_callback,
+    pw::async::Dispatcher& dispatcher)
     : TxEngine(channel_id, max_tx_sdu_size, std::move(send_frame_callback)),
       pw_dispatcher_(dispatcher),
       max_transmissions_(max_transmissions),
@@ -46,31 +48,37 @@ Engine::EnhancedRetransmissionModeTxEngine(ChannelId channel_id, uint16_t max_tx
       n_receiver_ready_polls_sent_(0),
       remote_is_busy_(false) {
   BT_DEBUG_ASSERT(n_frames_in_tx_window_);
-  receiver_ready_poll_task_.set_function([this](pw::async::Context /*ctx*/, pw::Status status) {
-    if (!status.ok()) {
-      return;
-    }
-    SendReceiverReadyPoll();
-    StartMonitorTimer();
-  });
-  monitor_task_.set_function([this](pw::async::Context /*ctx*/, pw::Status status) {
-    if (!status.ok()) {
-      return;
-    }
-    if (max_transmissions_ == 0 || n_receiver_ready_polls_sent_ < max_transmissions_) {
-      SendReceiverReadyPoll();
-      StartMonitorTimer();
-    } else {
-      connection_failure_callback_();  // May invalidate |self|.
-    }
-  });
+  receiver_ready_poll_task_.set_function(
+      [this](pw::async::Context /*ctx*/, pw::Status status) {
+        if (!status.ok()) {
+          return;
+        }
+        SendReceiverReadyPoll();
+        StartMonitorTimer();
+      });
+  monitor_task_.set_function(
+      [this](pw::async::Context /*ctx*/, pw::Status status) {
+        if (!status.ok()) {
+          return;
+        }
+        if (max_transmissions_ == 0 ||
+            n_receiver_ready_polls_sent_ < max_transmissions_) {
+          SendReceiverReadyPoll();
+          StartMonitorTimer();
+        } else {
+          connection_failure_callback_();  // May invalidate |self|.
+        }
+      });
 }
 
 bool Engine::QueueSdu(ByteBufferPtr sdu) {
   BT_ASSERT(sdu);
   // TODO(fxbug.dev/1033): Add support for segmentation
   if (sdu->size() > max_tx_sdu_size_) {
-    bt_log(INFO, "l2cap", "SDU size exceeds channel TxMTU (channel-id: %#.4x)", channel_id_);
+    bt_log(INFO,
+           "l2cap",
+           "SDU size exceeds channel TxMTU (channel-id: %#.4x)",
+           channel_id_);
     return false;
   }
 
@@ -88,25 +96,34 @@ bool Engine::QueueSdu(ByteBufferPtr sdu) {
 }
 
 void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
-  // TODO(quiche): Reconsider this assertion if we allow reconfiguration of the TX window.
+  // TODO(quiche): Reconsider this assertion if we allow reconfiguration of the
+  // TX window.
   BT_DEBUG_ASSERT_MSG(NumUnackedFrames() <= n_frames_in_tx_window_,
                       "(NumUnackedFrames() = %u, n_frames_in_tx_window_ = %u, "
                       "expected_ack_seq_ = %u, last_tx_seq_ = %u)",
-                      NumUnackedFrames(), n_frames_in_tx_window_, expected_ack_seq_, last_tx_seq_);
+                      NumUnackedFrames(),
+                      n_frames_in_tx_window_,
+                      expected_ack_seq_,
+                      last_tx_seq_);
 
   const auto n_frames_acked = NumFramesBetween(expected_ack_seq_, new_seq);
   if (n_frames_acked > NumUnackedFrames()) {
-    // Peer acknowledgment of our outbound data (ReqSeq) exceeds the sequence numbers of
-    // yet-acknowledged data that we've sent to that peer. See conditions "With-Invalid-ReqSeq" and
-    // "With-Invalid-ReqSeq-Retrans" in Core Spec v5.0 Vol 3 Part A Sec 8.6.5.5.
-    bt_log(WARN, "l2cap",
-           "Received acknowledgment for %hhu frames but only %hhu frames are pending",
-           n_frames_acked, NumUnackedFrames());
+    // Peer acknowledgment of our outbound data (ReqSeq) exceeds the sequence
+    // numbers of yet-acknowledged data that we've sent to that peer. See
+    // conditions "With-Invalid-ReqSeq" and "With-Invalid-ReqSeq-Retrans" in
+    // Core Spec v5.0 Vol 3 Part A Sec 8.6.5.5.
+    bt_log(WARN,
+           "l2cap",
+           "Received acknowledgment for %hhu frames but only %hhu frames are "
+           "pending",
+           n_frames_acked,
+           NumUnackedFrames());
     connection_failure_callback_();  // May invalidate |self|.
     return;
   }
 
-  // Perform Stop-MonitorTimer when "F = 1," per Core Spec v5.0, Vol 3, Part A, Sec 8.6.5.7–8.
+  // Perform Stop-MonitorTimer when "F = 1," per Core Spec v5.0, Vol 3, Part A,
+  // Sec 8.6.5.7–8.
   if (is_poll_response) {
     monitor_task_.Cancel();
   }
@@ -131,13 +148,15 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
 
   const auto range_request = std::exchange(range_request_, std::nullopt);
 
-  // RemoteBusy is cleared as the first action to take when receiving a REJ per Core Spec v5.0 Vol
-  // 3, Part A, Sec 8.6.5.9–11, so their corresponding member variables shouldn't be both set.
+  // RemoteBusy is cleared as the first action to take when receiving a REJ per
+  // Core Spec v5.0 Vol 3, Part A, Sec 8.6.5.9–11, so their corresponding member
+  // variables shouldn't be both set.
   BT_ASSERT(!(range_request.has_value() && remote_is_busy_));
   bool should_retransmit = range_request.has_value();
 
-  // This implements the logic for RejActioned in the Recv {I,RR,REJ} (F=1) event for all of the
-  // receiver states (Core Spec v5.0 Vol 3, Part A, Sec 8.6.5.9–11).
+  // This implements the logic for RejActioned in the Recv {I,RR,REJ} (F=1)
+  // event for all of the receiver states (Core Spec v5.0 Vol 3, Part A,
+  // Sec 8.6.5.9–11).
   if (is_poll_response) {
     if (retransmitted_range_during_poll_) {
       should_retransmit = false;
@@ -151,9 +170,11 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
     return;
   }
 
-  // This implements the logic for PbitOutstanding in the Recv REJ (F=0) event for all of the
-  // receiver states (Core Spec v5.0 Vol 3, Part A, Sec 8.6.5.9–11).
-  if (range_request.has_value() && !is_poll_response && monitor_task_.is_pending()) {
+  // This implements the logic for PbitOutstanding in the Recv REJ (F=0) event
+  // for all of the receiver states (Core Spec v5.0 Vol 3, Part A,
+  // Sec 8.6.5.9–11).
+  if (range_request.has_value() && !is_poll_response &&
+      monitor_task_.is_pending()) {
     retransmitted_range_during_poll_ = true;
   }
 
@@ -174,7 +195,8 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
 void Engine::UpdateReqSeq(uint8_t new_seq) { req_seqnum_ = new_seq; }
 
 void Engine::ClearRemoteBusy() {
-  // TODO(quiche): Maybe clear backpressure on the Channel (subject to TxWindow contraints).
+  // TODO(quiche): Maybe clear backpressure on the Channel (subject to TxWindow
+  // contraints).
   remote_is_busy_ = false;
 }
 
@@ -211,10 +233,13 @@ void Engine::MaybeSendQueuedData() {
   //   constraints).
   //
   // TODO(quiche): Consider if there's a way to do this that isn't O(n).
-  auto it = std::find_if(pending_pdus_.begin(), pending_pdus_.end(),
-                         [](const auto& pending_pdu) { return pending_pdu.tx_count == 0; });
+  auto it = std::find_if(
+      pending_pdus_.begin(), pending_pdus_.end(), [](const auto& pending_pdu) {
+        return pending_pdu.tx_count == 0;
+      });
 
-  while (it != pending_pdus_.end() && NumUnackedFrames() < n_frames_in_tx_window_) {
+  while (it != pending_pdus_.end() &&
+         NumUnackedFrames() < n_frames_in_tx_window_) {
     BT_DEBUG_ASSERT(it->tx_count == 0);
     SendPdu(&*it);
     last_tx_seq_ = it->buf.To<SimpleInformationFrameHeader>().tx_seq();
@@ -222,31 +247,34 @@ void Engine::MaybeSendQueuedData() {
   }
 }
 
-Engine::UpdateAckSeqAction Engine::ProcessSingleRetransmitRequest(uint8_t new_seq,
-                                                                  bool is_poll_response) {
+Engine::UpdateAckSeqAction Engine::ProcessSingleRetransmitRequest(
+    uint8_t new_seq, bool is_poll_response) {
   const auto single_request = std::exchange(single_request_, std::nullopt);
   BT_ASSERT(!(single_request.has_value() && remote_is_busy_));
   if (!single_request.has_value()) {
     return UpdateAckSeqAction::kDiscardAcknowledged;
   }
 
-  // This implements the logic for SrejActioned=TRUE in the Recv SREJ (P=0) (F=1) event for all of
-  // the receiver states (Core Spec v5.0 Vol 3, Part A, Sec 8.6.5.9–11).
+  // This implements the logic for SrejActioned=TRUE in the Recv SREJ (P=0)
+  // (F=1) event for all of the receiver states (Core Spec v5.0 Vol 3, Part A,
+  // Sec 8.6.5.9–11).
   if (is_poll_response && retransmitted_single_during_poll_.has_value() &&
       new_seq == *retransmitted_single_during_poll_) {
-    // Only a SREJ (F=1) with a matching AckSeq can clear this state, so if this duplicate
-    // suppression isn't performed it sticks around even when we sent the next poll request.
-    // AckSeq is modulo kMaxSeqNum + 1 so it'll roll over and potentially suppress retransmission
-    // of a different (non-duplicate) packet in a later poll request-response cycle. Unfortunately
-    // this isn't fixed as of Core Spec v5.2 so it's implemented as written.
+    // Only a SREJ (F=1) with a matching AckSeq can clear this state, so if this
+    // duplicate suppression isn't performed it sticks around even when we sent
+    // the next poll request. AckSeq is modulo kMaxSeqNum + 1 so it'll roll over
+    // and potentially suppress retransmission of a different (non-duplicate)
+    // packet in a later poll request-response cycle. Unfortunately this isn't
+    // fixed as of Core Spec v5.2 so it's implemented as written.
     retransmitted_single_during_poll_.reset();
 
     // Return early to suppress duplicate retransmission.
     return UpdateAckSeqAction::kConsumeAckSeq;
   }
 
-  // This implements the logic for PbitOutstanding in the Recv SREJ (P=0) (F=0) and Recv SREJ(P=1)
-  // events for all of the receiver states (Core Spec v5.0 Vol 3, Part A, Sec 8.6.5.9–11).
+  // This implements the logic for PbitOutstanding in the Recv SREJ (P=0) (F=0)
+  // and Recv SREJ(P=1) events for all of the receiver states (Core Spec v5.0
+  // Vol 3, Part A, Sec 8.6.5.9–11).
   if (!is_poll_response && monitor_task_.is_pending()) {
     retransmitted_single_during_poll_ = new_seq;
   }
@@ -255,8 +283,9 @@ Engine::UpdateAckSeqAction Engine::ProcessSingleRetransmitRequest(uint8_t new_se
     return UpdateAckSeqAction::kConsumeAckSeq;
   }
 
-  // Only "single requests" that are poll requests acknowledge previous I-Frames and cause initial
-  // transmission of queued SDUs, per Core Spec v5.0, Vol 3, Part A, Sec 8.6.1.4.
+  // Only "single requests" that are poll requests acknowledge previous I-Frames
+  // and cause initial transmission of queued SDUs, per Core Spec v5.0, Vol 3,
+  // Part A, Sec 8.6.1.4.
   if (single_request->is_poll_request) {
     return UpdateAckSeqAction::kDiscardAcknowledged;
   }
@@ -281,11 +310,14 @@ void Engine::SendReceiverReadyPoll() {
   frame.set_receive_seq_num(req_seqnum_);
   frame.set_is_poll_request();
   ++n_receiver_ready_polls_sent_;
-  BT_ASSERT_MSG(max_transmissions_ == 0 || n_receiver_ready_polls_sent_ <= max_transmissions_,
+  BT_ASSERT_MSG(max_transmissions_ == 0 ||
+                    n_receiver_ready_polls_sent_ <= max_transmissions_,
                 "(n_receiver_ready_polls_sent_ = %u, "
                 "max_transmissions = %u)",
-                n_receiver_ready_polls_sent_, max_transmissions_);
-  send_frame_callback_(std::make_unique<DynamicByteBuffer>(BufferView(&frame, sizeof(frame))));
+                n_receiver_ready_polls_sent_,
+                max_transmissions_);
+  send_frame_callback_(
+      std::make_unique<DynamicByteBuffer>(BufferView(&frame, sizeof(frame))));
 }
 
 uint8_t Engine::GetNextTxSeq() {
@@ -309,19 +341,22 @@ uint8_t Engine::NumUnackedFrames() {
   } else {
     // Having ascertained that some data _is_ in flight, the number of frames in
     // flight is given by the expression below.
-    return NumFramesBetween(expected_ack_seq_,
-                            last_tx_seq_ + 1  // Include frame with |last_tx_seq_| in count
+    return NumFramesBetween(
+        expected_ack_seq_,
+        last_tx_seq_ + 1  // Include frame with |last_tx_seq_| in count
     );
   }
 }
 
 void Engine::SendPdu(PendingPdu* pdu) {
   BT_DEBUG_ASSERT(pdu);
-  pdu->buf.AsMutable<SimpleInformationFrameHeader>()->set_receive_seq_num(req_seqnum_);
+  pdu->buf.AsMutable<SimpleInformationFrameHeader>()->set_receive_seq_num(
+      req_seqnum_);
 
-  // Prevent tx_count from overflowing to zero, as that would be indistinguishable from "never
-  // transmitted." This is only possible when configured for infinite retransmissions, so there is
-  // no benefit to having an accurate tx_count after each frame's initial transmission.
+  // Prevent tx_count from overflowing to zero, as that would be
+  // indistinguishable from "never transmitted." This is only possible when
+  // configured for infinite retransmissions, so there is no benefit to having
+  // an accurate tx_count after each frame's initial transmission.
   if (pdu->tx_count != std::numeric_limits<decltype(pdu->tx_count)>::max()) {
     pdu->tx_count++;
   }
@@ -337,13 +372,15 @@ bool Engine::RetransmitUnackedData(std::optional<uint8_t> only_with_seq,
   // "Recv REJ (F=0)".
   BT_DEBUG_ASSERT(!remote_is_busy_);
 
-  // Any peer actions that cause retransmission indicate the peer is alive. This is in conflict with
-  // Core Spec v5.0, Vol 3, Part A, Sec 8.6.5.8, which only stops the MonitorTimer when a poll
-  // response is received and omits what to do when REJ or SREJ cause retransmission. However, this
-  // behavior of canceling the MonitorTimer "early" is in line with Sequence Diagram Fig 4.94, L2CAP
-  // Test Spec v5.0.2 Section 4.9.7.24, among others that show REJ or SREJ causing the receiver to
-  // cancel its MonitorTimer. We follow the latter behavior because (1) it's less ambiguous (2) it
-  // makes sense and (3) we need to pass those tests.
+  // Any peer actions that cause retransmission indicate the peer is alive. This
+  // is in conflict with Core Spec v5.0, Vol 3, Part A, Sec 8.6.5.8, which only
+  // stops the MonitorTimer when a poll response is received and omits what to
+  // do when REJ or SREJ cause retransmission. However, this behavior of
+  // canceling the MonitorTimer "early" is in line with Sequence Diagram
+  // Fig 4.94, L2CAP Test Spec v5.0.2 Section 4.9.7.24, among others that show
+  // REJ or SREJ causing the receiver to cancel its MonitorTimer. We follow the
+  // latter behavior because (1) it's less ambiguous (2) it makes sense and (3)
+  // we need to pass those tests.
   monitor_task_.Cancel();
 
   const auto n_to_send = NumUnackedFrames();
@@ -355,15 +392,18 @@ bool Engine::RetransmitUnackedData(std::optional<uint8_t> only_with_seq,
   for (; cur_frame != last_frame; cur_frame++) {
     BT_DEBUG_ASSERT(cur_frame != pending_pdus_.end());
 
-    const auto control_field = cur_frame->buf.To<SimpleInformationFrameHeader>();
+    const auto control_field =
+        cur_frame->buf.To<SimpleInformationFrameHeader>();
     if (only_with_seq.has_value() && control_field.tx_seq() != *only_with_seq) {
       continue;
     }
 
-    // Core Spec v5.0, Vol 3, Part A, Sec 5.4: "In Enhanced Retransmission mode a value of zero for
-    // MaxTransmit means infinite retransmissions."
+    // Core Spec v5.0, Vol 3, Part A, Sec 5.4: "In Enhanced Retransmission mode
+    // a value of zero for MaxTransmit means infinite retransmissions."
     if (max_transmissions_ != 0 && cur_frame->tx_count >= max_transmissions_) {
-      BT_ASSERT_MSG(cur_frame->tx_count == max_transmissions_, "%hhu != %hhu", cur_frame->tx_count,
+      BT_ASSERT_MSG(cur_frame->tx_count == max_transmissions_,
+                    "%hhu != %hhu",
+                    cur_frame->tx_count,
                     max_transmissions_);
       connection_failure_callback_();
       return false;
@@ -372,13 +412,14 @@ bool Engine::RetransmitUnackedData(std::optional<uint8_t> only_with_seq,
     if (set_is_poll_response) {
       cur_frame->buf.AsMutable<EnhancedControlField>()->set_is_poll_response();
 
-      // Per "Retransmit-I-frames" of Core Spec v5.0 Vol 3, Part A, Sec 8.6.5.6, "[t]he F-bit of all
-      // other [than the first] unacknowledged I-frames sent shall be 0," so clear this for
-      // subsequent iterations.
+      // Per "Retransmit-I-frames" of Core Spec v5.0 Vol 3, Part A, Sec 8.6.5.6,
+      // "[t]he F-bit of all other [than the first] unacknowledged I-frames sent
+      // shall be 0," so clear this for subsequent iterations.
       set_is_poll_response = false;
     }
 
-    // TODO(fxbug.dev/1453): If the task is already running, we should not restart it.
+    // TODO(fxbug.dev/1453): If the task is already running, we should not
+    // restart it.
     SendPdu(&*cur_frame);
     *cur_frame->buf.AsMutable<EnhancedControlField>() = control_field;
   }

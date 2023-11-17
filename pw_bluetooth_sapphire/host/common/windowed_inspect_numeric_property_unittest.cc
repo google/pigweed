@@ -2,12 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "pw_bluetooth_sapphire/internal/host/common/windowed_inspect_numeric_property.h"
+
 #include <pw_async/fake_dispatcher_fixture.h>
 
-#ifndef NINSPECT
+#include "pw_bluetooth_sapphire/internal/host/testing/inspect.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
-#include "windowed_inspect_numeric_property.h"
+#ifndef NINSPECT
 
 namespace bt {
 
@@ -20,7 +21,8 @@ class TestProperty {
  public:
   using ValueCallback = fit::function<void(const T& value)>;
   TestProperty() = default;
-  TestProperty(T value, ValueCallback cb) : value_(value), value_cb_(std::move(cb)) {}
+  TestProperty(T value, ValueCallback cb)
+      : value_(value), value_cb_(std::move(cb)) {}
 
   void Add(const T& value) {
     value_ += value;
@@ -42,10 +44,12 @@ class TestProperty {
 };
 
 using WindowedProperty = WindowedInspectNumericProperty<TestProperty<int>, int>;
-using WindowedInspectNumericPropertyTest = pw::async::test::FakeDispatcherFixture;
+using WindowedInspectNumericPropertyTest =
+    pw::async::test::FakeDispatcherFixture;
 
 TEST_F(WindowedInspectNumericPropertyTest, AddTwoValues) {
-  constexpr pw::chrono::SystemClock::duration kExpiryDuration = std::chrono::minutes(3);
+  constexpr pw::chrono::SystemClock::duration kExpiryDuration =
+      std::chrono::minutes(3);
   WindowedProperty windowed_prop(dispatcher(), kExpiryDuration);
   int value = 0;
   auto value_cb = [&](auto val) { value = val; };
@@ -74,7 +78,8 @@ TEST_F(WindowedInspectNumericPropertyTest, AddTwoValues) {
 }
 
 TEST_F(WindowedInspectNumericPropertyTest, AddTwoValuesAtSameTime) {
-  constexpr pw::chrono::SystemClock::duration kExpiryDuration = std::chrono::minutes(3);
+  constexpr pw::chrono::SystemClock::duration kExpiryDuration =
+      std::chrono::minutes(3);
   WindowedProperty windowed_prop(dispatcher(), kExpiryDuration);
   int value = 0;
   auto value_cb = [&](auto val) { value = val; };
@@ -94,7 +99,8 @@ TEST_F(WindowedInspectNumericPropertyTest, AddTwoValuesAtSameTime) {
 }
 
 TEST_F(WindowedInspectNumericPropertyTest, AddValueThenExpireThenAddValue) {
-  constexpr pw::chrono::SystemClock::duration kExpiryDuration = std::chrono::minutes(3);
+  constexpr pw::chrono::SystemClock::duration kExpiryDuration =
+      std::chrono::minutes(3);
   WindowedProperty windowed_prop(dispatcher(), kExpiryDuration);
   int value = 0;
   auto value_cb = [&](auto val) { value = val; };
@@ -117,8 +123,10 @@ TEST_F(WindowedInspectNumericPropertyTest, AddValueThenExpireThenAddValue) {
 
 TEST_F(WindowedInspectNumericPropertyTest,
        AddTwoValuesWithinResolutionIntervalExpiresBothSimultaneously) {
-  constexpr pw::chrono::SystemClock::duration kExpiryDuration = std::chrono::minutes(3);
-  constexpr pw::chrono::SystemClock::duration kResolution = std::chrono::seconds(3);
+  constexpr pw::chrono::SystemClock::duration kExpiryDuration =
+      std::chrono::minutes(3);
+  constexpr pw::chrono::SystemClock::duration kResolution =
+      std::chrono::seconds(3);
   WindowedProperty windowed_prop(dispatcher(), kExpiryDuration, kResolution);
   int value = 0;
   auto value_cb = [&](auto val) { value = val; };
@@ -126,7 +134,8 @@ TEST_F(WindowedInspectNumericPropertyTest,
 
   // First two values are within kResolution of each other in time.
   windowed_prop.Add(1);
-  constexpr pw::chrono::SystemClock::duration kTinyDuration = std::chrono::milliseconds(1);
+  constexpr pw::chrono::SystemClock::duration kTinyDuration =
+      std::chrono::milliseconds(1);
   RunFor(kTinyDuration);
   windowed_prop.Add(1);
   EXPECT_EQ(value, 2);
@@ -148,7 +157,8 @@ TEST_F(WindowedInspectNumericPropertyTest,
 }
 
 TEST_F(WindowedInspectNumericPropertyTest, SetPropertyClearsValueAndTimer) {
-  constexpr pw::chrono::SystemClock::duration kExpiryDuration = std::chrono::minutes(3);
+  constexpr pw::chrono::SystemClock::duration kExpiryDuration =
+      std::chrono::minutes(3);
   WindowedProperty windowed_prop(dispatcher(), kExpiryDuration);
   int value_0 = 0;
   auto value_cb_0 = [&](auto val) { value_0 = val; };
@@ -177,21 +187,24 @@ TEST_F(WindowedInspectNumericPropertyTest, AttachInspectRealIntProperty) {
   ::inspect::Inspector inspector;
   auto& root = inspector.GetRoot();
 
-  constexpr pw::chrono::SystemClock::duration kExpiryDuration = std::chrono::minutes(3);
+  constexpr pw::chrono::SystemClock::duration kExpiryDuration =
+      std::chrono::minutes(3);
   WindowedInspectIntProperty windowed_property(dispatcher(), kExpiryDuration);
   windowed_property.AttachInspect(root, "windowed");
 
   auto hierarchy = ::inspect::ReadFromVmo(inspector.DuplicateVmo());
   ASSERT_TRUE(hierarchy.is_ok());
-  EXPECT_THAT(hierarchy.take_value(),
-              AllOf(NodeMatches(PropertyList(ElementsAre(IntIs("windowed", 0))))));
+  EXPECT_THAT(
+      hierarchy.take_value(),
+      AllOf(NodeMatches(PropertyList(ElementsAre(IntIs("windowed", 0))))));
 
   windowed_property.Add(7);
 
   hierarchy = ::inspect::ReadFromVmo(inspector.DuplicateVmo());
   ASSERT_TRUE(hierarchy.is_ok());
-  EXPECT_THAT(hierarchy.take_value(),
-              AllOf(NodeMatches(PropertyList(ElementsAre(IntIs("windowed", 7))))));
+  EXPECT_THAT(
+      hierarchy.take_value(),
+      AllOf(NodeMatches(PropertyList(ElementsAre(IntIs("windowed", 7))))));
 }
 
 }  // namespace

@@ -2,74 +2,17 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//build/bind/bind.gni")
-import("//build/components.gni")
-import("//build/drivers.gni")
-import("//build/fuzz.gni")
-import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
+import("//build_overrides/pigweed.gni")
+import("$dir_pigweed/third_party/emboss/emboss.gni")
+import("$dir_pw_assert/backend.gni")
+import("$dir_pw_async/backend.gni")
+import("$dir_pw_function/function.gni")
+import("$dir_pw_unit_test/test.gni")
 
-driver_bind_rules("bt_host_bind") {
-  rules = "bt_host.bind"
-  tests = "tests.json"
-  deps = [ "//src/devices/bind/fuchsia.bluetooth" ]
-}
-
-fuchsia_driver("fuchsia_driver") {
-  output_name = "bt-host"
-
-  sources = [ "driver.cc" ]
-
-  deps = [
-    ":bt_host_bind",
-    ":sources",
-    "//sdk/lib/syslog/cpp:backend",
-    "//third_party/pigweed/backends/pw_log:dfv1",
-  ]
-}
-
-fuchsia_driver_component("driver") {
-  component_name = "bt-host"
-  deps = [ ":fuchsia_driver" ]
-  info = "driver-info.json"
-  manifest = "meta/driver.cml"
-}
-
-source_set("sources") {
-  sources = [
-    "host.cc",
-    "host.h",
-    "host_device.cc",
-    "host_device.h",
-  ]
-
-  deps = [
-    "//src/devices/lib/driver",
-    "//third_party/pigweed/backends/pw_async_fuchsia:dispatcher",
-    "//third_party/pigweed/backends/pw_random:zircon_random_generator",
-    "//zircon/system/ulib/inspect",
-  ]
-
-  public_deps = [
-    ":stack",
-    "fidl",
-    "//sdk/banjo/fuchsia.hardware.bt.vendor:fuchsia.hardware.bt.vendor_banjo_cpp",
-    "//sdk/fidl/fuchsia.hardware.bluetooth:fuchsia.hardware.bluetooth_cpp",
-    "//sdk/lib/fit",
-    "//src/connectivity/bluetooth/fidl:host_hlcpp",
-    "//src/connectivity/bluetooth/lib/fidl",
-    "//src/lib/ddk",
-    "//zircon/system/ulib/async-loop:async-loop-cpp",
-    "//zircon/system/ulib/fbl",
-    "//zircon/system/ulib/trace",
-    "//zircon/system/ulib/zx",
-  ]
-}
-
-group("stack") {
+group("host") {
   public_deps = [
     "att",
     "common",
-    "controllers",
     "gap",
     "gatt",
     "hci",
@@ -78,190 +21,48 @@ group("stack") {
     "sco",
     "sdp",
     "sm",
-    "socket",
     "transport",
   ]
 }
 
-# TODO(armansito): Enable debug assertions by default from here for all package
-# dependencies when there is a way for it.
-fuchsia_driver_package("bt-host") {
-  driver_components = [ ":driver" ]
-  # This package is reachable from //bundles/packages/prod:all
-}
-
-# See https://fuchsia.dev/fuchsia-src/development/testing/fuzzing/build-a-fuzzer?hl=en#fx-set
-# for instructions on building the fuzzers package.
-fuchsia_fuzzer_component("advertising-data-fuzzer-component") {
-  manifest = "common/meta/advertising_data_fuzzer.cml"
-  deps = [ "common:advertising_data_fuzzer" ]
-}
-
-fuchsia_fuzzer_component("host-server-watch-peers-fuzzer-component") {
-  manifest = "fidl/meta/host_server_watch_peers_fuzzer.cml"
-  deps = [ "fidl:host_server_watch_peers_fuzzer" ]
-}
-
-fuchsia_fuzzer_component("peer-cache-fuzzer-component") {
-  manifest = "gap/meta/peer_cache_fuzzer.cml"
-  deps = [ "gap:peer_cache_fuzzer" ]
-}
-
-fuchsia_fuzzer_component("l2cap-fuzzer-component") {
-  manifest = "l2cap/meta/l2cap_fuzzer.cml"
-  deps = [ "l2cap:l2cap_fuzzer" ]
-}
-
-fuchsia_fuzzer_component("basic-mode-rx-engine-fuzzer-component") {
-  manifest = "l2cap/meta/basic_mode_rx_engine_fuzzer.cml"
-  deps = [ "l2cap:basic_mode_rx_engine_fuzzer" ]
-}
-
-fuchsia_fuzzer_component(
-    "enhanced-retransmission-mode-engines-fuzzer-component") {
-  manifest = "l2cap/meta/enhanced_retransmission_mode_engines_fuzzer.cml"
-  deps = [ "l2cap:enhanced_retransmission_mode_engines_fuzzer" ]
-}
-
-fuchsia_fuzzer_component("bredr-dynamic-channel-registry-fuzzer-component") {
-  manifest = "l2cap/meta/bredr_dynamic_channel_registry_fuzzer.cml"
-  deps = [ "l2cap:bredr_dynamic_channel_registry_fuzzer" ]
-}
-
-fuchsia_fuzzer_component("channel-configuration-fuzzer-component") {
-  manifest = "l2cap/meta/channel_configuration_fuzzer.cml"
-  deps = [ "l2cap:channel_configuration_fuzzer" ]
-}
-
-fuchsia_fuzzer_component("common-handler-fuzzer-component") {
-  manifest = "l2cap/meta/common_handler_fuzzer.cml"
-  deps = [ "l2cap:common_handler_fuzzer" ]
-}
-
-fuchsia_fuzzer_component("data-element-fuzzer-component") {
-  manifest = "sdp/meta/data_element_fuzzer.cml"
-  deps = [ "sdp:data_element_fuzzer" ]
-}
-
-fuchsia_fuzzer_component("pdu-fuzzer-component") {
-  manifest = "sdp/meta/pdu_fuzzer.cml"
-  deps = [ "sdp:pdu_fuzzer" ]
-}
-
-fuchsia_fuzzer_component("valid-packet-reader-fuzzer-component") {
-  manifest = "sm/meta/valid_packet_reader_fuzzer.cml"
-  deps = [ "sm:valid_packet_reader_fuzzer" ]
-}
-
-fuchsia_fuzzer_package("fuzzers") {
-  package_name = "bt-host-fuzzers"
-  cpp_fuzzer_components = [
-    ":advertising-data-fuzzer-component",
-    ":host-server-watch-peers-fuzzer-component",
-    ":peer-cache-fuzzer-component",
-    ":l2cap-fuzzer-component",
-    ":basic-mode-rx-engine-fuzzer-component",
-    ":enhanced-retransmission-mode-engines-fuzzer-component",
-    ":bredr-dynamic-channel-registry-fuzzer-component",
-    ":channel-configuration-fuzzer-component",
-    ":common-handler-fuzzer-component",
-    ":data-element-fuzzer-component",
-    ":pdu-fuzzer-component",
-    ":valid-packet-reader-fuzzer-component",
+pw_test_group("tests") {
+  enable_if =
+      pw_function_CONFIG == "$dir_pw_function:enable_dynamic_allocation" &&
+      pw_unit_test_GOOGLETEST_BACKEND != "$dir_pw_unit_test:light" &&
+      pw_unit_test_GOOGLETEST_BACKEND != "$dir_pw_fuzzer:gtest" &&
+      pw_async_TASK_BACKEND != "" && dir_pw_third_party_emboss != "" &&
+      (pw_third_party_boringssl_ALIAS != "" ||
+       dir_pw_third_party_boringssl != "") &&
+      pw_assert_BACKEND != "$dir_pw_assert_basic"
+  tests = [
+    "att:tests",
+    "common:tests",
+    "gap:tests",
+    "gatt:tests",
+    "hci:tests",
+    "hci-spec:tests",
+    "l2cap:tests",
+    "sco:tests",
+    "sdp:tests",
+    "sm:tests",
+    "testing:tests",
+    "transport:tests",
   ]
 }
 
-source_set("device_tests") {
-  testonly = true
-
-  sources = [ "host_unittest.cc" ]
-
+group("fuzzers") {
   deps = [
-    ":sources",
-    "//src/connectivity/bluetooth/core/bt-host/testing",
-    "//src/lib/testing/loop_fixture",
-    "//third_party/googletest:gtest",
-  ]
-}
-
-bt_gtest_package("bt-host-device-tests") {
-  deps = [ ":device_tests" ]
-}
-
-bt_gtest_package("bt-host-transport-tests") {
-  with_death_tests = true
-  deps = [ "transport:tests.lib" ]
-}
-
-bt_gtest_package("bt-host-gap-tests") {
-  with_death_tests = true
-  deps = [ "gap:tests.lib" ]
-}
-
-bt_gtest_package("bt-host-gatt-tests") {
-  deps = [ "gatt:tests.lib" ]
-}
-
-bt_gtest_package("bt-host-common-tests") {
-  with_death_tests = true
-  deps = [ "common:tests.lib" ]
-}
-
-bt_gtest_package("bt-host-l2cap-tests") {
-  with_death_tests = true
-  deps = [ "l2cap:tests.lib" ]
-}
-
-bt_gtest_package("bt-host-att-tests") {
-  with_death_tests = true
-  deps = [ "att:tests.lib" ]
-}
-
-bt_gtest_package("bt-host-hci-tests") {
-  with_death_tests = true
-  deps = [ "hci:tests.lib" ]
-}
-
-bt_gtest_package("bt-host-hci-spec-tests") {
-  deps = [ "hci-spec:tests.lib" ]
-}
-
-bt_gtest_package("bt-host-sco-tests") {
-  deps = [ "sco:tests.lib" ]
-}
-
-bt_gtest_package("bt-host-sdp-tests") {
-  deps = [ "sdp:tests.lib" ]
-}
-
-bt_gtest_package("bt-host-sm-tests") {
-  with_death_tests = true
-  deps = [ "sm:tests.lib" ]
-}
-
-bt_gtest_package("bt-host-testing-tests") {
-  deps = [ "testing:tests.lib" ]
-}
-
-group("tests") {
-  testonly = true
-  deps = [
-    ":bt-host-att-tests",
-    ":bt-host-common-tests",
-    ":bt-host-device-tests",
-    ":bt-host-gap-tests",
-    ":bt-host-gatt-tests",
-    ":bt-host-hci-spec-tests",
-    ":bt-host-hci-tests",
-    ":bt-host-l2cap-tests",
-    ":bt-host-sco-tests",
-    ":bt-host-sdp-tests",
-    ":bt-host-sm-tests",
-    ":bt-host-testing-tests",
-    ":bt-host-transport-tests",
-    ":fuzzers",
-    "controllers:bt-host-controllers-tests",
-    "fidl:bt-host-fidl-tests",
-    "socket:bt-host-socket-tests",
+    "common:advertising_data_fuzzer",
+    "fidl:host_server_watch_peers_fuzzer",
+    "gap:peer_cache_fuzzer",
+    "l2cap:basic_mode_rx_engine_fuzzer",
+    "l2cap:bredr_dynamic_channel_registry_fuzzer",
+    "l2cap:channel_configuration_fuzzer",
+    "l2cap:common_handler_fuzzer",
+    "l2cap:enhanced_retransmission_mode_engines_fuzzer",
+    "l2cap:l2cap_fuzzer",
+    "sdp:data_element_fuzzer",
+    "sdp:pdu_fuzzer",
+    "sm:valid_packet_reader_fuzzer",
   ]
 }

@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/hci/extended_low_energy_advertiser.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/extended_low_energy_advertiser.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/fake_controller.h"
 
 namespace bt::hci {
 namespace {
@@ -15,8 +15,8 @@ using TestingBase = bt::testing::FakeDispatcherControllerTest<FakeController>;
 using AdvertisingOptions = LowEnergyAdvertiser::AdvertisingOptions;
 using LEAdvertisingState = FakeController::LEAdvertisingState;
 
-constexpr AdvertisingIntervalRange kTestInterval(hci_spec::kLEAdvertisingIntervalMin,
-                                                 hci_spec::kLEAdvertisingIntervalMax);
+constexpr AdvertisingIntervalRange kTestInterval(
+    hci_spec::kLEAdvertisingIntervalMin, hci_spec::kLEAdvertisingIntervalMax);
 
 const DeviceAddress kPublicAddress(DeviceAddress::Type::kLEPublic, {1});
 const DeviceAddress kRandomAddress(DeviceAddress::Type::kLERandom, {2});
@@ -30,15 +30,18 @@ class ExtendedLowEnergyAdvertiserTest : public TestingBase {
   void SetUp() override {
     TestingBase::SetUp();
 
-    // ACL data channel needs to be present for production hci::Connection objects.
-    TestingBase::InitializeACLDataChannel(hci::DataBufferInfo(),
-                                          hci::DataBufferInfo(hci_spec::kMaxACLPayloadSize, 10));
+    // ACL data channel needs to be present for production hci::Connection
+    // objects.
+    TestingBase::InitializeACLDataChannel(
+        hci::DataBufferInfo(),
+        hci::DataBufferInfo(hci_spec::kMaxACLPayloadSize, 10));
 
     FakeController::Settings settings;
     settings.ApplyExtendedLEConfig();
     this->test_device()->set_settings(settings);
 
-    advertiser_ = std::make_unique<ExtendedLowEnergyAdvertiser>(transport()->GetWeakPtr());
+    advertiser_ = std::make_unique<ExtendedLowEnergyAdvertiser>(
+        transport()->GetWeakPtr());
   }
 
   void TearDown() override {
@@ -71,7 +74,8 @@ class ExtendedLowEnergyAdvertiserTest : public TestingBase {
     uint16_t appearance = 0x1234;
     result.SetAppearance(appearance);
 
-    EXPECT_LE(result.CalculateBlockSize(include_flags), hci_spec::kMaxLEAdvertisingDataLength);
+    EXPECT_LE(result.CalculateBlockSize(include_flags),
+              hci_spec::kMaxLEAdvertisingDataLength);
     return result;
   }
 
@@ -93,13 +97,19 @@ class ExtendedLowEnergyAdvertiserTest : public TestingBase {
 TEST_F(ExtendedLowEnergyAdvertiserTest, TxPowerLevelRetrieved) {
   AdvertisingData ad = GetExampleData();
   AdvertisingData scan_data = GetExampleData();
-  AdvertisingOptions options(kTestInterval, /*anonymous=*/false, kDefaultNoAdvFlags,
+  AdvertisingOptions options(kTestInterval,
+                             /*anonymous=*/false,
+                             kDefaultNoAdvFlags,
                              /*include_tx_power_level=*/true);
 
   std::unique_ptr<LowEnergyConnection> link;
   auto conn_cb = [&link](auto cb_link) { link = std::move(cb_link); };
 
-  this->advertiser()->StartAdvertising(kPublicAddress, ad, scan_data, options, conn_cb,
+  this->advertiser()->StartAdvertising(kPublicAddress,
+                                       ad,
+                                       scan_data,
+                                       options,
+                                       conn_cb,
                                        this->MakeExpectSuccessCallback());
   RunUntilIdle();
   ASSERT_TRUE(this->GetLastStatus());
@@ -110,15 +120,19 @@ TEST_F(ExtendedLowEnergyAdvertiserTest, TxPowerLevelRetrieved) {
   std::optional<hci_spec::AdvertisingHandle> handle =
       this->advertiser()->LastUsedHandleForTesting();
   ASSERT_TRUE(handle);
-  const LEAdvertisingState& st = this->test_device()->extended_advertising_state(handle.value());
+  const LEAdvertisingState& st =
+      this->test_device()->extended_advertising_state(handle.value());
 
-  AdvertisingData::ParseResult actual_ad = AdvertisingData::FromBytes(st.advertised_view());
-  AdvertisingData::ParseResult actual_scan_rsp = AdvertisingData::FromBytes(st.scan_rsp_view());
+  AdvertisingData::ParseResult actual_ad =
+      AdvertisingData::FromBytes(st.advertised_view());
+  AdvertisingData::ParseResult actual_scan_rsp =
+      AdvertisingData::FromBytes(st.scan_rsp_view());
 
   ASSERT_EQ(fit::ok(), actual_ad);
   ASSERT_EQ(fit::ok(), actual_scan_rsp);
   EXPECT_EQ(hci_spec::kLEAdvertisingTxPowerMax, actual_ad.value().tx_power());
-  EXPECT_EQ(hci_spec::kLEAdvertisingTxPowerMax, actual_scan_rsp.value().tx_power());
+  EXPECT_EQ(hci_spec::kLEAdvertisingTxPowerMax,
+            actual_scan_rsp.value().tx_power());
 }
 
 }  // namespace

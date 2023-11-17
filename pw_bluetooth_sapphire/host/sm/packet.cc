@@ -2,22 +2,24 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "packet.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/packet.h"
 
 #include <unordered_map>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 
 namespace bt::sm {
 
 PacketReader::PacketReader(const ByteBuffer* buffer)
     : PacketView<Header>(buffer, buffer->size() - sizeof(Header)) {}
 
-ValidPacketReader::ValidPacketReader(const ByteBuffer* buffer) : PacketReader(buffer) {}
+ValidPacketReader::ValidPacketReader(const ByteBuffer* buffer)
+    : PacketReader(buffer) {}
 
-fit::result<ErrorCode, ValidPacketReader> ValidPacketReader::ParseSdu(const ByteBufferPtr& sdu) {
+fit::result<ErrorCode, ValidPacketReader> ValidPacketReader::ParseSdu(
+    const ByteBufferPtr& sdu) {
   BT_ASSERT(sdu);
   size_t length = sdu->size();
   if (length < sizeof(Header)) {

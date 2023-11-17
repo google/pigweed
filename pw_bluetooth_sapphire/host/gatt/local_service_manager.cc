@@ -2,25 +2,26 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "local_service_manager.h"
+#include "pw_bluetooth_sapphire/internal/host/gatt/local_service_manager.h"
 
 #include <endian.h>
 
 #include <algorithm>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/gatt/gatt_defs.h"
 
 namespace bt::gatt {
 namespace {
 
 // Adds characteristic definition attributes to |grouping| for |chrc|. Returns
 // the characteristic value handle.
-att::Handle InsertCharacteristicAttributes(att::AttributeGrouping* grouping,
-                                           const Characteristic& chrc,
-                                           att::Attribute::ReadHandler read_handler,
-                                           att::Attribute::WriteHandler write_handler) {
+att::Handle InsertCharacteristicAttributes(
+    att::AttributeGrouping* grouping,
+    const Characteristic& chrc,
+    att::Attribute::ReadHandler read_handler,
+    att::Attribute::WriteHandler write_handler) {
   BT_DEBUG_ASSERT(grouping);
   BT_DEBUG_ASSERT(!grouping->complete());
   BT_DEBUG_ASSERT(read_handler);
@@ -29,14 +30,15 @@ att::Handle InsertCharacteristicAttributes(att::AttributeGrouping* grouping,
   // Characteristic Declaration (Vol 3, Part G, 3.3.1).
   auto* decl_attr = grouping->AddAttribute(
       types::kCharacteristicDeclaration,
-      att::AccessRequirements(/*encryption=*/false, /*authentication=*/false,
+      att::AccessRequirements(/*encryption=*/false,
+                              /*authentication=*/false,
                               /*authorization=*/false),  // read (no security)
       att::AccessRequirements());                        // write (not allowed)
   BT_DEBUG_ASSERT(decl_attr);
 
   // Characteristic Value Declaration (Vol 3, Part G, 3.3.2)
-  auto* value_attr =
-      grouping->AddAttribute(chrc.type(), chrc.read_permissions(), chrc.write_permissions());
+  auto* value_attr = grouping->AddAttribute(
+      chrc.type(), chrc.read_permissions(), chrc.write_permissions());
   BT_DEBUG_ASSERT(value_attr);
 
   value_attr->set_read_handler(std::move(read_handler));
@@ -62,7 +64,8 @@ att::Handle InsertCharacteristicAttributes(att::AttributeGrouping* grouping,
 }
 
 // Adds a characteristic descriptor declaration to |grouping| for |desc|.
-void InsertDescriptorAttribute(att::AttributeGrouping* grouping, const UUID& type,
+void InsertDescriptorAttribute(att::AttributeGrouping* grouping,
+                               const UUID& type,
                                const att::AccessRequirements& read_reqs,
                                const att::AccessRequirements& write_reqs,
                                att::Attribute::ReadHandler read_handler,
@@ -117,7 +120,9 @@ bool ValidateService(const Service& service, size_t* out_attr_count) {
       if (desc_ptr->type() == types::kClientCharacteristicConfig ||
           desc_ptr->type() == types::kCharacteristicExtProperties ||
           desc_ptr->type() == types::kServerCharacteristicConfig) {
-        bt_log(TRACE, "gatt", "server: disallowed descriptor type: %s",
+        bt_log(TRACE,
+               "gatt",
+               "server: disallowed descriptor type: %s",
                desc_ptr->type().ToString().c_str());
         return false;
       }
@@ -141,8 +146,11 @@ bool ValidateService(const Service& service, size_t* out_attr_count) {
 
 class LocalServiceManager::ServiceData final {
  public:
-  ServiceData(IdType id, att::AttributeGrouping* grouping, Service* service,
-              ReadHandler&& read_handler, WriteHandler&& write_handler,
+  ServiceData(IdType id,
+              att::AttributeGrouping* grouping,
+              Service* service,
+              ReadHandler&& read_handler,
+              WriteHandler&& write_handler,
               ClientConfigCallback&& ccc_callback)
       : id_(id),
         read_handler_(std::forward<ReadHandler>(read_handler)),
@@ -159,10 +167,12 @@ class LocalServiceManager::ServiceData final {
 
     // Sort characteristics by UUID size (see Vol 3, Part G, 3.3.1).
     auto chrcs = service->ReleaseCharacteristics();
-    std::sort(chrcs.begin(), chrcs.end(), [](const auto& chrc_ptr1, const auto& chrc_ptr2) {
-      return chrc_ptr1->type().CompactSize(/*allow_32bit=*/false) <
-             chrc_ptr2->type().CompactSize(/*allow_32bit=*/false);
-    });
+    std::sort(chrcs.begin(),
+              chrcs.end(),
+              [](const auto& chrc_ptr1, const auto& chrc_ptr2) {
+                return chrc_ptr1->type().CompactSize(/*allow_32bit=*/false) <
+                       chrc_ptr2->type().CompactSize(/*allow_32bit=*/false);
+              });
     for (auto& chrc : chrcs) {
       AddCharacteristic(grouping, std::move(chrc));
     }
@@ -172,7 +182,8 @@ class LocalServiceManager::ServiceData final {
   inline att::Handle start_handle() const { return start_handle_; }
   inline att::Handle end_handle() const { return end_handle_; }
 
-  bool GetCharacteristicConfig(IdType chrc_id, PeerId peer_id,
+  bool GetCharacteristicConfig(IdType chrc_id,
+                               PeerId peer_id,
                                ClientCharacteristicConfig* out_config) {
     BT_DEBUG_ASSERT(out_config);
 
@@ -216,7 +227,9 @@ class LocalServiceManager::ServiceData final {
       return iter->second;
     }
 
-    void Set(PeerId peer_id, uint16_t value) { client_states_[peer_id] = value; }
+    void Set(PeerId peer_id, uint16_t value) {
+      client_states_[peer_id] = value;
+    }
 
     void Erase(PeerId peer_id) { client_states_.erase(peer_id); }
 
@@ -229,7 +242,10 @@ class LocalServiceManager::ServiceData final {
 
   // Called when a read request is performed on a CCC descriptor belonging to
   // the characteristic identified by |chrc_id|.
-  void OnReadCCC(IdType chrc_id, PeerId peer_id, att::Handle handle, uint16_t offset,
+  void OnReadCCC(IdType chrc_id,
+                 PeerId peer_id,
+                 att::Handle handle,
+                 uint16_t offset,
                  att::Attribute::ReadResultCallback result_cb) {
     uint16_t value = 0;
     auto iter = chrc_configs_.find(chrc_id);
@@ -238,13 +254,19 @@ class LocalServiceManager::ServiceData final {
     }
 
     value = htole16(value);
-    result_cb(fit::ok(), BufferView(reinterpret_cast<const uint8_t*>(&value), sizeof(value)));
+    result_cb(
+        fit::ok(),
+        BufferView(reinterpret_cast<const uint8_t*>(&value), sizeof(value)));
   }
 
   // Called when a write request is performed on a CCC descriptor belonging to
   // the characteristic identified by |chrc_id|.
-  void OnWriteCCC(IdType chrc_id, uint8_t chrc_props, PeerId peer_id, att::Handle handle,
-                  uint16_t offset, const ByteBuffer& value,
+  void OnWriteCCC(IdType chrc_id,
+                  uint8_t chrc_props,
+                  PeerId peer_id,
+                  att::Handle handle,
+                  uint16_t offset,
+                  const ByteBuffer& value,
                   att::Attribute::WriteResultCallback result_cb) {
     if (offset != 0u) {
       result_cb(fit::error(att::ErrorCode::kInvalidOffset));
@@ -273,7 +295,8 @@ class LocalServiceManager::ServiceData final {
 
     auto iter = chrc_configs_.find(chrc_id);
     if (iter == chrc_configs_.end()) {
-      auto result_pair = chrc_configs_.emplace(chrc_id, CharacteristicConfig(handle));
+      auto result_pair =
+          chrc_configs_.emplace(chrc_id, CharacteristicConfig(handle));
       iter = result_pair.first;
     }
 
@@ -288,15 +311,19 @@ class LocalServiceManager::ServiceData final {
     }
   }
 
-  void AddCharacteristic(att::AttributeGrouping* grouping, CharacteristicPtr chrc) {
+  void AddCharacteristic(att::AttributeGrouping* grouping,
+                         CharacteristicPtr chrc) {
     // Set up the characteristic callbacks.
-    // TODO(armansito): Consider tracking a transaction timeout here (fxbug.dev/636).
+    // TODO(armansito): Consider tracking a transaction timeout here
+    // (fxbug.dev/636).
     IdType id = chrc->id();
     uint8_t props = chrc->properties();
     uint16_t ext_props = chrc->extended_properties();
     auto self = weak_self_.GetWeakPtr();
 
-    auto read_handler = [self, id, props](PeerId peer_id, att::Handle handle, uint16_t offset,
+    auto read_handler = [self, id, props](PeerId peer_id,
+                                          att::Handle handle,
+                                          uint16_t offset,
                                           auto result_cb) {
       if (!self.is_alive()) {
         result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
@@ -314,8 +341,11 @@ class LocalServiceManager::ServiceData final {
       self->read_handler_(peer_id, self->id_, id, offset, std::move(result_cb));
     };
 
-    auto write_handler = [self, id, props](PeerId peer_id, att::Handle handle, uint16_t offset,
-                                           const auto& value, auto result_cb) {
+    auto write_handler = [self, id, props](PeerId peer_id,
+                                           att::Handle handle,
+                                           uint16_t offset,
+                                           const auto& value,
+                                           auto result_cb) {
       if (!self.is_alive()) {
         if (result_cb)
           result_cb(fit::error(att::ErrorCode::kUnlikelyError));
@@ -333,7 +363,8 @@ class LocalServiceManager::ServiceData final {
       if (!result_cb && !(props & Property::kWriteWithoutResponse))
         return;
 
-      self->write_handler_(peer_id, self->id_, id, offset, value, std::move(result_cb));
+      self->write_handler_(
+          peer_id, self->id_, id, offset, value, std::move(result_cb));
     };
 
     att::Handle chrc_handle = InsertCharacteristicAttributes(
@@ -346,12 +377,14 @@ class LocalServiceManager::ServiceData final {
     if (ext_props) {
       auto* decl_attr = grouping->AddAttribute(
           types::kCharacteristicExtProperties,
-          att::AccessRequirements(/*encryption=*/false, /*authentication=*/false,
-                                  /*authorization=*/false),  // read (no security)
-          att::AccessRequirements());                        // write (not allowed)
+          att::AccessRequirements(
+              /*encryption=*/false,
+              /*authentication=*/false,
+              /*authorization=*/false),  // read (no security)
+          att::AccessRequirements());    // write (not allowed)
       BT_DEBUG_ASSERT(decl_attr);
-      decl_attr->SetValue(
-          StaticByteBuffer((uint8_t)(ext_props & 0x00FF), (uint8_t)((ext_props & 0xFF00) >> 8)));
+      decl_attr->SetValue(StaticByteBuffer(
+          (uint8_t)(ext_props & 0x00FF), (uint8_t)((ext_props & 0xFF00) >> 8)));
     }
 
     // TODO(armansito): Inject a SCC descriptor if the characteristic has the
@@ -361,10 +394,12 @@ class LocalServiceManager::ServiceData final {
     // but we do this to return as many descriptors as possible in a ATT Find
     // Information response.
     auto descs = chrc->ReleaseDescriptors();
-    std::sort(descs.begin(), descs.end(), [](const auto& desc_ptr1, const auto& desc_ptr2) {
-      return desc_ptr1->type().CompactSize(/*allow_32bit=*/false) <
-             desc_ptr2->type().CompactSize(/*allow_32bit=*/false);
-    });
+    std::sort(descs.begin(),
+              descs.end(),
+              [](const auto& desc_ptr1, const auto& desc_ptr2) {
+                return desc_ptr1->type().CompactSize(/*allow_32bit=*/false) <
+                       desc_ptr2->type().CompactSize(/*allow_32bit=*/false);
+              });
     for (auto& desc : descs) {
       AddDescriptor(grouping, std::move(desc));
     }
@@ -372,7 +407,9 @@ class LocalServiceManager::ServiceData final {
 
   void AddDescriptor(att::AttributeGrouping* grouping, DescriptorPtr desc) {
     auto self = weak_self_.GetWeakPtr();
-    auto read_handler = [self, id = desc->id()](PeerId peer_id, att::Handle handle, uint16_t offset,
+    auto read_handler = [self, id = desc->id()](PeerId peer_id,
+                                                att::Handle handle,
+                                                uint16_t offset,
                                                 auto result_cb) {
       if (!self.is_alive()) {
         result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
@@ -382,8 +419,10 @@ class LocalServiceManager::ServiceData final {
       self->read_handler_(peer_id, self->id_, id, offset, std::move(result_cb));
     };
 
-    auto write_handler = [self, id = desc->id()](PeerId peer_id, att::Handle handle,
-                                                 uint16_t offset, const auto& value,
+    auto write_handler = [self, id = desc->id()](PeerId peer_id,
+                                                 att::Handle handle,
+                                                 uint16_t offset,
+                                                 const auto& value,
                                                  auto result_cb) {
       // Descriptors cannot be written using the "write without response"
       // procedure.
@@ -395,29 +434,37 @@ class LocalServiceManager::ServiceData final {
         return;
       }
 
-      self->write_handler_(peer_id, self->id_, id, offset, value, std::move(result_cb));
+      self->write_handler_(
+          peer_id, self->id_, id, offset, value, std::move(result_cb));
     };
 
-    InsertDescriptorAttribute(grouping, desc->type(), desc->read_permissions(),
-                              desc->write_permissions(), std::move(read_handler),
+    InsertDescriptorAttribute(grouping,
+                              desc->type(),
+                              desc->read_permissions(),
+                              desc->write_permissions(),
+                              std::move(read_handler),
                               std::move(write_handler));
   }
 
-  void AddCCCDescriptor(att::AttributeGrouping* grouping, const Characteristic& chrc,
+  void AddCCCDescriptor(att::AttributeGrouping* grouping,
+                        const Characteristic& chrc,
                         att::Handle chrc_handle) {
     BT_DEBUG_ASSERT(chrc.update_permissions().allowed());
 
     // Readable with no authentication or authorization (Vol 3, Part G,
     // 3.3.3.3). We let the service determine the encryption permission.
-    att::AccessRequirements read_reqs(chrc.update_permissions().encryption_required(),
-                                      /*authentication=*/false,
-                                      /*authorization=*/false);
+    att::AccessRequirements read_reqs(
+        chrc.update_permissions().encryption_required(),
+        /*authentication=*/false,
+        /*authorization=*/false);
 
     IdType id = chrc.id();
     auto self = weak_self_.GetWeakPtr();
 
-    auto read_handler = [self, id, chrc_handle](const auto& peer_id, att::Handle handle,
-                                                uint16_t offset, auto result_cb) {
+    auto read_handler = [self, id, chrc_handle](const auto& peer_id,
+                                                att::Handle handle,
+                                                uint16_t offset,
+                                                auto result_cb) {
       if (!self.is_alive()) {
         result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
         return;
@@ -427,19 +474,26 @@ class LocalServiceManager::ServiceData final {
     };
 
     auto write_handler = [self, id, chrc_handle, props = chrc.properties()](
-                             const auto& peer_id, att::Handle handle, uint16_t offset,
-                             const auto& value, auto result_cb) {
+                             const auto& peer_id,
+                             att::Handle handle,
+                             uint16_t offset,
+                             const auto& value,
+                             auto result_cb) {
       if (!self.is_alive()) {
         result_cb(fit::error(att::ErrorCode::kUnlikelyError));
         return;
       }
 
-      self->OnWriteCCC(id, props, peer_id, chrc_handle, offset, value, std::move(result_cb));
+      self->OnWriteCCC(
+          id, props, peer_id, chrc_handle, offset, value, std::move(result_cb));
     };
 
     // The write permission is determined by the service.
-    InsertDescriptorAttribute(grouping, types::kClientCharacteristicConfig, read_reqs,
-                              chrc.update_permissions(), std::move(read_handler),
+    InsertDescriptorAttribute(grouping,
+                              types::kClientCharacteristicConfig,
+                              read_reqs,
+                              chrc.update_permissions(),
+                              std::move(read_handler),
                               std::move(write_handler));
   }
 
@@ -461,13 +515,16 @@ class LocalServiceManager::ServiceData final {
 };
 
 LocalServiceManager::LocalServiceManager()
-    : WeakSelf(this), db_(std::make_unique<att::Database>()), next_service_id_(1ull) {
+    : WeakSelf(this),
+      db_(std::make_unique<att::Database>()),
+      next_service_id_(1ull) {
   BT_DEBUG_ASSERT(db_);
 }
 
 LocalServiceManager::~LocalServiceManager() = default;
 
-IdType LocalServiceManager::RegisterService(ServicePtr service, ReadHandler read_handler,
+IdType LocalServiceManager::RegisterService(ServicePtr service,
+                                            ReadHandler read_handler,
                                             WriteHandler write_handler,
                                             ClientConfigCallback ccc_callback) {
   BT_DEBUG_ASSERT(service);
@@ -485,23 +542,30 @@ IdType LocalServiceManager::RegisterService(ServicePtr service, ReadHandler read
     return kInvalidId;
 
   // GATT does not support 32-bit UUIDs.
-  const BufferView service_decl_value = service->type().CompactView(/*allow_32bit=*/false);
+  const BufferView service_decl_value =
+      service->type().CompactView(/*allow_32bit=*/false);
 
   // TODO(armansito): Cluster services with 16-bit and 128-bit together inside
   // |db_| (Vol 3, Part G, 3.1).
 
-  att::AttributeGrouping* grouping =
-      db_->NewGrouping(service->primary() ? types::kPrimaryService : types::kSecondaryService,
-                       attr_count, service_decl_value);
+  att::AttributeGrouping* grouping = db_->NewGrouping(
+      service->primary() ? types::kPrimaryService : types::kSecondaryService,
+      attr_count,
+      service_decl_value);
   if (!grouping) {
-    bt_log(DEBUG, "gatt", "server: Failed to allocate attribute grouping for service");
+    bt_log(DEBUG,
+           "gatt",
+           "server: Failed to allocate attribute grouping for service");
     return kInvalidId;
   }
 
   // Creating a ServiceData will populate the attribute grouping.
-  auto service_data = std::make_unique<ServiceData>(
-      next_service_id_, grouping, service.get(), std::move(read_handler), std::move(write_handler),
-      std::move(ccc_callback));
+  auto service_data = std::make_unique<ServiceData>(next_service_id_,
+                                                    grouping,
+                                                    service.get(),
+                                                    std::move(read_handler),
+                                                    std::move(write_handler),
+                                                    std::move(ccc_callback));
   BT_DEBUG_ASSERT(grouping->complete());
   grouping->set_active(true);
 
@@ -510,7 +574,8 @@ IdType LocalServiceManager::RegisterService(ServicePtr service, ReadHandler read
 
   services_[id] = std::move(service_data);
   if (service_changed_callback_) {
-    service_changed_callback_(id, grouping->start_handle(), grouping->end_handle());
+    service_changed_callback_(
+        id, grouping->start_handle(), grouping->end_handle());
   }
 
   return id;
@@ -532,8 +597,11 @@ bool LocalServiceManager::UnregisterService(IdType service_id) {
   return true;
 }
 
-bool LocalServiceManager::GetCharacteristicConfig(IdType service_id, IdType chrc_id, PeerId peer_id,
-                                                  ClientCharacteristicConfig* out_config) {
+bool LocalServiceManager::GetCharacteristicConfig(
+    IdType service_id,
+    IdType chrc_id,
+    PeerId peer_id,
+    ClientCharacteristicConfig* out_config) {
   BT_DEBUG_ASSERT(out_config);
 
   auto iter = services_.find(service_id);

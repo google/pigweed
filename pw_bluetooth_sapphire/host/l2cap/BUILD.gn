@@ -2,135 +2,140 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//build/fuzz.gni")
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_unit_test/test.gni")
 
+dir_public_l2cap = "../../public/pw_bluetooth_sapphire/internal/host/l2cap"
+
 # Basic target with protocol definitions and no logic, suitable for test
 # emulation.
 pw_source_set("definitions") {
-  sources = [
-    "frame_headers.h",
-    "l2cap_defs.h",
+  public = [
+    "$dir_public_l2cap/frame_headers.h",
+    "$dir_public_l2cap/l2cap_defs.h",
   ]
 
   public_deps = [
-    "//src/connectivity/bluetooth/core/bt-host/hci-spec",
-    "//src/connectivity/bluetooth/core/bt-host/sm:definitions",
+    "$dir_pw_bluetooth_sapphire/host/hci-spec",
+    "$dir_pw_bluetooth_sapphire/host/sm:definitions",
   ]
 }
 
 pw_source_set("l2cap") {
+  public = [
+    "$dir_public_l2cap/a2dp_offload_manager.h",
+    "$dir_public_l2cap/basic_mode_rx_engine.h",
+    "$dir_public_l2cap/basic_mode_tx_engine.h",
+    "$dir_public_l2cap/bredr_command_handler.h",
+    "$dir_public_l2cap/bredr_dynamic_channel.h",
+    "$dir_public_l2cap/bredr_signaling_channel.h",
+    "$dir_public_l2cap/channel.h",
+    "$dir_public_l2cap/channel_configuration.h",
+    "$dir_public_l2cap/channel_manager.h",
+    "$dir_public_l2cap/command_handler.h",
+    "$dir_public_l2cap/dynamic_channel.h",
+    "$dir_public_l2cap/dynamic_channel_registry.h",
+    "$dir_public_l2cap/enhanced_retransmission_mode_engines.h",
+    "$dir_public_l2cap/enhanced_retransmission_mode_rx_engine.h",
+    "$dir_public_l2cap/enhanced_retransmission_mode_tx_engine.h",
+    "$dir_public_l2cap/fcs.h",
+    "$dir_public_l2cap/fragmenter.h",
+    "$dir_public_l2cap/le_signaling_channel.h",
+    "$dir_public_l2cap/logical_link.h",
+    "$dir_public_l2cap/low_energy_command_handler.h",
+    "$dir_public_l2cap/pdu.h",
+    "$dir_public_l2cap/recombiner.h",
+    "$dir_public_l2cap/rx_engine.h",
+    "$dir_public_l2cap/scoped_channel.h",
+    "$dir_public_l2cap/signaling_channel.h",
+    "$dir_public_l2cap/tx_engine.h",
+    "$dir_public_l2cap/types.h",
+  ]
+
   sources = [
     "a2dp_offload_manager.cc",
-    "a2dp_offload_manager.h",
     "basic_mode_rx_engine.cc",
-    "basic_mode_rx_engine.h",
     "basic_mode_tx_engine.cc",
-    "basic_mode_tx_engine.h",
     "bredr_command_handler.cc",
-    "bredr_command_handler.h",
     "bredr_dynamic_channel.cc",
-    "bredr_dynamic_channel.h",
     "bredr_signaling_channel.cc",
-    "bredr_signaling_channel.h",
     "channel.cc",
-    "channel.h",
     "channel_configuration.cc",
-    "channel_configuration.h",
     "channel_manager.cc",
-    "channel_manager.h",
     "command_handler.cc",
-    "command_handler.h",
     "dynamic_channel.cc",
-    "dynamic_channel.h",
     "dynamic_channel_registry.cc",
-    "dynamic_channel_registry.h",
     "enhanced_retransmission_mode_engines.cc",
-    "enhanced_retransmission_mode_engines.h",
     "enhanced_retransmission_mode_rx_engine.cc",
-    "enhanced_retransmission_mode_rx_engine.h",
     "enhanced_retransmission_mode_tx_engine.cc",
-    "enhanced_retransmission_mode_tx_engine.h",
     "fcs.cc",
-    "fcs.h",
     "fragmenter.cc",
-    "fragmenter.h",
     "le_signaling_channel.cc",
-    "le_signaling_channel.h",
     "logical_link.cc",
-    "logical_link.h",
     "low_energy_command_handler.cc",
-    "low_energy_command_handler.h",
     "pdu.cc",
-    "pdu.h",
     "recombiner.cc",
-    "recombiner.h",
-    "rx_engine.h",
     "scoped_channel.cc",
-    "scoped_channel.h",
     "signaling_channel.cc",
-    "signaling_channel.h",
-    "tx_engine.h",
     "types.cc",
-    "types.h",
   ]
 
   public_deps = [
     ":definitions",
+    "$dir_pw_bluetooth_sapphire:config",
+    "$dir_pw_bluetooth_sapphire/host/hci",
+    "$dir_pw_bluetooth_sapphire/host/transport",
+    "$dir_pw_string",
     "$dir_pw_third_party/fuchsia:fit",
-    "//src/connectivity/bluetooth/core/bt-host/hci",
-    "//src/connectivity/bluetooth/core/bt-host/transport",
-    "//third_party/pigweed/src/pw_string",
   ]
 }
 
 # Separate from :testing to avoid a dependency cycle.
 pw_source_set("channel_manager_mock_controller_test_fixture") {
-  testonly = true
-
-  sources = [ "channel_manager_mock_controller_test_fixture.h" ]
+  public =
+      [ "$dir_public_l2cap/channel_manager_mock_controller_test_fixture.h" ]
 
   public_deps = [
     ":l2cap",
     ":testing",
-    "//src/connectivity/bluetooth/core/bt-host/hci",
-    "//src/connectivity/bluetooth/core/bt-host/testing",
+    "$dir_pw_bluetooth_sapphire/host/hci",
+    "$dir_pw_bluetooth_sapphire/host/testing",
   ]
 }
 
 pw_source_set("testing") {
-  testonly = true
+  public = [
+    "$dir_public_l2cap/fake_channel.h",
+    "$dir_public_l2cap/fake_channel_test.h",
+    "$dir_public_l2cap/fake_l2cap.h",
+    "$dir_public_l2cap/fake_signaling_channel.h",
+    "$dir_public_l2cap/mock_channel_test.h",
+    "$dir_public_l2cap/test_packets.h",
+  ]
 
   sources = [
     "fake_channel.cc",
-    "fake_channel.h",
     "fake_channel_test.cc",
-    "fake_channel_test.h",
     "fake_l2cap.cc",
-    "fake_l2cap.h",
     "fake_signaling_channel.cc",
-    "fake_signaling_channel.h",
     "mock_channel_test.cc",
-    "mock_channel_test.h",
     "test_packets.cc",
-    "test_packets.h",
   ]
 
   public_deps = [
     ":l2cap",
+    "$dir_pw_async:fake_dispatcher_fixture",
+    "$dir_pw_async:heap_dispatcher",
     "$dir_pw_bluetooth",
+    "$dir_pw_bluetooth_sapphire/host/common",
+    "$dir_pw_bluetooth_sapphire/host/hci",
+    "$dir_pw_bluetooth_sapphire/host/testing:test_helpers",
     "$dir_pw_unit_test",
-    "//src/connectivity/bluetooth/core/bt-host/common",
-    "//src/connectivity/bluetooth/core/bt-host/hci",
-    "//src/connectivity/bluetooth/core/bt-host/testing:test_helpers",
-    "//third_party/pigweed:pw_async_heap_dispatcher",
-    "//third_party/pigweed/backends/pw_async_fuchsia:fake_dispatcher_fixture",
   ]
 }
 
-pw_test("tests") {
+pw_test("l2cap_tests") {
   sources = [
     "a2dp_offload_manager_unittest.cc",
     "basic_mode_rx_engine_unittest.cc",
@@ -163,24 +168,17 @@ pw_test("tests") {
     ":channel_manager_mock_controller_test_fixture",
     ":l2cap",
     ":testing",
-    "//src/connectivity/bluetooth/core/bt-host/hci",
-    "//src/connectivity/bluetooth/core/bt-host/hci:testing",
-    "//src/connectivity/bluetooth/core/bt-host/testing",
-    "//src/connectivity/bluetooth/core/bt-host/transport:testing",
-    "//third_party/pigweed/backends/pw_async_fuchsia:fake_dispatcher_fixture",
+    "$dir_pw_async:fake_dispatcher_fixture",
+    "$dir_pw_bluetooth_sapphire/host/hci",
+    "$dir_pw_bluetooth_sapphire/host/hci:testing",
+    "$dir_pw_bluetooth_sapphire/host/testing",
+    "$dir_pw_bluetooth_sapphire/host/transport:testing",
   ]
+
+  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
 }
 
-fuchsia_library_fuzzer("basic_mode_rx_engine_fuzzer") {
-  sources = [ "basic_mode_rx_engine_fuzztest.cc" ]
-  deps = [
-    ":l2cap",
-    ":testing",
-    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
-  ]
-}
-
-pw_fuzzer("pw_basic_mode_rx_engine_fuzzer") {
+pw_fuzzer("basic_mode_rx_engine_fuzzer") {
   sources = [ "basic_mode_rx_engine_fuzztest.cc" ]
   deps = [
     ":l2cap",
@@ -188,16 +186,7 @@ pw_fuzzer("pw_basic_mode_rx_engine_fuzzer") {
   ]
 }
 
-fuchsia_library_fuzzer("enhanced_retransmission_mode_engines_fuzzer") {
-  sources = [ "enhanced_retransmission_mode_engines_fuzztest.cc" ]
-  deps = [
-    ":l2cap",
-    ":testing",
-    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
-  ]
-}
-
-pw_fuzzer("pw_enhanced_retransmission_mode_engines_fuzzer") {
+pw_fuzzer("enhanced_retransmission_mode_engines_fuzzer") {
   sources = [ "enhanced_retransmission_mode_engines_fuzztest.cc" ]
   deps = [
     ":l2cap",
@@ -205,17 +194,7 @@ pw_fuzzer("pw_enhanced_retransmission_mode_engines_fuzzer") {
   ]
 }
 
-fuchsia_library_fuzzer("bredr_dynamic_channel_registry_fuzzer") {
-  sources = [ "bredr_dynamic_channel_registry_fuzztest.cc" ]
-  deps = [
-    ":l2cap",
-    ":testing",
-    "$dir_pw_random:fuzzer_generator",
-    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
-  ]
-}
-
-pw_fuzzer("pw_bredr_dynamic_channel_registry_fuzzer") {
+pw_fuzzer("bredr_dynamic_channel_registry_fuzzer") {
   sources = [ "bredr_dynamic_channel_registry_fuzztest.cc" ]
   deps = [
     ":l2cap",
@@ -224,16 +203,7 @@ pw_fuzzer("pw_bredr_dynamic_channel_registry_fuzzer") {
   ]
 }
 
-fuchsia_library_fuzzer("channel_configuration_fuzzer") {
-  sources = [ "channel_configuration_fuzztest.cc" ]
-  deps = [
-    ":l2cap",
-    ":testing",
-    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
-  ]
-}
-
-pw_fuzzer("pw_channel_configuration_fuzzer") {
+pw_fuzzer("channel_configuration_fuzzer") {
   sources = [ "channel_configuration_fuzztest.cc" ]
   deps = [
     ":l2cap",
@@ -241,16 +211,7 @@ pw_fuzzer("pw_channel_configuration_fuzzer") {
   ]
 }
 
-fuchsia_library_fuzzer("common_handler_fuzzer") {
-  sources = [ "common_handler_fuzztest.cc" ]
-  deps = [
-    ":l2cap",
-    ":testing",
-    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
-  ]
-}
-
-pw_fuzzer("pw_common_handler_fuzzer") {
+pw_fuzzer("common_handler_fuzzer") {
   sources = [ "common_handler_fuzztest.cc" ]
   deps = [
     ":l2cap",
@@ -258,23 +219,24 @@ pw_fuzzer("pw_common_handler_fuzzer") {
   ]
 }
 
-fuchsia_library_fuzzer("l2cap_fuzzer") {
+pw_fuzzer("l2cap_fuzzer") {
   sources = [ "l2cap_fuzztest.cc" ]
   deps = [
     ":l2cap",
+    "$dir_pw_bluetooth_sapphire/host/testing",
+    "$dir_pw_bluetooth_sapphire/host/testing:controller_test_double_base",
     "$dir_pw_random:fuzzer_generator",
-    "//src/connectivity/bluetooth/core/bt-host/testing",
-    "//src/connectivity/bluetooth/core/bt-host/testing:controller_test_double_base",
-    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
   ]
 }
 
-pw_fuzzer("pw_l2cap_fuzzer") {
-  sources = [ "l2cap_fuzztest.cc" ]
-  deps = [
-    ":l2cap",
-    "$dir_pw_random:fuzzer_generator",
-    "//src/connectivity/bluetooth/core/bt-host/testing",
-    "//src/connectivity/bluetooth/core/bt-host/testing:controller_test_double_base",
+pw_test_group("tests") {
+  tests = [
+    ":l2cap_tests",
+    ":basic_mode_rx_engine_fuzzer_test",
+    ":enhanced_retransmission_mode_engines_fuzzer_test",
+    ":bredr_dynamic_channel_registry_fuzzer_test",
+    ":channel_configuration_fuzzer_test",
+    ":common_handler_fuzzer_test",
+    ":l2cap_fuzzer_test",
   ]
 }

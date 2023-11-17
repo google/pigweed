@@ -2,10 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "util.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/util.h"
 
 #include <endian.h>
-
 #include <gtest/gtest.h>
 
 namespace bt::hci {
@@ -13,7 +12,8 @@ namespace {
 
 TEST(UtilTest, DeviceAddressFromAdvReportParsesAddress) {
   StaticByteBuffer<sizeof(hci_spec::LEAdvertisingReportData)> buffer;
-  auto* report = reinterpret_cast<hci_spec::LEAdvertisingReportData*>(buffer.mutable_data());
+  auto* report = reinterpret_cast<hci_spec::LEAdvertisingReportData*>(
+      buffer.mutable_data());
   report->address = DeviceAddressBytes({0, 1, 2, 3, 4, 5});
   report->address_type = hci_spec::LEAddressType::kPublicIdentity;
 

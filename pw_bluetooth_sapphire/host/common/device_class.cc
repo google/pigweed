@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "device_class.h"
+#include "pw_bluetooth_sapphire/internal/host/common/device_class.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 
 namespace bt {
 
@@ -97,7 +97,8 @@ uint32_t DeviceClass::to_int() const {
   return out;
 }
 
-void DeviceClass::SetServiceClasses(const std::unordered_set<ServiceClass>& classes) {
+void DeviceClass::SetServiceClasses(
+    const std::unordered_set<ServiceClass>& classes) {
   for (const auto& c : classes) {
     uint8_t bit = static_cast<uint8_t>(c);
     if (bit >= 16) {
@@ -108,7 +109,8 @@ void DeviceClass::SetServiceClasses(const std::unordered_set<ServiceClass>& clas
   }
 }
 
-std::unordered_set<DeviceClass::ServiceClass> DeviceClass::GetServiceClasses() const {
+std::unordered_set<DeviceClass::ServiceClass> DeviceClass::GetServiceClasses()
+    const {
   std::unordered_set<ServiceClass> classes;
   for (uint8_t bit_no = 13; bit_no < 16; bit_no++) {
     if (bytes_[1] & (0x01 << (bit_no - 8))) {

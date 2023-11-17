@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/hci/legacy_low_energy_scanner.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/legacy_low_energy_scanner.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/fake_local_address_delegate.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
+#include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
+#include "pw_bluetooth_sapphire/internal/host/common/macros.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/fake_local_address_delegate.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/fake_controller.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/fake_peer.h"
 
 namespace bt::hci {
 namespace {
@@ -18,13 +18,17 @@ using bt::testing::FakeController;
 using bt::testing::FakePeer;
 using TestingBase = bt::testing::FakeDispatcherControllerTest<FakeController>;
 
-constexpr pw::chrono::SystemClock::duration kScanPeriod = std::chrono::seconds(10);
-constexpr pw::chrono::SystemClock::duration kPwScanPeriod = std::chrono::seconds(10);
-constexpr pw::chrono::SystemClock::duration kScanResponseTimeout = std::chrono::seconds(2);
-constexpr pw::chrono::SystemClock::duration kPwScanResponseTimeout = std::chrono::seconds(2);
+constexpr pw::chrono::SystemClock::duration kScanPeriod =
+    std::chrono::seconds(10);
+constexpr pw::chrono::SystemClock::duration kPwScanPeriod =
+    std::chrono::seconds(10);
+constexpr pw::chrono::SystemClock::duration kScanResponseTimeout =
+    std::chrono::seconds(2);
+constexpr pw::chrono::SystemClock::duration kPwScanResponseTimeout =
+    std::chrono::seconds(2);
 
-// The unit tests below assume that the scan period is longer than the scan response timeout when
-// exercising timeout expiration.
+// The unit tests below assume that the scan period is longer than the scan
+// response timeout when exercising timeout expiration.
 static_assert(kScanResponseTimeout < kScanPeriod,
               "expected a smaller scan response timeout for testing");
 
@@ -43,7 +47,8 @@ const DeviceAddress kRandomAddress2(DeviceAddress::Type::kLERandom, {4});
 const DeviceAddress kRandomAddress3(DeviceAddress::Type::kLERandom, {5});
 const DeviceAddress kRandomAddress4(DeviceAddress::Type::kLERandom, {6});
 
-class LegacyLowEnergyScannerTest : public TestingBase, public LowEnergyScanner::Delegate {
+class LegacyLowEnergyScannerTest : public TestingBase,
+                                   public LowEnergyScanner::Delegate {
  public:
   LegacyLowEnergyScannerTest() = default;
   ~LegacyLowEnergyScannerTest() override = default;
@@ -57,8 +62,8 @@ class LegacyLowEnergyScannerTest : public TestingBase, public LowEnergyScanner::
     settings.ApplyLegacyLEConfig();
     test_device()->set_settings(settings);
 
-    scanner_ = std::make_unique<LegacyLowEnergyScanner>(&fake_address_delegate_,
-                                                        transport()->GetWeakPtr(), dispatcher());
+    scanner_ = std::make_unique<LegacyLowEnergyScanner>(
+        &fake_address_delegate_, transport()->GetWeakPtr(), dispatcher());
     scanner_->set_delegate(this);
   }
 
@@ -68,23 +73,32 @@ class LegacyLowEnergyScannerTest : public TestingBase, public LowEnergyScanner::
     TestingBase::TearDown();
   }
 
-  using PeerFoundCallback = fit::function<void(const LowEnergyScanResult&, const ByteBuffer&)>;
-  void set_peer_found_callback(PeerFoundCallback cb) { peer_found_cb_ = std::move(cb); }
+  using PeerFoundCallback =
+      fit::function<void(const LowEnergyScanResult&, const ByteBuffer&)>;
+  void set_peer_found_callback(PeerFoundCallback cb) {
+    peer_found_cb_ = std::move(cb);
+  }
 
   using DirectedAdvCallback = fit::function<void(const LowEnergyScanResult&)>;
-  void set_directed_adv_callback(DirectedAdvCallback cb) { directed_adv_cb_ = std::move(cb); }
+  void set_directed_adv_callback(DirectedAdvCallback cb) {
+    directed_adv_cb_ = std::move(cb);
+  }
 
   bool StartScan(bool active,
-                 pw::chrono::SystemClock::duration period = LowEnergyScanner::kPeriodInfinite) {
-    LowEnergyScanner::ScanOptions options{.active = active,
-                                          .filter_duplicates = true,
-                                          .period = period,
-                                          .scan_response_timeout = kPwScanResponseTimeout};
-    return scanner()->StartScan(options, [this](auto status) { last_scan_status_ = status; });
+                 pw::chrono::SystemClock::duration period =
+                     LowEnergyScanner::kPeriodInfinite) {
+    LowEnergyScanner::ScanOptions options{
+        .active = active,
+        .filter_duplicates = true,
+        .period = period,
+        .scan_response_timeout = kPwScanResponseTimeout};
+    return scanner()->StartScan(
+        options, [this](auto status) { last_scan_status_ = status; });
   }
 
   // LowEnergyScanner::Observer override:
-  void OnPeerFound(const LowEnergyScanResult& result, const ByteBuffer& data) override {
+  void OnPeerFound(const LowEnergyScanResult& result,
+                   const ByteBuffer& data) override {
     if (peer_found_cb_) {
       peer_found_cb_(result, data);
     }
@@ -100,47 +114,61 @@ class LegacyLowEnergyScannerTest : public TestingBase, public LowEnergyScanner::
   // Adds 6 fake peers using kAddress[0-5] above.
   void AddFakePeers() {
     // Generates ADV_IND, scan response is reported in a single HCI event.
-    auto fake_peer = std::make_unique<FakePeer>(kPublicAddress1, dispatcher(), true, true);
+    auto fake_peer =
+        std::make_unique<FakePeer>(kPublicAddress1, dispatcher(), true, true);
     fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
-    fake_peer->SetScanResponse(/*should_batch_reports=*/true, kPlainScanRspBytes);
+    fake_peer->SetScanResponse(/*should_batch_reports=*/true,
+                               kPlainScanRspBytes);
     test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_SCAN_IND, scan response is reported over multiple HCI
     // events.
-    fake_peer = std::make_unique<FakePeer>(kRandomAddress1, dispatcher(), false, true);
+    fake_peer =
+        std::make_unique<FakePeer>(kRandomAddress1, dispatcher(), false, true);
     fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
-    fake_peer->SetScanResponse(/*should_batch_reports=*/false, kPlainScanRspBytes);
+    fake_peer->SetScanResponse(/*should_batch_reports=*/false,
+                               kPlainScanRspBytes);
     test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_IND, empty scan response is reported over multiple HCI
     // events.
-    fake_peer = std::make_unique<FakePeer>(kPublicAddress2, dispatcher(), true, true);
+    fake_peer =
+        std::make_unique<FakePeer>(kPublicAddress2, dispatcher(), true, true);
     fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
-    fake_peer->SetScanResponse(/*should_batch_reports=*/false, DynamicByteBuffer());
+    fake_peer->SetScanResponse(/*should_batch_reports=*/false,
+                               DynamicByteBuffer());
     test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_IND, empty adv data and non-empty scan response is reported
     // over multiple HCI events.
-    fake_peer = std::make_unique<FakePeer>(kRandomAddress2, dispatcher(), true, true);
-    fake_peer->SetScanResponse(/*should_batch_reports=*/false, kPlainScanRspBytes);
+    fake_peer =
+        std::make_unique<FakePeer>(kRandomAddress2, dispatcher(), true, true);
+    fake_peer->SetScanResponse(/*should_batch_reports=*/false,
+                               kPlainScanRspBytes);
     test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_IND, a scan response is never sent even though ADV_IND is
     // scannable.
-    fake_peer = std::make_unique<FakePeer>(kRandomAddress3, dispatcher(), true, false);
+    fake_peer =
+        std::make_unique<FakePeer>(kRandomAddress3, dispatcher(), true, false);
     fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
     test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_NONCONN_IND
-    fake_peer = std::make_unique<FakePeer>(kRandomAddress4, dispatcher(), false, false);
+    fake_peer =
+        std::make_unique<FakePeer>(kRandomAddress4, dispatcher(), false, false);
     fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
     test_device()->AddPeer(std::move(fake_peer));
   }
 
   LegacyLowEnergyScanner* scanner() const { return scanner_.get(); }
-  FakeLocalAddressDelegate* fake_address_delegate() { return &fake_address_delegate_; }
+  FakeLocalAddressDelegate* fake_address_delegate() {
+    return &fake_address_delegate_;
+  }
 
-  LowEnergyScanner::ScanStatus last_scan_status() const { return last_scan_status_; }
+  LowEnergyScanner::ScanStatus last_scan_status() const {
+    return last_scan_status_;
+  }
 
  private:
   PeerFoundCallback peer_found_cb_;
@@ -161,8 +189,9 @@ TEST_F(LegacyLowEnergyScannerTest, StartScanHCIErrors) {
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
 
   // Set Scan Parameters will fail.
-  test_device()->SetDefaultResponseStatus(hci_spec::kLESetScanParameters,
-                                          pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE);
+  test_device()->SetDefaultResponseStatus(
+      hci_spec::kLESetScanParameters,
+      pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE);
   EXPECT_EQ(0, test_device()->le_scan_state().scan_interval);
 
   EXPECT_TRUE(StartScan(false));
@@ -181,8 +210,9 @@ TEST_F(LegacyLowEnergyScannerTest, StartScanHCIErrors) {
 
   // Set Scan Parameters will succeed but Set Scan Enable will fail.
   test_device()->ClearDefaultResponseStatus(hci_spec::kLESetScanParameters);
-  test_device()->SetDefaultResponseStatus(hci_spec::kLESetScanEnable,
-                                          pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE);
+  test_device()->SetDefaultResponseStatus(
+      hci_spec::kLESetScanEnable,
+      pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE);
 
   EXPECT_TRUE(StartScan(false));
   EXPECT_EQ(LowEnergyScanner::State::kInitiating, scanner()->state());
@@ -190,8 +220,10 @@ TEST_F(LegacyLowEnergyScannerTest, StartScanHCIErrors) {
 
   // Status should be failure but the scan parameters should have applied.
   EXPECT_EQ(LowEnergyScanner::ScanStatus::kFailed, last_scan_status());
-  EXPECT_EQ(hci_spec::defaults::kLEScanInterval, test_device()->le_scan_state().scan_interval);
-  EXPECT_EQ(hci_spec::defaults::kLEScanWindow, test_device()->le_scan_state().scan_window);
+  EXPECT_EQ(hci_spec::defaults::kLEScanInterval,
+            test_device()->le_scan_state().scan_interval);
+  EXPECT_EQ(hci_spec::defaults::kLEScanWindow,
+            test_device()->le_scan_state().scan_window);
   EXPECT_EQ(pw::bluetooth::emboss::LEScanFilterPolicy::BASIC_UNFILTERED,
             test_device()->le_scan_state().filter_policy);
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
@@ -210,11 +242,14 @@ TEST_F(LegacyLowEnergyScannerTest, StartScan) {
 
   // Scan should have started.
   EXPECT_EQ(LowEnergyScanner::ScanStatus::kActive, last_scan_status());
-  EXPECT_EQ(hci_spec::defaults::kLEScanInterval, test_device()->le_scan_state().scan_interval);
-  EXPECT_EQ(hci_spec::defaults::kLEScanWindow, test_device()->le_scan_state().scan_window);
+  EXPECT_EQ(hci_spec::defaults::kLEScanInterval,
+            test_device()->le_scan_state().scan_interval);
+  EXPECT_EQ(hci_spec::defaults::kLEScanWindow,
+            test_device()->le_scan_state().scan_window);
   EXPECT_EQ(pw::bluetooth::emboss::LEScanFilterPolicy::BASIC_UNFILTERED,
             test_device()->le_scan_state().filter_policy);
-  EXPECT_EQ(pw::bluetooth::emboss::LEScanType::ACTIVE, test_device()->le_scan_state().scan_type);
+  EXPECT_EQ(pw::bluetooth::emboss::LEScanType::ACTIVE,
+            test_device()->le_scan_state().scan_type);
   EXPECT_TRUE(test_device()->le_scan_state().filter_duplicates);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(LowEnergyScanner::State::kActiveScanning, scanner()->state());
@@ -284,19 +319,24 @@ TEST_F(LegacyLowEnergyScannerTest, StopScanWhileInitiating) {
 }
 
 TEST_F(LegacyLowEnergyScannerTest, ScanResponseTimeout) {
-  constexpr pw::chrono::SystemClock::duration kHalfTimeout = kScanResponseTimeout / 2;
+  constexpr pw::chrono::SystemClock::duration kHalfTimeout =
+      kScanResponseTimeout / 2;
 
   std::unordered_set<DeviceAddress> results;
-  set_peer_found_callback(
-      [&](const auto& result, const auto& data) { results.insert(result.address); });
+  set_peer_found_callback([&](const auto& result, const auto& data) {
+    results.insert(result.address);
+  });
 
   // Add a peer that sends a scan response and one that doesn't.
-  auto fake_peer = std::make_unique<FakePeer>(kRandomAddress1, dispatcher(), false, true);
+  auto fake_peer =
+      std::make_unique<FakePeer>(kRandomAddress1, dispatcher(), false, true);
   fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
-  fake_peer->SetScanResponse(/*should_batch_reports=*/false, kPlainScanRspBytes);
+  fake_peer->SetScanResponse(/*should_batch_reports=*/false,
+                             kPlainScanRspBytes);
   test_device()->AddPeer(std::move(fake_peer));
 
-  fake_peer = std::make_unique<FakePeer>(kRandomAddress2, dispatcher(), true, false);
+  fake_peer =
+      std::make_unique<FakePeer>(kRandomAddress2, dispatcher(), true, false);
   fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
   test_device()->AddPeer(std::move(fake_peer));
 
@@ -309,9 +349,10 @@ TEST_F(LegacyLowEnergyScannerTest, ScanResponseTimeout) {
   RunFor(kHalfTimeout);
   ASSERT_EQ(1u, results.size());
 
-  // Add another peer that doesn't send a scan response after the kHalfTimeout delay.
-  // This is to test that a separate timeout is kept for every peer.
-  fake_peer = std::make_unique<FakePeer>(kRandomAddress3, dispatcher(), true, false);
+  // Add another peer that doesn't send a scan response after the kHalfTimeout
+  // delay. This is to test that a separate timeout is kept for every peer.
+  fake_peer =
+      std::make_unique<FakePeer>(kRandomAddress3, dispatcher(), true, false);
   fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
   test_device()->AddPeer(std::move(fake_peer));
 
@@ -354,9 +395,10 @@ TEST_F(LegacyLowEnergyScannerTest, ActiveScanResults) {
   EXPECT_EQ(LowEnergyScanner::ScanStatus::kComplete, last_scan_status());
   ASSERT_EQ(kExpectedResultCount + 1, results.size());
 
-  // Verify the 6 results against the fake peers that were set up by AddFakePeers(). Since the scan
-  // period ended naturally, LowEnergyScanner should generate a peer found event for all pending
-  // reports even if a scan response was not received for a scannable peer (see Fake Peer 4, i.e.
+  // Verify the 6 results against the fake peers that were set up by
+  // AddFakePeers(). Since the scan period ended naturally, LowEnergyScanner
+  // should generate a peer found event for all pending reports even if a scan
+  // response was not received for a scannable peer (see Fake Peer 4, i.e.
   // kRandomAddress3).
 
   // Result 0 (ADV_IND)
@@ -452,8 +494,8 @@ TEST_F(LegacyLowEnergyScannerTest, StopDuringActiveScan) {
 
   // Run the loop until we've seen an event for the last peer that we
   // added. Fake Peer 4 (i.e. kRandomAddress3) is scannable but it never sends
-  // a scan response so we expect that to remain in the scanner's pending reports
-  // list.
+  // a scan response so we expect that to remain in the scanner's pending
+  // reports list.
   RunUntilIdle();
   EXPECT_EQ(5u, results.size());
   EXPECT_EQ(results.find(kRandomAddress3), results.end());
@@ -573,29 +615,34 @@ TEST_F(LegacyLowEnergyScannerTest, DirectedReport) {
   constexpr size_t kExpectedResultCount = 4u;
 
   // Unresolved public.
-  auto fake_peer = std::make_unique<FakePeer>(kPublicUnresolved, dispatcher(), true, false);
+  auto fake_peer =
+      std::make_unique<FakePeer>(kPublicUnresolved, dispatcher(), true, false);
   fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
 
   // Unresolved random.
-  fake_peer = std::make_unique<FakePeer>(kRandomUnresolved, dispatcher(), true, false);
+  fake_peer =
+      std::make_unique<FakePeer>(kRandomUnresolved, dispatcher(), true, false);
   fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
 
   // Resolved public.
-  fake_peer = std::make_unique<FakePeer>(kPublicResolved, dispatcher(), true, false);
+  fake_peer =
+      std::make_unique<FakePeer>(kPublicResolved, dispatcher(), true, false);
   fake_peer->set_address_resolved(true);
   fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
 
   // Resolved random.
-  fake_peer = std::make_unique<FakePeer>(kRandomResolved, dispatcher(), true, false);
+  fake_peer =
+      std::make_unique<FakePeer>(kRandomResolved, dispatcher(), true, false);
   fake_peer->set_address_resolved(true);
   fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
 
   std::unordered_map<DeviceAddress, LowEnergyScanResult> results;
-  set_directed_adv_callback([&](const auto& result) { results[result.address] = result; });
+  set_directed_adv_callback(
+      [&](const auto& result) { results[result.address] = result; });
 
   EXPECT_TRUE(StartScan(true));
   EXPECT_EQ(LowEnergyScanner::State::kInitiating, scanner()->state());
@@ -631,7 +678,8 @@ TEST_F(LegacyLowEnergyScannerTest, AllowsRandomAddressChange) {
   EXPECT_FALSE(scanner()->AllowsRandomAddressChange());
 }
 
-TEST_F(LegacyLowEnergyScannerTest, AllowsRandomAddressChangeWhileRequestingLocalAddress) {
+TEST_F(LegacyLowEnergyScannerTest,
+       AllowsRandomAddressChangeWhileRequestingLocalAddress) {
   // Make the local address delegate report its result asynchronously.
   fake_address_delegate()->set_async(true);
   EXPECT_TRUE(StartScan(false));

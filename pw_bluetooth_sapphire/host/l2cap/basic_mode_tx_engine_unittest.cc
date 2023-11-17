@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "basic_mode_tx_engine.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/basic_mode_tx_engine.h"
 
 #include <gtest/gtest.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
+#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
 namespace bt::l2cap::internal {
 namespace {

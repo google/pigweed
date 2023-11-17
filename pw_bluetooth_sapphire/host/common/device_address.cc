@@ -2,12 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "device_address.h"
+#include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
 
 #include <climits>
 
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_string/format.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
+
+#pragma clang diagnostic ignored "-Wswitch-enum"
 
 namespace bt {
 namespace {
@@ -31,7 +33,8 @@ std::string TypeToString(DeviceAddress::Type type) {
 
 DeviceAddressBytes::DeviceAddressBytes() { SetToZero(); }
 
-DeviceAddressBytes::DeviceAddressBytes(std::array<uint8_t, kDeviceAddressSize> bytes) {
+DeviceAddressBytes::DeviceAddressBytes(
+    std::array<uint8_t, kDeviceAddressSize> bytes) {
   bytes_ = bytes;
 }
 
@@ -49,8 +52,14 @@ std::string DeviceAddressBytes::ToString() const {
   char out[out_size] = "";
   // Ignore errors. If an error occurs, an empty string will be returned.
   pw::StatusWithSize result =
-      pw::string::Format({out, sizeof(out)}, "%02X:%02X:%02X:%02X:%02X:%02X", bytes_[5], bytes_[4],
-                         bytes_[3], bytes_[2], bytes_[1], bytes_[0]);
+      pw::string::Format({out, sizeof(out)},
+                         "%02X:%02X:%02X:%02X:%02X:%02X",
+                         bytes_[5],
+                         bytes_[4],
+                         bytes_[3],
+                         bytes_[2],
+                         bytes_[1],
+                         bytes_[0]);
   BT_DEBUG_ASSERT(result.ok());
   return out;
 }
@@ -74,10 +83,12 @@ DeviceAddress::DeviceAddress() : type_(Type::kBREDR) {}
 DeviceAddress::DeviceAddress(Type type, const DeviceAddressBytes& value)
     : type_(type), value_(value) {}
 
-DeviceAddress::DeviceAddress(Type type, std::array<uint8_t, kDeviceAddressSize> bytes)
+DeviceAddress::DeviceAddress(Type type,
+                             std::array<uint8_t, kDeviceAddressSize> bytes)
     : DeviceAddress(type, DeviceAddressBytes(bytes)) {}
 
-pw::bluetooth::emboss::LEPeerAddressType DeviceAddress::DeviceAddrToLePeerAddr(Type type) {
+pw::bluetooth::emboss::LEPeerAddressType DeviceAddress::DeviceAddrToLePeerAddr(
+    Type type) {
   switch (type) {
     case DeviceAddress::Type::kBREDR: {
       BT_PANIC("BR/EDR address not convertible to LE address");
@@ -115,7 +126,8 @@ DeviceAddress::Type DeviceAddress::LePeerAddrToDeviceAddr(
   }
 }
 
-pw::bluetooth::emboss::LEAddressType DeviceAddress::DeviceAddrToLeAddr(DeviceAddress::Type type) {
+pw::bluetooth::emboss::LEAddressType DeviceAddress::DeviceAddrToLeAddr(
+    DeviceAddress::Type type) {
   switch (type) {
     case DeviceAddress::Type::kLEPublic: {
       return pw::bluetooth::emboss::LEAddressType::PUBLIC;
@@ -129,7 +141,8 @@ pw::bluetooth::emboss::LEAddressType DeviceAddress::DeviceAddrToLeAddr(DeviceAdd
   }
 }
 
-DeviceAddress::Type DeviceAddress::LeAddrToDeviceAddr(pw::bluetooth::emboss::LEAddressType type) {
+DeviceAddress::Type DeviceAddress::LeAddrToDeviceAddr(
+    pw::bluetooth::emboss::LEAddressType type) {
   switch (type) {
     case pw::bluetooth::emboss::LEAddressType::PUBLIC:
     case pw::bluetooth::emboss::LEAddressType::PUBLIC_IDENTITY: {
@@ -174,7 +187,9 @@ std::size_t DeviceAddress::Hash() const {
   return h1 ^ (h2 << 1);
 }
 
-std::string DeviceAddress::ToString() const { return TypeToString(type_) + value_.ToString(); }
+std::string DeviceAddress::ToString() const {
+  return TypeToString(type_) + value_.ToString();
+}
 
 }  // namespace bt
 

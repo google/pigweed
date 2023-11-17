@@ -1,7 +1,8 @@
 // Copyright 2019 The Fuchsia Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file.
 
-#include "fcs.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/fcs.h"
 
 #include <gtest/gtest.h>
 
@@ -20,15 +21,31 @@ TEST(FcsTest, FcsOfSimpleValues) {
   // By inspection, the FCS has value zero if all inputs are 0.
   EXPECT_EQ(0, ComputeFcs(StaticByteBuffer(0).view()).fcs);
 
-  // If only the "last" bit (i.e. MSb of the message) is set, then the FCS should equal the
-  // generator polynomial because there's exactly one round of feedback.
-  EXPECT_EQ(0b1010'0000'0000'0001, ComputeFcs(StaticByteBuffer(0b1000'0000).view()).fcs);
+  // If only the "last" bit (i.e. MSb of the message) is set, then the FCS
+  // should equal the generator polynomial because there's exactly one round of
+  // feedback.
+  EXPECT_EQ(0b1010'0000'0000'0001,
+            ComputeFcs(StaticByteBuffer(0b1000'0000).view()).fcs);
 }
 
 TEST(FcsTest, Example1) {
   // Core Spec v5.0, Vol 3, Part A, Section 3.3.5, Example 1.
-  const StaticByteBuffer kExample1Data(0x0E, 0x00, 0x40, 0x00, 0x02, 0x00, 0x00, 0x01, 0x02, 0x03,
-                                       0x04, 0x05, 0x06, 0x07, 0x08, 0x09);
+  const StaticByteBuffer kExample1Data(0x0E,
+                                       0x00,
+                                       0x40,
+                                       0x00,
+                                       0x02,
+                                       0x00,
+                                       0x00,
+                                       0x01,
+                                       0x02,
+                                       0x03,
+                                       0x04,
+                                       0x05,
+                                       0x06,
+                                       0x07,
+                                       0x08,
+                                       0x09);
   EXPECT_EQ(0x6138, ComputeFcs(kExample1Data.view()).fcs);
 }
 

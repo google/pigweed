@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "data_element.h"
+#include "pw_bluetooth_sapphire/internal/host/sdp/data_element.h"
 
+#include <cpp-string/string_printf.h>
 #include <endian.h>
 
 #include <algorithm>
 #include <set>
 #include <vector>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
 
 // Returns true if |url| is a valid URI.
 bool IsValidUrl(const std::string& url) {
@@ -19,7 +19,8 @@ bool IsValidUrl(const std::string& url) {
   // See Section 2.2 for the set of reserved characters.
   // See Section 2.3 for the set of unreserved characters.
   constexpr char kValidUrlChars[] =
-      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.~!#$&'()*+,/:;=?@[]";
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.~!#$&'("
+      ")*+,/:;=?@[]";
   return url.find_first_not_of(kValidUrlChars) == std::string::npos;
 }
 
@@ -81,7 +82,8 @@ size_t WriteLength(MutableByteBuffer* buf, size_t length) {
 
 DataElement::DataElement() : type_(Type::kNull), size_(Size::kOneByte) {}
 
-DataElement::DataElement(const DataElement& other) : type_(other.type_), size_(other.size_) {
+DataElement::DataElement(const DataElement& other)
+    : type_(other.type_), size_(other.size_) {
   switch (type_) {
     case Type::kNull:
       return;
@@ -230,7 +232,8 @@ std::optional<uint8_t> DataElement::Get<uint8_t>() const {
 
 template <>
 std::optional<uint16_t> DataElement::Get<uint16_t>() const {
-  if (type_ == Type::kUnsignedInt && size_ == SizeToSizeType(sizeof(uint16_t))) {
+  if (type_ == Type::kUnsignedInt &&
+      size_ == SizeToSizeType(sizeof(uint16_t))) {
     return static_cast<uint16_t>(uint_value_);
   }
 
@@ -239,7 +242,8 @@ std::optional<uint16_t> DataElement::Get<uint16_t>() const {
 
 template <>
 std::optional<uint32_t> DataElement::Get<uint32_t>() const {
-  if (type_ == Type::kUnsignedInt && size_ == SizeToSizeType(sizeof(uint32_t))) {
+  if (type_ == Type::kUnsignedInt &&
+      size_ == SizeToSizeType(sizeof(uint32_t))) {
     return static_cast<uint32_t>(uint_value_);
   }
 
@@ -248,7 +252,8 @@ std::optional<uint32_t> DataElement::Get<uint32_t>() const {
 
 template <>
 std::optional<uint64_t> DataElement::Get<uint64_t>() const {
-  if (type_ == Type::kUnsignedInt && size_ == SizeToSizeType(sizeof(uint64_t))) {
+  if (type_ == Type::kUnsignedInt &&
+      size_ == SizeToSizeType(sizeof(uint64_t))) {
     return uint_value_;
   }
 
@@ -311,7 +316,8 @@ std::optional<std::nullptr_t> DataElement::Get<std::nullptr_t>() const {
 }
 
 template <>
-std::optional<bt::DynamicByteBuffer> DataElement::Get<bt::DynamicByteBuffer>() const {
+std::optional<bt::DynamicByteBuffer> DataElement::Get<bt::DynamicByteBuffer>()
+    const {
   if (type_ != Type::kString) {
     return std::nullopt;
   }
@@ -325,7 +331,8 @@ std::optional<std::string> DataElement::Get<std::string>() const {
     return std::nullopt;
   }
 
-  return std::string(reinterpret_cast<const char*>(bytes_.data()), bytes_.size());
+  return std::string(reinterpret_cast<const char*>(bytes_.data()),
+                     bytes_.size());
 }
 
 template <>
@@ -338,7 +345,8 @@ std::optional<UUID> DataElement::Get<UUID>() const {
 }
 
 template <>
-std::optional<std::vector<DataElement>> DataElement::Get<std::vector<DataElement>>() const {
+std::optional<std::vector<DataElement>>
+DataElement::Get<std::vector<DataElement>>() const {
   if (type_ != Type::kSequence) {
     return std::nullopt;
   }
@@ -356,7 +364,8 @@ std::optional<std::string> DataElement::GetUrl() const {
     return std::nullopt;
   }
 
-  return std::string(reinterpret_cast<const char*>(bytes_.data()), bytes_.size());
+  return std::string(reinterpret_cast<const char*>(bytes_.data()),
+                     bytes_.size());
 }
 
 void DataElement::SetVariableSize(size_t length) {
@@ -402,7 +411,7 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
       if (cursor.size() < sizeof(uint16_t)) {
         return 0;
       }
-      data_bytes = betoh16(cursor.To<uint16_t>());
+      data_bytes = be16toh(cursor.To<uint16_t>());
       bytes_read += sizeof(uint16_t);
       break;
     }
@@ -410,7 +419,7 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
       if (cursor.size() < sizeof(uint32_t)) {
         return 0;
       }
-      data_bytes = betoh32(cursor.To<uint32_t>());
+      data_bytes = be32toh(cursor.To<uint32_t>());
       bytes_read += sizeof(uint32_t);
       break;
     }
@@ -439,11 +448,11 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
       if (size_desc == Size::kOneByte) {
         elem->Set(cursor.To<uint8_t>());
       } else if (size_desc == Size::kTwoBytes) {
-        elem->Set(betoh16(cursor.To<uint16_t>()));
+        elem->Set(be16toh(cursor.To<uint16_t>()));
       } else if (size_desc == Size::kFourBytes) {
-        elem->Set(betoh32(cursor.To<uint32_t>()));
+        elem->Set(be32toh(cursor.To<uint32_t>()));
       } else if (size_desc == Size::kEightBytes) {
-        elem->Set(betoh64(cursor.To<uint64_t>()));
+        elem->Set(be64toh(cursor.To<uint64_t>()));
       } else {
         // TODO(fxbug.dev/128187): support 128-bit uints
         // Invalid size.
@@ -455,11 +464,11 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
       if (size_desc == Size::kOneByte) {
         elem->Set(cursor.To<int8_t>());
       } else if (size_desc == Size::kTwoBytes) {
-        elem->Set(betoh16(cursor.To<int16_t>()));
+        elem->Set(be16toh(cursor.To<int16_t>()));
       } else if (size_desc == Size::kFourBytes) {
-        elem->Set(betoh32(cursor.To<int32_t>()));
+        elem->Set(be32toh(cursor.To<int32_t>()));
       } else if (size_desc == Size::kEightBytes) {
-        elem->Set(betoh64(cursor.To<int64_t>()));
+        elem->Set(be64toh(cursor.To<int64_t>()));
       } else {
         // TODO(fxbug.dev/128187): support 128-bit uints
         // Invalid size.
@@ -469,9 +478,9 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
     }
     case Type::kUuid: {
       if (size_desc == Size::kTwoBytes) {
-        elem->Set(UUID(betoh16(cursor.To<uint16_t>())));
+        elem->Set(UUID(be16toh(cursor.To<uint16_t>())));
       } else if (size_desc == Size::kFourBytes) {
-        elem->Set(UUID(betoh32(cursor.To<uint32_t>())));
+        elem->Set(UUID(be32toh(cursor.To<uint32_t>())));
       } else if (size_desc == Size::kSixteenBytes) {
         StaticByteBuffer<16> uuid_bytes;
         // UUID expects these to be in little-endian order.
@@ -547,17 +556,23 @@ size_t DataElement::WriteSize() const {
       return 1 + (1 << (static_cast<uint8_t>(size_) - 5)) + bytes_.size();
     case Type::kSequence:
     case Type::kAlternative:
-      return 1 + (1 << (static_cast<uint8_t>(size_) - 5)) + AggregateSize(aggregate_);
+      return 1 + (1 << (static_cast<uint8_t>(size_) - 5)) +
+             AggregateSize(aggregate_);
   }
 }
 
 size_t DataElement::Write(MutableByteBuffer* buffer) const {
   if (buffer->size() < WriteSize()) {
-    bt_log(TRACE, "sdp", "not enough space in buffer (%zu < %zu)", buffer->size(), WriteSize());
+    bt_log(TRACE,
+           "sdp",
+           "not enough space in buffer (%zu < %zu)",
+           buffer->size(),
+           WriteSize());
     return 0;
   }
 
-  uint8_t type_and_size = static_cast<uint8_t>(type_) | static_cast<uint8_t>(size_);
+  uint8_t type_and_size =
+      static_cast<uint8_t>(type_) | static_cast<uint8_t>(size_);
   buffer->Write(&type_and_size, 1);
   size_t pos = 1;
 
@@ -645,7 +660,8 @@ size_t DataElement::Write(MutableByteBuffer* buffer) const {
 }
 
 const DataElement* DataElement::At(size_t idx) const {
-  if ((type_ != Type::kSequence && type_ != Type::kAlternative) || (idx >= aggregate_.size())) {
+  if ((type_ != Type::kSequence && type_ != Type::kAlternative) ||
+      (idx >= aggregate_.size())) {
     return nullptr;
   }
   return &aggregate_[idx];
@@ -656,18 +672,23 @@ std::string DataElement::ToString() const {
     case Type::kNull:
       return std::string("Null");
     case Type::kBoolean:
-      return bt_lib_cpp_string::StringPrintf("Boolean(%s)", int_value_ ? "true" : "false");
+      return bt_lib_cpp_string::StringPrintf("Boolean(%s)",
+                                             int_value_ ? "true" : "false");
     case Type::kUnsignedInt:
-      return bt_lib_cpp_string::StringPrintf("UnsignedInt:%zu(%lu)", WriteSize() - 1, uint_value_);
+      return bt_lib_cpp_string::StringPrintf(
+          "UnsignedInt:%zu(%lu)", WriteSize() - 1, uint_value_);
     case Type::kSignedInt:
-      return bt_lib_cpp_string::StringPrintf("SignedInt:%zu(%ld)", WriteSize() - 1, int_value_);
+      return bt_lib_cpp_string::StringPrintf(
+          "SignedInt:%zu(%ld)", WriteSize() - 1, int_value_);
     case Type::kUuid:
-      return bt_lib_cpp_string::StringPrintf("UUID(%s)", uuid_.ToString().c_str());
+      return bt_lib_cpp_string::StringPrintf("UUID(%s)",
+                                             uuid_.ToString().c_str());
     case Type::kString:
-      return bt_lib_cpp_string::StringPrintf("String(%s)",
-                                             bytes_.Printable(0, bytes_.size()).c_str());
+      return bt_lib_cpp_string::StringPrintf(
+          "String(%s)", bytes_.Printable(0, bytes_.size()).c_str());
     case Type::kUrl:
-      return bt_lib_cpp_string::StringPrintf("Url(%s)", bytes_.Printable(0, bytes_.size()).c_str());
+      return bt_lib_cpp_string::StringPrintf(
+          "Url(%s)", bytes_.Printable(0, bytes_.size()).c_str());
     case Type::kSequence: {
       std::string str;
       for (const auto& it : aggregate_) {
@@ -683,7 +704,9 @@ std::string DataElement::ToString() const {
       return bt_lib_cpp_string::StringPrintf("Alternatives { %s}", str.c_str());
     }
     default:
-      bt_log(TRACE, "sdp", "unhandled type (%hhu) in ToString()",
+      bt_log(TRACE,
+             "sdp",
+             "unhandled type (%hhu) in ToString()",
              static_cast<unsigned char>(type_));
       // Fallthrough to unknown.
   }

@@ -2,27 +2,31 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "pairing_phase.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/pairing_phase.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 
 namespace bt::sm {
 
-PairingPhase::PairingPhase(PairingChannel::WeakPtr chan, Listener::WeakPtr listener, Role role)
+PairingPhase::PairingPhase(PairingChannel::WeakPtr chan,
+                           Listener::WeakPtr listener,
+                           Role role)
     : sm_chan_(std::move(chan)),
       listener_(std::move(listener)),
       role_(role),
       has_failed_(false),
       weak_channel_handler_(nullptr) {}
 
-void PairingPhase::SetPairingChannelHandler(PairingChannelHandler &self) {
+void PairingPhase::SetPairingChannelHandler(PairingChannelHandler& self) {
   weak_channel_handler_ = WeakSelf(&self);
   sm_chan().SetChannelHandler(weak_channel_handler_.GetWeakPtr());
 }
 
-void PairingPhase::InvalidatePairingChannelHandler() { weak_channel_handler_.InvalidatePtrs(); }
+void PairingPhase::InvalidatePairingChannelHandler() {
+  weak_channel_handler_.InvalidatePtrs();
+}
 
 void PairingPhase::OnFailure(Error error) {
   BT_ASSERT(!has_failed());

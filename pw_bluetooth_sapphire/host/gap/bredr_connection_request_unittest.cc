@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "bredr_connection_request.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/bredr_connection_request.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <pw_async/fake_dispatcher_fixture.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
+#include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/inspect.h"
 
 namespace bt::gap {
 namespace {
@@ -26,7 +26,9 @@ using BrEdrConnectionRequestTests = pw::async::test::FakeDispatcherFixture;
 
 TEST_F(BrEdrConnectionRequestTests, IncomingRequestStatusTracked) {
   // A freshly created request is not yet incoming
-  auto req = BrEdrConnectionRequest(dispatcher(), kTestAddr, kPeerId,
+  auto req = BrEdrConnectionRequest(dispatcher(),
+                                    kTestAddr,
+                                    kPeerId,
                                     Peer::InitializingConnectionToken([] {}));
   EXPECT_FALSE(req.HasIncoming());
 
@@ -44,8 +46,11 @@ TEST_F(BrEdrConnectionRequestTests, CallbacksExecuted) {
   bool callback_called = false;
   bool token_destroyed = false;
   auto req = BrEdrConnectionRequest(
-      dispatcher(), kTestAddr, kPeerId,
-      Peer::InitializingConnectionToken([&token_destroyed] { token_destroyed = true; }),
+      dispatcher(),
+      kTestAddr,
+      kPeerId,
+      Peer::InitializingConnectionToken(
+          [&token_destroyed] { token_destroyed = true; }),
       [&callback_called](auto, auto) { callback_called = true; });
 
   // A freshly created request with a callback is awaiting outgoing
@@ -63,36 +68,49 @@ TEST_F(BrEdrConnectionRequestTests, CallbacksExecuted) {
 TEST_F(BrEdrConnectionRequestTests, Inspect) {
   // inspector must outlive request
   inspect::Inspector inspector;
-  BrEdrConnectionRequest req(dispatcher(), kTestAddr, kPeerId,
-                             Peer::InitializingConnectionToken([] {}), [](auto, auto) {});
+  BrEdrConnectionRequest req(dispatcher(),
+                             kTestAddr,
+                             kPeerId,
+                             Peer::InitializingConnectionToken([] {}),
+                             [](auto, auto) {});
   req.BeginIncoming();
   req.AttachInspect(inspector.GetRoot(), "request_name");
 
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
-  EXPECT_THAT(hierarchy.value(),
-              ChildrenMatch(ElementsAre(NodeMatches(
-                  AllOf(NameMatches("request_name"),
-                        PropertyList(UnorderedElementsAre(
-                            StringIs("peer_id", kPeerId.ToString()), UintIs("callbacks", 1u),
-                            BoolIs("has_incoming", true),
-                            IntIs("first_create_connection_request_timestamp", -1))))))));
+  EXPECT_THAT(
+      hierarchy.value(),
+      ChildrenMatch(ElementsAre(NodeMatches(AllOf(
+          NameMatches("request_name"),
+          PropertyList(UnorderedElementsAre(
+              StringIs("peer_id", kPeerId.ToString()),
+              UintIs("callbacks", 1u),
+              BoolIs("has_incoming", true),
+              IntIs("first_create_connection_request_timestamp", -1))))))));
 }
 #endif  // NINSPECT
 
-class BrEdrConnectionRequestLoopTest : public pw::async::test::FakeDispatcherFixture {
+class BrEdrConnectionRequestLoopTest
+    : public pw::async::test::FakeDispatcherFixture {
  protected:
   using OnComplete = BrEdrConnectionRequest::OnComplete;
 
   BrEdrConnectionRequestLoopTest()
-      : req_(dispatcher(), kTestAddr, kPeerId, Peer::InitializingConnectionToken([] {}),
+      : req_(dispatcher(),
+             kTestAddr,
+             kPeerId,
+             Peer::InitializingConnectionToken([] {}),
              [this](hci::Result<> res, BrEdrConnection* conn) {
                if (handler_) {
                  handler_(res, conn);
                }
              }) {
-    // By default, an outbound ConnectionRequest with a complete handler that just logs the result.
+    // By default, an outbound ConnectionRequest with a complete handler that
+    // just logs the result.
     handler_ = [](hci::Result<> res, auto /*ignore*/) {
-      bt_log(INFO, "gap-bredr-test", "outbound connection request complete: %s", bt_str(res));
+      bt_log(INFO,
+             "gap-bredr-test",
+             "outbound connection request complete: %s",
+             bt_str(res));
     };
   }
 
@@ -108,13 +126,15 @@ class BrEdrConnectionRequestLoopTest : public pw::async::test::FakeDispatcherFix
 };
 using BrEdrConnectionRequestLoopDeathTest = BrEdrConnectionRequestLoopTest;
 
-TEST_F(BrEdrConnectionRequestLoopTest, RetryableErrorCodeShouldRetryAfterFirstCreateConnection) {
+TEST_F(BrEdrConnectionRequestLoopTest,
+       RetryableErrorCodeShouldRetryAfterFirstCreateConnection) {
   connection_req().RecordHciCreateConnectionAttempt();
   RunFor(std::chrono::seconds(1));
   EXPECT_TRUE(connection_req().ShouldRetry(RetryableError));
 }
 
-TEST_F(BrEdrConnectionRequestLoopTest, ShouldntRetryBeforeFirstCreateConnection) {
+TEST_F(BrEdrConnectionRequestLoopTest,
+       ShouldntRetryBeforeFirstCreateConnection) {
   EXPECT_FALSE(connection_req().ShouldRetry(RetryableError));
 }
 

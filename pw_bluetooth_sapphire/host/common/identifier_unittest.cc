@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "identifier.h"
-
-#include <unordered_set>
+#include "pw_bluetooth_sapphire/internal/host/common/identifier.h"
 
 #include <gtest/gtest.h>
+
+#include <unordered_set>
 
 namespace bt {
 namespace {

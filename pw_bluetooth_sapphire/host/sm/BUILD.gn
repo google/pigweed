@@ -2,81 +2,88 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//build/fuzzing/fuchsia_library_fuzzer.gni")
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_unit_test/test.gni")
 
+dir_public_sm = "../../public/pw_bluetooth_sapphire/internal/host/sm"
+
 pw_source_set("definitions") {
+  public = [
+    "$dir_public_sm/error.h",
+    "$dir_public_sm/packet.h",
+    "$dir_public_sm/smp.h",
+    "$dir_public_sm/types.h",
+  ]
+
   sources = [
     "error.cc",
-    "error.h",
     "packet.cc",
-    "packet.h",
-    "smp.h",
     "types.cc",
-    "types.h",
   ]
 
   public_deps = [
-    "//src/connectivity/bluetooth/core/bt-host/common",
-    "//src/connectivity/bluetooth/core/bt-host/hci-spec",  # hci_spec::LinkKey
+    "$dir_pw_bluetooth_sapphire/host/common",
+    "$dir_pw_bluetooth_sapphire/host/hci-spec",  # hci_spec::LinkKey
   ]
 }
 
 pw_source_set("sm") {
+  public = [
+    "$dir_public_sm/ecdh_key.h",
+    "$dir_public_sm/pairing_channel.h",
+    "$dir_public_sm/pairing_phase.h",
+    "$dir_public_sm/phase_1.h",
+    "$dir_public_sm/phase_2_legacy.h",
+    "$dir_public_sm/phase_2_secure_connections.h",
+    "$dir_public_sm/phase_3.h",
+    "$dir_public_sm/sc_stage_1.h",
+    "$dir_public_sm/sc_stage_1_just_works_numeric_comparison.h",
+    "$dir_public_sm/sc_stage_1_passkey.h",
+    "$dir_public_sm/security_manager.h",
+    "$dir_public_sm/security_request_phase.h",
+    "$dir_public_sm/util.h",
+  ]
+
   sources = [
     "ecdh_key.cc",
-    "ecdh_key.h",
     "pairing_channel.cc",
-    "pairing_channel.h",
     "pairing_phase.cc",
-    "pairing_phase.h",
     "phase_1.cc",
-    "phase_1.h",
     "phase_2_legacy.cc",
-    "phase_2_legacy.h",
     "phase_2_secure_connections.cc",
-    "phase_2_secure_connections.h",
     "phase_3.cc",
-    "phase_3.h",
-    "sc_stage_1.h",
     "sc_stage_1_just_works_numeric_comparison.cc",
-    "sc_stage_1_just_works_numeric_comparison.h",
     "sc_stage_1_passkey.cc",
-    "sc_stage_1_passkey.h",
     "security_manager.cc",
-    "security_manager.h",
     "security_request_phase.cc",
-    "security_request_phase.h",
     "util.cc",
-    "util.h",
   ]
 
   public_deps = [
     ":definitions",
+    "$dir_pw_bluetooth_sapphire:config",
+    "$dir_pw_bluetooth_sapphire/host/gap:definitions",
+    "$dir_pw_bluetooth_sapphire/host/hci",
+    "$dir_pw_bluetooth_sapphire/host/l2cap",
     "$dir_pw_string",
     "$dir_pw_third_party/boringssl",
     "$dir_pw_third_party/fuchsia:fit",
-    "//src/connectivity/bluetooth/core/bt-host/gap:definitions",
-    "//src/connectivity/bluetooth/core/bt-host/hci",
-    "//src/connectivity/bluetooth/core/bt-host/l2cap",
   ]
 }
 
 pw_source_set("testing") {
-  testonly = true
-
-  sources = [
-    "fake_phase_listener.h",
-    "test_security_manager.cc",
-    "test_security_manager.h",
+  public = [
+    "$dir_public_sm/fake_phase_listener.h",
+    "$dir_public_sm/test_security_manager.h",
   ]
+
+  sources = [ "test_security_manager.cc" ]
 
   deps = [ ":sm" ]
 }
 
-pw_test("tests") {
+pw_test("sm_tests") {
   sources = [
     "ecdh_key_unittest.cc",
     "error_unittest.cc",
@@ -98,21 +105,22 @@ pw_test("tests") {
   deps = [
     ":sm",
     ":testing",
-    "//src/connectivity/bluetooth/core/bt-host/hci:testing",
-    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
-    "//src/connectivity/bluetooth/core/bt-host/testing",
+    "$dir_pw_bluetooth_sapphire/host/hci:testing",
+    "$dir_pw_bluetooth_sapphire/host/l2cap:testing",
+    "$dir_pw_bluetooth_sapphire/host/testing",
   ]
+
+  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
 }
 
-fuchsia_library_fuzzer("valid_packet_reader_fuzzer") {
-  sources = [ "valid_packet_reader_parse_sdu_fuzztest.cc" ]
-  deps = [
-    ":definitions",
-    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
-  ]
-}
-
-pw_fuzzer("pw_valid_packet_reader_fuzzer") {
+pw_fuzzer("valid_packet_reader_fuzzer") {
   sources = [ "valid_packet_reader_parse_sdu_fuzztest.cc" ]
   deps = [ ":definitions" ]
+}
+
+pw_test_group("tests") {
+  tests = [
+    ":sm_tests",
+    ":valid_packet_reader_fuzzer_test",
+  ]
 }

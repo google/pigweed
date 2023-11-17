@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "slab_allocators.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/slab_allocators.h"
+
+#include <gtest/gtest.h>
 
 #include <forward_list>
 #include <list>
 
-#include <gtest/gtest.h>
-
-#include "acl_data_packet.h"
-#include "control_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/acl_data_packet.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 
 namespace bt::hci::allocators {
 namespace {
@@ -32,9 +32,10 @@ TEST(SlabAllocatorsTest, CommandPacket) {
 }
 
 TEST(SlabAllocatorsTest, CommandPacketFallBack) {
-  // Maximum number of packets we can expect to obtain from all the slab allocators.
-  const size_t kMaxSlabPackets =
-      kMaxNumSlabs * kNumSmallControlPackets + kMaxNumSlabs * kNumLargeControlPackets;
+  // Maximum number of packets we can expect to obtain from all the slab
+  // allocators.
+  const size_t kMaxSlabPackets = kMaxNumSlabs * kNumSmallControlPackets +
+                                 kMaxNumSlabs * kNumLargeControlPackets;
 
   std::list<std::unique_ptr<hci::CommandPacket>> packets;
   for (size_t num_packets = 0; num_packets < kMaxSlabPackets; num_packets++) {
@@ -42,7 +43,8 @@ TEST(SlabAllocatorsTest, CommandPacketFallBack) {
     packets.push_front(std::move(packet));
   }
 
-  // Command allocator can fall back on system allocator after slabs are exhausted.
+  // Command allocator can fall back on system allocator after slabs are
+  // exhausted.
   auto packet = CommandPacket::New(kTestOpCode, 5);
   ASSERT_TRUE(packet);
 }
@@ -65,7 +67,8 @@ TEST(SlabAllocatorsTest, ACLDataPacket) {
 }
 
 TEST(SlabAllocatorsTest, ACLDataPacketFallBack) {
-  // Maximum number of packets we can expect to obtain from all the slab allocators.
+  // Maximum number of packets we can expect to obtain from all the slab
+  // allocators.
   const size_t kMaxSlabPackets = kMaxNumSlabs * kNumSmallACLDataPackets +
                                  kMaxNumSlabs * kNumMediumACLDataPackets +
                                  kMaxNumSlabs * kNumLargeACLDataPackets;
@@ -83,14 +86,17 @@ TEST(SlabAllocatorsTest, ACLDataPacketFallBack) {
   ASSERT_TRUE(packet);
 
   // Fallback-allocated packet should still function as expected.
-  EXPECT_EQ(sizeof(hci_spec::ACLDataHeader) + kPayloadSize, packet->view().size());
+  EXPECT_EQ(sizeof(hci_spec::ACLDataHeader) + kPayloadSize,
+            packet->view().size());
 
-  // Write over the whole allocation (errors to be caught by sanitizer instrumentation).
+  // Write over the whole allocation (errors to be caught by sanitizer
+  // instrumentation).
   packet->mutable_view()->mutable_data().Fill('m');
 }
 
 TEST(SlabAllocatorsTest, LargeACLDataPacketFallback) {
-  // Maximum number of packets we can expect to obtain from the large slab allocator.
+  // Maximum number of packets we can expect to obtain from the large slab
+  // allocator.
   const size_t kMaxSlabPackets = kMaxNumSlabs * kNumLargeACLDataPackets;
   const size_t kPayloadSize = kLargeACLDataPayloadSize;
   std::list<hci::ACLDataPacketPtr> packets;
@@ -106,9 +112,11 @@ TEST(SlabAllocatorsTest, LargeACLDataPacketFallback) {
   ASSERT_TRUE(packet);
 
   // Fallback-allocated packet should still function as expected.
-  EXPECT_EQ(sizeof(hci_spec::ACLDataHeader) + kPayloadSize, packet->view().size());
+  EXPECT_EQ(sizeof(hci_spec::ACLDataHeader) + kPayloadSize,
+            packet->view().size());
 
-  // Write over the whole allocation (errors to be caught by sanitizer instrumentation).
+  // Write over the whole allocation (errors to be caught by sanitizer
+  // instrumentation).
   packet->mutable_view()->mutable_data().Fill('m');
 }
 

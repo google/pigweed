@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "bredr_connection.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/bredr_connection.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
 
 namespace bt::hci {
 
@@ -13,7 +13,8 @@ BrEdrConnection::BrEdrConnection(hci_spec::ConnectionHandle handle,
                                  const DeviceAddress& peer_address,
                                  pw::bluetooth::emboss::ConnectionRole role,
                                  const Transport::WeakPtr& hci)
-    : AclConnection(handle, local_address, peer_address, role, hci), WeakSelf(this) {
+    : AclConnection(handle, local_address, peer_address, role, hci),
+      WeakSelf(this) {
   BT_ASSERT(local_address.type() == DeviceAddress::Type::kBREDR);
   BT_ASSERT(peer_address.type() == DeviceAddress::Type::kBREDR);
   BT_ASSERT(hci.is_alive());
@@ -28,15 +29,20 @@ bool BrEdrConnection::StartEncryption() {
 
   BT_ASSERT(ltk().has_value() == ltk_type_.has_value());
   if (!ltk().has_value()) {
-    bt_log(DEBUG, "hci", "connection link key type has not been set; not starting encryption");
+    bt_log(
+        DEBUG,
+        "hci",
+        "connection link key type has not been set; not starting encryption");
     return false;
   }
 
-  auto cmd = EmbossCommandPacket::New<pw::bluetooth::emboss::SetConnectionEncryptionCommandWriter>(
+  auto cmd = EmbossCommandPacket::New<
+      pw::bluetooth::emboss::SetConnectionEncryptionCommandWriter>(
       hci_spec::kSetConnectionEncryption);
   auto params = cmd.view_t();
   params.connection_handle().Write(handle());
-  params.encryption_enable().Write(pw::bluetooth::emboss::GenericEnableParam::ENABLE);
+  params.encryption_enable().Write(
+      pw::bluetooth::emboss::GenericEnableParam::ENABLE);
 
   auto self = GetWeakPtr();
   auto event_cb = [self, handle = handle()](auto id, const EventPacket& event) {
@@ -45,7 +51,10 @@ bool BrEdrConnection::StartEncryption() {
     }
 
     Result<> result = event.ToResult();
-    if (bt_is_error(result, ERROR, "hci-bredr", "could not set encryption on link %#.04x",
+    if (bt_is_error(result,
+                    ERROR,
+                    "hci-bredr",
+                    "could not set encryption on link %#.04x",
                     handle)) {
       if (self->encryption_change_callback()) {
         self->encryption_change_callback()(result.take_error());
@@ -58,17 +67,19 @@ bool BrEdrConnection::StartEncryption() {
   if (!hci().is_alive()) {
     return false;
   }
-  return hci()->command_channel()->SendCommand(std::move(cmd), std::move(event_cb),
-                                               hci_spec::kCommandStatusEventCode);
+  return hci()->command_channel()->SendCommand(
+      std::move(cmd), std::move(event_cb), hci_spec::kCommandStatusEventCode);
 }
 
-void BrEdrConnection::HandleEncryptionStatus(Result<bool> result, bool key_refreshed) {
+void BrEdrConnection::HandleEncryptionStatus(Result<bool> result,
+                                             bool key_refreshed) {
   bool enabled = result.is_ok() && result.value() && !key_refreshed;
   if (enabled) {
     ValidateEncryptionKeySize([self = GetWeakPtr()](Result<> key_valid_status) {
       if (self.is_alive()) {
         self->HandleEncryptionStatusValidated(
-            key_valid_status.is_ok() ? Result<bool>(fit::ok(true)) : key_valid_status.take_error());
+            key_valid_status.is_ok() ? Result<bool>(fit::ok(true))
+                                     : key_valid_status.take_error());
       }
     });
     return;
@@ -86,35 +97,51 @@ void BrEdrConnection::HandleEncryptionStatusValidated(Result<bool> result) {
   }
 
   if (!encryption_change_callback()) {
-    bt_log(DEBUG, "hci", "%#.4x: no encryption status callback assigned", handle());
+    bt_log(DEBUG,
+           "hci",
+           "%#.4x: no encryption status callback assigned",
+           handle());
     return;
   }
   encryption_change_callback()(result);
 }
 
-void BrEdrConnection::ValidateEncryptionKeySize(hci::ResultFunction<> key_size_validity_cb) {
+void BrEdrConnection::ValidateEncryptionKeySize(
+    hci::ResultFunction<> key_size_validity_cb) {
   BT_ASSERT(state() == Connection::State::kConnected);
 
-  auto cmd = EmbossCommandPacket::New<pw::bluetooth::emboss::ReadEncryptionKeySizeCommandWriter>(
+  auto cmd = EmbossCommandPacket::New<
+      pw::bluetooth::emboss::ReadEncryptionKeySizeCommandWriter>(
       hci_spec::kReadEncryptionKeySize);
   cmd.view_t().connection_handle().Write(handle());
 
-  auto event_cb = [self = GetWeakPtr(), valid_cb = std::move(key_size_validity_cb)](
+  auto event_cb = [self = GetWeakPtr(),
+                   valid_cb = std::move(key_size_validity_cb)](
                       auto, const EventPacket& event) {
     if (!self.is_alive()) {
       return;
     }
 
     Result<> result = event.ToResult();
-    if (!bt_is_error(result, ERROR, "hci", "Could not read ACL encryption key size on %#.4x",
+    if (!bt_is_error(result,
+                     ERROR,
+                     "hci",
+                     "Could not read ACL encryption key size on %#.4x",
                      self->handle())) {
       const auto& return_params =
           *event.return_params<hci_spec::ReadEncryptionKeySizeReturnParams>();
       const auto key_size = return_params.key_size;
-      bt_log(TRACE, "hci", "%#.4x: encryption key size %hhu", self->handle(), key_size);
+      bt_log(TRACE,
+             "hci",
+             "%#.4x: encryption key size %hhu",
+             self->handle(),
+             key_size);
 
       if (key_size < hci_spec::kMinEncryptionKeySize) {
-        bt_log(WARN, "hci", "%#.4x: encryption key size %hhu insufficient", self->handle(),
+        bt_log(WARN,
+               "hci",
+               "%#.4x: encryption key size %hhu insufficient",
+               self->handle(),
                key_size);
         result = ToResult(HostError::kInsufficientSecurity);
       }

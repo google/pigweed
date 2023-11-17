@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "error.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/error.h"
 
 #include "pw_string/format.h"
 
@@ -46,7 +46,9 @@ constexpr const char* ErrorToString(sm::ErrorCode ecode) {
 }
 
 constexpr size_t kMaxErrorStringSize =
-    std::string_view(ErrorToString(sm::ErrorCode::kCrossTransportKeyDerivationNotAllowed)).size();
+    std::string_view(
+        ErrorToString(sm::ErrorCode::kCrossTransportKeyDerivationNotAllowed))
+        .size();
 
 }  // namespace
 
@@ -54,8 +56,11 @@ constexpr size_t kMaxErrorStringSize =
 std::string ProtocolErrorTraits<sm::ErrorCode>::ToString(sm::ErrorCode ecode) {
   const size_t out_size = kMaxErrorStringSize + sizeof(" (SMP 0x0e)");
   char out[out_size] = "";
-  pw::StatusWithSize status = pw::string::Format(
-      {out, sizeof(out)}, "%s (SMP %#.2x)", ErrorToString(ecode), static_cast<unsigned int>(ecode));
+  pw::StatusWithSize status =
+      pw::string::Format({out, sizeof(out)},
+                         "%s (SMP %#.2x)",
+                         ErrorToString(ecode),
+                         static_cast<unsigned int>(ecode));
   BT_DEBUG_ASSERT(status.ok());
   return out;
 }

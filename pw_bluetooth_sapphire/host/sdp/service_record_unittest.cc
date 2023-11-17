@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/sdp/service_record.h"
+#include "pw_bluetooth_sapphire/internal/host/sdp/service_record.h"
 
 #include <gtest/gtest.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/sdp/data_element.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
+#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
+#include "pw_bluetooth_sapphire/internal/host/sdp/data_element.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
 namespace bt::sdp {
 namespace {
@@ -50,7 +50,8 @@ TEST(ServiceRecordTest, BasicFunctionality) {
 
   EXPECT_EQ(DataElement::Type::kSequence, elem.type());
 
-  std::optional<std::vector<DataElement>> vec = elem.Get<std::vector<DataElement>>();
+  std::optional<std::vector<DataElement>> vec =
+      elem.Get<std::vector<DataElement>>();
 
   EXPECT_TRUE(vec);
   EXPECT_EQ(2u, vec->size());
@@ -73,7 +74,8 @@ TEST(ServiceRecordTest, GetAttributesInRange) {
   record.SetAttribute(0x0001, DataElement());
   record.SetAttribute(0xfeed, DataElement());
 
-  auto attrs = record.GetAttributesInRange(kServiceRecordHandle, kServiceRecordHandle);
+  auto attrs =
+      record.GetAttributesInRange(kServiceRecordHandle, kServiceRecordHandle);
 
   EXPECT_EQ(1u, attrs.size());
   EXPECT_EQ(kServiceRecordHandle, *attrs.begin());
@@ -124,8 +126,8 @@ TEST(ServiceRecordTest, AddProtocolDescriptor) {
 
   DataElement psm(uint16_t{0x0001});  // SDP PSM
 
-  record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
-                               std::move(psm));
+  record.AddProtocolDescriptor(
+      ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP, std::move(psm));
 
   // clang-format off
   StaticByteBuffer expected(
@@ -147,7 +149,8 @@ TEST(ServiceRecordTest, AddProtocolDescriptor) {
   EXPECT_EQ(expected.size(), block.size());
   EXPECT_TRUE(ContainersEqual(expected, block));
 
-  record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kSDP, DataElement());
+  record.AddProtocolDescriptor(
+      ServiceRecord::kPrimaryProtocolList, protocol::kSDP, DataElement());
 
   EXPECT_TRUE(record.HasAttribute(kProtocolDescriptorList));
 
@@ -186,7 +189,8 @@ TEST(ServiceRecordTest, AddProtocolDescriptor) {
   );
   // clang-format on
 
-  const DataElement& apdl = record.GetAttribute(kAdditionalProtocolDescriptorList);
+  const DataElement& apdl =
+      record.GetAttribute(kAdditionalProtocolDescriptorList);
   DynamicByteBuffer block_addl(apdl.WriteSize());
   apdl.Write(&block_addl);
 
@@ -242,7 +246,8 @@ TEST(ServiceRecordTest, AddProfile) {
   );
   // clang-format on
 
-  const DataElement& val_dun = record.GetAttribute(kBluetoothProfileDescriptorList);
+  const DataElement& val_dun =
+      record.GetAttribute(kBluetoothProfileDescriptorList);
   DynamicByteBuffer block_dun(val_dun.WriteSize());
   val_dun.Write(&block_dun);
 
@@ -287,13 +292,15 @@ TEST(ServiceRecordTest, AddInfo) {
   EXPECT_EQ(0x0100, *base_attrid);  // The primary language must be at 0x0100.
 
   EXPECT_TRUE(record.HasAttribute(*base_attrid + kServiceNameOffset));
-  const DataElement& name_elem = record.GetAttribute(*base_attrid + kServiceNameOffset);
+  const DataElement& name_elem =
+      record.GetAttribute(*base_attrid + kServiceNameOffset);
   auto name = name_elem.Get<std::string>();
   EXPECT_TRUE(name);
   EXPECT_EQ("SDP", *name);
 
   EXPECT_TRUE(record.HasAttribute(*base_attrid + kServiceDescriptionOffset));
-  const DataElement& desc_elem = record.GetAttribute(*base_attrid + kServiceDescriptionOffset);
+  const DataElement& desc_elem =
+      record.GetAttribute(*base_attrid + kServiceDescriptionOffset);
   auto desc = desc_elem.Get<std::string>();
   EXPECT_TRUE(desc);
   EXPECT_EQ("💖", *desc);
@@ -306,7 +313,8 @@ TEST(ServiceRecordTest, AddInfo) {
 TEST(ServiceRecordTest, IsRegisterable) {
   ServiceRecord record;
   record.SetServiceClassUUIDs({profile::kAVRemoteControlTarget});
-  record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
+  record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList,
+                               protocol::kL2CAP,
                                DataElement(uint16_t{25}));
   record.AddProtocolDescriptor(1, protocol::kL2CAP, DataElement(uint16_t{27}));
 
@@ -329,13 +337,15 @@ TEST(ServiceRecordTest, ToString) {
   record.AddProfile(profile::kAdvancedAudioDistribution, 1, 3);
 
   EXPECT_EQ(
-      "Profile Descriptor: Sequence { Sequence { UUID(0000110d-0000-1000-8000-00805f9b34fb) "
+      "Profile Descriptor: Sequence { Sequence { "
+      "UUID(0000110d-0000-1000-8000-00805f9b34fb) "
       "UnsignedInt:2(259) } }\n",
       record.ToString());
 
   record.SetServiceClassUUIDs({profile::kAVRemoteControlTarget});
   EXPECT_EQ(
-      "Profile Descriptor: Sequence { Sequence { UUID(0000110d-0000-1000-8000-00805f9b34fb) "
+      "Profile Descriptor: Sequence { Sequence { "
+      "UUID(0000110d-0000-1000-8000-00805f9b34fb) "
       "UnsignedInt:2(259) } }\nService Class Id List: Sequence { "
       "UUID(0000110c-0000-1000-8000-00805f9b34fb) }",
       record.ToString());

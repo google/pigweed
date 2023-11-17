@@ -2,17 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "fake_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel.h"
 
-#include <lib/async/cpp/task.h>
-
-#include "src/connectivity/bluetooth/core/bt-host/common/host_error.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/common/host_error.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
 
 namespace bt::l2cap::testing {
 
-FakeChannel::FakeChannel(ChannelId id, ChannelId remote_id, hci_spec::ConnectionHandle handle,
-                         bt::LinkType link_type, ChannelInfo info, uint16_t max_tx_queued)
+FakeChannel::FakeChannel(ChannelId id,
+                         ChannelId remote_id,
+                         hci_spec::ConnectionHandle handle,
+                         bt::LinkType link_type,
+                         ChannelInfo info,
+                         uint16_t max_tx_queued)
     : Channel(id, remote_id, link_type, handle, info, max_tx_queued),
       handle_(handle),
       fragmenter_(handle),
@@ -22,7 +24,8 @@ FakeChannel::FakeChannel(ChannelId id, ChannelId remote_id, hci_spec::Connection
       weak_fake_chan_(this) {}
 
 void FakeChannel::Receive(const ByteBuffer& data) {
-  auto pdu = fragmenter_.BuildFrame(id(), data, FrameCheckSequenceOption::kNoFcs);
+  auto pdu =
+      fragmenter_.BuildFrame(id(), data, FrameCheckSequenceOption::kNoFcs);
   auto sdu = std::make_unique<DynamicByteBuffer>(pdu.length());
   pdu.Copy(sdu.get());
   if (rx_cb_) {
@@ -32,9 +35,12 @@ void FakeChannel::Receive(const ByteBuffer& data) {
   }
 }
 
-void FakeChannel::SetSendCallback(SendCallback callback) { send_cb_ = std::move(callback); }
+void FakeChannel::SetSendCallback(SendCallback callback) {
+  send_cb_ = std::move(callback);
+}
 
-void FakeChannel::SetSendCallback(SendCallback callback, pw::async::Dispatcher& dispatcher) {
+void FakeChannel::SetSendCallback(SendCallback callback,
+                                  pw::async::Dispatcher& dispatcher) {
   SetSendCallback(std::move(callback));
   send_dispatcher_.emplace(dispatcher);
 }
@@ -54,7 +60,8 @@ void FakeChannel::Close() {
     closed_cb_();
 }
 
-bool FakeChannel::Activate(RxCallback rx_callback, ClosedCallback closed_callback) {
+bool FakeChannel::Activate(RxCallback rx_callback,
+                           ClosedCallback closed_callback) {
   BT_DEBUG_ASSERT(rx_callback);
   BT_DEBUG_ASSERT(closed_callback);
   BT_DEBUG_ASSERT(!rx_cb_);
@@ -97,18 +104,22 @@ bool FakeChannel::Send(ByteBufferPtr sdu) {
     return false;
 
   if (sdu->size() > max_tx_sdu_size()) {
-    bt_log(ERROR, "l2cap", "Dropping oversized SDU (sdu->size()=%zu, max_tx_sdu_size()=%u)",
-           sdu->size(), max_tx_sdu_size());
+    bt_log(ERROR,
+           "l2cap",
+           "Dropping oversized SDU (sdu->size()=%zu, max_tx_sdu_size()=%u)",
+           sdu->size(),
+           max_tx_sdu_size());
     return false;
   }
 
   if (send_dispatcher_) {
-    send_dispatcher_->Post([cb = send_cb_.share(), sdu = std::move(sdu)](
-                               pw::async::Context /*ctx*/, pw::Status status) mutable {
-      if (status.ok()) {
-        cb(std::move(sdu));
-      }
-    });
+    (void)send_dispatcher_->Post(
+        [cb = send_cb_.share(), sdu = std::move(sdu)](
+            pw::async::Context /*ctx*/, pw::Status status) mutable {
+          if (status.ok()) {
+            cb(std::move(sdu));
+          }
+        });
   } else {
     send_cb_(std::move(sdu));
   }
@@ -116,18 +127,23 @@ bool FakeChannel::Send(ByteBufferPtr sdu) {
   return true;
 }
 
-void FakeChannel::UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback) {
+void FakeChannel::UpgradeSecurity(sm::SecurityLevel level,
+                                  sm::ResultFunction<> callback) {
   BT_ASSERT(security_dispatcher_);
-  security_dispatcher_->Post([cb = std::move(callback), f = security_cb_.share(), handle = handle_,
-                              level](pw::async::Context /*ctx*/, pw::Status status) mutable {
-    if (status.ok()) {
-      f(handle, level, std::move(cb));
-    }
-  });
+  (void)security_dispatcher_->Post(
+      [cb = std::move(callback),
+       f = security_cb_.share(),
+       handle = handle_,
+       level](pw::async::Context /*ctx*/, pw::Status status) mutable {
+        if (status.ok()) {
+          f(handle, level, std::move(cb));
+        }
+      });
 }
 
-void FakeChannel::RequestAclPriority(pw::bluetooth::AclPriority priority,
-                                     fit::callback<void(fit::result<fit::failed>)> cb) {
+void FakeChannel::RequestAclPriority(
+    pw::bluetooth::AclPriority priority,
+    fit::callback<void(fit::result<fit::failed>)> cb) {
   if (acl_priority_fails_) {
     cb(fit::failed());
     return;
@@ -136,8 +152,9 @@ void FakeChannel::RequestAclPriority(pw::bluetooth::AclPriority priority,
   cb(fit::ok());
 }
 
-void FakeChannel::SetBrEdrAutomaticFlushTimeout(pw::chrono::SystemClock::duration flush_timeout,
-                                                hci::ResultCallback<> callback) {
+void FakeChannel::SetBrEdrAutomaticFlushTimeout(
+    pw::chrono::SystemClock::duration flush_timeout,
+    hci::ResultCallback<> callback) {
   if (!flush_timeout_succeeds_) {
     callback(ToResult(pw::bluetooth::emboss::StatusCode::UNSPECIFIED_ERROR));
     return;
@@ -146,8 +163,9 @@ void FakeChannel::SetBrEdrAutomaticFlushTimeout(pw::chrono::SystemClock::duratio
   callback(fit::ok());
 }
 
-void FakeChannel::StartA2dpOffload(const A2dpOffloadManager::Configuration& config,
-                                   hci::ResultCallback<> callback) {
+void FakeChannel::StartA2dpOffload(
+    const A2dpOffloadManager::Configuration& config,
+    hci::ResultCallback<> callback) {
   if (a2dp_offload_error_.has_value()) {
     callback(ToResult(a2dp_offload_error_.value()));
     return;

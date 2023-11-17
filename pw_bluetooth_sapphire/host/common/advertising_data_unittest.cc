@@ -2,19 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
+#include "pw_bluetooth_sapphire/internal/host/common/advertising_data.h"
+
+#include <cpp-string/string_printf.h>
+#include <gtest/gtest.h>
 
 #include <limits>
 #include <variant>
 
-#include <gtest/gtest.h>
-
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
-#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
+#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/common/random.h"
+#include "pw_bluetooth_sapphire/internal/host/common/uuid.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
 namespace bt {
 namespace {
@@ -69,7 +69,8 @@ TEST(AdvertisingDataTest, EncodeKnownURI) {
   AdvertisingData data;
   EXPECT_TRUE(data.AddUri("https://abc.xyz"));
 
-  StaticByteBuffer bytes(0x0B, 0x24, 0x17, '/', '/', 'a', 'b', 'c', '.', 'x', 'y', 'z');
+  StaticByteBuffer bytes(
+      0x0B, 0x24, 0x17, '/', '/', 'a', 'b', 'c', '.', 'x', 'y', 'z');
 
   EXPECT_EQ(bytes.size(), data.CalculateBlockSize());
   DynamicByteBuffer block(data.CalculateBlockSize());
@@ -81,7 +82,8 @@ TEST(AdvertisingDataTest, EncodeUnknownURI) {
   AdvertisingData data;
   EXPECT_TRUE(data.AddUri("flubs:xyz"));
 
-  StaticByteBuffer bytes(0x0B, 0x24, 0x01, 'f', 'l', 'u', 'b', 's', ':', 'x', 'y', 'z');
+  StaticByteBuffer bytes(
+      0x0B, 0x24, 0x01, 'f', 'l', 'u', 'b', 's', ':', 'x', 'y', 'z');
 
   size_t block_size = data.CalculateBlockSize();
   EXPECT_EQ(bytes.size(), block_size);
@@ -103,12 +105,14 @@ TEST(AdvertisingDataTest, CompressServiceUUIDs) {
                                 + (sizeof(uint16_t) * 2);  // 2 16-bit UUIDs
   EXPECT_EQ(expected_block_size, data.CalculateBlockSize());
 
-  StaticByteBuffer expected_header{expected_block_size - 1, DataType::kIncomplete16BitServiceUuids};
+  StaticByteBuffer expected_header{expected_block_size - 1,
+                                   DataType::kIncomplete16BitServiceUuids};
 
   DynamicByteBuffer block(expected_block_size);
   data.WriteBlock(&block, std::nullopt);
 
-  EXPECT_TRUE(ContainersEqual(expected_header, block.view(/*pos=*/0, /*size=*/2)));
+  EXPECT_TRUE(
+      ContainersEqual(expected_header, block.view(/*pos=*/0, /*size=*/2)));
   auto to_uuid = [](const ByteBuffer& b, size_t pos) {
     return UUID(b.view(pos, /*size=*/2).To<uint16_t>());
   };
@@ -119,13 +123,34 @@ TEST(AdvertisingDataTest, CompressServiceUUIDs) {
 TEST(AdvertisingDataTest, ParseBlock) {
   StaticByteBuffer bytes(
       // Complete 16-bit UUIDs
-      0x05, 0x03, 0x12, 0x02, 0x22, 0x11,
+      0x05,
+      0x03,
+      0x12,
+      0x02,
+      0x22,
+      0x11,
       // Incomplete list of 32-bit UUIDs
-      0x05, 0x04, 0x34, 0x12, 0x34, 0x12,
+      0x05,
+      0x04,
+      0x34,
+      0x12,
+      0x34,
+      0x12,
       // Local name
-      0x09, 0x09, 'T', 'e', 's', 't', 0xF0, 0x9F, 0x92, 0x96,
+      0x09,
+      0x09,
+      'T',
+      'e',
+      's',
+      't',
+      0xF0,
+      0x9F,
+      0x92,
+      0x96,
       // TX Power
-      0x02, 0x0A, 0x8F);
+      0x02,
+      0x0A,
+      0x8F);
 
   AdvertisingData::ParseResult data = AdvertisingData::FromBytes(bytes);
   ASSERT_EQ(fit::ok(), data);
@@ -144,24 +169,35 @@ TEST(AdvertisingDataTest, ParseBlockUnknownDataType) {
   // The only field present in the expected AD is one complete 16-bit UUID.
   EXPECT_TRUE(expected_ad.AddServiceUuid(UUID(uuid_value)));
 
-  StaticByteBuffer bytes{
-      // Complete 16-bit UUIDs
-      0x03, 0x03, lower_byte, upper_byte,
-      // 0x40, the second octet, is not a recognized DataType (see common/supplement_data.h).
-      0x05, 0x40, 0x34, 0x12, 0x34, 0x12};
+  StaticByteBuffer bytes{// Complete 16-bit UUIDs
+                         0x03,
+                         0x03,
+                         lower_byte,
+                         upper_byte,
+                         // 0x40, the second octet, is not a recognized DataType
+                         // (see common/supplement_data.h).
+                         0x05,
+                         0x40,
+                         0x34,
+                         0x12,
+                         0x34,
+                         0x12};
   AdvertisingData::ParseResult data = AdvertisingData::FromBytes(bytes);
   ASSERT_EQ(fit::ok(), data);
 
-  // The second field of `bytes` was valid (in that its length byte matched its length), but its
-  // Data Type was unknown, so it should be ignored (i.e. the only field in the `data` should be the
-  // single 16-bit UUID, matching expected AD).
+  // The second field of `bytes` was valid (in that its length byte matched its
+  // length), but its Data Type was unknown, so it should be ignored (i.e. the
+  // only field in the `data` should be the single 16-bit UUID, matching
+  // expected AD).
   EXPECT_EQ(expected_ad, *data);
 }
 
 TEST(AdvertisingDataTest, ParseBlockNameTooLong) {
-  // A block with a name of exactly kMaxNameLength (==248) bytes should be parsed correctly.
+  // A block with a name of exactly kMaxNameLength (==248) bytes should be
+  // parsed correctly.
   {
-    StaticByteBuffer<2> leading_bytes{kMaxNameLength + 1, DataType::kCompleteLocalName};
+    StaticByteBuffer<2> leading_bytes{kMaxNameLength + 1,
+                                      DataType::kCompleteLocalName};
     auto bytes = DynamicByteBuffer(kMaxNameLength + 2);
     bytes.Write(leading_bytes);
     DynamicByteBuffer name(kMaxNameLength);
@@ -173,7 +209,8 @@ TEST(AdvertisingDataTest, ParseBlockNameTooLong) {
   }
   // Repeat previous test with shortened name.
   {
-    auto leading_bytes = StaticByteBuffer<2>{kMaxNameLength + 1, DataType::kShortenedLocalName};
+    auto leading_bytes =
+        StaticByteBuffer<2>{kMaxNameLength + 1, DataType::kShortenedLocalName};
     auto bytes = DynamicByteBuffer(kMaxNameLength + 2);
     bytes.Write(leading_bytes);
     DynamicByteBuffer name(kMaxNameLength);
@@ -185,7 +222,8 @@ TEST(AdvertisingDataTest, ParseBlockNameTooLong) {
   }
   // A block with a name of kMaxNameLength+1 (==249) bytes should be rejected.
   {
-    StaticByteBuffer<2> leading_bytes{kMaxNameLength + 2, DataType::kCompleteLocalName};
+    StaticByteBuffer<2> leading_bytes{kMaxNameLength + 2,
+                                      DataType::kCompleteLocalName};
     auto bytes = DynamicByteBuffer(kMaxNameLength + 3);
     bytes.Write(leading_bytes);
     DynamicByteBuffer name(kMaxNameLength + 1);
@@ -193,11 +231,13 @@ TEST(AdvertisingDataTest, ParseBlockNameTooLong) {
     bytes.Write(name, /*pos=*/2);
     AdvertisingData::ParseResult result = AdvertisingData::FromBytes(bytes);
     ASSERT_TRUE(result.is_error());
-    EXPECT_EQ(AdvertisingData::ParseError::kLocalNameTooLong, result.error_value());
+    EXPECT_EQ(AdvertisingData::ParseError::kLocalNameTooLong,
+              result.error_value());
   }
   // Repeat previous test with shortened name.
   {
-    auto leading_bytes = StaticByteBuffer<2>{kMaxNameLength + 2, DataType::kShortenedLocalName};
+    auto leading_bytes =
+        StaticByteBuffer<2>{kMaxNameLength + 2, DataType::kShortenedLocalName};
     auto bytes = DynamicByteBuffer(kMaxNameLength + 3);
     bytes.Write(leading_bytes);
     DynamicByteBuffer name(kMaxNameLength + 1);
@@ -205,16 +245,25 @@ TEST(AdvertisingDataTest, ParseBlockNameTooLong) {
     bytes.Write(name, /*pos=*/2);
     AdvertisingData::ParseResult result = AdvertisingData::FromBytes(bytes);
     ASSERT_TRUE(result.is_error());
-    EXPECT_EQ(AdvertisingData::ParseError::kLocalNameTooLong, result.error_value());
+    EXPECT_EQ(AdvertisingData::ParseError::kLocalNameTooLong,
+              result.error_value());
   }
 }
 
 TEST(AdvertisingDataTest, ManufacturerZeroLength) {
   StaticByteBuffer bytes(
       // Complete 16-bit UUIDs
-      0x05, 0x03, 0x12, 0x02, 0x22, 0x11,
+      0x05,
+      0x03,
+      0x12,
+      0x02,
+      0x22,
+      0x11,
       // Manufacturer Data with no data
-      0x03, 0xFF, 0x34, 0x12);
+      0x03,
+      0xFF,
+      0x34,
+      0x12);
 
   EXPECT_EQ(0u, AdvertisingData().manufacturer_data_ids().size());
 
@@ -230,13 +279,28 @@ TEST(AdvertisingDataTest, ServiceData) {
   // to "https://fuchsia.cl"
   StaticByteBuffer bytes(
       // Complete 16-bit UUIDs, 0xFEAA
-      0x03, 0x03, 0xAA, 0xFE,
+      0x03,
+      0x03,
+      0xAA,
+      0xFE,
       // Eddystone Service (0xFEAA) Data:
-      0x10, 0x16, 0xAA, 0xFE,
+      0x10,
+      0x16,
+      0xAA,
+      0xFE,
       0x10,  // Eddystone-Uri type
       0xEE,  // TX Power level -18dBm
       0x03,  // "https://"
-      'f', 'u', 'c', 'h', 's', 'i', 'a', '.', 'c', 'l');
+      'f',
+      'u',
+      'c',
+      'h',
+      's',
+      'i',
+      'a',
+      '.',
+      'c',
+      'l');
 
   EXPECT_EQ(0u, AdvertisingData().service_data_uuids().size());
 
@@ -251,14 +315,17 @@ TEST(AdvertisingDataTest, ServiceData) {
   EXPECT_TRUE(ContainersEqual(bytes.view(8), data->service_data(eddystone)));
 }
 
-// Per CSS v9 Part A 1.1.1, "A packet or data block shall not contain more than one instance for
-// each Service UUID data size". We enforce this by failing to parse AdvertisingData with UUIDs of a
-// particular size which exceed the amount that can fit in one TLV field.
+// Per CSS v9 Part A 1.1.1, "A packet or data block shall not contain more than
+// one instance for each Service UUID data size". We enforce this by failing to
+// parse AdvertisingData with UUIDs of a particular size which exceed the amount
+// that can fit in one TLV field.
 TEST(AdvertisingDataTest, TooManyUuidsOfSizeRejected) {
   // Space for the maximum # of 16 bit UUIDs + length + type fields.
-  const uint64_t kMaxAllowed16BitUuidsSize = (2 + kMax16BitUuids * UUIDElemSize::k16Bit);
+  const uint64_t kMaxAllowed16BitUuidsSize =
+      (2 + kMax16BitUuids * UUIDElemSize::k16Bit);
   // Space for one more UUID + type and length fields
-  const uint64_t kExpectedBuffSize = kMaxAllowed16BitUuidsSize + (2 + UUIDElemSize::k16Bit);
+  const uint64_t kExpectedBuffSize =
+      kMaxAllowed16BitUuidsSize + (2 + UUIDElemSize::k16Bit);
 
   DynamicByteBuffer bytes(kExpectedBuffSize);
   uint64_t offset = 0;
@@ -273,16 +340,18 @@ TEST(AdvertisingDataTest, TooManyUuidsOfSizeRejected) {
     bytes.Write(uuid.CompactView(), offset);
     offset += uuid.CompactSize();
   }
-  // Verify that we successfully parse an AD with the maximum amount of 16 bit UUIDs
-  AdvertisingData::ParseResult adv_result =
-      AdvertisingData::FromBytes(bytes.view(/*pos=*/0, /*size=*/kMaxAllowed16BitUuidsSize));
+  // Verify that we successfully parse an AD with the maximum amount of 16 bit
+  // UUIDs
+  AdvertisingData::ParseResult adv_result = AdvertisingData::FromBytes(
+      bytes.view(/*pos=*/0, /*size=*/kMaxAllowed16BitUuidsSize));
   ASSERT_EQ(fit::ok(), adv_result);
   EXPECT_EQ(kMax16BitUuids, adv_result->service_uuids().size());
   // Write second Complete 16 bit Service UUIDs TLV field with one more UUID
   bytes.Write(
       StaticByteBuffer{
-          UUIDElemSize::k16Bit + 1,                                   // Size byte
-          static_cast<uint8_t>(DataType::kComplete16BitServiceUuids)  // Type byte
+          UUIDElemSize::k16Bit + 1,  // Size byte
+          static_cast<uint8_t>(
+              DataType::kComplete16BitServiceUuids)  // Type byte
       },
       offset);
   offset += 2;
@@ -291,35 +360,44 @@ TEST(AdvertisingDataTest, TooManyUuidsOfSizeRejected) {
 
   adv_result = AdvertisingData::FromBytes(bytes);
   ASSERT_TRUE(adv_result.is_error());
-  EXPECT_EQ(AdvertisingData::ParseError::kUuidsMalformed, adv_result.error_value());
+  EXPECT_EQ(AdvertisingData::ParseError::kUuidsMalformed,
+            adv_result.error_value());
 }
 
 TEST(AdvertisingDataTest, Missing) {
-  AdvertisingData::ParseResult result = AdvertisingData::FromBytes(DynamicByteBuffer());
+  AdvertisingData::ParseResult result =
+      AdvertisingData::FromBytes(DynamicByteBuffer());
   ASSERT_TRUE(result.is_error());
   EXPECT_EQ(AdvertisingData::ParseError::kMissing, result.error_value());
 }
 
 TEST(AdvertisingDataTest, InvalidTlvFormat) {
-  AdvertisingData::ParseResult result = AdvertisingData::FromBytes(StaticByteBuffer(0x03));
+  AdvertisingData::ParseResult result =
+      AdvertisingData::FromBytes(StaticByteBuffer(0x03));
   ASSERT_TRUE(result.is_error());
-  EXPECT_EQ(AdvertisingData::ParseError::kInvalidTlvFormat, result.error_value());
+  EXPECT_EQ(AdvertisingData::ParseError::kInvalidTlvFormat,
+            result.error_value());
 }
 
 TEST(AdvertisingDataTest, TxPowerLevelMalformed) {
-  StaticByteBuffer service_data{/*length=*/0x01, static_cast<uint8_t>(DataType::kTxPowerLevel)};
-  AdvertisingData::ParseResult result = AdvertisingData::FromBytes(service_data);
+  StaticByteBuffer service_data{/*length=*/0x01,
+                                static_cast<uint8_t>(DataType::kTxPowerLevel)};
+  AdvertisingData::ParseResult result =
+      AdvertisingData::FromBytes(service_data);
   ASSERT_TRUE(result.is_error());
-  EXPECT_EQ(AdvertisingData::ParseError::kTxPowerLevelMalformed, result.error_value());
+  EXPECT_EQ(AdvertisingData::ParseError::kTxPowerLevelMalformed,
+            result.error_value());
 }
 
 TEST(AdvertisingDataTest, UuidsMalformed) {
   StaticByteBuffer service_data{
       0x02,  // Length
       static_cast<uint8_t>(DataType::kComplete16BitServiceUuids),
-      0x12  // The length of a valid 16-bit UUID byte array be a multiple of 2 (and 1 % 2 == 1).
+      0x12  // The length of a valid 16-bit UUID byte array be a multiple of 2
+            // (and 1 % 2 == 1).
   };
-  AdvertisingData::ParseResult result = AdvertisingData::FromBytes(service_data);
+  AdvertisingData::ParseResult result =
+      AdvertisingData::FromBytes(service_data);
   ASSERT_TRUE(result.is_error());
   EXPECT_EQ(AdvertisingData::ParseError::kUuidsMalformed, result.error_value());
 }
@@ -330,20 +408,25 @@ TEST(AdvertisingDataTest, ManufacturerSpecificDataTooSmall) {
       static_cast<uint8_t>(DataType::kManufacturerSpecificData),
       0x12  // Manufacturer-specific data must be at least 2 bytes
   };
-  AdvertisingData::ParseResult result = AdvertisingData::FromBytes(service_data);
+  AdvertisingData::ParseResult result =
+      AdvertisingData::FromBytes(service_data);
   ASSERT_TRUE(result.is_error());
-  EXPECT_EQ(AdvertisingData::ParseError::kManufacturerSpecificDataTooSmall, result.error_value());
+  EXPECT_EQ(AdvertisingData::ParseError::kManufacturerSpecificDataTooSmall,
+            result.error_value());
 }
 
 TEST(AdvertisingDataTest, DecodeServiceDataWithIncompleteUuid) {
-  StaticByteBuffer service_data(0x02,                                               // Length
-                                static_cast<uint8_t>(DataType::kServiceData16Bit),  // Data type
-                                0xAA  // First byte of incomplete UUID
+  StaticByteBuffer service_data(
+      0x02,                                               // Length
+      static_cast<uint8_t>(DataType::kServiceData16Bit),  // Data type
+      0xAA  // First byte of incomplete UUID
   );
 
-  AdvertisingData::ParseResult result = AdvertisingData::FromBytes(service_data);
+  AdvertisingData::ParseResult result =
+      AdvertisingData::FromBytes(service_data);
   ASSERT_TRUE(result.is_error());
-  EXPECT_EQ(AdvertisingData::ParseError::kServiceDataTooSmall, result.error_value());
+  EXPECT_EQ(AdvertisingData::ParseError::kServiceDataTooSmall,
+            result.error_value());
 }
 
 TEST(AdvertisingDataTest, AppearanceMalformed) {
@@ -352,9 +435,11 @@ TEST(AdvertisingDataTest, AppearanceMalformed) {
       static_cast<uint8_t>(DataType::kAppearance),
       0x12  // Appearance is supposed to be 2 bytes
   };
-  AdvertisingData::ParseResult result = AdvertisingData::FromBytes(service_data);
+  AdvertisingData::ParseResult result =
+      AdvertisingData::FromBytes(service_data);
   ASSERT_TRUE(result.is_error());
-  EXPECT_EQ(AdvertisingData::ParseError::kAppearanceMalformed, result.error_value());
+  EXPECT_EQ(AdvertisingData::ParseError::kAppearanceMalformed,
+            result.error_value());
 }
 TEST(AdvertisingDataTest, Equality) {
   AdvertisingData one, two;
@@ -445,13 +530,16 @@ TEST(AdvertisingDataTest, Move) {
   EXPECT_TRUE(source.AddServiceUuid(eddy));
   EXPECT_TRUE(source.SetServiceData(heart_rate_uuid, rand_data.view()));
 
-  auto verify_advertising_data = [&](const AdvertisingData& dest, const char* type) {
+  auto verify_advertising_data = [&](const AdvertisingData& dest,
+                                     const char* type) {
     SCOPED_TRACE(type);
     // Dest should have the data we set.
     EXPECT_EQ("test", dest.local_name()->name);
     EXPECT_EQ(tx_power, dest.tx_power().value());
     EXPECT_EQ(appearance, dest.appearance().value());
-    EXPECT_EQ(std::unordered_set<std::string>({"http://fuchsia.cl", "https://ru.st"}), dest.uris());
+    EXPECT_EQ(
+        std::unordered_set<std::string>({"http://fuchsia.cl", "https://ru.st"}),
+        dest.uris());
     EXPECT_TRUE(ContainersEqual(rand_data, dest.manufacturer_data(0x0123)));
     EXPECT_EQ(std::unordered_set<UUID>({gatt, eddy}), dest.service_uuids());
     EXPECT_TRUE(ContainersEqual(rand_data, dest.service_data(heart_rate_uuid)));
@@ -488,26 +576,72 @@ TEST(AdvertisingDataTest, Flags) {
 }
 
 TEST(AdvertisingDataTest, Uris) {
-  // The encoding scheme is represented by the first UTF-8 code-point in the URI string. Per
+  // The encoding scheme is represented by the first UTF-8 code-point in the URI
+  // string. Per
   // https://www.bluetooth.com/specifications/assigned-numbers/uri-scheme-name-string-mapping/,
-  // 0xBA is the highest code point corresponding to an encoding scheme. However, 0xBA > 0x7F, so
-  // representing too-large encoding schemes (i.e. code-points > 0xBA) in UTF-8 requires two bytes.
-  const uint8_t kLargestKnownSchemeByte1 = 0xC2, kLargestKnownSchemeByte2 = 0xBA;
-  // These bytes represent the (valid) UTF-8 code point for the (unknown encoding scheme) U+00BB.
+  // 0xBA is the highest code point corresponding to an encoding scheme.
+  // However, 0xBA > 0x7F, so representing too-large encoding schemes (i.e.
+  // code-points > 0xBA) in UTF-8 requires two bytes.
+  const uint8_t kLargestKnownSchemeByte1 = 0xC2,
+                kLargestKnownSchemeByte2 = 0xBA;
+  // These bytes represent the (valid) UTF-8 code point for the (unknown
+  // encoding scheme) U+00BB.
   const uint8_t kUnknownSchemeByte1 = 0xC2, kUnknownSchemeByte2 = 0xBB;
   StaticByteBuffer bytes(
       // Uri: "https://abc.xyz"
-      0x0B, DataType::kURI, 0x17, '/', '/', 'a', 'b', 'c', '.', 'x', 'y', 'z',
+      0x0B,
+      DataType::kURI,
+      0x17,
+      '/',
+      '/',
+      'a',
+      'b',
+      'c',
+      '.',
+      'x',
+      'y',
+      'z',
       // Empty URI should be ignored:
-      0x01, DataType::kURI,
+      0x01,
+      DataType::kURI,
       // Uri: "flubs:abc"
-      0x0B, DataType::kURI, 0x01, 'f', 'l', 'u', 'b', 's', ':', 'a', 'b', 'c',
+      0x0B,
+      DataType::kURI,
+      0x01,
+      'f',
+      'l',
+      'u',
+      'b',
+      's',
+      ':',
+      'a',
+      'b',
+      'c',
       // Uri: "ms-settings-cloudstorage:flub"
-      0x07, DataType::kURI, kLargestKnownSchemeByte1, kLargestKnownSchemeByte2, 'f', 'l', 'u', 'b',
-      // Invalid URI should be ignored - UTF-8 U+00BB doesn't correspond to an encoding scheme.
-      0x07, DataType::kURI, kUnknownSchemeByte1, kUnknownSchemeByte2, 'f', 'l', 'u', 'b',
-      // Invalid URI should be ignored - UTF-8 U+0000 doesn't correspond to an encoding scheme.
-      0x03, DataType::kURI, 0x00, 0x00);
+      0x07,
+      DataType::kURI,
+      kLargestKnownSchemeByte1,
+      kLargestKnownSchemeByte2,
+      'f',
+      'l',
+      'u',
+      'b',
+      // Invalid URI should be ignored - UTF-8 U+00BB doesn't correspond to an
+      // encoding scheme.
+      0x07,
+      DataType::kURI,
+      kUnknownSchemeByte1,
+      kUnknownSchemeByte2,
+      'f',
+      'l',
+      'u',
+      'b',
+      // Invalid URI should be ignored - UTF-8 U+0000 doesn't correspond to an
+      // encoding scheme.
+      0x03,
+      DataType::kURI,
+      0x00,
+      0x00);
 
   AdvertisingData::ParseResult data = AdvertisingData::FromBytes(bytes);
   ASSERT_EQ(fit::ok(), data);
@@ -515,9 +649,12 @@ TEST(AdvertisingDataTest, Uris) {
   auto uris = data->uris();
   EXPECT_EQ(3u, uris.size());
 
-  EXPECT_TRUE(std::find(uris.begin(), uris.end(), "https://abc.xyz") != uris.end());
+  EXPECT_TRUE(std::find(uris.begin(), uris.end(), "https://abc.xyz") !=
+              uris.end());
   EXPECT_TRUE(std::find(uris.begin(), uris.end(), "flubs:abc") != uris.end());
-  EXPECT_TRUE(std::find(uris.begin(), uris.end(), "ms-settings-cloudstorage:flub") != uris.end());
+  EXPECT_TRUE(std::find(uris.begin(),
+                        uris.end(),
+                        "ms-settings-cloudstorage:flub") != uris.end());
 }
 
 // Tests writing a fully populated |AdvertisingData| to
@@ -542,14 +679,54 @@ TEST(AdvertisingDataTest, WriteBlockSuccess) {
   DynamicByteBuffer write_buf(data.CalculateBlockSize());
   EXPECT_TRUE(data.WriteBlock(&write_buf, std::nullopt));
 
-  StaticByteBuffer expected_buf(0x02, 0x0a, 0x04,        // tx_power_level_: 4
-                                0x03, 0x19, 0x67, 0x45,  // appearance_: 0x4567
-                                0x08, 0x09, 0x66, 0x75, 0x63, 0x68, 0x73, 0x69,
-                                0x61,                                      // local_name_: "fuchsia"
-                                0x06, 0xff, 0x23, 0x01, 0x01, 0x02, 0x03,  // manufacturer_data_
-                                0x05, 0x16, 0x12, 0x02, 0x01, 0x02,        // service_data_
-                                0x0e, 0x24, 0x16, 0x2f, 0x2f, 0x66, 0x75, 0x63, 0x68, 0x73, 0x69,
-                                0x61, 0x2e, 0x63, 0x6c, 0x03, 0x02, 0x12, 0x02);  // uris_
+  StaticByteBuffer expected_buf(0x02,
+                                0x0a,
+                                0x04,  // tx_power_level_: 4
+                                0x03,
+                                0x19,
+                                0x67,
+                                0x45,  // appearance_: 0x4567
+                                0x08,
+                                0x09,
+                                0x66,
+                                0x75,
+                                0x63,
+                                0x68,
+                                0x73,
+                                0x69,
+                                0x61,  // local_name_: "fuchsia"
+                                0x06,
+                                0xff,
+                                0x23,
+                                0x01,
+                                0x01,
+                                0x02,
+                                0x03,  // manufacturer_data_
+                                0x05,
+                                0x16,
+                                0x12,
+                                0x02,
+                                0x01,
+                                0x02,  // service_data_
+                                0x0e,
+                                0x24,
+                                0x16,
+                                0x2f,
+                                0x2f,
+                                0x66,
+                                0x75,
+                                0x63,
+                                0x68,
+                                0x73,
+                                0x69,
+                                0x61,
+                                0x2e,
+                                0x63,
+                                0x6c,
+                                0x03,
+                                0x02,
+                                0x12,
+                                0x02);  // uris_
   EXPECT_TRUE(ContainersEqual(expected_buf, write_buf));
 }
 
@@ -589,15 +766,57 @@ TEST(AdvertisingDataTest, WriteBlockWithFlagsSuccess) {
   DynamicByteBuffer write_buf(data.CalculateBlockSize(/*include_flags=*/true));
   EXPECT_TRUE(data.WriteBlock(&write_buf, AdvFlag::kLEGeneralDiscoverableMode));
 
-  StaticByteBuffer expected_buf(0x02, 0x01, 0x02,        // flags: 2
-                                0x02, 0x0a, 0x04,        // tx_power_level_: 4
-                                0x03, 0x19, 0x67, 0x45,  // appearance_: 0x4567
-                                0x08, 0x09, 0x66, 0x75, 0x63, 0x68, 0x73, 0x69,
-                                0x61,                                      // local_name_: "fuchsia"
-                                0x06, 0xff, 0x23, 0x01, 0x01, 0x02, 0x03,  // manufacturer_data_
-                                0x05, 0x16, 0x12, 0x02, 0x01, 0x02,        // service_data_
-                                0x0e, 0x24, 0x16, 0x2f, 0x2f, 0x66, 0x75, 0x63, 0x68, 0x73, 0x69,
-                                0x61, 0x2e, 0x63, 0x6c, 0x03, 0x02, 0x12, 0x02);  // uris_
+  StaticByteBuffer expected_buf(0x02,
+                                0x01,
+                                0x02,  // flags: 2
+                                0x02,
+                                0x0a,
+                                0x04,  // tx_power_level_: 4
+                                0x03,
+                                0x19,
+                                0x67,
+                                0x45,  // appearance_: 0x4567
+                                0x08,
+                                0x09,
+                                0x66,
+                                0x75,
+                                0x63,
+                                0x68,
+                                0x73,
+                                0x69,
+                                0x61,  // local_name_: "fuchsia"
+                                0x06,
+                                0xff,
+                                0x23,
+                                0x01,
+                                0x01,
+                                0x02,
+                                0x03,  // manufacturer_data_
+                                0x05,
+                                0x16,
+                                0x12,
+                                0x02,
+                                0x01,
+                                0x02,  // service_data_
+                                0x0e,
+                                0x24,
+                                0x16,
+                                0x2f,
+                                0x2f,
+                                0x66,
+                                0x75,
+                                0x63,
+                                0x68,
+                                0x73,
+                                0x69,
+                                0x61,
+                                0x2e,
+                                0x63,
+                                0x6c,
+                                0x03,
+                                0x02,
+                                0x12,
+                                0x02);  // uris_
   EXPECT_TRUE(ContainersEqual(expected_buf, write_buf));
 }
 
@@ -608,14 +827,18 @@ TEST(AdvertisingDataTest, WriteBlockWithFlagsBufError) {
   EXPECT_TRUE(data.SetLocalName("Fuchsia"));
   data.SetAppearance(0x1234);
 
-  DynamicByteBuffer write_buf(data.CalculateBlockSize(/*include_flags=*/true) - 1);
-  EXPECT_FALSE(data.WriteBlock(&write_buf, AdvFlag::kLEGeneralDiscoverableMode));
+  DynamicByteBuffer write_buf(data.CalculateBlockSize(/*include_flags=*/true) -
+                              1);
+  EXPECT_FALSE(
+      data.WriteBlock(&write_buf, AdvFlag::kLEGeneralDiscoverableMode));
 }
 
-// Adds `n_(consecutively_increasing)_uuids` to `input` and returns the "next" UUID in the sequence.
-// UUIDs may wrap around - this is OK, as we only care that they are all distinct.
+// Adds `n_(consecutively_increasing)_uuids` to `input` and returns the "next"
+// UUID in the sequence. UUIDs may wrap around - this is OK, as we only care
+// that they are all distinct.
 UUID AddNDistinctUuids(AdvertisingData& input,
-                       std::variant<uint16_t, uint32_t, UInt128> starting_uuid, uint8_t n_uuids) {
+                       std::variant<uint16_t, uint32_t, UInt128> starting_uuid,
+                       uint8_t n_uuids) {
   UUID next;
   for (uint8_t i = 0; true; ++i) {
     std::visit(
@@ -629,7 +852,8 @@ UUID AddNDistinctUuids(AdvertisingData& input,
           }
         },
         starting_uuid);
-    SCOPED_TRACE(bt_lib_cpp_string::StringPrintf("i: %du UUID: %s", i, bt_str(next)));
+    SCOPED_TRACE(
+        bt_lib_cpp_string::StringPrintf("i: %du UUID: %s", i, bt_str(next)));
     if (i >= n_uuids) {
       return next;
     }
@@ -640,7 +864,8 @@ UUID AddNDistinctUuids(AdvertisingData& input,
 TEST(AdvertisingDataTest, SetFieldsWithTooLongParameters) {
   AdvertisingData data;
   {
-    // Use the https URI encoding scheme. This prefix will be compressed to one byte when encoded.
+    // Use the https URI encoding scheme. This prefix will be compressed to one
+    // byte when encoded.
     std::string uri = "https:";
     uri += std::string(kMaxEncodedUriLength - 1, '.');
     EXPECT_TRUE(data.AddUri(uri));
@@ -654,7 +879,8 @@ TEST(AdvertisingDataTest, SetFieldsWithTooLongParameters) {
     long_data.Fill(0xAB);
     EXPECT_FALSE(data.SetServiceData(two_byte_uuid, long_data));
     // An empty DynamicByteBuffer represents unset service data per the header.
-    EXPECT_TRUE(ContainersEqual(DynamicByteBuffer(), data.service_data(two_byte_uuid)));
+    EXPECT_TRUE(
+        ContainersEqual(DynamicByteBuffer(), data.service_data(two_byte_uuid)));
     // Now use a view that is just small enough to fit when encoded
     BufferView view = long_data.view(/*pos=*/0, /*size=*/long_data.size() - 1);
     EXPECT_TRUE(data.SetServiceData(two_byte_uuid, view));
@@ -667,7 +893,8 @@ TEST(AdvertisingDataTest, SetFieldsWithTooLongParameters) {
     long_data.Fill(0xAB);
     EXPECT_FALSE(data.SetManufacturerData(manufacturer_id, long_data.view()));
     // An empty DynamicByteBuffer represents unset service data per the header.
-    EXPECT_TRUE(ContainersEqual(DynamicByteBuffer(), data.manufacturer_data(manufacturer_id)));
+    EXPECT_TRUE(ContainersEqual(DynamicByteBuffer(),
+                                data.manufacturer_data(manufacturer_id)));
     // Now use a view that is just small enough to fit when encoded
     BufferView view = long_data.view(/*pos=*/0, /*size=*/long_data.size() - 1);
     EXPECT_TRUE(data.SetManufacturerData(manufacturer_id, view));
@@ -677,23 +904,47 @@ TEST(AdvertisingDataTest, SetFieldsWithTooLongParameters) {
   {
     uint16_t starting_16bit_uuid = 0x0001;
     UUID should_fail = AddNDistinctUuids(
-        data, std::variant<uint16_t, uint32_t, UInt128>{starting_16bit_uuid}, kMax16BitUuids);
+        data,
+        std::variant<uint16_t, uint32_t, UInt128>{starting_16bit_uuid},
+        kMax16BitUuids);
     EXPECT_FALSE(data.AddServiceUuid(should_fail));
-    EXPECT_TRUE(data.service_uuids().find(should_fail) == data.service_uuids().end());
+    EXPECT_TRUE(data.service_uuids().find(should_fail) ==
+                data.service_uuids().end());
 
-    // This value must not fit in a 16 bit number in order to count as a "32 bit" UUID
+    // This value must not fit in a 16 bit number in order to count as a "32
+    // bit" UUID
     uint32_t starting_32bit_uuid = std::numeric_limits<uint16_t>::max() + 1;
     should_fail = AddNDistinctUuids(
-        data, std::variant<uint16_t, uint32_t, UInt128>{starting_32bit_uuid}, kMax32BitUuids);
+        data,
+        std::variant<uint16_t, uint32_t, UInt128>{starting_32bit_uuid},
+        kMax32BitUuids);
     EXPECT_FALSE(data.AddServiceUuid(should_fail));
-    EXPECT_TRUE(data.service_uuids().find(should_fail) == data.service_uuids().end());
+    EXPECT_TRUE(data.service_uuids().find(should_fail) ==
+                data.service_uuids().end());
 
-    UInt128 starting_128bit_uuid = {0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB,
-                                    0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB};
+    UInt128 starting_128bit_uuid = {0xAB,
+                                    0xAB,
+                                    0xAB,
+                                    0xAB,
+                                    0xAB,
+                                    0xAB,
+                                    0xAB,
+                                    0xAB,
+                                    0xAB,
+                                    0xAB,
+                                    0xAB,
+                                    0xAB,
+                                    0xAB,
+                                    0xAB,
+                                    0xAB,
+                                    0xAB};
     should_fail = AddNDistinctUuids(
-        data, std::variant<uint16_t, uint32_t, UInt128>{starting_128bit_uuid}, kMax128BitUuids);
+        data,
+        std::variant<uint16_t, uint32_t, UInt128>{starting_128bit_uuid},
+        kMax128BitUuids);
     EXPECT_FALSE(data.AddServiceUuid(should_fail));
-    EXPECT_TRUE(data.service_uuids().find(should_fail) == data.service_uuids().end());
+    EXPECT_TRUE(data.service_uuids().find(should_fail) ==
+                data.service_uuids().end());
   }
   // Ensures names exceeding kMaxNameLength are rejected.
   {
@@ -709,8 +960,9 @@ TEST(AdvertisingDataTest, SetFieldsWithTooLongParameters) {
   EXPECT_TRUE(data.WriteBlock(&block, std::nullopt));
 }
 
-// Tests that setting a complete local name overwrites an existing shortened local name and that
-// setting a shortened local name has no effect if a complete local name is currently stored.
+// Tests that setting a complete local name overwrites an existing shortened
+// local name and that setting a shortened local name has no effect if a
+// complete local name is currently stored.
 TEST(AdvertisingDataTest, CompleteLocalNameFavored) {
   AdvertisingData data;
   std::string short_name = "short";
@@ -725,16 +977,20 @@ TEST(AdvertisingDataTest, CompleteLocalNameFavored) {
   EXPECT_EQ(complete_name, data.local_name()->name);
 }
 
-// Tests that even when the maximum number of distinct UUIDs for a certain size have been added to
-// an AD, we do not reject additional UUIDs that are duplicates of already-added UUIDs.
+// Tests that even when the maximum number of distinct UUIDs for a certain size
+// have been added to an AD, we do not reject additional UUIDs that are
+// duplicates of already-added UUIDs.
 TEST(AdvertisingDataTest, AddDuplicateServiceUuidsWhenFullSucceeds) {
   AdvertisingData data;
   uint16_t starting_16bit_uuid = 0x0001;
   UUID should_fail = AddNDistinctUuids(
-      data, std::variant<uint16_t, uint32_t, UInt128>{starting_16bit_uuid}, kMax16BitUuids);
+      data,
+      std::variant<uint16_t, uint32_t, UInt128>{starting_16bit_uuid},
+      kMax16BitUuids);
   // Verify that adding another distinct UUID fails - i.e. we are at the limit.
   EXPECT_FALSE(data.AddServiceUuid(should_fail));
-  EXPECT_TRUE(data.service_uuids().find(should_fail) == data.service_uuids().end());
+  EXPECT_TRUE(data.service_uuids().find(should_fail) ==
+              data.service_uuids().end());
   // Verify that we are notified of success when adding an existing UUID
   EXPECT_TRUE(data.AddServiceUuid(UUID(starting_16bit_uuid)));
 }

@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/att/bearer.h"
+#include "pw_bluetooth_sapphire/internal/host/att/bearer.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/mock_channel_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/mock_channel_test.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
 namespace bt::att {
 namespace {
@@ -19,7 +19,8 @@ constexpr OpCode kTestResponse3 = kFindByTypeValueResponse;
 
 constexpr OpCode kTestCommand = kWriteCommand;
 
-void NopHandler(Bearer::TransactionId /*unused*/, const PacketReader& /*unused*/) {}
+void NopHandler(Bearer::TransactionId /*unused*/,
+                const PacketReader& /*unused*/) {}
 
 class BearerTest : public l2cap::testing::MockChannelTest {
  public:
@@ -29,13 +30,16 @@ class BearerTest : public l2cap::testing::MockChannelTest {
  protected:
   void SetUp() override {
     ChannelOptions options(l2cap::kATTChannelId);
-    bearer_ = Bearer::Create(CreateFakeChannel(options)->GetWeakPtr(), dispatcher());
+    bearer_ =
+        Bearer::Create(CreateFakeChannel(options)->GetWeakPtr(), dispatcher());
   }
 
   void TearDown() override { bearer_ = nullptr; }
 
   Bearer* bearer() const { return bearer_.get(); }
-  l2cap::testing::FakeChannel::WeakPtr fake_att_chan() const { return fake_chan(); }
+  l2cap::testing::FakeChannel::WeakPtr fake_att_chan() const {
+    return fake_chan();
+  }
 
   void DeleteBearer() { bearer_ = nullptr; }
 
@@ -83,11 +87,12 @@ TEST_F(BearerTest, StartTransactionErrorClosed) {
   ASSERT_FALSE(bearer()->is_open());
 
   bool received_error = false;
-  Bearer::TransactionCallback cb = [&received_error](Bearer::TransactionResult result) {
-    if (result.is_error()) {
-      received_error = true;
-    }
-  };
+  Bearer::TransactionCallback cb =
+      [&received_error](Bearer::TransactionResult result) {
+        if (result.is_error()) {
+          received_error = true;
+        }
+      };
   bearer()->StartTransaction(NewBuffer(kTestRequest), std::move(cb));
   EXPECT_TRUE(received_error);
 }
@@ -96,25 +101,28 @@ TEST_F(BearerTest, StartTransactionInvalidPacket) {
   auto cb = [](Bearer::TransactionResult) { FAIL(); };
 
   // Empty
-  EXPECT_DEATH_IF_SUPPORTED(bearer()->StartTransaction(std::make_unique<BufferView>(), cb),
-                            "bad length");
+  EXPECT_DEATH_IF_SUPPORTED(
+      bearer()->StartTransaction(std::make_unique<BufferView>(), cb),
+      "bad length");
 
   // Exceeds MTU.
   bearer()->set_mtu(1);
-  EXPECT_DEATH_IF_SUPPORTED(bearer()->StartTransaction(NewBuffer(kTestRequest, 2), cb),
-                            "bad length");
+  EXPECT_DEATH_IF_SUPPORTED(
+      bearer()->StartTransaction(NewBuffer(kTestRequest, 2), cb), "bad length");
 }
 
 TEST_F(BearerTest, StartTransactionWrongMethodType) {
   auto cb = [](Bearer::TransactionResult) { FAIL(); };
 
   // Command
-  EXPECT_DEATH_IF_SUPPORTED(bearer()->StartTransaction(NewBuffer(kWriteCommand), cb),
-                            "callback was provided");
+  EXPECT_DEATH_IF_SUPPORTED(
+      bearer()->StartTransaction(NewBuffer(kWriteCommand), cb),
+      "callback was provided");
 
   // Notification
-  EXPECT_DEATH_IF_SUPPORTED(bearer()->StartTransaction(NewBuffer(kNotification), cb),
-                            "callback was provided");
+  EXPECT_DEATH_IF_SUPPORTED(
+      bearer()->StartTransaction(NewBuffer(kNotification), cb),
+      "callback was provided");
 }
 
 TEST_F(BearerTest, RequestTimeout) {
@@ -340,7 +348,9 @@ TEST_F(BearerTest, SendRequestErrorResponseTooShort) {
 
       // Parameters are too short (by 1 byte). Contents are unimportant, as the
       // PDU should be rejected.
-      1, 2, 3);
+      1,
+      2,
+      3);
 
   bool chan_cb_called = false;
   auto chan_cb = [this, &chan_cb_called, &malformed_error_rsp](auto cb_packet) {
@@ -382,7 +392,11 @@ TEST_F(BearerTest, SendRequestErrorResponseTooLong) {
 
       // Parameters are too long (by 1 byte). Contents are unimportant, as the
       // PDU should be rejected.
-      1, 2, 3, 4, 5);
+      1,
+      2,
+      3,
+      4,
+      5);
 
   bool chan_cb_called = false;
   auto chan_cb = [this, &chan_cb_called, &malformed_error_rsp](auto cb_packet) {
@@ -426,7 +440,8 @@ TEST_F(BearerTest, SendRequestErrorResponseWrongOpCode) {
       kTestRequest2,
 
       // handle, should be ignored
-      0x00, 0x00,
+      0x00,
+      0x00,
 
       // error code:
       ErrorCode::kRequestNotSupported);
@@ -473,7 +488,8 @@ TEST_F(BearerTest, SendRequestErrorResponse) {
       kTestRequest,
 
       // handle (0x0001)
-      0x01, 0x00,
+      0x01,
+      0x00,
 
       // error code:
       ErrorCode::kRequestNotSupported);
@@ -586,7 +602,8 @@ TEST_F(BearerTest, SendManyRequests) {
                                    kTestRequest2,
 
                                    // handle (0x0001)
-                                   0x01, 0x00,
+                                   0x01,
+                                   0x00,
 
                                    // error code:
                                    ErrorCode::kRequestNotSupported);
@@ -607,8 +624,10 @@ TEST_F(BearerTest, SendManyRequests) {
 
   bool called_1 = false, called_2 = false, called_3 = false;
 
-  // We expect each callback to be called in the order that we send the corresponding request.
-  auto callback1 = [&called_1, &called_2, &called_3, &response1](Bearer::TransactionResult result) {
+  // We expect each callback to be called in the order that we send the
+  // corresponding request.
+  auto callback1 = [&called_1, &called_2, &called_3, &response1](
+                       Bearer::TransactionResult result) {
     EXPECT_FALSE(called_2);
     EXPECT_FALSE(called_3);
     called_1 = true;
@@ -619,20 +638,22 @@ TEST_F(BearerTest, SendManyRequests) {
   };
   bearer()->StartTransaction(NewBuffer(kTestRequest), callback1);
 
-  auto callback2 = [&called_1, &called_2, &called_3](Bearer::TransactionResult result) {
-    EXPECT_TRUE(called_1);
-    EXPECT_FALSE(called_3);
-    called_2 = true;
+  auto callback2 =
+      [&called_1, &called_2, &called_3](Bearer::TransactionResult result) {
+        EXPECT_TRUE(called_1);
+        EXPECT_FALSE(called_3);
+        called_2 = true;
 
-    // Second request should've failed
-    ASSERT_EQ(fit::failed(), result);
-    const auto& [error, handle] = result.error_value();
-    EXPECT_EQ(Error(ErrorCode::kRequestNotSupported), error);
-    EXPECT_EQ(0x0001, handle);
-  };
+        // Second request should've failed
+        ASSERT_EQ(fit::failed(), result);
+        const auto& [error, handle] = result.error_value();
+        EXPECT_EQ(Error(ErrorCode::kRequestNotSupported), error);
+        EXPECT_EQ(0x0001, handle);
+      };
   bearer()->StartTransaction(NewBuffer(kTestRequest2), callback2);
 
-  auto callback3 = [&called_1, &called_2, &called_3, &response3](Bearer::TransactionResult result) {
+  auto callback3 = [&called_1, &called_2, &called_3, &response3](
+                       Bearer::TransactionResult result) {
     EXPECT_TRUE(called_1);
     EXPECT_TRUE(called_2);
     called_3 = true;
@@ -697,25 +718,30 @@ TEST_F(BearerTest, SendWithoutResponseErrorClosed) {
 TEST_F(BearerTest, SendWithoutResponseInvalidPacket) {
   // Empty
   EXPECT_DEATH_IF_SUPPORTED(
-      [[maybe_unused]] auto _ = bearer()->SendWithoutResponse(std::make_unique<BufferView>()),
+      [[maybe_unused]] auto _ =
+          bearer()->SendWithoutResponse(std::make_unique<BufferView>()),
       "bad length");
 
   // Exceeds MTU
   bearer()->set_mtu(1);
   EXPECT_DEATH_IF_SUPPORTED(
-      [[maybe_unused]] auto _ = bearer()->SendWithoutResponse(NewBuffer(kTestCommand, 2)),
+      [[maybe_unused]] auto _ =
+          bearer()->SendWithoutResponse(NewBuffer(kTestCommand, 2)),
       "bad length");
 }
 
 TEST_F(BearerTest, SendWithoutResponseWrongMethodType) {
   EXPECT_DEATH_IF_SUPPORTED(
-      [[maybe_unused]] auto _ = bearer()->SendWithoutResponse(NewBuffer(kTestRequest)),
+      [[maybe_unused]] auto _ =
+          bearer()->SendWithoutResponse(NewBuffer(kTestRequest)),
       "requires callback");
   EXPECT_DEATH_IF_SUPPORTED(
-      [[maybe_unused]] auto _ = bearer()->SendWithoutResponse(NewBuffer(kTestResponse)),
+      [[maybe_unused]] auto _ =
+          bearer()->SendWithoutResponse(NewBuffer(kTestResponse)),
       "unsupported opcode");
   EXPECT_DEATH_IF_SUPPORTED(
-      [[maybe_unused]] auto _ = bearer()->SendWithoutResponse(NewBuffer(kIndication)),
+      [[maybe_unused]] auto _ =
+          bearer()->SendWithoutResponse(NewBuffer(kIndication)),
       "requires callback");
 }
 
@@ -751,7 +777,8 @@ TEST_F(BearerTest, SendWithoutResponseMany) {
 
   for (OpCode opcode = 0; opcode < kExpectedCount; opcode++) {
     // Everything
-    EXPECT_TRUE(bearer()->SendWithoutResponse(NewBuffer(opcode | kCommandFlag)));
+    EXPECT_TRUE(
+        bearer()->SendWithoutResponse(NewBuffer(opcode | kCommandFlag)));
   }
 
   RunUntilIdle();
@@ -761,13 +788,17 @@ TEST_F(BearerTest, SendWithoutResponseMany) {
 TEST_F(BearerTest, RegisterHandlerErrorClosed) {
   bearer()->ShutDown();
   EXPECT_FALSE(bearer()->is_open());
-  EXPECT_EQ(Bearer::kInvalidHandlerId, bearer()->RegisterHandler(kWriteRequest, NopHandler));
-  EXPECT_EQ(Bearer::kInvalidHandlerId, bearer()->RegisterHandler(kIndication, NopHandler));
+  EXPECT_EQ(Bearer::kInvalidHandlerId,
+            bearer()->RegisterHandler(kWriteRequest, NopHandler));
+  EXPECT_EQ(Bearer::kInvalidHandlerId,
+            bearer()->RegisterHandler(kIndication, NopHandler));
 }
 
 TEST_F(BearerTest, RegisterHandlerErrorAlreadyRegistered) {
-  EXPECT_NE(Bearer::kInvalidHandlerId, bearer()->RegisterHandler(kIndication, NopHandler));
-  EXPECT_EQ(Bearer::kInvalidHandlerId, bearer()->RegisterHandler(kIndication, NopHandler));
+  EXPECT_NE(Bearer::kInvalidHandlerId,
+            bearer()->RegisterHandler(kIndication, NopHandler));
+  EXPECT_EQ(Bearer::kInvalidHandlerId,
+            bearer()->RegisterHandler(kIndication, NopHandler));
 }
 
 TEST_F(BearerTest, UnregisterHandler) {
@@ -790,7 +821,8 @@ TEST_F(BearerTest, RemoteTransactionNoHandler) {
       kTestRequest,
 
       // handle
-      0x00, 0x00,
+      0x00,
+      0x00,
 
       // error code
       ErrorCode::kRequestNotSupported);
@@ -873,7 +905,8 @@ TEST_F(BearerTest, ReplyInvalidPacket) {
 }
 
 TEST_F(BearerTest, ReplyInvalidId) {
-  EXPECT_FALSE(bearer()->Reply(Bearer::kInvalidTransactionId, NewBuffer(kTestResponse)));
+  EXPECT_FALSE(
+      bearer()->Reply(Bearer::kInvalidTransactionId, NewBuffer(kTestResponse)));
 
   // The ID is valid but doesn't correspond to an active transaction.
   EXPECT_FALSE(bearer()->Reply(1u, NewBuffer(kTestResponse)));
@@ -882,7 +915,8 @@ TEST_F(BearerTest, ReplyInvalidId) {
 TEST_F(BearerTest, ReplyWrongOpCode) {
   Bearer::TransactionId id;
   bool handler_called = false;
-  auto handler = [&id, &handler_called](auto cb_id, const PacketReader& packet) {
+  auto handler = [&id, &handler_called](auto cb_id,
+                                        const PacketReader& packet) {
     EXPECT_EQ(kTestRequest, packet.opcode());
     EXPECT_EQ(0u, packet.payload_size());
 
@@ -902,7 +936,8 @@ TEST_F(BearerTest, ReplyWrongOpCode) {
 TEST_F(BearerTest, ReplyToIndicationWrongOpCode) {
   Bearer::TransactionId id;
   bool handler_called = false;
-  auto handler = [&id, &handler_called](auto cb_id, const PacketReader& packet) {
+  auto handler = [&id, &handler_called](auto cb_id,
+                                        const PacketReader& packet) {
     EXPECT_EQ(kIndication, packet.opcode());
     EXPECT_EQ(0u, packet.payload_size());
 
@@ -930,7 +965,8 @@ TEST_F(BearerTest, ReplyWithResponse) {
 
   Bearer::TransactionId id;
   bool handler_called = false;
-  auto handler = [&id, &handler_called](auto cb_id, const PacketReader& packet) {
+  auto handler = [&id, &handler_called](auto cb_id,
+                                        const PacketReader& packet) {
     EXPECT_EQ(kTestRequest, packet.opcode());
     EXPECT_EQ(0u, packet.payload_size());
 
@@ -964,7 +1000,8 @@ TEST_F(BearerTest, IndicationConfirmation) {
 
   Bearer::TransactionId id;
   bool handler_called = false;
-  auto handler = [&id, &handler_called](auto cb_id, const PacketReader& packet) {
+  auto handler = [&id, &handler_called](auto cb_id,
+                                        const PacketReader& packet) {
     EXPECT_EQ(kIndication, packet.opcode());
     EXPECT_EQ(0u, packet.payload_size());
 
@@ -994,7 +1031,8 @@ TEST_F(BearerTest, ReplyWithErrorInvalidId) {
 TEST_F(BearerTest, IndicationReplyWithError) {
   Bearer::TransactionId id;
   bool handler_called = false;
-  auto handler = [&id, &handler_called](auto cb_id, const PacketReader& packet) {
+  auto handler = [&id, &handler_called](auto cb_id,
+                                        const PacketReader& packet) {
     EXPECT_EQ(kIndication, packet.opcode());
     EXPECT_EQ(0u, packet.payload_size());
 
@@ -1018,14 +1056,16 @@ TEST_F(BearerTest, ReplyWithError) {
     response_sent = true;
 
     // The error response that we send below
-    StaticByteBuffer expected(kErrorResponse, kTestRequest, 0x00, 0x00, ErrorCode::kUnlikelyError);
+    StaticByteBuffer expected(
+        kErrorResponse, kTestRequest, 0x00, 0x00, ErrorCode::kUnlikelyError);
     EXPECT_TRUE(ContainersEqual(expected, *packet));
   };
   fake_chan()->SetSendCallback(chan_cb, dispatcher());
 
   Bearer::TransactionId id;
   bool handler_called = false;
-  auto handler = [&id, &handler_called](auto cb_id, const PacketReader& packet) {
+  auto handler = [&id, &handler_called](auto cb_id,
+                                        const PacketReader& packet) {
     EXPECT_EQ(kTestRequest, packet.opcode());
     EXPECT_EQ(0u, packet.payload_size());
 
@@ -1201,12 +1241,14 @@ class BearerTestSecurity : public BearerTest {
     BearerTest::SetUp();
 
     fake_chan()->SetSecurityCallback(
-        [this](hci_spec::ConnectionHandle handle, sm::SecurityLevel level,
+        [this](hci_spec::ConnectionHandle handle,
+               sm::SecurityLevel level,
                sm::ResultFunction<> callback) {
           security_request_count_++;
           requested_security_level_ = level;
 
-          ASSERT_FALSE(security_responder_) << "Security request received while one was pending";
+          ASSERT_FALSE(security_responder_)
+              << "Security request received while one was pending";
           security_responder_ = std::move(callback);
         },
         dispatcher());
@@ -1218,12 +1260,13 @@ class BearerTestSecurity : public BearerTest {
     fake_chan()->SetSendCallback(
         [this, ecode, handle](auto packet) {
           att_request_count_++;
-          fake_chan()->Receive(StaticByteBuffer(kErrorResponse,  // opcode (Error Response)
-                                                kTestRequest,    // request opcode
-                                                LowerBits(handle),
-                                                UpperBits(handle),  // handle
-                                                ecode               // error code
-                                                ));
+          fake_chan()->Receive(StaticByteBuffer(
+              kErrorResponse,  // opcode (Error Response)
+              kTestRequest,    // request opcode
+              LowerBits(handle),
+              UpperBits(handle),  // handle
+              ecode               // error code
+              ));
         },
         dispatcher());
   }
@@ -1245,8 +1288,8 @@ class BearerTestSecurity : public BearerTest {
     ASSERT_TRUE(security_responder_);
 
     if (status.is_ok()) {
-      fake_chan()->set_security(
-          sm::SecurityProperties(requested_security_level_, 16, /*secure_connections=*/false));
+      fake_chan()->set_security(sm::SecurityProperties(
+          requested_security_level_, 16, /*secure_connections=*/false));
     }
 
     // Clear the responder before invoking it.
@@ -1272,7 +1315,9 @@ class BearerTestSecurity : public BearerTest {
   size_t att_request_count() const { return att_request_count_; }
 
   size_t security_request_count() const { return security_request_count_; }
-  sm::SecurityLevel requested_security_level() const { return requested_security_level_; }
+  sm::SecurityLevel requested_security_level() const {
+    return requested_security_level_;
+  }
 
  private:
   Result<> last_request_status_ = fit::ok();
@@ -1317,10 +1362,11 @@ TEST_F(BearerTestSecurity, SecurityUpgradeAfterInsufficientAuthentication) {
   EXPECT_EQ(0u, request_error_count());
 }
 
-TEST_F(BearerTestSecurity, SecurityUpgradeWithMitmAfterInsufficientAuthentication) {
+TEST_F(BearerTestSecurity,
+       SecurityUpgradeWithMitmAfterInsufficientAuthentication) {
   // Configure the channel to be already encrypted.
-  fake_chan()->set_security(
-      sm::SecurityProperties(sm::SecurityLevel::kEncrypted, 16, /*secure_connections=*/false));
+  fake_chan()->set_security(sm::SecurityProperties(
+      sm::SecurityLevel::kEncrypted, 16, /*secure_connections=*/false));
 
   // Configure the endpoint to respond with an authentication error.
   SetUpErrorResponder(ErrorCode::kInsufficientAuthentication);
@@ -1383,7 +1429,8 @@ TEST_F(BearerTestSecurity, SecurityUpgradeFailsAfterAuthError) {
   EXPECT_EQ(1u, security_request_count());
   EXPECT_EQ(0u, request_success_count());
   EXPECT_EQ(1u, request_error_count());
-  EXPECT_EQ(ToResult(ErrorCode::kInsufficientAuthentication), last_request_status());
+  EXPECT_EQ(ToResult(ErrorCode::kInsufficientAuthentication),
+            last_request_status());
 }
 
 TEST_F(BearerTestSecurity, NoSecurityUpgradeIfAlreadyRetried) {
@@ -1430,13 +1477,14 @@ TEST_F(BearerTestSecurity, NoSecurityUpgradeIfAlreadyRetried) {
   EXPECT_EQ(2u, security_request_count());
   EXPECT_EQ(0u, request_success_count());
   EXPECT_EQ(1u, request_error_count());
-  EXPECT_EQ(ToResult(ErrorCode::kInsufficientAuthentication), last_request_status());
+  EXPECT_EQ(ToResult(ErrorCode::kInsufficientAuthentication),
+            last_request_status());
 }
 
 TEST_F(BearerTestSecurity, NoSecurityUpgradeIfChannelAlreadyEncrypted) {
   // Configure the channel to be already encrypted.
-  fake_chan()->set_security(
-      sm::SecurityProperties(sm::SecurityLevel::kEncrypted, 16, /*secure_connections=*/false));
+  fake_chan()->set_security(sm::SecurityProperties(
+      sm::SecurityLevel::kEncrypted, 16, /*secure_connections=*/false));
 
   // Configure the endpoint to respond with an encryption error.
   SetUpErrorResponder(ErrorCode::kInsufficientEncryption);
@@ -1449,13 +1497,14 @@ TEST_F(BearerTestSecurity, NoSecurityUpgradeIfChannelAlreadyEncrypted) {
   EXPECT_EQ(0u, security_request_count());
   EXPECT_EQ(0u, request_success_count());
   EXPECT_EQ(1u, request_error_count());
-  EXPECT_EQ(ToResult(ErrorCode::kInsufficientEncryption), last_request_status());
+  EXPECT_EQ(ToResult(ErrorCode::kInsufficientEncryption),
+            last_request_status());
 }
 
 TEST_F(BearerTestSecurity, NoSecurityUpgradeIfChannelAlreadyEncryptedWithMitm) {
   // Configure the channel to be already encrypted with MITM protection
-  fake_chan()->set_security(
-      sm::SecurityProperties(sm::SecurityLevel::kAuthenticated, 16, /*secure_connections=*/false));
+  fake_chan()->set_security(sm::SecurityProperties(
+      sm::SecurityLevel::kAuthenticated, 16, /*secure_connections=*/false));
 
   // Configure the endpoint to respond with an authentication error.
   SetUpErrorResponder(ErrorCode::kInsufficientAuthentication);
@@ -1468,7 +1517,8 @@ TEST_F(BearerTestSecurity, NoSecurityUpgradeIfChannelAlreadyEncryptedWithMitm) {
   EXPECT_EQ(0u, security_request_count());
   EXPECT_EQ(0u, request_success_count());
   EXPECT_EQ(1u, request_error_count());
-  EXPECT_EQ(ToResult(ErrorCode::kInsufficientAuthentication), last_request_status());
+  EXPECT_EQ(ToResult(ErrorCode::kInsufficientAuthentication),
+            last_request_status());
 }
 
 }  // namespace

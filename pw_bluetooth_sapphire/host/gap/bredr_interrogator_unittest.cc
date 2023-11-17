@@ -2,19 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/gap/bredr_interrogator.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/bredr_interrogator.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_l2cap.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/util.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/fake_l2cap.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/fake_peer.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/mock_controller.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/error.h"
 
 namespace bt::gap {
 
@@ -24,18 +24,22 @@ const DeviceAddress kTestDevAddr(DeviceAddress::Type::kBREDR, {1});
 const auto kRemoteNameRequestRsp = testing::CommandStatusPacket(
     hci_spec::kRemoteNameRequest, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
-const auto kReadRemoteVersionInfoRsp = testing::CommandStatusPacket(
-    hci_spec::kReadRemoteVersionInfo, pw::bluetooth::emboss::StatusCode::SUCCESS);
+const auto kReadRemoteVersionInfoRsp =
+    testing::CommandStatusPacket(hci_spec::kReadRemoteVersionInfo,
+                                 pw::bluetooth::emboss::StatusCode::SUCCESS);
 
-const auto kReadRemoteSupportedFeaturesRsp = testing::CommandStatusPacket(
-    hci_spec::kReadRemoteSupportedFeatures, pw::bluetooth::emboss::StatusCode::SUCCESS);
+const auto kReadRemoteSupportedFeaturesRsp =
+    testing::CommandStatusPacket(hci_spec::kReadRemoteSupportedFeatures,
+                                 pw::bluetooth::emboss::StatusCode::SUCCESS);
 
-const auto kReadRemoteExtendedFeaturesRsp = testing::CommandStatusPacket(
-    hci_spec::kReadRemoteExtendedFeatures, pw::bluetooth::emboss::StatusCode::SUCCESS);
+const auto kReadRemoteExtendedFeaturesRsp =
+    testing::CommandStatusPacket(hci_spec::kReadRemoteExtendedFeatures,
+                                 pw::bluetooth::emboss::StatusCode::SUCCESS);
 
 using bt::testing::CommandTransaction;
 
-using TestingBase = bt::testing::FakeDispatcherControllerTest<bt::testing::MockController>;
+using TestingBase =
+    bt::testing::FakeDispatcherControllerTest<bt::testing::MockController>;
 
 class BrEdrInterrogatorTest : public TestingBase {
  public:
@@ -50,11 +54,12 @@ class BrEdrInterrogatorTest : public TestingBase {
     EXPECT_FALSE(peer_->name());
     EXPECT_FALSE(peer_->version());
     EXPECT_FALSE(peer_->features().HasPage(0));
-    EXPECT_FALSE(peer_->features().HasBit(/*page=*/0, hci_spec::LMPFeature::kExtendedFeatures));
+    EXPECT_FALSE(peer_->features().HasBit(
+        /*page=*/0, hci_spec::LMPFeature::kExtendedFeatures));
     EXPECT_EQ(0u, peer_->features().last_page_number());
 
-    interrogator_ = std::make_unique<BrEdrInterrogator>(peer_->GetWeakPtr(), kConnectionHandle,
-                                                        cmd_channel()->AsWeakPtr());
+    interrogator_ = std::make_unique<BrEdrInterrogator>(
+        peer_->GetWeakPtr(), kConnectionHandle, cmd_channel()->AsWeakPtr());
   }
 
   void TearDown() override {
@@ -66,36 +71,49 @@ class BrEdrInterrogatorTest : public TestingBase {
   }
 
  protected:
-  void QueueSuccessfulInterrogation(DeviceAddress addr, hci_spec::ConnectionHandle conn,
+  void QueueSuccessfulInterrogation(DeviceAddress addr,
+                                    hci_spec::ConnectionHandle conn,
                                     bool extended_features = true) const {
     const DynamicByteBuffer remote_name_request_complete_packet =
         testing::RemoteNameRequestCompletePacket(addr);
     const DynamicByteBuffer remote_version_complete_packet =
         testing::ReadRemoteVersionInfoCompletePacket(conn);
     const DynamicByteBuffer remote_supported_complete_packet =
-        testing::ReadRemoteSupportedFeaturesCompletePacket(conn, extended_features);
+        testing::ReadRemoteSupportedFeaturesCompletePacket(conn,
+                                                           extended_features);
 
-    EXPECT_CMD_PACKET_OUT(test_device(), testing::RemoteNameRequestPacket(addr),
-                          &kRemoteNameRequestRsp, &remote_name_request_complete_packet);
-    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(conn),
-                          &kReadRemoteVersionInfoRsp, &remote_version_complete_packet);
-    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteSupportedFeaturesPacket(conn),
-                          &kReadRemoteSupportedFeaturesRsp, &remote_supported_complete_packet);
+    EXPECT_CMD_PACKET_OUT(test_device(),
+                          testing::RemoteNameRequestPacket(addr),
+                          &kRemoteNameRequestRsp,
+                          &remote_name_request_complete_packet);
+    EXPECT_CMD_PACKET_OUT(test_device(),
+                          testing::ReadRemoteVersionInfoPacket(conn),
+                          &kReadRemoteVersionInfoRsp,
+                          &remote_version_complete_packet);
+    EXPECT_CMD_PACKET_OUT(test_device(),
+                          testing::ReadRemoteSupportedFeaturesPacket(conn),
+                          &kReadRemoteSupportedFeaturesRsp,
+                          &remote_supported_complete_packet);
     if (extended_features) {
       QueueSuccessfulReadRemoteExtendedFeatures(conn);
     }
   }
 
-  void QueueSuccessfulReadRemoteExtendedFeatures(hci_spec::ConnectionHandle conn) const {
+  void QueueSuccessfulReadRemoteExtendedFeatures(
+      hci_spec::ConnectionHandle conn) const {
     const DynamicByteBuffer remote_extended1_complete_packet =
         testing::ReadRemoteExtended1CompletePacket(conn);
     const DynamicByteBuffer remote_extended2_complete_packet =
         testing::ReadRemoteExtended2CompletePacket(conn);
 
-    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteExtended1Packet(conn),
-                          &kReadRemoteExtendedFeaturesRsp, &remote_extended1_complete_packet);
-    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteExtended2Packet(conn),
-                          &kReadRemoteExtendedFeaturesRsp, &remote_extended2_complete_packet);
+    EXPECT_CMD_PACKET_OUT(test_device(),
+                          testing::ReadRemoteExtended1Packet(conn),
+                          &kReadRemoteExtendedFeaturesRsp,
+                          &remote_extended1_complete_packet);
+    EXPECT_CMD_PACKET_OUT(test_device(),
+                          testing::ReadRemoteExtended2Packet(conn),
+                          &kReadRemoteExtendedFeaturesRsp,
+                          &remote_extended2_complete_packet);
   }
 
   void DestroyInterrogator() { interrogator_.reset(); }
@@ -116,25 +134,35 @@ class BrEdrInterrogatorTest : public TestingBase {
 
 using GAP_BrEdrInterrogatorTest = BrEdrInterrogatorTest;
 
-TEST_F(BrEdrInterrogatorTest, InterrogationFailsWithMalformedRemoteNameRequestComplete) {
+TEST_F(BrEdrInterrogatorTest,
+       InterrogationFailsWithMalformedRemoteNameRequestComplete) {
   // Remote Name Request Complete event with insufficient length.
   const auto addr = kTestDevAddr.value().bytes();
   StaticByteBuffer remote_name_request_complete_packet(
       hci_spec::kRemoteNameRequestCompleteEventCode,
       0x08,                                        // parameter_total_size (8)
       pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
-      addr[0], addr[1], addr[2], addr[3], addr[4],
+      addr[0],
+      addr[1],
+      addr[2],
+      addr[3],
+      addr[4],
       addr[5],  // peer address
       'F'       // remote name
   );
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::RemoteNameRequestPacket(kTestDevAddr),
-                        &kRemoteNameRequestRsp, &remote_name_request_complete_packet);
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(kConnectionHandle));
   EXPECT_CMD_PACKET_OUT(test_device(),
-                        testing::ReadRemoteSupportedFeaturesPacket(kConnectionHandle));
+                        testing::RemoteNameRequestPacket(kTestDevAddr),
+                        &kRemoteNameRequestRsp,
+                        &remote_name_request_complete_packet);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), testing::ReadRemoteVersionInfoPacket(kConnectionHandle));
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      testing::ReadRemoteSupportedFeaturesPacket(kConnectionHandle));
 
   hci::Result<> status = fit::ok();
-  interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
+  interrogator()->Start(
+      [&status](hci::Result<> cb_status) { status = cb_status; });
   RunUntilIdle();
   EXPECT_TRUE(status.is_error());
 }
@@ -143,7 +171,8 @@ TEST_F(BrEdrInterrogatorTest, SuccessfulInterrogation) {
   QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
 
   std::optional<hci::Result<>> status;
-  interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
+  interrogator()->Start(
+      [&status](hci::Result<> cb_status) { status = cb_status; });
   RunUntilIdle();
 
   ASSERT_TRUE(status.has_value());
@@ -152,7 +181,8 @@ TEST_F(BrEdrInterrogatorTest, SuccessfulInterrogation) {
   EXPECT_TRUE(peer()->name());
   EXPECT_TRUE(peer()->version());
   EXPECT_TRUE(peer()->features().HasPage(0));
-  EXPECT_TRUE(peer()->features().HasBit(/*page=*/0, hci_spec::LMPFeature::kExtendedFeatures));
+  EXPECT_TRUE(peer()->features().HasBit(
+      /*page=*/0, hci_spec::LMPFeature::kExtendedFeatures));
   EXPECT_EQ(2u, peer()->features().last_page_number());
 }
 
@@ -160,7 +190,8 @@ TEST_F(BrEdrInterrogatorTest, SuccessfulReinterrogation) {
   QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
 
   std::optional<hci::Result<>> status;
-  interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
+  interrogator()->Start(
+      [&status](hci::Result<> cb_status) { status = cb_status; });
   RunUntilIdle();
 
   ASSERT_TRUE(status.has_value());
@@ -168,23 +199,30 @@ TEST_F(BrEdrInterrogatorTest, SuccessfulReinterrogation) {
   status = std::nullopt;
 
   QueueSuccessfulReadRemoteExtendedFeatures(kConnectionHandle);
-  interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
+  interrogator()->Start(
+      [&status](hci::Result<> cb_status) { status = cb_status; });
   RunUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(fit::ok(), *status);
 }
 
 TEST_F(BrEdrInterrogatorTest, InterrogationFailedToGetName) {
-  const DynamicByteBuffer remote_name_request_failure_rsp = testing::CommandStatusPacket(
-      hci_spec::kRemoteNameRequest, pw::bluetooth::emboss::StatusCode::UNSPECIFIED_ERROR);
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::RemoteNameRequestPacket(kTestDevAddr),
-                        &remote_name_request_failure_rsp);
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(kConnectionHandle));
+  const DynamicByteBuffer remote_name_request_failure_rsp =
+      testing::CommandStatusPacket(
+          hci_spec::kRemoteNameRequest,
+          pw::bluetooth::emboss::StatusCode::UNSPECIFIED_ERROR);
   EXPECT_CMD_PACKET_OUT(test_device(),
-                        testing::ReadRemoteSupportedFeaturesPacket(kConnectionHandle));
+                        testing::RemoteNameRequestPacket(kTestDevAddr),
+                        &remote_name_request_failure_rsp);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), testing::ReadRemoteVersionInfoPacket(kConnectionHandle));
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      testing::ReadRemoteSupportedFeaturesPacket(kConnectionHandle));
 
   std::optional<hci::Result<>> status;
-  interrogator()->Start([&status](hci::Result<> cb_status) { status = cb_status; });
+  interrogator()->Start(
+      [&status](hci::Result<> cb_status) { status = cb_status; });
   RunUntilIdle();
 
   ASSERT_TRUE(status.has_value());
@@ -192,7 +230,8 @@ TEST_F(BrEdrInterrogatorTest, InterrogationFailedToGetName) {
 }
 
 TEST_F(BrEdrInterrogatorTest, Cancel) {
-  QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle, /*extended_features=*/false);
+  QueueSuccessfulInterrogation(
+      kTestDevAddr, kConnectionHandle, /*extended_features=*/false);
 
   std::optional<hci::Result<>> result;
   interrogator()->Start([&](hci::Result<> status) { result = status; });
@@ -226,7 +265,8 @@ TEST_F(BrEdrInterrogatorTest, InterrogatorDestroyedInCompleteCallback) {
   EXPECT_TRUE(peer()->name());
   EXPECT_TRUE(peer()->version());
   EXPECT_TRUE(peer()->features().HasPage(0));
-  EXPECT_TRUE(peer()->features().HasBit(/*page=*/0, hci_spec::LMPFeature::kExtendedFeatures));
+  EXPECT_TRUE(peer()->features().HasBit(
+      /*page=*/0, hci_spec::LMPFeature::kExtendedFeatures));
   EXPECT_EQ(2u, peer()->features().last_page_number());
 }
 }  // namespace bt::gap

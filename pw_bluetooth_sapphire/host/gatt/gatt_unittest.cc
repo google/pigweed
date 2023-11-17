@@ -2,20 +2,20 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "gatt.h"
+#include "pw_bluetooth_sapphire/internal/host/gatt/gatt.h"
 
 #include <pw_async/fake_dispatcher_fixture.h>
 
-#include "fake_client.h"
-#include "mock_server.h"
-#include "src/connectivity/bluetooth/core/bt-host/att/att.h"
-#include "src/connectivity/bluetooth/core/bt-host/att/error.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/host_error.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
-#include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
-#include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
+#include "pw_bluetooth_sapphire/internal/host/att/att.h"
+#include "pw_bluetooth_sapphire/internal/host/att/error.h"
+#include "pw_bluetooth_sapphire/internal/host/common/host_error.h"
+#include "pw_bluetooth_sapphire/internal/host/common/identifier.h"
+#include "pw_bluetooth_sapphire/internal/host/gatt/fake_client.h"
+#include "pw_bluetooth_sapphire/internal/host/gatt/gatt_defs.h"
+#include "pw_bluetooth_sapphire/internal/host/gatt/local_service_manager.h"
+#include "pw_bluetooth_sapphire/internal/host/gatt/mock_server.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
 namespace bt::gatt::internal {
 namespace {
@@ -26,10 +26,12 @@ constexpr UUID kTestServiceUuid0(uint16_t{0xbeef});
 constexpr IdType kChrcId{13};
 constexpr bt::UUID kChrcUuid(uint16_t{113u});
 
-// Factory function for tests of client-facing behavior that don't care about the server
-std::unique_ptr<Server> CreateMockServer(PeerId peer_id,
-                                         LocalServiceManager::WeakPtr local_services) {
-  return std::make_unique<testing::MockServer>(peer_id, std::move(local_services));
+// Factory function for tests of client-facing behavior that don't care about
+// the server
+std::unique_ptr<Server> CreateMockServer(
+    PeerId peer_id, LocalServiceManager::WeakPtr local_services) {
+  return std::make_unique<testing::MockServer>(peer_id,
+                                               std::move(local_services));
 }
 
 class GattTest : public pw::async::test::FakeDispatcherFixture {
@@ -59,16 +61,23 @@ class GattTest : public pw::async::test::FakeDispatcherFixture {
     gatt_.reset();
   }
 
-  // Register an arbitrary service with a single characteristic of id |kChrcId|, e.g. for sending
-  // notifications. Returns the internal IdType of the registered service.
+  // Register an arbitrary service with a single characteristic of id |kChrcId|,
+  // e.g. for sending notifications. Returns the internal IdType of the
+  // registered service.
   IdType RegisterArbitraryService() {
     auto svc = std::make_unique<Service>(/*primary=*/true, kTestServiceUuid0);
-    const att::AccessRequirements kReadPerm, kWritePerm;  // Default is not allowed
+    const att::AccessRequirements kReadPerm,
+        kWritePerm;  // Default is not allowed
     // Allow "update" (i.e. indications / notifications) with no security
-    const att::AccessRequirements kUpdatePerm(/*encryption=*/false, /*authentication=*/false,
+    const att::AccessRequirements kUpdatePerm(/*encryption=*/false,
+                                              /*authentication=*/false,
                                               /*authorization=*/false);
-    auto chrc = std::make_unique<Characteristic>(kChrcId, kChrcUuid, Property::kIndicate,
-                                                 /*extended_properties=*/0, kReadPerm, kWritePerm,
+    auto chrc = std::make_unique<Characteristic>(kChrcId,
+                                                 kChrcUuid,
+                                                 Property::kIndicate,
+                                                 /*extended_properties=*/0,
+                                                 kReadPerm,
+                                                 kWritePerm,
                                                  kUpdatePerm);
     svc->AddCharacteristic(std::move(chrc));
 
@@ -77,7 +86,10 @@ class GattTest : public pw::async::test::FakeDispatcherFixture {
       EXPECT_NE(kInvalidId, received_id);
       svc_id = received_id;
     };
-    gatt()->RegisterService(std::move(svc), std::move(id_cb), NopReadHandler, NopWriteHandler,
+    gatt()->RegisterService(std::move(svc),
+                            std::move(id_cb),
+                            NopReadHandler,
+                            NopWriteHandler,
                             NopCCCallback);
     RunUntilIdle();
     EXPECT_TRUE(svc_id.has_value());
@@ -104,18 +116,23 @@ TEST_F(GattTest, RemoteServiceWatcherNotifiesAddedModifiedAndRemovedService) {
   const att::Handle kCCCDescriptorHandle(4);
   const att::Handle kGattSvcEndHandle(kCCCDescriptorHandle);
 
-  ServiceData gatt_svc(ServiceKind::PRIMARY, kGattSvcStartHandle, kGattSvcEndHandle,
+  ServiceData gatt_svc(ServiceKind::PRIMARY,
+                       kGattSvcStartHandle,
+                       kGattSvcEndHandle,
                        types::kGenericAttributeService);
-  CharacteristicData service_changed_chrc(Property::kIndicate, std::nullopt, kSvcChangedChrcHandle,
+  CharacteristicData service_changed_chrc(Property::kIndicate,
+                                          std::nullopt,
+                                          kSvcChangedChrcHandle,
                                           kSvcChangedChrcValueHandle,
                                           types::kServiceChangedCharacteristic);
-  DescriptorData ccc_descriptor(kCCCDescriptorHandle, types::kClientCharacteristicConfig);
+  DescriptorData ccc_descriptor(kCCCDescriptorHandle,
+                                types::kClientCharacteristicConfig);
   fake_client()->set_services({gatt_svc});
   fake_client()->set_characteristics({service_changed_chrc});
   fake_client()->set_descriptors({ccc_descriptor});
 
-  // Return success when a Service Changed Client Characteristic Config descriptor write is
-  // performed.
+  // Return success when a Service Changed Client Characteristic Config
+  // descriptor write is performed.
   int write_request_count = 0;
   fake_client()->set_write_request_callback(
       [&](att::Handle handle, const auto& value, auto status_callback) {
@@ -126,11 +143,15 @@ TEST_F(GattTest, RemoteServiceWatcherNotifiesAddedModifiedAndRemovedService) {
 
   std::vector<ServiceWatcherData> svc_watcher_data;
   gatt()->RegisterRemoteServiceWatcherForPeer(
-      kPeerId, [&](std::vector<att::Handle> removed, ServiceList added, ServiceList modified) {
-        svc_watcher_data.push_back(ServiceWatcherData{.peer_id = kPeerId,
-                                                      .removed = std::move(removed),
-                                                      .added = std::move(added),
-                                                      .modified = std::move(modified)});
+      kPeerId,
+      [&](std::vector<att::Handle> removed,
+          ServiceList added,
+          ServiceList modified) {
+        svc_watcher_data.push_back(
+            ServiceWatcherData{.peer_id = kPeerId,
+                               .removed = std::move(removed),
+                               .added = std::move(added),
+                               .modified = std::move(modified)});
       });
 
   gatt()->AddConnection(kPeerId, take_client(), CreateMockServer);
@@ -149,18 +170,25 @@ TEST_F(GattTest, RemoteServiceWatcherNotifiesAddedModifiedAndRemovedService) {
   const att::Handle kSvc1StartHandle(5);
   const att::Handle kSvc1EndHandle(kSvc1StartHandle);
 
-  // Add a test service to ensure that service discovery occurs after the Service Changed
-  // characteristic is configured.
-  ServiceData svc1(ServiceKind::PRIMARY, kSvc1StartHandle, kSvc1EndHandle, kTestServiceUuid0);
+  // Add a test service to ensure that service discovery occurs after the
+  // Service Changed characteristic is configured.
+  ServiceData svc1(ServiceKind::PRIMARY,
+                   kSvc1StartHandle,
+                   kSvc1EndHandle,
+                   kTestServiceUuid0);
   fake_client()->set_services({gatt_svc, svc1});
 
   // Send a notification that svc1 has been added.
   StaticByteBuffer svc_changed_range_buffer(
-      LowerBits(kSvc1StartHandle), UpperBits(kSvc1StartHandle),  // start handle of affected range
-      LowerBits(kSvc1EndHandle), UpperBits(kSvc1EndHandle)       // end handle of affected range
+      LowerBits(kSvc1StartHandle),
+      UpperBits(kSvc1StartHandle),  // start handle of affected range
+      LowerBits(kSvc1EndHandle),
+      UpperBits(kSvc1EndHandle)  // end handle of affected range
   );
-  fake_client()->SendNotification(/*indicate=*/true, kSvcChangedChrcValueHandle,
-                                  svc_changed_range_buffer, /*maybe_truncated=*/false);
+  fake_client()->SendNotification(/*indicate=*/true,
+                                  kSvcChangedChrcValueHandle,
+                                  svc_changed_range_buffer,
+                                  /*maybe_truncated=*/false);
   RunUntilIdle();
   ASSERT_EQ(2u, svc_watcher_data.size());
   ASSERT_EQ(1u, svc_watcher_data[1].added.size());
@@ -169,11 +197,14 @@ TEST_F(GattTest, RemoteServiceWatcherNotifiesAddedModifiedAndRemovedService) {
   EXPECT_EQ(kPeerId, svc_watcher_data[1].peer_id);
   EXPECT_EQ(kSvc1StartHandle, svc_watcher_data[1].added[0]->handle());
   bool original_service_removed = false;
-  svc_watcher_data[1].added[0]->AddRemovedHandler([&]() { original_service_removed = true; });
+  svc_watcher_data[1].added[0]->AddRemovedHandler(
+      [&]() { original_service_removed = true; });
 
   // Send a notification that svc1 has been modified.
-  fake_client()->SendNotification(/*indicate=*/true, kSvcChangedChrcValueHandle,
-                                  svc_changed_range_buffer, /*maybe_truncated=*/false);
+  fake_client()->SendNotification(/*indicate=*/true,
+                                  kSvcChangedChrcValueHandle,
+                                  svc_changed_range_buffer,
+                                  /*maybe_truncated=*/false);
   RunUntilIdle();
   EXPECT_TRUE(original_service_removed);
   ASSERT_EQ(3u, svc_watcher_data.size());
@@ -183,14 +214,17 @@ TEST_F(GattTest, RemoteServiceWatcherNotifiesAddedModifiedAndRemovedService) {
   EXPECT_EQ(kPeerId, svc_watcher_data[2].peer_id);
   EXPECT_EQ(kSvc1StartHandle, svc_watcher_data[2].modified[0]->handle());
   bool modified_service_removed = false;
-  svc_watcher_data[2].modified[0]->AddRemovedHandler([&]() { modified_service_removed = true; });
+  svc_watcher_data[2].modified[0]->AddRemovedHandler(
+      [&]() { modified_service_removed = true; });
 
   // Remove the service.
   fake_client()->set_services({gatt_svc});
 
   // Send a notification that svc1 has been removed.
-  fake_client()->SendNotification(/*indicate=*/true, kSvcChangedChrcValueHandle,
-                                  svc_changed_range_buffer, /*maybe_truncated=*/false);
+  fake_client()->SendNotification(/*indicate=*/true,
+                                  kSvcChangedChrcValueHandle,
+                                  svc_changed_range_buffer,
+                                  /*maybe_truncated=*/false);
   RunUntilIdle();
   EXPECT_TRUE(modified_service_removed);
   ASSERT_EQ(4u, svc_watcher_data.size());
@@ -201,26 +235,35 @@ TEST_F(GattTest, RemoteServiceWatcherNotifiesAddedModifiedAndRemovedService) {
   EXPECT_EQ(kSvc1StartHandle, svc_watcher_data[3].removed[0]);
 }
 
-// Register 3 service watchers, 2 of which are for the same peer.  Then unregister 2 service
-// watchers (one for each peer) and ensure only the third is called.
+// Register 3 service watchers, 2 of which are for the same peer.  Then
+// unregister 2 service watchers (one for each peer) and ensure only the third
+// is called.
 TEST_F(GattTest, MultipleRegisterRemoteServiceWatcherForPeers) {
   // Configure peer 0 with 1 service.
   const att::Handle kSvcStartHandle0(42);
   const att::Handle kSvcEndHandle0(kSvcStartHandle0);
-  ServiceData svc_data_0(ServiceKind::PRIMARY, kSvcStartHandle0, kSvcEndHandle0, kTestServiceUuid0);
+  ServiceData svc_data_0(ServiceKind::PRIMARY,
+                         kSvcStartHandle0,
+                         kSvcEndHandle0,
+                         kTestServiceUuid0);
   auto client_0 = std::make_unique<testing::FakeClient>(dispatcher());
   client_0->set_services({svc_data_0});
 
   gatt()->AddConnection(kPeerId0, std::move(client_0), CreateMockServer);
 
   std::vector<ServiceWatcherData> watcher_data_0;
-  GATT::RemoteServiceWatcherId id_0 = gatt()->RegisterRemoteServiceWatcherForPeer(
-      kPeerId0, [&](std::vector<att::Handle> removed, ServiceList added, ServiceList modified) {
-        watcher_data_0.push_back(ServiceWatcherData{.peer_id = kPeerId0,
-                                                    .removed = std::move(removed),
-                                                    .added = std::move(added),
-                                                    .modified = std::move(modified)});
-      });
+  GATT::RemoteServiceWatcherId id_0 =
+      gatt()->RegisterRemoteServiceWatcherForPeer(
+          kPeerId0,
+          [&](std::vector<att::Handle> removed,
+              ServiceList added,
+              ServiceList modified) {
+            watcher_data_0.push_back(
+                ServiceWatcherData{.peer_id = kPeerId0,
+                                   .removed = std::move(removed),
+                                   .added = std::move(added),
+                                   .modified = std::move(modified)});
+          });
 
   // Configure peer 1 with gatt service.
   const att::Handle kGattSvcStartHandle(1);
@@ -228,46 +271,63 @@ TEST_F(GattTest, MultipleRegisterRemoteServiceWatcherForPeers) {
   const att::Handle kSvcChangedChrcValueHandle(3);
   const att::Handle kCCCDescriptorHandle(4);
   const att::Handle kGattSvcEndHandle(kCCCDescriptorHandle);
-  ServiceData gatt_svc(ServiceKind::PRIMARY, kGattSvcStartHandle, kGattSvcEndHandle,
+  ServiceData gatt_svc(ServiceKind::PRIMARY,
+                       kGattSvcStartHandle,
+                       kGattSvcEndHandle,
                        types::kGenericAttributeService);
-  CharacteristicData service_changed_chrc(Property::kIndicate, std::nullopt, kSvcChangedChrcHandle,
+  CharacteristicData service_changed_chrc(Property::kIndicate,
+                                          std::nullopt,
+                                          kSvcChangedChrcHandle,
                                           kSvcChangedChrcValueHandle,
                                           types::kServiceChangedCharacteristic);
-  DescriptorData ccc_descriptor(kCCCDescriptorHandle, types::kClientCharacteristicConfig);
+  DescriptorData ccc_descriptor(kCCCDescriptorHandle,
+                                types::kClientCharacteristicConfig);
   auto client_1 = std::make_unique<testing::FakeClient>(dispatcher());
   auto client_1_weak = client_1.get();
   client_1->set_services({gatt_svc});
   client_1->set_characteristics({service_changed_chrc});
   client_1->set_descriptors({ccc_descriptor});
 
-  // Return success when a Service Changed Client Characteristic Config descriptor write is
-  // performed.
-  client_1->set_write_request_callback([&](att::Handle handle, const auto& value,
-                                           auto status_callback) { status_callback(fit::ok()); });
+  // Return success when a Service Changed Client Characteristic Config
+  // descriptor write is performed.
+  client_1->set_write_request_callback(
+      [&](att::Handle handle, const auto& value, auto status_callback) {
+        status_callback(fit::ok());
+      });
 
   gatt()->AddConnection(kPeerId1, std::move(client_1), CreateMockServer);
 
   // Register 2 watchers for kPeerId1.
   std::vector<ServiceWatcherData> watcher_data_1;
-  GATT::RemoteServiceWatcherId id_1 = gatt()->RegisterRemoteServiceWatcherForPeer(
-      kPeerId1, [&](std::vector<att::Handle> removed, ServiceList added, ServiceList modified) {
-        watcher_data_1.push_back(ServiceWatcherData{.peer_id = kPeerId1,
-                                                    .removed = std::move(removed),
-                                                    .added = std::move(added),
-                                                    .modified = std::move(modified)});
-      });
+  GATT::RemoteServiceWatcherId id_1 =
+      gatt()->RegisterRemoteServiceWatcherForPeer(
+          kPeerId1,
+          [&](std::vector<att::Handle> removed,
+              ServiceList added,
+              ServiceList modified) {
+            watcher_data_1.push_back(
+                ServiceWatcherData{.peer_id = kPeerId1,
+                                   .removed = std::move(removed),
+                                   .added = std::move(added),
+                                   .modified = std::move(modified)});
+          });
   EXPECT_NE(id_0, id_1);
 
   std::vector<ServiceWatcherData> watcher_data_2;
   gatt()->RegisterRemoteServiceWatcherForPeer(
-      kPeerId1, [&](std::vector<att::Handle> removed, ServiceList added, ServiceList modified) {
-        watcher_data_2.push_back(ServiceWatcherData{.peer_id = kPeerId1,
-                                                    .removed = std::move(removed),
-                                                    .added = std::move(added),
-                                                    .modified = std::move(modified)});
+      kPeerId1,
+      [&](std::vector<att::Handle> removed,
+          ServiceList added,
+          ServiceList modified) {
+        watcher_data_2.push_back(
+            ServiceWatcherData{.peer_id = kPeerId1,
+                               .removed = std::move(removed),
+                               .added = std::move(added),
+                               .modified = std::move(modified)});
       });
 
-  // Service discovery should complete and all service watchers should be notified.
+  // Service discovery should complete and all service watchers should be
+  // notified.
   gatt()->InitializeClient(kPeerId0, /*service_uuids=*/{});
   gatt()->InitializeClient(kPeerId1, /*service_uuids=*/{});
   RunUntilIdle();
@@ -288,16 +348,23 @@ TEST_F(GattTest, MultipleRegisterRemoteServiceWatcherForPeers) {
 
   const att::Handle kSvcStartHandle1(84);
   const att::Handle kSvcEndHandle1(kSvcStartHandle1);
-  ServiceData svc_data_1(ServiceKind::PRIMARY, kSvcStartHandle1, kSvcEndHandle1, kTestServiceUuid0);
+  ServiceData svc_data_1(ServiceKind::PRIMARY,
+                         kSvcStartHandle1,
+                         kSvcEndHandle1,
+                         kTestServiceUuid0);
   client_1_weak->set_services({gatt_svc, svc_data_1});
 
   // Send a notification that service kSvcStartHandle1 has been added.
   StaticByteBuffer svc_changed_range_buffer(
-      LowerBits(kSvcStartHandle1), UpperBits(kSvcStartHandle1),  // start handle of affected range
-      LowerBits(kSvcEndHandle1), UpperBits(kSvcEndHandle1)       // end handle of affected range
+      LowerBits(kSvcStartHandle1),
+      UpperBits(kSvcStartHandle1),  // start handle of affected range
+      LowerBits(kSvcEndHandle1),
+      UpperBits(kSvcEndHandle1)  // end handle of affected range
   );
-  client_1_weak->SendNotification(/*indicate=*/true, kSvcChangedChrcValueHandle,
-                                  svc_changed_range_buffer, /*maybe_truncated=*/false);
+  client_1_weak->SendNotification(/*indicate=*/true,
+                                  kSvcChangedChrcValueHandle,
+                                  svc_changed_range_buffer,
+                                  /*maybe_truncated=*/false);
   RunUntilIdle();
   // Unregistered handlers should not be notified.
   ASSERT_EQ(watcher_data_0.size(), 1u);
@@ -311,14 +378,16 @@ TEST_F(GattTest, MultipleRegisterRemoteServiceWatcherForPeers) {
 
 TEST_F(GattTest, ServiceDiscoveryFailureShutsDownConnection) {
   testing::MockServer::WeakPtr mock_server;
-  auto mock_server_factory = [&](PeerId peer_id, LocalServiceManager::WeakPtr local_services) {
-    auto unique_mock_server =
-        std::make_unique<testing::MockServer>(peer_id, std::move(local_services));
+  auto mock_server_factory = [&](PeerId peer_id,
+                                 LocalServiceManager::WeakPtr local_services) {
+    auto unique_mock_server = std::make_unique<testing::MockServer>(
+        peer_id, std::move(local_services));
     mock_server = unique_mock_server->AsMockWeakPtr();
     return unique_mock_server;
   };
-  fake_client()->set_discover_services_callback(
-      [](ServiceKind kind) { return ToResult(att::ErrorCode::kRequestNotSupported); });
+  fake_client()->set_discover_services_callback([](ServiceKind kind) {
+    return ToResult(att::ErrorCode::kRequestNotSupported);
+  });
   gatt()->AddConnection(kPeerId, take_client(), std::move(mock_server_factory));
   ASSERT_TRUE(mock_server.is_alive());
   EXPECT_FALSE(mock_server->was_shut_down());
@@ -331,18 +400,23 @@ TEST_F(GattTest, SendIndicationNoConnectionFails) {
   att::Result<> res = fit::ok();
   auto indicate_cb = [&res](att::Result<> cb_res) { res = cb_res; };
   // Don't add the connection to GATT before trying to send an indication
-  gatt()->SendUpdate(/*service_id=*/1, /*chrc_id=*/2, PeerId{3}, std::vector<uint8_t>{1},
+  gatt()->SendUpdate(/*service_id=*/1,
+                     /*chrc_id=*/2,
+                     PeerId{3},
+                     std::vector<uint8_t>{1},
                      std::move(indicate_cb));
   EXPECT_EQ(fit::failed(), res);
 }
 
-class GattTestBoolParam : public GattTest, public ::testing::WithParamInterface<bool> {};
+class GattTestBoolParam : public GattTest,
+                          public ::testing::WithParamInterface<bool> {};
 
 TEST_P(GattTestBoolParam, SendIndicationReceiveResponse) {
   testing::MockServer::WeakPtr mock_server;
-  auto mock_server_factory = [&](PeerId peer_id, LocalServiceManager::WeakPtr local_services) {
-    auto unique_mock_server =
-        std::make_unique<testing::MockServer>(peer_id, std::move(local_services));
+  auto mock_server_factory = [&](PeerId peer_id,
+                                 LocalServiceManager::WeakPtr local_services) {
+    auto unique_mock_server = std::make_unique<testing::MockServer>(
+        peer_id, std::move(local_services));
     mock_server = unique_mock_server->AsMockWeakPtr();
     return unique_mock_server;
   };
@@ -352,20 +426,24 @@ TEST_P(GattTestBoolParam, SendIndicationReceiveResponse) {
   // Configure how the mock server handles updates sent from the GATT object.
   IndicationCallback mock_ind_cb = nullptr;
   const std::vector<uint8_t> kIndicateVal{114};  // 114 is arbitrary
-  testing::UpdateHandler handler = [&](auto /*ignore*/, auto /*ignore*/, const ByteBuffer& bytes,
+  testing::UpdateHandler handler = [&](auto /*ignore*/,
+                                       auto /*ignore*/,
+                                       const ByteBuffer& bytes,
                                        IndicationCallback ind_cb) {
     EXPECT_EQ(kIndicateVal, bytes.ToVector());
     mock_ind_cb = std::move(ind_cb);
   };
   mock_server->set_update_handler(std::move(handler));
 
-  // Registering the service isn't strictly necessary as gatt::GATT itself is not responsible for
-  // checking that a service exists before sending an update, but it's a more realistic test.
+  // Registering the service isn't strictly necessary as gatt::GATT itself is
+  // not responsible for checking that a service exists before sending an
+  // update, but it's a more realistic test.
   IdType svc_id = RegisterArbitraryService();
 
   std::optional<att::Result<>> indicate_status;
   auto indicate_cb = [&](att::Result<> status) { indicate_status = status; };
-  gatt()->SendUpdate(svc_id, kChrcId, kPeerId, kIndicateVal, std::move(indicate_cb));
+  gatt()->SendUpdate(
+      svc_id, kChrcId, kPeerId, kIndicateVal, std::move(indicate_cb));
   RunUntilIdle();
   EXPECT_TRUE(mock_ind_cb);
   EXPECT_FALSE(indicate_status.has_value());
@@ -380,25 +458,31 @@ TEST_P(GattTestBoolParam, SendIndicationReceiveResponse) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(GattTestBoolParamTests, GattTestBoolParam, ::testing::Bool());
+INSTANTIATE_TEST_SUITE_P(GattTestBoolParamTests,
+                         GattTestBoolParam,
+                         ::testing::Bool());
 
 TEST_F(GattTest, NotifyConnectedPeersNoneConnectedDoesntCrash) {
-  // Registering a service isn't strictly necessary, but makes for a more realistic test.
+  // Registering a service isn't strictly necessary, but makes for a more
+  // realistic test.
   IdType svc_id = RegisterArbitraryService();
 
   const std::vector<uint8_t> kNotifyVal{12u};
-  gatt()->UpdateConnectedPeers(svc_id, kChrcId, kNotifyVal, /*indicate_cb=*/nullptr);
+  gatt()->UpdateConnectedPeers(
+      svc_id, kChrcId, kNotifyVal, /*indicate_cb=*/nullptr);
   RunUntilIdle();
 }
 
 TEST_F(GattTest, NotifyConnectedPeerWithConnectionDoesntCrash) {
-  // Registering a service isn't strictly necessary, but makes for a more realistic test.
+  // Registering a service isn't strictly necessary, but makes for a more
+  // realistic test.
   IdType svc_id = RegisterArbitraryService();
 
   testing::MockServer::WeakPtr mock_server;
-  auto mock_server_factory = [&](PeerId peer_id, LocalServiceManager::WeakPtr local_services) {
-    auto unique_mock_server =
-        std::make_unique<testing::MockServer>(peer_id, std::move(local_services));
+  auto mock_server_factory = [&](PeerId peer_id,
+                                 LocalServiceManager::WeakPtr local_services) {
+    auto unique_mock_server = std::make_unique<testing::MockServer>(
+        peer_id, std::move(local_services));
     mock_server = unique_mock_server->AsMockWeakPtr();
     return unique_mock_server;
   };
@@ -408,25 +492,30 @@ TEST_F(GattTest, NotifyConnectedPeerWithConnectionDoesntCrash) {
   // Configure how the mock server handles updates sent from the GATT object.
   IndicationCallback mock_ind_cb = [](att::Result<>) {};  // no-op, but not-null
   const std::vector<uint8_t> kNotifyVal{12u};
-  testing::UpdateHandler handler = [&](auto /*ignore*/, auto /*ignore*/, const ByteBuffer& bytes,
+  testing::UpdateHandler handler = [&](auto /*ignore*/,
+                                       auto /*ignore*/,
+                                       const ByteBuffer& bytes,
                                        IndicationCallback ind_cb) {
     EXPECT_EQ(kNotifyVal, bytes.ToVector());
     mock_ind_cb = std::move(ind_cb);
   };
   mock_server->set_update_handler(std::move(handler));
-  gatt()->UpdateConnectedPeers(svc_id, kChrcId, kNotifyVal, /*indicate_cb=*/nullptr);
+  gatt()->UpdateConnectedPeers(
+      svc_id, kChrcId, kNotifyVal, /*indicate_cb=*/nullptr);
   RunUntilIdle();
   EXPECT_EQ(nullptr, mock_ind_cb);
 }
 
 TEST_F(GattTest, IndicateConnectedPeersNoneConnectedSucceeds) {
-  // Registering a service isn't strictly necessary, but makes for a more realistic test.
+  // Registering a service isn't strictly necessary, but makes for a more
+  // realistic test.
   IdType svc_id = RegisterArbitraryService();
 
   const std::vector<uint8_t> indicate_val{12u};
   att::Result<> res = ToResult(att::ErrorCode::kAttributeNotFound);
   auto indicate_cb = [&](att::Result<> cb_res) { res = cb_res; };
-  gatt()->UpdateConnectedPeers(svc_id, kChrcId, indicate_val, std::move(indicate_cb));
+  gatt()->UpdateConnectedPeers(
+      svc_id, kChrcId, indicate_val, std::move(indicate_cb));
 
   EXPECT_EQ(fit::ok(), res);
 }
@@ -446,7 +535,8 @@ TEST_F(GattTest, UpdateMtuListenersNotified) {
     listener_2_results = PeerIdAndMtu{.peer_id = peer_id, .mtu = mtu};
   };
   gatt()->RegisterPeerMtuListener(std::move(listener_1));
-  GATT::PeerMtuListenerId listener_2_id = gatt()->RegisterPeerMtuListener(std::move(listener_2));
+  GATT::PeerMtuListenerId listener_2_id =
+      gatt()->RegisterPeerMtuListener(std::move(listener_2));
 
   // Configure MTU
   const uint16_t kExpectedMtu = att::kLEMinMTU + 1;
@@ -464,7 +554,8 @@ TEST_F(GattTest, UpdateMtuListenersNotified) {
   EXPECT_EQ(kPeerId0, listener_2_results->peer_id);
   EXPECT_EQ(kExpectedMtu, listener_2_results->mtu);
 
-  // After unregistering listener_2, only listener_1 should be notified for the next update
+  // After unregistering listener_2, only listener_1 should be notified for the
+  // next update
   listener_1_results.reset();
   listener_2_results.reset();
   EXPECT_TRUE(gatt()->UnregisterPeerMtuListener(listener_2_id));
@@ -494,10 +585,12 @@ TEST_F(GattTest, MtuExchangeServerNotSupportedListenersNotifiedDefaultMtu) {
   gatt()->RegisterPeerMtuListener(std::move(listener_1));
   gatt()->RegisterPeerMtuListener(std::move(listener_2));
 
-  // It should be OK for the MTU exchange to fail with kRequestNotSupported, in which case we use
-  // the default LE MTU per v5.3 Vol. 3 Part G 4.3.1 (not the Server MTU)
+  // It should be OK for the MTU exchange to fail with kRequestNotSupported, in
+  // which case we use the default LE MTU per v5.3 Vol. 3 Part G 4.3.1 (not the
+  // Server MTU)
   fake_client()->set_server_mtu(att::kLEMinMTU + 5);
-  fake_client()->set_exchange_mtu_status(ToResult(att::ErrorCode::kRequestNotSupported));
+  fake_client()->set_exchange_mtu_status(
+      ToResult(att::ErrorCode::kRequestNotSupported));
   gatt()->AddConnection(kPeerId0, take_client(), CreateMockServer);
   gatt()->InitializeClient(kPeerId0, {});
   RunUntilIdle();
@@ -513,7 +606,9 @@ TEST_F(GattTest, MtuExchangeServerNotSupportedListenersNotifiedDefaultMtu) {
 TEST_F(GattTest, MtuExchangeFailsListenersNotNotifiedConnectionShutdown) {
   // Add MTU listener to GATT
   bool listener_invoked = false;
-  auto listener = [&](PeerId /*ignore*/, uint16_t /*ignore*/) { listener_invoked = true; };
+  auto listener = [&](PeerId /*ignore*/, uint16_t /*ignore*/) {
+    listener_invoked = true;
+  };
   gatt()->RegisterPeerMtuListener(std::move(listener));
 
   // Configure MTU exchange to fail
@@ -521,15 +616,18 @@ TEST_F(GattTest, MtuExchangeFailsListenersNotNotifiedConnectionShutdown) {
 
   // Track mock server
   testing::MockServer::WeakPtr mock_server;
-  auto mock_server_factory = [&](PeerId peer_id, LocalServiceManager::WeakPtr local_services) {
-    auto unique_mock_server =
-        std::make_unique<testing::MockServer>(peer_id, std::move(local_services));
+  auto mock_server_factory = [&](PeerId peer_id,
+                                 LocalServiceManager::WeakPtr local_services) {
+    auto unique_mock_server = std::make_unique<testing::MockServer>(
+        peer_id, std::move(local_services));
     mock_server = unique_mock_server->AsMockWeakPtr();
     return unique_mock_server;
   };
 
-  // Add connection, initialize, and verify that MTU exchange failure causes connection shutdown.
-  gatt()->AddConnection(kPeerId0, take_client(), std::move(mock_server_factory));
+  // Add connection, initialize, and verify that MTU exchange failure causes
+  // connection shutdown.
+  gatt()->AddConnection(
+      kPeerId0, take_client(), std::move(mock_server_factory));
   gatt()->InitializeClient(kPeerId0, {});
   RunUntilIdle();
   EXPECT_FALSE(listener_invoked);
@@ -542,41 +640,50 @@ class GattIndicateMultipleConnectedPeersTest : public GattTest {
  protected:
   void SetUp() override {
     GattTest::SetUp();
-    // Registering a service isn't strictly necessary, but makes for a more realistic test.
+    // Registering a service isn't strictly necessary, but makes for a more
+    // realistic test.
     svc_id_ = RegisterArbitraryService();
 
     // Add first connection
-    auto mock_server_factory_0 = [&](PeerId peer_id, LocalServiceManager::WeakPtr local_services) {
-      auto unique_mock_server =
-          std::make_unique<testing::MockServer>(peer_id, std::move(local_services));
-      mock_server_0_ = unique_mock_server->AsMockWeakPtr();
-      return unique_mock_server;
-    };
-    gatt()->AddConnection(kPeerId0, std::make_unique<testing::FakeClient>(dispatcher()),
+    auto mock_server_factory_0 =
+        [&](PeerId peer_id, LocalServiceManager::WeakPtr local_services) {
+          auto unique_mock_server = std::make_unique<testing::MockServer>(
+              peer_id, std::move(local_services));
+          mock_server_0_ = unique_mock_server->AsMockWeakPtr();
+          return unique_mock_server;
+        };
+    gatt()->AddConnection(kPeerId0,
+                          std::make_unique<testing::FakeClient>(dispatcher()),
                           std::move(mock_server_factory_0));
     ASSERT_TRUE(mock_server_0_.is_alive());
 
     // Add second connection
-    auto mock_server_factory_1 = [&](PeerId peer_id, LocalServiceManager::WeakPtr local_services) {
-      auto unique_mock_server =
-          std::make_unique<testing::MockServer>(peer_id, std::move(local_services));
-      mock_server_1_ = unique_mock_server->AsMockWeakPtr();
-      return unique_mock_server;
-    };
-    gatt()->AddConnection(kPeerId1, std::make_unique<testing::FakeClient>(dispatcher()),
+    auto mock_server_factory_1 =
+        [&](PeerId peer_id, LocalServiceManager::WeakPtr local_services) {
+          auto unique_mock_server = std::make_unique<testing::MockServer>(
+              peer_id, std::move(local_services));
+          mock_server_1_ = unique_mock_server->AsMockWeakPtr();
+          return unique_mock_server;
+        };
+    gatt()->AddConnection(kPeerId1,
+                          std::make_unique<testing::FakeClient>(dispatcher()),
                           std::move(mock_server_factory_1));
     ASSERT_TRUE(mock_server_1_.is_alive());
 
     // Configure how the mock servers handle updates from the GATT object.
-    testing::UpdateHandler handler_0 = [&](auto /*ignore*/, auto /*ignore*/,
-                                           const ByteBuffer& bytes, IndicationCallback ind_cb) {
+    testing::UpdateHandler handler_0 = [&](auto /*ignore*/,
+                                           auto /*ignore*/,
+                                           const ByteBuffer& bytes,
+                                           IndicationCallback ind_cb) {
       EXPECT_EQ(kIndicateVal, bytes.ToVector());
       indication_ack_cb_0_ = std::move(ind_cb);
     };
     mock_server_0_->set_update_handler(std::move(handler_0));
 
-    testing::UpdateHandler handler_1 = [&](auto /*ignore*/, auto /*ignore*/,
-                                           const ByteBuffer& bytes, IndicationCallback ind_cb) {
+    testing::UpdateHandler handler_1 = [&](auto /*ignore*/,
+                                           auto /*ignore*/,
+                                           const ByteBuffer& bytes,
+                                           IndicationCallback ind_cb) {
       EXPECT_EQ(kIndicateVal, bytes.ToVector());
       indication_ack_cb_1_ = std::move(ind_cb);
     };
@@ -590,16 +697,22 @@ class GattIndicateMultipleConnectedPeersTest : public GattTest {
   testing::MockServer::WeakPtr mock_server_1_;
 };
 
-TEST_F(GattIndicateMultipleConnectedPeersTest, UpdateConnectedPeersWaitsTillAllCallbacksComplete) {
+TEST_F(GattIndicateMultipleConnectedPeersTest,
+       UpdateConnectedPeersWaitsTillAllCallbacksComplete) {
   // Send an indication.
-  att::Result<> res = ToResult(att::ErrorCode::kInvalidPDU);  // arbitrary error code
-  IndicationCallback indication_cb = [&res](att::Result<> cb_res) { res = cb_res; };
-  gatt()->UpdateConnectedPeers(svc_id_, kChrcId, kIndicateVal, indication_cb.share());
+  att::Result<> res =
+      ToResult(att::ErrorCode::kInvalidPDU);  // arbitrary error code
+  IndicationCallback indication_cb = [&res](att::Result<> cb_res) {
+    res = cb_res;
+  };
+  gatt()->UpdateConnectedPeers(
+      svc_id_, kChrcId, kIndicateVal, indication_cb.share());
   RunUntilIdle();
   ASSERT_TRUE(indication_ack_cb_0_);
   ASSERT_TRUE(indication_ack_cb_1_);
 
-  // The UpdateConnectedPeers callback shouldn't resolved when the first indication is ACKed.
+  // The UpdateConnectedPeers callback shouldn't resolved when the first
+  // indication is ACKed.
   indication_ack_cb_0_(fit::ok());
   RunUntilIdle();
   EXPECT_EQ(ToResult(att::ErrorCode::kInvalidPDU), res);
@@ -609,10 +722,14 @@ TEST_F(GattIndicateMultipleConnectedPeersTest, UpdateConnectedPeersWaitsTillAllC
   EXPECT_EQ(fit::ok(), res);
 }
 
-TEST_F(GattIndicateMultipleConnectedPeersTest, OneFailsNextSucceedsOnlyFailureNotified) {
+TEST_F(GattIndicateMultipleConnectedPeersTest,
+       OneFailsNextSucceedsOnlyFailureNotified) {
   std::optional<att::Result<>> res;
-  IndicationCallback indication_cb = [&res](att::Result<> cb_res) { res = cb_res; };
-  gatt()->UpdateConnectedPeers(svc_id_, kChrcId, kIndicateVal, indication_cb.share());
+  IndicationCallback indication_cb = [&res](att::Result<> cb_res) {
+    res = cb_res;
+  };
+  gatt()->UpdateConnectedPeers(
+      svc_id_, kChrcId, kIndicateVal, indication_cb.share());
   RunUntilIdle();
   EXPECT_EQ(std::nullopt, res);
   ASSERT_TRUE(indication_ack_cb_0_);
@@ -621,7 +738,8 @@ TEST_F(GattIndicateMultipleConnectedPeersTest, OneFailsNextSucceedsOnlyFailureNo
   indication_ack_cb_0_(ToResult(att::ErrorCode::kRequestNotSupported));
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), res);
 
-  // Acking the next indication should not cause the callback to be invoked again with success.
+  // Acking the next indication should not cause the callback to be invoked
+  // again with success.
   indication_ack_cb_1_(fit::ok());
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), res);
 }

@@ -2,19 +2,23 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "sc_stage_1_just_works_numeric_comparison.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/sc_stage_1_just_works_numeric_comparison.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/delegate.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
+#include "pw_bluetooth_sapphire/internal/host/common/random.h"
+#include "pw_bluetooth_sapphire/internal/host/common/uint128.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/delegate.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/util.h"
 
 namespace bt::sm {
 
 ScStage1JustWorksNumericComparison::ScStage1JustWorksNumericComparison(
-    PairingPhase::Listener::WeakPtr listener, Role role, UInt256 local_pub_key_x,
-    UInt256 peer_pub_key_x, PairingMethod method, PairingChannel::WeakPtr sm_chan,
+    PairingPhase::Listener::WeakPtr listener,
+    Role role,
+    UInt256 local_pub_key_x,
+    UInt256 peer_pub_key_x,
+    PairingMethod method,
+    PairingChannel::WeakPtr sm_chan,
     Stage1CompleteCallback on_complete)
     : listener_(std::move(listener)),
       role_(role),
@@ -28,12 +32,14 @@ ScStage1JustWorksNumericComparison::ScStage1JustWorksNumericComparison(
       sm_chan_(std::move(sm_chan)),
       on_complete_(std::move(on_complete)),
       weak_self_(this) {
-  BT_ASSERT(method == PairingMethod::kJustWorks || method == PairingMethod::kNumericComparison);
+  BT_ASSERT(method == PairingMethod::kJustWorks ||
+            method == PairingMethod::kNumericComparison);
 }
 
 void ScStage1JustWorksNumericComparison::Run() {
-  // The responder sends the Pairing Confirm message to start Stage 1, so as initiator there is
-  // nothing to do besides wait for the peer's Confirm value (Vol 3, Part H, 2.3.5.6.2).
+  // The responder sends the Pairing Confirm message to start Stage 1, so as
+  // initiator there is nothing to do besides wait for the peer's Confirm value
+  // (Vol 3, Part H, 2.3.5.6.2).
   if (role_ == Role::kResponder) {
     std::optional<UInt128> maybe_confirm =
         util::F4(local_public_key_x_, peer_public_key_x_, local_rand_, 0);
@@ -48,28 +54,35 @@ void ScStage1JustWorksNumericComparison::Run() {
   }
 }
 
-void ScStage1JustWorksNumericComparison::OnPairingConfirm(PairingConfirmValue confirm) {
-  // Only the responder can send the confirm value to the initiator (Vol 3, Part H, 2.3.5.6.2).
+void ScStage1JustWorksNumericComparison::OnPairingConfirm(
+    PairingConfirmValue confirm) {
+  // Only the responder can send the confirm value to the initiator (Vol 3, Part
+  // H, 2.3.5.6.2).
   if (role_ == Role::kResponder) {
-    bt_log(WARN, "sm",
-           "cannot accept pairing confirm in SC Numeric Comparison/Just Works responder mode");
+    bt_log(WARN,
+           "sm",
+           "cannot accept pairing confirm in SC Numeric Comparison/Just Works "
+           "responder mode");
     on_complete_(fit::error(ErrorCode::kUnspecifiedReason));
     return;
   }
   if (responder_confirm_.has_value()) {
-    bt_log(WARN, "sm",
-           "received multiple Pairing Confirm values in SC Numeric Comparison/Just Works");
+    bt_log(WARN,
+           "sm",
+           "received multiple Pairing Confirm values in SC Numeric "
+           "Comparison/Just Works");
     on_complete_(fit::error(ErrorCode::kUnspecifiedReason));
     return;
   }
   responder_confirm_ = confirm;
-  // We already know that we're the initiator at this point, which sends the Random immediately
-  // after receiving the Confirm.
+  // We already know that we're the initiator at this point, which sends the
+  // Random immediately after receiving the Confirm.
   SendPairingRandom();
 }
 
 void ScStage1JustWorksNumericComparison::SendPairingRandom() {
-  // The random value is always sent after the confirm exchange (Vol 3, Part H, 2.3.5.6.2).
+  // The random value is always sent after the confirm exchange (Vol 3, Part
+  // H, 2.3.5.6.2).
   BT_ASSERT(responder_confirm_.has_value());
   BT_ASSERT(!sent_local_rand_);
   if (role_ == Role::kResponder) {
@@ -82,9 +95,12 @@ void ScStage1JustWorksNumericComparison::SendPairingRandom() {
   }
 }
 
-void ScStage1JustWorksNumericComparison::OnPairingRandom(PairingRandomValue rand) {
+void ScStage1JustWorksNumericComparison::OnPairingRandom(
+    PairingRandomValue rand) {
   if (!responder_confirm_.has_value()) {
-    bt_log(WARN, "sm", "received Pairing Random before the confirm value was exchanged");
+    bt_log(WARN,
+           "sm",
+           "received Pairing Random before the confirm value was exchanged");
     on_complete_(fit::error(ErrorCode::kUnspecifiedReason));
     return;
   }
@@ -98,9 +114,11 @@ void ScStage1JustWorksNumericComparison::OnPairingRandom(PairingRandomValue rand
     SendPairingRandom();
     return;
   }
-  // Otherwise, we're the initiator & we must validate the |responder_confirm_| with |rand|.
+  // Otherwise, we're the initiator & we must validate the |responder_confirm_|
+  // with |rand|.
   if (!sent_local_rand_) {
-    bt_log(WARN, "sm", "received peer random before sending our own as initiator");
+    bt_log(
+        WARN, "sm", "received peer random before sending our own as initiator");
     on_complete_(fit::error(ErrorCode::kUnspecifiedReason));
     return;
   }
@@ -123,7 +141,8 @@ void ScStage1JustWorksNumericComparison::CompleteStage1() {
   BT_ASSERT(responder_confirm_.has_value());
   BT_ASSERT(peer_rand_.has_value());
   BT_ASSERT(sent_local_rand_);
-  const auto& [initiator_rand, responder_rand] = util::MapToRoles(local_rand_, *peer_rand_, role_);
+  const auto& [initiator_rand, responder_rand] =
+      util::MapToRoles(local_rand_, *peer_rand_, role_);
   const auto& [initiator_pub_key_x, responder_pub_key_x] =
       util::MapToRoles(local_public_key_x_, peer_public_key_x_, role_);
   auto results = Output{.initiator_r = {0},
@@ -132,33 +151,43 @@ void ScStage1JustWorksNumericComparison::CompleteStage1() {
                         .responder_rand = responder_rand};
   auto self = weak_self_.GetWeakPtr();
   if (method_ == PairingMethod::kNumericComparison) {
-    std::optional<uint32_t> g2_result =
-        util::G2(initiator_pub_key_x, responder_pub_key_x, initiator_rand, responder_rand);
+    std::optional<uint32_t> g2_result = util::G2(initiator_pub_key_x,
+                                                 responder_pub_key_x,
+                                                 initiator_rand,
+                                                 responder_rand);
     if (!g2_result.has_value()) {
       bt_log(WARN, "sm", "unable to calculate numeric comparison user check");
       on_complete_(fit::error(ErrorCode::kNumericComparisonFailed));
       return;
     }
 
-    // The code displayed to the user is the least significant 6 digits of the G2 function.
+    // The code displayed to the user is the least significant 6 digits of the
+    // G2 function.
     uint32_t comparison_code = *g2_result % 1000000;
     listener_->DisplayPasskey(
-        comparison_code, Delegate::DisplayMethod::kComparison,
+        comparison_code,
+        Delegate::DisplayMethod::kComparison,
         [self, results](bool passkey_confirmed) {
-          bt_log(INFO, "sm", "PairingDelegate %s SC numeric display pairing",
+          bt_log(INFO,
+                 "sm",
+                 "PairingDelegate %s SC numeric display pairing",
                  passkey_confirmed ? "accepted" : "rejected");
           if (self.is_alive()) {
             passkey_confirmed ? self->on_complete_(fit::ok(results))
-                              : self->on_complete_(fit::error(ErrorCode::kNumericComparisonFailed));
+                              : self->on_complete_(fit::error(
+                                    ErrorCode::kNumericComparisonFailed));
           }
         });
   } else {  // method == kJustWorks
     listener_->ConfirmPairing([self, results](bool user_confirmed) {
-      bt_log(INFO, "sm", "PairingDelegate %s SC just works pairing",
+      bt_log(INFO,
+             "sm",
+             "PairingDelegate %s SC just works pairing",
              user_confirmed ? "accepted" : "rejected");
       if (self.is_alive()) {
-        user_confirmed ? self->on_complete_(fit::ok(results))
-                       : self->on_complete_(fit::error(ErrorCode::kUnspecifiedReason));
+        user_confirmed
+            ? self->on_complete_(fit::ok(results))
+            : self->on_complete_(fit::error(ErrorCode::kUnspecifiedReason));
       }
     });
   }

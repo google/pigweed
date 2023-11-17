@@ -2,13 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "sco_connection.h"
+#include "pw_bluetooth_sapphire/internal/host/sco/sco_connection.h"
 
 namespace bt::sco {
 
 ScoConnection::ScoConnection(
-    std::unique_ptr<hci::Connection> connection, fit::closure deactivated_cb,
-    bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> parameters,
+    std::unique_ptr<hci::Connection> connection,
+    fit::closure deactivated_cb,
+    bt::StaticPacket<
+        pw::bluetooth::emboss::SynchronousConnectionParametersWriter>
+        parameters,
     hci::ScoDataChannel* channel)
     : active_(false),
       connection_(std::move(connection)),
@@ -17,8 +20,8 @@ ScoConnection::ScoConnection(
       parameters_(std::move(parameters)),
       weak_self_(this) {
   BT_ASSERT(connection_);
-  BT_ASSERT(!channel_ ||
-            channel_->max_data_length() <= hci_spec::kMaxSynchronousDataPacketPayloadSize);
+  BT_ASSERT(!channel_ || channel_->max_data_length() <=
+                             hci_spec::kMaxSynchronousDataPacketPayloadSize);
 
   handle_ = connection_->handle();
 
@@ -52,23 +55,26 @@ void ScoConnection::Close() {
   cb();
 }
 
-bool ScoConnection::Activate(fit::closure rx_callback, fit::closure closed_callback) {
-  // TODO(fxbug.dev/58458): Handle Activate() called on a connection that has been closed already.
+bool ScoConnection::Activate(fit::closure rx_callback,
+                             fit::closure closed_callback) {
+  // TODO(fxbug.dev/58458): Handle Activate() called on a connection that has
+  // been closed already.
   BT_ASSERT(closed_callback);
   BT_ASSERT(!active_);
   BT_ASSERT(rx_callback);
   activator_closed_cb_ = std::move(closed_callback);
   rx_callback_ = std::move(rx_callback);
   active_ = true;
-  if (channel_ &&
-      parameters_.view().input_data_path().Read() == pw::bluetooth::emboss::ScoDataPath::HCI) {
+  if (channel_ && parameters_.view().input_data_path().Read() ==
+                      pw::bluetooth::emboss::ScoDataPath::HCI) {
     channel_->RegisterConnection(GetWeakPtr());
   }
   return true;
 }
 
 void ScoConnection::Deactivate() {
-  bt_log(TRACE, "gap-sco", "deactivating sco connection (handle: %.4x)", handle());
+  bt_log(
+      TRACE, "gap-sco", "deactivating sco connection (handle: %.4x)", handle());
   CleanUp();
   if (deactivated_cb_) {
     // Move cb out of this, since cb may destroy this.
@@ -83,29 +89,39 @@ uint16_t ScoConnection::max_tx_sdu_size() const {
 
 bool ScoConnection::Send(ByteBufferPtr payload) {
   if (!active_) {
-    bt_log(WARN, "gap-sco", "dropping SCO packet for inactive connection (handle: %#.4x)", handle_);
-    return false;
-  }
-
-  if (!channel_) {
-    bt_log(WARN, "gap-sco", "dropping SCO packet because HCI SCO is not supported (handle: %#.4x)",
+    bt_log(WARN,
+           "gap-sco",
+           "dropping SCO packet for inactive connection (handle: %#.4x)",
            handle_);
     return false;
   }
 
+  if (!channel_) {
+    bt_log(
+        WARN,
+        "gap-sco",
+        "dropping SCO packet because HCI SCO is not supported (handle: %#.4x)",
+        handle_);
+    return false;
+  }
+
   if (payload->size() > channel_->max_data_length()) {
-    bt_log(WARN, "gap-sco",
-           "dropping SCO packet larger than the buffer data packet length (packet size: %zu, max "
+    bt_log(WARN,
+           "gap-sco",
+           "dropping SCO packet larger than the buffer data packet length "
+           "(packet size: %zu, max "
            "data length: "
            "%hu)",
-           payload->size(), channel_->max_data_length());
+           payload->size(),
+           channel_->max_data_length());
     return false;
   }
 
   outbound_queue_.push(std::move(payload));
 
-  // Notify ScoDataChannel that a packet is available. This is only necessary for the first
-  // packet of an empty queue (flow control will poll this connection otherwise).
+  // Notify ScoDataChannel that a packet is available. This is only necessary
+  // for the first packet of an empty queue (flow control will poll this
+  // connection otherwise).
   if (outbound_queue_.size() == 1u) {
     channel_->OnOutboundPacketReadable();
   }
@@ -116,7 +132,8 @@ std::unique_ptr<hci::ScoDataPacket> ScoConnection::Read() {
   if (inbound_queue_.empty()) {
     return nullptr;
   }
-  std::unique_ptr<hci::ScoDataPacket> packet = std::move(inbound_queue_.front());
+  std::unique_ptr<hci::ScoDataPacket> packet =
+      std::move(inbound_queue_.front());
   inbound_queue_.pop();
   return packet;
 }
@@ -131,18 +148,20 @@ std::unique_ptr<hci::ScoDataPacket> ScoConnection::GetNextOutboundPacket() {
     return nullptr;
   }
 
-  std::unique_ptr<hci::ScoDataPacket> out =
-      hci::ScoDataPacket::New(handle(), static_cast<uint8_t>(outbound_queue_.front()->size()));
+  std::unique_ptr<hci::ScoDataPacket> out = hci::ScoDataPacket::New(
+      handle(), static_cast<uint8_t>(outbound_queue_.front()->size()));
   if (!out) {
     bt_log(ERROR, "gap-sco", "failed to allocate SCO data packet");
     return nullptr;
   }
-  out->mutable_view()->mutable_payload_data().Write(outbound_queue_.front()->view());
+  out->mutable_view()->mutable_payload_data().Write(
+      outbound_queue_.front()->view());
   outbound_queue_.pop();
   return out;
 }
 
-void ScoConnection::ReceiveInboundPacket(std::unique_ptr<hci::ScoDataPacket> packet) {
+void ScoConnection::ReceiveInboundPacket(
+    std::unique_ptr<hci::ScoDataPacket> packet) {
   BT_ASSERT(packet->connection_handle() == handle_);
 
   if (!active_ || !rx_callback_) {
@@ -151,8 +170,8 @@ void ScoConnection::ReceiveInboundPacket(std::unique_ptr<hci::ScoDataPacket> pac
   }
 
   inbound_queue_.push(std::move(packet));
-  // It's only necessary to notify activator of the first packet queued (flow control will poll this
-  // connection otherwise).
+  // It's only necessary to notify activator of the first packet queued (flow
+  // control will poll this connection otherwise).
   if (inbound_queue_.size() == 1u) {
     rx_callback_();
   }
@@ -165,7 +184,8 @@ void ScoConnection::OnHciError() {
 
 void ScoConnection::CleanUp() {
   if (active_ && channel_ &&
-      parameters_.view().input_data_path().Read() == pw::bluetooth::emboss::ScoDataPath::HCI) {
+      parameters_.view().input_data_path().Read() ==
+          pw::bluetooth::emboss::ScoDataPath::HCI) {
     channel_->UnregisterConnection(handle_);
   }
   active_ = false;

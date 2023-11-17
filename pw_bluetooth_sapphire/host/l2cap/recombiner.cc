@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "recombiner.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/recombiner.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
 
 namespace bt::l2cap {
 namespace {
@@ -29,17 +29,19 @@ Recombiner::Result Recombiner::ConsumeFragment(hci::ACLDataPacketPtr fragment) {
     return ProcessFirstFragment(std::move(fragment));
   }
 
-  // If we received a new initial packet without completing the recombination, then drop the
-  // entire last sequence.
-  if (fragment->packet_boundary_flag() != hci_spec::ACLPacketBoundaryFlag::kContinuingFragment) {
-    bt_log(WARN, "l2cap", "expected continuing fragment! (handle: %.4x)", handle_);
+  // If we received a new initial packet without completing the recombination,
+  // then drop the entire last sequence.
+  if (fragment->packet_boundary_flag() !=
+      hci_spec::ACLPacketBoundaryFlag::kContinuingFragment) {
+    bt_log(
+        WARN, "l2cap", "expected continuing fragment! (handle: %.4x)", handle_);
     ClearRecombination();
 
     // Try to initiate a new starting sequence with |fragment|.
     auto result = ProcessFirstFragment(std::move(fragment));
 
-    // Report an error for the dropped frame, even if there was no error processing |fragment|
-    // itself.
+    // Report an error for the dropped frame, even if there was no error
+    // processing |fragment| itself.
     result.frames_dropped = true;
     return result;
   }
@@ -48,15 +50,18 @@ Recombiner::Result Recombiner::ConsumeFragment(hci::ACLDataPacketPtr fragment) {
   recombination_->pdu.AppendFragment(std::move(fragment));
   BeginTrace();
 
-  if (recombination_->accumulated_length > recombination_->expected_frame_length) {
-    bt_log(WARN, "l2cap", "continuing fragment too long! (handle: %.4x)", handle_);
+  if (recombination_->accumulated_length >
+      recombination_->expected_frame_length) {
+    bt_log(
+        WARN, "l2cap", "continuing fragment too long! (handle: %.4x)", handle_);
     ClearRecombination();
 
     // Drop |fragment| since a continuing fragment cannot begin a sequence.
     return {.pdu = {}, .frames_dropped = true};
   }
 
-  if (recombination_->accumulated_length == recombination_->expected_frame_length) {
+  if (recombination_->accumulated_length ==
+      recombination_->expected_frame_length) {
     // The frame is complete!
     auto pdu = std::move(recombination_->pdu);
     ClearRecombination();
@@ -67,28 +72,34 @@ Recombiner::Result Recombiner::ConsumeFragment(hci::ACLDataPacketPtr fragment) {
   return {.pdu = {}, .frames_dropped = false};
 }
 
-Recombiner::Result Recombiner::ProcessFirstFragment(hci::ACLDataPacketPtr fragment) {
+Recombiner::Result Recombiner::ProcessFirstFragment(
+    hci::ACLDataPacketPtr fragment) {
   BT_DEBUG_ASSERT(fragment);
   BT_DEBUG_ASSERT(!recombination_);
 
   // The first fragment needs to at least contain the Basic L2CAP header and
   // should not be a continuation fragment.
   size_t current_length = fragment->view().payload_size();
-  if (fragment->packet_boundary_flag() == hci_spec::ACLPacketBoundaryFlag::kContinuingFragment ||
+  if (fragment->packet_boundary_flag() ==
+          hci_spec::ACLPacketBoundaryFlag::kContinuingFragment ||
       current_length < sizeof(BasicHeader)) {
     bt_log(DEBUG, "l2cap", "bad first fragment (size: %zu)", current_length);
     return {.pdu = {}, .frames_dropped = true};
   }
 
-  // TODO(armansito): Also validate that the controller honors the HCI packet boundary flag contract
-  // for the controller-to-host flow direction.
+  // TODO(armansito): Also validate that the controller honors the HCI packet
+  // boundary flag contract for the controller-to-host flow direction.
 
-  size_t expected_frame_length = le16toh(GetBasicHeader(*fragment).length) + sizeof(BasicHeader);
+  size_t expected_frame_length =
+      le16toh(GetBasicHeader(*fragment).length) + sizeof(BasicHeader);
 
   if (current_length > expected_frame_length) {
-    bt_log(DEBUG, "l2cap",
-           "fragment malformed: payload too long (expected length: %zu, fragment length: %zu)",
-           expected_frame_length, current_length);
+    bt_log(DEBUG,
+           "l2cap",
+           "fragment malformed: payload too long (expected length: %zu, "
+           "fragment length: %zu)",
+           expected_frame_length,
+           current_length);
     return {.pdu = {}, .frames_dropped = true};
   }
 
@@ -114,11 +125,15 @@ Recombiner::Result Recombiner::ProcessFirstFragment(hci::ACLDataPacketPtr fragme
 void Recombiner::ClearRecombination() {
   BT_DEBUG_ASSERT(recombination_);
   if (recombination_->pdu.is_valid()) {
-    bt_log(DEBUG, "l2cap",
-           "recombiner dropped packet (fragments: %zu, expected length: %zu, accumulated length: "
+    bt_log(DEBUG,
+           "l2cap",
+           "recombiner dropped packet (fragments: %zu, expected length: %zu, "
+           "accumulated length: "
            "%zu, handle: %.4x)",
-           recombination_->pdu.fragment_count(), recombination_->expected_frame_length,
-           recombination_->accumulated_length, handle_);
+           recombination_->pdu.fragment_count(),
+           recombination_->expected_frame_length,
+           recombination_->accumulated_length,
+           handle_);
   }
   recombination_.reset();
   EndTraces();
@@ -129,7 +144,8 @@ void Recombiner::BeginTrace() {
     return;
   }
   trace_flow_id_t flow_id = TRACE_NONCE();
-  TRACE_FLOW_BEGIN("bluetooth", "Recombiner buffered ACL data fragment", flow_id);
+  TRACE_FLOW_BEGIN(
+      "bluetooth", "Recombiner buffered ACL data fragment", flow_id);
   trace_ids_.push_back(flow_id);
 }
 
@@ -138,7 +154,8 @@ void Recombiner::EndTraces() {
     return;
   }
   for ([[maybe_unused]] auto flow_id : trace_ids_) {
-    TRACE_FLOW_END("bluetooth", "Recombiner buffered ACL data fragment", flow_id);
+    TRACE_FLOW_END(
+        "bluetooth", "Recombiner buffered ACL data fragment", flow_id);
   }
   trace_ids_.clear();
 }

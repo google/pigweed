@@ -2,19 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/gatt/server.h"
+#include "pw_bluetooth_sapphire/internal/host/gatt/server.h"
 
-#include <lib/async/cpp/task.h>
+#include "pw_bluetooth_sapphire/internal/host/att/att.h"
+#include "pw_bluetooth_sapphire/internal/host/att/attribute.h"
+#include "pw_bluetooth_sapphire/internal/host/att/database.h"
+#include "pw_bluetooth_sapphire/internal/host/common/macros.h"
+#include "pw_bluetooth_sapphire/internal/host/common/uuid.h"
+#include "pw_bluetooth_sapphire/internal/host/gatt/gatt_defs.h"
+#include "pw_bluetooth_sapphire/internal/host/gatt/local_service_manager.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/mock_channel_test.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/att/att.h"
-#include "src/connectivity/bluetooth/core/bt-host/att/attribute.h"
-#include "src/connectivity/bluetooth/core/bt-host/att/database.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
-#include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
-#include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/mock_channel_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
+#pragma clang diagnostic ignored "-Wshadow"
 
 namespace bt::gatt {
 namespace {
@@ -24,7 +24,8 @@ constexpr UUID kTestChrcType(uint16_t{0xFEED});
 constexpr IdType kTestChrcId{0xFADE};
 constexpr PeerId kTestPeerId(1);
 constexpr UUID kTestType16(uint16_t{0xBEEF});
-constexpr UUID kTestType128({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+constexpr UUID kTestType128(
+    {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
 
 const StaticByteBuffer kTestValue1('f', 'o', 'o');
 const StaticByteBuffer kTestValue2('b', 'a', 'r');
@@ -34,7 +35,8 @@ const StaticByteBuffer kTestValue4('l', 'o', 'l');
 const StaticByteBuffer kTestValueLong('l', 'o', 'n', 'g');
 
 inline att::AccessRequirements AllowedNoSecurity() {
-  return att::AccessRequirements(/*encryption=*/false, /*authentication=*/false,
+  return att::AccessRequirements(/*encryption=*/false,
+                                 /*authentication=*/false,
                                  /*authorization=*/false);
 }
 
@@ -50,7 +52,8 @@ class ServerTest : public l2cap::testing::MockChannelTest {
     ChannelOptions options(l2cap::kATTChannelId);
     fake_att_chan_ = CreateFakeChannel(options);
     att_ = att::Bearer::Create(fake_att_chan_->GetWeakPtr(), dispatcher());
-    server_ = gatt::Server::Create(kTestPeerId, local_services_->GetWeakPtr(), att_->GetWeakPtr());
+    server_ = gatt::Server::Create(
+        kTestPeerId, local_services_->GetWeakPtr(), att_->GetWeakPtr());
   }
 
   void TearDown() override {
@@ -61,41 +64,52 @@ class ServerTest : public l2cap::testing::MockChannelTest {
     local_services_ = nullptr;
   }
 
-  // Registers a service with UUID |svc_type| containing a single characteristic of UUID |chrc_type|
-  // and represented by |chrc_id|. The characteristic supports the indicate and notify properties,
-  // but has not configured them via the CCC. Returns the ID of the registered service.
-  IdType RegisterSvcWithSingleChrc(UUID svc_type, IdType chrc_id, UUID chrc_type) {
+  // Registers a service with UUID |svc_type| containing a single characteristic
+  // of UUID |chrc_type| and represented by |chrc_id|. The characteristic
+  // supports the indicate and notify properties, but has not configured them
+  // via the CCC. Returns the ID of the registered service.
+  IdType RegisterSvcWithSingleChrc(UUID svc_type,
+                                   IdType chrc_id,
+                                   UUID chrc_type) {
     ServicePtr svc = std::make_unique<Service>(/*primary=*/true, svc_type);
     CharacteristicPtr chr = std::make_unique<Characteristic>(
-        chrc_id, chrc_type, Property::kIndicate | Property::kNotify,
+        chrc_id,
+        chrc_type,
+        Property::kIndicate | Property::kNotify,
         /*extended_properties=*/0u,
         /*read_permission=*/att::AccessRequirements(),
         /*write_permissions=*/att::AccessRequirements(),
         /*update_permisisons=*/AllowedNoSecurity());
     svc->AddCharacteristic(std::move(chr));
-    return local_services_->RegisterService(std::move(svc), NopReadHandler, NopWriteHandler,
-                                            NopCCCallback);
+    return local_services_->RegisterService(
+        std::move(svc), NopReadHandler, NopWriteHandler, NopCCCallback);
   }
 
   struct SvcIdAndChrcHandle {
     IdType svc_id;
     att::Handle chrc_val_handle;
   };
-  // RegisterSvcWithSingleChrc, but the CCC is configured to |ccc_val| for kTestPeerId.
-  // Returns the ID of the service alongside the handle of the registered characteristic value.
-  SvcIdAndChrcHandle RegisterSvcWithConfiguredChrc(UUID svc_type, IdType chrc_id, UUID chrc_type,
-                                                   uint16_t ccc_val = kCCCIndicationBit |
-                                                                      kCCCNotificationBit) {
+  // RegisterSvcWithSingleChrc, but the CCC is configured to |ccc_val| for
+  // kTestPeerId. Returns the ID of the service alongside the handle of the
+  // registered characteristic value.
+  SvcIdAndChrcHandle RegisterSvcWithConfiguredChrc(
+      UUID svc_type,
+      IdType chrc_id,
+      UUID chrc_type,
+      uint16_t ccc_val = kCCCIndicationBit | kCCCNotificationBit) {
     IdType svc_id = RegisterSvcWithSingleChrc(svc_type, chrc_id, chrc_type);
-    std::vector<att::Handle> chrc_val_handle = SetCCCs(kTestPeerId, chrc_type, ccc_val);
+    std::vector<att::Handle> chrc_val_handle =
+        SetCCCs(kTestPeerId, chrc_type, ccc_val);
     EXPECT_EQ(1u, chrc_val_handle.size());
-    return SvcIdAndChrcHandle{.svc_id = svc_id, .chrc_val_handle = chrc_val_handle[0]};
+    return SvcIdAndChrcHandle{.svc_id = svc_id,
+                              .chrc_val_handle = chrc_val_handle[0]};
   }
   Server* server() const { return server_.get(); }
 
   att::Database::WeakPtr db() const { return local_services_->database(); }
 
-  // TODO(armansito): Consider introducing a FakeBearer for testing (fxbug.dev/642).
+  // TODO(armansito): Consider introducing a FakeBearer for testing
+  // (fxbug.dev/642).
   att::Bearer* att() const { return att_.get(); }
 
  private:
@@ -104,9 +118,12 @@ class ServerTest : public l2cap::testing::MockChannelTest {
     kChrcDeclarationFound,
     kCorrectChrcUuidFound,
   };
-  // Sets |local_services_|' CCCs for |peer_id| to |ccc_val| for all characteristics of |chrc_type|,
-  // and returns the handles of the characteristic values for which the CCC was modified.
-  std::vector<att::Handle> SetCCCs(PeerId peer_id, bt::UUID chrc_type, uint16_t ccc_val) {
+  // Sets |local_services_|' CCCs for |peer_id| to |ccc_val| for all
+  // characteristics of |chrc_type|, and returns the handles of the
+  // characteristic values for which the CCC was modified.
+  std::vector<att::Handle> SetCCCs(PeerId peer_id,
+                                   bt::UUID chrc_type,
+                                   uint16_t ccc_val) {
     std::vector<att::Handle> modified_attrs;
     CCCSearchState state = kSearching;
     for (auto& grouping : db()->groupings()) {
@@ -114,7 +131,8 @@ class ServerTest : public l2cap::testing::MockChannelTest {
       for (auto& attr : grouping.attributes()) {
         if (attr.type() == types::kCharacteristicDeclaration) {
           EXPECT_NE(state, kChrcDeclarationFound)
-              << "unexpectedly found two consecutive characteristic declarations";
+              << "unexpectedly found two consecutive characteristic "
+                 "declarations";
           state = kChrcDeclarationFound;
         } else if (state == kChrcDeclarationFound && attr.type() == chrc_type) {
           state = kCorrectChrcUuidFound;
@@ -126,12 +144,16 @@ class ServerTest : public l2cap::testing::MockChannelTest {
           BT_ASSERT(matching_chrc_value_handle != att::kInvalidHandle);
           DynamicByteBuffer new_ccc(sizeof(ccc_val));
           new_ccc.WriteObj(ccc_val);
-          fit::result<att::ErrorCode> write_status = fit::error(att::ErrorCode::kReadNotPermitted);
-          EXPECT_TRUE(
-              attr.WriteAsync(peer_id, /*offset=*/0, new_ccc,
-                              [&](fit::result<att::ErrorCode> status) { write_status = status; }));
-          // Not strictly necessary with the current WriteAsync implementation, but running the loop
-          // here makes this more future-proof.
+          fit::result<att::ErrorCode> write_status =
+              fit::error(att::ErrorCode::kReadNotPermitted);
+          EXPECT_TRUE(attr.WriteAsync(peer_id,
+                                      /*offset=*/0,
+                                      new_ccc,
+                                      [&](fit::result<att::ErrorCode> status) {
+                                        write_status = status;
+                                      }));
+          // Not strictly necessary with the current WriteAsync implementation,
+          // but running the loop here makes this more future-proof.
           RunUntilIdle();
           EXPECT_EQ(fit::ok(), write_status);
           modified_attrs.push_back(matching_chrc_value_handle);
@@ -698,7 +720,8 @@ TEST_F(ServerTest, ReadByGroupTypeSingle) {
 
   // Start: 1, end: 2
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  grp->AddAttribute(UUID(), att::AccessRequirements(), att::AccessRequirements());
+  grp->AddAttribute(
+      UUID(), att::AccessRequirements(), att::AccessRequirements());
   grp->set_active(true);
 
   // clang-format off
@@ -727,7 +750,8 @@ TEST_F(ServerTest, ReadByGroupTypeSingle128) {
 
   // Start: 1, end: 2
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  grp->AddAttribute(UUID(), att::AccessRequirements(), att::AccessRequirements());
+  grp->AddAttribute(
+      UUID(), att::AccessRequirements(), att::AccessRequirements());
   grp->set_active(true);
 
   // clang-format off
@@ -873,12 +897,14 @@ TEST_F(ServerTest, ReadByGroupTypeMultipleSameValueSize) {
   fake_chan()->Receive(kRequest2);
 }
 
-// The responses should only include 1 value because the next value has a different length.
+// The responses should only include 1 value because the next value has a
+// different length.
 TEST_F(ServerTest, ReadByGroupTypeMultipleVaryingLengths) {
   // Start: 1, end: 1
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
   // Start: 2, end: 2
-  db()->NewGrouping(types::kPrimaryService, 0, kTestValueLong)->set_active(true);
+  db()->NewGrouping(types::kPrimaryService, 0, kTestValueLong)
+      ->set_active(true);
   // Start: 3, end: 3
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
@@ -1023,7 +1049,8 @@ TEST_F(ServerTest, ReadByTypeDynamicValueNoHandler) {
   const StaticByteBuffer kTestValue('t', 'e', 's', 't');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
+  grp->AddAttribute(
+      kTestType16, AllowedNoSecurity(), att::AccessRequirements());
   grp->set_active(true);
 
   // clang-format off
@@ -1049,11 +1076,12 @@ TEST_F(ServerTest, ReadByTypeDynamicValueNoHandler) {
 TEST_F(ServerTest, ReadByTypeDynamicValue) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 2, kTestValue1);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity());
-  attr->set_read_handler([attr](PeerId peer_id, auto handle, uint16_t offset, auto result_cb) {
-    EXPECT_EQ(attr->handle(), handle);
-    EXPECT_EQ(0u, offset);
-    result_cb(fit::ok(), StaticByteBuffer('f', 'o', 'r', 'k'));
-  });
+  attr->set_read_handler(
+      [attr](PeerId peer_id, auto handle, uint16_t offset, auto result_cb) {
+        EXPECT_EQ(attr->handle(), handle);
+        EXPECT_EQ(0u, offset);
+        result_cb(fit::ok(), StaticByteBuffer('f', 'o', 'r', 'k'));
+      });
 
   // Add a second dynamic attribute, which should be omitted.
   attr = grp->AddAttribute(kTestType16, AllowedNoSecurity());
@@ -1089,10 +1117,12 @@ TEST_F(ServerTest, ReadByTypeDynamicValueError) {
   const StaticByteBuffer kTestValue('t', 'e', 's', 't');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
-  attr->set_read_handler([](PeerId peer_id, auto handle, uint16_t offset, auto result_cb) {
-    result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
-  });
+  auto* attr = grp->AddAttribute(
+      kTestType16, AllowedNoSecurity(), att::AccessRequirements());
+  attr->set_read_handler(
+      [](PeerId peer_id, auto handle, uint16_t offset, auto result_cb) {
+        result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
+      });
   grp->set_active(true);
 
   // clang-format off
@@ -1150,7 +1180,8 @@ TEST_F(ServerTest, ReadByTypeSingle128) {
   const StaticByteBuffer kTestValue2('t', 'e', 's', 't');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
-  grp->AddAttribute(kTestType128, AllowedNoSecurity(), att::AccessRequirements())
+  grp->AddAttribute(
+         kTestType128, AllowedNoSecurity(), att::AccessRequirements())
       ->SetValue(kTestValue2);
   grp->set_active(true);
 
@@ -1177,8 +1208,8 @@ TEST_F(ServerTest, ReadByTypeSingle128) {
 }
 
 TEST_F(ServerTest, ReadByTypeSingleTruncated) {
-  const StaticByteBuffer kVeryLongValue('t', 'e', 's', 't', 'i', 'n', 'g', ' ', 'i', 's', ' ', 'f',
-                                        'u', 'n');
+  const StaticByteBuffer kVeryLongValue(
+      't', 'e', 's', 't', 'i', 'n', 'g', ' ', 'i', 's', ' ', 'f', 'u', 'n');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
   grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements())
@@ -1473,8 +1504,10 @@ TEST_F(ServerTest, WriteRequestSecurity) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
   // Requires encryption
-  grp->AddAttribute(kTestType16, att::AccessRequirements(),
-                    att::AccessRequirements(/*encryption=*/true, /*authentication=*/false,
+  grp->AddAttribute(kTestType16,
+                    att::AccessRequirements(),
+                    att::AccessRequirements(/*encryption=*/true,
+                                            /*authentication=*/false,
                                             /*authorization=*/false));
   grp->set_active(true);
 
@@ -1521,7 +1554,8 @@ TEST_F(ServerTest, WriteRequestNoHandler) {
   const StaticByteBuffer kTestValue('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
-  grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
+  grp->AddAttribute(
+      kTestType16, att::AccessRequirements(), AllowedNoSecurity());
   grp->set_active(true);
 
   // clang-format off
@@ -1547,17 +1581,21 @@ TEST_F(ServerTest, WriteRequestNoHandler) {
 TEST_F(ServerTest, WriteRequestError) {
   const StaticByteBuffer kTestValue('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
+  auto* attr = grp->AddAttribute(
+      kTestType16, att::AccessRequirements(), AllowedNoSecurity());
 
-  attr->set_write_handler(
-      [&](PeerId peer_id, att::Handle handle, uint16_t offset, const auto& value, auto result_cb) {
-        EXPECT_EQ(kTestPeerId, peer_id);
-        EXPECT_EQ(attr->handle(), handle);
-        EXPECT_EQ(0u, offset);
-        EXPECT_TRUE(ContainersEqual(StaticByteBuffer('t', 'e', 's', 't'), value));
+  attr->set_write_handler([&](PeerId peer_id,
+                              att::Handle handle,
+                              uint16_t offset,
+                              const auto& value,
+                              auto result_cb) {
+    EXPECT_EQ(kTestPeerId, peer_id);
+    EXPECT_EQ(attr->handle(), handle);
+    EXPECT_EQ(0u, offset);
+    EXPECT_TRUE(ContainersEqual(StaticByteBuffer('t', 'e', 's', 't'), value));
 
-        result_cb(fit::error(att::ErrorCode::kUnlikelyError));
-      });
+    result_cb(fit::error(att::ErrorCode::kUnlikelyError));
+  });
   grp->set_active(true);
 
   // clang-format off
@@ -1583,17 +1621,21 @@ TEST_F(ServerTest, WriteRequestError) {
 TEST_F(ServerTest, WriteRequestSuccess) {
   const StaticByteBuffer kTestValue('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
+  auto* attr = grp->AddAttribute(
+      kTestType16, att::AccessRequirements(), AllowedNoSecurity());
 
-  attr->set_write_handler(
-      [&](PeerId peer_id, att::Handle handle, uint16_t offset, const auto& value, auto result_cb) {
-        EXPECT_EQ(kTestPeerId, peer_id);
-        EXPECT_EQ(attr->handle(), handle);
-        EXPECT_EQ(0u, offset);
-        EXPECT_TRUE(ContainersEqual(StaticByteBuffer('t', 'e', 's', 't'), value));
+  attr->set_write_handler([&](PeerId peer_id,
+                              att::Handle handle,
+                              uint16_t offset,
+                              const auto& value,
+                              auto result_cb) {
+    EXPECT_EQ(kTestPeerId, peer_id);
+    EXPECT_EQ(attr->handle(), handle);
+    EXPECT_EQ(0u, offset);
+    EXPECT_TRUE(ContainersEqual(StaticByteBuffer('t', 'e', 's', 't'), value));
 
-        result_cb(fit::ok());
-      });
+    result_cb(fit::ok());
+  });
   grp->set_active(true);
 
   // clang-format off
@@ -1618,10 +1660,14 @@ TEST_F(ServerTest, WriteRequestSuccess) {
 TEST_F(ServerTest, WriteCommandSuccess) {
   const StaticByteBuffer kTestValue('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
+  auto* attr = grp->AddAttribute(
+      kTestType16, att::AccessRequirements(), AllowedNoSecurity());
 
-  attr->set_write_handler([&](PeerId peer_id, att::Handle handle, uint16_t offset,
-                              const auto& value, const auto& result_cb) {
+  attr->set_write_handler([&](PeerId peer_id,
+                              att::Handle handle,
+                              uint16_t offset,
+                              const auto& value,
+                              const auto& result_cb) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
@@ -1680,7 +1726,8 @@ TEST_F(ServerTest, ReadRequestSecurity) {
 
   // Requires encryption
   grp->AddAttribute(kTestType16,
-                    att::AccessRequirements(/*encryption=*/true, /*authentication=*/false,
+                    att::AccessRequirements(/*encryption=*/true,
+                                            /*authentication=*/false,
                                             /*authorization=*/false),
                     att::AccessRequirements());
   grp->set_active(true);
@@ -1706,7 +1753,8 @@ TEST_F(ServerTest, ReadRequestCached) {
   const StaticByteBuffer kDeclValue('d', 'e', 'c', 'l');
   const StaticByteBuffer kTestValue('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kDeclValue);
-  auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
+  auto* attr = grp->AddAttribute(
+      kTestType16, AllowedNoSecurity(), att::AccessRequirements());
   attr->SetValue(kTestValue);
   grp->set_active(true);
 
@@ -1739,7 +1787,8 @@ TEST_F(ServerTest, ReadRequestNoHandler) {
   const StaticByteBuffer kTestValue('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
-  grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
+  grp->AddAttribute(
+      kTestType16, AllowedNoSecurity(), att::AccessRequirements());
   grp->set_active(true);
 
   // clang-format off
@@ -1763,14 +1812,16 @@ TEST_F(ServerTest, ReadRequestNoHandler) {
 TEST_F(ServerTest, ReadRequestError) {
   const StaticByteBuffer kTestValue('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
-  attr->set_read_handler([&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
-    EXPECT_EQ(kTestPeerId, peer_id);
-    EXPECT_EQ(attr->handle(), handle);
-    EXPECT_EQ(0u, offset);
+  auto* attr = grp->AddAttribute(
+      kTestType16, AllowedNoSecurity(), att::AccessRequirements());
+  attr->set_read_handler(
+      [&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
+        EXPECT_EQ(kTestPeerId, peer_id);
+        EXPECT_EQ(attr->handle(), handle);
+        EXPECT_EQ(0u, offset);
 
-    result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
-  });
+        result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
+      });
   grp->set_active(true);
 
   // clang-format off
@@ -1809,21 +1860,86 @@ TEST_F(ServerTest, ReadBlobRequestInvalidPDU) {
 
 TEST_F(ServerTest, ReadBlobRequestDynamicSuccess) {
   const StaticByteBuffer kDeclValue('d', 'e', 'c', 'l');
-  const StaticByteBuffer kTestValue('A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D',
-                                    'e', 'v', 'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's',
-                                    'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't',
-                                    't', 'r', 'i', 'b', 'u', 't', 'e');
+  const StaticByteBuffer kTestValue('A',
+                                    ' ',
+                                    'V',
+                                    'e',
+                                    'r',
+                                    'y',
+                                    ' ',
+                                    'L',
+                                    'o',
+                                    'n',
+                                    'g',
+                                    ' ',
+                                    'D',
+                                    'e',
+                                    'v',
+                                    'i',
+                                    'c',
+                                    'e',
+                                    ' ',
+                                    'N',
+                                    'a',
+                                    'm',
+                                    'e',
+                                    ' ',
+                                    'U',
+                                    's',
+                                    'i',
+                                    'n',
+                                    'g',
+                                    ' ',
+                                    'A',
+                                    ' ',
+                                    'L',
+                                    'o',
+                                    'n',
+                                    'g',
+                                    ' ',
+                                    'A',
+                                    't',
+                                    't',
+                                    'r',
+                                    'i',
+                                    'b',
+                                    'u',
+                                    't',
+                                    'e');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
+  auto* attr = grp->AddAttribute(
+      kTestType16, AllowedNoSecurity(), att::AccessRequirements());
 
-  attr->set_read_handler([&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
-    EXPECT_EQ(kTestPeerId, peer_id);
-    EXPECT_EQ(attr->handle(), handle);
-    EXPECT_EQ(22u, offset);
-    result_cb(fit::ok(), StaticByteBuffer('e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L',
-                                          'o', 'n', 'g', ' ', 'A', 't', 't', 'r', 'i', 'b', 'u'));
-  });
+  attr->set_read_handler(
+      [&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
+        EXPECT_EQ(kTestPeerId, peer_id);
+        EXPECT_EQ(attr->handle(), handle);
+        EXPECT_EQ(22u, offset);
+        result_cb(fit::ok(),
+                  StaticByteBuffer('e',
+                                   ' ',
+                                   'U',
+                                   's',
+                                   'i',
+                                   'n',
+                                   'g',
+                                   ' ',
+                                   'A',
+                                   ' ',
+                                   'L',
+                                   'o',
+                                   'n',
+                                   'g',
+                                   ' ',
+                                   'A',
+                                   't',
+                                   't',
+                                   'r',
+                                   'i',
+                                   'b',
+                                   'u'));
+      });
   grp->set_active(true);
 
   // clang-format off
@@ -1845,18 +1961,62 @@ TEST_F(ServerTest, ReadBlobRequestDynamicSuccess) {
 }
 
 TEST_F(ServerTest, ReadBlobDynamicRequestError) {
-  const StaticByteBuffer kTestValue('A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D',
-                                    'e', 'v', 'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's',
-                                    'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't',
-                                    't', 'r', 'i', 'b', 'u', 't', 'e');
+  const StaticByteBuffer kTestValue('A',
+                                    ' ',
+                                    'V',
+                                    'e',
+                                    'r',
+                                    'y',
+                                    ' ',
+                                    'L',
+                                    'o',
+                                    'n',
+                                    'g',
+                                    ' ',
+                                    'D',
+                                    'e',
+                                    'v',
+                                    'i',
+                                    'c',
+                                    'e',
+                                    ' ',
+                                    'N',
+                                    'a',
+                                    'm',
+                                    'e',
+                                    ' ',
+                                    'U',
+                                    's',
+                                    'i',
+                                    'n',
+                                    'g',
+                                    ' ',
+                                    'A',
+                                    ' ',
+                                    'L',
+                                    'o',
+                                    'n',
+                                    'g',
+                                    ' ',
+                                    'A',
+                                    't',
+                                    't',
+                                    'r',
+                                    'i',
+                                    'b',
+                                    'u',
+                                    't',
+                                    'e');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
-  attr->set_read_handler([&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
-    EXPECT_EQ(kTestPeerId, peer_id);
-    EXPECT_EQ(attr->handle(), handle);
+  auto* attr = grp->AddAttribute(
+      kTestType16, AllowedNoSecurity(), att::AccessRequirements());
+  attr->set_read_handler(
+      [&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
+        EXPECT_EQ(kTestPeerId, peer_id);
+        EXPECT_EQ(attr->handle(), handle);
 
-    result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
-  });
+        result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
+      });
   grp->set_active(true);
 
   // clang-format off
@@ -1878,10 +2038,52 @@ TEST_F(ServerTest, ReadBlobDynamicRequestError) {
 }
 
 TEST_F(ServerTest, ReadBlobRequestStaticSuccess) {
-  const StaticByteBuffer kTestValue('A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D',
-                                    'e', 'v', 'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's',
-                                    'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't',
-                                    't', 'r', 'i', 'b', 'u', 't', 'e');
+  const StaticByteBuffer kTestValue('A',
+                                    ' ',
+                                    'V',
+                                    'e',
+                                    'r',
+                                    'y',
+                                    ' ',
+                                    'L',
+                                    'o',
+                                    'n',
+                                    'g',
+                                    ' ',
+                                    'D',
+                                    'e',
+                                    'v',
+                                    'i',
+                                    'c',
+                                    'e',
+                                    ' ',
+                                    'N',
+                                    'a',
+                                    'm',
+                                    'e',
+                                    ' ',
+                                    'U',
+                                    's',
+                                    'i',
+                                    'n',
+                                    'g',
+                                    ' ',
+                                    'A',
+                                    ' ',
+                                    'L',
+                                    'o',
+                                    'n',
+                                    'g',
+                                    ' ',
+                                    'A',
+                                    't',
+                                    't',
+                                    'r',
+                                    'i',
+                                    'b',
+                                    'u',
+                                    't',
+                                    'e');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 0, kTestValue);
   grp->set_active(true);
@@ -1929,10 +2131,52 @@ TEST_F(ServerTest, ReadBlobRequestStaticOverflowError) {
 }
 
 TEST_F(ServerTest, ReadBlobRequestInvalidHandleError) {
-  const StaticByteBuffer kTestValue('A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D',
-                                    'e', 'v', 'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's',
-                                    'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't',
-                                    't', 'r', 'i', 'b', 'u', 't', 'e');
+  const StaticByteBuffer kTestValue('A',
+                                    ' ',
+                                    'V',
+                                    'e',
+                                    'r',
+                                    'y',
+                                    ' ',
+                                    'L',
+                                    'o',
+                                    'n',
+                                    'g',
+                                    ' ',
+                                    'D',
+                                    'e',
+                                    'v',
+                                    'i',
+                                    'c',
+                                    'e',
+                                    ' ',
+                                    'N',
+                                    'a',
+                                    'm',
+                                    'e',
+                                    ' ',
+                                    'U',
+                                    's',
+                                    'i',
+                                    'n',
+                                    'g',
+                                    ' ',
+                                    'A',
+                                    ' ',
+                                    'L',
+                                    'o',
+                                    'n',
+                                    'g',
+                                    ' ',
+                                    'A',
+                                    't',
+                                    't',
+                                    'r',
+                                    'i',
+                                    'b',
+                                    'u',
+                                    't',
+                                    'e');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 0, kTestValue);
   grp->set_active(true);
 
@@ -1955,21 +2199,66 @@ TEST_F(ServerTest, ReadBlobRequestInvalidHandleError) {
 }
 
 TEST_F(ServerTest, ReadBlobRequestNotPermitedError) {
-  const StaticByteBuffer kTestValue('A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D',
-                                    'e', 'v', 'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's',
-                                    'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't',
-                                    't', 'r', 'i', 'b', 'u', 't', 'e');
+  const StaticByteBuffer kTestValue('A',
+                                    ' ',
+                                    'V',
+                                    'e',
+                                    'r',
+                                    'y',
+                                    ' ',
+                                    'L',
+                                    'o',
+                                    'n',
+                                    'g',
+                                    ' ',
+                                    'D',
+                                    'e',
+                                    'v',
+                                    'i',
+                                    'c',
+                                    'e',
+                                    ' ',
+                                    'N',
+                                    'a',
+                                    'm',
+                                    'e',
+                                    ' ',
+                                    'U',
+                                    's',
+                                    'i',
+                                    'n',
+                                    'g',
+                                    ' ',
+                                    'A',
+                                    ' ',
+                                    'L',
+                                    'o',
+                                    'n',
+                                    'g',
+                                    ' ',
+                                    'A',
+                                    't',
+                                    't',
+                                    'r',
+                                    'i',
+                                    'b',
+                                    'u',
+                                    't',
+                                    'e');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr =
-      grp->AddAttribute(kTestType16, att::AccessRequirements(),
-                        att::AccessRequirements(/*encryption=*/true, /*authentication=*/false,
+      grp->AddAttribute(kTestType16,
+                        att::AccessRequirements(),
+                        att::AccessRequirements(/*encryption=*/true,
+                                                /*authentication=*/false,
                                                 /*authorization=*/false));
-  attr->set_read_handler([&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
-    EXPECT_EQ(kTestPeerId, peer_id);
-    EXPECT_EQ(attr->handle(), handle);
+  attr->set_read_handler(
+      [&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
+        EXPECT_EQ(kTestPeerId, peer_id);
+        EXPECT_EQ(attr->handle(), handle);
 
-    result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
-  });
+        result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
+      });
   grp->set_active(true);
 
   // clang-format off
@@ -1991,19 +2280,63 @@ TEST_F(ServerTest, ReadBlobRequestNotPermitedError) {
 }
 
 TEST_F(ServerTest, ReadBlobRequestInvalidOffsetError) {
-  const StaticByteBuffer kTestValue('A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D',
-                                    'e', 'v', 'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's',
-                                    'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't',
-                                    't', 'r', 'i', 'b', 'u', 't', 'e');
+  const StaticByteBuffer kTestValue('A',
+                                    ' ',
+                                    'V',
+                                    'e',
+                                    'r',
+                                    'y',
+                                    ' ',
+                                    'L',
+                                    'o',
+                                    'n',
+                                    'g',
+                                    ' ',
+                                    'D',
+                                    'e',
+                                    'v',
+                                    'i',
+                                    'c',
+                                    'e',
+                                    ' ',
+                                    'N',
+                                    'a',
+                                    'm',
+                                    'e',
+                                    ' ',
+                                    'U',
+                                    's',
+                                    'i',
+                                    'n',
+                                    'g',
+                                    ' ',
+                                    'A',
+                                    ' ',
+                                    'L',
+                                    'o',
+                                    'n',
+                                    'g',
+                                    ' ',
+                                    'A',
+                                    't',
+                                    't',
+                                    'r',
+                                    'i',
+                                    'b',
+                                    'u',
+                                    't',
+                                    'e');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
-  attr->set_read_handler([&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
-    EXPECT_EQ(kTestPeerId, peer_id);
-    EXPECT_EQ(attr->handle(), handle);
+  auto* attr = grp->AddAttribute(
+      kTestType16, AllowedNoSecurity(), att::AccessRequirements());
+  attr->set_read_handler(
+      [&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
+        EXPECT_EQ(kTestPeerId, peer_id);
+        EXPECT_EQ(attr->handle(), handle);
 
-    result_cb(fit::error(att::ErrorCode::kInvalidOffset), BufferView());
-  });
+        result_cb(fit::error(att::ErrorCode::kInvalidOffset), BufferView());
+      });
   grp->set_active(true);
 
   // clang-format off
@@ -2028,14 +2361,16 @@ TEST_F(ServerTest, ReadRequestSuccess) {
   const StaticByteBuffer kDeclValue('d', 'e', 'c', 'l');
   const StaticByteBuffer kTestValue('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
-  attr->set_read_handler([&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
-    EXPECT_EQ(kTestPeerId, peer_id);
-    EXPECT_EQ(attr->handle(), handle);
-    EXPECT_EQ(0u, offset);
+  auto* attr = grp->AddAttribute(
+      kTestType16, AllowedNoSecurity(), att::AccessRequirements());
+  attr->set_read_handler(
+      [&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
+        EXPECT_EQ(kTestPeerId, peer_id);
+        EXPECT_EQ(attr->handle(), handle);
+        EXPECT_EQ(0u, offset);
 
-    result_cb(fit::ok(), kTestValue);
-  });
+        result_cb(fit::ok(), kTestValue);
+      });
   grp->set_active(true);
 
   // clang-format off
@@ -2099,14 +2434,18 @@ TEST_F(ServerTest, PrepareWriteRequestSucceeds) {
 
   // No security requirement
   auto* attr =
-      grp->AddAttribute(kTestType16, att::AccessRequirements(),
-                        att::AccessRequirements(/*encryption=*/false, /*authentication=*/false,
+      grp->AddAttribute(kTestType16,
+                        att::AccessRequirements(),
+                        att::AccessRequirements(/*encryption=*/false,
+                                                /*authentication=*/false,
                                                 /*authorization=*/false));
   grp->set_active(true);
 
   int write_count = 0;
   attr->set_write_handler(
-      [&](PeerId, att::Handle, uint16_t, const auto&, const auto&) { write_count++; });
+      [&](PeerId, att::Handle, uint16_t, const auto&, const auto&) {
+        write_count++;
+      });
 
   ASSERT_EQ(0x0002, attr->handle());
 
@@ -2137,8 +2476,10 @@ TEST_F(ServerTest, PrepareWriteRequestPrepareQueueFull) {
 
   // No security requirement
   const auto* attr =
-      grp->AddAttribute(kTestType16, att::AccessRequirements(),
-                        att::AccessRequirements(/*encryption=*/false, /*authentication=*/false,
+      grp->AddAttribute(kTestType16,
+                        att::AccessRequirements(),
+                        att::AccessRequirements(/*encryption=*/false,
+                                                /*authentication=*/false,
                                                 /*authorization=*/false));
   grp->set_active(true);
 
@@ -2169,7 +2510,8 @@ TEST_F(ServerTest, PrepareWriteRequestPrepareQueueFull) {
   for (unsigned i = 0; i < att::kPrepareQueueMaxCapacity; i++) {
     EXPECT_PACKET_OUT(kSuccessResponse);
     fake_chan()->Receive(kRequest);
-    ASSERT_TRUE(AllExpectedPacketsSent()) << "Unexpected failure at attempt: " << i;
+    ASSERT_TRUE(AllExpectedPacketsSent())
+        << "Unexpected failure at attempt: " << i;
   }
 
   // The next request should fail with a capacity error.
@@ -2236,9 +2578,13 @@ TEST_F(ServerTest, ExecuteWriteSuccess) {
   StaticByteBuffer buffer('x', 'x', 'x', 'x', 'x', 'x');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
-  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
-  attr->set_write_handler([&](const auto& peer_id, att::Handle handle, uint16_t offset,
-                              const auto& value, auto result_cb) {
+  auto* attr = grp->AddAttribute(
+      kTestType16, att::AccessRequirements(), AllowedNoSecurity());
+  attr->set_write_handler([&](const auto& peer_id,
+                              att::Handle handle,
+                              uint16_t offset,
+                              const auto& value,
+                              auto result_cb) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
 
@@ -2323,9 +2669,13 @@ TEST_F(ServerTest, ExecuteWriteError) {
   StaticByteBuffer buffer('x', 'x', 'x', 'x', 'x', 'x');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
-  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
-  attr->set_write_handler([&](const auto& peer_id, att::Handle handle, uint16_t offset,
-                              const auto& value, auto result_cb) {
+  auto* attr = grp->AddAttribute(
+      kTestType16, att::AccessRequirements(), AllowedNoSecurity());
+  attr->set_write_handler([&](const auto& peer_id,
+                              att::Handle handle,
+                              uint16_t offset,
+                              const auto& value,
+                              auto result_cb) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
 
@@ -2399,11 +2749,15 @@ TEST_F(ServerTest, ExecuteWriteError) {
 TEST_F(ServerTest, ExecuteWriteAbort) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
   // |attr| has handle "2".
-  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
+  auto* attr = grp->AddAttribute(
+      kTestType16, att::AccessRequirements(), AllowedNoSecurity());
 
   int write_count = 0;
-  attr->set_write_handler([&](const auto& peer_id, att::Handle handle, uint16_t offset,
-                              const auto& value, auto result_cb) {
+  attr->set_write_handler([&](const auto& peer_id,
+                              att::Handle handle,
+                              uint16_t offset,
+                              const auto& value,
+                              auto result_cb) {
     write_count++;
 
     EXPECT_EQ(kTestPeerId, peer_id);
@@ -2487,16 +2841,19 @@ TEST_F(ServerTest, ExecuteWriteAbort) {
 }
 
 TEST_F(ServerTest, TrySendNotificationNoCccConfig) {
-  IdType svc_id = RegisterSvcWithSingleChrc(kTestSvcType, kTestChrcId, kTestChrcType);
+  IdType svc_id =
+      RegisterSvcWithSingleChrc(kTestSvcType, kTestChrcId, kTestChrcType);
   const BufferView kTestValue;
-  server()->SendUpdate(svc_id, kTestChrcId, kTestValue, /*indicate_cb=*/nullptr);
+  server()->SendUpdate(
+      svc_id, kTestChrcId, kTestValue, /*indicate_cb=*/nullptr);
 }
 
 TEST_F(ServerTest, TrySendNotificationConfiguredForIndicationsOnly) {
-  SvcIdAndChrcHandle registered =
-      RegisterSvcWithConfiguredChrc(kTestSvcType, kTestChrcId, kTestChrcType, kCCCIndicationBit);
+  SvcIdAndChrcHandle registered = RegisterSvcWithConfiguredChrc(
+      kTestSvcType, kTestChrcId, kTestChrcType, kCCCIndicationBit);
   const BufferView kTestValue;
-  server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue, /*indicate_cb=*/nullptr);
+  server()->SendUpdate(
+      registered.svc_id, kTestChrcId, kTestValue, /*indicate_cb=*/nullptr);
 }
 
 TEST_F(ServerTest, SendNotificationEmpty) {
@@ -2513,7 +2870,8 @@ TEST_F(ServerTest, SendNotificationEmpty) {
   // clang-format on
 
   EXPECT_PACKET_OUT(kExpected);
-  server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue, /*indicate_cb=*/nullptr);
+  server()->SendUpdate(
+      registered.svc_id, kTestChrcId, kTestValue, /*indicate_cb=*/nullptr);
 }
 
 TEST_F(ServerTest, SendNotification) {
@@ -2531,12 +2889,15 @@ TEST_F(ServerTest, SendNotification) {
   // clang-format on
 
   EXPECT_PACKET_OUT(kExpected);
-  server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue.view(),
+  server()->SendUpdate(registered.svc_id,
+                       kTestChrcId,
+                       kTestValue.view(),
                        /*indicate_cb=*/nullptr);
 }
 
 TEST_F(ServerTest, TrySendIndicationNoCccConfig) {
-  IdType svc_id = RegisterSvcWithSingleChrc(kTestSvcType, kTestChrcId, kTestChrcType);
+  IdType svc_id =
+      RegisterSvcWithSingleChrc(kTestSvcType, kTestChrcId, kTestChrcType);
   const BufferView kTestValue;
 
   att::Result<> indicate_res = fit::ok();
@@ -2547,14 +2908,15 @@ TEST_F(ServerTest, TrySendIndicationNoCccConfig) {
 }
 
 TEST_F(ServerTest, TrySendIndicationConfiguredForNotificationsOnly) {
-  SvcIdAndChrcHandle registered =
-      RegisterSvcWithConfiguredChrc(kTestSvcType, kTestChrcId, kTestChrcType, kCCCNotificationBit);
+  SvcIdAndChrcHandle registered = RegisterSvcWithConfiguredChrc(
+      kTestSvcType, kTestChrcId, kTestChrcType, kCCCNotificationBit);
   const BufferView kTestValue;
 
   att::Result<> indicate_res = fit::ok();
   auto indicate_cb = [&](att::Result<> res) { indicate_res = res; };
 
-  server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue, std::move(indicate_cb));
+  server()->SendUpdate(
+      registered.svc_id, kTestChrcId, kTestValue, std::move(indicate_cb));
   EXPECT_EQ(fit::failed(), indicate_res);
 }
 
@@ -2575,7 +2937,8 @@ TEST_F(ServerTest, SendIndicationEmpty) {
   // clang-format on
 
   EXPECT_PACKET_OUT(kExpected);
-  server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue, std::move(indicate_cb));
+  server()->SendUpdate(
+      registered.svc_id, kTestChrcId, kTestValue, std::move(indicate_cb));
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   const StaticByteBuffer kIndicationConfirmation{att::kConfirmation};
@@ -2601,7 +2964,10 @@ TEST_F(ServerTest, SendIndication) {
   // clang-format on
 
   EXPECT_PACKET_OUT(kExpected);
-  server()->SendUpdate(registered.svc_id, kTestChrcId, kTestValue.view(), std::move(indicate_cb));
+  server()->SendUpdate(registered.svc_id,
+                       kTestChrcId,
+                       kTestValue.view(),
+                       std::move(indicate_cb));
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   const StaticByteBuffer kIndicationConfirmation{att::kConfirmation};
@@ -2614,17 +2980,22 @@ class ServerTestSecurity : public ServerTest {
   void InitializeAttributesForReading() {
     auto* grp = db()->NewGrouping(types::kPrimaryService, 4, kTestValue1);
 
-    const att::AccessRequirements encryption(/*encryption=*/true, /*authentication=*/false,
+    const att::AccessRequirements encryption(/*encryption=*/true,
+                                             /*authentication=*/false,
                                              /*authorization=*/false);
-    const att::AccessRequirements authentication(/*encryption=*/false, /*authentication=*/true,
+    const att::AccessRequirements authentication(/*encryption=*/false,
+                                                 /*authentication=*/true,
                                                  /*authorization=*/false);
-    const att::AccessRequirements authorization(/*encryption=*/false, /*authentication=*/false,
+    const att::AccessRequirements authorization(/*encryption=*/false,
+                                                /*authentication=*/false,
                                                 /*authorization=*/true);
 
     not_permitted_attr_ = grp->AddAttribute(kTestType16);
     encryption_required_attr_ = grp->AddAttribute(kTestType16, encryption);
-    authentication_required_attr_ = grp->AddAttribute(kTestType16, authentication);
-    authorization_required_attr_ = grp->AddAttribute(kTestType16, authorization);
+    authentication_required_attr_ =
+        grp->AddAttribute(kTestType16, authentication);
+    authorization_required_attr_ =
+        grp->AddAttribute(kTestType16, authorization);
 
     // Assigns all tests attributes a static value. Intended to be used by read
     // requests. (Note: assigning a static value makes an attribute
@@ -2641,14 +3012,20 @@ class ServerTestSecurity : public ServerTest {
   void InitializeAttributesForWriting() {
     auto* grp = db()->NewGrouping(types::kPrimaryService, 4, kTestValue1);
 
-    const att::AccessRequirements encryption(/*encryption=*/true, /*authentication=*/false,
+    const att::AccessRequirements encryption(/*encryption=*/true,
+                                             /*authentication=*/false,
                                              /*authorization=*/false);
-    const att::AccessRequirements authentication(/*encryption=*/false, /*authentication=*/true,
+    const att::AccessRequirements authentication(/*encryption=*/false,
+                                                 /*authentication=*/true,
                                                  /*authorization=*/false);
-    const att::AccessRequirements authorization(/*encryption=*/false, /*authentication=*/false,
+    const att::AccessRequirements authorization(/*encryption=*/false,
+                                                /*authentication=*/false,
                                                 /*authorization=*/true);
 
-    auto write_handler = [this](const auto&, att::Handle, uint16_t, const auto& value,
+    auto write_handler = [this](const auto&,
+                                att::Handle,
+                                uint16_t,
+                                const auto& value,
                                 auto responder) {
       write_count_++;
       if (responder) {
@@ -2663,104 +3040,144 @@ class ServerTestSecurity : public ServerTest {
         grp->AddAttribute(kTestType16, att::AccessRequirements(), encryption);
     encryption_required_attr_->set_write_handler(write_handler);
 
-    authentication_required_attr_ =
-        grp->AddAttribute(kTestType16, att::AccessRequirements(), authentication);
+    authentication_required_attr_ = grp->AddAttribute(
+        kTestType16, att::AccessRequirements(), authentication);
     authentication_required_attr_->set_write_handler(write_handler);
 
-    authorization_required_attr_ =
-        grp->AddAttribute(kTestType16, att::AccessRequirements(), authorization);
+    authorization_required_attr_ = grp->AddAttribute(
+        kTestType16, att::AccessRequirements(), authorization);
     authorization_required_attr_->set_write_handler(write_handler);
 
     grp->set_active(true);
   }
 
-  auto MakeAttError(att::OpCode request, att::Handle handle, att::ErrorCode ecode) {
-    return StaticByteBuffer(0x01,                                  // opcode: error response
-                            request,                               // request opcode
-                            LowerBits(handle), UpperBits(handle),  // handle
-                            ecode                                  // error code
+  auto MakeAttError(att::OpCode request,
+                    att::Handle handle,
+                    att::ErrorCode ecode) {
+    return StaticByteBuffer(0x01,     // opcode: error response
+                            request,  // request opcode
+                            LowerBits(handle),
+                            UpperBits(handle),  // handle
+                            ecode               // error code
     );
   }
 
-  // Helpers for emulating the receipt of an ATT read/write request PDU and expecting back a
-  // security error. Expects a successful response if |expected_status| is fit::ok().
-  bool EmulateReadByTypeRequest(att::Handle handle, fit::result<att::ErrorCode> expected_status) {
-    const StaticByteBuffer kReadByTypeRequestPdu(0x08,  // opcode: read by type
-                                                 LowerBits(handle),
-                                                 UpperBits(handle),  // start handle
-                                                 LowerBits(handle),
-                                                 UpperBits(handle),  // end handle
-                                                 0xEF, 0xBE);  // type: 0xBEEF, i.e. kTestType16
+  // Helpers for emulating the receipt of an ATT read/write request PDU and
+  // expecting back a security error. Expects a successful response if
+  // |expected_status| is fit::ok().
+  bool EmulateReadByTypeRequest(att::Handle handle,
+                                fit::result<att::ErrorCode> expected_status) {
+    const StaticByteBuffer kReadByTypeRequestPdu(
+        0x08,  // opcode: read by type
+        LowerBits(handle),
+        UpperBits(handle),  // start handle
+        LowerBits(handle),
+        UpperBits(handle),  // end handle
+        0xEF,
+        0xBE);  // type: 0xBEEF, i.e. kTestType16
     if (expected_status.is_ok()) {
       EXPECT_PACKET_OUT(StaticByteBuffer(0x09,  // opcode: read by type response
                                          0x05,  // length: 5 (strlen("foo") + 2)
-                                         LowerBits(handle), UpperBits(handle),  // handle
-                                         'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
+                                         LowerBits(handle),
+                                         UpperBits(handle),  // handle
+                                         'f',
+                                         'o',
+                                         'o'  // value: "foo", i.e. kTestValue1
                                          ));
     } else {
-      EXPECT_PACKET_OUT(MakeAttError(0x08, handle, expected_status.error_value()));
+      EXPECT_PACKET_OUT(
+          MakeAttError(0x08, handle, expected_status.error_value()));
     }
     fake_chan()->Receive(kReadByTypeRequestPdu);
     return AllExpectedPacketsSent();
   }
 
-  bool EmulateReadBlobRequest(att::Handle handle, fit::result<att::ErrorCode> expected_status) {
+  bool EmulateReadBlobRequest(att::Handle handle,
+                              fit::result<att::ErrorCode> expected_status) {
     const StaticByteBuffer kReadBlobRequestPdu(0x0C,  // opcode: read blob
-                                               LowerBits(handle), UpperBits(handle),  // handle
-                                               0x00, 0x00);                           // offset: 0
+                                               LowerBits(handle),
+                                               UpperBits(handle),  // handle
+                                               0x00,
+                                               0x00);  // offset: 0
     if (expected_status.is_ok()) {
-      EXPECT_PACKET_OUT(StaticByteBuffer(0x0D,          // opcode: read blob response
-                                         'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
+      EXPECT_PACKET_OUT(StaticByteBuffer(0x0D,  // opcode: read blob response
+                                         'f',
+                                         'o',
+                                         'o'  // value: "foo", i.e. kTestValue1
                                          ));
     } else {
-      EXPECT_PACKET_OUT(MakeAttError(0x0C, handle, expected_status.error_value()));
+      EXPECT_PACKET_OUT(
+          MakeAttError(0x0C, handle, expected_status.error_value()));
     }
     fake_chan()->Receive(kReadBlobRequestPdu);
     return AllExpectedPacketsSent();
   }
 
-  bool EmulateReadRequest(att::Handle handle, fit::result<att::ErrorCode> expected_status) {
+  bool EmulateReadRequest(att::Handle handle,
+                          fit::result<att::ErrorCode> expected_status) {
     const StaticByteBuffer kReadRequestPdu(0x0A,  // opcode: read request
-                                           LowerBits(handle), UpperBits(handle));  // handle
+                                           LowerBits(handle),
+                                           UpperBits(handle));  // handle
     if (expected_status.is_ok()) {
-      EXPECT_PACKET_OUT(StaticByteBuffer(0x0B,          // opcode: read response
-                                         'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
+      EXPECT_PACKET_OUT(StaticByteBuffer(0x0B,  // opcode: read response
+                                         'f',
+                                         'o',
+                                         'o'  // value: "foo", i.e. kTestValue1
                                          ));
     } else {
-      EXPECT_PACKET_OUT(MakeAttError(0x0A, handle, expected_status.error_value()));
+      EXPECT_PACKET_OUT(
+          MakeAttError(0x0A, handle, expected_status.error_value()));
     }
     fake_chan()->Receive(kReadRequestPdu);
     return AllExpectedPacketsSent();
   }
 
-  bool EmulateWriteRequest(att::Handle handle, fit::result<att::ErrorCode> expected_status) {
+  bool EmulateWriteRequest(att::Handle handle,
+                           fit::result<att::ErrorCode> expected_status) {
     const StaticByteBuffer kWriteRequestPdu(0x12,  // opcode: write request
-                                            LowerBits(handle), UpperBits(handle),  // handle
-                                            't', 'e', 's', 't');                   // value: "test"
+                                            LowerBits(handle),
+                                            UpperBits(handle),  // handle
+                                            't',
+                                            'e',
+                                            's',
+                                            't');  // value: "test"
     if (expected_status.is_ok()) {
       EXPECT_PACKET_OUT(StaticByteBuffer(0x13));
     } else {
-      EXPECT_PACKET_OUT(MakeAttError(0x12, handle, expected_status.error_value()));
+      EXPECT_PACKET_OUT(
+          MakeAttError(0x12, handle, expected_status.error_value()));
     }
     fake_chan()->Receive(kWriteRequestPdu);
     return AllExpectedPacketsSent();
   }
 
-  bool EmulatePrepareWriteRequest(att::Handle handle, fit::result<att::ErrorCode> expected_status) {
+  bool EmulatePrepareWriteRequest(att::Handle handle,
+                                  fit::result<att::ErrorCode> expected_status) {
     const auto kPrepareWriteRequestPdu =
-        StaticByteBuffer(0x16,                                  // opcode: prepare write request
-                         LowerBits(handle), UpperBits(handle),  // handle
-                         0x00, 0x00,                            // offset: 0
-                         't', 'e', 's', 't'                     // value: "test"
+        StaticByteBuffer(0x16,  // opcode: prepare write request
+                         LowerBits(handle),
+                         UpperBits(handle),  // handle
+                         0x00,
+                         0x00,  // offset: 0
+                         't',
+                         'e',
+                         's',
+                         't'  // value: "test"
         );
     if (expected_status.is_ok()) {
       EXPECT_PACKET_OUT(StaticByteBuffer(0x17,  // prepare write response
-                                         LowerBits(handle), UpperBits(handle),  // handle
-                                         0x00, 0x00,                            // offset: 0
-                                         't', 'e', 's', 't'                     // value: "test"
+                                         LowerBits(handle),
+                                         UpperBits(handle),  // handle
+                                         0x00,
+                                         0x00,  // offset: 0
+                                         't',
+                                         'e',
+                                         's',
+                                         't'  // value: "test"
                                          ));
     } else {
-      EXPECT_PACKET_OUT(MakeAttError(0x16, handle, expected_status.error_value()));
+      EXPECT_PACKET_OUT(
+          MakeAttError(0x16, handle, expected_status.error_value()));
     }
     fake_chan()->Receive(kPrepareWriteRequestPdu);
     return AllExpectedPacketsSent();
@@ -2770,63 +3187,98 @@ class ServerTestSecurity : public ServerTest {
   // is unused since ATT commands do not have a response.
   bool EmulateWriteCommand(att::Handle handle, fit::result<att::ErrorCode>) {
     fake_chan()->Receive(StaticByteBuffer(0x52,  // opcode: write command
-                                          LowerBits(handle), UpperBits(handle),  // handle
-                                          't', 'e', 's', 't'                     // value: "test"
+                                          LowerBits(handle),
+                                          UpperBits(handle),  // handle
+                                          't',
+                                          'e',
+                                          's',
+                                          't'  // value: "test"
                                           ));
     RunUntilIdle();
     return true;
   }
 
-  template <bool (ServerTestSecurity::*EmulateMethod)(att::Handle, fit::result<att::ErrorCode>),
+  template <bool (ServerTestSecurity::*EmulateMethod)(
+                att::Handle, fit::result<att::ErrorCode>),
             bool IsWrite>
   void RunTest() {
-    const fit::error<att::ErrorCode> kNotPermittedError = fit::error(
-        IsWrite ? att::ErrorCode::kWriteNotPermitted : att::ErrorCode::kReadNotPermitted);
+    const fit::error<att::ErrorCode> kNotPermittedError =
+        fit::error(IsWrite ? att::ErrorCode::kWriteNotPermitted
+                           : att::ErrorCode::kReadNotPermitted);
 
     // No security.
-    EXPECT_TRUE(
-        (this->*EmulateMethod)(not_permitted_attr()->handle(), fit::error(kNotPermittedError)));
-    EXPECT_TRUE((this->*EmulateMethod)(encryption_required_attr()->handle(),
-                                       fit::error(att::ErrorCode::kInsufficientAuthentication)));
-    EXPECT_TRUE((this->*EmulateMethod)(authentication_required_attr()->handle(),
-                                       fit::error(att::ErrorCode::kInsufficientAuthentication)));
-    EXPECT_TRUE((this->*EmulateMethod)(authorization_required_attr()->handle(),
-                                       fit::error(att::ErrorCode::kInsufficientAuthentication)));
+    EXPECT_TRUE((this->*EmulateMethod)(not_permitted_attr()->handle(),
+                                       fit::error(kNotPermittedError)));
+    EXPECT_TRUE((this->*EmulateMethod)(
+        encryption_required_attr()->handle(),
+        fit::error(att::ErrorCode::kInsufficientAuthentication)));
+    EXPECT_TRUE((this->*EmulateMethod)(
+        authentication_required_attr()->handle(),
+        fit::error(att::ErrorCode::kInsufficientAuthentication)));
+    EXPECT_TRUE((this->*EmulateMethod)(
+        authorization_required_attr()->handle(),
+        fit::error(att::ErrorCode::kInsufficientAuthentication)));
 
     // Link encrypted.
-    fake_chan()->set_security(
-        sm::SecurityProperties(sm::SecurityLevel::kEncrypted, 16, /*secure_connections=*/false));
-    EXPECT_TRUE((this->*EmulateMethod)(not_permitted_attr()->handle(), kNotPermittedError));
-    EXPECT_TRUE((this->*EmulateMethod)(encryption_required_attr()->handle(), fit::ok()));
-    EXPECT_TRUE((this->*EmulateMethod)(authentication_required_attr()->handle(),
-                                       fit::error(att::ErrorCode::kInsufficientAuthentication)));
-    EXPECT_TRUE((this->*EmulateMethod)(authorization_required_attr()->handle(),
-                                       fit::error(att::ErrorCode::kInsufficientAuthentication)));
+    fake_chan()->set_security(sm::SecurityProperties(
+        sm::SecurityLevel::kEncrypted, 16, /*secure_connections=*/false));
+    EXPECT_TRUE((this->*EmulateMethod)(not_permitted_attr()->handle(),
+                                       kNotPermittedError));
+    EXPECT_TRUE((this->*EmulateMethod)(encryption_required_attr()->handle(),
+                                       fit::ok()));
+    EXPECT_TRUE((this->*EmulateMethod)(
+        authentication_required_attr()->handle(),
+        fit::error(att::ErrorCode::kInsufficientAuthentication)));
+    EXPECT_TRUE((this->*EmulateMethod)(
+        authorization_required_attr()->handle(),
+        fit::error(att::ErrorCode::kInsufficientAuthentication)));
 
     // Link encrypted w/ MITM.
-    fake_chan()->set_security(sm::SecurityProperties(sm::SecurityLevel::kAuthenticated, 16,
-                                                     /*secure_connections=*/false));
-    EXPECT_TRUE((this->*EmulateMethod)(not_permitted_attr()->handle(), kNotPermittedError));
-    EXPECT_TRUE((this->*EmulateMethod)(encryption_required_attr()->handle(), fit::ok()));
-    EXPECT_TRUE((this->*EmulateMethod)(authentication_required_attr()->handle(), fit::ok()));
-    EXPECT_TRUE((this->*EmulateMethod)(authorization_required_attr()->handle(), fit::ok()));
+    fake_chan()->set_security(
+        sm::SecurityProperties(sm::SecurityLevel::kAuthenticated,
+                               16,
+                               /*secure_connections=*/false));
+    EXPECT_TRUE((this->*EmulateMethod)(not_permitted_attr()->handle(),
+                                       kNotPermittedError));
+    EXPECT_TRUE((this->*EmulateMethod)(encryption_required_attr()->handle(),
+                                       fit::ok()));
+    EXPECT_TRUE((this->*EmulateMethod)(authentication_required_attr()->handle(),
+                                       fit::ok()));
+    EXPECT_TRUE((this->*EmulateMethod)(authorization_required_attr()->handle(),
+                                       fit::ok()));
   }
 
-  void RunReadByTypeTest() { RunTest<&ServerTestSecurity::EmulateReadByTypeRequest, false>(); }
-  void RunReadBlobTest() { RunTest<&ServerTestSecurity::EmulateReadBlobRequest, false>(); }
-  void RunReadRequestTest() { RunTest<&ServerTestSecurity::EmulateReadRequest, false>(); }
-  void RunWriteRequestTest() { RunTest<&ServerTestSecurity::EmulateWriteRequest, true>(); }
+  void RunReadByTypeTest() {
+    RunTest<&ServerTestSecurity::EmulateReadByTypeRequest, false>();
+  }
+  void RunReadBlobTest() {
+    RunTest<&ServerTestSecurity::EmulateReadBlobRequest, false>();
+  }
+  void RunReadRequestTest() {
+    RunTest<&ServerTestSecurity::EmulateReadRequest, false>();
+  }
+  void RunWriteRequestTest() {
+    RunTest<&ServerTestSecurity::EmulateWriteRequest, true>();
+  }
   void RunPrepareWriteRequestTest() {
     RunTest<&ServerTestSecurity::EmulatePrepareWriteRequest, true>();
   }
-  void RunWriteCommandTest() { RunTest<&ServerTestSecurity::EmulateWriteCommand, true>(); }
+  void RunWriteCommandTest() {
+    RunTest<&ServerTestSecurity::EmulateWriteCommand, true>();
+  }
 
-  const att::Attribute* not_permitted_attr() const { return not_permitted_attr_; }
-  const att::Attribute* encryption_required_attr() const { return encryption_required_attr_; }
+  const att::Attribute* not_permitted_attr() const {
+    return not_permitted_attr_;
+  }
+  const att::Attribute* encryption_required_attr() const {
+    return encryption_required_attr_;
+  }
   const att::Attribute* authentication_required_attr() const {
     return authentication_required_attr_;
   }
-  const att::Attribute* authorization_required_attr() const { return authorization_required_attr_; }
+  const att::Attribute* authorization_required_attr() const {
+    return authorization_required_attr_;
+  }
 
   size_t write_count() const { return write_count_; }
 

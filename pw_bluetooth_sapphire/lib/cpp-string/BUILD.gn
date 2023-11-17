@@ -1,0 +1,38 @@
+# Copyright 2021 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//build_overrides/pigweed.gni")
+import("$dir_pw_third_party/icu/icu.gni")
+import("$dir_pw_unit_test/test.gni")
+
+config("public_include_path") {
+  include_dirs = [ "public" ]
+}
+
+pw_source_set("cpp-string") {
+  sources = [
+    "public/cpp-string/string_printf.h",
+    "public/cpp-string/utf_codecs.h",
+    "string_printf.cc",
+    "utf_codecs.cc",
+  ]
+
+  deps = [ "$dir_pw_third_party/icu" ]
+
+  public_configs = [ ":public_include_path" ]
+}
+
+pw_test("string_printf_test") {
+  enable_if = current_os != "win" && dir_pw_third_party_icu != ""
+
+  sources = [ "string_printf_unittest.cc" ]
+
+  cflags = [ "-Wno-format-zero-length" ]
+
+  deps = [ ":cpp-string" ]
+}
+
+pw_test_group("tests") {
+  tests = [ ":string_printf_test" ]
+}

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "le_connection_parameters.h"
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/le_connection_parameters.h"
 
 namespace bt::hci_spec {
 
@@ -13,9 +13,12 @@ constexpr static float kTimesliceMs = 1.25f;
 
 }  // namespace
 
-LEConnectionParameters::LEConnectionParameters(uint16_t interval, uint16_t latency,
+LEConnectionParameters::LEConnectionParameters(uint16_t interval,
+                                               uint16_t latency,
                                                uint16_t supervision_timeout)
-    : interval_(interval), latency_(latency), supervision_timeout_(supervision_timeout) {}
+    : interval_(interval),
+      latency_(latency),
+      supervision_timeout_(supervision_timeout) {}
 
 LEConnectionParameters::LEConnectionParameters()
     : interval_(0), latency_(0), supervision_timeout_(0) {}
@@ -27,28 +30,35 @@ bool hci_spec::LEConnectionParameters::operator==(
 }
 
 std::string hci_spec::LEConnectionParameters::ToString() const {
-  return bt_lib_cpp_string::StringPrintf("interval: %.2f ms, latency: %.2f ms, timeout: %u ms",
-                                         static_cast<float>(interval_) * kTimesliceMs,
-                                         static_cast<float>(latency_) * kTimesliceMs,
-                                         supervision_timeout_ * 10u);
+  return bt_lib_cpp_string::StringPrintf(
+      "interval: %.2f ms, latency: %.2f ms, timeout: %u ms",
+      static_cast<float>(interval_) * kTimesliceMs,
+      static_cast<float>(latency_) * kTimesliceMs,
+      supervision_timeout_ * 10u);
 }
 
-LEPreferredConnectionParameters::LEPreferredConnectionParameters(uint16_t min_interval,
-                                                                 uint16_t max_interval,
-                                                                 uint16_t max_latency,
-                                                                 uint16_t supervision_timeout)
+LEPreferredConnectionParameters::LEPreferredConnectionParameters(
+    uint16_t min_interval,
+    uint16_t max_interval,
+    uint16_t max_latency,
+    uint16_t supervision_timeout)
     : min_interval_(min_interval),
       max_interval_(max_interval),
       max_latency_(max_latency),
       supervision_timeout_(supervision_timeout) {}
 
 LEPreferredConnectionParameters::LEPreferredConnectionParameters()
-    : min_interval_(0), max_interval_(0), max_latency_(0), supervision_timeout_(0) {}
+    : min_interval_(0),
+      max_interval_(0),
+      max_latency_(0),
+      supervision_timeout_(0) {}
 
 bool LEPreferredConnectionParameters::operator==(
     const LEPreferredConnectionParameters& other) const {
-  return min_interval_ == other.min_interval_ && max_interval_ == other.max_interval_ &&
-         max_latency_ == other.max_latency_ && supervision_timeout_ == other.supervision_timeout_;
+  return min_interval_ == other.min_interval_ &&
+         max_interval_ == other.max_interval_ &&
+         max_latency_ == other.max_latency_ &&
+         supervision_timeout_ == other.supervision_timeout_;
 }
 
 }  // namespace bt::hci_spec

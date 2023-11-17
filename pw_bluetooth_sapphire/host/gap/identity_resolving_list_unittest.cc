@@ -2,18 +2,20 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "identity_resolving_list.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/identity_resolving_list.h"
 
 #include <gtest/gtest.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
+#include "pw_bluetooth_sapphire/internal/host/common/random.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/util.h"
 
 namespace bt::gap {
 namespace {
 
-const DeviceAddress kAddress1(DeviceAddress::Type::kLERandom, {6, 5, 4, 3, 2, 1});
-const DeviceAddress kAddress2(DeviceAddress::Type::kLERandom, {0x66, 0x55, 0x44, 0x33, 0x22, 0x11});
+const DeviceAddress kAddress1(DeviceAddress::Type::kLERandom,
+                              {6, 5, 4, 3, 2, 1});
+const DeviceAddress kAddress2(DeviceAddress::Type::kLERandom,
+                              {0x66, 0x55, 0x44, 0x33, 0x22, 0x11});
 
 TEST(IdentityResolvingListTest, ResolveEmpty) {
   IdentityResolvingList rl;

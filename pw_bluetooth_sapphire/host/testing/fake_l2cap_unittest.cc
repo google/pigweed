@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_l2cap.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/fake_l2cap.h"
 
 #include <gtest/gtest.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
 namespace bt::testing {
 
@@ -49,9 +49,11 @@ TEST_F(FakeL2capTest, RegisterHandler) {
   StaticByteBuffer sample_packet(
       // L2CAP B-Frame header for signaling channel packet.
       // Length 0x0001
-      0x01, 0x00,
+      0x01,
+      0x00,
       // Channel Id: 0x0001
-      LowerBits(l2cap::kSignalingChannelId), UpperBits(l2cap::kSignalingChannelId),
+      LowerBits(l2cap::kSignalingChannelId),
+      UpperBits(l2cap::kSignalingChannelId),
       // Payload: "#"
       0x23);
   fake_l2cap().HandlePdu(kConnectionHandle, sample_packet);
@@ -69,9 +71,11 @@ TEST_F(FakeL2capTest, CallHandlerMultipleTimes) {
   StaticByteBuffer sample_packet(
       // L2CAP B-Frame header for signaling channel packet.
       // Length 0x0001
-      0x01, 0x00,
+      0x01,
+      0x00,
       // Channel Id: 0x0001
-      LowerBits(l2cap::kSignalingChannelId), UpperBits(l2cap::kSignalingChannelId),
+      LowerBits(l2cap::kSignalingChannelId),
+      UpperBits(l2cap::kSignalingChannelId),
       // Payload: "#"
       0x23);
   fake_l2cap().HandlePdu(kConnectionHandle, sample_packet);
@@ -84,7 +88,8 @@ TEST_F(FakeL2capTest, CustomUnexpectedPacketHandler) {
   size_t n_pdus = 0;
   auto unexpected_cb = [&](auto kConnectionHandle, auto& buffer) {
     ++n_pdus;
-    EXPECT_TRUE(ContainersEqual(StaticByteBuffer(0x01, 0x00, 0x01, 0x00, 0x23), buffer));
+    EXPECT_TRUE(ContainersEqual(StaticByteBuffer(0x01, 0x00, 0x01, 0x00, 0x23),
+                                buffer));
   };
   auto send_cb = [](auto kConnectionHandle, auto cid, auto& buffer) {};
   auto fake_l2cap_custom_handler =
@@ -93,9 +98,11 @@ TEST_F(FakeL2capTest, CustomUnexpectedPacketHandler) {
   StaticByteBuffer sample_packet(
       // L2CAP B-Frame header for signaling channel packet.
       // Length 0x0001
-      0x01, 0x00,
+      0x01,
+      0x00,
       // Channel Id: 0x0001
-      LowerBits(l2cap::kSignalingChannelId), UpperBits(l2cap::kSignalingChannelId),
+      LowerBits(l2cap::kSignalingChannelId),
+      UpperBits(l2cap::kSignalingChannelId),
       // Payload: "#"
       0x23);
   fake_l2cap_custom_handler.HandlePdu(kConnectionHandle, sample_packet);
@@ -109,9 +116,11 @@ TEST_F(FakeL2capTest, DefaultUnexpectedPacketHandler) {
   StaticByteBuffer sample_packet = StaticByteBuffer(
       // L2CAP B-Frame header for signaling channel packet.
       // Length 0x0001
-      0x01, 0x00,
+      0x01,
+      0x00,
       // Channel Id: 0x0001
-      LowerBits(l2cap::kSignalingChannelId), UpperBits(l2cap::kSignalingChannelId),
+      LowerBits(l2cap::kSignalingChannelId),
+      UpperBits(l2cap::kSignalingChannelId),
       // Payload: "#"
       0x23);
   fake_l2cap().HandlePdu(kConnectionHandle, sample_packet);
@@ -124,7 +133,8 @@ TEST_F(FakeL2capTest, DefaultUnexpectedPacketHandler) {
 
 TEST_F(FakeL2capTest, DefaultSendPacketOnCustomChannel) {
   std::unique_ptr<ByteBuffer> received_packet;
-  auto send_cb = [&received_packet](auto kConnectionHandle, auto cid, auto& buffer) {
+  auto send_cb = [&received_packet](
+                     auto kConnectionHandle, auto cid, auto& buffer) {
     received_packet = std::make_unique<DynamicByteBuffer>(buffer);
   };
   set_send_frame_callback(send_cb);
@@ -143,8 +153,10 @@ TEST_F(FakeL2capTest, DefaultSendPacketOnCustomChannel) {
   l2cap::ChannelId src_id = l2cap::kFirstDynamicChannelId;
 
   // Open up the SDP channel.
-  fake_l2cap().RegisterDynamicChannel(kConnectionHandle, l2cap::kSDP, src_id, src_id);
-  auto channel = fake_l2cap().FindDynamicChannelByLocalId(kConnectionHandle, src_id);
+  fake_l2cap().RegisterDynamicChannel(
+      kConnectionHandle, l2cap::kSDP, src_id, src_id);
+  auto channel =
+      fake_l2cap().FindDynamicChannelByLocalId(kConnectionHandle, src_id);
   channel->set_opened();
   fake_l2cap().RegisterDynamicChannelWithPsm(kConnectionHandle, src_id);
 
@@ -152,9 +164,11 @@ TEST_F(FakeL2capTest, DefaultSendPacketOnCustomChannel) {
   StaticByteBuffer sample_packet(
       // L2CAP B-Frame header for signaling channel packet.
       // Length 0x0001
-      0x01, 0x00,
+      0x01,
+      0x00,
       // Channel Id: 0x0040
-      LowerBits(src_id), UpperBits(src_id),
+      LowerBits(src_id),
+      UpperBits(src_id),
       // Payload: "#"
       0x23);
   fake_l2cap().HandlePdu(kConnectionHandle, sample_packet);

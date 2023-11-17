@@ -2,18 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "client.h"
+#include "pw_bluetooth_sapphire/internal/host/gatt/client.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/att/att.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/mock_channel_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
+#include "pw_bluetooth_sapphire/internal/host/att/att.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/mock_channel_test.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
 namespace bt::gatt {
 namespace {
 
 constexpr UUID kTestUuid1(uint16_t{0xDEAD});
 constexpr UUID kTestUuid2(uint16_t{0xBEEF});
-constexpr UUID kTestUuid3({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+constexpr UUID kTestUuid3(
+    {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
 
 att::Result<uint16_t> MtuResultFromErrCode(att::ErrorCode ecode) {
   return fit::error(att::Error(ecode));
@@ -48,11 +49,13 @@ const StaticByteBuffer kDiscoverPrimary128ByUUID(
 );
 // clang-format on
 
-auto MakeFindInformation(att::Handle range_start = 0x0001, att::Handle range_end = 0xFFFF) {
+auto MakeFindInformation(att::Handle range_start = 0x0001,
+                         att::Handle range_end = 0xFFFF) {
   return StaticByteBuffer(att::kFindInformationRequest,  // opcode
                           LowerBits(range_start),
-                          UpperBits(range_start),                     // start handle
-                          LowerBits(range_end), UpperBits(range_end)  // end handle
+                          UpperBits(range_start),  // start handle
+                          LowerBits(range_end),
+                          UpperBits(range_end)  // end handle
   );
 }
 
@@ -79,10 +82,15 @@ class ClientTest : public l2cap::testing::MockChannelTest {
   }
 
   // |out_status| must remain valid.
-  void SendDiscoverDescriptors(att::Result<>* out_status, Client::DescriptorCallback desc_callback,
-                               att::Handle range_start = 0x0001, att::Handle range_end = 0xFFFF) {
-    client()->DiscoverDescriptors(range_start, range_end, std::move(desc_callback),
-                                  [out_status](att::Result<> val) { *out_status = val; });
+  void SendDiscoverDescriptors(att::Result<>* out_status,
+                               Client::DescriptorCallback desc_callback,
+                               att::Handle range_start = 0x0001,
+                               att::Handle range_end = 0xFFFF) {
+    client()->DiscoverDescriptors(
+        range_start,
+        range_end,
+        std::move(desc_callback),
+        [out_status](att::Result<> val) { *out_status = val; });
   }
 
   att::Bearer* att() const { return att_.get(); }
@@ -97,8 +105,9 @@ class ClientTest : public l2cap::testing::MockChannelTest {
 
 TEST_F(ClientTest, ExchangeMTUMalformedResponse) {
   constexpr uint16_t kPreferredMTU = 100;
-  const StaticByteBuffer kExpectedRequest(0x02,                // opcode: exchange MTU
-                                          kPreferredMTU, 0x00  // client rx mtu: kPreferredMTU
+  const StaticByteBuffer kExpectedRequest(0x02,  // opcode: exchange MTU
+                                          kPreferredMTU,
+                                          0x00  // client rx mtu: kPreferredMTU
   );
 
   std::optional<att::Result<uint16_t>> result;
@@ -113,9 +122,10 @@ TEST_F(ClientTest, ExchangeMTUMalformedResponse) {
 
   // Respond back with a malformed PDU. This should cause a link error and the
   // MTU request should fail.
-  fake_chan()->Receive(StaticByteBuffer(0x03,  // opcode: exchange MTU response
-                                        30     // server rx mtu is one octet too short
-                                        ));
+  fake_chan()->Receive(StaticByteBuffer(
+      0x03,  // opcode: exchange MTU response
+      30     // server rx mtu is one octet too short
+      ));
 
   RunUntilIdle();
 
@@ -128,8 +138,9 @@ TEST_F(ClientTest, ExchangeMTUMalformedResponse) {
 TEST_F(ClientTest, ExchangeMTUErrorNotSupported) {
   constexpr uint16_t kPreferredMTU = 100;
   constexpr uint16_t kInitialMTU = 50;
-  const StaticByteBuffer kExpectedRequest(0x02,                // opcode: exchange MTU
-                                          kPreferredMTU, 0x00  // client rx mtu: kPreferredMTU
+  const StaticByteBuffer kExpectedRequest(0x02,  // opcode: exchange MTU
+                                          kPreferredMTU,
+                                          0x00  // client rx mtu: kPreferredMTU
   );
 
   std::optional<att::Result<uint16_t>> result;
@@ -146,23 +157,27 @@ TEST_F(ClientTest, ExchangeMTUErrorNotSupported) {
 
   // Respond with "Request Not Supported". This will cause us to switch to the
   // default MTU.
-  fake_chan()->Receive(StaticByteBuffer(att::kErrorResponse,       // opcode
-                                        att::kExchangeMTURequest,  // request opcode
-                                        0x00, 0x00,                // handle: 0
-                                        att::ErrorCode::kRequestNotSupported));
+  fake_chan()->Receive(
+      StaticByteBuffer(att::kErrorResponse,       // opcode
+                       att::kExchangeMTURequest,  // request opcode
+                       0x00,
+                       0x00,  // handle: 0
+                       att::ErrorCode::kRequestNotSupported));
 
   RunUntilIdle();
 
   ASSERT_TRUE(result.has_value());
-  EXPECT_EQ(MtuResultFromErrCode(att::ErrorCode::kRequestNotSupported), *result);
+  EXPECT_EQ(MtuResultFromErrCode(att::ErrorCode::kRequestNotSupported),
+            *result);
   EXPECT_EQ(att::kLEMinMTU, att()->mtu());
 }
 
 TEST_F(ClientTest, ExchangeMTUErrorOther) {
   constexpr uint16_t kPreferredMTU = 100;
   const auto kExpectedRequest =
-      StaticByteBuffer(0x02,                // opcode: exchange MTU
-                       kPreferredMTU, 0x00  // client rx mtu: kPreferredMTU
+      StaticByteBuffer(0x02,  // opcode: exchange MTU
+                       kPreferredMTU,
+                       0x00  // client rx mtu: kPreferredMTU
       );
 
   std::optional<att::Result<uint16_t>> result;
@@ -176,10 +191,12 @@ TEST_F(ClientTest, ExchangeMTUErrorOther) {
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   // Respond with an error. The MTU should remain unchanged.
-  fake_chan()->Receive(StaticByteBuffer(att::kErrorResponse,       // opcode
-                                        att::kExchangeMTURequest,  // request opcode
-                                        0x00, 0x00,                // handle: 0
-                                        att::ErrorCode::kUnlikelyError));
+  fake_chan()->Receive(
+      StaticByteBuffer(att::kErrorResponse,       // opcode
+                       att::kExchangeMTURequest,  // request opcode
+                       0x00,
+                       0x00,  // handle: 0
+                       att::ErrorCode::kUnlikelyError));
 
   RunUntilIdle();
 
@@ -194,8 +211,9 @@ TEST_F(ClientTest, ExchangeMTUSelectLocal) {
   constexpr uint16_t kServerRxMTU = kPreferredMTU + 1;
 
   const auto kExpectedRequest =
-      StaticByteBuffer(0x02,                // opcode: exchange MTU
-                       kPreferredMTU, 0x00  // client rx mtu: kPreferredMTU
+      StaticByteBuffer(0x02,  // opcode: exchange MTU
+                       kPreferredMTU,
+                       0x00  // client rx mtu: kPreferredMTU
       );
 
   std::optional<att::Result<uint16_t>> result;
@@ -209,8 +227,9 @@ TEST_F(ClientTest, ExchangeMTUSelectLocal) {
   ASSERT_EQ(att::kLEMinMTU, att()->mtu());
 
   // Respond with an error. The MTU should remain unchanged.
-  fake_chan()->Receive(StaticByteBuffer(0x03,               // opcode: exchange MTU response
-                                        kServerRxMTU, 0x00  // server rx mtu
+  fake_chan()->Receive(StaticByteBuffer(0x03,  // opcode: exchange MTU response
+                                        kServerRxMTU,
+                                        0x00  // server rx mtu
                                         ));
 
   RunUntilIdle();
@@ -225,8 +244,9 @@ TEST_F(ClientTest, ExchangeMTUSelectRemote) {
   constexpr uint16_t kServerRxMTU = kPreferredMTU - 1;
 
   const auto kExpectedRequest =
-      StaticByteBuffer(0x02,                // opcode: exchange MTU
-                       kPreferredMTU, 0x00  // client rx mtu: kPreferredMTU
+      StaticByteBuffer(0x02,  // opcode: exchange MTU
+                       kPreferredMTU,
+                       0x00  // client rx mtu: kPreferredMTU
       );
 
   std::optional<att::Result<uint16_t>> result;
@@ -240,8 +260,9 @@ TEST_F(ClientTest, ExchangeMTUSelectRemote) {
   ASSERT_EQ(att::kLEMinMTU, att()->mtu());
 
   // Respond with an error. The MTU should remain unchanged.
-  fake_chan()->Receive(StaticByteBuffer(0x03,               // opcode: exchange MTU response
-                                        kServerRxMTU, 0x00  // server rx mtu
+  fake_chan()->Receive(StaticByteBuffer(0x03,  // opcode: exchange MTU response
+                                        kServerRxMTU,
+                                        0x00  // server rx mtu
                                         ));
 
   RunUntilIdle();
@@ -257,8 +278,9 @@ TEST_F(ClientTest, ExchangeMTUSelectDefault) {
   constexpr uint16_t kServerRxMTU = 5;  // Smaller than the LE default MTU
 
   const auto kExpectedRequest =
-      StaticByteBuffer(0x02,                // opcode: exchange MTU
-                       kPreferredMTU, 0x00  // client rx mtu: kPreferredMTU
+      StaticByteBuffer(0x02,  // opcode: exchange MTU
+                       kPreferredMTU,
+                       0x00  // client rx mtu: kPreferredMTU
       );
 
   std::optional<att::Result<uint16_t>> result;
@@ -272,8 +294,9 @@ TEST_F(ClientTest, ExchangeMTUSelectDefault) {
   ASSERT_EQ(att::kLEMinMTU, att()->mtu());
 
   // Respond with an error. The MTU should remain unchanged.
-  fake_chan()->Receive(StaticByteBuffer(0x03,               // opcode: exchange MTU response
-                                        kServerRxMTU, 0x00  // server rx mtu
+  fake_chan()->Receive(StaticByteBuffer(0x03,  // opcode: exchange MTU response
+                                        kServerRxMTU,
+                                        0x00  // server rx mtu
                                         ));
 
   RunUntilIdle();
@@ -310,11 +333,17 @@ TEST_F(ClientTest, DiscoverPrimaryMalformedDataLength) {
   // Respond back with an unexpected data length. This is 6 for services with a
   // 16-bit UUID (start (2) + end (2) + uuid (2)) and 20 for 128-bit
   // (start (2) + end (2) + uuid (16)).
-  fake_chan()->Receive(StaticByteBuffer(0x11,  // opcode: read by group type response
-                                        7,     // data length: 7 (not 6 or 20)
-                                        0, 1, 2, 3, 4, 5,
-                                        6  // one entry of length 7, which will be ignored
-                                        ));
+  fake_chan()->Receive(StaticByteBuffer(
+      0x11,  // opcode: read by group type response
+      7,     // data length: 7 (not 6 or 20)
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6  // one entry of length 7, which will be ignored
+      ));
 
   RunUntilIdle();
 
@@ -329,11 +358,21 @@ TEST_F(ClientTest, DiscoverPrimaryMalformedAttrDataList) {
   client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
   EXPECT_TRUE(AllExpectedPacketsSent());
 
-  fake_chan()->Receive(StaticByteBuffer(0x11,              // opcode: read by group type response
-                                        6,                 // data length: 6 (16-bit UUIDs)
-                                        0, 1, 2, 3, 4, 5,  // entry 1: correct size
-                                        0, 1, 2, 3, 4      // entry 2: incorrect size
-                                        ));
+  fake_chan()->Receive(StaticByteBuffer(
+      0x11,  // opcode: read by group type response
+      6,     // data length: 6 (16-bit UUIDs)
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,  // entry 1: correct size
+      0,
+      1,
+      2,
+      3,
+      4  // entry 2: incorrect size
+      ));
 
   RunUntilIdle();
 
@@ -348,15 +387,22 @@ TEST_F(ClientTest, DiscoverPrimaryResultsOutOfOrder) {
   client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
   EXPECT_TRUE(AllExpectedPacketsSent());
 
-  fake_chan()->Receive(StaticByteBuffer(0x11,        // opcode: read by group type response
-                                        6,           // data length: 6 (16-bit UUIDs)
-                                        0x12, 0x00,  // svc 0 start: 0x0012
-                                        0x13, 0x00,  // svc 0 end: 0x0013
-                                        0xEF, 0xBE,  // svc 0 uuid: 0xBEEF
-                                        0x10, 0x00,  // svc 1 start: 0x0010
-                                        0x11, 0x00,  // svc 1 end: 0x0011
-                                        0xAD, 0xDE   // svc 1 uuid: 0xDEAD
-                                        ));
+  fake_chan()->Receive(StaticByteBuffer(
+      0x11,  // opcode: read by group type response
+      6,     // data length: 6 (16-bit UUIDs)
+      0x12,
+      0x00,  // svc 0 start: 0x0012
+      0x13,
+      0x00,  // svc 0 end: 0x0013
+      0xEF,
+      0xBE,  // svc 0 uuid: 0xBEEF
+      0x10,
+      0x00,  // svc 1 start: 0x0010
+      0x11,
+      0x00,  // svc 1 end: 0x0011
+      0xAD,
+      0xDE  // svc 1 uuid: 0xDEAD
+      ));
 
   RunUntilIdle();
 
@@ -374,10 +420,11 @@ TEST_F(ClientTest, DiscoverPrimaryEmptyDataList) {
   client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
   EXPECT_TRUE(AllExpectedPacketsSent());
 
-  fake_chan()->Receive(StaticByteBuffer(0x11,  // opcode: read by group type response
-                                        6      // data length: 6 (16-bit UUIDs)
-                                               // data list is empty
-                                        ));
+  fake_chan()->Receive(StaticByteBuffer(
+      0x11,  // opcode: read by group type response
+      6      // data length: 6 (16-bit UUIDs)
+             // data list is empty
+      ));
 
   RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
@@ -392,10 +439,11 @@ TEST_F(ClientTest, DiscoverPrimaryAttributeNotFound) {
   client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
   EXPECT_TRUE(AllExpectedPacketsSent());
 
-  fake_chan()->Receive(StaticByteBuffer(0x01,        // opcode: error response
-                                        0x10,        // request: read by group type
-                                        0x01, 0x00,  // handle: 0x0001
-                                        0x0A         // error: Attribute Not Found
+  fake_chan()->Receive(StaticByteBuffer(0x01,  // opcode: error response
+                                        0x10,  // request: read by group type
+                                        0x01,
+                                        0x00,  // handle: 0x0001
+                                        0x0A   // error: Attribute Not Found
                                         ));
 
   RunUntilIdle();
@@ -413,10 +461,11 @@ TEST_F(ClientTest, DiscoverPrimaryError) {
   client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
   EXPECT_TRUE(AllExpectedPacketsSent());
 
-  fake_chan()->Receive(StaticByteBuffer(0x01,        // opcode: error response
-                                        0x10,        // request: read by group type
-                                        0x01, 0x00,  // handle: 0x0001
-                                        0x06         // error: Request Not Supported
+  fake_chan()->Receive(StaticByteBuffer(0x01,  // opcode: error response
+                                        0x10,  // request: read by group type
+                                        0x01,
+                                        0x00,  // handle: 0x0001
+                                        0x06   // error: Request Not Supported
                                         ));
 
   RunUntilIdle();
@@ -433,11 +482,14 @@ TEST_F(ClientTest, DiscoverPrimaryMalformedServiceRange) {
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   // Return a service where start > end.
-  fake_chan()->Receive(StaticByteBuffer(0x11,        // opcode: read by group type response
-                                        0x06,        // data length: 6 (16-bit UUIDs)
-                                        0x02, 0x00,  // svc 1 start: 0x0002
-                                        0x01, 0x00   // svc 1 end: 0x0001
-                                        ));
+  fake_chan()->Receive(StaticByteBuffer(
+      0x11,  // opcode: read by group type response
+      0x06,  // data length: 6 (16-bit UUIDs)
+      0x02,
+      0x00,  // svc 1 start: 0x0002
+      0x01,
+      0x00  // svc 1 end: 0x0001
+      ));
 
   RunUntilIdle();
 
@@ -451,21 +503,30 @@ TEST_F(ClientTest, DiscoverPrimary16BitResultsSingleRequest) {
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<ServiceData> services;
-  auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
+  auto svc_cb = [&services](const ServiceData& svc) {
+    services.push_back(svc);
+  };
 
   EXPECT_PACKET_OUT(kDiscoverPrimaryRequest);
   client()->DiscoverServices(ServiceKind::PRIMARY, svc_cb, res_cb);
   EXPECT_TRUE(AllExpectedPacketsSent());
 
-  fake_chan()->Receive(StaticByteBuffer(0x11,        // opcode: read by group type response
-                                        0x06,        // data length: 6 (16-bit UUIDs)
-                                        0x01, 0x00,  // svc 1 start: 0x0001
-                                        0x05, 0x00,  // svc 1 end: 0x0005
-                                        0xAD, 0xDE,  // svc 1 uuid: 0xDEAD
-                                        0x06, 0x00,  // svc 2 start: 0x0006
-                                        0xFF, 0xFF,  // svc 2 end: 0xFFFF
-                                        0xEF, 0xBE   // svc 2 uuid: 0xBEEF
-                                        ));
+  fake_chan()->Receive(StaticByteBuffer(
+      0x11,  // opcode: read by group type response
+      0x06,  // data length: 6 (16-bit UUIDs)
+      0x01,
+      0x00,  // svc 1 start: 0x0001
+      0x05,
+      0x00,  // svc 1 end: 0x0005
+      0xAD,
+      0xDE,  // svc 1 uuid: 0xDEAD
+      0x06,
+      0x00,  // svc 2 start: 0x0006
+      0xFF,
+      0xFF,  // svc 2 end: 0xFFFF
+      0xEF,
+      0xBE  // svc 2 uuid: 0xBEEF
+      ));
 
   RunUntilIdle();
 
@@ -486,19 +547,39 @@ TEST_F(ClientTest, DiscoverPrimary128BitResultSingleRequest) {
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<ServiceData> services;
-  auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
+  auto svc_cb = [&services](const ServiceData& svc) {
+    services.push_back(svc);
+  };
 
   EXPECT_PACKET_OUT(kDiscoverPrimaryRequest);
   client()->DiscoverServices(ServiceKind::PRIMARY, svc_cb, res_cb);
   EXPECT_TRUE(AllExpectedPacketsSent());
 
-  fake_chan()->Receive(StaticByteBuffer(0x11,        // opcode: read by group type response
-                                        0x14,        // data length: 20 (128-bit UUIDs)
-                                        0x01, 0x00,  // svc 1 start: 0x0008
-                                        0xFF, 0xFF,  // svc 1 end: 0xFFFF
+  fake_chan()->Receive(
+      StaticByteBuffer(0x11,  // opcode: read by group type response
+                       0x14,  // data length: 20 (128-bit UUIDs)
+                       0x01,
+                       0x00,  // svc 1 start: 0x0008
+                       0xFF,
+                       0xFF,  // svc 1 end: 0xFFFF
 
-                                        // UUID matches |kTestUuid3| declared above.
-                                        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15));
+                       // UUID matches |kTestUuid3| declared above.
+                       0,
+                       1,
+                       2,
+                       3,
+                       4,
+                       5,
+                       6,
+                       7,
+                       8,
+                       9,
+                       10,
+                       11,
+                       12,
+                       13,
+                       14,
+                       15));
 
   RunUntilIdle();
 
@@ -512,50 +593,90 @@ TEST_F(ClientTest, DiscoverPrimary128BitResultSingleRequest) {
 }
 
 TEST_F(ClientTest, DiscoverAllPrimaryMultipleRequests) {
-  const auto kExpectedRequest0 = StaticByteBuffer(0x10,        // opcode: read by group type request
-                                                  0x01, 0x00,  // start handle: 0x0001
-                                                  0xFF, 0xFF,  // end handle: 0xFFFF
-                                                  0x00, 0x28   // type: primary service (0x2800)
+  const auto kExpectedRequest0 =
+      StaticByteBuffer(0x10,  // opcode: read by group type request
+                       0x01,
+                       0x00,  // start handle: 0x0001
+                       0xFF,
+                       0xFF,  // end handle: 0xFFFF
+                       0x00,
+                       0x28  // type: primary service (0x2800)
+      );
+  const StaticByteBuffer kResponse0(
+      0x11,  // opcode: read by group type response
+      0x06,  // data length: 6 (16-bit UUIDs)
+      0x01,
+      0x00,  // svc 1 start: 0x0001
+      0x05,
+      0x00,  // svc 1 end: 0x0005
+      0xAD,
+      0xDE,  // svc 1 uuid: 0xDEAD
+      0x06,
+      0x00,  // svc 2 start: 0x0006
+      0x07,
+      0x00,  // svc 2 end: 0x0007
+      0xEF,
+      0xBE  // svc 2 uuid: 0xBEEF
   );
-  const StaticByteBuffer kResponse0(0x11,        // opcode: read by group type response
-                                    0x06,        // data length: 6 (16-bit UUIDs)
-                                    0x01, 0x00,  // svc 1 start: 0x0001
-                                    0x05, 0x00,  // svc 1 end: 0x0005
-                                    0xAD, 0xDE,  // svc 1 uuid: 0xDEAD
-                                    0x06, 0x00,  // svc 2 start: 0x0006
-                                    0x07, 0x00,  // svc 2 end: 0x0007
-                                    0xEF, 0xBE   // svc 2 uuid: 0xBEEF
-  );
-  const auto kExpectedRequest1 = StaticByteBuffer(0x10,        // opcode: read by group type request
-                                                  0x08, 0x00,  // start handle: 0x0008
-                                                  0xFF, 0xFF,  // end handle: 0xFFFF
-                                                  0x00, 0x28   // type: primary service (0x2800)
-  );
+  const auto kExpectedRequest1 =
+      StaticByteBuffer(0x10,  // opcode: read by group type request
+                       0x08,
+                       0x00,  // start handle: 0x0008
+                       0xFF,
+                       0xFF,  // end handle: 0xFFFF
+                       0x00,
+                       0x28  // type: primary service (0x2800)
+      );
   // Respond with one 128-bit service UUID.
-  const StaticByteBuffer kResponse1(0x11,        // opcode: read by group type response
-                                    0x14,        // data length: 20 (128-bit UUIDs)
-                                    0x08, 0x00,  // svc 1 start: 0x0008
-                                    0x09, 0x00,  // svc 1 end: 0x0009
+  const StaticByteBuffer kResponse1(
+      0x11,  // opcode: read by group type response
+      0x14,  // data length: 20 (128-bit UUIDs)
+      0x08,
+      0x00,  // svc 1 start: 0x0008
+      0x09,
+      0x00,  // svc 1 end: 0x0009
 
-                                    // UUID matches |kTestUuid3| declared above.
-                                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
-  const auto kExpectedRequest2 = StaticByteBuffer(0x10,        // opcode: read by group type request
-                                                  0x0A, 0x00,  // start handle: 0x000A
-                                                  0xFF, 0xFF,  // end handle: 0xFFFF
-                                                  0x00, 0x28   // type: primary service (0x2800)
-  );
+      // UUID matches |kTestUuid3| declared above.
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15);
+  const auto kExpectedRequest2 =
+      StaticByteBuffer(0x10,  // opcode: read by group type request
+                       0x0A,
+                       0x00,  // start handle: 0x000A
+                       0xFF,
+                       0xFF,  // end handle: 0xFFFF
+                       0x00,
+                       0x28  // type: primary service (0x2800)
+      );
   // Terminate the procedure with an error response.
-  const StaticByteBuffer kResponse2(0x01,        // opcode: error response
-                                    0x10,        // request: read by group type
-                                    0x0A, 0x00,  // handle: 0x000A
-                                    0x0A         // error: Attribute Not Found
+  const StaticByteBuffer kResponse2(0x01,  // opcode: error response
+                                    0x10,  // request: read by group type
+                                    0x0A,
+                                    0x00,  // handle: 0x000A
+                                    0x0A   // error: Attribute Not Found
   );
 
   att::Result<> status = ToResult(HostError::kFailed);
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<ServiceData> services;
-  auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
+  auto svc_cb = [&services](const ServiceData& svc) {
+    services.push_back(svc);
+  };
 
   EXPECT_PACKET_OUT(kExpectedRequest0, &kResponse0);
   EXPECT_PACKET_OUT(kExpectedRequest1, &kResponse1);
@@ -587,58 +708,97 @@ TEST_F(ClientTest, DiscoverServicesInRangeMultipleRequests) {
   const att::Handle kRangeEnd = 0x0020;
 
   const StaticByteBuffer kExpectedRequest0(
-      0x10,                                            // opcode: read by group type request
-      LowerBits(kRangeStart), UpperBits(kRangeStart),  // start handle
-      LowerBits(kRangeEnd), UpperBits(kRangeEnd),      // end handle
-      0x00, 0x28                                       // type: primary service (0x2800)
+      0x10,  // opcode: read by group type request
+      LowerBits(kRangeStart),
+      UpperBits(kRangeStart),  // start handle
+      LowerBits(kRangeEnd),
+      UpperBits(kRangeEnd),  // end handle
+      0x00,
+      0x28  // type: primary service (0x2800)
   );
 
-  const StaticByteBuffer kResponse0(0x11,        // opcode: read by group type response
-                                    0x06,        // data length: 6 (16-bit UUIDs)
-                                    0x10, 0x00,  // svc 0 start: 0x0010
-                                    0x11, 0x00,  // svc 0 end: 0x0011
-                                    0xAD, 0xDE,  // svc 0 uuid: 0xDEAD
-                                    0x12, 0x00,  // svc 1 start: 0x0012
-                                    0x13, 0x00,  // svc 1 end: 0x0013
-                                    0xEF, 0xBE   // svc 1 uuid: 0xBEEF
+  const StaticByteBuffer kResponse0(
+      0x11,  // opcode: read by group type response
+      0x06,  // data length: 6 (16-bit UUIDs)
+      0x10,
+      0x00,  // svc 0 start: 0x0010
+      0x11,
+      0x00,  // svc 0 end: 0x0011
+      0xAD,
+      0xDE,  // svc 0 uuid: 0xDEAD
+      0x12,
+      0x00,  // svc 1 start: 0x0012
+      0x13,
+      0x00,  // svc 1 end: 0x0013
+      0xEF,
+      0xBE  // svc 1 uuid: 0xBEEF
   );
   const auto kExpectedRequest1 =
-      StaticByteBuffer(0x10,        // opcode: read by group type request
-                       0x14, 0x00,  // start handle: 0x0014
-                       LowerBits(kRangeEnd), UpperBits(kRangeEnd),  // end handle
-                       0x00, 0x28  // type: primary service (0x2800)
+      StaticByteBuffer(0x10,  // opcode: read by group type request
+                       0x14,
+                       0x00,  // start handle: 0x0014
+                       LowerBits(kRangeEnd),
+                       UpperBits(kRangeEnd),  // end handle
+                       0x00,
+                       0x28  // type: primary service (0x2800)
       );
   // Respond with one 128-bit service UUID.
-  const auto kResponse1 = StaticByteBuffer(0x11,        // opcode: read by group type response
-                                           0x14,        // data length: 20 (128-bit UUIDs)
-                                           0x14, 0x00,  // svc 2 start: 0x0014
-                                           0x15, 0x00,  // svc 2 end: 0x0015
+  const auto kResponse1 =
+      StaticByteBuffer(0x11,  // opcode: read by group type response
+                       0x14,  // data length: 20 (128-bit UUIDs)
+                       0x14,
+                       0x00,  // svc 2 start: 0x0014
+                       0x15,
+                       0x00,  // svc 2 end: 0x0015
 
-                                           // UUID matches |kTestUuid3| declared above.
-                                           0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+                       // UUID matches |kTestUuid3| declared above.
+                       0,
+                       1,
+                       2,
+                       3,
+                       4,
+                       5,
+                       6,
+                       7,
+                       8,
+                       9,
+                       10,
+                       11,
+                       12,
+                       13,
+                       14,
+                       15);
   const auto kExpectedRequest2 =
-      StaticByteBuffer(0x10,        // opcode: read by group type request
-                       0x16, 0x00,  // start handle: 0x0016
-                       LowerBits(kRangeEnd), UpperBits(kRangeEnd),  // end handle
-                       0x00, 0x28  // type: primary service (0x2800)
+      StaticByteBuffer(0x10,  // opcode: read by group type request
+                       0x16,
+                       0x00,  // start handle: 0x0016
+                       LowerBits(kRangeEnd),
+                       UpperBits(kRangeEnd),  // end handle
+                       0x00,
+                       0x28  // type: primary service (0x2800)
       );
   // Terminate the procedure with an error response.
-  const auto kNotFoundResponse2 = StaticByteBuffer(0x01,        // opcode: error response
-                                                   0x10,        // request: read by group type
-                                                   0x16, 0x00,  // start handle: 0x0016
-                                                   0x0A         // error: Attribute Not Found
-  );
+  const auto kNotFoundResponse2 =
+      StaticByteBuffer(0x01,  // opcode: error response
+                       0x10,  // request: read by group type
+                       0x16,
+                       0x00,  // start handle: 0x0016
+                       0x0A   // error: Attribute Not Found
+      );
 
   att::Result<> status = ToResult(HostError::kFailed);
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<ServiceData> services;
-  auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
+  auto svc_cb = [&services](const ServiceData& svc) {
+    services.push_back(svc);
+  };
 
   EXPECT_PACKET_OUT(kExpectedRequest0, &kResponse0);
   EXPECT_PACKET_OUT(kExpectedRequest1, &kResponse1);
   EXPECT_PACKET_OUT(kExpectedRequest2, &kNotFoundResponse2);
-  client()->DiscoverServicesInRange(ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb, res_cb);
+  client()->DiscoverServicesInRange(
+      ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb, res_cb);
   RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_EQ(fit::ok(), status);
@@ -665,27 +825,36 @@ TEST_F(ClientTest, DiscoverServicesInRangeFailsIfServiceResultIsOutOfRange) {
 
   const auto kExpectedRequest =
       StaticByteBuffer(0x10,  // opcode: read by group type request
-                       LowerBits(kRangeStart), UpperBits(kRangeStart),  // start handle
-                       LowerBits(kRangeEnd), UpperBits(kRangeEnd),      // end handle
-                       0x00, 0x28  // type: primary service (0x2800)
+                       LowerBits(kRangeStart),
+                       UpperBits(kRangeStart),  // start handle
+                       LowerBits(kRangeEnd),
+                       UpperBits(kRangeEnd),  // end handle
+                       0x00,
+                       0x28  // type: primary service (0x2800)
       );
 
   const auto kResponse =
       StaticByteBuffer(0x11,  // opcode: read by group type response
                        0x06,  // data length: 6 (16-bit UUIDs)
-                       LowerBits(kServiceStart), UpperBits(kServiceStart),  // svc start
-                       LowerBits(kServiceEnd), UpperBits(kServiceEnd),      // svc end
-                       0xAD, 0xDE                                           // svc uuid: 0xDEAD
+                       LowerBits(kServiceStart),
+                       UpperBits(kServiceStart),  // svc start
+                       LowerBits(kServiceEnd),
+                       UpperBits(kServiceEnd),  // svc end
+                       0xAD,
+                       0xDE  // svc uuid: 0xDEAD
       );
 
   std::optional<att::Result<>> status;
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<ServiceData> services;
-  auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
+  auto svc_cb = [&services](const ServiceData& svc) {
+    services.push_back(svc);
+  };
 
   EXPECT_PACKET_OUT(kExpectedRequest);
-  client()->DiscoverServicesInRange(ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb, res_cb);
+  client()->DiscoverServicesInRange(
+      ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb, res_cb);
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   fake_chan()->Receive(kResponse);
@@ -702,15 +871,16 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsByResponseTooShort) {
   // Respond back with a malformed payload.
   const StaticByteBuffer kResponse(0x7, 0x0);
   EXPECT_PACKET_OUT(kDiscoverPrimary16ByUUID, &kResponse);
-  client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
+  client()->DiscoverServicesWithUuids(
+      ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
   EXPECT_TRUE(AllExpectedPacketsSent());
   RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
-// Tests that we handle an empty handle information list properly. In practice, the
-// server would send an "Attribute Not Found" error instead.  A handle list that is
-// empty is an error.
+// Tests that we handle an empty handle information list properly. In practice,
+// the server would send an "Attribute Not Found" error instead.  A handle list
+// that is empty is an error.
 TEST_F(ClientTest, DiscoverPrimaryWithUuidsEmptyDataList) {
   att::Result<> status = ToResult(HostError::kFailed);
   auto res_cb = [&status](att::Result<> val) { status = val; };
@@ -719,7 +889,8 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsEmptyDataList) {
                                          // data list is empty
   );
   EXPECT_PACKET_OUT(kDiscoverPrimary16ByUUID, &kResponse);
-  client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
+  client()->DiscoverServicesWithUuids(
+      ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
   EXPECT_TRUE(AllExpectedPacketsSent());
   RunUntilIdle();
   EXPECT_TRUE(status.is_error());
@@ -730,14 +901,16 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsAttributeNotFound) {
   att::Result<> status = ToResult(HostError::kFailed);
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
-  const StaticByteBuffer kResponse(0x01,        // opcode: error response
-                                   0x06,        // request: find by type value
-                                   0x01, 0x00,  // handle: 0x0001
-                                   0x0A         // error: Attribute Not Found
+  const StaticByteBuffer kResponse(0x01,  // opcode: error response
+                                   0x06,  // request: find by type value
+                                   0x01,
+                                   0x00,  // handle: 0x0001
+                                   0x0A   // error: Attribute Not Found
   );
 
   EXPECT_PACKET_OUT(kDiscoverPrimary16ByUUID, &kResponse);
-  client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
+  client()->DiscoverServicesWithUuids(
+      ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
   EXPECT_TRUE(AllExpectedPacketsSent());
   RunUntilIdle();
   // The procedure succeeds with no services.
@@ -749,14 +922,16 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsError) {
   att::Result<> status = ToResult(HostError::kFailed);
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
-  const StaticByteBuffer kResponse(0x01,        // opcode: error response
-                                   0x06,        // request: find by type value
-                                   0x01, 0x00,  // handle: 0x0001
-                                   0x06         // error: Request Not Supported
+  const StaticByteBuffer kResponse(0x01,  // opcode: error response
+                                   0x06,  // request: find by type value
+                                   0x01,
+                                   0x00,  // handle: 0x0001
+                                   0x06   // error: Request Not Supported
   );
 
   EXPECT_PACKET_OUT(kDiscoverPrimary16ByUUID, &kResponse);
-  client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
+  client()->DiscoverServicesWithUuids(
+      ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
   EXPECT_TRUE(AllExpectedPacketsSent());
   RunUntilIdle();
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status);
@@ -767,12 +942,15 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsMalformedServiceRange) {
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   // Return a service where start > end.
-  const StaticByteBuffer kResponse(0x07,        // opcode: find by type value response
-                                   0x02, 0x00,  // svc 1 start: 0x0002
-                                   0x01, 0x00   // svc 1 end: 0x0001
+  const StaticByteBuffer kResponse(0x07,  // opcode: find by type value response
+                                   0x02,
+                                   0x00,  // svc 1 start: 0x0002
+                                   0x01,
+                                   0x00  // svc 1 end: 0x0001
   );
   EXPECT_PACKET_OUT(kDiscoverPrimary16ByUUID, &kResponse);
-  client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
+  client()->DiscoverServicesWithUuids(
+      ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
   RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
   // The procedure should be over since the last service in the payload has
@@ -785,14 +963,19 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuidsServicesOutOfOrder) {
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   // Return services out of order.
-  const StaticByteBuffer kResponse(0x07,        // opcode: find by type value response
-                                   0x05, 0x00,  // svc 0 start: 0x0005
-                                   0x06, 0x00,  // svc 0 end: 0x0006
-                                   0x01, 0x00,  // svc 1 start: 0x0001
-                                   0x02, 0x00   // svc 1 end: 0x0002
+  const StaticByteBuffer kResponse(0x07,  // opcode: find by type value response
+                                   0x05,
+                                   0x00,  // svc 0 start: 0x0005
+                                   0x06,
+                                   0x00,  // svc 0 end: 0x0006
+                                   0x01,
+                                   0x00,  // svc 1 start: 0x0001
+                                   0x02,
+                                   0x00  // svc 1 end: 0x0002
   );
   EXPECT_PACKET_OUT(kDiscoverPrimary16ByUUID, &kResponse);
-  client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
+  client()->DiscoverServicesWithUuids(
+      ServiceKind::PRIMARY, NopSvcCallback, res_cb, {kTestUuid1});
   RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
   ASSERT_TRUE(status.has_value());
@@ -804,17 +987,24 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuids16BitResultsSingleRequest) {
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<ServiceData> services;
-  auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
+  auto svc_cb = [&services](const ServiceData& svc) {
+    services.push_back(svc);
+  };
 
-  const StaticByteBuffer kResponse(0x07,        // opcode: find by type value response
-                                   0x01, 0x00,  // svc 1 start: 0x0001
-                                   0x05, 0x00,  // svc 1 end: 0x0005
-                                   0x06, 0x00,  // svc 2 start: 0x0006
-                                   0xFF, 0xFF   // svc 2 end: 0xFFFF
+  const StaticByteBuffer kResponse(0x07,  // opcode: find by type value response
+                                   0x01,
+                                   0x00,  // svc 1 start: 0x0001
+                                   0x05,
+                                   0x00,  // svc 1 end: 0x0005
+                                   0x06,
+                                   0x00,  // svc 2 start: 0x0006
+                                   0xFF,
+                                   0xFF  // svc 2 end: 0xFFFF
   );
 
   EXPECT_PACKET_OUT(kDiscoverPrimary16ByUUID, &kResponse);
-  client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, svc_cb, res_cb, {kTestUuid1});
+  client()->DiscoverServicesWithUuids(
+      ServiceKind::PRIMARY, svc_cb, res_cb, {kTestUuid1});
   RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
@@ -835,14 +1025,19 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuids128BitResultSingleRequest) {
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<ServiceData> services;
-  auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
+  auto svc_cb = [&services](const ServiceData& svc) {
+    services.push_back(svc);
+  };
 
-  const StaticByteBuffer kResponse(0x07,        // opcode: find by type value response
-                                   0x01, 0x00,  // svc 1 start: 0x0008
-                                   0xFF, 0xFF   // svc 1 end: 0xFFFF
+  const StaticByteBuffer kResponse(0x07,  // opcode: find by type value response
+                                   0x01,
+                                   0x00,  // svc 1 start: 0x0008
+                                   0xFF,
+                                   0xFF  // svc 1 end: 0xFFFF
   );
   EXPECT_PACKET_OUT(kDiscoverPrimary128ByUUID, &kResponse);
-  client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, svc_cb, res_cb, {kTestUuid3});
+  client()->DiscoverServicesWithUuids(
+      ServiceKind::PRIMARY, svc_cb, res_cb, {kTestUuid3});
   EXPECT_TRUE(AllExpectedPacketsSent());
   RunUntilIdle();
 
@@ -856,56 +1051,84 @@ TEST_F(ClientTest, DiscoverPrimaryWithUuids128BitResultSingleRequest) {
 }
 
 TEST_F(ClientTest, DiscoverAllPrimaryWithUuidsMultipleRequests) {
-  const auto kExpectedRequest0 = StaticByteBuffer(0x06,        // opcode: find by type value request
-                                                  0x01, 0x00,  // start handle: 0x0001
-                                                  0xFF, 0xFF,  // end handle: 0xFFFF
-                                                  0x00, 0x28,  // type: primary service (0x2800)
-                                                  0xAD, 0xDE   // svc 1 uuid: 0xDEAD
-  );
-  const auto kResponse0 = StaticByteBuffer(0x07,        // opcode: find by type value response
-                                           0x01, 0x00,  // svc 1 start: 0x0001
-                                           0x05, 0x00,  // svc 1 end: 0x0005
-                                           0x06, 0x00,  // svc 2 start: 0x0006
-                                           0x07, 0x00   // svc 2 end: 0x0007
-  );
-  const auto kExpectedRequest1 = StaticByteBuffer(0x06,        // opcode: find by type value request
-                                                  0x08, 0x00,  // start handle: 0x0008
-                                                  0xFF, 0xFF,  // end handle: 0xFFFF
-                                                  0x00, 0x28,  // type: primary service (0x2800)
-                                                  0xAD, 0xDE   // svc 1 uuid: 0xDEAD
-  );
+  const auto kExpectedRequest0 =
+      StaticByteBuffer(0x06,  // opcode: find by type value request
+                       0x01,
+                       0x00,  // start handle: 0x0001
+                       0xFF,
+                       0xFF,  // end handle: 0xFFFF
+                       0x00,
+                       0x28,  // type: primary service (0x2800)
+                       0xAD,
+                       0xDE  // svc 1 uuid: 0xDEAD
+      );
+  const auto kResponse0 =
+      StaticByteBuffer(0x07,  // opcode: find by type value response
+                       0x01,
+                       0x00,  // svc 1 start: 0x0001
+                       0x05,
+                       0x00,  // svc 1 end: 0x0005
+                       0x06,
+                       0x00,  // svc 2 start: 0x0006
+                       0x07,
+                       0x00  // svc 2 end: 0x0007
+      );
+  const auto kExpectedRequest1 =
+      StaticByteBuffer(0x06,  // opcode: find by type value request
+                       0x08,
+                       0x00,  // start handle: 0x0008
+                       0xFF,
+                       0xFF,  // end handle: 0xFFFF
+                       0x00,
+                       0x28,  // type: primary service (0x2800)
+                       0xAD,
+                       0xDE  // svc 1 uuid: 0xDEAD
+      );
   // Respond with one 128-bit service UUID.
-  const auto kResponse1 = StaticByteBuffer(0x07,        // opcode: find by type value response
-                                           0x08, 0x00,  // svc 1 start: 0x0008
-                                           0x09, 0x00   // svc 1 end: 0x0009
-  );
-  const auto kExpectedRequest2 = StaticByteBuffer(0x06,        // opcode: find by type value request
-                                                  0x0A, 0x00,  // start handle: 0x000A
-                                                  0xFF, 0xFF,  // end handle: 0xFFFF
-                                                  0x00, 0x28,  // type: primary service (0x2800)
-                                                  0xAD, 0xDE   // svc 1 uuid: 0xDEAD
-  );
+  const auto kResponse1 =
+      StaticByteBuffer(0x07,  // opcode: find by type value response
+                       0x08,
+                       0x00,  // svc 1 start: 0x0008
+                       0x09,
+                       0x00  // svc 1 end: 0x0009
+      );
+  const auto kExpectedRequest2 =
+      StaticByteBuffer(0x06,  // opcode: find by type value request
+                       0x0A,
+                       0x00,  // start handle: 0x000A
+                       0xFF,
+                       0xFF,  // end handle: 0xFFFF
+                       0x00,
+                       0x28,  // type: primary service (0x2800)
+                       0xAD,
+                       0xDE  // svc 1 uuid: 0xDEAD
+      );
   // Terminate the procedure with an error response.
-  const StaticByteBuffer kResponse2(0x01,        // opcode: error response
-                                    0x06,        // request: find by type value
-                                    0x0A, 0x00,  // handle: 0x000A
-                                    0x0A         // error: Attribute Not Found
+  const StaticByteBuffer kResponse2(0x01,  // opcode: error response
+                                    0x06,  // request: find by type value
+                                    0x0A,
+                                    0x00,  // handle: 0x000A
+                                    0x0A   // error: Attribute Not Found
   );
 
   att::Result<> status = ToResult(HostError::kFailed);
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<ServiceData> services;
-  auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
+  auto svc_cb = [&services](const ServiceData& svc) {
+    services.push_back(svc);
+  };
 
   EXPECT_PACKET_OUT(kExpectedRequest0, &kResponse0);
   EXPECT_PACKET_OUT(kExpectedRequest1, &kResponse1);
   EXPECT_PACKET_OUT(kExpectedRequest2, &kResponse2);
-  client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, svc_cb, res_cb, {kTestUuid1});
+  client()->DiscoverServicesWithUuids(
+      ServiceKind::PRIMARY, svc_cb, res_cb, {kTestUuid1});
   RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
-  // The procedure should be over since the last service in the payload has end handle 0xFFFF.
+  // The procedure should be over since the last service in the payload has end
+  // handle 0xFFFF.
   EXPECT_EQ(fit::ok(), status);
   EXPECT_EQ(3u, services.size());
 
@@ -923,61 +1146,93 @@ TEST_F(ClientTest, DiscoverAllPrimaryWithUuidsMultipleRequests) {
 }
 
 TEST_F(ClientTest, DiscoverPrimaryWithUuidsMultipleUuids) {
-  const auto kExpectedRequest0 = StaticByteBuffer(0x06,        // opcode: find by type value request
-                                                  0x01, 0x00,  // start handle: 0x0001
-                                                  0xFF, 0xFF,  // end handle: 0xFFFF
-                                                  0x00, 0x28,  // type: primary service (0x2800)
-                                                  0xAD, 0xDE   // kTestUuid1
-  );
-  const auto kResponse0 = StaticByteBuffer(0x07,        // opcode: find by type value response
-                                           0x01, 0x00,  // svc 1 start: 0x0001
-                                           0x05, 0x00   // svc 1 end: 0x0005
-  );
-  const auto kExpectedRequest1 = StaticByteBuffer(0x06,        // opcode: find by type value request
-                                                  0x06, 0x00,  // start handle: 0x0006
-                                                  0xFF, 0xFF,  // end handle: 0xFFFF
-                                                  0x00, 0x28,  // type: primary service (0x2800)
-                                                  0xAD, 0xDE   // kTestUuid1
-  );
-  const auto kNotFoundResponse1 = StaticByteBuffer(0x01,        // opcode: error response
-                                                   0x06,        // request: find by type value
-                                                   0x06, 0x00,  // handle: 0x0006
-                                                   0x0A         // error: Attribute Not Found
-  );
-  const auto kExpectedRequest2 = StaticByteBuffer(0x06,        // opcode: find by type value request
-                                                  0x01, 0x00,  // start handle: 0x0001
-                                                  0xFF, 0xFF,  // end handle: 0xFFFF
-                                                  0x00, 0x28,  // type: primary service (0x2800)
-                                                  0xEF, 0xBE   // kTestUuid2
-  );
-  const auto kResponse2 = StaticByteBuffer(0x07,        // opcode: find by type value response
-                                           0x06, 0x00,  // svc 1 start: 0x0006
-                                           0x09, 0x00   // svc 1 end: 0x0009
-  );
-  const auto kExpectedRequest3 = StaticByteBuffer(0x06,        // opcode: find by type value request
-                                                  0x0A, 0x00,  // start handle: 0x000A
-                                                  0xFF, 0xFF,  // end handle: 0xFFFF
-                                                  0x00, 0x28,  // type: primary service (0x2800)
-                                                  0xEF, 0xBE   // kTestUuid2
-  );
-  const auto kNotFoundResponse3 = StaticByteBuffer(0x01,        // opcode: error response
-                                                   0x06,        // request: find by type value
-                                                   0x0A, 0x00,  // handle: 0x000A
-                                                   0x0A         // error: Attribute Not Found
-  );
+  const auto kExpectedRequest0 =
+      StaticByteBuffer(0x06,  // opcode: find by type value request
+                       0x01,
+                       0x00,  // start handle: 0x0001
+                       0xFF,
+                       0xFF,  // end handle: 0xFFFF
+                       0x00,
+                       0x28,  // type: primary service (0x2800)
+                       0xAD,
+                       0xDE  // kTestUuid1
+      );
+  const auto kResponse0 =
+      StaticByteBuffer(0x07,  // opcode: find by type value response
+                       0x01,
+                       0x00,  // svc 1 start: 0x0001
+                       0x05,
+                       0x00  // svc 1 end: 0x0005
+      );
+  const auto kExpectedRequest1 =
+      StaticByteBuffer(0x06,  // opcode: find by type value request
+                       0x06,
+                       0x00,  // start handle: 0x0006
+                       0xFF,
+                       0xFF,  // end handle: 0xFFFF
+                       0x00,
+                       0x28,  // type: primary service (0x2800)
+                       0xAD,
+                       0xDE  // kTestUuid1
+      );
+  const auto kNotFoundResponse1 =
+      StaticByteBuffer(0x01,  // opcode: error response
+                       0x06,  // request: find by type value
+                       0x06,
+                       0x00,  // handle: 0x0006
+                       0x0A   // error: Attribute Not Found
+      );
+  const auto kExpectedRequest2 =
+      StaticByteBuffer(0x06,  // opcode: find by type value request
+                       0x01,
+                       0x00,  // start handle: 0x0001
+                       0xFF,
+                       0xFF,  // end handle: 0xFFFF
+                       0x00,
+                       0x28,  // type: primary service (0x2800)
+                       0xEF,
+                       0xBE  // kTestUuid2
+      );
+  const auto kResponse2 =
+      StaticByteBuffer(0x07,  // opcode: find by type value response
+                       0x06,
+                       0x00,  // svc 1 start: 0x0006
+                       0x09,
+                       0x00  // svc 1 end: 0x0009
+      );
+  const auto kExpectedRequest3 =
+      StaticByteBuffer(0x06,  // opcode: find by type value request
+                       0x0A,
+                       0x00,  // start handle: 0x000A
+                       0xFF,
+                       0xFF,  // end handle: 0xFFFF
+                       0x00,
+                       0x28,  // type: primary service (0x2800)
+                       0xEF,
+                       0xBE  // kTestUuid2
+      );
+  const auto kNotFoundResponse3 =
+      StaticByteBuffer(0x01,  // opcode: error response
+                       0x06,  // request: find by type value
+                       0x0A,
+                       0x00,  // handle: 0x000A
+                       0x0A   // error: Attribute Not Found
+      );
 
   att::Result<> status = ToResult(HostError::kFailed);
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<ServiceData> services;
-  auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
+  auto svc_cb = [&services](const ServiceData& svc) {
+    services.push_back(svc);
+  };
 
   EXPECT_PACKET_OUT(kExpectedRequest0, &kResponse0);
   EXPECT_PACKET_OUT(kExpectedRequest1, &kNotFoundResponse1);
   EXPECT_PACKET_OUT(kExpectedRequest2, &kResponse2);
   EXPECT_PACKET_OUT(kExpectedRequest3, &kNotFoundResponse3);
-  client()->DiscoverServicesWithUuids(ServiceKind::PRIMARY, svc_cb, res_cb,
-                                      {kTestUuid2, kTestUuid1});
+  client()->DiscoverServicesWithUuids(
+      ServiceKind::PRIMARY, svc_cb, res_cb, {kTestUuid2, kTestUuid1});
   RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
@@ -998,63 +1253,95 @@ TEST_F(ClientTest, DiscoverServicesWithUuidsInRangeMultipleUuids) {
   const att::Handle kRangeEnd = 0x0020;
   const auto kExpectedRequest0 =
       StaticByteBuffer(0x06,  // opcode: find by type value request
-                       LowerBits(kRangeStart), UpperBits(kRangeStart),  // start handle
-                       LowerBits(kRangeEnd), UpperBits(kRangeEnd),      // end handle
-                       0x00, 0x28,  // type: primary service (0x2800)
-                       0xAD, 0xDE   // kTestUuid1
+                       LowerBits(kRangeStart),
+                       UpperBits(kRangeStart),  // start handle
+                       LowerBits(kRangeEnd),
+                       UpperBits(kRangeEnd),  // end handle
+                       0x00,
+                       0x28,  // type: primary service (0x2800)
+                       0xAD,
+                       0xDE  // kTestUuid1
       );
-  const auto kResponse0 = StaticByteBuffer(0x07,        // opcode: find by type value response
-                                           0x02, 0x00,  // svc 0 start: 0x0002
-                                           0x05, 0x00   // svc 0 end: 0x0005
-  );
+  const auto kResponse0 =
+      StaticByteBuffer(0x07,  // opcode: find by type value response
+                       0x02,
+                       0x00,  // svc 0 start: 0x0002
+                       0x05,
+                       0x00  // svc 0 end: 0x0005
+      );
   const auto kExpectedRequest1 =
-      StaticByteBuffer(0x06,        // opcode: find by type value request
-                       0x06, 0x00,  // start handle: 0x0006
-                       LowerBits(kRangeEnd), UpperBits(kRangeEnd),  // end handle
-                       0x00, 0x28,  // type: primary service (0x2800)
-                       0xAD, 0xDE   // kTestUuid1
+      StaticByteBuffer(0x06,  // opcode: find by type value request
+                       0x06,
+                       0x00,  // start handle: 0x0006
+                       LowerBits(kRangeEnd),
+                       UpperBits(kRangeEnd),  // end handle
+                       0x00,
+                       0x28,  // type: primary service (0x2800)
+                       0xAD,
+                       0xDE  // kTestUuid1
       );
-  const auto kNotFoundResponse1 = StaticByteBuffer(0x01,        // opcode: error response
-                                                   0x06,        // request: find by type value
-                                                   0x06, 0x00,  // handle: 0x0006
-                                                   0x0A         // error: Attribute Not Found
-  );
+  const auto kNotFoundResponse1 =
+      StaticByteBuffer(0x01,  // opcode: error response
+                       0x06,  // request: find by type value
+                       0x06,
+                       0x00,  // handle: 0x0006
+                       0x0A   // error: Attribute Not Found
+      );
   const auto kExpectedRequest2 =
       StaticByteBuffer(0x06,  // opcode: find by type value request
-                       LowerBits(kRangeStart), UpperBits(kRangeStart),  // start handle
-                       LowerBits(kRangeEnd), UpperBits(kRangeEnd),      // end handle
-                       0x00, 0x28,  // type: primary service (0x2800)
-                       0xEF, 0xBE   // kTestUuid2
+                       LowerBits(kRangeStart),
+                       UpperBits(kRangeStart),  // start handle
+                       LowerBits(kRangeEnd),
+                       UpperBits(kRangeEnd),  // end handle
+                       0x00,
+                       0x28,  // type: primary service (0x2800)
+                       0xEF,
+                       0xBE  // kTestUuid2
       );
-  const auto kResponse2 = StaticByteBuffer(0x07,        // opcode: find by type value response
-                                           0x06, 0x00,  // svc 1 start: 0x0006
-                                           0x09, 0x00   // svc 1 end: 0x0009
-  );
+  const auto kResponse2 =
+      StaticByteBuffer(0x07,  // opcode: find by type value response
+                       0x06,
+                       0x00,  // svc 1 start: 0x0006
+                       0x09,
+                       0x00  // svc 1 end: 0x0009
+      );
   const auto kExpectedRequest3 =
-      StaticByteBuffer(0x06,        // opcode: find by type value request
-                       0x0A, 0x00,  // start handle: 0x000A
-                       LowerBits(kRangeEnd), UpperBits(kRangeEnd),  // end handle
-                       0x00, 0x28,  // type: primary service (0x2800)
-                       0xEF, 0xBE   // kTestUuid2
+      StaticByteBuffer(0x06,  // opcode: find by type value request
+                       0x0A,
+                       0x00,  // start handle: 0x000A
+                       LowerBits(kRangeEnd),
+                       UpperBits(kRangeEnd),  // end handle
+                       0x00,
+                       0x28,  // type: primary service (0x2800)
+                       0xEF,
+                       0xBE  // kTestUuid2
       );
-  const auto kNotFoundResponse3 = StaticByteBuffer(0x01,        // opcode: error response
-                                                   0x06,        // request: find by type value
-                                                   0x0A, 0x00,  // handle: 0x000A
-                                                   0x0A         // error: Attribute Not Found
-  );
+  const auto kNotFoundResponse3 =
+      StaticByteBuffer(0x01,  // opcode: error response
+                       0x06,  // request: find by type value
+                       0x0A,
+                       0x00,  // handle: 0x000A
+                       0x0A   // error: Attribute Not Found
+      );
 
   att::Result<> status = ToResult(HostError::kFailed);
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<ServiceData> services;
-  auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
+  auto svc_cb = [&services](const ServiceData& svc) {
+    services.push_back(svc);
+  };
 
   EXPECT_PACKET_OUT(kExpectedRequest0, &kResponse0);
   EXPECT_PACKET_OUT(kExpectedRequest1, &kNotFoundResponse1);
   EXPECT_PACKET_OUT(kExpectedRequest2, &kResponse2);
   EXPECT_PACKET_OUT(kExpectedRequest3, &kNotFoundResponse3);
-  client()->DiscoverServicesWithUuidsInRange(ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb,
-                                             res_cb, {kTestUuid2, kTestUuid1});
+  client()->DiscoverServicesWithUuidsInRange(ServiceKind::PRIMARY,
+                                             kRangeStart,
+                                             kRangeEnd,
+                                             svc_cb,
+                                             res_cb,
+                                             {kTestUuid2, kTestUuid1});
   RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
@@ -1070,7 +1357,8 @@ TEST_F(ClientTest, DiscoverServicesWithUuidsInRangeMultipleUuids) {
   EXPECT_EQ(kTestUuid2, services[1].type);
 }
 
-TEST_F(ClientTest, DiscoverServicesWithUuidsInRangeFailsOnResultNotInRequestedRange) {
+TEST_F(ClientTest,
+       DiscoverServicesWithUuidsInRangeFailsOnResultNotInRequestedRange) {
   const att::Handle kRangeStart = 0x0010;
   const att::Handle kRangeEnd = 0x0020;
   const att::Handle kServiceStart = 0x0002;
@@ -1078,26 +1366,38 @@ TEST_F(ClientTest, DiscoverServicesWithUuidsInRangeFailsOnResultNotInRequestedRa
 
   const auto kExpectedRequest =
       StaticByteBuffer(0x06,  // opcode: find by type value request
-                       LowerBits(kRangeStart), UpperBits(kRangeStart),  // start handle
-                       LowerBits(kRangeEnd), UpperBits(kRangeEnd),      // end handle
-                       0x00, 0x28,  // type: primary service (0x2800)
-                       0xAD, 0xDE   // kTestUuid1
+                       LowerBits(kRangeStart),
+                       UpperBits(kRangeStart),  // start handle
+                       LowerBits(kRangeEnd),
+                       UpperBits(kRangeEnd),  // end handle
+                       0x00,
+                       0x28,  // type: primary service (0x2800)
+                       0xAD,
+                       0xDE  // kTestUuid1
       );
   const auto kResponse =
       StaticByteBuffer(0x07,  // opcode: find by type value response
-                       LowerBits(kServiceStart), UpperBits(kServiceStart),  // svc start
-                       LowerBits(kServiceEnd), UpperBits(kServiceEnd)       // svc end
+                       LowerBits(kServiceStart),
+                       UpperBits(kServiceStart),  // svc start
+                       LowerBits(kServiceEnd),
+                       UpperBits(kServiceEnd)  // svc end
       );
 
   std::optional<att::Result<>> status;
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<ServiceData> services;
-  auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
+  auto svc_cb = [&services](const ServiceData& svc) {
+    services.push_back(svc);
+  };
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
-  client()->DiscoverServicesWithUuidsInRange(ServiceKind::PRIMARY, kRangeStart, kRangeEnd, svc_cb,
-                                             res_cb, {kTestUuid1});
+  client()->DiscoverServicesWithUuidsInRange(ServiceKind::PRIMARY,
+                                             kRangeStart,
+                                             kRangeEnd,
+                                             svc_cb,
+                                             res_cb,
+                                             {kTestUuid1});
   RunUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), *status);
@@ -1120,11 +1420,15 @@ TEST_F(ClientTest, CharacteristicDiscoveryResponseTooShort) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0xFFFF;
 
-  const auto kExpectedRequest = StaticByteBuffer(0x08,        // opcode: read by type request
-                                                 0x01, 0x00,  // start handle: 0x0001
-                                                 0xFF, 0xFF,  // end handle: 0xFFFF
-                                                 0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
+  const auto kExpectedRequest =
+      StaticByteBuffer(0x08,  // opcode: read by type request
+                       0x01,
+                       0x00,  // start handle: 0x0001
+                       0xFF,
+                       0xFF,  // end handle: 0xFFFF
+                       0x03,
+                       0x28  // type: characteristic decl. (0x2803)
+      );
   const StaticByteBuffer kMalformedResponse(0x09);
 
   att::Result<> status = fit::ok();
@@ -1140,18 +1444,29 @@ TEST_F(ClientTest, CharacteristicDiscoveryMalformedDataLength) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0xFFFF;
 
-  const auto kExpectedRequest = StaticByteBuffer(0x08,        // opcode: read by type request
-                                                 0x01, 0x00,  // start handle: 0x0001
-                                                 0xFF, 0xFF,  // end handle: 0xFFFF
-                                                 0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
+  const auto kExpectedRequest =
+      StaticByteBuffer(0x08,  // opcode: read by type request
+                       0x01,
+                       0x00,  // start handle: 0x0001
+                       0xFF,
+                       0xFF,  // end handle: 0xFFFF
+                       0x03,
+                       0x28  // type: characteristic decl. (0x2803)
+      );
   // Respond back with an unexpected data length. This is 7 for characteristics
   // with a 16-bit UUID (handle (2) + props (1) + value handle (2) + uuid (2))
   // and 21 for 128-bit (handle (2) + props (1) + value handle (2) + uuid (16)).
-  const StaticByteBuffer kResponse(0x09,  // opcode: read by type response
-                                   8,     // data length: 8 (not 7 or 21)
-                                   0, 1, 2, 3, 4, 5, 6,
-                                   7  // one entry of length 8, which will be ignored
+  const StaticByteBuffer kResponse(
+      0x09,  // opcode: read by type response
+      8,     // data length: 8 (not 7 or 21)
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7  // one entry of length 8, which will be ignored
   );
 
   att::Result<> status = fit::ok();
@@ -1167,19 +1482,34 @@ TEST_F(ClientTest, CharacteristicDiscoveryMalformedAttrDataList) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0xFFFF;
 
-  const auto kExpectedRequest = StaticByteBuffer(0x08,        // opcode: read by type request
-                                                 0x01, 0x00,  // start handle: 0x0001
-                                                 0xFF, 0xFF,  // end handle: 0xFFFF
-                                                 0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
+  const auto kExpectedRequest =
+      StaticByteBuffer(0x08,  // opcode: read by type request
+                       0x01,
+                       0x00,  // start handle: 0x0001
+                       0xFF,
+                       0xFF,  // end handle: 0xFFFF
+                       0x03,
+                       0x28  // type: characteristic decl. (0x2803)
+      );
 
   // Respond back with an unexpected data length. This is 7 for characteristics
   // with a 16-bit UUID (handle (2) + props (1) + value handle (2) + uuid (2))
   // and 21 for 128-bit (handle (2) + props (1) + value handle (2) + uuid (16)).
-  const StaticByteBuffer kResponse(0x09,                 // opcode: read by type response
-                                   7,                    // data length: 7 (16-bit UUIDs)
-                                   0, 1, 2, 3, 4, 5, 6,  // entry 1: correct size
-                                   0, 1, 2, 3, 4, 5      // entry 2: incorrect size
+  const StaticByteBuffer kResponse(0x09,  // opcode: read by type response
+                                   7,     // data length: 7 (16-bit UUIDs)
+                                   0,
+                                   1,
+                                   2,
+                                   3,
+                                   4,
+                                   5,
+                                   6,  // entry 1: correct size
+                                   0,
+                                   1,
+                                   2,
+                                   3,
+                                   4,
+                                   5  // entry 2: incorrect size
   );
 
   att::Result<> status = fit::ok();
@@ -1196,11 +1526,15 @@ TEST_F(ClientTest, CharacteristicDiscoveryEmptyDataList) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0xFFFF;
 
-  const auto kExpectedRequest = StaticByteBuffer(0x08,        // opcode: read by type request
-                                                 0x01, 0x00,  // start handle: 0x0001
-                                                 0xFF, 0xFF,  // end handle: 0xFFFF
-                                                 0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
+  const auto kExpectedRequest =
+      StaticByteBuffer(0x08,  // opcode: read by type request
+                       0x01,
+                       0x00,  // start handle: 0x0001
+                       0xFF,
+                       0xFF,  // end handle: 0xFFFF
+                       0x03,
+                       0x28  // type: characteristic decl. (0x2803)
+      );
   const StaticByteBuffer kResponse(0x09,  // opcode: read by type response
                                    7      // data length: 7 (16-bit UUIDs)
                                           // data list empty
@@ -1219,15 +1553,20 @@ TEST_F(ClientTest, CharacteristicDiscoveryAttributeNotFound) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0xFFFF;
 
-  const auto kExpectedRequest = StaticByteBuffer(0x08,        // opcode: read by type request
-                                                 0x01, 0x00,  // start handle: 0x0001
-                                                 0xFF, 0xFF,  // end handle: 0xFFFF
-                                                 0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
-  const StaticByteBuffer kResponse(0x01,        // opcode: error response
-                                   0x08,        // request: read by type
-                                   0x01, 0x00,  // handle: 0x0001
-                                   0x0A         // error: Attribute Not Found
+  const auto kExpectedRequest =
+      StaticByteBuffer(0x08,  // opcode: read by type request
+                       0x01,
+                       0x00,  // start handle: 0x0001
+                       0xFF,
+                       0xFF,  // end handle: 0xFFFF
+                       0x03,
+                       0x28  // type: characteristic decl. (0x2803)
+      );
+  const StaticByteBuffer kResponse(0x01,  // opcode: error response
+                                   0x08,  // request: read by type
+                                   0x01,
+                                   0x00,  // handle: 0x0001
+                                   0x0A   // error: Attribute Not Found
   );
 
   att::Result<> status = fit::ok();
@@ -1244,15 +1583,20 @@ TEST_F(ClientTest, CharacteristicDiscoveryError) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0xFFFF;
 
-  const auto kExpectedRequest = StaticByteBuffer(0x08,        // opcode: read by type request
-                                                 0x01, 0x00,  // start handle: 0x0001
-                                                 0xFF, 0xFF,  // end handle: 0xFFFF
-                                                 0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
-  const StaticByteBuffer kResponse(0x01,        // opcode: error response
-                                   0x08,        // request: read by type
-                                   0x01, 0x00,  // handle: 0x0001
-                                   0x06         // error: Request Not Supported
+  const auto kExpectedRequest =
+      StaticByteBuffer(0x08,  // opcode: read by type request
+                       0x01,
+                       0x00,  // start handle: 0x0001
+                       0xFF,
+                       0xFF,  // end handle: 0xFFFF
+                       0x03,
+                       0x28  // type: characteristic decl. (0x2803)
+      );
+  const StaticByteBuffer kResponse(0x01,  // opcode: error response
+                                   0x08,  // request: read by type
+                                   0x01,
+                                   0x00,  // handle: 0x0001
+                                   0x06   // error: Request Not Supported
   );
 
   att::Result<> status = fit::ok();
@@ -1268,29 +1612,41 @@ TEST_F(ClientTest, CharacteristicDiscovery16BitResultsSingleRequest) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0x0005;
 
-  const auto kExpectedRequest = StaticByteBuffer(0x08,        // opcode: read by type request
-                                                 0x01, 0x00,  // start handle: 0x0001
-                                                 0x05, 0x00,  // end handle: 0x0005
-                                                 0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
+  const auto kExpectedRequest =
+      StaticByteBuffer(0x08,  // opcode: read by type request
+                       0x01,
+                       0x00,  // start handle: 0x0001
+                       0x05,
+                       0x00,  // end handle: 0x0005
+                       0x03,
+                       0x28  // type: characteristic decl. (0x2803)
+      );
   const StaticByteBuffer kResponse(
-      0x09,        // opcode: read by type response
-      0x07,        // data length: 7 (16-bit UUIDs)
-      0x03, 0x00,  // chrc 1 handle
-      0x00,        // chrc 1 properties
-      0x04, 0x00,  // chrc 1 value handle
-      0xAD, 0xDE,  // chrc 1 uuid: 0xDEAD
-      0x05, 0x00,  // chrc 2 handle (0x0005 is the end of the requested range)
-      0x01,        // chrc 2 properties
-      0x06, 0x00,  // chrc 2 value handle
-      0xEF, 0xBE   // chrc 2 uuid: 0xBEEF
+      0x09,  // opcode: read by type response
+      0x07,  // data length: 7 (16-bit UUIDs)
+      0x03,
+      0x00,  // chrc 1 handle
+      0x00,  // chrc 1 properties
+      0x04,
+      0x00,  // chrc 1 value handle
+      0xAD,
+      0xDE,  // chrc 1 uuid: 0xDEAD
+      0x05,
+      0x00,  // chrc 2 handle (0x0005 is the end of the requested range)
+      0x01,  // chrc 2 properties
+      0x06,
+      0x00,  // chrc 2 value handle
+      0xEF,
+      0xBE  // chrc 2 uuid: 0xBEEF
   );
 
   att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<CharacteristicData> chrcs;
-  auto chrc_cb = [&chrcs](const CharacteristicData& chrc) { chrcs.push_back(chrc); };
+  auto chrc_cb = [&chrcs](const CharacteristicData& chrc) {
+    chrcs.push_back(chrc);
+  };
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb);
@@ -1311,25 +1667,48 @@ TEST_F(ClientTest, CharacteristicDiscovery128BitResultsSingleRequest) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0x0005;
 
-  const auto kExpectedRequest = StaticByteBuffer(0x08,        // opcode: read by type request
-                                                 0x01, 0x00,  // start handle: 0x0001
-                                                 0x05, 0x00,  // end handle: 0x0005
-                                                 0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
-  const StaticByteBuffer kResponse(0x09,        // opcode: read by type response
-                                   0x15,        // data length: 21 (128-bit UUIDs)
-                                   0x05, 0x00,  // chrc handle
-                                   0x00,        // chrc properties
-                                   0x06, 0x00,  // chrc value handle
+  const auto kExpectedRequest =
+      StaticByteBuffer(0x08,  // opcode: read by type request
+                       0x01,
+                       0x00,  // start handle: 0x0001
+                       0x05,
+                       0x00,  // end handle: 0x0005
+                       0x03,
+                       0x28  // type: characteristic decl. (0x2803)
+      );
+  const StaticByteBuffer kResponse(0x09,  // opcode: read by type response
+                                   0x15,  // data length: 21 (128-bit UUIDs)
+                                   0x05,
+                                   0x00,  // chrc handle
+                                   0x00,  // chrc properties
+                                   0x06,
+                                   0x00,  // chrc value handle
 
                                    // UUID matches |kTestUuid3| declared above.
-                                   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+                                   0,
+                                   1,
+                                   2,
+                                   3,
+                                   4,
+                                   5,
+                                   6,
+                                   7,
+                                   8,
+                                   9,
+                                   10,
+                                   11,
+                                   12,
+                                   13,
+                                   14,
+                                   15);
 
   att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<CharacteristicData> chrcs;
-  auto chrc_cb = [&chrcs](const CharacteristicData& chrc) { chrcs.push_back(chrc); };
+  auto chrc_cb = [&chrcs](const CharacteristicData& chrc) {
+    chrcs.push_back(chrc);
+  };
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb);
@@ -1346,52 +1725,92 @@ TEST_F(ClientTest, CharacteristicDiscoveryMultipleRequests) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0xFFFF;
 
-  const auto kExpectedRequest0 = StaticByteBuffer(0x08,        // opcode: read by type request
-                                                  0x01, 0x00,  // start handle: 0x0001
-                                                  0xFF, 0xFF,  // end handle: 0xFFFF
-                                                  0x03, 0x28  // type: characteristic decl. (0x2803)
-  );
-  const auto kResponse0 = StaticByteBuffer(0x09,        // opcode: read by type response
-                                           0x07,        // data length: 7 (16-bit UUIDs)
-                                           0x03, 0x00,  // chrc 1 handle
-                                           0x00,        // chrc 1 properties
-                                           0x04, 0x00,  // chrc 1 value handle
-                                           0xAD, 0xDE,  // chrc 1 uuid: 0xDEAD
-                                           0x05, 0x00,  // chrc 2 handle
-                                           0x01,        // chrc 2 properties
-                                           0x06, 0x00,  // chrc 2 value handle
-                                           0xEF, 0xBE   // chrc 2 uuid: 0xBEEF
-  );
-  const auto kExpectedRequest1 = StaticByteBuffer(0x08,        // opcode: read by type request
-                                                  0x06, 0x00,  // start handle: 0x0006
-                                                  0xFF, 0xFF,  // end handle: 0xFFFF
-                                                  0x03, 0x28  // type: characteristic decl. (0x2803)
-  );
+  const auto kExpectedRequest0 =
+      StaticByteBuffer(0x08,  // opcode: read by type request
+                       0x01,
+                       0x00,  // start handle: 0x0001
+                       0xFF,
+                       0xFF,  // end handle: 0xFFFF
+                       0x03,
+                       0x28  // type: characteristic decl. (0x2803)
+      );
+  const auto kResponse0 =
+      StaticByteBuffer(0x09,  // opcode: read by type response
+                       0x07,  // data length: 7 (16-bit UUIDs)
+                       0x03,
+                       0x00,  // chrc 1 handle
+                       0x00,  // chrc 1 properties
+                       0x04,
+                       0x00,  // chrc 1 value handle
+                       0xAD,
+                       0xDE,  // chrc 1 uuid: 0xDEAD
+                       0x05,
+                       0x00,  // chrc 2 handle
+                       0x01,  // chrc 2 properties
+                       0x06,
+                       0x00,  // chrc 2 value handle
+                       0xEF,
+                       0xBE  // chrc 2 uuid: 0xBEEF
+      );
+  const auto kExpectedRequest1 =
+      StaticByteBuffer(0x08,  // opcode: read by type request
+                       0x06,
+                       0x00,  // start handle: 0x0006
+                       0xFF,
+                       0xFF,  // end handle: 0xFFFF
+                       0x03,
+                       0x28  // type: characteristic decl. (0x2803)
+      );
   // Respond with one characteristic with a 128-bit UUID
-  const auto kResponse1 = StaticByteBuffer(0x09,        // opcode: read by type response
-                                           0x15,        // data length: 21 (128-bit UUIDs)
-                                           0x07, 0x00,  // chrc handle
-                                           0x00,        // chrc properties
-                                           0x08, 0x00,  // chrc value handle
-                                           // UUID matches |kTestUuid3| declared above.
-                                           0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
-  const auto kExpectedRequest2 = StaticByteBuffer(0x08,        // opcode: read by type request
-                                                  0x08, 0x00,  // start handle: 0x0008
-                                                  0xFF, 0xFF,  // end handle: 0xFFFF
-                                                  0x03, 0x28  // type: characteristic decl. (0x2803)
-  );
+  const auto kResponse1 =
+      StaticByteBuffer(0x09,  // opcode: read by type response
+                       0x15,  // data length: 21 (128-bit UUIDs)
+                       0x07,
+                       0x00,  // chrc handle
+                       0x00,  // chrc properties
+                       0x08,
+                       0x00,  // chrc value handle
+                       // UUID matches |kTestUuid3| declared above.
+                       0,
+                       1,
+                       2,
+                       3,
+                       4,
+                       5,
+                       6,
+                       7,
+                       8,
+                       9,
+                       10,
+                       11,
+                       12,
+                       13,
+                       14,
+                       15);
+  const auto kExpectedRequest2 =
+      StaticByteBuffer(0x08,  // opcode: read by type request
+                       0x08,
+                       0x00,  // start handle: 0x0008
+                       0xFF,
+                       0xFF,  // end handle: 0xFFFF
+                       0x03,
+                       0x28  // type: characteristic decl. (0x2803)
+      );
   // Terminate the procedure with an error response.
-  const StaticByteBuffer kResponse2(0x01,        // opcode: error response
-                                    0x08,        // request: read by type
-                                    0x0A, 0x00,  // handle: 0x000A
-                                    0x0A         // error: Attribute Not Found
+  const StaticByteBuffer kResponse2(0x01,  // opcode: error response
+                                    0x08,  // request: read by type
+                                    0x0A,
+                                    0x00,  // handle: 0x000A
+                                    0x0A   // error: Attribute Not Found
   );
 
   att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<CharacteristicData> chrcs;
-  auto chrc_cb = [&chrcs](const CharacteristicData& chrc) { chrcs.push_back(chrc); };
+  auto chrc_cb = [&chrcs](const CharacteristicData& chrc) {
+    chrcs.push_back(chrc);
+  };
 
   EXPECT_PACKET_OUT(kExpectedRequest0, &kResponse0);
   EXPECT_PACKET_OUT(kExpectedRequest1, &kResponse1);
@@ -1425,25 +1844,34 @@ TEST_F(ClientTest, CharacteristicDiscoveryResultsBeforeRange) {
   constexpr att::Handle kStart = 0x0002;
   constexpr att::Handle kEnd = 0x0005;
 
-  const auto kExpectedRequest = StaticByteBuffer(0x08,        // opcode: read by type request
-                                                 0x02, 0x00,  // start handle: 0x0002
-                                                 0x05, 0x00,  // end handle: 0x0005
-                                                 0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
-  const StaticByteBuffer kResponse(0x09,  // opcode: read by type response
-                                   0x07,  // data length: 7 (16-bit UUIDs)
-                                   0x01,
-                                   0x00,        // chrc 1 handle (handle is before the range)
-                                   0x00,        // chrc 1 properties
-                                   0x02, 0x00,  // chrc 1 value handle
-                                   0xAD, 0xDE   // chrc 1 uuid: 0xDEAD
+  const auto kExpectedRequest =
+      StaticByteBuffer(0x08,  // opcode: read by type request
+                       0x02,
+                       0x00,  // start handle: 0x0002
+                       0x05,
+                       0x00,  // end handle: 0x0005
+                       0x03,
+                       0x28  // type: characteristic decl. (0x2803)
+      );
+  const StaticByteBuffer kResponse(
+      0x09,  // opcode: read by type response
+      0x07,  // data length: 7 (16-bit UUIDs)
+      0x01,
+      0x00,  // chrc 1 handle (handle is before the range)
+      0x00,  // chrc 1 properties
+      0x02,
+      0x00,  // chrc 1 value handle
+      0xAD,
+      0xDE  // chrc 1 uuid: 0xDEAD
   );
 
   att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<CharacteristicData> chrcs;
-  auto chrc_cb = [&chrcs](const CharacteristicData& chrc) { chrcs.push_back(chrc); };
+  auto chrc_cb = [&chrcs](const CharacteristicData& chrc) {
+    chrcs.push_back(chrc);
+  };
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb);
@@ -1458,25 +1886,34 @@ TEST_F(ClientTest, CharacteristicDiscoveryResultsBeyondRange) {
   constexpr att::Handle kStart = 0x0002;
   constexpr att::Handle kEnd = 0x0005;
 
-  const auto kExpectedRequest = StaticByteBuffer(0x08,        // opcode: read by type request
-                                                 0x02, 0x00,  // start handle: 0x0002
-                                                 0x05, 0x00,  // end handle: 0x0005
-                                                 0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
-  const StaticByteBuffer kResponse(0x09,  // opcode: read by type response
-                                   0x07,  // data length: 7 (16-bit UUIDs)
-                                   0x06,
-                                   0x00,        // chrc 1 handle (handle is beyond the range)
-                                   0x00,        // chrc 1 properties
-                                   0x07, 0x00,  // chrc 1 value handle
-                                   0xAD, 0xDE   // chrc 1 uuid: 0xDEAD
+  const auto kExpectedRequest =
+      StaticByteBuffer(0x08,  // opcode: read by type request
+                       0x02,
+                       0x00,  // start handle: 0x0002
+                       0x05,
+                       0x00,  // end handle: 0x0005
+                       0x03,
+                       0x28  // type: characteristic decl. (0x2803)
+      );
+  const StaticByteBuffer kResponse(
+      0x09,  // opcode: read by type response
+      0x07,  // data length: 7 (16-bit UUIDs)
+      0x06,
+      0x00,  // chrc 1 handle (handle is beyond the range)
+      0x00,  // chrc 1 properties
+      0x07,
+      0x00,  // chrc 1 value handle
+      0xAD,
+      0xDE  // chrc 1 uuid: 0xDEAD
   );
 
   att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<CharacteristicData> chrcs;
-  auto chrc_cb = [&chrcs](const CharacteristicData& chrc) { chrcs.push_back(chrc); };
+  auto chrc_cb = [&chrcs](const CharacteristicData& chrc) {
+    chrcs.push_back(chrc);
+  };
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb);
@@ -1491,24 +1928,33 @@ TEST_F(ClientTest, CharacteristicDiscoveryValueNotContiguous) {
   constexpr att::Handle kStart = 0x0002;
   constexpr att::Handle kEnd = 0x0005;
 
-  const auto kExpectedRequest = StaticByteBuffer(0x08,        // opcode: read by type request
-                                                 0x02, 0x00,  // start handle: 0x0002
-                                                 0x05, 0x00,  // end handle: 0x0005
-                                                 0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
-  const StaticByteBuffer kResponse(0x09,        // opcode: read by type response
-                                   0x07,        // data length: 7 (16-bit UUIDs)
-                                   0x02, 0x00,  // chrc 1 handle
-                                   0x00,        // chrc 1 properties
-                                   0x04, 0x00,  // chrc 1 value handle (not immediate)
-                                   0xAD, 0xDE   // chrc 1 uuid: 0xDEAD
+  const auto kExpectedRequest =
+      StaticByteBuffer(0x08,  // opcode: read by type request
+                       0x02,
+                       0x00,  // start handle: 0x0002
+                       0x05,
+                       0x00,  // end handle: 0x0005
+                       0x03,
+                       0x28  // type: characteristic decl. (0x2803)
+      );
+  const StaticByteBuffer kResponse(0x09,  // opcode: read by type response
+                                   0x07,  // data length: 7 (16-bit UUIDs)
+                                   0x02,
+                                   0x00,  // chrc 1 handle
+                                   0x00,  // chrc 1 properties
+                                   0x04,
+                                   0x00,  // chrc 1 value handle (not immediate)
+                                   0xAD,
+                                   0xDE  // chrc 1 uuid: 0xDEAD
   );
 
   att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<CharacteristicData> chrcs;
-  auto chrc_cb = [&chrcs](const CharacteristicData& chrc) { chrcs.push_back(chrc); };
+  auto chrc_cb = [&chrcs](const CharacteristicData& chrc) {
+    chrcs.push_back(chrc);
+  };
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb);
@@ -1521,28 +1967,40 @@ TEST_F(ClientTest, CharacteristicDiscoveryHandlesNotIncreasing) {
   constexpr att::Handle kStart = 0x0002;
   constexpr att::Handle kEnd = 0x0005;
 
-  const auto kExpectedRequest = StaticByteBuffer(0x08,        // opcode: read by type request
-                                                 0x02, 0x00,  // start handle: 0x0002
-                                                 0x05, 0x00,  // end handle: 0x0005
-                                                 0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
-  const StaticByteBuffer kResponse(0x09,        // opcode: read by type response
-                                   0x07,        // data length: 7 (16-bit UUIDs)
-                                   0x02, 0x00,  // chrc 1 handle
-                                   0x00,        // chrc 1 properties
-                                   0x03, 0x00,  // chrc 1 value handle
-                                   0xAD, 0xDE,  // chrc 1 uuid: 0xDEAD
-                                   0x02, 0x00,  // chrc 1 handle (repeated)
-                                   0x00,        // chrc 1 properties
-                                   0x03, 0x00,  // chrc 1 value handle
-                                   0xEF, 0xBE   // chrc 1 uuid: 0xBEEF
+  const auto kExpectedRequest =
+      StaticByteBuffer(0x08,  // opcode: read by type request
+                       0x02,
+                       0x00,  // start handle: 0x0002
+                       0x05,
+                       0x00,  // end handle: 0x0005
+                       0x03,
+                       0x28  // type: characteristic decl. (0x2803)
+      );
+  const StaticByteBuffer kResponse(0x09,  // opcode: read by type response
+                                   0x07,  // data length: 7 (16-bit UUIDs)
+                                   0x02,
+                                   0x00,  // chrc 1 handle
+                                   0x00,  // chrc 1 properties
+                                   0x03,
+                                   0x00,  // chrc 1 value handle
+                                   0xAD,
+                                   0xDE,  // chrc 1 uuid: 0xDEAD
+                                   0x02,
+                                   0x00,  // chrc 1 handle (repeated)
+                                   0x00,  // chrc 1 properties
+                                   0x03,
+                                   0x00,  // chrc 1 value handle
+                                   0xEF,
+                                   0xBE  // chrc 1 uuid: 0xBEEF
   );
 
   att::Result<> status = fit::ok();
   auto res_cb = [&status](att::Result<> val) { status = val; };
 
   std::vector<CharacteristicData> chrcs;
-  auto chrc_cb = [&chrcs](const CharacteristicData& chrc) { chrcs.push_back(chrc); };
+  auto chrc_cb = [&chrcs](const CharacteristicData& chrc) {
+    chrcs.push_back(chrc);
+  };
 
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb);
@@ -1586,9 +2044,14 @@ TEST_F(ClientTest, DescriptorDiscoveryMalformedDataLength) {
 
 TEST_F(ClientTest, DescriptorDiscoveryMalformedAttrDataList16) {
   att::Result<> status = fit::ok();
-  const StaticByteBuffer kResponse(0x05,  // opcode: find information response
-                                   0x01,  // format: 16-bit. Data length must be 4
-                                   1, 2, 3, 4, 5);
+  const StaticByteBuffer kResponse(
+      0x05,  // opcode: find information response
+      0x01,  // format: 16-bit. Data length must be 4
+      1,
+      2,
+      3,
+      4,
+      5);
   EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback);
   RunUntilIdle();
@@ -1597,9 +2060,26 @@ TEST_F(ClientTest, DescriptorDiscoveryMalformedAttrDataList16) {
 
 TEST_F(ClientTest, DescriptorDiscoveryMalformedAttrDataList128) {
   att::Result<> status = fit::ok();
-  const StaticByteBuffer kResponse(0x05,  // opcode: find information response
-                                   0x02,  // format: 128-bit. Data length must be 18
-                                   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17);
+  const StaticByteBuffer kResponse(
+      0x05,  // opcode: find information response
+      0x02,  // format: 128-bit. Data length must be 18
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17);
   EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback);
   RunUntilIdle();
@@ -1620,10 +2100,11 @@ TEST_F(ClientTest, DescriptorDiscoveryEmptyDataList) {
 
 TEST_F(ClientTest, DescriptorDiscoveryAttributeNotFound) {
   att::Result<> status = ToResult(HostError::kFailed);
-  const StaticByteBuffer kResponse(0x01,        // opcode: error response
-                                   0x04,        // request: find information
-                                   0x01, 0x00,  // handle: 0x0001
-                                   0x0A         // error: Attribute Not Found
+  const StaticByteBuffer kResponse(0x01,  // opcode: error response
+                                   0x04,  // request: find information
+                                   0x01,
+                                   0x00,  // handle: 0x0001
+                                   0x0A   // error: Attribute Not Found
   );
   EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback);
@@ -1633,10 +2114,11 @@ TEST_F(ClientTest, DescriptorDiscoveryAttributeNotFound) {
 
 TEST_F(ClientTest, DescriptorDiscoveryError) {
   att::Result<> status = ToResult(HostError::kFailed);
-  const StaticByteBuffer kResponse(0x01,        // opcode: error response
-                                   0x04,        // request: find information
-                                   0x01, 0x00,  // handle: 0x0001
-                                   0x06         // error: Request Not Supported
+  const StaticByteBuffer kResponse(0x01,  // opcode: error response
+                                   0x04,  // request: find information
+                                   0x01,
+                                   0x00,  // handle: 0x0001
+                                   0x06   // error: Request Not Supported
   );
   EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback);
@@ -1648,18 +2130,27 @@ TEST_F(ClientTest, DescriptorDiscovery16BitResultsSingleRequest) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0x0003;
 
-  const StaticByteBuffer kResponse(0x05,        // opcode: find information response
-                                   0x01,        // format: 16-bit. Data length must be 4
-                                   0x01, 0x00,  // desc 1 handle
-                                   0xEF, 0xBE,  // desc 1 uuid
-                                   0x02, 0x00,  // desc 2 handle
-                                   0xAD, 0xDE,  // desc 2 uuid
-                                   0x03, 0x00,  // desc 3 handle
-                                   0xFE, 0xFE   // desc 3 uuid
+  const StaticByteBuffer kResponse(
+      0x05,  // opcode: find information response
+      0x01,  // format: 16-bit. Data length must be 4
+      0x01,
+      0x00,  // desc 1 handle
+      0xEF,
+      0xBE,  // desc 1 uuid
+      0x02,
+      0x00,  // desc 2 handle
+      0xAD,
+      0xDE,  // desc 2 uuid
+      0x03,
+      0x00,  // desc 3 handle
+      0xFE,
+      0xFE  // desc 3 uuid
   );
 
   std::vector<DescriptorData> descrs;
-  auto desc_cb = [&descrs](const DescriptorData& desc) { descrs.push_back(desc); };
+  auto desc_cb = [&descrs](const DescriptorData& desc) {
+    descrs.push_back(desc);
+  };
 
   att::Result<> status = ToResult(HostError::kFailed);
   EXPECT_PACKET_OUT(MakeFindInformation(kStart, kEnd), &kResponse);
@@ -1680,18 +2171,50 @@ TEST_F(ClientTest, DescriptorDiscovery128BitResultsSingleRequest) {
   constexpr att::Handle kEnd = 0x0002;
 
   const StaticByteBuffer kResponse(
-      0x05,        // opcode: find information response
-      0x02,        // format: 128-bit. Data length must be 18
-      0x01, 0x00,  // desc 1 handle
-      0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0xEF, 0xBE, 0x00,
-      0x00,        // desc 1 uuid
-      0x02, 0x00,  // desc 2 handle
-      0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0xAD, 0xDE, 0x00,
+      0x05,  // opcode: find information response
+      0x02,  // format: 128-bit. Data length must be 18
+      0x01,
+      0x00,  // desc 1 handle
+      0xFB,
+      0x34,
+      0x9B,
+      0x5F,
+      0x80,
+      0x00,
+      0x00,
+      0x80,
+      0x00,
+      0x10,
+      0x00,
+      0x00,
+      0xEF,
+      0xBE,
+      0x00,
+      0x00,  // desc 1 uuid
+      0x02,
+      0x00,  // desc 2 handle
+      0xFB,
+      0x34,
+      0x9B,
+      0x5F,
+      0x80,
+      0x00,
+      0x00,
+      0x80,
+      0x00,
+      0x10,
+      0x00,
+      0x00,
+      0xAD,
+      0xDE,
+      0x00,
       0x00  // desc 2 uuid
   );
 
   std::vector<DescriptorData> descrs;
-  auto desc_cb = [&descrs](const DescriptorData& desc) { descrs.push_back(desc); };
+  auto desc_cb = [&descrs](const DescriptorData& desc) {
+    descrs.push_back(desc);
+  };
   att::Result<> status = ToResult(HostError::kFailed);
   att()->set_mtu(512);
 
@@ -1713,18 +2236,37 @@ TEST_F(ClientTest, DescriptorDiscoveryMultipleRequests) {
   const StaticByteBuffer kResponse0(
       att::kFindInformationResponse,  // opcode: find information response
       0x01,                           // format: 16-bit. Data length must be 4
-      0x01, 0x00,                     // desc 1 handle
-      0xEF, 0xBE,                     // desc 1 uuid
-      0x02, 0x00,                     // desc 2 handle
-      0xAD, 0xDE                      // desc 2 uuid
+      0x01,
+      0x00,  // desc 1 handle
+      0xEF,
+      0xBE,  // desc 1 uuid
+      0x02,
+      0x00,  // desc 2 handle
+      0xAD,
+      0xDE  // desc 2 uuid
   );
   constexpr att::Handle kStart1 = 0x0003;
   const StaticByteBuffer kRequest1 = MakeFindInformation(kStart1, kEnd);
   const StaticByteBuffer kResponse1(
       att::kFindInformationResponse,  // opcode: find information response
       0x02,                           // format: 128-bit. Data length must be 18
-      0x03, 0x00,                     // desc 3 handle
-      0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0xFE, 0xFE, 0x00,
+      0x03,
+      0x00,  // desc 3 handle
+      0xFB,
+      0x34,
+      0x9B,
+      0x5F,
+      0x80,
+      0x00,
+      0x00,
+      0x80,
+      0x00,
+      0x10,
+      0x00,
+      0x00,
+      0xFE,
+      0xFE,
+      0x00,
       0x00  // desc 3 uuid
   );
   constexpr att::Handle kStart2 = 0x0004;
@@ -1732,12 +2274,15 @@ TEST_F(ClientTest, DescriptorDiscoveryMultipleRequests) {
   const StaticByteBuffer kResponse2(
       att::kErrorResponse,           // response opcode
       att::kFindInformationRequest,  // request opcode that generated error
-      0x04, 0x00,                    // handle: kStart2
-      0x0A                           // error: Attribute Not Found
+      0x04,
+      0x00,  // handle: kStart2
+      0x0A   // error: Attribute Not Found
   );
 
   std::vector<DescriptorData> descrs;
-  auto desc_cb = [&descrs](const DescriptorData& desc) { descrs.push_back(desc); };
+  auto desc_cb = [&descrs](const DescriptorData& desc) {
+    descrs.push_back(desc);
+  };
   att::Result<> status = ToResult(HostError::kFailed);
 
   EXPECT_PACKET_OUT(kRequest0, &kResponse0);
@@ -1758,10 +2303,12 @@ TEST_F(ClientTest, DescriptorDiscoveryMultipleRequests) {
 
 TEST_F(ClientTest, DescriptorDiscoveryResultsBeforeRange) {
   constexpr att::Handle kStart = 0x0002;
-  const StaticByteBuffer kResponse(0x05,        // opcode: find information response
-                                   0x01,        // format: 16-bit.
-                                   0x01, 0x00,  // handle is before kStart
-                                   0xEF, 0xBE   // uuid
+  const StaticByteBuffer kResponse(0x05,  // opcode: find information response
+                                   0x01,  // format: 16-bit.
+                                   0x01,
+                                   0x00,  // handle is before kStart
+                                   0xEF,
+                                   0xBE  // uuid
   );
   att::Result<> status = fit::ok();
   EXPECT_PACKET_OUT(MakeFindInformation(kStart), &kResponse);
@@ -1773,10 +2320,12 @@ TEST_F(ClientTest, DescriptorDiscoveryResultsBeforeRange) {
 TEST_F(ClientTest, DescriptorDiscoveryResultsBeyondRange) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0x0002;
-  const StaticByteBuffer kResponse(0x05,        // opcode: find information response
-                                   0x01,        // format: 16-bit.
-                                   0x03, 0x00,  // handle is beyond kEnd
-                                   0xEF, 0xBE   // uuid
+  const StaticByteBuffer kResponse(0x05,  // opcode: find information response
+                                   0x01,  // format: 16-bit.
+                                   0x03,
+                                   0x00,  // handle is beyond kEnd
+                                   0xEF,
+                                   0xBE  // uuid
   );
   att::Result<> status = fit::ok();
   EXPECT_PACKET_OUT(MakeFindInformation(kStart, kEnd), &kResponse);
@@ -1787,12 +2336,16 @@ TEST_F(ClientTest, DescriptorDiscoveryResultsBeyondRange) {
 
 TEST_F(ClientTest, DescriptorDiscoveryHandlesNotIncreasing) {
   att::Result<> status = fit::ok();
-  const StaticByteBuffer kResponse(0x05,        // opcode: find information response
-                                   0x01,        // format: 16-bit.
-                                   0x01, 0x00,  // handle: 0x0001
-                                   0xEF, 0xBE,  // uuid
-                                   0x01, 0x00,  // handle: 0x0001 (repeats)
-                                   0xAD, 0xDE   // uuid
+  const StaticByteBuffer kResponse(0x05,  // opcode: find information response
+                                   0x01,  // format: 16-bit.
+                                   0x01,
+                                   0x00,  // handle: 0x0001
+                                   0xEF,
+                                   0xBE,  // uuid
+                                   0x01,
+                                   0x00,  // handle: 0x0001 (repeats)
+                                   0xAD,
+                                   0xDE  // uuid
   );
   EXPECT_PACKET_OUT(MakeFindInformation(), &kResponse);
   SendDiscoverDescriptors(&status, NopDescCallback);
@@ -1803,13 +2356,17 @@ TEST_F(ClientTest, DescriptorDiscoveryHandlesNotIncreasing) {
 TEST_F(ClientTest, WriteRequestMalformedResponse) {
   const StaticByteBuffer kValue('f', 'o', 'o');
   const auto kHandle = 0x0001;
-  const StaticByteBuffer kExpectedRequest(0x12,          // opcode: write request
-                                          0x01, 0x00,    // handle: 0x0001
-                                          'f', 'o', 'o'  // value: "foo"
+  const StaticByteBuffer kExpectedRequest(0x12,  // opcode: write request
+                                          0x01,
+                                          0x00,  // handle: 0x0001
+                                          'f',
+                                          'o',
+                                          'o'  // value: "foo"
   );
   // Respond back with a malformed PDU. This should result in a link error.
-  const StaticByteBuffer kResponse(0x013,  // opcode: write response
-                                   0       // One byte payload. The write request has no parameters.
+  const StaticByteBuffer kResponse(
+      0x013,  // opcode: write response
+      0       // One byte payload. The write request has no parameters.
   );
 
   att::Result<> status = fit::ok();
@@ -1827,9 +2384,12 @@ TEST_F(ClientTest, WriteRequestExceedsMtu) {
   const StaticByteBuffer kValue('f', 'o', 'o');
   constexpr att::Handle kHandle = 0x0001;
   constexpr size_t kMtu = 5;
-  const StaticByteBuffer kExpectedRequest(0x12,          // opcode: write request
-                                          0x01, 0x00,    // handle: 0x0001
-                                          'f', 'o', 'o'  // value: "foo"
+  const StaticByteBuffer kExpectedRequest(0x12,  // opcode: write request
+                                          0x01,
+                                          0x00,  // handle: 0x0001
+                                          'f',
+                                          'o',
+                                          'o'  // value: "foo"
   );
   ASSERT_EQ(kMtu + 1, kExpectedRequest.size());
 
@@ -1848,14 +2408,18 @@ TEST_F(ClientTest, WriteRequestExceedsMtu) {
 TEST_F(ClientTest, WriteRequestError) {
   const StaticByteBuffer kValue('f', 'o', 'o');
   const auto kHandle = 0x0001;
-  const StaticByteBuffer kExpectedRequest(0x12,          // opcode: write request
-                                          0x01, 0x00,    // handle: 0x0001
-                                          'f', 'o', 'o'  // value: "foo"
+  const StaticByteBuffer kExpectedRequest(0x12,  // opcode: write request
+                                          0x01,
+                                          0x00,  // handle: 0x0001
+                                          'f',
+                                          'o',
+                                          'o'  // value: "foo"
   );
-  const StaticByteBuffer kResponse(0x01,        // opcode: error response
-                                   0x12,        // request: write request
-                                   0x01, 0x00,  // handle: 0x0001
-                                   0x06         // error: Request Not Supported
+  const StaticByteBuffer kResponse(0x01,  // opcode: error response
+                                   0x12,  // request: write request
+                                   0x01,
+                                   0x00,  // handle: 0x0001
+                                   0x06   // error: Request Not Supported
   );
 
   att::Result<> status = fit::ok();
@@ -1871,9 +2435,12 @@ TEST_F(ClientTest, WriteRequestError) {
 TEST_F(ClientTest, WriteRequestSuccess) {
   const StaticByteBuffer kValue('f', 'o', 'o');
   const auto kHandle = 0x0001;
-  const StaticByteBuffer kExpectedRequest(0x12,          // opcode: write request
-                                          0x01, 0x00,    // handle: 0x0001
-                                          'f', 'o', 'o'  // value: "foo"
+  const StaticByteBuffer kExpectedRequest(0x12,  // opcode: write request
+                                          0x01,
+                                          0x00,  // handle: 0x0001
+                                          'f',
+                                          'o',
+                                          'o'  // value: "foo"
   );
   const StaticByteBuffer kResponse(0x13  // opcode: write response
   );
@@ -1891,17 +2458,24 @@ TEST_F(ClientTest, PrepareWriteRequestExceedsMtu) {
   constexpr att::Handle kHandle = 0x0001;
   constexpr auto kOffset = 0;
   constexpr size_t kMtu = 7;
-  const StaticByteBuffer kExpectedRequest(0x16,          // opcode: prepare write request
-                                          0x01, 0x00,    // handle: 0x0001
-                                          0x00, 0x00,    // offset: 0x0000
-                                          'f', 'o', 'o'  // value: "foo"
+  const StaticByteBuffer kExpectedRequest(
+      0x16,  // opcode: prepare write request
+      0x01,
+      0x00,  // handle: 0x0001
+      0x00,
+      0x00,  // offset: 0x0000
+      'f',
+      'o',
+      'o'  // value: "foo"
   );
   ASSERT_EQ(kMtu + 1, kExpectedRequest.size());
 
   att()->set_mtu(kMtu);
 
   att::Result<> status = fit::ok();
-  auto cb = [&status](att::Result<> cb_status, const ByteBuffer& value) { status = cb_status; };
+  auto cb = [&status](att::Result<> cb_status, const ByteBuffer& value) {
+    status = cb_status;
+  };
 
   client()->PrepareWriteRequest(kHandle, kOffset, kValue, cb);
 
@@ -1914,18 +2488,26 @@ TEST_F(ClientTest, PrepareWriteRequestError) {
   const StaticByteBuffer kValue('f', 'o', 'o');
   const auto kHandle = 0x0001;
   const auto kOffset = 5;
-  const StaticByteBuffer kExpectedRequest(0x16,          // opcode: prepare write request
-                                          0x01, 0x00,    // handle: 0x0001
-                                          0x05, 0x00,    // offset: 0x0005
-                                          'f', 'o', 'o'  // value: "foo"
+  const StaticByteBuffer kExpectedRequest(
+      0x16,  // opcode: prepare write request
+      0x01,
+      0x00,  // handle: 0x0001
+      0x05,
+      0x00,  // offset: 0x0005
+      'f',
+      'o',
+      'o'  // value: "foo"
   );
-  const StaticByteBuffer kResponse(0x01,        // opcode: error response
-                                   0x16,        // request: prepare write request
-                                   0x01, 0x00,  // handle: 0x0001
-                                   0x06         // error: Request Not Supported
+  const StaticByteBuffer kResponse(0x01,  // opcode: error response
+                                   0x16,  // request: prepare write request
+                                   0x01,
+                                   0x00,  // handle: 0x0001
+                                   0x06   // error: Request Not Supported
   );
   std::optional<att::Result<>> status;
-  auto cb = [&status](att::Result<> cb_status, const ByteBuffer& value) { status = cb_status; };
+  auto cb = [&status](att::Result<> cb_status, const ByteBuffer& value) {
+    status = cb_status;
+  };
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->PrepareWriteRequest(kHandle, kOffset, kValue, cb);
   RunUntilIdle();
@@ -1938,18 +2520,29 @@ TEST_F(ClientTest, PrepareWriteRequestSuccess) {
   const StaticByteBuffer kValue('f', 'o', 'o');
   const auto kHandle = 0x0001;
   const auto kOffset = 0;
-  const StaticByteBuffer kExpectedRequest(0x16,          // opcode: prepare write request
-                                          0x01, 0x00,    // handle: 0x0001
-                                          0x00, 0x00,    // offset: 0x0000
-                                          'f', 'o', 'o'  // value: "foo"
+  const StaticByteBuffer kExpectedRequest(
+      0x16,  // opcode: prepare write request
+      0x01,
+      0x00,  // handle: 0x0001
+      0x00,
+      0x00,  // offset: 0x0000
+      'f',
+      'o',
+      'o'  // value: "foo"
   );
-  const StaticByteBuffer kResponse(0x17,          // opcode: prepare write response
-                                   0x01, 0x00,    // handle: 0x0001
-                                   0x00, 0x00,    // offset: 0x0000
-                                   'f', 'o', 'o'  // value: "foo"
+  const StaticByteBuffer kResponse(0x17,  // opcode: prepare write response
+                                   0x01,
+                                   0x00,  // handle: 0x0001
+                                   0x00,
+                                   0x00,  // offset: 0x0000
+                                   'f',
+                                   'o',
+                                   'o'  // value: "foo"
   );
   att::Result<> status = fit::ok();
-  auto cb = [&status](att::Result<> cb_status, const ByteBuffer& value) { status = cb_status; };
+  auto cb = [&status](att::Result<> cb_status, const ByteBuffer& value) {
+    status = cb_status;
+  };
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
   client()->PrepareWriteRequest(kHandle, kOffset, kValue, cb);
   RunUntilIdle();
@@ -1959,8 +2552,9 @@ TEST_F(ClientTest, PrepareWriteRequestSuccess) {
 
 TEST_F(ClientTest, ExecuteWriteRequestPendingSuccess) {
   const auto kFlag = att::ExecuteWriteFlag::kWritePending;
-  const StaticByteBuffer kExpectedRequest(0x18,  // opcode: execute write request
-                                          0x01   // flag: write pending
+  const StaticByteBuffer kExpectedRequest(
+      0x18,  // opcode: execute write request
+      0x01   // flag: write pending
   );
   const StaticByteBuffer kResponse(0x19);  // opcode: execute write response
   att::Result<> status = fit::ok();
@@ -1974,8 +2568,9 @@ TEST_F(ClientTest, ExecuteWriteRequestPendingSuccess) {
 
 TEST_F(ClientTest, ExecuteWriteRequestCancelSuccess) {
   const auto kFlag = att::ExecuteWriteFlag::kCancelAll;
-  const StaticByteBuffer kExpectedRequest(0x18,  // opcode: execute write request
-                                          0x00   // flag: cancel all
+  const StaticByteBuffer kExpectedRequest(
+      0x18,  // opcode: execute write request
+      0x00   // flag: cancel all
   );
   const StaticByteBuffer kResponse(0x19);  // opcode: execute write response
   att::Result<> status = fit::ok();
@@ -1995,26 +2590,44 @@ TEST_F(ClientTest, ExecutePrepareWritesSuccess) {
   const StaticByteBuffer kValue1('f', 'o', 'o');
   const StaticByteBuffer kValue2('b', 'a', 'r');
 
-  const StaticByteBuffer kExpectedPrep1(0x16,          // opcode: prepare write request
-                                        0x01, 0x00,    // handle: 0x0001
-                                        0x00, 0x00,    // offset: 0x0000
-                                        'f', 'o', 'o'  // value: "foo"
+  const StaticByteBuffer kExpectedPrep1(0x16,  // opcode: prepare write request
+                                        0x01,
+                                        0x00,  // handle: 0x0001
+                                        0x00,
+                                        0x00,  // offset: 0x0000
+                                        'f',
+                                        'o',
+                                        'o'  // value: "foo"
   );
-  const auto kResponse1 = StaticByteBuffer(0x17,          // opcode: prepare write response
-                                           0x01, 0x00,    // handle: 0x0001
-                                           0x00, 0x00,    // offset: 0x0000
-                                           'f', 'o', 'o'  // value: "foo"
+  const auto kResponse1 =
+      StaticByteBuffer(0x17,  // opcode: prepare write response
+                       0x01,
+                       0x00,  // handle: 0x0001
+                       0x00,
+                       0x00,  // offset: 0x0000
+                       'f',
+                       'o',
+                       'o'  // value: "foo"
+      );
+  const StaticByteBuffer kExpectedPrep2(0x16,  // opcode: prepare write request
+                                        0x01,
+                                        0x00,  // handle: 0x0001
+                                        0x03,
+                                        0x00,  // offset: 0x0003
+                                        'b',
+                                        'a',
+                                        'r'  // value: "bar"
   );
-  const StaticByteBuffer kExpectedPrep2(0x16,          // opcode: prepare write request
-                                        0x01, 0x00,    // handle: 0x0001
-                                        0x03, 0x00,    // offset: 0x0003
-                                        'b', 'a', 'r'  // value: "bar"
-  );
-  const auto kResponse2 = StaticByteBuffer(0x17,          // opcode: prepare write response
-                                           0x01, 0x00,    // handle: 0x0001
-                                           0x03, 0x00,    // offset: 0x0003
-                                           'b', 'a', 'r'  // value: "bar"
-  );
+  const auto kResponse2 =
+      StaticByteBuffer(0x17,  // opcode: prepare write response
+                       0x01,
+                       0x00,  // handle: 0x0001
+                       0x03,
+                       0x00,  // offset: 0x0003
+                       'b',
+                       'a',
+                       'r'  // value: "bar"
+      );
   const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
                                        0x01   // flag: write pending
   );
@@ -2025,12 +2638,14 @@ TEST_F(ClientTest, ExecutePrepareWritesSuccess) {
 
   att::PrepareWriteQueue prep_write_queue;
   prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
-  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
+  prep_write_queue.push(
+      att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
 
   EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
   EXPECT_PACKET_OUT(kExpectedPrep2, &kResponse2);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
-  client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kDisabled, cb);
+  client()->ExecutePrepareWrites(
+      std::move(prep_write_queue), ReliableMode::kDisabled, cb);
   RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_EQ(fit::ok(), status);
@@ -2046,22 +2661,33 @@ TEST_F(ClientTest, ExecutePrepareWritesMalformedFailure) {
   const StaticByteBuffer kValue1('f', 'o');
   const StaticByteBuffer kValue2('b', 'a', 'r');
 
-  const StaticByteBuffer kExpectedPrep1(0x16,        // opcode: prepare write request
-                                        0x01, 0x00,  // handle: 0x0001
-                                        0x00, 0x00,  // offset: 0x0000
-                                        'f', 'o'     // value: "fo"
+  const StaticByteBuffer kExpectedPrep1(0x16,  // opcode: prepare write request
+                                        0x01,
+                                        0x00,  // handle: 0x0001
+                                        0x00,
+                                        0x00,  // offset: 0x0000
+                                        'f',
+                                        'o'  // value: "fo"
   );
-  const auto kResponse1 = StaticByteBuffer(0x17,        // opcode: prepare write response
-                                           0x01, 0x00,  // handle: 0x0001
-                                           0x00, 0x00,  // offset: 0x0000
-                                           'f', 'o'     // value: "fo"
-  );
+  const auto kResponse1 =
+      StaticByteBuffer(0x17,  // opcode: prepare write response
+                       0x01,
+                       0x00,  // handle: 0x0001
+                       0x00,
+                       0x00,  // offset: 0x0000
+                       'f',
+                       'o'  // value: "fo"
+      );
   // The second request is malformed, the client should send an ExecuteWrite
   // instead of the malformed PrepareWrite.
-  const StaticByteBuffer kExpectedPrep2(0x16,          // opcode: prepare write request
-                                        0x01, 0x00,    // handle: 0x0001
-                                        0x02, 0x00,    // offset: 0x0002
-                                        'b', 'a', 'r'  // value: "bar"
+  const StaticByteBuffer kExpectedPrep2(0x16,  // opcode: prepare write request
+                                        0x01,
+                                        0x00,  // handle: 0x0001
+                                        0x02,
+                                        0x00,  // offset: 0x0002
+                                        'b',
+                                        'a',
+                                        'r'  // value: "bar"
   );
   const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
                                        0x00   // flag: kCancelAll
@@ -2078,11 +2704,13 @@ TEST_F(ClientTest, ExecutePrepareWritesMalformedFailure) {
 
   att::PrepareWriteQueue prep_write_queue;
   prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
-  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
+  prep_write_queue.push(
+      att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
 
   EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
-  client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kDisabled, cb);
+  client()->ExecutePrepareWrites(
+      std::move(prep_write_queue), ReliableMode::kDisabled, cb);
   RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
@@ -2095,16 +2723,22 @@ TEST_F(ClientTest, ExecutePrepareWritesErrorFailure) {
   const StaticByteBuffer kValue1('f', 'o', 'o');
   const StaticByteBuffer kValue2('b', 'a', 'r');
 
-  const StaticByteBuffer kExpectedPrep1(0x16,          // opcode: prepare write request
-                                        0x01, 0x00,    // handle: 0x0001
-                                        0x00, 0x00,    // offset: 0x0000
-                                        'f', 'o', 'o'  // value: "fo"
+  const StaticByteBuffer kExpectedPrep1(0x16,  // opcode: prepare write request
+                                        0x01,
+                                        0x00,  // handle: 0x0001
+                                        0x00,
+                                        0x00,  // offset: 0x0000
+                                        'f',
+                                        'o',
+                                        'o'  // value: "fo"
   );
-  const auto kResponse1 = StaticByteBuffer(0x01,        // opcode: error response
-                                           0x16,        // request: prepare write request
-                                           0x01, 0x00,  // handle: 0x0001
-                                           0x06         // error: Request Not Supported
-  );
+  const auto kResponse1 =
+      StaticByteBuffer(0x01,  // opcode: error response
+                       0x16,  // request: prepare write request
+                       0x01,
+                       0x00,  // handle: 0x0001
+                       0x06   // error: Request Not Supported
+      );
   // The first request returned an error, the client should send an ExecuteWrite
   // instead of the second PrepareWrite.
   const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
@@ -2118,11 +2752,13 @@ TEST_F(ClientTest, ExecutePrepareWritesErrorFailure) {
   // Create the PrepareWriteQueue of requests to pass to the client
   att::PrepareWriteQueue prep_write_queue;
   prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
-  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
+  prep_write_queue.push(
+      att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
 
   EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
-  client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kDisabled, cb);
+  client()->ExecutePrepareWrites(
+      std::move(prep_write_queue), ReliableMode::kDisabled, cb);
   RunUntilIdle();
   EXPECT_EQ(ToResult(att::ErrorCode::kRequestNotSupported), status);
   EXPECT_FALSE(fake_chan()->link_error());
@@ -2137,70 +2773,112 @@ TEST_F(ClientTest, ExecutePrepareWritesEnqueueRequestSuccess) {
   const StaticByteBuffer kValue1('f', 'o', 'o');
   const StaticByteBuffer kValue2('b', 'a', 'r');
 
-  const StaticByteBuffer kExpectedPrep1(0x16,          // opcode: prepare write request
-                                        0x01, 0x00,    // handle: 0x0001
-                                        0x00, 0x00,    // offset: 0x0000
-                                        'f', 'o', 'o'  // value: "foo"
+  const StaticByteBuffer kExpectedPrep1(0x16,  // opcode: prepare write request
+                                        0x01,
+                                        0x00,  // handle: 0x0001
+                                        0x00,
+                                        0x00,  // offset: 0x0000
+                                        'f',
+                                        'o',
+                                        'o'  // value: "foo"
   );
-  const auto kResponse1 = StaticByteBuffer(0x17,          // opcode: prepare write response
-                                           0x01, 0x00,    // handle: 0x0001
-                                           0x00, 0x00,    // offset: 0x0000
-                                           'f', 'o', 'o'  // value: "foo"
+  const auto kResponse1 =
+      StaticByteBuffer(0x17,  // opcode: prepare write response
+                       0x01,
+                       0x00,  // handle: 0x0001
+                       0x00,
+                       0x00,  // offset: 0x0000
+                       'f',
+                       'o',
+                       'o'  // value: "foo"
+      );
+  const StaticByteBuffer kExpectedPrep2(0x16,  // opcode: prepare write request
+                                        0x01,
+                                        0x00,  // handle: 0x0001
+                                        0x03,
+                                        0x00,  // offset: 0x0003
+                                        'b',
+                                        'a',
+                                        'r'  // value: "bar"
   );
-  const StaticByteBuffer kExpectedPrep2(0x16,          // opcode: prepare write request
-                                        0x01, 0x00,    // handle: 0x0001
-                                        0x03, 0x00,    // offset: 0x0003
-                                        'b', 'a', 'r'  // value: "bar"
-  );
-  const auto kResponse2 = StaticByteBuffer(0x17,          // opcode: prepare write response
-                                           0x01, 0x00,    // handle: 0x0001
-                                           0x03, 0x00,    // offset: 0x0003
-                                           'b', 'a', 'r'  // value: "bar"
-  );
+  const auto kResponse2 =
+      StaticByteBuffer(0x17,  // opcode: prepare write response
+                       0x01,
+                       0x00,  // handle: 0x0001
+                       0x03,
+                       0x00,  // offset: 0x0003
+                       'b',
+                       'a',
+                       'r'  // value: "bar"
+      );
   // Start second write:
-  const StaticByteBuffer kExpectedPrep3(0x16,          // opcode: prepare write request
-                                        0x02, 0x00,    // handle: 0x0002
-                                        0x00, 0x00,    // offset: 0x0000
-                                        'f', 'o', 'o'  // value: "foo"
+  const StaticByteBuffer kExpectedPrep3(0x16,  // opcode: prepare write request
+                                        0x02,
+                                        0x00,  // handle: 0x0002
+                                        0x00,
+                                        0x00,  // offset: 0x0000
+                                        'f',
+                                        'o',
+                                        'o'  // value: "foo"
   );
-  const auto kResponse3 = StaticByteBuffer(0x17,          // opcode: prepare write response
-                                           0x02, 0x00,    // handle: 0x0002
-                                           0x00, 0x00,    // offset: 0x0000
-                                           'f', 'o', 'o'  // value: "foo"
+  const auto kResponse3 =
+      StaticByteBuffer(0x17,  // opcode: prepare write response
+                       0x02,
+                       0x00,  // handle: 0x0002
+                       0x00,
+                       0x00,  // offset: 0x0000
+                       'f',
+                       'o',
+                       'o'  // value: "foo"
+      );
+  const StaticByteBuffer kExpectedPrep4(0x16,  // opcode: prepare write request
+                                        0x02,
+                                        0x00,  // handle: 0x0002
+                                        0x03,
+                                        0x00,  // offset: 0x0003
+                                        'b',
+                                        'a',
+                                        'r'  // value: "bar"
   );
-  const StaticByteBuffer kExpectedPrep4(0x16,          // opcode: prepare write request
-                                        0x02, 0x00,    // handle: 0x0002
-                                        0x03, 0x00,    // offset: 0x0003
-                                        'b', 'a', 'r'  // value: "bar"
-  );
-  const auto kResponse4 = StaticByteBuffer(0x17,          // opcode: prepare write response
-                                           0x02, 0x00,    // handle: 0x0002
-                                           0x03, 0x00,    // offset: 0x0003
-                                           'b', 'a', 'r'  // value: "bar"
-  );
+  const auto kResponse4 =
+      StaticByteBuffer(0x17,  // opcode: prepare write response
+                       0x02,
+                       0x00,  // handle: 0x0002
+                       0x03,
+                       0x00,  // offset: 0x0003
+                       'b',
+                       'a',
+                       'r'  // value: "bar"
+      );
   const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
                                        0x01   // flag: write pending
   );
-  const auto kExecuteWriteResponse = StaticByteBuffer(0x19);  // opcode: execute write response
+  const auto kExecuteWriteResponse =
+      StaticByteBuffer(0x19);  // opcode: execute write response
 
   att::Result<> status1 = fit::ok();
   auto cb1 = [&status1](att::Result<> cb_status) { status1 = cb_status; };
   att::PrepareWriteQueue prep_write_queue1;
   prep_write_queue1.push(att::QueuedWrite(kHandle1, kOffset, kValue1));
-  prep_write_queue1.push(att::QueuedWrite(kHandle1, kOffset + kValue1.size(), kValue2));
+  prep_write_queue1.push(
+      att::QueuedWrite(kHandle1, kOffset + kValue1.size(), kValue2));
   EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
-  client()->ExecutePrepareWrites(std::move(prep_write_queue1), ReliableMode::kDisabled, cb1);
+  client()->ExecutePrepareWrites(
+      std::move(prep_write_queue1), ReliableMode::kDisabled, cb1);
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   att::Result<> status2 = fit::ok();
   auto cb2 = [&status2](att::Result<> cb_status) { status2 = cb_status; };
   att::PrepareWriteQueue prep_write_queue2;
   prep_write_queue2.push(att::QueuedWrite(kHandle2, kOffset, kValue1));
-  prep_write_queue2.push(att::QueuedWrite(kHandle2, kOffset + kValue1.size(), kValue2));
-  client()->ExecutePrepareWrites(std::move(prep_write_queue2), ReliableMode::kDisabled, cb2);
+  prep_write_queue2.push(
+      att::QueuedWrite(kHandle2, kOffset + kValue1.size(), kValue2));
+  client()->ExecutePrepareWrites(
+      std::move(prep_write_queue2), ReliableMode::kDisabled, cb2);
 
   EXPECT_PACKET_OUT(kExpectedPrep2, &kResponse2);
-  EXPECT_PACKET_OUT(kExpectedExec);  // Delay sending response so the status can be checked
+  EXPECT_PACKET_OUT(
+      kExpectedExec);  // Delay sending response so the status can be checked
   RunUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
   // The first request should be fully complete now, and should trigger the
@@ -2210,7 +2888,8 @@ TEST_F(ClientTest, ExecutePrepareWritesEnqueueRequestSuccess) {
   EXPECT_PACKET_OUT(kExpectedPrep3, &kResponse3);
   EXPECT_PACKET_OUT(kExpectedPrep4, &kResponse4);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecuteWriteResponse);
-  // Responding to the first execute request should start the second write request.
+  // Responding to the first execute request should start the second write
+  // request.
   fake_chan()->Receive(kExecuteWriteResponse);
   RunUntilIdle();
   EXPECT_EQ(fit::ok(), status2);
@@ -2227,26 +2906,43 @@ TEST_F(ClientTest, ExecutePrepareWritesDifferingResponseSuccess) {
   const StaticByteBuffer kValue1('f', 'o', 'o');
   const StaticByteBuffer kValue2('b', 'a', 'r');
 
-  const StaticByteBuffer kExpectedPrep1(0x16,          // opcode: prepare write request
-                                        0x01, 0x00,    // handle: 0x0001
-                                        0x00, 0x00,    // offset: 0x0000
-                                        'f', 'o', 'o'  // value: "foo"
+  const StaticByteBuffer kExpectedPrep1(0x16,  // opcode: prepare write request
+                                        0x01,
+                                        0x00,  // handle: 0x0001
+                                        0x00,
+                                        0x00,  // offset: 0x0000
+                                        'f',
+                                        'o',
+                                        'o'  // value: "foo"
   );
-  const auto kResponse1 = StaticByteBuffer(0x17,        // opcode: prepare write response
-                                           0x01, 0x00,  // handle: 0x0001
-                                           0x00, 0x00,  // offset: 0x0000
-                                           'f', 'l'     // value: "fl" -> different, but OK.
+  const auto kResponse1 =
+      StaticByteBuffer(0x17,  // opcode: prepare write response
+                       0x01,
+                       0x00,  // handle: 0x0001
+                       0x00,
+                       0x00,  // offset: 0x0000
+                       'f',
+                       'l'  // value: "fl" -> different, but OK.
+      );
+  const StaticByteBuffer kExpectedPrep2(0x16,  // opcode: prepare write request
+                                        0x01,
+                                        0x00,  // handle: 0x0001
+                                        0x03,
+                                        0x00,  // offset: 0x0003
+                                        'b',
+                                        'a',
+                                        'r'  // value: "bar"
   );
-  const StaticByteBuffer kExpectedPrep2(0x16,          // opcode: prepare write request
-                                        0x01, 0x00,    // handle: 0x0001
-                                        0x03, 0x00,    // offset: 0x0003
-                                        'b', 'a', 'r'  // value: "bar"
-  );
-  const auto kResponse2 = StaticByteBuffer(0x17,          // opcode: prepare write response
-                                           0x01, 0x00,    // handle: 0x0001
-                                           0x03, 0x00,    // offset: 0x0003
-                                           'b', 'a', 'r'  // value: "bar"
-  );
+  const auto kResponse2 =
+      StaticByteBuffer(0x17,  // opcode: prepare write response
+                       0x01,
+                       0x00,  // handle: 0x0001
+                       0x03,
+                       0x00,  // offset: 0x0003
+                       'b',
+                       'a',
+                       'r'  // value: "bar"
+      );
   const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
                                        0x01   // flag: write pending
   );
@@ -2258,10 +2954,12 @@ TEST_F(ClientTest, ExecutePrepareWritesDifferingResponseSuccess) {
   // Create the PrepareWriteQueue of requests to pass to the client
   att::PrepareWriteQueue prep_write_queue;
   prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
-  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
+  prep_write_queue.push(
+      att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
 
   EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
-  client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kDisabled, cb);
+  client()->ExecutePrepareWrites(
+      std::move(prep_write_queue), ReliableMode::kDisabled, cb);
   EXPECT_PACKET_OUT(kExpectedPrep2, &kResponse2);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
   RunUntilIdle();
@@ -2278,26 +2976,44 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableWriteSuccess) {
   const StaticByteBuffer kValue1('f', 'o', 'o');
   const StaticByteBuffer kValue2('b', 'a', 'r');
 
-  const StaticByteBuffer kExpectedPrep1(0x16,          // opcode: prepare write request
-                                        0x01, 0x00,    // handle: 0x0001
-                                        0x00, 0x00,    // offset: 0x0000
-                                        'f', 'o', 'o'  // value: "foo"
+  const StaticByteBuffer kExpectedPrep1(0x16,  // opcode: prepare write request
+                                        0x01,
+                                        0x00,  // handle: 0x0001
+                                        0x00,
+                                        0x00,  // offset: 0x0000
+                                        'f',
+                                        'o',
+                                        'o'  // value: "foo"
   );
-  const auto kResponse1 = StaticByteBuffer(0x17,          // opcode: prepare write response
-                                           0x01, 0x00,    // handle: 0x0001
-                                           0x00, 0x00,    // offset: 0x0000
-                                           'f', 'o', 'o'  // value: "foo"
+  const auto kResponse1 =
+      StaticByteBuffer(0x17,  // opcode: prepare write response
+                       0x01,
+                       0x00,  // handle: 0x0001
+                       0x00,
+                       0x00,  // offset: 0x0000
+                       'f',
+                       'o',
+                       'o'  // value: "foo"
+      );
+  const StaticByteBuffer kExpectedPrep2(0x16,  // opcode: prepare write request
+                                        0x01,
+                                        0x00,  // handle: 0x0001
+                                        0x03,
+                                        0x00,  // offset: 0x0003
+                                        'b',
+                                        'a',
+                                        'r'  // value: "bar"
   );
-  const StaticByteBuffer kExpectedPrep2(0x16,          // opcode: prepare write request
-                                        0x01, 0x00,    // handle: 0x0001
-                                        0x03, 0x00,    // offset: 0x0003
-                                        'b', 'a', 'r'  // value: "bar"
-  );
-  const auto kResponse2 = StaticByteBuffer(0x17,          // opcode: prepare write response
-                                           0x01, 0x00,    // handle: 0x0001
-                                           0x03, 0x00,    // offset: 0x0003
-                                           'b', 'a', 'r'  // value: "bar"
-  );
+  const auto kResponse2 =
+      StaticByteBuffer(0x17,  // opcode: prepare write response
+                       0x01,
+                       0x00,  // handle: 0x0001
+                       0x03,
+                       0x00,  // offset: 0x0003
+                       'b',
+                       'a',
+                       'r'  // value: "bar"
+      );
   const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
                                        0x01   // flag: write pending
   );
@@ -2309,10 +3025,12 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableWriteSuccess) {
   // Create the PrepareWriteQueue of requests to pass to the client
   att::PrepareWriteQueue prep_write_queue;
   prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
-  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
+  prep_write_queue.push(
+      att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
 
   EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
-  client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
+  client()->ExecutePrepareWrites(
+      std::move(prep_write_queue), ReliableMode::kEnabled, cb);
   EXPECT_PACKET_OUT(kExpectedPrep2, &kResponse2);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
   RunUntilIdle();
@@ -2328,14 +3046,19 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableEmptyBufSuccess) {
   const auto kOffset = 0;
   const auto kValue1 = BufferView();
 
-  const StaticByteBuffer kExpectedPrep1(0x16,        // opcode: prepare write request
-                                        0x01, 0x00,  // handle: 0x0001
-                                        0x00, 0x00   // offset: 0x0000
+  const StaticByteBuffer kExpectedPrep1(0x16,  // opcode: prepare write request
+                                        0x01,
+                                        0x00,  // handle: 0x0001
+                                        0x00,
+                                        0x00  // offset: 0x0000
   );
-  const auto kResponse1 = StaticByteBuffer(0x17,        // opcode: prepare write response
-                                           0x01, 0x00,  // handle: 0x0001
-                                           0x00, 0x00   // offset: 0x0000
-  );
+  const auto kResponse1 =
+      StaticByteBuffer(0x17,  // opcode: prepare write response
+                       0x01,
+                       0x00,  // handle: 0x0001
+                       0x00,
+                       0x00  // offset: 0x0000
+      );
   const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
                                        0x01   // flag: write pending
   );
@@ -2348,7 +3071,8 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableEmptyBufSuccess) {
   prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
 
   EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
-  client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
+  client()->ExecutePrepareWrites(
+      std::move(prep_write_queue), ReliableMode::kEnabled, cb);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
   RunUntilIdle();
   EXPECT_EQ(fit::ok(), status);
@@ -2364,16 +3088,26 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableDifferingResponseError) {
   const StaticByteBuffer kValue1('f', 'o', 'o');
   const StaticByteBuffer kValue2('b', 'a', 'r');
 
-  const StaticByteBuffer kExpectedPrep1(0x16,          // opcode: prepare write request
-                                        0x01, 0x00,    // handle: 0x0001
-                                        0x00, 0x00,    // offset: 0x0000
-                                        'f', 'o', 'o'  // value: "foo"
+  const StaticByteBuffer kExpectedPrep1(0x16,  // opcode: prepare write request
+                                        0x01,
+                                        0x00,  // handle: 0x0001
+                                        0x00,
+                                        0x00,  // offset: 0x0000
+                                        'f',
+                                        'o',
+                                        'o'  // value: "foo"
   );
-  const auto kResponse1 = StaticByteBuffer(0x17,               // opcode: prepare write response
-                                           0x01, 0x00,         // handle: 0x0001
-                                           0x00, 0x00,         // offset: 0x0000
-                                           'f', 'o', 'b', '1'  // value: "fob1" -> invalid
-  );
+  const auto kResponse1 =
+      StaticByteBuffer(0x17,  // opcode: prepare write response
+                       0x01,
+                       0x00,  // handle: 0x0001
+                       0x00,
+                       0x00,  // offset: 0x0000
+                       'f',
+                       'o',
+                       'b',
+                       '1'  // value: "fob1" -> invalid
+      );
   // The first response was invalid, the client should send an ExecuteWrite
   // instead of the second PrepareWrite.
   const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
@@ -2386,10 +3120,12 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableDifferingResponseError) {
 
   att::PrepareWriteQueue prep_write_queue;
   prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
-  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
+  prep_write_queue.push(
+      att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
 
   EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
-  client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
+  client()->ExecutePrepareWrites(
+      std::move(prep_write_queue), ReliableMode::kEnabled, cb);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
   RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kNotReliable), status);
@@ -2405,15 +3141,21 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableMalformedResponseError) {
   const StaticByteBuffer kValue1('f', 'o', 'o');
   const StaticByteBuffer kValue2('b', 'a', 'r');
 
-  const StaticByteBuffer kExpectedPrep1(0x16,          // opcode: prepare write request
-                                        0x01, 0x00,    // handle: 0x0001
-                                        0x00, 0x00,    // offset: 0x0000
-                                        'f', 'o', 'o'  // value: "foo"
+  const StaticByteBuffer kExpectedPrep1(0x16,  // opcode: prepare write request
+                                        0x01,
+                                        0x00,  // handle: 0x0001
+                                        0x00,
+                                        0x00,  // offset: 0x0000
+                                        'f',
+                                        'o',
+                                        'o'  // value: "foo"
   );
-  const auto kResponse1 = StaticByteBuffer(0x17,        // opcode: prepare write response
-                                           0x01, 0x00,  // handle: 0x0001
-                                           0x00         // offset: malformed
-  );
+  const auto kResponse1 =
+      StaticByteBuffer(0x17,  // opcode: prepare write response
+                       0x01,
+                       0x00,  // handle: 0x0001
+                       0x00   // offset: malformed
+      );
   // The first response was malformed, the client should send an ExecuteWrite
   // instead of the second PrepareWrite.
   const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
@@ -2426,10 +3168,12 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableMalformedResponseError) {
 
   att::PrepareWriteQueue prep_write_queue;
   prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
-  prep_write_queue.push(att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
+  prep_write_queue.push(
+      att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
 
   EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
-  client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
+  client()->ExecutePrepareWrites(
+      std::move(prep_write_queue), ReliableMode::kEnabled, cb);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
   RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kNotReliable), status);
@@ -2444,16 +3188,25 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableOffsetMismatchError) {
   const auto kOffset = 0;
   const StaticByteBuffer kValue1('f', 'o', 'o');
 
-  const StaticByteBuffer kExpectedPrep1(0x16,          // opcode: prepare write request
-                                        0x01, 0x00,    // handle: 0x0001
-                                        0x00, 0x00,    // offset: 0x0000
-                                        'f', 'o', 'o'  // value: "foo"
+  const StaticByteBuffer kExpectedPrep1(0x16,  // opcode: prepare write request
+                                        0x01,
+                                        0x00,  // handle: 0x0001
+                                        0x00,
+                                        0x00,  // offset: 0x0000
+                                        'f',
+                                        'o',
+                                        'o'  // value: "foo"
   );
-  const auto kResponse1 = StaticByteBuffer(0x17,          // opcode: prepare write response
-                                           0x01, 0x00,    // handle: 0x0001
-                                           0x01, 0x00,    // offset: incorrect
-                                           'f', 'o', 'o'  // value: 'foo'
-  );
+  const auto kResponse1 =
+      StaticByteBuffer(0x17,  // opcode: prepare write response
+                       0x01,
+                       0x00,  // handle: 0x0001
+                       0x01,
+                       0x00,  // offset: incorrect
+                       'f',
+                       'o',
+                       'o'  // value: 'foo'
+      );
   // The first response was malformed, the client should send an ExecuteWrite
   // instead of the second PrepareWrite.
   const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
@@ -2468,7 +3221,8 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableOffsetMismatchError) {
   prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
 
   EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
-  client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
+  client()->ExecutePrepareWrites(
+      std::move(prep_write_queue), ReliableMode::kEnabled, cb);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
   RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kNotReliable), status);
@@ -2483,17 +3237,24 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableEmptyValueError) {
   const auto kOffset = 0;
   const StaticByteBuffer kValue1('f', 'o', 'o');
 
-  const StaticByteBuffer kExpectedPrep1(0x16,          // opcode: prepare write request
-                                        0x01, 0x00,    // handle: 0x0001
-                                        0x00, 0x00,    // offset: 0x0000
-                                        'f', 'o', 'o'  // value: "foo"
+  const StaticByteBuffer kExpectedPrep1(0x16,  // opcode: prepare write request
+                                        0x01,
+                                        0x00,  // handle: 0x0001
+                                        0x00,
+                                        0x00,  // offset: 0x0000
+                                        'f',
+                                        'o',
+                                        'o'  // value: "foo"
   );
-  const auto kResponse1 = StaticByteBuffer(0x17,        // opcode: prepare write response
-                                           0x01, 0x00,  // handle: 0x0001
-                                           0x00, 0x00   // offset: 0x0000
-  );
-  // The first response was malformed (empty value), the client should send an ExecuteWrite instead
-  // of the second PrepareWrite.
+  const auto kResponse1 =
+      StaticByteBuffer(0x17,  // opcode: prepare write response
+                       0x01,
+                       0x00,  // handle: 0x0001
+                       0x00,
+                       0x00  // offset: 0x0000
+      );
+  // The first response was malformed (empty value), the client should send an
+  // ExecuteWrite instead of the second PrepareWrite.
   const StaticByteBuffer kExpectedExec(0x18,  // opcode: execute write request
                                        0x00   // flag: kCancelAll
   );
@@ -2506,7 +3267,8 @@ TEST_F(ClientTest, ExecutePrepareWritesReliableEmptyValueError) {
   prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
 
   EXPECT_PACKET_OUT(kExpectedPrep1, &kResponse1);
-  client()->ExecutePrepareWrites(std::move(prep_write_queue), ReliableMode::kEnabled, cb);
+  client()->ExecutePrepareWrites(
+      std::move(prep_write_queue), ReliableMode::kEnabled, cb);
   EXPECT_PACKET_OUT(kExpectedExec, &kExecResponse);
   RunUntilIdle();
   EXPECT_EQ(ToResult(HostError::kNotReliable), status);
@@ -2518,16 +3280,19 @@ TEST_F(ClientTest, WriteWithoutResponseExceedsMtu) {
   constexpr att::Handle kHandle = 0x0001;
   constexpr size_t kMtu = 5;
   att()->set_mtu(kMtu);
-  const StaticByteBuffer kExpectedRequest(0x52,          // opcode: write command
-                                          0x01, 0x00,    // handle: 0x0001
-                                          'f', 'o', 'o'  // value: "foo"
+  const StaticByteBuffer kExpectedRequest(0x52,  // opcode: write command
+                                          0x01,
+                                          0x00,  // handle: 0x0001
+                                          'f',
+                                          'o',
+                                          'o'  // value: "foo"
   );
   ASSERT_EQ(kMtu + 1, kExpectedRequest.size());
 
   std::optional<att::Result<>> status;
   // No packet should be sent.
-  client()->WriteWithoutResponse(kHandle, kValue,
-                                 [&](att::Result<> cb_status) { status = cb_status; });
+  client()->WriteWithoutResponse(
+      kHandle, kValue, [&](att::Result<> cb_status) { status = cb_status; });
   RunUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(ToResult(HostError::kFailed), *status);
@@ -2536,28 +3301,34 @@ TEST_F(ClientTest, WriteWithoutResponseExceedsMtu) {
 TEST_F(ClientTest, WriteWithoutResponseSuccess) {
   const StaticByteBuffer kValue('f', 'o', 'o');
   const auto kHandle = 0x0001;
-  const StaticByteBuffer kExpectedRequest(0x52,          // opcode: write request
-                                          0x01, 0x00,    // handle: 0x0001
-                                          'f', 'o', 'o'  // value: "foo"
+  const StaticByteBuffer kExpectedRequest(0x52,  // opcode: write request
+                                          0x01,
+                                          0x00,  // handle: 0x0001
+                                          'f',
+                                          'o',
+                                          'o'  // value: "foo"
   );
   std::optional<att::Result<>> status;
   EXPECT_PACKET_OUT(kExpectedRequest);
-  client()->WriteWithoutResponse(kHandle, kValue,
-                                 [&](att::Result<> cb_status) { status = cb_status; });
+  client()->WriteWithoutResponse(
+      kHandle, kValue, [&](att::Result<> cb_status) { status = cb_status; });
   ASSERT_TRUE(status.has_value());
   ASSERT_EQ(fit::ok(), *status);
 }
 
 TEST_F(ClientTest, ReadRequestEmptyResponse) {
   constexpr att::Handle kHandle = 0x0001;
-  const StaticByteBuffer kExpectedRequest(0x0A,       // opcode: read request
-                                          0x01, 0x00  // handle: 0x0001
+  const StaticByteBuffer kExpectedRequest(0x0A,  // opcode: read request
+                                          0x01,
+                                          0x00  // handle: 0x0001
   );
   // ATT Read Response with no payload.
   const StaticByteBuffer kResponse(0x0B);
 
   att::Result<> status = ToResult(HostError::kFailed);
-  auto cb = [&status](att::Result<> cb_status, const ByteBuffer& value, bool maybe_truncated) {
+  auto cb = [&status](att::Result<> cb_status,
+                      const ByteBuffer& value,
+                      bool maybe_truncated) {
     status = cb_status;
 
     // We expect an empty value
@@ -2574,16 +3345,22 @@ TEST_F(ClientTest, ReadRequestEmptyResponse) {
 
 TEST_F(ClientTest, ReadRequestSuccess) {
   constexpr att::Handle kHandle = 0x0001;
-  const StaticByteBuffer kExpectedRequest(0x0A,       // opcode: read request
-                                          0x01, 0x00  // handle: 0x0001
+  const StaticByteBuffer kExpectedRequest(0x0A,  // opcode: read request
+                                          0x01,
+                                          0x00  // handle: 0x0001
   );
 
-  const StaticByteBuffer kExpectedResponse(0x0B,               // opcode: read response
-                                           't', 'e', 's', 't'  // value: "test"
+  const StaticByteBuffer kExpectedResponse(0x0B,  // opcode: read response
+                                           't',
+                                           'e',
+                                           's',
+                                           't'  // value: "test"
   );
 
   att::Result<> status = ToResult(HostError::kFailed);
-  auto cb = [&](att::Result<> cb_status, const ByteBuffer& value, bool maybe_truncated) {
+  auto cb = [&](att::Result<> cb_status,
+                const ByteBuffer& value,
+                bool maybe_truncated) {
     status = cb_status;
     EXPECT_TRUE(ContainersEqual(kExpectedResponse.view(1), value));
     EXPECT_FALSE(maybe_truncated);
@@ -2599,7 +3376,8 @@ TEST_F(ClientTest, ReadRequestSuccess) {
 TEST_F(ClientTest, ReadRequestSuccessMaybeTruncatedDueToMtu) {
   constexpr att::Handle kHandle = 0x0001;
   const auto kExpectedRequest = StaticByteBuffer(0x0A,  // opcode: read request
-                                                 LowerBits(kHandle), UpperBits(kHandle)  // handle
+                                                 LowerBits(kHandle),
+                                                 UpperBits(kHandle)  // handle
   );
 
   DynamicByteBuffer expected_response(att()->mtu());
@@ -2607,7 +3385,9 @@ TEST_F(ClientTest, ReadRequestSuccessMaybeTruncatedDueToMtu) {
   expected_response.WriteObj(att::kReadResponse);  // opcode: read response
 
   att::Result<> status = ToResult(HostError::kFailed);
-  auto cb = [&](att::Result<> cb_status, const ByteBuffer& value, bool maybe_truncated) {
+  auto cb = [&](att::Result<> cb_status,
+                const ByteBuffer& value,
+                bool maybe_truncated) {
     status = cb_status;
     EXPECT_TRUE(ContainersEqual(expected_response.view(1), value));
     EXPECT_TRUE(maybe_truncated);
@@ -2621,13 +3401,15 @@ TEST_F(ClientTest, ReadRequestSuccessMaybeTruncatedDueToMtu) {
 }
 
 TEST_F(ClientTest, ReadRequestSuccessNotTruncatedWhenMtuAllowsMaxValueLength) {
-  constexpr uint16_t kPreferredMTU = att::kMaxAttributeValueLength + sizeof(att::OpCode);
+  constexpr uint16_t kPreferredMTU =
+      att::kMaxAttributeValueLength + sizeof(att::OpCode);
   att()->set_preferred_mtu(kPreferredMTU);
   constexpr uint16_t kServerRxMTU = kPreferredMTU;
 
   const auto kExpectedMtuRequest =
-      StaticByteBuffer(0x02,                                               // opcode: exchange MTU
-                       LowerBits(kPreferredMTU), UpperBits(kPreferredMTU)  // client rx mtu
+      StaticByteBuffer(0x02,  // opcode: exchange MTU
+                       LowerBits(kPreferredMTU),
+                       UpperBits(kPreferredMTU)  // client rx mtu
       );
 
   std::optional<att::Result<uint16_t>> result;
@@ -2636,10 +3418,11 @@ TEST_F(ClientTest, ReadRequestSuccessNotTruncatedWhenMtuAllowsMaxValueLength) {
   EXPECT_PACKET_OUT(kExpectedMtuRequest);
   client()->ExchangeMTU(mtu_cb);
   ASSERT_EQ(att::kLEMinMTU, att()->mtu());
-  fake_chan()->Receive(StaticByteBuffer(0x03,  // opcode: exchange MTU response
-                                        LowerBits(kServerRxMTU),
-                                        UpperBits(kServerRxMTU)  // server rx mtu
-                                        ));
+  fake_chan()->Receive(StaticByteBuffer(
+      0x03,  // opcode: exchange MTU response
+      LowerBits(kServerRxMTU),
+      UpperBits(kServerRxMTU)  // server rx mtu
+      ));
   RunUntilIdle();
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(att::Result<uint16_t>(fit::ok(kPreferredMTU)), *result);
@@ -2647,8 +3430,9 @@ TEST_F(ClientTest, ReadRequestSuccessNotTruncatedWhenMtuAllowsMaxValueLength) {
 
   constexpr att::Handle kHandle = 0x0001;
   const auto kExpectedReadRequest =
-      StaticByteBuffer(0x0A,                                   // opcode: read request
-                       LowerBits(kHandle), UpperBits(kHandle)  // handle
+      StaticByteBuffer(0x0A,  // opcode: read request
+                       LowerBits(kHandle),
+                       UpperBits(kHandle)  // handle
       );
 
   DynamicByteBuffer expected_response(att()->mtu());
@@ -2656,7 +3440,9 @@ TEST_F(ClientTest, ReadRequestSuccessNotTruncatedWhenMtuAllowsMaxValueLength) {
   expected_response.WriteObj(att::kReadResponse);  // opcode: read response
 
   att::Result<> status = ToResult(HostError::kFailed);
-  auto cb = [&](att::Result<> cb_status, const ByteBuffer& value, bool maybe_truncated) {
+  auto cb = [&](att::Result<> cb_status,
+                const ByteBuffer& value,
+                bool maybe_truncated) {
     status = cb_status;
     EXPECT_TRUE(ContainersEqual(expected_response.view(1), value));
     EXPECT_FALSE(maybe_truncated);
@@ -2671,17 +3457,21 @@ TEST_F(ClientTest, ReadRequestSuccessNotTruncatedWhenMtuAllowsMaxValueLength) {
 
 TEST_F(ClientTest, ReadRequestError) {
   constexpr att::Handle kHandle = 0x0001;
-  const StaticByteBuffer kExpectedRequest(0x0A,       // opcode: read request
-                                          0x01, 0x00  // handle: 0x0001
+  const StaticByteBuffer kExpectedRequest(0x0A,  // opcode: read request
+                                          0x01,
+                                          0x00  // handle: 0x0001
   );
-  const StaticByteBuffer kErrorResponse(0x01,        // opcode: error response
-                                        0x0A,        // request: read request
-                                        0x01, 0x00,  // handle: 0x0001
-                                        0x06         // error: Request Not Supported
+  const StaticByteBuffer kErrorResponse(0x01,  // opcode: error response
+                                        0x0A,  // request: read request
+                                        0x01,
+                                        0x00,  // handle: 0x0001
+                                        0x06   // error: Request Not Supported
   );
 
   att::Result<> status = fit::ok();
-  auto cb = [&](att::Result<> cb_status, const ByteBuffer& value, bool maybe_truncated) {
+  auto cb = [&](att::Result<> cb_status,
+                const ByteBuffer& value,
+                bool maybe_truncated) {
     status = cb_status;
 
     // Value should be empty due to the error.
@@ -2701,20 +3491,26 @@ TEST_F(ClientTest, ReadByTypeRequestSuccess16BitUUID) {
   constexpr att::Handle kStartHandle = 0x0001;
   constexpr att::Handle kEndHandle = 0xFFFF;
   const auto kExpectedRequest =
-      StaticByteBuffer(att::kReadByTypeRequest,                           // opcode
-                       LowerBits(kStartHandle), UpperBits(kStartHandle),  // start handle
-                       LowerBits(kEndHandle), UpperBits(kEndHandle),      // end handle
+      StaticByteBuffer(att::kReadByTypeRequest,  // opcode
+                       LowerBits(kStartHandle),
+                       UpperBits(kStartHandle),  // start handle
+                       LowerBits(kEndHandle),
+                       UpperBits(kEndHandle),  // end handle
                        // UUID
-                       0xEF, 0xBE);
+                       0xEF,
+                       0xBE);
 
   constexpr att::Handle kHandle0 = 0x0002;
   constexpr att::Handle kHandle1 = 0x0003;
-  const auto kExpectedResponse =
-      StaticByteBuffer(att::kReadByTypeResponse,
-                       0x03,                                            // pair length
-                       LowerBits(kHandle0), UpperBits(kHandle0), 0x00,  // attribute pair 0
-                       LowerBits(kHandle1), UpperBits(kHandle1), 0x01   // attribute pair 1
-      );
+  const auto kExpectedResponse = StaticByteBuffer(att::kReadByTypeResponse,
+                                                  0x03,  // pair length
+                                                  LowerBits(kHandle0),
+                                                  UpperBits(kHandle0),
+                                                  0x00,  // attribute pair 0
+                                                  LowerBits(kHandle1),
+                                                  UpperBits(kHandle1),
+                                                  0x01  // attribute pair 1
+  );
 
   bool cb_called = false;
   auto cb = [&](Client::ReadByTypeResult result) {
@@ -2742,20 +3538,40 @@ TEST_F(ClientTest, ReadByTypeRequestSuccess128BitUUID) {
   constexpr att::Handle kStartHandle = 0x0001;
   constexpr att::Handle kEndHandle = 0xFFFF;
   const auto kExpectedRequest =
-      StaticByteBuffer(att::kReadByTypeRequest,                           // opcode
-                       LowerBits(kStartHandle), UpperBits(kStartHandle),  // start handle
-                       LowerBits(kEndHandle), UpperBits(kEndHandle),      // end handle
+      StaticByteBuffer(att::kReadByTypeRequest,  // opcode
+                       LowerBits(kStartHandle),
+                       UpperBits(kStartHandle),  // start handle
+                       LowerBits(kEndHandle),
+                       UpperBits(kEndHandle),  // end handle
                        // UUID
-                       0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+                       0,
+                       1,
+                       2,
+                       3,
+                       4,
+                       5,
+                       6,
+                       7,
+                       8,
+                       9,
+                       10,
+                       11,
+                       12,
+                       13,
+                       14,
+                       15);
 
   constexpr att::Handle kHandle0 = 0x0002;
   constexpr att::Handle kHandle1 = 0x0003;
-  const auto kExpectedResponse =
-      StaticByteBuffer(att::kReadByTypeResponse,
-                       0x03,                                            // pair length
-                       LowerBits(kHandle0), UpperBits(kHandle0), 0x00,  // attribute pair 0
-                       LowerBits(kHandle1), UpperBits(kHandle1), 0x01   // attribute pair 1
-      );
+  const auto kExpectedResponse = StaticByteBuffer(att::kReadByTypeResponse,
+                                                  0x03,  // pair length
+                                                  LowerBits(kHandle0),
+                                                  UpperBits(kHandle0),
+                                                  0x00,  // attribute pair 0
+                                                  LowerBits(kHandle1),
+                                                  UpperBits(kHandle1),
+                                                  0x01  // attribute pair 1
+  );
 
   bool cb_called = false;
   auto cb = [&](Client::ReadByTypeResult result) {
@@ -2780,18 +3596,36 @@ TEST_F(ClientTest, ReadByTypeRequestError) {
   constexpr att::Handle kStartHandle = 0x0001;
   constexpr att::Handle kEndHandle = 0xFFFF;
   const auto kExpectedRequest =
-      StaticByteBuffer(att::kReadByTypeRequest,                           // opcode
-                       LowerBits(kStartHandle), UpperBits(kStartHandle),  // start handle
-                       LowerBits(kEndHandle), UpperBits(kEndHandle),      // end handle
+      StaticByteBuffer(att::kReadByTypeRequest,  // opcode
+                       LowerBits(kStartHandle),
+                       UpperBits(kStartHandle),  // start handle
+                       LowerBits(kEndHandle),
+                       UpperBits(kEndHandle),  // end handle
                        // UUID matches |kTestUuid3| declared above.
-                       0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+                       0,
+                       1,
+                       2,
+                       3,
+                       4,
+                       5,
+                       6,
+                       7,
+                       8,
+                       9,
+                       10,
+                       11,
+                       12,
+                       13,
+                       14,
+                       15);
 
-  const auto kErrorResponse =
-      StaticByteBuffer(att::kErrorResponse,                                      // opcode
-                       att::kReadByTypeRequest,                                  // request opcode
-                       LowerBits(kStartHandle), UpperBits(kStartHandle),         // start handle
-                       static_cast<uint8_t>(att::ErrorCode::kAttributeNotFound)  // error code
-      );
+  const auto kErrorResponse = StaticByteBuffer(
+      att::kErrorResponse,      // opcode
+      att::kReadByTypeRequest,  // request opcode
+      LowerBits(kStartHandle),
+      UpperBits(kStartHandle),                                  // start handle
+      static_cast<uint8_t>(att::ErrorCode::kAttributeNotFound)  // error code
+  );
 
   std::optional<att::Error> error;
   std::optional<att::Handle> handle;
@@ -2825,55 +3659,83 @@ TEST_F(ClientTest, ReadByTypeRequestInvalidResponses) {
   const auto kResponseWithInvalidLength =
       StaticByteBuffer(att::kReadByTypeResponse,
                        0x00,  // invalid pair length (less than handle size)
-                       LowerBits(kHandle0), UpperBits(kHandle0), 0x00);  // attribute pair 0
+                       LowerBits(kHandle0),
+                       UpperBits(kHandle0),
+                       0x00);  // attribute pair 0
   const auto kResponseWithEmptyList = StaticByteBuffer(att::kReadByTypeResponse,
                                                        0x03);  // pair length
   const auto kResponseWithInvalidList = StaticByteBuffer(
       att::kReadByTypeResponse,
-      0x03,                                       // length
-      LowerBits(kHandle0), UpperBits(kHandle0));  // invalid attribute pair 0 (invalid length)
+      0x03,  // length
+      LowerBits(kHandle0),
+      UpperBits(kHandle0));  // invalid attribute pair 0 (invalid length)
   const auto kResponseWithInvalidAttributeHandleLessThanStart =
       StaticByteBuffer(att::kReadByTypeResponse,
                        0x02,  // length
                        // invalid attribute pair 0 (handle out of range)
-                       LowerBits(kStartHandle - 1), UpperBits(kStartHandle - 1));
+                       LowerBits(kStartHandle - 1),
+                       UpperBits(kStartHandle - 1));
   const auto kResponseWithInvalidAttributeHandleGreaterThanEnd =
       StaticByteBuffer(att::kReadByTypeResponse,
                        0x02,  // length
                        // invalid attribute pair 0 (handle out of range)
-                       LowerBits(kEndHandle + 1), UpperBits(kEndHandle + 1));
+                       LowerBits(kEndHandle + 1),
+                       UpperBits(kEndHandle + 1));
   const auto kResponseWithInvalidListWithDecreasingHandles =
       StaticByteBuffer(att::kReadByTypeResponse,
-                       0x02,                                       // length
-                       LowerBits(kHandle1), UpperBits(kHandle1),   // attribute pair 0
-                       LowerBits(kHandle0), UpperBits(kHandle0));  // attribute pair 1
+                       0x02,  // length
+                       LowerBits(kHandle1),
+                       UpperBits(kHandle1),  // attribute pair 0
+                       LowerBits(kHandle0),
+                       UpperBits(kHandle0));  // attribute pair 1
   const auto kResponseWithInvalidListWithDuplicateHandles =
       StaticByteBuffer(att::kReadByTypeResponse,
-                       0x02,                                       // length
-                       LowerBits(kHandle0), UpperBits(kHandle0),   // attribute pair 0
-                       LowerBits(kHandle0), UpperBits(kHandle0));  // attribute pair 1
+                       0x02,  // length
+                       LowerBits(kHandle0),
+                       UpperBits(kHandle0),  // attribute pair 0
+                       LowerBits(kHandle0),
+                       UpperBits(kHandle0));  // attribute pair 1
 
-  const std::vector<std::pair<const char*, const ByteBuffer&>> kInvalidResponses = {
-      {"kResponseEmptyPayload", kResponseEmptyPayload},
-      {"kResponseLengthGreaterThanListLength", kResponseLengthGreaterThanListLength},
-      {"kResponseWithInvalidLength", kResponseWithInvalidLength},
-      {"kResponseWithEmptyList", kResponseWithEmptyList},
-      {"kResponseWithInvalidList", kResponseWithInvalidList},
-      {"kResponseWithInvalidAttributeHandleLessThanStart",
-       kResponseWithInvalidAttributeHandleLessThanStart},
-      {"kResponseWithInvalidAttributeHandleGreaterThanEnd",
-       kResponseWithInvalidAttributeHandleGreaterThanEnd},
-      {"kResponseWithInvalidListWithDecreasingHandles",
-       kResponseWithInvalidListWithDecreasingHandles},
-      {"kResponseWithInvalidListWithDuplicateHandles",
-       kResponseWithInvalidListWithDuplicateHandles}};
+  const std::vector<std::pair<const char*, const ByteBuffer&>>
+      kInvalidResponses = {
+          {"kResponseEmptyPayload", kResponseEmptyPayload},
+          {"kResponseLengthGreaterThanListLength",
+           kResponseLengthGreaterThanListLength},
+          {"kResponseWithInvalidLength", kResponseWithInvalidLength},
+          {"kResponseWithEmptyList", kResponseWithEmptyList},
+          {"kResponseWithInvalidList", kResponseWithInvalidList},
+          {"kResponseWithInvalidAttributeHandleLessThanStart",
+           kResponseWithInvalidAttributeHandleLessThanStart},
+          {"kResponseWithInvalidAttributeHandleGreaterThanEnd",
+           kResponseWithInvalidAttributeHandleGreaterThanEnd},
+          {"kResponseWithInvalidListWithDecreasingHandles",
+           kResponseWithInvalidListWithDecreasingHandles},
+          {"kResponseWithInvalidListWithDuplicateHandles",
+           kResponseWithInvalidListWithDuplicateHandles}};
 
   const auto kExpectedRequest =
-      StaticByteBuffer(att::kReadByTypeRequest,                           // opcode
-                       LowerBits(kStartHandle), UpperBits(kStartHandle),  // start handle
-                       LowerBits(kEndHandle), UpperBits(kEndHandle),      // end handle
+      StaticByteBuffer(att::kReadByTypeRequest,  // opcode
+                       LowerBits(kStartHandle),
+                       UpperBits(kStartHandle),  // start handle
+                       LowerBits(kEndHandle),
+                       UpperBits(kEndHandle),  // end handle
                        // UUID matches |kTestUuid3| declared above.
-                       0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+                       0,
+                       1,
+                       2,
+                       3,
+                       4,
+                       5,
+                       6,
+                       7,
+                       8,
+                       9,
+                       10,
+                       11,
+                       12,
+                       13,
+                       14,
+                       15);
 
   for (const auto& [name, invalid_rsp] : kInvalidResponses) {
     SCOPED_TRACE(bt_lib_cpp_string::StringPrintf("Invalid Response: %s", name));
@@ -2897,15 +3759,19 @@ TEST_F(ClientTest, ReadByTypeRequestInvalidResponses) {
 TEST_F(ClientTest, ReadBlobRequestEmptyResponse) {
   constexpr att::Handle kHandle = 1;
   constexpr uint16_t kOffset = 5;
-  const StaticByteBuffer kExpectedRequest(0x0C,        // opcode: read blob request
-                                          0x01, 0x00,  // handle: 1
-                                          0x05, 0x00   // offset: 5
+  const StaticByteBuffer kExpectedRequest(0x0C,  // opcode: read blob request
+                                          0x01,
+                                          0x00,  // handle: 1
+                                          0x05,
+                                          0x00  // offset: 5
   );
   // ATT Read Blob Response with no payload.
   const StaticByteBuffer kResponse(0x0D);
 
   att::Result<> status = ToResult(HostError::kFailed);
-  auto cb = [&](att::Result<> cb_status, const ByteBuffer& value, bool maybe_truncated) {
+  auto cb = [&](att::Result<> cb_status,
+                const ByteBuffer& value,
+                bool maybe_truncated) {
     status = cb_status;
 
     // We expect an empty value
@@ -2923,16 +3789,23 @@ TEST_F(ClientTest, ReadBlobRequestEmptyResponse) {
 TEST_F(ClientTest, ReadBlobRequestSuccess) {
   constexpr att::Handle kHandle = 1;
   constexpr uint16_t kOffset = 5;
-  const StaticByteBuffer kExpectedRequest(0x0C,        // opcode: read blob request
-                                          0x01, 0x00,  // handle: 1
-                                          0x05, 0x00   // offset: 5
+  const StaticByteBuffer kExpectedRequest(0x0C,  // opcode: read blob request
+                                          0x01,
+                                          0x00,  // handle: 1
+                                          0x05,
+                                          0x00  // offset: 5
   );
-  const StaticByteBuffer kExpectedResponse(0x0D,               // opcode: read blob response
-                                           't', 'e', 's', 't'  // value: "test"
+  const StaticByteBuffer kExpectedResponse(0x0D,  // opcode: read blob response
+                                           't',
+                                           'e',
+                                           's',
+                                           't'  // value: "test"
   );
 
   att::Result<> status = ToResult(HostError::kFailed);
-  auto cb = [&](att::Result<> cb_status, const ByteBuffer& value, bool maybe_truncated) {
+  auto cb = [&](att::Result<> cb_status,
+                const ByteBuffer& value,
+                bool maybe_truncated) {
     status = cb_status;
 
     // We expect an empty value
@@ -2950,17 +3823,23 @@ TEST_F(ClientTest, ReadBlobRequestSuccess) {
 TEST_F(ClientTest, ReadBlobRequestMaybeTruncated) {
   constexpr att::Handle kHandle = 0x0001;
   constexpr uint16_t kOffset = 5;
-  const auto kExpectedRequest = StaticByteBuffer(0x0C,  // opcode: read blob request
-                                                 LowerBits(kHandle), UpperBits(kHandle),  // handle
-                                                 LowerBits(kOffset), UpperBits(kOffset)   // offset
-  );
+  const auto kExpectedRequest =
+      StaticByteBuffer(0x0C,  // opcode: read blob request
+                       LowerBits(kHandle),
+                       UpperBits(kHandle),  // handle
+                       LowerBits(kOffset),
+                       UpperBits(kOffset)  // offset
+      );
 
   DynamicByteBuffer expected_response(att()->mtu());
   expected_response.Fill(0);
-  expected_response.WriteObj(att::kReadBlobResponse);  // opcode: read blob response
+  expected_response.WriteObj(
+      att::kReadBlobResponse);  // opcode: read blob response
 
   att::Result<> status = ToResult(HostError::kFailed);
-  auto cb = [&](att::Result<> cb_status, const ByteBuffer& value, bool maybe_truncated) {
+  auto cb = [&](att::Result<> cb_status,
+                const ByteBuffer& value,
+                bool maybe_truncated) {
     status = cb_status;
     EXPECT_TRUE(ContainersEqual(expected_response.view(1), value));
     EXPECT_TRUE(maybe_truncated);
@@ -2973,21 +3852,30 @@ TEST_F(ClientTest, ReadBlobRequestMaybeTruncated) {
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
-TEST_F(ClientTest, ReadBlobRequestSuccessNotTruncatedWhenOffsetPlusMtuEqualsMaxValueLength) {
+TEST_F(
+    ClientTest,
+    ReadBlobRequestSuccessNotTruncatedWhenOffsetPlusMtuEqualsMaxValueLength) {
   constexpr att::Handle kHandle = 0x0001;
-  const uint16_t kOffset = att::kMaxAttributeValueLength - (att()->mtu() - sizeof(att::OpCode));
-  const auto kExpectedRequest = StaticByteBuffer(0x0C,  // opcode: read blob request
-                                                 LowerBits(kHandle), UpperBits(kHandle),  // handle
-                                                 LowerBits(kOffset), UpperBits(kOffset)   // offset
-  );
+  const uint16_t kOffset =
+      att::kMaxAttributeValueLength - (att()->mtu() - sizeof(att::OpCode));
+  const auto kExpectedRequest =
+      StaticByteBuffer(0x0C,  // opcode: read blob request
+                       LowerBits(kHandle),
+                       UpperBits(kHandle),  // handle
+                       LowerBits(kOffset),
+                       UpperBits(kOffset)  // offset
+      );
 
   // The blob should both max out the MTU and max out the value length.
   DynamicByteBuffer expected_response(att()->mtu());
   expected_response.Fill(0);
-  expected_response.WriteObj(att::kReadBlobResponse);  // opcode: read blob response
+  expected_response.WriteObj(
+      att::kReadBlobResponse);  // opcode: read blob response
 
   att::Result<> status = ToResult(HostError::kFailed);
-  auto cb = [&](att::Result<> cb_status, const ByteBuffer& value, bool maybe_truncated) {
+  auto cb = [&](att::Result<> cb_status,
+                const ByteBuffer& value,
+                bool maybe_truncated) {
     status = cb_status;
     EXPECT_TRUE(ContainersEqual(expected_response.view(1), value));
     EXPECT_FALSE(maybe_truncated);
@@ -3003,18 +3891,23 @@ TEST_F(ClientTest, ReadBlobRequestSuccessNotTruncatedWhenOffsetPlusMtuEqualsMaxV
 TEST_F(ClientTest, ReadBlobRequestError) {
   constexpr att::Handle kHandle = 1;
   constexpr uint16_t kOffset = 5;
-  const StaticByteBuffer kExpectedRequest(0x0C,        // opcode: read blob request
-                                          0x01, 0x00,  // handle: 1
-                                          0x05, 0x00   // offset: 5
+  const StaticByteBuffer kExpectedRequest(0x0C,  // opcode: read blob request
+                                          0x01,
+                                          0x00,  // handle: 1
+                                          0x05,
+                                          0x00  // offset: 5
   );
-  const StaticByteBuffer kErrorResponse(0x01,        // opcode: error response
-                                        0x0C,        // request: read blob request
-                                        0x01, 0x00,  // handle: 0x0001
-                                        0x07         // error: Invalid Offset
+  const StaticByteBuffer kErrorResponse(0x01,  // opcode: error response
+                                        0x0C,  // request: read blob request
+                                        0x01,
+                                        0x00,  // handle: 0x0001
+                                        0x07   // error: Invalid Offset
   );
 
   att::Result<> status = ToResult(HostError::kFailed);
-  auto cb = [&](att::Result<> cb_status, const ByteBuffer& value, bool maybe_truncated) {
+  auto cb = [&](att::Result<> cb_status,
+                const ByteBuffer& value,
+                bool maybe_truncated) {
     status = cb_status;
 
     // We expect an empty value
@@ -3079,8 +3972,9 @@ TEST_F(ClientTest, Notification) {
 
 TEST_F(ClientTest, NotificationTruncated) {
   constexpr att::Handle kHandle = 1;
-  StaticByteBuffer pdu_header(0x1B,       // opcode: notification
-                              0x01, 0x00  // handle: 1
+  StaticByteBuffer pdu_header(0x1B,  // opcode: notification
+                              0x01,
+                              0x00  // handle: 1
 
   );
   DynamicByteBuffer pdu(att()->mtu());
@@ -3088,14 +3982,16 @@ TEST_F(ClientTest, NotificationTruncated) {
   pdu_header.Copy(&pdu);
 
   bool called = false;
-  client()->SetNotificationHandler(
-      [&](bool ind, auto handle, const ByteBuffer& value, bool maybe_truncated) {
-        called = true;
-        EXPECT_FALSE(ind);
-        EXPECT_EQ(kHandle, handle);
-        EXPECT_EQ(value.size(), att()->mtu() - pdu_header.size());
-        EXPECT_TRUE(maybe_truncated);
-      });
+  client()->SetNotificationHandler([&](bool ind,
+                                       auto handle,
+                                       const ByteBuffer& value,
+                                       bool maybe_truncated) {
+    called = true;
+    EXPECT_FALSE(ind);
+    EXPECT_EQ(kHandle, handle);
+    EXPECT_EQ(value.size(), att()->mtu() - pdu_header.size());
+    EXPECT_TRUE(maybe_truncated);
+  });
   fake_chan()->Receive(pdu);
 
   RunUntilIdle();
@@ -3115,9 +4011,13 @@ TEST_F(ClientTest, Indication) {
         EXPECT_FALSE(maybe_truncated);
       });
 
-  const auto kIndication = StaticByteBuffer(0x1D,               // opcode: indication
-                                            0x01, 0x00,         // handle: 1
-                                            't', 'e', 's', 't'  // value: "test"
+  const auto kIndication = StaticByteBuffer(0x1D,  // opcode: indication
+                                            0x01,
+                                            0x00,  // handle: 1
+                                            't',
+                                            'e',
+                                            's',
+                                            't'  // value: "test"
   );
 
   // Wait until a confirmation gets sent.
@@ -3127,16 +4027,19 @@ TEST_F(ClientTest, Indication) {
   EXPECT_TRUE(called);
 }
 
-// Maxing out the length parameter of a Read By Type request is not possible with the current max
-// preferred MTU. If the max MTU is increased, this test will need to be updated to test that
-// ReadByTypeValue.maybe_truncated is true for read by type responses with values that max out the
-// length parameter.
+// Maxing out the length parameter of a Read By Type request is not possible
+// with the current max preferred MTU. If the max MTU is increased, this test
+// will need to be updated to test that ReadByTypeValue.maybe_truncated is true
+// for read by type responses with values that max out the length parameter.
 TEST_F(ClientTest, ReadByTypeRequestSuccessValueTruncatedByLengthParam) {
   const uint16_t kSizeOfReadByTypeResponseWithValueThatMaxesOutLengthParam =
       sizeof(att::kReadByTypeResponse) + sizeof(att::ReadByTypeResponseParams) +
-      std::numeric_limits<decltype(att::ReadByTypeResponseParams::length)>::max();
-  EXPECT_LT(att()->preferred_mtu(), kSizeOfReadByTypeResponseWithValueThatMaxesOutLengthParam);
-  EXPECT_LT(att::kLEMaxMTU, kSizeOfReadByTypeResponseWithValueThatMaxesOutLengthParam);
+      std::numeric_limits<
+          decltype(att::ReadByTypeResponseParams::length)>::max();
+  EXPECT_LT(att()->preferred_mtu(),
+            kSizeOfReadByTypeResponseWithValueThatMaxesOutLengthParam);
+  EXPECT_LT(att::kLEMaxMTU,
+            kSizeOfReadByTypeResponseWithValueThatMaxesOutLengthParam);
 }
 
 TEST_F(ClientTest, ReadByTypeRequestSuccessValueTruncatedByMtu) {
@@ -3146,19 +4049,23 @@ TEST_F(ClientTest, ReadByTypeRequestSuccessValueTruncatedByMtu) {
   constexpr att::Handle kStartHandle = 0x0001;
   constexpr att::Handle kEndHandle = 0xFFFF;
   const auto kExpectedRequest =
-      StaticByteBuffer(att::kReadByTypeRequest,                           // opcode
-                       LowerBits(kStartHandle), UpperBits(kStartHandle),  // start handle
-                       LowerBits(kEndHandle), UpperBits(kEndHandle),      // end handle
+      StaticByteBuffer(att::kReadByTypeRequest,  // opcode
+                       LowerBits(kStartHandle),
+                       UpperBits(kStartHandle),  // start handle
+                       LowerBits(kEndHandle),
+                       UpperBits(kEndHandle),  // end handle
                        // UUID
-                       0xEF, 0xBE);
+                       0xEF,
+                       0xBE);
 
   constexpr att::Handle kHandle = 0x0002;
   const uint8_t kMaxReadByTypeValueLengthWithMinMtu = att::kLEMinMTU - 4;
-  const auto kExpectedResponseHeader =
-      StaticByteBuffer(att::kReadByTypeResponse,
-                       sizeof(kHandle) + kMaxReadByTypeValueLengthWithMinMtu,  // pair length
-                       LowerBits(kHandle), UpperBits(kHandle)                  // attribute handle
-      );
+  const auto kExpectedResponseHeader = StaticByteBuffer(
+      att::kReadByTypeResponse,
+      sizeof(kHandle) + kMaxReadByTypeValueLengthWithMinMtu,  // pair length
+      LowerBits(kHandle),
+      UpperBits(kHandle)  // attribute handle
+  );
   DynamicByteBuffer expected_response(kExpectedResponseHeader.size() +
                                       kMaxReadByTypeValueLengthWithMinMtu);
   expected_response.Fill(0);

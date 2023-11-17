@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/a2dp_offload_manager.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/a2dp_offload_manager.h"
 
 #include <memory>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/host_error.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/common/host_error.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/mock_controller.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
 
 namespace bt::l2cap {
 namespace {
@@ -33,22 +33,33 @@ A2dpOffloadManager::Configuration BuildConfiguration(
       codec_information.sbc.blocklen_subbands_alloc_method = 0x00;
       codec_information.sbc.min_bitpool_value = 0x00;
       codec_information.sbc.max_bitpool_value = 0xFF;
-      memset(codec_information.sbc.reserved, 0, sizeof(codec_information.sbc.reserved));
+      memset(codec_information.sbc.reserved,
+             0,
+             sizeof(codec_information.sbc.reserved));
       break;
     case hci_android::A2dpCodecType::kAac:
       codec_information.aac.object_type = 0x00;
-      codec_information.aac.variable_bit_rate = hci_android::A2dpAacEnableVariableBitRate::kDisable;
-      memset(codec_information.aac.reserved, 0, sizeof(codec_information.aac.reserved));
+      codec_information.aac.variable_bit_rate =
+          hci_android::A2dpAacEnableVariableBitRate::kDisable;
+      memset(codec_information.aac.reserved,
+             0,
+             sizeof(codec_information.aac.reserved));
       break;
     case hci_android::A2dpCodecType::kLdac:
       codec_information.ldac.vendor_id = 0x0000012D;
       codec_information.ldac.codec_id = 0x00AA;
-      codec_information.ldac.bitrate_index = hci_android::A2dpBitrateIndex::kLow;
-      codec_information.ldac.ldac_channel_mode = hci_android::A2dpLdacChannelMode::kStereo;
-      memset(codec_information.ldac.reserved, 0, sizeof(codec_information.ldac.reserved));
+      codec_information.ldac.bitrate_index =
+          hci_android::A2dpBitrateIndex::kLow;
+      codec_information.ldac.ldac_channel_mode =
+          hci_android::A2dpLdacChannelMode::kStereo;
+      memset(codec_information.ldac.reserved,
+             0,
+             sizeof(codec_information.ldac.reserved));
       break;
     default:
-      memset(codec_information.aptx.reserved, 0, sizeof(codec_information.aptx.reserved));
+      memset(codec_information.aptx.reserved,
+             0,
+             sizeof(codec_information.aptx.reserved));
       break;
   }
 
@@ -75,7 +86,8 @@ class A2dpOffloadTest : public TestingBase {
   void SetUp() override {
     TestingBase::SetUp();
 
-    offload_mgr_ = std::make_unique<A2dpOffloadManager>(cmd_channel()->AsWeakPtr());
+    offload_mgr_ =
+        std::make_unique<A2dpOffloadManager>(cmd_channel()->AsWeakPtr());
   }
 
   void TearDown() override { TestingBase::TearDown(); }
@@ -88,22 +100,30 @@ class A2dpOffloadTest : public TestingBase {
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(A2dpOffloadTest);
 };
 
-class StartA2dpOffloadTest : public A2dpOffloadTest,
-                             public ::testing::WithParamInterface<hci_android::A2dpCodecType> {};
+class StartA2dpOffloadTest
+    : public A2dpOffloadTest,
+      public ::testing::WithParamInterface<hci_android::A2dpCodecType> {};
 
 TEST_P(StartA2dpOffloadTest, StartA2dpOffloadSuccess) {
   const hci_android::A2dpCodecType codec = GetParam();
   A2dpOffloadManager::Configuration config = BuildConfiguration(codec);
 
-  const auto command_complete = CommandCompletePacket(hci_android::kA2dpOffloadCommand,
-                                                      pw::bluetooth::emboss::StatusCode::SUCCESS);
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        StartA2dpOffloadRequest(config, kTestHandle1, kRemoteId, kMaxMTU),
-                        &command_complete);
+  const auto command_complete =
+      CommandCompletePacket(hci_android::kA2dpOffloadCommand,
+                            pw::bluetooth::emboss::StatusCode::SUCCESS);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      StartA2dpOffloadRequest(config, kTestHandle1, kRemoteId, kMaxMTU),
+      &command_complete);
 
   std::optional<hci::Result<>> start_result;
   offload_mgr()->StartA2dpOffload(
-      config, kLocalId, kRemoteId, kTestHandle1, kMaxMTU, [&start_result](auto res) {
+      config,
+      kLocalId,
+      kRemoteId,
+      kTestHandle1,
+      kMaxMTU,
+      [&start_result](auto res) {
         EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
         start_result = res;
       });
@@ -115,25 +135,36 @@ TEST_P(StartA2dpOffloadTest, StartA2dpOffloadSuccess) {
 }
 
 const std::vector<hci_android::A2dpCodecType> kA2dpCodecTypeParams = {
-    hci_android::A2dpCodecType::kSbc, hci_android::A2dpCodecType::kAac,
-    hci_android::A2dpCodecType::kLdac, hci_android::A2dpCodecType::kAptx};
-INSTANTIATE_TEST_SUITE_P(ChannelManagerTest, StartA2dpOffloadTest,
+    hci_android::A2dpCodecType::kSbc,
+    hci_android::A2dpCodecType::kAac,
+    hci_android::A2dpCodecType::kLdac,
+    hci_android::A2dpCodecType::kAptx};
+INSTANTIATE_TEST_SUITE_P(ChannelManagerTest,
+                         StartA2dpOffloadTest,
                          ::testing::ValuesIn(kA2dpCodecTypeParams));
 
 TEST_F(A2dpOffloadTest, StartA2dpOffloadInvalidConfiguration) {
   A2dpOffloadManager::Configuration config = BuildConfiguration();
 
-  const auto command_complete =
-      CommandCompletePacket(hci_android::kA2dpOffloadCommand,
-                            pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        StartA2dpOffloadRequest(config, kTestHandle1, kRemoteId, kMaxMTU),
-                        &command_complete);
+  const auto command_complete = CommandCompletePacket(
+      hci_android::kA2dpOffloadCommand,
+      pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      StartA2dpOffloadRequest(config, kTestHandle1, kRemoteId, kMaxMTU),
+      &command_complete);
 
   std::optional<hci::Result<>> start_result;
   offload_mgr()->StartA2dpOffload(
-      config, kLocalId, kRemoteId, kTestHandle1, kMaxMTU, [&start_result](auto res) {
-        EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS), res);
+      config,
+      kLocalId,
+      kRemoteId,
+      kTestHandle1,
+      kMaxMTU,
+      [&start_result](auto res) {
+        EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::
+                               INVALID_HCI_COMMAND_PARAMETERS),
+                  res);
         start_result = res;
       });
   RunUntilIdle();
@@ -145,15 +176,22 @@ TEST_F(A2dpOffloadTest, StartA2dpOffloadInvalidConfiguration) {
 TEST_F(A2dpOffloadTest, StartAndStopA2dpOffloadSuccess) {
   A2dpOffloadManager::Configuration config = BuildConfiguration();
 
-  const auto command_complete = CommandCompletePacket(hci_android::kA2dpOffloadCommand,
-                                                      pw::bluetooth::emboss::StatusCode::SUCCESS);
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        StartA2dpOffloadRequest(config, kTestHandle1, kRemoteId, kMaxMTU),
-                        &command_complete);
+  const auto command_complete =
+      CommandCompletePacket(hci_android::kA2dpOffloadCommand,
+                            pw::bluetooth::emboss::StatusCode::SUCCESS);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      StartA2dpOffloadRequest(config, kTestHandle1, kRemoteId, kMaxMTU),
+      &command_complete);
 
   std::optional<hci::Result<>> start_result;
   offload_mgr()->StartA2dpOffload(
-      config, kLocalId, kRemoteId, kTestHandle1, kMaxMTU, [&start_result](auto res) {
+      config,
+      kLocalId,
+      kRemoteId,
+      kTestHandle1,
+      kMaxMTU,
+      [&start_result](auto res) {
         EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
         start_result = res;
       });
@@ -163,13 +201,15 @@ TEST_F(A2dpOffloadTest, StartAndStopA2dpOffloadSuccess) {
   ASSERT_TRUE(start_result.has_value());
   EXPECT_TRUE(start_result->is_ok());
 
-  EXPECT_CMD_PACKET_OUT(test_device(), StopA2dpOffloadRequest(), &command_complete);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), StopA2dpOffloadRequest(), &command_complete);
 
   std::optional<hci::Result<>> stop_result;
-  offload_mgr()->RequestStopA2dpOffload(kLocalId, kTestHandle1, [&stop_result](auto res) {
-    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
-    stop_result = res;
-  });
+  offload_mgr()->RequestStopA2dpOffload(
+      kLocalId, kTestHandle1, [&stop_result](auto res) {
+        EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
+        stop_result = res;
+      });
   RunUntilIdle();
   EXPECT_FALSE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
@@ -180,15 +220,22 @@ TEST_F(A2dpOffloadTest, StartAndStopA2dpOffloadSuccess) {
 TEST_F(A2dpOffloadTest, StartA2dpOffloadAlreadyStarted) {
   A2dpOffloadManager::Configuration config = BuildConfiguration();
 
-  const auto command_complete = CommandCompletePacket(hci_android::kA2dpOffloadCommand,
-                                                      pw::bluetooth::emboss::StatusCode::SUCCESS);
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        StartA2dpOffloadRequest(config, kTestHandle1, kRemoteId, kMaxMTU),
-                        &command_complete);
+  const auto command_complete =
+      CommandCompletePacket(hci_android::kA2dpOffloadCommand,
+                            pw::bluetooth::emboss::StatusCode::SUCCESS);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      StartA2dpOffloadRequest(config, kTestHandle1, kRemoteId, kMaxMTU),
+      &command_complete);
 
   std::optional<hci::Result<>> start_result;
   offload_mgr()->StartA2dpOffload(
-      config, kLocalId, kRemoteId, kTestHandle1, kMaxMTU, [&start_result](auto res) {
+      config,
+      kLocalId,
+      kRemoteId,
+      kTestHandle1,
+      kMaxMTU,
+      [&start_result](auto res) {
         EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
         start_result = res;
       });
@@ -199,9 +246,14 @@ TEST_F(A2dpOffloadTest, StartA2dpOffloadAlreadyStarted) {
   EXPECT_TRUE(start_result->is_ok());
 
   start_result.reset();
-  offload_mgr()->StartA2dpOffload(config, kLocalId, kRemoteId, kTestHandle1, kMaxMTU,
+  offload_mgr()->StartA2dpOffload(config,
+                                  kLocalId,
+                                  kRemoteId,
+                                  kTestHandle1,
+                                  kMaxMTU,
                                   [&start_result](auto res) {
-                                    EXPECT_EQ(ToResult(HostError::kInProgress), res);
+                                    EXPECT_EQ(ToResult(HostError::kInProgress),
+                                              res);
                                     start_result = res;
                                   });
   RunUntilIdle();
@@ -213,23 +265,35 @@ TEST_F(A2dpOffloadTest, StartA2dpOffloadAlreadyStarted) {
 TEST_F(A2dpOffloadTest, StartA2dpOffloadStillStarting) {
   A2dpOffloadManager::Configuration config = BuildConfiguration();
 
-  const auto command_complete = CommandCompletePacket(hci_android::kA2dpOffloadCommand,
-                                                      pw::bluetooth::emboss::StatusCode::SUCCESS);
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        StartA2dpOffloadRequest(config, kTestHandle1, kRemoteId, kMaxMTU),
-                        &command_complete);
+  const auto command_complete =
+      CommandCompletePacket(hci_android::kA2dpOffloadCommand,
+                            pw::bluetooth::emboss::StatusCode::SUCCESS);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      StartA2dpOffloadRequest(config, kTestHandle1, kRemoteId, kMaxMTU),
+      &command_complete);
 
   std::optional<hci::Result<>> start_result;
   offload_mgr()->StartA2dpOffload(
-      config, kLocalId, kRemoteId, kTestHandle1, kMaxMTU, [&start_result](auto res) {
+      config,
+      kLocalId,
+      kRemoteId,
+      kTestHandle1,
+      kMaxMTU,
+      [&start_result](auto res) {
         EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
         start_result = res;
       });
   EXPECT_FALSE(start_result.has_value());
 
-  offload_mgr()->StartA2dpOffload(config, kLocalId, kRemoteId, kTestHandle1, kMaxMTU,
+  offload_mgr()->StartA2dpOffload(config,
+                                  kLocalId,
+                                  kRemoteId,
+                                  kTestHandle1,
+                                  kMaxMTU,
                                   [&start_result](auto res) {
-                                    EXPECT_EQ(ToResult(HostError::kInProgress), res);
+                                    EXPECT_EQ(ToResult(HostError::kInProgress),
+                                              res);
                                     start_result = res;
                                   });
   RunUntilIdle();
@@ -242,15 +306,22 @@ TEST_F(A2dpOffloadTest, StartA2dpOffloadStillStarting) {
 TEST_F(A2dpOffloadTest, StartA2dpOffloadStillStopping) {
   A2dpOffloadManager::Configuration config = BuildConfiguration();
 
-  const auto command_complete = CommandCompletePacket(hci_android::kA2dpOffloadCommand,
-                                                      pw::bluetooth::emboss::StatusCode::SUCCESS);
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        StartA2dpOffloadRequest(config, kTestHandle1, kRemoteId, kMaxMTU),
-                        &command_complete);
+  const auto command_complete =
+      CommandCompletePacket(hci_android::kA2dpOffloadCommand,
+                            pw::bluetooth::emboss::StatusCode::SUCCESS);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      StartA2dpOffloadRequest(config, kTestHandle1, kRemoteId, kMaxMTU),
+      &command_complete);
 
   std::optional<hci::Result<>> start_result;
   offload_mgr()->StartA2dpOffload(
-      config, kLocalId, kRemoteId, kTestHandle1, kMaxMTU, [&start_result](auto res) {
+      config,
+      kLocalId,
+      kRemoteId,
+      kTestHandle1,
+      kMaxMTU,
+      [&start_result](auto res) {
         EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
         start_result = res;
       });
@@ -260,19 +331,26 @@ TEST_F(A2dpOffloadTest, StartA2dpOffloadStillStopping) {
   ASSERT_TRUE(start_result.has_value());
   EXPECT_TRUE(start_result->is_ok());
 
-  EXPECT_CMD_PACKET_OUT(test_device(), StopA2dpOffloadRequest(), &command_complete);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), StopA2dpOffloadRequest(), &command_complete);
 
   std::optional<hci::Result<>> stop_result;
-  offload_mgr()->RequestStopA2dpOffload(kLocalId, kTestHandle1, [&stop_result](auto res) {
-    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
-    stop_result = res;
-  });
+  offload_mgr()->RequestStopA2dpOffload(
+      kLocalId, kTestHandle1, [&stop_result](auto res) {
+        EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
+        stop_result = res;
+      });
   EXPECT_FALSE(stop_result.has_value());
 
   start_result.reset();
-  offload_mgr()->StartA2dpOffload(config, kLocalId, kRemoteId, kTestHandle1, kMaxMTU,
+  offload_mgr()->StartA2dpOffload(config,
+                                  kLocalId,
+                                  kRemoteId,
+                                  kTestHandle1,
+                                  kMaxMTU,
                                   [&start_result](auto res) {
-                                    EXPECT_EQ(ToResult(HostError::kInProgress), res);
+                                    EXPECT_EQ(ToResult(HostError::kInProgress),
+                                              res);
                                     start_result = res;
                                   });
   RunUntilIdle();
@@ -287,27 +365,36 @@ TEST_F(A2dpOffloadTest, StartA2dpOffloadStillStopping) {
 TEST_F(A2dpOffloadTest, StopA2dpOffloadStillStarting) {
   A2dpOffloadManager::Configuration config = BuildConfiguration();
 
-  const auto command_complete = CommandCompletePacket(hci_android::kA2dpOffloadCommand,
-                                                      pw::bluetooth::emboss::StatusCode::SUCCESS);
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        StartA2dpOffloadRequest(config, kTestHandle1, kRemoteId, kMaxMTU),
-                        &command_complete);
+  const auto command_complete =
+      CommandCompletePacket(hci_android::kA2dpOffloadCommand,
+                            pw::bluetooth::emboss::StatusCode::SUCCESS);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      StartA2dpOffloadRequest(config, kTestHandle1, kRemoteId, kMaxMTU),
+      &command_complete);
 
   std::optional<hci::Result<>> start_result;
   offload_mgr()->StartA2dpOffload(
-      config, kLocalId, kRemoteId, kTestHandle1, kMaxMTU, [&start_result](auto res) {
+      config,
+      kLocalId,
+      kRemoteId,
+      kTestHandle1,
+      kMaxMTU,
+      [&start_result](auto res) {
         EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
         start_result = res;
       });
   EXPECT_FALSE(start_result.has_value());
 
-  EXPECT_CMD_PACKET_OUT(test_device(), StopA2dpOffloadRequest(), &command_complete);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), StopA2dpOffloadRequest(), &command_complete);
 
   std::optional<hci::Result<>> stop_result;
-  offload_mgr()->RequestStopA2dpOffload(kLocalId, kTestHandle1, [&stop_result](auto res) {
-    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
-    stop_result = res;
-  });
+  offload_mgr()->RequestStopA2dpOffload(
+      kLocalId, kTestHandle1, [&stop_result](auto res) {
+        EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
+        stop_result = res;
+      });
   RunUntilIdle();
   EXPECT_FALSE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
@@ -320,15 +407,22 @@ TEST_F(A2dpOffloadTest, StopA2dpOffloadStillStarting) {
 TEST_F(A2dpOffloadTest, StopA2dpOffloadStillStopping) {
   A2dpOffloadManager::Configuration config = BuildConfiguration();
 
-  const auto command_complete = CommandCompletePacket(hci_android::kA2dpOffloadCommand,
-                                                      pw::bluetooth::emboss::StatusCode::SUCCESS);
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        StartA2dpOffloadRequest(config, kTestHandle1, kRemoteId, kMaxMTU),
-                        &command_complete);
+  const auto command_complete =
+      CommandCompletePacket(hci_android::kA2dpOffloadCommand,
+                            pw::bluetooth::emboss::StatusCode::SUCCESS);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      StartA2dpOffloadRequest(config, kTestHandle1, kRemoteId, kMaxMTU),
+      &command_complete);
 
   std::optional<hci::Result<>> start_result;
   offload_mgr()->StartA2dpOffload(
-      config, kLocalId, kRemoteId, kTestHandle1, kMaxMTU, [&start_result](auto res) {
+      config,
+      kLocalId,
+      kRemoteId,
+      kTestHandle1,
+      kMaxMTU,
+      [&start_result](auto res) {
         EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
         start_result = res;
       });
@@ -338,19 +432,22 @@ TEST_F(A2dpOffloadTest, StopA2dpOffloadStillStopping) {
   ASSERT_TRUE(start_result.has_value());
   EXPECT_TRUE(start_result->is_ok());
 
-  EXPECT_CMD_PACKET_OUT(test_device(), StopA2dpOffloadRequest(), &command_complete);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), StopA2dpOffloadRequest(), &command_complete);
 
   std::optional<hci::Result<>> stop_result;
-  offload_mgr()->RequestStopA2dpOffload(kLocalId, kTestHandle1, [&stop_result](auto res) {
-    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
-    stop_result = res;
-  });
+  offload_mgr()->RequestStopA2dpOffload(
+      kLocalId, kTestHandle1, [&stop_result](auto res) {
+        EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
+        stop_result = res;
+      });
   EXPECT_FALSE(stop_result.has_value());
 
-  offload_mgr()->RequestStopA2dpOffload(kLocalId, kTestHandle1, [&stop_result](auto res) {
-    EXPECT_EQ(ToResult(HostError::kInProgress), res);
-    stop_result = res;
-  });
+  offload_mgr()->RequestStopA2dpOffload(
+      kLocalId, kTestHandle1, [&stop_result](auto res) {
+        EXPECT_EQ(ToResult(HostError::kInProgress), res);
+        stop_result = res;
+      });
   RunUntilIdle();
   EXPECT_FALSE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
@@ -360,10 +457,11 @@ TEST_F(A2dpOffloadTest, StopA2dpOffloadStillStopping) {
 
 TEST_F(A2dpOffloadTest, StopA2dpOffloadAlreadyStopped) {
   std::optional<hci::Result<>> stop_result;
-  offload_mgr()->RequestStopA2dpOffload(kLocalId, kTestHandle1, [&stop_result](auto res) {
-    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
-    stop_result = res;
-  });
+  offload_mgr()->RequestStopA2dpOffload(
+      kLocalId, kTestHandle1, [&stop_result](auto res) {
+        EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
+        stop_result = res;
+      });
   RunUntilIdle();
   EXPECT_FALSE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   ASSERT_TRUE(stop_result.has_value());
@@ -373,15 +471,22 @@ TEST_F(A2dpOffloadTest, StopA2dpOffloadAlreadyStopped) {
 TEST_F(A2dpOffloadTest, A2dpOffloadOnlyOneChannel) {
   A2dpOffloadManager::Configuration config = BuildConfiguration();
 
-  const auto command_complete = CommandCompletePacket(hci_android::kA2dpOffloadCommand,
-                                                      pw::bluetooth::emboss::StatusCode::SUCCESS);
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        StartA2dpOffloadRequest(config, kTestHandle1, kRemoteId, kMaxMTU),
-                        &command_complete);
+  const auto command_complete =
+      CommandCompletePacket(hci_android::kA2dpOffloadCommand,
+                            pw::bluetooth::emboss::StatusCode::SUCCESS);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      StartA2dpOffloadRequest(config, kTestHandle1, kRemoteId, kMaxMTU),
+      &command_complete);
 
   std::optional<hci::Result<>> start_result_0;
   offload_mgr()->StartA2dpOffload(
-      config, kLocalId, kRemoteId, kTestHandle1, kMaxMTU, [&start_result_0](auto res) {
+      config,
+      kLocalId,
+      kRemoteId,
+      kTestHandle1,
+      kMaxMTU,
+      [&start_result_0](auto res) {
         EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
         start_result_0 = res;
       });
@@ -392,9 +497,14 @@ TEST_F(A2dpOffloadTest, A2dpOffloadOnlyOneChannel) {
   EXPECT_TRUE(start_result_0->is_ok());
 
   std::optional<hci::Result<>> start_result_1;
-  offload_mgr()->StartA2dpOffload(config, kLocalId + 1, kRemoteId + 1, kTestHandle1, kMaxMTU,
+  offload_mgr()->StartA2dpOffload(config,
+                                  kLocalId + 1,
+                                  kRemoteId + 1,
+                                  kTestHandle1,
+                                  kMaxMTU,
                                   [&start_result_1](auto res) {
-                                    EXPECT_EQ(ToResult(HostError::kInProgress), res);
+                                    EXPECT_EQ(ToResult(HostError::kInProgress),
+                                              res);
                                     start_result_1 = res;
                                   });
   RunUntilIdle();
@@ -407,15 +517,22 @@ TEST_F(A2dpOffloadTest, A2dpOffloadOnlyOneChannel) {
 TEST_F(A2dpOffloadTest, DifferentChannelCannotStopA2dpOffloading) {
   A2dpOffloadManager::Configuration config = BuildConfiguration();
 
-  const auto command_complete = CommandCompletePacket(hci_android::kA2dpOffloadCommand,
-                                                      pw::bluetooth::emboss::StatusCode::SUCCESS);
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        StartA2dpOffloadRequest(config, kTestHandle1, kRemoteId, kMaxMTU),
-                        &command_complete);
+  const auto command_complete =
+      CommandCompletePacket(hci_android::kA2dpOffloadCommand,
+                            pw::bluetooth::emboss::StatusCode::SUCCESS);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      StartA2dpOffloadRequest(config, kTestHandle1, kRemoteId, kMaxMTU),
+      &command_complete);
 
   std::optional<hci::Result<>> start_result;
   offload_mgr()->StartA2dpOffload(
-      config, kLocalId, kRemoteId, kTestHandle1, kMaxMTU, [&start_result](auto res) {
+      config,
+      kLocalId,
+      kRemoteId,
+      kTestHandle1,
+      kMaxMTU,
+      [&start_result](auto res) {
         EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
         start_result = res;
       });
@@ -426,23 +543,26 @@ TEST_F(A2dpOffloadTest, DifferentChannelCannotStopA2dpOffloading) {
   EXPECT_TRUE(start_result->is_ok());
 
   std::optional<hci::Result<>> stop_result;
-  offload_mgr()->RequestStopA2dpOffload(kLocalId + 1, kTestHandle1 + 1, [&stop_result](auto res) {
-    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
-    stop_result = res;
-  });
+  offload_mgr()->RequestStopA2dpOffload(
+      kLocalId + 1, kTestHandle1 + 1, [&stop_result](auto res) {
+        EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
+        stop_result = res;
+      });
   RunUntilIdle();
   EXPECT_TRUE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   ASSERT_TRUE(stop_result.has_value());
   EXPECT_TRUE(stop_result->is_ok());
 
-  EXPECT_CMD_PACKET_OUT(test_device(), StopA2dpOffloadRequest(), &command_complete);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), StopA2dpOffloadRequest(), &command_complete);
 
   // Can still stop it from the correct one.
   stop_result = std::nullopt;
-  offload_mgr()->RequestStopA2dpOffload(kLocalId, kTestHandle1, [&stop_result](auto res) {
-    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
-    stop_result = res;
-  });
+  offload_mgr()->RequestStopA2dpOffload(
+      kLocalId, kTestHandle1, [&stop_result](auto res) {
+        EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
+        stop_result = res;
+      });
   RunUntilIdle();
   EXPECT_FALSE(offload_mgr()->IsChannelOffloaded(kLocalId, kTestHandle1));
   ASSERT_TRUE(stop_result.has_value());

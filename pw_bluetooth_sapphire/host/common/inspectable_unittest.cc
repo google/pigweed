@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef NINSPECT
-
-#include "inspectable.h"
+#include "pw_bluetooth_sapphire/internal/host/common/inspectable.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/inspect.h"
+
+#ifndef NINSPECT
 
 namespace bt {
 
@@ -22,7 +22,8 @@ class TestProperty {
  public:
   using ValueCallback = fit::function<void(const T& value)>;
   TestProperty() = default;
-  TestProperty(T value, ValueCallback cb) : value_(value), value_cb_(std::move(cb)) {}
+  TestProperty(T value, ValueCallback cb)
+      : value_(value), value_cb_(std::move(cb)) {}
 
   void Set(const T& value) {
     value_ = value;
@@ -112,7 +113,8 @@ TEST(InspectableTest, UpdateValueThroughMutable) {
   auto prop_cb = [&](auto value) { prop_value = value; };
 
   Inspectable<TestValue, TestProperty<int>, int> inspectable(
-      TestValue(0), TestProperty<int>(0, std::move(prop_cb)),
+      TestValue(0),
+      TestProperty<int>(0, std::move(prop_cb)),
       [](const TestValue& v) { return v.value; });
   inspectable.Mutable()->set_value(1);
   EXPECT_EQ(1, inspectable->value);
@@ -125,7 +127,8 @@ TEST(InspectableTest, MakeToStringInspectConvertFunction) {
   inspect::Inspector inspector;
   auto& root = inspector.GetRoot();
 
-  StringInspectable inspectable(StringValue{""}, root.CreateString(kPropertyName, ""),
+  StringInspectable inspectable(StringValue{""},
+                                root.CreateString(kPropertyName, ""),
                                 MakeToStringInspectConvertFunction());
 
   const std::string kExpectedValue = "fuchsia";
@@ -134,9 +137,9 @@ TEST(InspectableTest, MakeToStringInspectConvertFunction) {
 
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   ASSERT_TRUE(hierarchy.is_ok());
-  EXPECT_THAT(
-      hierarchy.take_value(),
-      AllOf(NodeMatches(PropertyList(ElementsAre(StringIs(kPropertyName, kExpectedValue))))));
+  EXPECT_THAT(hierarchy.take_value(),
+              AllOf(NodeMatches(PropertyList(
+                  ElementsAre(StringIs(kPropertyName, kExpectedValue))))));
 }
 
 TEST(InspectableTest, MakeContainerOfToStringConvertFunction) {
@@ -144,15 +147,19 @@ TEST(InspectableTest, MakeContainerOfToStringConvertFunction) {
   inspect::Inspector inspector;
   auto& root = inspector.GetRoot();
 
-  std::array values = {StringValue{"fuchsia"}, StringValue{"purple"}, StringValue{"magenta"}};
+  std::array values = {
+      StringValue{"fuchsia"}, StringValue{"purple"}, StringValue{"magenta"}};
   StringInspectable inspectable(
-      std::move(values), root.CreateString(kPropertyName, ""),
-      MakeContainerOfToStringConvertFunction({.prologue = "👉", .delimiter = "🥺", .epilogue = "👈"}));
+      std::move(values),
+      root.CreateString(kPropertyName, ""),
+      MakeContainerOfToStringConvertFunction(
+          {.prologue = "👉", .delimiter = "🥺", .epilogue = "👈"}));
 
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   ASSERT_TRUE(hierarchy.is_ok());
-  EXPECT_THAT(hierarchy.take_value(), AllOf(NodeMatches(PropertyList(ElementsAre(
-                                          StringIs(kPropertyName, "👉fuchsia🥺purple🥺magenta👈"))))));
+  EXPECT_THAT(hierarchy.take_value(),
+              AllOf(NodeMatches(PropertyList(ElementsAre(
+                  StringIs(kPropertyName, "👉fuchsia🥺purple🥺magenta👈"))))));
 }
 
 TEST(InspectableTest, InspectRealStringProperty) {
@@ -166,14 +173,16 @@ TEST(InspectableTest, InspectRealStringProperty) {
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   ASSERT_TRUE(hierarchy.is_ok());
   EXPECT_THAT(hierarchy.take_value(),
-              AllOf(NodeMatches(PropertyList(ElementsAre(StringIs(kPropertyName, "A"))))));
+              AllOf(NodeMatches(
+                  PropertyList(ElementsAre(StringIs(kPropertyName, "A"))))));
 
   inspectable.Set("B");
 
   hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   ASSERT_TRUE(hierarchy.is_ok());
   EXPECT_THAT(hierarchy.take_value(),
-              AllOf(NodeMatches(PropertyList(ElementsAre(StringIs(kPropertyName, "B"))))));
+              AllOf(NodeMatches(
+                  PropertyList(ElementsAre(StringIs(kPropertyName, "B"))))));
 }
 
 }  // namespace bt

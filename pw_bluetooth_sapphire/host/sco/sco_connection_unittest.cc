@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "sco_connection.h"
+#include "pw_bluetooth_sapphire/internal/host/sco/sco_connection.h"
 
 #include <gtest/gtest.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/hci/fake_sco_connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/fake_sco_data_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/fake_sco_connection.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/mock_controller.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/fake_sco_data_channel.h"
 
 namespace bt::sco {
 namespace {
@@ -24,9 +24,11 @@ constexpr uint16_t kHciScoMtu = 1;
 // Default data buffer information used by ScoDataChannel.
 static constexpr size_t kMaxScoPacketLength = 255;
 static constexpr size_t kMaxScoPacketCount = 1;
-const hci::DataBufferInfo kDataBufferInfo(kMaxScoPacketLength, kMaxScoPacketCount);
+const hci::DataBufferInfo kDataBufferInfo(kMaxScoPacketLength,
+                                          kMaxScoPacketCount);
 
-using TestingBase = testing::FakeDispatcherControllerTest<testing::MockController>;
+using TestingBase =
+    testing::FakeDispatcherControllerTest<testing::MockController>;
 class ScoConnectionTest : public TestingBase {
  public:
   ScoConnectionTest() = default;
@@ -38,11 +40,14 @@ class ScoConnectionTest : public TestingBase {
     InitializeACLDataChannel();
     InitializeScoDataChannel(kDataBufferInfo);
 
-    test_device()->set_configure_sco_cb([](auto, auto, auto, auto cb) { cb(PW_STATUS_OK); });
+    test_device()->set_configure_sco_cb(
+        [](auto, auto, auto, auto cb) { cb(PW_STATUS_OK); });
     test_device()->set_reset_sco_cb([](auto cb) { cb(PW_STATUS_OK); });
 
-    auto conn = std::make_unique<hci::ScoConnection>(kConnectionHandle, DeviceAddress(),
-                                                     DeviceAddress(), transport()->GetWeakPtr());
+    auto conn = std::make_unique<hci::ScoConnection>(kConnectionHandle,
+                                                     DeviceAddress(),
+                                                     DeviceAddress(),
+                                                     transport()->GetWeakPtr());
     hci_conn_ = conn->GetWeakPtr();
     deactivated_cb_count_ = 0;
     sco_conn_ = CreateScoConnection(std::move(conn));
@@ -56,8 +61,10 @@ class ScoConnectionTest : public TestingBase {
   virtual std::unique_ptr<ScoConnection> CreateScoConnection(
       std::unique_ptr<hci::Connection> hci_conn) {
     return std::make_unique<ScoConnection>(
-        std::move(hci_conn), [this] { OnDeactivated(); },
-        bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>(),
+        std::move(hci_conn),
+        [this] { OnDeactivated(); },
+        bt::StaticPacket<
+            pw::bluetooth::emboss::SynchronousConnectionParametersWriter>(),
         /*channel=*/nullptr);
   }
 
@@ -79,11 +86,17 @@ class HciScoConnectionTest : public ScoConnectionTest {
  public:
   std::unique_ptr<ScoConnection> CreateScoConnection(
       std::unique_ptr<hci::Connection> hci_conn) override {
-    bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> hci_conn_params;
-    hci_conn_params.view().input_data_path().Write(pw::bluetooth::emboss::ScoDataPath::HCI);
-    hci_conn_params.view().output_data_path().Write(pw::bluetooth::emboss::ScoDataPath::HCI);
+    bt::StaticPacket<
+        pw::bluetooth::emboss::SynchronousConnectionParametersWriter>
+        hci_conn_params;
+    hci_conn_params.view().input_data_path().Write(
+        pw::bluetooth::emboss::ScoDataPath::HCI);
+    hci_conn_params.view().output_data_path().Write(
+        pw::bluetooth::emboss::ScoDataPath::HCI);
     return std::make_unique<ScoConnection>(
-        std::move(hci_conn), [this] { OnDeactivated(); }, hci_conn_params,
+        std::move(hci_conn),
+        [this] { OnDeactivated(); },
+        hci_conn_params,
         transport()->sco_data_channel());
   }
 };
@@ -94,11 +107,18 @@ class HciScoConnectionTestWithFakeScoChannel : public ScoConnectionTest {
       std::unique_ptr<hci::Connection> hci_conn) override {
     channel_ = std::make_unique<hci::FakeScoDataChannel>(/*mtu=*/kHciScoMtu);
 
-    bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> hci_conn_params;
-    hci_conn_params.view().input_data_path().Write(pw::bluetooth::emboss::ScoDataPath::HCI);
-    hci_conn_params.view().output_data_path().Write(pw::bluetooth::emboss::ScoDataPath::HCI);
+    bt::StaticPacket<
+        pw::bluetooth::emboss::SynchronousConnectionParametersWriter>
+        hci_conn_params;
+    hci_conn_params.view().input_data_path().Write(
+        pw::bluetooth::emboss::ScoDataPath::HCI);
+    hci_conn_params.view().output_data_path().Write(
+        pw::bluetooth::emboss::ScoDataPath::HCI);
     return std::make_unique<ScoConnection>(
-        std::move(hci_conn), [this] { OnDeactivated(); }, hci_conn_params, channel_.get());
+        std::move(hci_conn),
+        [this] { OnDeactivated(); },
+        hci_conn_params,
+        channel_.get());
   }
 
   hci::FakeScoDataChannel* fake_sco_chan() { return channel_.get(); }
@@ -109,19 +129,22 @@ class HciScoConnectionTestWithFakeScoChannel : public ScoConnectionTest {
 
 TEST_F(ScoConnectionTest, Send) {
   EXPECT_FALSE(sco_conn()->Send(nullptr));
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kConnectionHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::DisconnectPacket(kConnectionHandle));
 }
 
 TEST_F(ScoConnectionTest, MaxTxSduSize) {
   EXPECT_EQ(sco_conn()->max_tx_sdu_size(), 0u);
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kConnectionHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::DisconnectPacket(kConnectionHandle));
 }
 
 TEST_F(ScoConnectionTest, ActivateAndDeactivate) {
   size_t close_count = 0;
   auto closed_cb = [&] { close_count++; };
 
-  EXPECT_TRUE(sco_conn()->Activate(/*rx_callback=*/[]() {}, std::move(closed_cb)));
+  EXPECT_TRUE(
+      sco_conn()->Activate(/*rx_callback=*/[]() {}, std::move(closed_cb)));
   EXPECT_EQ(close_count, 0u);
   EXPECT_TRUE(hci_conn().is_alive());
 
@@ -134,27 +157,32 @@ TEST_F(ScoConnectionTest, ActivateAndDeactivate) {
   sco_conn()->Deactivate();
   EXPECT_EQ(close_count, 0u);
   EXPECT_EQ(deactivated_count(), 1u);
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kConnectionHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::DisconnectPacket(kConnectionHandle));
 }
 
 TEST_F(HciScoConnectionTestWithFakeScoChannel,
        ActivateAndDeactivateRegistersAndUnregistersConnection) {
   EXPECT_TRUE(fake_sco_chan()->connections().empty());
 
-  EXPECT_TRUE(sco_conn()->Activate(/*rx_callback=*/[]() {}, /*closed_callback=*/[] {}));
+  EXPECT_TRUE(
+      sco_conn()->Activate(/*rx_callback=*/[]() {}, /*closed_callback=*/[] {}));
   ASSERT_EQ(fake_sco_chan()->connections().size(), 1u);
-  EXPECT_EQ(fake_sco_chan()->connections().begin()->first, sco_conn()->handle());
+  EXPECT_EQ(fake_sco_chan()->connections().begin()->first,
+            sco_conn()->handle());
 
   sco_conn()->Deactivate();
   EXPECT_TRUE(fake_sco_chan()->connections().empty());
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kConnectionHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::DisconnectPacket(kConnectionHandle));
 }
 
 TEST_F(ScoConnectionTest, ActivateAndClose) {
   size_t close_count = 0;
   auto closed_cb = [&] { close_count++; };
 
-  EXPECT_TRUE(sco_conn()->Activate(/*rx_callback=*/[]() {}, std::move(closed_cb)));
+  EXPECT_TRUE(
+      sco_conn()->Activate(/*rx_callback=*/[]() {}, std::move(closed_cb)));
   EXPECT_EQ(close_count, 0u);
   EXPECT_TRUE(hci_conn().is_alive());
 
@@ -167,24 +195,30 @@ TEST_F(ScoConnectionTest, ActivateAndClose) {
   sco_conn()->Close();
   EXPECT_EQ(close_count, 1u);
   EXPECT_EQ(deactivated_count(), 0u);
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kConnectionHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::DisconnectPacket(kConnectionHandle));
 }
 
-TEST_F(HciScoConnectionTestWithFakeScoChannel, ActivateAndCloseRegistersAndUnregistersConnection) {
+TEST_F(HciScoConnectionTestWithFakeScoChannel,
+       ActivateAndCloseRegistersAndUnregistersConnection) {
   EXPECT_TRUE(fake_sco_chan()->connections().empty());
 
-  EXPECT_TRUE(sco_conn()->Activate(/*rx_callback=*/[]() {}, /*closed_callback=*/[] {}));
+  EXPECT_TRUE(
+      sco_conn()->Activate(/*rx_callback=*/[]() {}, /*closed_callback=*/[] {}));
   ASSERT_EQ(fake_sco_chan()->connections().size(), 1u);
-  EXPECT_EQ(fake_sco_chan()->connections().begin()->first, sco_conn()->handle());
+  EXPECT_EQ(fake_sco_chan()->connections().begin()->first,
+            sco_conn()->handle());
 
   sco_conn()->Close();
   EXPECT_TRUE(fake_sco_chan()->connections().empty());
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kConnectionHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::DisconnectPacket(kConnectionHandle));
 }
 
 TEST_F(ScoConnectionTest, UniqueId) {
   EXPECT_EQ(sco_conn()->unique_id(), kConnectionHandle);
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kConnectionHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::DisconnectPacket(kConnectionHandle));
 }
 
 TEST_F(ScoConnectionTest, CloseWithoutActivating) {
@@ -192,19 +226,23 @@ TEST_F(ScoConnectionTest, CloseWithoutActivating) {
   sco_conn()->Close();
   EXPECT_EQ(deactivated_count(), 0u);
   EXPECT_FALSE(hci_conn().is_alive());
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kConnectionHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::DisconnectPacket(kConnectionHandle));
 }
 
-TEST_F(HciScoConnectionTestWithFakeScoChannel, CloseWithoutActivatingDoesNotUnregister) {
+TEST_F(HciScoConnectionTestWithFakeScoChannel,
+       CloseWithoutActivatingDoesNotUnregister) {
   sco_conn()->Close();
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kConnectionHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::DisconnectPacket(kConnectionHandle));
 }
 
 TEST_F(ScoConnectionTest, ActivateAndPeerDisconnectDeactivates) {
   size_t close_count = 0;
   auto closed_cb = [&] { close_count++; };
 
-  EXPECT_TRUE(sco_conn()->Activate(/*rx_callback=*/[]() {}, std::move(closed_cb)));
+  EXPECT_TRUE(
+      sco_conn()->Activate(/*rx_callback=*/[]() {}, std::move(closed_cb)));
   EXPECT_EQ(close_count, 0u);
   ASSERT_TRUE(hci_conn().is_alive());
 
@@ -227,18 +265,21 @@ TEST_F(HciScoConnectionTestWithFakeScoChannel, ReceiveTwoPackets) {
     packets.push_back(std::move(packet));
   };
 
-  EXPECT_TRUE(sco_conn()->Activate(std::move(rx_callback), std::move(closed_cb)));
+  EXPECT_TRUE(
+      sco_conn()->Activate(std::move(rx_callback), std::move(closed_cb)));
   ASSERT_EQ(fake_sco_chan()->connections().size(), 1u);
 
   EXPECT_FALSE(sco_conn()->Read());
 
   StaticByteBuffer packet_buffer_0(
       LowerBits(kConnectionHandle),
-      UpperBits(kConnectionHandle) | 0x30,  // handle + packet status flag: kDataPartiallyLost
-      0x01,                                 // payload length
-      0x00                                  // payload
+      UpperBits(kConnectionHandle) |
+          0x30,  // handle + packet status flag: kDataPartiallyLost
+      0x01,      // payload length
+      0x00       // payload
   );
-  std::unique_ptr<hci::ScoDataPacket> packet_0 = hci::ScoDataPacket::New(/*payload_size=*/1);
+  std::unique_ptr<hci::ScoDataPacket> packet_0 =
+      hci::ScoDataPacket::New(/*payload_size=*/1);
   packet_0->mutable_view()->mutable_data().Write(packet_buffer_0);
   packet_0->InitializeFromBuffer();
   sco_conn()->ReceiveInboundPacket(std::move(packet_0));
@@ -246,17 +287,20 @@ TEST_F(HciScoConnectionTestWithFakeScoChannel, ReceiveTwoPackets) {
   ASSERT_EQ(packets.size(), 1u);
   EXPECT_FALSE(sco_conn()->Read());
   StaticByteBuffer payload_buffer_0(0x00);
-  EXPECT_TRUE(ContainersEqual(packets[0]->view().payload_data(), payload_buffer_0));
+  EXPECT_TRUE(
+      ContainersEqual(packets[0]->view().payload_data(), payload_buffer_0));
   EXPECT_EQ(packets[0]->packet_status_flag(),
             hci_spec::SynchronousDataPacketStatusFlag::kDataPartiallyLost);
 
   StaticByteBuffer packet_buffer_1(
       LowerBits(kConnectionHandle),
-      UpperBits(kConnectionHandle),  // handle + packet status flag: kCorrectlyReceived
+      UpperBits(kConnectionHandle),  // handle + packet status flag:
+                                     // kCorrectlyReceived
       0x01,                          // payload length
       0x01                           // payload
   );
-  std::unique_ptr<hci::ScoDataPacket> packet_1 = hci::ScoDataPacket::New(/*payload_size=*/1);
+  std::unique_ptr<hci::ScoDataPacket> packet_1 =
+      hci::ScoDataPacket::New(/*payload_size=*/1);
   packet_1->mutable_view()->mutable_data().Write(packet_buffer_1);
   packet_1->InitializeFromBuffer();
   sco_conn()->ReceiveInboundPacket(std::move(packet_1));
@@ -264,34 +308,42 @@ TEST_F(HciScoConnectionTestWithFakeScoChannel, ReceiveTwoPackets) {
   ASSERT_EQ(packets.size(), 2u);
   EXPECT_FALSE(sco_conn()->Read());
   auto payload_buffer_1 = StaticByteBuffer(0x01);
-  EXPECT_TRUE(ContainersEqual(packets[1]->view().payload_data(), payload_buffer_1));
+  EXPECT_TRUE(
+      ContainersEqual(packets[1]->view().payload_data(), payload_buffer_1));
   EXPECT_EQ(packets[1]->packet_status_flag(),
             hci_spec::SynchronousDataPacketStatusFlag::kCorrectlyReceived);
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kConnectionHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::DisconnectPacket(kConnectionHandle));
 }
 
 TEST_F(HciScoConnectionTestWithFakeScoChannel, SendPackets) {
-  EXPECT_TRUE(sco_conn()->Activate(/*rx_callback=*/[]() {}, /*closed_callback=*/[] {}));
+  EXPECT_TRUE(
+      sco_conn()->Activate(/*rx_callback=*/[]() {}, /*closed_callback=*/[] {}));
   ASSERT_EQ(fake_sco_chan()->connections().size(), 1u);
 
-  const auto packet_buffer_0 = StaticByteBuffer(LowerBits(kConnectionHandle),
-                                                UpperBits(kConnectionHandle),  // handle
-                                                0x01,                          // payload length
-                                                0x00                           // payload
-  );
-  const BufferView payload_view_0 = packet_buffer_0.view(sizeof(hci_spec::SynchronousDataHeader));
+  const auto packet_buffer_0 =
+      StaticByteBuffer(LowerBits(kConnectionHandle),
+                       UpperBits(kConnectionHandle),  // handle
+                       0x01,                          // payload length
+                       0x00                           // payload
+      );
+  const BufferView payload_view_0 =
+      packet_buffer_0.view(sizeof(hci_spec::SynchronousDataHeader));
   sco_conn()->Send(std::make_unique<DynamicByteBuffer>(payload_view_0));
 
-  auto packet_buffer_1 = StaticByteBuffer(LowerBits(kConnectionHandle),
-                                          UpperBits(kConnectionHandle),  // handle
-                                          0x01,                          // payload length
-                                          0x01                           // payload
-  );
-  BufferView payload_view_1 = packet_buffer_1.view(sizeof(hci_spec::SynchronousDataHeader));
+  auto packet_buffer_1 =
+      StaticByteBuffer(LowerBits(kConnectionHandle),
+                       UpperBits(kConnectionHandle),  // handle
+                       0x01,                          // payload length
+                       0x01                           // payload
+      );
+  BufferView payload_view_1 =
+      packet_buffer_1.view(sizeof(hci_spec::SynchronousDataHeader));
   sco_conn()->Send(std::make_unique<DynamicByteBuffer>(payload_view_1));
 
   EXPECT_EQ(fake_sco_chan()->readable_count(), 1u);
-  std::unique_ptr<hci::ScoDataPacket> sent_packet = sco_conn()->GetNextOutboundPacket();
+  std::unique_ptr<hci::ScoDataPacket> sent_packet =
+      sco_conn()->GetNextOutboundPacket();
   ASSERT_TRUE(sent_packet);
   EXPECT_TRUE(ContainersEqual(packet_buffer_0, sent_packet->view().data()));
 
@@ -300,25 +352,32 @@ TEST_F(HciScoConnectionTestWithFakeScoChannel, SendPackets) {
   EXPECT_TRUE(ContainersEqual(packet_buffer_1, sent_packet->view().data()));
 
   EXPECT_FALSE(sco_conn()->GetNextOutboundPacket());
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kConnectionHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::DisconnectPacket(kConnectionHandle));
 }
 
-TEST_F(HciScoConnectionTestWithFakeScoChannel, SendPacketLargerThanMtuGetsDropped) {
-  EXPECT_TRUE(sco_conn()->Activate(/*rx_callback=*/[]() {}, /*closed_callback=*/[] {}));
+TEST_F(HciScoConnectionTestWithFakeScoChannel,
+       SendPacketLargerThanMtuGetsDropped) {
+  EXPECT_TRUE(
+      sco_conn()->Activate(/*rx_callback=*/[]() {}, /*closed_callback=*/[] {}));
   ASSERT_EQ(fake_sco_chan()->connections().size(), 1u);
 
-  const auto packet_buffer = StaticByteBuffer(LowerBits(kConnectionHandle),
-                                              UpperBits(kConnectionHandle),  // handle
-                                              0x02,                          // payload length
-                                              0x00, 0x01                     // payload
-  );
-  const BufferView payload_view = packet_buffer.view(sizeof(hci_spec::SynchronousDataHeader));
+  const auto packet_buffer =
+      StaticByteBuffer(LowerBits(kConnectionHandle),
+                       UpperBits(kConnectionHandle),  // handle
+                       0x02,                          // payload length
+                       0x00,
+                       0x01  // payload
+      );
+  const BufferView payload_view =
+      packet_buffer.view(sizeof(hci_spec::SynchronousDataHeader));
   EXPECT_GT(payload_view.size(), sco_conn()->max_tx_sdu_size());
   sco_conn()->Send(std::make_unique<DynamicByteBuffer>(payload_view));
 
   EXPECT_EQ(fake_sco_chan()->readable_count(), 0u);
   EXPECT_FALSE(sco_conn()->GetNextOutboundPacket());
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kConnectionHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::DisconnectPacket(kConnectionHandle));
 }
 
 TEST_F(HciScoConnectionTestWithFakeScoChannel, OnHciError) {
@@ -332,23 +391,26 @@ TEST_F(HciScoConnectionTestWithFakeScoChannel, OnHciError) {
 
   sco_conn()->OnHciError();
   EXPECT_EQ(closed_cb_count, 1);
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kConnectionHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::DisconnectPacket(kConnectionHandle));
 }
 
 TEST_F(HciScoConnectionTest, ControllerPacketCountClearedOnPeerDisconnect) {
   size_t close_count_0 = 0;
   auto closed_cb_0 = [&] { close_count_0++; };
 
-  EXPECT_TRUE(sco_conn()->Activate(/*rx_callback=*/[]() {}, std::move(closed_cb_0)));
+  EXPECT_TRUE(
+      sco_conn()->Activate(/*rx_callback=*/[]() {}, std::move(closed_cb_0)));
   EXPECT_EQ(close_count_0, 0u);
   ASSERT_TRUE(hci_conn().is_alive());
 
   // Fill up the controller buffer.
   ASSERT_EQ(kMaxScoPacketCount, 1u);
-  const StaticByteBuffer packet_buffer_0(LowerBits(kConnectionHandle),
-                                         UpperBits(kConnectionHandle),  // handle
-                                         0x01,                          // payload length
-                                         0x00                           // payload
+  const StaticByteBuffer packet_buffer_0(
+      LowerBits(kConnectionHandle),
+      UpperBits(kConnectionHandle),  // handle
+      0x01,                          // payload length
+      0x00                           // payload
   );
   const BufferView packet_0_payload =
       packet_buffer_0.view(/*pos=*/sizeof(hci_spec::SynchronousDataHeader));
@@ -358,24 +420,30 @@ TEST_F(HciScoConnectionTest, ControllerPacketCountClearedOnPeerDisconnect) {
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
 
   // Queue a packet on a second connection.
-  auto hci_conn_1 = std::make_unique<hci::ScoConnection>(
-      kConnectionHandle2, DeviceAddress(), DeviceAddress(), transport()->GetWeakPtr());
-  std::unique_ptr<ScoConnection> sco_conn_1 = CreateScoConnection(std::move(hci_conn_1));
+  auto hci_conn_1 =
+      std::make_unique<hci::ScoConnection>(kConnectionHandle2,
+                                           DeviceAddress(),
+                                           DeviceAddress(),
+                                           transport()->GetWeakPtr());
+  std::unique_ptr<ScoConnection> sco_conn_1 =
+      CreateScoConnection(std::move(hci_conn_1));
   size_t close_count_1 = 0;
   auto closed_cb_1 = [&] { close_count_1++; };
-  EXPECT_TRUE(sco_conn_1->Activate(/*rx_callback=*/[] {}, std::move(closed_cb_1)));
-  const auto packet_buffer_1 = StaticByteBuffer(LowerBits(kConnectionHandle2),
-                                                UpperBits(kConnectionHandle2),  // handle
-                                                0x01,                           // payload length
-                                                0x01                            // payload
-  );
+  EXPECT_TRUE(
+      sco_conn_1->Activate(/*rx_callback=*/[] {}, std::move(closed_cb_1)));
+  const auto packet_buffer_1 =
+      StaticByteBuffer(LowerBits(kConnectionHandle2),
+                       UpperBits(kConnectionHandle2),  // handle
+                       0x01,                           // payload length
+                       0x01                            // payload
+      );
   const BufferView packet_1_payload =
       packet_buffer_1.view(/*pos=*/sizeof(hci_spec::SynchronousDataHeader));
   sco_conn_1->Send(std::make_unique<DynamicByteBuffer>(packet_1_payload));
   RunUntilIdle();
 
-  // Disconnecting the first connection should clear the controller packet count and allow
-  // packet_buffer_1 to be sent.
+  // Disconnecting the first connection should clear the controller packet count
+  // and allow packet_buffer_1 to be sent.
   test_device()->SendCommandChannelPacket(
       bt::testing::DisconnectionCompletePacket(kConnectionHandle));
   EXPECT_SCO_PACKET_OUT(test_device(), packet_buffer_1);
@@ -384,7 +452,8 @@ TEST_F(HciScoConnectionTest, ControllerPacketCountClearedOnPeerDisconnect) {
   EXPECT_FALSE(hci_conn().is_alive());
   EXPECT_EQ(close_count_1, 0u);
 
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kConnectionHandle2));
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::DisconnectPacket(kConnectionHandle2));
   sco_conn_1.reset();
   RunUntilIdle();
   EXPECT_EQ(close_count_1, 0u);

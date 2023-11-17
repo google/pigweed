@@ -2,13 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "bounded_inspect_list_node.h"
+#include "pw_bluetooth_sapphire/internal/host/common/bounded_inspect_list_node.h"
 
-#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
+#include <cpp-string/string_printf.h>
 
 namespace bt {
 
-void BoundedInspectListNode::AttachInspect(inspect::Node& parent, std::string name) {
+void BoundedInspectListNode::AttachInspect(inspect::Node& parent,
+                                           std::string name) {
   list_node_ = parent.CreateChild(name);
 }
 

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "fake_sco_connection.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/fake_sco_connection.h"
 
 namespace bt::hci::testing {
 

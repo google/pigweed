@@ -2,22 +2,21 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "sc_stage_1_passkey.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/sc_stage_1_passkey.h"
 
 #include <gtest/gtest.h>
 
-#include "lib/async/default.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/fake_phase_listener.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/sc_stage_1.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
+#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
+#include "pw_bluetooth_sapphire/internal/host/common/random.h"
+#include "pw_bluetooth_sapphire/internal/host/common/uint128.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/connection.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel_test.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/fake_phase_listener.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/packet.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/sc_stage_1.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/util.h"
 
 namespace bt::sm {
 namespace {
@@ -51,25 +50,36 @@ class ScStage1PasskeyTest : public l2cap::testing::FakeChannelTest {
               ValidPacketReader::ParseSdu(sent_packet);
           ASSERT_TRUE(maybe_reader.is_ok())
               << "Sent invalid packet: "
-              << ProtocolErrorTraits<sm::ErrorCode>::ToString(maybe_reader.error_value());
+              << ProtocolErrorTraits<sm::ErrorCode>::ToString(
+                     maybe_reader.error_value());
           last_packet_.emplace(maybe_reader.value());
           last_packet_internal_ = std::move(sent_packet);
         },
         dispatcher());
     stage_1_ = std::make_unique<ScStage1Passkey>(
-        listener_->as_weak_ptr(), args.role, args.local_pub_key_x, args.peer_pub_key_x, args.method,
+        listener_->as_weak_ptr(),
+        args.role,
+        args.local_pub_key_x,
+        args.peer_pub_key_x,
+        args.method,
         sm_chan_->GetWeakPtr(),
-        [this](fit::result<ErrorCode, ScStage1::Output> out) { last_results_ = out; });
+        [this](fit::result<ErrorCode, ScStage1::Output> out) {
+          last_results_ = out;
+        });
   }
 
-  UInt128 GenerateConfirmValue(const UInt128& random, bool gen_initiator_confirm, uint8_t r) const {
-    UInt256 initiator_key = args_.local_pub_key_x, responder_key = args_.peer_pub_key_x;
+  UInt128 GenerateConfirmValue(const UInt128& random,
+                               bool gen_initiator_confirm,
+                               uint8_t r) const {
+    UInt256 initiator_key = args_.local_pub_key_x,
+            responder_key = args_.peer_pub_key_x;
     if (args_.role == Role::kResponder) {
       std::swap(responder_key, initiator_key);
     }
 
-    return gen_initiator_confirm ? util::F4(initiator_key, responder_key, random, r).value()
-                                 : util::F4(responder_key, initiator_key, random, r).value();
+    return gen_initiator_confirm
+               ? util::F4(initiator_key, responder_key, random, r).value()
+               : util::F4(responder_key, initiator_key, random, r).value();
   }
 
   struct MatchingPair {
@@ -78,10 +88,13 @@ class ScStage1PasskeyTest : public l2cap::testing::FakeChannelTest {
   };
   MatchingPair GenerateMatchingConfirmAndRandom(uint8_t r) {
     MatchingPair pair;
-    random_generator()->Get({reinterpret_cast<std::byte*>(pair.random.data()), pair.random.size()});
-    // If the args_ has Role::kResponder, then we are testing responder flow, so the test code will
-    // act in the initiator role, and vice versa if args_ has Role::kInitiator.
-    pair.confirm = GenerateConfirmValue(pair.random, args_.role == Role::kResponder, r);
+    random_generator()->Get(
+        {reinterpret_cast<std::byte*>(pair.random.data()), pair.random.size()});
+    // If the args_ has Role::kResponder, then we are testing responder flow, so
+    // the test code will act in the initiator role, and vice versa if args_ has
+    // Role::kInitiator.
+    pair.confirm =
+        GenerateConfirmValue(pair.random, args_.role == Role::kResponder, r);
     return pair;
   }
 
@@ -100,9 +113,11 @@ class ScStage1PasskeyTest : public l2cap::testing::FakeChannelTest {
   std::unique_ptr<PairingChannel> sm_chan_;
   std::unique_ptr<ScStage1Passkey> stage_1_;
   std::optional<ValidPacketReader> last_packet_ = std::nullopt;
-  // To store the last sent SDU so that the the last_packet_ PacketReader points at valid data.
+  // To store the last sent SDU so that the the last_packet_ PacketReader points
+  // at valid data.
   ByteBufferPtr last_packet_internal_;
-  std::optional<fit::result<ErrorCode, ScStage1::Output>> last_results_ = std::nullopt;
+  std::optional<fit::result<ErrorCode, ScStage1::Output>> last_results_ =
+      std::nullopt;
 };
 
 using ScStage1PasskeyDeathTest = ScStage1PasskeyTest;
@@ -123,12 +138,13 @@ TEST_F(ScStage1PasskeyTest, InitiatorPasskeyEntryDisplay) {
   NewScStage1Passkey(args);
   uint64_t passkey;
   ConfirmCallback confirm_cb = nullptr;
-  listener()->set_display_delegate(
-      [&](uint64_t disp_passkey, Delegate::DisplayMethod method, ConfirmCallback cb) {
-        ASSERT_EQ(Delegate::DisplayMethod::kPeerEntry, method);
-        confirm_cb = std::move(cb);
-        passkey = disp_passkey;
-      });
+  listener()->set_display_delegate([&](uint64_t disp_passkey,
+                                       Delegate::DisplayMethod method,
+                                       ConfirmCallback cb) {
+    ASSERT_EQ(Delegate::DisplayMethod::kPeerEntry, method);
+    confirm_cb = std::move(cb);
+    passkey = disp_passkey;
+  });
   stage_1()->Run();
   ASSERT_TRUE(confirm_cb);
   confirm_cb(true);
@@ -140,13 +156,16 @@ TEST_F(ScStage1PasskeyTest, InitiatorPasskeyEntryDisplay) {
     ASSERT_EQ(kPairingConfirm, last_packet()->code());
     const uint8_t r = (passkey & (1 << i)) ? 0x81 : 0x80;
     vals = GenerateMatchingConfirmAndRandom(r);
-    PairingConfirmValue init_confirm = last_packet()->payload<PairingConfirmValue>();
+    PairingConfirmValue init_confirm =
+        last_packet()->payload<PairingConfirmValue>();
     stage_1()->OnPairingConfirm(vals.confirm);
     RunUntilIdle();
 
     ASSERT_EQ(kPairingRandom, last_packet()->code());
     last_rand = last_packet()->payload<PairingRandomValue>();
-    ASSERT_EQ(GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/true, r), init_confirm);
+    ASSERT_EQ(
+        GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/true, r),
+        init_confirm);
     stage_1()->OnPairingRandom(vals.random);
     RunUntilIdle();
   }
@@ -181,13 +200,16 @@ TEST_F(ScStage1PasskeyTest, InitiatorPasskeyEntryInput) {
     ASSERT_EQ(kPairingConfirm, last_packet()->code());
     const uint8_t r = (kPasskey & (1 << i)) ? 0x81 : 0x80;
     vals = GenerateMatchingConfirmAndRandom(r);
-    PairingConfirmValue init_confirm = last_packet()->payload<PairingConfirmValue>();
+    PairingConfirmValue init_confirm =
+        last_packet()->payload<PairingConfirmValue>();
     stage_1()->OnPairingConfirm(vals.confirm);
     RunUntilIdle();
 
     ASSERT_EQ(kPairingRandom, last_packet()->code());
     last_rand = last_packet()->payload<PairingRandomValue>();
-    ASSERT_EQ(GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/true, r), init_confirm);
+    ASSERT_EQ(
+        GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/true, r),
+        init_confirm);
     stage_1()->OnPairingRandom(vals.random);
     RunUntilIdle();
   }
@@ -216,7 +238,8 @@ TEST_F(ScStage1PasskeyTest, InitiatorPeerConfirmBeforeUserInputFails) {
   uint8_t r = 0x80;
   MatchingPair vals = GenerateMatchingConfirmAndRandom(r);
   stage_1()->OnPairingConfirm(vals.confirm);
-  // The initiator expects to send the pairing confirm first, so it should now reject pairing
+  // The initiator expects to send the pairing confirm first, so it should now
+  // reject pairing
   ASSERT_TRUE(last_results()->is_error());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error_value());
 }
@@ -227,7 +250,8 @@ TEST_F(ScStage1PasskeyTest, ReceiveRandomBeforePeerConfirm) {
   args.role = Role::kInitiator;
   NewScStage1Passkey(args);
   const uint64_t kPasskey = 123456;
-  listener()->set_request_passkey_delegate([=](PasskeyResponseCallback cb) { cb(kPasskey); });
+  listener()->set_request_passkey_delegate(
+      [=](PasskeyResponseCallback cb) { cb(kPasskey); });
   stage_1()->Run();
   RunUntilIdle();
   ASSERT_EQ(kPairingConfirm, last_packet()->code());
@@ -321,12 +345,13 @@ TEST_F(ScStage1PasskeyTest, ResponderPasskeyEntryDisplay) {
   NewScStage1Passkey(args);
   uint64_t passkey;
   ConfirmCallback confirm_cb = nullptr;
-  listener()->set_display_delegate(
-      [&](uint64_t disp_passkey, Delegate::DisplayMethod method, ConfirmCallback cb) {
-        ASSERT_EQ(Delegate::DisplayMethod::kPeerEntry, method);
-        confirm_cb = std::move(cb);
-        passkey = disp_passkey;
-      });
+  listener()->set_display_delegate([&](uint64_t disp_passkey,
+                                       Delegate::DisplayMethod method,
+                                       ConfirmCallback cb) {
+    ASSERT_EQ(Delegate::DisplayMethod::kPeerEntry, method);
+    confirm_cb = std::move(cb);
+    passkey = disp_passkey;
+  });
   stage_1()->Run();
   ASSERT_TRUE(confirm_cb);
   confirm_cb(true);
@@ -339,13 +364,16 @@ TEST_F(ScStage1PasskeyTest, ResponderPasskeyEntryDisplay) {
     stage_1()->OnPairingConfirm(vals.confirm);
     RunUntilIdle();
     ASSERT_EQ(kPairingConfirm, last_packet()->code());
-    PairingConfirmValue init_confirm = last_packet()->payload<PairingConfirmValue>();
+    PairingConfirmValue init_confirm =
+        last_packet()->payload<PairingConfirmValue>();
 
     stage_1()->OnPairingRandom(vals.random);
     RunUntilIdle();
     ASSERT_EQ(kPairingRandom, last_packet()->code());
     last_rand = last_packet()->payload<PairingRandomValue>();
-    ASSERT_EQ(GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/false, r), init_confirm);
+    ASSERT_EQ(
+        GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/false, r),
+        init_confirm);
   }
   UInt128 passkey_array{0};
   // Copy little-endian uint64 passkey to the UInt128 array needed for Stage 2
@@ -379,13 +407,16 @@ TEST_F(ScStage1PasskeyTest, ResponderPasskeyEntryInput) {
     stage_1()->OnPairingConfirm(vals.confirm);
     RunUntilIdle();
     ASSERT_EQ(kPairingConfirm, last_packet()->code());
-    PairingConfirmValue init_confirm = last_packet()->payload<PairingConfirmValue>();
+    PairingConfirmValue init_confirm =
+        last_packet()->payload<PairingConfirmValue>();
 
     stage_1()->OnPairingRandom(vals.random);
     RunUntilIdle();
     ASSERT_EQ(kPairingRandom, last_packet()->code());
     last_rand = last_packet()->payload<PairingRandomValue>();
-    ASSERT_EQ(GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/false, r), init_confirm);
+    ASSERT_EQ(
+        GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/false, r),
+        init_confirm);
   }
   UInt128 passkey_array{0};
   // Copy little-endian uint64 passkey to the UInt128 array needed for Stage 2
@@ -410,7 +441,8 @@ TEST_F(ScStage1PasskeyTest, ResponderPeerConfirmBeforeUserInputOk) {
   stage_1()->Run();
   ASSERT_TRUE(passkey_cb);
 
-  // Do 0th iteration outside loop so we can notify the callback after receiving the confirm.
+  // Do 0th iteration outside loop so we can notify the callback after receiving
+  // the confirm.
   uint8_t r = (kPasskey & 1) ? 0x81 : 0x80;
   MatchingPair vals = GenerateMatchingConfirmAndRandom(r);
   stage_1()->OnPairingConfirm(vals.confirm);
@@ -419,13 +451,15 @@ TEST_F(ScStage1PasskeyTest, ResponderPeerConfirmBeforeUserInputOk) {
   passkey_cb(kPasskey);
   RunUntilIdle();
   ASSERT_EQ(kPairingConfirm, last_packet()->code());
-  PairingConfirmValue init_confirm = last_packet()->payload<PairingConfirmValue>();
+  PairingConfirmValue init_confirm =
+      last_packet()->payload<PairingConfirmValue>();
 
   stage_1()->OnPairingRandom(vals.random);
   RunUntilIdle();
   ASSERT_EQ(kPairingRandom, last_packet()->code());
   UInt128 last_rand = last_packet()->payload<PairingRandomValue>();
-  ASSERT_EQ(GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/false, r), init_confirm);
+  ASSERT_EQ(GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/false, r),
+            init_confirm);
   for (size_t i = 1; i < 20; ++i) {
     r = (kPasskey & (1 << i)) ? 0x81 : 0x80;
     vals = GenerateMatchingConfirmAndRandom(r);
@@ -438,7 +472,9 @@ TEST_F(ScStage1PasskeyTest, ResponderPeerConfirmBeforeUserInputOk) {
     RunUntilIdle();
     ASSERT_EQ(kPairingRandom, last_packet()->code());
     last_rand = last_packet()->payload<PairingRandomValue>();
-    ASSERT_EQ(GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/false, r), init_confirm);
+    ASSERT_EQ(
+        GenerateConfirmValue(last_rand, /*gen_initiator_confirm=*/false, r),
+        init_confirm);
   }
   UInt128 passkey_array{0};
   // Copy little-endian uint64 passkey to the UInt128 array needed for Stage 2
@@ -457,7 +493,8 @@ TEST_F(ScStage1PasskeyTest, ReceiveTwoPairingConfirmsFails) {
   args.role = Role::kResponder;
   NewScStage1Passkey(args);
   const uint64_t kPasskey = 123456;
-  listener()->set_request_passkey_delegate([=](PasskeyResponseCallback cb) { cb(kPasskey); });
+  listener()->set_request_passkey_delegate(
+      [=](PasskeyResponseCallback cb) { cb(kPasskey); });
   stage_1()->Run();
 
   const uint8_t r = (kPasskey & 1) ? 0x81 : 0x80;
@@ -477,7 +514,8 @@ TEST_F(ScStage1PasskeyTest, ReceiveTwoPairingRandomsFails) {
   args.role = Role::kResponder;
   NewScStage1Passkey(args);
   const uint64_t kPasskey = 123456;
-  listener()->set_request_passkey_delegate([=](PasskeyResponseCallback cb) { cb(kPasskey); });
+  listener()->set_request_passkey_delegate(
+      [=](PasskeyResponseCallback cb) { cb(kPasskey); });
   stage_1()->Run();
 
   const uint8_t r = (kPasskey & 1) ? 0x81 : 0x80;
@@ -508,8 +546,8 @@ TEST_F(ScStage1PasskeyTest, ReceiveMismatchedPairingConfirmFails) {
   ASSERT_TRUE(passkey_cb);
   passkey_cb(kPasskey);
 
-  // Here we reverse the bit of the passkey used to generate the confirm, so the random and confirm
-  // values do not match
+  // Here we reverse the bit of the passkey used to generate the confirm, so the
+  // random and confirm values do not match
   uint8_t r = (kPasskey & 1) ? 0x80 : 0x81;
   MatchingPair vals = GenerateMatchingConfirmAndRandom(r);
   stage_1()->OnPairingConfirm(vals.confirm);

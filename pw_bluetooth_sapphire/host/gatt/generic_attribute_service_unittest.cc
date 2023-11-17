@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "generic_attribute_service.h"
+#include "pw_bluetooth_sapphire/internal/host/gatt/generic_attribute_service.h"
 
 #include <gtest/gtest.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
-#include "src/connectivity/bluetooth/core/bt-host/gatt/persisted_data.h"
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/gatt/gatt_defs.h"
+#include "pw_bluetooth_sapphire/internal/host/gatt/persisted_data.h"
 
 namespace bt::gatt {
 namespace {
@@ -21,7 +21,8 @@ constexpr uint16_t kEnableInd = 0x0002;
 
 class GenericAttributeServiceTest : public ::testing::Test {
  protected:
-  bool WriteServiceChangedCcc(PeerId peer_id, uint16_t ccc_value,
+  bool WriteServiceChangedCcc(PeerId peer_id,
+                              uint16_t ccc_value,
                               fit::result<att::ErrorCode>* out_status) {
     BT_ASSERT(out_status);
 
@@ -29,7 +30,8 @@ class GenericAttributeServiceTest : public ::testing::Test {
     BT_ASSERT(attr);
     auto result_cb = [&out_status](auto cb_status) { *out_status = cb_status; };
     uint16_t value = htole16(ccc_value);
-    return attr->WriteAsync(peer_id, 0u, BufferView(&value, sizeof(value)), result_cb);
+    return attr->WriteAsync(
+        peer_id, 0u, BufferView(&value, sizeof(value)), result_cb);
   }
 
   LocalServiceManager mgr;
@@ -66,22 +68,24 @@ TEST_F(GenericAttributeServiceTest, RegisterUnregister) {
 // callback to send an indication to the "client."
 TEST_F(GenericAttributeServiceTest, IndicateOnRegister) {
   std::optional<IdType> indicated_svc_id;
-  auto send_indication = [&](IdType service_id, IdType chrc_id, PeerId peer_id, BufferView value) {
-    EXPECT_EQ(kTestPeerId, peer_id);
-    EXPECT_EQ(kServiceChangedChrcId, chrc_id);
-    indicated_svc_id = service_id;
+  auto send_indication =
+      [&](IdType service_id, IdType chrc_id, PeerId peer_id, BufferView value) {
+        EXPECT_EQ(kTestPeerId, peer_id);
+        EXPECT_EQ(kServiceChangedChrcId, chrc_id);
+        indicated_svc_id = service_id;
 
-    ASSERT_EQ(4u, value.size());
-    // The second service following the four-attribute GATT service should span
-    // the subsequent three handles.
-    EXPECT_EQ(0x05, value[0]);
-    EXPECT_EQ(0x00, value[1]);
-    EXPECT_EQ(0x07, value[2]);
-    EXPECT_EQ(0x00, value[3]);
-  };
+        ASSERT_EQ(4u, value.size());
+        // The second service following the four-attribute GATT service should
+        // span the subsequent three handles.
+        EXPECT_EQ(0x05, value[0]);
+        EXPECT_EQ(0x00, value[1]);
+        EXPECT_EQ(0x07, value[2]);
+        EXPECT_EQ(0x00, value[3]);
+      };
 
   // Register the GATT service.
-  GenericAttributeService gatt_service(mgr.GetWeakPtr(), std::move(send_indication));
+  GenericAttributeService gatt_service(mgr.GetWeakPtr(),
+                                       std::move(send_indication));
 
   // Enable Service Changed indications for the test client.
   fit::result<att::ErrorCode> status = fit::ok();
@@ -92,18 +96,24 @@ TEST_F(GenericAttributeServiceTest, IndicateOnRegister) {
   constexpr IdType kChrcId = 12;
   constexpr uint8_t kChrcProps = Property::kRead;
   constexpr UUID kTestChrcType(uint32_t{0xdeadbeef});
-  const att::AccessRequirements kReadReqs(/*encryption=*/true, /*authentication=*/true,
+  const att::AccessRequirements kReadReqs(/*encryption=*/true,
+                                          /*authentication=*/true,
                                           /*authorization=*/true);
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
   auto service = std::make_unique<Service>(/*primary=*/false, kTestSvcType);
-  service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId, kTestChrcType, kChrcProps, 0,
-                                                              kReadReqs, kWriteReqs, kUpdateReqs));
-  auto service_id =
-      mgr.RegisterService(std::move(service), NopReadHandler, NopWriteHandler, NopCCCallback);
+  service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId,
+                                                              kTestChrcType,
+                                                              kChrcProps,
+                                                              0,
+                                                              kReadReqs,
+                                                              kWriteReqs,
+                                                              kUpdateReqs));
+  auto service_id = mgr.RegisterService(
+      std::move(service), NopReadHandler, NopWriteHandler, NopCCCallback);
   // Verify that service registration succeeded
   EXPECT_NE(kInvalidId, service_id);
-  // Verify that |send_indication| was invoked to indicate the Service Changed chrc within the
-  // gatt_service.
+  // Verify that |send_indication| was invoked to indicate the Service Changed
+  // chrc within the gatt_service.
   EXPECT_EQ(gatt_service.service_id(), indicated_svc_id);
 }
 
@@ -111,35 +121,43 @@ TEST_F(GenericAttributeServiceTest, IndicateOnRegister) {
 // the latter test service.
 TEST_F(GenericAttributeServiceTest, IndicateOnUnregister) {
   std::optional<IdType> indicated_svc_id;
-  auto send_indication = [&](IdType service_id, IdType chrc_id, PeerId peer_id, BufferView value) {
-    EXPECT_EQ(kTestPeerId, peer_id);
-    EXPECT_EQ(kServiceChangedChrcId, chrc_id);
-    indicated_svc_id = service_id;
+  auto send_indication =
+      [&](IdType service_id, IdType chrc_id, PeerId peer_id, BufferView value) {
+        EXPECT_EQ(kTestPeerId, peer_id);
+        EXPECT_EQ(kServiceChangedChrcId, chrc_id);
+        indicated_svc_id = service_id;
 
-    ASSERT_EQ(4u, value.size());
-    // The second service following the four-attribute GATT service should span
-    // the subsequent four handles (update enabled).
-    EXPECT_EQ(0x05, value[0]);
-    EXPECT_EQ(0x00, value[1]);
-    EXPECT_EQ(0x08, value[2]);
-    EXPECT_EQ(0x00, value[3]);
-  };
+        ASSERT_EQ(4u, value.size());
+        // The second service following the four-attribute GATT service should
+        // span the subsequent four handles (update enabled).
+        EXPECT_EQ(0x05, value[0]);
+        EXPECT_EQ(0x00, value[1]);
+        EXPECT_EQ(0x08, value[2]);
+        EXPECT_EQ(0x00, value[3]);
+      };
 
   // Register the GATT service.
-  GenericAttributeService gatt_service(mgr.GetWeakPtr(), std::move(send_indication));
+  GenericAttributeService gatt_service(mgr.GetWeakPtr(),
+                                       std::move(send_indication));
 
   constexpr UUID kTestSvcType(uint32_t{0xdeadbeef});
   constexpr IdType kChrcId = 0;
   constexpr uint8_t kChrcProps = Property::kNotify;
   constexpr UUID kTestChrcType(uint32_t{0xdeadbeef});
   const att::AccessRequirements kReadReqs, kWriteReqs;
-  const att::AccessRequirements kUpdateReqs(/*encryption=*/true, /*authentication=*/true,
+  const att::AccessRequirements kUpdateReqs(/*encryption=*/true,
+                                            /*authentication=*/true,
                                             /*authorization=*/true);
   auto service = std::make_unique<Service>(/*primary=*/false, kTestSvcType);
-  service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId, kTestChrcType, kChrcProps, 0,
-                                                              kReadReqs, kWriteReqs, kUpdateReqs));
-  auto service_id =
-      mgr.RegisterService(std::move(service), NopReadHandler, NopWriteHandler, NopCCCallback);
+  service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId,
+                                                              kTestChrcType,
+                                                              kChrcProps,
+                                                              0,
+                                                              kReadReqs,
+                                                              kWriteReqs,
+                                                              kUpdateReqs));
+  auto service_id = mgr.RegisterService(
+      std::move(service), NopReadHandler, NopWriteHandler, NopCCCallback);
   // Verify that service registration succeeded
   EXPECT_NE(kInvalidId, service_id);
 
@@ -149,19 +167,20 @@ TEST_F(GenericAttributeServiceTest, IndicateOnUnregister) {
   EXPECT_EQ(std::nullopt, indicated_svc_id);
 
   mgr.UnregisterService(service_id);
-  // Verify that |send_indication| was invoked to indicate the Service Changed chrc within the
-  // gatt_service.
+  // Verify that |send_indication| was invoked to indicate the Service Changed
+  // chrc within the gatt_service.
   EXPECT_EQ(gatt_service.service_id(), indicated_svc_id);
 }
 
-// Tests that registering the GATT service reads a persisted value for the service changed
-// characteristic's ccc, and that enabling indication on its service changed characteristic writes a
-// persisted value.
+// Tests that registering the GATT service reads a persisted value for the
+// service changed characteristic's ccc, and that enabling indication on its
+// service changed characteristic writes a persisted value.
 TEST_F(GenericAttributeServiceTest, PersistIndicate) {
   int persist_callback_count = 0;
 
-  auto persist_callback = [&persist_callback_count](PeerId peer_id,
-                                                    ServiceChangedCCCPersistedData gatt_data) {
+  auto persist_callback = [&persist_callback_count](
+                              PeerId peer_id,
+                              ServiceChangedCCCPersistedData gatt_data) {
     EXPECT_EQ(peer_id, kTestPeerId);
     EXPECT_EQ(gatt_data.indicate, true);
     persist_callback_count++;

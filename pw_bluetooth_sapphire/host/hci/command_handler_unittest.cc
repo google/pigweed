@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "command_handler.h"
-
-#include "src/connectivity/bluetooth/core/bt-host/common/error.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/command_handler.h"
 
 #include <pw_bluetooth/hci_common.emb.h>
 #include <pw_bluetooth/hci_test.emb.h>
+
+#include "pw_bluetooth_sapphire/internal/host/common/error.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/mock_controller.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
 
 namespace bt::hci {
 
@@ -31,13 +31,15 @@ struct TestEvent {
     return fit::ok(TestEvent{.test_param = kTestEventParam});
   }
 
-  static constexpr hci_spec::EventCode kEventCode = hci_spec::kInquiryCompleteEventCode;
+  static constexpr hci_spec::EventCode kEventCode =
+      hci_spec::kInquiryCompleteEventCode;
 };
 using DecodableEvent = TestEvent<true>;
 using UndecodableEvent = TestEvent<false>;
 
 DynamicByteBuffer MakeTestEventPacket(
-    pw::bluetooth::emboss::StatusCode status = pw::bluetooth::emboss::StatusCode::SUCCESS) {
+    pw::bluetooth::emboss::StatusCode status =
+        pw::bluetooth::emboss::StatusCode::SUCCESS) {
   return DynamicByteBuffer(StaticByteBuffer(DecodableEvent::kEventCode,
                                             0x01,  // parameters_total_size
                                             status));
@@ -47,7 +49,8 @@ template <bool DecodeSucceeds>
 struct TestCommandCompleteEvent {
   uint8_t test_param;
 
-  static fit::result<bt::Error<>, TestCommandCompleteEvent> Decode(const EventPacket& packet) {
+  static fit::result<bt::Error<>, TestCommandCompleteEvent> Decode(
+      const EventPacket& packet) {
     if (!DecodeSucceeds) {
       return fit::error(bt::Error(HostError::kPacketMalformed));
     }
@@ -55,7 +58,8 @@ struct TestCommandCompleteEvent {
     return fit::ok(TestCommandCompleteEvent{.test_param = kTestEventParam});
   }
 
-  static constexpr hci_spec::EventCode kEventCode = hci_spec::kCommandCompleteEventCode;
+  static constexpr hci_spec::EventCode kEventCode =
+      hci_spec::kCommandCompleteEventCode;
 };
 using DecodableCommandCompleteEvent = TestCommandCompleteEvent<true>;
 using UndecodableCommandCompleteEvent = TestCommandCompleteEvent<false>;
@@ -67,7 +71,8 @@ struct TestCommand {
   uint8_t test_param;
 
   EmbossCommandPacket Encode() {
-    auto packet = EmbossCommandPacket::New<pw::bluetooth::emboss::TestCommandPacketWriter>(kOpCode);
+    auto packet = EmbossCommandPacket::New<
+        pw::bluetooth::emboss::TestCommandPacketWriter>(kOpCode);
     packet.view_t().payload().Write(kEncodedTestCommandParam);
     return packet;
   }
@@ -78,16 +83,18 @@ struct TestCommand {
 };
 
 const TestCommand<DecodableEvent> kTestCommandWithAsyncEvent{.test_param = 1u};
-const TestCommand<DecodableCommandCompleteEvent> kTestCommandWithCommandCompleteEvent{.test_param =
-                                                                                          1u};
-const TestCommand<UndecodableCommandCompleteEvent> kTestCommandWithUndecodableCommandCompleteEvent{
-    .test_param = 1u};
+const TestCommand<DecodableCommandCompleteEvent>
+    kTestCommandWithCommandCompleteEvent{.test_param = 1u};
+const TestCommand<UndecodableCommandCompleteEvent>
+    kTestCommandWithUndecodableCommandCompleteEvent{.test_param = 1u};
 
-const StaticByteBuffer kTestCommandPacket(LowerBits(kOpCode), UpperBits(kOpCode),
+const StaticByteBuffer kTestCommandPacket(LowerBits(kOpCode),
+                                          UpperBits(kOpCode),
                                           0x01,  // param length
                                           kEncodedTestCommandParam);
 
-using TestingBase = bt::testing::FakeDispatcherControllerTest<bt::testing::MockController>;
+using TestingBase =
+    bt::testing::FakeDispatcherControllerTest<bt::testing::MockController>;
 class CommandHandlerTest : public TestingBase {
  public:
   void SetUp() override {
@@ -103,15 +110,16 @@ class CommandHandlerTest : public TestingBase {
 };
 
 TEST_F(CommandHandlerTest, SuccessfulSendCommandWithSyncEvent) {
-  const auto kEventPacket =
-      bt::testing::CommandCompletePacket(kOpCode, pw::bluetooth::emboss::StatusCode::SUCCESS);
+  const auto kEventPacket = bt::testing::CommandCompletePacket(
+      kOpCode, pw::bluetooth::emboss::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kEventPacket);
 
   std::optional<DecodableCommandCompleteEvent> event;
-  handler().SendCommand(kTestCommandWithCommandCompleteEvent, [&event](auto result) {
-    ASSERT_EQ(fit::ok(), result);
-    event = result.value();
-  });
+  handler().SendCommand(kTestCommandWithCommandCompleteEvent,
+                        [&event](auto result) {
+                          ASSERT_EQ(fit::ok(), result);
+                          event = result.value();
+                        });
 
   RunUntilIdle();
   ASSERT_TRUE(event.has_value());
@@ -124,10 +132,11 @@ TEST_F(CommandHandlerTest, SendCommandReceiveFailEvent) {
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kEventPacket);
 
   std::optional<hci::Error> error;
-  handler().SendCommand(kTestCommandWithCommandCompleteEvent, [&error](auto result) {
-    ASSERT_TRUE(result.is_error());
-    error = std::move(result).error_value();
-  });
+  handler().SendCommand(kTestCommandWithCommandCompleteEvent,
+                        [&error](auto result) {
+                          ASSERT_TRUE(result.is_error());
+                          error = std::move(result).error_value();
+                        });
 
   RunUntilIdle();
   ASSERT_TRUE(error.has_value());
@@ -135,15 +144,16 @@ TEST_F(CommandHandlerTest, SendCommandReceiveFailEvent) {
 }
 
 TEST_F(CommandHandlerTest, SendCommandWithSyncEventFailsToDecode) {
-  const auto kEventPacket =
-      bt::testing::CommandCompletePacket(kOpCode, pw::bluetooth::emboss::StatusCode::SUCCESS);
+  const auto kEventPacket = bt::testing::CommandCompletePacket(
+      kOpCode, pw::bluetooth::emboss::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kEventPacket);
 
   std::optional<hci::Error> error;
-  handler().SendCommand(kTestCommandWithUndecodableCommandCompleteEvent, [&error](auto result) {
-    ASSERT_TRUE(result.is_error());
-    error = std::move(result).error_value();
-  });
+  handler().SendCommand(kTestCommandWithUndecodableCommandCompleteEvent,
+                        [&error](auto result) {
+                          ASSERT_TRUE(result.is_error());
+                          error = std::move(result).error_value();
+                        });
 
   RunUntilIdle();
   ASSERT_TRUE(error.has_value());
@@ -152,17 +162,21 @@ TEST_F(CommandHandlerTest, SendCommandWithSyncEventFailsToDecode) {
 
 TEST_F(CommandHandlerTest, SuccessfulSendCommandWithAsyncEvent) {
   const auto kTestEventPacket = MakeTestEventPacket();
-  const auto kStatusEventPacket =
-      bt::testing::CommandStatusPacket(kOpCode, pw::bluetooth::emboss::StatusCode::SUCCESS);
-  EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kStatusEventPacket, &kTestEventPacket);
+  const auto kStatusEventPacket = bt::testing::CommandStatusPacket(
+      kOpCode, pw::bluetooth::emboss::StatusCode::SUCCESS);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kTestCommandPacket,
+                        &kStatusEventPacket,
+                        &kTestEventPacket);
 
   std::optional<DecodableEvent> event;
   size_t cb_count = 0;
-  handler().SendCommand(kTestCommandWithAsyncEvent, [&event, &cb_count](auto result) {
-    ASSERT_EQ(fit::ok(), result);
-    event = result.value();
-    cb_count++;
-  });
+  handler().SendCommand(kTestCommandWithAsyncEvent,
+                        [&event, &cb_count](auto result) {
+                          ASSERT_EQ(fit::ok(), result);
+                          event = result.value();
+                          cb_count++;
+                        });
 
   RunUntilIdle();
   ASSERT_EQ(cb_count, 1u);
@@ -199,15 +213,16 @@ TEST_F(CommandHandlerTest, AddEventHandlerDecodeError) {
 }
 
 TEST_F(CommandHandlerTest, SendCommandFinishOnStatus) {
-  const auto kStatusEventPacket =
-      bt::testing::CommandStatusPacket(kOpCode, pw::bluetooth::emboss::StatusCode::SUCCESS);
+  const auto kStatusEventPacket = bt::testing::CommandStatusPacket(
+      kOpCode, pw::bluetooth::emboss::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kStatusEventPacket);
 
   size_t cb_count = 0;
-  handler().SendCommandFinishOnStatus(kTestCommandWithAsyncEvent, [&cb_count](auto result) {
-    ASSERT_EQ(fit::ok(), result);
-    cb_count++;
-  });
+  handler().SendCommandFinishOnStatus(kTestCommandWithAsyncEvent,
+                                      [&cb_count](auto result) {
+                                        ASSERT_EQ(fit::ok(), result);
+                                        cb_count++;
+                                      });
 
   RunUntilIdle();
   ASSERT_EQ(cb_count, 1u);

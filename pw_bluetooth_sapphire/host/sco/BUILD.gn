@@ -5,21 +5,28 @@
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_unit_test/test.gni")
 
+dir_public_sco = "../../public/pw_bluetooth_sapphire/internal/host/sco"
+
 pw_source_set("sco") {
+  public = [
+    "$dir_public_sco/sco.h",
+    "$dir_public_sco/sco_connection.h",
+    "$dir_public_sco/sco_connection_manager.h",
+  ]
+
   sources = [
-    "sco.h",
     "sco_connection.cc",
-    "sco_connection.h",
     "sco_connection_manager.cc",
-    "sco_connection_manager.h",
   ]
 
   public_deps = [
+    "$dir_pw_bluetooth_sapphire/host/common",
+    "$dir_pw_bluetooth_sapphire/host/hci",
+    "$dir_pw_bluetooth_sapphire/host/transport",
     "$dir_pw_third_party/fuchsia:fit",
-    "//src/connectivity/bluetooth/core/bt-host/common",
-    "//src/connectivity/bluetooth/core/bt-host/hci",
-    "//src/connectivity/bluetooth/core/bt-host/transport",
   ]
+
+  public_configs = [ "$dir_pw_bluetooth_sapphire:public_include_path" ]
 }
 
 pw_test("tests") {
@@ -30,8 +37,10 @@ pw_test("tests") {
 
   deps = [
     ":sco",
-    "//src/connectivity/bluetooth/core/bt-host/hci:testing",
-    "//src/connectivity/bluetooth/core/bt-host/testing",
-    "//src/connectivity/bluetooth/core/bt-host/transport:testing",
+    "$dir_pw_bluetooth_sapphire/host/hci:testing",
+    "$dir_pw_bluetooth_sapphire/host/testing",
+    "$dir_pw_bluetooth_sapphire/host/transport:testing",
   ]
+
+  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
 }

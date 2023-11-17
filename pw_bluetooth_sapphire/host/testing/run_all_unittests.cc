@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <cstdlib>
-
 #include <gtest/gtest.h>
 #include <pw_random/xor_shift.h>
 #include <pw_string/format.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/parse_args.h"
+#include <cstdlib>
+
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/common/random.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/parse_args.h"
 
 #ifdef PW_LOG_DECLARE_FAKE_DRIVER
 PW_LOG_DECLARE_FAKE_DRIVER();
@@ -45,10 +45,10 @@ int32_t NormalizeRandomSeed(uint32_t seed) {
 
 int32_t GenerateRandomSeed() {
   // TODO(fxbug.dev/118898): Get time using pw::chrono for portability.
-  const int64_t time_ms =
-      std::chrono::duration_cast<std::chrono::milliseconds>(
-          std::chrono::system_clock::now() - std::chrono::system_clock::from_time_t(0))
-          .count();
+  const int64_t time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                              std::chrono::system_clock::now() -
+                              std::chrono::system_clock::from_time_t(0))
+                              .count();
   return NormalizeRandomSeed(static_cast<uint32_t>(time_ms));
 }
 
@@ -57,7 +57,8 @@ int32_t GenerateRandomSeed() {
 int main(int argc, char** argv) {
   LogSeverity log_severity = LogSeverity::ERROR;
 
-  std::optional<std::string_view> severity_arg_value = GetArgValue("severity", argc, argv);
+  std::optional<std::string_view> severity_arg_value =
+      GetArgValue("severity", argc, argv);
   if (severity_arg_value) {
     log_severity = LogSeverityFromString(*severity_arg_value);
   }
@@ -65,18 +66,23 @@ int main(int argc, char** argv) {
   // Set all library log messages to use printf.
   bt::UsePrintf(log_severity);
 
-  // If --gtest_random_seed is not specified, then GoogleTest calculates a seed based on time. To
-  // avoid using different seeds, we need to tell GoogleTest what seed we are using.
+  // If --gtest_random_seed is not specified, then GoogleTest calculates a seed
+  // based on time. To avoid using different seeds, we need to tell GoogleTest
+  // what seed we are using.
   std::vector<char*> new_argv(argv, argv + argc);
   char new_argv_seed_option[sizeof("--gtest_random_seed=-2147483648")] = {};
 
-  // GoogleTest doesn't initialize the random seed (UnitTest::random_seed()) until RUN_ALL_TESTS, so
-  // we need to parse it now to avoid configuring the random generator in every test suite.
+  // GoogleTest doesn't initialize the random seed (UnitTest::random_seed())
+  // until RUN_ALL_TESTS, so we need to parse it now to avoid configuring the
+  // random generator in every test suite.
   int32_t random_seed = 0;
-  std::optional<std::string_view> seed_arg_value = GetArgValue("gtest_random_seed", argc, argv);
+  std::optional<std::string_view> seed_arg_value =
+      GetArgValue("gtest_random_seed", argc, argv);
   if (seed_arg_value) {
-    std::from_chars_result result = std::from_chars(
-        seed_arg_value->data(), seed_arg_value->data() + seed_arg_value->size(), random_seed);
+    std::from_chars_result result =
+        std::from_chars(seed_arg_value->data(),
+                        seed_arg_value->data() + seed_arg_value->size(),
+                        random_seed);
     if (result.ec != std::errc()) {
       fprintf(stderr, "\nERROR: Invalid gtest_random_seed value\n");
       return 1;
@@ -84,7 +90,11 @@ int main(int argc, char** argv) {
     random_seed = NormalizeRandomSeed(random_seed);
   } else {
     random_seed = GenerateRandomSeed();
-    BT_ASSERT(pw::string::Format(new_argv_seed_option, "--gtest_random_seed=%d", random_seed).ok());
+    bool format_ok =
+        pw::string::Format(
+            new_argv_seed_option, "--gtest_random_seed=%d", random_seed)
+            .ok();
+    BT_ASSERT(format_ok);
     new_argv.push_back(new_argv_seed_option);
   }
 

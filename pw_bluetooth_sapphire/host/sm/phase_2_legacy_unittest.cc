@@ -2,25 +2,25 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "phase_2_legacy.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/phase_2_legacy.h"
+
+#include <gtest/gtest.h>
 
 #include <cstdint>
 #include <memory>
 
-#include <gtest/gtest.h>
-
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/fake_phase_listener.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
+#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
+#include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
+#include "pw_bluetooth_sapphire/internal/host/common/random.h"
+#include "pw_bluetooth_sapphire/internal/host/common/uint128.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/connection.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel_test.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/fake_phase_listener.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/packet.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/types.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/util.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
 namespace bt::sm {
 namespace {
@@ -51,8 +51,10 @@ const PairingResponseParams kDefaultPres{
     .initiator_key_dist_gen = KeyDistGen::kIdKey,
     .responder_key_dist_gen = KeyDistGen::kIdKey | KeyDistGen::kEncKey};
 
-const DeviceAddress kAddr1(DeviceAddress::Type::kLEPublic, {0x00, 0x00, 0x00, 0x00, 0x00, 0x01});
-const DeviceAddress kAddr2(DeviceAddress::Type::kLEPublic, {0x00, 0x00, 0x00, 0x00, 0x00, 0x02});
+const DeviceAddress kAddr1(DeviceAddress::Type::kLEPublic,
+                           {0x00, 0x00, 0x00, 0x00, 0x00, 0x01});
+const DeviceAddress kAddr2(DeviceAddress::Type::kLEPublic,
+                           {0x00, 0x00, 0x00, 0x00, 0x00, 0x02});
 struct Phase2LegacyArgs {
   PairingFeatures features = kDefaultFeatures;
   PairingRequestParams preq = kDefaultPreq;
@@ -77,8 +79,8 @@ class Phase2LegacyTest : public l2cap::testing::FakeChannelTest {
 
   void NewPhase2Legacy(Phase2LegacyArgs phase_args = Phase2LegacyArgs(),
                        bt::LinkType ll_type = bt::LinkType::kLE) {
-    l2cap::ChannelId cid =
-        ll_type == bt::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
+    l2cap::ChannelId cid = ll_type == bt::LinkType::kLE ? l2cap::kLESMPChannelId
+                                                        : l2cap::kSMPChannelId;
     ChannelOptions options(cid);
     options.link_type = ll_type;
 
@@ -87,16 +89,24 @@ class Phase2LegacyTest : public l2cap::testing::FakeChannelTest {
     listener_ = std::make_unique<FakeListener>();
     fake_chan_ = CreateFakeChannel(options);
     sm_chan_ = std::make_unique<PairingChannel>(fake_chan_->GetWeakPtr());
-    auto role = phase_args.features.initiator ? Role::kInitiator : Role::kResponder;
+    auto role =
+        phase_args.features.initiator ? Role::kInitiator : Role::kResponder;
     StaticByteBuffer<PacketSize<PairingRequestParams>()> preq, pres;
     preq.WriteObj(phase_args.preq);
     pres.WriteObj(phase_args.pres);
-    phase_2_legacy_ = std::make_unique<Phase2Legacy>(
-        sm_chan_->GetWeakPtr(), listener_->as_weak_ptr(), role, phase_args.features, preq, pres,
-        *phase_args.initiator_addr, *phase_args.responder_addr, [this](const UInt128& stk) {
-          phase_2_complete_count_++;
-          stk_ = stk;
-        });
+    phase_2_legacy_ =
+        std::make_unique<Phase2Legacy>(sm_chan_->GetWeakPtr(),
+                                       listener_->as_weak_ptr(),
+                                       role,
+                                       phase_args.features,
+                                       preq,
+                                       pres,
+                                       *phase_args.initiator_addr,
+                                       *phase_args.responder_addr,
+                                       [this](const UInt128& stk) {
+                                         phase_2_complete_count_++;
+                                         stk_ = stk;
+                                       });
   }
 
   void Receive128BitCmd(Code cmd_code, const UInt128& value) {
@@ -120,7 +130,12 @@ class Phase2LegacyTest : public l2cap::testing::FakeChannelTest {
     pres.WriteObj(phase_args_.pres);
 
     UInt128 out_value;
-    util::C1(tk128, random, preq, pres, *phase_args_.initiator_addr, *phase_args_.responder_addr,
+    util::C1(tk128,
+             random,
+             preq,
+             pres,
+             *phase_args_.initiator_addr,
+             *phase_args_.responder_addr,
              &out_value);
     return out_value;
   }
@@ -131,7 +146,8 @@ class Phase2LegacyTest : public l2cap::testing::FakeChannelTest {
   };
   MatchingPair GenerateMatchingConfirmAndRandom(uint32_t tk) {
     MatchingPair pair;
-    random_generator()->Get({reinterpret_cast<std::byte*>(pair.random.data()), pair.random.size()});
+    random_generator()->Get(
+        {reinterpret_cast<std::byte*>(pair.random.data()), pair.random.size()});
     pair.confirm = GenerateConfirmValue(pair.random, tk);
     return pair;
   }
@@ -139,8 +155,10 @@ class Phase2LegacyTest : public l2cap::testing::FakeChannelTest {
   static std::pair<Code, UInt128> ExtractCodeAnd128BitCmd(ByteBufferPtr sdu) {
     BT_ASSERT_MSG(sdu, "Tried to ExtractCodeAnd128BitCmd from nullptr in test");
     auto maybe_reader = ValidPacketReader::ParseSdu(sdu);
-    BT_ASSERT_MSG(maybe_reader.is_ok(), "Tried to ExtractCodeAnd128BitCmd from invalid SMP packet");
-    return {maybe_reader.value().code(), maybe_reader.value().payload<UInt128>()};
+    BT_ASSERT_MSG(maybe_reader.is_ok(),
+                  "Tried to ExtractCodeAnd128BitCmd from invalid SMP packet");
+    return {maybe_reader.value().code(),
+            maybe_reader.value().payload<UInt128>()};
   }
 
   void DestroyPhase2() { phase_2_legacy_.reset(nullptr); }
@@ -168,7 +186,8 @@ using Phase2LegacyDeathTest = Phase2LegacyTest;
 
 TEST_F(Phase2LegacyDeathTest, InvalidPairingMethodDies) {
   Phase2LegacyArgs args;
-  // Legacy Pairing does not permit Numeric Comparison (V5.0, Vol. 3, Part H, Section 2.3.5.1)
+  // Legacy Pairing does not permit Numeric Comparison (V5.0, Vol. 3, Part H,
+  // Section 2.3.5.1)
   args.features.method = PairingMethod::kNumericComparison;
   ASSERT_DEATH_IF_SUPPORTED(NewPhase2Legacy(args), "method");
 }
@@ -187,20 +206,24 @@ TEST_F(Phase2LegacyTest, InitiatorJustWorksStkSucceeds) {
   std::optional<UInt128> sent_payload = std::nullopt;
   fake_chan()->SetSendCallback(
       [&](ByteBufferPtr sdu) {
-        std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
+        std::tie(sent_code, sent_payload) =
+            ExtractCodeAnd128BitCmd(std::move(sdu));
       },
       dispatcher());
   phase_2_legacy()->Start();
-  // We should request user confirmation, but not send a message until we receive it.
+  // We should request user confirmation, but not send a message until we
+  // receive it.
   ASSERT_EQ(kInvalidCode, sent_code);
   ASSERT_TRUE(confirm_cb);
   confirm_cb(true);
   RunUntilIdle();
   ASSERT_EQ(kPairingConfirm, sent_code);
 
-  // Reset |sent_payload| to be able to detect that the FakeChannel's |send_callback| is notified.
+  // Reset |sent_payload| to be able to detect that the FakeChannel's
+  // |send_callback| is notified.
   sent_payload = std::nullopt;
-  MatchingPair values = GenerateMatchingConfirmAndRandom(0);  // Just Works TK is 0
+  MatchingPair values =
+      GenerateMatchingConfirmAndRandom(0);  // Just Works TK is 0
   Receive128BitCmd(kPairingConfirm, values.confirm);
   RunUntilIdle();
   ASSERT_EQ(kPairingRandom, sent_code);
@@ -219,25 +242,30 @@ TEST_F(Phase2LegacyTest, InitiatorPasskeyInputStkSucceeds) {
   Phase2LegacyArgs args;
   args.features.initiator = true;
   args.features.method = PairingMethod::kPasskeyEntryInput;
-  // preq & pres are set for consistency w/ args.features - not necessary for the test to pass.
+  // preq & pres are set for consistency w/ args.features - not necessary for
+  // the test to pass.
   args.preq.io_capability = IOCapability::kKeyboardOnly;
   args.preq.auth_req |= AuthReq::kMITM;
   args.pres.io_capability = IOCapability::kDisplayOnly;
   NewPhase2Legacy(args);
   FakeListener::PasskeyResponseCallback passkey_responder = nullptr;
   listener()->set_request_passkey_delegate(
-      [&](FakeListener::PasskeyResponseCallback cb) { passkey_responder = std::move(cb); });
+      [&](FakeListener::PasskeyResponseCallback cb) {
+        passkey_responder = std::move(cb);
+      });
 
   Code sent_code = kInvalidCode;
   std::optional<UInt128> sent_payload = std::nullopt;
   fake_chan()->SetSendCallback(
       [&](ByteBufferPtr sdu) {
-        std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
+        std::tie(sent_code, sent_payload) =
+            ExtractCodeAnd128BitCmd(std::move(sdu));
       },
       dispatcher());
   phase_2_legacy()->Start();
 
-  // We should request user confirmation, but not send a message until we receive it.
+  // We should request user confirmation, but not send a message until we
+  // receive it.
   ASSERT_EQ(kInvalidCode, sent_code);
   ASSERT_TRUE(passkey_responder);
   const int32_t kTk = 0x1234;
@@ -246,7 +274,8 @@ TEST_F(Phase2LegacyTest, InitiatorPasskeyInputStkSucceeds) {
   RunUntilIdle();
   ASSERT_EQ(kPairingConfirm, sent_code);
 
-  // Reset |sent_payload| to be able to detect that the FakeChannel's |send_callback| is notified.
+  // Reset |sent_payload| to be able to detect that the FakeChannel's
+  // |send_callback| is notified.
   sent_payload = std::nullopt;
   MatchingPair values = GenerateMatchingConfirmAndRandom(kTk);
   Receive128BitCmd(kPairingConfirm, values.confirm);
@@ -263,13 +292,15 @@ TEST_F(Phase2LegacyTest, InitiatorPasskeyInputStkSucceeds) {
   ASSERT_EQ(generated_stk, stk());
 }
 
-// This test is shorter than InitiatorPasskeyInputStkSucceeds because it only tests the code paths
-// that differ for PasskeyDisplay, which all take place before sending the Confirm value.
+// This test is shorter than InitiatorPasskeyInputStkSucceeds because it only
+// tests the code paths that differ for PasskeyDisplay, which all take place
+// before sending the Confirm value.
 TEST_F(Phase2LegacyTest, InitiatorPasskeyDisplaySucceeds) {
   Phase2LegacyArgs args;
   args.features.initiator = true;
   args.features.method = PairingMethod::kPasskeyEntryDisplay;
-  // preq & pres are set for consistency w/ args.features - not necessary for the test to pass.
+  // preq & pres are set for consistency w/ args.features - not necessary for
+  // the test to pass.
   args.preq.io_capability = IOCapability::kDisplayOnly;
   args.preq.auth_req |= AuthReq::kMITM;
   args.pres.io_capability = IOCapability::kKeyboardOnly;
@@ -277,24 +308,29 @@ TEST_F(Phase2LegacyTest, InitiatorPasskeyDisplaySucceeds) {
 
   FakeListener::ConfirmCallback display_confirmer = nullptr;
   listener()->set_display_delegate(
-      [&](uint32_t, bool, FakeListener::ConfirmCallback cb) { display_confirmer = std::move(cb); });
+      [&](uint32_t, bool, FakeListener::ConfirmCallback cb) {
+        display_confirmer = std::move(cb);
+      });
 
   Code sent_code = kInvalidCode;
   std::optional<UInt128> sent_payload = std::nullopt;
   fake_chan()->SetSendCallback(
       [&](ByteBufferPtr sdu) {
-        std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
+        std::tie(sent_code, sent_payload) =
+            ExtractCodeAnd128BitCmd(std::move(sdu));
       },
       dispatcher());
   phase_2_legacy()->Start();
-  // We should request user confirmation, but not send a message until we receive it.
+  // We should request user confirmation, but not send a message until we
+  // receive it.
   ASSERT_EQ(kInvalidCode, sent_code);
   ASSERT_TRUE(display_confirmer);
   display_confirmer(true);
   RunUntilIdle();
   ASSERT_EQ(kPairingConfirm, sent_code);
   ASSERT_TRUE(sent_payload.has_value());
-  // After sending Pairing Confirm, the behavior is the same as InitiatorPasskeyInputStkSucceeds
+  // After sending Pairing Confirm, the behavior is the same as
+  // InitiatorPasskeyInputStkSucceeds
 }
 
 TEST_F(Phase2LegacyTest, InitiatorReceivesConfirmBeforeTkFails) {
@@ -306,15 +342,18 @@ TEST_F(Phase2LegacyTest, InitiatorReceivesConfirmBeforeTkFails) {
       [&](FakeListener::ConfirmCallback cb) { confirm_cb = std::move(cb); });
 
   ByteBufferPtr sent_sdu = nullptr;
-  fake_chan()->SetSendCallback([&](ByteBufferPtr sdu) { sent_sdu = std::move(sdu); }, dispatcher());
+  fake_chan()->SetSendCallback(
+      [&](ByteBufferPtr sdu) { sent_sdu = std::move(sdu); }, dispatcher());
   phase_2_legacy()->Start();
   ASSERT_TRUE(confirm_cb);
   ASSERT_FALSE(sent_sdu);
 
-  // Receive peer confirm (generated from arbitrary peer rand {0}) before |confirm_cb| is notified
-  const auto kPairingConfirmCmd = Make128BitCmd(kPairingConfirm, GenerateConfirmValue({0}));
-  const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
-                                                                   ErrorCode::kUnspecifiedReason};
+  // Receive peer confirm (generated from arbitrary peer rand {0}) before
+  // |confirm_cb| is notified
+  const auto kPairingConfirmCmd =
+      Make128BitCmd(kPairingConfirm, GenerateConfirmValue({0}));
+  const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{
+      kPairingFailed, ErrorCode::kUnspecifiedReason};
   ASSERT_TRUE(ReceiveAndExpect(kPairingConfirmCmd, kExpectedFailure));
 }
 
@@ -323,24 +362,29 @@ TEST_F(Phase2LegacyTest, InvalidConfirmValueFails) {
   std::optional<UInt128> sent_payload = std::nullopt;
   fake_chan()->SetSendCallback(
       [&](ByteBufferPtr sdu) {
-        std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
+        std::tie(sent_code, sent_payload) =
+            ExtractCodeAnd128BitCmd(std::move(sdu));
       },
       dispatcher());
   phase_2_legacy()->Start();
   RunUntilIdle();
   ASSERT_EQ(kPairingConfirm, sent_code);
-  // Reset |sent_payload| to be able to detect that the FakeChannel's |send_callback| is notified.
+  // Reset |sent_payload| to be able to detect that the FakeChannel's
+  // |send_callback| is notified.
   sent_payload = std::nullopt;
-  MatchingPair values = GenerateMatchingConfirmAndRandom(0);  // Just Works TK is 0
+  MatchingPair values =
+      GenerateMatchingConfirmAndRandom(0);  // Just Works TK is 0
   Receive128BitCmd(kPairingConfirm, values.confirm);
   RunUntilIdle();
   ASSERT_EQ(kPairingRandom, sent_code);
-  // Change the peer random so that the confirm value we sent does not match the random value.
+  // Change the peer random so that the confirm value we sent does not match the
+  // random value.
   UInt128 mismatched_peer_rand = values.random;
   mismatched_peer_rand[0] += 1;
-  const auto kPairingRandomCmd = Make128BitCmd(kPairingRandom, mismatched_peer_rand);
-  const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
-                                                                   ErrorCode::kConfirmValueFailed};
+  const auto kPairingRandomCmd =
+      Make128BitCmd(kPairingRandom, mismatched_peer_rand);
+  const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{
+      kPairingFailed, ErrorCode::kConfirmValueFailed};
   ASSERT_TRUE(ReceiveAndExpect(kPairingRandomCmd, kExpectedFailure));
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
@@ -355,13 +399,14 @@ TEST_F(Phase2LegacyTest, JustWorksUserConfirmationRejectedPairingFails) {
     confirmation_requested = true;
     cb(false);
   });
-  heap_dispatcher().Post([this](pw::async::Context /*ctx*/, pw::Status status) {
-    if (status.ok()) {
-      phase_2_legacy()->Start();
-    }
-  });
-  const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
-                                                                   ErrorCode::kUnspecifiedReason};
+  (void)heap_dispatcher().Post(
+      [this](pw::async::Context /*ctx*/, pw::Status status) {
+        if (status.ok()) {
+          phase_2_legacy()->Start();
+        }
+      });
+  const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{
+      kPairingFailed, ErrorCode::kUnspecifiedReason};
   ASSERT_TRUE(Expect(kExpectedFailure));
   ASSERT_TRUE(confirmation_requested);
   ASSERT_EQ(1, listener()->pairing_error_count());
@@ -373,18 +418,20 @@ TEST_F(Phase2LegacyTest, PasskeyInputRejectedPairingFails) {
   NewPhase2Legacy(args);
   // Reject the TK request
   bool confirmation_requested = false;
-  listener()->set_request_passkey_delegate([&](FakeListener::PasskeyResponseCallback cb) {
-    confirmation_requested = true;
-    const int64_t kGenericNegativeInt = -12;
-    cb(kGenericNegativeInt);
-  });
-  heap_dispatcher().Post([this](pw::async::Context /*ctx*/, pw::Status status) {
-    if (status.ok()) {
-      phase_2_legacy()->Start();
-    }
-  });
-  const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
-                                                                   ErrorCode::kPasskeyEntryFailed};
+  listener()->set_request_passkey_delegate(
+      [&](FakeListener::PasskeyResponseCallback cb) {
+        confirmation_requested = true;
+        const int64_t kGenericNegativeInt = -12;
+        cb(kGenericNegativeInt);
+      });
+  (void)heap_dispatcher().Post(
+      [this](pw::async::Context /*ctx*/, pw::Status status) {
+        if (status.ok()) {
+          phase_2_legacy()->Start();
+        }
+      });
+  const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{
+      kPairingFailed, ErrorCode::kPasskeyEntryFailed};
   ASSERT_TRUE(Expect(kExpectedFailure));
   ASSERT_TRUE(confirmation_requested);
   ASSERT_EQ(1, listener()->pairing_error_count());
@@ -401,20 +448,21 @@ TEST_F(Phase2LegacyTest, PasskeyDisplayRejectedPairingFails) {
         confirmation_requested = true;
         cb(false);
       });
-  heap_dispatcher().Post([this](pw::async::Context /*ctx*/, pw::Status status) {
-    if (status.ok()) {
-      phase_2_legacy()->Start();
-    }
-  });
-  const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
-                                                                   ErrorCode::kUnspecifiedReason};
+  (void)heap_dispatcher().Post(
+      [this](pw::async::Context /*ctx*/, pw::Status status) {
+        if (status.ok()) {
+          phase_2_legacy()->Start();
+        }
+      });
+  const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{
+      kPairingFailed, ErrorCode::kUnspecifiedReason};
   ASSERT_TRUE(Expect(kExpectedFailure));
   ASSERT_TRUE(confirmation_requested);
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
-// Each of the pairing methods has its own user input callback, and thus correct behavior under
-// destruction of the Phase needs to be checked for each method.
+// Each of the pairing methods has its own user input callback, and thus correct
+// behavior under destruction of the Phase needs to be checked for each method.
 TEST_F(Phase2LegacyTest, PhaseDestroyedWhileWaitingForJustWorksTk) {
   Phase2LegacyArgs args;
   args.features.method = PairingMethod::kJustWorks;
@@ -436,7 +484,8 @@ TEST_F(Phase2LegacyTest, PhaseDestroyedWhileWaitingForPasskeyInputTk) {
   args.features.method = PairingMethod::kPasskeyEntryInput;
   NewPhase2Legacy(args);
   FakeListener::PasskeyResponseCallback respond = nullptr;
-  listener()->set_request_passkey_delegate([&](auto rsp) { respond = std::move(rsp); });
+  listener()->set_request_passkey_delegate(
+      [&](auto rsp) { respond = std::move(rsp); });
   phase_2_legacy()->Start();
 
   ASSERT_TRUE(respond);
@@ -467,45 +516,51 @@ TEST_F(Phase2LegacyTest, PhaseDestroyedWaitingForPasskeyDisplayTk) {
 }
 
 TEST_F(Phase2LegacyTest, ReceiveRandomBeforeTkFails) {
-  // This test assumes initiator flow, but the behavior verified is the same for responder flow.
+  // This test assumes initiator flow, but the behavior verified is the same for
+  // responder flow.
   FakeListener::ConfirmCallback confirm_cb = nullptr;
   listener()->set_confirm_delegate(
       [&](FakeListener::ConfirmCallback cb) { confirm_cb = std::move(cb); });
 
   phase_2_legacy()->Start();
-  // We should have made the pairing delegate request, which will not be responded to.
+  // We should have made the pairing delegate request, which will not be
+  // responded to.
   ASSERT_TRUE(confirm_cb);
 
-  MatchingPair values = GenerateMatchingConfirmAndRandom(0);  // Just Works TK is 0
+  MatchingPair values =
+      GenerateMatchingConfirmAndRandom(0);  // Just Works TK is 0
   const auto kPairingRandomCmd = Make128BitCmd(kPairingRandom, values.random);
-  const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
-                                                                   ErrorCode::kUnspecifiedReason};
+  const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{
+      kPairingFailed, ErrorCode::kUnspecifiedReason};
   ASSERT_TRUE(ReceiveAndExpect(kPairingRandomCmd, kExpectedFailure));
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
 TEST_F(Phase2LegacyTest, ReceiveRandomBeforeConfirmFails) {
-  // This test assumes initiator flow, but the behavior verified is the same for responder flow.
+  // This test assumes initiator flow, but the behavior verified is the same for
+  // responder flow.
   bool requested_confirmation = false;
-  // We automatically confirm the TK to check the case where we have a TK, but no peer confirm.
+  // We automatically confirm the TK to check the case where we have a TK, but
+  // no peer confirm.
   listener()->set_confirm_delegate([&](FakeListener::ConfirmCallback cb) {
     requested_confirmation = true;
     cb(true);
   });
   phase_2_legacy()->Start();
   ASSERT_TRUE(requested_confirmation);
-  MatchingPair values = GenerateMatchingConfirmAndRandom(0);  // Just Works TK is 0
+  MatchingPair values =
+      GenerateMatchingConfirmAndRandom(0);  // Just Works TK is 0
   const auto kPairingRandomCmd = Make128BitCmd(kPairingRandom, values.random);
-  const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
-                                                                   ErrorCode::kUnspecifiedReason};
+  const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{
+      kPairingFailed, ErrorCode::kUnspecifiedReason};
   ASSERT_TRUE(ReceiveAndExpect(kPairingRandomCmd, kExpectedFailure));
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
 TEST_F(Phase2LegacyTest, ReceivePairingFailed) {
   phase_2_legacy()->Start();
-  fake_chan()->Receive(
-      StaticByteBuffer<PacketSize<ErrorCode>()>{kPairingFailed, ErrorCode::kPairingNotSupported});
+  fake_chan()->Receive(StaticByteBuffer<PacketSize<ErrorCode>()>{
+      kPairingFailed, ErrorCode::kPairingNotSupported});
   RunUntilIdle();
 
   EXPECT_EQ(1, listener()->pairing_error_count());
@@ -517,9 +572,10 @@ TEST_F(Phase2LegacyTest, UnsupportedCommandDuringPairing) {
   listener()->set_confirm_delegate([](auto) {});
   phase_2_legacy()->Start();
 
-  const StaticByteBuffer<PacketSize<ErrorCode>()> kExpected{kPairingFailed,
-                                                            ErrorCode::kCommandNotSupported};
-  ASSERT_TRUE(ReceiveAndExpect(StaticByteBuffer<1>(0xFF), kExpected));  // 0xFF is not an SMP code.
+  const StaticByteBuffer<PacketSize<ErrorCode>()> kExpected{
+      kPairingFailed, ErrorCode::kCommandNotSupported};
+  ASSERT_TRUE(ReceiveAndExpect(StaticByteBuffer<1>(0xFF),
+                               kExpected));  // 0xFF is not an SMP code.
   EXPECT_EQ(1, listener()->pairing_error_count());
   EXPECT_EQ(Error(ErrorCode::kCommandNotSupported), listener()->last_error());
 }
@@ -554,11 +610,13 @@ TEST_F(Phase2LegacyTest, ResponderJustWorksStkSucceeds) {
   std::optional<UInt128> sent_payload = std::nullopt;
   fake_chan()->SetSendCallback(
       [&](ByteBufferPtr sdu) {
-        std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
+        std::tie(sent_code, sent_payload) =
+            ExtractCodeAnd128BitCmd(std::move(sdu));
       },
       dispatcher());
   phase_2_legacy()->Start();
-  // We should not send a message until we receive the requested user input AND the peer confirm.
+  // We should not send a message until we receive the requested user input AND
+  // the peer confirm.
   ASSERT_TRUE(confirm_cb);
   ASSERT_EQ(kInvalidCode, sent_code);
   confirm_cb(true);
@@ -566,14 +624,17 @@ TEST_F(Phase2LegacyTest, ResponderJustWorksStkSucceeds) {
   ASSERT_EQ(kInvalidCode, sent_code);
 
   // Now we receive the peer confirm & should send ours.
-  MatchingPair values = GenerateMatchingConfirmAndRandom(0);  // Just Works TK is 0
+  MatchingPair values =
+      GenerateMatchingConfirmAndRandom(0);  // Just Works TK is 0
   Receive128BitCmd(kPairingConfirm, values.confirm);
   RunUntilIdle();
   ASSERT_EQ(kPairingConfirm, sent_code);
 
-  // Reset |sent_payload| to be able to detect that the FakeChannel's |send_callback| is notified.
+  // Reset |sent_payload| to be able to detect that the FakeChannel's
+  // |send_callback| is notified.
   sent_payload = std::nullopt;
-  // Receive the peer pairing random & verify we send our random & pairing completes.
+  // Receive the peer pairing random & verify we send our random & pairing
+  // completes.
   Receive128BitCmd(kPairingRandom, values.random);
   RunUntilIdle();
   ASSERT_EQ(kPairingRandom, sent_code);
@@ -588,26 +649,31 @@ TEST_F(Phase2LegacyTest, ResponderPasskeyInputStkSucceeds) {
   Phase2LegacyArgs args;
   args.features.initiator = false;
   args.features.method = PairingMethod::kPasskeyEntryInput;
-  // preq & pres are set for consistency w/ args.features - not necessary for the test to pass.
+  // preq & pres are set for consistency w/ args.features - not necessary for
+  // the test to pass.
   args.preq.io_capability = IOCapability::kDisplayOnly;
   args.preq.auth_req |= AuthReq::kMITM;
   args.pres.io_capability = IOCapability::kKeyboardOnly;
   NewPhase2Legacy(args);
   FakeListener::PasskeyResponseCallback passkey_responder = nullptr;
   listener()->set_request_passkey_delegate(
-      [&](FakeListener::PasskeyResponseCallback cb) { passkey_responder = std::move(cb); });
+      [&](FakeListener::PasskeyResponseCallback cb) {
+        passkey_responder = std::move(cb);
+      });
 
   Code sent_code = kInvalidCode;
   std::optional<UInt128> sent_payload = std::nullopt;
   fake_chan()->SetSendCallback(
       [&](ByteBufferPtr sdu) {
-        std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
+        std::tie(sent_code, sent_payload) =
+            ExtractCodeAnd128BitCmd(std::move(sdu));
       },
       dispatcher());
 
   phase_2_legacy()->Start();
 
-  // We should not send a message until we receive the requested user input AND the peer confirm.
+  // We should not send a message until we receive the requested user input AND
+  // the peer confirm.
   ASSERT_TRUE(passkey_responder);
   ASSERT_EQ(kInvalidCode, sent_code);
   const int32_t kTk = 0x1234;
@@ -621,9 +687,11 @@ TEST_F(Phase2LegacyTest, ResponderPasskeyInputStkSucceeds) {
   RunUntilIdle();
   ASSERT_EQ(kPairingConfirm, sent_code);
 
-  // Reset |sent_payload| to be able to detect that the FakeChannel's |send_callback| is notified.
+  // Reset |sent_payload| to be able to detect that the FakeChannel's
+  // |send_callback| is notified.
   sent_payload = std::nullopt;
-  // Receive the peer pairing random & verify we send our random & pairing completes.
+  // Receive the peer pairing random & verify we send our random & pairing
+  // completes.
   Receive128BitCmd(kPairingRandom, values.random);
   RunUntilIdle();
   ASSERT_EQ(kPairingRandom, sent_code);
@@ -634,13 +702,15 @@ TEST_F(Phase2LegacyTest, ResponderPasskeyInputStkSucceeds) {
   ASSERT_EQ(generated_stk, stk());
 }
 
-// This test is shorter than ResponderPasskeyInputStkSucceeds because it only tests the code paths
-// that differ for PasskeyDisplay, which all take place before sending the Confirm value.
+// This test is shorter than ResponderPasskeyInputStkSucceeds because it only
+// tests the code paths that differ for PasskeyDisplay, which all take place
+// before sending the Confirm value.
 TEST_F(Phase2LegacyTest, ResponderPasskeyDisplaySucceeds) {
   Phase2LegacyArgs args;
   args.features.initiator = false;
   args.features.method = PairingMethod::kPasskeyEntryDisplay;
-  // preq & pres are set for consistency w/ args.features - not necessary for the test to pass.
+  // preq & pres are set for consistency w/ args.features - not necessary for
+  // the test to pass.
   args.preq.io_capability = IOCapability::kKeyboardOnly;
   args.preq.auth_req |= AuthReq::kMITM;
   args.pres.io_capability = IOCapability::kDisplayOnly;
@@ -648,21 +718,24 @@ TEST_F(Phase2LegacyTest, ResponderPasskeyDisplaySucceeds) {
 
   FakeListener::ConfirmCallback display_confirmer = nullptr;
   uint32_t passkey = 0;
-  listener()->set_display_delegate([&](uint32_t key, bool, FakeListener::ConfirmCallback cb) {
-    passkey = key;
-    display_confirmer = std::move(cb);
-  });
+  listener()->set_display_delegate(
+      [&](uint32_t key, bool, FakeListener::ConfirmCallback cb) {
+        passkey = key;
+        display_confirmer = std::move(cb);
+      });
 
   Code sent_code = kInvalidCode;
   std::optional<UInt128> sent_payload = std::nullopt;
   fake_chan()->SetSendCallback(
       [&](ByteBufferPtr sdu) {
-        std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
+        std::tie(sent_code, sent_payload) =
+            ExtractCodeAnd128BitCmd(std::move(sdu));
       },
       dispatcher());
 
   phase_2_legacy()->Start();
-  // We should not send a message until we receive the requested user input AND the peer confirm.
+  // We should not send a message until we receive the requested user input AND
+  // the peer confirm.
   ASSERT_TRUE(display_confirmer);
   ASSERT_EQ(kInvalidCode, sent_code);
   display_confirmer(true);
@@ -690,15 +763,18 @@ TEST_F(Phase2LegacyTest, ResponderReceivesConfirmBeforeTkSucceeds) {
   std::optional<UInt128> sent_payload = std::nullopt;
   fake_chan()->SetSendCallback(
       [&](ByteBufferPtr sdu) {
-        std::tie(sent_code, sent_payload) = ExtractCodeAnd128BitCmd(std::move(sdu));
+        std::tie(sent_code, sent_payload) =
+            ExtractCodeAnd128BitCmd(std::move(sdu));
       },
       dispatcher());
   phase_2_legacy()->Start();
 
-  // We should not send a message until we receive the requested user input AND the peer confirm.
+  // We should not send a message until we receive the requested user input AND
+  // the peer confirm.
   ASSERT_TRUE(confirm_cb);
   ASSERT_EQ(kInvalidCode, sent_code);
-  MatchingPair values = GenerateMatchingConfirmAndRandom(0);  // Just Works TK is 0
+  MatchingPair values =
+      GenerateMatchingConfirmAndRandom(0);  // Just Works TK is 0
   Receive128BitCmd(kPairingConfirm, values.confirm);
   RunUntilIdle();
   ASSERT_EQ(kInvalidCode, sent_code);
@@ -707,9 +783,11 @@ TEST_F(Phase2LegacyTest, ResponderReceivesConfirmBeforeTkSucceeds) {
   confirm_cb(true);
   RunUntilIdle();
   ASSERT_EQ(kPairingConfirm, sent_code);
-  // Reset |sent_payload| to be able to detect that the FakeChannel's |send_callback| is notified.
+  // Reset |sent_payload| to be able to detect that the FakeChannel's
+  // |send_callback| is notified.
   sent_payload = std::nullopt;
-  // Receive the peer pairing random & verify we send our random & pairing completes.
+  // Receive the peer pairing random & verify we send our random & pairing
+  // completes.
   Receive128BitCmd(kPairingRandom, values.random);
   RunUntilIdle();
   ASSERT_EQ(kPairingRandom, sent_code);
@@ -721,7 +799,8 @@ TEST_F(Phase2LegacyTest, ResponderReceivesConfirmBeforeTkSucceeds) {
 }
 
 TEST_F(Phase2LegacyTest, ReceiveConfirmValueTwiceFails) {
-  // This test uses the responder flow, but the behavior verified is the same for initiator flow.
+  // This test uses the responder flow, but the behavior verified is the same
+  // for initiator flow.
   Phase2LegacyArgs args;
   args.features.initiator = false;
   NewPhase2Legacy(args);
@@ -734,29 +813,35 @@ TEST_F(Phase2LegacyTest, ReceiveConfirmValueTwiceFails) {
       dispatcher());
   phase_2_legacy()->Start();
 
-  MatchingPair values = GenerateMatchingConfirmAndRandom(0);  // Just Works TK is 0
+  MatchingPair values =
+      GenerateMatchingConfirmAndRandom(0);  // Just Works TK is 0
   Receive128BitCmd(kPairingConfirm, values.confirm);
   RunUntilIdle();
   ASSERT_EQ(kPairingConfirm, code);
-  const auto kPairingConfirmCmd = Make128BitCmd(kPairingConfirm, values.confirm);
-  // Pairing should fail after receiving 2 confirm values with kUnspecifiedReason
-  const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
-                                                                   ErrorCode::kUnspecifiedReason};
+  const auto kPairingConfirmCmd =
+      Make128BitCmd(kPairingConfirm, values.confirm);
+  // Pairing should fail after receiving 2 confirm values with
+  // kUnspecifiedReason
+  const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{
+      kPairingFailed, ErrorCode::kUnspecifiedReason};
   ASSERT_TRUE(ReceiveAndExpect(kPairingConfirmCmd, kExpectedFailure));
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
-// Phase 2 ends after receiving the second random value & subsequently sending its own, but if the
-// Phase 2 object is kept around and receives a second random value, pairing will fail.
+// Phase 2 ends after receiving the second random value & subsequently sending
+// its own, but if the Phase 2 object is kept around and receives a second
+// random value, pairing will fail.
 TEST_F(Phase2LegacyTest, ReceiveRandomValueTwiceFails) {
-  // This test uses the responder flow, but the behavior verified is the same for initiator flow.
+  // This test uses the responder flow, but the behavior verified is the same
+  // for initiator flow.
   Phase2LegacyArgs args;
   args.features.initiator = false;
   NewPhase2Legacy(args);
 
   phase_2_legacy()->Start();
 
-  MatchingPair values = GenerateMatchingConfirmAndRandom(0);  // Just Works TK is 0
+  MatchingPair values =
+      GenerateMatchingConfirmAndRandom(0);  // Just Works TK is 0
   Receive128BitCmd(kPairingConfirm, values.confirm);
   RunUntilIdle();
   Receive128BitCmd(kPairingRandom, values.random);
@@ -764,9 +849,10 @@ TEST_F(Phase2LegacyTest, ReceiveRandomValueTwiceFails) {
   // We've completed Phase 2, and should've notified the callback
   ASSERT_EQ(1, phase_2_complete_count());
   const auto kPairingRandomCmd = Make128BitCmd(kPairingRandom, values.random);
-  // Pairing should fail after receiving a second random value with kUnspecifiedReason
-  const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
-                                                                   ErrorCode::kUnspecifiedReason};
+  // Pairing should fail after receiving a second random value with
+  // kUnspecifiedReason
+  const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{
+      kPairingFailed, ErrorCode::kUnspecifiedReason};
   ASSERT_TRUE(ReceiveAndExpect(kPairingRandomCmd, kExpectedFailure));
   ASSERT_EQ(1, listener()->pairing_error_count());
 }

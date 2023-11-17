@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "parse_args.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/parse_args.h"
 
 #include <string>
 #include <string_view>

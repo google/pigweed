@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "le_signaling_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/le_signaling_channel.h"
 
-#include "fake_channel_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel_test.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
 namespace bt::l2cap::internal {
 namespace {
@@ -26,7 +26,8 @@ class LESignalingChannelTestBase : public testing::FakeChannelTest {
     options.conn_handle = kTestHandle;
 
     fake_sig_chan_ = CreateFakeChannel(options);
-    sig_ = std::make_unique<LESignalingChannel>(fake_sig_chan_->GetWeakPtr(), Role, dispatcher());
+    sig_ = std::make_unique<LESignalingChannel>(
+        fake_sig_chan_->GetWeakPtr(), Role, dispatcher());
   }
 
   void TearDown() override { sig_ = nullptr; }
@@ -42,8 +43,8 @@ class LESignalingChannelTestBase : public testing::FakeChannelTest {
 
 using LESignalingChannelTest = LESignalingChannelTestBase<>;
 
-using LESignalingChannelPeripheralTest =
-    LESignalingChannelTestBase<pw::bluetooth::emboss::ConnectionRole::PERIPHERAL>;
+using LESignalingChannelPeripheralTest = LESignalingChannelTestBase<
+    pw::bluetooth::emboss::ConnectionRole::PERIPHERAL>;
 
 TEST_F(LESignalingChannelTest, IgnoreEmptyFrame) {
   bool send_cb_called = false;

@@ -2,29 +2,28 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/gap/pairing_state.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/pairing_state.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "gmock/gmock.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/fake_pairing_delegate.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/fake_bredr_connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/inspect_util.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/fake_pairing_delegate.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/fake_bredr_connection.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/types.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/fake_peer.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/inspect.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/inspect_util.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/mock_controller.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/error.h"
 
 namespace bt::gap {
 namespace {
 
 using namespace inspect::testing;
-using bt::testing::ReadInspect;
 
 using hci::testing::FakeBrEdrConnection;
 using hci_spec::kUserConfirmationRequestEventCode;
@@ -36,22 +35,38 @@ using pw::bluetooth::emboss::IoCapability;
 const hci_spec::ConnectionHandle kTestHandle(0x0A0B);
 const DeviceAddress kLocalAddress(DeviceAddress::Type::kBREDR,
                                   {0x22, 0x11, 0x00, 0xCC, 0xBB, 0xAA});
-const DeviceAddress kPeerAddress(DeviceAddress::Type::kBREDR, {0x99, 0x88, 0x77, 0xFF, 0xEE, 0xDD});
+const DeviceAddress kPeerAddress(DeviceAddress::Type::kBREDR,
+                                 {0x99, 0x88, 0x77, 0xFF, 0xEE, 0xDD});
 const auto kTestLocalIoCap = sm::IOCapability::kDisplayYesNo;
 const auto kTestPeerIoCap = IoCapability::DISPLAY_ONLY;
 const uint32_t kTestPasskey = 123456;
-const auto kTestLinkKeyValue = UInt128{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+const auto kTestLinkKeyValue = UInt128{0x00,
+                                       0x00,
+                                       0x00,
+                                       0x00,
+                                       0x00,
+                                       0x00,
+                                       0x00,
+                                       0x00,
+                                       0x00,
+                                       0x00,
+                                       0x00,
+                                       0x00,
+                                       0x00,
+                                       0x00,
+                                       0x00,
+                                       0x01};
 const hci_spec::LinkKey kTestLinkKey(kTestLinkKeyValue, 0, 0);
 const auto kTestUnauthenticatedLinkKeyType192 =
     hci_spec::LinkKeyType::kUnauthenticatedCombination192;
-const auto kTestAuthenticatedLinkKeyType192 = hci_spec::LinkKeyType::kAuthenticatedCombination192;
+const auto kTestAuthenticatedLinkKeyType192 =
+    hci_spec::LinkKeyType::kAuthenticatedCombination192;
 const auto kTestUnauthenticatedLinkKeyType256 =
     hci_spec::LinkKeyType::kUnauthenticatedCombination256;
 const auto kTestLegacyLinkKeyType = hci_spec::LinkKeyType::kCombination;
 const auto kTestChangedLinkKeyType = hci_spec::LinkKeyType::kChangedCombination;
-const BrEdrSecurityRequirements kNoSecurityRequirements{.authentication = false,
-                                                        .secure_connections = false};
+const BrEdrSecurityRequirements kNoSecurityRequirements{
+    .authentication = false, .secure_connections = false};
 
 void NoOpStatusCallback(hci_spec::ConnectionHandle, hci::Result<>) {}
 void NoOpUserConfirmationCallback(bool) {}
@@ -69,9 +84,12 @@ class NoOpPairingDelegate final : public PairingDelegate {
   sm::IOCapability io_capability() const override { return io_capability_; }
   void CompletePairing(PeerId peer_id, sm::Result<> status) override {}
   void ConfirmPairing(PeerId peer_id, ConfirmCallback confirm) override {}
-  void DisplayPasskey(PeerId peer_id, uint32_t passkey, DisplayMethod method,
+  void DisplayPasskey(PeerId peer_id,
+                      uint32_t passkey,
+                      DisplayMethod method,
                       ConfirmCallback confirm) override {}
-  void RequestPasskey(PeerId peer_id, PasskeyResponseCallback respond) override {}
+  void RequestPasskey(PeerId peer_id,
+                      PasskeyResponseCallback respond) override {}
 
  private:
   const sm::IOCapability io_capability_;
@@ -101,18 +119,24 @@ class PairingStateTest : public TestBase {
     peer_ = nullptr;
     peer_cache_ = nullptr;
 
-    EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
+    EXPECT_CMD_PACKET_OUT(test_device(),
+                          testing::DisconnectPacket(kTestHandle));
     connection_.reset();
 
     TestBase::TearDown();
   }
 
-  fit::closure MakeAuthRequestCallback() { return send_auth_request_callback_.share(); }
+  fit::closure MakeAuthRequestCallback() {
+    return send_auth_request_callback_.share();
+  }
 
   std::unique_ptr<FakeBrEdrConnection> MakeFakeConnection() {
-    return std::make_unique<FakeBrEdrConnection>(kTestHandle, kLocalAddress, kPeerAddress,
-                                                 pw::bluetooth::emboss::ConnectionRole::CENTRAL,
-                                                 transport()->GetWeakPtr());
+    return std::make_unique<FakeBrEdrConnection>(
+        kTestHandle,
+        kLocalAddress,
+        kPeerAddress,
+        pw::bluetooth::emboss::ConnectionRole::CENTRAL,
+        transport()->GetWeakPtr());
   }
 
   FakeBrEdrConnection* connection() const { return connection_.get(); }
@@ -131,48 +155,66 @@ class PairingStateTest : public TestBase {
 class PairingStateDeathTest : public PairingStateTest {};
 
 TEST_F(PairingStateTest, PairingStateStartsAsResponder) {
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), NoOpStatusCallback);
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             NoOpStatusCallback);
   EXPECT_FALSE(pairing_state.initiator());
 }
 
 TEST_F(PairingStateTest, PairingStateRemainsResponderAfterPeerIoCapResponse) {
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), NoOpStatusCallback);
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             NoOpStatusCallback);
   pairing_state.OnIoCapabilityResponse(kTestPeerIoCap);
   EXPECT_EQ(0u, auth_request_count());
   EXPECT_FALSE(pairing_state.initiator());
 }
 
-TEST_F(PairingStateTest, PairingStateBecomesInitiatorAfterLocalPairingInitiated) {
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), NoOpStatusCallback);
+TEST_F(PairingStateTest,
+       PairingStateBecomesInitiatorAfterLocalPairingInitiated) {
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             NoOpStatusCallback);
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
-  pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
-  EXPECT_EQ(1u, auth_request_count());
-  EXPECT_TRUE(pairing_state.initiator());
-}
-
-TEST_F(PairingStateTest, PairingStateSendsAuthenticationRequestOnceForDuplicateRequest) {
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), NoOpStatusCallback);
-  NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
-  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
-
-  pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
-  EXPECT_EQ(1u, auth_request_count());
-  EXPECT_TRUE(pairing_state.initiator());
-
   pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
   EXPECT_EQ(1u, auth_request_count());
   EXPECT_TRUE(pairing_state.initiator());
 }
 
 TEST_F(PairingStateTest,
-       PairingStateRemainsResponderIfPairingInitiatedWhileResponderPairingInProgress) {
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), NoOpStatusCallback);
+       PairingStateSendsAuthenticationRequestOnceForDuplicateRequest) {
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             NoOpStatusCallback);
+  NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
+  EXPECT_EQ(1u, auth_request_count());
+  EXPECT_TRUE(pairing_state.initiator());
+
+  pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
+  EXPECT_EQ(1u, auth_request_count());
+  EXPECT_TRUE(pairing_state.initiator());
+}
+
+TEST_F(
+    PairingStateTest,
+    PairingStateRemainsResponderIfPairingInitiatedWhileResponderPairingInProgress) {
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             NoOpStatusCallback);
   pairing_state.OnIoCapabilityResponse(kTestPeerIoCap);
   ASSERT_FALSE(pairing_state.initiator());
 
@@ -184,20 +226,25 @@ TEST_F(PairingStateTest,
 TEST_F(PairingStateTest, StatusCallbackMayDestroyPairingState) {
   std::unique_ptr<PairingState> pairing_state;
   bool cb_called = false;
-  auto status_cb = [&pairing_state, &cb_called](hci_spec::ConnectionHandle handle,
-                                                hci::Result<> status) {
+  auto status_cb = [&pairing_state, &cb_called](
+                       hci_spec::ConnectionHandle handle,
+                       hci::Result<> status) {
     EXPECT_TRUE(status.is_error());
     cb_called = true;
 
-    // Note that this lambda is owned by the PairingState so its captures are invalid after this.
+    // Note that this lambda is owned by the PairingState so its captures are
+    // invalid after this.
     pairing_state = nullptr;
   };
 
-  pairing_state = std::make_unique<PairingState>(peer()->GetWeakPtr(), connection(),
+  pairing_state = std::make_unique<PairingState>(peer()->GetWeakPtr(),
+                                                 connection(),
                                                  /*link_initiated=*/false,
-                                                 MakeAuthRequestCallback(), status_cb);
+                                                 MakeAuthRequestCallback(),
+                                                 status_cb);
 
-  // Unexpected event that should cause the status callback to be called with an error.
+  // Unexpected event that should cause the status callback to be called with an
+  // error.
   pairing_state->OnUserPasskeyNotification(kTestPasskey);
 
   EXPECT_TRUE(cb_called);
@@ -205,22 +252,28 @@ TEST_F(PairingStateTest, StatusCallbackMayDestroyPairingState) {
 
 TEST_F(PairingStateTest, InitiatorCallbackMayDestroyPairingState) {
   std::unique_ptr<PairingState> pairing_state =
-      std::make_unique<PairingState>(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                                     MakeAuthRequestCallback(), NoOpStatusCallback);
+      std::make_unique<PairingState>(peer()->GetWeakPtr(),
+                                     connection(),
+                                     /*link_initiated=*/false,
+                                     MakeAuthRequestCallback(),
+                                     NoOpStatusCallback);
   bool cb_called = false;
-  auto status_cb = [&pairing_state, &cb_called](hci_spec::ConnectionHandle handle,
-                                                hci::Result<> status) {
+  auto status_cb = [&pairing_state, &cb_called](
+                       hci_spec::ConnectionHandle handle,
+                       hci::Result<> status) {
     EXPECT_TRUE(status.is_error());
     cb_called = true;
 
-    // Note that this lambda is owned by the PairingState so its captures are invalid after this.
+    // Note that this lambda is owned by the PairingState so its captures are
+    // invalid after this.
     pairing_state = nullptr;
   };
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state->SetPairingDelegate(pairing_delegate.GetWeakPtr());
   pairing_state->InitiatePairing(kNoSecurityRequirements, status_cb);
 
-  // Unexpected event that should cause the status callback to be called with an error.
+  // Unexpected event that should cause the status callback to be called with an
+  // error.
   pairing_state->OnUserPasskeyNotification(kTestPasskey);
 
   EXPECT_TRUE(cb_called);
@@ -265,16 +318,22 @@ TEST_F(PairingStateTest, TestStatusHandlerTracksStatusCallbackInvocations) {
   ASSERT_TRUE(handler.handle());
   EXPECT_EQ(hci_spec::ConnectionHandle(0x0A0B), *handler.handle());
   ASSERT_TRUE(handler.status());
-  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED), *handler.status());
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED),
+            *handler.status());
 }
 
-TEST_F(PairingStateTest, InitiatingPairingAfterErrorTriggersStatusCallbackWithError) {
+TEST_F(PairingStateTest,
+       InitiatingPairingAfterErrorTriggersStatusCallbackWithError) {
   TestStatusHandler link_status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), link_status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             link_status_handler.MakeStatusCallback());
 
-  // Unexpected event that should cause the status callback to be called with an error.
+  // Unexpected event that should cause the status callback to be called with an
+  // error.
   pairing_state.OnUserPasskeyNotification(kTestPasskey);
 
   EXPECT_EQ(1, link_status_handler.call_count());
@@ -288,8 +347,8 @@ TEST_F(PairingStateTest, InitiatingPairingAfterErrorTriggersStatusCallbackWithEr
   pairing_state.InitiatePairing(kNoSecurityRequirements,
                                 pairing_status_handler.MakeStatusCallback());
 
-  // The status callback for pairing attempts made after a pairing failure should be rejected as
-  // canceled.
+  // The status callback for pairing attempts made after a pairing failure
+  // should be rejected as canceled.
   EXPECT_EQ(1, pairing_status_handler.call_count());
   ASSERT_TRUE(pairing_status_handler.handle());
   EXPECT_EQ(kTestHandle, *pairing_status_handler.handle());
@@ -297,11 +356,15 @@ TEST_F(PairingStateTest, InitiatingPairingAfterErrorTriggersStatusCallbackWithEr
   EXPECT_EQ(ToResult(HostError::kCanceled), *pairing_status_handler.status());
 }
 
-TEST_F(PairingStateTest, UnexpectedEncryptionChangeDoesNotTriggerStatusCallback) {
+TEST_F(PairingStateTest,
+       UnexpectedEncryptionChangeDoesNotTriggerStatusCallback) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -321,28 +384,38 @@ TEST_F(PairingStateTest, UnexpectedEncryptionChangeDoesNotTriggerStatusCallback)
 TEST_F(PairingStateTest, PeerMayNotChangeLinkKeyWhenNotEncrypted) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   ASSERT_FALSE(connection()->ltk().has_value());
 
-  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestChangedLinkKeyType);
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestChangedLinkKeyType);
 
   EXPECT_FALSE(connection()->ltk().has_value());
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.handle());
   EXPECT_EQ(kTestHandle, *status_handler.handle());
   ASSERT_TRUE(status_handler.status());
-  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity), *status_handler.status());
+  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity),
+            *status_handler.status());
 }
 
 TEST_F(PairingStateTest, PeerMayChangeLinkKeyWhenInIdleState) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
-  connection()->set_link_key(hci_spec::LinkKey(UInt128(), 0, 0), kTestAuthenticatedLinkKeyType192);
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
+  connection()->set_link_key(hci_spec::LinkKey(UInt128(), 0, 0),
+                             kTestAuthenticatedLinkKeyType192);
 
-  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestChangedLinkKeyType);
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestChangedLinkKeyType);
 
   ASSERT_TRUE(connection()->ltk().has_value());
   EXPECT_EQ(kTestLinkKeyValue, connection()->ltk().value().value());
@@ -351,23 +424,30 @@ TEST_F(PairingStateTest, PeerMayChangeLinkKeyWhenInIdleState) {
   EXPECT_EQ(0, status_handler.call_count());
 }
 
-// Inject events that occur during the course of a successful pairing as an initiator, but not
-// including enabling link encryption.
+// Inject events that occur during the course of a successful pairing as an
+// initiator, but not including enabling link encryption.
 void AdvanceToEncryptionAsInitiator(PairingState* pairing_state) {
   static_cast<void>(pairing_state->OnLinkKeyRequest());
   static_cast<void>(pairing_state->OnIoCapabilityRequest());
   pairing_state->OnIoCapabilityResponse(kTestPeerIoCap);
-  pairing_state->OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
-  pairing_state->OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
-  pairing_state->OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType192);
-  pairing_state->OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state->OnUserConfirmationRequest(kTestPasskey,
+                                           NoOpUserConfirmationCallback);
+  pairing_state->OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state->OnLinkKeyNotification(kTestLinkKeyValue,
+                                       kTestUnauthenticatedLinkKeyType192);
+  pairing_state->OnAuthenticationComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
 }
 
 TEST_F(PairingStateTest, SuccessfulEncryptionChangeTriggersStatusCallback) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -389,13 +469,17 @@ TEST_F(PairingStateTest, SuccessfulEncryptionChangeTriggersStatusCallback) {
 TEST_F(PairingStateTest, EncryptionChangeErrorTriggersStatusCallbackWithError) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  static_cast<void>(pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback));
+  static_cast<void>(pairing_state.InitiatePairing(kNoSecurityRequirements,
+                                                  NoOpStatusCallback));
   AdvanceToEncryptionAsInitiator(&pairing_state);
 
   ASSERT_EQ(0, status_handler.call_count());
@@ -407,14 +491,19 @@ TEST_F(PairingStateTest, EncryptionChangeErrorTriggersStatusCallbackWithError) {
   ASSERT_TRUE(status_handler.handle());
   EXPECT_EQ(kTestHandle, *status_handler.handle());
   ASSERT_TRUE(status_handler.status());
-  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity), *status_handler.status());
+  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity),
+            *status_handler.status());
 }
 
-TEST_F(PairingStateTest, EncryptionChangeToDisabledTriggersStatusCallbackWithError) {
+TEST_F(PairingStateTest,
+       EncryptionChangeToDisabledTriggersStatusCallbackWithError) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -434,21 +523,25 @@ TEST_F(PairingStateTest, EncryptionChangeToDisabledTriggersStatusCallbackWithErr
 }
 
 TEST_F(PairingStateTest, EncryptionChangeToEnableCallsInitiatorCallbacks) {
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), NoOpStatusCallback);
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             NoOpStatusCallback);
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
   TestStatusHandler status_handler_0;
-  pairing_state.InitiatePairing(kNoSecurityRequirements, status_handler_0.MakeStatusCallback());
+  pairing_state.InitiatePairing(kNoSecurityRequirements,
+                                status_handler_0.MakeStatusCallback());
   AdvanceToEncryptionAsInitiator(&pairing_state);
   EXPECT_TRUE(pairing_state.initiator());
 
   // Try to initiate pairing while pairing is in progress.
   TestStatusHandler status_handler_1;
-  static_cast<void>(pairing_state.InitiatePairing(kNoSecurityRequirements,
-                                                  status_handler_1.MakeStatusCallback()));
+  static_cast<void>(pairing_state.InitiatePairing(
+      kNoSecurityRequirements, status_handler_1.MakeStatusCallback()));
 
   EXPECT_TRUE(pairing_state.initiator());
   ASSERT_EQ(0, status_handler_0.call_count());
@@ -473,8 +566,11 @@ TEST_F(PairingStateTest, EncryptionChangeToEnableCallsInitiatorCallbacks) {
 }
 
 TEST_F(PairingStateTest, InitiatingPairingOnResponderWaitsForPairingToFinish) {
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), NoOpStatusCallback);
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             NoOpStatusCallback);
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -482,16 +578,20 @@ TEST_F(PairingStateTest, InitiatingPairingOnResponderWaitsForPairingToFinish) {
   pairing_state.OnIoCapabilityResponse(kTestPeerIoCap);
   ASSERT_FALSE(pairing_state.initiator());
   static_cast<void>(pairing_state.OnIoCapabilityRequest());
-  pairing_state.OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
+  pairing_state.OnUserConfirmationRequest(kTestPasskey,
+                                          NoOpUserConfirmationCallback);
 
   // Try to initiate pairing while pairing is in progress.
   TestStatusHandler status_handler;
-  pairing_state.InitiatePairing(kNoSecurityRequirements, status_handler.MakeStatusCallback());
+  pairing_state.InitiatePairing(kNoSecurityRequirements,
+                                status_handler.MakeStatusCallback());
   EXPECT_FALSE(pairing_state.initiator());
 
   // Keep advancing state machine.
-  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
-  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType192);
+  pairing_state.OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestUnauthenticatedLinkKeyType192);
 
   EXPECT_FALSE(pairing_state.initiator());
   ASSERT_EQ(0, status_handler.call_count());
@@ -504,7 +604,8 @@ TEST_F(PairingStateTest, InitiatingPairingOnResponderWaitsForPairingToFinish) {
   ASSERT_TRUE(status_handler.status());
   EXPECT_EQ(fit::ok(), *status_handler.status());
 
-  // Errors for a new pairing shouldn't invoke the attempted initiator's callback.
+  // Errors for a new pairing shouldn't invoke the attempted initiator's
+  // callback.
   pairing_state.OnUserPasskeyNotification(kTestPasskey);
   EXPECT_EQ(1, status_handler.call_count());
 }
@@ -512,8 +613,11 @@ TEST_F(PairingStateTest, InitiatingPairingOnResponderWaitsForPairingToFinish) {
 TEST_F(PairingStateTest, UnresolvedPairingCallbackIsCalledOnDestruction) {
   TestStatusHandler overall_status, request_status;
   {
-    PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                               MakeAuthRequestCallback(), overall_status.MakeStatusCallback());
+    PairingState pairing_state(peer()->GetWeakPtr(),
+                               connection(),
+                               /*link_initiated=*/false,
+                               MakeAuthRequestCallback(),
+                               overall_status.MakeStatusCallback());
     NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
     pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -521,17 +625,22 @@ TEST_F(PairingStateTest, UnresolvedPairingCallbackIsCalledOnDestruction) {
     pairing_state.OnIoCapabilityResponse(kTestPeerIoCap);
     ASSERT_FALSE(pairing_state.initiator());
     static_cast<void>(pairing_state.OnIoCapabilityRequest());
-    pairing_state.OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
+    pairing_state.OnUserConfirmationRequest(kTestPasskey,
+                                            NoOpUserConfirmationCallback);
 
     // Try to initiate pairing while pairing is in progress.
-    pairing_state.InitiatePairing(kNoSecurityRequirements, request_status.MakeStatusCallback());
+    pairing_state.InitiatePairing(kNoSecurityRequirements,
+                                  request_status.MakeStatusCallback());
     EXPECT_FALSE(pairing_state.initiator());
 
     // Keep advancing state machine.
-    pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
-    pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType192);
+    pairing_state.OnSimplePairingComplete(
+        pw::bluetooth::emboss::StatusCode::SUCCESS);
+    pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                        kTestUnauthenticatedLinkKeyType192);
 
-    // as pairing_state falls out of scope, we expect additional pairing callbacks to be called
+    // as pairing_state falls out of scope, we expect additional pairing
+    // callbacks to be called
     ASSERT_EQ(0, overall_status.call_count());
     ASSERT_EQ(0, request_status.call_count());
   }
@@ -544,24 +653,29 @@ TEST_F(PairingStateTest, UnresolvedPairingCallbackIsCalledOnDestruction) {
   EXPECT_EQ(ToResult(HostError::kLinkDisconnected), *request_status.status());
 }
 
-TEST_F(PairingStateTest, InitiatorPairingStateRejectsIoCapReqWithoutPairingDelegate) {
+TEST_F(PairingStateTest,
+       InitiatorPairingStateRejectsIoCapReqWithoutPairingDelegate) {
   TestStatusHandler owner_status_handler;
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), owner_status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             owner_status_handler.MakeStatusCallback());
 
   TestStatusHandler initiator_status_handler;
   // Advance state machine to Initiator Waiting IOCap Request
   pairing_state.InitiatePairing(kNoSecurityRequirements,
                                 initiator_status_handler.MakeStatusCallback());
   EXPECT_TRUE(pairing_state.initiator());
-  // We should permit the pairing state machine to continue even without a PairingDelegate, as we
-  // may have an existing bond to restore, which can be done without a PairingDelegate.
+  // We should permit the pairing state machine to continue even without a
+  // PairingDelegate, as we may have an existing bond to restore, which can be
+  // done without a PairingDelegate.
   EXPECT_EQ(0, owner_status_handler.call_count());
   EXPECT_EQ(0, initiator_status_handler.call_count());
   // We will only start the pairing process if there is no stored bond
   EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
-  // We expect to be notified that there are no IOCapabilities, as there is no PairingDelegate to
-  // provide them
+  // We expect to be notified that there are no IOCapabilities, as there is no
+  // PairingDelegate to provide them
   EXPECT_EQ(std::nullopt, pairing_state.OnIoCapabilityRequest());
   // All callbacks should be notified of pairing failure
   EXPECT_EQ(1, owner_status_handler.call_count());
@@ -571,18 +685,23 @@ TEST_F(PairingStateTest, InitiatorPairingStateRejectsIoCapReqWithoutPairingDeleg
   EXPECT_EQ(initiator_status_handler.status(), owner_status_handler.status());
 }
 
-TEST_F(PairingStateTest, ResponderPairingStateRejectsIoCapReqWithoutPairingDelegate) {
+TEST_F(PairingStateTest,
+       ResponderPairingStateRejectsIoCapReqWithoutPairingDelegate) {
   TestStatusHandler status_handler;
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
 
   // Advance state machine to Responder Waiting IOCap Request
-  pairing_state.OnIoCapabilityResponse(pw::bluetooth::emboss::IoCapability::DISPLAY_YES_NO);
+  pairing_state.OnIoCapabilityResponse(
+      pw::bluetooth::emboss::IoCapability::DISPLAY_YES_NO);
   EXPECT_FALSE(pairing_state.initiator());
   EXPECT_EQ(0, status_handler.call_count());
 
-  // We expect to be notified that there are no IOCapabilities, as there is no PairingDelegate to
-  // provide them.
+  // We expect to be notified that there are no IOCapabilities, as there is no
+  // PairingDelegate to provide them.
   EXPECT_EQ(std::nullopt, pairing_state.OnIoCapabilityRequest());
   // All callbacks should be notified of pairing failure
   EXPECT_EQ(1, status_handler.call_count());
@@ -593,8 +712,11 @@ TEST_F(PairingStateTest, ResponderPairingStateRejectsIoCapReqWithoutPairingDeleg
 TEST_F(PairingStateTest, UnexpectedLinkKeyAuthenticationRaisesError) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kDisplayOnly);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -602,24 +724,32 @@ TEST_F(PairingStateTest, UnexpectedLinkKeyAuthenticationRaisesError) {
   pairing_state.OnIoCapabilityResponse(IoCapability::DISPLAY_YES_NO);
   ASSERT_FALSE(pairing_state.initiator());
   static_cast<void>(pairing_state.OnIoCapabilityRequest());
-  pairing_state.OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
-  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state.OnUserConfirmationRequest(kTestPasskey,
+                                          NoOpUserConfirmationCallback);
+  pairing_state.OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
 
-  // Provide an authenticated link key when this should have resulted in an unauthenticated link key
-  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestAuthenticatedLinkKeyType192);
+  // Provide an authenticated link key when this should have resulted in an
+  // unauthenticated link key
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestAuthenticatedLinkKeyType192);
 
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.handle());
   EXPECT_EQ(kTestHandle, *status_handler.handle());
   ASSERT_TRUE(status_handler.status());
-  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity), *status_handler.status());
+  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity),
+            *status_handler.status());
 }
 
 TEST_F(PairingStateTest, LegacyPairingLinkKeyRaisesError) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -627,24 +757,31 @@ TEST_F(PairingStateTest, LegacyPairingLinkKeyRaisesError) {
   pairing_state.OnIoCapabilityResponse(IoCapability::DISPLAY_YES_NO);
   ASSERT_FALSE(pairing_state.initiator());
   static_cast<void>(pairing_state.OnIoCapabilityRequest());
-  pairing_state.OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
-  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state.OnUserConfirmationRequest(kTestPasskey,
+                                          NoOpUserConfirmationCallback);
+  pairing_state.OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   // Provide a legacy pairing link key type.
-  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestLegacyLinkKeyType);
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestLegacyLinkKeyType);
 
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.handle());
   EXPECT_EQ(kTestHandle, *status_handler.handle());
   ASSERT_TRUE(status_handler.status());
-  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity), *status_handler.status());
+  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity),
+            *status_handler.status());
 }
 
 TEST_F(PairingStateTest, PairingSetsConnectionLinkKey) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -652,43 +789,58 @@ TEST_F(PairingStateTest, PairingSetsConnectionLinkKey) {
   pairing_state.OnIoCapabilityResponse(IoCapability::DISPLAY_YES_NO);
   ASSERT_FALSE(pairing_state.initiator());
   static_cast<void>(pairing_state.OnIoCapabilityRequest());
-  pairing_state.OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
-  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state.OnUserConfirmationRequest(kTestPasskey,
+                                          NoOpUserConfirmationCallback);
+  pairing_state.OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   ASSERT_FALSE(connection()->ltk());
-  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType192);
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestUnauthenticatedLinkKeyType192);
   ASSERT_TRUE(connection()->ltk());
   EXPECT_EQ(kTestLinkKeyValue, connection()->ltk()->value());
 
   EXPECT_EQ(0, status_handler.call_count());
 }
 
-TEST_F(PairingStateTest, SecureConnectionsRequiresSecureConnectionsLinkKeySuccess) {
+TEST_F(PairingStateTest,
+       SecureConnectionsRequiresSecureConnectionsLinkKeySuccess) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kDisplayOnly);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Set peer lmp_features: Secure Connections (Host Support)
   peer()->SetFeaturePage(
-      1u, static_cast<uint64_t>(hci_spec::LMPFeature::kSecureConnectionsHostSupport));
+      1u,
+      static_cast<uint64_t>(
+          hci_spec::LMPFeature::kSecureConnectionsHostSupport));
 
   // Set peer lmp_features: Secure Connections (Controller Support)
   peer()->SetFeaturePage(
-      2u, static_cast<uint64_t>(hci_spec::LMPFeature::kSecureConnectionsControllerSupport));
+      2u,
+      static_cast<uint64_t>(
+          hci_spec::LMPFeature::kSecureConnectionsControllerSupport));
 
   // Advance state machine.
   pairing_state.OnIoCapabilityResponse(IoCapability::DISPLAY_YES_NO);
   ASSERT_FALSE(pairing_state.initiator());
   static_cast<void>(pairing_state.OnIoCapabilityRequest());
-  pairing_state.OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
-  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state.OnUserConfirmationRequest(kTestPasskey,
+                                          NoOpUserConfirmationCallback);
+  pairing_state.OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   // Ensure that P-256 authenticated link key was provided
-  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType256,
-                                      /*local_secure_connections_supported=*/true);
+  pairing_state.OnLinkKeyNotification(
+      kTestLinkKeyValue,
+      kTestUnauthenticatedLinkKeyType256,
+      /*local_secure_connections_supported=*/true);
 
   ASSERT_TRUE(connection()->ltk());
   EXPECT_EQ(kTestLinkKeyValue, connection()->ltk()->value());
@@ -696,58 +848,81 @@ TEST_F(PairingStateTest, SecureConnectionsRequiresSecureConnectionsLinkKeySucces
   EXPECT_EQ(0, status_handler.call_count());
 }
 
-TEST_F(PairingStateTest, SecureConnectionsRequiresSecureConnectionsLinkKeyFail) {
+TEST_F(PairingStateTest,
+       SecureConnectionsRequiresSecureConnectionsLinkKeyFail) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kDisplayOnly);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Set peer lmp_features: Secure Connections (Host Support)
   peer()->SetFeaturePage(
-      1u, static_cast<uint64_t>(hci_spec::LMPFeature::kSecureConnectionsHostSupport));
+      1u,
+      static_cast<uint64_t>(
+          hci_spec::LMPFeature::kSecureConnectionsHostSupport));
 
   // Set peer lmp_features: Secure Connections (Controller Support)
   peer()->SetFeaturePage(
-      2u, static_cast<uint64_t>(hci_spec::LMPFeature::kSecureConnectionsControllerSupport));
+      2u,
+      static_cast<uint64_t>(
+          hci_spec::LMPFeature::kSecureConnectionsControllerSupport));
 
   // Advance state machine.
   pairing_state.OnIoCapabilityResponse(IoCapability::DISPLAY_YES_NO);
   ASSERT_FALSE(pairing_state.initiator());
   static_cast<void>(pairing_state.OnIoCapabilityRequest());
-  pairing_state.OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
-  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state.OnUserConfirmationRequest(kTestPasskey,
+                                          NoOpUserConfirmationCallback);
+  pairing_state.OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
 
-  // Provide P-192 authenticated link key when this should have resulted in an P-256 link key
-  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType192,
-                                      /*local_secure_connections_supported=*/true);
+  // Provide P-192 authenticated link key when this should have resulted in an
+  // P-256 link key
+  pairing_state.OnLinkKeyNotification(
+      kTestLinkKeyValue,
+      kTestUnauthenticatedLinkKeyType192,
+      /*local_secure_connections_supported=*/true);
 
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.handle());
   EXPECT_EQ(kTestHandle, *status_handler.handle());
   ASSERT_TRUE(status_handler.status());
-  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity), *status_handler.status());
+  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity),
+            *status_handler.status());
 }
 
-TEST_F(PairingStateTest, NumericComparisonPairingComparesPasskeyOnInitiatorDisplayYesNoSide) {
+TEST_F(PairingStateTest,
+       NumericComparisonPairingComparesPasskeyOnInitiatorDisplayYesNoSide) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  pairing_state.InitiatePairing(kNoSecurityRequirements, status_handler.MakeStatusCallback());
+  pairing_state.InitiatePairing(kNoSecurityRequirements,
+                                status_handler.MakeStatusCallback());
   ASSERT_TRUE(pairing_state.initiator());
   static_cast<void>(pairing_state.OnLinkKeyRequest());
-  EXPECT_EQ(IoCapability::DISPLAY_YES_NO, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::DISPLAY_YES_NO,
+            *pairing_state.OnIoCapabilityRequest());
 
   pairing_state.OnIoCapabilityResponse(IoCapability::DISPLAY_YES_NO);
 
   pairing_delegate.SetDisplayPasskeyCallback(
-      [this](PeerId peer_id, uint32_t value, PairingDelegate::DisplayMethod method, auto cb) {
+      [this](PeerId peer_id,
+             uint32_t value,
+             PairingDelegate::DisplayMethod method,
+             auto cb) {
         EXPECT_EQ(peer()->identifier(), peer_id);
         EXPECT_EQ(kTestPasskey, value);
         EXPECT_EQ(PairingDelegate::DisplayMethod::kComparison, method);
@@ -755,34 +930,44 @@ TEST_F(PairingStateTest, NumericComparisonPairingComparesPasskeyOnInitiatorDispl
         cb(true);
       });
   bool confirmed = false;
-  pairing_state.OnUserConfirmationRequest(kTestPasskey,
-                                          [&confirmed](bool confirm) { confirmed = confirm; });
+  pairing_state.OnUserConfirmationRequest(
+      kTestPasskey, [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
-    EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_EQ(fit::ok(), status);
-  });
-  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_delegate.SetCompletePairingCallback(
+      [this](PeerId peer_id, sm::Result<> status) {
+        EXPECT_EQ(peer()->identifier(), peer_id);
+        EXPECT_EQ(fit::ok(), status);
+      });
+  pairing_state.OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   EXPECT_EQ(0, status_handler.call_count());
 }
 
-TEST_F(PairingStateTest, NumericComparisonPairingComparesPasskeyOnResponderDisplayYesNoSide) {
+TEST_F(PairingStateTest,
+       NumericComparisonPairingComparesPasskeyOnResponderDisplayYesNoSide) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
   pairing_state.OnIoCapabilityResponse(IoCapability::DISPLAY_YES_NO);
   ASSERT_FALSE(pairing_state.initiator());
-  EXPECT_EQ(IoCapability::DISPLAY_YES_NO, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::DISPLAY_YES_NO,
+            *pairing_state.OnIoCapabilityRequest());
 
   pairing_delegate.SetDisplayPasskeyCallback(
-      [this](PeerId peer_id, uint32_t value, PairingDelegate::DisplayMethod method, auto cb) {
+      [this](PeerId peer_id,
+             uint32_t value,
+             PairingDelegate::DisplayMethod method,
+             auto cb) {
         EXPECT_EQ(peer()->identifier(), peer_id);
         EXPECT_EQ(kTestPasskey, value);
         EXPECT_EQ(PairingDelegate::DisplayMethod::kComparison, method);
@@ -790,15 +975,17 @@ TEST_F(PairingStateTest, NumericComparisonPairingComparesPasskeyOnResponderDispl
         cb(true);
       });
   bool confirmed = false;
-  pairing_state.OnUserConfirmationRequest(kTestPasskey,
-                                          [&confirmed](bool confirm) { confirmed = confirm; });
+  pairing_state.OnUserConfirmationRequest(
+      kTestPasskey, [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
-    EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_EQ(fit::ok(), status);
-  });
-  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_delegate.SetCompletePairingCallback(
+      [this](PeerId peer_id, sm::Result<> status) {
+        EXPECT_EQ(peer()->identifier(), peer_id);
+        EXPECT_EQ(fit::ok(), status);
+      });
+  pairing_state.OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   EXPECT_EQ(0, status_handler.call_count());
 }
@@ -807,18 +994,23 @@ TEST_F(PairingStateTest, NumericComparisonPairingComparesPasskeyOnResponderDispl
 // confirmation on device B only and Yes/No confirmation on whether to pair on
 // device A. Device A does not show the confirmation value." and it should
 // result in user consent.
-TEST_F(PairingStateTest, NumericComparisonWithoutValueRequestsConsentFromDisplayYesNoSide) {
+TEST_F(PairingStateTest,
+       NumericComparisonWithoutValueRequestsConsentFromDisplayYesNoSide) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
   pairing_state.OnIoCapabilityResponse(IoCapability::NO_INPUT_NO_OUTPUT);
   ASSERT_FALSE(pairing_state.initiator());
-  EXPECT_EQ(IoCapability::DISPLAY_YES_NO, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::DISPLAY_YES_NO,
+            *pairing_state.OnIoCapabilityRequest());
 
   pairing_delegate.SetConfirmPairingCallback([this](PeerId peer_id, auto cb) {
     EXPECT_EQ(peer()->identifier(), peer_id);
@@ -826,15 +1018,17 @@ TEST_F(PairingStateTest, NumericComparisonWithoutValueRequestsConsentFromDisplay
     cb(true);
   });
   bool confirmed = false;
-  pairing_state.OnUserConfirmationRequest(kTestPasskey,
-                                          [&confirmed](bool confirm) { confirmed = confirm; });
+  pairing_state.OnUserConfirmationRequest(
+      kTestPasskey, [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
-    EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_EQ(fit::ok(), status);
-  });
-  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_delegate.SetCompletePairingCallback(
+      [this](PeerId peer_id, sm::Result<> status) {
+        EXPECT_EQ(peer()->identifier(), peer_id);
+        EXPECT_EQ(fit::ok(), status);
+      });
+  pairing_state.OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   EXPECT_EQ(0, status_handler.call_count());
 }
@@ -842,8 +1036,11 @@ TEST_F(PairingStateTest, NumericComparisonWithoutValueRequestsConsentFromDisplay
 TEST_F(PairingStateTest, PasskeyEntryPairingDisplaysPasskeyToDisplayOnlySide) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayOnly);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -853,7 +1050,10 @@ TEST_F(PairingStateTest, PasskeyEntryPairingDisplaysPasskeyToDisplayOnlySide) {
   EXPECT_EQ(IoCapability::DISPLAY_ONLY, *pairing_state.OnIoCapabilityRequest());
 
   pairing_delegate.SetDisplayPasskeyCallback(
-      [this](PeerId peer_id, uint32_t value, PairingDelegate::DisplayMethod method, auto cb) {
+      [this](PeerId peer_id,
+             uint32_t value,
+             PairingDelegate::DisplayMethod method,
+             auto cb) {
         EXPECT_EQ(peer()->identifier(), peer_id);
         EXPECT_EQ(kTestPasskey, value);
         EXPECT_EQ(PairingDelegate::DisplayMethod::kPeerEntry, method);
@@ -861,27 +1061,34 @@ TEST_F(PairingStateTest, PasskeyEntryPairingDisplaysPasskeyToDisplayOnlySide) {
       });
   pairing_state.OnUserPasskeyNotification(kTestPasskey);
 
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
-    EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_EQ(fit::ok(), status);
-  });
-  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_delegate.SetCompletePairingCallback(
+      [this](PeerId peer_id, sm::Result<> status) {
+        EXPECT_EQ(peer()->identifier(), peer_id);
+        EXPECT_EQ(fit::ok(), status);
+      });
+  pairing_state.OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   EXPECT_EQ(0, status_handler.call_count());
 }
 
-TEST_F(PairingStateTest, PasskeyEntryPairingRequestsPasskeyFromKeyboardOnlySide) {
+TEST_F(PairingStateTest,
+       PasskeyEntryPairingRequestsPasskeyFromKeyboardOnlySide) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kKeyboardOnly);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
   pairing_state.OnIoCapabilityResponse(IoCapability::DISPLAY_ONLY);
   ASSERT_FALSE(pairing_state.initiator());
-  EXPECT_EQ(IoCapability::KEYBOARD_ONLY, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::KEYBOARD_ONLY,
+            *pairing_state.OnIoCapabilityRequest());
 
   pairing_delegate.SetRequestPasskeyCallback([this](PeerId peer_id, auto cb) {
     EXPECT_EQ(peer()->identifier(), peer_id);
@@ -890,7 +1097,8 @@ TEST_F(PairingStateTest, PasskeyEntryPairingRequestsPasskeyFromKeyboardOnlySide)
   });
   bool cb_called = false;
   std::optional<uint32_t> passkey;
-  auto passkey_cb = [&cb_called, &passkey](std::optional<uint32_t> pairing_state_passkey) {
+  auto passkey_cb = [&cb_called,
+                     &passkey](std::optional<uint32_t> pairing_state_passkey) {
     cb_called = true;
     passkey = pairing_state_passkey;
   };
@@ -900,20 +1108,26 @@ TEST_F(PairingStateTest, PasskeyEntryPairingRequestsPasskeyFromKeyboardOnlySide)
   ASSERT_TRUE(passkey);
   EXPECT_EQ(kTestPasskey, *passkey);
 
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
-    EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_EQ(fit::ok(), status);
-  });
-  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_delegate.SetCompletePairingCallback(
+      [this](PeerId peer_id, sm::Result<> status) {
+        EXPECT_EQ(peer()->identifier(), peer_id);
+        EXPECT_EQ(fit::ok(), status);
+      });
+  pairing_state.OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   EXPECT_EQ(0, status_handler.call_count());
 }
 
-TEST_F(PairingStateTest, JustWorksPairingOutgoingConnectDoesNotRequestUserActionInitiator) {
+TEST_F(PairingStateTest,
+       JustWorksPairingOutgoingConnectDoesNotRequestUserActionInitiator) {
   TestStatusHandler owner_status_handler;
   TestStatusHandler initiator_status_handler;
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/true,
-                             MakeAuthRequestCallback(), owner_status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/true,
+                             MakeAuthRequestCallback(),
+                             owner_status_handler.MakeStatusCallback());
 
   FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -923,63 +1137,78 @@ TEST_F(PairingStateTest, JustWorksPairingOutgoingConnectDoesNotRequestUserAction
                                 initiator_status_handler.MakeStatusCallback());
   EXPECT_TRUE(pairing_state.initiator());
   static_cast<void>(pairing_state.OnLinkKeyRequest());
-  EXPECT_EQ(IoCapability::NO_INPUT_NO_OUTPUT, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::NO_INPUT_NO_OUTPUT,
+            *pairing_state.OnIoCapabilityRequest());
 
   pairing_state.OnIoCapabilityResponse(IoCapability::NO_INPUT_NO_OUTPUT);
   bool confirmed = false;
-  pairing_state.OnUserConfirmationRequest(kTestPasskey,
-                                          [&confirmed](bool confirm) { confirmed = confirm; });
+  pairing_state.OnUserConfirmationRequest(
+      kTestPasskey, [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
-    EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_EQ(fit::ok(), status);
-  });
-  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_delegate.SetCompletePairingCallback(
+      [this](PeerId peer_id, sm::Result<> status) {
+        EXPECT_EQ(peer()->identifier(), peer_id);
+        EXPECT_EQ(fit::ok(), status);
+      });
+  pairing_state.OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   EXPECT_EQ(0, owner_status_handler.call_count());
   EXPECT_EQ(0, initiator_status_handler.call_count());
 }
 
-TEST_F(PairingStateTest, JustWorksPairingOutgoingConnectDoesNotRequestUserActionResponder) {
+TEST_F(PairingStateTest,
+       JustWorksPairingOutgoingConnectDoesNotRequestUserActionResponder) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/true,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/true,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
   pairing_state.OnIoCapabilityResponse(IoCapability::NO_INPUT_NO_OUTPUT);
   ASSERT_FALSE(pairing_state.initiator());
-  EXPECT_EQ(IoCapability::NO_INPUT_NO_OUTPUT, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::NO_INPUT_NO_OUTPUT,
+            *pairing_state.OnIoCapabilityRequest());
 
   bool confirmed = false;
-  pairing_state.OnUserConfirmationRequest(kTestPasskey,
-                                          [&confirmed](bool confirm) { confirmed = confirm; });
+  pairing_state.OnUserConfirmationRequest(
+      kTestPasskey, [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
-    EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_EQ(fit::ok(), status);
-  });
-  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_delegate.SetCompletePairingCallback(
+      [this](PeerId peer_id, sm::Result<> status) {
+        EXPECT_EQ(peer()->identifier(), peer_id);
+        EXPECT_EQ(fit::ok(), status);
+      });
+  pairing_state.OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   EXPECT_EQ(0, status_handler.call_count());
 }
 
-TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationRejectedResponder) {
+TEST_F(PairingStateTest,
+       JustWorksPairingIncomingConnectRequiresConfirmationRejectedResponder) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
   pairing_state.OnIoCapabilityResponse(IoCapability::NO_INPUT_NO_OUTPUT);
   ASSERT_FALSE(pairing_state.initiator());
-  EXPECT_EQ(IoCapability::NO_INPUT_NO_OUTPUT, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::NO_INPUT_NO_OUTPUT,
+            *pairing_state.OnIoCapabilityRequest());
 
   pairing_delegate.SetConfirmPairingCallback([this](PeerId peer_id, auto cb) {
     EXPECT_EQ(peer()->identifier(), peer_id);
@@ -987,16 +1216,19 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationReje
     cb(false);
   });
   bool confirmed = true;
-  pairing_state.OnUserConfirmationRequest(kTestPasskey,
-                                          [&confirmed](bool confirm) { confirmed = confirm; });
+  pairing_state.OnUserConfirmationRequest(
+      kTestPasskey, [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_FALSE(confirmed);
 
-  // Eventually the controller sends a SimplePairingComplete indicating the failure.
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
-    EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status.is_error());
-  });
-  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE);
+  // Eventually the controller sends a SimplePairingComplete indicating the
+  // failure.
+  pairing_delegate.SetCompletePairingCallback(
+      [this](PeerId peer_id, sm::Result<> status) {
+        EXPECT_EQ(peer()->identifier(), peer_id);
+        EXPECT_TRUE(status.is_error());
+      });
+  pairing_state.OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE);
 
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.status());
@@ -1004,11 +1236,15 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationReje
             *status_handler.status());
 }
 
-TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationRejectedInitiator) {
+TEST_F(PairingStateTest,
+       JustWorksPairingIncomingConnectRequiresConfirmationRejectedInitiator) {
   TestStatusHandler owner_status_handler;
   TestStatusHandler initiator_status_handler;
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), owner_status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             owner_status_handler.MakeStatusCallback());
 
   FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -1018,7 +1254,8 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationReje
                                 initiator_status_handler.MakeStatusCallback());
   EXPECT_TRUE(pairing_state.initiator());
   static_cast<void>(pairing_state.OnLinkKeyRequest());
-  EXPECT_EQ(IoCapability::NO_INPUT_NO_OUTPUT, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::NO_INPUT_NO_OUTPUT,
+            *pairing_state.OnIoCapabilityRequest());
 
   pairing_state.OnIoCapabilityResponse(IoCapability::NO_INPUT_NO_OUTPUT);
 
@@ -1028,16 +1265,19 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationReje
     cb(false);
   });
   bool confirmed = true;
-  pairing_state.OnUserConfirmationRequest(kTestPasskey,
-                                          [&confirmed](bool confirm) { confirmed = confirm; });
+  pairing_state.OnUserConfirmationRequest(
+      kTestPasskey, [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_FALSE(confirmed);
 
-  // Eventually the controller sends a SimplePairingComplete indicating the failure.
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
-    EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status.is_error());
-  });
-  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE);
+  // Eventually the controller sends a SimplePairingComplete indicating the
+  // failure.
+  pairing_delegate.SetCompletePairingCallback(
+      [this](PeerId peer_id, sm::Result<> status) {
+        EXPECT_EQ(peer()->identifier(), peer_id);
+        EXPECT_TRUE(status.is_error());
+      });
+  pairing_state.OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE);
 
   EXPECT_EQ(1, owner_status_handler.call_count());
   ASSERT_TRUE(owner_status_handler.status());
@@ -1049,18 +1289,23 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationReje
             *initiator_status_handler.status());
 }
 
-TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationAcceptedResponder) {
+TEST_F(PairingStateTest,
+       JustWorksPairingIncomingConnectRequiresConfirmationAcceptedResponder) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
   pairing_state.OnIoCapabilityResponse(IoCapability::NO_INPUT_NO_OUTPUT);
   ASSERT_FALSE(pairing_state.initiator());
-  EXPECT_EQ(IoCapability::NO_INPUT_NO_OUTPUT, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::NO_INPUT_NO_OUTPUT,
+            *pairing_state.OnIoCapabilityRequest());
 
   pairing_delegate.SetConfirmPairingCallback([this](PeerId peer_id, auto cb) {
     EXPECT_EQ(peer()->identifier(), peer_id);
@@ -1068,24 +1313,30 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationAcce
     cb(true);
   });
   bool confirmed = false;
-  pairing_state.OnUserConfirmationRequest(kTestPasskey,
-                                          [&confirmed](bool confirm) { confirmed = confirm; });
+  pairing_state.OnUserConfirmationRequest(
+      kTestPasskey, [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
-    EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_EQ(fit::ok(), status);
-  });
-  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_delegate.SetCompletePairingCallback(
+      [this](PeerId peer_id, sm::Result<> status) {
+        EXPECT_EQ(peer()->identifier(), peer_id);
+        EXPECT_EQ(fit::ok(), status);
+      });
+  pairing_state.OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   EXPECT_EQ(0, status_handler.call_count());
 }
 
-TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationAcceptedInitiator) {
+TEST_F(PairingStateTest,
+       JustWorksPairingIncomingConnectRequiresConfirmationAcceptedInitiator) {
   TestStatusHandler owner_status_handler;
   TestStatusHandler initiator_status_handler;
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), owner_status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             owner_status_handler.MakeStatusCallback());
 
   FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -1095,7 +1346,8 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationAcce
                                 initiator_status_handler.MakeStatusCallback());
   EXPECT_TRUE(pairing_state.initiator());
   static_cast<void>(pairing_state.OnLinkKeyRequest());
-  EXPECT_EQ(IoCapability::NO_INPUT_NO_OUTPUT, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::NO_INPUT_NO_OUTPUT,
+            *pairing_state.OnIoCapabilityRequest());
 
   pairing_state.OnIoCapabilityResponse(IoCapability::NO_INPUT_NO_OUTPUT);
 
@@ -1105,15 +1357,17 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationAcce
     cb(true);
   });
   bool confirmed = false;
-  pairing_state.OnUserConfirmationRequest(kTestPasskey,
-                                          [&confirmed](bool confirm) { confirmed = confirm; });
+  pairing_state.OnUserConfirmationRequest(
+      kTestPasskey, [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
-    EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_EQ(fit::ok(), status);
-  });
-  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_delegate.SetCompletePairingCallback(
+      [this](PeerId peer_id, sm::Result<> status) {
+        EXPECT_EQ(peer()->identifier(), peer_id);
+        EXPECT_EQ(fit::ok(), status);
+      });
+  pairing_state.OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   EXPECT_EQ(0, owner_status_handler.call_count());
   EXPECT_EQ(0, initiator_status_handler.call_count());
@@ -1132,7 +1386,8 @@ void IoCapabilityResponse(PairingState* pairing_state) {
   pairing_state->OnIoCapabilityResponse(kTestPeerIoCap);
 }
 void UserConfirmationRequest(PairingState* pairing_state) {
-  pairing_state->OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
+  pairing_state->OnUserConfirmationRequest(kTestPasskey,
+                                           NoOpUserConfirmationCallback);
 }
 void UserPasskeyRequest(PairingState* pairing_state) {
   pairing_state->OnUserPasskeyRequest(NoOpUserPasskeyCallback);
@@ -1141,13 +1396,16 @@ void UserPasskeyNotification(PairingState* pairing_state) {
   pairing_state->OnUserPasskeyNotification(kTestPasskey);
 }
 void SimplePairingComplete(PairingState* pairing_state) {
-  pairing_state->OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state->OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
 }
 void LinkKeyNotification(PairingState* pairing_state) {
-  pairing_state->OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType192);
+  pairing_state->OnLinkKeyNotification(kTestLinkKeyValue,
+                                       kTestUnauthenticatedLinkKeyType192);
 }
 void AuthenticationComplete(PairingState* pairing_state) {
-  pairing_state->OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state->OnAuthenticationComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
 }
 
 // Test suite fixture that genericizes an injected pairing state event. The
@@ -1160,16 +1418,20 @@ void AuthenticationComplete(PairingState* pairing_state) {
 // This is named so that the instantiated test description looks correct:
 //
 //   PairingStateTest/HandlesEvent.<test case>/<index of event>
-class HandlesEvent : public PairingStateTest,
-                     public ::testing::WithParamInterface<void (*)(PairingState*)> {
+class HandlesEvent
+    : public PairingStateTest,
+      public ::testing::WithParamInterface<void (*)(PairingState*)> {
  public:
   void SetUp() override {
     PairingStateTest::SetUp();
 
     pairing_delegate_ = std::make_unique<NoOpPairingDelegate>(kTestLocalIoCap);
-    pairing_state_ = std::make_unique<PairingState>(
-        peer()->GetWeakPtr(), connection(), /*link_initiated=*/false, MakeAuthRequestCallback(),
-        status_handler_.MakeStatusCallback());
+    pairing_state_ =
+        std::make_unique<PairingState>(peer()->GetWeakPtr(),
+                                       connection(),
+                                       /*link_initiated=*/false,
+                                       MakeAuthRequestCallback(),
+                                       status_handler_.MakeStatusCallback());
     pairing_state().SetPairingDelegate(pairing_delegate_->GetWeakPtr());
   }
 
@@ -1196,11 +1458,16 @@ class HandlesEvent : public PairingStateTest,
 // through the expected pairing flow and generates errors when the pairing flow
 // occurs out of order. This is intended to cover its internal state machine
 // transitions and not the side effects.
-INSTANTIATE_TEST_SUITE_P(PairingStateTest, HandlesEvent,
-                         ::testing::Values(LinkKeyRequest, IoCapabilityRequest,
-                                           IoCapabilityResponse, UserConfirmationRequest,
-                                           UserPasskeyRequest, UserPasskeyNotification,
-                                           SimplePairingComplete, LinkKeyNotification,
+INSTANTIATE_TEST_SUITE_P(PairingStateTest,
+                         HandlesEvent,
+                         ::testing::Values(LinkKeyRequest,
+                                           IoCapabilityRequest,
+                                           IoCapabilityResponse,
+                                           UserConfirmationRequest,
+                                           UserPasskeyRequest,
+                                           UserPasskeyNotification,
+                                           SimplePairingComplete,
+                                           LinkKeyNotification,
                                            AuthenticationComplete));
 
 TEST_P(HandlesEvent, InIdleState) {
@@ -1218,7 +1485,8 @@ TEST_P(HandlesEvent, InIdleState) {
 
 TEST_P(HandlesEvent, InInitiatorWaitLinkKeyRequestState) {
   // Advance state machine.
-  static_cast<void>(pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback));
+  static_cast<void>(pairing_state().InitiatePairing(kNoSecurityRequirements,
+                                                    NoOpStatusCallback));
 
   RETURN_IF_FATAL(InjectEvent());
   if (event() == LinkKeyRequest) {
@@ -1247,7 +1515,8 @@ TEST_P(HandlesEvent, InInitiatorWaitIoCapRequest) {
 
 TEST_P(HandlesEvent, InInitiatorWaitAuthCompleteSkippingSimplePairing) {
   peer()->MutBrEdr().SetBondData(
-      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey));
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192),
+              kTestLinkKey));
 
   // Advance state machine.
   pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
@@ -1266,7 +1535,8 @@ TEST_P(HandlesEvent, InInitiatorWaitAuthCompleteSkippingSimplePairing) {
 
 TEST_P(HandlesEvent, InInitiatorWaitIoCapResponseState) {
   // Advance state machine.
-  static_cast<void>(pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback));
+  static_cast<void>(pairing_state().InitiatePairing(kNoSecurityRequirements,
+                                                    NoOpStatusCallback));
   static_cast<void>(pairing_state().OnLinkKeyRequest());
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
 
@@ -1294,7 +1564,8 @@ TEST_P(HandlesEvent, InResponderWaitIoCapRequestState) {
   }
 }
 
-TEST_P(HandlesEvent, InErrorStateAfterIoCapRequestRejectedWithoutPairingDelegate) {
+TEST_P(HandlesEvent,
+       InErrorStateAfterIoCapRequestRejectedWithoutPairingDelegate) {
   // Clear the default pairing delegate set by the fixture.
   pairing_state().SetPairingDelegate(PairingDelegate::WeakPtr());
 
@@ -1302,12 +1573,14 @@ TEST_P(HandlesEvent, InErrorStateAfterIoCapRequestRejectedWithoutPairingDelegate
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   EXPECT_FALSE(pairing_state().OnIoCapabilityRequest());
 
-  // PairingState no longer accepts events because being not ready to pair has raised an error.
+  // PairingState no longer accepts events because being not ready to pair has
+  // raised an error.
   RETURN_IF_FATAL(InjectEvent());
   EXPECT_LE(1, status_handler().call_count());
   ASSERT_TRUE(status_handler().status());
   if (event() == LinkKeyRequest || event() == IoCapabilityResponse) {
-    // Peer attempted to pair again, which raises an additional "not ready" error.
+    // Peer attempted to pair again, which raises an additional "not ready"
+    // error.
     EXPECT_EQ(ToResult(HostError::kNotReady), status_handler().status());
   } else {
     EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
@@ -1439,7 +1712,8 @@ TEST_P(HandlesEvent, InWaitPairingCompleteState) {
   // Advance state machine.
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
-  pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
+  pairing_state().OnUserConfirmationRequest(kTestPasskey,
+                                            NoOpUserConfirmationCallback);
 
   RETURN_IF_FATAL(InjectEvent());
   if (event() == SimplePairingComplete) {
@@ -1455,8 +1729,10 @@ TEST_P(HandlesEvent, InWaitLinkKeyState) {
   // Advance state machine.
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
-  pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
-  pairing_state().OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state().OnUserConfirmationRequest(kTestPasskey,
+                                            NoOpUserConfirmationCallback);
+  pairing_state().OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
   EXPECT_EQ(0, connection()->start_encryption_count());
 
   RETURN_IF_FATAL(InjectEvent());
@@ -1476,9 +1752,12 @@ TEST_P(HandlesEvent, InInitiatorWaitAuthCompleteStateAfterSimplePairing) {
   static_cast<void>(pairing_state().OnLinkKeyRequest());
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
-  pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
-  pairing_state().OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
-  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType192);
+  pairing_state().OnUserConfirmationRequest(kTestPasskey,
+                                            NoOpUserConfirmationCallback);
+  pairing_state().OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue,
+                                        kTestUnauthenticatedLinkKeyType192);
   ASSERT_TRUE(pairing_state().initiator());
   EXPECT_EQ(0, connection()->start_encryption_count());
 
@@ -1499,10 +1778,14 @@ TEST_P(HandlesEvent, InWaitEncryptionStateAsInitiator) {
   static_cast<void>(pairing_state().OnLinkKeyRequest());
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
-  pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
-  pairing_state().OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
-  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType192);
-  pairing_state().OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state().OnUserConfirmationRequest(kTestPasskey,
+                                            NoOpUserConfirmationCallback);
+  pairing_state().OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue,
+                                        kTestUnauthenticatedLinkKeyType192);
+  pairing_state().OnAuthenticationComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
   ASSERT_TRUE(pairing_state().initiator());
 
   RETURN_IF_FATAL(InjectEvent());
@@ -1522,9 +1805,12 @@ TEST_P(HandlesEvent, InWaitEncryptionStateAsResponder) {
   // Advance state machine.
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
-  pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
-  pairing_state().OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
-  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType192);
+  pairing_state().OnUserConfirmationRequest(kTestPasskey,
+                                            NoOpUserConfirmationCallback);
+  pairing_state().OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue,
+                                        kTestUnauthenticatedLinkKeyType192);
   ASSERT_FALSE(pairing_state().initiator());
 
   RETURN_IF_FATAL(InjectEvent());
@@ -1542,8 +1828,8 @@ TEST_P(HandlesEvent, InWaitEncryptionStateAsResponder) {
 
 TEST_P(HandlesEvent, InWaitEncryptionStateAsResponderForBonded) {
   // We are previously bonded.
-  auto existing_link_key =
-      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey);
+  auto existing_link_key = sm::LTK(
+      sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey);
   peer()->MutBrEdr().SetBondData(existing_link_key);
 
   // Advance state machine.
@@ -1556,8 +1842,8 @@ TEST_P(HandlesEvent, InWaitEncryptionStateAsResponderForBonded) {
     // This re-starts the pairing as a responder.
     EXPECT_EQ(0, status_handler().call_count());
   } else {
-    // Should not receive anything else other than OnEncryptionChange, receiving anything else is a
-    // failure.
+    // Should not receive anything else other than OnEncryptionChange, receiving
+    // anything else is a failure.
     EXPECT_EQ(1, status_handler().call_count());
     ASSERT_TRUE(status_handler().status());
     EXPECT_EQ(ToResult(HostError::kNotSupported), status_handler().status());
@@ -1566,14 +1852,19 @@ TEST_P(HandlesEvent, InWaitEncryptionStateAsResponderForBonded) {
 
 TEST_P(HandlesEvent, InIdleStateAfterOnePairing) {
   // Advance state machine.
-  static_cast<void>(pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback));
+  static_cast<void>(pairing_state().InitiatePairing(kNoSecurityRequirements,
+                                                    NoOpStatusCallback));
   static_cast<void>(pairing_state().OnLinkKeyRequest());
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
-  pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
-  pairing_state().OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
-  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType192);
-  pairing_state().OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state().OnUserConfirmationRequest(kTestPasskey,
+                                            NoOpUserConfirmationCallback);
+  pairing_state().OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue,
+                                        kTestUnauthenticatedLinkKeyType192);
+  pairing_state().OnAuthenticationComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
   ASSERT_TRUE(pairing_state().initiator());
 
   // Successfully enabling encryption should allow pairing to start again.
@@ -1597,7 +1888,8 @@ TEST_P(HandlesEvent, InFailedStateAfterPairingFailed) {
   // Advance state machine.
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
-  pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
+  pairing_state().OnUserConfirmationRequest(kTestPasskey,
+                                            NoOpUserConfirmationCallback);
 
   // Inject failure status.
   pairing_state().OnSimplePairingComplete(
@@ -1614,13 +1906,17 @@ TEST_P(HandlesEvent, InFailedStateAfterPairingFailed) {
 
 TEST_P(HandlesEvent, InFailedStateAfterAuthenticationFailed) {
   // Advance state machine.
-  static_cast<void>(pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback));
+  static_cast<void>(pairing_state().InitiatePairing(kNoSecurityRequirements,
+                                                    NoOpStatusCallback));
   static_cast<void>(pairing_state().OnLinkKeyRequest());
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
-  pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
-  pairing_state().OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
-  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType192);
+  pairing_state().OnUserConfirmationRequest(kTestPasskey,
+                                            NoOpUserConfirmationCallback);
+  pairing_state().OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue,
+                                        kTestUnauthenticatedLinkKeyType192);
 
   // Inject failure status.
   pairing_state().OnAuthenticationComplete(
@@ -1639,161 +1935,220 @@ TEST_P(HandlesEvent, InFailedStateAfterAuthenticationFailed) {
 // Stage 1 specs in v5.0 Vol 3, Part C, Sec 5.2.2.6, Table 5.7.
 TEST_F(PairingStateTest, GetInitiatorPairingAction) {
   EXPECT_EQ(PairingAction::kAutomatic,
-            GetInitiatorPairingAction(IoCapability::DISPLAY_ONLY, IoCapability::DISPLAY_ONLY));
+            GetInitiatorPairingAction(IoCapability::DISPLAY_ONLY,
+                                      IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(PairingAction::kDisplayPasskey,
-            GetInitiatorPairingAction(IoCapability::DISPLAY_ONLY, IoCapability::DISPLAY_YES_NO));
+            GetInitiatorPairingAction(IoCapability::DISPLAY_ONLY,
+                                      IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(PairingAction::kDisplayPasskey,
-            GetInitiatorPairingAction(IoCapability::DISPLAY_ONLY, IoCapability::KEYBOARD_ONLY));
-  EXPECT_EQ(PairingAction::kAutomatic, GetInitiatorPairingAction(IoCapability::DISPLAY_ONLY,
-                                                                 IoCapability::NO_INPUT_NO_OUTPUT));
+            GetInitiatorPairingAction(IoCapability::DISPLAY_ONLY,
+                                      IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(PairingAction::kAutomatic,
+            GetInitiatorPairingAction(IoCapability::DISPLAY_ONLY,
+                                      IoCapability::NO_INPUT_NO_OUTPUT));
 
   EXPECT_EQ(PairingAction::kComparePasskey,
-            GetInitiatorPairingAction(IoCapability::DISPLAY_YES_NO, IoCapability::DISPLAY_ONLY));
+            GetInitiatorPairingAction(IoCapability::DISPLAY_YES_NO,
+                                      IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(PairingAction::kDisplayPasskey,
-            GetInitiatorPairingAction(IoCapability::DISPLAY_YES_NO, IoCapability::DISPLAY_YES_NO));
+            GetInitiatorPairingAction(IoCapability::DISPLAY_YES_NO,
+                                      IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(PairingAction::kDisplayPasskey,
-            GetInitiatorPairingAction(IoCapability::DISPLAY_YES_NO, IoCapability::KEYBOARD_ONLY));
-  EXPECT_EQ(
-      PairingAction::kGetConsent,
-      GetInitiatorPairingAction(IoCapability::DISPLAY_YES_NO, IoCapability::NO_INPUT_NO_OUTPUT));
+            GetInitiatorPairingAction(IoCapability::DISPLAY_YES_NO,
+                                      IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(PairingAction::kGetConsent,
+            GetInitiatorPairingAction(IoCapability::DISPLAY_YES_NO,
+                                      IoCapability::NO_INPUT_NO_OUTPUT));
 
   EXPECT_EQ(PairingAction::kRequestPasskey,
-            GetInitiatorPairingAction(IoCapability::KEYBOARD_ONLY, IoCapability::DISPLAY_ONLY));
+            GetInitiatorPairingAction(IoCapability::KEYBOARD_ONLY,
+                                      IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(PairingAction::kRequestPasskey,
-            GetInitiatorPairingAction(IoCapability::KEYBOARD_ONLY, IoCapability::DISPLAY_YES_NO));
+            GetInitiatorPairingAction(IoCapability::KEYBOARD_ONLY,
+                                      IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(PairingAction::kRequestPasskey,
-            GetInitiatorPairingAction(IoCapability::KEYBOARD_ONLY, IoCapability::KEYBOARD_ONLY));
-  EXPECT_EQ(PairingAction::kAutomatic, GetInitiatorPairingAction(IoCapability::KEYBOARD_ONLY,
-                                                                 IoCapability::NO_INPUT_NO_OUTPUT));
+            GetInitiatorPairingAction(IoCapability::KEYBOARD_ONLY,
+                                      IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(PairingAction::kAutomatic,
+            GetInitiatorPairingAction(IoCapability::KEYBOARD_ONLY,
+                                      IoCapability::NO_INPUT_NO_OUTPUT));
 
-  EXPECT_EQ(PairingAction::kAutomatic, GetInitiatorPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
-                                                                 IoCapability::DISPLAY_ONLY));
-  EXPECT_EQ(PairingAction::kAutomatic, GetInitiatorPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
-                                                                 IoCapability::DISPLAY_YES_NO));
-  EXPECT_EQ(PairingAction::kAutomatic, GetInitiatorPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
-                                                                 IoCapability::KEYBOARD_ONLY));
-  EXPECT_EQ(PairingAction::kAutomatic, GetInitiatorPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
-                                                                 IoCapability::NO_INPUT_NO_OUTPUT));
+  EXPECT_EQ(PairingAction::kAutomatic,
+            GetInitiatorPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
+                                      IoCapability::DISPLAY_ONLY));
+  EXPECT_EQ(PairingAction::kAutomatic,
+            GetInitiatorPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
+                                      IoCapability::DISPLAY_YES_NO));
+  EXPECT_EQ(PairingAction::kAutomatic,
+            GetInitiatorPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
+                                      IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(PairingAction::kAutomatic,
+            GetInitiatorPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
+                                      IoCapability::NO_INPUT_NO_OUTPUT));
 }
 
 // Ibid., but for "device B."
 TEST_F(PairingStateTest, GetResponderPairingAction) {
   EXPECT_EQ(PairingAction::kAutomatic,
-            GetResponderPairingAction(IoCapability::DISPLAY_ONLY, IoCapability::DISPLAY_ONLY));
+            GetResponderPairingAction(IoCapability::DISPLAY_ONLY,
+                                      IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(PairingAction::kComparePasskey,
-            GetResponderPairingAction(IoCapability::DISPLAY_ONLY, IoCapability::DISPLAY_YES_NO));
+            GetResponderPairingAction(IoCapability::DISPLAY_ONLY,
+                                      IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(PairingAction::kRequestPasskey,
-            GetResponderPairingAction(IoCapability::DISPLAY_ONLY, IoCapability::KEYBOARD_ONLY));
-  EXPECT_EQ(PairingAction::kAutomatic, GetResponderPairingAction(IoCapability::DISPLAY_ONLY,
-                                                                 IoCapability::NO_INPUT_NO_OUTPUT));
+            GetResponderPairingAction(IoCapability::DISPLAY_ONLY,
+                                      IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(PairingAction::kAutomatic,
+            GetResponderPairingAction(IoCapability::DISPLAY_ONLY,
+                                      IoCapability::NO_INPUT_NO_OUTPUT));
 
   EXPECT_EQ(PairingAction::kDisplayPasskey,
-            GetResponderPairingAction(IoCapability::DISPLAY_YES_NO, IoCapability::DISPLAY_ONLY));
+            GetResponderPairingAction(IoCapability::DISPLAY_YES_NO,
+                                      IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(PairingAction::kComparePasskey,
-            GetResponderPairingAction(IoCapability::DISPLAY_YES_NO, IoCapability::DISPLAY_YES_NO));
+            GetResponderPairingAction(IoCapability::DISPLAY_YES_NO,
+                                      IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(PairingAction::kRequestPasskey,
-            GetResponderPairingAction(IoCapability::DISPLAY_YES_NO, IoCapability::KEYBOARD_ONLY));
-  EXPECT_EQ(PairingAction::kAutomatic, GetResponderPairingAction(IoCapability::DISPLAY_YES_NO,
-                                                                 IoCapability::NO_INPUT_NO_OUTPUT));
+            GetResponderPairingAction(IoCapability::DISPLAY_YES_NO,
+                                      IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(PairingAction::kAutomatic,
+            GetResponderPairingAction(IoCapability::DISPLAY_YES_NO,
+                                      IoCapability::NO_INPUT_NO_OUTPUT));
 
   EXPECT_EQ(PairingAction::kDisplayPasskey,
-            GetResponderPairingAction(IoCapability::KEYBOARD_ONLY, IoCapability::DISPLAY_ONLY));
+            GetResponderPairingAction(IoCapability::KEYBOARD_ONLY,
+                                      IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(PairingAction::kDisplayPasskey,
-            GetResponderPairingAction(IoCapability::KEYBOARD_ONLY, IoCapability::DISPLAY_YES_NO));
+            GetResponderPairingAction(IoCapability::KEYBOARD_ONLY,
+                                      IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(PairingAction::kRequestPasskey,
-            GetResponderPairingAction(IoCapability::KEYBOARD_ONLY, IoCapability::KEYBOARD_ONLY));
-  EXPECT_EQ(PairingAction::kAutomatic, GetResponderPairingAction(IoCapability::KEYBOARD_ONLY,
-                                                                 IoCapability::NO_INPUT_NO_OUTPUT));
+            GetResponderPairingAction(IoCapability::KEYBOARD_ONLY,
+                                      IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(PairingAction::kAutomatic,
+            GetResponderPairingAction(IoCapability::KEYBOARD_ONLY,
+                                      IoCapability::NO_INPUT_NO_OUTPUT));
 
-  EXPECT_EQ(PairingAction::kAutomatic, GetResponderPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
-                                                                 IoCapability::DISPLAY_ONLY));
-  EXPECT_EQ(PairingAction::kGetConsent, GetResponderPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
-                                                                  IoCapability::DISPLAY_YES_NO));
-  EXPECT_EQ(PairingAction::kGetConsent, GetResponderPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
-                                                                  IoCapability::KEYBOARD_ONLY));
-  EXPECT_EQ(PairingAction::kAutomatic, GetResponderPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
-                                                                 IoCapability::NO_INPUT_NO_OUTPUT));
+  EXPECT_EQ(PairingAction::kAutomatic,
+            GetResponderPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
+                                      IoCapability::DISPLAY_ONLY));
+  EXPECT_EQ(PairingAction::kGetConsent,
+            GetResponderPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
+                                      IoCapability::DISPLAY_YES_NO));
+  EXPECT_EQ(PairingAction::kGetConsent,
+            GetResponderPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
+                                      IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(PairingAction::kAutomatic,
+            GetResponderPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
+                                      IoCapability::NO_INPUT_NO_OUTPUT));
 }
 
 // Events are obtained from ibid. association models, mapped to HCI sequences in
 // v5.0 Vol 3, Vol 2, Part F, Sec 4.2.10–15.
 TEST_F(PairingStateTest, GetExpectedEvent) {
+  EXPECT_EQ(
+      kUserConfirmationRequestEventCode,
+      GetExpectedEvent(IoCapability::DISPLAY_ONLY, IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(kUserConfirmationRequestEventCode,
-            GetExpectedEvent(IoCapability::DISPLAY_ONLY, IoCapability::DISPLAY_ONLY));
-  EXPECT_EQ(kUserConfirmationRequestEventCode,
-            GetExpectedEvent(IoCapability::DISPLAY_ONLY, IoCapability::DISPLAY_YES_NO));
+            GetExpectedEvent(IoCapability::DISPLAY_ONLY,
+                             IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(kUserPasskeyNotificationEventCode,
-            GetExpectedEvent(IoCapability::DISPLAY_ONLY, IoCapability::KEYBOARD_ONLY));
+            GetExpectedEvent(IoCapability::DISPLAY_ONLY,
+                             IoCapability::KEYBOARD_ONLY));
   EXPECT_EQ(kUserConfirmationRequestEventCode,
-            GetExpectedEvent(IoCapability::DISPLAY_ONLY, IoCapability::NO_INPUT_NO_OUTPUT));
+            GetExpectedEvent(IoCapability::DISPLAY_ONLY,
+                             IoCapability::NO_INPUT_NO_OUTPUT));
 
   EXPECT_EQ(kUserConfirmationRequestEventCode,
-            GetExpectedEvent(IoCapability::DISPLAY_YES_NO, IoCapability::DISPLAY_ONLY));
+            GetExpectedEvent(IoCapability::DISPLAY_YES_NO,
+                             IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(kUserConfirmationRequestEventCode,
-            GetExpectedEvent(IoCapability::DISPLAY_YES_NO, IoCapability::DISPLAY_YES_NO));
+            GetExpectedEvent(IoCapability::DISPLAY_YES_NO,
+                             IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(kUserPasskeyNotificationEventCode,
-            GetExpectedEvent(IoCapability::DISPLAY_YES_NO, IoCapability::KEYBOARD_ONLY));
+            GetExpectedEvent(IoCapability::DISPLAY_YES_NO,
+                             IoCapability::KEYBOARD_ONLY));
   EXPECT_EQ(kUserConfirmationRequestEventCode,
-            GetExpectedEvent(IoCapability::DISPLAY_YES_NO, IoCapability::NO_INPUT_NO_OUTPUT));
+            GetExpectedEvent(IoCapability::DISPLAY_YES_NO,
+                             IoCapability::NO_INPUT_NO_OUTPUT));
 
   EXPECT_EQ(kUserPasskeyRequestEventCode,
-            GetExpectedEvent(IoCapability::KEYBOARD_ONLY, IoCapability::DISPLAY_ONLY));
+            GetExpectedEvent(IoCapability::KEYBOARD_ONLY,
+                             IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(kUserPasskeyRequestEventCode,
-            GetExpectedEvent(IoCapability::KEYBOARD_ONLY, IoCapability::DISPLAY_YES_NO));
+            GetExpectedEvent(IoCapability::KEYBOARD_ONLY,
+                             IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(kUserPasskeyRequestEventCode,
-            GetExpectedEvent(IoCapability::KEYBOARD_ONLY, IoCapability::KEYBOARD_ONLY));
+            GetExpectedEvent(IoCapability::KEYBOARD_ONLY,
+                             IoCapability::KEYBOARD_ONLY));
   EXPECT_EQ(kUserConfirmationRequestEventCode,
-            GetExpectedEvent(IoCapability::KEYBOARD_ONLY, IoCapability::NO_INPUT_NO_OUTPUT));
+            GetExpectedEvent(IoCapability::KEYBOARD_ONLY,
+                             IoCapability::NO_INPUT_NO_OUTPUT));
 
   EXPECT_EQ(kUserConfirmationRequestEventCode,
-            GetExpectedEvent(IoCapability::NO_INPUT_NO_OUTPUT, IoCapability::DISPLAY_ONLY));
+            GetExpectedEvent(IoCapability::NO_INPUT_NO_OUTPUT,
+                             IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(kUserConfirmationRequestEventCode,
-            GetExpectedEvent(IoCapability::NO_INPUT_NO_OUTPUT, IoCapability::DISPLAY_YES_NO));
+            GetExpectedEvent(IoCapability::NO_INPUT_NO_OUTPUT,
+                             IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(kUserConfirmationRequestEventCode,
-            GetExpectedEvent(IoCapability::NO_INPUT_NO_OUTPUT, IoCapability::KEYBOARD_ONLY));
+            GetExpectedEvent(IoCapability::NO_INPUT_NO_OUTPUT,
+                             IoCapability::KEYBOARD_ONLY));
   EXPECT_EQ(kUserConfirmationRequestEventCode,
-            GetExpectedEvent(IoCapability::NO_INPUT_NO_OUTPUT, IoCapability::NO_INPUT_NO_OUTPUT));
+            GetExpectedEvent(IoCapability::NO_INPUT_NO_OUTPUT,
+                             IoCapability::NO_INPUT_NO_OUTPUT));
 }
 
 // Level of authentication from ibid. table.
 TEST_F(PairingStateTest, IsPairingAuthenticated) {
-  EXPECT_FALSE(IsPairingAuthenticated(IoCapability::DISPLAY_ONLY, IoCapability::DISPLAY_ONLY));
-  EXPECT_FALSE(IsPairingAuthenticated(IoCapability::DISPLAY_ONLY, IoCapability::DISPLAY_YES_NO));
-  EXPECT_TRUE(IsPairingAuthenticated(IoCapability::DISPLAY_ONLY, IoCapability::KEYBOARD_ONLY));
-  EXPECT_FALSE(
-      IsPairingAuthenticated(IoCapability::DISPLAY_ONLY, IoCapability::NO_INPUT_NO_OUTPUT));
+  EXPECT_FALSE(IsPairingAuthenticated(IoCapability::DISPLAY_ONLY,
+                                      IoCapability::DISPLAY_ONLY));
+  EXPECT_FALSE(IsPairingAuthenticated(IoCapability::DISPLAY_ONLY,
+                                      IoCapability::DISPLAY_YES_NO));
+  EXPECT_TRUE(IsPairingAuthenticated(IoCapability::DISPLAY_ONLY,
+                                     IoCapability::KEYBOARD_ONLY));
+  EXPECT_FALSE(IsPairingAuthenticated(IoCapability::DISPLAY_ONLY,
+                                      IoCapability::NO_INPUT_NO_OUTPUT));
 
-  EXPECT_FALSE(IsPairingAuthenticated(IoCapability::DISPLAY_YES_NO, IoCapability::DISPLAY_ONLY));
-  EXPECT_TRUE(IsPairingAuthenticated(IoCapability::DISPLAY_YES_NO, IoCapability::DISPLAY_YES_NO));
-  EXPECT_TRUE(IsPairingAuthenticated(IoCapability::DISPLAY_YES_NO, IoCapability::KEYBOARD_ONLY));
-  EXPECT_FALSE(
-      IsPairingAuthenticated(IoCapability::DISPLAY_YES_NO, IoCapability::NO_INPUT_NO_OUTPUT));
+  EXPECT_FALSE(IsPairingAuthenticated(IoCapability::DISPLAY_YES_NO,
+                                      IoCapability::DISPLAY_ONLY));
+  EXPECT_TRUE(IsPairingAuthenticated(IoCapability::DISPLAY_YES_NO,
+                                     IoCapability::DISPLAY_YES_NO));
+  EXPECT_TRUE(IsPairingAuthenticated(IoCapability::DISPLAY_YES_NO,
+                                     IoCapability::KEYBOARD_ONLY));
+  EXPECT_FALSE(IsPairingAuthenticated(IoCapability::DISPLAY_YES_NO,
+                                      IoCapability::NO_INPUT_NO_OUTPUT));
 
-  EXPECT_TRUE(IsPairingAuthenticated(IoCapability::KEYBOARD_ONLY, IoCapability::DISPLAY_ONLY));
-  EXPECT_TRUE(IsPairingAuthenticated(IoCapability::KEYBOARD_ONLY, IoCapability::DISPLAY_YES_NO));
-  EXPECT_TRUE(IsPairingAuthenticated(IoCapability::KEYBOARD_ONLY, IoCapability::KEYBOARD_ONLY));
-  EXPECT_FALSE(
-      IsPairingAuthenticated(IoCapability::KEYBOARD_ONLY, IoCapability::NO_INPUT_NO_OUTPUT));
+  EXPECT_TRUE(IsPairingAuthenticated(IoCapability::KEYBOARD_ONLY,
+                                     IoCapability::DISPLAY_ONLY));
+  EXPECT_TRUE(IsPairingAuthenticated(IoCapability::KEYBOARD_ONLY,
+                                     IoCapability::DISPLAY_YES_NO));
+  EXPECT_TRUE(IsPairingAuthenticated(IoCapability::KEYBOARD_ONLY,
+                                     IoCapability::KEYBOARD_ONLY));
+  EXPECT_FALSE(IsPairingAuthenticated(IoCapability::KEYBOARD_ONLY,
+                                      IoCapability::NO_INPUT_NO_OUTPUT));
 
-  EXPECT_FALSE(
-      IsPairingAuthenticated(IoCapability::NO_INPUT_NO_OUTPUT, IoCapability::DISPLAY_ONLY));
-  EXPECT_FALSE(
-      IsPairingAuthenticated(IoCapability::NO_INPUT_NO_OUTPUT, IoCapability::DISPLAY_YES_NO));
-  EXPECT_FALSE(
-      IsPairingAuthenticated(IoCapability::NO_INPUT_NO_OUTPUT, IoCapability::KEYBOARD_ONLY));
-  EXPECT_FALSE(
-      IsPairingAuthenticated(IoCapability::NO_INPUT_NO_OUTPUT, IoCapability::NO_INPUT_NO_OUTPUT));
+  EXPECT_FALSE(IsPairingAuthenticated(IoCapability::NO_INPUT_NO_OUTPUT,
+                                      IoCapability::DISPLAY_ONLY));
+  EXPECT_FALSE(IsPairingAuthenticated(IoCapability::NO_INPUT_NO_OUTPUT,
+                                      IoCapability::DISPLAY_YES_NO));
+  EXPECT_FALSE(IsPairingAuthenticated(IoCapability::NO_INPUT_NO_OUTPUT,
+                                      IoCapability::KEYBOARD_ONLY));
+  EXPECT_FALSE(IsPairingAuthenticated(IoCapability::NO_INPUT_NO_OUTPUT,
+                                      IoCapability::NO_INPUT_NO_OUTPUT));
 }
 
 TEST_F(PairingStateTest, GetInitiatorAuthenticationRequirements) {
   EXPECT_EQ(AuthenticationRequirements::MITM_GENERAL_BONDING,
             GetInitiatorAuthenticationRequirements(IoCapability::DISPLAY_ONLY));
-  EXPECT_EQ(AuthenticationRequirements::MITM_GENERAL_BONDING,
-            GetInitiatorAuthenticationRequirements(IoCapability::DISPLAY_YES_NO));
-  EXPECT_EQ(AuthenticationRequirements::MITM_GENERAL_BONDING,
-            GetInitiatorAuthenticationRequirements(IoCapability::KEYBOARD_ONLY));
-  EXPECT_EQ(AuthenticationRequirements::GENERAL_BONDING,
-            GetInitiatorAuthenticationRequirements(IoCapability::NO_INPUT_NO_OUTPUT));
+  EXPECT_EQ(
+      AuthenticationRequirements::MITM_GENERAL_BONDING,
+      GetInitiatorAuthenticationRequirements(IoCapability::DISPLAY_YES_NO));
+  EXPECT_EQ(
+      AuthenticationRequirements::MITM_GENERAL_BONDING,
+      GetInitiatorAuthenticationRequirements(IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(
+      AuthenticationRequirements::GENERAL_BONDING,
+      GetInitiatorAuthenticationRequirements(IoCapability::NO_INPUT_NO_OUTPUT));
 }
 
 TEST_F(PairingStateTest, GetResponderAuthenticationRequirements) {
@@ -1801,67 +2156,73 @@ TEST_F(PairingStateTest, GetResponderAuthenticationRequirements) {
             GetResponderAuthenticationRequirements(IoCapability::DISPLAY_ONLY,
                                                    IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(AuthenticationRequirements::GENERAL_BONDING,
-            GetResponderAuthenticationRequirements(IoCapability::DISPLAY_ONLY,
-                                                   IoCapability::DISPLAY_YES_NO));
+            GetResponderAuthenticationRequirements(
+                IoCapability::DISPLAY_ONLY, IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(AuthenticationRequirements::MITM_GENERAL_BONDING,
-            GetResponderAuthenticationRequirements(IoCapability::DISPLAY_ONLY,
-                                                   IoCapability::KEYBOARD_ONLY));
+            GetResponderAuthenticationRequirements(
+                IoCapability::DISPLAY_ONLY, IoCapability::KEYBOARD_ONLY));
   EXPECT_EQ(AuthenticationRequirements::GENERAL_BONDING,
-            GetResponderAuthenticationRequirements(IoCapability::DISPLAY_ONLY,
-                                                   IoCapability::NO_INPUT_NO_OUTPUT));
+            GetResponderAuthenticationRequirements(
+                IoCapability::DISPLAY_ONLY, IoCapability::NO_INPUT_NO_OUTPUT));
 
   EXPECT_EQ(AuthenticationRequirements::GENERAL_BONDING,
             GetResponderAuthenticationRequirements(IoCapability::DISPLAY_YES_NO,
                                                    IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(AuthenticationRequirements::MITM_GENERAL_BONDING,
-            GetResponderAuthenticationRequirements(IoCapability::DISPLAY_YES_NO,
-                                                   IoCapability::DISPLAY_YES_NO));
+            GetResponderAuthenticationRequirements(
+                IoCapability::DISPLAY_YES_NO, IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(AuthenticationRequirements::MITM_GENERAL_BONDING,
-            GetResponderAuthenticationRequirements(IoCapability::DISPLAY_YES_NO,
-                                                   IoCapability::KEYBOARD_ONLY));
-  EXPECT_EQ(AuthenticationRequirements::GENERAL_BONDING,
-            GetResponderAuthenticationRequirements(IoCapability::DISPLAY_YES_NO,
-                                                   IoCapability::NO_INPUT_NO_OUTPUT));
+            GetResponderAuthenticationRequirements(
+                IoCapability::DISPLAY_YES_NO, IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(
+      AuthenticationRequirements::GENERAL_BONDING,
+      GetResponderAuthenticationRequirements(IoCapability::DISPLAY_YES_NO,
+                                             IoCapability::NO_INPUT_NO_OUTPUT));
 
   EXPECT_EQ(AuthenticationRequirements::MITM_GENERAL_BONDING,
             GetResponderAuthenticationRequirements(IoCapability::KEYBOARD_ONLY,
                                                    IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(AuthenticationRequirements::MITM_GENERAL_BONDING,
-            GetResponderAuthenticationRequirements(IoCapability::KEYBOARD_ONLY,
-                                                   IoCapability::DISPLAY_YES_NO));
+            GetResponderAuthenticationRequirements(
+                IoCapability::KEYBOARD_ONLY, IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(AuthenticationRequirements::MITM_GENERAL_BONDING,
-            GetResponderAuthenticationRequirements(IoCapability::KEYBOARD_ONLY,
-                                                   IoCapability::KEYBOARD_ONLY));
+            GetResponderAuthenticationRequirements(
+                IoCapability::KEYBOARD_ONLY, IoCapability::KEYBOARD_ONLY));
   EXPECT_EQ(AuthenticationRequirements::GENERAL_BONDING,
-            GetResponderAuthenticationRequirements(IoCapability::KEYBOARD_ONLY,
-                                                   IoCapability::NO_INPUT_NO_OUTPUT));
+            GetResponderAuthenticationRequirements(
+                IoCapability::KEYBOARD_ONLY, IoCapability::NO_INPUT_NO_OUTPUT));
 
   EXPECT_EQ(AuthenticationRequirements::GENERAL_BONDING,
-            GetResponderAuthenticationRequirements(IoCapability::NO_INPUT_NO_OUTPUT,
-                                                   IoCapability::DISPLAY_ONLY));
+            GetResponderAuthenticationRequirements(
+                IoCapability::NO_INPUT_NO_OUTPUT, IoCapability::DISPLAY_ONLY));
+  EXPECT_EQ(
+      AuthenticationRequirements::GENERAL_BONDING,
+      GetResponderAuthenticationRequirements(IoCapability::NO_INPUT_NO_OUTPUT,
+                                             IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(AuthenticationRequirements::GENERAL_BONDING,
-            GetResponderAuthenticationRequirements(IoCapability::NO_INPUT_NO_OUTPUT,
-                                                   IoCapability::DISPLAY_YES_NO));
-  EXPECT_EQ(AuthenticationRequirements::GENERAL_BONDING,
-            GetResponderAuthenticationRequirements(IoCapability::NO_INPUT_NO_OUTPUT,
-                                                   IoCapability::KEYBOARD_ONLY));
-  EXPECT_EQ(AuthenticationRequirements::GENERAL_BONDING,
-            GetResponderAuthenticationRequirements(IoCapability::NO_INPUT_NO_OUTPUT,
-                                                   IoCapability::NO_INPUT_NO_OUTPUT));
+            GetResponderAuthenticationRequirements(
+                IoCapability::NO_INPUT_NO_OUTPUT, IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(
+      AuthenticationRequirements::GENERAL_BONDING,
+      GetResponderAuthenticationRequirements(IoCapability::NO_INPUT_NO_OUTPUT,
+                                             IoCapability::NO_INPUT_NO_OUTPUT));
 }
 
 TEST_F(PairingStateTest, SkipPairingIfExistingKeyMeetsSecurityRequirements) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   connection()->set_link_key(kTestLinkKey, kTestAuthenticatedLinkKeyType192);
 
-  constexpr BrEdrSecurityRequirements kSecurityRequirements{.authentication = true,
-                                                            .secure_connections = false};
+  constexpr BrEdrSecurityRequirements kSecurityRequirements{
+      .authentication = true, .secure_connections = false};
   TestStatusHandler initiator_status_handler;
   pairing_state.InitiatePairing(kSecurityRequirements,
                                 initiator_status_handler.MakeStatusCallback());
@@ -1872,37 +2233,49 @@ TEST_F(PairingStateTest, SkipPairingIfExistingKeyMeetsSecurityRequirements) {
   EXPECT_EQ(fit::ok(), *initiator_status_handler.status());
 }
 
-TEST_F(PairingStateTest,
-       InitiatorAuthRequiredCausesOnLinkKeyRequestToReturnNullIfUnauthenticatedKeyExists) {
+TEST_F(
+    PairingStateTest,
+    InitiatorAuthRequiredCausesOnLinkKeyRequestToReturnNullIfUnauthenticatedKeyExists) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
-  BrEdrSecurityRequirements security{.authentication = true, .secure_connections = false};
+  BrEdrSecurityRequirements security{.authentication = true,
+                                     .secure_connections = false};
   pairing_state.InitiatePairing(security, status_handler.MakeStatusCallback());
 
   peer()->MutBrEdr().SetBondData(
-      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey));
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192),
+              kTestLinkKey));
 
   EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
   EXPECT_EQ(0, status_handler.call_count());
 }
 
-TEST_F(PairingStateTest, InitiatorNoSecurityRequirementsCausesOnLinkKeyRequestToReturnExistingKey) {
+TEST_F(
+    PairingStateTest,
+    InitiatorNoSecurityRequirementsCausesOnLinkKeyRequestToReturnExistingKey) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
 
   peer()->MutBrEdr().SetBondData(
-      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey));
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192),
+              kTestLinkKey));
   EXPECT_FALSE(connection()->ltk().has_value());
 
   auto reply_key = pairing_state.OnLinkKeyRequest();
@@ -1912,11 +2285,15 @@ TEST_F(PairingStateTest, InitiatorNoSecurityRequirementsCausesOnLinkKeyRequestTo
   EXPECT_TRUE(connection()->ltk().has_value());
 }
 
-TEST_F(PairingStateTest, InitiatorOnLinkKeyRequestReturnsNullIfBondDataDoesNotExist) {
+TEST_F(PairingStateTest,
+       InitiatorOnLinkKeyRequestReturnsNullIfBondDataDoesNotExist) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -1927,16 +2304,21 @@ TEST_F(PairingStateTest, InitiatorOnLinkKeyRequestReturnsNullIfBondDataDoesNotEx
   EXPECT_EQ(0, status_handler.call_count());
 }
 
-TEST_F(PairingStateTest, IdleStateOnLinkKeyRequestReturnsLinkKeyWhenBondDataExists) {
+TEST_F(PairingStateTest,
+       IdleStateOnLinkKeyRequestReturnsLinkKeyWhenBondDataExists) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   peer()->MutBrEdr().SetBondData(
-      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey));
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192),
+              kTestLinkKey));
   EXPECT_FALSE(connection()->ltk().has_value());
 
   auto reply_key = pairing_state.OnLinkKeyRequest();
@@ -1946,11 +2328,15 @@ TEST_F(PairingStateTest, IdleStateOnLinkKeyRequestReturnsLinkKeyWhenBondDataExis
   EXPECT_TRUE(connection()->ltk().has_value());
 }
 
-TEST_F(PairingStateTest, IdleStateOnLinkKeyRequestReturnsNullWhenBondDataDoesNotExist) {
+TEST_F(PairingStateTest,
+       IdleStateOnLinkKeyRequestReturnsNullWhenBondDataDoesNotExist) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -1959,21 +2345,27 @@ TEST_F(PairingStateTest, IdleStateOnLinkKeyRequestReturnsNullWhenBondDataDoesNot
   EXPECT_EQ(0, status_handler.call_count());
 }
 
-TEST_F(PairingStateTest, SimplePairingCompleteWithErrorCodeReceivedEarlyFailsPairing) {
+TEST_F(PairingStateTest,
+       SimplePairingCompleteWithErrorCodeReceivedEarlyFailsPairing) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
 
   EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
-  EXPECT_EQ(IoCapability::NO_INPUT_NO_OUTPUT, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::NO_INPUT_NO_OUTPUT,
+            *pairing_state.OnIoCapabilityRequest());
   EXPECT_EQ(0, status_handler.call_count());
 
-  const auto status_code = pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED;
+  const auto status_code =
+      pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED;
   pairing_state.OnSimplePairingComplete(status_code);
   ASSERT_EQ(1, status_handler.call_count());
   EXPECT_EQ(ToResult(status_code), status_handler.status().value());
@@ -1982,8 +2374,11 @@ TEST_F(PairingStateTest, SimplePairingCompleteWithErrorCodeReceivedEarlyFailsPai
 TEST_F(PairingStateDeathTest, OnLinkKeyRequestReceivedMissingPeerAsserts) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -1992,14 +2387,19 @@ TEST_F(PairingStateDeathTest, OnLinkKeyRequestReceivedMissingPeerAsserts) {
   EXPECT_TRUE(peer_cache()->RemoveDisconnectedPeer(peer()->identifier()));
 
   ASSERT_DEATH_IF_SUPPORTED(
-      { [[maybe_unused]] auto reply_key = pairing_state.OnLinkKeyRequest(); }, ".*peer.*");
+      { [[maybe_unused]] auto reply_key = pairing_state.OnLinkKeyRequest(); },
+      ".*peer.*");
 }
 
-TEST_F(PairingStateTest, AuthenticationCompleteWithErrorCodeReceivedEarlyFailsPairing) {
+TEST_F(PairingStateTest,
+       AuthenticationCompleteWithErrorCodeReceivedEarlyFailsPairing) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -2008,23 +2408,28 @@ TEST_F(PairingStateTest, AuthenticationCompleteWithErrorCodeReceivedEarlyFailsPa
   EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
   EXPECT_EQ(0, status_handler.call_count());
 
-  const auto status_code = pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE;
+  const auto status_code =
+      pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE;
   pairing_state.OnAuthenticationComplete(status_code);
   ASSERT_EQ(1, status_handler.call_count());
   EXPECT_EQ(ToResult(status_code), status_handler.status().value());
 }
 
-TEST_F(PairingStateTest,
-       AuthenticationCompleteWithMissingKeyRetriesWithoutKeyAndDoesntAutoConfirmRejected) {
+TEST_F(
+    PairingStateTest,
+    AuthenticationCompleteWithMissingKeyRetriesWithoutKeyAndDoesntAutoConfirmRejected) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/true,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/true,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
-  auto existing_link_key =
-      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey);
+  auto existing_link_key = sm::LTK(
+      sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey);
 
   peer()->MutBrEdr().SetBondData(existing_link_key);
   EXPECT_FALSE(connection()->ltk().has_value());
@@ -2038,9 +2443,11 @@ TEST_F(PairingStateTest,
   EXPECT_EQ(0, status_handler.call_count());
 
   // Peer says that they don't have a key.
-  pairing_state.OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::PIN_OR_KEY_MISSING);
+  pairing_state.OnAuthenticationComplete(
+      pw::bluetooth::emboss::StatusCode::PIN_OR_KEY_MISSING);
   ASSERT_EQ(0, status_handler.call_count());
-  // We should retry the authentication request, this time pretending we don't have a key.
+  // We should retry the authentication request, this time pretending we don't
+  // have a key.
   EXPECT_EQ(2u, auth_request_count());
 
   EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
@@ -2054,19 +2461,21 @@ TEST_F(PairingStateTest,
     cb(false);
   });
   bool confirmed = true;
-  pairing_state.OnUserConfirmationRequest(kTestPasskey,
-                                          [&confirmed](bool confirm) { confirmed = confirm; });
+  pairing_state.OnUserConfirmationRequest(
+      kTestPasskey, [&confirmed](bool confirm) { confirmed = confirm; });
 
   EXPECT_FALSE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
-    EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_TRUE(status.is_error());
-  });
+  pairing_delegate.SetCompletePairingCallback(
+      [this](PeerId peer_id, sm::Result<> status) {
+        EXPECT_EQ(peer()->identifier(), peer_id);
+        EXPECT_TRUE(status.is_error());
+      });
 
-  // The controller sends a SimplePairingComplete indicating the failure after we send a
-  // Negative Confirmation.
-  const auto status_code = pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE;
+  // The controller sends a SimplePairingComplete indicating the failure after
+  // we send a Negative Confirmation.
+  const auto status_code =
+      pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE;
   pairing_state.OnSimplePairingComplete(status_code);
 
   // The bonding key should not have been touched.
@@ -2080,12 +2489,15 @@ TEST_F(PairingStateTest,
 TEST_F(PairingStateTest, ResponderSignalsCompletionOfPairing) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   EXPECT_FALSE(pairing_state.initiator());
 
-  auto existing_link_key =
-      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey);
+  auto existing_link_key = sm::LTK(
+      sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey);
 
   peer()->MutBrEdr().SetBondData(existing_link_key);
   EXPECT_FALSE(connection()->ltk().has_value());
@@ -2095,10 +2507,11 @@ TEST_F(PairingStateTest, ResponderSignalsCompletionOfPairing) {
   EXPECT_EQ(kTestLinkKey, reply_key.value());
   EXPECT_EQ(0, status_handler.call_count());
 
-  // If a pairing request comes in after the peer has already asked for the key, we
-  // add it's completion to the queue.
+  // If a pairing request comes in after the peer has already asked for the key,
+  // we add it's completion to the queue.
   TestStatusHandler new_pairing_handler;
-  pairing_state.InitiatePairing(kNoSecurityRequirements, new_pairing_handler.MakeStatusCallback());
+  pairing_state.InitiatePairing(kNoSecurityRequirements,
+                                new_pairing_handler.MakeStatusCallback());
 
   connection()->TriggerEncryptionChangeCallback(fit::ok(true));
 
@@ -2116,17 +2529,21 @@ TEST_F(PairingStateTest, ResponderSignalsCompletionOfPairing) {
   EXPECT_EQ(kTestLinkKey, connection()->ltk());
 }
 
-TEST_F(PairingStateTest,
-       AuthenticationCompleteWithMissingKeyRetriesWithoutKeyAndDoesntAutoConfirmAccepted) {
+TEST_F(
+    PairingStateTest,
+    AuthenticationCompleteWithMissingKeyRetriesWithoutKeyAndDoesntAutoConfirmAccepted) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/true,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/true,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
-  auto existing_link_key =
-      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey);
+  auto existing_link_key = sm::LTK(
+      sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey);
 
   peer()->MutBrEdr().SetBondData(existing_link_key);
   EXPECT_FALSE(connection()->ltk().has_value());
@@ -2140,9 +2557,11 @@ TEST_F(PairingStateTest,
   EXPECT_EQ(0, status_handler.call_count());
 
   // Peer says that they don't have a key.
-  pairing_state.OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::PIN_OR_KEY_MISSING);
+  pairing_state.OnAuthenticationComplete(
+      pw::bluetooth::emboss::StatusCode::PIN_OR_KEY_MISSING);
   ASSERT_EQ(0, status_handler.call_count());
-  // We should retry the authentication request, this time pretending we don't have a key.
+  // We should retry the authentication request, this time pretending we don't
+  // have a key.
   EXPECT_EQ(2u, auth_request_count());
 
   EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
@@ -2156,27 +2575,44 @@ TEST_F(PairingStateTest,
     cb(true);
   });
   bool confirmed = false;
-  pairing_state.OnUserConfirmationRequest(kTestPasskey,
-                                          [&confirmed](bool confirm) { confirmed = confirm; });
+  pairing_state.OnUserConfirmationRequest(
+      kTestPasskey, [&confirmed](bool confirm) { confirmed = confirm; });
 
   EXPECT_TRUE(confirmed);
 
-  pairing_delegate.SetCompletePairingCallback([this](PeerId peer_id, sm::Result<> status) {
-    EXPECT_EQ(peer()->identifier(), peer_id);
-    EXPECT_EQ(fit::ok(), status);
-  });
+  pairing_delegate.SetCompletePairingCallback(
+      [this](PeerId peer_id, sm::Result<> status) {
+        EXPECT_EQ(peer()->identifier(), peer_id);
+        EXPECT_EQ(fit::ok(), status);
+      });
 
-  // The controller sends a SimplePairingComplete indicating the success, then the controller
-  // sends us the new link key, and Authentication Complete.
+  // The controller sends a SimplePairingComplete indicating the success, then
+  // the controller sends us the new link key, and Authentication Complete.
   // Negative Confirmation.
   auto status_code = pw::bluetooth::emboss::StatusCode::SUCCESS;
   pairing_state.OnSimplePairingComplete(status_code);
 
-  const auto new_link_key_value = UInt128{0xC0, 0xDE, 0xFA, 0xCE, 0x00, 0x00, 0x00, 0x00,
-                                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04};
+  const auto new_link_key_value = UInt128{0xC0,
+                                          0xDE,
+                                          0xFA,
+                                          0xCE,
+                                          0x00,
+                                          0x00,
+                                          0x00,
+                                          0x00,
+                                          0x00,
+                                          0x00,
+                                          0x00,
+                                          0x00,
+                                          0x00,
+                                          0x00,
+                                          0x00,
+                                          0x04};
 
-  pairing_state.OnLinkKeyNotification(new_link_key_value, kTestUnauthenticatedLinkKeyType192);
-  pairing_state.OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state.OnLinkKeyNotification(new_link_key_value,
+                                      kTestUnauthenticatedLinkKeyType192);
+  pairing_state.OnAuthenticationComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
   // then we request encryption, which when it finishes, completes pairing.
   ASSERT_EQ(1, connection()->start_encryption_count());
   connection()->TriggerEncryptionChangeCallback(fit::ok(true));
@@ -2190,12 +2626,16 @@ TEST_F(PairingStateTest,
   EXPECT_EQ(new_link_key, connection()->ltk());
 }
 
-TEST_F(PairingStateTest,
-       MultipleQueuedPairingRequestsWithSameSecurityRequirementsCompleteAtSameTimeWithSuccess) {
+TEST_F(
+    PairingStateTest,
+    MultipleQueuedPairingRequestsWithSameSecurityRequirementsCompleteAtSameTimeWithSuccess) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -2228,13 +2668,16 @@ TEST_F(
     MultipleQueuedPairingRequestsWithAuthSecurityRequirementsCompleteAtSameTimeWithInsufficientSecurityFailure) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
-  constexpr BrEdrSecurityRequirements kSecurityRequirements{.authentication = true,
-                                                            .secure_connections = false};
+  constexpr BrEdrSecurityRequirements kSecurityRequirements{
+      .authentication = true, .secure_connections = false};
 
   TestStatusHandler initiate_status_handler_0;
   pairing_state.InitiatePairing(kSecurityRequirements,
@@ -2256,18 +2699,25 @@ TEST_F(
   ASSERT_TRUE(status_handler.status());
   EXPECT_EQ(fit::ok(), *status_handler.status());
   ASSERT_EQ(1, initiate_status_handler_0.call_count());
-  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity), initiate_status_handler_0.status().value());
+  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity),
+            initiate_status_handler_0.status().value());
   ASSERT_EQ(1, initiate_status_handler_1.call_count());
-  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity), initiate_status_handler_1.status().value());
+  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity),
+            initiate_status_handler_1.status().value());
 }
 
-TEST_F(PairingStateTest,
-       AuthPairingRequestDuringInitiatorNoAuthPairingFailsQueuedAuthPairingRequest) {
+TEST_F(
+    PairingStateTest,
+    AuthPairingRequestDuringInitiatorNoAuthPairingFailsQueuedAuthPairingRequest) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
-  NoOpPairingDelegate pairing_delegate_no_io(sm::IOCapability::kNoInputNoOutput);
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
+  NoOpPairingDelegate pairing_delegate_no_io(
+      sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate_no_io.GetWeakPtr());
 
   TestStatusHandler initiate_status_handler_0;
@@ -2275,8 +2725,8 @@ TEST_F(PairingStateTest,
                                 initiate_status_handler_0.MakeStatusCallback());
 
   TestStatusHandler initiate_status_handler_1;
-  constexpr BrEdrSecurityRequirements kSecurityRequirements{.authentication = true,
-                                                            .secure_connections = false};
+  constexpr BrEdrSecurityRequirements kSecurityRequirements{
+      .authentication = true, .secure_connections = false};
   pairing_state.InitiatePairing(kSecurityRequirements,
                                 initiate_status_handler_1.MakeStatusCallback());
 
@@ -2296,39 +2746,47 @@ TEST_F(PairingStateTest,
   ASSERT_EQ(1, initiate_status_handler_0.call_count());
   EXPECT_EQ(fit::ok(), *initiate_status_handler_0.status());
   ASSERT_EQ(1, initiate_status_handler_1.call_count());
-  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity), initiate_status_handler_1.status().value());
+  EXPECT_EQ(ToResult(HostError::kInsufficientSecurity),
+            initiate_status_handler_1.status().value());
 
   // Pairing for second request should not start.
   EXPECT_FALSE(pairing_state.initiator());
 }
 
-TEST_F(PairingStateTest, InitiatingPairingDuringAuthenticationWithExistingUnauthenticatedLinkKey) {
+TEST_F(
+    PairingStateTest,
+    InitiatingPairingDuringAuthenticationWithExistingUnauthenticatedLinkKey) {
   TestStatusHandler status_handler;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   FakePairingDelegate fake_pairing_delegate(sm::IOCapability::kDisplayYesNo);
   pairing_state.SetPairingDelegate(fake_pairing_delegate.GetWeakPtr());
 
   peer()->MutBrEdr().SetBondData(
-      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey));
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192),
+              kTestLinkKey));
 
   TestStatusHandler initiator_status_handler_0;
-  pairing_state.InitiatePairing(kNoSecurityRequirements,
-                                initiator_status_handler_0.MakeStatusCallback());
+  pairing_state.InitiatePairing(
+      kNoSecurityRequirements, initiator_status_handler_0.MakeStatusCallback());
   EXPECT_EQ(1u, auth_request_count());
 
   TestStatusHandler initiator_status_handler_1;
-  constexpr BrEdrSecurityRequirements kSecurityRequirements{.authentication = true,
-                                                            .secure_connections = false};
-  pairing_state.InitiatePairing(kSecurityRequirements,
-                                initiator_status_handler_1.MakeStatusCallback());
+  constexpr BrEdrSecurityRequirements kSecurityRequirements{
+      .authentication = true, .secure_connections = false};
+  pairing_state.InitiatePairing(
+      kSecurityRequirements, initiator_status_handler_1.MakeStatusCallback());
   EXPECT_EQ(1u, auth_request_count());
 
   // Authenticate with link key.
   EXPECT_NE(std::nullopt, pairing_state.OnLinkKeyRequest());
   EXPECT_TRUE(connection()->ltk().has_value());
-  pairing_state.OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state.OnAuthenticationComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   EXPECT_EQ(0, status_handler.call_count());
   EXPECT_EQ(1, connection()->start_encryption_count());
@@ -2340,27 +2798,35 @@ TEST_F(PairingStateTest, InitiatingPairingDuringAuthenticationWithExistingUnauth
   EXPECT_EQ(fit::ok(), *initiator_status_handler_0.status());
   EXPECT_EQ(0, initiator_status_handler_1.call_count());
 
-  fake_pairing_delegate.SetDisplayPasskeyCallback([](PeerId peer_id, uint32_t value,
-                                                     PairingDelegate::DisplayMethod method,
-                                                     auto cb) { cb(true); });
+  fake_pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId peer_id,
+         uint32_t value,
+         PairingDelegate::DisplayMethod method,
+         auto cb) { cb(true); });
   fake_pairing_delegate.SetCompletePairingCallback(
-      [](PeerId peer_id, sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
+      [](PeerId peer_id, sm::Result<> status) {
+        EXPECT_EQ(fit::ok(), status);
+      });
 
   // Pairing for second request should start.
   EXPECT_EQ(2u, auth_request_count());
   EXPECT_TRUE(pairing_state.initiator());
   EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
-  EXPECT_EQ(IoCapability::DISPLAY_YES_NO, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::DISPLAY_YES_NO,
+            *pairing_state.OnIoCapabilityRequest());
   pairing_state.OnIoCapabilityResponse(IoCapability::DISPLAY_YES_NO);
 
   bool confirmed = false;
-  pairing_state.OnUserConfirmationRequest(kTestPasskey,
-                                          [&confirmed](bool confirm) { confirmed = confirm; });
+  pairing_state.OnUserConfirmationRequest(
+      kTestPasskey, [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
-  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestAuthenticatedLinkKeyType192);
-  pairing_state.OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state.OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestAuthenticatedLinkKeyType192);
+  pairing_state.OnAuthenticationComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
   EXPECT_EQ(2, connection()->start_encryption_count());
 
   connection()->TriggerEncryptionChangeCallback(fit::ok(true));
@@ -2381,23 +2847,28 @@ TEST_F(PairingStateTest, Inspect) {
 
   inspect::Inspector inspector;
 
-  PairingState pairing_state(peer()->GetWeakPtr(), connection(), /*link_initiated=*/false,
-                             MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
+  PairingState pairing_state(peer()->GetWeakPtr(),
+                             connection(),
+                             /*link_initiated=*/false,
+                             MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
 
   pairing_state.AttachInspect(inspector.GetRoot(), "pairing_state");
 
   auto security_properties_matcher = AllOf(NodeMatches(AllOf(
       NameMatches("security_properties"),
-      PropertyList(UnorderedElementsAre(StringIs("level", "not secure"), BoolIs("encrypted", false),
+      PropertyList(UnorderedElementsAre(StringIs("level", "not secure"),
+                                        BoolIs("encrypted", false),
                                         BoolIs("secure_connections", false),
                                         BoolIs("authenticated", false))))));
 
-  auto pairing_state_matcher = AllOf(
-      NodeMatches(AllOf(NameMatches("pairing_state"),
-                        PropertyList(UnorderedElementsAre(StringIs("encryption_status", "OFF"))))),
-      ChildrenMatch(UnorderedElementsAre(security_properties_matcher)));
+  auto pairing_state_matcher =
+      AllOf(NodeMatches(AllOf(NameMatches("pairing_state"),
+                              PropertyList(UnorderedElementsAre(
+                                  StringIs("encryption_status", "OFF"))))),
+            ChildrenMatch(UnorderedElementsAre(security_properties_matcher)));
 
-  inspect::Hierarchy hierarchy = ReadInspect(inspector);
+  inspect::Hierarchy hierarchy = bt::testing::ReadInspect(inspector);
   EXPECT_THAT(hierarchy, ChildrenMatch(ElementsAre(pairing_state_matcher)));
 }
 #endif  // NINSPECT

@@ -2,7 +2,7 @@
 
 ## Test
 
-`$ fx test //src/connectivity/bluetooth/core/bt-host`
+`$ fx test $dir_pw_bluetooth_sapphire/host`
 
 ### Fuzz Testing
 
@@ -10,7 +10,7 @@ bt-host contains fuzz tests for several libraries. Make sure to include the desi
 in your `fx set`. For example, to include all bt-host fuzzing targets, use:
 
 ```
-fx set core.x64 --fuzz-with asan --with //src/connectivity/bluetooth/core/bt-host:fuzzers
+fx set core.x64 --fuzz-with asan --with $dir_pw_bluetooth_sapphire/host:fuzzers
 ```
 
 Before running the test, ensure QEMU is running.

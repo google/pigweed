@@ -2,18 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "bearer.h"
+#include "pw_bluetooth_sapphire/internal/host/att/bearer.h"
 
-#include <lib/async/default.h>
+#include <cpp-string/string_printf.h>
 #include <lib/fit/defer.h>
 
 #include <type_traits>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/common/slab_allocator.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/channel.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/types.h"
+
+#pragma clang diagnostic ignored "-Wswitch-enum"
 
 namespace bt::att {
 
@@ -27,7 +28,8 @@ namespace {
 // required if the returned value equals sm::SecurityLevel::kNoSecurity.
 // TODO(armansito): Supporting requesting Secure Connections in addition to the
 // encrypted/MITM dimensions.
-sm::SecurityLevel CheckSecurity(ErrorCode ecode, const sm::SecurityProperties& security) {
+sm::SecurityLevel CheckSecurity(ErrorCode ecode,
+                                const sm::SecurityProperties& security) {
   bool encrypted = (security.level() != sm::SecurityLevel::kNoSecurity);
 
   switch (ecode) {
@@ -51,7 +53,8 @@ sm::SecurityLevel CheckSecurity(ErrorCode ecode, const sm::SecurityProperties& s
       if (security.authenticated()) {
         return sm::SecurityLevel::kNoSecurity;
       }
-      return encrypted ? sm::SecurityLevel::kAuthenticated : sm::SecurityLevel::kEncrypted;
+      return encrypted ? sm::SecurityLevel::kAuthenticated
+                       : sm::SecurityLevel::kEncrypted;
 
     // Our SMP implementation always claims to support the maximum encryption
     // key size. If the key size is too small then the peer must support a
@@ -169,7 +172,8 @@ std::unique_ptr<Bearer> Bearer::Create(l2cap::Channel::WeakPtr chan,
   return bearer->Activate() ? std::move(bearer) : nullptr;
 }
 
-Bearer::PendingTransaction::PendingTransaction(OpCode opcode, TransactionCallback callback,
+Bearer::PendingTransaction::PendingTransaction(OpCode opcode,
+                                               TransactionCallback callback,
                                                ByteBufferPtr pdu)
     : opcode(opcode),
       callback(std::move(callback)),
@@ -179,7 +183,8 @@ Bearer::PendingTransaction::PendingTransaction(OpCode opcode, TransactionCallbac
   BT_ASSERT(this->pdu);
 }
 
-Bearer::PendingRemoteTransaction::PendingRemoteTransaction(TransactionId id, OpCode opcode)
+Bearer::PendingRemoteTransaction::PendingRemoteTransaction(TransactionId id,
+                                                           OpCode opcode)
     : id(id), opcode(opcode) {}
 
 Bearer::TransactionQueue::TransactionQueue(TransactionQueue&& other)
@@ -204,12 +209,14 @@ void Bearer::TransactionQueue::Enqueue(PendingTransactionPtr transaction) {
   queue_.push(std::move(transaction));
 }
 
-void Bearer::TransactionQueue::TrySendNext(const l2cap::Channel::WeakPtr& chan,
-                                           pw::async::TaskFunction timeout_cb,
-                                           pw::chrono::SystemClock::duration timeout) {
+void Bearer::TransactionQueue::TrySendNext(
+    const l2cap::Channel::WeakPtr& chan,
+    pw::async::TaskFunction timeout_cb,
+    pw::chrono::SystemClock::duration timeout) {
   BT_DEBUG_ASSERT(chan.is_alive());
 
-  // Abort if a transaction is currently pending or there are no transactions queued.
+  // Abort if a transaction is currently pending or there are no transactions
+  // queued.
   if (current_ || queue_.empty()) {
     return;
   }
@@ -234,7 +241,8 @@ void Bearer::TransactionQueue::TrySendNext(const l2cap::Channel::WeakPtr& chan,
 
     bt_log(TRACE, "att", "Failed to start transaction: out of memory!");
     auto t = std::move(current_);
-    t->callback(fit::error(std::pair(Error(HostError::kOutOfMemory), kInvalidHandle)));
+    t->callback(
+        fit::error(std::pair(Error(HostError::kOutOfMemory), kInvalidHandle)));
 
     // Process the next command until we can send OR we have drained the queue.
     if (queue_.empty()) {
@@ -314,15 +322,17 @@ void Bearer::ShutDownInternal(bool due_to_timeout) {
 
   bt_log(DEBUG, "att", "bearer shutting down");
 
-  // Move the contents to temporaries. This prevents a potential memory corruption in InvokeErrorAll
-  // if the Bearer gets deleted by one of the invoked error callbacks.
+  // Move the contents to temporaries. This prevents a potential memory
+  // corruption in InvokeErrorAll if the Bearer gets deleted by one of the
+  // invoked error callbacks.
   TransactionQueue req_queue(std::move(request_queue_));
   TransactionQueue ind_queue(std::move(indication_queue_));
 
   fit::closure closed_cb = std::move(closed_cb_);
 
   l2cap::ScopedChannel chan = std::move(chan_);
-  // SignalLinkError may delete the Bearer! Nothing below this line should access |this|.
+  // SignalLinkError may delete the Bearer! Nothing below this line should
+  // access |this|.
   chan->SignalLinkError();
   chan = nullptr;
 
@@ -330,8 +340,8 @@ void Bearer::ShutDownInternal(bool due_to_timeout) {
     closed_cb();
   }
 
-  // Terminate all remaining procedures with an error. This is safe even if the bearer got deleted
-  // by |closed_cb_|.
+  // Terminate all remaining procedures with an error. This is safe even if the
+  // bearer got deleted by |closed_cb_|.
   Error error(due_to_timeout ? HostError::kTimedOut : HostError::kFailed);
   req_queue.InvokeErrorAll(error);
   ind_queue.InvokeErrorAll(error);
@@ -351,14 +361,16 @@ bool Bearer::SendWithoutResponse(ByteBufferPtr pdu) {
 
 bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback) {
   auto _check_callback_empty = fit::defer([&callback]() {
-    // Ensure that callback was either never present or called/moved before SendInternal returns
+    // Ensure that callback was either never present or called/moved before
+    // SendInternal returns
     BT_ASSERT(!callback);
   });
 
   if (!is_open()) {
     bt_log(TRACE, "att", "bearer closed; cannot send packet");
     if (callback) {
-      callback(fit::error(std::pair(Error(HostError::kLinkDisconnected), kInvalidHandle)));
+      callback(fit::error(
+          std::pair(Error(HostError::kLinkDisconnected), kInvalidHandle)));
     }
     return false;
   }
@@ -373,7 +385,8 @@ bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback) {
   switch (type) {
     case MethodType::kCommand:
     case MethodType::kNotification:
-      BT_ASSERT_MSG(!callback, "opcode %#.2x has no response but callback was provided",
+      BT_ASSERT_MSG(!callback,
+                    "opcode %#.2x has no response but callback was provided",
                     reader.opcode());
 
       // Send the command. No flow control is necessary.
@@ -390,11 +403,13 @@ bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback) {
       BT_PANIC("unsupported opcode: %#.2x", reader.opcode());
   }
 
-  BT_ASSERT_MSG(callback, "transaction with opcode %#.2x has response that requires callback!",
-                reader.opcode());
+  BT_ASSERT_MSG(
+      callback,
+      "transaction with opcode %#.2x has response that requires callback!",
+      reader.opcode());
 
-  tq->Enqueue(
-      std::make_unique<PendingTransaction>(reader.opcode(), std::move(callback), std::move(pdu)));
+  tq->Enqueue(std::make_unique<PendingTransaction>(
+      reader.opcode(), std::move(callback), std::move(pdu)));
   TryStartNextTransaction(tq);
 
   return true;
@@ -407,7 +422,10 @@ Bearer::HandlerId Bearer::RegisterHandler(OpCode opcode, Handler handler) {
     return kInvalidHandlerId;
 
   if (handlers_.find(opcode) != handlers_.end()) {
-    bt_log(DEBUG, "att", "can only register one handler per opcode (%#.2x)", opcode);
+    bt_log(DEBUG,
+           "att",
+           "can only register one handler per opcode (%#.2x)",
+           opcode);
     return kInvalidHandlerId;
   }
 
@@ -464,7 +482,10 @@ bool Bearer::Reply(TransactionId tid, ByteBufferPtr pdu) {
 
   OpCode pending_opcode = (*pending)->opcode;
   if (pending_opcode != MatchingTransactionCode(reader.opcode())) {
-    bt_log(DEBUG, "att", "opcodes do not match (pending: %#.2x, given: %#.2x)", pending_opcode,
+    bt_log(DEBUG,
+           "att",
+           "opcodes do not match (pending: %#.2x, given: %#.2x)",
+           pending_opcode,
            reader.opcode());
     return false;
   }
@@ -475,7 +496,9 @@ bool Bearer::Reply(TransactionId tid, ByteBufferPtr pdu) {
   return true;
 }
 
-bool Bearer::ReplyWithError(TransactionId id, Handle handle, ErrorCode error_code) {
+bool Bearer::ReplyWithError(TransactionId id,
+                            Handle handle,
+                            ErrorCode error_code) {
   RemoteTransaction* pending = FindRemoteTransaction(id);
   if (!pending)
     return false;
@@ -514,7 +537,8 @@ void Bearer::TryStartNextTransaction(TransactionQueue* tq) {
       kTransactionTimeout);
 }
 
-void Bearer::SendErrorResponse(OpCode request_opcode, Handle attribute_handle,
+void Bearer::SendErrorResponse(OpCode request_opcode,
+                               Handle attribute_handle,
                                ErrorCode error_code) {
   auto buffer = NewBuffer(sizeof(Header) + sizeof(ErrorResponseParams));
   BT_ASSERT(buffer);
@@ -528,12 +552,16 @@ void Bearer::SendErrorResponse(OpCode request_opcode, Handle attribute_handle,
   chan_->Send(std::move(buffer));
 }
 
-void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& packet) {
+void Bearer::HandleEndTransaction(TransactionQueue* tq,
+                                  const PacketReader& packet) {
   BT_DEBUG_ASSERT(is_open());
   BT_DEBUG_ASSERT(tq);
 
   if (!tq->current()) {
-    bt_log(DEBUG, "att", "received unexpected transaction PDU (opcode: %#.2x)", packet.opcode());
+    bt_log(DEBUG,
+           "att",
+           "received unexpected transaction PDU (opcode: %#.2x)",
+           packet.opcode());
     ShutDown();
     return;
   }
@@ -564,7 +592,10 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
   BT_DEBUG_ASSERT(tq->current()->opcode != kInvalidOpCode);
 
   if (tq->current()->opcode != target_opcode) {
-    bt_log(DEBUG, "att", "received bad transaction PDU (opcode: %#.2x)", packet.opcode());
+    bt_log(DEBUG,
+           "att",
+           "received bad transaction PDU (opcode: %#.2x)",
+           packet.opcode());
     ShutDown();
     return;
   }
@@ -574,8 +605,9 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
   BT_DEBUG_ASSERT(transaction);
 
   const sm::SecurityLevel security_requirement =
-      error.has_value() ? CheckSecurity(error->first.protocol_error(), chan_->security())
-                        : sm::SecurityLevel::kNoSecurity;
+      error.has_value()
+          ? CheckSecurity(error->first.protocol_error(), chan_->security())
+          : sm::SecurityLevel::kNoSecurity;
   if (transaction->security_retry_level >= security_requirement ||
       security_requirement <= chan_->security().level()) {
     // The transaction callback may result in our connection being closed.
@@ -596,12 +628,17 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
   }
 
   BT_ASSERT(error.has_value());
-  bt_log(TRACE, "att",
-         "Received security error %s for transaction; requesting upgrade to level: %s",
-         bt_str(error->first), sm::LevelToString(security_requirement));
+  bt_log(TRACE,
+         "att",
+         "Received security error %s for transaction; requesting upgrade to "
+         "level: %s",
+         bt_str(error->first),
+         sm::LevelToString(security_requirement));
   chan_->UpgradeSecurity(
       security_requirement,
-      [self = weak_self_.GetWeakPtr(), error = *std::move(error), security_requirement,
+      [self = weak_self_.GetWeakPtr(),
+       error = *std::move(error),
+       security_requirement,
        t = std::move(transaction)](sm::Result<> status) mutable {
         // If the security upgrade failed or the bearer got destroyed, then
         // resolve the transaction with the original error.
@@ -654,14 +691,20 @@ void Bearer::HandleBeginTransaction(RemoteTransaction* currently_pending,
   BT_DEBUG_ASSERT(currently_pending);
 
   if (currently_pending->has_value()) {
-    bt_log(DEBUG, "att", "A transaction is already pending! (opcode: %#.2x)", packet.opcode());
+    bt_log(DEBUG,
+           "att",
+           "A transaction is already pending! (opcode: %#.2x)",
+           packet.opcode());
     ShutDown();
     return;
   }
 
   auto iter = handlers_.find(packet.opcode());
   if (iter == handlers_.end()) {
-    bt_log(DEBUG, "att", "no handler registered for opcode %#.2x", packet.opcode());
+    bt_log(DEBUG,
+           "att",
+           "no handler registered for opcode %#.2x",
+           packet.opcode());
     SendErrorResponse(packet.opcode(), 0, ErrorCode::kRequestNotSupported);
     return;
   }
@@ -688,7 +731,10 @@ Bearer::RemoteTransaction* Bearer::FindRemoteTransaction(TransactionId id) {
 void Bearer::HandlePDUWithoutResponse(const PacketReader& packet) {
   auto iter = handlers_.find(packet.opcode());
   if (iter == handlers_.end()) {
-    bt_log(DEBUG, "att", "dropping unhandled packet (opcode: %#.2x)", packet.opcode());
+    bt_log(DEBUG,
+           "att",
+           "dropping unhandled packet (opcode: %#.2x)",
+           packet.opcode());
     return;
   }
 
@@ -712,8 +758,8 @@ void Bearer::OnRxBFrame(ByteBufferPtr sdu) {
     return;
   }
 
-  // This static cast is safe because we have verified that `sdu->size()` fits in a uint16_t with
-  // the above check and the below static_assert.
+  // This static cast is safe because we have verified that `sdu->size()` fits
+  // in a uint16_t with the above check and the below static_assert.
   static_assert(std::is_same_v<uint16_t, decltype(mtu_)>);
   auto length = static_cast<uint16_t>(sdu->size());
 

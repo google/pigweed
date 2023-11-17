@@ -2,27 +2,30 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "phase_3.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/phase_3.h"
 
 #include <optional>
 #include <type_traits>
 
 #include "lib/fit/function.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/common/random.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/connection.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/packet.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/pairing_phase.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/types.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/util.h"
 
 namespace bt::sm {
 
-Phase3::Phase3(PairingChannel::WeakPtr chan, Listener::WeakPtr listener, Role role,
-               PairingFeatures features, SecurityProperties le_sec,
+Phase3::Phase3(PairingChannel::WeakPtr chan,
+               Listener::WeakPtr listener,
+               Role role,
+               PairingFeatures features,
+               SecurityProperties le_sec,
                Phase3CompleteCallback on_complete)
     : PairingPhase(std::move(chan), std::move(listener), role),
       features_(features),
@@ -31,11 +34,14 @@ Phase3::Phase3(PairingChannel::WeakPtr chan, Listener::WeakPtr listener, Role ro
       sent_local_keys_(false),
       on_complete_(std::move(on_complete)) {
   // LTKs may not be distributed during Secure Connections.
-  BT_ASSERT_MSG(!(features_.secure_connections && (ShouldSendLtk() || ShouldReceiveLtk())),
-                "Phase 3 may not distribute the LTK in Secure Connections pairing");
+  BT_ASSERT_MSG(
+      !(features_.secure_connections &&
+        (ShouldSendLtk() || ShouldReceiveLtk())),
+      "Phase 3 may not distribute the LTK in Secure Connections pairing");
 
   BT_ASSERT(HasKeysToDistribute(features_));
-  // The link must be encrypted with at least an STK in order for Phase 3 to take place.
+  // The link must be encrypted with at least an STK in order for Phase 3 to
+  // take place.
   BT_ASSERT(le_sec.level() != SecurityLevel::kNoSecurity);
   SetPairingChannelHandler(*this);
 }
@@ -54,8 +60,9 @@ void Phase3::Start() {
     Abort(ErrorCode::kUnspecifiedReason);
     return;
   }
-  // If there are no keys left to exchange then we're done with pairing. This cannot be an else
-  // branch because the above call to SendLocalKeys could've completed pairing.
+  // If there are no keys left to exchange then we're done with pairing. This
+  // cannot be an else branch because the above call to SendLocalKeys could've
+  // completed pairing.
   if (KeyExchangeComplete()) {
     SignalComplete();
   }
@@ -64,7 +71,8 @@ void Phase3::Start() {
 void Phase3::OnEncryptionInformation(const EncryptionInformationParams& ltk) {
   // Only allowed on the LE transport.
   if (sm_chan().link_type() != bt::LinkType::kLE) {
-    bt_log(DEBUG, "sm", "\"Encryption Information\" over BR/EDR not supported!");
+    bt_log(
+        DEBUG, "sm", "\"Encryption Information\" over BR/EDR not supported!");
     Abort(ErrorCode::kCommandNotSupported);
     return;
   }
@@ -107,10 +115,12 @@ void Phase3::OnEncryptionInformation(const EncryptionInformationParams& ltk) {
   // Wait to receive EDiv and Rand
 }
 
-void Phase3::OnCentralIdentification(const CentralIdentificationParams& params) {
+void Phase3::OnCentralIdentification(
+    const CentralIdentificationParams& params) {
   // Only allowed on the LE transport.
   if (sm_chan().link_type() != bt::LinkType::kLE) {
-    bt_log(DEBUG, "sm", "\"Central Identification\" over BR/EDR not supported!");
+    bt_log(
+        DEBUG, "sm", "\"Central Identification\" over BR/EDR not supported!");
     Abort(ErrorCode::kCommandNotSupported);
     return;
   }
@@ -172,7 +182,8 @@ void Phase3::OnIdentityInformation(const IRK& irk) {
   // Wait to receive identity address
 }
 
-void Phase3::OnIdentityAddressInformation(const IdentityAddressInformationParams& params) {
+void Phase3::OnIdentityAddressInformation(
+    const IdentityAddressInformationParams& params) {
   if (!ShouldReceiveIdentity()) {
     bt_log(WARN, "sm", "received unexpected identity address");
     Abort(ErrorCode::kUnspecifiedReason);
@@ -194,7 +205,10 @@ void Phase3::OnIdentityAddressInformation(const IdentityAddressInformationParams
   auto type = DeviceAddress::Type::kLERandom;
   if (params.type != AddressType::kStaticRandom) {
     if (params.type != AddressType::kPublic) {
-      bt_log(WARN, "sm", "received invalid bt address type: %d", static_cast<int>(params.type));
+      bt_log(WARN,
+             "sm",
+             "received invalid bt address type: %d",
+             static_cast<int>(params.type));
       Abort(ErrorCode::kInvalidParameters);
       return;
     }
@@ -220,7 +234,8 @@ void Phase3::OnExpectedKeyReceived() {
     Abort(ErrorCode::kUnspecifiedReason);
     return;
   }
-  // If we've received all the expected keys and sent the local keys, Phase 3 is complete
+  // If we've received all the expected keys and sent the local keys, Phase 3 is
+  // complete
   SignalComplete();
 }
 
@@ -258,15 +273,19 @@ bool Phase3::SendEncryptionKey() {
   }
 
   // Generate completely random values for EDiv and Rand, use masked LTK.
-  // The LTK inherits the security properties of the STK currently encrypting the link.
-  local_ltk_ = LTK(le_sec_, hci_spec::LinkKey(ltk_bytes, Random<uint64_t>(), Random<uint16_t>()));
+  // The LTK inherits the security properties of the STK currently encrypting
+  // the link.
+  local_ltk_ =
+      LTK(le_sec_,
+          hci_spec::LinkKey(ltk_bytes, Random<uint64_t>(), Random<uint16_t>()));
 
   // Send LTK
   sm_chan().SendMessage(kEncryptionInformation, local_ltk_->key().value());
   // Send EDiv & Rand
-  sm_chan().SendMessage(kCentralIdentification,
-                        CentralIdentificationParams{.ediv = htole16(local_ltk_->key().ediv()),
-                                                    .rand = htole64(local_ltk_->key().rand())});
+  sm_chan().SendMessage(
+      kCentralIdentification,
+      CentralIdentificationParams{.ediv = htole16(local_ltk_->key().ediv()),
+                                  .rand = htole64(local_ltk_->key().rand())});
 
   return true;
 }
@@ -274,7 +293,8 @@ bool Phase3::SendEncryptionKey() {
 bool Phase3::SendIdentityInfo() {
   std::optional<IdentityInfo> maybe_id_info = listener()->OnIdentityRequest();
   if (!maybe_id_info.has_value()) {
-    bt_log(DEBUG, "sm",
+    bt_log(DEBUG,
+           "sm",
            "local identity information required but no longer "
            "available; abort pairing");
     return false;
@@ -289,11 +309,12 @@ bool Phase3::SendIdentityInfo() {
   // Send IRK
   sm_chan().SendMessage(kIdentityInformation, id_info.irk);
   // Send identity address
-  sm_chan().SendMessage(kIdentityAddressInformation,
-                        IdentityAddressInformationParams{
-                            .type = (id_info.address.IsStaticRandom() ? AddressType::kStaticRandom
-                                                                      : AddressType::kPublic),
-                            .bd_addr = id_info.address.value()});
+  sm_chan().SendMessage(
+      kIdentityAddressInformation,
+      IdentityAddressInformationParams{
+          .type = (id_info.address.IsStaticRandom() ? AddressType::kStaticRandom
+                                                    : AddressType::kPublic),
+          .bd_addr = id_info.address.value()});
 
   return true;
 }
@@ -301,8 +322,9 @@ bool Phase3::SendIdentityInfo() {
 void Phase3::SignalComplete() {
   BT_ASSERT(KeyExchangeComplete());
 
-  // The security properties of all keys are determined by the security properties of the link used
-  // to distribute them. This is already reflected by |le_sec_|.
+  // The security properties of all keys are determined by the security
+  // properties of the link used to distribute them. This is already reflected
+  // by |le_sec_|.
   PairingData pairing_data;
   pairing_data.peer_ltk = peer_ltk_;
   pairing_data.local_ltk = local_ltk_;
@@ -339,27 +361,37 @@ void Phase3::OnRxBFrame(ByteBufferPtr sdu) {
       OnIdentityInformation(reader.payload<IRK>());
       break;
     case kIdentityAddressInformation:
-      OnIdentityAddressInformation(reader.payload<IdentityAddressInformationParams>());
+      OnIdentityAddressInformation(
+          reader.payload<IdentityAddressInformationParams>());
       break;
     default:
-      bt_log(INFO, "sm", "received unexpected code %d when in Pairing Phase 3", smp_code);
+      bt_log(INFO,
+             "sm",
+             "received unexpected code %d when in Pairing Phase 3",
+             smp_code);
       Abort(ErrorCode::kUnspecifiedReason);
   }
 }
 
 bool Phase3::RequestedKeysObtained() const {
-  // DistributableKeys masks key fields that don't correspond to keys exchanged in Phase 3.
-  const KeyDistGenField kMaskedRemoteKeys = DistributableKeys(features_.remote_key_distribution);
-  // Return true if we expect no keys from the remote. We keep track of received keys individually
-  // in `obtained_remote_keys` as they are received asynchronously from the peer.
+  // DistributableKeys masks key fields that don't correspond to keys exchanged
+  // in Phase 3.
+  const KeyDistGenField kMaskedRemoteKeys =
+      DistributableKeys(features_.remote_key_distribution);
+  // Return true if we expect no keys from the remote. We keep track of received
+  // keys individually in `obtained_remote_keys` as they are received
+  // asynchronously from the peer.
   return !kMaskedRemoteKeys || (kMaskedRemoteKeys == obtained_remote_keys_);
 }
 
 bool Phase3::LocalKeysSent() const {
-  // DistributableKeys masks key fields that don't correspond to keys exchanged in Phase 3.
-  const KeyDistGenField kMaskedLocalKeys = DistributableKeys(features_.local_key_distribution);
-  // Return true if we didn't agree to send any keys. We need only store a boolean to track whether
-  // we've sent the keys, as sending the keys to the peer occurs sequentially.
+  // DistributableKeys masks key fields that don't correspond to keys exchanged
+  // in Phase 3.
+  const KeyDistGenField kMaskedLocalKeys =
+      DistributableKeys(features_.local_key_distribution);
+  // Return true if we didn't agree to send any keys. We need only store a
+  // boolean to track whether we've sent the keys, as sending the keys to the
+  // peer occurs sequentially.
   return !kMaskedLocalKeys || sent_local_keys_;
 }
 

@@ -5,46 +5,54 @@
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_unit_test/test.gni")
 
+dir_public_att = "../../public/pw_bluetooth_sapphire/internal/host/att"
+
 # Basic target with protocol definitions and no logic, suitable for test
 # emulation.
 pw_source_set("definitions") {
-  sources = [
-    "att.h",
-    "packet.cc",
-    "packet.h",
+  public = [
+    "$dir_public_att/att.h",
+    "$dir_public_att/packet.h",
   ]
 
+  sources = [ "packet.cc" ]
+
   public_deps = [
-    "//src/connectivity/bluetooth/core/bt-host/common",
-    "//src/connectivity/bluetooth/core/bt-host/hci-spec",
-    "//src/connectivity/bluetooth/core/bt-host/l2cap:definitions",
+    "$dir_pw_bluetooth_sapphire/host/common",
+    "$dir_pw_bluetooth_sapphire/host/hci-spec",
+    "$dir_pw_bluetooth_sapphire/host/l2cap:definitions",
   ]
 }
 
 pw_source_set("att") {
+  public = [
+    "$dir_public_att/attribute.h",
+    "$dir_public_att/bearer.h",
+    "$dir_public_att/database.h",
+    "$dir_public_att/error.h",
+    "$dir_public_att/permissions.h",
+    "$dir_public_att/write_queue.h",
+  ]
+
   sources = [
     "attribute.cc",
-    "attribute.h",
     "bearer.cc",
-    "bearer.h",
     "database.cc",
-    "database.h",
     "error.cc",
-    "error.h",
     "permissions.cc",
-    "permissions.h",
     "write_queue.cc",
-    "write_queue.h",
   ]
 
   public_deps = [
     ":definitions",
+    "$dir_pw_bluetooth_sapphire/host/l2cap",
+    "$dir_pw_bluetooth_sapphire/host/sm:definitions",
     "$dir_pw_third_party/fuchsia:fit",
-    "//src/connectivity/bluetooth/core/bt-host/l2cap",
-    "//src/connectivity/bluetooth/core/bt-host/sm:definitions",
   ]
 
   deps = [ "$dir_pw_string" ]
+
+  public_configs = [ "$dir_pw_bluetooth_sapphire:public_include_path" ]
 }
 
 pw_test("tests") {
@@ -58,6 +66,8 @@ pw_test("tests") {
 
   deps = [
     ":att",
-    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
+    "$dir_pw_bluetooth_sapphire/host/l2cap:testing",
   ]
+
+  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
 }

@@ -2,13 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "scoped_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/scoped_channel.h"
 
 namespace bt::l2cap {
 
 ScopedChannel::ScopedChannel(Channel::WeakPtr chan) : chan_(std::move(chan)) {}
 
-ScopedChannel::ScopedChannel(ScopedChannel&& other) : chan_(std::move(other.chan_)) {}
+ScopedChannel::ScopedChannel(ScopedChannel&& other)
+    : chan_(std::move(other.chan_)) {}
 
 ScopedChannel::~ScopedChannel() { Close(); }
 

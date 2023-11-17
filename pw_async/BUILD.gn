@@ -43,6 +43,7 @@ pw_source_set("dispatcher") {
   visibility = [
                  ":*",
                  "$dir_pw_async_basic:*",
+                 "$dir_pw_bluetooth_sapphire/*",
                ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
 }
 
@@ -59,6 +60,7 @@ pw_facade("task") {
   visibility = [
                  ":*",
                  "$dir_pw_async_basic:*",
+                 "$dir_pw_bluetooth_sapphire/*",
                ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
 }
 
@@ -86,6 +88,7 @@ pw_facade("fake_dispatcher") {
   visibility = [
                  ":*",
                  "$dir_pw_async_basic:*",
+                 "$dir_pw_bluetooth_sapphire/*",
                ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
 }
 
@@ -94,6 +97,7 @@ fake_dispatcher_fixture("fake_dispatcher_fixture") {
   visibility = [
                  ":*",
                  "$dir_pw_async_basic:*",
+                 "$dir_pw_bluetooth_sapphire/*",
                ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
 }
 
@@ -102,6 +106,7 @@ pw_async_heap_dispatcher_source_set("heap_dispatcher") {
   visibility = [
                  ":*",
                  "$dir_pw_async_basic:*",
+                 "$dir_pw_bluetooth_sapphire/*",
                ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
 }
 

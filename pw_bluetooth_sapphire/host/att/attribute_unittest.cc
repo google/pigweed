@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "attribute.h"
+#include "pw_bluetooth_sapphire/internal/host/att/attribute.h"
 
 #include <gtest/gtest.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
 namespace bt::att {
 namespace {
@@ -22,7 +22,9 @@ const StaticByteBuffer kTestValue('t', 'e', 's', 't');
 
 TEST(AttributeDeathTest, OverflowingMaxHandleOnAttributeGroupDies) {
   ASSERT_DEATH_IF_SUPPORTED(
-      { AttributeGrouping A(kTestType1, kHandleMax - 1, size_t{2}, kTestValue); },
+      {
+        AttributeGrouping A(kTestType1, kHandleMax - 1, size_t{2}, kTestValue);
+      },
       ".*attr_count.*");
 }
 
@@ -35,14 +37,17 @@ TEST(AttributeTest, AccessRequirementsDefault) {
 }
 
 TEST(AttributeTest, AccessRequirements) {
-  AccessRequirements reqs0(/*encryption=*/true, /*authentication=*/false, /*authorization=*/false);
+  AccessRequirements reqs0(
+      /*encryption=*/true, /*authentication=*/false, /*authorization=*/false);
   EXPECT_TRUE(reqs0.allowed());
   EXPECT_TRUE(reqs0.encryption_required());
   EXPECT_FALSE(reqs0.authentication_required());
   EXPECT_FALSE(reqs0.authorization_required());
   EXPECT_EQ(reqs0.min_enc_key_size(), sm::kMaxEncryptionKeySize);
 
-  AccessRequirements reqs1(/*encryption=*/true, /*authentication=*/false, /*authorization=*/false,
+  AccessRequirements reqs1(/*encryption=*/true,
+                           /*authentication=*/false,
+                           /*authorization=*/false,
                            8);
   EXPECT_TRUE(reqs1.allowed());
   EXPECT_TRUE(reqs1.encryption_required());
@@ -50,19 +55,22 @@ TEST(AttributeTest, AccessRequirements) {
   EXPECT_FALSE(reqs1.authorization_required());
   EXPECT_EQ(reqs1.min_enc_key_size(), 8u);
 
-  AccessRequirements reqs2(/*encryption=*/false, /*authentication=*/true, /*authorization=*/false);
+  AccessRequirements reqs2(
+      /*encryption=*/false, /*authentication=*/true, /*authorization=*/false);
   EXPECT_TRUE(reqs2.allowed());
   EXPECT_FALSE(reqs2.encryption_required());
   EXPECT_TRUE(reqs2.authentication_required());
   EXPECT_FALSE(reqs2.authorization_required());
 
-  AccessRequirements reqs3(/*encryption=*/false, /*authentication=*/false, /*authorization=*/true);
+  AccessRequirements reqs3(
+      /*encryption=*/false, /*authentication=*/false, /*authorization=*/true);
   EXPECT_TRUE(reqs3.allowed());
   EXPECT_FALSE(reqs3.encryption_required());
   EXPECT_FALSE(reqs3.authentication_required());
   EXPECT_TRUE(reqs3.authorization_required());
 
-  AccessRequirements reqs4(/*encryption=*/false, /*authentication=*/false, /*authorization=*/false);
+  AccessRequirements reqs4(
+      /*encryption=*/false, /*authentication=*/false, /*authorization=*/false);
   EXPECT_TRUE(reqs4.allowed());
   EXPECT_FALSE(reqs4.encryption_required());
   EXPECT_FALSE(reqs4.authentication_required());
@@ -82,7 +90,8 @@ TEST(AttributeTest, GroupingDeclAttr) {
   EXPECT_EQ(1u, group.attributes().size());
 
   // The grouping is already complete.
-  EXPECT_FALSE(group.AddAttribute(kTestType2, AccessRequirements(), AccessRequirements()));
+  EXPECT_FALSE(group.AddAttribute(
+      kTestType2, AccessRequirements(), AccessRequirements()));
 
   const Attribute& decl_attr = group.attributes()[0];
   EXPECT_EQ(kTestHandle, decl_attr.handle());
@@ -105,7 +114,8 @@ TEST(AttributeTest, GroupingAddAttribute) {
   EXPECT_EQ(kTestHandle, group.start_handle());
   EXPECT_EQ(kTestHandle + kAttrCount, group.end_handle());
 
-  Attribute* attr = group.AddAttribute(kTestType2, AccessRequirements(), AccessRequirements());
+  Attribute* attr = group.AddAttribute(
+      kTestType2, AccessRequirements(), AccessRequirements());
   ASSERT_TRUE(attr);
   EXPECT_EQ(kTestType2, attr->type());
   EXPECT_EQ(kTestHandle + 1, attr->handle());
@@ -121,7 +131,8 @@ TEST(AttributeTest, GroupingAddAttribute) {
   EXPECT_FALSE(group.complete());
   EXPECT_EQ(2u, group.attributes().size());
 
-  attr = group.AddAttribute(kTestType3, AccessRequirements(), AccessRequirements());
+  attr = group.AddAttribute(
+      kTestType3, AccessRequirements(), AccessRequirements());
   ASSERT_TRUE(attr);
   EXPECT_EQ(kTestType3, attr->type());
 
@@ -129,22 +140,25 @@ TEST(AttributeTest, GroupingAddAttribute) {
   EXPECT_EQ(group.end_handle(), attr->handle());
   EXPECT_EQ(3u, group.attributes().size());
 
-  EXPECT_FALSE(group.AddAttribute(kTestType4, AccessRequirements(), AccessRequirements()));
+  EXPECT_FALSE(group.AddAttribute(
+      kTestType4, AccessRequirements(), AccessRequirements()));
 }
 
 TEST(AttributeTest, ReadAsyncReadNotAllowed) {
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
-  Attribute* attr = group.AddAttribute(kTestType2, AccessRequirements(), AccessRequirements());
+  Attribute* attr = group.AddAttribute(
+      kTestType2, AccessRequirements(), AccessRequirements());
   EXPECT_FALSE(attr->ReadAsync(kTestPeerId, 0, [](auto, const auto&) {}));
 }
 
 TEST(AttributeTest, ReadAsyncReadNoHandler) {
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
-  Attribute* attr =
-      group.AddAttribute(kTestType2,
-                         AccessRequirements(/*encryption=*/false, /*authentication=*/false,
-                                            /*authorization=*/false),  // read (no security)
-                         AccessRequirements());                        // write not allowed
+  Attribute* attr = group.AddAttribute(
+      kTestType2,
+      AccessRequirements(/*encryption=*/false,
+                         /*authentication=*/false,
+                         /*authorization=*/false),  // read (no security)
+      AccessRequirements());                        // write not allowed
   EXPECT_FALSE(attr->ReadAsync(kTestPeerId, 0, [](auto, const auto&) {}));
 }
 
@@ -152,11 +166,12 @@ TEST(AttributeTest, ReadAsync) {
   constexpr uint16_t kTestOffset = 5;
 
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
-  Attribute* attr =
-      group.AddAttribute(kTestType2,
-                         AccessRequirements(/*encryption=*/false, /*authentication=*/false,
-                                            /*authorization=*/false),  // read (no security)
-                         AccessRequirements());                        // write not allowed
+  Attribute* attr = group.AddAttribute(
+      kTestType2,
+      AccessRequirements(/*encryption=*/false,
+                         /*authentication=*/false,
+                         /*authorization=*/false),  // read (no security)
+      AccessRequirements());                        // write not allowed
 
   bool callback_called = false;
   auto callback = [&](fit::result<ErrorCode> status, const auto& value) {
@@ -165,14 +180,15 @@ TEST(AttributeTest, ReadAsync) {
     callback_called = true;
   };
 
-  auto handler = [&](PeerId peer_id, Handle handle, uint16_t offset, auto result_cb) {
-    EXPECT_EQ(kTestPeerId, peer_id);
-    EXPECT_EQ(attr->handle(), handle);
-    EXPECT_EQ(kTestOffset, offset);
-    EXPECT_TRUE(result_cb);
+  auto handler =
+      [&](PeerId peer_id, Handle handle, uint16_t offset, auto result_cb) {
+        EXPECT_EQ(kTestPeerId, peer_id);
+        EXPECT_EQ(attr->handle(), handle);
+        EXPECT_EQ(kTestOffset, offset);
+        EXPECT_TRUE(result_cb);
 
-    result_cb(fit::ok(), StaticByteBuffer('h', 'i'));
-  };
+        result_cb(fit::ok(), StaticByteBuffer('h', 'i'));
+      };
 
   attr->set_read_handler(handler);
   EXPECT_TRUE(attr->ReadAsync(kTestPeerId, kTestOffset, callback));
@@ -181,17 +197,19 @@ TEST(AttributeTest, ReadAsync) {
 
 TEST(AttributeTest, WriteAsyncWriteNotAllowed) {
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
-  Attribute* attr = group.AddAttribute(kTestType2, AccessRequirements(), AccessRequirements());
+  Attribute* attr = group.AddAttribute(
+      kTestType2, AccessRequirements(), AccessRequirements());
   EXPECT_FALSE(attr->WriteAsync(kTestPeerId, 0, BufferView(), [](auto) {}));
 }
 
 TEST(AttributeTest, WriteAsyncWriteNoHandler) {
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
-  Attribute* attr =
-      group.AddAttribute(kTestType2,
-                         AccessRequirements(),  // read not allowed
-                         AccessRequirements(/*encryption=*/false, /*authentication=*/false,
-                                            /*authorization=*/false));  // write no security
+  Attribute* attr = group.AddAttribute(
+      kTestType2,
+      AccessRequirements(),  // read not allowed
+      AccessRequirements(/*encryption=*/false,
+                         /*authentication=*/false,
+                         /*authorization=*/false));  // write no security
   EXPECT_FALSE(attr->WriteAsync(kTestPeerId, 0, BufferView(), [](auto) {}));
 }
 
@@ -199,11 +217,12 @@ TEST(AttributeTest, WriteAsync) {
   constexpr uint16_t kTestOffset = 5;
 
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
-  Attribute* attr =
-      group.AddAttribute(kTestType2,
-                         AccessRequirements(),  // read not allowed
-                         AccessRequirements(/*encryption=*/false, /*authentication=*/false,
-                                            /*authorization=*/false));  // write no security
+  Attribute* attr = group.AddAttribute(
+      kTestType2,
+      AccessRequirements(),  // read not allowed
+      AccessRequirements(/*encryption=*/false,
+                         /*authentication=*/false,
+                         /*authorization=*/false));  // write no security
 
   bool callback_called = false;
   auto callback = [&](fit::result<ErrorCode> status) {
@@ -211,7 +230,10 @@ TEST(AttributeTest, WriteAsync) {
     callback_called = true;
   };
 
-  auto handler = [&](PeerId peer_id, Handle handle, uint16_t offset, const auto& value,
+  auto handler = [&](PeerId peer_id,
+                     Handle handle,
+                     uint16_t offset,
+                     const auto& value,
                      auto result_cb) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
@@ -223,7 +245,8 @@ TEST(AttributeTest, WriteAsync) {
   };
 
   attr->set_write_handler(handler);
-  EXPECT_TRUE(attr->WriteAsync(kTestPeerId, kTestOffset, StaticByteBuffer('h', 'i'), callback));
+  EXPECT_TRUE(attr->WriteAsync(
+      kTestPeerId, kTestOffset, StaticByteBuffer('h', 'i'), callback));
   EXPECT_TRUE(callback_called);
 }
 

@@ -2,33 +2,37 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "connection.h"
+#include "pw_bluetooth_sapphire/internal/host/gatt/connection.h"
 
 #include <numeric>
 
-#include "client.h"
-#include "server.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/gatt/client.h"
+#include "pw_bluetooth_sapphire/internal/host/gatt/local_service_manager.h"
+#include "pw_bluetooth_sapphire/internal/host/gatt/server.h"
 
 namespace bt::gatt::internal {
 
-Connection::Connection(std::unique_ptr<Client> client, std::unique_ptr<Server> server,
+Connection::Connection(std::unique_ptr<Client> client,
+                       std::unique_ptr<Server> server,
                        RemoteServiceWatcher svc_watcher)
     : server_(std::move(server)), weak_self_(this) {
   BT_ASSERT(svc_watcher);
 
-  remote_service_manager_ = std::make_unique<RemoteServiceManager>(std::move(client));
+  remote_service_manager_ =
+      std::make_unique<RemoteServiceManager>(std::move(client));
   remote_service_manager_->set_service_watcher(std::move(svc_watcher));
 }
 
-void Connection::Initialize(std::vector<UUID> service_uuids, fit::callback<void(uint16_t)> mtu_cb) {
+void Connection::Initialize(std::vector<UUID> service_uuids,
+                            fit::callback<void(uint16_t)> mtu_cb) {
   BT_ASSERT(remote_service_manager_);
 
   auto uuids_count = service_uuids.size();
   // status_cb must not capture att_ in order to prevent reference cycle.
-  auto status_cb = [self = weak_self_.GetWeakPtr(), uuids_count](att::Result<> status) {
+  auto status_cb = [self = weak_self_.GetWeakPtr(),
+                    uuids_count](att::Result<> status) {
     if (!self.is_alive()) {
       return;
     }
@@ -37,20 +41,23 @@ void Connection::Initialize(std::vector<UUID> service_uuids, fit::callback<void(
       // Signal a link error.
       self->ShutDown();
     } else if (uuids_count > 0) {
-      bt_log(DEBUG, "gatt", "primary service discovery complete for (%zu) service uuids",
+      bt_log(DEBUG,
+             "gatt",
+             "primary service discovery complete for (%zu) service uuids",
              uuids_count);
     } else {
       bt_log(DEBUG, "gatt", "primary service discovery complete");
     }
   };
 
-  remote_service_manager_->Initialize(std::move(status_cb), std::move(mtu_cb),
-                                      std::move(service_uuids));
+  remote_service_manager_->Initialize(
+      std::move(status_cb), std::move(mtu_cb), std::move(service_uuids));
 }
 
 void Connection::ShutDown() {
-  // We shut down the connection from the server not for any technical reason, but just because it
-  // was simpler to expose the att::Bearer's ShutDown behavior from the server.
+  // We shut down the connection from the server not for any technical reason,
+  // but just because it was simpler to expose the att::Bearer's ShutDown
+  // behavior from the server.
   server_->ShutDown();
 }
 }  // namespace bt::gatt::internal

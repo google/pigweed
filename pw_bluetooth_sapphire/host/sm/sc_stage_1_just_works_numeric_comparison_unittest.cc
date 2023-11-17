@@ -2,23 +2,23 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "sc_stage_1_just_works_numeric_comparison.h"
-
-#include <memory>
+#include "pw_bluetooth_sapphire/internal/host/sm/sc_stage_1_just_works_numeric_comparison.h"
 
 #include <gtest/gtest.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/fake_phase_listener.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/sc_stage_1.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
+#include <memory>
+
+#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
+#include "pw_bluetooth_sapphire/internal/host/common/random.h"
+#include "pw_bluetooth_sapphire/internal/host/common/uint128.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/connection.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel_test.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/fake_phase_listener.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/packet.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/sc_stage_1.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/util.h"
 
 namespace bt::sm {
 namespace {
@@ -30,7 +30,8 @@ struct ScStage1Args {
   PairingMethod method = PairingMethod::kJustWorks;
 };
 
-class ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeChannelTest {
+class ScStage1JustWorksNumericComparisonTest
+    : public l2cap::testing::FakeChannelTest {
  public:
   ScStage1JustWorksNumericComparisonTest() = default;
   ~ScStage1JustWorksNumericComparisonTest() = default;
@@ -39,7 +40,8 @@ class ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeChanne
   using ConfirmCallback = FakeListener::ConfirmCallback;
   void SetUp() override { NewScStage1JustWorksNumericComparison(); }
   void TearDown() override { stage_1_ = nullptr; }
-  void NewScStage1JustWorksNumericComparison(ScStage1Args args = ScStage1Args()) {
+  void NewScStage1JustWorksNumericComparison(
+      ScStage1Args args = ScStage1Args()) {
     args_ = args;
     listener_ = std::make_unique<FakeListener>();
     fake_chan_ = CreateFakeChannel(ChannelOptions(l2cap::kLESMPChannelId));
@@ -50,19 +52,27 @@ class ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeChanne
               ValidPacketReader::ParseSdu(sent_packet);
           ASSERT_TRUE(maybe_reader.is_ok())
               << "Sent invalid packet: "
-              << ProtocolErrorTraits<sm::ErrorCode>::ToString(maybe_reader.error_value());
+              << ProtocolErrorTraits<sm::ErrorCode>::ToString(
+                     maybe_reader.error_value());
           last_packet_.emplace(maybe_reader.value());
           last_packet_internal_ = std::move(sent_packet);
         },
         dispatcher());
     stage_1_ = std::make_unique<ScStage1JustWorksNumericComparison>(
-        listener_->as_weak_ptr(), args.role, args.local_pub_key_x, args.peer_pub_key_x, args.method,
+        listener_->as_weak_ptr(),
+        args.role,
+        args.local_pub_key_x,
+        args.peer_pub_key_x,
+        args.method,
         sm_chan_->GetWeakPtr(),
-        [this](fit::result<ErrorCode, ScStage1::Output> out) { last_results_ = out; });
+        [this](fit::result<ErrorCode, ScStage1::Output> out) {
+          last_results_ = out;
+        });
   }
 
   UInt128 GenerateConfirmValue(const UInt128& random) const {
-    UInt256 responder_key = args_.local_pub_key_x, initiator_key = args_.peer_pub_key_x;
+    UInt256 responder_key = args_.local_pub_key_x,
+            initiator_key = args_.peer_pub_key_x;
     if (args_.role == Role::kInitiator) {
       std::swap(responder_key, initiator_key);
     }
@@ -75,7 +85,8 @@ class ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeChanne
   };
   MatchingPair GenerateMatchingConfirmAndRandom() {
     MatchingPair pair;
-    random_generator()->Get({reinterpret_cast<std::byte*>(pair.random.data()), pair.random.size()});
+    random_generator()->Get(
+        {reinterpret_cast<std::byte*>(pair.random.data()), pair.random.size()});
     pair.confirm = GenerateConfirmValue(pair.random);
     return pair;
   }
@@ -95,20 +106,26 @@ class ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeChanne
   std::unique_ptr<PairingChannel> sm_chan_;
   std::unique_ptr<ScStage1JustWorksNumericComparison> stage_1_;
   std::optional<ValidPacketReader> last_packet_ = std::nullopt;
-  // To store the last sent SDU so that the last_packet_ PacketReader points at valid data.
+  // To store the last sent SDU so that the last_packet_ PacketReader points at
+  // valid data.
   ByteBufferPtr last_packet_internal_;
-  std::optional<fit::result<ErrorCode, ScStage1::Output>> last_results_ = std::nullopt;
+  std::optional<fit::result<ErrorCode, ScStage1::Output>> last_results_ =
+      std::nullopt;
 };
 
-using ScStage1JustWorksNumericComparisonDeathTest = ScStage1JustWorksNumericComparisonTest;
+using ScStage1JustWorksNumericComparisonDeathTest =
+    ScStage1JustWorksNumericComparisonTest;
 TEST_F(ScStage1JustWorksNumericComparisonDeathTest, InvalidMethodsDie) {
   ScStage1Args args;
   args.method = PairingMethod::kOutOfBand;
-  ASSERT_DEATH_IF_SUPPORTED(NewScStage1JustWorksNumericComparison(args), ".*method.*");
+  ASSERT_DEATH_IF_SUPPORTED(NewScStage1JustWorksNumericComparison(args),
+                            ".*method.*");
   args.method = PairingMethod::kPasskeyEntryDisplay;
-  ASSERT_DEATH_IF_SUPPORTED(NewScStage1JustWorksNumericComparison(args), ".*method.*");
+  ASSERT_DEATH_IF_SUPPORTED(NewScStage1JustWorksNumericComparison(args),
+                            ".*method.*");
   args.method = PairingMethod::kPasskeyEntryInput;
-  ASSERT_DEATH_IF_SUPPORTED(NewScStage1JustWorksNumericComparison(args), ".*method.*");
+  ASSERT_DEATH_IF_SUPPORTED(NewScStage1JustWorksNumericComparison(args),
+                            ".*method.*");
 }
 
 TEST_F(ScStage1JustWorksNumericComparisonTest, InitiatorJustWorks) {
@@ -117,15 +134,18 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, InitiatorJustWorks) {
   args.method = PairingMethod::kJustWorks;
   NewScStage1JustWorksNumericComparison(args);
   MatchingPair vals = GenerateMatchingConfirmAndRandom();
-  ScStage1::Output expected_results{
-      .initiator_r = {0}, .responder_r = {0}, .initiator_rand = {0}, .responder_rand = vals.random};
+  ScStage1::Output expected_results{.initiator_r = {0},
+                                    .responder_r = {0},
+                                    .initiator_rand = {0},
+                                    .responder_rand = vals.random};
 
   stage_1()->Run();
   stage_1()->OnPairingConfirm(vals.confirm);
   RunUntilIdle();
   ASSERT_TRUE(last_packet().has_value());
   EXPECT_EQ(kPairingRandom, last_packet()->code());
-  expected_results.initiator_rand = last_packet()->payload<PairingRandomValue>();
+  expected_results.initiator_rand =
+      last_packet()->payload<PairingRandomValue>();
 
   stage_1()->OnPairingRandom(vals.random);
   ASSERT_TRUE(last_results()->is_ok());
@@ -146,23 +166,28 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, InitiatorNumericComparison) {
         user_confirm = std::move(cb);
       });
   MatchingPair vals = GenerateMatchingConfirmAndRandom();
-  ScStage1::Output expected_results{
-      .initiator_r = {0}, .responder_r = {0}, .initiator_rand = {0}, .responder_rand = vals.random};
+  ScStage1::Output expected_results{.initiator_r = {0},
+                                    .responder_r = {0},
+                                    .initiator_rand = {0},
+                                    .responder_rand = vals.random};
 
   stage_1()->Run();
   stage_1()->OnPairingConfirm(vals.confirm);
   RunUntilIdle();
   ASSERT_TRUE(last_packet().has_value());
   EXPECT_EQ(kPairingRandom, last_packet()->code());
-  expected_results.initiator_rand = last_packet()->payload<PairingRandomValue>();
+  expected_results.initiator_rand =
+      last_packet()->payload<PairingRandomValue>();
 
   stage_1()->OnPairingRandom(vals.random);
   ASSERT_TRUE(user_confirm);
-  // Results should not be ready until user input is received through user_confirm
+  // Results should not be ready until user input is received through
+  // user_confirm
   ASSERT_FALSE(last_results().has_value());
-  uint32_t kExpectedCompare =
-      *util::G2(args.local_pub_key_x, args.peer_pub_key_x, expected_results.initiator_rand,
-                expected_results.responder_rand);
+  uint32_t kExpectedCompare = *util::G2(args.local_pub_key_x,
+                                        args.peer_pub_key_x,
+                                        expected_results.initiator_rand,
+                                        expected_results.responder_rand);
   kExpectedCompare %= 1000000;
   EXPECT_EQ(kExpectedCompare, compare);
 
@@ -171,7 +196,8 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, InitiatorNumericComparison) {
   EXPECT_EQ(expected_results, last_results()->value());
 }
 
-TEST_F(ScStage1JustWorksNumericComparisonTest, InitiatorReceivesConfirmTwiceFails) {
+TEST_F(ScStage1JustWorksNumericComparisonTest,
+       InitiatorReceivesConfirmTwiceFails) {
   ScStage1Args args;
   args.role = Role::kInitiator;
   NewScStage1JustWorksNumericComparison(args);
@@ -182,15 +208,18 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, InitiatorReceivesConfirmTwiceFail
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error_value());
 }
 
-TEST_F(ScStage1JustWorksNumericComparisonTest, InitiatorReceiveRandomOutOfOrder) {
+TEST_F(ScStage1JustWorksNumericComparisonTest,
+       InitiatorReceiveRandomOutOfOrder) {
   stage_1()->Run();
   ASSERT_FALSE(last_results().has_value());
   stage_1()->OnPairingRandom(Random<PairingRandomValue>());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error_value());
 }
 
-// Test to demonstrate receiving random twice for responder causes pairing to fail.
-TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderReceiveRandomTwiceFails) {
+// Test to demonstrate receiving random twice for responder causes pairing to
+// fail.
+TEST_F(ScStage1JustWorksNumericComparisonTest,
+       ResponderReceiveRandomTwiceFails) {
   ScStage1Args args;
   args.role = Role::kResponder;
   NewScStage1JustWorksNumericComparison(args);
@@ -202,7 +231,8 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderReceiveRandomTwiceFails)
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error_value());
 }
 
-TEST_F(ScStage1JustWorksNumericComparisonTest, InitiatorMismatchedConfirmAndRand) {
+TEST_F(ScStage1JustWorksNumericComparisonTest,
+       InitiatorMismatchedConfirmAndRand) {
   ScStage1Args args;
   args.role = Role::kInitiator;
   NewScStage1JustWorksNumericComparison(args);
@@ -223,8 +253,10 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderJustWorks) {
   args.method = PairingMethod::kJustWorks;
   NewScStage1JustWorksNumericComparison(args);
   UInt128 kPeerRand = Random<PairingRandomValue>();
-  ScStage1::Output expected_results{
-      .initiator_r = {0}, .responder_r = {0}, .initiator_rand = kPeerRand, .responder_rand = {0}};
+  ScStage1::Output expected_results{.initiator_r = {0},
+                                    .responder_r = {0},
+                                    .initiator_rand = kPeerRand,
+                                    .responder_rand = {0}};
 
   stage_1()->Run();
   RunUntilIdle();
@@ -236,8 +268,10 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderJustWorks) {
   RunUntilIdle();
   ASSERT_TRUE(last_packet().has_value());
   EXPECT_EQ(kPairingRandom, last_packet()->code());
-  expected_results.responder_rand = last_packet()->payload<PairingRandomValue>();
-  EXPECT_EQ(GenerateConfirmValue(expected_results.responder_rand), sent_confirm);
+  expected_results.responder_rand =
+      last_packet()->payload<PairingRandomValue>();
+  EXPECT_EQ(GenerateConfirmValue(expected_results.responder_rand),
+            sent_confirm);
   ASSERT_TRUE(last_results()->is_ok());
   EXPECT_EQ(expected_results, last_results()->value());
 }
@@ -256,8 +290,10 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderNumericComparison) {
         user_confirm = std::move(cb);
       });
   UInt128 kPeerRand = Random<PairingRandomValue>();
-  ScStage1::Output expected_results{
-      .initiator_r = {0}, .responder_r = {0}, .initiator_rand = kPeerRand, .responder_rand = {0}};
+  ScStage1::Output expected_results{.initiator_r = {0},
+                                    .responder_r = {0},
+                                    .initiator_rand = kPeerRand,
+                                    .responder_rand = {0}};
 
   stage_1()->Run();
   RunUntilIdle();
@@ -269,15 +305,19 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderNumericComparison) {
   RunUntilIdle();
   ASSERT_TRUE(last_packet().has_value());
   EXPECT_EQ(kPairingRandom, last_packet()->code());
-  expected_results.responder_rand = last_packet()->payload<PairingRandomValue>();
-  EXPECT_EQ(GenerateConfirmValue(expected_results.responder_rand), sent_confirm);
+  expected_results.responder_rand =
+      last_packet()->payload<PairingRandomValue>();
+  EXPECT_EQ(GenerateConfirmValue(expected_results.responder_rand),
+            sent_confirm);
 
   ASSERT_TRUE(user_confirm);
-  // Results should not be ready until user input is received through user_confirm
+  // Results should not be ready until user input is received through
+  // user_confirm
   ASSERT_FALSE(last_results().has_value());
-  uint32_t kExpectedCompare =
-      *util::G2(args.peer_pub_key_x, args.local_pub_key_x, expected_results.initiator_rand,
-                expected_results.responder_rand);
+  uint32_t kExpectedCompare = *util::G2(args.peer_pub_key_x,
+                                        args.local_pub_key_x,
+                                        expected_results.initiator_rand,
+                                        expected_results.responder_rand);
   kExpectedCompare %= 1000000;
   EXPECT_EQ(kExpectedCompare, compare);
 
@@ -297,22 +337,25 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderReceivesConfirmFails) {
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error_value());
 }
 
-TEST_F(ScStage1JustWorksNumericComparisonTest, ResponderReceiveRandomOutOfOrder) {
+TEST_F(ScStage1JustWorksNumericComparisonTest,
+       ResponderReceiveRandomOutOfOrder) {
   NewScStage1JustWorksNumericComparison(ScStage1Args{.role = Role::kResponder});
-  // `stage_1_` was not `Run`, so the Pairing Confirm hasn't been sent and the peer should not have
-  // sent the Pairing Random.
+  // `stage_1_` was not `Run`, so the Pairing Confirm hasn't been sent and the
+  // peer should not have sent the Pairing Random.
   stage_1()->OnPairingRandom(Random<PairingRandomValue>());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error_value());
 }
 
-// This test uses responder flow, but the behavior under test is the same for initiator.
+// This test uses responder flow, but the behavior under test is the same for
+// initiator.
 TEST_F(ScStage1JustWorksNumericComparisonTest, ListenerRejectsJustWorks) {
   ScStage1Args args;
   args.role = Role::kResponder;
   args.method = PairingMethod::kJustWorks;
   NewScStage1JustWorksNumericComparison(args);
   ConfirmCallback user_confirm = nullptr;
-  listener()->set_confirm_delegate([&](ConfirmCallback cb) { user_confirm = std::move(cb); });
+  listener()->set_confirm_delegate(
+      [&](ConfirmCallback cb) { user_confirm = std::move(cb); });
 
   stage_1()->Run();
   stage_1()->OnPairingRandom(Random<PairingRandomValue>());
@@ -323,8 +366,10 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, ListenerRejectsJustWorks) {
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error_value());
 }
 
-// This test uses responder flow, but the behavior under test is the same for initiator.
-TEST_F(ScStage1JustWorksNumericComparisonTest, ListenerRejectsNumericComparison) {
+// This test uses responder flow, but the behavior under test is the same for
+// initiator.
+TEST_F(ScStage1JustWorksNumericComparisonTest,
+       ListenerRejectsNumericComparison) {
   ScStage1Args args;
   args.role = Role::kResponder;
   args.method = PairingMethod::kNumericComparison;
@@ -345,13 +390,15 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, ListenerRejectsNumericComparison)
   EXPECT_EQ(ErrorCode::kNumericComparisonFailed, last_results()->error_value());
 }
 
-TEST_F(ScStage1JustWorksNumericComparisonTest, StageDestroyedWhileWaitingForJustWorksConfirm) {
+TEST_F(ScStage1JustWorksNumericComparisonTest,
+       StageDestroyedWhileWaitingForJustWorksConfirm) {
   ScStage1Args args;
   args.role = Role::kResponder;
   args.method = PairingMethod::kJustWorks;
   NewScStage1JustWorksNumericComparison(args);
   ConfirmCallback user_confirm = nullptr;
-  listener()->set_confirm_delegate([&](ConfirmCallback cb) { user_confirm = std::move(cb); });
+  listener()->set_confirm_delegate(
+      [&](ConfirmCallback cb) { user_confirm = std::move(cb); });
 
   stage_1()->Run();
   stage_1()->OnPairingRandom(Random<PairingRandomValue>());
@@ -364,7 +411,8 @@ TEST_F(ScStage1JustWorksNumericComparisonTest, StageDestroyedWhileWaitingForJust
   EXPECT_FALSE(last_results().has_value());
 }
 
-TEST_F(ScStage1JustWorksNumericComparisonTest, StageDestroyedWhileWaitingForNumericComparison) {
+TEST_F(ScStage1JustWorksNumericComparisonTest,
+       StageDestroyedWhileWaitingForNumericComparison) {
   ScStage1Args args;
   args.role = Role::kResponder;
   args.method = PairingMethod::kNumericComparison;

@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/gap/fake_pairing_delegate.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/fake_pairing_delegate.h"
 
 #include <gtest/gtest.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
 namespace bt::gap {
 namespace {
@@ -60,8 +60,9 @@ TEST(FakePairingDelegateTest, DisplayPasskey) {
     confirm(true);
   };
   delegate.SetDisplayPasskeyCallback(std::move(cb));
-  delegate.DisplayPasskey(PeerId(5), 123456, PairingDelegate::DisplayMethod::kComparison,
-                          [](bool) {});
+  delegate.DisplayPasskey(
+      PeerId(5), 123456, PairingDelegate::DisplayMethod::kComparison, [](bool) {
+      });
   EXPECT_TRUE(cb_called);
 }
 
@@ -86,7 +87,8 @@ TEST(FakePairingDelegateTest, UnexpectedCalls) {
   // Each of the following calls should generate failure(s).
   // delegate.CompletePairing(PeerId(5), ToResult(HostError::kFailed));
   // delegate.ConfirmPairing(PeerId(5), [](bool) {});
-  // delegate.DisplayPasskey(PeerId(5), 123456, PairingDelegate::DisplayMethod::kComparison,
+  // delegate.DisplayPasskey(PeerId(5), 123456,
+  // PairingDelegate::DisplayMethod::kComparison,
   //                         [](bool) {});
   // delegate.RequestPasskey(PeerId(5), [](uint64_t) {});
 }
@@ -98,7 +100,8 @@ TEST(FakePairingDelegateTest, ExpectCallNotCalled) {
   // delegate.SetConfirmPairingCallback([](auto, auto) {});
   // delegate.SetDisplayPasskeyCallback([](auto, auto, auto, auto) {});
   // delegate.SetRequestPasskeyCallback([](auto, auto) {});
-  // Each of the preceding calls should generate failure(s) when |delegate| goes out of scope.
+  // Each of the preceding calls should generate failure(s) when |delegate| goes
+  // out of scope.
 }
 
 }  // namespace

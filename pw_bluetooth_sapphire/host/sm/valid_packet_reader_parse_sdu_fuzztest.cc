@@ -4,8 +4,8 @@
 
 #include <memory>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
+#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/packet.h"
 
 namespace bt::sm {
 

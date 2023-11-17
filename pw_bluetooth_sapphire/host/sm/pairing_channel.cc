@@ -2,19 +2,21 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "pairing_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/pairing_channel.h"
 
-#include "lib/async/default.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/scoped_channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/channel.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/scoped_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
 
 namespace bt::sm {
 
-PairingChannel::PairingChannel(l2cap::Channel::WeakPtr chan, fit::closure timer_resetter)
-    : chan_(std::move(chan)), reset_timer_(std::move(timer_resetter)), weak_self_(this) {
+PairingChannel::PairingChannel(l2cap::Channel::WeakPtr chan,
+                               fit::closure timer_resetter)
+    : chan_(std::move(chan)),
+      reset_timer_(std::move(timer_resetter)),
+      weak_self_(this) {
   BT_ASSERT(chan_);
   if (chan_->link_type() == bt::LinkType::kLE) {
     BT_ASSERT(chan_->id() == l2cap::kLESMPChannelId);
@@ -37,10 +39,11 @@ PairingChannel::PairingChannel(l2cap::Channel::WeakPtr chan, fit::closure timer_
           self->OnChannelClosed();
         }
       });
-  // The SMP fixed channel's MTU must be >=23 bytes (kNoSecureConnectionsMTU) per spec V5.0 Vol. 3
-  // Part H 3.2. As SMP operates on a fixed channel, there is no way to configure this MTU, so we
-  // expect that L2CAP always provides a channel with a sufficiently large MTU. This assertion
-  // serves as an explicit acknowledgement of that contract between L2CAP and SMP.
+  // The SMP fixed channel's MTU must be >=23 bytes (kNoSecureConnectionsMTU)
+  // per spec V5.0 Vol. 3 Part H 3.2. As SMP operates on a fixed channel, there
+  // is no way to configure this MTU, so we expect that L2CAP always provides a
+  // channel with a sufficiently large MTU. This assertion serves as an explicit
+  // acknowledgement of that contract between L2CAP and SMP.
   BT_ASSERT(chan_->max_tx_sdu_size() >= kNoSecureConnectionsMtu &&
             chan_->max_rx_sdu_size() >= kNoSecureConnectionsMtu);
 }

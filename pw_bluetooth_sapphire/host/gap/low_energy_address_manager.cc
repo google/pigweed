@@ -2,18 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "low_energy_address_manager.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/low_energy_address_manager.h"
 
-#include "gap.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/util.h"
 
 namespace bt::gap {
 
-LowEnergyAddressManager::LowEnergyAddressManager(const DeviceAddress& public_address,
-                                                 StateQueryDelegate delegate,
-                                                 hci::CommandChannel::WeakPtr cmd_channel,
-                                                 pw::async::Dispatcher& dispatcher)
+LowEnergyAddressManager::LowEnergyAddressManager(
+    const DeviceAddress& public_address,
+    StateQueryDelegate delegate,
+    hci::CommandChannel::WeakPtr cmd_channel,
+    pw::async::Dispatcher& dispatcher)
     : dispatcher_(dispatcher),
       delegate_(std::move(delegate)),
       cmd_(std::move(cmd_channel)),
@@ -31,7 +32,10 @@ LowEnergyAddressManager::~LowEnergyAddressManager() { CancelExpiry(); }
 
 void LowEnergyAddressManager::EnablePrivacy(bool enabled) {
   if (enabled == privacy_enabled_) {
-    bt_log(DEBUG, "gap-le", "privacy already %s", (enabled ? "enabled" : "disabled"));
+    bt_log(DEBUG,
+           "gap-le",
+           "privacy already %s",
+           (enabled ? "enabled" : "disabled"));
     return;
   }
 
@@ -74,7 +78,9 @@ void LowEnergyAddressManager::TryRefreshRandomAddress() {
   }
 
   if (!CanUpdateRandomAddress()) {
-    bt_log(DEBUG, "gap-le", "deferring local address refresh due to ongoing procedures");
+    bt_log(DEBUG,
+           "gap-le",
+           "deferring local address refresh due to ongoing procedures");
     // Don't stall procedures that requested the current address while in this
     // state.
     ResolveAddressRequests();
@@ -91,12 +97,14 @@ void LowEnergyAddressManager::TryRefreshRandomAddress() {
     random_addr = sm::util::GenerateRandomAddress(/*is_static=*/false);
   }
 
-  auto cmd = hci::EmbossCommandPacket::New<pw::bluetooth::emboss::LESetRandomAddressCommandWriter>(
+  auto cmd = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::LESetRandomAddressCommandWriter>(
       hci_spec::kLESetRandomAddress);
   cmd.view_t().random_address().CopyFrom(random_addr.value().view());
 
   auto self = weak_self_.GetWeakPtr();
-  auto cmd_complete_cb = [self, this, random_addr](auto id, const hci::EventPacket& event) {
+  auto cmd_complete_cb = [self, this, random_addr](
+                             auto id, const hci::EventPacket& event) {
     if (!self.is_alive()) {
       return;
     }
@@ -104,11 +112,14 @@ void LowEnergyAddressManager::TryRefreshRandomAddress() {
     refreshing_ = false;
 
     if (!privacy_enabled_) {
-      bt_log(DEBUG, "gap-le", "ignore random address result while privacy is disabled");
+      bt_log(DEBUG,
+             "gap-le",
+             "ignore random address result while privacy is disabled");
       return;
     }
 
-    if (!hci_is_error(event, TRACE, "gap-le", "failed to update random address")) {
+    if (!hci_is_error(
+            event, TRACE, "gap-le", "failed to update random address")) {
       needs_refresh_ = false;
       random_ = random_addr;
       bt_log(INFO, "gap-le", "random address updated: %s", bt_str(*random_));
@@ -139,7 +150,9 @@ void LowEnergyAddressManager::CleanUpPrivacyState() {
   CancelExpiry();
 }
 
-void LowEnergyAddressManager::CancelExpiry() { random_address_expiry_task_.Cancel(); }
+void LowEnergyAddressManager::CancelExpiry() {
+  random_address_expiry_task_.Cancel();
+}
 
 bool LowEnergyAddressManager::CanUpdateRandomAddress() const {
   BT_DEBUG_ASSERT(delegate_);

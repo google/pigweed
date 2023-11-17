@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/gap/bredr_discovery_manager.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/bredr_discovery_manager.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/inspect.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/mock_controller.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
 
 namespace bt::gap {
 namespace {
@@ -19,7 +19,8 @@ using namespace inspect::testing;
 
 using bt::testing::CommandTransaction;
 
-using TestingBase = bt::testing::FakeDispatcherControllerTest<bt::testing::MockController>;
+using TestingBase =
+    bt::testing::FakeDispatcherControllerTest<bt::testing::MockController>;
 
 // clang-format off
 #define COMMAND_COMPLETE_RSP(opcode)                                         \
@@ -69,11 +70,16 @@ class BrEdrDiscoveryManagerTest : public TestingBase {
 
   void NewDiscoveryManager(pw::bluetooth::emboss::InquiryMode mode) {
     // We expect to set the Inquiry Scan and the Type when we start.
-    EXPECT_CMD_PACKET_OUT(test_device(), kWriteInquiryActivity, &kWriteInquiryActivityRsp);
-    EXPECT_CMD_PACKET_OUT(test_device(), kWriteInquiryType, &kWriteInquiryTypeRsp);
+    EXPECT_CMD_PACKET_OUT(
+        test_device(), kWriteInquiryActivity, &kWriteInquiryActivityRsp);
+    EXPECT_CMD_PACKET_OUT(
+        test_device(), kWriteInquiryType, &kWriteInquiryTypeRsp);
 
     discovery_manager_ = std::make_unique<BrEdrDiscoveryManager>(
-        dispatcher(), transport()->command_channel()->AsWeakPtr(), mode, &peer_cache_);
+        dispatcher(),
+        transport()->command_channel()->AsWeakPtr(),
+        mode,
+        &peer_cache_);
 
     RunUntilIdle();
   }
@@ -83,7 +89,9 @@ class BrEdrDiscoveryManagerTest : public TestingBase {
   PeerCache* peer_cache() { return &peer_cache_; }
 
  protected:
-  BrEdrDiscoveryManager* discovery_manager() const { return discovery_manager_.get(); }
+  BrEdrDiscoveryManager* discovery_manager() const {
+    return discovery_manager_.get();
+  }
 
  private:
   PeerCache peer_cache_{dispatcher()};
@@ -380,19 +388,22 @@ const auto kWriteScanEnableRsp = COMMAND_COMPLETE_RSP(hci_spec::kWriteScanEnable
 // clang-format on
 
 // Test: malformed inquiry result is fatal
-TEST_F(BrEdrDiscoveryManagerDeathTest, MalformedInquiryResultFromControllerIsFatal) {
+TEST_F(BrEdrDiscoveryManagerDeathTest,
+       MalformedInquiryResultFromControllerIsFatal) {
   EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kInquiry, &kInquiryRsp);
 
   std::unique_ptr<BrEdrDiscoverySession> session;
 
-  discovery_manager()->RequestDiscovery([&session](auto status, auto cb_session) {
-    EXPECT_EQ(fit::ok(), status);
-    session = std::move(cb_session);
-  });
+  discovery_manager()->RequestDiscovery(
+      [&session](auto status, auto cb_session) {
+        EXPECT_EQ(fit::ok(), status);
+        session = std::move(cb_session);
+      });
 
   RunUntilIdle();
 
-  for (auto event : {kInquiryResultIncompleteHeader.view(), kInquiryResultMissingResponses.view(),
+  for (auto event : {kInquiryResultIncompleteHeader.view(),
+                     kInquiryResultMissingResponses.view(),
                      kInquiryResultIncompleteResponse.view()}) {
     EXPECT_DEATH_IF_SUPPORTED(
         [=] {
@@ -413,18 +424,23 @@ TEST_F(BrEdrDiscoveryManagerDeathTest, MalformedInquiryResultFromControllerIsFat
 // Test: Inquiry Results that come in when there's no discovery happening get
 // discarded.
 TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryAndDrop) {
-  EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kInquiry, &kInquiryRsp, &kInquiryResult);
-  EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest1, &kRemoteNameRequestRsp,
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), hci_spec::kInquiry, &kInquiryRsp, &kInquiryResult);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kRemoteNameRequest1,
+                        &kRemoteNameRequestRsp,
                         &kRemoteNameRequestComplete1);
 
   std::unique_ptr<BrEdrDiscoverySession> session;
   size_t peers_found = 0u;
 
-  discovery_manager()->RequestDiscovery([&session, &peers_found](auto status, auto cb_session) {
-    EXPECT_EQ(fit::ok(), status);
-    cb_session->set_result_callback([&peers_found](const auto&) { peers_found++; });
-    session = std::move(cb_session);
-  });
+  discovery_manager()->RequestDiscovery(
+      [&session, &peers_found](auto status, auto cb_session) {
+        EXPECT_EQ(fit::ok(), status);
+        cb_session->set_result_callback(
+            [&peers_found](const auto&) { peers_found++; });
+        session = std::move(cb_session);
+      });
 
   EXPECT_FALSE(discovery_manager()->discovering());
 
@@ -433,7 +449,8 @@ TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryAndDrop) {
   EXPECT_EQ(1u, peers_found);
   EXPECT_TRUE(discovery_manager()->discovering());
 
-  EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kInquiry, &kInquiryRsp, &kInquiryResult);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), hci_spec::kInquiry, &kInquiryRsp, &kInquiryResult);
 
   test_device()->SendCommandChannelPacket(kInquiryComplete);
 
@@ -466,18 +483,23 @@ TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryAndDrop) {
 // Test: dropping the first discovery shouldn't stop inquiry
 // Test: starting two sessions at once should only start inquiry once
 TEST_F(BrEdrDiscoveryManagerTest, MultipleRequests) {
-  EXPECT_CMD_PACKET_OUT(test_device(), hci_spec::kInquiry, &kInquiryRsp, &kInquiryResult);
-  EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest1, &kRemoteNameRequestRsp,
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), hci_spec::kInquiry, &kInquiryRsp, &kInquiryResult);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kRemoteNameRequest1,
+                        &kRemoteNameRequestRsp,
                         &kRemoteNameRequestComplete1);
 
   std::unique_ptr<BrEdrDiscoverySession> session1;
   size_t peers_found1 = 0u;
 
-  discovery_manager()->RequestDiscovery([&session1, &peers_found1](auto status, auto cb_session) {
-    EXPECT_EQ(fit::ok(), status);
-    cb_session->set_result_callback([&peers_found1](const auto&) { peers_found1++; });
-    session1 = std::move(cb_session);
-  });
+  discovery_manager()->RequestDiscovery(
+      [&session1, &peers_found1](auto status, auto cb_session) {
+        EXPECT_EQ(fit::ok(), status);
+        cb_session->set_result_callback(
+            [&peers_found1](const auto&) { peers_found1++; });
+        session1 = std::move(cb_session);
+      });
 
   EXPECT_FALSE(discovery_manager()->discovering());
 
@@ -490,11 +512,13 @@ TEST_F(BrEdrDiscoveryManagerTest, MultipleRequests) {
   std::unique_ptr<BrEdrDiscoverySession> session2;
   size_t peers_found2 = 0u;
 
-  discovery_manager()->RequestDiscovery([&session2, &peers_found2](auto status, auto cb_session) {
-    EXPECT_EQ(fit::ok(), status);
-    cb_session->set_result_callback([&peers_found2](const auto&) { peers_found2++; });
-    session2 = std::move(cb_session);
-  });
+  discovery_manager()->RequestDiscovery(
+      [&session2, &peers_found2](auto status, auto cb_session) {
+        EXPECT_EQ(fit::ok(), status);
+        cb_session->set_result_callback(
+            [&peers_found2](const auto&) { peers_found2++; });
+        session2 = std::move(cb_session);
+      });
 
   RunUntilIdle();
 
@@ -547,17 +571,21 @@ TEST_F(BrEdrDiscoveryManagerTest, MultipleRequests) {
 // encounter it.
 TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryWhileStop) {
   EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kInquiryResult);
-  EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest1, &kRemoteNameRequestRsp,
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kRemoteNameRequest1,
+                        &kRemoteNameRequestRsp,
                         &kRemoteNameRequestComplete1);
 
   std::unique_ptr<BrEdrDiscoverySession> session1;
   size_t peers_found1 = 0u;
 
-  discovery_manager()->RequestDiscovery([&session1, &peers_found1](auto status, auto cb_session) {
-    EXPECT_EQ(fit::ok(), status);
-    cb_session->set_result_callback([&peers_found1](const auto&) { peers_found1++; });
-    session1 = std::move(cb_session);
-  });
+  discovery_manager()->RequestDiscovery(
+      [&session1, &peers_found1](auto status, auto cb_session) {
+        EXPECT_EQ(fit::ok(), status);
+        cb_session->set_result_callback(
+            [&peers_found1](const auto&) { peers_found1++; });
+        session1 = std::move(cb_session);
+      });
 
   EXPECT_FALSE(discovery_manager()->discovering());
 
@@ -573,11 +601,13 @@ TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryWhileStop) {
 
   std::unique_ptr<BrEdrDiscoverySession> session2;
   size_t peers_found2 = 0u;
-  discovery_manager()->RequestDiscovery([&session2, &peers_found2](auto status, auto cb_session) {
-    EXPECT_EQ(fit::ok(), status);
-    cb_session->set_result_callback([&peers_found2](const auto&) { peers_found2++; });
-    session2 = std::move(cb_session);
-  });
+  discovery_manager()->RequestDiscovery(
+      [&session2, &peers_found2](auto status, auto cb_session) {
+        EXPECT_EQ(fit::ok(), status);
+        cb_session->set_result_callback(
+            [&peers_found2](const auto&) { peers_found2++; });
+        session2 = std::move(cb_session);
+      });
 
   // The new session should be started at this point, and inquiry results
   // returned.
@@ -622,8 +652,11 @@ TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryWhileStop) {
 
 // Test: When Inquiry Fails to start, we report this back to the requester.
 TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryError) {
-  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRspError, &kInquiryResult);
-  EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest1, &kRemoteNameRequestRsp,
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), kInquiry, &kInquiryRspError, &kInquiryResult);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kRemoteNameRequest1,
+                        &kRemoteNameRequestRsp,
                         &kRemoteNameRequestComplete1);
 
   std::unique_ptr<BrEdrDiscoverySession> session;
@@ -631,7 +664,8 @@ TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryError) {
   discovery_manager()->RequestDiscovery([](auto status, auto cb_session) {
     EXPECT_TRUE(status.is_error());
     EXPECT_FALSE(cb_session);
-    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE), status);
+    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE),
+              status);
   });
 
   EXPECT_FALSE(discovery_manager()->discovering());
@@ -645,7 +679,9 @@ TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryError) {
 // sessions.
 TEST_F(BrEdrDiscoveryManagerTest, ContinuingDiscoveryError) {
   EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kInquiryResult);
-  EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest1, &kRemoteNameRequestRsp,
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kRemoteNameRequest1,
+                        &kRemoteNameRequestRsp,
                         &kRemoteNameRequestComplete1);
 
   std::unique_ptr<BrEdrDiscoverySession> session;
@@ -655,8 +691,10 @@ TEST_F(BrEdrDiscoveryManagerTest, ContinuingDiscoveryError) {
   discovery_manager()->RequestDiscovery(
       [&session, &peers_found, &error_callback](auto status, auto cb_session) {
         EXPECT_EQ(fit::ok(), status);
-        cb_session->set_result_callback([&peers_found](const auto&) { peers_found++; });
-        cb_session->set_error_callback([&error_callback]() { error_callback = true; });
+        cb_session->set_result_callback(
+            [&peers_found](const auto&) { peers_found++; });
+        cb_session->set_error_callback(
+            [&error_callback]() { error_callback = true; });
         session = std::move(cb_session);
       });
 
@@ -742,7 +780,8 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameShortenedSuccess) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalNameMaxLen, );
 
   // Set the status to be a dummy invalid status.
-  hci::Result<> result = ToResult(pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED);
+  hci::Result<> result =
+      ToResult(pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED);
   size_t callback_count = 0u;
   auto name_cb = [&result, &callback_count](const auto& status) {
     EXPECT_EQ(fit::ok(), status);
@@ -787,7 +826,8 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameSuccess) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalName, );
 
   // Set the status to be a dummy invalid status.
-  hci::Result<> result = ToResult(pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED);
+  hci::Result<> result =
+      ToResult(pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED);
   size_t callback_count = 0u;
   auto name_cb = [&result, &callback_count](const auto& status) {
     EXPECT_EQ(fit::ok(), status);
@@ -822,13 +862,14 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameSuccess) {
   EXPECT_EQ(1u, callback_count);
 }
 
-// Test: UpdateLocalName passes back error code through the callback and |local_name_|
-// does not get updated.
+// Test: UpdateLocalName passes back error code through the callback and
+// |local_name_| does not get updated.
 TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameError) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalName, );
 
   // Set the status to be a dummy invalid status.
-  hci::Result<> result = ToResult(pw::bluetooth::emboss::StatusCode::UNSUPPORTED_REMOTE_FEATURE);
+  hci::Result<> result =
+      ToResult(pw::bluetooth::emboss::StatusCode::UNSUPPORTED_REMOTE_FEATURE);
   size_t callback_count = 0u;
   auto name_cb = [&result, &callback_count](const auto& status) {
     EXPECT_TRUE(status.is_error());
@@ -851,18 +892,20 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameError) {
 
   // |local_name_| should not be updated, return status should be error.
   EXPECT_NE(kNewName, discovery_manager()->local_name());
-  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE), result);
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE),
+            result);
   EXPECT_EQ(1u, callback_count);
 }
 
 // Test: UpdateLocalName should succeed, but UpdateEIRResponseData should fail.
-// Consequently, the |local_name_| should not be updated, and the callback should
-// return the error.
+// Consequently, the |local_name_| should not be updated, and the callback
+// should return the error.
 TEST_F(BrEdrDiscoveryManagerTest, UpdateEIRResponseDataError) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalName, );
 
   // Set the status to be a dummy invalid status.
-  hci::Result<> result = ToResult(pw::bluetooth::emboss::StatusCode::UNSUPPORTED_REMOTE_FEATURE);
+  hci::Result<> result =
+      ToResult(pw::bluetooth::emboss::StatusCode::UNSUPPORTED_REMOTE_FEATURE);
   size_t callback_count = 0u;
   auto name_cb = [&result, &callback_count](const auto& status) {
     EXPECT_TRUE(status.is_error());
@@ -890,13 +933,15 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateEIRResponseDataError) {
   EXPECT_EQ(0u, callback_count);
 
   // kWriteExtendedInquiryResponse should fail.
-  test_device()->SendCommandChannelPacket(kWriteExtendedInquiryResponseRspError);
+  test_device()->SendCommandChannelPacket(
+      kWriteExtendedInquiryResponseRspError);
 
   RunUntilIdle();
 
   // |local_name_| should not be updated, return status should be error.
   EXPECT_NE(kNewName, discovery_manager()->local_name());
-  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE), result);
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE),
+            result);
   EXPECT_EQ(1u, callback_count);
 }
 
@@ -940,8 +985,10 @@ TEST_F(BrEdrDiscoveryManagerTest, DiscoverableSet) {
   EXPECT_EQ(3u, sessions.size());
   EXPECT_TRUE(discovery_manager()->discoverable());
 
-  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspInquiry);
-  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableNone, &kWriteScanEnableRsp);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), kReadScanEnable, &kReadScanEnableRspInquiry);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), kWriteScanEnableNone, &kWriteScanEnableRsp);
 
   sessions.clear();
 
@@ -954,8 +1001,10 @@ TEST_F(BrEdrDiscoveryManagerTest, DiscoverableSet) {
 // the discoverable enabled and reports success
 // Test: enable/disable while page scan is enabled works.
 TEST_F(BrEdrDiscoveryManagerTest, DiscoverableRequestWhileStopping) {
-  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspPage);
-  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableBoth, &kWriteScanEnableRsp);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), kReadScanEnable, &kReadScanEnableRspPage);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), kWriteScanEnableBoth, &kWriteScanEnableRsp);
 
   std::vector<std::unique_ptr<BrEdrDiscoverableSession>> sessions;
   auto session_cb = [&sessions](auto status, auto cb_session) {
@@ -992,7 +1041,8 @@ TEST_F(BrEdrDiscoveryManagerTest, DiscoverableRequestWhileStopping) {
   EXPECT_TRUE(discovery_manager()->discoverable());
 
   // If somehow the scan got turned off, we will still turn it back on.
-  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableBoth, &kWriteScanEnableRsp);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), kWriteScanEnableBoth, &kWriteScanEnableRsp);
   test_device()->SendCommandChannelPacket(kReadScanEnableRspPage);
 
   RunUntilIdle();
@@ -1000,8 +1050,10 @@ TEST_F(BrEdrDiscoveryManagerTest, DiscoverableRequestWhileStopping) {
   EXPECT_EQ(1u, sessions.size());
   EXPECT_TRUE(discovery_manager()->discoverable());
 
-  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspBoth);
-  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnablePage, &kWriteScanEnableRsp);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), kReadScanEnable, &kReadScanEnableRspBoth);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), kWriteScanEnablePage, &kWriteScanEnableRsp);
 
   sessions.clear();
 
@@ -1017,19 +1069,26 @@ TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiry) {
   NewDiscoveryManager(pw::bluetooth::emboss::InquiryMode::EXTENDED);
 
   EXPECT_CMD_PACKET_OUT(test_device(), kSetExtendedMode, &kSetExtendedModeRsp);
-  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kExtendedInquiryResult,
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kInquiry,
+                        &kInquiryRsp,
+                        &kExtendedInquiryResult,
                         &kRSSIInquiryResult);
-  EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest2, &kRemoteNameRequestRsp,
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kRemoteNameRequest2,
+                        &kRemoteNameRequestRsp,
                         &kRemoteNameRequestComplete2);
 
   std::unique_ptr<BrEdrDiscoverySession> session1;
   size_t peers_found1 = 0u;
 
-  discovery_manager()->RequestDiscovery([&session1, &peers_found1](auto status, auto cb_session) {
-    EXPECT_EQ(fit::ok(), status);
-    cb_session->set_result_callback([&peers_found1](const auto&) { peers_found1++; });
-    session1 = std::move(cb_session);
-  });
+  discovery_manager()->RequestDiscovery(
+      [&session1, &peers_found1](auto status, auto cb_session) {
+        EXPECT_EQ(fit::ok(), status);
+        cb_session->set_result_callback(
+            [&peers_found1](const auto&) { peers_found1++; });
+        session1 = std::move(cb_session);
+      });
 
   EXPECT_FALSE(discovery_manager()->discovering());
 
@@ -1057,8 +1116,8 @@ TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiry) {
   EXPECT_FALSE(discovery_manager()->discovering());
 }
 
-// Verify that receiving a inquiry response for a known LE non-connectable peer results in the
-// peer being changed to DualMode and connectable.
+// Verify that receiving a inquiry response for a known LE non-connectable peer
+// results in the peer being changed to DualMode and connectable.
 TEST_F(BrEdrDiscoveryManagerTest, InquiryResultUpgradesKnownLowEnergyPeer) {
   Peer* peer = peer_cache()->NewPeer(kLeAliasAddress1, /*connectable=*/false);
   ASSERT_TRUE(peer);
@@ -1066,13 +1125,16 @@ TEST_F(BrEdrDiscoveryManagerTest, InquiryResultUpgradesKnownLowEnergyPeer) {
   ASSERT_EQ(TechnologyType::kLowEnergy, peer->technology());
 
   EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kInquiryResult);
-  EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest1, &kRemoteNameRequestRsp,
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kRemoteNameRequest1,
+                        &kRemoteNameRequestRsp,
                         &kRemoteNameRequestComplete1);
 
   std::unique_ptr<BrEdrDiscoverySession> session;
   size_t peers_found = 0u;
 
-  discovery_manager()->RequestDiscovery([&session, &peers_found](auto status, auto cb_session) {
+  discovery_manager()->RequestDiscovery([&session, &peers_found](
+                                            auto status, auto cb_session) {
     EXPECT_EQ(fit::ok(), status);
     cb_session->set_result_callback([&peers_found](auto&) { peers_found++; });
     session = std::move(cb_session);
@@ -1090,9 +1152,11 @@ TEST_F(BrEdrDiscoveryManagerTest, InquiryResultUpgradesKnownLowEnergyPeer) {
   RunUntilIdle();
 }
 
-// Verify that receiving an extended inquiry response for a known LE non-connectable peer results in
-// the peer being changed to DualMode and connectable.
-TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiryResultUpgradesKnownLowEnergyPeer) {
+// Verify that receiving an extended inquiry response for a known LE
+// non-connectable peer results in the peer being changed to DualMode and
+// connectable.
+TEST_F(BrEdrDiscoveryManagerTest,
+       ExtendedInquiryResultUpgradesKnownLowEnergyPeer) {
   Peer* peer = peer_cache()->NewPeer(kLeAliasAddress3, /*connectable=*/false);
   ASSERT_TRUE(peer);
   ASSERT_FALSE(peer->connectable());
@@ -1101,12 +1165,14 @@ TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiryResultUpgradesKnownLowEnergyPee
   NewDiscoveryManager(pw::bluetooth::emboss::InquiryMode::EXTENDED);
 
   EXPECT_CMD_PACKET_OUT(test_device(), kSetExtendedMode, &kSetExtendedModeRsp);
-  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kExtendedInquiryResult);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), kInquiry, &kInquiryRsp, &kExtendedInquiryResult);
 
   std::unique_ptr<BrEdrDiscoverySession> session;
   size_t peers_found = 0u;
 
-  discovery_manager()->RequestDiscovery([&session, &peers_found](auto status, auto cb_session) {
+  discovery_manager()->RequestDiscovery([&session, &peers_found](
+                                            auto status, auto cb_session) {
     EXPECT_EQ(fit::ok(), status);
     cb_session->set_result_callback([&peers_found](auto&) { peers_found++; });
     session = std::move(cb_session);
@@ -1124,8 +1190,9 @@ TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiryResultUpgradesKnownLowEnergyPee
   RunUntilIdle();
 }
 
-// Verify that receiving an extended inquiry response with RSSI for a known LE non-connectable peer
-// results in the peer being changed to DualMode and connectable.
+// Verify that receiving an extended inquiry response with RSSI for a known LE
+// non-connectable peer results in the peer being changed to DualMode and
+// connectable.
 TEST_F(BrEdrDiscoveryManagerTest, RSSIInquiryResultUpgradesKnownLowEnergyPeer) {
   Peer* peer = peer_cache()->NewPeer(kLeAliasAddress2, /*connectable=*/false);
   ASSERT_TRUE(peer);
@@ -1135,14 +1202,18 @@ TEST_F(BrEdrDiscoveryManagerTest, RSSIInquiryResultUpgradesKnownLowEnergyPeer) {
   NewDiscoveryManager(pw::bluetooth::emboss::InquiryMode::EXTENDED);
 
   EXPECT_CMD_PACKET_OUT(test_device(), kSetExtendedMode, &kSetExtendedModeRsp);
-  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kRSSIInquiryResult);
-  EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest2, &kRemoteNameRequestRsp,
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), kInquiry, &kInquiryRsp, &kRSSIInquiryResult);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kRemoteNameRequest2,
+                        &kRemoteNameRequestRsp,
                         &kRemoteNameRequestComplete2);
 
   std::unique_ptr<BrEdrDiscoverySession> session;
   size_t peers_found = 0u;
 
-  discovery_manager()->RequestDiscovery([&session, &peers_found](auto status, auto cb_session) {
+  discovery_manager()->RequestDiscovery([&session, &peers_found](
+                                            auto status, auto cb_session) {
     EXPECT_EQ(fit::ok(), status);
     cb_session->set_result_callback([&peers_found](auto&) { peers_found++; });
     session = std::move(cb_session);
@@ -1163,9 +1234,11 @@ TEST_F(BrEdrDiscoveryManagerTest, RSSIInquiryResultUpgradesKnownLowEnergyPeer) {
 #ifndef NINSPECT
 TEST_F(BrEdrDiscoveryManagerTest, Inspect) {
   inspect::Inspector inspector;
-  discovery_manager()->AttachInspect(inspector.GetRoot(), "bredr_discovery_manager");
+  discovery_manager()->AttachInspect(inspector.GetRoot(),
+                                     "bredr_discovery_manager");
 
-  auto discoverable_session_active_matcher = Contains(UintIs("discoverable_sessions", 1));
+  auto discoverable_session_active_matcher =
+      Contains(UintIs("discoverable_sessions", 1));
 
   std::unique_ptr<BrEdrDiscoverableSession> discoverable_session;
   auto session_cb = [&discoverable_session](auto status, auto cb_session) {
@@ -1173,8 +1246,10 @@ TEST_F(BrEdrDiscoveryManagerTest, Inspect) {
     discoverable_session = std::move(cb_session);
   };
 
-  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspPage);
-  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableBoth, &kWriteScanEnableRsp);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), kReadScanEnable, &kReadScanEnableRspPage);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), kWriteScanEnableBoth, &kWriteScanEnableRsp);
   discovery_manager()->RequestDiscoverable(session_cb);
   RunUntilIdle();
   EXPECT_TRUE(discoverable_session);
@@ -1187,14 +1262,17 @@ TEST_F(BrEdrDiscoveryManagerTest, Inspect) {
                         ->take_properties();
   EXPECT_THAT(properties, discoverable_session_active_matcher);
 
-  auto discoverable_session_counted_matcher = ::testing::IsSupersetOf(
-      {UintIs("discoverable_sessions", 0), UintIs("discoverable_sessions_count", 1),
-       UintIs("last_discoverable_length_sec", 4)});
+  auto discoverable_session_counted_matcher =
+      ::testing::IsSupersetOf({UintIs("discoverable_sessions", 0),
+                               UintIs("discoverable_sessions_count", 1),
+                               UintIs("last_discoverable_length_sec", 4)});
 
   RunFor(std::chrono::seconds(4));
   discoverable_session = nullptr;
-  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspBoth);
-  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnablePage, &kWriteScanEnableRsp);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), kReadScanEnable, &kReadScanEnableRspBoth);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), kWriteScanEnablePage, &kWriteScanEnableRsp);
   RunUntilIdle();
 
   properties = inspect::ReadFromVmo(inspector.DuplicateVmo())
@@ -1205,14 +1283,16 @@ TEST_F(BrEdrDiscoveryManagerTest, Inspect) {
                    ->take_properties();
   EXPECT_THAT(properties, discoverable_session_counted_matcher);
 
-  auto discovery_session_active_matcher = Contains(UintIs("discovery_sessions", 1));
+  auto discovery_session_active_matcher =
+      Contains(UintIs("discovery_sessions", 1));
 
   std::unique_ptr<BrEdrDiscoverySession> discovery_session;
 
-  discovery_manager()->RequestDiscovery([&discovery_session](auto status, auto cb_session) {
-    EXPECT_EQ(fit::ok(), status);
-    discovery_session = std::move(cb_session);
-  });
+  discovery_manager()->RequestDiscovery(
+      [&discovery_session](auto status, auto cb_session) {
+        EXPECT_EQ(fit::ok(), status);
+        discovery_session = std::move(cb_session);
+      });
 
   EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp);
   RunUntilIdle();
@@ -1227,7 +1307,8 @@ TEST_F(BrEdrDiscoveryManagerTest, Inspect) {
   EXPECT_THAT(properties, discovery_session_active_matcher);
 
   auto discovery_session_counted_matcher =
-      ::testing::IsSupersetOf({UintIs("discovery_sessions", 0), UintIs("inquiry_sessions_count", 1),
+      ::testing::IsSupersetOf({UintIs("discovery_sessions", 0),
+                               UintIs("inquiry_sessions_count", 1),
                                UintIs("last_inquiry_length_sec", 7)});
 
   RunFor(std::chrono::seconds(7));

@@ -2,108 +2,113 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//build/fuzz.gni")
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_unit_test/test.gni")
 
+dir_public_gap = "../../public/pw_bluetooth_sapphire/internal/host/gap"
+
 pw_source_set("definitions") {
-  sources = [
-    "gap.cc",
-    "gap.h",
-  ]
-  deps = [ "//src/connectivity/bluetooth/core/bt-host/common" ]
+  public = [ "$dir_public_gap/gap.h" ]
+
+  sources = [ "gap.cc" ]
+  deps = [ "$dir_pw_bluetooth_sapphire/host/common" ]
 }
 
 pw_source_set("gap") {
+  public = [
+    "$dir_public_gap/adapter.h",
+    "$dir_public_gap/adapter_state.h",
+    "$dir_public_gap/android_vendor_capabilities.h",
+    "$dir_public_gap/bredr_connection.h",
+    "$dir_public_gap/bredr_connection_manager.h",
+    "$dir_public_gap/bredr_connection_request.h",
+    "$dir_public_gap/bredr_discovery_manager.h",
+    "$dir_public_gap/bredr_interrogator.h",
+    "$dir_public_gap/discovery_filter.h",
+    "$dir_public_gap/event_masks.h",
+    "$dir_public_gap/generic_access_client.h",
+    "$dir_public_gap/identity_resolving_list.h",
+    "$dir_public_gap/low_energy_address_manager.h",
+    "$dir_public_gap/low_energy_advertising_manager.h",
+    "$dir_public_gap/low_energy_connection.h",
+    "$dir_public_gap/low_energy_connection_handle.h",
+    "$dir_public_gap/low_energy_connection_manager.h",
+    "$dir_public_gap/low_energy_connection_request.h",
+    "$dir_public_gap/low_energy_connector.h",
+    "$dir_public_gap/low_energy_discovery_manager.h",
+    "$dir_public_gap/low_energy_interrogator.h",
+    "$dir_public_gap/low_energy_state.h",
+    "$dir_public_gap/pairing_delegate.h",
+    "$dir_public_gap/pairing_state.h",
+    "$dir_public_gap/peer.h",
+    "$dir_public_gap/peer_cache.h",
+    "$dir_public_gap/peer_metrics.h",
+    "$dir_public_gap/types.h",
+  ]
+
   sources = [
     "adapter.cc",
-    "adapter.h",
-    "adapter_state.h",
     "android_vendor_capabilities.cc",
-    "android_vendor_capabilities.h",
     "bredr_connection.cc",
-    "bredr_connection.h",
     "bredr_connection_manager.cc",
-    "bredr_connection_manager.h",
     "bredr_connection_request.cc",
-    "bredr_connection_request.h",
     "bredr_discovery_manager.cc",
-    "bredr_discovery_manager.h",
     "bredr_interrogator.cc",
-    "bredr_interrogator.h",
     "discovery_filter.cc",
-    "discovery_filter.h",
-    "event_masks.h",
     "generic_access_client.cc",
-    "generic_access_client.h",
     "identity_resolving_list.cc",
-    "identity_resolving_list.h",
     "low_energy_address_manager.cc",
-    "low_energy_address_manager.h",
     "low_energy_advertising_manager.cc",
-    "low_energy_advertising_manager.h",
     "low_energy_connection.cc",
-    "low_energy_connection.h",
     "low_energy_connection_handle.cc",
-    "low_energy_connection_handle.h",
     "low_energy_connection_manager.cc",
-    "low_energy_connection_manager.h",
     "low_energy_connection_request.cc",
-    "low_energy_connection_request.h",
     "low_energy_connector.cc",
-    "low_energy_connector.h",
     "low_energy_discovery_manager.cc",
-    "low_energy_discovery_manager.h",
     "low_energy_interrogator.cc",
-    "low_energy_interrogator.h",
-    "low_energy_state.h",
-    "pairing_delegate.h",
     "pairing_state.cc",
-    "pairing_state.h",
     "peer.cc",
-    "peer.h",
     "peer_cache.cc",
-    "peer_cache.h",
     "peer_metrics.cc",
-    "peer_metrics.h",
     "types.cc",
-    "types.h",
   ]
 
   public_deps = [
     ":definitions",
+    "$dir_pw_async:heap_dispatcher",
     "$dir_pw_bluetooth",
+    "$dir_pw_bluetooth_sapphire/host/common",
+    "$dir_pw_bluetooth_sapphire/host/gatt",
+    "$dir_pw_bluetooth_sapphire/host/hci",
+    "$dir_pw_bluetooth_sapphire/host/l2cap",
+    "$dir_pw_bluetooth_sapphire/host/sco",
+    "$dir_pw_bluetooth_sapphire/host/sdp",
+    "$dir_pw_bluetooth_sapphire/host/sm",
     "$dir_pw_third_party/fuchsia:fit",
-    "//src/connectivity/bluetooth/core/bt-host/common",
-    "//src/connectivity/bluetooth/core/bt-host/gatt",
-    "//src/connectivity/bluetooth/core/bt-host/hci",
-    "//src/connectivity/bluetooth/core/bt-host/l2cap",
-    "//src/connectivity/bluetooth/core/bt-host/sco",
-    "//src/connectivity/bluetooth/core/bt-host/sdp",
-    "//src/connectivity/bluetooth/core/bt-host/sm",
-    "//third_party/pigweed:pw_async_heap_dispatcher",
   ]
+
+  public_configs = [ "$dir_pw_bluetooth_sapphire:public_include_path" ]
 }
 
 pw_source_set("testing") {
-  testonly = true
-
+  public = [
+    "$dir_public_gap/fake_adapter.h",
+    "$dir_public_gap/fake_pairing_delegate.h",
+  ]
   sources = [
     "fake_adapter.cc",
-    "fake_adapter.h",
     "fake_pairing_delegate.cc",
-    "fake_pairing_delegate.h",
   ]
 
   public_deps = [
     ":gap",
+    "$dir_pw_bluetooth_sapphire/host/l2cap:testing",
     "$dir_pw_unit_test",
-    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
   ]
 }
 
-pw_test("tests") {
+pw_test("gap_tests") {
   sources = [
     "adapter_unittest.cc",
     "android_vendor_capabilities_unittest.cc",
@@ -128,33 +133,30 @@ pw_test("tests") {
   deps = [
     ":gap",
     ":testing",
-    "//src/connectivity/bluetooth/core/bt-host/common",
-    "//src/connectivity/bluetooth/core/bt-host/gatt:testing",
-    "//src/connectivity/bluetooth/core/bt-host/hci:testing",
-    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
-    "//src/connectivity/bluetooth/core/bt-host/sm:testing",
-    "//src/connectivity/bluetooth/core/bt-host/socket",
-    "//src/connectivity/bluetooth/core/bt-host/testing",
+    "$dir_pw_bluetooth_sapphire/host/common",
+    "$dir_pw_bluetooth_sapphire/host/gatt:testing",
+    "$dir_pw_bluetooth_sapphire/host/hci:testing",
+    "$dir_pw_bluetooth_sapphire/host/l2cap:testing",
+    "$dir_pw_bluetooth_sapphire/host/sm:testing",
+    "$dir_pw_bluetooth_sapphire/host/testing",
   ]
+
+  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
 }
 
-fuchsia_library_fuzzer("peer_cache_fuzzer") {
+pw_fuzzer("peer_cache_fuzzer") {
   sources = [ "peer_cache_fuzztest.cc" ]
   deps = [
     ":gap",
+    "$dir_pw_async:fake_dispatcher",
+    "$dir_pw_bluetooth_sapphire/host/testing:fuzzing",
     "$dir_pw_random:fuzzer_generator",
-    "//src/connectivity/bluetooth/core/bt-host/testing:fuzzing",
-    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
-    "//third_party/pigweed/backends/pw_async_fuchsia:fake_dispatcher",
   ]
 }
 
-pw_fuzzer("pw_peer_cache_fuzzer") {
-  sources = [ "peer_cache_fuzztest.cc" ]
-  deps = [
-    ":gap",
-    "$dir_pw_random:fuzzer_generator",
-    "//src/connectivity/bluetooth/core/bt-host/testing:fuzzing",
-    "//third_party/pigweed/backends/pw_async_fuchsia:fake_dispatcher",
+pw_test_group("tests") {
+  tests = [
+    ":gap_tests",
+    ":peer_cache_fuzzer_test",
   ]
 }

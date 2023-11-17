@@ -2,23 +2,25 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "remote_characteristic.h"
+#include "pw_bluetooth_sapphire/internal/host/gatt/remote_characteristic.h"
 
-#include "client.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/common/slab_allocator.h"
+#include "pw_bluetooth_sapphire/internal/host/gatt/client.h"
 
 namespace bt::gatt {
 
-RemoteCharacteristic::PendingNotifyRequest::PendingNotifyRequest(ValueCallback value_cb,
-                                                                 NotifyStatusCallback status_cb)
-    : value_callback(std::move(value_cb)), status_callback(std::move(status_cb)) {
+RemoteCharacteristic::PendingNotifyRequest::PendingNotifyRequest(
+    ValueCallback value_cb, NotifyStatusCallback status_cb)
+    : value_callback(std::move(value_cb)),
+      status_callback(std::move(status_cb)) {
   BT_DEBUG_ASSERT(value_callback);
   BT_DEBUG_ASSERT(status_callback);
 }
 
-RemoteCharacteristic::RemoteCharacteristic(Client::WeakPtr client, const CharacteristicData& info)
+RemoteCharacteristic::RemoteCharacteristic(Client::WeakPtr client,
+                                           const CharacteristicData& info)
     : info_(info),
       discovery_error_(false),
       ccc_handle_(att::kInvalidHandle),
@@ -32,13 +34,14 @@ RemoteCharacteristic::RemoteCharacteristic(Client::WeakPtr client, const Charact
 RemoteCharacteristic::~RemoteCharacteristic() {
   ResolvePendingNotifyRequests(ToResult(HostError::kFailed));
 
-  // Clear the CCC if we have enabled notifications and destructor was not called as a result of a
-  // Service Changed notification.
+  // Clear the CCC if we have enabled notifications and destructor was not
+  // called as a result of a Service Changed notification.
   if (!notify_handlers_.empty()) {
     notify_handlers_.clear();
-    // Don't disable notifications if the service changed as this characteristic may no longer
-    // exist, may have been changed, or may have moved. If the characteristic is still valid, the
-    // server may continue to send notifications, but they will be ignored until a new handler is
+    // Don't disable notifications if the service changed as this characteristic
+    // may no longer exist, may have been changed, or may have moved. If the
+    // characteristic is still valid, the server may continue to send
+    // notifications, but they will be ignored until a new handler is
     // registered.
     if (!service_changed_) {
       DisableNotificationsInternal();
@@ -46,12 +49,16 @@ RemoteCharacteristic::~RemoteCharacteristic() {
   }
 }
 
-void RemoteCharacteristic::UpdateDataWithExtendedProperties(ExtendedProperties ext_props) {
-  // |CharacteristicData| is an immutable snapshot into the data associated with this
-  // Characteristic. Update |info_| with the most recent snapshot - the only new member is the
-  // recently read |ext_props|.
-  info_ =
-      CharacteristicData(info_.properties, ext_props, info_.handle, info_.value_handle, info_.type);
+void RemoteCharacteristic::UpdateDataWithExtendedProperties(
+    ExtendedProperties ext_props) {
+  // |CharacteristicData| is an immutable snapshot into the data associated with
+  // this Characteristic. Update |info_| with the most recent snapshot - the
+  // only new member is the recently read |ext_props|.
+  info_ = CharacteristicData(info_.properties,
+                             ext_props,
+                             info_.handle,
+                             info_.value_handle,
+                             info_.type);
 }
 
 void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
@@ -78,20 +85,23 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
 
     if (desc.type == types::kClientCharacteristicConfig) {
       if (self->ccc_handle_ != att::kInvalidHandle) {
-        bt_log(DEBUG, "gatt", "characteristic has more than one CCC descriptor!");
+        bt_log(
+            DEBUG, "gatt", "characteristic has more than one CCC descriptor!");
         self->discovery_error_ = true;
         return;
       }
       self->ccc_handle_ = desc.handle;
     } else if (desc.type == types::kCharacteristicExtProperties) {
       if (self->ext_prop_handle_ != att::kInvalidHandle) {
-        bt_log(DEBUG, "gatt", "characteristic has more than one Extended Prop descriptor!");
+        bt_log(DEBUG,
+               "gatt",
+               "characteristic has more than one Extended Prop descriptor!");
         self->discovery_error_ = true;
         return;
       }
 
-      // If the characteristic properties has the ExtendedProperties bit set, then
-      // update the handle.
+      // If the characteristic properties has the ExtendedProperties bit set,
+      // then update the handle.
       if (self->properties() & Property::kExtendedProperties) {
         self->ext_prop_handle_ = desc.handle;
       } else {
@@ -99,12 +109,15 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
       }
     }
 
-    // As descriptors must be strictly increasing, this emplace should always succeed
-    auto [_unused, success] = self->descriptors_.try_emplace(DescriptorHandle(desc.handle), desc);
+    // As descriptors must be strictly increasing, this emplace should always
+    // succeed
+    auto [_unused, success] =
+        self->descriptors_.try_emplace(DescriptorHandle(desc.handle), desc);
     BT_DEBUG_ASSERT(success);
   };
 
-  auto status_cb = [self, cb = std::move(callback)](att::Result<> status) mutable {
+  auto status_cb = [self,
+                    cb = std::move(callback)](att::Result<> status) mutable {
     if (!self.is_alive()) {
       cb(ToResult(HostError::kFailed));
       return;
@@ -120,19 +133,21 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
       return;
     }
 
-    // If the characteristic contains the ExtendedProperties descriptor, perform a Read operation
-    // to get the extended properties before notifying the callback.
+    // If the characteristic contains the ExtendedProperties descriptor, perform
+    // a Read operation to get the extended properties before notifying the
+    // callback.
     if (self->ext_prop_handle_ != att::kInvalidHandle) {
-      auto read_cb = [self, cb = std::move(cb)](att::Result<> status, const ByteBuffer& data,
+      auto read_cb = [self, cb = std::move(cb)](att::Result<> status,
+                                                const ByteBuffer& data,
                                                 bool /*maybe_truncated*/) {
         if (status.is_error()) {
           cb(status);
           return;
         }
 
-        // The ExtendedProperties descriptor value is a |uint16_t| representing the
-        // ExtendedProperties bitfield. If the retrieved |data| is malformed, respond with an error
-        // and return early.
+        // The ExtendedProperties descriptor value is a |uint16_t| representing
+        // the ExtendedProperties bitfield. If the retrieved |data| is
+        // malformed, respond with an error and return early.
         if (data.size() != sizeof(uint16_t)) {
           cb(ToResult(HostError::kPacketMalformed));
           return;
@@ -151,12 +166,14 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
     cb(status);
   };
 
-  client_->DiscoverDescriptors(info().value_handle + 1, range_end, std::move(desc_cb),
+  client_->DiscoverDescriptors(info().value_handle + 1,
+                               range_end,
+                               std::move(desc_cb),
                                std::move(status_cb));
 }
 
-void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
-                                               NotifyStatusCallback status_callback) {
+void RemoteCharacteristic::EnableNotifications(
+    ValueCallback value_callback, NotifyStatusCallback status_callback) {
   BT_DEBUG_ASSERT(client_.is_alive());
   BT_DEBUG_ASSERT(value_callback);
   BT_DEBUG_ASSERT(status_callback);
@@ -177,18 +194,21 @@ void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
     return;
   }
 
-  pending_notify_reqs_.emplace(std::move(value_callback), std::move(status_callback));
+  pending_notify_reqs_.emplace(std::move(value_callback),
+                               std::move(status_callback));
 
   // If there are other pending requests to enable notifications then we'll wait
   // until the descriptor write completes.
   if (pending_notify_reqs_.size() > 1u)
     return;
 
-  // It is possible for some characteristics that support notifications or indications to not have a
-  // CCC descriptor. Such characteristics do not need to be directly configured to consider
-  // notifications to have been enabled.
+  // It is possible for some characteristics that support notifications or
+  // indications to not have a CCC descriptor. Such characteristics do not need
+  // to be directly configured to consider notifications to have been enabled.
   if (ccc_handle_ == att::kInvalidHandle) {
-    bt_log(TRACE, "gatt", "notications enabled without characteristic configuration");
+    bt_log(TRACE,
+           "gatt",
+           "notications enabled without characteristic configuration");
     ResolvePendingNotifyRequests(fit::ok());
     return;
   }
@@ -272,7 +292,8 @@ void RemoteCharacteristic::ResolvePendingNotifyRequests(att::Result<> status) {
 
     if (status.is_ok()) {
       id = next_notify_handler_id_++;
-      // Add handler to map before calling status callback in case callback removes the handler.
+      // Add handler to map before calling status callback in case callback
+      // removes the handler.
       notify_handlers_[id] = std::move(req.value_callback);
     }
 
@@ -280,7 +301,8 @@ void RemoteCharacteristic::ResolvePendingNotifyRequests(att::Result<> status) {
   }
 }
 
-void RemoteCharacteristic::HandleNotification(const ByteBuffer& value, bool maybe_truncated) {
+void RemoteCharacteristic::HandleNotification(const ByteBuffer& value,
+                                              bool maybe_truncated) {
   BT_DEBUG_ASSERT(client_.is_alive());
 
   notifying_handlers_ = true;

@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "fake_l2cap.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/fake_l2cap.h"
 
 #include <endian.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_dynamic_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/fake_dynamic_channel.h"
 
 namespace bt::testing {
 
@@ -19,29 +19,39 @@ FakeL2cap::FakeL2cap(SendFrameCallback send_frame_callback,
       unexpected_pdu_callback_(std::move(unexpected_pdu_callback)),
       largest_channel_id_(largest_channel_id) {}
 
-void FakeL2cap::RegisterHandler(l2cap::ChannelId cid, ChannelReceiveCallback callback) {
+void FakeL2cap::RegisterHandler(l2cap::ChannelId cid,
+                                ChannelReceiveCallback callback) {
   BT_ASSERT(cid < l2cap::kFirstDynamicChannelId);
   if (callbacks_.find(cid) != callbacks_.end()) {
-    bt_log(WARN, "fake-hci", "Overwriting previous handler for Channel ID %hu", cid);
+    bt_log(WARN,
+           "fake-hci",
+           "Overwriting previous handler for Channel ID %hu",
+           cid);
   }
   callbacks_.insert_or_assign(cid, std::move(callback));
 }
 
-void FakeL2cap::RegisterService(l2cap::Psm psm, FakeDynamicChannelCallback callback) {
+void FakeL2cap::RegisterService(l2cap::Psm psm,
+                                FakeDynamicChannelCallback callback) {
   if (callbacks_.find(psm) != callbacks_.end()) {
     bt_log(WARN, "fake-hci", "Overwriting previous handler for PSM %.4hu", psm);
   }
   registered_services_.insert_or_assign(psm, std::move(callback));
 }
 
-bool FakeL2cap::RegisterDynamicChannel(hci_spec::ConnectionHandle conn, l2cap::Psm psm,
-                                       l2cap::ChannelId local_cid, l2cap::ChannelId remote_cid) {
+bool FakeL2cap::RegisterDynamicChannel(hci_spec::ConnectionHandle conn,
+                                       l2cap::Psm psm,
+                                       l2cap::ChannelId local_cid,
+                                       l2cap::ChannelId remote_cid) {
   BT_ASSERT(local_cid >= l2cap::kFirstDynamicChannelId);
   auto channel_map = dynamic_channels_.find(conn);
   if (channel_map != dynamic_channels_.end()) {
     if (channel_map->second.find(local_cid) == channel_map->second.end()) {
-      bt_log(ERROR, "fake-hci", "Dynamic channel already exists at handle %hu and Channel ID %hu",
-             conn, local_cid);
+      bt_log(ERROR,
+             "fake-hci",
+             "Dynamic channel already exists at handle %hu and Channel ID %hu",
+             conn,
+             local_cid);
       return false;
     }
   }
@@ -50,11 +60,13 @@ bool FakeL2cap::RegisterDynamicChannel(hci_spec::ConnectionHandle conn, l2cap::P
     return false;
   }
   if (dynamic_channels_.find(conn) == dynamic_channels_.end()) {
-    std::unordered_map<l2cap::ChannelId, std::unique_ptr<FakeDynamicChannel>> new_conn_map;
+    std::unordered_map<l2cap::ChannelId, std::unique_ptr<FakeDynamicChannel>>
+        new_conn_map;
     dynamic_channels_.emplace(conn, std::move(new_conn_map));
   }
   dynamic_channels_.find(conn)->second.insert_or_assign(
-      local_cid, std::make_unique<FakeDynamicChannel>(conn, psm, local_cid, remote_cid));
+      local_cid,
+      std::make_unique<FakeDynamicChannel>(conn, psm, local_cid, remote_cid));
   return true;
 }
 
@@ -65,7 +77,10 @@ bool FakeL2cap::RegisterDynamicChannelWithPsm(hci_spec::ConnectionHandle conn,
     BT_ASSERT(channel->opened());
     auto psm_iter = registered_services_.find(channel->psm());
     if (psm_iter == registered_services_.end()) {
-      bt_log(ERROR, "fake-hci", "No service registered for psm %hu", channel->psm());
+      bt_log(ERROR,
+             "fake-hci",
+             "No service registered for psm %hu",
+             channel->psm());
       return false;
     }
     psm_iter->second(channel);
@@ -91,14 +106,17 @@ bool FakeL2cap::ServiceRegisteredForPsm(l2cap::Psm psm) {
   return true;
 }
 
-l2cap::ChannelId FakeL2cap::FindAvailableDynamicChannelId(hci_spec::ConnectionHandle conn) {
+l2cap::ChannelId FakeL2cap::FindAvailableDynamicChannelId(
+    hci_spec::ConnectionHandle conn) {
   auto channel_map = dynamic_channels_.find(conn);
   // If there are no dynamic channel connections on the ConnectHandle, assign
   // it the first ID
   if (channel_map == dynamic_channels_.end()) {
     return l2cap::kFirstDynamicChannelId;
   }
-  for (l2cap::ChannelId id = l2cap::kFirstDynamicChannelId; id < largest_channel_id_ + 1; id++) {
+  for (l2cap::ChannelId id = l2cap::kFirstDynamicChannelId;
+       id < largest_channel_id_ + 1;
+       id++) {
     if (channel_map->second.count(id) == 0) {
       return id;
     }
@@ -106,8 +124,8 @@ l2cap::ChannelId FakeL2cap::FindAvailableDynamicChannelId(hci_spec::ConnectionHa
   return l2cap::kInvalidChannelId;
 }
 
-FakeDynamicChannel::WeakPtr FakeL2cap::FindDynamicChannelByLocalId(hci_spec::ConnectionHandle conn,
-                                                                   l2cap::ChannelId local_cid) {
+FakeDynamicChannel::WeakPtr FakeL2cap::FindDynamicChannelByLocalId(
+    hci_spec::ConnectionHandle conn, l2cap::ChannelId local_cid) {
   auto channel_map = dynamic_channels_.find(conn);
   if (channel_map == dynamic_channels_.end()) {
     return FakeDynamicChannel::WeakPtr();
@@ -119,8 +137,8 @@ FakeDynamicChannel::WeakPtr FakeL2cap::FindDynamicChannelByLocalId(hci_spec::Con
   return channel->second->AsWeakPtr();
 }
 
-FakeDynamicChannel::WeakPtr FakeL2cap::FindDynamicChannelByRemoteId(hci_spec::ConnectionHandle conn,
-                                                                    l2cap::ChannelId remote_cid) {
+FakeDynamicChannel::WeakPtr FakeL2cap::FindDynamicChannelByRemoteId(
+    hci_spec::ConnectionHandle conn, l2cap::ChannelId remote_cid) {
   auto channel_map = dynamic_channels_.find(conn);
   if (channel_map == dynamic_channels_.end()) {
     return FakeDynamicChannel::WeakPtr();
@@ -149,7 +167,8 @@ void FakeL2cap::DeleteDynamicChannelByLocalId(hci_spec::ConnectionHandle conn,
   dynamic_channels_[conn].erase(local_cid);
 }
 
-void FakeL2cap::HandlePdu(hci_spec::ConnectionHandle conn, const ByteBuffer& pdu) {
+void FakeL2cap::HandlePdu(hci_spec::ConnectionHandle conn,
+                          const ByteBuffer& pdu) {
   if (pdu.size() < sizeof(l2cap::BasicHeader)) {
     bt_log(WARN, "fake-hci", "malformed L2CAP packet!");
     return;

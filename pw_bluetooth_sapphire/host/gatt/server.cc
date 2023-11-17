@@ -2,24 +2,25 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "server.h"
+#include "pw_bluetooth_sapphire/internal/host/gatt/server.h"
 
 #include <lib/fit/function.h>
 
-#include "gatt_defs.h"
-#include "src/connectivity/bluetooth/core/bt-host/att/att.h"
-#include "src/connectivity/bluetooth/core/bt-host/att/database.h"
-#include "src/connectivity/bluetooth/core/bt-host/att/permissions.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/trace.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
+#include "pw_bluetooth_sapphire/internal/host/att/att.h"
+#include "pw_bluetooth_sapphire/internal/host/att/database.h"
+#include "pw_bluetooth_sapphire/internal/host/att/permissions.h"
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/slab_allocator.h"
+#include "pw_bluetooth_sapphire/internal/host/common/trace.h"
+#include "pw_bluetooth_sapphire/internal/host/common/uuid.h"
+#include "pw_bluetooth_sapphire/internal/host/gatt/gatt_defs.h"
 
 namespace bt::gatt {
 
 class AttBasedServer final : public Server {
  public:
-  AttBasedServer(PeerId peer_id, LocalServiceManager::WeakPtr local_services,
+  AttBasedServer(PeerId peer_id,
+                 LocalServiceManager::WeakPtr local_services,
                  att::Bearer::WeakPtr bearer)
       : peer_id_(peer_id),
         local_services_(std::move(local_services)),
@@ -29,28 +30,38 @@ class AttBasedServer final : public Server {
     BT_DEBUG_ASSERT(att_.is_alive());
 
     exchange_mtu_id_ = att_->RegisterHandler(
-        att::kExchangeMTURequest, fit::bind_member<&AttBasedServer::OnExchangeMTU>(this));
+        att::kExchangeMTURequest,
+        fit::bind_member<&AttBasedServer::OnExchangeMTU>(this));
     find_information_id_ = att_->RegisterHandler(
-        att::kFindInformationRequest, fit::bind_member<&AttBasedServer::OnFindInformation>(this));
+        att::kFindInformationRequest,
+        fit::bind_member<&AttBasedServer::OnFindInformation>(this));
     read_by_group_type_id_ = att_->RegisterHandler(
-        att::kReadByGroupTypeRequest, fit::bind_member<&AttBasedServer::OnReadByGroupType>(this));
-    read_by_type_id_ = att_->RegisterHandler(att::kReadByTypeRequest,
-                                             fit::bind_member<&AttBasedServer::OnReadByType>(this));
-    read_req_id_ = att_->RegisterHandler(att::kReadRequest,
-                                         fit::bind_member<&AttBasedServer::OnReadRequest>(this));
-    write_req_id_ = att_->RegisterHandler(att::kWriteRequest,
-                                          fit::bind_member<&AttBasedServer::OnWriteRequest>(this));
-    write_cmd_id_ = att_->RegisterHandler(att::kWriteCommand,
-                                          fit::bind_member<&AttBasedServer::OnWriteCommand>(this));
+        att::kReadByGroupTypeRequest,
+        fit::bind_member<&AttBasedServer::OnReadByGroupType>(this));
+    read_by_type_id_ = att_->RegisterHandler(
+        att::kReadByTypeRequest,
+        fit::bind_member<&AttBasedServer::OnReadByType>(this));
+    read_req_id_ = att_->RegisterHandler(
+        att::kReadRequest,
+        fit::bind_member<&AttBasedServer::OnReadRequest>(this));
+    write_req_id_ = att_->RegisterHandler(
+        att::kWriteRequest,
+        fit::bind_member<&AttBasedServer::OnWriteRequest>(this));
+    write_cmd_id_ = att_->RegisterHandler(
+        att::kWriteCommand,
+        fit::bind_member<&AttBasedServer::OnWriteCommand>(this));
     read_blob_req_id_ = att_->RegisterHandler(
-        att::kReadBlobRequest, fit::bind_member<&AttBasedServer::OnReadBlobRequest>(this));
-    find_by_type_value_id_ =
-        att_->RegisterHandler(att::kFindByTypeValueRequest,
-                              fit::bind_member<&AttBasedServer::OnFindByTypeValueRequest>(this));
+        att::kReadBlobRequest,
+        fit::bind_member<&AttBasedServer::OnReadBlobRequest>(this));
+    find_by_type_value_id_ = att_->RegisterHandler(
+        att::kFindByTypeValueRequest,
+        fit::bind_member<&AttBasedServer::OnFindByTypeValueRequest>(this));
     prepare_write_id_ = att_->RegisterHandler(
-        att::kPrepareWriteRequest, fit::bind_member<&AttBasedServer::OnPrepareWriteRequest>(this));
+        att::kPrepareWriteRequest,
+        fit::bind_member<&AttBasedServer::OnPrepareWriteRequest>(this));
     exec_write_id_ = att_->RegisterHandler(
-        att::kExecuteWriteRequest, fit::bind_member<&AttBasedServer::OnExecuteWriteRequest>(this));
+        att::kExecuteWriteRequest,
+        fit::bind_member<&AttBasedServer::OnExecuteWriteRequest>(this));
   }
 
   ~AttBasedServer() override {
@@ -72,31 +83,43 @@ class AttBasedServer final : public Server {
   inline att::Database::WeakPtr db() { return local_services_->database(); }
 
   // Server overrides:
-  void SendUpdate(IdType service_id, IdType chrc_id, BufferView value,
+  void SendUpdate(IdType service_id,
+                  IdType chrc_id,
+                  BufferView value,
                   IndicationCallback indicate_cb) override {
-    auto buffer = NewBuffer(sizeof(att::Header) + sizeof(att::Handle) + value.size());
+    auto buffer =
+        NewBuffer(sizeof(att::Header) + sizeof(att::Handle) + value.size());
     BT_ASSERT(buffer);
 
     LocalServiceManager::ClientCharacteristicConfig config;
-    if (!local_services_->GetCharacteristicConfig(service_id, chrc_id, peer_id_, &config)) {
-      bt_log(TRACE, "gatt", "peer has not configured characteristic: %s", bt_str(peer_id_));
+    if (!local_services_->GetCharacteristicConfig(
+            service_id, chrc_id, peer_id_, &config)) {
+      bt_log(TRACE,
+             "gatt",
+             "peer has not configured characteristic: %s",
+             bt_str(peer_id_));
       if (indicate_cb) {
         indicate_cb(ToResult(HostError::kNotSupported));
       }
       return;
     }
 
-    // Make sure that the client has subscribed to the requested protocol method.
+    // Make sure that the client has subscribed to the requested protocol
+    // method.
     if ((indicate_cb && !config.indicate) || (!indicate_cb && !config.notify)) {
-      bt_log(TRACE, "gatt", "peer has not enabled (%s): %s",
-             (indicate_cb ? "indications" : "notifications"), bt_str(peer_id_));
+      bt_log(TRACE,
+             "gatt",
+             "peer has not enabled (%s): %s",
+             (indicate_cb ? "indications" : "notifications"),
+             bt_str(peer_id_));
       if (indicate_cb) {
         indicate_cb(ToResult(HostError::kNotSupported));
       }
       return;
     }
 
-    att::PacketWriter writer(indicate_cb ? att::kIndication : att::kNotification, buffer.get());
+    att::PacketWriter writer(
+        indicate_cb ? att::kIndication : att::kNotification, buffer.get());
     auto rsp_params = writer.mutable_payload<att::AttributeData>();
     rsp_params->handle = htole16(config.handle);
     writer.mutable_payload_data().Write(value, sizeof(att::AttributeData));
@@ -112,7 +135,11 @@ class AttBasedServer final : public Server {
         indicate_cb(fit::ok());
       } else {
         const auto& [error, handle] = result.error_value();
-        bt_log(WARN, "gatt", "indication failed (error %s, handle: %#.4x)", bt_str(error), handle);
+        bt_log(WARN,
+               "gatt",
+               "indication failed (error %s, handle: %#.4x)",
+               bt_str(error),
+               handle);
         indicate_cb(fit::error(error));
       }
     };
@@ -122,11 +149,13 @@ class AttBasedServer final : public Server {
   void ShutDown() override { att_->ShutDown(); }
 
   // ATT protocol request handlers:
-  void OnExchangeMTU(att::Bearer::TransactionId tid, const att::PacketReader& packet) {
+  void OnExchangeMTU(att::Bearer::TransactionId tid,
+                     const att::PacketReader& packet) {
     BT_DEBUG_ASSERT(packet.opcode() == att::kExchangeMTURequest);
 
     if (packet.payload_size() != sizeof(att::ExchangeMTURequestParams)) {
-      att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
+      att_->ReplyWithError(
+          tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
       return;
     }
 
@@ -134,7 +163,8 @@ class AttBasedServer final : public Server {
     uint16_t client_mtu = le16toh(params.client_rx_mtu);
     uint16_t server_mtu = att_->preferred_mtu();
 
-    auto buffer = NewBuffer(sizeof(att::Header) + sizeof(att::ExchangeMTUResponseParams));
+    auto buffer =
+        NewBuffer(sizeof(att::Header) + sizeof(att::ExchangeMTUResponseParams));
     BT_ASSERT(buffer);
 
     att::PacketWriter writer(att::kExchangeMTUResponse, buffer.get());
@@ -143,19 +173,21 @@ class AttBasedServer final : public Server {
 
     att_->Reply(tid, std::move(buffer));
 
-    // If the minimum value is less than the default MTU, then go with the default
-    // MTU (Vol 3, Part F, 3.4.2.2).
-    // TODO(armansito): This needs to use on kBREDRMinATTMTU for BR/EDR. Make the
-    // default MTU configurable.
+    // If the minimum value is less than the default MTU, then go with the
+    // default MTU (Vol 3, Part F, 3.4.2.2).
+    // TODO(armansito): This needs to use on kBREDRMinATTMTU for BR/EDR. Make
+    // the default MTU configurable.
     att_->set_mtu(std::max(att::kLEMinMTU, std::min(client_mtu, server_mtu)));
   }
 
-  void OnFindInformation(att::Bearer::TransactionId tid, const att::PacketReader& packet) {
+  void OnFindInformation(att::Bearer::TransactionId tid,
+                         const att::PacketReader& packet) {
     BT_DEBUG_ASSERT(packet.opcode() == att::kFindInformationRequest);
     TRACE_DURATION("bluetooth", "gatt::Server::OnFindInformation");
 
     if (packet.payload_size() != sizeof(att::FindInformationRequestParams)) {
-      att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
+      att_->ReplyWithError(
+          tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
       return;
     }
 
@@ -163,7 +195,8 @@ class AttBasedServer final : public Server {
     att::Handle start = le16toh(params.start_handle);
     att::Handle end = le16toh(params.end_handle);
 
-    constexpr size_t kRspStructSize = sizeof(att::FindInformationResponseParams);
+    constexpr size_t kRspStructSize =
+        sizeof(att::FindInformationResponseParams);
     constexpr size_t kHeaderSize = sizeof(att::Header) + kRspStructSize;
     BT_DEBUG_ASSERT(kHeaderSize <= att_->mtu());
 
@@ -187,7 +220,8 @@ class AttBasedServer final : public Server {
       if (results.empty()) {
         // |uuid_size| is determined by the first attribute.
         uuid_size = compact_size;
-        entry_size = std::min(uuid_size + sizeof(att::Handle), max_payload_size);
+        entry_size =
+            std::min(uuid_size + sizeof(att::Handle), max_payload_size);
       } else if (compact_size != uuid_size || entry_size > max_payload_size) {
         break;
       }
@@ -209,14 +243,18 @@ class AttBasedServer final : public Server {
     BT_ASSERT(buffer);
 
     att::PacketWriter writer(att::kFindInformationResponse, buffer.get());
-    auto rsp_params = writer.mutable_payload<att::FindInformationResponseParams>();
-    rsp_params->format = (entry_size == 4) ? att::UUIDType::k16Bit : att::UUIDType::k128Bit;
+    auto rsp_params =
+        writer.mutable_payload<att::FindInformationResponseParams>();
+    rsp_params->format =
+        (entry_size == 4) ? att::UUIDType::k16Bit : att::UUIDType::k128Bit;
 
     // |out_entries| initially references |params->information_data|. The loop
     // below modifies it as entries are written into the list.
-    auto out_entries = writer.mutable_payload_data().mutable_view(kRspStructSize);
+    auto out_entries =
+        writer.mutable_payload_data().mutable_view(kRspStructSize);
     for (const auto& attr : results) {
-      *reinterpret_cast<att::Handle*>(out_entries.mutable_data()) = htole16(attr->handle());
+      *reinterpret_cast<att::Handle*>(out_entries.mutable_data()) =
+          htole16(attr->handle());
       auto uuid_view = out_entries.mutable_view(sizeof(att::Handle));
       attr->type().ToBytes(&uuid_view, /*allow_32bit=*/false);
 
@@ -227,11 +265,13 @@ class AttBasedServer final : public Server {
     att_->Reply(tid, std::move(buffer));
   }
 
-  void OnFindByTypeValueRequest(att::Bearer::TransactionId tid, const att::PacketReader& packet) {
+  void OnFindByTypeValueRequest(att::Bearer::TransactionId tid,
+                                const att::PacketReader& packet) {
     BT_DEBUG_ASSERT(packet.opcode() == att::kFindByTypeValueRequest);
 
     if (packet.payload_size() < sizeof(att::FindByTypeValueRequestParams)) {
-      att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
+      att_->ReplyWithError(
+          tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
       return;
     }
 
@@ -241,16 +281,19 @@ class AttBasedServer final : public Server {
     UUID type(params.type);
     constexpr size_t kParamsSize = sizeof(att::FindByTypeValueRequestParams);
 
-    BufferView value = packet.payload_data().view(kParamsSize, packet.payload_size() - kParamsSize);
+    BufferView value = packet.payload_data().view(
+        kParamsSize, packet.payload_size() - kParamsSize);
 
     if (start == att::kInvalidHandle || start > end) {
-      att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kInvalidHandle);
+      att_->ReplyWithError(
+          tid, att::kInvalidHandle, att::ErrorCode::kInvalidHandle);
       return;
     }
 
     auto iter = db()->GetIterator(start, end, &type, /*groups_only=*/false);
     if (iter.AtEnd()) {
-      att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kAttributeNotFound);
+      att_->ReplyWithError(
+          tid, att::kInvalidHandle, att::ErrorCode::kAttributeNotFound);
       return;
     }
 
@@ -271,7 +314,8 @@ class AttBasedServer final : public Server {
 
     // No attributes match the value
     if (results.size() == 0) {
-      att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kAttributeNotFound);
+      att_->ReplyWithError(
+          tid, att::kInvalidHandle, att::ErrorCode::kAttributeNotFound);
       return;
     }
 
@@ -285,7 +329,8 @@ class AttBasedServer final : public Server {
     // Points to the next entry in the target PDU.
     auto next_entry = writer.mutable_payload_data();
     for (const auto& attr : results) {
-      auto* entry = reinterpret_cast<att::HandlesInformationList*>(next_entry.mutable_data());
+      auto* entry = reinterpret_cast<att::HandlesInformationList*>(
+          next_entry.mutable_data());
       entry->handle = htole16(attr->handle());
       if (attr->group().active()) {
         entry->group_end_handle = htole16(attr->group().end_handle());
@@ -298,7 +343,8 @@ class AttBasedServer final : public Server {
     att_->Reply(tid, std::move(buffer));
   }
 
-  void OnReadByGroupType(att::Bearer::TransactionId tid, const att::PacketReader& packet) {
+  void OnReadByGroupType(att::Bearer::TransactionId tid,
+                         const att::PacketReader& packet) {
     BT_DEBUG_ASSERT(packet.opcode() == att::kReadByGroupTypeRequest);
     TRACE_DURATION("bluetooth", "gatt::Server::OnReadByGroupType");
 
@@ -311,31 +357,41 @@ class AttBasedServer final : public Server {
       start = le16toh(params.start_handle);
       end = le16toh(params.end_handle);
       group_type = UUID(le16toh(params.type));
-    } else if (packet.payload_size() == sizeof(att::ReadByTypeRequestParams128)) {
+    } else if (packet.payload_size() ==
+               sizeof(att::ReadByTypeRequestParams128)) {
       const auto& params = packet.payload<att::ReadByTypeRequestParams128>();
       start = le16toh(params.start_handle);
       end = le16toh(params.end_handle);
       group_type = UUID(params.type);
     } else {
-      att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
+      att_->ReplyWithError(
+          tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
       return;
     }
 
-    if (group_type != types::kPrimaryService && group_type != types::kSecondaryService) {
+    if (group_type != types::kPrimaryService &&
+        group_type != types::kSecondaryService) {
       att_->ReplyWithError(tid, start, att::ErrorCode::kUnsupportedGroupType);
       return;
     }
 
-    constexpr size_t kRspStructSize = sizeof(att::ReadByGroupTypeResponseParams);
+    constexpr size_t kRspStructSize =
+        sizeof(att::ReadByGroupTypeResponseParams);
     constexpr size_t kHeaderSize = sizeof(att::Header) + kRspStructSize;
     BT_DEBUG_ASSERT(kHeaderSize <= att_->mtu());
 
     size_t value_size;
     std::list<const att::Attribute*> results;
     fit::result<att::ErrorCode> status =
-        ReadByTypeHelper(start, end, group_type, /*group_type=*/true, att_->mtu() - kHeaderSize,
-                         att::kMaxReadByGroupTypeValueLength, sizeof(att::AttributeGroupDataEntry),
-                         &value_size, &results);
+        ReadByTypeHelper(start,
+                         end,
+                         group_type,
+                         /*group_type=*/true,
+                         att_->mtu() - kHeaderSize,
+                         att::kMaxReadByGroupTypeValueLength,
+                         sizeof(att::AttributeGroupDataEntry),
+                         &value_size,
+                         &results);
     if (status.is_error()) {
       att_->ReplyWithError(tid, start, status.error_value());
       return;
@@ -357,9 +413,11 @@ class AttBasedServer final : public Server {
     params->length = static_cast<uint8_t>(entry_size);
 
     // Points to the next entry in the target PDU.
-    auto next_entry = writer.mutable_payload_data().mutable_view(kRspStructSize);
+    auto next_entry =
+        writer.mutable_payload_data().mutable_view(kRspStructSize);
     for (const auto& attr : results) {
-      auto* entry = reinterpret_cast<att::AttributeGroupDataEntry*>(next_entry.mutable_data());
+      auto* entry = reinterpret_cast<att::AttributeGroupDataEntry*>(
+          next_entry.mutable_data());
       entry->start_handle = htole16(attr->group().start_handle());
       entry->group_end_handle = htole16(attr->group().end_handle());
       next_entry.Write(attr->group().decl_value().view(0, value_size),
@@ -371,7 +429,8 @@ class AttBasedServer final : public Server {
     att_->Reply(tid, std::move(buffer));
   }
 
-  void OnReadByType(att::Bearer::TransactionId tid, const att::PacketReader& packet) {
+  void OnReadByType(att::Bearer::TransactionId tid,
+                    const att::PacketReader& packet) {
     BT_DEBUG_ASSERT(packet.opcode() == att::kReadByTypeRequest);
     TRACE_DURATION("bluetooth", "gatt::Server::OnReadByType");
 
@@ -384,13 +443,15 @@ class AttBasedServer final : public Server {
       start = le16toh(params.start_handle);
       end = le16toh(params.end_handle);
       type = UUID(le16toh(params.type));
-    } else if (packet.payload_size() == sizeof(att::ReadByTypeRequestParams128)) {
+    } else if (packet.payload_size() ==
+               sizeof(att::ReadByTypeRequestParams128)) {
       const auto& params = packet.payload<att::ReadByTypeRequestParams128>();
       start = le16toh(params.start_handle);
       end = le16toh(params.end_handle);
       type = UUID(params.type);
     } else {
-      att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
+      att_->ReplyWithError(
+          tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
       return;
     }
 
@@ -400,9 +461,16 @@ class AttBasedServer final : public Server {
 
     size_t value_size;
     std::list<const att::Attribute*> results;
-    fit::result<att::ErrorCode> status = ReadByTypeHelper(
-        start, end, type, /*group_type=*/false, att_->mtu() - kHeaderSize,
-        att::kMaxReadByTypeValueLength, sizeof(att::AttributeData), &value_size, &results);
+    fit::result<att::ErrorCode> status =
+        ReadByTypeHelper(start,
+                         end,
+                         type,
+                         /*group_type=*/false,
+                         att_->mtu() - kHeaderSize,
+                         att::kMaxReadByTypeValueLength,
+                         sizeof(att::AttributeData),
+                         &value_size,
+                         &results);
     if (status.is_error()) {
       att_->ReplyWithError(tid, start, status.error_value());
       return;
@@ -410,17 +478,20 @@ class AttBasedServer final : public Server {
 
     BT_DEBUG_ASSERT(!results.empty());
 
-    // If the value is dynamic, then delegate the read to any registered handler.
+    // If the value is dynamic, then delegate the read to any registered
+    // handler.
     if (!results.front()->value()) {
       BT_DEBUG_ASSERT(results.size() == 1u);
 
-      const size_t kMaxValueSize = std::min(att_->mtu() - kHeaderSize - sizeof(att::AttributeData),
-                                            static_cast<size_t>(att::kMaxReadByTypeValueLength));
+      const size_t kMaxValueSize =
+          std::min(att_->mtu() - kHeaderSize - sizeof(att::AttributeData),
+                   static_cast<size_t>(att::kMaxReadByTypeValueLength));
 
       att::Handle handle = results.front()->handle();
       auto self = weak_self_.GetWeakPtr();
-      auto result_cb = [self, tid, handle, kMaxValueSize](fit::result<att::ErrorCode> status,
-                                                          const auto& value) {
+      auto result_cb = [self, tid, handle, kMaxValueSize](
+                           fit::result<att::ErrorCode> status,
+                           const auto& value) {
         if (!self.is_alive())
           return;
 
@@ -438,8 +509,8 @@ class AttBasedServer final : public Server {
         auto params = writer.mutable_payload<att::ReadByTypeResponseParams>();
         params->length = static_cast<uint8_t>(entry_size);
         params->attribute_data_list->handle = htole16(handle);
-        writer.mutable_payload_data().Write(value.data(), value_size,
-                                            sizeof(params->length) + sizeof(handle));
+        writer.mutable_payload_data().Write(
+            value.data(), value_size, sizeof(params->length) + sizeof(handle));
 
         self->att_->Reply(tid, std::move(buffer));
       };
@@ -465,11 +536,14 @@ class AttBasedServer final : public Server {
     params->length = static_cast<uint8_t>(entry_size);
 
     // Points to the next entry in the target PDU.
-    auto next_entry = writer.mutable_payload_data().mutable_view(kRspStructSize);
+    auto next_entry =
+        writer.mutable_payload_data().mutable_view(kRspStructSize);
     for (const auto& attr : results) {
-      auto* entry = reinterpret_cast<att::AttributeData*>(next_entry.mutable_data());
+      auto* entry =
+          reinterpret_cast<att::AttributeData*>(next_entry.mutable_data());
       entry->handle = htole16(attr->handle());
-      next_entry.Write(attr->value()->view(0, value_size), sizeof(entry->handle));
+      next_entry.Write(attr->value()->view(0, value_size),
+                       sizeof(entry->handle));
 
       next_entry = next_entry.mutable_view(entry_size);
     }
@@ -477,11 +551,13 @@ class AttBasedServer final : public Server {
     att_->Reply(tid, std::move(buffer));
   }
 
-  void OnReadBlobRequest(att::Bearer::TransactionId tid, const att::PacketReader& packet) {
+  void OnReadBlobRequest(att::Bearer::TransactionId tid,
+                         const att::PacketReader& packet) {
     BT_DEBUG_ASSERT(packet.opcode() == att::kReadBlobRequest);
 
     if (packet.payload_size() != sizeof(att::ReadBlobRequestParams)) {
-      att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
+      att_->ReplyWithError(
+          tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
       return;
     }
 
@@ -505,7 +581,8 @@ class AttBasedServer final : public Server {
     constexpr size_t kHeaderSize = sizeof(att::Header);
 
     auto self = weak_self_.GetWeakPtr();
-    auto callback = [self, tid, handle](fit::result<att::ErrorCode> status, const auto& value) {
+    auto callback = [self, tid, handle](fit::result<att::ErrorCode> status,
+                                        const auto& value) {
       if (!self.is_alive())
         return;
 
@@ -514,7 +591,8 @@ class AttBasedServer final : public Server {
         return;
       }
 
-      size_t value_size = std::min(value.size(), self->att_->mtu() - kHeaderSize);
+      size_t value_size =
+          std::min(value.size(), self->att_->mtu() - kHeaderSize);
       auto buffer = NewBuffer(value_size + kHeaderSize);
       BT_ASSERT(buffer);
 
@@ -530,7 +608,8 @@ class AttBasedServer final : public Server {
         att_->ReplyWithError(tid, handle, att::ErrorCode::kInvalidOffset);
         return;
       }
-      size_t value_size = std::min(attr->value()->size(), self->att_->mtu() - kHeaderSize);
+      size_t value_size =
+          std::min(attr->value()->size(), self->att_->mtu() - kHeaderSize);
       callback(fit::ok(), attr->value()->view(offset, value_size));
       return;
     }
@@ -541,11 +620,13 @@ class AttBasedServer final : public Server {
     }
   }
 
-  void OnReadRequest(att::Bearer::TransactionId tid, const att::PacketReader& packet) {
+  void OnReadRequest(att::Bearer::TransactionId tid,
+                     const att::PacketReader& packet) {
     BT_DEBUG_ASSERT(packet.opcode() == att::kReadRequest);
 
     if (packet.payload_size() != sizeof(att::ReadRequestParams)) {
-      att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
+      att_->ReplyWithError(
+          tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
       return;
     }
 
@@ -568,7 +649,8 @@ class AttBasedServer final : public Server {
     constexpr size_t kHeaderSize = sizeof(att::Header);
 
     auto self = weak_self_.GetWeakPtr();
-    auto callback = [self, tid, handle](fit::result<att::ErrorCode> status, const auto& value) {
+    auto callback = [self, tid, handle](fit::result<att::ErrorCode> status,
+                                        const auto& value) {
       if (!self.is_alive())
         return;
 
@@ -577,7 +659,8 @@ class AttBasedServer final : public Server {
         return;
       }
 
-      size_t value_size = std::min(value.size(), self->att_->mtu() - kHeaderSize);
+      size_t value_size =
+          std::min(value.size(), self->att_->mtu() - kHeaderSize);
       auto buffer = NewBuffer(value_size + kHeaderSize);
       BT_ASSERT(buffer);
 
@@ -598,7 +681,8 @@ class AttBasedServer final : public Server {
     }
   }
 
-  void OnWriteCommand(att::Bearer::TransactionId tid, const att::PacketReader& packet) {
+  void OnWriteCommand(att::Bearer::TransactionId tid,
+                      const att::PacketReader& packet) {
     BT_DEBUG_ASSERT(packet.opcode() == att::kWriteCommand);
 
     if (packet.payload_size() < sizeof(att::WriteRequestParams)) {
@@ -635,11 +719,13 @@ class AttBasedServer final : public Server {
     attr->WriteAsync(peer_id_, 0, value_view, nullptr);
   }
 
-  void OnWriteRequest(att::Bearer::TransactionId tid, const att::PacketReader& packet) {
+  void OnWriteRequest(att::Bearer::TransactionId tid,
+                      const att::PacketReader& packet) {
     BT_DEBUG_ASSERT(packet.opcode() == att::kWriteRequest);
 
     if (packet.payload_size() < sizeof(att::WriteRequestParams)) {
-      att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
+      att_->ReplyWithError(
+          tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
       return;
     }
 
@@ -667,7 +753,8 @@ class AttBasedServer final : public Server {
 
     auto value_view = packet.payload_data().view(sizeof(params.handle));
     if (value_view.size() > att::kMaxAttributeValueLength) {
-      att_->ReplyWithError(tid, handle, att::ErrorCode::kInvalidAttributeValueLength);
+      att_->ReplyWithError(
+          tid, handle, att::ErrorCode::kInvalidAttributeValueLength);
       return;
     }
 
@@ -691,18 +778,21 @@ class AttBasedServer final : public Server {
     }
   }
 
-  void OnPrepareWriteRequest(att::Bearer::TransactionId tid, const att::PacketReader& packet) {
+  void OnPrepareWriteRequest(att::Bearer::TransactionId tid,
+                             const att::PacketReader& packet) {
     BT_DEBUG_ASSERT(packet.opcode() == att::kPrepareWriteRequest);
 
     if (packet.payload_size() < sizeof(att::PrepareWriteRequestParams)) {
-      att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
+      att_->ReplyWithError(
+          tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
       return;
     }
 
     const auto& params = packet.payload<att::PrepareWriteRequestParams>();
     att::Handle handle = le16toh(params.handle);
     uint16_t offset = le16toh(params.offset);
-    auto value_view = packet.payload_data().view(sizeof(params.handle) + sizeof(params.offset));
+    auto value_view = packet.payload_data().view(sizeof(params.handle) +
+                                                 sizeof(params.offset));
 
     if (prepare_queue_.size() >= att::kPrepareQueueMaxCapacity) {
       att_->ReplyWithError(tid, handle, att::ErrorCode::kPrepareQueueFull);
@@ -734,11 +824,13 @@ class AttBasedServer final : public Server {
     att_->Reply(tid, std::move(buffer));
   }
 
-  void OnExecuteWriteRequest(att::Bearer::TransactionId tid, const att::PacketReader& packet) {
+  void OnExecuteWriteRequest(att::Bearer::TransactionId tid,
+                             const att::PacketReader& packet) {
     BT_DEBUG_ASSERT(packet.opcode() == att::kExecuteWriteRequest);
 
     if (packet.payload_size() != sizeof(att::ExecuteWriteRequestParams)) {
-      att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
+      att_->ReplyWithError(
+          tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
       return;
     }
 
@@ -753,13 +845,15 @@ class AttBasedServer final : public Server {
     }
 
     if (params.flags != att::ExecuteWriteFlag::kWritePending) {
-      att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
+      att_->ReplyWithError(
+          tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
       return;
     }
 
     auto self = weak_self_.GetWeakPtr();
     auto result_cb = [self,
-                      tid](fit::result<std::tuple<att::Handle, att::ErrorCode>> result) mutable {
+                      tid](fit::result<std::tuple<att::Handle, att::ErrorCode>>
+                               result) mutable {
       if (!self.is_alive())
         return;
 
@@ -773,24 +867,32 @@ class AttBasedServer final : public Server {
       att::PacketWriter writer(att::kExecuteWriteResponse, rsp.get());
       self->att_->Reply(tid, std::move(rsp));
     };
-    db()->ExecuteWriteQueue(peer_id_, std::move(prepare_queue_), att_->security(),
+    db()->ExecuteWriteQueue(peer_id_,
+                            std::move(prepare_queue_),
+                            att_->security(),
                             std::move(result_cb));
   }
 
-  // Helper function to serve the Read By Type and Read By Group Type requests. This searches |db|
-  // for attributes with the given |type| and adds as many attributes as it can fit within the given
-  // |max_data_list_size|. The attribute value that should be included within each attribute data
-  // list entry is returned in |out_value_size|.
+  // Helper function to serve the Read By Type and Read By Group Type requests.
+  // This searches |db| for attributes with the given |type| and adds as many
+  // attributes as it can fit within the given |max_data_list_size|. The
+  // attribute value that should be included within each attribute data list
+  // entry is returned in |out_value_size|.
   //
-  // If the result is a dynamic attribute, |out_results| will contain at most one entry.
-  // |out_value_size| will point to an undefined value in that case.
+  // If the result is a dynamic attribute, |out_results| will contain at most
+  // one entry. |out_value_size| will point to an undefined value in that case.
   //
   // On error, returns an error code that can be used in a ATT Error Response.
-  fit::result<att::ErrorCode> ReadByTypeHelper(att::Handle start, att::Handle end, const UUID& type,
-                                               bool group_type, size_t max_data_list_size,
-                                               size_t max_value_size, size_t entry_prefix_size,
-                                               size_t* out_value_size,
-                                               std::list<const att::Attribute*>* out_results) {
+  fit::result<att::ErrorCode> ReadByTypeHelper(
+      att::Handle start,
+      att::Handle end,
+      const UUID& type,
+      bool group_type,
+      size_t max_data_list_size,
+      size_t max_value_size,
+      size_t entry_prefix_size,
+      size_t* out_value_size,
+      std::list<const att::Attribute*>* out_results) {
     BT_DEBUG_ASSERT(out_results);
     BT_DEBUG_ASSERT(out_value_size);
 
@@ -815,8 +917,8 @@ class AttBasedServer final : public Server {
       fit::result<att::ErrorCode> security_result =
           att::CheckReadPermissions(attr->read_reqs(), att_->security());
       if (security_result.is_error()) {
-        // Return error only if this is the first result that matched. We simply stop the search
-        // otherwise.
+        // Return error only if this is the first result that matched. We simply
+        // stop the search otherwise.
         if (results.empty()) {
           return security_result;
         }
@@ -834,7 +936,8 @@ class AttBasedServer final : public Server {
 
         value_size = attr->value()->size();  // untruncated value size
         entry_size =
-            std::min(std::min(value_size, max_value_size) + entry_prefix_size, max_data_list_size);
+            std::min(std::min(value_size, max_value_size) + entry_prefix_size,
+                     max_data_list_size);
 
         // Actual value size to include in a PDU.
         *out_value_size = entry_size - entry_prefix_size;
@@ -842,8 +945,9 @@ class AttBasedServer final : public Server {
       } else if (!attr->value() || attr->value()->size() != value_size ||
                  entry_size > max_data_list_size) {
         // Stop the search and exclude this attribute because either:
-        // a. we ran into a dynamic value in a result that contains static values,
-        // b. the matching attribute has a different value size than the first
+        // a. we ran into a dynamic value in a result that contains static
+        // values, b. the matching attribute has a different value size than the
+        // first
         //    attribute,
         // c. there is no remaining space in the response PDU.
         break;
@@ -889,8 +993,11 @@ class AttBasedServer final : public Server {
 };
 
 // static
-std::unique_ptr<Server> Server::Create(PeerId peer_id, LocalServiceManager::WeakPtr local_services,
-                                       att::Bearer::WeakPtr bearer) {
-  return std::make_unique<AttBasedServer>(peer_id, std::move(local_services), std::move(bearer));
+std::unique_ptr<Server> Server::Create(
+    PeerId peer_id,
+    LocalServiceManager::WeakPtr local_services,
+    att::Bearer::WeakPtr bearer) {
+  return std::make_unique<AttBasedServer>(
+      peer_id, std::move(local_services), std::move(bearer));
 }
 }  // namespace bt::gatt

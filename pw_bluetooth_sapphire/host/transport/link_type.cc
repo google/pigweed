@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "link_type.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/link_type.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 
 namespace bt {
 

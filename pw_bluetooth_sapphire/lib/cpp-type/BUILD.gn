@@ -1,0 +1,32 @@
+# Copyright 2020 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//build_overrides/pigweed.gni")
+import("$dir_pw_unit_test/test.gni")
+
+config("public_include_path") {
+  include_dirs = [ "public" ]
+}
+
+pw_source_set("cpp-type") {
+  sources = [
+    "public/cpp-type/member_pointer_traits.h",
+    "public/cpp-type/to_std_array.h",
+  ]
+
+  public_configs = [ ":public_include_path" ]
+}
+
+pw_test("type_test") {
+  sources = [
+    "member_pointer_traits_unittest.cc",
+    "to_std_array_unittest.cc",
+  ]
+
+  deps = [ ":cpp-type" ]
+}
+
+pw_test_group("tests") {
+  tests = [ ":type_test" ]
+}

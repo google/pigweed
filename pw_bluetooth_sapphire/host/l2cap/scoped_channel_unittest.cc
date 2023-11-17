@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "scoped_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/scoped_channel.h"
 
 #include <gtest/gtest.h>
 
-#include "fake_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel.h"
 
 namespace bt::l2cap::testing {
 namespace {

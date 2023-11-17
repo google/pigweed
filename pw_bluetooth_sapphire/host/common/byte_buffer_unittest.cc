@@ -2,15 +2,17 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-
-#include <cstddef>
-#include <type_traits>
+#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
+#include <cstddef>
+#include <type_traits>
+
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+
+#pragma clang diagnostic ignored "-Wc99-extensions"
 
 namespace bt {
 namespace {
@@ -20,14 +22,16 @@ TEST(ByteBufferTest, StaticByteBuffer) {
   StaticByteBuffer<kBufferSize> buffer;
 
   // The buffer is initialized to 0.
-  constexpr std::array<uint8_t, kBufferSize> kExpectedDefault{{0x00, 0x00, 0x00, 0x00, 0x00}};
+  constexpr std::array<uint8_t, kBufferSize> kExpectedDefault{
+      {0x00, 0x00, 0x00, 0x00, 0x00}};
   EXPECT_TRUE(ContainersEqual(kExpectedDefault, buffer));
 
   EXPECT_EQ(kBufferSize, buffer.size());
   buffer.SetToZeros();
   buffer[3] = 3;
 
-  constexpr std::array<uint8_t, kBufferSize> kExpected{{0x00, 0x00, 0x00, 0x03, 0x00}};
+  constexpr std::array<uint8_t, kBufferSize> kExpected{
+      {0x00, 0x00, 0x00, 0x03, 0x00}};
   EXPECT_TRUE(ContainersEqual(kExpected, buffer));
 
   // Moving will result in a copy.
@@ -35,7 +39,8 @@ TEST(ByteBufferTest, StaticByteBuffer) {
       std::move(buffer);                  // NOLINT(performance-move-const-arg)
   EXPECT_EQ(kBufferSize, buffer.size());  // NOLINT(bugprone-use-after-move)
   EXPECT_EQ(kBufferSize, buffer_copy.size());
-  EXPECT_TRUE(ContainersEqual(kExpected, buffer));  // NOLINT(bugprone-use-after-move)
+  EXPECT_TRUE(
+      ContainersEqual(kExpected, buffer));  // NOLINT(bugprone-use-after-move)
   EXPECT_TRUE(ContainersEqual(kExpected, buffer_copy));
 
   // Copying should also copy.
@@ -76,11 +81,13 @@ TEST(ByteBufferTest, DynamicByteBuffer) {
   EXPECT_EQ(kBufferSize, buffer.size());
 
   // The buffer is initialized to 0.
-  constexpr std::array<uint8_t, kBufferSize> kExpectedDefault{{0x00, 0x00, 0x00, 0x00, 0x00}};
+  constexpr std::array<uint8_t, kBufferSize> kExpectedDefault{
+      {0x00, 0x00, 0x00, 0x00, 0x00}};
   EXPECT_TRUE(ContainersEqual(kExpectedDefault, buffer));
 
   buffer[3] = 3;
-  constexpr std::array<uint8_t, kBufferSize> kExpected{{0x00, 0x00, 0x00, 0x03, 0x00}};
+  constexpr std::array<uint8_t, kBufferSize> kExpected{
+      {0x00, 0x00, 0x00, 0x03, 0x00}};
   EXPECT_TRUE(ContainersEqual(kExpected, buffer));
 
   // Moving will invalidate the source buffer.
@@ -206,7 +213,8 @@ TEST(ByteBufferDeathTest, Copy) {
   // Copy all of |buffer|. The first |buffer.size()| octets of |target_buffer|
   // should match the contents of |buffer|.
   buffer.Copy(&target_buffer);
-  EXPECT_TRUE(ContainersEqual(buffer, BufferView(target_buffer, buffer.size())));
+  EXPECT_TRUE(
+      ContainersEqual(buffer, BufferView(target_buffer, buffer.size())));
 
   // Copy one octet of |buffer| starting at index 2
   target_buffer.SetToZeros();
@@ -280,20 +288,25 @@ TEST(ByteBufferTest, Span) {
   EXPECT_EQ(0u, span.size());
 
   span = buffer.subspan();
-  EXPECT_THAT(span, ::testing::ElementsAreArray(
-                        {std::byte{'T'}, std::byte{'e'}, std::byte{'s'}, std::byte{'t'}}));
+  EXPECT_THAT(
+      span,
+      ::testing::ElementsAreArray(
+          {std::byte{'T'}, std::byte{'e'}, std::byte{'s'}, std::byte{'t'}}));
 
   span = buffer.subspan(4);
   EXPECT_EQ(0u, span.size());
 
   span = buffer.subspan(1);
-  EXPECT_THAT(span, ::testing::ElementsAreArray({std::byte{'e'}, std::byte{'s'}, std::byte{'t'}}));
+  EXPECT_THAT(span,
+              ::testing::ElementsAreArray(
+                  {std::byte{'e'}, std::byte{'s'}, std::byte{'t'}}));
 
   span = buffer.subspan(1, 1);
   EXPECT_THAT(span, ::testing::ElementsAreArray({std::byte{'e'}}));
 
   span = buffer.subspan(1, 2);
-  EXPECT_THAT(span, ::testing::ElementsAreArray({std::byte{'e'}, std::byte{'s'}}));
+  EXPECT_THAT(span,
+              ::testing::ElementsAreArray({std::byte{'e'}, std::byte{'s'}}));
 }
 
 TEST(ByteBufferTest, MutableView) {
@@ -343,8 +356,9 @@ TEST(ByteBufferTest, ByteBufferEqualitySuccess) {
 TEST(ByteBufferDeathTest, ByteBufferWithInsufficientBytesAssertsOnTo) {
   StaticByteBuffer buffer(0, 0, 0);
   ASSERT_GT(sizeof(float), buffer.size());
-  EXPECT_DEATH_IF_SUPPORTED([=] { [[maybe_unused]] auto _ = buffer.To<float>(); }(),
-                            "end exceeds source range");
+  EXPECT_DEATH_IF_SUPPORTED(
+      [=] { [[maybe_unused]] auto _ = buffer.To<float>(); }(),
+      "end exceeds source range");
 }
 
 template <typename T>
@@ -382,13 +396,31 @@ TEST(ByteBufferTest, ByteBufferToRoundtripOnPrimitives) {
   }
   {
     SCOPED_TRACE("float");
-    TestByteBufferRoundtrip<float>(
-        {0.0f, 1.0f, -1.0f, 10.0f, -10.0f, 1e10f, 1e20f, 1e-10f, 1e-20f, 2.71828f, 3.14159f});
+    TestByteBufferRoundtrip<float>({0.0f,
+                                    1.0f,
+                                    -1.0f,
+                                    10.0f,
+                                    -10.0f,
+                                    1e10f,
+                                    1e20f,
+                                    1e-10f,
+                                    1e-20f,
+                                    2.71828f,
+                                    3.14159f});
   }
   {
     SCOPED_TRACE("double");
     TestByteBufferRoundtrip<double>(
-        {0.0, 1.0, -1.0, 10.0, -10.0, 1e10, 1e100, 1e-10, 1e-100, 2.718281828459045,
+        {0.0,
+         1.0,
+         -1.0,
+         10.0,
+         -10.0,
+         1e10,
+         1e100,
+         1e-10,
+         1e-100,
+         2.718281828459045,
          3.141592653589793238462643383279502884197169399375105820974944});
   }
 }
@@ -424,16 +456,17 @@ TEST(ByteBufferTest, ByteBufferToDoesNotReadUnaligned) {
   const DynamicByteBuffer buf(2 * sizeof(float) - 1);
 
   // Advance past the float alignment boundary
-  const size_t offset =
-      std::distance(buf.begin(), std::find_if(buf.begin(), buf.end(), [](auto& b) {
-                      return reinterpret_cast<uintptr_t>(&b) % alignof(float) != 0;
-                    }));
+  const size_t offset = std::distance(
+      buf.begin(), std::find_if(buf.begin(), buf.end(), [](auto& b) {
+        return reinterpret_cast<uintptr_t>(&b) % alignof(float) != 0;
+      }));
   BufferView view = buf.view(offset, sizeof(float));
 
   // Prove that the data in the view isn't aligned for a float
   ASSERT_NE(0U, reinterpret_cast<uintptr_t>(view.data()) % alignof(float));
 
-  // This cref binds to a new object that ByteBuffer::To creates, so the alignment is correct
+  // This cref binds to a new object that ByteBuffer::To creates, so the
+  // alignment is correct
   const float& to_object = view.To<float>();
   EXPECT_EQ(0U, reinterpret_cast<uintptr_t>(&to_object) % alignof(float));
 }
@@ -463,8 +496,11 @@ TEST(ByteBufferTest, ByteBufferReadMember) {
   EXPECT_THAT(array, ::testing::ElementsAre(uint8_t{0x03}, uint8_t{0x37}));
 
   auto multi = data.ReadMember<&Point::multi>();
-  static_assert(std::is_same_v<std::array<std::array<char, 1>, 2>, decltype(multi)>);
-  EXPECT_THAT(multi, ::testing::ElementsAre(std::array{char{0x7f}}, std::array{char{0x02}}));
+  static_assert(
+      std::is_same_v<std::array<std::array<char, 1>, 2>, decltype(multi)>);
+  EXPECT_THAT(
+      multi,
+      ::testing::ElementsAre(std::array{char{0x7f}}, std::array{char{0x02}}));
 }
 
 TEST(ByteBufferDeathTest, ByteBufferReadMemberOfFixedArrayType) {
@@ -476,22 +512,32 @@ TEST(ByteBufferDeathTest, ByteBufferReadMemberOfFixedArrayType) {
 
   StaticByteBuffer data(
       // f
-      0, 0, 0, 0,
+      0,
+      0,
+      0,
+      0,
 
       // coordinates[3]
-      0x01, 0x02, 0x03,
+      0x01,
+      0x02,
+      0x03,
 
       // multi[2][1]
-      0x37, 0x45);
+      0x37,
+      0x45);
   ASSERT_LE(sizeof(Point), data.size());
-  EXPECT_DEATH_IF_SUPPORTED(data.ReadMember<&Point::coordinates>(3), "index past array bounds");
+  EXPECT_DEATH_IF_SUPPORTED(data.ReadMember<&Point::coordinates>(3),
+                            "index past array bounds");
 
   auto view = data.view(0, 6);
   ASSERT_GT(sizeof(Point), view.size());
-  EXPECT_DEATH_IF_SUPPORTED(view.ReadMember<&Point::coordinates>(0), "insufficient buffer");
+  EXPECT_DEATH_IF_SUPPORTED(view.ReadMember<&Point::coordinates>(0),
+                            "insufficient buffer");
 
-  EXPECT_EQ(data[offsetof(Point, coordinates)], data.ReadMember<&Point::coordinates>(0));
-  EXPECT_EQ(data[offsetof(Point, coordinates) + 1], data.ReadMember<&Point::coordinates>(1));
+  EXPECT_EQ(data[offsetof(Point, coordinates)],
+            data.ReadMember<&Point::coordinates>(0));
+  EXPECT_EQ(data[offsetof(Point, coordinates) + 1],
+            data.ReadMember<&Point::coordinates>(1));
 
   // Elements of a multi-dimensional C array are returned as std::arrays
   auto inner = data.ReadMember<&Point::multi>(1);
@@ -506,10 +552,13 @@ TEST(ByteBufferDeathTest, ByteBufferReadMemberOfStdArrayType) {
 
   StaticByteBuffer data(0, 0, 0, 0, 0x01, 0x02, 0x03, 0x37);
   ASSERT_LE(sizeof(Point), data.size());
-  EXPECT_DEATH_IF_SUPPORTED(data.ReadMember<&Point::coordinates>(3), "index past array bounds");
+  EXPECT_DEATH_IF_SUPPORTED(data.ReadMember<&Point::coordinates>(3),
+                            "index past array bounds");
 
-  EXPECT_EQ(data[offsetof(Point, coordinates)], data.ReadMember<&Point::coordinates>(0));
-  EXPECT_EQ(data[offsetof(Point, coordinates) + 1], data.ReadMember<&Point::coordinates>(1));
+  EXPECT_EQ(data[offsetof(Point, coordinates)],
+            data.ReadMember<&Point::coordinates>(0));
+  EXPECT_EQ(data[offsetof(Point, coordinates) + 1],
+            data.ReadMember<&Point::coordinates>(1));
 }
 
 TEST(ByteBufferDeathTest, ByteBufferReadMemberOfFlexibleArrayType) {
@@ -520,10 +569,13 @@ TEST(ByteBufferDeathTest, ByteBufferReadMemberOfFlexibleArrayType) {
 
   StaticByteBuffer data(0, 0, 0x01, 0x02);
   ASSERT_LE(sizeof(Point), data.size());
-  EXPECT_DEATH_IF_SUPPORTED(data.ReadMember<&Point::coordinates>(2), "end exceeds source range");
+  EXPECT_DEATH_IF_SUPPORTED(data.ReadMember<&Point::coordinates>(2),
+                            "end exceeds source range");
 
-  EXPECT_EQ(data[offsetof(Point, coordinates)], data.ReadMember<&Point::coordinates>(0));
-  EXPECT_EQ(data[offsetof(Point, coordinates) + 1], data.ReadMember<&Point::coordinates>(1));
+  EXPECT_EQ(data[offsetof(Point, coordinates)],
+            data.ReadMember<&Point::coordinates>(0));
+  EXPECT_EQ(data[offsetof(Point, coordinates) + 1],
+            data.ReadMember<&Point::coordinates>(1));
 }
 
 TEST(ByteBufferTest, ByteBufferReadMemberOfUnalignedArrayType) {
@@ -533,21 +585,26 @@ TEST(ByteBufferTest, ByteBufferReadMemberOfUnalignedArrayType) {
   } point;
 
   BufferView view(&point, sizeof(point));
-  static_assert(alignof(decltype(view.ReadMember<&Point::f>(0))) == alignof(float));
+  static_assert(alignof(decltype(view.ReadMember<&Point::f>(0))) ==
+                alignof(float));
 
-  // This branch (that the second field of |point| is unaligned) does get taken in manual testing
-  // but there's no way to guarantee it, so make it run-time conditional.
+  // This branch (that the second field of |point| is unaligned) does get taken
+  // in manual testing but there's no way to guarantee it, so make it run-time
+  // conditional.
   if (reinterpret_cast<uintptr_t>(&point.f) % alignof(float) != 0) {
-    // Casting (which is UB here) a pointer into the buffer contents yields a pointer that is not
-    // aligned to type requirements
-    const float* unaligned_pointer = reinterpret_cast<const Point*>(view.data())->f;
-    ASSERT_NE(0U, reinterpret_cast<uintptr_t>(unaligned_pointer) % alignof(float));
+    // Casting (which is UB here) a pointer into the buffer contents yields a
+    // pointer that is not aligned to type requirements
+    const float* unaligned_pointer =
+        reinterpret_cast<const Point*>(view.data())->f;
+    ASSERT_NE(0U,
+              reinterpret_cast<uintptr_t>(unaligned_pointer) % alignof(float));
   }
 
-  // The same cref binds to a temporary new object that ByteBuffer::ReadMember creates, so the
-  // alignment is correct.
+  // The same cref binds to a temporary new object that ByteBuffer::ReadMember
+  // creates, so the alignment is correct.
   const float& through_read_member = view.ReadMember<&Point::f>(0);
-  EXPECT_EQ(0U, reinterpret_cast<uintptr_t>(&through_read_member) % alignof(float));
+  EXPECT_EQ(0U,
+            reinterpret_cast<uintptr_t>(&through_read_member) % alignof(float));
 }
 
 TEST(ByteBufferTest, MutableByteBufferAsMutableFundamental) {
@@ -650,7 +707,8 @@ TEST(ByteBufferTest, PrintableAscii) {
 }
 
 TEST(ByteBufferTest, PrintableUtf8) {
-  StaticByteBuffer buffer(0xce, 0xba, 0xe1, 0xbd, 0xb9, 0xcf, 0x83, 0xce, 0xbc, 0xce, 0xB5);
+  StaticByteBuffer buffer(
+      0xce, 0xba, 0xe1, 0xbd, 0xb9, 0xcf, 0x83, 0xce, 0xbc, 0xce, 0xB5);
   std::string result = buffer.Printable(0, buffer.size());
   EXPECT_EQ("κόσμε", result);
 }

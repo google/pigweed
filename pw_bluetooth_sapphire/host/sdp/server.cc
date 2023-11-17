@@ -2,21 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "server.h"
-
-#include <lib/async/default.h>
+#include "pw_bluetooth_sapphire/internal/host/sdp/server.h"
 
 #include <cstdint>
 #include <cstdio>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
-#include "src/connectivity/bluetooth/core/bt-host/sdp/data_element.h"
-#include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"
-#include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/common/random.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/types.h"
+#include "pw_bluetooth_sapphire/internal/host/sdp/data_element.h"
+#include "pw_bluetooth_sapphire/internal/host/sdp/pdu.h"
+#include "pw_bluetooth_sapphire/internal/host/sdp/sdp.h"
 
 namespace bt::sdp {
 
@@ -28,9 +26,12 @@ constexpr const char* kInspectRegisteredPsmName = "registered_psms";
 constexpr const char* kInspectPsmName = "psm";
 constexpr const char* kInspectRecordName = "record";
 
-bool IsQueuedPsm(const std::vector<std::pair<l2cap::Psm, ServiceHandle>>* queued_psms,
-                 l2cap::Psm psm) {
-  auto is_queued = [target = psm](const auto& psm_pair) { return target == psm_pair.first; };
+bool IsQueuedPsm(
+    const std::vector<std::pair<l2cap::Psm, ServiceHandle>>* queued_psms,
+    l2cap::Psm psm) {
+  auto is_queued = [target = psm](const auto& psm_pair) {
+    return target == psm_pair.first;
+  };
   auto iter = std::find_if(queued_psms->begin(), queued_psms->end(), is_queued);
   return iter != queued_psms->end();
 }
@@ -76,7 +77,9 @@ bool UpdateProtocolWithPsm(DataElement& protocol_list, l2cap::Psm psm) {
   }
 
   protocol_list = DataElement(std::move(result));
-  bt_log(TRACE, "sdp", "Updated protocol list with dynamic PSM %s",
+  bt_log(TRACE,
+         "sdp",
+         "Updated protocol list with dynamic PSM %s",
          protocol_list.ToString().c_str());
   return true;
 }
@@ -84,7 +87,10 @@ bool UpdateProtocolWithPsm(DataElement& protocol_list, l2cap::Psm psm) {
 // Finds the PSM that is specified in a ProtocolDescriptorList
 // Returns l2cap::kInvalidPsm if none is found or the list is invalid
 l2cap::Psm FindProtocolListPsm(const DataElement& protocol_list) {
-  bt_log(TRACE, "sdp", "Trying to find PSM from %s", protocol_list.ToString().c_str());
+  bt_log(TRACE,
+         "sdp",
+         "Trying to find PSM from %s",
+         protocol_list.ToString().c_str());
   const auto* l2cap_protocol = protocol_list.At(0);
   BT_DEBUG_ASSERT(l2cap_protocol);
   const auto* prot_uuid = l2cap_protocol->At(0);
@@ -110,7 +116,8 @@ l2cap::Psm FindProtocolListPsm(const DataElement& protocol_list) {
     return l2cap::kInvalidPsm;
   }
   const auto* next_protocol_uuid = next_protocol->At(0);
-  if (!next_protocol_uuid || next_protocol_uuid->type() != DataElement::Type::kUuid) {
+  if (!next_protocol_uuid ||
+      next_protocol_uuid->type() != DataElement::Type::kUuid) {
     bt_log(TRACE, "sdp", "L2CAP has no PSM and additional protocol invalid");
     return l2cap::kInvalidPsm;
   }
@@ -180,7 +187,8 @@ ServiceRecord Server::MakeServiceDiscoveryService() {
   // Version 1.0
   std::vector<DataElement> version_attribute;
   version_attribute.emplace_back(kVersion);
-  sdp.SetAttribute(kSDP_VersionNumberList, DataElement(std::move(version_attribute)));
+  sdp.SetAttribute(kSDP_VersionNumberList,
+                   DataElement(std::move(version_attribute)));
 
   // ServiceDatabaseState attribute. Changes when a service gets added or
   // removed.
@@ -190,7 +198,10 @@ ServiceRecord Server::MakeServiceDiscoveryService() {
 }
 
 Server::Server(l2cap::ChannelManager* l2cap)
-    : l2cap_(l2cap), next_handle_(kFirstUnreservedHandle), db_state_(0), weak_ptr_factory_(this) {
+    : l2cap_(l2cap),
+      next_handle_(kFirstUnreservedHandle),
+      db_state_(0),
+      weak_ptr_factory_(this) {
   BT_ASSERT(l2cap_);
 
   records_.emplace(kSDPHandle, Server::MakeServiceDiscoveryService());
@@ -198,15 +209,19 @@ Server::Server(l2cap::ChannelManager* l2cap)
   // Register SDP
   l2cap::ChannelParameters sdp_chan_params;
   sdp_chan_params.mode = l2cap::RetransmissionAndFlowControlMode::kBasic;
-  l2cap_->RegisterService(l2cap::kSDP, sdp_chan_params,
-                          [self = weak_ptr_factory_.GetWeakPtr()](auto channel) {
-                            if (self.is_alive())
-                              self->AddConnection(channel);
-                          });
+  l2cap_->RegisterService(
+      l2cap::kSDP,
+      sdp_chan_params,
+      [self = weak_ptr_factory_.GetWeakPtr()](auto channel) {
+        if (self.is_alive())
+          self->AddConnection(channel);
+      });
 
   // SDP is used by SDP server.
-  psm_to_service_.emplace(l2cap::kSDP, std::unordered_set<ServiceHandle>({kSDPHandle}));
-  service_to_psms_.emplace(kSDPHandle, std::unordered_set<l2cap::Psm>({l2cap::kSDP}));
+  psm_to_service_.emplace(l2cap::kSDP,
+                          std::unordered_set<ServiceHandle>({kSDPHandle}));
+  service_to_psms_.emplace(kSDPHandle,
+                           std::unordered_set<l2cap::Psm>({l2cap::kSDP}));
 
   // Update the inspect properties after Server initialization.
   UpdateInspectProperties();
@@ -233,7 +248,8 @@ bool Server::AddConnection(l2cap::Channel::WeakPtr channel) {
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   bool activated = channel->Activate(
-      [self, chan_id, max_tx_sdu_size = channel->max_tx_sdu_size()](ByteBufferPtr sdu) {
+      [self, chan_id, max_tx_sdu_size = channel->max_tx_sdu_size()](
+          ByteBufferPtr sdu) {
         if (self.is_alive()) {
           auto packet = self->HandleRequest(std::move(sdu), max_tx_sdu_size);
           if (packet) {
@@ -254,7 +270,8 @@ bool Server::AddConnection(l2cap::Channel::WeakPtr channel) {
   return true;
 }
 
-bool Server::AddPsmToProtocol(ProtocolQueue* protocols_to_register, l2cap::Psm psm,
+bool Server::AddPsmToProtocol(ProtocolQueue* protocols_to_register,
+                              l2cap::Psm psm,
                               ServiceHandle handle) const {
   if (psm == l2cap::kInvalidPsm) {
     return false;
@@ -272,7 +289,8 @@ bool Server::AddPsmToProtocol(ProtocolQueue* protocols_to_register, l2cap::Psm p
 
 l2cap::Psm Server::GetDynamicPsm(const ProtocolQueue* queued_psms) const {
   // Generate a random PSM in the valid range of PSMs.
-  // RNG(Range(MIN, MAX)) = MIN + RNG(MAX-MIN) where MIN = kMinDynamicPSM = 0x1001. MAX = 0xffff.
+  // RNG(Range(MIN, MAX)) = MIN + RNG(MAX-MIN) where MIN = kMinDynamicPSM =
+  // 0x1001. MAX = 0xffff.
   uint16_t offset = 0;
   constexpr uint16_t MAX_MINUS_MIN = 0xeffe;
   random_generator()->GetInt(offset, MAX_MINUS_MIN);
@@ -284,8 +302,10 @@ l2cap::Psm Server::GetDynamicPsm(const ProtocolQueue* queued_psms) const {
   psm |= LOWER_OCTET_MASK;
   bt_log(DEBUG, "sdp", "Trying random dynamic PSM %#.4x", psm);
 
-  // Check if the PSM is valid (e.g. valid construction, not allocated, & not queued).
-  if ((IsValidPsm(psm)) && (!IsAllocated(psm)) && (!IsQueuedPsm(queued_psms, psm))) {
+  // Check if the PSM is valid (e.g. valid construction, not allocated, & not
+  // queued).
+  if ((IsValidPsm(psm)) && (!IsAllocated(psm)) &&
+      (!IsQueuedPsm(queued_psms, psm))) {
     bt_log(TRACE, "sdp", "Generated random dynamic PSM %#.4x", psm);
     return psm;
   }
@@ -299,8 +319,8 @@ l2cap::Psm Server::GetDynamicPsm(const ProtocolQueue* queued_psms) const {
       return next_psm;
     }
 
-    // If we reach the max valid PSM, wrap around to the minimum valid dynamic PSM. Only try this
-    // once.
+    // If we reach the max valid PSM, wrap around to the minimum valid dynamic
+    // PSM. Only try this once.
     if (next_psm == 0xFEFF) {
       next_psm = l2cap::kMinDynamicPsm;
       if (search_wrapped) {
@@ -313,10 +333,12 @@ l2cap::Psm Server::GetDynamicPsm(const ProtocolQueue* queued_psms) const {
   return l2cap::kInvalidPsm;
 }
 
-bool Server::QueueService(ServiceRecord* record, ProtocolQueue* protocols_to_register) {
+bool Server::QueueService(ServiceRecord* record,
+                          ProtocolQueue* protocols_to_register) {
   // ProtocolDescriptorList handling:
   if (record->HasAttribute(kProtocolDescriptorList)) {
-    const auto& primary_protocol = record->GetAttribute(kProtocolDescriptorList);
+    const auto& primary_protocol =
+        record->GetAttribute(kProtocolDescriptorList);
     auto psm = PsmFromProtocolList(&primary_protocol);
     if (psm == kDynamicPsm) {
       bt_log(TRACE, "sdp", "Primary protocol contains dynamic PSM");
@@ -325,7 +347,8 @@ bool Server::QueueService(ServiceRecord* record, ProtocolQueue* protocols_to_reg
       if (!UpdateProtocolWithPsm(primary_protocol_copy, psm)) {
         return false;
       }
-      record->SetAttribute(kProtocolDescriptorList, std::move(primary_protocol_copy));
+      record->SetAttribute(kProtocolDescriptorList,
+                           std::move(primary_protocol_copy));
     }
     if (!AddPsmToProtocol(protocols_to_register, psm, record->handle())) {
       return false;
@@ -335,19 +358,22 @@ bool Server::QueueService(ServiceRecord* record, ProtocolQueue* protocols_to_reg
   // AdditionalProtocolDescriptorList handling:
   if (record->HasAttribute(kAdditionalProtocolDescriptorList)) {
     // |additional_list| is a list of ProtocolDescriptorLists.
-    const auto& additional_list = record->GetAttribute(kAdditionalProtocolDescriptorList);
+    const auto& additional_list =
+        record->GetAttribute(kAdditionalProtocolDescriptorList);
     size_t attribute_id = 0;
     const auto* additional = additional_list.At(attribute_id);
 
-    // If `kAdditionalProtocolDescriptorList` exists, there should be at least one
-    // protocol provided.
+    // If `kAdditionalProtocolDescriptorList` exists, there should be at least
+    // one protocol provided.
     if (!additional) {
-      bt_log(TRACE, "sdp", "AdditionalProtocolDescriptorList provided but empty");
+      bt_log(
+          TRACE, "sdp", "AdditionalProtocolDescriptorList provided but empty");
       return false;
     }
 
-    // Add valid additional PSMs to the register queue. Because some additional protocols may need
-    // dynamic PSM assignment, modify the relevant protocols and rebuild the list.
+    // Add valid additional PSMs to the register queue. Because some additional
+    // protocols may need dynamic PSM assignment, modify the relevant protocols
+    // and rebuild the list.
     std::vector<DataElement> additional_protocols;
     while (additional) {
       auto psm = PsmFromProtocolList(additional);
@@ -371,14 +397,15 @@ bool Server::QueueService(ServiceRecord* record, ProtocolQueue* protocols_to_reg
                          DataElement(std::move(additional_protocols)));
   }
 
-  // For some services that depend on OBEX, the L2CAP PSM is specified in the GoepL2capPsm
-  // attribute.
+  // For some services that depend on OBEX, the L2CAP PSM is specified in the
+  // GoepL2capPsm attribute.
   bool has_obex = record->FindUUID(std::unordered_set<UUID>({protocol::kOBEX}));
   if (has_obex && record->HasAttribute(kGoepL2capPsm)) {
     const auto& attribute = record->GetAttribute(kGoepL2capPsm);
     if (attribute.Get<uint16_t>()) {
       auto psm = *attribute.Get<uint16_t>();
-      // If a dynamic PSM was requested, attempt to allocate the next available PSM.
+      // If a dynamic PSM was requested, attempt to allocate the next available
+      // PSM.
       if (psm == kDynamicPsm) {
         bt_log(TRACE, "sdp", "GoepL2capAttribute contains dynamic PSM");
         psm = GetDynamicPsm(protocols_to_register);
@@ -427,7 +454,8 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
 
     // Attempt to queue the |record| for registration.
     // Note: Since the validation & queueing operations for ALL the records
-    // occur before registration, multiple ServiceRecords can share the same PSM.
+    // occur before registration, multiple ServiceRecords can share the same
+    // PSM.
     //
     // If any |record| is not parsable, exit the registration process early.
     if (!QueueService(&record, &protocols_to_register)) {
@@ -445,7 +473,8 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
 
   // Multiple ServiceRecords in |records| can request the same PSM. However,
   // |l2cap_| expects a single target for each PSM to go to. Consequently,
-  // only the first occurrence of a PSM needs to be registered with the |l2cap_|.
+  // only the first occurrence of a PSM needs to be registered with the
+  // |l2cap_|.
   std::unordered_set<l2cap::Psm> psms_to_register;
 
   // All PSMs have assigned handles and will be registered.
@@ -460,8 +489,10 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
   for (const auto& psm : psms_to_register) {
     bt_log(TRACE, "sdp", "Allocating PSM %#.4x for new service", psm);
     l2cap_->RegisterService(
-        psm, chan_params,
-        [psm = psm, conn_cb = conn_cb.share()](l2cap::Channel::WeakPtr channel) mutable {
+        psm,
+        chan_params,
+        [psm = psm,
+         conn_cb = conn_cb.share()](l2cap::Channel::WeakPtr channel) mutable {
           bt_log(TRACE, "sdp", "Channel connected to %#.4x", psm);
           // Build the L2CAP descriptor
           std::vector<DataElement> protocol_l2cap;
@@ -479,15 +510,22 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
     BT_DEBUG_ASSERT(success);
     const ServiceRecord& placed_record = it->second;
     if (placed_record.IsProtocolOnly()) {
-      bt_log(TRACE, "sdp", "registered protocol-only service %#.8x, Protocol: %s",
-             placed_record.handle(), bt_str(placed_record.GetAttribute(kProtocolDescriptorList)));
+      bt_log(TRACE,
+             "sdp",
+             "registered protocol-only service %#.8x, Protocol: %s",
+             placed_record.handle(),
+             bt_str(placed_record.GetAttribute(kProtocolDescriptorList)));
     } else {
-      bt_log(TRACE, "sdp", "registered service %#.8x, classes: %s", placed_record.handle(),
+      bt_log(TRACE,
+             "sdp",
+             "registered service %#.8x, classes: %s",
+             placed_record.handle(),
              bt_str(placed_record.GetAttribute(kServiceClassIdList)));
     }
   }
 
-  // Store the RegistrationHandle that represents the set of services that were registered.
+  // Store the RegistrationHandle that represents the set of services that were
+  // registered.
   reg_to_service_[reg_handle] = std::move(assigned_handles);
 
   // Update the inspect properties.
@@ -548,7 +586,8 @@ ServiceHandle Server::GetNextHandle() {
   return next_handle_++;
 }
 
-ServiceSearchResponse Server::SearchServices(const std::unordered_set<UUID>& pattern) const {
+ServiceSearchResponse Server::SearchServices(
+    const std::unordered_set<UUID>& pattern) const {
   ServiceSearchResponse resp;
   std::vector<ServiceHandle> matched;
   for (const auto& it : records_) {
@@ -571,7 +610,10 @@ ServiceAttributeResponse Server::GetServiceAttributes(
       resp.set_attribute(attr, record.GetAttribute(attr).Clone());
     }
   }
-  bt_log(TRACE, "sdp", "ServiceAttribute %zu attributes", resp.attributes().size());
+  bt_log(TRACE,
+         "sdp",
+         "ServiceAttribute %zu attributes",
+         resp.attributes().size());
   return resp;
 }
 
@@ -594,13 +636,19 @@ ServiceSearchAttributeResponse Server::SearchAllServiceAttributes(
     }
   }
 
-  bt_log(TRACE, "sdp", "ServiceSearchAttribute %zu records", resp.num_attribute_lists());
+  bt_log(TRACE,
+         "sdp",
+         "ServiceSearchAttribute %zu records",
+         resp.num_attribute_lists());
   return resp;
 }
 
-void Server::OnChannelClosed(l2cap::Channel::UniqueId channel_id) { channels_.erase(channel_id); }
+void Server::OnChannelClosed(l2cap::Channel::UniqueId channel_id) {
+  channels_.erase(channel_id);
+}
 
-std::optional<ByteBufferPtr> Server::HandleRequest(ByteBufferPtr sdu, uint16_t max_tx_sdu_size) {
+std::optional<ByteBufferPtr> Server::HandleRequest(ByteBufferPtr sdu,
+                                                   uint16_t max_tx_sdu_size) {
   BT_DEBUG_ASSERT(sdu);
   TRACE_DURATION("bluetooth", "sdp::Server::HandleRequest");
   if (sdu->size() < sizeof(Header)) {
@@ -608,13 +656,18 @@ std::optional<ByteBufferPtr> Server::HandleRequest(ByteBufferPtr sdu, uint16_t m
     return std::nullopt;
   }
   PacketView<Header> packet(sdu.get());
-  TransactionId tid = betoh16(packet.header().tid);
-  uint16_t param_length = betoh16(packet.header().param_length);
-  auto error_response_builder = [tid, max_tx_sdu_size](ErrorCode code) -> ByteBufferPtr {
-    return ErrorResponse(code).GetPDU(0 /* ignored */, tid, max_tx_sdu_size, BufferView());
+  TransactionId tid = be16toh(static_cast<uint16_t>(packet.header().tid));
+  uint16_t param_length = be16toh(packet.header().param_length);
+  auto error_response_builder =
+      [tid, max_tx_sdu_size](ErrorCode code) -> ByteBufferPtr {
+    return ErrorResponse(code).GetPDU(
+        0 /* ignored */, tid, max_tx_sdu_size, BufferView());
   };
   if (param_length != (sdu->size() - sizeof(Header))) {
-    bt_log(TRACE, "sdp", "request isn't the correct size (%hu != %zu)", param_length,
+    bt_log(TRACE,
+           "sdp",
+           "request isn't the correct size (%hu != %zu)",
+           param_length,
            sdu->size() - sizeof(Header));
     return error_response_builder(ErrorCode::kInvalidSize);
   }
@@ -628,7 +681,9 @@ std::optional<ByteBufferPtr> Server::HandleRequest(ByteBufferPtr sdu, uint16_t m
       }
       auto resp = SearchServices(request.service_search_pattern());
 
-      auto bytes = resp.GetPDU(request.max_service_record_count(), tid, max_tx_sdu_size,
+      auto bytes = resp.GetPDU(request.max_service_record_count(),
+                               tid,
+                               max_tx_sdu_size,
                                request.ContinuationState());
       if (!bytes) {
         return error_response_builder(ErrorCode::kInvalidContinuationState);
@@ -644,11 +699,16 @@ std::optional<ByteBufferPtr> Server::HandleRequest(ByteBufferPtr sdu, uint16_t m
       auto handle = request.service_record_handle();
       auto record_it = records_.find(handle);
       if (record_it == records_.end() || record_it->second.IsProtocolOnly()) {
-        bt_log(TRACE, "sdp", "ServiceAttributeRequest can't find handle %#.8x", handle);
+        bt_log(TRACE,
+               "sdp",
+               "ServiceAttributeRequest can't find handle %#.8x",
+               handle);
         return error_response_builder(ErrorCode::kInvalidRecordHandle);
       }
       auto resp = GetServiceAttributes(handle, request.attribute_ranges());
-      auto bytes = resp.GetPDU(request.max_attribute_byte_count(), tid, max_tx_sdu_size,
+      auto bytes = resp.GetPDU(request.max_attribute_byte_count(),
+                               tid,
+                               max_tx_sdu_size,
                                request.ContinuationState());
       if (!bytes) {
         return error_response_builder(ErrorCode::kInvalidContinuationState);
@@ -661,9 +721,11 @@ std::optional<ByteBufferPtr> Server::HandleRequest(ByteBufferPtr sdu, uint16_t m
         bt_log(TRACE, "sdp", "ServiceSearchAttributeRequest not valid");
         return error_response_builder(ErrorCode::kInvalidRequestSyntax);
       }
-      auto resp =
-          SearchAllServiceAttributes(request.service_search_pattern(), request.attribute_ranges());
-      auto bytes = resp.GetPDU(request.max_attribute_byte_count(), tid, max_tx_sdu_size,
+      auto resp = SearchAllServiceAttributes(request.service_search_pattern(),
+                                             request.attribute_ranges());
+      auto bytes = resp.GetPDU(request.max_attribute_byte_count(),
+                               tid,
+                               max_tx_sdu_size,
                                request.ContinuationState());
       if (!bytes) {
         return error_response_builder(ErrorCode::kInvalidContinuationState);
@@ -708,12 +770,13 @@ void Server::UpdateInspectProperties() {
       psm_set = psms_it->second;
     }
 
-    InspectProperties::InspectServiceRecordProperties svc_rec_props(std::move(record_string),
-                                                                    std::move(psm_set));
+    InspectProperties::InspectServiceRecordProperties svc_rec_props(
+        std::move(record_string), std::move(psm_set));
     auto& parent = inspect_properties_.sdp_server_node;
     svc_rec_props.AttachInspect(parent, parent.UniqueName(kInspectRecordName));
 
-    inspect_properties_.svc_record_properties.push_back(std::move(svc_rec_props));
+    inspect_properties_.svc_record_properties.push_back(
+        std::move(svc_rec_props));
   }
 }
 
@@ -725,19 +788,22 @@ std::set<l2cap::Psm> Server::AllocatedPsmsForTest() const {
   return allocated;
 }
 
-Server::InspectProperties::InspectServiceRecordProperties::InspectServiceRecordProperties(
-    std::string record, std::unordered_set<l2cap::Psm> psms)
+Server::InspectProperties::InspectServiceRecordProperties::
+InspectServiceRecordProperties(std::string record,
+                               std::unordered_set<l2cap::Psm> psms)
     : record(std::move(record)), psms(std::move(psms)) {}
 
-void Server::InspectProperties::InspectServiceRecordProperties::AttachInspect(inspect::Node& parent,
-                                                                              std::string name) {
+void Server::InspectProperties::InspectServiceRecordProperties::AttachInspect(
+    inspect::Node& parent, std::string name) {
   node = parent.CreateChild(name);
   record_property = node.CreateString(kInspectRecordName, record);
   psms_node = node.CreateChild(kInspectRegisteredPsmName);
   psm_nodes.clear();
   for (const auto& psm : psms) {
-    auto psm_node = psms_node.CreateChild(psms_node.UniqueName(kInspectPsmName));
-    auto psm_string = psm_node.CreateString(kInspectPsmName, l2cap::PsmToString(psm));
+    auto psm_node =
+        psms_node.CreateChild(psms_node.UniqueName(kInspectPsmName));
+    auto psm_string =
+        psm_node.CreateString(kInspectPsmName, l2cap::PsmToString(psm));
     psm_nodes.emplace_back(std::move(psm_node), std::move(psm_string));
   }
 }

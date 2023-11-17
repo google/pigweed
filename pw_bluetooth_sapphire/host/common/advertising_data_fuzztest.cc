@@ -4,8 +4,8 @@
 
 #include <fuzzer/FuzzedDataProvider.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "pw_bluetooth_sapphire/internal/host/common/advertising_data.h"
+#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 
 namespace bt::common {
 
@@ -16,11 +16,14 @@ void fuzz(const uint8_t* data, size_t size) {
   auto write_buffer_size = fuzzed_data.ConsumeIntegralInRange(0, 2000);
   auto adv_data = fuzzed_data.ConsumeRemainingBytes<uint8_t>();
 
-  AdvertisingData::ParseResult result = AdvertisingData::FromBytes(BufferView(adv_data));
+  AdvertisingData::ParseResult result =
+      AdvertisingData::FromBytes(BufferView(adv_data));
 
   if (result.is_ok()) {
     DynamicByteBuffer write_buffer(write_buffer_size);
-    result->WriteBlock(&write_buffer, include_adv_flags ? std::optional(adv_flags) : std::nullopt);
+    result->WriteBlock(
+        &write_buffer,
+        include_adv_flags ? std::optional(adv_flags) : std::nullopt);
   }
 }
 

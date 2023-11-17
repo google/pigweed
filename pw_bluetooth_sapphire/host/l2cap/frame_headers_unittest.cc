@@ -2,37 +2,41 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "frame_headers.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/frame_headers.h"
 
 #include <gtest/gtest.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 
 namespace bt::l2cap::internal {
 namespace {
 
 TEST(FrameHeadersEnhancedControlFieldTest, IdentifiesInformationFrame) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2.
-  EXPECT_TRUE(
-      StaticByteBuffer(0b0000'0000, 0).To<EnhancedControlField>().designates_information_frame());
+  EXPECT_TRUE(StaticByteBuffer(0b0000'0000, 0)
+                  .To<EnhancedControlField>()
+                  .designates_information_frame());
 }
 
 TEST(FrameHeadersEnhancedControlFieldTest, IdentifiesNonInformationFrame) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2.
-  EXPECT_FALSE(
-      StaticByteBuffer(0b0000'0001, 0).To<EnhancedControlField>().designates_information_frame());
+  EXPECT_FALSE(StaticByteBuffer(0b0000'0001, 0)
+                   .To<EnhancedControlField>()
+                   .designates_information_frame());
 }
 
 TEST(FrameHeadersEnhancedControlFieldTest, IdentifiesSupervisoryFrame) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2.
-  EXPECT_TRUE(
-      StaticByteBuffer(0b00000001, 0).To<EnhancedControlField>().designates_supervisory_frame());
+  EXPECT_TRUE(StaticByteBuffer(0b00000001, 0)
+                  .To<EnhancedControlField>()
+                  .designates_supervisory_frame());
 }
 
 TEST(FrameHeadersEnhancedControlFieldTest, IdentifiesNonSupervisoryFrame) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2.
-  EXPECT_FALSE(
-      StaticByteBuffer(0b00000000, 1).To<EnhancedControlField>().designates_supervisory_frame());
+  EXPECT_FALSE(StaticByteBuffer(0b00000000, 1)
+                   .To<EnhancedControlField>()
+                   .designates_supervisory_frame());
 }
 
 TEST(FrameHeadersEnhancedControlFieldTest, IdentifiesStartOfSegmentedSdu) {
@@ -91,7 +95,10 @@ TEST(FrameHeadersEnhancedControlFieldTest, ReadsRequestSequenceNumber) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2, and Core Spec v5, Vol 3, Part
   // A, Sec 8.3.
   for (uint8_t seq_num = 0; seq_num < 64; ++seq_num) {
-    EXPECT_EQ(seq_num, StaticByteBuffer(0, seq_num).To<EnhancedControlField>().receive_seq_num());
+    EXPECT_EQ(seq_num,
+              StaticByteBuffer(0, seq_num)
+                  .To<EnhancedControlField>()
+                  .receive_seq_num());
   }
 }
 
@@ -100,7 +107,8 @@ TEST(FrameHeadersEnhancedControlFieldTest, IsConstructedProperly) {
   EXPECT_EQ(StaticByteBuffer(0, 0), BufferView(&ecf, sizeof(ecf)));
 }
 
-TEST(FrameHeadersEnhancedControlFieldTest, SetSupervisoryFrameSetsBitCorrectly) {
+TEST(FrameHeadersEnhancedControlFieldTest,
+     SetSupervisoryFrameSetsBitCorrectly) {
   EnhancedControlField ecf;
   ecf.set_supervisory_frame();
   // See Core Spec, v5, Vol 3, Part A, Table 3.2.
@@ -116,7 +124,8 @@ TEST(FrameHeadersEnhancedControlFieldTest, SetRequestSeqNumSetsBitsCorrectly) {
   }
 }
 
-TEST(FrameHeadersEnhancedControlFieldTest, SetSegmentationStatusWorksCorrectlyOnFreshFrame) {
+TEST(FrameHeadersEnhancedControlFieldTest,
+     SetSegmentationStatusWorksCorrectlyOnFreshFrame) {
   // See Core Spec, v5, Vol 3, Part A, Tables 3.2 and 3.4.
 
   {
@@ -144,7 +153,8 @@ TEST(FrameHeadersEnhancedControlFieldTest, SetSegmentationStatusWorksCorrectlyOn
   }
 }
 
-TEST(FrameHeadersEnhancedControlFieldTest, SetSegmentationStatusWorksCorrectlyOnRecycledFrame) {
+TEST(FrameHeadersEnhancedControlFieldTest,
+     SetSegmentationStatusWorksCorrectlyOnRecycledFrame) {
   // See Core Spec, v5, Vol 3, Part A, Tables 3.2 and 3.4.
 
   {
@@ -176,7 +186,8 @@ TEST(FrameHeadersEnhancedControlFieldTest, SetSegmentationStatusWorksCorrectlyOn
   }
 }
 
-TEST(FrameHeadersEnhancedControlFieldTest, SetSegmentationStatusPreservesRequestSeqNum) {
+TEST(FrameHeadersEnhancedControlFieldTest,
+     SetSegmentationStatusPreservesRequestSeqNum) {
   EnhancedControlField ecf;
   ecf.set_receive_seq_num(EnhancedControlField::kMaxSeqNum);
   ecf.set_segmentation_status(SegmentationStatus::Unsegmented);
@@ -188,7 +199,9 @@ TEST(FrameHeadersSimpleInformationFrameHeaderTest, ReadsTxSequenceNumber) {
   // A, Sec 8.3.
   for (uint8_t seq_num = 0; seq_num < 64; ++seq_num) {
     EXPECT_EQ(seq_num,
-              StaticByteBuffer(seq_num << 1, 0).To<SimpleInformationFrameHeader>().tx_seq());
+              StaticByteBuffer(seq_num << 1, 0)
+                  .To<SimpleInformationFrameHeader>()
+                  .tx_seq());
   }
 }
 
@@ -199,7 +212,8 @@ TEST(FrameHeadersSimpleInformationFrameHeaderTest, IsConstructedProperly) {
   EXPECT_EQ(StaticByteBuffer(0b111'1110, 0), BufferView(&frame, sizeof(frame)));
 }
 
-TEST(FrameHeadersSimpleInformationFrameHeaderTest, SetSegmentationStatusPreservesTxSeq) {
+TEST(FrameHeadersSimpleInformationFrameHeaderTest,
+     SetSegmentationStatusPreservesTxSeq) {
   constexpr uint8_t kTxSeq = 63;
   SimpleInformationFrameHeader frame(kTxSeq);
   frame.set_segmentation_status(SegmentationStatus::Unsegmented);
@@ -210,7 +224,8 @@ TEST(FrameHeadersSimpleStartOfSduFrameHeaderTest, IsConstructedProperly) {
   constexpr uint8_t kTxSeq = 63;
   SimpleStartOfSduFrameHeader frame(kTxSeq);
   // See Core Spec, v5, Vol 3, Part A, Table 3.2, and Figure 3.3.
-  EXPECT_EQ(StaticByteBuffer(0b111'1110, 0b0100'0000, 0, 0), BufferView(&frame, sizeof(frame)));
+  EXPECT_EQ(StaticByteBuffer(0b111'1110, 0b0100'0000, 0, 0),
+            BufferView(&frame, sizeof(frame)));
 }
 
 TEST(FrameHeadersSimpleSupervisoryFrameTest, IsConstructedProperly) {
@@ -239,26 +254,38 @@ TEST(FrameHeadersSimpleSupervisoryFrameTest, IsConstructedProperly) {
 
 TEST(FrameHeadersSimpleSupervisoryFrameTest, IdentifiesPollRequest) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2.
-  EXPECT_FALSE(StaticByteBuffer(0b0'0001, 0).To<SimpleSupervisoryFrame>().is_poll_request());
-  EXPECT_TRUE(StaticByteBuffer(0b1'0001, 0).To<SimpleSupervisoryFrame>().is_poll_request());
+  EXPECT_FALSE(StaticByteBuffer(0b0'0001, 0)
+                   .To<SimpleSupervisoryFrame>()
+                   .is_poll_request());
+  EXPECT_TRUE(StaticByteBuffer(0b1'0001, 0)
+                  .To<SimpleSupervisoryFrame>()
+                  .is_poll_request());
 }
 
 TEST(FrameHeadersSimpleSupervisoryFrameTest, IdentifiesPollResponse) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2.
-  EXPECT_FALSE(StaticByteBuffer(0b0000'0001, 0).To<SimpleSupervisoryFrame>().is_poll_response());
-  EXPECT_TRUE(StaticByteBuffer(0b1000'0001, 0).To<SimpleSupervisoryFrame>().is_poll_response());
+  EXPECT_FALSE(StaticByteBuffer(0b0000'0001, 0)
+                   .To<SimpleSupervisoryFrame>()
+                   .is_poll_response());
+  EXPECT_TRUE(StaticByteBuffer(0b1000'0001, 0)
+                  .To<SimpleSupervisoryFrame>()
+                  .is_poll_response());
 }
 
 TEST(FrameHeadersSimpleSupervisoryFrameTest, FunctionReadsSupervisoryFunction) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 and Table 3.5.
-  EXPECT_EQ(SupervisoryFunction::ReceiverReady,
-            StaticByteBuffer(0b0001, 0).To<SimpleSupervisoryFrame>().function());
-  EXPECT_EQ(SupervisoryFunction::Reject,
-            StaticByteBuffer(0b0101, 0).To<SimpleSupervisoryFrame>().function());
-  EXPECT_EQ(SupervisoryFunction::ReceiverNotReady,
-            StaticByteBuffer(0b1001, 0).To<SimpleSupervisoryFrame>().function());
-  EXPECT_EQ(SupervisoryFunction::SelectiveReject,
-            StaticByteBuffer(0b1101, 0).To<SimpleSupervisoryFrame>().function());
+  EXPECT_EQ(
+      SupervisoryFunction::ReceiverReady,
+      StaticByteBuffer(0b0001, 0).To<SimpleSupervisoryFrame>().function());
+  EXPECT_EQ(
+      SupervisoryFunction::Reject,
+      StaticByteBuffer(0b0101, 0).To<SimpleSupervisoryFrame>().function());
+  EXPECT_EQ(
+      SupervisoryFunction::ReceiverNotReady,
+      StaticByteBuffer(0b1001, 0).To<SimpleSupervisoryFrame>().function());
+  EXPECT_EQ(
+      SupervisoryFunction::SelectiveReject,
+      StaticByteBuffer(0b1101, 0).To<SimpleSupervisoryFrame>().function());
 }
 
 TEST(FrameHeadersSimpleSupervisoryFrameTest, SetIsPollRequestSetsCorrectBit) {
@@ -272,7 +299,8 @@ TEST(FrameHeadersSimpleSupervisoryFrameTest, SetIsPollResponseSetsCorrectBit) {
   SimpleSupervisoryFrame sframe(SupervisoryFunction::ReceiverReady);
   sframe.set_is_poll_response();
   // See Core Spec, v5, Vol 3, Part A, Table 3.2.
-  EXPECT_EQ(StaticByteBuffer(0b1000'0001, 0), BufferView(&sframe, sizeof(sframe)));
+  EXPECT_EQ(StaticByteBuffer(0b1000'0001, 0),
+            BufferView(&sframe, sizeof(sframe)));
 }
 
 TEST(FrameHeadersSimpleReceiverReadyFrameTest, IsConstructedProperly) {

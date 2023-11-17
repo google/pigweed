@@ -2,22 +2,25 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "security_request_phase.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/security_request_phase.h"
 
 #include <type_traits>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/packet.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/types.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/util.h"
 
 namespace bt::sm {
 
-SecurityRequestPhase::SecurityRequestPhase(PairingChannel::WeakPtr chan, Listener::WeakPtr listener,
-                                           SecurityLevel desired_level, BondableMode bondable_mode,
-                                           PairingRequestCallback on_pairing_req)
+SecurityRequestPhase::SecurityRequestPhase(
+    PairingChannel::WeakPtr chan,
+    Listener::WeakPtr listener,
+    SecurityLevel desired_level,
+    BondableMode bondable_mode,
+    PairingRequestCallback on_pairing_req)
     : PairingPhase(std::move(chan), std::move(listener), Role::kResponder),
       bondable_mode_(bondable_mode),
       pending_security_request_(desired_level),
@@ -51,7 +54,8 @@ void SecurityRequestPhase::OnPairingRequest(PairingRequestParams req_params) {
 }
 
 void SecurityRequestPhase::OnRxBFrame(ByteBufferPtr sdu) {
-  fit::result<ErrorCode, ValidPacketReader> maybe_reader = ValidPacketReader::ParseSdu(sdu);
+  fit::result<ErrorCode, ValidPacketReader> maybe_reader =
+      ValidPacketReader::ParseSdu(sdu);
   if (maybe_reader.is_error()) {
     Abort(maybe_reader.error_value());
     return;
@@ -62,7 +66,10 @@ void SecurityRequestPhase::OnRxBFrame(ByteBufferPtr sdu) {
   if (smp_code == kPairingRequest) {
     OnPairingRequest(reader.payload<PairingRequestParams>());
   } else {
-    bt_log(DEBUG, "sm", "received unexpected code %#.2X with pending Security Request", smp_code);
+    bt_log(DEBUG,
+           "sm",
+           "received unexpected code %#.2X with pending Security Request",
+           smp_code);
     Abort(ErrorCode::kUnspecifiedReason);
   }
 }

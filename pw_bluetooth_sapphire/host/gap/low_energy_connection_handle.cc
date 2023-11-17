@@ -2,15 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "low_energy_connection_handle.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/low_energy_connection_handle.h"
 
-#include "low_energy_connection.h"
-#include "low_energy_connection_manager.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/low_energy_connection.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/low_energy_connection_manager.h"
 
 namespace bt::gap {
 
 LowEnergyConnectionHandle::LowEnergyConnectionHandle(
-    PeerId peer_id, hci_spec::ConnectionHandle handle,
+    PeerId peer_id,
+    hci_spec::ConnectionHandle handle,
     fit::callback<void(LowEnergyConnectionHandle*)> release_cb,
     fit::function<sm::BondableMode()> bondable_cb,
     fit::function<sm::SecurityProperties()> security_cb)

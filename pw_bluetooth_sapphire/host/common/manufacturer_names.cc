@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "manufacturer_names.h"
+#include "pw_bluetooth_sapphire/internal/host/common/manufacturer_names.h"
 
 #include <iterator>
 #include <map>

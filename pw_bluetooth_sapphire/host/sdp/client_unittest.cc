@@ -2,18 +2,18 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/sdp/client.h"
-
-#include <chrono>
-#include <ratio>
+#include "pw_bluetooth_sapphire/internal/host/sdp/client.h"
 
 #include <gtest/gtest.h>
 #include <pw_async/dispatcher.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/sdp/service_record.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
+#include <chrono>
+#include <ratio>
+
+#include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel_test.h"
+#include "pw_bluetooth_sapphire/internal/host/sdp/service_record.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
 namespace bt::sdp {
 namespace {
@@ -52,14 +52,17 @@ TEST_F(ClientTest, ConnectAndQuery) {
 
     size_t cb_count = 0;
     auto result_cb =
-        [&](fit::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+        [&](fit::result<
+            Error<>,
+            std::reference_wrapper<const std::map<AttributeId, DataElement>>>
                 attrs_result) {
           cb_count++;
           if (cb_count == 3) {
             EXPECT_EQ(Error(HostError::kNotFound), attrs_result);
             return true;
           }
-          const std::map<AttributeId, DataElement>& attrs = attrs_result.value();
+          const std::map<AttributeId, DataElement>& attrs =
+              attrs_result.value();
           // All results should have the ServiceClassIdList.
           EXPECT_EQ(1u, attrs.count(kServiceClassIdList));
           // The first result has a kProtocolDescriptorList and the second has a
@@ -76,15 +79,26 @@ TEST_F(ClientTest, ConnectAndQuery) {
 
     const StaticByteBuffer kSearchExpectedParams(
         // ServiceSearchPattern
-        0x35, 0x03,        // Sequence uint8 3 bytes
-        0x19, 0x11, 0x0B,  // UUID (kAudioSink)
-        0xFF, 0xFF,        // MaxAttributeByteCount (no max)
+        0x35,
+        0x03,  // Sequence uint8 3 bytes
+        0x19,
+        0x11,
+        0x0B,  // UUID (kAudioSink)
+        0xFF,
+        0xFF,  // MaxAttributeByteCount (no max)
         // Attribute ID list
-        0x35, 0x09,        // Sequence uint8 9 bytes
-        0x09, 0x00, 0x01,  // uint16_t (kServiceClassIdList)
-        0x09, 0x00, 0x04,  // uint16_t (kProtocolDescriptorList)
-        0x09, 0x00, 0x09,  // uint16_t (kBluetoothProfileDescriptorList)
-        0x00               // No continuation state
+        0x35,
+        0x09,  // Sequence uint8 9 bytes
+        0x09,
+        0x00,
+        0x01,  // uint16_t (kServiceClassIdList)
+        0x09,
+        0x00,
+        0x04,  // uint16_t (kProtocolDescriptorList)
+        0x09,
+        0x00,
+        0x09,  // uint16_t (kBluetoothProfileDescriptorList)
+        0x00   // No continuation state
     );
 
     uint32_t request_tid;
@@ -105,31 +119,44 @@ TEST_F(ClientTest, ConnectAndQuery) {
     //  - Service Class ID list
     //  - Descriptor List
     //  - Bluetooth Profile Descriptor List
-    client->ServiceSearchAttributes(
-        {profile::kAudioSink},
-        {kServiceClassIdList, kProtocolDescriptorList, kBluetoothProfileDescriptorList}, result_cb);
+    client->ServiceSearchAttributes({profile::kAudioSink},
+                                    {kServiceClassIdList,
+                                     kProtocolDescriptorList,
+                                     kBluetoothProfileDescriptorList},
+                                    result_cb);
     RunUntilIdle();
     EXPECT_TRUE(success);
 
     // Receive the response
     // Record makes building the response easier.
     ServiceRecord rec;
-    rec.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
+    rec.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList,
+                              protocol::kL2CAP,
                               DataElement(l2cap::kAVDTP));
     // The second element here indicates version 1.3 (specified in A2DP spec)
-    rec.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kAVDTP,
+    rec.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList,
+                              protocol::kAVDTP,
                               DataElement(uint16_t{0x0103}));
     rec.AddProfile(profile::kAudioSink, 1, 3);
     ServiceSearchAttributeResponse rsp;
-    rsp.SetAttribute(0, kServiceClassIdList, DataElement({DataElement(profile::kAudioSink)}));
-    rsp.SetAttribute(0, kProtocolDescriptorList, rec.GetAttribute(kProtocolDescriptorList).Clone());
+    rsp.SetAttribute(0,
+                     kServiceClassIdList,
+                     DataElement({DataElement(profile::kAudioSink)}));
+    rsp.SetAttribute(0,
+                     kProtocolDescriptorList,
+                     rec.GetAttribute(kProtocolDescriptorList).Clone());
 
-    rsp.SetAttribute(1, kServiceClassIdList, DataElement({DataElement(profile::kAudioSink)}));
-    rsp.SetAttribute(1, kBluetoothProfileDescriptorList,
+    rsp.SetAttribute(1,
+                     kServiceClassIdList,
+                     DataElement({DataElement(profile::kAudioSink)}));
+    rsp.SetAttribute(1,
+                     kBluetoothProfileDescriptorList,
                      rec.GetAttribute(kBluetoothProfileDescriptorList).Clone());
 
-    auto rsp_ptr =
-        rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, kResponseMaxSize, BufferView());
+    auto rsp_ptr = rsp.GetPDU(0xFFFF /* Max attribute bytes */,
+                              request_tid,
+                              kResponseMaxSize,
+                              BufferView());
     fake_chan()->Receive(*rsp_ptr);
 
     RunUntilIdle();
@@ -147,7 +174,9 @@ TEST_F(ClientTest, TwoQueriesSubsequent) {
 
     size_t cb_count = 0;
     auto result_cb =
-        [&](fit::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+        [&](fit::result<
+            Error<>,
+            std::reference_wrapper<const std::map<AttributeId, DataElement>>>
                 attrs_result) {
           cb_count++;
           // We return no results for both queries.
@@ -157,13 +186,20 @@ TEST_F(ClientTest, TwoQueriesSubsequent) {
 
     const StaticByteBuffer kSearchExpectedParams(
         // ServiceSearchPattern
-        0x35, 0x03,        // Sequence uint8 3 bytes
-        0x19, 0x11, 0x0B,  // UUID (kAudioSink)
-        0xFF, 0xFF,        // MaxAttributeByteCount (no max)
+        0x35,
+        0x03,  // Sequence uint8 3 bytes
+        0x19,
+        0x11,
+        0x0B,  // UUID (kAudioSink)
+        0xFF,
+        0xFF,  // MaxAttributeByteCount (no max)
         // Attribute ID list
-        0x35, 0x03,        // Sequence uint8 3 bytes
-        0x09, 0x00, 0x01,  // uint16_t (kServiceClassIdList)
-        0x00               // No continuation state
+        0x35,
+        0x03,  // Sequence uint8 3 bytes
+        0x09,
+        0x00,
+        0x01,  // uint16_t (kServiceClassIdList)
+        0x00   // No continuation state
     );
 
     uint32_t request_tid;
@@ -182,15 +218,18 @@ TEST_F(ClientTest, TwoQueriesSubsequent) {
 
     // Search for all A2DP sinks, get the:
     //  - Service Class ID list
-    client->ServiceSearchAttributes({profile::kAudioSink}, {kServiceClassIdList}, result_cb);
+    client->ServiceSearchAttributes(
+        {profile::kAudioSink}, {kServiceClassIdList}, result_cb);
     RunUntilIdle();
     EXPECT_TRUE(success);
 
     // Receive the response (empty response)
     // Record makes building the response easier.
     ServiceSearchAttributeResponse rsp;
-    auto rsp_ptr =
-        rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, kResponseMaxSize, BufferView());
+    auto rsp_ptr = rsp.GetPDU(0xFFFF /* Max attribute bytes */,
+                              request_tid,
+                              kResponseMaxSize,
+                              BufferView());
     fake_chan()->Receive(*rsp_ptr);
 
     RunUntilIdle();
@@ -199,12 +238,15 @@ TEST_F(ClientTest, TwoQueriesSubsequent) {
 
     // Twice
     success = false;
-    client->ServiceSearchAttributes({profile::kAudioSink}, {kServiceClassIdList}, result_cb);
+    client->ServiceSearchAttributes(
+        {profile::kAudioSink}, {kServiceClassIdList}, result_cb);
     RunUntilIdle();
     EXPECT_TRUE(success);
 
-    rsp_ptr =
-        rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, kResponseMaxSize, BufferView());
+    rsp_ptr = rsp.GetPDU(0xFFFF /* Max attribute bytes */,
+                         request_tid,
+                         kResponseMaxSize,
+                         BufferView());
     fake_chan()->Receive(*rsp_ptr);
 
     RunUntilIdle();
@@ -222,7 +264,9 @@ TEST_F(ClientTest, TwoQueriesQueued) {
 
     size_t cb_count = 0;
     auto result_cb =
-        [&](fit::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+        [&](fit::result<
+            Error<>,
+            std::reference_wrapper<const std::map<AttributeId, DataElement>>>
                 attrs_result) {
           cb_count++;
           // We return no results for both queries.
@@ -232,13 +276,20 @@ TEST_F(ClientTest, TwoQueriesQueued) {
 
     const StaticByteBuffer kSearchExpectedParams(
         // ServiceSearchPattern
-        0x35, 0x03,        // Sequence uint8 3 bytes
-        0x19, 0x11, 0x0B,  // UUID (kAudioSink)
-        0xFF, 0xFF,        // MaxAttributeByteCount (no max)
+        0x35,
+        0x03,  // Sequence uint8 3 bytes
+        0x19,
+        0x11,
+        0x0B,  // UUID (kAudioSink)
+        0xFF,
+        0xFF,  // MaxAttributeByteCount (no max)
         // Attribute ID list
-        0x35, 0x03,        // Sequence uint8 3 bytes
-        0x09, 0x00, 0x01,  // uint16_t (kServiceClassIdList)
-        0x00               // No continuation state
+        0x35,
+        0x03,  // Sequence uint8 3 bytes
+        0x09,
+        0x00,
+        0x01,  // uint16_t (kServiceClassIdList)
+        0x00   // No continuation state
     );
 
     uint32_t request_tid;
@@ -257,9 +308,11 @@ TEST_F(ClientTest, TwoQueriesQueued) {
 
     // Search for all A2DP sinks, get the:
     //  - Service Class ID list
-    client->ServiceSearchAttributes({profile::kAudioSink}, {kServiceClassIdList}, result_cb);
+    client->ServiceSearchAttributes(
+        {profile::kAudioSink}, {kServiceClassIdList}, result_cb);
     // Twice (without waiting)
-    client->ServiceSearchAttributes({profile::kAudioSink}, {kServiceClassIdList}, result_cb);
+    client->ServiceSearchAttributes(
+        {profile::kAudioSink}, {kServiceClassIdList}, result_cb);
     RunUntilIdle();
     // Only one request should have been sent.
     EXPECT_EQ(1u, sent_packets);
@@ -267,8 +320,10 @@ TEST_F(ClientTest, TwoQueriesQueued) {
     // Receive the response (empty response)
     // Record makes building the response easier.
     ServiceSearchAttributeResponse rsp;
-    auto rsp_ptr =
-        rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, kResponseMaxSize, BufferView());
+    auto rsp_ptr = rsp.GetPDU(0xFFFF /* Max attribute bytes */,
+                              request_tid,
+                              kResponseMaxSize,
+                              BufferView());
     fake_chan()->Receive(*rsp_ptr);
 
     RunUntilIdle();
@@ -278,8 +333,10 @@ TEST_F(ClientTest, TwoQueriesQueued) {
     EXPECT_EQ(2u, sent_packets);
 
     // Respond to the second request.
-    rsp_ptr =
-        rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, kResponseMaxSize, BufferView());
+    rsp_ptr = rsp.GetPDU(0xFFFF /* Max attribute bytes */,
+                         request_tid,
+                         kResponseMaxSize,
+                         BufferView());
     fake_chan()->Receive(*rsp_ptr);
 
     RunUntilIdle();
@@ -302,7 +359,9 @@ TEST_F(ClientTest, ContinuingResponseRequested) {
 
   size_t cb_count = 0;
   auto result_cb =
-      [&](fit::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+      [&](fit::result<
+          Error<>,
+          std::reference_wrapper<const std::map<AttributeId, DataElement>>>
               attrs_result) {
         cb_count++;
         if (cb_count == 3) {
@@ -318,30 +377,47 @@ TEST_F(ClientTest, ContinuingResponseRequested) {
 
   const StaticByteBuffer kSearchExpectedParams(
       // ServiceSearchPattern
-      0x35, 0x03,        // Sequence uint8 3 bytes
-      0x19, 0x11, 0x0B,  // UUID (kAudioSink)
-      0xFF, 0xFF,        // MaxAttributeByteCount (no max)
+      0x35,
+      0x03,  // Sequence uint8 3 bytes
+      0x19,
+      0x11,
+      0x0B,  // UUID (kAudioSink)
+      0xFF,
+      0xFF,  // MaxAttributeByteCount (no max)
       // Attribute ID list
-      0x35, 0x06,        // Sequence uint8 6 bytes
-      0x09, 0x00, 0x01,  // uint16_t (0x0001 = kServiceClassIdList)
-      0x09, 0x00, 0x04   // uint16_t (0x0004 = kProtocolDescriptorList)
+      0x35,
+      0x06,  // Sequence uint8 6 bytes
+      0x09,
+      0x00,
+      0x01,  // uint16_t (0x0001 = kServiceClassIdList)
+      0x09,
+      0x00,
+      0x04  // uint16_t (0x0004 = kProtocolDescriptorList)
   );
 
   size_t requests_made = 0;
 
   // Record makes building the response easier.
   ServiceRecord rec;
-  rec.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
+  rec.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList,
+                            protocol::kL2CAP,
                             DataElement(l2cap::kAVDTP));
   // The second element here indicates version 1.3 (specified in A2DP spec)
-  rec.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kAVDTP,
+  rec.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList,
+                            protocol::kAVDTP,
                             DataElement(uint16_t{0x0103}));
   rec.AddProfile(profile::kAudioSink, 1, 3);
   ServiceSearchAttributeResponse rsp;
-  rsp.SetAttribute(0, kServiceClassIdList, DataElement({DataElement(profile::kAudioSink)}));
-  rsp.SetAttribute(0, kProtocolDescriptorList, rec.GetAttribute(kProtocolDescriptorList).Clone());
-  rsp.SetAttribute(1, kServiceClassIdList, DataElement({DataElement(profile::kAudioSink)}));
-  rsp.SetAttribute(1, kProtocolDescriptorList, rec.GetAttribute(kProtocolDescriptorList).Clone());
+  rsp.SetAttribute(
+      0, kServiceClassIdList, DataElement({DataElement(profile::kAudioSink)}));
+  rsp.SetAttribute(0,
+                   kProtocolDescriptorList,
+                   rec.GetAttribute(kProtocolDescriptorList).Clone());
+  rsp.SetAttribute(
+      1, kServiceClassIdList, DataElement({DataElement(profile::kAudioSink)}));
+  rsp.SetAttribute(1,
+                   kProtocolDescriptorList,
+                   rec.GetAttribute(kProtocolDescriptorList).Clone());
 
   fake_chan()->SetSendCallback(
       [&](auto packet) {
@@ -350,10 +426,14 @@ TEST_F(ClientTest, ContinuingResponseRequested) {
         ASSERT_LE(5u, packet->size());
         ASSERT_EQ(kServiceSearchAttributeRequest, (*packet)[0]);
         uint16_t request_tid = ((*packet)[1] << 8) != 0 || (*packet)[2];
-        ASSERT_EQ(kSearchExpectedParams, packet->view(5, kSearchExpectedParams.size()));
+        ASSERT_EQ(kSearchExpectedParams,
+                  packet->view(5, kSearchExpectedParams.size()));
         // The stuff after the params is the continuation state.
-        auto rsp_ptr = rsp.GetPDU(16 /* Max attribute bytes */, request_tid, kResponseMaxSize,
-                                  packet->view(5 + kSearchExpectedParams.size() + 1));
+        auto rsp_ptr =
+            rsp.GetPDU(16 /* Max attribute bytes */,
+                       request_tid,
+                       kResponseMaxSize,
+                       packet->view(5 + kSearchExpectedParams.size() + 1));
         fake_chan()->Receive(*rsp_ptr);
       },
       dispatcher());
@@ -362,8 +442,10 @@ TEST_F(ClientTest, ContinuingResponseRequested) {
   //  - Service Class ID list
   //  - Descriptor List
   //  - Bluetooth Profile Descriptor List
-  client->ServiceSearchAttributes({profile::kAudioSink},
-                                  {kServiceClassIdList, kProtocolDescriptorList}, result_cb);
+  client->ServiceSearchAttributes(
+      {profile::kAudioSink},
+      {kServiceClassIdList, kProtocolDescriptorList},
+      result_cb);
   RunUntilIdle();
   EXPECT_EQ(3u, cb_count);
   EXPECT_EQ(4u, requests_made);
@@ -378,7 +460,9 @@ TEST_F(ClientTest, NoResults) {
 
   size_t cb_count = 0;
   auto result_cb =
-      [&](fit::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+      [&](fit::result<
+          Error<>,
+          std::reference_wrapper<const std::map<AttributeId, DataElement>>>
               attrs_result) {
         cb_count++;
         EXPECT_EQ(Error(HostError::kNotFound), attrs_result);
@@ -387,14 +471,23 @@ TEST_F(ClientTest, NoResults) {
 
   const StaticByteBuffer kSearchExpectedParams(
       // ServiceSearchPattern
-      0x35, 0x03,        // Sequence uint8 3 bytes
-      0x19, 0x11, 0x0B,  // UUID (kAudioSink)
-      0xFF, 0xFF,        // MaxAttributeByteCount (no max)
+      0x35,
+      0x03,  // Sequence uint8 3 bytes
+      0x19,
+      0x11,
+      0x0B,  // UUID (kAudioSink)
+      0xFF,
+      0xFF,  // MaxAttributeByteCount (no max)
       // Attribute ID list
-      0x35, 0x06,        // Sequence uint8 6 bytes
-      0x09, 0x00, 0x01,  // uint16_t (0x0001 = kServiceClassIdList)
-      0x09, 0x00, 0x04,  // uint16_t (0x0004 = kProtocolDescriptorList)
-      0x00               // No continuation state
+      0x35,
+      0x06,  // Sequence uint8 6 bytes
+      0x09,
+      0x00,
+      0x01,  // uint16_t (0x0001 = kServiceClassIdList)
+      0x09,
+      0x00,
+      0x04,  // uint16_t (0x0004 = kProtocolDescriptorList)
+      0x00   // No continuation state
   );
 
   uint32_t request_tid;
@@ -415,15 +508,19 @@ TEST_F(ClientTest, NoResults) {
   //  - Service Class ID list
   //  - Descriptor List
   //  - Bluetooth Profile Descriptor List
-  client->ServiceSearchAttributes({profile::kAudioSink},
-                                  {kServiceClassIdList, kProtocolDescriptorList}, result_cb);
+  client->ServiceSearchAttributes(
+      {profile::kAudioSink},
+      {kServiceClassIdList, kProtocolDescriptorList},
+      result_cb);
   RunUntilIdle();
   EXPECT_TRUE(success);
 
   // Receive an empty response
   ServiceSearchAttributeResponse rsp;
-  auto rsp_ptr =
-      rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, kResponseMaxSize, BufferView());
+  auto rsp_ptr = rsp.GetPDU(0xFFFF /* Max attribute bytes */,
+                            request_tid,
+                            kResponseMaxSize,
+                            BufferView());
   fake_chan()->Receive(*rsp_ptr);
 
   RunUntilIdle();
@@ -440,7 +537,9 @@ TEST_F(ClientTest, Disconnected) {
 
   size_t cb_count = 0;
   auto result_cb =
-      [&](fit::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+      [&](fit::result<
+          Error<>,
+          std::reference_wrapper<const std::map<AttributeId, DataElement>>>
               attrs_result) {
         cb_count++;
         EXPECT_EQ(Error(HostError::kLinkDisconnected), attrs_result);
@@ -449,14 +548,23 @@ TEST_F(ClientTest, Disconnected) {
 
   const StaticByteBuffer kSearchExpectedParams(
       // ServiceSearchPattern
-      0x35, 0x03,        // Sequence uint8 3 bytes
-      0x19, 0x11, 0x0B,  // UUID (kAudioSink)
-      0xFF, 0xFF,        // MaxAttributeByteCount (no max)
+      0x35,
+      0x03,  // Sequence uint8 3 bytes
+      0x19,
+      0x11,
+      0x0B,  // UUID (kAudioSink)
+      0xFF,
+      0xFF,  // MaxAttributeByteCount (no max)
       // Attribute ID list
-      0x35, 0x06,        // Sequence uint8 6 bytes
-      0x09, 0x00, 0x01,  // uint16_t (0x0001 = kServiceClassIdList)
-      0x09, 0x00, 0x04,  // uint16_t (0x0004 = kProtocolDescriptorList)
-      0x00               // No continuation state
+      0x35,
+      0x06,  // Sequence uint8 6 bytes
+      0x09,
+      0x00,
+      0x01,  // uint16_t (0x0001 = kServiceClassIdList)
+      0x09,
+      0x00,
+      0x04,  // uint16_t (0x0004 = kProtocolDescriptorList)
+      0x00   // No continuation state
   );
 
   bool requested = false;
@@ -475,8 +583,10 @@ TEST_F(ClientTest, Disconnected) {
   //  - Service Class ID list
   //  - Descriptor List
   //  - Bluetooth Profile Descriptor List
-  client->ServiceSearchAttributes({profile::kAudioSink},
-                                  {kServiceClassIdList, kProtocolDescriptorList}, result_cb);
+  client->ServiceSearchAttributes(
+      {profile::kAudioSink},
+      {kServiceClassIdList, kProtocolDescriptorList},
+      result_cb);
   RunUntilIdle();
   EXPECT_TRUE(requested);
   EXPECT_EQ(0u, cb_count);
@@ -498,7 +608,9 @@ TEST_F(ClientTest, InvalidResponse) {
 
   size_t cb_count = 0;
   auto result_cb =
-      [&](fit::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+      [&](fit::result<
+          Error<>,
+          std::reference_wrapper<const std::map<AttributeId, DataElement>>>
               attrs_result) {
         cb_count++;
         EXPECT_EQ(Error(HostError::kPacketMalformed), attrs_result);
@@ -507,14 +619,23 @@ TEST_F(ClientTest, InvalidResponse) {
 
   const StaticByteBuffer kSearchExpectedParams(
       // ServiceSearchPattern
-      0x35, 0x03,        // Sequence uint8 3 bytes
-      0x19, 0x11, 0x0B,  // UUID (kAudioSink)
-      0xFF, 0xFF,        // MaxAttributeByteCount (no max)
+      0x35,
+      0x03,  // Sequence uint8 3 bytes
+      0x19,
+      0x11,
+      0x0B,  // UUID (kAudioSink)
+      0xFF,
+      0xFF,  // MaxAttributeByteCount (no max)
       // Attribute ID list
-      0x35, 0x06,        // Sequence uint8 6 bytes
-      0x09, 0x00, 0x01,  // uint16_t (0x0001 = kServiceClassIdList)
-      0x09, 0x00, 0x04,  // uint16_t (0x0004 = kProtocolDescriptorList)
-      0x00               // No continuation state
+      0x35,
+      0x06,  // Sequence uint8 6 bytes
+      0x09,
+      0x00,
+      0x01,  // uint16_t (0x0001 = kServiceClassIdList)
+      0x09,
+      0x00,
+      0x04,  // uint16_t (0x0004 = kProtocolDescriptorList)
+      0x00   // No continuation state
   );
 
   uint32_t request_tid;
@@ -535,15 +656,23 @@ TEST_F(ClientTest, InvalidResponse) {
   //  - Service Class ID list
   //  - Descriptor List
   //  - Bluetooth Profile Descriptor List
-  client->ServiceSearchAttributes({profile::kAudioSink},
-                                  {kServiceClassIdList, kProtocolDescriptorList}, result_cb);
+  client->ServiceSearchAttributes(
+      {profile::kAudioSink},
+      {kServiceClassIdList, kProtocolDescriptorList},
+      result_cb);
   RunUntilIdle();
   EXPECT_TRUE(requested);
   EXPECT_EQ(0u, cb_count);
 
   // Remote end sends some unparsable stuff for the packet.
-  fake_chan()->Receive(StaticByteBuffer(0x07, UpperBits(request_tid), LowerBits(request_tid), 0x00,
-                                        0x03, 0x05, 0x06, 0x07));
+  fake_chan()->Receive(StaticByteBuffer(0x07,
+                                        UpperBits(request_tid),
+                                        LowerBits(request_tid),
+                                        0x00,
+                                        0x03,
+                                        0x05,
+                                        0x06,
+                                        0x07));
 
   RunUntilIdle();
 
@@ -557,7 +686,9 @@ TEST_F(ClientTest, Timeout) {
 
   size_t cb_count = 0;
   auto result_cb =
-      [&](fit::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+      [&](fit::result<
+          Error<>,
+          std::reference_wrapper<const std::map<AttributeId, DataElement>>>
               attrs_result) {
         cb_count++;
         EXPECT_EQ(Error(HostError::kTimedOut), attrs_result);
@@ -566,14 +697,23 @@ TEST_F(ClientTest, Timeout) {
 
   const StaticByteBuffer kSearchExpectedParams(
       // ServiceSearchPattern
-      0x35, 0x03,        // Sequence uint8 3 bytes
-      0x19, 0x11, 0x0B,  // UUID (kAudioSink)
-      0xFF, 0xFF,        // MaxAttributeByteCount (no max)
+      0x35,
+      0x03,  // Sequence uint8 3 bytes
+      0x19,
+      0x11,
+      0x0B,  // UUID (kAudioSink)
+      0xFF,
+      0xFF,  // MaxAttributeByteCount (no max)
       // Attribute ID list
-      0x35, 0x06,        // Sequence uint8 6 bytes
-      0x09, 0x00, 0x01,  // uint16_t (0x0001 = kServiceClassIdList)
-      0x09, 0x00, 0x04,  // uint16_t (0x0004 = kProtocolDescriptorList)
-      0x00               // No continuation state
+      0x35,
+      0x06,  // Sequence uint8 6 bytes
+      0x09,
+      0x00,
+      0x01,  // uint16_t (0x0001 = kServiceClassIdList)
+      0x09,
+      0x00,
+      0x04,  // uint16_t (0x0004 = kProtocolDescriptorList)
+      0x00   // No continuation state
   );
 
   bool requested = false;
@@ -592,8 +732,10 @@ TEST_F(ClientTest, Timeout) {
   //  - Service Class ID list
   //  - Descriptor List
   //  - Bluetooth Profile Descriptor List
-  client->ServiceSearchAttributes({profile::kAudioSink},
-                                  {kServiceClassIdList, kProtocolDescriptorList}, result_cb);
+  client->ServiceSearchAttributes(
+      {profile::kAudioSink},
+      {kServiceClassIdList, kProtocolDescriptorList},
+      result_cb);
   RunUntilIdle();
   EXPECT_TRUE(requested);
   EXPECT_EQ(0u, cb_count);
@@ -610,7 +752,9 @@ TEST_F(ClientTest, DestroyClientInErrorResultCallbackDoesNotCrash) {
 
   size_t cb_count = 0;
   auto result_cb =
-      [&](fit::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+      [&](fit::result<
+          Error<>,
+          std::reference_wrapper<const std::map<AttributeId, DataElement>>>
               attrs_result) {
         cb_count++;
         EXPECT_TRUE(attrs_result.is_error());
@@ -619,10 +763,13 @@ TEST_F(ClientTest, DestroyClientInErrorResultCallbackDoesNotCrash) {
       };
 
   bool requested = false;
-  fake_chan()->SetSendCallback([&](auto packet) { requested = true; }, dispatcher());
+  fake_chan()->SetSendCallback([&](auto packet) { requested = true; },
+                               dispatcher());
 
-  client->ServiceSearchAttributes({profile::kAudioSink},
-                                  {kServiceClassIdList, kProtocolDescriptorList}, result_cb);
+  client->ServiceSearchAttributes(
+      {profile::kAudioSink},
+      {kServiceClassIdList, kProtocolDescriptorList},
+      result_cb);
   RunUntilIdle();
   EXPECT_TRUE(requested);
   EXPECT_EQ(0u, cb_count);
@@ -638,7 +785,9 @@ TEST_F(ClientTest, DestroyClientInDisconnectedResultCallback) {
 
   size_t cb_count = 0;
   auto result_cb =
-      [&](fit::result<Error<>, std::reference_wrapper<const std::map<AttributeId, DataElement>>>
+      [&](fit::result<
+          Error<>,
+          std::reference_wrapper<const std::map<AttributeId, DataElement>>>
               attrs_result) {
         cb_count++;
         EXPECT_EQ(Error(HostError::kLinkDisconnected), attrs_result);
@@ -647,10 +796,13 @@ TEST_F(ClientTest, DestroyClientInDisconnectedResultCallback) {
       };
 
   bool requested = false;
-  fake_chan()->SetSendCallback([&](auto packet) { requested = true; }, dispatcher());
+  fake_chan()->SetSendCallback([&](auto packet) { requested = true; },
+                               dispatcher());
 
-  client->ServiceSearchAttributes({profile::kAudioSink},
-                                  {kServiceClassIdList, kProtocolDescriptorList}, result_cb);
+  client->ServiceSearchAttributes(
+      {profile::kAudioSink},
+      {kServiceClassIdList, kProtocolDescriptorList},
+      result_cb);
   RunUntilIdle();
   EXPECT_TRUE(requested);
   EXPECT_EQ(0u, cb_count);

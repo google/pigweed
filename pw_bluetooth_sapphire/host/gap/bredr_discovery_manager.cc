@@ -2,23 +2,22 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "bredr_discovery_manager.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/bredr_discovery_manager.h"
 
 #include <lib/fit/defer.h>
 #include <lib/stdcompat/functional.h>
-
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/supplement_data.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/emboss_control_packets.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
-
 #include <pw_bluetooth/hci_commands.emb.h>
 #include <pw_bluetooth/hci_events.emb.h>
+
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/common/supplement_data.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
 
 namespace bt::gap {
 
@@ -38,12 +37,14 @@ Peer* AddOrUpdateConnectablePeer(PeerCache* cache, const DeviceAddress& addr) {
 }
 
 std::unordered_set<Peer*> ProcessInquiryResultEvent(
-    PeerCache* cache, const pw::bluetooth::emboss::InquiryResultWithRssiEventView& event) {
+    PeerCache* cache,
+    const pw::bluetooth::emboss::InquiryResultWithRssiEventView& event) {
   bt_log(TRACE, "gap-bredr", "inquiry result received");
   std::unordered_set<Peer*> updated;
   auto responses = event.responses();
   for (auto response : responses) {
-    DeviceAddress addr(DeviceAddress::Type::kBREDR, DeviceAddressBytes(response.bd_addr()));
+    DeviceAddress addr(DeviceAddress::Type::kBREDR,
+                       DeviceAddressBytes(response.bd_addr()));
     Peer* peer = AddOrUpdateConnectablePeer(cache, addr);
     peer->MutBrEdr().SetInquiryData(response);
     updated.insert(peer);
@@ -53,10 +54,13 @@ std::unordered_set<Peer*> ProcessInquiryResultEvent(
 
 }  // namespace
 
-BrEdrDiscoverySession::BrEdrDiscoverySession(BrEdrDiscoveryManager::WeakPtr manager)
+BrEdrDiscoverySession::BrEdrDiscoverySession(
+    BrEdrDiscoveryManager::WeakPtr manager)
     : manager_(std::move(manager)) {}
 
-BrEdrDiscoverySession::~BrEdrDiscoverySession() { manager_->RemoveDiscoverySession(this); }
+BrEdrDiscoverySession::~BrEdrDiscoverySession() {
+  manager_->RemoveDiscoverySession(this);
+}
 
 void BrEdrDiscoverySession::NotifyDiscoveryResult(const Peer& peer) const {
   if (peer_found_callback_) {
@@ -70,15 +74,19 @@ void BrEdrDiscoverySession::NotifyError() const {
   }
 }
 
-BrEdrDiscoverableSession::BrEdrDiscoverableSession(BrEdrDiscoveryManager::WeakPtr manager)
+BrEdrDiscoverableSession::BrEdrDiscoverableSession(
+    BrEdrDiscoveryManager::WeakPtr manager)
     : manager_(std::move(manager)) {}
 
-BrEdrDiscoverableSession::~BrEdrDiscoverableSession() { manager_->RemoveDiscoverableSession(this); }
+BrEdrDiscoverableSession::~BrEdrDiscoverableSession() {
+  manager_->RemoveDiscoverableSession(this);
+}
 
-BrEdrDiscoveryManager::BrEdrDiscoveryManager(pw::async::Dispatcher& pw_dispatcher,
-                                             hci::CommandChannel::WeakPtr cmd,
-                                             pw::bluetooth::emboss::InquiryMode mode,
-                                             PeerCache* peer_cache)
+BrEdrDiscoveryManager::BrEdrDiscoveryManager(
+    pw::async::Dispatcher& pw_dispatcher,
+    hci::CommandChannel::WeakPtr cmd,
+    pw::bluetooth::emboss::InquiryMode mode,
+    PeerCache* peer_cache)
     : cmd_(std::move(cmd)),
       dispatcher_(pw_dispatcher),
       cache_(peer_cache),
@@ -89,21 +97,22 @@ BrEdrDiscoveryManager::BrEdrDiscoveryManager(pw::async::Dispatcher& pw_dispatche
   BT_DEBUG_ASSERT(cache_);
   BT_DEBUG_ASSERT(cmd_.is_alive());
 
-  result_handler_id_ =
-      cmd_->AddEventHandler(hci_spec::kInquiryResultEventCode,
-                            fit::bind_member<&BrEdrDiscoveryManager::InquiryResult>(this));
+  result_handler_id_ = cmd_->AddEventHandler(
+      hci_spec::kInquiryResultEventCode,
+      fit::bind_member<&BrEdrDiscoveryManager::InquiryResult>(this));
   BT_DEBUG_ASSERT(result_handler_id_);
-  rssi_handler_id_ =
-      cmd_->AddEventHandler(hci_spec::kInquiryResultWithRSSIEventCode,
-                            cpp20::bind_front(&BrEdrDiscoveryManager::InquiryResultWithRssi, this));
+  rssi_handler_id_ = cmd_->AddEventHandler(
+      hci_spec::kInquiryResultWithRSSIEventCode,
+      cpp20::bind_front(&BrEdrDiscoveryManager::InquiryResultWithRssi, this));
   BT_DEBUG_ASSERT(rssi_handler_id_);
-  eir_handler_id_ =
-      cmd_->AddEventHandler(hci_spec::kExtendedInquiryResultEventCode,
-                            cpp20::bind_front(&BrEdrDiscoveryManager::ExtendedInquiryResult, this));
+  eir_handler_id_ = cmd_->AddEventHandler(
+      hci_spec::kExtendedInquiryResultEventCode,
+      cpp20::bind_front(&BrEdrDiscoveryManager::ExtendedInquiryResult, this));
   BT_DEBUG_ASSERT(eir_handler_id_);
 
   // Set the Inquiry Scan Settings
-  WriteInquiryScanSettings(kInquiryScanInterval, kInquiryScanWindow, /*interlaced=*/true);
+  WriteInquiryScanSettings(
+      kInquiryScanInterval, kInquiryScanWindow, /*interlaced=*/true);
 }
 
 BrEdrDiscoveryManager::~BrEdrDiscoveryManager() {
@@ -149,24 +158,27 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
 
   auto self = weak_self_.GetWeakPtr();
   if (desired_inquiry_mode_ != current_inquiry_mode_) {
-    auto packet =
-        hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WriteInquiryModeCommandWriter>(
-            hci_spec::kWriteInquiryMode);
+    auto packet = hci::EmbossCommandPacket::New<
+        pw::bluetooth::emboss::WriteInquiryModeCommandWriter>(
+        hci_spec::kWriteInquiryMode);
     packet.view_t().inquiry_mode().Write(desired_inquiry_mode_);
-    cmd_->SendCommand(std::move(packet),
-                      [self, mode = desired_inquiry_mode_](auto /*unused*/, const auto& event) {
-                        if (!self.is_alive()) {
-                          return;
-                        }
+    cmd_->SendCommand(
+        std::move(packet),
+        [self, mode = desired_inquiry_mode_](auto /*unused*/,
+                                             const auto& event) {
+          if (!self.is_alive()) {
+            return;
+          }
 
-                        if (!hci_is_error(event, ERROR, "gap-bredr", "write inquiry mode failed")) {
-                          self->current_inquiry_mode_ = mode;
-                        }
-                      });
+          if (!hci_is_error(
+                  event, ERROR, "gap-bredr", "write inquiry mode failed")) {
+            self->current_inquiry_mode_ = mode;
+          }
+        });
   }
 
-  auto inquiry = hci::EmbossCommandPacket::New<pw::bluetooth::emboss::InquiryCommandWriter>(
-      hci_spec::kInquiry);
+  auto inquiry = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::InquiryCommandWriter>(hci_spec::kInquiry);
   auto view = inquiry.view_t();
   view.lap().Write(pw::bluetooth::emboss::InquiryAccessCode::GIAC);
   view.inquiry_length().Write(kInquiryLengthDefault);
@@ -188,20 +200,22 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
 
         // Resolve the request if the controller sent back a Command Complete or
         // Status event.
-        // TODO(fxbug.dev/1109): Make it impossible for Command Complete to happen here
-        // and remove handling for it.
+        // TODO(fxbug.dev/1109): Make it impossible for Command Complete to
+        // happen here and remove handling for it.
         if (event.event_code() == hci_spec::kCommandStatusEventCode ||
             event.event_code() == hci_spec::kCommandCompleteEventCode) {
           // Inquiry started, make sessions for our waiting callbacks.
           while (!self->pending_discovery_.empty()) {
             auto callback = std::move(self->pending_discovery_.front());
             self->pending_discovery_.pop();
-            callback(status, (status.is_ok() ? self->AddDiscoverySession() : nullptr));
+            callback(status,
+                     (status.is_ok() ? self->AddDiscoverySession() : nullptr));
           }
           return;
         }
 
-        BT_DEBUG_ASSERT(event.event_code() == hci_spec::kInquiryCompleteEventCode);
+        BT_DEBUG_ASSERT(event.event_code() ==
+                        hci_spec::kInquiryCompleteEventCode);
         self->zombie_discovering_.clear();
 
         if (bt_is_error(status, TRACE, "gap", "inquiry complete error")) {
@@ -212,7 +226,8 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
         bt_log(TRACE, "gap-bredr", "inquiry complete, restart");
         self->MaybeStartInquiry();
       },
-      hci_spec::kInquiryCompleteEventCode, {hci_spec::kRemoteNameRequest});
+      hci_spec::kInquiryCompleteEventCode,
+      {hci_spec::kRemoteNameRequest});
 }
 
 // Stops the inquiry procedure.
@@ -220,9 +235,9 @@ void BrEdrDiscoveryManager::StopInquiry() {
   BT_DEBUG_ASSERT(result_handler_id_);
   bt_log(TRACE, "gap-bredr", "cancelling inquiry");
 
-  const hci::EmbossCommandPacket inq_cancel =
-      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::InquiryCancelCommandView>(
-          hci_spec::kInquiryCancel);
+  const hci::EmbossCommandPacket inq_cancel = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::InquiryCancelCommandView>(
+      hci_spec::kInquiryCancel);
   cmd_->SendCommand(std::move(inq_cancel), [](int64_t, const auto& event) {
     // Warn if the command failed.
     hci_is_error(event, WARN, "gap-bredr", "inquiry cancel failed");
@@ -237,7 +252,8 @@ hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::InquiryResult(
   auto view = event.view<pw::bluetooth::emboss::InquiryResultEventView>();
   for (int i = 0; i < view.num_responses().Read(); i++) {
     const auto response = view.responses()[i];
-    DeviceAddress addr(DeviceAddress::Type::kBREDR, DeviceAddressBytes{response.bd_addr()});
+    DeviceAddress addr(DeviceAddress::Type::kBREDR,
+                       DeviceAddressBytes{response.bd_addr()});
     Peer* peer = AddOrUpdateConnectablePeer(cache_, addr);
     peer->MutBrEdr().SetInquiryData(response);
     peers.insert(peer);
@@ -248,20 +264,25 @@ hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::InquiryResult(
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
-hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::InquiryResultWithRssi(
+hci::CommandChannel::EventCallbackResult
+BrEdrDiscoveryManager::InquiryResultWithRssi(
     const hci::EmbossEventPacket& event) {
   std::unordered_set<Peer*> peers = ProcessInquiryResultEvent(
-      cache_, event.view<pw::bluetooth::emboss::InquiryResultWithRssiEventView>());
+      cache_,
+      event.view<pw::bluetooth::emboss::InquiryResultWithRssiEventView>());
   NotifyPeersUpdated(peers);
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
-hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::ExtendedInquiryResult(
+hci::CommandChannel::EventCallbackResult
+BrEdrDiscoveryManager::ExtendedInquiryResult(
     const hci::EmbossEventPacket& event) {
   bt_log(TRACE, "gap-bredr", "ExtendedInquiryResult received");
-  const auto result = event.view<pw::bluetooth::emboss::ExtendedInquiryResultEventView>();
+  const auto result =
+      event.view<pw::bluetooth::emboss::ExtendedInquiryResultEventView>();
 
-  DeviceAddress addr(DeviceAddress::Type::kBREDR, DeviceAddressBytes(result.bd_addr()));
+  DeviceAddress addr(DeviceAddress::Type::kBREDR,
+                     DeviceAddressBytes(result.bd_addr()));
   Peer* peer = AddOrUpdateConnectablePeer(cache_, addr);
   peer->MutBrEdr().SetInquiryData(result);
 
@@ -269,8 +290,8 @@ hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::ExtendedInquiryR
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
-void BrEdrDiscoveryManager::UpdateEIRResponseData(std::string name,
-                                                  hci::ResultFunction<> callback) {
+void BrEdrDiscoveryManager::UpdateEIRResponseData(
+    std::string name, hci::ResultFunction<> callback) {
   DataType name_type = DataType::kCompleteLocalName;
   size_t name_size = name.size();
   if (name.size() >= (hci_spec::kExtendedInquiryResponseMaxNameBytes)) {
@@ -286,61 +307,73 @@ void BrEdrDiscoveryManager::UpdateEIRResponseData(std::string name,
   write_eir_params.fec_required().Write(0x00);
 
   // Create MutableBufferView of BackingStorage
-  unsigned char* eir_data = write_eir_params.extended_inquiry_response().BackingStorage().data();
+  unsigned char* eir_data =
+      write_eir_params.extended_inquiry_response().BackingStorage().data();
   MutableBufferView eir_response_buf =
       MutableBufferView(eir_data, hci_spec::kExtendedInquiryResponseBytes);
   eir_response_buf.Fill(0);
   eir_response_buf[0] = name_size + 1;
   eir_response_buf[1] = static_cast<uint8_t>(name_type);
-  eir_response_buf.mutable_view(2).Write(reinterpret_cast<const uint8_t*>(name.data()), name_size);
+  eir_response_buf.mutable_view(2).Write(
+      reinterpret_cast<const uint8_t*>(name.data()), name_size);
 
-  self->cmd_->SendCommand(std::move(write_eir),
-                          [self, name = std::move(name), cb = std::move(callback)](
-                              auto, const hci::EventPacket& event) mutable {
-                            if (!hci_is_error(event, WARN, "gap", "write EIR failed")) {
-                              self->local_name_ = std::move(name);
-                            }
-                            cb(event.ToResult());
-                          });
+  self->cmd_->SendCommand(
+      std::move(write_eir),
+      [self, name = std::move(name), cb = std::move(callback)](
+          auto, const hci::EventPacket& event) mutable {
+        if (!hci_is_error(event, WARN, "gap", "write EIR failed")) {
+          self->local_name_ = std::move(name);
+        }
+        cb(event.ToResult());
+      });
 }
 
-void BrEdrDiscoveryManager::UpdateLocalName(std::string name, hci::ResultFunction<> callback) {
+void BrEdrDiscoveryManager::UpdateLocalName(std::string name,
+                                            hci::ResultFunction<> callback) {
   auto self = weak_self_.GetWeakPtr();
 
-  auto write_name =
-      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WriteLocalNameCommandWriter>(
-          hci_spec::kWriteLocalName);
+  auto write_name = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::WriteLocalNameCommandWriter>(
+      hci_spec::kWriteLocalName);
   auto write_name_view = write_name.view_t();
   auto local_name = write_name_view.local_name().BackingStorage();
   size_t name_size = std::min(name.size(), hci_spec::kMaxNameLength);
 
-  // Use ContiguousBuffer instead of constructing LocalName view in case of invalid view being
-  // created when name is not large enough for the view
+  // Use ContiguousBuffer instead of constructing LocalName view in case of
+  // invalid view being created when name is not large enough for the view
   auto name_buf = emboss::support::ReadOnlyContiguousBuffer(&name);
   local_name.CopyFrom(name_buf, name_size);
 
-  cmd_->SendCommand(std::move(write_name), [self, name = std::move(name), cb = std::move(callback)](
-                                               auto, const hci::EventPacket& event) mutable {
-    if (hci_is_error(event, WARN, "gap", "set local name failed")) {
-      cb(event.ToResult());
-      return;
-    }
-    // If the WriteLocalName command was successful, update the extended inquiry data.
-    self->UpdateEIRResponseData(std::move(name), std::move(cb));
-  });
+  cmd_->SendCommand(
+      std::move(write_name),
+      [self, name = std::move(name), cb = std::move(callback)](
+          auto, const hci::EventPacket& event) mutable {
+        if (hci_is_error(event, WARN, "gap", "set local name failed")) {
+          cb(event.ToResult());
+          return;
+        }
+        // If the WriteLocalName command was successful, update the extended
+        // inquiry data.
+        self->UpdateEIRResponseData(std::move(name), std::move(cb));
+      });
 }
 
-void BrEdrDiscoveryManager::AttachInspect(inspect::Node& parent, std::string name) {
+void BrEdrDiscoveryManager::AttachInspect(inspect::Node& parent,
+                                          std::string name) {
   auto node = parent.CreateChild(name);
   inspect_properties_.Initialize(std::move(node));
   UpdateInspectProperties();
 }
 
-void BrEdrDiscoveryManager::InspectProperties::Initialize(inspect::Node new_node) {
+void BrEdrDiscoveryManager::InspectProperties::Initialize(
+    inspect::Node new_node) {
   discoverable_sessions = new_node.CreateUint("discoverable_sessions", 0);
-  pending_discoverable_sessions = new_node.CreateUint("pending_discoverable", 0);
-  discoverable_sessions_count = new_node.CreateUint("discoverable_sessions_count", 0);
-  last_discoverable_length_sec = new_node.CreateUint("last_discoverable_length_sec", 0);
+  pending_discoverable_sessions =
+      new_node.CreateUint("pending_discoverable", 0);
+  discoverable_sessions_count =
+      new_node.CreateUint("discoverable_sessions_count", 0);
+  last_discoverable_length_sec =
+      new_node.CreateUint("last_discoverable_length_sec", 0);
 
   discovery_sessions = new_node.CreateUint("discovery_sessions", 0);
   last_inquiry_length_sec = new_node.CreateUint("last_inquiry_length_sec", 0);
@@ -352,10 +385,11 @@ void BrEdrDiscoveryManager::InspectProperties::Initialize(inspect::Node new_node
   node = std::move(new_node);
 }
 
-void BrEdrDiscoveryManager::InspectProperties::Update(size_t discoverable_count,
-                                                      size_t pending_discoverable_count,
-                                                      size_t discovery_count,
-                                                      pw::chrono::SystemClock::time_point now) {
+void BrEdrDiscoveryManager::InspectProperties::Update(
+    size_t discoverable_count,
+    size_t pending_discoverable_count,
+    size_t discovery_count,
+    pw::chrono::SystemClock::time_point now) {
   if (!node) {
     return;
   }
@@ -364,7 +398,8 @@ void BrEdrDiscoveryManager::InspectProperties::Update(size_t discoverable_count,
     discoverable_started_time.emplace(now);
   } else if (discoverable_started_time.has_value() && discoverable_count == 0) {
     discoverable_sessions_count.Add(1);
-    pw::chrono::SystemClock::duration length = now - discoverable_started_time.value();
+    pw::chrono::SystemClock::duration length =
+        now - discoverable_started_time.value();
     last_discoverable_length_sec.Set(
         std::chrono::duration_cast<std::chrono::seconds>(length).count());
     discoverable_started_time.reset();
@@ -374,8 +409,10 @@ void BrEdrDiscoveryManager::InspectProperties::Update(size_t discoverable_count,
     inquiry_started_time.emplace(now);
   } else if (inquiry_started_time.has_value() && discovery_count == 0) {
     inquiry_sessions_count.Add(1);
-    pw::chrono::SystemClock::duration length = now - inquiry_started_time.value();
-    last_inquiry_length_sec.Set(std::chrono::duration_cast<std::chrono::seconds>(length).count());
+    pw::chrono::SystemClock::duration length =
+        now - inquiry_started_time.value();
+    last_inquiry_length_sec.Set(
+        std::chrono::duration_cast<std::chrono::seconds>(length).count());
     inquiry_started_time.reset();
   }
 
@@ -385,11 +422,14 @@ void BrEdrDiscoveryManager::InspectProperties::Update(size_t discoverable_count,
 }
 
 void BrEdrDiscoveryManager::UpdateInspectProperties() {
-  inspect_properties_.Update(discoverable_.size(), pending_discoverable_.size(),
-                             discovering_.size(), dispatcher_.now());
+  inspect_properties_.Update(discoverable_.size(),
+                             pending_discoverable_.size(),
+                             discovering_.size(),
+                             dispatcher_.now());
 }
 
-void BrEdrDiscoveryManager::NotifyPeersUpdated(const std::unordered_set<Peer*>& peers) {
+void BrEdrDiscoveryManager::NotifyPeersUpdated(
+    const std::unordered_set<Peer*>& peers) {
   for (Peer* peer : peers) {
     if (!peer->name()) {
       RequestPeerName(peer->identifier());
@@ -407,24 +447,27 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
   }
   Peer* peer = cache_->FindById(id);
   if (!peer) {
-    bt_log(WARN, "gap-bredr", "cannot request name, unknown peer: %s", bt_str(id));
+    bt_log(
+        WARN, "gap-bredr", "cannot request name, unknown peer: %s", bt_str(id));
     return;
   }
-  auto packet =
-      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::RemoteNameRequestCommandWriter>(
-          hci_spec::kRemoteNameRequest);
+  auto packet = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::RemoteNameRequestCommandWriter>(
+      hci_spec::kRemoteNameRequest);
   auto params = packet.view_t();
   BT_DEBUG_ASSERT(peer->bredr());
   BT_DEBUG_ASSERT(peer->bredr()->page_scan_repetition_mode());
   params.bd_addr().CopyFrom(peer->address().value().view());
-  params.page_scan_repetition_mode().Write(*(peer->bredr()->page_scan_repetition_mode()));
+  params.page_scan_repetition_mode().Write(
+      *(peer->bredr()->page_scan_repetition_mode()));
   if (peer->bredr()->clock_offset()) {
     params.clock_offset().valid().Write(true);
     uint16_t offset = peer->bredr()->clock_offset().value();
     params.clock_offset().clock_offset().Write(offset);
   }
 
-  auto cb = [id, self = weak_self_.GetWeakPtr()](auto, const hci::EmbossEventPacket& event) {
+  auto cb = [id, self = weak_self_.GetWeakPtr()](
+                auto, const hci::EmbossEventPacket& event) {
     if (!self.is_alive()) {
       return;
     }
@@ -437,7 +480,8 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
       return;
     }
 
-    BT_DEBUG_ASSERT(event.event_code() == hci_spec::kRemoteNameRequestCompleteEventCode);
+    BT_DEBUG_ASSERT(event.event_code() ==
+                    hci_spec::kRemoteNameRequestCompleteEventCode);
 
     self->requesting_names_.erase(id);
     Peer* const peer = self->cache_->FindById(id);
@@ -445,17 +489,22 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
       return;
     }
 
-    auto params = event.view<pw::bluetooth::emboss::RemoteNameRequestCompleteEventView>();
-    emboss::support::ReadOnlyContiguousBuffer name = params.remote_name().BackingStorage();
+    auto params =
+        event.view<pw::bluetooth::emboss::RemoteNameRequestCompleteEventView>();
+    emboss::support::ReadOnlyContiguousBuffer name =
+        params.remote_name().BackingStorage();
     const unsigned char* name_end = std::find(name.begin(), name.end(), '\0');
     std::string name_string(reinterpret_cast<const char*>(name.begin()),
                             reinterpret_cast<const char*>(name_end));
-    peer->RegisterName(std::move(name_string), Peer::NameSource::kNameDiscoveryProcedure);
+    peer->RegisterName(std::move(name_string),
+                       Peer::NameSource::kNameDiscoveryProcedure);
   };
 
-  auto cmd_id = cmd_->SendExclusiveCommand(std::move(packet), std::move(cb),
-                                           hci_spec::kRemoteNameRequestCompleteEventCode,
-                                           {hci_spec::kInquiry});
+  auto cmd_id =
+      cmd_->SendExclusiveCommand(std::move(packet),
+                                 std::move(cb),
+                                 hci_spec::kRemoteNameRequestCompleteEventCode,
+                                 {hci_spec::kInquiry});
   if (cmd_id) {
     requesting_names_.insert(id);
   }
@@ -469,11 +518,14 @@ void BrEdrDiscoveryManager::RequestDiscoverable(DiscoverableCallback callback) {
     cb(result, (result.is_ok() ? self->AddDiscoverableSession() : nullptr));
   };
 
-  auto update_inspect = fit::defer([self]() { self->UpdateInspectProperties(); });
+  auto update_inspect =
+      fit::defer([self]() { self->UpdateInspectProperties(); });
 
   if (!pending_discoverable_.empty()) {
     pending_discoverable_.push(std::move(result_cb));
-    bt_log(INFO, "gap-bredr", "discoverable mode starting: %lu pending",
+    bt_log(INFO,
+           "gap-bredr",
+           "discoverable mode starting: %lu pending",
            pending_discoverable_.size());
     return;
   }
@@ -490,8 +542,12 @@ void BrEdrDiscoveryManager::RequestDiscoverable(DiscoverableCallback callback) {
 
 void BrEdrDiscoveryManager::SetInquiryScan() {
   bool enable = !discoverable_.empty() || !pending_discoverable_.empty();
-  bt_log(INFO, "gap-bredr", "%sabling inquiry scan: %lu sessions, %lu pending",
-         (enable ? "en" : "dis"), discoverable_.size(), pending_discoverable_.size());
+  bt_log(INFO,
+         "gap-bredr",
+         "%sabling inquiry scan: %lu sessions, %lu pending",
+         (enable ? "en" : "dis"),
+         discoverable_.size(),
+         pending_discoverable_.size());
 
   auto self = weak_self_.GetWeakPtr();
   auto scan_enable_cb = [self](auto, const hci::EventPacket& event) {
@@ -512,13 +568,18 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
       return;
     }
 
-    bool enable = !self->discoverable_.empty() || !self->pending_discoverable_.empty();
+    bool enable =
+        !self->discoverable_.empty() || !self->pending_discoverable_.empty();
     auto params = event.return_params<hci_spec::ReadScanEnableReturnParams>();
     uint8_t scan_type = params->scan_enable;
-    bool enabled = scan_type & static_cast<uint8_t>(hci_spec::ScanEnableBit::kInquiry);
+    bool enabled =
+        scan_type & static_cast<uint8_t>(hci_spec::ScanEnableBit::kInquiry);
 
     if (enable == enabled) {
-      bt_log(INFO, "gap-bredr", "inquiry scan already %s", (enable ? "enabled" : "disabled"));
+      bt_log(INFO,
+             "gap-bredr",
+             "inquiry scan already %s",
+             (enable ? "enabled" : "disabled"));
       return;
     }
 
@@ -528,72 +589,81 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
       scan_type &= ~static_cast<uint8_t>(hci_spec::ScanEnableBit::kInquiry);
     }
 
-    auto write_enable =
-        hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WriteScanEnableCommandWriter>(
-            hci_spec::kWriteScanEnable);
+    auto write_enable = hci::EmbossCommandPacket::New<
+        pw::bluetooth::emboss::WriteScanEnableCommandWriter>(
+        hci_spec::kWriteScanEnable);
     auto write_enable_view = write_enable.view_t();
     write_enable_view.scan_enable().inquiry().Write(
         scan_type & static_cast<uint8_t>(hci_spec::ScanEnableBit::kInquiry));
     write_enable_view.scan_enable().page().Write(
         scan_type & static_cast<uint8_t>(hci_spec::ScanEnableBit::kPage));
     resolve_pending.cancel();
-    self->cmd_->SendCommand(std::move(write_enable), [self](auto, const hci::EventPacket& event) {
-      if (!self.is_alive()) {
-        return;
-      }
+    self->cmd_->SendCommand(
+        std::move(write_enable), [self](auto, const hci::EventPacket& event) {
+          if (!self.is_alive()) {
+            return;
+          }
 
-      // Warn if the command failed
-      hci_is_error(event, WARN, "gap-bredr", "write scan enable failed");
+          // Warn if the command failed
+          hci_is_error(event, WARN, "gap-bredr", "write scan enable failed");
 
-      while (!self->pending_discoverable_.empty()) {
-        auto cb = std::move(self->pending_discoverable_.front());
-        self->pending_discoverable_.pop();
-        cb(event.ToResult());
-      }
-      self->UpdateInspectProperties();
-    });
+          while (!self->pending_discoverable_.empty()) {
+            auto cb = std::move(self->pending_discoverable_.front());
+            self->pending_discoverable_.pop();
+            cb(event.ToResult());
+          }
+          self->UpdateInspectProperties();
+        });
   };
 
-  auto read_enable =
-      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ReadScanEnableCommandWriter>(
-          hci_spec::kReadScanEnable);
+  auto read_enable = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::ReadScanEnableCommandWriter>(
+      hci_spec::kReadScanEnable);
   cmd_->SendCommand(std::move(read_enable), std::move(scan_enable_cb));
 }
 
-void BrEdrDiscoveryManager::WriteInquiryScanSettings(uint16_t interval, uint16_t window,
+void BrEdrDiscoveryManager::WriteInquiryScanSettings(uint16_t interval,
+                                                     uint16_t window,
                                                      bool interlaced) {
   // TODO(jamuraa): add a callback for success or failure?
-  auto write_activity =
-      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WriteInquiryScanActivityCommandWriter>(
-          hci_spec::kWriteInquiryScanActivity);
+  auto write_activity = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::WriteInquiryScanActivityCommandWriter>(
+      hci_spec::kWriteInquiryScanActivity);
   auto activity_params = write_activity.view_t();
   activity_params.inquiry_scan_interval().Write(interval);
   activity_params.inquiry_scan_window().Write(window);
 
-  cmd_->SendCommand(std::move(write_activity), [](auto id, const hci::EventPacket& event) {
-    if (hci_is_error(event, WARN, "gap-bredr", "write inquiry scan activity failed")) {
-      return;
-    }
-    bt_log(TRACE, "gap-bredr", "inquiry scan activity updated");
-  });
+  cmd_->SendCommand(
+      std::move(write_activity), [](auto id, const hci::EventPacket& event) {
+        if (hci_is_error(event,
+                         WARN,
+                         "gap-bredr",
+                         "write inquiry scan activity failed")) {
+          return;
+        }
+        bt_log(TRACE, "gap-bredr", "inquiry scan activity updated");
+      });
 
-  auto write_type =
-      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WriteInquiryScanTypeCommandWriter>(
-          hci_spec::kWriteInquiryScanType);
+  auto write_type = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::WriteInquiryScanTypeCommandWriter>(
+      hci_spec::kWriteInquiryScanType);
   auto type_params = write_type.view_t();
-  type_params.inquiry_scan_type().Write(interlaced
-                                            ? pw::bluetooth::emboss::InquiryScanType::INTERLACED
-                                            : pw::bluetooth::emboss::InquiryScanType::STANDARD);
+  type_params.inquiry_scan_type().Write(
+      interlaced ? pw::bluetooth::emboss::InquiryScanType::INTERLACED
+                 : pw::bluetooth::emboss::InquiryScanType::STANDARD);
 
-  cmd_->SendCommand(std::move(write_type), [](auto id, const hci::EventPacket& event) {
-    if (hci_is_error(event, WARN, "gap-bredr", "write inquiry scan type failed")) {
-      return;
-    }
-    bt_log(TRACE, "gap-bredr", "inquiry scan type updated");
-  });
+  cmd_->SendCommand(
+      std::move(write_type), [](auto id, const hci::EventPacket& event) {
+        if (hci_is_error(
+                event, WARN, "gap-bredr", "write inquiry scan type failed")) {
+          return;
+        }
+        bt_log(TRACE, "gap-bredr", "inquiry scan type updated");
+      });
 }
 
-std::unique_ptr<BrEdrDiscoverySession> BrEdrDiscoveryManager::AddDiscoverySession() {
+std::unique_ptr<BrEdrDiscoverySession>
+BrEdrDiscoveryManager::AddDiscoverySession() {
   bt_log(TRACE, "gap-bredr", "adding discovery session");
 
   // Cannot use make_unique here since BrEdrDiscoverySession has a private
@@ -602,12 +672,16 @@ std::unique_ptr<BrEdrDiscoverySession> BrEdrDiscoveryManager::AddDiscoverySessio
       new BrEdrDiscoverySession(weak_self_.GetWeakPtr()));
   BT_DEBUG_ASSERT(discovering_.find(session.get()) == discovering_.end());
   discovering_.insert(session.get());
-  bt_log(INFO, "gap-bredr", "new discovery session: %lu sessions active", discovering_.size());
+  bt_log(INFO,
+         "gap-bredr",
+         "new discovery session: %lu sessions active",
+         discovering_.size());
   UpdateInspectProperties();
   return session;
 }
 
-void BrEdrDiscoveryManager::RemoveDiscoverySession(BrEdrDiscoverySession* session) {
+void BrEdrDiscoveryManager::RemoveDiscoverySession(
+    BrEdrDiscoverySession* session) {
   bt_log(TRACE, "gap-bredr", "removing discovery session");
 
   auto removed = discovering_.erase(session);
@@ -618,7 +692,8 @@ void BrEdrDiscoveryManager::RemoveDiscoverySession(BrEdrDiscoverySession* sessio
   UpdateInspectProperties();
 }
 
-std::unique_ptr<BrEdrDiscoverableSession> BrEdrDiscoveryManager::AddDiscoverableSession() {
+std::unique_ptr<BrEdrDiscoverableSession>
+BrEdrDiscoveryManager::AddDiscoverableSession() {
   bt_log(TRACE, "gap-bredr", "adding discoverable session");
 
   // Cannot use make_unique here since BrEdrDiscoverableSession has a private
@@ -627,11 +702,15 @@ std::unique_ptr<BrEdrDiscoverableSession> BrEdrDiscoveryManager::AddDiscoverable
       new BrEdrDiscoverableSession(weak_self_.GetWeakPtr()));
   BT_DEBUG_ASSERT(discoverable_.find(session.get()) == discoverable_.end());
   discoverable_.insert(session.get());
-  bt_log(INFO, "gap-bredr", "new discoverable session: %lu sessions active", discoverable_.size());
+  bt_log(INFO,
+         "gap-bredr",
+         "new discoverable session: %lu sessions active",
+         discoverable_.size());
   return session;
 }
 
-void BrEdrDiscoveryManager::RemoveDiscoverableSession(BrEdrDiscoverableSession* session) {
+void BrEdrDiscoveryManager::RemoveDiscoverableSession(
+    BrEdrDiscoverableSession* session) {
   bt_log(DEBUG, "gap-bredr", "removing discoverable session");
   discoverable_.erase(session);
   if (discoverable_.empty()) {

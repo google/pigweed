@@ -2,18 +2,20 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "bredr_connection_request.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/bredr_connection_request.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 
 namespace bt::hci {
 
 EmbossCommandPacket CreateConnectionPacket(
     DeviceAddress address,
-    std::optional<pw::bluetooth::emboss::PageScanRepetitionMode> page_scan_repetition_mode,
+    std::optional<pw::bluetooth::emboss::PageScanRepetitionMode>
+        page_scan_repetition_mode,
     std::optional<uint16_t> clock_offset) {
-  auto request = EmbossCommandPacket::New<pw::bluetooth::emboss::CreateConnectionCommandWriter>(
+  auto request = EmbossCommandPacket::New<
+      pw::bluetooth::emboss::CreateConnectionCommandWriter>(
       hci_spec::kCreateConnection);
   auto params = request.view_t();
   params.bd_addr().CopyFrom(address.value().view());
@@ -25,7 +27,8 @@ EmbossCommandPacket CreateConnectionPacket(
   if (page_scan_repetition_mode) {
     params.page_scan_repetition_mode().Write(*page_scan_repetition_mode);
   } else {
-    params.page_scan_repetition_mode().Write(pw::bluetooth::emboss::PageScanRepetitionMode::R2_);
+    params.page_scan_repetition_mode().Write(
+        pw::bluetooth::emboss::PageScanRepetitionMode::R2_);
   }
 
   params.reserved().Write(0);  // Reserved, must be set to 0.
@@ -40,22 +43,28 @@ EmbossCommandPacket CreateConnectionPacket(
     params.clock_offset().valid().Write(false);
   }
 
-  params.allow_role_switch().Write(pw::bluetooth::emboss::GenericEnableParam::DISABLE);
+  params.allow_role_switch().Write(
+      pw::bluetooth::emboss::GenericEnableParam::DISABLE);
 
   return request;
 }
 
 void BrEdrConnectionRequest::CreateConnection(
-    CommandChannel* command_channel, std::optional<uint16_t> clock_offset,
-    std::optional<pw::bluetooth::emboss::PageScanRepetitionMode> page_scan_repetition_mode,
-    pw::chrono::SystemClock::duration timeout, OnCompleteDelegate on_command_fail) {
+    CommandChannel* command_channel,
+    std::optional<uint16_t> clock_offset,
+    std::optional<pw::bluetooth::emboss::PageScanRepetitionMode>
+        page_scan_repetition_mode,
+    pw::chrono::SystemClock::duration timeout,
+    OnCompleteDelegate on_command_fail) {
   BT_DEBUG_ASSERT(timeout.count() > 0);
 
   // HCI Command Status Event will be sent as our completion callback.
   auto self = weak_self_.GetWeakPtr();
-  auto complete_cb = [self, timeout, peer_id = peer_id_,
-                      on_command_fail = std::move(on_command_fail)](auto,
-                                                                    const EventPacket& event) {
+  auto complete_cb = [self,
+                      timeout,
+                      peer_id = peer_id_,
+                      on_command_fail = std::move(on_command_fail)](
+                         auto, const EventPacket& event) {
     BT_DEBUG_ASSERT(event.event_code() == hci_spec::kCommandStatusEventCode);
 
     if (!self.is_alive())
@@ -65,10 +74,14 @@ void BrEdrConnectionRequest::CreateConnection(
     if (status.is_error()) {
       on_command_fail(status, peer_id);
     } else {
-      // Both CommandChannel and the controller perform some scheduling, so log when the controller
-      // finally acknowledges Create Connection to observe outgoing connection sequencing.
-      // TODO(fxbug.dev/92299): Added to investigate timing and can be removed if it adds no value
-      bt_log(INFO, "hci-bredr", "Create Connection for peer %s successfully dispatched",
+      // Both CommandChannel and the controller perform some scheduling, so log
+      // when the controller finally acknowledges Create Connection to observe
+      // outgoing connection sequencing.
+      // TODO(fxbug.dev/92299): Added to investigate timing and can be removed
+      // if it adds no value
+      bt_log(INFO,
+             "hci-bredr",
+             "Create Connection for peer %s successfully dispatched",
              bt_str(peer_id));
 
       // The request was started but has not completed; initiate the command
@@ -78,16 +91,24 @@ void BrEdrConnectionRequest::CreateConnection(
     }
   };
 
-  auto packet = CreateConnectionPacket(peer_address_, page_scan_repetition_mode, clock_offset);
+  auto packet = CreateConnectionPacket(
+      peer_address_, page_scan_repetition_mode, clock_offset);
 
-  bt_log(INFO, "hci-bredr", "initiating connection request (peer: %s)", bt_str(peer_id_));
-  command_channel->SendCommand(std::move(packet), std::move(complete_cb),
+  bt_log(INFO,
+         "hci-bredr",
+         "initiating connection request (peer: %s)",
+         bt_str(peer_id_));
+  command_channel->SendCommand(std::move(packet),
+                               std::move(complete_cb),
                                hci_spec::kCommandStatusEventCode);
 }
 
 // Status is either a Success or an Error value
 Result<> BrEdrConnectionRequest::CompleteRequest(Result<> status) {
-  bt_log(INFO, "hci-bredr", "connection complete (status: %s, peer: %s)", bt_str(status),
+  bt_log(INFO,
+         "hci-bredr",
+         "connection complete (status: %s, peer: %s)",
+         bt_str(status),
          bt_str(peer_id_));
   timeout_task_.Cancel();
 
@@ -95,7 +116,8 @@ Result<> BrEdrConnectionRequest::CompleteRequest(Result<> status) {
     if (state_ == RequestState::kTimedOut) {
       return ToResult(HostError::kTimedOut);
     }
-    if (status == ToResult(pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID)) {
+    if (status ==
+        ToResult(pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID)) {
       // The "Unknown Connection Identifier" error code is returned if this
       // event was sent due to a successful cancellation via the
       // HCI_Create_Connection_Cancel command
@@ -111,7 +133,9 @@ Result<> BrEdrConnectionRequest::CompleteRequest(Result<> status) {
 void BrEdrConnectionRequest::Timeout() {
   // If the request was cancelled, this handler will have been removed
   BT_ASSERT(state_ == RequestState::kPending);
-  bt_log(INFO, "hci-bredr", "create connection timed out: canceling request (peer: %s)",
+  bt_log(INFO,
+         "hci-bredr",
+         "create connection timed out: canceling request (peer: %s)",
          bt_str(peer_id_));
   state_ = RequestState::kTimedOut;
   timeout_task_.Cancel();
@@ -119,16 +143,25 @@ void BrEdrConnectionRequest::Timeout() {
 
 bool BrEdrConnectionRequest::Cancel() {
   if (state_ == RequestState::kSuccess) {
-    bt_log(DEBUG, "hci-bredr", "connection has already succeeded (peer: %s)", bt_str(peer_id_));
+    bt_log(DEBUG,
+           "hci-bredr",
+           "connection has already succeeded (peer: %s)",
+           bt_str(peer_id_));
     return false;
   }
   if (state_ != RequestState::kPending) {
-    bt_log(WARN, "hci-bredr", "connection attempt already canceled! (peer: %s)", bt_str(peer_id_));
+    bt_log(WARN,
+           "hci-bredr",
+           "connection attempt already canceled! (peer: %s)",
+           bt_str(peer_id_));
     return false;
   }
-  // TODO(fxbug.dev/65157) - We should correctly handle cancels due to a disconnect call during a
-  // pending connection creation attempt
-  bt_log(INFO, "hci-bredr", "canceling connection request (peer: %s)", bt_str(peer_id_));
+  // TODO(fxbug.dev/65157) - We should correctly handle cancels due to a
+  // disconnect call during a pending connection creation attempt
+  bt_log(INFO,
+         "hci-bredr",
+         "canceling connection request (peer: %s)",
+         bt_str(peer_id_));
   state_ = RequestState::kCanceled;
   timeout_task_.Cancel();
   return true;

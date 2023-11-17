@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "uuid.h"
+#include "pw_bluetooth_sapphire/internal/host/common/uuid.h"
 
 #include <endian.h>
 
 #include <cinttypes>
 
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
+#include "pw_bluetooth_sapphire/internal/host/common/random.h"
 #include "pw_string/format.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 
 namespace bt {
 namespace {
@@ -39,7 +39,8 @@ bool ParseUuidString(const std::string& uuid_string, UInt128* out_bytes) {
 
   if (uuid_string.length() == 4) {
     // Possibly a 16-bit short UUID, parse it in context of the Base UUID.
-    return ParseUuidString("0000" + uuid_string + "-0000-1000-8000-00805F9B34FB", out_bytes);
+    return ParseUuidString(
+        "0000" + uuid_string + "-0000-1000-8000-00805F9B34FB", out_bytes);
   }
 
   // This is a 36 character string, including 4 "-" characters and two
@@ -47,12 +48,24 @@ bool ParseUuidString(const std::string& uuid_string, UInt128* out_bytes) {
   if (uuid_string.length() != 36)
     return false;
 
-  int result = std::sscanf(uuid_string.c_str(), kScanUuidFormatString, out_bytes->data() + 15,
-                           out_bytes->data() + 14, out_bytes->data() + 13, out_bytes->data() + 12,
-                           out_bytes->data() + 11, out_bytes->data() + 10, out_bytes->data() + 9,
-                           out_bytes->data() + 8, out_bytes->data() + 7, out_bytes->data() + 6,
-                           out_bytes->data() + 5, out_bytes->data() + 4, out_bytes->data() + 3,
-                           out_bytes->data() + 2, out_bytes->data() + 1, out_bytes->data());
+  int result = std::sscanf(uuid_string.c_str(),
+                           kScanUuidFormatString,
+                           out_bytes->data() + 15,
+                           out_bytes->data() + 14,
+                           out_bytes->data() + 13,
+                           out_bytes->data() + 12,
+                           out_bytes->data() + 11,
+                           out_bytes->data() + 10,
+                           out_bytes->data() + 9,
+                           out_bytes->data() + 8,
+                           out_bytes->data() + 7,
+                           out_bytes->data() + 6,
+                           out_bytes->data() + 5,
+                           out_bytes->data() + 4,
+                           out_bytes->data() + 3,
+                           out_bytes->data() + 2,
+                           out_bytes->data() + 1,
+                           out_bytes->data());
 
   return (result > 0) && (static_cast<size_t>(result) == out_bytes->size());
 }
@@ -85,15 +98,15 @@ bool UUID::FromBytes(const ByteBuffer& bytes, UUID* out_uuid) {
 }
 
 UUID UUID::Generate() {
-  // We generate a 128-bit random UUID in the form of version 4 as described in ITU-T Rec.
-  // X.667(10/2012) Sec 15.1. This is the same as RFC 4122.
+  // We generate a 128-bit random UUID in the form of version 4 as described in
+  // ITU-T Rec. X.667(10/2012) Sec 15.1. This is the same as RFC 4122.
   UInt128 uuid = Random<UInt128>();
-  //  Set the four most significant bits (bits 15 through 12) of the "VersionAndTimeHigh" field
-  //  to 4.
+  //  Set the four most significant bits (bits 15 through 12) of the
+  //  "VersionAndTimeHigh" field to 4.
   constexpr uint8_t version_number = 0b0100'0000;
   uuid[6] = (uuid[6] & 0b0000'1111) | version_number;
-  // Set the two most significant bits (bits 7 and 6) of the "VariantAndClockSeqHigh" field to 1 and
-  // 0, respectively.
+  // Set the two most significant bits (bits 7 and 6) of the
+  // "VariantAndClockSeqHigh" field to 1 and 0, respectively.
   uuid[8] = (uuid[8] & 0b0011'1111) | 0b1000'0000;
   return UUID(uuid);
 }
@@ -121,7 +134,9 @@ bool UUID::operator==(uint32_t uuid32) const {
   return *this == UUID(uuid32);
 }
 
-bool UUID::operator==(const UInt128& uuid128) const { return value_ == uuid128; }
+bool UUID::operator==(const UInt128& uuid128) const {
+  return value_ == uuid128;
+}
 
 bool UUID::CompareBytes(const ByteBuffer& bytes) const {
   UUID other;
@@ -134,9 +149,24 @@ bool UUID::CompareBytes(const ByteBuffer& bytes) const {
 std::string UUID::ToString() const {
   char out[sizeof("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")];
   pw::StatusWithSize result = pw::string::Format(
-      {out, sizeof(out)}, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-      value_[15], value_[14], value_[13], value_[12], value_[11], value_[10], value_[9], value_[8],
-      value_[7], value_[6], value_[5], value_[4], value_[3], value_[2], value_[1], value_[0]);
+      {out, sizeof(out)},
+      "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+      value_[15],
+      value_[14],
+      value_[13],
+      value_[12],
+      value_[11],
+      value_[10],
+      value_[9],
+      value_[8],
+      value_[7],
+      value_[6],
+      value_[5],
+      value_[4],
+      value_[3],
+      value_[2],
+      value_[1],
+      value_[0]);
   BT_DEBUG_ASSERT(result.ok());
   return out;
 }
@@ -179,7 +209,8 @@ std::size_t UUID::Hash() const {
   // static_assert(alignof(value_) % alignof(size_t) == 0);
   size_t hash = 0;
   for (size_t i = 0; i < (sizeof(value_) / sizeof(size_t)); i++) {
-    hash ^= *reinterpret_cast<const size_t*>(value_.data() + (i * sizeof(size_t)));
+    hash ^=
+        *reinterpret_cast<const size_t*>(value_.data() + (i * sizeof(size_t)));
   }
   return hash;
 }
@@ -195,13 +226,15 @@ std::optional<uint16_t> UUID::As16Bit() const {
 uint16_t UUID::ValueAs16Bit() const {
   BT_DEBUG_ASSERT(type_ == Type::k16Bit);
 
-  return le16toh(*reinterpret_cast<const uint16_t*>(value_.data() + kBaseOffset));
+  return le16toh(
+      *reinterpret_cast<const uint16_t*>(value_.data() + kBaseOffset));
 }
 
 uint32_t UUID::ValueAs32Bit() const {
   BT_DEBUG_ASSERT(type_ != Type::k128Bit);
 
-  return le32toh(*reinterpret_cast<const uint32_t*>(value_.data() + kBaseOffset));
+  return le32toh(
+      *reinterpret_cast<const uint32_t*>(value_.data() + kBaseOffset));
 }
 
 bool IsStringValidUuid(const std::string& uuid_string) {

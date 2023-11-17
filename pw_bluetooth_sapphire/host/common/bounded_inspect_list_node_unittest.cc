@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef NINSPECT
-
-#include "bounded_inspect_list_node.h"
+#include "pw_bluetooth_sapphire/internal/host/common/bounded_inspect_list_node.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/inspect.h"
+
+#ifndef NINSPECT
 
 namespace bt {
 
@@ -38,10 +38,12 @@ TEST(BoundedInspectListNodeTest, ListEviction) {
           NodeMatches(NameMatches("list_name")),
           ChildrenMatch(UnorderedElementsAre(
               // item_0
-              NodeMatches(AllOf(NameMatches("0"), PropertyList(ElementsAre(IntIs("item_0", 0))))),
+              NodeMatches(AllOf(NameMatches("0"),
+                                PropertyList(ElementsAre(IntIs("item_0", 0))))),
               // item_1
               NodeMatches(
-                  AllOf(NameMatches("1"), PropertyList(ElementsAre(IntIs("item_1", 1)))))))))));
+                  AllOf(NameMatches("1"),
+                        PropertyList(ElementsAre(IntIs("item_1", 1)))))))))));
 
   // Exceed capacity. item_0 should be evicted.
   Item& item_2 = list.CreateItem();
@@ -56,10 +58,12 @@ TEST(BoundedInspectListNodeTest, ListEviction) {
           NodeMatches(NameMatches("list_name")),
           ChildrenMatch(UnorderedElementsAre(
               // item_1
-              NodeMatches(AllOf(NameMatches("1"), PropertyList(ElementsAre(IntIs("item_1", 1))))),
+              NodeMatches(AllOf(NameMatches("1"),
+                                PropertyList(ElementsAre(IntIs("item_1", 1))))),
               // item_2
               NodeMatches(
-                  AllOf(NameMatches("2"), PropertyList(ElementsAre(IntIs("item_2", 2)))))))))));
+                  AllOf(NameMatches("2"),
+                        PropertyList(ElementsAre(IntIs("item_2", 2)))))))))));
 }
 
 }  // namespace

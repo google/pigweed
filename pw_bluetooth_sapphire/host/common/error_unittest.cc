@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "error.h"
-
-#include <sstream>
+#include "pw_bluetooth_sapphire/internal/host/common/error.h"
 
 #include <gtest/gtest.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
+#include <sstream>
+
+#include "pw_bluetooth_sapphire/internal/host/common/uuid.h"
 
 namespace bt {
 namespace {
@@ -69,8 +69,8 @@ struct ProtocolErrorTraits<TestErrorWithoutSuccess> {
 
 namespace {
 
-// Build an Error when |proto_code| is guaranteed to be an error. This could be consteval in C++20
-// so that if the code isn't an error, it doesn't compile.
+// Build an Error when |proto_code| is guaranteed to be an error. This could be
+// consteval in C++20 so that if the code isn't an error, it doesn't compile.
 constexpr Error<TestError> MakeError(TestError proto_code) {
   return ToResult(proto_code).error_value();
 }
@@ -169,29 +169,35 @@ TEST(ErrorTest, ResultFromSuccessProtocolError) {
 
 TEST(ErrorTest, ResultFromNonSuccessProtocolErrorThatOnlyHoldsErrors) {
   // Use public ctor to construct the error directly.
-  constexpr Error<TestErrorWithoutSuccess> error(TestErrorWithoutSuccess::kFail0);
+  constexpr Error<TestErrorWithoutSuccess> error(
+      TestErrorWithoutSuccess::kFail0);
   EXPECT_TRUE(error.is(TestErrorWithoutSuccess::kFail0));
 }
 
 TEST(ErrorDeathTest, ReadingHostErrorThatIsNotPresentIsFatal) {
   const Error error = MakeError(TestError::kFail1);
-  ASSERT_DEATH_IF_SUPPORTED([[maybe_unused]] auto _ = error.host_error(), "HostError");
+  ASSERT_DEATH_IF_SUPPORTED([[maybe_unused]] auto _ = error.host_error(),
+                            "HostError");
 }
 
 TEST(ErrorDeathTest, ReadingProtocolErrorThatIsNotPresentIsFatal) {
   const Error<TestError> error(HostError::kFailed);
-  ASSERT_DEATH_IF_SUPPORTED([[maybe_unused]] auto _ = error.protocol_error(), "protocol error");
+  ASSERT_DEATH_IF_SUPPORTED([[maybe_unused]] auto _ = error.protocol_error(),
+                            "protocol error");
 }
 
 TEST(ErrorTest, ResultIsAnyOf) {
   constexpr Error error = MakeError(TestError::kFail1);
 
   // None of the arguments compare equal to error's contents
-  EXPECT_FALSE(error.is_any_of(HostError::kFailed, TestError::kFail2, TestError::kSuccess));
+  EXPECT_FALSE(error.is_any_of(
+      HostError::kFailed, TestError::kFail2, TestError::kSuccess));
 
   // One argument matches
-  EXPECT_TRUE(error.is_any_of(HostError::kFailed, TestError::kFail2, TestError::kFail1));
-  EXPECT_TRUE(error.is_any_of(HostError::kFailed, TestError::kFail1, TestError::kFail2));
+  EXPECT_TRUE(error.is_any_of(
+      HostError::kFailed, TestError::kFail2, TestError::kFail1));
+  EXPECT_TRUE(error.is_any_of(
+      HostError::kFailed, TestError::kFail1, TestError::kFail2));
   EXPECT_TRUE(error.is_any_of(TestError::kFail1));
 }
 
@@ -250,8 +256,8 @@ TEST(ErrorTest, ResultCanBeComparedInTests) {
   const fit::result<Error<TestError>, int> error_with_value_holding_host_error =
       fit::error(Error<TestError>(HostError::kFailed));
 
-  // ToResult(HostError) constructs a bt::Error<NoProtocolError> so comparisons must take this into
-  // account.
+  // ToResult(HostError) constructs a bt::Error<NoProtocolError> so comparisons
+  // must take this into account.
   EXPECT_EQ(Error(HostError::kFailed), error_with_value_holding_host_error);
   EXPECT_NE(Error(HostError::kFailed), error_with_value);
 }
@@ -292,47 +298,56 @@ TEST(ErrorTest, GeneralHostErrorToString) {
 
 TEST(ErrorTest, ProtocolErrorToString) {
   constexpr Error error = MakeError(TestError::kFail2);
-  EXPECT_EQ(ProtocolErrorTraits<TestError>::ToString(TestError::kFail2), error.ToString());
+  EXPECT_EQ(ProtocolErrorTraits<TestError>::ToString(TestError::kFail2),
+            error.ToString());
 
   // Test that GoogleTest's value printer converts to the same string
   EXPECT_EQ(internal::ToString(error), ::testing::PrintToString(error));
 
-  // ostringstream::operator<< returns a ostream&, so test that our operator is compatible
+  // ostringstream::operator<< returns a ostream&, so test that our operator is
+  // compatible
   std::ostringstream oss;
   oss << error;
 }
 
 TEST(ErrorTest, ToStringOnResult) {
   constexpr fit::result proto_error_result = ToResult(TestError::kFail2);
-  EXPECT_EQ("[result: error(fail 2 (TestError 2))]", internal::ToString(proto_error_result));
+  EXPECT_EQ("[result: error(fail 2 (TestError 2))]",
+            internal::ToString(proto_error_result));
   constexpr fit::result<Error<TestError>> success_result = fit::ok();
   EXPECT_EQ("[result: ok()]", internal::ToString(success_result));
-  constexpr fit::result<Error<TestError>, int> success_result_with_value = fit::ok(1);
+  constexpr fit::result<Error<TestError>, int> success_result_with_value =
+      fit::ok(1);
   EXPECT_EQ("[result: ok(?)]", internal::ToString(success_result_with_value));
-  constexpr fit::result<Error<TestError>, UUID> success_result_with_printable_value =
-      fit::ok(UUID(uint16_t{}));
+  constexpr fit::result<Error<TestError>, UUID>
+      success_result_with_printable_value = fit::ok(UUID(uint16_t{}));
   EXPECT_EQ("[result: ok(00000000-0000-1000-8000-00805f9b34fb)]",
             internal::ToString(success_result_with_printable_value));
 
   // Test that GoogleTest's value printer converts to the same string
-  EXPECT_EQ(internal::ToString(proto_error_result), ::testing::PrintToString(proto_error_result));
-  EXPECT_EQ(internal::ToString(success_result), ::testing::PrintToString(success_result));
+  EXPECT_EQ(internal::ToString(proto_error_result),
+            ::testing::PrintToString(proto_error_result));
+  EXPECT_EQ(internal::ToString(success_result),
+            ::testing::PrintToString(success_result));
   EXPECT_EQ(internal::ToString(success_result_with_printable_value),
             ::testing::PrintToString(success_result_with_printable_value));
 
-  // The value printer will try to stream types to the GoogleTest ostream if possible, so it may not
-  // always match bt::internal::ToString's output.
-  EXPECT_EQ("[result: ok(1)]", ::testing::PrintToString(success_result_with_value));
+  // The value printer will try to stream types to the GoogleTest ostream if
+  // possible, so it may not always match bt::internal::ToString's output.
+  EXPECT_EQ("[result: ok(1)]",
+            ::testing::PrintToString(success_result_with_value));
 }
 
 TEST(ErrorTest, BtIsErrorMacroCompiles) {
   const fit::result general_error = ToResult(HostError::kFailed);
   EXPECT_TRUE(bt_is_error(general_error, ERROR, "ErrorTest", "error message"));
   const fit::result<Error<TestError>, int> success_with_value = fit::ok(1);
-  EXPECT_FALSE(bt_is_error(success_with_value, ERROR, "ErrorTest", "error message"));
+  EXPECT_FALSE(
+      bt_is_error(success_with_value, ERROR, "ErrorTest", "error message"));
   const fit::result<Error<TestError>, int> error_with_value =
       fit::error(MakeError(TestError::kFail1));
-  EXPECT_TRUE(bt_is_error(error_with_value, ERROR, "ErrorTest", "error message"));
+  EXPECT_TRUE(
+      bt_is_error(error_with_value, ERROR, "ErrorTest", "error message"));
 }
 
 TEST(ErrorTest, BtIsErrorOnlyEvaluatesResultOnce) {

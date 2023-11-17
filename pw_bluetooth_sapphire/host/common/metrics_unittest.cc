@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef NINSPECT
-
-#include "src/connectivity/bluetooth/core/bt-host/common/metrics.h"
+#include "pw_bluetooth_sapphire/internal/host/common/metrics.h"
 
 #include <gtest/gtest.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/inspect.h"
+
+#ifndef NINSPECT
 
 namespace bt {
 namespace {
@@ -22,26 +22,32 @@ TEST(MetrictsTest, PropertyAddSubInt) {
   counter.AttachInspect(child, "value");
 
   auto node_matcher_0 = AllOf(NodeMatches(
-      AllOf(NameMatches("child"), PropertyList(UnorderedElementsAre(UintIs("value", 0))))));
+      AllOf(NameMatches("child"),
+            PropertyList(UnorderedElementsAre(UintIs("value", 0))))));
 
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo()).take_value();
-  EXPECT_THAT(hierarchy, AllOf(ChildrenMatch(UnorderedElementsAre(node_matcher_0))));
+  EXPECT_THAT(hierarchy,
+              AllOf(ChildrenMatch(UnorderedElementsAre(node_matcher_0))));
 
   counter.Add(5);
 
   auto node_matcher_1 = AllOf(NodeMatches(
-      AllOf(NameMatches("child"), PropertyList(UnorderedElementsAre(UintIs("value", 5))))));
+      AllOf(NameMatches("child"),
+            PropertyList(UnorderedElementsAre(UintIs("value", 5))))));
 
   hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo()).take_value();
-  EXPECT_THAT(hierarchy, AllOf(ChildrenMatch(UnorderedElementsAre(node_matcher_1))));
+  EXPECT_THAT(hierarchy,
+              AllOf(ChildrenMatch(UnorderedElementsAre(node_matcher_1))));
 
   counter.Subtract();
 
   auto node_matcher_2 = AllOf(NodeMatches(
-      AllOf(NameMatches("child"), PropertyList(UnorderedElementsAre(UintIs("value", 4))))));
+      AllOf(NameMatches("child"),
+            PropertyList(UnorderedElementsAre(UintIs("value", 4))))));
 
   hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo()).take_value();
-  EXPECT_THAT(hierarchy, AllOf(ChildrenMatch(UnorderedElementsAre(node_matcher_2))));
+  EXPECT_THAT(hierarchy,
+              AllOf(ChildrenMatch(UnorderedElementsAre(node_matcher_2))));
 }
 
 }  // namespace

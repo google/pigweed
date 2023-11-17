@@ -2,21 +2,23 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "le_signaling_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/le_signaling_channel.h"
 
-#include "channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/channel.h"
 
 namespace bt::l2cap::internal {
 
-LESignalingChannel::LESignalingChannel(Channel::WeakPtr chan,
-                                       pw::bluetooth::emboss::ConnectionRole role,
-                                       pw::async::Dispatcher& dispatcher)
+LESignalingChannel::LESignalingChannel(
+    Channel::WeakPtr chan,
+    pw::bluetooth::emboss::ConnectionRole role,
+    pw::async::Dispatcher& dispatcher)
     : SignalingChannel(std::move(chan), role, dispatcher) {
   set_mtu(kMinLEMTU);
 }
 
-void LESignalingChannel::DecodeRxUnit(ByteBufferPtr sdu, const SignalingPacketHandler& cb) {
+void LESignalingChannel::DecodeRxUnit(ByteBufferPtr sdu,
+                                      const SignalingPacketHandler& cb) {
   // "[O]nly one command per C-frame shall be sent over [the LE] Fixed Channel"
   // (v5.0, Vol 3, Part A, Section 4).
   BT_DEBUG_ASSERT(sdu);
@@ -28,9 +30,13 @@ void LESignalingChannel::DecodeRxUnit(ByteBufferPtr sdu, const SignalingPacketHa
   SignalingPacket packet(sdu.get());
   uint16_t expected_payload_length = le16toh(packet.header().length);
   if (expected_payload_length != sdu->size() - sizeof(CommandHeader)) {
-    bt_log(DEBUG, "l2cap-le", "sig: packet size mismatch (expected: %u, recv: %zu); drop",
-           expected_payload_length, sdu->size() - sizeof(CommandHeader));
-    SendCommandReject(packet.header().id, RejectReason::kNotUnderstood, BufferView());
+    bt_log(DEBUG,
+           "l2cap-le",
+           "sig: packet size mismatch (expected: %u, recv: %zu); drop",
+           expected_payload_length,
+           sdu->size() - sizeof(CommandHeader));
+    SendCommandReject(
+        packet.header().id, RejectReason::kNotUnderstood, BufferView());
     return;
   }
 

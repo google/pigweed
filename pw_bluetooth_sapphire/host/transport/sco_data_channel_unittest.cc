@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/transport/sco_data_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/sco_data_channel.h"
 
 #include "pw_bluetooth/controller.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/mock_controller.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
 
 namespace bt::hci {
 namespace {
@@ -23,30 +23,37 @@ constexpr size_t kBufferMaxNumPackets = 2;
 
 bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>
 MsbcConnectionParams() {
-  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> out;
+  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>
+      out;
   auto view = out.view();
   view.transmit_bandwidth().Write(0);
   view.receive_bandwidth().Write(0);
-  view.transmit_coding_format().coding_format().Write(pw::bluetooth::emboss::CodingFormat::MSBC);
+  view.transmit_coding_format().coding_format().Write(
+      pw::bluetooth::emboss::CodingFormat::MSBC);
   view.transmit_coding_format().company_id().Write(0);
   view.transmit_coding_format().vendor_codec_id().Write(0);
-  view.receive_coding_format().coding_format().Write(pw::bluetooth::emboss::CodingFormat::MSBC);
+  view.receive_coding_format().coding_format().Write(
+      pw::bluetooth::emboss::CodingFormat::MSBC);
   view.receive_coding_format().company_id().Write(0);
   view.receive_coding_format().vendor_codec_id().Write(0);
   view.transmit_codec_frame_size_bytes().Write(0);
   view.receive_codec_frame_size_bytes().Write(0);
   view.input_bandwidth().Write(32000);
   view.output_bandwidth().Write(32000);
-  view.input_coding_format().coding_format().Write(pw::bluetooth::emboss::CodingFormat::MSBC);
+  view.input_coding_format().coding_format().Write(
+      pw::bluetooth::emboss::CodingFormat::MSBC);
   view.input_coding_format().company_id().Write(0);
   view.input_coding_format().vendor_codec_id().Write(0);
-  view.output_coding_format().coding_format().Write(pw::bluetooth::emboss::CodingFormat::MSBC);
+  view.output_coding_format().coding_format().Write(
+      pw::bluetooth::emboss::CodingFormat::MSBC);
   view.output_coding_format().company_id().Write(0);
   view.output_coding_format().vendor_codec_id().Write(0);
   view.input_coded_data_size_bits().Write(16);
   view.output_coded_data_size_bits().Write(16);
-  view.input_pcm_data_format().Write(pw::bluetooth::emboss::PcmDataFormat::UNSIGNED);
-  view.output_pcm_data_format().Write(pw::bluetooth::emboss::PcmDataFormat::UNSIGNED);
+  view.input_pcm_data_format().Write(
+      pw::bluetooth::emboss::PcmDataFormat::UNSIGNED);
+  view.output_pcm_data_format().Write(
+      pw::bluetooth::emboss::PcmDataFormat::UNSIGNED);
   view.input_pcm_sample_payload_msb_position().Write(0);
   view.output_pcm_sample_payload_msb_position().Write(0);
   view.input_data_path().Write(pw::bluetooth::emboss::ScoDataPath::HCI);
@@ -56,36 +63,44 @@ MsbcConnectionParams() {
   view.max_latency_ms().Write(0);
   view.packet_types().BackingStorage().WriteUInt(0);
   view.retransmission_effort().Write(
-      pw::bluetooth::emboss::SynchronousConnectionParameters::ScoRetransmissionEffort::NONE);
+      pw::bluetooth::emboss::SynchronousConnectionParameters::
+          ScoRetransmissionEffort::NONE);
   return out;
 }
 
 bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>
 cvsd_connection_params() {
-  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> out;
+  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>
+      out;
   auto view = out.view();
   view.transmit_bandwidth().Write(0);
   view.receive_bandwidth().Write(0);
-  view.transmit_coding_format().coding_format().Write(pw::bluetooth::emboss::CodingFormat::CVSD);
+  view.transmit_coding_format().coding_format().Write(
+      pw::bluetooth::emboss::CodingFormat::CVSD);
   view.transmit_coding_format().company_id().Write(0);
   view.transmit_coding_format().vendor_codec_id().Write(0);
-  view.receive_coding_format().coding_format().Write(pw::bluetooth::emboss::CodingFormat::CVSD);
+  view.receive_coding_format().coding_format().Write(
+      pw::bluetooth::emboss::CodingFormat::CVSD);
   view.receive_coding_format().company_id().Write(0);
   view.receive_coding_format().vendor_codec_id().Write(0);
   view.transmit_codec_frame_size_bytes().Write(0);
   view.receive_codec_frame_size_bytes().Write(0);
   view.input_bandwidth().Write(8000);
   view.output_bandwidth().Write(8000);
-  view.input_coding_format().coding_format().Write(pw::bluetooth::emboss::CodingFormat::CVSD);
+  view.input_coding_format().coding_format().Write(
+      pw::bluetooth::emboss::CodingFormat::CVSD);
   view.input_coding_format().company_id().Write(0);
   view.input_coding_format().vendor_codec_id().Write(0);
-  view.output_coding_format().coding_format().Write(pw::bluetooth::emboss::CodingFormat::CVSD);
+  view.output_coding_format().coding_format().Write(
+      pw::bluetooth::emboss::CodingFormat::CVSD);
   view.output_coding_format().company_id().Write(0);
   view.output_coding_format().vendor_codec_id().Write(0);
   view.input_coded_data_size_bits().Write(8);
   view.output_coded_data_size_bits().Write(8);
-  view.input_pcm_data_format().Write(pw::bluetooth::emboss::PcmDataFormat::UNSIGNED);
-  view.output_pcm_data_format().Write(pw::bluetooth::emboss::PcmDataFormat::UNSIGNED);
+  view.input_pcm_data_format().Write(
+      pw::bluetooth::emboss::PcmDataFormat::UNSIGNED);
+  view.output_pcm_data_format().Write(
+      pw::bluetooth::emboss::PcmDataFormat::UNSIGNED);
   view.input_pcm_sample_payload_msb_position().Write(0);
   view.output_pcm_sample_payload_msb_position().Write(0);
   view.input_data_path().Write(pw::bluetooth::emboss::ScoDataPath::HCI);
@@ -95,14 +110,17 @@ cvsd_connection_params() {
   view.max_latency_ms().Write(0);
   view.packet_types().BackingStorage().WriteUInt(0);
   view.retransmission_effort().Write(
-      pw::bluetooth::emboss::SynchronousConnectionParameters::ScoRetransmissionEffort::NONE);
+      pw::bluetooth::emboss::SynchronousConnectionParameters::
+          ScoRetransmissionEffort::NONE);
   return out;
 }
 class FakeScoConnection : public ScoDataChannel::ConnectionInterface {
  public:
   explicit FakeScoConnection(
-      ScoDataChannel* data_channel, hci_spec::ConnectionHandle handle = kConnectionHandle0,
-      bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> params =
+      ScoDataChannel* data_channel,
+      hci_spec::ConnectionHandle handle = kConnectionHandle0,
+      bt::StaticPacket<
+          pw::bluetooth::emboss::SynchronousConnectionParametersWriter> params =
           MsbcConnectionParams())
       : handle_(handle),
         params_(std::move(params)),
@@ -125,14 +143,16 @@ class FakeScoConnection : public ScoDataChannel::ConnectionInterface {
 
   uint16_t hci_error_count() const { return hci_error_count_; }
 
-  WeakPtr<ConnectionInterface> GetWeakPtr() { return weak_interface_.GetWeakPtr(); }
+  WeakPtr<ConnectionInterface> GetWeakPtr() {
+    return weak_interface_.GetWeakPtr();
+  }
 
   // ScoDataChannel::ConnectionInterface overrides:
 
   hci_spec::ConnectionHandle handle() const override { return handle_; }
 
-  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> parameters()
-      override {
+  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>
+  parameters() override {
     return params_;
   }
 
@@ -153,7 +173,8 @@ class FakeScoConnection : public ScoDataChannel::ConnectionInterface {
 
  private:
   hci_spec::ConnectionHandle handle_;
-  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> params_;
+  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>
+      params_;
   std::queue<std::unique_ptr<ScoDataPacket>> queued_packets_;
   std::vector<std::unique_ptr<ScoDataPacket>> received_packets_;
   ScoDataChannel* data_channel_;
@@ -161,7 +182,8 @@ class FakeScoConnection : public ScoDataChannel::ConnectionInterface {
   WeakSelf<ConnectionInterface> weak_interface_;
 };
 
-using TestingBase = bt::testing::FakeDispatcherControllerTest<bt::testing::MockController>;
+using TestingBase =
+    bt::testing::FakeDispatcherControllerTest<bt::testing::MockController>;
 class ScoDataChannelTest : public TestingBase {
  public:
   void SetUp() override {
@@ -177,20 +199,23 @@ class ScoDataChannelSingleConnectionTest : public ScoDataChannelTest {
   void SetUp() override {
     ScoDataChannelTest::SetUp();
 
-    test_device()->set_configure_sco_cb([this](ScoCodingFormat format, ScoEncoding encoding,
-                                               ScoSampleRate rate,
-                                               fit::callback<void(pw::Status)> callback) {
-      config_count_++;
-      EXPECT_EQ(format, ScoCodingFormat::kMsbc);
-      EXPECT_EQ(encoding, ScoEncoding::k16Bits);
-      EXPECT_EQ(rate, ScoSampleRate::k16Khz);
-      callback(PW_STATUS_OK);
-    });
+    test_device()->set_configure_sco_cb(
+        [this](ScoCodingFormat format,
+               ScoEncoding encoding,
+               ScoSampleRate rate,
+               fit::callback<void(pw::Status)> callback) {
+          config_count_++;
+          EXPECT_EQ(format, ScoCodingFormat::kMsbc);
+          EXPECT_EQ(encoding, ScoEncoding::k16Bits);
+          EXPECT_EQ(rate, ScoSampleRate::k16Khz);
+          callback(PW_STATUS_OK);
+        });
 
-    test_device()->set_reset_sco_cb([this](fit::callback<void(pw::Status)> callback) {
-      reset_count_++;
-      callback(PW_STATUS_OK);
-    });
+    test_device()->set_reset_sco_cb(
+        [this](fit::callback<void(pw::Status)> callback) {
+          reset_count_++;
+          callback(PW_STATUS_OK);
+        });
 
     connection_.emplace(sco_data_channel());
 
@@ -217,7 +242,8 @@ class ScoDataChannelSingleConnectionTest : public ScoDataChannelTest {
 };
 
 TEST_F(ScoDataChannelSingleConnectionTest, SendManyMsbcPackets) {
-  // Queue 1 more than than the max number of packets (1 packet will remain queued).
+  // Queue 1 more than than the max number of packets (1 packet will remain
+  // queued).
   for (size_t i = 0; i <= kBufferMaxNumPackets; i++) {
     std::unique_ptr<ScoDataPacket> packet =
         ScoDataPacket::New(kConnectionHandle0, /*payload_size=*/1);
@@ -225,10 +251,11 @@ TEST_F(ScoDataChannelSingleConnectionTest, SendManyMsbcPackets) {
 
     // The last packet should remain queued.
     if (i < kBufferMaxNumPackets) {
-      EXPECT_SCO_PACKET_OUT(test_device(), StaticByteBuffer(LowerBits(kConnectionHandle0),
-                                                            UpperBits(kConnectionHandle0),
-                                                            0x01,  // payload length
-                                                            static_cast<uint8_t>(i)));
+      EXPECT_SCO_PACKET_OUT(test_device(),
+                            StaticByteBuffer(LowerBits(kConnectionHandle0),
+                                             UpperBits(kConnectionHandle0),
+                                             0x01,  // payload length
+                                             static_cast<uint8_t>(i)));
     }
     connection()->QueuePacket(std::move(packet));
     RunUntilIdle();
@@ -237,9 +264,11 @@ TEST_F(ScoDataChannelSingleConnectionTest, SendManyMsbcPackets) {
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
 
   EXPECT_SCO_PACKET_OUT(
-      test_device(), StaticByteBuffer(LowerBits(kConnectionHandle0), UpperBits(kConnectionHandle0),
-                                      0x01,  // payload length
-                                      static_cast<uint8_t>(kBufferMaxNumPackets)));
+      test_device(),
+      StaticByteBuffer(LowerBits(kConnectionHandle0),
+                       UpperBits(kConnectionHandle0),
+                       0x01,  // payload length
+                       static_cast<uint8_t>(kBufferMaxNumPackets)));
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle0, 1));
   RunUntilIdle();
@@ -249,14 +278,17 @@ TEST_F(ScoDataChannelSingleConnectionTest, SendManyMsbcPackets) {
 TEST_F(ScoDataChannelSingleConnectionTest, ReceiveManyPackets) {
   for (uint8_t i = 0; i < 20; i++) {
     SCOPED_TRACE(i);
-    StaticByteBuffer packet(LowerBits(kConnectionHandle0), UpperBits(kConnectionHandle0),
+    StaticByteBuffer packet(LowerBits(kConnectionHandle0),
+                            UpperBits(kConnectionHandle0),
                             0x01,  // payload length
                             i      // payload
     );
     test_device()->SendScoDataChannelPacket(packet);
     RunUntilIdle();
-    ASSERT_EQ(connection()->received_packets().size(), static_cast<size_t>(i) + 1);
-    EXPECT_TRUE(ContainersEqual(connection()->received_packets()[i]->view().data(), packet));
+    ASSERT_EQ(connection()->received_packets().size(),
+              static_cast<size_t>(i) + 1);
+    EXPECT_TRUE(ContainersEqual(
+        connection()->received_packets()[i]->view().data(), packet));
   }
 }
 
@@ -269,10 +301,11 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndUnregisterFirstConnection) {
       });
 
   int reset_count = 0;
-  test_device()->set_reset_sco_cb([&](fit::callback<void(pw::Status)> callback) {
-    reset_count++;
-    callback(PW_STATUS_OK);
-  });
+  test_device()->set_reset_sco_cb(
+      [&](fit::callback<void(pw::Status)> callback) {
+        reset_count++;
+        callback(PW_STATUS_OK);
+      });
 
   FakeScoConnection connection_0(sco_data_channel());
   sco_data_channel()->RegisterConnection(connection_0.GetWeakPtr());
@@ -284,7 +317,8 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndUnregisterFirstConnection) {
   EXPECT_EQ(config_count, 1);
   EXPECT_EQ(reset_count, 0);
 
-  StaticByteBuffer packet_0(LowerBits(kConnectionHandle0), UpperBits(kConnectionHandle0),
+  StaticByteBuffer packet_0(LowerBits(kConnectionHandle0),
+                            UpperBits(kConnectionHandle0),
                             0x01,  // payload length
                             0x00   // payload
   );
@@ -293,18 +327,21 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndUnregisterFirstConnection) {
   ASSERT_EQ(connection_0.received_packets().size(), 1u);
   ASSERT_EQ(connection_1.received_packets().size(), 0u);
 
-  StaticByteBuffer packet_1(LowerBits(kConnectionHandle1), UpperBits(kConnectionHandle1),
+  StaticByteBuffer packet_1(LowerBits(kConnectionHandle1),
+                            UpperBits(kConnectionHandle1),
                             0x01,  // payload length
                             0x01   // payload
   );
   test_device()->SendScoDataChannelPacket(packet_1);
   RunUntilIdle();
   ASSERT_EQ(connection_0.received_packets().size(), 1u);
-  // The packet should be received even though connection_1 isn't the active connection.
+  // The packet should be received even though connection_1 isn't the active
+  // connection.
   ASSERT_EQ(connection_1.received_packets().size(), 1u);
 
   EXPECT_SCO_PACKET_OUT(test_device(), packet_0);
-  std::unique_ptr<ScoDataPacket> out_packet_0 = ScoDataPacket::New(/*payload_size=*/1);
+  std::unique_ptr<ScoDataPacket> out_packet_0 =
+      ScoDataPacket::New(/*payload_size=*/1);
   out_packet_0->mutable_view()->mutable_data().Write(packet_0);
   out_packet_0->InitializeFromBuffer();
   connection_0.QueuePacket(std::move(out_packet_0));
@@ -313,16 +350,18 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndUnregisterFirstConnection) {
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle0, 1));
 
-  std::unique_ptr<ScoDataPacket> out_packet_1 = ScoDataPacket::New(/*payload_size=*/1);
+  std::unique_ptr<ScoDataPacket> out_packet_1 =
+      ScoDataPacket::New(/*payload_size=*/1);
   out_packet_1->mutable_view()->mutable_data().Write(packet_1);
   out_packet_1->InitializeFromBuffer();
-  // The packet should be sent even though connection_1 isn't the active connection.
+  // The packet should be sent even though connection_1 isn't the active
+  // connection.
   EXPECT_SCO_PACKET_OUT(test_device(), packet_1);
   connection_1.QueuePacket(std::move(out_packet_1));
   RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
-  // This is necessary because kBufferMaxNumPackets is 2, so we won't be able to send
-  // any more packets until at least 1 is ACKed by the controller.
+  // This is necessary because kBufferMaxNumPackets is 2, so we won't be able to
+  // send any more packets until at least 1 is ACKed by the controller.
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle1, 1));
 
@@ -335,7 +374,8 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndUnregisterFirstConnection) {
   out_packet_1 = ScoDataPacket::New(/*payload_size=*/1);
   out_packet_1->mutable_view()->mutable_data().Write(packet_1);
   out_packet_1->InitializeFromBuffer();
-  // Now that connection_1 is the active connection, packets should still be sent.
+  // Now that connection_1 is the active connection, packets should still be
+  // sent.
   EXPECT_SCO_PACKET_OUT(test_device(), packet_1);
   connection_1.QueuePacket(std::move(out_packet_1));
   RunUntilIdle();
@@ -347,10 +387,14 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndUnregisterFirstConnection) {
   EXPECT_EQ(reset_count, 1);
 }
 
-TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndClearControllerPacketCountOfFirstConnection) {
+TEST_F(ScoDataChannelTest,
+       RegisterTwoConnectionsAndClearControllerPacketCountOfFirstConnection) {
   test_device()->set_configure_sco_cb(
-      [](auto, auto, auto, fit::callback<void(pw::Status)> cb) { cb(PW_STATUS_OK); });
-  test_device()->set_reset_sco_cb([](fit::callback<void(pw::Status)> cb) { cb(PW_STATUS_OK); });
+      [](auto, auto, auto, fit::callback<void(pw::Status)> cb) {
+        cb(PW_STATUS_OK);
+      });
+  test_device()->set_reset_sco_cb(
+      [](fit::callback<void(pw::Status)> cb) { cb(PW_STATUS_OK); });
 
   FakeScoConnection connection_0(sco_data_channel());
   sco_data_channel()->RegisterConnection(connection_0.GetWeakPtr());
@@ -358,50 +402,59 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndClearControllerPacketCountOf
   FakeScoConnection connection_1(sco_data_channel(), kConnectionHandle1);
   sco_data_channel()->RegisterConnection(connection_1.GetWeakPtr());
 
-  auto packet_0 = StaticByteBuffer(LowerBits(kConnectionHandle0), UpperBits(kConnectionHandle0),
+  auto packet_0 = StaticByteBuffer(LowerBits(kConnectionHandle0),
+                                   UpperBits(kConnectionHandle0),
                                    0x01,  // payload length
                                    0x00   // payload
   );
-  auto packet_1 = StaticByteBuffer(LowerBits(kConnectionHandle0), UpperBits(kConnectionHandle0),
+  auto packet_1 = StaticByteBuffer(LowerBits(kConnectionHandle0),
+                                   UpperBits(kConnectionHandle0),
                                    0x01,  // payload length
                                    0x01   // payload
   );
-  auto packet_2 = StaticByteBuffer(LowerBits(kConnectionHandle1), UpperBits(kConnectionHandle1),
+  auto packet_2 = StaticByteBuffer(LowerBits(kConnectionHandle1),
+                                   UpperBits(kConnectionHandle1),
                                    0x01,  // payload length
                                    0x02   // payload
   );
 
   EXPECT_SCO_PACKET_OUT(test_device(), packet_0);
-  std::unique_ptr<ScoDataPacket> out_packet_0 = ScoDataPacket::New(/*payload_size=*/1);
+  std::unique_ptr<ScoDataPacket> out_packet_0 =
+      ScoDataPacket::New(/*payload_size=*/1);
   out_packet_0->mutable_view()->mutable_data().Write(packet_0);
   out_packet_0->InitializeFromBuffer();
   connection_0.QueuePacket(std::move(out_packet_0));
   RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
 
-  // The second packet should fill up the controller buffer (kBufferMaxNumPackets).
+  // The second packet should fill up the controller buffer
+  // (kBufferMaxNumPackets).
   ASSERT_EQ(kBufferMaxNumPackets, 2u);
   EXPECT_SCO_PACKET_OUT(test_device(), packet_1);
-  std::unique_ptr<ScoDataPacket> out_packet_1 = ScoDataPacket::New(/*payload_size=*/1);
+  std::unique_ptr<ScoDataPacket> out_packet_1 =
+      ScoDataPacket::New(/*payload_size=*/1);
   out_packet_1->mutable_view()->mutable_data().Write(packet_1);
   out_packet_1->InitializeFromBuffer();
   connection_0.QueuePacket(std::move(out_packet_1));
   RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
 
-  std::unique_ptr<ScoDataPacket> out_packet_2 = ScoDataPacket::New(/*payload_size=*/1);
+  std::unique_ptr<ScoDataPacket> out_packet_2 =
+      ScoDataPacket::New(/*payload_size=*/1);
   out_packet_2->mutable_view()->mutable_data().Write(packet_2);
   out_packet_2->InitializeFromBuffer();
   // The packet should NOT be sent because the controller buffer is full.
   connection_1.QueuePacket(std::move(out_packet_2));
   RunUntilIdle();
 
-  // connection_1 should become the active connection, but out_packet_2 can't be sent yet.
+  // connection_1 should become the active connection, but out_packet_2 can't be
+  // sent yet.
   sco_data_channel()->UnregisterConnection(connection_0.handle());
   RunUntilIdle();
   EXPECT_EQ(connection_1.queued_packets().size(), 1u);
 
-  // Clearing the pending packet count for connection_0 should result in packet_2 being sent.
+  // Clearing the pending packet count for connection_0 should result in
+  // packet_2 being sent.
   EXPECT_SCO_PACKET_OUT(test_device(), packet_2);
   sco_data_channel()->ClearControllerPacketCount(connection_0.handle());
   RunUntilIdle();
@@ -413,9 +466,11 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndClearControllerPacketCountOf
   RunUntilIdle();
 }
 
-TEST_F(ScoDataChannelSingleConnectionTest, IgnoreInboundPacketForUnknownConnectionHandle) {
+TEST_F(ScoDataChannelSingleConnectionTest,
+       IgnoreInboundPacketForUnknownConnectionHandle) {
   // kConnectionHandle1 is not registered.
-  auto packet = StaticByteBuffer(LowerBits(kConnectionHandle1), UpperBits(kConnectionHandle1),
+  auto packet = StaticByteBuffer(LowerBits(kConnectionHandle1),
+                                 UpperBits(kConnectionHandle1),
                                  0x01,  // payload length
                                  0x07   // payload
   );
@@ -426,7 +481,8 @@ TEST_F(ScoDataChannelSingleConnectionTest, IgnoreInboundPacketForUnknownConnecti
 
 TEST_F(ScoDataChannelSingleConnectionTest,
        IgnoreNumberOfCompletedPacketsEventForUnknownConnectionHandle) {
-  // Queue 1 more than than the max number of packets (1 packet will remain queued).
+  // Queue 1 more than than the max number of packets (1 packet will remain
+  // queued).
   for (size_t i = 0; i <= kBufferMaxNumPackets; i++) {
     std::unique_ptr<ScoDataPacket> packet =
         ScoDataPacket::New(kConnectionHandle0, /*payload_size=*/1);
@@ -434,10 +490,11 @@ TEST_F(ScoDataChannelSingleConnectionTest,
 
     // The last packet should remain queued.
     if (i < kBufferMaxNumPackets) {
-      EXPECT_SCO_PACKET_OUT(test_device(), StaticByteBuffer(LowerBits(kConnectionHandle0),
-                                                            UpperBits(kConnectionHandle0),
-                                                            0x01,  // payload length
-                                                            static_cast<uint8_t>(i)));
+      EXPECT_SCO_PACKET_OUT(test_device(),
+                            StaticByteBuffer(LowerBits(kConnectionHandle0),
+                                             UpperBits(kConnectionHandle0),
+                                             0x01,  // payload length
+                                             static_cast<uint8_t>(i)));
     }
     connection()->QueuePacket(std::move(packet));
     RunUntilIdle();
@@ -445,8 +502,8 @@ TEST_F(ScoDataChannelSingleConnectionTest,
   EXPECT_EQ(connection()->queued_packets().size(), 1u);
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
 
-  // kConnectionHandle1 is not registered, so this event should be ignored (no packets should be
-  // sent).
+  // kConnectionHandle1 is not registered, so this event should be ignored (no
+  // packets should be sent).
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle1, 1));
   RunUntilIdle();
@@ -454,14 +511,16 @@ TEST_F(ScoDataChannelSingleConnectionTest,
 }
 
 TEST_F(ScoDataChannelSingleConnectionTest, ReceiveTooSmallPacket) {
-  StaticByteBuffer invalid_packet(LowerBits(kConnectionHandle0), UpperBits(kConnectionHandle0));
+  StaticByteBuffer invalid_packet(LowerBits(kConnectionHandle0),
+                                  UpperBits(kConnectionHandle0));
   test_device()->SendScoDataChannelPacket(invalid_packet);
   RunUntilIdle();
   // Packet should be ignored.
   EXPECT_EQ(connection()->received_packets().size(), 0u);
 
   // The next valid packet should not be ignored.
-  auto valid_packet = StaticByteBuffer(LowerBits(kConnectionHandle0), UpperBits(kConnectionHandle0),
+  auto valid_packet = StaticByteBuffer(LowerBits(kConnectionHandle0),
+                                       UpperBits(kConnectionHandle0),
                                        0x01,  // correct payload length
                                        0x01   // payload
   );
@@ -470,8 +529,10 @@ TEST_F(ScoDataChannelSingleConnectionTest, ReceiveTooSmallPacket) {
   EXPECT_EQ(connection()->received_packets().size(), 1u);
 }
 
-TEST_F(ScoDataChannelSingleConnectionTest, ReceivePacketWithIncorrectHeaderLengthField) {
-  auto packet = StaticByteBuffer(LowerBits(kConnectionHandle0), UpperBits(kConnectionHandle0),
+TEST_F(ScoDataChannelSingleConnectionTest,
+       ReceivePacketWithIncorrectHeaderLengthField) {
+  auto packet = StaticByteBuffer(LowerBits(kConnectionHandle0),
+                                 UpperBits(kConnectionHandle0),
                                  0x03,  // incorrect payload length
                                  0x00   // payload
   );
@@ -481,7 +542,8 @@ TEST_F(ScoDataChannelSingleConnectionTest, ReceivePacketWithIncorrectHeaderLengt
   EXPECT_EQ(connection()->received_packets().size(), 0u);
 
   // The next valid packet should not be ignored.
-  packet = StaticByteBuffer(LowerBits(kConnectionHandle0), UpperBits(kConnectionHandle0),
+  packet = StaticByteBuffer(LowerBits(kConnectionHandle0),
+                            UpperBits(kConnectionHandle0),
                             0x01,  // correct payload length
                             0x01   // payload
   );
@@ -493,23 +555,27 @@ TEST_F(ScoDataChannelSingleConnectionTest, ReceivePacketWithIncorrectHeaderLengt
 TEST_F(ScoDataChannelTest, CvsdConnectionEncodingBits8SampleRate8Khz) {
   int config_count = 0;
 
-  test_device()->set_configure_sco_cb([&](ScoCodingFormat format, ScoEncoding encoding,
-                                          ScoSampleRate rate,
-                                          fit::callback<void(pw::Status)> callback) {
-    config_count++;
-    EXPECT_EQ(format, ScoCodingFormat::kCvsd);
-    EXPECT_EQ(encoding, ScoEncoding::k8Bits);
-    EXPECT_EQ(rate, ScoSampleRate::k8Khz);
-    callback(PW_STATUS_OK);
-  });
+  test_device()->set_configure_sco_cb(
+      [&](ScoCodingFormat format,
+          ScoEncoding encoding,
+          ScoSampleRate rate,
+          fit::callback<void(pw::Status)> callback) {
+        config_count++;
+        EXPECT_EQ(format, ScoCodingFormat::kCvsd);
+        EXPECT_EQ(encoding, ScoEncoding::k8Bits);
+        EXPECT_EQ(rate, ScoSampleRate::k8Khz);
+        callback(PW_STATUS_OK);
+      });
 
   int reset_count = 0;
-  test_device()->set_reset_sco_cb([&](fit::callback<void(pw::Status)> callback) {
-    reset_count++;
-    callback(PW_STATUS_OK);
-  });
+  test_device()->set_reset_sco_cb(
+      [&](fit::callback<void(pw::Status)> callback) {
+        reset_count++;
+        callback(PW_STATUS_OK);
+      });
 
-  FakeScoConnection connection_0(sco_data_channel(), kConnectionHandle0, cvsd_connection_params());
+  FakeScoConnection connection_0(
+      sco_data_channel(), kConnectionHandle0, cvsd_connection_params());
   sco_data_channel()->RegisterConnection(connection_0.GetWeakPtr());
   EXPECT_EQ(config_count, 1);
   EXPECT_EQ(reset_count, 0);
@@ -517,28 +583,32 @@ TEST_F(ScoDataChannelTest, CvsdConnectionEncodingBits8SampleRate8Khz) {
 
 TEST_F(ScoDataChannelTest, CvsdConnectionEncodingBits16SampleRate8Khz) {
   int config_count = 0;
-  test_device()->set_configure_sco_cb([&](ScoCodingFormat format, ScoEncoding encoding,
-                                          ScoSampleRate rate,
-                                          fit::callback<void(pw::Status)> callback) {
-    config_count++;
-    EXPECT_EQ(format, ScoCodingFormat::kCvsd);
-    EXPECT_EQ(encoding, ScoEncoding::k16Bits);
-    EXPECT_EQ(rate, ScoSampleRate::k8Khz);
-    callback(PW_STATUS_OK);
-  });
+  test_device()->set_configure_sco_cb(
+      [&](ScoCodingFormat format,
+          ScoEncoding encoding,
+          ScoSampleRate rate,
+          fit::callback<void(pw::Status)> callback) {
+        config_count++;
+        EXPECT_EQ(format, ScoCodingFormat::kCvsd);
+        EXPECT_EQ(encoding, ScoEncoding::k16Bits);
+        EXPECT_EQ(rate, ScoSampleRate::k8Khz);
+        callback(PW_STATUS_OK);
+      });
 
   int reset_count = 0;
-  test_device()->set_reset_sco_cb([&](fit::callback<void(pw::Status)> callback) {
-    reset_count++;
-    callback(PW_STATUS_OK);
-  });
+  test_device()->set_reset_sco_cb(
+      [&](fit::callback<void(pw::Status)> callback) {
+        reset_count++;
+        callback(PW_STATUS_OK);
+      });
 
-  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> params =
-      cvsd_connection_params();
+  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>
+      params = cvsd_connection_params();
   auto view = params.view();
   view.input_coded_data_size_bits().Write(16);
   view.output_coded_data_size_bits().Write(16);
-  // Bandwidth = sample size (2 bytes/sample) * sample rate (8000 samples/sec) = 16000 bytes/sec
+  // Bandwidth = sample size (2 bytes/sample) * sample rate (8000 samples/sec) =
+  // 16000 bytes/sec
   view.output_bandwidth().Write(16000);
   view.input_bandwidth().Write(16000);
   FakeScoConnection connection(sco_data_channel(), kConnectionHandle0, params);
@@ -549,28 +619,32 @@ TEST_F(ScoDataChannelTest, CvsdConnectionEncodingBits16SampleRate8Khz) {
 
 TEST_F(ScoDataChannelTest, CvsdConnectionEncodingBits16SampleRate16Khz) {
   int config_count = 0;
-  test_device()->set_configure_sco_cb([&](ScoCodingFormat format, ScoEncoding encoding,
-                                          ScoSampleRate rate,
-                                          fit::callback<void(pw::Status)> callback) {
-    config_count++;
-    EXPECT_EQ(format, ScoCodingFormat::kCvsd);
-    EXPECT_EQ(encoding, ScoEncoding::k16Bits);
-    EXPECT_EQ(rate, ScoSampleRate::k16Khz);
-    callback(PW_STATUS_OK);
-  });
+  test_device()->set_configure_sco_cb(
+      [&](ScoCodingFormat format,
+          ScoEncoding encoding,
+          ScoSampleRate rate,
+          fit::callback<void(pw::Status)> callback) {
+        config_count++;
+        EXPECT_EQ(format, ScoCodingFormat::kCvsd);
+        EXPECT_EQ(encoding, ScoEncoding::k16Bits);
+        EXPECT_EQ(rate, ScoSampleRate::k16Khz);
+        callback(PW_STATUS_OK);
+      });
 
   int reset_count = 0;
-  test_device()->set_reset_sco_cb([&](fit::callback<void(pw::Status)> callback) {
-    reset_count++;
-    callback(PW_STATUS_OK);
-  });
+  test_device()->set_reset_sco_cb(
+      [&](fit::callback<void(pw::Status)> callback) {
+        reset_count++;
+        callback(PW_STATUS_OK);
+      });
 
-  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> params =
-      cvsd_connection_params();
+  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>
+      params = cvsd_connection_params();
   auto view = params.view();
   view.input_coded_data_size_bits().Write(16);
   view.output_coded_data_size_bits().Write(16);
-  // Bandwidth = sample size (2 bytes/sample) * sample rate (16,000 samples/sec) = 32,000 bytes/sec
+  // Bandwidth = sample size (2 bytes/sample) * sample rate (16,000 samples/sec)
+  // = 32,000 bytes/sec
   view.output_bandwidth().Write(32000);
   view.input_bandwidth().Write(32000);
   FakeScoConnection connection(sco_data_channel(), kConnectionHandle0, params);
@@ -581,24 +655,27 @@ TEST_F(ScoDataChannelTest, CvsdConnectionEncodingBits16SampleRate16Khz) {
 
 TEST_F(ScoDataChannelTest, CvsdConnectionInvalidSampleSizeAndRate) {
   int config_count = 0;
-  test_device()->set_configure_sco_cb([&](ScoCodingFormat format, ScoEncoding encoding,
-                                          ScoSampleRate rate,
-                                          fit::callback<void(pw::Status)> callback) {
-    config_count++;
-    EXPECT_EQ(format, ScoCodingFormat::kCvsd);
-    EXPECT_EQ(encoding, ScoEncoding::k16Bits);
-    EXPECT_EQ(rate, ScoSampleRate::k16Khz);
-    callback(PW_STATUS_OK);
-  });
+  test_device()->set_configure_sco_cb(
+      [&](ScoCodingFormat format,
+          ScoEncoding encoding,
+          ScoSampleRate rate,
+          fit::callback<void(pw::Status)> callback) {
+        config_count++;
+        EXPECT_EQ(format, ScoCodingFormat::kCvsd);
+        EXPECT_EQ(encoding, ScoEncoding::k16Bits);
+        EXPECT_EQ(rate, ScoSampleRate::k16Khz);
+        callback(PW_STATUS_OK);
+      });
 
   int reset_count = 0;
-  test_device()->set_reset_sco_cb([&](fit::callback<void(pw::Status)> callback) {
-    reset_count++;
-    callback(PW_STATUS_OK);
-  });
+  test_device()->set_reset_sco_cb(
+      [&](fit::callback<void(pw::Status)> callback) {
+        reset_count++;
+        callback(PW_STATUS_OK);
+      });
 
-  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> params =
-      cvsd_connection_params();
+  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>
+      params = cvsd_connection_params();
   auto view = params.view();
   // Invalid sample size will be replaced with sample size of 16 bits.
   view.input_coded_data_size_bits().Write(0u);
@@ -612,17 +689,23 @@ TEST_F(ScoDataChannelTest, CvsdConnectionInvalidSampleSizeAndRate) {
   EXPECT_EQ(reset_count, 0);
 }
 
-TEST_F(ScoDataChannelTest, ConfigureCallbackCalledAfterTransportDestroyedDoesNotUseAfterFree) {
+TEST_F(ScoDataChannelTest,
+       ConfigureCallbackCalledAfterTransportDestroyedDoesNotUseAfterFree) {
   fit::callback<void(pw::Status)> config_cb = nullptr;
   test_device()->set_configure_sco_cb(
-      [&](ScoCodingFormat format, ScoEncoding encoding, ScoSampleRate rate,
-          fit::callback<void(pw::Status)> callback) { config_cb = std::move(callback); });
+      [&](ScoCodingFormat format,
+          ScoEncoding encoding,
+          ScoSampleRate rate,
+          fit::callback<void(pw::Status)> callback) {
+        config_cb = std::move(callback);
+      });
 
   int reset_count = 0;
-  test_device()->set_reset_sco_cb([&](fit::callback<void(pw::Status)> callback) {
-    reset_count++;
-    callback(PW_STATUS_OK);
-  });
+  test_device()->set_reset_sco_cb(
+      [&](fit::callback<void(pw::Status)> callback) {
+        reset_count++;
+        callback(PW_STATUS_OK);
+      });
 
   FakeScoConnection connection(sco_data_channel());
   sco_data_channel()->RegisterConnection(connection.GetWeakPtr());
@@ -637,8 +720,9 @@ TEST_F(ScoDataChannelTest, ConfigureCallbackCalledAfterTransportDestroyedDoesNot
   RunUntilIdle();
 }
 
-TEST_F(ScoDataChannelTest,
-       RegisterAndUnregisterFirstConnectionAndRegisterSecondConnectionBeforeFirstConfigCompletes) {
+TEST_F(
+    ScoDataChannelTest,
+    RegisterAndUnregisterFirstConnectionAndRegisterSecondConnectionBeforeFirstConfigCompletes) {
   std::vector<fit::callback<void(pw::Status)>> config_callbacks;
   test_device()->set_configure_sco_cb(
       [&](auto, auto, auto, fit::callback<void(pw::Status)> callback) {
@@ -646,10 +730,11 @@ TEST_F(ScoDataChannelTest,
       });
 
   int reset_count = 0;
-  test_device()->set_reset_sco_cb([&](fit::callback<void(pw::Status)> callback) {
-    reset_count++;
-    callback(PW_STATUS_OK);
-  });
+  test_device()->set_reset_sco_cb(
+      [&](fit::callback<void(pw::Status)> callback) {
+        reset_count++;
+        callback(PW_STATUS_OK);
+      });
 
   FakeScoConnection connection_0(sco_data_channel());
   sco_data_channel()->RegisterConnection(connection_0.GetWeakPtr());
@@ -658,11 +743,13 @@ TEST_F(ScoDataChannelTest,
   EXPECT_EQ(reset_count, 1);
 
   FakeScoConnection connection_1(sco_data_channel(), kConnectionHandle1);
-  auto packet = StaticByteBuffer(LowerBits(kConnectionHandle1), UpperBits(kConnectionHandle1),
+  auto packet = StaticByteBuffer(LowerBits(kConnectionHandle1),
+                                 UpperBits(kConnectionHandle1),
                                  0x01,  // payload length
                                  0x00   // payload
   );
-  std::unique_ptr<ScoDataPacket> sco_packet = ScoDataPacket::New(/*payload_size=*/1);
+  std::unique_ptr<ScoDataPacket> sco_packet =
+      ScoDataPacket::New(/*payload_size=*/1);
   sco_packet->mutable_view()->mutable_data().Write(packet);
   sco_packet->InitializeFromBuffer();
   connection_1.QueuePacket(std::move(sco_packet));
@@ -671,7 +758,8 @@ TEST_F(ScoDataChannelTest,
   EXPECT_EQ(config_callbacks.size(), 2u);
   // sco_packet should not be sent yet.
   RunUntilIdle();
-  // The first callback completing should not complete the second connection configuration.
+  // The first callback completing should not complete the second connection
+  // configuration.
   config_callbacks[0](PW_STATUS_OK);
   // sco_packet should not be sent yet.
   RunUntilIdle();
@@ -685,7 +773,8 @@ TEST_F(ScoDataChannelTest,
 
 TEST_F(ScoDataChannelSingleConnectionTest,
        ReceiveNumberOfCompletedPacketsEventWithInconsistentNumberOfHandles) {
-  // Queue 1 more than than the max number of packets (1 packet will remain queued).
+  // Queue 1 more than than the max number of packets (1 packet will remain
+  // queued).
   for (size_t i = 0; i <= kBufferMaxNumPackets; i++) {
     std::unique_ptr<ScoDataPacket> packet =
         ScoDataPacket::New(kConnectionHandle0, /*payload_size=*/1);
@@ -693,30 +782,35 @@ TEST_F(ScoDataChannelSingleConnectionTest,
 
     // The last packet should remain queued.
     if (i < kBufferMaxNumPackets) {
-      EXPECT_SCO_PACKET_OUT(test_device(), StaticByteBuffer(LowerBits(kConnectionHandle0),
-                                                            UpperBits(kConnectionHandle0),
-                                                            0x01,  // payload length
-                                                            static_cast<uint8_t>(i)));
+      EXPECT_SCO_PACKET_OUT(test_device(),
+                            StaticByteBuffer(LowerBits(kConnectionHandle0),
+                                             UpperBits(kConnectionHandle0),
+                                             0x01,  // payload length
+                                             static_cast<uint8_t>(i)));
     }
     connection()->QueuePacket(std::move(packet));
     RunUntilIdle();
   }
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
 
-  // The handle in the event should still be processed even though the number of handles is wrong.
+  // The handle in the event should still be processed even though the number of
+  // handles is wrong.
   EXPECT_SCO_PACKET_OUT(
-      test_device(), StaticByteBuffer(LowerBits(kConnectionHandle0), UpperBits(kConnectionHandle0),
-                                      0x01,  // payload length
-                                      static_cast<uint8_t>(kBufferMaxNumPackets)));
+      test_device(),
+      StaticByteBuffer(LowerBits(kConnectionHandle0),
+                       UpperBits(kConnectionHandle0),
+                       0x01,  // payload length
+                       static_cast<uint8_t>(kBufferMaxNumPackets)));
 
   constexpr uint16_t num_packets = 1;
-  StaticByteBuffer event{0x13,
-                         0x05,  // Number Of Completed Packet HCI event header, parameters length
-                         0x09,  // Incorrect number of handles
-                         LowerBits(kConnectionHandle0),
-                         UpperBits(kConnectionHandle0),
-                         LowerBits(num_packets),
-                         UpperBits(num_packets)};
+  StaticByteBuffer event{
+      0x13,
+      0x05,  // Number Of Completed Packet HCI event header, parameters length
+      0x09,  // Incorrect number of handles
+      LowerBits(kConnectionHandle0),
+      UpperBits(kConnectionHandle0),
+      LowerBits(num_packets),
+      UpperBits(num_packets)};
   test_device()->SendCommandChannelPacket(event);
   RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
@@ -724,22 +818,25 @@ TEST_F(ScoDataChannelSingleConnectionTest,
 
 TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndFirstConfigurationFails) {
   int config_count = 0;
-  test_device()->set_configure_sco_cb([&](ScoCodingFormat format, ScoEncoding encoding,
-                                          ScoSampleRate rate,
-                                          fit::callback<void(pw::Status)> callback) {
-    config_count++;
-    if (config_count == 1) {
-      callback(pw::Status::InvalidArgument());
-      return;
-    }
-    callback(PW_STATUS_OK);
-  });
+  test_device()->set_configure_sco_cb(
+      [&](ScoCodingFormat format,
+          ScoEncoding encoding,
+          ScoSampleRate rate,
+          fit::callback<void(pw::Status)> callback) {
+        config_count++;
+        if (config_count == 1) {
+          callback(pw::Status::InvalidArgument());
+          return;
+        }
+        callback(PW_STATUS_OK);
+      });
 
   int reset_count = 0;
-  test_device()->set_reset_sco_cb([&](fit::callback<void(pw::Status)> callback) {
-    reset_count++;
-    callback(PW_STATUS_OK);
-  });
+  test_device()->set_reset_sco_cb(
+      [&](fit::callback<void(pw::Status)> callback) {
+        reset_count++;
+        callback(PW_STATUS_OK);
+      });
 
   FakeScoConnection connection_0(sco_data_channel());
   sco_data_channel()->RegisterConnection(connection_0.GetWeakPtr());
@@ -752,23 +849,26 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndFirstConfigurationFails) {
   EXPECT_EQ(config_count, 1);
   EXPECT_EQ(reset_count, 0);
 
-  // The first configuration error should be processed & the configuration of connection_1 should
-  // succeed.
+  // The first configuration error should be processed & the configuration of
+  // connection_1 should succeed.
   RunUntilIdle();
   EXPECT_EQ(connection_0.hci_error_count(), 1);
   EXPECT_EQ(config_count, 2);
   EXPECT_EQ(reset_count, 0);
 
-  auto packet_0 = StaticByteBuffer(LowerBits(kConnectionHandle0), UpperBits(kConnectionHandle0),
+  auto packet_0 = StaticByteBuffer(LowerBits(kConnectionHandle0),
+                                   UpperBits(kConnectionHandle0),
                                    0x01,  // payload length
                                    0x00   // payload
   );
   test_device()->SendScoDataChannelPacket(packet_0);
   RunUntilIdle();
-  // packet_0 should not be received since connection_0 failed configuration and was unregistered.
+  // packet_0 should not be received since connection_0 failed configuration and
+  // was unregistered.
   ASSERT_EQ(connection_0.received_packets().size(), 0u);
 
-  auto packet_1 = StaticByteBuffer(LowerBits(kConnectionHandle1), UpperBits(kConnectionHandle1),
+  auto packet_1 = StaticByteBuffer(LowerBits(kConnectionHandle1),
+                                   UpperBits(kConnectionHandle1),
                                    0x01,  // payload length
                                    0x01   // payload
   );
@@ -784,33 +884,41 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndFirstConfigurationFails) {
 
 TEST_F(ScoDataChannelTest, UnsupportedCodingFormatTreatedAsCvsd) {
   int config_count = 0;
-  test_device()->set_configure_sco_cb([&](ScoCodingFormat format, ScoEncoding encoding,
-                                          ScoSampleRate rate,
-                                          fit::callback<void(pw::Status)> callback) {
-    config_count++;
-    EXPECT_EQ(format, ScoCodingFormat::kCvsd);
-    callback(PW_STATUS_OK);
-  });
+  test_device()->set_configure_sco_cb(
+      [&](ScoCodingFormat format,
+          ScoEncoding encoding,
+          ScoSampleRate rate,
+          fit::callback<void(pw::Status)> callback) {
+        config_count++;
+        EXPECT_EQ(format, ScoCodingFormat::kCvsd);
+        callback(PW_STATUS_OK);
+      });
 
   int reset_count = 0;
-  test_device()->set_reset_sco_cb([&](fit::callback<void(pw::Status)> callback) {
-    reset_count++;
-    callback(PW_STATUS_OK);
-  });
+  test_device()->set_reset_sco_cb(
+      [&](fit::callback<void(pw::Status)> callback) {
+        reset_count++;
+        callback(PW_STATUS_OK);
+      });
 
-  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> params =
-      cvsd_connection_params();
+  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>
+      params = cvsd_connection_params();
   auto view = params.view();
-  view.output_coding_format().coding_format().Write(pw::bluetooth::emboss::CodingFormat::U_LAW);
-  view.input_coding_format().coding_format().Write(pw::bluetooth::emboss::CodingFormat::U_LAW);
-  FakeScoConnection connection_0(sco_data_channel(), kConnectionHandle0, params);
+  view.output_coding_format().coding_format().Write(
+      pw::bluetooth::emboss::CodingFormat::U_LAW);
+  view.input_coding_format().coding_format().Write(
+      pw::bluetooth::emboss::CodingFormat::U_LAW);
+  FakeScoConnection connection_0(
+      sco_data_channel(), kConnectionHandle0, params);
   sco_data_channel()->RegisterConnection(connection_0.GetWeakPtr());
   EXPECT_EQ(config_count, 1);
   EXPECT_EQ(reset_count, 0);
 }
 
-TEST_F(ScoDataChannelSingleConnectionTest, NumberOfCompletedPacketsExceedsPendingPackets) {
-  // Queue 1 more than than the max number of packets (1 packet will remain queued).
+TEST_F(ScoDataChannelSingleConnectionTest,
+       NumberOfCompletedPacketsExceedsPendingPackets) {
+  // Queue 1 more than than the max number of packets (1 packet will remain
+  // queued).
   for (size_t i = 0; i <= kBufferMaxNumPackets; i++) {
     std::unique_ptr<ScoDataPacket> packet =
         ScoDataPacket::New(kConnectionHandle0, /*payload_size=*/1);
@@ -818,10 +926,11 @@ TEST_F(ScoDataChannelSingleConnectionTest, NumberOfCompletedPacketsExceedsPendin
 
     // The last packet should remain queued.
     if (i < kBufferMaxNumPackets) {
-      EXPECT_SCO_PACKET_OUT(test_device(), StaticByteBuffer(LowerBits(kConnectionHandle0),
-                                                            UpperBits(kConnectionHandle0),
-                                                            0x01,  // payload length
-                                                            static_cast<uint8_t>(i)));
+      EXPECT_SCO_PACKET_OUT(test_device(),
+                            StaticByteBuffer(LowerBits(kConnectionHandle0),
+                                             UpperBits(kConnectionHandle0),
+                                             0x01,  // payload length
+                                             static_cast<uint8_t>(i)));
     }
     connection()->QueuePacket(std::move(packet));
     RunUntilIdle();
@@ -830,11 +939,14 @@ TEST_F(ScoDataChannelSingleConnectionTest, NumberOfCompletedPacketsExceedsPendin
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
 
   EXPECT_SCO_PACKET_OUT(
-      test_device(), StaticByteBuffer(LowerBits(kConnectionHandle0), UpperBits(kConnectionHandle0),
-                                      0x01,  // payload length
-                                      static_cast<uint8_t>(kBufferMaxNumPackets)));
+      test_device(),
+      StaticByteBuffer(LowerBits(kConnectionHandle0),
+                       UpperBits(kConnectionHandle0),
+                       0x01,  // payload length
+                       static_cast<uint8_t>(kBufferMaxNumPackets)));
   test_device()->SendCommandChannelPacket(
-      bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle0, kBufferMaxNumPackets + 1));
+      bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle0,
+                                                  kBufferMaxNumPackets + 1));
   RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
 }

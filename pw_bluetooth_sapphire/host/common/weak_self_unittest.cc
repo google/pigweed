@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "weak_self.h"
+#include "pw_bluetooth_sapphire/internal/host/common/weak_self.h"
 
 #include <gtest/gtest.h>
 #include <pw_async/fake_dispatcher_fixture.h>
@@ -15,17 +15,19 @@ using WeakSelfTest = pw::async::test::FakeDispatcherFixture;
 
 class FunctionTester : public WeakSelf<FunctionTester> {
  public:
-  explicit FunctionTester(uint8_t testval, pw::async::Dispatcher &pw_dispatcher)
+  explicit FunctionTester(uint8_t testval, pw::async::Dispatcher& pw_dispatcher)
       : WeakSelf(this), value_(testval), heap_dispatcher_(pw_dispatcher) {}
 
-  void callback_later_with_weak(fit::function<void(FunctionTester::WeakPtr)> cb) {
+  void callback_later_with_weak(
+      fit::function<void(FunctionTester::WeakPtr)> cb) {
     auto weak = GetWeakPtr();
-    heap_dispatcher_.Post([self = std::move(weak), cb = std::move(cb)](pw::async::Context /*ctx*/,
-                                                                       pw::Status status) {
-      if (status.ok()) {
-        cb(self);
-      }
-    });
+    (void)heap_dispatcher_.Post(
+        [self = std::move(weak), cb = std::move(cb)](pw::async::Context /*ctx*/,
+                                                     pw::Status status) {
+          if (status.ok()) {
+            cb(self);
+          }
+        });
   }
 
   uint8_t value() const { return value_; }
@@ -116,19 +118,19 @@ class StaticTester;
 
 class OnlyTwoStaticManager {
  public:
-  explicit OnlyTwoStaticManager(StaticTester *self_ptr) : obj_ptr_(self_ptr) {}
+  explicit OnlyTwoStaticManager(StaticTester* self_ptr) : obj_ptr_(self_ptr) {}
   ~OnlyTwoStaticManager() { InvalidateAll(); }
 
   using RefType = RecyclingWeakRef;
 
   std::optional<pw::IntrusivePtr<RefType>> GetWeakRef() {
-    for (auto &ptr : OnlyTwoStaticManager::pointers_) {
+    for (auto& ptr : OnlyTwoStaticManager::pointers_) {
       if (ptr.is_alive() && ptr.get() == obj_ptr_) {
         // Already adopted, add another refptr pointing to it.
         return pw::IntrusivePtr(&ptr);
       }
     }
-    for (auto &ptr : OnlyTwoStaticManager::pointers_) {
+    for (auto& ptr : OnlyTwoStaticManager::pointers_) {
       if (!ptr.is_in_use()) {
         return ptr.alloc(obj_ptr_);
       }
@@ -142,7 +144,7 @@ class OnlyTwoStaticManager {
   }
 
  private:
-  StaticTester *obj_ptr_;
+  StaticTester* obj_ptr_;
   inline static RecyclingWeakRef pointers_[2];
 };
 
@@ -175,7 +177,7 @@ TEST_F(WeakSelfTest, StaticRecyclingPointers) {
       auto second_ptr = test4.GetWeakPtr();
       auto second_ptr2 = test4.GetWeakPtr();
       EXPECT_TRUE(ptr4.is_alive());
-      StaticTester *ptr4_old = &ptr4.get();
+      StaticTester* ptr4_old = &ptr4.get();
       ptr4 = second_ptr;
       EXPECT_TRUE(ptr4.is_alive());
       // It's moved to the new one though.

@@ -2,15 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "supplement_data.h"
+#include "pw_bluetooth_sapphire/internal/host/common/supplement_data.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
+
+#pragma clang diagnostic ignored "-Wswitch-enum"
 
 namespace bt {
 
-bool ParseUuids(const BufferView& data, UUIDElemSize uuid_size, UuidFunction func) {
+bool ParseUuids(const BufferView& data,
+                UUIDElemSize uuid_size,
+                UuidFunction func) {
   BT_ASSERT(func);
 
   if (data.size() % uuid_size) {
@@ -47,7 +51,8 @@ UUIDElemSize SizeForType(DataType type) {
       break;
   };
 
-  BT_PANIC("called SizeForType with non-UUID DataType %du", static_cast<uint8_t>(type));
+  BT_PANIC("called SizeForType with non-UUID DataType %du",
+           static_cast<uint8_t>(type));
   return UUIDElemSize::k16Bit;
 }
 
@@ -78,7 +83,8 @@ SupplementDataReader::SupplementDataReader(const ByteBuffer& data)
   }
 }
 
-bool SupplementDataReader::GetNextField(DataType* out_type, BufferView* out_data) {
+bool SupplementDataReader::GetNextField(DataType* out_type,
+                                        BufferView* out_data) {
   BT_DEBUG_ASSERT(out_type);
   BT_DEBUG_ASSERT(out_data);
 

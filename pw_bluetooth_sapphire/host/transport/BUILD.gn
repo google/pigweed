@@ -6,54 +6,62 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_unit_test/test.gni")
 
+dir_public_transport =
+    "../../public/pw_bluetooth_sapphire/internal/host/transport"
+
 pw_source_set("transport") {
+  public = [
+    "$dir_public_transport/acl_data_channel.h",
+    "$dir_public_transport/acl_data_packet.h",
+    "$dir_public_transport/command_channel.h",
+    "$dir_public_transport/control_packets.h",
+    "$dir_public_transport/data_buffer_info.h",
+    "$dir_public_transport/emboss_control_packets.h",
+    "$dir_public_transport/emboss_packet.h",
+    "$dir_public_transport/error.h",
+    "$dir_public_transport/link_type.h",
+    "$dir_public_transport/packet.h",
+    "$dir_public_transport/sco_data_channel.h",
+    "$dir_public_transport/sco_data_packet.h",
+    "$dir_public_transport/slab_allocators.h",
+    "$dir_public_transport/transport.h",
+  ]
+
   sources = [
     "acl_data_channel.cc",
-    "acl_data_channel.h",
     "acl_data_packet.cc",
-    "acl_data_packet.h",
     "command_channel.cc",
-    "command_channel.h",
     "control_packets.cc",
-    "control_packets.h",
-    "data_buffer_info.h",
     "emboss_control_packets.cc",
-    "emboss_control_packets.h",
-    "emboss_packet.h",
     "error.cc",
-    "error.h",
     "link_type.cc",
-    "link_type.h",
-    "packet.h",
     "sco_data_channel.cc",
-    "sco_data_channel.h",
     "sco_data_packet.cc",
-    "sco_data_packet.h",
-    "slab_allocators.h",
     "transport.cc",
-    "transport.h",
   ]
 
   public_deps = [
+    "$dir_pw_async:dispatcher",
+    "$dir_pw_async:task",
     "$dir_pw_bluetooth",
     "$dir_pw_bluetooth:emboss_hci_group",
     "$dir_pw_bluetooth:emboss_hci_test",
+    "$dir_pw_bluetooth_sapphire/host/common",
+    "$dir_pw_bluetooth_sapphire/host/hci-spec",
     "$dir_pw_third_party/fuchsia:fit",
-    "//src/connectivity/bluetooth/core/bt-host/common",
-    "//src/connectivity/bluetooth/core/bt-host/hci-spec",
-    "//third_party/pigweed:pw_async_dispatcher",
-    "//third_party/pigweed:pw_async_task",
   ]
+
+  public_configs = [ "$dir_pw_bluetooth_sapphire:public_include_path" ]
 }
 
 pw_source_set("testing") {
-  testonly = true
-
+  public = [
+    "$dir_public_transport/fake_sco_data_channel.h",
+    "$dir_public_transport/mock_acl_data_channel.h",
+  ]
   sources = [
     "fake_sco_data_channel.cc",
-    "fake_sco_data_channel.h",
     "mock_acl_data_channel.cc",
-    "mock_acl_data_channel.h",
   ]
 
   public_deps = [ ":transport" ]
@@ -74,6 +82,6 @@ pw_test("tests") {
 
   deps = [
     ":transport",
-    "//src/connectivity/bluetooth/core/bt-host/testing",
+    "$dir_pw_bluetooth_sapphire/host/testing",
   ]
 }

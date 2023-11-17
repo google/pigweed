@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/sdp/service_record.h"
+#include "pw_bluetooth_sapphire/internal/host/sdp/service_record.h"
 
 #include <endian.h>
 
 #include <iterator>
 #include <set>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
 
 namespace bt::sdp {
 
@@ -21,7 +21,8 @@ void AddAllUUIDs(const DataElement& elem, std::unordered_set<UUID>* out) {
   DataElement::Type type = elem.type();
   if (type == DataElement::Type::kUuid) {
     out->emplace(*elem.Get<UUID>());
-  } else if (type == DataElement::Type::kSequence || type == DataElement::Type::kAlternative) {
+  } else if (type == DataElement::Type::kSequence ||
+             type == DataElement::Type::kAlternative) {
     const DataElement* it;
     for (size_t idx = 0; nullptr != (it = elem.At(idx)); idx++) {
       AddAllUUIDs(*it, out);
@@ -31,7 +32,9 @@ void AddAllUUIDs(const DataElement& elem, std::unordered_set<UUID>* out) {
 
 }  // namespace
 
-ServiceRecord::ServiceRecord() { SetAttribute(kServiceId, DataElement(UUID::Generate())); }
+ServiceRecord::ServiceRecord() {
+  SetAttribute(kServiceId, DataElement(UUID::Generate()));
+}
 
 void ServiceRecord::SetAttribute(AttributeId id, DataElement value) {
   attributes_.erase(id);
@@ -44,7 +47,9 @@ const DataElement& ServiceRecord::GetAttribute(AttributeId id) const {
   return it->second;
 }
 
-bool ServiceRecord::HasAttribute(AttributeId id) const { return attributes_.count(id) == 1; }
+bool ServiceRecord::HasAttribute(AttributeId id) const {
+  return attributes_.count(id) == 1;
+}
 
 void ServiceRecord::RemoveAttribute(AttributeId id) { attributes_.erase(id); }
 
@@ -56,7 +61,8 @@ bool ServiceRecord::IsProtocolOnly() const {
   if (attributes_.size() != 3) {
     return false;
   }
-  for (AttributeId x : {kServiceRecordHandle, kProtocolDescriptorList, kServiceId}) {
+  for (AttributeId x :
+       {kServiceRecordHandle, kProtocolDescriptorList, kServiceId}) {
     if (attributes_.count(x) != 1) {
       return false;
     }
@@ -106,13 +112,14 @@ void ServiceRecord::SetHandle(ServiceHandle handle) {
   SetAttribute(kServiceRecordHandle, DataElement(uint32_t(handle_)));
 }
 
-std::set<AttributeId> ServiceRecord::GetAttributesInRange(AttributeId start,
-                                                          AttributeId end) const {
+std::set<AttributeId> ServiceRecord::GetAttributesInRange(
+    AttributeId start, AttributeId end) const {
   std::set<AttributeId> attrs;
   if (start > end) {
     return attrs;
   }
-  for (auto it = attributes_.lower_bound(start); it != attributes_.end() && (it->first <= end);
+  for (auto it = attributes_.lower_bound(start);
+       it != attributes_.end() && (it->first <= end);
        ++it) {
     attrs.emplace(it->first);
   }
@@ -146,7 +153,8 @@ void ServiceRecord::SetServiceClassUUIDs(const std::vector<UUID>& classes) {
   SetAttribute(kServiceClassIdList, std::move(class_id_list_val));
 }
 
-void ServiceRecord::AddProtocolDescriptor(const ProtocolListId id, const UUID& uuid,
+void ServiceRecord::AddProtocolDescriptor(const ProtocolListId id,
+                                          const UUID& uuid,
                                           DataElement params) {
   std::vector<DataElement> seq;
   if (id == kPrimaryProtocolList) {
@@ -165,7 +173,9 @@ void ServiceRecord::AddProtocolDescriptor(const ProtocolListId id, const UUID& u
   if (params.type() == DataElement::Type::kSequence) {
     auto v = params.Get<std::vector<DataElement>>();
     auto param_seq = std::move(*v);
-    std::move(std::begin(param_seq), std::end(param_seq), std::back_inserter(protocol_desc));
+    std::move(std::begin(param_seq),
+              std::end(param_seq),
+              std::back_inserter(protocol_desc));
   } else if (params.type() != DataElement::Type::kNull) {
     protocol_desc.emplace_back(std::move(params));
   }
@@ -183,7 +193,8 @@ void ServiceRecord::AddProtocolDescriptor(const ProtocolListId id, const UUID& u
       addl_protocol_seq.emplace_back(it.second.Clone());
     }
 
-    SetAttribute(kAdditionalProtocolDescriptorList, DataElement(std::move(addl_protocol_seq)));
+    SetAttribute(kAdditionalProtocolDescriptorList,
+                 DataElement(std::move(addl_protocol_seq)));
   }
 }
 
@@ -198,12 +209,15 @@ void ServiceRecord::AddProfile(const UUID& uuid, uint8_t major, uint8_t minor) {
   std::vector<DataElement> profile_desc;
   profile_desc.emplace_back(DataElement(uuid));
   // Safety notes:
-  // 1.) `<<` applies integer promotion of `major` to `int` (32 bits) before operating. This makes
-  //     it safe to left shift 8 bits, even though 8 is >= `major`'s original width.
-  // 2.) Casting to 16 bits is safe because `major` and `minor` are both only 8 bits, so it is only
+  // 1.) `<<` applies integer promotion of `major` to `int` (32 bits) before
+  // operating. This makes
+  //     it safe to left shift 8 bits, even though 8 is >= `major`'s original
+  //     width.
+  // 2.) Casting to 16 bits is safe because `major` and `minor` are both only 8
+  // bits, so it is only
   //     possible for 16 bits of the resulting value to be populated.
-  uint16_t profile_version =
-      static_cast<uint16_t>((major << std::numeric_limits<uint8_t>::digits) | minor);
+  uint16_t profile_version = static_cast<uint16_t>(
+      (major << std::numeric_limits<uint8_t>::digits) | minor);
   profile_desc.emplace_back(DataElement(profile_version));
 
   seq.emplace_back(DataElement(std::move(profile_desc)));
@@ -211,9 +225,12 @@ void ServiceRecord::AddProfile(const UUID& uuid, uint8_t major, uint8_t minor) {
   SetAttribute(kBluetoothProfileDescriptorList, DataElement(std::move(seq)));
 }
 
-bool ServiceRecord::AddInfo(const std::string& language_code, const std::string& name,
-                            const std::string& description, const std::string& provider) {
-  if ((name.empty() && description.empty() && provider.empty()) || (language_code.size() != 2)) {
+bool ServiceRecord::AddInfo(const std::string& language_code,
+                            const std::string& name,
+                            const std::string& description,
+                            const std::string& provider) {
+  if ((name.empty() && description.empty() && provider.empty()) ||
+      (language_code.size() != 2)) {
     return false;
   }
   AttributeId base_attrid = 0x0100;
@@ -243,7 +260,7 @@ bool ServiceRecord::AddInfo(const std::string& language_code, const std::string&
   // The language code consists of two byte characters in left-to-right order,
   // so it may be considered a 16-bit big-endian integer that can be converted
   // to host byte order.
-  uint16_t lang_encoded = betoh16(*((const uint16_t*)(language_code.data())));
+  uint16_t lang_encoded = be16toh(*((const uint16_t*)(language_code.data())));
   base_attr_list.emplace_back(DataElement(lang_encoded));
   base_attr_list.emplace_back(DataElement(uint16_t{106}));  // UTF-8
   base_attr_list.emplace_back(DataElement(base_attrid));
@@ -252,13 +269,15 @@ bool ServiceRecord::AddInfo(const std::string& language_code, const std::string&
     SetAttribute(base_attrid + kServiceNameOffset, DataElement(name));
   }
   if (!description.empty()) {
-    SetAttribute(base_attrid + kServiceDescriptionOffset, DataElement(description));
+    SetAttribute(base_attrid + kServiceDescriptionOffset,
+                 DataElement(description));
   }
   if (!provider.empty()) {
     SetAttribute(base_attrid + kProviderNameOffset, DataElement(provider));
   }
 
-  SetAttribute(kLanguageBaseAttributeIdList, DataElement(std::move(base_attr_list)));
+  SetAttribute(kLanguageBaseAttributeIdList,
+               DataElement(std::move(base_attr_list)));
   return true;
 }
 
@@ -266,7 +285,8 @@ std::string ServiceRecord::ToString() const {
   std::string str;
 
   if (HasAttribute(kBluetoothProfileDescriptorList)) {
-    const DataElement& prof_desc = GetAttribute(kBluetoothProfileDescriptorList);
+    const DataElement& prof_desc =
+        GetAttribute(kBluetoothProfileDescriptorList);
     str += "Profile Descriptor: " + prof_desc.ToString() + "\n";
   }
 

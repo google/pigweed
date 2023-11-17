@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "discovery_filter.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/discovery_filter.h"
 
 #include <endian.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/common/advertising_data.h"
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
 
 namespace bt::gap {
 
@@ -18,35 +18,40 @@ void DiscoveryFilter::SetGeneralDiscoveryFlags() {
 }
 
 bool DiscoveryFilter::MatchLowEnergyResult(
-    const std::optional<std::reference_wrapper<const AdvertisingData>> advertising_data,
-    bool connectable, int8_t rssi) const {
+    const std::optional<std::reference_wrapper<const AdvertisingData>>
+        advertising_data,
+    bool connectable,
+    int8_t rssi) const {
   // No need to check |advertising_data| for the |connectable_| filter.
   if (connectable_ && *connectable_ != connectable) {
     return false;
   }
 
   // If a pathloss filter is not set then apply the RSSI filter before
-  // checking |advertising_data|. (An RSSI value of hci_spec::kRSSIInvalid means that RSSI is
-  // not available, which we check for here).
+  // checking |advertising_data|. (An RSSI value of hci_spec::kRSSIInvalid means
+  // that RSSI is not available, which we check for here).
   bool rssi_ok = !rssi_ || (rssi != hci_spec::kRSSIInvalid && rssi >= *rssi_);
   if (!pathloss_ && !rssi_ok) {
     return false;
   }
 
-  // Any of these filters being set requires us to have a valid |advertising_data| to pass.
-  bool needs_ad_check = flags_ || !service_uuids_.empty() || !service_data_uuids_.empty() ||
+  // Any of these filters being set requires us to have a valid
+  // |advertising_data| to pass.
+  bool needs_ad_check = flags_ || !service_uuids_.empty() ||
+                        !service_data_uuids_.empty() ||
                         !name_substring_.empty() || manufacturer_code_;
 
   if (!advertising_data.has_value() && needs_ad_check) {
     return false;
   }
 
-  // Pathloss is complicated because we can pass if it's set and we have no |advertising_data| by
-  // passing RSSI instead.
+  // Pathloss is complicated because we can pass if it's set and we have no
+  // |advertising_data| by passing RSSI instead.
   if (pathloss_) {
-    if (!advertising_data.has_value() || !advertising_data->get().tx_power().has_value()) {
-      // If no RSSI filter was set OR if one was set but it didn't match the scan
-      // result, we fail.
+    if (!advertising_data.has_value() ||
+        !advertising_data->get().tx_power().has_value()) {
+      // If no RSSI filter was set OR if one was set but it didn't match the
+      // scan result, we fail.
       if (!rssi_ || !rssi_ok) {
         return false;
       }
@@ -54,7 +59,9 @@ bool DiscoveryFilter::MatchLowEnergyResult(
     } else {
       int8_t tx_power_lvl = *advertising_data->get().tx_power();
       if (tx_power_lvl < rssi) {
-        bt_log(WARN, "gap", "reported tx-power level is less than RSSI, failed pathloss");
+        bt_log(WARN,
+               "gap",
+               "reported tx-power level is less than RSSI, failed pathloss");
         return false;
       }
       int8_t pathloss = tx_power_lvl - rssi;
@@ -66,8 +73,8 @@ bool DiscoveryFilter::MatchLowEnergyResult(
     }
   }
 
-  // If we made it here without advetising_data, and there's no need to check, we pass if rssi
-  // passed (which also passes if RSSI filtering was not set)
+  // If we made it here without advetising_data, and there's no need to check,
+  // we pass if rssi passed (which also passes if RSSI filtering was not set)
   if (!advertising_data.has_value() && !needs_ad_check) {
     return rssi_ok;
   }
@@ -99,7 +106,8 @@ bool DiscoveryFilter::MatchLowEnergyResult(
   }
 
   if (manufacturer_code_) {
-    if (ad.manufacturer_data_ids().find(*manufacturer_code_) == ad.manufacturer_data_ids().end()) {
+    if (ad.manufacturer_data_ids().find(*manufacturer_code_) ==
+        ad.manufacturer_data_ids().end()) {
       return false;
     }
   }

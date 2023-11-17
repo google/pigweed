@@ -1,0 +1,279 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+import("$dir_pw_build/module_config.gni")
+import("$dir_pw_build/target_types.gni")
+import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_unit_test/test.gni")
+
+declare_args() {
+  # The build target that overrides the default configuration options for this
+  # module. This should point to a source set that provides defines through a
+  # public config (which may -include a file or add defines directly).
+  pw_bluetooth_sapphire_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
+}
+
+config("public_include_path") {
+  include_dirs = [ "public" ]
+}
+
+pw_source_set("config") {
+  public = [ "public/pw_bluetooth_sapphire/config.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ pw_bluetooth_sapphire_CONFIG ]
+}
+
+group("host") {
+  public_deps = [ "host" ]
+  public_configs = [ ":public_include_path" ]
+}
+
+pw_test_group("tests") {
+  group_deps = [
+    "host:tests",
+    "lib:tests",
+  ]
+}
+
+group("fuzzers") {
+  deps = [ "host:fuzzers" ]
+}
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
+}
+
+# Satisfies source_is_in_gn_build lint, which doesn't know about the BUILD.gn
+# files in nested directories.
+pw_source_set("_public") {
+  public = [
+    "public/pw_bluetooth_sapphire/internal/host/att/att.h",
+    "public/pw_bluetooth_sapphire/internal/host/att/attribute.h",
+    "public/pw_bluetooth_sapphire/internal/host/att/bearer.h",
+    "public/pw_bluetooth_sapphire/internal/host/att/database.h",
+    "public/pw_bluetooth_sapphire/internal/host/att/error.h",
+    "public/pw_bluetooth_sapphire/internal/host/att/packet.h",
+    "public/pw_bluetooth_sapphire/internal/host/att/permissions.h",
+    "public/pw_bluetooth_sapphire/internal/host/att/write_queue.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/advertising_data.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/assert.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/bounded_inspect_list_node.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/byte_buffer.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/device_address.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/device_class.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/error.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/expiring_set.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/fake_inspect.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/host_error.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/identifier.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/inspect.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/inspectable.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/log.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/macros.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/manufacturer_names.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/metrics.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/packet_view.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/pipeline_monitor.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/random.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/retire_log.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/slab_allocator.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/slab_buffer.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/smart_task.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/supplement_data.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/to_string.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/trace.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/uint128.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/uint256.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/uuid.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/weak_self.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/windowed_inspect_numeric_property.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/adapter.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/adapter_state.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/bonding_data.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/bredr_connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/bredr_connection_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/bredr_connection_request.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/bredr_discovery_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/bredr_interrogator.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/discovery_filter.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/event_masks.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/fake_adapter.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/fake_pairing_delegate.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/gap.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/generic_access_client.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/identity_resolving_list.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/low_energy_address_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/low_energy_advertising_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/low_energy_connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/low_energy_connection_handle.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/low_energy_connection_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/low_energy_connection_request.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/low_energy_connector.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/low_energy_discovery_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/low_energy_interrogator.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/low_energy_state.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/pairing_delegate.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/pairing_state.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/peer.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/peer_cache.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/peer_metrics.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/types.h",
+    "public/pw_bluetooth_sapphire/internal/host/gatt/client.h",
+    "public/pw_bluetooth_sapphire/internal/host/gatt/connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/gatt/fake_client.h",
+    "public/pw_bluetooth_sapphire/internal/host/gatt/fake_layer.h",
+    "public/pw_bluetooth_sapphire/internal/host/gatt/gatt.h",
+    "public/pw_bluetooth_sapphire/internal/host/gatt/gatt_defs.h",
+    "public/pw_bluetooth_sapphire/internal/host/gatt/generic_attribute_service.h",
+    "public/pw_bluetooth_sapphire/internal/host/gatt/local_service_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/gatt/mock_server.h",
+    "public/pw_bluetooth_sapphire/internal/host/gatt/persisted_data.h",
+    "public/pw_bluetooth_sapphire/internal/host/gatt/remote_characteristic.h",
+    "public/pw_bluetooth_sapphire/internal/host/gatt/remote_service.h",
+    "public/pw_bluetooth_sapphire/internal/host/gatt/remote_service_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/gatt/server.h",
+    "public/pw_bluetooth_sapphire/internal/host/gatt/types.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci-spec/constants.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci-spec/defaults.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci-spec/le_connection_parameters.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci-spec/link_key.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci-spec/lmp_feature_set.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci-spec/util.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/acl_connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/advertising_handle_map.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/advertising_report_parser.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/bredr_connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/bredr_connection_request.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/command_handler.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/extended_low_energy_advertiser.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/fake_bredr_connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/fake_local_address_delegate.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/fake_low_energy_connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/fake_sco_connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/legacy_low_energy_advertiser.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/legacy_low_energy_scanner.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/local_address_delegate.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/low_energy_advertiser.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/low_energy_connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/low_energy_connector.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/low_energy_scanner.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/sco_connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/sequential_command_runner.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/util.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/a2dp_offload_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/basic_mode_rx_engine.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/basic_mode_tx_engine.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/bredr_command_handler.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/bredr_dynamic_channel.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/bredr_signaling_channel.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/channel.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/channel_configuration.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/channel_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/channel_manager_mock_controller_test_fixture.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/command_handler.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/dynamic_channel.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/dynamic_channel_registry.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/enhanced_retransmission_mode_engines.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/enhanced_retransmission_mode_rx_engine.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/enhanced_retransmission_mode_tx_engine.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/fake_channel.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/fake_channel_test.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/fake_l2cap.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/fake_signaling_channel.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/fcs.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/fragmenter.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/frame_headers.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/le_signaling_channel.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/logical_link.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/low_energy_command_handler.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/mock_channel_test.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/pdu.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/recombiner.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/rx_engine.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/scoped_channel.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/signaling_channel.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/test_packets.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/tx_engine.h",
+    "public/pw_bluetooth_sapphire/internal/host/l2cap/types.h",
+    "public/pw_bluetooth_sapphire/internal/host/sco/sco.h",
+    "public/pw_bluetooth_sapphire/internal/host/sco/sco_connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/sco/sco_connection_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/sdp/client.h",
+    "public/pw_bluetooth_sapphire/internal/host/sdp/data_element.h",
+    "public/pw_bluetooth_sapphire/internal/host/sdp/error.h",
+    "public/pw_bluetooth_sapphire/internal/host/sdp/pdu.h",
+    "public/pw_bluetooth_sapphire/internal/host/sdp/sdp.h",
+    "public/pw_bluetooth_sapphire/internal/host/sdp/server.h",
+    "public/pw_bluetooth_sapphire/internal/host/sdp/service_discoverer.h",
+    "public/pw_bluetooth_sapphire/internal/host/sdp/service_record.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/delegate.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/ecdh_key.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/error.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/fake_phase_listener.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/packet.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/pairing_channel.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/pairing_phase.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/phase_1.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/phase_2_legacy.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/phase_2_secure_connections.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/phase_3.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/sc_stage_1.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/sc_stage_1_just_works_numeric_comparison.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/sc_stage_1_passkey.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/security_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/security_request_phase.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/smp.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/test_security_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/types.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/util.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/controller_test.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/controller_test_double_base.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/fake_controller.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/fake_dynamic_channel.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/fake_gatt_server.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/fake_l2cap.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/fake_peer.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/fake_sdp_server.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/fake_signaling_server.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/inspect.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/inspect_util.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/mock_controller.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/parse_args.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/peer_fuzzer.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/test_helpers.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/test_packets.h",
+    "public/pw_bluetooth_sapphire/internal/host/transport/acl_data_channel.h",
+    "public/pw_bluetooth_sapphire/internal/host/transport/acl_data_packet.h",
+    "public/pw_bluetooth_sapphire/internal/host/transport/command_channel.h",
+    "public/pw_bluetooth_sapphire/internal/host/transport/control_packets.h",
+    "public/pw_bluetooth_sapphire/internal/host/transport/data_buffer_info.h",
+    "public/pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h",
+    "public/pw_bluetooth_sapphire/internal/host/transport/emboss_packet.h",
+    "public/pw_bluetooth_sapphire/internal/host/transport/error.h",
+    "public/pw_bluetooth_sapphire/internal/host/transport/fake_acl_connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/transport/fake_sco_data_channel.h",
+    "public/pw_bluetooth_sapphire/internal/host/transport/link_type.h",
+    "public/pw_bluetooth_sapphire/internal/host/transport/mock_acl_data_channel.h",
+    "public/pw_bluetooth_sapphire/internal/host/transport/packet.h",
+    "public/pw_bluetooth_sapphire/internal/host/transport/sco_data_channel.h",
+    "public/pw_bluetooth_sapphire/internal/host/transport/sco_data_packet.h",
+    "public/pw_bluetooth_sapphire/internal/host/transport/slab_allocators.h",
+    "public/pw_bluetooth_sapphire/internal/host/transport/transport.h",
+  ]
+}

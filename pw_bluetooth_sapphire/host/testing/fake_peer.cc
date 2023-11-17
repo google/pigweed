@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "fake_peer.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/fake_peer.h"
 
 #include <endian.h>
 
-#include "fake_controller.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/common/packet_view.h"
+#include "pw_bluetooth_sapphire/internal/host/common/random.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/fake_controller.h"
 
 namespace bt::testing {
 namespace {
@@ -29,8 +29,10 @@ void WriteRandomRSSI(int8_t* out_mem) {
 
 }  // namespace
 
-FakePeer::FakePeer(const DeviceAddress& address, pw::async::Dispatcher& pw_dispatcher,
-                   bool connectable, bool scannable)
+FakePeer::FakePeer(const DeviceAddress& address,
+                   pw::async::Dispatcher& pw_dispatcher,
+                   bool connectable,
+                   bool scannable)
     : ctrl_(nullptr),
       address_(address),
       name_("FakePeer"),
@@ -59,7 +61,8 @@ void FakePeer::SetAdvertisingData(const ByteBuffer& data) {
   adv_data_ = DynamicByteBuffer(data);
 }
 
-void FakePeer::SetScanResponse(bool should_batch_reports, const ByteBuffer& data) {
+void FakePeer::SetScanResponse(bool should_batch_reports,
+                               const ByteBuffer& data) {
   BT_DEBUG_ASSERT(scannable_);
   BT_DEBUG_ASSERT(data.size() <= hci_spec::kMaxLEAdvertisingDataLength);
   scan_rsp_ = DynamicByteBuffer(data);
@@ -71,45 +74,53 @@ DynamicByteBuffer FakePeer::CreateInquiryResponseEvent(
   BT_DEBUG_ASSERT(address_.type() == DeviceAddress::Type::kBREDR);
 
   if (mode == pw::bluetooth::emboss::InquiryMode::STANDARD) {
-    size_t packet_size = pw::bluetooth::emboss::InquiryResultEvent::MinSizeInBytes() +
-                         pw::bluetooth::emboss::InquiryResult::IntrinsicSizeInBytes();
-    auto packet = hci::EmbossEventPacket::New<pw::bluetooth::emboss::InquiryResultEventWriter>(
+    size_t packet_size =
+        pw::bluetooth::emboss::InquiryResultEvent::MinSizeInBytes() +
+        pw::bluetooth::emboss::InquiryResult::IntrinsicSizeInBytes();
+    auto packet = hci::EmbossEventPacket::New<
+        pw::bluetooth::emboss::InquiryResultEventWriter>(
         hci_spec::kInquiryResultEventCode, packet_size);
     auto view = packet.view_t();
     view.num_responses().Write(1);
     view.responses()[0].bd_addr().CopyFrom(address_.value().view());
     view.responses()[0].page_scan_repetition_mode().Write(
         pw::bluetooth::emboss::PageScanRepetitionMode::R0_);
-    view.responses()[0].class_of_device().BackingStorage().WriteUInt(class_of_device_.to_int());
+    view.responses()[0].class_of_device().BackingStorage().WriteUInt(
+        class_of_device_.to_int());
     return DynamicByteBuffer{packet.data()};
   }
 
   constexpr size_t packet_size =
       pw::bluetooth::emboss::InquiryResultWithRssiEvent::MinSizeInBytes() +
       pw::bluetooth::emboss::InquiryResultWithRssi::IntrinsicSizeInBytes();
-  auto packet =
-      hci::EmbossEventPacket::New<pw::bluetooth::emboss::InquiryResultWithRssiEventWriter>(
-          hci_spec::kInquiryResultEventCode, packet_size);
+  auto packet = hci::EmbossEventPacket::New<
+      pw::bluetooth::emboss::InquiryResultWithRssiEventWriter>(
+      hci_spec::kInquiryResultEventCode, packet_size);
   auto view = packet.view_t();
 
   // TODO(jamuraa): simulate clock offset and RSSI
   view.num_responses().Write(1);
   auto response = view.responses()[0];
   response.bd_addr().CopyFrom(address_.value().view());
-  response.page_scan_repetition_mode().Write(pw::bluetooth::emboss::PageScanRepetitionMode::R0_);
-  response.class_of_device().BackingStorage().WriteUInt(class_of_device_.to_int());
+  response.page_scan_repetition_mode().Write(
+      pw::bluetooth::emboss::PageScanRepetitionMode::R0_);
+  response.class_of_device().BackingStorage().WriteUInt(
+      class_of_device_.to_int());
   response.clock_offset().BackingStorage().WriteUInt(0);
   response.rssi().Write(-30);
   return DynamicByteBuffer{packet.data()};
 }
 
-DynamicByteBuffer FakePeer::CreateAdvertisingReportEvent(bool include_scan_rsp) const {
+DynamicByteBuffer FakePeer::CreateAdvertisingReportEvent(
+    bool include_scan_rsp) const {
   size_t param_size = sizeof(hci_spec::LEMetaEventParams) +
                       sizeof(hci_spec::LEAdvertisingReportSubeventParams) +
-                      sizeof(hci_spec::LEAdvertisingReportData) + adv_data_.size() + sizeof(int8_t);
+                      sizeof(hci_spec::LEAdvertisingReportData) +
+                      adv_data_.size() + sizeof(int8_t);
   if (include_scan_rsp) {
     BT_DEBUG_ASSERT(scannable_);
-    param_size += sizeof(hci_spec::LEAdvertisingReportData) + scan_rsp_.size() + sizeof(int8_t);
+    param_size += sizeof(hci_spec::LEAdvertisingReportData) + scan_rsp_.size() +
+                  sizeof(int8_t);
   }
 
   DynamicByteBuffer buffer(sizeof(hci_spec::EventHeader) + param_size);
@@ -121,10 +132,12 @@ DynamicByteBuffer FakePeer::CreateAdvertisingReportEvent(bool include_scan_rsp) 
   payload->subevent_code = hci_spec::kLEAdvertisingReportSubeventCode;
 
   auto subevent_payload =
-      reinterpret_cast<hci_spec::LEAdvertisingReportSubeventParams*>(payload->subevent_parameters);
+      reinterpret_cast<hci_spec::LEAdvertisingReportSubeventParams*>(
+          payload->subevent_parameters);
   subevent_payload->num_reports = include_scan_rsp ? 2 : 1;
 
-  auto report = reinterpret_cast<hci_spec::LEAdvertisingReportData*>(subevent_payload->reports);
+  auto report = reinterpret_cast<hci_spec::LEAdvertisingReportData*>(
+      subevent_payload->reports);
   if (directed_) {
     report->event_type = hci_spec::LEAdvertisingEventType::kAdvDirectInd;
   } else if (connectable_) {
@@ -135,21 +148,25 @@ DynamicByteBuffer FakePeer::CreateAdvertisingReportEvent(bool include_scan_rsp) 
     report->event_type = hci_spec::LEAdvertisingEventType::kAdvNonConnInd;
   }
   if (address_.type() == DeviceAddress::Type::kLERandom) {
-    report->address_type = address_resolved_ ? hci_spec::LEAddressType::kRandomIdentity
-                                             : hci_spec::LEAddressType::kRandom;
+    report->address_type = address_resolved_
+                               ? hci_spec::LEAddressType::kRandomIdentity
+                               : hci_spec::LEAddressType::kRandom;
   } else {
-    report->address_type = address_resolved_ ? hci_spec::LEAddressType::kPublicIdentity
-                                             : hci_spec::LEAddressType::kPublic;
+    report->address_type = address_resolved_
+                               ? hci_spec::LEAddressType::kPublicIdentity
+                               : hci_spec::LEAddressType::kPublic;
   }
   report->address = address_.value();
   report->length_data = adv_data_.size();
   std::memcpy(report->data, adv_data_.data(), adv_data_.size());
 
-  WriteRandomRSSI(reinterpret_cast<int8_t*>(report->data + report->length_data));
+  WriteRandomRSSI(
+      reinterpret_cast<int8_t*>(report->data + report->length_data));
 
   if (include_scan_rsp) {
-    WriteScanResponseReport(reinterpret_cast<hci_spec::LEAdvertisingReportData*>(
-        report->data + report->length_data + sizeof(int8_t)));
+    WriteScanResponseReport(
+        reinterpret_cast<hci_spec::LEAdvertisingReportData*>(
+            report->data + report->length_data + sizeof(int8_t)));
   }
 
   return buffer;
@@ -159,7 +176,8 @@ DynamicByteBuffer FakePeer::CreateScanResponseReportEvent() const {
   BT_DEBUG_ASSERT(scannable_);
   size_t param_size = sizeof(hci_spec::LEMetaEventParams) +
                       sizeof(hci_spec::LEAdvertisingReportSubeventParams) +
-                      sizeof(hci_spec::LEAdvertisingReportData) + scan_rsp_.size() + sizeof(int8_t);
+                      sizeof(hci_spec::LEAdvertisingReportData) +
+                      scan_rsp_.size() + sizeof(int8_t);
 
   DynamicByteBuffer buffer(sizeof(hci_spec::EventHeader) + param_size);
   MutablePacketView<hci_spec::EventHeader> event(&buffer, param_size);
@@ -170,10 +188,12 @@ DynamicByteBuffer FakePeer::CreateScanResponseReportEvent() const {
   payload->subevent_code = hci_spec::kLEAdvertisingReportSubeventCode;
 
   auto subevent_payload =
-      reinterpret_cast<hci_spec::LEAdvertisingReportSubeventParams*>(payload->subevent_parameters);
+      reinterpret_cast<hci_spec::LEAdvertisingReportSubeventParams*>(
+          payload->subevent_parameters);
   subevent_payload->num_reports = 1;
 
-  auto report = reinterpret_cast<hci_spec::LEAdvertisingReportData*>(subevent_payload->reports);
+  auto report = reinterpret_cast<hci_spec::LEAdvertisingReportData*>(
+      subevent_payload->reports);
   WriteScanResponseReport(report);
 
   return buffer;
@@ -204,7 +224,8 @@ FakePeer::HandleSet FakePeer::Disconnect() {
   return std::move(logical_links_);
 }
 
-void FakePeer::WriteScanResponseReport(hci_spec::LEAdvertisingReportData* report) const {
+void FakePeer::WriteScanResponseReport(
+    hci_spec::LEAdvertisingReportData* report) const {
   BT_DEBUG_ASSERT(scannable_);
   report->event_type = hci_spec::LEAdvertisingEventType::kScanRsp;
   report->address_type = (address_.type() == DeviceAddress::Type::kLERandom)
@@ -214,10 +235,12 @@ void FakePeer::WriteScanResponseReport(hci_spec::LEAdvertisingReportData* report
   report->length_data = scan_rsp_.size();
   std::memcpy(report->data, scan_rsp_.data(), scan_rsp_.size());
 
-  WriteRandomRSSI(reinterpret_cast<int8_t*>(report->data + report->length_data));
+  WriteRandomRSSI(
+      reinterpret_cast<int8_t*>(report->data + report->length_data));
 }
 
-void FakePeer::OnRxL2CAP(hci_spec::ConnectionHandle conn, const ByteBuffer& pdu) {
+void FakePeer::OnRxL2CAP(hci_spec::ConnectionHandle conn,
+                         const ByteBuffer& pdu) {
   if (pdu.size() < sizeof(l2cap::BasicHeader)) {
     bt_log(WARN, "fake-hci", "malformed L2CAP packet!");
     return;
@@ -225,7 +248,8 @@ void FakePeer::OnRxL2CAP(hci_spec::ConnectionHandle conn, const ByteBuffer& pdu)
   l2cap_.HandlePdu(conn, pdu);
 }
 
-void FakePeer::SendPacket(hci_spec::ConnectionHandle conn, l2cap::ChannelId cid,
+void FakePeer::SendPacket(hci_spec::ConnectionHandle conn,
+                          l2cap::ChannelId cid,
                           const ByteBuffer& packet) {
   ctrl()->SendL2CAPBFrame(conn, cid, packet);
 }

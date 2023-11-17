@@ -6,15 +6,16 @@
 #include <pw_async/fake_dispatcher.h>
 #include <pw_random/fuzzer.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_dynamic_channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_signaling_channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/bredr_dynamic_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/bredr_signaling_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel.h"
 
 constexpr static bt::hci_spec::ConnectionHandle kTestHandle = 0x0001;
 
-bt::l2cap::ChannelParameters ConsumeChannelParameters(FuzzedDataProvider& provider) {
+bt::l2cap::ChannelParameters ConsumeChannelParameters(
+    FuzzedDataProvider& provider) {
   bt::l2cap::ChannelParameters params;
 
   bool use_defaults = provider.ConsumeBool();
@@ -24,7 +25,8 @@ bt::l2cap::ChannelParameters ConsumeChannelParameters(FuzzedDataProvider& provid
 
   params.mode = provider.ConsumeBool()
                     ? bt::l2cap::RetransmissionAndFlowControlMode::kBasic
-                    : bt::l2cap::RetransmissionAndFlowControlMode::kEnhancedRetransmission;
+                    : bt::l2cap::RetransmissionAndFlowControlMode::
+                          kEnhancedRetransmission;
   params.max_rx_sdu_size = provider.ConsumeIntegral<uint16_t>();
   return params;
 }
@@ -38,11 +40,15 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   pw::async::test::FakeDispatcher dispatcher;
 
   auto fake_chan = std::make_unique<bt::l2cap::testing::FakeChannel>(
-      bt::l2cap::kSignalingChannelId, bt::l2cap::kSignalingChannelId, kTestHandle,
+      bt::l2cap::kSignalingChannelId,
+      bt::l2cap::kSignalingChannelId,
+      kTestHandle,
       bt::LinkType::kACL);
 
   bt::l2cap::internal::BrEdrSignalingChannel sig_chan(
-      fake_chan->GetWeakPtr(), pw::bluetooth::emboss::ConnectionRole::CENTRAL, dispatcher);
+      fake_chan->GetWeakPtr(),
+      pw::bluetooth::emboss::ConnectionRole::CENTRAL,
+      dispatcher);
 
   auto open_cb = [](auto chan) {};
   auto close_cb = [](auto chan) {};
@@ -51,24 +57,30 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   auto service_cb = [&](auto psm) {
     // Reject some PSMs.
     if (provider.ConsumeBool()) {
-      return std::optional<bt::l2cap::internal::DynamicChannelRegistry::ServiceInfo>();
+      return std::optional<
+          bt::l2cap::internal::DynamicChannelRegistry::ServiceInfo>();
     }
 
     auto params = ConsumeChannelParameters(provider);
     return std::optional(
-        bt::l2cap::internal::DynamicChannelRegistry::ServiceInfo(params, service_chan_cb));
+        bt::l2cap::internal::DynamicChannelRegistry::ServiceInfo(
+            params, service_chan_cb));
   };
-  bt::l2cap::internal::BrEdrDynamicChannelRegistry registry(&sig_chan, close_cb, service_cb,
-                                                            /*random_channel_ids=*/true);
+  bt::l2cap::internal::BrEdrDynamicChannelRegistry registry(
+      &sig_chan,
+      close_cb,
+      service_cb,
+      /*random_channel_ids=*/true);
 
   while (provider.remaining_bytes() > 0) {
     // Receive an l2cap packet.
     uint16_t data_size = provider.ConsumeIntegral<uint16_t>();
-    auto data = provider.ConsumeBytes<uint8_t>(data_size);
-    fake_chan->Receive(bt::BufferView(data.data(), data.size()));
+    auto packet = provider.ConsumeBytes<uint8_t>(data_size);
+    fake_chan->Receive(bt::BufferView(packet.data(), packet.size()));
 
     if (provider.ConsumeBool()) {
-      registry.OpenOutbound(bt::l2cap::kAVDTP, ConsumeChannelParameters(provider), open_cb);
+      registry.OpenOutbound(
+          bt::l2cap::kAVDTP, ConsumeChannelParameters(provider), open_cb);
     }
 
     if (provider.ConsumeBool()) {
@@ -76,5 +88,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     }
   }
 
+  bt::set_random_generator(nullptr);
   return 0;
 }

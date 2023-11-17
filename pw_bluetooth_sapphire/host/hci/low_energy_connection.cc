@@ -2,18 +2,21 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "low_energy_connection.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/low_energy_connection.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
+
+#pragma clang diagnostic ignored "-Wshadow"
 
 namespace bt::hci {
 
-LowEnergyConnection::LowEnergyConnection(hci_spec::ConnectionHandle handle,
-                                         const DeviceAddress& local_address,
-                                         const DeviceAddress& peer_address,
-                                         const hci_spec::LEConnectionParameters& params,
-                                         pw::bluetooth::emboss::ConnectionRole role,
-                                         const Transport::WeakPtr& hci)
+LowEnergyConnection::LowEnergyConnection(
+    hci_spec::ConnectionHandle handle,
+    const DeviceAddress& local_address,
+    const DeviceAddress& peer_address,
+    const hci_spec::LEConnectionParameters& params,
+    pw::bluetooth::emboss::ConnectionRole role,
+    const Transport::WeakPtr& hci)
     : AclConnection(handle, local_address, peer_address, role, hci),
       WeakSelf(this),
       parameters_(params) {
@@ -23,7 +26,8 @@ LowEnergyConnection::LowEnergyConnection(hci_spec::ConnectionHandle handle,
 
   le_ltk_request_id_ = hci->command_channel()->AddLEMetaEventHandler(
       hci_spec::kLELongTermKeyRequestSubeventCode,
-      fit::bind_member<&LowEnergyConnection::OnLELongTermKeyRequestEvent>(this));
+      fit::bind_member<&LowEnergyConnection::OnLELongTermKeyRequestEvent>(
+          this));
 }
 
 LowEnergyConnection::~LowEnergyConnection() {
@@ -47,21 +51,28 @@ bool LowEnergyConnection::StartEncryption() {
     return false;
   }
 
-  auto cmd = EmbossCommandPacket::New<pw::bluetooth::emboss::LEEnableEncryptionCommandWriter>(
+  auto cmd = EmbossCommandPacket::New<
+      pw::bluetooth::emboss::LEEnableEncryptionCommandWriter>(
       hci_spec::kLEStartEncryption);
   auto params = cmd.view_t();
   params.connection_handle().Write(handle());
   params.random_number().Write(ltk()->rand());
   params.encrypted_diversifier().Write(ltk()->ediv());
-  params.long_term_key().CopyFrom(pw::bluetooth::emboss::LinkKeyView(&ltk()->value()));
+  params.long_term_key().CopyFrom(
+      pw::bluetooth::emboss::LinkKeyView(&ltk()->value()));
 
-  auto event_cb = [self = GetWeakPtr(), handle = handle()](auto id, const EventPacket& event) {
+  auto event_cb = [self = GetWeakPtr(), handle = handle()](
+                      auto id, const EventPacket& event) {
     if (!self.is_alive()) {
       return;
     }
 
     Result<> result = event.ToResult();
-    if (bt_is_error(result, ERROR, "hci-le", "could not set encryption on link %#.04x", handle)) {
+    if (bt_is_error(result,
+                    ERROR,
+                    "hci-le",
+                    "could not set encryption on link %#.04x",
+                    handle)) {
       if (self->encryption_change_callback()) {
         self->encryption_change_callback()(result.take_error());
       }
@@ -72,11 +83,12 @@ bool LowEnergyConnection::StartEncryption() {
   if (!hci().is_alive()) {
     return false;
   }
-  return hci()->command_channel()->SendCommand(std::move(cmd), std::move(event_cb),
-                                               hci_spec::kCommandStatusEventCode);
+  return hci()->command_channel()->SendCommand(
+      std::move(cmd), std::move(event_cb), hci_spec::kCommandStatusEventCode);
 }
 
-void LowEnergyConnection::HandleEncryptionStatus(Result<bool> result, bool /*key_refreshed*/) {
+void LowEnergyConnection::HandleEncryptionStatus(Result<bool> result,
+                                                 bool /*key_refreshed*/) {
   // "On an authentication failure, the connection shall be automatically
   // disconnected by the Link Layer." (HCI_LE_Start_Encryption, Vol 2, Part E,
   // 7.8.24). We make sure of this by telling the controller to disconnect.
@@ -85,19 +97,23 @@ void LowEnergyConnection::HandleEncryptionStatus(Result<bool> result, bool /*key
   }
 
   if (!encryption_change_callback()) {
-    bt_log(DEBUG, "hci", "%#.4x: no encryption status callback assigned", handle());
+    bt_log(DEBUG,
+           "hci",
+           "%#.4x: no encryption status callback assigned",
+           handle());
     return;
   }
   encryption_change_callback()(result);
 }
 
-CommandChannel::EventCallbackResult LowEnergyConnection::OnLELongTermKeyRequestEvent(
-    const EventPacket& event) {
+CommandChannel::EventCallbackResult
+LowEnergyConnection::OnLELongTermKeyRequestEvent(const EventPacket& event) {
   BT_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
   BT_ASSERT(event.params<hci_spec::LEMetaEventParams>().subevent_code ==
             hci_spec::kLELongTermKeyRequestSubeventCode);
 
-  auto* params = event.subevent_params<hci_spec::LELongTermKeyRequestSubeventParams>();
+  auto* params =
+      event.subevent_params<hci_spec::LELongTermKeyRequestSubeventParams>();
   if (!params) {
     bt_log(WARN, "hci", "malformed LE LTK request event");
     return CommandChannel::EventCallbackResult::kContinue;
@@ -115,12 +131,15 @@ CommandChannel::EventCallbackResult LowEnergyConnection::OnLELongTermKeyRequestE
   uint64_t rand = le64toh(params->random_number);
   uint16_t ediv = le16toh(params->encrypted_diversifier);
 
-  bt_log(DEBUG, "hci", "LE LTK request - ediv: %#.4x, rand: %#.16lx", ediv, rand);
+  bt_log(
+      DEBUG, "hci", "LE LTK request - ediv: %#.4x, rand: %#.16lx", ediv, rand);
   if (ltk() && ltk()->rand() == rand && ltk()->ediv() == ediv) {
-    cmd = CommandPacket::New(hci_spec::kLELongTermKeyRequestReply,
-                             sizeof(hci_spec::LELongTermKeyRequestReplyCommandParams));
+    cmd = CommandPacket::New(
+        hci_spec::kLELongTermKeyRequestReply,
+        sizeof(hci_spec::LELongTermKeyRequestReplyCommandParams));
     auto* params = std::get<std::unique_ptr<CommandPacket>>(cmd)
-                       ->mutable_payload<hci_spec::LELongTermKeyRequestReplyCommandParams>();
+                       ->mutable_payload<
+                           hci_spec::LELongTermKeyRequestReplyCommandParams>();
 
     params->connection_handle = htole16(handle);
     params->long_term_key = ltk()->value();
@@ -131,7 +150,8 @@ CommandChannel::EventCallbackResult LowEnergyConnection::OnLELongTermKeyRequestE
         pw::bluetooth::emboss::LELongTermKeyRequestNegativeReplyCommandWriter>(
         hci_spec::kLELongTermKeyRequestNegativeReply);
     auto view = std::get<EmbossCommandPacket>(cmd)
-                    .view<pw::bluetooth::emboss::LELongTermKeyRequestNegativeReplyCommandWriter>();
+                    .view<pw::bluetooth::emboss::
+                              LELongTermKeyRequestNegativeReplyCommandWriter>();
     view.connection_handle().Write(handle);
   }
 

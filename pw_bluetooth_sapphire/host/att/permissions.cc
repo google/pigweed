@@ -2,14 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "permissions.h"
+#include "pw_bluetooth_sapphire/internal/host/att/permissions.h"
 
 namespace bt::att {
 namespace {
 
 fit::result<ErrorCode> CheckSecurity(const AccessRequirements& reqs,
                                      const sm::SecurityProperties& security) {
-  if (reqs.encryption_required() && security.level() < sm::SecurityLevel::kEncrypted) {
+  if (reqs.encryption_required() &&
+      security.level() < sm::SecurityLevel::kEncrypted) {
     // If the peer is bonded but the link is not encrypted the "Insufficient
     // Encryption" error should be sent. Our GAP layer always keeps the link
     // encrypted so the authentication procedure needs to fail during
@@ -24,7 +25,8 @@ fit::result<ErrorCode> CheckSecurity(const AccessRequirements& reqs,
     return fit::error(ErrorCode::kInsufficientAuthentication);
   }
 
-  if (reqs.encryption_required() && security.enc_key_size() < reqs.min_enc_key_size()) {
+  if (reqs.encryption_required() &&
+      security.enc_key_size() < reqs.min_enc_key_size()) {
     return fit::error(ErrorCode::kInsufficientEncryptionKeySize);
   }
 
@@ -33,16 +35,16 @@ fit::result<ErrorCode> CheckSecurity(const AccessRequirements& reqs,
 
 }  // namespace
 
-fit::result<ErrorCode> CheckReadPermissions(const AccessRequirements& reqs,
-                                            const sm::SecurityProperties& security) {
+fit::result<ErrorCode> CheckReadPermissions(
+    const AccessRequirements& reqs, const sm::SecurityProperties& security) {
   if (!reqs.allowed()) {
     return fit::error(ErrorCode::kReadNotPermitted);
   }
   return CheckSecurity(reqs, security);
 }
 
-fit::result<ErrorCode> CheckWritePermissions(const AccessRequirements& reqs,
-                                             const sm::SecurityProperties& security) {
+fit::result<ErrorCode> CheckWritePermissions(
+    const AccessRequirements& reqs, const sm::SecurityProperties& security) {
   if (!reqs.allowed()) {
     return fit::error(ErrorCode::kWriteNotPermitted);
   }

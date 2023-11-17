@@ -2,16 +2,18 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_interrogator.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/low_energy_interrogator.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/peer.h"
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
 
 namespace bt::gap {
 
-LowEnergyInterrogator::LowEnergyInterrogator(Peer::WeakPtr peer, hci_spec::ConnectionHandle handle,
-                                             hci::CommandChannel::WeakPtr cmd_channel)
+LowEnergyInterrogator::LowEnergyInterrogator(
+    Peer::WeakPtr peer,
+    hci_spec::ConnectionHandle handle,
+    hci::CommandChannel::WeakPtr cmd_channel)
     : peer_(std::move(peer)),
       peer_id_(peer_->identifier()),
       handle_(handle),
@@ -29,10 +31,11 @@ void LowEnergyInterrogator::Start(ResultCallback callback) {
 
   BT_ASSERT(peer_->le().has_value());
 
-  // Always read remote version information as a test of whether the connection was *actually*
-  // successfully established. If the connection failed to be established, the command status of the
-  // Read Remote Version Information command will be "Connection Failed to be Established". See
-  // fxbug.dev/60517 for details.
+  // Always read remote version information as a test of whether the connection
+  // was *actually* successfully established. If the connection failed to be
+  // established, the command status of the Read Remote Version Information
+  // command will be "Connection Failed to be Established". See fxbug.dev/60517
+  // for details.
   QueueReadRemoteVersionInformation();
 
   if (!peer_->le()->features().has_value()) {
@@ -58,59 +61,81 @@ void LowEnergyInterrogator::Complete(hci::Result<> result) {
   // callback may destroy this object
   callback_(result);
 
-  // Complete() may have been called by a command callback, in which case the runner needs to be
-  // canceled.
+  // Complete() may have been called by a command callback, in which case the
+  // runner needs to be canceled.
   if (self.is_alive() && !cmd_runner_.IsReady()) {
     cmd_runner_.Cancel();
   }
 }
 
 void LowEnergyInterrogator::QueueReadLERemoteFeatures() {
-  auto packet =
-      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::LEReadRemoteFeaturesCommandWriter>(
-          hci_spec::kLEReadRemoteFeatures);
+  auto packet = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::LEReadRemoteFeaturesCommandWriter>(
+      hci_spec::kLEReadRemoteFeatures);
   packet.view_t().connection_handle().Write(handle_);
 
-  // It's safe to capture |this| instead of a weak ptr to self because |cmd_runner_| guarantees that
-  // |cmd_cb| won't be invoked if |cmd_runner_| is destroyed, and |this| outlives |cmd_runner_|.
+  // It's safe to capture |this| instead of a weak ptr to self because
+  // |cmd_runner_| guarantees that |cmd_cb| won't be invoked if |cmd_runner_| is
+  // destroyed, and |this| outlives |cmd_runner_|.
   auto cmd_cb = [this](const hci::EmbossEventPacket& event) {
     if (hci_is_error(event, WARN, "gap-le", "LE read remote features failed")) {
       return;
     }
-    bt_log(DEBUG, "gap-le", "LE read remote features complete (peer: %s)", bt_str(peer_id_));
-    auto view = event.view<pw::bluetooth::emboss::LEReadRemoteFeaturesCompleteSubeventView>();
-    peer_->MutLe().SetFeatures(
-        hci_spec::LESupportedFeatures{view.le_features().BackingStorage().ReadUInt()});
+    bt_log(DEBUG,
+           "gap-le",
+           "LE read remote features complete (peer: %s)",
+           bt_str(peer_id_));
+    auto view = event.view<
+        pw::bluetooth::emboss::LEReadRemoteFeaturesCompleteSubeventView>();
+    peer_->MutLe().SetFeatures(hci_spec::LESupportedFeatures{
+        view.le_features().BackingStorage().ReadUInt()});
   };
 
-  bt_log(TRACE, "gap-le", "sending LE read remote features command (peer id: %s)",
+  bt_log(TRACE,
+         "gap-le",
+         "sending LE read remote features command (peer id: %s)",
          bt_str(peer_id_));
-  cmd_runner_.QueueLeAsyncCommand(std::move(packet),
-                                  hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode,
-                                  std::move(cmd_cb), /*wait=*/false);
+  cmd_runner_.QueueLeAsyncCommand(
+      std::move(packet),
+      hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode,
+      std::move(cmd_cb),
+      /*wait=*/false);
 }
 
 void LowEnergyInterrogator::QueueReadRemoteVersionInformation() {
-  auto packet =
-      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ReadRemoteVersionInfoCommandWriter>(
-          hci_spec::kReadRemoteVersionInfo);
+  auto packet = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::ReadRemoteVersionInfoCommandWriter>(
+      hci_spec::kReadRemoteVersionInfo);
   packet.view_t().connection_handle().Write(handle_);
 
-  // It's safe to capture |this| instead of a weak ptr to self because |cmd_runner_| guarantees that
-  // |cmd_cb| won't be invoked if |cmd_runner_| is destroyed, and |this| outlives |cmd_runner_|.
+  // It's safe to capture |this| instead of a weak ptr to self because
+  // |cmd_runner_| guarantees that |cmd_cb| won't be invoked if |cmd_runner_| is
+  // destroyed, and |this| outlives |cmd_runner_|.
   auto cmd_cb = [this](const hci::EmbossEventPacket& event) {
-    if (hci_is_error(event, WARN, "gap-le", "read remote version info failed")) {
+    if (hci_is_error(
+            event, WARN, "gap-le", "read remote version info failed")) {
       return;
     }
-    BT_DEBUG_ASSERT(event.event_code() == hci_spec::kReadRemoteVersionInfoCompleteEventCode);
-    bt_log(TRACE, "gap-le", "read remote version info completed (peer: %s)", bt_str(peer_id_));
-    auto view = event.view<pw::bluetooth::emboss::ReadRemoteVersionInfoCompleteEventView>();
-    peer_->set_version(view.version().Read(), view.company_identifier().Read(),
+    BT_DEBUG_ASSERT(event.event_code() ==
+                    hci_spec::kReadRemoteVersionInfoCompleteEventCode);
+    bt_log(TRACE,
+           "gap-le",
+           "read remote version info completed (peer: %s)",
+           bt_str(peer_id_));
+    auto view = event.view<
+        pw::bluetooth::emboss::ReadRemoteVersionInfoCompleteEventView>();
+    peer_->set_version(view.version().Read(),
+                       view.company_identifier().Read(),
                        view.subversion().Read());
   };
 
-  bt_log(TRACE, "gap-le", "asking for version info (peer id: %s)", bt_str(peer_id_));
-  cmd_runner_.QueueCommand(std::move(packet), std::move(cmd_cb), /*wait=*/false,
+  bt_log(TRACE,
+         "gap-le",
+         "asking for version info (peer id: %s)",
+         bt_str(peer_id_));
+  cmd_runner_.QueueCommand(std::move(packet),
+                           std::move(cmd_cb),
+                           /*wait=*/false,
                            hci_spec::kReadRemoteVersionInfoCompleteEventCode);
 }
 

@@ -2,75 +2,80 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//build/fuzz.gni")
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_unit_test/test.gni")
 
+dir_public_common = "../../public/pw_bluetooth_sapphire/internal/host/common"
+
 pw_source_set("common") {
+  public = [
+    "$dir_public_common/advertising_data.h",
+    "$dir_public_common/assert.h",
+    "$dir_public_common/bounded_inspect_list_node.h",
+    "$dir_public_common/byte_buffer.h",
+    "$dir_public_common/device_address.h",
+    "$dir_public_common/device_class.h",
+    "$dir_public_common/error.h",
+    "$dir_public_common/expiring_set.h",
+    "$dir_public_common/fake_inspect.h",
+    "$dir_public_common/host_error.h",
+    "$dir_public_common/identifier.h",
+    "$dir_public_common/inspect.h",
+    "$dir_public_common/inspectable.h",
+    "$dir_public_common/log.h",
+    "$dir_public_common/macros.h",
+    "$dir_public_common/manufacturer_names.h",
+    "$dir_public_common/metrics.h",
+    "$dir_public_common/packet_view.h",
+    "$dir_public_common/pipeline_monitor.h",
+    "$dir_public_common/random.h",
+    "$dir_public_common/retire_log.h",
+    "$dir_public_common/slab_allocator.h",
+    "$dir_public_common/slab_buffer.h",
+    "$dir_public_common/smart_task.h",
+    "$dir_public_common/supplement_data.h",
+    "$dir_public_common/to_string.h",
+    "$dir_public_common/trace.h",
+    "$dir_public_common/uint128.h",
+    "$dir_public_common/uint256.h",
+    "$dir_public_common/uuid.h",
+    "$dir_public_common/weak_self.h",
+    "$dir_public_common/windowed_inspect_numeric_property.h",
+  ]
+
   sources = [
     "advertising_data.cc",
-    "advertising_data.h",
-    "assert.h",
     "bounded_inspect_list_node.cc",
-    "bounded_inspect_list_node.h",
     "byte_buffer.cc",
-    "byte_buffer.h",
     "device_address.cc",
-    "device_address.h",
     "device_class.cc",
-    "device_class.h",
-    "error.h",
-    "expiring_set.h",
-    "fake_inspect.h",
     "host_error.cc",
-    "host_error.h",
     "identifier.cc",
-    "identifier.h",
-    "inspect.h",
-    "inspectable.h",
     "log.cc",
-    "log.h",
-    "macros.h",
     "manufacturer_names.cc",
-    "manufacturer_names.h",
     "metrics.cc",
-    "metrics.h",
-    "packet_view.h",
-    "pipeline_monitor.h",
     "random.cc",
-    "random.h",
     "retire_log.cc",
-    "retire_log.h",
     "slab_allocator.cc",
-    "slab_allocator.h",
-    "slab_buffer.h",
-    "smart_task.h",
     "supplement_data.cc",
-    "supplement_data.h",
-    "to_string.h",
-    "trace.h",
-    "uint128.h",
-    "uint256.h",
     "uuid.cc",
-    "uuid.h",
-    "weak_self.h",
-    "windowed_inspect_numeric_property.h",
   ]
 
   public_deps = [
     "$dir_pw_assert",
+    "$dir_pw_async:dispatcher",
+    "$dir_pw_async:task",
     "$dir_pw_bluetooth:emboss_hci_group",
+    "$dir_pw_bluetooth_sapphire:config",
+    "$dir_pw_bluetooth_sapphire/lib/cpp-string",
+    "$dir_pw_bluetooth_sapphire/lib/cpp-type",
     "$dir_pw_intrusive_ptr",
     "$dir_pw_log",
     "$dir_pw_random",
     "$dir_pw_span",
     "$dir_pw_string",
     "$dir_pw_third_party/fuchsia:fit",
-    "//src/connectivity/bluetooth/lib/cpp-string",
-    "//src/connectivity/bluetooth/lib/cpp-type",
-    "//third_party/pigweed:pw_async_dispatcher",
-    "//third_party/pigweed:pw_async_task",
   ]
 
   if (current_os == "fuchsia") {
@@ -81,7 +86,7 @@ pw_source_set("common") {
   }
 }
 
-pw_test("tests") {
+pw_test("common_tests") {
   sources = [
     "advertising_data_unittest.cc",
     "bounded_inspect_list_node_unittest.cc",
@@ -106,20 +111,21 @@ pw_test("tests") {
 
   deps = [
     ":common",
-    "//src/connectivity/bluetooth/core/bt-host/testing",
-    "//third_party/pigweed/backends/pw_async_fuchsia:fake_dispatcher_fixture",
+    "$dir_pw_async:fake_dispatcher_fixture",
+    "$dir_pw_bluetooth_sapphire/host/testing",
   ]
+
+  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
 }
 
-fuchsia_library_fuzzer("advertising_data_fuzzer") {
-  sources = [ "advertising_data_fuzztest.cc" ]
-  deps = [
-    ":common",
-    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
-  ]
-}
-
-pw_fuzzer("pw_advertising_data_fuzzer") {
+pw_fuzzer("advertising_data_fuzzer") {
   sources = [ "advertising_data_fuzztest.cc" ]
   deps = [ ":common" ]
+}
+
+pw_test_group("tests") {
+  tests = [
+    ":common_tests",
+    ":advertising_data_fuzzer_test",
+  ]
 }

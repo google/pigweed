@@ -2,26 +2,27 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "util.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/util.h"
 
 #include <endian.h>
+#include <openssl/aes.h>
+#include <openssl/cmac.h>
 
 #include <algorithm>
 #include <optional>
 
-#include <openssl/aes.h>
-#include <openssl/cmac.h>
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
+#include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
+#include "pw_bluetooth_sapphire/internal/host/common/random.h"
+#include "pw_bluetooth_sapphire/internal/host/common/uint128.h"
+#include "pw_bluetooth_sapphire/internal/host/common/uint256.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/util.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/error.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/uint256.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/error.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
+#pragma clang diagnostic ignored "-Wswitch-enum"
 
 namespace bt::sm::util {
 namespace {
@@ -29,8 +30,22 @@ namespace {
 constexpr size_t kPreqSize = 7;
 constexpr uint32_t k24BitMax = 0xFFFFFF;
 // F5 parameters are stored in little-endian
-const auto kF5Salt = UInt128{0xBE, 0x83, 0x60, 0x5A, 0xDB, 0x0B, 0x37, 0x60,
-                             0x38, 0xA5, 0xF5, 0xAA, 0x91, 0x83, 0x88, 0x6C};
+const auto kF5Salt = UInt128{0xBE,
+                             0x83,
+                             0x60,
+                             0x5A,
+                             0xDB,
+                             0x0B,
+                             0x37,
+                             0x60,
+                             0x38,
+                             0xA5,
+                             0xF5,
+                             0xAA,
+                             0x91,
+                             0x83,
+                             0x88,
+                             0x6C};
 const auto kF5KeyId = std::array<uint8_t, 4>{0x65, 0x6C, 0x74, 0x62};
 
 // Swap the endianness of a 128-bit integer. |in| and |out| should not be backed
@@ -52,19 +67,23 @@ void Xor128(const UInt128& int1, const UInt128& int2, UInt128* out) {
   }
 }
 
-// Writes |data| to |output_data_loc| & returns a view of the remainder of |output_data_loc|.
+// Writes |data| to |output_data_loc| & returns a view of the remainder of
+// |output_data_loc|.
 template <typename InputType>
-MutableBufferView WriteToBuffer(InputType data, MutableBufferView output_data_loc) {
+MutableBufferView WriteToBuffer(InputType data,
+                                MutableBufferView output_data_loc) {
   output_data_loc.WriteObj(data);
   return output_data_loc.mutable_view(sizeof(data));
 }
 
-// Converts |addr| into the 56-bit format used by F5/F6 and writes that data to a BufferView.
-// Returns a buffer view pointing just past the last byte written.
-MutableBufferView WriteCryptoDeviceAddr(const DeviceAddress& addr, const MutableBufferView& out) {
+// Converts |addr| into the 56-bit format used by F5/F6 and writes that data to
+// a BufferView. Returns a buffer view pointing just past the last byte written.
+MutableBufferView WriteCryptoDeviceAddr(const DeviceAddress& addr,
+                                        const MutableBufferView& out) {
   std::array<uint8_t, sizeof(addr.value()) + 1> little_endian_addr_buffer;
   BufferView addr_bytes = addr.value().bytes();
-  std::copy(addr_bytes.begin(), addr_bytes.end(), little_endian_addr_buffer.data());
+  std::copy(
+      addr_bytes.begin(), addr_bytes.end(), little_endian_addr_buffer.data());
   little_endian_addr_buffer[6] = addr.IsPublic() ? 0x00 : 0x01;
   return WriteToBuffer(little_endian_addr_buffer, out);
 }
@@ -89,7 +108,8 @@ std::string IOCapabilityToString(IOCapability capability) {
   return "(unknown)";
 }
 
-pw::bluetooth::emboss::IoCapability IOCapabilityForHci(IOCapability capability) {
+pw::bluetooth::emboss::IoCapability IOCapabilityForHci(
+    IOCapability capability) {
   switch (capability) {
     case IOCapability::kDisplayOnly:
       return pw::bluetooth::emboss::IoCapability::DISPLAY_ONLY;
@@ -141,15 +161,21 @@ std::string DisplayMethodToString(Delegate::DisplayMethod method) {
 }
 
 MutableByteBufferPtr NewPdu(size_t param_size) {
-  // TODO(fxbug.dev/1338): Remove unique_ptr->DynamicByteBuffer double indirection once sufficient
-  // progress has been made on the attached bug (specifically re:l2cap::Channel::Send).
+  // TODO(fxbug.dev/1338): Remove unique_ptr->DynamicByteBuffer double
+  // indirection once sufficient progress has been made on the attached bug
+  // (specifically re:l2cap::Channel::Send).
   return std::make_unique<DynamicByteBuffer>(sizeof(Header) + param_size);
 }
 
-PairingMethod SelectPairingMethod(bool sec_conn, bool local_oob, bool peer_oob, bool mitm_required,
-                                  IOCapability local_ioc, IOCapability peer_ioc,
+PairingMethod SelectPairingMethod(bool sec_conn,
+                                  bool local_oob,
+                                  bool peer_oob,
+                                  bool mitm_required,
+                                  IOCapability local_ioc,
+                                  IOCapability peer_ioc,
                                   bool local_initiator) {
-  if ((sec_conn && (local_oob || peer_oob)) || (!sec_conn && local_oob && peer_oob)) {
+  if ((sec_conn && (local_oob || peer_oob)) ||
+      (!sec_conn && local_oob && peer_oob)) {
     return PairingMethod::kOutOfBand;
   }
 
@@ -179,9 +205,11 @@ PairingMethod SelectPairingMethod(bool sec_conn, bool local_oob, bool peer_oob, 
     case IOCapability::kDisplayYesNo:
       switch (peer_ioc) {
         case IOCapability::kDisplayYesNo:
-          return sec_conn ? PairingMethod::kNumericComparison : PairingMethod::kJustWorks;
+          return sec_conn ? PairingMethod::kNumericComparison
+                          : PairingMethod::kJustWorks;
         case IOCapability::kKeyboardDisplay:
-          return sec_conn ? PairingMethod::kNumericComparison : PairingMethod::kPasskeyEntryDisplay;
+          return sec_conn ? PairingMethod::kNumericComparison
+                          : PairingMethod::kPasskeyEntryDisplay;
         case IOCapability::kKeyboardOnly:
           return PairingMethod::kPasskeyEntryDisplay;
         default:
@@ -199,7 +227,8 @@ PairingMethod SelectPairingMethod(bool sec_conn, bool local_oob, bool peer_oob, 
         case IOCapability::kDisplayOnly:
           return PairingMethod::kPasskeyEntryInput;
         case IOCapability::kDisplayYesNo:
-          return sec_conn ? PairingMethod::kNumericComparison : PairingMethod::kPasskeyEntryInput;
+          return sec_conn ? PairingMethod::kNumericComparison
+                          : PairingMethod::kPasskeyEntryInput;
         default:
           break;
       }
@@ -217,7 +246,9 @@ PairingMethod SelectPairingMethod(bool sec_conn, bool local_oob, bool peer_oob, 
   return PairingMethod::kJustWorks;
 }
 
-void Encrypt(const UInt128& key, const UInt128& plaintext_data, UInt128* out_encrypted_data) {
+void Encrypt(const UInt128& key,
+             const UInt128& plaintext_data,
+             UInt128* out_encrypted_data) {
   // Swap the bytes since "the most significant octet of key corresponds to
   // key[0], the most significant octet of plaintextData corresponds to in[0]
   // and the most significant octet of encryptedData corresponds to out[0] using
@@ -234,8 +265,12 @@ void Encrypt(const UInt128& key, const UInt128& plaintext_data, UInt128* out_enc
   Swap128(be_enc, out_encrypted_data);
 }
 
-void C1(const UInt128& tk, const UInt128& rand, const ByteBuffer& preq, const ByteBuffer& pres,
-        const DeviceAddress& initiator_addr, const DeviceAddress& responder_addr,
+void C1(const UInt128& tk,
+        const UInt128& rand,
+        const ByteBuffer& preq,
+        const ByteBuffer& pres,
+        const DeviceAddress& initiator_addr,
+        const DeviceAddress& responder_addr,
         UInt128* out_confirm_value) {
   BT_DEBUG_ASSERT(preq.size() == kPreqSize);
   BT_DEBUG_ASSERT(pres.size() == kPreqSize);
@@ -250,7 +285,7 @@ void C1(const UInt128& tk, const UInt128& rand, const ByteBuffer& preq, const By
       DeviceAddress::DeviceAddrToLeAddr(responder_addr.type());
   p1[0] = static_cast<uint8_t>(iat);
   p1[1] = static_cast<uint8_t>(rat);
-  std::memcpy(p1.data() + 2, preq.data(), preq.size());                // Bytes [2-8]
+  std::memcpy(p1.data() + 2, preq.data(), preq.size());  // Bytes [2-8]
   std::memcpy(p1.data() + 2 + preq.size(), pres.data(), pres.size());  // [9-15]
 
   // Calculate p2 = padding || ia || ra
@@ -258,7 +293,8 @@ void C1(const UInt128& tk, const UInt128& rand, const ByteBuffer& preq, const By
   BufferView ra = responder_addr.value().bytes();
   std::memcpy(p2.data(), ra.data(), ra.size());              // Lowest 6 bytes
   std::memcpy(p2.data() + ra.size(), ia.data(), ia.size());  // Next 6 bytes
-  std::memset(p2.data() + ra.size() + ia.size(), 0,
+  std::memset(p2.data() + ra.size() + ia.size(),
+              0,
               p2.size() - ra.size() - ia.size());  // Pad 0s for the remainder
 
   // Calculate the confirm value: e(tk, e(tk, rand XOR p1) XOR p2)
@@ -269,7 +305,10 @@ void C1(const UInt128& tk, const UInt128& rand, const ByteBuffer& preq, const By
   Encrypt(tk, tmp, out_confirm_value);
 }
 
-void S1(const UInt128& tk, const UInt128& r1, const UInt128& r2, UInt128* out_stk) {
+void S1(const UInt128& tk,
+        const UInt128& r1,
+        const UInt128& r2,
+        UInt128* out_stk) {
   BT_DEBUG_ASSERT(out_stk);
 
   UInt128 r_prime;
@@ -347,7 +386,8 @@ DeviceAddress GenerateRpa(const UInt128& irk) {
   addr_bytes.Write(hash_bytes);
   addr_bytes.Write(prand_bytes, hash_bytes.size());
 
-  return DeviceAddress(DeviceAddress::Type::kLERandom, DeviceAddressBytes(addr_bytes));
+  return DeviceAddress(DeviceAddress::Type::kLERandom,
+                       DeviceAddressBytes(addr_bytes));
 }
 
 DeviceAddress GenerateRandomAddress(bool is_static) {
@@ -368,11 +408,13 @@ DeviceAddress GenerateRandomAddress(bool is_static) {
     addr_bytes[kDeviceAddressSize - 1] &= ~0b11000000;
   }
 
-  return DeviceAddress(DeviceAddress::Type::kLERandom, DeviceAddressBytes(addr_bytes));
+  return DeviceAddress(DeviceAddress::Type::kLERandom,
+                       DeviceAddressBytes(addr_bytes));
 }
 
 std::optional<UInt128> AesCmac(const UInt128& hash_key, const ByteBuffer& msg) {
-  // Reverse little-endian input parameters to the big-endian format expected by BoringSSL.
+  // Reverse little-endian input parameters to the big-endian format expected by
+  // BoringSSL.
   UInt128 big_endian_key;
   Swap128(hash_key, &big_endian_key);
   DynamicByteBuffer big_endian_msg(msg);
@@ -380,7 +422,10 @@ std::optional<UInt128> AesCmac(const UInt128& hash_key, const ByteBuffer& msg) {
   std::reverse(msg_begin, msg_begin + big_endian_msg.size());
   UInt128 big_endian_out, little_endian_out;
   // 0 is the failure error code for AES_CMAC
-  if (AES_CMAC(big_endian_out.data(), big_endian_key.data(), big_endian_key.size(), msg_begin,
+  if (AES_CMAC(big_endian_out.data(),
+               big_endian_key.data(),
+               big_endian_key.size(),
+               msg_begin,
                big_endian_msg.size()) == 0) {
     return std::nullopt;
   }
@@ -388,11 +433,16 @@ std::optional<UInt128> AesCmac(const UInt128& hash_key, const ByteBuffer& msg) {
   return little_endian_out;
 }
 
-std::optional<UInt128> F4(const UInt256& u, const UInt256& v, const UInt128& x, const uint8_t z) {
+std::optional<UInt128> F4(const UInt256& u,
+                          const UInt256& v,
+                          const UInt128& x,
+                          const uint8_t z) {
   constexpr size_t kDataLength = 2 * kUInt256Size + 1;
   StaticByteBuffer<kDataLength> data_to_encrypt;
-  // Write to buffer in reverse of human-readable spec format as all parameters are little-endian.
-  MutableBufferView current_view = WriteToBuffer(z, data_to_encrypt.mutable_view());
+  // Write to buffer in reverse of human-readable spec format as all parameters
+  // are little-endian.
+  MutableBufferView current_view =
+      WriteToBuffer(z, data_to_encrypt.mutable_view());
   current_view = WriteToBuffer(v, current_view);
   current_view = WriteToBuffer(u, current_view);
 
@@ -401,8 +451,10 @@ std::optional<UInt128> F4(const UInt256& u, const UInt256& v, const UInt128& x, 
   return AesCmac(x, data_to_encrypt);
 }
 
-std::optional<F5Results> F5(const UInt256& dhkey, const UInt128& initiator_nonce,
-                            const UInt128& responder_nonce, const DeviceAddress& initiator_addr,
+std::optional<F5Results> F5(const UInt256& dhkey,
+                            const UInt128& initiator_nonce,
+                            const UInt128& responder_nonce,
+                            const DeviceAddress& initiator_addr,
                             const DeviceAddress& responder_addr) {
   // Get the T key value
   StaticByteBuffer<kUInt256Size> dhkey_buffer;
@@ -416,12 +468,15 @@ std::optional<F5Results> F5(const UInt256& dhkey, const UInt128& initiator_nonce
   // Create the MacKey and LTK using the T Key value.
   uint8_t counter = 0x00;
   const std::array<uint8_t, 2> length = {0x00, 0x01};  // 256 in little-endian
-  constexpr size_t kDataLength = sizeof(counter) + kF5KeyId.size() + 2 * kUInt128Size +
+  constexpr size_t kDataLength = sizeof(counter) + kF5KeyId.size() +
+                                 2 * kUInt128Size +
                                  2 * (1 + kDeviceAddressSize) + length.size();
   StaticByteBuffer<kDataLength> data_to_encrypt;
 
-  // Write to buffer in reverse of human-readable spec format as all parameters are little-endian.
-  MutableBufferView current_view = WriteToBuffer(length, data_to_encrypt.mutable_view());
+  // Write to buffer in reverse of human-readable spec format as all parameters
+  // are little-endian.
+  MutableBufferView current_view =
+      WriteToBuffer(length, data_to_encrypt.mutable_view());
   current_view = WriteCryptoDeviceAddr(responder_addr, current_view);
   current_view = WriteCryptoDeviceAddr(initiator_addr, current_view);
   current_view = WriteToBuffer(responder_nonce, current_view);
@@ -448,14 +503,23 @@ std::optional<F5Results> F5(const UInt256& dhkey, const UInt128& initiator_nonce
   return results;
 }
 
-std::optional<UInt128> F6(const UInt128& mackey, const UInt128& n1, const UInt128& n2,
-                          const UInt128& r, AuthReqField auth_req, OOBDataFlag oob,
-                          IOCapability io_cap, const DeviceAddress& a1, const DeviceAddress& a2) {
-  constexpr size_t kDataLength = 3 * kUInt128Size + sizeof(AuthReqField) + sizeof(OOBDataFlag) +
-                                 sizeof(IOCapability) + 2 * (1 + kDeviceAddressSize);
+std::optional<UInt128> F6(const UInt128& mackey,
+                          const UInt128& n1,
+                          const UInt128& n2,
+                          const UInt128& r,
+                          AuthReqField auth_req,
+                          OOBDataFlag oob,
+                          IOCapability io_cap,
+                          const DeviceAddress& a1,
+                          const DeviceAddress& a2) {
+  constexpr size_t kDataLength = 3 * kUInt128Size + sizeof(AuthReqField) +
+                                 sizeof(OOBDataFlag) + sizeof(IOCapability) +
+                                 2 * (1 + kDeviceAddressSize);
   StaticByteBuffer<kDataLength> data_to_encrypt;
-  // Write to buffer in reverse of human-readable spec format as all parameters are little-endian.
-  MutableBufferView current_view = WriteCryptoDeviceAddr(a2, data_to_encrypt.mutable_view());
+  // Write to buffer in reverse of human-readable spec format as all parameters
+  // are little-endian.
+  MutableBufferView current_view =
+      WriteCryptoDeviceAddr(a2, data_to_encrypt.mutable_view());
   current_view = WriteCryptoDeviceAddr(a1, current_view);
   current_view = WriteToBuffer(static_cast<uint8_t>(io_cap), current_view);
   current_view = WriteToBuffer(static_cast<uint8_t>(oob), current_view);
@@ -468,12 +532,16 @@ std::optional<UInt128> F6(const UInt128& mackey, const UInt128& n1, const UInt12
   return AesCmac(mackey, data_to_encrypt);
 }
 
-std::optional<uint32_t> G2(const UInt256& initiator_pubkey_x, const UInt256& responder_pubkey_x,
-                           const UInt128& initiator_nonce, const UInt128& responder_nonce) {
+std::optional<uint32_t> G2(const UInt256& initiator_pubkey_x,
+                           const UInt256& responder_pubkey_x,
+                           const UInt128& initiator_nonce,
+                           const UInt128& responder_nonce) {
   constexpr size_t kDataLength = 2 * kUInt256Size + kUInt128Size;
   StaticByteBuffer<kDataLength> data_to_encrypt;
-  // Write to buffer in reverse of human-readable spec format as all parameters are little-endian.
-  MutableBufferView current_view = WriteToBuffer(responder_nonce, data_to_encrypt.mutable_view());
+  // Write to buffer in reverse of human-readable spec format as all parameters
+  // are little-endian.
+  MutableBufferView current_view =
+      WriteToBuffer(responder_nonce, data_to_encrypt.mutable_view());
   current_view = WriteToBuffer(responder_pubkey_x, current_view);
   current_view = WriteToBuffer(initiator_pubkey_x, current_view);
   BT_DEBUG_ASSERT(current_view.size() == 0);
@@ -499,24 +567,42 @@ std::optional<UInt128> H7(const UInt128& salt, const UInt128& w) {
   return AesCmac(salt, data_to_encrypt);
 }
 
-std::optional<UInt128> LeLtkToBrEdrLinkKey(const UInt128& le_ltk,
-                                           CrossTransportKeyAlgo hash_function) {
+std::optional<UInt128> LeLtkToBrEdrLinkKey(
+    const UInt128& le_ltk, CrossTransportKeyAlgo hash_function) {
   std::optional<UInt128> intermediate_key;
   if (hash_function == CrossTransportKeyAlgo::kUseH7) {
-    const UInt128 salt = {0x31, 0x70, 0x6D, 0x74, 0x00, 0x00, 0x00, 0x00,
-                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    const UInt128 salt = {0x31,
+                          0x70,
+                          0x6D,
+                          0x74,
+                          0x00,
+                          0x00,
+                          0x00,
+                          0x00,
+                          0x00,
+                          0x00,
+                          0x00,
+                          0x00,
+                          0x00,
+                          0x00,
+                          0x00,
+                          0x00};
     intermediate_key = H7(salt, le_ltk);
   } else if (hash_function == CrossTransportKeyAlgo::kUseH6) {
-    // The string "tmp1" mapped into extended ASCII per spec v5.2 Vol. 3 Part H 2.4.2.4.
+    // The string "tmp1" mapped into extended ASCII per spec v5.2 Vol. 3 Part
+    // H 2.4.2.4.
     const uint32_t tmp1_key_id = 0x746D7031;
     intermediate_key = H6(le_ltk, tmp1_key_id);
   } else {
-    bt_log(WARN, "sm", "unexpected CrossTransportKeyAlgo passed to link key generation!");
+    bt_log(WARN,
+           "sm",
+           "unexpected CrossTransportKeyAlgo passed to link key generation!");
   }
   if (!intermediate_key.has_value()) {
     return std::nullopt;
   }
-  // The string "lebr" mapped into extended ASCII per spec v5.2 Vol. 3 Part H 2.4.2.4.
+  // The string "lebr" mapped into extended ASCII per spec v5.2 Vol. 3 Part
+  // H 2.4.2.4.
   const uint32_t lebr_key_id = 0x6C656272;
   return H6(*intermediate_key, lebr_key_id);
 }

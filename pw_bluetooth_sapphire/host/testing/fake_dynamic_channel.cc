@@ -2,12 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "fake_dynamic_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/fake_dynamic_channel.h"
 
 namespace bt::testing {
 
-FakeDynamicChannel::FakeDynamicChannel(hci_spec::ConnectionHandle conn, l2cap::Psm psm,
-                                       l2cap::ChannelId local_cid, l2cap::ChannelId remote_cid)
+FakeDynamicChannel::FakeDynamicChannel(hci_spec::ConnectionHandle conn,
+                                       l2cap::Psm psm,
+                                       l2cap::ChannelId local_cid,
+                                       l2cap::ChannelId remote_cid)
     : handle_(conn),
       opened_(false),
       configuration_request_received_(false),

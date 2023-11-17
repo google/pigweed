@@ -47,6 +47,9 @@ default_args = {
 
     # Exclude Boringssl, which fails some clang-tidy checks.
     ".*/boringssl/src/.*",
+
+    "pw_bluetooth_sapphire/.*",
+    "../pw_bluetooth_sapphire/.*",
   ]
 
   pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS = [
@@ -62,5 +65,7 @@ default_args = {
 
     # Exclude Boringssl, which fails some clang-tidy checks.
     ".*/boringssl/src/include.*",
+
+    "../pw_bluetooth_sapphire/.*",
   ]
 }

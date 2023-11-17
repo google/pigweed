@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "host_error.h"
+#include "pw_bluetooth_sapphire/internal/host/common/host_error.h"
 
 namespace bt {
 

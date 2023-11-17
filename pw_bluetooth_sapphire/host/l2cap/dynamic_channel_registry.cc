@@ -2,16 +2,17 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "dynamic_channel_registry.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/dynamic_channel_registry.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 
 namespace bt::l2cap::internal {
 // Run return callbacks on the L2CAP thread. LogicalLink takes care of out-of-
 // thread dispatch for delivering the pointer to the channel.
-void DynamicChannelRegistry::OpenOutbound(Psm psm, ChannelParameters params,
+void DynamicChannelRegistry::OpenOutbound(Psm psm,
+                                          ChannelParameters params,
                                           DynamicChannelCallback open_cb) {
   const ChannelId id = FindAvailableChannelId();
   if (id == kInvalidChannelId) {
@@ -24,7 +25,8 @@ void DynamicChannelRegistry::OpenOutbound(Psm psm, ChannelParameters params,
   ActivateChannel(iter->second.get(), std::move(open_cb), /*pass_failed=*/true);
 }
 
-void DynamicChannelRegistry::CloseChannel(ChannelId local_cid, fit::closure close_cb) {
+void DynamicChannelRegistry::CloseChannel(ChannelId local_cid,
+                                          fit::closure close_cb) {
   DynamicChannel* channel = FindChannelByLocalId(local_cid);
   if (!channel) {
     close_cb();
@@ -32,21 +34,23 @@ void DynamicChannelRegistry::CloseChannel(ChannelId local_cid, fit::closure clos
   }
 
   BT_DEBUG_ASSERT(channel->IsConnected());
-  auto disconn_done_cb = [self = GetWeakPtr(), close_cb = std::move(close_cb), channel] {
-    if (!self.is_alive()) {
-      close_cb();
-      return;
-    }
-    self->RemoveChannel(channel);
-    close_cb();
-  };
+  auto disconn_done_cb =
+      [self = GetWeakPtr(), close_cb = std::move(close_cb), channel] {
+        if (!self.is_alive()) {
+          close_cb();
+          return;
+        }
+        self->RemoveChannel(channel);
+        close_cb();
+      };
   channel->Disconnect(std::move(disconn_done_cb));
 }
 
-DynamicChannelRegistry::DynamicChannelRegistry(uint16_t max_num_channels,
-                                               DynamicChannelCallback close_cb,
-                                               ServiceRequestCallback service_request_cb,
-                                               bool random_channel_ids)
+DynamicChannelRegistry::DynamicChannelRegistry(
+    uint16_t max_num_channels,
+    DynamicChannelCallback close_cb,
+    ServiceRequestCallback service_request_cb,
+    bool random_channel_ids)
     : WeakSelf(this),
       max_num_channels_(max_num_channels),
       close_cb_(std::move(close_cb)),
@@ -58,21 +62,31 @@ DynamicChannelRegistry::DynamicChannelRegistry(uint16_t max_num_channels,
   BT_DEBUG_ASSERT(service_request_cb_);
 }
 
-DynamicChannel* DynamicChannelRegistry::RequestService(Psm psm, ChannelId local_cid,
+DynamicChannel* DynamicChannelRegistry::RequestService(Psm psm,
+                                                       ChannelId local_cid,
                                                        ChannelId remote_cid) {
   BT_DEBUG_ASSERT(local_cid != kInvalidChannelId);
 
   auto service_info = service_request_cb_(psm);
   if (!service_info) {
-    bt_log(WARN, "l2cap", "No service found for PSM %#.4x from %#.4x", psm, remote_cid);
+    bt_log(WARN,
+           "l2cap",
+           "No service found for PSM %#.4x from %#.4x",
+           psm,
+           remote_cid);
     return nullptr;
   }
 
   auto iter =
       channels_
-          .emplace(local_cid, MakeInbound(psm, local_cid, remote_cid, service_info->channel_params))
+          .emplace(
+              local_cid,
+              MakeInbound(
+                  psm, local_cid, remote_cid, service_info->channel_params))
           .first;
-  ActivateChannel(iter->second.get(), std::move(service_info->channel_cb), /*pass_failed=*/false);
+  ActivateChannel(iter->second.get(),
+                  std::move(service_info->channel_cb),
+                  /*pass_failed=*/false);
   return iter->second.get();
 }
 
@@ -91,9 +105,12 @@ ChannelId DynamicChannelRegistry::FindAvailableChannelId() {
   return kInvalidChannelId;
 }
 
-size_t DynamicChannelRegistry::AliveChannelCount() const { return channels_.size(); }
+size_t DynamicChannelRegistry::AliveChannelCount() const {
+  return channels_.size();
+}
 
-DynamicChannel* DynamicChannelRegistry::FindChannelByLocalId(ChannelId local_cid) const {
+DynamicChannel* DynamicChannelRegistry::FindChannelByLocalId(
+    ChannelId local_cid) const {
   auto iter = channels_.find(local_cid);
   if (iter == channels_.end()) {
     return nullptr;
@@ -101,7 +118,8 @@ DynamicChannel* DynamicChannelRegistry::FindChannelByLocalId(ChannelId local_cid
   return iter->second.get();
 }
 
-DynamicChannel* DynamicChannelRegistry::FindChannelByRemoteId(ChannelId remote_cid) const {
+DynamicChannel* DynamicChannelRegistry::FindChannelByRemoteId(
+    ChannelId remote_cid) const {
   for (auto& [id, channel_ptr] : channels_) {
     if (channel_ptr->remote_cid() == remote_cid) {
       return channel_ptr.get();
@@ -110,10 +128,11 @@ DynamicChannel* DynamicChannelRegistry::FindChannelByRemoteId(ChannelId remote_c
   return nullptr;
 }
 
-void DynamicChannelRegistry::ForEach(fit::function<void(DynamicChannel*)> f) const {
+void DynamicChannelRegistry::ForEach(
+    fit::function<void(DynamicChannel*)> f) const {
   for (auto iter = channels_.begin(); iter != channels_.end();) {
-    // f() may remove the channel from the registry, so get next iterator to avoid invalidation.
-    // Only the erased iterator is invalidated.
+    // f() may remove the channel from the registry, so get next iterator to
+    // avoid invalidation. Only the erased iterator is invalidated.
     auto next = std::next(iter);
     f(iter->second.get());
     iter = next;
@@ -121,39 +140,46 @@ void DynamicChannelRegistry::ForEach(fit::function<void(DynamicChannel*)> f) con
 }
 
 void DynamicChannelRegistry::ActivateChannel(DynamicChannel* channel,
-                                             DynamicChannelCallback open_cb, bool pass_failed) {
+                                             DynamicChannelCallback open_cb,
+                                             bool pass_failed) {
   // It's safe to capture |this| here because the callback will be owned by the
   // DynamicChannel, which this registry owns.
-  auto return_chan = [this, channel, open_cb = std::move(open_cb), pass_failed]() mutable {
-    if (channel->IsOpen()) {
-      open_cb(channel);
-      return;
-    }
+  auto return_chan =
+      [this, channel, open_cb = std::move(open_cb), pass_failed]() mutable {
+        if (channel->IsOpen()) {
+          open_cb(channel);
+          return;
+        }
 
-    bt_log(DEBUG, "l2cap", "Failed to open dynamic channel %#.4x (remote %#.4x) for PSM %#.4x",
-           channel->local_cid(), channel->remote_cid(), channel->psm());
+        bt_log(
+            DEBUG,
+            "l2cap",
+            "Failed to open dynamic channel %#.4x (remote %#.4x) for PSM %#.4x",
+            channel->local_cid(),
+            channel->remote_cid(),
+            channel->psm());
 
-    // TODO(fxbug.dev/1059): Maybe negotiate channel parameters here? For now, just
-    // disconnect the channel.
-    // Move the callback to the stack to prepare for channel destruction.
-    auto pass_failure = [open_cb = std::move(open_cb), pass_failed] {
-      if (pass_failed) {
-        open_cb(nullptr);
-      }
-    };
+        // TODO(fxbug.dev/1059): Maybe negotiate channel parameters here? For
+        // now, just disconnect the channel. Move the callback to the stack to
+        // prepare for channel destruction.
+        auto pass_failure = [open_cb = std::move(open_cb), pass_failed] {
+          if (pass_failed) {
+            open_cb(nullptr);
+          }
+        };
 
-    // This lambda is owned by the channel, so captures are no longer valid
-    // after this call.
-    auto disconn_done_cb = [self = GetWeakPtr(), channel] {
-      if (!self.is_alive()) {
-        return;
-      }
-      self->RemoveChannel(channel);
-    };
-    channel->Disconnect(std::move(disconn_done_cb));
+        // This lambda is owned by the channel, so captures are no longer valid
+        // after this call.
+        auto disconn_done_cb = [self = GetWeakPtr(), channel] {
+          if (!self.is_alive()) {
+            return;
+          }
+          self->RemoveChannel(channel);
+        };
+        channel->Disconnect(std::move(disconn_done_cb));
 
-    pass_failure();
-  };
+        pass_failure();
+      };
 
   channel->Open(std::move(return_chan));
 }

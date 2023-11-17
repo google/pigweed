@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "pdu.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/pdu.h"
 
 #include <gtest/gtest.h>
 
-#include "fragmenter.h"
-#include "recombiner.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/packet.h"
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/fragmenter.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/recombiner.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/packet.h"
 
 namespace bt::l2cap {
 namespace {
@@ -20,7 +20,8 @@ hci::ACLDataPacketPtr PacketFromBytes(T... data) {
   StaticByteBuffer bytes(std::forward<T>(data)...);
   BT_DEBUG_ASSERT(bytes.size() >= sizeof(hci_spec::ACLDataHeader));
 
-  auto packet = hci::ACLDataPacket::New(bytes.size() - sizeof(hci_spec::ACLDataHeader));
+  auto packet =
+      hci::ACLDataPacket::New(bytes.size() - sizeof(hci_spec::ACLDataHeader));
   packet->mutable_view()->mutable_data().Write(bytes);
   packet->InitializeFromBuffer();
 
@@ -141,10 +142,20 @@ TEST(PduTest, ReleaseFragments) {
   // Check that the fragment we got out is identical to the one we fed in.
   EXPECT_TRUE(ContainersEqual(StaticByteBuffer(
                                   // ACL data header
-                                  0x01, 0x00, 0x08, 0x00,
+                                  0x01,
+                                  0x00,
+                                  0x08,
+                                  0x00,
 
                                   // Basic l2cap header
-                                  0x04, 0x00, 0xFF, 0xFF, 'T', 'e', 's', 't'),
+                                  0x04,
+                                  0x00,
+                                  0xFF,
+                                  0xFF,
+                                  'T',
+                                  'e',
+                                  's',
+                                  't'),
                               (*fragments.begin())->view().data()));
 }
 

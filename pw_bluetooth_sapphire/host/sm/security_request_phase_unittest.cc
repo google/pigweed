@@ -2,22 +2,22 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "security_request_phase.h"
-
-#include <memory>
+#include "pw_bluetooth_sapphire/internal/host/sm/security_request_phase.h"
 
 #include <gtest/gtest.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/fake_phase_listener.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
+#include <memory>
+
+#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
+#include "pw_bluetooth_sapphire/internal/host/common/macros.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/connection.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel_test.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/fake_phase_listener.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/packet.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/types.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/util.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
 namespace bt::sm {
 namespace {
@@ -38,10 +38,11 @@ class SecurityRequestPhaseTest : public l2cap::testing::FakeChannelTest {
 
   pw::async::HeapDispatcher& heap_dispatcher() { return heap_dispatcher_; }
 
-  void NewSecurityRequestPhase(SecurityRequestOptions opts = SecurityRequestOptions(),
-                               bt::LinkType ll_type = bt::LinkType::kLE) {
-    l2cap::ChannelId cid =
-        ll_type == bt::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
+  void NewSecurityRequestPhase(
+      SecurityRequestOptions opts = SecurityRequestOptions(),
+      bt::LinkType ll_type = bt::LinkType::kLE) {
+    l2cap::ChannelId cid = ll_type == bt::LinkType::kLE ? l2cap::kLESMPChannelId
+                                                        : l2cap::kSMPChannelId;
     ChannelOptions options(cid);
     options.link_type = ll_type;
 
@@ -49,14 +50,21 @@ class SecurityRequestPhaseTest : public l2cap::testing::FakeChannelTest {
     sm_chan_ = std::make_unique<PairingChannel>(fake_chan_->GetWeakPtr());
     fake_listener_ = std::make_unique<FakeListener>();
     security_request_phase_ = std::make_unique<SecurityRequestPhase>(
-        sm_chan_->GetWeakPtr(), fake_listener_->as_weak_ptr(), opts.requested_level, opts.bondable,
+        sm_chan_->GetWeakPtr(),
+        fake_listener_->as_weak_ptr(),
+        opts.requested_level,
+        opts.bondable,
         [this](PairingRequestParams preq) { last_pairing_req_ = preq; });
   }
 
   l2cap::testing::FakeChannel* fake_chan() const { return fake_chan_.get(); }
-  SecurityRequestPhase* security_request_phase() { return security_request_phase_.get(); }
+  SecurityRequestPhase* security_request_phase() {
+    return security_request_phase_.get();
+  }
 
-  std::optional<PairingRequestParams> last_pairing_req() { return last_pairing_req_; }
+  std::optional<PairingRequestParams> last_pairing_req() {
+    return last_pairing_req_;
+  }
 
  private:
   std::unique_ptr<l2cap::testing::FakeChannel> fake_chan_;
@@ -74,41 +82,49 @@ class SecurityRequestPhaseTest : public l2cap::testing::FakeChannelTest {
 using SMP_SecurityRequestPhaseDeathTest = SecurityRequestPhaseTest;
 
 TEST_F(SecurityRequestPhaseTest, MakeEncryptedBondableSecurityRequest) {
-  NewSecurityRequestPhase(SecurityRequestOptions{.requested_level = SecurityLevel::kEncrypted,
-                                                 .bondable = BondableMode::Bondable});
+  NewSecurityRequestPhase(
+      SecurityRequestOptions{.requested_level = SecurityLevel::kEncrypted,
+                             .bondable = BondableMode::Bondable});
   StaticByteBuffer kExpectedReq(kSecurityRequest, AuthReq::kBondingFlag);
-  heap_dispatcher().Post([this](pw::async::Context /*ctx*/, pw::Status status) {
-    if (status.ok()) {
-      security_request_phase()->Start();
-    }
-  });
+  (void)heap_dispatcher().Post(
+      [this](pw::async::Context /*ctx*/, pw::Status status) {
+        if (status.ok()) {
+          security_request_phase()->Start();
+        }
+      });
   ASSERT_TRUE(Expect(kExpectedReq));
-  EXPECT_EQ(SecurityLevel::kEncrypted, security_request_phase()->pending_security_request());
+  EXPECT_EQ(SecurityLevel::kEncrypted,
+            security_request_phase()->pending_security_request());
 }
 
 TEST_F(SecurityRequestPhaseTest, MakeAuthenticatedNonBondableSecurityRequest) {
-  NewSecurityRequestPhase(SecurityRequestOptions{.requested_level = SecurityLevel::kAuthenticated,
-                                                 .bondable = BondableMode::NonBondable});
+  NewSecurityRequestPhase(
+      SecurityRequestOptions{.requested_level = SecurityLevel::kAuthenticated,
+                             .bondable = BondableMode::NonBondable});
   StaticByteBuffer kExpectedReq(kSecurityRequest, AuthReq::kMITM);
-  heap_dispatcher().Post([this](pw::async::Context /*ctx*/, pw::Status status) {
-    if (status.ok()) {
-      security_request_phase()->Start();
-    }
-  });
+  (void)heap_dispatcher().Post(
+      [this](pw::async::Context /*ctx*/, pw::Status status) {
+        if (status.ok()) {
+          security_request_phase()->Start();
+        }
+      });
   ASSERT_TRUE(Expect(kExpectedReq));
-  EXPECT_EQ(SecurityLevel::kAuthenticated, security_request_phase()->pending_security_request());
+  EXPECT_EQ(SecurityLevel::kAuthenticated,
+            security_request_phase()->pending_security_request());
 }
 
-TEST_F(SecurityRequestPhaseTest, MakeSecureAuthenticatedBondableSecurityRequest) {
-  NewSecurityRequestPhase(
-      SecurityRequestOptions{.requested_level = SecurityLevel::kSecureAuthenticated});
-  StaticByteBuffer kExpectedReq(kSecurityRequest,
-                                AuthReq::kBondingFlag | AuthReq::kMITM | AuthReq::kSC);
-  heap_dispatcher().Post([this](pw::async::Context /*ctx*/, pw::Status status) {
-    if (status.ok()) {
-      security_request_phase()->Start();
-    }
-  });
+TEST_F(SecurityRequestPhaseTest,
+       MakeSecureAuthenticatedBondableSecurityRequest) {
+  NewSecurityRequestPhase(SecurityRequestOptions{
+      .requested_level = SecurityLevel::kSecureAuthenticated});
+  StaticByteBuffer kExpectedReq(
+      kSecurityRequest, AuthReq::kBondingFlag | AuthReq::kMITM | AuthReq::kSC);
+  (void)heap_dispatcher().Post(
+      [this](pw::async::Context /*ctx*/, pw::Status status) {
+        if (status.ok()) {
+          security_request_phase()->Start();
+        }
+      });
   ASSERT_TRUE(Expect(kExpectedReq));
   EXPECT_EQ(SecurityLevel::kSecureAuthenticated,
             security_request_phase()->pending_security_request());

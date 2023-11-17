@@ -2,41 +2,47 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_configuration.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/channel_configuration.h"
 
+#include <cpp-string/string_printf.h>
 #include <endian.h>
 #include <lib/fit/function.h>
 
 #include <iterator>
 #include <optional>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
-#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
+#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/common/packet_view.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
+
+#pragma clang diagnostic ignored "-Wswitch-enum"
 
 namespace bt::l2cap::internal {
 
 template <typename OptionT, typename PayloadT>
 DynamicByteBuffer EncodeOption(PayloadT payload) {
   DynamicByteBuffer buffer(OptionT::kEncodedSize);
-  MutablePacketView<ConfigurationOption> option(&buffer, OptionT::kPayloadLength);
+  MutablePacketView<ConfigurationOption> option(&buffer,
+                                                OptionT::kPayloadLength);
   option.mutable_header()->type = OptionT::kType;
   option.mutable_header()->length = OptionT::kPayloadLength;
   option.mutable_payload_data().WriteObj(payload);
   return buffer;
 }
 
-// Compares length field in option header with expected option payload length for that option type.
-// Returns true if lengths match, false otherwise.
+// Compares length field in option header with expected option payload length
+// for that option type. Returns true if lengths match, false otherwise.
 template <typename OptionT>
 bool CheckHeaderLengthField(PacketView<ConfigurationOption> option) {
   if (option.header().length != OptionT::kPayloadLength) {
-    bt_log(WARN, "l2cap",
-           "received channel configuration option with incorrect length (type: %#.2x, "
+    bt_log(WARN,
+           "l2cap",
+           "received channel configuration option with incorrect length (type: "
+           "%#.2x, "
            "length: %hhu, expected length: %hhu)",
-           static_cast<uint8_t>(option.header().type), option.header().length,
+           static_cast<uint8_t>(option.header().type),
+           option.header().length,
            OptionT::kPayloadLength);
     return false;
   }
@@ -61,8 +67,10 @@ bool ChannelConfiguration::ReadOptions(const ByteBuffer& options_payload) {
 
 size_t ChannelConfiguration::ReadNextOption(const ByteBuffer& options) {
   if (options.size() < sizeof(ConfigurationOption)) {
-    bt_log(WARN, "l2cap",
-           "tried to decode channel configuration option from buffer with invalid size (size: %lu)",
+    bt_log(WARN,
+           "l2cap",
+           "tried to decode channel configuration option from buffer with "
+           "invalid size (size: %lu)",
            options.size());
     return 0;
   }
@@ -72,10 +80,13 @@ size_t ChannelConfiguration::ReadNextOption(const ByteBuffer& options) {
 
   // Check length against buffer bounds.
   if (option.header().length > remaining_size) {
-    bt_log(WARN, "l2cap",
-           "decoded channel configuration option with length greater than remaining buffer size "
+    bt_log(WARN,
+           "l2cap",
+           "decoded channel configuration option with length greater than "
+           "remaining buffer size "
            "(length: %hhu, remaining: %zu)",
-           option.header().length, remaining_size);
+           option.header().length,
+           remaining_size);
     return 0;
   }
 
@@ -100,11 +111,13 @@ size_t ChannelConfiguration::ReadNextOption(const ByteBuffer& options) {
       OnReadFlushTimeoutOption(FlushTimeoutOption(option.payload_data()));
       return FlushTimeoutOption::kEncodedSize;
     default:
-      bt_log(DEBUG, "l2cap", "decoded unsupported channel configuration option (type: %#.2x)",
+      bt_log(DEBUG,
+             "l2cap",
+             "decoded unsupported channel configuration option (type: %#.2x)",
              static_cast<uint8_t>(option.header().type));
 
-      UnknownOption unknown_option(option.header().type, option.header().length,
-                                   option.payload_data());
+      UnknownOption unknown_option(
+          option.header().type, option.header().length, option.payload_data());
       size_t option_size = unknown_option.size();
 
       OnReadUnknownOption(std::move(unknown_option));
@@ -116,7 +129,7 @@ size_t ChannelConfiguration::ReadNextOption(const ByteBuffer& options) {
 // MtuOption implementation
 
 ChannelConfiguration::MtuOption::MtuOption(const ByteBuffer& data_buf) {
-  mtu_ = letoh16(data_buf.ReadMember<&MtuOptionPayload::mtu>());
+  mtu_ = le16toh(data_buf.ReadMember<&MtuOptionPayload::mtu>());
 }
 
 DynamicByteBuffer ChannelConfiguration::MtuOption::Encode() const {
@@ -131,21 +144,32 @@ std::string ChannelConfiguration::MtuOption::ToString() const {
 
 ChannelConfiguration::RetransmissionAndFlowControlOption
 ChannelConfiguration::RetransmissionAndFlowControlOption::MakeBasicMode() {
-  return RetransmissionAndFlowControlOption(RetransmissionAndFlowControlMode::kBasic, 0, 0, 0, 0,
-                                            0);
+  return RetransmissionAndFlowControlOption(
+      RetransmissionAndFlowControlMode::kBasic, 0, 0, 0, 0, 0);
 }
 
-ChannelConfiguration::RetransmissionAndFlowControlOption
-ChannelConfiguration::RetransmissionAndFlowControlOption::MakeEnhancedRetransmissionMode(
-    uint8_t tx_window_size, uint8_t max_transmit, uint16_t rtx_timeout, uint16_t monitor_timeout,
-    uint16_t mps) {
+ChannelConfiguration::RetransmissionAndFlowControlOption ChannelConfiguration::
+    RetransmissionAndFlowControlOption::MakeEnhancedRetransmissionMode(
+        uint8_t tx_window_size,
+        uint8_t max_transmit,
+        uint16_t rtx_timeout,
+        uint16_t monitor_timeout,
+        uint16_t mps) {
   return RetransmissionAndFlowControlOption(
-      RetransmissionAndFlowControlMode::kEnhancedRetransmission, tx_window_size, max_transmit,
-      rtx_timeout, monitor_timeout, mps);
+      RetransmissionAndFlowControlMode::kEnhancedRetransmission,
+      tx_window_size,
+      max_transmit,
+      rtx_timeout,
+      monitor_timeout,
+      mps);
 }
-ChannelConfiguration::RetransmissionAndFlowControlOption::RetransmissionAndFlowControlOption(
-    RetransmissionAndFlowControlMode mode, uint8_t tx_window_size, uint8_t max_transmit,
-    uint16_t rtx_timeout, uint16_t monitor_timeout, uint16_t mps)
+ChannelConfiguration::RetransmissionAndFlowControlOption::
+RetransmissionAndFlowControlOption(RetransmissionAndFlowControlMode mode,
+                                   uint8_t tx_window_size,
+                                   uint8_t max_transmit,
+                                   uint16_t rtx_timeout,
+                                   uint16_t monitor_timeout,
+                                   uint16_t mps)
     : mode_(mode),
       tx_window_size_(tx_window_size),
       max_transmit_(max_transmit),
@@ -153,18 +177,20 @@ ChannelConfiguration::RetransmissionAndFlowControlOption::RetransmissionAndFlowC
       monitor_timeout_(monitor_timeout),
       mps_(mps) {}
 
-ChannelConfiguration::RetransmissionAndFlowControlOption::RetransmissionAndFlowControlOption(
-    const ByteBuffer& data_buf) {
-  const auto option_payload = data_buf.To<RetransmissionAndFlowControlOptionPayload>();
+ChannelConfiguration::RetransmissionAndFlowControlOption::
+RetransmissionAndFlowControlOption(const ByteBuffer& data_buf) {
+  const auto option_payload =
+      data_buf.To<RetransmissionAndFlowControlOptionPayload>();
   mode_ = option_payload.mode;
   tx_window_size_ = option_payload.tx_window_size;
   max_transmit_ = option_payload.max_transmit;
-  rtx_timeout_ = letoh16(option_payload.rtx_timeout);
-  monitor_timeout_ = letoh16(option_payload.monitor_timeout);
-  mps_ = letoh16(option_payload.mps);
+  rtx_timeout_ = le16toh(option_payload.rtx_timeout);
+  monitor_timeout_ = le16toh(option_payload.monitor_timeout);
+  mps_ = le16toh(option_payload.mps);
 }
 
-DynamicByteBuffer ChannelConfiguration::RetransmissionAndFlowControlOption::Encode() const {
+DynamicByteBuffer
+ChannelConfiguration::RetransmissionAndFlowControlOption::Encode() const {
   RetransmissionAndFlowControlOptionPayload payload;
   payload.mode = mode_;
   payload.tx_window_size = tx_window_size_;
@@ -175,18 +201,26 @@ DynamicByteBuffer ChannelConfiguration::RetransmissionAndFlowControlOption::Enco
   return EncodeOption<RetransmissionAndFlowControlOption>(payload);
 }
 
-std::string ChannelConfiguration::RetransmissionAndFlowControlOption::ToString() const {
+std::string ChannelConfiguration::RetransmissionAndFlowControlOption::ToString()
+    const {
   return bt_lib_cpp_string::StringPrintf(
-      "[type: RtxFlowControl, mode: %hhu, tx window size: %hhu, max transmit: %hhu, rtx timeout: "
+      "[type: RtxFlowControl, mode: %hhu, tx window size: %hhu, max transmit: "
+      "%hhu, rtx timeout: "
       "%hu, monitor timeout: %hu, max pdu payload size: %hu]",
-      static_cast<uint8_t>(mode_), tx_window_size_, max_transmit_, rtx_timeout_, monitor_timeout_,
+      static_cast<uint8_t>(mode_),
+      tx_window_size_,
+      max_transmit_,
+      rtx_timeout_,
+      monitor_timeout_,
       mps_);
 }
 
 // FlushTimeoutOption implementation
 
-ChannelConfiguration::FlushTimeoutOption::FlushTimeoutOption(const ByteBuffer& data_buf) {
-  flush_timeout_ = letoh16(data_buf.ReadMember<&FlushTimeoutOptionPayload::flush_timeout>());
+ChannelConfiguration::FlushTimeoutOption::FlushTimeoutOption(
+    const ByteBuffer& data_buf) {
+  flush_timeout_ =
+      le16toh(data_buf.ReadMember<&FlushTimeoutOptionPayload::flush_timeout>());
 }
 
 DynamicByteBuffer ChannelConfiguration::FlushTimeoutOption::Encode() const {
@@ -196,13 +230,14 @@ DynamicByteBuffer ChannelConfiguration::FlushTimeoutOption::Encode() const {
 }
 
 std::string ChannelConfiguration::FlushTimeoutOption::ToString() const {
-  return bt_lib_cpp_string::StringPrintf("[type: FlushTimeout, flush timeout: %hu]",
-                                         flush_timeout_);
+  return bt_lib_cpp_string::StringPrintf(
+      "[type: FlushTimeout, flush timeout: %hu]", flush_timeout_);
 }
 
 // UnknownOption implementation
 
-ChannelConfiguration::UnknownOption::UnknownOption(OptionType type, uint8_t length,
+ChannelConfiguration::UnknownOption::UnknownOption(OptionType type,
+                                                   uint8_t length,
                                                    const ByteBuffer& data)
     : type_(type), payload_(BufferView(data, length)) {}
 
@@ -226,24 +261,28 @@ bool ChannelConfiguration::UnknownOption::IsHint() const {
 
 std::string ChannelConfiguration::UnknownOption::ToString() const {
   return bt_lib_cpp_string::StringPrintf("[type: %#.2hhx, length: %zu]",
-                                         static_cast<unsigned char>(type_), payload_.size());
+                                         static_cast<unsigned char>(type_),
+                                         payload_.size());
 }
 
 // ChannelConfiguration implementation
 
-ChannelConfiguration::ConfigurationOptions ChannelConfiguration::Options() const {
+ChannelConfiguration::ConfigurationOptions ChannelConfiguration::Options()
+    const {
   ConfigurationOptions options;
   if (mtu_option_) {
     options.push_back(ConfigurationOptionPtr(new MtuOption(*mtu_option_)));
   }
 
   if (retransmission_flow_control_option_) {
-    options.push_back(ConfigurationOptionPtr(
-        new RetransmissionAndFlowControlOption(*retransmission_flow_control_option_)));
+    options.push_back(
+        ConfigurationOptionPtr(new RetransmissionAndFlowControlOption(
+            *retransmission_flow_control_option_)));
   }
 
   if (flush_timeout_option_) {
-    options.push_back(ConfigurationOptionPtr(new FlushTimeoutOption(*flush_timeout_option_)));
+    options.push_back(
+        ConfigurationOptionPtr(new FlushTimeoutOption(*flush_timeout_option_)));
   }
 
   return options;
@@ -282,16 +321,18 @@ void ChannelConfiguration::Merge(ChannelConfiguration other) {
   }
 
   if (other.retransmission_flow_control_option_) {
-    retransmission_flow_control_option_ = other.retransmission_flow_control_option_;
+    retransmission_flow_control_option_ =
+        other.retransmission_flow_control_option_;
   }
 
   if (other.flush_timeout_option_) {
     flush_timeout_option_ = other.flush_timeout_option_;
   }
 
-  unknown_options_.insert(unknown_options_.end(),
-                          std::make_move_iterator(other.unknown_options_.begin()),
-                          std::make_move_iterator(other.unknown_options_.end()));
+  unknown_options_.insert(
+      unknown_options_.end(),
+      std::make_move_iterator(other.unknown_options_.begin()),
+      std::make_move_iterator(other.unknown_options_.end()));
 }
 
 void ChannelConfiguration::OnReadUnknownOption(UnknownOption option) {

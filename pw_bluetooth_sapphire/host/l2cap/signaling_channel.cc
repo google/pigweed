@@ -2,15 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "signaling_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/signaling_channel.h"
 
-#include <lib/async/default.h>
 #include <lib/fit/function.h>
 
-#include "channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/common/slab_allocator.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/channel.h"
 
 namespace bt::l2cap::internal {
 
@@ -24,7 +23,8 @@ SignalingChannel::SignalingChannel(Channel::WeakPtr chan,
       next_cmd_id_(0x01),
       weak_self_(this) {
   BT_DEBUG_ASSERT(chan_);
-  BT_DEBUG_ASSERT(chan_->id() == kSignalingChannelId || chan_->id() == kLESignalingChannelId);
+  BT_DEBUG_ASSERT(chan_->id() == kSignalingChannelId ||
+                  chan_->id() == kLESignalingChannelId);
 
   // Note: No need to guard against out-of-thread access as these callbacks are
   // called on the L2CAP thread.
@@ -40,7 +40,8 @@ SignalingChannel::SignalingChannel(Channel::WeakPtr chan,
       });
 }
 
-bool SignalingChannel::SendRequest(CommandCode req_code, const ByteBuffer& payload,
+bool SignalingChannel::SendRequest(CommandCode req_code,
+                                   const ByteBuffer& payload,
                                    ResponseHandler cb) {
   BT_ASSERT(cb);
 
@@ -58,10 +59,12 @@ bool SignalingChannel::SendRequest(CommandCode req_code, const ByteBuffer& paylo
     id = GetNextCommandId();
 
     if (id == initial_id) {
-      bt_log(WARN, "l2cap",
-             "sig: all valid command IDs in use for pending requests; can't send "
-             "request %#.2x",
-             req_code);
+      bt_log(
+          WARN,
+          "l2cap",
+          "sig: all valid command IDs in use for pending requests; can't send "
+          "request %#.2x",
+          req_code);
       return false;
     }
   }
@@ -80,23 +83,27 @@ void SignalingChannel::ServeRequest(CommandCode req_code, RequestDelegate cb) {
   inbound_handlers_[req_code] = std::move(cb);
 }
 
-void SignalingChannel::EnqueueResponse(const ByteBuffer& request_packet, CommandId id,
-                                       CommandCode response_code, ResponseHandler cb) {
+void SignalingChannel::EnqueueResponse(const ByteBuffer& request_packet,
+                                       CommandId id,
+                                       CommandCode response_code,
+                                       ResponseHandler cb) {
   BT_ASSERT(IsSupportedResponse(response_code));
 
-  const auto [iter, inserted] = pending_commands_.try_emplace(id, request_packet, response_code,
-                                                              std::move(cb), pw_dispatcher_);
+  const auto [iter, inserted] = pending_commands_.try_emplace(
+      id, request_packet, response_code, std::move(cb), pw_dispatcher_);
   BT_ASSERT(inserted);
 
-  // Start the RTX timer per Core Spec v5.0, Volume 3, Part A, Sec 6.2.1 which will call
-  // OnResponseTimeout when it expires. This timer is canceled if the response is received before
-  // expiry because OnRxResponse destroys its containing PendingCommand.
+  // Start the RTX timer per Core Spec v5.0, Volume 3, Part A, Sec 6.2.1 which
+  // will call OnResponseTimeout when it expires. This timer is canceled if the
+  // response is received before expiry because OnRxResponse destroys its
+  // containing PendingCommand.
   SmartTask& rtx_task = iter->second.response_timeout_task;
-  rtx_task.set_function([this, id](pw::async::Context /*ctx*/, pw::Status status) {
-    if (status.ok()) {
-      OnResponseTimeout(id, /*retransmit=*/true);
-    }
-  });
+  rtx_task.set_function(
+      [this, id](pw::async::Context /*ctx*/, pw::Status status) {
+        if (status.ok()) {
+          OnResponseTimeout(id, /*retransmit=*/true);
+        }
+      });
   iter->second.timer_duration = kSignalingChannelResponseTimeout;
   rtx_task.PostAfter(iter->second.timer_duration);
 }
@@ -105,7 +112,8 @@ bool SignalingChannel::IsCommandPending(CommandId id) const {
   return pending_commands_.find(id) != pending_commands_.end();
 }
 
-SignalingChannel::ResponderImpl::ResponderImpl(SignalingChannel* sig, CommandCode code,
+SignalingChannel::ResponderImpl::ResponderImpl(SignalingChannel* sig,
+                                               CommandCode code,
                                                CommandId id)
     : sig_(sig), code_(code), id_(id) {
   BT_DEBUG_ASSERT(sig_);
@@ -119,15 +127,18 @@ void SignalingChannel::ResponderImpl::RejectNotUnderstood() {
   sig()->SendCommandReject(id_, RejectReason::kNotUnderstood, BufferView());
 }
 
-void SignalingChannel::ResponderImpl::RejectInvalidChannelId(ChannelId local_cid,
-                                                             ChannelId remote_cid) {
+void SignalingChannel::ResponderImpl::RejectInvalidChannelId(
+    ChannelId local_cid, ChannelId remote_cid) {
   uint16_t ids[2];
   ids[0] = htole16(local_cid);
   ids[1] = htole16(remote_cid);
-  sig()->SendCommandReject(id_, RejectReason::kInvalidCID, BufferView(ids, sizeof(ids)));
+  sig()->SendCommandReject(
+      id_, RejectReason::kInvalidCID, BufferView(ids, sizeof(ids)));
 }
 
-bool SignalingChannel::SendPacket(CommandCode code, uint8_t identifier, const ByteBuffer& data) {
+bool SignalingChannel::SendPacket(CommandCode code,
+                                  uint8_t identifier,
+                                  const ByteBuffer& data) {
   return Send(BuildPacket(code, identifier, data));
 }
 
@@ -145,7 +156,10 @@ bool SignalingChannel::HandlePacket(const SignalingPacket& packet) {
     return true;
   }
 
-  bt_log(DEBUG, "l2cap", "sig: ignoring unsupported code %#.2x", packet.header().code);
+  bt_log(DEBUG,
+         "l2cap",
+         "sig: ignoring unsupported code %#.2x",
+         packet.header().code);
 
   return false;
 }
@@ -154,9 +168,12 @@ void SignalingChannel::OnRxResponse(const SignalingPacket& packet) {
   auto cmd_id = packet.header().id;
   auto iter = pending_commands_.find(cmd_id);
   if (iter == pending_commands_.end()) {
-    // Core Spec v5.2, Vol 3, Part A, Section 4.1: L2CAP_COMMAND_REJECT_RSP packets should NOT be
-    // sent in response to an identified response packet.
-    bt_log(TRACE, "l2cap", "sig: ignoring unexpected response, id %#.2x", packet.header().id);
+    // Core Spec v5.2, Vol 3, Part A, Section 4.1: L2CAP_COMMAND_REJECT_RSP
+    // packets should NOT be sent in response to an identified response packet.
+    bt_log(TRACE,
+           "l2cap",
+           "sig: ignoring unexpected response, id %#.2x",
+           packet.header().id);
     return;
   }
 
@@ -168,7 +185,10 @@ void SignalingChannel::OnRxResponse(const SignalingPacket& packet) {
   } else if (packet.header().code == kCommandRejectCode) {
     status = Status::kReject;
   } else {
-    bt_log(WARN, "l2cap", "sig: response (id %#.2x) has unexpected code %#.2x", packet.header().id,
+    bt_log(WARN,
+           "l2cap",
+           "sig: response (id %#.2x) has unexpected code %#.2x",
+           packet.header().id,
            packet.header().code);
     SendCommandReject(cmd_id, RejectReason::kNotUnderstood, BufferView());
     return;
@@ -180,20 +200,22 @@ void SignalingChannel::OnRxResponse(const SignalingPacket& packet) {
     return;
   }
 
-  // Renew the timer as an ERTX timer per Core Spec v5.0, Volume 3, Part A, Sec 6.2.2.
-  // TODO(fxbug.dev/55361): Limit the number of times the ERTX timer is reset so that total
-  // timeout duration is <= 300 seconds.
+  // Renew the timer as an ERTX timer per Core Spec v5.0, Volume 3, Part A,
+  // Sec 6.2.2.
+  // TODO(fxbug.dev/55361): Limit the number of times the ERTX timer is reset so
+  // that total timeout duration is <= 300 seconds.
   pending_command.response_timeout_task.Cancel();
   pending_command.timer_duration = kPwSignalingChannelExtendedResponseTimeout;
-  // Don't retransmit after an ERTX timeout as the peer has already indicated that it received the
-  // request and has been given a large amount of time.
+  // Don't retransmit after an ERTX timeout as the peer has already indicated
+  // that it received the request and has been given a large amount of time.
   pending_command.response_timeout_task.set_function(
       [this, cmd_id](pw::async::Context /*ctx*/, pw::Status status) {
         if (status.ok()) {
           OnResponseTimeout(cmd_id, /*retransmit=*/false);
         }
       });
-  pending_command.response_timeout_task.PostAfter(pending_command.timer_duration);
+  pending_command.response_timeout_task.PostAfter(
+      pending_command.timer_duration);
   pending_commands_.insert(std::move(command_node));
 }
 
@@ -201,7 +223,8 @@ void SignalingChannel::OnResponseTimeout(CommandId id, bool retransmit) {
   auto iter = pending_commands_.find(id);
   BT_ASSERT(iter != pending_commands_.end());
 
-  if (!retransmit || iter->second.transmit_count == kMaxSignalingChannelTransmissions) {
+  if (!retransmit ||
+      iter->second.transmit_count == kMaxSignalingChannelTransmissions) {
     auto node = pending_commands_.extract(iter);
     ResponseHandler& response_handler = node.mapped().response_handler;
     response_handler(Status::kTimeOut, BufferView());
@@ -222,7 +245,8 @@ bool SignalingChannel::Send(ByteBufferPtr packet) {
   // Section 4) we don't assert that here. When we receive a command that uses
   // 0 as the identifier, we reject the command and use that identifier in the
   // response rather than assert and crash.
-  [[maybe_unused]] SignalingPacket reply(packet.get(), packet->size() - sizeof(CommandHeader));
+  [[maybe_unused]] SignalingPacket reply(
+      packet.get(), packet->size() - sizeof(CommandHeader));
   BT_DEBUG_ASSERT(reply.header().code);
   BT_DEBUG_ASSERT(reply.payload_size() == le16toh(reply.header().length));
   BT_DEBUG_ASSERT(chan_);
@@ -230,7 +254,8 @@ bool SignalingChannel::Send(ByteBufferPtr packet) {
   return chan_->Send(std::move(packet));
 }
 
-ByteBufferPtr SignalingChannel::BuildPacket(CommandCode code, uint8_t identifier,
+ByteBufferPtr SignalingChannel::BuildPacket(CommandCode code,
+                                            uint8_t identifier,
                                             const ByteBuffer& data) {
   BT_DEBUG_ASSERT(data.size() <= std::numeric_limits<uint16_t>::max());
 
@@ -246,15 +271,17 @@ ByteBufferPtr SignalingChannel::BuildPacket(CommandCode code, uint8_t identifier
   return buffer;
 }
 
-bool SignalingChannel::SendCommandReject(uint8_t identifier, RejectReason reason,
+bool SignalingChannel::SendCommandReject(uint8_t identifier,
+                                         RejectReason reason,
                                          const ByteBuffer& data) {
   BT_DEBUG_ASSERT(data.size() <= kCommandRejectMaxDataLength);
 
-  constexpr size_t kMaxPayloadLength = sizeof(CommandRejectPayload) + kCommandRejectMaxDataLength;
+  constexpr size_t kMaxPayloadLength =
+      sizeof(CommandRejectPayload) + kCommandRejectMaxDataLength;
   StaticByteBuffer<kMaxPayloadLength> rej_buf;
 
   MutablePacketView<CommandRejectPayload> reject(&rej_buf, data.size());
-  reject.mutable_header()->reason = htole16(reason);
+  reject.mutable_header()->reason = htole16(static_cast<uint16_t>(reason));
   reject.mutable_payload_data().Write(data);
 
   return SendPacket(kCommandRejectCode, identifier, reject.data());
@@ -281,7 +308,9 @@ void SignalingChannel::OnRxBFrame(ByteBufferPtr sdu) {
   if (!is_open())
     return;
 
-  DecodeRxUnit(std::move(sdu), fit::bind_member<&SignalingChannel::CheckAndDispatchPacket>(this));
+  DecodeRxUnit(
+      std::move(sdu),
+      fit::bind_member<&SignalingChannel::CheckAndDispatchPacket>(this));
 }
 
 void SignalingChannel::CheckAndDispatchPacket(const SignalingPacket& packet) {
@@ -289,29 +318,37 @@ void SignalingChannel::CheckAndDispatchPacket(const SignalingPacket& packet) {
     // Respond with our signaling MTU.
     uint16_t rsp_mtu = htole16(mtu());
     BufferView rej_data(&rsp_mtu, sizeof(rsp_mtu));
-    SendCommandReject(packet.header().id, RejectReason::kSignalingMTUExceeded, rej_data);
+    SendCommandReject(
+        packet.header().id, RejectReason::kSignalingMTUExceeded, rej_data);
   } else if (!packet.header().id) {
     // "Signaling identifier 0x00 is an illegal identifier and shall never be
     // used in any command" (v5.0, Vol 3, Part A, Section 4).
     bt_log(DEBUG, "l2cap", "illegal signaling cmd ID: 0x00; reject");
-    SendCommandReject(packet.header().id, RejectReason::kNotUnderstood, BufferView());
+    SendCommandReject(
+        packet.header().id, RejectReason::kNotUnderstood, BufferView());
   } else if (!HandlePacket(packet)) {
-    SendCommandReject(packet.header().id, RejectReason::kNotUnderstood, BufferView());
+    SendCommandReject(
+        packet.header().id, RejectReason::kNotUnderstood, BufferView());
   }
 }
 
-void SignalingChannel::RetransmitPendingCommand(PendingCommand& pending_command) {
+void SignalingChannel::RetransmitPendingCommand(
+    PendingCommand& pending_command) {
   pending_command.response_timeout_task.Cancel();
 
   pending_command.transmit_count++;
-  bt_log(TRACE, "l2cap", "retransmitting pending command (transmission #: %zu)",
+  bt_log(TRACE,
+         "l2cap",
+         "retransmitting pending command (transmission #: %zu)",
          pending_command.transmit_count);
 
-  // "If a duplicate Request message is sent, the RTX timeout value shall be reset to a new value at
-  // least double the previous value". (Core Spec v5.1, Vol 3, Part A, Sec 6.2.1).
+  // "If a duplicate Request message is sent, the RTX timeout value shall be
+  // reset to a new value at least double the previous value". (Core Spec v5.1,
+  // Vol 3, Part A, Sec 6.2.1).
   pending_command.timer_duration *= 2;
 
-  pending_command.response_timeout_task.PostAfter(pending_command.timer_duration);
+  pending_command.response_timeout_task.PostAfter(
+      pending_command.timer_duration);
 
   Send(std::make_unique<DynamicByteBuffer>(*pending_command.command_packet));
 }

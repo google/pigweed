@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "database.h"
+#include "pw_bluetooth_sapphire/internal/host/att/database.h"
 
 #include <lib/fit/defer.h>
 
 #include <algorithm>
 
-#include "src/connectivity/bluetooth/core/bt-host/att/error.h"
-#include "src/connectivity/bluetooth/core/bt-host/att/permissions.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/att/error.h"
+#include "pw_bluetooth_sapphire/internal/host/att/permissions.h"
+#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include "pw_bluetooth_sapphire/internal/host/common/log.h"
 
 namespace bt::att {
 namespace {
@@ -26,7 +26,10 @@ bool EndLessThan(const AttributeGrouping& grp, const Handle handle) {
 
 }  // namespace
 
-Database::Iterator::Iterator(GroupingList* list, Handle start, Handle end, const UUID* type,
+Database::Iterator::Iterator(GroupingList* list,
+                             Handle start,
+                             Handle end,
+                             const UUID* type,
                              bool groups_only)
     : start_(start), end_(end), grp_only_(groups_only), attr_offset_(0u) {
   BT_DEBUG_ASSERT(list);
@@ -39,8 +42,8 @@ Database::Iterator::Iterator(GroupingList* list, Handle start, Handle end, const
   // If we were asked to iterate over groupings only, then look strictly within
   // the range. Otherwise we allow the first grouping to partially overlap the
   // range.
-  grp_iter_ =
-      std::lower_bound(list->begin(), grp_end_, start_, grp_only_ ? StartLessThan : EndLessThan);
+  grp_iter_ = std::lower_bound(
+      list->begin(), grp_end_, start_, grp_only_ ? StartLessThan : EndLessThan);
 
   if (AtEnd())
     return;
@@ -58,7 +61,8 @@ Database::Iterator::Iterator(GroupingList* list, Handle start, Handle end, const
   // If the first is inactive or if it doesn't match the current filter then
   // skip ahead.
   if (!grp_iter_->active() ||
-      (type_filter_ && grp_iter_->attributes()[attr_offset_].type() != *type_filter_)) {
+      (type_filter_ &&
+       grp_iter_->attributes()[attr_offset_].type() != *type_filter_)) {
     Advance();
   }
 }
@@ -137,7 +141,9 @@ Database::Database(Handle range_start, Handle range_end)
   BT_DEBUG_ASSERT(range_end_ <= kHandleMax);
 }
 
-Database::Iterator Database::GetIterator(Handle start, Handle end, const UUID* type,
+Database::Iterator Database::GetIterator(Handle start,
+                                         Handle end,
+                                         const UUID* type,
                                          bool groups_only) {
   BT_DEBUG_ASSERT(start >= range_start_);
   BT_DEBUG_ASSERT(end <= range_end_);
@@ -146,7 +152,8 @@ Database::Iterator Database::GetIterator(Handle start, Handle end, const UUID* t
   return Iterator(&groupings_, start, end, type, groups_only);
 }
 
-AttributeGrouping* Database::NewGrouping(const UUID& group_type, size_t attr_count,
+AttributeGrouping* Database::NewGrouping(const UUID& group_type,
+                                         size_t attr_count,
                                          const ByteBuffer& decl_value) {
   // This method looks for a |pos| before which to insert the new grouping.
   Handle start_handle;
@@ -189,14 +196,16 @@ AttributeGrouping* Database::NewGrouping(const UUID& group_type, size_t attr_cou
     start_handle = prev->end_handle() + 1;
   }
 
-  auto iter = groupings_.emplace(pos, group_type, start_handle, attr_count, decl_value);
+  auto iter =
+      groupings_.emplace(pos, group_type, start_handle, attr_count, decl_value);
   BT_DEBUG_ASSERT(iter != groupings_.end());
 
   return &*iter;
 }
 
 bool Database::RemoveGrouping(Handle start_handle) {
-  auto iter = std::lower_bound(groupings_.begin(), groupings_.end(), start_handle, StartLessThan);
+  auto iter = std::lower_bound(
+      groupings_.begin(), groupings_.end(), start_handle, StartLessThan);
 
   if (iter == groupings_.end() || iter->start_handle() != start_handle)
     return false;
@@ -210,7 +219,8 @@ const Attribute* Database::FindAttribute(Handle handle) {
     return nullptr;
 
   // Do a binary search to find the grouping that this handle is in.
-  auto iter = std::lower_bound(groupings_.begin(), groupings_.end(), handle, EndLessThan);
+  auto iter = std::lower_bound(
+      groupings_.begin(), groupings_.end(), handle, EndLessThan);
   if (iter == groupings_.end() || iter->start_handle() > handle)
     return nullptr;
 
@@ -223,26 +233,30 @@ const Attribute* Database::FindAttribute(Handle handle) {
   return &iter->attributes()[index];
 }
 
-void Database::ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
-                                 const sm::SecurityProperties& security, WriteCallback callback) {
+void Database::ExecuteWriteQueue(PeerId peer_id,
+                                 PrepareWriteQueue write_queue,
+                                 const sm::SecurityProperties& security,
+                                 WriteCallback callback) {
   BT_ASSERT(callback);
 
-  // When destroyed, invokes |callback| with success if it hasn't already been called
+  // When destroyed, invokes |callback| with success if it hasn't already been
+  // called
   auto deferred_succcess = fit::defer([client_cb = callback.share()]() mutable {
     if (client_cb) {
       client_cb(fit::ok());
     }
   });
 
-  // Signal success without writing to any attributes if the queue is empty (see Core Spec v5.3, Vol
-  // 3, Part F, 3.4.6.3).
+  // Signal success without writing to any attributes if the queue is empty (see
+  // Core Spec v5.3, Vol 3, Part F, 3.4.6.3).
   if (write_queue.empty()) {
     return;
   }
 
-  // Continuation that keeps track of all outstanding write requests. This is shared between writes
-  // in the queue, causing the captured |deferred_success| to be destroyed only after all writes
-  // have completed. |callback| may be called earlier (and consumed) if any error is received.
+  // Continuation that keeps track of all outstanding write requests. This is
+  // shared between writes in the queue, causing the captured |deferred_success|
+  // to be destroyed only after all writes have completed. |callback| may be
+  // called earlier (and consumed) if any error is received.
   fit::function<void(WriteQueueResult)> write_complete_fn =
       [client_cb = std::move(callback),
        d = std::move(deferred_succcess)](WriteQueueResult result) mutable {
@@ -250,10 +264,14 @@ void Database::ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
           return;
         }
         const auto& [handle, error] = result.error_value();
-        bt_log(DEBUG, "att", "execute write result - handle: %#.4x, error: %s", handle,
+        bt_log(DEBUG,
+               "att",
+               "execute write result - handle: %#.4x, error: %s",
+               handle,
                bt_str(Error(error)));
         if (!client_cb) {
-          bt_log(TRACE, "att", "ignore execute write result - already responded");
+          bt_log(
+              TRACE, "att", "ignore execute write result - already responded");
           return;
         }
         client_cb(result);
@@ -263,7 +281,8 @@ void Database::ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
     auto next = std::move(write_queue.front());
     write_queue.pop();
 
-    auto attr_write_cb = [handle = next.handle(), write_complete_fn = write_complete_fn.share()](
+    auto attr_write_cb = [handle = next.handle(),
+                          write_complete_fn = write_complete_fn.share()](
                              fit::result<ErrorCode> status) {
       if (status.is_error()) {
         write_complete_fn(fit::error(std::tuple(handle, status.error_value())));
@@ -275,8 +294,8 @@ void Database::ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
 
     const auto* attr = FindAttribute(next.handle());
     if (!attr) {
-      // The attribute is no longer valid, so we can respond with an error and abort the rest of the
-      // queue.
+      // The attribute is no longer valid, so we can respond with an error and
+      // abort the rest of the queue.
       attr_write_cb(fit::error(ErrorCode::kInvalidHandle));
       break;
     }
@@ -286,16 +305,20 @@ void Database::ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
       break;
     }
 
-    fit::result<ErrorCode> status = CheckWritePermissions(attr->write_reqs(), security);
+    fit::result<ErrorCode> status =
+        CheckWritePermissions(attr->write_reqs(), security);
     if (status.is_error()) {
       attr_write_cb(status);
       break;
     }
 
-    // TODO(fxbug.dev/97458): Consider removing the boolean return value in favor of always
-    // reporting errors using the callback. That would simplify the pattern here.
-    if (!attr->WriteAsync(peer_id, next.offset(), next.value(), std::move(attr_write_cb))) {
-      write_complete_fn(fit::error(std::tuple(next.handle(), ErrorCode::kWriteNotPermitted)));
+    // TODO(fxbug.dev/97458): Consider removing the boolean return value in
+    // favor of always reporting errors using the callback. That would simplify
+    // the pattern here.
+    if (!attr->WriteAsync(
+            peer_id, next.offset(), next.value(), std::move(attr_write_cb))) {
+      write_complete_fn(
+          fit::error(std::tuple(next.handle(), ErrorCode::kWriteNotPermitted)));
       break;
     }
   }
