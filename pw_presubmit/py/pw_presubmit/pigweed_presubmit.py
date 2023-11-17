@@ -249,34 +249,6 @@ stm32f429i = build.GnGenNinja(
     ninja_targets=_at_all_optimization_levels('stm32f429i'),
 )
 
-gn_emboss_build = build.GnGenNinja(
-    name='gn_emboss_build',
-    packages=('emboss',),
-    gn_args=dict(
-        dir_pw_third_party_emboss=lambda ctx: '"{}"'.format(
-            ctx.package_root / 'emboss'
-        ),
-        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
-    ),
-    ninja_targets=(*_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),),
-)
-
-gn_nanopb_build = build.GnGenNinja(
-    name='gn_nanopb_build',
-    path_filter=_BUILD_FILE_FILTER,
-    packages=('nanopb',),
-    gn_args=dict(
-        dir_pw_third_party_nanopb=lambda ctx: '"{}"'.format(
-            ctx.package_root / 'nanopb'
-        ),
-        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
-    ),
-    ninja_targets=(
-        *_at_all_optimization_levels('stm32f429i'),
-        *_at_all_optimization_levels('host_clang'),
-    ),
-)
-
 gn_chre_build = build.GnGenNinja(
     name='gn_chre_build',
     path_filter=_BUILD_FILE_FILTER,
@@ -290,14 +262,11 @@ gn_chre_build = build.GnGenNinja(
     ninja_targets=(*_at_all_optimization_levels('host_clang'),),
 )
 
-gn_emboss_nanopb_build = build.GnGenNinja(
-    name='gn_emboss_nanopb_build',
+gn_nanopb_build = build.GnGenNinja(
+    name='gn_nanopb_build',
     path_filter=_BUILD_FILE_FILTER,
-    packages=('emboss', 'nanopb'),
+    packages=('nanopb',),
     gn_args=dict(
-        dir_pw_third_party_emboss=lambda ctx: '"{}"'.format(
-            ctx.package_root / 'emboss'
-        ),
         dir_pw_third_party_nanopb=lambda ctx: '"{}"'.format(
             ctx.package_root / 'nanopb'
         ),
@@ -466,13 +435,22 @@ gn_pw_system_demo_build = build.GnGenNinja(
     ninja_targets=('pw_system_demo',),
 )
 
-gn_googletest_build = build.GnGenNinja(
-    name='gn_googletest_build',
+gn_googletest_sapphire_build = build.GnGenNinja(
+    name='gn_googletest_sapphire_build',
     path_filter=_BUILD_FILE_FILTER,
-    packages=('googletest',),
+    packages=('googletest', 'emboss', 'boringssl', 'icu'),
     gn_args={
         'dir_pw_third_party_googletest': lambda ctx: '"{}"'.format(
             ctx.package_root / 'googletest'
+        ),
+        'dir_pw_third_party_emboss': lambda ctx: '"{}"'.format(
+            ctx.package_root / 'emboss'
+        ),
+        'dir_pw_third_party_boringssl': lambda ctx: '"{}"'.format(
+            ctx.package_root / 'boringssl'
+        ),
+        'dir_pw_third_party_icu': lambda ctx: '"{}"'.format(
+            ctx.package_root / 'icu'
         ),
         'pw_unit_test_MAIN': lambda ctx: '"{}"'.format(
             ctx.root / 'third_party/googletest:gmock_main'
@@ -480,6 +458,10 @@ gn_googletest_build = build.GnGenNinja(
         'pw_unit_test_GOOGLETEST_BACKEND': lambda ctx: '"{}"'.format(
             ctx.root / 'third_party/googletest'
         ),
+        'pw_function_CONFIG': lambda ctx: '"{}"'.format(
+            ctx.root / 'pw_function:enable_dynamic_allocation'
+        ),
+        'pw_bluetooth_sapphire_ENABLED': True,
         'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,
     },
     ninja_targets=_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),
@@ -1244,8 +1226,8 @@ INTERNAL = (gn_mimxrt595_build, gn_mimxrt595_freertos_build)
 MISC = (
     # keep-sorted: start
     gn_chre_build,
-    gn_emboss_nanopb_build,
-    gn_googletest_build,
+    gn_googletest_sapphire_build,
+    gn_nanopb_build,
     # keep-sorted: end
 )
 

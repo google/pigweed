@@ -19,6 +19,10 @@ import("$dir_pw_async/backend.gni")
 import("$dir_pw_function/function.gni")
 import("$dir_pw_unit_test/test.gni")
 
+declare_args() {
+  pw_bluetooth_sapphire_ENABLED = false
+}
+
 group("host") {
   public_deps = [
     "att",
@@ -36,14 +40,8 @@ group("host") {
 }
 
 pw_test_group("tests") {
-  enable_if =
-      pw_function_CONFIG == "$dir_pw_function:enable_dynamic_allocation" &&
-      pw_unit_test_GOOGLETEST_BACKEND != "$dir_pw_unit_test:light" &&
-      pw_unit_test_GOOGLETEST_BACKEND != "$dir_pw_fuzzer:gtest" &&
-      pw_async_TASK_BACKEND != "" && dir_pw_third_party_emboss != "" &&
-      (pw_third_party_boringssl_ALIAS != "" ||
-       dir_pw_third_party_boringssl != "") &&
-      pw_assert_BACKEND != "$dir_pw_assert_basic"
+  enable_if = pw_bluetooth_sapphire_ENABLED
+
   tests = [
     "att:tests",
     "common:tests",

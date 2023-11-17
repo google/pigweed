@@ -36,6 +36,7 @@
 #include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/error.h"
 
+// inclusive-language: disable
 namespace bt::sm {
 namespace {
 
@@ -3916,3 +3917,4 @@ TEST_F(ResponderPairingTest, SecureConnectionsWorks) {
 }
 }  // namespace
 }  // namespace bt::sm
+// inclusive-language: enable
