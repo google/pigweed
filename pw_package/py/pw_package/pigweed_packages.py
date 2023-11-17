@@ -27,6 +27,7 @@ from pw_package.packages import emboss
 from pw_package.packages import freertos
 from pw_package.packages import fuzztest
 from pw_package.packages import googletest
+from pw_package.packages import icu
 from pw_package.packages import mbedtls
 from pw_package.packages import mcuxpresso
 from pw_package.packages import micro_ecc
