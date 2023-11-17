@@ -82,5 +82,9 @@ pw_test("try_test") {
 }
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "docs.rst",
+    "guide.rst",
+    "reference.rst",
+  ]
 }
