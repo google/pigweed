@@ -16,6 +16,7 @@
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 load(
     "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
+    "ActionConfigInfo",
     "FlagSetInfo",
     "action_config",
     "feature",
@@ -26,6 +27,7 @@ load(
 )
 load(
     "//cc_toolchain/private:providers.bzl",
+    "ActionConfigListInfo",
     "ToolchainFeatureInfo",
 )
 load(
@@ -34,16 +36,20 @@ load(
     "ALL_CPP_COMPILER_ACTIONS",
     "ALL_C_COMPILER_ACTIONS",
     "ALL_LINK_ACTIONS",
-    "check_deps",
+    "actionless_flag_set",
+    "check_deps_provide",
 )
 
-# TODO(b/301004620): Remove when bazel 7 is released and this constant exists in
-# ACTION_NAMES
+# TODO(b/301004620): Remove when bazel 7 is released and these constants exists
+# in ACTION_NAMES.
+LLVM_COV = "llvm-cov"
 OBJ_COPY_ACTION_NAME = "objcopy_embed_data"
+
+# This action name isn't yet a well-known action name.
 OBJ_DUMP_ACTION_NAME = "objdump_embed_data"
 
-PW_CC_TOOLCHAIN_CONFIG_ATTRS = {
-    "feature_deps": "`pw_cc_toolchain_feature` labels that provide features for this toolchain",
+# These attributes of pw_cc_toolchain are deprecated.
+PW_CC_TOOLCHAIN_DEPRECATED_TOOL_ATTRS = {
     "ar": "Path to the tool to use for `ar` (static link) actions",
     "cpp": "Path to the tool to use for C++ compile actions",
     "gcc": "Path to the tool to use for C compile actions",
@@ -52,7 +58,12 @@ PW_CC_TOOLCHAIN_CONFIG_ATTRS = {
     "strip": "Path to the tool to use for strip actions",
     "objcopy": "Path to the tool to use for objcopy actions",
     "objdump": "Path to the tool to use for objdump actions",
-    "action_config_flag_sets": "List of flag sets to apply to the respective `action_config`s",
+}
+
+PW_CC_TOOLCHAIN_CONFIG_ATTRS = {
+    "action_configs": "List of pw_cc_action_config labels that match tools to the appropriate actions",
+    "action_config_flag_sets": "List of flag sets to apply to the respective action_configs",
+    "feature_deps": "pw_cc_toolchain_feature labels that provide features for this toolchain",
 
     # Attributes originally part of create_cc_toolchain_config_info.
     "toolchain_identifier": "See documentation for cc_common.create_cc_toolchain_config_info()",
@@ -72,7 +83,6 @@ PW_CC_TOOLCHAIN_BLOCKED_ATTRS = {
     "toolchain_config": "pw_cc_toolchain includes a generated toolchain config",
     "artifact_name_patterns": "pw_cc_toolchain does not yet support artifact name patterns",
     "features": "Use feature_deps to add pw_cc_toolchain_feature deps to the toolchain",
-    "action_configs": "pw_cc_toolchain does not yet support action configs, use the \"ar\", \"cpp\", \"gcc\", \"gcov\", \"ld\", and \"strip\" attributes to set toolchain tools",
     "cxx_builtin_include_directories": "Use a pw_cc_toolchain_feature to add cxx_builtin_include_directories",
     "tool_paths": "pw_cc_toolchain does not support tool_paths, use \"ar\", \"cpp\", \"gcc\", \"gcov\", \"ld\", and \"strip\" attributes to set toolchain tools",
     "make_variables": "pw_cc_toolchain does not yet support make variables",
@@ -177,66 +187,22 @@ def _archiver_flags_feature(is_mac):
         ],
     )
 
-def _archiver_flags(is_mac):
-    """Returns flags for llvm-ar."""
-    if is_mac:
-        return ["--format=darwin", "rcs"]
-    else:
-        return ["rcsD"]
-
-def _strip_actions(flag_set_to_copy):
-    """Copies a flag_set, stripping `actions`.
+def _generate_action_configs(ctx, flag_sets_by_action):
+    """Legacy logic for generation of `action_config`s.
 
     Args:
-        flag_set_to_copy: The base flag_set to copy.
-    Returns:
-        flag_set with empty `actions` list.
-    """
-    return flag_set(
-        with_features = flag_set_to_copy.with_features,
-        flag_groups = flag_set_to_copy.flag_groups,
-    )
-
-def _create_action_flag_set_map(flag_sets):
-    """Creates a mapping of action names to flag sets.
-
-    Args:
-        flag_sets: the flag sets to expand.
-    Returns:
-        Dictionary mapping action names to lists of FlagSetInfo providers.
-    """
-    flag_sets_by_action = {}
-    for fs in flag_sets:
-        handled_actions = {}
-        for action in fs.actions:
-            if action not in flag_sets_by_action:
-                flag_sets_by_action[action] = []
-
-            # Dedupe action set list.
-            if action not in handled_actions:
-                handled_actions[action] = True
-                flag_sets_by_action[action].append(_strip_actions(fs))
-    return flag_sets_by_action
-
-def _pw_cc_toolchain_config_impl(ctx):
-    """Rule that provides a CcToolchainConfigInfo.
-
-    Args:
-        ctx: The context of the current build rule.
+        ctx: Rule context.
+        flag_sets_by_action: A mapping of action name to a list of FlagSetInfo
+            providers.
 
     Returns:
-        CcToolchainConfigInfo
+        list of `action_config` providers.
     """
-    check_deps(ctx)
-
-    flag_sets_by_action = _create_action_flag_set_map([dep[FlagSetInfo] for dep in ctx.attr.action_config_flag_sets])
-
     all_actions = []
     all_actions += _action_configs(ctx.executable.gcc, ALL_ASM_ACTIONS, flag_sets_by_action)
     all_actions += _action_configs(ctx.executable.gcc, ALL_C_COMPILER_ACTIONS, flag_sets_by_action)
     all_actions += _action_configs(ctx.executable.cpp, ALL_CPP_COMPILER_ACTIONS, flag_sets_by_action)
     all_actions += _action_configs(ctx.executable.cpp, ALL_LINK_ACTIONS, flag_sets_by_action)
-
     all_actions += [
         action_config(
             action_name = ACTION_NAMES.cpp_link_static_library,
@@ -285,6 +251,103 @@ def _pw_cc_toolchain_config_impl(ctx):
             flag_sets = flag_sets_by_action.get(ACTION_NAMES.strip, default = []),
         ),
     ]
+    return all_actions
+
+def _extend_action_set_flags(action, flag_sets_by_action):
+    extended_flags = flag_sets_by_action.get(action.action_name, default = [])
+    for x in extended_flags:
+        for y in action.flag_sets:
+            if x == y:
+                # TODO: b/311679764 - Propagate labels so we can raise the label
+                # as part of the warning.
+                fail("Flag set in `action_config_flag_sets` is already bound to the `{}` tool".format(action.action_name))
+    return action_config(
+        action_name = action.action_name,
+        enabled = action.enabled,
+        tools = action.tools,
+        flag_sets = action.flag_sets + extended_flags,
+        implies = action.implies,
+    )
+
+def _collect_action_configs(ctx, flag_sets_by_action):
+    known_actions = {}
+    action_configs = []
+    for ac_dep in ctx.attr.action_configs:
+        temp_actions = []
+        if ActionConfigInfo in ac_dep:
+            temp_actions.append(ac_dep[ActionConfigInfo])
+        if ActionConfigListInfo in ac_dep:
+            temp_actions.extend([ac for ac in ac_dep[ActionConfigListInfo].action_configs])
+        for action in temp_actions:
+            if action.action_name in known_actions:
+                fail("In {} both {} and {} implement `{}`".format(
+                    ctx.label,
+                    ac_dep.label,
+                    known_actions[action.action_name],
+                    action.action_name,
+                ))
+
+            # Track which labels implement each action name for better error
+            # reporting.
+            known_actions[action.action_name] = ac_dep.label
+            action_configs.append(_extend_action_set_flags(action, flag_sets_by_action))
+    return action_configs
+
+def _archiver_flags(is_mac):
+    """Returns flags for llvm-ar."""
+    if is_mac:
+        return ["--format=darwin", "rcs"]
+    else:
+        return ["rcsD"]
+
+def _create_action_flag_set_map(flag_sets):
+    """Creates a mapping of action names to flag sets.
+
+    Args:
+        flag_sets: the flag sets to expand.
+
+    Returns:
+        Dictionary mapping action names to lists of FlagSetInfo providers.
+    """
+    flag_sets_by_action = {}
+    for fs in flag_sets:
+        handled_actions = {}
+        for action in fs.actions:
+            if action not in flag_sets_by_action:
+                flag_sets_by_action[action] = []
+
+            # Dedupe action set list.
+            if action not in handled_actions:
+                handled_actions[action] = True
+                flag_sets_by_action[action].append(actionless_flag_set(fs))
+    return flag_sets_by_action
+
+def _pw_cc_toolchain_config_impl(ctx):
+    """Rule that provides a CcToolchainConfigInfo.
+
+    Args:
+        ctx: The context of the current build rule.
+
+    Returns:
+        CcToolchainConfigInfo
+    """
+    check_deps_provide(ctx, "feature_deps", ToolchainFeatureInfo, "pw_cc_toolchain_feature")
+    check_deps_provide(ctx, "action_config_flag_sets", FlagSetInfo, "pw_cc_flag_set")
+
+    flag_sets_by_action = _create_action_flag_set_map([dep[FlagSetInfo] for dep in ctx.attr.action_config_flag_sets])
+
+    all_actions = []
+
+    should_generate_action_configs = False
+    for key in PW_CC_TOOLCHAIN_DEPRECATED_TOOL_ATTRS.keys():
+        if getattr(ctx.attr, key, None):
+            if ctx.attr.action_configs:
+                fail("Specifying tool names is incompatible with action configs")
+            should_generate_action_configs = True
+    if should_generate_action_configs:
+        all_actions = _generate_action_configs(ctx, flag_sets_by_action)
+    else:
+        all_actions = _collect_action_configs(ctx, flag_sets_by_action)
 
     features = [dep[ToolchainFeatureInfo].feature for dep in ctx.attr.feature_deps]
     features.append(_archiver_flags_feature(ctx.attr.target_libc == "macosx"))
@@ -330,6 +393,7 @@ pw_cc_toolchain_config = rule(
         "objcopy": attr.label(allow_single_file = True, executable = True, cfg = "exec"),
         "objdump": attr.label(allow_single_file = True, executable = True, cfg = "exec"),
         "strip": attr.label(allow_single_file = True, executable = True, cfg = "exec"),
+        "action_configs": attr.label_list(),
         "action_config_flag_sets": attr.label_list(),
 
         # Attributes from create_cc_toolchain_config_info.
@@ -378,7 +442,7 @@ def _split_args(kwargs, filter_dict):
         kwargs: Dictionary of args to split.
         filter_dict: The dictionary used as the filter.
 
-    Returns
+    Returns:
         Tuple[Dict, Dict]
     """
     filtered_args = {}
@@ -401,7 +465,7 @@ def pw_cc_toolchain(**kwargs):
 
     _check_args(native.package_relative_label(kwargs["name"]), kwargs)
 
-    cc_toolchain_config_args, cc_toolchain_args = _split_args(kwargs, PW_CC_TOOLCHAIN_CONFIG_ATTRS)
+    cc_toolchain_config_args, cc_toolchain_args = _split_args(kwargs, PW_CC_TOOLCHAIN_CONFIG_ATTRS | PW_CC_TOOLCHAIN_DEPRECATED_TOOL_ATTRS)
 
     # Bind pw_cc_toolchain_config and the cc_toolchain.
     config_name = "{}_config".format(cc_toolchain_args["name"])

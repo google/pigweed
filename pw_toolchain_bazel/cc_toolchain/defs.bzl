@@ -14,7 +14,17 @@
 """Toolchain configuration for Bazel."""
 
 load(
+    "@bazel_tools//tools/build_defs/cc:action_names.bzl",
+    _STRIP_ACTION_NAME = "STRIP_ACTION_NAME",
+)
+load(
+    "//cc_toolchain/private:action_config.bzl",
+    _pw_cc_action_config = "pw_cc_action_config",
+    _pw_cc_tool = "pw_cc_tool",
+)
+load(
     "//cc_toolchain/private:cc_toolchain.bzl",
+    _LLVM_COV = "LLVM_COV",
     _OBJ_COPY_ACTION_NAME = "OBJ_COPY_ACTION_NAME",
     _OBJ_DUMP_ACTION_NAME = "OBJ_DUMP_ACTION_NAME",
     _pw_cc_toolchain = "pw_cc_toolchain",
@@ -37,16 +47,28 @@ load(
     _ALL_LINK_ACTIONS = "ALL_LINK_ACTIONS",
 )
 
+# TODO(b/301004620): Remove when bazel 7 is released and these constants exists
+# in ACTION_NAMES.
+OBJ_COPY_ACTION_NAME = _OBJ_COPY_ACTION_NAME
+COV_ACTION_NAME = _LLVM_COV
+
+# This action name isn't yet a well-known action name.
+OBJ_DUMP_ACTION_NAME = _OBJ_DUMP_ACTION_NAME
+
+STRIP_ACTION_NAME = _STRIP_ACTION_NAME
+
+ALL_AR_ACTIONS = _ALL_AR_ACTIONS
 ALL_ASM_ACTIONS = _ALL_ASM_ACTIONS
 ALL_C_COMPILER_ACTIONS = _ALL_C_COMPILER_ACTIONS
+ALL_COVERAGE_ACTIONS = [COV_ACTION_NAME]
 ALL_CPP_COMPILER_ACTIONS = _ALL_CPP_COMPILER_ACTIONS
 ALL_LINK_ACTIONS = _ALL_LINK_ACTIONS
-ALL_AR_ACTIONS = _ALL_AR_ACTIONS
+ALL_OBJCOPY_ACTIONS = [OBJ_COPY_ACTION_NAME]
+ALL_OBJDUMP_ACTIONS = [OBJ_DUMP_ACTION_NAME]
+ALL_STRIP_ACTIONS = [STRIP_ACTION_NAME]
 
-# TODO(b/301004620): Remove when bazel 7 is released and this constant exists in
-# ACTION_NAMES
-OBJ_COPY_ACTION_NAME = _OBJ_COPY_ACTION_NAME
-OBJ_DUMP_ACTION_NAME = _OBJ_DUMP_ACTION_NAME
+pw_cc_action_config = _pw_cc_action_config
+pw_cc_tool = _pw_cc_tool
 
 pw_cc_flag_group = _pw_cc_flag_group
 pw_cc_flag_set = _pw_cc_flag_set

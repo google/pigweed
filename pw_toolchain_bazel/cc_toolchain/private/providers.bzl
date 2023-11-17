@@ -13,6 +13,16 @@
 # the License.
 """All shared providers that act as an API between toolchain-related rules."""
 
+# To reduce the number of require pw_cc_action_config rules, a
+# pw_cc_action_config provides a list of ActionConfigInfo providers rather than
+# a simpler 1:1 mapping.
+ActionConfigListInfo = provider(
+    doc = "A provider containing a list of ActionConfigInfo providers.",
+    fields = {
+        "action_configs": "List[ActionConfigInfo]: A list of ActionConfigInfo providers.",
+    },
+)
+
 ToolchainFeatureInfo = provider(
     doc = "A provider containing cc_toolchain features and related fields.",
     fields = {

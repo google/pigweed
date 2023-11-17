@@ -296,3 +296,179 @@ API reference
 
       Expands the expression in :py:attr:`pw_cc_flag_group.flags` if the
       specified build variable is **NOT** set.
+
+.. py:class:: pw_cc_tool
+
+   Declares a singular tool that can be bound to action configs.
+
+   :py:class:`pw_cc_tool` rules are intended to be consumed exclusively by
+   :py:class:`pw_cc_action_config` rules. These rules declare an underlying tool
+   that can be used to fulfill various actions. Many actions may reuse a shared
+   tool.
+
+   Note: ``with_features`` is not yet supported.
+
+   Examples:
+
+   .. code-block:: py
+
+      # A project-provided tool.
+      pw_cc_tool(
+          name = "clang_tool",
+          tool = "@llvm_toolchain//:bin/clang",
+      )
+
+      # A tool expected to be preinstalled on a user's machine.
+      pw_cc_tool(
+          name = "clang_tool",
+          path = "/usr/bin/clang",
+      )
+
+   .. py:attribute:: tool
+      :type: label
+
+      The underlying tool that this rule represents.
+
+      This attribute is a label rather than a simple file path. This means that
+      the file must be referenced relative to the BUILD file that exports it.
+      For example:
+
+      .. code-block:: none
+
+         @llvm_toolchain//:bin/clang
+         ^              ^  ^
+
+      Where:
+
+      * ``@llvm_toolchain`` is the repository.
+      * ``//`` is the directory of the BUILD file that exports the file of
+        interest.
+      * ``bin/clang`` is the path of the actual binary relative to the BUILD
+        file of interest.
+
+      Note: :py:attr:`pw_cc_tool.tool` and :py:attr:`pw_cc_tool.path` are
+      mutually exclusive.
+
+   .. py:attribute:: path
+      :type: Path
+
+      An absolute path to a binary to use for this tool.
+
+      Relative paths are also supported, but they are relative to the
+      :py:class:`pw_cc_toolchain` that uses this tool rather than relative to
+      this :py:class:`pw_cc_tool` rule.
+
+      Note: :py:attr:`pw_cc_tool.path` and :py:attr:`pw_cc_tool.tool` are
+      mutually exclusive.
+
+      .. admonition:: Note
+         :class: warning
+
+         This method of listing a tool is NOT recommended, and is provided as an
+         escape hatch for edge cases. Prefer using :py:attr:`pw_cc_tool.tool`
+         whenever possible.
+
+   .. py:attribute:: execution_requirements
+      :type: List[str]
+
+      A list of strings that provide hints for execution environment
+      compatibility (e.g. ``requires-darwin``).
+
+
+.. py:class:: pw_cc_action_config
+
+   Declares the configuration and selection of `pw_cc_tool` rules.
+
+   Action configs are bound to a toolchain through `action_configs`, and are the
+   driving mechanism for controlling toolchain tool invocation/behavior.
+
+   Action configs define three key things:
+
+   * Which tools to invoke for a given type of action.
+   * Tool features and compatibility.
+   * :py:class:`pw_cc_flag_set`\s that are unconditionally bound to a tool
+     invocation.
+
+   Examples:
+
+   .. code-block:: py
+
+      pw_cc_action_config(
+          name = "ar",
+          action_names = ALL_AR_ACTIONS,
+          implies = [
+              "archiver_flags",
+              "linker_param_file",
+          ],
+          tools = [":ar_tool"],
+      )
+
+      pw_cc_action_config(
+          name = "clang",
+          action_names = ALL_ASM_ACTIONS + ALL_C_COMPILER_ACTIONS,
+          tools = [":clang_tool"],
+      )
+
+   .. py:attribute:: action_names
+      :type: List[str]
+
+      A list of action names to apply this action to.
+
+      .. inclusive-language: disable
+
+      Valid choices are listed at
+      `@rules_cc//cc:action_names.bzl <https://github.com/bazelbuild/bazel/blob/master/tools/build_defs/cc/action_names.bzl>`_\.
+
+      .. inclusive-language: enable
+
+      It is possible for some needed action names to not be enumerated in this list,
+      so there is not rigid validation for these strings. Prefer using constants
+      rather than manually typing action names.
+
+   .. py:attribute:: enabled
+      :type: bool
+
+      Whether or not this action config is enabled by default.
+
+      .. admonition:: Note
+
+         This defaults to ``True`` since it's assumed that most listed action
+         configs will be enabled and used by default. This is the opposite of
+         Bazel's native default.
+
+   .. py:attribute:: tools
+      :type: List[label]
+
+      The :py:class:`pw_cc_tool` to use for the specified actions.
+
+      If multiple tools are specified, the first tool that has ``with_features``
+      that satisfy the currently enabled feature set is used.
+
+   .. py:attribute:: flag_sets
+      :type: List[label]
+
+      Labels that point to :py:class:`pw_cc_flag_set`\s that are unconditionally
+      bound to the specified actions.
+
+      .. admonition:: Note
+
+         The flags in the :py:class:`pw_cc_flag_set` are only bound to matching
+         action names. If an action is listed in this rule's
+         :py:attr:`pw_cc_action_config.action_names`,
+         but is NOT listed in the :py:class:`pw_cc_flag_set`\'s
+         :py:attr:`pw_cc_flag_set.actions`, the flag will not be applied to that
+         action.
+
+   .. py:attribute:: implies
+      :type: List[str]
+
+      Names of features that should be automatically enabled when this tool is
+      used.
+
+      .. admonition:: Note
+         :class: warning
+
+         If this action config implies an unknown feature, this action config
+         will silently be disabled. This behavior is native to Bazel itself, and
+         there's no way to detect this and emit an error instead. For this
+         reason, be very cautious when listing implied features!

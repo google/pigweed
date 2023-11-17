@@ -14,9 +14,18 @@
 
 load(
     "@pw_toolchain//cc_toolchain:defs.bzl",
+    "ALL_AR_ACTIONS",
+    "ALL_ASM_ACTIONS",
+    "ALL_COVERAGE_ACTIONS",
     "ALL_CPP_COMPILER_ACTIONS",
     "ALL_C_COMPILER_ACTIONS",
+    "ALL_LINK_ACTIONS",
+    "ALL_OBJCOPY_ACTIONS",
+    "ALL_OBJDUMP_ACTIONS",
+    "ALL_STRIP_ACTIONS",
+    "pw_cc_action_config",
     "pw_cc_flag_set",
+    "pw_cc_tool",
     "pw_cc_toolchain",
     "pw_cc_toolchain_feature",
 )
@@ -80,6 +89,96 @@ pw_cc_flag_set(
     ],
 )
 
+# TODO: b/311257445 - These tools and action sets are living in this BUILD file
+# temporarily; as they stabilize they'll be moved out into a template that can
+# be reused for arbitrary LLVM toolchains.
+pw_cc_tool(
+    name = "ar_tool",
+    tool = "@llvm_toolchain//:bin/llvm-ar",
+)
+
+pw_cc_action_config(
+    name = "ar",
+    action_names = ALL_AR_ACTIONS,
+    implies = [
+        "archiver_flags",
+        "linker_param_file",
+    ],
+    tools = [":ar_tool"],
+)
+
+pw_cc_tool(
+    name = "clang++_tool",
+    tool = "@llvm_toolchain//:bin/clang++",
+)
+
+pw_cc_action_config(
+    name = "clang++",
+    action_names = ALL_CPP_COMPILER_ACTIONS,
+    tools = [":clang++_tool"],
+)
+
+pw_cc_tool(
+    name = "clang_tool",
+    tool = "@llvm_toolchain//:bin/clang",
+)
+
+pw_cc_action_config(
+    name = "clang",
+    action_names = ALL_ASM_ACTIONS + ALL_C_COMPILER_ACTIONS,
+    tools = [":clang_tool"],
+)
+
+pw_cc_action_config(
+    name = "lld",
+    action_names = ALL_LINK_ACTIONS,
+    tools = [":clang++_tool"],  # Use the clang++ frontend to drive lld.
+)
+
+pw_cc_tool(
+    name = "llvm_cov_tool",
+    tool = "@llvm_toolchain//:bin/llvm-cov",
+)
+
+pw_cc_action_config(
+    name = "llvm-cov",
+    action_names = ALL_COVERAGE_ACTIONS,
+    tools = [":llvm_cov_tool"],
+)
+
+pw_cc_tool(
+    name = "llvm_objcopy_tool",
+    tool = "@llvm_toolchain//:bin/llvm-objcopy",
+)
+
+pw_cc_action_config(
+    name = "llvm-objcopy",
+    action_names = ALL_OBJCOPY_ACTIONS,
+    tools = [":llvm_objcopy_tool"],
+)
+
+pw_cc_tool(
+    name = "llvm_objdump_tool",
+    tool = "@llvm_toolchain//:bin/llvm-objdump",
+)
+
+pw_cc_action_config(
+    name = "llvm-objdump",
+    action_names = ALL_OBJDUMP_ACTIONS,
+    tools = [":llvm_objdump_tool"],
+)
+
+pw_cc_tool(
+    name = "llvm_strip_tool",
+    tool = "@llvm_toolchain//:bin/llvm-strip",
+)
+
+pw_cc_action_config(
+    name = "llvm-strip",
+    action_names = ALL_STRIP_ACTIONS,
+    tools = [":llvm_strip_tool"],
+)
+
 filegroup(
     name = "all_linux_files",
     srcs = [
@@ -95,14 +194,22 @@ pw_cc_toolchain(
     action_config_flag_sets = [
         ":warnings",
     ],
+    action_configs = [
+        ":ar",
+        ":clang",
+        ":clang++",
+        ":lld",
+        ":llvm-cov",
+        ":llvm-objcopy",
+        ":llvm-objdump",
+        ":llvm-strip",
+    ],
     all_files = "@llvm_toolchain//:all",
-    ar = "@llvm_toolchain//:bin/llvm-ar",
     ar_files = "@llvm_toolchain//:all",
     as_files = "@llvm_toolchain//:all",
     compiler = "unknown",
     compiler_files = "@llvm_toolchain//:all",
     coverage_files = "@llvm_toolchain//:all",
-    cpp = "@llvm_toolchain//:bin/clang++",
     dwp_files = "@llvm_toolchain//:all",
     feature_deps = [
         "@pw_toolchain//features:no_default_cpp_stdlib",
@@ -116,15 +223,9 @@ pw_cc_toolchain(
         "@pw_toolchain//features:wno_register",
         "@pw_toolchain//features:wnon_virtual_dtor",
     ],
-    gcc = "@llvm_toolchain//:bin/clang",
-    gcov = "@llvm_toolchain//:bin/llvm-cov",
     host_system_name = "unknown",
-    ld = "@llvm_toolchain//:bin/clang++",
     linker_files = "@llvm_toolchain//:all",
-    objcopy = "@llvm_toolchain//:bin/llvm-objcopy",
     objcopy_files = "@llvm_toolchain//:all",
-    objdump = "@llvm_toolchain//:bin/llvm-objdump",
-    strip = "@llvm_toolchain//:bin/llvm-strip",
     strip_files = "@llvm_toolchain//:all",
     supports_param_files = 0,
     # The implementations of some "legacy features" built into Bazel use

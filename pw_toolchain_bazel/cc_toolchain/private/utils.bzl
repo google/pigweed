@@ -16,11 +16,7 @@
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 load(
     "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
-    "FlagSetInfo",
-)
-load(
-    "//cc_toolchain/private:providers.bzl",
-    "ToolchainFeatureInfo",
+    "flag_set",
 )
 
 # A potentially more complete set of these constants are available at
@@ -56,18 +52,35 @@ ACTION_MAP = {
     "linkopts": ALL_LINK_ACTIONS,
 }
 
-def _check_dep_provides(ctx_label, dep, provider, what_provides):
-    if provider not in dep:
-        fail(
-            "{} listed as a dependency of {}, but it's not a {}".format(
-                dep.label,
-                ctx_label,
-                what_provides,
-            ),
-        )
+def check_deps_provide(ctx, list_name, provider, what_provides):
+    """Ensures that each dep in the specified list offers the required provider.
 
-def check_deps(ctx):
-    for dep in ctx.attr.feature_deps:
-        _check_dep_provides(ctx.label, dep, ToolchainFeatureInfo, "pw_cc_toolchain_feature")
-    for dep in ctx.attr.action_config_flag_sets:
-        _check_dep_provides(ctx.label, dep, FlagSetInfo, "pw_cc_flag_set")
+    Args:
+        ctx: The rule context to pull the dependency list from.
+        list_name: The name of the attr to scan the dependencies from.
+        provider: The concrete provider to ensure exists.
+        what_provides: The name of the build rule that offers the required
+            provider.
+    """
+    for dep in getattr(ctx.attr, list_name):
+        if provider not in dep:
+            fail(
+                "{} in `{}` is not a {}".format(
+                    dep.label,
+                    list_name,
+                    what_provides,
+                ),
+            )
+
+def actionless_flag_set(flag_set_to_copy):
+    """Copies a flag_set, stripping `actions`.
+
+    Args:
+        flag_set_to_copy: The base flag_set to copy.
+    Returns:
+        flag_set with empty `actions` list.
+    """
+    return flag_set(
+        with_features = flag_set_to_copy.with_features,
+        flag_groups = flag_set_to_copy.flag_groups,
+    )
