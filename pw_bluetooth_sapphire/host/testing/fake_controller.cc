@@ -452,7 +452,7 @@ void FakeController::ConnectLowEnergy(
         view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
         view.peer_address().CopyFrom(addr.value().view());
         view.peer_address_type().Write(
-            DeviceAddress::DeviceAddrToLePeerAddr(addr.type()));
+            DeviceAddress::DeviceAddrToLePeerAddrNoAnon(addr.type()));
         view.peripheral_latency().Write(conn_params.latency());
         view.connection_interval().Write(conn_params.interval());
         view.supervision_timeout().Write(conn_params.supervision_timeout());
@@ -893,7 +893,7 @@ void FakeController::OnLECreateConnectionCommandReceived(
   view.status().Write(status);
   view.peer_address().CopyFrom(params.peer_address());
   view.peer_address_type().Write(
-      DeviceAddress::DeviceAddrToLePeerAddr(addr_type));
+      DeviceAddress::DeviceAddrToLePeerAddrNoAnon(addr_type));
 
   if (status == pw::bluetooth::emboss::StatusCode::SUCCESS) {
     uint16_t interval_min = params.connection_interval_min().UncheckedRead();
@@ -1268,7 +1268,7 @@ void FakeController::OnLECreateConnectionCancel() {
       hci_spec::kLEConnectionCompleteSubeventCode);
   view.status().Write(pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID);
   view.peer_address().CopyFrom(le_connect_params_->peer_address.value().view());
-  view.peer_address_type().Write(DeviceAddress::DeviceAddrToLePeerAddr(
+  view.peer_address_type().Write(DeviceAddress::DeviceAddrToLePeerAddrNoAnon(
       le_connect_params_->peer_address.type()));
 
   RespondWithCommandComplete(hci_spec::kLECreateConnectionCancel,

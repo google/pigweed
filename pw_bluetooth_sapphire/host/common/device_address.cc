@@ -118,6 +118,27 @@ pw::bluetooth::emboss::LEPeerAddressType DeviceAddress::DeviceAddrToLePeerAddr(
   }
 }
 
+pw::bluetooth::emboss::LEPeerAddressTypeNoAnon
+DeviceAddress::DeviceAddrToLePeerAddrNoAnon(Type type) {
+  switch (type) {
+    case DeviceAddress::Type::kBREDR: {
+      BT_PANIC("BR/EDR address not convertible to LE address");
+    }
+    case DeviceAddress::Type::kLEPublic: {
+      return pw::bluetooth::emboss::LEPeerAddressTypeNoAnon::PUBLIC;
+    }
+    case DeviceAddress::Type::kLERandom: {
+      return pw::bluetooth::emboss::LEPeerAddressTypeNoAnon::RANDOM;
+    }
+    case DeviceAddress::Type::kLEAnonymous: {
+      BT_PANIC("invalid DeviceAddressType; anonymous type unsupported");
+    }
+    default: {
+      BT_PANIC("invalid DeviceAddressType");
+    }
+  }
+}
+
 DeviceAddress::Type DeviceAddress::LePeerAddrToDeviceAddr(
     pw::bluetooth::emboss::LEPeerAddressType type) {
   switch (type) {
@@ -132,6 +153,21 @@ DeviceAddress::Type DeviceAddress::LePeerAddrToDeviceAddr(
     }
     default: {
       BT_PANIC("invalid LEPeerAddressType");
+    }
+  }
+}
+
+DeviceAddress::Type DeviceAddress::LePeerAddrToDeviceAddr(
+    pw::bluetooth::emboss::LEPeerAddressTypeNoAnon type) {
+  switch (type) {
+    case pw::bluetooth::emboss::LEPeerAddressTypeNoAnon::PUBLIC: {
+      return DeviceAddress::Type::kLEPublic;
+    }
+    case pw::bluetooth::emboss::LEPeerAddressTypeNoAnon::RANDOM: {
+      return DeviceAddress::Type::kLERandom;
+    }
+    default: {
+      BT_PANIC("invalid LEPeerAddressNoAnonType");
     }
   }
 }

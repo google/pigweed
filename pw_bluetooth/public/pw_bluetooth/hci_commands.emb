@@ -2538,46 +2538,46 @@ struct LEExtendedCreateConnectionV1:
   -- 7.8.66 LE Extended Create Connection command version 1
   -- HCI_LE_Extended_Create_Connection v1
   let hdr_size = hci.CommandHeader.$size_in_bytes
-  0     [+hdr_size]                             hci.CommandHeader       header
-  $next [+1]                                    hci.GenericEnableParam  initiator_filter_policy
-  $next [+1]                                    LEOwnAddressType        own_address_type
-  $next [+1]                                    hci.LEPeerAddressType   peer_address_type
-  $next [+hci.BdAddr.$size_in_bytes]            hci.BdAddr              peer_address
+  0     [+hdr_size]                             hci.CommandHeader            header
+  $next [+1]                                    hci.GenericEnableParam       initiator_filter_policy
+  $next [+1]                                    LEOwnAddressType             own_address_type
+  $next [+1]                                    hci.LEPeerAddressTypeNoAnon  peer_address_type
+  $next [+hci.BdAddr.$size_in_bytes]            hci.BdAddr                   peer_address
   $next [+1]  bits:
-    0     [+LEInitiatingPHYBits.$size_in_bits]  LEInitiatingPHYBits     initiating_phys
+    0     [+LEInitiatingPHYBits.$size_in_bits]  LEInitiatingPHYBits          initiating_phys
 
   let num_entries = (initiating_phys.le_1m ? 1 : 0)+(initiating_phys.le_2m ? 1 : 0)+(initiating_phys.le_coded ? 1 : 0)
-  $next [+2*num_entries]                        UInt:16[num_entries]    scan_interval
+  $next [+2*num_entries]                        UInt:16[num_entries]         scan_interval
     -- Time interval from when the Controller started its last scan until it begins the subsequent
     -- scan on the primary advertising physical channel.
     -- Time = N × 0.625 ms
     -- Time Range: 2.5 ms to 40.959375 s
 
-  $next [+2*num_entries]                        UInt:16[num_entries]    scan_window
+  $next [+2*num_entries]                        UInt:16[num_entries]         scan_window
     -- Duration of the scan on the primary advertising physical channel.
     -- Time = N × 0.625 ms
     -- Time Range: 2.5 ms to 40.959375 s
 
-  $next [+2*num_entries]                        UInt:16[num_entries]    connection_interval_min
+  $next [+2*num_entries]                        UInt:16[num_entries]         connection_interval_min
     -- Time: N * 1.25 ms
     -- Time Range: 7.5 ms to 4 s.
 
-  $next [+2*num_entries]                        UInt:16[num_entries]    connection_interval_max
+  $next [+2*num_entries]                        UInt:16[num_entries]         connection_interval_max
     -- Time: N * 1.25 ms
     -- Time Range: 7.5 ms to 4 s.
 
-  $next [+2*num_entries]                        UInt:16[num_entries]    max_latency
+  $next [+2*num_entries]                        UInt:16[num_entries]         max_latency
     -- Maximum Peripheral latency for the connection in number of connection events.
 
-  $next [+2*num_entries]                        UInt:16[num_entries]    supervision_timeout
+  $next [+2*num_entries]                        UInt:16[num_entries]         supervision_timeout
     -- See Core Spec v5.3, Vol 6, Part B, Section 4.5.2.
     -- Time: N * 10 ms
     -- Time Range: 100 ms to 32 s
 
-  $next [+2*num_entries]                        UInt:16[num_entries]    min_connection_event_length
+  $next [+2*num_entries]                        UInt:16[num_entries]         min_connection_event_length
     -- Time: N * 0.625 ms
 
-  $next [+2*num_entries]                        UInt:16[num_entries]    max_connection_event_length
+  $next [+2*num_entries]                        UInt:16[num_entries]         max_connection_event_length
     -- Time: N * 0.625 ms
 
 # 7.8.66 LE Extended Create Connection command version 2
@@ -2646,16 +2646,15 @@ struct LEAddDeviceToPeriodicAdvertiserListCommand:
   -- 7.8.70 LE Add Device To Periodic Advertiser List command (v5.0) (LE)
   -- HCI_LE_Add_Device_To_Periodic_Advertiser_List
   let hdr_size = hci.CommandHeader.$size_in_bytes
-  0     [+hdr_size]                   hci.CommandHeader  header
-  $next [+1]                          hci.LEAddressType  advertiser_address_type
-    -- Address type of the advertiser. The LEAddressType::kPublicIdentity and
-    -- LEAddressType::kRandomIdentity values are excluded for this command.
+  0     [+hdr_size]                   hci.CommandHeader            header
+  $next [+1]                          hci.LEPeerAddressTypeNoAnon  advertiser_address_type
+    -- Address type of the advertiser.
 
-  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr         advertiser_address
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                   advertiser_address
     -- Public Device Address, Random Device Address, Public Identity Address, or
     -- Random (static) Identity Address of the advertiser.
 
-  $next [+1]                          UInt               advertising_sid
+  $next [+1]                          UInt                         advertising_sid
     -- Advertising SID subfield in the ADI field used to identify the Periodic
     -- Advertising.
 
@@ -2664,16 +2663,16 @@ struct LERemoveDeviceFromPeriodicAdvertiserListCommand:
   -- 7.8.71 LE Remove Device From Periodic Advertiser List command (v5.0) (LE)
   -- HCI_LE_Remove_Device_From_Periodic_Advertiser_List
   let hdr_size = hci.CommandHeader.$size_in_bytes
-  0     [+hdr_size]                   hci.CommandHeader  header
-  $next [+1]                          UInt               advertiser_address_type
+  0     [+hdr_size]                   hci.CommandHeader            header
+  $next [+1]                          hci.LEPeerAddressTypeNoAnon  advertiser_address_type
     -- Address type of the advertiser. The LEAddressType::kPublicIdentity and
     -- LEAddressType::kRandomIdentity values are excluded for this command.
 
-  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr         advertiser_address
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                   advertiser_address
     -- Public Device Address, Random Device Address, Public Identity Address, or
     -- Random (static) Identity Address of the advertiser.
 
-  $next [+1]                          UInt               advertising_sid
+  $next [+1]                          UInt                         advertising_sid
     -- Advertising SID subfield in the ADI field used to identify the Periodic
     -- Advertising.
 
