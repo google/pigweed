@@ -86,6 +86,7 @@ pw_add_library(pw_system.hdlc_rpc_server STATIC
     pw_system.rpc_server.facade
     pw_system.target_io
     pw_thread.thread_core
+    pw_trace
   SOURCES
     hdlc_rpc_server.cc
 )
