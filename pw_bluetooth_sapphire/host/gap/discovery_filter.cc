@@ -109,7 +109,8 @@ bool DiscoveryFilter::MatchLowEnergyResult(
     if (!ad.local_name()) {
       return false;
     }
-    // TODO(--): If this is an incomplete name should we match the first part?
+    // TODO(jamuraa): If this is an incomplete name should we match the first
+    // part?
     if (ad.local_name()->name.find(name_substring_) == std::string_view::npos) {
       return false;
     }

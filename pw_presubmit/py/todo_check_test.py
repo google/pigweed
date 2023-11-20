@@ -271,6 +271,14 @@ class TestTodoCheck(unittest.TestCase):
         self._run_bugs_users('TODO: foo\n')
         self.ctx.fail.assert_called()
 
+    def test_fuchsia(self) -> None:
+        self._run_bugs_users('TODO(fxbug.dev/123): foo\n')
+        self.ctx.fail.assert_not_called()
+
+    def test_fuchsia_two_bugs(self) -> None:
+        self._run_bugs_users('TODO(fxbug.dev/123,fxbug.dev/321): bar\n')
+        self.ctx.fail.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()

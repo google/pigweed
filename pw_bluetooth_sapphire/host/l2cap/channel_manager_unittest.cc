@@ -497,7 +497,8 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
     acl_data_channel_.set_send_packets_cb(
         fit::bind_member<&ChannelManagerMockAclChannelTest::SendPackets>(this));
 
-    // TODO(63074): Make these tests not depend on strict channel ID ordering.
+    // TODO(fxbug.dev/63074): Make these tests not depend on strict channel ID
+    // ordering.
     chanmgr_ = ChannelManager::Create(&acl_data_channel_,
                                       transport()->command_channel(),
                                       /*random_channel_ids=*/false,

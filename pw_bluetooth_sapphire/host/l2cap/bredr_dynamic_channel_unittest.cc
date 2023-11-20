@@ -676,7 +676,8 @@ class BrEdrDynamicChannelTest : public pw::async::test::FakeDispatcherFixture {
 
     ext_info_transaction_id_ = EXPECT_OUTBOUND_REQ(
         *sig(), kInformationRequest, kExtendedFeaturesInfoReq.view());
-    // TODO(63074): Make these tests not rely on strict ordering of channel IDs.
+    // TODO(fxbug.dev/63074): Make these tests not rely on strict ordering of
+    // channel IDs.
     registry_ = std::make_unique<BrEdrDynamicChannelRegistry>(
         sig(),
         fit::bind_member<&BrEdrDynamicChannelTest::OnChannelClose>(this),

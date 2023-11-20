@@ -453,7 +453,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartAdvertisingReadTxPowerFails) {
   EXPECT_TRUE(status->error_value().is_protocol_error());
 }
 
-// TODO(create bug): This test should really belong in LowEnergyAdvertiser's
+// TODO(fsareshwala): This test should really belong in LowEnergyAdvertiser's
 // unittest file
 // ($dir_pw_bluetooth_sapphire/host/hci/low_energy_advertiser_unittest.cc)
 // because all low energy advertisers should follow this convention. However,

@@ -80,7 +80,7 @@ class FakeL2cap final {
       l2cap::ChannelId largest_channel_id = l2cap::kLastACLDynamicChannelId);
 
   // Public methods for services/clients that operate over L2CAP channels:
-  // TODO (fxbug.dev/57535) Add Unit tests for public methods
+  // TODO(fxbug.dev/57535) Add Unit tests for public methods
 
   // Register |callback| to be called when a Service Data Unit (SDU) is
   // received on an L2CAP channel identified by |cid|. |callback| will be

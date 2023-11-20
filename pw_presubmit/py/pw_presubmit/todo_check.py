@@ -69,6 +69,13 @@ BUGS_OR_USERNAMES = re.compile(
         )
     )*
 [ ]-[ ].*\w  # Explanation.
+)|
+(?:  # Fuchsia style.
+    \bTODO\(
+        (?:fxbug\.dev/\d+|[a-z]+)  # Username or bug.
+        (?:,[ ]?(?:fxbug\.dev/\d+|[a-z]+))*  # Additional usernames or bugs.
+    \)
+.*\w  # Explanation.
 )
     """,
     re.VERBOSE,
