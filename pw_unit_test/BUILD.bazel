@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
+load("@rules_python//python:proto.bzl", "py_proto_library")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
@@ -216,7 +216,7 @@ proto_library(
 
 py_proto_library(
     name = "unit_test_py_pb2",
-    srcs = ["pw_unit_test_proto/unit_test.proto"],
+    deps = [":unit_test_proto"],
 )
 
 pw_proto_library(

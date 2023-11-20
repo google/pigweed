@@ -12,8 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_python//python:proto.bzl", "py_proto_library")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
@@ -195,9 +195,7 @@ proto_library(
 
 py_proto_library(
     name = "codegen_protos_pb2",
-    srcs = [
-        "pw_protobuf_codegen_protos/codegen_options.proto",
-    ],
+    deps = [":codegen_protos"],
 )
 
 proto_library(
@@ -226,11 +224,8 @@ proto_library(
 
 py_proto_library(
     name = "field_options_proto_pb2",
-    srcs = [
-        "pw_protobuf_protos/field_options.proto",
-    ],
     deps = [
-        "@com_google_protobuf//:protobuf_python",
+        ":field_options_proto",
     ],
 )
 
@@ -244,9 +239,7 @@ proto_library(
 
 py_proto_library(
     name = "status_proto_pb2",
-    srcs = [
-        "pw_protobuf_protos/status.proto",
-    ],
+    deps = [":status_proto"],
 )
 
 pw_proto_filegroup(

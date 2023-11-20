@@ -21,10 +21,8 @@ py_library(
         "pw_chrono/timestamp_analyzer.py",
     ],
     imports = ["."],
-    tags = ["manual"],
     deps = [
-        # TODO: b/241456982 - Add this dep back in
-        # "//pw_chrono:chrono_proto_pb2",
+        "//pw_chrono:chrono_proto_pb2",
     ],
 )
 
@@ -33,10 +31,8 @@ py_test(
     srcs = [
         "timestamp_analyzer_test.py",
     ],
-    tags = ["manual"],
     deps = [
         ":pw_chrono",
-        # TODO: b/241456982 - Add this dep back in
-        # "//pw_chrono:chrono_proto_pb2",
+        "//pw_chrono:chrono_proto_pb2",
     ],
 )

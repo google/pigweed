@@ -40,8 +40,8 @@ import tempfile
 from google.protobuf import text_format
 
 from pigweed.pw_transfer.integration_test import config_pb2
-from pigweed.pw_protobuf.pw_protobuf_protos import status_pb2
 from pigweed.pw_transfer.integration_test import test_fixture
+from pw_protobuf_protos import status_pb2
 from test_fixture import TransferIntegrationTestHarness, TransferConfig
 
 

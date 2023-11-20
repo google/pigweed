@@ -127,17 +127,28 @@ load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 
 bazel_skylib_workspace()
 
+http_archive(
+    name = "rules_proto",
+    sha256 = "dc3fb206a2cb3441b485eb1e423165b231235a1ea9b031b4433cf7bc1fa460dd",
+    strip_prefix = "rules_proto-5.3.0-21.7",
+    urls = [
+        "https://github.com/bazelbuild/rules_proto/archive/refs/tags/5.3.0-21.7.tar.gz",
+    ],
+)
+
 # Set up Python support.
 # Required by: rules_fuzzing, com_github_nanopb_nanopb.
 # Used in modules: None.
 http_archive(
     name = "rules_python",
-    sha256 = "0a8003b044294d7840ac7d9d73eef05d6ceb682d7516781a4ec62eeb34702578",
-    strip_prefix = "rules_python-0.24.0",
-    url = "https://github.com/bazelbuild/rules_python/releases/download/0.24.0/rules_python-0.24.0.tar.gz",
+    sha256 = "9acc0944c94adb23fba1c9988b48768b1bacc6583b52a2586895c5b7491e2e31",
+    strip_prefix = "rules_python-0.27.0",
+    url = "https://github.com/bazelbuild/rules_python/releases/download/0.27.0/rules_python-0.27.0.tar.gz",
 )
 
-load("@rules_python//python:repositories.bzl", "python_register_toolchains")
+load("@rules_python//python:repositories.bzl", "py_repositories", "python_register_toolchains")
+
+py_repositories()
 
 # Use Python 3.10 for bazel Python rules.
 python_register_toolchains(
@@ -293,11 +304,12 @@ http_archive(
 # Set up rules for fuzz testing.
 # Required by: pigweed.
 # Used in modules: //pw_protobuf, //pw_tokenizer, //pw_fuzzer.
-http_archive(
+#
+# TODO(b/311746469): Switch back to a released version when possible.
+git_repository(
     name = "rules_fuzzing",
-    sha256 = "d9002dd3cd6437017f08593124fdd1b13b3473c7b929ceb0e60d317cb9346118",
-    strip_prefix = "rules_fuzzing-0.3.2",
-    urls = ["https://github.com/bazelbuild/rules_fuzzing/archive/v0.3.2.zip"],
+    commit = "67ba0264c46c173a75825f2ae0a0b4b9b17c5e59",
+    remote = "https://github.com/bazelbuild/rules_fuzzing",
 )
 
 load("@rules_fuzzing//fuzzing:repositories.bzl", "rules_fuzzing_dependencies")

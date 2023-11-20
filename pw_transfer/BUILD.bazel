@@ -12,8 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_python//python:proto.bzl", "py_proto_library")
 load("//pw_build:pigweed.bzl", "pw_cc_library", "pw_cc_test")
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
 
@@ -241,7 +241,7 @@ pw_proto_library(
 
 py_proto_library(
     name = "transfer_proto_pb2",
-    srcs = ["transfer.proto"],
+    deps = [":transfer_proto"],
 )
 
 java_lite_proto_library(

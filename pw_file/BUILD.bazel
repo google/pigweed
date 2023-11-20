@@ -12,12 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_python//python:proto.bzl", "py_proto_library")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
     "pw_cc_test",
 )
-load("//pw_build/bazel_internal:py_proto_library.bzl", "py_proto_library")
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -42,9 +42,7 @@ pw_proto_library(
 
 py_proto_library(
     name = "file_proto_py_pb2",
-    srcs = ["file.proto"],
-    # TODO: b/241456982 - Get this target to build.
-    tags = ["manual"],
+    deps = [":file_proto"],
 )
 
 pw_cc_library(

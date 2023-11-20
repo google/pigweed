@@ -12,12 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_python//python:proto.bzl", "py_proto_library")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
     "pw_cc_test",
 )
-load("//pw_build/bazel_internal:py_proto_library.bzl", "py_proto_library")
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -110,10 +110,8 @@ proto_library(
     ],
 )
 
-# TODO: b/241456982 - Not expected to build yet.
 py_proto_library(
     name = "metric_proto_py_pb2",
-    tags = ["manual"],
     deps = [":metric_proto"],
 )
 

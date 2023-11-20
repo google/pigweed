@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
+load("@rules_python//python:proto.bzl", "py_proto_library")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_facade",
@@ -113,13 +113,9 @@ proto_library(
     strip_import_prefix = "/pw_chrono",
 )
 
-# TODO: b/241456982 - Not expected to build yet.
 py_proto_library(
     name = "chrono_proto_pb2",
-    # Once b/241456982 is fixed srcs here should be replaced with:
-    # deps = [ ":chrono_proto" ]
-    srcs = ["chrono.proto"],
-    tags = ["manual"],
+    deps = [":chrono_proto"],
 )
 
 pw_proto_library(

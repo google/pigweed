@@ -36,6 +36,7 @@ from pigweed.pw_rpc.internal import packet_pb2
 from pigweed.pw_transfer import transfer_pb2
 from pigweed.pw_transfer.integration_test import config_pb2
 from pw_hdlc import decode
+from pw_transfer import ProtocolVersion
 from pw_transfer.chunk import Chunk
 
 _LOG = logging.getLogger('pw_transfer_intergration_test_proxy')
