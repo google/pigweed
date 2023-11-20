@@ -1577,7 +1577,7 @@ struct LEExtendedAdvertisingReportData:
     -- 0xFF means no ADI field provided.
     [requires: 0x00 <= this <= 0x0F || this == 0xFF]
 
-  $next [+1]                                               UInt                            tx_power
+  $next [+1]                                               Int                             tx_power
     -- Units: dBm. A value of 0x7F means Tx Power information is not available.
     [requires: -127 <= this <= 20 || this == 0x7F]
 
