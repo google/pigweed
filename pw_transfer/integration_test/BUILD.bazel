@@ -133,6 +133,9 @@ py_test(
         # This test is not run in CQ because it's too slow.
         "manual",
         "integration",
+        # Isolate the network to allow running multiple copies of the test in
+        # parallel.
+        "block-network",
     ],
     deps = [
         ":integration_test_fixture",
@@ -152,6 +155,9 @@ py_test(
         # This test is not run in CQ because it's too slow.
         "manual",
         "integration",
+        # Isolate the network to allow running multiple copies of the test in
+        # parallel.
+        "block-network",
     ],
     deps = [
         ":integration_test_fixture",
@@ -165,7 +171,12 @@ py_test(
     srcs = [
         "cross_language_medium_read_test.py",
     ],
-    tags = ["integration"],
+    tags = [
+        "integration",
+        # Isolate the network to allow running multiple copies of the test in
+        # parallel.
+        "block-network",
+    ],
     deps = [
         ":config_pb2",
         ":integration_test_fixture",
@@ -181,7 +192,12 @@ py_test(
     srcs = [
         "cross_language_medium_write_test.py",
     ],
-    tags = ["integration"],
+    tags = [
+        "integration",
+        # Isolate the network to allow running multiple copies of the test in
+        # parallel.
+        "block-network",
+    ],
     deps = [
         ":config_pb2",
         ":integration_test_fixture",
@@ -197,7 +213,12 @@ py_test(
     srcs = [
         "cross_language_small_test.py",
     ],
-    tags = ["integration"],
+    tags = [
+        "integration",
+        # Isolate the network to allow running multiple copies of the test in
+        # parallel.
+        "block-network",
+    ],
     deps = [
         ":config_pb2",
         ":integration_test_fixture",
@@ -212,7 +233,12 @@ py_test(
     srcs = [
         "multi_transfer_test.py",
     ],
-    tags = ["integration"],
+    tags = [
+        "integration",
+        # Isolate the network to allow running multiple copies of the test in
+        # parallel.
+        "block-network",
+    ],
     deps = [
         ":config_pb2",
         ":integration_test_fixture",
@@ -225,7 +251,12 @@ py_test(
     name = "expected_errors_test",
     timeout = "moderate",
     srcs = ["expected_errors_test.py"],
-    tags = ["integration"],
+    tags = [
+        "integration",
+        # Isolate the network to allow running multiple copies of the test in
+        # parallel.
+        "block-network",
+    ],
     deps = [
         ":config_pb2",
         ":integration_test_fixture",
@@ -243,7 +274,12 @@ py_test(
     data = [
         "@pw_transfer_test_binaries//:all",
     ],
-    tags = ["integration"],
+    tags = [
+        "integration",
+        # Isolate the network to allow running multiple copies of the test in
+        # parallel.
+        "block-network",
+    ],
     # Legacy binaries were only built for linux-x86_64.
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
