@@ -2478,7 +2478,7 @@ TEST_F(RemoteServiceManagerTest, ReadDescSendsReadRequest) {
   // TODO(armansito): Some of the service set up and |status| verification
   // boilerplate could be reduced by factoring them out into helpers on the test
   // harness (also see code review comment in
-  // https://fuchsia-review.googlesource.com/c/garnet/+/213794/6/drivers/bluetooth/lib/gatt/remote_service_manager_unittest.cc).
+  // https://fuchsia-review.googlesource.com/c/garnet/+/213794/6/drivers/bluetooth/lib/gatt/remote_service_manager_test.cc).
   constexpr att::Handle kValueHandle1 = 3;
   constexpr att::Handle kValueHandle2 = 5;
   constexpr att::Handle kDescrHandle = 6;

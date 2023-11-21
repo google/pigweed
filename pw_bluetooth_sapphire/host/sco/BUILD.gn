@@ -41,8 +41,8 @@ pw_source_set("sco") {
 
 pw_test("tests") {
   sources = [
-    "sco_connection_manager_unittest.cc",
-    "sco_connection_unittest.cc",
+    "sco_connection_manager_test.cc",
+    "sco_connection_test.cc",
   ]
 
   deps = [

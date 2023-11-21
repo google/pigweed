@@ -30,8 +30,8 @@ pw_source_set("cpp-type") {
 
 pw_test("type_test") {
   sources = [
-    "member_pointer_traits_unittest.cc",
-    "to_std_array_unittest.cc",
+    "member_pointer_traits_test.cc",
+    "to_std_array_test.cc",
   ]
 
   deps = [ ":cpp-type" ]

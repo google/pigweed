@@ -79,15 +79,15 @@ pw_source_set("testing") {
 
 pw_test("tests") {
   sources = [
-    "acl_data_channel_unittest.cc",
-    "command_channel_unittest.cc",
-    "emboss_control_packets_unittest.cc",
-    "emboss_packet_unittest.cc",
-    "packet_unittest.cc",
-    "sco_data_channel_unittest.cc",
-    "sco_data_packet_unittest.cc",
-    "slab_allocators_unittest.cc",
-    "transport_unittest.cc",
+    "acl_data_channel_test.cc",
+    "command_channel_test.cc",
+    "emboss_control_packets_test.cc",
+    "emboss_packet_test.cc",
+    "packet_test.cc",
+    "sco_data_channel_test.cc",
+    "sco_data_packet_test.cc",
+    "slab_allocators_test.cc",
+    "transport_test.cc",
   ]
 
   deps = [

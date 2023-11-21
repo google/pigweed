@@ -86,12 +86,12 @@ pw_source_set("testing") {
 
 pw_test("tests") {
   sources = [
-    "client_unittest.cc",
-    "gatt_unittest.cc",
-    "generic_attribute_service_unittest.cc",
-    "local_service_manager_unittest.cc",
-    "remote_service_manager_unittest.cc",
-    "server_unittest.cc",
+    "client_test.cc",
+    "gatt_test.cc",
+    "generic_attribute_service_test.cc",
+    "local_service_manager_test.cc",
+    "remote_service_manager_test.cc",
+    "server_test.cc",
   ]
 
   deps = [

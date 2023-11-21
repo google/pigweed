@@ -455,7 +455,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartAdvertisingReadTxPowerFails) {
 
 // TODO(fsareshwala): This test should really belong in LowEnergyAdvertiser's
 // unittest file
-// ($dir_pw_bluetooth_sapphire/host/hci/low_energy_advertiser_unittest.cc)
+// ($dir_pw_bluetooth_sapphire/host/hci/low_energy_advertiser_test.cc)
 // because all low energy advertisers should follow this convention. However,
 // this requires that all low energy advertisers implement random address
 // rotation. Currently, the only other low energy advertiser is the

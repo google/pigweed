@@ -95,21 +95,21 @@ pw_source_set("testing") {
 
 pw_test("sm_tests") {
   sources = [
-    "ecdh_key_unittest.cc",
-    "error_unittest.cc",
-    "packet_unittest.cc",
-    "pairing_channel_unittest.cc",
-    "pairing_phase_unittest.cc",
-    "phase_1_unittest.cc",
-    "phase_2_legacy_unittest.cc",
-    "phase_2_secure_connections_unittest.cc",
-    "phase_3_unittest.cc",
-    "sc_stage_1_just_works_numeric_comparison_unittest.cc",
-    "sc_stage_1_passkey_unittest.cc",
-    "security_manager_unittest.cc",
-    "security_request_phase_unittest.cc",
-    "types_unittest.cc",
-    "util_unittest.cc",
+    "ecdh_key_test.cc",
+    "error_test.cc",
+    "packet_test.cc",
+    "pairing_channel_test.cc",
+    "pairing_phase_test.cc",
+    "phase_1_test.cc",
+    "phase_2_legacy_test.cc",
+    "phase_2_secure_connections_test.cc",
+    "phase_3_test.cc",
+    "sc_stage_1_just_works_numeric_comparison_test.cc",
+    "sc_stage_1_passkey_test.cc",
+    "security_manager_test.cc",
+    "security_request_phase_test.cc",
+    "types_test.cc",
+    "util_test.cc",
   ]
 
   deps = [

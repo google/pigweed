@@ -65,13 +65,13 @@ pw_source_set("test_helpers") {
 
 pw_test("tests") {
   sources = [
-    "fake_controller_unittest.cc",
-    "fake_dynamic_channel_unittest.cc",
-    "fake_l2cap_unittest.cc",
-    "fake_sdp_server_unittest.cc",
-    "fake_signaling_server_unittest.cc",
-    "inspect_util_unittest.cc",
-    "parse_args_unittest.cc",
+    "fake_controller_test.cc",
+    "fake_dynamic_channel_test.cc",
+    "fake_l2cap_test.cc",
+    "fake_sdp_server_test.cc",
+    "fake_signaling_server_test.cc",
+    "inspect_util_test.cc",
+    "parse_args_test.cc",
   ]
 
   deps = [

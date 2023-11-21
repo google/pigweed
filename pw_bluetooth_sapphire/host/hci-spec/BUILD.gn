@@ -45,7 +45,7 @@ pw_source_set("hci-spec") {
 }
 
 pw_test("tests") {
-  sources = [ "util_unittest.cc" ]
+  sources = [ "util_test.cc" ]
 
   deps = [ ":hci-spec" ]
 

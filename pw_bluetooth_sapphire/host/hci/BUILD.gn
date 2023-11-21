@@ -91,18 +91,18 @@ pw_source_set("testing") {
 
 pw_test("tests") {
   sources = [
-    "advertising_handle_map_unittest.cc",
-    "advertising_report_parser_unittest.cc",
-    "command_handler_unittest.cc",
-    "connection_unittest.cc",
-    "extended_low_energy_advertiser_unittest.cc",
-    "legacy_low_energy_advertiser_unittest.cc",
-    "legacy_low_energy_scanner_unittest.cc",
-    "low_energy_advertiser_unittest.cc",
-    "low_energy_connector_unittest.cc",
-    "low_energy_multiple_advertising_unittest.cc",
-    "sequential_command_runner_unittest.cc",
-    "util_unittest.cc",
+    "advertising_handle_map_test.cc",
+    "advertising_report_parser_test.cc",
+    "command_handler_test.cc",
+    "connection_test.cc",
+    "extended_low_energy_advertiser_test.cc",
+    "legacy_low_energy_advertiser_test.cc",
+    "legacy_low_energy_scanner_test.cc",
+    "low_energy_advertiser_test.cc",
+    "low_energy_connector_test.cc",
+    "low_energy_multiple_advertising_test.cc",
+    "sequential_command_runner_test.cc",
+    "util_test.cc",
   ]
 
   deps = [

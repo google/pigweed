@@ -36,7 +36,7 @@ pw_source_set("cpp-string") {
 pw_test("string_printf_test") {
   enable_if = current_os != "win" && dir_pw_third_party_icu != ""
 
-  sources = [ "string_printf_unittest.cc" ]
+  sources = [ "string_printf_test.cc" ]
 
   cflags = [ "-Wno-format-zero-length" ]
 

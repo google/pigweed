@@ -71,6 +71,6 @@ These files provide commonly-used functionality in SM. They easily could be (and
   * [`util.h`](/src/connectivity/bluetooth/core/bt-host/sm/util.h) - cryptographic primitives and other pure-function utilities used in the SMP stack.
 
 #### Test files:
-Besides the `bt-host` standard `<source_file_stem>_unittest.cc` files, SM provides the following test helpers:
+Besides the `bt-host` standard `<source_file_stem>_test.cc` files, SM provides the following test helpers:
 * [`TestSecurityManager(Factory)`](/src/connectivity/bluetooth/core/bt-host/sm/test_security_manager.h) - a test implementation of SM's public interface, `SecurityManager`. Provides a `TestSecurityManagerFactory` with a `CreateSm` method which stores a reference to the created `TestSecurityManager`. A `TestSecurityManagerFactory` can be used to inject `TestSecurityManager`s into production code while keeping them accessible by unit tests. The current implementation is a very minimal test spy. It provides basic argument snooping and stub responses for a few methods and noop implementations for others. More functionality may be added as necessary to expand test coverage of SM-dependent code.
 * [`FakeListener`](/src/connectivity/bluetooth/core/bt-host/sm/fake_phase_listener.h) - fakes an implementation of the `PairingPhase::Listener` interface, which the `PairingPhase` subclasses require for unit testing.

@@ -67,11 +67,11 @@ pw_source_set("att") {
 
 pw_test("tests") {
   sources = [
-    "attribute_unittest.cc",
-    "bearer_unittest.cc",
-    "database_unittest.cc",
-    "error_unittest.cc",
-    "permissions_unittest.cc",
+    "attribute_test.cc",
+    "bearer_test.cc",
+    "database_test.cc",
+    "error_test.cc",
+    "permissions_test.cc",
   ]
 
   deps = [

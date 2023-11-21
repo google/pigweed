@@ -63,12 +63,12 @@ pw_source_set("sdp") {
 
 pw_test("sdp_tests") {
   sources = [
-    "client_unittest.cc",
-    "data_element_unittest.cc",
-    "pdu_unittest.cc",
-    "server_unittest.cc",
-    "service_discoverer_unittest.cc",
-    "service_record_unittest.cc",
+    "client_test.cc",
+    "data_element_test.cc",
+    "pdu_test.cc",
+    "server_test.cc",
+    "service_discoverer_test.cc",
+    "service_record_test.cc",
   ]
 
   deps = [
