@@ -344,6 +344,8 @@ reasons:
 * Adding one or two additional virtual calls increases the size of all
   :cpp:class:`Stream` vtables.
 
+.. _module-pw_stream-class-hierarchy:
+
 Class hierarchy
 ===============
 All ``pw_stream`` classes inherit from a single, common base with all possible

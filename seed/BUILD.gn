@@ -32,6 +32,7 @@ pw_doc_group("docs") {
     ":0111",
     ":0112",
     ":0113",
+    ":0114",
   ]
 }
 
@@ -86,4 +87,8 @@ pw_doc_group("0112") {
 
 pw_doc_group("0113") {
   sources = [ "0113-bazel-cc-toolchain-api.rst" ]
+}
+
+pw_doc_group("0114") {
+  sources = [ "0114-channels.rst" ]
 }
