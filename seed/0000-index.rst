@@ -27,3 +27,4 @@ All pending, active, and resolved SEEDs are listed below.
   0115: pw_sensor Sensors <http://pigweed-review.googlesource.com/c/pigweed/pigweed/+/176760>
   0116: pw_net Sockets <http://pigweed-review.googlesource.com/c/pigweed/pigweed/+/177696>
   0117: pw_i3c <http://pigweed-review.googlesource.com/c/pigweed/pigweed/+/178350>
+  0118: Sensor Read API <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/181836>
