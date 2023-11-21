@@ -196,4 +196,5 @@ pw_test_group("tests") {
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
+  inputs = [ "examples/example_perf_test.cc" ]
 }

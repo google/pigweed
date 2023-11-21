@@ -18,6 +18,22 @@
 #include "pw_perf_test/state.h"
 #include "pw_preprocessor/arguments.h"
 
+/// Defines a performance test.
+///
+/// The `Framework` will create a `State` and pass it to the provided function.
+/// This function should perform whatever behavior is to be measured in a loop
+/// as long as `State::KeepRunning()` returns true.
+///
+/// Example:
+/// @code{.cpp}
+///   void TestFunction(::pw::perf_test::State& state, args...) {
+///     // Create any needed variables.
+///     while (state.KeepRunning()){
+///       // Run code to be measured here.
+///     }
+///   }
+///   PW_PERF_TEST(PerformanceTestName, TestFunction, args...);
+/// @endcode
 #define PW_PERF_TEST(name, function, ...)                             \
   const ::pw::perf_test::internal::TestInfo PwPerfTest_##name(        \
       #name, [](::pw::perf_test::State& pw_perf_test_state) {         \
@@ -25,6 +41,20 @@
             function(pw_perf_test_state PW_COMMA_ARGS(__VA_ARGS__))); \
       })
 
+/// Defines a simple performance test.
+///
+/// This macro is similar to `PW_PERF_TEST`, except that the provided function
+/// does not take a `State` parameter. As a result, the function should NOT call
+/// `State::KeepRunning()`. Instead, the macro calls the function within its own
+/// internal state loop.
+///
+/// Example:
+/// @code{.cpp}
+///   void TestFunction(args...) {
+///     // Run code to be measured here.
+///   }
+///   PW_PERF_SIMPLE_TEST(PerformanceTestName, TestFunction, args...);
+/// @endcode
 #define PW_PERF_TEST_SIMPLE(name, function, ...)            \
   PW_PERF_TEST(                                             \
       name,                                                 \
@@ -38,6 +68,10 @@
 
 namespace pw::perf_test {
 
+/// Runs all registered tests,
+///
+/// This function should be called by `main`. The tests will use the provided
+/// `handler` to report results.
 void RunAllTests(EventHandler& handler);
 
 }  // namespace pw::perf_test

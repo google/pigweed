@@ -12,37 +12,47 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_perf_test/perf_test.h"
+#include <cstddef>
 
-constexpr int kGlobalVariablePerfTest = 4;
+#include "pw_perf_test/perf_test.h"
 
 namespace pw::perf_test {
 namespace {
 
-void SimpleTestingFunction(pw::perf_test::State& state) {
-  while (state.KeepRunning()) {
-    // Intentionally empty.
+// DOCSTAG: [pw_perf_test_examples-simulate_work]
+void SimulateWork(size_t a, size_t b) {
+  for (volatile size_t i = 0; i < a * b * 100000; i = i + 1) {
   }
 }
+// DOCSTAG: [pw_perf_test_examples-simulate_work]
 
-void FunctionWithDelay(pw::perf_test::State& state, int a, int b) {
+// DOCSTAG: [pw_perf_test_examples-simple_example]
+PW_PERF_TEST_SIMPLE(SimpleFunction, SimulateWork, 2, 4);
+// DOCSTAG: [pw_perf_test_examples-simple_example]
+
+// DOCSTAG: [pw_perf_test_examples-full_example]
+void TestFunction(pw::perf_test::State& state, size_t a, size_t b) {
   while (state.KeepRunning()) {
-    for (volatile int i = 0; i < a * b * 100000; i = i + 1) {
-    }
+    SimulateWork(a, b);
   }
 }
+PW_PERF_TEST(FunctionWithArgs, TestFunction, 2, 4);
+// DOCSTAG: [pw_perf_test_examples-full_example]
 
-int TestSimple(int a, int b) { return a + b; }
+// DOCSTAG: [pw_perf_test_examples-lambda_example]
+PW_PERF_TEST_SIMPLE(
+    SimpleLambda, [](size_t a, size_t b) { SimulateWork(a, b); }, 2, 4);
 
-PW_PERF_TEST(IntialTest, SimpleTestingFunction);
+PW_PERF_TEST(
+    LambdaFunction,
+    [](pw::perf_test::State& state, size_t a, size_t b) {
+      while (state.KeepRunning()) {
+        SimulateWork(a, b);
+      }
+    },
+    2,
+    4);
+// DOCSTAG: [pw_perf_test_examples-lambda_example]
 
-PW_PERF_TEST(FunctionWithParameters, FunctionWithDelay, 5, 5);
-
-PW_PERF_TEST(LambdaFunction, [](pw::perf_test::State& state_) {
-  FunctionWithDelay(state_, kGlobalVariablePerfTest, 4);
-});
-
-PW_PERF_TEST_SIMPLE(SimpleTest, TestSimple, 2, 4);
-PW_PERF_TEST_SIMPLE(SimpleLambda, [](int a, int b) { return a + b; }, 1, 3);
 }  // namespace
 }  // namespace pw::perf_test

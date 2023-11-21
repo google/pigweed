@@ -17,13 +17,13 @@
 
 namespace pw::perf_test {
 
-// The data that will be reported on completion of an iteration.
+/// Data reported on completion of an iteration.
 struct IterationResult {
   int64_t number;
   int64_t result;
 };
 
-// The data that will be reported upon the completion of an iteration.
+/// Data reported upon the completion of an iteration.
 struct Results {
   int64_t mean;
   int64_t max;
@@ -31,36 +31,38 @@ struct Results {
   int iterations;
 };
 
-// Stores information on the upcoming collection of tests.
+/// Stores information on the upcoming collection of tests.
 struct TestRunInfo {
   int total_tests;
   int default_iterations;
 };
 
+/// Describes a performance test case.
 struct TestCase {
   const char* name;
 };
 
-// This is a declaration of the base EventHandler class. An EventHandler
-// collects and reports test results. Both the state and the framework classes
-// use their functions to report what happens at each stage
+/// Collects and reports test results.
+///
+/// Both the state and the framework classes use these functions to report what
+/// happens at each stage.
 class EventHandler {
  public:
   virtual ~EventHandler() = default;
 
-  // Called before all tests are run
+  /// Called before all tests are run.
   virtual void RunAllTestsStart(const TestRunInfo& summary) = 0;
 
-  // Called after all tests are run
+  /// Called after all tests are run.
   virtual void RunAllTestsEnd() = 0;
 
-  // Called when a new performance test is started
+  /// Called when a new performance test is started.
   virtual void TestCaseStart(const TestCase& info) = 0;
 
-  // Called to output the results of an iteration
+  /// Called to output the results of an iteration.
   virtual void TestCaseIteration(const IterationResult& result) = 0;
 
-  // Called after a performance test ends
+  /// Called after a performance test ends.
   virtual void TestCaseEnd(const TestCase& info, const Results& end_result) = 0;
 };
 

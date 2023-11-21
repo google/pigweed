@@ -161,3 +161,16 @@ if(NOT "${pw_perf_test.TIMER_INTERFACE_BACKEND}"
       pw_perf_test
   )
 endif()
+
+# Module-level targets
+
+if(NOT "${pw_perf_test.TIMER_INTERFACE_BACKEND}"
+    STREQUAL "pw_chrono.SYSTEM_CLOCK_BACKEND.NO_BACKEND_SET")
+  add_executable(pw_perf_test.example_perf_test EXCLUDE_FROM_ALL
+    examples/example_perf_test.cc
+  )
+
+  target_link_libraries(pw_perf_test.example_perf_test
+    pw_perf_test
+  )
+endif()
