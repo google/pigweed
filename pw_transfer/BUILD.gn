@@ -273,6 +273,7 @@ pw_executable("integration_test_server") {
 }
 
 pw_executable("integration_test_client") {
+  testonly = pw_unit_test_TESTONLY
   sources = [ "integration_test/client.cc" ]
   deps = [
     ":client",
