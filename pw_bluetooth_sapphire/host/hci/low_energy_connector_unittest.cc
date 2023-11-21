@@ -328,7 +328,7 @@ TEST_F(LowEnergyConnectorTest, IncomingConnect) {
   view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
   view.peer_address().CopyFrom(kTestAddress.value().view());
   view.peer_address_type().Write(
-      pw::bluetooth::emboss::LEPeerAddressTypeNoAnon::PUBLIC);
+      pw::bluetooth::emboss::LEPeerAddressType::PUBLIC);
   view.connection_interval().Write(
       hci_spec::defaults::kLEConnectionIntervalMin);
   view.connection_handle().Write(1);
@@ -392,7 +392,7 @@ TEST_F(LowEnergyConnectorTest, IncomingConnectDuringConnectionRequest) {
         view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
         view.peer_address().CopyFrom(kIncomingAddress.value().view());
         view.peer_address_type().Write(
-            pw::bluetooth::emboss::LEPeerAddressTypeNoAnon::PUBLIC);
+            pw::bluetooth::emboss::LEPeerAddressType::PUBLIC);
         view.connection_interval().Write(
             hci_spec::defaults::kLEConnectionIntervalMin);
         view.connection_handle().Write(2);

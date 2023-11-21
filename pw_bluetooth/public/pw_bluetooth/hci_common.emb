@@ -337,8 +337,8 @@ enum LEPeerAddressTypeNoAnon:
   -- Possible values that can be used for the address_type parameters in various
   -- HCI commands
   [maximum_bits: 8]
-  PUBLIC = 0x00
-  RANDOM = 0x01
+  PUBLIC    = 0x00
+  RANDOM    = 0x01
 
 
 bits ClockOffset:

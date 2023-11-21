@@ -1374,35 +1374,35 @@ struct LEConnectionCompleteSubevent:
   -- 7.7.65.1 LE Connection Complete event
   -- HCI_LE_Connection_Complete
 
-  0     [+LEMetaEvent.$size_in_bytes]  LEMetaEvent                  le_meta_event
+  0     [+LEMetaEvent.$size_in_bytes]  LEMetaEvent            le_meta_event
 
-  $next [+1]                           hci.StatusCode               status
+  $next [+1]                           hci.StatusCode         status
 
-  $next [+2]                           UInt                         connection_handle
+  $next [+2]                           UInt                   connection_handle
     -- Only the lower 12-bits are meaningful.
     [requires: 0x0000 <= this <= 0x0EFF]
 
-  $next [+1]                           hci.ConnectionRole           role
+  $next [+1]                           hci.ConnectionRole     role
 
-  $next [+1]                           hci.LEPeerAddressTypeNoAnon  peer_address_type
+  $next [+1]                           hci.LEPeerAddressType  peer_address_type
 
-  $next [+hci.BdAddr.$size_in_bytes]   hci.BdAddr                   peer_address
+  $next [+hci.BdAddr.$size_in_bytes]   hci.BdAddr             peer_address
     -- Public Device Address or Random Device Address of the peer device.
 
-  $next [+2]                           UInt                         connection_interval
+  $next [+2]                           UInt                   connection_interval
     -- Time: N * 1.25 ms
     -- Range: 7.5 ms to 4 s
     [requires: 0x0006 <= this <= 0x0C80]
 
-  $next [+2]                           UInt                         peripheral_latency
+  $next [+2]                           UInt                   peripheral_latency
     [requires: 0x0000 <= this <= 0x01F3]
 
-  $next [+2]                           UInt                         supervision_timeout
+  $next [+2]                           UInt                   supervision_timeout
     -- Time: N * 10 ms
     -- Range: 100 ms to 32 s
     [requires: 0x000A <= this <= 0x0C80]
 
-  $next [+1]                           LEClockAccuracy              central_clock_accuracy
+  $next [+1]                           LEClockAccuracy        central_clock_accuracy
     -- Only valid for a peripheral. On a central, this parameter shall be set to 0x00.
 
 # 7.7.65.2 LE Advertising Report event
