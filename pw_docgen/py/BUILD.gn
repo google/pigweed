@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2023 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -24,6 +24,7 @@ pw_python_package("py") {
   sources = [
     "pw_docgen/__init__.py",
     "pw_docgen/docgen.py",
+    "pw_docgen/seed.py",
     "pw_docgen/sphinx/__init__.py",
     "pw_docgen/sphinx/google_analytics.py",
     "pw_docgen/sphinx/kconfig.py",

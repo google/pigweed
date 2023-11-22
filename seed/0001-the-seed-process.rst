@@ -107,13 +107,30 @@ Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
 
       touch seed/5309-pw_rpc-over-smoke-signals.rst
 
-   Include your document in the GN build by modifying ``seed/BUILD.gn``:
+#. Commit your RST document and push it up to Gerrit, marking it as a
+   Work-In-Progress change, following the :ref:`docs-contributing` guide.
+
+   Your change will be assigned a number, which can be found in the Gerrit UI
+   and in its URL. For example, if your change is located at
+   ``http://pigweed-review.googlesource.com/c/pigweed/pigweed/+/987654``, its CL
+   number is ``987654``.
+
+#. Add a SEED entry to the GN build pointing to your CL by modifying
+   ``seed/BUILD.gn``.
 
    .. code-block::
 
-      # Insert your dependency to the doc group at the top of the file.
-      pw_doc_group("docs") {
-        group_deps = [
+      # Define a target for your SEED.
+      pw_seed("5309") {
+        changelist = 987654
+        title = "pw_rpc Over Smoke Signals"
+        status = "Draft"
+        author = "Your Name"
+      }
+
+      # Insert your dependency to the doc group at the bottom of the file.
+      pw_seed_index("seeds") {
+        seeds = [
           ":0001",
           ...
           ":5308",
@@ -121,36 +138,7 @@ Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
         ]
       }
 
-      # Define a doc group target for your SEED.
-      pw_doc_group("5309") {
-        sources = [ "5309-pw_rpc-over-smoke-signals.rst" ]
-      }
-
-#. Push up your document to Gerrit, marking it as a Work-In-Progress change,
-   following the :ref:`docs-contributing` guide.
-
-#. Update the ``toctree`` in the SEED index adding a row for your SEED. The
-   entry should be labeled with the title of your SEED and link to your work
-   in progress change.
-
-   .. code-block:: rst
-
-      .. toctree::
-
-         0001-the-seed-process
-         ...
-         5308-some-other-seed
-         5309: pw_rpc Over Smoke Signals<https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/116577>
-
-#. Commit your change to the index (and nothing else) with the commit message
-   ``SEED-xxxx: Claim SEED number``.
-
-   .. code-block:: sh
-
-      git add seed/0000-index.rst
-      git commit -m "SEED-5309: Claim SEED number"
-
-#. Push a separate change to Gerrit with your SEED index modification and add
+#. Push a separate change to Gerrit with your SEED's GN build additions and add
    GWSQ as a reviewer. Set ``Pigweed-Auto-Submit`` to +1.
 
    .. image:: 0001-the-seed-process/seed-index-gerrit.png
@@ -186,17 +174,18 @@ Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
    <seed-0001-lifecycle>` section).
 
 #. Following the conclusion of the Last Call period, a Pigweed team member will
-   sign off on the CL with a +2 vote, allowing it to be submitted. Update the
-   reference in the SEED index with the link to your document and submit the CL.
+   sign off on the CL with a +2 vote, allowing it to be submitted.
 
-   .. code-block:: rst
+   Before submitting, update your SEED's GN target to point to the local RST
+   file and to reflect its final status.
 
-      .. toctree::
+   .. code-block::
 
-         0001-the-seed-process
-         ...
-         5308-some-other-seed
-         5309-pw_rpc-over-smoke-signals
+      pw_seed("5309") {
+        sources = [ "5309-pw_rpc-over-smoke-signals.rst" ]
+        status = "Accepted"
+        author = "Your Name"
+      }
 
 --------------
 SEED documents

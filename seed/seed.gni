@@ -1,0 +1,133 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/python.gni")
+import("$dir_pw_docgen/docs.gni")
+
+# Defines a directory of SEED proposals, generating an RST snippet containing
+# information about each of them.
+#
+# Args:
+#   index_file: Base .rst file in which the index will be defined.
+#   seeds: Nonempty list of `pw_seed` targets defining the SEEDs to include in
+#       the index. All targets must previously have been defined in the same
+#       BUILD.gn file.
+#
+template("pw_seed_index") {
+  assert(defined(invoker.index_file), "Must provide an index file")
+  assert(defined(invoker.seeds) && invoker.seeds != [],
+         "A SEED index must contain SEEDs")
+
+  _gen_target = "${target_name}.gen"
+  _index_rst_output = "$target_gen_dir/${target_name}"
+
+  _script_args = [
+    "--output",
+    rebase_path(_index_rst_output, root_build_dir),
+  ]
+
+  foreach(_seed_target, invoker.seeds) {
+    _outputs = []
+    _outputs = get_target_outputs("${_seed_target}.metadata")
+    _script_args += [ rebase_path(_outputs[0], root_build_dir) ]
+  }
+
+  pw_python_action(_gen_target) {
+    script = "$dir_pw_docgen/py/pw_docgen/seed.py"
+    args = _script_args
+    outputs = [ _index_rst_output ]
+  }
+
+  pw_doc_group(target_name) {
+    sources = [ invoker.index_file ]
+    inputs = [ _index_rst_output ]
+    group_deps = invoker.seeds
+    other_deps = [ ":$_gen_target" ]
+  }
+}
+
+# Defines a SEED document suitable for inclusion in a SEED directory.
+# The `target_name` of the SEED target should be its 4-digit number and nothing
+# else.
+#
+# Args:
+#
+#  sources (optional): If the SEED docs are already in-tree, list of the RST
+#      source files.
+#
+#  inputs (optional): If the SEED docs are already in-tree, list of any
+#      additional resource files the docs require (images, graphs, etc.).
+#
+#  changelist (optional): If the SEED has not yet been merged, the number of the
+#      CL on Gerrit where the SEED is being reviewed.
+#
+#  title (optional): If `changelist` is provided, the title of the SEED.
+#
+#  authors (required): Comma-separated list of SEED authors.
+#
+#  status (required): Status of the SEED. One of:
+#      Draft, Open for Comments, Last Call, Accepted, Rejected, On Hold,
+#      Deprecated, Superseded, Meta
+#
+# A SEED target must set either `sources` or `changelist` to be valid.
+template("pw_seed") {
+  _has_sources = defined(invoker.sources) && invoker.sources != []
+  assert(_has_sources || defined(invoker.changelist),
+         "A SEED must either have in-tree sources or an active CL")
+  assert(defined(invoker.status), "SEEDs must list their status")
+  assert(defined(invoker.author), "SEEDs must list their author(s)")
+
+  _metadata_file = "${target_gen_dir}/${target_name}.metadata.json"
+  _metadata_target = "${target_name}.metadata"
+
+  _metadata = {
+    number = target_name
+    status = invoker.status
+    author = invoker.author
+  }
+
+  if (_has_sources) {
+    _sources = invoker.sources
+    _metadata.rst_file = _sources[0]
+  } else {
+    assert(defined(invoker.title),
+           "SEEDs pointing to a CL must provide a title")
+    _metadata.changelist = invoker.changelist
+    _metadata.title = invoker.title
+  }
+
+  generated_file(_metadata_target) {
+    contents = _metadata
+    output_conversion = "json"
+    outputs = [ _metadata_file ]
+  }
+
+  if (_has_sources) {
+    pw_doc_group(target_name) {
+      other_deps = [ ":${_metadata_target}" ]
+      forward_variables_from(invoker,
+                             [
+                               "sources",
+                               "inputs",
+                             ])
+    }
+  } else {
+    group(target_name) {
+      deps = [ ":${_metadata_target}" ]
+      not_needed(invoker, [ "*" ])
+    }
+  }
+}

@@ -1,4 +1,4 @@
-# Copyright 2022 The Pigweed Authors
+# Copyright 2023 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -14,17 +14,141 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pw_docgen/docs.gni")
+import("seed.gni")
 
-pw_doc_group("docs") {
-  sources = [ "0000-index.rst" ]
-  group_deps = [
+pw_seed("0001") {
+  sources = [ "0001-the-seed-process.rst" ]
+  inputs = [ "0001-the-seed-process/seed-index-gerrit.png" ]
+  status = "Meta"
+  author = "The Pigweed Authors"
+}
+
+pw_seed("0002") {
+  sources = [ "0002-template.rst" ]
+  status = "Meta"
+  author = "The Pigweed Authors"
+}
+
+pw_seed("0101") {
+  sources = [ "0101-pigweed.json.rst" ]
+  status = "Accepted"
+  author = "Rob Mohr"
+}
+
+pw_seed("0102") {
+  sources = [ "0102-module-docs.rst" ]
+  status = "Accepted"
+  author = "Chad Norvell"
+}
+
+pw_seed("0103") {
+  changelist = 133971
+  title = "pw_protobuf: Past, present, and future"
+  status = "On Hold"
+  author = "Alexei Frolov"
+}
+
+pw_seed("0104") {
+  sources = [ "0104-display-support.rst" ]
+  status = "Accepted"
+  author = "Chris Mumford"
+}
+
+pw_seed("0105") {
+  sources = [ "0105-pw_tokenizer-pw_log-nested-tokens.rst" ]
+  status = "Accepted"
+  author = "Gwyneth Chen"
+}
+
+pw_seed("0106") {
+  changelist = 155430
+  title = "Project Template"
+  status = "On Hold"
+  author = "Armando Montanez"
+}
+
+pw_seed("0107") {
+  sources = [ "0107-communications.rst" ]
+  status = "Accepted"
+  author = "Wyatt Hepler"
+}
+
+pw_seed("0108") {
+  sources = [ "0108-pw_emu-emulators-frontend.rst" ]
+  status = "Accepted"
+  author = "Octavian Purdila"
+}
+
+pw_seed("0109") {
+  sources = [ "0109-comms-buffers.rst" ]
+  status = "Accepted"
+  author = "Taylor Cramer"
+}
+
+pw_seed("0110") {
+  status = "Accepted"
+  sources = [ "0110-memory-allocation-interfaces.rst" ]
+  author = "Alexei Frolov"
+}
+
+pw_seed("0111") {
+  sources = [ "0111-build-systems.rst" ]
+  status = "Accepted"
+  author = "Ted Pudlik"
+}
+
+pw_seed("0112") {
+  sources = [ "0112-async-poll.rst" ]
+  status = "Accepted"
+  author = "Taylor Cramer"
+}
+
+pw_seed("0113") {
+  sources = [ "0113-bazel-cc-toolchain-api.rst" ]
+  status = "Accepted"
+  author = "Armando Montanez"
+}
+
+pw_seed("0114") {
+  sources = [ "0114-channels.rst" ]
+  status = "Accepted"
+  author = "Wyatt Hepler"
+}
+
+pw_seed("0115") {
+  changelist = 176760
+  title = "pw_sensor: Sensors"
+  status = "Open for Comments"
+  author = "Yuval Peress"
+}
+
+pw_seed("0116") {
+  changelist = 177696
+  title = "pw_net Sockets"
+  status = "Open for Comments"
+  author = "Wyatt Hepler"
+}
+
+pw_seed("0117") {
+  changelist = 178350
+  title = "pw_i3c"
+  status = "Draft"
+  author = "Jack Chen"
+}
+
+# This must be defined after all `pw_seed` targets, as it relies on information
+# exposed by them.
+pw_seed_index("seeds") {
+  index_file = "0000-index.rst"
+  seeds = [
     ":0001",
     ":0002",
     ":0101",
     ":0102",
+    ":0103",
     ":0104",
     ":0105",
+    ":0106",
     ":0107",
     ":0108",
     ":0109",
@@ -33,62 +157,8 @@ pw_doc_group("docs") {
     ":0112",
     ":0113",
     ":0114",
+    ":0115",
+    ":0116",
+    ":0117",
   ]
-}
-
-pw_doc_group("0001") {
-  sources = [ "0001-the-seed-process.rst" ]
-  inputs = [ "0001-the-seed-process/seed-index-gerrit.png" ]
-}
-
-pw_doc_group("0002") {
-  sources = [ "0002-template.rst" ]
-}
-
-pw_doc_group("0101") {
-  sources = [ "0101-pigweed.json.rst" ]
-}
-
-pw_doc_group("0102") {
-  sources = [ "0102-module-docs.rst" ]
-}
-
-pw_doc_group("0104") {
-  sources = [ "0104-display-support.rst" ]
-}
-
-pw_doc_group("0105") {
-  sources = [ "0105-pw_tokenizer-pw_log-nested-tokens.rst" ]
-}
-
-pw_doc_group("0107") {
-  sources = [ "0107-communications.rst" ]
-}
-
-pw_doc_group("0108") {
-  sources = [ "0108-pw_emu-emulators-frontend.rst" ]
-}
-
-pw_doc_group("0109") {
-  sources = [ "0109-comms-buffers.rst" ]
-}
-
-pw_doc_group("0110") {
-  sources = [ "0110-memory-allocation-interfaces.rst" ]
-}
-
-pw_doc_group("0111") {
-  sources = [ "0111-build-systems.rst" ]
-}
-
-pw_doc_group("0112") {
-  sources = [ "0112-async-poll.rst" ]
-}
-
-pw_doc_group("0113") {
-  sources = [ "0113-bazel-cc-toolchain-api.rst" ]
-}
-
-pw_doc_group("0114") {
-  sources = [ "0114-channels.rst" ]
 }

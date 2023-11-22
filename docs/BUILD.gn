@@ -245,7 +245,7 @@ pw_doc_gen("docs") {
     ":target_docs",
     ":third_party_docs",
     "$dir_pigweed/kudzu:docs",
-    "$dir_pigweed/seed:docs",
+    "$dir_pigweed/seed:seeds",
     "$dir_pw_env_setup:python.install",
   ]
 
