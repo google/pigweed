@@ -14,6 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_allocator/allocator.gni")
 import("$dir_pw_async/backend.gni")
 import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_perf_test/perf_test.gni")
@@ -215,6 +216,9 @@ pw_target_toolchain_host = {
       forward_variables_from(_host_common, "*")
       forward_variables_from(_os_specific_config, "*")
       default_configs += _clang_default_configs
+
+      # Also poison dynamic allocations using Pigweed.
+      pw_allocator_POISON_HEAP = true
     }
   }
 

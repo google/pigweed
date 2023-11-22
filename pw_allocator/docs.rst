@@ -67,11 +67,24 @@ By default, this module disables heap poisoning since it requires extra space.
 User can enable heap poisoning by enabling the ``pw_allocator_POISON_HEAP``
 build arg.
 
-.. code-block:: sh
+.. tab-set::
 
-  $ gn args out
-  # Modify and save the args file to use heap poison.
-  pw_allocator_POISON_HEAP = true
+   .. tab-item:: GN
+      :sync: gn
+
+      .. code-block:: sh
+
+         $ gn args out
+         # Modify and save the args file to use heap poison.
+         pw_allocator_POISON_HEAP = true
+
+   .. tab-item:: CMake
+      :sync: cmake
+
+      .. code-block:: sh
+
+         # Modify the top-level CMakeLists.txt and add:
+         set(pw_allocator_POISON_HEAP, ON)
 
 When heap poisoning is enabled, ``pw_allocator`` will add ``sizeof(void*)``
 bytes before and after the usable space of each ``Block``, and paint the space

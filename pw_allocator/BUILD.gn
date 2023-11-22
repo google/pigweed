@@ -14,14 +14,11 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_allocator/allocator.gni")
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
-
-declare_args() {
-  pw_allocator_POISON_HEAP = false
-}
 
 config("default_config") {
   include_dirs = [ "public" ]
@@ -66,8 +63,10 @@ pw_source_set("allocator_metric_proxy") {
 }
 
 pw_source_set("block") {
-  public_configs = [ ":default_config" ]
-  configs = [ ":enable_heap_poison" ]
+  public_configs = [
+    ":default_config",
+    ":enable_heap_poison",
+  ]
   public = [ "public/pw_allocator/block.h" ]
   public_deps = [
     "$dir_pw_third_party/fuchsia:stdcompat",
@@ -93,7 +92,6 @@ pw_source_set("fallback_allocator") {
 
 pw_source_set("freelist") {
   public_configs = [ ":default_config" ]
-  configs = [ ":enable_heap_poison" ]
   public = [ "public/pw_allocator/freelist.h" ]
   public_deps = [
     "$dir_pw_containers:vector",
@@ -105,7 +103,6 @@ pw_source_set("freelist") {
 
 pw_source_set("freelist_heap") {
   public_configs = [ ":default_config" ]
-  configs = [ ":enable_heap_poison" ]
   public = [ "public/pw_allocator/freelist_heap.h" ]
   public_deps = [
     ":block",
@@ -246,7 +243,6 @@ pw_test("fallback_allocator_test") {
 }
 
 pw_test("freelist_test") {
-  configs = [ ":enable_heap_poison" ]
   deps = [
     ":freelist",
     dir_pw_span,
@@ -256,7 +252,6 @@ pw_test("freelist_test") {
 }
 
 pw_test("freelist_heap_test") {
-  configs = [ ":enable_heap_poison" ]
   deps = [ ":freelist_heap" ]
   sources = [ "freelist_heap_test.cc" ]
 }
@@ -272,7 +267,6 @@ pw_test("null_allocator_test") {
 }
 
 pw_test("simple_allocator_test") {
-  configs = [ ":enable_heap_poison" ]
   deps = [
     ":allocator_testing",
     ":simple_allocator",
@@ -281,7 +275,6 @@ pw_test("simple_allocator_test") {
 }
 
 pw_test("split_free_list_allocator_test") {
-  configs = [ ":enable_heap_poison" ]
   deps = [
     ":allocator_testing",
     ":split_free_list_allocator",

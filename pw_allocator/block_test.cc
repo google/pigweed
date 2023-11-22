@@ -374,13 +374,13 @@ void CanAllocFirstFromAlignedBlock() {
 
   // Make sure the block's usable space is aligned.
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
-  size_t pad_inner_size = AlignUp(addr, kAlign) - addr;
-  if (pad_inner_size != 0) {
-    if (pad_inner_size < BlockType::kHeaderSize) {
-      pad_inner_size += kAlign;
+  size_t pad_outer_size = AlignUp(addr, kAlign) - addr;
+  if (pad_outer_size != 0) {
+    while (pad_outer_size < BlockType::kBlockOverhead) {
+      pad_outer_size += kAlign;
     }
-    pad_inner_size -= BlockType::kHeaderSize;
-    result = BlockType::Split(block, pad_inner_size);
+    result =
+        BlockType::Split(block, pad_outer_size - BlockType::kBlockOverhead);
     EXPECT_EQ(result.status(), OkStatus());
     block = *result;
   }

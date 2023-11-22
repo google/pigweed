@@ -142,48 +142,50 @@ TEST_F(SplitFreeListAllocatorTest, AllocateFromUnaligned) {
 }
 
 TEST_F(SplitFreeListAllocatorTest, AllocateAlignmentFailure) {
-  // Determine the total number of available bytes.
-  auto base = reinterpret_cast<uintptr_t>(allocator_.data());
-  uintptr_t addr = AlignUp(base, BlockType::kAlignment);
-  size_t outer_size = allocator_.size() - (addr - base);
-
-  // The first block is large....
-  addr += BlockType::kBlockOverhead + kThreshold;
-
-  // The next block is not aligned...
   constexpr size_t kAlignment = 128;
-  uintptr_t next = AlignUp(addr + BlockType::kBlockOverhead, kAlignment / 4);
-  if (next % kAlignment == 0) {
-    next += kAlignment / 4;
+
+  // Allocate a block, an unaligned block, and any remaining space.
+  // This approach needs to work with and without heap poisoning, and so employs
+  // a "guess and check" strategy rather than trying to calculate exact values.
+  Layout layout0(kThreshold, 1);
+  Layout layout1(kThreshold * 2, 1);
+  while (true) {
+    // Allocate space from the front.
+    ptrs_[0] = allocator_->Allocate(layout0);
+    ASSERT_NE(ptrs_[0], nullptr);
+
+    // Allocate a possibly unaligned block.
+    ptrs_[1] = allocator_->Allocate(layout1);
+    ASSERT_NE(ptrs_[1], nullptr);
+    auto addr = reinterpret_cast<uintptr_t>(ptrs_[1]);
+    if (addr % kAlignment != 0) {
+      break;
+    }
+
+    // If the second block was aligned, release both blocks, increase the size
+    // of the first and try again.
+    allocator_->Deallocate(ptrs_[0], layout0);
+    allocator_->Deallocate(ptrs_[1], layout1);
+    layout0 = Layout(layout0.size() + 1, 1);
   }
 
-  // And the last block consumes the remaining space.
-  // size_t outer_size = allocator_->begin()->OuterSize();
-  size_t inner_size1 = next - addr;
-  size_t inner_size2 = kThreshold * 2;
-  size_t inner_size3 =
-      outer_size - (BlockType::kBlockOverhead * 3 + inner_size1 + inner_size2);
+  // Consume any remaining memory.
+  Layout layout2(kCapacity, 1);
+  while (layout2.size() != 0) {
+    ptrs_[2] = allocator_->Allocate(layout2);
+    if (ptrs_[2] != nullptr) {
+      break;
+    }
+    layout2 = Layout(layout2.size() - 1, 1);
+  }
 
-  // Allocate all the blocks.
-  ptrs_[0] = allocator_->Allocate(Layout(inner_size1, 1));
-  ASSERT_NE(ptrs_[0], nullptr);
-
-  ptrs_[1] = allocator_->Allocate(Layout(inner_size2, 1));
-  ASSERT_NE(ptrs_[1], nullptr);
-
-  ptrs_[2] = allocator_->Allocate(Layout(inner_size3, 1));
-  ASSERT_NE(ptrs_[2], nullptr);
-
-  // If done correctly, the second block's usable space should be unaligned.
-  EXPECT_NE(reinterpret_cast<uintptr_t>(ptrs_[1]) % kAlignment, 0U);
-
-  // Free the second region. This leaves an unaligned region available.
-  allocator_->Deallocate(ptrs_[1], Layout(inner_size2, 1));
+  // Free the second region. This leaves exactly one unaligned region available.
+  allocator_->Deallocate(ptrs_[1], layout1);
   ptrs_[1] = nullptr;
 
   // The allocator should be unable to create an aligned region..
-  ptrs_[3] = allocator_->Allocate(Layout(inner_size2, kAlignment));
-  EXPECT_EQ(ptrs_[3], nullptr);
+  ptrs_[1] = allocator_->Allocate(Layout(layout1.size(), kAlignment));
+  EXPECT_EQ(ptrs_[1], nullptr);
 }
 
 TEST_F(SplitFreeListAllocatorTest, DeallocateNull) {
@@ -217,21 +219,22 @@ TEST_F(SplitFreeListAllocatorTest, DeallocateShuffled) {
 }
 
 TEST_F(SplitFreeListAllocatorTest, IterateOverBlocks) {
-  constexpr Layout layout1 = Layout::Of<std::byte[32]>();
-  constexpr Layout layout2 = Layout::Of<std::byte[16]>();
+  // Pick sizes small enough that blocks fit, even with poisoning.
+  constexpr Layout layout1 = Layout::Of<std::byte[16]>();
+  constexpr Layout layout2 = Layout::Of<std::byte[8]>();
 
-  // Allocate eight blocks of alternating sizes. After this, the will also be a
-  // ninth, unallocated block of the remaining memory.
-  for (size_t i = 0; i < 4; ++i) {
+  // Allocate six blocks of alternating sizes. After this, the will also be a
+  // seventh, unallocated block of the remaining memory.
+  for (size_t i = 0; i < 3; ++i) {
     ptrs_[i] = allocator_->Allocate(layout1);
     ASSERT_NE(ptrs_[i], nullptr);
-    ptrs_[i + 4] = allocator_->Allocate(layout2);
-    ASSERT_NE(ptrs_[i + 4], nullptr);
+    ptrs_[i + 3] = allocator_->Allocate(layout2);
+    ASSERT_NE(ptrs_[i + 3], nullptr);
   }
 
-  // Deallocate every other block. After this there will be four more
-  // unallocated blocks, for a total of five.
-  for (size_t i = 0; i < 4; ++i) {
+  // Deallocate every other block. After this there will be three more
+  // unallocated blocks, for a total of four.
+  for (size_t i = 0; i < 3; ++i) {
     allocator_->Deallocate(ptrs_[i], layout1);
   }
 
@@ -247,8 +250,8 @@ TEST_F(SplitFreeListAllocatorTest, IterateOverBlocks) {
       ++free_count;
     }
   }
-  EXPECT_EQ(used_count, 4U);
-  EXPECT_EQ(free_count, 5U);
+  EXPECT_EQ(used_count, 3U);
+  EXPECT_EQ(free_count, 4U);
 }
 
 TEST_F(SplitFreeListAllocatorTest, QueryLargeValid) {
@@ -384,7 +387,7 @@ TEST_F(SplitFreeListAllocatorTest, ResizeSmallLargerFailure) {
 
   // And finally, resize. Since the memory after the block is available but not
   // big enough, `Resize` should fail.
-  size_t new_size = 48;
+  size_t new_size = (kThreshold / 2) + BlockType::kBlockOverhead + 1;
   EXPECT_FALSE(allocator_->Resize(ptrs_[1], old_layout, new_size));
 }
 

@@ -12,7 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
+include("$ENV{PW_ROOT}/pw_allocator/allocator.cmake")
+
+if(pw_allocator_POISON_HEAP)
+  set(enable_heap_poison "PW_ALLOCATOR_POISON_ENABLE=1")
+endif()
 
 pw_add_library(pw_allocator.allocator STATIC
   HEADERS
@@ -44,6 +49,8 @@ pw_add_library(pw_allocator.allocator_metric_proxy STATIC
 )
 
 pw_add_library(pw_allocator.block STATIC
+  PUBLIC_DEFINES
+    ${enable_heap_poison}
   HEADERS
     public/pw_allocator/block.h
   PUBLIC_INCLUDES
