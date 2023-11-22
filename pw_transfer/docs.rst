@@ -688,6 +688,41 @@ change by adding to following line to the commit message footer:
 
    Cq-Include-Trybots: luci.pigweed.try:pigweed-integration-transfer
 
+Running the tests many times
+============================
+Because the tests bind to network ports, you cannot run more than one instance
+of each test in parallel. However, you might want to do so, e.g. to debug
+flakes. This section describes a manual process that makes this possible.
+
+Linux
+-----
+On Linux, you can add the ``"block-network"`` tag to the tests (`example
+<https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/181297>`_). This
+enables network isolation for the tests, allowing you to run them in parallel
+via,
+
+.. code-block::
+
+   bazel test --runs_per_test=10 //pw_transfer/integration_tests/...
+
+MacOS
+-----
+Network isolation is not supported on MacOS because the OS doesn't support
+network virtualization (`gh#2669
+<https://github.com/bazelbuild/bazel/issues/2669>`_). The best you can do is to
+tag the tests ``"exclusive"``. This allows you to use ``--runs_per_test``, but
+will force each test to run by itself, with no parallelism.
+
+Why is this manual?
+-------------------
+Ideally, we would apply either the ``"block-network"`` or ``"exclusive"`` tag
+to the tests depending on the OS. But this is not supported, `gh#2971
+<https://github.com/bazelbuild/bazel/issues/2971>`_.
+
+We don't want to tag the tests ``"exclusive"`` by default because that will
+prevent *different* tests from running in parallel, significantly slowing them
+down.
+
 .. toctree::
    :hidden:
 

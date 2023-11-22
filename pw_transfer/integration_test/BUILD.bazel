@@ -134,9 +134,6 @@ py_test(
         # This test is not run in CQ because it's too slow.
         "manual",
         "integration",
-        # Isolate the network to allow running multiple copies of the test in
-        # parallel.
-        "block-network",
     ],
     deps = [
         ":integration_test_fixture",
@@ -156,9 +153,6 @@ py_test(
         # This test is not run in CQ because it's too slow.
         "manual",
         "integration",
-        # Isolate the network to allow running multiple copies of the test in
-        # parallel.
-        "block-network",
     ],
     deps = [
         ":integration_test_fixture",
@@ -174,9 +168,6 @@ py_test(
     ],
     tags = [
         "integration",
-        # Isolate the network to allow running multiple copies of the test in
-        # parallel.
-        "block-network",
     ],
     deps = [
         ":config_pb2",
@@ -195,9 +186,6 @@ py_test(
     ],
     tags = [
         "integration",
-        # Isolate the network to allow running multiple copies of the test in
-        # parallel.
-        "block-network",
     ],
     deps = [
         ":config_pb2",
@@ -216,9 +204,6 @@ py_test(
     ],
     tags = [
         "integration",
-        # Isolate the network to allow running multiple copies of the test in
-        # parallel.
-        "block-network",
     ],
     deps = [
         ":config_pb2",
@@ -236,9 +221,6 @@ py_test(
     ],
     tags = [
         "integration",
-        # Isolate the network to allow running multiple copies of the test in
-        # parallel.
-        "block-network",
     ],
     deps = [
         ":config_pb2",
@@ -254,9 +236,6 @@ py_test(
     srcs = ["expected_errors_test.py"],
     tags = [
         "integration",
-        # Isolate the network to allow running multiple copies of the test in
-        # parallel.
-        "block-network",
     ],
     deps = [
         ":config_pb2",
@@ -277,9 +256,6 @@ py_test(
     ],
     tags = [
         "integration",
-        # Isolate the network to allow running multiple copies of the test in
-        # parallel.
-        "block-network",
     ],
     # Legacy binaries were only built for linux-x86_64.
     target_compatible_with = ["@platforms//os:linux"],
