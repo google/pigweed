@@ -432,7 +432,7 @@ class TransferIntegrationTest(unittest.TestCase):
                     file_path=f_payload.name,
                     transfer_type=config_pb2.TransferAction.TransferType.WRITE_TO_SERVER,
                     protocol_version=protocol_version,
-                    expected_status=int(expected_status),
+                    expected_status=expected_status,
                 )
             )
 
@@ -475,7 +475,7 @@ class TransferIntegrationTest(unittest.TestCase):
                     file_path=f_client_output.name,
                     transfer_type=config_pb2.TransferAction.TransferType.READ_FROM_SERVER,
                     protocol_version=protocol_version,
-                    expected_status=int(expected_status),
+                    expected_status=expected_status,
                 )
             )
 

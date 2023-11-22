@@ -153,7 +153,7 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
       break;
     }
 
-    if (result.status.code() != action.expected_status()) {
+    if (int(result.status.code()) != int(action.expected_status())) {
       PW_LOG_ERROR("Failed to perform action:\n%s",
                    action.DebugString().c_str());
       status = result.status;

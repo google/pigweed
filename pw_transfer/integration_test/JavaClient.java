@@ -275,10 +275,12 @@ public class JavaClient {
       }
 
       if (action.getTransferType() == ConfigProtos.TransferAction.TransferType.WRITE_TO_SERVER) {
-        WriteToServer(resourceId, fileName, client, Status.fromCode(action.getExpectedStatus()));
+        WriteToServer(
+            resourceId, fileName, client, Status.fromCode(action.getExpectedStatus().getNumber()));
       } else if (action.getTransferType()
           == ConfigProtos.TransferAction.TransferType.READ_FROM_SERVER) {
-        ReadFromServer(resourceId, fileName, client, Status.fromCode(action.getExpectedStatus()));
+        ReadFromServer(
+            resourceId, fileName, client, Status.fromCode(action.getExpectedStatus().getNumber()));
       } else {
         throw new AssertionError("Unknown transfer action type");
       }
