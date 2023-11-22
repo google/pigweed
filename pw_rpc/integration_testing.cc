@@ -33,7 +33,12 @@ unit_test::LoggingEventHandler log_test_events;
 
 Client& client() { return context.client(); }
 
-int GetClientSocketFd() { return context.GetSocketFd(); }
+int SetClientSockOpt(int level,
+                     int optname,
+                     const void* optval,
+                     unsigned int optlen) {
+  return context.SetSockOpt(level, optname, optval, optlen);
+}
 
 void SetEgressChannelManipulator(ChannelManipulator* new_channel_manipulator) {
   context.SetEgressChannelManipulator(new_channel_manipulator);

@@ -115,18 +115,12 @@ class SocketSender {
     }
   }
 
-  // stream::SocketStream doesn't support read timeouts so we have to
-  // unblock socket reads by sending more data after the transport is stopped.
-  pw::Status Terminate() { return transport_.Send(terminator_); }
-
  private:
   SocketRpcTransport<kReadBufferSize>& transport_;
   std::vector<std::byte> sent_;
   std::array<std::byte, 256> data_{};
   std::uniform_int_distribution<size_t> offset_dist_{0, 255};
   std::uniform_int_distribution<size_t> size_dist_{1, kMaxWriteSize};
-  std::array<std::byte, 1> terminator_bytes_{std::byte{0x42}};
-  RpcFrame terminator_{.header = {}, .payload = terminator_bytes_};
 };
 
 class SocketSenderThreadCore : public SocketSender, public thread::ThreadCore {
@@ -181,10 +175,6 @@ TEST(SocketRpcTransportTest, SendAndReceiveFramesOverSocketConnection) {
 
   server.Stop();
   client.Stop();
-
-  // Unblock socket reads to propagate the stop signal.
-  EXPECT_EQ(server_sender.Terminate(), OkStatus());
-  EXPECT_EQ(client_sender.Terminate(), OkStatus());
 
   server_thread.join();
   client_thread.join();
@@ -242,7 +232,6 @@ TEST(SocketRpcTransportTest, ServerReconnects) {
     // Stop the client but not the server: we're re-using the same server
     // with a new client below.
     client.Stop();
-    EXPECT_EQ(server_sender.Terminate(), OkStatus());
     client_thread.join();
   }
 
@@ -267,13 +256,11 @@ TEST(SocketRpcTransportTest, ServerReconnects) {
               std::back_inserter(received));
 
     client.Stop();
-    EXPECT_EQ(server_sender.Terminate(), OkStatus());
     client_thread.join();
 
     // This time stop the server as well.
     SocketSender client_sender(client);
     server.Stop();
-    EXPECT_EQ(client_sender.Terminate(), OkStatus());
     server_thread.join();
   }
 
@@ -322,7 +309,6 @@ TEST(SocketRpcTransportTest, ClientReconnects) {
             server1_sent.end(),
             std::back_inserter(sent_by_server));
 
-  EXPECT_EQ(client_sender.Terminate(), OkStatus());
   server_thread.join();
   server = nullptr;
 
@@ -345,11 +331,9 @@ TEST(SocketRpcTransportTest, ClientReconnects) {
             server2_sent.end(),
             std::back_inserter(sent_by_server));
 
-  EXPECT_EQ(client_sender.Terminate(), OkStatus());
   server_thread.join();
 
   client.Stop();
-  EXPECT_EQ(server2_sender.Terminate(), OkStatus());
   client_thread.join();
   server = nullptr;
 

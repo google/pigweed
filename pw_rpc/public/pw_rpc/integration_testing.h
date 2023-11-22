@@ -85,9 +85,11 @@ void SetIngressChannelManipulator(ChannelManipulator* new_channel_manipulator);
 // Returns the global RPC client for integration test use.
 Client& client();
 
-// The file descriptor for the socket associated with the client. This may be
-// used to configure socket options.
-int GetClientSocketFd();
+// Configure options for the socket associated with the client.
+int SetClientSockOpt(int level,
+                     int optname,
+                     const void* optval,
+                     unsigned int optlen);
 
 // Initializes logging and the global RPC client for integration testing. Starts
 // a background thread that processes incoming.
@@ -98,10 +100,6 @@ Status InitializeClient(int argc,
 Status InitializeClient(int port);
 
 // Terminates the client, joining the RPC dispatch thread.
-//
-// WARNING: This may block forever if the socket is configured to block
-// indefinitely on reads. Configuring the client socket's `SO_RCVTIMEO` to a
-// nonzero timeout will allow the dispatch thread to always return.
 void TerminateClient();
 
 }  // namespace pw::rpc::integration_test

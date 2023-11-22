@@ -16,8 +16,6 @@
 #include "pw_rpc/internal/log_config.h"  // PW_LOG_* macros must be first.
 // clang-format on
 
-#include <sys/socket.h>
-
 #include <cstring>
 
 #include "pw_log/log.h"
@@ -27,10 +25,6 @@
 
 namespace pw::rpc::fuzz {
 namespace {
-
-// This client configures a socket read timeout to allow the RPC dispatch thread
-// to exit gracefully.
-constexpr timeval kSocketReadTimeout = {.tv_sec = 1, .tv_usec = 0};
 
 int FuzzClient(int argc, char** argv) {
   // TODO(aarongreen): Incorporate descriptions into usage message.
@@ -75,19 +69,6 @@ int FuzzClient(int argc, char** argv) {
 
   if (auto status = integration_test::InitializeClient(port); !status.ok()) {
     PW_LOG_ERROR("Failed to initialize client: %s", pw_StatusString(status));
-    return 1;
-  }
-
-  // Set read timout on socket to allow
-  // pw::rpc::integration_test::TerminateClient() to complete.
-  int fd = integration_test::GetClientSocketFd();
-  if (setsockopt(fd,
-                 SOL_SOCKET,
-                 SO_RCVTIMEO,
-                 &kSocketReadTimeout,
-                 sizeof(kSocketReadTimeout)) != 0) {
-    PW_LOG_ERROR("Failed to configure socket receive timeout with errno=%d",
-                 errno);
     return 1;
   }
 

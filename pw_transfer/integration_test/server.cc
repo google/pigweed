@@ -158,11 +158,11 @@ void RunServer(int socket_port, ServerConfig config) {
   thread::Thread transfer_thread_handle =
       thread::Thread(thread::stl::Options(), transfer_thread);
 
-  int retval = setsockopt(rpc::system_server::GetServerSocketFd(),
-                          SOL_SOCKET,
-                          SO_SNDBUF,
-                          &kMaxSocketSendBufferSize,
-                          sizeof(kMaxSocketSendBufferSize));
+  int retval =
+      rpc::system_server::SetServerSockOpt(SOL_SOCKET,
+                                           SO_SNDBUF,
+                                           &kMaxSocketSendBufferSize,
+                                           sizeof(kMaxSocketSendBufferSize));
   PW_CHECK_INT_EQ(retval,
                   0,
                   "Failed to configure socket send buffer size with errno=%d",

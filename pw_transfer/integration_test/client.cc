@@ -57,10 +57,6 @@ namespace {
 // smaller receive buffer size.
 constexpr int kMaxSocketSendBufferSize = 1;
 
-// This client configures a socket read timeout to allow the RPC dispatch thread
-// to exit gracefully.
-constexpr timeval kSocketReadTimeout = {.tv_sec = 1, .tv_usec = 0};
-
 thread::Options& TransferThreadOptions() {
   static thread::stl::Options options;
   return options;
@@ -203,8 +199,7 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  int retval = setsockopt(
-      pw::rpc::integration_test::GetClientSocketFd(),
+  int retval = pw::rpc::integration_test::SetClientSockOpt(
       SOL_SOCKET,
       SO_SNDBUF,
       &pw::transfer::integration_test::kMaxSocketSendBufferSize,
@@ -212,17 +207,6 @@ int main(int argc, char* argv[]) {
   PW_CHECK_INT_EQ(retval,
                   0,
                   "Failed to configure socket send buffer size with errno=%d",
-                  errno);
-
-  retval =
-      setsockopt(pw::rpc::integration_test::GetClientSocketFd(),
-                 SOL_SOCKET,
-                 SO_RCVTIMEO,
-                 &pw::transfer::integration_test::kSocketReadTimeout,
-                 sizeof(pw::transfer::integration_test::kSocketReadTimeout));
-  PW_CHECK_INT_EQ(retval,
-                  0,
-                  "Failed to configure socket receive timeout with errno=%d",
                   errno);
 
   if (!pw::transfer::integration_test::PerformTransferActions(config).ok()) {

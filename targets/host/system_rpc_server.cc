@@ -49,7 +49,12 @@ void set_socket_port(uint16_t new_socket_port) {
   socket_port = new_socket_port;
 }
 
-int GetServerSocketFd() { return socket_stream.connection_fd(); }
+int SetServerSockOpt(int level,
+                     int optname,
+                     const void* optval,
+                     unsigned int optlen) {
+  return socket_stream.SetSockOpt(level, optname, optval, optlen);
+}
 
 void Init() {
   log_basic::SetOutput([](std::string_view log) {
