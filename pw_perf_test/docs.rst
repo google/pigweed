@@ -58,7 +58,7 @@ If necessary, configure your toolchain for performance testing:
 
        - ``pw_perf_test_MAIN_FUNCTION``: Indicates the GN target that provides
          a ``main`` function that sets the event handler and runs tests. The
-         default is ``"$dir_pw_perf_test:log_perf_handler_main"``.
+         default is ``"$dir_pw_perf_test:logging_main"``.
 
 Write a test function
 =====================

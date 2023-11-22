@@ -13,7 +13,7 @@
 // the License.
 #define PW_LOG_LEVEL PW_LOG_LEVEL_INFO
 
-#include "pw_perf_test/log_perf_handler.h"
+#include "pw_perf_test/logging_event_handler.h"
 
 #include "pw_log/log.h"
 #include "pw_perf_test/event_handler.h"

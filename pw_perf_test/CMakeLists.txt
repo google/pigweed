@@ -70,33 +70,26 @@ pw_add_library(pw_perf_test.event_handler INTERFACE
     public
 )
 
-pw_add_library(pw_perf_test.googletest_style_event_handler INTERFACE
-  PUBLIC_INCLUDES
-    public
-  HEADERS
-    public/pw_perf_test/googletest_style_event_handler.h
-)
-
-pw_add_library(pw_perf_test.log_perf_handler STATIC
+pw_add_library(pw_perf_test.logging_event_handler STATIC
   PUBLIC_INCLUDES
     public
   PRIVATE_DEPS
     pw_log
   PUBLIC_DEPS
     pw_perf_test.event_handler
-    pw_perf_test.googletest_style_event_handler
     pw_perf_test
   HEADERS
-    public/pw_perf_test/log_perf_handler.h
+    public/pw_perf_test/googletest_style_event_handler.h
+    public/pw_perf_test/logging_event_handler.h
   SOURCES
-    log_perf_handler.cc
+    logging_event_handler.cc
 )
 
-pw_add_library(pw_perf_test.log_perf_handler_main STATIC
+pw_add_library(pw_perf_test.logging_main STATIC
   PUBLIC_DEPS
-    pw_perf_test.log_perf_handler
+    pw_perf_test.logging_event_handler
   SOURCES
-    log_perf_handler_main.cc
+    logging_main.cc
 )
 
 # Timer facade

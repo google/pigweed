@@ -82,29 +82,26 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "google_test_style_event_strings",
-    hdrs = ["public/pw_perf_test/googletest_style_event_handler.h"],
-)
-
-pw_cc_library(
-    name = "log_main_handler",
-    srcs = ["log_perf_handler.cc"],
-    hdrs = ["public/pw_perf_test/log_perf_handler.h"],
+    name = "logging_event_handler",
+    srcs = ["logging_event_handler.cc"],
+    hdrs = [
+        "public/pw_perf_test/googletest_style_event_handler.h",
+        "public/pw_perf_test/logging_event_handler.h",
+    ],
     includes = [
         "public",
     ],
     deps = [
         ":event_handler",
-        ":google_test_style_event_strings",
         "//pw_log",
     ],
 )
 
 pw_cc_library(
     name = "logging_main",
-    srcs = ["log_perf_handler_main.cc"],
+    srcs = ["logging_main.cc"],
     deps = [
-        ":log_main_handler",
+        ":logging_event_handler",
         ":pw_perf_test",
     ],
 )

@@ -36,7 +36,7 @@ _host_common = {
   pw_unit_test_MAIN = "$dir_pw_unit_test:logging_main"
 
   # Used to configure logging-based perftest on host
-  pw_perf_test_MAIN_FUNCTION = "$dir_pw_perf_test:log_perf_handler_main"
+  pw_perf_test_MAIN_FUNCTION = "$dir_pw_perf_test:logging_main"
 
   # Configure backend for assert facade.
   pw_assert_BACKEND = "$dir_pw_assert:print_and_abort_check_backend"

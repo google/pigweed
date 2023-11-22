@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_perf_test/log_perf_handler.h"
+#include "pw_perf_test/logging_event_handler.h"
 #include "pw_perf_test/perf_test.h"
 
 int main() {

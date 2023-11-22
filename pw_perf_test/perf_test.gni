@@ -25,7 +25,7 @@ declare_args() {
   pw_perf_test_TIMER_INTERFACE_BACKEND = ""
 
   # Chooses the EventHandler for running the perf tests
-  pw_perf_test_MAIN_FUNCTION = "$dir_pw_perf_test:log_perf_handler_main"
+  pw_perf_test_MAIN_FUNCTION = "$dir_pw_perf_test:logging_main"
 
   # Chooses the executable template for performance tests
   pw_perf_test_EXECUTABLE_TARGET_TYPE = "pw_executable"

@@ -71,26 +71,23 @@ pw_source_set("event_handler") {
   public = [ "public/pw_perf_test/event_handler.h" ]
 }
 
-pw_source_set("googletest_style_event_handler") {
+pw_source_set("logging_event_handler") {
   public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_perf_test/googletest_style_event_handler.h" ]
-}
-
-pw_source_set("log_perf_handler") {
-  public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_perf_test/log_perf_handler.h" ]
+  public = [
+    "public/pw_perf_test/googletest_style_event_handler.h",
+    "public/pw_perf_test/logging_event_handler.h",
+  ]
   public_deps = [
     ":event_handler",
-    ":googletest_style_event_handler",
     ":pw_perf_test",
   ]
   deps = [ dir_pw_log ]
-  sources = [ "log_perf_handler.cc" ]
+  sources = [ "logging_event_handler.cc" ]
 }
 
-pw_source_set("log_perf_handler_main") {
-  public_deps = [ ":log_perf_handler" ]
-  sources = [ "log_perf_handler_main.cc" ]
+pw_source_set("logging_main") {
+  public_deps = [ ":logging_event_handler" ]
+  sources = [ "logging_main.cc" ]
 }
 
 # Timer facade
