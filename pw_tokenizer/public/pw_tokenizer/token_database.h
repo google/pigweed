@@ -84,6 +84,14 @@ class TokenDatabase {
 
   static_assert(sizeof(RawEntry) == 8u);
 
+  template <typename T>
+  static constexpr uint32_t ReadUint32(const T* bytes) {
+    return static_cast<uint8_t>(bytes[0]) |
+           static_cast<uint8_t>(bytes[1]) << 8 |
+           static_cast<uint8_t>(bytes[2]) << 16 |
+           static_cast<uint8_t>(bytes[3]) << 24;
+  }
+
  public:
   /// An entry in the token database.
   struct Entry {
@@ -320,14 +328,6 @@ class TokenDatabase {
   static constexpr uint32_t ReadEntryCount(const T* header_bytes) {
     const T* bytes = header_bytes + offsetof(Header, entry_count);
     return ReadUint32(bytes);
-  }
-
-  template <typename T>
-  static constexpr uint32_t ReadUint32(const T* bytes) {
-    return static_cast<uint8_t>(bytes[0]) |
-           static_cast<uint8_t>(bytes[1]) << 8 |
-           static_cast<uint8_t>(bytes[2]) << 16 |
-           static_cast<uint8_t>(bytes[3]) << 24;
   }
 
   // Calculates the offset of the string table.
