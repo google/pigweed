@@ -43,7 +43,7 @@ pw_cc_library(
     visibility = [":__subpackages__"],
     deps = [
         ":chunk",
-        "//pw_allocator:allocator_metric_proxy",
+        "//pw_allocator:allocator_metric_proxy_for_test",
         "//pw_allocator:split_free_list_allocator",
     ],
 )

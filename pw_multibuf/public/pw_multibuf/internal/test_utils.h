@@ -16,7 +16,7 @@
 
 #include <memory>
 
-#include "pw_allocator/allocator_metric_proxy.h"
+#include "pw_allocator/allocator_metric_proxy_for_test.h"
 #include "pw_allocator/split_free_list_allocator.h"
 #include "pw_multibuf/chunk.h"
 
@@ -31,7 +31,7 @@ class TrackingAllocator : public pw::allocator::Allocator {
   TrackingAllocator(ByteSpan span) : alloc_stats_(kFakeToken) {
     Status status = alloc_.Init(span, kFakeThreshold);
     EXPECT_EQ(status, OkStatus());
-    alloc_stats_.Initialize(alloc_);
+    alloc_stats_.Init(alloc_);
   }
 
   /// Returns the number of current allocations.

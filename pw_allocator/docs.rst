@@ -161,3 +161,24 @@ Size report
 interface, whos costs are shown below.
 
 .. include:: allocator_size_report
+
+Metric collection
+=================
+Consumers can use an ``AllocatorMetricProxy`` to wrap an allocator and collect
+usage statistics. These statistics are implemented using
+:ref:`module-pw_metric`.
+
+.. code-block:: cpp
+
+  MyAllocator allocator;
+  AllocatorMetricProxy proxy(PW_TOKENIZE_STRING_EXPR("my allocator"));
+  proxy.Init(allocator);
+  // ...Perform various allocations and deallocations...
+  proxy.Dump();
+
+Metric collection is controlled using the ``pw_allocator_COLLECT_METRICS`` build
+argument. If this is unset or ``false``, metric collection is skipped.
+
+To force metric collection regardless of the build argument, tests may include
+the ``"pw_allocator/allocator_metric_proxy_for_tests.h"`` header file and depend
+on the ``//pw_allocator:allocator_metric_proxy_for_tests`` target.

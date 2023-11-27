@@ -58,6 +58,17 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "allocator_metric_proxy_for_test",
+    hdrs = [
+        "public/pw_allocator/allocator_metric_proxy_for_test.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":allocator_metric_proxy",
+    ],
+)
+
+pw_cc_library(
     name = "block",
     srcs = ["block.cc"],
     hdrs = [
@@ -85,8 +96,11 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         ":allocator",
+        ":allocator_metric_proxy",
         "//pw_assert",
+        "//pw_metric:metric",
         "//pw_status",
+        "//pw_tokenizer",
     ],
 )
 
@@ -220,7 +234,7 @@ pw_cc_test(
         "allocator_metric_proxy_test.cc",
     ],
     deps = [
-        ":allocator_metric_proxy",
+        ":allocator_metric_proxy_for_test",
         ":allocator_testing",
         "//pw_unit_test",
     ],

@@ -19,6 +19,10 @@ if(pw_allocator_POISON_HEAP)
   set(enable_heap_poison "PW_ALLOCATOR_POISON_ENABLE=1")
 endif()
 
+if(pw_allocator_COLLECT_METRICS)
+  set(collect_metrics "PW_ALLOCATOR_COLLECT_METRICS=1")
+endif()
+
 pw_add_library(pw_allocator.allocator STATIC
   HEADERS
     public/pw_allocator/allocator.h
@@ -34,6 +38,8 @@ pw_add_library(pw_allocator.allocator STATIC
 )
 
 pw_add_library(pw_allocator.allocator_metric_proxy STATIC
+  PUBLIC_DEFINES
+    ${collect_metrics}
   HEADERS
     public/pw_allocator/allocator_metric_proxy.h
   PUBLIC_INCLUDES
@@ -46,6 +52,15 @@ pw_add_library(pw_allocator.allocator_metric_proxy STATIC
     pw_assert
   SOURCES
     allocator_metric_proxy.cc
+)
+
+pw_add_library(pw_allocator.allocator_metric_proxy_for_test INTERFACE
+  HEADERS
+    public/pw_allocator/allocator_metric_proxy_for_test.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.allocator_metric_proxy
 )
 
 pw_add_library(pw_allocator.block STATIC
@@ -74,8 +89,12 @@ pw_add_library(pw_allocator.fallback_allocator STATIC
     public
   PUBLIC_DEPS
     pw_allocator.allocator
-    pw_assert
+    pw_allocator.allocator_metric_proxy
+    pw_metric
     pw_status
+    pw_tokenizer
+  PRIVATE_DEPS
+    pw_assert
   SOURCES
     fallback_allocator.cc
 )
@@ -192,7 +211,7 @@ pw_add_test(pw_allocator.allocator_metric_proxy_test
   SOURCES
     allocator_metric_proxy_test.cc
   PRIVATE_DEPS
-    pw_allocator.allocator_metric_proxy
+    pw_allocator.allocator_metric_proxy_for_test
     pw_allocator.allocator_testing
   GROUPS
     modules

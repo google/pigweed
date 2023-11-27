@@ -19,60 +19,34 @@
 #include "pw_assert/check.h"
 #include "pw_metric/metric.h"
 
-namespace pw::allocator {
+namespace pw::allocator::internal {
 
-void AllocatorMetricProxy::Initialize(Allocator& allocator) {
-  PW_DCHECK(allocator_ == nullptr);
-  allocator_ = &allocator;
-  // Manually add the metrics to the metric group to allow the constructor to
-  // remain constexpr.
-  memusage_.Add(used_);
-  memusage_.Add(peak_);
-  memusage_.Add(count_);
+void Metrics::Init() {
+  Add(used_);
+  Add(peak_);
+  Add(count_);
 }
 
-Status AllocatorMetricProxy::DoQuery(const void* ptr, Layout layout) const {
-  PW_DCHECK_NOTNULL(allocator_);
-  return allocator_->Query(ptr, layout);
+void Metrics::Update(size_t old_size, size_t new_size) {
+  size_t used = used_.value();
+  size_t count = count_.value();
+  if (old_size != 0) {
+    PW_DCHECK_UINT_GE(used, old_size);
+    PW_DCHECK_UINT_GT(count, 0);
+    used -= old_size;
+    --count;
+  }
+  if (new_size != 0) {
+    used += new_size;
+    ++count;
+    PW_DCHECK_UINT_GE(used, new_size);
+    PW_DCHECK_UINT_GT(count, 0);
+  }
+  if (used > peak_.value()) {
+    peak_.Set(used);
+  }
+  used_.Set(used);
+  count_.Set(count);
 }
 
-void* AllocatorMetricProxy::DoAllocate(Layout layout) {
-  PW_DCHECK_NOTNULL(allocator_);
-  void* ptr = allocator_->Allocate(layout);
-  if (ptr == nullptr) {
-    return nullptr;
-  }
-  used_.Increment(layout.size());
-  if (used_.value() > peak_.value()) {
-    peak_.Set(used_.value());
-  }
-  count_.Increment();
-  return ptr;
-}
-
-void AllocatorMetricProxy::DoDeallocate(void* ptr, Layout layout) {
-  PW_DCHECK_NOTNULL(allocator_);
-  allocator_->Deallocate(ptr, layout);
-  if (ptr == nullptr) {
-    return;
-  }
-  PW_DCHECK_UINT_GE(used_.value(), layout.size());
-  PW_DCHECK_UINT_NE(count_.value(), 0);
-  used_.Set(used_.value() - layout.size());
-  count_.Set(count_.value() - 1);
-}
-
-bool AllocatorMetricProxy::DoResize(void* ptr, Layout layout, size_t new_size) {
-  PW_DCHECK_NOTNULL(allocator_);
-  if (!allocator_->Resize(ptr, layout, new_size)) {
-    return false;
-  }
-  PW_DCHECK_UINT_GE(used_.value(), layout.size());
-  used_.Set(used_.value() - layout.size() + new_size);
-  if (used_.value() > peak_.value()) {
-    peak_.Set(used_.value());
-  }
-  return true;
-}
-
-}  // namespace pw::allocator
+}  // namespace pw::allocator::internal

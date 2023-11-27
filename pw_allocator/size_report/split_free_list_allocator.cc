@@ -114,7 +114,7 @@ int main() {
 #endif  // SIZE_REPORT_UNIQUE_PTR
 
 #ifdef SIZE_REPORT_METRIC_PROXY
-  proxy.Initialize(allocator);
+  proxy.Init(allocator);
 
   Foo* foo2 =
       static_cast<Foo*>(proxy.Allocate(pw::allocator::Layout::Of<Foo>()));

@@ -42,7 +42,7 @@ pw_source_set("test_utils") {
   public = [ "public/pw_multibuf/internal/test_utils.h" ]
   public_deps = [
     ":chunk",
-    "$dir_pw_allocator:allocator_metric_proxy",
+    "$dir_pw_allocator:allocator_metric_proxy_for_test",
     "$dir_pw_allocator:split_free_list_allocator",
   ]
 }

@@ -14,7 +14,10 @@
 #pragma once
 
 #include "pw_allocator/allocator.h"
+#include "pw_allocator/allocator_metric_proxy.h"
+#include "pw_metric/metric.h"
 #include "pw_status/status.h"
+#include "pw_tokenizer/tokenize.h"
 
 namespace pw::allocator {
 
@@ -24,14 +27,32 @@ namespace pw::allocator {
 /// secondary alloator will try to allocate memory instead.
 class FallbackAllocator : public Allocator {
  public:
-  constexpr FallbackAllocator() = default;
+  using MetricsType = typename AllocatorMetricProxy::MetricsType;
+
+  constexpr FallbackAllocator() : secondary_(kSecondary) {}
+
+  IntrusiveList<metric::Group>& children() { return secondary_.children(); }
+  IntrusiveList<metric::Metric>& metrics() { return secondary_.metrics(); }
+
+  const IntrusiveList<metric::Group>& children() const {
+    return secondary_.children();
+  }
+  const IntrusiveList<metric::Metric>& metrics() const {
+    return secondary_.metrics();
+  }
+
+  uint32_t used() const { return secondary_.used(); }
+  uint32_t peak() const { return secondary_.peak(); }
+  uint32_t count() const { return secondary_.count(); }
 
   /// Sets the primary and secondary allocators.
   ///
   /// It is an error to call any method without calling this method first.
-  void Initialize(Allocator& primary, Allocator& secondary);
+  void Init(Allocator& primary, Allocator& secondary);
 
  private:
+  static constexpr metric::Token kSecondary = PW_TOKENIZE_STRING("fallback");
+
   /// @copydoc Allocator::Query
   Status DoQuery(const void* ptr, Layout layout) const override;
 
@@ -45,7 +66,7 @@ class FallbackAllocator : public Allocator {
   bool DoResize(void* ptr, Layout layout, size_t new_size) override;
 
   Allocator* primary_ = nullptr;
-  Allocator* secondary_ = nullptr;
+  AllocatorMetricProxy secondary_;
 };
 
 }  // namespace pw::allocator

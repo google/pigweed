@@ -30,6 +30,12 @@ config("enable_heap_poison") {
   }
 }
 
+config("collect_metrics") {
+  if (pw_allocator_COLLECT_METRICS) {
+    defines = [ "PW_ALLOCATOR_COLLECT_METRICS=1" ]
+  }
+}
+
 group("pw_allocator") {
   public_deps = [
     ":allocator",
@@ -51,7 +57,10 @@ pw_source_set("allocator") {
 }
 
 pw_source_set("allocator_metric_proxy") {
-  public_configs = [ ":default_config" ]
+  public_configs = [
+    ":default_config",
+    ":collect_metrics",
+  ]
   public = [ "public/pw_allocator/allocator_metric_proxy.h" ]
   public_deps = [
     ":allocator",
@@ -60,6 +69,11 @@ pw_source_set("allocator_metric_proxy") {
   ]
   deps = [ dir_pw_assert ]
   sources = [ "allocator_metric_proxy.cc" ]
+}
+
+pw_source_set("allocator_metric_proxy_for_test") {
+  public = [ "public/pw_allocator/allocator_metric_proxy_for_test.h" ]
+  public_deps = [ ":allocator_metric_proxy" ]
 }
 
 pw_source_set("block") {
@@ -84,9 +98,12 @@ pw_source_set("fallback_allocator") {
   public = [ "public/pw_allocator/fallback_allocator.h" ]
   public_deps = [
     ":allocator",
-    dir_pw_assert,
+    ":allocator_metric_proxy",
+    dir_pw_metric,
     dir_pw_status,
+    dir_pw_tokenizer,
   ]
+  deps = [ dir_pw_assert ]
   sources = [ "fallback_allocator.cc" ]
 }
 
@@ -218,7 +235,7 @@ pw_test("allocator_test") {
 
 pw_test("allocator_metric_proxy_test") {
   deps = [
-    ":allocator_metric_proxy",
+    ":allocator_metric_proxy_for_test",
     ":allocator_testing",
   ]
   sources = [ "allocator_metric_proxy_test.cc" ]

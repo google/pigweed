@@ -25,7 +25,7 @@ namespace {
 
 class FallbackAllocatorTest : public ::testing::Test {
  protected:
-  void SetUp() override { allocator.Initialize(*primary, *secondary); }
+  void SetUp() override { allocator.Init(*primary, *secondary); }
 
   void TearDown() override {
     primary->DeallocateAll();

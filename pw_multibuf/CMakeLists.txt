@@ -38,8 +38,9 @@ pw_add_library(pw_multibuf.test_utils STATIC
     public
   PUBLIC_DEPS
     pw_multibuf.chunk
-    pw_allocator.allocator_metric_proxy
+    pw_allocator.allocator_metric_proxy_for_test
     pw_allocator.split_free_list_allocator
+)
 
 pw_add_test(pw_multibuf.chunk_test STATIC
   SOURCES
