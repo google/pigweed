@@ -234,11 +234,11 @@ bool FakeController::AddPeer(std::unique_ptr<FakePeer> peer) {
   if (peers_.count(peer->address()) != 0u) {
     return false;
   }
-  peer->set_ctrl(this);
+  peer->set_controller(this);
 
   // If a scan is enabled then send an advertising report for the peer that just
   // got registered if it supports advertising.
-  SendSingleAdvertisingReport(*peer);
+  SendAdvertisingReport(*peer);
 
   peers_[peer->address()] = std::move(peer);
   return true;
@@ -632,11 +632,12 @@ void FakeController::SendInquiryResponses() {
 }
 
 void FakeController::SendAdvertisingReports() {
-  if (!le_scan_state_.enabled || peers_.empty())
+  if (!le_scan_state_.enabled || peers_.empty()) {
     return;
+  }
 
   for (const auto& iter : peers_) {
-    SendSingleAdvertisingReport(*iter.second);
+    SendAdvertisingReport(*iter.second);
   }
 
   // We'll send new reports for the same peers if duplicate filtering is
@@ -651,7 +652,7 @@ void FakeController::SendAdvertisingReports() {
   }
 }
 
-void FakeController::SendSingleAdvertisingReport(const FakePeer& peer) {
+void FakeController::SendAdvertisingReport(const FakePeer& peer) {
   if (!le_scan_state_.enabled || !peer.supports_le() ||
       !peer.advertising_enabled()) {
     return;
