@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -220,8 +220,9 @@ TEST_F(TransferThreadTest, StartTransferExhausted_Server) {
       EncodeChunk(
           Chunk(ProtocolVersion::kLegacy, Chunk::Type::kParametersRetransmit)
               .set_session_id(3)
+              // Ensure only one chunk is sent as end offset equals max size.
               .set_window_end_offset(16)
-              .set_max_chunk_size_bytes(8)
+              .set_max_chunk_size_bytes(16)
               .set_offset(0)),
       max_parameters_,
       kNeverTimeout,
@@ -244,8 +245,9 @@ TEST_F(TransferThreadTest, StartTransferExhausted_Server) {
       EncodeChunk(
           Chunk(ProtocolVersion::kLegacy, Chunk::Type::kParametersRetransmit)
               .set_session_id(4)
+              // Ensure only one chunk is sent as end offset equals max size.
               .set_window_end_offset(16)
-              .set_max_chunk_size_bytes(8)
+              .set_max_chunk_size_bytes(16)
               .set_offset(0)),
       max_parameters_,
       kNeverTimeout,
