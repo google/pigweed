@@ -19,23 +19,13 @@ from types import ModuleType
 from typing import Any, Callable, List, Union, Optional
 
 from pw_thread_protos import thread_pb2
-from pw_hdlc.rpc import (
-    HdlcRpcClient,
-    channel_output,
-    NoEncodingSingleChannelRpcClient,
-    RpcClient,
-    CancellableReader,
-)
-from pw_log.log_decoder import (
-    Log,
-    LogStreamDecoder,
-    log_decoded_log,
-    timestamp_parser_ns_since_boot,
-)
-from pw_log_rpc.rpc_log_stream import LogStreamHandler
+from pw_hdlc import rpc
+from pw_log import log_decoder
+from pw_log_rpc import rpc_log_stream
 from pw_metric import metric_parser
-from pw_rpc import callback_client, Channel, console_tools
-from pw_thread.thread_analyzer import ThreadSnapshotAnalyzer
+import pw_rpc
+from pw_rpc import callback_client, console_tools
+from pw_thread import thread_analyzer
 from pw_tokenizer import detokenize
 from pw_tokenizer.proto import decode_optionally_tokenized
 from pw_unit_test.rpc import run_tests as pw_unit_test_run_tests, TestRecord
@@ -53,18 +43,15 @@ class Device:
     Note: use this class as a base for specialized device representations.
     """
 
-    # pylint: disable=too-many-instance-attributes
     def __init__(
-        # pylint: disable=too-many-arguments
         self,
         channel_id: int,
-        reader: CancellableReader,
+        reader: rpc.CancellableReader,
         write,
         proto_library: List[Union[ModuleType, Path]],
         detokenizer: Optional[detokenize.Detokenizer] = None,
         timestamp_decoder: Optional[Callable[[int], str]] = None,
         rpc_timeout_s: float = 5,
-        time_offset: int = 0,
         use_rpc_logging: bool = True,
         use_hdlc_encoding: bool = True,
         logger: logging.Logger = DEFAULT_DEVICE_LOGGER,
@@ -73,7 +60,6 @@ class Device:
         self.protos = proto_library
         self.detokenizer = detokenizer
         self.rpc_timeout_s = rpc_timeout_s
-        self.time_offset = time_offset
 
         self.logger = logger
         self.logger.setLevel(logging.DEBUG)  # Allow all device logs through.
@@ -96,10 +82,12 @@ class Device:
             for line in log_messages.splitlines():
                 self.logger.info(line)
 
-        self.client: RpcClient
+        self.client: rpc.RpcClient
         if use_hdlc_encoding:
-            channels = [Channel(self.channel_id, channel_output(write))]
-            self.client = HdlcRpcClient(
+            channels = [
+                pw_rpc.Channel(self.channel_id, rpc.channel_output(write))
+            ]
+            self.client = rpc.HdlcRpcClient(
                 reader,
                 self.protos,
                 channels,
@@ -107,8 +95,8 @@ class Device:
                 client_impl=callback_client_impl,
             )
         else:
-            channel = Channel(self.channel_id, write)
-            self.client = NoEncodingSingleChannelRpcClient(
+            channel = pw_rpc.Channel(self.channel_id, write)
+            self.client = rpc.NoEncodingSingleChannelRpcClient(
                 reader,
                 self.protos,
                 channel,
@@ -118,22 +106,22 @@ class Device:
         if use_rpc_logging:
             # Create the log decoder used by the LogStreamHandler.
 
-            def decoded_log_handler(log: Log) -> None:
-                log_decoded_log(log, self.logger)
+            def decoded_log_handler(log: log_decoder.Log) -> None:
+                log_decoder.log_decoded_log(log, self.logger)
 
-            self._log_decoder = LogStreamDecoder(
+            self._log_decoder = log_decoder.LogStreamDecoder(
                 decoded_log_handler=decoded_log_handler,
                 detokenizer=self.detokenizer,
                 source_name='RpcDevice',
                 timestamp_parser=(
                     timestamp_decoder
                     if timestamp_decoder
-                    else timestamp_parser_ns_since_boot
+                    else log_decoder.timestamp_parser_ns_since_boot
                 ),
             )
 
             # Start listening to logs as soon as possible.
-            self.log_stream_handler = LogStreamHandler(
+            self.log_stream_handler = rpc_log_stream.LogStreamHandler(
                 self.rpcs, self._log_decoder
             )
             self.log_stream_handler.listen_to_logs()
@@ -184,5 +172,7 @@ class Device:
         for thread_info_block in rsp:
             for thread in thread_info_block.threads:
                 thread_info.threads.append(thread)
-        for line in str(ThreadSnapshotAnalyzer(thread_info)).splitlines():
+        for line in str(
+            thread_analyzer.ThreadSnapshotAnalyzer(thread_info)
+        ).splitlines():
             _LOG.info('%s', line)

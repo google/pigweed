@@ -38,9 +38,9 @@ from pw_trace_tokenized import trace_tokenized
 import pw_transfer
 from pw_file import file_pb2
 from pw_hdlc import rpc
-from pw_system.device_tracing import DeviceWithTracing
-from pw_tokenizer.detokenize import AutoUpdatingDetokenizer
-from pw_console.socket_client import SocketClient
+from pw_system import device_tracing
+from pw_tokenizer import detokenize
+from pw_console import socket_client
 
 
 _LOG = logging.getLogger('pw_console_trace_client')
@@ -87,21 +87,23 @@ def _parse_args():
         '--baudrate',
         type=int,
         default=115200,
-        help='the baud rate to use',
+        help='The baud rate to use',
     )
     group.add_argument(
         '-s',
         '--socket-addr',
         type=str,
-        default="default",
-        help='use socket to connect to server, type default for\
-            localhost:33000, or manually input the server address:port',
+        default='default',
+        help=(
+            'Use socket to connect to server, type default for '
+            'localhost:33000, or manually input the server address:port'
+        ),
     )
     parser.add_argument(
         '-o',
         '--trace_output',
         dest='trace_output_file',
-        help=('The json file to which to write the output.'),
+        help='The json file to which to write the output.',
     )
     parser.add_argument(
         '-t',
@@ -113,30 +115,32 @@ def _parse_args():
         '--ticks_per_second',
         type=int,
         dest='ticks_per_second',
-        help=('The clock rate of the trace events.'),
+        help='The clock rate of the trace events.',
     )
     parser.add_argument(
         '--time_offset',
         type=int,
         dest='time_offset',
         default=0,
-        help=('Time offset (us) of the trace events (Default 0).'),
+        help='Time offset (us) of the trace events (Default 0).',
     )
     parser.add_argument(
         '--channel-id',
         type=int,
         dest='channel_id',
         default=rpc.DEFAULT_CHANNEL_ID,
-        help="Channel ID used in RPC communications.",
+        help='Channel ID used in RPC communications.',
     )
     return parser.parse_args()
 
 
 def _main(args) -> int:
-    detokenizer = AutoUpdatingDetokenizer(args.trace_token_database + "#trace")
+    detokenizer = detokenize.AutoUpdatingDetokenizer(
+        args.trace_token_database + '#trace'
+    )
     detokenizer.show_errors = True
 
-    socket_impl = SocketClient
+    socket_impl = socket_client.SocketClient
     try:
         socket_device = socket_impl(args.socket_addr)
         reader = rpc.SelectableReader(socket_device)
@@ -153,8 +157,7 @@ def _main(args) -> int:
     ]
 
     with reader:
-        device_client = DeviceWithTracing(
-            args.ticks_per_second,
+        device_client = device_tracing.DeviceWithTracing(
             args.channel_id,
             reader,
             write,
@@ -164,17 +167,18 @@ def _main(args) -> int:
             rpc_timeout_s=5,
             use_rpc_logging=True,
             use_hdlc_encoding=True,
+            ticks_per_second=args.ticks_per_second,
         )
 
         with device_client:
-            _LOG.info("Starting tracing")
+            _LOG.info('Starting tracing')
             start_tracing_on_device(device_client)
 
-            _LOG.info("Stopping tracing")
+            _LOG.info('Stopping tracing')
             file_id = stop_tracing_on_device(device_client)
-            _LOG.info("Trace file id = %d", file_id.response.file_id)
+            _LOG.info('Trace file id = %d', file_id.response.file_id)
 
-            _LOG.info("Listing Files")
+            _LOG.info('Listing Files')
             stream_response = list_files_on_device(device_client)
 
             if not stream_response.status.ok():
@@ -183,7 +187,7 @@ def _main(args) -> int:
 
             for list_response in stream_response.responses:
                 for file in list_response.paths:
-                    _LOG.info("Transfering File: %s", file.path)
+                    _LOG.info('Transfering File: %s', file.path)
                     try:
                         data = device_client.transfer_manager.read(file.file_id)
                         events = trace_tokenized.get_trace_events(
@@ -199,10 +203,10 @@ def _main(args) -> int:
                     except pw_transfer.Error as err:
                         print('Failed to read:', err.status)
 
-                    _LOG.info("Deleting File: %s", file.path)
+                    _LOG.info('Deleting File: %s', file.path)
                     delete_file_on_device(device_client, file.path)
 
-            _LOG.info("All trace transfers completed successfully")
+            _LOG.info('All trace transfers completed successfully')
 
     return 0
 

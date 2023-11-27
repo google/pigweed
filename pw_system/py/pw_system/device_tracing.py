@@ -37,7 +37,7 @@ class DeviceWithTracing(Device):
     """Represents an RPC Client for a device running a Pigweed target with
     tracing.
 
-    The target must have and RPC support for the following services:
+    The target must have RPC support for the following services:
      - logging
      - file
      - transfer
@@ -45,8 +45,14 @@ class DeviceWithTracing(Device):
     Note: use this class as a base for specialized device representations.
     """
 
-    def __init__(self, ticks_per_second: Optional[int], *argv, **kargv):
-        super().__init__(*argv, **kargv)
+    def __init__(
+        self,
+        *device_args,
+        ticks_per_second: Optional[int] = None,
+        time_offset: int = 0,
+        **device_kwargs,
+    ):
+        super().__init__(*device_args, **device_kwargs)
 
         # Create the transfer manager
         self.transfer_service = self.rpcs.pw.transfer.Transfer
@@ -56,6 +62,7 @@ class DeviceWithTracing(Device):
             initial_response_timeout_s=self.rpc_timeout_s,
             default_protocol_version=pw_transfer.ProtocolVersion.LATEST,
         )
+        self.time_offset = time_offset
 
         if ticks_per_second:
             self.ticks_per_second = ticks_per_second
@@ -69,8 +76,7 @@ class DeviceWithTracing(Device):
             resp = trace_service.GetClockParameters()
             if not resp.status.ok():
                 _LOG.error(
-                    'Failed to get clock parameters: %s. Using default \
-                    value',
+                    'Failed to get clock parameters: %s. Using default value',
                     resp.status,
                 )
                 return DEFAULT_TICKS_PER_SECOND

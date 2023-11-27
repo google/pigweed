@@ -55,17 +55,17 @@ import serial
 import IPython  # type: ignore
 
 from pw_cli import log as pw_cli_log
-from pw_console.embed import PwConsoleEmbed
-from pw_console.log_store import LogStore
-from pw_console.plugins.bandwidth_toolbar import BandwidthToolbar
-from pw_console.pyserial_wrapper import SerialWithLogging
-from pw_console.python_logging import create_temp_log_file, JsonLogFormatter
-from pw_console.socket_client import SocketClient, SocketClientWithLogging
+from pw_console import embed
+from pw_console import log_store
+from pw_console.plugins import bandwidth_toolbar
+from pw_console import pyserial_wrapper
+from pw_console import python_logging
+from pw_console import socket_client
 from pw_hdlc import rpc
 from pw_rpc.console_tools.console import flattened_rpc_completions
-from pw_system.device import Device
-from pw_system.device_tracing import DeviceWithTracing
-from pw_tokenizer.detokenize import AutoUpdatingDetokenizer
+from pw_system import device as pw_device
+from pw_system import device_tracing
+from pw_tokenizer import detokenize
 
 # Default proto imports:
 from pw_log.proto import log_pb2
@@ -165,8 +165,8 @@ def get_parser() -> argparse.ArgumentParser:
             'Socket address used to connect to server. Type "default" to use '
             'localhost:33000, pass the server address and port as '
             'address:port, or prefix the path to a forwarded socket with '
-            f'"{SocketClient.FILE_SOCKET_SERVER}:" as '
-            f'{SocketClient.FILE_SOCKET_SERVER}:path_to_file.'
+            f'"{socket_client.SocketClient.FILE_SOCKET_SERVER}:" as '
+            f'{socket_client.SocketClient.FILE_SOCKET_SERVER}:path_to_file.'
         ),
     )
     parser.add_argument(
@@ -265,10 +265,10 @@ def _expand_globs(globs: Iterable[str]) -> Iterator[Path]:
 
 
 def _start_python_terminal(  # pylint: disable=too-many-arguments
-    device: Device,
-    device_log_store: LogStore,
-    root_log_store: LogStore,
-    serial_debug_log_store: LogStore,
+    device: pw_device.Device,
+    device_log_store: log_store.LogStore,
+    root_log_store: log_store.LogStore,
+    serial_debug_log_store: log_store.LogStore,
     log_file: str,
     host_logfile: str,
     device_logfile: str,
@@ -327,14 +327,14 @@ def _start_python_terminal(  # pylint: disable=too-many-arguments
     client_info = device.info()
     completions = flattened_rpc_completions([client_info])
 
-    log_windows: Dict[str, Union[List[logging.Logger], LogStore]] = {
+    log_windows: Dict[str, Union[List[logging.Logger], log_store.LogStore]] = {
         'Device Logs': device_log_store,
         'Host Logs': root_log_store,
     }
     if serial_debug:
         log_windows['Serial Debug'] = serial_debug_log_store
 
-    interactive_console = PwConsoleEmbed(
+    interactive_console = embed.PwConsoleEmbed(
         global_vars=local_variables,
         local_vars=None,
         loggers=log_windows,
@@ -344,7 +344,9 @@ def _start_python_terminal(  # pylint: disable=too-many-arguments
     )
     interactive_console.add_sentence_completer(completions)
     if serial_debug:
-        interactive_console.add_bottom_toolbar(BandwidthToolbar())
+        interactive_console.add_bottom_toolbar(
+            bandwidth_toolbar.BandwidthToolbar()
+        )
 
     # Setup Python logger propagation
     interactive_console.setup_python_logging(
@@ -387,13 +389,13 @@ def console(
 
     # Don't send device logs to the root logger.
     _DEVICE_LOG.propagate = False
-    # Create pw_console LogStore handlers. These are the data source for log
-    # messages to be displayed in the UI.
-    device_log_store = LogStore()
-    root_log_store = LogStore()
-    serial_debug_log_store = LogStore()
-    # Attach the LogStores as handlers for each log window we want to show.
-    # This should be done before device initialization to capture early
+    # Create pw_console log_store.LogStore handlers. These are the data source
+    # for log messages to be displayed in the UI.
+    device_log_store = log_store.LogStore()
+    root_log_store = log_store.LogStore()
+    serial_debug_log_store = log_store.LogStore()
+    # Attach the log_store.LogStores as handlers for each log window we want to
+    # show. This should be done before device initialization to capture early
     # messages.
     _DEVICE_LOG.addHandler(device_log_store)
     _ROOT_LOG.addHandler(root_log_store)
@@ -402,7 +404,7 @@ def console(
     if not logfile:
         # Create a temp logfile to prevent logs from appearing over stdout. This
         # would corrupt the prompt toolkit UI.
-        logfile = create_temp_log_file()
+        logfile = python_logging.create_temp_log_file()
 
     log_level = logging.DEBUG if verbose else logging.INFO
 
@@ -445,7 +447,7 @@ def console(
     if json_logfile:
         json_filehandler = logging.FileHandler(json_logfile, encoding='utf-8')
         json_filehandler.setLevel(log_level)
-        json_filehandler.setFormatter(JsonLogFormatter())
+        json_filehandler.setFormatter(python_logging.JsonLogFormatter())
         _DEVICE_LOG.addHandler(json_filehandler)
 
     detokenizer = None
@@ -454,7 +456,9 @@ def console(
         for token_database in token_databases:
             token_databases_with_domains.append(str(token_database) + "#trace")
 
-        detokenizer = AutoUpdatingDetokenizer(*token_databases_with_domains)
+        detokenizer = detokenize.AutoUpdatingDetokenizer(
+            *token_databases_with_domains
+        )
         detokenizer.show_errors = True
 
     protos: List[Union[ModuleType, Path]] = list(_expand_globs(proto_globs))
@@ -490,7 +494,11 @@ def console(
 
     timestamp_decoder = None
     if socket_addr is None:
-        serial_impl = SerialWithLogging if serial_debug else serial.Serial
+        serial_impl = (
+            pyserial_wrapper.SerialWithLogging
+            if serial_debug
+            else serial.Serial
+        )
         serial_device = serial_impl(
             device,
             baudrate,
@@ -510,9 +518,15 @@ def console(
 
         timestamp_decoder = milliseconds_to_string
     else:
-        socket_impl = SocketClientWithLogging if serial_debug else SocketClient
+        socket_impl = (
+            socket_client.SocketClientWithLogging
+            if serial_debug
+            else socket_client.SocketClient
+        )
 
-        def disconnect_handler(socket_device: SocketClient) -> None:
+        def disconnect_handler(
+            socket_device: socket_client.SocketClient,
+        ) -> None:
             """Attempts to reconnect on disconnected socket."""
             _LOG.error('Socket disconnected. Will retry to connect.')
             while True:
@@ -535,17 +549,17 @@ def console(
             return 1
 
     with reader:
-        device_client = DeviceWithTracing(
-            ticks_per_second,
+        device_client = device_tracing.DeviceWithTracing(
             channel_id,
             reader,
             write,
-            protos,
+            proto_library=protos,
             detokenizer=detokenizer,
             timestamp_decoder=timestamp_decoder,
             rpc_timeout_s=5,
             use_rpc_logging=rpc_logging,
             use_hdlc_encoding=hdlc_encoding,
+            ticks_per_second=ticks_per_second,
         )
         with device_client:
             _start_python_terminal(
