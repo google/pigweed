@@ -92,8 +92,11 @@ pw_toolchain_arm_clang = {
     name = "arm_clang_cortex_m0plus_size_optimized"
     forward_variables_from(_arm_clang_toolchain, "*")
     defaults = {
-      default_configs = pigweed_default_configs + _cortex_m0plus +
-                        [ "$dir_pw_build:optimize_size_clang" ]
+      default_configs = pigweed_default_configs + _cortex_m0plus + [
+                          "$dir_pw_build:optimize_size_clang",
+                          "$dir_pw_build:enable_clang_mlinliner",
+                          "$dir_pw_build:enable_clang_gvn_sink_hoist",
+                        ]
     }
   }
   cortex_m3_debug = {

@@ -65,9 +65,34 @@ config("optimize_size") {
   ldflags = cflags
 }
 
+config("enable_clang_mlinliner") {
+  cflags = [
+    # Enable ML inliner.
+    "-mllvm",
+    "-enable-ml-inliner=release",
+  ]
+}
+
+config("enable_clang_gvn_sink_hoist") {
+  cflags = [
+    # Enable GVN sink/hoist.
+    "-mllvm",
+    "-enable-gvn-sink=1",
+    "-mllvm",
+    "-enable-gvn-hoist=1",
+  ]
+}
+
 config("optimize_size_clang") {
   cflags = [ "-Oz" ]
-  ldflags = cflags
+  ldflags = [
+    # Identical Code Folding optimization
+    "-Wl,--icf=all",
+
+    # LLD does not recognize `Oz` which is a compiler front-end flag.
+    "-Wl,-O2",
+  ]
+  ldflags += cflags
 }
 
 # Standard compiler flags to reduce output binary size.
@@ -77,6 +102,7 @@ config("reduced_size") {
     "-fno-exceptions",
     "-ffunction-sections",
     "-fdata-sections",
+    "-fomit-frame-pointer",
   ]
   cflags_cc = [ "-fno-rtti" ]
 
