@@ -436,6 +436,19 @@ enum IoCapability:
   KEYBOARD_ONLY      = 0x02
   NO_INPUT_NO_OUTPUT = 0x03
 
+
+enum LESleepClockAccuracyRange:
+  -- Accuracy of the sleep clock, provided as a range
+  [maximum_bits: 8]
+  PPM_251_TO_500 = 0x00
+  PPM_151_TO_250 = 0x01
+  PPM_101_TO_150 = 0x02
+  PPM_76_TO_100  = 0x03
+  PPM_51_TO_75   = 0x04
+  PPM_31_TO_50   = 0x05
+  PPM_21_TO_30   = 0x06
+  PPM_0_TO_20    = 0x07
+
 # inclusive-language: disable
 
 

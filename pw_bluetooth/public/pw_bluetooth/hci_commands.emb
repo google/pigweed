@@ -492,19 +492,6 @@ struct LESetCIGParametersCISOptions:
     -- Central
 
 
-enum LESleepClockAccuracyRange:
-  -- Accuracy of the sleep clock, provided as a range
-  [maximum_bits: 8]
-  PPM_251_TO_500 = 0x00
-  PPM_151_TO_250 = 0x01
-  PPM_101_TO_150 = 0x02
-  PPM_76_TO_100  = 0x03
-  PPM_51_TO_75   = 0x04
-  PPM_31_TO_50   = 0x05
-  PPM_21_TO_30   = 0x06
-  PPM_0_TO_20    = 0x07
-
-
 enum LECISPacking:
   -- Preferred method of arranging subevents of multiple CISes
   [maximum_bits: 8]
@@ -2776,7 +2763,7 @@ struct LESetCIGParametersCommand:
     -- The interval, in microseconds, of periodic SDUs (Peripheral => Central)
     [requires: 0x0000FF <= this <= 0x0FFFFF]
 
-  $next [+1]                       LESleepClockAccuracyRange                worst_case_sca
+  $next [+1]                       hci.LESleepClockAccuracyRange            worst_case_sca
     -- Worst-case sleep clock accuracy of all Peripherals that will participate in the CIG
 
   $next [+1]                       LECISPacking                             packing
