@@ -206,6 +206,11 @@ proto_library(
     strip_import_prefix = "/pw_protobuf",
 )
 
+py_proto_library(
+    name = "common_py_pb2",
+    deps = [":common_proto"],
+)
+
 java_lite_proto_library(
     name = "common_java_proto_lite",
     deps = [":common_proto"],
