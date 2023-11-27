@@ -21,6 +21,7 @@ import("$dir_pw_docgen/docs.gni")
 pw_doc_group("static_assets") {
   inputs = [
     "_static/css/pigweed.css",
+    "_static/js/changelog.js",
     "_static/js/pigweed.js",
     "_static/pw_logo.ico",
     "_static/pw_logo.svg",
@@ -44,6 +45,7 @@ pw_doc_group("core_docs") {
     "code_of_conduct.rst",
     "code_reviews.rst",
     "concepts/index.rst",
+    "contributing/changelog.rst",
     "contributing/index.rst",
     "contributing/module_docs.rst",
     "editors.rst",

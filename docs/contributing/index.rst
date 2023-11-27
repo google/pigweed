@@ -424,3 +424,4 @@ See the warning about caching Python packages for multiple platforms in
    ../code_reviews
    ../code_of_conduct
    module_docs
+   changelog
