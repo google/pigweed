@@ -703,9 +703,13 @@ class CoverageOptions:
     of the metadata fields.
     """
 
+    # pylint: disable=too-many-instance-attributes
+
+    codesearch_host: str
     target_bucket_root: str
     target_bucket_project: str
-    project: str
+    codesearch_project: str
+    gerrit_project: str
     trace_type: str
     ref: str
     source: str
@@ -901,8 +905,6 @@ def _write_coverage_metadata(
     change = ctx.luci.triggers[0]
 
     metadata = {
-        'host': change.gerrit_host,
-        'project': options.project,
         'trace_type': options.trace_type,
         'trim_prefix': options.trim_prefix,
         'patchset_num': change.patchset,
@@ -921,8 +923,10 @@ def _write_coverage_metadata(
                 # TODO(tpudlik): Follow up with Kalypsi team, since this is
                 # surprising (given that trim_prefix is supported for both types
                 # of coverage). This might be an error in the docs.
-                'patchset_num': change.patchset,
                 'change_id': change.number,
+                'host': change.gerrit_host,
+                'patchset_num': change.patchset,
+                'project': options.gerrit_project,
             }
         )
     else:
@@ -931,6 +935,8 @@ def _write_coverage_metadata(
             {
                 'add_prefix': options.add_prefix,
                 'commit_id': change.ref,
+                'host': options.codesearch_host,
+                'project': options.codesearch_project,
                 'ref': options.ref,
                 'source': options.source,
             }
