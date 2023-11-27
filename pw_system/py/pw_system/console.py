@@ -454,7 +454,8 @@ def console(
     if token_databases:
         token_databases_with_domains = [] * len(token_databases)
         for token_database in token_databases:
-            token_databases_with_domains.append(str(token_database) + "#trace")
+            # Load all domains from token database.
+            token_databases_with_domains.append(str(token_database) + "#.*")
 
         detokenizer = detokenize.AutoUpdatingDetokenizer(
             *token_databases_with_domains
