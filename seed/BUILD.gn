@@ -136,6 +136,13 @@ pw_seed("0117") {
   author = "Jack Chen"
 }
 
+pw_seed("0119") {
+  changelist = 182673
+  title = "pw_sensor Sensor drivers and framework"
+  status = "Draft"
+  author = "Yuval Peress"
+}
+
 # This must be defined after all `pw_seed` targets, as it relies on information
 # exposed by them.
 pw_seed_index("seeds") {
@@ -160,5 +167,6 @@ pw_seed_index("seeds") {
     ":0115",
     ":0116",
     ":0117",
+    ":0119",
   ]
 }
