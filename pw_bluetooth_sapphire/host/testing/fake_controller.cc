@@ -848,8 +848,7 @@ DynamicByteBuffer FakeController::BuildExtendedAdvertisingReports(
   auto event =
       hci::EmbossEventPacket::New<LEExtendedAdvertisingReportSubeventWriter>(
           hci_spec::kLEMetaEventCode, packet_size);
-  auto packet =
-      event.view<LEExtendedAdvertisingReportSubeventWriter>(reports_size);
+  auto packet = event.view<LEExtendedAdvertisingReportSubeventWriter>();
   packet.le_meta_event().subevent_code().Write(
       hci_spec::kLEExtendedAdvertisingReportSubeventCode);
 

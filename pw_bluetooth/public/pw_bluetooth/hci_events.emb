@@ -1430,7 +1430,7 @@ struct LEAdvertisingReportData:
 struct LEAdvertisingReportSubevent:
   0     [+LEMetaEvent.$size_in_bytes]  LEMetaEvent           le_meta_event
   $next [+1]                           UInt                  num_reports
-    [requires: this <= 0x19]
+    [requires: 0x01 <= this <= 0x0A]
 
   # The -1 at the end is sizeof(num_reports).
   let reports_size = le_meta_event.header.parameter_total_size-(LEMetaEvent.$size_in_bytes-hci.EventHeader.$size_in_bytes)-1
@@ -1606,7 +1606,7 @@ struct LEExtendedAdvertisingReportData:
     -- [Vol 3] Part C, Section 11. Note: Each element of this array has a variable length.
 
 
-struct LEExtendedAdvertisingReportSubevent(reports_size: UInt:8):
+struct LEExtendedAdvertisingReportSubevent:
   -- 7.7.65.13 LE Extended Advertising Report event (v5.0) (LE)
   -- HCI_LE_Extended_Advertising_Report
   0     [+LEMetaEvent.$size_in_bytes]  LEMetaEvent           le_meta_event
@@ -1614,6 +1614,7 @@ struct LEExtendedAdvertisingReportSubevent(reports_size: UInt:8):
     -- Number of separate reports in the event.
     [requires: 0x01 <= this <= 0x0A]
 
+  let reports_size = le_meta_event.header.parameter_total_size-(LEMetaEvent.$size_in_bytes-hci.EventHeader.$size_in_bytes)-1
   $next [+reports_size]                UInt:8[reports_size]  reports
     -- Since each report has a variable length, they are stored in a UInt:8 array.
 
