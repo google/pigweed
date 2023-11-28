@@ -6,7 +6,7 @@
 .. seed::
    :number: 114
    :name: Channels
-   :status: Open for Comments
+   :status: Accepted
    :proposal_date: 2023-10-10
    :cl: 175471
 
@@ -318,6 +318,7 @@ Channel Class Capabilities
 ``Channel`` s may offer any of five capabilities:
 
 .. list-table::
+   :header-rows: 1
 
    * - Capability
      - Description
