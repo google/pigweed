@@ -7,7 +7,9 @@
         "dev": "vite",
         "build": "tsc && vite build --base=/asset/5b095937-1e59-52cf-9255-eb8577d1ff83/",
         "preview": "vite preview",
-        "lint": "eslint --max-warnings=0 src"
+        "lint": "eslint --max-warnings=0 src",
+        "test": "web-test-runner test/**/*.test.js --node-resolve",
+        "test:watch": "web-test-runner test/**/*.test.js --node-resolve --watch"
     },
     "dependencies": {
         "@lit-labs/virtualizer": "^2.0.7",
@@ -16,7 +18,12 @@
         "prettier-plugin-jsdoc": "^0.4.2"
     },
     "devDependencies": {
+        "@open-wc/testing": "^3.0.0-next.5",
+        "@remcovaes/web-test-runner-vite-plugin": "1.2.0",
         "@typescript-eslint/eslint-plugin": "^5.59.7",
+        "@web/test-runner": "^0.18.0",
+        "@web/test-runner-commands": "^0.9.0",
+        "@web/test-runner-playwright": "^0.11.0",
         "eslint": "^8.41.0",
         "eslint-config-prettier": "^8.8.0",
         "eslint-config-standard-with-typescript": "^34.0.1",
