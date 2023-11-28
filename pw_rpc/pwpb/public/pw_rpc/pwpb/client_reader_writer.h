@@ -90,7 +90,7 @@ class PwpbUnaryResponseClientCall : public UnaryResponseClientCall {
  protected:
   // Derived classes allow default construction so that users can declare a
   // variable into which to move client reader/writers from RPC calls.
-  constexpr PwpbUnaryResponseClientCall() = default;
+  constexpr PwpbUnaryResponseClientCall() : serde_(nullptr) {}
 
   PwpbUnaryResponseClientCall(LockedEndpoint& client,
                               uint32_t channel_id,
@@ -252,7 +252,7 @@ class PwpbStreamResponseClientCall : public StreamResponseClientCall {
  protected:
   // Derived classes allow default construction so that users can declare a
   // variable into which to move client reader/writers from RPC calls.
-  constexpr PwpbStreamResponseClientCall() = default;
+  constexpr PwpbStreamResponseClientCall() : serde_(nullptr) {}
 
   PwpbStreamResponseClientCall(LockedEndpoint& client,
                                uint32_t channel_id,
