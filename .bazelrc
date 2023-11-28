@@ -97,6 +97,15 @@ build:stm32f429i --//pw_log:backend_impl=@pigweed//pw_log_tokenized:impl
 build:stm32f429i --//targets:pw_log_backend=@pigweed//pw_log_tokenized
 build:stm32f429i --//targets:pw_log_tokenized_handler_backend=@pigweed//pw_system:log_backend
 
+
+# For some platforms i.e. google/oss-fuzz we need to use the system provided
+# rather than the hermetic toolchains. This allows oss-fuzz to override the
+# build with specialised compilers that are tightly coupled to the fuzzing
+# runtimes.
+# Detect toolchains
+common:non_hermetic --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=0
+common:non_hermetic --extra_toolchains=@local_config_cc_toolchains//...
+
 # Specifies desired output mode for running tests.
 # Valid values are
 #   'summary' to output only test status summary
