@@ -89,7 +89,6 @@ cipd_repository(
 # toolchain compatible with the target platform. So, they should be listed from
 # most-restrive to least-restrictive.
 register_toolchains(
-    "//pw_toolchain/host_clang:host_cc_toolchain_linux_kythe",
     "//pw_toolchain/host_clang:host_cc_toolchain_linux",
     "//pw_toolchain/host_clang:host_cc_toolchain_macos",
 )
