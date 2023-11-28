@@ -97,10 +97,10 @@ pw_test("tests") {
     "connection_test.cc",
     "extended_low_energy_advertiser_test.cc",
     "legacy_low_energy_advertiser_test.cc",
-    "legacy_low_energy_scanner_test.cc",
     "low_energy_advertiser_test.cc",
     "low_energy_connector_test.cc",
     "low_energy_multiple_advertising_test.cc",
+    "low_energy_scanner_test.cc",
     "sequential_command_runner_test.cc",
     "util_test.cc",
   ]
