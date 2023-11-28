@@ -65,7 +65,7 @@ TEST(EmbossControlPackets, ArrayFieldWithVariableLengthElements) {
   auto packet = EmbossEventPacket::New<
       pw::bluetooth::emboss::LEExtendedAdvertisingReportSubeventWriter>(
       hci_spec::kLEMetaEventCode, packet_size);
-  auto view = packet.view_t();
+  auto view = packet.view_t(reports_size);
   view.num_reports().Write(2);
   ASSERT_TRUE(view.Ok());
   EXPECT_EQ(view.reports().SizeInBytes(), reports_size);
