@@ -42,17 +42,7 @@ class FakePeer {
                     bool connectable = true,
                     bool scannable = true);
 
-  const ByteBuffer& advertising_data() const { return adv_data_; }
-  void set_advertising_data(const ByteBuffer& data) {
-    adv_data_ = DynamicByteBuffer(data);
-  }
-
-  // |should_batch_reports| indicates to the FakeController that the SCAN_IND
-  // report should be included in the same HCI LE Advertising Report Event
-  // payload that includes the original advertising data (see comments for
-  // should_batch_reports()).
-  void set_scan_response(bool should_batch_reports, const ByteBuffer& data);
-  const ByteBuffer& scan_response() const { return scan_rsp_; }
+  void SetAdvertisingData(const ByteBuffer& data);
 
   bool advertising_enabled() const { return advertising_enabled_; }
   void set_advertising_enabled(bool enabled) { advertising_enabled_ = enabled; }
@@ -89,6 +79,12 @@ class FakePeer {
     return address().type() != DeviceAddress::Type::kBREDR;
   }
 
+  // |should_batch_reports| indicates to the FakeController that the SCAN_IND
+  // report should be included in the same HCI LE Advertising Report Event
+  // payload that includes the original advertising data (see comments for
+  // should_batch_reports()).
+  void SetScanResponse(bool should_batch_reports, const ByteBuffer& data);
+
   // Generates a Inquiry Response Event payload containing a inquiry result
   // response.
   DynamicByteBuffer CreateInquiryResponseEvent(
@@ -101,6 +97,8 @@ class FakePeer {
   // The local name of the device. Used in HCI Remote Name Request event.
   std::string name() const { return name_; }
   void set_name(const std::string& name) { name_ = name; }
+
+  void set_name(std::string name) { name_ = name; }
 
   // Indicates whether or not this device should include the scan response and
   // the advertising data in the same HCI LE Advertising Report Event. This is
@@ -168,13 +166,13 @@ class FakePeer {
   bool force_pending_connect() const { return force_pending_connect_; }
   void set_force_pending_connect(bool value) { force_pending_connect_ = value; }
 
-  const std::optional<pw::bluetooth::emboss::LinkType>&
-  last_connection_request_link_type() const {
-    return last_connection_request_link_type_;
-  }
   void set_last_connection_request_link_type(
       std::optional<pw::bluetooth::emboss::LinkType> type) {
     last_connection_request_link_type_ = type;
+  }
+  const std::optional<pw::bluetooth::emboss::LinkType>&
+  last_connection_request_link_type() const {
+    return last_connection_request_link_type_;
   }
 
   void AddLink(hci_spec::ConnectionHandle handle);
@@ -189,7 +187,7 @@ class FakePeer {
   HandleSet Disconnect();
 
   // Returns the FakeController that has been assigned to this device.
-  FakeController* controller() const { return controller_; }
+  FakeController* ctrl() const { return ctrl_; }
 
   // Returns the FakeSdpServer associated with this device.
   FakeSdpServer* sdp_server() { return &sdp_server_; }
@@ -198,7 +196,7 @@ class FakePeer {
   friend class FakeController;
 
   // Called by a FakeController when a FakePeer is registered with it.
-  void set_controller(FakeController* ctrl) { controller_ = ctrl; }
+  void set_ctrl(FakeController* ctrl) { ctrl_ = ctrl; }
 
   void WriteScanResponseReport(hci_spec::LEAdvertisingReportData* report) const;
 
@@ -213,10 +211,10 @@ class FakePeer {
   //  packet header.
   void SendPacket(hci_spec::ConnectionHandle conn,
                   l2cap::ChannelId cid,
-                  const ByteBuffer& packet) const;
+                  const ByteBuffer& packet);
 
   // The FakeController that this FakePeer has been assigned to.
-  FakeController* controller_;  // weak
+  FakeController* ctrl_;  // weak
 
   DeviceAddress address_;
   std::string name_;

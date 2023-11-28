@@ -528,7 +528,7 @@ class FakeController final : public ControllerTestDoubleBase,
   //
   // Does nothing if a LE scan is not currently enabled or if the peer doesn't
   // support advertising.
-  void SendAdvertisingReport(const FakePeer& peer);
+  void SendSingleAdvertisingReport(const FakePeer& peer);
 
   // Generates and returns a LE Advertising Report Event payload. If
   // |include_scan_rsp| is true, then the returned PDU will contain two reports

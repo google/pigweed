@@ -29,7 +29,7 @@ FakePeer::FakePeer(const DeviceAddress& address,
                    pw::async::Dispatcher& pw_dispatcher,
                    bool connectable,
                    bool scannable)
-    : controller_(nullptr),
+    : ctrl_(nullptr),
       address_(address),
       name_("FakePeer"),
       connected_(false),
@@ -52,8 +52,13 @@ FakePeer::FakePeer(const DeviceAddress& address,
   sdp_server_.RegisterWithL2cap(&l2cap_);
 }
 
-void FakePeer::set_scan_response(bool should_batch_reports,
-                                 const ByteBuffer& data) {
+void FakePeer::SetAdvertisingData(const ByteBuffer& data) {
+  BT_DEBUG_ASSERT(data.size() <= hci_spec::kMaxLEAdvertisingDataLength);
+  adv_data_ = DynamicByteBuffer(data);
+}
+
+void FakePeer::SetScanResponse(bool should_batch_reports,
+                               const ByteBuffer& data) {
   BT_DEBUG_ASSERT(scannable_);
   scan_rsp_ = DynamicByteBuffer(data);
   should_batch_reports_ = should_batch_reports;
@@ -137,8 +142,8 @@ void FakePeer::OnRxL2CAP(hci_spec::ConnectionHandle conn,
 
 void FakePeer::SendPacket(hci_spec::ConnectionHandle conn,
                           l2cap::ChannelId cid,
-                          const ByteBuffer& packet) const {
-  controller()->SendL2CAPBFrame(conn, cid, packet);
+                          const ByteBuffer& packet) {
+  ctrl()->SendL2CAPBFrame(conn, cid, packet);
 }
 
 }  // namespace bt::testing
