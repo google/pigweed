@@ -136,6 +136,13 @@ pw_seed("0117") {
   author = "Jack Chen"
 }
 
+pw_seed("0118") {
+  changelist = 181836
+  title = "Sensor Read API"
+  status = "Draft"
+  author = "Taylor Cramer"
+}
+
 pw_seed("0119") {
   changelist = 182673
   title = "pw_sensor Sensor drivers and framework"
@@ -167,6 +174,7 @@ pw_seed_index("seeds") {
     ":0115",
     ":0116",
     ":0117",
+    ":0118",
     ":0119",
   ]
 }
