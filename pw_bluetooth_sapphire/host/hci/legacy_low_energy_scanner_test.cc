@@ -503,9 +503,8 @@ TEST_F(LegacyLowEnergyScannerTest, StopDuringActiveScan) {
   EXPECT_EQ(LowEnergyScanner::State::kActiveScanning, scanner()->state());
 
   // Run the loop until we've seen an event for the last peer that we
-  // added. Fake Peer 4 (i.e. kRandomAddress3) is scannable but it never sends
-  // a scan response so we expect that to remain in the scanner's pending
-  // reports list.
+  // added. Fake Peer kRandomAddress3 is scannable but it never sends a scan
+  // response so we expect that to remain in the scanner's pending reports list.
   RunUntilIdle();
   EXPECT_EQ(5u, results.size());
   EXPECT_EQ(results.find(kRandomAddress3), results.end());
@@ -627,27 +626,27 @@ TEST_F(LegacyLowEnergyScannerTest, DirectedReport) {
   // Unresolved public.
   auto fake_peer =
       std::make_unique<FakePeer>(kPublicUnresolved, dispatcher(), true, false);
-  fake_peer->enable_directed_advertising(true);
+  fake_peer->set_directed_advertising_enabled(true);
   test_device()->AddPeer(std::move(fake_peer));
 
   // Unresolved random.
   fake_peer =
       std::make_unique<FakePeer>(kRandomUnresolved, dispatcher(), true, false);
-  fake_peer->enable_directed_advertising(true);
+  fake_peer->set_directed_advertising_enabled(true);
   test_device()->AddPeer(std::move(fake_peer));
 
   // Resolved public.
   fake_peer =
       std::make_unique<FakePeer>(kPublicResolved, dispatcher(), true, false);
   fake_peer->set_address_resolved(true);
-  fake_peer->enable_directed_advertising(true);
+  fake_peer->set_directed_advertising_enabled(true);
   test_device()->AddPeer(std::move(fake_peer));
 
   // Resolved random.
   fake_peer =
       std::make_unique<FakePeer>(kRandomResolved, dispatcher(), true, false);
   fake_peer->set_address_resolved(true);
-  fake_peer->enable_directed_advertising(true);
+  fake_peer->set_directed_advertising_enabled(true);
   test_device()->AddPeer(std::move(fake_peer));
 
   std::unordered_map<DeviceAddress, LowEnergyScanResult> results;

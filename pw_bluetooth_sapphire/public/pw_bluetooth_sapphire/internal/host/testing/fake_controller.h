@@ -119,13 +119,15 @@ class FakeController final : public ControllerTestDoubleBase,
     bool enabled = false;
     pw::bluetooth::emboss::LEScanType scan_type =
         pw::bluetooth::emboss::LEScanType::PASSIVE;
-    uint16_t scan_interval = 0;
-    uint16_t scan_window = 0;
-    bool filter_duplicates = false;
     pw::bluetooth::emboss::LEOwnAddressType own_address_type =
         pw::bluetooth::emboss::LEOwnAddressType::PUBLIC;
     pw::bluetooth::emboss::LEScanFilterPolicy filter_policy =
         pw::bluetooth::emboss::LEScanFilterPolicy::BASIC_UNFILTERED;
+    uint16_t scan_interval = 0;
+    uint16_t scan_window = 0;
+    bool filter_duplicates = false;
+    uint16_t duration = 0;
+    uint16_t period = 0;
   };
 
   // Current device basic advertising state
@@ -437,6 +439,7 @@ class FakeController final : public ControllerTestDoubleBase,
 
   // Controller overrides:
   void SendCommand(pw::span<const std::byte> command) override;
+
   void SendAclData(pw::span<const std::byte> data) override {
     // Post the packet to simulate async HCI behavior.
     (void)heap_dispatcher().Post(
@@ -447,6 +450,7 @@ class FakeController final : public ControllerTestDoubleBase,
           }
         });
   }
+
   void SendScoData(pw::span<const std::byte> data) override {
     // Post the packet to simulate async HCI behavior.
     (void)heap_dispatcher().Post(
@@ -457,6 +461,15 @@ class FakeController final : public ControllerTestDoubleBase,
           }
         });
   }
+
+  // Populate an LEExtendedAdvertisingReportData as though it was received from
+  // the given FakePeer
+  void FillExtendedAdvertisingReport(
+      const FakePeer& peer,
+      pw::bluetooth::emboss::LEExtendedAdvertisingReportDataWriter report,
+      const ByteBuffer& data,
+      bool is_fragmented,
+      bool is_scan_response) const;
 
  private:
   static bool IsValidAdvertisingHandle(hci_spec::AdvertisingHandle handle) {
@@ -507,13 +520,34 @@ class FakeController final : public ControllerTestDoubleBase,
   // reports are continued to be sent until scan is disabled.
   void SendAdvertisingReports();
 
-  // Sends a single LE advertising report for the given peer. May send an
-  // additional report if the peer has scan response data and was configured to
-  // not batch them in a single report alongside the regular advertisement.
+  // Sends a single LE advertising report for the given peer. This method will
+  // send a legacy or extended advertising report, depending on which one the
+  // peer is configured to send. May send an additional report if the peer has
+  // scan response data and was configured to not batch them in a single report
+  // alongside the regular advertisement.
   //
   // Does nothing if a LE scan is not currently enabled or if the peer doesn't
   // support advertising.
   void SendAdvertisingReport(const FakePeer& peer);
+
+  // Generates and returns a LE Advertising Report Event payload. If
+  // |include_scan_rsp| is true, then the returned PDU will contain two reports
+  // including the SCAN_IND report.
+  DynamicByteBuffer BuildLegacyAdvertisingReportEvent(const FakePeer& peer,
+                                                      bool include_scan_rsp);
+
+  // Generates a LE Advertising Report Event payload containing the scan
+  // response.
+  DynamicByteBuffer BuildLegacyScanResponseReportEvent(
+      const FakePeer& peer) const;
+
+  // Generates and returns an LE Extended Advertising Report Event payload.
+  DynamicByteBuffer BuildExtendedAdvertisingReportEvent(
+      const FakePeer& peer) const;
+
+  // Generates an LE Extended Advertising Report Event payload containing the
+  // scan response.
+  DynamicByteBuffer BuildExtendedScanResponseEvent(const FakePeer& peer) const;
 
   // Notifies |controller_parameters_cb_|.
   void NotifyControllerParametersChanged();
@@ -568,9 +602,19 @@ class FakeController final : public ControllerTestDoubleBase,
   void OnLESetScanEnable(
       const pw::bluetooth::emboss::LESetScanEnableCommandView& params);
 
+  // Called when a HCI_LE_Set_Extended_Scan_Enable command is received.
+  void OnLESetExtendedScanEnable(
+      const pw::bluetooth::emboss::LESetExtendedScanEnableCommandView& params);
+
   // Called when a HCI_LE_Set_Scan_Parameters command is received.
-  void OnLESetScanParamaters(
+
+  void OnLESetScanParameters(
       const pw::bluetooth::emboss::LESetScanParametersCommandView& params);
+
+  // Called when a HCI_LE_Extended_Set_Scan_Parameters command is received.
+  void OnLESetExtendedScanParameters(
+      const pw::bluetooth::emboss::LESetExtendedScanParametersCommandView&
+          params);
 
   // Called when a HCI_Read_Local_Extended_Features command is received.
   void OnReadLocalExtendedFeatures(
@@ -858,6 +902,11 @@ class FakeController final : public ControllerTestDoubleBase,
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet);
   void OnScoDataPacketReceived(const ByteBuffer& sco_data_packet);
 
+  DynamicByteBuffer BuildExtendedAdvertisingReports(
+      const FakePeer& peer,
+      const ByteBuffer& data,
+      bool is_scan_response) const;
+
   const uint8_t BIT_1 = 1;
   bool isBREDRPageScanEnabled() const {
     return (bredr_scan_state_ >> BIT_1) & BIT_1;
@@ -959,6 +1008,10 @@ class FakeController final : public ControllerTestDoubleBase,
 
   bool auto_completed_packets_event_enabled_ = true;
   bool auto_disconnection_complete_event_enabled_ = true;
+
+  // True if the FakeController has received any extended operations
+  // (e.g. extended advertising, extended scanning, extended connections, etc).
+  bool received_extended_operations_ = false;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeController);
 };
