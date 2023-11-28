@@ -29,6 +29,13 @@ void TransferService::HandleChunk(ConstByteSpan message,
     return;
   }
 
+  if (chunk->type() != transfer::pwpb::Chunk::Type::DATA) {
+    PW_LOG_DEBUG("Handled Chunk: %d, %d, %d",
+                 static_cast<int>(chunk->type()),
+                 static_cast<int>(chunk->session_id()),
+                 static_cast<int>(chunk->protocol_version()));
+  }
+
   if (chunk->IsInitialChunk()) {
     uint32_t resource_id =
         chunk->is_legacy() ? chunk->session_id() : chunk->resource_id().value();

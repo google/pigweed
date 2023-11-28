@@ -25,6 +25,12 @@ from typing import Any, Callable, Optional
 from pw_status import Status
 from pw_transfer.chunk import Chunk, ProtocolVersion
 
+try:
+    from pw_transfer import transfer_pb2
+except ImportError:
+    # For the bazel build, which puts generated protos in a different location.
+    from pigweed.pw_transfer import transfer_pb2  # type: ignore
+
 _LOG = logging.getLogger(__package__)
 
 
@@ -217,6 +223,10 @@ class Transfer(abc.ABC):
 
     def _send_chunk(self, chunk: Chunk) -> None:
         """Sends a chunk to the server, keeping track of the last chunk sent."""
+        if chunk.type is not transfer_pb2.Chunk.Type.DATA:
+            _LOG.debug(
+                'Transmitting chunk\n%s', str(chunk.to_message()).rstrip()
+            )
         self._send_chunk_fn(chunk)
         self._last_chunk = chunk
 

@@ -325,6 +325,13 @@ void Context::HandleChunkEvent(const ChunkEvent& event) {
   retries_ = 0;
   flags_ |= kFlagsContactMade;
 
+  if (chunk.type() != transfer::pwpb::Chunk::Type::DATA) {
+    PW_LOG_DEBUG("Handled Chunk Event: %d, %d, %d",
+                 static_cast<int>(chunk.type()),
+                 static_cast<int>(chunk.session_id()),
+                 static_cast<int>(chunk.protocol_version()));
+  }
+
   if (chunk.IsTerminatingChunk()) {
     if (active()) {
       HandleTermination(chunk.status().value());
