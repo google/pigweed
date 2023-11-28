@@ -43,6 +43,18 @@ class LegacyLowEnergyScanner : public LowEnergyScanner {
                  ScanStatusCallback callback) override;
   bool StopScan() override;
 
+ protected:
+  // Build the HCI command packet to set the scan parameters for the flavor of
+  // low energy scanning being implemented.
+  EmbossCommandPacket BuildSetScanParametersPacket(
+      const DeviceAddress& local_address, const ScanOptions& options) override;
+
+  // Build the HCI command packet to enable scanning for the flavor of low
+  // energy scanning being implemented.
+  EmbossCommandPacket BuildEnablePacket(
+      const ScanOptions& options,
+      pw::bluetooth::emboss::GenericEnableParam enable) override;
+
  private:
   // This represents the data obtained for a scannable advertisement for which a
   // scan response has not yet been received. Clients are notified for scannable

@@ -59,7 +59,7 @@ LegacyLowEnergyScanner::PendingScanResult::PendingScanResult(
     pw::chrono::SystemClock::duration timeout,
     fit::closure timeout_handler,
     pw::async::Dispatcher& dispatcher)
-    : result_(result), data_size_(0u), timeout_task_(dispatcher) {
+    : result_(result), timeout_task_(dispatcher) {
   Append(adv);
   timeout_task_.set_function(
       [timeout_handler = std::move(timeout_handler)](pw::async::Context /*ctx*/,
@@ -160,40 +160,14 @@ void LegacyLowEnergyScanner::StartScanInternal(
          options.interval,
          options.window);
 
-  // HCI_LE_Set_Scan_Parameters
-  auto scan_params_command = hci::EmbossCommandPacket::New<
-      pw::bluetooth::emboss::LESetScanParametersCommandWriter>(
-      hci_spec::kLESetScanParameters);
-  auto scan_params = scan_params_command.view_t();
-  scan_params.le_scan_type().Write(
-      options.active ? pw::bluetooth::emboss::LEScanType::ACTIVE
-                     : pw::bluetooth::emboss::LEScanType::PASSIVE);
-  scan_params.le_scan_interval().Write(options.interval);
-  scan_params.le_scan_window().Write(options.window);
-  scan_params.scanning_filter_policy().Write(options.filter_policy);
-
-  if (local_address.type() == DeviceAddress::Type::kLERandom) {
-    scan_params.own_address_type().Write(
-        pw::bluetooth::emboss::LEOwnAddressType::RANDOM);
-  } else {
-    scan_params.own_address_type().Write(
-        pw::bluetooth::emboss::LEOwnAddressType::PUBLIC);
-  }
+  EmbossCommandPacket scan_params_command =
+      BuildSetScanParametersPacket(local_address, options);
   hci_cmd_runner()->QueueCommand(std::move(scan_params_command));
 
-  // HCI_LE_Set_Scan_Enable
-  auto scan_enable_command = EmbossCommandPacket::New<
-      pw::bluetooth::emboss::LESetScanEnableCommandWriter>(
-      hci_spec::kLESetScanEnable);
-  auto enable_params = scan_enable_command.view_t();
-  enable_params.le_scan_enable().Write(
-      pw::bluetooth::emboss::GenericEnableParam::ENABLE);
-  enable_params.filter_duplicates().Write(
-      options.filter_duplicates
-          ? pw::bluetooth::emboss::GenericEnableParam::ENABLE
-          : pw::bluetooth::emboss::GenericEnableParam::DISABLE);
-
+  EmbossCommandPacket scan_enable_command = BuildEnablePacket(
+      options, pw::bluetooth::emboss::GenericEnableParam::ENABLE);
   hci_cmd_runner()->QueueCommand(std::move(scan_enable_command));
+
   hci_cmd_runner()->RunCommands(
       [this, period = options.period](Result<> status) {
         BT_DEBUG_ASSERT(scan_cb_);
@@ -272,16 +246,11 @@ void LegacyLowEnergyScanner::StopScanInternal(bool stopped) {
   BT_DEBUG_ASSERT(hci_cmd_runner()->IsReady());
 
   // Tell the controller to stop scanning.
-  auto command = EmbossCommandPacket::New<
-      pw::bluetooth::emboss::LESetScanEnableCommandWriter>(
-      hci_spec::kLESetScanEnable);
-  auto enable_params = command.view_t();
-  enable_params.le_scan_enable().Write(
-      pw::bluetooth::emboss::GenericEnableParam::DISABLE);
-  enable_params.filter_duplicates().Write(
-      pw::bluetooth::emboss::GenericEnableParam::DISABLE);
-
+  ScanOptions options;
+  EmbossCommandPacket command = BuildEnablePacket(
+      options, pw::bluetooth::emboss::GenericEnableParam::DISABLE);
   hci_cmd_runner()->QueueCommand(std::move(command));
+
   hci_cmd_runner()->RunCommands([this, stopped](Result<> status) {
     BT_DEBUG_ASSERT(scan_cb_);
     BT_DEBUG_ASSERT(state() == State::kStopping);
@@ -299,6 +268,52 @@ void LegacyLowEnergyScanner::StopScanInternal(bool stopped) {
            ? ScanStatus::kFailed
            : (stopped ? ScanStatus::kStopped : ScanStatus::kComplete));
   });
+}
+
+EmbossCommandPacket LegacyLowEnergyScanner::BuildSetScanParametersPacket(
+    const DeviceAddress& local_address, const ScanOptions& options) {
+  auto packet = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::LESetScanParametersCommandWriter>(
+      hci_spec::kLESetScanParameters);
+  auto params = packet.view_t();
+
+  params.le_scan_type().Write(pw::bluetooth::emboss::LEScanType::PASSIVE);
+  if (options.active) {
+    params.le_scan_type().Write(pw::bluetooth::emboss::LEScanType::ACTIVE);
+  }
+
+  params.le_scan_interval().Write(options.interval);
+  params.le_scan_window().Write(options.window);
+  params.scanning_filter_policy().Write(options.filter_policy);
+
+  if (local_address.type() == DeviceAddress::Type::kLERandom) {
+    params.own_address_type().Write(
+        pw::bluetooth::emboss::LEOwnAddressType::RANDOM);
+  } else {
+    params.own_address_type().Write(
+        pw::bluetooth::emboss::LEOwnAddressType::PUBLIC);
+  }
+
+  return packet;
+}
+
+EmbossCommandPacket LegacyLowEnergyScanner::BuildEnablePacket(
+    const ScanOptions& options,
+    pw::bluetooth::emboss::GenericEnableParam enable) {
+  auto packet = EmbossCommandPacket::New<
+      pw::bluetooth::emboss::LESetScanEnableCommandWriter>(
+      hci_spec::kLESetScanEnable);
+  auto params = packet.view_t();
+  params.le_scan_enable().Write(enable);
+
+  params.filter_duplicates().Write(
+      pw::bluetooth::emboss::GenericEnableParam::DISABLE);
+  if (options.filter_duplicates) {
+    params.filter_duplicates().Write(
+        pw::bluetooth::emboss::GenericEnableParam::ENABLE);
+  }
+
+  return packet;
 }
 
 CommandChannel::EventCallbackResult

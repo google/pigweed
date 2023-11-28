@@ -216,6 +216,17 @@ class LowEnergyScanner : public LocalAddressClient {
   void set_delegate(Delegate* delegate) { delegate_ = delegate; }
 
  protected:
+  // Build the HCI command packet to set the scan parameters for the flavor of
+  // low energy scanning being implemented.
+  virtual EmbossCommandPacket BuildSetScanParametersPacket(
+      const DeviceAddress& local_address, const ScanOptions& options) = 0;
+
+  // Build the HCI command packet to enable scanning for the flavor of low
+  // energy scanning being implemented.
+  virtual EmbossCommandPacket BuildEnablePacket(
+      const ScanOptions& options,
+      pw::bluetooth::emboss::GenericEnableParam enable) = 0;
+
   pw::async::Dispatcher& pw_dispatcher() { return pw_dispatcher_; }
   Transport::WeakPtr transport() const { return transport_; }
   SequentialCommandRunner* hci_cmd_runner() const {
