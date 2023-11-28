@@ -15,15 +15,16 @@
 
 import os
 import subprocess
+from pathlib import Path
 import tempfile
 import unittest
-from pathlib import Path
 
 from pw_build_info import build_id
 
-# Since build_id.cc depends on pw_preprocessor, we have to use the in-tree path.
-_MODULE_DIR = Path(__file__).parent.parent.resolve()
-_MODULE_PY_DIR = Path(__file__).parent.resolve()
+# Since build_id.cc depends on pw_preprocessor, we have to use the in-tree path
+# to reference the dependent source files.
+_MODULE_DIR = Path(__file__).resolve().parent.parent
+_MODULE_PY_DIR = Path(__file__).resolve().parent
 
 _SHA1_BUILD_ID_LENGTH = 20
 
@@ -43,16 +44,17 @@ class TestGnuBuildId(unittest.TestCase):
             # Compiles a binary that prints the embedded GNU build id.
             cmd = [
                 'clang++',
-                'build_id.cc',
+                _MODULE_DIR / 'build_id.cc',
                 _MODULE_PY_DIR / 'print_build_id.cc',
-                '-Ipublic',
-                '-I../pw_polyfill/public',
-                '-I../pw_preprocessor/public',
-                '-I../pw_span/public',
+                f'-I{_MODULE_DIR}/public',
+                f'-I{_MODULE_DIR}/../pw_polyfill/public',
+                f'-I{_MODULE_DIR}/../pw_preprocessor/public',
+                f'-I{_MODULE_DIR}/../pw_span/public',
                 '--sysroot=%s' % sysroot,
                 '-std=c++17',
                 '-fuse-ld=lld',
-                '-Wl,-Tadd_build_id_to_default_linker_script.ld',
+                f'-Wl,-T{_MODULE_DIR}/add_build_id_to_default_linker_script.ld',
+                f'-Wl,-L{_MODULE_DIR}',
                 '-Wl,--build-id=sha1',
                 '-o',
                 exe_file,
@@ -62,7 +64,6 @@ class TestGnuBuildId(unittest.TestCase):
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
-                cwd=_MODULE_DIR,
             )
             self.assertEqual(
                 process.returncode, 0, process.stdout.decode(errors='replace')
@@ -73,7 +74,6 @@ class TestGnuBuildId(unittest.TestCase):
                 [exe_file],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
-                cwd=_MODULE_DIR,
             )
             self.assertEqual(process.returncode, 0)
 

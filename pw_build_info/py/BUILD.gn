@@ -17,7 +17,6 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/python.gni")
 
 pw_python_package("py") {
-  inputs = [ "print_build_id.cc" ]
   setup = [
     "pyproject.toml",
     "setup.cfg",
@@ -31,6 +30,19 @@ pw_python_package("py") {
   # AND run an ELF file.
   if (host_os == "linux") {
     tests = [ "build_id_test.py" ]
+
+    # Deps for build_id_test.py
+    inputs = [
+      "print_build_id.cc",
+      "../build_id.cc",
+      "../add_build_id_to_default_linker_script.ld",
+      "../build_id_linker_snippet.ld",
+    ]
+
+    other_deps = [
+      dir_pw_preprocessor,
+      dir_pw_span,
+    ]
   }
 
   pylintrc = "$dir_pigweed/.pylintrc"
