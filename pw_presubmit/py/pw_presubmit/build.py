@@ -924,7 +924,7 @@ def _write_coverage_metadata(
                 # surprising (given that trim_prefix is supported for both types
                 # of coverage). This might be an error in the docs.
                 'change_id': change.number,
-                'host': change.gerrit_host,
+                'host': change.gerrit_name,
                 'patchset_num': change.patchset,
                 'project': options.gerrit_project,
             }
