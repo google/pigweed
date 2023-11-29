@@ -202,7 +202,7 @@ void FakeController::Settings::ApplyAndroidVendorExtensionDefaults() {
   // Settings for the android vendor extensions component within the Fake
   // Controller. These settings correspond to the vendor capabilities returned
   // by the controller. See
-  // src/connectivity/bluetooth/core/bt-host/hci-spec/vendor_protocol.h and
+  // pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h and
   // LEGetVendorCapabilities for more information.
   android_extension_settings.view().status().Write(
       pw::bluetooth::emboss::StatusCode::SUCCESS);

@@ -30,6 +30,7 @@ pw_source_set("gap") {
     "$dir_public_gap/adapter.h",
     "$dir_public_gap/adapter_state.h",
     "$dir_public_gap/android_vendor_capabilities.h",
+    "$dir_public_gap/bonding_data.h",
     "$dir_public_gap/bredr_connection.h",
     "$dir_public_gap/bredr_connection_manager.h",
     "$dir_public_gap/bredr_connection_request.h",
@@ -102,10 +103,13 @@ pw_source_set("gap") {
 }
 
 pw_source_set("testing") {
+  testonly = pw_unit_test_TESTONLY
+
   public = [
     "$dir_public_gap/fake_adapter.h",
     "$dir_public_gap/fake_pairing_delegate.h",
   ]
+
   sources = [
     "fake_adapter.cc",
     "fake_pairing_delegate.cc",

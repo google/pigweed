@@ -18,6 +18,8 @@ import("$dir_pw_unit_test/test.gni")
 dir_public_testing = "../../public/pw_bluetooth_sapphire/internal/host/testing"
 
 pw_source_set("testing") {
+  testonly = pw_unit_test_TESTONLY
+
   public = [
     "$dir_public_testing/controller_test.h",
     "$dir_public_testing/inspect.h",
@@ -51,6 +53,8 @@ pw_source_set("testing") {
 
 # test_helpers is separate from :testing to fix dependency cycles.
 pw_source_set("test_helpers") {
+  testonly = pw_unit_test_TESTONLY
+
   public = [ "$dir_public_testing/test_helpers.h" ]
 
   deps = [ "$dir_pw_bluetooth_sapphire/lib/cpp-string" ]
@@ -83,6 +87,8 @@ pw_test("tests") {
 }
 
 pw_source_set("controller_test_double_base") {
+  testonly = pw_unit_test_TESTONLY
+
   public = [ "$dir_public_testing/controller_test_double_base.h" ]
 
   sources = [ "controller_test_double_base.cc" ]
@@ -97,6 +103,8 @@ pw_source_set("controller_test_double_base") {
 }
 
 pw_source_set("mock_controller") {
+  testonly = pw_unit_test_TESTONLY
+
   public = [ "$dir_public_testing/mock_controller.h" ]
 
   sources = [ "mock_controller.cc" ]
@@ -114,6 +122,8 @@ pw_source_set("mock_controller") {
 # Target that includes Fake HCI emulation support. This should NOT depend on
 # gtest.
 pw_source_set("fake_controller") {
+  testonly = pw_unit_test_TESTONLY
+
   public = [
     "$dir_public_testing/fake_controller.h",
     "$dir_public_testing/fake_dynamic_channel.h",
@@ -152,6 +162,8 @@ pw_source_set("fake_controller") {
 
 # Main entry point for host library unittests.
 pw_source_set("gtest_main") {
+  testonly = pw_unit_test_TESTONLY
+
   sources = [ "run_all_unittests.cc" ]
 
   deps = [

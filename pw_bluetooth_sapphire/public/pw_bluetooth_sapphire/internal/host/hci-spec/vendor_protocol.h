@@ -34,7 +34,6 @@
 #include <pw_bluetooth/hci_vendor.emb.h>
 
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
-#include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 
 namespace bt::hci_spec::vendor::android {
 

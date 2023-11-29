@@ -103,6 +103,8 @@ pw_source_set("l2cap") {
 
 # Separate from :testing to avoid a dependency cycle.
 pw_source_set("channel_manager_mock_controller_test_fixture") {
+  testonly = pw_unit_test_TESTONLY
+
   public =
       [ "$dir_public_l2cap/channel_manager_mock_controller_test_fixture.h" ]
 
@@ -115,6 +117,8 @@ pw_source_set("channel_manager_mock_controller_test_fixture") {
 }
 
 pw_source_set("testing") {
+  testonly = pw_unit_test_TESTONLY
+
   public = [
     "$dir_public_l2cap/fake_channel.h",
     "$dir_public_l2cap/fake_channel_test.h",

@@ -64,6 +64,8 @@ pw_source_set("gatt") {
 }
 
 pw_source_set("testing") {
+  testonly = pw_unit_test_TESTONLY
+
   public = [
     "$dir_public_gatt/fake_client.h",
     "$dir_public_gatt/fake_layer.h",

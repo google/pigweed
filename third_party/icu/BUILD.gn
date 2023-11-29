@@ -19,6 +19,7 @@ import("$dir_pw_third_party/icu/icu.gni")
 if (dir_pw_third_party_icu != "") {
   config("includes") {
     include_dirs = [ "$dir_pw_third_party_icu/source/common" ]
+    cflags = [ "-Wno-conversion" ]
   }
 
   pw_source_set("icu") {

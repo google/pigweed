@@ -28,6 +28,7 @@ pw_source_set("hci-spec") {
     "$dir_public_hci_spec/lmp_feature_set.h",
     "$dir_public_hci_spec/protocol.h",
     "$dir_public_hci_spec/util.h",
+    "$dir_public_hci_spec/vendor_protocol.h",
   ]
 
   sources = [
