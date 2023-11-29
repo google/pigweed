@@ -35,7 +35,7 @@ public class TransferClient {
   private final TransferEventHandler transferEventHandler;
   private final Thread transferEventHandlerThread;
 
-  private ProtocolVersion desiredProtocolVersion = ProtocolVersion.VERSION_TWO;
+  private ProtocolVersion desiredProtocolVersion = ProtocolVersion.LEGACY;
 
   /**
    * Creates a new transfer client for sending and receiving data with pw_transfer.

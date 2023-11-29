@@ -119,9 +119,9 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
             result.status = status;
             result.completed.release();
           },
-          protocol_version,
           pw::transfer::cfg::kDefaultChunkTimeout,
-          pw::transfer::cfg::kDefaultInitialChunkTimeout);
+          pw::transfer::cfg::kDefaultInitialChunkTimeout,
+          protocol_version);
       // Wait for the transfer to complete. We need to do this here so that the
       // StdFileReader doesn't go out of scope.
       result.completed.acquire();
@@ -137,9 +137,9 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
             result.status = status;
             result.completed.release();
           },
-          protocol_version,
           pw::transfer::cfg::kDefaultChunkTimeout,
-          pw::transfer::cfg::kDefaultInitialChunkTimeout);
+          pw::transfer::cfg::kDefaultInitialChunkTimeout,
+          protocol_version);
       // Wait for the transfer to complete.
       result.completed.acquire();
     } else {

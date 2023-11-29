@@ -23,9 +23,9 @@ namespace pw::transfer {
 Status Client::Read(uint32_t resource_id,
                     stream::Writer& output,
                     CompletionFunc&& on_completion,
-                    ProtocolVersion protocol_version,
                     chrono::SystemClock::duration timeout,
-                    chrono::SystemClock::duration initial_chunk_timeout) {
+                    chrono::SystemClock::duration initial_chunk_timeout,
+                    ProtocolVersion protocol_version) {
   if (on_completion == nullptr ||
       protocol_version == ProtocolVersion::kUnknown) {
     return Status::InvalidArgument();
@@ -59,9 +59,9 @@ Status Client::Read(uint32_t resource_id,
 Status Client::Write(uint32_t resource_id,
                      stream::Reader& input,
                      CompletionFunc&& on_completion,
-                     ProtocolVersion protocol_version,
                      chrono::SystemClock::duration timeout,
-                     chrono::SystemClock::duration initial_chunk_timeout) {
+                     chrono::SystemClock::duration initial_chunk_timeout,
+                     ProtocolVersion protocol_version) {
   if (on_completion == nullptr ||
       protocol_version == ProtocolVersion::kUnknown) {
     return Status::InvalidArgument();
