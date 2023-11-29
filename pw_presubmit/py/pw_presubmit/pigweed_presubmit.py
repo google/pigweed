@@ -213,18 +213,24 @@ coverage = build.GnGenNinja(
     path_filter=_BUILD_FILE_FILTER,
     ninja_targets=('coverage',),
     coverage_options=build.CoverageOptions(
-        target_bucket_root='gs://ng3-metrics/ng3-pigweed-coverage',
-        target_bucket_project='pigweed',
-        codesearch_host='pigweed-internal',
-        codesearch_project='codesearch',
-        gerrit_project='pigweed/pigweed',
-        trace_type='LLVM',
-        add_prefix='pigweed',
-        trim_prefix='/b/s/w/ir/x/w/co',
-        ref='refs/heads/main',
-        source='infra:main',
-        owner='pigweed-infra@google.com',
-        bug_component='503634',
+        common=build.CommonCoverageOptions(
+            target_bucket_project='pigweed',
+            target_bucket_root='gs://ng3-metrics/ng3-pigweed-coverage',
+            trace_type='LLVM',
+            owner='pigweed-infra@google.com',
+            bug_component='503634',
+            trim_prefix='/b/s/w/ir/x/w/co',
+        ),
+        codesearch=build.CodeSearchCoverageOptions(
+            host='pigweed-internal',
+            project='codesearch',
+            add_prefix='pigweed',
+            ref='refs/heads/main',
+            source='infra:main',
+        ),
+        gerrit=build.GerritCoverageOptions(
+            project='pigweed/pigweed',
+        ),
     ),
 )
 

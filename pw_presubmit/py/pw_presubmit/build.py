@@ -696,27 +696,72 @@ _ABSOLUTE_COVERAGE_TOOL = 'raw_coverage_cloud_uploader'
 
 
 @dataclass(frozen=True)
-class CoverageOptions:
-    """Coverage collection configuration.
+class CommonCoverageOptions:
+    """Coverage options shared by both CodeSearch and Gerrit.
 
-    For Google use only. See go/kalypsi-abs and go/kalypsi-inc for documentation
-    of the metadata fields.
+    For Google use only.
     """
 
-    # pylint: disable=too-many-instance-attributes
-
-    codesearch_host: str
+    # The "root" of the Kalypsi GCS bucket path to which the coverage data
+    # should be uploaded. Typically gs://ng3-metrics/ng3-<teamname>-coverage.
     target_bucket_root: str
+
+    # The project name in the Kalypsi GCS bucket path.
     target_bucket_project: str
-    codesearch_project: str
-    gerrit_project: str
+
+    # See go/kalypsi-abs#trace-type-required.
     trace_type: str
-    ref: str
-    source: str
+
+    # go/kalypsi-abs#owner-required.
     owner: str
+
+    # go/kalypsi-abs#bug-component-required.
     bug_component: str
+
+    # go/kalypsi-abs#trim-prefix-optional.
     trim_prefix: str = ''
+
+
+@dataclass(frozen=True)
+class CodeSearchCoverageOptions:
+    """CodeSearch-specific coverage options. For Google use only."""
+
+    # The name of the Gerrit host containing the CodeSearch repo. Just the name
+    # ("pigweed"), not the full URL ("pigweed.googlesource.com"). This may be
+    # different from the host from which the code was originally checked out.
+    host: str
+
+    # The name of the project, as expected by CodeSearch. Typically
+    # 'codesearch'.
+    project: str
+
+    # See go/kalypsi-abs#ref-required.
+    ref: str
+
+    # See go/kalypsi-abs#source-required.
+    source: str
+
+    # See go/kalypsi-abs#add-prefix-optional.
     add_prefix: str = ''
+
+
+@dataclass(frozen=True)
+class GerritCoverageOptions:
+    """Gerrit-specific coverage options. For Google use only."""
+
+    # The name of the project, as expected by Gerrit. This is typically the
+    # repository name, e.g. 'pigweed/pigweed' for upstream Pigweed.
+    # See go/kalypsi-inc#project-required.
+    project: str
+
+
+@dataclass(frozen=True)
+class CoverageOptions:
+    """Coverage collection configuration. For Google use only."""
+
+    common: CommonCoverageOptions
+    codesearch: CodeSearchCoverageOptions
+    gerrit: GerritCoverageOptions
 
 
 class _NinjaBase(Check):
@@ -837,9 +882,9 @@ class _NinjaBase(Check):
             with self._context(ctx):
                 # GCS bucket paths are POSIX-like.
                 coverage_gcs_path = posixpath.join(
-                    options.target_bucket_root,
+                    options.common.target_bucket_root,
                     'incremental' if ctx.luci.is_try else 'absolute',
-                    options.target_bucket_project,
+                    options.common.target_bucket_project,
                     str(ctx.luci.buildbucket_id),
                 )
                 _copy_to_gcs(
@@ -905,40 +950,34 @@ def _write_coverage_metadata(
     change = ctx.luci.triggers[0]
 
     metadata = {
-        'trace_type': options.trace_type,
-        'trim_prefix': options.trim_prefix,
+        'trace_type': options.common.trace_type,
+        'trim_prefix': options.common.trim_prefix,
         'patchset_num': change.patchset,
         'change_id': change.number,
-        'owner': options.owner,
-        'bug_component': options.bug_component,
+        'owner': options.common.owner,
+        'bug_component': options.common.bug_component,
     }
 
     if ctx.luci.is_try:
         # Running in CQ: uploading incremental coverage
         metadata.update(
             {
-                # Note: no `add_prefix`. According to the documentation, that's
-                # only supported for absolute coverage.
-                #
-                # TODO(tpudlik): Follow up with Kalypsi team, since this is
-                # surprising (given that trim_prefix is supported for both types
-                # of coverage). This might be an error in the docs.
                 'change_id': change.number,
                 'host': change.gerrit_name,
                 'patchset_num': change.patchset,
-                'project': options.gerrit_project,
+                'project': options.gerrit.project,
             }
         )
     else:
         # Running in CI: uploading absolute coverage
         metadata.update(
             {
-                'add_prefix': options.add_prefix,
+                'add_prefix': options.codesearch.add_prefix,
                 'commit_id': change.ref,
-                'host': options.codesearch_host,
-                'project': options.codesearch_project,
-                'ref': options.ref,
-                'source': options.source,
+                'host': options.codesearch.host,
+                'project': options.codesearch.project,
+                'ref': options.codesearch.ref,
+                'source': options.codesearch.source,
             }
         )
 
