@@ -211,7 +211,10 @@ pw_cc_library(
         ":simple_allocator",
         "//pw_assert",
         "//pw_bytes",
+        "//pw_containers",
+        "//pw_random",
         "//pw_unit_test",
+        "//third_party/fuchsia:stdcompat",
     ],
 )
 

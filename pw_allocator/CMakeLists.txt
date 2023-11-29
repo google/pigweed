@@ -188,6 +188,9 @@ pw_add_library(pw_allocator.allocator_testing STATIC
     pw_allocator.block
     pw_allocator.simple_allocator
     pw_bytes
+    pw_containers
+    pw_random
+    pw_third_party.fuchsia.stdcompat
   PRIVATE_DEPS
     pw_assert
     pw_unit_test

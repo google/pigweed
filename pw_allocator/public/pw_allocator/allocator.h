@@ -36,6 +36,7 @@ namespace pw::allocator {
 /// @endcode
 class Layout {
  public:
+  constexpr Layout() = default;
   constexpr Layout(size_t size, size_t alignment = alignof(std::max_align_t))
       : size_(size), alignment_(alignment) {}
 
@@ -53,8 +54,8 @@ class Layout {
   size_t alignment() const { return alignment_; }
 
  private:
-  size_t size_;
-  size_t alignment_;
+  size_t size_ = 0;
+  size_t alignment_ = 1;
 };
 
 template <typename T>

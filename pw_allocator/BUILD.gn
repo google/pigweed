@@ -217,7 +217,10 @@ pw_source_set("allocator_testing") {
     ":allocator",
     ":block",
     ":simple_allocator",
+    "$dir_pw_containers",
+    "$dir_pw_third_party/fuchsia:stdcompat",
     dir_pw_bytes,
+    dir_pw_random,
     dir_pw_unit_test,
   ]
   deps = [ dir_pw_assert ]

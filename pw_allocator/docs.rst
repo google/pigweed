@@ -60,6 +60,26 @@ UniquePtr
 .. doxygenclass:: pw::allocator::UniquePtr
    :members:
 
+Test Support
+============
+This module also provides several utilities designed to make it easier to write
+tests for custom ``Allocator`` implementations:
+
+AllocatorForTest
+----------------
+.. doxygenclass:: pw::allocator::test::AllocatorForTest
+   :members:
+
+WithBuffer
+----------
+.. doxygenclass:: pw::allocator::test::WithBuffer
+   :members:
+
+AllocatorTestHarness
+--------------------
+.. doxygenclass:: pw::allocator::test::AllocatorTestHarness
+   :members:
+
 Heap Poisoning
 ==============
 
