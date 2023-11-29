@@ -72,6 +72,7 @@ cipd_repository(
 # Used in modules: //pw_toolchain.
 cipd_repository(
     name = "llvm_toolchain",
+    build_file = "@pw_toolchain//third_party:llvm_clang.BUILD",
     path = "fuchsia/third_party/clang/${os}-${arch}",
     tag = "git_revision:8475d0a2b853f6184948b428ec679edf84ed2688",
 )
