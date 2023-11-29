@@ -40,13 +40,21 @@ def _pw_xcode_repository_impl(repository_ctx):
     # This is required to make a repository, so make a stub for all other
     # operating systems.
     if repository_ctx.os.name != "mac os x":
-        lines = [
+        build_file_contents = [
+            "package(default_visibility = [\"//visibility:public\"])",
+            "",
             "filegroup(",
             "    name = \"default\",",
             "    visibility = [\"@pw_toolchain//features/macos:__pkg__\"],",
             ")",
         ]
-        repository_ctx.file("BUILD", "\n".join(lines))
+        repository_ctx.file("BUILD", "\n".join(build_file_contents))
+
+        # Generate the constant, but make it empty.
+        defs_file_contents = [
+            "XCODE_SDK_PATH = \"\"",
+        ]
+        repository_ctx.file("defs.bzl", "\n".join(defs_file_contents))
         return
 
     xcrun_result = repository_ctx.execute(["/usr/bin/xcrun", "--show-sdk-path"])
@@ -54,8 +62,13 @@ def _pw_xcode_repository_impl(repository_ctx):
         fail("Failed locating Xcode SDK: {}".format(xcrun_result.stderr))
 
     sdk_path = xcrun_result.stdout.replace("\n", "")
-    lines = [
+
+    # DEPRECATED: Generate pw_xcode_info for backwards compatibility.
+    build_file_contents = [
         "load(\"@pw_toolchain//features/macos/private:xcode_command_line_tools.bzl\", \"pw_xcode_info\")",
+        "",
+        "package(default_visibility = [\"//visibility:public\"])",
+        "",
         "pw_xcode_info(",
         "    name = \"default\",",
         "    sdk_path = \"{}\",".format(sdk_path),
@@ -64,7 +77,12 @@ def _pw_xcode_repository_impl(repository_ctx):
     ]
 
     if xcrun_result.return_code == 0:
-        repository_ctx.file("BUILD", "\n".join(lines))
+        repository_ctx.file("BUILD", "\n".join(build_file_contents))
+
+        defs_file_contents = [
+            "XCODE_SDK_PATH = \"{}\"".format(sdk_path),
+        ]
+        repository_ctx.file("defs.bzl", "\n".join(defs_file_contents))
 
 pw_xcode_repository = repository_rule(
     _pw_xcode_repository_impl,

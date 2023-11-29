@@ -111,6 +111,16 @@ API reference
 
       See  `cc_common.create_cc_toolchain_config_info() <https://bazel.build/rules/lib/toplevel/cc_common#create_cc_toolchain_config_info>`_\.
 
+   .. py:attribute:: builtin_sysroot
+      :type: str
+
+      See  `cc_common.create_cc_toolchain_config_info() <https://bazel.build/rules/lib/toplevel/cc_common#create_cc_toolchain_config_info>`_\.
+
+   .. py:attribute:: cxx_builtin_include_directories
+      :type: List[str]
+
+      See  `cc_common.create_cc_toolchain_config_info() <https://bazel.build/rules/lib/toplevel/cc_common#create_cc_toolchain_config_info>`_\.
+
 .. py:class:: pw_cc_flag_set
 
    Declares an ordered set of flags bound to a set of actions.

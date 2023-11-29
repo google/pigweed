@@ -75,6 +75,8 @@ PW_CC_TOOLCHAIN_CONFIG_ATTRS = {
     "abi_version": "See documentation for cc_common.create_cc_toolchain_config_info()",
     "abi_libc_version": "See documentation for cc_common.create_cc_toolchain_config_info()",
     "cc_target_os": "See documentation for cc_common.create_cc_toolchain_config_info()",
+    "builtin_sysroot": "See documentation for cc_common.create_cc_toolchain_config_info()",
+    "cxx_builtin_include_directories": "See documentation for cc_common.create_cc_toolchain_config_info()",
 }
 
 PW_CC_TOOLCHAIN_SHARED_ATTRS = ["toolchain_identifier"]
@@ -83,10 +85,8 @@ PW_CC_TOOLCHAIN_BLOCKED_ATTRS = {
     "toolchain_config": "pw_cc_toolchain includes a generated toolchain config",
     "artifact_name_patterns": "pw_cc_toolchain does not yet support artifact name patterns",
     "features": "Use feature_deps to add pw_cc_toolchain_feature deps to the toolchain",
-    "cxx_builtin_include_directories": "Use a pw_cc_toolchain_feature to add cxx_builtin_include_directories",
     "tool_paths": "pw_cc_toolchain does not support tool_paths, use \"ar\", \"cpp\", \"gcc\", \"gcov\", \"ld\", and \"strip\" attributes to set toolchain tools",
     "make_variables": "pw_cc_toolchain does not yet support make variables",
-    "builtin_sysroot": "Use a pw_cc_toolchain_feature to add a builtin_sysroot",
 }
 
 def _action_configs(action_tool, action_list, flag_sets_by_action):
@@ -351,11 +351,11 @@ def _pw_cc_toolchain_config_impl(ctx):
 
     features = [dep[ToolchainFeatureInfo].feature for dep in ctx.attr.feature_deps]
     features.append(_archiver_flags_feature(ctx.attr.target_libc == "macosx"))
-    builtin_include_dirs = []
+    builtin_include_dirs = ctx.attr.cxx_builtin_include_directories if ctx.attr.cxx_builtin_include_directories else []
     for dep in ctx.attr.feature_deps:
         builtin_include_dirs.extend(dep[ToolchainFeatureInfo].cxx_builtin_include_directories)
 
-    sysroot_dir = None
+    sysroot_dir = ctx.attr.builtin_sysroot if ctx.attr.builtin_sysroot else None
     for dep in ctx.attr.feature_deps:
         dep_sysroot = dep[ToolchainFeatureInfo].builtin_sysroot
         if dep_sysroot:
@@ -406,6 +406,8 @@ pw_cc_toolchain_config = rule(
         "abi_version": attr.string(),
         "abi_libc_version": attr.string(),
         "cc_target_os": attr.string(),
+        "builtin_sysroot": attr.string(),
+        "cxx_builtin_include_directories": attr.string_list(),
     },
     provides = [CcToolchainConfigInfo],
 )

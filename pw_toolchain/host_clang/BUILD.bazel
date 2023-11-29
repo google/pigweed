@@ -27,8 +27,8 @@ load(
     "pw_cc_flag_set",
     "pw_cc_tool",
     "pw_cc_toolchain",
-    "pw_cc_toolchain_feature",
 )
+load("@pw_xcode_command_line_tools//:defs.bzl", "XCODE_SDK_PATH")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -36,33 +36,23 @@ licenses(["notice"])
 
 filegroup(name = "empty")
 
-pw_cc_toolchain_feature(
+pw_cc_flag_set(
     name = "macos_stdlib",
-    cxx_builtin_include_directories = [
-        "%package(@llvm_toolchain//)%/include/c++/v1",
-        "%package(@llvm_toolchain//)%/lib/clang/17/include",
-    ],
-    linker_files = ["@llvm_toolchain//:lib/libc++.a"],
+    actions = ALL_LINK_ACTIONS,
+    flags = ["external/llvm_toolchain/lib/libc++.a"],
     target_compatible_with = ["@platforms//os:macos"],
 )
 
-pw_cc_toolchain_feature(
-    name = "linux_sysroot",
-    builtin_sysroot = "external/linux_sysroot",
-    cxx_builtin_include_directories = [
-        "%package(@llvm_toolchain//)%/include/x86_64-unknown-linux-gnu/c++/v1",
-        "%package(@llvm_toolchain//)%/include/c++/v1",
-        "%package(@llvm_toolchain//)%/lib/clang/17/include",
-        "%sysroot%/usr/local/include",
-        "%sysroot%/usr/include/x86_64-linux-gnu",
-        "%sysroot%/usr/include",
-    ],
-    linkopts = [
+pw_cc_flag_set(
+    name = "linux_link_libs",
+    actions = ALL_LINK_ACTIONS,
+    flags = [
         "-pthread",
         "-stdlib=libc++",
         "--rtlib=compiler-rt",
         "--unwindlib=libunwind",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 # Although we use similar warnings for clang and arm_gcc, we don't have one
@@ -196,7 +186,15 @@ pw_cc_toolchain(
     name = "host_toolchain",
     abi_libc_version = "unknown",
     abi_version = "unknown",
-    action_config_flag_sets = [
+    action_config_flag_sets = select({
+        "@platforms//os:macos": [
+            "@pw_toolchain//flag_sets:no_default_cpp_stdlib",
+            ":macos_stdlib",
+        ],
+        "@platforms//os:linux": [
+            ":linux_link_libs",
+        ],
+    }) + [
         ":warnings",
         "@pw_toolchain//flag_sets:c++17",
         "@pw_toolchain//flag_sets:debugging",
@@ -222,20 +220,29 @@ pw_cc_toolchain(
     all_files = ":all_toolchain_files",
     ar_files = ":all_toolchain_files",
     as_files = ":all_toolchain_files",
+    builtin_sysroot = select({
+        "@platforms//os:macos": XCODE_SDK_PATH,
+        "@platforms//os:linux": "external/linux_sysroot",
+    }),
     compiler = "unknown",
     compiler_files = ":all_toolchain_files",
     coverage_files = ":all_toolchain_files",
-    dwp_files = ":all_toolchain_files",
-    feature_deps = select({
+    cxx_builtin_include_directories = select({
         "@platforms//os:macos": [
-            "@pw_toolchain//features:no_default_cpp_stdlib",
-            ":macos_stdlib",
-            "@pw_toolchain//features/macos:macos_sysroot",
+            "%sysroot%/usr/include",
+            "%package(@llvm_toolchain//)%/include/c++/v1",
+            "%package(@llvm_toolchain//)%/lib/clang/17/include",
         ],
         "@platforms//os:linux": [
-            ":linux_sysroot",
+            "%package(@llvm_toolchain//)%/include/x86_64-unknown-linux-gnu/c++/v1",
+            "%package(@llvm_toolchain//)%/include/c++/v1",
+            "%package(@llvm_toolchain//)%/lib/clang/17/include",
+            "%sysroot%/usr/local/include",
+            "%sysroot%/usr/include/x86_64-linux-gnu",
+            "%sysroot%/usr/include",
         ],
     }),
+    dwp_files = ":all_toolchain_files",
     host_system_name = "unknown",
     linker_files = ":all_toolchain_files",
     objcopy_files = ":all_toolchain_files",
