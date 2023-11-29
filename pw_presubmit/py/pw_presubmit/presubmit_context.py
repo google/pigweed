@@ -246,6 +246,8 @@ class LuciContext:
         is_try: True if the bucket is a try bucket.
         is_ci: True if the bucket is a ci bucket.
         is_dev: True if the bucket is a dev bucket.
+        is_shadow: True if the bucket is a shadow bucket.
+        is_prod: True if both is_dev and is_shadow are False.
     """
 
     buildbucket_id: int
@@ -270,6 +272,14 @@ class LuciContext:
     @property
     def is_dev(self):
         return re.search(r'\bdev\b', self.bucket)
+
+    @property
+    def is_shadow(self):
+        return re.search(r'\bshadow\b', self.bucket)
+
+    @property
+    def is_prod(self):
+        return not self.is_dev and not self.is_shadow
 
     @staticmethod
     def create_from_environment(

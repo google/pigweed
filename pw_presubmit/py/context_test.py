@@ -52,6 +52,8 @@ class ContextTest(unittest.TestCase):
         self.assertFalse(ctx.is_try)
         self.assertTrue(ctx.is_ci)
         self.assertTrue(ctx.is_dev)
+        self.assertFalse(ctx.is_shadow)
+        self.assertFalse(ctx.is_prod)
 
     def test_lucitrigger(self):
         trigger = presubmit_context.LuciTrigger.create_for_testing(
