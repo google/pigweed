@@ -19,6 +19,12 @@ size in a variable. This allows Vectors to be used without having to know
 their maximum size at compile time. It also keeps code size small since
 function implementations are shared for all maximum sizes.
 
+.. admonition:: Non-trivially-destructible, self-referencing types
+
+   ``pw::Vector`` is not safe to use with non-trivially-destructible,
+   self-referencing types. See `b/313899658
+   <https://issues.pigweed.dev/issues/313899658>`_.
+
 ---------------
 pw::InlineDeque
 ---------------
