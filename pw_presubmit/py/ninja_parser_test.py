@@ -14,6 +14,7 @@
 # the License.
 """Tests for ninja_parser."""
 
+import difflib
 from pathlib import Path
 import unittest
 from unittest.mock import MagicMock, mock_open, patch
@@ -160,28 +161,42 @@ class TestNinjaParser(unittest.TestCase):
         with patch.object(path, 'open', mocked_open_read):
             return ninja_parser.parse_ninja_stdout(path)
 
+    def _assert_equal(self, left, right):
+        if (
+            not isinstance(left, str)
+            or not isinstance(right, str)
+            or '\n' not in left
+            or '\n' not in right
+        ):
+            return self.assertEqual(left, right)
+
+        diff = ''.join(
+            difflib.unified_diff(left.splitlines(True), right.splitlines(True))
+        )
+        return self.assertSequenceEqual(left, right, f'\n{diff}\n')
+
     def test_simple(self) -> None:
         error = '[2/10] baz\nFAILED: something\nerror 1\nerror 2\n'
         result = self._run('[0/10] foo\n[1/10] bar\n' + error + _STOP)
-        self.assertEqual(error.strip(), result.strip())
+        self._assert_equal(error.strip(), result.strip())
 
     def test_short(self) -> None:
         error = '[2/10] baz\nFAILED: something\n'
         result = self._run('[0/10] foo\n[1/10] bar\n' + error + _STOP)
-        self.assertEqual(error.strip(), result.strip())
+        self._assert_equal(error.strip(), result.strip())
 
     def test_unexpected(self) -> None:
         error = '[2/10] baz\nERROR: something\nerror 1\n'
         result = self._run('[0/10] foo\n[1/10] bar\n' + error)
-        self.assertEqual('', result.strip())
+        self._assert_equal('', result.strip())
 
     def test_real_build(self) -> None:
         result = self._run(_REAL_BUILD_INPUT)
-        self.assertEqual(_REAL_BUILD_SUMMARY.strip(), result.strip())
+        self._assert_equal(_REAL_BUILD_SUMMARY.strip(), result.strip())
 
     def test_real_test(self) -> None:
         result = self._run(_REAL_TEST_INPUT)
-        self.assertEqual(_REAL_TEST_SUMMARY.strip(), result.strip())
+        self._assert_equal(_REAL_TEST_SUMMARY.strip(), result.strip())
 
 
 if __name__ == '__main__':

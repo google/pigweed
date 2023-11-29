@@ -14,6 +14,7 @@
 # the License.
 """Tests for bazel_parser."""
 
+import difflib
 from pathlib import Path
 import tempfile
 import unittest
@@ -502,24 +503,38 @@ class TestBazelParser(unittest.TestCase):
 
             self.output = bazel_parser.parse_bazel_stdout(path)
 
+    def _assert_equal(self, left, right):
+        if (
+            not isinstance(left, str)
+            or not isinstance(right, str)
+            or '\n' not in left
+            or '\n' not in right
+        ):
+            return self.assertEqual(left, right)
+
+        diff = ''.join(
+            difflib.unified_diff(left.splitlines(True), right.splitlines(True))
+        )
+        return self.assertSequenceEqual(left, right, f'\n{diff}\n')
+
     def test_simple(self) -> None:
         error = 'ERROR: abc\nerror 1\nerror2\n'
         self._run('[0/10] foo\n[1/10] bar\n' + error)
-        self.assertEqual(error.strip(), self.output.strip())
+        self._assert_equal(error.strip(), self.output.strip())
 
     def test_path(self) -> None:
         error_in = 'ERROR: abc\n PATH=... \\\nerror 1\nerror2\n'
         error_out = 'ERROR: abc\nerror 1\nerror2\n'
         self._run('[0/10] foo\n[1/10] bar\n' + error_in)
-        self.assertEqual(error_out.strip(), self.output.strip())
+        self._assert_equal(error_out.strip(), self.output.strip())
 
     def test_failure(self) -> None:
         self._run(_REAL_TEST_INPUT)
-        self.assertEqual(_REAL_TEST_SUMMARY.strip(), self.output.strip())
+        self._assert_equal(_REAL_TEST_SUMMARY.strip(), self.output.strip())
 
     def test_failure_2(self) -> None:
         self._run(_REAL_TEST_INPUT_2)
-        self.assertEqual(_REAL_TEST_SUMMARY_2.strip(), self.output.strip())
+        self._assert_equal(_REAL_TEST_SUMMARY_2.strip(), self.output.strip())
 
 
 if __name__ == '__main__':
