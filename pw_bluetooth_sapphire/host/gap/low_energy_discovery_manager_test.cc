@@ -915,7 +915,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromUnknownPeer) {
                                               dispatcher(),
                                               /*connectable=*/true,
                                               /*scannable=*/false);
-  fake_peer->set_directed_advertising_enabled(true);
+  fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
 
   int connectable_count = 0;
@@ -945,7 +945,7 @@ TEST_F(LowEnergyDiscoveryManagerTest,
                                               dispatcher(),
                                               /*connectable=*/false,
                                               /*scannable=*/false);
-  fake_peer->set_directed_advertising_enabled(true);
+  fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
   Peer* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/false);
   ASSERT_TRUE(peer);
@@ -977,7 +977,7 @@ TEST_F(LowEnergyDiscoveryManagerTest,
                                               dispatcher(),
                                               /*connectable=*/true,
                                               /*scannable=*/false);
-  fake_peer->set_directed_advertising_enabled(true);
+  fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
   Peer* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   ASSERT_TRUE(peer);
@@ -1230,7 +1230,7 @@ TEST_F(LowEnergyDiscoveryManagerTest,
                                            dispatcher(),
                                            /*connectable=*/false,
                                            /*scannable=*/false);
-    peer->set_directed_advertising_enabled(true);
+    peer->enable_directed_advertising(true);
     test_device()->AddPeer(std::move(peer));
   }
   // Address 4: directed connectable; added to cache below
@@ -1239,7 +1239,7 @@ TEST_F(LowEnergyDiscoveryManagerTest,
                                            dispatcher(),
                                            /*connectable=*/true,
                                            /*scannable=*/false);
-    peer->set_directed_advertising_enabled(true);
+    peer->enable_directed_advertising(true);
     test_device()->AddPeer(std::move(peer));
   }
   // Address 5: directed connectable; NOT in cache
@@ -1248,7 +1248,7 @@ TEST_F(LowEnergyDiscoveryManagerTest,
                                            dispatcher(),
                                            /*connectable=*/true,
                                            /*scannable=*/false);
-    peer->set_directed_advertising_enabled(true);
+    peer->enable_directed_advertising(true);
     test_device()->AddPeer(std::move(peer));
   }
 

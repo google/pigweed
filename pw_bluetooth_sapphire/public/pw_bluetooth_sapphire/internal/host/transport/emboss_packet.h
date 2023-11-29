@@ -138,7 +138,6 @@ class DynamicPacket {
   size_t size() const { return buffer_.size(); }
   BufferView data() const { return {buffer_.data(), size()}; }
   MutableBufferView mutable_data() { return {buffer_.mutable_data(), size()}; }
-  DynamicByteBuffer release() { return std::move(buffer_); }
 
  protected:
   // Construct the buffer to hold |packet_size| bytes (payload + header).

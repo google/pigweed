@@ -90,7 +90,7 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
     int8_t selected_tx_power_level = 0;
   };
 
-  EmbossCommandPacket BuildEnablePacket(
+  std::optional<EmbossCommandPacket> BuildEnablePacket(
       const DeviceAddress& address,
       pw::bluetooth::emboss::GenericEnableParam enable) override;
 
@@ -114,7 +114,7 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   CommandChannel::CommandPacketVariant BuildUnsetScanResponse(
       const DeviceAddress& address) override;
 
-  EmbossCommandPacket BuildRemoveAdvertisingSet(
+  std::optional<EmbossCommandPacket> BuildRemoveAdvertisingSet(
       const DeviceAddress& address) override;
 
   void OnSetAdvertisingParamsComplete(const EventPacket& event) override;

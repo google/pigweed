@@ -878,18 +878,12 @@ constexpr uint16_t kLERPATimeoutDefault = 0x0384;  // 900 seconds or 15 minutes.
 // information.
 constexpr size_t kMaxLEAdvertisingDataLength = 0x1F;  // (31)
 
-// The number of bytes of advertising data that can be sent in a single extended
-// advertisement. The Bluetooth spec allows for a larger amount of bytes (based
-// on the value returned for the LE Read Maximum Advertising Data Length
-// parameter) but they must be fragmented across multiple extended advertising
-// PDUs. We don't currently support data framgentation when advertising, nor do
-// we support the use of extended advertising PDUs when advertising.
-constexpr size_t kMaxPduLEExtendedAdvertisingDataLength = 252;
-
-// Core Spec Version 5.4, Volume 6, Part B, Section 2.3.4.9: the total
-// amount of Host Advertising Data before fragmentation shall not exceed 1650
-// octets.
-constexpr size_t kMaxLEExtendedAdvertisingDataLength = 1650;
+// The maximum length of advertising data that can get passed to the
+// HCI_LE_Set_Extended_Advertising_Data command. The advertised data can be
+// larger than this value (based on the value returned for the LE Read Maximum
+// Advertising Data Length parameter), however must be fragmented among multiple
+// command packets.
+constexpr size_t kMaxLEExtendedAdvertisingDataLength = 251;
 
 // Tx Power values, See Core Spec v5.0 Vol 4, Part E, 7.8.6.
 constexpr int8_t kTxPowerInvalid = 127;
@@ -1349,3 +1343,4 @@ constexpr pw::chrono::SystemClock::duration kDefaultPageTimeoutDuration = kDurat
 constexpr pw::chrono::SystemClock::duration kMaxPageTimeoutDuration = kDurationPerPageTimeoutUnit * static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::MAX);
 
 }  // namespace bt::hci_spec
+

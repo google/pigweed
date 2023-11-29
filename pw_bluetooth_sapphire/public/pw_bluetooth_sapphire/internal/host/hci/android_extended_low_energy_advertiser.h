@@ -85,7 +85,7 @@ class AndroidExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
     hci_spec::LEConnectionParameters conn_params;
   };
 
-  EmbossCommandPacket BuildEnablePacket(
+  std::optional<EmbossCommandPacket> BuildEnablePacket(
       const DeviceAddress& address,
       pw::bluetooth::emboss::GenericEnableParam enable) override;
 
@@ -109,7 +109,7 @@ class AndroidExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   CommandChannel::CommandPacketVariant BuildUnsetScanResponse(
       const DeviceAddress& address) override;
 
-  EmbossCommandPacket BuildRemoveAdvertisingSet(
+  std::optional<EmbossCommandPacket> BuildRemoveAdvertisingSet(
       const DeviceAddress& address) override;
 
   void OnCurrentOperationComplete() override;
