@@ -61,6 +61,13 @@ def parse_bazel_stdout(bazel_stdout: Path) -> str:
                     error_lines.append(line)
                     break
 
+                line = re.sub(
+                    r'/b/s/w/ir/\S*/bazel-out(/k8-fastbuild)?(/bin)?'
+                    r'(/testlogs?)',
+                    '<truncated>',
+                    line,
+                )
+
                 error_lines.append(line)
 
     result = '\n'.join(error_lines)

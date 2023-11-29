@@ -116,9 +116,9 @@ _REAL_TEST_INPUT_2 = """
 [4,570 / 4,573] 332 / 343 tests; Testing //pw_transfer/integration_test:cross_language_medium_read_test; 54s linux-sandbox ... (3 actions running)
 [4,570 / 4,573] 332 / 343 tests; Testing //pw_transfer/integration_test:cross_language_medium_read_test; 65s linux-sandbox ... (3 actions running)
 [4,570 / 4,573] 332 / 343 tests; Testing //pw_transfer/integration_test:cross_language_medium_read_test; 83s linux-sandbox ... (3 actions running)
-FAIL: //pw_transfer/integration_test:cross_language_medium_read_test (see /b/s/w/ir/cache/bazel/_bazel_swarming/823a25200ba977576a072121498f22ec/execroot/pigweed/bazel-out/k8-fastbuild/testlogs/pw_transfer/integration_test/cross_language_medium_read_test/test.log)
+FAIL: //pw_transfer/integration_test:cross_language_medium_read_test (see <truncated>/pw_transfer/integration_test/cross_language_medium_read_test/test.log)
 INFO: From Testing //pw_transfer/integration_test:cross_language_medium_read_test:
-stdout (/b/s/w/ir/cache/bazel/_bazel_swarming/823a25200ba977576a072121498f22ec/execroot/pigweed/bazel-out/_tmp/actions/stdout-2115) 1131999 exceeds maximum size of --experimental_ui_max_stdouterr_bytes=1048576 bytes; skipping
+stdout (<truncated>/_tmp/actions/stdout-2115) 1131999 exceeds maximum size of --experimental_ui_max_stdouterr_bytes=1048576 bytes; skipping
 [4,572 / 4,573] 334 / 343 tests, 1 failed; Testing //pw_transfer/integration_test:expected_errors_test; 84s linux-sandbox
 [4,572 / 4,573] 334 / 343 tests, 1 failed; Testing //pw_transfer/integration_test:expected_errors_test; 94s linux-sandbox
 [4,572 / 4,573] 334 / 343 tests, 1 failed; Testing //pw_transfer/integration_test:expected_errors_test; 124s linux-sandbox
@@ -469,21 +469,21 @@ INFO: Build completed, 1 test FAILED, 1206 total actions
 //pw_transfer/integration_test:proxy_test                                PASSED in 2.4s
 //pw_transfer/py:transfer_test                                           PASSED in 1.4s
 //pw_transfer/integration_test:cross_language_medium_read_test           FAILED in 82.1s
-/b/s/w/ir/cache/bazel/_bazel_swarming/823a25200ba977576a072121498f22ec/execroot/pigweed/bazel-out/k8-fastbuild/testlogs/pw_transfer/integration_test/cross_language_medium_read_test/test.log
+<truncated>/pw_transfer/integration_test/cross_language_medium_read_test/test.log
 
 Executed 35 out of 343 tests: 334 tests pass, 1 fails locally and 8 were skipped.
 There were tests whose specified size is too big. Use the --test_verbose_timeout_warnings command line option to see which ones these are.
 """
 
 _REAL_TEST_SUMMARY_2 = """
-FAIL: //pw_transfer/integration_test:cross_language_medium_read_test (see /b/s/w/ir/cache/bazel/_bazel_swarming/823a25200ba977576a072121498f22ec/execroot/pigweed/bazel-out/k8-fastbuild/testlogs/pw_transfer/integration_test/cross_language_medium_read_test/test.log)
+FAIL: //pw_transfer/integration_test:cross_language_medium_read_test (see <truncated>/pw_transfer/integration_test/cross_language_medium_read_test/test.log)
 INFO: From Testing //pw_transfer/integration_test:cross_language_medium_read_test:
-stdout (/b/s/w/ir/cache/bazel/_bazel_swarming/823a25200ba977576a072121498f22ec/execroot/pigweed/bazel-out/_tmp/actions/stdout-2115) 1131999 exceeds maximum size of --experimental_ui_max_stdouterr_bytes=1048576 bytes; skipping
+stdout (<truncated>/_tmp/actions/stdout-2115) 1131999 exceeds maximum size of --experimental_ui_max_stdouterr_bytes=1048576 bytes; skipping
 INFO: Elapsed time: 507.459s, Critical Path: 181.66s
 INFO: 1206 processes: 1235 linux-sandbox, 4 worker.
 INFO: Build completed, 1 test FAILED, 1206 total actions
 //pw_transfer/integration_test:cross_language_medium_read_test           FAILED in 82.1s
-/b/s/w/ir/cache/bazel/_bazel_swarming/823a25200ba977576a072121498f22ec/execroot/pigweed/bazel-out/k8-fastbuild/testlogs/pw_transfer/integration_test/cross_language_medium_read_test/test.log
+<truncated>/pw_transfer/integration_test/cross_language_medium_read_test/test.log
 Executed 35 out of 343 tests: 334 tests pass, 1 fails locally and 8 were skipped.
 """
 
