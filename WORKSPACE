@@ -98,6 +98,7 @@ register_toolchains(
 # Used in modules: //pw_toolchain.
 cipd_repository(
     name = "gcc_arm_none_eabi_toolchain",
+    build_file = "@pw_toolchain//third_party:gcc_arm_none_eabi.BUILD",
     path = "fuchsia/third_party/armgcc/${os}-${arch}",
     tag = "version:2@12.2.mpacbti-rel1.1",
 )
