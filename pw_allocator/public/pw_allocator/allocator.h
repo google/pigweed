@@ -22,8 +22,9 @@
 namespace pw::allocator {
 /// Describes the layout of a block of memory.
 ///
-/// Layouts are passed to allocators, and consist of a size and a power-of-two
-/// alignment. Layouts can be constructed for a type `T` using `Layout::Of`.
+/// Layouts are passed to allocators, and consist of a (possibly padded) size
+/// and a power-of-two alignment no larger than the size. Layouts can be
+/// constructed for a type `T` using `Layout::Of`.
 ///
 /// Example:
 ///

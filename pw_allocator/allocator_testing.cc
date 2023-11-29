@@ -149,6 +149,13 @@ void AllocatorTestHarnessGeneric::HandleRequests(
   Reset();
 }
 
+// Helper to allow static_assert'ing in constexpr-if branches, e.g. that a
+// visitor for a std::variant are exhaustive.
+template <typename T>
+static constexpr bool not_reached(T&) {
+  return false;
+}
+
 void AllocatorTestHarnessGeneric::HandleRequest(
     const AllocatorRequest& request) {
   if (allocator_ == nullptr) {
@@ -184,6 +191,8 @@ void AllocatorTestHarnessGeneric::HandleRequest(
                             Layout(r.new_size, old.layout.alignment()));
             }
           }
+        } else {
+          static_assert(not_reached(r), "unsupported request type!");
         }
       },
       request);
