@@ -41,8 +41,10 @@ pub enum PrintfTestGeneratorOps {
 mod tests {
     use pw_format::macros::IntegerDisplayType;
     use pw_format_test_macros::{
-        char_sub_printf_generator_test_macro, generator_test_macro,
-        integer_sub_printf_generator_test_macro, printf_generator_test_macro,
+        char_sub_core_fmt_generator_test_macro, char_sub_printf_generator_test_macro,
+        core_fmt_generator_test_macro, generator_test_macro,
+        integer_sub_core_fmt_generator_test_macro, integer_sub_printf_generator_test_macro,
+        printf_generator_test_macro, string_sub_core_fmt_generator_test_macro,
         string_sub_printf_generator_test_macro,
     };
 
@@ -151,6 +153,96 @@ mod tests {
                 // %ld gets converted to %d because they are equivalent for 32 bit
                 // systems.
                 "test %d %s %K",
+                vec![
+                    PrintfTestGeneratorOps::StringFragment("test ".to_string()),
+                    PrintfTestGeneratorOps::IntegerConversion {
+                        ty: "i32".to_string(),
+                    },
+                    PrintfTestGeneratorOps::StringFragment(" ".to_string()),
+                    PrintfTestGeneratorOps::StringConversion,
+                    PrintfTestGeneratorOps::StringFragment(" ".to_string()),
+                    PrintfTestGeneratorOps::CharConversion,
+                    PrintfTestGeneratorOps::Finalize
+                ]
+            )
+        );
+    }
+
+    #[test]
+    fn generate_core_fmt_calls_generator_correctly() {
+        assert_eq!(
+            core_fmt_generator_test_macro!("test %ld %s %c", 5, "test", 'c'),
+            (
+                "test {} {} {}",
+                vec![
+                    PrintfTestGeneratorOps::StringFragment("test ".to_string()),
+                    PrintfTestGeneratorOps::IntegerConversion {
+                        ty: "i32".to_string(),
+                    },
+                    PrintfTestGeneratorOps::StringFragment(" ".to_string()),
+                    PrintfTestGeneratorOps::StringConversion,
+                    PrintfTestGeneratorOps::StringFragment(" ".to_string()),
+                    PrintfTestGeneratorOps::CharConversion,
+                    PrintfTestGeneratorOps::Finalize
+                ]
+            )
+        );
+    }
+
+    // Test that a generator returning an overridden integer conversion specifier
+    // changes that and only that conversion specifier in the format string.
+    #[test]
+    fn generate_core_fmt_substitutes_integer_conversion() {
+        assert_eq!(
+            integer_sub_core_fmt_generator_test_macro!("test %ld %s %c", 5, "test", 'c'),
+            (
+                "test {:?} {} {}",
+                vec![
+                    PrintfTestGeneratorOps::StringFragment("test ".to_string()),
+                    PrintfTestGeneratorOps::IntegerConversion {
+                        ty: "i32".to_string(),
+                    },
+                    PrintfTestGeneratorOps::StringFragment(" ".to_string()),
+                    PrintfTestGeneratorOps::StringConversion,
+                    PrintfTestGeneratorOps::StringFragment(" ".to_string()),
+                    PrintfTestGeneratorOps::CharConversion,
+                    PrintfTestGeneratorOps::Finalize
+                ]
+            )
+        );
+    }
+
+    // Test that a generator returning an overridden string conversion specifier
+    // changes that and only that conversion specifier in the format string.
+    #[test]
+    fn generate_core_fmt_substitutes_string_conversion() {
+        assert_eq!(
+            string_sub_core_fmt_generator_test_macro!("test %ld %s %c", 5, "test", 'c'),
+            (
+                "test {} {:?} {}",
+                vec![
+                    PrintfTestGeneratorOps::StringFragment("test ".to_string()),
+                    PrintfTestGeneratorOps::IntegerConversion {
+                        ty: "i32".to_string(),
+                    },
+                    PrintfTestGeneratorOps::StringFragment(" ".to_string()),
+                    PrintfTestGeneratorOps::StringConversion,
+                    PrintfTestGeneratorOps::StringFragment(" ".to_string()),
+                    PrintfTestGeneratorOps::CharConversion,
+                    PrintfTestGeneratorOps::Finalize
+                ]
+            )
+        );
+    }
+
+    // Test that a generator returning an overridden character conversion specifier
+    // changes that and only that conversion specifier in the format string.
+    #[test]
+    fn generate_core_fmt_substitutes_char_conversion() {
+        assert_eq!(
+            char_sub_core_fmt_generator_test_macro!("test %ld %s %c", 5, "test", 'c'),
+            (
+                "test {} {} {:?}",
                 vec![
                     PrintfTestGeneratorOps::StringFragment("test ".to_string()),
                     PrintfTestGeneratorOps::IntegerConversion {
