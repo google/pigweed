@@ -19,21 +19,11 @@
 
 namespace pw::allocator::test {
 
-// AllocatorForTest methods.
-
-AllocatorForTest::~AllocatorForTest() {
-  for (auto* block : allocator_.blocks()) {
-    PW_DCHECK(
-        !block->Used(),
-        "The block at %p was still in use when its allocator was "
-        "destroyed. All memory allocated by an allocator must be released "
-        "before the allocator goes out of scope.",
-        static_cast<void*>(block));
-  }
-}
+AllocatorForTest::~AllocatorForTest() { PW_DCHECK(!initialized_); }
 
 Status AllocatorForTest::Init(ByteSpan bytes) {
   ResetParameters();
+  initialized_ = true;
   return allocator_.Init(bytes);
 }
 
@@ -52,11 +42,13 @@ void AllocatorForTest::ResetParameters() {
   resize_new_size_ = 0;
 }
 
-void AllocatorForTest::DeallocateAll() {
+void AllocatorForTest::Reset() {
   for (auto* block : allocator_.blocks()) {
     BlockType::Free(block);
   }
   ResetParameters();
+  allocator_.Reset();
+  initialized_ = false;
 }
 
 Status AllocatorForTest::DoQuery(const void* ptr, Layout layout) const {

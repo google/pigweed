@@ -45,6 +45,9 @@ class AllocatorForTest : public Allocator {
   size_t resize_new_size() const { return resize_new_size_; }
 
   /// Provides memory for the allocator to allocate from.
+  ///
+  /// If this method is called, then `Reset` MUST be called before the object is
+  /// destroyed.
   Status Init(ByteSpan bytes);
 
   /// Allocates all the memory from this object.
@@ -53,8 +56,12 @@ class AllocatorForTest : public Allocator {
   /// Resets the recorded parameters to an initial state.
   void ResetParameters();
 
-  /// This frees all memory associated with this allocator.
-  void DeallocateAll();
+  /// Resets the object to an initial state.
+  ///
+  /// This frees all memory associated with this allocator and disassociates the
+  /// allocator from its memory region. If `Init` is called, then this method
+  /// MUST be called before the object is destroyed.
+  void Reset();
 
  private:
   using BlockType = Block<>;
@@ -72,6 +79,7 @@ class AllocatorForTest : public Allocator {
   bool DoResize(void* ptr, Layout layout, size_t new_size) override;
 
   SimpleAllocator allocator_;
+  bool initialized_ = false;
   size_t allocate_size_ = 0;
   void* deallocate_ptr_ = nullptr;
   size_t deallocate_size_ = 0;
@@ -130,6 +138,7 @@ class AllocatorForTestWithBuffer
   AllocatorForTestWithBuffer() {
     EXPECT_EQ((*this)->Init(ByteSpan(this->data(), this->size())), OkStatus());
   }
+  ~AllocatorForTestWithBuffer() { (*this)->Reset(); }
 };
 
 /// Represents a request to allocate some memory.

@@ -27,11 +27,6 @@ class FallbackAllocatorTest : public ::testing::Test {
  protected:
   void SetUp() override { allocator.Init(*primary, *secondary); }
 
-  void TearDown() override {
-    primary->DeallocateAll();
-    secondary->DeallocateAll();
-  }
-
   test::AllocatorForTestWithBuffer<128> primary;
   test::AllocatorForTestWithBuffer<128> secondary;
   FallbackAllocator allocator;
@@ -64,7 +59,7 @@ TEST_F(FallbackAllocatorTest, QueryInvalidPtr) {
   EXPECT_FALSE(primary->Query(ptr, layout).ok());
   EXPECT_FALSE(secondary->Query(ptr, layout).ok());
   EXPECT_FALSE(allocator.Query(ptr, layout).ok());
-  other.DeallocateAll();
+  other.Reset();
 }
 
 TEST_F(FallbackAllocatorTest, AllocateFromPrimary) {

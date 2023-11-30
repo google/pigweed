@@ -39,6 +39,9 @@ class SimpleAllocator : public Allocator {
   /// Return the range of blocks for this allocator.
   Range blocks() { return Range(blocks_); }
 
+  /// Resets the object to an initial state.
+  void Reset() { blocks_ = nullptr; }
+
  private:
   /// @copydoc Allocator::Query
   Status DoQuery(const void* ptr, Layout) const override {
