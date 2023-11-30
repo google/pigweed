@@ -22,7 +22,6 @@ load(
     "//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl",
     "cipd_client_repository",
     "cipd_repository",
-    "pigweed_deps",
 )
 
 # Set up Bazel platforms.
@@ -50,12 +49,6 @@ pw_xcode_command_line_tools_repository()
 # Setup CIPD client and packages.
 # Required by: pigweed.
 # Used by modules: all.
-pigweed_deps()
-
-load("@cipd_deps//:cipd_init.bzl", "cipd_init")
-
-cipd_init()
-
 cipd_client_repository()
 
 # Set up legacy pw_transfer test binaries.
