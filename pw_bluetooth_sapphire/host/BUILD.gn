@@ -17,6 +17,7 @@ import("$dir_pigweed/third_party/emboss/emboss.gni")
 import("$dir_pw_assert/backend.gni")
 import("$dir_pw_async/backend.gni")
 import("$dir_pw_function/function.gni")
+import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_unit_test/test.gni")
 
 declare_args() {
@@ -58,8 +59,8 @@ pw_test_group("tests") {
   ]
 }
 
-group("fuzzers") {
-  deps = [
+pw_fuzzer_group("fuzzers") {
+  fuzzers = [
     "common:advertising_data_fuzzer",
     "gap:peer_cache_fuzzer",
     "l2cap:basic_mode_rx_engine_fuzzer",
