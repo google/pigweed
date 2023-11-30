@@ -52,7 +52,6 @@ pw_test("chunk_region_tracker_test") {
     ":chunk",
     ":chunk_region_tracker",
     "$dir_pw_allocator:simple_allocator",
-    "$dir_pw_unit_test:googletest_test_matchers",
     dir_pw_status,
   ]
   sources = [ "chunk_region_tracker_test.cc" ]
