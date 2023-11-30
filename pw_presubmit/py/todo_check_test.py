@@ -63,6 +63,13 @@ class TestTodoCheck(unittest.TestCase):
         self._run_bugs(contents)
         self.ctx.fail.assert_not_called()
 
+    def test_one_bug_full_url(self) -> None:
+        contents = 'TODO: https://issues.pigweed.dev/issues/123 - foo\n'
+        self._run_bugs_users(contents)
+        self.ctx.fail.assert_not_called()
+        self._run_bugs(contents)
+        self.ctx.fail.assert_not_called()
+
     def test_two_bugs_legacy(self) -> None:
         contents = 'TODO(b/123, b/456): foo\n'
         self._run_bugs_users(contents)

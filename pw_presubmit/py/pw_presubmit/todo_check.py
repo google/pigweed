@@ -43,7 +43,8 @@ EXCLUDE: Sequence[str] = (
 # todo-check: disable
 BUGS_ONLY = re.compile(
     r'(?:\bTODO\(b/\d+(?:, ?b/\d+)*\).*\w)|'
-    r'(?:\bTODO: b/\d+(?:, ?b/\d+)* - )'
+    r'(?:\bTODO: b/\d+(?:, ?b/\d+)* - )|'
+    r'(?:\bTODO: https://issues.pigweed.dev/issues/\d+ - )'
 )
 BUGS_OR_USERNAMES = re.compile(
     r"""
@@ -58,6 +59,7 @@ BUGS_OR_USERNAMES = re.compile(
     \bTODO:[ ]
     (?:
         b/\d+|  # Bug.
+        https://issues.pigweed.dev/issues/\d+| # Fully qualified bug for rustdoc
         # Username@ with optional domain.
         [a-z]+@(?:[a-z][-a-z0-9]*(?:\.[a-z][-a-z0-9]*)+)?
     )
