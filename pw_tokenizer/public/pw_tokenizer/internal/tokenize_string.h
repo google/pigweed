@@ -29,6 +29,18 @@
 
 #define _PW_TOKENIZER_ENTRY_MAGIC 0xBAA98DEE
 
+// Tokenizer entries are stored sequentially in an ELF section. Each entry
+// starts with a header comprised of a magic number, the token, and the domain
+// and string lengths. The domain and tokenized string follow immediately after
+// the header, with no padding or null terminators. Entries are NOT aligned
+// within the section.
+typedef struct {
+  uint32_t magic;          // must be _PW_TOKENIZER_ENTRY_MAGIC
+  uint32_t token;          // the token that represents this string.
+  uint32_t domain_length;  // domain string length
+  uint32_t string_length;  // tokenized string length
+} _pw_tokenizer_EntryHeader;
+
 #ifdef __cplusplus
 
 #include "pw_containers/to_array.h"
@@ -37,6 +49,8 @@
 namespace pw {
 namespace tokenizer {
 namespace internal {
+
+static_assert(sizeof(_pw_tokenizer_EntryHeader) == 4 * sizeof(uint32_t));
 
 // The C++ tokenzied string entry supports both string literals and char arrays,
 // such as __func__.
@@ -47,10 +61,10 @@ Entry {
   constexpr Entry(uint32_t token,
                   const char(&domain)[kDomainSize],
                   const char(&string)[kStringSize])
-      : magic_(_PW_TOKENIZER_ENTRY_MAGIC),
-        token_(token),
-        domain_size_(kDomainSize),
-        string_size_(kStringSize),
+      : header_{.magic = _PW_TOKENIZER_ENTRY_MAGIC,
+                .token = token,
+                .domain_length = kDomainSize,
+                .string_length = kStringSize},
         domain_(containers::to_array(domain)),
         string_(containers::to_array(string)) {}
 
@@ -58,10 +72,7 @@ Entry {
   static_assert(kStringSize > 0u && kDomainSize > 0u,
                 "The string and domain must have at least a null terminator");
 
-  uint32_t magic_;
-  uint32_t token_;
-  uint32_t domain_size_;
-  uint32_t string_size_;
+  _pw_tokenizer_EntryHeader header_;
   std::array<char, kDomainSize> domain_;
   std::array<char, kStringSize> string_;
 };
@@ -87,19 +98,18 @@ constexpr Entry<kDomainSize, kStringSize> MakeEntry(
 #define _PW_TOKENIZER_STRING_ENTRY(                   \
     calculated_token, domain_literal, string_literal) \
   PW_PACKED(struct) {                                 \
-    uint32_t magic;                                   \
-    uint32_t token;                                   \
-    uint32_t domain_size;                             \
-    uint32_t string_length;                           \
+    _pw_tokenizer_EntryHeader header;                 \
     char domain[sizeof(domain_literal)];              \
     char string[sizeof(string_literal)];              \
   }                                                   \
   _PW_TOKENIZER_UNIQUE(_pw_tokenizer_string_entry_)   \
   _PW_TOKENIZER_SECTION = {                           \
-      _PW_TOKENIZER_ENTRY_MAGIC,                      \
-      calculated_token,                               \
-      sizeof(domain_literal),                         \
-      sizeof(string_literal),                         \
+      {                                               \
+          .magic = _PW_TOKENIZER_ENTRY_MAGIC,         \
+          .token = calculated_token,                  \
+          .domain_length = sizeof(domain_literal),    \
+          .string_length = sizeof(string_literal),    \
+      },                                              \
       domain_literal,                                 \
       string_literal,                                 \
   }
