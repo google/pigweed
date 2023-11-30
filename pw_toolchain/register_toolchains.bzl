@@ -46,7 +46,7 @@ def register_pigweed_cxx_toolchains():
     # Fetch llvm toolchain.
     cipd_repository(
         name = "llvm_toolchain",
-        build_file = "@pw_toolchain//third_party:llvm_clang.BUILD",
+        build_file = "@pw_toolchain//build_external:llvm_clang.BUILD",
         path = "fuchsia/third_party/clang/${os}-${arch}",
         tag = "git_revision:8475d0a2b853f6184948b428ec679edf84ed2688",
     )
@@ -61,7 +61,7 @@ def register_pigweed_cxx_toolchains():
     # Fetch gcc-arm-none-eabi toolchain.
     cipd_repository(
         name = "gcc_arm_none_eabi_toolchain",
-        build_file = "@pw_toolchain//third_party:gcc_arm_none_eabi.BUILD",
+        build_file = "@pw_toolchain//build_external:gcc_arm_none_eabi.BUILD",
         path = "fuchsia/third_party/armgcc/${os}-${arch}",
         tag = "version:2@12.2.mpacbti-rel1.1",
     )
