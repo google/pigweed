@@ -50,7 +50,7 @@ class TestTodoCheck(unittest.TestCase):
         self._run(todo_check.BUGS_ONLY, contents)
 
     def test_one_bug_legacy(self) -> None:
-        contents = 'TODO: b/123 - foo\n'
+        contents = 'TODO(b/123): foo\n'
         self._run_bugs_users(contents)
         self.ctx.fail.assert_not_called()
         self._run_bugs(contents)
