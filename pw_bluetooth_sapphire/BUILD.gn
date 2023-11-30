@@ -47,8 +47,8 @@ pw_test_group("tests") {
   ]
 }
 
-group("fuzzers") {
-  deps = [ "host:fuzzers" ]
+pw_test_group("fuzzers") {
+  group_deps = [ "host:fuzzers" ]
 }
 
 pw_doc_group("docs") {
