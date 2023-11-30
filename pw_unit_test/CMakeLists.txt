@@ -74,7 +74,8 @@ pw_add_library(pw_unit_test.googletest_style_event_handler STATIC
     googletest_style_event_handler.cc
 )
 
-if(NOT ${pw_unit_test_GOOGLETEST_BACKEND} STREQUAL "")
+if(NOT ${pw_unit_test_GOOGLETEST_BACKEND} STREQUAL "" AND
+   NOT ${pw_unit_test_GOOGLETEST_BACKEND} STREQUAL "pw_unit_test.light")
   pw_add_library(pw_unit_test.googletest_test_matchers INTERFACE
     HEADERS
       public/pw_unit_test/googletest_test_matchers.h

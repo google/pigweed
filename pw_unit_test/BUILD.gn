@@ -127,7 +127,8 @@ pw_source_set("googletest_test_matchers") {
 }
 
 pw_test("googletest_test_matchers_test") {
-  enable_if = pw_unit_test_GOOGLETEST_BACKEND != ""
+  enable_if = pw_unit_test_GOOGLETEST_BACKEND != "" &&
+              pw_unit_test_GOOGLETEST_BACKEND != "$dir_pw_unit_test:light"
   sources = [ "googletest_test_matchers_test.cc" ]
   deps = [ ":googletest_test_matchers" ]
 }
