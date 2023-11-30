@@ -266,6 +266,17 @@ We support a number of `git footers`_ in the commit message, such as ``Bug:
 
    Bug: 123
 
+The footer syntax is described in the `git documentation
+<https://git-scm.com/docs/git-interpret-trailers>`_. Note in particular that
+multi-line footers are supported:
+
+.. code-block::none
+
+   pw_something: Add foo and bar functions
+
+   Test: Carried out manual tests of pw_console
+     as described in the documentation.
+
 You are encouraged to use the following footers when appropriate:
 
 * ``Bug``: Associates this commit with a bug (issue in our `bug tracker`_). The
@@ -287,6 +298,20 @@ You are encouraged to use the following footers when appropriate:
       pw_something: Fix incorrect use of foo
 
       Fixes: 123
+
+* ``Test``: The author can use this field to tell the reviewer how the change
+  was tested. Typically, this will be some combination of writing new automated
+  tests, running automated tests, and manual testing.
+
+  Note: descriptions of manual testing procedures belong in module
+  documentation, not in the commit message. Use the ``Test`` field to attest
+  that tests were carried out, not to describe the procedures in detail.
+
+  .. code-block:: none
+
+      pw_something: Fix incorrect use of foo
+
+      Test: Added a regression unit test.
 
 In addition, we support all of the `Chromium CQ footers`_, but those are
 relatively rarely useful.
