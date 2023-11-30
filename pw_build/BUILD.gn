@@ -356,6 +356,11 @@ pw_doc_group("docs") {
   ]
 }
 
+config("module_config_test_config") {
+  visibility = [ ":*" ]
+  defines = [ "PW_THREAD_FREERTOS_CONFIG_JOINING_ENABLED=1" ]
+}
+
 # Pigweed upstream does not use the default toolchain, but other projects may
 # use it. To support using pw_build from the default toolchain without fully
 # configuring the Pigweed build, only instantiate the pw_build tests for a
@@ -364,6 +369,12 @@ if (current_toolchain != default_toolchain) {
   pw_test("cc_blob_library_test") {
     sources = [ "cc_blob_library_test.cc" ]
     deps = [ ":test_blob" ]
+  }
+
+  pw_test("module_config_test") {
+    public_configs = [ ":module_config_test_config" ]
+    sources = [ "module_config_test.cc" ]
+    deps = [ "$dir_pw_thread_freertos:config" ]
   }
 
   pw_cc_blob_library("test_blob") {

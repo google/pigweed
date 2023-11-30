@@ -93,12 +93,18 @@ pw_cc_library(
         "//pw_build/constraints/rtos:freertos",
     ],
     deps = [
+        ":config_override",
         ":id",
         "//pw_assert",
         "//pw_string",
         "//pw_sync:binary_semaphore",
         "//pw_thread:thread_facade",
     ],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
 )
 
 pw_cc_library(

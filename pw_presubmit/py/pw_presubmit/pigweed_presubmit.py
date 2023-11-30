@@ -728,6 +728,14 @@ def bazel_build(ctx: PresubmitContext) -> None:
         '//pw_cpu_exception/...',
     )
 
+    build.bazel(
+        ctx,
+        'build',
+        '--//pw_thread_freertos:config_override=//pw_build:test_module_config',
+        '--platforms=//pw_build/platforms:testonly_freertos',
+        '//pw_build:module_config_test',
+    )
+
     # Build the pw_system example for the Discovery board using STM32Cube.
     build.bazel(
         ctx,

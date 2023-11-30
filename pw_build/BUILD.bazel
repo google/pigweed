@@ -72,6 +72,33 @@ pw_cc_test(
     ],
 )
 
+label_flag(
+    name = "default_module_config",
+    # The default module config is empty.
+    build_setting_default = ":empty_cc_library",
+)
+
+cc_library(
+    name = "test_module_config",
+    defines = [
+        "PW_THREAD_FREERTOS_CONFIG_JOINING_ENABLED=1",
+    ],
+)
+
+pw_cc_test(
+    name = "module_config_test",
+    srcs = ["module_config_test.cc"],
+    # This test requires a special configuration. It's run in CI, and can be
+    # run manually via,
+    #
+    #   bazel build \
+    #     --//pw_thread_freertos:config_override=//pw_build:test_module_config \
+    #     --platforms=//pw_build/platforms:testonly_freertos \
+    #     //pw_build:module_config_test
+    tags = ["manual"],
+    deps = ["//pw_thread:thread"],
+)
+
 # This empty library is used as a placeholder for label flags that need to
 # point to a library of some kind, but don't actually need the dependency to
 # amount to anything.

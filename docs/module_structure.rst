@@ -254,10 +254,14 @@ on whether the header should be exposed by the module or not.
      pw_foo_private/config.h
 
 The configuration header is provided by a build system library. This library
-acts as a :ref:`facade<docs-module-structure-facades>`. The facade uses a
-variable such as ``pw_foo_CONFIG``. In upstream Pigweed, all config facades
-default to the ``pw_build_DEFAULT_MODULE_CONFIG`` backend. In the GN build
-system, the config facade is declared as follows:
+acts as a :ref:`facade<docs-module-structure-facades>`. The details depend on
+the build system.
+
+GN compile-time configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The facade uses a variable such as ``pw_foo_CONFIG``. In upstream Pigweed, all
+config facades default to the ``pw_build_DEFAULT_MODULE_CONFIG`` backend. The
+config facade is declared as follows:
 
 .. code-block::
 
@@ -293,21 +297,84 @@ system, the config facade is declared as follows:
      visibility = [":*"]  # Only allow this module to depend on ":config"
    }
 
+Bazel compile-time configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The module that uses configuration depends on a ``label_flag``, conventionally
+named ``config``, that by default points to the
+``//pw_build:default_module_config``. For example,
+
+.. code-block:: python
+
+   # A module with a public config. That config doesn't need to be broken out
+   # into a separate cc_library.
+   cc_library(
+     name = "pw_foo",
+     hdrs = ["config.h"],
+     deps = [":config"],
+   )
+
+   label_flag(
+     name = "config",
+     build_setting_default = "//pw_build:default_module_config",
+   )
+
+   # A module with an internal config that's included by other module headers.
+   cc_library(
+     name = "pw_bar",
+     deps = [":internal_config"],
+   )
+
+   cc_library(
+     name = "internal_config",
+     hdrs = ["config.h"],
+     deps = [":config"],
+     visibility = ["//visibility:private"],
+   )
+
+   label_flag(
+     name = "config",
+     build_setting_default = "//pw_build:default_module_config",
+   )
+
+   # A module with a private config.
+   cc_library(
+     name = "pw_bar",
+     implementation_deps = [":private_config"],
+   )
+
+   cc_library(
+     name = "private_config",
+     hdrs = ["config.h"],
+     deps = [":config"],
+     visibility = ["//visibility:private"],
+   )
+
+   label_flag(
+     name = "config",
+     build_setting_default = "//pw_build:default_module_config",
+   )
+
+
+
 Overriding configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^
 As noted above, all module configuration facades default to the same backend
-(``pw_build_DEFAULT_MODULE_CONFIG``). This allows projects to override
-configuration values for multiple modules from a single configuration backend,
-if desired. The configuration values may also be overridden individually by
-setting backends for the individual module configurations (e.g. in GN,
-``pw_foo_CONFIG = "//configuration:my_foo_config"``).
+(``pw_build_DEFAULT_MODULE_CONFIG`` in GN, ``//pw_build:default_module_config``
+in Bazel). This allows projects to override configuration values for multiple
+modules from a single configuration backend, if desired. The configuration
+values may also be overridden individually by setting backends for the
+individual module configurations (e.g. in GN, ``pw_foo_CONFIG =
+"//configuration:my_foo_config"``, in Bazel
+``--//pw_foo:config=//configuration:my_foo_config``).
 
 Configurations options are overridden by setting macros in the config backend.
-These macro definitions can be provided through compilation options, such as
-``-DPW_FOO_INPUT_BUFFER_SIZE_BYTES=256``. Configuration macro definitions may
-also be set in a header file. The header file is included using the ``-include``
-compilation option.
+In Bazel, the only supported override mechanism are compilation options, such
+as ``-DPW_FOO_INPUT_BUFFER_SIZE_BYTES=256``. In GN and CMake, configuration
+macro definitions may also be set in a header file. The header file is included
+using the ``-include`` compilation option.
 
+GN config override example
+..........................
 This example shows two ways to configure a module in the GN build system.
 
 .. code-block::
@@ -339,27 +406,50 @@ This example shows two ways to configure a module in the GN build system.
      ]
    }
 
-.. admonition:: Why this config pattern is preferred
+Bazel config override example
+.............................
+This shows the only supported way to configure a module in Bazel.
 
-  Alternate patterns for configuring a module include overriding the module's
-  config header or having that header optionally include a header at a known
-  path (e.g. ``pw_foo/config_overrides.h``). There are a few downsides to these
-  approaches:
+.. code-block:: python
 
-  * The module needs its own config header that defines, provides defaults for,
-    and validates the configuration options. Replacing this header with a
-    user-defined header would require defining all options in the user's header,
-    which is cumbersome and brittle, and would bypass validation in the module's
-    header.
-  * Including a config override header at a particular path would prevent
-    multiple modules from sharing the same configuration file. Multiple headers
-    could redirect to the same configuration file, but this would still require
-    creating a separate header and setting the config backend variable for each
-    module.
-  * Optionally including a config override header requires boilerplate code that
-    would have to be duplicated in every configurable module.
-  * An optional config override header file would silently be excluded if the
-    file path were accidentally misspelled.
+   # To use these overrides for all modules, set the global module config label
+   # flag,
+   #
+   # --@pigweed//pw_build:default_module_config=//path_to:config_overrides
+   #
+   # To use them just for one module, set the module-specific config label
+   # flag,
+   #
+   # --@pigweed//pw_foo:config_override=//path_to:config_overrides
+   cc_library(
+     name = "config_overrides",
+     defines = [
+        "PW_FOO_INPUT_BUFFER_SIZE_BYTES=256",
+     ],
+   )
+
+
+Why this config pattern is preferred
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Alternate patterns for configuring a module include overriding the module's
+config header or having that header optionally include a header at a known
+path (e.g. ``pw_foo/config_overrides.h``). There are a few downsides to these
+approaches:
+
+*  The module needs its own config header that defines, provides defaults for,
+   and validates the configuration options. Replacing this header with a
+   user-defined header would require defining all options in the user's header,
+   which is cumbersome and brittle, and would bypass validation in the module's
+   header.
+*  Including a config override header at a particular path would prevent
+   multiple modules from sharing the same configuration file. Multiple headers
+   could redirect to the same configuration file, but this would still require
+   creating a separate header and setting the config backend variable for each
+   module.
+*  Optionally including a config override header requires boilerplate code that
+   would have to be duplicated in every configurable module.
+*  An optional config override header file would silently be excluded if the
+   file path were accidentally misspelled.
 
 Python module structure
 -----------------------
