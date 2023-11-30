@@ -872,8 +872,8 @@ class _NinjaBase(Check):
         coverage_json = coverage_jsons[0]
 
         if ctx.luci:
-            if ctx.luci.is_dev:
-                _LOG.warning('Not uploading coverage since running in dev')
+            if not ctx.luci.is_prod:
+                _LOG.warning('Not uploading coverage since not running in prod')
                 return PresubmitResult.PASS
 
             with self._context(ctx):
