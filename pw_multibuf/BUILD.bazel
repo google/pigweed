@@ -59,7 +59,6 @@ pw_cc_library(
         "//pw_allocator:split_free_list_allocator",
         "//pw_bytes",
         "//pw_status",
-        "@com_google_googletest//:gtest",
     ],
 )
 
