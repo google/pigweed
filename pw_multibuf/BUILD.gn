@@ -37,6 +37,27 @@ pw_source_set("chunk") {
   deps = [ "$dir_pw_assert:check" ]
 }
 
+pw_source_set("chunk_region_tracker") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_multibuf/chunk_region_tracker.h" ]
+  public_deps = [
+    ":chunk",
+    dir_pw_allocator,
+    dir_pw_bytes,
+  ]
+}
+
+pw_test("chunk_region_tracker_test") {
+  deps = [
+    ":chunk",
+    ":chunk_region_tracker",
+    "$dir_pw_allocator:simple_allocator",
+    "$dir_pw_unit_test:googletest_test_matchers",
+    dir_pw_status,
+  ]
+  sources = [ "chunk_region_tracker_test.cc" ]
+}
+
 pw_source_set("test_utils") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_multibuf/internal/test_utils.h" ]
@@ -44,12 +65,15 @@ pw_source_set("test_utils") {
     ":chunk",
     "$dir_pw_allocator:allocator_metric_proxy_for_test",
     "$dir_pw_allocator:split_free_list_allocator",
+    dir_pw_allocator,
+    dir_pw_bytes,
   ]
 }
 
 pw_test("chunk_test") {
   deps = [
     ":chunk",
+    ":chunk_region_tracker",
     ":test_utils",
   ]
   sources = [ "chunk_test.cc" ]
@@ -64,6 +88,7 @@ pw_source_set("pw_multibuf") {
 
 pw_test("multibuf_test") {
   deps = [
+    ":chunk_region_tracker",
     ":pw_multibuf",
     ":test_utils",
   ]
@@ -73,6 +98,7 @@ pw_test("multibuf_test") {
 pw_test_group("tests") {
   tests = [
     ":chunk_test",
+    ":chunk_region_tracker_test",
     ":multibuf_test",
   ]
 }

@@ -31,15 +31,29 @@ pw_add_library(pw_multibuf.chunk STATIC
     chunk.cc
 )
 
+pw_add_library(pw_multibuf.chunk_region_tracker STATIC
+  SOURCES
+    public/pw_multibuf/chunk_region_tracker.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.allocator
+    pw_bytes
+    pw_multibuf.chunk
+)
+
 pw_add_library(pw_multibuf.test_utils STATIC
   SOURCES
     public/pw_multibuf/internal/test_utils.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_bytes
     pw_multibuf.chunk
     pw_allocator.allocator_metric_proxy_for_test
     pw_allocator.split_free_list_allocator
+    pw_status
+    ${pw_unit_test_GOOGLETEST_BACKEND}
 )
 
 pw_add_test(pw_multibuf.chunk_test
@@ -47,7 +61,21 @@ pw_add_test(pw_multibuf.chunk_test
     chunk_test.cc
   PRIVATE_DEPS
     pw_multibuf.chunk
+    pw_multibuf.chunk_region_tracker
     pw_multibuf.test_utils
+  GROUPS
+    modules
+    pw_multibuf
+)
+
+pw_add_test(pw_multibuf.chunk_region_tracker_test
+  SOURCES
+    chunk_region_tracker_test.cc
+  PRIVATE_DEPS
+    pw_allocator.simple_allocator
+    pw_multibuf.chunk
+    pw_multibuf.chunk_region_tracker
+    pw_status
   GROUPS
     modules
     pw_multibuf
@@ -69,6 +97,7 @@ pw_add_test(pw_multibuf.multibuf_test
     multibuf_test.cc
   PRIVATE_DEPS
     pw_multibuf
+    pw_multibuf.chunk_region_tracker
     pw_multibuf.test_utils
   GROUPS
     modules

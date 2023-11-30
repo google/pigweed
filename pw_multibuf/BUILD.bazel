@@ -37,14 +37,29 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "chunk_region_tracker",
+    hdrs = ["public/pw_multibuf/chunk_region_tracker.h"],
+    includes = ["public"],
+    deps = [
+        ":chunk",
+        "//pw_allocator:allocator",
+        "//pw_bytes",
+    ],
+)
+
+pw_cc_library(
     name = "test_utils",
     hdrs = ["public/pw_multibuf/internal/test_utils.h"],
     includes = ["public"],
     visibility = [":__subpackages__"],
     deps = [
         ":chunk",
+        "//pw_allocator:allocator",
         "//pw_allocator:allocator_metric_proxy_for_test",
         "//pw_allocator:split_free_list_allocator",
+        "//pw_bytes",
+        "//pw_status",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -53,8 +68,20 @@ pw_cc_test(
     srcs = ["chunk_test.cc"],
     deps = [
         ":chunk",
+        ":chunk_region_tracker",
         ":test_utils",
         "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "chunk_region_tracker_test",
+    srcs = ["chunk_region_tracker_test.cc"],
+    deps = [
+        ":chunk",
+        ":chunk_region_tracker",
+        "//pw_allocator:simple_allocator",
+        "//pw_status",
     ],
 )
 
@@ -69,6 +96,7 @@ pw_cc_test(
     name = "multibuf_test",
     srcs = ["multibuf_test.cc"],
     deps = [
+        ":chunk_region_tracker",
         ":pw_multibuf",
         ":test_utils",
         "//pw_unit_test",

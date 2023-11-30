@@ -16,12 +16,12 @@
 
 #include "gtest/gtest.h"
 #include "pw_bytes/suffix.h"
+#include "pw_multibuf/chunk_region_tracker.h"
 #include "pw_multibuf/internal/test_utils.h"
 
 namespace pw::multibuf {
 namespace {
 
-using ::pw::multibuf::internal::HeaderChunkRegionTracker;
 using ::pw::multibuf::internal::TrackingAllocatorWithMemory;
 
 const size_t kArbitraryAllocatorSize = 1024;
