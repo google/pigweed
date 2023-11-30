@@ -41,15 +41,14 @@ local_repository(
     path = "pw_toolchain_bazel",
 )
 
-# Setup xcode on mac.
-load("@pw_toolchain//features/macos:generate_xcode_repository.bzl", "pw_xcode_command_line_tools_repository")
-
-pw_xcode_command_line_tools_repository()
-
 # Setup CIPD client and packages.
 # Required by: pigweed.
 # Used by modules: all.
 cipd_client_repository()
+
+load("//pw_toolchain:register_toolchains.bzl", "register_pigweed_cxx_toolchains")
+
+register_pigweed_cxx_toolchains()
 
 # Set up legacy pw_transfer test binaries.
 # Required by: pigweed.
@@ -58,50 +57,6 @@ cipd_repository(
     name = "pw_transfer_test_binaries",
     path = "pigweed/pw_transfer_test_binaries/${os=linux}-${arch=amd64}",
     tag = "version:pw_transfer_test_binaries_528098d588f307881af83f769207b8e6e1b57520-linux-amd64-cipd.cipd",
-)
-
-# Fetch llvm toolchain.
-# Required by: pigweed.
-# Used in modules: //pw_toolchain.
-cipd_repository(
-    name = "llvm_toolchain",
-    build_file = "@pw_toolchain//third_party:llvm_clang.BUILD",
-    path = "fuchsia/third_party/clang/${os}-${arch}",
-    tag = "git_revision:8475d0a2b853f6184948b428ec679edf84ed2688",
-)
-
-# Fetch linux sysroot for host builds.
-# Required by: pigweed.
-# Used in modules: //pw_toolchain.
-cipd_repository(
-    name = "linux_sysroot",
-    path = "fuchsia/third_party/sysroot/linux",
-    tag = "git_revision:d342388843734b6c5c50fb7e18cd3a76476b93aa",
-)
-
-# Note that the order of registration matters: Bazel will use the first
-# toolchain compatible with the target platform. So, they should be listed from
-# most-restrive to least-restrictive.
-register_toolchains(
-    "//pw_toolchain/host_clang:host_cc_toolchain_linux",
-    "//pw_toolchain/host_clang:host_cc_toolchain_macos",
-)
-
-# Fetch gcc-arm-none-eabi toolchain.
-# Required by: pigweed.
-# Used in modules: //pw_toolchain.
-cipd_repository(
-    name = "gcc_arm_none_eabi_toolchain",
-    build_file = "@pw_toolchain//third_party:gcc_arm_none_eabi.BUILD",
-    path = "fuchsia/third_party/armgcc/${os}-${arch}",
-    tag = "version:2@12.2.mpacbti-rel1.1",
-)
-
-register_toolchains(
-    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m0",
-    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m3",
-    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m4",
-    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m4+nofp",
 )
 
 # Set up Starlark library.

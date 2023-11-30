@@ -8,17 +8,16 @@ for evaluating build files. The same compilations and actions can be executed by
 different toolchains. Each toolchain maintains its own set of build args, and
 build steps from all toolchains can be executed in parallel.
 
-----------
-Toolchains
-----------
+-------------
+GN Toolchains
+-------------
 ``pw_toolchain`` module provides GN toolchains that may be used to build
 Pigweed. Various GCC and Clang toolchains for multiple platforms are provided.
 Toolchains names typically include the compiler (``clang`` or ``gcc`` and
 optimization level (``debug``, ``size_optimized``, ``speed_optimized``).
 
---------------------
 Non-C/C++ toolchains
---------------------
+====================
 ``pw_toolchain/non_c_toolchain.gni`` provides the ``pw_non_c_toolchain``
 template. This template creates toolchains that cannot compile C/C++ source
 code. These toolchains may only be used to execute GN actions or declare groups
@@ -35,18 +34,16 @@ installation and Pylint in toolchains created with ``pw_non_c_toolchain``. This
 allows all toolchains to cleanly share the same protobuf and Python declarations
 without any duplicated work.
 
--------------------------------
 Testing other compiler versions
--------------------------------
+===============================
 The clang-based toolchain provided by Pigweed can be substituted with another
 version by modifying the ``pw_toolchain_CLANG_PREFIX`` GN build argument to
 point to the directory that contains the desired clang, clang++, and llvm-ar
 binaries. This should only be used for debugging purposes. Pigweed does not
 officially support any compilers other than those provided by Pigweed.
 
-------------------------------
 Running static analysis checks
-------------------------------
+==============================
 ``clang-tidy`` can be run as a compiler replacement, to analyze all sources
 built for a target. ``pw_toolchain/static_analysis_toolchain.gni`` provides
 the ``pw_static_analysis_toolchain`` template. This template creates toolchains
@@ -93,7 +90,7 @@ dependency to the generated ``.d`` files for the
    }
 
 Excluding files from checks
-===========================
+–--------------------------
 The build argument ``pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_RES`` is used
 to exclude source files from the analysis. The list must contain regular
 expressions matching individual files, rather than directories. For example,
@@ -116,7 +113,7 @@ to ``pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS``, but *not* by adding
 include path.
 
 Provided toolchains
-===================
+-------------------
 ``pw_toolchain`` provides static analysis GN toolchains that may be used to
 test host targets:
 
@@ -152,9 +149,8 @@ For example, to run ``clang-tidy`` on all source dependencies of the
    clean the output directory before invoking
    ``clang-tidy``.
 
--------------
 Target traits
--------------
+=============
 Pigweed targets expose a set of constants that describe properties of the target
 or the toolchain compiling code for it. These are referred to as target traits.
 
@@ -171,12 +167,33 @@ set by the target.
    See `b/234883746 <http://issuetracker.google.com/issues/234883746>`_.
 
 List of traits
-==============
+--------------
 - ``CXX_STANDARD``. The C++ standard used by the toolchain. The value must be an
   integer value matching one of the standard values for the ``__cplusplus``
   macro. For example, ``201703`` corresponds to C++17. See
   https://en.cppreference.com/w/cpp/preprocessor/replace#Predefined_macros for
   further details.
+
+----------------
+Bazel toolchains
+----------------
+Pigweed provides a suite of building blocks for designing a custom C/C++
+toolchain in Bazel. See the :ref:`module-pw_toolchain_bazel` module
+documentation for more information.
+
+Upstream Pigweed Toolchains
+===========================
+You can use Pigweed's upstream toolchains by calling
+``register_pigweed_cxx_toolchains()`` provided by
+``@pigweed//pw_toolchain:register_toolchains.bzl`` in your ``WORKSPACE`` file.
+
+
+.. admonition:: Note
+   :class: warning
+
+   Pigweed's upstream toolchains are subject to change without notice. If you
+   would prefer more stability in toolchain configurations, consider declaring
+   custom toolchains in your project.
 
 ---------------
 C/C++ libraries
