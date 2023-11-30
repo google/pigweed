@@ -29,5 +29,9 @@ rust_docs(
         "//pw_varint/rust:pw_varint",
         "//pw_tokenizer/rust:pw_tokenizer_core",
         "//pw_tokenizer/rust:pw_tokenizer",
+        "//pw_log/rust:pw_log_backend_println",
+        "//pw_log/rust:pw_log_backend_printf",
+        "//pw_log/rust:pw_log_backend_api",
+        "//pw_log/rust:pw_log",
     ],
 )

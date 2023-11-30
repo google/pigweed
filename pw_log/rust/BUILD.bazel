@@ -1,0 +1,116 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("@rules_rust//rust:defs.bzl", "rust_doc_test", "rust_library", "rust_proc_macro", "rust_test")
+
+rust_library(
+    name = "pw_log",
+    srcs = [
+        "pw_log.rs",
+    ],
+    crate_features = select({
+        "@rust_crates//:std": ["std"],
+        "//conditions:default": [""],
+    }),
+    visibility = ["//visibility:public"],
+    deps = [
+        ":pw_log_backend",
+        ":pw_log_backend_api",
+    ],
+)
+
+rust_test(
+    name = "pw_log_test",
+    crate = ":pw_log",
+    crate_features = select({
+        "@rust_crates//:std": ["std"],
+        "//conditions:default": [""],
+    }),
+)
+
+rust_doc_test(
+    name = "pw_log_doc_test",
+    crate = ":pw_log",
+)
+
+rust_library(
+    name = "pw_log_backend_api",
+    srcs = [
+        "pw_log_backend_api.rs",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+rust_library(
+    name = "pw_log_backend_println",
+    srcs = [
+        "pw_log_backend_println.rs",
+    ],
+    crate_name = "pw_log_backend",
+    proc_macro_deps = [":pw_log_backend_println_macro"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":pw_log_backend_api",
+    ],
+)
+
+rust_proc_macro(
+    name = "pw_log_backend_println_macro",
+    srcs = [
+        "pw_log_backend_println_macro.rs",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":pw_log_backend_api",
+        "//pw_format/rust:pw_format",
+        "//pw_status/rust:pw_status",
+        "@rust_crates//:proc-macro2",
+        "@rust_crates//:quote",
+        "@rust_crates//:syn",
+    ],
+)
+
+rust_library(
+    name = "pw_log_backend_printf",
+    srcs = [
+        "pw_log_backend_printf.rs",
+    ],
+    crate_name = "pw_log_backend",
+    proc_macro_deps = [":pw_log_backend_printf_macro"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":pw_log_backend_api",
+    ],
+)
+
+rust_proc_macro(
+    name = "pw_log_backend_printf_macro",
+    srcs = [
+        "pw_log_backend_printf_macro.rs",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":pw_log_backend_api",
+        "//pw_format/rust:pw_format",
+        "//pw_status/rust:pw_status",
+        "@rust_crates//:proc-macro2",
+        "@rust_crates//:quote",
+        "@rust_crates//:syn",
+    ],
+)
+
+label_flag(
+    name = "pw_log_backend",
+    build_setting_default = ":pw_log_backend_println",
+)
