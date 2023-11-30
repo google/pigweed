@@ -61,7 +61,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         initial_response_timeout_s: float = 4.0,
         max_retries: int = 3,
         max_lifetime_retries: int = 1500,
-        default_protocol_version=ProtocolVersion.LEGACY,
+        default_protocol_version=ProtocolVersion.VERSION_TWO,
     ):
         """Initializes a Manager on top of a TransferService.
 
