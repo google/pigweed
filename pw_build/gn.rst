@@ -1128,6 +1128,8 @@ on without an error.
 
 The templates for build time errors are defined in ``pw_build/error.gni``.
 
+.. _module-pw_build-gn-pw_coverage_report:
+
 Generate code coverage reports: ``pw_coverage_report``
 ------------------------------------------------------
 Pigweed supports generating coverage reports, in a variety of formats, for C/C++

@@ -646,6 +646,8 @@ use the following additional tags:
 
    will run all tests *except* for these integration tests.
 
+.. _docs-build_system-bazel_coverage:
+
 Code Coverage
 ^^^^^^^^^^^^^
 Making use of the code coverage functionality in Bazel is straightforward.
