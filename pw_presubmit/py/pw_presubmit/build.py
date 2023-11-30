@@ -691,9 +691,6 @@ def _value(ctx: PresubmitContext, val: InputValue) -> Value:
 _CtxMgrLambda = Callable[[PresubmitContext], ContextManager]
 _CtxMgrOrLambda = Union[ContextManager, _CtxMgrLambda]
 
-_INCREMENTAL_COVERAGE_TOOL = 'cloud_client'
-_ABSOLUTE_COVERAGE_TOOL = 'raw_coverage_cloud_uploader'
-
 
 @dataclass(frozen=True)
 class CommonCoverageOptions:
