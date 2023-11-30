@@ -2919,3 +2919,15 @@ struct LERemoveISODataPathCommand:
 # 7.8.112 LE ISO Receive Test command
 # 7.8.113 LE ISO Read Test Counters command
 # 7.8.114 LE ISO Test End command
+
+struct LESetHostFeatureCommand:
+  -- 7.8.115 LE Set Host Feature command
+  -- HCI_LE_Set_Host_Feature
+  let hdr_size = hci.CommandHeader.$size_in_bytes
+  0     [+hdr_size]  hci.CommandHeader       header
+  $next [+1]         UInt                    bit_number
+    -- Bit position in the Feature Set
+    [requires: 0x00 <= this <= 0x3F]
+
+  $next [+1]         hci.GenericEnableParam  bit_value
+    -- Indicates if Host feature is enabled or disabled
