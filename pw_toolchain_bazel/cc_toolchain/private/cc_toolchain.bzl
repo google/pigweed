@@ -22,20 +22,14 @@ load(
     "feature",
     "flag_group",
     "flag_set",
-    "tool",
     "variable_with_value",
 )
 load(
     "//cc_toolchain/private:providers.bzl",
     "ActionConfigListInfo",
-    "ToolchainFeatureInfo",
 )
 load(
     "//cc_toolchain/private:utils.bzl",
-    "ALL_ASM_ACTIONS",
-    "ALL_CPP_COMPILER_ACTIONS",
-    "ALL_C_COMPILER_ACTIONS",
-    "ALL_LINK_ACTIONS",
     "actionless_flag_set",
     "check_deps_provide",
 )
@@ -61,9 +55,8 @@ PW_CC_TOOLCHAIN_DEPRECATED_TOOL_ATTRS = {
 }
 
 PW_CC_TOOLCHAIN_CONFIG_ATTRS = {
-    "action_configs": "List of pw_cc_action_config labels that match tools to the appropriate actions",
-    "action_config_flag_sets": "List of flag sets to apply to the respective action_configs",
-    "feature_deps": "pw_cc_toolchain_feature labels that provide features for this toolchain",
+    "action_configs": "List of `pw_cc_action_config` labels that match tools to the appropriate actions",
+    "action_config_flag_sets": "List of `pw_cc_flag_set`s to apply to their respective action configs",
 
     # Attributes originally part of create_cc_toolchain_config_info.
     "toolchain_identifier": "See documentation for cc_common.create_cc_toolchain_config_info()",
@@ -84,35 +77,10 @@ PW_CC_TOOLCHAIN_SHARED_ATTRS = ["toolchain_identifier"]
 PW_CC_TOOLCHAIN_BLOCKED_ATTRS = {
     "toolchain_config": "pw_cc_toolchain includes a generated toolchain config",
     "artifact_name_patterns": "pw_cc_toolchain does not yet support artifact name patterns",
-    "features": "Use feature_deps to add pw_cc_toolchain_feature deps to the toolchain",
-    "tool_paths": "pw_cc_toolchain does not support tool_paths, use \"ar\", \"cpp\", \"gcc\", \"gcov\", \"ld\", and \"strip\" attributes to set toolchain tools",
+    "features": "pw_cc_toolchain does not yet support features",
+    "tool_paths": "pw_cc_toolchain does not support tool_paths, use \"action_configs\" to set toolchain tools",
     "make_variables": "pw_cc_toolchain does not yet support make variables",
 }
-
-def _action_configs(action_tool, action_list, flag_sets_by_action):
-    """Binds a tool to an action.
-
-    Args:
-        action_tool (File): Tool to bind to the specified actions.
-        action_list (List[str]): List of actions to bind to the specified tool.
-        flag_sets_by_action: Dictionary mapping action names to lists of applicable flag sets.
-
-    Returns:
-        action_config: A action_config binding the provided tool to the
-          specified actions.
-    """
-    return [
-        action_config(
-            action_name = action,
-            tools = [
-                tool(
-                    tool = action_tool,
-                ),
-            ],
-            flag_sets = flag_sets_by_action.get(action, default = []),
-        )
-        for action in action_list
-    ]
 
 def _archiver_flags_feature(is_mac):
     """Returns our implementation of the legacy archiver_flags feature.
@@ -186,72 +154,6 @@ def _archiver_flags_feature(is_mac):
             ),
         ],
     )
-
-def _generate_action_configs(ctx, flag_sets_by_action):
-    """Legacy logic for generation of `action_config`s.
-
-    Args:
-        ctx: Rule context.
-        flag_sets_by_action: A mapping of action name to a list of FlagSetInfo
-            providers.
-
-    Returns:
-        list of `action_config` providers.
-    """
-    all_actions = []
-    all_actions += _action_configs(ctx.executable.gcc, ALL_ASM_ACTIONS, flag_sets_by_action)
-    all_actions += _action_configs(ctx.executable.gcc, ALL_C_COMPILER_ACTIONS, flag_sets_by_action)
-    all_actions += _action_configs(ctx.executable.cpp, ALL_CPP_COMPILER_ACTIONS, flag_sets_by_action)
-    all_actions += _action_configs(ctx.executable.cpp, ALL_LINK_ACTIONS, flag_sets_by_action)
-    all_actions += [
-        action_config(
-            action_name = ACTION_NAMES.cpp_link_static_library,
-            implies = ["archiver_flags", "linker_param_file"],
-            tools = [
-                tool(
-                    tool = ctx.executable.ar,
-                ),
-            ],
-            flag_sets = flag_sets_by_action.get(ACTION_NAMES.cpp_link_static_library, default = []),
-        ),
-        action_config(
-            action_name = ACTION_NAMES.llvm_cov,
-            tools = [
-                tool(
-                    tool = ctx.executable.gcov,
-                ),
-            ],
-            flag_sets = flag_sets_by_action.get(ACTION_NAMES.llvm_cov, default = []),
-        ),
-        action_config(
-            action_name = OBJ_COPY_ACTION_NAME,
-            tools = [
-                tool(
-                    tool = ctx.executable.objcopy,
-                ),
-            ],
-            flag_sets = flag_sets_by_action.get(OBJ_COPY_ACTION_NAME, default = []),
-        ),
-        action_config(
-            action_name = OBJ_DUMP_ACTION_NAME,
-            tools = [
-                tool(
-                    tool = ctx.executable.objdump,
-                ),
-            ],
-            flag_sets = flag_sets_by_action.get(OBJ_DUMP_ACTION_NAME, default = []),
-        ),
-        action_config(
-            action_name = ACTION_NAMES.strip,
-            tools = [
-                tool(
-                    tool = ctx.executable.strip,
-                ),
-            ],
-            flag_sets = flag_sets_by_action.get(ACTION_NAMES.strip, default = []),
-        ),
-    ]
-    return all_actions
 
 def _extend_action_set_flags(action, flag_sets_by_action):
     extended_flags = flag_sets_by_action.get(action.action_name, default = [])
@@ -331,37 +233,18 @@ def _pw_cc_toolchain_config_impl(ctx):
     Returns:
         CcToolchainConfigInfo
     """
-    check_deps_provide(ctx, "feature_deps", ToolchainFeatureInfo, "pw_cc_toolchain_feature")
     check_deps_provide(ctx, "action_config_flag_sets", FlagSetInfo, "pw_cc_flag_set")
 
     flag_sets_by_action = _create_action_flag_set_map([dep[FlagSetInfo] for dep in ctx.attr.action_config_flag_sets])
-
-    all_actions = []
-
-    should_generate_action_configs = False
-    for key in PW_CC_TOOLCHAIN_DEPRECATED_TOOL_ATTRS.keys():
-        if getattr(ctx.attr, key, None):
-            if ctx.attr.action_configs:
-                fail("Specifying tool names is incompatible with action configs")
-            should_generate_action_configs = True
-    if should_generate_action_configs:
-        all_actions = _generate_action_configs(ctx, flag_sets_by_action)
-    else:
-        all_actions = _collect_action_configs(ctx, flag_sets_by_action)
-
-    features = [dep[ToolchainFeatureInfo].feature for dep in ctx.attr.feature_deps]
-    features.append(_archiver_flags_feature(ctx.attr.target_libc == "macosx"))
+    all_actions = _collect_action_configs(ctx, flag_sets_by_action)
     builtin_include_dirs = ctx.attr.cxx_builtin_include_directories if ctx.attr.cxx_builtin_include_directories else []
-    for dep in ctx.attr.feature_deps:
-        builtin_include_dirs.extend(dep[ToolchainFeatureInfo].cxx_builtin_include_directories)
-
     sysroot_dir = ctx.attr.builtin_sysroot if ctx.attr.builtin_sysroot else None
-    for dep in ctx.attr.feature_deps:
-        dep_sysroot = dep[ToolchainFeatureInfo].builtin_sysroot
-        if dep_sysroot:
-            if sysroot_dir:
-                fail("Failed to set sysroot at `{}`, already have sysroot at `{}` ".format(dep_sysroot, sysroot_dir))
-            sysroot_dir = dep_sysroot
+
+    # TODO: b/309533028 - Support features.
+    features = []
+
+    # TODO: b/297413805 - This could be externalized.
+    features.append(_archiver_flags_feature(ctx.attr.target_libc == "macosx"))
 
     return cc_common.create_cc_toolchain_config_info(
         ctx = ctx,
@@ -384,15 +267,6 @@ pw_cc_toolchain_config = rule(
     implementation = _pw_cc_toolchain_config_impl,
     attrs = {
         # Attributes new to this rule.
-        "feature_deps": attr.label_list(),
-        "gcc": attr.label(allow_single_file = True, executable = True, cfg = "exec"),
-        "ld": attr.label(allow_single_file = True, executable = True, cfg = "exec"),
-        "ar": attr.label(allow_single_file = True, executable = True, cfg = "exec"),
-        "cpp": attr.label(allow_single_file = True, executable = True, cfg = "exec"),
-        "gcov": attr.label(allow_single_file = True, executable = True, cfg = "exec"),
-        "objcopy": attr.label(allow_single_file = True, executable = True, cfg = "exec"),
-        "objdump": attr.label(allow_single_file = True, executable = True, cfg = "exec"),
-        "strip": attr.label(allow_single_file = True, executable = True, cfg = "exec"),
         "action_configs": attr.label_list(),
         "action_config_flag_sets": attr.label_list(),
 

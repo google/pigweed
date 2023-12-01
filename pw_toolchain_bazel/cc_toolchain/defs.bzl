@@ -35,10 +35,6 @@ load(
     _pw_cc_flag_set = "pw_cc_flag_set",
 )
 load(
-    "//cc_toolchain/private:toolchain_feature.bzl",
-    _pw_cc_toolchain_feature = "pw_cc_toolchain_feature",
-)
-load(
     "//cc_toolchain/private:utils.bzl",
     _ALL_AR_ACTIONS = "ALL_AR_ACTIONS",
     _ALL_ASM_ACTIONS = "ALL_ASM_ACTIONS",
@@ -74,6 +70,3 @@ pw_cc_flag_group = _pw_cc_flag_group
 pw_cc_flag_set = _pw_cc_flag_set
 
 pw_cc_toolchain = _pw_cc_toolchain
-
-# TODO: b/309533028 - This is deprecated, and will soon be removed.
-pw_cc_toolchain_feature = _pw_cc_toolchain_feature

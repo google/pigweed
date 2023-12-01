@@ -17,16 +17,6 @@ This replaces xcode_configure, but only intends to work with macOS host builds,
 and exclusively attempts to support xcode command-line tools.
 """
 
-load("//cc_toolchain/private:providers.bzl", "ToolchainFeatureInfo")  # buildifier: disable=bzl-visibility
-load("//cc_toolchain/private:toolchain_feature.bzl", "build_toolchain_feature_info")  # buildifier: disable=bzl-visibility
-
-XcodeSdkInfo = provider(
-    doc = "A simple provider that provides the path to the macOS Xcode SDK",
-    fields = {
-        "sdk_path": "str: Path to the macOS sdk",
-    },
-)
-
 def _pw_xcode_repository_impl(repository_ctx):
     """Generated repository containing a pw_xcode_info target.
 
@@ -37,19 +27,18 @@ def _pw_xcode_repository_impl(repository_ctx):
         None
     """
 
-    # This is required to make a repository, so make a stub for all other
-    # operating systems.
-    if repository_ctx.os.name != "mac os x":
-        build_file_contents = [
-            "package(default_visibility = [\"//visibility:public\"])",
-            "",
-            "filegroup(",
-            "    name = \"default\",",
-            "    visibility = [\"@pw_toolchain//features/macos:__pkg__\"],",
-            ")",
-        ]
-        repository_ctx.file("BUILD", "\n".join(build_file_contents))
+    build_file_contents = [
+        "package(default_visibility = [\"//visibility:public\"])",
+        "",
+        "filegroup(",
+        "    name = \"default\",",
+        "    visibility = [\"//visibility:private\"],",
+        ")",
+    ]
+    repository_ctx.file("BUILD", "\n".join(build_file_contents))
 
+    # Generate a stub and early return if not on macOS.
+    if repository_ctx.os.name != "mac os x":
         # Generate the constant, but make it empty.
         defs_file_contents = [
             "XCODE_SDK_PATH = \"\"",
@@ -62,73 +51,13 @@ def _pw_xcode_repository_impl(repository_ctx):
         fail("Failed locating Xcode SDK: {}".format(xcrun_result.stderr))
 
     sdk_path = xcrun_result.stdout.replace("\n", "")
-
-    # DEPRECATED: Generate pw_xcode_info for backwards compatibility.
-    build_file_contents = [
-        "load(\"@pw_toolchain//features/macos/private:xcode_command_line_tools.bzl\", \"pw_xcode_info\")",
-        "",
-        "package(default_visibility = [\"//visibility:public\"])",
-        "",
-        "pw_xcode_info(",
-        "    name = \"default\",",
-        "    sdk_path = \"{}\",".format(sdk_path),
-        "    visibility = [\"@pw_toolchain//features/macos:__pkg__\"],",
-        ")",
+    defs_file_contents = [
+        "XCODE_SDK_PATH = \"{}\"".format(sdk_path),
     ]
-
-    if xcrun_result.return_code == 0:
-        repository_ctx.file("BUILD", "\n".join(build_file_contents))
-
-        defs_file_contents = [
-            "XCODE_SDK_PATH = \"{}\"".format(sdk_path),
-        ]
-        repository_ctx.file("defs.bzl", "\n".join(defs_file_contents))
+    repository_ctx.file("defs.bzl", "\n".join(defs_file_contents))
 
 pw_xcode_repository = repository_rule(
     _pw_xcode_repository_impl,
     attrs = {},
     doc = "Initializes a macOS SDK repository",
-)
-
-def _xcode_info_impl(ctx):
-    """Rule that provides XcodeSdkInfo.
-
-    Args:
-        ctx: The context of the current build rule.
-
-    Returns:
-        XcodeSdkInfo
-    """
-    return [XcodeSdkInfo(sdk_path = ctx.attr.sdk_path)]
-
-pw_xcode_info = rule(
-    implementation = _xcode_info_impl,
-    attrs = {
-        "sdk_path": attr.string(),
-    },
-    provides = [XcodeSdkInfo],
-)
-
-def _pw_macos_sysroot_impl(ctx):
-    """Rule that provides an Xcode-provided sysroot as ToolchainFeatureInfo.
-
-    Args:
-        ctx: The context of the current build rule.
-
-    Returns:
-        ToolchainFeatureInfo
-    """
-    sdk_path = ctx.attr.sdk[XcodeSdkInfo].sdk_path
-    return build_toolchain_feature_info(
-        ctx = ctx,
-        cxx_builtin_include_directories = ["%sysroot%/usr/include"],
-        builtin_sysroot = sdk_path,
-    )
-
-pw_macos_sysroot = rule(
-    implementation = _pw_macos_sysroot_impl,
-    attrs = {
-        "sdk": attr.label(),
-    },
-    provides = [ToolchainFeatureInfo],
 )
