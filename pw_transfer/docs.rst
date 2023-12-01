@@ -632,14 +632,14 @@ To run the tests on your machine, run
 
 .. code-block:: bash
 
-  $ bazel test --features=c++17 \
+  $ bazel test \
         pw_transfer/integration_test:cross_language_small_test \
         pw_transfer/integration_test:cross_language_medium_test
 
 .. note:: There is a large test that tests transfers that are megabytes in size.
   These are not run automatically, but can be run manually via the
-  pw_transfer/integration_test:cross_language_large_test test. These are VERY
-  slow, but exist for manual validation of real-world use cases.
+  ``pw_transfer/integration_test:cross_language_large_test`` test. These are
+  VERY slow, but exist for manual validation of real-world use cases.
 
 The integration tests permit injection of client/server/proxy binaries to use
 when running the tests. This allows manual testing of older versions of
@@ -665,8 +665,8 @@ The CIPD package contents can be created with this command:
 
 .. code-block::bash
 
-  $ bazel build --features=c++17 pw_transfer/integration_test:server \
-                                 pw_transfer/integration_test:cpp_client
+  $ bazel build pw_transfer/integration_test:server \
+                pw_transfer/integration_test:cpp_client
   $ mkdir pw_transfer_test_binaries
   $ cp bazel-bin/pw_transfer/integration_test/server \
        pw_transfer_test_binaries
@@ -678,7 +678,7 @@ updating a CIPD package <go/pigweed-cipd#installing-packages-into-cipd>`_.
 
 CI/CQ integration
 =================
-`Current status of the test in CI <https://ci.chromium.org/p/pigweed/builders/ci/pigweed-integration-transfer>`_.
+`Current status of the test in CI <https://ci.chromium.org/ui/p/pigweed/builders/luci.pigweed.pigweed.ci/pigweed-linux-bzl-integration>`_.
 
 By default, these tests are not run in CQ (on presubmit) because they are too
 slow. However, you can request that the tests be run in presubmit on your
@@ -686,7 +686,7 @@ change by adding to following line to the commit message footer:
 
 .. code-block::
 
-   Cq-Include-Trybots: luci.pigweed.try:pigweed-integration-transfer
+   Cq-Include-Trybots: luci.pigweed.try:pigweed-linux-bzl-integration
 
 Running the tests many times
 ============================
