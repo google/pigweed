@@ -115,6 +115,7 @@ group("third_party_docs") {
 
 # All sources with doxygen comment blocks.
 _doxygen_input_files = [  # keep-sorted: start
+  "$dir_pw_alignment/public/pw_alignment/alignment.h",
   "$dir_pw_allocator/public/pw_allocator/allocator.h",
   "$dir_pw_allocator/public/pw_allocator/allocator_testing.h",
   "$dir_pw_allocator/public/pw_allocator/block.h",

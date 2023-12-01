@@ -31,8 +31,9 @@ To deploy ``pw_status``, depend on the library:
            ]
          }
 
-      This assumes ``@pigweed`` is the name you pulled Pigweed into your Bazel
-      ``WORKSPACE`` as.
+      This assumes that your Bazel ``WORKSPACE`` has a `repository
+      <https://bazel.build/concepts/build-ref#repositories>`_ named ``@pigweed``
+      that points to the upstream Pigweed repository.
 
    .. tab-item:: GN
 

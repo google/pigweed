@@ -112,6 +112,11 @@ you feel strongly about it, but we've found this is an intuitive ordering.
 The file must be located at ``//pw_<name>/docs.rst``, where ``<name>`` is
 replaced with the actual name of your module.
 
+Examples:
+
+* :ref:`module-pw_alignment`
+* :ref:`module-pw_perf_test`
+
 .. _docs-contrib-moduledocs-multipage:
 
 Multi-page approach
@@ -241,9 +246,9 @@ The API reference should:
 
 * Be auto-generated from :ref:`docs-pw-style-doxygen` (for C++ / C APIs) or
   autodoc (for Python APIs).
-* Provide a code example demonstrating how to use class, at minimum. Consider
-  whether it's also helpful to provide more granular examples demonstrating
-  how to use each method, variable, etc.
+* Provide a code example demonstrating how to use the class, at minimum.
+  Consider whether it's also helpful to provide more granular examples
+  demonstrating how to use each method, variable, etc.
 
 The typical approach is to order everything alphabetically. Some module docs
 group classes logically according to the tasks they're related to. We don't
