@@ -4785,7 +4785,8 @@ TEST_F(BrEdrConnectionManagerTest, Inspect) {
                             UintIs("disconnect_local_api_request_count", 1),
                             UintIs("disconnect_pairing_failed_count", 0),
                             UintIs("disconnect_peer_disconnection_count", 0),
-                            UintIs("interrogation_complete_count", 1))))),
+                            UintIs("interrogation_complete_count", 1),
+                            StringIs("security_mode", "Mode 4"))))),
       ChildrenMatch(
           UnorderedElementsAre(empty_requests_matcher,
                                connections_after_disconnect_matcher,
