@@ -14,6 +14,7 @@
 
 #include "pw_string/type_to_string.h"
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstring>
