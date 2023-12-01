@@ -715,9 +715,6 @@ class CommonCoverageOptions:
     # go/kalypsi-abs#bug-component-required.
     bug_component: str
 
-    # go/kalypsi-abs#trim-prefix-optional.
-    trim_prefix: str = ''
-
 
 @dataclass(frozen=True)
 class CodeSearchCoverageOptions:
@@ -948,7 +945,7 @@ def _write_coverage_metadata(
 
     metadata = {
         'trace_type': options.common.trace_type,
-        'trim_prefix': options.common.trim_prefix,
+        'trim_prefix': str(ctx.root),
         'patchset_num': change.patchset,
         'change_id': change.number,
         'owner': options.common.owner,

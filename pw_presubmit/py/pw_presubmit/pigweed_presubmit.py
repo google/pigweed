@@ -219,7 +219,6 @@ coverage = build.GnGenNinja(
             trace_type='LLVM',
             owner='pigweed-infra@google.com',
             bug_component='503634',
-            trim_prefix='/b/s/w/ir/x/w/co',
         ),
         codesearch=build.CodeSearchCoverageOptions(
             host='pigweed-internal',
