@@ -60,6 +60,8 @@ UniquePtr
 .. doxygenclass:: pw::allocator::UniquePtr
    :members:
 
+.. _module-pw_allocator-test-support:
+
 Test Support
 ============
 This module also provides several utilities designed to make it easier to write
@@ -181,6 +183,8 @@ Size report
 interface, whos costs are shown below.
 
 .. include:: allocator_size_report
+
+.. _module-pw_allocator-metric-collection:
 
 Metric collection
 =================

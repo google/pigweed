@@ -621,6 +621,8 @@ implementations detect if their transfer peer is running the legacy protocol and
 automatically switch to it if required, even if they requested a newer protocol
 version. It is **strongly** unadvised to use the legacy protocol in new code.
 
+.. _module-pw_transfer-integration-tests:
+
 -----------------
 Integration tests
 -----------------
@@ -687,6 +689,8 @@ change by adding to following line to the commit message footer:
 .. code-block::
 
    Cq-Include-Trybots: luci.pigweed.try:pigweed-linux-bzl-integration
+
+.. _module-pw_transfer-parallel-tests:
 
 Running the tests many times
 ============================

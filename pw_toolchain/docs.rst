@@ -181,6 +181,8 @@ Pigweed provides a suite of building blocks for designing a custom C/C++
 toolchain in Bazel. See the :ref:`module-pw_toolchain_bazel` module
 documentation for more information.
 
+.. _module-pw_toolchain-bazel-upstream-pigweed-toolchains:
+
 Upstream Pigweed Toolchains
 ===========================
 You can use Pigweed's upstream toolchains by calling

@@ -214,12 +214,15 @@ async function render(commits) {
     rest += '* Highlight #2\n';
     rest += '* Highlight #3\n\n';
     rest += '.. changelog_highlights_end\n\n';
-    rest += '.. pigweed-live::\n\n';
     rest += 'Active SEEDs\n';
     rest += '============\n';
-    rest +=
-      'Help shape the future of Pigweed! Please leave feedback on the following active RFCs (SEEDs):\n\n';
-    rest += '* `SEED-???: ??? <???>`_\n\n';
+    rest += 'Help shape the future of Pigweed! Please visit :ref:`seed-0000`\n';
+    rest += 'and leave feedback on the RFCs (i.e. SEEDs) marked\n';
+    rest += '``Open for Comments``.\n\n';
+    rest += '.. Note: There is space between the following section headings\n';
+    rest += '.. and commit lists to remind you to write a summary for each\n';
+    rest += '.. section. If a summary is not needed, delete the extra\n';
+    rest += '.. space.\n\n';
     const categories = [
       'Modules',
       'Build',
@@ -245,7 +248,7 @@ async function render(commits) {
           const change = commit.change.replaceAll('`', '`');
           // The double underscores are signficant:
           // https://github.com/sphinx-doc/sphinx/issues/3921
-          rest += `* \`${commit.title} <${change}>\`__\n`;
+          rest += `* \`${commit.title}\n  <${change}>\`__\n`;
           if (commit.issue)
             rest += `  (issue \`#${commit.issue.id} <${commit.issue.url}>\`__)\n`;
         });
