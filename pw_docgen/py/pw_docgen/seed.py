@@ -78,17 +78,17 @@ def _main():
 
             if 'changelist' in meta:
                 # The SEED has not yet been merged and points to an active CL.
-                change_url = (
+                change_link = (
                     'https://pigweed-review.googlesource.com'
                     f'/c/pigweed/pigweed/+/{meta["changelist"]}'
                 )
-                title = f'`{meta["title"]} <{change_url}>`__'
+                title = f'`{meta["title"]} <{change_link}>`__'
                 seed_toctree.append(
-                    f'{meta["number"]}: {meta["title"]}<{change_url}>',
+                    f'{meta["number"]}: {meta["title"]}<{change_link}>',
                 )
             else:
                 # The SEED document is in the source tree.
-                title = f':ref:`seed-{meta["number"]}`'
+                title = f':ref:`{meta["title"]} <seed-{meta["number"]}>`'
                 seed_toctree.append(Path(meta["rst_file"]).stem)
 
             seed_table.extend(

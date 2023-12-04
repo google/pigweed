@@ -19,24 +19,28 @@ import("seed.gni")
 pw_seed("0001") {
   sources = [ "0001-the-seed-process.rst" ]
   inputs = [ "0001-the-seed-process/seed-index-gerrit.png" ]
+  title = "The SEED Process"
   status = "Meta"
   author = "The Pigweed Authors"
 }
 
 pw_seed("0002") {
   sources = [ "0002-template.rst" ]
+  title = "SEED Template"
   status = "Meta"
   author = "The Pigweed Authors"
 }
 
 pw_seed("0101") {
   sources = [ "0101-pigweed.json.rst" ]
+  title = "pigweed.json"
   status = "Accepted"
   author = "Rob Mohr"
 }
 
 pw_seed("0102") {
   sources = [ "0102-module-docs.rst" ]
+  title = "Consistent Module Documentation"
   status = "Accepted"
   author = "Chad Norvell"
 }
@@ -50,12 +54,14 @@ pw_seed("0103") {
 
 pw_seed("0104") {
   sources = [ "0104-display-support.rst" ]
+  title = "Display Support"
   status = "Accepted"
   author = "Chris Mumford"
 }
 
 pw_seed("0105") {
   sources = [ "0105-pw_tokenizer-pw_log-nested-tokens.rst" ]
+  title = "Nested Tokens and Tokenized Log Arguments"
   status = "Accepted"
   author = "Gwyneth Chen"
 }
@@ -69,48 +75,56 @@ pw_seed("0106") {
 
 pw_seed("0107") {
   sources = [ "0107-communications.rst" ]
+  title = "Pigweed Communications"
   status = "Accepted"
   author = "Wyatt Hepler"
 }
 
 pw_seed("0108") {
   sources = [ "0108-pw_emu-emulators-frontend.rst" ]
+  title = "Emulators Frontend"
   status = "Accepted"
   author = "Octavian Purdila"
 }
 
 pw_seed("0109") {
   sources = [ "0109-comms-buffers.rst" ]
+  title = "Communication Buffers"
   status = "Accepted"
   author = "Taylor Cramer"
 }
 
 pw_seed("0110") {
-  status = "Accepted"
   sources = [ "0110-memory-allocation-interfaces.rst" ]
+  title = "Memory Allocation Interfaces"
+  status = "Accepted"
   author = "Alexei Frolov"
 }
 
 pw_seed("0111") {
   sources = [ "0111-build-systems.rst" ]
+  title = "Make Bazel Pigweed's Primary Build System"
   status = "Accepted"
   author = "Ted Pudlik"
 }
 
 pw_seed("0112") {
   sources = [ "0112-async-poll.rst" ]
+  title = "Async Poll Model"
   status = "Accepted"
   author = "Taylor Cramer"
 }
 
 pw_seed("0113") {
   sources = [ "0113-bazel-cc-toolchain-api.rst" ]
+  title = "Add modular Bazel C/C++ toolchain API"
   status = "Accepted"
   author = "Armando Montanez"
 }
 
 pw_seed("0114") {
   sources = [ "0114-channels.rst" ]
+  title = "Channels"
   status = "Accepted"
   author = "Wyatt Hepler"
 }

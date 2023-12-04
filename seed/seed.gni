@@ -74,7 +74,7 @@ template("pw_seed_index") {
 #  changelist (optional): If the SEED has not yet been merged, the number of the
 #      CL on Gerrit where the SEED is being reviewed.
 #
-#  title (optional): If `changelist` is provided, the title of the SEED.
+#  title (required): The title of the SEED.
 #
 #  authors (required): Comma-separated list of SEED authors.
 #
@@ -87,6 +87,7 @@ template("pw_seed") {
   _has_sources = defined(invoker.sources) && invoker.sources != []
   assert(_has_sources || defined(invoker.changelist),
          "A SEED must either have in-tree sources or an active CL")
+  assert(defined(invoker.title), "SEEDs must have a title")
   assert(defined(invoker.status), "SEEDs must list their status")
   assert(defined(invoker.author), "SEEDs must list their author(s)")
 
@@ -95,6 +96,7 @@ template("pw_seed") {
 
   _metadata = {
     number = target_name
+    title = invoker.title
     status = invoker.status
     author = invoker.author
   }
@@ -103,10 +105,7 @@ template("pw_seed") {
     _sources = invoker.sources
     _metadata.rst_file = _sources[0]
   } else {
-    assert(defined(invoker.title),
-           "SEEDs pointing to a CL must provide a title")
     _metadata.changelist = invoker.changelist
-    _metadata.title = invoker.title
   }
 
   generated_file(_metadata_target) {

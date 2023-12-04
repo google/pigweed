@@ -183,6 +183,7 @@ Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
 
       pw_seed("5309") {
         sources = [ "5309-pw_rpc-over-smoke-signals.rst" ]
+        title = "pw_rpc Over Smoke Signals"
         status = "Accepted"
         author = "Your Name"
       }
