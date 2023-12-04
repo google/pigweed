@@ -2545,6 +2545,18 @@ struct LESetExtendedScanEnableCommand:
     --     Time Range: 1.28 s to 83,884.8 s
 
 
+
+struct LESetExtendedConnectionPhyConnectionData:
+  -- Data fields for variable-length portion of an LE Set Extended Advertising Enable command
+  0     [+2]  UInt:16  scan_interval
+  $next [+2]  UInt:16  scan_window
+  $next [+2]  UInt:16  connection_interval_min
+  $next [+2]  UInt:16  connection_interval_max
+  $next [+2]  UInt:16  max_latency
+  $next [+2]  UInt:16  supervision_timeout
+  $next [+2]  UInt:16  min_connection_event_length
+  $next [+2]  UInt:16  max_connection_event_length
+
 struct LEExtendedCreateConnectionV1:
   -- 7.8.66 LE Extended Create Connection command version 1
   -- HCI_LE_Extended_Create_Connection v1
@@ -2558,38 +2570,8 @@ struct LEExtendedCreateConnectionV1:
     0     [+LEInitiatingPHYBits.$size_in_bits]  LEInitiatingPHYBits     initiating_phys
 
   let num_entries = (initiating_phys.le_1m ? 1 : 0)+(initiating_phys.le_2m ? 1 : 0)+(initiating_phys.le_coded ? 1 : 0)
-  $next [+2*num_entries]                        UInt:16[num_entries]    scan_interval
-    -- Time interval from when the Controller started its last scan until it begins the subsequent
-    -- scan on the primary advertising physical channel.
-    -- Time = N × 0.625 ms
-    -- Time Range: 2.5 ms to 40.959375 s
-
-  $next [+2*num_entries]                        UInt:16[num_entries]    scan_window
-    -- Duration of the scan on the primary advertising physical channel.
-    -- Time = N × 0.625 ms
-    -- Time Range: 2.5 ms to 40.959375 s
-
-  $next [+2*num_entries]                        UInt:16[num_entries]    connection_interval_min
-    -- Time: N * 1.25 ms
-    -- Time Range: 7.5 ms to 4 s.
-
-  $next [+2*num_entries]                        UInt:16[num_entries]    connection_interval_max
-    -- Time: N * 1.25 ms
-    -- Time Range: 7.5 ms to 4 s.
-
-  $next [+2*num_entries]                        UInt:16[num_entries]    max_latency
-    -- Maximum Peripheral latency for the connection in number of connection events.
-
-  $next [+2*num_entries]                        UInt:16[num_entries]    supervision_timeout
-    -- See Core Spec v5.3, Vol 6, Part B, Section 4.5.2.
-    -- Time: N * 10 ms
-    -- Time Range: 100 ms to 32 s
-
-  $next [+2*num_entries]                        UInt:16[num_entries]    min_connection_event_length
-    -- Time: N * 0.625 ms
-
-  $next [+2*num_entries]                        UInt:16[num_entries]    max_connection_event_length
-    -- Time: N * 0.625 ms
+  let single_data_size = LESetExtendedConnectionPhyConnectionData.$size_in_bytes
+  $next [+single_data_size*num_entries]  LESetExtendedConnectionPhyConnectionData[]  data
 
 # 7.8.66 LE Extended Create Connection command version 2
 # HCI_LE_Extended_Create_Connection v2
