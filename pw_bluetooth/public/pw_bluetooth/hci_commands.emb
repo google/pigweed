@@ -1748,10 +1748,34 @@ struct ReadBdAddrCommand:
 # TODO: b/265052417 - Definition needs to be added
 
 
-# 7.4.11 Read Local Supported Controller Delay command
-# HCI_Read_Local_Supported_Controller_Delay
-# TODO: b/265052417 - Definition needs to be added
+enum LogicalTransportType:
+  [maximum_bits: 8]
+  BR_EDR_ACL         = 0x00
+    -- BR/EDR ACL
 
+  BR_EDR_SCO_OR_ESCO = 0x01
+    -- BR/EDR SCO or eSCO
+
+  LE_CIS             = 0x02
+    -- LE CIS
+
+  LE_BIS             = 0x03
+    -- LE BIS
+
+
+struct ReadLocalSupportedControllerDelayCommand:
+  -- 7.4.11 Read Local Supported Controller Delay command (v5.2)
+  -- HCI_Read_Local_Supported_Controller_Delay
+  let hdr_size = hci.CommandHeader.$size_in_bytes
+  0     [+hdr_size]                    hci.CommandHeader                   header
+  $next [+CodecId.$size_in_bytes]      CodecId                             codec_id
+  $next [+1]                           LogicalTransportType                logical_transport_type
+  $next [+1]                           DataPathDirection                   direction
+  $next [+1]                           UInt                                codec_configuration_length
+    -- Length of codec configuration
+
+  $next [+codec_configuration_length]  UInt:8[codec_configuration_length]  codec_configuration
+    -- Codec-specific configuration data
 
 # ========== 7.5 Status Parameters ==========
 
