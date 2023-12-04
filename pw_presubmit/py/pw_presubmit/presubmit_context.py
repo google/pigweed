@@ -441,6 +441,7 @@ class PresubmitContext:  # pylint: disable=too-many-instance-attributes
     full: bool = False
     _failed: bool = False
     dry_run: bool = False
+    pw_root: Path = pw_cli.env.pigweed_environment().PW_ROOT
 
     @property
     def failed(self) -> bool:

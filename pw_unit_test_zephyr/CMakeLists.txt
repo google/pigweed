@@ -13,11 +13,11 @@
 # the License.
 
 cmake_minimum_required(VERSION 3.20)
-project(PigweedZephyrTest)
 
 set(pw_third_party_nanopb_ADD_SUBDIRECTORY ON CACHE BOOL "" FORCE)
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
+project(PigweedZephyrTest)
 enable_language(C CXX)
 
 target_sources(app PRIVATE main.cc)

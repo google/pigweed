@@ -536,6 +536,7 @@ def _env_with_zephyr_vars(ctx: PresubmitContext) -> dict:
     # Set some variables here.
     env['ZEPHYR_BASE'] = str(ctx.package_root / 'zephyr')
     env['ZEPHYR_MODULES'] = str(ctx.root)
+    env['ZEPHYR_TOOLCHAIN_VARIANT'] = 'llvm'
     return env
 
 
@@ -547,6 +548,23 @@ def zephyr_build(ctx: PresubmitContext) -> None:
     env = _env_with_zephyr_vars(ctx)
     # Get the python twister runner
     twister = ctx.package_root / 'zephyr' / 'scripts' / 'twister'
+    # Get a list of the test roots
+    testsuite_roots = [
+        ctx.pw_root / dir
+        for dir in os.listdir(ctx.pw_root)
+        if dir.startswith('pw_')
+    ]
+    testsuite_roots_list = [
+        args for dir in testsuite_roots for args in ('--testsuite-root', dir)
+    ]
+    sysroot_dir = (
+        ctx.pw_root
+        / 'environment'
+        / 'cipd'
+        / 'packages'
+        / 'pigweed'
+        / 'clang_sysroot'
+    )
     # Run twister
     call(
         sys.executable,
@@ -556,8 +574,11 @@ def zephyr_build(ctx: PresubmitContext) -> None:
         '--clobber-output',
         '--inline-logs',
         '--verbose',
-        '--testsuite-root',
-        ctx.root / 'pw_unit_test_zephyr',
+        '-x=CONFIG_LLVM_USE_LLD=y',
+        '-x=CONFIG_COMPILER_RT_RTLIB=y',
+        f'-x=TOOLCHAIN_C_FLAGS=--sysroot={sysroot_dir}',
+        f'-x=TOOLCHAIN_LD_FLAGS=--sysroot={sysroot_dir}',
+        *testsuite_roots_list,
         env=env,
     )
     # Produces reports at (ctx.root / 'twister_out' / 'twister*.xml')
