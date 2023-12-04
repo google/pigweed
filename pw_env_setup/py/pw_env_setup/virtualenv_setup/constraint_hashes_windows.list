@@ -359,9 +359,9 @@ docutils==0.20.1 \
     #   -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
     #   python-daemon
     #   sphinx
-executing==2.0.0 \
-    --hash=sha256:06df6183df67389625f4e763921c6cf978944721abf3e714000200aab95b0657 \
-    --hash=sha256:0ff053696fdeef426cda5bd18eacd94f82c91f49823a2e9090124212ceea9b08
+executing==2.0.1 \
+    --hash=sha256:35afe2ce3affba8ee97f2d69927fa823b08b472b7b994e36a52a964b93d16147 \
+    --hash=sha256:eac49ca94516ccc753f9fb5ce82603156e590b27525a8bc32cce8ae302eb61bc
     # via
     #   -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
     #   stack-data
