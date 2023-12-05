@@ -640,14 +640,14 @@ enum class LESupportedFeature : uint64_t {
   kRemotePublicKeyValidation                = (1 << 27),
 
   // Added in 5.2
-  kConnectedIsochronousStreamCentral    = (1 << 28),
-  kConnectedIsochronousStreamPeripheral = (1 << 29),
-  kIsochronousBoradcaster               = (1 << 30),
-  kSynchronizedReceiver                 = (1ul << 31),
-  kIsochronousChannels                  = (1ul << 32),
-  kLEPowerControlRequest                = (1ul << 33),
-  kLEPowerChangeIndication              = (1ul << 34),
-  kLEPathLossMonitoring                 = (1ul << 35),
+  kConnectedIsochronousStreamCentral     = (1 << 28),
+  kConnectedIsochronousStreamPeripheral  = (1 << 29),
+  kIsochronousBoradcaster                = (1 << 30),
+  kSynchronizedReceiver                  = (1ul << 31),
+  kConnectedIsochronousStreamHostSupport = (1ul << 32),
+  kLEPowerControlRequest                 = (1ul << 33),
+  kLEPowerChangeIndication               = (1ul << 34),
+  kLEPathLossMonitoring                  = (1ul << 35),
 
   // The rest is reserved for future use.
 };
