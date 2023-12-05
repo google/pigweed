@@ -41,12 +41,20 @@ rust_library(
         "pw_tokenizer_core.rs",
         "pw_tokenizer_core_test_cases.rs",
     ],
+    crate_features = select({
+        "@rust_crates//:std": ["std"],
+        "//conditions:default": [""],
+    }),
     visibility = ["//visibility:public"],
 )
 
 rust_test(
     name = "pw_tokenizer_core_test",
     crate = ":pw_tokenizer_core",
+    crate_features = select({
+        "@rust_crates//:std": ["std"],
+        "//conditions:default": [""],
+    }),
 )
 
 rust_doc_test(

@@ -18,6 +18,7 @@
 //! for a string or byte sequence.  This is intended to provide a minimal core
 //! for both the main `pw_tokenizer` and `pw_tokenizer_macro` crates.  Users
 //! should prefer depending `pw_tokenizer` instead of this crate.
+#![cfg_attr(not(feature = "std"), no_std)]
 
 use core::num::Wrapping;
 
