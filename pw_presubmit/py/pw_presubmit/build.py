@@ -1005,6 +1005,9 @@ class GnGenNinja(_NinjaBase):
         super().__init__(self._substeps(), *args, **kwargs)
         self._gn_args: Dict[str, Any] = gn_args or {}
 
+    def add_default_gn_args(self, args):
+        """Add any project-specific default GN args to 'args'."""
+
     @property
     def gn_args(self) -> Dict[str, Any]:
         return self._gn_args
@@ -1014,7 +1017,7 @@ class GnGenNinja(_NinjaBase):
         if self._coverage_options is not None:
             args['pw_toolchain_COVERAGE_ENABLED'] = True
             args['pw_build_PYTHON_TEST_COVERAGE'] = True
-            args['pw_C_OPTIMIZATION_LEVELS'] = ('debug',)
+            self.add_default_gn_args(args)
 
             if ctx.incremental:
                 args['pw_toolchain_PROFILE_SOURCE_FILES'] = [
