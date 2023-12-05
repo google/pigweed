@@ -14,7 +14,14 @@
  * the License.
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,300;8..144,400;8..144,500;8..144,600&family=Roboto+Mono:wght@400;500&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block');
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Flex&family=Roboto+Mono:wght@400;500&display=block');
+
+@font-face {
+    font-family: 'Material Symbols Rounded';
+    font-style: normal;
+    font-display: block;
+    src: url('./assets/material_symbols_rounded_subset.woff2') format('woff2');
+}
 
 :root {
     background-color: #fff;
@@ -26,6 +33,14 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     -webkit-text-size-adjust: 100%;
+    /* Material component properties */
+    --md-icon-font: 'Material Symbols Rounded';
+    --md-icon-font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 200, 'opsz' 58;
+    --md-icon-size: 1.25rem;
+    --md-filled-button-label-text-type: "Roboto Flex", Arial, sans-serif;
+    --md-outlined-button-label-text-type: "Roboto Flex", Arial, sans-serif;
+    --md-icon-button-unselected-icon-color: var(--md-sys-color-on-surface-variant);
+    --md-icon-button-unselected-hover-icon-color: var(--md-sys-color-on-primary-container);
 }
 
 @media (prefers-color-scheme: dark) {

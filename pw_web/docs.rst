@@ -261,29 +261,29 @@ like this:
 
 .. code-block:: typescript
 
-  import { LogSource, LogEntry, Severity } from 'pigweedjs/logging';
+   import { LogSource, LogEntry, Severity } from 'pigweedjs/logging';
 
-  export class MockLogSource extends LogSource {
-    constructor(){
-      super();
-      // Do any initializations here
-      // ...
-      // Then emit logs
-      const log1: LogEntry = {
+   export class MockLogSource extends LogSource {
+     constructor(){
+       super();
+       // Do any initializations here
+       // ...
+       // Then emit logs
+       const log1: LogEntry = {
 
-      }
-      this.emitEvent('logEntry', {
-        severity: Severity.INFO,
-        timestamp: new Date(),
-        fields: [
-          { key: 'severity', value: severity }
-          { key: 'timestamp', value: new Date().toISOString() },
-          { key: 'source', value: "LEFT SHOE" },
-          { key: 'message', value: "Running mode activated." }
-        ]
-      });
-    }
-  }
+       }
+       this.emitEvent('logEntry', {
+         severity: Severity.INFO,
+         timestamp: new Date(),
+         fields: [
+           { key: 'severity', value: severity }
+           { key: 'timestamp', value: new Date().toISOString() },
+           { key: 'source', value: "LEFT SHOE" },
+           { key: 'message', value: "Running mode activated." }
+         ]
+       });
+     }
+   }
 
 After this, you just need to pass your custom log source object
 to `createLogViewer()`. See implementation of
@@ -292,25 +292,92 @@ for reference.
 
 Color Scheme
 ------------
-The log viewer web component provides the ability to set the color scheme manually, overriding any default or system preferences.
+The log viewer web component provides the ability to set the color scheme
+manually, overriding any default or system preferences.
 
-To set the color scheme, first obtain a reference to the ``log-viewer`` element in the DOM. A common way to do this is by using ``querySelector()``:
-
-.. code-block:: javascript
-
-  const logViewer = document.querySelector('log-viewer');
-
-You can then set the color scheme dynamically by updating the component's `colorScheme` property or by setting a value for the `colorscheme` HTML attribute.
+To set the color scheme, first obtain a reference to the ``log-viewer`` element
+in the DOM. A common way to do this is by using ``querySelector()``:
 
 .. code-block:: javascript
 
-  logViewer.colorScheme = 'dark';
+   const logViewer = document.querySelector('log-viewer');
+
+You can then set the color scheme dynamically by updating the component's
+`colorScheme` property or by setting a value for the `colorscheme` HTML attribute.
 
 .. code-block:: javascript
 
-  logViewer.setAttribute('colorscheme', 'dark');
+   logViewer.colorScheme = 'dark';
 
-The color scheme can be set to ``'dark'``, ``'light'``, or the default ``'auto'`` which allows the component to adapt to the preferences in the operating system settings.
+.. code-block:: javascript
+
+   logViewer.setAttribute('colorscheme', 'dark');
+
+The color scheme can be set to ``'dark'``, ``'light'``, or the default ``'auto'``
+which allows the component to adapt to the preferences in the operating system
+settings.
+
+Material Icon Font (Subsetting)
+-------------------------------
+.. inclusive-language: disable
+
+Log Viewer uses a subset of Material Icons Rounded hosted on `GitHub <https://github.com/google/material-design-icons/blob/master/variablefont/MaterialSymbolsRounded%5BFILL%2CGRAD%2Copsz%2Cwght%5D.woff2>`_
+with codepoints listed in the `codepoints <https://github.com/google/material-design-icons/blob/master/variablefont/MaterialSymbolsRounded%5BFILL%2CGRAD%2Copsz%2Cwght%5D.codepoints>`_ file
+
+(It's easiest to look up the codepoints at `fonts.google.com <https://fonts.google.com/icons?selected=Material+Symbols+Rounded>`_ e.g. see
+the sidebar shows the Codepoint for `"home" <https://fonts.google.com/icons?selected=Material+Symbols+Rounded:home:FILL@0;wght@0;GRAD@0;opsz@NaN>`_ is e88a)
+
+The following icons with codepoints are curently used:
+
+* delete_sweep e16c
+* error e000
+* warning f083
+* cancel e5c9
+* bug_report e868
+* view_column e8ec
+* brightness_alert f5cf
+* wrap_text e25b
+* more_vert e5d4
+
+To save load time and bandwidth, we provide a pre-made subset of the font with
+just the codepoints we need, which reduces the font size from 3.74MB to 12KB.
+
+We use fonttools (https://github.com/fonttools/fonttools) to create the subset.
+To create your own subset, find the codepoints you want to add and:
+
+1. Start a python virtualenv and install fonttools
+
+.. code-block:: bash
+
+   virtualenv env
+   source env/bin/activate
+   pip install fonttools brotli
+
+2. Download the the raw `MaterialSybmolsRounded woff2 file <https://github.com/google/material-design-icons/tree/master/variablefont>`_
+
+.. code-block:: bash
+
+   # line below for example, the url is not stable: e.g.
+   curl -L -o MaterialSymbolsRounded.woff2 \
+     "https://github.com/google/material-design-icons/raw/master/variablefont/MaterialSymbolsRounded%5BFILL,GRAD,opsz,wght%5D.woff2"
+
+3. Run fonttools, passing in the unicode codepoints of the necessary glyphs.
+   (The points for letters a-z, numbers 0-9 and underscore character are
+   necessary for creating ligatures)
+
+.. warning::  Ensure there are nono spaces in the list of codepoints.
+.. code-block:: bash
+
+   fonttools subset MaterialSymbolsRounded.woff2 \
+      --unicodes=5f-7a,30-39,e16c,e000,e002,e8b2,e5c9,e868,e8ec,f083,f5cf,e25b,e5d4 \
+      --no-layout-closure \
+      --output-file=material_symbols_rounded_subset.woff2 \
+      --flavor=woff2
+
+4. Update ``material_symbols_rounded_subset.woff2`` in ``log_viewer/src/assets``
+   with the new subset
+
+.. inclusive-language: enable
 
 Guides
 ======
