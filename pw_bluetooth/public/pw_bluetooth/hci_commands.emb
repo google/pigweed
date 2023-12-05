@@ -2481,7 +2481,7 @@ struct LEClearAdvertisingSetsCommand:
 
 
 struct LESetExtendedScanParametersData:
-  -- Data fields for variable-length portion of an LE Set Extneded Scan Parameters command
+  -- Data fields for variable-length portion of an LE Set Extended Scan Parameters command
 
   0     [+1]  LEScanType  scan_type
 
@@ -2545,33 +2545,65 @@ struct LESetExtendedScanEnableCommand:
     --     Time Range: 1.28 s to 83,884.8 s
 
 
+struct LEExtendedCreateConnectionData:
+  -- Data fields for variable-length portion of an LE Extneded Create Connection command
 
-struct LESetExtendedConnectionPhyConnectionData:
-  -- Data fields for variable-length portion of an LE Set Extended Advertising Enable command
-  0     [+2]  UInt:16  scan_interval
-  $next [+2]  UInt:16  scan_window
-  $next [+2]  UInt:16  connection_interval_min
-  $next [+2]  UInt:16  connection_interval_max
-  $next [+2]  UInt:16  max_latency
-  $next [+2]  UInt:16  supervision_timeout
-  $next [+2]  UInt:16  min_connection_event_length
-  $next [+2]  UInt:16  max_connection_event_length
+  0     [+2]  UInt  scan_interval
+    -- Time interval from when the Controller started its last scan until it begins the subsequent
+    -- scan on the primary advertising physical channel.
+    -- Time = N × 0.625 ms
+    -- Time Range: 2.5 ms to 40.959375 s
+    [requires: 0x0004 <= this]
 
-struct LEExtendedCreateConnectionV1:
+  $next [+2]  UInt  scan_window
+    -- Duration of the scan on the primary advertising physical channel.
+    -- Time = N × 0.625 ms
+    -- Time Range: 2.5 ms to 40.959375 s
+    [requires: 0x0004 <= this]
+
+  $next [+2]  UInt  connection_interval_min
+    -- Time: N * 1.25 ms
+    -- Time Range: 7.5 ms to 4 s.
+    [requires: 0x0006 <= this <= 0x0C80]
+
+  $next [+2]  UInt  connection_interval_max
+    -- Time: N * 1.25 ms
+    -- Time Range: 7.5 ms to 4 s.
+    [requires: 0x0006 <= this <= 0x0C80]
+
+  $next [+2]  UInt  max_latency
+    -- Maximum Peripheral latency for the connection in number of connection events.
+    [requires: this <= 0x01F3]
+
+  $next [+2]  UInt  supervision_timeout
+    -- See Core Spec v5.3, Vol 6, Part B, Section 4.5.2.
+    -- Time: N * 10 ms
+    -- Time Range: 100 ms to 32 s
+    [requires: 0x000A <= this <= 0x0C80]
+
+  $next [+2]  UInt  min_connection_event_length
+    -- Time: N * 0.625 ms
+
+  $next [+2]  UInt  max_connection_event_length
+    -- Time: N * 0.625 ms
+
+
+struct LEExtendedCreateConnectionCommandV1:
   -- 7.8.66 LE Extended Create Connection command version 1
   -- HCI_LE_Extended_Create_Connection v1
   let hdr_size = hci.CommandHeader.$size_in_bytes
-  0     [+hdr_size]                             hci.CommandHeader       header
-  $next [+1]                                    hci.GenericEnableParam  initiator_filter_policy
-  $next [+1]                                    LEOwnAddressType        own_address_type
-  $next [+1]                                    hci.LEPeerAddressType   peer_address_type
-  $next [+hci.BdAddr.$size_in_bytes]            hci.BdAddr              peer_address
+  0     [+hdr_size]                             hci.CommandHeader                            header
+  $next [+1]                                    hci.GenericEnableParam                       initiator_filter_policy
+  $next [+1]                                    LEOwnAddressType                             own_address_type
+  $next [+1]                                    hci.LEPeerAddressType                        peer_address_type
+  $next [+hci.BdAddr.$size_in_bytes]            hci.BdAddr                                   peer_address
   $next [+1]  bits:
-    0     [+LEInitiatingPHYBits.$size_in_bits]  LEInitiatingPHYBits     initiating_phys
+    0     [+LEInitiatingPHYBits.$size_in_bits]  LEInitiatingPHYBits                          initiating_phys
 
   let num_entries = (initiating_phys.le_1m ? 1 : 0)+(initiating_phys.le_2m ? 1 : 0)+(initiating_phys.le_coded ? 1 : 0)
-  let single_data_size = LESetExtendedConnectionPhyConnectionData.$size_in_bytes
-  $next [+single_data_size*num_entries]  LESetExtendedConnectionPhyConnectionData[]  data
+  let single_entry_size = LEExtendedCreateConnectionData.$size_in_bytes
+  let total_entries_size = num_entries*single_entry_size
+  $next [+total_entries_size]                   LEExtendedCreateConnectionData[num_entries]  data
 
 # 7.8.66 LE Extended Create Connection command version 2
 # HCI_LE_Extended_Create_Connection v2
@@ -2925,6 +2957,7 @@ struct LERemoveISODataPathCommand:
 # 7.8.112 LE ISO Receive Test command
 # 7.8.113 LE ISO Read Test Counters command
 # 7.8.114 LE ISO Test End command
+
 
 struct LESetHostFeatureCommand:
   -- 7.8.115 LE Set Host Feature command
