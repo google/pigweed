@@ -140,19 +140,19 @@ pw_test("fuzztest_tests") {
 }
 
 # This target should only be used when defining a fuzzing toolchain, e.g. to set
-# `pw_unit_test_GOOGLETEST_BACKEND = "$dir_pw_fuzzer:gtest"
+# `pw_unit_test_BACKEND = "$dir_pw_fuzzer:gtest"
 # TODO: b/295961502 - Support running FuzzTest-based fuzzers on OSS-Fuzz.
 if (dir_pw_third_party_googletest == "") {
   pw_error("gtest") {
     message_lines = [
-      "pw_unit_test_GOOGLETEST_BACKEND is set to dir_pw_fuzzer:gtest, ",
+      "pw_unit_test_BACKEND is set to dir_pw_fuzzer:gtest, ",
       "but dir_pw_third_party_googletest is not set.",
     ]
   }
 } else if (!pw_toolchain_FUZZING_ENABLED) {
   pw_error("gtest") {
     message_lines = [
-      "pw_unit_test_GOOGLETEST_BACKEND is set to dir_pw_fuzzer:gtest, ",
+      "pw_unit_test_BACKEND is set to dir_pw_fuzzer:gtest, ",
       "but $current_toolchain does not support fuzzing.",
     ]
   }
@@ -161,7 +161,7 @@ if (dir_pw_third_party_googletest == "") {
     if (pw_toolchain_OSS_FUZZ_ENABLED) {
       public_deps = [ "$dir_pw_unit_test:light" ]
     } else {
-      public_deps = [ "$dir_pw_third_party/googletest" ]
+      public_deps = [ "$dir_pw_unit_test:googletest" ]
     }
   }
 }

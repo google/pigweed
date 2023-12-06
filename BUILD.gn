@@ -523,7 +523,7 @@ group("pigweed_default") {
 
     # Upstream GoogleTest assumes the presence of a POSIX filesystem. If an
     # external gtest backend has been provided, limit the tests to host-only.
-    if (pw_unit_test_GOOGLETEST_BACKEND == "$dir_pw_unit_test:light" ||
+    if (pw_unit_test_BACKEND == "$dir_pw_unit_test:light" ||
         _is_host_toolchain) {
       if (pw_unit_test_AUTOMATIC_RUNNER == "") {
         # Without a test runner defined, build the tests but don't run them.

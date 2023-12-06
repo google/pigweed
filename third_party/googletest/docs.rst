@@ -30,16 +30,15 @@ Configure ``pw_unit_test`` to use upstream GoogleTest/GoogleMock.
    .. tab-item:: GN
 
       * Set the GN var ``dir_pw_third_party_googletest`` to the location of the
-        GoogleTest source. If you used the command above this will be
-        ``//third_party/googletest``.
+        GoogleTest source.
       * Set the GN var ``pw_unit_test_MAIN`` to
         ``dir_pigweed + "/third_party/googletest:gmock_main"``.
-      * Set the GN var ``pw_unit_test_GOOGLETEST_BACKEND`` to
-        ``"//third_party/googletest"``.
+      * Set the GN var ``pw_unit_test_BACKEND`` to
+        ``"//pw_unit_test:googletest"``.
 
       Pigweed unit tests that do not work with upstream GoogleTest can be
       disabled by setting ``enable_if`` to
-      ``pw_unit_test_GOOGLETEST_BACKEND == "$dir_pw_unit_test:light"``.
+      ``pw_unit_test_BACKEND == "$dir_pw_unit_test:light"``.
 
    .. tab-item:: CMake
 
@@ -47,8 +46,8 @@ Configure ``pw_unit_test`` to use upstream GoogleTest/GoogleMock.
         GoogleTest source.
       * Set the var
         ``pw_unit_test_MAIN`` to ``pw_third_party.googletest.gmock_main``.
-      * Set the var ``pw_unit_test_GOOGLETEST_BACKEND`` to
-        ``pw_third_party.googletest``.
+      * Set the var ``pw_unit_test_BACKEND`` to
+        ``pw_unit_test.googletest``.
 
    .. tab-item:: Bazel
 
@@ -57,8 +56,8 @@ Configure ``pw_unit_test`` to use upstream GoogleTest/GoogleMock.
       :ref:`target config <docs-build_system-bazel_configuration>` or on
       the command line:
 
-      * ``pw_unit_test_googletest_backend`` to
-        ``@com_google_googletest//:gtest``.
+      * ``pw_unit_test_backend`` to
+        ``@pigweed//pw_unit_test:googletest``.
       * ``pw_unit_test_main`` to ``@com_google_googletest//:gtest_main``.
 
       For example:
@@ -66,7 +65,7 @@ Configure ``pw_unit_test`` to use upstream GoogleTest/GoogleMock.
       .. code-block:: sh
 
          bazel test //... \
-            --@pigweed//targets:pw_unit_test_googletest_backend=@com_google_googletest//:gtest \
+            --@pigweed//targets:pw_unit_test_backend=@pigweed//pw_unit_test:googletest \
             --@pigweed//targets:pw_unit_test_main=@com_google_googletest//:gtest_main
 
 .. note::

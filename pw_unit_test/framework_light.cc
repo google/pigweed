@@ -12,11 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_unit_test/internal/framework.h"
-
 #include <algorithm>
 #include <cstring>
 
+#include "light_public_overrides/pw_unit_test/framework_backend.h"
 #include "pw_assert/check.h"
 
 namespace pw {

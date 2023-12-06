@@ -5,7 +5,8 @@ pw_unit_test
 ============
 ``pw_unit_test`` provides a `GoogleTest`_-compatible unit testing API for
 Pigweed. The default implementation is the embedded-friendly
-``pw_unit_test:light`` backend. Upstream GoogleTest may be used as well (see
+``pw_unit_test:light`` backend. Upstream GoogleTest may be used as well using
+the ``pw_unit_test:googletest`` backend after setting up Googletest (see
 `Using upstream GoogleTest`_).
 
 .. _GoogleTest: https://github.com/google/googletest
@@ -60,11 +61,42 @@ include:
 To request a feature addition, please `let us know
 <mailto:pigweed@googlegroups.com>`_.
 
-See `Using upstream GoogleTest`_ below for information
-about using upstream GoogleTest instead.
+If a test needs to include other GoogleTest functionality not
+included in the ``light`` backend, it must include the GoogleTest headers (e.g.
+``gtest/gtest.h``, ``gmock/gmock.h``) directly and the target definition must be
+guarded to avoid compiling it with the ``light`` backend.
+
+See `Using upstream GoogleTest`_ below for information about using upstream
+GoogleTest instead.
 
 API Reference
 -------------
+Unit tests that can use either ``pw_unit_test:light`` or
+``pw_unit_test:googletest`` must include ``pw_unit_test/framework.h`` to use the
+following APIs.
+
+
+Test Declaration
+````````````````
+
+.. doxygendefine:: TEST
+.. doxygendefine:: GTEST_TEST
+.. doxygendefine:: TEST_F
+.. doxygendefine:: FRIEND_TEST
+
+Test Control
+````````````
+
+.. doxygendefine:: FAIL
+.. doxygendefine:: GTEST_FAIL
+.. doxygendefine:: SUCCEED
+.. doxygendefine:: GTEST_SUCCEED
+.. doxygendefine:: GTEST_SKIP
+.. doxygendefine:: ADD_FAILURE
+.. doxygendefine:: RUN_ALL_TESTS
+.. doxygendefine:: GTEST_HAS_DEATH_TEST
+.. doxygendefine:: EXPECT_DEATH_IF_SUPPORTED
+.. doxygendefine:: ASSERT_DEATH_IF_SUPPORTED
 
 .. _module-pw_unit_test-api-expect:
 
@@ -385,7 +417,7 @@ arg :option:`pw_unit_test_FACADE_TESTS_ENABLED` to ``true``.
 
 Build arguments
 ```````````````
-.. option:: pw_unit_test_GOOGLETEST_BACKEND <source_set>
+.. option:: pw_unit_test_BACKEND <source_set>
 
    The GoogleTest implementation to use for Pigweed unit tests. This library
    provides "gtest/gtest.h" and related headers. Defaults to pw_unit_test:light,
@@ -580,7 +612,7 @@ creates several sub-targets:
 
 Build arguments
 ```````````````
-.. option:: pw_unit_test_GOOGLETEST_BACKEND <target>
+.. option:: pw_unit_test_BACKEND <target>
 
    The GoogleTest implementation to use for Pigweed unit tests. This library
    provides "gtest/gtest.h" and related headers. Defaults to pw_unit_test.light,
@@ -679,7 +711,7 @@ test is skipped when `using upstream GoogleTest`_:
 
 Build arguments
 ```````````````
-.. option:: pw_unit_test_googletest_backend <target>
+.. option:: pw_unit_test_backend <target>
 
    The GoogleTest implementation to use for Pigweed unit tests. This library
    provides "gtest/gtest.h" and related headers. Defaults to

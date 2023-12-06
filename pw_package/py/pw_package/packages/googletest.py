@@ -41,7 +41,7 @@ class Googletest(pw_package.git_repo.GitRepo):
             "Enable by running 'gn args out' and adding these lines:",
             f'  dir_pw_third_party_googletest = "{path}"',
             '  pw_unit_test_MAIN = "//third_party/googletest:gmock_main"',
-            '  pw_unit_test_GOOGLETEST_BACKEND = "//third_party/googletest"',
+            '  pw_unit_test_BACKEND = "//pw_unit_test:googletest"',
         )
 
 

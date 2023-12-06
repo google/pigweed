@@ -53,7 +53,7 @@ pw_add_library(pw_multibuf.test_utils STATIC
     pw_allocator.allocator_metric_proxy_for_test
     pw_allocator.split_free_list_allocator
     pw_status
-    ${pw_unit_test_GOOGLETEST_BACKEND}
+    ${pw_unit_test_BACKEND}
 )
 
 pw_add_test(pw_multibuf.chunk_test

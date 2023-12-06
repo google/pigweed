@@ -12,10 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_unit_test/framework.h"
+
 #include <cstring>
 
-#include "gtest/gtest.h"
 #include "pw_assert/check.h"
+#include "pw_status/status.h"
 
 namespace pw {
 namespace {
@@ -107,7 +109,8 @@ TEST(PigweedTest, ExpectStringEquality) {
   EXPECT_STRNE("NO", "no");
   ASSERT_STRNE("yes", no);
 
-  EXPECT_STREQ(nullptr, nullptr);
+  const char* invalid_string = nullptr;
+  EXPECT_STREQ(invalid_string, nullptr);
   EXPECT_STRNE("abc", nullptr);
 }
 
@@ -321,51 +324,6 @@ TEST_F(SetUpAndTearDown, MakeSureItIsSet) {
 
 TEST(TestSuiteTearDown, MakeSureItRan) {
   EXPECT_EQ(SetUpAndTearDown::value, 8);
-}
-
-TEST(UnknownTypeToString, SmallObject) {
-  struct {
-    char a = 0xa1;
-  } object;
-
-  StringBuffer<64> expected;
-  expected << "<1-byte object at 0x" << &object << '>';
-  ASSERT_EQ(OkStatus(), expected.status());
-
-  StringBuffer<64> actual;
-  actual << object;
-  ASSERT_EQ(OkStatus(), actual.status());
-  EXPECT_STREQ(expected.c_str(), actual.c_str());
-}
-
-TEST(UnknownTypeToString, NineByteObject) {
-  struct {
-    char a[9] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-  } object;
-
-  StringBuffer<64> expected;
-  expected << "<9-byte object at 0x" << &object << '>';
-  ASSERT_EQ(OkStatus(), expected.status());
-
-  StringBuffer<64> actual;
-  actual << object;
-  ASSERT_EQ(OkStatus(), actual.status());
-  EXPECT_STREQ(expected.c_str(), actual.c_str());
-}
-
-TEST(UnknownTypeToString, TenByteObject) {
-  struct {
-    char a[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-  } object;
-
-  StringBuffer<72> expected;
-  expected << "<10-byte object at 0x" << &object << '>';
-  ASSERT_EQ(OkStatus(), expected.status());
-
-  StringBuffer<72> actual;
-  actual << object;
-  ASSERT_EQ(OkStatus(), actual.status());
-  EXPECT_STREQ(expected.c_str(), actual.c_str());
 }
 
 }  // namespace

@@ -218,7 +218,7 @@ pw_test("transfer_test") {
 
 pw_test("transfer_thread_test") {
   enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread" &&
-              pw_unit_test_GOOGLETEST_BACKEND == "$dir_pw_unit_test:light"
+              pw_unit_test_BACKEND == "$dir_pw_unit_test:light"
   sources = [ "transfer_thread_test.cc" ]
   deps = [
     ":core",

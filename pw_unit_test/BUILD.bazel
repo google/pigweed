@@ -36,23 +36,35 @@ pw_cc_library(
 
 alias(
     name = "pw_unit_test",
-    actual = "@pigweed//targets:pw_unit_test_googletest_backend",
+    actual = "@pigweed//targets:pw_unit_test_backend",
+)
+
+pw_cc_library(
+    name = "framework",
+    hdrs = ["public/pw_unit_test/framework.h"],
+    includes = ["public"],
 )
 
 pw_cc_library(
     name = "light",
-    srcs = [
-        "framework.cc",
-        "public/pw_unit_test/internal/framework.h",
+    srcs = ["framework_light.cc"],
+    hdrs = [
+        "light_public_overrides/pw_unit_test/framework_backend.h",
+        # The facade header is included here since
+        # public_overrides/gtest/gtest.h includes it. This avoids a circular
+        # dependency in the build system.
+        "public/pw_unit_test/framework.h",
+        "public_overrides/gtest/gtest.h",
     ],
-    hdrs = ["public_overrides/gtest/gtest.h"],
     includes = [
+        "light_public_overrides",
         "public",
         "public_overrides",
     ],
     deps = [
         ":config",
         ":event_handler",
+        ":framework",
         "//pw_assert",
         "//pw_polyfill",
         "//pw_preprocessor",
@@ -61,18 +73,30 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "googletest",
+    hdrs = [
+        "googletest_public_overrides/pw_unit_test/framework_backend.h",
+    ],
+    includes = ["googletest_public_overrides"],
+    deps = [
+        ":framework",
+        "@com_google_googletest//:gtest",
+    ],
+)
+
 # Identifies when the light framework is being used.
 config_setting(
     name = "light_setting",
     flag_values = {
-        "@pigweed//targets:pw_unit_test_googletest_backend": "@pigweed//pw_unit_test:light",
+        "@pigweed//targets:pw_unit_test_backend": "@pigweed//pw_unit_test:light",
     },
 )
 
 config_setting(
     name = "gtest_setting",
     flag_values = {
-        "@pigweed//targets:pw_unit_test_googletest_backend": "@com_google_googletest//:gtest",
+        "@pigweed//targets:pw_unit_test_backend": "@pigweed//pw_unit_test:googletest",
     },
 )
 
@@ -312,6 +336,21 @@ pw_cc_test(
     deps = [
         ":pw_unit_test",
         "//pw_assert",
+        "//pw_status",
+    ],
+)
+
+pw_cc_test(
+    name = "framework_light_test",
+    srcs = ["framework_light_test.cc"],
+    target_compatible_with = select({
+        "//pw_unit_test:light_setting": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        ":pw_unit_test",
+        "//pw_status",
+        "//pw_string",
     ],
 )
 

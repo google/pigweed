@@ -471,8 +471,8 @@ gn_googletest_sapphire_build = PigweedGnGenNinja(
         'pw_unit_test_MAIN': lambda ctx: '"{}"'.format(
             ctx.root / 'third_party/googletest:gmock_main'
         ),
-        'pw_unit_test_GOOGLETEST_BACKEND': lambda ctx: '"{}"'.format(
-            ctx.root / 'third_party/googletest'
+        'pw_unit_test_BACKEND': lambda ctx: '"{}"'.format(
+            ctx.root / 'pw_unit_test:googletest'
         ),
         'pw_function_CONFIG': lambda ctx: '"{}"'.format(
             ctx.root / 'pw_function:enable_dynamic_allocation'
@@ -503,8 +503,8 @@ gn_fuzz_build = PigweedGnGenNinja(
         'pw_unit_test_MAIN': lambda ctx: '"{}"'.format(
             ctx.root / 'third_party/googletest:gmock_main'
         ),
-        'pw_unit_test_GOOGLETEST_BACKEND': lambda ctx: '"{}"'.format(
-            ctx.root / 'third_party/googletest'
+        'pw_unit_test_BACKEND': lambda ctx: '"{}"'.format(
+            ctx.root / 'pw_unit_test:googletest'
         ),
     },
     ninja_targets=('fuzzers',),

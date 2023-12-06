@@ -1,4 +1,4 @@
-// Copyright 2019 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -11,10 +11,6 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-//
-// pw_unit_test exposes a gTest-compatible interface. This file is provided for
-// existing projects which #include "gtest/gtest.h" to allow them to compile
-// using pw_unit_test as a backend.
 #pragma once
 
-#include "pw_unit_test/framework.h"
+#include "gtest/gtest.h"

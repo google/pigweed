@@ -22,13 +22,21 @@ import("$dir_pw_toolchain/generate_toolchain.gni")
 import("$dir_pw_toolchain/host_clang/toolchains.gni")
 
 declare_args() {
-  # The GoogleTest implementation to use for Pigweed unit tests. This library
-  # provides "gtest/gtest.h" and related headers. Defaults to
-  # pw_unit_test:light, which implements a subset of GoogleTest.
+  # The unit test framework implementation. Defaults to
+  # pw_unit_test:light, which implements a subset of GoogleTest safe to run on
+  # device. Set to //pw_unit_test:googletest when using GoogleTest.
   #
   # Type: string (GN path to a source set)
   # Usage: toolchain-controlled only
-  pw_unit_test_GOOGLETEST_BACKEND = "$dir_pw_unit_test:light"
+  pw_unit_test_BACKEND = "$dir_pw_unit_test:light"
+
+  # Warning: Deprecated build argument.
+  # When using the gooogletest backend, set pw_unit_test_BACKEND to
+  # //pw_unit_test:googletest instead.
+  #
+  # Type: string (GN path to a source set)
+  # Usage: toolchain-controlled only
+  pw_unit_test_GOOGLETEST_BACKEND = ""
 
   # Implementation of a main function for ``pw_test`` unit test binaries. Must
   # be set to an appropriate target for the pw_unit_test backend.

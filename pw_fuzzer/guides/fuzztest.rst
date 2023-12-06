@@ -48,7 +48,7 @@ See the following:
              name = "my_clang_fuzz"
              forward_variables_from(pw_toolchain_host.clang_fuzz, "*", ["name"])
              pw_unit_test_MAIN = "$dir_pw_fuzzer:fuzztest_main"
-             pw_unit_test_GOOGLETEST_BACKEND = "$dir_pw_fuzzer:gtest"
+             pw_unit_test_BACKEND = "$dir_pw_fuzzer:gtest"
            }
            ...
          }
@@ -73,7 +73,7 @@ See the following:
              "path/to/googletest"
            CACHE STRING "" FORCE
          )
-         set(pw_unit_test_GOOGLETEST_BACKEND
+         set(pw_unit_test_BACKEND
              "pw_third_party.fuzztest"
            CACHE STRING "" FORCE
          )
@@ -271,7 +271,7 @@ Step 5: Build the fuzzer
          cmake ... \
            -Ddir_pw_third_party_fuzztest=path/to/fuzztest \
            -Ddir_pw_third_party_googletest=path/to/googletest \
-           -Dpw_unit_test_GOOGLETEST_BACKEND=pw_third_party.fuzztest
+           -Dpw_unit_test_BACKEND=pw_third_party.fuzztest
 
 
    .. tab-item:: Bazel

@@ -177,13 +177,15 @@ For example, the ``pw_unit_test`` module provides a header override for
 
    pw_unit_test/...
 
+     light_public_overrides/pw_unit_test/framework_backend.h
+     googletest_public_overrides/pw_unit_test/framework_backend.h
+
      public_overrides/gtest
      public_overrides/gtest/gtest.h
 
      public/pw_unit_test
      public/pw_unit_test/simple_printing_event_handler.h
      public/pw_unit_test/event_handler.h
-     public/pw_unit_test/internal/framework.h
 
 Note that the overrides are in a separate directory ``public_overrides``.
 

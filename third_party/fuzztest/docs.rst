@@ -61,7 +61,7 @@ Add FuzzTest to your workspace with the following command.
       * Set ``dir_pw_third_party_googletest`` to the location of the
         :ref:`module-pw_third_party_googletest` source.
 
-      * Set ``pw_unit_test_GOOGLETEST_BACKEND`` to ``pw_third_party.fuzztest``.
+      * Set ``pw_unit_test_BACKEND`` to ``pw_third_party.fuzztest``.
 
    .. tab-item:: Bazel
 

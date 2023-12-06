@@ -46,6 +46,14 @@ config("public_overrides_include_path") {
   include_dirs = [ "public_overrides" ]
 }
 
+config("light_public_overrides_include_path") {
+  include_dirs = [ "light_public_overrides" ]
+}
+
+config("googletest_public_overrides_include_path") {
+  include_dirs = [ "googletest_public_overrides" ]
+}
+
 pw_source_set("config") {
   public = [ "public/pw_unit_test/config.h" ]
   public_configs = [ ":public_include_path" ]
@@ -59,12 +67,25 @@ pw_source_set("config") {
 # pw_unit_test facade. This provides a GoogleTest-compatible test framework.
 pw_source_set("pw_unit_test") {
   testonly = pw_unit_test_TESTONLY
-  public_deps = [ pw_unit_test_GOOGLETEST_BACKEND ]
+  public = [ "public/pw_unit_test/framework.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ pw_unit_test_BACKEND ]
+
+  # Temporarily redirect deprecated googletest pointer to new pointer.
+  if ("$pw_unit_test_GOOGLETEST_BACKEND" == "$dir_pw_third_party/googletest" &&
+      "$pw_unit_test_MAIN" == "$dir_pw_third_party/googletest:gmock_main" &&
+      "$pw_unit_test_BACKEND" == "$dir_pw_unit_test:light") {
+    print("Warning: pw_unit_test_GOOGLETEST_BACKEND is deprecated.")
+    print("Set pw_unit_test_BACKEND to //pw_unit_test:googletest.")
+    public_deps = []  # The list must be empty before overriding.
+    public_deps = [ ":googletest" ]
+  }
 }
 
 # Lightweight unit test backend that implements a subset of GoogleTest.
 pw_source_set("light") {
   public_configs = [
+    ":light_public_overrides_include_path",
     ":public_include_path",
     ":public_overrides_include_path",
   ]
@@ -83,11 +104,25 @@ pw_source_set("light") {
 
   deps = [ dir_pw_assert ]
 
-  public = [ "public_overrides/gtest/gtest.h" ]
-  sources = [
-    "framework.cc",
-    "public/pw_unit_test/internal/framework.h",
+  public = [
+    "light_public_overrides/pw_unit_test/framework_backend.h",
+
+    # The facade header is included here since public_overrides/gtest/gtest.h
+    # includes it. This avoids a circular dependency in the build system.
+    "public/pw_unit_test/framework.h",
+    "public_overrides/gtest/gtest.h",
   ]
+  sources = [ "framework_light.cc" ]
+}
+
+# Unit test framework backend that redirects to GoogleTest.
+if (pw_unit_test_BACKEND != "") {
+  pw_source_set("googletest") {
+    public_configs = [ ":googletest_public_overrides_include_path" ]
+    public = [ "googletest_public_overrides/pw_unit_test/framework_backend.h" ]
+
+    public_deps = [ "$dir_pw_third_party/googletest" ]
+  }
 }
 
 pw_source_set("event_handler") {
@@ -127,8 +162,8 @@ pw_source_set("googletest_test_matchers") {
 }
 
 pw_test("googletest_test_matchers_test") {
-  enable_if = pw_unit_test_GOOGLETEST_BACKEND != "" &&
-              pw_unit_test_GOOGLETEST_BACKEND != "$dir_pw_unit_test:light"
+  enable_if = pw_unit_test_BACKEND != "" &&
+              pw_unit_test_BACKEND != "$dir_pw_unit_test:light"
   sources = [ "googletest_test_matchers_test.cc" ]
   deps = [ ":googletest_test_matchers" ]
 }
@@ -188,7 +223,7 @@ pw_source_set("logging_event_handler") {
 group("logging") {
   public_deps = [ ":logging_event_handler" ]
   deps = []
-  if (pw_unit_test_GOOGLETEST_BACKEND != "$dir_pw_unit_test:light") {
+  if (pw_unit_test_BACKEND != "$dir_pw_unit_test:light") {
     deps += [ ":googletest_handler_adapter" ]
   }
 }
@@ -225,7 +260,7 @@ pw_source_set("rpc_service") {
   sources = [ "unit_test_service.cc" ]
   defines = []
 
-  if (pw_unit_test_GOOGLETEST_BACKEND == "$dir_pw_unit_test:light") {
+  if (pw_unit_test_BACKEND == "$dir_pw_unit_test:light") {
     public_configs += [ ":rpc_service_backend_light" ]
     sources += [ "rpc_light_event_handler.cc" ]
     public += [ "rpc_light_public/pw_unit_test/internal/rpc_event_handler.h" ]
@@ -247,11 +282,13 @@ pw_source_set("rpc_main") {
   sources = [ "rpc_main.cc" ]
 }
 
-pw_source_set("static_library_support") {
-  public_configs = [ ":public_include_path" ]
-  public_deps = [ ":light" ]  # This library only works with the light backend
-  public = [ "public/pw_unit_test/static_library_support.h" ]
-  sources = [ "static_library_support.cc" ]
+if (pw_unit_test_BACKEND == "$dir_pw_unit_test:light") {
+  pw_source_set("static_library_support") {
+    public_configs = [ ":public_include_path" ]
+    public_deps = [ pw_unit_test_BACKEND ]
+    public = [ "public/pw_unit_test/static_library_support.h" ]
+    sources = [ "static_library_support.cc" ]
+  }
 }
 
 pw_executable("test_rpc_server") {
@@ -298,9 +335,20 @@ pw_python_action_test("test_group_metadata_test") {
 }
 
 pw_test("framework_test") {
-  enable_if = pw_unit_test_GOOGLETEST_BACKEND == "$dir_pw_unit_test:light"
   sources = [ "framework_test.cc" ]
-  deps = [ dir_pw_assert ]
+  deps = [
+    dir_pw_assert,
+    dir_pw_status,
+  ]
+}
+
+pw_test("framework_light_test") {
+  enable_if = pw_unit_test_BACKEND == "$dir_pw_unit_test:light"
+  sources = [ "framework_light_test.cc" ]
+  deps = [
+    "$dir_pw_string:builder",
+    dir_pw_status,
+  ]
 }
 
 pw_static_library("tests_in_archive") {
@@ -314,7 +362,7 @@ pw_static_library("tests_in_archive") {
 }
 
 pw_test("static_library_support_test") {
-  enable_if = pw_unit_test_GOOGLETEST_BACKEND == "$dir_pw_unit_test:light"
+  enable_if = pw_unit_test_BACKEND == "$dir_pw_unit_test:light"
   sources = [ "static_library_support_test.cc" ]
   deps = [
     ":static_library_support",
@@ -326,6 +374,7 @@ pw_test("static_library_support_test") {
 pw_test_group("tests") {
   tests = [
     ":framework_test",
+    ":framework_light_test",
     ":static_library_support_test",
   ]
   if (dir_pw_third_party_googletest != "") {

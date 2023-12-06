@@ -36,10 +36,19 @@ function(pw_add_test_executable NAME TEST_DEP)
   add_executable("${NAME}" EXCLUDE_FROM_ALL
                  $<TARGET_PROPERTY:pw_build.empty,SOURCES>)
 
-  set(test_backend "${pw_unit_test_GOOGLETEST_BACKEND}")
+  # Temporarily redirect deprecated googletest pointer to new pointer.
+  if("${pw_unit_test_GOOGLETEST_BACKEND}" STREQUAL "pw_third_party.googletest")
+    message(DEPRECATION
+      "pw_unit_test_GOOGLETEST_BACKEND is deprecated. Set pw_unit_test_BACKEND "
+      "to pw_unit_test.googletest instead."
+    )
+    set(pw_unit_test_BACKEND pw_unit_test.googletest)
+  endif()
+
+  set(test_backend "${pw_unit_test_BACKEND}")
   if("${test_backend}" STREQUAL "pw_unit_test.light")
     set(main pw_unit_test.logging_main)
-  elseif("${test_backend}" STREQUAL "pw_third_party.googletest")
+  elseif("${test_backend}" STREQUAL "pw_unit_test.googletest")
     set(main pw_third_party.googletest.gmock_main)
   elseif("${test_backend}" STREQUAL "pw_third_party.fuzztest")
     set(main pw_third_party.fuzztest_gtest_main)
