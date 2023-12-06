@@ -18,7 +18,6 @@
 #include <cstddef>
 #include <cstring>
 
-#include "gtest/gtest.h"
 #include "pw_kvs/crc16_checksum.h"
 #include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/flash_memory.h"
@@ -26,6 +25,7 @@
 #include "pw_log/log.h"
 #include "pw_random/xor_shift.h"
 #include "pw_span/span.h"
+#include "pw_unit_test/framework.h"
 
 #ifndef PW_FLASH_TEST_ALIGNMENT
 #define PW_FLASH_TEST_ALIGNMENT 1

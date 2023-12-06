@@ -14,8 +14,8 @@
 
 #include "pw_build_info/build_id.h"
 
-#include "gtest/gtest.h"
 #include "pw_span/span.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::build_info {
 namespace {

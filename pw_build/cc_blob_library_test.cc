@@ -14,8 +14,8 @@
 
 #include <cstddef>
 
-#include "gtest/gtest.h"
 #include "pw_build/test_blob.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::build {
 namespace {

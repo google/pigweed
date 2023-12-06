@@ -18,7 +18,6 @@
 #include <cstddef>
 #include <cstring>
 
-#include "gtest/gtest.h"
 #include "pw_blob_store/blob_store.h"
 #include "pw_kvs/crc16_checksum.h"
 #include "pw_kvs/fake_flash_memory.h"
@@ -27,6 +26,7 @@
 #include "pw_random/xor_shift.h"
 #include "pw_span/span.h"
 #include "pw_sync/mutex.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::blob_store {
 namespace {
