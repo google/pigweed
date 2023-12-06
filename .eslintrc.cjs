@@ -3,6 +3,8 @@ module.exports = {
   env: {
     browser: true,
     es2021: true,
+    mocha: true,
+    jest: true,
   },
   root: true,
   extends: [

@@ -14,7 +14,6 @@
 
 import { LogFilter } from './log-filter';
 import { Severity, LogEntry } from '../../shared/interfaces';
-import { describe, expect, test } from '@jest/globals';
 import testData from './test-data';
 
 describe('LogFilter', () => {

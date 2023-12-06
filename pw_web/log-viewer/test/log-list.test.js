@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { expect, describe, beforeEach, afterEach, it } from '@open-wc/testing';
+import { expect } from '@open-wc/testing';
 import '../src/components/log-viewer';
 import { MockLogSource } from '../src/custom/mock-log-source';
 import { createLogViewer } from '../src/createLogViewer';
