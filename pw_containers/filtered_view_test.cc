@@ -16,11 +16,11 @@
 
 #include <array>
 
-#include "gtest/gtest.h"
 #include "pw_containers/algorithm.h"
 #include "pw_containers/flat_map.h"
 #include "pw_containers/intrusive_list.h"
 #include "pw_span/span.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::containers {
 namespace {

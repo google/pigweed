@@ -21,11 +21,11 @@
 #include <algorithm>
 #include <iterator>
 
-#include "gtest/gtest.h"
 #include "pw_containers/flat_map.h"
 #include "pw_containers/intrusive_list.h"
 #include "pw_containers/vector.h"
 #include "pw_span/span.h"
+#include "pw_unit_test/framework.h"
 
 namespace {
 

@@ -14,9 +14,9 @@
 
 #include <chrono>
 
-#include "gtest/gtest.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_preprocessor/util.h"
+#include "pw_unit_test/framework.h"
 
 using namespace std::chrono_literals;
 

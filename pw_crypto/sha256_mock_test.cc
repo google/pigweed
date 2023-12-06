@@ -14,9 +14,9 @@
 
 #include <cstring>
 
-#include "gtest/gtest.h"
 #include "pw_crypto/sha256.h"
 #include "pw_crypto/sha256_backend.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::crypto::sha256 {
 namespace {

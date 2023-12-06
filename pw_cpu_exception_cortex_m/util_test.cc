@@ -14,8 +14,8 @@
 
 #include "pw_pw_cpu_exception_cortex_m/util.h"
 
-#include "gtest/gtest.h"
 #include "pw_pw_cpu_exception_cortex_m/cpu_state.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::pw_cpu_exception::cortex_m {
 namespace {

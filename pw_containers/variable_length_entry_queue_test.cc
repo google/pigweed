@@ -18,8 +18,8 @@
 #include <string_view>
 #include <variant>
 
-#include "gtest/gtest.h"
 #include "pw_containers_private/variable_length_entry_queue_test_oracle.h"
+#include "pw_unit_test/framework.h"
 
 namespace {
 

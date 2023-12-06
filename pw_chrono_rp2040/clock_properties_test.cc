@@ -14,9 +14,9 @@
 
 #include <cmath>
 
-#include "gtest/gtest.h"
 #include "pico/critical_section.h"
 #include "pw_chrono/system_clock.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::chrono::rp2040 {
 namespace {

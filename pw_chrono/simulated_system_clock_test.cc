@@ -14,7 +14,7 @@
 
 #include "pw_chrono/simulated_system_clock.h"
 
-#include "gtest/gtest.h"
+#include "pw_unit_test/framework.h"
 
 using namespace std::chrono_literals;
 

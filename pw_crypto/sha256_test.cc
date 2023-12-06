@@ -16,8 +16,8 @@
 
 #include <cstring>
 
-#include "gtest/gtest.h"
 #include "pw_stream/memory_stream.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::crypto::sha256 {
 namespace {

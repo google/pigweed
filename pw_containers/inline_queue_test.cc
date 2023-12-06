@@ -18,10 +18,10 @@
 #include <array>
 #include <cstddef>
 
-#include "gtest/gtest.h"
 #include "pw_compilation_testing/negative_compilation.h"
 #include "pw_containers/algorithm.h"
 #include "pw_containers_private/test_helpers.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::containers {
 namespace {

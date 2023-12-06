@@ -28,7 +28,7 @@ Negative compilation test example
 ---------------------------------
 .. code-block:: cpp
 
-  #include "gtest/gtest.h"
+  #include "pw_unit_test/framework.h"
   #include "pw_compilation_testing/negative_compilation.h"
 
   template <int kValue>

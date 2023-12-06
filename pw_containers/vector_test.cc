@@ -16,8 +16,8 @@
 
 #include <cstddef>
 
-#include "gtest/gtest.h"
 #include "pw_containers_private/test_helpers.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw {
 namespace {

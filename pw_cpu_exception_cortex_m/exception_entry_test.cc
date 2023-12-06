@@ -15,7 +15,6 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "gtest/gtest.h"
 #include "pw_cpu_exception/entry.h"
 #include "pw_cpu_exception/handler.h"
 #include "pw_cpu_exception/support.h"
@@ -23,6 +22,7 @@
 #include "pw_cpu_exception_cortex_m_private/config.h"
 #include "pw_cpu_exception_cortex_m_private/cortex_m_constants.h"
 #include "pw_span/span.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::cpu_exception::cortex_m {
 namespace {

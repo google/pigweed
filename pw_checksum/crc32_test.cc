@@ -15,10 +15,10 @@
 
 #include <string_view>
 
-#include "gtest/gtest.h"
 #include "public/pw_checksum/crc32.h"
 #include "pw_bytes/array.h"
 #include "pw_span/span.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::checksum {
 namespace {
