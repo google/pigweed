@@ -13,12 +13,12 @@
 // the License.
 #include "pw_async_basic/dispatcher.h"
 
-#include "gtest/gtest.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_log/log.h"
 #include "pw_sync/thread_notification.h"
 #include "pw_thread/thread.h"
 #include "pw_thread_stl/options.h"
+#include "pw_unit_test/framework.h"
 
 #define ASSERT_OK(status) ASSERT_EQ(OkStatus(), status)
 #define ASSERT_CANCELLED(status) ASSERT_EQ(Status::Cancelled(), status)

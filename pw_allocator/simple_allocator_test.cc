@@ -14,8 +14,8 @@
 
 #include "pw_allocator/simple_allocator.h"
 
-#include "gtest/gtest.h"
 #include "pw_allocator/allocator_testing.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::allocator {
 

@@ -14,9 +14,9 @@
 
 #include "pw_allocator/freelist.h"
 
-#include "gtest/gtest.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
+#include "pw_unit_test/framework.h"
 
 using std::byte;
 

@@ -14,9 +14,9 @@
 
 #include <cstddef>
 
-#include "gtest/gtest.h"
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/allocator_testing.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::allocator {
 namespace {

@@ -13,9 +13,9 @@
 // the License.
 #include "pw_async/fake_dispatcher.h"
 
-#include "gtest/gtest.h"
 #include "pw_containers/vector.h"
 #include "pw_string/to_string.h"
+#include "pw_unit_test/framework.h"
 
 #define ASSERT_OK(status) ASSERT_EQ(OkStatus(), status)
 #define ASSERT_CANCELLED(status) ASSERT_EQ(Status::Cancelled(), status)

@@ -13,7 +13,7 @@
 // the License.
 #include "pw_analog/analog_input.h"
 
-#include "gtest/gtest.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw {
 namespace analog {

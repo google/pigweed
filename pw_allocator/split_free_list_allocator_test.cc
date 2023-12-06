@@ -14,12 +14,12 @@
 
 #include "pw_allocator/split_free_list_allocator.h"
 
-#include "gtest/gtest.h"
 #include "pw_allocator/allocator_testing.h"
 #include "pw_allocator/block.h"
 #include "pw_bytes/alignment.h"
 #include "pw_bytes/span.h"
 #include "pw_containers/vector.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::allocator {
 namespace {

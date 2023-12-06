@@ -14,8 +14,8 @@
 
 #include "pw_assert/assert.h"
 
-#include "gtest/gtest.h"
 #include "pw_status/status.h"
+#include "pw_unit_test/framework.h"
 
 // PW_ASSERT() should always be enabled, and always evaluate the expression.
 TEST(Assert, AssertTrue) {

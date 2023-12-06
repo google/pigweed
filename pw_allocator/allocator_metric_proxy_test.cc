@@ -12,9 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "gtest/gtest.h"
 #include "pw_allocator/allocator_metric_proxy_for_test.h"
 #include "pw_allocator/allocator_testing.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::allocator {
 namespace {

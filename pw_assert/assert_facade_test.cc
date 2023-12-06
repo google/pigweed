@@ -25,9 +25,9 @@
 #include "pw_assert/internal/check_impl.h"
 // clang-format on
 
-#include "gtest/gtest.h"
 #include "pw_compilation_testing/negative_compilation.h"
 #include "pw_status/status.h"
+#include "pw_unit_test/framework.h"
 
 namespace {
 

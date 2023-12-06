@@ -13,7 +13,7 @@
 // the License.
 #include "pw_analog/microvolt_input.h"
 
-#include "gtest/gtest.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw {
 namespace analog {

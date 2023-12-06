@@ -36,9 +36,9 @@
 // TODO: b/235289499 - Add verification of the actually recorded asserts
 // statements.
 
-#include "gtest/gtest.h"
 #include "pw_assert/short.h"
 #include "pw_status/status.h"
+#include "pw_unit_test/framework.h"
 
 // This is a global constant to feed into the formatter for tests.
 // Intended to pair with FAIL_IF_DISPLAYED_ARGS or FAIL_IF_HIDDEN_ARGS.

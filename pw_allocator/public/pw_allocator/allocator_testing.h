@@ -17,7 +17,6 @@
 #include <cstddef>
 #include <variant>
 
-#include "gtest/gtest.h"
 #include "lib/stdcompat/bit.h"
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/block.h"
@@ -25,6 +24,7 @@
 #include "pw_bytes/span.h"
 #include "pw_containers/vector.h"
 #include "pw_random/random.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::allocator::test {
 
