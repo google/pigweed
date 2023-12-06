@@ -13,7 +13,7 @@
 # the License.
 """Utility for tagging a target as compatible with a host OS."""
 
-_RTOS_NONE = "//pw_build/constraints/rtos:none"
+_RTOS_NONE = Label("//pw_build/constraints/rtos:none")
 
 # Common select for tagging a target as only compatible with host OS's. This
 # select implements the logic '(Windows, macOS, iOS, Linux, Android, or
