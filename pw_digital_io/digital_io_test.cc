@@ -14,8 +14,8 @@
 
 #include "pw_digital_io/digital_io.h"
 
-#include "gtest/gtest.h"
 #include "pw_status/status.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::digital_io {
 namespace {

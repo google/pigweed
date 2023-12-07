@@ -14,9 +14,9 @@
 
 #include "pw_function/function.h"
 
-#include "gtest/gtest.h"
 #include "pw_compilation_testing/negative_compilation.h"
 #include "pw_polyfill/language_feature_macros.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw {
 namespace {

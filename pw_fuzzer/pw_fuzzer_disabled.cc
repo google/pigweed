@@ -19,8 +19,8 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "gtest/gtest.h"
 #include "pw_log/log.h"
+#include "pw_unit_test/framework.h"
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size);
 

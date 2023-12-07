@@ -14,8 +14,8 @@
 
 #include "pw_function/pointer.h"
 
-#include "gtest/gtest.h"
 #include "pw_function/function.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::function {
 namespace {

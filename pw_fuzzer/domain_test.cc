@@ -14,9 +14,9 @@
 
 #include <cctype>
 
-#include "gtest/gtest.h"
 #include "pw_fuzzer/fuzztest.h"
 #include "pw_result/result.h"
+#include "pw_unit_test/framework.h"
 
 // Most of the tests in this file only validate that the domains provided by
 // Pigweed build, both with and without FuzzTest. Each domain comprises one or
