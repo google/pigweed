@@ -20,8 +20,8 @@
 #include <cstring>
 #include <limits>
 
-#include "gtest/gtest.h"
 #include "pw_stream/memory_stream.h"
+#include "pw_unit_test/framework.h"
 #include "pw_varint/varint.h"
 
 namespace pw::varint {

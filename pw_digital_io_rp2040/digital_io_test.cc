@@ -13,9 +13,8 @@
 // the License.
 #include "pw_digital_io/digital_io.h"
 
-#include <gtest/gtest.h>
-
 #include "pw_digital_io_rp2040/digital_io.h"
+#include "pw_unit_test/framework.h"
 
 using pw::digital_io::Rp2040DigitalIn;
 using pw::digital_io::Rp2040DigitalInOut;

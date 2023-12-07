@@ -13,11 +13,10 @@
 // the License.
 #include "pw_i2c_mcuxpresso/initiator.h"
 
-#include <gtest/gtest.h>
-
 #include <cstdint>
 
 #include "fsl_clock.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::i2c {
 namespace {

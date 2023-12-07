@@ -12,9 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include <gtest/gtest.h>
-#include <pw_unit_test/logging_event_handler.h>
 #include <zephyr/kernel.h>
+
+#include "pw_unit_test/framework.h"
+#include "pw_unit_test/logging_event_handler.h"
 
 int main() {
   testing::InitGoogleTest(nullptr, nullptr);

@@ -14,11 +14,11 @@
 
 #include "pw_work_queue/work_queue.h"
 
-#include "gtest/gtest.h"
 #include "pw_function/function.h"
 #include "pw_log/log.h"
 #include "pw_sync/thread_notification.h"
 #include "pw_thread/thread.h"
+#include "pw_unit_test/framework.h"
 #include "pw_work_queue/test_thread.h"
 
 namespace pw::work_queue {

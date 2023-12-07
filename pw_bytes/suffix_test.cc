@@ -14,7 +14,7 @@
 
 #include "pw_bytes/suffix.h"
 
-#include "gtest/gtest.h"
+#include "pw_unit_test/framework.h"
 
 namespace {
 

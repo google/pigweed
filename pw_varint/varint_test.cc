@@ -19,8 +19,8 @@
 #include <cstring>
 #include <limits>
 
-#include "gtest/gtest.h"
 #include "pw_fuzzer/fuzztest.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::varint {
 namespace {
