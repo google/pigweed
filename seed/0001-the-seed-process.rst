@@ -94,8 +94,8 @@ Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
    following the :ref:`docs-get-started-upstream` guide.
 
 #. Claim a number for your SEED. This should be the next sequential number
-   listed within the `SEED index`_'s ``toctree`` table. (We will use 5309 for
-   our example.)
+   listed within the ``pw_seed_index`` in ``seed/BUILD.gn``. (We will use 5309
+   for our example.)
 
    .. _SEED index: https://cs.opensource.google/pigweed/pigweed/+/main:seed/0000-index.rst
 
