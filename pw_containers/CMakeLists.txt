@@ -266,6 +266,7 @@ pw_add_test(pw_containers.intrusive_list_test
   PRIVATE_DEPS
     pw_compilation_testing._pigweed_only_negative_compilation
     pw_containers.intrusive_list
+    pw_containers.vector
     pw_preprocessor
   GROUPS
     modules
