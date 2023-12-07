@@ -63,7 +63,7 @@ class TestSymbolizer(unittest.TestCase):
                 '-std=c++17',
                 '-fno-pic',
                 '-fno-pie',
-                '-nopie',
+                '-no-pie',
                 '-o',
                 exe_file,
             ]
