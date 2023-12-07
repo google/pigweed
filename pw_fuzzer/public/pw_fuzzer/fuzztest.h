@@ -452,7 +452,8 @@ struct ArbitraryImpl<Result<T>> {
 /// @retval    Domain that produces `Vector<T>`s.
 template <size_t kMaxSize, int&... ExplicitArgumentBarrier, typename Inner>
 auto VectorOf(Inner inner) {
-  return ContainerOf<Vector<typename Inner::value_type, kMaxSize>>(inner)
+  return fuzztest::ContainerOf<Vector<typename Inner::value_type, kMaxSize>>(
+             inner)
       .WithMaxSize(kMaxSize);
 }
 
