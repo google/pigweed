@@ -18,8 +18,8 @@
 
 #include <utility>
 
-#include "gtest/gtest.h"
 #include "pw_intrusive_ptr/intrusive_ptr.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw {
 namespace {

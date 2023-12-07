@@ -16,8 +16,8 @@
 
 #include <type_traits>
 
-#include "gtest/gtest.h"
 #include "pw_i2c/initiator.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::i2c {
 namespace {

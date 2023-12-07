@@ -16,12 +16,12 @@
 #include <algorithm>
 #include <chrono>
 
-#include "gtest/gtest.h"
 #include "pw_i2c/address.h"
 #include "pw_i2c/initiator.h"
 #include "pw_i2c/initiator_mock.h"
 #include "pw_rpc/pwpb/test_method_context.h"
 #include "pw_status/status.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::i2c {
 namespace {

@@ -13,9 +13,9 @@
 // the License.
 #include "pw_i2c/register_device.h"
 
-#include "gtest/gtest.h"
 #include "pw_assert/check.h"
 #include "pw_bytes/byte_builder.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw {
 namespace i2c {

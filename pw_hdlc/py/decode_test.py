@@ -364,7 +364,7 @@ _CPP_HEADER = """\
 #include <cstddef>
 #include <variant>
 
-#include "gtest/gtest.h"
+#include "pw_unit_test/framework.h"
 #include "pw_bytes/array.h"
 
 namespace pw::hdlc {

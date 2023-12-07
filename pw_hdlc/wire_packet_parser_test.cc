@@ -14,9 +14,9 @@
 
 #include "pw_hdlc/wire_packet_parser.h"
 
-#include "gtest/gtest.h"
 #include "pw_bytes/array.h"
 #include "pw_hdlc/internal/protocol.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::hdlc {
 namespace {

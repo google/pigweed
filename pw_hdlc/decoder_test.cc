@@ -17,10 +17,10 @@
 #include <array>
 #include <cstddef>
 
-#include "gtest/gtest.h"
 #include "pw_bytes/array.h"
 #include "pw_fuzzer/fuzztest.h"
 #include "pw_hdlc/internal/protocol.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::hdlc {
 namespace {
