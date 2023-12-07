@@ -89,6 +89,7 @@ describe('Transfer client', () => {
     packet.setChannelId(1);
     packet.setServiceId(service.id);
     packet.setMethodId(method.id);
+    packet.setCallId(method.rpcs.nextCallId);
     packet.setStatus(error);
     packetsToSend.push([packet.serializeBinary()]);
   }
@@ -102,6 +103,7 @@ describe('Transfer client', () => {
         packet.setChannelId(1);
         packet.setServiceId(service.id);
         packet.setMethodId(method.id);
+        packet.setCallId(method.rpcs.nextCallId);
         packet.setStatus(Status.OK);
         packet.setPayload(response.serializeBinary());
         serializedGroup.push(packet.serializeBinary());

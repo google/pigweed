@@ -95,18 +95,19 @@ describe('Client', () => {
   });
 
   it('processPacket for unrecognized channel', () => {
-    const packet = packets.encodeResponse([123, 456, 789], new Request());
+    const packet = packets.encodeResponse([123, 456, 789, 456], new Request());
     expect(client.processPacket(packet)).toEqual(Status.NOT_FOUND);
   });
 
   it('processPacket for unrecognized service', () => {
-    const packet = packets.encodeResponse([1, 456, 789], new Request());
+    const packet = packets.encodeResponse([1, 456, 789, 456], new Request());
     const status = client.processPacket(packet);
     expect(client.processPacket(packet)).toEqual(Status.OK);
 
     expect(lastPacketSent.getChannelId()).toEqual(1);
     expect(lastPacketSent.getServiceId()).toEqual(456);
     expect(lastPacketSent.getMethodId()).toEqual(789);
+    expect(lastPacketSent.getCallId()).toEqual(456);
     expect(lastPacketSent.getType()).toEqual(PacketType.CLIENT_ERROR);
     expect(lastPacketSent.getStatus()).toEqual(Status.NOT_FOUND);
   });
@@ -114,13 +115,17 @@ describe('Client', () => {
   it('processPacket for unrecognized method', () => {
     const service = client.services.values().next().value;
 
-    const packet = packets.encodeResponse([1, service.id, 789], new Request());
+    const packet = packets.encodeResponse(
+      [1, service.id, 789, 456],
+      new Request(),
+    );
     const status = client.processPacket(packet);
     expect(client.processPacket(packet)).toEqual(Status.OK);
 
     expect(lastPacketSent.getChannelId()).toEqual(1);
     expect(lastPacketSent.getServiceId()).toEqual(service.id);
     expect(lastPacketSent.getMethodId()).toEqual(789);
+    expect(lastPacketSent.getCallId()).toEqual(456);
     expect(lastPacketSent.getType()).toEqual(PacketType.CLIENT_ERROR);
     expect(lastPacketSent.getStatus()).toEqual(Status.NOT_FOUND);
   });
@@ -130,7 +135,7 @@ describe('Client', () => {
     const method = service.methods.values().next().value;
 
     const packet = packets.encodeResponse(
-      [1, service.id, method.id],
+      [1, service.id, method.id, 456],
       new Request(),
     );
     const status = client.processPacket(packet);
@@ -187,6 +192,7 @@ describe('RPC', () => {
     channelId: number,
     method: Method,
     status: Status,
+    callId: number,
     response?: Message,
   ) {
     const packet = new RpcPacket();
@@ -194,6 +200,7 @@ describe('RPC', () => {
     packet.setChannelId(channelId);
     packet.setServiceId(method.service.id);
     packet.setMethodId(method.id);
+    packet.setCallId(callId);
     packet.setStatus(status);
     if (response === undefined) {
       packet.setPayload(new Uint8Array(0));
@@ -207,6 +214,7 @@ describe('RPC', () => {
     channelId: number,
     method: Method,
     response: Message,
+    callId: number,
     status: Status = Status.OK,
   ) {
     const packet = new RpcPacket();
@@ -214,6 +222,7 @@ describe('RPC', () => {
     packet.setChannelId(channelId);
     packet.setServiceId(method.service.id);
     packet.setMethodId(method.id);
+    packet.setCallId(callId);
     packet.setPayload(response.serializeBinary());
     packet.setStatus(status);
     nextPackets.push([packet.serializeBinary(), status]);
@@ -224,12 +233,14 @@ describe('RPC', () => {
     method: Method,
     status: Status,
     processStatus: Status,
+    callId: number,
   ) {
     const packet = new RpcPacket();
     packet.setType(PacketType.SERVER_ERROR);
     packet.setChannelId(channelId);
     packet.setServiceId(method.service.id);
     packet.setMethodId(method.id);
+    packet.setCallId(callId);
     packet.setStatus(status);
 
     nextPackets.push([packet.serializeBinary(), processStatus]);
@@ -263,6 +274,7 @@ describe('RPC', () => {
   function processEnqueuedPackets(): void {
     // Avoid infinite recursion when processing a packet causes another packet
     // to send.
+    if (responseLock) return;
     responseLock = true;
     for (const [packet, status] of nextPackets) {
       expect(client.processPacket(packet)).toEqual(status);
@@ -288,6 +300,7 @@ describe('RPC', () => {
           1,
           unaryStub.method,
           Status.ABORTED,
+          unaryStub.rpcs.nextCallId,
           newResponse('0_o'),
         );
         const [status, response] = await unaryStub.call(newRequest(6));
@@ -301,7 +314,13 @@ describe('RPC', () => {
     it('nonblocking call', () => {
       for (let i = 0; i < 3; i++) {
         const response = newResponse('hello world');
-        enqueueResponse(1, unaryStub.method, Status.ABORTED, response);
+        enqueueResponse(
+          1,
+          unaryStub.method,
+          Status.ABORTED,
+          unaryStub.rpcs.nextCallId,
+          response,
+        );
 
         const onNext = jest.fn();
         const onCompleted = jest.fn();
@@ -325,7 +344,13 @@ describe('RPC', () => {
 
       for (let i = 0; i < 3; i++) {
         const response = newResponse('hello world');
-        enqueueResponse(1, unaryStub.method, Status.ABORTED, response);
+        enqueueResponse(
+          1,
+          unaryStub.method,
+          Status.ABORTED,
+          unaryStub.rpcs.nextCallId,
+          response,
+        );
 
         const onNext = jest.fn();
         const onCompleted = jest.fn();
@@ -341,9 +366,55 @@ describe('RPC', () => {
       }
     });
 
+    it('nonblocking concurrent call', () => {
+      // Start several calls to the same method
+      const callsAndCallbacks = [];
+      for (let i = 0; i < 3; i++) {
+        const onNext = jest.fn();
+        const onCompleted = jest.fn();
+        const onError = jest.fn();
+
+        const call = unaryStub.invoke(
+          newRequest(5),
+          onNext,
+          onCompleted,
+          onError,
+        );
+        callsAndCallbacks.push([call, onNext, onCompleted, onError]);
+
+        expect(sentPayload(Request).getMagicNumber()).toEqual(5);
+      }
+      // Respond only to the last call
+      const [lastCall, lastCallback] = callsAndCallbacks.pop();
+      const lastResponse = newResponse('last payload');
+
+      enqueueResponse(
+        1,
+        unaryStub.method,
+        Status.OK,
+        lastCall.callId,
+        lastResponse,
+      );
+      processEnqueuedPackets();
+
+      expect(lastCallback).toHaveBeenCalledWith(lastResponse);
+      for (const i in callsAndCallbacks) {
+        const [_call, onNext, onCompleted, onError] = callsAndCallbacks[i];
+        expect(onNext).toBeCalledTimes(0);
+        expect(onCompleted).toBeCalledTimes(0);
+        expect(onError).toBeCalledTimes(0);
+      }
+    });
+
     it('blocking server error', async () => {
       for (let i = 0; i < 3; i++) {
-        enqueueError(1, unaryStub.method, Status.NOT_FOUND, Status.OK);
+        enqueueError(
+          1,
+          unaryStub.method,
+          Status.NOT_FOUND,
+          Status.OK,
+          unaryStub.rpcs.nextCallId,
+        );
 
         try {
           await unaryStub.call(newRequest());
@@ -380,21 +451,17 @@ describe('RPC', () => {
       }
     });
 
-    it('nonblocking duplicate calls first is cancelled', () => {
-      const firstCall = unaryStub.invoke(newRequest());
-      expect(firstCall.completed).toBe(false);
-
-      const secondCall = unaryStub.invoke(newRequest());
-      expect(firstCall.error).toEqual(Status.CANCELLED);
-      expect(secondCall.completed).toBe(false);
-    });
-
     it('nonblocking exception in callback', () => {
       const errorCallback = () => {
         throw Error('Something went wrong!');
       };
 
-      enqueueResponse(1, unaryStub.method, Status.OK);
+      enqueueResponse(
+        1,
+        unaryStub.method,
+        Status.OK,
+        unaryStub.rpcs.nextCallId,
+      );
       const call = unaryStub.invoke(newRequest(), errorCallback);
       expect(call.callbackException!.name).toEqual('Error');
       expect(call.callbackException!.message).toEqual('Something went wrong!');
@@ -417,9 +484,24 @@ describe('RPC', () => {
       const response2 = newResponse('?');
 
       for (let i = 0; i < 3; i++) {
-        enqueueServerStream(1, serverStreaming.method, response1);
-        enqueueServerStream(1, serverStreaming.method, response2);
-        enqueueResponse(1, serverStreaming.method, Status.ABORTED);
+        enqueueServerStream(
+          1,
+          serverStreaming.method,
+          response1,
+          serverStreaming.rpcs.nextCallId,
+        );
+        enqueueServerStream(
+          1,
+          serverStreaming.method,
+          response2,
+          serverStreaming.rpcs.nextCallId,
+        );
+        enqueueResponse(
+          1,
+          serverStreaming.method,
+          Status.ABORTED,
+          serverStreaming.rpcs.nextCallId,
+        );
 
         const onNext = jest.fn();
         const onCompleted = jest.fn();
@@ -443,9 +525,24 @@ describe('RPC', () => {
       const response2 = newResponse('?');
 
       for (let i = 0; i < 3; i++) {
-        enqueueServerStream(1, serverStreaming.method, response1);
-        enqueueServerStream(1, serverStreaming.method, response2);
-        enqueueResponse(1, serverStreaming.method, Status.ABORTED);
+        enqueueServerStream(
+          1,
+          serverStreaming.method,
+          response1,
+          serverStreaming.rpcs.nextCallId,
+        );
+        enqueueServerStream(
+          1,
+          serverStreaming.method,
+          response2,
+          serverStreaming.rpcs.nextCallId,
+        );
+        enqueueResponse(
+          1,
+          serverStreaming.method,
+          Status.ABORTED,
+          serverStreaming.rpcs.nextCallId,
+        );
 
         const onNext = jest.fn();
         const onCompleted = jest.fn();
@@ -478,7 +575,12 @@ describe('RPC', () => {
 
     it('non-blocking cancel', () => {
       const testResponse = newResponse('!!!');
-      enqueueServerStream(1, serverStreaming.method, testResponse);
+      enqueueServerStream(
+        1,
+        serverStreaming.method,
+        testResponse,
+        serverStreaming.rpcs.nextCallId,
+      );
 
       const onNext = jest.fn();
       const onCompleted = jest.fn();
@@ -493,8 +595,18 @@ describe('RPC', () => {
       expect(lastRequest().getStatus()).toEqual(Status.CANCELLED);
 
       // Ensure the RPC can be called after being cancelled.
-      enqueueServerStream(1, serverStreaming.method, testResponse);
-      enqueueResponse(1, serverStreaming.method, Status.OK);
+      enqueueServerStream(
+        1,
+        serverStreaming.method,
+        testResponse,
+        serverStreaming.rpcs.nextCallId,
+      );
+      enqueueResponse(
+        1,
+        serverStreaming.method,
+        Status.OK,
+        serverStreaming.rpcs.nextCallId,
+      );
       call = serverStreaming.invoke(newRequest(), onNext, onCompleted, onError);
       expect(onNext).toHaveBeenNthCalledWith(2, testResponse);
       expect(onError).not.toHaveBeenCalled();
@@ -527,7 +639,13 @@ describe('RPC', () => {
         expect(stream.completed).toBe(false);
 
         // Enqueue the server response to be sent after the next message.
-        enqueueResponse(1, clientStreaming.method, Status.OK, testResponse);
+        enqueueResponse(
+          1,
+          clientStreaming.method,
+          Status.OK,
+          stream.callId,
+          testResponse,
+        );
 
         stream.send(newRequest(32));
         expect(lastRequest().getType()).toEqual(PacketType.CLIENT_STREAM);
@@ -545,7 +663,13 @@ describe('RPC', () => {
       const response = newResponse('!!!');
 
       for (let i = 0; i < 3; i++) {
-        enqueueResponse(1, clientStreaming.method, Status.OK, response);
+        enqueueResponse(
+          1,
+          clientStreaming.method,
+          Status.OK,
+          clientStreaming.rpcs.nextCallId,
+          response,
+        );
 
         const onNext = jest.fn();
         const onCompleted = jest.fn();
@@ -583,7 +707,13 @@ describe('RPC', () => {
         expect(stream.completed).toBe(false);
 
         // Enqueue the server response to be sent after the next message.
-        enqueueResponse(1, clientStreaming.method, Status.OK, testResponse);
+        enqueueResponse(
+          1,
+          clientStreaming.method,
+          Status.OK,
+          stream.callId,
+          testResponse,
+        );
 
         stream.finishAndWait();
         expect(lastRequest().getType()).toEqual(
@@ -619,6 +749,7 @@ describe('RPC', () => {
           clientStreaming.method,
           Status.INVALID_ARGUMENT,
           Status.OK,
+          stream.callId,
         );
 
         stream.send(newRequest());
@@ -643,6 +774,7 @@ describe('RPC', () => {
           clientStreaming.method,
           Status.INVALID_ARGUMENT,
           Status.OK,
+          stream.callId,
         );
 
         await stream
@@ -678,6 +810,7 @@ describe('RPC', () => {
         1,
         clientStreaming.method,
         Status.UNAVAILABLE,
+        clientStreaming.rpcs.nextCallId,
         enqueuedResponse,
       );
 
@@ -690,7 +823,13 @@ describe('RPC', () => {
     });
 
     it('non-blocking finish after error', async () => {
-      enqueueError(1, clientStreaming.method, Status.UNAVAILABLE, Status.OK);
+      enqueueError(
+        1,
+        clientStreaming.method,
+        Status.UNAVAILABLE,
+        Status.OK,
+        clientStreaming.rpcs.nextCallId,
+      );
       const stream = clientStreaming.invoke();
 
       for (let i = 0; i < 3; i++) {
@@ -705,15 +844,6 @@ describe('RPC', () => {
             expect(stream.response).toBeUndefined();
           });
       }
-    });
-
-    it('non-blocking duplicate calls first is cancelled', () => {
-      const firstCall = clientStreaming.invoke();
-      expect(firstCall.completed).toBe(false);
-
-      const secondCall = clientStreaming.invoke();
-      expect(firstCall.error).toEqual(Status.CANCELLED);
-      expect(secondCall.completed).toBe(false);
     });
   });
 
@@ -732,7 +862,12 @@ describe('RPC', () => {
       const testRequests = [newRequest(123), newRequest(456)];
 
       sendResponsesAfterPackets = 3;
-      enqueueResponse(1, bidiStreaming.method, Status.NOT_FOUND);
+      enqueueResponse(
+        1,
+        bidiStreaming.method,
+        Status.NOT_FOUND,
+        bidiStreaming.rpcs.nextCallId,
+      );
 
       const results = await bidiStreaming.call(testRequests);
       expect(results[0]).toEqual(Status.NOT_FOUND);
@@ -741,7 +876,13 @@ describe('RPC', () => {
 
     it('blocking server error', async () => {
       const testRequests = [newRequest(123)];
-      enqueueError(1, bidiStreaming.method, Status.NOT_FOUND, Status.OK);
+      enqueueError(
+        1,
+        bidiStreaming.method,
+        Status.NOT_FOUND,
+        Status.OK,
+        bidiStreaming.rpcs.nextCallId,
+      );
 
       await bidiStreaming
         .call(testRequests)
@@ -770,8 +911,8 @@ describe('RPC', () => {
         expect(stream.completed).toBe(false);
         expect(testResponses).toEqual([]);
 
-        enqueueServerStream(1, bidiStreaming.method, rep1);
-        enqueueServerStream(1, bidiStreaming.method, rep2);
+        enqueueServerStream(1, bidiStreaming.method, rep1, stream.callId);
+        enqueueServerStream(1, bidiStreaming.method, rep2, stream.callId);
 
         stream.send(newRequest(66));
         expect(lastRequest().getType()).toEqual(PacketType.CLIENT_STREAM);
@@ -779,7 +920,7 @@ describe('RPC', () => {
         expect(stream.completed).toBe(false);
         expect(testResponses).toEqual([rep1, rep2]);
 
-        enqueueResponse(1, bidiStreaming.method, Status.OK);
+        enqueueResponse(1, bidiStreaming.method, Status.OK, stream.callId);
 
         stream.send(newRequest(77));
         expect(stream.completed).toBe(true);
@@ -795,9 +936,24 @@ describe('RPC', () => {
       const response2 = newResponse('?');
 
       for (let i = 0; i < 3; i++) {
-        enqueueServerStream(1, bidiStreaming.method, response1);
-        enqueueServerStream(1, bidiStreaming.method, response2);
-        enqueueResponse(1, bidiStreaming.method, Status.OK);
+        enqueueServerStream(
+          1,
+          bidiStreaming.method,
+          response1,
+          bidiStreaming.rpcs.nextCallId,
+        );
+        enqueueServerStream(
+          1,
+          bidiStreaming.method,
+          response2,
+          bidiStreaming.rpcs.nextCallId,
+        );
+        enqueueResponse(
+          1,
+          bidiStreaming.method,
+          Status.OK,
+          bidiStreaming.rpcs.nextCallId,
+        );
 
         const onNext = jest.fn();
         const onCompleted = jest.fn();
@@ -833,13 +989,19 @@ describe('RPC', () => {
         });
         expect(stream.completed).toBe(false);
 
-        enqueueServerStream(1, bidiStreaming.method, response);
+        enqueueServerStream(1, bidiStreaming.method, response, stream.callId);
 
         stream.send(newRequest(55));
         expect(stream.completed).toBe(false);
         expect(testResponses).toEqual([response]);
 
-        enqueueError(1, bidiStreaming.method, Status.OUT_OF_RANGE, Status.OK);
+        enqueueError(
+          1,
+          bidiStreaming.method,
+          Status.OUT_OF_RANGE,
+          Status.OK,
+          stream.callId,
+        );
 
         stream.send(newRequest(999));
         expect(stream.completed).toBe(true);
@@ -867,6 +1029,7 @@ describe('RPC', () => {
           bidiStreaming.method,
           Status.INVALID_ARGUMENT,
           Status.OK,
+          stream.callId,
         );
 
         await stream
@@ -894,8 +1057,18 @@ describe('RPC', () => {
 
     it('non-blocking finish after completed', async () => {
       const response = newResponse('!?');
-      enqueueServerStream(1, bidiStreaming.method, response);
-      enqueueResponse(1, bidiStreaming.method, Status.UNAVAILABLE);
+      enqueueServerStream(
+        1,
+        bidiStreaming.method,
+        response,
+        bidiStreaming.rpcs.nextCallId,
+      );
+      enqueueResponse(
+        1,
+        bidiStreaming.method,
+        Status.UNAVAILABLE,
+        bidiStreaming.rpcs.nextCallId,
+      );
 
       const stream = bidiStreaming.invoke();
       const result = await stream.finishAndWait();
@@ -907,8 +1080,19 @@ describe('RPC', () => {
 
     it('non-blocking finish after error', async () => {
       const response = newResponse('!?');
-      enqueueServerStream(1, bidiStreaming.method, response);
-      enqueueError(1, bidiStreaming.method, Status.UNAVAILABLE, Status.OK);
+      enqueueServerStream(
+        1,
+        bidiStreaming.method,
+        response,
+        bidiStreaming.rpcs.nextCallId,
+      );
+      enqueueError(
+        1,
+        bidiStreaming.method,
+        Status.UNAVAILABLE,
+        Status.OK,
+        bidiStreaming.rpcs.nextCallId,
+      );
 
       const stream = bidiStreaming.invoke();
 
@@ -923,13 +1107,6 @@ describe('RPC', () => {
             expect(stream.error).toEqual(Status.UNAVAILABLE);
           });
       }
-    });
-    it('non-blocking duplicate calls first is cancelled', () => {
-      const firstCall = bidiStreaming.invoke();
-      expect(firstCall.completed).toBe(false);
-      const secondCall = bidiStreaming.invoke();
-      expect(firstCall.error).toEqual(Status.CANCELLED);
-      expect(secondCall.completed).toBe(false);
     });
   });
 });

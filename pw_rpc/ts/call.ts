@@ -56,6 +56,7 @@ export class Call {
 
   private rpcs: PendingCalls;
   private rpc: Rpc;
+  readonly callId: number;
 
   private onNext: Callback;
   private onCompleted: Callback;
@@ -78,6 +79,7 @@ export class Call {
     this.onNext = onNext;
     this.onCompleted = onCompleted;
     this.onError = onError;
+    this.callId = rpcs.allocateCallId();
   }
 
   /* Calls the RPC. This must be called immediately after construction. */
@@ -201,7 +203,7 @@ export class Call {
     }
 
     this.error = Status.CANCELLED;
-    return this.rpcs.sendCancel(this.rpc);
+    return this.rpcs.sendCancel(this.rpc, this.callId);
   }
 
   private checkErrors(): void {
@@ -241,7 +243,7 @@ export class Call {
     if (this.status !== undefined) {
       throw new RpcError(this.rpc, Status.FAILED_PRECONDITION);
     }
-    this.rpcs.sendClientStream(this.rpc, request);
+    this.rpcs.sendClientStream(this.rpc, request, this.callId);
   }
 
   protected finishClientStream(requests: Message[]) {
@@ -250,7 +252,7 @@ export class Call {
     }
 
     if (!this.completed) {
-      this.rpcs.sendClientStreamEnd(this.rpc);
+      this.rpcs.sendClientStreamEnd(this.rpc, this.callId);
     }
   }
 }

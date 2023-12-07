@@ -25,8 +25,13 @@ class FakeRpc {
   readonly service: any = undefined;
   readonly method: any = undefined;
 
-  idSet: [number, number, number] = [1, 2, 3];
-  idString = '1.2.3';
+  getIdSet(callId: number): [number, number, number, number] {
+    return [1, 2, 3, callId];
+  }
+
+  getIdString(callId: number): string {
+    return '1.2.3.' + callId;
+  }
 }
 
 describe('Call', () => {

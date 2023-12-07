@@ -281,7 +281,7 @@ export class Client {
       status = Status.DATA_LOSS;
     }
 
-    const call = this.rpcs.getPending(rpc, status);
+    const call = this.rpcs.getPending(rpc, packet.getCallId(), status);
     if (call === undefined) {
       this.sendClientError(channelClient, packet, Status.FAILED_PRECONDITION);
       console.debug(`Discarding response for ${rpc}, which is not pending`);

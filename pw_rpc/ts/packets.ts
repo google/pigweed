@@ -21,8 +21,8 @@ import {
 } from 'pigweedjs/protos/pw_rpc/internal/packet_pb';
 import { Status } from 'pigweedjs/pw_status';
 
-// Channel, Service, Method
-type idSet = [number, number, number];
+// Channel, Service, Method, CallId
+type idSet = [number, number, number, number];
 
 export function decode(data: Uint8Array): RpcPacket {
   return RpcPacket.deserializeBinary(data);
@@ -45,6 +45,7 @@ export function encodeClientError(
   errorPacket.setChannelId(packet.getChannelId());
   errorPacket.setMethodId(packet.getMethodId());
   errorPacket.setServiceId(packet.getServiceId());
+  errorPacket.setCallId(packet.getCallId());
   errorPacket.setStatus(status);
   return errorPacket.serializeBinary();
 }
@@ -55,6 +56,7 @@ export function encodeClientStream(ids: idSet, message: Message): Uint8Array {
   streamPacket.setChannelId(ids[0]);
   streamPacket.setServiceId(ids[1]);
   streamPacket.setMethodId(ids[2]);
+  streamPacket.setCallId(ids[3]);
   const msgSerialized = (message as any)['serializeBinary']();
   streamPacket.setPayload(msgSerialized);
   return streamPacket.serializeBinary();
@@ -66,6 +68,7 @@ export function encodeClientStreamEnd(ids: idSet): Uint8Array {
   streamEnd.setChannelId(ids[0]);
   streamEnd.setServiceId(ids[1]);
   streamEnd.setMethodId(ids[2]);
+  streamEnd.setCallId(ids[3]);
   return streamEnd.serializeBinary();
 }
 
@@ -80,6 +83,7 @@ export function encodeRequest(ids: idSet, request?: Message): Uint8Array {
   packet.setChannelId(ids[0]);
   packet.setServiceId(ids[1]);
   packet.setMethodId(ids[2]);
+  packet.setCallId(ids[3]);
   packet.setPayload(payload);
   return packet.serializeBinary();
 }
@@ -90,6 +94,7 @@ export function encodeResponse(ids: idSet, response: Message): Uint8Array {
   packet.setChannelId(ids[0]);
   packet.setServiceId(ids[1]);
   packet.setMethodId(ids[2]);
+  packet.setCallId(ids[3]);
   const msgSerialized = (response as any)['serializeBinary']();
   packet.setPayload(msgSerialized);
   return packet.serializeBinary();
@@ -102,5 +107,6 @@ export function encodeCancel(ids: idSet): Uint8Array {
   packet.setChannelId(ids[0]);
   packet.setServiceId(ids[1]);
   packet.setMethodId(ids[2]);
+  packet.setCallId(ids[3]);
   return packet.serializeBinary();
 }
