@@ -14,9 +14,9 @@
 
 #include "pw_metric/metric_service_nanopb.h"
 
-#include "gtest/gtest.h"
 #include "pw_log/log.h"
 #include "pw_rpc/nanopb/test_method_context.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::metric {
 namespace {

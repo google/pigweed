@@ -20,10 +20,10 @@
 #include <optional>
 #include <string_view>
 
-#include "gtest/gtest.h"
 #include "pw_function/function.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::multisink {
 using Drain = MultiSink::Drain;

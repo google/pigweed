@@ -18,12 +18,12 @@
 #include <cstddef>
 #include <memory>
 
-#include "gtest/gtest.h"
 #include "pw_allocator/allocator_metric_proxy_for_test.h"
 #include "pw_allocator/split_free_list_allocator.h"
 #include "pw_bytes/span.h"
 #include "pw_multibuf/chunk.h"
 #include "pw_status/status.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::multibuf::internal {
 

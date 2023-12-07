@@ -14,13 +14,13 @@
 
 #include "pw_metric/metric_service_pwpb.h"
 
-#include "gtest/gtest.h"
 #include "pw_log/log.h"
 #include "pw_metric_proto/metric_service.pwpb.h"
 #include "pw_protobuf/decoder.h"
 #include "pw_rpc/pwpb/test_method_context.h"
 #include "pw_rpc/raw/test_method_context.h"
 #include "pw_span/span.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::metric {
 namespace {

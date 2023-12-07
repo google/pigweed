@@ -700,7 +700,7 @@ class _CcLanguageGenerator(_LanguageGenerator):
         test_source.line(
             f'#include "{main_header.path.relative_to(self._public_dir)}"\n'
         )
-        test_source.line('#include "gtest/gtest.h"\n')
+        test_source.line('#include "pw_unit_test/framework.h"\n')
         test_source.line(f'namespace {namespace} {{')
         test_source.line('namespace {\n')
         test_source.line(

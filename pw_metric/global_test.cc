@@ -14,9 +14,9 @@
 
 #include "pw_metric/global.h"
 
-#include "gtest/gtest.h"
 #include "pw_log/log.h"
 #include "pw_metric/metric.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw {
 namespace metric {

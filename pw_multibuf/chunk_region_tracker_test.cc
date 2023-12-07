@@ -17,10 +17,10 @@
 #include <cstddef>
 #include <optional>
 
-#include "gtest/gtest.h"
 #include "pw_allocator/simple_allocator.h"
 #include "pw_multibuf/chunk.h"
 #include "pw_status/status.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::multibuf {
 namespace {

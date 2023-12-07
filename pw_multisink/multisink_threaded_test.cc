@@ -15,7 +15,6 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "gtest/gtest.h"
 #include "pw_containers/vector.h"
 #include "pw_multisink/multisink.h"
 #include "pw_multisink/test_thread.h"
@@ -23,6 +22,7 @@
 #include "pw_string/string_builder.h"
 #include "pw_thread/thread.h"
 #include "pw_thread/yield.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::multisink {
 namespace {

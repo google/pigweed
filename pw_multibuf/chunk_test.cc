@@ -20,9 +20,9 @@
 #include <ranges>
 #endif  // __cplusplus >= 202002L
 
-#include "gtest/gtest.h"
 #include "pw_multibuf/chunk_region_tracker.h"
 #include "pw_multibuf/internal/test_utils.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::multibuf {
 namespace {

@@ -14,7 +14,7 @@
 
 // Include all of the provided headers, even if they aren't tested.
 
-#include "gtest/gtest.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::minimal_cpp_stdlib {
 

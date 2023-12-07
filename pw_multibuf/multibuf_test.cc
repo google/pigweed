@@ -14,10 +14,10 @@
 
 #include "pw_multibuf/multibuf.h"
 
-#include "gtest/gtest.h"
 #include "pw_bytes/suffix.h"
 #include "pw_multibuf/chunk_region_tracker.h"
 #include "pw_multibuf/internal/test_utils.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::multibuf {
 namespace {
