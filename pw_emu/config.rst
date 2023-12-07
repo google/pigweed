@@ -5,15 +5,10 @@ Configuration
 =============
 .. pigweed-module-subpage::
    :name: pw_emu
-   :tagline: Emulators frontend
+   :tagline: pw_emu: Flexible emulators frontend
 
-The emulators configuration is part of the Pigweed root configuration file
-(``pigweed.json``) and reside in the ``pw:pw_emu`` namespace.
-
-Projects can define emulation targets in the Pigweed root configuration file and
-can also import predefined targets from other files (configuration
-fragments). The ``pw_emu`` module provides a set of targets as examples and to
-promote reusability.
+``pw_emu`` configuration is done in the ``pw.pw_emu`` namespace of
+:ref:`pigweed.json <seed-0101>`.
 
 The target configuration allows users to start other programs before
 or after starting the main emulator process. This allows extending the
@@ -23,133 +18,221 @@ emulate just the serial port while the HCI emulation done is in an
 external program (e.g. `bumble <https://google.github.io/bumble>`_,
 `netsim <https://android.googlesource.com/platform/tools/netsim>`_).
 
+.. _module-pw_emu-config-fragments:
+
+-----------------------
+Configuration fragments
+-----------------------
+Emulation targets can be stored in JSON files outside of ``pigweed.json``.
+These are known as *configuration fragments*. ``pigweed.json`` imports these
+fragments via ``target_files``.
+
+Example configuration fragments:
+
+* `//pw_emu/qemu-lm3s6965evb.json <https://cs.opensource.google/pigweed/pigweed/+/main:pw_emu/qemu-lm3s6965evb.json>`_
+* `//pw_emu/renode-stm32f4_discovery.json <https://cs.opensource.google/pigweed/pigweed/+/main:pw_emu/renode-stm32f4_discovery.json>`_
+
 .. _module-pw_emu-config-options:
 
 -----------------------
 Configuration reference
 -----------------------
-* ``gdb``: top level gdb command as a list of strings
-   (e.g. ``[gdb-multiarch]``); this can be overridden at the target level
+The following list explains the valid schema for the ``pw_emu`` dict in
+:ref:`pigweed.json <seed-0101>`.
 
-* ``target_files``: list of paths to json files to include targets from; the
-  target configuration should be placed under a ``target`` key; if paths are
-  relative they are interpreted relative to the project root directory
+.. caution::
 
-* ``qemu``: options for the QEMU emulator:
+   All the values below should be nested under ``pw.pw_emu`` in ``pigweed.json``.
+   For example, the top-level ``gdb`` item in the list below actually lives
+   here:
 
-  * ``executable`: command used to start QEMU (e.g. `system-arm-qemu``); this
-    can be overridden at the target level
+   .. code-block:: json
 
-  * ``args``: list of command line options to pass directly to QEMU
-    when starting an emulator instance; can be *extended* at the
-    target level
+      {
+        "pw": {
+          "pw_emu": {
+            "gdb": ["..."]
+          }
+        }
+      }
 
-  * ``channels``: options for channel configuration:
+.. Note to maintainers: Multi-level unordered lists in reST are very finicky.
+.. The syntax below is the only one that works (e.g. spaces are significant).
 
-    * ``type``: optional type for channels, see channel types below
+* ``gdb`` (list of strings) - The default GDB command to run.
+  Can be overridden at the target level.
 
-    * ``gdb``, ``qmp``, ``monitor``: optional channel configuration entries
+* ``target_files`` (list of strings) - Relative or absolute paths
+  to :ref:`module-pw_emu-config-fragments`. Relative paths are
+  interpreted relative to the project root directory.
 
-      * ``type``: channel type, see channel types below
+* ``qemu`` (dict) - QEMU options.
 
-* ``renode``: options for the renode emulator:
+  * ``executable`` (string) - The default command for starting
+    QEMU, e.g. ``system-arm-qemu``. Can be overridden at the target level.
 
-  * ``executable``: command used to start renode (e.g. "system-arm-qemu"); this
-    can be overridden at the target level
+  * ``args`` (list of strings) - Command line options to pass
+    directly to QEMU when ``executable`` is invoked. Can be **extended** (not
+    overridden) at the target level.
 
-  * ``channels``: options for channel configuration:
+  * ``channels`` (dict) - Channel options.
 
-    * ``terminals``: exposed terminal devices (serial ports) generic options:
+    * ``type`` (string) - The :ref:`channel type
+      <module-pw_emu-config-channel-types>`. Optional.
 
-      * ``type``: optional type for channels, see channel types below
+    * ``gdb`` (dict) - Channel-specific GDB options. Optional.
 
-* ``targets``: target configurations with target names as keys:
+      * ``type`` (string) - The :ref:`channel type
+        <module-pw_emu-config-channel-types>`. Optional.
 
-  * ``<target-name>``: target options:
+    * ``qmp`` (dict) - Channel-specific QMP options. Optional.
 
-    * ``gdb``: gdb command as a list of strings (e.g. ``[arm-none-eabi-gdb]``)
+      * ``type`` (string) - The :ref:`channel type
+        <module-pw_emu-config-channel-types>`. Optional.
 
-    * ``pre-start-cmds``: commands to run before the emulator is started
+    * ``monitor`` (dict) - Channel-specific Monitor options. Optional.
 
-      * ``<name>``: command for starting the process as a list of strings
+      * ``type`` (string) - The :ref:`channel type
+        <module-pw_emu-config-channel-types>`. Optional.
 
-    * ``post-start-cmds``: processes to run after the emulator is started
+* ``renode`` (dict) - Renode options.
 
-      * ``<name>``: command for starting the process as a list of strings
+  * ``executable`` (string) - The default command for starting Renode. Can be
+    overridden at the target level.
 
-    * ``qemu``: options for the QEMU emulator:
+  * ``channels`` (dict) - Channel options.
 
-      * ``executable``: command used to start QEMU (e.g. ``system-arm-qemu``)
+    * ``terminals`` (dict) - Generic options for exposed terminal devices, e.g.
+      serial ports.
 
-      * ``args``: list of command line options passed directly to QEMU when
-        starting this target
+      * ``type`` (string) - The :ref:`channel type
+        <module-pw_emu-config-channel-types>`. Optional.
 
-      * ``machine``: QEMU machine name; passed to the QEMU ``-machine`` command
-        line argument
+* ``targets`` (dict) - Target configuration. Each key of this dict represents
+  a target name.
 
-      * ``channels``: exposed channels:
+  * ``<target-name>`` (dict) - Configuration for a single target. Replace
+    ``<target-name>`` with a real target name, e.g. ``qemu-lm3s6965evb``.
 
-	* ``chardevs``: exposed QEMU chardev devices (typically serial
-          ports):
+    * ``gdb`` (list of strings) - The GDB command to run for this target.
+      Overrides the top-level ``gdb`` command.
 
-	  * ``<channel-name>``: channel options:
+    * ``pre-start-cmds`` (dict) - Commands to run before the emulator
+      is started. See also :ref:`module-pw_emu-config-pre-post-substitutions`.
 
-	    * ``id``: the id of the QEMU chardev
+      * ``<command-id>`` (list of strings) - A pre-start command.
+        Replace ``<command-id>`` with a descriptive name for the command.
 
-	    * ``type``: optional type of the channel see channel types below
+    * ``post-start-cmds`` (dict) - Commands to run after the emulator
+      is started. See also :ref:`module-pw_emu-config-pre-post-substitutions`.
 
-	* ``gdb``, ``qmp`, ``monitor``: optional channel configuration
-          entries
+      * ``<command-id>`` (list of strings) - A post-start command.
+        Replace ``<command-id>`` with a descriptive name.
 
-	  * ``type``: channel type, see channel types below
+    * ``qemu`` (dict) - QEMU options for this target. Overrides the top-level
+      ``qemu`` command.
 
-    * ``renode``: options for the renode emulator:
+      * ``executable`` (string) - The command for starting QEMU on this target.
+        Required.
 
-      * ``executable``: command used to start renode
+      * ``machine`` (string) - The QEMU ``-machine`` value for this target,
+        e.g. ``stm32vldiscovery``.  See ``qemu-system-<arch> -machine help``
+        for a list of supported machines. Required.
 
-      * ``machine``: machine script to use when running this target
+      * ``args`` (list of strings) - Command line options to pass
+        directly to QEMU when ``executable`` is invoked. This value **extends**
+        the top-level ``args`` value; it does *not* override it. Optional.
 
-      * ``channels``: exposed channels:
+      * ``channels`` (dict) - Channel options for this target.
 
-	* ``terminals``: exposed terminal devices (serial ports):
+	* ``chardevs`` (dict) - QEMU chardev device configuration. Usually
+          serial ports.
 
-	  * ``<channel-name>``: channel options:
+	  * ``<channel-name>`` (dict) - The configuration for a single channel.
+            Replace ``<channel-name>`` with a descriptive name.
 
-	    * ``device-path``: device path
+	    * ``id`` (string) - The ID of the QEMU chardev.
 
-	    * ``type``: optional type of the channel see channel types below
+            * ``type`` (string) - The :ref:`channel type
+              <module-pw_emu-config-channel-types>`. Optional.
 
+            * ``gdb`` (dict) - Channel-specific GDB options. Optional.
+
+              * ``type`` (string) - The :ref:`channel type
+                <module-pw_emu-config-channel-types>`. Optional.
+
+            * ``qmp`` (dict) - Channel-specific QMP options. Optional.
+
+              * ``type`` (string) - The :ref:`channel type
+                <module-pw_emu-config-channel-types>`. Optional.
+
+            * ``monitor`` (dict) - Channel-specific Monitor options. Optional.
+
+              * ``type`` (string) - The :ref:`channel type
+                <module-pw_emu-config-channel-types>`. Optional.
+
+    * ``renode`` (dict) - Renode options for this target.
+
+      * ``executable`` (string) - The command for starting Renode on this target,
+        e.g. ``renode``.
+
+      * ``machine`` (string) - The Renode script to use for machine definitions,
+        e.g. ``platforms/boards/stm32f4_discovery-kit.repl``.
+
+      * ``channels`` (dict) - Channel options.
+
+        * ``terminals`` (dict) - Exposed terminal devices, usually serial ports.
+
+          * ``<device-name>`` (dict) - Device configuration. Replace ``<device-name>``
+            with a descriptive name, e.g. ``serial0``.
+
+            * ``device-path`` (string) - The path to the device, e.g.
+              ``sysbus.usart1``.
+
+            * ``type`` (string) - The :ref:`channel type
+              <module-pw_emu-config-channel-types>`. Optional.
+
+.. _module-pw_emu-config-channel-types:
+
+Channel types
+=============
 The following channel types are currently supported:
 
-* ``pty``: supported on Mac and Linux; renode only supports ptys for
-  ``terminals`` channels
+* ``pty`` - Full support on macOS and Linux. Renode only supports PTYs for
+  ``terminals``.
 
-* ``tcp``: supported on all platforms and for all channels; it is also the
-  default type if no channel type is configured
+* ``tcp`` - Full support on all platforms and channels. This is the default
+  value if no channel type is configured.
 
-The channel configuration can be set at multiple levels: emulator, target, or
-specific channel. The channel configuration takes precedence, then the target
-channel configuration then the emulator channel configuration.
+The channel configuration can be set at the emulator, target, or channel level.
+The channel level takes precedence, then the target level, then the emulator
+level.
 
+.. _module-pw_emu-config-pre-post-substitutions:
+
+Pre-start and post-start expression substitutions
+=================================================
 The following expressions are substituted in the ``pre-start-cmd`` and
 ``post-start-cmd`` strings:
 
-* ``$pw_emu_wdir{relative-path}``: replaces statement with an absolute path
-  by concatenating the emulator's working directory with the given relative path
+* ``$pw_emu_wdir{relative-path}`` - Replaces the statement with an absolute path
+  by concatenating the emulator's working directory with the given relative path.
 
-* ``$pw_emu_channel_port{channel-name}``: replaces the statement with the port
-  number for the given channel name; the channel type should be ``tcp``
+* ``$pw_emu_channel_port{channel-name}`` - Replaces the statement with the port
+  number for the given channel name. The channel type should be ``tcp``.
 
-* ``$pw_emu_channel_host{channel-name}``: replaces the statement with the host
-  for the given channel name; the channel type should be ``tcp``
+* ``$pw_emu_channel_host{channel-name}`` - Replaces the statement with the host
+  for the given channel name. The channel type should be ``tcp``.
 
-* ``$pw_emu_channel_path{channel-name}``: replaces the statement with the path
-  for the given channel name; the channel type should be ``pty``
+* ``$pw_emu_channel_path{channel-name}`` - Replaces the statement with the path
+  for the given channel name. The channel type should be ``pty``.
 
+.. _module-pw_emu-config-string-substitutions:
 
-The followng expressions are substituted in configuration strings, including
-configuration framents:
+Configuration string substitutions
+==================================
+The following expressions are substituted in configuration strings, including
+:ref:`module-pw_emu-config-fragments`:
 
-* ``$pw_env{envvar}``: replaces statement with the value of the ``envar``
-  environment variable; if the variable does not exists in the environment a
-  configuration error is raised
+* ``$pw_env{envvar}`` - Replaces the statement with the value of ``envvar``.
+  If ``envvar`` doesn't exist a configuration error is raised.

@@ -33,21 +33,21 @@ _TERM_CMD = ['python', '-m', 'serial', '--raw']
 
 
 def _cmd_gdb_cmds(emu, args: argparse.Namespace) -> None:
-    """Run gdb commands in batch mode."""
+    """Run ``gdb`` commands in batch mode."""
 
     emu.run_gdb_cmds(args.gdb_cmd, executable=args.executable, pause=args.pause)
 
 
 def _cmd_load(emu: Emulator, args: argparse.Namespace) -> None:
-    """Load an executable image via gdb start executing it if pause is
-    not set"""
+    """Load an executable image via ``gdb`` and start executing it if
+    ``--pause`` is not set"""
 
     args.gdb_cmd = ['load']
     _cmd_gdb_cmds(emu, args)
 
 
 def _cmd_start(emu: Emulator, args: argparse.Namespace) -> None:
-    """Launch the emulator and start executing, unless pause is set."""
+    """Launch the emulator and start executing, unless ``--pause`` is set."""
 
     if args.runner:
         emu.set_emu(args.runner)
@@ -103,7 +103,7 @@ def _get_miniterm(emu: Emulator, chan: str) -> Miniterm:
 
 def _cmd_run(emu: Emulator, args: argparse.Namespace) -> None:
     """Start the emulator and connect the terminal to a channel. Stop
-    the emulator when exiting the terminal"""
+    the emulator when exiting the terminal."""
 
     emu.start(
         target=args.target,
@@ -137,7 +137,7 @@ def _cmd_run(emu: Emulator, args: argparse.Namespace) -> None:
 
 
 def _cmd_restart(emu: Emulator, args: argparse.Namespace) -> None:
-    """Restart the emulator and start executing, unless pause is set."""
+    """Restart the emulator and start executing, unless ``--pause`` is set."""
 
     if emu.running():
         emu.stop()
@@ -145,7 +145,7 @@ def _cmd_restart(emu: Emulator, args: argparse.Namespace) -> None:
 
 
 def _cmd_stop(emu: Emulator, _args: argparse.Namespace) -> None:
-    """Stop the emulator"""
+    """Stop the emulator."""
 
     emu.stop()
 
@@ -157,7 +157,7 @@ def _cmd_reset(emu: Emulator, _args: argparse.Namespace) -> None:
 
 
 def _cmd_gdb(emu: Emulator, args: argparse.Namespace) -> None:
-    """Start a gdb interactive session"""
+    """Start a ``gdb`` interactive session."""
 
     executable = args.executable if args.executable else ""
 
@@ -223,7 +223,10 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         '-i',
         '--instance',
-        help='instance to use (default: %(default)s)',
+        help=(
+            'Run multiple instances simultaneously by assigning each instance '
+            'an ID (default: ``%(default)s``)'
+        ),
         type=str,
         metavar='STRING',
         default='default',
@@ -231,14 +234,17 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         '-C',
         '--working-dir',
-        help='path to working directory (default: %(default)s)',
+        help=(
+            'Absolute path to the working directory '
+            '(default: ``%(default)s``)'
+        ),
         type=Path,
         default=os.getenv('PW_EMU_WDIR'),
     )
     parser.add_argument(
         '-c',
         '--config',
-        help='path config file (default: %(default)s)',
+        help='Absolute path to config file (default: ``%(default)s``)',
         type=str,
         default=None,
     )
@@ -264,37 +270,37 @@ def get_parser() -> argparse.ArgumentParser:
             '--file',
             '-f',
             metavar='FILE',
-            help='file to load before starting',
+            help='File to load before starting',
         )
         subparser.add_argument(
             '--runner',
             '-r',
-            help='emulator to use, automatically detected if not set',
+            help='The emulator to use (automatically detected if not set)',
             choices=[None, 'qemu', 'renode'],
             default=None,
         )
         subparser.add_argument(
             '--args',
             '-a',
-            help='options to pass to the emulator',
+            help='Options to pass to the emulator',
         )
         subparser.add_argument(
             '--pause',
             '-p',
             action='store_true',
-            help='pause the emulator after starting it',
+            help='Pause the emulator after starting it',
         )
         subparser.add_argument(
             '--debug',
             '-d',
             action='store_true',
-            help='start the emulator in debug mode',
+            help='Start the emulator in debug mode',
         )
         subparser.add_argument(
             '--foreground',
             '-F',
             action='store_true',
-            help='start the emulator in foreground mode',
+            help='Start the emulator in foreground mode',
         )
 
     run = add_cmd('run', _cmd_run)
@@ -305,17 +311,17 @@ def get_parser() -> argparse.ArgumentParser:
     run.add_argument(
         'file',
         metavar='FILE',
-        help='file to load before starting',
+        help='File to load before starting',
     )
     run.add_argument(
         '--args',
         '-a',
-        help='options to pass to the emulator',
+        help='Options to pass to the emulator',
     )
     run.add_argument(
         '--channel',
         '-n',
-        help='channel to connect the terminal to',
+        help='Channel to connect the terminal to',
     )
 
     stop = add_cmd('stop', _cmd_stop)
@@ -324,19 +330,19 @@ def get_parser() -> argparse.ArgumentParser:
     load.add_argument(
         'executable',
         metavar='FILE',
-        help='file to load via gdb',
+        help='File to load via ``gdb``',
     )
     load.add_argument(
         '--pause',
         '-p',
-        help='pause the emulator after loading the file',
+        help='Pause the emulator after loading the file',
         action='store_true',
     )
     load.add_argument(
         '--offset',
         '-o',
         metavar='ADDRESS',
-        help='address to load the file at',
+        help='Address to load the file at',
     )
 
     reset = add_cmd('reset', _cmd_reset)
@@ -346,62 +352,62 @@ def get_parser() -> argparse.ArgumentParser:
         '--executable',
         '-e',
         metavar='FILE',
-        help='file to use for the debugging session',
+        help='File to use for the debugging session',
     )
 
     prop_ls = add_cmd('prop-ls', _cmd_prop_ls)
     prop_ls.add_argument(
         'path',
-        help='path of the emulator object',
+        help='Absolute path to the emulator object',
     )
 
     prop_get = add_cmd('prop-get', _cmd_prop_get)
     prop_get.add_argument(
         'path',
-        help='path of the emulator object',
+        help='Absolute path to the emulator object',
     )
     prop_get.add_argument(
         'property',
-        help='name of the object property',
+        help='Name of the object property',
     )
 
     prop_set = add_cmd('prop-set', _cmd_prop_set)
     prop_set.add_argument(
         'path',
-        help='path of the emulator object',
+        help='Absolute path to the emulator object',
     )
     prop_set.add_argument(
         'property',
-        help='name of the object property',
+        help='Name of the object property',
     )
     prop_set.add_argument(
         'value',
-        help='value to set for the object property',
+        help='Value to set for the object property',
     )
 
     gdb_cmds = add_cmd('gdb-cmds', _cmd_gdb_cmds)
     gdb_cmds.add_argument(
         '--pause',
         '-p',
-        help='do not resume execution after running the commands',
+        help='Do not resume execution after running the commands',
         action='store_true',
     )
     gdb_cmds.add_argument(
         '--executable',
         '-e',
         metavar='FILE',
-        help='executable to use while running the gdb commands',
+        help='Executable to use while running ``gdb`` commands',
     )
     gdb_cmds.add_argument(
         'gdb_cmd',
         nargs='+',
-        help='gdb command to execute',
+        help='``gdb`` command to execute',
     )
 
     term = add_cmd('term', _cmd_term)
     term.add_argument(
         'channel',
-        help='channel name',
+        help='Channel name',
     )
 
     resume = add_cmd('resume', _cmd_resume)

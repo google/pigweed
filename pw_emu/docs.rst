@@ -7,74 +7,115 @@ pw_emu
 ======
 .. pigweed-module::
    :name: pw_emu
-   :tagline: Emulators frontend
+   :tagline: Flexible emulators frontend
    :status: experimental
+   :languages: Python, CLI
 
---------
-Overview
---------
-``pw_emu`` is an emulators frontend with the following features:
+* **Declarative**. Define emulation targets in JSON. A target encapsulates the
+  emulated machine, tools, and host channels configuration.
+* **Flexible**. Manage multiple emulator instances over a CLI or Python API.
+* **Unopinionated**. Use QEMU or Renode, or extend ``pw_emu`` to support your
+  favorite emulator.
+* **Configurable**. Expose channels for debugging and monitoring through
+  configurable host resources like sockets.
 
-* It allows users to define an emulation target that encapsulates the emulated
-  machine configuration, the tools configuration and the host channels
-  configuration.
+Declaratively configure an emulation target like this:
 
-* It provides a command line interface that manages multiple emulator instances
-  and provides interactive access to the emulator's host channels.
+.. code-block:: json
 
-* It provides a Python API to control emulator instances and access the
-  emulator's host channels (e.g. serial ports).
+   {
+     "targets": {
+       "qemu-lm3s6965evb": {
+         "gdb": [
+           "arm-none-eabi-gdb"
+         ],
+         "qemu": {
+           "executable": "qemu-system-arm",
+           "machine": "lm3s6965evb",
+           "channels": {
+             "chardevs": {
+               "serial0": {
+                 "id": "serial0"
+               }
+             }
+           }
+         }
+       }
+     }
+   }
 
-* It supports multiple emulators, QEMU and renode.
+Then run a binary like this!
 
-* It expose channels for gdb, monitor and user selected devices through
-  configurable host resources like sockets and ptys.
+.. code-block:: console
 
-For background on why the module exists and some of the design
-choices see :ref:`seed-0108`.
+   pw emu run --args=-no-reboot qemu-lm3s6965evb \
+       out/lm3s6965evb_qemu_gcc_size_optimized/obj/pw_snapshot/test/cpp_compile_test
 
-.. _module-pw_emu-get-started:
+.. grid:: 1
 
------------
-Get started
------------
-Include the desired emulator target files in the ``pigweed.json`` configuration
-file, e.g.:
+   .. grid-item-card:: :octicon:`rocket` Get started & guides
+      :link: module-pw_emu-guide
+      :link-type: ref
+      :class-item: sales-pitch-cta-primary
 
-.. code-block::
+      How to set up and use ``pw_emu``
 
-   ...
-   "pw_emu": {
-      "target_files": [
+.. grid:: 2
 
-        "pw_emu/qemu-lm3s6965evb.json",
-        "pw_emu/qemu-stm32vldiscovery.json",
-        "pw_emu/qemu-netduinoplus2.json",
-        "renode-stm32f4_discovery.json"
-      ]
-    }
-    ...
+   .. grid-item-card:: :octicon:`terminal` CLI reference
+      :link: module-pw_emu-cli
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
 
+      Reference details about the ``pw_emu`` command line interface
 
-Build the ``qemu_gcc`` target and use ``pw emu run`` command to run the target
-binaries on the host using the ``qemu-lm3s6965evb`` emulation target:
+   .. grid-item-card:: :octicon:`code-square` API reference
+      :link: module-pw_emu-api
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
 
-.. code:: bash
+      Reference details about the ``pw_emu`` Python API
 
-   ninja -C out qemu_gcc
-   pw emu run --args=-no-reboot qemu-lm3s6965evb out/lm3s6965evb_qemu_gcc_size_optimized/obj/pw_snapshot/test/cpp_compile_test
+.. grid:: 2
 
-See :ref:`module-pw_emu-guide` for more examples,
-:ref:`module-pw_emu-config` for detailed configuration information,
-:ref:`module-pw_emu-cli` for detailed CLI usage information and
-:ref:`module-pw_emu-api` for managing emulators with Python APIs.
+   .. grid-item-card:: :octicon:`gear` Configuration
+      :link: module-pw_emu-config
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Reference details about ``pw_emu`` declarative configuration
+
+   .. grid-item-card:: :octicon:`stack` Design
+      :link: module-pw_emu-design
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Design details about ``pw_emu``
+
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`comment-discussion` SEED-0108: Emulators Frontend
+      :link: seed-0108
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      The RFC explaining the initial design and motivations for ``pw_emu``
+
+   .. grid-item-card:: :octicon:`code-square` Source code
+      :link: seed-0108
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Source code for ``pw_emu``
 
 .. toctree::
    :hidden:
    :maxdepth: 1
 
    guide
-   config
    cli
    api
+   config
    design
+   SEED-0108 <../seed/0108-pw_emu-emulators-frontend>
+   Source code <https://cs.opensource.google/pigweed/pigweed/+/main:pw_emu/>

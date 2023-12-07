@@ -74,22 +74,22 @@ class Emulator:
         foreground: bool = False,
         args: Optional[str] = None,
     ) -> None:
-        """Start the emulator for the given target.
+        """Starts the emulator for the given ``target``.
 
-        If file is set the emulator will load the file before starting.
+        If ``file`` is set the emulator loads the file before starting.
 
-        If pause is True the emulator is paused until the debugger is
+        If ``pause`` is ``True`` the emulator pauses until the debugger is
         connected.
 
-        If debug is True the emulator is run in foreground with debug
+        If ``debug`` is ``True`` the emulator runs in the foreground with debug
         output enabled. This is useful for seeing errors, traces, etc.
 
-        If foreground is True the emulator is run in foreground otherwise
-        it is started in daemon mode. This is useful when there is
-        another process controlling the emulator's life cycle
-        (e.g. cuttlefish)
+        If ``foreground`` is ``True`` the emulator runs in the foreground,
+        otherwise it starts in daemon mode. Foreground mode is useful when
+        there is another process controlling the emulator's life cycle,
+        e.g. cuttlefish.
 
-        args are passed directly to the emulator
+        ``args`` are passed directly to the emulator.
 
         """
         if self._connector:
@@ -115,7 +115,7 @@ class Emulator:
         return self._connector
 
     def running(self) -> bool:
-        """Check if the main emulator process is already running."""
+        """Checks if the main emulator process is already running."""
 
         try:
             return self._c().running()
@@ -133,7 +133,7 @@ class Emulator:
         return self._c().stop()
 
     def get_gdb_remote(self) -> str:
-        """Return a string that can be passed to the target remote gdb
+        """Returns a string that can be passed to the target remote ``gdb``
         command.
 
         """
@@ -150,7 +150,7 @@ class Emulator:
         raise InvalidChannelType(chan_type)
 
     def get_gdb_cmd(self) -> List[str]:
-        """Returns the gdb command for current target."""
+        """Returns the ``gdb`` command for current target."""
         return self._c().get_gdb_cmd()
 
     def run_gdb_cmds(
@@ -159,14 +159,12 @@ class Emulator:
         executable: Optional[str] = None,
         pause: bool = False,
     ) -> subprocess.CompletedProcess:
-        """Connect to the target and run the given commands silently
+        """Connects to the target and runs the given commands silently
         in batch mode.
 
-        The executable is optional but it may be required by some gdb
-        commands.
+        ``executable`` is optional but may be required by some ``gdb`` commands.
 
-        If pause is set do not continue execution after running the
-        given commands.
+        If ``pause`` is set, execution stops after running the given commands.
 
         """
 
@@ -188,18 +186,18 @@ class Emulator:
         return subprocess.run(cmd, capture_output=True)
 
     def reset(self) -> None:
-        """Perform a software reset."""
+        """Performs a software reset."""
         self._c().reset()
 
     def list_properties(self, path: str) -> List[Dict]:
         """Returns the property list for an emulator object.
 
-        The object is identified by a full path. The path is target
-        specific and the format of the path is backend specific.
+        The object is identified by a full path. The path is
+        target-specific and the format of the path is backend-specific.
 
-        qemu path example: /machine/unattached/device[10]
+        QEMU path example: ``/machine/unattached/device[10]``
 
-        renode path example: sysbus.uart
+        renode path example: ``sysbus.uart``
 
         """
         return self._c().list_properties(path)
@@ -217,23 +215,23 @@ class Emulator:
     def get_channel_type(self, name: str) -> str:
         """Returns the channel type
 
-        Currently `pty` or `tcp` are the only supported types.
+        Currently ``pty`` and ``tcp`` are the only supported types.
 
         """
 
         return self._c().get_channel_type(name)
 
     def get_channel_path(self, name: str) -> str:
-        """Returns the channel path. Raises InvalidChannelType if this
-        is not a pty channel.
+        """Returns the channel path. Raises ``InvalidChannelType`` if this
+        is not a ``pty`` channel.
 
         """
 
         return self._c().get_channel_path(name)
 
     def get_channel_addr(self, name: str) -> tuple:
-        """Returns a pair of (host, port) for the channel. Raises
-        InvalidChannelType if this is not a tcp channel.
+        """Returns a pair of ``(host, port)`` for the channel. Raises
+        ``InvalidChannelType`` if this is not a TCP channel.
 
         """
 
@@ -244,10 +242,10 @@ class Emulator:
         name: str,
         timeout: Optional[float] = None,
     ) -> io.RawIOBase:
-        """Returns a file object for a given host exposed device.
+        """Returns a file object for a given host-exposed device.
 
-        If timeout is None than reads and writes are blocking. If
-        timeout is zero the stream is operating in non-blocking
+        If ``timeout`` is ``None`` than reads and writes are blocking. If
+        ``timeout`` is ``0`` the stream is operating in non-blocking
         mode. Otherwise read and write will timeout after the given
         value.
 
@@ -261,12 +259,12 @@ class Emulator:
         return self._c().get_channels()
 
     def set_emu(self, emu: str) -> None:
-        """Set the emulator type for this instance."""
+        """Sets the emulator type for this instance."""
 
         self._launcher = Launcher.get(emu, self._config_path)
 
     def cont(self) -> None:
-        """Resume the emulator's execution."""
+        """Resumes the emulator's execution."""
 
         self._c().cont()
 
@@ -276,11 +274,10 @@ class TemporaryEmulator(Emulator):
 
     Manages emulator instances that run in temporary working
     directories. The emulator instance is stopped and the working
-    directory is cleared when the with block completes.
+    directory is cleared when the ``with`` block completes.
 
-    It also supports interoperability with the pw emu cli, i.e.
-    starting the emulator with the CLI and controlling / interacting
-    with it from the API.
+    It also supports interoperability with the ``pw_emu`` cli, e.g. starting the
+    emulator with the CLI and then controlling it from the Python API.
 
     Usage example:
 
