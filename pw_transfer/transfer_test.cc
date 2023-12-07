@@ -742,7 +742,8 @@ class WriteTransfer : public ::testing::Test {
         ctx_(transfer_thread_,
              max_bytes_to_receive,
              // Use a long timeout to avoid accidentally triggering timeouts.
-             std::chrono::minutes(1)) {
+             std::chrono::minutes(1),
+             /*max_retries=*/3) {
     ctx_.service().RegisterHandler(handler_);
 
     PW_CHECK(!handler_.prepare_write_called);

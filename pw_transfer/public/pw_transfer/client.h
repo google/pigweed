@@ -65,7 +65,7 @@ class Client {
                             : transfer_thread.max_chunk_size(),
                         transfer_thread.max_chunk_size(),
                         extend_window_divisor),
-        max_retries_(cfg::kDefaultMaxRetries),
+        max_retries_(cfg::kDefaultMaxClientRetries),
         max_lifetime_retries_(cfg::kDefaultMaxLifetimeRetries),
         has_read_stream_(false),
         has_write_stream_(false) {}
@@ -74,20 +74,22 @@ class Client {
   // the server is written to the provided writer. Returns OK if the transfer is
   // successfully started. When the transfer finishes (successfully or not), the
   // completion callback is invoked with the overall status.
-  Status Read(uint32_t resource_id,
-              stream::Writer& output,
-              CompletionFunc&& on_completion,
-              ProtocolVersion version,
-              chrono::SystemClock::duration timeout = cfg::kDefaultChunkTimeout,
-              chrono::SystemClock::duration initial_chunk_timeout =
-                  cfg::kDefaultInitialChunkTimeout);
+  Status Read(
+      uint32_t resource_id,
+      stream::Writer& output,
+      CompletionFunc&& on_completion,
+      ProtocolVersion version,
+      chrono::SystemClock::duration timeout = cfg::kDefaultClientTimeout,
+      chrono::SystemClock::duration initial_chunk_timeout =
+          cfg::kDefaultInitialChunkTimeout);
 
-  Status Read(uint32_t resource_id,
-              stream::Writer& output,
-              CompletionFunc&& on_completion,
-              chrono::SystemClock::duration timeout = cfg::kDefaultChunkTimeout,
-              chrono::SystemClock::duration initial_chunk_timeout =
-                  cfg::kDefaultInitialChunkTimeout) {
+  Status Read(
+      uint32_t resource_id,
+      stream::Writer& output,
+      CompletionFunc&& on_completion,
+      chrono::SystemClock::duration timeout = cfg::kDefaultClientTimeout,
+      chrono::SystemClock::duration initial_chunk_timeout =
+          cfg::kDefaultInitialChunkTimeout) {
     return Read(resource_id,
                 output,
                 std::move(on_completion),
@@ -105,7 +107,7 @@ class Client {
       stream::Reader& input,
       CompletionFunc&& on_completion,
       ProtocolVersion version,
-      chrono::SystemClock::duration timeout = cfg::kDefaultChunkTimeout,
+      chrono::SystemClock::duration timeout = cfg::kDefaultClientTimeout,
       chrono::SystemClock::duration initial_chunk_timeout =
           cfg::kDefaultInitialChunkTimeout);
 
@@ -113,7 +115,7 @@ class Client {
       uint32_t resource_id,
       stream::Reader& input,
       CompletionFunc&& on_completion,
-      chrono::SystemClock::duration timeout = cfg::kDefaultChunkTimeout,
+      chrono::SystemClock::duration timeout = cfg::kDefaultClientTimeout,
       chrono::SystemClock::duration initial_chunk_timeout =
           cfg::kDefaultInitialChunkTimeout) {
     return Write(resource_id,

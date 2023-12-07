@@ -1678,8 +1678,8 @@ TEST_F(ReadTransfer, Version2_SingleChunk) {
                 3,
                 writer,
                 [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultChunkTimeout,
-                cfg::kDefaultChunkTimeout));
+                cfg::kDefaultClientTimeout,
+                cfg::kDefaultClientTimeout));
 
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -1758,8 +1758,8 @@ TEST_F(ReadTransfer, Version2_ServerRunsLegacy) {
                 3,
                 writer,
                 [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultChunkTimeout,
-                cfg::kDefaultChunkTimeout));
+                cfg::kDefaultClientTimeout,
+                cfg::kDefaultClientTimeout));
 
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -1816,8 +1816,8 @@ TEST_F(ReadTransfer, Version2_TimeoutDuringHandshake) {
                 3,
                 writer,
                 [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultChunkTimeout,
-                cfg::kDefaultChunkTimeout));
+                cfg::kDefaultClientTimeout,
+                cfg::kDefaultClientTimeout));
 
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -1905,8 +1905,8 @@ TEST_F(ReadTransfer, Version2_TimeoutAfterHandshake) {
                 3,
                 writer,
                 [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultChunkTimeout,
-                cfg::kDefaultChunkTimeout));
+                cfg::kDefaultClientTimeout,
+                cfg::kDefaultClientTimeout));
 
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -1998,8 +1998,8 @@ TEST_F(ReadTransfer, Version2_ServerErrorDuringHandshake) {
                 3,
                 writer,
                 [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultChunkTimeout,
-                cfg::kDefaultChunkTimeout));
+                cfg::kDefaultClientTimeout,
+                cfg::kDefaultClientTimeout));
 
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -2038,8 +2038,8 @@ TEST_F(ReadTransfer, Version2_TimeoutWaitingForCompletionAckRetries) {
                 3,
                 writer,
                 [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultChunkTimeout,
-                cfg::kDefaultChunkTimeout));
+                cfg::kDefaultClientTimeout,
+                cfg::kDefaultClientTimeout));
 
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -2143,8 +2143,8 @@ TEST_F(ReadTransfer,
                 3,
                 writer,
                 [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultChunkTimeout,
-                cfg::kDefaultChunkTimeout));
+                cfg::kDefaultClientTimeout,
+                cfg::kDefaultClientTimeout));
 
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -2234,8 +2234,8 @@ TEST_F(WriteTransfer, Version2_SingleChunk) {
                 3,
                 reader,
                 [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultChunkTimeout,
-                cfg::kDefaultChunkTimeout));
+                cfg::kDefaultClientTimeout,
+                cfg::kDefaultClientTimeout));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.
@@ -2323,8 +2323,8 @@ TEST_F(WriteTransfer, Version2_ServerRunsLegacy) {
                 3,
                 reader,
                 [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultChunkTimeout,
-                cfg::kDefaultChunkTimeout));
+                cfg::kDefaultClientTimeout,
+                cfg::kDefaultClientTimeout));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.
@@ -2390,8 +2390,8 @@ TEST_F(WriteTransfer, Version2_RetryDuringHandshake) {
                 3,
                 reader,
                 [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultChunkTimeout,
-                cfg::kDefaultChunkTimeout));
+                cfg::kDefaultClientTimeout,
+                cfg::kDefaultClientTimeout));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.
@@ -2487,8 +2487,8 @@ TEST_F(WriteTransfer, Version2_RetryAfterHandshake) {
                 3,
                 reader,
                 [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultChunkTimeout,
-                cfg::kDefaultChunkTimeout));
+                cfg::kDefaultClientTimeout,
+                cfg::kDefaultClientTimeout));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.
@@ -2586,8 +2586,8 @@ TEST_F(WriteTransfer, Version2_ServerErrorDuringHandshake) {
                 3,
                 reader,
                 [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultChunkTimeout,
-                cfg::kDefaultChunkTimeout));
+                cfg::kDefaultClientTimeout,
+                cfg::kDefaultClientTimeout));
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.

@@ -55,8 +55,8 @@ class TransferService : public pw_rpc::raw::Transfer::Service<TransferService> {
   TransferService(
       TransferThread& transfer_thread,
       uint32_t max_pending_bytes,
-      chrono::SystemClock::duration chunk_timeout = cfg::kDefaultChunkTimeout,
-      uint8_t max_retries = cfg::kDefaultMaxRetries,
+      chrono::SystemClock::duration chunk_timeout = cfg::kDefaultServerTimeout,
+      uint8_t max_retries = cfg::kDefaultMaxServerRetries,
       uint32_t extend_window_divisor = cfg::kDefaultExtendWindowDivisor,
       uint32_t max_lifetime_retries = cfg::kDefaultMaxLifetimeRetries)
       : max_parameters_(max_pending_bytes,

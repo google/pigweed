@@ -21,15 +21,61 @@
 
 #include "pw_chrono/system_clock.h"
 
-// The default maximum number of times a transfer should retry sending a chunk
-// when no response is received. This can later be configured per-transfer.
-#ifndef PW_TRANSFER_DEFAULT_MAX_RETRIES
-#define PW_TRANSFER_DEFAULT_MAX_RETRIES 3
+#ifdef PW_TRANSFER_DEFAULT_MAX_RETRIES
+#pragma message(                                      \
+    "PW_TRANSFER_DEFAULT_MAX_RETRIES is deprecated; " \
+    "Use PW_TRANSFER_DEFAULT_MAX_CLIENT_RETRIES and " \
+    "PW_TRANSFER_DEFAULT_MAX_SERVER_RETRIES instead.")
 #endif  // PW_TRANSFER_DEFAULT_MAX_RETRIES
 
-static_assert(PW_TRANSFER_DEFAULT_MAX_RETRIES > 0 &&
-              PW_TRANSFER_DEFAULT_MAX_RETRIES <=
+#ifdef PW_TRANSFER_DEFAULT_TIMEOUT_MS
+#pragma message(                                     \
+    "PW_TRANSFER_DEFAULT_TIMEOUT_MS is deprecated; " \
+    "Use PW_TRANSFER_DEFAULT_CLIENT_TIMEOUT_MS and " \
+    "PW_TRANSFER_DEFAULT_SERVER_TIMEOUT_MS instead.")
+#endif  // PW_TRANSFER_DEFAULT_TIMEOUT_MS
+
+// The default maximum number of times a transfer client should retry sending a
+// chunk when no response is received. Can later be configured per-transfer when
+// starting one.
+#ifndef PW_TRANSFER_DEFAULT_MAX_CLIENT_RETRIES
+
+// Continue to accept the old deprecated setting until projects have migrated.
+#ifdef PW_TRANSFER_DEFAULT_MAX_RETRIES
+#define PW_TRANSFER_DEFAULT_MAX_CLIENT_RETRIES PW_TRANSFER_DEFAULT_MAX_RETRIES
+#else
+#define PW_TRANSFER_DEFAULT_MAX_CLIENT_RETRIES 3
+#endif  // PW_TRANSFER_DEFAULT_MAX_RETRIES
+
+#endif  // PW_TRANSFER_DEFAULT_MAX_CLIENT_RETRIES
+
+static_assert(PW_TRANSFER_DEFAULT_MAX_CLIENT_RETRIES >= 0 &&
+              PW_TRANSFER_DEFAULT_MAX_CLIENT_RETRIES <=
+                  static_cast<uint32_t>(std::numeric_limits<uint8_t>::max()));
+
+// The default maximum number of times a transfer server should retry sending a
+// chunk when no response is received.
+//
+// In typical setups, retries are driven by the client, and timeouts on the
+// server are used only to clean up resources, so this defaults to 0.
+#ifndef PW_TRANSFER_DEFAULT_MAX_SERVER_RETRIES
+
+// Continue to accept the old deprecated setting until projects have migrated.
+#ifdef PW_TRANSFER_DEFAULT_MAX_RETRIES
+#define PW_TRANSFER_DEFAULT_MAX_SERVER_RETRIES PW_TRANSFER_DEFAULT_MAX_RETRIES
+#else
+#define PW_TRANSFER_DEFAULT_MAX_SERVER_RETRIES 0
+#endif  // PW_TRANSFER_DEFAULT_MAX_RETRIES
+
+#endif  // PW_TRANSFER_DEFAULT_MAX_SERVER_RETRIES
+
+// GCC emits spurious -Wtype-limits warnings for the static_assert.
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC_GCC(ignored, "-Wtype-limits");
+static_assert(PW_TRANSFER_DEFAULT_MAX_SERVER_RETRIES >= 0 &&
+              PW_TRANSFER_DEFAULT_MAX_SERVER_RETRIES <=
                   std::numeric_limits<uint8_t>::max());
+PW_MODIFY_DIAGNOSTICS_POP();
 
 // The default maximum number of times a transfer should retry sending a chunk
 // over the course of its entire lifetime.
@@ -38,31 +84,56 @@ static_assert(PW_TRANSFER_DEFAULT_MAX_RETRIES > 0 &&
 // infinite loop.
 #ifndef PW_TRANSFER_DEFAULT_MAX_LIFETIME_RETRIES
 #define PW_TRANSFER_DEFAULT_MAX_LIFETIME_RETRIES \
-  (static_cast<uint32_t>(PW_TRANSFER_DEFAULT_MAX_RETRIES) * 1000u)
+  (static_cast<uint32_t>(PW_TRANSFER_DEFAULT_MAX_CLIENT_RETRIES) * 1000u)
 #endif  // PW_TRANSFER_DEFAULT_MAX_LIFETIME_RETRIES
 
 static_assert(PW_TRANSFER_DEFAULT_MAX_LIFETIME_RETRIES >
-                  PW_TRANSFER_DEFAULT_MAX_RETRIES &&
+                  PW_TRANSFER_DEFAULT_MAX_CLIENT_RETRIES &&
               PW_TRANSFER_DEFAULT_MAX_LIFETIME_RETRIES <=
                   std::numeric_limits<uint32_t>::max());
 
 // The default amount of time, in milliseconds, to wait for a chunk to arrive
-// before retrying. This can later be configured per-transfer.
-#ifndef PW_TRANSFER_DEFAULT_TIMEOUT_MS
-#define PW_TRANSFER_DEFAULT_TIMEOUT_MS 2000
+// in a transfer client before retrying. This can later be configured
+// per-transfer.
+#ifndef PW_TRANSFER_DEFAULT_CLIENT_TIMEOUT_MS
+
+// Continue to accept the old deprecated setting until projects have migrated.
+#ifdef PW_TRANSFER_DEFAULT_TIMEOUT_MS
+#define PW_TRANSFER_DEFAULT_CLIENT_TIMEOUT_MS PW_TRANSFER_DEFAULT_TIMEOUT_MS
+#else
+#define PW_TRANSFER_DEFAULT_CLIENT_TIMEOUT_MS 2000
 #endif  // PW_TRANSFER_DEFAULT_TIMEOUT_MS
 
-static_assert(PW_TRANSFER_DEFAULT_TIMEOUT_MS > 0);
+#endif  // PW_TRANSFER_DEFAULT_CLIENT_TIMEOUT_MS
 
-// The default amount of time, in milliseconds, to wait for an initial server
-// response to a transfer before retrying. This can later be configured
-// per-transfer.
+static_assert(PW_TRANSFER_DEFAULT_CLIENT_TIMEOUT_MS > 0);
+
+// The default amount of time, in milliseconds, to wait for a chunk to arrive
+// on the server before retrying. This can later be configured per-transfer.
+#ifndef PW_TRANSFER_DEFAULT_SERVER_TIMEOUT_MS
+
+// Continue to accept the old deprecated setting until projects have migrated.
+#ifdef PW_TRANSFER_DEFAULT_TIMEOUT_MS
+#define PW_TRANSFER_DEFAULT_SERVER_TIMEOUT_MS PW_TRANSFER_DEFAULT_TIMEOUT_MS
+#else
+#define PW_TRANSFER_DEFAULT_SERVER_TIMEOUT_MS \
+  (static_cast<uint32_t>(PW_TRANSFER_DEFAULT_CLIENT_TIMEOUT_MS) * 5u)
+#endif  // PW_TRANSFER_DEFAULT_TIMEOUT_MS
+
+#endif  // PW_TRANSFER_DEFAULT_SERVER_TIMEOUT_MS
+
+static_assert(PW_TRANSFER_DEFAULT_SERVER_TIMEOUT_MS > 0);
+
+// The default amount of time, in milliseconds, for a client to wait for an
+// initial response from the transfer server before retrying. This can later be
+// configured // per-transfer.
 //
-// This is set separately to PW_TRANSFER_DEFAULT_TIMEOUT_MS as transfers may
-// require additional time for resource initialization (e.g. erasing a flash
+// This is set separately to PW_TRANSFER_DEFAULT_CLIENT_TIMEOUT_MS as transfers
+// may require additional time for resource initialization (e.g. erasing a flash
 // region before writing to it).
 #ifndef PW_TRANSFER_DEFAULT_INITIAL_TIMEOUT_MS
-#define PW_TRANSFER_DEFAULT_INITIAL_TIMEOUT_MS PW_TRANSFER_DEFAULT_TIMEOUT_MS
+#define PW_TRANSFER_DEFAULT_INITIAL_TIMEOUT_MS \
+  PW_TRANSFER_DEFAULT_CLIENT_TIMEOUT_MS
 #endif  // PW_TRANSFER_DEFAULT_INITIAL_TIMEOUT_MS
 
 static_assert(PW_TRANSFER_DEFAULT_INITIAL_TIMEOUT_MS > 0);
@@ -82,13 +153,20 @@ static_assert(PW_TRANSFER_DEFAULT_EXTEND_WINDOW_DIVISOR > 1);
 
 namespace pw::transfer::cfg {
 
-inline constexpr uint8_t kDefaultMaxRetries = PW_TRANSFER_DEFAULT_MAX_RETRIES;
+inline constexpr uint8_t kDefaultMaxClientRetries =
+    PW_TRANSFER_DEFAULT_MAX_CLIENT_RETRIES;
+inline constexpr uint8_t kDefaultMaxServerRetries =
+    PW_TRANSFER_DEFAULT_MAX_SERVER_RETRIES;
 inline constexpr uint16_t kDefaultMaxLifetimeRetries =
     PW_TRANSFER_DEFAULT_MAX_LIFETIME_RETRIES;
 
-inline constexpr chrono::SystemClock::duration kDefaultChunkTimeout =
+inline constexpr chrono::SystemClock::duration kDefaultClientTimeout =
     chrono::SystemClock::for_at_least(
-        std::chrono::milliseconds(PW_TRANSFER_DEFAULT_TIMEOUT_MS));
+        std::chrono::milliseconds(PW_TRANSFER_DEFAULT_CLIENT_TIMEOUT_MS));
+inline constexpr chrono::SystemClock::duration kDefaultServerTimeout =
+    chrono::SystemClock::for_at_least(
+        std::chrono::milliseconds(PW_TRANSFER_DEFAULT_SERVER_TIMEOUT_MS));
+
 inline constexpr chrono::SystemClock::duration kDefaultInitialChunkTimeout =
     chrono::SystemClock::for_at_least(
         std::chrono::milliseconds(PW_TRANSFER_DEFAULT_INITIAL_TIMEOUT_MS));

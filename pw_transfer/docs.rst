@@ -176,7 +176,7 @@ an RPC client.
 
 The transfer client provides the following two APIs for starting data transfers:
 
-.. cpp:function:: pw::Status pw::transfer::Client::Read(uint32_t resource_id, pw::stream::Writer& output, CompletionFunc&& on_completion, pw::chrono::SystemClock::duration timeout = cfg::kDefaultChunkTimeout, pw::transfer::ProtocolVersion version = kDefaultProtocolVersion)
+.. cpp:function:: pw::Status pw::transfer::Client::Read(uint32_t resource_id, pw::stream::Writer& output, CompletionFunc&& on_completion, pw::chrono::SystemClock::duration timeout = cfg::kDefaultClientTimeout, pw::transfer::ProtocolVersion version = kDefaultProtocolVersion)
 
   Reads data from a transfer server to the specified ``pw::stream::Writer``.
   Invokes the provided callback function with the overall status of the
@@ -186,7 +186,7 @@ The transfer client provides the following two APIs for starting data transfers:
   return a non-OK status if it is called with bad arguments. Otherwise, it will
   return OK and errors will be reported through the completion callback.
 
-.. cpp:function:: pw::Status pw::transfer::Client::Write(uint32_t resource_id, pw::stream::Reader& input, CompletionFunc&& on_completion, pw::chrono::SystemClock::duration timeout = cfg::kDefaultChunkTimeout, pw::transfer::ProtocolVersion version = kDefaultProtocolVersion)
+.. cpp:function:: pw::Status pw::transfer::Client::Write(uint32_t resource_id, pw::stream::Reader& input, CompletionFunc&& on_completion, pw::chrono::SystemClock::duration timeout = cfg::kDefaultClientTimeout, pw::transfer::ProtocolVersion version = kDefaultProtocolVersion)
 
   Writes data from a source ``pw::stream::Reader`` to a transfer server.
   Invokes the provided callback function with the overall status of the
@@ -249,10 +249,19 @@ this module, see the
 :ref:`module documentation <module-structure-compile-time-configuration>` for
 more details.
 
-.. c:macro:: PW_TRANSFER_DEFAULT_MAX_RETRIES
+.. c:macro:: PW_TRANSFER_DEFAULT_MAX_CLIENT_RETRIES
 
-  The default maximum number of times a transfer should retry sending a chunk
-  when no response is received. This can later be configured per-transfer.
+  The default maximum number of times a transfer client should retry sending a
+  chunk when no response is received. Can later be configured per-transfer when
+  starting one.
+
+.. c:macro:: PW_TRANSFER_DEFAULT_MAX_SERVER_RETRIES
+
+  The default maximum number of times a transfer server should retry sending a
+  chunk when no response is received.
+
+  In typical setups, retries are driven by the client, and timeouts on the
+  server are used only to clean up resources, so this defaults to 0.
 
 .. c:macro:: PW_TRANSFER_DEFAULT_MAX_LIFETIME_RETRIES
 
@@ -263,10 +272,16 @@ more details.
   expected. Its purpose is to prevent transfers from getting stuck in an
   infinite loop.
 
-.. c:macro:: PW_TRANSFER_DEFAULT_TIMEOUT_MS
+.. c:macro:: PW_TRANSFER_DEFAULT_CLIENT_TIMEOUT_MS
 
   The default amount of time, in milliseconds, to wait for a chunk to arrive
-  before retrying. This can later be configured per-transfer.
+  in a transfer client before retrying. This can later be configured
+  per-transfer.
+
+.. c:macro:: PW_TRANSFER_DEFAULT_SERVER_TIMEOUT_MS
+
+  The default amount of time, in milliseconds, to wait for a chunk to arrive
+  on the server before retrying. This can later be configured per-transfer.
 
 .. c:macro:: PW_TRANSFER_DEFAULT_INITIAL_TIMEOUT_MS
 
