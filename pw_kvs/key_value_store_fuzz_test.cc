@@ -15,7 +15,6 @@
 #include <array>
 #include <cstring>
 
-#include "gtest/gtest.h"
 #include "pw_checksum/crc16_ccitt.h"
 #include "pw_kvs/crc16_checksum.h"
 #include "pw_kvs/flash_memory.h"
@@ -26,6 +25,7 @@
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_string/string_builder.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::kvs {
 namespace {

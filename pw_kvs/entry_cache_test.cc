@@ -14,12 +14,12 @@
 
 #include "pw_kvs/internal/entry_cache.h"
 
-#include "gtest/gtest.h"
 #include "pw_bytes/array.h"
 #include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/internal/hash.h"
 #include "pw_kvs/internal/key_descriptor.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::kvs::internal {
 namespace {

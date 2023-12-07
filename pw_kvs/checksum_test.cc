@@ -14,8 +14,8 @@
 
 #include "pw_kvs/checksum.h"
 
-#include "gtest/gtest.h"
 #include "pw_kvs/crc16_checksum.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::kvs {
 namespace {

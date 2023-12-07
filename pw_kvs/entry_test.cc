@@ -16,7 +16,6 @@
 
 #include <string_view>
 
-#include "gtest/gtest.h"
 #include "pw_bytes/array.h"
 #include "pw_kvs/alignment.h"
 #include "pw_kvs/checksum.h"
@@ -25,6 +24,7 @@
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/format.h"
 #include "pw_span/span.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::kvs::internal {
 namespace {

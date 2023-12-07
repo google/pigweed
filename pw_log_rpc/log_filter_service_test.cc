@@ -18,7 +18,6 @@
 #include <cstdint>
 #include <limits>
 
-#include "gtest/gtest.h"
 #include "pw_bytes/endian.h"
 #include "pw_log/proto/log.pwpb.h"
 #include "pw_log_rpc/log_filter.h"
@@ -28,6 +27,7 @@
 #include "pw_result/result.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/raw/test_method_context.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::log_rpc {
 namespace {

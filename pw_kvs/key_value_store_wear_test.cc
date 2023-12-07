@@ -15,12 +15,12 @@
 // Always use stats, these tests depend on it.
 #define PW_KVS_RECORD_PARTITION_STATS 1
 
-#include "gtest/gtest.h"
 #include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/flash_partition_with_stats.h"
 #include "pw_kvs/key_value_store.h"
 #include "pw_log/log.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::kvs {
 namespace {

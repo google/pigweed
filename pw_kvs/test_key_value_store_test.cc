@@ -14,10 +14,10 @@
 
 #include "pw_kvs/test_key_value_store.h"
 
-#include "gtest/gtest.h"
 #include "pw_kvs/key_value_store.h"
 #include "pw_status/status.h"
 #include "pw_sync/borrow.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::kvs {
 namespace {

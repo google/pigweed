@@ -27,7 +27,6 @@
 #include <vector>
 #endif  // DUMP_KVS_STATE_TO_FILE
 
-#include "gtest/gtest.h"
 #include "pw_assert/check.h"
 #include "pw_bytes/array.h"
 #include "pw_checksum/crc16_ccitt.h"
@@ -39,6 +38,7 @@
 #include "pw_log/log.h"
 #include "pw_status/status.h"
 #include "pw_string/string_builder.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::kvs {
 namespace {

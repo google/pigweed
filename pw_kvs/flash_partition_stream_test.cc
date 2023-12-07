@@ -17,7 +17,6 @@
 #include <cstddef>
 #include <cstring>
 
-#include "gtest/gtest.h"
 #include "public/pw_kvs/flash_memory.h"
 #include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/flash_memory.h"
@@ -25,6 +24,7 @@
 #include "pw_log/log.h"
 #include "pw_random/xor_shift.h"
 #include "pw_span/span.h"
+#include "pw_unit_test/framework.h"
 
 #if PW_CXX_STANDARD_IS_SUPPORTED(17)
 

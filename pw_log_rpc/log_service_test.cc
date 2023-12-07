@@ -18,7 +18,6 @@
 #include <cstdint>
 #include <limits>
 
-#include "gtest/gtest.h"
 #include "pw_assert/check.h"
 #include "pw_bytes/endian.h"
 #include "pw_containers/vector.h"
@@ -35,6 +34,7 @@
 #include "pw_rpc/raw/fake_channel_output.h"
 #include "pw_rpc/raw/test_method_context.h"
 #include "pw_sync/mutex.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::log_rpc {
 namespace {

@@ -27,9 +27,9 @@
 
 #include "pw_log_tokenized/log_tokenized.h"
 
-#include "gtest/gtest.h"
 #include "pw_log_tokenized/base64.h"
 #include "pw_log_tokenized_private/test_utils.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::log_tokenized {
 namespace {

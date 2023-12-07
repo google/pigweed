@@ -28,7 +28,6 @@
 #include <iostream>
 #endif  // DUMP_KVS_CONTENTS
 
-#include "gtest/gtest.h"
 #include "pw_kvs/crc16_checksum.h"
 #include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/flash_partition_with_stats.h"
@@ -36,6 +35,7 @@
 #include "pw_kvs/key_value_store.h"
 #include "pw_log/log.h"
 #include "pw_string/string_builder.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::kvs {
 namespace {

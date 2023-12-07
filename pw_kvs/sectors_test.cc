@@ -14,8 +14,8 @@
 
 #include "pw_kvs/internal/sectors.h"
 
-#include "gtest/gtest.h"
 #include "pw_kvs/fake_flash_memory.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::kvs::internal {
 namespace {

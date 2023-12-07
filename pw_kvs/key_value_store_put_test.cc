@@ -12,12 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "gtest/gtest.h"
 #include "pw_assert/check.h"
 #include "pw_kvs/crc16_checksum.h"
 #include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/flash_partition_with_stats.h"
 #include "pw_kvs/key_value_store.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::kvs {
 namespace {

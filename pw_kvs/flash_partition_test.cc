@@ -14,12 +14,12 @@
 
 #include <algorithm>
 
-#include "gtest/gtest.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/flash_test_partition.h"
 #include "pw_kvs_private/config.h"
 #include "pw_log/log.h"
 #include "pw_span/span.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::kvs::PartitionTest {
 namespace {

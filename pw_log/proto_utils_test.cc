@@ -14,13 +14,13 @@
 
 #include "pw_log/proto_utils.h"
 
-#include "gtest/gtest.h"
 #include "pw_bytes/span.h"
 #include "pw_containers/algorithm.h"
 #include "pw_log/levels.h"
 #include "pw_log/proto/log.pwpb.h"
 #include "pw_protobuf/bytes_utils.h"
 #include "pw_protobuf/decoder.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::log {
 

@@ -26,7 +26,7 @@
 #include "pw_log/shorter.h"
 // clang-format on
 
-#include "gtest/gtest.h"
+#include "pw_unit_test/framework.h"
 
 // TODO: b/235291136 - Test unsigned integer logging (32 and 64 bit); test
 // pointer logging.

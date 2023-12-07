@@ -18,7 +18,6 @@
 #include <cstdint>
 #include <string_view>
 
-#include "gtest/gtest.h"
 #include "pw_bytes/array.h"
 #include "pw_bytes/span.h"
 #include "pw_log/proto/log.pwpb.h"
@@ -37,6 +36,7 @@
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_sync/mutex.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::log_rpc {
 namespace {

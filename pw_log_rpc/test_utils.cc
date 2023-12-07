@@ -16,7 +16,6 @@
 
 #include <cstdint>
 
-#include "gtest/gtest.h"
 #include "pw_bytes/span.h"
 #include "pw_containers/vector.h"
 #include "pw_log/log.h"
@@ -24,6 +23,7 @@
 #include "pw_log_tokenized/metadata.h"
 #include "pw_protobuf/bytes_utils.h"
 #include "pw_protobuf/decoder.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::log_rpc {
 namespace {

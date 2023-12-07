@@ -17,9 +17,9 @@
 #include <string_view>
 #include <vector>
 
-#include "gtest/gtest.h"
 #include "pw_kvs/internal/span_traits.h"
 #include "pw_span/span.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::kvs {
 namespace {

@@ -24,8 +24,8 @@
 #include <cstring>
 #include <numeric>
 
-#include "gtest/gtest.h"
 #include "pw_containers/algorithm.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw {
 namespace {

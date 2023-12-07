@@ -16,13 +16,13 @@
 
 #include <string_view>
 
-#include "gtest/gtest.h"
 #include "pw_bytes/array.h"
 #include "pw_kvs/crc16_checksum.h"
 #include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/format.h"
 #include "pw_kvs/internal/hash.h"
 #include "pw_kvs/key_value_store.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::kvs {
 namespace {

@@ -19,7 +19,7 @@
 
 #include "pw_log/glog_adapter.h"
 
-#include "gtest/gtest.h"
+#include "pw_unit_test/framework.h"
 // clang-format on
 
 namespace pw::log {

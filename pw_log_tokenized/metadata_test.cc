@@ -14,7 +14,7 @@
 
 #include "pw_log_tokenized/metadata.h"
 
-#include "gtest/gtest.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::log_tokenized {
 namespace {

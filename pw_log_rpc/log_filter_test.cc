@@ -18,7 +18,6 @@
 #include <cstddef>
 #include <cstring>
 
-#include "gtest/gtest.h"
 #include "pw_bytes/endian.h"
 #include "pw_log/levels.h"
 #include "pw_log/log.h"
@@ -29,6 +28,7 @@
 #include "pw_result/result.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::log_rpc {
 namespace {
