@@ -209,6 +209,13 @@ label_flag(
     build_setting_default = "@pigweed//pw_unit_test:light",
 )
 
+# Temporarily point the old build flag to the new googletest backend while
+# downstream projects migrate to the new backend flag.
+label_flag(
+    name = "pw_unit_test_googletest_backend",
+    build_setting_default = "@pigweed//pw_unit_test:googletest",
+)
+
 label_flag(
     name = "pw_unit_test_main",
     build_setting_default = "@pigweed//pw_unit_test:simple_printing_main",
