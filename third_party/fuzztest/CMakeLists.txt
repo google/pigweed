@@ -37,7 +37,8 @@ add_library(pw_third_party.fuzztest INTERFACE)
 target_link_libraries(pw_third_party.fuzztest
   INTERFACE
     fuzztest_fuzztest
-    pw_third_party.googletest
+    pw_unit_test
+    pw_unit_test.googletest
 )
 target_include_directories(pw_third_party.fuzztest
   INTERFACE

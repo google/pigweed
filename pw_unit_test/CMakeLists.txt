@@ -27,6 +27,10 @@ pw_add_library(pw_unit_test.config INTERFACE
 )
 
 add_library(pw_unit_test INTERFACE)
+target_include_directories(pw_unit_test
+  INTERFACE
+    public
+)
 
 # Temporarily redirect deprecated googletest pointer to new pointer.
 if("${pw_unit_test_GOOGLETEST_BACKEND}" STREQUAL "pw_third_party.googletest")

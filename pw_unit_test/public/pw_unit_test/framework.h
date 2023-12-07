@@ -178,7 +178,7 @@
 
 // RUN_ALL_TESTS can be a macro or a function, check for both.
 #ifndef RUN_ALL_TESTS
-static_assert(RUN_ALL_TESTS,
+static_assert(&RUN_ALL_TESTS != nullptr,
               "The pw_unit_test framework backend must define RUN_ALL_TESTS()");
 #endif  // RUN_ALL_TESTS
 
