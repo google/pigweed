@@ -12,10 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "gtest/gtest.h"
 #include "pw_sync/binary_semaphore.h"
 #include "pw_thread/test_thread_context.h"
 #include "pw_thread/thread.h"
+#include "pw_unit_test/framework.h"
 
 using pw::thread::test::TestThreadContext;
 

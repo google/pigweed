@@ -14,8 +14,8 @@
 
 #include "pw_toolchain/no_destructor.h"
 
-#include "gtest/gtest.h"
 #include "pw_assert/check.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw {
 namespace {

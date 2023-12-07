@@ -14,7 +14,6 @@
 
 #include "pw_transfer/transfer.h"
 
-#include "gtest/gtest.h"
 #include "pw_assert/check.h"
 #include "pw_bytes/array.h"
 #include "pw_containers/algorithm.h"
@@ -24,6 +23,7 @@
 #include "pw_thread_stl/options.h"
 #include "pw_transfer/transfer.pwpb.h"
 #include "pw_transfer_private/chunk_testing.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::transfer::test {
 namespace {

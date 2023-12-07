@@ -18,9 +18,9 @@
 #include <string>
 #include <string_view>
 
-#include "gtest/gtest.h"
 #include "pw_tokenizer_private/tokenized_string_decoding_test_data.h"
 #include "pw_tokenizer_private/varint_decoding_test_data.h"
+#include "pw_unit_test/framework.h"
 #include "pw_varint/varint.h"
 
 #define ERR PW_TOKENIZER_ARG_DECODING_ERROR

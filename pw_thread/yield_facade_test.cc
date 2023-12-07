@@ -12,9 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "gtest/gtest.h"
 #include "pw_thread/id.h"
 #include "pw_thread/yield.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::this_thread {
 namespace {

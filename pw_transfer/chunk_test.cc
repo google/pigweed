@@ -14,8 +14,8 @@
 
 #include "pw_transfer/internal/chunk.h"
 
-#include "gtest/gtest.h"
 #include "pw_bytes/array.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::transfer::internal {
 namespace {

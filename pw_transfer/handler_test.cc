@@ -14,7 +14,7 @@
 
 #include "pw_transfer/handler.h"
 
-#include "gtest/gtest.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::transfer {
 namespace {

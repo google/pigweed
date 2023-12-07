@@ -14,7 +14,6 @@
 
 #include "pw_thread/thread_snapshot_service.h"
 
-#include "gtest/gtest.h"
 #include "pw_protobuf/decoder.h"
 #include "pw_rpc/raw/server_reader_writer.h"
 #include "pw_span/span.h"
@@ -23,6 +22,7 @@
 #include "pw_thread_private/thread_snapshot_service.h"
 #include "pw_thread_protos/thread.pwpb.h"
 #include "pw_thread_protos/thread_snapshot_service.pwpb.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::thread::proto {
 namespace {

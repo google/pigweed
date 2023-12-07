@@ -19,13 +19,13 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "gtest/gtest.h"
 #include "pw_preprocessor/util.h"
 #include "pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_128_hash_macro.h"
 #include "pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_256_hash_macro.h"
 #include "pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_80_hash_macro.h"
 #include "pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_96_hash_macro.h"
 #include "pw_tokenizer_private/generated_hash_test_cases.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::tokenizer {
 namespace {

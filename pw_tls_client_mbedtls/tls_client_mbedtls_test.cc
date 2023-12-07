@@ -12,9 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "gtest/gtest.h"
 #include "pw_stream/null_stream.h"
 #include "pw_tls_client/session.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::tls_client {
 

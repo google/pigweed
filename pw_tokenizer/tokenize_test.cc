@@ -20,9 +20,9 @@
 #include <iterator>
 #include <limits>
 
-#include "gtest/gtest.h"
 #include "pw_tokenizer/hash.h"
 #include "pw_tokenizer_private/tokenize_test.h"
+#include "pw_unit_test/framework.h"
 #include "pw_varint/varint.h"
 
 namespace pw::tokenizer {

@@ -13,10 +13,10 @@
 // the License.
 #pragma once
 
-#include "gtest/gtest.h"
 #include "pw_bytes/span.h"
 #include "pw_containers/vector.h"
 #include "pw_transfer/internal/chunk.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::transfer::test {
 

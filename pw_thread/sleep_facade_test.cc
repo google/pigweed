@@ -14,10 +14,10 @@
 
 #include <chrono>
 
-#include "gtest/gtest.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_thread/id.h"
 #include "pw_thread/sleep.h"
+#include "pw_unit_test/framework.h"
 
 using pw::chrono::SystemClock;
 using namespace std::chrono_literals;

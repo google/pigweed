@@ -20,13 +20,13 @@
 #include <string>
 #include <string_view>
 
-#include "gtest/gtest.h"
 #include "pw_random/xor_shift.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
 #include "pw_string/string_builder.h"
 #include "pw_transfer/transfer.h"
 #include "pw_transfer_private/filename_generator.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::transfer {
 
