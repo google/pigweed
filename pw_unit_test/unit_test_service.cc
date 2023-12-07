@@ -14,10 +14,10 @@
 
 #include "pw_unit_test/unit_test_service.h"
 
-#include "gtest/gtest.h"
 #include "pw_containers/vector.h"
 #include "pw_log/log.h"
 #include "pw_protobuf/decoder.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::unit_test {
 

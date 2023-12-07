@@ -13,7 +13,7 @@
 // the License.
 #pragma once
 
-#include "gtest/gtest.h"
+#include "pw_unit_test/framework.h"
 
 // Ensures tests in a static library are linked and executed. Provide the test
 // suite name and test name for one test in the file linked into a static

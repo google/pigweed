@@ -253,7 +253,7 @@ The following example shows how to write a main function that runs
 
 .. code-block:: cpp
 
-   #include "gtest/gtest.h"
+   #include "pw_unit_test/framework.h"
 
    // pw_unit_test:light requires an event handler to be configured.
    #include "pw_unit_test/simple_printing_event_handler.h"
@@ -842,7 +842,7 @@ GoogleTest without modification, as shown below.
 
 .. code-block:: c++
 
-   #include "gtest/gtest.h"
+   #include "pw_unit_test/framework.h"
    #include "pw_unit_test/logging_event_handler.h"
 
    int main() {
