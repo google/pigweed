@@ -12,8 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "gtest/gtest.h"
 #include "pw_trace/internal/null.h"
+#include "pw_unit_test/framework.h"
 
 #define PW_TRACE_MODULE_NAME "this test!"
 

@@ -14,12 +14,12 @@
 
 #include "pw_trace_tokenized/trace_service_pwpb.h"
 
-#include "gtest/gtest.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_rpc/pwpb/test_method_context.h"
 #include "pw_stream/memory_stream.h"
 #include "pw_trace/trace.h"
 #include "pw_trace_tokenized/trace_tokenized.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::trace {
 

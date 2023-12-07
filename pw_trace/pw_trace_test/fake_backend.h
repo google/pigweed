@@ -14,6 +14,9 @@
 
 #pragma once
 
+#include <cstddef>
+#include <cstring>
+
 // Enable traces
 #define PW_TRACE_TYPE_INSTANT trace_fake_backend::Instantaneous
 #define PW_TRACE_TYPE_INSTANT_GROUP trace_fake_backend::InstantaneousGroup
@@ -96,7 +99,7 @@ class Event {
            data_format_string_ == rhs.data_format_string_ &&      //
            data_size_ == rhs.data_size_ &&                        //
            (data_size_ == 0 ||                                    //
-            (memcmp(data_, rhs.data_, data_size_) == 0));
+            (std::memcmp(data_, rhs.data_, data_size_) == 0));
   }
 
   bool IsEqualIgnoreLabel(const Event& rhs) const {
@@ -107,7 +110,7 @@ class Event {
            data_format_string_ == rhs.data_format_string_ &&      //
            data_size_ == rhs.data_size_ &&                        //
            (data_size_ == 0 ||                                    //
-            (memcmp(data_, rhs.data_, data_size_) == 0));
+            (std::memcmp(data_, rhs.data_, data_size_) == 0));
   }
 
  private:

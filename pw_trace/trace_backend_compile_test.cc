@@ -15,8 +15,8 @@
 // This is a simple test that ensures a provided trace backend compiles.
 
 #define PW_TRACE_MODULE_NAME "TST"
-#include "gtest/gtest.h"
 #include "pw_trace/trace.h"
+#include "pw_unit_test/framework.h"
 
 namespace {
 

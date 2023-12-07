@@ -13,9 +13,9 @@
 // the License.
 
 #define PW_TRACE_MODULE_NAME "TST"
-#include "gtest/gtest.h"
 #include "pw_trace/trace.h"
 #include "pw_trace_test/fake_backend.h"
+#include "pw_unit_test/framework.h"
 
 using namespace trace_fake_backend;
 

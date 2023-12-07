@@ -16,8 +16,8 @@
 
 #include "pw_trace_tokenized/trace_buffer.h"
 
-#include "gtest/gtest.h"
 #include "pw_trace/trace.h"
+#include "pw_unit_test/framework.h"
 
 TEST(TokenizedTrace, Simple) {
   PW_TRACE_SET_ENABLED(true);
