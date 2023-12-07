@@ -20,6 +20,7 @@ import json
 import logging
 import os
 from pathlib import Path
+import platform
 import re
 import shutil
 import subprocess
@@ -573,6 +574,11 @@ def zephyr_build(ctx: PresubmitContext) -> None:
         / 'pigweed'
         / 'clang_sysroot'
     )
+    platform_filters = (
+        ['-P', 'native_posix', '-P', 'native_sim']
+        if platform.system() in ['Windows', 'Darwin']
+        else []
+    )
     # Run twister
     call(
         sys.executable,
@@ -582,6 +588,7 @@ def zephyr_build(ctx: PresubmitContext) -> None:
         '--clobber-output',
         '--inline-logs',
         '--verbose',
+        *platform_filters,
         '-x=CONFIG_LLVM_USE_LLD=y',
         '-x=CONFIG_COMPILER_RT_RTLIB=y',
         f'-x=TOOLCHAIN_C_FLAGS=--sysroot={sysroot_dir}',
@@ -729,11 +736,11 @@ def bazel_build(ctx: PresubmitContext) -> None:
             '//...',
         )
 
-        for platform, targets in targets_for_platform.items():
+        for platforms, targets in targets_for_platform.items():
             build.bazel(
                 ctx,
                 'build',
-                f'--platforms={platform}',
+                f'--platforms={platforms}',
                 f"--cxxopt='-std={cxxversion}'",
                 *targets,
             )
