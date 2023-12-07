@@ -169,6 +169,15 @@ identical to the project's directory structure. The only special case is the
 top-level ``index.rst`` file's imports; they must start from the project's build
 root.
 
+Viewing Documentation
+---------------------
+``pw_docgen`` includes a web server that serves locally-generated documentation
+at ``pw_docgen.docserver``. It supports hot-reloading, so the rendered docs in
+your browser will refresh as you make changes to the source files.
+
+In most cases, you will not need to run the docs server directly. Instead, it
+will be run via :ref:`module-pw_watch`.
+
 Sphinx Extensions
 =================
 This module houses Pigweed-specific extensions for the Sphinx documentation

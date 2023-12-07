@@ -24,6 +24,7 @@ pw_python_package("py") {
   sources = [
     "pw_docgen/__init__.py",
     "pw_docgen/docgen.py",
+    "pw_docgen/docserver.py",
     "pw_docgen/seed.py",
     "pw_docgen/sphinx/__init__.py",
     "pw_docgen/sphinx/google_analytics.py",
