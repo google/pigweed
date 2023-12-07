@@ -18,10 +18,10 @@
 #include <array>
 #include <random>
 
-#include "gtest/gtest.h"
 #include "pw_bytes/span.h"
 #include "pw_log/log.h"
 #include "pw_status/status.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
 namespace {

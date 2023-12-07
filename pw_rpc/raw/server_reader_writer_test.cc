@@ -16,12 +16,12 @@
 
 #include <optional>
 
-#include "gtest/gtest.h"
 #include "pw_rpc/internal/lock.h"
 #include "pw_rpc/raw/fake_channel_output.h"
 #include "pw_rpc/service.h"
 #include "pw_rpc/writer.h"
 #include "pw_rpc_test_protos/test.raw_rpc.pb.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
 

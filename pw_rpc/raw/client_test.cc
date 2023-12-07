@@ -16,11 +16,11 @@
 
 #include <optional>
 
-#include "gtest/gtest.h"
 #include "pw_rpc/internal/client_call.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/raw/client_reader_writer.h"
 #include "pw_rpc/raw/client_testing.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
 

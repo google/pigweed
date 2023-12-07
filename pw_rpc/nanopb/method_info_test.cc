@@ -14,9 +14,9 @@
 
 #include "pw_rpc/internal/method_info.h"
 
-#include "gtest/gtest.h"
 #include "pw_rpc/internal/method_info_tester.h"
 #include "pw_rpc_test_protos/test.rpc.pb.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc::internal {
 namespace {

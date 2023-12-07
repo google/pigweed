@@ -22,9 +22,9 @@
 
 #include "pw_result/result.h"
 
-#include "gtest/gtest.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw {
 namespace {

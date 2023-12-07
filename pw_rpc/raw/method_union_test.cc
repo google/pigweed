@@ -16,13 +16,13 @@
 
 #include <array>
 
-#include "gtest/gtest.h"
 #include "pw_bytes/array.h"
 #include "pw_protobuf/decoder.h"
 #include "pw_protobuf/encoder.h"
 #include "pw_rpc/internal/test_utils.h"
 #include "pw_rpc/service.h"
 #include "pw_rpc_test_protos/test.pwpb.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc::internal {
 namespace {

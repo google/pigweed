@@ -16,8 +16,8 @@
 // so that the generated stubs can be tested.
 #define _PW_RPC_COMPILE_GENERATED_SERVICE_STUBS
 
-#include "gtest/gtest.h"
 #include "pw_rpc_test_protos/test.raw_rpc.pb.h"
+#include "pw_unit_test/framework.h"
 
 namespace {
 

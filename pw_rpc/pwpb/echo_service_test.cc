@@ -14,9 +14,9 @@
 
 #include <string_view>
 
-#include "gtest/gtest.h"
 #include "pw_rpc/echo_service_pwpb.h"
 #include "pw_rpc/pwpb/test_method_context.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
 namespace {

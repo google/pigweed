@@ -20,7 +20,6 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "gtest/gtest.h"
 #include "pw_assert/assert.h"
 #include "pw_rpc/client.h"
 #include "pw_rpc/internal/channel.h"
@@ -29,6 +28,7 @@
 #include "pw_rpc/raw/fake_channel_output.h"
 #include "pw_rpc/server.h"
 #include "pw_span/span.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc::internal {
 

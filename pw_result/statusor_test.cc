@@ -29,8 +29,8 @@
 #include <variant>
 #include <vector>
 
-#include "gtest/gtest.h"
 #include "pw_result/result.h"
+#include "pw_unit_test/framework.h"
 
 namespace {
 

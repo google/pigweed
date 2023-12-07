@@ -14,12 +14,12 @@
 
 #include <atomic>
 
-#include "gtest/gtest.h"
 #include "pw_rpc/nanopb/client_server_testing_threaded.h"
 #include "pw_rpc_test_protos/test.rpc.pb.h"
 #include "pw_sync/binary_semaphore.h"
 #include "pw_sync/mutex.h"
 #include "pw_thread/non_portable_test_thread_options.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
 namespace {

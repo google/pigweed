@@ -12,11 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "gtest/gtest.h"
 #include "pw_assert/check.h"
 #include "pw_rpc/benchmark.rpc.pb.h"
 #include "pw_rpc/integration_testing.h"
 #include "pw_sync/binary_semaphore.h"
+#include "pw_unit_test/framework.h"
 
 namespace nanopb_rpc_test {
 namespace {

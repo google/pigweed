@@ -16,9 +16,9 @@
 
 #include <optional>
 
-#include "gtest/gtest.h"
 #include "pw_rpc/nanopb/client_testing.h"
 #include "pw_rpc_test_protos/test.rpc.pb.h"
+#include "pw_unit_test/framework.h"
 
 PW_MODIFY_DIAGNOSTICS_PUSH();
 PW_MODIFY_DIAGNOSTIC(ignored, "-Wmissing-field-initializers");

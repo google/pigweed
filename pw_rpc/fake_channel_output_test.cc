@@ -18,10 +18,10 @@
 #include <cstddef>
 #include <memory>
 
-#include "gtest/gtest.h"
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/lock.h"
 #include "pw_rpc/internal/packet.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc::internal::test {
 namespace {

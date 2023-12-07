@@ -18,10 +18,10 @@
 #include <cstddef>
 #include <memory>
 
-#include "gtest/gtest.h"
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc_test_protos/test.rpc.pwpb.h"
+#include "pw_unit_test/framework.h"
 
 PW_MODIFY_DIAGNOSTICS_PUSH();
 PW_MODIFY_DIAGNOSTIC(ignored, "-Wmissing-field-initializers");

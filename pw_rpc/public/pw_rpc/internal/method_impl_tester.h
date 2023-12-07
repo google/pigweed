@@ -16,9 +16,9 @@
 #include <tuple>
 #include <type_traits>
 
-#include "gtest/gtest.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/raw/internal/method.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc::internal {
 

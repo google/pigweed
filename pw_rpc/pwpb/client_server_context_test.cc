@@ -15,10 +15,10 @@
 #include <mutex>
 #include <utility>
 
-#include "gtest/gtest.h"
 #include "pw_rpc/pwpb/client_server_testing.h"
 #include "pw_rpc_test_protos/test.rpc.pwpb.h"
 #include "pw_sync/mutex.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
 namespace {

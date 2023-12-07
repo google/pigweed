@@ -16,8 +16,8 @@
 
 #include <chrono>
 
-#include "gtest/gtest.h"
 #include "pw_sync/binary_semaphore.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc::fuzz {
 namespace {

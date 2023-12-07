@@ -16,7 +16,6 @@
 
 #include <chrono>
 
-#include "gtest/gtest.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/packet.h"
@@ -26,6 +25,7 @@
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 #include "pw_thread/thread.h"
+#include "pw_unit_test/framework.h"
 #include "pw_work_queue/test_thread.h"
 #include "pw_work_queue/work_queue.h"
 

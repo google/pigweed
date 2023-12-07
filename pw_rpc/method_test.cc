@@ -16,11 +16,11 @@
 
 #include <array>
 
-#include "gtest/gtest.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/method_type.h"
 #include "pw_rpc/server.h"
 #include "pw_rpc_private/test_method.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc::internal {
 namespace {

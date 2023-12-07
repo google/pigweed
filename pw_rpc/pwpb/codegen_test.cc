@@ -12,13 +12,13 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "gtest/gtest.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_rpc/internal/hash.h"
 #include "pw_rpc/internal/test_utils.h"
 #include "pw_rpc/pwpb/test_method_context.h"
 #include "pw_rpc_pwpb_private/internal_test_utils.h"
 #include "pw_rpc_test_protos/test.rpc.pwpb.h"
+#include "pw_unit_test/framework.h"
 
 PW_MODIFY_DIAGNOSTICS_PUSH();
 PW_MODIFY_DIAGNOSTIC(ignored, "-Wmissing-field-initializers");

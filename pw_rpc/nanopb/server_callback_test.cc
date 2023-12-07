@@ -14,12 +14,12 @@
 
 #include <array>
 
-#include "gtest/gtest.h"
 #include "pb_decode.h"
 #include "pb_encode.h"
 #include "pw_rpc/nanopb/test_method_context.h"
 #include "pw_rpc/service.h"
 #include "pw_rpc_test_protos/test.rpc.pb.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
 

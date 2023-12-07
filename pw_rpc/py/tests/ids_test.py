@@ -48,7 +48,7 @@ IdsTest = _TESTS.python_tests('IdsTest', _define_py_test)
 _CC_HEADER = """\
 #include <string_view>
 
-#include "gtest/gtest.h"
+#include "pw_unit_test/framework.h"
 #include "pw_rpc/internal/hash.h"
 
 namespace pw::rpc::internal {

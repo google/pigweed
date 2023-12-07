@@ -12,7 +12,6 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "gtest/gtest.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_rpc/client_server.h"
 #include "pw_rpc/synchronous_call.h"
@@ -26,6 +25,7 @@
 #include "pw_thread/thread.h"
 #include "pw_thread/thread_core.h"
 #include "pw_thread_stl/options.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
 namespace {

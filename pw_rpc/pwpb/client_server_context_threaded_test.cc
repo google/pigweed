@@ -15,12 +15,12 @@
 #include <atomic>
 #include <iostream>
 
-#include "gtest/gtest.h"
 #include "pw_function/function.h"
 #include "pw_rpc/pwpb/client_server_testing_threaded.h"
 #include "pw_rpc_test_protos/test.rpc.pwpb.h"
 #include "pw_sync/binary_semaphore.h"
 #include "pw_thread/non_portable_test_thread_options.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
 namespace {

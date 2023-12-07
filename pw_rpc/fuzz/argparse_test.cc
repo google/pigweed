@@ -17,8 +17,8 @@
 #include <cstdint>
 #include <limits>
 
-#include "gtest/gtest.h"
 #include "pw_string/string_builder.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc::fuzz {
 namespace {

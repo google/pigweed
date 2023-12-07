@@ -14,12 +14,12 @@
 
 #include "pw_rpc/client_server.h"
 
-#include "gtest/gtest.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/test_utils.h"
 #include "pw_rpc/raw/fake_channel_output.h"
 #include "pw_rpc/raw/internal/method_union.h"
 #include "pw_rpc/service.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc::internal {
 namespace {

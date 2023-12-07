@@ -16,7 +16,6 @@
 
 #include <chrono>
 
-#include "gtest/gtest.h"
 #include "pw_containers/vector.h"
 #include "pw_log/log.h"
 #include "pw_rpc/benchmark.h"
@@ -24,6 +23,7 @@
 #include "pw_rpc/internal/client_server_testing_threaded.h"
 #include "pw_rpc/internal/fake_channel_output.h"
 #include "pw_thread/non_portable_test_thread_options.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc::fuzz {
 namespace {

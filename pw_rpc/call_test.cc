@@ -20,11 +20,11 @@
 #include <cstring>
 #include <optional>
 
-#include "gtest/gtest.h"
 #include "pw_rpc/internal/test_utils.h"
 #include "pw_rpc/service.h"
 #include "pw_rpc_private/fake_server_reader_writer.h"
 #include "pw_rpc_private/test_method.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
 

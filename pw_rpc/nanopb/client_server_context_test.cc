@@ -13,10 +13,10 @@
 // the License.
 #include <array>
 
-#include "gtest/gtest.h"
 #include "pw_rpc/nanopb/client_server_testing.h"
 #include "pw_rpc_test_protos/test.rpc.pb.h"
 #include "pw_sync/mutex.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
 namespace {

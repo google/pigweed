@@ -17,9 +17,9 @@
 #include <algorithm>
 #include <array>
 
-#include "gtest/gtest.h"
 #include "pw_bytes/span.h"
 #include "pw_status/status.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
 namespace {

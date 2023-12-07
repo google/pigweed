@@ -14,11 +14,11 @@
 
 #include <array>
 
-#include "gtest/gtest.h"
 #include "pw_containers/vector.h"
 #include "pw_rpc/pwpb/test_method_context.h"
 #include "pw_rpc/service.h"
 #include "pw_rpc_test_protos/test.rpc.pwpb.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
 namespace {

@@ -14,10 +14,10 @@
 
 #include "pw_rpc/internal/packet.h"
 
-#include "gtest/gtest.h"
 #include "pw_bytes/array.h"
 #include "pw_fuzzer/fuzztest.h"
 #include "pw_protobuf/wire_format.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc::internal {
 namespace {

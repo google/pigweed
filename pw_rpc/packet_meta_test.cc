@@ -14,9 +14,9 @@
 
 #include "pw_rpc/packet_meta.h"
 
-#include "gtest/gtest.h"
 #include "pw_fuzzer/fuzztest.h"
 #include "pw_rpc/internal/packet.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
 namespace {

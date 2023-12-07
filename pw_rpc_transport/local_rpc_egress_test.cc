@@ -14,7 +14,6 @@
 
 #include "pw_rpc_transport/local_rpc_egress.h"
 
-#include "gtest/gtest.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_log/log.h"
 #include "pw_rpc/client_server.h"
@@ -27,6 +26,7 @@
 #include "pw_sync/thread_notification.h"
 #include "pw_thread/thread.h"
 #include "pw_thread_stl/options.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
 namespace {

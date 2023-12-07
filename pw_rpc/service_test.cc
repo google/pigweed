@@ -14,8 +14,8 @@
 
 #include "pw_rpc/service.h"
 
-#include "gtest/gtest.h"
 #include "pw_rpc/internal/method.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
 

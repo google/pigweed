@@ -17,7 +17,6 @@
 #include <array>
 #include <cstdint>
 
-#include "gtest/gtest.h"
 #include "pw_assert/check.h"
 #include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/method.h"
@@ -26,6 +25,7 @@
 #include "pw_rpc/service.h"
 #include "pw_rpc_private/fake_server_reader_writer.h"
 #include "pw_rpc_private/test_method.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
 namespace {

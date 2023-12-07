@@ -16,7 +16,6 @@
 
 #include <mutex>
 
-#include "gtest/gtest.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_containers/vector.h"
 #include "pw_result/result.h"
@@ -28,6 +27,7 @@
 #include "pw_sync/interrupt_spin_lock.h"
 #include "pw_sync/lock_annotations.h"
 #include "pw_sync/timed_thread_notification.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc::test {
 namespace {

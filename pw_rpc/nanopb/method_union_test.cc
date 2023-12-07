@@ -17,10 +17,10 @@
 
 #include <array>
 
-#include "gtest/gtest.h"
 #include "pw_rpc/internal/test_utils.h"
 #include "pw_rpc_nanopb_private/internal_test_utils.h"
 #include "pw_rpc_test_protos/test.pb.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc::internal {
 namespace {

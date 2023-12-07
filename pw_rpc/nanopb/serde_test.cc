@@ -12,9 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "gtest/gtest.h"
 #include "pw_rpc/nanopb/internal/common.h"
 #include "pw_rpc_test_protos/test.pb.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc::internal {
 namespace {

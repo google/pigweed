@@ -16,12 +16,12 @@
 #include <array>
 #include <cstring>
 
-#include "gtest/gtest.h"
 #include "pw_assert/check.h"
 #include "pw_log/log.h"
 #include "pw_rpc/benchmark.raw_rpc.pb.h"
 #include "pw_rpc/integration_testing.h"
 #include "pw_sync/binary_semaphore.h"
+#include "pw_unit_test/framework.h"
 
 namespace rpc_test {
 namespace {

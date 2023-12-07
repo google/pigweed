@@ -16,10 +16,10 @@
 
 #include <array>
 
-#include "gtest/gtest.h"
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc::internal {
 namespace {

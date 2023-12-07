@@ -17,7 +17,6 @@
 #include <algorithm>
 #include <random>
 
-#include "gtest/gtest.h"
 #include "pw_bytes/span.h"
 #include "pw_log/log.h"
 #include "pw_rpc_transport/socket_rpc_transport.h"
@@ -27,6 +26,7 @@
 #include "pw_sync/thread_notification.h"
 #include "pw_thread/thread.h"
 #include "pw_thread_stl/options.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
 namespace {

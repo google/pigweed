@@ -16,7 +16,6 @@
 
 #include <array>
 
-#include "gtest/gtest.h"
 #include "pw_containers/algorithm.h"
 #include "pw_rpc/internal/lock.h"
 #include "pw_rpc/internal/method_impl_tester.h"
@@ -25,6 +24,7 @@
 #include "pw_rpc/service.h"
 #include "pw_rpc_pwpb_private/internal_test_utils.h"
 #include "pw_rpc_test_protos/test.pwpb.h"
+#include "pw_unit_test/framework.h"
 
 PW_MODIFY_DIAGNOSTICS_PUSH();
 PW_MODIFY_DIAGNOSTIC(ignored, "-Wmissing-field-initializers");

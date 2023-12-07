@@ -16,9 +16,9 @@
 
 #include <limits>
 
-#include "gtest/gtest.h"
 #include "pw_log/log.h"
 #include "pw_rpc/integration_test_socket_client.h"
+#include "pw_unit_test/framework.h"
 #include "pw_unit_test/logging_event_handler.h"
 
 namespace pw::rpc::integration_test {

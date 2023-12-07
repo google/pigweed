@@ -16,7 +16,6 @@
 
 #include <random>
 
-#include "gtest/gtest.h"
 #include "public/pw_rpc_transport/rpc_transport.h"
 #include "pw_bytes/span.h"
 #include "pw_metric/metric.h"
@@ -30,6 +29,7 @@
 #include "pw_status/status.h"
 #include "pw_string/string.h"
 #include "pw_sync/thread_notification.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
 namespace {

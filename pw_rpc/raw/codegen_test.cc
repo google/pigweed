@@ -14,7 +14,6 @@
 
 #include <optional>
 
-#include "gtest/gtest.h"
 #include "pw_protobuf/decoder.h"
 #include "pw_rpc/internal/hash.h"
 #include "pw_rpc/raw/client_testing.h"
@@ -22,6 +21,7 @@
 #include "pw_rpc_test_protos/no_package.raw_rpc.pb.h"
 #include "pw_rpc_test_protos/test.pwpb.h"
 #include "pw_rpc_test_protos/test.raw_rpc.pb.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
 namespace {
