@@ -14,50 +14,13 @@ API reference
     are supported.
   * Which flags to apply to various actions.
 
-   .. py:attribute:: feature_deps
+   .. py:attribute:: action_configs
       :type: List[label]
 
-      ``pw_cc_toolchain_feature`` labels that provide features for this toolchain.
-
-   .. py:attribute:: ar
-      :type: File
-
-      Path to the tool to use for ``ar`` (static link) actions.
-
-   .. py:attribute:: cpp
-      :type: File
-
-      Path to the tool to use for C++ compile actions.
-
-   .. py:attribute:: gcc
-      :type: File
-
-      Path to the tool to use for C compile actions.
-
-   .. py:attribute:: gcov
-      :type: File
-
-      Path to the tool to use for generating code coverage data.
-
-   .. py:attribute:: ld
-      :type: File
-
-      Path to the tool to use for link actions.
-
-   .. py:attribute:: strip
-      :type: File
-
-      Path to the tool to use for strip actions.
-
-   .. py:attribute:: objcopy
-      :type: File
-
-      Path to the tool to use for objcopy actions.
-
-   .. py:attribute:: objdump
-      :type: File
-
-      Path to the tool to use for objdump actions.
+      List of :py:class:`pw_cc_action_config` labels that bind tools to the
+      appropriate actions. This is how Bazel knows which binaries to use when
+      compiling, linking, or taking other actions like embedding data using
+      objcopy.
 
    .. py:attribute:: action_config_flag_sets
       :type: List[label]

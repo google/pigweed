@@ -55,7 +55,7 @@ PW_CC_TOOLCHAIN_DEPRECATED_TOOL_ATTRS = {
 }
 
 PW_CC_TOOLCHAIN_CONFIG_ATTRS = {
-    "action_configs": "List of `pw_cc_action_config` labels that match tools to the appropriate actions",
+    "action_configs": "List of `pw_cc_action_config` labels that bind tools to the appropriate actions",
     "action_config_flag_sets": "List of `pw_cc_flag_set`s to apply to their respective action configs",
 
     # Attributes originally part of create_cc_toolchain_config_info.
