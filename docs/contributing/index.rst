@@ -148,7 +148,7 @@ To build the documentation, follow the :ref:`getting
 started<docs-get-started-upstream>` guide so you can build Pigweed. Then:
 
 #. Change to your checkout directory and ``. activate.sh`` if necessary
-#. Run ``pw watch out`` to build the code, run tests, and build docs
+#. Run ``pw watch -C out`` to build the code, run tests, and build docs
 #. Wait for the build to finish (see a ``PASS``)
 #. Navigate to  ``<CHECKOUT>/out/docs/gen/docs/html/index.html``
 #. Edit the relevant ``.rst`` file. Save when ready
