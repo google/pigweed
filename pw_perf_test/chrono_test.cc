@@ -14,10 +14,10 @@
 
 #include <chrono>
 
-#include "gtest/gtest.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_perf_test/internal/chrono_timer_interface.h"
 #include "pw_thread/sleep.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::perf_test::internal::backend {
 namespace {

@@ -16,8 +16,8 @@
 
 #include <cstring>
 
-#include "gtest/gtest.h"
 #include "pw_preprocessor/util.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::protobuf {
 namespace {

@@ -14,8 +14,8 @@
 
 #include "pw_preprocessor/concat.h"
 
-#include "gtest/gtest.h"
 #include "pw_preprocessor/util.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw {
 namespace {

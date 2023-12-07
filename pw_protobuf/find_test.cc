@@ -14,9 +14,9 @@
 
 #include "pw_protobuf/find.h"
 
-#include "gtest/gtest.h"
 #include "pw_stream/memory_stream.h"
 #include "pw_string/string.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::protobuf {
 namespace {

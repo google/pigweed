@@ -12,9 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "gtest/gtest.h"
 #include "pw_bytes/array.h"
 #include "pw_protobuf/encoder.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::protobuf {
 namespace {

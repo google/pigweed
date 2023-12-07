@@ -14,7 +14,7 @@
 
 #include "pw_persistent_ram/flat_file_system_entry.h"
 
-#include "gtest/gtest.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::persistent_ram {
 namespace {

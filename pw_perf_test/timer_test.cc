@@ -14,7 +14,7 @@
 
 #include "pw_perf_test/internal/timer.h"
 
-#include "gtest/gtest.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::perf_test::internal {
 namespace {

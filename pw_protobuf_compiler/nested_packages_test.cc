@@ -12,12 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "gtest/gtest.h"
 #include "proto_root/aggregate.pwpb.h"
 #include "proto_root/aggregate_wrapper.pwpb.h"
 #include "proto_root/data_type/id/id.pwpb.h"
 #include "proto_root/data_type/thing/thing.pwpb.h"
 #include "proto_root/data_type/thing/type_of_thing.pwpb.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::protobuf_compiler {
 namespace {

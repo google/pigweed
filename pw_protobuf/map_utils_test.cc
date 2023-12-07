@@ -16,9 +16,9 @@
 
 #include <string_view>
 
-#include "gtest/gtest.h"
 #include "pw_stream/memory_stream.h"
 #include "pw_stream/stream.h"
+#include "pw_unit_test/framework.h"
 
 #define ASSERT_OK(status) ASSERT_EQ(OkStatus(), status)
 

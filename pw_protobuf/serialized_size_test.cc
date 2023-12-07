@@ -15,7 +15,7 @@
 
 #include <cinttypes>
 
-#include "gtest/gtest.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::protobuf {
 namespace {

@@ -15,8 +15,8 @@
 
 #include <type_traits>
 
-#include "gtest/gtest.h"
 #include "pw_random/xor_shift.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::persistent_ram {
 namespace {

@@ -14,10 +14,10 @@
 
 #include "pw_protobuf/encoder.h"
 
-#include "gtest/gtest.h"
 #include "pw_bytes/span.h"
 #include "pw_span/span.h"
 #include "pw_stream/memory_stream.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::protobuf {
 namespace {

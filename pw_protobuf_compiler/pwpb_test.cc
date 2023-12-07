@@ -12,9 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "gtest/gtest.h"
 #include "pw_protobuf_compiler_pwpb_protos/pwpb_test.pwpb.h"
 #include "pw_string/string.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::protobuf_compiler {
 namespace {

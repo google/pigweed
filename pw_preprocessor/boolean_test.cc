@@ -16,7 +16,7 @@
 // passed. The TEST functions are used for organization only.
 #include "pw_preprocessor/boolean.h"
 
-#include "gtest/gtest.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw {
 namespace {

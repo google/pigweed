@@ -16,7 +16,7 @@
 
 #include <cstdint>
 
-#include "gtest/gtest.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw {
 namespace {

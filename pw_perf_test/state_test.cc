@@ -14,8 +14,8 @@
 
 #include "pw_perf_test/state.h"
 
-#include "gtest/gtest.h"
 #include "pw_perf_test/event_handler.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::perf_test {
 namespace {
