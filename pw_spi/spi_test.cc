@@ -15,7 +15,6 @@
 #include <array>
 #include <optional>
 
-#include "gtest/gtest.h"
 #include "pw_spi/chip_selector.h"
 #include "pw_spi/device.h"
 #include "pw_spi/initiator.h"
@@ -23,6 +22,7 @@
 #include "pw_status/status.h"
 #include "pw_sync/borrow.h"
 #include "pw_sync/mutex.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::spi {
 namespace {

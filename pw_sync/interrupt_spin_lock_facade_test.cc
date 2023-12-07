@@ -12,9 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "gtest/gtest.h"
 #include "pw_sync/interrupt_spin_lock.h"
 #include "pw_sync_private/borrow_lockable_tests.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::sync {
 namespace {

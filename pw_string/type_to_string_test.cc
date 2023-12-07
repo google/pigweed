@@ -19,7 +19,7 @@
 #include <limits>
 #include <string_view>
 
-#include "gtest/gtest.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::string {
 namespace {

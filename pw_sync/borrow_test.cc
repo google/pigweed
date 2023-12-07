@@ -14,9 +14,9 @@
 
 #include "pw_sync/borrow.h"
 
-#include "gtest/gtest.h"
 #include "pw_sync/lock_testing.h"
 #include "pw_sync_private/borrow_lockable_tests.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::sync::test {
 namespace {

@@ -14,9 +14,9 @@
 
 #include <chrono>
 
-#include "gtest/gtest.h"
 #include "pw_sync/mutex.h"
 #include "pw_sync_private/borrow_lockable_tests.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::sync {
 namespace {

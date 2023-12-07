@@ -16,8 +16,8 @@
 
 #include <cstring>
 
-#include "gtest/gtest.h"
 #include "pw_preprocessor/compiler.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::stream {
 namespace {

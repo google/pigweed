@@ -18,12 +18,12 @@
 #include <optional>
 
 #include "FreeRTOS.h"
-#include "gtest/gtest.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_thread/non_portable_test_thread_options.h"
 #include "pw_thread/sleep.h"
 #include "pw_thread/thread.h"
 #include "pw_thread/thread_core.h"
+#include "pw_unit_test/framework.h"
 #include "task.h"
 
 namespace pw::sync::freertos {

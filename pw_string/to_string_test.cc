@@ -20,10 +20,10 @@
 #include <cstring>
 #include <string>
 
-#include "gtest/gtest.h"
 #include "pw_status/status.h"
 #include "pw_string/internal/config.h"
 #include "pw_string/type_to_string.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw {
 

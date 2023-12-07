@@ -30,9 +30,9 @@
 ///   variants, e.g.
 ///   `ADD_BORROWABLE_LOCK_NAMED_TESTS(MyTestSuite, pw::my_module::Lock);`.
 
-#include "gtest/gtest.h"
 #include "pw_sync/borrow.h"
 #include "pw_sync/lock_traits.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::sync {
 

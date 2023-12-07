@@ -18,10 +18,10 @@
 #include <chrono>
 #include <tuple>
 
-#include "gtest/gtest.h"
 #include "pw_sync/interrupt_spin_lock.h"
 #include "pw_sync/lock_annotations.h"
 #include "pw_sync/mutex.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::sync {
 namespace {

@@ -14,8 +14,8 @@
 
 #include <chrono>
 
-#include "gtest/gtest.h"
 #include "pw_sync/recursive_mutex.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::sync {
 namespace {

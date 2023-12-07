@@ -14,9 +14,9 @@
 
 #include <chrono>
 
-#include "gtest/gtest.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_sync/counting_semaphore.h"
+#include "pw_unit_test/framework.h"
 
 using pw::chrono::SystemClock;
 using namespace std::chrono_literals;

@@ -16,13 +16,13 @@
 
 #include <array>
 
-#include "gtest/gtest.h"
 #include "pw_bytes/span.h"
 #include "pw_protobuf/encoder.h"
 #include "pw_result/result.h"
 #include "pw_snapshot_metadata_proto/snapshot_metadata.pwpb.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::snapshot {
 namespace {

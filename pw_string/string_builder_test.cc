@@ -20,9 +20,9 @@
 #include <cstring>
 #include <string_view>
 
-#include "gtest/gtest.h"
 #include "pw_span/span.h"
 #include "pw_string/format.h"
+#include "pw_unit_test/framework.h"
 
 namespace this_pw_test {
 

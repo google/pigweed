@@ -15,9 +15,9 @@
 #include "pw_spi_mcuxpresso/flexspi.h"
 
 #include "board.h"
-#include "gtest/gtest.h"
 #include "pw_bytes/array.h"
 #include "pw_status/status.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::spi {
 namespace {

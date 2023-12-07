@@ -14,7 +14,6 @@
 
 #include <array>
 
-#include "gtest/gtest.h"
 #include "pw_blob_store/blob_store.h"
 #include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/test_key_value_store.h"
@@ -22,6 +21,7 @@
 #include "pw_software_update/bundled_update_backend.h"
 #include "pw_software_update/update_bundle_accessor.h"
 #include "pw_stream/memory_stream.h"
+#include "pw_unit_test/framework.h"
 #include "test_bundles.h"
 
 #define ASSERT_OK(status) ASSERT_EQ(OkStatus(), status)

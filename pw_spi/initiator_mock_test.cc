@@ -16,11 +16,11 @@
 
 #include <array>
 
-#include "gtest/gtest.h"
 #include "pw_bytes/array.h"
 #include "pw_bytes/span.h"
 #include "pw_containers/algorithm.h"
 #include "pw_span/span.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::spi {
 namespace {

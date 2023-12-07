@@ -12,10 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "gtest/gtest.h"
 #include "pw_protobuf/encoder.h"
 #include "pw_snapshot_protos/snapshot.pwpb.h"
 #include "pw_span/span.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::snapshot {
 namespace {

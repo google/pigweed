@@ -16,9 +16,9 @@
 
 #include <thread>
 
-#include "gtest/gtest.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::stream {
 namespace {

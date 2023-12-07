@@ -14,7 +14,7 @@
 
 #include "pw_stream_shmem_mcuxpresso/stream.h"
 
-#include "gtest/gtest.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::stream {
 namespace {

@@ -14,8 +14,8 @@
 
 #include "pw_stream_uart_linux/stream.h"
 
-#include "gtest/gtest.h"
 #include "public/pw_stream_uart_linux/stream.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::stream {
 namespace {

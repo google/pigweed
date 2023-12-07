@@ -14,6 +14,6 @@
 
 #include "pw_software_update/bundled_update_service_pwpb.h"
 
-#include "gtest/gtest.h"
+#include "pw_unit_test/framework.h"
 
 TEST(BundledUpdateServicePwpb, Compiles) {}

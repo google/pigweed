@@ -18,9 +18,9 @@
 #include <iterator>
 #include <type_traits>
 
-#include "gtest/gtest.h"
 #include "pw_compilation_testing/negative_compilation.h"
 #include "pw_polyfill/standard.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw {
 

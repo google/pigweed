@@ -17,13 +17,13 @@
 #include <chrono>
 #include <functional>
 
-#include "gtest/gtest.h"
 #include "pw_containers/vector.h"
 #include "pw_sync/mutex.h"
 #include "pw_sync/timed_thread_notification.h"
 #include "pw_thread/non_portable_test_thread_options.h"
 #include "pw_thread/sleep.h"
 #include "pw_thread/thread.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::sync {
 namespace {

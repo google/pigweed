@@ -14,9 +14,9 @@
 
 #include "pw_stream/interval_reader.h"
 
-#include "gtest/gtest.h"
 #include "pw_result/result.h"
 #include "pw_stream/memory_stream.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::stream {
 namespace {

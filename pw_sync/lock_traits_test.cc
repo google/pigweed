@@ -14,8 +14,8 @@
 
 #include "pw_sync/lock_traits.h"
 
-#include "gtest/gtest.h"
 #include "pw_sync/lock_testing.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::sync::test {
 

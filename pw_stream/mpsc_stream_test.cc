@@ -14,12 +14,12 @@
 
 #include "pw_stream/mpsc_stream.h"
 
-#include "gtest/gtest.h"
 #include "pw_containers/vector.h"
 #include "pw_fuzzer/fuzztest.h"
 #include "pw_random/xor_shift.h"
 #include "pw_thread/test_thread_context.h"
 #include "pw_thread/thread.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::stream {
 namespace {

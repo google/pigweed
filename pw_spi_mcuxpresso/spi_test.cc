@@ -15,10 +15,10 @@
 #include "pw_spi_mcuxpresso/spi.h"
 
 #include "board.h"
-#include "gtest/gtest.h"
 #include "pw_bytes/array.h"
 #include "pw_spi/device.h"
 #include "pw_status/status.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::spi {
 namespace {

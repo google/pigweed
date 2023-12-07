@@ -33,8 +33,8 @@
 #include <type_traits>
 #include <vector>
 
-#include "gtest/gtest.h"
 #include "pw_polyfill/standard.h"
+#include "pw_unit_test/framework.h"
 
 // Pigweed: gMock matchers are not yet supported.
 #if 0
