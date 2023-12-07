@@ -198,6 +198,7 @@ pw_cc_library(
 
 pw_cc_library(
     name = "allocator_testing",
+    testonly = True,
     srcs = [
         "allocator_testing.cc",
     ],
@@ -212,6 +213,7 @@ pw_cc_library(
         "//pw_assert",
         "//pw_bytes",
         "//pw_containers",
+        "//pw_fuzzer:fuzztest",
         "//pw_random",
         "//pw_unit_test",
         "//third_party/fuchsia:stdcompat",

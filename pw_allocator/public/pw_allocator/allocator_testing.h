@@ -23,6 +23,7 @@
 #include "pw_allocator/simple_allocator.h"
 #include "pw_bytes/span.h"
 #include "pw_containers/vector.h"
+#include "pw_fuzzer/fuzztest.h"
 #include "pw_random/random.h"
 #include "pw_unit_test/framework.h"
 
@@ -161,6 +162,27 @@ struct ReallocationRequest {
 using AllocatorRequest =
     std::variant<AllocationRequest, DeallocationRequest, ReallocationRequest>;
 
+/// Returns a FuzzTest domain for producing arbitrary allocator requests.
+///
+/// This method integrates with FuzzTest to use code coverage to produce guided
+/// mutations.
+///
+/// See https://github.com/google/fuzztest/blob/main/doc/domains-reference.md
+///
+/// @param  max_size  Size of the largest allocation that can be requested.
+fuzzer::Domain<AllocatorRequest> ArbitraryAllocatorRequest(size_t max_size);
+
+/// Returns a FuzzTest domain for producing sequences of arbitrary allocator
+/// requests.
+///
+/// See https://github.com/google/fuzztest/blob/main/doc/domains-reference.md
+///
+/// @param  max_size  Size of the largest allocation that can be requested.
+template <size_t kMaxRequests, size_t kMaxSize>
+auto ArbitraryAllocatorRequests() {
+  return fuzzer::VectorOf<kMaxRequests>(ArbitraryAllocatorRequest(kMaxSize));
+}
+
 /// Associates an `Allocator` with a vector to store allocated pointers.
 ///
 /// This class facilitates performing allocations from generated
@@ -259,6 +281,28 @@ class AllocatorTestHarnessGeneric {
 ///
 /// This class does NOT implement `WithAllocationsGeneric::Init`. It must be
 /// extended further with a method that provides an initialized allocator.
+///
+/// For example, one create a fuzzer for `MyAllocator` that verifies it never
+/// crashes by adding the following class, function, and macro:
+/// @code{.cpp}
+///   constexpr size_t kMaxRequests = 256;
+///   constexpr size_t kMaxAllocations = 128;
+///   constexpr size_t kMaxSize = 2048;
+///
+///   class MyAllocatorFuzzer : public AllocatorTestHarness<kMaxAllocations> {
+///    private:
+///     Allocator* Init() override { return &allocator_; }
+///     MyAllocator allocator_;
+///   };
+///
+///   void MyAllocatorNeverCrashes(const Vector<AllocatorRequest>& requests) {
+///     static MyAllocatorFuzzer fuzzer;
+///     fuzzer.HandleRequests(requests);
+///   }
+///
+///   FUZZ_TEST(MyAllocator, MyAllocatorNeverCrashes)
+///     .WithDomains(ArbitraryAllocatorRequests<kMaxRequests, kMaxSize>());
+/// @endcode
 template <size_t kMaxConcurrentAllocations>
 class AllocatorTestHarness : public AllocatorTestHarnessGeneric {
  public:
