@@ -682,3 +682,34 @@ can consider:
   scoped static destructors are prefixed ``__tcf_*``. To figure out object these
   destructor functions are associated with, you can use ``llvm-symbolizer`` or
   ``addr2line`` and these will often print out the related object's name.
+
+Sorting input sections by alignment
+=========================================
+
+Linker scripts often contain input section wildcard patterns to specify which
+input sections should be placed in each output section. For example, say a
+linker script contains a sections command like the following:
+
+.. code-block:: text
+
+   .text : { *(.init*) *(.text*) }
+
+By default, the GCC and Clang linkers will place symbols matched by each
+wildcard pattern in the order they are seen at link-time. The linker will insert
+padding bytes as necessary to satisfy the alignment requirements of each symbol.
+
+The GCC and Clang linkers allow one to first sort matched symbols for each
+wildcard pattern by alignment with the ``SORT_BY_ALIGNMENT`` keyword, which can
+reduce the amount of necessary padding bytes and save memory. This can be used
+to enable alignment sort on a per-pattern basis like so:
+
+.. code-block:: text
+
+   .text : { *(SORT_BY_ALIGNMENT(.init*)) *(SORT_BY_ALIGNMENT(.text*)) }
+
+This keyword can be applied globally to all wildcard matches in your linker
+script by passing the ``--sort-section=alignment`` option to the linker.
+
+See the `ld manual <https://sourceware.org/binutils/docs/ld/Input-Section-Wildcards.html>`_
+for more information.
+
