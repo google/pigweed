@@ -12,7 +12,6 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include <gtest/gtest.h>
 #include <pw_random/xor_shift.h>
 #include <pw_string/format.h>
 
@@ -22,6 +21,7 @@
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/random.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/parse_args.h"
+#include "pw_unit_test/framework.h"
 
 #ifdef PW_LOG_DECLARE_FAKE_DRIVER
 PW_LOG_DECLARE_FAKE_DRIVER();

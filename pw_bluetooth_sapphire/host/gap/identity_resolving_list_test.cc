@@ -14,10 +14,9 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gap/identity_resolving_list.h"
 
-#include <gtest/gtest.h>
-
 #include "pw_bluetooth_sapphire/internal/host/common/random.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/util.h"
+#include "pw_unit_test/framework.h"
 
 namespace bt::gap {
 namespace {

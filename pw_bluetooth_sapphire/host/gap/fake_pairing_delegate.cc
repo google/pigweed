@@ -14,7 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gap/fake_pairing_delegate.h"
 
-#include <gtest/gtest.h>
+#include "pw_unit_test/framework.h"
 
 namespace bt::gap {
 namespace {

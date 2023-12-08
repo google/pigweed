@@ -14,12 +14,11 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gatt/local_service_manager.h"
 
-#include <gtest/gtest.h>
-
 #include "pw_bluetooth_sapphire/internal/host/att/att.h"
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/gatt_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_unit_test/framework.h"
 
 namespace bt::gatt {
 namespace {

@@ -14,10 +14,9 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/uuid.h"
 
-#include <gtest/gtest.h>
-
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_unit_test/framework.h"
 
 namespace bt {
 namespace {

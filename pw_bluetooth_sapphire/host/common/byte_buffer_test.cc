@@ -15,12 +15,12 @@
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 
 #include <gmock/gmock.h>
-#include <gtest/gtest.h>
 
 #include <cstddef>
 #include <type_traits>
 
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_unit_test/framework.h"
 
 #pragma clang diagnostic ignored "-Wc99-extensions"
 

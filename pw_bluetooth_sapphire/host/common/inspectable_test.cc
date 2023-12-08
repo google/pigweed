@@ -15,9 +15,9 @@
 #include "pw_bluetooth_sapphire/internal/host/common/inspectable.h"
 
 #include <gmock/gmock.h>
-#include <gtest/gtest.h>
 
 #include "pw_bluetooth_sapphire/internal/host/testing/inspect.h"
+#include "pw_unit_test/framework.h"
 
 #ifndef NINSPECT
 

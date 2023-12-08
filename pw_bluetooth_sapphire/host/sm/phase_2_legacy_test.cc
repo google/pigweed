@@ -16,8 +16,6 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sm/phase_2_legacy.h"
 
-#include <gtest/gtest.h>
-
 #include <cstdint>
 #include <memory>
 
@@ -33,6 +31,7 @@
 #include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/util.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_unit_test/framework.h"
 
 namespace bt::sm {
 namespace {

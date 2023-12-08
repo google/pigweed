@@ -14,7 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/dynamic_channel_registry.h"
 
-#include <gtest/gtest.h>
+#include "pw_unit_test/framework.h"
 
 namespace bt::l2cap::internal {
 namespace {

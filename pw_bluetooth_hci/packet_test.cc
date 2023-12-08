@@ -14,11 +14,11 @@
 
 #include "pw_bluetooth_hci/packet.h"
 
-#include "gtest/gtest.h"
 #include "pw_bytes/array.h"
 #include "pw_bytes/byte_builder.h"
 #include "pw_containers/algorithm.h"
 #include "pw_status/status.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::bluetooth_hci {
 namespace {

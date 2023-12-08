@@ -14,10 +14,10 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
 
-#include <gtest/gtest.h>
-
 #include <map>
 #include <unordered_map>
+
+#include "pw_unit_test/framework.h"
 
 namespace bt {
 namespace {

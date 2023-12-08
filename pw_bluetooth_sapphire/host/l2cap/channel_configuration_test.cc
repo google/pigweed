@@ -14,11 +14,10 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel_configuration.h"
 
-#include <gtest/gtest.h>
-
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_unit_test/framework.h"
 
 namespace bt::l2cap::internal {
 namespace {

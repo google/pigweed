@@ -14,9 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/metrics.h"
 
-#include <gtest/gtest.h>
-
 #include "pw_bluetooth_sapphire/internal/host/testing/inspect.h"
+#include "pw_unit_test/framework.h"
 
 #ifndef NINSPECT
 

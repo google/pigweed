@@ -17,7 +17,7 @@
 #include <string>
 #include <string_view>
 
-#include "gtest/gtest.h"
+#include "pw_unit_test/framework.h"
 
 namespace bt::testing {
 namespace {

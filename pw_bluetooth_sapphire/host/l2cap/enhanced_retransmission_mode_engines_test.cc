@@ -15,11 +15,11 @@
 #include "pw_bluetooth_sapphire/internal/host/l2cap/enhanced_retransmission_mode_engines.h"
 
 #include <gmock/gmock.h>
-#include <gtest/gtest.h>
 #include <pw_async/fake_dispatcher_fixture.h>
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fragmenter.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_unit_test/framework.h"
 
 namespace bt::l2cap::internal {
 namespace {

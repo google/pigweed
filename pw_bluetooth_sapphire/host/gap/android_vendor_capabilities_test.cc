@@ -14,11 +14,10 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gap/android_vendor_capabilities.h"
 
-#include <gtest/gtest.h>
-
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
+#include "pw_unit_test/framework.h"
 
 namespace bt::gap {
 namespace {

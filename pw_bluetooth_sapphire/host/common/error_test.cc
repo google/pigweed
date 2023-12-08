@@ -14,11 +14,10 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/error.h"
 
-#include <gtest/gtest.h>
-
 #include <sstream>
 
 #include "pw_bluetooth_sapphire/internal/host/common/uuid.h"
+#include "pw_unit_test/framework.h"
 
 namespace bt {
 namespace {

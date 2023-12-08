@@ -13,7 +13,6 @@
 // the License.
 
 #include <endian.h>
-#include <gtest/gtest.h>
 
 #include <array>
 #include <cstdint>
@@ -21,6 +20,7 @@
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/acl_data_packet.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
+#include "pw_unit_test/framework.h"
 
 using bt::ContainersEqual;
 using bt::StaticByteBuffer;

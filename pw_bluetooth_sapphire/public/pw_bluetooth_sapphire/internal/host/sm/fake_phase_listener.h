@@ -13,9 +13,8 @@
 // the License.
 
 #pragma once
-#include <gtest/gtest.h>
-
 #include "pw_bluetooth_sapphire/internal/host/sm/pairing_phase.h"
+#include "pw_unit_test/framework.h"
 
 namespace bt::sm {
 

@@ -14,10 +14,9 @@
 
 #include "pw_bluetooth_sapphire/internal/host/hci/advertising_handle_map.h"
 
-#include <gtest/gtest.h>
-
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
+#include "pw_unit_test/framework.h"
 
 namespace bt::hci {
 namespace {

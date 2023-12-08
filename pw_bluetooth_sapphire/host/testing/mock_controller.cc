@@ -15,11 +15,11 @@
 #include "pw_bluetooth_sapphire/internal/host/testing/mock_controller.h"
 
 #include <endian.h>
-#include <gtest/gtest.h>
 
 #include <cstdint>
 
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_unit_test/framework.h"
 
 namespace bt::testing {
 

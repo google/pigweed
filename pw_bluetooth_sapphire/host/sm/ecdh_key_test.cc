@@ -14,12 +14,11 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sm/ecdh_key.h"
 
-#include <gtest/gtest.h>
-
 #include <cstring>
 #include <memory>
 
 #include "pw_bluetooth_sapphire/internal/host/common/uint256.h"
+#include "pw_unit_test/framework.h"
 
 namespace bt::sm {
 namespace {

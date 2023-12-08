@@ -15,12 +15,12 @@
 #include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 
 #include <cpp-string/string_printf.h>
-#include <gtest/gtest.h>
 
 #include <string>
 
 #include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/inspect_util.h"
+#include "pw_unit_test/framework.h"
 
 namespace bt::sm {
 namespace {

@@ -14,7 +14,6 @@
 
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_controller.h"
 
-#include <gtest/gtest.h>
 #include <pw_async/fake_dispatcher_fixture.h>
 #include <pw_bluetooth/hci_events.emb.h>
 
@@ -23,6 +22,7 @@
 #include <cstdint>
 
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
+#include "pw_unit_test/framework.h"
 
 namespace bt::testing {
 

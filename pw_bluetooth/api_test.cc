@@ -12,8 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "gtest/gtest.h"
 #include "pw_bluetooth/host.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::bluetooth {
 namespace {

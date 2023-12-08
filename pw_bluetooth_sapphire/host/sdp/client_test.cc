@@ -14,7 +14,6 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sdp/client.h"
 
-#include <gtest/gtest.h>
 #include <pw_async/dispatcher.h>
 
 #include <chrono>
@@ -24,6 +23,7 @@
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel_test.h"
 #include "pw_bluetooth_sapphire/internal/host/sdp/service_record.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_unit_test/framework.h"
 
 namespace bt::sdp {
 namespace {

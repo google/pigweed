@@ -14,13 +14,12 @@
 
 #include "pw_bluetooth_sapphire/internal/host/transport/slab_allocators.h"
 
-#include <gtest/gtest.h>
-
 #include <forward_list>
 #include <list>
 
 #include "pw_bluetooth_sapphire/internal/host/transport/acl_data_packet.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
+#include "pw_unit_test/framework.h"
 
 namespace bt::hci::allocators {
 namespace {

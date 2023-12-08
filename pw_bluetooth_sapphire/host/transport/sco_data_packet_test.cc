@@ -14,7 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/transport/sco_data_packet.h"
 
-#include <gtest/gtest.h>
+#include "pw_unit_test/framework.h"
 
 namespace bt::hci {
 namespace {

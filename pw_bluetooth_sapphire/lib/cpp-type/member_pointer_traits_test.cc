@@ -13,9 +13,10 @@
 // the License.
 
 #include <cpp-type/member_pointer_traits.h>
-#include <gtest/gtest.h>
 
 #include <type_traits>
+
+#include "pw_unit_test/framework.h"
 
 namespace bt_lib_cpp_type {
 namespace {

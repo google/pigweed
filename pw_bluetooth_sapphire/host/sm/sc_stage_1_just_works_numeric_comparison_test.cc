@@ -14,8 +14,6 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sm/sc_stage_1_just_works_numeric_comparison.h"
 
-#include <gtest/gtest.h>
-
 #include <memory>
 
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
@@ -29,6 +27,7 @@
 #include "pw_bluetooth_sapphire/internal/host/sm/sc_stage_1.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/util.h"
+#include "pw_unit_test/framework.h"
 
 namespace bt::sm {
 namespace {

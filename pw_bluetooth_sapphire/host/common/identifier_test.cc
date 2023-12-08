@@ -14,9 +14,9 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/identifier.h"
 
-#include <gtest/gtest.h>
-
 #include <unordered_set>
+
+#include "pw_unit_test/framework.h"
 
 namespace bt {
 namespace {

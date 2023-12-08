@@ -15,7 +15,8 @@
 #include "pw_bluetooth_sapphire/internal/host/hci/util.h"
 
 #include <endian.h>
-#include <gtest/gtest.h>
+
+#include "pw_unit_test/framework.h"
 
 namespace bt::hci {
 namespace {

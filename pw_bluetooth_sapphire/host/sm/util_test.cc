@@ -14,8 +14,6 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sm/util.h"
 
-#include <gtest/gtest.h>
-
 #include <array>
 #include <cstdint>
 
@@ -27,6 +25,7 @@
 #include "pw_bluetooth_sapphire/internal/host/sm/error.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_unit_test/framework.h"
 
 // inclusive-language: disable
 

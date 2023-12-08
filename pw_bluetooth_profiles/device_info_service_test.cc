@@ -16,8 +16,8 @@
 
 #include <string_view>
 
-#include "gtest/gtest.h"
 #include "pw_bluetooth/gatt/server.h"
+#include "pw_unit_test/framework.h"
 
 using namespace std::string_view_literals;
 

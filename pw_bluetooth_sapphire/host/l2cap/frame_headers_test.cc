@@ -14,9 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/frame_headers.h"
 
-#include <gtest/gtest.h>
-
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
+#include "pw_unit_test/framework.h"
 
 namespace bt::l2cap::internal {
 namespace {

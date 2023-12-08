@@ -14,14 +14,13 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sco/sco_connection.h"
 
-#include <gtest/gtest.h>
-
 #include "pw_bluetooth_sapphire/internal/host/hci/fake_sco_connection.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/mock_controller.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/fake_sco_data_channel.h"
+#include "pw_unit_test/framework.h"
 
 namespace bt::sco {
 namespace {

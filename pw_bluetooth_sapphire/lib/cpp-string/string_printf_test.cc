@@ -14,10 +14,11 @@
 
 #include <cpp-string/string_printf.h>
 #include <errno.h>
-#include <gtest/gtest.h>
 #include <stdarg.h>
 
 #include <string>
+
+#include "pw_unit_test/framework.h"
 
 namespace bt_lib_cpp_string {
 namespace {

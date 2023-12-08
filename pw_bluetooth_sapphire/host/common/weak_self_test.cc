@@ -14,9 +14,10 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/weak_self.h"
 
-#include <gtest/gtest.h>
 #include <pw_async/fake_dispatcher_fixture.h>
 #include <pw_async/heap_dispatcher.h>
+
+#include "pw_unit_test/framework.h"
 
 namespace bt {
 namespace {

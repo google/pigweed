@@ -14,7 +14,6 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/bredr_dynamic_channel.h"
 
-#include <gtest/gtest.h>
 #include <pw_async/fake_dispatcher_fixture.h>
 
 #include <vector>
@@ -24,6 +23,7 @@
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_signaling_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_unit_test/framework.h"
 
 #pragma clang diagnostic ignored "-Wshadow"
 

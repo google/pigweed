@@ -14,13 +14,12 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/basic_mode_rx_engine.h"
 
-#include <gtest/gtest.h>
-
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fragmenter.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/recombiner.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_unit_test/framework.h"
 
 namespace bt::l2cap::internal {
 namespace {

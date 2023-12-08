@@ -14,12 +14,11 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/packet_view.h"
 
-#include <gtest/gtest.h>
-
 #include <string>
 
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_unit_test/framework.h"
 
 #pragma clang diagnostic ignored "-Wzero-length-array"
 

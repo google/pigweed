@@ -11,11 +11,11 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#include "gtest/gtest.h"
 #include "pw_bluetooth/hci_commands.emb.h"
 #include "pw_bluetooth/hci_events.emb.h"
 #include "pw_bluetooth/hci_test.emb.h"
 #include "pw_bluetooth/hci_vendor.emb.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::bluetooth {
 namespace {

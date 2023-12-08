@@ -14,11 +14,10 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/recombiner.h"
 
-#include <gtest/gtest.h>
-
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/pdu.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/packet.h"
+#include "pw_unit_test/framework.h"
 
 #pragma clang diagnostic ignored "-Wshadow"
 
