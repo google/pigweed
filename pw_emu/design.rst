@@ -104,3 +104,10 @@ allocate a port dynamically:
 There is a race condition that allows another program to fetch the same port,
 but it should work in most light use cases until the issue is properly resolved
 upstream.
+
+----------------
+More pw_emu docs
+----------------
+.. include:: docs.rst
+   :start-after: .. pw_emu-nav-start
+   :end-before: .. pw_emu-nav-end

@@ -14,3 +14,10 @@ CLI reference
    :nodefaultconst:
    :nodescription:
    :noepilog:
+
+----------------
+More pw_emu docs
+----------------
+.. include:: docs.rst
+   :start-after: .. pw_emu-nav-start
+   :end-before: .. pw_emu-nav-end

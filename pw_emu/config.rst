@@ -236,3 +236,10 @@ The following expressions are substituted in configuration strings, including
 
 * ``$pw_env{envvar}`` - Replaces the statement with the value of ``envvar``.
   If ``envvar`` doesn't exist a configuration error is raised.
+
+----------------
+More pw_emu docs
+----------------
+.. include:: docs.rst
+   :start-after: .. pw_emu-nav-start
+   :end-before: .. pw_emu-nav-end

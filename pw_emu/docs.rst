@@ -51,6 +51,8 @@ Then run a binary like this!
    pw emu run --args=-no-reboot qemu-lm3s6965evb \
        out/lm3s6965evb_qemu_gcc_size_optimized/obj/pw_snapshot/test/cpp_compile_test
 
+.. pw_emu-nav-start
+
 .. grid:: 1
 
    .. grid-item-card:: :octicon:`rocket` Get started & guides
@@ -107,6 +109,8 @@ Then run a binary like this!
       :class-item: sales-pitch-cta-secondary
 
       Source code for ``pw_emu``
+
+.. pw_emu-nav-end
 
 .. toctree::
    :hidden:

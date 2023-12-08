@@ -44,4 +44,9 @@ pw_emu.core.Launcher
    :members:
    :private-members: _config, _handles, _pre_start, _post_start, _get_connector
 
-11:08:20
+----------------
+More pw_emu docs
+----------------
+.. include:: docs.rst
+   :start-after: .. pw_emu-nav-start
+   :end-before: .. pw_emu-nav-end

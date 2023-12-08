@@ -345,3 +345,10 @@ connector, like :py:meth:`pw_emu.core.Connector.reset` and
 internal channels and :py:class:`pw_emu.core.Connector.get_channel_stream`. See
 :py:class:`pw_emu.core.Connector` for a complete list of the abstract methods
 that need to be implemented.
+
+----------------
+More pw_emu docs
+----------------
+.. include:: docs.rst
+   :start-after: .. pw_emu-nav-start
+   :end-before: .. pw_emu-nav-end
