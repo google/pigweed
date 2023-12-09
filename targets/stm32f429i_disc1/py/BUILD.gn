@@ -28,6 +28,7 @@ pw_python_package("py") {
     "stm32f429i_disc1_utils/unit_test_runner.py",
     "stm32f429i_disc1_utils/unit_test_server.py",
   ]
+  inputs = [ "stm32f429i_disc1_utils/openocd_stm32f4xx.cfg" ]
   pylintrc = "$dir_pigweed/.pylintrc"
   mypy_ini = "$dir_pigweed/.mypy.ini"
   python_deps = [ "$dir_pw_cli/py" ]
