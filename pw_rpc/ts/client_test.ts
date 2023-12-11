@@ -34,7 +34,7 @@ import {
 } from './method';
 import * as packets from './packets';
 
-const TEST_PROTO_PATH = 'pw_rpc/ts/test_protos-descriptor-set.proto.bin';
+const OPEN_CALL_ID = 2 ** 32 - 1;
 
 describe('Client', () => {
   let protoCollection: ProtoCollection;
@@ -292,6 +292,24 @@ describe('RPC', () => {
         ?.methodStub(
           'pw.rpc.test1.TheTestService.SomeUnary',
         ) as UnaryMethodStub;
+    });
+
+    it('unrequested response', async () => {
+      const promisedResponse = unaryStub.call(newRequest(6));
+      enqueueResponse(
+        1,
+        unaryStub.method,
+        Status.ABORTED,
+        OPEN_CALL_ID,
+        newResponse('is unrequested'),
+      );
+
+      processEnqueuedPackets();
+      const [status, response] = await promisedResponse;
+
+      expect(sentPayload(Request).getMagicNumber()).toEqual(6);
+      expect(status).toEqual(Status.ABORTED);
+      expect(response).toEqual(newResponse('is unrequested'));
     });
 
     it('blocking call', async () => {

@@ -55,7 +55,7 @@ export class Call {
   protected responses: Message[] = [];
 
   private rpcs: PendingCalls;
-  private rpc: Rpc;
+  rpc: Rpc;
   readonly callId: number;
 
   private onNext: Callback;

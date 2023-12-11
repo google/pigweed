@@ -21,6 +21,9 @@ import * as packets from './packets';
 
 /** Max number that can fit into a 2-byte varint */
 const MAX_CALL_ID = 1 << 14;
+/** Calls with ID of `kOpenCallId` were unrequested, and are updated to have the
+    call ID of the first matching request. */
+const OPEN_CALL_ID = 2 ** 32 - 1;
 
 /** Data class for a pending RPC call. */
 export class Rpc {
@@ -146,11 +149,23 @@ export class PendingCalls {
 
   /** Gets the pending RPC's call. If status is set, clears the RPC. */
   getPending(rpc: Rpc, callId: number, status?: Status): Call | undefined {
+    let call: Call | undefined = this.pending.get(rpc.getIdString(callId));
+    if (callId === OPEN_CALL_ID) {
+      // Calls with ID `OPEN_CALL_ID` were unrequested, and are updated to
+      // have the call ID of the first matching request.
+      const allPendingCalls = Array.from(this.pending.values());
+      for (const pending in allPendingCalls) {
+        const curCall = allPendingCalls[pending];
+        if (curCall.rpc.getIdString(0) === rpc.getIdString(0)) {
+          call = curCall;
+          break;
+        }
+      }
+    }
     if (status === undefined) {
-      return this.pending.get(rpc.getIdString(callId));
+      return call;
     }
 
-    const call = this.pending.get(rpc.getIdString(callId));
     this.pending.delete(rpc.getIdString(callId));
     return call;
   }
