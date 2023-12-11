@@ -27,5 +27,6 @@ pw_doc_group("docs") {
   sources = [
     "api.rst",
     "docs.rst",
+    "get_started.rst",
   ]
 }

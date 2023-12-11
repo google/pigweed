@@ -3,6 +3,9 @@
 =============
 API reference
 =============
+.. pigweed-module-subpage::
+   :name: pw_toolchain_bazel
+   :tagline: A modular toolkit for declaring C/C++ toolchains in Bazel
 
 .. py:class:: pw_cc_toolchain
 
