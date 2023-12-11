@@ -129,9 +129,7 @@ class PwPtPythonRepl(
         # Change some ptpython.repl defaults.
         self.show_status_bar = False
         self.show_exit_confirmation = False
-        self.complete_private_attributes = (
-            CompletePrivateAttributes.IF_NO_PUBLIC
-        )
+        self.complete_private_attributes = CompletePrivateAttributes.NEVER
 
         # Function signature that shows args, kwargs, and types under the cursor
         # of the input window.
