@@ -121,7 +121,7 @@ if (pw_unit_test_BACKEND != "") {
     public_configs = [ ":googletest_public_overrides_include_path" ]
     public = [ "googletest_public_overrides/pw_unit_test/framework_backend.h" ]
 
-    public_deps = [ "$dir_pw_third_party/googletest" ]
+    public_deps = [ pw_unit_test_GOOGLETEST_BACKEND ]
   }
 }
 
@@ -288,6 +288,9 @@ if (pw_unit_test_BACKEND == "$dir_pw_unit_test:light") {
     public_deps = [ pw_unit_test_BACKEND ]
     public = [ "public/pw_unit_test/static_library_support.h" ]
     sources = [ "static_library_support.cc" ]
+  }
+} else {
+  group("static_library_support") {
   }
 }
 

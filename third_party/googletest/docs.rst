@@ -30,7 +30,10 @@ Configure ``pw_unit_test`` to use upstream GoogleTest/GoogleMock.
    .. tab-item:: GN
 
       * Set the GN var ``dir_pw_third_party_googletest`` to the location of the
-        GoogleTest source.
+        GoogleTest source. If you are using a different version of the upstream
+        GoogleTest, or a different target than ``//third_party/googletest``, set
+        ``pw_unit_test_GOOGLETEST_BACKEND`` to point to your GoogleTest target
+        instead.
       * Set the GN var ``pw_unit_test_MAIN`` to
         ``dir_pigweed + "/third_party/googletest:gmock_main"``.
       * Set the GN var ``pw_unit_test_BACKEND`` to

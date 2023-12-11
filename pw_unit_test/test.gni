@@ -30,13 +30,15 @@ declare_args() {
   # Usage: toolchain-controlled only
   pw_unit_test_BACKEND = "$dir_pw_unit_test:light"
 
-  # Warning: Deprecated build argument.
-  # When using the gooogletest backend, set pw_unit_test_BACKEND to
-  # //pw_unit_test:googletest instead.
+  # The GoogleTest library target. This is not a pw_unit_test backend (anymore).
+  # Use this to depend on the GoogleTest library directly *WITHOUT* using the
+  # pw_unit_test facade. The //pw_unit_test:googletest backend depends on this
+  # library target.
+  # Defaults to //third_party/googletest.
   #
   # Type: string (GN path to a source set)
   # Usage: toolchain-controlled only
-  pw_unit_test_GOOGLETEST_BACKEND = ""
+  pw_unit_test_GOOGLETEST_BACKEND = "$dir_pw_third_party/googletest"
 
   # Implementation of a main function for ``pw_test`` unit test binaries. Must
   # be set to an appropriate target for the pw_unit_test backend.
