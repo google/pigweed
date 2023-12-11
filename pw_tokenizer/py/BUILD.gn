@@ -71,17 +71,6 @@ pw_python_package("py") {
   ]
 }
 
-# This setup.py may be used to install pw_tokenizer without GN. It does not
-# include the pw_tokenizer.proto subpackage, since it contains a generated
-# protobuf module.
-pw_python_script("setup") {
-  sources = [ "setup.py" ]
-  inputs = [
-    "setup.cfg",
-    "pyproject.toml",
-  ]
-}
-
 pw_proto_library("test_proto") {
   sources = [ "detokenize_proto_test.proto" ]
   deps = [ "..:proto" ]
