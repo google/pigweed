@@ -9,7 +9,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "version:2@12.2.mpacbti-rel1.1"
+        "version:2@12.2.MPACBTI-Rel1.1"
       ],
       "version_file": ".versions/gcc-arm-none-eabi.version"
     },
