@@ -241,6 +241,7 @@ class LuciContext:
         swarming_server: The swarming server on which this build is running.
         swarming_task_id: The swarming task id of this build.
         cas_instance: The CAS instance accessible from this build.
+        context_file: The path to the LUCI_CONTEXT file.
         pipeline: Information about the build pipeline, if applicable.
         triggers: Information about triggering commits, if applicable.
         is_try: True if the bucket is a try bucket.
@@ -258,6 +259,7 @@ class LuciContext:
     swarming_server: str
     swarming_task_id: str
     cas_instance: str
+    context_file: Path
     pipeline: Optional[LuciPipeline]
     triggers: Sequence[LuciTrigger] = dataclasses.field(default_factory=tuple)
 
@@ -295,6 +297,7 @@ class LuciContext:
             'BUILDBUCKET_ID',
             'BUILDBUCKET_NAME',
             'BUILD_NUMBER',
+            'LUCI_CONTEXT',
             'SWARMING_TASK_ID',
             'SWARMING_SERVER',
         ]
@@ -329,6 +332,7 @@ class LuciContext:
             cas_instance=cas_instance,
             pipeline=pipeline,
             triggers=LuciTrigger.create_from_environment(env),
+            context_file=Path(env['LUCI_CONTEXT']),
         )
         _LOG.debug('%r', result)
         return result
@@ -339,6 +343,7 @@ class LuciContext:
             'BUILDBUCKET_ID': '881234567890',
             'BUILDBUCKET_NAME': 'pigweed:bucket.try:builder-name',
             'BUILD_NUMBER': '123',
+            'LUCI_CONTEXT': '/path/to/context/file.json',
             'SWARMING_SERVER': 'https://chromium-swarm.appspot.com',
             'SWARMING_TASK_ID': 'cd2dac62d2',
         }
