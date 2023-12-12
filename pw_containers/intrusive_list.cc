@@ -20,12 +20,6 @@
 
 namespace pw::intrusive_list_impl {
 
-List::Item::Item(Item&& other) {
-  // Ensure `next_` is valid on instantiation.
-  next_ = this;
-  *this = std::move(other);
-}
-
 List::Item& List::Item::operator=(List::Item&& other) {
   // Remove `this` object from its current list.
   if (!unlisted()) {

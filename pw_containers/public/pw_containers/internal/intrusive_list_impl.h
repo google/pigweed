@@ -102,14 +102,18 @@ class List {
     /// This uses the move assignment operator. See the note on that method.
     ///
     /// This should NOT typically be used, except for testing.
-    Item(Item&& other);
+    Item(Item&& other) : Item() { *this = std::move(other); }
 
-    /// Move assignment operators.
+    /// Move assignment operator.
     ///
-    /// This will unlist the current object, and replace other with this object
-    /// in the list that contained it. As a result, this O(m + n), where "m" is
-    /// the number of items in this object's list, and "n" is the number of
-    /// objects in the `other` object's list.
+    /// Upon returning, this object should be indistinguishable from the prior
+    /// value of `other` before the call. In particular, any list that `other`
+    /// had been a part of will appear unchanged to its callers.
+    ///
+    /// To achieve this, the operator will unlist the current object, and
+    /// replace other with this object in the list that contained it. As a
+    /// result, this O(m + n), where "m" is the number of items in this object's
+    /// list, and "n" is the number of objects in the `other` object's list.
     ///
     /// As such, it should NOT typically be used, except for testing.
     Item& operator=(Item&& other);

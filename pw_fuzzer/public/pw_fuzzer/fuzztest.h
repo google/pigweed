@@ -832,44 +832,6 @@ struct ArbitraryImpl<InlineQueue<T, kCapacity>> {
   auto operator()() { return QueueOf<kCapacity>(Arbitrary<T>()); }
 };
 
-// Supporting types and functions for creating `IntrusiveList<T>`s.
-namespace internal {
-
-/// Construct an `Item` and emplace it in the given `Vector`.
-///
-/// The `Item` is constructed using arguments passed as a tuple.
-/// This should only be called by the overload that generates the index sequence
-/// used to expand the tuple.
-///
-/// @param[out] vector The vector to add the item to.
-/// @param[in]  args   A tuple of arguments to pass to the constructor of `T`.
-/// @param[in]  (n/a)  An sequence used to index the tuple.
-template <int&... ExplicitArgumentBarrier,
-          typename T,
-          typename Args,
-          size_t... Index>
-void EmplaceItem(Vector<T>& vector,
-                 const Args& args,
-                 std::index_sequence<Index...>) {
-  vector.emplace_back(std::get<Index>(args)...);
-}
-
-/// Construct an `Item` and emplace it in the given `Vector`.
-///
-/// The `Item` is constructed using arguments passed as a tuple.
-///
-/// @param[out] vector The vector to add the item to.
-/// @param[in]  args   A tuple of arguments to pass to the constructor of `T`.
-template <int&... ExplicitArgumentBarrier, typename T, typename Args>
-void EmplaceItem(Vector<T>& vector, const Args& args) {
-  EmplaceItem(
-      vector,
-      args,
-      std::make_index_sequence<std::tuple_size<std::decay_t<Args>>::value>{});
-}
-
-}  // namespace internal
-
 /// Associates an `IntrusiveList<T>` with a `Vector<T>` that stores its `Item`s.
 ///
 /// The `Item`s are constructed from a sequence of argument tuples passed to
@@ -883,7 +845,6 @@ class ScopedList {
   explicit ScopedList(const Vector<Tuple>& arg_tuples) {
     for (const auto& arg_tuple : arg_tuples) {
       items_.emplace_back(std::make_from_tuple<T>(arg_tuple));
-      // internal::EmplaceItem(items_, arg);
       list_.push_back(items_.back());
     }
   }
