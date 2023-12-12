@@ -85,7 +85,7 @@ class PwFindCipdInstalledExeTests(unittest.TestCase):
 
     def touch_temp_exe_file(self, exe_path: Path) -> Path:
         """Create a temporary executable file given a path."""
-        if "win" in sys.platform.lower():
+        if sys.platform.lower() in ("win32", "cygwin"):
             exe_path = Path(str(exe_path) + ".exe")
 
         file_path = self.temp_dir_path / exe_path

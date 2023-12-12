@@ -1139,7 +1139,7 @@ def find_cipd_installed_exe_path(exe: str) -> Path:
     `PW_<PROJ_NAME>_CIPD_INSTALL_DIR` environment variables.
     """
 
-    if "win" in sys.platform.lower():
+    if sys.platform.lower() in ("win32", "cygwin"):
         exe += ".exe"
 
     env_vars = vars(env)
