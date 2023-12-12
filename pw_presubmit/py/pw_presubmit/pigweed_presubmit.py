@@ -266,35 +266,6 @@ stm32f429i = PigweedGnGenNinja(
     ninja_targets=_at_all_optimization_levels('stm32f429i'),
 )
 
-gn_chre_build = PigweedGnGenNinja(
-    name='gn_chre_build',
-    path_filter=_BUILD_FILE_FILTER,
-    packages=('chre',),
-    gn_args=dict(
-        dir_pw_third_party_chre=lambda ctx: '"{}"'.format(
-            ctx.package_root / 'chre'
-        ),
-        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
-    ),
-    ninja_targets=(*_at_all_optimization_levels('host_clang'),),
-)
-
-gn_nanopb_build = PigweedGnGenNinja(
-    name='gn_nanopb_build',
-    path_filter=_BUILD_FILE_FILTER,
-    packages=('nanopb',),
-    gn_args=dict(
-        dir_pw_third_party_nanopb=lambda ctx: '"{}"'.format(
-            ctx.package_root / 'nanopb'
-        ),
-        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
-    ),
-    ninja_targets=(
-        *_at_all_optimization_levels('stm32f429i'),
-        *_at_all_optimization_levels('host_clang'),
-    ),
-)
-
 gn_crypto_mbedtls_build = PigweedGnGenNinja(
     name='gn_crypto_mbedtls_build',
     path_filter=_BUILD_FILE_FILTER,
@@ -452,36 +423,45 @@ gn_pw_system_demo_build = PigweedGnGenNinja(
     ninja_targets=('pw_system_demo',),
 )
 
-gn_googletest_sapphire_build = PigweedGnGenNinja(
-    name='gn_googletest_sapphire_build',
+gn_chre_googletest_nanopb_sapphire_build = PigweedGnGenNinja(
+    name='gn_chre_googletest_nanopb_sapphire_build',
     path_filter=_BUILD_FILE_FILTER,
-    packages=('googletest', 'emboss', 'boringssl', 'icu'),
-    gn_args={
-        'dir_pw_third_party_googletest': lambda ctx: '"{}"'.format(
+    packages=('boringssl', 'chre', 'emboss', 'googletest', 'icu', 'nanopb'),
+    gn_args=dict(
+        dir_pw_third_party_chre=lambda ctx: '"{}"'.format(
+            ctx.package_root / 'chre'
+        ),
+        dir_pw_third_party_nanopb=lambda ctx: '"{}"'.format(
+            ctx.package_root / 'nanopb'
+        ),
+        dir_pw_third_party_googletest=lambda ctx: '"{}"'.format(
             ctx.package_root / 'googletest'
         ),
-        'dir_pw_third_party_emboss': lambda ctx: '"{}"'.format(
+        dir_pw_third_party_emboss=lambda ctx: '"{}"'.format(
             ctx.package_root / 'emboss'
         ),
-        'dir_pw_third_party_boringssl': lambda ctx: '"{}"'.format(
+        dir_pw_third_party_boringssl=lambda ctx: '"{}"'.format(
             ctx.package_root / 'boringssl'
         ),
-        'dir_pw_third_party_icu': lambda ctx: '"{}"'.format(
+        dir_pw_third_party_icu=lambda ctx: '"{}"'.format(
             ctx.package_root / 'icu'
         ),
-        'pw_unit_test_MAIN': lambda ctx: '"{}"'.format(
+        pw_unit_test_MAIN=lambda ctx: '"{}"'.format(
             ctx.root / 'third_party/googletest:gmock_main'
         ),
-        'pw_unit_test_BACKEND': lambda ctx: '"{}"'.format(
+        pw_unit_test_BACKEND=lambda ctx: '"{}"'.format(
             ctx.root / 'pw_unit_test:googletest'
         ),
-        'pw_function_CONFIG': lambda ctx: '"{}"'.format(
+        pw_function_CONFIG=lambda ctx: '"{}"'.format(
             ctx.root / 'pw_function:enable_dynamic_allocation'
         ),
-        'pw_bluetooth_sapphire_ENABLED': True,
-        'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,
-    },
-    ninja_targets=_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),
+        pw_bluetooth_sapphire_ENABLED=True,
+        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
+    ),
+    ninja_targets=(
+        *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),
+        *_at_all_optimization_levels('stm32f429i'),
+    ),
 )
 
 gn_fuzz_build = PigweedGnGenNinja(
@@ -1277,9 +1257,7 @@ INTERNAL = (gn_mimxrt595_build, gn_mimxrt595_freertos_build)
 # program block CQ on Linux.
 MISC = (
     # keep-sorted: start
-    gn_chre_build,
-    gn_googletest_sapphire_build,
-    gn_nanopb_build,
+    gn_chre_googletest_nanopb_sapphire_build,
     # keep-sorted: end
 )
 
