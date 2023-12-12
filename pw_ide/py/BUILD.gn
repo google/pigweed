@@ -39,6 +39,7 @@ pw_python_package("py") {
   tests = [
     "commands_test.py",
     "cpp_test.py",
+    "cpp_test_fake_env.py",
     "editors_test.py",
     "test_cases.py",
     "vscode_test.py",

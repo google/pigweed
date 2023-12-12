@@ -45,6 +45,7 @@ intelligence.
 
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
+import functools
 import glob
 from hashlib import sha1
 from io import TextIOBase
@@ -1130,29 +1131,63 @@ class CppCompilationDatabasesMap:
         return merged
 
 
+@functools.lru_cache
+def find_cipd_installed_exe_path(exe: str) -> Path:
+    """Return the path of an executable installed by CIPD.
+
+    Search for the executable in the paths pointed by all the defined
+    `PW_<PROJ_NAME>_CIPD_INSTALL_DIR` environment variables.
+    """
+
+    if "win" in sys.platform.lower():
+        exe += ".exe"
+
+    env_vars = vars(env)
+
+    search_paths: List[str] = []
+    for env_var_name, env_var in env_vars.items():
+        if re.fullmatch(r"PW_[A-Z_]+_CIPD_INSTALL_DIR", env_var_name):
+            search_paths.append(str(Path(env_var) / "bin" / exe))
+
+    if (env_var := env_vars.get('PW_PIGWEED_CIPD_INSTALL_DIR')) is not None:
+        search_paths.append(str(Path(env_var) / "bin" / exe))
+
+    path = None
+    exception = None
+    try:
+        path = path_to_executable(
+            exe, default_path=None, path_globs=search_paths, strict=True
+        )
+    except UnresolvablePathException as e:
+        exception = e
+
+    if path is None or exception:
+        search_paths_str = ":".join(search_paths)
+        raise FileNotFoundError(
+            f"Not able to find '{exe}' "
+            f"among '{search_paths_str}'. Is bootstrap successful?"
+        )
+
+    return path
+
+
 class ClangdSettings:
     """Makes system-specific settings for running ``clangd`` with Pigweed."""
 
     def __init__(self, settings: PigweedIdeSettings):
         state = CppIdeFeaturesState(settings)
 
-        clangd_bin = "clangd"
-
-        if sys.platform.lower() == "windows":
-            clangd_bin += ".exe"
-
-        self.clangd_path: Path = (
-            Path(env.PW_PIGWEED_CIPD_INSTALL_DIR) / 'bin' / clangd_bin
-        )
+        self.clangd_path = find_cipd_installed_exe_path("clangd")
 
         compile_commands_dir = env.PW_PROJECT_ROOT
 
         if state.current_target is not None:
             compile_commands_dir = str(state.stable_target_link)
 
+        host_cc_path = find_cipd_installed_exe_path("clang++")
         self.arguments: List[str] = [
             f'--compile-commands-dir={compile_commands_dir}',
-            f'--query-driver={settings.clangd_query_driver_str()}',
+            f'--query-driver={settings.clangd_query_driver_str(host_cc_path)}',
             '--background-index',
             '--clang-tidy',
         ]

@@ -32,6 +32,7 @@ from pw_ide.cpp import (
     CppCompilationDatabasesMap,
     CppIdeFeaturesState,
     CppIdeFeaturesTarget,
+    find_cipd_installed_exe_path,
 )
 
 from pw_ide.exceptions import (
@@ -383,7 +384,9 @@ def _process_compdbs(  # pylint: disable=too-many-locals
         # We haven't seen this database before. Process it.
         processed_compdbs = compdb.process(
             settings=pw_ide_settings,
-            path_globs=pw_ide_settings.clangd_query_drivers(),
+            path_globs=pw_ide_settings.clangd_query_drivers(
+                find_cipd_installed_exe_path("clang++")
+            ),
             always_output_new=always_output_new,
         )
 

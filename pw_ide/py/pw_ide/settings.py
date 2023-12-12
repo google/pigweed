@@ -262,7 +262,7 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         """
         return self._config.get('clangd_additional_query_drivers', list())
 
-    def clangd_query_drivers(self) -> List[str]:
+    def clangd_query_drivers(self, host_clang_cc_path: Path) -> List[str]:
         drivers = [
             *[
                 _expand_any_vars_str(p)
@@ -270,16 +270,15 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
             ],
         ]
 
-        if (env_var := env_vars.get('PW_PIGWEED_CIPD_INSTALL_DIR')) is not None:
-            drivers.append(str(Path(env_var) / 'bin' / '*'))
+        drivers.append(str(host_clang_cc_path.parent / '*'))
 
         if (env_var := env_vars.get('PW_ARM_CIPD_INSTALL_DIR')) is not None:
             drivers.append(str(Path(env_var) / 'bin' / '*'))
 
         return drivers
 
-    def clangd_query_driver_str(self) -> str:
-        return ','.join(self.clangd_query_drivers())
+    def clangd_query_driver_str(self, host_clang_cc_path: Path) -> str:
+        return ','.join(self.clangd_query_drivers(host_clang_cc_path))
 
     @property
     def editors(self) -> Dict[str, bool]:
