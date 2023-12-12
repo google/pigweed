@@ -168,20 +168,20 @@ A simplified example is provided below.
            "@pw_toolchain//flag_sets:no_canonical_prefixes",
        ],
        action_configs = [
-           "@llvm_toolchain//:ar",
-           "@llvm_toolchain//:clang",
-           "@llvm_toolchain//:clang++",
-           "@llvm_toolchain//:lld",
-           "@llvm_toolchain//:llvm-cov",
-           "@llvm_toolchain//:llvm-objcopy",
-           "@llvm_toolchain//:llvm-objdump",
-           "@llvm_toolchain//:llvm-strip",
+           "@linux_clang_toolchain//:ar",
+           "@linux_clang_toolchain//:clang",
+           "@linux_clang_toolchain//:clang++",
+           "@linux_clang_toolchain//:lld",
+           "@linux_clang_toolchain//:llvm-cov",
+           "@linux_clang_toolchain//:llvm-objcopy",
+           "@linux_clang_toolchain//:llvm-objdump",
+           "@linux_clang_toolchain//:llvm-strip",
        ],
        compiler = "unknown",
        cxx_builtin_include_directories = [
-           "%package(@llvm_toolchain//)%/include/x86_64-unknown-linux-gnu/c++/v1",
-           "%package(@llvm_toolchain//)%/include/c++/v1",
-           "%package(@llvm_toolchain//)%/lib/clang/17/include",
+           "%package(@linux_clang_toolchain//)%/include/x86_64-unknown-linux-gnu/c++/v1",
+           "%package(@linux_clang_toolchain//)%/include/c++/v1",
+           "%package(@linux_clang_toolchain//)%/lib/clang/17/include",
        ],
        host_system_name = "unknown",
        supports_param_files = 0,
@@ -403,9 +403,9 @@ your toolchain definition by listing them in
            ":global_defines",  # Newly added pw_cc_flag_set from above.
        ],
        action_configs = [
-           "@llvm_toolchain//:ar",
-           "@llvm_toolchain//:clang",
-           "@llvm_toolchain//:clang++",
+           "@linux_clang_toolchain//:ar",
+           "@linux_clang_toolchain//:clang",
+           "@linux_clang_toolchain//:clang++",
        ...
    )
 
