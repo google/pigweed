@@ -165,9 +165,6 @@ pw_cc_flag_set(
     ],
 )
 
-# TODO(tpudlik): We ought to refactor the pw_cc_toolchain API so that the
-# *_files and tools don't need to be retyped every time you want to create a
-# variant with different feature deps.
 pw_cc_toolchain(
     name = "arm_gcc_toolchain_cortex-m",
     abi_libc_version = "unknown",
@@ -206,13 +203,8 @@ pw_cc_toolchain(
         "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-objdump",
         "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-strip",
     ],
-    all_files = "@gcc_arm_none_eabi_toolchain//:all",
-    ar_files = "@gcc_arm_none_eabi_toolchain//:all",
-    as_files = "@gcc_arm_none_eabi_toolchain//:all",
     builtin_sysroot = "external/gcc_arm_none_eabi_toolchain",
     compiler = "unknown",
-    compiler_files = "@gcc_arm_none_eabi_toolchain//:all",
-    coverage_files = "@gcc_arm_none_eabi_toolchain//:all",
     cxx_builtin_include_directories = [
         "%sysroot%/arm-none-eabi/include/newlib-nano",
         "%sysroot%/arm-none-eabi/include/c++/12.2.1",
@@ -222,11 +214,7 @@ pw_cc_toolchain(
         "%sysroot%/lib/gcc/arm-none-eabi/12.2.1/include-fixed",
         "%sysroot%/arm-none-eabi/include",
     ],
-    dwp_files = "@gcc_arm_none_eabi_toolchain//:all",
     host_system_name = "unknown",
-    linker_files = "@gcc_arm_none_eabi_toolchain//:all",
-    objcopy_files = "@gcc_arm_none_eabi_toolchain//:all",
-    strip_files = "@gcc_arm_none_eabi_toolchain//:all",
     supports_param_files = 0,
     target_compatible_with = select({
         "@pw_toolchain//constraints/arm_mcpu:cortex-m0": [],

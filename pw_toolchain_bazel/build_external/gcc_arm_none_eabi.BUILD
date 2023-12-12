@@ -60,6 +60,14 @@ pw_cc_action_config(
 pw_cc_tool(
     name = "arm-none-eabi-g++_tool",
     tool = "//:bin/arm-none-eabi-g++",
+    additional_files = glob([
+        "**/*.spec",
+        "**/*.specs",
+        "arm-none-eabi/include/**",
+        "lib/gcc/arm-none-eabi/*/include/**",
+        "lib/gcc/arm-none-eabi/*/include-fixed/**",
+        "libexec/**",
+    ]),
 )
 
 pw_cc_action_config(
@@ -71,6 +79,16 @@ pw_cc_action_config(
 pw_cc_tool(
     name = "arm-none-eabi-gcc_tool",
     tool = "//:bin/arm-none-eabi-gcc",
+    additional_files = glob([
+        "**/*.spec",
+        "**/*.specs",
+        "arm-none-eabi/include/**",
+        "lib/gcc/arm-none-eabi/*/include/**",
+        "lib/gcc/arm-none-eabi/*/include-fixed/**",
+        "libexec/**",
+    ]) + [
+        "arm-none-eabi/bin/as",  # The assembler needs to be explicilty added.
+    ],
 )
 
 pw_cc_action_config(
@@ -79,10 +97,26 @@ pw_cc_action_config(
     tools = [":arm-none-eabi-gcc_tool"],
 )
 
+# This tool is actually just g++ under the hood, we just enumerate this
+# tool differently to specify a different set of additional files.
+pw_cc_tool(
+    name = "arm-none-eabi-ld_tool",
+    tool = "//:bin/arm-none-eabi-g++",
+    additional_files = glob([
+        "**/*.a",
+        "**/*.ld",
+        "**/*.o",
+        "**/*.spec",
+        "**/*.specs",
+        "**/*.so",
+        "libexec/**",
+    ]),
+)
+
 pw_cc_action_config(
     name = "arm-none-eabi-ld",
     action_names = ALL_LINK_ACTIONS,
-    tools = [":arm-none-eabi-g++_tool"],  # Use the g++ frontend to drive ld.
+    tools = [":arm-none-eabi-ld_tool"],
 )
 
 pw_cc_tool(

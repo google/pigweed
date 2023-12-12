@@ -177,22 +177,13 @@ A simplified example is provided below.
            "@llvm_toolchain//:llvm-objdump",
            "@llvm_toolchain//:llvm-strip",
        ],
-       all_files = "@linux_clang_toolchain//:all",
-       ar_files = "@linux_clang_toolchain//:all",
-       as_files = "@linux_clang_toolchain//:all",
        compiler = "unknown",
-       compiler_files = "@linux_clang_toolchain//:all",
-       coverage_files = "@linux_clang_toolchain//:all",
        cxx_builtin_include_directories = [
            "%package(@llvm_toolchain//)%/include/x86_64-unknown-linux-gnu/c++/v1",
            "%package(@llvm_toolchain//)%/include/c++/v1",
            "%package(@llvm_toolchain//)%/lib/clang/17/include",
        ],
-       dwp_files = "@linux_clang_toolchain//:all",
        host_system_name = "unknown",
-       linker_files = "@linux_clang_toolchain//:all",
-       objcopy_files = "@linux_clang_toolchain//:all",
-       strip_files = "@linux_clang_toolchain//:all",
        supports_param_files = 0,
        target_cpu = "unknown",
        target_libc = "unknown",
@@ -215,12 +206,6 @@ A simplified example is provided below.
        toolchain = ":host_toolchain",
        toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
    )
-
-.. admonition:: Note
-
-   `b/305737273 <https://issues.pigweed.dev/305737273>`_\: The boilerplate that
-   requires specifying ``@linux_clang_toolchain//:all`` for various ``*_files``
-   attributes will eventually go away for most toolchains.
 
 .. admonition:: Note
 

@@ -25,22 +25,19 @@ load(
     "variable_with_value",
 )
 load(
+    "//cc_toolchain/private:action_config_files.bzl",
+    "pw_cc_action_config_file_collector",
+)
+load(
     "//cc_toolchain/private:providers.bzl",
     "ActionConfigListInfo",
 )
 load(
     "//cc_toolchain/private:utils.bzl",
+    "ALL_FILE_GROUPS",
     "actionless_flag_set",
     "check_deps_provide",
 )
-
-# TODO(b/301004620): Remove when bazel 7 is released and these constants exists
-# in ACTION_NAMES.
-LLVM_COV = "llvm-cov"
-OBJ_COPY_ACTION_NAME = "objcopy_embed_data"
-
-# This action name isn't yet a well-known action name.
-OBJ_DUMP_ACTION_NAME = "objdump_embed_data"
 
 # These attributes of pw_cc_toolchain are deprecated.
 PW_CC_TOOLCHAIN_DEPRECATED_TOOL_ATTRS = {
@@ -180,6 +177,12 @@ def _collect_action_configs(ctx, flag_sets_by_action):
             temp_actions.append(ac_dep[ActionConfigInfo])
         if ActionConfigListInfo in ac_dep:
             temp_actions.extend([ac for ac in ac_dep[ActionConfigListInfo].action_configs])
+        if ActionConfigListInfo not in ac_dep and ActionConfigInfo not in ac_dep:
+            fail(
+                "{} in `action_configs` is not a `pw_cc_action_config`".format(
+                    ac_dep.label,
+                ),
+            )
         for action in temp_actions:
             if action.action_name in known_actions:
                 fail("In {} both {} and {} implement `{}`".format(
@@ -332,15 +335,68 @@ def _split_args(kwargs, filter_dict):
 
     return filtered_args, remainder
 
-def pw_cc_toolchain(**kwargs):
-    """A bound cc_toolchain and pw_cc_toolchain_config pair.
+def _generate_file_group(kwargs, attr_name, action_names):
+    """Generates rules to collect files from pw_cc_action_config rules.
+
+    All items in the kwargs dictionary whose keys are present in the filter
+    dictionary are returned as a new dictionary as the first item in the tuple.
+    All remaining arguments are returned as a dictionary in the second item of
+    the tuple.
 
     Args:
-        **kwargs: All attributes supported by cc_toolchain and pw_cc_toolchain_config.
+        kwargs: Dictionary of all pw_cc_toolchain arguments.
+        attr_name: The attr name of the file group to collect files for.
+        action_names: The actions that apply to the `attr_name` group.
+
+    Returns:
+        Name of the generated filegroup rule.
+    """
+    file_group_name = "{}_{}".format(kwargs["name"], attr_name)
+    pw_cc_action_config_file_collector(
+        name = file_group_name,
+        all_action_configs = kwargs["action_configs"],
+        extra_files = kwargs[attr_name] if attr_name in kwargs else None,
+        collect_files_from_actions = action_names,
+        visibility = ["//visibility:private"],
+    )
+    return file_group_name
+
+def pw_cc_toolchain(**kwargs):
+    """A suite of cc_toolchain, pw_cc_toolchain_config, and *_files rules.
+
+    Generated rules:
+        {name}: A `cc_toolchain` for this toolchain.
+        {name}_config: A `pw_cc_toolchain_config` for this toolchain.
+        {name}_*_files: Generated rules that group together files for
+            "all_files", "ar_files", "as_files", "compiler_files",
+            "coverage_files", "dwp_files", "linker_files", "objcopy_files", and
+            "strip_files" normally enumerated as part of the `cc_toolchain`
+            rule.
+
+    Args:
+        **kwargs: All attributes supported by either cc_toolchain or pw_cc_toolchain_config.
     """
 
     _check_args(native.package_relative_label(kwargs["name"]), kwargs)
 
+    # Generate *_files groups.
+    # `all_files` is skipped here because it is handled differently below.
+    for group_name, action_names in ALL_FILE_GROUPS.items():
+        kwargs[group_name] = _generate_file_group(kwargs, group_name, action_names)
+
+    # The `all_files` group must be a superset of all the smaller file groups.
+    all_files_name = "{}_all_files".format(kwargs["name"])
+    all_file_inputs = [":{}".format(kwargs[file_group]) for file_group in ALL_FILE_GROUPS.keys()]
+    if "all_files" in kwargs:
+        all_file_inputs.append(kwargs["all_files"])
+    native.filegroup(
+        name = all_files_name,
+        srcs = all_file_inputs,
+        visibility = ["//visibility:private"],
+    )
+    kwargs["all_files"] = ":{}".format(all_files_name)
+
+    # Split args between `pw_cc_toolchain_config` and `native.cc_toolchain`.
     cc_toolchain_config_args, cc_toolchain_args = _split_args(kwargs, PW_CC_TOOLCHAIN_CONFIG_ATTRS | PW_CC_TOOLCHAIN_DEPRECATED_TOOL_ATTRS)
 
     # Bind pw_cc_toolchain_config and the cc_toolchain.

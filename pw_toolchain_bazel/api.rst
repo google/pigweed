@@ -87,6 +87,131 @@ API reference
 
       See  `cc_common.create_cc_toolchain_config_info() <https://bazel.build/rules/lib/toplevel/cc_common#create_cc_toolchain_config_info>`_\.
 
+   .. py:attribute:: all_files
+      :type: Label
+
+      Label of a ``filegroup`` specifying additional files required to run
+      actions not associated with another ``*_files`` group.
+
+      This differs from the native
+      `cc_toolchain.all_files <https://bazel.build/reference/be/c-cpp#cc_toolchain.all_files>`_
+      attribute in that it automatically collects the contents of the other
+      ``*_files`` attributes, which includes
+      :py:attr:`pw_cc_tool.additional_files` from all
+      :py:class:`pw_cc_action_config` rules associated with this toolchain.
+
+   .. py:attribute:: ar_files
+      :type: Label
+
+      Label of a ``filegroup`` specifying additional files required to run
+      static link actions.
+
+      This differs from the native
+      `cc_toolchain.ar_files <https://bazel.build/reference/be/c-cpp#cc_toolchain.ar_files>`_
+      attribute in that it automatically collects
+      :py:attr:`pw_cc_tool.additional_files` from the
+      :py:class:`pw_cc_action_config` rules associated with these kinds of
+      actions. Any ``filegroup`` specified here must also be enumerated in the
+      ``filegroup`` listed in :py:attr:`pw_cc_toolchain.all_files`.
+
+   .. py:attribute:: as_files
+      :type: Label
+
+      Label of a ``filegroup`` specifying additional files required to run
+      assembly actions.
+
+      This differs from the native
+      `cc_toolchain.as_files <https://bazel.build/reference/be/c-cpp#cc_toolchain.as_files>`_
+      attribute in that it automatically collects
+      :py:attr:`pw_cc_tool.additional_files` from the
+      :py:class:`pw_cc_action_config` rules associated with these kinds of
+      actions. Any ``filegroup`` specified here must also be enumerated in the
+      ``filegroup`` listed in :py:attr:`pw_cc_toolchain.all_files`.
+
+   .. py:attribute:: compiler_files
+      :type: Label
+
+      Label of a ``filegroup`` specifying additional files required to run
+      C/C++ compile actions.
+
+      This differs from the native
+      `cc_toolchain.compiler_files <https://bazel.build/reference/be/c-cpp#cc_toolchain.compiler_files>`_
+      attribute in that it automatically collects
+      :py:attr:`pw_cc_tool.additional_files` from the
+      :py:class:`pw_cc_action_config` rules associated with these kinds of
+      actions. Any ``filegroup`` specified here must also be enumerated in the
+      ``filegroup`` listed in :py:attr:`pw_cc_toolchain.all_files`.
+
+   .. py:attribute:: coverage_files
+      :type: Label
+
+      Label of a ``filegroup`` specifying additional files required to run
+      code coverage generation actions.
+
+      This differs from the native
+      `cc_toolchain.coverage_files <https://bazel.build/reference/be/c-cpp#cc_toolchain.coverage_files>`_
+      attribute in that it automatically collects
+      :py:attr:`pw_cc_tool.additional_files` from the
+      :py:class:`pw_cc_action_config` rules associated with these kinds of
+      actions. Any ``filegroup`` specified here must also be enumerated in the
+      ``filegroup`` listed in :py:attr:`pw_cc_toolchain.all_files`.
+
+   .. py:attribute:: dwp_files
+      :type: Label
+
+      Label of a ``filegroup`` specifying additional files required to run
+      Dwarf package generation actions.
+
+      This differs from the native
+      `cc_toolchain.dwp_files <https://bazel.build/reference/be/c-cpp#cc_toolchain.dwp_files>`_
+      attribute in that it automatically collects
+      :py:attr:`pw_cc_tool.additional_files` from the
+      :py:class:`pw_cc_action_config` rules associated with these kinds of
+      actions. Any ``filegroup`` specified here must also be enumerated in the
+      ``filegroup`` listed in :py:attr:`pw_cc_toolchain.all_files`.
+
+   .. py:attribute:: linker_files
+      :type: Label
+
+      Label of a ``filegroup`` specifying additional files required to run
+      link actions.
+
+      This differs from the native
+      `cc_toolchain.linker_files <https://bazel.build/reference/be/c-cpp#cc_toolchain.linker_files>`_
+      attribute in that it automatically collects
+      :py:attr:`pw_cc_tool.additional_files` from the
+      :py:class:`pw_cc_action_config` rules associated with these kinds of
+      actions. Any ``filegroup`` specified here must also be enumerated in the
+      ``filegroup`` listed in :py:attr:`pw_cc_toolchain.all_files`.
+
+   .. py:attribute:: objcopy_files
+      :type: Label
+
+      Label of a ``filegroup`` specifying additional files required to run
+      objcopy actions.
+
+      This differs from the native
+      `cc_toolchain.objcopy_files <https://bazel.build/reference/be/c-cpp#cc_toolchain.objcopy_files>`_
+      attribute in that it automatically collects
+      :py:attr:`pw_cc_tool.additional_files` from the
+      :py:class:`pw_cc_action_config` rules associated with these kinds of
+      actions. Any ``filegroup`` specified here must also be enumerated in the
+      ``filegroup`` listed in :py:attr:`pw_cc_toolchain.all_files`.
+
+   .. py:attribute:: strip_files
+      :type: Label
+
+      Label of a ``filegroup`` specifying additional files required to run
+      strip actions.
+
+      This differs from the native
+      `cc_toolchain.strip_files <https://bazel.build/reference/be/c-cpp#cc_toolchain.strip_files>`_
+      attribute in that it automatically collects
+      :py:attr:`pw_cc_tool.additional_files` from the
+      :py:class:`pw_cc_action_config` rules associated with these kinds of
+      actions. Any ``filegroup`` specified here must also be enumerated in the
+      ``filegroup`` listed in :py:attr:`pw_cc_toolchain.all_files`.
+
 .. py:class:: pw_cc_flag_set
 
    Declares an ordered set of flags bound to a set of actions.
@@ -349,6 +474,14 @@ API reference
 
       A list of strings that provide hints for execution environment
       compatibility (e.g. ``requires-darwin``).
+
+   .. py:attribute:: additional_files
+      :type: List[label]
+
+      Additional files that are required for this tool to correctly operate.
+      These files are propagated up to the :py:class:`pw_cc_toolchain` so you
+      typically won't need to explicitly specify the ``*_files`` attributes
+      on a :py:class:`pw_cc_toolchain`.
 
 
 .. py:class:: pw_cc_action_config

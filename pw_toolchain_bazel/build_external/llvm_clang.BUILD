@@ -59,6 +59,10 @@ pw_cc_action_config(
 pw_cc_tool(
     name = "clang++_tool",
     tool = "//:bin/clang++",
+    additional_files = glob([
+        "include/**",
+        "lib/clang/**/include/**",
+    ]),
 )
 
 pw_cc_action_config(
@@ -70,6 +74,10 @@ pw_cc_action_config(
 pw_cc_tool(
     name = "clang_tool",
     tool = "//:bin/clang",
+    additional_files = glob([
+        "include/**",
+        "lib/clang/**/include/**",
+    ]),
 )
 
 pw_cc_action_config(
@@ -78,10 +86,21 @@ pw_cc_action_config(
     tools = [":clang_tool"],
 )
 
+# This tool is actually just clang++ under the hood, we just enumerate this
+# tool differently to specify a different set of additional files.
+pw_cc_tool(
+    name = "lld_tool",
+    tool = "//:bin/clang++",
+    additional_files = glob([
+        "lib/**/*.a",
+        "lib/**/*.so*",
+    ]),
+)
+
 pw_cc_action_config(
     name = "lld",
     action_names = ALL_LINK_ACTIONS,
-    tools = [":clang++_tool"],  # Use the clang++ frontend to drive lld.
+    tools = [":lld_tool"],
 )
 
 pw_cc_tool(

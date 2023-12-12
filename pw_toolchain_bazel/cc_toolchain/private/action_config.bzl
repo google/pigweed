@@ -36,11 +36,16 @@ def _pw_cc_tool_impl(ctx):
     # Remaps empty strings to `None` to match behavior of the default values.
     tool = ctx.executable.tool if ctx.executable.tool else None
     path = ctx.attr.path if ctx.attr.path else None
-    return config_lib_tool(
-        tool = tool,
-        path = path,
-        execution_requirements = ctx.attr.execution_requirements,
-    )
+    return [
+        config_lib_tool(
+            tool = tool,
+            path = path,
+            execution_requirements = ctx.attr.execution_requirements,
+        ),
+        DefaultInfo(
+            files = depset(ctx.files.additional_files + [tool]),
+        ),
+    ]
 
 pw_cc_tool = rule(
     implementation = _pw_cc_tool_impl,
@@ -78,8 +83,16 @@ escape hatch for edge cases. Prefer using `tool` whenever possible.
         "execution_requirements": attr.string_list(
             doc = "A list of strings that provide hints for execution environment compatibility (e.g. `requires-darwin`).",
         ),
+        "additional_files": attr.label_list(
+            allow_files = True,
+            doc = """Additional files that are required for this tool to correctly operate.
+
+These files are propagated up to the `pw_cc_toolchain` so you typically won't
+need to explicitly specify the `*_files` attributes on a `pw_cc_toolchain`.
+""",
+        ),
     },
-    provides = [ToolInfo],
+    provides = [ToolInfo, DefaultInfo],
     doc = """Declares a singular tool that can be bound to action configs.
 
 `pw_cc_tool` rules are intended to be consumed exclusively by
@@ -142,9 +155,14 @@ def _pw_cc_action_config_impl(ctx):
                 ctx.label,
             ))
 
-    return ActionConfigListInfo(
-        action_configs = [_generate_action_config(ctx, action) for action in ctx.attr.action_names],
-    )
+    return [
+        ActionConfigListInfo(
+            action_configs = [_generate_action_config(ctx, action) for action in ctx.attr.action_names],
+        ),
+        DefaultInfo(
+            files = depset(None, transitive = [dep[DefaultInfo].files for dep in ctx.attr.tools]),
+        ),
+    ]
 
 pw_cc_action_config = rule(
     implementation = _pw_cc_action_config_impl,

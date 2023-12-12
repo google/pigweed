@@ -24,9 +24,6 @@ load(
 )
 load(
     "//cc_toolchain/private:cc_toolchain.bzl",
-    _LLVM_COV = "LLVM_COV",
-    _OBJ_COPY_ACTION_NAME = "OBJ_COPY_ACTION_NAME",
-    _OBJ_DUMP_ACTION_NAME = "OBJ_DUMP_ACTION_NAME",
     _pw_cc_toolchain = "pw_cc_toolchain",
 )
 load(
@@ -41,6 +38,9 @@ load(
     _ALL_CPP_COMPILER_ACTIONS = "ALL_CPP_COMPILER_ACTIONS",
     _ALL_C_COMPILER_ACTIONS = "ALL_C_COMPILER_ACTIONS",
     _ALL_LINK_ACTIONS = "ALL_LINK_ACTIONS",
+    _LLVM_COV = "LLVM_COV",
+    _OBJ_COPY_ACTION_NAME = "OBJ_COPY_ACTION_NAME",
+    _OBJ_DUMP_ACTION_NAME = "OBJ_DUMP_ACTION_NAME",
 )
 
 # TODO(b/301004620): Remove when bazel 7 is released and these constants exists

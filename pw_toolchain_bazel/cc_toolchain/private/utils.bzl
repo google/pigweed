@@ -13,7 +13,7 @@
 # the License.
 """Private utilities and global variables."""
 
-load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
+load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES", "STRIP_ACTION_NAME")
 load(
     "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
     "flag_set",
@@ -50,6 +50,29 @@ ACTION_MAP = {
     "conlyopts": ALL_C_COMPILER_ACTIONS,
     "cxxopts": ALL_CPP_COMPILER_ACTIONS,
     "linkopts": ALL_LINK_ACTIONS,
+}
+
+# TODO(b/301004620): Remove when bazel 7 is released and these constants exists
+# in ACTION_NAMES.
+LLVM_COV = "llvm-cov"
+OBJ_COPY_ACTION_NAME = "objcopy_embed_data"
+
+# This action name isn't yet a well-known action name.
+OBJ_DUMP_ACTION_NAME = "objdump_embed_data"
+
+# A dictionary mapping the `*_files` attribute names of a `cc_toolchain` rule
+# to their respective applicable actions.
+#
+# `all_files` is intentionally omitted from this, as it applies to all actions.
+ALL_FILE_GROUPS = {
+    "ar_files": ALL_AR_ACTIONS,
+    "as_files": ALL_ASM_ACTIONS,
+    "compiler_files": ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS,
+    "coverage_files": [LLVM_COV],
+    "dwp_files": [],
+    "linker_files": ALL_LINK_ACTIONS,
+    "objcopy_files": [OBJ_COPY_ACTION_NAME],
+    "strip_files": [STRIP_ACTION_NAME],
 }
 
 def check_deps_provide(ctx, list_name, provider, what_provides):
