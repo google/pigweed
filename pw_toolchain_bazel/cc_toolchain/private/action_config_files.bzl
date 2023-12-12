@@ -21,6 +21,9 @@ load("@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl", "ActionConfigInfo")
 load("//cc_toolchain/private:providers.bzl", "ActionConfigListInfo")
 
 def _pw_cc_action_config_file_collector_impl(ctx):
+    if ctx.attr.collect_files_from_actions and ctx.attr.collect_files_not_from_actions:
+        fail("{} attempted to specify `collect_files_from_actions` and `collect_files_not_from_actions` simultaneously".format(ctx.label))
+
     all_file_depsets = []
     for dep in ctx.attr.all_action_configs:
         action_names = []
@@ -39,6 +42,10 @@ def _pw_cc_action_config_file_collector_impl(ctx):
             if (action_name in ctx.attr.collect_files_from_actions and
                 DefaultInfo in dep):
                 all_file_depsets.append(dep[DefaultInfo].files)
+            elif (ctx.attr.collect_files_not_from_actions and
+                  action_name not in ctx.attr.collect_files_not_from_actions and
+                  DefaultInfo in dep):
+                all_file_depsets.append(dep[DefaultInfo].files)
 
     # Tag on the `filegroup` specified in `extra_files` if specified.
     if ctx.attr.extra_files:
@@ -56,7 +63,20 @@ pw_cc_action_config_file_collector = rule(
     implementation = _pw_cc_action_config_file_collector_impl,
     attrs = {
         "all_action_configs": attr.label_list(default = []),
-        "collect_files_from_actions": attr.string_list(mandatory = True),
+        "collect_files_from_actions": attr.string_list(
+            doc = """Collects files from tools that apply to the listed action names.
+
+Note: `collect_files_from_actions` and `collect_files_not_from_actions` are
+mutually exclusive.
+""",
+        ),
+        "collect_files_not_from_actions": attr.string_list(
+            doc = """Collects files from tools that DO NOT apply to the listed action names.
+
+Note: `collect_files_from_actions` and `collect_files_not_from_actions` are
+mutually exclusive.
+""",
+        ),
         "extra_files": attr.label(),
     },
 )

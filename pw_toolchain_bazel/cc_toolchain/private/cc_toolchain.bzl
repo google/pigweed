@@ -361,6 +361,34 @@ def _generate_file_group(kwargs, attr_name, action_names):
     )
     return file_group_name
 
+def _generate_misc_file_group(kwargs):
+    """Generate the misc_files group.
+
+    Some actions aren't enumerated in ALL_FILE_GROUPS because they don't
+    necessarily have an associated *_files group. This group collects
+    all the other files and enumerates them in a group so they still appear in
+    all_files.
+
+    Args:
+        kwargs: Dictionary of all pw_cc_toolchain arguments.
+
+    Returns:
+        Name of the generated filegroup rule.
+    """
+    file_group_name = "{}_misc_files".format(kwargs["name"])
+
+    all_known_actions = []
+    for action_names in ALL_FILE_GROUPS.values():
+        all_known_actions.extend(action_names)
+
+    pw_cc_action_config_file_collector(
+        name = file_group_name,
+        all_action_configs = kwargs["action_configs"],
+        collect_files_not_from_actions = all_known_actions,
+        visibility = ["//visibility:private"],
+    )
+    return file_group_name
+
 def pw_cc_toolchain(**kwargs):
     """A suite of cc_toolchain, pw_cc_toolchain_config, and *_files rules.
 
@@ -372,6 +400,8 @@ def pw_cc_toolchain(**kwargs):
             "coverage_files", "dwp_files", "linker_files", "objcopy_files", and
             "strip_files" normally enumerated as part of the `cc_toolchain`
             rule.
+        {name}_misc_files: Generated rule that groups together files for action
+            configs not associated with any other *_files group.
 
     Args:
         **kwargs: All attributes supported by either cc_toolchain or pw_cc_toolchain_config.
@@ -387,6 +417,9 @@ def pw_cc_toolchain(**kwargs):
     # The `all_files` group must be a superset of all the smaller file groups.
     all_files_name = "{}_all_files".format(kwargs["name"])
     all_file_inputs = [":{}".format(kwargs[file_group]) for file_group in ALL_FILE_GROUPS.keys()]
+
+    all_file_inputs.append(":{}".format(_generate_misc_file_group(kwargs)))
+
     if "all_files" in kwargs:
         all_file_inputs.append(kwargs["all_files"])
     native.filegroup(
