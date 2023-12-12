@@ -92,8 +92,8 @@ class BundledUpdateService
   sync::Mutex mutex_;
   // Nested lock for safe status updates and queries.
   sync::Mutex status_mutex_ PW_ACQUIRED_AFTER(mutex_);
-  pw_software_update_BundledUpdateStatus unsafe_status_
-      PW_GUARDED_BY(status_mutex_);
+  pw_software_update_BundledUpdateStatus unsafe_status_ PW_GUARDED_BY(
+      status_mutex_);
   sync::Borrowable<pw_software_update_BundledUpdateStatus, sync::Mutex> status_;
   BundledUpdateBackend& backend_ PW_GUARDED_BY(mutex_);
   UpdateBundleAccessor& bundle_ PW_GUARDED_BY(mutex_);

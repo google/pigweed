@@ -326,5 +326,5 @@ static inline bool pw_VariableLengthEntryQueue_Empty(
 #undef _PW_VAR_QUEUE_DATA
 
 #ifdef __cplusplus
-}       // extern "C"
+}  // extern "C"
 #endif  // __cplusplus

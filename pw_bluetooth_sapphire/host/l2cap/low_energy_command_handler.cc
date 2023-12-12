@@ -24,7 +24,8 @@ bool LowEnergyCommandHandler::ConnectionParameterUpdateResponse::Decode(
 }
 
 LowEnergyCommandHandler::ConnectionParameterUpdateResponder::
-ConnectionParameterUpdateResponder(SignalingChannel::Responder* sig_responder)
+    ConnectionParameterUpdateResponder(
+        SignalingChannel::Responder* sig_responder)
     : Responder(sig_responder) {}
 
 void LowEnergyCommandHandler::ConnectionParameterUpdateResponder::Send(

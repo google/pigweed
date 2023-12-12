@@ -67,7 +67,7 @@ bool Chunk::Merge(OwnedChunk& next_chunk_owned) {
 }
 
 void Chunk::InsertAfterInRegionList(Chunk* new_chunk)
-    PW_EXCLUSIVE_LOCKS_REQUIRED(region_tracker_ -> lock_) {
+    PW_EXCLUSIVE_LOCKS_REQUIRED(region_tracker_->lock_) {
   new_chunk->next_in_region_ = next_in_region_;
   new_chunk->prev_in_region_ = this;
   if (next_in_region_ != nullptr) {
@@ -77,7 +77,7 @@ void Chunk::InsertAfterInRegionList(Chunk* new_chunk)
 }
 
 void Chunk::InsertBeforeInRegionList(Chunk* new_chunk)
-    PW_EXCLUSIVE_LOCKS_REQUIRED(region_tracker_ -> lock_) {
+    PW_EXCLUSIVE_LOCKS_REQUIRED(region_tracker_->lock_) {
   new_chunk->next_in_region_ = this;
   new_chunk->prev_in_region_ = prev_in_region_;
   if (prev_in_region_ != nullptr) {
@@ -87,7 +87,7 @@ void Chunk::InsertBeforeInRegionList(Chunk* new_chunk)
 }
 
 void Chunk::RemoveFromRegionList()
-    PW_EXCLUSIVE_LOCKS_REQUIRED(region_tracker_ -> lock_) {
+    PW_EXCLUSIVE_LOCKS_REQUIRED(region_tracker_->lock_) {
   if (prev_in_region_ != nullptr) {
     prev_in_region_->next_in_region_ = next_in_region_;
   }

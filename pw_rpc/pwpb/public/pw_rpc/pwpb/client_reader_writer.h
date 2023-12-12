@@ -185,8 +185,8 @@ class PwpbUnaryResponseClientCall : public UnaryResponseClientCall {
   }
 
   const PwpbMethodSerde* serde_ PW_GUARDED_BY(rpc_lock());
-  Function<void(const Response&, Status)> pwpb_on_completed_
-      PW_GUARDED_BY(rpc_lock());
+  Function<void(const Response&, Status)> pwpb_on_completed_ PW_GUARDED_BY(
+      rpc_lock());
 };
 
 // internal::PwpbStreamResponseClientCall extends

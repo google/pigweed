@@ -215,7 +215,7 @@ TEST(StreamEncoder, Nested) {
                 OkStatus());
       // Rely on destructor for finalization.
     }  // end DoubleNestedProto
-  }    // end NestedProto
+  }  // end NestedProto
 
   // test_proto.ziggy = -13;
   EXPECT_EQ(encoder.WriteSint32(kTestProtoZiggyField, -13), OkStatus());

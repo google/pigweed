@@ -135,13 +135,13 @@ class MultiSink {
     Result<ConstByteSpan> PopEntry(ByteSpan buffer,
                                    uint32_t& drain_drop_count_out,
                                    uint32_t& ingress_drop_count_out)
-        PW_LOCKS_EXCLUDED(multisink_ -> lock_);
+        PW_LOCKS_EXCLUDED(multisink_->lock_);
     // Overload that combines drop counts.
     // TODO(cachinchilla): remove when downstream projects migrated to new API.
     [[deprecated("Use PopEntry with different drop count outputs")]] Result<
         ConstByteSpan>
     PopEntry(ByteSpan buffer, uint32_t& drop_count_out)
-        PW_LOCKS_EXCLUDED(multisink_ -> lock_) {
+        PW_LOCKS_EXCLUDED(multisink_->lock_) {
       uint32_t ingress_drop_count = 0;
       Result<ConstByteSpan> result =
           PopEntry(buffer, drop_count_out, ingress_drop_count);
@@ -173,7 +173,7 @@ class MultiSink {
     // OK - the entry or entries were removed from the multisink succesfully.
     // FAILED_PRECONDITION - The drain must be attached to a sink.
     Status PopEntry(const PeekedEntry& entry)
-        PW_LOCKS_EXCLUDED(multisink_ -> lock_);
+        PW_LOCKS_EXCLUDED(multisink_->lock_);
 
     // Returns a copy of the next available entry if it exists and acquires the
     // latest drop count if the drain was advanced, and the latest ingress drop
@@ -195,7 +195,7 @@ class MultiSink {
     Result<PeekedEntry> PeekEntry(ByteSpan buffer,
                                   uint32_t& drain_drop_count_out,
                                   uint32_t& ingress_drop_count_out)
-        PW_LOCKS_EXCLUDED(multisink_ -> lock_);
+        PW_LOCKS_EXCLUDED(multisink_->lock_);
 
     // Drains are not copyable or movable.
     Drain(const Drain&) = delete;

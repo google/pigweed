@@ -174,12 +174,12 @@ ChannelConfiguration::RetransmissionAndFlowControlOption ChannelConfiguration::
       mps);
 }
 ChannelConfiguration::RetransmissionAndFlowControlOption::
-RetransmissionAndFlowControlOption(RetransmissionAndFlowControlMode mode,
-                                   uint8_t tx_window_size,
-                                   uint8_t max_transmit,
-                                   uint16_t rtx_timeout,
-                                   uint16_t monitor_timeout,
-                                   uint16_t mps)
+    RetransmissionAndFlowControlOption(RetransmissionAndFlowControlMode mode,
+                                       uint8_t tx_window_size,
+                                       uint8_t max_transmit,
+                                       uint16_t rtx_timeout,
+                                       uint16_t monitor_timeout,
+                                       uint16_t mps)
     : mode_(mode),
       tx_window_size_(tx_window_size),
       max_transmit_(max_transmit),
@@ -188,7 +188,7 @@ RetransmissionAndFlowControlOption(RetransmissionAndFlowControlMode mode,
       mps_(mps) {}
 
 ChannelConfiguration::RetransmissionAndFlowControlOption::
-RetransmissionAndFlowControlOption(const ByteBuffer& data_buf) {
+    RetransmissionAndFlowControlOption(const ByteBuffer& data_buf) {
   const auto option_payload =
       data_buf.To<RetransmissionAndFlowControlOptionPayload>();
   mode_ = option_payload.mode;

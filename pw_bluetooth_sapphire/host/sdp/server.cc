@@ -799,8 +799,8 @@ std::set<l2cap::Psm> Server::AllocatedPsmsForTest() const {
 }
 
 Server::InspectProperties::InspectServiceRecordProperties::
-InspectServiceRecordProperties(std::string record,
-                               std::unordered_set<l2cap::Psm> psms)
+    InspectServiceRecordProperties(std::string record,
+                                   std::unordered_set<l2cap::Psm> psms)
     : record(std::move(record)), psms(std::move(psms)) {}
 
 void Server::InspectProperties::InspectServiceRecordProperties::AttachInspect(

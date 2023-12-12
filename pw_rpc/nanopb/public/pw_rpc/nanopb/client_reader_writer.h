@@ -112,8 +112,8 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
   }
 
   const NanopbMethodSerde* serde_ PW_GUARDED_BY(rpc_lock());
-  Function<void(const Response&, Status)> nanopb_on_completed_
-      PW_GUARDED_BY(rpc_lock());
+  Function<void(const Response&, Status)> nanopb_on_completed_ PW_GUARDED_BY(
+      rpc_lock());
 };
 
 // Base class for server and bidirectional streaming calls.
