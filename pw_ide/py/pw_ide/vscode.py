@@ -377,7 +377,7 @@ def _default_tasks(
             "type": "pickString",
             "id": "availableTargetToolchains",
             "description": "Available target toolchains",
-            "options": list(state.targets),
+            "options": sorted(list(state.targets)),
         }
     ]
 
