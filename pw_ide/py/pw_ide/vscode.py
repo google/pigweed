@@ -138,7 +138,6 @@ def _local_python_settings() -> Dict[str, Any]:
     paths = PythonPaths()
     return {
         'python.defaultInterpreterPath': str(paths.interpreter),
-        'python.formatting.yapfPath': str(paths.bin_dir / 'yapf'),
     }
 
 
@@ -180,7 +179,7 @@ _DEFAULT_SETTINGS: EditorSettingsDict = OrderedDict(
         "gulp.autoDetect": "off",
         "jake.autoDetect": "off",
         "npm.autoDetect": "off",
-        "C_Cpp.intelliSenseEngine": "Disabled",
+        "C_Cpp.intelliSenseEngine": "disabled",
         "[cpp]": OrderedDict(
             {"editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"}
         ),
@@ -192,9 +191,6 @@ _DEFAULT_SETTINGS: EditorSettingsDict = OrderedDict(
         ),
         # The "strict" mode is much more strict than what we currently enforce.
         "python.analysis.typeCheckingMode": "basic",
-        "python.formatting.provider": "yapf",
-        "python.linting.pylintEnabled": True,
-        "python.linting.mypyEnabled": True,
         "python.testing.unittestEnabled": True,
         "[python]": OrderedDict({"editor.tabSize": 4}),
         "typescript.tsc.autoDetect": "off",
@@ -332,7 +328,9 @@ _DEFAULT_EXTENSIONS: EditorSettingsDict = OrderedDict(
     {
         "recommendations": [
             "llvm-vs-code-extensions.vscode-clangd",
+            "ms-python.mypy-type-checker",
             "ms-python.python",
+            "ms-python.pylint",
             "npclaudiu.vscode-gn",
             "msedge-dev.gnls",
             "zxh404.vscode-proto3",
