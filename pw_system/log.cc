@@ -44,12 +44,27 @@ sync::Mutex drains_mutex;
 static_assert(rpc::MaxSafePayloadSize() >= PW_SYSTEM_MAX_LOG_ENTRY_SIZE);
 std::array<std::byte, PW_SYSTEM_MAX_LOG_ENTRY_SIZE> log_decode_buffer
     PW_GUARDED_BY(drains_mutex);
+#if PW_SYSTEM_EXTRA_LOGGING_CHANNEL_ID != PW_SYSTEM_LOGGING_CHANNEL_ID
+std::array<std::byte, PW_SYSTEM_MAX_LOG_ENTRY_SIZE> log_decode_buffer_extra
+    PW_GUARDED_BY(drains_mutex);
+#endif
 
-std::array<RpcLogDrain, 1> drains{{
+#if PW_SYSTEM_EXTRA_LOGGING_CHANNEL_ID != PW_SYSTEM_LOGGING_CHANNEL_ID
+constexpr size_t drain_count = 2;
+#else
+constexpr size_t drain_count = 1;
+#endif
+std::array<RpcLogDrain, drain_count> drains{{
     RpcLogDrain(kLoggingRpcChannelId,
                 log_decode_buffer,
                 drains_mutex,
                 RpcLogDrain::LogDrainErrorHandling::kIgnoreWriterErrors),
+#if PW_SYSTEM_EXTRA_LOGGING_CHANNEL_ID != PW_SYSTEM_LOGGING_CHANNEL_ID
+    RpcLogDrain(kExtraLoggingRpcChannelId,
+                log_decode_buffer_extra,
+                drains_mutex,
+                RpcLogDrain::LogDrainErrorHandling::kIgnoreWriterErrors),
+#endif
 }};
 
 log_rpc::RpcLogDrainMap drain_map(drains);

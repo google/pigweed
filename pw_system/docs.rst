@@ -187,3 +187,40 @@ To use this mode, add the following to ``gn args out``:
 
 The settings for the channel ID and address can be found in the target
 ``//pw_system:multi_endpoint_rpc_overrides``.
+
+---------------------
+Extra logging Channel
+---------------------
+In multi-processor devices, logs are typically forwarded to a primary
+application-class core. By default, ``pw_system`` assumes a simpler device
+architecture where a single processor is communicating with an external host
+system (e.g. a Linux workstation) for developer debugging. This means that
+logging and RPCs are expected to coexist on the same channel. It is possible
+to redirect the logs to a different RPC channel output by configuring
+``PW_SYSTEM_LOGGING_CHANNEL_ID`` to a different channel ID, but this would
+still mean that logs would inaccessible from either the application-class
+processor, or the host system.
+
+The logging multisink can be leveraged to address this completely by forwarding
+a copy of the logs to the application-class core without impacting the behavior
+of the debug communication channel. This allows ``pw-system-console`` work as
+usual, while also ensuring logs are available from the larger application-class
+processor. Additionally, this allows the debug channel to easily be disabled in
+production environments while maintaining the log forwarding path through the
+larger processor.
+
+An example configuration is provided below:
+
+.. code-block::
+
+   config("extra_logging_channel") {
+     defines = [ "PW_SYSTEM_EXTRA_LOGGING_CHANNEL_ID=2" ]
+   }
+
+   pw_system_target("my_system") {
+     global_configs = [ ":extra_logging_channel" ]
+   }
+
+Once you have configured pw_system as shown in the example above, you will
+still need to define an RPC channel for the channel ID that you selected so
+the logs can be routed to the appropriate destination.

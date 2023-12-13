@@ -68,6 +68,16 @@
 #define PW_SYSTEM_LOGGING_RPC_HDLC_ADDRESS PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS
 #endif  // PW_SYSTEM_LOGGING_RPC_HDLC_ADDRESS
 
+// PW_SYSTEM_EXTRA_LOGGING_CHANNEL_ID extra logging channel ID.
+// If this is different from PW_SYSTEM_LOGGING_CHANNEL_ID, then
+// an additional sink will be created to forward logs to
+// this channel.
+//
+// Defaults to PW_SYSTEM_LOGGING_CHANNEL_ID
+#ifndef PW_SYSTEM_EXTRA_LOGGING_CHANNEL_ID
+#define PW_SYSTEM_EXTRA_LOGGING_CHANNEL_ID PW_SYSTEM_LOGGING_CHANNEL_ID
+#endif  // PW_SYSTEM_EXTRA_LOGGING_CHANNEL_ID
+
 // PW_SYSTEM_ENABLE_TRACE_SERVICE specifies if the trace RPC service is enabled.
 //
 // Defaults to 1.

@@ -29,6 +29,10 @@ inline constexpr uint32_t kDefaultRpcChannelId = PW_SYSTEM_DEFAULT_CHANNEL_ID;
 
 // This is the channel ID used for logging.
 inline constexpr uint32_t kLoggingRpcChannelId = PW_SYSTEM_LOGGING_CHANNEL_ID;
+#if PW_SYSTEM_EXTRA_LOGGING_CHANNEL_ID != PW_SYSTEM_LOGGING_CHANNEL_ID
+inline constexpr uint32_t kExtraLoggingRpcChannelId =
+    PW_SYSTEM_EXTRA_LOGGING_CHANNEL_ID;
+#endif
 
 rpc::Server& GetRpcServer();
 
