@@ -64,7 +64,7 @@ export async function loadExtensionsJson(
  */
 export async function getExtensionsJson(
   includeWorkspace = false,
-): Promise<ExtensionsJson> {
+): Promise<ExtensionsJson | null> {
   const files = await vscode.workspace.findFiles(
     '.vscode/extensions.json',
     '**/node_modules/**',
@@ -79,9 +79,7 @@ export async function getExtensionsJson(
   }
 
   if (files.length == 0) {
-    // TODO(chadnorvell): Improve this
-    vscode.window.showErrorMessage('extensions.json is missing!');
-    throw new Error('extensions.json is missing!');
+    return null;
   } else {
     if (files.length > 1) {
       vscode.window.showWarningMessage(

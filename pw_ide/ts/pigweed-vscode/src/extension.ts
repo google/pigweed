@@ -213,14 +213,14 @@ async function disableUnwantedExtensions(unwanted: string[]) {
 async function checkExtensions() {
   const extensions = await getExtensionsJson();
 
-  const num_recommendations = extensions.recommendations?.length ?? 0;
-  const num_unwanted = extensions.unwantedRecommendations?.length ?? 0;
+  const num_recommendations = extensions?.recommendations?.length ?? 0;
+  const num_unwanted = extensions?.unwantedRecommendations?.length ?? 0;
 
-  if (num_recommendations > 0) {
+  if (extensions && num_recommendations > 0) {
     await installRecommendedExtensions(extensions.recommendations as string[]);
   }
 
-  if (num_unwanted > 0) {
+  if (extensions && num_unwanted > 0) {
     await disableUnwantedExtensions(
       extensions.unwantedRecommendations as string[],
     );
