@@ -1,3 +1,4 @@
 config_title: pw_ide
 
 default_target: pw_strict_host_clang_debug
+compdb_gen_cmd: gn gen out

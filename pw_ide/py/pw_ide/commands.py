@@ -518,6 +518,10 @@ def _process_compdbs(  # pylint: disable=too-many-locals
     return False
 
 
+class TryAgainException(Exception):
+    """A signal to retry an action."""
+
+
 @_inject_reporter
 def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements
     should_list_targets: bool,
@@ -527,6 +531,7 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
     use_default_target: bool = False,
     clangd_command: bool = False,
     clangd_command_system: Optional[str] = None,
+    should_try_compdb_gen_cmd: bool = True,
     reporter: StatusReporter = StatusReporter(),
     pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings(),
 ) -> None:
@@ -679,8 +684,34 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
                         'generate a compilation database.',
                     ]
                 )
+
+                if (
+                    should_try_compdb_gen_cmd
+                    and pw_ide_settings.compdb_gen_cmd is not None
+                ):
+                    raise TryAgainException
+
                 sys.exit(1)
 
+        except TryAgainException:
+            if pw_ide_settings.compdb_gen_cmd is not None:
+                reporter.info(
+                    'Will try to generate a compilation database with: '
+                    f'{pw_ide_settings.compdb_gen_cmd}'
+                )
+
+                subprocess.run(shlex.split(pw_ide_settings.compdb_gen_cmd))
+
+                cmd_cpp(
+                    should_list_targets=should_list_targets,
+                    should_get_target=should_get_target,
+                    target_to_set=target_to_set,
+                    process=process,
+                    use_default_target=use_default_target,
+                    clangd_command=clangd_command,
+                    clangd_command_system=clangd_command_system,
+                    should_try_compdb_gen_cmd=False,
+                )
         except InvalidTargetException:
             reporter.err(
                 f'Invalid target toolchain! {target_to_set} not among the '

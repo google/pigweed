@@ -48,6 +48,7 @@ _DEFAULT_SUPPORTED_EDITORS: Dict[SupportedEditorName, bool] = {
 _DEFAULT_CONFIG: Dict[str, Any] = {
     'cascade_targets': False,
     'clangd_additional_query_drivers': [],
+    'compdb_gen_cmd': None,
     'compdb_search_paths': [_DEFAULT_BUILD_DIR_NAME],
     'default_target': None,
     'editors': _DEFAULT_SUPPORTED_EDITORS,
@@ -136,6 +137,15 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         directory) nor should it be committed to source control.
         """
         return Path(self._config.get('working_dir', PW_IDE_DEFAULT_DIR))
+
+    @property
+    def compdb_gen_cmd(self) -> Optional[str]:
+        """The command that should be run to generate a compilation database.
+
+        Defining this allows ``pw_ide`` to automatically generate a compilation
+        database if it suspects one has not been generated yet before a sync.
+        """
+        return self._config.get('compdb_gen_cmd')
 
     @property
     def compdb_search_paths(self) -> List[Tuple[Path, str]]:
