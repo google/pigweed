@@ -44,17 +44,8 @@
         "linux-amd64",
         "linux-arm64",
         "mac-amd64",
+        "mac-arm64",
         "windows-amd64"
-      ],
-      "tags": [
-        "version:2@24.4"
-      ]
-    },
-    {
-      "_comment": "Always get the amd64 version on Mac until there's an arm64 version",
-      "path": "infra/3pp/tools/protoc/mac-amd64",
-      "platforms": [
-        "mac-arm64"
       ],
       "tags": [
         "version:2@24.4"
