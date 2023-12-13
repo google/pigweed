@@ -17,6 +17,7 @@
 include(${CMAKE_CURRENT_LIST_DIR}/../../pw_build/pigweed.cmake)
 
 include($ENV{PW_ROOT}/pw_assert/backend.cmake)
+include($ENV{PW_ROOT}/pw_async2/backend.cmake)
 include($ENV{PW_ROOT}/pw_chrono/backend.cmake)
 include($ENV{PW_ROOT}/pw_log/backend.cmake)
 include($ENV{PW_ROOT}/pw_perf_test/backend.cmake)
@@ -34,6 +35,9 @@ pw_add_global_compile_options(-std=c++20 LANGUAGES CXX)
 # Configure backend for assert facade.
 pw_set_backend(pw_assert.check pw_assert.print_and_abort_check_backend)
 pw_set_backend(pw_assert.assert pw_assert.print_and_abort_assert_backend)
+
+# Configure backend for async dispatcher facade
+pw_set_backend(pw_async2.dispatcher pw_async2_basic.dispatcher_backend)
 
 # Configure backend for logging facade.
 pw_set_backend(pw_log pw_log_basic)

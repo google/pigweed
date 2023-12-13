@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_allocator/allocator.gni")
 import("$dir_pw_async/backend.gni")
+import("$dir_pw_async2/backend.gni")
 import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_perf_test/perf_test.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
@@ -42,9 +43,12 @@ _host_common = {
   pw_assert_BACKEND = "$dir_pw_assert:print_and_abort_check_backend"
   pw_assert_LITE_BACKEND = "$dir_pw_assert:print_and_abort_assert_backend"
 
-  # Configure backend for async facade.
+  # Configure backend for legacy facade.
   pw_async_TASK_BACKEND = "$dir_pw_async_basic:task"
   pw_async_FAKE_DISPATCHER_BACKEND = "$dir_pw_async_basic:fake_dispatcher"
+
+  # Configure backend for async facade.
+  pw_async2_DISPATCHER_BACKEND = "$dir_pw_async2_basic:dispatcher_backend"
 
   # Configure backend for logging facade.
   pw_log_BACKEND = "$dir_pw_log_basic"
