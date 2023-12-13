@@ -146,7 +146,7 @@ pw_seed("0116") {
 pw_seed("0117") {
   changelist = 178350
   title = "pw_i3c"
-  status = "Draft"
+  status = "Open for Comments"
   author = "Jack Chen"
 }
 
