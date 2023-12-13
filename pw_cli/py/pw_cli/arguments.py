@@ -23,6 +23,7 @@ from typing import List, NoReturn, Optional
 
 from pw_cli import argument_types, plugins
 from pw_cli.branding import banner
+import pw_cli.env
 
 _HELP_HEADER = '''The Pigweed command line interface (CLI).
 
@@ -108,6 +109,9 @@ def print_completions_for_option(
 
 def print_banner() -> None:
     """Prints the PIGWEED (or project specific) banner to stderr."""
+    parsed_env = pw_cli.env.pigweed_environment()
+    if parsed_env.PW_ENVSETUP_NO_BANNER or parsed_env.PW_ENVSETUP_QUIET:
+        return
     print(banner() + '\n', file=sys.stderr)
 
 

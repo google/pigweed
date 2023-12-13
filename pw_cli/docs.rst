@@ -196,6 +196,7 @@ the banners by setting environment variables:
   ``red``, ``bold_red``, ``yellow``, ``bold_yellow``, ``green``,
   ``bold_green``, ``blue``, ``cyan``, ``magenta``, ``bold_white``,
   ``black_on_white``. See ``pw_cli.colors`` for details.
+* ``PW_ENVSETUP_NO_BANNER`` - Suppress banner from being printed.
 
 The below example shows how to manually change the branding at the command
 line. However, these environment variables should be set in the project root's
