@@ -130,7 +130,7 @@ macro_rules! tokenize_to_buffer {
       __pw_tokenizer_crate::_tokenize_to_buffer!($buffer, $format_string)
     }};
 
-    ($buffer:expr, $format_string:literal, $($args:expr),*) => {{
+    ($buffer:expr, $format_string:expr, $($args:expr),*) => {{
       use $crate::__private as __pw_tokenizer_crate;
       __pw_tokenizer_crate::_tokenize_to_buffer!($buffer, $format_string, $($args),*)
     }};

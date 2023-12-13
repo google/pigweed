@@ -40,12 +40,17 @@ use quote::{format_ident, quote, ToTokens};
 use syn::{
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
+    spanned::Spanned,
     Expr, LitStr, Token,
 };
 
 use crate::{
     ConversionSpec, FormatFragment, FormatString, Length, MinFieldWidth, Precision, Specifier,
 };
+
+mod keywords {
+    syn::custom_keyword!(PW_FMT_CONCAT);
+}
 
 type TokenStream2 = proc_macro2::TokenStream;
 
@@ -173,6 +178,10 @@ pub trait FormatMacroGenerator {
 /// `FormatAndArgs` implements [`syn::parse::Parse`] and can be used to parse
 /// arguments to proc maros that take format strings.  Arguments are parsed
 /// according to the pattern: `($format_string:literal, $($args:expr),*)`
+///
+/// To support uses where format strings need to be built by macros at compile
+/// time, the format string can be specified as a set of string literals
+/// separated by the custom `PW_FMT_CONCAT` keyword.
 #[derive(Debug)]
 pub struct FormatAndArgs {
     format_string: LitStr,
@@ -182,7 +191,16 @@ pub struct FormatAndArgs {
 
 impl Parse for FormatAndArgs {
     fn parse(input: ParseStream) -> syn::parse::Result<Self> {
-        let format_string = input.parse::<LitStr>()?;
+        let punctuated =
+            Punctuated::<LitStr, keywords::PW_FMT_CONCAT>::parse_separated_nonempty(input)?;
+        let span = punctuated.span();
+        let format_string = LitStr::new(
+            &punctuated.into_iter().fold(String::new(), |mut acc, s| {
+                acc.push_str(&s.value());
+                acc
+            }),
+            span,
+        );
 
         let args = if input.is_empty() {
             // If there are no more tokens, no arguments were specified.

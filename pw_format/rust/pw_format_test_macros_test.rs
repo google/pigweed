@@ -257,4 +257,15 @@ mod tests {
             )
         );
     }
+
+    #[test]
+    fn multiple_format_strings_are_concatenated() {
+        assert_eq!(
+            generator_test_macro!("a" PW_FMT_CONCAT "b"),
+            vec![
+                TestGeneratorOps::StringFragment("ab".to_string()),
+                TestGeneratorOps::Finalize
+            ]
+        );
+    }
 }
