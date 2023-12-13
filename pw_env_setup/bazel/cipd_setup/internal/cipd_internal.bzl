@@ -143,7 +143,7 @@ def cipd_repository_base(rctx):
     result = rctx.execute([cipd_path, "ensure", "-root", ".", "-ensure-file", ensure_path])
 
     if result.return_code != 0:
-        fail("Failed to fetch CIPD repsoitory `{}`:\n{}".format(rctx.name, result.stderr))
+        fail("Failed to fetch CIPD repository `{}`:\n{}".format(rctx.name, result.stderr))
 
 def cipd_repository_impl(rctx):
     """Generates an external repository from a CIPD package.
