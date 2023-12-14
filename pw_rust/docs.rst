@@ -22,7 +22,7 @@ the following commands where ``PLATFORM`` is one of ``lm3s6965evb`` or
 .. code-block:: bash
 
    $ bazel build //pw_rust/examples/embedded_hello:hello \
-     --platforms //pw_build/platforms:${PLATFORM} \
+     --platforms //pw_build/platforms:${PLATFORM}
 
    $ qemu-system-arm \
      -machine ${PLATFORM} \
