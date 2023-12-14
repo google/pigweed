@@ -143,6 +143,8 @@ class RunError(Error):
 
     def __init__(self, proc: str, msg: str) -> None:
         super().__init__(f'error running `{proc}`: {msg}')
+        self.proc = proc
+        self.msg = msg
 
 
 class InvalidPropertyPath(Error):
@@ -582,6 +584,12 @@ class Connector(ABC):
     def get_channels(self) -> List[str]:
         return self._handles.channels.keys()
 
+    def get_logs(self) -> str:
+        """Returns the emulator logs."""
+
+        log_path = self._wdir / f'{self._handles.emu}.log'
+        return log_path.read_text()
+
     def stop(self) -> None:
         """Stops the emulator."""
 
@@ -949,7 +957,15 @@ class Launcher(ABC):
             self._stop_procs()
             raise err
 
-        self._post_start()
+        try:
+            self._post_start()
+        except RunError as err:
+            self._handles.save(wdir)
+            connector = self._get_connector(self._wdir)
+            if not connector.running():
+                msg = err.msg + '; dumping logs:\n' + connector.get_logs()
+                raise RunError(err.proc, msg)
+            raise err
         self._handles.save(wdir)
 
         if proc:

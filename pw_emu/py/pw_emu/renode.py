@@ -22,10 +22,11 @@ from typing import Optional, List, Any
 
 from pw_emu.core import (
     Connector,
+    Error,
     Handles,
     InvalidChannelType,
     Launcher,
-    Error,
+    RunError,
     WrongEmulator,
 )
 
@@ -155,7 +156,7 @@ class RenodeLauncher(Launcher):
         if not connected:
             msg = 'failed to connect to robot channel'
             msg += f'({robot.host}:{robot.port}): {err}'
-            raise RenodeRobotError(msg)
+            raise RunError('renode', msg)
 
         sock.close()
 

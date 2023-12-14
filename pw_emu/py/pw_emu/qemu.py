@@ -31,6 +31,7 @@ from pw_emu.core import (
     Launcher,
     Error,
     InvalidChannelType,
+    RunError,
     WrongEmulator,
 )
 
@@ -290,9 +291,15 @@ class QemuLauncher(Launcher):
 
     def _post_start(self) -> None:
         assert self._qmp_init_sock is not None
-        conn, _ = self._qmp_init_sock.accept()
+        try:
+            conn, _ = self._qmp_init_sock.accept()
+        except (KeyboardInterrupt, socket.timeout):
+            raise RunError('qemu', 'qmp connection failed')
         self._qmp_init_sock.close()
-        qmp = QmpClient(conn.makefile('rwb', buffering=0))
+        try:
+            qmp = QmpClient(conn.makefile('rwb', buffering=0))
+        except json.decoder.JSONDecodeError:
+            raise RunError('qemu', 'qmp handshake failed')
         conn.close()
 
         resp = qmp.request('query-chardev')

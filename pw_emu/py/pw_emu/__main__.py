@@ -441,7 +441,7 @@ def main() -> int:
         )
 
     try:
-        emu = Emulator(args.working_dir, args.config)
+        emu = Emulator(Path(args.working_dir), args.config)
         args.func(emu, args)
     except Error as err:
         print(err)
