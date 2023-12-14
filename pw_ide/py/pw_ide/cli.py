@@ -363,12 +363,6 @@ def _build_argument_parser() -> argparse.ArgumentParser:
         metavar='SETTINGS_TYPE',
         help='do not update these settings types',
     )
-    parser_vscode.add_argument(
-        '--install-extension',
-        dest='should_install_extension',
-        action='store_true',
-        help='install the experimental extension',
-    )
 
     return parser_root
 

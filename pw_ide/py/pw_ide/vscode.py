@@ -65,8 +65,6 @@ import json
 import os
 from pathlib import Path
 import platform
-import shutil
-import subprocess
 from typing import Any, Dict, List, Optional, OrderedDict
 
 from pw_cli.env import pigweed_environment
@@ -83,11 +81,8 @@ from pw_ide.editors import (
 
 from pw_ide.python import PythonPaths
 from pw_ide.settings import PigweedIdeSettings
-from pw_ide.status_reporter import StatusReporter
 
 env = pigweed_environment()
-
-_VSIX_DIR = Path(env.PW_ROOT) / 'pw_ide' / 'vscode'
 
 
 def _vsc_os(system: str = platform.system()):
@@ -429,122 +424,3 @@ class VscSettingsManager(EditorSettingsManager[VscSettingsType]):
         VscSettingsType.EXTENSIONS: _default_extensions,
         VscSettingsType.LAUNCH: _default_launch,
     }
-
-
-def _prompt_for_path(reporter: StatusReporter) -> Path:
-    reporter.info(
-        [
-            "Hmmm... I can't seem to find your Visual Studio Code binary path!",
-            "You can provide it manually here, or Ctrl-C to cancel.",
-        ]
-    )
-
-    path = Path(input("> "))
-
-    if path.exists():
-        return path
-
-    reporter.err("Nothing found there!")
-    raise FileNotFoundError()
-
-
-# TODO(chadnorvell): Replace this when we support Python 3.11 with:
-# _PathData = Tuple[Optional[str], *Tuple[str]]
-_PathData = List[Optional[str]]
-
-
-def _try_code_path(path_list: _PathData) -> Optional[Path]:
-    root, *rest = path_list
-
-    if root is None:
-        return None
-
-    path = Path(root)
-
-    for part in rest:
-        if part is None:
-            return None
-
-        path /= part
-
-    return path
-
-
-def _try_each_code_path(
-    reporter: StatusReporter, *path_lists: _PathData
-) -> Path:
-    for path_list in path_lists:
-        if (path := _try_code_path(path_list)) is not None:
-            return path
-
-    if (path_str := shutil.which('code')) is not None:
-        return Path(path_str)
-
-    return _prompt_for_path(reporter)
-
-
-def _get_vscode_exe_path(
-    reporter: StatusReporter, system: str = platform.system()
-) -> Path:
-    if system == 'Darwin':
-        return _try_each_code_path(
-            reporter,
-            [
-                '/Applications',
-                'Visual Studio Code.app',
-                'Contents',
-                'Resources',
-                'app',
-                'bin',
-                'code',
-            ],
-        )
-
-    if system == 'Windows':
-        return _try_each_code_path(
-            reporter,
-            [
-                os.getenv('APPDATA'),
-                'Local',
-                'Programs',
-                'Microsoft VS Code',
-                'bin',
-                'code.exe',
-            ],
-            [
-                os.getenv('LOCALAPPDATA'),
-                'Local',
-                'Programs',
-                'Microsoft VS Code',
-                'bin',
-                'code.exe',
-            ],
-        )
-
-    if system == 'Linux':
-        return _try_each_code_path(
-            reporter,
-            ['/usr', 'bin', 'code'],
-            ['/usr', 'local', 'bin', 'code'],
-        )
-
-    return _prompt_for_path(reporter)
-
-
-def _get_latest_extension_vsix() -> Path:
-    return sorted(_VSIX_DIR.glob('*.vsix'), reverse=True)[0]
-
-
-def install_extension_from_vsix(reporter: StatusReporter) -> None:
-    """Install the latest pre-built VSC extension from its VSIX file.
-
-    Normally, extensions are installed from the VSC extension marketplace.
-    This will instead install the extension directly from a file.
-    """
-    extension_path = _get_latest_extension_vsix()
-    vscode_exe_path = _get_vscode_exe_path(reporter)
-
-    reporter.info(f"Path: {vscode_exe_path}")
-    subprocess.run(
-        [vscode_exe_path, '--install-extension', extension_path], check=True
-    )
