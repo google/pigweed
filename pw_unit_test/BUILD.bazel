@@ -122,6 +122,10 @@ pw_cc_library(
     srcs = ["googletest_handler_adapter.cc"],
     hdrs = ["public/pw_unit_test/googletest_handler_adapter.h"],
     includes = ["public"],
+    target_compatible_with = select({
+        ":gtest_setting": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":event_handler",
         "//pw_preprocessor",
@@ -134,6 +138,10 @@ pw_cc_library(
     testonly = True,
     hdrs = ["public/pw_unit_test/googletest_test_matchers.h"],
     includes = ["public"],
+    target_compatible_with = select({
+        ":gtest_setting": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         "//pw_result",
         "//pw_status",
@@ -144,6 +152,10 @@ pw_cc_library(
 pw_cc_test(
     name = "googletest_test_matchers_test",
     srcs = ["googletest_test_matchers_test.cc"],
+    target_compatible_with = select({
+        ":gtest_setting": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":googletest_test_matchers",
     ],
