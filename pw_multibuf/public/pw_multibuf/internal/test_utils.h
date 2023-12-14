@@ -63,7 +63,7 @@ class TrackingAllocator : public allocator::Allocator {
   const int32_t kFakeToken = 0;
 
   allocator::SplitFreeListAllocator<> alloc_;
-  allocator::AllocatorMetricProxy alloc_stats_;
+  allocator::AllocatorMetricProxyForTest alloc_stats_;
 };
 
 /// A ``TrackingAllocator`` which holds an internal buffer of size `num_buffer`

@@ -55,12 +55,15 @@ class Metrics : public metric::Group {
 ///
 /// This class provides the same interface as `Metrics`, but each methods has no
 /// effect.
-class MetricsStub : public metric::Group {
+class MetricsStub {
  public:
-  constexpr MetricsStub(metric::Token token) : metric::Group(token) {}
+  constexpr MetricsStub(metric::Token) {}
 
   /// @copydoc `Metrics::Init`.
   void Init() {}
+
+  /// Like `pw::metric::Group::Add`, but for this stub object.
+  void Add(MetricsStub&) {}
 
   /// @copydoc `Metrics::Update`.
   void Update(size_t, size_t) {}
@@ -68,12 +71,16 @@ class MetricsStub : public metric::Group {
   uint32_t used() const { return 0; }
   uint32_t peak() const { return 0; }
   uint32_t count() const { return 0; }
+
+  /// @copydoc pw::metric::Group::Dump.
+  void Dump() {}
+  void Dump(int) {}
 };
 
 /// If the `pw_allocator_COLLECT_METRICS` build argument is enabled,
 /// `AllocatorMetricProxy` will use `Metrics` by default. If it is disabled or
 /// not set, it will use the `MetricsStub`.
-#if !defined(PW_ALLOCATOR_COLLECT_METRICS) || !PW_ALLOCATOR_COLLECT_METRICS
+#if defined(PW_ALLOCATOR_COLLECT_METRICS) && PW_ALLOCATOR_COLLECT_METRICS
 using DefaultMetrics = Metrics;
 #else
 using DefaultMetrics = MetricsStub;
@@ -107,15 +114,8 @@ class AllocatorMetricProxyImpl : public Allocator {
   /// @copydoc `Init`.
   void Initialize(Allocator& allocator) { Init(allocator); }
 
-  IntrusiveList<metric::Group>& children() { return metrics_.children(); }
-  IntrusiveList<metric::Metric>& metrics() { return metrics_.metrics(); }
-
-  const IntrusiveList<metric::Group>& children() const {
-    return metrics_.children();
-  }
-  const IntrusiveList<metric::Metric>& metrics() const {
-    return metrics_.metrics();
-  }
+  MetricsType& metric_group() { return metrics_; }
+  const MetricsType& metric_group() const { return metrics_; }
 
   uint32_t used() const { return metrics_.used(); }
   uint32_t peak() const { return metrics_.peak(); }

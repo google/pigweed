@@ -31,14 +31,9 @@ class FallbackAllocator : public Allocator {
 
   constexpr FallbackAllocator() : secondary_(kSecondary) {}
 
-  IntrusiveList<metric::Group>& children() { return secondary_.children(); }
-  IntrusiveList<metric::Metric>& metrics() { return secondary_.metrics(); }
-
-  const IntrusiveList<metric::Group>& children() const {
-    return secondary_.children();
-  }
-  const IntrusiveList<metric::Metric>& metrics() const {
-    return secondary_.metrics();
+  MetricsType& secondary_metric_group() { return secondary_.metric_group(); }
+  const MetricsType& secondary_metric_group() const {
+    return secondary_.metric_group();
   }
 
   uint32_t used() const { return secondary_.used(); }

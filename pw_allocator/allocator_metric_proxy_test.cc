@@ -42,8 +42,9 @@ TEST_F(AllocatorMetricProxyTest, InitiallyZero) {
 }
 
 TEST_F(AllocatorMetricProxyTest, MetricsInitialized) {
-  EXPECT_EQ(allocator_.metrics().size(), 3U);
-  EXPECT_EQ(allocator_.children().size(), 0U);
+  metric::Group& group = allocator_.metric_group();
+  EXPECT_EQ(group.metrics().size(), 3U);
+  EXPECT_EQ(group.children().size(), 0U);
 }
 
 TEST_F(AllocatorMetricProxyTest, AllocateDeallocate) {
