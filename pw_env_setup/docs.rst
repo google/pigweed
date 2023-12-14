@@ -43,15 +43,6 @@ runs bootstrap.
    and ``activate.bat``. For simplicity they will be referred to with the
    ``.sh`` endings unless the distinction is relevant.
 
-.. warning::
-
-   At this time ``pw_env_setup`` works for us, but isn’t well tested. We don’t
-   suggest relying on it just yet. However, we are interested in experience
-   reports; if you give it a try, please `send us a note`_ about your
-   experience.
-
-.. _send us a note: pigweed@googlegroups.com
-
 On POSIX systems, the environment can be deactivated by running ``deactivate``.
 
 ==================================
