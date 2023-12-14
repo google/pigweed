@@ -998,6 +998,33 @@ struct ReadBdAddrCommandCompleteEvent:
   $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                bd_addr
 
 
+struct LEReadBufferSizeV2CommandCompleteEvent:
+  -- 7.7.14 Command Complete event (7.8.2 LE Read Buffer Size [v2] command)
+
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+
+  $next [+1]         hci.StatusCode            status
+
+  $next [+2]         UInt                      le_acl_data_packet_length
+    -- Maximum length (in octets) of the data portion of each HCI ACL data packet,
+    -- or 0 if no dedicated LE buffer exists.
+    [requires: 0x001b <= this <= 0xFFFF || this == 0x0000]
+
+  $next [+1]         UInt                      total_num_le_acl_data_packets
+    -- The total number of HCI ACL data packets that can be stored in the data
+    -- buffers of the Controller, or 0 if no dedicated LE buffer exists.
+
+  $next [+2]         UInt                      iso_data_packet_length
+    -- The maximum length (in octets) of the data portion of each HCI ISO data
+    -- packet, or 0 if no dedicated ISO buffer exists.
+
+  $next [+1]         UInt                      total_num_iso_data_packets
+    -- The total number of HCI ISO data packets that can be stored in the ISO
+    -- buffers of the controller, or 0 if no dedicated ISO buffer exists.
+
+
 struct LEReadLocalSupportedFeaturesCommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.8.3 LE Read Local Supported Features command)
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
