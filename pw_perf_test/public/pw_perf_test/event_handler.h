@@ -18,28 +18,29 @@
 namespace pw::perf_test {
 
 /// Data reported on completion of an iteration.
-struct IterationResult {
-  int64_t number;
-  int64_t result;
+struct TestIteration {
+  uint32_t number = 0;
+  float result = 0;
 };
 
-/// Data reported upon the completion of an iteration.
-struct Results {
-  int64_t mean;
-  int64_t max;
-  int64_t min;
-  int iterations;
+/// Data reported for each `Measurement` upon completion of a performance test.
+struct TestMeasurement {
+  float mean = 0;
+  float max = 0;
+  float min = 0;
 };
 
 /// Stores information on the upcoming collection of tests.
+///
+/// In order to match gtest, these integer types are not sized
 struct TestRunInfo {
-  int total_tests;
-  int default_iterations;
+  int total_tests = 0;
+  int default_iterations = 0;
 };
 
-/// Describes a performance test case.
+/// Describes the performance test being run.
 struct TestCase {
-  const char* name;
+  const char* name = nullptr;
 };
 
 /// Collects and reports test results.
@@ -50,20 +51,23 @@ class EventHandler {
  public:
   virtual ~EventHandler() = default;
 
-  /// Called before all tests are run.
-  virtual void RunAllTestsStart(const TestRunInfo& summary) = 0;
+  /// A performance test is starting.
+  virtual void RunAllTestsStart(const TestRunInfo& test_run_info) = 0;
 
-  /// Called after all tests are run.
+  /// A performance test has ended.
   virtual void RunAllTestsEnd() = 0;
 
-  /// Called when a new performance test is started.
-  virtual void TestCaseStart(const TestCase& info) = 0;
+  /// A performance test case is starting.
+  virtual void TestCaseStart(const TestCase& test_case) = 0;
 
-  /// Called to output the results of an iteration.
-  virtual void TestCaseIteration(const IterationResult& result) = 0;
+  /// A performance test case has completed an iteration.
+  virtual void TestCaseIteration(const TestIteration& test_iteration) = 0;
 
-  /// Called after a performance test ends.
-  virtual void TestCaseEnd(const TestCase& info, const Results& end_result) = 0;
+  /// A performance test case has produced a `Measurement`.
+  virtual void TestCaseMeasure(const TestMeasurement& test_measurement) = 0;
+
+  /// A performance test case has ended.
+  virtual void TestCaseEnd(const TestCase& test_case) = 0;
 };
 
 }  // namespace pw::perf_test

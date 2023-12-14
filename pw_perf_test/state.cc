@@ -28,8 +28,8 @@ State CreateState(int durations,
 
 bool State::KeepRunning() {
   internal::Timestamp iteration_end = internal::GetCurrentTimestamp();
-  if (current_iteration_ == -1) {
-    ++current_iteration_;
+  if (current_iteration_ < 0) {
+    current_iteration_ = 0;
     event_handler_->TestCaseStart(test_info);
     iteration_start_ = internal::GetCurrentTimestamp();
     return true;
@@ -46,7 +46,8 @@ bool State::KeepRunning() {
   PW_LOG_DEBUG("Iteration number: %d - Duration: %ld",
                current_iteration_,
                static_cast<long>(duration));
-  event_handler_->TestCaseIteration({current_iteration_, duration});
+  event_handler_->TestCaseIteration({static_cast<uint32_t>(current_iteration_),
+                                     static_cast<float>(duration)});
   if (current_iteration_ == test_iterations_) {
     PW_LOG_DEBUG("Total Duration: %ld  Total Iterations: %d",
                  static_cast<long>(total_duration_),
@@ -55,8 +56,13 @@ bool State::KeepRunning() {
     PW_LOG_DEBUG("Mean: %ld: ", static_cast<long>(mean_));
     PW_LOG_DEBUG("Minimum: %ld", static_cast<long>(min_));
     PW_LOG_DEBUG("Maxmimum: %ld", static_cast<long>(max_));
-    event_handler_->TestCaseEnd(test_info,
-                                Results{mean_, max_, min_, test_iterations_});
+    TestMeasurement test_measurement = {
+        .mean = static_cast<float>(mean_),
+        .max = static_cast<float>(max_),
+        .min = static_cast<float>(min_),
+    };
+    event_handler_->TestCaseMeasure(test_measurement);
+    event_handler_->TestCaseEnd(test_info);
     return false;
   }
   iteration_start_ = internal::GetCurrentTimestamp();

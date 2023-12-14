@@ -23,38 +23,39 @@
 namespace pw::perf_test {
 
 void LoggingEventHandler::RunAllTestsStart(const TestRunInfo& summary) {
-  PW_LOG_INFO(PW_PERF_TEST_GOOGLESTYLE_RUN_ALL_TESTS_START);
-  PW_LOG_INFO(PW_PERF_TEST_GOOGLESTYLE_BEGINNING_SUMMARY,
+  PW_LOG_INFO(PW_PERF_TEST_GOOGLETEST_RUN_ALL_TESTS_START);
+  PW_LOG_INFO(PW_PERF_TEST_GOOGLETEST_BEGINNING_SUMMARY,
               summary.total_tests,
               summary.default_iterations);
 }
 
-void LoggingEventHandler::TestCaseStart(const TestCase& info) {
-  PW_LOG_INFO(PW_PERF_TEST_GOOGLESTYLE_CASE_START, info.name);
-}
-
-void LoggingEventHandler::TestCaseEnd(const TestCase& info,
-                                      const Results& end_result) {
-  PW_LOG_INFO(PW_PERF_TEST_GOOGLESTYLE_CASE_RESULT,
-              static_cast<long>(end_result.mean),
-              internal::GetDurationUnitStr(),
-              static_cast<long>(end_result.min),
-              internal::GetDurationUnitStr(),
-              static_cast<long>(end_result.max),
-              internal::GetDurationUnitStr(),
-              end_result.iterations);
-  PW_LOG_INFO(PW_PERF_TEST_GOOGLESTYLE_CASE_END, info.name);
-}
-
 void LoggingEventHandler::RunAllTestsEnd() {
-  PW_LOG_INFO(PW_PERF_TEST_GOOGLESTYLE_RUN_ALL_TESTS_END);
+  PW_LOG_INFO(PW_PERF_TEST_GOOGLETEST_RUN_ALL_TESTS_END);
 }
 
-void LoggingEventHandler::TestCaseIteration(const IterationResult& result) {
-  PW_LOG_DEBUG(PW_PERF_TEST_GOOGLESTYLE_ITERATION_REPORT,
-               static_cast<long>(result.number),
-               static_cast<long>(result.result),
+void LoggingEventHandler::TestCaseStart(const TestCase& info) {
+  PW_LOG_INFO(PW_PERF_TEST_GOOGLETEST_CASE_START, info.name);
+}
+
+void LoggingEventHandler::TestCaseIteration(const TestIteration& iteration) {
+  PW_LOG_DEBUG(PW_PERF_TEST_GOOGLETEST_CASE_ITERATION,
+               static_cast<unsigned>(iteration.number),
+               static_cast<unsigned long>(iteration.result),
                internal::GetDurationUnitStr());
+}
+
+void LoggingEventHandler::TestCaseMeasure(const TestMeasurement& measurement) {
+  PW_LOG_INFO(PW_PERF_TEST_GOOGLETEST_CASE_MEASUREMENT,
+              static_cast<unsigned long>(measurement.mean),
+              internal::GetDurationUnitStr(),
+              static_cast<unsigned long>(measurement.min),
+              internal::GetDurationUnitStr(),
+              static_cast<unsigned long>(measurement.max),
+              internal::GetDurationUnitStr());
+}
+
+void LoggingEventHandler::TestCaseEnd(const TestCase& info) {
+  PW_LOG_INFO(PW_PERF_TEST_GOOGLETEST_CASE_END, info.name);
 }
 
 }  // namespace pw::perf_test

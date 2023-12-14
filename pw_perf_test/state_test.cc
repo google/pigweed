@@ -23,10 +23,11 @@ namespace {
 class EmptyEventHandler : public EventHandler {
  public:
   void RunAllTestsStart(const TestRunInfo&) override {}
-  void TestCaseStart(const TestCase&) override {}
-  void TestCaseEnd(const TestCase&, const Results&) override {}
-  void TestCaseIteration(const IterationResult&) override {}
   void RunAllTestsEnd() override {}
+  void TestCaseStart(const TestCase&) override {}
+  void TestCaseIteration(const TestIteration&) override {}
+  void TestCaseMeasure(const TestMeasurement&) override {}
+  void TestCaseEnd(const TestCase&) override {}
 };
 
 EmptyEventHandler handler;

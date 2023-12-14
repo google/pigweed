@@ -13,15 +13,15 @@
 // the License.
 #pragma once
 
-#define PW_PERF_TEST_GOOGLESTYLE_RUN_ALL_TESTS_START \
+#define PW_PERF_TEST_GOOGLETEST_RUN_ALL_TESTS_START \
   "[==========] Running all tests."
-#define PW_PERF_TEST_GOOGLESTYLE_BEGINNING_SUMMARY \
-  "[ PLANNING ] %d test(s) with %d run(s) each."
-#define PW_PERF_TEST_GOOGLESTYLE_RUN_ALL_TESTS_END \
+#define PW_PERF_TEST_GOOGLETEST_BEGINNING_SUMMARY \
+  "[ PLANNING ] %u test(s) with %u run(s) each."
+#define PW_PERF_TEST_GOOGLETEST_RUN_ALL_TESTS_END \
   "[==========] Done running all tests."
 
-#define PW_PERF_TEST_GOOGLESTYLE_CASE_START "[ RUN      ] %s"
-#define PW_PERF_TEST_GOOGLESTYLE_CASE_RESULT \
-  "[  RESULT  ] MEAN: %ld %s, MIN: %ld %s, MAX: %ld %s, ITERATIONS: %d"
-#define PW_PERF_TEST_GOOGLESTYLE_CASE_END "[     DONE ] %s"
-#define PW_PERF_TEST_GOOGLESTYLE_ITERATION_REPORT "[ Iteration ] #%ld: %ld %s"
+#define PW_PERF_TEST_GOOGLETEST_CASE_START "[ RUN      ] %s"
+#define PW_PERF_TEST_GOOGLETEST_CASE_ITERATION "[ Iteration ] #%u: %lu %s"
+#define PW_PERF_TEST_GOOGLETEST_CASE_MEASUREMENT \
+  "[  RESULT  ] MEAN: %lu %s, MIN: %lu %s, MAX: %lu %s"
+#define PW_PERF_TEST_GOOGLETEST_CASE_END "[     DONE ] %s"

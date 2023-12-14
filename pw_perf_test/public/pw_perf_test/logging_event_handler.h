@@ -26,8 +26,9 @@ class LoggingEventHandler : public EventHandler {
   void RunAllTestsStart(const TestRunInfo& summary) override;
   void RunAllTestsEnd() override;
   void TestCaseStart(const TestCase& info) override;
-  void TestCaseEnd(const TestCase& info, const Results& end_result) override;
-  void TestCaseIteration(const IterationResult& result) override;
+  void TestCaseIteration(const TestIteration& iteration) override;
+  void TestCaseMeasure(const TestMeasurement& measurement) override;
+  void TestCaseEnd(const TestCase& info) override;
 };
 
 }  // namespace pw::perf_test
