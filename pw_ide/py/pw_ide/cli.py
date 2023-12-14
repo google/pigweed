@@ -363,6 +363,11 @@ def _build_argument_parser() -> argparse.ArgumentParser:
         metavar='SETTINGS_TYPE',
         help='do not update these settings types',
     )
+    parser_vscode.add_argument(
+        '--build-extension',
+        action='store_true',
+        help='build the extension from source',
+    )
 
     return parser_root
 

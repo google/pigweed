@@ -65,6 +65,8 @@ import json
 import os
 from pathlib import Path
 import platform
+import shutil
+import subprocess
 from typing import Any, Dict, List, Optional, OrderedDict
 
 from pw_cli.env import pigweed_environment
@@ -424,3 +426,25 @@ class VscSettingsManager(EditorSettingsManager[VscSettingsType]):
         VscSettingsType.EXTENSIONS: _default_extensions,
         VscSettingsType.LAUNCH: _default_launch,
     }
+
+
+def build_extension(pw_root: Path):
+    """Build the VS Code extension."""
+
+    license_path = pw_root / 'LICENSE'
+    icon_path = pw_root.parent / 'icon.png'
+
+    vsc_ext_path = pw_root / 'pw_ide' / 'ts' / 'pigweed-vscode'
+    temp_license_path = vsc_ext_path / 'LICENSE'
+    temp_icon_path = vsc_ext_path / 'icon.png'
+
+    shutil.copy(license_path, temp_license_path)
+    shutil.copy(icon_path, temp_icon_path)
+
+    try:
+        subprocess.run(['vsce', 'package'], check=True, cwd=vsc_ext_path)
+    except subprocess.CalledProcessError as e:
+        raise e
+    finally:
+        temp_license_path.unlink()
+        temp_icon_path.unlink()
