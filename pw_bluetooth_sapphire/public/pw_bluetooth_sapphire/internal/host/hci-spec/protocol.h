@@ -2370,6 +2370,10 @@ constexpr OpCode kLEWriteRFPathCompensation = LEControllerCommandOpCode(0x004D);
 // LE Set Privacy Mode Command (v5.0) (LE)
 constexpr OpCode kLESetPrivacyMode = LEControllerCommandOpCode(0x004E);
 
+// =======================================
+// LE Set Host Feature Command (v5.2) (LE)
+constexpr OpCode kLESetHostFeature = LEControllerCommandOpCode(0x0074);
+
 // ======= Vendor Command =======
 // The OGF of 0x3F is reserved for vendor-specific debug commands (see Core Spec
 // v5.0, Vol 2, Part E, Section 5.4.1).
