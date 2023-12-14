@@ -9,6 +9,7 @@
    :status: Accepted
    :proposal_date: 2022-10-31
    :cl: 116577
+   :facilitator: Unassigned
 
 -------
 Summary
@@ -163,18 +164,44 @@ Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
    reviewed, push it up to Gerrit and switch the change from WIP to Active.
    This will begin the open comments period.
 
+   Congrats! You are now a SEED author.
+
+#. The Pigweed team will now assign your SEED a SEED facilitator. The
+   facilitator will leave a comment on your SEED asking you to add their name
+   to the ``facilitator:`` entry in the header of your SEED.
+
+   The SEED facilitator is a member of the Pigweed team who will help move your
+   through the process. The SEED facilitator will be added as a reviewer on
+   your SEED and will be your primary point of contact on the Pigweed team.
+
 #. Create a thread for your SEED in the ``#seed`` channel of Pigweed's
    `Discord server <https://discord.gg/M9NSeTA>`_.
 
 #. Engage with reviewers to iterate on your proposal through its comment period.
 
-#. When a tentative decision has been reached, a Pigweed team member will
-   comment on your proposal with a summary of the discussion and reasoning,
-   moving it into its Last Call phase (as described in the :ref:`Lifecycle
-   <seed-0001-lifecycle>` section).
+#. During the comment period, the facilitator may comment that your proposal has
+   received "Approval of Intent" and request in the SEED comments for interested
+   reviewers to identify themselves.
 
-#. Following the conclusion of the Last Call period, a Pigweed team member will
-   sign off on the CL with a +2 vote, allowing it to be submitted.
+   The SEED status should be changed to ``Intent Approved``.
+
+   At this point, initial implementation of the feature may begin landing in
+   Pigweed upstream. Any CLs prior to the SEED landing should CC both the
+   facilitator and other commenters who've indictated their interest in
+   reviewing.
+
+   All code landed during this period should be marked as experimental and
+   protected by visibility limitations.
+
+#. When a tentative decision has been reached, the facilitator will comment on
+   your proposal with a summary of the discussion and reasoning, moving it into
+   its Last Call phase (as described in the
+   :ref:`Lifecycle <seed-0001-lifecycle>` section).
+
+#. Following the conclusion of the Last Call period (one week from the start of
+   Last Call), the facilitator will sign off on the CL with a +2 vote, allowing
+   it to be submitted. Once a +2 has been given, the SEED author should update
+   the SEED index and submit the CL.
 
    Before submitting, update your SEED's GN target to point to the local RST
    file and to reflect its final status.
@@ -187,6 +214,94 @@ Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
         status = "Accepted"
         author = "Your Name"
       }
+
+---------------------------------------
+The relationship between SEEDs and code
+---------------------------------------
+Some common questions raised by participants in the SEED process revolve around
+how SEED proposals relate to implemented code. This section addresses several of
+those questions.
+
+When should implementation of a SEED proposal begin?
+====================================================
+.. admonition:: TL;DR
+
+  The SEED's author can start writing code as soon as the intent of the proposal
+  is approved.
+
+Generally speaking, there are two stages of approval for the majority of SEED
+proposals. The first is approval of the *intent* of the SEED --- that is,
+stakeholders agree that it represents a problem that Pigweed should address,
+and the general outline of the solution is reasonable.
+
+Following this comes the approval of the specific details of the proposed
+solution. Depending on the nature of the SEED, this could range
+from higher-level component hierarchies and interactions down to concrete API
+design and precise implementation details.
+
+Once the intent of a SEED is approved, authors are free to begin implementing
+code for their proposal if they wish. This can serve as an additional reference
+for reviewers to aid their understanding of the proposal, and allow both the
+proposal and implementation to co-evolve throughout the review process.
+
+Code written alongside an active SEED can be reviewed and even merged into
+Pigweed, hidden behind experimental feature flags.
+
+At what point is the code related to a SEED considered usable?
+==============================================================
+.. admonition:: TL;DR
+
+  Code written for a SEED is considered experimental and unstable until the SEED
+  is fully approved.
+
+It is possible for code to be written, reviewed, and committed to Pigweed while
+its SEED is still in the review process. As these changes end up in Pigweed's
+main, it naturally raises the question of whether or not it is usable by other
+modules, or even external projects.
+
+Any code which is approved and submitted while its SEED remains active will be
+treated as experimental and hidden behind a feature flag. These flags will be
+configurable by other modules and downstream projects, allowing dependencies on
+experimental code. All experimental features are unstable and subject to
+potentially large changes at any time, so depending on them in non-experimental
+contexts is strongly discouraged.
+
+There may be rare circumstances where particularly time-sensitive code is
+required by projects with whom Pigweed works in close collaboration before a
+full SEED approval cycle can be completed. In these instances, the project may
+begin to depend on experimental code prematurely, and Pigweed will assist them
+with keeping up-to-date as it evolves. This type of usage is limited to only
+exceptional circumstances. In almost all cases, experimental code should be used
+at a project's own risk.
+
+Will approved SEEDs be updated in response to code changes?
+===========================================================
+.. admonition:: TL;DR
+
+  Approved SEEDs will not be updated as code evolves. Use module documentation
+  as a current reference.
+
+SEED documents are intended to capture decisions made at a point in time with
+their justification. They are not living documents which reflect the current
+state of the codebase. Generally speaking, SEEDs will not be updated following
+their acceptance and will likely diverge from the actual code as time passes.
+Some SEEDs may even become entirely obsolete if the team revisited the issue and
+decided to move in a different direction, becoming purely a historical record of
+design decisions.
+
+There are exceptions when a SEED may be modified after it has been approved;
+typically, these will occur shortly after the approval if its implementer finds
+that an important detail was incorrect or missing.
+
+If a SEED/s content is obsolete or outdated, it should ideally be marked as
+such by adding a notice or warning to the top of the SEED. However, these
+indications are marked on a best-effort basis, so SEEDs should not be be used as
+the primary source of documentation for a Pigweed feature.
+
+Users should instead rely on module documentation for up-to-date
+information about the state of a Pigweed module or feature. SEEDs can be used as
+an additional resource to learn *why* something was designed the way that it is,
+but is never necessary to understand functionality or usage.
 
 --------------
 SEED documents
@@ -230,19 +345,18 @@ for comments.**
 - The SEED remains open for as long as necessary. Internally, Pigweed's review
   committee will regularly meet to consider active SEEDs and determine when to
   advance to them the next stage.
-- Open SEEDs are assigned owners in the core Pigweed team, who are primarily
-  responsible for engaging with the author to move the SEED through its review
-  process.
+- Open SEEDs are assigned facilitators in the core Pigweed team, who are
+  primarily responsible for engaging with the author to move the SEED through
+  its review process.
 
 :bdg-warning:`Last Call` **A tentative decision has been reached, but
 commenters may raise final objections.**
 
 - A tentative decision on the SEED has been made. The decision is issued at the
-  best judgement of the SEED's owner within the Pigweed team when they feel
-  there has been sufficient discussion on the tradeoffs of the proposal to do
-  so.
-- Transition is triggered manually by its owner, with a comment on the likely
-  outcome of the SEED (acceptance / rejection).
+  best judgement of the SEED's facilitator when they feel there has been
+  sufficient discussion on the tradeoffs of the proposal to do so.
+- Transition is triggered manually by its facilitator, with a comment on the
+  likely outcome of the SEED (acceptance / rejection).
 - On entering Last Call, the visibility of the SEED is widely boosted through
   Pigweed's communication channels (Discord, mailing list, Pigweed Live, etc.)
   to solicit any strong objections from stakeholders.
@@ -284,7 +398,7 @@ Rationale
 ---------
 
 Document format
----------------
+===============
 Three different documentation formats are considered for SEEDs:
 
 - **ReST:** Used for Pigweed's existing documentation, making it a natural
@@ -295,7 +409,7 @@ Three different documentation formats are considered for SEEDs:
   available.
 
 Summary
-^^^^^^^
+-------
 Based on the evaluated criteria, ReST documents provide the best overall SEED
 experience. The primary issues with ReST exist around contributor tooling, which
 may be mitigated with additional investment from the Pigweed team.
@@ -341,7 +455,7 @@ detailed explanations following.
      - ❌
 
 Integration
-^^^^^^^^^^^
+-----------
 .. admonition:: Goal
 
    SEED documents should seamlessly integrate with the rest of Pigweed's docs.
@@ -351,7 +465,7 @@ choice for SEEDs. The use of other formats requires additional scaffolding and
 may not provide as seamless of an experience.
 
 Indexability
-^^^^^^^^^^^^
+------------
 .. admonition:: Goal
 
    Design decisions in SEEDs should be readily available for Pigweed users.
@@ -365,7 +479,7 @@ The search function is provided by Pigweed's Sphinx build, so only documents
 which exist as part of that (ReST / Markdown) are indexed.
 
 Auditability
-^^^^^^^^^^^^
+------------
 .. admonition:: Goal
 
    Changes to SEED documents should be reviewed and recorded.
@@ -378,7 +492,7 @@ Conversely, Google Docs may be edited by anyone with access, making them prone
 to unintentional modification.
 
 Archive of discussions
-^^^^^^^^^^^^^^^^^^^^^^
+----------------------
 .. admonition:: Goal
 
    Discussions during the review of a SEED should be well-archived for
@@ -394,7 +508,7 @@ document changes do not exist as clearly-defined snapshots, making the history
 of a SEED harder to follow.
 
 Accessibility
-^^^^^^^^^^^^^
+-------------
 .. admonition:: Goal
 
    SEEDs should be easy for contributors to write.
@@ -408,7 +522,7 @@ its usage for SEEDs is heavily tied to Pigweed's documentation build. Authors
 are required to set up and constantly re-run this build, slowing iteration.
 
 Format and styling
-^^^^^^^^^^^^^^^^^^
+------------------
 .. admonition:: Goal
 
    SEED authors should have options for formatting various kinds of information
@@ -419,7 +533,7 @@ whereas ReST has a wide selection of directives and Google Docs functions as a
 traditional WYSIWYG editor, making them far more flexible.
 
 Sharing between Google and non-Google
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-------------------------------------
 .. admonition:: Goal
 
    Both Google and non-Google contributors should easily be able to write and

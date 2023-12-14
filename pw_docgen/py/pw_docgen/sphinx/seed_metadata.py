@@ -31,7 +31,14 @@ from sphinx_design.cards import CardDirective
 
 def status_choice(arg) -> str:
     return directives.choice(
-        arg, ('open_for_comments', 'last_call', 'accepted', 'rejected')
+        arg,
+        (
+            'open_for_comments',
+            'intent_approved',
+            'last_call',
+            'accepted',
+            'rejected',
+        ),
     )
 
 
@@ -74,6 +81,7 @@ class PigweedSeedDirective(SphinxDirective):
         'status': parse_status,
         'proposal_date': directives.unchanged_required,
         'cl': directives.positive_int_list,
+        'facilitator': directives.unchanged_required,
     }
 
     def _try_get_option(self, option: str):
@@ -90,6 +98,7 @@ class PigweedSeedDirective(SphinxDirective):
         status = self._try_get_option('status')
         proposal_date = self._try_get_option('proposal_date')
         cl_nums = self._try_get_option('cl')
+        facilitator = self._try_get_option('facilitator')
 
         title = (
             f':fas:`seedling` SEED-{seed_number}: :ref:'
@@ -102,6 +111,9 @@ class PigweedSeedDirective(SphinxDirective):
                 f'{status_badge(status, "open_for_comments")}'
                 '`Open for Comments`',
                 ':octicon:`chevron-right`',
+                f'{status_badge(status, "intent_approved")}'
+                '`Intent Approved`',
+                ':octicon:`chevron-right`',
                 f'{status_badge(status, "last_call")}`Last Call`',
                 ':octicon:`chevron-right`',
                 f'{status_badge(status, "accepted")}`Accepted`',
@@ -112,6 +124,8 @@ class PigweedSeedDirective(SphinxDirective):
                 '\n',
                 ':octicon:`code-review` CL: ',
                 ', '.join([cl_link(cl_num) for cl_num in cl_nums]),
+                '\n',
+                f':octicon:`person` Facilitator: {facilitator}',
             ]
         )
 

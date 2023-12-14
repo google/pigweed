@@ -10,6 +10,7 @@
    :status: Accepted
    :proposal_date: 2023-07-10
    :cl: 154190
+   :facilitator: Wyatt Hepler
 
 -------
 Summary

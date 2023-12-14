@@ -13,6 +13,7 @@
    :status: Accepted
    :proposal_date: 2023-06-24
    :cl: 158190
+   :facilitator: Armando Montanez
 
 -------
 Summary

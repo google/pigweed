@@ -9,6 +9,7 @@
    :status: Accepted
    :proposal_date: 2023-10-10
    :cl: 175471
+   :facilitator: Carlos Chinchilla
 
 -------
 Summary
