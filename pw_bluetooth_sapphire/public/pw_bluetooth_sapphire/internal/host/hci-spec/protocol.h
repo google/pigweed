@@ -1417,10 +1417,10 @@ inline bool IsLECommand(OpCode opcode) {
 constexpr OpCode kLESetEventMask = LEControllerCommandOpCode(0x0001);
 
 // =======================================
-// LE Read Buffer Size Command (v4.0) (LE)
+// LE Read Buffer Size [v1] Command (v4.0) (LE)
 constexpr OpCode kLEReadBufferSizeV1 = LEControllerCommandOpCode(0x0002);
 
-struct LEReadBufferSizeReturnParams {
+struct LEReadBufferSizeV1ReturnParams {
   // See enum StatusCode in hci_constants.h.
   StatusCode status;
 
@@ -2369,6 +2369,10 @@ constexpr OpCode kLEWriteRFPathCompensation = LEControllerCommandOpCode(0x004D);
 // =======================================
 // LE Set Privacy Mode Command (v5.0) (LE)
 constexpr OpCode kLESetPrivacyMode = LEControllerCommandOpCode(0x004E);
+
+// =======================================
+// LE Read Buffer Size [v2] Command (v5.2) (LE)
+constexpr OpCode kLEReadBufferSizeV2 = LEControllerCommandOpCode(0x0060);
 
 // =======================================
 // LE Set Host Feature Command (v5.2) (LE)

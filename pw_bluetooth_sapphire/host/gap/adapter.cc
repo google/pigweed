@@ -974,7 +974,7 @@ void AdapterImpl::InitializeStep2() {
         }
         auto params =
             cmd_complete
-                .return_params<hci_spec::LEReadBufferSizeReturnParams>();
+                .return_params<hci_spec::LEReadBufferSizeV1ReturnParams>();
         uint16_t mtu = le16toh(params->hc_le_acl_data_packet_length);
         uint8_t max_count = params->hc_total_num_le_acl_data_packets;
         if (mtu && max_count) {

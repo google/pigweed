@@ -77,6 +77,8 @@ void FakeController::Settings::ApplyDualModeDefaults() {
   le_total_num_acl_data_packets = 1;
   synchronous_data_packet_length = 0;
   total_num_synchronous_data_packets = 0;
+  iso_data_packet_length = 512;
+  total_num_iso_data_packets = 1;
   android_extension_settings.SetToZeros();
 }
 
@@ -162,6 +164,8 @@ void FakeController::Settings::AddLESupportedCommands() {
          hci_spec::SupportedCommand::kLEReadRemoteFeatures);
   SetBit(supported_commands + 28,
          hci_spec::SupportedCommand::kLEStartEncryption);
+  SetBit(supported_commands + 41,
+         hci_spec::SupportedCommand::kLEReadBufferSizeV2);
 }
 
 void FakeController::Settings::ApplyLegacyLEConfig() {
@@ -307,6 +311,18 @@ void FakeController::RespondWithCommandComplete(hci_spec::OpCode opcode,
   SendEvent(hci_spec::kCommandCompleteEventCode, buffer);
 }
 
+void FakeController::RespondWithCommandComplete(
+    hci_spec::OpCode opcode, hci::EmbossEventPacket* packet) {
+  auto header =
+      packet
+          ->template view<pw::bluetooth::emboss::CommandCompleteEventWriter>();
+
+  header.num_hci_command_packets().Write(settings_.num_hci_command_packets);
+  header.command_opcode().BackingStorage().WriteUInt(opcode);
+
+  SendEvent(hci_spec::kCommandCompleteEventCode, packet);
+}
+
 void FakeController::RespondWithCommandStatus(
     hci_spec::OpCode opcode, pw::bluetooth::emboss::StatusCode status) {
   StaticByteBuffer<sizeof(hci_spec::CommandStatusEventParams)> buffer;
@@ -330,6 +346,20 @@ void FakeController::SendEvent(hci_spec::EventCode event_code,
   event.mutable_payload_data().Write(payload);
 
   SendCommandChannelPacket(buffer);
+}
+
+void FakeController::SendEvent(hci_spec::EventCode event_code,
+                               hci::EmbossEventPacket* packet) {
+  auto header =
+      packet->template view<pw::bluetooth::emboss::EventHeaderWriter>();
+  uint8_t parameter_total_size =
+      packet->size() -
+      pw::bluetooth::emboss::EventHeader::IntrinsicSizeInBytes();
+
+  header.event_code().Write(event_code);
+  header.parameter_total_size().Write(parameter_total_size);
+
+  SendCommandChannelPacket(packet->data());
 }
 
 void FakeController::SendLEMetaEvent(hci_spec::EventCode subevent_code,
@@ -1217,7 +1247,7 @@ void FakeController::OnLESetEventMask(
 }
 
 void FakeController::OnLEReadBufferSizeV1() {
-  hci_spec::LEReadBufferSizeReturnParams params;
+  hci_spec::LEReadBufferSizeV1ReturnParams params;
   params.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
   params.hc_le_acl_data_packet_length =
       htole16(settings_.le_acl_data_packet_length);
@@ -1225,6 +1255,22 @@ void FakeController::OnLEReadBufferSizeV1() {
       settings_.le_total_num_acl_data_packets;
   RespondWithCommandComplete(hci_spec::kLEReadBufferSizeV1,
                              BufferView(&params, sizeof(params)));
+}
+
+void FakeController::OnLEReadBufferSizeV2() {
+  auto packet = hci::EmbossEventPacket::New<
+      pw::bluetooth::emboss::LEReadBufferSizeV2CommandCompleteEventWriter>(
+      hci_spec::kCommandCompleteEventCode);
+  auto view = packet.view_t();
+
+  view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  view.le_acl_data_packet_length().Write(settings_.le_acl_data_packet_length);
+  view.total_num_le_acl_data_packets().Write(
+      settings_.le_total_num_acl_data_packets);
+  view.iso_data_packet_length().Write(settings_.iso_data_packet_length);
+  view.total_num_iso_data_packets().Write(settings_.total_num_iso_data_packets);
+
+  RespondWithCommandComplete(hci_spec::kLEReadBufferSizeV2, &packet);
 }
 
 void FakeController::OnLEReadSupportedStates() {
@@ -3582,6 +3628,10 @@ void FakeController::HandleReceivedCommandPacket(
     }
     case hci_spec::kLEReadBufferSizeV1: {
       OnLEReadBufferSizeV1();
+      break;
+    }
+    case hci_spec::kLEReadBufferSizeV2: {
+      OnLEReadBufferSizeV2();
       break;
     }
     case hci_spec::kReset: {

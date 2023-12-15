@@ -87,6 +87,8 @@ class FakeController final : public ControllerTestDoubleBase,
     uint8_t le_total_num_acl_data_packets = 0;
     uint16_t synchronous_data_packet_length = 0;
     uint8_t total_num_synchronous_data_packets = 0;
+    uint16_t iso_data_packet_length = 0;
+    uint8_t total_num_iso_data_packets = 0;
 
     // Vendor extensions
     StaticPacket<pw::bluetooth::vendor::android_hci::
@@ -291,6 +293,10 @@ class FakeController final : public ControllerTestDoubleBase,
   // Sends a HCI event with the given parameters.
   void SendEvent(hci_spec::EventCode event_code, const ByteBuffer& payload);
 
+  // Sends an HCI event, filling in the parameters in a provided event packet.
+  void SendEvent(hci_spec::EventCode event_code,
+                 hci::EmbossEventPacket* packet);
+
   // Sends a LE Meta event with the given parameters.
   void SendLEMetaEvent(hci_spec::EventCode subevent_code,
                        const ByteBuffer& payload);
@@ -485,6 +491,12 @@ class FakeController final : public ControllerTestDoubleBase,
   void RespondWithCommandComplete(hci_spec::OpCode opcode,
                                   const ByteBuffer& params);
 
+  // Sends an HCI_Command_Complete event in response to the command with
+  // |opcode| and using the provided event packet, filling in the event header
+  // fields.
+  void RespondWithCommandComplete(hci_spec::OpCode opcode,
+                                  hci::EmbossEventPacket* packet);
+
   // Sends a HCI_Command_Status event in response to the command with |opcode|
   // and using the given data as the parameter payload.
   void RespondWithCommandStatus(hci_spec::OpCode opcode,
@@ -587,6 +599,9 @@ class FakeController final : public ControllerTestDoubleBase,
 
   // Called when a HCI_LE_Read_Buffer_Size command is received.
   void OnLEReadBufferSizeV1();
+
+  // Called when a HCI_LE_Read_Buffer_Size command is received.
+  void OnLEReadBufferSizeV2();
 
   // Called when a HCI_LE_Read_Supported_States command is received.
   void OnLEReadSupportedStates();
