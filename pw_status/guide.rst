@@ -145,6 +145,8 @@ intended behavior.
      }
      return overall_status;
 
+.. _module-pw_status-guide-status-with-size:
+
 ----------------------------------
 Jointly reporting status with size
 ----------------------------------
@@ -155,9 +157,11 @@ status, regardless of the status value, and only supports a limited range (27
 bits).
 
 ``pw::StatusWithSize`` values may be created with functions similar to
-``pw::Status``. For example,
+``pw::Status``. For example:
 
 .. code-block:: cpp
+
+   #include "pw_status/status_with_size.h"
 
    // An OK StatusWithSize with a size of 123.
    StatusWithSize(123)
@@ -167,6 +171,10 @@ bits).
 
    // A RESOURCE_EXHAUSTED StatusWithSize with a size of 10.
    StatusWithSize::ResourceExhausted(10)
+
+``pw::StatusWithSize`` is useful for cases where an operation may partially
+complete - for example read operations may read some number of bytes into an
+output buffer, but not all.
 
 -----------------------------------
 Reducing error handling boilerplate
