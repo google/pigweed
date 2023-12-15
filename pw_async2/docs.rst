@@ -5,7 +5,7 @@ pw_async2
 =============
 .. pigweed-module::
    :name: pw_async2
-   :tagline: Exception-free error propagation for embedded
+   :tagline: Cooperative async tasks for embedded
    :status: experimental
    :languages: C++17
 
@@ -19,7 +19,7 @@ pw_async2
      like other tasks, and can easily plug into an existing ``pw_async2``
      systems.
 
-:cpp:type:`pw::async2::Task` is Pigweed's async primitive. ``Task`` s
+:cpp:type:`pw::async2::Task` is Pigweed's async primitive. ``Task`` objects
 are cooperatively-scheduled "threads" which yield to the ``Dispatcher``
 when waiting. When the ``Task`` is able to make progress, the ``Dispatcher``
 will run it again. For example:
@@ -47,8 +47,8 @@ will run it again. For example:
          // ``PendReceive`` checks for available data or errors.
          //
          // If no data is available, it will grab a ``Waker`` from
-         // `cx.Waker()` and return ``Pending``. When data arrives,
-         // it will call `waker.Wake()` which tells the ``Dispatcher`` to
+         // ``cx.Waker()`` and return ``Pending``. When data arrives,
+         // it will call ``waker.Wake()`` which tells the ``Dispatcher`` to
          // ``Pend`` this ``Task`` again.
          Poll<pw::Result<Data>> new_data = receiver_.PendReceive(cx);
          if (new_data.is_pending()) {
@@ -100,6 +100,9 @@ method:
      return 0;
    }
 
+-------
+Roadmap
+-------
 Coming soon: C++20 users can also define tasks using coroutines!
 
 .. code-block:: cpp
@@ -124,7 +127,7 @@ Coming soon: C++20 users can also define tasks using coroutines!
    }
 
 -----------------
-C++ API Reference
+C++ API reference
 -----------------
 .. doxygenclass:: pw::async2::Task
   :members:
