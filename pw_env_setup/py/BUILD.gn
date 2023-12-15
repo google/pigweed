@@ -36,6 +36,7 @@ pw_python_package("py") {
     "pw_env_setup/environment.py",
     "pw_env_setup/gni_visitor.py",
     "pw_env_setup/json_visitor.py",
+    "pw_env_setup/npm_action.py",
     "pw_env_setup/python_packages.py",
     "pw_env_setup/shell_visitor.py",
     "pw_env_setup/spinner.py",
