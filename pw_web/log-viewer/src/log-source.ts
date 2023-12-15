@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { LogEntry } from './shared/interfaces';
+import { LogEntry, Severity } from './shared/interfaces';
 
 export abstract class LogSource {
   private eventListeners: {
@@ -43,10 +43,59 @@ export abstract class LogSource {
   }
 
   emitEvent(eventType: string, data: LogEntry): void {
+    const validationResult = this.validateLogEntry(data);
+    if (validationResult !== null) {
+      console.error('Validation error:', validationResult);
+      return;
+    }
+
     this.eventListeners.forEach((eventListener) => {
       if (eventListener.eventType === eventType) {
         eventListener.listener(data);
       }
     });
+  }
+
+  validateLogEntry(logEntry: LogEntry): string | null {
+    try {
+      if (!logEntry.timestamp) {
+        return 'Log entry has no valid timestamp';
+      }
+      if (!Array.isArray(logEntry.fields)) {
+        return 'Log entry fields must be an array';
+      }
+      if (logEntry.fields.length === 0) {
+        return 'Log entry fields must not be empty';
+      }
+
+      for (const field of logEntry.fields) {
+        if (!field.key || typeof field.key !== 'string') {
+          return 'Invalid field key';
+        }
+        if (
+          field.value === undefined ||
+          (typeof field.value !== 'string' &&
+            typeof field.value !== 'boolean' &&
+            typeof field.value !== 'number' &&
+            typeof field.value !== 'object')
+        ) {
+          return 'Invalid field value';
+        }
+      }
+
+      if (
+        logEntry.severity !== undefined &&
+        typeof logEntry.severity !== 'string'
+      ) {
+        return 'Invalid severity value';
+      }
+
+      return null;
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error('Validation error:', error.message);
+      }
+      return 'An unexpected error occurred during validation';
+    }
   }
 }

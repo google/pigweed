@@ -21,7 +21,7 @@ import {
   LogViewConfig,
   State,
 } from '../shared/interfaces';
-import { StateStore } from '../shared/state';
+import { LocalStorageState, StateStore } from '../shared/state';
 import { styles } from './log-viewer.styles';
 import { themeDark } from '../themes/dark';
 import { themeLight } from '../themes/light';
@@ -57,7 +57,7 @@ export class LogViewer extends LitElement {
 
   private _state: State;
 
-  constructor(state: StateStore) {
+  constructor(state: StateStore = new LocalStorageState()) {
     super();
     this._stateStore = state;
     this._state = this._stateStore.getState();

@@ -58,6 +58,10 @@ export function createLogViewer(
 
   // Method to destroy and unsubscribe
   return () => {
+    if (logViewer.parentNode) {
+      logViewer.parentNode.removeChild(logViewer);
+    }
+
     logSource.removeEventListener('logEntry', logEntryListener);
   };
 }
