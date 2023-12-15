@@ -962,26 +962,59 @@ void AdapterImpl::InitializeStep2() {
         state_.low_energy_state.supported_states_ = le64toh(params->le_states);
       });
 
-  // HCI_LE_Read_Buffer_Size
-  init_seq_runner_->QueueCommand(
-      hci::EmbossCommandPacket::New<
-          pw::bluetooth::emboss::LEReadBufferSizeCommandV1View>(
-          hci_spec::kLEReadBufferSizeV1),
-      [this](const hci::EventPacket& cmd_complete) {
-        if (hci_is_error(
-                cmd_complete, WARN, "gap", "LE read buffer size failed")) {
-          return;
-        }
-        auto params =
-            cmd_complete
-                .return_params<hci_spec::LEReadBufferSizeV1ReturnParams>();
-        uint16_t mtu = le16toh(params->hc_le_acl_data_packet_length);
-        uint8_t max_count = params->hc_total_num_le_acl_data_packets;
-        if (mtu && max_count) {
-          state_.low_energy_state.data_buffer_info_ =
-              hci::DataBufferInfo(mtu, max_count);
-        }
-      });
+  if (state_.IsCommandSupported(
+          /*octet=*/41, hci_spec::SupportedCommand::kLEReadBufferSizeV2)) {
+    // HCI_LE_Read_Buffer_Size [v2]
+    init_seq_runner_->QueueCommand(
+        hci::EmbossCommandPacket::New<
+            pw::bluetooth::emboss::LEReadBufferSizeCommandV2View>(
+            hci_spec::kLEReadBufferSizeV2),
+        [this](const hci::EmbossEventPacket& cmd_complete) {
+          if (hci_is_error(cmd_complete,
+                           WARN,
+                           "gap",
+                           "LE read buffer size [v2] failed")) {
+            return;
+          }
+          auto params =
+              cmd_complete
+                  .view<pw::bluetooth::emboss::
+                            LEReadBufferSizeV2CommandCompleteEventView>();
+          uint16_t acl_mtu = params.le_acl_data_packet_length().Read();
+          uint8_t acl_max_count = params.total_num_le_acl_data_packets().Read();
+          if (acl_mtu && acl_max_count) {
+            state_.low_energy_state.acl_data_buffer_info_ =
+                hci::DataBufferInfo(acl_mtu, acl_max_count);
+          }
+          uint16_t iso_mtu = params.iso_data_packet_length().Read();
+          uint8_t iso_max_count = params.total_num_iso_data_packets().Read();
+          if (iso_mtu && iso_max_count) {
+            state_.low_energy_state.iso_data_buffer_info_ =
+                hci::DataBufferInfo(iso_mtu, iso_max_count);
+          }
+        });
+  } else {
+    // HCI_LE_Read_Buffer_Size [v1]
+    init_seq_runner_->QueueCommand(
+        hci::EmbossCommandPacket::New<
+            pw::bluetooth::emboss::LEReadBufferSizeCommandV1View>(
+            hci_spec::kLEReadBufferSizeV1),
+        [this](const hci::EventPacket& cmd_complete) {
+          if (hci_is_error(
+                  cmd_complete, WARN, "gap", "LE read buffer size failed")) {
+            return;
+          }
+          auto params =
+              cmd_complete
+                  .return_params<hci_spec::LEReadBufferSizeV1ReturnParams>();
+          uint16_t mtu = le16toh(params->hc_le_acl_data_packet_length);
+          uint8_t max_count = params->hc_total_num_le_acl_data_packets;
+          if (mtu && max_count) {
+            state_.low_energy_state.acl_data_buffer_info_ =
+                hci::DataBufferInfo(mtu, max_count);
+          }
+        });
+  }
 
   if (state_.features.HasBit(
           /*page=*/0u,
@@ -1071,7 +1104,7 @@ void AdapterImpl::InitializeStep3() {
   BT_ASSERT(!init_seq_runner_->HasQueuedCommands());
 
   if (!state_.bredr_data_buffer_info.IsAvailable() &&
-      !state_.low_energy_state.data_buffer_info().IsAvailable()) {
+      !state_.low_energy_state.acl_data_buffer_info().IsAvailable()) {
     bt_log(ERROR, "gap", "Both BR/EDR and LE buffers are unavailable");
     CompleteInitialization(/*success=*/false);
     return;
@@ -1081,7 +1114,7 @@ void AdapterImpl::InitializeStep3() {
   // initialize the ACLDataChannel.
   if (!hci_->InitializeACLDataChannel(
           state_.bredr_data_buffer_info,
-          state_.low_energy_state.data_buffer_info())) {
+          state_.low_energy_state.acl_data_buffer_info())) {
     bt_log(ERROR, "gap", "Failed to initialize ACLDataChannel (step 3)");
     CompleteInitialization(/*success=*/false);
     return;
@@ -1408,10 +1441,10 @@ void AdapterImpl::UpdateInspectProperties() {
 
   inspect_properties_.le_max_num_packets = adapter_node_.CreateUint(
       "le_max_num_packets",
-      state_.low_energy_state.data_buffer_info().max_num_packets());
+      state_.low_energy_state.acl_data_buffer_info().max_num_packets());
   inspect_properties_.le_max_data_length = adapter_node_.CreateUint(
       "le_max_data_length",
-      state_.low_energy_state.data_buffer_info().max_data_length());
+      state_.low_energy_state.acl_data_buffer_info().max_data_length());
 
   inspect_properties_.sco_max_num_packets = adapter_node_.CreateUint(
       "sco_max_num_packets", state_.sco_buffer_info.max_num_packets());

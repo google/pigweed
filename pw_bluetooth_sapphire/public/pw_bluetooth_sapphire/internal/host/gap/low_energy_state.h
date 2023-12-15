@@ -32,8 +32,13 @@ class LowEnergyState final {
   uint64_t supported_features() const { return supported_features_; }
 
   // Returns the LE ACL data buffer capacity.
-  const hci::DataBufferInfo& data_buffer_info() const {
-    return data_buffer_info_;
+  const hci::DataBufferInfo& acl_data_buffer_info() const {
+    return acl_data_buffer_info_;
+  }
+
+  // Returns the ISO data buffer capacity.
+  const hci::DataBufferInfo& iso_data_buffer_info() const {
+    return iso_data_buffer_info_;
   }
 
  private:
@@ -42,7 +47,11 @@ class LowEnergyState final {
 
   // Storage capacity information about the controller's internal ACL data
   // buffers.
-  hci::DataBufferInfo data_buffer_info_;
+  hci::DataBufferInfo acl_data_buffer_info_;
+
+  // Storage capacity information about the controller's internal ISO data
+  // buffers.
+  hci::DataBufferInfo iso_data_buffer_info_;
 
   // Local supported LE Features reported by the controller.
   uint64_t supported_features_ = 0;

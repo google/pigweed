@@ -1173,12 +1173,12 @@ TEST_F(AdapterTest, InspectHierarchy) {
               UintIs("le_max_num_packets",
                      adapter()
                          ->state()
-                         .low_energy_state.data_buffer_info()
+                         .low_energy_state.acl_data_buffer_info()
                          .max_num_packets()),
               UintIs("le_max_data_length",
                      adapter()
                          ->state()
-                         .low_energy_state.data_buffer_info()
+                         .low_energy_state.acl_data_buffer_info()
                          .max_data_length()),
               UintIs("sco_max_num_packets",
                      adapter()->state().sco_buffer_info.max_num_packets()),
@@ -1390,26 +1390,42 @@ TEST_F(AdapterTest, BufferSizesRecordedInState) {
   settings.AddLESupportedCommands();
   settings.lmp_features_page0 |=
       static_cast<uint64_t>(hci_spec::LMPFeature::kLESupportedHost);
-  settings.le_acl_data_packet_length = 1;
+  settings.le_acl_data_packet_length = 0x1B;  // minimum supported size
   settings.le_total_num_acl_data_packets = 2;
   settings.acl_data_packet_length = 3;
   settings.total_num_acl_data_packets = 4;
   settings.synchronous_data_packet_length = 5;
   settings.total_num_synchronous_data_packets = 6;
+  settings.iso_data_packet_length = 7;
+  settings.total_num_iso_data_packets = 8;
   test_device()->set_settings(settings);
 
   InitializeAdapter(std::move(init_cb));
   EXPECT_TRUE(success);
-  EXPECT_EQ(
-      adapter()->state().low_energy_state.data_buffer_info().max_data_length(),
-      1u);
-  EXPECT_EQ(
-      adapter()->state().low_energy_state.data_buffer_info().max_num_packets(),
-      2u);
+  EXPECT_EQ(adapter()
+                ->state()
+                .low_energy_state.acl_data_buffer_info()
+                .max_data_length(),
+            (uint16_t)0x1B);
+  EXPECT_EQ(adapter()
+                ->state()
+                .low_energy_state.acl_data_buffer_info()
+                .max_num_packets(),
+            2u);
   EXPECT_EQ(adapter()->state().bredr_data_buffer_info.max_data_length(), 3u);
   EXPECT_EQ(adapter()->state().bredr_data_buffer_info.max_num_packets(), 4u);
   EXPECT_EQ(adapter()->state().sco_buffer_info.max_data_length(), 5u);
   EXPECT_EQ(adapter()->state().sco_buffer_info.max_num_packets(), 6u);
+  EXPECT_EQ(adapter()
+                ->state()
+                .low_energy_state.iso_data_buffer_info()
+                .max_data_length(),
+            7u);
+  EXPECT_EQ(adapter()
+                ->state()
+                .low_energy_state.iso_data_buffer_info()
+                .max_num_packets(),
+            8u);
 }
 
 TEST_F(AdapterTest, ScoDataChannelInitializedSuccessfully) {
