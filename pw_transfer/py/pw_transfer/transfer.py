@@ -255,8 +255,12 @@ class Transfer(abc.ABC):
                 # Expecting a completion ACK but didn't receive one. Go through
                 # the retry process.
                 self._on_timeout()
-        else:
+        # Only ignoring START_ACK, tests were unhappy with other non-data chunks
+        elif chunk.type not in [Chunk.Type.START_ACK]:
             await self._handle_data_chunk(chunk)
+        else:
+            _LOG.warning("Ignoring extra START_ACK chunk")
+            return
 
         # Start the timeout for the server to send a chunk in response.
         self._response_timer.start()

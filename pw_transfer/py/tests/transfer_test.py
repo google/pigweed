@@ -417,7 +417,8 @@ class TransferManagerTest(unittest.TestCase):
 
     def test_write_transfer_basic(self) -> None:
         manager = pw_transfer.Manager(
-            self._service, default_response_timeout_s=DEFAULT_TIMEOUT_S
+            self._service,
+            default_response_timeout_s=DEFAULT_TIMEOUT_S,
         )
 
         self._enqueue_server_responses(

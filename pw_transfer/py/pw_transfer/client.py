@@ -120,6 +120,8 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         resource_id: int,
         progress_callback: Optional[ProgressCallback] = None,
         protocol_version: Optional[ProtocolVersion] = None,
+        chunk_timeout_s: Optional[float] = None,
+        initial_timeout_s: Optional[float] = None,
     ) -> bytes:
         """Receives ("downloads") data from the server.
 
@@ -147,13 +149,19 @@ class Manager:  # pylint: disable=too-many-instance-attributes
             else self.assign_session_id()
         )
 
+        if chunk_timeout_s is None:
+            chunk_timeout_s = self._default_response_timeout_s
+
+        if initial_timeout_s is None:
+            initial_timeout_s = self._initial_response_timeout_s
+
         transfer = ReadTransfer(
             session_id,
             resource_id,
             self._send_read_chunk,
             self._end_read_transfer,
-            self._default_response_timeout_s,
-            self._initial_response_timeout_s,
+            chunk_timeout_s,
+            initial_timeout_s,
             self.max_retries,
             self.max_lifetime_retries,
             protocol_version,
@@ -174,6 +182,8 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         data: Union[bytes, str],
         progress_callback: Optional[ProgressCallback] = None,
         protocol_version: Optional[ProtocolVersion] = None,
+        chunk_timeout_s: Optional[Any] = None,
+        initial_timeout_s: Optional[Any] = None,
     ) -> None:
         """Transmits ("uploads") data to the server.
 
@@ -205,14 +215,20 @@ class Manager:  # pylint: disable=too-many-instance-attributes
             else self.assign_session_id()
         )
 
+        if chunk_timeout_s is None:
+            chunk_timeout_s = self._default_response_timeout_s
+
+        if initial_timeout_s is None:
+            initial_timeout_s = self._initial_response_timeout_s
+
         transfer = WriteTransfer(
             session_id,
             resource_id,
             data,
             self._send_write_chunk,
             self._end_write_transfer,
-            self._default_response_timeout_s,
-            self._initial_response_timeout_s,
+            chunk_timeout_s,
+            initial_timeout_s,
             self.max_retries,
             self.max_lifetime_retries,
             protocol_version,
