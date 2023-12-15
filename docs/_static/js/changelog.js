@@ -111,8 +111,7 @@ async function annotate(commits) {
     return tmp.substring(0, end).trim();
   }
 
-  function parseBugUrl(message) {
-    const bugLabel = 'Bug:';
+  function parseBugUrl(message, bugLabel) {
     const start = message.indexOf(bugLabel);
     const tmp = message.substring(start);
     const end = tmp.indexOf('\n');
@@ -144,7 +143,7 @@ async function annotate(commits) {
     // situation. The same commit gets duplicated to each module's section.
     // The rationale for the duplication is that someone might only care about
     // pw_tokenizer and they should be able to see all commits that affected
-    // that module at a glance.
+    // in a single place.
     if (commit.preamble.indexOf('{') > -1) {
       commit.topics = [];
       const topics = commit.preamble
@@ -157,11 +156,15 @@ async function annotate(commits) {
     } else {
       commit.topics = [commit.preamble];
     }
-    // TODO: b/309534703 - Detect the synonymous labels like "Fixes"
-    if (message.indexOf('Bug:') > -1) {
-      const bugUrl = parseBugUrl(message);
-      const bugId = bugUrl.substring(bugUrl.lastIndexOf('/') + 1);
-      commit.issue = { id: bugId, url: bugUrl };
+    const bugLabels = ['Bug:', 'Fixes:', 'Fixed:'];
+    for (let i = 0; i < bugLabels.length; i++) {
+      const bugLabel = bugLabels[i];
+      if (message.indexOf(bugLabel) > -1) {
+        const bugUrl = parseBugUrl(message, bugLabel);
+        const bugId = bugUrl.substring(bugUrl.lastIndexOf('/') + 1);
+        commit.issue = { id: bugId, url: bugUrl };
+        break;
+      }
     }
   }
   return commits;

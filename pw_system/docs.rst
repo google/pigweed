@@ -188,8 +188,10 @@ To use this mode, add the following to ``gn args out``:
 The settings for the channel ID and address can be found in the target
 ``//pw_system:multi_endpoint_rpc_overrides``.
 
+.. _module-pw_system-logchannel:
+
 ---------------------
-Extra logging Channel
+Extra logging channel
 ---------------------
 In multi-processor devices, logs are typically forwarded to a primary
 application-class core. By default, ``pw_system`` assumes a simpler device
