@@ -74,8 +74,9 @@ Doxygen comments into Sphinx. These include the following:
 
   `All Breathe directives for use in RST files <https://breathe.readthedocs.io/en/latest/directives.html>`_
 
-Example Doxygen Comment Block
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------
+Example Doxygen comment block
+-----------------------------
 Start a Doxygen comment block using ``///`` (three forward slashes).
 
 .. code-block:: cpp
@@ -126,8 +127,9 @@ Start a Doxygen comment block using ``///`` (three forward slashes).
    ///
    #define PW_LOCK_RETURNED(x) __attribute__((lock_returned(x)))
 
-Doxygen Syntax
-^^^^^^^^^^^^^^
+--------------
+Doxygen syntax
+--------------
 Pigweed prefers to use RST wherever possible, but there are a few Doxygen
 syntatic elements that may be needed.
 
@@ -180,8 +182,9 @@ example, the following comment documents two macros:
 
 .. seealso:: `All Doxygen commands <https://www.doxygen.nl/manual/commands.html>`_
 
+----------------
 Cross-references
-^^^^^^^^^^^^^^^^
+----------------
 Pigweed provides Doxygen aliases for creating Sphinx cross references within
 Doxygen comments. These should be used when referring to other symbols, such as
 functions, classes, or macros.
@@ -244,8 +247,9 @@ with Doxygen using standard Sphinx cross references, such as ``:cpp:class:`` and
 
 .. inclusive-language: enable
 
+--------------------------------
 Status codes in Doxygen comments
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+--------------------------------
 Use the following syntax when referring to ``pw_status`` codes in Doxygen
 comments:
 
@@ -262,3 +266,27 @@ reference documentation in :ref:`module-pw_status`.
 
    The guidance in this section only applies to Doxygen comments in C++ header
    files.
+
+-----------------------------------------------
+Disabled auto-generated ``#include`` statements
+-----------------------------------------------
+Doxygen and Breathe have the ability to auto-generate ``#include`` statements
+for class references. These have been disabled because:
+
+* The auto-generated paths are inaccurate. E.g. the ``#include`` for
+  ``pw::string::RandomGenerator`` was generated as ``#include <random.h>``
+  when it should be ``#include "pw_random/random.h"``.
+* The auto-generation is not consistent. They seem to only get generated when
+  using the ``doxygennamespace`` directive but ``pigweed.dev`` frequently
+  uses ``doxygenclass``, ``doxygenfunction``, etc.
+
+In the future, if it's decided that these ``#include`` statements are needed,
+there is a way to manually override each one. The code block below shows how
+it's done. This approach wouldn't be great because it adds a lot of noise to
+the header files.
+
+.. code-block::
+
+   /// @class RandomGenerator random.h "pw_random/random.h"``
+
+See `b/295023422 <https://issues.pigweed.dev/issues/295023422>`_.

@@ -265,10 +265,11 @@ breathe_projects = {
     # This dir should be relative to out/docs/gen/docs/pw_docgen_tree/
     "Pigweed": "./../../../doxygen/xml/",
 }
-
 breathe_default_project = "Pigweed"
-
 breathe_debug_trace_directives = True
+# (b/295023422) Disable the inaccurate `#include` statements that are generated
+# when `doxygennamespace` is used.
+breathe_show_include = False
 
 # Treat these as valid attributes in function signatures.
 cpp_id_attributes = [
