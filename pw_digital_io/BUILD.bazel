@@ -32,6 +32,7 @@ pw_cc_library(
     hdrs = [
         "public/pw_digital_io/digital_io.h",
         "public/pw_digital_io/internal/conversions.h",
+        "public/pw_digital_io/polarity.h",
     ],
     includes = ["public"],
     deps = [

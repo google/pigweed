@@ -30,6 +30,7 @@ pw_source_set("pw_digital_io") {
   public = [
     "public/pw_digital_io/digital_io.h",
     "public/pw_digital_io/internal/conversions.h",
+    "public/pw_digital_io/polarity.h",
   ]
   sources = [ "digital_io.cc" ]
   public_deps = [

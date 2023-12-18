@@ -176,6 +176,9 @@ properties of the line. This allows applications to interact with Digital IO
 lines across targets that may have different physical configurations. It is up
 to the backend to provide a consistent definition of state.
 
+There is a helper ``pw::digital_io::Polarity`` enum provided to enable mapping
+from logical to physical states for backends.
+
 Interrupt handling
 ==================
 Interrupt handling is part of this API. The alternative was to have a separate
