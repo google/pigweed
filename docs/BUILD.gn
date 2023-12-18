@@ -117,8 +117,10 @@ group("third_party_docs") {
 _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_alignment/public/pw_alignment/alignment.h",
   "$dir_pw_allocator/public/pw_allocator/allocator.h",
+  "$dir_pw_allocator/public/pw_allocator/allocator_test_harness.h",
   "$dir_pw_allocator/public/pw_allocator/allocator_testing.h",
   "$dir_pw_allocator/public/pw_allocator/block.h",
+  "$dir_pw_allocator/public/pw_allocator/buffer.h",
   "$dir_pw_allocator/public/pw_allocator/freelist.h",
   "$dir_pw_analog/public/pw_analog/analog_input.h",
   "$dir_pw_analog/public/pw_analog/microvolt_input.h",

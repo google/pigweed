@@ -13,18 +13,14 @@
 // the License.
 #pragma once
 
-#include <array>
 #include <cstddef>
-#include <variant>
 
-#include "lib/stdcompat/bit.h"
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/block.h"
+#include "pw_allocator/buffer.h"
 #include "pw_allocator/simple_allocator.h"
 #include "pw_bytes/span.h"
-#include "pw_containers/vector.h"
-#include "pw_fuzzer/fuzztest.h"
-#include "pw_random/random.h"
+#include "pw_status/status.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::allocator::test {
@@ -89,48 +85,6 @@ class AllocatorForTest : public Allocator {
   size_t resize_new_size_ = 0;
 };
 
-/// Wraps a default-constructed type a buffer holding a region of memory.
-///
-/// Although the type is arbitrary, the intended purpose of of this class is to
-/// provide allocators with memory to use when testing.
-///
-/// This class uses composition instead of inheritance in order to allow the
-/// wrapped type's destructor to reference the memory without risk of a
-/// use-after-free. As a result, the specific methods of the wrapped type
-/// are not directly accesible. Instead, they can be accessed using the `*` and
-/// `->` operators, e.g.
-///
-/// @code{.cpp}
-/// WithBuffer<MyAllocator, 256> allocator;
-/// allocator->MethodSpecificToMyAllocator();
-/// @endcode
-///
-/// Note that this class does NOT initialize the allocator, since initialization
-/// is not specified as part of the `Allocator` interface and may vary from
-/// allocator to allocator. As a result, typical usgae includes deriving a class
-/// that initializes the wrapped allocator with the buffer in a constructor. See
-/// `AllocatorForTestWithBuffer` below for an example.
-///
-/// @tparam   T             The wrapped object.
-/// @tparam   kBufferSize   The size of the backing memory, in bytes.
-/// @tparam   AlignType     Buffer memory will be aligned to this type's
-///                         alignment boundary.
-template <typename T, size_t kBufferSize, typename AlignType = uint8_t>
-class WithBuffer {
- public:
-  static constexpr size_t kCapacity = kBufferSize;
-
-  std::byte* data() { return buffer_.data(); }
-  size_t size() const { return buffer_.size(); }
-
-  T& operator*() { return obj_; }
-  T* operator->() { return &obj_; }
-
- private:
-  alignas(AlignType) std::array<std::byte, kBufferSize> buffer_;
-  T obj_;
-};
-
 /// An `AllocatorForTest` that is automatically initialized on construction.
 template <size_t kBufferSize>
 class AllocatorForTestWithBuffer
@@ -140,177 +94,6 @@ class AllocatorForTestWithBuffer
     EXPECT_EQ((*this)->Init(ByteSpan(this->data(), this->size())), OkStatus());
   }
   ~AllocatorForTestWithBuffer() { (*this)->Reset(); }
-};
-
-/// Represents a request to allocate some memory.
-struct AllocationRequest {
-  size_t size = 0;
-  size_t alignment = 1;
-};
-
-/// Represents a request to free some allocated memory.
-struct DeallocationRequest {
-  size_t index = 0;
-};
-
-/// Represents a request to reallocate allocated memory with a new size.
-struct ReallocationRequest {
-  size_t index = 0;
-  size_t new_size = 0;
-};
-
-using AllocatorRequest =
-    std::variant<AllocationRequest, DeallocationRequest, ReallocationRequest>;
-
-/// Returns a FuzzTest domain for producing arbitrary allocator requests.
-///
-/// This method integrates with FuzzTest to use code coverage to produce guided
-/// mutations.
-///
-/// See https://github.com/google/fuzztest/blob/main/doc/domains-reference.md
-///
-/// @param  max_size  Size of the largest allocation that can be requested.
-fuzzer::Domain<AllocatorRequest> ArbitraryAllocatorRequest(size_t max_size);
-
-/// Returns a FuzzTest domain for producing sequences of arbitrary allocator
-/// requests.
-///
-/// See https://github.com/google/fuzztest/blob/main/doc/domains-reference.md
-///
-/// @param  max_size  Size of the largest allocation that can be requested.
-template <size_t kMaxRequests, size_t kMaxSize>
-auto ArbitraryAllocatorRequests() {
-  return fuzzer::VectorOf<kMaxRequests>(ArbitraryAllocatorRequest(kMaxSize));
-}
-
-/// Associates an `Allocator` with a vector to store allocated pointers.
-///
-/// This class facilitates performing allocations from generated
-/// `AllocatorRequest`s, enabling the creation of performance, stress, and fuzz
-/// tests for various allocators.
-///
-/// This class lacks a public constructor, and so cannot be used directly.
-/// Instead callers should use `WithAllocations`, which is templated on the
-/// size of the vector used to store allocated pointers.
-class AllocatorTestHarnessGeneric {
- public:
-  /// Since this object has references passed to it that are typically owned by
-  /// an object of a derived type, the destructor MUST NOT touch those
-  /// references. Instead, it is the callers and/or the derived classes
-  /// responsibility to call `Reset` before the object is destroyed, if desired.
-  virtual ~AllocatorTestHarnessGeneric() = default;
-
-  /// Generates and handles a sequence of allocation requests.
-  ///
-  /// This method will use the given PRNG to generate a `num_requests` and pass
-  /// each in turn to `HandleRequest`. It will call `Reset` before returning.
-  void GenerateRequests(random::RandomGenerator& prng,
-                        size_t max_size,
-                        size_t num_requests);
-
-  /// Handles a sequence of allocation requests.
-  ///
-  /// This method is useful for processing externally generated requests, e.g.
-  /// from FuzzTest. It will call `Reset` before returning.
-  void HandleRequests(const Vector<AllocatorRequest>& requests);
-
-  /// Handles an allocator request.
-  ///
-  /// This method is stateful, and modifies the vector of allocated pointers.
-  /// It will call `Init` if it has not yet been called.
-  ///
-  /// If the request is an allocation request:
-  /// * If the vector of previous allocations is full, ignores the request.
-  /// * Otherwise, allocates memory and stores the pointer in the vector.
-  ///
-  /// If the request is a deallocation request:
-  /// * If the vector of previous allocations is empty, ignores the request.
-  /// * Otherwise, removes a pointer from the vector and deallocates it.
-  ///
-  /// If the request is a reallocation request:
-  /// * If the vector of previous allocations is empty, reallocates a `nullptr`.
-  /// * Otherwise, removes a pointer from the vector and reallocates it.
-  void HandleRequest(const AllocatorRequest& request);
-
-  /// Deallocates any pointers stored in the vector of allocated pointers.
-  void Reset();
-
- protected:
-  /// Associates a pointer to memory with the `Layout` used to allocate it.
-  struct Allocation {
-    void* ptr;
-    Layout layout;
-  };
-
-  constexpr AllocatorTestHarnessGeneric(Vector<Allocation>& allocations)
-      : allocations_(allocations) {}
-
- private:
-  virtual Allocator* Init() = 0;
-
-  /// Adds a pointer to the vector of allocated pointers.
-  ///
-  /// The `ptr` must not be null, and the vector of allocated pointers must not
-  /// be full. To aid in detecting memory corruptions and in debugging, the
-  /// pointed-at memory will be filled with as much of the following sequence as
-  /// will fit:
-  /// * The request number.
-  /// * The request size.
-  /// * The byte "0x5a", repeating.
-  void AddAllocation(void* ptr, Layout layout);
-
-  /// Removes and returns a previously allocated pointer.
-  ///
-  /// The vector of allocated pointers must not be empty.
-  Allocation RemoveAllocation(size_t index);
-
-  /// An allocator used to manage memory.
-  Allocator* allocator_ = nullptr;
-
-  /// A vector of allocated pointers.
-  Vector<Allocation>& allocations_;
-
-  /// The number of requests this object has handled.
-  uint8_t num_requests_ = 0;
-};
-
-/// Associates an `Allocator` with a vector to store allocated pointers.
-///
-/// This class differes from its base class only in that it uses its template
-/// parameter to explicitly size the vector used to store allocated pointers.
-///
-/// This class does NOT implement `WithAllocationsGeneric::Init`. It must be
-/// extended further with a method that provides an initialized allocator.
-///
-/// For example, one create a fuzzer for `MyAllocator` that verifies it never
-/// crashes by adding the following class, function, and macro:
-/// @code{.cpp}
-///   constexpr size_t kMaxRequests = 256;
-///   constexpr size_t kMaxAllocations = 128;
-///   constexpr size_t kMaxSize = 2048;
-///
-///   class MyAllocatorFuzzer : public AllocatorTestHarness<kMaxAllocations> {
-///    private:
-///     Allocator* Init() override { return &allocator_; }
-///     MyAllocator allocator_;
-///   };
-///
-///   void MyAllocatorNeverCrashes(const Vector<AllocatorRequest>& requests) {
-///     static MyAllocatorFuzzer fuzzer;
-///     fuzzer.HandleRequests(requests);
-///   }
-///
-///   FUZZ_TEST(MyAllocator, MyAllocatorNeverCrashes)
-///     .WithDomains(ArbitraryAllocatorRequests<kMaxRequests, kMaxSize>());
-/// @endcode
-template <size_t kMaxConcurrentAllocations>
-class AllocatorTestHarness : public AllocatorTestHarnessGeneric {
- public:
-  constexpr AllocatorTestHarness()
-      : AllocatorTestHarnessGeneric(allocations_) {}
-
- private:
-  Vector<Allocation, kMaxConcurrentAllocations> allocations_;
 };
 
 }  // namespace pw::allocator::test

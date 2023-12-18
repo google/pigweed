@@ -93,6 +93,11 @@ pw_source_set("block") {
   sources = [ "block.cc" ]
 }
 
+pw_source_set("buffer") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_allocator/buffer.h" ]
+}
+
 pw_source_set("fallback_allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/fallback_allocator.h" ]
@@ -216,16 +221,37 @@ pw_source_set("allocator_testing") {
   public_deps = [
     ":allocator",
     ":block",
+    ":buffer",
     ":simple_allocator",
-    "$dir_pw_containers",
-    "$dir_pw_fuzzer:fuzztest",
-    "$dir_pw_third_party/fuchsia:stdcompat",
     dir_pw_bytes,
-    dir_pw_random,
+    dir_pw_status,
     dir_pw_unit_test,
   ]
   deps = [ dir_pw_assert ]
   sources = [ "allocator_testing.cc" ]
+}
+
+pw_source_set("allocator_test_harness") {
+  public = [ "public/pw_allocator/allocator_test_harness.h" ]
+  public_deps = [
+    ":allocator",
+    "$dir_pw_containers",
+    dir_pw_random,
+  ]
+  deps = [
+    "$dir_pw_third_party/fuchsia:stdcompat",
+    dir_pw_assert,
+  ]
+  sources = [ "allocator_test_harness.cc" ]
+}
+
+pw_source_set("allocator_fuzzing") {
+  public = [ "public/pw_allocator/allocator_fuzzing.h" ]
+  public_deps = [
+    ":allocator_test_harness",
+    "$dir_pw_fuzzer:fuzztest",
+  ]
+  sources = [ "allocator_fuzzing.cc" ]
 }
 
 pw_test("allocator_test") {

@@ -82,6 +82,13 @@ pw_add_library(pw_allocator.block STATIC
     block.cc
 )
 
+pw_add_library(pw_allocator.buffer INTERFACE
+  HEADERS
+    public/pw_allocator/buffer.h
+  PUBLIC_INCLUDES
+    public
+)
+
 pw_add_library(pw_allocator.fallback_allocator STATIC
   HEADERS
     public/pw_allocator/fallback_allocator.h
@@ -186,17 +193,43 @@ pw_add_library(pw_allocator.allocator_testing STATIC
   PUBLIC_DEPS
     pw_allocator.allocator
     pw_allocator.block
+    pw_allocator.buffer
     pw_allocator.simple_allocator
     pw_bytes
-    pw_containers
-    pw_fuzzer.fuzztest
-    pw_random
-    pw_third_party.fuchsia.stdcompat
+    pw_status
+    pw_unit_test
   PRIVATE_DEPS
     pw_assert
-    pw_unit_test
   SOURCES
     allocator_testing.cc
+)
+
+pw_add_library(pw_allocator.allocator_test_harness STATIC
+  HEADERS
+    public/pw_allocator/allocator_test_harness.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.allocator
+    pw_containers
+    pw_random
+  PRIVATE_DEPS
+    pw_assert
+    pw_third_party.fuchsia.stdcompat
+  SOURCES
+    allocator_test_harness.cc
+)
+
+pw_add_library(pw_allocator.allocator_fuzzing STATIC
+  HEADERS
+    public/pw_allocator/allocator_fuzzing.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.allocator_test_harness
+    pw_fuzzer.fuzztest
+  SOURCES
+    allocator_fuzzing.cc
 )
 
 pw_add_test(pw_allocator.allocator_test
@@ -293,7 +326,7 @@ pw_add_test(pw_allocator.simple_allocator_test
   SOURCES
     simple_allocator_test.cc
   PRIVATE_DEPS
-    pw_allocator.allocator_testing
+    pw_allocator.buffer
     pw_allocator.simple_allocator
 )
 
@@ -301,7 +334,7 @@ pw_add_test(pw_allocator.split_free_list_allocator_test
   SOURCES
     split_free_list_allocator_test.cc
   PRIVATE_DEPS
-    pw_allocator.allocator_testing
+    pw_allocator.buffer
     pw_allocator.split_free_list_allocator
     pw_containers.vector
     pw_bytes

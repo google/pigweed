@@ -14,8 +14,8 @@
 
 #include "pw_allocator/split_free_list_allocator.h"
 
-#include "pw_allocator/allocator_testing.h"
 #include "pw_allocator/block.h"
+#include "pw_allocator/buffer.h"
 #include "pw_bytes/alignment.h"
 #include "pw_bytes/span.h"
 #include "pw_containers/vector.h"
@@ -37,8 +37,9 @@ static constexpr size_t kThreshold = 64;
 // construction.
 using BlockType = Block<uint16_t, kCapacity>;
 class SplitFreeListAllocatorWithBuffer
-    : public test::
-          WithBuffer<SplitFreeListAllocator<BlockType>, kCapacity, BlockType> {
+    : public WithBuffer<SplitFreeListAllocator<BlockType>,
+                        kCapacity,
+                        BlockType> {
  public:
   SplitFreeListAllocatorWithBuffer() {
     EXPECT_EQ((*this)->Init(ByteSpan(this->data(), this->size()), kThreshold),

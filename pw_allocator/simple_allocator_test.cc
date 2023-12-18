@@ -14,7 +14,7 @@
 
 #include "pw_allocator/simple_allocator.h"
 
-#include "pw_allocator/allocator_testing.h"
+#include "pw_allocator/buffer.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::allocator {
@@ -24,7 +24,7 @@ constexpr size_t kCapacity = 256;
 
 // An `SimpleAllocator` that is automatically initialized on construction.
 class SimpleAllocatorWithBuffer
-    : public test::WithBuffer<SimpleAllocator, kCapacity> {
+    : public WithBuffer<SimpleAllocator, kCapacity> {
  public:
   SimpleAllocatorWithBuffer() {
     EXPECT_EQ((*this)->Init(ByteSpan(this->data(), this->size())), OkStatus());

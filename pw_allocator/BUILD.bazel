@@ -86,6 +86,14 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "buffer",
+    hdrs = [
+        "public/pw_allocator/buffer.h",
+    ],
+    includes = ["public"],
+)
+
+pw_cc_library(
     name = "fallback_allocator",
     srcs = [
         "fallback_allocator.cc",
@@ -209,14 +217,47 @@ pw_cc_library(
     deps = [
         ":allocator",
         ":block",
+        ":buffer",
         ":simple_allocator",
         "//pw_assert",
         "//pw_bytes",
-        "//pw_containers",
-        "//pw_fuzzer:fuzztest",
-        "//pw_random",
+        "//pw_status",
         "//pw_unit_test",
+    ],
+)
+
+pw_cc_library(
+    name = "allocator_test_harness",
+    testonly = True,
+    srcs = [
+        "allocator_test_harness.cc",
+    ],
+    hdrs = [
+        "public/pw_allocator/allocator_test_harness.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":allocator",
+        "//pw_assert",
+        "//pw_containers",
+        "//pw_random",
         "//third_party/fuchsia:stdcompat",
+    ],
+)
+
+pw_cc_library(
+    name = "allocator_fuzzing",
+    testonly = True,
+    srcs = [
+        "allocator_fuzzing.cc",
+    ],
+    hdrs = [
+        "public/pw_allocator/allocator_fuzzing.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":allocator_test_harness",
+        "//pw_fuzzer:fuzztest",
     ],
 )
 
@@ -321,7 +362,7 @@ pw_cc_test(
         "simple_allocator_test.cc",
     ],
     deps = [
-        ":allocator_testing",
+        ":buffer",
         ":simple_allocator",
     ],
 )
@@ -332,7 +373,7 @@ pw_cc_test(
         "split_free_list_allocator_test.cc",
     ],
     deps = [
-        ":allocator_testing",
+        ":buffer",
         ":split_free_list_allocator",
         "//pw_bytes",
         "//pw_containers:vector",
