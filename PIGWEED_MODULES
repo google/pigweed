@@ -77,6 +77,7 @@ pw_log_tokenized
 pw_log_zephyr
 pw_malloc
 pw_malloc_freelist
+pw_malloc_freertos
 pw_metric
 pw_minimal_cpp_stdlib
 pw_module

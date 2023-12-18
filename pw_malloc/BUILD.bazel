@@ -22,6 +22,10 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+constraint_setting(
+    name = "backend_constraint_setting",
+)
+
 pw_cc_facade(
     name = "facade",
     hdrs = [
@@ -41,8 +45,13 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+alias(
     name = "backend_multiplexer",
+    actual = select({
+        "//pw_malloc_freelist:backend": "//pw_malloc_freelist",
+        "//pw_malloc_freertos:backend": "//pw_malloc_freertos",
+        # Allow default till all users specify a backend.
+        "//conditions:default": "//pw_malloc_freelist",
+    }),
     visibility = ["@pigweed//targets:__pkg__"],
-    deps = ["//pw_malloc_freelist"],
 )

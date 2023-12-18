@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2023 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -15,7 +15,6 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
-    "pw_cc_test",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -28,19 +27,9 @@ constraint_value(
 )
 
 pw_cc_library(
-    name = "headers",
-    hdrs = [
-        "public/pw_malloc_freelist/freelist_malloc.h",
-    ],
-    includes = [
-        "public",
-    ],
-)
-
-pw_cc_library(
-    name = "pw_malloc_freelist",
+    name = "pw_malloc_freertos",
     srcs = [
-        "freelist_malloc.cc",
+        "freertos_malloc.cc",
     ],
     linkopts = [
         # Link options that replace dynamic memory operations in standard
@@ -54,25 +43,12 @@ pw_cc_library(
         "-Wl,--wrap=_free_r",
         "-Wl,--wrap=_calloc_r",
     ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:freertos",
+    ],
     deps = [
-        ":headers",
-        "//pw_allocator:block",
-        "//pw_allocator:freelist_heap",
         "//pw_malloc:facade",
         "//pw_preprocessor",
-    ],
-)
-
-pw_cc_test(
-    name = "freelist_malloc_test",
-    srcs = [
-        "freelist_malloc_test.cc",
-    ],
-    # TODO: b/257530518 - Get this test to work with Bazel.
-    tags = ["manual"],
-    deps = [
-        ":headers",
-        ":pw_malloc_freelist",
-        "//pw_unit_test",
+        "@freertos",
     ],
 )

@@ -18,9 +18,11 @@ Setup
 =====
 This module requires the following setup:
 
-1. Chose a ``pw_malloc`` backend, or write one yourself.
-2. If using GN build, Specify the ``pw_malloc_BACKEND`` GN build arg to point
-   the library that provides a ``pw_malloc`` backend.
+1. Choose a ``pw_malloc`` backend, or write one yourself.
+2. Select a backend in your build system. If using GN build, Specify the
+   ``pw_malloc_BACKEND`` GN build arg to point to the library that provides a
+   ``pw_malloc`` backend. If using the Bazel build, add the constraint value for
+   the backend library that provides a ``pw_malloc`` backend.
 
 Module usage
 ============
