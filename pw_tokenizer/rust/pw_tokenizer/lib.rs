@@ -103,6 +103,9 @@ macro_rules! token {
 ///
 /// Returns a [`pw_status::Result<usize>`] the number of bytes written to the buffer.
 ///
+/// `tokenize_to_buffer!` supports concatenation of format strings as described
+/// in [`pw_format::macros::FormatAndArgs`].
+///
 /// # Errors
 /// - [`pw_status::Error::OutOfRange`] - Buffer is not large enough to fit
 ///   tokenized data.
@@ -114,25 +117,35 @@ macro_rules! token {
 /// use pw_tokenizer::tokenize_to_buffer;
 ///
 /// # fn doctest() -> pw_status::Result<()> {
+/// // Tokenize a format string and argument into a buffer.
 /// let mut buffer = [0u8; 1024];
 /// let len = tokenize_to_buffer!(&mut buffer, "The answer is %d", 42)?;
 ///
 /// // 4 bytes used to encode the token and one to encode the value 42.
 /// assert_eq!(len, 5);
+///
+/// // The format string can be composed of multiple strings literals using
+/// // the custom`PW_FMT_CONCAT` operator.
+/// let len = tokenize_to_buffer!(&mut buffer, "Hello " PW_FMT_CONCAT "Pigweed")?;
+///
+/// // Only a single 4 byte token is emitted after concatenation of the string
+/// // literals above.
+/// assert_eq!(len, 4);
 /// # Ok(())
 /// # }
 /// # doctest().unwrap();
 /// ```
+
 #[macro_export]
 macro_rules! tokenize_to_buffer {
-    ($buffer:expr, $format_string:literal) => {{
+    ($buffer:expr,  $($format_string:literal)PW_FMT_CONCAT+) => {{
       use $crate::__private as __pw_tokenizer_crate;
-      __pw_tokenizer_crate::_tokenize_to_buffer!($buffer, $format_string)
+      __pw_tokenizer_crate::_tokenize_to_buffer!($buffer,  $($format_string)PW_FMT_CONCAT+)
     }};
 
-    ($buffer:expr, $format_string:expr, $($args:expr),*) => {{
+    ($buffer:expr, $($format_string:literal)PW_FMT_CONCAT+, $($args:expr),*) => {{
       use $crate::__private as __pw_tokenizer_crate;
-      __pw_tokenizer_crate::_tokenize_to_buffer!($buffer, $format_string, $($args),*)
+      __pw_tokenizer_crate::_tokenize_to_buffer!($buffer, $($format_string)PW_FMT_CONCAT+, $($args),*)
     }};
 }
 
@@ -151,12 +164,10 @@ mod tests {
       ($expected_data:expr, $buffer_len:expr, $fmt:expr) => {
         {
           let mut orig_buffer = [0u8; $buffer_len];
-          let buffer =
-              tokenize_to_buffer!(&mut orig_buffer, $fmt).unwrap();
-            let len = buffer.len();
-            assert_eq!(
-              &orig_buffer[..(($buffer_len) - len)],
-              $expected_data,
+          let len = tokenize_to_buffer!(&mut orig_buffer, $fmt).unwrap();
+          assert_eq!(
+            &orig_buffer[..len],
+            $expected_data,
           );
         }
       };
@@ -173,6 +184,14 @@ mod tests {
       };
     }
 
+    #[test]
+    fn bare_string_encodes_correctly() {
+        tokenize_to_buffer_test!(
+            &[0xe0, 0x92, 0xe0, 0xa], // expected buffer
+            64,                       // buffer size
+            "Hello Pigweed",
+        );
+    }
     #[test]
     fn test_decimal_format() {
         tokenize_to_buffer_test!(
@@ -273,5 +292,19 @@ mod tests {
             "Hello: %cigweed",
             "P".as_bytes()[0]
         );
+    }
+
+    #[test]
+    fn tokenizer_supports_concatenated_format_strings() {
+        // Since the no argument and some arguments cases are handled differently
+        // by `tokenize_to_buffer!` we need to test both.
+        let mut buffer = [0u8; 64];
+        let len = tokenize_to_buffer!(&mut buffer, "Hello" PW_FMT_CONCAT " Pigweed").unwrap();
+        assert_eq!(&buffer[..len], &[0xe0, 0x92, 0xe0, 0xa]);
+
+        let len = tokenize_to_buffer!(&mut buffer, "Hello: " PW_FMT_CONCAT "%cigweed",
+          "P".as_bytes()[0])
+        .unwrap();
+        assert_eq!(&buffer[..len], &[0x2e, 0x52, 0xac, 0xe4, 0x50]);
     }
 }
