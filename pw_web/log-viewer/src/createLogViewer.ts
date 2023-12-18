@@ -61,7 +61,6 @@ export function createLogViewer(
     if (logViewer.parentNode) {
       logViewer.parentNode.removeChild(logViewer);
     }
-
     logSource.removeEventListener('logEntry', logEntryListener);
   };
 }
