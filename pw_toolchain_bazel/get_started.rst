@@ -160,8 +160,6 @@ A simplified example is provided below.
 
    pw_cc_toolchain(
        name = "host_toolchain",
-       abi_libc_version = "unknown",
-       abi_version = "unknown",
        action_config_flag_sets = [
            "@pw_toolchain//flag_sets:c++17",
            "@pw_toolchain//flag_sets:debugging",
@@ -177,17 +175,12 @@ A simplified example is provided below.
            "@linux_clang_toolchain//:llvm-objdump",
            "@linux_clang_toolchain//:llvm-strip",
        ],
-       compiler = "unknown",
        cxx_builtin_include_directories = [
            "%package(@linux_clang_toolchain//)%/include/x86_64-unknown-linux-gnu/c++/v1",
            "%package(@linux_clang_toolchain//)%/include/c++/v1",
            "%package(@linux_clang_toolchain//)%/lib/clang/17/include",
        ],
-       host_system_name = "unknown",
        supports_param_files = 0,
-       target_cpu = "unknown",
-       target_libc = "unknown",
-       target_system_name = "unknown",
        toolchain_identifier = "host-linux-toolchain",
    )
 
@@ -206,12 +199,6 @@ A simplified example is provided below.
        toolchain = ":host_toolchain",
        toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
    )
-
-.. admonition:: Note
-
-   `b/315206506 <https://issues.pigweed.dev/315206506>`_\: The fields set to
-   ``"unknown"`` are currently mandatory, but may not be strictly required in
-   the future.
 
 The ``toolchain`` rule
 ======================

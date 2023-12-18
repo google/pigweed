@@ -83,8 +83,6 @@ filegroup(
 
 pw_cc_toolchain(
     name = "host_toolchain",
-    abi_libc_version = "unknown",
-    abi_version = "unknown",
     action_config_flag_sets = select({
         "@platforms//os:macos": [
             "@pw_toolchain//flag_sets:no_default_cpp_stdlib",
@@ -120,7 +118,6 @@ pw_cc_toolchain(
         "@platforms//os:macos": XCODE_SDK_PATH,
         "@platforms//os:linux": "external/linux_sysroot",
     }),
-    compiler = "unknown",
     compiler_files = ":sysroot_files",
     cxx_builtin_include_directories = select({
         "@platforms//os:macos": [
@@ -137,7 +134,6 @@ pw_cc_toolchain(
             "%sysroot%/usr/include",
         ],
     }),
-    host_system_name = "unknown",
     linker_files = ":sysroot_files",
     supports_param_files = 0,
     # The implementations of some "legacy features" built into Bazel use
@@ -145,13 +141,12 @@ pw_cc_toolchain(
     # https://github.com/bazelbuild/bazel/blob/release-7.0.0-pre.20230816.3rc1/src/main/java/com/google/devtools/build/lib/rules/cpp/CcModule.java#L1301-L1304
     target_cpu = select({
         "@platforms//os:macos": "darwin",
-        "//conditions:default": "unknown",
+        "//conditions:default": None,
     }),
     target_libc = select({
         "@platforms//os:macos": "macosx",
-        "//conditions:default": "unknown",
+        "//conditions:default": None,
     }),
-    target_system_name = "unknown",
     toolchain_identifier = "host-toolchain",
 )
 

@@ -167,8 +167,6 @@ pw_cc_flag_set(
 
 pw_cc_toolchain(
     name = "arm_gcc_toolchain_cortex-m",
-    abi_libc_version = "unknown",
-    abi_version = "unknown",
     action_config_flag_sets = [
         "@pw_toolchain//flag_sets:o2",
         "@pw_toolchain//flag_sets:c++17",
@@ -204,7 +202,6 @@ pw_cc_toolchain(
         "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-strip",
     ],
     builtin_sysroot = "external/gcc_arm_none_eabi_toolchain",
-    compiler = "unknown",
     cxx_builtin_include_directories = [
         "%sysroot%/arm-none-eabi/include/newlib-nano",
         "%sysroot%/arm-none-eabi/include/c++/12.2.1",
@@ -214,7 +211,6 @@ pw_cc_toolchain(
         "%sysroot%/lib/gcc/arm-none-eabi/12.2.1/include-fixed",
         "%sysroot%/arm-none-eabi/include",
     ],
-    host_system_name = "unknown",
     supports_param_files = 0,
     target_compatible_with = select({
         "@pw_toolchain//constraints/arm_mcpu:cortex-m0": [],
@@ -226,9 +222,6 @@ pw_cc_toolchain(
         "@pw_toolchain//constraints/arm_mcpu:cortex-m33+nofp": [],
         "@pw_toolchain//constraints/arm_mcpu:none": ["@platforms//:incompatible"],
     }),
-    target_cpu = "unknown",
-    target_libc = "unknown",
-    target_system_name = "unknown",
     toolchain_identifier = "arm-gcc-toolchain",
 )
 
