@@ -922,7 +922,10 @@ static_assert(std::is_trivially_destructible_v<InlineDeque<CopyOnly>>);
 static_assert(std::is_trivially_destructible_v<InlineDeque<CopyOnly, 99>>);
 
 static_assert(!std::is_trivially_destructible_v<Counter>);
-static_assert(!std::is_trivially_destructible_v<InlineDeque<Counter>>);
+// The size-generic type is trivially destructible.
+// Instances of it will never be on the stack-- it should only be destroyed
+// when using >=C++20 and destroying_delete;
+static_assert(std::is_trivially_destructible_v<InlineDeque<Counter>>);
 static_assert(!std::is_trivially_destructible_v<InlineDeque<Counter, 99>>);
 
 // Tests that InlineDeque<T> does not have any extra padding.

@@ -32,23 +32,6 @@ template <typename T>
 using EnableIfIterable =
     std::enable_if_t<true, decltype(T().begin(), T().end())>;
 
-// The DestructorHelper is used to make a Container<T> trivially destructible if
-// T is. This could be replaced with a C++20 constraint.
-template <typename Container, bool kIsTriviallyDestructible>
-class DestructorHelper;
-
-template <typename Container>
-class DestructorHelper<Container, true> {
- public:
-  ~DestructorHelper() = default;
-};
-
-template <typename Container>
-class DestructorHelper<Container, false> {
- public:
-  ~DestructorHelper() { static_cast<Container*>(this)->clear(); }
-};
-
 // Container similar to std::array that provides an array of Elements which are
 // stored as uninitialized memory blocks aligned correctly for the type.
 //

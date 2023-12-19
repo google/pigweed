@@ -41,6 +41,14 @@ class InlineDequeIterator;
 template <typename T, typename SizeType, size_t kCapacity>
 class BasicInlineDeque;
 
+// Storage for a queue's data and that ensures entries are `clear`'d before
+// the storage is removed.
+template <typename ValueType,
+          typename SizeType,
+          size_t kCapacity,
+          bool kIsTriviallyDestructible>
+class BasicInlineDequeStorage;
+
 /// The `InlineDeque` class is similar to the STL's double ended queue
 /// (`std::deque`), except it is backed by a fixed-size buffer.
 /// `InlineDeque`'s must be declared with an explicit maximum size (e.g.
@@ -48,7 +56,8 @@ class BasicInlineDeque;
 /// the max size template parameter (e.g. `InlineDeque<int>`).
 ///
 /// To allow referring to a `pw::InlineDeque` without an explicit maximum
-/// size, all `InlineDeque` classes inherit from the generic
+/// size, all `InlineDeque` classes inherit from the
+/// ``BasicInlineDequeStorage`` class, which in turn inherits from
 /// `InlineDeque<T>`, which stores the maximum size in a variable. This allows
 /// InlineDeques to be used without having to know their maximum size at compile
 /// time. It also keeps code size small since function implementations are
@@ -59,10 +68,11 @@ using InlineDeque = BasicInlineDeque<T, uint16_t, kCapacity>;
 template <typename ValueType,
           typename SizeType,
           size_t kCapacity = containers::internal::kGenericSized>
-class BasicInlineDeque
-    : public BasicInlineDeque<ValueType,
-                              SizeType,
-                              containers::internal::kGenericSized> {
+class BasicInlineDeque : public BasicInlineDequeStorage<
+                             ValueType,
+                             SizeType,
+                             kCapacity,
+                             std::is_trivially_destructible_v<ValueType>> {
  private:
   using Base = BasicInlineDeque<ValueType,
                                 SizeType,
@@ -81,9 +91,9 @@ class BasicInlineDeque
 
   // Constructors
 
-  constexpr BasicInlineDeque() noexcept : Base(kCapacity) {}
+  constexpr BasicInlineDeque() noexcept {}
 
-  BasicInlineDeque(size_type count, const_reference value) : Base(kCapacity) {
+  BasicInlineDeque(size_type count, const_reference value) {
     Base::assign(count, value);
   }
 
@@ -93,22 +103,16 @@ class BasicInlineDeque
   template <
       typename InputIterator,
       typename = containers::internal::EnableIfInputIterator<InputIterator>>
-  BasicInlineDeque(InputIterator start, InputIterator finish)
-      : Base(kCapacity) {
+  BasicInlineDeque(InputIterator start, InputIterator finish) {
     Base::assign(start, finish);
   }
 
-  BasicInlineDeque(std::initializer_list<value_type> list)
-      : BasicInlineDeque() {
-    *this = list;
-  }
+  BasicInlineDeque(std::initializer_list<value_type> list) { *this = list; }
 
-  BasicInlineDeque(const BasicInlineDeque& other) : BasicInlineDeque() {
-    *this = other;
-  }
+  BasicInlineDeque(const BasicInlineDeque& other) { *this = other; }
 
   template <typename T, typename = containers::internal::EnableIfIterable<T>>
-  BasicInlineDeque(const T& other) : BasicInlineDeque() {
+  BasicInlineDeque(const T& other) {
     *this = other;
   }
 
@@ -137,6 +141,9 @@ class BasicInlineDeque
   static constexpr size_type max_size() { return capacity(); }
   static constexpr size_type capacity() { return kCapacity; }
 
+  // Allow `delete` with non-polymorphic-sized `pw::InlineDeque<T>`.
+  static void operator delete(void* ptr) { ::operator delete(ptr); }
+
   // All other methods are implemented on the generic-sized base class.
 
  private:
@@ -145,31 +152,89 @@ class BasicInlineDeque
                                 containers::internal::kGenericSized>;
 
   static_assert(kCapacity <= std::numeric_limits<size_type>::max());
+};
+
+// Specialization of ``BasicInlineDequeue`` for trivially-destructible
+// ``ValueType``. This specialization ensures that no destructor is generated.
+template <typename ValueType, typename SizeType, size_t kCapacity>
+class BasicInlineDequeStorage<ValueType, SizeType, kCapacity, true>
+    : public BasicInlineDeque<ValueType,
+                              SizeType,
+                              containers::internal::kGenericSized> {
+  // NOTE: no destructor is added, as `ValueType` is trivially-destructible.
+ private:
+  friend class BasicInlineDeque<ValueType, SizeType, kCapacity>;
+  friend class BasicInlineDeque<ValueType,
+                                SizeType,
+                                containers::internal::kGenericSized>;
+
+  using Base = BasicInlineDeque<ValueType,
+                                SizeType,
+                                containers::internal::kGenericSized>;
+
+  BasicInlineDequeStorage() : Base(kCapacity) {}
 
   // The data() function is defined differently for the generic-sized and
   // known-sized specializations. This data() implementation simply returns the
   // RawStorage's data(). The generic-sized data() function casts *this to a
   // known zero-sized specialization to access this exact function.
-  pointer data() { return raw_storage_.data(); }
-  const_pointer data() const { return raw_storage_.data(); }
+  typename Base::pointer data() { return raw_storage_.data(); }
+  typename Base::const_pointer data() const { return raw_storage_.data(); }
 
   // Note that this is offset and aligned the same for all possible
   // kCapacity values for the same value_type.
-  containers::internal::RawStorage<value_type, kCapacity> raw_storage_;
+  containers::internal::RawStorage<ValueType, kCapacity> raw_storage_;
+};
+
+// Specialization of ``BasicInlineDequeue`` for non-trivially-destructible
+// ``ValueType``. This specialization ensures that the queue is cleared
+// during destruction prior to the invalidation of the `raw_storage_`.
+template <typename ValueType, typename SizeType, size_t kCapacity>
+class BasicInlineDequeStorage<ValueType, SizeType, kCapacity, false>
+    : public BasicInlineDeque<ValueType,
+                              SizeType,
+                              containers::internal::kGenericSized> {
+ public:
+  ~BasicInlineDequeStorage() { Base::clear(); }
+
+ private:
+  friend class BasicInlineDeque<ValueType, SizeType, kCapacity>;
+  friend class BasicInlineDeque<ValueType,
+                                SizeType,
+                                containers::internal::kGenericSized>;
+
+  using Base = BasicInlineDeque<ValueType,
+                                SizeType,
+                                containers::internal::kGenericSized>;
+
+  BasicInlineDequeStorage() : Base(kCapacity) {}
+
+  // The data() function is defined differently for the generic-sized and
+  // known-sized specializations. This data() implementation simply returns the
+  // RawStorage's data(). The generic-sized data() function casts *this to a
+  // known zero-sized specialization to access this exact function.
+  typename Base::pointer data() { return raw_storage_.data(); }
+  typename Base::const_pointer data() const { return raw_storage_.data(); }
+
+  // Note that this is offset and aligned the same for all possible
+  // kCapacity values for the same value_type.
+  containers::internal::RawStorage<ValueType, kCapacity> raw_storage_;
 };
 
 // Defines the generic-sized BasicInlineDeque<T> specialization, which
 // serves as the base class for BasicInlineDeque<T> of any capacity.
 //
-// Except for constructors, all other methods should be implemented on this
-// generic-sized specialization.
+// Except for constructors and destructors, all other methods should be
+// implemented on this generic-sized specialization. Destructors must
+// only be written for the `BasicInlineDequeStorage` type in order to ensure
+// that `raw_storage_` is still valid at the time of destruction.
+//
+// NOTE: this size-polymorphic base class must not be used inside of
+// ``std::unique_ptr`` or ``delete``.
 template <typename ValueType, typename SizeType>
-class BasicInlineDeque<ValueType, SizeType, containers::internal::kGenericSized>
-    : public containers::internal::DestructorHelper<
-          BasicInlineDeque<ValueType,
-                           SizeType,
-                           containers::internal::kGenericSized>,
-          std::is_trivially_destructible<ValueType>::value> {
+class BasicInlineDeque<ValueType,
+                       SizeType,
+                       containers::internal::kGenericSized> {
  public:
   using value_type = ValueType;
   using size_type = SizeType;
@@ -187,8 +252,14 @@ class BasicInlineDeque<ValueType, SizeType, containers::internal::kGenericSized>
       size_type,
       inline_circular_buffer_impl::Constness::kConst>;
 
-  // Assignment
+ private:
+  // Polymorphic-sized `pw::InlineDeque<T>` may not be used with `unique_ptr`
+  // or `delete` prior to C++20. This function is marked private to prevent
+  // accidental usage.
+  static void operator delete(void*) {}
 
+ public:
+  // Assignment
   BasicInlineDeque& operator=(std::initializer_list<value_type> list) {
     assign(list);
     return *this;
