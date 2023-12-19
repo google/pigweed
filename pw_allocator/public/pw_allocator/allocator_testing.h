@@ -16,23 +16,36 @@
 #include <cstddef>
 
 #include "pw_allocator/allocator.h"
+#include "pw_allocator/allocator_metric_proxy.h"
 #include "pw_allocator/block.h"
 #include "pw_allocator/buffer.h"
+#include "pw_allocator/metrics.h"
 #include "pw_allocator/simple_allocator.h"
 #include "pw_bytes/span.h"
 #include "pw_status/status.h"
+#include "pw_tokenizer/tokenize.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::allocator::test {
+namespace internal {
+
+using pw::allocator::internal::Metrics;
 
 /// Simple memory allocator for testing.
 ///
 /// This allocator records the most recent parameters passed to the `Allocator`
 /// interface methods, and returns them via accessors.
-class AllocatorForTest : public Allocator {
+class AllocatorForTestImpl : public AllocatorWithMetrics<Metrics> {
  public:
-  constexpr AllocatorForTest() = default;
-  ~AllocatorForTest() override;
+  using metrics_type = Metrics;
+
+  AllocatorForTestImpl() : proxy_(PW_TOKENIZE_STRING_EXPR("test")) {}
+  ~AllocatorForTestImpl() override;
+
+  metrics_type& metric_group() override { return proxy_.metric_group(); }
+  const metrics_type& metric_group() const override {
+    return proxy_.metric_group();
+  }
 
   size_t allocate_size() const { return allocate_size_; }
   void* deallocate_ptr() const { return deallocate_ptr_; }
@@ -76,6 +89,8 @@ class AllocatorForTest : public Allocator {
   bool DoResize(void* ptr, Layout layout, size_t new_size) override;
 
   SimpleAllocator allocator_;
+  AllocatorMetricProxyImpl<metrics_type> proxy_;
+
   bool initialized_ = false;
   size_t allocate_size_ = 0;
   void* deallocate_ptr_ = nullptr;
@@ -85,15 +100,23 @@ class AllocatorForTest : public Allocator {
   size_t resize_new_size_ = 0;
 };
 
+}  // namespace internal
+
 /// An `AllocatorForTest` that is automatically initialized on construction.
 template <size_t kBufferSize>
-class AllocatorForTestWithBuffer
-    : public WithBuffer<AllocatorForTest, kBufferSize> {
+class AllocatorForTest
+    : public WithBuffer<internal::AllocatorForTestImpl, kBufferSize> {
  public:
-  AllocatorForTestWithBuffer() {
+  using allocator_type = internal::AllocatorForTestImpl;
+  using metrics_type = allocator_type::metrics_type;
+
+  AllocatorForTest() {
     EXPECT_EQ((*this)->Init(ByteSpan(this->data(), this->size())), OkStatus());
   }
-  ~AllocatorForTestWithBuffer() { (*this)->Reset(); }
+  ~AllocatorForTest() { (*this)->Reset(); }
+
+  /// Helper method to get a pointer to underlying allocator.
+  AllocatorWithMetrics<metrics_type>* get() { return &**this; }
 };
 
 }  // namespace pw::allocator::test

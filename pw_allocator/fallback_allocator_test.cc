@@ -27,9 +27,9 @@ class FallbackAllocatorTest : public ::testing::Test {
  protected:
   void SetUp() override { allocator.Init(*primary, *secondary); }
 
-  test::AllocatorForTestWithBuffer<128> primary;
-  test::AllocatorForTestWithBuffer<128> secondary;
-  FallbackAllocator allocator;
+  test::AllocatorForTest<128> primary;
+  test::AllocatorForTest<128> secondary;
+  FallbackAllocatorImpl<internal::Metrics> allocator;
 };
 
 // Unit tests.
@@ -51,15 +51,12 @@ TEST_F(FallbackAllocatorTest, QueryValidSecondary) {
 }
 
 TEST_F(FallbackAllocatorTest, QueryInvalidPtr) {
-  std::array<std::byte, 128> buffer = {};
-  test::AllocatorForTest other;
-  ASSERT_EQ(other.Init(buffer), OkStatus());
+  test::AllocatorForTest<128> other;
   Layout layout = Layout::Of<uint32_t>();
-  void* ptr = other.Allocate(layout);
+  void* ptr = other->Allocate(layout);
   EXPECT_FALSE(primary->Query(ptr, layout).ok());
   EXPECT_FALSE(secondary->Query(ptr, layout).ok());
   EXPECT_FALSE(allocator.Query(ptr, layout).ok());
-  other.Reset();
 }
 
 TEST_F(FallbackAllocatorTest, AllocateFromPrimary) {
@@ -210,6 +207,24 @@ TEST_F(FallbackAllocatorTest, ReallocateDifferentAllocator) {
   EXPECT_EQ(primary->deallocate_ptr(), ptr);
   EXPECT_EQ(primary->deallocate_size(), old_layout.size());
   EXPECT_EQ(secondary->allocate_size(), new_size);
+}
+
+TEST_F(FallbackAllocatorTest, GetMetrics) {
+  primary->Exhaust();
+  Layout layout = Layout::Of<uint32_t>();
+  allocator.Allocate(layout);
+
+  EXPECT_NE(primary->used(), 0U);
+  EXPECT_EQ(primary->peak(), primary->used());
+  EXPECT_EQ(primary->count(), 1U);
+
+  EXPECT_EQ(secondary->used(), layout.size());
+  EXPECT_EQ(secondary->peak(), layout.size());
+  EXPECT_EQ(secondary->count(), 1U);
+
+  EXPECT_EQ(allocator.used(), secondary->used());
+  EXPECT_EQ(allocator.peak(), secondary->peak());
+  EXPECT_EQ(allocator.count(), secondary->count());
 }
 
 }  // namespace

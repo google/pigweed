@@ -72,11 +72,6 @@ AllocatorForTest
 .. doxygenclass:: pw::allocator::test::AllocatorForTest
    :members:
 
-WithBuffer
-----------
-.. doxygenclass:: pw::allocator::WithBuffer
-   :members:
-
 AllocatorTestHarness
 --------------------
 .. doxygenclass:: pw::allocator::test::AllocatorTestHarness

@@ -12,16 +12,20 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/allocator_metric_proxy.h"
+#include "pw_allocator/metrics.h"
 
 #include <cstddef>
 
 #include "pw_assert/check.h"
-#include "pw_metric/metric.h"
 
 namespace pw::allocator::internal {
 
 void Metrics::Init() {
+  children().clear();
+  metrics().clear();
+  used_.Set(0);
+  peak_.Set(0);
+  count_.Set(0);
   Add(used_);
   Add(peak_);
   Add(count_);

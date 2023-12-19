@@ -17,22 +17,28 @@
 #include "pw_assert/check.h"
 
 namespace pw::allocator::test {
+namespace internal {
 
-AllocatorForTest::~AllocatorForTest() { PW_DCHECK(!initialized_); }
+AllocatorForTestImpl::~AllocatorForTestImpl() { PW_DCHECK(!initialized_); }
 
-Status AllocatorForTest::Init(ByteSpan bytes) {
+Status AllocatorForTestImpl::Init(ByteSpan bytes) {
   ResetParameters();
   initialized_ = true;
-  return allocator_.Init(bytes);
+  if (auto status = allocator_.Init(bytes); !status.ok()) {
+    return status;
+  }
+  proxy_.Init(allocator_);
+  return OkStatus();
 }
 
-void AllocatorForTest::Exhaust() {
+void AllocatorForTestImpl::Exhaust() {
   for (auto* block : allocator_.blocks()) {
     block->MarkUsed();
+    proxy_.metric_group().Update(0, block->InnerSize());
   }
 }
 
-void AllocatorForTest::ResetParameters() {
+void AllocatorForTestImpl::ResetParameters() {
   allocate_size_ = 0;
   deallocate_ptr_ = nullptr;
   deallocate_size_ = 0;
@@ -41,7 +47,7 @@ void AllocatorForTest::ResetParameters() {
   resize_new_size_ = 0;
 }
 
-void AllocatorForTest::Reset() {
+void AllocatorForTestImpl::Reset() {
   for (auto* block : allocator_.blocks()) {
     BlockType::Free(block);
   }
@@ -50,26 +56,27 @@ void AllocatorForTest::Reset() {
   initialized_ = false;
 }
 
-Status AllocatorForTest::DoQuery(const void* ptr, Layout layout) const {
-  return allocator_.Query(ptr, layout);
+Status AllocatorForTestImpl::DoQuery(const void* ptr, Layout layout) const {
+  return proxy_.Query(ptr, layout);
 }
 
-void* AllocatorForTest::DoAllocate(Layout layout) {
+void* AllocatorForTestImpl::DoAllocate(Layout layout) {
   allocate_size_ = layout.size();
-  return allocator_.Allocate(layout);
+  return proxy_.Allocate(layout);
 }
 
-void AllocatorForTest::DoDeallocate(void* ptr, Layout layout) {
+void AllocatorForTestImpl::DoDeallocate(void* ptr, Layout layout) {
   deallocate_ptr_ = ptr;
   deallocate_size_ = layout.size();
-  return allocator_.Deallocate(ptr, layout);
+  return proxy_.Deallocate(ptr, layout);
 }
 
-bool AllocatorForTest::DoResize(void* ptr, Layout layout, size_t new_size) {
+bool AllocatorForTestImpl::DoResize(void* ptr, Layout layout, size_t new_size) {
   resize_ptr_ = ptr;
   resize_old_size_ = layout.size();
   resize_new_size_ = new_size;
-  return allocator_.Resize(ptr, layout, new_size);
+  return proxy_.Resize(ptr, layout, new_size);
 }
 
+}  // namespace internal
 }  // namespace pw::allocator::test

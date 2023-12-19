@@ -42,29 +42,16 @@ pw_cc_library(
 
 pw_cc_library(
     name = "allocator_metric_proxy",
-    srcs = [
-        "allocator_metric_proxy.cc",
-    ],
     hdrs = [
         "public/pw_allocator/allocator_metric_proxy.h",
     ],
     includes = ["public"],
     deps = [
         ":allocator",
+        ":metrics",
         "//pw_assert",
         "//pw_metric:metric",
         "//pw_status",
-    ],
-)
-
-pw_cc_library(
-    name = "allocator_metric_proxy_for_test",
-    hdrs = [
-        "public/pw_allocator/allocator_metric_proxy_for_test.h",
-    ],
-    includes = ["public"],
-    deps = [
-        ":allocator_metric_proxy",
     ],
 )
 
@@ -95,9 +82,6 @@ pw_cc_library(
 
 pw_cc_library(
     name = "fallback_allocator",
-    srcs = [
-        "fallback_allocator.cc",
-    ],
     hdrs = [
         "public/pw_allocator/fallback_allocator.h",
     ],
@@ -105,7 +89,7 @@ pw_cc_library(
     deps = [
         ":allocator",
         ":allocator_metric_proxy",
-        "//pw_assert",
+        ":metrics",
         "//pw_metric:metric",
         "//pw_status",
         "//pw_tokenizer",
@@ -158,6 +142,22 @@ pw_cc_library(
         "//pw_assert",
         "//pw_bytes",
         "//pw_status",
+    ],
+)
+
+pw_cc_library(
+    name = "metrics",
+    srcs = [
+        "metrics.cc",
+    ],
+    hdrs = [
+        "public/pw_allocator/metrics.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":allocator",
+        "//pw_assert",
+        "//pw_metric:metric",
     ],
 )
 
@@ -216,6 +216,7 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         ":allocator",
+        ":allocator_metric_proxy",
         ":block",
         ":buffer",
         ":simple_allocator",
@@ -280,7 +281,6 @@ pw_cc_test(
         "allocator_metric_proxy_test.cc",
     ],
     deps = [
-        ":allocator_metric_proxy_for_test",
         ":allocator_testing",
         "//pw_unit_test",
     ],

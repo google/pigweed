@@ -12,162 +12,153 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/allocator_metric_proxy_for_test.h"
 #include "pw_allocator/allocator_testing.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::allocator {
 namespace {
 
-// Test fixtures.
-
-class AllocatorMetricProxyTest : public ::testing::Test {
- protected:
-  AllocatorMetricProxyTest() : allocator_(0) {}
-
-  void SetUp() override { allocator_.Init(*wrapped); }
-
-  AllocatorMetricProxyForTest allocator_;
-
- private:
-  test::AllocatorForTestWithBuffer<256> wrapped;
-};
-
-// Unit tests.
-
-TEST_F(AllocatorMetricProxyTest, InitiallyZero) {
-  EXPECT_EQ(allocator_.used(), 0U);
-  EXPECT_EQ(allocator_.peak(), 0U);
-  EXPECT_EQ(allocator_.count(), 0U);
+TEST(AllocatorMetricProxyTest, InitiallyZero) {
+  test::AllocatorForTest<256> allocator;
+  EXPECT_EQ(allocator->used(), 0U);
+  EXPECT_EQ(allocator->peak(), 0U);
+  EXPECT_EQ(allocator->count(), 0U);
 }
 
-TEST_F(AllocatorMetricProxyTest, MetricsInitialized) {
-  metric::Group& group = allocator_.metric_group();
+TEST(AllocatorMetricProxyTest, MetricsInitialized) {
+  test::AllocatorForTest<256> allocator;
+  metric::Group& group = allocator->metric_group();
   EXPECT_EQ(group.metrics().size(), 3U);
   EXPECT_EQ(group.children().size(), 0U);
 }
 
-TEST_F(AllocatorMetricProxyTest, AllocateDeallocate) {
+TEST(AllocatorMetricProxyTest, AllocateDeallocate) {
+  test::AllocatorForTest<256> allocator;
   constexpr Layout layout = Layout::Of<uint32_t[2]>();
-  void* ptr = allocator_.Allocate(layout);
+  void* ptr = allocator->Allocate(layout);
   ASSERT_NE(ptr, nullptr);
-  EXPECT_EQ(allocator_.used(), sizeof(uint32_t) * 2);
-  EXPECT_EQ(allocator_.peak(), sizeof(uint32_t) * 2);
-  EXPECT_EQ(allocator_.count(), 1U);
+  EXPECT_EQ(allocator->used(), sizeof(uint32_t) * 2);
+  EXPECT_EQ(allocator->peak(), sizeof(uint32_t) * 2);
+  EXPECT_EQ(allocator->count(), 1U);
 
-  allocator_.Deallocate(ptr, layout);
-  EXPECT_EQ(allocator_.used(), 0U);
-  EXPECT_EQ(allocator_.peak(), sizeof(uint32_t) * 2);
-  EXPECT_EQ(allocator_.count(), 0U);
+  allocator->Deallocate(ptr, layout);
+  EXPECT_EQ(allocator->used(), 0U);
+  EXPECT_EQ(allocator->peak(), sizeof(uint32_t) * 2);
+  EXPECT_EQ(allocator->count(), 0U);
 }
 
-TEST_F(AllocatorMetricProxyTest, AllocateFailure) {
+TEST(AllocatorMetricProxyTest, AllocateFailure) {
+  test::AllocatorForTest<256> allocator;
   constexpr Layout layout = Layout::Of<uint32_t[0x10000000U]>();
-  void* ptr = allocator_.Allocate(layout);
+  void* ptr = allocator->Allocate(layout);
   EXPECT_EQ(ptr, nullptr);
-  EXPECT_EQ(allocator_.used(), 0U);
-  EXPECT_EQ(allocator_.peak(), 0U);
-  EXPECT_EQ(allocator_.count(), 0U);
+  EXPECT_EQ(allocator->used(), 0U);
+  EXPECT_EQ(allocator->peak(), 0U);
+  EXPECT_EQ(allocator->count(), 0U);
 }
 
-TEST_F(AllocatorMetricProxyTest, AllocateDeallocateMultiple) {
+TEST(AllocatorMetricProxyTest, AllocateDeallocateMultiple) {
+  test::AllocatorForTest<256> allocator;
   constexpr Layout layout1 = Layout::Of<uint32_t[3]>();
-  void* ptr1 = allocator_.Allocate(layout1);
+  void* ptr1 = allocator->Allocate(layout1);
   ASSERT_NE(ptr1, nullptr);
-  EXPECT_EQ(allocator_.used(), sizeof(uint32_t) * 3);
-  EXPECT_EQ(allocator_.peak(), sizeof(uint32_t) * 3);
-  EXPECT_EQ(allocator_.count(), 1U);
+  EXPECT_EQ(allocator->used(), sizeof(uint32_t) * 3);
+  EXPECT_EQ(allocator->peak(), sizeof(uint32_t) * 3);
+  EXPECT_EQ(allocator->count(), 1U);
 
   constexpr Layout layout2 = Layout::Of<uint32_t[2]>();
-  void* ptr2 = allocator_.Allocate(layout2);
+  void* ptr2 = allocator->Allocate(layout2);
   ASSERT_NE(ptr2, nullptr);
-  EXPECT_EQ(allocator_.used(), sizeof(uint32_t) * 5);
-  EXPECT_EQ(allocator_.peak(), sizeof(uint32_t) * 5);
-  EXPECT_EQ(allocator_.count(), 2U);
+  EXPECT_EQ(allocator->used(), sizeof(uint32_t) * 5);
+  EXPECT_EQ(allocator->peak(), sizeof(uint32_t) * 5);
+  EXPECT_EQ(allocator->count(), 2U);
 
-  allocator_.Deallocate(ptr1, layout1);
-  EXPECT_EQ(allocator_.used(), sizeof(uint32_t) * 2);
-  EXPECT_EQ(allocator_.peak(), sizeof(uint32_t) * 5);
-  EXPECT_EQ(allocator_.count(), 1U);
+  allocator->Deallocate(ptr1, layout1);
+  EXPECT_EQ(allocator->used(), sizeof(uint32_t) * 2);
+  EXPECT_EQ(allocator->peak(), sizeof(uint32_t) * 5);
+  EXPECT_EQ(allocator->count(), 1U);
 
-  allocator_.Deallocate(ptr2, layout2);
-  EXPECT_EQ(allocator_.used(), 0U);
-  EXPECT_EQ(allocator_.peak(), sizeof(uint32_t) * 5);
-  EXPECT_EQ(allocator_.count(), 0U);
+  allocator->Deallocate(ptr2, layout2);
+  EXPECT_EQ(allocator->used(), 0U);
+  EXPECT_EQ(allocator->peak(), sizeof(uint32_t) * 5);
+  EXPECT_EQ(allocator->count(), 0U);
 }
 
-TEST_F(AllocatorMetricProxyTest, ResizeLarger) {
+TEST(AllocatorMetricProxyTest, ResizeLarger) {
+  test::AllocatorForTest<256> allocator;
   constexpr Layout old_layout = Layout::Of<uint32_t[3]>();
-  void* ptr = allocator_.Allocate(old_layout);
+  void* ptr = allocator->Allocate(old_layout);
   ASSERT_NE(ptr, nullptr);
-  EXPECT_EQ(allocator_.used(), sizeof(uint32_t) * 3);
-  EXPECT_EQ(allocator_.peak(), sizeof(uint32_t) * 3);
-  EXPECT_EQ(allocator_.count(), 1U);
+  EXPECT_EQ(allocator->used(), sizeof(uint32_t) * 3);
+  EXPECT_EQ(allocator->peak(), sizeof(uint32_t) * 3);
+  EXPECT_EQ(allocator->count(), 1U);
 
   constexpr Layout new_layout = Layout::Of<uint32_t[5]>();
-  EXPECT_TRUE(allocator_.Resize(ptr, old_layout, new_layout.size()));
-  EXPECT_EQ(allocator_.used(), sizeof(uint32_t) * 5);
-  EXPECT_EQ(allocator_.peak(), sizeof(uint32_t) * 5);
-  EXPECT_EQ(allocator_.count(), 1U);
+  EXPECT_TRUE(allocator->Resize(ptr, old_layout, new_layout.size()));
+  EXPECT_EQ(allocator->used(), sizeof(uint32_t) * 5);
+  EXPECT_EQ(allocator->peak(), sizeof(uint32_t) * 5);
+  EXPECT_EQ(allocator->count(), 1U);
 
-  allocator_.Deallocate(ptr, new_layout);
-  EXPECT_EQ(allocator_.used(), 0U);
-  EXPECT_EQ(allocator_.peak(), sizeof(uint32_t) * 5);
-  EXPECT_EQ(allocator_.count(), 0U);
+  allocator->Deallocate(ptr, new_layout);
+  EXPECT_EQ(allocator->used(), 0U);
+  EXPECT_EQ(allocator->peak(), sizeof(uint32_t) * 5);
+  EXPECT_EQ(allocator->count(), 0U);
 }
 
-TEST_F(AllocatorMetricProxyTest, ResizeSmaller) {
+TEST(AllocatorMetricProxyTest, ResizeSmaller) {
+  test::AllocatorForTest<256> allocator;
   constexpr Layout old_layout = Layout::Of<uint32_t[2]>();
-  void* ptr = allocator_.Allocate(old_layout);
+  void* ptr = allocator->Allocate(old_layout);
   ASSERT_NE(ptr, nullptr);
-  EXPECT_EQ(allocator_.used(), sizeof(uint32_t) * 2);
-  EXPECT_EQ(allocator_.peak(), sizeof(uint32_t) * 2);
-  EXPECT_EQ(allocator_.count(), 1U);
+  EXPECT_EQ(allocator->used(), sizeof(uint32_t) * 2);
+  EXPECT_EQ(allocator->peak(), sizeof(uint32_t) * 2);
+  EXPECT_EQ(allocator->count(), 1U);
 
   constexpr Layout new_layout = Layout::Of<uint32_t>();
-  EXPECT_TRUE(allocator_.Resize(ptr, old_layout, new_layout.size()));
-  EXPECT_EQ(allocator_.used(), sizeof(uint32_t));
-  EXPECT_EQ(allocator_.peak(), sizeof(uint32_t) * 2);
-  EXPECT_EQ(allocator_.count(), 1U);
+  EXPECT_TRUE(allocator->Resize(ptr, old_layout, new_layout.size()));
+  EXPECT_EQ(allocator->used(), sizeof(uint32_t));
+  EXPECT_EQ(allocator->peak(), sizeof(uint32_t) * 2);
+  EXPECT_EQ(allocator->count(), 1U);
 
-  allocator_.Deallocate(ptr, new_layout);
-  EXPECT_EQ(allocator_.used(), 0U);
-  EXPECT_EQ(allocator_.peak(), sizeof(uint32_t) * 2);
-  EXPECT_EQ(allocator_.count(), 0U);
+  allocator->Deallocate(ptr, new_layout);
+  EXPECT_EQ(allocator->used(), 0U);
+  EXPECT_EQ(allocator->peak(), sizeof(uint32_t) * 2);
+  EXPECT_EQ(allocator->count(), 0U);
 }
 
-TEST_F(AllocatorMetricProxyTest, Reallocate) {
+TEST(AllocatorMetricProxyTest, Reallocate) {
+  test::AllocatorForTest<256> allocator;
   constexpr Layout old_layout = Layout::Of<uint32_t[2]>();
-  void* ptr1 = allocator_.Allocate(old_layout);
+  void* ptr1 = allocator->Allocate(old_layout);
   ASSERT_NE(ptr1, nullptr);
-  EXPECT_EQ(allocator_.used(), sizeof(uint32_t) * 2);
-  EXPECT_EQ(allocator_.peak(), sizeof(uint32_t) * 2);
-  EXPECT_EQ(allocator_.count(), 1U);
+  EXPECT_EQ(allocator->used(), sizeof(uint32_t) * 2);
+  EXPECT_EQ(allocator->peak(), sizeof(uint32_t) * 2);
+  EXPECT_EQ(allocator->count(), 1U);
 
   // Make a second allocation to force reallocation.
-  void* ptr2 = allocator_.Allocate(old_layout);
+  void* ptr2 = allocator->Allocate(old_layout);
   ASSERT_NE(ptr2, nullptr);
-  EXPECT_EQ(allocator_.used(), sizeof(uint32_t) * 4);
-  EXPECT_EQ(allocator_.peak(), sizeof(uint32_t) * 4);
-  EXPECT_EQ(allocator_.count(), 2U);
+  EXPECT_EQ(allocator->used(), sizeof(uint32_t) * 4);
+  EXPECT_EQ(allocator->peak(), sizeof(uint32_t) * 4);
+  EXPECT_EQ(allocator->count(), 2U);
 
   // Reallocating allocates before deallocating, leading to higher peaks.
   constexpr Layout new_layout = Layout::Of<uint32_t[4]>();
-  void* new_ptr = allocator_.Reallocate(ptr1, old_layout, new_layout.size());
+  void* new_ptr = allocator->Reallocate(ptr1, old_layout, new_layout.size());
   EXPECT_NE(new_ptr, nullptr);
-  EXPECT_EQ(allocator_.used(), sizeof(uint32_t) * 6);
-  EXPECT_EQ(allocator_.peak(), sizeof(uint32_t) * 8);
-  EXPECT_EQ(allocator_.count(), 2U);
+  EXPECT_EQ(allocator->used(), sizeof(uint32_t) * 6);
+  EXPECT_EQ(allocator->peak(), sizeof(uint32_t) * 8);
+  EXPECT_EQ(allocator->count(), 2U);
 
-  allocator_.Deallocate(new_ptr, new_layout);
-  EXPECT_EQ(allocator_.used(), sizeof(uint32_t) * 2);
-  EXPECT_EQ(allocator_.peak(), sizeof(uint32_t) * 8);
-  EXPECT_EQ(allocator_.count(), 1U);
+  allocator->Deallocate(new_ptr, new_layout);
+  EXPECT_EQ(allocator->used(), sizeof(uint32_t) * 2);
+  EXPECT_EQ(allocator->peak(), sizeof(uint32_t) * 8);
+  EXPECT_EQ(allocator->count(), 1U);
 
-  allocator_.Deallocate(ptr2, old_layout);
-  EXPECT_EQ(allocator_.used(), 0U);
-  EXPECT_EQ(allocator_.peak(), sizeof(uint32_t) * 8);
-  EXPECT_EQ(allocator_.count(), 0U);
+  allocator->Deallocate(ptr2, old_layout);
+  EXPECT_EQ(allocator->used(), 0U);
+  EXPECT_EQ(allocator->peak(), sizeof(uint32_t) * 8);
+  EXPECT_EQ(allocator->count(), 0U);
 }
 
 }  // namespace

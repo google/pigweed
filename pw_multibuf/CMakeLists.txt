@@ -42,27 +42,13 @@ pw_add_library(pw_multibuf.chunk_region_tracker STATIC
     pw_multibuf.chunk
 )
 
-pw_add_library(pw_multibuf.test_utils STATIC
-  SOURCES
-    public/pw_multibuf/internal/test_utils.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    pw_bytes
-    pw_multibuf.chunk
-    pw_allocator.allocator_metric_proxy_for_test
-    pw_allocator.split_free_list_allocator
-    pw_status
-    ${pw_unit_test_BACKEND}
-)
-
 pw_add_test(pw_multibuf.chunk_test
   SOURCES
     chunk_test.cc
   PRIVATE_DEPS
+    pw_allocator.allocator_testing
     pw_multibuf.chunk
     pw_multibuf.chunk_region_tracker
-    pw_multibuf.test_utils
   GROUPS
     modules
     pw_multibuf
@@ -98,7 +84,7 @@ pw_add_test(pw_multibuf.multibuf_test
   PRIVATE_DEPS
     pw_multibuf
     pw_multibuf.chunk_region_tracker
-    pw_multibuf.test_utils
+    pw_allocator.allocator_testing
   GROUPS
     modules
     pw_multibuf

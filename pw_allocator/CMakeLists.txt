@@ -37,30 +37,16 @@ pw_add_library(pw_allocator.allocator STATIC
     allocator.cc
 )
 
-pw_add_library(pw_allocator.allocator_metric_proxy STATIC
-  PUBLIC_DEFINES
-    ${collect_metrics}
+pw_add_library(pw_allocator.allocator_metric_proxy INTERFACE
   HEADERS
     public/pw_allocator/allocator_metric_proxy.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
     pw_allocator.allocator
+    pw_allocator.metrics
     pw_metric
     pw_status
-  PRIVATE_DEPS
-    pw_assert
-  SOURCES
-    allocator_metric_proxy.cc
-)
-
-pw_add_library(pw_allocator.allocator_metric_proxy_for_test INTERFACE
-  HEADERS
-    public/pw_allocator/allocator_metric_proxy_for_test.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    pw_allocator.allocator_metric_proxy
 )
 
 pw_add_library(pw_allocator.block STATIC
@@ -89,7 +75,7 @@ pw_add_library(pw_allocator.buffer INTERFACE
     public
 )
 
-pw_add_library(pw_allocator.fallback_allocator STATIC
+pw_add_library(pw_allocator.fallback_allocator INTERFACE
   HEADERS
     public/pw_allocator/fallback_allocator.h
   PUBLIC_INCLUDES
@@ -97,13 +83,10 @@ pw_add_library(pw_allocator.fallback_allocator STATIC
   PUBLIC_DEPS
     pw_allocator.allocator
     pw_allocator.allocator_metric_proxy
+    pw_allocator.metrics
     pw_metric
     pw_status
     pw_tokenizer
-  PRIVATE_DEPS
-    pw_assert
-  SOURCES
-    fallback_allocator.cc
 )
 
 pw_add_library(pw_allocator.freelist STATIC
@@ -150,6 +133,22 @@ pw_add_library(pw_allocator.libc_allocator STATIC
     pw_bytes
 )
 
+pw_add_library(pw_allocator.metrics STATIC
+  PUBLIC_DEFINES
+    ${collect_metrics}
+  SOURCES
+    metrics.cc
+  HEADERS
+    public/pw_allocator/metrics.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.allocator
+    pw_metric
+  PRIVATE_DEPS
+    pw_assert
+)
+
 pw_add_library(pw_allocator.null_allocator INTERFACE
   HEADERS
     public/pw_allocator/null_allocator.h
@@ -192,6 +191,7 @@ pw_add_library(pw_allocator.allocator_testing STATIC
     public
   PUBLIC_DEPS
     pw_allocator.allocator
+    pw_allocator.allocator_metric_proxy
     pw_allocator.block
     pw_allocator.buffer
     pw_allocator.simple_allocator
@@ -248,7 +248,6 @@ pw_add_test(pw_allocator.allocator_metric_proxy_test
   SOURCES
     allocator_metric_proxy_test.cc
   PRIVATE_DEPS
-    pw_allocator.allocator_metric_proxy_for_test
     pw_allocator.allocator_testing
   GROUPS
     modules

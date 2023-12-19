@@ -24,7 +24,7 @@ namespace pw::allocator {
 namespace {
 
 TEST(AllocatorTest, ReallocateNull) {
-  test::AllocatorForTestWithBuffer<256> allocator;
+  test::AllocatorForTest<256> allocator;
   constexpr Layout old_layout = Layout::Of<uint32_t>();
   size_t new_size = old_layout.size();
   void* new_ptr = allocator->Reallocate(nullptr, old_layout, new_size);
@@ -41,7 +41,7 @@ TEST(AllocatorTest, ReallocateNull) {
 }
 
 TEST(AllocatorTest, ReallocateZeroNewSize) {
-  test::AllocatorForTestWithBuffer<256> allocator;
+  test::AllocatorForTest<256> allocator;
   constexpr Layout old_layout = Layout::Of<uint32_t[3]>();
   void* ptr = allocator->Allocate(old_layout);
   ASSERT_EQ(allocator->allocate_size(), old_layout.size());
@@ -64,7 +64,7 @@ TEST(AllocatorTest, ReallocateZeroNewSize) {
 }
 
 TEST(AllocatorTest, ReallocateSame) {
-  test::AllocatorForTestWithBuffer<256> allocator;
+  test::AllocatorForTest<256> allocator;
   constexpr Layout layout = Layout::Of<uint32_t[3]>();
   void* ptr = allocator->Allocate(layout);
   ASSERT_EQ(allocator->allocate_size(), layout.size());
@@ -90,7 +90,7 @@ TEST(AllocatorTest, ReallocateSame) {
 }
 
 TEST(AllocatorTest, ReallocateSmaller) {
-  test::AllocatorForTestWithBuffer<256> allocator;
+  test::AllocatorForTest<256> allocator;
   constexpr Layout old_layout = Layout::Of<uint32_t[3]>();
   void* ptr = allocator->Allocate(old_layout);
   ASSERT_EQ(allocator->allocate_size(), old_layout.size());
@@ -117,7 +117,7 @@ TEST(AllocatorTest, ReallocateSmaller) {
 }
 
 TEST(AllocatorTest, ReallocateLarger) {
-  test::AllocatorForTestWithBuffer<256> allocator;
+  test::AllocatorForTest<256> allocator;
   constexpr Layout old_layout = Layout::Of<uint32_t>();
   void* ptr = allocator->Allocate(old_layout);
   ASSERT_EQ(allocator->allocate_size(), old_layout.size());

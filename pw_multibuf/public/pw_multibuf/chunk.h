@@ -175,6 +175,7 @@ class Chunk {
       : region_tracker_(region_tracker),
         next_in_region_(nullptr),
         prev_in_region_(nullptr),
+        next_in_buf_(nullptr),
         span_(span) {}
 
   // NOTE: these functions are logically

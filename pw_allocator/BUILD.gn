@@ -57,23 +57,15 @@ pw_source_set("allocator") {
 }
 
 pw_source_set("allocator_metric_proxy") {
-  public_configs = [
-    ":default_config",
-    ":collect_metrics",
-  ]
+  public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/allocator_metric_proxy.h" ]
   public_deps = [
     ":allocator",
+    ":metrics",
     dir_pw_metric,
     dir_pw_status,
   ]
   deps = [ dir_pw_assert ]
-  sources = [ "allocator_metric_proxy.cc" ]
-}
-
-pw_source_set("allocator_metric_proxy_for_test") {
-  public = [ "public/pw_allocator/allocator_metric_proxy_for_test.h" ]
-  public_deps = [ ":allocator_metric_proxy" ]
 }
 
 pw_source_set("block") {
@@ -104,12 +96,11 @@ pw_source_set("fallback_allocator") {
   public_deps = [
     ":allocator",
     ":allocator_metric_proxy",
+    ":metrics",
     dir_pw_metric,
     dir_pw_status,
     dir_pw_tokenizer,
   ]
-  deps = [ dir_pw_assert ]
-  sources = [ "fallback_allocator.cc" ]
 }
 
 pw_source_set("freelist") {
@@ -147,6 +138,20 @@ pw_source_set("libc_allocator") {
     dir_pw_bytes,
   ]
   sources = [ "libc_allocator.cc" ]
+}
+
+pw_source_set("metrics") {
+  public_configs = [
+    ":default_config",
+    ":collect_metrics",
+  ]
+  public = [ "public/pw_allocator/metrics.h" ]
+  public_deps = [
+    ":allocator",
+    dir_pw_metric,
+  ]
+  deps = [ dir_pw_assert ]
+  sources = [ "metrics.cc" ]
 }
 
 pw_source_set("null_allocator") {
@@ -220,8 +225,10 @@ pw_source_set("allocator_testing") {
   public = [ "public/pw_allocator/allocator_testing.h" ]
   public_deps = [
     ":allocator",
+    ":allocator_metric_proxy",
     ":block",
     ":buffer",
+    ":metrics",
     ":simple_allocator",
     dir_pw_bytes,
     dir_pw_status,
@@ -264,10 +271,7 @@ pw_test("allocator_test") {
 }
 
 pw_test("allocator_metric_proxy_test") {
-  deps = [
-    ":allocator_metric_proxy_for_test",
-    ":allocator_testing",
-  ]
+  deps = [ ":allocator_testing" ]
   sources = [ "allocator_metric_proxy_test.cc" ]
 }
 
