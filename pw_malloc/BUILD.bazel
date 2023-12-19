@@ -50,8 +50,7 @@ alias(
     actual = select({
         "//pw_malloc_freelist:backend": "//pw_malloc_freelist",
         "//pw_malloc_freertos:backend": "//pw_malloc_freertos",
-        # Allow default till all users specify a backend.
-        "//conditions:default": "//pw_malloc_freelist",
+        "//conditions:default": "//pw_build:unspecified_backend",
     }),
     visibility = ["@pigweed//targets:__pkg__"],
 )

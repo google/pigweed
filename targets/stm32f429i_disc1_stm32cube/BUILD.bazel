@@ -53,6 +53,7 @@ platform(
         ":freertos_config_cv",
         "//pw_build/constraints/rtos:freertos",
         "//pw_interrupt_cortex_m:backend",
+        "//pw_malloc_freelist:backend",
         "//pw_sys_io_stm32cube:backend",
         "@freertos//:port_ARM_CM4F",
         "@freertos//:disable_task_statics",

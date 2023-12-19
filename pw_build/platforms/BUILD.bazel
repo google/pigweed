@@ -96,6 +96,7 @@ platform(
         "//pw_cpu_exception_cortex_m:entry_backend",
         "//pw_cpu_exception_cortex_m:support_backend",
         "//pw_interrupt_cortex_m:backend",
+        "//pw_malloc_freertos:backend",
         # os:none means, we're not building for any host platform (Windows,
         # Linux, or Mac). The pw_sys_io_baremetal_stm32f429 backend is only
         # compatible with os:none.
