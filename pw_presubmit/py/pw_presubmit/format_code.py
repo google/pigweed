@@ -157,7 +157,7 @@ def clang_format_fix(ctx: _Context) -> Dict[Path, str]:
 
 def _typescript_format(*args: Union[Path, str], **kwargs) -> bytes:
     return log_run(
-        ['npx', 'prettier@3.0.1', *args],
+        ['npm', 'exec', 'prettier', *args],
         stdout=subprocess.PIPE,
         check=True,
         **kwargs,
@@ -695,7 +695,7 @@ CODE_FORMATS: Tuple[CodeFormat, ...] = tuple(
             C_FORMAT,
             GN_FORMAT,
             GO_FORMAT,
-            JAVASCRIPT_FORMAT if shutil.which('npx') else None,
+            JAVASCRIPT_FORMAT if shutil.which('npm') else None,
             JAVA_FORMAT,
             JSON_FORMAT,
             MARKDOWN_FORMAT,
@@ -703,7 +703,7 @@ CODE_FORMATS: Tuple[CodeFormat, ...] = tuple(
             PROTO_FORMAT,
             PYTHON_FORMAT,
             RST_FORMAT,
-            TYPESCRIPT_FORMAT if shutil.which('npx') else None,
+            TYPESCRIPT_FORMAT if shutil.which('npm') else None,
             # keep-sorted: end
         ),
     )

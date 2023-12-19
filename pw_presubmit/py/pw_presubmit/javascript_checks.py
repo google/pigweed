@@ -39,6 +39,6 @@ def eslint(ctx: PresubmitContext):
         if npm_install.returncode != 0:
             raise PresubmitFailure('npm install failed.')
 
-    result = log_run(['npx', 'eslint@8.47.0', *ctx.paths])
+    result = log_run(['npm', 'exec', 'eslint', *ctx.paths])
     if result.returncode != 0:
         raise PresubmitFailure('eslint identifed issues.')

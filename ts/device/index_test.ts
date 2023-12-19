@@ -124,9 +124,8 @@ describe('WebSerialTransport', () => {
         ),
       );
     }, 10);
-    const [status, response] = await device.rpcs.pw.rpc.EchoService.Echo(
-      'hello',
-    );
+    const [status, response] =
+      await device.rpcs.pw.rpc.EchoService.Echo('hello');
     expect(response.getMsg()).toBe('hello');
     expect(status).toBe(0);
   });
