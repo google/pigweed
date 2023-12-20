@@ -26,10 +26,11 @@ message CpuArchitecture {
     ARMV6M = 1;
     ARMV7M = 2;
     ARMV8M = 3;
-    RVWMO = 4;
+    RV32E = 4;
     RV32I = 5;
-    RV64I = 6;
-    RV128I = 7;
+    RV64E = 6;
+    RV64I = 7;
+    RV128I = 8;
   }
 }
 
