@@ -1,14 +1,18 @@
 .. _module-pw_hdlc-api:
 
-======================
-pw_hdlc: API reference
-======================
+=============
+API reference
+=============
 .. pigweed-module-subpage::
    :name: pw_hdlc
-   :tagline: Lightweight, simple, and easy serial communication
+   :tagline: pw_hdlc: Simple, robust, and efficient serial communication
 
-This page describes the :ref:`module-pw_hdlc-api-encoder`, :ref:`module-pw_hdlc-api-decoder`,
-and :ref:`module-pw_hdlc-api-rpc` APIs of ``pw_hdlc``.
+The ``pw_hdlc`` API has 3 conceptual parts:
+
+* :ref:`module-pw_hdlc-api-encoder`: Encode data as HDLC unnumbered
+  information frames.
+* :ref:`module-pw_hdlc-api-decoder`: Decode HDLC frames from a stream of data.
+* :ref:`module-pw_hdlc-api-rpc`: Use RPC over HDLC.
 
 .. _module-pw_hdlc-api-encoder:
 
@@ -20,12 +24,11 @@ unnumbered information frame.
 .. tab-set::
 
    .. tab-item:: C++
+      :sync: cpp
 
       .. doxygenfunction:: pw::hdlc::WriteUIFrame(uint64_t address, ConstByteSpan data, stream::Writer &writer)
 
       Example:
-
-      .. TODO: b/279648188 - Share this code between api.rst and guide.rst.
 
       .. code-block:: cpp
 
@@ -45,14 +48,13 @@ unnumbered information frame.
          }
 
    .. tab-item:: Python
+      :sync: py
 
       .. automodule:: pw_hdlc.encode
          :members:
          :noindex:
 
       Example:
-
-      .. TODO: b/279648188 - Share this code between api.rst and guide.rst.
 
       .. code-block:: python
 
@@ -66,32 +68,31 @@ unnumbered information frame.
          ser.write(encode.ui_frame(address, b'your data here!'))
 
    .. tab-item:: TypeScript
+      :sync: ts
 
-      The Encoder class provides a way to build complete, escaped HDLC UI frames.
+      ``Encoder`` provides a way to build complete, escaped HDLC unnumbered
+      information frames.
 
       .. js:method:: Encoder.uiFrame(address, data)
          :noindex:
 
          :param number address: frame address.
          :param Uint8Array data: frame data.
-         :returns: Uint8Array containing a complete HDLC frame.
+         :returns: ``Uint8Array`` containing a complete HDLC frame.
 
 .. _module-pw_hdlc-api-decoder:
 
 Decoder
 =======
-
-
 .. tab-set::
 
    .. tab-item:: C++
+      :sync: cpp
 
       .. doxygenclass:: pw::hdlc::Decoder
          :members:
 
       Example:
-
-      .. TODO: b/279648188 - Share this code between api.rst and guide.rst.
 
       .. code-block:: cpp
 
@@ -115,14 +116,13 @@ Decoder
          }
 
    .. tab-item:: Python
+      :sync: py
 
       .. autoclass:: pw_hdlc.decode.FrameDecoder
          :members:
          :noindex:
 
       Example:
-
-      .. TODO: b/279648188 - Share this code between api.rst and guide.rst.
 
       .. code-block:: python
 
@@ -150,8 +150,9 @@ Decoder
         :noindex:
 
    .. tab-item:: TypeScript
+      :sync: ts
 
-      The decoder class unescapes received bytes and adds them to a buffer. Complete,
+      ``Decoder`` unescapes received bytes and adds them to a buffer. Complete,
       valid HDLC frames are yielded as they are received.
 
       .. js:method:: Decoder.process(data)
@@ -159,7 +160,7 @@ Decoder
 
          :param Uint8Array data: bytes to be decoded.
          :yields: HDLC frames, including corrupt frames.
-                  The Frame.ok() method whether the frame is valid.
+                  The ``Frame.ok()`` method whether the frame is valid.
 
       .. js:method:: processValidFrames(data)
          :noindex:
@@ -175,26 +176,28 @@ RPC
 .. tab-set::
 
    .. tab-item:: C++
+      :sync: cpp
 
-      The ``RpcChannelOutput`` implements pw_rpc's ``pw::rpc::ChannelOutput``
-      interface, simplifying the process of creating an RPC channel over HDLC. A
-      ``pw::stream::Writer`` must be provided as the underlying transport
+      ``RpcChannelOutput`` implements the ``pw::rpc::ChannelOutput`` interface
+      of ``pw_rpc``, simplifying the process of creating an RPC channel over HDLC.
+      A ``pw::stream::Writer`` must be provided as the underlying transport
       implementation.
 
       If your HDLC routing path has a Maximum Transmission Unit (MTU) limitation,
-      using the ``FixedMtuChannelOutput`` is strongly recommended to verify that the
-      currently configured max RPC payload size (dictated by pw_rpc's static encode
-      buffer) will always fit safely within the limits of the fixed HDLC MTU *after*
+      use the ``FixedMtuChannelOutput`` to verify that the currently configured
+      max RPC payload size (dictated by the static encode buffer of ``pw_rpc``)
+      will always fit safely within the limits of the fixed HDLC MTU *after*
       HDLC encoding.
 
    .. tab-item:: Python
+      :sync: py
 
       The ``pw_hdlc`` Python package includes utilities to HDLC-encode and
-      decode RPC packets, with examples of RPC Client implementations in Python.
+      decode RPC packets, with examples of RPC client implementations in Python.
       It also provides abstractions for interfaces used to receive RPC Packets.
 
       The ``pw_hdlc.rpc.CancellableReader`` and ``pw_hdlc.rpc.RpcClient``
-      classes and and derived classes are context-managed to cleanly cancel the
+      classes and derived classes are context-managed to cleanly cancel the
       read process and stop the reader thread. The ``pw_hdlc.rpc.SocketReader``
       and ``pw_hdlc.rpc.SerialReader`` also close the provided interface on
       context exit. It is recommended to use these in a context statement. For
@@ -264,3 +267,15 @@ RPC
       .. autoclass:: pw_hdlc.rpc.HdlcRpcLocalServerAndClient
          :members:
          :noindex:
+
+   .. tab-item:: TypeScript
+      :sync: ts
+
+      The TypeScript library doesn't have an RPC interface.
+
+-----------------
+More pw_hdlc docs
+-----------------
+.. include:: docs.rst
+   :start-after: .. pw_hdlc-nav-start
+   :end-before: .. pw_hdlc-nav-end

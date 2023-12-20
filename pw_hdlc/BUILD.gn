@@ -240,6 +240,7 @@ pw_doc_group("docs") {
     "docs.rst",
     "guide.rst",
     "rpc_example/docs.rst",
+    "size.rst",
   ]
   inputs = [
     "py/pw_hdlc/decode.py",

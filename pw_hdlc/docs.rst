@@ -7,96 +7,164 @@ pw_hdlc
 =======
 .. pigweed-module::
    :name: pw_hdlc
-   :tagline: Lightweight, simple, and easy serial communication
+   :tagline: Simple, robust, and efficient serial communication
    :status: stable
-   :languages: C++17
+   :languages: C++17, Python, TypeScript
    :code-size-impact: 1400 to 2600 bytes
 
-   - Transmit RPCs and other data between devices over serial
-   - Detect corruption and data loss
-   - Stream to transport without buffering
+   - **Simple**: Transmit RPCs and other data between devices over serial
+   - **Robust**: Detect corruption and data loss
+   - **Efficient**: Stream to transport without buffering
 
-----------
-Background
-----------
+.. include:: design.rst
+   :start-after: .. pw_hdlc-overview-start
+   :end-before: .. pw_hdlc-overview-end
 
-`High-Level Data Link Control (HDLC)
-<https://en.wikipedia.org/wiki/High-Level_Data_Link_Control>`_ is a data link
-layer protocol intended for serial communication between devices. HDLC is
-standardized as `ISO/IEC 13239:2002 <https://www.iso.org/standard/37010.html>`_.
+Encoding looks like this:
 
-------------
-Our solution
-------------
+.. pw_hdlc-encoding-example-start
 
-The ``pw_hdlc`` module provides a simple, robust frame-oriented transport that
-uses a subset of the HDLC protocol. ``pw_hdlc`` supports sending between
-embedded devices or the host. It can be used with :ref:`module-pw_rpc` to enable
-remote procedure calls (RPCs) on embedded on devices.
+.. tab-set::
 
-``pw_hdlc`` has two primary functions:
+   .. tab-item:: C++
+      :sync: cpp
 
-* **Encoding** data by constructing a frame with the escaped payload bytes and
-  frame check sequence.
-* **Decoding** data by unescaping the received bytes, verifying the frame
-  check sequence, and returning successfully decoded frames.
+      .. code-block:: cpp
 
-Design considerations
-=====================
+         // Writes a span of data to a pw::stream::Writer and returns the status. This
+         // implementation uses the pw_checksum module to compute the CRC-32 frame check
+         // sequence.
 
-* ``pw_hdlc`` only supports unnumbered information frames.
-* It uses special escaped bytes to mark the beginning and end of a frame.
-* Frame data is stored in a buffer until the end-of-frame delimiter byte is read.
+         #include "pw_hdlc/encoder.h"
+         #include "pw_hdlc/sys_io_stream.h"
 
-See :ref:`module-pw_hdlc-design` for more information.
+         int main() {
+           pw::stream::SysIoWriter serial_writer;
+           Status status = pw::hdlc::WriteUIFrame(123 /* address */, data, serial_writer);
+           if (!status.ok()) {
+             PW_LOG_INFO("Writing frame failed! %s", status.str());
+           }
+         }
 
-Size report
-===========
-``pw_hdlc`` currently optimizes for robustness and flexibility instead of
-binary size or performance.
+   .. tab-item:: Python
+      :sync: py
 
-There are two size reports: the first shows the cost of everything needed to
-use HDLC, including the dependencies on common modules like CRC32 from
-:ref:`module-pw_checksum` and variable-length integer handling from
-:ref:`module-pw_varint`. The other is the cost if your application is already
-linking those functions. ``pw_varint`` is commonly used since it's necessary
-for protocol buffer handling, so is often already present.
+      .. code-block:: python
 
-.. include:: size_report
+         # Read bytes from serial and encode HDLC frames
 
-Roadmap
-=======
-- **Expanded protocol support** - ``pw_hdlc`` currently only supports
-  unnumbered information frames. Support for different frame types and
-  extended control fields may be added in the future.
+         import serial
+         from pw_hdlc import encode
 
-.. _module-pw_hdlc-get-started:
+         ser = serial.Serial()
+         address = 123
+         ser.write(encode.ui_frame(address, b'your data here!'))
 
----------------
-Getting started
----------------
+.. pw_hdlc-encoding-example-end
 
-For an example of how to use HDLC with :ref:`module-pw_rpc`, see the
-:ref:`module-pw_hdlc-rpc-example`.
+And decoding looks like this:
 
-Example pw::rpc::system_server backend
-======================================
-This module includes an example implementation of ``pw_rpc``'s ``system_server``
-facade. This implementation sends HDLC encoded RPC packets via ``pw_sys_io``,
-and has blocking sends/reads, so it is hardly performance-oriented and
-unsuitable for performance-sensitive applications. This mostly servers as a
-simplistic example for quickly bringing up RPC over HDLC on bare-metal targets.
+.. pw_hdlc-decoding-example-start
 
-Zephyr
-======
-To enable ``pw_hdlc.pw_rpc`` for Zephyr add ``CONFIG_PIGWEED_HDLC_RPC=y`` to
-the project's configuration.
+.. tab-set::
+
+   .. tab-item:: C++
+      :sync: cpp
+
+      .. code-block:: cpp
+
+         // Read individual bytes from pw::sys_io and decode HDLC frames.
+
+         #include "pw_hdlc/decoder.h"
+         #include "pw_sys_io/sys_io.h"
+
+         int main() {
+           std::byte data;
+           std::array<std::byte, 128> decode_buffer;
+           pw::hdlc::Decoder decoder(decode_buffer);
+           while (true) {
+             if (!pw::sys_io::ReadByte(&data).ok()) {
+               // Log serial reading error
+             }
+             Result<Frame> decoded_frame = decoder.Process(data);
+
+             if (decoded_frame.ok()) {
+               // Handle the decoded frame
+             }
+           }
+         }
+
+   .. tab-item:: Python
+      :sync: py
+
+      .. code-block:: python
+
+         # Decode data read from serial
+
+         import serial
+         from pw_hdlc import decode
+
+         ser = serial.Serial()
+         decoder = decode.FrameDecoder()
+
+         while True:
+             for frame in decoder.process_valid_frames(ser.read()):
+                 # Handle the decoded frame
+
+.. pw_hdlc-decoding-example-end
+
+.. pw_hdlc-nav-start
+
+.. grid:: 1
+
+   .. grid-item-card:: :octicon:`rocket` Get started & guides
+      :link: module-pw_hdlc-guide
+      :link-type: ref
+      :class-item: sales-pitch-cta-primary
+
+      How to set up and use ``pw_hdlc``
+
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`code-square` API reference
+      :link: module-pw_hdlc-api
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Reference details about the ``pw_hdlc`` API
+
+   .. grid-item-card:: :octicon:`stack` Design
+      :link: module-pw_hdlc-design
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Design details about ``pw_hdlc``
+
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`graph` Code size analysis
+      :link: module-pw_hdlc-size
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      The code size impact of ``pw_hdlc``
+
+   .. grid-item-card:: :octicon:`list-ordered` RPC over HDLC example
+      :link: module-pw_hdlc-rpc-example
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      A step-by-step example of sending RPCs over HDLC
+
+.. pw_hdlc-nav-end
 
 .. toctree::
-  :maxdepth: 1
-  :hidden:
+   :maxdepth: 1
+   :hidden:
 
-  design
-  api
-  rpc_example/docs
-  guide
+   guide
+   api
+   design
+   size
+   rpc_example/docs
+   Source code <https://cs.opensource.google/pigweed/pigweed/+/main:pw_hdlc/>

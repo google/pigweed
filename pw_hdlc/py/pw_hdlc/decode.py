@@ -76,11 +76,11 @@ class Frame:
             self.data = raw_decoded[address_length + 1 : -4]
 
     def ok(self) -> bool:
-        """True if this represents a valid frame.
+        """``True`` if this represents a valid frame.
 
-        If false, then parsing failed. The status is set to indicate what type
-        of error occurred, and the data field contains all bytes parsed from the
-        frame (including bytes parsed as address or control bytes).
+        If ``False``, then parsing failed. The status is set to indicate what
+        type of error occurred, and the data field contains all bytes parsed
+        from the frame (including bytes parsed as address or control bytes).
         """
         return self.status is FrameStatus.OK
 
@@ -127,11 +127,12 @@ class FrameDecoder:
     def process(self, data: bytes) -> Iterable[Frame]:
         """Decodes and yields HDLC frames, including corrupt frames.
 
-        The ok() method on Frame indicates whether it is valid or represents a
-        frame parsing error.
+        The ``ok()`` method on ``Frame`` indicates whether it is valid or
+        represents a frame parsing error.
 
         Yields:
-          Frames, which may be valid (frame.ok()) or corrupt (!frame.ok())
+          Frames, which may be valid (``frame.ok()``) or corrupt
+          (``!frame.ok()``)
         """
         for byte in data:
             frame = self.process_byte(byte)
@@ -219,11 +220,12 @@ class FrameAndNonFrameDecoder:
           mtu: Maximum bytes to receive before flushing raw data. If a valid
               HDLC frame contains more than MTU bytes, the valid frame will be
               emitted, but part of the frame will be included in the raw data.
-          timeout_s: How long to wait before automatically flushing raw data. If
-              a timeout occurs partway through a valid frame, the frame will be
-              emitted, but part of the frame will be included in the raw data.
+          timeout_s: How long to wait before automatically flushing raw
+              data. If a timeout occurs partway through a valid frame, the frame
+              will be emitted, but part of the frame will be included in the raw
+              data.
           handle_shared_flags: Whether to permit HDLC frames to share a single
-              flag byte between frames. If False, partial HDLC frames may be
+              flag byte between frames. If ``False``, partial HDLC frames may be
               emitted as raw data when HDLC frames share a flag byte, but raw
               data won't have to wait for a timeout or full MTU to be flushed.
         """
@@ -266,7 +268,8 @@ class FrameAndNonFrameDecoder:
     def process(self, data: bytes) -> Iterable[Frame]:
         """Processes a stream of mixed HDLC and unstructured data.
 
-        Yields OK frames and calls non_frame_data_handler with non-HDLC data.
+        Yields OK frames and calls ``non_frame_data_handler()`` with non-HDLC
+        data.
         """
         with self._lock:
             for byte in data:

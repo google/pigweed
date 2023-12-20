@@ -11,7 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Utilities for using HDLC with pw_rpc."""
+"""Utilities for using HDLC with ``pw_rpc``."""
 
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
@@ -62,7 +62,9 @@ def channel_output(
     address: int = DEFAULT_ADDRESS,
     delay_s: float = 0,
 ) -> Callable[[bytes], None]:
-    """Returns a function that can be used as a channel output for pw_rpc."""
+    """
+    Returns a function that can be used as a channel output for ``pw_rpc``.
+    """
 
     if delay_s:
 
@@ -127,7 +129,8 @@ class CancellableReader(ABC):
 
 class SelectableReader(CancellableReader):
     """
-    Wraps interfaces that work with select() to signal when data is received.
+    Wraps interfaces that work with ``select()`` to signal when data is
+    received.
 
     These interfaces must provide a ``fileno()`` method.
     WINDOWS ONLY: Only sockets that originate from WinSock can be wrapped. File
@@ -159,7 +162,7 @@ class SelectableReader(CancellableReader):
         return b''
 
     def _wait_for_read_or_cancel(self) -> bool:
-        """Returns True when ready to read."""
+        """Returns ``True`` when ready to read."""
         with self._waiting_for_read_or_cancel_lock:
             if self._base_obj.fileno() < 0 or self._cancel_signal_pipe_r_fd < 0:
                 # The interface might've been closed already.
@@ -221,7 +224,7 @@ class SerialReader(CancellableReader):
 class DataReaderAndExecutor:
     """Reads incoming bytes, data processor that delegates frame handling.
 
-    Executing callbacks in a ThreadPoolExecutor decouples reading the input
+    Executing callbacks in a ``ThreadPoolExecutor`` decouples reading the input
     stream from handling the data. That way, if a handler function takes a
     long time or crashes, this reading thread is not interrupted.
     """
@@ -339,10 +342,10 @@ class RpcClient:
         """Creates an RPC client.
 
         Args:
-          reader_and_executor: DataReaderAndExecutor instance.
+          reader_and_executor: ``DataReaderAndExecutor`` instance.
           paths_or_modules: paths to .proto files or proto modules.
           channels: RPC channels to use for output.
-          client_impl: The RPC Client implementation. Defaults to the callback
+          client_impl: The RPC client implementation. Defaults to the callback
             client implementation if not provided.
         """
         if isinstance(paths_or_modules, python_protos.Library):
@@ -374,8 +377,8 @@ class RpcClient:
         """Returns object for accessing services on the specified channel.
 
         This skips some intermediate layers to make it simpler to invoke RPCs
-        from an HdlcRpcClient. If only one channel is in use, the channel ID is
-        not necessary.
+        from an ``HdlcRpcClient``. If only one channel is in use, the channel ID
+        is not necessary.
         """
         if channel_id is None:
             return next(iter(self.client.channels())).rpcs
@@ -415,12 +418,12 @@ class HdlcRpcClient(RpcClient):
           reader: Readable object used to receive RPC packets.
           paths_or_modules: paths to .proto files or proto modules.
           channels: RPC channels to use for output.
-          output: where to write "stdout" output from the device.
+          output: where to write ``stdout`` output from the device.
           client_impl: The RPC Client implementation. Defaults to the callback
             client implementation if not provided.
           rpc_frames_address: the address used in the HDLC frames for RPC
             packets. This can be the channel ID, or any custom address.
-          log_frames_address: the address used in the HDLC frames for "stdout"
+          log_frames_address: the address used in the HDLC frames for ``stdout``
             output from the device.
           extra_fram_handlers: Optional mapping of HDLC frame addresses to their
             callbacks.
@@ -576,7 +579,7 @@ class HdlcRpcLocalServerAndClient:
         incoming_processor: Optional[pw_rpc.ChannelManipulator] = None,
         outgoing_processor: Optional[pw_rpc.ChannelManipulator] = None,
     ) -> None:
-        """Creates a new HdlcRpcLocalServerAndClient."""
+        """Creates a new ``HdlcRpcLocalServerAndClient``."""
 
         self.server = SocketSubprocess(server_command, port)
 

@@ -81,13 +81,13 @@ class Decoder {
   ///
   /// @returns A `pw::Result` with the complete frame if the byte completes a
   /// frame. The status can be one of the following:
-  /// * `OK` - A frame was successfully decoded. The `Result` contains the
-  /// `Frame`, which is invalidated by the next `Process()` call.
-  /// * `UNAVAILABLE` - No frame is available.
-  /// * `RESOURCE_EXHAUSTED` - A frame completed, but it was too large to fit in
-  ///   the decoder's buffer.
-  /// * `DATA_LOSS` - A frame completed, but it was invalid. The frame was
-  ///   incomplete or the frame check sequence verification failed.
+  /// * @pw_status{OK} - A frame was successfully decoded. The `Result` contains
+  ///   the `Frame`, which is invalidated by the next `Process()` call.
+  /// * @pw_status{UNAVAILABLE} - No frame is available.
+  /// * @pw_status{RESOURCE_EXHAUSTED} - A frame completed, but it was too large
+  ///   to fit in the decoder's buffer.
+  /// * @pw_status{DATA_LOSS} - A frame completed, but it was invalid. The frame
+  ///   was incomplete or the frame check sequence verification failed.
   Result<Frame> Process(std::byte new_byte);
 
   // Returns the buffer space required for a `Decoder` to successfully decode a

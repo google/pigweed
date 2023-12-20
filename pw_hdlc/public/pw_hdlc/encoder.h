@@ -20,29 +20,28 @@
 namespace pw::hdlc {
 
 /// @brief Writes an HDLC unnumbered information frame (UI frame) to the
-/// provided `pw::stream` writer.
+/// provided ``pw::stream`` writer.
 ///
 /// @param address The frame address.
 ///
 /// @param payload The frame data to encode.
 ///
-/// @param writer The `pw::stream` to write the frame to. The frame contains
-/// the following bytes. See [pw_hdlc: Design](/pw_hdlc/design.html) for more
+/// @param writer The ``pw::stream`` to write the frame to. The frame contains
+/// the following bytes. See [Design](/pw_hdlc/design.html) for more
 /// information.
-/// * HDLC flag byte (`0x7e`)
+/// * HDLC flag byte (``0x7e``)
 /// * Address (variable length, up to 10 bytes)
 /// * UI-frame control (metadata) byte
 /// * Payload (0 or more bytes)
 /// * Frame check sequence (CRC-32, 4 bytes)
-/// * HDLC flag byte (`0x7e`)
+/// * HDLC flag byte (``0x7e``)
 ///
-/// @returns A [pw::Status](/pw_status/) instance describing the result of the
-/// operation:
-/// * `pw::Status::Ok()`: The write finished successfully.
-/// * `pw::Status::ResourceExhausted()`: The write failed because the size of
+/// @returns A ``pw::Status`` instance describing the result of the operation:
+/// * @pw_status{OK} - The write finished successfully.
+/// * @pw_status{RESOURCE_EXHAUSTED} - The write failed because the size of
 ///   the frame would be larger than the writer's conservative limit.
-/// * `pw::Status::InvalidArgument()`: The start of the write failed. Check
-///   for problems in your `address` argument's value.
+/// * @pw_status{INVALID_ARGUMENT} - The start of the write failed. Check
+///   for problems in your ``address`` argument's value.
 Status WriteUIFrame(uint64_t address,
                     ConstByteSpan payload,
                     stream::Writer& writer);

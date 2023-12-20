@@ -1,68 +1,121 @@
 .. _module-pw_hdlc-guide:
 
-=====================
-pw_hdlc: How-to guide
-=====================
+====================
+Get started & guides
+====================
 .. pigweed-module-subpage::
    :name: pw_hdlc
-   :tagline: Lightweight, simple, and easy serial communication
+   :tagline: pw_hdlc: Simple, robust, and efficient serial communication
 
-This page shows you how to use the :ref:`module-pw_hdlc-api-encoder` and
-:ref:`module-pw_hdlc-api-decoder` APIs of :ref:`module-pw_hdlc`.
+.. include:: design.rst
+   :start-after: .. pw_hdlc-overview-start
+   :end-before: .. pw_hdlc-overview-end
+
+.. _module-pw_hdlc-getstarted:
+
+------------------------
+Get started with pw_hdlc
+------------------------
+Depend on the library:
+
+.. tab-set::
+
+   .. tab-item:: Bazel
+      :sync: bazel
+
+      Add ``@pigweed//pw_hdlc`` to the ``deps`` list in your Bazel target:
+
+      .. code-block::
+
+         cc_library("...") {
+           # ...
+           deps = [
+             # ...
+             "@pigweed//pw_hdlc",
+             # ...
+           ]
+         }
+
+      This assumes that your Bazel ``WORKSPACE`` has a `repository
+      <https://bazel.build/concepts/build-ref#repositories>`_ named ``@pigweed``
+      that points to the upstream Pigweed repository.
+
+   .. tab-item:: GN
+      :sync: gn
+
+      Add ``$dir_pw_hdlc`` to the ``deps`` list in your ``pw_executable()``
+      build target:
+
+      .. code-block::
+
+         pw_executable("...") {
+           # ...
+           deps = [
+             # ...
+             "$dir_pw_hdlc",
+             # ...
+           ]
+         }
+
+
+   .. tab-item:: CMake
+      :sync: cmake
+
+      Add ``pw_hdlc`` to your ``pw_add_library`` or similar CMake target:
+
+      .. code-block::
+
+         pw_add_library(my_library STATIC
+           HEADERS
+             # ...
+           PRIVATE_DEPS
+             # ...
+             pw_hdlc
+             # ...
+         )
+
+   .. tab-item:: Zephyr
+      :sync: zephyr
+
+      There are two ways to use ``pw_hdlc`` from a Zephyr project:
+
+      * (Recommended) Depend on ``pw_hdlc`` in your CMake target. See the CMake
+        tab. The Pigweed team recommends this approach because it enables
+        precise CMake dependency analysis.
+
+      * Add ``CONFIG_PIGWEED_HDLC=y`` to your Zephyr project's configuration.
+        Also add ``CONFIG_PIGWEED_HDLC_RPC=y`` if using RPC. Although this is
+        the typical Zephyr solution, the Pigweed team doesn't recommend this
+        approach because it makes ``pw_hdlc`` a global dependency and exposes
+        its includes to all targets.
+
+And then :ref:`encode <module-pw_hdlc-guide-encode>` and
+:ref:`decode <module-pw_hdlc-guide-decode>` some data!
+
+Set up RPC over HDLC
+====================
+See :ref:`module-pw_hdlc-rpc-example`.
+
+.. _module-pw_hdlc-guide-encode:
 
 --------
 Encoding
 --------
-.. tab-set::
-
-   .. tab-item:: C++
-
-      ..
-        TODO: b/279648188 - Share this code between api.rst and guide.rst.
-
-      .. code-block:: cpp
-
-         // Writes a span of data to a pw::stream::Writer and returns the status. This
-         // implementation uses the pw_checksum module to compute the CRC-32 frame check
-         // sequence.
-
-         #include "pw_hdlc/encoder.h"
-         #include "pw_hdlc/sys_io_stream.h"
-
-         int main() {
-           pw::stream::SysIoWriter serial_writer;
-           Status status = WriteUIFrame(123 /* address */, data, serial_writer);
-           if (!status.ok()) {
-             PW_LOG_INFO("Writing frame failed! %s", status.str());
-           }
-         }
-
-   .. tab-item:: Python
-
-      ..
-        TODO: b/279648188 - Share this code between api.rst and guide.rst.
-
-      .. code-block:: python
-
-         # Read bytes from serial and encode HDLC frames
-
-         import serial
-         from pw_hdlc import encode
-
-         ser = serial.Serial()
-         address = 123
-         ser.write(encode.ui_frame(address, b'your data here!'))
+.. include:: docs.rst
+   :start-after: .. pw_hdlc-encoding-example-start
+   :end-before: .. pw_hdlc-encoding-example-end
 
 Allocating buffers when encoding
 ================================
 .. tab-set::
 
    .. tab-item:: C++
+      :sync: cpp
 
-      Since HDLC's encoding overhead changes with payload size and what data is being
-      encoded, this module provides helper functions that are useful for determining
-      the size of buffers by providing worst-case sizes of frames given a certain
-      payload size and vice-versa.
+      HDLC encoding overhead changes depending on the payload size and the
+      nature of the data being encoded. ``pw_hdlc`` provides helper functions
+      for determining the size of buffers. The helper functions provide
+      worst-case sizes of frames given a certain payload size and vice-versa.
 
       .. code-block:: cpp
 
@@ -83,65 +136,26 @@ Allocating buffers when encoding
            return rpc_encode_buffer;
          }
 
+.. _module-pw_hdlc-guide-decode:
+
 --------
 Decoding
 --------
-.. tab-set::
+.. include:: docs.rst
+   :start-after: .. pw_hdlc-decoding-example-start
+   :end-before: .. pw_hdlc-decoding-example-end
 
-   .. tab-item:: C++
-
-      ..
-        TODO: b/279648188 - Share this code between api.rst and guide.rst.
-
-      .. code-block:: cpp
-
-         // Read individual bytes from pw::sys_io and decode HDLC frames.
-
-         #include "pw_hdlc/decoder.h"
-         #include "pw_sys_io/sys_io.h"
-
-         int main() {
-           std::byte data;
-           while (true) {
-             if (!pw::sys_io::ReadByte(&data).ok()) {
-               // Log serial reading error
-             }
-             Result<Frame> decoded_frame = decoder.Process(data);
-
-             if (decoded_frame.ok()) {
-               // Handle the decoded frame
-             }
-           }
-         }
-
-   .. tab-item:: Python
-
-      ..
-        TODO: b/279648188 - Share this code between api.rst and guide.rst.
-
-      .. code-block:: python
-
-         # Decode data read from serial
-
-         import serial
-         from pw_hdlc import decode
-
-         ser = serial.Serial()
-         decoder = decode.FrameDecoder()
-
-         while True:
-             for frame in decoder.process_valid_frames(ser.read()):
-                 # Handle the decoded frame
 
 Allocating buffers when decoding
 ================================
 .. tab-set::
 
    .. tab-item:: C++
+      :sync: cpp
 
-      The HDLC ``Decoder`` has its own helper for allocating a buffer since it doesn't
-      need the entire escaped frame in-memory to decode, and therefore has slightly
-      lower overhead.
+      ``pw::hdlc::Decoder`` is a helper for allocating a buffer. It has slightly
+      lower overhead because it doesn't need to decode the entire escaped
+      frame in-memory.
 
       .. code-block:: cpp
 
@@ -154,3 +168,10 @@ Allocating buffers when decoding
          constexpr size_t kDecoderBufferSize =
              pw::hdlc::Decoder::RequiredBufferSizeForFrameSize(kMtu);
          pw::hdlc::DecoderBuffer<kDecoderBufferSize> decoder;
+
+-----------------
+More pw_hdlc docs
+-----------------
+.. include:: docs.rst
+   :start-after: .. pw_hdlc-nav-start
+   :end-before: .. pw_hdlc-nav-end
