@@ -781,17 +781,27 @@ def watch_setup(  # pylint: disable=too-many-locals
     if not exclude_list:
         exclude_list = []
     exclude_list += get_common_excludes()
-    # Add build directories to the exclude list.
-    exclude_list.extend(
+
+    # Add build directories to the exclude list if they are not already ignored.
+    for build_dir in list(
         cfg.build_dir.resolve()
         for cfg in build_recipes
         if isinstance(cfg.build_dir, Path)
-    )
+    ):
+        if not any(
+            # Check if build_dir.is_relative_to(excluded_dir)
+            build_dir == excluded_dir or excluded_dir in build_dir.parents
+            for excluded_dir in exclude_list
+        ):
+            exclude_list.append(build_dir)
 
     for i, build_recipe in enumerate(build_recipes, start=1):
         _LOG.info('Will build [%d/%d]: %s', i, len(build_recipes), build_recipe)
 
     _LOG.debug('Patterns: %s', patterns)
+
+    for excluded_dir in exclude_list:
+        _LOG.debug('exclude-list: %s', excluded_dir)
 
     if serve_docs:
         _serve_docs(
