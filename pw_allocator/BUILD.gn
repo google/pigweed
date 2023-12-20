@@ -154,6 +154,16 @@ pw_source_set("metrics") {
   sources = [ "metrics.cc" ]
 }
 
+pw_source_set("multiplex_allocator") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_allocator/multiplex_allocator.h" ]
+  public_deps = [
+    ":allocator",
+    ":allocator_metric_proxy",
+    dir_pw_metric,
+  ]
+}
+
 pw_source_set("null_allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/null_allocator.h" ]
@@ -214,6 +224,7 @@ pw_test_group("tests") {
     ":freelist_test",
     ":freelist_heap_test",
     ":libc_allocator_test",
+    ":multiplex_allocator_test",
     ":null_allocator_test",
     ":simple_allocator_test",
     ":split_free_list_allocator_test",
@@ -310,6 +321,15 @@ pw_test("freelist_heap_test") {
 pw_test("libc_allocator_test") {
   deps = [ ":libc_allocator" ]
   sources = [ "libc_allocator_test.cc" ]
+}
+
+pw_test("multiplex_allocator_test") {
+  deps = [
+    ":allocator_testing",
+    ":multiplex_allocator",
+    dir_pw_tokenizer,
+  ]
+  sources = [ "multiplex_allocator_test.cc" ]
 }
 
 pw_test("null_allocator_test") {

@@ -49,6 +49,8 @@ Provided implementations of the ``Allocator`` interface include:
   fails, to a secondary alloator.
 - ``LibCAllocator``: Uses ``malloc``, ``realloc``, and ``free``. This should
   only be used if the ``libc`` in use provides those functions.
+- ``MultiplexAllocator``: Abstract class that applications can use to dispatch
+  between allocators based on an application-specific request type identifier.
 - ``NullAllocator``: Always fails. This may be useful if allocations should be
   disallowed under specific circumstances.
 - ``SplitFreeListAllocator``: Tracks memory using ``Block``, and splits large

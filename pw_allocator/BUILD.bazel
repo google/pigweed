@@ -162,6 +162,19 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "multiplex_allocator",
+    hdrs = [
+        "public/pw_allocator/multiplex_allocator.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":allocator",
+        ":allocator_metric_proxy",
+        "//pw_metric:metric",
+    ],
+)
+
+pw_cc_library(
     name = "null_allocator",
     hdrs = [
         "public/pw_allocator/null_allocator.h",
@@ -341,6 +354,19 @@ pw_cc_test(
     ],
     deps = [
         ":libc_allocator",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "multiplex_allocator_test",
+    srcs = [
+        "multiplex_allocator_test.cc",
+    ],
+    deps = [
+        ":allocator_testing",
+        ":multiplex_allocator",
+        "//pw_tokenizer",
         "//pw_unit_test",
     ],
 )
