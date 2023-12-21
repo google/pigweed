@@ -1,4 +1,4 @@
-# Copyright 2022 The Pigweed Authors
+# Copyright 2023 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -17,7 +17,7 @@ import asyncio
 import ctypes
 import logging
 import threading
-from typing import Any, Dict, Optional, Union
+from typing import Any, Callable, Dict, Optional, Union
 
 from pw_rpc.callback_client import BidirectionalStreamingCall
 from pw_status import Status
@@ -40,6 +40,68 @@ except ImportError:
 _LOG = logging.getLogger(__package__)
 
 _TransferDict = Dict[int, Transfer]
+
+
+class _TransferStream:
+    def __init__(
+        self,
+        method,
+        chunk_handler: Callable[[Chunk], Any],
+        error_handler: Callable[[Status], Any],
+        max_reopen_attempts=3,
+    ):
+        self._method = method
+        self._chunk_handler = chunk_handler
+        self._error_handler = error_handler
+        self._call: Optional[BidirectionalStreamingCall] = None
+        self._reopen_attempts = 0
+        self._max_reopen_attempts = max_reopen_attempts
+
+    def is_open(self) -> bool:
+        return self._call is not None
+
+    def open(self, force: bool = False) -> None:
+        if force or self._call is None:
+            self._call = self._method.invoke(
+                lambda _, chunk: self._on_chunk_received(chunk),
+                on_error=lambda _, status: self._on_stream_error(status),
+            )
+
+    def close(self) -> None:
+        if self._call is not None:
+            self._call.cancel()
+            self._call = None
+
+    def send(self, chunk: Chunk) -> None:
+        assert self._call is not None
+        self._call.send(chunk.to_message())
+
+    def _on_chunk_received(self, chunk: Chunk) -> None:
+        self._reopen_attempts = 0
+        self._chunk_handler(chunk)
+
+    def _on_stream_error(self, rpc_status: Status) -> None:
+        if rpc_status is Status.FAILED_PRECONDITION:
+            # FAILED_PRECONDITION indicates that the stream packet was not
+            # recognized as the stream is not open. Attempt to re-open the
+            # stream to allow pending transfers to continue.
+            self._reopen_attempts += 1
+            if self._reopen_attempts > self._max_reopen_attempts:
+                _LOG.error(
+                    'Failed to reopen transfer stream after %d tries',
+                    self._max_reopen_attempts,
+                )
+                self._error_handler(Status.UNAVAILABLE)
+            else:
+                _LOG.info(
+                    'Transfer stream failed to write; attempting to re-open'
+                )
+                self.open(force=True)
+        else:
+            # Other errors are unrecoverable; clear the stream.
+            _LOG.error('Transfer stream shut down with status %s', rpc_status)
+            self._call = None
+            self._error_handler(rpc_status)
 
 
 class Manager:  # pylint: disable=too-many-instance-attributes
@@ -86,11 +148,6 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         self._write_transfers: _TransferDict = {}
         self._next_session_id = ctypes.c_uint32(1)
 
-        # RPC streams for read and write transfers. These are shareable by
-        # multiple transfers of the same type.
-        self._read_stream: Optional[BidirectionalStreamingCall] = None
-        self._write_stream: Optional[BidirectionalStreamingCall] = None
-
         self._loop = asyncio.new_event_loop()
         # Set the event loop for the current thread.
         asyncio.set_event_loop(self._loop)
@@ -104,6 +161,23 @@ class Manager:  # pylint: disable=too-many-instance-attributes
 
         self._thread = threading.Thread(
             target=self._start_event_loop_thread, daemon=True
+        )
+
+        # RPC streams for read and write transfers. These are shareable by
+        # multiple transfers of the same type.
+        self._read_stream = _TransferStream(
+            self._service.Read,
+            lambda chunk: self._loop.call_soon_threadsafe(
+                self._read_chunk_queue.put_nowait, chunk
+            ),
+            self._on_read_error,
+        )
+        self._write_stream = _TransferStream(
+            self._service.Write,
+            lambda chunk: self._loop.call_soon_threadsafe(
+                self._write_chunk_queue.put_nowait, chunk
+            ),
+            self._on_write_error,
         )
 
         self._thread.start()
@@ -158,7 +232,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         transfer = ReadTransfer(
             session_id,
             resource_id,
-            self._send_read_chunk,
+            self._read_stream.send,
             self._end_read_transfer,
             chunk_timeout_s,
             initial_timeout_s,
@@ -225,7 +299,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
             session_id,
             resource_id,
             data,
-            self._send_write_chunk,
+            self._write_stream.send,
             self._end_write_transfer,
             chunk_timeout_s,
             initial_timeout_s,
@@ -240,14 +314,6 @@ class Manager:  # pylint: disable=too-many-instance-attributes
 
         if not transfer.status.ok():
             raise Error(transfer.resource_id, transfer.status)
-
-    def _send_read_chunk(self, chunk: Chunk) -> None:
-        assert self._read_stream is not None
-        self._read_stream.send(chunk.to_message())
-
-    def _send_write_chunk(self, chunk: Chunk) -> None:
-        assert self._write_stream is not None
-        self._write_stream.send(chunk.to_message())
 
     def assign_session_id(self) -> int:
         new_id = self._next_session_id.value
@@ -352,71 +418,29 @@ class Manager:  # pylint: disable=too-many-instance-attributes
 
         await transfer.handle_chunk(chunk)
 
-    def _open_read_stream(self) -> None:
-        self._read_stream = self._service.Read.invoke(
-            lambda _, chunk: self._loop.call_soon_threadsafe(
-                self._read_chunk_queue.put_nowait, chunk
-            ),
-            on_error=lambda _, status: self._on_read_error(status),
-        )
-
     def _on_read_error(self, status: Status) -> None:
         """Callback for an RPC error in the read stream."""
 
-        if status is Status.FAILED_PRECONDITION:
-            # FAILED_PRECONDITION indicates that the stream packet was not
-            # recognized as the stream is not open. This could occur if the
-            # server resets during an active transfer. Re-open the stream to
-            # allow pending transfers to continue.
-            self._open_read_stream()
-        else:
-            # Other errors are unrecoverable. Clear the stream and cancel any
-            # pending transfers with an INTERNAL status as this is a system
-            # error.
-            self._read_stream = None
+        for transfer in self._read_transfers.values():
+            transfer.finish(Status.INTERNAL, skip_callback=True)
+        self._read_transfers.clear()
 
-            for transfer in self._read_transfers.values():
-                transfer.finish(Status.INTERNAL, skip_callback=True)
-            self._read_transfers.clear()
-
-            _LOG.error('Read stream shut down: %s', status)
-
-    def _open_write_stream(self) -> None:
-        self._write_stream = self._service.Write.invoke(
-            lambda _, chunk: self._loop.call_soon_threadsafe(
-                self._write_chunk_queue.put_nowait, chunk
-            ),
-            on_error=lambda _, status: self._on_write_error(status),
-        )
+        _LOG.error('Read stream shut down: %s', status)
 
     def _on_write_error(self, status: Status) -> None:
         """Callback for an RPC error in the write stream."""
 
-        if status is Status.FAILED_PRECONDITION:
-            # FAILED_PRECONDITION indicates that the stream packet was not
-            # recognized as the stream is not open. This could occur if the
-            # server resets during an active transfer. Re-open the stream to
-            # allow pending transfers to continue.
-            self._open_write_stream()
-        else:
-            # Other errors are unrecoverable. Clear the stream and cancel any
-            # pending transfers with an INTERNAL status as this is a system
-            # error.
-            self._write_stream = None
+        for transfer in self._write_transfers.values():
+            transfer.finish(Status.INTERNAL, skip_callback=True)
+        self._write_transfers.clear()
 
-            for transfer in self._write_transfers.values():
-                transfer.finish(Status.INTERNAL, skip_callback=True)
-            self._write_transfers.clear()
-
-            _LOG.error('Write stream shut down: %s', status)
+        _LOG.error('Write stream shut down: %s', status)
 
     def _start_read_transfer(self, transfer: Transfer) -> None:
         """Begins a new read transfer, opening the stream if it isn't."""
 
         self._read_transfers[transfer.resource_id] = transfer
-
-        if not self._read_stream:
-            self._open_read_stream()
+        self._read_stream.open()
 
         _LOG.debug('Starting new read transfer %d', transfer.id)
         self._loop.call_soon_threadsafe(
@@ -434,19 +458,15 @@ class Manager:  # pylint: disable=too-many-instance-attributes
                 transfer.status,
             )
 
-        # TODO(frolv): This doesn't seem to work. Investigate why.
         # If no more transfers are using the read stream, close it.
-        # if not self._read_transfers and self._read_stream:
-        #     self._read_stream.cancel()
-        #     self._read_stream = None
+        if not self._read_transfers:
+            self._read_stream.close()
 
     def _start_write_transfer(self, transfer: Transfer) -> None:
         """Begins a new write transfer, opening the stream if it isn't."""
 
         self._write_transfers[transfer.resource_id] = transfer
-
-        if not self._write_stream:
-            self._open_write_stream()
+        self._write_stream.open()
 
         _LOG.debug('Starting new write transfer %d', transfer.id)
         self._loop.call_soon_threadsafe(
@@ -464,11 +484,9 @@ class Manager:  # pylint: disable=too-many-instance-attributes
                 transfer.status,
             )
 
-        # TODO(frolv): This doesn't seem to work. Investigate why.
         # If no more transfers are using the write stream, close it.
-        # if not self._write_transfers and self._write_stream:
-        #     self._write_stream.cancel()
-        #     self._write_stream = None
+        if not self._write_transfers:
+            self._write_stream.close()
 
 
 class Error(Exception):
