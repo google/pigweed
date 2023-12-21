@@ -174,6 +174,19 @@ Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
    through the process. The SEED facilitator will be added as a reviewer on
    your SEED and will be your primary point of contact on the Pigweed team.
 
+   Update the status of your SEED to ``"Open for Comments"`` and set the
+   assigned facilitator in its build target.
+
+   .. code-block::
+
+      pw_seed("5309") {
+        changelist = 987654
+        title = "pw_rpc Over Smoke Signals"
+        status = "Open for Comments"
+        author = "Your Name"
+        author = "Your Facilitator"
+      }
+
 #. Create a thread for your SEED in the ``#seed`` channel of Pigweed's
    `Discord server <https://discord.gg/M9NSeTA>`_.
 

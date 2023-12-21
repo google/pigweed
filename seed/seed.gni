@@ -78,6 +78,8 @@ template("pw_seed_index") {
 #
 #  authors (required): Comma-separated list of SEED authors.
 #
+#  facilitator (optional): Pigweed team member facilitating the SEED.
+#
 #  status (required): Status of the SEED. One of:
 #      Draft, Open for Comments, Last Call, Accepted, Rejected, On Hold,
 #      Deprecated, Superseded, Meta
@@ -99,6 +101,10 @@ template("pw_seed") {
     title = invoker.title
     status = invoker.status
     author = invoker.author
+
+    if (defined(invoker.facilitator)) {
+      facilitator = invoker.facilitator
+    }
   }
 
   if (_has_sources) {

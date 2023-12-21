@@ -67,6 +67,7 @@ def _main():
         '     - Title',
         '     - Status',
         '     - Author',
+        '     - Facilitator',
     ]
 
     # RST toctree including each SEED's source file.
@@ -91,12 +92,15 @@ def _main():
                 title = f':ref:`{meta["title"]} <seed-{meta["number"]}>`'
                 seed_toctree.append(Path(meta["rst_file"]).stem)
 
+            facilitator = meta.get('facilitator', 'Unassigned')
+
             seed_table.extend(
                 [
                     f'   * - {meta["number"]}',
                     f'     - {title}',
                     f'     - {_status_badge(meta["status"])}',
                     f'     - {meta["author"]}',
+                    f'     - {facilitator}',
                 ]
             )
 
