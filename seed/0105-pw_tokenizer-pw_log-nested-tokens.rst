@@ -353,7 +353,7 @@ single byte for most enums.
   recovered unless an entire project is converted to log ``pw::Status``
   as tokens.
 
-  .. code:: cpp
+  .. code-block:: cpp
 
     #include "pw_log/log.h"
     #include "pw_log/tokenized_args.h"
