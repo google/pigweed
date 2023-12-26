@@ -39,7 +39,7 @@ Get started
       Build a target and then use ``pw emu run`` to run the target binaries on
       the host. Continuing with the example:
 
-      .. code:: console
+      .. code-block:: console
 
          ninja -C out qemu_gcc
          pw emu run --args=-no-reboot qemu-lm3s6965evb \
