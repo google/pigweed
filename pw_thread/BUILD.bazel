@@ -341,6 +341,13 @@ pw_cc_test(
     srcs = [
         "test_thread_context_facade_test.cc",
     ],
+    # TODO: b/317922402 - On Windows, this test can easily hang indefinitely.
+    # Disable on Windows until we can test with the native Windows SDK libraries
+    # for threading.
+    target_compatible_with = select({
+        "@platforms//os:windows": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":test_thread_context",
         ":thread",

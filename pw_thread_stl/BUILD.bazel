@@ -106,7 +106,12 @@ pw_cc_library(
 
 pw_cc_test(
     name = "thread_backend_test",
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    # TODO: b/317922402 - On Windows, this test can easily hang indefinitely.
+    # Disable on Windows until we can test with the native Windows SDK libraries
+    # for threading.
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT | {
+        "@platforms//os:windows": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":non_portable_test_thread_options",
         "//pw_thread:thread_facade_test",
