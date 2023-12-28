@@ -163,7 +163,10 @@ pw_test_group("tests") {
 }
 
 pw_test("test_thread_context_facade_test") {
-  enable_if = pw_thread_TEST_THREAD_CONTEXT_BACKEND != ""
+  # TODO: b/317922402 - On Windows, this test can easily hang indefinitely.
+  # Disable on Windows until we can test with the native Windows SDK libraries
+  # for threading.
+  enable_if = pw_thread_TEST_THREAD_CONTEXT_BACKEND != "" && current_os != "win"
   sources = [ "test_thread_context_facade_test.cc" ]
   deps = [
     ":test_thread_context",

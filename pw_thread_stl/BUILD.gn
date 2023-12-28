@@ -160,8 +160,11 @@ pw_source_set("non_portable_test_thread_options") {
 }
 
 pw_test("thread_backend_test") {
+  # TODO: b/317922402 - On Windows, this test can hang indefinitely. Disable on
+  # Windows until we can test with the native Windows SDK libraries for
+  # threading.
   enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread" &&
-              pw_thread_SLEEP_BACKEND != ""
+              pw_thread_SLEEP_BACKEND != "" && current_os != "win"
   deps = [
     ":non_portable_test_thread_options",
     "$dir_pw_thread:thread_facade_test",
