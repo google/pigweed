@@ -20,9 +20,7 @@
 //! should prefer depending `pw_tokenizer` instead of this crate.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use core::num::Wrapping;
-
-pub const HASH_CONSTANT: Wrapping<u32> = Wrapping(65599u32);
+pub const HASH_CONSTANT: u32 = 65599u32;
 
 /// Calculate the hash for a sequence of bytes.
 ///
@@ -32,7 +30,7 @@ pub const HASH_CONSTANT: Wrapping<u32> = Wrapping(65599u32);
 /// let hash = hash_bytes(&[0x34, 0xd8, 0x3a, 0xbb, 0xf1, 0x0e, 0x07]);
 /// assert_eq!(hash, 0x9e624642);
 /// ```
-pub fn hash_bytes(bytes: &[u8]) -> u32 {
+pub const fn hash_bytes(bytes: &[u8]) -> u32 {
     hash_bytes_fixed(bytes, bytes.len())
 }
 
@@ -44,27 +42,30 @@ pub fn hash_bytes(bytes: &[u8]) -> u32 {
 /// let hash = hash_bytes_fixed(&[0x34, 0xd8, 0x3a, 0xbb, 0xf1, 0x0e, 0x07], 4);
 /// assert_eq!(hash, 0x92c5d2ac);
 /// ```
-pub fn hash_bytes_fixed(bytes: &[u8], len: usize) -> u32 {
+pub const fn hash_bytes_fixed(bytes: &[u8], len: usize) -> u32 {
     // The length is hashed as if it were the first byte.
-    let mut hash = Wrapping(bytes.len() as u32);
+    let mut hash = bytes.len() as u32;
     let mut coefficient = HASH_CONSTANT;
 
     // Fixed sized hashes are seeded with the total length of the slice
     // but only hash over at most `len` bytes.
     let bytes = if bytes.len() > len {
-        &bytes[0..len]
+        bytes.split_at(len).0
     } else {
         bytes
     };
 
-    // Hash all of the bytes in the slice as u32s.  Wrapping arithmetic
-    // is used intentionally as part of the hashing algorithm.
-    for b in bytes {
-        hash += coefficient * Wrapping(*b as u32);
-        coefficient *= HASH_CONSTANT;
+    // For loops are not allowed in const functions.
+    let mut i = 0;
+    while i < bytes.len() {
+        // We call `u32::wrapping_*` instead of using `core::num::Wrapping` to
+        // avoid using traits in a const function.
+        hash = hash.wrapping_add(coefficient.wrapping_mul(bytes[i] as u32));
+        coefficient = coefficient.wrapping_mul(HASH_CONSTANT);
+        i += 1;
     }
 
-    hash.0
+    hash
 }
 
 /// Calculate the hash for a string.
