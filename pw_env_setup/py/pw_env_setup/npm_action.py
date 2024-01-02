@@ -39,5 +39,6 @@ def run_action(env=None):
                 "--loglevel=error",
             ],
             stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             cwd=repo_root,
         )
