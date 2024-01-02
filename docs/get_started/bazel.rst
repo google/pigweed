@@ -77,6 +77,26 @@ Build the project
       INFO: 40 processes: 3 internal, 37 linux-sandbox.
       INFO: Build completed successfully, 40 total actions
 
+Troubleshooting: ``Network is unreachable (connect failed)``
+============================================================
+.. _bazelbuild/bazel#2486: https://github.com/bazelbuild/bazel/issues/2486#issuecomment-1870698756
+
+If your build fails and you see a ``Network is unreachable (connect failed)``
+error, check if you're on an IPv6 network. If you are, try switching to an IPv4
+network. See `bazelbuild/bazel#2486`_.
+
+.. code-block:: console
+
+   bazel build //...
+   Starting local Bazel server and connecting to it...
+   INFO: Repository platforms instantiated at:
+     /home/kayce/sandbox/echo/WORKSPACE:21:13: in <toplevel>
+   Repository rule http_archive defined at:
+     /home/kayce/.cache/bazel/_bazel_kayce/5b77aa1b33d7b7c439479c603973101b/external/bazel_tools/tools/build_defs/repo/http.bzl:372:31: in <toplevel>
+   WARNING: Download from https://mirror.bazel.build/github.com/bazelbuild/platforms/releases/download/0.0.8/platforms-0.0.8.tar.gz failed: class java.net.ConnectException Network is unreachable (connect failed)
+   WARNING: Download from https://github.com/bazelbuild/platforms/releases/download/0.0.8/platforms-0.0.8.tar.gz failed: class java.net.ConnectException Network is unreachable (connect failed)
+   ...
+
 -----------------------
 Run the project locally
 -----------------------
