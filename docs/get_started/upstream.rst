@@ -17,11 +17,18 @@ This guide will walk you through the typical upstream development workflow.
   <https://discord.gg/M9NSeTA>`_ or send a note to the `mailing list
   <https://groups.google.com/forum/#!forum/pigweed>`_.
 
-Express setup
+.. _prerequisites:
+
+Prerequisites
 =============
+If you haven't already, :ref:`docs-first-time-setup`.
+
+-------------
+Express setup
+-------------
 If you'd like to skip the detailed explanations, below is the shorter version
-of getting setup for Pigweed. If you run into trouble, look at the more
-in-depth guide below, starting at :ref:`prerequisites`. The express setup
+of getting setup for Pigweed. If you run into trouble, ensure you've followed
+all the steps to :ref:`docs-first-time-setup`. The express setup
 configures Pigweed's watcher for three targets to give a taste of Pigweed:
 
 #. **Host** - Mac, Linux, or Windows. Builds and runs tests
@@ -94,63 +101,9 @@ part does.
 ``activate.bat`` on Windows) to re-activate the environment without
 re-bootstrapping.
 
-.. _prerequisites:
-
-Prerequisites
--------------
-**Linux**
-
-Most Linux installations should work out of box, and not require any manual
-installation of prerequisites beyond basics like ``git`` and
-``build-essential`` (or the equivalent for your distro).
-
-.. inclusive-language: disable
-
-To flash devices using OpenOCD, you may need to extend your system udev rules
-at ``/etc/udev/rules.d/``. The OpenOCD repository has a good
-`example udev rules file <https://github.com/openocd-org/openocd/blob/master/contrib/60-openocd.rules>`_
-that includes many popular hardware debuggers.
-
-.. inclusive-language: enable
-
-**macOS**
-
-To start using Pigweed on MacOS, you'll need to install XCode. Download it
-via the App Store, then install the relevant tools from the command line.
-
-.. code-block:: none
-
-  $ xcode-select --install
-
-If you get SSL certificate errors, try installing
-`Python 3.11.3 <https://www.python.org/downloads/release/python-3113/>`
-and then running ``/Applications/Python\ 3.11/Install\ Certificates.command``.
-
-**Windows**
-
-To start using Pigweed on Windows, you'll need to do the following:
-
-* Install `Git <https://git-scm.com/download/win>`_. Git must be installed to
-  run from the command line and third-party software or be added to ``PATH``.
-  Also, ensure that the **Enable symbolic links** option is selected.
-* Install `Python <https://www.python.org/downloads/windows/>`_.
-* Ensure that `Developer Mode
-  <https://docs.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development>`_
-  is enabled.
-* Enable long file paths. This can be done using ``regedit`` or by running the
-  following command as an administrator:
-
-  .. code-block:: bat
-
-     REG ADD HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem /v LongPathsEnabled /t REG_DWORD /d 1 /f
-
-
-If you plan to flash devices with firmware, you'll need to install OpenOCD and
-ensure it's on your system path.
-
+---------
 Bootstrap
-=========
-
+---------
 Once you satisfied the prerequisites, you will be able to clone Pigweed and
 run the bootstrap that initializes the Pigweed virtual environment. The
 bootstrap may take several minutes to complete, so please be patient.
@@ -182,8 +135,9 @@ Congratulations, you are now set up to start using Pigweed!
 
 .. _activate-pigweed-environment:
 
+---------------------------------
 Activate your Pigweed Environment
-=================================
+---------------------------------
 After going through the initial setup process, your current terminal will be in
 the Pigweed development environment that provides all the tools you should need
 to develop on Pigweed. If you leave that session, you can activate the
@@ -204,8 +158,9 @@ environment in a new session with the following command:
 Some major changes may require triggering the bootstrap again, so if you run
 into host tooling changes after a pull it may be worth re-running bootstrap.
 
+----------------------
 Build Pigweed for Host
-======================
+----------------------
 Pigweed's primary build system is GN/Ninja based. There are CMake and Bazel
 builds in-development, but they are incomplete and don't have feature parity
 with the GN build. We strongly recommend you stick to the GN build system.
@@ -264,8 +219,9 @@ See below for a demo of this in action:
   :width: 800
   :alt: build example using pw watch
 
+------------------
 Running Unit Tests
-==================
+------------------
 Fun fact, you've been running the unit tests already! Ninja builds targeting
 the host automatically build and run the unit tests. Unit tests err on the side
 of being quiet in the success case, and only output test results when there's a
@@ -292,8 +248,9 @@ Try running the ``pw_status`` test manually:
 Depending on your host OS, the compiler will default to either ``clang`` or
 ``gcc``.
 
+---------------------
 Building for a Device
-=====================
+---------------------
 A Pigweed "target" is a build configuration that includes a toolchain, default
 library configurations, and more to result in binaries that run natively on the
 target. With the default build invocation, you're already building for a device
@@ -312,8 +269,9 @@ This is equivalent to the following Ninja invocation:
 
   $ ninja -C out stm32f429i
 
+-------------------------
 Running Tests on a Device
-=========================
+-------------------------
 While tests run automatically on the host, it takes a few more steps to get
 tests to run automatically on a device, too. Even though we've verified tests
 pass on the host, it's crucial to verify the same with on-device testing. We've
@@ -321,7 +279,7 @@ encountered some unexpected bugs that can only be found by running the unit
 tests directly on the device.
 
 1. Connect Device(s)
---------------------
+====================
 Connect any number of STM32F429I-DISC1 boards to your computer using the mini
 USB port on the board (**not** the micro USB). Pigweed will automatically
 detect the boards and distribute the tests across the devices. More boards =
@@ -335,7 +293,7 @@ and dialout groups.
   :alt: development boards connected via USB
 
 2. Launch Test Server
----------------------
+=====================
 To allow Ninja to run tests on an arbitrary number of devices, Ninja will send
 test requests to a server running in the background. Launch the server in
 another window using the command below (remember, you'll need to activate the
@@ -349,7 +307,7 @@ Pigweed environment first).
 need to relaunch this server.
 
 3. Configure GN
----------------
+===============
 Tell GN to use the testing server by enabling a build arg specific to the
 stm32f429i-disc1 target.
 
@@ -361,7 +319,7 @@ stm32f429i-disc1 target.
   pw_use_test_server = true
 
 Done!
------
+=====
 Whenever you make code changes and trigger a build, all the affected unit tests
 will be run across the attached boards!
 
@@ -371,8 +329,9 @@ See the demo below for an example of what this all looks like put together:
   :width: 800
   :alt: pw watch running on-device tests
 
+--------------------------
 Building the Documentation
-==========================
+--------------------------
 In addition to the markdown documentation, Pigweed has a collection of
 information-rich RST files that are used to generate HTML documentation. All
 the docs are hosted at https://pigweed.dev/, and are built as a part of the
@@ -388,8 +347,9 @@ You can explicitly build just the documentation with the command below.
 
 This concludes the introduction to developing for upstream Pigweed.
 
+---------------------------
 Building Tests Individually
-===========================
+---------------------------
 Sometimes it's faster to incrementally build a single test target rather than
 waiting for the whole world to build and all tests to run. GN has a built-in
 tool, ``gn outputs``, that will translate a GN build step into a Ninja build
@@ -417,11 +377,11 @@ In macOS and Linux, ``xargs`` can be used to turn this into a single command:
 
   $ gn outputs out "//pw_status:status_test.run(//targets/host/pigweed_internal:pw_strict_host_clang_debug)" | xargs ninja -C out
 
+----------
 Next steps
-==========
-
+----------
 Editor setup
------------------------
+============
 Check out the :ref:`module-pw_ide` for setting up editor configurations or run
 the following for a quick setup:
 
@@ -430,19 +390,19 @@ the following for a quick setup:
   pw ide sync
 
 Check out other modules
------------------------
+=======================
 If you'd like to see more of what Pigweed has to offer, dive into the
 :ref:`docs-module-guides`.
 
 Check out the sample project
-----------------------------
+============================
 We have a `sample project
 <https://pigweed.googlesource.com/pigweed/sample_project/+/main/README.md>`_
 that demonstrates how to use Pigweed in your own project. Note that there are
 many ways to leverage Pigweed and the sample project is one approach.
 
 Check out the Hackaday Supercon talk about Pigweed
---------------------------------------------------
+==================================================
 We gave a talk at Hackaday's 2021 supercon, `Give Pigweed a Whirl
 <https://hackaday.com/2021/01/13/remoticon-video-pigweed-brings-embedded-unit-testing-library-integration-to-commandline/>`_
 
@@ -450,7 +410,7 @@ We've made improvements since we gave the talk; for example, we now have RTOS
 primitives.
 
 Set up Pigweed for your own project
-------------------------------------
+===================================
 We don't yet have thorough documentation for leveraging Pigweed in a separate
 project (our intended use case!). The `sample project
 <https://pigweed.googlesource.com/pigweed/sample_project/+/main/README.md>`_

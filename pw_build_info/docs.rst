@@ -15,6 +15,8 @@ local changes were present when the binary was built, and more. pw_build_info
 simplifies the process of integrating rich version metadata to answer more
 complex questions about compiled binaries.
 
+.. _module-pw_build_info-gnu-build-ids:
+
 -------------
 GNU build IDs
 -------------
