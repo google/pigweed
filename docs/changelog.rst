@@ -14,10 +14,169 @@ Discuss what's new with the Pigweed team
 .. _docs-changelog-latest:
 
 ------------
-Dec 15, 2023
+Dec 29, 2023
 ------------
 .. changelog_highlights_start
 
+Highlights (Dec 15, 2023 to Dec 29, 2023):
+
+* The new ``pw::allocator::MultiplexAllocator`` abstract class makes it easier
+  to dispatch between allocators depending on an app-specific request type ID.
+* ``pw_base64`` now has initial Rust support.
+* ``pw_malloc_freertos``, a new FreeRTOS backend for :ref:`module-pw_malloc`,
+  was added.
+* The new ``pw::digital_io::Polarity`` helper enum makes it easier for backends
+  to map logical levels to physical levels.
+* The Rust macro ``tokenize_to_buffer!`` in the ``pw_tokenizer`` Rust crate now
+  supports concatenation of format strings via the ``PW_FMT_CONCAT`` operator.
+* The :ref:`module-pw_hdlc` and :ref:`module-pw_result` docs were updated to
+  follow our latest :ref:`docs-contrib-moduledocs`.
+
+.. changelog_highlights_end
+
+Active SEEDs
+============
+Help shape the future of Pigweed! Please visit :ref:`seed-0000`
+and leave feedback on the RFCs (i.e. SEEDs) marked
+``Open for Comments``.
+
+Modules
+=======
+
+pw_allocator
+------------
+The new ``pw::allocator::MultiplexAllocator`` abstract class makes it easier to
+dispatch between allocators depending on an app-specific request type ID.
+
+* `Add MultiplexAllocator
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/185027>`__
+* `Add WithMetrics interface
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/185296>`__
+* `Split up test utilities
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/185295>`__
+
+pw_base64
+---------
+``pw_base64`` now has initial Rust support. See `Crate pw_base64
+</rustdoc/pw_base64/>`_.
+
+* `Add initial Rust support
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/185210>`__
+
+pw_containers
+-------------
+* `Remove DestructorHelper from queues
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/185030>`__
+  (issue `#301329862 <https://issues.pigweed.dev/issues/301329862>`__)
+
+pw_digital_io
+-------------
+`pw::digital_io::Polarity <https://cs.opensource.google/pigweed/pigweed/+/main:pw_digital_io/public/pw_digital_io/polarity.h>`_
+was added to make it easier for backends to map logical levels to physical levels.
+
+* `Add helper Polarity enum
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/185435>`__
+
+pw_emu
+------
+* `Use code-block instead of code
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/186170>`__
+
+pw_hdlc
+-------
+* `Follow new module docs guidelines
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/184799>`__
+
+pw_malloc
+---------
+``pw_malloc_freertos``, a FreeRTOS backend for ``pw_malloc`` was added.
+
+* `Require specifying a backend in bazel build
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/185441>`__
+* `Add freertos backend
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/185452>`__
+
+pw_presubmit
+------------
+* `Use local prettier + eslint versions
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/185144>`__
+
+pw_result
+---------
+* `Rework docs to new standard
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/185147>`__
+
+pw_rpc
+------
+* `Adjust alarm_timer_test
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/186274>`__
+  (issue `#317990451 <https://issues.pigweed.dev/issues/317990451>`__)
+
+pw_snapshot
+-----------
+* `Clean up RISCV CpuArchitecture
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/185690>`__
+* `Add RISCV CpuArchitecture to metadata
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/185630>`__
+
+pw_thread_stl
+-------------
+* `Disable Bazel tests failing on Windows
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/186242>`__
+  (issue `#317922402 <https://issues.pigweed.dev/issues/317922402>`__)
+* `Disable tests failing on Windows
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/186253>`__
+  (issue `#317922402 <https://issues.pigweed.dev/issues/317922402>`__)
+
+pw_tokenizer
+------------
+The Rust macro ``tokenize_to_buffer!`` now supports concatenation of format
+strings via the ``PW_FMT_CONCAT`` operator.
+
+* `Support \`PW_FMT_CONCAT\` in \`tokenize_to_buffer!\`
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/185211>`__
+
+pw_toolchain
+------------
+The need to provide an ``unknown`` value for various ``pw_cc_toolchain`` fields
+has been removed.
+
+* `Remove "unknown" from various fields
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/185170>`__
+  (issue `#315206506 <https://issues.pigweed.dev/issues/315206506>`__)
+
+pw_transfer
+-----------
+* `Improve Python stream reopening and closing
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/184931>`__
+
+pw_unit_test
+------------
+* `Silence ASAN error in TestInfo
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/185654>`__
+
+pw_watch
+--------
+* `Build directory exclude list handling
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/185772>`__
+  (issue `#317241320 <https://issues.pigweed.dev/issues/317241320>`__)
+
+pw_web
+------
+* `Add state UI unit tests
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/184909>`__
+  (issue `#316218222 <https://issues.pigweed.dev/issues/316218222>`__)
+
+SEEDs
+=====
+* `Add facilitators to metadata and generated table
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/185932>`__
+* (SEED-0105) `Use code-block instead of code
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/186171>`__
+
+------------
+Dec 15, 2023
+------------
 Highlights (Dec 1, 2023 to Dec 15, 2023):
 
 * We started implementing our new async API, :ref:`module-pw_async2`.
@@ -36,8 +195,6 @@ Highlights (Dec 1, 2023 to Dec 15, 2023):
   <module-pw_system-logchannel>`.
 * ``pw_toolchain_bazel`` has a new :ref:`get started guide
   <module-pw_toolchain_bazel-get-started>`.
-
-.. changelog_highlights_end
 
 Active SEEDs
 ============
