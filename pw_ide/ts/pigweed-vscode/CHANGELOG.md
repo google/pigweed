@@ -1,5 +1,16 @@
 # Change Log
 
+## [0.1.2]
+
+- You can now submit bugs to the [Pigweed issue tracker](https://issues.pigweed.dev/issues?q=status:open)
+  directly from your editor. Just run `Pigweed: File Bug`.
+- Several UX improvements, including:
+  - Auto-detection and activation in Pigweed projects is more reliable
+  - Clearer feedback on the need to install or disable extensions
+  - Target toolchains are now presented in alphabetical order
+  - Errors will not appear when working in Pigweed projects that don't define
+    project-level extensions
+
 ## [0.1.1]
 
 - Fixes cases where "Pigweed: Check Extensions" was not running on startup.

@@ -1,13 +1,14 @@
 {
   "publisher": "pigweed",
   "name": "pigweed-vscode",
-  "displayName": "Pigweed Visual Studio Code Extension",
+  "displayName": "Pigweed",
   "description": "Visual Studio Code support for Pigweed projects",
+  "icon": "./icon.png",
   "repository": {
     "type": "git",
     "url": "https://pigweed.googlesource.com/pigweed/pigweed"
   },
-  "version": "0.1.1",
+  "version": "0.1.2",
   "license": "Apache-2.0",
   "engines": {
     "vscode": "^1.64.0"
