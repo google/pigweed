@@ -780,12 +780,6 @@ inline void SetTestSuitesToRun(span<std::string_view> test_suites) {
                  test_suite_name##_##test_name##_Test,                         \
                  parent_class)
 
-#if PW_HAVE_ATTRIBUTE(no_sanitizer)
-#define PW_NO_SANITIZER(...) __attribute__((no_sanitizer(__VA_ARGS__)))
-#else
-#define PW_NO_SANITIZER(...)
-#endif
-
 #define _PW_TEST_CLASS(suite, name, class_name, parent_class)               \
   class class_name final : public parent_class {                            \
    private:                                                                 \
@@ -797,7 +791,7 @@ inline void SetTestSuitesToRun(span<std::string_view> test_suites) {
   /* Silence ASAN to avoid errors in the initialization order checker */    \
   /* caused by the intentional use of dynamic initializers which modify */  \
   /* other globals */                                                       \
-  PW_NO_SANITIZER("address")                                                \
+  PW_NO_SANITIZE("address")                                                 \
   /* Declare the TestInfo as non-const since const variables do not work */ \
   /* with the PW_UNIT_TEST_LINK_FILE_CONTAINING_TEST macro. */              \
   /* NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables) */  \
