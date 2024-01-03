@@ -42,7 +42,13 @@ class _ParsedDocstring:
         self.description = ''
         self.epilog = ''
 
-        if obj is not None and (doc := _get_docstring(obj)) is not None:
+        if obj is not None:
+            if not (doc := _get_docstring(obj)):
+                raise ValueError(
+                    'Trying to use docstring for documentation, '
+                    'but no docstring is defined!'
+                )
+
             lines = doc.split('\n')
             self.description = lines.pop(0)
 

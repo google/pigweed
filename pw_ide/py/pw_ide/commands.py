@@ -74,6 +74,9 @@ def _inject_reporter(func):
         kwargs['reporter'] = reporter
         return func(*args, **kwargs)
 
+    # Hoist the decorated function's docstring onto the new function so that
+    # we can still access it to auto-generate CLI documentation.
+    wrapped.__doc__ = func.__doc__
     return wrapped
 
 
