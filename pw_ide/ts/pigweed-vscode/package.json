@@ -27,6 +27,10 @@
   "contributes": {
     "commands": [
       {
+        "command": "pigweed.file-bug",
+        "title": "Pigweed: File Bug"
+      },
+      {
         "command": "pigweed.check-extensions",
         "title": "Pigweed: Check Extensions"
       }

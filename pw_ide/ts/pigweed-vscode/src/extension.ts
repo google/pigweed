@@ -16,6 +16,16 @@ import * as vscode from 'vscode';
 
 import { getExtensionsJson } from './config';
 
+const bugUrl =
+  'https://issues.pigweed.dev/issues/new?component=1194524&template=1911548';
+
+/**
+ * Open the bug report template in the user's browser.
+ */
+function fileBug() {
+  vscode.env.openExternal(vscode.Uri.parse(bugUrl));
+}
+
 /**
  * Open the extensions sidebar and show the provided extensions.
  * @param extensions - A list of extension IDs
@@ -247,11 +257,16 @@ async function checkExtensions() {
 }
 
 export function activate(context: vscode.ExtensionContext) {
+  const pwFileBug = vscode.commands.registerCommand('pigweed.file-bug', () =>
+    fileBug(),
+  );
+
   const pwCheckExtensions = vscode.commands.registerCommand(
     'pigweed.check-extensions',
     () => checkExtensions(),
   );
 
+  context.subscriptions.push(pwFileBug);
   context.subscriptions.push(pwCheckExtensions);
   checkExtensions();
 }
