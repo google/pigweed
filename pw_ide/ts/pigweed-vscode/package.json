@@ -21,7 +21,7 @@
     "Testing"
   ],
   "activationEvents": [
-    "workspaceContains:**/pigweed.json"
+    "workspaceContains:pigweed.json"
   ],
   "main": "./out/extension.js",
   "contributes": {

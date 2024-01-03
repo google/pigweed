@@ -80,10 +80,16 @@ async function installRecommendedExtensions(recs: string[]): Promise<void> {
 
   showExtensions(unavailableRecs);
 
+  vscode.window.showInformationMessage(
+    `This Pigweed project needs you to install ${totalNumUnavailableRecs} ` +
+      'required extensions. Install the extensions shown the extensions tab.',
+    { modal: true },
+    'Ok',
+  );
+
   vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
-      // TODO(chadnorvell): Make this look better
       title:
         'Install these extensions! This Pigweed project needs these recommended extensions to be installed.',
       cancellable: true,
@@ -114,6 +120,9 @@ async function installRecommendedExtensions(recs: string[]): Promise<void> {
       }
 
       console.log('All recommended extensions are enabled');
+      vscode.commands.executeCommand(
+        'workbench.action.toggleSidebarVisibility',
+      );
       progress.report({ increment: 100 });
     },
   );
@@ -171,10 +180,17 @@ async function disableUnwantedExtensions(unwanted: string[]) {
 
   showExtensions(enabledUnwanted);
 
+  vscode.window.showInformationMessage(
+    `This Pigweed project needs you to disable ${totalNumEnabledUnwanted} ` +
+      'incompatible extensions. ' +
+      'Disable the extensions shown the extensions tab.',
+    { modal: true },
+    'Ok',
+  );
+
   vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
-      // TODO(chadnorvell): Make this look better
       title:
         'Disable these extensions! This Pigweed project needs these extensions to be disabled.',
       cancellable: true,
@@ -205,6 +221,9 @@ async function disableUnwantedExtensions(unwanted: string[]) {
       }
 
       console.log('All unwanted extensions are disabled');
+      vscode.commands.executeCommand(
+        'workbench.action.toggleSidebarVisibility',
+      );
       progress.report({ increment: 100 });
     },
   );
