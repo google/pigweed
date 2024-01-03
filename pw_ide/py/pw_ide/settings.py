@@ -375,6 +375,11 @@ _docstring_set_default(
     PigweedIdeSettings.working_dir, PW_IDE_DIR_NAME, literal=True
 )
 _docstring_set_default(
+    PigweedIdeSettings.compdb_gen_cmd,
+    _DEFAULT_CONFIG['compdb_gen_cmd'],
+    literal=True,
+)
+_docstring_set_default(
     PigweedIdeSettings.compdb_search_paths,
     [_DEFAULT_BUILD_DIR_NAME],
     literal=True,
