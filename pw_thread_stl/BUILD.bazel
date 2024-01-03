@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 load(
@@ -26,7 +25,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "id",
     hdrs = [
         "id_public_overrides/pw_thread_backend/id_inline.h",
@@ -44,7 +43,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "sleep",
     hdrs = [
         "public/pw_thread_stl/sleep_inline.h",
@@ -61,7 +60,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "thread",
     hdrs = [
         "public/pw_thread_stl/options.h",
@@ -83,7 +82,7 @@ pw_cc_library(
 # This target provides a stub backend for pw::this_thread::thread_iteration.
 # Iterating over child threads isn't supported by STL, so this only exists
 # for portability reasons.
-pw_cc_library(
+cc_library(
     name = "thread_iteration",
     srcs = ["thread_iteration.cc"],
     deps = [
@@ -92,7 +91,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "non_portable_test_thread_options",
     srcs = [
         "test_threads.cc",
@@ -118,7 +117,7 @@ pw_cc_test(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "yield",
     hdrs = [
         "public/pw_thread_stl/yield_inline.h",
@@ -134,7 +133,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "test_thread_context",
     hdrs = [
         "public/pw_thread_stl/test_thread_context_native.h",

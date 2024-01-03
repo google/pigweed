@@ -12,11 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
-
 # Ready-made configurations
 liberosoc_configs = [
     ("default", "configs/config_default.h"),
@@ -25,7 +20,7 @@ liberosoc_configs = [
 
 # Config targets.
 [
-    pw_cc_library(
+    cc_library(
         name = "%s_config" % config_name,
         hdrs = [
             config_header,

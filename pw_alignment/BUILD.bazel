@@ -12,14 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
-
 package(default_visibility = ["//visibility:public"])
 
-pw_cc_library(
+cc_library(
     name = "pw_alignment",
     hdrs = ["public/pw_alignment/alignment.h"],
     includes = ["public"],

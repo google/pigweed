@@ -15,14 +15,13 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_facade",
-    "pw_cc_library",
 )
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "pw_log_string",
     hdrs = [
         "public_overrides/pw_log_backend/log_backend.h",
@@ -51,7 +50,7 @@ alias(
     actual = ":handler",
 )
 
-pw_cc_library(
+cc_library(
     name = "handler",
     srcs = ["handler.cc"],
     hdrs = [
@@ -66,7 +65,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "handler_backend_multiplexer",
     visibility = ["@pigweed//targets:__pkg__"],
     # TODO: b/257539200 - This probably should default to

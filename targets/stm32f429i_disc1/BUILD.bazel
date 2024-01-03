@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_linker_script",
 )
 
@@ -40,7 +39,7 @@ pw_linker_script(
     linker_script = "//pw_boot_cortex_m:basic_cortex_m.ld",
 )
 
-pw_cc_library(
+cc_library(
     name = "pre_init",
     srcs = [
         "boot.cc",

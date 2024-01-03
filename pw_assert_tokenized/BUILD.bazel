@@ -12,11 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
-
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
@@ -28,7 +23,7 @@ licenses(["notice"])
 # If you point the @pigweed//targets:pw_assert_backend to
 # //pw_assert_tokenized, then @pigweed//targets:pw_assert_backend_impl should
 # point to //pw_assert_tokenized:impl.
-pw_cc_library(
+cc_library(
     name = "pw_assert_tokenized",
     hdrs = [
         "assert_public_overrides/pw_assert_backend/assert_backend.h",
@@ -50,7 +45,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "handler",
     hdrs = [
         "public/pw_assert_tokenized/handler.h",
@@ -61,7 +56,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "impl",
     srcs = [
         "log_handler.cc",

@@ -15,7 +15,6 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
-    "pw_cc_library",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -31,7 +30,7 @@ constraint_value(
     constraint_setting = ":system_example_tracing_setting",
 )
 
-pw_cc_library(
+cc_library(
     name = "config",
     hdrs = [
         "public/pw_system/config.h",
@@ -43,7 +42,7 @@ pw_cc_library(
     }),
 )
 
-pw_cc_library(
+cc_library(
     name = "log",
     srcs = [
         "log.cc",
@@ -63,7 +62,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "log_backend",
     srcs = [
         "log_backend.cc",
@@ -94,7 +93,7 @@ pw_cc_library(
     alwayslink = 1,
 )
 
-pw_cc_library(
+cc_library(
     name = "rpc_server",
     srcs = [
         "hdlc_rpc_server.cc",
@@ -116,7 +115,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "thread_snapshot_service",
     srcs = [
         "thread_snapshot_service.cc",
@@ -131,7 +130,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "io",
     hdrs = [
         "public/pw_system/io.h",
@@ -141,7 +140,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "init",
     srcs = [
         "init.cc",
@@ -173,7 +172,7 @@ pw_cc_library(
     }),
 )
 
-pw_cc_library(
+cc_library(
     name = "work_queue",
     srcs = [
         "work_queue.cc",
@@ -188,7 +187,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "target_io",
     srcs = [
         "target_io.cc",
@@ -201,7 +200,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "socket_target_io",
     srcs = [
         "socket_target_io.cc",
@@ -216,7 +215,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "transfer_handlers",
     srcs = [
         "transfer_handlers.cc",
@@ -232,7 +231,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "file_manager",
     srcs = [
         "file_manager.cc",
@@ -255,7 +254,7 @@ pw_cc_library(
     }),
 )
 
-pw_cc_library(
+cc_library(
     name = "transfer_service",
     srcs = [
         "transfer_service.cc",
@@ -270,7 +269,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "file_service",
     srcs = [
         "file_service.cc",
@@ -284,7 +283,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "trace_service",
     srcs = [
         "trace_service.cc",
@@ -300,7 +299,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "target_hooks",
     hdrs = [
         "public/pw_system/target_hooks.h",
@@ -315,7 +314,7 @@ pw_cc_library(
 # This isn't the best solution, but it's close enough for now. Target hooks are
 # not generically related to an OS, and should be inject-able by downstream
 # projects. For now, assume the pre-baked OS-specific hooks are good enough.
-pw_cc_library(
+cc_library(
     name = "target_hooks_multiplexer",
     visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
@@ -324,7 +323,7 @@ pw_cc_library(
     }),
 )
 
-pw_cc_library(
+cc_library(
     name = "stl_target_hooks",
     srcs = [
         "stl_target_hooks.cc",
@@ -337,7 +336,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "freertos_target_hooks",
     srcs = [
         "freertos_target_hooks.cc",

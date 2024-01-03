@@ -14,14 +14,14 @@
 
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
-load("//pw_build:pigweed.bzl", "pw_cc_library", "pw_cc_test")
+load("//pw_build:pigweed.bzl", "pw_cc_test")
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "config",
     hdrs = ["public/pw_transfer/internal/config.h"],
     includes = ["public"],
@@ -30,7 +30,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "core",
     srcs = [
         "chunk.cc",
@@ -76,7 +76,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "pw_transfer",
     srcs = [
         "transfer.cc",
@@ -98,7 +98,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "client",
     srcs = [
         "client.cc",
@@ -116,7 +116,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "atomic_file_transfer_handler",
     srcs = ["atomic_file_transfer_handler.cc"],
     hdrs = [
@@ -131,14 +131,14 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "atomic_file_transfer_handler_internal",
     srcs = [
         "pw_transfer_private/filename_generator.h",
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "test_helpers",
     srcs = [
         "pw_transfer_private/chunk_testing.h",

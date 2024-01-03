@@ -16,7 +16,6 @@ load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
     "pw_cc_facade",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -36,7 +35,7 @@ pw_cc_facade(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "pw_trace",
     hdrs = [
         "public/pw_trace/internal/trace_internal.h",
@@ -49,13 +48,13 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "backend_multiplexer",
     visibility = ["@pigweed//targets:__pkg__"],
     deps = ["//pw_trace:null"],
 )
 
-pw_cc_library(
+cc_library(
     name = "null",
     hdrs = [
         "public/pw_trace/internal/null.h",
@@ -120,7 +119,7 @@ pw_cc_test(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "trace_null_test",
     srcs = [
         "trace_null_test.cc",
@@ -133,7 +132,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "pw_trace_sample_app",
     srcs = ["example/sample_app.cc"],
     hdrs = ["example/public/pw_trace/example/sample_app.h"],

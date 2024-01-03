@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -22,7 +21,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "pw_kvs",
     srcs = [
         "alignment.cc",
@@ -66,7 +65,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "crc16",
     hdrs = [
         "public/pw_kvs/crc16_checksum.h",
@@ -78,13 +77,13 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "flash_test_partition",
     hdrs = ["public/pw_kvs/flash_test_partition.h"],
     deps = [":pw_kvs"],
 )
 
-pw_cc_library(
+cc_library(
     name = "fake_flash",
     srcs = [
         "fake_flash_memory.cc",
@@ -103,7 +102,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "flash_partition_with_logical_sectors",
     hdrs = [
         "public/pw_kvs/flash_partition_with_logical_sectors.h",
@@ -114,7 +113,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "fake_flash_1_aligned_partition",
     srcs = [
         "fake_flash_test_partition.cc",
@@ -133,7 +132,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "fake_flash_1_aligned_4_logical_partition",
     srcs = [
         "fake_flash_test_logical_sector_partition.cc",
@@ -154,7 +153,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "fake_flash_12_byte_partition",
     srcs = ["fake_flash_test_partition.cc"],
     hdrs = ["public/pw_kvs/flash_test_partition.h"],
@@ -170,7 +169,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "fake_flash_16_aligned_partition",
     srcs = [
         "fake_flash_test_partition.cc",
@@ -189,7 +188,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "fake_flash_64_aligned_partition",
     srcs = [
         "fake_flash_test_partition.cc",
@@ -208,7 +207,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "fake_flash_256_aligned_partition",
     srcs = [
         "fake_flash_test_partition.cc",
@@ -227,7 +226,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "fake_flash_test_key_value_store",
     srcs = [
         "fake_flash_test_key_value_store.cc",
@@ -243,7 +242,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "test_partition",
     srcs = [
         "flash_partition_with_stats.cc",

@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_linker_script",
 )
 
@@ -37,7 +36,7 @@ pw_linker_script(
     linker_script = "mimxrt595_flash.ld",
 )
 
-pw_cc_library(
+cc_library(
     name = "boot",
     srcs = [
         "boot.cc",
@@ -61,7 +60,7 @@ pw_cc_library(
     alwayslink = 1,
 )
 
-pw_cc_library(
+cc_library(
     name = "freertos_config",
     hdrs = [
         "FreeRTOSConfig.h",
@@ -70,7 +69,7 @@ pw_cc_library(
     deps = ["//third_party/freertos:config_assert"],
 )
 
-pw_cc_library(
+cc_library(
     name = "tasks",
     srcs = [
         "tasks.c",

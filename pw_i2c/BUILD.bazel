@@ -15,7 +15,6 @@
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 load(
@@ -28,7 +27,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "address",
     srcs = [
         "address.cc",
@@ -42,7 +41,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "initiator",
     hdrs = [
         "public/pw_i2c/initiator.h",
@@ -55,7 +54,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "device",
     hdrs = [
         "public/pw_i2c/device.h",
@@ -70,7 +69,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "register_device",
     srcs = ["register_device.cc"],
     hdrs = [
@@ -99,7 +98,7 @@ pw_cc_test(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "initiator_mock",
     testonly = True,
     srcs = ["initiator_mock.cc"],
@@ -115,7 +114,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "initiator_gmock",
     testonly = True,
     hdrs = [
@@ -181,7 +180,7 @@ pw_proto_library(
     deps = [":i2c_proto"],
 )
 
-pw_cc_library(
+cc_library(
     name = "i2c_service",
     srcs = ["i2c_service.cc"],
     hdrs = ["public/pw_i2c/i2c_service.h"],

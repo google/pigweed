@@ -16,7 +16,6 @@ load("@rules_python//python:proto.bzl", "py_proto_library")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
-    "pw_cc_library",
     "pw_cc_test",
     "pw_linker_script",
 )
@@ -26,7 +25,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "pw_tokenizer",
     srcs = [
         "encode_args.cc",
@@ -64,12 +63,12 @@ pw_linker_script(
     linker_script = "pw_tokenizer_linker_sections.ld",
 )
 
-pw_cc_library(
+cc_library(
     name = "test_backend",
     visibility = ["@pigweed//targets:__pkg__"],
 )
 
-pw_cc_library(
+cc_library(
     name = "base64",
     srcs = [
         "base64.cc",
@@ -87,7 +86,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "decoder",
     srcs = [
         "decode.cc",
@@ -277,7 +276,7 @@ pw_cc_test(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "tokenize_c99_test_c",
     srcs = ["tokenize_c99_test.c"],
     copts = ["-std=c99"],

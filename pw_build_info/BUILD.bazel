@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -22,7 +21,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "build_id_header",
     hdrs = [
         "public/pw_build_info/build_id.h",
@@ -33,7 +32,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "build_id",
     srcs = [
         "build_id.cc",
@@ -52,7 +51,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "build_id_noop",
     srcs = [
         "build_id_noop.cc",
@@ -63,7 +62,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "build_id_or_noop",
     deps = select({
         "@platforms//os:windows": [":build_id_noop"],

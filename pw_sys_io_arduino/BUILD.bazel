@@ -12,11 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
-
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
@@ -26,7 +21,7 @@ constraint_value(
     constraint_setting = "//pw_sys_io:backend_constraint_setting",
 )
 
-pw_cc_library(
+cc_library(
     name = "pw_sys_io_arduino",
     srcs = ["sys_io_arduino.cc"],
     hdrs = ["public/pw_sys_io_arduino/init.h"],
@@ -40,7 +35,7 @@ pw_cc_library(
 )
 
 # Used in targets/arduino
-pw_cc_library(
+cc_library(
     name = "pw_sys_io_arduino_header",
     hdrs = ["public/pw_sys_io_arduino/init.h"],
     includes = ["public"],

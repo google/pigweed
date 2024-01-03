@@ -12,16 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "@pigweed//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
-
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "config_assert",
     hdrs = [
         "public/pw_third_party/freertos/config_assert.h",
@@ -57,7 +52,7 @@ constraint_value(
     constraint_setting = ":port",
 )
 
-pw_cc_library(
+cc_library(
     name = "freertos",
     srcs = [
         "croutine.c",
@@ -120,7 +115,7 @@ pw_cc_library(
     alwayslink = 1,
 )
 
-pw_cc_library(
+cc_library(
     name = "freertos_port_headers",
     hdrs = select({
         ":port_ARM_CM33_NTZ": [
@@ -151,7 +146,7 @@ pw_cc_library(
 )
 
 # Headers transitively included by using "FreeRTOS.h"
-pw_cc_library(
+cc_library(
     name = "freertos_headers",
     hdrs = [
         "include/FreeRTOS.h",
@@ -190,7 +185,7 @@ constraint_value(
     constraint_setting = ":disable_tasks_statics_setting",
 )
 
-pw_cc_library(
+cc_library(
     name = "pigweed_tasks_c",
     srcs = ["tasks.c"],
     defines = select({
@@ -221,7 +216,7 @@ alias(
     }),
 )
 
-pw_cc_library(
+cc_library(
     name = "default_freertos_config",
     # The "default" config is not compatible with any configuration: you can't
     # build FreeRTOS without choosing a config.
@@ -259,7 +254,7 @@ constraint_value(
     constraint_setting = ":malloc",
 )
 
-pw_cc_library(
+cc_library(
     name = "freertos_malloc",
     srcs = select({
         ":malloc_heap_1": ["portable/MemMang/heap_1.c"],

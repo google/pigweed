@@ -11,10 +11,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -24,7 +20,7 @@ licenses(["notice"])
 # different targets (platforms).
 exports_files(["basic_cortex_m.ld"])
 
-pw_cc_library(
+cc_library(
     name = "pw_boot_cortex_m",
     srcs = [
         "core_init.c",
@@ -46,7 +42,7 @@ pw_cc_library(
 )
 
 # The following targets are deprecated, depend on ":pw_boot_cortex_m" instead.
-pw_cc_library(
+cc_library(
     name = "armv7m",
     target_compatible_with = select({
         "@platforms//cpu:armv7-m": [],
@@ -57,7 +53,7 @@ pw_cc_library(
     deps = [":pw_boot_cortex_m"],
 )
 
-pw_cc_library(
+cc_library(
     name = "armv8m",
     target_compatible_with = select({
         "@platforms//cpu:armv8-m": [],

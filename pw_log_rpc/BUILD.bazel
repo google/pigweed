@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -22,7 +21,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "log_service",
     srcs = [
         "log_service.cc",
@@ -39,7 +38,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "log_filter_service",
     srcs = ["log_filter_service.cc"],
     hdrs = ["public/pw_log_rpc/log_filter_service.h"],
@@ -54,7 +53,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "log_filter",
     srcs = [
         "log_filter.cc",
@@ -76,7 +75,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "rpc_log_drain",
     srcs = [
         "public/pw_log_rpc/internal/config.h",
@@ -103,7 +102,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "rpc_log_drain_thread",
     hdrs = ["public/pw_log_rpc/rpc_log_drain_thread.h"],
     includes = ["public"],
@@ -120,7 +119,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "test_utils",
     srcs = ["test_utils.cc"],
     hdrs = ["pw_log_rpc_private/test_utils.h"],

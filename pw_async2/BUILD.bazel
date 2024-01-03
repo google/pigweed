@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -22,7 +21,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "poll",
     hdrs = [
         "public/pw_async2/poll.h",
@@ -40,7 +39,7 @@ pw_cc_test(
 
 # NOTE: this target should only be used directly by implementors of the
 # `dispatcher` facade.
-pw_cc_library(
+cc_library(
     name = "dispatcher_base",
     srcs = [
         "dispatcher_base.cc",
@@ -62,7 +61,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "dispatcher",
     hdrs = [
         "public/pw_async2/dispatcher.h",
@@ -76,7 +75,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "dispatcher_backend_multiplexer",
     visibility = ["@pigweed//targets:__pkg__"],
     deps = select({

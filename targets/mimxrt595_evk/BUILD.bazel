@@ -12,18 +12,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
-
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
 # TODO(pwbug/545): These just list sources files to pass presubmit and aren't
 # expected to actually work.
-pw_cc_library(
+cc_library(
     name = "boot",
     srcs = [
         "boot.cc",

@@ -15,7 +15,6 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_facade",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -38,7 +37,7 @@ pw_cc_facade(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "sha256",
     hdrs = [
         "public/pw_crypto/sha256.h",
@@ -71,7 +70,7 @@ alias(
     }),
 )
 
-pw_cc_library(
+cc_library(
     name = "sha256_mbedtls",
     srcs = ["sha256_mbedtls.cc"],
     hdrs = [
@@ -94,7 +93,7 @@ pw_cc_test(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "sha256_mock",
     srcs = ["sha256_mock.cc"],
     hdrs = [
@@ -129,7 +128,7 @@ pw_cc_facade(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "ecdsa",
     hdrs = [
         "public/pw_crypto/ecdsa.h",
@@ -165,7 +164,7 @@ alias(
     }),
 )
 
-pw_cc_library(
+cc_library(
     name = "ecdsa_mbedtls",
     srcs = ["ecdsa_mbedtls.cc"],
     deps = [
@@ -176,7 +175,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "ecdsa_uecc",
     srcs = [
         "ecdsa_uecc.cc",

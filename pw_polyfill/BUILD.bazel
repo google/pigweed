@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -22,7 +21,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "pw_polyfill",
     hdrs = [
         "public/pw_polyfill/language_feature_macros.h",
@@ -31,7 +30,7 @@ pw_cc_library(
     includes = ["public"],
 )
 
-pw_cc_library(
+cc_library(
     name = "standard_library",
     hdrs = [
         "standard_library_public/pw_polyfill/standard_library/namespace.h",

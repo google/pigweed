@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -22,7 +21,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "pw_hdlc",
     srcs = [
         "decoder.cc",
@@ -48,7 +47,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "rpc_channel_output",
     hdrs = ["public/pw_hdlc/rpc_channel.h"],
     includes = ["public"],
@@ -59,7 +58,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "pw_rpc",
     srcs = ["rpc_packets.cc"],
     hdrs = ["public/pw_hdlc/rpc_packets.h"],
@@ -71,7 +70,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "packet_parser",
     srcs = ["wire_packet_parser.cc"],
     hdrs = ["public/pw_hdlc/wire_packet_parser.h"],
@@ -91,7 +90,7 @@ pw_cc_library(
 # Warning: This system server is polling and blocking, so it's not
 # production-ready. This exists for simplifying initial bringup/testing, and
 # should not be used in any performance-sensitive application.
-pw_cc_library(
+cc_library(
     name = "hdlc_sys_io_system_server",
     srcs = [
         "hdlc_sys_io_system_server.cc",

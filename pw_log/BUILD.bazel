@@ -16,7 +16,6 @@ load("@rules_python//python:proto.bzl", "py_proto_library")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_facade",
-    "pw_cc_library",
     "pw_cc_test",
 )
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
@@ -41,7 +40,7 @@ pw_cc_facade(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "pw_log",
     hdrs = [
         "public/pw_log/config.h",
@@ -64,7 +63,7 @@ label_flag(
     build_setting_default = "//pw_log_basic:impl",
 )
 
-pw_cc_library(
+cc_library(
     name = "glog_adapter",
     hdrs = [
         "public/pw_log/glog_adapter.h",
@@ -80,7 +79,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "proto_utils",
     srcs = [
         "proto_utils.cc",
@@ -126,7 +125,7 @@ pw_proto_library(
     deps = [":log_proto"],
 )
 
-pw_cc_library(
+cc_library(
     name = "backend_multiplexer",
     visibility = ["@pigweed//targets:__pkg__"],
     deps = ["//pw_log_basic"],

@@ -14,11 +14,10 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
-pw_cc_library(
+cc_library(
     name = "metrics_lib",
     srcs = [
         "metrics.cc",

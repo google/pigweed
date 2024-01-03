@@ -12,11 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
-
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
@@ -24,7 +19,7 @@ licenses(["notice"])
 # NOTE: To depend on this target, you must set the STM32CUBE_HEADER
 # preprocessor variable, perhaps using copts associated with the target
 # platform. See the module documentation for details.
-pw_cc_library(
+cc_library(
     name = "stm32cube",
     hdrs = [
         "public/stm32cube/init.h",

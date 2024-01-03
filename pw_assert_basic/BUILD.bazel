@@ -15,7 +15,6 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_facade",
-    "pw_cc_library",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -29,7 +28,7 @@ licenses(["notice"])
 # If you point @pigweed//targets:pw_assert_backend to //pw_assert_basic, then
 # @pigweed//targets:pw_assert_backend_impl should point to
 # //pw_assert_basic:impl.
-pw_cc_library(
+cc_library(
     name = "pw_assert_basic",
     hdrs = [
         "public/pw_assert_basic/assert_basic.h",
@@ -45,7 +44,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "impl",
     srcs = [
         "assert_basic.cc",
@@ -71,7 +70,7 @@ pw_cc_facade(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "pw_assert_basic_handler",
     srcs = [
         "basic_handler.cc",

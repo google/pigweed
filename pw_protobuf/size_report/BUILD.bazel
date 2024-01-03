@@ -15,7 +15,6 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
-    "pw_cc_library",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -46,7 +45,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "proto_bloat",
     srcs = [
         "proto_bloat.cc",

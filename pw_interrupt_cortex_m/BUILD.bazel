@@ -12,11 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
-
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
@@ -26,7 +21,7 @@ constraint_value(
     constraint_setting = "//pw_interrupt:backend_constraint_setting",
 )
 
-pw_cc_library(
+cc_library(
     name = "context",
     hdrs = [
         "public/pw_interrupt_cortex_m/context_inline.h",

@@ -16,7 +16,6 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
@@ -76,7 +75,7 @@ py_proto_library(
 #     deps = [":bundled_update_proto"],
 # )
 
-pw_cc_library(
+cc_library(
     name = "openable_reader",
     hdrs = [
         "public/pw_software_update/openable_reader.h",
@@ -86,7 +85,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "blob_store_openable_reader",
     hdrs = [
         "public/pw_software_update/blob_store_openable_reader.h",
@@ -96,7 +95,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "update_bundle",
     srcs = [
         "manifest_accessor.cc",
@@ -128,7 +127,7 @@ pw_cc_library(
 
 # TODO: b/258074401 - Depends on bundled_update_proto_cc.nanopb_rpc, which
 # doesn't build yet.
-pw_cc_library(
+cc_library(
     name = "bundled_update_service",
     srcs = ["bundled_update_service.cc"],
     hdrs = ["public/pw_software_update/bundled_update_service.h"],
@@ -153,7 +152,7 @@ pw_cc_library(
 
 # TODO: b/258074401 - Depends on bundled_update_proto_cc.nanopb_rpc, which
 # doesn't build yet.
-pw_cc_library(
+cc_library(
     name = "bundled_update_service_pwpb",
     srcs = ["bundled_update_service_pwpb.cc"],
     hdrs = ["public/pw_software_update/bundled_update_service_pwpb.h"],

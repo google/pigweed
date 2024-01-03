@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -22,13 +21,13 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "config",
     hdrs = ["public/pw_function/config.h"],
     includes = ["public"],
 )
 
-pw_cc_library(
+cc_library(
     name = "pw_function",
     hdrs = ["public/pw_function/function.h"],
     includes = ["public"],
@@ -49,7 +48,7 @@ pw_cc_test(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "pointer",
     srcs = ["public/pw_function/internal/static_invoker.h"],
     hdrs = ["public/pw_function/pointer.h"],
@@ -65,7 +64,7 @@ pw_cc_test(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "scope_guard",
     hdrs = ["public/pw_function/scope_guard.h"],
     includes = ["public"],

@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -22,7 +21,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "pw_preprocessor",
     srcs = [
         "public/pw_preprocessor/internal/arg_count_impl.h",
@@ -37,7 +36,7 @@ pw_cc_library(
     includes = ["public"],
 )
 
-pw_cc_library(
+cc_library(
     name = "cortex_m",
     hdrs = [
         "public/pw_preprocessor/arch.h",

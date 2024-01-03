@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -23,7 +22,7 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 # Backend for //pw_async:task
-pw_cc_library(
+cc_library(
     name = "task",
     hdrs = [
         "public/pw_async_basic/task.h",
@@ -40,7 +39,7 @@ pw_cc_library(
 )
 
 # Backend for //pw_async:fake_dispatcher
-pw_cc_library(
+cc_library(
     name = "fake_dispatcher",
     srcs = ["fake_dispatcher.cc"],
     hdrs = [
@@ -64,7 +63,7 @@ pw_cc_test(
     deps = ["//pw_async:fake_dispatcher_fixture"],
 )
 
-pw_cc_library(
+cc_library(
     name = "dispatcher",
     srcs = ["dispatcher.cc"],
     hdrs = ["public/pw_async_basic/dispatcher.h"],

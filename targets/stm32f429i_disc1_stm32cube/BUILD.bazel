@@ -15,7 +15,6 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
-    "pw_cc_library",
     "pw_linker_script",
 )
 
@@ -23,7 +22,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "freertos_config",
     hdrs = [
         "config/FreeRTOSConfig.h",
@@ -62,7 +61,7 @@ platform(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "hal_config",
     hdrs = [
         "config/stm32f4xx_hal_conf.h",
@@ -70,7 +69,7 @@ pw_cc_library(
     includes = ["config"],
 )
 
-pw_cc_library(
+cc_library(
     name = "pre_init",
     srcs = [
         "boot.cc",

@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -24,7 +23,7 @@ licenses(["notice"])
 
 # TODO(b/310035978): Support heap poisoning.
 
-pw_cc_library(
+cc_library(
     name = "allocator",
     srcs = [
         "allocator.cc",
@@ -40,7 +39,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "allocator_metric_proxy",
     hdrs = [
         "public/pw_allocator/allocator_metric_proxy.h",
@@ -55,7 +54,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "block",
     srcs = ["block.cc"],
     hdrs = [
@@ -72,7 +71,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "buffer",
     hdrs = [
         "public/pw_allocator/buffer.h",
@@ -80,7 +79,7 @@ pw_cc_library(
     includes = ["public"],
 )
 
-pw_cc_library(
+cc_library(
     name = "fallback_allocator",
     hdrs = [
         "public/pw_allocator/fallback_allocator.h",
@@ -96,7 +95,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "freelist",
     srcs = [
         "freelist.cc",
@@ -112,7 +111,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "freelist_heap",
     srcs = [
         "freelist_heap.cc",
@@ -128,7 +127,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "libc_allocator",
     srcs = [
         "libc_allocator.cc",
@@ -145,7 +144,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "metrics",
     srcs = [
         "metrics.cc",
@@ -161,7 +160,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "multiplex_allocator",
     hdrs = [
         "public/pw_allocator/multiplex_allocator.h",
@@ -174,7 +173,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "null_allocator",
     hdrs = [
         "public/pw_allocator/null_allocator.h",
@@ -185,7 +184,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "simple_allocator",
     hdrs = [
         "public/pw_allocator/simple_allocator.h",
@@ -198,7 +197,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "split_free_list_allocator",
     srcs = [
         "split_free_list_allocator.cc",
@@ -217,7 +216,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "allocator_testing",
     testonly = True,
     srcs = [
@@ -240,7 +239,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "allocator_test_harness",
     testonly = True,
     srcs = [
@@ -259,7 +258,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "allocator_fuzzing",
     testonly = True,
     srcs = [

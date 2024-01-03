@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -22,7 +21,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "pw_stream",
     srcs = [
         "memory_stream.cc",
@@ -44,7 +43,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "socket_stream",
     srcs = ["socket_stream.cc"],
     hdrs = ["public/pw_stream/socket_stream.h"],
@@ -57,7 +56,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "sys_io_stream",
     hdrs = ["public/pw_stream/sys_io_stream.h"],
     deps = [
@@ -66,7 +65,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "std_file_stream",
     srcs = ["std_file_stream.cc"],
     hdrs = ["public/pw_stream/std_file_stream.h"],
@@ -76,14 +75,14 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "interval_reader",
     srcs = ["interval_reader.cc"],
     hdrs = ["public/pw_stream/interval_reader.h"],
     deps = [":pw_stream"],
 )
 
-pw_cc_library(
+cc_library(
     name = "mpsc_stream",
     srcs = ["mpsc_stream.cc"],
     hdrs = ["public/pw_stream/mpsc_stream.h"],

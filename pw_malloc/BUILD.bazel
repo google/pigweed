@@ -15,7 +15,6 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_facade",
-    "pw_cc_library",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -34,7 +33,7 @@ pw_cc_facade(
     includes = ["public"],
 )
 
-pw_cc_library(
+cc_library(
     name = "pw_malloc",
     hdrs = [
         "public/pw_malloc/malloc.h",

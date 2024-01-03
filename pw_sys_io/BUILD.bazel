@@ -16,7 +16,6 @@ load(
     "//pw_build:pigweed.bzl",
     "host_backend_alias",
     "pw_cc_facade",
-    "pw_cc_library",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -37,7 +36,7 @@ pw_cc_facade(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "default_putget_bytes",
     srcs = ["sys_io.cc"],
     deps = [
@@ -47,7 +46,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "pw_sys_io",
     hdrs = ["public/pw_sys_io/sys_io.h"],
     includes = ["public"],

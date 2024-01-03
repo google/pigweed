@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -29,7 +28,7 @@ filegroup(
 )
 
 # Device Information Service 1.1
-pw_cc_library(
+cc_library(
     name = "device_info_service",
     srcs = [
         "device_info_service.cc",

@@ -15,7 +15,6 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_facade",
-    "pw_cc_library",
     "pw_cc_perf_test",
     "pw_cc_test",
 )
@@ -28,7 +27,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "pw_perf_test",
     srcs = [
         "framework.cc",
@@ -49,7 +48,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "state",
     srcs = [
         "state.cc",
@@ -74,14 +73,14 @@ pw_cc_test(
 
 # Event handlers
 
-pw_cc_library(
+cc_library(
     name = "event_handler",
     hdrs = ["public/pw_perf_test/event_handler.h"],
     includes = ["public"],
     deps = [":timer"],
 )
 
-pw_cc_library(
+cc_library(
     name = "logging_event_handler",
     srcs = ["logging_event_handler.cc"],
     hdrs = [
@@ -97,7 +96,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "logging_main",
     srcs = ["logging_main.cc"],
     deps = [
@@ -108,7 +107,7 @@ pw_cc_library(
 
 # Timer facade
 
-pw_cc_library(
+cc_library(
     name = "duration_unit",
     hdrs = [
         "public/pw_perf_test/internal/duration_unit.h",
@@ -129,7 +128,7 @@ pw_cc_facade(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "timer",
     hdrs = [
         "public/pw_perf_test/internal/timer.h",
@@ -141,7 +140,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "timer_multiplexer",
     visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
@@ -161,7 +160,7 @@ pw_cc_test(
 
 # Chrono timer facade implementation
 
-pw_cc_library(
+cc_library(
     name = "chrono_timer",
     hdrs = [
         "chrono_public_overrides/pw_perf_test_timer_backend/timer.h",
@@ -191,7 +190,7 @@ pw_cc_test(
 
 # ARM Cortex timer facade implementation
 
-pw_cc_library(
+cc_library(
     name = "arm_cortex_timer",
     hdrs = [
         "arm_cortex_cyccnt_public_overrides/pw_perf_test_timer_backend/timer.h",

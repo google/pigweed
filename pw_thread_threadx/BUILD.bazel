@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -22,7 +21,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "id",
     hdrs = [
         "id_public_overrides/pw_thread_backend/id_inline.h",
@@ -40,7 +39,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "thread",
     srcs = [
         "thread.cc",
@@ -68,7 +67,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "non_portable_test_thread_options",
     srcs = [
         "test_threads.cc",
@@ -93,7 +92,7 @@ pw_cc_test(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "sleep",
     srcs = [
         "sleep.cc",
@@ -117,7 +116,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "yield",
     hdrs = [
         "public/pw_thread_threadx/yield_inline.h",
@@ -134,7 +133,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "util",
     srcs = [
         "util.cc",
@@ -151,7 +150,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "snapshot",
     srcs = [
         "snapshot.cc",

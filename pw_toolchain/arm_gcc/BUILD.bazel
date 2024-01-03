@@ -21,14 +21,10 @@ load(
     "pw_cc_flag_set",
     "pw_cc_toolchain",
 )
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "newlib_os_interface_stubs",
     srcs = ["newlib_os_interface_stubs.cc"],
     linkopts = [
@@ -42,7 +38,7 @@ pw_cc_library(
     alwayslink = 1,
 )
 
-pw_cc_library(
+cc_library(
     name = "arm_none_eabi_gcc_support",
     visibility = ["//visibility:public"],
     deps = [

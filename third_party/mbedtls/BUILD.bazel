@@ -12,17 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
-
 package(
     default_visibility = ["//visibility:public"],
 )
 
 # Config targets.
-pw_cc_library(
+cc_library(
     name = "default_config",
     hdrs = [
         "configs/config_default.h",

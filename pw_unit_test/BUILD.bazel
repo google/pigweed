@@ -16,7 +16,6 @@ load("@rules_python//python:proto.bzl", "py_proto_library")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
-    "pw_cc_library",
     "pw_cc_test",
 )
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
@@ -25,7 +24,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "config",
     hdrs = ["public/pw_unit_test/config.h"],
     includes = ["public"],
@@ -39,13 +38,13 @@ alias(
     actual = "@pigweed//targets:pw_unit_test_backend",
 )
 
-pw_cc_library(
+cc_library(
     name = "framework",
     hdrs = ["public/pw_unit_test/framework.h"],
     includes = ["public"],
 )
 
-pw_cc_library(
+cc_library(
     name = "light",
     srcs = ["framework_light.cc"],
     hdrs = [
@@ -73,7 +72,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "googletest",
     hdrs = [
         "googletest_public_overrides/pw_unit_test/framework_backend.h",
@@ -100,13 +99,13 @@ config_setting(
     },
 )
 
-pw_cc_library(
+cc_library(
     name = "event_handler",
     hdrs = ["public/pw_unit_test/event_handler.h"],
     includes = ["public"],
 )
 
-pw_cc_library(
+cc_library(
     name = "googletest_style_event_handler",
     srcs = ["googletest_style_event_handler.cc"],
     hdrs = ["public/pw_unit_test/googletest_style_event_handler.h"],
@@ -116,7 +115,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "googletest_handler_adapter",
     testonly = True,
     srcs = ["googletest_handler_adapter.cc"],
@@ -133,7 +132,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "googletest_test_matchers",
     testonly = True,
     hdrs = ["public/pw_unit_test/googletest_test_matchers.h"],
@@ -161,7 +160,7 @@ pw_cc_test(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "simple_printing_event_handler",
     srcs = ["simple_printing_event_handler.cc"],
     hdrs = [
@@ -176,7 +175,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "simple_printing_main",
     srcs = [
         "simple_printing_main.cc",
@@ -189,7 +188,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "printf_event_handler",
     hdrs = ["public/pw_unit_test/printf_event_handler.h"],
     deps = [
@@ -198,7 +197,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "printf_main",
     srcs = ["printf_main.cc"],
     deps = [
@@ -207,7 +206,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "logging_event_handler",
     srcs = [
         "logging_event_handler.cc",
@@ -225,7 +224,7 @@ pw_cc_library(
 )
 
 # Provides logging to either the light framework or an external GoogleTest.
-pw_cc_library(
+cc_library(
     name = "logging",
     deps = [":logging_event_handler"] + select({
         ":gtest_setting": [":googletest_handler_adapter"],
@@ -260,7 +259,7 @@ pw_proto_library(
     deps = [":unit_test_proto"],
 )
 
-pw_cc_library(
+cc_library(
     name = "rpc_service",
     srcs = ["unit_test_service.cc"] + select({
         ":light_setting": ["rpc_light_event_handler.cc"],
@@ -290,7 +289,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "rpc_main",
     srcs = [
         "rpc_main.cc",
@@ -305,7 +304,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "static_library_support",
     srcs = ["static_library_support.cc"],
     hdrs = ["public/pw_unit_test/static_library_support.h"],
@@ -313,7 +312,7 @@ pw_cc_library(
     deps = [":light"],  # This library only works with the light backend
 )
 
-pw_cc_library(
+cc_library(
     name = "tests_in_archive",
     srcs = [
         "static_library_archived_tests.cc",

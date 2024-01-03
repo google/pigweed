@@ -13,7 +13,7 @@
 # the License.
 
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("//pw_build:pigweed.bzl", "pw_cc_library", "pw_cc_test")
+load("//pw_build:pigweed.bzl", "pw_cc_test")
 load(
     "//pw_build:selects.bzl",
     "TARGET_COMPATIBLE_WITH_HOST_SELECT",
@@ -29,7 +29,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "rpc_transport",
     hdrs = ["public/pw_rpc_transport/rpc_transport.h"],
     includes = ["public"],
@@ -40,7 +40,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "service_registry",
     hdrs = ["public/pw_rpc_transport/service_registry.h"],
     includes = ["public"],
@@ -52,7 +52,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "test_loopback_service_registry",
     hdrs = ["public/pw_rpc_transport/test_loopback_service_registry.h"],
     includes = ["public"],
@@ -64,7 +64,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "packet_buffer_queue",
     hdrs = ["public/pw_rpc_transport/internal/packet_buffer_queue.h"],
     includes = ["public"],
@@ -96,7 +96,7 @@ pw_cc_test(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "local_rpc_egress",
     srcs = ["local_rpc_egress.cc"],
     hdrs = ["public/pw_rpc_transport/local_rpc_egress.h"],
@@ -136,7 +136,7 @@ pw_cc_test(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "hdlc_framing",
     hdrs = [
         "public/pw_rpc_transport/hdlc_framing.h",
@@ -164,7 +164,7 @@ pw_cc_test(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "simple_framing",
     srcs = [
         "simple_framing.cc",
@@ -190,7 +190,7 @@ pw_cc_test(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "egress_ingress",
     srcs = [
         "egress_ingress.cc",
@@ -223,7 +223,7 @@ pw_cc_test(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "socket_rpc_transport",
     srcs = ["socket_rpc_transport.cc"],
     hdrs = ["public/pw_rpc_transport/socket_rpc_transport.h"],
@@ -245,7 +245,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "stream_rpc_frame_sender",
     hdrs = ["public/pw_rpc_transport/stream_rpc_frame_sender.h"],
     deps = [
@@ -255,7 +255,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "stream_rpc_dispatcher",
     hdrs = ["public/pw_rpc_transport/stream_rpc_dispatcher.h"],
     deps = [

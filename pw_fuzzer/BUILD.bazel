@@ -12,11 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
-
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
@@ -35,7 +30,7 @@ config_setting(
     },
 )
 
-pw_cc_library(
+cc_library(
     name = "fuzztest",
     testonly = True,
     hdrs = ["public/pw_fuzzer/fuzztest.h"] + select({
@@ -55,7 +50,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "fuzztest_stub",
     testonly = True,
     hdrs = [
@@ -75,7 +70,7 @@ pw_cc_library(
 # Create libFuzzer-style fuzzers by using the `pw_fuzzer` template from
 # fuzzer.gni.
 
-pw_cc_library(
+cc_library(
     name = "libfuzzer",
     hdrs = [
         "public/pw_fuzzer/asan_interface.h",

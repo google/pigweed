@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 load(
@@ -26,7 +25,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "server_api",
     srcs = [
         "server_reader_writer.cc",
@@ -43,7 +42,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "client_api",
     hdrs = [
         "public/pw_rpc/pwpb/client_reader_writer.h",
@@ -54,7 +53,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "common",
     hdrs = [
         "public/pw_rpc/pwpb/internal/common.h",
@@ -67,7 +66,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "test_method_context",
     hdrs = [
         "public/pw_rpc/pwpb/fake_channel_output.h",
@@ -84,7 +83,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "client_testing",
     hdrs = [
         "public/pw_rpc/pwpb/client_testing.h",
@@ -97,7 +96,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "client_server_testing",
     hdrs = [
         "public/pw_rpc/pwpb/client_server_testing.h",
@@ -110,7 +109,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "client_server_testing_threaded",
     hdrs = [
         "public/pw_rpc/pwpb/client_server_testing_threaded.h",
@@ -122,13 +121,13 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "internal_test_utils",
     hdrs = ["pw_rpc_pwpb_private/internal_test_utils.h"],
     deps = ["//pw_rpc:internal_test_utils"],
 )
 
-pw_cc_library(
+cc_library(
     name = "echo_service",
     hdrs = ["public/pw_rpc/echo_service_pwpb.h"],
     deps = [

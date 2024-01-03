@@ -15,7 +15,6 @@
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
@@ -34,12 +33,12 @@ constraint_value(
     constraint_setting = "//pw_cpu_exception:support_constraint_setting",
 )
 
-pw_cc_library(
+cc_library(
     name = "config",
     hdrs = ["pw_cpu_exception_cortex_m_private/config.h"],
 )
 
-pw_cc_library(
+cc_library(
     name = "cpu_state",
     hdrs = ["public/pw_cpu_exception_cortex_m/cpu_state.h"],
     includes = ["public"],
@@ -49,7 +48,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "util",
     srcs = ["util.cc"],
     hdrs = ["public/pw_cpu_exception_cortex_m/util.h"],
@@ -70,7 +69,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "support",
     srcs = ["support.cc"],
     deps = [
@@ -86,7 +85,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "proto_dump",
     srcs = ["proto_dump.cc"],
     hdrs = ["public/pw_cpu_exception_cortex_m/proto_dump.h"],
@@ -119,7 +118,7 @@ pw_proto_library(
     deps = [":cpu_state_protos"],
 )
 
-pw_cc_library(
+cc_library(
     name = "cpu_exception",
     hdrs = [
         "public_overrides/pw_cpu_exception_backend/state.h",
@@ -135,7 +134,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "cpu_exception_impl",
     srcs = ["entry.cc"],
     deps = [
@@ -149,7 +148,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "snapshot",
     srcs = ["snapshot.cc"],
     hdrs = ["public/pw_cpu_exception_cortex_m/snapshot.h"],
@@ -168,7 +167,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "cortex_m_constants",
     hdrs = ["pw_cpu_exception_cortex_m_private/cortex_m_constants.h"],
     visibility = ["//visibility:private"],

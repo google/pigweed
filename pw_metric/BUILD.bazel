@@ -15,7 +15,6 @@
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
@@ -24,7 +23,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "metric",
     srcs = ["metric.cc"],
     hdrs = [
@@ -41,7 +40,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "global",
     srcs = ["global.cc"],
     hdrs = [
@@ -53,7 +52,7 @@ pw_cc_library(
 )
 
 # Common MetricWalker/MetricWriter used by RPC service.
-pw_cc_library(
+cc_library(
     name = "metric_walker",
     hdrs = ["pw_metric_private/metric_walker.h"],
     visibility = ["//visibility:private"],
@@ -66,7 +65,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "metric_service_nanopb",
     srcs = ["metric_service_nanopb.cc"],
     hdrs = ["public/pw_metric/metric_service_nanopb.h"],
@@ -79,7 +78,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "metric_service_pwpb",
     srcs = ["metric_service_pwpb.cc"],
     hdrs = ["public/pw_metric/metric_service_pwpb.h"],

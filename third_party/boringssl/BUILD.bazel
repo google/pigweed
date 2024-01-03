@@ -13,12 +13,7 @@
 # the License.
 #
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
-
-pw_cc_library(
+cc_library(
     name = "sysdeps",
     hdrs = ["sysdeps/sys/socket.h"],
     copts = ["-Wno-unused-parameter"],

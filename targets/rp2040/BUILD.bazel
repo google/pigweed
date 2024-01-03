@@ -12,11 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
-
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
@@ -26,7 +21,7 @@ licenses(["notice"])
 # the Pi Pico.
 #
 # TODO: b/260639642 - Support Pico in the Bazel build.
-pw_cc_library(
+cc_library(
     name = "pico_logging_test_main",
     srcs = [
         "pico_logging_test_main.cc",

@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 load(
@@ -26,7 +25,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "pw_multisink",
     srcs = [
         "multisink.cc",
@@ -51,7 +50,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "util",
     srcs = ["util.cc"],
     hdrs = ["public/pw_multisink/util.h"],
@@ -66,7 +65,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "test_thread",
     hdrs = ["public/pw_multisink/test_thread.h"],
     includes = ["public"],
@@ -89,7 +88,7 @@ pw_cc_test(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "multisink_threaded_test",
     srcs = [
         "multisink_threaded_test.cc",
@@ -104,7 +103,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "stl_test_thread",
     srcs = [
         "stl_test_thread.cc",

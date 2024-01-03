@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -22,7 +21,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "server_api",
     srcs = [
         "method.cc",
@@ -41,7 +40,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "client_api",
     hdrs = ["public/pw_rpc/raw/client_reader_writer.h"],
     includes = ["public"],
@@ -52,7 +51,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "fake_channel_output",
     hdrs = ["public/pw_rpc/raw/fake_channel_output.h"],
     includes = ["public"],
@@ -63,7 +62,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "test_method_context",
     hdrs = ["public/pw_rpc/raw/test_method_context.h"],
     includes = ["public"],
@@ -78,7 +77,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "client_testing",
     srcs = ["client_testing.cc"],
     hdrs = ["public/pw_rpc/raw/client_testing.h"],

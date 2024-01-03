@@ -16,7 +16,6 @@ load("@rules_python//python:proto.bzl", "py_proto_library")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_facade",
-    "pw_cc_library",
     "pw_cc_test",
 )
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
@@ -33,7 +32,7 @@ pw_cc_facade(
     includes = ["public"],
 )
 
-pw_cc_library(
+cc_library(
     name = "id",
     hdrs = [
         "public/pw_thread/id.h",
@@ -44,7 +43,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "id_backend_multiplexer",
     visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
@@ -55,13 +54,13 @@ pw_cc_library(
     }),
 )
 
-pw_cc_library(
+cc_library(
     name = "config",
     hdrs = ["public/pw_thread/config.h"],
     includes = ["public"],
 )
 
-pw_cc_library(
+cc_library(
     name = "thread_info",
     hdrs = ["public/pw_thread/thread_info.h"],
     includes = ["public"],
@@ -81,7 +80,7 @@ pw_cc_facade(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "thread_iteration",
     hdrs = [
         "public/pw_thread/thread_iteration.h",
@@ -95,7 +94,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "iteration_backend_multiplexer",
     visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
@@ -118,7 +117,7 @@ pw_cc_facade(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "sleep",
     srcs = [
         "sleep.cc",
@@ -135,7 +134,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "sleep_backend_multiplexer",
     visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
@@ -159,7 +158,7 @@ pw_cc_facade(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "thread",
     srcs = [
         "thread.cc",
@@ -177,7 +176,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "thread_backend_multiplexer",
     visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
@@ -188,7 +187,7 @@ pw_cc_library(
     }),
 )
 
-pw_cc_library(
+cc_library(
     name = "thread_core",
     hdrs = [
         "public/pw_thread/thread_core.h",
@@ -200,7 +199,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "thread_snapshot_service",
     srcs = [
         "pw_thread_private/thread_snapshot_service.h",
@@ -224,7 +223,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "test_thread_context_backend_multiplexer",
     visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
@@ -240,7 +239,7 @@ pw_cc_facade(
     includes = ["public"],
 )
 
-pw_cc_library(
+cc_library(
     name = "test_thread_context",
     hdrs = [
         "public/pw_thread/test_thread_context.h",
@@ -262,7 +261,7 @@ pw_cc_facade(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "yield",
     srcs = [
         "yield.cc",
@@ -278,7 +277,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "yield_backend_multiplexer",
     visibility = ["@pigweed//targets:__pkg__"],
     deps = select({
@@ -289,7 +288,7 @@ pw_cc_library(
     }),
 )
 
-pw_cc_library(
+cc_library(
     name = "snapshot",
     srcs = [
         "snapshot.cc",
@@ -308,7 +307,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "non_portable_test_thread_options",
     hdrs = [
         "public/pw_thread/non_portable_test_thread_options.h",
@@ -321,7 +320,7 @@ pw_cc_library(
 # To instantiate this as a pw_cc_test, depend on this pw_cc_library and the
 # pw_cc_library which implements the backend for non_portable_test_thread_options. See
 # //pw_thread_stl:thread_backend_test as an example.
-pw_cc_library(
+cc_library(
     name = "thread_facade_test",
     srcs = [
         "thread_facade_test.cc",

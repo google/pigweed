@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -22,7 +21,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "analog_input",
     hdrs = [
         "public/pw_analog/analog_input.h",
@@ -34,7 +33,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "microvolt_input",
     hdrs = [
         "public/pw_analog/microvolt_input.h",
@@ -48,7 +47,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "microvolt_input_gmock",
     testonly = True,
     hdrs = [
@@ -61,7 +60,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "analog_input_gmock",
     testonly = True,
     hdrs = [

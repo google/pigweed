@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -22,7 +21,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "pw_blob_store",
     srcs = ["blob_store.cc"],
     hdrs = [
@@ -44,7 +43,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "flat_file_system_entry",
     srcs = ["flat_file_system_entry.cc"],
     hdrs = ["public/pw_blob_store/flat_file_system_entry.h"],

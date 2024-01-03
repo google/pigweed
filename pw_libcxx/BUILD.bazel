@@ -12,12 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
-
-pw_cc_library(
+cc_library(
     name = "pw_libcxx",
     srcs = [
         "__cxa_deleted_virtual.cc",

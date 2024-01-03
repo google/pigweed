@@ -13,10 +13,6 @@
 # the License.
 
 load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
-load(
     "//pw_build:selects.bzl",
     "TARGET_COMPATIBLE_WITH_HOST_SELECT",
 )
@@ -25,7 +21,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "binary_semaphore",
     srcs = [
         "binary_semaphore.cc",
@@ -48,7 +44,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "counting_semaphore",
     srcs = [
         "counting_semaphore.cc",
@@ -71,7 +67,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "mutex",
     srcs = ["mutex.cc"],
     hdrs = [
@@ -91,7 +87,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "timed_mutex",
     hdrs = [
         "public/pw_sync_stl/timed_mutex_inline.h",
@@ -108,7 +104,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "recursive_mutex",
     hdrs = [
         "public/pw_sync_stl/recursive_mutex_inline.h",
@@ -127,7 +123,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "interrupt_spin_lock",
     hdrs = [
         "public/pw_sync_stl/interrupt_spin_lock_inline.h",
@@ -146,7 +142,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "condition_variable",
     hdrs = [
         "public/pw_sync_stl/condition_variable_inline.h",

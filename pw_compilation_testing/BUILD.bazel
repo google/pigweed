@@ -12,15 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
-
 licenses(["notice"])
 
 # Negative compilation testing is not yet supported in Bazel.
-pw_cc_library(
+cc_library(
     name = "negative_compilation_testing",
     hdrs = ["public/pw_compilation_testing/negative_compilation.h"],
     includes = ["public"],

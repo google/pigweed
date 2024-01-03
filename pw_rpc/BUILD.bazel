@@ -14,7 +14,7 @@
 
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
-load("//pw_build:pigweed.bzl", "pw_cc_library", "pw_cc_test")
+load("//pw_build:pigweed.bzl", "pw_cc_test")
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_filegroup", "pw_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -33,7 +33,7 @@ pw_proto_library(
     deps = [":benchmark_proto"],
 )
 
-pw_cc_library(
+cc_library(
     name = "benchmark",
     srcs = ["benchmark.cc"],
     hdrs = ["public/pw_rpc/benchmark.h"],
@@ -55,14 +55,14 @@ filegroup(
     # ],
 )
 
-pw_cc_library(
+cc_library(
     name = "client_server",
     srcs = ["client_server.cc"],
     hdrs = ["public/pw_rpc/client_server.h"],
     deps = [":pw_rpc"],
 )
 
-pw_cc_library(
+cc_library(
     name = "pw_rpc",
     srcs = [
         "call.cc",
@@ -127,7 +127,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "synchronous_client_api",
     srcs = ["public/pw_rpc/internal/synchronous_call_impl.h"],
     hdrs = [
@@ -142,7 +142,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "client_server_testing",
     hdrs = ["public/pw_rpc/internal/client_server_testing.h"],
     includes = ["public"],
@@ -154,7 +154,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "client_server_testing_threaded",
     hdrs = ["public/pw_rpc/internal/client_server_testing_threaded.h"],
     includes = ["public"],
@@ -169,7 +169,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "test_helpers",
     hdrs = ["public/pw_rpc/test_helpers.h"],
     includes = ["public"],
@@ -186,14 +186,14 @@ pw_cc_library(
 
 # thread_testing target is kept for backward compatibility.
 # New code should use test_helpers instead.
-pw_cc_library(
+cc_library(
     name = "thread_testing",
     hdrs = ["public/pw_rpc/thread_testing.h"],
     includes = ["public"],
     deps = [":test_helpers"],
 )
 
-pw_cc_library(
+cc_library(
     name = "internal_test_utils",
     srcs = ["fake_channel_output.cc"],
     hdrs = [
@@ -224,7 +224,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "integration_testing",
     srcs = [
         "integration_testing.cc",

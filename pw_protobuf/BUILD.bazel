@@ -16,7 +16,6 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_perf_test",
     "pw_cc_test",
 )
@@ -27,13 +26,13 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "config",
     hdrs = ["public/pw_protobuf/config.h"],
     includes = ["public"],
 )
 
-pw_cc_library(
+cc_library(
     name = "pw_protobuf",
     srcs = [
         "decoder.cc",
@@ -75,7 +74,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "bytes_utils",
     hdrs = ["public/pw_protobuf/bytes_utils.h"],
     includes = ["public"],

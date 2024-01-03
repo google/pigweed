@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -22,7 +21,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "pw_containers",
     deps = [
         ":algorithm",
@@ -34,7 +33,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "algorithm",
     hdrs = [
         "public/pw_containers/algorithm.h",
@@ -43,7 +42,7 @@ pw_cc_library(
     includes = ["public"],
 )
 
-pw_cc_library(
+cc_library(
     name = "intrusive_list",
     srcs = [
         "intrusive_list.cc",
@@ -59,13 +58,13 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "iterator",
     hdrs = ["public/pw_containers/iterator.h"],
     includes = ["public"],
 )
 
-pw_cc_library(
+cc_library(
     name = "inline_deque",
     hdrs = [
         "public/pw_containers/inline_deque.h",
@@ -79,7 +78,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "inline_queue",
     hdrs = [
         "public/pw_containers/inline_queue.h",
@@ -90,7 +89,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "variable_length_entry_queue",
     srcs = ["variable_length_entry_queue.c"],
     hdrs = ["public/pw_containers/variable_length_entry_queue.h"],
@@ -101,7 +100,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "vector",
     hdrs = [
         "public/pw_containers/vector.h",
@@ -114,7 +113,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "filtered_view",
     hdrs = ["public/pw_containers/filtered_view.h"],
     includes = ["public"],
@@ -124,14 +123,14 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "flat_map",
     hdrs = ["public/pw_containers/flat_map.h"],
     includes = ["public"],
     deps = ["//pw_assert"],
 )
 
-pw_cc_library(
+cc_library(
     name = "raw_storage",
     hdrs = [
         "public/pw_containers/internal/raw_storage.h",
@@ -140,20 +139,20 @@ pw_cc_library(
     visibility = [":__subpackages__"],
 )
 
-pw_cc_library(
+cc_library(
     name = "test_helpers",
     srcs = ["test_helpers.cc"],
     hdrs = ["pw_containers_private/test_helpers.h"],
     visibility = [":__subpackages__"],
 )
 
-pw_cc_library(
+cc_library(
     name = "to_array",
     hdrs = ["public/pw_containers/to_array.h"],
     includes = ["public"],
 )
 
-pw_cc_library(
+cc_library(
     name = "wrapped_iterator",
     hdrs = ["public/pw_containers/wrapped_iterator.h"],
     includes = ["public"],

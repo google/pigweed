@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -27,7 +26,7 @@ constraint_value(
     constraint_setting = "//pw_malloc:backend_constraint_setting",
 )
 
-pw_cc_library(
+cc_library(
     name = "headers",
     hdrs = [
         "public/pw_malloc_freelist/freelist_malloc.h",
@@ -37,7 +36,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "pw_malloc_freelist",
     srcs = [
         "freelist_malloc.cc",

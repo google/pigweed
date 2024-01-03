@@ -12,16 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
-
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "pw_arduino_build",
     srcs = ["arduino_main_wrapper.cc"],
     hdrs = ["public/pw_arduino_build/init.h"],
@@ -33,7 +28,7 @@ pw_cc_library(
 )
 
 # Used in targets/arduino
-pw_cc_library(
+cc_library(
     name = "pw_arduino_build_header",
     hdrs = ["public/pw_arduino_build/init.h"],
     includes = ["public"],

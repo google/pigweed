@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -22,13 +21,13 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "config",
     hdrs = ["public/pw_string/internal/config.h"],
     includes = ["public"],
 )
 
-pw_cc_library(
+cc_library(
     name = "pw_string",
     deps = [
         ":builder",
@@ -38,7 +37,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "builder",
     srcs = ["string_builder.cc"],
     hdrs = ["public/pw_string/string_builder.h"],
@@ -53,7 +52,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "format",
     srcs = ["format.cc"],
     hdrs = ["public/pw_string/format.h"],
@@ -66,7 +65,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "string",
     srcs = [
         "public/pw_string/internal/string_common_functions.inc",
@@ -80,7 +79,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "to_string",
     srcs = ["type_to_string.cc"],
     hdrs = [
@@ -97,7 +96,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "util",
     srcs = ["public/pw_string/internal/length.h"],
     hdrs = ["public/pw_string/util.h"],

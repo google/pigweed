@@ -15,7 +15,6 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_facade",
-    "pw_cc_library",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -59,7 +58,7 @@ pw_cc_facade(
     deps = ["//pw_preprocessor"],
 )
 
-pw_cc_library(
+cc_library(
     name = "entry",
     hdrs = [
         "public/pw_cpu_exception/entry.h",
@@ -79,7 +78,7 @@ pw_cc_facade(
     deps = [":entry"],
 )
 
-pw_cc_library(
+cc_library(
     name = "handler",
     srcs = ["start_exception_handler.cc"],
     hdrs = ["public/pw_cpu_exception/handler.h"],
@@ -97,7 +96,7 @@ pw_cc_facade(
     deps = [":entry"],
 )
 
-pw_cc_library(
+cc_library(
     name = "support",
     hdrs = ["public/pw_cpu_exception/support.h"],
     includes = ["public"],
@@ -112,7 +111,7 @@ constraint_value(
     constraint_setting = "//pw_cpu_exception:handler_constraint_setting",
 )
 
-pw_cc_library(
+cc_library(
     name = "basic_handler",
     srcs = ["basic_handler.cc"],
     deps = [

@@ -15,7 +15,6 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_facade",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -23,7 +22,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "dispatcher",
     hdrs = [
         "public/pw_async/dispatcher.h",
@@ -50,7 +49,7 @@ pw_cc_facade(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "task",
     hdrs = ["public/pw_async/task.h"],
     includes = ["public"],
@@ -63,7 +62,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "types",
     hdrs = [
         "public/pw_async/context.h",
@@ -83,7 +82,7 @@ pw_cc_facade(
     deps = [":dispatcher"],
 )
 
-pw_cc_library(
+cc_library(
     name = "fake_dispatcher",
     hdrs = ["public/pw_async/fake_dispatcher.h"],
     includes = ["public"],
@@ -106,14 +105,14 @@ pw_cc_test(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "fake_dispatcher_fixture",
     hdrs = ["public/pw_async/fake_dispatcher_fixture.h"],
     includes = ["public"],
     deps = [":fake_dispatcher"],
 )
 
-pw_cc_library(
+cc_library(
     name = "heap_dispatcher",
     srcs = ["heap_dispatcher.cc"],
     hdrs = ["public/pw_async/heap_dispatcher.h"],

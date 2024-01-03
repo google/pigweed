@@ -12,16 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
-
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "binary_semaphore",
     srcs = [
         "binary_semaphore.cc",
@@ -47,7 +42,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "counting_semaphore",
     srcs = [
         "counting_semaphore.cc",
@@ -73,7 +68,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "mutex",
     hdrs = [
         "public/pw_sync_threadx/mutex_inline.h",
@@ -94,7 +89,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "timed_mutex",
     srcs = [
         "timed_mutex.cc",
@@ -118,7 +113,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "interrupt_spin_lock",
     srcs = [
         "interrupt_spin_lock.cc",

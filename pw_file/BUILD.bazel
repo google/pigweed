@@ -15,7 +15,6 @@
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
@@ -45,7 +44,7 @@ py_proto_library(
     deps = [":file_proto"],
 )
 
-pw_cc_library(
+cc_library(
     name = "flat_file_system",
     srcs = [
         "flat_file_system.cc",

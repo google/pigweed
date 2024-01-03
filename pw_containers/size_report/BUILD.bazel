@@ -15,10 +15,9 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
-    "pw_cc_library",
 )
 
-pw_cc_library(
+cc_library(
     name = "base_lib",
     hdrs = ["base.h"],
 )

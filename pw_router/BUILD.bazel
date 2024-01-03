@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -22,7 +21,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "static_router",
     srcs = ["static_router.cc"],
     hdrs = ["public/pw_router/static_router.h"],
@@ -35,7 +34,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "egress",
     hdrs = ["public/pw_router/egress.h"],
     deps = [
@@ -44,14 +43,14 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "packet_parser",
     hdrs = ["public/pw_router/packet_parser.h"],
     includes = ["public"],
     deps = ["//pw_bytes"],
 )
 
-pw_cc_library(
+cc_library(
     name = "egress_function",
     hdrs = ["public/pw_router/egress_function.h"],
     deps = [

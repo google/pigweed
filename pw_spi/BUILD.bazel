@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -22,7 +21,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "initiator",
     hdrs = [
         "public/pw_spi/initiator.h",
@@ -35,7 +34,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "responder",
     hdrs = [
         "public/pw_spi/responder.h",
@@ -48,7 +47,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "chip_selector",
     hdrs = [
         "public/pw_spi/chip_selector.h",
@@ -59,7 +58,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "initiator_mock",
     testonly = True,
     srcs = ["initiator_mock.cc"],
@@ -91,7 +90,7 @@ pw_cc_test(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "device",
     hdrs = [
         "public/pw_spi/device.h",
@@ -121,7 +120,7 @@ pw_cc_test(
 )
 
 # Linux-specific spidev implementation.
-pw_cc_library(
+cc_library(
     name = "linux_spi",
     srcs = ["linux_spi.cc"],
     hdrs = ["public/pw_spi/linux_spi.h"],

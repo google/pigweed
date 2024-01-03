@@ -14,7 +14,6 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_library",
     "pw_cc_test",
 )
 
@@ -22,7 +21,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+cc_library(
     name = "chunk",
     srcs = ["chunk.cc"],
     hdrs = ["public/pw_multibuf/chunk.h"],
@@ -36,7 +35,7 @@ pw_cc_library(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "chunk_region_tracker",
     hdrs = ["public/pw_multibuf/chunk_region_tracker.h"],
     includes = ["public"],
@@ -69,7 +68,7 @@ pw_cc_test(
     ],
 )
 
-pw_cc_library(
+cc_library(
     name = "pw_multibuf",
     srcs = ["multibuf.cc"],
     hdrs = ["public/pw_multibuf/multibuf.h"],
