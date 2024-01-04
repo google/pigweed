@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include <pw_log_tokenized/base64.h>
 #include <pw_log_tokenized/config.h>
 #include <pw_log_tokenized/handler.h>
 #include <pw_log_tokenized/metadata.h>
