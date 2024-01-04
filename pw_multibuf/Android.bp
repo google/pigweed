@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -16,19 +16,37 @@ package {
     default_applicable_licenses: ["external_pigweed_license"],
 }
 
-cc_library_headers {
-    name: "pw_log_null_headers",
+cc_library_static {
+    name: "pw_multibuf",
     cpp_std: "c++20",
-    vendor_available: true,
-    export_include_dirs: [
-        "public",
-        "public_overrides",
-    ],
     host_supported: true,
+    vendor_available: true,
+    export_include_dirs: ["public"],
+    srcs: [
+        "chunk.cc",
+        "multibuf.cc",
+    ],
     header_libs: [
-        "pw_preprocessor_headers",
+        "pw_assert_headers",
+        "pw_assert_log_headers",
+        "pw_span_headers",
+        "pw_sync_headers",
     ],
     export_header_lib_headers: [
-        "pw_preprocessor_headers",
+        "pw_assert_headers",
+        "pw_assert_log_headers",
+        "pw_span_headers",
+        "pw_sync_headers",
+    ],
+    defaults: [
+        "pw_assert_log_defaults",
+        "pw_chrono_stl_defaults",
+        "pw_sync_stl_defaults",
+    ],
+    static_libs: [
+        "pw_bytes",
+    ],
+    export_static_lib_headers: [
+        "pw_bytes",
     ],
 }

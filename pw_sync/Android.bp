@@ -22,6 +22,14 @@ cc_library_headers {
     vendor_available: true,
     export_include_dirs: ["public"],
     host_supported: true,
+    header_libs: [
+        "pw_chrono_include_dirs",
+        "pw_polyfill_headers",
+    ],
+    export_header_lib_headers: [
+        "pw_chrono_include_dirs",
+        "pw_polyfill_headers",
+    ],
 }
 
 cc_library_headers {
