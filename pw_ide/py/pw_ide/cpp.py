@@ -1171,13 +1171,20 @@ def find_cipd_installed_exe_path(exe: str) -> Path:
     return path
 
 
+def get_clangd_path(settings: PigweedIdeSettings) -> Path:
+    if settings.clangd_alternate_path is not None:
+        return settings.clangd_alternate_path
+
+    return find_cipd_installed_exe_path('clangd')
+
+
 class ClangdSettings:
     """Makes system-specific settings for running ``clangd`` with Pigweed."""
 
     def __init__(self, settings: PigweedIdeSettings):
         state = CppIdeFeaturesState(settings)
 
-        self.clangd_path = find_cipd_installed_exe_path("clangd")
+        self.clangd_path = get_clangd_path(settings)
 
         compile_commands_dir = env.PW_PROJECT_ROOT
 
