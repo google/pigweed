@@ -3121,7 +3121,7 @@ def generate_is_trivially_comparable_specialization(
             is_trivially_comparable = False
             break
 
-    qualified_message = f'{message.cpp_namespace()}::Message'
+    qualified_message = f'::{message.cpp_namespace()}::Message'
 
     output.write_line('template <>')
     output.write_line(
