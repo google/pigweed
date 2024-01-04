@@ -10,8 +10,8 @@ microcontrollers.
 Wrapper rules
 -------------
 The common configuration for Bazel for all modules is in the ``pigweed.bzl``
-file. The built-in Bazel rules ``cc_binary``, ``cc_library``, and ``cc_test``
-are wrapped with ``pw_cc_binary``, ``pw_cc_library``, and ``pw_cc_test``.
+file. The built-in Bazel rules ``cc_binary``, ``cc_test`` are wrapped with
+``pw_cc_binary`` and ``pw_cc_test``.
 
 .. _module-pw_build-bazel-pw_linker_script:
 
@@ -89,13 +89,13 @@ components:
 
 #. The **library target**, i.e. both the facade (interface) and backend
    (implementation). This is what *users of the module* depend on. It's a
-   regular ``pw_cc_library`` that exposes the same headers as the facade, but
+   regular ``cc_library`` that exposes the same headers as the facade, but
    has a dependency on the "backend label flag" (discussed next). It may also
    include some source files (if these are backend-independent). For example,
 
    .. code-block:: python
 
-     pw_cc_library(
+     cc_library(
          name = "binary_semaphore",
          # A backend-independent source file.
          srcs = [
@@ -129,11 +129,11 @@ components:
    ``//targets/BUILD.bazel``.
 
 #. The **backend target** implements a particular backend for a facade. It's
-   just a plain ``pw_cc_library``, with a dependency on the facade target. For example,
+   just a plain ``cc_library``, with a dependency on the facade target. For example,
 
    .. code-block:: python
 
-     pw_cc_library(
+     cc_library(
          name = "binary_semaphore",
          srcs = [
              "binary_semaphore.cc",

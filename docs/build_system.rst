@@ -692,7 +692,7 @@ see the `Bazel selects reference`_. e.g.
 
 .. code-block:: py
 
-  pw_cc_library(
+  cc_library(
     name = "some_platform_dependant_library",
     deps = select({
       "@platforms//cpu:armv7e-m": [":arm_libs"],
@@ -708,7 +708,7 @@ compatible with only a host os;
 
 .. code-block:: py
 
-  pw_cc_library(
+  cc_library(
     name = "some_host_only_lib",
     srcs = ["host.cc"],
     target_compatible_with = select({
@@ -753,12 +753,12 @@ swap out a single dependency from the command line. e.g.
 
 .. code-block:: py
 
-  pw_cc_library(
+  cc_library(
     name = "some_default_io",
     srcs = ["default_io.cc"],
   )
 
-  pw_cc_library(
+  cc_library(
     name = "some_other_io",
     srcs = ["other_io.cc"],
   )
@@ -768,7 +768,7 @@ swap out a single dependency from the command line. e.g.
     default_build_setting = ":some_default_io",
   )
 
-  pw_cc_library(
+  cc_library(
     name = "some_target_that_needs_io",
     deps = [":io"],
   )
@@ -806,7 +806,7 @@ you create a target in your repository like so:
 .. code-block:: python
 
    # BUILD.bazel
-   pw_cc_library(
+   cc_library(
      name = "time_is_relative",
      srcs = ["relative_time_on_earth.cc"],
      deps = ["@pigweed//pw_chrono:system_clock"],
@@ -892,7 +892,7 @@ files and a BUILD file like,
 
    # //pw_chrono_my_hardware_rtc/BUILD.bazel
 
-   pw_cc_library(
+   cc_library(
        name = "system_clock",
        hdrs = [
            "public/pw_chrono_stl/system_clock_config.h",
@@ -1021,9 +1021,7 @@ backup computer over to use Pigweed's default FreeRTOS backend:
    .. code-block:: python
 
      # //targets/BUILD.bazel
-     load("//pw_build:pigweed.bzl", "pw_cc_library")
-
-     pw_cc_library(
+     cc_library(
        name = "system_clock_backend_multiplexer",
        deps = select({
          "//pw_chrono_my_hardware_rtc:system_clock_backend": [

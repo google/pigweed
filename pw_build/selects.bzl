@@ -19,7 +19,7 @@ _RTOS_NONE = Label("//pw_build/constraints/rtos:none")
 # select implements the logic '(Windows, macOS, iOS, Linux, Android, or
 # Chromium OS) and not RTOS'.  Example usage:
 #   load("//pw_build:selects.bzl","TARGET_COMPATIBLE_WITH_HOST_SELECT")
-#   pw_cc_library(
+#   cc_library(
 #       name = "some_host_only_lib",
 #       hdrs = ["host.h"],
 #       target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),

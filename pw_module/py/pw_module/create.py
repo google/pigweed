@@ -498,17 +498,16 @@ class _BazelBuildFile(_BuildFile):
 
     def _write_preamble(self, file: _OutputFile) -> None:
         imports = ['//pw_build:pigweed.bzl']
-        if self._cc_targets:
-            imports.append('pw_cc_library')
-
         if self._cc_tests:
             imports.append('pw_cc_test')
 
-        file.line('load(')
-        with file.indent():
-            for imp in sorted(imports):
-                file.line(f'"{imp}",')
-        file.line(')\n')
+        # Add a load statement, but only if there are any symbols to load.
+        if len(imports) > 1:
+            file.line('load(')
+            with file.indent():
+                for imp in sorted(imports):
+                    file.line(f'"{imp}",')
+            file.line(')\n')
 
         file.line('package(default_visibility = ["//visibility:public"])\n')
         file.line('licenses(["notice"])')
@@ -520,7 +519,7 @@ class _BazelBuildFile(_BuildFile):
     ) -> None:
         _BazelBuildFile._target(
             file,
-            'pw_cc_library',
+            'cc_library',
             target.name,
             {
                 'srcs': list(target.rebased_sources(self.dir)),

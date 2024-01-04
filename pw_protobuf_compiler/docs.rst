@@ -430,21 +430,21 @@ compile them. e.g.
    )
 
    # Library that depends on only pw_protobuf generated proto targets.
-   pw_cc_library(
+   cc_library(
      name = "my_proto_only_lib",
      srcs = ["my/proto_only.cc"],
      deps = [":my_proto_pwpb"],
    )
 
    # Library that depends on only Nanopb generated proto targets.
-   pw_cc_library(
+   cc_library(
      name = "my_nanopb_only_lib",
      srcs = ["my/nanopb_only.cc"],
      deps = [":my_proto_nanopb"],
    )
 
    # Library that depends on pw_protobuf and pw_rpc/raw.
-   pw_cc_library(
+   cc_library(
      name = "my_raw_rpc_lib",
      srcs = ["my/raw_rpc.cc"],
      deps = [
@@ -452,7 +452,7 @@ compile them. e.g.
        ":my_proto_raw_rpc",
      ],
    )
-   pw_cc_library(
+   cc_library(
      name = "my_nanopb_rpc_lib",
      srcs = ["my/proto_only.cc"],
      deps = [
