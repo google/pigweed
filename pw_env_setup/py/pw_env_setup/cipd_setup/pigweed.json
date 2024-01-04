@@ -15,7 +15,7 @@
       "version_file": ".versions/gn.cipd_version"
     },
     {
-      "path": "infra/3pp/tools/ninja/${platform}",
+      "path": "fuchsia/third_party/ninja/${platform}",
       "platforms": [
         "linux-amd64",
         "linux-arm64",
@@ -24,7 +24,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "version:2@1.11.1.chromium.7"
+        "git_revision:a4366bd29bc0bfc20e87d8304558d3c2847d54cb"
       ]
     },
     {
