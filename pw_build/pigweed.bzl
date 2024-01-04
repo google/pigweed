@@ -45,17 +45,6 @@ def pw_cc_binary(**kwargs):
     kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_log:backend_impl"]
     native.cc_binary(**kwargs)
 
-def pw_cc_library(**kwargs):
-    """Wrapper for cc_library.
-
-    TODO: b/267498492 - This wrapper no longer does anything. Remove it once
-    all projects have been migrated off of it.
-
-    Args:
-      **kwargs: Passed to cc_library.
-    """
-    native.cc_library(**kwargs)
-
 def pw_cc_test(**kwargs):
     """Wrapper for cc_test providing some defaults.
 
