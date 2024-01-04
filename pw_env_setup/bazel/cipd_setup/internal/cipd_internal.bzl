@@ -43,8 +43,6 @@ def platform_normalized(rctx):
     else:
         fail("Could not normalize os:", rctx.os.name)
 
-# TODO: b/234879770 - Enable unused variable check.
-# buildifier: disable=unused-variable
 def arch_normalized(rctx):
     """Normalizes the architecture string to match CIPDs naming system.
 
@@ -55,8 +53,9 @@ def arch_normalized(rctx):
         str: Normalized architecture.
     """
 
-    # TODO: b/234879770 - Find a way to get host architecture information from a
-    # repository context.
+    if "arm" in rctx.os.name or "aarch" in rctx.os.arch:
+        return "arm64"
+
     return "amd64"
 
 def get_client_cipd_version(rctx):

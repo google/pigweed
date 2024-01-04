@@ -63,7 +63,7 @@ def register_pigweed_cxx_toolchains():
         name = "gcc_arm_none_eabi_toolchain",
         build_file = "@pw_toolchain//build_external:gcc_arm_none_eabi.BUILD",
         path = "fuchsia/third_party/armgcc/${os}-${arch}",
-        tag = "version:2@12.2.mpacbti-rel1.1",
+        tag = "version:2@12.2.MPACBTI-Rel1.1",
     )
 
     native.register_toolchains(
