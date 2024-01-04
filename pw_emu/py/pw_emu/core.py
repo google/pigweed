@@ -18,6 +18,7 @@ import json
 import logging
 import os
 import re
+import signal
 import socket
 import subprocess
 import sys
@@ -28,8 +29,6 @@ from importlib import import_module
 from pathlib import Path
 from typing import Optional, Dict, List, Union, Any, Type
 
-import psutil  # type: ignore
-
 from pw_emu.pigweed_emulators import pigweed_emulators
 from pw_env_setup.config_file import load as pw_config_load
 from pw_env_setup.config_file import path as pw_config_path
@@ -39,17 +38,69 @@ from serial import Serial
 _LAUNCHER_LOG = logging.getLogger('pw_qemu.core.launcher')
 
 
+def _pid_exists(pid: int) -> bool:
+    """Check if there is a process for a given pid."""
+
+    # Unix
+    if sys.platform != 'win32':
+        try:
+            # From man 2 kill:
+            #
+            # If sig is 0, then no signal is sent, but existence and
+            # permission checks are still performed; this can be used
+            # to check for the existence of a process ID or process
+            # group ID that the caller is permitted to signal.
+            os.kill(pid, 0)
+            return True
+        except ProcessLookupError:
+            return False
+
+    # Windows
+    proc = subprocess.run(
+        ['tasklist', '/fi', f'pid eq {pid}', '/nh'],
+        capture_output=True,
+        text=True,
+    )
+    return f'{pid}' in proc.stdout
+
+
 def _stop_process(pid: int) -> None:
     """Gracefully stops a running process."""
 
+    # SIGTERM works on both Unix and Windows
     try:
-        proc = psutil.Process(pid)
-        proc.terminate()
-        try:
-            proc.wait(timeout=5)
-        except psutil.TimeoutExpired:
-            proc.kill()
-    except psutil.NoSuchProcess:
+        os.kill(pid, signal.SIGTERM)
+    except OSError:
+        pass
+
+    timeout = 10
+    deadline = time.monotonic() + timeout
+    while _pid_exists(pid):
+        time.sleep(0.1)
+        if time.monotonic() > deadline:
+            break
+
+    if not _pid_exists(pid):
+        return
+
+    _LAUNCHER_LOG.warning(
+        "Process %s still running after %d seconds.", pid, timeout
+    )
+
+    # On Windows there is nothing else we can do
+    if sys.platform == 'win32':
+        return
+
+    _LAUNCHER_LOG.warning("Sending SIGKILL...")
+
+    # Avoid mypy false positive on win32.
+    assert sys.platform != 'win32'
+
+    try:
+        # pylint: disable=no-member
+        # Avoid pylint false positive on win32.
+        os.kill(pid, signal.SIGKILL)
+    except ProcessLookupError:
         pass
 
 
@@ -602,7 +653,7 @@ class Connector(ABC):
 
     def proc_running(self, proc: str) -> bool:
         try:
-            return psutil.pid_exists(self._handles.procs[proc].pid)
+            return _pid_exists(self._handles.procs[proc].pid)
         except (NotRunning, KeyError):
             return False
 
@@ -610,7 +661,7 @@ class Connector(ABC):
         """Checks if the main emulator process is already running."""
 
         try:
-            return psutil.pid_exists(self._handles.procs[self._handles.emu].pid)
+            return _pid_exists(self._handles.procs[self._handles.emu].pid)
         except (NotRunning, KeyError):
             return False
 
@@ -925,7 +976,7 @@ class Launcher(ABC):
 
         try:
             handles = Handles.load(wdir)
-            if psutil.pid_exists(handles.procs[handles.emu].pid):
+            if _pid_exists(handles.procs[handles.emu].pid):
                 raise AlreadyRunning(wdir)
         except NotRunning:
             pass
