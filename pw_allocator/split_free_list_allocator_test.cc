@@ -33,19 +33,7 @@ static constexpr size_t kCapacity = 256;
 // considered "small".
 static constexpr size_t kThreshold = 64;
 
-// An `SplitFreeListAllocator` that is automatically initialized on
-// construction.
 using BlockType = Block<uint16_t, kCapacity>;
-class SplitFreeListAllocatorWithBuffer
-    : public WithBuffer<SplitFreeListAllocator<BlockType>,
-                        kCapacity,
-                        BlockType> {
- public:
-  SplitFreeListAllocatorWithBuffer() {
-    EXPECT_EQ((*this)->Init(ByteSpan(this->data(), this->size()), kThreshold),
-              OkStatus());
-  }
-};
 
 // Test case fixture that allows individual tests to cache allocations and
 // release them automatically on tear-down.
@@ -55,6 +43,9 @@ class SplitFreeListAllocatorTest : public ::testing::Test {
   static constexpr size_t kNumPtrs = 16;
 
   void SetUp() override {
+    EXPECT_EQ(allocator_->Init(ByteSpan(allocator_.data(), allocator_.size()),
+                               kThreshold),
+              OkStatus());
     for (size_t i = 0; i < kNumPtrs; ++i) {
       ptrs_[i] = nullptr;
     }
@@ -73,7 +64,8 @@ class SplitFreeListAllocatorTest : public ::testing::Test {
     }
   }
 
-  SplitFreeListAllocatorWithBuffer allocator_;
+  WithBuffer<SplitFreeListAllocator<BlockType>, kCapacity, BlockType>
+      allocator_;
 
   // Tests can store allocations in this array to have them automatically
   // freed in `TearDown`, including on ASSERT failure. If pointers are manually
@@ -83,12 +75,26 @@ class SplitFreeListAllocatorTest : public ::testing::Test {
 
 // Unit tests.
 
-TEST_F(SplitFreeListAllocatorTest, InitUnaligned) {
+TEST_F(SplitFreeListAllocatorTest, AutomaticallyInit) {
+  alignas(BlockType) std::array<std::byte, kCapacity> buffer;
+  ByteSpan bytes(buffer.data(), buffer.size());
+
+  SplitFreeListAllocator<Block<>> allocator(bytes, kThreshold);
+
+  EXPECT_NE(*(allocator.blocks().begin()), nullptr);
+}
+
+TEST_F(SplitFreeListAllocatorTest, ExplicitlyInit) {
   // The test fixture uses aligned memory to make it easier to reason about
   // allocations, but that isn't strictly required.
-  SplitFreeListAllocator<Block<>> unaligned;
-  ByteSpan bytes(allocator_.data(), allocator_.size());
-  EXPECT_EQ(unaligned.Init(bytes.subspan(1), kThreshold), OkStatus());
+  alignas(BlockType) std::array<std::byte, kCapacity> buffer;
+  ByteSpan bytes(buffer.data(), buffer.size());
+
+  SplitFreeListAllocator<Block<>> allocator;
+
+  EXPECT_EQ(*(allocator.blocks().begin()), nullptr);
+  EXPECT_EQ(allocator.Init(bytes.subspan(1)), OkStatus());
+  EXPECT_NE(*(allocator.blocks().begin()), nullptr);
 }
 
 TEST_F(SplitFreeListAllocatorTest, AllocateLarge) {

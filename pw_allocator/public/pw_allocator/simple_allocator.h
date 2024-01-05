@@ -25,6 +25,7 @@ class SimpleAllocator : public Allocator {
   using Block = pw::allocator::Block<>;
   using Range = typename Block::Range;
 
+  /// Constexpr constructor. Callers must explicitly call `Init`.
   constexpr SimpleAllocator() = default;
 
   /// Initialize this allocator to allocate memory from `region`.

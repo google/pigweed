@@ -102,6 +102,9 @@ class AllocatorForTestImpl : public AllocatorWithMetrics<Metrics> {
 
 }  // namespace internal
 
+/// Token that can be used in tests.
+constexpr tokenizer::Token kToken = PW_TOKENIZE_STRING("test");
+
 /// An `AllocatorForTest` that is automatically initialized on construction.
 template <size_t kBufferSize>
 class AllocatorForTest

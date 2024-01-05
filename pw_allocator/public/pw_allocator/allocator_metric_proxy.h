@@ -35,8 +35,15 @@ class AllocatorMetricProxyImpl : public AllocatorWithMetrics<MetricsType> {
  public:
   using metrics_type = MetricsType;
 
+  /// Constexpr constructor. Callers must explicitly call `Init`.
   constexpr explicit AllocatorMetricProxyImpl(metric::Token token)
       : allocator_(nullptr), metrics_(token) {}
+
+  /// Non-constexpr constructor that autmatically invokes `Init`.
+  AllocatorMetricProxyImpl(metric::Token token, Allocator& allocator)
+      : AllocatorMetricProxyImpl(token) {
+    Init(allocator);
+  }
 
   /// Sets the wrapped allocator.
   ///

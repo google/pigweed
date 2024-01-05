@@ -63,7 +63,21 @@ class SplitFreeListAllocator : public BaseSplitFreeListAllocator {
  public:
   using Range = typename BlockType::Range;
 
+  /// Constexpr constructor. Callers must explicitly call `Init`.
   constexpr SplitFreeListAllocator() = default;
+
+  /// Non-constexpr constructor that automatically calls `Init`.
+  ///
+  /// Errors are fatal.
+  ///
+  /// @param[in]  region              The memory region for this allocator.
+  /// @param[in]  threshold           Allocations of this size of larger are
+  ///                                 "large" and come from lower addresses.
+  explicit SplitFreeListAllocator(ByteSpan region, size_t threshold)
+      : SplitFreeListAllocator() {
+    PW_ASSERT(Init(region, threshold).ok());
+  }
+
   ~SplitFreeListAllocator() override;
 
   // Not copyable.
@@ -81,7 +95,7 @@ class SplitFreeListAllocator : public BaseSplitFreeListAllocator {
   /// @retval     INVALID_ARGUMENT    The memory region is null.
   /// @retval     RESOURCE_EXHAUSTED  The region is too small for `BlockType`.
   /// @retval     OUT_OF_RANGE        The region too large for `BlockType`.
-  Status Init(ByteSpan region, size_t threshold);
+  Status Init(ByteSpan region, size_t threshold = 0);
 
   /// Returns an iterable range of blocks tracking the memory of this allocator.
   Range blocks() const;
@@ -137,8 +151,7 @@ class SplitFreeListAllocator : public BaseSplitFreeListAllocator {
 
 template <typename BlockType>
 SplitFreeListAllocator<BlockType>::~SplitFreeListAllocator() {
-  auto* begin = BlockType::FromUsableSpace(static_cast<std::byte*>(begin_));
-  for (auto* block : Range(begin)) {
+  for (auto* block : blocks()) {
     if (block->Used()) {
       CrashOnAllocated(block);
     }
@@ -147,7 +160,10 @@ SplitFreeListAllocator<BlockType>::~SplitFreeListAllocator() {
 
 template <typename BlockType>
 typename BlockType::Range SplitFreeListAllocator<BlockType>::blocks() const {
-  auto* begin = BlockType::FromUsableSpace(static_cast<std::byte*>(begin_));
+  auto* begin =
+      begin_ == nullptr
+          ? nullptr
+          : BlockType::FromUsableSpace(static_cast<std::byte*>(begin_));
   return Range(begin);
 }
 
@@ -160,7 +176,7 @@ Status SplitFreeListAllocator<BlockType>::Init(ByteSpan region,
   if (BlockType::kCapacity < region.size()) {
     return Status::OutOfRange();
   }
-
+  printf("### (%s:%d)\n", __FILE__, __LINE__);
   // Blocks need to be aligned. Find the first aligned address, and use as much
   // of the memory region as possible.
   auto addr = reinterpret_cast<uintptr_t>(region.data());
@@ -179,6 +195,7 @@ Status SplitFreeListAllocator<BlockType>::Init(ByteSpan region,
   last_free_ = block;
 
   threshold_ = threshold;
+  printf("### (%s:%d)\n", __FILE__, __LINE__);
   return OkStatus();
 }
 

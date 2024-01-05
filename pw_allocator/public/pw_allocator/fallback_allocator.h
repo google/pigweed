@@ -27,12 +27,18 @@ namespace pw::allocator {
 /// If it cannot allocate memory, e.g. because it is out of memory, the
 /// secondary alloator will try to allocate memory instead.
 template <typename MetricsType>
-class FallbackAllocatorImpl : public Allocator,
-                              public WithMetrics<MetricsType> {
+class FallbackAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
  public:
   using metrics_type = MetricsType;
 
+  /// Constexpr constructor. Callers must explicitly call `Init`.
   constexpr FallbackAllocatorImpl() : secondary_(kSecondary) {}
+
+  /// Non-constexpr constructor that autmatically invokes `Init`.
+  FallbackAllocatorImpl(Allocator& primary, Allocator& secondary)
+      : FallbackAllocatorImpl() {
+    Init(primary, secondary);
+  }
 
   metrics_type& metric_group() override { return secondary_.metric_group(); }
   const metrics_type& metric_group() const override {

@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_allocator/allocator_metric_proxy.h"
+
 #include "pw_allocator/allocator_testing.h"
 #include "pw_unit_test/framework.h"
 
@@ -22,21 +24,36 @@ namespace {
 // `Allocator` calls to a field of type
 // `AllocatorMetricProxyImpl<internal::Metrics>`. This is the same type as
 // `AllocatorMetricProxy`, except that metrics are explicitly enabled. As a
-// result, these unit tests do validate `AllocatorMetricProxy`, even though that
-// type never appears directly here.
+// result, these unit tests do validate `AllocatorMetricProxy`, even when that
+// type never appears directly in a test.
+
+TEST(AllocatorMetricProxyTest, ExplicitlyInitialized) {
+  WithBuffer<SimpleAllocator, 256> allocator;
+  AllocatorMetricProxyImpl<internal::Metrics> proxy(test::kToken);
+
+  metric::Group& group = proxy.metric_group();
+  EXPECT_EQ(group.metrics().size(), 0U);
+  EXPECT_EQ(group.children().size(), 0U);
+
+  proxy.Init(*allocator);
+  EXPECT_EQ(group.metrics().size(), 3U);
+  EXPECT_EQ(group.children().size(), 0U);
+}
+
+TEST(AllocatorMetricProxyTest, AutomaticallyInitialized) {
+  WithBuffer<SimpleAllocator, 256> allocator;
+  AllocatorMetricProxyImpl<internal::Metrics> proxy(test::kToken, *allocator);
+
+  metric::Group& group = proxy.metric_group();
+  EXPECT_EQ(group.metrics().size(), 3U);
+  EXPECT_EQ(group.children().size(), 0U);
+}
 
 TEST(AllocatorMetricProxyTest, InitiallyZero) {
   test::AllocatorForTest<256> allocator;
   EXPECT_EQ(allocator->used(), 0U);
   EXPECT_EQ(allocator->peak(), 0U);
   EXPECT_EQ(allocator->count(), 0U);
-}
-
-TEST(AllocatorMetricProxyTest, MetricsInitialized) {
-  test::AllocatorForTest<256> allocator;
-  metric::Group& group = allocator->metric_group();
-  EXPECT_EQ(group.metrics().size(), 3U);
-  EXPECT_EQ(group.children().size(), 0U);
 }
 
 TEST(AllocatorMetricProxyTest, AllocateDeallocate) {
