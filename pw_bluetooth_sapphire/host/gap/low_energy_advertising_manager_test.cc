@@ -133,10 +133,12 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
   }
 
  private:
-  std::optional<hci::EmbossCommandPacket> BuildEnablePacket(
+  hci::EmbossCommandPacket BuildEnablePacket(
       const DeviceAddress& address,
       pw::bluetooth::emboss::GenericEnableParam enable) override {
-    return std::nullopt;
+    return hci::EmbossCommandPacket::New<
+        pw::bluetooth::emboss::LESetExtendedAdvertisingEnableDataWriter>(
+        hci_spec::kLESetExtendedAdvertisingEnable);
   }
 
   hci::CommandChannel::CommandPacketVariant BuildSetAdvertisingParams(
@@ -169,9 +171,11 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     return std::unique_ptr<hci::CommandPacket>();
   }
 
-  std::optional<hci::EmbossCommandPacket> BuildRemoveAdvertisingSet(
+  hci::EmbossCommandPacket BuildRemoveAdvertisingSet(
       const DeviceAddress& address) override {
-    return std::nullopt;
+    return hci::EmbossCommandPacket::New<
+        pw::bluetooth::emboss::LERemoveAdvertisingSetCommandWriter>(
+        hci_spec::kLERemoveAdvertisingSet);
   }
 
   size_t max_ad_size_;

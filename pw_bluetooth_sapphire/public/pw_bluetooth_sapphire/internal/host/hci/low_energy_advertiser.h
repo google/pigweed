@@ -164,7 +164,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
  protected:
   // Build the HCI command packet to enable advertising for the flavor of low
   // energy advertising being implemented.
-  virtual std::optional<EmbossCommandPacket> BuildEnablePacket(
+  virtual EmbossCommandPacket BuildEnablePacket(
       const DeviceAddress& address,
       pw::bluetooth::emboss::GenericEnableParam enable) = 0;
 
@@ -202,7 +202,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // Build the HCI command packet to remove the advertising set entirely from
   // the controller's memory for the flavor of low energy advertising being
   // implemented.
-  virtual std::optional<EmbossCommandPacket> BuildRemoveAdvertisingSet(
+  virtual EmbossCommandPacket BuildRemoveAdvertisingSet(
       const DeviceAddress& address) = 0;
 
   // Called when the command packet created with BuildSetAdvertisingParams
