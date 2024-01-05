@@ -170,18 +170,7 @@ typename BlockType::Range SplitFreeListAllocator<BlockType>::blocks() const {
 template <typename BlockType>
 Status SplitFreeListAllocator<BlockType>::Init(ByteSpan region,
                                                size_t threshold) {
-  if (region.data() == nullptr) {
-    return Status::InvalidArgument();
-  }
-  if (BlockType::kCapacity < region.size()) {
-    return Status::OutOfRange();
-  }
-  printf("### (%s:%d)\n", __FILE__, __LINE__);
-  // Blocks need to be aligned. Find the first aligned address, and use as much
-  // of the memory region as possible.
-  auto addr = reinterpret_cast<uintptr_t>(region.data());
-  auto aligned = AlignUp(addr, BlockType::kAlignment);
-  Result<BlockType*> result = BlockType::Init(region.subspan(aligned - addr));
+  Result<BlockType*> result = BlockType::Init(region);
   if (!result.ok()) {
     return result.status();
   }
@@ -195,7 +184,6 @@ Status SplitFreeListAllocator<BlockType>::Init(ByteSpan region,
   last_free_ = block;
 
   threshold_ = threshold;
-  printf("### (%s:%d)\n", __FILE__, __LINE__);
   return OkStatus();
 }
 

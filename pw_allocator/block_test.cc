@@ -14,6 +14,7 @@
 
 #include "pw_allocator/block.h"
 
+#include <array>
 #include <cstdint>
 #include <cstring>
 
@@ -24,14 +25,12 @@ using std::byte;
 
 namespace pw::allocator {
 
-const size_t kCapacity = 0x20000;
-
 template <typename BlockType>
-void CanCreateSingleBlock() {
-  constexpr size_t kN = 200;
-  alignas(BlockType*) byte bytes[kN];
+void CanCreateSingleAlignedBlock() {
+  constexpr size_t kN = 1024;
+  alignas(BlockType*) std::array<std::byte, kN> bytes;
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block = *result;
 
@@ -43,37 +42,34 @@ void CanCreateSingleBlock() {
   EXPECT_TRUE(block->Last());
 }
 TEST(GenericBlockTest, CanCreateSingleBlock) {
-  CanCreateSingleBlock<Block<>>();
+  CanCreateSingleAlignedBlock<Block<>>();
 }
 TEST(CustomBlockTest, CanCreateSingleBlock) {
-  CanCreateSingleBlock<Block<uint32_t, kCapacity>>();
+  CanCreateSingleAlignedBlock<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
-void CannotCreateUnalignedSingleBlock() {
+void CanCreateUnalignedSingleBlock() {
   constexpr size_t kN = 1024;
 
   // Force alignment, so we can un-force it below
-  alignas(BlockType*) byte bytes[kN];
-  byte* byte_ptr = bytes;
+  alignas(BlockType*) std::array<std::byte, kN> bytes;
+  ByteSpan aligned(bytes);
 
-  Result<BlockType*> result = BlockType::Init(span(byte_ptr + 1, kN - 1));
-  EXPECT_FALSE(result.ok());
-  EXPECT_EQ(result.status(), Status::InvalidArgument());
+  Result<BlockType*> result = BlockType::Init(aligned.subspan(1));
+  EXPECT_EQ(result.status(), OkStatus());
 }
 TEST(GenericBlockTest, CannotCreateUnalignedSingleBlock) {
-  CannotCreateUnalignedSingleBlock<Block<>>();
+  CanCreateUnalignedSingleBlock<Block<>>();
 }
 TEST(CustomBlockTest, CannotCreateUnalignedSingleBlock) {
-  CannotCreateUnalignedSingleBlock<Block<uint32_t, kCapacity>>();
+  CanCreateUnalignedSingleBlock<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
 void CannotCreateTooSmallBlock() {
-  constexpr size_t kN = 2;
-  alignas(BlockType*) byte bytes[kN];
-
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, 2> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   EXPECT_FALSE(result.ok());
   EXPECT_EQ(result.status(), Status::ResourceExhausted());
 }
@@ -81,15 +77,15 @@ TEST(GenericBlockTest, CannotCreateTooSmallBlock) {
   CannotCreateTooSmallBlock<Block<>>();
 }
 TEST(CustomBlockTest, CannotCreateTooSmallBlock) {
-  CannotCreateTooSmallBlock<Block<uint32_t, kCapacity>>();
+  CannotCreateTooSmallBlock<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 TEST(CustomBlockTest, CannotCreateTooLargeBlock) {
-  using BlockType = Block<uint16_t, 512>;
   constexpr size_t kN = 1024;
-  alignas(BlockType*) byte bytes[kN];
+  using BlockType = Block<uint8_t>;
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   EXPECT_FALSE(result.ok());
   EXPECT_EQ(result.status(), Status::OutOfRange());
 }
@@ -98,9 +94,9 @@ template <typename BlockType>
 void CanSplitBlock() {
   constexpr size_t kN = 1024;
   constexpr size_t kSplitN = 512;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block1 = *result;
 
@@ -121,25 +117,24 @@ void CanSplitBlock() {
 }
 TEST(GenericBlockTest, CanSplitBlock) { CanSplitBlock<Block<>>(); }
 TEST(CustomBlockTest, CanSplitBlock) {
-  CanSplitBlock<Block<uint32_t, kCapacity>>();
+  CanSplitBlock<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
 void CanSplitBlockUnaligned() {
   constexpr size_t kN = 1024;
-  constexpr size_t kSplitN = 513;
 
-  alignas(BlockType*) byte bytes[kN];
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
+  ASSERT_EQ(result.status(), OkStatus());
+  BlockType* block1 = *result;
 
   // We should split at sizeof(BlockType) + kSplitN bytes. Then
   // we need to round that up to an alignof(BlockType*) boundary.
-  uintptr_t split_addr = ((uintptr_t)&bytes) + kSplitN;
+  constexpr size_t kSplitN = 513;
+  uintptr_t split_addr = reinterpret_cast<uintptr_t>(block1) + kSplitN;
   split_addr += alignof(BlockType*) - (split_addr % alignof(BlockType*));
   uintptr_t split_len = split_addr - (uintptr_t)&bytes;
-
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
-  ASSERT_EQ(result.status(), OkStatus());
-  BlockType* block1 = *result;
 
   result = BlockType::Split(block1, kSplitN);
   ASSERT_EQ(result.status(), OkStatus());
@@ -156,7 +151,7 @@ void CanSplitBlockUnaligned() {
 }
 TEST(GenericBlockTest, CanSplitBlockUnaligned) { CanSplitBlock<Block<>>(); }
 TEST(CustomBlockTest, CanSplitBlockUnaligned) {
-  CanSplitBlock<Block<uint32_t, kCapacity>>();
+  CanSplitBlock<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
@@ -173,9 +168,9 @@ void CanSplitMidBlock() {
   constexpr size_t kN = 1024;
   constexpr size_t kSplit1 = 512;
   constexpr size_t kSplit2 = 256;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block1 = *result;
 
@@ -194,16 +189,16 @@ void CanSplitMidBlock() {
 }
 TEST(GenericBlockTest, CanSplitMidBlock) { CanSplitMidBlock<Block<>>(); }
 TEST(CustomBlockTest, CanSplitMidBlock) {
-  CanSplitMidBlock<Block<uint32_t, kCapacity>>();
+  CanSplitMidBlock<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
 void CannotSplitTooSmallBlock() {
   constexpr size_t kN = 64;
   constexpr size_t kSplitN = kN + 1;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block = *result;
 
@@ -215,9 +210,9 @@ template <typename BlockType>
 void CannotSplitBlockWithoutHeaderSpace() {
   constexpr size_t kN = 1024;
   constexpr size_t kSplitN = kN - BlockType::kBlockOverhead - 1;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block = *result;
 
@@ -228,16 +223,16 @@ TEST(GenericBlockTest, CannotSplitBlockWithoutHeaderSpace) {
   CannotSplitBlockWithoutHeaderSpace<Block<>>();
 }
 TEST(CustomBlockTest, CannotSplitBlockWithoutHeaderSpace) {
-  CannotSplitBlockWithoutHeaderSpace<Block<uint32_t, kCapacity>>();
+  CannotSplitBlockWithoutHeaderSpace<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
 void CannotMakeBlockLargerInSplit() {
   // Ensure that we can't ask for more space than the block actually has...
   constexpr size_t kN = 1024;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block = *result;
 
@@ -248,16 +243,16 @@ TEST(GenericBlockTest, CannotMakeBlockLargerInSplit) {
   CannotMakeBlockLargerInSplit<Block<>>();
 }
 TEST(CustomBlockTest, CannotMakeBlockLargerInSplit) {
-  CannotMakeBlockLargerInSplit<Block<uint32_t, kCapacity>>();
+  CannotMakeBlockLargerInSplit<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
 void CannotMakeSecondBlockLargerInSplit() {
   // Ensure that the second block in split is at least of the size of header.
   constexpr size_t kN = 1024;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block = *result;
 
@@ -269,16 +264,16 @@ TEST(GenericBlockTest, CannotMakeSecondBlockLargerInSplit) {
   CannotMakeSecondBlockLargerInSplit<Block<>>();
 }
 TEST(CustomBlockTest, CannotMakeSecondBlockLargerInSplit) {
-  CannotMakeSecondBlockLargerInSplit<Block<uint32_t, kCapacity>>();
+  CannotMakeSecondBlockLargerInSplit<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
 void CanMakeZeroSizeFirstBlock() {
   // This block does support splitting with zero payload size.
   constexpr size_t kN = 1024;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block = *result;
 
@@ -290,16 +285,16 @@ TEST(GenericBlockTest, CanMakeZeroSizeFirstBlock) {
   CanMakeZeroSizeFirstBlock<Block<>>();
 }
 TEST(CustomBlockTest, CanMakeZeroSizeFirstBlock) {
-  CanMakeZeroSizeFirstBlock<Block<uint32_t, kCapacity>>();
+  CanMakeZeroSizeFirstBlock<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
 void CanMakeZeroSizeSecondBlock() {
   // Likewise, the split block can be zero-width.
   constexpr size_t kN = 1024;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block1 = *result;
 
@@ -314,15 +309,15 @@ TEST(GenericBlockTest, CanMakeZeroSizeSecondBlock) {
   CanMakeZeroSizeSecondBlock<Block<>>();
 }
 TEST(CustomBlockTest, CanMakeZeroSizeSecondBlock) {
-  CanMakeZeroSizeSecondBlock<Block<uint32_t, kCapacity>>();
+  CanMakeZeroSizeSecondBlock<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
 void CanMarkBlockUsed() {
   constexpr size_t kN = 1024;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block = *result;
 
@@ -337,16 +332,16 @@ void CanMarkBlockUsed() {
 }
 TEST(GenericBlockTest, CanMarkBlockUsed) { CanMarkBlockUsed<Block<>>(); }
 TEST(CustomBlockTest, CanMarkBlockUsed) {
-  CanMarkBlockUsed<Block<uint32_t, kCapacity>>();
+  CanMarkBlockUsed<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
 void CannotSplitUsedBlock() {
   constexpr size_t kN = 1024;
   constexpr size_t kSplitN = 512;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block = *result;
 
@@ -358,7 +353,7 @@ TEST(GenericBlockTest, CannotSplitUsedBlock) {
   CannotSplitUsedBlock<Block<>>();
 }
 TEST(CustomBlockTest, CannotSplitUsedBlock) {
-  CannotSplitUsedBlock<Block<uint32_t, kCapacity>>();
+  CannotSplitUsedBlock<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
@@ -366,9 +361,9 @@ void CanAllocFirstFromAlignedBlock() {
   constexpr size_t kN = 1024;
   constexpr size_t kSize = 256;
   constexpr size_t kAlign = 32;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block = *result;
 
@@ -403,7 +398,7 @@ TEST(GenericBlockTest, CanAllocFirstFromAlignedBlock) {
   CanAllocFirstFromAlignedBlock<Block<>>();
 }
 TEST(CustomBlockTest, CanAllocFirstFromAlignedBlock) {
-  CanAllocFirstFromAlignedBlock<Block<uint32_t, kCapacity>>();
+  CanAllocFirstFromAlignedBlock<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
@@ -411,9 +406,9 @@ void CanAllocFirstFromUnalignedBlock() {
   constexpr size_t kN = 1024;
   constexpr size_t kSize = 256;
   constexpr size_t kAlign = 32;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block = *result;
 
@@ -446,16 +441,16 @@ TEST(GenericBlockTest, CanAllocFirstFromUnalignedBlock) {
   CanAllocFirstFromUnalignedBlock<Block<>>();
 }
 TEST(CustomBlockTest, CanAllocFirstFromUnalignedBlock) {
-  CanAllocFirstFromUnalignedBlock<Block<uint32_t, kCapacity>>();
+  CanAllocFirstFromUnalignedBlock<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
 void CannotAllocFirstTooSmallBlock() {
   constexpr size_t kN = 1024;
   constexpr size_t kAlign = 32;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block = *result;
 
@@ -478,7 +473,7 @@ TEST(GenericBlockTest, CannotAllocFirstTooSmallBlock) {
   CannotAllocFirstTooSmallBlock<Block<>>();
 }
 TEST(CustomBlockTest, CannotAllocFirstTooSmallBlock) {
-  CannotAllocFirstTooSmallBlock<Block<uint32_t, kCapacity>>();
+  CannotAllocFirstTooSmallBlock<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
@@ -486,9 +481,9 @@ void CanAllocLast() {
   constexpr size_t kN = 1024;
   constexpr size_t kSize = 256;
   constexpr size_t kAlign = 32;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block = *result;
 
@@ -505,16 +500,16 @@ void CanAllocLast() {
 }
 TEST(GenericBlockTest, CanAllocLast) { CanAllocLast<Block<>>(); }
 TEST(CustomBlockTest, CanAllocLast) {
-  CanAllocLast<Block<uint32_t, kCapacity>>();
+  CanAllocLast<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
 void CannotAllocLastFromTooSmallBlock() {
   constexpr size_t kN = 1024;
   constexpr size_t kAlign = 32;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block = *result;
 
@@ -538,7 +533,7 @@ TEST(GenericBlockTest, CannotAllocLastFromTooSmallBlock) {
   CannotAllocLastFromTooSmallBlock<Block<>>();
 }
 TEST(CustomBlockTest, CannotAllocLastFromTooSmallBlock) {
-  CannotAllocLastFromTooSmallBlock<Block<uint32_t, kCapacity>>();
+  CannotAllocLastFromTooSmallBlock<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
@@ -548,9 +543,9 @@ void CanMergeWithNextBlock() {
   constexpr size_t kN = 1024;
   constexpr size_t kSplit1 = 512;
   constexpr size_t kSplit2 = 256;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block1 = *result;
 
@@ -572,21 +567,20 @@ TEST(GenericBlockTest, CanMergeWithNextBlock) {
   CanMergeWithNextBlock<Block<>>();
 }
 TEST(CustomBlockTest, CanMergeWithNextBlock) {
-  CanMergeWithNextBlock<Block<uint32_t, kCapacity>>();
+  CanMergeWithNextBlock<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
 void CannotMergeWithFirstOrLastBlock() {
   constexpr size_t kN = 1024;
   constexpr size_t kSplitN = 512;
-  alignas(BlockType*) byte bytes[kN];
 
-  // Do a split, just to check that the checks on Next/Prev are
-  // different...
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block1 = *result;
 
+  // Do a split, just to check that the checks on Next/Prev are different...
   result = BlockType::Split(block1, kSplitN);
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block2 = *result;
@@ -600,21 +594,20 @@ TEST(GenericBlockTest, CannotMergeWithFirstOrLastBlock) {
   CannotMergeWithFirstOrLastBlock<Block<>>();
 }
 TEST(CustomBlockTest, CannotMergeWithFirstOrLastBlock) {
-  CannotMergeWithFirstOrLastBlock<Block<uint32_t, kCapacity>>();
+  CannotMergeWithFirstOrLastBlock<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
 void CannotMergeUsedBlock() {
   constexpr size_t kN = 1024;
   constexpr size_t kSplitN = 512;
-  alignas(BlockType*) byte bytes[kN];
 
-  // Do a split, just to check that the checks on Next/Prev are
-  // different...
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block = *result;
 
+  // Do a split, just to check that the checks on Next/Prev are different...
   result = BlockType::Split(block, kSplitN);
   ASSERT_EQ(result.status(), OkStatus());
 
@@ -625,7 +618,7 @@ TEST(GenericBlockTest, CannotMergeUsedBlock) {
   CannotMergeUsedBlock<Block<>>();
 }
 TEST(CustomBlockTest, CannotMergeUsedBlock) {
-  CannotMergeUsedBlock<Block<uint32_t, kCapacity>>();
+  CannotMergeUsedBlock<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
@@ -644,7 +637,7 @@ void CanFreeSingleBlock() {
 }
 TEST(GenericBlockTest, CanFreeSingleBlock) { CanFreeSingleBlock<Block<>>(); }
 TEST(CustomBlockTest, CanFreeSingleBlock) {
-  CanFreeSingleBlock<Block<uint32_t, kCapacity>>();
+  CanFreeSingleBlock<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
@@ -652,9 +645,9 @@ void CanFreeBlockWithoutMerging() {
   constexpr size_t kN = 1024;
   constexpr size_t kSplit1 = 512;
   constexpr size_t kSplit2 = 256;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block1 = *result;
 
@@ -679,7 +672,7 @@ TEST(GenericBlockTest, CanFreeBlockWithoutMerging) {
   CanFreeBlockWithoutMerging<Block<>>();
 }
 TEST(CustomBlockTest, CanFreeBlockWithoutMerging) {
-  CanFreeBlockWithoutMerging<Block<uint32_t, kCapacity>>();
+  CanFreeBlockWithoutMerging<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
@@ -687,9 +680,9 @@ void CanFreeBlockAndMergeWithPrev() {
   constexpr size_t kN = 1024;
   constexpr size_t kSplit1 = 512;
   constexpr size_t kSplit2 = 256;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block1 = *result;
 
@@ -713,7 +706,7 @@ TEST(GenericBlockTest, CanFreeBlockAndMergeWithPrev) {
   CanFreeBlockAndMergeWithPrev<Block<>>();
 }
 TEST(CustomBlockTest, CanFreeBlockAndMergeWithPrev) {
-  CanFreeBlockAndMergeWithPrev<Block<uint32_t, kCapacity>>();
+  CanFreeBlockAndMergeWithPrev<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
@@ -721,9 +714,9 @@ void CanFreeBlockAndMergeWithNext() {
   constexpr size_t kN = 1024;
   constexpr size_t kSplit1 = 512;
   constexpr size_t kSplit2 = 256;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block1 = *result;
 
@@ -746,7 +739,7 @@ TEST(GenericBlockTest, CanFreeBlockAndMergeWithNext) {
   CanFreeBlockAndMergeWithNext<Block<>>();
 }
 TEST(CustomBlockTest, CanFreeBlockAndMergeWithNext) {
-  CanFreeBlockAndMergeWithNext<Block<uint32_t, kCapacity>>();
+  CanFreeBlockAndMergeWithNext<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
@@ -754,9 +747,9 @@ void CanFreeUsedBlockAndMergeWithBoth() {
   constexpr size_t kN = 1024;
   constexpr size_t kSplit1 = 512;
   constexpr size_t kSplit2 = 256;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block1 = *result;
 
@@ -778,15 +771,15 @@ TEST(GenericBlockTest, CanFreeUsedBlockAndMergeWithBoth) {
   CanFreeUsedBlockAndMergeWithBoth<Block<>>();
 }
 TEST(CustomBlockTest, CanFreeUsedBlockAndMergeWithBoth) {
-  CanFreeUsedBlockAndMergeWithBoth<Block<uint32_t, kCapacity>>();
+  CanFreeUsedBlockAndMergeWithBoth<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
 void CanResizeBlockSameSize() {
   constexpr size_t kN = 1024;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block = *result;
 
@@ -797,15 +790,15 @@ TEST(GenericBlockTest, CanResizeBlockSameSize) {
   CanResizeBlockSameSize<Block<>>();
 }
 TEST(CustomBlockTest, CanResizeBlockSameSize) {
-  CanResizeBlockSameSize<Block<uint32_t, kCapacity>>();
+  CanResizeBlockSameSize<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
 void CannotResizeFreeBlock() {
   constexpr size_t kN = 1024;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block = *result;
 
@@ -816,16 +809,16 @@ TEST(GenericBlockTest, CannotResizeFreeBlock) {
   CannotResizeFreeBlock<Block<>>();
 }
 TEST(CustomBlockTest, CannotResizeFreeBlock) {
-  CannotResizeFreeBlock<Block<uint32_t, kCapacity>>();
+  CannotResizeFreeBlock<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
 void CanResizeBlockSmallerWithNextFree() {
   constexpr size_t kN = 1024;
   constexpr size_t kSplit1 = 512;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block1 = *result;
 
@@ -838,7 +831,7 @@ void CanResizeBlockSmallerWithNextFree() {
 
   // Shrink by less than the minimum needed for a block. The extra should be
   // added to the subsequent block.
-  size_t delta = BlockType::kBlockOverhead / 2;
+  size_t delta = BlockType::kBlockOverhead - BlockType::kAlignment;
   size_t new_inner_size = block1->InnerSize() - delta;
   EXPECT_EQ(BlockType::Resize(block1, new_inner_size), OkStatus());
   EXPECT_EQ(block1->InnerSize(), new_inner_size);
@@ -850,16 +843,16 @@ TEST(GenericBlockTest, CanResizeBlockSmallerWithNextFree) {
   CanResizeBlockSmallerWithNextFree<Block<>>();
 }
 TEST(CustomBlockTest, CanResizeBlockSmallerWithNextFree) {
-  CanResizeBlockSmallerWithNextFree<Block<uint32_t, kCapacity>>();
+  CanResizeBlockSmallerWithNextFree<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
 void CanResizeBlockLargerWithNextFree() {
   constexpr size_t kN = 1024;
   constexpr size_t kSplit1 = 512;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block1 = *result;
 
@@ -872,7 +865,7 @@ void CanResizeBlockLargerWithNextFree() {
 
   // Grow by less than the minimum needed for a block. The extra should be
   // added to the subsequent block.
-  size_t delta = BlockType::kBlockOverhead / 2;
+  size_t delta = BlockType::kBlockOverhead - BlockType::kAlignment;
   size_t new_inner_size = block1->InnerSize() + delta;
   EXPECT_EQ(BlockType::Resize(block1, new_inner_size), OkStatus());
   EXPECT_EQ(block1->InnerSize(), new_inner_size);
@@ -884,7 +877,7 @@ TEST(GenericBlockTest, CanResizeBlockLargerWithNextFree) {
   CanResizeBlockLargerWithNextFree<Block<>>();
 }
 TEST(CustomBlockTest, CanResizeBlockLargerWithNextFree) {
-  CanResizeBlockLargerWithNextFree<Block<uint32_t, kCapacity>>();
+  CanResizeBlockLargerWithNextFree<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
@@ -892,9 +885,9 @@ void CannotResizeBlockMuchLargerWithNextFree() {
   constexpr size_t kN = 1024;
   constexpr size_t kSplit1 = 512;
   constexpr size_t kSplit2 = 256;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block1 = *result;
 
@@ -916,16 +909,16 @@ TEST(GenericBlockTest, CannotResizeBlockMuchLargerWithNextFree) {
   CannotResizeBlockMuchLargerWithNextFree<Block<>>();
 }
 TEST(CustomBlockTest, CannotResizeBlockMuchLargerWithNextFree) {
-  CannotResizeBlockMuchLargerWithNextFree<Block<uint32_t, kCapacity>>();
+  CannotResizeBlockMuchLargerWithNextFree<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
 void CanResizeBlockSmallerWithNextUsed() {
   constexpr size_t kN = 1024;
   constexpr size_t kSplit1 = 512;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block1 = *result;
 
@@ -949,16 +942,16 @@ TEST(GenericBlockTest, CanResizeBlockSmallerWithNextUsed) {
   CanResizeBlockSmallerWithNextUsed<Block<>>();
 }
 TEST(CustomBlockTest, CanResizeBlockSmallerWithNextUsed) {
-  CanResizeBlockSmallerWithNextUsed<Block<uint32_t, kCapacity>>();
+  CanResizeBlockSmallerWithNextUsed<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
 void CannotResizeBlockLargerWithNextUsed() {
   constexpr size_t kN = 1024;
   constexpr size_t kSplit1 = 512;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block1 = *result;
 
@@ -977,7 +970,7 @@ TEST(GenericBlockTest, CannotResizeBlockLargerWithNextUsed) {
   CannotResizeBlockLargerWithNextUsed<Block<>>();
 }
 TEST(CustomBlockTest, CannotResizeBlockLargerWithNextUsed) {
-  CannotResizeBlockLargerWithNextUsed<Block<uint32_t, kCapacity>>();
+  CannotResizeBlockLargerWithNextUsed<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
@@ -985,9 +978,9 @@ void CanCheckValidBlock() {
   constexpr size_t kN = 1024;
   constexpr size_t kSplit1 = 512;
   constexpr size_t kSplit2 = 256;
-  alignas(BlockType*) byte bytes[kN];
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block1 = *result;
 
@@ -1010,7 +1003,7 @@ void CanCheckValidBlock() {
 }
 TEST(GenericBlockTest, CanCheckValidBlock) { CanCheckValidBlock<Block<>>(); }
 TEST(CustomBlockTest, CanCheckValidBlock) {
-  CanCheckValidBlock<Block<uint32_t, kCapacity>>();
+  CanCheckValidBlock<Block<uint32_t, sizeof(uint16_t)>>();
 }
 
 template <typename BlockType>
@@ -1019,10 +1012,9 @@ void CanCheckInvalidBlock() {
   constexpr size_t kSplit1 = 512;
   constexpr size_t kSplit2 = 128;
   constexpr size_t kSplit3 = 256;
-  alignas(BlockType*) byte bytes[kN];
-  memset(bytes, 0, sizeof(bytes));
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes{};
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block1 = *result;
 
@@ -1064,15 +1056,29 @@ TEST(GenericBlockTest, CanCheckInvalidBlock) {
   CanCheckInvalidBlock<Block<>>();
 }
 TEST(CustomBlockTest, CanCheckInvalidBlock) {
-  CanCheckInvalidBlock<Block<uint32_t, kCapacity>>();
+  CanCheckInvalidBlock<Block<uint32_t, sizeof(uint16_t)>>();
+}
+
+TEST(CustomBlockTest, NoFlagsbyDefault) {
+  constexpr size_t kN = 1024;
+  using BlockType = Block<>;
+
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
+  ASSERT_EQ(result.status(), OkStatus());
+  BlockType* block = *result;
+
+  block->SetFlags(std::numeric_limits<BlockType::offset_type>::max());
+  EXPECT_EQ(block->GetFlags(), 0U);
 }
 
 TEST(CustomBlockTest, CustomFlagsInitiallyZero) {
   constexpr size_t kN = 1024;
-  using BlockType = Block<uint16_t, kN>;
-  alignas(BlockType*) byte bytes[kN];
+  constexpr size_t kNumFlags = 10;
+  using BlockType = Block<uint16_t, 0, kNumFlags>;
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block = *result;
 
@@ -1081,10 +1087,11 @@ TEST(CustomBlockTest, CustomFlagsInitiallyZero) {
 
 TEST(CustomBlockTest, SetCustomFlags) {
   constexpr size_t kN = 1024;
-  using BlockType = Block<uint16_t, kN>;
-  alignas(BlockType*) byte bytes[kN];
+  constexpr size_t kNumFlags = 10;
+  using BlockType = Block<uint16_t, 0, kNumFlags>;
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block = *result;
 
@@ -1094,10 +1101,11 @@ TEST(CustomBlockTest, SetCustomFlags) {
 
 TEST(CustomBlockTest, SetAllCustomFlags) {
   constexpr size_t kN = 1024;
-  using BlockType = Block<uint16_t, kN>;
-  alignas(BlockType*) byte bytes[kN];
+  constexpr size_t kNumFlags = 10;
+  using BlockType = Block<uint16_t, 0, kNumFlags>;
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block = *result;
 
@@ -1110,10 +1118,11 @@ TEST(CustomBlockTest, SetAllCustomFlags) {
 
 TEST(CustomBlockTest, ClearCustomFlags) {
   constexpr size_t kN = 1024;
-  using BlockType = Block<uint16_t, kN>;
-  alignas(BlockType*) byte bytes[kN];
+  constexpr size_t kNumFlags = 10;
+  using BlockType = Block<uint16_t, 0, kNumFlags>;
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block = *result;
 
@@ -1125,10 +1134,11 @@ TEST(CustomBlockTest, ClearCustomFlags) {
 TEST(CustomBlockTest, FlagsNotCopiedOnSplit) {
   constexpr size_t kN = 1024;
   constexpr size_t kSplitN = 512;
-  using BlockType = Block<uint16_t, kN>;
-  alignas(BlockType*) byte bytes[kN];
+  constexpr size_t kNumFlags = 10;
+  using BlockType = Block<uint16_t, 0, kNumFlags>;
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block1 = *result;
   block1->SetFlags(0x137);
@@ -1144,10 +1154,11 @@ TEST(CustomBlockTest, FlagsNotCopiedOnSplit) {
 TEST(CustomBlockTest, FlagsPreservedByMergeNext) {
   constexpr size_t kN = 1024;
   constexpr size_t kSplitN = 512;
-  using BlockType = Block<uint16_t, kN>;
-  alignas(BlockType*) byte bytes[kN];
+  constexpr size_t kNumFlags = 10;
+  using BlockType = Block<uint16_t, 0, kNumFlags>;
 
-  Result<BlockType*> result = BlockType::Init(span(bytes, kN));
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block = *result;
 
@@ -1157,6 +1168,132 @@ TEST(CustomBlockTest, FlagsPreservedByMergeNext) {
   block->SetFlags(0x137);
   EXPECT_EQ(BlockType::MergeNext(block), OkStatus());
   EXPECT_EQ(block->GetFlags(), 0x137U);
+}
+
+TEST(GenericBlockTest, SetAndGetExtraBytes) {
+  constexpr size_t kN = 1024;
+  using BlockType = Block<>;
+  constexpr size_t kExtraN = 4;
+  constexpr std::array<uint8_t, kExtraN> kExtra{0xa1, 0xb2, 0xc3, 0xd4};
+
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
+  ASSERT_EQ(result.status(), OkStatus());
+  BlockType* block = *result;
+
+  block->SetExtraBytes(as_bytes(span(kExtra)));
+  ConstByteSpan extra = block->GetExtraBytes();
+  EXPECT_EQ(extra.size(), 0U);
+}
+
+TEST(CustomBlockTest, SetAndGetExtraBytes) {
+  constexpr size_t kN = 1024;
+  constexpr size_t kNumExtraBytes = 4;
+  using BlockType = Block<uintptr_t, kNumExtraBytes>;
+  constexpr size_t kExtraN = 4;
+  constexpr std::array<uint8_t, kExtraN> kExtra{0xa1, 0xb2, 0xc3, 0xd4};
+
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
+  ASSERT_EQ(result.status(), OkStatus());
+  BlockType* block = *result;
+
+  block->SetExtraBytes(as_bytes(span(kExtra)));
+  ConstByteSpan extra = block->GetExtraBytes();
+  EXPECT_EQ(extra.size(), kNumExtraBytes);
+  EXPECT_EQ(std::memcmp(extra.data(), kExtra.data(), kExtraN), 0);
+}
+
+TEST(CustomBlockTest, SetExtraBytesPadsWhenShort) {
+  constexpr size_t kN = 1024;
+  constexpr size_t kNumExtraBytes = 8;
+  using BlockType = Block<uintptr_t, kNumExtraBytes>;
+  constexpr size_t kExtraN = 4;
+  constexpr std::array<uint8_t, kExtraN> kExtra{0xa1, 0xb2, 0xc3, 0xd4};
+
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
+  ASSERT_EQ(result.status(), OkStatus());
+  BlockType* block = *result;
+
+  block->SetExtraBytes(as_bytes(span(kExtra)));
+  ConstByteSpan extra = block->GetExtraBytes();
+  EXPECT_EQ(extra.size(), kNumExtraBytes);
+  EXPECT_EQ(std::memcmp(extra.data(), kExtra.data(), kExtraN), 0);
+  for (size_t i = kExtraN; i < kNumExtraBytes; ++i) {
+    EXPECT_EQ(size_t(extra[i]), 0U);
+  }
+}
+
+TEST(CustomBlockTest, SetExtraBytesTruncatesWhenLong) {
+  constexpr size_t kN = 1024;
+  constexpr size_t kNumExtraBytes = 2;
+  using BlockType = Block<uintptr_t, kNumExtraBytes>;
+  constexpr size_t kExtraN = 4;
+  constexpr std::array<uint8_t, kExtraN> kExtra{0xa1, 0xb2, 0xc3, 0xd4};
+
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
+  ASSERT_EQ(result.status(), OkStatus());
+  BlockType* block = *result;
+
+  block->SetExtraBytes(as_bytes(span(kExtra)));
+  ConstByteSpan extra = block->GetExtraBytes();
+  EXPECT_EQ(extra.size(), kNumExtraBytes);
+  EXPECT_EQ(std::memcmp(extra.data(), kExtra.data(), kNumExtraBytes), 0);
+}
+
+TEST(CustomBlockTest, SetAndGetTypedExtra) {
+  constexpr size_t kN = 1024;
+  using BlockType = Block<uintptr_t, sizeof(uint32_t)>;
+  constexpr uint32_t kExtra = 0xa1b2c3d4;
+
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
+  ASSERT_EQ(result.status(), OkStatus());
+  BlockType* block = *result;
+
+  block->SetTypedExtra(kExtra);
+  EXPECT_EQ(block->GetTypedExtra<uint32_t>(), kExtra);
+}
+
+TEST(CustomBlockTest, ExtraDataNotCopiedOnSplit) {
+  constexpr size_t kN = 1024;
+  constexpr size_t kSplitN = 512;
+  using BlockType = Block<uintptr_t, sizeof(uint32_t)>;
+  constexpr uint32_t kExtra = 0xa1b2c3d4;
+
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
+  ASSERT_EQ(result.status(), OkStatus());
+  BlockType* block1 = *result;
+  block1->SetTypedExtra(kExtra);
+
+  result = BlockType::Split(block1, kSplitN);
+  ASSERT_EQ(result.status(), OkStatus());
+  BlockType* block2 = *result;
+
+  EXPECT_EQ(block1->GetTypedExtra<uint32_t>(), kExtra);
+  EXPECT_EQ(block2->GetFlags(), 0U);
+}
+
+TEST(CustomBlockTest, ExtraDataPreservedByMergeNext) {
+  constexpr size_t kN = 1024;
+  constexpr size_t kSplitN = 512;
+  using BlockType = Block<uintptr_t, sizeof(uint32_t)>;
+  constexpr uint32_t kExtra = 0xa1b2c3d4;
+
+  std::array<std::byte, kN> bytes;
+  Result<BlockType*> result = BlockType::Init(span(bytes));
+  ASSERT_EQ(result.status(), OkStatus());
+  BlockType* block = *result;
+
+  result = BlockType::Split(block, kSplitN);
+  ASSERT_EQ(result.status(), OkStatus());
+
+  block->SetTypedExtra(kExtra);
+  EXPECT_EQ(BlockType::MergeNext(block), OkStatus());
+  EXPECT_EQ(block->GetTypedExtra<uint32_t>(), kExtra);
 }
 
 }  // namespace pw::allocator

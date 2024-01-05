@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include <climits>
 #include <cstdint>
 #include <cstring>
 
@@ -154,7 +155,7 @@ class BaseBlock {
 /// allocated memory with a small amount of overhead. See
 /// pw_allocator_private/simple_allocator.h for an example.
 ///
-/// Blocks will always be aligned to a `kAlignment boundary. Block sizes will
+/// Blocks will always be aligned to a `kAlignment` boundary. Block sizes will
 /// always be rounded up to a multiple of `kAlignment`.
 ///
 /// The blocks do not encode their size. Instead, they encode the offsets to the
@@ -197,55 +198,45 @@ class BaseBlock {
 /// block matches the previous offset of its next block. The first block in a
 /// list is denoted by having a previous offset of `0`.
 ///
-/// Each block also encodes flags. Builtin flags indicate whether the block is
-/// in use and whether it is the last block in the list. The last block will
-/// still have a next offset that denotes its size.
+/// Each block may also include extra data and custom flags. The amount of extra
+/// data is given in bytes by the `kNumExtraBytes` template parameter.
+/// Additional bytes may be included in the header to keep it aligned to
+/// `kAlignment`.
 ///
-/// Depending on `kMaxSize`, some bits of type `T` may not be needed to
-/// encode an offset. Additional bits of both the previous and next offsets may
-/// be used for setting custom flags.
+/// The custom flags are stored using bits from the offset fields, thereby
+/// decreasing the range of offsets that blocks can address. Up to half of the
+/// offset field may be used as flags, including one built-in flag per offset
+/// field to track `used` and `last`.
 ///
-/// For example, for a `Block<uint32_t, 0x10000>`, on a platform where
-/// `alignof(uint32_t) == 4`, the fully encoded bits would be:
-///
-/// @code{.unparsed}
-/// +-------------------------------------------------------------------------+
-/// | block:                                                                  |
-/// +------------------------------------+------------------------------------+
-/// | .prev_                             | .next_:                            |
-/// +---------------+------+-------------+---------------+------+-------------+
-/// | MSB           |      |         LSB | MSB           |      |         LSB |
-/// | 31.........16 |  15  | 14........0 | 31.........16 |  15  | 14........0 |
-/// | custom_flags1 | used | prev_offset | custom_flags2 | last | next_offset |
-/// +---------------+------+-------------+---------------+------+-------------+
-/// @endcode
-///
-/// @tparam   UintType  Unsigned integral type used to encode offsets and flags.
-/// @tparam   kMaxSize  Largest offset that can be addressed by this block. Bits
-///                     of `UintType` not needed for offsets are available as
-///                     flags.
-template <typename UintType = uintptr_t,
-          size_t kMaxSize = std::numeric_limits<uintptr_t>::max()>
+/// @tparam   OffsetType      Unsigned integral type used to encode offsets and
+///                           flags.
+/// @tparam   kNumExtraBytes  Number of additional **bytes** to add to the block
+///                           header storing custom data.
+/// @tparam    kNumFlags      Number of **bits** of the offset fields to use as
+///                           custom flags.
+template <typename OffsetType = uintptr_t,
+          size_t kNumExtraBytes = 0,
+          size_t kNumFlags = 0>
 class Block final : public BaseBlock {
  public:
-  static_assert(std::is_unsigned_v<UintType>);
-  static_assert(kMaxSize <= std::numeric_limits<UintType>::max());
+  using offset_type = OffsetType;
 
-  static constexpr size_t kCapacity = kMaxSize;
-  static constexpr size_t kHeaderSize = sizeof(Block) + kPoisonOffset;
-  static constexpr size_t kFooterSize = kPoisonOffset;
-  static constexpr size_t kBlockOverhead = kHeaderSize + kFooterSize;
+  static_assert(std::is_unsigned_v<offset_type>);
+  static_assert(kNumFlags < sizeof(offset_type) * CHAR_BIT);
+
   static constexpr size_t kAlignment = alignof(Block);
+  static constexpr size_t kHeaderSize =
+      AlignUp(sizeof(Block) + kNumExtraBytes + kPoisonOffset, kAlignment);
+  static constexpr size_t kFooterSize = AlignUp(kPoisonOffset, kAlignment);
+  static constexpr size_t kBlockOverhead = kHeaderSize + kFooterSize;
 
   /// @brief Creates the first block for a given memory region.
   ///
-  /// @pre The start of the given memory region must be aligned to an
-  /// `kAlignment` boundary.
-  ///
   /// @retval OK                    Returns a block representing the region.
-  /// @retval INVALID_ARGUMENT      The region is unaligned.
+  /// @retval INVALID_ARGUMENT      The region is null.
   /// @retval RESOURCE_EXHAUSTED    The region is too small for a block.
-  /// @retval OUT_OF_RANGE          The region is larger than `kMaxSize`.
+  /// @retval OUT_OF_RANGE          The region is too big to be addressed using
+  ///                               `offset_type`.
   static Result<Block*> Init(ByteSpan region);
 
   /// @returns  A pointer to a `Block`, given a pointer to the start of the
@@ -436,8 +427,9 @@ class Block final : public BaseBlock {
   /// any others are ignored. Refer to the class level documentation for the
   /// exact bit layout.
   ///
-  /// Custom flags are not copied when a block is split, and are unchanged when
-  /// merging for the block that remains valid after the merge.
+  /// Custom flags are not copied when a block is split. When merging, the
+  /// custom flags are preserved in the block that remains valid after the
+  /// merge.
   ///
   /// If `flags_to_clear` are provided, these bits will be cleared before
   /// setting the `flags_to_set`. As a consequence, if a bit is set in both
@@ -445,10 +437,61 @@ class Block final : public BaseBlock {
   ///
   /// @param[in]  flags_to_set      Bit flags to enable.
   /// @param[in]  flags_to_clear    Bit flags to disable.
-  void SetFlags(UintType flags_to_set, UintType flags_to_clear = 0);
+  void SetFlags(offset_type flags_to_set, offset_type flags_to_clear = 0);
 
   /// Returns the custom flags previously set on this block.
-  UintType GetFlags();
+  offset_type GetFlags();
+
+  /// Stores extra data in the block.
+  ///
+  /// If the given region is shorter than `kNumExtraBytes`, it will be padded
+  /// with `\x00` bytes. If the given region is longer than `kNumExtraBytes`, it
+  /// will be truncated.
+  ///
+  /// Extra data is not copied when a block is split. When merging, the extra
+  /// data is preserved in the block that remains valid after the merge.
+  ///
+  /// @param[in]  extra             Extra data to store in the block.
+  void SetExtraBytes(ConstByteSpan extra);
+
+  /// Stores extra data in the block from a trivially copyable type.
+  ///
+  /// The type given by template parameter should match the type used to specify
+  /// `kNumExtraBytes`. The value will treated as a span of bytes and copied
+  /// using `SetExtra(ConstByteSpan)`.
+  template <typename T,
+            std::enable_if_t<std::is_trivially_copyable_v<T> &&
+                                 sizeof(T) == kNumExtraBytes,
+                             int> = 0>
+  void SetTypedExtra(const T& extra) {
+    SetExtraBytes(as_bytes(span(&extra, 1)));
+  }
+
+  /// Returns the extra data from the block.
+  ConstByteSpan GetExtraBytes() const;
+
+  /// Returns the extra data from block as a default constructible and trivally
+  /// copyable type.
+  ///
+  /// The template parameter should match the type used to specify
+  /// `kNumExtraBytes`. For example:
+  ///
+  /// @code{.cpp}
+  ///   using BlockType = Block<uint16_t, sizeof(Token)>;
+  ///   BlockType* block = ...;
+  ///   block->SetExtra(kMyToken);
+  ///   Token my_token = block->GetExtra<Token>();
+  /// @endcode
+  template <typename T,
+            std::enable_if_t<std::is_default_constructible_v<T> &&
+                                 std::is_trivially_copyable_v<T> &&
+                                 sizeof(T) == kNumExtraBytes,
+                             int> = 0>
+  T GetTypedExtra() const {
+    T result{};
+    std::memcpy(&result, GetExtraBytes().data(), kNumExtraBytes);
+    return result;
+  }
 
   /// @brief Checks if a block is valid.
   ///
@@ -464,15 +507,13 @@ class Block final : public BaseBlock {
   void CrashIfInvalid();
 
  private:
-  static constexpr UintType kMaxOffset = UintType(kMaxSize / kAlignment);
-  static constexpr size_t kCustomFlagBitsPerField =
-      cpp20::countl_zero(kMaxOffset) - 1;
-  static constexpr size_t kCustomFlagBits = kCustomFlagBitsPerField * 2;
-  static constexpr size_t kOffsetBits = cpp20::bit_width(kMaxOffset);
-  static constexpr UintType kBuiltinFlag = UintType(1) << kOffsetBits;
-  static constexpr UintType kOffsetMask = kBuiltinFlag - 1;
+  static constexpr size_t kCustomFlagBitsPerField = (kNumFlags + 1) / 2;
+  static constexpr size_t kOffsetBits =
+      (sizeof(offset_type) * CHAR_BIT) - (kCustomFlagBitsPerField + 1);
+  static constexpr offset_type kBuiltinFlag = offset_type(1) << kOffsetBits;
+  static constexpr offset_type kOffsetMask = kBuiltinFlag - 1;
   static constexpr size_t kCustomFlagShift = kOffsetBits + 1;
-  static constexpr UintType kCustomFlagMask = ~(kOffsetMask | kBuiltinFlag);
+  static constexpr offset_type kCustomFlagMask = ~(kOffsetMask | kBuiltinFlag);
 
   Block(size_t prev_offset, size_t next_offset);
 
@@ -490,17 +531,18 @@ class Block final : public BaseBlock {
   BlockStatus CheckStatus() const;
 
   /// Extracts the offset portion from `next_` or `prev_`.
-  static size_t GetOffset(UintType packed) {
+  static size_t GetOffset(offset_type packed) {
     return static_cast<size_t>(packed & kOffsetMask) * kAlignment;
   }
 
   /// Overwrites the offset portion of `next_` or `prev_`.
-  static void SetOffset(UintType& field, size_t offset) {
-    field = (field & ~kOffsetMask) | static_cast<UintType>(offset) / kAlignment;
+  static void SetOffset(offset_type& field, size_t offset) {
+    field =
+        (field & ~kOffsetMask) | static_cast<offset_type>(offset) / kAlignment;
   }
 
-  UintType next_ = 0;
-  UintType prev_ = 0;
+  offset_type next_ = 0;
+  offset_type prev_ = 0;
 
  public:
   // Associated types.
@@ -561,16 +603,19 @@ class Block final : public BaseBlock {
 
 // Public template method implementations.
 
-template <typename UintType, size_t kMaxSize>
-Result<Block<UintType, kMaxSize>*> Block<UintType, kMaxSize>::Init(
-    ByteSpan region) {
-  if (reinterpret_cast<uintptr_t>(region.data()) % kAlignment != 0) {
+template <typename OffsetType, size_t kNumExtraBytes, size_t kNumFlags>
+Result<Block<OffsetType, kNumExtraBytes, kNumFlags>*>
+Block<OffsetType, kNumExtraBytes, kNumFlags>::Init(ByteSpan region) {
+  if (region.data() == nullptr) {
     return Status::InvalidArgument();
   }
-  if (region.size() < kBlockOverhead) {
+  auto addr = reinterpret_cast<uintptr_t>(region.data());
+  auto aligned = AlignUp(addr, kAlignment);
+  if (addr + region.size() <= aligned + kBlockOverhead) {
     return Status::ResourceExhausted();
   }
-  if (kMaxSize < region.size()) {
+  region = region.subspan(aligned - addr);
+  if (GetOffset(std::numeric_limits<offset_type>::max()) < region.size()) {
     return Status::OutOfRange();
   }
   Block* block = AsBlock(0, region);
@@ -579,10 +624,9 @@ Result<Block<UintType, kMaxSize>*> Block<UintType, kMaxSize>::Init(
   return block;
 }
 
-template <typename UintType, size_t kMaxSize>
-Status Block<UintType, kMaxSize>::AllocFirst(Block*& block,
-                                             size_t inner_size,
-                                             size_t alignment) {
+template <typename OffsetType, size_t kNumExtraBytes, size_t kNumFlags>
+Status Block<OffsetType, kNumExtraBytes, kNumFlags>::AllocFirst(
+    Block*& block, size_t inner_size, size_t alignment) {
   if (block->Used()) {
     return Status::FailedPrecondition();
   }
@@ -612,10 +656,9 @@ Status Block<UintType, kMaxSize>::AllocFirst(Block*& block,
   return OkStatus();
 }
 
-template <typename UintType, size_t kMaxSize>
-Status Block<UintType, kMaxSize>::AllocLast(Block*& block,
-                                            size_t inner_size,
-                                            size_t alignment) {
+template <typename OffsetType, size_t kNumExtraBytes, size_t kNumFlags>
+Status Block<OffsetType, kNumExtraBytes, kNumFlags>::AllocLast(
+    Block*& block, size_t inner_size, size_t alignment) {
   if (block->Used()) {
     return Status::FailedPrecondition();
   }
@@ -644,8 +687,8 @@ Status Block<UintType, kMaxSize>::AllocLast(Block*& block,
   return OkStatus();
 }
 
-template <typename UintType, size_t kMaxSize>
-void Block<UintType, kMaxSize>::Free(Block*& block) {
+template <typename OffsetType, size_t kNumExtraBytes, size_t kNumFlags>
+void Block<OffsetType, kNumExtraBytes, kNumFlags>::Free(Block*& block) {
   block->MarkFree();
   Block* prev = block->Prev();
   if (Block::MergeNext(prev).ok()) {
@@ -654,8 +697,9 @@ void Block<UintType, kMaxSize>::Free(Block*& block) {
   Block::MergeNext(block).IgnoreError();
 }
 
-template <typename UintType, size_t kMaxSize>
-Status Block<UintType, kMaxSize>::Resize(Block*& block, size_t new_inner_size) {
+template <typename OffsetType, size_t kNumExtraBytes, size_t kNumFlags>
+Status Block<OffsetType, kNumExtraBytes, kNumFlags>::Resize(
+    Block*& block, size_t new_inner_size) {
   if (!block->Used()) {
     return Status::FailedPrecondition();
   }
@@ -687,9 +731,10 @@ Status Block<UintType, kMaxSize>::Resize(Block*& block, size_t new_inner_size) {
   return status;
 }
 
-template <typename UintType, size_t kMaxSize>
-Result<Block<UintType, kMaxSize>*> Block<UintType, kMaxSize>::Split(
-    Block*& block, size_t new_inner_size) {
+template <typename OffsetType, size_t kNumExtraBytes, size_t kNumFlags>
+Result<Block<OffsetType, kNumExtraBytes, kNumFlags>*>
+Block<OffsetType, kNumExtraBytes, kNumFlags>::Split(Block*& block,
+                                                    size_t new_inner_size) {
   if (block->Used()) {
     return Status::FailedPrecondition();
   }
@@ -704,7 +749,7 @@ Result<Block<UintType, kMaxSize>*> Block<UintType, kMaxSize>::Split(
   size_t prev_offset = GetOffset(block->prev_);
   size_t outer_size1 = aligned_inner_size + kBlockOverhead;
   bool is_last = block->Last();
-  UintType flags = block->GetFlags();
+  offset_type flags = block->GetFlags();
   ByteSpan bytes = AsBytes(std::move(block));
   Block* block1 = AsBlock(prev_offset, bytes.subspan(0, outer_size1));
   Block* block2 = AsBlock(outer_size1, bytes.subspan(outer_size1));
@@ -721,8 +766,8 @@ Result<Block<UintType, kMaxSize>*> Block<UintType, kMaxSize>::Split(
   return block2;
 }
 
-template <typename UintType, size_t kMaxSize>
-Status Block<UintType, kMaxSize>::MergeNext(Block*& block) {
+template <typename OffsetType, size_t kNumExtraBytes, size_t kNumFlags>
+Status Block<OffsetType, kNumExtraBytes, kNumFlags>::MergeNext(Block*& block) {
   if (block == nullptr || block->Last()) {
     return Status::OutOfRange();
   }
@@ -732,7 +777,7 @@ Status Block<UintType, kMaxSize>::MergeNext(Block*& block) {
   }
   size_t prev_offset = GetOffset(block->prev_);
   bool is_last = next->Last();
-  UintType flags = block->GetFlags();
+  offset_type flags = block->GetFlags();
   ByteSpan prev_bytes = AsBytes(std::move(block));
   ByteSpan next_bytes = AsBytes(std::move(next));
   size_t next_offset = prev_bytes.size() + next_bytes.size();
@@ -743,20 +788,24 @@ Status Block<UintType, kMaxSize>::MergeNext(Block*& block) {
   } else {
     SetOffset(block->Next()->prev_, GetOffset(block->next_));
   }
-  block->SetFlags(flags);
+  if constexpr (kNumFlags > 0) {
+    block->SetFlags(flags);
+  }
   return OkStatus();
 }
 
-template <typename UintType, size_t kMaxSize>
-Block<UintType, kMaxSize>* Block<UintType, kMaxSize>::Next() const {
+template <typename OffsetType, size_t kNumExtraBytes, size_t kNumFlags>
+Block<OffsetType, kNumExtraBytes, kNumFlags>*
+Block<OffsetType, kNumExtraBytes, kNumFlags>::Next() const {
   size_t offset = GetOffset(next_);
   uintptr_t addr = Last() ? 0 : reinterpret_cast<uintptr_t>(this) + offset;
   // See the note in `FromUsableSpace` about memory laundering.
   return std::launder(reinterpret_cast<Block*>(addr));
 }
 
-template <typename UintType, size_t kMaxSize>
-Block<UintType, kMaxSize>* Block<UintType, kMaxSize>::Prev() const {
+template <typename OffsetType, size_t kNumExtraBytes, size_t kNumFlags>
+Block<OffsetType, kNumExtraBytes, kNumFlags>*
+Block<OffsetType, kNumExtraBytes, kNumFlags>::Prev() const {
   size_t offset = GetOffset(prev_);
   uintptr_t addr =
       (offset == 0) ? 0 : reinterpret_cast<uintptr_t>(this) - offset;
@@ -764,55 +813,88 @@ Block<UintType, kMaxSize>* Block<UintType, kMaxSize>::Prev() const {
   return std::launder(reinterpret_cast<Block*>(addr));
 }
 
-template <typename UintType, size_t kMaxSize>
-void Block<UintType, kMaxSize>::SetFlags(UintType flags_to_set,
-                                         UintType flags_to_clear) {
-  UintType hi_flags_to_set = flags_to_set >> kCustomFlagBitsPerField;
-  hi_flags_to_set <<= kCustomFlagShift;
-  UintType hi_flags_to_clear = (flags_to_clear >> kCustomFlagBitsPerField)
-                               << kCustomFlagShift;
-  UintType lo_flags_to_set =
-      (flags_to_set & ((UintType(1) << kCustomFlagBitsPerField) - 1))
-      << kCustomFlagShift;
-  UintType lo_flags_to_clear =
-      (flags_to_clear & ((UintType(1) << kCustomFlagBitsPerField) - 1))
-      << kCustomFlagShift;
-  prev_ = (prev_ & ~hi_flags_to_clear) | hi_flags_to_set;
-  next_ = (next_ & ~lo_flags_to_clear) | lo_flags_to_set;
+template <typename OffsetType, size_t kNumExtraBytes, size_t kNumFlags>
+void Block<OffsetType, kNumExtraBytes, kNumFlags>::SetFlags(
+    OffsetType flags_to_set, OffsetType flags_to_clear) {
+  if constexpr (kNumFlags > 0) {
+    offset_type hi_flags_to_set = flags_to_set >> kCustomFlagBitsPerField;
+    hi_flags_to_set <<= kCustomFlagShift;
+    offset_type hi_flags_to_clear = (flags_to_clear >> kCustomFlagBitsPerField)
+                                    << kCustomFlagShift;
+    offset_type lo_flags_to_set =
+        (flags_to_set & ((offset_type(1) << kCustomFlagBitsPerField) - 1))
+        << kCustomFlagShift;
+    offset_type lo_flags_to_clear =
+        (flags_to_clear & ((offset_type(1) << kCustomFlagBitsPerField) - 1))
+        << kCustomFlagShift;
+    prev_ = (prev_ & ~hi_flags_to_clear) | hi_flags_to_set;
+    next_ = (next_ & ~lo_flags_to_clear) | lo_flags_to_set;
+  }
 }
 
-template <typename UintType, size_t kMaxSize>
-UintType Block<UintType, kMaxSize>::GetFlags() {
-  UintType hi_flags = (prev_ & kCustomFlagMask) >> kCustomFlagShift;
-  UintType lo_flags = (next_ & kCustomFlagMask) >> kCustomFlagShift;
-  return (hi_flags << kCustomFlagBitsPerField) | lo_flags;
+template <typename OffsetType, size_t kNumExtraBytes, size_t kNumFlags>
+OffsetType Block<OffsetType, kNumExtraBytes, kNumFlags>::GetFlags() {
+  if constexpr (kNumFlags > 0) {
+    offset_type hi_flags = (prev_ & kCustomFlagMask) >> kCustomFlagShift;
+    offset_type lo_flags = (next_ & kCustomFlagMask) >> kCustomFlagShift;
+    return (hi_flags << kCustomFlagBitsPerField) | lo_flags;
+  }
+  return 0;
+}
+
+template <typename OffsetType, size_t kNumExtraBytes, size_t kNumFlags>
+void Block<OffsetType, kNumExtraBytes, kNumFlags>::SetExtraBytes(
+    ConstByteSpan extra) {
+  if constexpr (kNumExtraBytes > 0) {
+    auto* data = reinterpret_cast<std::byte*>(this) + sizeof(*this);
+    if (kNumExtraBytes <= extra.size()) {
+      std::memcpy(data, extra.data(), kNumExtraBytes);
+    } else {
+      std::memcpy(data, extra.data(), extra.size());
+      std::memset(data + extra.size(), 0, kNumExtraBytes - extra.size());
+    }
+  }
+}
+
+/// Returns the extra data from the block.
+template <typename OffsetType, size_t kNumExtraBytes, size_t kNumFlags>
+ConstByteSpan Block<OffsetType, kNumExtraBytes, kNumFlags>::GetExtraBytes()
+    const {
+  if constexpr (kNumExtraBytes > 0) {
+    const auto* data = reinterpret_cast<const std::byte*>(this) + sizeof(*this);
+    return ConstByteSpan{data, kNumExtraBytes};
+  } else {
+    return ConstByteSpan{};
+  }
 }
 
 // Private template method implementations.
 
-template <typename UintType, size_t kMaxSize>
-Block<UintType, kMaxSize>::Block(size_t prev_offset, size_t next_offset)
+template <typename OffsetType, size_t kNumExtraBytes, size_t kNumFlags>
+Block<OffsetType, kNumExtraBytes, kNumFlags>::Block(size_t prev_offset,
+                                                    size_t next_offset)
     : BaseBlock() {
   SetOffset(prev_, prev_offset);
   SetOffset(next_, next_offset);
 }
 
-template <typename UintType, size_t kMaxSize>
-ByteSpan Block<UintType, kMaxSize>::AsBytes(Block*&& block) {
+template <typename OffsetType, size_t kNumExtraBytes, size_t kNumFlags>
+ByteSpan Block<OffsetType, kNumExtraBytes, kNumFlags>::AsBytes(Block*&& block) {
   size_t block_size = block->OuterSize();
   std::byte* bytes = ::new (std::move(block)) std::byte[block_size];
   return {bytes, block_size};
 }
 
-template <typename UintType, size_t kMaxSize>
-Block<UintType, kMaxSize>* Block<UintType, kMaxSize>::AsBlock(
-    size_t prev_offset, ByteSpan bytes) {
+template <typename OffsetType, size_t kNumExtraBytes, size_t kNumFlags>
+Block<OffsetType, kNumExtraBytes, kNumFlags>*
+Block<OffsetType, kNumExtraBytes, kNumFlags>::AsBlock(size_t prev_offset,
+                                                      ByteSpan bytes) {
   return ::new (bytes.data()) Block(prev_offset, bytes.size());
 }
 
-template <typename UintType, size_t kMaxSize>
-typename Block<UintType, kMaxSize>::BlockStatus
-Block<UintType, kMaxSize>::CheckStatus() const {
+template <typename OffsetType, size_t kNumExtraBytes, size_t kNumFlags>
+typename Block<OffsetType, kNumExtraBytes, kNumFlags>::BlockStatus
+Block<OffsetType, kNumExtraBytes, kNumFlags>::CheckStatus() const {
   // Make sure the Block is aligned.
   if (reinterpret_cast<uintptr_t>(this) % kAlignment != 0) {
     return BlockStatus::kMisaligned;
@@ -834,8 +916,8 @@ Block<UintType, kMaxSize>::CheckStatus() const {
   return BlockStatus::kValid;
 }
 
-template <typename UintType, size_t kMaxSize>
-void Block<UintType, kMaxSize>::CrashIfInvalid() {
+template <typename OffsetType, size_t kNumExtraBytes, size_t kNumFlags>
+void Block<OffsetType, kNumExtraBytes, kNumFlags>::CrashIfInvalid() {
   uintptr_t addr = reinterpret_cast<uintptr_t>(this);
   switch (CheckStatus()) {
     case kValid:

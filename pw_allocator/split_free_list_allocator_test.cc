@@ -33,7 +33,7 @@ static constexpr size_t kCapacity = 256;
 // considered "small".
 static constexpr size_t kThreshold = 64;
 
-using BlockType = Block<uint16_t, kCapacity>;
+using BlockType = Block<uint16_t>;
 
 // Test case fixture that allows individual tests to cache allocations and
 // release them automatically on tear-down.
