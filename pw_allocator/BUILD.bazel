@@ -168,8 +168,9 @@ cc_library(
     includes = ["public"],
     deps = [
         ":allocator",
-        ":allocator_metric_proxy",
-        "//pw_metric:metric",
+        ":metrics",
+        "//pw_containers:flat_map",
+        "//pw_tokenizer",
     ],
 )
 

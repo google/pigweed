@@ -156,8 +156,9 @@ pw_add_library(pw_allocator.multiplex_allocator INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.allocator
-    pw_allocator.allocator_metric_proxy
-    pw_metric
+    pw_allocator.metrics
+    pw_containers.flat_map
+    pw_tokenizer
 )
 
 pw_add_library(pw_allocator.null_allocator INTERFACE

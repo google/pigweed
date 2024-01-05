@@ -159,8 +159,9 @@ pw_source_set("multiplex_allocator") {
   public = [ "public/pw_allocator/multiplex_allocator.h" ]
   public_deps = [
     ":allocator",
-    ":allocator_metric_proxy",
-    dir_pw_metric,
+    ":metrics",
+    "$dir_pw_containers:flat_map",
+    dir_pw_tokenizer,
   ]
 }
 
@@ -253,7 +254,7 @@ pw_source_set("allocator_test_harness") {
   public = [ "public/pw_allocator/allocator_test_harness.h" ]
   public_deps = [
     ":allocator",
-    "$dir_pw_containers",
+    dir_pw_containers,
     dir_pw_random,
   ]
   deps = [
