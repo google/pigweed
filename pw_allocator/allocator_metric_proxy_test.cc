@@ -18,6 +18,13 @@
 namespace pw::allocator {
 namespace {
 
+// These unit tests below use `AllocatorForTest<kBufferSize>`, which forwards
+// `Allocator` calls to a field of type
+// `AllocatorMetricProxyImpl<internal::Metrics>`. This is the same type as
+// `AllocatorMetricProxy`, except that metrics are explicitly enabled. As a
+// result, these unit tests do validate `AllocatorMetricProxy`, even though that
+// type never appears directly here.
+
 TEST(AllocatorMetricProxyTest, InitiallyZero) {
   test::AllocatorForTest<256> allocator;
   EXPECT_EQ(allocator->used(), 0U);
