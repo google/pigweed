@@ -32,7 +32,8 @@ Automatic formatting
 ====================
 Pigweed uses `clang-format <https://clang.llvm.org/docs/ClangFormat.html>`_ to
 automatically format Pigweed source code. A ``.clang-format`` configuration is
-provided with the Pigweed repository.
+provided with the Pigweed repository.  Within an upstream Pigweed environment, the
+`pw format` tool can be used to automatically format code.
 
 Automatic formatting is essential to facilitate large-scale, automated changes
 in Pigweed. Therefore, all code in Pigweed is expected to be formatted with
