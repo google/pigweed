@@ -675,7 +675,8 @@ static_assert(std::is_trivially_destructible_v<Vector<CopyOnly>>);
 static_assert(std::is_trivially_destructible_v<Vector<CopyOnly, 99>>);
 
 static_assert(!std::is_trivially_destructible_v<Counter>);
-static_assert(!std::is_trivially_destructible_v<Vector<Counter>>);
+// NOTE: the size-polymorphic base class cannot be destructed directly.
+static_assert(std::is_trivially_destructible_v<Vector<Counter>>);
 static_assert(!std::is_trivially_destructible_v<Vector<Counter, 99>>);
 
 }  // namespace
