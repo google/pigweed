@@ -137,48 +137,48 @@ class LowEnergyScannerTest : public TestingBase,
     // Generates ADV_IND, scan response is reported in a single HCI event.
     auto fake_peer =
         std::make_unique<FakePeer>(kPublicAddress1, dispatcher(), true, true);
-    fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
-    fake_peer->SetScanResponse(/*should_batch_reports=*/true,
-                               kPlainScanRspBytes);
+    fake_peer->set_advertising_data(kPlainAdvDataBytes);
+    fake_peer->set_scan_response(/*should_batch_reports=*/true,
+                                 kPlainScanRspBytes);
     test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_SCAN_IND, scan response is reported over multiple HCI
     // events.
     fake_peer =
         std::make_unique<FakePeer>(kRandomAddress1, dispatcher(), false, true);
-    fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
-    fake_peer->SetScanResponse(/*should_batch_reports=*/false,
-                               kPlainScanRspBytes);
+    fake_peer->set_advertising_data(kPlainAdvDataBytes);
+    fake_peer->set_scan_response(/*should_batch_reports=*/false,
+                                 kPlainScanRspBytes);
     test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_IND, empty scan response is reported over multiple HCI
     // events.
     fake_peer =
         std::make_unique<FakePeer>(kPublicAddress2, dispatcher(), true, true);
-    fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
-    fake_peer->SetScanResponse(/*should_batch_reports=*/false,
-                               DynamicByteBuffer());
+    fake_peer->set_advertising_data(kPlainAdvDataBytes);
+    fake_peer->set_scan_response(/*should_batch_reports=*/false,
+                                 DynamicByteBuffer());
     test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_IND, empty adv data and non-empty scan response is reported
     // over multiple HCI events.
     fake_peer =
         std::make_unique<FakePeer>(kRandomAddress2, dispatcher(), true, true);
-    fake_peer->SetScanResponse(/*should_batch_reports=*/false,
-                               kPlainScanRspBytes);
+    fake_peer->set_scan_response(/*should_batch_reports=*/false,
+                                 kPlainScanRspBytes);
     test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_IND, a scan response is never sent even though ADV_IND is
     // scannable.
     fake_peer =
         std::make_unique<FakePeer>(kRandomAddress3, dispatcher(), true, false);
-    fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
+    fake_peer->set_advertising_data(kPlainAdvDataBytes);
     test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_NONCONN_IND
     fake_peer =
         std::make_unique<FakePeer>(kRandomAddress4, dispatcher(), false, false);
-    fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
+    fake_peer->set_advertising_data(kPlainAdvDataBytes);
     test_device()->AddPeer(std::move(fake_peer));
   }
 
@@ -353,14 +353,14 @@ TYPED_TEST(LowEnergyScannerTest, ScanResponseTimeout) {
   // Add a peer that sends a scan response and one that doesn't.
   auto fake_peer = std::make_unique<FakePeer>(
       kRandomAddress1, this->dispatcher(), false, true);
-  fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
-  fake_peer->SetScanResponse(/*should_batch_reports=*/false,
-                             kPlainScanRspBytes);
+  fake_peer->set_advertising_data(kPlainAdvDataBytes);
+  fake_peer->set_scan_response(/*should_batch_reports=*/false,
+                               kPlainScanRspBytes);
   this->test_device()->AddPeer(std::move(fake_peer));
 
   fake_peer = std::make_unique<FakePeer>(
       kRandomAddress2, this->dispatcher(), true, false);
-  fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
+  fake_peer->set_advertising_data(kPlainAdvDataBytes);
   this->test_device()->AddPeer(std::move(fake_peer));
 
   EXPECT_TRUE(this->StartScan(true));
@@ -376,7 +376,7 @@ TYPED_TEST(LowEnergyScannerTest, ScanResponseTimeout) {
   // delay. This is to test that a separate timeout is kept for every peer.
   fake_peer = std::make_unique<FakePeer>(
       kRandomAddress3, this->dispatcher(), true, false);
-  fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
+  fake_peer->set_advertising_data(kPlainAdvDataBytes);
   this->test_device()->AddPeer(std::move(fake_peer));
 
   // Expire the first timeout.

@@ -206,8 +206,8 @@ void FakeGattServer::HandleFindByTypeValue(hci_spec::ConnectionHandle conn,
 
 void FakeGattServer::Send(hci_spec::ConnectionHandle conn,
                           const ByteBuffer& pdu) {
-  if (dev_->ctrl()) {
-    dev_->ctrl()->SendL2CAPBFrame(conn, l2cap::kATTChannelId, pdu);
+  if (dev_->controller()) {
+    dev_->controller()->SendL2CAPBFrame(conn, l2cap::kATTChannelId, pdu);
   } else {
     bt_log(WARN, "fake-hci", "no assigned FakeController!");
   }
