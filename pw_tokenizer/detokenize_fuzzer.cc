@@ -98,7 +98,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
         std::vector<uint8_t> buffer =
             provider.ConsumeBytes<uint8_t>(consumed_size);
         auto detokenized_string =
-            detokenizer.Detokenize(&buffer[0], buffer.size());
+            detokenizer.Detokenize(buffer.data(), buffer.size());
         static_cast<void>(detokenized_string);
         break;
       }
