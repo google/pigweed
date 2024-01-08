@@ -114,6 +114,13 @@ size_t ChannelConfiguration::ReadNextOption(const ByteBuffer& options) {
       OnReadRetransmissionAndFlowControlOption(
           RetransmissionAndFlowControlOption(option.payload_data()));
       return RetransmissionAndFlowControlOption::kEncodedSize;
+    case OptionType::kFCS:
+      if (!CheckHeaderLengthField<FrameCheckSequenceOption>(option)) {
+        return 0;
+      }
+      OnReadFrameCheckSequenceOption(
+          FrameCheckSequenceOption(option.payload_data()));
+      return FrameCheckSequenceOption::kEncodedSize;
     case OptionType::kFlushTimeout:
       if (!CheckHeaderLengthField<FlushTimeoutOption>(option)) {
         return 0;
@@ -225,6 +232,25 @@ std::string ChannelConfiguration::RetransmissionAndFlowControlOption::ToString()
       mps_);
 }
 
+// FrameCheckSequenceOption implementation
+
+ChannelConfiguration::FrameCheckSequenceOption::FrameCheckSequenceOption(
+    const ByteBuffer& data_buf) {
+  fcs_type_ = data_buf.ReadMember<&FrameCheckSequenceOptionPayload::fcs_type>();
+}
+
+DynamicByteBuffer ChannelConfiguration::FrameCheckSequenceOption::Encode()
+    const {
+  FrameCheckSequenceOptionPayload payload;
+  payload.fcs_type = fcs_type_;
+  return EncodeOption<FrameCheckSequenceOption>(payload);
+}
+
+std::string ChannelConfiguration::FrameCheckSequenceOption::ToString() const {
+  return bt_lib_cpp_string::StringPrintf(
+      "[type: FrameCheckSequence, type: %hu]", static_cast<uint8_t>(fcs_type_));
+}
+
 // FlushTimeoutOption implementation
 
 ChannelConfiguration::FlushTimeoutOption::FlushTimeoutOption(
@@ -290,6 +316,11 @@ ChannelConfiguration::ConfigurationOptions ChannelConfiguration::Options()
             *retransmission_flow_control_option_)));
   }
 
+  if (fcs_option_) {
+    options.push_back(
+        ConfigurationOptionPtr(new FrameCheckSequenceOption(*fcs_option_)));
+  }
+
   if (flush_timeout_option_) {
     options.push_back(
         ConfigurationOptionPtr(new FlushTimeoutOption(*flush_timeout_option_)));
@@ -307,6 +338,9 @@ std::string ChannelConfiguration::ToString() const {
   }
   if (retransmission_flow_control_option_) {
     options.push_back(retransmission_flow_control_option_->ToString());
+  }
+  if (fcs_option_) {
+    options.push_back(fcs_option_->ToString());
   }
   if (flush_timeout_option_) {
     options.push_back(flush_timeout_option_->ToString());
@@ -337,6 +371,10 @@ void ChannelConfiguration::Merge(ChannelConfiguration other) {
 
   if (other.flush_timeout_option_) {
     flush_timeout_option_ = other.flush_timeout_option_;
+  }
+
+  if (other.fcs_option_) {
+    fcs_option_ = other.fcs_option_;
   }
 
   unknown_options_.insert(

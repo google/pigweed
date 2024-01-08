@@ -198,6 +198,12 @@ enum class RetransmissionAndFlowControlMode : uint8_t {
   kStreaming = 0x04,
 };
 
+// FCS Types defined by the specification
+enum class FcsType : uint8_t {
+  kNoFcs = 0x00,
+  kSixteenBitFcs = 0x01,
+};
+
 // Channel modes defined by an associated channel establishment packet rather
 // than an L2CAP_CONFIGURATION_REQ packet. The values here are the signaling
 // packet code of the connection establishment request packet associated with
@@ -407,6 +413,11 @@ struct RetransmissionAndFlowControlOptionPayload {
   uint16_t rtx_timeout;
   uint16_t monitor_timeout;
   uint16_t mps;
+} __attribute__((packed));
+
+// Payload of the FCS Option (see Vol 3, Part A, Section 5.5)
+struct FrameCheckSequenceOptionPayload {
+  FcsType fcs_type;
 } __attribute__((packed));
 
 struct ConfigurationRequestPayload {

@@ -201,7 +201,7 @@ void BrEdrDynamicChannelRegistry::OnRxInfoReq(
 
     case InformationType::kExtendedFeaturesSupported: {
       const ExtendedFeatures extended_features =
-          kExtendedFeaturesBitFixedChannels |
+          kExtendedFeaturesBitFixedChannels | kExtendedFeaturesBitFCSOption |
           kExtendedFeaturesBitEnhancedRetransmission;
 
       // Express support for the Fixed Channel Supported feature
@@ -602,10 +602,8 @@ void BrEdrDynamicChannel::OnRxConfigReq(
       bt_log(TRACE,
              "l2cap-bredr",
              "Channel %#.4x: second configuration request doesn't have desired "
-             "mode, "
-             "sending unacceptable parameters response and disconnecting (req "
-             "mode: %#.2x, "
-             "desired: %#.2x)",
+             "mode, sending unacceptable parameters response and disconnecting "
+             "(req mode: %#.2x, desired: %#.2x)",
              local_cid(),
              static_cast<uint8_t>(req_mode),
              static_cast<uint8_t>(local_mode));

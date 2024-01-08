@@ -431,7 +431,13 @@ const StaticByteBuffer kInboundConfigReqWithERTM(
     0x00,
     0x00,
     LowerBits(kMaxTxPduPayloadSize),
-    UpperBits(kMaxTxPduPayloadSize));
+    UpperBits(kMaxTxPduPayloadSize),
+
+    // FCS Option (Type, Length = 1) - turn off which we should accept and
+    // ignore
+    0x05,
+    0x01,
+    static_cast<uint8_t>(FcsType::kNoFcs));
 
 // Configuration Responses
 
@@ -2154,7 +2160,7 @@ INSTANTIATE_TEST_SUITE_P(BrEdrDynamicChannelTest,
 
 TEST_F(BrEdrDynamicChannelTest, RespondsToInboundExtendedFeaturesRequest) {
   const auto kExpectedExtendedFeatures =
-      kExtendedFeaturesBitFixedChannels |
+      kExtendedFeaturesBitFixedChannels | kExtendedFeaturesBitFCSOption |
       kExtendedFeaturesBitEnhancedRetransmission;
   const auto kExpectedExtendedFeaturesInfoRsp = MakeExtendedFeaturesInfoRsp(
       InformationResult::kSuccess, kExpectedExtendedFeatures);
@@ -2165,7 +2171,7 @@ TEST_F(BrEdrDynamicChannelTest, RespondsToInboundExtendedFeaturesRequest) {
 
 TEST_F(BrEdrDynamicChannelTest, ExtendedFeaturesResponseSaved) {
   const auto kExpectedExtendedFeatures =
-      kExtendedFeaturesBitFixedChannels |
+      kExtendedFeaturesBitFixedChannels | kExtendedFeaturesBitFCSOption |
       kExtendedFeaturesBitEnhancedRetransmission;
   const auto kInfoRsp = MakeExtendedFeaturesInfoRsp(InformationResult::kSuccess,
                                                     kExpectedExtendedFeatures);
