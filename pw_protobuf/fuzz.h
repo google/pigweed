@@ -48,6 +48,7 @@ enum FieldType : uint8_t {
   kBytes,
   kString,
   kPush,
+  kPop,
   kMaxValue = kPush,
 };
 

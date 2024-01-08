@@ -30,10 +30,10 @@
 namespace pw::protobuf::fuzz {
 namespace {
 
-void recursive_fuzzed_decode(FuzzedDataProvider& provider,
-                             StreamDecoder& decoder,
-                             uint32_t depth = 0) {
-  constexpr size_t kMaxRepeatedRead = 1024;
+void RecursiveFuzzedDecode(FuzzedDataProvider& provider,
+                           StreamDecoder& decoder,
+                           uint32_t depth = 0) {
+  constexpr size_t kMaxRepeatedRead = 256;
   constexpr size_t kMaxDepth = 3;
 
   if (depth > kMaxDepth) {
@@ -193,9 +193,13 @@ void recursive_fuzzed_decode(FuzzedDataProvider& provider,
       } break;
       case kPush: {
         StreamDecoder nested_decoder = decoder.GetNestedDecoder();
-        recursive_fuzzed_decode(provider, nested_decoder, depth + 1);
-
+        RecursiveFuzzedDecode(provider, nested_decoder, depth + 1);
       } break;
+      case kPop:
+        if (depth > 0) {
+          // Special "field". The marks the end of a nested message.
+          return;
+        }
     }
   }
 }
@@ -206,7 +210,7 @@ void TestOneInput(FuzzedDataProvider& provider) {
       provider.ConsumeIntegralInRange<size_t>(0, kMaxFuzzedProtoSize));
   stream::MemoryReader memory_reader(proto_message_data);
   StreamDecoder decoder(memory_reader);
-  recursive_fuzzed_decode(provider, decoder);
+  RecursiveFuzzedDecode(provider, decoder);
 }
 
 }  // namespace
