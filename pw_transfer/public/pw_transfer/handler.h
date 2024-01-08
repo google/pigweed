@@ -143,8 +143,7 @@ class ReadWriteHandler : public Handler {
  public:
   constexpr ReadWriteHandler(uint32_t resource_id)
       : Handler(resource_id, static_cast<stream::Reader*>(nullptr)) {}
-  constexpr ReadWriteHandler(uint32_t resource_id,
-                             stream::ReaderWriter& reader_writer)
+  ReadWriteHandler(uint32_t resource_id, stream::ReaderWriter& reader_writer)
       : Handler(resource_id, &static_cast<stream::Reader&>(reader_writer)) {}
 
   ~ReadWriteHandler() override = default;
