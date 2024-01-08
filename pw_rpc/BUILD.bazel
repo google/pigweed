@@ -110,6 +110,7 @@ cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":config_override",
         ":internal_packet_cc.pwpb",
         "//pw_assert",
         "//pw_bytes",
@@ -125,6 +126,11 @@ cc_library(
         "//pw_thread:sleep",
         "//pw_toolchain:no_destructor",
     ],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
 )
 
 cc_library(

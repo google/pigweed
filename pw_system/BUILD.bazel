@@ -35,11 +35,21 @@ cc_library(
     hdrs = [
         "public/pw_system/config.h",
     ],
-    defines = select({
-        "//conditions:default": [
-            "PW_SYSTEM_ENABLE_TRACE_SERVICE=0",
-        ],
-    }),
+    deps = [":config_override"],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = ":default_config",
+)
+
+cc_library(
+    name = "default_config",
+    defines = [
+        # TODO(b/260641850): Remove this Bazel-only default configuration once
+        # pw_trace builds with Bazel.
+        "PW_SYSTEM_ENABLE_TRACE_SERVICE=0",
+    ],
 )
 
 cc_library(

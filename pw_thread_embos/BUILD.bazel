@@ -82,6 +82,7 @@ cc_library(
         "thread_public_overrides",
     ],
     deps = [
+        ":config_override",
         ":id",
         "//pw_assert",
         "//pw_string",
@@ -89,6 +90,11 @@ cc_library(
     ],
     # TODO: b/234876414 - This should depend on embOS but our third parties
     # currently do not have Bazel support.
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
 )
 
 cc_library(

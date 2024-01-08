@@ -121,6 +121,7 @@ cc_library(
         "//pw_build/constraints/rtos:freertos",
     ],
     deps = [
+        ":config_override",
         "//pw_assert",
         "//pw_interrupt:context",
         "//pw_polyfill",
@@ -129,6 +130,11 @@ cc_library(
         "//pw_sync:thread_notification_facade",
         "@freertos",
     ],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
 )
 
 cc_library(

@@ -49,6 +49,7 @@ cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":config_override",
         "//pw_bytes:bit",
         "//pw_containers:to_array",
         "//pw_polyfill",
@@ -56,6 +57,11 @@ cc_library(
         "//pw_span",
         "//pw_varint",
     ],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
 )
 
 pw_linker_script(

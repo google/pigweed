@@ -65,6 +65,12 @@ cc_library(
     name = "config",
     hdrs = ["public/pw_assert/config.h"],
     includes = ["public"],
+    deps = [":config_override"],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
 )
 
 cc_library(

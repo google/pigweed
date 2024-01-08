@@ -36,6 +36,7 @@ cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":config_override",
         "//pw_assert",
         "//pw_bytes",
         "//pw_containers",
@@ -48,6 +49,11 @@ cc_library(
         "//pw_sync:mutex",
         "//pw_varint",
     ],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
 )
 
 cc_library(

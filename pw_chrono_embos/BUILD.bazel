@@ -36,9 +36,15 @@ cc_library(
     ],
     # TODO: b/290366523 - This should depend on embOS.
     deps = [
+        ":config_override",
         "//pw_chrono:epoch",
         "//pw_chrono:system_clock_facade",
     ],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
 )
 
 cc_library(

@@ -36,6 +36,12 @@ constraint_value(
 cc_library(
     name = "config",
     hdrs = ["pw_cpu_exception_cortex_m_private/config.h"],
+    deps = [":config_override"],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
 )
 
 cc_library(

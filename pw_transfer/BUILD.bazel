@@ -26,8 +26,14 @@ cc_library(
     hdrs = ["public/pw_transfer/internal/config.h"],
     includes = ["public"],
     deps = [
+        ":config_override",
         "//pw_chrono:system_clock",
     ],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
 )
 
 cc_library(

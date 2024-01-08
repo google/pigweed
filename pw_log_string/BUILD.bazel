@@ -42,7 +42,15 @@ pw_cc_facade(
         "public/pw_log_string/handler.h",
     ],
     includes = ["public"],
-    deps = ["//pw_preprocessor"],
+    deps = [
+        ":config_override",
+        "//pw_preprocessor",
+    ],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
 )
 
 alias(

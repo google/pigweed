@@ -22,6 +22,23 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 cc_library(
+    name = "config",
+    hdrs = [
+        "public/pw_log_rpc/internal/config.h",
+    ],
+    includes = ["public"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":config_override",
+    ],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
+)
+
+cc_library(
     name = "log_service",
     srcs = [
         "log_service.cc",
@@ -30,6 +47,7 @@ cc_library(
     hdrs = ["public/pw_log_rpc/log_service.h"],
     includes = ["public"],
     deps = [
+        ":config",
         ":log_filter",
         ":rpc_log_drain",
         "//pw_log",
@@ -57,7 +75,6 @@ cc_library(
     name = "log_filter",
     srcs = [
         "log_filter.cc",
-        "public/pw_log_rpc/internal/config.h",
     ],
     hdrs = [
         "public/pw_log_rpc/log_filter.h",
@@ -65,6 +82,7 @@ cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":config",
         "//pw_assert",
         "//pw_bytes",
         "//pw_containers:vector",
@@ -78,7 +96,6 @@ cc_library(
 cc_library(
     name = "rpc_log_drain",
     srcs = [
-        "public/pw_log_rpc/internal/config.h",
         "rpc_log_drain.cc",
     ],
     hdrs = [
@@ -87,6 +104,7 @@ cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":config",
         ":log_filter",
         "//pw_assert",
         "//pw_chrono:system_clock",

@@ -42,6 +42,12 @@ cc_library(
         "public/pw_preprocessor/arch.h",
     ],
     includes = ["public"],
+    deps = [":config_override"],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
 )
 
 TESTS = [

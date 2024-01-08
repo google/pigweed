@@ -35,12 +35,18 @@ cc_library(
         "//pw_build/constraints/rtos:freertos",
     ],
     deps = [
+        ":config_override",
         "//pw_chrono:epoch",
         "//pw_chrono:system_clock_facade",
         "//pw_interrupt:context",
         "//pw_sync:interrupt_spin_lock",
         "@freertos",
     ],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
 )
 
 cc_library(

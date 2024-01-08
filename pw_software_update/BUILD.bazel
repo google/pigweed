@@ -111,6 +111,7 @@ cc_library(
     tags = ["manual"],  # TODO: b/236321905 - Depends on pw_crypto.
     deps = [
         ":blob_store_openable_reader",
+        ":config_override",
         ":openable_reader",
         ":update_bundle_proto_cc.pwpb",
         "//pw_blob_store",
@@ -123,6 +124,11 @@ cc_library(
         "//pw_stream",
         "//pw_string",
     ],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
 )
 
 # TODO: b/258074401 - Depends on bundled_update_proto_cc.nanopb_rpc, which

@@ -35,9 +35,15 @@ cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":config_override",
         "//pw_bytes",
         "//pw_span",
     ],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
 )
 
 pw_cc_test(

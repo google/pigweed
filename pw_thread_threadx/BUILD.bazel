@@ -60,11 +60,17 @@ cc_library(
     # TODO: b/257321712 - Add ThreadX dependency.
     tags = ["manual"],
     deps = [
+        ":config_override",
         ":id",
         "//pw_assert",
         "//pw_string",
         "//pw_thread:thread_facade",
     ],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
 )
 
 cc_library(

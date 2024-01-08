@@ -29,8 +29,14 @@ cc_library(
     hdrs = ["public/pw_unit_test/config.h"],
     includes = ["public"],
     deps = [
+        ":config_override",
         "//pw_polyfill",
     ],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
 )
 
 alias(

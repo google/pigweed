@@ -32,9 +32,15 @@ cc_library(
         "@platforms//os:none",
     ],
     deps = [
+        ":config_override",
         "//pw_boot_cortex_m:armv7m",
         "//pw_preprocessor",
         "//pw_sys_io:default_putget_bytes",
         "//pw_sys_io:facade",
     ],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
 )

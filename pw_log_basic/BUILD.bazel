@@ -38,11 +38,17 @@ cc_library(
         "pw_log_basic_private/config.h",
     ],
     deps = [
+        ":config_override",
         ":headers",
         "//pw_log:facade",
         "//pw_string",
         "//pw_sys_io",
     ],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
 )
 
 # The impl of pw_log_basic is an empty library: it's so basic that there's no
