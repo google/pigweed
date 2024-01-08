@@ -2931,7 +2931,7 @@ def generate_struct_for_message(
             output.write_line(f'{type_name} {name};')
 
             if not prop.use_callback():
-                cmp.append(f'{name} == other.{name}')
+                cmp.append(f'this->{name} == other.{name}')
 
         # Equality operator
         output.write_line()
