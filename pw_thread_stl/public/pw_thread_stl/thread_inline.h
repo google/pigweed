@@ -18,6 +18,20 @@
 #include "pw_thread/thread.h"
 
 namespace pw::thread {
+namespace internal {
+
+// When compiling with GCC and MinGW-w64 on Windows, std::thread::detach() can
+// cause indefinite hangs due to issues with thread cleanup. This undefined
+// symbol prevents binaries from linking if detach() is ever called on a thread
+// in the final binary.
+//
+// It's not clear yet whether this goes away when using the official Windows
+// SDK. For more information, see b/317922402.
+#if defined(__MINGW32__) || defined(__MINGW64__)
+[[noreturn]] void ErrorAttemptedToInvokeStdThreadDetachOnMinGW();
+#endif  // defined(__MINGW32__) || defined(__MINGW64__)
+
+}  // namespace internal
 
 inline Thread::Thread() : native_type_() {}
 
@@ -36,7 +50,12 @@ inline Id Thread::get_id() const { return native_type_.get_id(); }
 
 inline void Thread::join() { native_type_.join(); }
 
-inline void Thread::detach() { native_type_.detach(); }
+inline void Thread::detach() {
+#if defined(__MINGW32__) || defined(__MINGW64__)
+  internal::ErrorAttemptedToInvokeStdThreadDetachOnMinGW();
+#endif  // defined(__MINGW32__) || defined(__MINGW64__)
+  native_type_.detach();
+}
 
 inline void Thread::swap(Thread& other) {
   native_type_.swap(other.native_handle());
