@@ -196,6 +196,13 @@ pw_seed("0121") {
   author = "Chad Norvell"
 }
 
+pw_seed("0122") {
+  changelist = 187121
+  title = "Organize Pigweed code samples"
+  status = "Draft"
+  author = "Ted Pudlik"
+}
+
 # This must be defined after all `pw_seed` targets, as it relies on information
 # exposed by them.
 pw_seed_index("seeds") {
@@ -224,5 +231,6 @@ pw_seed_index("seeds") {
     ":0119",
     ":0120",
     ":0121",
+    ":0122",
   ]
 }
