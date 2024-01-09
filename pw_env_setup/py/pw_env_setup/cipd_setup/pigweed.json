@@ -75,8 +75,7 @@
       "subdir": "rust",
       "tags": [
         "git_revision:b7b7f2716ee1655a696d3d64c3e12638d0dd19c0"
-      ],
-      "version_file": ".versions/rust.cipd_version"
+      ]
     },
     {
       "path": "infra/3pp/tools/openocd/${platform}",
