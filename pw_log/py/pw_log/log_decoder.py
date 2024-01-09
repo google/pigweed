@@ -18,7 +18,7 @@ from dataclasses import dataclass
 import datetime
 import logging
 import re
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Union
 
 from pw_log.proto import log_pb2
 import pw_log_tokenized
@@ -195,7 +195,9 @@ def pw_status_code_to_name(
     )
 
 
-def log_decoded_log(log: Log, logger: logging.Logger) -> None:
+def log_decoded_log(
+    log: Log, logger: Union[logging.Logger, logging.LoggerAdapter]
+) -> None:
     """Formats and saves the log information in a pw console compatible way.
 
     Arg:

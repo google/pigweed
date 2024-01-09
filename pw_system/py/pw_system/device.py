@@ -54,7 +54,9 @@ class Device:
         rpc_timeout_s: float = 5,
         use_rpc_logging: bool = True,
         use_hdlc_encoding: bool = True,
-        logger: logging.Logger = DEFAULT_DEVICE_LOGGER,
+        logger: Union[
+            logging.Logger, logging.LoggerAdapter
+        ] = DEFAULT_DEVICE_LOGGER,
     ):
         self.channel_id = channel_id
         self.protos = proto_library
