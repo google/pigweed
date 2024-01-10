@@ -14,7 +14,7 @@
       "tags": [
         "version:2@7.0.0-pre.20231011.2.6"
       ],
-      "version_file": ".versions/bazel.cipd_version"
+      "version_file": ".versions/bazel.version"
     },
     {
       "path": "flutter/java/openjdk/${platform}",
