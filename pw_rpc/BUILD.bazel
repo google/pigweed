@@ -134,6 +134,20 @@ label_flag(
 )
 
 cc_library(
+    name = "completion_request_callback_config_enabled",
+    defines = [
+        "PW_RPC_COMPLETION_REQUEST_CALLBACK=1",
+    ],
+)
+
+config_setting(
+    name = "completion_request_callback_config_setting",
+    flag_values = {
+        ":config_override": ":completion_request_callback_config_enabled",
+    },
+)
+
+cc_library(
     name = "synchronous_client_api",
     srcs = ["public/pw_rpc/internal/synchronous_call_impl.h"],
     hdrs = [

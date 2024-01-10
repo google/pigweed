@@ -674,6 +674,17 @@ def bazel_test(ctx: PresubmitContext) -> None:
         '//...',
     )
 
+    # Run tests for non-default config options
+    build.bazel(
+        ctx,
+        'test',
+        '--test_output=errors',
+        '--//pw_rpc:config_override='
+        '//pw_rpc:completion_request_callback_config_enabled',
+        '--',
+        '//pw_rpc/...',
+    )
+
 
 @filter_paths(
     endswith=(
@@ -1217,7 +1228,6 @@ SOURCE_FILES_FILTER = FileFilter(
 
 OTHER_CHECKS = (
     # keep-sorted: start
-    # TODO: b/235277910 - Enable all Bazel tests when they're fixed.
     bazel_test,
     build.gn_gen_check,
     cmake_clang,
