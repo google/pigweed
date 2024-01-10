@@ -184,7 +184,7 @@ Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
         title = "pw_rpc Over Smoke Signals"
         status = "Open for Comments"
         author = "Your Name"
-        author = "Your Facilitator"
+        facilitator = "Your Facilitator"
       }
 
 #. Create a thread for your SEED in the ``#seed`` channel of Pigweed's
@@ -239,8 +239,8 @@ When should implementation of a SEED proposal begin?
 ====================================================
 .. admonition:: TL;DR
 
-  The SEED's author can start writing code as soon as the intent of the proposal
-  is approved.
+   The SEED's author can start writing code as soon as the intent of the
+   proposal is approved.
 
 Generally speaking, there are two stages of approval for the majority of SEED
 proposals. The first is approval of the *intent* of the SEED --- that is,
@@ -264,8 +264,8 @@ At what point is the code related to a SEED considered usable?
 ==============================================================
 .. admonition:: TL;DR
 
-  Code written for a SEED is considered experimental and unstable until the SEED
-  is fully approved.
+   Code written for a SEED is considered experimental and unstable until the
+   SEED is fully approved.
 
 It is possible for code to be written, reviewed, and committed to Pigweed while
 its SEED is still in the review process. As these changes end up in Pigweed's
@@ -291,8 +291,8 @@ Will approved SEEDs be updated in response to code changes?
 ===========================================================
 .. admonition:: TL;DR
 
-  Approved SEEDs will not be updated as code evolves. Use module documentation
-  as a current reference.
+   Approved SEEDs will not be updated as code evolves. Use module documentation
+   as a current reference.
 
 SEED documents are intended to capture decisions made at a point in time with
 their justification. They are not living documents which reflect the current
