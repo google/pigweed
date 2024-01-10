@@ -202,18 +202,23 @@ def all_package_files(env_vars, package_files):
     return list(flatten_package_files(to_process))
 
 
+def update_subdir(package, package_file):
+    """Updates subdir in package and saves original."""
+    name = package_file_name(package_file)
+    if 'subdir' in package:
+        package['original_subdir'] = package['subdir']
+        package['subdir'] = '/'.join([name, package['subdir']])
+    else:
+        package['subdir'] = name
+
+
 def all_packages(package_files):
     packages = []
     for package_file in package_files:
-        name = package_file_name(package_file)
         with open(package_file, 'r') as ins:
             file_packages = json.load(ins).get('packages', ())
             for package in file_packages:
-                if 'subdir' in package:
-                    package['original_subdir'] = package['subdir']
-                    package['subdir'] = '/'.join([name, package['subdir']])
-                else:
-                    package['subdir'] = name
+                update_subdir(package, package_file)
             packages.extend(file_packages)
     return packages
 

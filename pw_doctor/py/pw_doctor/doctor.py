@@ -453,6 +453,8 @@ def cipd_versions(ctx: DoctorContext):
             cipd_update.package_installation_path(cipd_dir, json_path)
         )
         for package in json.loads(json_path.read_text()).get('packages', ()):
+            # Ensure package matches deduped_packages format
+            cipd_update.update_subdir(package, json_path)
             if package not in deduped_packages:
                 ctx.debug(
                     f'Skipping overridden package {package["path"]} '
