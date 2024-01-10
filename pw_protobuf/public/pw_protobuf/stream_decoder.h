@@ -607,15 +607,23 @@ class StreamDecoder {
             std::is_same_v<T, int64_t>,
         "Protobuf varints must be of type bool, uint32_t, int32_t, uint64_t, "
         "or int64_t");
+    using DecodedValue =
+        std::conditional_t<std::is_signed<T>::value, int64_t, uint64_t>;
+    static_assert(sizeof(DecodedValue) >= sizeof(T));
 
-    T result;
+    DecodedValue result;
     if (Status status =
             ReadVarintField(as_writable_bytes(span(&result, 1)), decode_type);
         !status.ok()) {
       return status;
     }
-
-    return result;
+    if (result > static_cast<DecodedValue>(std::numeric_limits<T>::max()) ||
+        result < static_cast<DecodedValue>(std::numeric_limits<T>::lowest())) {
+      // When a varint is too big to fit in an integer, the decoder returns
+      // FAILED_PRECONDITION, so this mirrors that behavior.
+      return Status::FailedPrecondition();
+    }
+    return static_cast<T>(result);
   }
 
   Status ReadFixedField(span<std::byte> out);
