@@ -658,13 +658,21 @@ class StreamEncoder {
   constexpr StreamEncoder(StreamEncoder& parent,
                           ByteSpan scratch_buffer,
                           bool write_when_empty = true)
-      : status_(scratch_buffer.empty() ? Status::ResourceExhausted()
-                                       : OkStatus()),
+      : status_(OkStatus()),
         write_when_empty_(write_when_empty),
         parent_(&parent),
         nested_field_number_(0),
         memory_writer_(scratch_buffer),
-        writer_(memory_writer_) {}
+        writer_(memory_writer_) {
+    // If this encoder was spawned from a failed encoder, it should also start
+    // in a failed state.
+    if (&parent != this) {
+      status_.Update(parent.status_);
+    }
+    if (scratch_buffer.empty()) {
+      status_.Update(Status::ResourceExhausted());
+    }
+  }
 
   bool nested_encoder_open() const { return nested_field_number_ != 0; }
 

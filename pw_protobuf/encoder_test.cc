@@ -505,6 +505,16 @@ TEST(StreamEncoder, EmptyChildWrites) {
   ASSERT_EQ(parent.size(), kExpectedSize);
 }
 
+TEST(StreamEncoder, InvalidChildFieldNumber) {
+  std::byte encode_buffer[32];
+  MemoryEncoder parent(encode_buffer);
+  {
+    StreamEncoder child = parent.GetNestedEncoder(0);
+    EXPECT_EQ(child.status(), Status::InvalidArgument());
+  }
+  EXPECT_EQ(parent.status(), Status::InvalidArgument());
+}
+
 TEST(StreamEncoder, NestedStatusPropagates) {
   std::byte encode_buffer[32];
   MemoryEncoder parent(encode_buffer);

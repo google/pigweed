@@ -40,9 +40,12 @@ using internal::VarintType;
 StreamEncoder StreamEncoder::GetNestedEncoder(uint32_t field_number,
                                               bool write_when_empty) {
   PW_CHECK(!nested_encoder_open());
-  PW_CHECK(ValidFieldNumber(field_number));
 
   nested_field_number_ = field_number;
+  if (!ValidFieldNumber(field_number)) {
+    status_.Update(Status::InvalidArgument());
+    return StreamEncoder(*this, ByteSpan(), false);
+  }
 
   // Pass the unused space of the scratch buffer to the nested encoder to use
   // as their scratch buffer.
