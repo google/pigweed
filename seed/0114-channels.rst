@@ -144,7 +144,9 @@ are mixed in through different interfaces. ``Channel`` supports `byte stream
 <https://docs.oracle.com/javase/8/docs/api/java/nio/channels/ByteChannel.html>`_,
 `datagram
 <https://docs.oracle.com/javase/8/docs/api/java/nio/channels/DatagramChannel.html>`_,
-`asynchronous <https://docs.oracle.com/javase/8/docs/api/java/nio/channels/AsynchronousChannel.html>`_, and `scatter <https://docs.oracle.com/javase/8/docs/api/java/nio/channels/ScatteringByteChannel.html>`_/`gather <https://docs.oracle.com/javase/8/docs/api/java/nio/channels/GatheringByteChannel.html>`_ IO.
+`asynchronous <https://docs.oracle.com/javase/8/docs/api/java/nio/channels/AsynchronousChannel.html>`_,
+and `scatter <https://docs.oracle.com/javase/8/docs/api/java/nio/channels/ScatteringByteChannel.html>`_/
+`gather <https://docs.oracle.com/javase/8/docs/api/java/nio/channels/GatheringByteChannel.html>`_ IO.
 
 C#
 ==
@@ -358,7 +360,7 @@ inheritance, minimizing vtable overhead.
 Prototype Demonstrating Channel Capabilities
 --------------------------------------------
 A prototype demonstrating this interface can be seen `here
-<https://godbolt.org/z/3c4M3Y17r>_`.
+<https://godbolt.org/z/3c4M3Y17r>`_.
 
 API sketch
 ==========
