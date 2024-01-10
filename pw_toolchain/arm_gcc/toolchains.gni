@@ -157,7 +157,6 @@ _cortex_m33f = [
 
 _cortex_a32 = [
   "$dir_pw_toolchain/arm_gcc:cortex_common",
-  "$dir_pw_toolchain/arm_gcc:cortex_common",
   "$dir_pw_toolchain/arm_gcc:cortex_a32",
 ]
 
