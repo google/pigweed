@@ -113,6 +113,13 @@ config("sanitize_thread") {
   ldflags = cflags
 }
 
+config("no_ms_compatibility") {
+  if (current_os == "win") {
+    cflags = [ "-fno-ms-compatibility" ]
+    ldflags = cflags
+  }
+}
+
 # Locate XCode's sysroot for Clang.
 config("xcode_sysroot") {
   if (current_os == "mac") {

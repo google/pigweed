@@ -63,6 +63,7 @@ _defaults = {
                       "$dir_pw_build:extra_debugging",
                       "$dir_pw_toolchain/host_clang:no_system_libcpp",
                       "$dir_pw_toolchain/host_clang:xcode_sysroot",
+                      "$dir_pw_toolchain/host_clang:no_ms_compatibility",
                     ]
 
   # OSS-Fuzz uses -stdlib=libc++, which isn't included in the CIPD-provided
