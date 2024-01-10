@@ -43,6 +43,10 @@ template <typename T>
 span<const T> ConsumeSpan(FuzzedDataProvider& provider, std::vector<T>* data) {
   size_t num = ConsumeSize<T>(provider);
   size_t off = data->size();
+  if (num == 0) {
+    return span<const T>();
+  }
+
   data->reserve(off + num);
   for (size_t i = 0; i < num; ++i) {
     if constexpr (std::is_floating_point<T>::value) {
