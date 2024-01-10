@@ -430,6 +430,33 @@ This shows the only supported way to configure a module in Bazel.
      ],
    )
 
+To conditionally enable targets based on whether a particular config override is
+enabled, a ``config_setting`` can be defined that looks at the config_override
+label flag value. This allows use of ``target_compatible_with`` to enable
+targets.
+
+.. code-block:: python
+
+   # Setup config_setting that is enabled when a particular config override is
+   # set.
+   config_setting(
+     name = "config_override_setting",
+     flag_values = {
+       "--@pigweed//pw_foo:config_override": ":config_overrides",
+     },
+   )
+
+   # For targets that need some specific config setting to build, conditionally
+   # enable them.
+   pw_cc_test(
+     name = "test",
+     target_compatible_with = select({
+        ":config_override_setting": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+     }),
+     ...
+   )
+
 
 Why this config pattern is preferred
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
