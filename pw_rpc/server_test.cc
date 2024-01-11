@@ -28,6 +28,15 @@
 #include "pw_unit_test/framework.h"
 
 namespace pw::rpc {
+
+class ServerTestHelper {
+ public:
+  static std::tuple<Service*, const internal::Method*> FindMethod(
+      Server& server, uint32_t service_id, uint32_t method_id) {
+    return server.FindMethod(service_id, method_id);
+  }
+};
+
 namespace {
 
 using std::byte;
@@ -394,6 +403,31 @@ TEST_F(BasicServer, OpenChannel_AdditionalSlot) {
   constexpr Status kExpected =
       PW_RPC_DYNAMIC_ALLOCATION == 0 ? Status::ResourceExhausted() : OkStatus();
   EXPECT_EQ(kExpected, server_.OpenChannel(19823, output_));
+}
+
+TEST_F(BasicServer, FindMethod_FoundOkOptionallyCheckType) {
+  const auto [service, method] = ServerTestHelper::FindMethod(server_, 1, 100);
+  ASSERT_TRUE(service != nullptr);
+  ASSERT_TRUE(method != nullptr);
+#if PW_RPC_METHOD_STORES_TYPE
+  EXPECT_EQ(MethodType::kBidirectionalStreaming, method->type());
+#endif
+}
+
+TEST_F(BasicServer, FindMethod_NotFound) {
+  {
+    const auto [service, method] =
+        ServerTestHelper::FindMethod(server_, 2, 100);
+    ASSERT_TRUE(service == nullptr);
+    ASSERT_TRUE(method == nullptr);
+  }
+
+  {
+    const auto [service, method] =
+        ServerTestHelper::FindMethod(server_, 1, 101);
+    ASSERT_TRUE(service != nullptr);
+    ASSERT_TRUE(method == nullptr);
+  }
 }
 
 class BidiMethod : public BasicServer {

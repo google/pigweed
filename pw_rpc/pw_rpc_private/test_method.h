@@ -34,7 +34,7 @@ namespace pw::rpc::internal {
 class TestMethod : public Method {
  public:
   constexpr TestMethod(uint32_t id, MethodType type = MethodType::kUnary)
-      : Method(id, GetInvoker(type)),
+      : Method(id, GetInvoker(type), type),
         last_channel_id_(0),
         invocations_(0),
         move_to_call_(nullptr) {}

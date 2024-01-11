@@ -42,7 +42,7 @@ class RawMethod : public Method {
                   "Use an asynchronous unary method instead: "
                   "void MethodName(pw::ConstByteSpan request, "
                   "pw::rpc::RawUnaryResponder& responder)");
-    return {id, InvalidInvoker, {}};
+    return {id, InvalidInvoker, MethodType::kUnary, {}};
   }
 
   template <auto kMethod>
@@ -51,8 +51,10 @@ class RawMethod : public Method {
         [](Service& service, ConstByteSpan req, RawUnaryResponder& responder) {
           return CallMethodImplFunction<kMethod>(service, req, responder);
         };
-    return RawMethod(
-        id, AsynchronousUnaryInvoker, Function{.asynchronous_unary = wrapper});
+    return RawMethod(id,
+                     AsynchronousUnaryInvoker,
+                     MethodType::kUnary,
+                     Function{.asynchronous_unary = wrapper});
   }
 
   template <auto kMethod>
@@ -61,8 +63,10 @@ class RawMethod : public Method {
         [](Service& service, ConstByteSpan request, RawServerWriter& writer) {
           return CallMethodImplFunction<kMethod>(service, request, writer);
         };
-    return RawMethod(
-        id, ServerStreamingInvoker, Function{.server_streaming = wrapper});
+    return RawMethod(id,
+                     ServerStreamingInvoker,
+                     MethodType::kServerStreaming,
+                     Function{.server_streaming = wrapper});
   }
 
   template <auto kMethod>
@@ -72,8 +76,10 @@ class RawMethod : public Method {
           return CallMethodImplFunction<kMethod>(
               service, static_cast<RawServerReader&>(reader));
         };
-    return RawMethod(
-        id, ClientStreamingInvoker, Function{.stream_request = wrapper});
+    return RawMethod(id,
+                     ClientStreamingInvoker,
+                     MethodType::kClientStreaming,
+                     Function{.stream_request = wrapper});
   }
 
   template <auto kMethod>
@@ -82,12 +88,16 @@ class RawMethod : public Method {
         [](Service& service, RawServerReaderWriter& reader_writer) {
           return CallMethodImplFunction<kMethod>(service, reader_writer);
         };
-    return RawMethod(
-        id, BidirectionalStreamingInvoker, Function{.stream_request = wrapper});
+    return RawMethod(id,
+                     BidirectionalStreamingInvoker,
+                     MethodType::kBidirectionalStreaming,
+                     Function{.stream_request = wrapper});
   }
 
   // Represents an invalid method. Used to reduce error message verbosity.
-  static constexpr RawMethod Invalid() { return {0, InvalidInvoker, {}}; }
+  static constexpr RawMethod Invalid() {
+    return {0, InvalidInvoker, MethodType::kUnary, {}};
+  }
 
  private:
   // Wraps the user-defined functions.
@@ -112,8 +122,11 @@ class RawMethod : public Method {
     StreamRequestFunction stream_request;
   };
 
-  constexpr RawMethod(uint32_t id, Invoker invoker, Function function)
-      : Method(id, invoker), function_(function) {}
+  constexpr RawMethod(uint32_t id,
+                      Invoker invoker,
+                      MethodType type,
+                      Function function)
+      : Method(id, invoker, type), function_(function) {}
 
   static void AsynchronousUnaryInvoker(const CallContext& context,
                                        const Packet& request)

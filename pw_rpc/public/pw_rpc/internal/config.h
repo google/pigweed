@@ -43,6 +43,14 @@
 #define PW_RPC_COMPLETION_REQUEST_CALLBACK 0
 #endif  // PW_RPC_COMPLETION_REQUEST_CALLBACK
 
+/// pw_rpc Method's can include their MethodType as a runtime accessible
+/// variable.
+///
+/// This isn't needed for most applications so is disabled by default.
+#ifndef PW_RPC_METHOD_STORES_TYPE
+#define PW_RPC_METHOD_STORES_TYPE 0
+#endif  // PW_RPC_METHOD_STORES_TYPE
+
 /// The Nanopb-based pw_rpc implementation allocates memory to use for Nanopb
 /// structs for the request and response protobufs. The template function that
 /// allocates these structs rounds struct sizes up to this value so that
@@ -237,6 +245,9 @@ namespace pw::rpc::cfg {
 template <typename...>
 constexpr std::bool_constant<PW_RPC_COMPLETION_REQUEST_CALLBACK>
     kClientStreamEndCallbackEnabled;
+
+template <typename...>
+constexpr std::bool_constant<PW_RPC_METHOD_STORES_TYPE> kMethodStoresType;
 
 template <typename...>
 constexpr std::bool_constant<PW_RPC_DYNAMIC_ALLOCATION>

@@ -54,7 +54,7 @@ Status Server::ProcessPacket(ConstByteSpan packet_data) {
     return Status::Unavailable();
   }
 
-  const auto [service, method] = FindMethod(packet);
+  const auto [service, method] = FindMethodLocked(packet);
 
   if (method == nullptr) {
     // Don't send responses to errors to avoid infinite error cycles.
@@ -109,17 +109,22 @@ Status Server::ProcessPacket(ConstByteSpan packet_data) {
 }
 
 std::tuple<Service*, const internal::Method*> Server::FindMethod(
-    const internal::Packet& packet) {
-  // Packets always include service and method IDs.
+    uint32_t service_id, uint32_t method_id) {
+  internal::RpcLockGuard lock;
+  return FindMethodLocked(service_id, method_id);
+}
+
+std::tuple<Service*, const internal::Method*> Server::FindMethodLocked(
+    uint32_t service_id, uint32_t method_id) {
   auto service = std::find_if(services_.begin(), services_.end(), [&](auto& s) {
-    return internal::UnwrapServiceId(s.service_id()) == packet.service_id();
+    return internal::UnwrapServiceId(s.service_id()) == service_id;
   });
 
   if (service == services_.end()) {
     return {};
   }
 
-  return {&(*service), service->FindMethod(packet.method_id())};
+  return {&(*service), service->FindMethod(method_id)};
 }
 
 void Server::HandleCompletionRequest(

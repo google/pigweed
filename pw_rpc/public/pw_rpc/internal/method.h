@@ -19,6 +19,7 @@
 
 #include "pw_rpc/internal/call_context.h"
 #include "pw_rpc/internal/lock.h"
+#include "pw_rpc/method_type.h"
 
 namespace pw::rpc {
 
@@ -62,6 +63,18 @@ class Method {
  public:
   constexpr uint32_t id() const { return id_; }
 
+  template <typename UnusedType = void>
+  constexpr MethodType type() const {
+    static_assert(cfg::kMethodStoresType<UnusedType>,
+                  "The MethodType accessor is disabled. To enable set "
+                  "PW_RPC_METHOD_STORES_TYPE to 1.");
+#if PW_RPC_METHOD_STORES_TYPE
+    return type_;
+#else
+    return MethodType::kUnary;
+#endif
+  }
+
   // The pw::rpc::Server calls method.Invoke to call a user-defined RPC. Invoke
   // calls the invoker function, which handles the RPC request and response
   // according to the RPC type and protobuf implementation and calls the
@@ -79,11 +92,24 @@ class Method {
 
   static constexpr void InvalidInvoker(const CallContext&, const Packet&) {}
 
-  constexpr Method(uint32_t id, Invoker invoker) : id_(id), invoker_(invoker) {}
+  constexpr Method(uint32_t id,
+                   Invoker invoker,
+                   [[maybe_unused]] MethodType type)
+      : id_(id),
+        invoker_(invoker)
+#if PW_RPC_METHOD_STORES_TYPE
+        ,
+        type_(type)
+#endif
+  {
+  }
 
  private:
   uint32_t id_;
   Invoker invoker_;
+#if PW_RPC_METHOD_STORES_TYPE
+  MethodType type_;
+#endif
 };
 
 // MethodTraits inspects an RPC implementation function. It determines which

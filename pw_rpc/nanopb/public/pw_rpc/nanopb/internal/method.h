@@ -185,6 +185,7 @@ class NanopbMethod : public Method {
         id,
         SynchronousUnaryInvoker<AllocateSpaceFor<Request<kMethod>>(),
                                 AllocateSpaceFor<Response<kMethod>>()>,
+        MethodType::kUnary,
         Function{.synchronous_unary = wrapper},
         serde);
   }
@@ -209,6 +210,7 @@ class NanopbMethod : public Method {
     return NanopbMethod(
         id,
         AsynchronousUnaryInvoker<AllocateSpaceFor<Request<kMethod>>()>,
+        MethodType::kUnary,
         Function{.unary_request = wrapper},
         serde);
   }
@@ -231,6 +233,7 @@ class NanopbMethod : public Method {
     return NanopbMethod(
         id,
         ServerStreamingInvoker<AllocateSpaceFor<Request<kMethod>>()>,
+        MethodType::kServerStreaming,
         Function{.unary_request = wrapper},
         serde);
   }
@@ -248,6 +251,7 @@ class NanopbMethod : public Method {
     };
     return NanopbMethod(id,
                         ClientStreamingInvoker<Request<kMethod>>,
+                        MethodType::kClientStreaming,
                         Function{.stream_request = wrapper},
                         serde);
   }
@@ -266,13 +270,18 @@ class NanopbMethod : public Method {
         };
     return NanopbMethod(id,
                         BidirectionalStreamingInvoker<Request<kMethod>>,
+                        MethodType::kBidirectionalStreaming,
                         Function{.stream_request = wrapper},
                         serde);
   }
 
   // Represents an invalid method. Used to reduce error message verbosity.
   static constexpr NanopbMethod Invalid() {
-    return {0, InvalidInvoker, {}, NanopbMethodSerde(nullptr, nullptr)};
+    return {0,
+            InvalidInvoker,
+            MethodType::kUnary,
+            {},
+            NanopbMethodSerde(nullptr, nullptr)};
   }
 
   // Give access to the serializer/deserializer object for converting requests
@@ -313,9 +322,10 @@ class NanopbMethod : public Method {
 
   constexpr NanopbMethod(uint32_t id,
                          Invoker invoker,
+                         MethodType type,
                          Function function,
                          const NanopbMethodSerde& serde)
-      : Method(id, invoker), function_(function), serde_(serde) {}
+      : Method(id, invoker, type), function_(function), serde_(serde) {}
 
   void CallSynchronousUnary(const CallContext& context,
                             const Packet& request,
