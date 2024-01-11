@@ -35,7 +35,17 @@
         "command": "pigweed.check-extensions",
         "title": "Pigweed: Check Extensions"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Pigweed",
+      "properties": {
+        "pigweed.enforceExtensionRecommendations": {
+          "type": "boolean",
+          "default": "false",
+          "description": "Require installing and disabling extensions recommended in extensions.json"
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",

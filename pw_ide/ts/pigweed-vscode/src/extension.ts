@@ -268,7 +268,15 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(pwFileBug);
   context.subscriptions.push(pwCheckExtensions);
-  checkExtensions();
+
+  const shouldEnforce = vscode.workspace
+    .getConfiguration('pigweed')
+    .get('enforceExtensionRecommendations') as string;
+
+  if (shouldEnforce === 'true') {
+    console.log('pigweed.enforceExtensionRecommendations: true');
+    checkExtensions();
+  }
 }
 
 export function deactivate() {

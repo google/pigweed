@@ -37,6 +37,15 @@ this manually, you can do so with `Pigweed: Set Python Virtual Environment`.
 
 Run `Pigweed: File Bug` to let us know!
 
+## Configuration
+
+This extension provides the following configuration options:
+
+- `pigweed.enforceExtensionRecommendations`: If set to `true`, recommendations
+  in your project's `extensions.json` will be enforced. Recommended extensions
+  will need to be installed, and non-recommended extensions will need to be
+  disabled in the project's workspace.
+
 ## Developing
 
 If you want to contribute to this extension, here's how you can get started:
