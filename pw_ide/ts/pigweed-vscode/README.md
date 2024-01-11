@@ -64,6 +64,8 @@ If you want to contribute to this extension, here's how you can get started:
   circle-with-an-arrow icon at the top of your development window to update
   the extension development host with the new build.
 
+- Run tests: `npm run test`
+
 ### Building
 
 - Install the build tool: `npm install -g @vscode/vsce`
