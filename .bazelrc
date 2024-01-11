@@ -12,6 +12,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+# TODO: https://pwbug.dev/258836641#comment4: Enabling bzlmod breaks the build.
+common --noenable_bzlmod
+
+# TODO: https://pwbug.dev/319664275: Disable hermetic sandbox tmp due to issues
+# with arm toolchain.
+build --noincompatible_sandbox_hermetic_tmp
+
 # Silence all C/C++ warnings in external code.
 #
 # Note that this will not silence warnings from external headers #include'd in

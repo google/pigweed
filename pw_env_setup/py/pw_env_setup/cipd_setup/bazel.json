@@ -4,7 +4,7 @@
   ],
   "packages": [
     {
-      "path": "fuchsia/third_party/bazel-prerelease/${platform}",
+      "path": "fuchsia/third_party/bazel/${platform}",
       "platforms": [
         "linux-amd64",
         "mac-amd64",
@@ -12,7 +12,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "version:2@7.0.0-pre.20231011.2.6"
+        "version:2@7.0.0.6"
       ],
       "version_file": ".versions/bazel.version"
     },
