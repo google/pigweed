@@ -75,6 +75,9 @@ export class LogList extends LitElement {
   @query('tbody') private _tableBody!: HTMLTableSectionElement;
   @queryAll('tr') private _tableRows!: HTMLTableRowElement[];
 
+  /** The zoom level based on pixel ratio of the window  */
+  private _zoomLevel: number = Math.round(window.devicePixelRatio * 100);
+
   /** Indicates whether to enable autosizing of incoming log entries. */
   private _autosizeLocked = false;
 
@@ -297,20 +300,28 @@ export class LogList extends LitElement {
     this.lastScrollTop = currentScrollTop;
 
     const logsAreCleared = this.logs.length == 0;
+    const zoomChanged =
+      this._zoomLevel !== Math.round(window.devicePixelRatio * 100);
 
     if (logsAreCleared) {
       this._autoscrollIsEnabled = true;
       return;
     }
 
-    // Run autoscroll logic if scrolling vertically
+    // Do not change autoscroll if zoom level on window changed
+    if (zoomChanged) {
+      this._zoomLevel = Math.round(window.devicePixelRatio * 100);
+      return;
+    }
+
+    // Calculate horizontal scroll percentage
     if (!isScrollingVertically) {
       this._scrollPercentageLeft = scrollLeft / maxScrollLeft || 0;
       return;
     }
 
     // Scroll direction up, disable autoscroll
-    if (isScrollingUp) {
+    if (isScrollingUp && Math.abs(scrollY) > 1) {
       this._autoscrollIsEnabled = false;
       return;
     }
