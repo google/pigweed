@@ -786,6 +786,7 @@ def install_py_module_as_editable(
 
     reporter.info(f'Found {module_name} at: {site_packages_path}')
     shutil.rmtree(Path(site_packages_path) / module_name)
+    src_path = Path(env.PW_ROOT, module_name, 'py')
 
     try:
         subprocess.run(
@@ -794,7 +795,7 @@ def install_py_module_as_editable(
                 'install',
                 '--no-deps',
                 '-e',
-                f'{module_name}/py',
+                str(src_path),
             ],
             check=True,
             stdout=subprocess.PIPE,
@@ -806,6 +807,8 @@ def install_py_module_as_editable(
                 'You may need to re-bootstrap',
             ]
         )
+
+        sys.exit(1)
 
     reporter.new('Success!')
     reporter.wrn('Note that running bootstrap or building will reverse this.')
