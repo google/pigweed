@@ -754,9 +754,7 @@ class CoverageOptions:
     """Coverage collection configuration. For Google use only."""
 
     common: CommonCoverageOptions
-    codesearch: Union[
-        Tuple[CodeSearchCoverageOptions, ...], CodeSearchCoverageOptions
-    ]
+    codesearch: Tuple[CodeSearchCoverageOptions, ...]
     gerrit: GerritCoverageOptions
 
 
@@ -973,11 +971,8 @@ def _write_coverage_metadata(
 
     # Running in CI: uploading absolute coverage, possibly to multiple locations
     # since a repo could be in codesearch in multiple places.
-    codesearch = options.codesearch
-    if isinstance(codesearch, CodeSearchCoverageOptions):
-        codesearch = (codesearch,)
     metadata_jsons = []
-    for i, cs in enumerate(codesearch):
+    for i, cs in enumerate(options.codesearch):
         metadata.update(
             {
                 'add_prefix': cs.add_prefix,
