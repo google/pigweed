@@ -63,6 +63,16 @@ pw_cc_flag_set(
     ],
 )
 
+# Thread safety warnings are only supported by Clang.
+pw_cc_flag_set(
+    name = "thread_safety_warnings",
+    actions = ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS,
+    flags = [
+        "-Wthread-safety",
+        "-D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS=1",
+    ],
+)
+
 pw_cc_flag_set(
     name = "no_unknown_warning_option",
     actions = ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS,
@@ -93,6 +103,7 @@ pw_cc_toolchain(
         ],
     }) + [
         ":warnings",
+        ":thread_safety_warnings",
         "@pw_toolchain//flag_sets:c++17",
         "@pw_toolchain//flag_sets:debugging",
         "@pw_toolchain//flag_sets:reduced_size",
