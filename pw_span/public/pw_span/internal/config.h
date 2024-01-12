@@ -13,14 +13,18 @@
 // the License.
 #pragma once
 
-// PW_SPAN_ENABLE_ASSERTS controls whether pw_span's implementation includes
-// asserts for detecting disallowed span operations at runtime. For C++20 and
-// later, this replaces std::span with the custom implementation in pw_span to
-// ensure bounds-checking asserts have been enabled.
-//
-// This defaults to disabled because of the significant increase in code size
-// caused by enabling this feature. It's strongly recommended to enable this
-// in debug and testing builds.
+/// @def PW_SPAN_ENABLE_ASSERTS
+///
+/// @brief Controls whether `pw_span` includes asserts for detecting disallowed
+/// span operations at runtime.
+///
+/// For C++20 and later, this replaces `std::span` with the custom
+/// implementation in `pw_span` to ensure bounds-checking asserts have been
+/// enabled.
+///
+/// This defaults to disabled because of the significant increase in code size
+/// caused by enabling this feature. It's strongly recommended to enable this
+/// in debug and testing builds.
 #if !defined(PW_SPAN_ENABLE_ASSERTS)
 #define PW_SPAN_ENABLE_ASSERTS 0
 #endif  // !defined(PW_SPAN_ENABLE_ASSERTS)

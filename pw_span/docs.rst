@@ -3,95 +3,170 @@
 =======
 pw_span
 =======
-The ``pw_span`` module provides :cpp:class:`pw::span`, an implementation of
-C++20's `std::span <https://en.cppreference.com/w/cpp/container/span>`_.
-``std::span`` is a non-owning view of an array of values. The intent is for
-:cpp:class:`pw::span` is to match the C++20 standard as closely as possible.
+.. pigweed-module::
+   :name: pw_span
+   :tagline: std::span for C++17
+   :status: stable
+   :languages: C++17,C++20
 
-If C++20's ``std::span`` is available, :cpp:class:`pw::span` is simply an alias
-of it.
+* **Standardized**: :cpp:class:`pw::span` matches C++20's `std::span
+  <https://en.cppreference.com/w/cpp/container/span>`_ as closely as possible.
+* **Zero-cost**: If ``std::span`` is available, ``pw::span`` is simply an alias
+  of it.
 
---------------
-Using pw::span
---------------
+.. pw_span-example-start
+
+.. code-block:: cpp
+
+   #include <span>
+
+   // With pw::span, a buffer is passed as a single argument.
+   // No need to handle pointer and size arguments.
+   bool ProcessBuffer(pw::span<uint8_t> buffer);
+
+   bool DoStuff() {
+     // ...
+     ProcessBuffer(c_array);
+     ProcessBuffer(array_object);
+     ProcessBuffer(pw::span(data_pointer, data_size));
+   }
+
+.. pw_span-example-end
+
 :cpp:class:`pw::span` is a convenient abstraction that wraps a pointer and a
-size. :cpp:class:`pw::span` is especially useful in APIs. Spans support implicit
-conversions from C arrays, ``std::array``, or any STL-style container, such as
+size. It's especially useful in APIs. Spans support implicit conversions from
+C arrays, ``std::array``, or any STL-style container, such as
 ``std::string_view``.
 
-Functions operating on an array of bytes typically accept pointer and size
+.. _module-pw_span-start:
+
+-----------
+Get started
+-----------
+.. repository: https://bazel.build/concepts/build-ref#repositories
+
+.. tab-set::
+
+   .. tab-item:: Bazel
+
+      Add ``@pigweed//pw_span`` to the ``deps`` list in your Bazel target:
+
+      .. code-block::
+
+         cc_library("...") {
+           # ...
+           deps = [
+             # ...
+             "@pigweed//pw_span",
+             # ...
+           ]
+         }
+
+      This assumes that your Bazel ``WORKSPACE`` has a `repository
+      <https://bazel.build/concepts/build-ref#repositories>`_ named ``@pigweed``
+      that points to the upstream Pigweed repository.
+
+   .. tab-item:: GN
+
+      Add ``$dir_pw_span`` to the ``deps`` list in your ``pw_executable()``
+      build target:
+
+      .. code-block::
+
+         pw_executable("...") {
+           # ...
+           deps = [
+             # ...
+             "$dir_pw_span",
+             # ...
+           ]
+         }
+
+   .. tab-item:: CMake
+
+      Add ``pw_span`` to your ``pw_add_library`` or similar CMake target:
+
+      .. code-block::
+
+         pw_add_library(my_library STATIC
+           HEADERS
+             ...
+           PRIVATE_DEPS
+             # ...
+             pw_span
+             # ...
+         )
+
+   .. tab-item:: Zephyr
+
+      There are two ways to use ``pw_span`` from a Zephyr project:
+
+      #. Depend on ``pw_span`` in your CMake target (see CMake tab). This is
+         Pigweed Team's suggested approach since it enables precise CMake
+         dependency analysis.
+
+      #. Add ``CONFIG_PIGWEED_SPAN=y`` to the Zephyr project's configuration,
+         which causes ``pw_span`` to become a global dependency and have the
+         includes exposed to all targets. Pigweed team does not recommend this
+         approach, though it is the typical Zephyr solution.
+
+------
+Guides
+------
+
+Operating on arrays of bytes
+============================
+When operating on an array of bytes you typically need pointer and size
 arguments:
 
 .. code-block:: cpp
 
-  bool ProcessBuffer(char* buffer, size_t buffer_size);
+   bool ProcessBuffer(char* buffer, size_t buffer_size);
 
-  bool DoStuff() {
-    ProcessBuffer(c_array, sizeof(c_array));
-    ProcessBuffer(array_object.data(), array_object.size());
-    ProcessBuffer(data_pointer, data_size);
-  }
+   bool DoStuff() {
+     ProcessBuffer(c_array, sizeof(c_array));
+     ProcessBuffer(array_object.data(), array_object.size());
+     ProcessBuffer(data_pointer, data_size);
+   }
 
-Pointer and size arguments can be replaced with a :cpp:class:`pw::span`:
+With ``pw::span`` you can pass the buffer as a single argument instead:
+
+.. include:: docs.rst
+   :start-after: .. pw_span-example-start
+   :end-before: .. pw_span-example-end
+
+Working with spans of binary data
+=================================
+Use ``pw::span<std::byte>`` or ``pw::span<const std::byte>`` to represent
+spans of binary data. Convert spans to byte spans with ``pw::as_bytes`` or
+``pw::as_writable_bytes``.
 
 .. code-block:: cpp
 
-  #include <span>
+   void ProcessData(pw::span<const std::byte> data);
 
-  // With pw::span, the buffer is passed as a single argument.
-  bool ProcessBuffer(pw::span<uint8_t> buffer);
+   void DoStuff() {
+     std::array<AnyType, 7> data = { ... };
+     ProcessData(pw::as_bytes(pw::span(data)));
+   }
 
-  bool DoStuff() {
-    ProcessBuffer(c_array);
-    ProcessBuffer(array_object);
-    ProcessBuffer(pw::span(data_pointer, data_size));
-  }
+``pw_bytes/span.h`` provides ``ByteSpan`` and ``ConstByteSpan`` aliases for
+these types.
 
-.. tip::
+----------
+References
+----------
 
-  Use ``pw::span<std::byte>`` or ``pw::span<const std::byte>`` to represent
-  spans of binary data. Use ``pw::as_bytes`` or ``pw::as_writable_bytes`` to
-  convert any span to a byte span.
+API reference
+=============
+See `std::span <https://en.cppreference.com/w/cpp/container/span>`_.
+The ``pw::span`` API is designed to match the ``std::span`` API.
 
-  .. code-block:: cpp
-
-    void ProcessData(pw::span<const std::byte> data);
-
-    void DoStuff() {
-      std::array<AnyType, 7> data = { ... };
-      ProcessData(pw::as_bytes(pw::span(data)));
-    }
-
-  ``pw_bytes/span.h`` provides ``ByteSpan`` and ``ConstByteSpan`` aliases for
-  these types.
-
-----------------------------
-Module Configuration Options
-----------------------------
+Configuration options
+=====================
 The following configurations can be adjusted via compile-time configuration of
 this module, see the
 :ref:`module documentation <module-structure-compile-time-configuration>` for
 more details.
 
-.. c:macro:: PW_SPAN_ENABLE_ASSERTS
-
-  PW_SPAN_ENABLE_ASSERTS controls whether pw_span's implementation includes
-  asserts for detecting disallowed span operations at runtime. For C++20 and
-  later, this replaces std::span with the custom implementation in pw_span to
-  ensure bounds-checking asserts have been enabled.
-
-  This defaults to disabled because of the significant increase in code size
-  caused by enabling this feature. It's strongly recommended to enable this
-  in debug and testing builds. This can be done by setting
-  ``pw_span_ENABLE_ASSERTS`` to ``true`` in the GN build.
-
--------------
-Compatibility
--------------
-Works with C++17. In C++20, use ``std::span`` instead.
-
-------
-Zephyr
-------
-To enable ``pw_span`` for Zephyr add ``CONFIG_PIGWEED_SPAN=y`` to the project's
-configuration.
+.. doxygendefine:: PW_SPAN_ENABLE_ASSERTS
