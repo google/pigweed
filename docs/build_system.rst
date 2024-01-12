@@ -675,6 +675,50 @@ Making use of the code coverage functionality in Bazel is straightforward.
 
       lcov --list bazel-out/_coverage/_coverage_report.dat
 
+.. _docs-build_system-bazel_link-extra-lib:
+
+Libraries required at linktime
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Certain low-level libraries (:ref:`module-pw_assert`, :ref:`module-pw_log`) are
+prone to cyclic dependencies. Handling assertions and logging requires using
+other libraries, which themselves may use assertions or logging. To remove
+these cycles, the full implementations of these libraries are placed in special
+*implementation targets* that are not added to their dependencies. Instead,
+every binary with a dependency on these libraries (direct or indirect) must
+link against the implementation targets.
+
+What this means in practice is that any ``cc_binary`` that depends on Pigweed
+libraries should have a dependency on ``//pw_build:default_link_extra_lib``.
+This can be added in a couple ways:
+
+#.  Add ``@pigweed//pw_build:default_link_extra_lib`` directly to the ``deps``
+    of every embedded ``cc_binary`` in your project.
+
+    The con is that you may forget to add the dependency to some targets,
+    and will then encounter puzzling linker errors.
+
+#.  Use `link_extra_lib
+    <https://bazel.build/reference/be/c-cpp#cc_binary.link_extra_lib>`_. Set
+    the ``@bazel_tools//tools/cpp:link_extra_libs`` label flag to point to
+    ``@pigweed//pw_build:default_link_extra_lib``, probably using `bazelrc
+    <https://bazel.build/run/bazelrc>`_. This is only supported in Bazel 7.0.0
+    or newer.
+
+    The con is that these libraries are linked into *all* C++ binaries that are
+    part of your project's build, including ones that have no dependencies on
+    Pigweed.
+
+
+Note that depending on ``@pigweed//pw_build:link_extra_lib`` will
+*unconditionally* include the symbols in the implementation targets in your
+binary, even if the binary does not use them. If this is a concern (e.g., due
+to the binary size increase), depend only on the individual implementation
+targets you actually require.
+
+See :ref:`module-pw_log-circular-deps` and
+:ref:`module-pw_assert-circular-deps` for more information about the specific
+modules that have link-time dependencies.
+
 Configuration
 -------------
 Generally speaking there are three primary concepts that make up Bazel's

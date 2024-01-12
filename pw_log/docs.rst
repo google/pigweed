@@ -341,6 +341,9 @@ required by the log backend used by the platform.
 You must add a dependency on the ``@pigweed//pw_log:backend_impl`` target to
 any binary using ``pw_log``.
 
+See :ref:`docs-build_system-bazel_link-extra-lib` for a general discussion of
+cyclic dependencies in low-level libraries in Bazel.
+
 ----------------------
 Google Logging Adapter
 ----------------------

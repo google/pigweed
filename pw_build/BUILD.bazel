@@ -119,3 +119,16 @@ cc_library(
     name = "unspecified_backend",
     target_compatible_with = ["@platforms//:incompatible"],
 )
+
+# Additional libraries that all binaries using Pigweed should be linked against.
+#
+# This is analogous to GN's pw_build_LINK_DEPS. See
+# https://pigweed.dev/build_system.html#docs-build-system-bazel-link-extra-lib
+# for more details.
+cc_library(
+    name = "default_link_extra_lib",
+    deps = [
+        "//pw_log:backend_impl",
+        "//targets:pw_assert_backend_impl",
+    ],
+)

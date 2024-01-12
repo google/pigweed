@@ -517,21 +517,10 @@ label flag should be set to the ``impl`` target required by the assert backend
 used by the platform.
 
 You must add a dependency on the ``@pigweed//targets:pw_assert_backend_impl``
-target to any binary using ``pw_assert``.  You can do this in a few ways:
+target to any binary using ``pw_assert``.
 
-1.  Use ``pw_cc_binary``, one of the :ref:`module-pw_build-bazel-wrapper-rules`
-    provided by Pigweed, instead of native ``cc_binary``. This wrapper adds the
-    required dependency.
-
-1.  Use `link_extra_lib
-    <https://bazel.build/reference/be/c-cpp#cc_binary.link_extra_lib>`_: set
-    the ``@bazel_tools//tools/cpp:link_extra_lib`` label flag to point to
-    ``@pigweed//targets:pw_assert_backend_impl``, probably using `bazelrc
-    <https://bazel.build/run/bazelrc>`_. Note that this is only supported in
-    Bazel 7.0.0 or newer.
-
-1.  Add ``@pigweed//targets:pw_assert_backend_impl`` directly to the ``deps``
-    of every embedded ``cc_binary`` in your project.
+See :ref:`docs-build_system-bazel_link-extra-lib` for a general discussion of
+cyclic dependencies in low-level libraries in Bazel.
 
 .. _module-pw_assert-backend_api:
 

@@ -340,6 +340,12 @@ This empty library is used as a placeholder for label flags that need to point
 to a library of some kind, but don't actually need the dependency to amount to
 anything.
 
+default_link_extra_lib
+^^^^^^^^^^^^^^^^^^^^^^
+This library groups together all libraries commonly required at link time by
+Pigweed modules. See :ref:`docs-build_system-bazel_link-extra-lib` for more
+details.
+
 unspecified_backend
 ^^^^^^^^^^^^^^^^^^^
 A special target used instead of a cc_library as the default condition in

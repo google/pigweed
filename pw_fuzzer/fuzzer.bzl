@@ -26,7 +26,7 @@ def pw_cc_fuzz_test(**kwargs):
     # TODO: b/234877642 - Remove this implicit dependency once we have a better
     # way to handle the facades without introducing a circular dependency into
     # the build.
-    kwargs["deps"].append("@pigweed//targets:pw_assert_backend_impl")
+    kwargs["deps"].append("@pigweed//pw_build:default_link_extra_lib")
 
     # TODO: b/292628774 - Only linux is supported for now.
     kwargs["target_compatible_with"] = ["@platforms//os:linux"]

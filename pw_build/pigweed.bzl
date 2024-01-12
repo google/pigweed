@@ -36,13 +36,11 @@ def pw_cc_binary(**kwargs):
     Args:
       **kwargs: Passed to cc_binary.
     """
-    kwargs["deps"] = kwargs.get("deps", [])
 
     # TODO: b/234877642 - Remove this implicit dependency once we have a better
     # way to handle the facades without introducing a circular dependency into
     # the build.
-    kwargs["deps"] = kwargs["deps"] + ["@pigweed//targets:pw_assert_backend_impl"]
-    kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_log:backend_impl"]
+    kwargs["deps"] = kwargs.get("deps", []) + ["@pigweed//pw_build:default_link_extra_lib"]
     native.cc_binary(**kwargs)
 
 def pw_cc_test(**kwargs):
@@ -69,7 +67,7 @@ def pw_cc_test(**kwargs):
     # TODO: b/234877642 - Remove this implicit dependency once we have a better
     # way to handle the facades without introducing a circular dependency into
     # the build.
-    kwargs["deps"] = kwargs["deps"] + ["@pigweed//targets:pw_assert_backend_impl"]
+    kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_build:default_link_extra_lib"]
 
     # Some tests may include FuzzTest, which includes headers that trigger
     # warnings. This check must be done here and not in `add_defaults`, since
