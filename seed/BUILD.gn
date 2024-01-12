@@ -199,8 +199,9 @@ pw_seed("0121") {
 pw_seed("0122") {
   changelist = 187121
   title = "Organize Pigweed code samples"
-  status = "Draft"
+  status = "Open for Comments"
   author = "Ted Pudlik"
+  facilitator = "Kayce Basques"
 }
 
 # This must be defined after all `pw_seed` targets, as it relies on information
