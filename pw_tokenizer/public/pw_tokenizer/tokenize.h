@@ -20,9 +20,13 @@
 
 #else
 
-#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
+
+// For backwards compatibility, provide static_assert as a macro prior to C23.
+#if __STDC_VERSION__ < 202311L && !defined(static_assert)
+#define static_assert _Static_assert
+#endif  // __STDC_VERSION__ < 202311L && !defined(static_assert)
 
 #endif  // __cplusplus
 
