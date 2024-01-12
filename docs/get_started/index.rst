@@ -15,28 +15,15 @@ all prerequisites, it greatly accelerates new developer onboarding.
 The first-time setup guides below are required for any Pigweed-based project,
 but only need to be done once per machine.
 
-.. grid:: 3
+.. grid:: 1
 
-   .. grid-item-card:: Linux
-      :link: docs-first-time-setup-linux
+   .. grid-item-card:: First-time setup
+      :link: docs-first-time-setup-guide
       :link-type: ref
-      :class-item: sales-pitch-cta-secondary
+      :class-item: sales-pitch-cta-primary
 
-      Prerequisites, first-time setup, and support notes for Linux.
-
-   .. grid-item-card:: macOS
-      :link: docs-first-time-setup-macos
-      :link-type: ref
-      :class-item: sales-pitch-cta-secondary
-
-      Prerequisites, first-time setup, and support notes for macOS.
-
-   .. grid-item-card:: Windows
-      :link: docs-first-time-setup-windows
-      :link-type: ref
-      :class-item: sales-pitch-cta-secondary
-
-      Prerequisites, first-time setup, and support notes for Windows.
+      Prerequisites, first-time setup, and support notes for Linux, macOS, and
+      Windows.
 
 ------------------------------
 Create a Pigweed-based project
@@ -91,8 +78,6 @@ Create a Pigweed-based project
    :maxdepth: 1
    :hidden:
 
-   Linux first-time setup <linux>
-   macOS first-time setup <macos>
-   Windows first-time setup <windows>
+   First-time setup <first_time_setup>
    Bazel <bazel>
    Upstream Pigweed <upstream>
