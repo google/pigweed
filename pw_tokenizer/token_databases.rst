@@ -86,11 +86,10 @@ An example directory database might look something like this:
 
 .. code-block:: text
 
-   token_database
-   ├── chuck_e_cheese.pw_tokenizer.csv
-   ├── fungi_ble.pw_tokenizer.csv
-   └── some_more
-       └── arcade.pw_tokenizer.csv
+   directory_token_database
+   ├── database.pw_tokenizer.csv
+   ├── 9a8906c30d7c4abaa788de5634d2fa25.pw_tokenizer.csv
+   └── b9aff81a03ad4d8a82a250a737285454.pw_tokenizer.csv
 
 This format is optimized for storage in a Git repository alongside source code.
 The token database commands randomly generate unique file names for the CSVs in

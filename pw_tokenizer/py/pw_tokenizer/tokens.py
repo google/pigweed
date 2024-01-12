@@ -645,7 +645,7 @@ class _DirectoryDatabase(DatabaseFile):
                     write_csv(new_entries, fd)
 
     def _git_paths(self, commands: List) -> List[Path]:
-        """Returns a list of files from a Git command, filtered to matc."""
+        """Returns a list of database CSVs from a Git command."""
         try:
             output = subprocess.run(
                 ['git', *commands, DIR_DB_GLOB],
