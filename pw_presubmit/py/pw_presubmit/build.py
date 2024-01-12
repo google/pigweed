@@ -754,7 +754,9 @@ class CoverageOptions:
     """Coverage collection configuration. For Google use only."""
 
     common: CommonCoverageOptions
-    codesearch: CodeSearchCoverageOptions
+    codesearch: Union[
+        Tuple[CodeSearchCoverageOptions], CodeSearchCoverageOptions
+    ]
     gerrit: GerritCoverageOptions
 
 
@@ -874,24 +876,25 @@ class _NinjaBase(Check):
                 return PresubmitResult.PASS
 
             with self._context(ctx):
-                # GCS bucket paths are POSIX-like.
-                coverage_gcs_path = posixpath.join(
-                    options.common.target_bucket_root,
-                    'incremental' if ctx.luci.is_try else 'absolute',
-                    options.common.target_bucket_project,
-                    str(ctx.luci.buildbucket_id),
-                )
-                _copy_to_gcs(
-                    ctx,
-                    coverage_json,
-                    posixpath.join(coverage_gcs_path, 'report.json'),
-                )
-                metadata_json = _write_coverage_metadata(ctx, options)
-                _copy_to_gcs(
-                    ctx,
-                    metadata_json,
-                    posixpath.join(coverage_gcs_path, 'metadata.json'),
-                )
+                metadata_json_paths = _write_coverage_metadata(ctx, options)
+                for i, metadata_json in enumerate(metadata_json_paths):
+                    # GCS bucket paths are POSIX-like.
+                    coverage_gcs_path = posixpath.join(
+                        options.common.target_bucket_root,
+                        'incremental' if ctx.luci.is_try else 'absolute',
+                        options.common.target_bucket_project,
+                        f'{ctx.luci.buildbucket_id}-{i}',
+                    )
+                    _copy_to_gcs(
+                        ctx,
+                        coverage_json,
+                        posixpath.join(coverage_gcs_path, 'report.json'),
+                    )
+                    _copy_to_gcs(
+                        ctx,
+                        metadata_json,
+                        posixpath.join(coverage_gcs_path, 'metadata.json'),
+                    )
 
                 return PresubmitResult.PASS
 
@@ -937,8 +940,8 @@ def _copy_to_gcs(ctx: PresubmitContext, filepath: Path, gcs_dst: str):
 
 def _write_coverage_metadata(
     ctx: PresubmitContext, options: CoverageOptions
-) -> Path:
-    """Write out Kalypsi coverage metadata and return the path to it."""
+) -> Sequence[Path]:
+    """Write out Kalypsi coverage metadata file(s) and return their paths."""
     assert ctx.luci is not None
     assert len(ctx.luci.triggers) == 1
     change = ctx.luci.triggers[0]
@@ -962,23 +965,36 @@ def _write_coverage_metadata(
                 'project': options.gerrit.project,
             }
         )
-    else:
-        # Running in CI: uploading absolute coverage
+
+        metadata_json = ctx.output_dir / "metadata.json"
+        with metadata_json.open('w') as metadata_file:
+            json.dump(metadata, metadata_file)
+        return (metadata_json,)
+
+    # Running in CI: uploading absolute coverage, possibly to multiple locations
+    # since a repo could be in codesearch in multiple places.
+    codesearch = options.codesearch
+    if isinstance(codesearch, CodeSearchCoverageOptions):
+        codesearch = (codesearch,)
+    metadata_jsons = []
+    for i, cs in enumerate(codesearch):
         metadata.update(
             {
-                'add_prefix': options.codesearch.add_prefix,
+                'add_prefix': cs.add_prefix,
                 'commit_id': change.ref,
-                'host': options.codesearch.host,
-                'project': options.codesearch.project,
-                'ref': options.codesearch.ref,
-                'source': options.codesearch.source,
+                'host': cs.host,
+                'project': cs.project,
+                'ref': cs.ref,
+                'source': cs.source,
             }
         )
 
-    metadata_json = ctx.output_dir / "metadata.json"
-    with metadata_json.open('w') as metadata_file:
-        json.dump(metadata, metadata_file)
-    return metadata_json
+        metadata_json = ctx.output_dir / f'metadata-{i}.json'
+        with metadata_json.open('w') as metadata_file:
+            json.dump(metadata, metadata_file)
+        metadata_jsons.append(metadata_json)
+
+    return tuple(metadata_jsons)
 
 
 class GnGenNinja(_NinjaBase):

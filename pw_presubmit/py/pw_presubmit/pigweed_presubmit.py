@@ -229,12 +229,14 @@ coverage = PigweedGnGenNinja(
             owner='pigweed-infra@google.com',
             bug_component='503634',
         ),
-        codesearch=build.CodeSearchCoverageOptions(
-            host='pigweed-internal',
-            project='codesearch',
-            add_prefix='pigweed',
-            ref='refs/heads/main',
-            source='infra:main',
+        codesearch=(
+            build.CodeSearchCoverageOptions(
+                host='pigweed-internal',
+                project='codesearch',
+                add_prefix='pigweed',
+                ref='refs/heads/main',
+                source='infra:main',
+            ),
         ),
         gerrit=build.GerritCoverageOptions(
             project='pigweed/pigweed',
