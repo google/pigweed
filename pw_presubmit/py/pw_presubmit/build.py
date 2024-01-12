@@ -755,7 +755,7 @@ class CoverageOptions:
 
     common: CommonCoverageOptions
     codesearch: Union[
-        Tuple[CodeSearchCoverageOptions], CodeSearchCoverageOptions
+        Tuple[CodeSearchCoverageOptions, ...], CodeSearchCoverageOptions
     ]
     gerrit: GerritCoverageOptions
 
