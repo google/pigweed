@@ -435,13 +435,19 @@ def build_extension(pw_root: Path):
     icon_path = pw_root.parent / 'icon.png'
 
     vsc_ext_path = pw_root / 'pw_ide' / 'ts' / 'pigweed-vscode'
+    out_path = vsc_ext_path / 'out'
+    dist_path = vsc_ext_path / 'dist'
     temp_license_path = vsc_ext_path / 'LICENSE'
     temp_icon_path = vsc_ext_path / 'icon.png'
 
+    shutil.rmtree(out_path, ignore_errors=True)
+    shutil.rmtree(dist_path, ignore_errors=True)
     shutil.copy(license_path, temp_license_path)
     shutil.copy(icon_path, temp_icon_path)
 
     try:
+        subprocess.run(['npm', 'install'], check=True, cwd=vsc_ext_path)
+        subprocess.run(['npm', 'run', 'compile'], check=True, cwd=vsc_ext_path)
         subprocess.run(['vsce', 'package'], check=True, cwd=vsc_ext_path)
     except subprocess.CalledProcessError as e:
         raise e
