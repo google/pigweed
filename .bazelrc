@@ -15,6 +15,9 @@
 # TODO: https://pwbug.dev/258836641#comment4: Enabling bzlmod breaks the build.
 common --noenable_bzlmod
 
+# Improve debugability by printing all arguments for failing commands.
+common --verbose_failures
+
 # TODO: https://pwbug.dev/319664275: Disable hermetic sandbox tmp due to issues
 # with arm toolchain.
 build --noincompatible_sandbox_hermetic_tmp
