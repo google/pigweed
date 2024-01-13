@@ -329,6 +329,23 @@ Example
 
    }  // namespace my::stuff
 
+pw_cc_binary_with_map
+---------------------
+The ``pw_cc_binary_with_map`` rule can be used to build a binary like
+``cc_binary`` does but also generate a .map file from the linking step.
+
+.. code-block::
+
+   pw_cc_binary_with_map(
+     name = "test",
+     srcs = ["empty_main.cc"],
+   )
+
+This should result in a ``test.map`` file generated next to the ``test`` binary.
+
+Note that it's only partially compatible with the ``cc_binary`` interface and
+certain things are not implemented like make variable substitution.
+
 Miscellaneous utilities
 -----------------------
 

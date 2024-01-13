@@ -434,6 +434,11 @@ if (current_toolchain != default_toolchain) {
     visibility = [ ":*" ]
   }
 
+  pw_source_set("empty_main") {
+    sources = [ "empty_main.cc" ]
+    visibility = [ ":*" ]
+  }
+
   pw_test_group("tests") {
     tests = [
       ":cc_blob_library_test",
