@@ -189,6 +189,7 @@ class DigitalIoOptional {
   /// * @pw_status{OK} - The interrupt handler was cleared.
   /// * Other status codes as defined by the backend.
   Status ClearInterruptHandler() {
+    PW_TRY(DisableInterruptHandler());
     return DoSetInterruptHandler(InterruptTrigger::kActivatingEdge, nullptr);
   }
 
@@ -246,7 +247,12 @@ class DigitalIoOptional {
   /// @returns
   /// * @pw_status{OK} - The line is disabled.
   /// * Other status codes as defined by the backend.
-  Status Disable() { return DoEnable(false); }
+  Status Disable() {
+    if (provides_interrupt()) {
+      PW_TRY(DisableInterruptHandler());
+    }
+    return DoEnable(false);
+  }
 
  private:
   friend class DigitalInterrupt;
