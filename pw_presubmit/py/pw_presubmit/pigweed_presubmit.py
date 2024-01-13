@@ -168,9 +168,12 @@ def _gn_combined_build_check_targets() -> Sequence[str]:
         *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),
         'python.tests',
         'python.lint',
-        'docs',
         'pigweed_pypi_distribution',
     ]
+
+    # TODO: b/315998985 - Add docs back to Mac ARM build.
+    if sys.platform != 'darwin' or platform.machine() != 'arm64':
+        build_targets.append('docs')
 
     # C headers seem to be missing when building with pw_minimal_cpp_stdlib, so
     # skip it on Windows.
