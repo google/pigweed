@@ -103,7 +103,8 @@
       "platforms": [
         "linux-amd64",
         "linux-arm64",
-        "mac-amd64"
+        "mac-amd64",
+        "mac-arm64"
       ],
       "tags": [
         "git_revision:a342ce9dfeed8088c426e5d51d4a7e47f3764b84"
