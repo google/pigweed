@@ -213,6 +213,7 @@ pw_cc_test(
     deps = [
         ":pw_containers",
         ":test_helpers",
+        "//pw_compilation_testing:negative_compilation_testing",
         "//pw_unit_test",
     ],
 )

@@ -46,7 +46,8 @@ class RemoteService {
     Handle handle;
 
     /// The value of the characteristic or descriptor.
-    Vector<std::byte> value;
+    // TODO: b/320482584 - Consider changing capacity or making it configurable
+    Vector<std::byte, 20> value;
 
     /// True if `value` might be truncated (the buffer was completely filled by
     /// the server and the read was a short read).  `ReadCharacteristic` or

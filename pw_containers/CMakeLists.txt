@@ -243,6 +243,7 @@ pw_add_test(pw_containers.vector_test
   SOURCES
     vector_test.cc
   PRIVATE_DEPS
+    pw_compilation_testing._pigweed_only_negative_compilation
     pw_containers._test_helpers
     pw_containers.vector
   GROUPS

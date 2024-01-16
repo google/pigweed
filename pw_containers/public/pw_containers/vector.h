@@ -76,7 +76,7 @@ class Vector
   using typename Vector<T, vector_impl::kGeneric>::const_reverse_iterator;
 
   // Construct
-  Vector() noexcept {}
+  Vector() noexcept = default;
 
   Vector(size_type count, const T& value) { this->Append(count, value); }
 
@@ -146,9 +146,6 @@ class Vector
     this->assign(list.begin(), list.end());
     return *this;
   }
-
-  // Allow `delete` with non-polymorphic-sized vectors.
-  static void operator delete(void* ptr) { ::operator delete(ptr); }
 
   // All other vector methods are implemented on the Vector<T> base class.
 };
@@ -271,6 +268,7 @@ class Vector<T, vector_impl::kGeneric> {
   // A vector without an explicit maximum size (Vector<T>) cannot be constructed
   // directly. Instead, construct a Vector<T, kMaxSize>. Vectors of any max size
   // can be used through a Vector<T> pointer or reference.
+  Vector() = delete;
 
   // Assign
 
@@ -433,6 +431,10 @@ class Vector<T, vector_impl::kGeneric> {
   explicit constexpr Vector(size_type max_size) noexcept
       : max_size_(max_size) {}
 
+  // Polymorphic-sized vectors cannot be destroyed directly due to the lack of a
+  // virtual destructor.
+  ~Vector() = default;
+
   template <typename Iterator>
   void CopyFrom(Iterator first, Iterator last);
 
@@ -444,10 +446,6 @@ class Vector<T, vector_impl::kGeneric> {
   iterator InsertFrom(const_iterator index, Iterator first, Iterator last);
 
  private:
-  // Polymorphic-sized vectors cannot be `delete`d due to the lack of a virtual
-  // destructor.
-  static void operator delete(void*);
-
   const size_type max_size_;
   size_type size_ = 0;
 };

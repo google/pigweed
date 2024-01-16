@@ -255,6 +255,8 @@ pw_test("vector_test") {
     ":vector",
   ]
 
+  negative_compilation_tests = true
+
   # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
