@@ -141,9 +141,6 @@ class BasicInlineDeque : public BasicInlineDequeStorage<
   static constexpr size_type max_size() { return capacity(); }
   static constexpr size_type capacity() { return kCapacity; }
 
-  // Allow `delete` with non-polymorphic-sized `pw::InlineDeque<T>`.
-  static void operator delete(void* ptr) { ::operator delete(ptr); }
-
   // All other methods are implemented on the generic-sized base class.
 
  private:
@@ -252,13 +249,9 @@ class BasicInlineDeque<ValueType,
       size_type,
       inline_circular_buffer_impl::Constness::kConst>;
 
- private:
-  // Polymorphic-sized `pw::InlineDeque<T>` may not be used with `unique_ptr`
-  // or `delete` prior to C++20. This function is marked private to prevent
-  // accidental usage.
-  static void operator delete(void*) {}
+  // Polymorphic-sized `pw::InlineDeque<T>` may not be constructed directly.
+  BasicInlineDeque() = delete;
 
- public:
   // Assignment
   BasicInlineDeque& operator=(std::initializer_list<value_type> list) {
     assign(list);
@@ -414,6 +407,10 @@ class BasicInlineDeque<ValueType,
  protected:
   constexpr BasicInlineDeque(size_type capacity) noexcept
       : capacity_(capacity), head_(0), tail_(0), count_(0) {}
+
+  // Polymorphic-sized `pw::InlineDeque<T>` may not be used with `unique_ptr`
+  // or `delete`. `delete` could be supported using C++20's destroying delete.
+  ~BasicInlineDeque() = default;
 
  private:
   friend class inline_circular_buffer_impl::InlineDequeIterator<

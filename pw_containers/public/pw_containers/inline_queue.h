@@ -105,9 +105,6 @@ class BasicInlineQueue
   static constexpr size_type max_size() { return capacity(); }
   static constexpr size_type capacity() { return kCapacity; }
 
-  // Allow `delete` with non-polymorphic-sized `pw::InlineQueue<T>`.
-  static void operator delete(void* ptr) { ::operator delete(ptr); }
-
  private:
   friend class BasicInlineQueue<value_type,
                                 size_type,
@@ -146,13 +143,6 @@ class BasicInlineQueue<ValueType,
   using size_type = typename Deque::size_type;
   using value_type = typename Deque::value_type;
 
- private:
-  // Polymorphic-sized `pw::InlineQueue<T>` may not be used with `unique_ptr`
-  // or `delete` prior to C++20. This function is marked private to prevent
-  // accidental usage.
-  static void operator delete(void*) {}
-
- public:
   // Access
 
   reference at(size_type index) { return deque().at(index); }
@@ -228,6 +218,10 @@ class BasicInlineQueue<ValueType,
 
  protected:
   constexpr BasicInlineQueue() noexcept = default;
+
+  // Polymorphic-sized `pw::InlineQueue<T>` may not be used with `unique_ptr`
+  // or `delete`. `delete` could be supported using C++20's destroying delete.
+  ~BasicInlineQueue() = default;
 
  private:
   // The underlying BasicInlineDeque is not part of the generic-sized class. It

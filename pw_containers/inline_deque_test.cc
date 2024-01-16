@@ -910,23 +910,20 @@ TEST(InlineDeque, DereferenceOperator) {
 }
 
 // Test that InlineDeque<T> is trivially destructible when its type is.
-static_assert(std::is_trivially_destructible_v<InlineDeque<int>>);
 static_assert(std::is_trivially_destructible_v<InlineDeque<int, 4>>);
 
 static_assert(std::is_trivially_destructible_v<MoveOnly>);
-static_assert(std::is_trivially_destructible_v<InlineDeque<MoveOnly>>);
 static_assert(std::is_trivially_destructible_v<InlineDeque<MoveOnly, 1>>);
 
 static_assert(std::is_trivially_destructible_v<CopyOnly>);
-static_assert(std::is_trivially_destructible_v<InlineDeque<CopyOnly>>);
 static_assert(std::is_trivially_destructible_v<InlineDeque<CopyOnly, 99>>);
 
 static_assert(!std::is_trivially_destructible_v<Counter>);
-// The size-generic type is trivially destructible.
-// Instances of it will never be on the stack-- it should only be destroyed
-// when using >=C++20 and destroying_delete;
-static_assert(std::is_trivially_destructible_v<InlineDeque<Counter>>);
 static_assert(!std::is_trivially_destructible_v<InlineDeque<Counter, 99>>);
+
+// Generic-capacity deques cannot be constructed or destructed.
+static_assert(!std::is_constructible_v<InlineDeque<int>>);
+static_assert(!std::is_destructible_v<InlineDeque<int>>);
 
 // Tests that InlineDeque<T> does not have any extra padding.
 static_assert(sizeof(InlineDeque<uint8_t, 1>) ==
