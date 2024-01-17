@@ -76,11 +76,15 @@ rust_library(
     proc_macro_deps = [":pw_tokenizer_macro"],
     visibility = ["//visibility:public"],
     deps = [
-        ":pw_tokenizer_core",  # Added for rustdoc linking support.
-        "//pw_format/rust:pw_format",  # Added for rustdoc linking support.
         "//pw_status/rust:pw_status",
         "//pw_stream/rust:pw_stream",
-    ],
+    ] + select({
+        "@rust_crates//:std": [
+            ":pw_tokenizer_core",  # Added for rustdoc linking support.
+            "//pw_format/rust:pw_format",  # Added for rustdoc linking support.
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 rust_test(
