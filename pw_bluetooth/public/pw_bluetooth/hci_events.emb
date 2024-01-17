@@ -107,6 +107,14 @@ enum KeyType:
   UNAUTHENTICATED_COMBINATION_FROM_P256 = 0x07
   AUTHENTICATED_COMBINATION_FROM_P256   = 0x08
 
+
+enum IsoPhyType:
+  -- The PHY used for transmitting ISO frames
+  [maximum_bits: 8]
+  LE_1M    = 0x01
+  LE_2M    = 0x02
+  LE_CODED = 0x03
+
 # =========================== Field Types =================================
 
 
@@ -1704,15 +1712,102 @@ struct LEChannelSelectionAlgorithmSubevent:
 # TODO: b/265052417 - Definition needs to be added
 
 
-# 7.7.65.25 LE CIS Established event
-# HCI_LE_CIS_Established
-# TODO: b/265052417 - Definition needs to be added
+struct LECISEstablishedSubevent:
+  -- 7.7.65.25 LE CIS Established event
+  -- HCI_LE_CIS_Established
+
+  0     [+LEMetaEvent.$size_in_bytes]  LEMetaEvent     le_meta_event
+
+  $next [+1]                           hci.StatusCode  status
+
+  $next [+2]                           UInt            connection_handle
+    -- Connection handle of the CIS. Only the lower 12 bits are meaningful.
+    [requires: 0x0000 <= 0x0EFF]
+
+  $next [+3]                           UInt            cig_sync_delay
+    -- The maximum time, in microseconds, for transmission of PDUs of all CISes
+    -- in a CIG event.
+    [requires: 0x0000EA <= 0x7FFFFF]
+
+  $next [+3]                           UInt            cis_sync_delay
+    -- The maximum time, in microseconds, for transmission of PDUs of the
+    -- specified CIS in a CIG event.
+    [requires: 0x0000EA <= 0x7FFFFF]
+
+  $next [+3]                           UInt            transport_latency_c_to_p
+    -- The actual transport latency, in microseconds, from Central to
+    -- Peripheral.
+    [requires: 0x0000EA <= 0x7FFFFF]
+
+  $next [+3]                           UInt            transport_latency_p_to_c
+    -- The actual transport latency, in microseconds, from Peripheral to
+    -- Central.
+    [requires: 0x0000EA <= 0x7FFFFF]
+
+  $next [+1]                           IsoPhyType      phy_c_to_p
+    -- PHY used by the Central to transmit
+
+  $next [+1]                           IsoPhyType      phy_p_to_c
+    -- PHY used by the Peripheral to transmit
+
+  $next [+1]                           UInt            nse
+    -- Maximum number of subevents in each CIS event
+    [requires: 0x01 <= 0x1F]
+
+  $next [+1]                           UInt            bn_c_to_p
+    -- The burst number for Central to Peripheral transmission.
+    -- 0 indicates no isochronous data from the Central to the Peripheral.
+    [requires: 0x00 <= 0x0F]
+
+  $next [+1]                           UInt            bn_p_to_c
+    -- The burst number for Peripheral to Central transmission.
+    -- 0 indicates no isochronous data from the Peripheral to the Central.
+    [requires: 0x00 <= 0x0F]
+
+  $next [+1]                           UInt            ft_c_to_p
+    -- The flush timeout, in multiples of the ISO_Interval for the CIS, for each
+    -- payload sent from the Central to the Peripheral.
+    [requires: 0x01 <= 0xFF]
+
+  $next [+1]                           UInt            ft_p_to_c
+    -- The flush timeout, in multiples of the ISO_Interval for the CIS, for each
+    -- payload sent from the Peripheral to the Central.
+    [requires: 0x01 <= 0xFF]
+
+  $next [+2]                           UInt            max_pdu_c_to_p
+    -- Maximum size, in octets, of the payload from Central to Peripheral.
+    [requires: 0x0000 <= 0x00FB]
+
+  $next [+2]                           UInt            max_pdu_p_to_c
+    -- Maximum size, in octets, of the payload from Peripheral to Central.
+    [requires: 0x0000 <= 0x00FB]
+
+  $next [+2]                           UInt            iso_interval
+    -- The time between two consecutive CIS anchor points.
+    -- Time = N * 1.25ms
+    -- Time Range: 5ms to 4s
+    [requires: 0x0004 <= 0x0C80]
 
 
-# 7.7.65.26 LE CIS Request event
-# HCI_LE_CIS_Request
-# TODO: b/265052417 - Definition needs to be added
+struct LECISRequestSubevent:
+  -- 7.7.65.26 LE CIS Request event
+  -- HCI_LE_CIS_Request
 
+  0     [+LEMetaEvent.$size_in_bytes]  LEMetaEvent  le_meta_event
+
+  $next [+2]                           UInt         acl_connection_handle
+    -- Only the lower 12 bits are meaningful.
+    [requires: 0x0000 <= 0x0EFF]
+
+  $next [+2]                           UInt         cis_connection_handle
+    -- Only the lower 12 bits are meaningful.
+    [requires: 0x0000 <= 0x0EFF]
+
+  $next [+1]                           UInt         cig_id
+    [requires: 0x00 <= 0xEF]
+
+  $next [+1]                           UInt         cis_id
+    [requires: 0x00 <= 0xEF]
 
 # 7.7.65.27 LE Create BIG Complete event
 # HCI_LE_Create_BIG_Complete
