@@ -105,6 +105,150 @@ TEST_F(PersistentTest, LongData) {
   }
 }
 
+TEST_F(PersistentTest, MostlyFilled) {
+  std::array<std::byte, kBufferSize - 3> test_data;
+  constexpr size_t kWriteSize = 11;
+  random::XorShiftStarRng64 test_data_generator(0xDA960FD9);
+  test_data_generator.Get(test_data);
+
+  static_assert(test_data.size() < kBufferSize);
+
+  {  // Initialize the buffer.
+    RandomFillMemory();
+    auto& persistent = GetPersistentBuffer();
+    EXPECT_FALSE(persistent.has_value());
+
+    auto writer = persistent.GetWriter();
+    for (size_t i = 0; i < test_data.size(); i += kWriteSize) {
+      EXPECT_EQ(OkStatus(),
+                writer.Write(test_data.data() + i,
+                             std::min(kWriteSize, test_data.size() - i)));
+    }
+    persistent.~PersistentBuffer();  // Emulate shutdown / global destructors.
+  }
+
+  {  // Ensure data is valid.
+    auto& persistent = GetPersistentBuffer();
+    EXPECT_TRUE(persistent.has_value());
+    EXPECT_EQ(persistent.size(), test_data.size());
+    EXPECT_EQ(
+        std::memcmp(test_data.data(), persistent.data(), persistent.size()), 0);
+  }
+}
+
+TEST_F(PersistentTest, AttemptOversizedWrite) {
+  std::array<std::byte, kBufferSize - 3> test_data;
+  constexpr size_t kWriteSize = 11;
+  random::XorShiftStarRng64 test_data_generator(0xDA960FD9);
+  test_data_generator.Get(test_data);
+
+  static_assert(test_data.size() < kBufferSize);
+
+  {  // Initialize the buffer.
+    RandomFillMemory();
+    auto& persistent = GetPersistentBuffer();
+    EXPECT_FALSE(persistent.has_value());
+
+    auto writer = persistent.GetWriter();
+    for (size_t i = 0; i < test_data.size(); i += kWriteSize) {
+      EXPECT_EQ(OkStatus(),
+                writer.Write(test_data.data() + i,
+                             std::min(kWriteSize, test_data.size() - i)));
+    }
+
+    // This final write is guaranteed to be too big, but shouldn't corrupt the
+    // final contents of the buffer.
+    constexpr size_t kFinalWriteSize = 21;
+    EXPECT_GT(writer.ConservativeWriteLimit(), 0u);
+    EXPECT_GT(kFinalWriteSize, writer.ConservativeWriteLimit());
+    EXPECT_EQ(Status::ResourceExhausted(),
+              writer.Write(test_data.data(), kFinalWriteSize));
+
+    persistent.~PersistentBuffer();  // Emulate shutdown / global destructors.
+  }
+
+  {  // Ensure data is valid.
+    auto& persistent = GetPersistentBuffer();
+    EXPECT_TRUE(persistent.has_value());
+    EXPECT_EQ(persistent.size(), test_data.size());
+    EXPECT_EQ(
+        std::memcmp(test_data.data(), persistent.data(), persistent.size()), 0);
+  }
+}
+
+TEST_F(PersistentTest, Filled) {
+  std::array<std::byte, kBufferSize> test_data;
+  constexpr size_t kWriteSize = 5;
+  random::XorShiftStarRng64 test_data_generator(0x4BEDED8F);
+  test_data_generator.Get(test_data);
+
+  static_assert(test_data.size() == kBufferSize);
+
+  {  // Initialize the buffer.
+    RandomFillMemory();
+    auto& persistent = GetPersistentBuffer();
+    EXPECT_FALSE(persistent.has_value());
+
+    auto writer = persistent.GetWriter();
+    for (size_t i = 0; i < test_data.size(); i += kWriteSize) {
+      EXPECT_EQ(OkStatus(),
+                writer.Write(test_data.data() + i,
+                             std::min(kWriteSize, test_data.size() - i)));
+    }
+    EXPECT_EQ(writer.ConservativeWriteLimit(), 0u);
+    persistent.~PersistentBuffer();  // Emulate shutdown / global destructors.
+  }
+
+  {  // Ensure data is valid.
+    auto& persistent = GetPersistentBuffer();
+    EXPECT_TRUE(persistent.has_value());
+    EXPECT_EQ(persistent.size(), kBufferSize);
+    EXPECT_EQ(
+        std::memcmp(test_data.data(), persistent.data(), test_data.size()), 0);
+  }
+}
+
+TEST_F(PersistentTest, VariableSizedWrites) {
+  std::array<std::byte, kBufferSize> test_data;
+  constexpr size_t kMaxWriteSize = 11;
+  random::XorShiftStarRng64 test_data_generator(0x63CAA44A);
+  test_data_generator.Get(test_data);
+
+  static_assert(test_data.size() == kBufferSize);
+
+  {  // Initialize the buffer.
+    RandomFillMemory();
+    auto& persistent = GetPersistentBuffer();
+    EXPECT_FALSE(persistent.has_value());
+
+    auto writer = persistent.GetWriter();
+
+    size_t count = 0;
+    size_t write_size = 1;
+    while (count < kBufferSize) {
+      const size_t remaining_space = writer.ConservativeWriteLimit();
+
+      EXPECT_EQ(OkStatus(),
+                writer.Write(test_data.data() + count,
+                             std::min(write_size, remaining_space)));
+
+      count += write_size;
+      write_size = (write_size % kMaxWriteSize) + 1;
+      ASSERT_NE(write_size, 12u);
+      ASSERT_NE(write_size, 0u);
+    }
+    persistent.~PersistentBuffer();  // Emulate shutdown / global destructors.
+  }
+
+  {  // Ensure data is valid.
+    auto& persistent = GetPersistentBuffer();
+    EXPECT_TRUE(persistent.has_value());
+    EXPECT_EQ(persistent.size(), test_data.size());
+    EXPECT_EQ(
+        std::memcmp(test_data.data(), persistent.data(), persistent.size()), 0);
+  }
+}
+
 TEST_F(PersistentTest, ZeroDataIsNoValue) {
   ZeroPersistentMemory();
   auto& persistent = GetPersistentBuffer();
