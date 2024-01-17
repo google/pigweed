@@ -101,6 +101,22 @@ def _parse_ninja(ins: IO) -> str:
         if not x.lstrip().startswith('Requirement already satisfied:')
     ]
 
+    # Trim paths so the output is less likely to wrap. Specifically, if the
+    # path has six or more segments trim it down to three.
+    path_re = re.compile(
+        r'(?P<prefix>\b|\s)'
+        r'[-\w._]+/[-\w._]+(?:/[-\w._]+)+'
+        r'(?P<core>/[-\w._]+/[-\w._]+/[-\w._]+)'
+        r'(?P<suffix>\b|\s)'
+    )
+
+    def replace(m: re.Match):
+        return ''.join(
+            (m.group('prefix'), '[...]', m.group('core'), m.group('suffix'))
+        )
+
+    failure_lines = [path_re.sub(replace, x) for x in failure_lines]
+
     result: str = '\n'.join(failure_lines)
     return re.sub(r'\n+', '\n', result)
 
