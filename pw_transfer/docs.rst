@@ -174,9 +174,9 @@ an RPC client.
    Currently, a transfer client is only capable of running transfers on a single
    RPC channel. This may be expanded in the future.
 
-The transfer client provides the following two APIs for starting data transfers:
+The transfer client provides the following APIs for managing data transfers:
 
-.. cpp:function:: pw::Status pw::transfer::Client::Read(uint32_t resource_id, pw::stream::Writer& output, CompletionFunc&& on_completion, pw::chrono::SystemClock::duration timeout = cfg::kDefaultClientTimeout, pw::transfer::ProtocolVersion version = kDefaultProtocolVersion)
+.. cpp:function:: Result<pw::Transfer::Client::TransferHandle> pw::transfer::Client::Read(uint32_t resource_id, pw::stream::Writer& output, CompletionFunc&& on_completion, pw::chrono::SystemClock::duration timeout = cfg::kDefaultClientTimeout, pw::transfer::ProtocolVersion version = kDefaultProtocolVersion)
 
   Reads data from a transfer server to the specified ``pw::stream::Writer``.
   Invokes the provided callback function with the overall status of the
@@ -186,7 +186,7 @@ The transfer client provides the following two APIs for starting data transfers:
   return a non-OK status if it is called with bad arguments. Otherwise, it will
   return OK and errors will be reported through the completion callback.
 
-.. cpp:function:: pw::Status pw::transfer::Client::Write(uint32_t resource_id, pw::stream::Reader& input, CompletionFunc&& on_completion, pw::chrono::SystemClock::duration timeout = cfg::kDefaultClientTimeout, pw::transfer::ProtocolVersion version = kDefaultProtocolVersion)
+.. cpp:function:: Result<pw::Transfer::Client::TransferHandle> pw::transfer::Client::Write(uint32_t resource_id, pw::stream::Reader& input, CompletionFunc&& on_completion, pw::chrono::SystemClock::duration timeout = cfg::kDefaultClientTimeout, pw::transfer::ProtocolVersion version = kDefaultProtocolVersion)
 
   Writes data from a source ``pw::stream::Reader`` to a transfer server.
   Invokes the provided callback function with the overall status of the
@@ -195,6 +195,11 @@ The transfer client provides the following two APIs for starting data transfers:
   Due to the asynchronous nature of transfer operations, this function will only
   return a non-OK status if it is called with bad arguments. Otherwise, it will
   return OK and errors will be reported through the completion callback.
+
+.. cpp:function:: void pw::transfer::Client::CancelTransfer(pw::transfer::Client::TransferHandle handle)
+
+  Cancels a previously started transfer if it is active.
+
 
 **Example client setup**
 
@@ -220,13 +225,16 @@ The transfer client provides the following two APIs for starting data transfers:
        pw::Status status;
      } transfer_state;
 
-     transfer_client.Read(
+     Result<pw::transfer::Client::TransferHandle> handle = transfer_client.Read(
          kMagicBufferResourceId,
          writer,
          [&transfer_state](pw::Status status) {
            transfer_state.status = status;
            transfer_state.notification.release();
          });
+     if (!handle.ok()) {
+       return handle.status();
+     }
 
      // Block until the transfer completes.
      transfer_state.notification.acquire();

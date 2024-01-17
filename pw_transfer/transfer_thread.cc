@@ -103,6 +103,7 @@ void TransferThread::StartTransfer(
     ProtocolVersion version,
     uint32_t session_id,
     uint32_t resource_id,
+    uint32_t handle_id,
     ConstByteSpan raw_chunk,
     stream::Stream* stream,
     const TransferParameters& max_parameters,
@@ -136,6 +137,7 @@ void TransferThread::StartTransfer(
       .protocol_version = version,
       .session_id = session_id,
       .resource_id = resource_id,
+      .handle_id = handle_id,
       .max_parameters = &max_parameters,
       .timeout = timeout,
       .initial_timeout = initial_timeout,
@@ -230,7 +232,8 @@ void TransferThread::SendStatus(TransferStream stream,
 }
 
 void TransferThread::EndTransfer(EventType type,
-                                 uint32_t session_id,
+                                 IdentifierType id_type,
+                                 uint32_t id,
                                  Status status,
                                  bool send_status_chunk) {
   // Block until the last event has been processed.
@@ -238,7 +241,8 @@ void TransferThread::EndTransfer(EventType type,
 
   next_event_.type = type;
   next_event_.end_transfer = {
-      .session_id = session_id,
+      .id_type = id_type,
+      .id = id,
       .status = status.code(),
       .send_status_chunk = send_status_chunk,
   };
@@ -269,7 +273,8 @@ void TransferThread::HandleEvent(const internal::Event& event) {
             .type = EventType::kServerEndTransfer,
             .end_transfer =
                 EndTransferEvent{
-                    .session_id = server_context.session_id(),
+                    .id_type = IdentifierType::Session,
+                    .id = server_context.session_id(),
                     .status = Status::Aborted().code(),
                     .send_status_chunk = false,
                 },
@@ -282,7 +287,8 @@ void TransferThread::HandleEvent(const internal::Event& event) {
             .type = EventType::kClientEndTransfer,
             .end_transfer =
                 EndTransferEvent{
-                    .session_id = client_context.session_id(),
+                    .id_type = IdentifierType::Session,
+                    .id = client_context.session_id(),
                     .status = Status::Aborted().code(),
                     .send_status_chunk = false,
                 },
@@ -311,7 +317,8 @@ void TransferThread::HandleEvent(const internal::Event& event) {
               .type = EventType::kServerEndTransfer,
               .end_transfer =
                   EndTransferEvent{
-                      .session_id = server_context.session_id(),
+                      .id_type = IdentifierType::Session,
+                      .id = server_context.session_id(),
                       .status = Status::Aborted().code(),
                       .send_status_chunk = false,
                   },
@@ -356,8 +363,9 @@ void TransferThread::HandleEvent(const internal::Event& event) {
 
   if (event.type == EventType::kNewClientTransfer) {
     // TODO(frolv): This is terrible.
-    static_cast<ClientContext*>(ctx)->set_on_completion(
-        std::move(staged_on_completion_));
+    ClientContext* cctx = static_cast<ClientContext*>(ctx);
+    cctx->set_on_completion(std::move(staged_on_completion_));
+    cctx->set_handle_id(event.new_transfer.handle_id);
   }
 
   ctx->HandleEvent(event);
@@ -395,11 +403,15 @@ Context* TransferThread::FindContextForEvent(
                                           event.chunk.context_identifier);
 
     case EventType::kClientEndTransfer:
+      if (event.end_transfer.id_type == IdentifierType::Handle) {
+        return FindClientTransferByHandleId(event.end_transfer.id);
+      }
       return FindActiveTransferByLegacyId(client_transfers_,
-                                          event.end_transfer.session_id);
+                                          event.end_transfer.id);
     case EventType::kServerEndTransfer:
+      PW_DCHECK(event.end_transfer.id_type != IdentifierType::Handle);
       return FindActiveTransferByLegacyId(server_transfers_,
-                                          event.end_transfer.session_id);
+                                          event.end_transfer.id);
 
     case EventType::kSendStatusChunk:
     case EventType::kAddTransferHandler:

@@ -281,7 +281,8 @@ TEST_F(TransferThreadTest, StartTransferExhausted_Client) {
   transfer_thread_.StartClientTransfer(
       internal::TransferType::kReceive,
       ProtocolVersion::kLegacy,
-      3,
+      /*resource_id=*/3,
+      /*handle_id=*/27,
       &buffer3,
       max_parameters_,
       [&status3](Status status) { status3 = status; },
@@ -299,7 +300,8 @@ TEST_F(TransferThreadTest, StartTransferExhausted_Client) {
   transfer_thread_.StartClientTransfer(
       internal::TransferType::kReceive,
       ProtocolVersion::kLegacy,
-      4,
+      /*resource_id=*/4,
+      /*handle_id=*/27,
       &buffer4,
       max_parameters_,
       [&status4](Status status) { status4 = status; },

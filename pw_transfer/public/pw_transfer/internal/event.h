@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -31,6 +31,12 @@ enum class TransferStream {
   kClientWrite,
   kServerRead,
   kServerWrite,
+};
+
+enum class IdentifierType {
+  Session,
+  Resource,
+  Handle,
 };
 
 enum class EventType {
@@ -72,6 +78,7 @@ struct NewTransferEvent {
   ProtocolVersion protocol_version;
   uint32_t session_id;
   uint32_t resource_id;
+  uint32_t handle_id;
   rpc::Writer* rpc_writer;
   const TransferParameters* max_parameters;
   chrono::SystemClock::duration timeout;
@@ -103,7 +110,8 @@ struct ChunkEvent {
 };
 
 struct EndTransferEvent {
-  uint32_t session_id;
+  IdentifierType id_type;
+  uint32_t id;
   Status::Code status;
   bool send_status_chunk;
 };

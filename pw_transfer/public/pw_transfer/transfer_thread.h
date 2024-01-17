@@ -18,7 +18,6 @@
 #include "pw_assert/assert.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_function/function.h"
-#include "pw_preprocessor/compiler.h"
 #include "pw_rpc/raw/client_reader_writer.h"
 #include "pw_rpc/raw/server_reader_writer.h"
 #include "pw_span/span.h"
@@ -49,6 +48,7 @@ class TransferThread : public thread::ThreadCore {
   void StartClientTransfer(TransferType type,
                            ProtocolVersion version,
                            uint32_t resource_id,
+                           uint32_t handle_id,
                            stream::Stream* stream,
                            const TransferParameters& max_parameters,
                            Function<void(Status)>&& on_completion,
@@ -60,6 +60,7 @@ class TransferThread : public thread::ThreadCore {
                   version,
                   Context::kUnassignedSessionId,  // Assigned later.
                   resource_id,
+                  handle_id,
                   /*raw_chunk=*/{},
                   stream,
                   max_parameters,
@@ -83,6 +84,7 @@ class TransferThread : public thread::ThreadCore {
                   version,
                   session_id,
                   resource_id,
+                  /*handle_id=*/0,
                   raw_chunk,
                   /*stream=*/nullptr,
                   max_parameters,
@@ -112,18 +114,32 @@ class TransferThread : public thread::ThreadCore {
                status);
   }
 
+  void CancelClientTransfer(uint32_t handle_id) {
+    EndTransfer(EventType::kClientEndTransfer,
+                IdentifierType::Handle,
+                handle_id,
+                Status::Cancelled(),
+                /*send_status_chunk=*/true);
+  }
+
   void EndClientTransfer(uint32_t session_id,
                          Status status,
                          bool send_status_chunk = false) {
-    EndTransfer(
-        EventType::kClientEndTransfer, session_id, status, send_status_chunk);
+    EndTransfer(EventType::kClientEndTransfer,
+                IdentifierType::Session,
+                session_id,
+                status,
+                send_status_chunk);
   }
 
   void EndServerTransfer(uint32_t session_id,
                          Status status,
                          bool send_status_chunk = false) {
-    EndTransfer(
-        EventType::kServerEndTransfer, session_id, status, send_status_chunk);
+    EndTransfer(EventType::kServerEndTransfer,
+                IdentifierType::Session,
+                session_id,
+                status,
+                send_status_chunk);
   }
 
   // Move the read/write streams on this thread instead of the transfer thread.
@@ -207,6 +223,16 @@ class TransferThread : public thread::ThreadCore {
     return transfer != transfers.end() ? &*transfer : nullptr;
   }
 
+  Context* FindClientTransferByHandleId(uint32_t handle_id) const {
+    auto transfer =
+        std::find_if(client_transfers_.begin(),
+                     client_transfers_.end(),
+                     [handle_id](auto& c) {
+                       return c.initialized() && c.handle_id() == handle_id;
+                     });
+    return transfer != client_transfers_.end() ? &*transfer : nullptr;
+  }
+
   void SimulateTimeout(EventType type, uint32_t session_id);
 
   // Finds an new server or client transfer.
@@ -262,6 +288,7 @@ class TransferThread : public thread::ThreadCore {
                      ProtocolVersion version,
                      uint32_t session_id,
                      uint32_t resource_id,
+                     uint32_t handle_id,
                      ConstByteSpan raw_chunk,
                      stream::Stream* stream,
                      const TransferParameters& max_parameters,
@@ -279,6 +306,7 @@ class TransferThread : public thread::ThreadCore {
                   Status status);
 
   void EndTransfer(EventType type,
+                   IdentifierType id_type,
                    uint32_t session_id,
                    Status status,
                    bool send_status_chunk);

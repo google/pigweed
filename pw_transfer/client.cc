@@ -20,12 +20,13 @@
 
 namespace pw::transfer {
 
-Status Client::Read(uint32_t resource_id,
-                    stream::Writer& output,
-                    CompletionFunc&& on_completion,
-                    ProtocolVersion protocol_version,
-                    chrono::SystemClock::duration timeout,
-                    chrono::SystemClock::duration initial_chunk_timeout) {
+Result<Client::TransferHandle> Client::Read(
+    uint32_t resource_id,
+    stream::Writer& output,
+    CompletionFunc&& on_completion,
+    ProtocolVersion protocol_version,
+    chrono::SystemClock::duration timeout,
+    chrono::SystemClock::duration initial_chunk_timeout) {
   if (on_completion == nullptr ||
       protocol_version == ProtocolVersion::kUnknown) {
     return Status::InvalidArgument();
@@ -43,9 +44,12 @@ Status Client::Read(uint32_t resource_id,
     has_read_stream_ = true;
   }
 
+  TransferHandle handle = AssignHandle();
+
   transfer_thread_.StartClientTransfer(internal::TransferType::kReceive,
                                        protocol_version,
                                        resource_id,
+                                       handle.id(),
                                        &output,
                                        max_parameters_,
                                        std::move(on_completion),
@@ -53,15 +57,16 @@ Status Client::Read(uint32_t resource_id,
                                        initial_chunk_timeout,
                                        max_retries_,
                                        max_lifetime_retries_);
-  return OkStatus();
+  return handle;
 }
 
-Status Client::Write(uint32_t resource_id,
-                     stream::Reader& input,
-                     CompletionFunc&& on_completion,
-                     ProtocolVersion protocol_version,
-                     chrono::SystemClock::duration timeout,
-                     chrono::SystemClock::duration initial_chunk_timeout) {
+Result<Client::TransferHandle> Client::Write(
+    uint32_t resource_id,
+    stream::Reader& input,
+    CompletionFunc&& on_completion,
+    ProtocolVersion protocol_version,
+    chrono::SystemClock::duration timeout,
+    chrono::SystemClock::duration initial_chunk_timeout) {
   if (on_completion == nullptr ||
       protocol_version == ProtocolVersion::kUnknown) {
     return Status::InvalidArgument();
@@ -79,9 +84,12 @@ Status Client::Write(uint32_t resource_id,
     has_write_stream_ = true;
   }
 
+  TransferHandle handle = AssignHandle();
+
   transfer_thread_.StartClientTransfer(internal::TransferType::kTransmit,
                                        protocol_version,
                                        resource_id,
+                                       handle.id(),
                                        &input,
                                        max_parameters_,
                                        std::move(on_completion),
@@ -90,12 +98,16 @@ Status Client::Write(uint32_t resource_id,
                                        max_retries_,
                                        max_lifetime_retries_);
 
-  return OkStatus();
+  return handle;
 }
 
-void Client::CancelTransfer(uint32_t resource_id) {
-  transfer_thread_.EndClientTransfer(
-      resource_id, Status::Cancelled(), /*send_status_chunk=*/true);
+Client::TransferHandle Client::AssignHandle() {
+  uint32_t handle_id = next_handle_id_++;
+  if (handle_id == TransferHandle::kUnassignedHandleId) {
+    handle_id = next_handle_id_++;
+  }
+
+  return TransferHandle(handle_id);
 }
 
 void Client::OnRpcError(Status status, internal::TransferType type) {

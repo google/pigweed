@@ -112,7 +112,7 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
         pw::transfer::TransferAction::TransferType::
             TransferAction_TransferType_WRITE_TO_SERVER) {
       pw::stream::StdFileReader input(action.file_path().c_str());
-      client.Write(
+      pw::Result<pw::transfer::Client::TransferHandle> handle = client.Write(
           action.resource_id(),
           input,
           [&result](Status status) {
@@ -122,15 +122,19 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
           protocol_version,
           pw::transfer::cfg::kDefaultClientTimeout,
           pw::transfer::cfg::kDefaultInitialChunkTimeout);
-      // Wait for the transfer to complete. We need to do this here so that the
-      // StdFileReader doesn't go out of scope.
-      result.completed.acquire();
+      if (handle.ok()) {
+        // Wait for the transfer to complete. We need to do this here so that
+        // the StdFileReader doesn't go out of scope.
+        result.completed.acquire();
+      } else {
+        result.status = handle.status();
+      }
 
     } else if (action.transfer_type() ==
                pw::transfer::TransferAction::TransferType::
                    TransferAction_TransferType_READ_FROM_SERVER) {
       pw::stream::StdFileWriter output(action.file_path().c_str());
-      client.Read(
+      pw::Result<pw::transfer::Client::TransferHandle> handle = client.Read(
           action.resource_id(),
           output,
           [&result](Status status) {
@@ -140,8 +144,12 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
           protocol_version,
           pw::transfer::cfg::kDefaultClientTimeout,
           pw::transfer::cfg::kDefaultInitialChunkTimeout);
-      // Wait for the transfer to complete.
-      result.completed.acquire();
+      if (handle.ok()) {
+        // Wait for the transfer to complete.
+        result.completed.acquire();
+      } else {
+        result.status = handle.status();
+      }
     } else {
       PW_LOG_ERROR("Unrecognized transfer action type %d",
                    action.transfer_type());

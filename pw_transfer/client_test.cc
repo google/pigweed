@@ -78,10 +78,13 @@ TEST_F(ReadTransfer, SingleChunk) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            legacy_client_.Read(3, writer, [&transfer_status](Status status) {
-              transfer_status = status;
-            }));
+  ASSERT_EQ(
+      OkStatus(),
+      legacy_client_
+          .Read(3,
+                writer,
+                [&transfer_status](Status status) { transfer_status = status; })
+          .status());
 
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -122,10 +125,13 @@ TEST_F(ReadTransfer, MultiChunk) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            legacy_client_.Read(4, writer, [&transfer_status](Status status) {
-              transfer_status = status;
-            }));
+  ASSERT_EQ(
+      OkStatus(),
+      legacy_client_
+          .Read(4,
+                writer,
+                [&transfer_status](Status status) { transfer_status = status; })
+          .status());
 
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -176,10 +182,13 @@ TEST_F(ReadTransfer, MultipleTransfers) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            legacy_client_.Read(3, writer, [&transfer_status](Status status) {
-              transfer_status = status;
-            }));
+  ASSERT_EQ(
+      OkStatus(),
+      legacy_client_
+          .Read(3,
+                writer,
+                [&transfer_status](Status status) { transfer_status = status; })
+          .status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   context_.server().SendServerStream<Transfer::Read>(
@@ -193,10 +202,13 @@ TEST_F(ReadTransfer, MultipleTransfers) {
   ASSERT_EQ(transfer_status, OkStatus());
   transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            legacy_client_.Read(3, writer, [&transfer_status](Status status) {
-              transfer_status = status;
-            }));
+  ASSERT_EQ(
+      OkStatus(),
+      legacy_client_
+          .Read(3,
+                writer,
+                [&transfer_status](Status status) { transfer_status = status; })
+          .status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   context_.server().SendServerStream<Transfer::Read>(
@@ -217,7 +229,7 @@ class ReadTransferMaxBytes32 : public ReadTransfer {
 
 TEST_F(ReadTransferMaxBytes32, SetsPendingBytesFromConstructorArg) {
   stream::MemoryWriterBuffer<64> writer;
-  EXPECT_EQ(OkStatus(), legacy_client_.Read(5, writer, [](Status) {}));
+  EXPECT_EQ(OkStatus(), legacy_client_.Read(5, writer, [](Status) {}).status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -235,7 +247,8 @@ TEST_F(ReadTransferMaxBytes32, SetsPendingBytesFromConstructorArg) {
 
 TEST_F(ReadTransferMaxBytes32, SetsPendingBytesFromWriterLimit) {
   stream::MemoryWriterBuffer<16> small_writer;
-  EXPECT_EQ(OkStatus(), legacy_client_.Read(5, small_writer, [](Status) {}));
+  EXPECT_EQ(OkStatus(),
+            legacy_client_.Read(5, small_writer, [](Status) {}).status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -255,10 +268,13 @@ TEST_F(ReadTransferMaxBytes32, MultiParameters) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            legacy_client_.Read(6, writer, [&transfer_status](Status status) {
-              transfer_status = status;
-            }));
+  ASSERT_EQ(
+      OkStatus(),
+      legacy_client_
+          .Read(6,
+                writer,
+                [&transfer_status](Status status) { transfer_status = status; })
+          .status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -313,10 +329,13 @@ TEST_F(ReadTransfer, UnexpectedOffset) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            legacy_client_.Read(7, writer, [&transfer_status](Status status) {
-              transfer_status = status;
-            }));
+  ASSERT_EQ(
+      OkStatus(),
+      legacy_client_
+          .Read(7,
+                writer,
+                [&transfer_status](Status status) { transfer_status = status; })
+          .status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -384,10 +403,13 @@ TEST_F(ReadTransferMaxBytes32, TooMuchData) {
   stream::MemoryWriterBuffer<32> writer;
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            legacy_client_.Read(8, writer, [&transfer_status](Status status) {
-              transfer_status = status;
-            }));
+  ASSERT_EQ(
+      OkStatus(),
+      legacy_client_
+          .Read(8,
+                writer,
+                [&transfer_status](Status status) { transfer_status = status; })
+          .status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -440,10 +462,13 @@ TEST_F(ReadTransfer, ServerError) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            legacy_client_.Read(9, writer, [&transfer_status](Status status) {
-              transfer_status = status;
-            }));
+  ASSERT_EQ(
+      OkStatus(),
+      legacy_client_
+          .Read(9,
+                writer,
+                [&transfer_status](Status status) { transfer_status = status; })
+          .status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -472,10 +497,13 @@ TEST_F(ReadTransfer, OnlySendsParametersOnceAfterDrop) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            legacy_client_.Read(10, writer, [&transfer_status](Status status) {
-              transfer_status = status;
-            }));
+  ASSERT_EQ(
+      OkStatus(),
+      legacy_client_
+          .Read(10,
+                writer,
+                [&transfer_status](Status status) { transfer_status = status; })
+          .status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -541,10 +569,13 @@ TEST_F(ReadTransfer, ResendsParametersIfSentRepeatedChunkDuringRecovery) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            legacy_client_.Read(11, writer, [&transfer_status](Status status) {
-              transfer_status = status;
-            }));
+  ASSERT_EQ(
+      OkStatus(),
+      legacy_client_
+          .Read(11,
+                writer,
+                [&transfer_status](Status status) { transfer_status = status; })
+          .status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -635,13 +666,16 @@ TEST_F(ReadTransfer, Timeout_ResendsCurrentParameters) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            legacy_client_.Read(
-                12,
-                writer,
-                [&transfer_status](Status status) { transfer_status = status; },
-                kTestTimeout,
-                kTestTimeout));
+  ASSERT_EQ(
+      OkStatus(),
+      legacy_client_
+          .Read(
+              12,
+              writer,
+              [&transfer_status](Status status) { transfer_status = status; },
+              kTestTimeout,
+              kTestTimeout)
+          .status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -694,12 +728,15 @@ TEST_F(ReadTransfer, Timeout_ResendsUpdatedParameters) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            legacy_client_.Read(
-                13,
-                writer,
-                [&transfer_status](Status status) { transfer_status = status; },
-                kTestTimeout));
+  ASSERT_EQ(
+      OkStatus(),
+      legacy_client_
+          .Read(
+              13,
+              writer,
+              [&transfer_status](Status status) { transfer_status = status; },
+              kTestTimeout)
+          .status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -764,13 +801,13 @@ TEST_F(ReadTransfer, Timeout_EndsTransferAfterMaxRetries) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            legacy_client_.Read(
-                14,
-                writer,
-                [&transfer_status](Status status) { transfer_status = status; },
-                kTestTimeout,
-                kTestTimeout));
+  Result<Client::TransferHandle> handle = legacy_client_.Read(
+      14,
+      writer,
+      [&transfer_status](Status status) { transfer_status = status; },
+      kTestTimeout,
+      kTestTimeout);
+  ASSERT_EQ(OkStatus(), handle.status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -822,13 +859,13 @@ TEST_F(ReadTransfer, Timeout_ReceivingDataResetsRetryCount) {
 
   constexpr ConstByteSpan data(kData32);
 
-  ASSERT_EQ(OkStatus(),
-            legacy_client_.Read(
-                14,
-                writer,
-                [&transfer_status](Status status) { transfer_status = status; },
-                kTestTimeout,
-                kTestTimeout));
+  Result<Client::TransferHandle> handle = legacy_client_.Read(
+      14,
+      writer,
+      [&transfer_status](Status status) { transfer_status = status; },
+      kTestTimeout,
+      kTestTimeout);
+  ASSERT_EQ(OkStatus(), handle.status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer parameters chunk is sent.
@@ -888,7 +925,7 @@ TEST_F(ReadTransfer, Timeout_ReceivingDataResetsRetryCount) {
   EXPECT_EQ(c.window_end_offset(), 64u);
 
   // Ensure we don't leave a dangling reference to transfer_status.
-  legacy_client_.CancelTransfer(14);
+  legacy_client_.CancelTransfer(*handle);
   transfer_thread_.WaitUntilEventIsProcessed();
 }
 
@@ -899,15 +936,17 @@ TEST_F(ReadTransfer, InitialPacketFails_OnCompletedCalledWithDataLoss) {
   context_.output().set_send_status(Status::Unauthenticated());
 
   ASSERT_EQ(OkStatus(),
-            legacy_client_.Read(
-                14,
-                writer,
-                [&transfer_status](Status status) {
-                  ASSERT_EQ(transfer_status,
-                            Status::Unknown());  // Must only call once
-                  transfer_status = status;
-                },
-                kTestTimeout));
+            legacy_client_
+                .Read(
+                    14,
+                    writer,
+                    [&transfer_status](Status status) {
+                      ASSERT_EQ(transfer_status,
+                                Status::Unknown());  // Must only call once
+                      transfer_status = status;
+                    },
+                    kTestTimeout)
+                .status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   EXPECT_EQ(transfer_status, Status::Internal());
@@ -946,9 +985,13 @@ TEST_F(WriteTransfer, SingleChunk) {
   Status transfer_status = Status::Unknown();
 
   ASSERT_EQ(OkStatus(),
-            legacy_client_.Write(3, reader, [&transfer_status](Status status) {
-              transfer_status = status;
-            }));
+            legacy_client_
+                .Write(3,
+                       reader,
+                       [&transfer_status](Status status) {
+                         transfer_status = status;
+                       })
+                .status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.
@@ -1003,9 +1046,13 @@ TEST_F(WriteTransfer, MultiChunk) {
   Status transfer_status = Status::Unknown();
 
   ASSERT_EQ(OkStatus(),
-            legacy_client_.Write(4, reader, [&transfer_status](Status status) {
-              transfer_status = status;
-            }));
+            legacy_client_
+                .Write(4,
+                       reader,
+                       [&transfer_status](Status status) {
+                         transfer_status = status;
+                       })
+                .status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.
@@ -1070,9 +1117,13 @@ TEST_F(WriteTransfer, OutOfOrder_SeekSupported) {
   Status transfer_status = Status::Unknown();
 
   ASSERT_EQ(OkStatus(),
-            legacy_client_.Write(5, reader, [&transfer_status](Status status) {
-              transfer_status = status;
-            }));
+            legacy_client_
+                .Write(5,
+                       reader,
+                       [&transfer_status](Status status) {
+                         transfer_status = status;
+                       })
+                .status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.
@@ -1150,9 +1201,13 @@ TEST_F(WriteTransfer, OutOfOrder_SeekNotSupported) {
   Status transfer_status = Status::Unknown();
 
   ASSERT_EQ(OkStatus(),
-            legacy_client_.Write(6, reader, [&transfer_status](Status status) {
-              transfer_status = status;
-            }));
+            legacy_client_
+                .Write(6,
+                       reader,
+                       [&transfer_status](Status status) {
+                         transfer_status = status;
+                       })
+                .status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.
@@ -1192,9 +1247,13 @@ TEST_F(WriteTransfer, ServerError) {
   Status transfer_status = Status::Unknown();
 
   ASSERT_EQ(OkStatus(),
-            legacy_client_.Write(7, reader, [&transfer_status](Status status) {
-              transfer_status = status;
-            }));
+            legacy_client_
+                .Write(7,
+                       reader,
+                       [&transfer_status](Status status) {
+                         transfer_status = status;
+                       })
+                .status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.
@@ -1223,9 +1282,13 @@ TEST_F(WriteTransfer, AbortIfZeroBytesAreRequested) {
   Status transfer_status = Status::Unknown();
 
   ASSERT_EQ(OkStatus(),
-            legacy_client_.Write(9, reader, [&transfer_status](Status status) {
-              transfer_status = status;
-            }));
+            legacy_client_
+                .Write(9,
+                       reader,
+                       [&transfer_status](Status status) {
+                         transfer_status = status;
+                       })
+                .status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.
@@ -1263,13 +1326,13 @@ TEST_F(WriteTransfer, Timeout_RetriesWithInitialChunk) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            legacy_client_.Write(
-                10,
-                reader,
-                [&transfer_status](Status status) { transfer_status = status; },
-                kTestTimeout,
-                kTestTimeout));
+  Result<Client::TransferHandle> handle = legacy_client_.Write(
+      10,
+      reader,
+      [&transfer_status](Status status) { transfer_status = status; },
+      kTestTimeout,
+      kTestTimeout);
+  ASSERT_EQ(OkStatus(), handle.status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.
@@ -1297,7 +1360,7 @@ TEST_F(WriteTransfer, Timeout_RetriesWithInitialChunk) {
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   // Ensure we don't leave a dangling reference to transfer_status.
-  legacy_client_.CancelTransfer(10);
+  legacy_client_.CancelTransfer(*handle);
   transfer_thread_.WaitUntilEventIsProcessed();
 }
 
@@ -1305,12 +1368,12 @@ TEST_F(WriteTransfer, Timeout_RetriesWithMostRecentChunk) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            legacy_client_.Write(
-                11,
-                reader,
-                [&transfer_status](Status status) { transfer_status = status; },
-                kTestTimeout));
+  Result<Client::TransferHandle> handle = legacy_client_.Write(
+      11,
+      reader,
+      [&transfer_status](Status status) { transfer_status = status; },
+      kTestTimeout);
+  ASSERT_EQ(OkStatus(), handle.status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.
@@ -1370,7 +1433,7 @@ TEST_F(WriteTransfer, Timeout_RetriesWithMostRecentChunk) {
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   // Ensure we don't leave a dangling reference to transfer_status.
-  legacy_client_.CancelTransfer(11);
+  legacy_client_.CancelTransfer(*handle);
   transfer_thread_.WaitUntilEventIsProcessed();
 }
 
@@ -1378,12 +1441,12 @@ TEST_F(WriteTransfer, Timeout_RetriesWithSingleChunkTransfer) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            legacy_client_.Write(
-                12,
-                reader,
-                [&transfer_status](Status status) { transfer_status = status; },
-                kTestTimeout));
+  Result<Client::TransferHandle> handle = legacy_client_.Write(
+      12,
+      reader,
+      [&transfer_status](Status status) { transfer_status = status; },
+      kTestTimeout);
+  ASSERT_EQ(OkStatus(), handle.status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.
@@ -1462,13 +1525,13 @@ TEST_F(WriteTransfer, Timeout_EndsTransferAfterMaxRetries) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            legacy_client_.Write(
-                13,
-                reader,
-                [&transfer_status](Status status) { transfer_status = status; },
-                kTestTimeout,
-                kTestTimeout));
+  Result<Client::TransferHandle> handle = legacy_client_.Write(
+      13,
+      reader,
+      [&transfer_status](Status status) { transfer_status = status; },
+      kTestTimeout,
+      kTestTimeout);
+  ASSERT_EQ(OkStatus(), handle.status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.
@@ -1512,7 +1575,7 @@ TEST_F(WriteTransfer, Timeout_EndsTransferAfterMaxRetries) {
   ASSERT_EQ(payloads.size(), 4u);
 
   // Ensure we don't leave a dangling reference to transfer_status.
-  legacy_client_.CancelTransfer(13);
+  legacy_client_.CancelTransfer(*handle);
   transfer_thread_.WaitUntilEventIsProcessed();
 }
 
@@ -1520,12 +1583,12 @@ TEST_F(WriteTransfer, Timeout_NonSeekableReaderEndsTransfer) {
   FakeNonSeekableReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            legacy_client_.Write(
-                14,
-                reader,
-                [&transfer_status](Status status) { transfer_status = status; },
-                kTestTimeout));
+  Result<Client::TransferHandle> handle = legacy_client_.Write(
+      14,
+      reader,
+      [&transfer_status](Status status) { transfer_status = status; },
+      kTestTimeout);
+  ASSERT_EQ(OkStatus(), handle.status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.
@@ -1584,7 +1647,7 @@ TEST_F(WriteTransfer, Timeout_NonSeekableReaderEndsTransfer) {
   EXPECT_EQ(transfer_status, Status::DeadlineExceeded());
 
   // Ensure we don't leave a dangling reference to transfer_status.
-  legacy_client_.CancelTransfer(14);
+  legacy_client_.CancelTransfer(*handle);
   transfer_thread_.WaitUntilEventIsProcessed();
 }
 
@@ -1592,12 +1655,12 @@ TEST_F(WriteTransfer, ManualCancel) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            legacy_client_.Write(
-                15,
-                reader,
-                [&transfer_status](Status status) { transfer_status = status; },
-                kTestTimeout));
+  Result<Client::TransferHandle> handle = legacy_client_.Write(
+      15,
+      reader,
+      [&transfer_status](Status status) { transfer_status = status; },
+      kTestTimeout);
+  ASSERT_EQ(OkStatus(), handle.status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.
@@ -1623,7 +1686,7 @@ TEST_F(WriteTransfer, ManualCancel) {
   transfer_thread_.WaitUntilEventIsProcessed();
   ASSERT_EQ(payloads.size(), 2u);
 
-  legacy_client_.CancelTransfer(15);
+  legacy_client_.CancelTransfer(*handle);
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // Client should send a cancellation chunk to the server.
@@ -1640,13 +1703,13 @@ TEST_F(WriteTransfer, ManualCancel_NoContact) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            legacy_client_.Write(
-                15,
-                reader,
-                [&transfer_status](Status status) { transfer_status = status; },
-                kTestTimeout,
-                kTestTimeout));
+  Result<Client::TransferHandle> handle = legacy_client_.Write(
+      15,
+      reader,
+      [&transfer_status](Status status) { transfer_status = status; },
+      kTestTimeout,
+      kTestTimeout);
+  ASSERT_EQ(handle.status(), OkStatus());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.
@@ -1661,7 +1724,7 @@ TEST_F(WriteTransfer, ManualCancel_NoContact) {
   EXPECT_EQ(chunk.type(), Chunk::Type::kStart);
 
   // Cancel transfer without a server response. No final chunk should be sent.
-  legacy_client_.CancelTransfer(15);
+  legacy_client_.CancelTransfer(*handle);
   transfer_thread_.WaitUntilEventIsProcessed();
 
   ASSERT_EQ(payloads.size(), 1u);
@@ -1669,17 +1732,75 @@ TEST_F(WriteTransfer, ManualCancel_NoContact) {
   EXPECT_EQ(transfer_status, Status::Cancelled());
 }
 
+TEST_F(WriteTransfer, ManualCancel_Duplicate) {
+  stream::MemoryReader reader(kData32);
+  Status transfer_status = Status::Unknown();
+
+  Result<Client::TransferHandle> handle = legacy_client_.Write(
+      16,
+      reader,
+      [&transfer_status](Status status) { transfer_status = status; },
+      kTestTimeout);
+  ASSERT_EQ(OkStatus(), handle.status());
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  // The client begins by sending the ID of the resource to transfer.
+  rpc::PayloadsView payloads =
+      context_.output().payloads<Transfer::Write>(context_.channel().id());
+  ASSERT_EQ(payloads.size(), 1u);
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  Chunk chunk = DecodeChunk(payloads.back());
+  EXPECT_EQ(chunk.session_id(), 16u);
+  EXPECT_EQ(chunk.resource_id(), 16u);
+  EXPECT_EQ(chunk.type(), Chunk::Type::kStart);
+
+  // Get a response from the server, then cancel the transfer.
+  context_.server().SendServerStream<Transfer::Write>(EncodeChunk(
+      Chunk(ProtocolVersion::kLegacy, Chunk::Type::kParametersRetransmit)
+          .set_session_id(16)
+          .set_offset(0)
+          .set_window_end_offset(64)
+          .set_max_chunk_size_bytes(32)));
+  transfer_thread_.WaitUntilEventIsProcessed();
+  ASSERT_EQ(payloads.size(), 2u);
+
+  client_.CancelTransfer(*handle);
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  // Client should send a cancellation chunk to the server.
+  ASSERT_EQ(payloads.size(), 3u);
+  chunk = DecodeChunk(payloads.back());
+  EXPECT_EQ(chunk.session_id(), 16u);
+  ASSERT_EQ(chunk.type(), Chunk::Type::kCompletion);
+  EXPECT_EQ(chunk.status().value(), Status::Cancelled());
+
+  EXPECT_EQ(transfer_status, Status::Cancelled());
+
+  // Attempt to cancel the transfer again.
+  transfer_status = Status::Unknown();
+  client_.CancelTransfer(*handle);
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  // No further chunks should be sent.
+  EXPECT_EQ(payloads.size(), 3u);
+  EXPECT_EQ(transfer_status, Status::Unknown());
+}
+
 TEST_F(ReadTransfer, Version2_SingleChunk) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            client_.Read(
-                3,
-                writer,
-                [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultClientTimeout,
-                cfg::kDefaultClientTimeout));
+  ASSERT_EQ(
+      OkStatus(),
+      client_
+          .Read(
+              3,
+              writer,
+              [&transfer_status](Status status) { transfer_status = status; },
+              cfg::kDefaultClientTimeout,
+              cfg::kDefaultClientTimeout)
+          .status());
 
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -1753,13 +1874,16 @@ TEST_F(ReadTransfer, Version2_ServerRunsLegacy) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            client_.Read(
-                3,
-                writer,
-                [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultClientTimeout,
-                cfg::kDefaultClientTimeout));
+  ASSERT_EQ(
+      OkStatus(),
+      client_
+          .Read(
+              3,
+              writer,
+              [&transfer_status](Status status) { transfer_status = status; },
+              cfg::kDefaultClientTimeout,
+              cfg::kDefaultClientTimeout)
+          .status());
 
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -1811,13 +1935,16 @@ TEST_F(ReadTransfer, Version2_TimeoutDuringHandshake) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            client_.Read(
-                3,
-                writer,
-                [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultClientTimeout,
-                cfg::kDefaultClientTimeout));
+  ASSERT_EQ(
+      OkStatus(),
+      client_
+          .Read(
+              3,
+              writer,
+              [&transfer_status](Status status) { transfer_status = status; },
+              cfg::kDefaultClientTimeout,
+              cfg::kDefaultClientTimeout)
+          .status());
 
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -1900,13 +2027,16 @@ TEST_F(ReadTransfer, Version2_TimeoutAfterHandshake) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            client_.Read(
-                3,
-                writer,
-                [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultClientTimeout,
-                cfg::kDefaultClientTimeout));
+  ASSERT_EQ(
+      OkStatus(),
+      client_
+          .Read(
+              3,
+              writer,
+              [&transfer_status](Status status) { transfer_status = status; },
+              cfg::kDefaultClientTimeout,
+              cfg::kDefaultClientTimeout)
+          .status());
 
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -1993,13 +2123,16 @@ TEST_F(ReadTransfer, Version2_ServerErrorDuringHandshake) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            client_.Read(
-                3,
-                writer,
-                [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultClientTimeout,
-                cfg::kDefaultClientTimeout));
+  ASSERT_EQ(
+      OkStatus(),
+      client_
+          .Read(
+              3,
+              writer,
+              [&transfer_status](Status status) { transfer_status = status; },
+              cfg::kDefaultClientTimeout,
+              cfg::kDefaultClientTimeout)
+          .status());
 
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -2033,13 +2166,16 @@ TEST_F(ReadTransfer, Version2_TimeoutWaitingForCompletionAckRetries) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            client_.Read(
-                3,
-                writer,
-                [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultClientTimeout,
-                cfg::kDefaultClientTimeout));
+  ASSERT_EQ(
+      OkStatus(),
+      client_
+          .Read(
+              3,
+              writer,
+              [&transfer_status](Status status) { transfer_status = status; },
+              cfg::kDefaultClientTimeout,
+              cfg::kDefaultClientTimeout)
+          .status());
 
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -2138,13 +2274,16 @@ TEST_F(ReadTransfer,
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            client_.Read(
-                3,
-                writer,
-                [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultClientTimeout,
-                cfg::kDefaultClientTimeout));
+  ASSERT_EQ(
+      OkStatus(),
+      client_
+          .Read(
+              3,
+              writer,
+              [&transfer_status](Status status) { transfer_status = status; },
+              cfg::kDefaultClientTimeout,
+              cfg::kDefaultClientTimeout)
+          .status());
 
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -2229,13 +2368,16 @@ TEST_F(WriteTransfer, Version2_SingleChunk) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            client_.Write(
-                3,
-                reader,
-                [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultClientTimeout,
-                cfg::kDefaultClientTimeout));
+  ASSERT_EQ(
+      OkStatus(),
+      client_
+          .Write(
+              3,
+              reader,
+              [&transfer_status](Status status) { transfer_status = status; },
+              cfg::kDefaultClientTimeout,
+              cfg::kDefaultClientTimeout)
+          .status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.
@@ -2318,13 +2460,16 @@ TEST_F(WriteTransfer, Version2_ServerRunsLegacy) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            client_.Write(
-                3,
-                reader,
-                [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultClientTimeout,
-                cfg::kDefaultClientTimeout));
+  ASSERT_EQ(
+      OkStatus(),
+      client_
+          .Write(
+              3,
+              reader,
+              [&transfer_status](Status status) { transfer_status = status; },
+              cfg::kDefaultClientTimeout,
+              cfg::kDefaultClientTimeout)
+          .status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.
@@ -2385,13 +2530,16 @@ TEST_F(WriteTransfer, Version2_RetryDuringHandshake) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            client_.Write(
-                3,
-                reader,
-                [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultClientTimeout,
-                cfg::kDefaultClientTimeout));
+  ASSERT_EQ(
+      OkStatus(),
+      client_
+          .Write(
+              3,
+              reader,
+              [&transfer_status](Status status) { transfer_status = status; },
+              cfg::kDefaultClientTimeout,
+              cfg::kDefaultClientTimeout)
+          .status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.
@@ -2482,13 +2630,16 @@ TEST_F(WriteTransfer, Version2_RetryAfterHandshake) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            client_.Write(
-                3,
-                reader,
-                [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultClientTimeout,
-                cfg::kDefaultClientTimeout));
+  ASSERT_EQ(
+      OkStatus(),
+      client_
+          .Write(
+              3,
+              reader,
+              [&transfer_status](Status status) { transfer_status = status; },
+              cfg::kDefaultClientTimeout,
+              cfg::kDefaultClientTimeout)
+          .status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.
@@ -2581,13 +2732,16 @@ TEST_F(WriteTransfer, Version2_ServerErrorDuringHandshake) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  ASSERT_EQ(OkStatus(),
-            client_.Write(
-                3,
-                reader,
-                [&transfer_status](Status status) { transfer_status = status; },
-                cfg::kDefaultClientTimeout,
-                cfg::kDefaultClientTimeout));
+  ASSERT_EQ(
+      OkStatus(),
+      client_
+          .Write(
+              3,
+              reader,
+              [&transfer_status](Status status) { transfer_status = status; },
+              cfg::kDefaultClientTimeout,
+              cfg::kDefaultClientTimeout)
+          .status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // The client begins by sending the ID of the resource to transfer.

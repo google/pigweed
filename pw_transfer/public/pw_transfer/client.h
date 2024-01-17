@@ -13,12 +13,11 @@
 // the License.
 #pragma once
 
-#include <array>
-
 #include "pw_function/function.h"
+#include "pw_result/result.h"
+#include "pw_rpc/client.h"
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
-#include "pw_transfer/internal/client_context.h"
 #include "pw_transfer/internal/config.h"
 #include "pw_transfer/transfer.raw_rpc.pb.h"
 #include "pw_transfer/transfer_thread.h"
@@ -27,6 +26,24 @@ namespace pw::transfer {
 
 class Client {
  public:
+  // A handle to an active transfer. Used to manage the transfer during its
+  // operation.
+  class TransferHandle {
+   public:
+    constexpr TransferHandle() : id_(kUnassignedHandleId) {}
+
+   private:
+    friend class Client;
+
+    static constexpr uint32_t kUnassignedHandleId = 0;
+
+    explicit constexpr TransferHandle(uint32_t id) : id_(id) {}
+    constexpr uint32_t id() const { return id_; }
+    constexpr bool is_unassigned() const { return id_ == kUnassignedHandleId; }
+
+    uint32_t id_;
+  };
+
   using CompletionFunc = Function<void(Status)>;
 
   // Initializes a transfer client on a specified RPC client and channel.
@@ -60,6 +77,7 @@ class Client {
       : default_protocol_version(ProtocolVersion::kLatest),
         client_(rpc_client, channel_id),
         transfer_thread_(transfer_thread),
+        next_handle_id_(1),
         max_parameters_(max_bytes_to_receive > 0
                             ? max_bytes_to_receive
                             : transfer_thread.max_chunk_size(),
@@ -74,7 +92,7 @@ class Client {
   // the server is written to the provided writer. Returns OK if the transfer is
   // successfully started. When the transfer finishes (successfully or not), the
   // completion callback is invoked with the overall status.
-  Status Read(
+  Result<TransferHandle> Read(
       uint32_t resource_id,
       stream::Writer& output,
       CompletionFunc&& on_completion,
@@ -83,7 +101,7 @@ class Client {
       chrono::SystemClock::duration initial_chunk_timeout =
           cfg::kDefaultInitialChunkTimeout);
 
-  Status Read(
+  Result<TransferHandle> Read(
       uint32_t resource_id,
       stream::Writer& output,
       CompletionFunc&& on_completion,
@@ -102,7 +120,7 @@ class Client {
   // provided reader is sent to the server. When the transfer finishes
   // (successfully or not), the completion callback is invoked with the overall
   // status.
-  Status Write(
+  Result<TransferHandle> Write(
       uint32_t resource_id,
       stream::Reader& input,
       CompletionFunc&& on_completion,
@@ -111,7 +129,7 @@ class Client {
       chrono::SystemClock::duration initial_chunk_timeout =
           cfg::kDefaultInitialChunkTimeout);
 
-  Status Write(
+  Result<TransferHandle> Write(
       uint32_t resource_id,
       stream::Reader& input,
       CompletionFunc&& on_completion,
@@ -126,11 +144,12 @@ class Client {
                  initial_chunk_timeout);
   }
 
-  // Terminates an ongoing transfer for the specified resource ID.
-  //
-  // TODO(frolv): This should not take a resource_id, but a handle to an active
-  // transfer session.
-  void CancelTransfer(uint32_t resource_id);
+  // Terminates an ongoing transfer.
+  void CancelTransfer(TransferHandle handle) {
+    if (!handle.is_unassigned()) {
+      transfer_thread_.CancelClientTransfer(handle.id());
+    }
+  }
 
   Status set_extend_window_divisor(uint32_t extend_window_divisor) {
     if (extend_window_divisor <= 1) {
@@ -168,8 +187,12 @@ class Client {
 
   void OnRpcError(Status status, internal::TransferType type);
 
+  TransferHandle AssignHandle();
+
   Transfer::Client client_;
   TransferThread& transfer_thread_;
+
+  uint32_t next_handle_id_;
 
   internal::TransferParameters max_parameters_;
   uint32_t max_retries_;
