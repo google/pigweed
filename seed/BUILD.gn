@@ -204,6 +204,14 @@ pw_seed("0122") {
   facilitator = "Kayce Basques"
 }
 
+pw_seed("0123") {
+  changelist = 188141
+  title = "Sprout Bazel C++ toolchain API into a separate repository"
+  status = "Draft"
+  author = "Ted Pudlik"
+  facilitator = "Armando Montanez"
+}
+
 # This must be defined after all `pw_seed` targets, as it relies on information
 # exposed by them.
 pw_seed_index("seeds") {
@@ -233,5 +241,6 @@ pw_seed_index("seeds") {
     ":0120",
     ":0121",
     ":0122",
+    ":0123",
   ]
 }
