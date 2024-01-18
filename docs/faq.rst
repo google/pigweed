@@ -51,15 +51,16 @@ the Pigweed integrated environment and build, or just use individual modules?
 
 A la carte: Individual modules only
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-This option can work for small projects with a pre-existing build system in place.
-Large projects will probably need a more maintainable and scalable solution.
+This option can work for small projects with a pre-existing build system in
+place. Large projects will probably need a more maintainable and scalable
+solution.
 
 To use the libraries, submodule or copy the relevant Pigweed modules into your
-project, and use them like any other C++ library. You'll need to also copy over the
-`transitive dependencies`_ of any module you use. You can find a module's transitive
-dependencies by inspecting its build files. If your project uses CMake, you can
-directly import Pigweed's build from your project with CMake's external project
-system, or just use a CMake include statement.
+project, and use them like any other C++ library. You'll need to also copy over
+the `transitive dependencies`_ of any module you use. You can find a module's
+transitive dependencies by inspecting its build files. If your project uses
+CMake, you can directly import Pigweed's build from your project with CMake's
+external project system, or just use a CMake include statement.
 
 .. _transitive dependencies: https://en.wikipedia.org/wiki/Transitive_dependency#Computer_programs
 
@@ -97,9 +98,9 @@ Why doesn't Pigweed allow shell scripting?
 ------------------------------------------
 Pigweed supports multiple platforms. The native shells on these differ and
 additionally "compatible" shells often have sububle differences in behavior.
-Pigweed uses Python instead shell wherever practical and changes to Pigweed that
-include shell scripting will likely be rejected. Users of Pigweed may use shell
-scripts in their own code and we have included support for
+Pigweed uses Python instead of shell scripting wherever practical and changes to
+Pigweed that include shell scripting will likely be rejected. Users of Pigweed
+may use shell scripts in their own code and we have included support for
 `Shellcheck <https://www.shellcheck.net/>`_ during presubmit checks that is
 automatically enabled if ``shellcheck`` found in the path.
 
@@ -163,8 +164,8 @@ Host platforms that we are likely to support in the future
   config file. Other possible values are ``"never"`` and ``"allow"``. For now,
   ``"allow"`` means ``"force"`` but at some point in the future it will change
   to ``"never"``.
-- **Linux on ARM** - At time of writing (mid 2020), we do not support ARM-based
-  host platforms.  However, we would like to support this eventually.
+- **Linux on ARM** - We do not support ARM-based Linux host platforms. However,
+  we would like to support this eventually.
 - **Windows on WSL2 x86-64** - There are some minor issues preventing WSL2 on
   Windows from being a smooth experience, but we are working on them.
 
