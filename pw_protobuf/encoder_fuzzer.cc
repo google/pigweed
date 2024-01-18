@@ -77,6 +77,9 @@ const char* ConsumeString(FuzzedDataProvider& provider,
 span<const std::byte> ConsumeBytes(FuzzedDataProvider& provider,
                                    std::vector<std::byte>* data) {
   size_t num = ConsumeSize<std::byte>(provider);
+  if (num == 0) {
+    return span<const std::byte>();
+  }
   auto added = provider.ConsumeBytes<std::byte>(num);
   size_t off = data->size();
   num = added.size();
