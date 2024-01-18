@@ -40,7 +40,8 @@ export const styles = css`
 
   table {
     border-collapse: collapse;
-    display: block;
+    contain: content;
+    display: table;
     height: 100%;
     table-layout: fixed;
     width: 100%;
@@ -62,11 +63,12 @@ export const styles = css`
 
   tr {
     border-bottom: 1px solid var(--sys-log-viewer-color-table-cell-outline);
+    contain: content;
     display: grid;
     grid-template-columns: var(--column-widths);
     justify-content: flex-start;
     width: 100%;
-    will-change: transform;
+    will-change: transform, grid-template-columns;
   }
 
   .log-row--warning {

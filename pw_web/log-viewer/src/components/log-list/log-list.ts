@@ -25,6 +25,7 @@ import { styles } from './log-list.styles';
 import { LogEntry, Severity, TableColumn } from '../../shared/interfaces';
 import { virtualize } from '@lit-labs/virtualizer/virtualize.js';
 import '@lit-labs/virtualizer';
+import { throttle } from '../../utils/throttle';
 
 /**
  * A sub-component of the log view which takes filtered logs and renders them in
@@ -374,9 +375,9 @@ export class LogList extends LitElement {
       startWidth,
     };
 
-    const handleColumnResize = (event: MouseEvent) => {
+    const handleColumnResize = throttle((event: MouseEvent) => {
       this.handleColumnResize(event);
-    };
+    }, 32);
 
     const handleColumnResizeEnd = () => {
       this.columnResizeData = null;
