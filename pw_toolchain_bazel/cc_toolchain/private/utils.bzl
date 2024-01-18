@@ -75,26 +75,6 @@ ALL_FILE_GROUPS = {
     "strip_files": [STRIP_ACTION_NAME],
 }
 
-def check_deps_provide(ctx, list_name, provider, what_provides):
-    """Ensures that each dep in the specified list offers the required provider.
-
-    Args:
-        ctx: The rule context to pull the dependency list from.
-        list_name: The name of the attr to scan the dependencies from.
-        provider: The concrete provider to ensure exists.
-        what_provides: The name of the build rule that offers the required
-            provider.
-    """
-    for dep in getattr(ctx.attr, list_name):
-        if provider not in dep:
-            fail(
-                "{} in `{}` is not a {}".format(
-                    dep.label,
-                    list_name,
-                    what_provides,
-                ),
-            )
-
 def actionless_flag_set(flag_set_to_copy):
     """Copies a flag_set, stripping `actions`.
 

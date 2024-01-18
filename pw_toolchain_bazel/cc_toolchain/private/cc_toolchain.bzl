@@ -36,7 +36,6 @@ load(
     "//cc_toolchain/private:utils.bzl",
     "ALL_FILE_GROUPS",
     "actionless_flag_set",
-    "check_deps_provide",
 )
 
 # These attributes of pw_cc_toolchain are deprecated.
@@ -236,8 +235,6 @@ def _pw_cc_toolchain_config_impl(ctx):
     Returns:
         CcToolchainConfigInfo
     """
-    check_deps_provide(ctx, "action_config_flag_sets", FlagSetInfo, "pw_cc_flag_set")
-
     flag_sets_by_action = _create_action_flag_set_map([dep[FlagSetInfo] for dep in ctx.attr.action_config_flag_sets])
     all_actions = _collect_action_configs(ctx, flag_sets_by_action)
     builtin_include_dirs = ctx.attr.cxx_builtin_include_directories if ctx.attr.cxx_builtin_include_directories else []
@@ -271,7 +268,7 @@ pw_cc_toolchain_config = rule(
     attrs = {
         # Attributes new to this rule.
         "action_configs": attr.label_list(),
-        "action_config_flag_sets": attr.label_list(),
+        "action_config_flag_sets": attr.label_list(providers = [FlagSetInfo]),
 
         # Attributes from create_cc_toolchain_config_info.
         "toolchain_identifier": attr.string(),

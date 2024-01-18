@@ -27,7 +27,6 @@ load(
 load(
     "//cc_toolchain/private:utils.bzl",
     "actionless_flag_set",
-    "check_deps_provide",
 )
 
 def _pw_cc_tool_impl(ctx):
@@ -138,11 +137,8 @@ def _pw_cc_action_config_impl(ctx):
     if not ctx.attr.action_names:
         fail("Action configs are not valid unless they specify at least one action name in `action_names`")
 
-    check_deps_provide(ctx, "tools", ToolInfo, "pw_cc_tool")
-
     # Check that the listed flag sets apply to at least one action in this group
     # of action configs.
-    check_deps_provide(ctx, "flag_sets", FlagSetInfo, "pw_cc_flag_set")
     for fs in ctx.attr.flag_sets:
         provided_fs = fs[FlagSetInfo]
         flag_set_applies = False
@@ -193,6 +189,7 @@ default.
         ),
         "tools": attr.label_list(
             mandatory = True,
+            providers = [ToolInfo],
             doc = """The `pw_cc_tool` to use for the specified actions.
 
 If multiple tools are specified, the first tool that has `with_features` that
@@ -200,6 +197,7 @@ satisfy the currently enabled feature set is used.
 """,
         ),
         "flag_sets": attr.label_list(
+            providers = [FlagSetInfo],
             doc = """Labels that point to `pw_cc_flag_set`s that are
 unconditionally bound to the specified actions.
 
