@@ -101,16 +101,6 @@ pw_source_set("default_addresses") {
   public = [ "public/pw_hdlc/default_addresses.h" ]
 }
 
-# Just an alias to :default_addresses. Remove after all users are migrated off.
-pw_source_set("pw_rpc") {
-  public_deps = [
-    ":default_addresses",
-    ":pw_hdlc",
-  ]
-  public_configs = [ ":default_config" ]
-  public = [ "public/pw_hdlc/rpc_packets.h" ]
-}
-
 pw_source_set("packet_parser") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_hdlc/wire_packet_parser.h" ]
