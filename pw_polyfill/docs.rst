@@ -6,9 +6,9 @@ pw_polyfill
 The ``pw_polyfill`` module supports compiling code against different C++
 standards.
 
-----------------------------------------------------
-Adapt code to compile with different versions of C++
-----------------------------------------------------
+--------------------------------------------------
+Adapt code to compile with different C++ standards
+--------------------------------------------------
 
 C++ standard macro
 ==================
@@ -98,6 +98,25 @@ Backported features
     - :ref:`module-pw_span`
     - ``pw_span/span.h``
     - ``pw::span``
+
+------------------------------------------------
+Adapt code to compile with different C standards
+------------------------------------------------
+``pw_polyfill/static_assert.h`` provides C23-style ``static_assert`` for older
+C standards. As in C23, the message argument is optional.
+
+.. literalinclude:: c_test.c
+   :start-after: [static_assert-example]
+   :end-before: [static_assert-example]
+   :language: c
+
+.. tip::
+
+   Use ``pw_polyfill/static_assert.h`` rather than ``<assert.h>`` to provide
+   ``static_assert`` in C. ``<assert.h>`` provides a ``#define static_assert
+   _Static_assert`` macro prior to C23, but its ``static_assert`` does not
+   support C23 semantics (optional message argument), and it defines the
+   unwanted ``assert`` macro.
 
 ------
 Zephyr

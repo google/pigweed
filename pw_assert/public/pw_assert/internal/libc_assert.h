@@ -26,10 +26,11 @@ extern "C++" {
 }  // extern "C++"
 #endif  // __cplusplus
 
-// Provide static_assert() on >=C11
-#if (defined(__USE_ISOC11) ||                                       \
-     defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)) && \
-    !defined(__cplusplus)
+// Provide static_assert() for C11 and C17. static_assert is a keyword in C23.
+#if (defined(__USE_ISOC11) || defined(__STDC_VERSION__) &&         \
+                                  (__STDC_VERSION__ >= 201112L) && \
+                                  (__STDC_VERSION__ < 202311L)) && \
+    !defined(__cplusplus) && !defined(static_assert)
 #define static_assert _Static_assert
 #endif  // C11 or newer
 

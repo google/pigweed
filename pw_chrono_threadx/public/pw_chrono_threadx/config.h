@@ -14,8 +14,7 @@
 // Configuration macros for the tokenizer module.
 #pragma once
 
-#include <assert.h>
-
+#include "pw_polyfill/static_assert.h"
 #include "tx_api.h"
 
 // For the ThreadX backend of the SystemClock, there is no way to determine the

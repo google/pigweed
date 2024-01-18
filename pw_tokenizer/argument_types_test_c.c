@@ -15,9 +15,9 @@
 // This C source file tests that the tokenizer argument type encoding works
 // correctly in C. These functions are called from the main C++ test file
 // argument_types_test.cc.
-#include <assert.h>
 #include <stddef.h>
 
+#include "pw_polyfill/static_assert.h"
 #include "pw_tokenizer/tokenize.h"
 #include "pw_tokenizer_private/argument_types_test.h"
 
@@ -70,8 +70,7 @@ CHECK_TYPE(struct FakeType*,  _PW_TOKENIZER_SELECT_INT_TYPE(void*));
 // clang-format on
 
 // null
-static_assert(_PW_VARARGS_TYPE(NULL) == _PW_TOKENIZER_SELECT_INT_TYPE(void*),
-              "");
+static_assert(_PW_VARARGS_TYPE(NULL) == _PW_TOKENIZER_SELECT_INT_TYPE(void*));
 
 static char char_array[16];
 

@@ -39,6 +39,7 @@ pw_source_set("pw_preprocessor") {
     "public/pw_preprocessor/concat.h",
     "public/pw_preprocessor/util.h",
   ]
+  public_deps = [ dir_pw_polyfill ]
   sources = [ "public/pw_preprocessor/internal/arg_count_impl.h" ]
 }
 

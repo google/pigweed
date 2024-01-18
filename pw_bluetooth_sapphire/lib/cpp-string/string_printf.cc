@@ -12,7 +12,6 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include <assert.h>
 #include <cpp-string/string_printf.h>
 #include <errno.h>
 #include <stdarg.h>

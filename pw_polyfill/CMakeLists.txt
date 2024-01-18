@@ -18,6 +18,7 @@ pw_add_library(pw_polyfill INTERFACE
   HEADERS
     public/pw_polyfill/language_feature_macros.h
     public/pw_polyfill/standard.h
+    public/pw_polyfill/static_assert.h
   PUBLIC_INCLUDES
     public
 )

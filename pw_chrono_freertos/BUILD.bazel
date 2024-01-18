@@ -39,6 +39,7 @@ cc_library(
         "//pw_chrono:epoch",
         "//pw_chrono:system_clock_facade",
         "//pw_interrupt:context",
+        "//pw_polyfill",
         "//pw_sync:interrupt_spin_lock",
         "@freertos",
     ],

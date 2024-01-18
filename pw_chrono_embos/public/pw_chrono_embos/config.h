@@ -14,7 +14,7 @@
 // Configuration macros for the tokenizer module.
 #pragma once
 
-#include <assert.h>
+#include "pw_polyfill/static_assert.h"
 
 // For the embOS backend of the SystemClock, there is no way to determine the
 // system timer's tick interval/frequency. By default most ports happen to be at

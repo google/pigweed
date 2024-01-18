@@ -24,6 +24,8 @@ pw_add_library(pw_preprocessor INTERFACE
     public/pw_preprocessor/internal/arg_count_impl.h
   PUBLIC_INCLUDES
     public
+  PUBLIC_DEPS
+    pw_polyfill
 )
 
 pw_add_library(pw_preprocessor.arch INTERFACE

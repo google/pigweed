@@ -16,11 +16,11 @@
 // This file is used by both C++ and C code.
 #pragma once
 
-#include <assert.h>
-
 // TODO: b/234877280 - compiler.h should be refactored out of pw_preprocessor as
 // the scope is outside of the module. Perhaps it should be split up and placed
 // under pw_compiler, e.g. pw_compiler/attributes.h & pw_compiler/builtins.h.
+
+#include "pw_polyfill/static_assert.h"
 
 // Marks a struct or class as packed.
 #define PW_PACKED(declaration) declaration __attribute__((packed))

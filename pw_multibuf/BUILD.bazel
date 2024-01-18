@@ -82,6 +82,7 @@ pw_cc_test(
         ":chunk_region_tracker",
         ":pw_multibuf",
         "//pw_allocator:allocator_testing",
+        "//pw_assert",
         "//pw_unit_test",
     ],
 )

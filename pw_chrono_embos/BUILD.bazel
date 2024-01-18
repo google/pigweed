@@ -39,6 +39,7 @@ cc_library(
         ":config_override",
         "//pw_chrono:epoch",
         "//pw_chrono:system_clock_facade",
+        "//pw_polyfill",
     ],
 )
 

@@ -82,6 +82,7 @@ pw_add_test(pw_multibuf.multibuf_test
   SOURCES
     multibuf_test.cc
   PRIVATE_DEPS
+    pw_assert
     pw_multibuf
     pw_multibuf.chunk_region_tracker
     pw_allocator.allocator_testing

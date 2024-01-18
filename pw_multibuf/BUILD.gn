@@ -78,6 +78,7 @@ pw_test("multibuf_test") {
     ":chunk_region_tracker",
     ":pw_multibuf",
     "$dir_pw_allocator:allocator_testing",
+    dir_pw_assert,
   ]
   sources = [ "multibuf_test.cc" ]
 }

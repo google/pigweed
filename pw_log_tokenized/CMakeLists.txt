@@ -24,6 +24,7 @@ pw_add_library(pw_log_tokenized.config INTERFACE
     public
   PUBLIC_DEPS
     pw_log.facade
+    pw_polyfill
     pw_tokenizer.config
     ${pw_log_tokenized_CONFIG}
 )

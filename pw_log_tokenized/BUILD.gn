@@ -110,6 +110,7 @@ pw_source_set("config") {
   public_deps = [
     "$dir_pw_log:facade",
     "$dir_pw_tokenizer:config",
+    dir_pw_polyfill,
     pw_log_tokenized_CONFIG,
   ]
   public = [ "public/pw_log_tokenized/config.h" ]

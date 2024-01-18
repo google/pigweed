@@ -13,10 +13,9 @@
 // the License.
 #pragma once
 
-#include <assert.h>
-
 #include "pw_log/levels.h"
 #include "pw_log/options.h"
+#include "pw_polyfill/static_assert.h"
 #include "pw_tokenizer/config.h"
 
 // The size of the stack-allocated argument encoding buffer to use by default.

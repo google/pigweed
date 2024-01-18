@@ -26,6 +26,7 @@ cc_library(
     hdrs = [
         "public/pw_polyfill/language_feature_macros.h",
         "public/pw_polyfill/standard.h",
+        "public/pw_polyfill/static_assert.h",
     ],
     includes = ["public"],
 )
@@ -41,7 +42,10 @@ cc_library(
 
 pw_cc_test(
     name = "test",
-    srcs = ["test.cc"],
+    srcs = [
+        "c_test.c",
+        "test.cc",
+    ],
     deps = [
         ":pw_polyfill",
         ":standard_library",

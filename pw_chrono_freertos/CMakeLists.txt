@@ -22,6 +22,7 @@ pw_add_library(pw_chrono_freertos.config INTERFACE
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_polyfill
     pw_third_party.freertos
     ${pw_chrono_freertos_CONFIG}
 )

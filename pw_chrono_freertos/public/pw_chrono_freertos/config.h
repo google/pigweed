@@ -14,9 +14,8 @@
 // Configuration macros for the tokenizer module.
 #pragma once
 
-#include <assert.h>
-
 #include "FreeRTOS.h"
+#include "pw_polyfill/static_assert.h"
 
 // Because the SystemClock::now() implementation requires the user to invoke it
 // more than once per overflow period, the max timeout is set to ensure that

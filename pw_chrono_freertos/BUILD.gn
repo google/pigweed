@@ -41,6 +41,7 @@ pw_source_set("config") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     "$dir_pw_third_party/freertos",
+    dir_pw_polyfill,
     pw_chrono_freertos_CONFIG,
   ]
 }

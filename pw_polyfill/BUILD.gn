@@ -29,6 +29,7 @@ pw_source_set("pw_polyfill") {
   public = [
     "public/pw_polyfill/language_feature_macros.h",
     "public/pw_polyfill/standard.h",
+    "public/pw_polyfill/static_assert.h",
   ]
 }
 
@@ -58,9 +59,13 @@ pw_test("test") {
     ":pw_polyfill",
     ":standard_library",
   ]
-  sources = [ "test.cc" ]
+  sources = [
+    "c_test.c",
+    "test.cc",
+  ]
 }
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
+  inputs = [ "c_test.c" ]
 }

@@ -34,6 +34,7 @@ cc_library(
         "public/pw_preprocessor/util.h",
     ],
     includes = ["public"],
+    deps = ["//pw_polyfill"],
 )
 
 cc_library(
