@@ -1599,5 +1599,23 @@ TEST(StreamDecoder, PackedFixedVectorFull) {
   EXPECT_EQ(sfixed32.size(), 0u);
 }
 
+// See b/314803709.
+TEST(StreamDecoder, NestedIncompleteVarint) {
+  // clang-format off
+  constexpr uint8_t encoded_proto[] = {
+    0x4a, 0x02, 0x20, 0xff,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(as_bytes(span(encoded_proto)));
+  StreamDecoder decoder(reader);
+
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  StreamDecoder nested_decoder = decoder.GetNestedDecoder();
+
+  EXPECT_EQ(nested_decoder.Next(), OkStatus());
+  EXPECT_EQ(nested_decoder.ReadInt32().status(), Status::DataLoss());
+}
+
 }  // namespace
 }  // namespace pw::protobuf

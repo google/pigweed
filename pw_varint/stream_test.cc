@@ -251,6 +251,7 @@ TEST(VarintRead, Errors) {
     const auto sws = Read(reader, &value);
     EXPECT_FALSE(sws.ok());
     EXPECT_EQ(sws.status(), Status::OutOfRange());
+    EXPECT_EQ(sws.size(), buffer.size());
   }
 
   {
@@ -259,6 +260,7 @@ TEST(VarintRead, Errors) {
     const auto sws = Read(reader, &value);
     EXPECT_FALSE(sws.ok());
     EXPECT_EQ(sws.status(), Status::DataLoss());
+    EXPECT_EQ(sws.size(), buffer.size());
   }
 
   {
@@ -271,6 +273,7 @@ TEST(VarintRead, Errors) {
     const auto sws = Read(reader, &value);
     EXPECT_FALSE(sws.ok());
     EXPECT_EQ(sws.status(), Status::DataLoss());
+    EXPECT_EQ(sws.size(), varint::kMaxVarint64SizeBytes);
   }
 }
 
@@ -285,6 +288,7 @@ TEST(VarintRead, SizeLimit) {
     const auto sws = Read(reader, &value, 4);
     EXPECT_FALSE(sws.ok());
     EXPECT_EQ(sws.status(), Status::DataLoss());
+    EXPECT_EQ(sws.size(), 4u);
     EXPECT_EQ(reader.Tell(), 4u);
   }
 
@@ -296,6 +300,7 @@ TEST(VarintRead, SizeLimit) {
     const auto sws = Read(reader, &value, 0);
     EXPECT_FALSE(sws.ok());
     EXPECT_EQ(sws.status(), Status::OutOfRange());
+    EXPECT_EQ(sws.size(), 0u);
     EXPECT_EQ(reader.Tell(), 0u);
   }
 }

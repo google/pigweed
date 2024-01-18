@@ -232,6 +232,7 @@ Status StreamDecoder::ReadFieldKey() {
     // Read the length varint of length-delimited fields immediately to simplify
     // later processing of the field.
     StatusWithSize sws = varint::Read(reader_, &varint, RemainingBytes());
+    position_ += sws.size();
     if (sws.IsOutOfRange()) {
       // Out of range indicates the end of the stream. As a value is expected
       // here, report it as a data loss and terminate the decode operation.
@@ -240,7 +241,6 @@ Status StreamDecoder::ReadFieldKey() {
     if (!sws.ok()) {
       return sws.status();
     }
-    position_ += sws.size();
 
     if (varint > std::numeric_limits<uint32_t>::max()) {
       return Status::DataLoss();
@@ -328,6 +328,7 @@ StatusWithSize StreamDecoder::ReadOneVarint(span<std::byte> out,
                                             VarintType decode_type) {
   uint64_t value;
   StatusWithSize sws = varint::Read(reader_, &value, RemainingBytes());
+  position_ += sws.size();
   if (sws.IsOutOfRange()) {
     // Out of range indicates the end of the stream. As a value is expected
     // here, report it as a data loss and terminate the decode operation.
@@ -337,8 +338,6 @@ StatusWithSize StreamDecoder::ReadOneVarint(span<std::byte> out,
   if (!sws.ok()) {
     return sws;
   }
-
-  position_ += sws.size();
 
   if (out.size() == sizeof(uint64_t)) {
     if (decode_type == VarintType::kUnsigned) {

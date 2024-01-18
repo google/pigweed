@@ -26,6 +26,8 @@ namespace varint {
 /// of a `pw::stream`. Reads a maximum of 10 bytes or `max_size`, whichever is
 /// smaller.
 ///
+/// This method always returns the number of bytes read, even on error.
+///
 /// @param reader The `pw::stream` to read from.
 ///
 /// @param output The integer to read into. If reading into a signed integer,
@@ -35,10 +37,11 @@ namespace varint {
 /// @param max_size The maximum number of bytes to read. The upper limit is 10
 /// bytes.
 ///
-/// @returns The number of bytes read from the stream if successful. The value
-/// is placed in `output`. Returns `OutOfRange` if the varint does not fit into
-/// `output`. Also returns `OutOfRange` if the input is exhausted before the
-/// number terminates.
+/// @retval OK            The decoded value is placed in `output`.
+/// @retval OUT_OF_RANGE  No input is available, e.g. the stream is closed.
+/// @retval DATA_LOSS     The decoded value is too large for `output` or is
+///                       incomplete, e.g. the input was exhausted after a
+///                       partial varint was read.
 StatusWithSize Read(stream::Reader& reader,
                     int64_t* output,
                     size_t max_size = std::numeric_limits<size_t>::max());

@@ -44,14 +44,14 @@ StatusWithSize Read(stream::Reader& reader, uint64_t* output, size_t max_size) {
     if (count >= varint::kMaxVarint64SizeBytes) {
       // Varint can't fit a uint64_t, this likely means we're reading binary
       // data that is not actually a varint.
-      return StatusWithSize::DataLoss();
+      return StatusWithSize::DataLoss(count);
     }
 
     if (count >= max_size) {
       // Varint didn't fit within the range given; return OutOfRange() if
       // max_size was 0, but DataLoss if we were reading something we thought
       // was going to be a varint.
-      return count > 0 ? StatusWithSize::DataLoss()
+      return count > 0 ? StatusWithSize::DataLoss(count)
                        : StatusWithSize::OutOfRange();
     }
 
@@ -62,9 +62,9 @@ StatusWithSize Read(stream::Reader& reader, uint64_t* output, size_t max_size) {
         // when we reached the end of file. But after the first byte it means we
         // failed to decode a varint we were in the middle of, and that's not
         // a normal error condition.
-        return StatusWithSize(Status::DataLoss(), 0);
+        return StatusWithSize::DataLoss(count);
       }
-      return StatusWithSize(result.status(), 0);
+      return StatusWithSize(result.status(), count);
     }
 
     value |= static_cast<uint64_t>(b & std::byte(0b01111111)) << (7 * count);
