@@ -21,9 +21,15 @@ import os
 import sys
 import shlex
 import subprocess
-from typing import Iterable, Optional, TYPE_CHECKING
+from typing import Any, Iterable, Optional, TYPE_CHECKING
 from unittest.mock import patch
 
+# inclusive-language: disable
+from prompt_toolkit.input import DummyInput as IgnoredInput
+
+# inclusive-language: enable
+
+from prompt_toolkit.output.plain_text import PlainTextOutput
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.layout.controls import BufferControl
 from prompt_toolkit.completion import merge_completers
@@ -32,10 +38,13 @@ from prompt_toolkit.filters import (
     has_focus,
     to_filter,
 )
+from prompt_toolkit.formatted_text import StyleAndTextTuples
+
 from ptpython.completer import (  # type: ignore
     CompletePrivateAttributes,
     PythonCompleter,
 )
+from ptpython.printer import OutputPrinter
 import ptpython.repl  # type: ignore
 from ptpython.layout import (  # type: ignore
     CompletionVisualisation,
@@ -201,7 +210,7 @@ class PwPtPythonRepl(
 
     def _save_result(self, formatted_text):
         """Save the last repl execution result."""
-        unformatted_result = remove_formatting(formatted_text)
+        unformatted_result = formatted_text
         self._last_result = unformatted_result
 
     def _save_exception(self, formatted_text):
@@ -214,15 +223,39 @@ class PwPtPythonRepl(
         self._last_result = None
         self._last_exception = None
 
-    def show_result(self, result):
+    def _format_result_output(self, result: Any) -> Optional[str]:
+        """Return a plaintext repr of any object."""
+        try:
+            formatted_result = repr(result)
+        except BaseException as e:  # pylint: disable=broad-exception-caught
+            self._handle_exception(e)
+            formatted_result = None
+        return formatted_result
+
+    def _show_result(self, result: Any):
         """Format and save output results.
 
         This function is called from the _run_user_code() function which is
         always run from the user code thread, within
         .run_and_show_expression_async().
         """
-        formatted_result = self._format_result_output(result)
-        self._save_result(formatted_result)
+        self._save_result(self._format_result_output(result))
+
+    def _get_output_printer(self) -> OutputPrinter:
+        return OutputPrinter(
+            output=PlainTextOutput(io.StringIO()),
+            input=IgnoredInput(),
+            style=self._current_style,
+            style_transformation=self.style_transformation,
+            title=self.title,
+        )
+
+    def _format_exception_output(self, e: BaseException) -> StyleAndTextTuples:
+        output_printer = self._get_output_printer()
+        formatted_result = output_printer._format_exception_output(  # pylint: disable=protected-access
+            e, highlight=False
+        )
+        return list(formatted_result)
 
     def _handle_exception(self, e: BaseException) -> None:
         """Format and save output results.
@@ -231,8 +264,33 @@ class PwPtPythonRepl(
         always run from the user code thread, within
         .run_and_show_expression_async().
         """
-        formatted_result = self._format_exception_output(e)
-        self._save_exception(formatted_result.__pt_formatted_text__())
+        self._save_exception(self._format_exception_output(e))
+
+    async def run_and_show_expression_async(self, text: str) -> Any:
+        """Run user code and handle the result.
+
+        This function is similar to ptpython version v3.0.23.
+        """
+        loop = asyncio.get_event_loop()
+
+        try:
+            result = await self.eval_async(text)
+        except KeyboardInterrupt:
+            raise
+        except SystemExit:
+            return
+        except BaseException as e:  # pylint: disable=broad-exception-caught
+            self._handle_exception(e)
+        else:
+            # Print.
+            if result is not None:
+                await loop.run_in_executor(
+                    None, lambda: self._show_result(result)
+                )
+
+            self.current_statement_index += 1
+            self.signatures = []
+            return result
 
     def user_code_complete_callback(self, input_text, future):
         """Callback to run after user repl code is finished."""
@@ -254,8 +312,7 @@ class PwPtPythonRepl(
 
             if result_object is not None:
                 # Use ptpython formatted results:
-                formatted_result = self._format_result_output(result_object)
-                result_text = remove_formatting(formatted_result)
+                result_text = self._format_result_output(result_object)
 
         # Job is finished, append the last result.
         self.repl_pane.append_result_to_executed_code(

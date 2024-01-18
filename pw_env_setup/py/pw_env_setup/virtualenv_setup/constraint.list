@@ -50,10 +50,10 @@ pathspec==0.11.1
 pexpect==4.8.0
 pickleshare==0.7.5
 platformdirs==3.0.0
-prompt-toolkit==3.0.39
+prompt-toolkit==3.0.43
 protobuf==4.24.4
 psutil==5.9.4
-ptpython==3.0.23
+ptpython==3.0.25
 ptyprocess==0.7.0
 pure-eval==0.2.2
 pyasn1==0.4.8

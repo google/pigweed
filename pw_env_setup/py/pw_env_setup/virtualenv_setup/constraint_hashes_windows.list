@@ -693,9 +693,9 @@ platformdirs==3.0.0 \
     #   -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
     #   black
     #   pylint
-prompt-toolkit==3.0.39 \
-    --hash=sha256:04505ade687dc26dc4284b1ad19a83be2f2afe83e7a828ace0c72f3a1df72aac \
-    --hash=sha256:9dffbe1d8acf91e3de75f3b544e4842382fc06c6babe903ac9acb74dc6e08d88
+prompt-toolkit==3.0.43 \
+    --hash=sha256:3527b7af26106cbc65a040bcc84839a3566ec1b051bb0bfe953631e704b0ff7d \
+    --hash=sha256:a11a29cb3bf0a28a387fe5122cdb649816a957cd9261dcedf8c9f1fef33eacf6
     # via
     #   -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
     #   ipython
@@ -735,9 +735,9 @@ psutil==5.9.4 \
     --hash=sha256:efeae04f9516907be44904cc7ce08defb6b665128992a56957abc9b61dca94b7 \
     --hash=sha256:fd8522436a6ada7b4aad6638662966de0d61d241cb821239b2ae7013d41a43d4
     # via -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
-ptpython==3.0.23 \
-    --hash=sha256:51069503684169b21e1980734a9ba2e104643b7e6a50d3ca0e5669ea70d9e21c \
-    --hash=sha256:9fc9bec2cc51bc4000c1224d8c56241ce8a406b3d49ec8dc266f78cd3cd04ba4
+ptpython==3.0.25 \
+    --hash=sha256:16654143dea960dcefb9d6e69af5f92f01c7a783dd28ff99e78bc7449fba805c \
+    --hash=sha256:887f0a91a576bc26585a0dcec41cd03f004ac7c46a2c88576c87fc51d6c06cd7
     # via -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
 pure-eval==0.2.2 \
     --hash=sha256:01eaab343580944bc56080ebe0a674b39ec44a945e6d09ba7db3cb8cec289350 \
