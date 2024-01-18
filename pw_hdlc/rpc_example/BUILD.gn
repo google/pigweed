@@ -31,7 +31,7 @@ if (dir_pw_third_party_nanopb == "") {
       "$dir_pw_rpc:server",
       "$dir_pw_rpc/nanopb:echo_service",
       "$dir_pw_rpc/system_server",
-      "..:pw_rpc",
+      "..:default_addresses",
       dir_pw_hdlc,
       dir_pw_log,
     ]

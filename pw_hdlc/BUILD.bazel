@@ -60,14 +60,14 @@ cc_library(
 
 cc_library(
     name = "pw_rpc",
-    srcs = ["rpc_packets.cc"],
     hdrs = ["public/pw_hdlc/rpc_packets.h"],
     includes = ["public"],
-    deps = [
-        ":pw_hdlc",
-        "//pw_rpc",
-        "//pw_sys_io",
-    ],
+)
+
+cc_library(
+    name = "default_addresses",
+    hdrs = ["public/pw_hdlc/default_addresses.h"],
+    includes = ["public"],
 )
 
 cc_library(
@@ -96,7 +96,8 @@ cc_library(
         "hdlc_sys_io_system_server.cc",
     ],
     deps = [
-        ":pw_rpc",
+        ":default_addresses",
+        ":pw_hdlc",
         ":rpc_channel_output",
         "//pw_log",
         "//pw_rpc/system_server:facade",

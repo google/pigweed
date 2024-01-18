@@ -94,17 +94,11 @@ pw_add_library(pw_hdlc.rpc_channel_output INTERFACE
     pw_span
 )
 
-pw_add_library(pw_hdlc.pw_rpc STATIC
+pw_add_library(pw_hdlc.default_addresses INTERFACE
   HEADERS
-    public/pw_hdlc/rpc_packets.h
+    public/pw_hdlc/default_addresses.h
   PUBLIC_INCLUDES
     public
-  PUBLIC_DEPS
-    pw_hdlc
-    pw_rpc.server
-    pw_sys_io
-  SOURCES
-    rpc_packets.cc
 )
 
 pw_add_library(pw_hdlc.packet_parser STATIC
@@ -124,7 +118,7 @@ pw_add_library(pw_hdlc.packet_parser STATIC
 
 pw_add_library(pw_hdlc.hdlc_sys_io_system_server STATIC
   PRIVATE_DEPS
-    pw_hdlc.pw_rpc
+    pw_hdlc.default_addresses
     pw_hdlc.rpc_channel_output
     pw_rpc.system_server.facade
     pw_stream.sys_io_stream

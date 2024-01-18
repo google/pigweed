@@ -329,7 +329,8 @@ pw_source_set("integration_testing") {
   sources = [ "integration_testing.cc" ]
   public_deps = [
     ":client",
-    "$dir_pw_hdlc:pw_rpc",
+    "$dir_pw_hdlc:decoder",
+    "$dir_pw_hdlc:default_addresses",
     "$dir_pw_hdlc:rpc_channel_output",
     "$dir_pw_stream:socket_stream",
     "$dir_pw_unit_test:logging",

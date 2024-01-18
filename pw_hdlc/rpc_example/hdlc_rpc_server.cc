@@ -16,8 +16,8 @@
 #include <string_view>
 
 #include "pw_assert/check.h"
+#include "pw_hdlc/default_addresses.h"
 #include "pw_hdlc/encoder.h"
-#include "pw_hdlc/rpc_packets.h"
 #include "pw_log/log.h"
 #include "pw_rpc/echo_service_nanopb.h"
 #include "pw_rpc/server.h"

@@ -96,15 +96,19 @@ pw_source_set("rpc_channel_output") {
   ]
 }
 
+pw_source_set("default_addresses") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_hdlc/default_addresses.h" ]
+}
+
+# Just an alias to :default_addresses. Remove after all users are migrated off.
 pw_source_set("pw_rpc") {
+  public_deps = [
+    ":default_addresses",
+    ":pw_hdlc",
+  ]
   public_configs = [ ":default_config" ]
   public = [ "public/pw_hdlc/rpc_packets.h" ]
-  sources = [ "rpc_packets.cc" ]
-  public_deps = [
-    ":pw_hdlc",
-    "$dir_pw_rpc:server",
-    dir_pw_sys_io,
-  ]
 }
 
 pw_source_set("packet_parser") {
@@ -129,7 +133,8 @@ pw_source_set("packet_parser") {
 # should not be used in any performance-sensitive application.
 pw_source_set("hdlc_sys_io_system_server") {
   deps = [
-    "$dir_pw_hdlc:pw_rpc",
+    "$dir_pw_hdlc:decoder",
+    "$dir_pw_hdlc:default_addresses",
     "$dir_pw_hdlc:rpc_channel_output",
     "$dir_pw_rpc/system_server:facade",
     "$dir_pw_stream:sys_io_stream",

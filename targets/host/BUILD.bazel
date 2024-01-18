@@ -20,7 +20,8 @@ cc_library(
     name = "system_rpc_server",
     srcs = ["system_rpc_server.cc"],
     deps = [
-        "//pw_hdlc:pw_rpc",
+        "//pw_hdlc",
+        "//pw_hdlc:default_addresses",
         "//pw_hdlc:rpc_channel_output",
         "//pw_rpc/system_server:facade",
         "//pw_stream:socket_stream",

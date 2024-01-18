@@ -266,7 +266,7 @@ pw_add_library(pw_rpc.integration_testing STATIC
   PUBLIC_DEPS
     pw_assert
     pw_function
-    pw_hdlc.pw_rpc
+    pw_hdlc.default_addresses
     pw_hdlc.rpc_channel_output
     pw_rpc.client
     pw_stream.socket_stream

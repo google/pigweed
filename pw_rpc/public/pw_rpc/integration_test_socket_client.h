@@ -18,9 +18,10 @@
 #include <optional>
 #include <thread>
 
+#include "pw_hdlc/decoder.h"
+#include "pw_hdlc/default_addresses.h"
 #include "pw_hdlc/encoded_size.h"
 #include "pw_hdlc/rpc_channel.h"
-#include "pw_hdlc/rpc_packets.h"
 #include "pw_rpc/integration_testing.h"
 #include "pw_span/span.h"
 #include "pw_status/try.h"

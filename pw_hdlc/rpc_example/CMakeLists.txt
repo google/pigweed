@@ -21,7 +21,7 @@ add_executable(pw_hdlc.rpc_example EXCLUDE_FROM_ALL
 target_link_libraries(pw_hdlc.rpc_example
   PRIVATE
     pw_hdlc
-    pw_hdlc.pw_rpc
+    pw_hdlc.default_addresses
     pw_log
     pw_rpc.nanopb.echo_service
     pw_rpc.server

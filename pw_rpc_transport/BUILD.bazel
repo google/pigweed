@@ -145,7 +145,7 @@ cc_library(
         ":rpc_transport",
         "//pw_bytes",
         "//pw_hdlc",
-        "//pw_hdlc:pw_rpc",
+        "//pw_hdlc:default_addresses",
         "//pw_result",
         "//pw_status",
         "//pw_stream",

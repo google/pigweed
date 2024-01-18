@@ -13,21 +13,5 @@
 // the License.
 #pragma once
 
-#include <cstdint>
-
 #include "pw_hdlc/decoder.h"
-#include "pw_rpc/channel.h"
-#include "pw_rpc/server.h"
-#include "pw_status/status.h"
-
-namespace pw::hdlc {
-
-inline constexpr uint8_t kDefaultRpcAddress = 'R';
-
-// Reads HDLC frames with sys_io::ReadByte, using decode_buffer to store frames.
-// HDLC frames sent to rpc_address are passed to the RPC server.
-Status ReadAndProcessPackets(rpc::Server& server,
-                             span<std::byte> decode_buffer,
-                             unsigned rpc_address = kDefaultRpcAddress);
-
-}  // namespace pw::hdlc
+#include "pw_hdlc/default_addresses.h"

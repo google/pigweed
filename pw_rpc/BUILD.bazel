@@ -256,7 +256,8 @@ cc_library(
     deps = [
         ":pw_rpc",
         "//pw_assert",
-        "//pw_hdlc:pw_rpc",
+        "//pw_hdlc",
+        "//pw_hdlc:default_addresses",
         "//pw_hdlc:rpc_channel_output",
         "//pw_log",
         "//pw_stream:socket_stream",

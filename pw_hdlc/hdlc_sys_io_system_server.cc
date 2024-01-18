@@ -14,9 +14,10 @@
 
 #include <cstddef>
 
+#include "pw_hdlc/decoder.h"
+#include "pw_hdlc/default_addresses.h"
 #include "pw_hdlc/encoded_size.h"
 #include "pw_hdlc/rpc_channel.h"
-#include "pw_hdlc/rpc_packets.h"
 #include "pw_log/log.h"
 #include "pw_rpc_system_server/rpc_server.h"
 #include "pw_stream/sys_io_stream.h"
@@ -46,7 +47,8 @@ void Init() {
   // Send log messages to HDLC address 1. This prevents logs from interfering
   // with pw_rpc communications.
   pw::log_basic::SetOutput([](std::string_view log) {
-    pw::hdlc::WriteUIFrame(1, as_bytes(span<const char>(log)), writer);
+    pw::hdlc::WriteUIFrame(
+        pw::hdlc::kDefaultLogAddress, as_bytes(span<const char>(log)), writer);
   });
 }
 

@@ -17,8 +17,8 @@
 
 #include "pw_bytes/span.h"
 #include "pw_hdlc/decoder.h"
+#include "pw_hdlc/default_addresses.h"
 #include "pw_hdlc/encoder.h"
-#include "pw_hdlc/rpc_packets.h"
 #include "pw_result/result.h"
 #include "pw_rpc_transport/rpc_transport.h"
 #include "pw_status/status.h"

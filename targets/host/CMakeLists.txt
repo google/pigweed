@@ -19,7 +19,7 @@ pw_add_library(targets.host.system_rpc_server STATIC
     system_rpc_server.cc
   PRIVATE_DEPS
     pw_assert.check
-    pw_hdlc.pw_rpc
+    pw_hdlc.default_addresses
     pw_hdlc.rpc_channel_output
     pw_log
     pw_rpc.system_server.facade
