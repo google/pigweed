@@ -39,9 +39,8 @@
 #include "pw_tokenizer/tokenize.h"
 #include "pw_varint/varint.h"
 
-#if __STDC_VERSION__ != 199901L
-#error "This test should be compiled with -std=c99."
-#endif  // __STDC_VERSION__ != 199901L
+static_assert(__STDC_VERSION__ == 199901L,
+              "This test should be compiled with -std=c99.");
 
 PW_VARIABLE_LENGTH_ENTRY_QUEUE_DECLARE(buffer, 256);
 

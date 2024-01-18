@@ -22,11 +22,7 @@
 #define static_assert(expression, ...) \
   _Static_assert(expression, "(" #expression ") " __VA_ARGS__)
 
-// _Static_assert is not available prior to C11, so provide a definition that
-// evaluates to an illegal statement.
-#if __STDC_VERSION__ < 201112L && !defined(_Static_assert)
-#define _Static_assert(expression, unused_message) \
-  extern int _pw_static_assert_failed[(expression) ? 1 : -1]
-#endif  // __STDC_VERSION__ < 201112L
+// _Static_assert was not added until C11, but modern compilers support it for
+// all C standards. GCC has supported it since 4.6, for example.
 
 #endif  // !defined(__cplusplus) && __STDC_VERSION__ < 202311L
