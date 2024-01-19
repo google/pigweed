@@ -434,6 +434,9 @@ def pw_cc_toolchain(**kwargs):
     cc_toolchain_config_args["name"] = config_name
     cc_toolchain_args["toolchain_config"] = ":{}".format(config_name)
 
+    # TODO: b/321268080 - Remove after transition of this option is complete.
+    cc_toolchain_args["exec_transition_for_inputs"] = False
+
     # Copy over arguments that should be shared by both rules.
     for arg_name in PW_CC_TOOLCHAIN_SHARED_ATTRS:
         if arg_name in cc_toolchain_config_args:
