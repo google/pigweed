@@ -53,7 +53,8 @@ If you want to contribute to this extension, here's how you can get started:
 - Ensure that you have `npm` installed globally; this doesn't use the
   distribution provided by Pigweed yet.
 
-- Open the `pigweed/pw_ide/vscode` directory directly in Visual Studio Code.
+- Open the `pigweed/pw_ide/ts/pigweed-vscode` directory directly in Visual
+  Studio Code.
 
 - Run `npm install` to add all dependencies.
 
@@ -70,4 +71,4 @@ If you want to contribute to this extension, here's how you can get started:
 
 - Install the build tool: `npm install -g @vscode/vsce`
 
-- Build the VSIX: `vsce package`
+- Run `pw ide vscode --build-extension`
