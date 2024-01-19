@@ -28,6 +28,11 @@ Usually, `Pigweed: Sync IDE` will automatically configure Visual Studio Code to
 use the correct Pigweed Python virtual environment. But if you need to change
 this manually, you can do so with `Pigweed: Set Python Virtual Environment`.
 
+### Launch Pigweed activated terminals
+
+Run `Pigweed: Launch Activated Terminal`, or
+`Pigweed: Bootstrap Activated Terminal` if you need to bootstrap first.
+
 ### Other tasks
 
 - `Pigweed: Format` == `pw format --fix`

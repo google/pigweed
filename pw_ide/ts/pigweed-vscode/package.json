@@ -34,6 +34,14 @@
       {
         "command": "pigweed.check-extensions",
         "title": "Pigweed: Check Extensions"
+      },
+      {
+        "command": "pigweed.launch-terminal",
+        "title": "Pigweed: Launch Activated Terminal"
+      },
+      {
+        "command": "pigweed.bootstrap-terminal",
+        "title": "Pigweed: Bootstrap Activated Terminal"
       }
     ],
     "configuration": {
@@ -43,6 +51,15 @@
           "type": "boolean",
           "default": "false",
           "description": "Require installing and disabling extensions recommended in extensions.json"
+        },
+        "pigweed.terminalShell": {
+          "type": "string",
+          "default": "bash",
+          "enum": [
+            "bash",
+            "zsh"
+          ],
+          "description": "The shell to use for the Pigweed activated terminal"
         }
       }
     }
