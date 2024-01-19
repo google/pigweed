@@ -310,6 +310,7 @@ API reference
 
 .. doxygenclass:: pw::digital_io::DigitalIoOptional
    :members:
+   :private-members:
 
 ------------
 Dependencies

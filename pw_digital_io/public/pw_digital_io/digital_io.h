@@ -266,13 +266,93 @@ class DigitalIoOptional {
   // Private constructor so that only friends can extend us.
   constexpr DigitalIoOptional(internal::Provides config) : config_(config) {}
 
-  // Implemented by derived classes to provide different functionality.
-  // See the documentation of the public functions for requirements.
+  /// Enables the line to initialize it into the default state as determined by
+  /// the backend or disables the line to power down any pull-up/down resistors
+  /// and disconnect from any voltage sources.
+  ///
+  /// This may enable pull-up/down resistors, drive the line high/low, etc.
+  /// The line must be enabled before getting/setting the state or enabling
+  /// interrupts. Callers are responsible for waiting for the voltage level to
+  /// settle after this call returns.
+  ///
+  /// Calling DoEnable(true) on an already-enabled line should be a no-op, it
+  /// shouldn't reset the line back to the "default state".
+  ///
+  /// Calling DoEnable(false) should force the line into the disabled state,
+  /// If the line was not initialized at object construction time.
+  ///
+  /// @pre This method cannot be used in interrupt contexts.
+  /// @pre When disabling, the interrupt handler must already be disabled.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - The line is enabled and ready for use.
+  /// * Other status codes as defined by the backend.
   virtual Status DoEnable(bool enable) = 0;
+
+  /// Gets the state of the line.
+  ///
+  /// @pre This method cannot be used in interrupt contexts.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - An active or inactive state.
+  /// * @pw_status{FAILED_PRECONDITION} - The line has not been enabled.
+  /// * Other status codes as defined by the backend.
   virtual Result<State> DoGetState() = 0;
+
+  /// Sets the state of the line.
+  ///
+  /// Callers are responsible to wait for the voltage level to settle after this
+  /// call returns.
+  ///
+  /// @pre This method cannot be used in interrupt contexts.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - The state has been set.
+  /// * @pw_status{FAILED_PRECONDITION} - The line has not been enabled.
+  /// * Other status codes as defined by the backend.
   virtual Status DoSetState(State level) = 0;
+
+  /// Sets or clears an interrupt handler to execute when an interrupt is
+  /// triggered, and configures the condition for triggering the interrupt.
+  ///
+  /// The handler is executed in a backend-specific context—this may be a
+  /// system interrupt handler or a shared notification thread.
+  ///
+  /// The implementation is expected to provide the handler the last known state
+  /// of the input. The intention is to either sample the current state and
+  /// provide that or if not possible provide the state which triggerred the
+  /// interrupt (e.g. active for activating edge, and inactive for deactivating
+  /// edge).
+  ///
+  /// The handler is cleared by passing an empty handler, this can be checked by
+  /// comparing the handler to a nullptr. The implementation must guarantee that
+  /// the handler is not currently executing and (and will never execute again)
+  /// after returning from DoSetInterruptHandler(_, nullptr).
+  ///
+  /// @pre This method cannot be used in interrupt contexts.
+  /// @pre If setting a handler, no handler is permitted to be currently set.
+  /// @pre When cleaing a handler, the interrupt handler must be disabled.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - The interrupt handler was configured.
+  /// * Other status codes as defined by the backend.
   virtual Status DoSetInterruptHandler(InterruptTrigger trigger,
                                        InterruptHandler&& handler) = 0;
+
+  /// Enables or disables interrupts which will trigger the interrupt handler.
+  ///
+  /// @warning This interrupt handler disabling must be both thread-safe and,
+  ///          interrupt-safe, however enabling is not interrupt-safe and not
+  ///          thread-safe.
+  ///
+  /// @pre When enabling, a handler must have been set using
+  ///      `DoSetInterruptHandler()`.
+  /// @pre Interrupt handler enabling cannot be used in interrupt contexts.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - The interrupt handler was configured.
+  /// * @pw_status{FAILED_PRECONDITION} - The line has not been enabled.
+  /// * Other status codes as defined by the backend.
   virtual Status DoEnableInterruptHandler(bool enable) = 0;
 
   // The configuration of this line.
