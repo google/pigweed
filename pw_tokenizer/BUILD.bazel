@@ -285,7 +285,12 @@ pw_cc_test(
 cc_library(
     name = "tokenize_c99_test_c",
     srcs = ["tokenize_c99_test.c"],
-    copts = ["-std=c99"],
+    copts = [
+        "-std=c99",
+        # pw_tokenizer uses static_assert, so this test uses a static_assert to
+        # verify that it works. Silence warnings about preadopting C11 features.
+        "-Wno-c11-extensions",
+    ],
     visibility = ["//visibility:private"],
     deps = [
         ":pw_tokenizer",

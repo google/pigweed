@@ -269,7 +269,13 @@ pw_test("tokenize_test") {
 }
 
 pw_test("tokenize_c99_test") {
-  cflags_c = [ "-std=c99" ]
+  cflags_c = [
+    "-std=c99",
+
+    # pw_tokenizer uses static_assert, so this test uses a static_assert to
+    # verify that it works. Silence warnings about preadopting C11 features.
+    "-Wno-c11-extensions",
+  ]
   sources = [
     "tokenize_c99_test.c",
     "tokenize_c99_test_entry_point.cc",
