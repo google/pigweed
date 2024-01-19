@@ -213,27 +213,6 @@ bits LEPeriodicAdvertisingSyncCTEType:
     -- Do not sync to packets without a Constant Tone Extension
 
 
-enum LEOwnAddressType:
-  -- Possible values that can be used for the |own_address_type| parameter in various LE packets.
-
-  [maximum_bits: 8]
-
-  PUBLIC                    = 0x00
-    -- Public Device Address
-
-  RANDOM                    = 0x01
-    -- Random Device Address
-
-  PRIVATE_DEFAULT_TO_PUBLIC = 0x02
-    -- Controller generates the Resolvable Private Address based on the local IRK from the resolving
-    -- list. If the resolving list contains no matching entry, then use the public address.
-
-  PRIVATE_DEFAULT_TO_RANDOM = 0x03
-    -- Controller generates the Resolvable Private Address based on the local IRK from the resolving
-    -- list. If the resolving list contains no matching entry, then use the random address from
-    -- LE_Set_Random_Address.
-
-
 enum LEScanType:
   -- Possible values that can be used for the |scan_type| parameter in various LE HCI commands.
   [maximum_bits: 8]
@@ -335,50 +314,6 @@ bits LEEventMask:
   $next [+1]  Flag  le_transmit_power_reporting_event
   $next [+1]  Flag  le_biginfo_advertising_report_event
   $next [+1]  Flag  le_subrate_change_event
-
-
-enum LEAdvertisingType:
-  [maximum_bits: 8]
-  CONNECTABLE_AND_SCANNABLE_UNDIRECTED = 0x00
-    -- ADV_IND
-
-  CONNECTABLE_HIGH_DUTY_CYCLE_DIRECTED = 0x01
-    -- ADV_DIRECT_IND
-
-  SCANNABLE_UNDIRECTED                 = 0x02
-    -- ADV_SCAN_IND
-
-  NOT_CONNECTABLE_UNDIRECTED           = 0x03
-    -- ADV_NONCONN_IND
-
-  CONNECTABLE_LOW_DUTY_CYCLE_DIRECTED  = 0x04
-    -- ADV_DIRECT_IND
-
-
-bits LEAdvertisingChannels:
-  0     [+1]  Flag  channel_37
-  $next [+1]  Flag  channel_38
-  $next [+1]  Flag  channel_39
-
-
-enum LEAdvertisingFilterPolicy:
-  [maximum_bits: 8]
-
-  ALLOW_ALL                                                  = 0x00
-    -- Process scan and connection requests from all devices (i.e., the Filter
-    -- Accept List is not in use) (default).
-
-  ALLOW_ALL_CONNECTIONS_AND_USE_FILTER_ACCEPT_LIST_FOR_SCANS = 0x01
-    -- Process connection requests from all devices and scan requests only from
-    -- devices that are in the Filter Accept List.
-
-  ALLOW_ALL_SCANS_AND_USE_FILTER_ACCEPT_LIST_FOR_CONNECTIONS = 0x02
-    -- Process scan requests from all devices and connection requests only from
-    -- devices that are in the Filter Accept List.
-
-  ALLOW_FILTER_ACCEPT_LIST_ONLY                              = 0x03
-    -- Process scan and connection requests only from devices in the Filter
-    -- Accept List.
 
 
 enum ScanRequestNotifications:
@@ -1841,41 +1776,41 @@ struct LESetAdvertisingParametersCommand:
 
   let hdr_size = hci.CommandHeader.$size_in_bytes
 
-  0     [+hdr_size]                   hci.CommandHeader          header
+  0     [+hdr_size]                   hci.CommandHeader              header
 
-  $next [+2]                          UInt                       advertising_interval_min
+  $next [+2]                          UInt                           advertising_interval_min
     -- Default: 0x0800 (1.28 s)
     -- Time: N * 0.625 ms
     -- Time Range: 20 ms to 10.24 s
     [requires: 0x0020 <= this <= 0x4000]
 
-  $next [+2]                          UInt                       advertising_interval_max
+  $next [+2]                          UInt                           advertising_interval_max
     -- Default: 0x0800 (1.28 s)
     -- Time: N * 0.625 ms
     -- Time Range: 20 ms to 10.24 s
     [requires: 0x0020 <= this <= 0x4000]
 
-  $next [+1]                          LEAdvertisingType          adv_type
+  $next [+1]                          hci.LEAdvertisingType          adv_type
     -- Used to determine the packet type that is used for advertising when
     -- advertising is enabled.
 
-  $next [+1]                          LEOwnAddressType           own_address_type
+  $next [+1]                          hci.LEOwnAddressType           own_address_type
 
-  $next [+1]                          hci.LEPeerAddressType      peer_address_type
+  $next [+1]                          hci.LEPeerAddressType          peer_address_type
     -- ANONYMOUS address type not allowed.
 
-  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                 peer_address
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                     peer_address
     -- Public Device Address, Random Device Address, Public Identity Address, or
     -- Random (static) Identity Address of the device to be connected.
 
   $next [+1]  bits:
 
-    0     [+3]                        LEAdvertisingChannels      advertising_channel_map
+    0     [+3]                        hci.LEAdvertisingChannels      advertising_channel_map
       -- Indicates the advertising channels that shall be used when transmitting
       -- advertising packets. At least 1 channel must be enabled.
       -- Default: all channels enabled
 
-  $next [+1]                          LEAdvertisingFilterPolicy  advertising_filter_policy
+  $next [+1]                          hci.LEAdvertisingFilterPolicy  advertising_filter_policy
     -- This parameter shall be ignored when directed advertising is enabled.
 
 
@@ -1932,27 +1867,27 @@ struct LESetScanParametersCommand:
 
   let hdr_size = hci.CommandHeader.$size_in_bytes
 
-  0     [+hdr_size]  hci.CommandHeader   header
+  0     [+hdr_size]  hci.CommandHeader     header
 
-  $next [+1]         LEScanType          le_scan_type
+  $next [+1]         LEScanType            le_scan_type
     -- Controls the type of scan to perform.
 
-  $next [+2]         UInt                le_scan_interval
+  $next [+2]         UInt                  le_scan_interval
     -- Default: 0x0010 (10ms)
     -- Time: N * 0.625 ms
     -- Time Range: 2.5 ms to 10.24 s
     [requires: 0x0004 <= this <= 0x4000]
 
-  $next [+2]         UInt                le_scan_window
+  $next [+2]         UInt                  le_scan_window
     -- Default: 0x0010 (10ms)
     -- Time: N * 0.625 ms
     -- Time Range: 2.5ms to 10.24 s
     [requires: 0x0004 <= this <= 0x4000]
 
-  $next [+1]         LEOwnAddressType    own_address_type
+  $next [+1]         hci.LEOwnAddressType  own_address_type
     -- The type of address being used in the scan request packets.
 
-  $next [+1]         LEScanFilterPolicy  scanning_filter_policy
+  $next [+1]         LEScanFilterPolicy    scanning_filter_policy
 
 
 struct LESetScanEnableCommand:
@@ -1998,7 +1933,7 @@ struct LECreateConnectionCommand:
 
   $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr              peer_address
 
-  $next [+1]                          LEOwnAddressType        own_address_type
+  $next [+1]                          hci.LEOwnAddressType    own_address_type
 
   $next [+2]                          UInt                    connection_interval_min
     -- Time: N * 1.25 ms
@@ -2331,9 +2266,9 @@ struct LESetExtendedAdvertisingParametersV1Command:
 
   $next [+1]  bits:
 
-    0     [+3]                        LEAdvertisingChannels          primary_advertising_channel_map
+    0     [+3]                        hci.LEAdvertisingChannels      primary_advertising_channel_map
 
-  $next [+1]                          LEOwnAddressType               own_address_type
+  $next [+1]                          hci.LEOwnAddressType           own_address_type
 
   $next [+1]                          hci.LEPeerAddressTypeNoAnon    peer_address_type
 
@@ -2341,7 +2276,7 @@ struct LESetExtendedAdvertisingParametersV1Command:
     -- Public Device Address, Random Device Address, Public Identity Address, or Random (static)
     -- Identity Address of the device to be connected.
 
-  $next [+1]                          LEAdvertisingFilterPolicy      advertising_filter_policy
+  $next [+1]                          hci.LEAdvertisingFilterPolicy  advertising_filter_policy
 
   $next [+1]                          Int                            advertising_tx_power
     -- Range: -127 <= N <= +126
@@ -2505,7 +2440,7 @@ struct LESetExtendedScanParametersCommand:
   -- num_entries corresponds to the number of bits set in the |scanning_phys| field
   let hdr_size = hci.CommandHeader.$size_in_bytes
   0     [+hdr_size]                       hci.CommandHeader                             header
-  $next [+1]                              LEOwnAddressType                              own_address_type
+  $next [+1]                              hci.LEOwnAddressType                          own_address_type
   $next [+1]                              LEScanFilterPolicy                            scanning_filter_policy
   $next [+1]  bits:
     0     [+LEScanPHYBits.$size_in_bits]  LEScanPHYBits                                 scanning_phys
@@ -2594,7 +2529,7 @@ struct LEExtendedCreateConnectionCommandV1:
   let hdr_size = hci.CommandHeader.$size_in_bytes
   0     [+hdr_size]                             hci.CommandHeader                            header
   $next [+1]                                    hci.GenericEnableParam                       initiator_filter_policy
-  $next [+1]                                    LEOwnAddressType                             own_address_type
+  $next [+1]                                    hci.LEOwnAddressType                         own_address_type
   $next [+1]                                    hci.LEPeerAddressType                        peer_address_type
   $next [+hci.BdAddr.$size_in_bytes]            hci.BdAddr                                   peer_address
   $next [+1]  bits:
