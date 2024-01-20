@@ -14,9 +14,11 @@
 
 load(
     "@pw_toolchain//cc_toolchain:defs.bzl",
+    "ALL_ASM_ACTIONS",
     "ALL_CPP_COMPILER_ACTIONS",
     "ALL_C_COMPILER_ACTIONS",
     "ALL_LINK_ACTIONS",
+    "pw_cc_feature",
     "pw_cc_flag_set",
     "pw_cc_toolchain",
 )
@@ -71,6 +73,24 @@ pw_cc_flag_set(
         "-Wthread-safety",
         "-D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS=1",
     ],
+)
+
+pw_cc_flag_set(
+    name = "verbose_compiler_flags",
+    actions = ALL_ASM_ACTIONS + ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS + ALL_LINK_ACTIONS,
+    flags = ["-v"],
+)
+
+# A feature that can be easily toggled to include extra compiler output to help
+# debug things like include search path ordering and showing all the flags
+# passed to the compiler.
+#
+# Add `--features=verbose_compiler_output` to your Bazel invocation to enable.
+pw_cc_feature(
+    name = "verbose_compiler_output",
+    enabled = False,
+    feature_name = "verbose_compiler_output",
+    flag_sets = [":verbose_compiler_flags"],
 )
 
 pw_cc_flag_set(
@@ -158,6 +178,10 @@ pw_cc_toolchain(
         "@platforms//os:macos": "macosx",
         "//conditions:default": None,
     }),
+    target_system_name = "unknown",
+    toolchain_features = [
+        ":verbose_compiler_output",
+    ],
     toolchain_identifier = "host-toolchain",
 )
 

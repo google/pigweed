@@ -581,3 +581,188 @@ API reference
          will silently be disabled. This behavior is native to Bazel itself, and
          there's no way to detect this and emit an error instead. For this
          reason, be very cautious when listing implied features!
+
+.. py:class:: pw_cc_feature
+
+   Defines the implemented behavior of a C/C++ toolchain feature.
+
+
+   This rule is effectively a wrapper for the ``feature`` constructor in
+   `@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl <https://github.com/bazelbuild/rules_cc/blob/main/cc/cc_toolchain_config_lib.bzl>`_.
+
+   A feature is basically a dynamic flag set. There are a variety of
+   dependencies and compatibility requirements that must be satisfied for the
+   listed flag sets to be applied.
+
+   A feature may be enabled or disabled through the following mechanisms:\
+
+   * Via command-line flags, or a
+     `.bazelrc file <https://bazel.build/run/bazelrc>`_\.
+   * Through inter-feature relationships (enabling one feature may implicitly
+     enable another).
+   * Individual rules may elect to manually enable or disable features through
+     the
+     `builtin features attribute <https://bazel.build/reference/be/common-definitions#common.features>`_\.
+
+   Because of the dynamic nature of toolchain features, it's generally best to
+   avoid enumerating features as part of your toolchain with the following
+   exceptions:
+
+   * You want the flags to be controllable via Bazel's CLI. For example, adding
+     ``-v`` to a compiler invocation is often too verbose to be useful for most
+     workflows, but can be instrumental when debugging obscure errors. By
+     expressing compiler verbosity as a feature, users may opt-in when
+     necessary.
+   * You need to carry forward Starlark toolchain behaviors. If you're migrating
+     a complex Starlark-based toolchain definition to these rules, many of the
+     workflows and flags were likely based on features. This rule exists to
+     support those existing structures.
+
+   For more details about how Bazel handles features, see the official Bazel
+   documentation at
+   https://bazel.build/docs/cc-toolchain-config-reference#features.
+
+   Note: ``env_sets`` are not yet supported.
+
+   Examples:
+
+   .. code-block:: py
+
+      # A feature that can be easily toggled to include extra compiler output to
+      # help debug things like include search path ordering and showing all the
+      # flags passed to the compiler.
+      #
+      # Add `--features=verbose_compiler_output` to your Bazel invocation to
+      # enable.
+      pw_cc_feature(
+          name = "verbose_compiler_output",
+          enabled = False,
+          feature_name = "verbose_compiler_output",
+          flag_sets = [":verbose_compiler_flags"],
+      )
+
+      # This feature signals a capability, and doesn't have associated flags.
+      #
+      # For a list of well-known features, see:
+      #    https://bazel.build/docs/cc-toolchain-config-reference#wellknown-features
+      pw_cc_feature(
+          name = "link_object_files",
+          enabled = True,
+          feature_name = "supports_start_end_lib",
+      )
+
+   .. py:attribute:: feature_name
+      :type: str
+
+      The name of the feature that this rule implements.
+
+      Feature names are used to express feature dependencies and compatibility.
+      Because features are tracked by string names rather than labels, there's
+      great flexibility in swapping out feature implementations or overriding
+      the built-in legacy features that Bazel silently binds to every
+      toolchain.
+
+      :py:attr:`pw_cc_feature.feature_name` is used rather than ``name`` to
+      distinguish between the rule name, and the intended final feature name.
+      This allows similar rules to exist in the same package, even if slight
+      differences are required.
+
+      Example:
+
+      .. code-block:: py
+
+         pw_cc_feature(
+             name = "sysroot_macos",
+             feature_name = "sysroot",
+             ...
+         )
+
+         pw_cc_feature(
+             name = "sysroot_linux",
+             feature_name = "sysroot",
+             ...
+         )
+
+      While two features with the same :py:attr:`pw_cc_feature.feature_name` may
+      not be bound to the same toolchain, they can happily live alongside each
+      other in the same BUILD file.
+
+   .. py:attribute:: enabled
+      :type: bool
+
+      Whether or not this feature is enabled by default.
+
+   .. py:attribute:: flag_sets
+      :type: List[label]
+
+      Flag sets that, when expanded, implement this feature.
+
+   .. py:attribute:: requires
+      :type: List[label]
+
+      A list of feature sets that define toolchain compatibility.
+
+      If **at least one** of the listed :py:class:`pw_cc_feature_set`\s are
+      satisfied (all features exist in the toolchain AND are currently enabled),
+      this feature is deemed compatible and may be enabled.
+
+      .. admonition:: Note
+
+         Even if :py:attr:`pw_cc_feature.requires` is satisfied, a feature is
+         not enabled unless another mechanism (e.g. command-line flags,
+         :py:attr:`pw_cc_feature.implies`, or :py:attr:`pw_cc_feature.enabled`\)
+         signals that the feature should actually be enabled.
+
+   .. py:attribute:: implies
+      :type: List[str]
+
+      Names of features enabled along with this feature.
+
+      .. admonition:: Note
+         :class: warning
+
+         If any of the named features cannot be enabled, this feature is
+         silently disabled.
+
+   .. py:attribute:: provides
+      :type: List[str]
+
+      A list of additional feature names this feature fulfills.
+
+      .. admonition:: Note
+
+         This feature cannot be enabled if another feature also provides the
+         listed feature names.
+
+
+.. py:class:: pw_cc_feature_set
+
+   Defines a set of required features.
+
+   This rule is effectively a wrapper for the ``feature_set`` constructor in
+   `@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl <https://github.com/bazelbuild/rules_cc/blob/main/cc/cc_toolchain_config_lib.bzl>`_.
+
+   This rule is used to express a group of features that may satisfy a
+   :py:attr:`pw_cc_feature.requires` list. If **all** of the specified features
+   in a :py:class:`pw_cc_feature_set` are enabled, the :py:class:`pw_cc_feature`
+   that lists the feature set *can* also be enabled. Note that **this does cause
+   the feature to be enabled**; it only means it is possible for the feature to
+   be enabled.
+
+   Example:
+
+   .. code-block:: py
+
+      pw_cc_feature_set(
+          name = "thin_lto_requirements",
+          feature_names = [
+              "thin_lto",
+              "opt",
+          ],
+      )
+
+   .. py:attribute:: feature_names
+      :type: List[str]
+
+      Features that must be enabled for this feature set to be deemed compatible
+      with the current toolchain configuration.

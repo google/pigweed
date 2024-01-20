@@ -17,6 +17,7 @@ load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 load(
     "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
     "ActionConfigInfo",
+    "FeatureInfo",
     "FlagSetInfo",
     "action_config",
     "feature",
@@ -53,6 +54,7 @@ PW_CC_TOOLCHAIN_DEPRECATED_TOOL_ATTRS = {
 PW_CC_TOOLCHAIN_CONFIG_ATTRS = {
     "action_configs": "List of `pw_cc_action_config` labels that bind tools to the appropriate actions",
     "action_config_flag_sets": "List of `pw_cc_flag_set`s to apply to their respective action configs",
+    "toolchain_features": "List of `pw_cc_feature`s that this toolchain supports",
 
     # Attributes originally part of create_cc_toolchain_config_info.
     "toolchain_identifier": "See documentation for cc_common.create_cc_toolchain_config_info()",
@@ -73,7 +75,7 @@ PW_CC_TOOLCHAIN_SHARED_ATTRS = ["toolchain_identifier"]
 PW_CC_TOOLCHAIN_BLOCKED_ATTRS = {
     "toolchain_config": "pw_cc_toolchain includes a generated toolchain config",
     "artifact_name_patterns": "pw_cc_toolchain does not yet support artifact name patterns",
-    "features": "pw_cc_toolchain does not yet support features",
+    "features": "Use toolchain_features to add pw_cc_toolchain_feature deps to the toolchain",
     "tool_paths": "pw_cc_toolchain does not support tool_paths, use \"action_configs\" to set toolchain tools",
     "make_variables": "pw_cc_toolchain does not yet support make variables",
 }
@@ -239,9 +241,7 @@ def _pw_cc_toolchain_config_impl(ctx):
     all_actions = _collect_action_configs(ctx, flag_sets_by_action)
     builtin_include_dirs = ctx.attr.cxx_builtin_include_directories if ctx.attr.cxx_builtin_include_directories else []
     sysroot_dir = ctx.attr.builtin_sysroot if ctx.attr.builtin_sysroot else None
-
-    # TODO: b/309533028 - Support features.
-    features = []
+    features = [dep[FeatureInfo] for dep in ctx.attr.toolchain_features]
 
     # TODO: b/297413805 - This could be externalized.
     features.append(_archiver_flags_feature(ctx.attr.target_libc == "macosx"))
@@ -269,6 +269,7 @@ pw_cc_toolchain_config = rule(
         # Attributes new to this rule.
         "action_configs": attr.label_list(),
         "action_config_flag_sets": attr.label_list(providers = [FlagSetInfo]),
+        "toolchain_features": attr.label_list(providers = [FeatureInfo]),
 
         # Attributes from create_cc_toolchain_config_info.
         "toolchain_identifier": attr.string(),
