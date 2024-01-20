@@ -14,6 +14,8 @@
 
 #include "pw_bytes/suffix.h"
 
+#include "pw_compilation_testing/negative_compilation.h"
+#include "pw_polyfill/standard.h"
 #include "pw_unit_test/framework.h"
 
 namespace {
@@ -24,5 +26,18 @@ TEST(Suffix, ReturnsByte) {
   std::byte x = 5_b;
   EXPECT_EQ(x, std::byte(5));
 }
+
+#if PW_NC_TEST(Suffix_ErrorsAtCompileTimeOnTooLargeOfValueInCpp20AndAbove)
+PW_NC_EXPECT("ByteLiteralIsTooLarge");
+#if PW_CXX_STANDARD_IS_SUPPORTED(20)
+TEST(Suffix, ErrorsAtCompileTimeOnTooLargeOfValueInCpp20AndAbove) {
+  [[maybe_unused]] std::byte x = 256_b;
+}
+#else   // PW_CXX_STANDARD_IS_SUPPORTED(20)
+// Unconditionally issue the expected error prior to C++20.
+// TODO: b/321088147 - remove this whole NC_TEST with `#if` when supported.
+static_assert(false, "ByteLiteralIsTooLarge");
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(20)
+#endif  // PW_NC_TEST
 
 }  // namespace

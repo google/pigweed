@@ -15,7 +15,31 @@
 
 #include <cstddef>
 
+#include "pw_polyfill/language_feature_macros.h"
+
 namespace pw {
+namespace internal {
+
+// This function is not intended for use by end-users.
+//
+// This function does nothing, but attempting to call it in a constexpr
+// context will result in a compilation error.
+//
+// If it appears in an error like the following:
+//
+// ```
+// error: call to consteval function 'pw::operator""_b' is not a constant
+// expression
+// ...
+// note: non-constexpr function 'ByteLiteralIsTooLarge' cannot be used in a
+// constant expression
+// ```
+//
+// Then a byte-literal with a value exceeding 255 has been written.
+// For example, ``255_b`` is okay, but ``256_b`` will result in an error.
+inline void ByteLiteralIsTooLarge() {}
+
+}  // namespace internal
 
 /// Returns a ``std::byte`` when used as a ``_b`` suffix.
 ///
@@ -26,7 +50,10 @@ namespace pw {
 /// This should not be used in header files, as it requires a ``using``
 /// declaration that will be publicly exported at whatever level it is
 /// used.
-constexpr std::byte operator"" _b(unsigned long long value) {
+PW_CONSTEVAL std::byte operator"" _b(unsigned long long value) {
+  if (value > 255) {
+    internal::ByteLiteralIsTooLarge();
+  }
   return std::byte(value);
 }
 

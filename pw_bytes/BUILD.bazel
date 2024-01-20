@@ -103,6 +103,7 @@ pw_cc_test(
     srcs = ["suffix_test.cc"],
     deps = [
         ":pw_bytes",
+        "//pw_compilation_testing:negative_compilation_testing",
     ],
 )
 

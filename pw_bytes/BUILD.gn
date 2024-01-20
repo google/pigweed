@@ -95,6 +95,7 @@ pw_test("endian_test") {
 pw_test("suffix_test") {
   deps = [ ":pw_bytes" ]
   sources = [ "suffix_test.cc" ]
+  negative_compilation_tests = true
 }
 
 pw_test("units_test") {

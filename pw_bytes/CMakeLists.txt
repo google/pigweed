@@ -99,6 +99,7 @@ pw_add_test(pw_bytes.suffix_test
   SOURCES
     suffix_test.cc
   PRIVATE_DEPS
+    pw_compilation_testing._pigweed_only_negative_compilation
     pw_bytes
   GROUPS
     modules
