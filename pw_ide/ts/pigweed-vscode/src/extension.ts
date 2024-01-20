@@ -93,7 +93,8 @@ async function installRecommendedExtensions(recs: string[]): Promise<void> {
 
   vscode.window.showInformationMessage(
     `This Pigweed project needs you to install ${totalNumUnavailableRecs} ` +
-      'required extensions. Install the extensions shown the extensions tab.',
+      'required extensions. ' +
+      'Install the extensions shown in the extensions tab.',
     { modal: true },
     'Ok',
   );
