@@ -12,7 +12,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "version:2@7.0.0.6"
+        "version:2@7.0.1.6"
       ],
       "version_file": ".versions/bazel.version"
     },
