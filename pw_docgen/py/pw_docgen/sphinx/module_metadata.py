@@ -11,9 +11,19 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Sphinx directives for Pigweed module metadata"""
+"""Generates content related to Pigweed module metadata on pigweed.dev.
+
+This file implements the following pigweed.dev features:
+
+* The `.. pigweed-module::` and `.. pigweed-module-subpage::` directives.
+* The auto-generated "Source code" and "Issues" URLs that appear in the site
+  nav for each module.
+
+Everything is implemented through the Sphinx Extension API.
+"""
 
 from dataclasses import dataclass
+import sys
 from typing import cast, Dict, List, Optional, TypeVar, Union
 
 # We use BeautifulSoup for certain docs rendering features. It may not be
@@ -31,13 +41,15 @@ except ModuleNotFoundError:
 
 import docutils
 from docutils import nodes
+from docutils.nodes import Element
 import docutils.statemachine
 
 # pylint: disable=consider-using-from-import
 import docutils.parsers.rst.directives as directives  # type: ignore
 
 # pylint: enable=consider-using-from-import
-from sphinx.application import Sphinx as SphinxApplication
+from sphinx.addnodes import document as Document
+from sphinx.application import Sphinx
 from sphinx.environment import BuildEnvironment
 from sphinx.util.docutils import SphinxDirective
 
@@ -98,6 +110,11 @@ def status_badge(module_status: str) -> str:
 def cs_url(module_name: str) -> str:
     """Return the codesearch URL for the given module."""
     return f'https://cs.opensource.google/pigweed/pigweed/+/main:{module_name}/'
+
+
+def issues_url(module_name: str) -> str:
+    """Returns open issues that mention the given module name."""
+    return f'https://issues.pigweed.dev/issues?q={module_name}%20status:open'
 
 
 def concat_tags(*tag_lists: List[str]) -> List[str]:
@@ -345,10 +362,243 @@ def setup_parse_body(_app, _pagename, _templatename, context, _doctree):
     context['parse_body'] = parse_body
 
 
-def setup(app: SphinxApplication):
+def add_links(module_name: str, toctree: Element) -> None:
+    """Adds source code and issues URLs to a module's table of contents tree.
+
+    This function is how we auto-generate the source code and issues URLs
+    that appear for each module in the pigweed.dev site nav.
+
+    Args:
+        module_name:
+            The Pigweed module that we're creating links for.
+        toctree:
+            The table of contents tree from that module's homepage.
+
+    Returns:
+        `None`. `toctree` is modified in-place.
+    """
+    src = ('Source code', cs_url(module_name))
+    issues = ('Issues', issues_url(module_name))
+    # Maintenance tip: the trick here is to create the `toctree` the same way
+    # that Sphinx generates it. When in doubt, enable logging in this file,
+    # manually modify the `.. toctree::` directive on a module's homepage, log
+    # out `toctree` from somewhere in this script (you should see an XML-style
+    # node), and then just make sure your code modifies the `toctree` the same
+    # way that Sphinx generates it.
+    toctree['entries'] += [src, issues]
+    toctree['rawentries'] += [src[0], issues[0]]
+
+
+def find_first_toctree(doctree: Document) -> Optional[Element]:
+    """Finds the first `toctree` (table of contents tree) node in a `Document`.
+
+    Args:
+        doctree:
+            The content of a doc, represented as a tree of Docutils nodes.
+
+    Returns:
+        The first `toctree` node found in `doctree` or `None` if none was
+        found.
+    """
+    for node in doctree.traverse(nodes.Element):
+        if node.tagname == 'toctree':
+            return node
+    return None
+
+
+def parse_module_name(docname: str) -> str:
+    """Extracts a Pigweed module name from a Sphinx docname.
+
+    Preconditions:
+        `docname` is assumed to start with `pw_`. I.e. the docs are assumed to
+        have a flat directory structure, where the first directory is the name
+        of a Pigweed module.
+
+    Args:
+        docname:
+            Basically the relative path to the doc, except `.rst` is omitted
+            from the filename. E.g. `pw_string/docs`.
+
+    Returns:
+        Just the Pigweed module name, e.g. `pw_string`.
+    """
+    tokens = docname.split('/')
+    return tokens[0]
+
+
+def on_doctree_read(app: Sphinx, doctree: Document) -> None:
+    """Event handler that enables manipulating a doc's Docutils tree.
+
+    Sphinx fires this listener after it has parsed a doc's reStructuredText
+    into a tree of Docutils nodes. The listener fires once for each doc that's
+    processed.
+
+    In general, this stage of the Sphinx event lifecycle can only be used for
+    content changes that do not affect the Sphinx build environment [1]. For
+    example, creating a `toctree` node at this stage does not work, but
+    inserting links into a pre-existing `toctree` node is OK.
+
+    Args:
+        app:
+            Our Sphinx docs build system.
+        doctree:
+            The doc content, structured as a tree.
+
+    Returns:
+        `None`. The main modifications happen in-place in `doctree`.
+
+    [1] See link in `on_source_read()`
+    """
+    docname = app.env.docname
+    if not is_module_homepage(docname):
+        return
+    toctree = find_first_toctree(doctree)
+    if toctree is None:
+        # `add_toctree_to_module_homepage()` should ensure that every
+        # `pw_*/docs.rst` file has a `toctree` node but if something went wrong
+        # then we should bail.
+        sys.exit(f'[module_metadata.py] error: toctree missing in {docname}')
+    module_name = parse_module_name(docname)
+    add_links(module_name, toctree)
+
+
+def is_module_homepage(docname: str) -> bool:
+    """Determines if a doc is a module homepage.
+
+    Any doc that matches the pattern `pw_*/docs.rst` is considered a module
+    homepage. Watch out for the false positive of `pw_*/*/docs.rst`.
+
+    Preconditions:
+        `docname` is assumed to start with `pw_`. I.e. the docs are assumed to
+        have a flat directory structure, where the first directory is the name
+        of a Pigweed module.
+
+    Args:
+        docname:
+            Basically the relative path to the doc, except `.rst` is omitted
+            from the filename.
+
+    Returns:
+        `True` if the doc is a module homepage, else `False`.
+    """
+    tokens = docname.split('/')
+    if len(tokens) != 2:
+        return False
+    if not tokens[0].startswith('pw_'):
+        return False
+    if tokens[1] != 'docs':
+        return False
+    return True
+
+
+def add_toctree_to_module_homepage(docname: str, source: str) -> str:
+    """Appends an empty `toctree` to a module homepage.
+
+    Note that this function only needs to create the `toctree` node; it doesn't
+    need to fully populate the `toctree`. Inserting links later via the more
+    ergonomic Docutils API works fine.
+
+    Args:
+        docname:
+            Basically the relative path to `source`, except `.rst` is omitted
+            from the filename.
+        source:
+            The reStructuredText source code of `docname`.
+
+    Returns:
+        For module homepages that did not already have a `toctree`, the
+        original contents of `source` plus an empty `toctree` is returned.
+        For all other cases, the original contents of `source` are returned
+        with no modification.
+    """
+    # Don't do anything if the page is not a module homepage, i.e. its
+    # `docname` doesn't match the pattern `pw_*`/docs`.
+    if not is_module_homepage(docname):
+        return source
+    # Don't do anything if the module homepage already has a `toctree`.
+    if '.. toctree::' in source:
+        return source
+    # Append an empty `toctree` to the content.
+    # yapf: disable
+    return (
+        f'{source}\n\n'
+        '.. toctree::\n'
+        '   :hidden:\n'
+        '   :maxdepth: 1\n'
+    )
+    # yapf: enable
+    # Python formatting (yapf) is disabled in the return statement because the
+    # formatter tries to change it to a less-readable single line string.
+
+
+# inclusive-language: disable
+def on_source_read(
+    app: Sphinx,  # pylint: disable=unused-argument
+    docname: str,
+    source: List[str],
+) -> None:
+    """Event handler that enables manipulating a doc's reStructuredText.
+
+    Sphinx fires this event early in its event lifecycle [1], before it has
+    converted a doc's reStructuredText (reST) into a tree of Docutils nodes.
+    The listener fires once for each doc that's processed.
+
+    This is the place to make docs changes that have to propagate across the
+    site. Take our use case of adding a link in the site nav to each module's
+    source code. To do this we need a `toctree` (table of contents tree) node
+    on each module's homepage; the `toctree` is where we insert the source code
+    link. If we try to dynamically insert the `toctree` node via the Docutils
+    API later in the event lifecycle, e.g. during the `doctree-read` event, we
+    have to do a bunch of complex and fragile logic to make the Sphinx build
+    environment [2] aware of the new node. It's simpler and more reliable to
+    just insert a `.. toctree::` directive into the doc source before Sphinx
+    has processed the doc and then let Sphinx create its build environment as
+    it normally does. We just have to make sure the reStructuredText we're
+    injecting into the content is syntactically correct.
+
+    Args:
+        app:
+            Our Sphinx docs build system.
+        docname:
+            Basically the relative path to `source`, except `.rst` is omitted
+            from the filename.
+        source:
+            The reStructuredText source code of `docname`.
+
+    Returns:
+        None. `source` is modified in-place.
+
+    [1] www.sphinx-doc.org/en/master/extdev/appapi.html#sphinx-core-events
+    [2] www.sphinx-doc.org/en/master/extdev/envapi.html
+    """
+    # inclusive-language: enable
+    # If a module homepage doesn't have a `toctree`, add one.
+    source[0] = add_toctree_to_module_homepage(docname, source[0])
+
+
+def setup(app: Sphinx) -> Dict[str, bool]:
+    """Hooks the extension into our Sphinx docs build system.
+
+    This runs only once per docs build.
+
+    Args:
+        app:
+            Our Sphinx docs build system.
+
+    Returns:
+        A dict that provides Sphinx info about our extension.
+    """
+    # Register the `.. pigweed-module::` and `.. pigweed-module-subpage::`
+    # directives that are used on `pw_*/*.rst` pages.
     app.add_directive('pigweed-module', PigweedModuleDirective)
     app.add_directive('pigweed-module-subpage', PigweedModuleSubpageDirective)
-
+    # inclusive-language: disable
+    # Register the Sphinx event listeners that automatically generate content
+    # for `pw_*/*.rst` pages:
+    # www.sphinx-doc.org/en/master/extdev/appapi.html#sphinx-core-events
+    # inclusive-language: enable
+    app.connect('source-read', on_source_read)
+    app.connect('doctree-read', on_doctree_read)
     return {
         'parallel_read_safe': True,
         'parallel_write_safe': True,

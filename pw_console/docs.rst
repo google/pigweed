@@ -49,13 +49,13 @@ Contributing
 Guides
 ------
 .. toctree::
-  :maxdepth: 1
+   :maxdepth: 1
 
-  py/pw_console/docs/user_guide
-  embedding
-  plugins
-  testing
-  internals
+   py/pw_console/docs/user_guide
+   embedding
+   plugins
+   testing
+   internals
 
 .. _IPython's embed(): https://ipython.readthedocs.io/en/stable/interactive/reference.html#embedding
 .. _IPython: https://ipython.readthedocs.io/

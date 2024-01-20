@@ -442,9 +442,3 @@ usage of ``pw::Result`` in real code. Make sure to always run your own size
 reports to check if ``pw::Result`` is suitable for you.
 
 .. include:: result_size
-
-.. toctree::
-   :hidden:
-   :maxdepth: 1
-
-   Code <https://cs.opensource.google/pigweed/pigweed/+/main:pw_result/>

@@ -637,3 +637,9 @@ Rendered output:
       :sync: key2
 
       More Windows instructions...
+
+Auto-generated source code and issues URLS
+==========================================
+In the site nav there's a ``Source code`` and ``Issues`` URL for each module.
+These links are auto-generated. The auto-generation logic lives in
+``//pw_docgen/py/pw_docgen/sphinx/module_metadata.py``.

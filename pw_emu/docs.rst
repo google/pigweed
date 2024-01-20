@@ -122,4 +122,3 @@ Then run a binary like this!
    config
    design
    SEED-0108 <../seed/0108-pw_emu-emulators-frontend>
-   Source code <https://cs.opensource.google/pigweed/pigweed/+/main:pw_emu/>
