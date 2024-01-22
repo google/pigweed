@@ -32,15 +32,11 @@ arrays at compile time.
 
 pw_bytes/byte_builder.h
 =======================
-.. cpp:class:: ByteBuilder
+.. doxygenclass:: pw::ByteBuilder
+   :members:
 
-  ``ByteBuilder`` is a class that facilitates building or reading arrays of
-  bytes in a fixed-size buffer. ByteBuilder handles reading and writing integers
-  with varying endianness.
-
-.. cpp:class:: template <size_t kMaxSize> ByteBuffer
-
-  ``ByteBuilder`` with an internally allocated buffer.
+.. doxygenclass:: pw::ByteBuffer
+   :members:
 
 Size report: using ByteBuffer
 -----------------------------

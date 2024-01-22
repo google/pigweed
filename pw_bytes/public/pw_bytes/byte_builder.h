@@ -28,18 +28,18 @@
 
 namespace pw {
 
-// ByteBuilder facilitates building bytes in a fixed-size buffer.
-// BytesBuilders never overflow. Status is tracked for each operation and
-// an overall status is maintained, which reflects the most recent error.
-//
-// A ByteBuilder does not own the buffer it writes to. It can be used to write
-// bytes to any buffer. The ByteBuffer template class, defined below,
-// allocates a buffer alongside a ByteBuilder.
+/// ByteBuilder facilitates building bytes in a fixed-size buffer.
+/// BytesBuilders never overflow. Status is tracked for each operation and
+/// an overall status is maintained, which reflects the most recent error.
+///
+/// A ByteBuilder does not own the buffer it writes to. It can be used to write
+/// bytes to any buffer. The ByteBuffer template class, defined below,
+/// allocates a buffer alongside a ByteBuilder.
 class ByteBuilder {
  public:
-  // iterator class will allow users of ByteBuilder and ByteBuffer to access
-  // the data stored in the buffer. It has the functionality of C++'s
-  // random access iterator.
+  /// iterator class will allow users of ByteBuilder and ByteBuffer to access
+  /// the data stored in the buffer. It has the functionality of C++'s
+  /// random access iterator.
   class iterator {
    public:
     using difference_type = ptrdiff_t;
@@ -119,8 +119,8 @@ class ByteBuilder {
       return !operator<(rhs);
     }
 
-    // The Peek methods will retreive ordered (Little/Big Endian) values
-    // located at the iterator position without moving the iterator forward.
+    /// The Peek methods will retreive ordered (Little/Big Endian) values
+    /// located at the iterator position without moving the iterator forward.
     int8_t PeekInt8() const { return static_cast<int8_t>(PeekUint8()); }
 
     uint8_t PeekUint8() const {
@@ -151,9 +151,9 @@ class ByteBuilder {
       return bytes::ReadInOrder<uint64_t>(order, byte_);
     }
 
-    // The Read methods will retreive ordered (Little/Big Endian) values
-    // located at the iterator position and move the iterator forward by
-    // sizeof(value) positions forward.
+    /// The Read methods will retreive ordered (Little/Big Endian) values
+    /// located at the iterator position and move the iterator forward by
+    /// sizeof(value) positions forward.
     int8_t ReadInt8() { return static_cast<int8_t>(ReadUint8()); }
 
     uint8_t ReadUint8() {
@@ -203,100 +203,101 @@ class ByteBuilder {
   using iterator = iterator;
   using const_iterator = iterator;
 
-  // Creates an empty ByteBuilder.
+  /// Creates an empty ByteBuilder.
   constexpr ByteBuilder(ByteSpan buffer) : buffer_(buffer), size_(0) {}
 
-  // Disallow copy/assign to avoid confusion about where the bytes is actually
-  // stored. ByteBuffers may be copied into one another.
+  /// Disallow copy/assign to avoid confusion about where the bytes is actually
+  /// stored. ByteBuffers may be copied into one another.
   ByteBuilder(const ByteBuilder&) = delete;
 
   ByteBuilder& operator=(const ByteBuilder&) = delete;
 
-  // Returns the contents of the bytes buffer.
+  /// Returns the contents of the bytes buffer.
   const std::byte* data() const { return buffer_.data(); }
 
-  // Returns the ByteBuilder's status, which reflects the most recent error
-  // that occurred while updating the bytes. After an update fails, the status
-  // remains non-OK until it is cleared with clear() or clear_status(). Returns:
-  //
-  //     OK if no errors have occurred
-  //     RESOURCE_EXHAUSTED if output to the ByteBuilder was truncated
-  //     INVALID_ARGUMENT if printf-style formatting failed
-  //     OUT_OF_RANGE if an operation outside the buffer was attempted
-  //
+  /// Returns the ByteBuilder's status, which reflects the most recent error
+  /// that occurred while updating the bytes. After an update fails, the status
+  /// remains non-OK until it is cleared with clear() or clear_status().
+  /// Returns:
+  ///
+  ///     OK if no errors have occurred
+  ///     RESOURCE_EXHAUSTED if output to the ByteBuilder was truncated
+  ///     INVALID_ARGUMENT if printf-style formatting failed
+  ///     OUT_OF_RANGE if an operation outside the buffer was attempted
+  ///
   Status status() const { return status_; }
 
-  // Returns status() and size() as a StatusWithSize.
+  /// Returns status() and size() as a StatusWithSize.
   StatusWithSize status_with_size() const {
     return StatusWithSize(status_, size_);
   }
 
-  // True if status() is OkStatus().
+  /// True if status() is OkStatus().
   bool ok() const { return status_.ok(); }
 
-  // True if the bytes builder is empty.
+  /// True if the bytes builder is empty.
   bool empty() const { return size() == 0u; }
 
-  // Returns the current length of the bytes.
+  /// Returns the current length of the bytes.
   size_t size() const { return size_; }
 
-  // Returns the maximum length of the bytes.
+  /// Returns the maximum length of the bytes.
   size_t max_size() const { return buffer_.size(); }
 
-  // Clears the bytes and resets its error state.
+  /// Clears the bytes and resets its error state.
   void clear() {
     size_ = 0;
     status_ = OkStatus();
   }
 
-  // Sets the statuses to OkStatus();
+  /// Sets the statuses to OkStatus();
   void clear_status() { status_ = OkStatus(); }
 
-  // Appends a single byte. Sets the status to RESOURCE_EXHAUSTED if the
-  // byte cannot be added because the buffer is full.
+  /// Appends a single byte. Sets the status to RESOURCE_EXHAUSTED if the
+  /// byte cannot be added because the buffer is full.
   void push_back(std::byte b) { append(1, b); }
 
-  // Removes the last byte. Sets the status to OUT_OF_RANGE if the buffer
-  // is empty (in which case the unsigned overflow is intentional).
+  /// Removes the last byte. Sets the status to OUT_OF_RANGE if the buffer
+  /// is empty (in which case the unsigned overflow is intentional).
   void pop_back() PW_NO_SANITIZE("unsigned-integer-overflow") {
     resize(size() - 1);
   }
 
-  // Root of bytebuffer wrapped in iterator type
+  /// Root of bytebuffer wrapped in iterator type
   const_iterator begin() const { return iterator(data()); }
   const_iterator cbegin() const { return begin(); }
 
-  // End of bytebuffer wrapped in iterator type
+  /// End of bytebuffer wrapped in iterator type
   const_iterator end() const { return iterator(data() + size()); }
   const_iterator cend() const { return end(); }
 
-  // Front and Back C++ container functions
+  /// Front and Back C++ container functions
   const std::byte& front() const { return buffer_[0]; }
   const std::byte& back() const { return buffer_[size() - 1]; }
 
-  // Appends the provided byte count times.
+  /// Appends the provided byte count times.
   ByteBuilder& append(size_t count, std::byte b);
 
-  // Appends count bytes from 'bytes' to the end of the ByteBuilder. If count
-  // exceeds the remaining space in the ByteBuffer, no bytes will be appended
-  // and the status is set to RESOURCE_EXHAUSTED.
+  /// Appends count bytes from 'bytes' to the end of the ByteBuilder. If count
+  /// exceeds the remaining space in the ByteBuffer, no bytes will be appended
+  /// and the status is set to RESOURCE_EXHAUSTED.
   ByteBuilder& append(const void* bytes, size_t count);
 
-  // Appends bytes from a byte span that calls the pointer/length version.
+  /// Appends bytes from a byte span that calls the pointer/length version.
   ByteBuilder& append(ConstByteSpan bytes) {
     return append(bytes.data(), bytes.size());
   }
 
-  // Sets the ByteBuilder's size. This function only truncates; if
-  // new_size > size(), it sets status to OUT_OF_RANGE and does nothing.
+  /// Sets the ByteBuilder's size. This function only truncates; if
+  /// new_size > size(), it sets status to OUT_OF_RANGE and does nothing.
   void resize(size_t new_size);
 
-  // Put methods for inserting different 8-bit ints
+  /// Put methods for inserting different 8-bit ints
   ByteBuilder& PutUint8(uint8_t val) { return WriteInOrder(val); }
 
   ByteBuilder& PutInt8(int8_t val) { return WriteInOrder(val); }
 
-  // Put methods for inserting different 16-bit ints
+  /// Put methods for inserting different 16-bit ints
   ByteBuilder& PutUint16(uint16_t value, endian order = endian::little) {
     return WriteInOrder(bytes::ConvertOrderTo(order, value));
   }
@@ -305,7 +306,7 @@ class ByteBuilder {
     return PutUint16(static_cast<uint16_t>(value), order);
   }
 
-  // Put methods for inserting different 32-bit ints
+  /// Put methods for inserting different 32-bit ints
   ByteBuilder& PutUint32(uint32_t value, endian order = endian::little) {
     return WriteInOrder(bytes::ConvertOrderTo(order, value));
   }
@@ -314,7 +315,7 @@ class ByteBuilder {
     return PutUint32(static_cast<uint32_t>(value), order);
   }
 
-  // Put methods for inserting different 64-bit ints
+  /// Put methods for inserting different 64-bit ints
   ByteBuilder& PutUint64(uint64_t value, endian order = endian::little) {
     return WriteInOrder(bytes::ConvertOrderTo(order, value));
   }
@@ -324,7 +325,7 @@ class ByteBuilder {
   }
 
  protected:
-  // Functions to support ByteBuffer copies.
+  /// Functions to support ByteBuffer copies.
   constexpr ByteBuilder(const ByteSpan& buffer, const ByteBuilder& other)
       : buffer_(buffer), size_(other.size_), status_(other.status_) {}
 
@@ -346,18 +347,18 @@ class ByteBuilder {
   Status status_;
 };
 
-// ByteBuffers declare a buffer along with a ByteBuilder.
+/// ByteBuffers declare a buffer along with a ByteBuilder.
 template <size_t kSizeBytes>
 class ByteBuffer : public ByteBuilder {
  public:
   ByteBuffer() : ByteBuilder(buffer_) {}
 
-  // ByteBuffers of the same size may be copied and assigned into one another.
+  /// ByteBuffers of the same size may be copied and assigned into one another.
   ByteBuffer(const ByteBuffer& other) : ByteBuilder(buffer_, other) {
     CopyContents(other);
   }
 
-  // A smaller ByteBuffer may be copied or assigned into a larger one.
+  /// A smaller ByteBuffer may be copied or assigned into a larger one.
   template <size_t kOtherSizeBytes>
   ByteBuffer(const ByteBuffer<kOtherSizeBytes>& other)
       : ByteBuilder(buffer_, other) {
@@ -386,12 +387,12 @@ class ByteBuffer : public ByteBuilder {
     return *this;
   }
 
-  // Returns the maximum length of the bytes that can be inserted in the bytes
-  // buffer.
+  /// Returns the maximum length of the bytes that can be inserted in the bytes
+  /// buffer.
   static constexpr size_t max_size() { return kSizeBytes; }
 
-  // Returns a ByteBuffer<kSizeBytes>& instead of a generic ByteBuilder& for
-  // append calls.
+  /// Returns a ByteBuffer<kSizeBytes>& instead of a generic ByteBuilder& for
+  /// append calls.
   template <typename... Args>
   ByteBuffer& append(Args&&... args) {
     ByteBuilder::append(std::forward<Args>(args)...);
