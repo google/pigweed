@@ -25,6 +25,13 @@ Pigweed:
 
       .. inclusive-language: enable
 
+      .. admonition:: Note
+         :class: tip
+
+         If you're using a Linux distribution that isn't based on Debian/Ubuntu,
+         see the manual setup directions below for prerequisite installation
+         instructions.
+
    .. tab-item:: macOS
       :sync: macos
 
@@ -75,11 +82,23 @@ Install prerequisites
       software development, you likely already have these installed.
 
       To ensure you have the necessary prerequisites, you can run the following
-      command:
+      command on Debian/Ubuntu-based distributions:
 
       .. code-block:: sh
 
          sudo apt install git build-essential
+
+      The equivalent command on Fedora-based distributions is:
+
+      .. code-block:: sh
+
+         sudo dnf groupinstall "Development Tools"
+
+      The equivalent command on Arch-based distributions is:
+
+      .. code-block:: sh
+
+         sudo pacman -S git base-devel
 
    .. tab-item:: macOS
       :sync: macos
