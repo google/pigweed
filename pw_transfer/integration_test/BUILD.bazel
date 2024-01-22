@@ -13,6 +13,7 @@
 # the License.
 
 load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load("//pw_build:pigweed.bzl", "pw_cc_binary")
 

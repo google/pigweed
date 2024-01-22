@@ -12,8 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# Python utilities for code generation.
+load("@rules_python//python:defs.bzl", "py_binary")
 
+# Python utilities for code generation.
 py_binary(
     name = "generate_freertos_tsktcb",
     srcs = ["pw_thread_freertos/generate_freertos_tsktcb.py"],
