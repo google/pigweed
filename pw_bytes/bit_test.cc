@@ -23,6 +23,19 @@
 namespace pw::bytes {
 namespace {
 
+// SignExtend unsigned integer values into signed integers.
+constexpr uint32_t kNegative24Bits = 0x00FACADE;
+constexpr int32_t kExtendedNegative24Bits = SignExtend<24>(kNegative24Bits);
+static_assert(kExtendedNegative24Bits == static_cast<int32_t>(0xFFFACADE));
+
+constexpr uint32_t kPositive20Bits = 0x00000ACE;
+constexpr int32_t kExtendedPositive20Bits = SignExtend<20>(kPositive20Bits);
+static_assert(kExtendedPositive20Bits == static_cast<int32_t>(0x00000ACE));
+
+constexpr uint32_t kNegative12Bits = 0x00000ACE;
+constexpr int32_t kExtendedNegative12Bits = SignExtend<12>(kNegative12Bits);
+static_assert(kExtendedNegative12Bits == static_cast<int32_t>(0xFFFFFACE));
+
 TEST(Endian, NativeIsBigOrLittle) {
   EXPECT_TRUE(endian::native == endian::little ||
               endian::native == endian::big);

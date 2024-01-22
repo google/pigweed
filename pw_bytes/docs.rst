@@ -54,6 +54,10 @@ features:
 * ``pw::endian`` -- Implementation of the ``std::endian`` enum. If
   ``std::endian`` is available, ``pw::endian`` is an alias of it.
 
+* Additional functions for bit-level operations.
+
+  .. doxygenfunction:: pw::bytes::SignExtend
+
 pw_bytes/endian.h
 =================
 Functions for converting the endianness of integral values.

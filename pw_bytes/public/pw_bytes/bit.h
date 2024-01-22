@@ -12,8 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-// Features from the <bit> header introduced in C++20.
+// Low-level bit operations including std::endian from C++20.
 #pragma once
+
+#include <climits>
 
 #include "lib/stdcompat/bit.h"
 
@@ -21,4 +23,23 @@ namespace pw {
 
 using ::cpp20::endian;
 
+namespace bytes {
+
+/// Extends the nth bit to the left. Useful for expanding singed values into
+/// larger integer types.
+template <std::size_t kBitWidth, typename T>
+constexpr T SignExtend(T nbit_value) {
+  static_assert(std::is_integral_v<T>);
+  static_assert(kBitWidth < (sizeof(T) * CHAR_BIT));
+
+  using SignedT = std::make_signed_t<T>;
+
+  constexpr std::size_t extension_bits =
+      (sizeof(SignedT) * CHAR_BIT) - kBitWidth;
+
+  SignedT nbit_temp = static_cast<SignedT>(nbit_value);
+  return ((nbit_temp << extension_bits) >> extension_bits);
+}
+
+}  // namespace bytes
 }  // namespace pw
