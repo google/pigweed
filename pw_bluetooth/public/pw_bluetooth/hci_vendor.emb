@@ -248,7 +248,30 @@ struct LdacCodecInformation:
   $next [+24]        UInt:8[24]        reserved
 
 
+struct AptxCodecInformation:
+  0 [+32]  UInt:8[32]  reserved
+
+
+enum A2dpOffloadSubOpcode:
+  START_LEGACY = 0x01
+  STOP_LEGACY  = 0x02
+  START        = 0x03
+  STOP         = 0x04
+
+
+struct A2dpOffloadCommandCompleteEvent:
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  $next [+1]         hci.StatusCode            status
+  $next [+1]         A2dpOffloadSubOpcode      sub_opcode
+
+
 struct StartA2dpOffloadCommand:
+  -- TODO(b/321089008): This definition is actually the legacy version of this
+  -- command. There is a non-legacy version as well. We should rename this and
+  -- the other start/stop commands/events to indicate that it is the legacy
+  -- version.
+
   let vendor_size = AndroidCommandHeader.$size_in_bytes
 
   0     [+vendor_size]  AndroidCommandHeader   vendor_command
@@ -302,10 +325,14 @@ struct StartA2dpOffloadCommand:
     28    [+32]         LdacCodecInformation   ldac_codec_information
 
   if codec_type == A2dpCodecType.APTX || codec_type == A2dpCodecType.APTX_HD:
-    28    [+32]         UInt:8[32]             reserved
+    28    [+32]         AptxCodecInformation   aptx_codec_information
 
 
 struct StopA2dpOffloadCommand:
+  -- TODO(b/321089008): This definition is actually the legacy version of this
+  -- command. There is a non-legacy version as well. We should rename this and
+  -- the other start/stop commands/events to indicate that it is the legacy
+  -- version.
   let vendor_size = AndroidCommandHeader.$size_in_bytes
   0 [+vendor_size]  AndroidCommandHeader  vendor_command
 
