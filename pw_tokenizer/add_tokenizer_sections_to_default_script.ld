@@ -17,9 +17,11 @@
 INCLUDE pw_tokenizer_linker_sections.ld
 
 /*
- * The INSERT directive instructs the linker to append the directives in this
- * script to the default linker script, rather than replace the default with
- * this script. It doesn't matter where the tokenizer sections are inserted, so
- * insert them after the .debug_info section, which both clang and GCC use.
+ * The INSERT directive instructs the linker to merge the directives in this
+ * script with the default linker script, rather than replace the default with
+ * this script. The tokenized sections need to appear in the merged script
+ * before the .rodata section, to ensure that all of the correct symbols end up
+ * in the tokenized section. Here we insert them just before the .rodata
+ * section, which both clang and GCC use.
  */
-INSERT AFTER .debug_info
+INSERT BEFORE .rodata

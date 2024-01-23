@@ -66,5 +66,19 @@ SECTIONS
   .pw_tokenizer.entries 0x0 (INFO) :
   {
     KEEP(*(.pw_tokenizer.entries.*))
+    /* GCC has a known bug (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=88061)
+     * that causes it to ignore any user-specified section placement for
+     * variables declared inside function templates. The symbols for these
+     * variables instead end up in a .rodata.* subsection. The subsection names
+     * for these symbols all contain the string "_pw_tokenizer_string_entry_"
+     * (as long as -fdata-sections was used when compiling). Thus we can pick
+     * the relevant sections out of .rodata by using an appropriate wildcard.
+     *
+     * NOTE: this relies on the .pw_tokenizer.entries section defintion
+     * appearing in the final linker scripter *before* the .rodata section.
+     * This ordering is critical to ensure that the tokenized string symbols
+     * end up in the right output section.
+     */
+    KEEP(*(.rodata.*_pw_tokenizer_string_entry_*))
   }
 }
