@@ -601,8 +601,6 @@ if (current_toolchain != default_toolchain) {
     # Add host-only targets to the build.
     if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
         pw_toolchain_SCOPE.is_host_toolchain) {
-      deps += [ "$dir_pw_tool" ]
-
       # TODO: b/240982565 - Build integration tests on Windows and macOS when
       #     SocketStream supports those platforms.
       if (host_os == "linux") {
