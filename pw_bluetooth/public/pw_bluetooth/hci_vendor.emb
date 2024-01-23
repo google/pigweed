@@ -339,6 +339,106 @@ struct StopA2dpOffloadCommand:
 # ----------------------- Multiple Advertising ---------------------------------
 
 
+enum LEMultiAdvtSubOpcode:
+  SET_ADVERTISING_PARAMETERS = 0x01
+  SET_ADVERTISING_DATA       = 0x02
+  SET_SCAN_RESPONSE_DATA     = 0x03
+  SET_RANDOM_ADDRESS         = 0x04
+  ENABLE                     = 0x05
+
+
+struct LEMultiAdvtCommandCompleteEvent:
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  $next [+1]         hci.StatusCode            status
+  $next [+1]         LEMultiAdvtSubOpcode      sub_opcode
+
+
+struct LEMultiAdvtSetAdvtParamCommand:
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+
+  0     [+vendor_size]                AndroidCommandHeader           vendor_command
+
+  $next [+2]                          UInt                           adv_interval_min
+    -- Default: 0x0800 (1.28 s)
+    -- Time: N * 0.625 ms
+    -- Time Range: 20 ms to 10.24 s
+    [requires: 0x0020 <= this <= 0x4000]
+
+  $next [+2]                          UInt                           adv_interval_max
+    -- Default: 0x0800 (1.28 s)
+    -- Time: N * 0.625 ms
+    -- Time Range: 20 ms to 10.24 s
+    [requires: 0x0020 <= this <= 0x4000]
+
+  $next [+1]                          hci.LEAdvertisingType          adv_type
+    -- Used to determine the packet type that is used for advertising when
+    -- advertising is enabled.
+
+  $next [+1]                          hci.LEOwnAddressType           own_addr_type
+
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                     own_address
+    -- Public Device Address, Random Device Address, Public Identity Address, or
+    -- Random (static) Identity Address of our address.
+
+  $next [+1]                          hci.LEPeerAddressTypeNoAnon    peer_addr_type
+
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                     peer_address
+    -- Public Device Address, Random Device Address, Public Identity Address, or
+    -- Random (static) Identity Address of the device to be connected.
+
+  $next [+1]  bits:
+
+    0     [+3]                        hci.LEAdvertisingChannels      adv_channel_map
+      -- Indicates the advertising channels that shall be used when transmitting
+      -- advertising packets. At least 1 channel must be enabled.
+      -- Default: all channels enabled
+
+  $next [+1]                          hci.LEAdvertisingFilterPolicy  adv_filter_policy
+    -- This parameter shall be ignored when directed advertising is enabled.
+
+  $next [+1]                          UInt                           adv_handle
+    --  Handle used to identify an advertising set.
+
+  $next [+1]                          Int                            adv_tx_power
+    -- Transmit_Power, Unit: dBm
+    -- Range (-70 to +20)
+    [requires: -70 <= this <= 20]
+
+
+struct LEMultiAdvtSetAdvtDataCommand:
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+  0     [+vendor_size]      AndroidCommandHeader     vendor_command
+  $next [+1]                UInt                     adv_data_length
+    -- Length of the advertising data included in this command packet, up to
+    -- kMaxLEAdvertisingDataLength bytes.
+    [requires: 0 <= this <= 31]
+
+  $next [+adv_data_length]  UInt:8[adv_data_length]  adv_data
+  $next [+1]                UInt                     adv_handle
+    -- Handle used to identify an advertising set.
+
+
+struct LEMultiAdvtSetScanRespDataCommand:
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+  0     [+vendor_size]       AndroidCommandHeader      vendor_command
+  $next [+1]                 UInt                      scan_resp_length
+    -- Length of the scan response data included in this command packet, up to
+    -- kMaxLEAdvertisingDataLength bytes.
+    [requires: 0 <= this <= 31]
+
+  $next [+scan_resp_length]  UInt:8[scan_resp_length]  adv_data
+  $next [+1]                 UInt                      adv_handle
+    -- Handle used to identify an advertising set.
+
+
+struct LEMultiAdvtSetRandomAddrCommand:
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+  0     [+vendor_size]                AndroidCommandHeader  vendor_command
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr            peer_address
+  $next [+1]                          UInt                  adv_handle
+
+
 struct LEMultiAdvtEnableCommand:
   -- LE multi-advertising enable command.
   let vendor_size = AndroidCommandHeader.$size_in_bytes
@@ -349,14 +449,19 @@ struct LEMultiAdvtEnableCommand:
 
 struct LEMultiAdvtStateChangeSubevent:
   -- LE multi-advertising state change subevent.
-  0     [+hci.VendorDebugEvent.$size_in_bytes]  hci.VendorDebugEvent  vendor_event
-  $next [+1]                                    UInt                  advertising_handle
+  --
+  -- This event indicates that an advertising instance has changed its state. At
+  -- this time, this event is only used to indicate which advertising instance
+  -- was stopped as a result of a connection.
+  let hdr_size = hci.VendorDebugEvent.$size_in_bytes
+  0     [+hdr_size]  hci.VendorDebugEvent  vendor_event
+  $next [+1]         UInt                  advertising_handle
     -- Handle used to identify an advertising set.
 
-  $next [+1]                                    hci.StatusCode        status
+  $next [+1]         hci.StatusCode        status
     -- Reason for state change. Currently will always be 0x00.
     -- 0x00: Connection received.
 
-  $next [+2]                                    UInt                  connection_handle
+  $next [+2]         UInt                  connection_handle
     -- Handle used to identify the connection that caused the state change (i.e.
     -- advertising instance to be disabled). Value will be 0xFFFF if invalid.
