@@ -1,0 +1,222 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
+load("//actions:defs.bzl", "pw_cc_action_name", "pw_cc_action_name_set")
+
+package(default_visibility = ["//visibility:public"])
+
+# The following entries are copied from action_names.bzl.
+
+pw_cc_action_name(
+    name = "c_compile",
+    action_name = ACTION_NAMES.c_compile,
+)
+
+pw_cc_action_name(
+    name = "cpp_compile",
+    action_name = ACTION_NAMES.cpp_compile,
+)
+
+pw_cc_action_name(
+    name = "linkstamp_compile",
+    action_name = ACTION_NAMES.linkstamp_compile,
+)
+
+pw_cc_action_name(
+    name = "cc_flags_make_variable",
+    action_name = ACTION_NAMES.cc_flags_make_variable,
+)
+
+pw_cc_action_name(
+    name = "cpp_module_codegen",
+    action_name = ACTION_NAMES.cpp_module_codegen,
+)
+
+pw_cc_action_name(
+    name = "cpp_header_parsing",
+    action_name = ACTION_NAMES.cpp_header_parsing,
+)
+
+pw_cc_action_name(
+    name = "cpp_module_compile",
+    action_name = ACTION_NAMES.cpp_module_compile,
+)
+
+pw_cc_action_name(
+    name = "assemble",
+    action_name = ACTION_NAMES.assemble,
+)
+
+pw_cc_action_name(
+    name = "preprocess_assemble",
+    action_name = ACTION_NAMES.preprocess_assemble,
+)
+
+pw_cc_action_name(
+    name = "llvm_cov",
+    action_name = ACTION_NAMES.llvm_cov,
+)
+
+pw_cc_action_name(
+    name = "lto_indexing",
+    action_name = ACTION_NAMES.lto_indexing,
+)
+
+pw_cc_action_name(
+    name = "lto_backend",
+    action_name = ACTION_NAMES.lto_backend,
+)
+
+pw_cc_action_name(
+    name = "lto_index_for_executable",
+    action_name = ACTION_NAMES.lto_index_for_executable,
+)
+
+pw_cc_action_name(
+    name = "lto_index_for_dynamic_library",
+    action_name = ACTION_NAMES.lto_index_for_dynamic_library,
+)
+
+pw_cc_action_name(
+    name = "lto_index_for_nodeps_dynamic_library",
+    action_name = ACTION_NAMES.lto_index_for_nodeps_dynamic_library,
+)
+
+pw_cc_action_name(
+    name = "cpp_link_executable",
+    action_name = ACTION_NAMES.cpp_link_executable,
+)
+
+pw_cc_action_name(
+    name = "cpp_link_dynamic_library",
+    action_name = ACTION_NAMES.cpp_link_dynamic_library,
+)
+
+pw_cc_action_name(
+    name = "cpp_link_nodeps_dynamic_library",
+    action_name = ACTION_NAMES.cpp_link_nodeps_dynamic_library,
+)
+
+pw_cc_action_name(
+    name = "cpp_link_static_library",
+    action_name = ACTION_NAMES.cpp_link_static_library,
+)
+
+pw_cc_action_name(
+    name = "strip",
+    action_name = ACTION_NAMES.strip,
+)
+
+pw_cc_action_name(
+    name = "objc_compile",
+    action_name = ACTION_NAMES.objc_compile,
+)
+
+pw_cc_action_name(
+    name = "objc_executable",
+    action_name = ACTION_NAMES.objc_executable,
+)
+
+pw_cc_action_name(
+    name = "objc_fully_link",
+    action_name = ACTION_NAMES.objc_fully_link,
+)
+
+pw_cc_action_name(
+    name = "objcpp_compile",
+    action_name = ACTION_NAMES.objcpp_compile,
+)
+
+pw_cc_action_name(
+    name = "clif_match",
+    action_name = ACTION_NAMES.clif_match,
+)
+
+pw_cc_action_name(
+    name = "objcopy_embed_data",
+    action_name = ACTION_NAMES.objcopy_embed_data,
+)
+
+# This action name isn't yet a well-known action name.
+pw_cc_action_name(
+    name = "objdump_embed_data",
+    action_name = "objdump_embed_data",
+)
+
+pw_cc_action_name_set(
+    name = "all_ar_actions",
+    actions = [":cpp_link_static_library"],
+)
+
+pw_cc_action_name_set(
+    name = "all_asm_actions",
+    actions = [
+        ":assemble",
+        ":preprocess_assemble",
+    ],
+)
+
+pw_cc_action_name_set(
+    name = "all_c_compiler_actions",
+    actions = [
+        ":c_compile",
+        ":cc_flags_make_variable",
+    ],
+)
+
+pw_cc_action_name_set(
+    name = "all_compiler_actions",
+    actions = [
+        ":all_c_compiler_actions",
+        ":all_cpp_compiler_actions",
+    ],
+)
+
+pw_cc_action_name_set(
+    name = "all_coverage_actions",
+    actions = [":llvm_cov"],
+)
+
+pw_cc_action_name_set(
+    name = "all_cpp_compiler_actions",
+    actions = [
+        ":cpp_compile",
+        ":cpp_header_parsing",
+    ],
+)
+
+pw_cc_action_name_set(
+    name = "all_link_actions",
+    actions = [
+        ":cpp_link_executable",
+        ":cpp_link_dynamic_library",
+        ":cpp_link_nodeps_dynamic_library",
+    ],
+)
+
+pw_cc_action_name_set(
+    name = "all_objcopy_actions",
+    actions = [":objcopy_embed_data"],
+)
+
+pw_cc_action_name_set(
+    name = "all_objdump_actions",
+    actions = [":objdump_embed_data"],
+)
+
+pw_cc_action_name_set(
+    name = "all_strip_actions",
+    actions = [":strip"],
+)
