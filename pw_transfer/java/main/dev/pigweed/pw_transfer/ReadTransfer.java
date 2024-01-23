@@ -200,8 +200,7 @@ class ReadTransfer extends Transfer<byte[]> {
   }
 
   private VersionedChunk.Builder setTransferParameters(VersionedChunk.Builder chunk) {
-    chunk.setWindowEndOffset(offset + parameters.maxPendingBytes())
-        .setMaxChunkSizeBytes(parameters.maxChunkSizeBytes())
+    chunk.setMaxChunkSizeBytes(parameters.maxChunkSizeBytes())
         .setOffset(offset)
         .setWindowEndOffset(windowEndOffset);
     if (parameters.chunkDelayMicroseconds() > 0) {
