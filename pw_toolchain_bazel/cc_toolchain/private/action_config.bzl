@@ -20,14 +20,9 @@ load(
     "action_config",
     config_lib_tool = "tool",  # This is renamed to reduce name aliasing.
 )
-load(
-    "//cc_toolchain/private:providers.bzl",
-    "ActionConfigListInfo",
-)
-load(
-    "//cc_toolchain/private:utils.bzl",
-    "actionless_flag_set",
-)
+load("//actions:providers.bzl", "ActionNameSetInfo")
+load(":providers.bzl", "ActionConfigListInfo")
+load(":utils.bzl", "actionless_flag_set")
 
 def _pw_cc_tool_impl(ctx):
     """Implementation for pw_cc_tool."""
@@ -134,7 +129,12 @@ def _pw_cc_action_config_impl(ctx):
     """Implementation for pw_cc_tool."""
     if not ctx.attr.tools:
         fail("Action configs are not valid unless they specify at least one `pw_cc_tool` in `tools`")
-    if not ctx.attr.action_names:
+
+    action_names = depset(transitive = [
+        action[ActionNameSetInfo].actions
+        for action in ctx.attr.action_names
+    ]).to_list()
+    if not action_names:
         fail("Action configs are not valid unless they specify at least one action name in `action_names`")
 
     # Check that the listed flag sets apply to at least one action in this group
@@ -142,7 +142,7 @@ def _pw_cc_action_config_impl(ctx):
     for fs in ctx.attr.flag_sets:
         provided_fs = fs[FlagSetInfo]
         flag_set_applies = False
-        for action in ctx.attr.action_names:
+        for action in action_names:
             if action in provided_fs.actions:
                 flag_set_applies = True
         if not flag_set_applies:
@@ -153,7 +153,7 @@ def _pw_cc_action_config_impl(ctx):
 
     return [
         ActionConfigListInfo(
-            action_configs = [_generate_action_config(ctx, action) for action in ctx.attr.action_names],
+            action_configs = [_generate_action_config(ctx, action) for action in action_names],
         ),
         DefaultInfo(
             files = depset(None, transitive = [dep[DefaultInfo].files for dep in ctx.attr.tools]),
@@ -163,20 +163,13 @@ def _pw_cc_action_config_impl(ctx):
 pw_cc_action_config = rule(
     implementation = _pw_cc_action_config_impl,
     attrs = {
-        "action_names": attr.string_list(
-            # inclusive-language: disable
+        "action_names": attr.label_list(
+            providers = [ActionNameSetInfo],
             mandatory = True,
             doc = """A list of action names to apply this action to.
 
-Valid choices are listed here:
-
-    https://github.com/bazelbuild/bazel/blob/master/tools/build_defs/cc/action_names.bzl
-
-It is possible for some needed action names to not be enumerated in this list,
-so there is not rigid validation for these strings. Prefer using constants
-rather than manually typing action names.
+See @pw_toolchain//actions:all for valid options.
 """,
-            # inclusive-language: enable
         ),
         "enabled": attr.bool(
             default = True,
@@ -233,7 +226,7 @@ Examples:
 
     pw_cc_action_config(
         name = "ar",
-        action_names = ALL_AR_ACTIONS,
+        action_names = ["@pw_toolchain//actions:all_ar_actions"],
         implies = [
             "archiver_flags",
             "linker_param_file",
@@ -243,7 +236,10 @@ Examples:
 
     pw_cc_action_config(
         name = "clang",
-        action_names = ALL_ASM_ACTIONS + ALL_C_COMPILER_ACTIONS,
+        action_names = [
+            "@pw_toolchain//actions:all_asm_actions",
+            "@pw_toolchain//actions:all_c_compiler_actions",
+        ],
         tools = [":clang_tool"],
     )
 """,

@@ -504,7 +504,7 @@ API reference
 
       pw_cc_action_config(
           name = "ar",
-          action_names = ALL_AR_ACTIONS,
+          action_names = ["@pw_toolchain//actions:all_ar_actions"],
           implies = [
               "archiver_flags",
               "linker_param_file",
@@ -514,7 +514,10 @@ API reference
 
       pw_cc_action_config(
           name = "clang",
-          action_names = ALL_ASM_ACTIONS + ALL_C_COMPILER_ACTIONS,
+          action_names = [
+              "@pw_toolchain//actions:all_asm_actions",
+              "@pw_toolchain//actions:all_c_compiler_actions",
+          ]
           tools = [":clang_tool"],
       )
 

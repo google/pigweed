@@ -20,6 +20,7 @@ load(
     "flag_group",
     "flag_set",
 )
+load("//actions:providers.bzl", "ActionNameSetInfo")
 
 def _pw_cc_flag_group_impl(ctx):
     """Implementation for pw_cc_flag_group."""
@@ -152,28 +153,27 @@ def _pw_cc_flag_set_impl(ctx):
                 fail("{} in `flag_groups` of {} does not provide FlagGroupInfo".format(dep.label, ctx.label))
 
         flag_groups = [dep[FlagGroupInfo] for dep in ctx.attr.flag_groups]
+
+    actions = depset(transitive = [
+        action[ActionNameSetInfo].actions
+        for action in ctx.attr.actions
+    ])
+
     return flag_set(
-        actions = ctx.attr.actions,
+        actions = actions.to_list(),
         flag_groups = flag_groups,
     )
 
 pw_cc_flag_set = rule(
     implementation = _pw_cc_flag_set_impl,
     attrs = {
-        "actions": attr.string_list(
+        "actions": attr.label_list(
+            providers = [ActionNameSetInfo],
             mandatory = True,
-            # inclusive-language: disable
             doc = """A list of action names that this flag set applies to.
 
-Valid choices are listed here:
-
-    https://github.com/bazelbuild/bazel/blob/master/tools/build_defs/cc/action_names.bzl
-
-It is possible for some needed action names to not be enumerated in this list,
-so there is not rigid validation for these strings. Prefer using constants
-rather than manually typing action names.
+See @pw_toolchain//actions:all for valid options.
 """,
-            # inclusive-language: enable
         ),
         "flag_groups": attr.label_list(
             doc = """Labels pointing to `pw_cc_flag_group` rules.

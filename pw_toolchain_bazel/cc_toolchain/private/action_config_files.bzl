@@ -18,11 +18,20 @@ pw_toolchain_bazel, DO NOT export the contents of this file to be used publicly.
 """
 
 load("@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl", "ActionConfigInfo")
-load("//cc_toolchain/private:providers.bzl", "ActionConfigListInfo")
+load("//actions:providers.bzl", "ActionNameSetInfo")
+load(":providers.bzl", "ActionConfigListInfo")
+
+def _get_action_names(action_sets):
+    return depset(transitive = [
+        action_set[ActionNameSetInfo].actions
+        for action_set in action_sets
+    ]).to_list()
 
 def _pw_cc_action_config_file_collector_impl(ctx):
     if ctx.attr.collect_files_from_actions and ctx.attr.collect_files_not_from_actions:
         fail("{} attempted to specify `collect_files_from_actions` and `collect_files_not_from_actions` simultaneously".format(ctx.label))
+    collect_files_from_actions = _get_action_names(ctx.attr.collect_files_from_actions)
+    collect_files_not_from_actions = _get_action_names(ctx.attr.collect_files_not_from_actions)
 
     all_file_depsets = []
     for dep in ctx.attr.all_action_configs:
@@ -39,11 +48,11 @@ def _pw_cc_action_config_file_collector_impl(ctx):
         # even if `action_names` ends up empty.
 
         for action_name in action_names:
-            if (action_name in ctx.attr.collect_files_from_actions and
+            if (action_name in collect_files_from_actions and
                 DefaultInfo in dep):
                 all_file_depsets.append(dep[DefaultInfo].files)
-            elif (ctx.attr.collect_files_not_from_actions and
-                  action_name not in ctx.attr.collect_files_not_from_actions and
+            elif (collect_files_not_from_actions and
+                  action_name not in collect_files_not_from_actions and
                   DefaultInfo in dep):
                 all_file_depsets.append(dep[DefaultInfo].files)
 
@@ -63,14 +72,16 @@ pw_cc_action_config_file_collector = rule(
     implementation = _pw_cc_action_config_file_collector_impl,
     attrs = {
         "all_action_configs": attr.label_list(default = []),
-        "collect_files_from_actions": attr.string_list(
+        "collect_files_from_actions": attr.label_list(
+            providers = [ActionNameSetInfo],
             doc = """Collects files from tools that apply to the listed action names.
 
 Note: `collect_files_from_actions` and `collect_files_not_from_actions` are
 mutually exclusive.
 """,
         ),
-        "collect_files_not_from_actions": attr.string_list(
+        "collect_files_not_from_actions": attr.label_list(
+            providers = [ActionNameSetInfo],
             doc = """Collects files from tools that DO NOT apply to the listed action names.
 
 Note: `collect_files_from_actions` and `collect_files_not_from_actions` are

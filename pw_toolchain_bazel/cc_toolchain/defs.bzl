@@ -13,10 +13,7 @@
 # the License.
 """Toolchain configuration for Bazel."""
 
-load(
-    "@bazel_tools//tools/build_defs/cc:action_names.bzl",
-    _STRIP_ACTION_NAME = "STRIP_ACTION_NAME",
-)
+load("//actions:defs.bzl", _pw_cc_action_name_set = "pw_cc_action_name_set")
 load(
     "//cc_toolchain/private:action_config.bzl",
     _pw_cc_action_config = "pw_cc_action_config",
@@ -36,37 +33,25 @@ load(
     _pw_cc_flag_group = "pw_cc_flag_group",
     _pw_cc_flag_set = "pw_cc_flag_set",
 )
-load(
-    "//cc_toolchain/private:utils.bzl",
-    _ALL_AR_ACTIONS = "ALL_AR_ACTIONS",
-    _ALL_ASM_ACTIONS = "ALL_ASM_ACTIONS",
-    _ALL_CPP_COMPILER_ACTIONS = "ALL_CPP_COMPILER_ACTIONS",
-    _ALL_C_COMPILER_ACTIONS = "ALL_C_COMPILER_ACTIONS",
-    _ALL_LINK_ACTIONS = "ALL_LINK_ACTIONS",
-    _LLVM_COV = "LLVM_COV",
-    _OBJ_COPY_ACTION_NAME = "OBJ_COPY_ACTION_NAME",
-    _OBJ_DUMP_ACTION_NAME = "OBJ_DUMP_ACTION_NAME",
-)
 
-# TODO(b/301004620): Remove when bazel 7 is released and these constants exists
-# in ACTION_NAMES.
-OBJ_COPY_ACTION_NAME = _OBJ_COPY_ACTION_NAME
-COV_ACTION_NAME = _LLVM_COV
+# All of the following are deprecated. Instead use their targets.
+OBJ_COPY_ACTION_NAME = "@pw_toolchain//actions:objcopy_embed_data"
+COV_ACTION_NAME = "@pw_toolchain//actions:llvm_cov"
+OBJ_DUMP_ACTION_NAME = "@pw_toolchain//actions:objdump_embed_data"
+STRIP_ACTION_NAME = "@pw_toolchain//actions:strip"
 
-# This action name isn't yet a well-known action name.
-OBJ_DUMP_ACTION_NAME = _OBJ_DUMP_ACTION_NAME
-
-STRIP_ACTION_NAME = _STRIP_ACTION_NAME
-
-ALL_AR_ACTIONS = _ALL_AR_ACTIONS
-ALL_ASM_ACTIONS = _ALL_ASM_ACTIONS
-ALL_C_COMPILER_ACTIONS = _ALL_C_COMPILER_ACTIONS
-ALL_COVERAGE_ACTIONS = [COV_ACTION_NAME]
-ALL_CPP_COMPILER_ACTIONS = _ALL_CPP_COMPILER_ACTIONS
-ALL_LINK_ACTIONS = _ALL_LINK_ACTIONS
+# All of the following are deprecated. Instead use their targets.
+ALL_AR_ACTIONS = ["@pw_toolchain//actions:all_ar_actions"]
+ALL_ASM_ACTIONS = ["@pw_toolchain//actions:all_asm_actions"]
+ALL_C_COMPILER_ACTIONS = ["@pw_toolchain//actions:all_c_compiler_actions"]
+ALL_COVERAGE_ACTIONS = ["@pw_toolchain//actions:all_coverage_actions"]
+ALL_CPP_COMPILER_ACTIONS = ["@pw_toolchain//actions:all_cpp_compiler_actions"]
+ALL_LINK_ACTIONS = ["@pw_toolchain//actions:all_link_actions"]
 ALL_OBJCOPY_ACTIONS = [OBJ_COPY_ACTION_NAME]
 ALL_OBJDUMP_ACTIONS = [OBJ_DUMP_ACTION_NAME]
-ALL_STRIP_ACTIONS = [STRIP_ACTION_NAME]
+ALL_STRIP_ACTIONS = ["@pw_toolchain//actions:all_strip_actions"]
+
+pw_cc_action_name_set = _pw_cc_action_name_set
 
 pw_cc_action_config = _pw_cc_action_config
 pw_cc_tool = _pw_cc_tool

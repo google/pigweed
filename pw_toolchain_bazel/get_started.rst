@@ -288,14 +288,15 @@ way to prevent unintentional bugs that stem from dubious code.
 
    load(
        "@pw_toolchain//cc_toolchain:defs.bzl",
-       "ALL_CPP_COMPILER_ACTIONS",
-       "ALL_C_COMPILER_ACTIONS",
        "pw_cc_flag_set",
    )
 
    pw_cc_flag_set(
        name = "warnings",
-       actions = ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS,
+       actions = [
+           "@pw_toolchain//actions:all_c_compiler_actions",
+           "@pw_toolchain//actions:all_cpp_compiler_actions",
+       ],
        flags = [
            "-Wall",
            "-Wextra",
@@ -314,9 +315,6 @@ it can be omitted with the following flag sets.
 
    load(
        "@pw_toolchain//cc_toolchain:defs.bzl",
-       "ALL_CPP_COMPILER_ACTIONS",
-       "ALL_C_COMPILER_ACTIONS",
-       "ALL_LINK_ACTIONS",
        "pw_cc_flag_set",
    )
 
@@ -324,7 +322,10 @@ it can be omitted with the following flag sets.
    # This is mostly relevant when using `:omit_unused_sections`.
    pw_cc_flag_set(
        name = "function_and_data_sections",
-       actions = ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS,
+       actions = [
+           "@pw_toolchain//actions:all_c_compiler_actions",
+           "@pw_toolchain//actions:all_cpp_compiler_actions",
+       ],
        flags = [
            "-ffunction-sections",
            "-fdata-sections",
@@ -333,7 +334,7 @@ it can be omitted with the following flag sets.
 
    pw_cc_flag_set(
        name = "omit_unused_sections",
-       actions = ALL_LINK_ACTIONS,
+       actions = ["@pw_toolchain//actions:all_link_actions"],
        # This flag is parameterized by operating system. macOS and iOS require
        # a different flag to express this concept.
        flags = select({
@@ -351,17 +352,18 @@ actions.
 .. code-block:: py
 
    load(
-       "@pw_toolchain//cc_toolchain:defs.bzl",
-       "ALL_ASM_COMPILER_ACTIONS",
-       "ALL_CPP_COMPILER_ACTIONS",
-       "ALL_C_COMPILER_ACTIONS",
+       "["@pw_toolchain//cc_toolchain:defs.bzl"]",
        "pw_cc_flag_set",
    )
 
    # Specify global defines that should be available to all compile actions.
    pw_cc_flag_set(
       name = "global_defines",
-      actions = ALL_ASM_COMPILER_ACTIONS + ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS,
+      actions = [
+          "@pw_toolchain//actions:all_asm_compiler_actions",
+          "@pw_toolchain//actions:all_c_compiler_actions",
+          "@pw_toolchain//actions:all_cpp_compiler_actions",
+      ],
       flags = [
          "-DPW_LOG_LEVEL=PW_LOG_LEVEL_INFO",  # Omit all debug logs.
       ],

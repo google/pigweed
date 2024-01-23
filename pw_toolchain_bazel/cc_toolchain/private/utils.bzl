@@ -13,66 +13,20 @@
 # the License.
 """Private utilities and global variables."""
 
-load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES", "STRIP_ACTION_NAME")
 load(
     "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
     "flag_set",
 )
 
-# A potentially more complete set of these constants are available at
-# @rules_cc//cc:action_names.bzl, but it's not clear if they should be depended
-# on.
-ALL_ASM_ACTIONS = [
-    ACTION_NAMES.assemble,
-    ACTION_NAMES.preprocess_assemble,
-]
-ALL_C_COMPILER_ACTIONS = [
-    ACTION_NAMES.c_compile,
-    ACTION_NAMES.cc_flags_make_variable,
-]
-ALL_CPP_COMPILER_ACTIONS = [
-    ACTION_NAMES.cpp_compile,
-    ACTION_NAMES.cpp_header_parsing,
-]
-ALL_LINK_ACTIONS = [
-    ACTION_NAMES.cpp_link_executable,
-    ACTION_NAMES.cpp_link_dynamic_library,
-    ACTION_NAMES.cpp_link_nodeps_dynamic_library,
-]
-ALL_AR_ACTIONS = [
-    ACTION_NAMES.cpp_link_static_library,
-]
-
-ACTION_MAP = {
-    "aropts": ALL_AR_ACTIONS,
-    "asmopts": ALL_ASM_ACTIONS,
-    "copts": ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS,
-    "conlyopts": ALL_C_COMPILER_ACTIONS,
-    "cxxopts": ALL_CPP_COMPILER_ACTIONS,
-    "linkopts": ALL_LINK_ACTIONS,
-}
-
-# TODO(b/301004620): Remove when bazel 7 is released and these constants exists
-# in ACTION_NAMES.
-LLVM_COV = "llvm-cov"
-OBJ_COPY_ACTION_NAME = "objcopy_embed_data"
-
-# This action name isn't yet a well-known action name.
-OBJ_DUMP_ACTION_NAME = "objdump_embed_data"
-
-# A dictionary mapping the `*_files` attribute names of a `cc_toolchain` rule
-# to their respective applicable actions.
-#
-# `all_files` is intentionally omitted from this, as it applies to all actions.
 ALL_FILE_GROUPS = {
-    "ar_files": ALL_AR_ACTIONS,
-    "as_files": ALL_ASM_ACTIONS,
-    "compiler_files": ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS,
-    "coverage_files": [LLVM_COV],
+    "ar_files": ["@pw_toolchain//actions:all_ar_actions"],
+    "as_files": ["@pw_toolchain//actions:all_asm_actions"],
+    "compiler_files": ["@pw_toolchain//actions:all_compiler_actions"],
+    "coverage_files": ["@pw_toolchain//actions:llvm_cov"],
     "dwp_files": [],
-    "linker_files": ALL_LINK_ACTIONS,
-    "objcopy_files": [OBJ_COPY_ACTION_NAME],
-    "strip_files": [STRIP_ACTION_NAME],
+    "linker_files": ["@pw_toolchain//actions:all_link_actions"],
+    "objcopy_files": ["@pw_toolchain//actions:objcopy_embed_data"],
+    "strip_files": ["@pw_toolchain//actions:strip"],
 }
 
 def actionless_flag_set(flag_set_to_copy):
