@@ -187,7 +187,7 @@ class ByteBuilder {
     }
 
     uint64_t ReadUint64(endian order = endian::little) {
-      int64_t value = bytes::ReadInOrder<int64_t>(order, byte_);
+      uint64_t value = bytes::ReadInOrder<uint64_t>(order, byte_);
       byte_ += 8;
       return value;
     }
