@@ -3,7 +3,7 @@ compile_commands.json
 rust-project.json
 user.bazelrc
 out/
-bazel-*
+/bazel-*
 outbazel/
 .presubmit/
 docs/_build
