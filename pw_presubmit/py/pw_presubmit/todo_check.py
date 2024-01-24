@@ -16,7 +16,7 @@
 import logging
 from pathlib import Path
 import re
-from typing import Iterable, Pattern, Sequence, Union
+from typing import Dict, Iterable, List, Pattern, Sequence, Union
 
 from pw_presubmit import presubmit_context
 from pw_presubmit.presubmit import filter_paths
@@ -100,7 +100,7 @@ def _process_file(ctx: PresubmitContext, todo_pattern: re.Pattern, path: Path):
         prev = ''
 
         try:
-            summary = []
+            summary: List[str] = []
             for i, line in enumerate(ins, 1):
                 if _DISABLE in line:
                     enabled = False
@@ -116,20 +116,16 @@ def _process_file(ctx: PresubmitContext, todo_pattern: re.Pattern, path: Path):
                         # todo-check: ignore
                         ctx.fail(f'Bad TODO on line {i}:', path)
                         ctx.fail(f'    {line.strip()}')
-                        summary.append(
-                            f'{path.relative_to(ctx.root)}:{i}:{line.strip()}'
-                        )
+                        summary.append(f'{i}:{line.strip()}')
 
                 prev = line
 
-            if summary:
-                with ctx.failure_summary_log.open('w') as outs:
-                    for line in summary:
-                        print(line, file=outs)
+            return summary
 
         except UnicodeDecodeError:
             # File is not text, like a gif.
             _LOG.debug('File %s is not a text file', path)
+            return []
 
 
 def create(
@@ -142,7 +138,16 @@ def create(
     def todo_check(ctx: PresubmitContext):
         """Check that TODO lines are valid."""  # todo-check: ignore
         ctx.paths = presubmit_context.apply_exclusions(ctx)
+        summary: Dict[Path, List[str]] = {}
         for path in ctx.paths:
-            _process_file(ctx, todo_pattern, path)
+            if file_summary := _process_file(ctx, todo_pattern, path):
+                summary[path] = file_summary
+
+        if summary:
+            with ctx.failure_summary_log.open('w') as outs:
+                for path, lines in summary.items():
+                    print('====', path.relative_to(ctx.root), file=outs)
+                    for line in lines:
+                        print(line, file=outs)
 
     return todo_check
