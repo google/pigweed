@@ -308,6 +308,14 @@ class FlashPartition {
     return IsRegionErased(0, this->size_bytes(), is_erased);
   }
 
+  // Returns the address of the first byte of erased flash that has no more
+  // written bytes to the end of the partition. If no erased bytes at end of
+  // partition, then size_bytes of partition is returned.
+  //
+  // OK - success with number of bytes to end of written data.
+  // Other - error code from flash read operation.
+  StatusWithSize EndOfWrittenData();
+
   // Checks to see if the data appears to be erased. No reads or writes occur;
   // the FlashPartition simply compares the data to
   // flash_.erased_memory_content().

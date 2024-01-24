@@ -292,5 +292,63 @@ TEST(FlashPartitionTest, IsErased) {
   EXPECT_EQ(true, is_erased);
 }
 
+TEST(FlashPartitionTest, EndOfWrittenData) {
+  FlashPartition& test_partition = FlashTestPartition();
+
+  // Make sure the partition is big enough to do this test.
+  ASSERT_GE(test_partition.size_bytes(), 3 * kMaxFlashAlignment);
+
+  ASSERT_EQ(OkStatus(), test_partition.Erase());
+
+  StatusWithSize end_sws = test_partition.EndOfWrittenData();
+  EXPECT_EQ(OkStatus(), end_sws.status());
+  EXPECT_EQ(end_sws.size(), 0U);
+
+  static const uint8_t fill_byte = 0x55;
+  uint8_t test_data[kMaxFlashAlignment];
+  memset(test_data, fill_byte, sizeof(test_data));
+  auto data_span = span(test_data);
+
+  // Write the chunk with fill byte at start of partition.
+  StatusWithSize write_sws = test_partition.Write(0, as_bytes(data_span));
+  EXPECT_EQ(OkStatus(), write_sws.status());
+  EXPECT_EQ(data_span.size_bytes(), write_sws.size());
+
+  end_sws = test_partition.EndOfWrittenData();
+  EXPECT_EQ(OkStatus(), end_sws.status());
+  EXPECT_EQ(end_sws.size(), data_span.size_bytes());
+
+  // Write alignment number of bytes mid-partition.
+  ASSERT_EQ(OkStatus(), test_partition.Erase());
+  write_sws = test_partition.Write(
+      kMaxFlashAlignment,
+      as_bytes(data_span.first(test_partition.alignment_bytes())));
+  ASSERT_EQ(OkStatus(), write_sws.status());
+  EXPECT_EQ(write_sws.size(), test_partition.alignment_bytes());
+
+  end_sws = test_partition.EndOfWrittenData();
+  EXPECT_EQ(OkStatus(), end_sws.status());
+  EXPECT_EQ(kMaxFlashAlignment + test_partition.alignment_bytes(),
+            end_sws.size());
+
+  // Write full partition
+  ASSERT_EQ(OkStatus(), test_partition.Erase());
+  size_t remaining_bytes = test_partition.size_bytes();
+  size_t offset = 0;
+  while (remaining_bytes > 0) {
+    size_t write_size = std::min(remaining_bytes, data_span.size_bytes());
+    write_sws =
+        test_partition.Write(offset, as_bytes(data_span.first(write_size)));
+    EXPECT_EQ(OkStatus(), write_sws.status());
+    EXPECT_EQ(write_size, write_sws.size());
+    remaining_bytes -= write_size;
+    offset += write_size;
+  }
+
+  end_sws = test_partition.EndOfWrittenData();
+  EXPECT_EQ(OkStatus(), end_sws.status());
+  EXPECT_EQ(test_partition.size_bytes(), end_sws.size());
+}
+
 }  // namespace
 }  // namespace pw::kvs::PartitionTest
