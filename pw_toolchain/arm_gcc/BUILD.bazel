@@ -14,10 +14,6 @@
 
 load(
     "@pw_toolchain//cc_toolchain:defs.bzl",
-    "ALL_ASM_ACTIONS",
-    "ALL_CPP_COMPILER_ACTIONS",
-    "ALL_C_COMPILER_ACTIONS",
-    "ALL_LINK_ACTIONS",
     "pw_cc_flag_set",
     "pw_cc_toolchain",
 )
@@ -52,7 +48,10 @@ cc_library(
 # compiler in the future.
 pw_cc_flag_set(
     name = "warnings",
-    actions = ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS,
+    actions = [
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+    ],
     flags = [
         "-Wall",
         "-Wextra",
@@ -66,7 +65,12 @@ pw_cc_flag_set(
 
 pw_cc_flag_set(
     name = "thumb_abi",
-    actions = ALL_ASM_ACTIONS + ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS + ALL_LINK_ACTIONS,
+    actions = [
+        "@pw_toolchain//actions:all_asm_actions",
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@pw_toolchain//actions:all_link_actions",
+    ],
     flags = [
         "-mabi=aapcs",
         "-mthumb",
@@ -75,7 +79,10 @@ pw_cc_flag_set(
 
 pw_cc_flag_set(
     name = "cortex_common",
-    actions = ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS,
+    actions = [
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+    ],
     flags = [
         "-ffreestanding",
         "-specs=nano.specs",
@@ -85,7 +92,7 @@ pw_cc_flag_set(
 
 pw_cc_flag_set(
     name = "cortex_common_link",
-    actions = ALL_LINK_ACTIONS,
+    actions = ["@pw_toolchain//actions:all_link_actions"],
     flags = [
         "-Wl,--gc-sections",
         "-specs=nano.specs",
@@ -100,7 +107,12 @@ pw_cc_flag_set(
 
 pw_cc_flag_set(
     name = "cortex-m0",
-    actions = ALL_ASM_ACTIONS + ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS + ALL_LINK_ACTIONS,
+    actions = [
+        "@pw_toolchain//actions:all_asm_actions",
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@pw_toolchain//actions:all_link_actions",
+    ],
     flags = [
         "-mcpu=cortex-m0",
         "-mfloat-abi=soft",
@@ -109,7 +121,12 @@ pw_cc_flag_set(
 
 pw_cc_flag_set(
     name = "cortex-m3",
-    actions = ALL_ASM_ACTIONS + ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS + ALL_LINK_ACTIONS,
+    actions = [
+        "@pw_toolchain//actions:all_asm_actions",
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@pw_toolchain//actions:all_link_actions",
+    ],
     flags = [
         "-mcpu=cortex-m3",
         "-mfloat-abi=soft",
@@ -118,7 +135,12 @@ pw_cc_flag_set(
 
 pw_cc_flag_set(
     name = "cortex-m4",
-    actions = ALL_ASM_ACTIONS + ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS + ALL_LINK_ACTIONS,
+    actions = [
+        "@pw_toolchain//actions:all_asm_actions",
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@pw_toolchain//actions:all_link_actions",
+    ],
     flags = [
         "-mcpu=cortex-m4",
         "-mfloat-abi=hard",
@@ -127,7 +149,12 @@ pw_cc_flag_set(
 
 pw_cc_flag_set(
     name = "cortex-m4+nofp",
-    actions = ALL_ASM_ACTIONS + ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS + ALL_LINK_ACTIONS,
+    actions = [
+        "@pw_toolchain//actions:all_asm_actions",
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@pw_toolchain//actions:all_link_actions",
+    ],
     flags = [
         "-mcpu=cortex-m4+nofp",
         "-mfloat-abi=soft",
@@ -136,7 +163,12 @@ pw_cc_flag_set(
 
 pw_cc_flag_set(
     name = "cortex-m7",
-    actions = ALL_ASM_ACTIONS + ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS + ALL_LINK_ACTIONS,
+    actions = [
+        "@pw_toolchain//actions:all_asm_actions",
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@pw_toolchain//actions:all_link_actions",
+    ],
     flags = [
         "-mcpu=cortex-m7",
         "-mfloat-abi=hard",
@@ -145,7 +177,12 @@ pw_cc_flag_set(
 
 pw_cc_flag_set(
     name = "cortex-m33",
-    actions = ALL_ASM_ACTIONS + ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS + ALL_LINK_ACTIONS,
+    actions = [
+        "@pw_toolchain//actions:all_asm_actions",
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@pw_toolchain//actions:all_link_actions",
+    ],
     flags = [
         "-mcpu=cortex-m33",
         "-mfloat-abi=hard",
@@ -154,7 +191,12 @@ pw_cc_flag_set(
 
 pw_cc_flag_set(
     name = "cortex-m33+nofp",
-    actions = ALL_ASM_ACTIONS + ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS + ALL_LINK_ACTIONS,
+    actions = [
+        "@pw_toolchain//actions:all_asm_actions",
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@pw_toolchain//actions:all_link_actions",
+    ],
     flags = [
         "-mcpu=cortex-m33+nofp",
         "-mfloat-abi=soft",

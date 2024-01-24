@@ -14,9 +14,6 @@
 
 load(
     "//cc_toolchain:defs.bzl",
-    "ALL_CPP_COMPILER_ACTIONS",
-    "ALL_C_COMPILER_ACTIONS",
-    "ALL_LINK_ACTIONS",
     "pw_cc_flag_set",
 )
 
@@ -27,7 +24,11 @@ licenses(["notice"])
 # Optimization level option
 pw_cc_flag_set(
     name = "o2",
-    actions = ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS + ALL_LINK_ACTIONS,
+    actions = [
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@pw_toolchain//actions:all_link_actions",
+    ],
     flags = ["-O2"],
 )
 
@@ -35,35 +36,41 @@ pw_cc_flag_set(
 # different version.
 pw_cc_flag_set(
     name = "no_default_cpp_stdlib",
-    actions = ALL_LINK_ACTIONS,
+    actions = ["@pw_toolchain//actions:all_link_actions"],
     flags = ["-nostdlib++"],
 )
 
 # Prevent relative paths from being converted to absolute paths.
 pw_cc_flag_set(
     name = "no_canonical_prefixes",
-    actions = ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS,
+    actions = [
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+    ],
     flags = ["-no-canonical-prefixes"],
 )
 
 # Compile without runtime type information (RTTI). This produces smaller binaries.
 pw_cc_flag_set(
     name = "no_rtti",
-    actions = ALL_CPP_COMPILER_ACTIONS,
+    actions = ["@pw_toolchain//actions:all_cpp_compiler_actions"],
     flags = ["-fno-rtti"],
 )
 
 # Allow uses of the register keyword, which may appear in C headers.
 pw_cc_flag_set(
     name = "wno_register",
-    actions = ALL_CPP_COMPILER_ACTIONS,
+    actions = ["@pw_toolchain//actions:all_cpp_compiler_actions"],
     flags = ["-Wno-register"],
 )
 
 # Compile for the C++17 standard.
 pw_cc_flag_set(
     name = "c++17",
-    actions = ALL_CPP_COMPILER_ACTIONS + ALL_LINK_ACTIONS,
+    actions = [
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@pw_toolchain//actions:all_link_actions",
+    ],
     flags = ["-std=c++17"],
 )
 
@@ -71,14 +78,17 @@ pw_cc_flag_set(
 # non-virtual destructor
 pw_cc_flag_set(
     name = "wnon_virtual_dtor",
-    actions = ALL_CPP_COMPILER_ACTIONS,
+    actions = ["@pw_toolchain//actions:all_cpp_compiler_actions"],
     flags = ["-Wnon-virtual-dtor"],
 )
 
 # Standard compiler flags to reduce output binary size.
 pw_cc_flag_set(
     name = "reduced_size",
-    actions = ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS,
+    actions = [
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+    ],
     flags = [
         "-fno-common",
         "-fno-exceptions",
@@ -89,6 +99,9 @@ pw_cc_flag_set(
 
 pw_cc_flag_set(
     name = "debugging",
-    actions = ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS,
+    actions = [
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+    ],
     flags = ["-g"],
 )

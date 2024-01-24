@@ -14,10 +14,6 @@
 
 load(
     "@pw_toolchain//cc_toolchain:defs.bzl",
-    "ALL_ASM_ACTIONS",
-    "ALL_CPP_COMPILER_ACTIONS",
-    "ALL_C_COMPILER_ACTIONS",
-    "ALL_LINK_ACTIONS",
     "pw_cc_feature",
     "pw_cc_flag_set",
     "pw_cc_toolchain",
@@ -32,14 +28,14 @@ filegroup(name = "empty")
 
 pw_cc_flag_set(
     name = "macos_stdlib",
-    actions = ALL_LINK_ACTIONS,
+    actions = ["@pw_toolchain//actions:all_link_actions"],
     flags = ["external/llvm_toolchain/lib/libc++.a"],
     target_compatible_with = ["@platforms//os:macos"],
 )
 
 pw_cc_flag_set(
     name = "linux_link_libs",
-    actions = ALL_LINK_ACTIONS,
+    actions = ["@pw_toolchain//actions:all_link_actions"],
     flags = [
         "-pthread",
         "-stdlib=libc++",
@@ -54,7 +50,10 @@ pw_cc_flag_set(
 # compiler in the future.
 pw_cc_flag_set(
     name = "warnings",
-    actions = ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS,
+    actions = [
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+    ],
     flags = [
         "-Wall",
         "-Wextra",
@@ -68,7 +67,10 @@ pw_cc_flag_set(
 # Thread safety warnings are only supported by Clang.
 pw_cc_flag_set(
     name = "thread_safety_warnings",
-    actions = ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS,
+    actions = [
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+    ],
     flags = [
         "-Wthread-safety",
         "-D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS=1",
@@ -77,7 +79,12 @@ pw_cc_flag_set(
 
 pw_cc_flag_set(
     name = "verbose_compiler_flags",
-    actions = ALL_ASM_ACTIONS + ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS + ALL_LINK_ACTIONS,
+    actions = [
+        "@pw_toolchain//actions:all_asm_actions",
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@pw_toolchain//actions:all_link_actions",
+    ],
     flags = ["-v"],
 )
 
@@ -95,7 +102,10 @@ pw_cc_feature(
 
 pw_cc_flag_set(
     name = "no_unknown_warning_option",
-    actions = ALL_C_COMPILER_ACTIONS + ALL_CPP_COMPILER_ACTIONS,
+    actions = [
+        "@pw_toolchain//actions:all_c_compiler_actions",
+        "@pw_toolchain//actions:all_cpp_compiler_actions",
+    ],
     flags = [
         "-Wno-unknown-warning-option",
     ],

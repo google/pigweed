@@ -14,15 +14,6 @@
 
 load(
     "@pw_toolchain//cc_toolchain:defs.bzl",
-    "ALL_AR_ACTIONS",
-    "ALL_ASM_ACTIONS",
-    "ALL_COVERAGE_ACTIONS",
-    "ALL_CPP_COMPILER_ACTIONS",
-    "ALL_C_COMPILER_ACTIONS",
-    "ALL_LINK_ACTIONS",
-    "ALL_OBJCOPY_ACTIONS",
-    "ALL_OBJDUMP_ACTIONS",
-    "ALL_STRIP_ACTIONS",
     "pw_cc_action_config",
     "pw_cc_tool",
 )
@@ -48,7 +39,7 @@ pw_cc_tool(
 
 pw_cc_action_config(
     name = "ar",
-    action_names = ALL_AR_ACTIONS,
+    action_names = ["@pw_toolchain//actions:all_ar_actions"],
     implies = [
         "archiver_flags",
         "linker_param_file",
@@ -67,7 +58,7 @@ pw_cc_tool(
 
 pw_cc_action_config(
     name = "clang++",
-    action_names = ALL_CPP_COMPILER_ACTIONS,
+    action_names = ["@pw_toolchain//actions:all_cpp_compiler_actions"],
     tools = [":clang++_tool"],
 )
 
@@ -82,7 +73,10 @@ pw_cc_tool(
 
 pw_cc_action_config(
     name = "clang",
-    action_names = ALL_ASM_ACTIONS + ALL_C_COMPILER_ACTIONS,
+    action_names = [
+        "@pw_toolchain//actions:all_asm_actions",
+        "@pw_toolchain//actions:all_c_compiler_actions",
+    ],
     tools = [":clang_tool"],
 )
 
@@ -99,7 +93,7 @@ pw_cc_tool(
 
 pw_cc_action_config(
     name = "lld",
-    action_names = ALL_LINK_ACTIONS,
+    action_names = ["@pw_toolchain//actions:all_link_actions"],
     tools = [":lld_tool"],
 )
 
@@ -110,7 +104,7 @@ pw_cc_tool(
 
 pw_cc_action_config(
     name = "llvm-cov",
-    action_names = ALL_COVERAGE_ACTIONS,
+    action_names = ["@pw_toolchain//actions:all_coverage_actions"],
     tools = [":llvm_cov_tool"],
 )
 
@@ -121,7 +115,7 @@ pw_cc_tool(
 
 pw_cc_action_config(
     name = "llvm-objcopy",
-    action_names = ALL_OBJCOPY_ACTIONS,
+    action_names = ["@pw_toolchain//actions:all_objcopy_actions"],
     tools = [":llvm_objcopy_tool"],
 )
 
@@ -132,7 +126,7 @@ pw_cc_tool(
 
 pw_cc_action_config(
     name = "llvm-objdump",
-    action_names = ALL_OBJDUMP_ACTIONS,
+    action_names = ["@pw_toolchain//actions:all_objdump_actions"],
     tools = [":llvm_objdump_tool"],
 )
 
@@ -143,6 +137,6 @@ pw_cc_tool(
 
 pw_cc_action_config(
     name = "llvm-strip",
-    action_names = ALL_STRIP_ACTIONS,
+    action_names = ["@pw_toolchain//actions:all_strip_actions"],
     tools = [":llvm_strip_tool"],
 )
