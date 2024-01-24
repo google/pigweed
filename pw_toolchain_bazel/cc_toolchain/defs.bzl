@@ -34,23 +34,6 @@ load(
     _pw_cc_flag_set = "pw_cc_flag_set",
 )
 
-# All of the following are deprecated. Instead use their targets.
-OBJ_COPY_ACTION_NAME = "@pw_toolchain//actions:objcopy_embed_data"
-COV_ACTION_NAME = "@pw_toolchain//actions:llvm_cov"
-OBJ_DUMP_ACTION_NAME = "@pw_toolchain//actions:objdump_embed_data"
-STRIP_ACTION_NAME = "@pw_toolchain//actions:strip"
-
-# All of the following are deprecated. Instead use their targets.
-ALL_AR_ACTIONS = ["@pw_toolchain//actions:all_ar_actions"]
-ALL_ASM_ACTIONS = ["@pw_toolchain//actions:all_asm_actions"]
-ALL_C_COMPILER_ACTIONS = ["@pw_toolchain//actions:all_c_compiler_actions"]
-ALL_COVERAGE_ACTIONS = ["@pw_toolchain//actions:all_coverage_actions"]
-ALL_CPP_COMPILER_ACTIONS = ["@pw_toolchain//actions:all_cpp_compiler_actions"]
-ALL_LINK_ACTIONS = ["@pw_toolchain//actions:all_link_actions"]
-ALL_OBJCOPY_ACTIONS = [OBJ_COPY_ACTION_NAME]
-ALL_OBJDUMP_ACTIONS = [OBJ_DUMP_ACTION_NAME]
-ALL_STRIP_ACTIONS = ["@pw_toolchain//actions:all_strip_actions"]
-
 pw_cc_action_name_set = _pw_cc_action_name_set
 
 pw_cc_action_config = _pw_cc_action_config
