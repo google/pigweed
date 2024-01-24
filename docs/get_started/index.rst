@@ -79,5 +79,21 @@ Create a Pigweed-based project
    :hidden:
 
    First-time setup <first_time_setup>
-   Bazel <bazel>
+   Bazel quickstart <bazel>
+   Bazel integration <bazel_integration>
    Upstream Pigweed <upstream>
+
+------------------------------------------
+Use Pigweed modules in an existing project
+------------------------------------------
+Pigweed is modular: you can use as much or as little of it as you need.
+
+.. grid:: 1
+
+   .. grid-item-card:: :octicon:`rocket` Bazel
+      :link: docs-bazel-integration
+      :link-type: ref
+      :class-item: sales-pitch-cta-primary
+
+      Instructions for how to use a Pigweed module in an existing Bazel
+      project.

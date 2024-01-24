@@ -53,6 +53,7 @@ pw_doc_group("core_docs") {
     "facades.rst",
     "faq.rst",
     "get_started/bazel.rst",
+    "get_started/bazel_integration.rst",
     "get_started/first_time_setup.rst",
     "get_started/index.rst",
     "get_started/upstream.rst",
