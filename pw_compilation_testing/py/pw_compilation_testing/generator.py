@@ -268,7 +268,9 @@ class _NegativeCompilationTestSource:
         stray = all_expectations - self._parsed_expectations
         if stray:
             self._error(
-                f'Found {len(stray)} stray PW_NC_EXPECT() commands!',
+                f'Found {len(stray)} stray PW_NC_EXPECT() statements! '
+                'PW_NC_EXPECT() statements must follow immediately after a '
+                'PW_NC_TEST() declaration.',
                 *sorted(stray),
             )
 

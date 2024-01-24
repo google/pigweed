@@ -17,6 +17,7 @@ import argparse
 import logging
 from pathlib import Path
 import re
+import shlex
 import string
 import sys
 import subprocess
@@ -79,7 +80,7 @@ _EXPECTED_GN_VARS = (
     'include_dirs',
 )
 
-_ENABLE_TEST_MACRO = '-DPW_NC_TEST_EXECUTE_CASE_'
+_TEST_MACRO = 'PW_NC_TEST_EXECUTE_CASE_'
 # Regular expression to find and remove ANSI escape sequences, based on
 # https://stackoverflow.com/a/14693789.
 _ANSI_ESCAPE_SEQUENCES = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
@@ -199,6 +200,25 @@ def _check_results(
         raise _TestFailure
 
 
+def _should_skip_test(base_command: str) -> bool:
+    # Attempt to run the preprocessor while setting the PW_NC_TEST macro to an
+    # illegal statement (defined() with no identifier). If the preprocessor
+    # passes, the test was skipped.
+    preprocessor_cmd = f'{base_command}{shlex.quote("defined()")} -E'
+    process = subprocess.run(
+        preprocessor_cmd,
+        shell=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    _LOG.debug(
+        'Preprocessor command to check if test is enabled returned %d:\n%s',
+        process.returncode,
+        preprocessor_cmd,
+    )
+    return process.returncode == 0
+
+
 def _execute_test(
     test: TestCase,
     command: str,
@@ -207,21 +227,26 @@ def _execute_test(
 ) -> None:
     variables['in'] = str(test.source)
 
-    command = string.Template(command).substitute(variables)
-    command = ' '.join(
+    base_command = ' '.join(
         [
-            command,
+            string.Template(command).substitute(variables),
             '-DPW_NEGATIVE_COMPILATION_TESTS_ENABLED',
             # Define macros to disable all tests except this one.
-            *(
-                f'{_ENABLE_TEST_MACRO}{t}={1 if test.case == t else 0}'
-                for t in all_tests
-            ),
+            *(f'-D{_TEST_MACRO}{t}=0' for t in all_tests if t != test.case),
+            f'-D{_TEST_MACRO}{test.case}=',
         ]
     )
-    process = subprocess.run(command, shell=True, capture_output=True)
 
-    _check_results(test, command, process)
+    if _should_skip_test(base_command):
+        _LOG.info(
+            "Skipping test %s since it is excluded by the preprocessor",
+            test.name(),
+        )
+        return
+
+    compile_command = base_command + '1'  # set macro to 1 to enable the test
+    process = subprocess.run(compile_command, shell=True, capture_output=True)
+    _check_results(test, compile_command, process)
 
 
 def _main(

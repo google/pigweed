@@ -79,6 +79,13 @@ Negative compilation test example
     #endif  // PW_NC_TEST
   }
 
+  // PW_NC_TESTs can be conditionally executed using preprocessor conditionals.
+  #if PW_CXX_STANDARD_IS_SUPPORTED(20)
+  #if PW_NC_TEST(RequiresSomeCpp20Feature)
+  [[maybe_unused]] constinit MyStruct<4> constinit_works;
+  #endif // PW_NC_TEST
+  #endif // PW_CXX_STANDARD_IS_SUPPORTED(20)
+
 ------------------------------------
 Creating a negative compilation test
 ------------------------------------
@@ -94,11 +101,12 @@ Creating a negative compilation test
   line.
 - Execute the tests by running the build.
 
-To simplify parsing, all ``PW_NC_TEST()`` statements must fit on a single line.
-``PW_NC_EXPECT()`` statements may span multiple lines, but must contain a single
-regular expression as a string literal. The string may be comprised of multiple
-implicitly concatenated string literals. The ``PW_NC_EXPECT()`` statement cannot
-contain anything else except for ``//``-style comments.
+To simplify parsing, all ``PW_NC_TEST()`` statements must fit on a single line
+and cannot have any other code before or after them. ``PW_NC_EXPECT()``
+statements may span multiple lines, but must contain a single regular expression
+as a string literal. The string may be comprised of multiple implicitly
+concatenated string literals. The ``PW_NC_EXPECT()`` statement cannot contain
+anything else except for ``//``-style comments.
 
 Test assertions
 ===============

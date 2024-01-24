@@ -28,7 +28,7 @@
 
 #else
 
-// If testing is disbaled, always evaluate false to disable the test case.
+// If testing is disabled, always evaluate false to disable the test case.
 #define PW_NC_TEST(test_case) 0 && PW_NC_TEST_EXECUTE_CASE_##test_case
 
 #endif  // PW_NEGATIVE_COMPILATION_TESTS_ENABLED
