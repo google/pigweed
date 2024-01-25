@@ -14,6 +14,7 @@
 #pragma once
 
 #include <bitset>
+#include <cstdint>
 #include <optional>
 
 #include "pw_span/span.h"
