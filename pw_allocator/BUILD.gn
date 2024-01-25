@@ -18,6 +18,7 @@ import("$dir_pw_allocator/allocator.gni")
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_fuzzer/fuzz_test.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("default_config") {
@@ -346,9 +347,11 @@ pw_test("simple_allocator_test") {
   sources = [ "simple_allocator_test.cc" ]
 }
 
-pw_test("split_free_list_allocator_test") {
+pw_fuzz_test("split_free_list_allocator_test") {
+  configs = [ ":enable_heap_poison" ]
   deps = [
-    ":allocator_testing",
+    ":allocator_fuzzing",
+    ":buffer",
     ":split_free_list_allocator",
     "$dir_pw_containers:vector",
     dir_pw_bytes,

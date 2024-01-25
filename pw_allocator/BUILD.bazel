@@ -399,10 +399,12 @@ pw_cc_test(
         "split_free_list_allocator_test.cc",
     ],
     deps = [
+        ":allocator_fuzzing",
         ":buffer",
         ":split_free_list_allocator",
         "//pw_bytes",
         "//pw_containers:vector",
+        "//pw_fuzzer:fuzztest",
         "//pw_unit_test",
     ],
 )

@@ -44,4 +44,52 @@ auto ArbitraryAllocatorRequests() {
   return fuzzer::VectorOf<kMaxRequests>(ArbitraryAllocatorRequest(kMaxSize));
 }
 
+/// Builds an AllocatorRequest from an index and values.
+///
+/// Unfortunately, the reproducer emitted by FuzzTest for vectors of
+/// AllocatorRequests cannot simply be copied and pasted. To create a
+/// reproducer, create a `pw::Vector` of the appropriate size, and populate it
+/// using this method with the correct index.
+///
+/// For example, consider the following sample output:
+/// @code
+/// The test fails with input:
+/// argument 0: {(index=0, value={0, 1}), (index=0, value={1209, 8}),
+/// (index=2, value={9223372036854775807, 2048})}
+///
+/// =================================================================
+/// === Reproducer test
+///
+/// TEST(MyAllocatorFuzzTest, NeverCrashesU16Regression) {
+///   NeverCrashes(
+///     {{0, 1}, {1209, 8}, {9223372036854775807, 2048},
+///   );
+/// }
+/// @endcode
+///
+/// A valid reproducer might be:
+/// @code{.cpp}
+/// TEST(MyAllocatorFuzzTest, NeverCrashesU16Regression) {
+///   Vector<test::AllocatorRequest, 3> input({
+///     test::MakeAllocatorRequest<0>(0u, 1u),
+///     test::MakeAllocatorRequest<0>(1209u, 8u),
+///     test::MakeAllocatorRequest<2>(9223372036854775807u, 2048u),
+///   });
+///   NeverCrashes(input);
+// }
+/// @endcode
+template <size_t kIndex, typename... Args>
+AllocatorRequest MakeAllocatorRequest(Args... args) {
+  if constexpr (kIndex == 0) {
+    return AllocationRequest{static_cast<size_t>(args)...};
+  }
+  if constexpr (kIndex == 1) {
+    return DeallocationRequest{static_cast<size_t>(args)...};
+  }
+  if constexpr (kIndex == 2) {
+    return ReallocationRequest{static_cast<size_t>(args)...};
+  }
+  return AllocatorRequest();
+}
+
 }  // namespace pw::allocator::test

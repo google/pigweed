@@ -357,10 +357,12 @@ pw_add_test(pw_allocator.split_free_list_allocator_test
   SOURCES
     split_free_list_allocator_test.cc
   PRIVATE_DEPS
+    pw_allocator.allocator_fuzzing
     pw_allocator.buffer
     pw_allocator.split_free_list_allocator
     pw_containers.vector
     pw_bytes
+    pw_fuzzer.fuzztest
     pw_unit_test
   GROUPS
     modules

@@ -131,7 +131,9 @@ void AllocatorTestHarnessGeneric::HandleRequest(
             Allocation old = RemoveAllocation(r.index);
             void* new_ptr =
                 allocator_->Reallocate(old.ptr, old.layout, r.new_size);
-            if (new_ptr != nullptr) {
+            if (new_ptr == nullptr) {
+              AddAllocation(old.ptr, old.layout);
+            } else {
               AddAllocation(new_ptr,
                             Layout(r.new_size, old.layout.alignment()));
             }

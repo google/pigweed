@@ -14,11 +14,13 @@
 
 #include "pw_allocator/split_free_list_allocator.h"
 
+#include "pw_allocator/allocator_fuzzing.h"
 #include "pw_allocator/block.h"
 #include "pw_allocator/buffer.h"
 #include "pw_bytes/alignment.h"
 #include "pw_bytes/span.h"
 #include "pw_containers/vector.h"
+#include "pw_fuzzer/fuzztest.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::allocator {
@@ -26,26 +28,37 @@ namespace {
 
 // Test fixtures.
 
-// Size of the memory region to use in the tests below.
-static constexpr size_t kCapacity = 256;
-
-// Minimum size of a "large" allocation; allocation less than this size are
-// considered "small".
-static constexpr size_t kThreshold = 64;
-
-using BlockType = Block<uint16_t>;
+// An `SplitFreeListAllocator` that is automatically initialized on
+// construction.
+template <typename BlockType, size_t kCapacity, size_t kThreshold>
+class SplitFreeListAllocatorWithBuffer
+    : public WithBuffer<SplitFreeListAllocator<BlockType>,
+                        kCapacity,
+                        BlockType> {
+ public:
+  SplitFreeListAllocatorWithBuffer() {
+    EXPECT_EQ((*this)->Init(ByteSpan(this->data(), this->size()), kThreshold),
+              OkStatus());
+  }
+};
 
 // Test case fixture that allows individual tests to cache allocations and
 // release them automatically on tear-down.
 class SplitFreeListAllocatorTest : public ::testing::Test {
  protected:
+  using BlockType = Block<uint16_t>;
+
+  // Size of the memory region to use in the tests below.
+  static constexpr size_t kCapacity = 512;
+
+  // Minimum size of a "large" allocation; allocation less than this size are
+  // considered "small".
+  static constexpr size_t kThreshold = 64;
+
   static constexpr size_t kMaxSize = kCapacity - BlockType::kBlockOverhead;
   static constexpr size_t kNumPtrs = 16;
 
   void SetUp() override {
-    EXPECT_EQ(allocator_->Init(ByteSpan(allocator_.data(), allocator_.size()),
-                               kThreshold),
-              OkStatus());
     for (size_t i = 0; i < kNumPtrs; ++i) {
       ptrs_[i] = nullptr;
     }
@@ -64,8 +77,7 @@ class SplitFreeListAllocatorTest : public ::testing::Test {
     }
   }
 
-  WithBuffer<SplitFreeListAllocator<BlockType>, kCapacity, BlockType>
-      allocator_;
+  SplitFreeListAllocatorWithBuffer<BlockType, kCapacity, kThreshold> allocator_;
 
   // Tests can store allocations in this array to have them automatically
   // freed in `TearDown`, including on ASSERT failure. If pointers are manually
@@ -425,6 +437,38 @@ TEST_F(SplitFreeListAllocatorTest, ResizeSmallLargerAcrossThreshold) {
   ASSERT_NE(ptrs_[2], nullptr);
   UseMemory(ptrs_[2], new_layout.size());
 }
+
+// Fuzz tests.
+
+constexpr size_t kFuzzMaxRequests = 256;
+constexpr size_t kFuzzMaxAllocations = 128;
+
+template <typename BlockType, size_t kCapacity>
+class SplitFreeListAllocatorFuzzTest
+    : public test::AllocatorTestHarness<kFuzzMaxAllocations> {
+ private:
+  Allocator* Init() override { return &(*allocator_); }
+  SplitFreeListAllocatorWithBuffer<BlockType, kCapacity, kCapacity / 8>
+      allocator_;
+};
+
+constexpr size_t kFuzzU16MaxSize = 2048;
+void NeverCrashesU16(const Vector<test::AllocatorRequest>& requests) {
+  SplitFreeListAllocatorFuzzTest<Block<uint16_t>, kFuzzU16MaxSize> fuzzer;
+  fuzzer.HandleRequests(requests);
+}
+FUZZ_TEST(SplitFreeListAllocatorFuzzTest, NeverCrashesU16)
+    .WithDomains(
+        test::ArbitraryAllocatorRequests<kFuzzMaxRequests, kFuzzU16MaxSize>());
+
+constexpr size_t kFuzzU32MaxSize = 2048;
+void NeverCrashesU32(const Vector<test::AllocatorRequest>& requests) {
+  SplitFreeListAllocatorFuzzTest<Block<uint32_t>, kFuzzU32MaxSize> fuzzer;
+  fuzzer.HandleRequests(requests);
+}
+FUZZ_TEST(SplitFreeListAllocatorFuzzTest, NeverCrashesU32)
+    .WithDomains(
+        test::ArbitraryAllocatorRequests<kFuzzMaxRequests, kFuzzU32MaxSize>());
 
 }  // namespace
 }  // namespace pw::allocator
