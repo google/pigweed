@@ -392,7 +392,6 @@ struct LEMultiAdvtSetAdvtParamCommand:
     0     [+3]                        hci.LEAdvertisingChannels      adv_channel_map
       -- Indicates the advertising channels that shall be used when transmitting
       -- advertising packets. At least 1 channel must be enabled.
-      -- Default: all channels enabled
 
   $next [+1]                          hci.LEAdvertisingFilterPolicy  adv_filter_policy
     -- This parameter shall be ignored when directed advertising is enabled.
@@ -465,3 +464,344 @@ struct LEMultiAdvtStateChangeSubevent:
   $next [+2]         UInt                  connection_handle
     -- Handle used to identify the connection that caused the state change (i.e.
     -- advertising instance to be disabled). Value will be 0xFFFF if invalid.
+
+# ------------------ Advertising Packet Content Filter -------------------------
+
+
+enum ApcfSubOpcode:
+  ENABLE                   = 0x00
+  SET_FILTERING_PARAMETERS = 0x01
+  BROADCAST_ADDRESS        = 0x02
+  SERVICE_UUID             = 0x03
+  SOLICITATION_UUID        = 0x04
+  LOCAL_NAME               = 0x05
+  MANUFACTURER_DATA        = 0x06
+  SERVICE_DATA             = 0x07
+
+
+enum ApcfAction:
+  [maximum_bits: 8]
+  ADD    = 0x00
+  DELETE = 0x01
+    --  Delete will clear the specific filter along with associated feature
+    --  entries in other tables
+
+  CLEAR  = 0x02
+    -- Clear will clear all the filters and associated entries in other tables
+
+
+bits ApcfFeature:
+  0     [+1]  Flag  broadcast_address
+  $next [+1]  Flag  service_data_change
+  $next [+1]  Flag  service_uuid
+  $next [+1]  Flag  service_solicitation_uuid
+  $next [+1]  Flag  local_name
+  $next [+1]  Flag  manufacturer_data
+  $next [+1]  Flag  service_data
+
+
+enum ApcfDeliveryMode:
+  [maximum_bits: 8]
+
+  IMMEDIATE = 0x00
+    -- Deliver a matching advertising packet immediately when the Controller sees
+
+  ON_FOUND  = 0x01
+    -- Linger up to a configurable timeout (via onfound_timeout and
+    -- onfound_timeout_cnt) before delivering a matching advertising packet
+
+  BATCHED   = 0x02
+    -- Deliver matching advertising packets in batch
+
+
+struct LEApcfCommandCompleteEvent:
+  -- NOTE: The LEApcfCommandCompleteEvent applies to all commands except
+  -- LEApcfEnableCommand. LEApcfEnableCommand's command complete event is ever
+  -- so slightly different and has its own definition.
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  $next [+1]         hci.StatusCode            status
+  $next [+1]         ApcfSubOpcode             sub_opcode
+  $next [+1]         ApcfAction                action
+    -- Echo back of the action parameter provided in the original command
+
+  $next [+1]         UInt                      available_spaces
+    -- Number of available entries in the Controller's filters table
+
+
+struct LEApcfEnableCommand:
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+  0     [+vendor_size]  AndroidCommandHeader    vendor_command
+  $next [+1]            hci.GenericEnableParam  enabled
+
+
+struct LEApcfEnableCommandCompleteEvent:
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  $next [+1]         hci.StatusCode            status
+  $next [+1]         UInt                      sub_opcode
+    [requires: this == 0x00]
+
+  $next [+1]         hci.GenericEnableParam    enabled
+    -- Echo back of enable parameter provided in the original command
+
+
+struct LEApcfSetFilteringParametersCommand:
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+
+  0     [+vendor_size]  AndroidCommandHeader  vendor_command
+
+  $next [+1]            ApcfAction            action
+
+  $next [+1]            UInt                  filter_index
+    -- Filter index used to identify an advertising packet content
+    -- filter. Filter indices are assigned on demand when used.
+    --
+    -- NOTE: The maximum number of packet filters is published via the
+    -- max_filter attribute within LEGetVendorCapabilitiesCommandCompleteEvent.
+    --
+    -- Range: (0, max_filter - 1)
+
+  $next [+2]  bits:
+
+    0     [+7]          ApcfFeature           feature_selection
+      -- set of features to enable for this advertising packet content filter
+
+  $next [+2]  bits:
+
+    0     [+7]          ApcfFeature           list_logic_type
+      -- Multiple instances of a filter are stored in a list within the
+      -- controller. There is a separate list for each filter type within
+      -- feature_selection. This field specifies the logic operation for each
+      -- feature selection (per-bit position) specified in
+      -- feature_selection. Valid only when a feature is enabled.
+      --
+      -- Bit position value:
+      --    0: OR
+      --    1: AND
+      --
+      -- NOTE: If AND logic is selected, an advertising packet will pass the
+      -- filter only if it contains all of the entries in the list. If OR logic is
+      -- selected, an advertising packet will pass the filter if it contains any
+      -- of the entries in the list.
+
+  $next [+1]  bits:
+
+    0     [+7]          ApcfFeature           filter_logic_type
+      -- The controller supports multiple types of advertising packet content
+      -- filters. This field specifies the logic operation across advertising
+      -- packet content filters.
+      --
+      -- Bit position value:
+      --    0: OR
+      --    1: AND
+      --
+      -- NOTE: The logic type for the first three fields of ApcfFeature is always
+      -- AND. This bitmask is only applicable for bits 3 to 6 (four fields) of
+      -- ApcfFeature.
+
+  $next [+1]            UInt                  rssi_high_threshold
+    -- An advertiser is considered seen only if the signal is higher than the
+    -- RSSI high threshold. RSSI values must use 2's complement to represent
+    -- negative values.
+    --
+    -- Unit: dBm
+
+  $next [+1]            ApcfDeliveryMode      delivery_mode
+
+  $next [+2]            UInt                  onfound_timeout
+    -- Timeout (in milliseconds) for Controller to linger and collect additional
+    -- advertisements before reporting an advertising packet. Valid only if
+    -- delivery_mode is ON_FOUND.
+
+  $next [+1]            UInt                  onfound_timeout_count
+    -- Maximum number of advertisements that can linger unreported within the
+    -- Controller at any given time. The Controller will report lingering
+    -- advertising packets even in onfound_timeout hasn't been reached. Valid
+    -- only if delivery_mode is ON_FOUND.
+
+  $next [+1]            UInt                  rssi_low_threshold
+    -- If the RSSI of the received packet is below the RSSI low threshold, the
+    -- advertising packet is considered as not seen. RSSI values must use 2's
+    -- complement to represent negative values. Valid
+    -- only if delivery_mode is ON_FOUND.
+    --
+    -- Unit: dBm
+
+  $next [+2]            UInt                  onlost_timeout
+    -- Timeout (in milliseconds) for Controller to report an advertisement as
+    -- being lost if, after being found, is not seen contiguously for the
+    -- timeout period. Valid only if delivery_mode is ON_FOUND.
+
+  $next [+2]            UInt                  num_tracking_entries
+    -- Total number of advertisements to track per filter. Valid only if
+    -- delivery_mode is ON_FOUND.
+
+
+struct LEApcfBroadcastAddressCommand:
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+
+  0     [+vendor_size]                AndroidCommandHeader   vendor_command
+
+  $next [+1]                          ApcfAction             action
+
+  $next [+1]                          UInt                   filter_index
+    -- Filter index used to identify an advertising packet content
+    -- filter. Filter indices are assigned on demand when used.
+    --
+    -- NOTE: The maximum number of packet filters is published via the
+    -- max_filter attribute within LEGetVendorCapabilitiesCommandCompleteEvent.
+    --
+    -- Range: (0, max_filter - 1)
+
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr             broadcaster_address
+    -- Device address to add to or delete from the broadcaster address list
+
+  $next [+1]                          hci.LEPeerAddressType  peer_addr_type
+
+
+struct LEApcfServiceUUIDCommand(uuid_size: UInt:8):
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+
+  0     [+vendor_size]  AndroidCommandHeader  vendor_command
+
+  $next [+1]            ApcfAction            action
+
+  $next [+1]            UInt                  filter_index
+    -- Filter index used to identify an advertising packet content
+    -- filter. Filter indices are assigned on demand when used.
+    --
+    -- NOTE: The maximum number of packet filters is published via the
+    -- max_filter attribute within LEGetVendorCapabilitiesCommandCompleteEvent.
+    --
+    -- Range: (0, max_filter - 1)
+
+  $next [+uuid_size]    UInt:8[uuid_size]     uuid
+    -- The Service UUID (16-bit, 32-bit, or 128-bit) for adding to, or deleting
+    -- from, the list.
+
+  $next [+uuid_size]    UInt:8[uuid_size]     uuid_mask
+    -- The Service UUID Mask (16-bit, 32-bit, or 128-bit) to add to the list.
+
+
+struct LEApcfSolicitationUUIDCommand(uuid_size: UInt:8):
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+
+  0     [+vendor_size]  AndroidCommandHeader  vendor_command
+
+  $next [+1]            ApcfAction            action
+
+  $next [+1]            UInt                  filter_index
+    -- Filter index used to identify an advertising packet content
+    -- filter. Filter indices are assigned on demand when used.
+    --
+    -- NOTE: The maximum number of packet filters is published via the
+    -- max_filter attribute within LEGetVendorCapabilitiesCommandCompleteEvent.
+    --
+    -- Range: (0, max_filter - 1)
+
+  $next [+uuid_size]    UInt:8[uuid_size]     uuid
+    -- The Solicitation UUID (16-bit, 32-bit, or 128-bit) for adding to, or
+    -- deleting from, the list.
+
+  $next [+uuid_size]    UInt:8[uuid_size]     uuid_mask
+    -- The Solicitation UUID Mask (16-bit, 32-bit, or 128-bit) to add to the
+    -- list.
+
+
+struct LEApcfLocalNameCommand(size: UInt:8):
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+
+  0     [+vendor_size]  AndroidCommandHeader  vendor_command
+
+  $next [+1]            ApcfAction            action
+
+  $next [+1]            UInt                  filter_index
+    -- Filter index used to identify an advertising packet content
+    -- filter. Filter indices are assigned on demand when used.
+    --
+    -- NOTE: The maximum number of packet filters is published via the
+    -- max_filter attribute within LEGetVendorCapabilitiesCommandCompleteEvent.
+    --
+    -- Range: (0, max_filter - 1)
+
+  $next [+size]         UInt:8[size]          local_name
+    -- The character string to match against the local name. Currently, the
+    -- maximum number of bytes this field supports is kLEApcfMaxPDUValueLength.
+    --
+    -- NOTE: This field is not null (0x00) terminated. The size of the packet
+    -- sent to the controller determines the length of the value.
+    --
+    -- NOTE: This field is not applicable when the action above is
+    -- ApcfAction::Clear.
+
+
+struct LEApcfManufacturerDataCommand(size: UInt:8):
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+
+  0     [+vendor_size]  AndroidCommandHeader  vendor_command
+
+  $next [+1]            ApcfAction            action
+
+  $next [+1]            UInt                  filter_index
+    -- Filter index used to identify an advertising packet content
+    -- filter. Filter indices are assigned on demand when used.
+    --
+    -- NOTE: The maximum number of packet filters is published via the
+    -- max_filter attribute within LEGetVendorCapabilitiesCommandCompleteEvent.
+    --
+    -- Range: (0, max_filter - 1)
+
+  $next [+size]         UInt:8[size]          manufacturer_data
+    -- The character string to match against the manufacturer data. Currently,
+    -- the maximum number of bytes this field supports is
+    -- kLEApcfMaxPDUValueLength.
+    --
+    -- NOTE: This field is not null (0x00) terminated. The size of the packet
+    -- sent to the controller determines the length of the value.
+    --
+    -- NOTE: This field is not applicable when the action above is
+    -- ApcfAction::Clear.
+
+  $next [+size]         UInt:8[size]          manufacturer_data_mask
+    -- The manufacturer data mask to add to the list. Manufacturer data is
+    -- variable in size and we may want to match against some given part of
+    -- it. The manufacturer_data_mask selects the bits which we match against
+    -- within the manufacturer_data field.
+    --
+    -- NOTE: This field is not applicable when the action above is
+    -- ApcfAction::Clear.
+
+
+struct LEApcfServiceDataCommand(size: UInt:8):
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+
+  0     [+vendor_size]  AndroidCommandHeader  vendor_command
+
+  $next [+1]            ApcfAction            action
+
+  $next [+1]            UInt                  filter_index
+    -- Filter index used to identify an advertising packet content
+    -- filter. Filter indices are assigned on demand when used.
+    --
+    -- NOTE: The maximum number of packet filters is published via the
+    -- max_filter attribute within LEGetVendorCapabilitiesCommandCompleteEvent.
+    --
+    -- Range: (0, max_filter - 1)
+
+  $next [+size]         UInt:8[size]          service_data
+    -- The character string to match against the manufacturer data. Currently,
+    -- the maximum number of bytes this field supports is
+    -- kLEApcfMaxPDUValueLength.
+    --
+    -- NOTE: This field is not applicable when the action above is
+    -- ApcfAction::Clear.
+
+  $next [+size]         UInt:8[size]          service_data_mask
+    -- The service data mask to add to the list. Service data is variable in
+    -- size and we may want to match against some given part of it. The
+    -- service_data_mask selects the bits which we match against within the
+    -- service_data field.
+    --
+    -- NOTE: This field is not applicable when the action above is
+    -- ApcfAction::Clear.
