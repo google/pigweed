@@ -264,6 +264,39 @@ a single line if necessary.
   Whenever possible, fix the underlying issues about which the compiler is
   warning, rather than silencing the diagnostics.
 
+Integer with Overflow Checking
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``pw_preprocessor/compiler.h`` provides macros for performing arithmetic
+operations and checking whether it overflowed.
+
+.. c:macro:: PW_ADD_OVERFLOW(a, b, out)
+
+  PW_ADD_OVERFLOW adds two integers while checking for overflow.
+
+  Returns true if the result of `a + b` overflows the type of `out`; otherwise
+  stores the result in `out` and returns false.
+
+  See also `PW_CHECK_ADD`.
+
+.. c:macro:: PW_SUB_OVERFLOW(a, b, out)
+
+  PW_SUB_OVERFLOW subtracts an integer from another while checking for
+  overflow.
+
+  Returns true if the result of `a - b` overflows the type of `out`; otherwise
+  stores the result in `out` and returns false.
+
+  See also `PW_CHECK_SUB`.
+
+.. c:macro:: PW_MUL_OVERFLOW(a, b, out)
+
+  PW_MUL_OVERFLOW multiplies two integers while checking for overflow.
+
+  Returns true if the result of `a * b` overflows the type of `out`; otherwise
+  stores the result in `out` and returns false.
+
+  See also `PW_CHECK_MUL`.
+
 pw_preprocessor/concat.h
 ------------------------
 Defines the ``PW_CONCAT(...)`` macro, which expands its arguments if they are

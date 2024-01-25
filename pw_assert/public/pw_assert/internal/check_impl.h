@@ -130,6 +130,16 @@
 #define PW_DCHECK_FLOAT_EXACT_EQ(...) if (!(PW_ASSERT_ENABLE_DEBUG)) {} else PW_CHECK_FLOAT_EXACT_EQ(__VA_ARGS__)
 #define PW_DCHECK_FLOAT_EXACT_NE(...) if (!(PW_ASSERT_ENABLE_DEBUG)) {} else PW_CHECK_FLOAT_EXACT_NE(__VA_ARGS__)
 
+// Debug checks for integer overflows: ADD, SUB, MUL.
+#define PW_CHECK_ADD(a, b, out, ...) PW_CHECK(!PW_ADD_OVERFLOW(a, b, out), __VA_ARGS__)
+#define PW_CHECK_SUB(a, b, out, ...) PW_CHECK(!PW_SUB_OVERFLOW(a, b, out), __VA_ARGS__)
+#define PW_CHECK_MUL(a, b, out, ...) PW_CHECK(!PW_MUL_OVERFLOW(a, b, out), __VA_ARGS__)
+
+// Debug checks for integer overflows: ADD, SUB, MUL.
+#define PW_DCHECK_ADD(a, b, out, ...) PW_DCHECK(!PW_ADD_OVERFLOW(a, b, out), __VA_ARGS__)
+#define PW_DCHECK_SUB(a, b, out, ...) PW_DCHECK(!PW_SUB_OVERFLOW(a, b, out), __VA_ARGS__)
+#define PW_DCHECK_MUL(a, b, out, ...) PW_DCHECK(!PW_MUL_OVERFLOW(a, b, out), __VA_ARGS__)
+
 // clang-format on
 
 // PW_CHECK_OK - If condition does not evaluate to PW_STATUS_OK, crash. Message

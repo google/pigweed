@@ -216,3 +216,28 @@
 #else
 #define PW_ATTRIBUTE_LIFETIME_BOUND
 #endif  // PW_ATTRIBUTE_LIFETIME_BOUND
+
+/// PW_ADD_OVERFLOW adds two integers while checking for overflow.
+///
+/// Returns true if the result of `a + b` overflows the type of `out`; otherwise
+/// stores the result in `out` and returns false.
+///
+/// See also `PW_CHECK_ADD`.
+#define PW_ADD_OVERFLOW(a, b, out) __builtin_add_overflow(a, b, out)
+
+/// PW_SUB_OVERFLOW subtracts an integer from another while checking for
+/// overflow.
+///
+/// Returns true if the result of `a - b` overflows the type of `out`; otherwise
+/// stores the result in `out` and returns false.
+///
+/// See also `PW_CHECK_SUB`.
+#define PW_SUB_OVERFLOW(a, b, out) __builtin_sub_overflow(a, b, out)
+
+/// PW_MUL_OVERFLOW multiplies two integers while checking for overflow.
+///
+/// Returns true if the result of `a * b` overflows the type of `out`; otherwise
+/// stores the result in `out` and returns false.
+///
+/// See also `PW_CHECK_MUL`.
+#define PW_MUL_OVERFLOW(a, b, out) __builtin_mul_overflow(a, b, out)
