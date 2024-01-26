@@ -237,6 +237,21 @@ pw_source_set("logging_main") {
   sources = [ "logging_main.cc" ]
 }
 
+# Library providing an event handler adapter that allows for multiple
+# event handlers to be registered for a given test run
+pw_source_set("multi_event_handler") {
+  public_deps = [ ":event_handler" ]
+  public = [ "public/pw_unit_test/multi_event_handler.h" ]
+}
+
+pw_test("multi_event_handler_test") {
+  sources = [ "multi_event_handler_test.cc" ]
+  deps = [
+    ":multi_event_handler",
+    ":pw_unit_test",
+  ]
+}
+
 config("rpc_service_backend_light") {
   include_dirs = [ "rpc_light_public" ]
 }
@@ -379,6 +394,7 @@ pw_test_group("tests") {
     ":framework_test",
     ":framework_light_test",
     ":static_library_support_test",
+    ":multi_event_handler_test",
   ]
   if (dir_pw_third_party_googletest != "") {
     tests += [ ":googletest_test_matchers_test" ]

@@ -203,6 +203,13 @@ GoogleTest-style output using the shared
 
    Event handler that uses ``std::printf`` to output test results.
 
+.. cpp:class:: MultiEventHandler : public GoogleTestStyleEventHandler
+
+   An event handler adapter that allows you to register multiple event handlers
+   for a test run. To use it, create a MultiEventHandler object by passing
+   in the event handlers you want to use into the constructor. Then, register
+   the MultiEventHandler object as the test run's event handler.
+
 .. cpp:namespace-pop::
 
 Test filtering
