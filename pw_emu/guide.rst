@@ -47,11 +47,28 @@ Get started
 
    .. tab-item:: CMake
 
-      ``pw_emu`` is currently only supported for GN-based projects.
+      ``pw_emu`` is not currently supported for CMake-based projects.
 
    .. tab-item:: Zephyr
 
-      ``pw_emu`` is currently only supported for GN-based projects.
+      ``pw_emu`` is not currently supported for Zephyr-based projects.
+
+   .. tab-item:: Android host
+
+      Create a :ref:`pigweed.json <seed-0101>` file and include the
+      desired emulator targets.
+
+      Build the ``pw emu`` standalone Android Python executable:
+
+      .. code-block:: console
+
+         m pw_emu_py
+
+      Run ``pw emu``:
+
+      .. code-block:: console
+
+         pw_emu_py -c <path to pigweed.json> start <emulator target>
 
 ------------------------
 Set up emulation targets
@@ -199,7 +216,7 @@ Next, a ``gdb`` session is started and connected to the emulator instance:
    Reading symbols from out/stm32f429i_disc1_debug/obj/pw_status/test/status_test.elf...
    Remote debugging using ::1:32979
    pw::sys_io::WriteByte (b=(unknown: 0x20)) at pw_sys_io_baremetal_lm3s6965evb/sys_io_baremetal.cc:117
-   117	  uart0.data_register = static_cast<uint32_t>(b);
+   117    uart0.data_register = static_cast<uint32_t>(b);
    (gdb) bt
    #0  pw::sys_io::WriteByte (b=(unknown: 0x20)) at pw_sys_io_baremetal_lm3s6965evb/sys_io_baremetal.cc:117
    #1  0x00002f6a in pw::sys_io::WriteBytes (src=...) at pw_span/public/pw_span/internal/span_impl.h:408
@@ -246,7 +263,7 @@ a debugging session with ``pw emu gdb``:
    Reading symbols from out/lm3s6965evb_qemu_gcc_size_optimized//obj/pw_status/test/status_test...
    Remote debugging using ::1:38723
    pw_boot_Entry () at pw_boot_cortex_m/core_init.c:122
-   122	  asm volatile("cpsid i");
+   122    asm volatile("cpsid i");
    (gdb)
 
 The program stops at the :ref:`pw_boot_Entry() <module-pw_boot>` function. From
