@@ -197,7 +197,7 @@ pw_seed("0121") {
 }
 
 pw_seed("0122") {
-  changelist = 187121
+  sources = [ "0122-code-samples.rst" ]
   title = "Organize Pigweed code samples"
   status = "Open for Comments"
   author = "Ted Pudlik"
