@@ -73,6 +73,7 @@ fn token_backend(domain: &str, string: &str) -> TokenStream2 {
             // This is currently manually verified to be correct.
             // TODO: b/287132907 - Add integration tests for token database.
             #[link_section = #section ]
+            #[used]
             static #ident: TokenEntry = TokenEntry {
                 magic: #TOKENIZER_ENTRY_MAGIC,
                 token: #hash,
