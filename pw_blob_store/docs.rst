@@ -42,8 +42,9 @@ Writing to a BlobStore
 ``BlobWriter`` objects are ``pw::stream::Writer`` compatible, but do not support
 reading any of the blob's contents. Opening a ``BlobWriter`` on a ``BlobStore``
 that contains data will discard any existing data if ``Discard()``, ``Write
-()``, or ``Erase()`` are called. There is currently no mechanism to allow
-appending to existing data.
+()``, or ``Erase()`` are called. Partially written blobs can be resumed using
+``Resume()``. There is currently no mechanism to allow appending to completed
+data write.
 
 .. code-block:: cpp
 
@@ -56,6 +57,28 @@ appending to existing data.
    // A close is implied when a BlobWriter is destroyed. Manually closing a
    // BlobWriter enables error handling on Close() failure.
    writer.Close();
+
+Resuming a BlobStore write
+--------------------------
+``BlobWriter::Resume()`` supports resuming writes for blobs that have not been
+completed (``writer.Close()``). Supported resume situations are after ``Abandon()``
+has been called on a write or after a crash/reboot with a fresh ``BlobStore``
+instance.
+
+``Resume()`` opens the ``BlobWriter`` at the most recent safe resume point.
+``Resume()`` finds the furthest written point in the flash partition and then backs
+up by erasing any partially written sector plus a full sector. This backing up is to
+try to avoid any corrupted or otherwise wrong data that might have resulted from the
+previous write failing. ``Resume()`` returns the current number of valid bytes in the
+resumed write.
+
+If the blob is using a ChecksumAlgorithm, the checksum of the resumed blob write instance
+calculated from the content of the already written data. If it is desired to check the
+integrity of the already written data, ``BlobWriter::CurrentChecksum()`` can be used to
+check against the incoming data.
+
+Once ``Resume()`` has successfully completed, the writer is ready to continue writing
+as normal.
 
 Erasing a BlobStore
 ===================

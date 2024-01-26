@@ -90,7 +90,10 @@ Status BlobStore::LoadMetadata() {
                         metadata.v1_metadata.checksum)
            .ok()) {
     PW_LOG_ERROR("BlobStore init - Invalidating blob with invalid checksum");
-    Invalidate().IgnoreError();  // TODO: b/242598609 - Handle Status properly
+
+    // Invalidate return status can be safely be ignored, are already about to
+    // return the correct error status.
+    Invalidate().IgnoreError();
     return Status::DataLoss();
   }
 
@@ -119,10 +122,62 @@ Status BlobStore::OpenWrite() {
 
   writer_open_ = true;
 
-  // Clear any existing contents.
-  Invalidate().IgnoreError();  // TODO: b/242598609 - Handle Status properly
+  // Clear any existing contents. Invalidate return status can be safely be
+  // ignored, only KVS::Delete can result in an error and that KVS entry will
+  // overwriten on write Close.
+  Invalidate().IgnoreError();
 
   return OkStatus();
+}
+
+StatusWithSize BlobStore::ResumeWrite() {
+  if (!initialized_) {
+    return StatusWithSize::FailedPrecondition();
+  }
+
+  // Writer can only be opened if there are no other writer or readers already
+  // open and also if there is no completed blob (opening completed blob to
+  // append is not currently supported).
+  if (writer_open_ || readers_open_ != 0 || valid_data_) {
+    return StatusWithSize::Unavailable();
+  }
+
+  // Clear any existing blob state or KVS key, to provide a consistent starting
+  // point for resume.
+  //
+  // Invalidate return status can be safely be ignored, only KVS::Delete can
+  // result in an error and that KVS entry will overwriten on write Close.
+  Invalidate().IgnoreError();
+  StatusWithSize written_sws = partition_.EndOfWrittenData();
+  PW_TRY_WITH_SIZE(StatusWithSize(written_sws.status(), 0));
+
+  // Round down to the number of fully written sectors.
+  size_t written_sectors = written_sws.size() / partition_.sector_size_bytes();
+
+  // Drop the last full written sector, to back things up in case the last bit
+  // written data was corrupted.
+  written_sectors = written_sectors == 0 ? 0 : written_sectors - 1;
+
+  size_t written_bytes_on_resume =
+      written_sectors * partition_.sector_size_bytes();
+
+  // Erase the 2 sectors after the kept written sectors. This is a full sector
+  // and any possible partitial sector after the kept data.
+  size_t sectors_to_erase =
+      std::min<size_t>(2, (partition_.sector_count() - written_sectors));
+  PW_TRY_WITH_SIZE(partition_.Erase(written_bytes_on_resume, sectors_to_erase));
+
+  PW_TRY_WITH_SIZE(CalculateChecksumFromFlash(written_bytes_on_resume, false));
+
+  flash_address_ = written_bytes_on_resume;
+  write_address_ = written_bytes_on_resume;
+  valid_data_ = true;
+  writer_open_ = true;
+
+  PW_LOG_DEBUG("Blob writer open for resume with %zu bytes",
+               written_bytes_on_resume);
+
+  return StatusWithSize(OkStatus(), written_bytes_on_resume);
 }
 
 StatusWithSize BlobStore::GetFileName(span<char> dest) const {
@@ -453,7 +508,9 @@ Status BlobStore::Erase() {
 
   // If any writes have been performed, reset the state.
   if (flash_address_ != 0) {
-    Invalidate().IgnoreError();  // TODO: b/242598609 - Handle Status properly
+    // Invalidate return status can be safely be ignored, only KVS::Delete can
+    // result in an error and that KVS entry will overwriten on write Close.
+    Invalidate().IgnoreError();
   }
 
   PW_TRY(partition_.Erase());
@@ -500,7 +557,7 @@ Status BlobStore::ValidateChecksum(size_t blob_size_bytes,
   PW_LOG_DEBUG("Validate checksum of 0x%08x in flash for blob of %u bytes",
                static_cast<unsigned>(expected),
                static_cast<unsigned>(blob_size_bytes));
-  PW_TRY(CalculateChecksumFromFlash(blob_size_bytes));
+  PW_TRY(CalculateChecksumFromFlash(blob_size_bytes, true));
 
   Status status = checksum_algo_->Verify(as_bytes(span(&expected, 1)));
   PW_LOG_DEBUG("  checksum verify of %s", status.str());
@@ -508,7 +565,8 @@ Status BlobStore::ValidateChecksum(size_t blob_size_bytes,
   return status;
 }
 
-Status BlobStore::CalculateChecksumFromFlash(size_t bytes_to_check) {
+Status BlobStore::CalculateChecksumFromFlash(size_t bytes_to_check,
+                                             bool finish) {
   if (checksum_algo_ == nullptr) {
     return OkStatus();
   }
@@ -528,9 +586,11 @@ Status BlobStore::CalculateChecksumFromFlash(size_t bytes_to_check) {
     address += read_size;
   }
 
-  // Safe to ignore the return from Finish, checksum_algo_ keeps the state
-  // information that it needs.
-  checksum_algo_->Finish();
+  if (finish) {
+    // Safe to ignore the return from Finish, checksum_algo_ keeps the state
+    // information that it needs.
+    checksum_algo_->Finish();
+  }
   return OkStatus();
 }
 
@@ -555,6 +615,29 @@ Status BlobStore::BlobWriter::SetFileName(std::string_view file_name) {
   return OkStatus();
 }
 
+StatusWithSize BlobStore::BlobWriter::GetFileName(span<char> dest) {
+  if (!open_) {
+    return StatusWithSize::FailedPrecondition();
+  }
+  PW_DCHECK(store_.writer_open_);
+
+  if (store_.file_name_length_ == 0) {
+    return StatusWithSize(Status::NotFound(), 0);
+  }
+
+  const size_t file_name_length =
+      std::min(store_.file_name_length_, dest.size_bytes());
+
+  // Get the file name from the encode buffer, just past the BlobMetadataHeader
+  // struct. Do this instead of using store_.GetFileName() because the writter
+  // has not yet flushed the name ot KVS yet.
+  constexpr size_t kFileNameOffset = sizeof(BlobMetadataHeader);
+  const ByteSpan file_name_dest = metadata_buffer_.subspan(kFileNameOffset);
+  std::memcpy(dest.data(), file_name_dest.data(), file_name_length);
+
+  return StatusWithSize(file_name_length);
+}
+
 Status BlobStore::BlobWriter::Open() {
   PW_DCHECK(!open_);
   PW_DCHECK_UINT_GE(metadata_buffer_.size_bytes(),
@@ -565,6 +648,18 @@ Status BlobStore::BlobWriter::Open() {
     open_ = true;
   }
   return status;
+}
+
+StatusWithSize BlobStore::BlobWriter::Resume() {
+  PW_DCHECK(!open_);
+  PW_DCHECK_UINT_GE(metadata_buffer_.size_bytes(),
+                    sizeof(internal::BlobMetadataHeader));
+
+  const StatusWithSize sws = store_.ResumeWrite();
+  if (sws.ok()) {
+    open_ = true;
+  }
+  return sws;
 }
 
 // Validates and commits BlobStore metadata to KVS.
@@ -680,6 +775,18 @@ Status BlobStore::BlobWriter::Close() {
   return OkStatus();
 }
 
+Status BlobStore::BlobWriter::Abandon() {
+  if (!open_) {
+    return Status::FailedPrecondition();
+  }
+
+  store_.valid_data_ = false;
+  open_ = false;
+  store_.writer_open_ = false;
+
+  return OkStatus();
+}
+
 size_t BlobStore::BlobReader::ConservativeLimit(LimitType limit) const {
   if (open_ && limit == LimitType::kRead) {
     return store_.ReadableDataBytes() - offset_;
@@ -690,16 +797,17 @@ size_t BlobStore::BlobReader::ConservativeLimit(LimitType limit) const {
 Status BlobStore::BlobReader::Open(size_t offset) {
   PW_DCHECK(!open_);
   PW_TRY(store_.Init());
-  if (!store_.HasData()) {
-    return Status::FailedPrecondition();
-  }
-  if (offset >= store_.ReadableDataBytes()) {
-    return Status::InvalidArgument();
-  }
 
-  offset_ = offset;
   Status status = store_.OpenRead();
   if (status.ok()) {
+    if (offset >= store_.ReadableDataBytes()) {
+      PW_LOG_ERROR(
+          "Blob reader unable open with offset greater than valid data");
+      store_.CloseRead().IgnoreError();
+      return Status::InvalidArgument();
+    }
+
+    offset_ = offset;
     open_ = true;
   }
   return status;

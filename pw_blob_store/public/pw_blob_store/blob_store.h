@@ -77,10 +77,10 @@ class BlobStore {
       return max_file_name_size + sizeof(internal::BlobMetadataHeader);
     }
 
-    // Open a blob for writing/erasing. Open will invalidate any existing blob
-    // that may be stored, and will not retain the previous file name. Can not
-    // open when already open. Only one writer is allowed to be open at a time.
-    // Returns:
+    // Open writer for writing/erasing of a new/fresh blob. Open will invalidate
+    // any existing blob that may be stored, and will not retain the previous
+    // file name. Can not open when any readers or writers are already open for
+    // this blob. Only one writer is allowed to be open at a time. Returns:
     //
     // Preconditions:
     // This writer must not already be open.
@@ -92,30 +92,86 @@ class BlobStore {
     //     already open.
     Status Open();
 
-    // Finalize a blob write. Flush all remaining buffered data to storage and
-    // store blob metadata. Close fails in the closed state, do NOT retry Close
-    // on error. An error may or may not result in an invalid blob stored.
+    // Open and resume an in-progress/interrupted blob for writing. This will
+    // check for any existing write-in-prgress blob (not Closed) that may be
+    // partially stored, interrupted by a crash, reboot, or other reason.
+    // Resume writing at the last known good write location.
+    //
+    // If no in-progress/interrupted blob write is found, a normal Open() for
+    // writing is performed.
+    //
+    // File name in writer instance is retained from the previous Abandon()
+    // write, but not persisted across new writer instances.
+    //
+    // Checksum of resumed write is calculated from data written to flash.
+    //
+    // Can not resume when already open. Only one writer is allowed to be open
+    // at a time.
+    //
+    // Current implementation can only resume blob writes that was Abandon() or
+    // interrupted by crash/reboot. Completed valid blobs are not able to be
+    // resumed to append additional data (support not implemented at this time).
+    //
+    // Preconditions:
+    // - This writer must not already be open.
+    // - Blob must not be valid. Opening a completed blob to append is not
+    //   currently supported.
+    // - This writer's metadata encode buffer must be at
+    //   least the size of internal::BlobMetadataHeader.
+    //
     // Returns:
+    //   OK, size - Number of bytes already written in the resumed blob write.
+    //   UNAVAILABLE - Unable to resume, another writer or reader instance is
+    //     already open.
+    StatusWithSize Resume();
+
+    // Finalize a completed blob write and change the writer state to closed.
+    // Flush all remaining buffered data to storage and store blob metadata.
+    // Close fails in the closed state, do NOT retry Close on error. An error
+    // may or may not result in an invalid blob stored (depending on the failure
+    // mode). Returns:
     //
     // OK - success.
+    // FAILED_PRECONDITION - can not close if not open.
     // DATA_LOSS - Error writing data or fail to verify written data.
     Status Close();
 
+    // Abandon the current in-progress blob write and change the writer state to
+    // closed. Blob is left in an invalid data state (no valid data to read).
+    //
+    // After Abandon, writer can be opened either with Open to start a new blob
+    // write or Resume to resume the abandoned blob write. On resume, any bytes
+    // written to flash at the Abandon point are handled by the resume
+    // algorithm.
+    //
+    // Abandon fails in the closed state, do NOT retry Abandon on error.
+    //
+    // OK - successfully
+    // FAILED_PRECONDITION - not open.
+    Status Abandon();
+
     bool IsOpen() { return open_; }
 
-    // Erase the blob partition and reset state for a new blob. Explicit calls
-    // to Erase are optional, beginning a write will do any needed Erase.
-    // Returns:
+    // Erase the blob partition and reset state for a new blob, keeping the
+    // writer in the opened state, Explicit calls to Erase are optional,
+    // beginning a write will do any needed Erase. The Erase process includes
+    // doing a Discard of any in-progress blob write but keeps the writer in the
+    // opened state. Returns:
     //
     // OK - success.
-    // UNAVAILABLE - Unable to erase while reader is open.
+    // FAILED_PRECONDITION - not open.
     // [error status] - flash erase failed.
     Status Erase() {
       return open_ ? store_.Erase() : Status::FailedPrecondition();
     }
 
-    // Discard the current blob. Any written bytes to this point are considered
-    // invalid. Returns:
+    // Discard the current blob write and keep the writer in the opened state,
+    // ready to start a new/clean blob write. Any written bytes to this point
+    // are considered invalid and discarded.
+    //
+    // Discard does not directly perform an erase. Erase of the already written
+    // data happens either by an explicit Erase command or on-demand when first
+    // new data is written after the Discard. Returns:
     //
     // OK - success.
     // FAILED_PRECONDITION - not open.
@@ -140,8 +196,32 @@ class BlobStore {
     //   buffer, file name not set.
     Status SetFileName(std::string_view file_name);
 
+    // Copies the file name associated with the data written to `dest`, and
+    // returns the number of bytes written to the destination buffer. The string
+    // is not null-terminated.
+    //
+    // Returns:
+    //   OK - File name copied, size contains file name length.
+    //   RESOURCE_EXHAUSTED - `dest` too small to fit file name, size contains
+    //     first N bytes of the file name.
+    //   NOT_FOUND - No file name set for this blob.
+    //   FAILED_PRECONDITION - not open
+    //
+    StatusWithSize GetFileName(span<char> dest);
+
     size_t CurrentSizeBytes() const {
       return open_ ? store_.write_address_ : 0;
+    }
+
+    // Get the current running checksum for the current write session.
+    //
+    // Returns:
+    //   ConstByteSpan - current checksum
+    //   NOT_FOUND - No checksum algo in use
+    //   FAILED_PRECONDITION - not open
+    //
+    Result<ConstByteSpan> CurrentChecksum() const {
+      return Status::Unimplemented();
     }
 
     // Max file name length, not including null terminator (null terminators
@@ -400,6 +480,13 @@ class BlobStore {
   //     already open.
   Status OpenWrite();
 
+  // Open to resume a blob write. Returns:
+  //
+  // size - Number of bytes already written in the resumed blob write.
+  // UNAVAILABLE - Unable to open writer, another writer or reader instance is
+  //     already open.
+  StatusWithSize ResumeWrite();
+
   // Open to do a blob read. Returns:
   //
   // OK - success.
@@ -528,7 +615,7 @@ class BlobStore {
   Status ValidateChecksum(size_t blob_size_bytes,
                           internal::ChecksumValue expected);
 
-  Status CalculateChecksumFromFlash(size_t bytes_to_check);
+  Status CalculateChecksumFromFlash(size_t bytes_to_check, bool finish = true);
 
   const std::string_view MetadataKey() const { return name_; }
 
