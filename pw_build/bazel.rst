@@ -329,6 +329,8 @@ Example
 
    }  // namespace my::stuff
 
+.. _module-pw_build-bazel-pw_cc_binary_with_map:
+
 pw_cc_binary_with_map
 ---------------------
 The ``pw_cc_binary_with_map`` rule can be used to build a binary like

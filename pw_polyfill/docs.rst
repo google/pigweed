@@ -99,6 +99,8 @@ Backported features
     - ``pw_span/span.h``
     - ``pw::span``
 
+.. _module-pw_polyfill-static_assert:
+
 ------------------------------------------------
 Adapt code to compile with different C standards
 ------------------------------------------------

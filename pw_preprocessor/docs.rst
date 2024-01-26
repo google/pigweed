@@ -264,6 +264,8 @@ a single line if necessary.
   Whenever possible, fix the underlying issues about which the compiler is
   warning, rather than silencing the diagnostics.
 
+.. _module-pw_preprocessor-integer-overflow:
+
 Integer with Overflow Checking
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ``pw_preprocessor/compiler.h`` provides macros for performing arithmetic
