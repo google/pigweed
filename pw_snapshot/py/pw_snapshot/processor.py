@@ -59,6 +59,7 @@ def process_snapshot(
     detokenizer: Optional[pw_tokenizer.Detokenizer] = None,
     elf_matcher: Optional[ElfMatcher] = None,
     symbolizer_matcher: Optional[SymbolizerMatcher] = None,
+    llvm_symbolizer_binary: Optional[Path] = None,
 ) -> str:
     """Processes a single snapshot."""
 
@@ -77,9 +78,13 @@ def process_snapshot(
     if symbolizer_matcher is not None:
         symbolizer = symbolizer_matcher(snapshot)
     elif elf_matcher is not None:
-        symbolizer = LlvmSymbolizer(elf_matcher(snapshot))
+        symbolizer = LlvmSymbolizer(
+            elf_matcher(snapshot), llvm_symbolizer_binary=llvm_symbolizer_binary
+        )
     else:
-        symbolizer = LlvmSymbolizer()
+        symbolizer = LlvmSymbolizer(
+            llvm_symbolizer_binary=llvm_symbolizer_binary
+        )
 
     cortex_m_cpu_state = pw_cpu_exception_cortex_m.process_snapshot(
         serialized_snapshot, symbolizer
