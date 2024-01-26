@@ -57,6 +57,27 @@ pw_test("chunk_region_tracker_test") {
   sources = [ "chunk_region_tracker_test.cc" ]
 }
 
+pw_source_set("single_chunk_region_tracker") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_multibuf/single_chunk_region_tracker.h" ]
+  public_deps = [
+    ":chunk",
+    dir_pw_assert,
+    dir_pw_bytes,
+  ]
+}
+
+pw_test("single_chunk_region_tracker_test") {
+  deps = [
+    ":chunk",
+    ":single_chunk_region_tracker",
+  ]
+  sources = [ "single_chunk_region_tracker_test.cc" ]
+
+  # TODO: b/260624583 - Fix this for //targets/rp2040
+  enable_if = pw_build_EXECUTABLE_TARGET_TYPE != "pico_executable"
+}
+
 pw_test("chunk_test") {
   deps = [
     ":chunk",
@@ -88,6 +109,7 @@ pw_test_group("tests") {
     ":chunk_test",
     ":chunk_region_tracker_test",
     ":multibuf_test",
+    ":single_chunk_region_tracker_test",
   ]
 }
 

@@ -42,6 +42,17 @@ pw_add_library(pw_multibuf.chunk_region_tracker STATIC
     pw_multibuf.chunk
 )
 
+pw_add_library(pw_multibuf.single_chunk_region_tracker STATIC
+  SOURCES
+    public/pw_multibuf/single_chunk_region_tracker.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_assert
+    pw_bytes
+    pw_multibuf.chunk
+)
+
 pw_add_test(pw_multibuf.chunk_test
   SOURCES
     chunk_test.cc
@@ -62,6 +73,17 @@ pw_add_test(pw_multibuf.chunk_region_tracker_test
     pw_multibuf.chunk
     pw_multibuf.chunk_region_tracker
     pw_status
+  GROUPS
+    modules
+    pw_multibuf
+)
+
+pw_add_test(pw_multibuf.single_chunk_region_tracker_test
+  SOURCES
+    single_chunk_region_tracker_test.cc
+  PRIVATE_DEPS
+    pw_multibuf.chunk
+    pw_multibuf.single_chunk_region_tracker
   GROUPS
     modules
     pw_multibuf

@@ -46,6 +46,17 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "single_chunk_region_tracker",
+    hdrs = ["public/pw_multibuf/single_chunk_region_tracker.h"],
+    includes = ["public"],
+    deps = [
+        ":chunk",
+        "//pw_assert",
+        "//pw_bytes",
+    ],
+)
+
 pw_cc_test(
     name = "chunk_test",
     srcs = ["chunk_test.cc"],
@@ -65,6 +76,15 @@ pw_cc_test(
         ":chunk_region_tracker",
         "//pw_allocator:simple_allocator",
         "//pw_status",
+    ],
+)
+
+pw_cc_test(
+    name = "single_chunk_region_tracker_test",
+    srcs = ["single_chunk_region_tracker_test.cc"],
+    deps = [
+        ":chunk",
+        ":single_chunk_region_tracker",
     ],
 )
 
