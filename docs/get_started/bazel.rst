@@ -58,24 +58,11 @@ Build the project
    .. code-block:: none
 
       Starting local Bazel server and connecting to it...
-      INFO: Analyzed 7 targets (101 packages loaded, 17371 targets configured).
+      INFO: Analyzed 7 targets (105 packages loaded, 14022 targets configured).
       INFO: Found 7 targets...
-      INFO: From Linking src/echo:
-      /home/xyz/.cache/bazel/_bazel_xyz/8c700b5cf88b83b789ceaf0e4e271fac/external/gcc_arm_none_eabi_toolchain/bin/../lib/gcc/arm-none-eabi/12.2.1/../../../../arm-none-eabi/bin/ld: /home/xyz/.cache/bazel/_bazel_xyz/8c700b5cf88b83b789ceaf0e4e271fac/external/gcc_arm_none_eabi_toolchain/bin/../lib/gcc/arm-none-eabi/12.2.1/../../../../arm-none-eabi/lib/thumb/v7e-m/nofp/libc_nano.a(libc_a-closer.o): in function `_close_r':
-      closer.c:(.text._close_r+0xc): warning: _close is not implemented and will always fail
-      /home/xyz/.cache/bazel/_bazel_xyz/8c700b5cf88b83b789ceaf0e4e271fac/external/gcc_arm_none_eabi_toolchain/bin/../lib/gcc/arm-none-eabi/12.2.1/../../../../arm-none-eabi/bin/ld: /home/xyz/.cache/bazel/_bazel_xyz/8c700b5cf88b83b789ceaf0e4e271fac/external/gcc_arm_none_eabi_toolchain/bin/../lib/gcc/arm-none-eabi/12.2.1/../../../../arm-none-eabi/lib/thumb/v7e-m/nofp/libc_nano.a(libc_a-signalr.o): in function `_getpid_r':
-      signalr.c:(.text._getpid_r+0x0): warning: _getpid is not implemented and will always fail
-      /home/xyz/.cache/bazel/_bazel_xyz/8c700b5cf88b83b789ceaf0e4e271fac/external/gcc_arm_none_eabi_toolchain/bin/../lib/gcc/arm-none-eabi/12.2.1/../../../../arm-none-eabi/bin/ld: /home/xyz/.cache/bazel/_bazel_xyz/8c700b5cf88b83b789ceaf0e4e271fac/external/gcc_arm_none_eabi_toolchain/bin/../lib/gcc/arm-none-eabi/12.2.1/../../../../arm-none-eabi/lib/thumb/v7e-m/nofp/libc_nano.a(libc_a-signalr.o): in function `_kill_r':
-      signalr.c:(.text._kill_r+0xe): warning: _kill is not implemented and will always fail
-      /home/xyz/.cache/bazel/_bazel_xyz/8c700b5cf88b83b789ceaf0e4e271fac/external/gcc_arm_none_eabi_toolchain/bin/../lib/gcc/arm-none-eabi/12.2.1/../../../../arm-none-eabi/bin/ld: /home/xyz/.cache/bazel/_bazel_xyz/8c700b5cf88b83b789ceaf0e4e271fac/external/gcc_arm_none_eabi_toolchain/bin/../lib/gcc/arm-none-eabi/12.2.1/../../../../arm-none-eabi/lib/thumb/v7e-m/nofp/libc_nano.a(libc_a-lseekr.o): in function `_lseek_r':
-      lseekr.c:(.text._lseek_r+0x10): warning: _lseek is not implemented and will always fail
-      /home/xyz/.cache/bazel/_bazel_xyz/8c700b5cf88b83b789ceaf0e4e271fac/external/gcc_arm_none_eabi_toolchain/bin/../lib/gcc/arm-none-eabi/12.2.1/../../../../arm-none-eabi/bin/ld: /home/xyz/.cache/bazel/_bazel_xyz/8c700b5cf88b83b789ceaf0e4e271fac/external/gcc_arm_none_eabi_toolchain/bin/../lib/gcc/arm-none-eabi/12.2.1/../../../../arm-none-eabi/lib/thumb/v7e-m/nofp/libc_nano.a(libc_a-readr.o): in function `_read_r':
-      readr.c:(.text._read_r+0x10): warning: _read is not implemented and will always fail
-      /home/xyz/.cache/bazel/_bazel_xyz/8c700b5cf88b83b789ceaf0e4e271fac/external/gcc_arm_none_eabi_toolchain/bin/../lib/gcc/arm-none-eabi/12.2.1/../../../../arm-none-eabi/bin/ld: /home/xyz/.cache/bazel/_bazel_xyz/8c700b5cf88b83b789ceaf0e4e271fac/external/gcc_arm_none_eabi_toolchain/bin/../lib/gcc/arm-none-eabi/12.2.1/../../../../arm-none-eabi/lib/thumb/v7e-m/nofp/libc_nano.a(libc_a-writer.o): in function `_write_r':
-      writer.c:(.text._write_r+0x10): warning: _write is not implemented and will always fail
-      INFO: Elapsed time: 6.716s, Critical Path: 1.98s
-      INFO: 40 processes: 3 internal, 37 linux-sandbox.
-      INFO: Build completed successfully, 40 total actions
+      INFO: Elapsed time: 30.705s, Critical Path: 5.55s
+      INFO: 86 processes: 24 internal, 62 linux-sandbox.
+      INFO: Build completed successfully, 86 total actions
 
 Troubleshooting: ``Network is unreachable (connect failed)``
 ============================================================
