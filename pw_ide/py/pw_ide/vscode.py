@@ -61,17 +61,14 @@ command.
 # TODO(chadnorvell): Import collections.OrderedDict when we don't need to
 # support Python 3.8 anymore.
 from enum import Enum
-import json
 import os
 from pathlib import Path
-import platform
 import shutil
 import subprocess
 from typing import Any, Dict, List, Optional, OrderedDict
 
 from pw_cli.env import pigweed_environment
 
-from pw_ide.activate import BashShellModifier
 from pw_ide.cpp import ClangdSettings, CppIdeFeaturesState
 
 from pw_ide.editors import (
@@ -85,40 +82,6 @@ from pw_ide.python import PythonPaths
 from pw_ide.settings import PigweedIdeSettings
 
 env = pigweed_environment()
-
-
-def _vsc_os(system: str = platform.system()):
-    """Return the OS tag that VSC expects."""
-    if system == 'Darwin':
-        return 'osx'
-
-    return system.lower()
-
-
-def _activated_env() -> OrderedDict[str, Any]:
-    """Return the environment diff needed to provide Pigweed activation.
-
-    The integrated terminal will already include the user's default environment
-    (e.g. from their shell init scripts). This provides the modifications to
-    the environment needed for Pigweed activation.
-    """
-    # Not all environments have an actions.json, which this ultimately relies
-    # on (e.g. tests in CI). No problem, just return an empty dict instead.
-    try:
-        activated_env = (
-            BashShellModifier(env_only=True, path_var='${env:PATH}')
-            .modify_env()
-            .env_mod
-        )
-    except (FileNotFoundError, json.JSONDecodeError):
-        activated_env = dict()
-
-    return OrderedDict(activated_env)
-
-
-def _local_terminal_integrated_env() -> Dict[str, Any]:
-    """VSC setting to activate the integrated terminal."""
-    return {f'terminal.integrated.env.{_vsc_os()}': _activated_env()}
 
 
 def _local_clangd_settings(ide_settings: PigweedIdeSettings) -> Dict[str, Any]:
@@ -355,7 +318,6 @@ def _default_settings(
     return OrderedDict(
         {
             **_DEFAULT_SETTINGS,
-            **_local_terminal_integrated_env(),
             **_local_clangd_settings(pw_ide_settings),
             **_local_python_settings(),
         }
