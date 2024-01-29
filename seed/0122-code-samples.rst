@@ -6,7 +6,7 @@
 .. seed::
    :number: 122
    :name: Organize Pigweed code samples
-   :status: open_for_comments
+   :status: accepted
    :proposal_date: 2024-01-09
    :cl: 187121
    :facilitator: Kayce Basques
@@ -14,7 +14,8 @@
 -------
 Summary
 -------
-This SEED describes how Pigweed code samples will be organized.
+This SEED describes how Pigweed code samples will be organized. Implementation
+bug: https://pwbug.dev//322816792.
 
 ----------
 Motivation

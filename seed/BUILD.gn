@@ -203,7 +203,7 @@ pw_seed("0121") {
 pw_seed("0122") {
   sources = [ "0122-code-samples.rst" ]
   title = "Organize Pigweed code samples"
-  status = "Open for Comments"
+  status = "Accepted"
   author = "Ted Pudlik"
   facilitator = "Kayce Basques"
 }
