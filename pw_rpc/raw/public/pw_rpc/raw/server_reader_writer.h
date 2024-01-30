@@ -86,8 +86,7 @@ class RawServerReaderWriter : private internal::ServerCall {
   }
 
   // Allow use as a generic RPC Writer.
-  using internal::Call::operator Writer&;
-  using internal::Call::operator const Writer&;
+  using internal::Call::as_writer;
 
  protected:
   RawServerReaderWriter(const internal::LockedCallContext& context,
@@ -198,8 +197,7 @@ class RawServerWriter : private RawServerReaderWriter {
   using RawServerReaderWriter::Write;
 
   // Allow use as a generic RPC Writer.
-  using internal::Call::operator Writer&;
-  using internal::Call::operator const Writer&;
+  using internal::Call::as_writer;
 
  private:
   friend class internal::RawMethod;

@@ -13,41 +13,41 @@
 // the License.
 #pragma once
 
-#include "pw_rpc/internal/call.h"
+#include <cstdint>
+
+#include "pw_bytes/span.h"
+#include "pw_rpc/internal/lock.h"
+#include "pw_status/status.h"
 
 namespace pw::rpc {
+namespace internal {
+class Call;
+}
 
 // The Writer class allows writing requests or responses to a streaming RPC.
 // ClientWriter, ClientReaderWriter, ServerWriter, and ServerReaderWriter
 // classes can be used as a generic Writer.
-class Writer final : private internal::Call {
+class Writer {
  public:
-  // Writers cannot be created directly. They may only be used as a reference to
-  // an existing call object.
-  Writer() = delete;
-
   Writer(const Writer&) = delete;
   Writer(Writer&&) = delete;
 
   Writer& operator=(const Writer&) = delete;
   Writer& operator=(Writer&&) = delete;
 
-  using internal::Call::active;
-  using internal::Call::channel_id;
+  bool active() const;
+  uint32_t channel_id() const;
 
-  using internal::Call::Write;
+  Status Write(ConstByteSpan payload) PW_LOCKS_EXCLUDED(internal::rpc_lock());
 
  private:
+  // Only allow Call to inherit from Writer. This guarantees that Writers can
+  // always safely downcast to Call.
   friend class internal::Call;
+
+  // Writers cannot be created directly. They may only be used as a reference to
+  // an existing call object.
+  constexpr Writer() = default;
 };
 
-namespace internal {
-
-constexpr Call::operator Writer&() { return static_cast<Writer&>(*this); }
-
-constexpr Call::operator const Writer&() const {
-  return static_cast<const Writer&>(*this);
-}
-
-}  // namespace internal
 }  // namespace pw::rpc

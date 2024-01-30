@@ -1761,7 +1761,8 @@ sharing code between servers and clients, ``pw_rpc`` provides the
 streaming RPC call object (``ClientWriter`` or ``ClientReaderWriter``) can be
 used as a ``pw::rpc::Writer&``. On the server side, a server or bidirectional
 streaming RPC call object (``ServerWriter`` or ``ServerReaderWriter``) can be
-used as a ``pw::rpc::Writer&``.
+used as a ``pw::rpc::Writer&``. Call ``as_writer()`` to get a ``Writer&`` of the
+client or server call object.
 
 Zephyr
 ======

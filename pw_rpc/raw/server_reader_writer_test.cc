@@ -407,7 +407,7 @@ TEST(RawServerWriter, UsableAsWriter) {
       RawServerWriter::Open<TestService::TestServerStreamRpc>(
           ctx.server, ctx.channel.id(), ctx.service);
 
-  WriteAsWriter(call);
+  WriteAsWriter(call.as_writer());
 
   EXPECT_STREQ(reinterpret_cast<const char*>(
                    ctx.output.payloads<TestService::TestServerStreamRpc>()
@@ -422,7 +422,7 @@ TEST(RawServerReaderWriter, UsableAsWriter) {
       RawServerReaderWriter::Open<TestService::TestBidirectionalStreamRpc>(
           ctx.server, ctx.channel.id(), ctx.service);
 
-  WriteAsWriter(call);
+  WriteAsWriter(call.as_writer());
 
   EXPECT_STREQ(
       reinterpret_cast<const char*>(

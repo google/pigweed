@@ -441,7 +441,7 @@ TEST(RawClientWriter, UsableAsWriter) {
   RawClientWriter call = TestService::TestClientStreamRpc(
       ctx.client(), ctx.channel().id(), FailIfOnCompletedCalled, FailIfCalled);
 
-  WriteAsWriter(call);
+  WriteAsWriter(call.as_writer());
 
   EXPECT_STREQ(reinterpret_cast<const char*>(
                    ctx.output()
@@ -460,7 +460,7 @@ TEST(RawClientReaderWriter, UsableAsWriter) {
                                               FailIfCalled,
                                               FailIfCalled);
 
-  WriteAsWriter(call);
+  WriteAsWriter(call.as_writer());
 
   EXPECT_STREQ(reinterpret_cast<const char*>(
                    ctx.output()

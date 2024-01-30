@@ -27,14 +27,12 @@
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/method_type.h"
 #include "pw_rpc/service.h"
+#include "pw_rpc/writer.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_sync/lock_annotations.h"
 
 namespace pw::rpc {
-
-class Writer;
-
 namespace internal {
 
 class Endpoint;
@@ -115,7 +113,7 @@ inline constexpr uint32_t kOpenCallId = std::numeric_limits<uint32_t>::max();
 // At the top level, `ServerCall` and `ClientCall` invoke `DestroyServerCall`
 // `DestroyClientCall` respectively to perform cleanup in the case where no
 // subclass carries additional state.
-class Call : public IntrusiveList<Call>::Item {
+class Call : public IntrusiveList<Call>::Item, private rpc::Writer {
  public:
   Call(const Call&) = delete;
 
@@ -393,10 +391,9 @@ class Call : public IntrusiveList<Call>::Item {
   // active or inactive when this is called.
   void UnregisterAndMarkClosed() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
-  // Define conversions to the generic server/client RPC writer class. These
-  // functions are defined in pw_rpc/writer.h after the Writer class is defined.
-  constexpr operator Writer&();
-  constexpr operator const Writer&() const;
+  // Define conversions to the generic server/client RPC writer class.
+  constexpr Writer& as_writer() { return *this; }
+  constexpr const Writer& as_writer() const { return *this; }
 
   // Indicates if the on_next and unary on_completed callbacks are internal
   // wrappers that decode the raw proto before invoking the user's callback. If
@@ -478,6 +475,8 @@ class Call : public IntrusiveList<Call>::Item {
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
  private:
+  friend class rpc::Writer;
+
   enum State : uint8_t {
     kActive = 0b001,
     kClientRequestedCompletion = 0b010,
@@ -575,4 +574,17 @@ class Call : public IntrusiveList<Call>::Item {
 };
 
 }  // namespace internal
+
+inline bool Writer::active() const {
+  return static_cast<const internal::Call*>(this)->active();
+}
+
+inline uint32_t Writer::channel_id() const {
+  return static_cast<const internal::Call*>(this)->channel_id();
+}
+
+inline Status Writer::Write(ConstByteSpan payload) {
+  return static_cast<internal::Call*>(this)->Write(payload);
+}
+
 }  // namespace pw::rpc

@@ -63,8 +63,7 @@ class RawClientReaderWriter : private internal::StreamResponseClientCall {
   using internal::ClientCall::Abandon;
 
   // Allow use as a generic RPC Writer.
-  using internal::Call::operator Writer&;
-  using internal::Call::operator const Writer&;
+  using internal::Call::as_writer;
 
  private:
   friend class internal::StreamResponseClientCall;
@@ -140,8 +139,7 @@ class RawClientWriter : private internal::UnaryResponseClientCall {
   using internal::ClientCall::Abandon;
 
   // Allow use as a generic RPC Writer.
-  using internal::Call::operator Writer&;
-  using internal::Call::operator const Writer&;
+  using internal::Call::as_writer;
 
  private:
   friend class internal::UnaryResponseClientCall;

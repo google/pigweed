@@ -155,18 +155,20 @@ void TransferThread::StartTransfer(
   // with the specified ID.
   if (is_client_transfer) {
     next_event_.new_transfer.stream = stream;
-    next_event_.new_transfer.rpc_writer = &static_cast<rpc::Writer&>(
-        type == TransferType::kTransmit ? client_write_stream_
-                                        : client_read_stream_);
+    next_event_.new_transfer.rpc_writer =
+        &(type == TransferType::kTransmit ? client_write_stream_
+                                          : client_read_stream_)
+             .as_writer();
   } else {
     auto handler = std::find_if(handlers_.begin(),
                                 handlers_.end(),
                                 [&](auto& h) { return h.id() == resource_id; });
     if (handler != handlers_.end()) {
       next_event_.new_transfer.handler = &*handler;
-      next_event_.new_transfer.rpc_writer = &static_cast<rpc::Writer&>(
-          type == TransferType::kTransmit ? server_read_stream_
-                                          : server_write_stream_);
+      next_event_.new_transfer.rpc_writer =
+          &(type == TransferType::kTransmit ? server_read_stream_
+                                            : server_write_stream_)
+               .as_writer();
     } else {
       // No handler exists for the transfer: return a NOT_FOUND.
       next_event_.type = EventType::kSendStatusChunk;
