@@ -221,9 +221,24 @@ intended. For example, it may pull in undesired dependencies (e.g.
 arm-none-eabi-gcc support
 =========================
 Targets building with the GNU Arm Embedded Toolchain (``arm-none-eabi-gcc``)
-should depend on the ``pw_toolchain/arm_gcc:arm_none_eabi_gcc_support`` library
-into their builds. In GN, that target should be included in
-``pw_build_LINK_DEPS``.
+should depend on the ``pw_toolchain/arm_gcc:arm_none_eabi_gcc_support``
+library. In GN, that target should be included in ``pw_build_LINK_DEPS``. In
+Bazel, it should be added to `link_extra_lib
+<https://bazel.build/reference/be/c-cpp#cc_binary.link_extra_lib>`__ or
+directly to the `deps` of any binary being build with that toolchain:
+
+.. code-block:: python
+
+   cc_binary(
+      deps = [
+        # Other deps, omitted
+      ] + select({
+        "@platforms//cpu:armv7e-m": [
+          "@pigweed//pw_toolchain/arm_gcc:arm_none_eabi_gcc_support",
+        ],
+        "//conditions:default": [],
+      }),
+   )
 
 Newlib OS interface
 -------------------
