@@ -34,7 +34,7 @@ void* Allocator::DoReallocate(void* ptr, Layout layout, size_t new_size) {
     return nullptr;
   }
   if (ptr != nullptr && layout.size() != 0) {
-    std::memcpy(new_ptr, ptr, layout.size());
+    std::memcpy(new_ptr, ptr, std::min(new_size, layout.size()));
     DoDeallocate(ptr, layout);
   }
   return new_ptr;
