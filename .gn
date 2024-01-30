@@ -48,6 +48,9 @@ default_args = {
     # Exclude Boringssl, which fails some clang-tidy checks.
     ".*/boringssl/src/.*",
 
+    # Exclude mbedtls, which fails some clang-tidy checks.
+    ".*/mbedtls/library/.*",
+
     "pw_bluetooth_sapphire/.*",
     "../pw_bluetooth_sapphire/.*",
   ]
@@ -65,6 +68,9 @@ default_args = {
 
     # Exclude Boringssl, which fails some clang-tidy checks.
     ".*/boringssl/src/include.*",
+
+    # Exclude mbedtls, which fails some clang-tidy checks.
+    ".*/mbedtls/include.*",
 
     "../pw_bluetooth_sapphire/.*",
   ]
