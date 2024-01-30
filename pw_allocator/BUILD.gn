@@ -19,6 +19,8 @@ import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_fuzzer/fuzz_test.gni")
+import("$dir_pw_sync/backend.gni")
+import("$dir_pw_thread/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("default_config") {
@@ -196,6 +198,15 @@ pw_source_set("split_free_list_allocator") {
   sources = [ "split_free_list_allocator.cc" ]
 }
 
+pw_source_set("synchronized_allocator") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_allocator/synchronized_allocator.h" ]
+  public_deps = [
+    ":allocator",
+    "$dir_pw_sync:borrow",
+  ]
+}
+
 pw_size_diff("allocator_size_report") {
   title = "Sizes of various pw_allocator implementations"
   binaries = [
@@ -221,6 +232,7 @@ pw_test_group("tests") {
   tests = [
     ":allocator_test",
     ":allocator_metric_proxy_test",
+    ":synchronized_allocator_test",
     ":block_test",
     ":fallback_allocator_test",
     ":freelist_test",
@@ -341,6 +353,7 @@ pw_test("null_allocator_test") {
 
 pw_test("simple_allocator_test") {
   deps = [
+    ":allocator_fuzzing",
     ":allocator_testing",
     ":simple_allocator",
   ]
@@ -357,6 +370,29 @@ pw_fuzz_test("split_free_list_allocator_test") {
     dir_pw_bytes,
   ]
   sources = [ "split_free_list_allocator_test.cc" ]
+}
+
+pw_test("synchronized_allocator_test") {
+  enable_if =
+      pw_sync_BINARY_SEMAPHORE_BACKEND != "" && pw_sync_MUTEX_BACKEND != "" &&
+      pw_sync_INTERRUPT_SPIN_LOCK_BACKEND != "" &&
+      pw_thread_YIELD_BACKEND != "" &&
+      pw_thread_TEST_THREAD_CONTEXT_BACKEND != ""
+  deps = [
+    ":allocator_test_harness",
+    ":allocator_testing",
+    ":synchronized_allocator",
+    "$dir_pw_sync:binary_semaphore",
+    "$dir_pw_sync:interrupt_spin_lock",
+    "$dir_pw_sync:mutex",
+    "$dir_pw_sync:virtual_basic_lockable",
+    "$dir_pw_thread:test_thread_context",
+    "$dir_pw_thread:thread",
+    "$dir_pw_thread:thread_core",
+    "$dir_pw_thread:yield",
+    dir_pw_random,
+  ]
+  sources = [ "synchronized_allocator_test.cc" ]
 }
 
 pw_test("unique_ptr_test") {

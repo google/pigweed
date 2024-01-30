@@ -218,6 +218,18 @@ cc_library(
 )
 
 cc_library(
+    name = "synchronized_allocator",
+    hdrs = [
+        "public/pw_allocator/synchronized_allocator.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":allocator",
+        "//pw_sync:borrow",
+    ],
+)
+
+cc_library(
     name = "allocator_testing",
     testonly = True,
     srcs = [
@@ -294,6 +306,7 @@ pw_cc_test(
         "allocator_metric_proxy_test.cc",
     ],
     deps = [
+        ":allocator_metric_proxy",
         ":allocator_testing",
         "//pw_unit_test",
     ],
@@ -405,6 +418,28 @@ pw_cc_test(
         "//pw_bytes",
         "//pw_containers:vector",
         "//pw_fuzzer:fuzztest",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "synchronized_allocator_test",
+    srcs = [
+        "synchronized_allocator_test.cc",
+    ],
+    deps = [
+        ":allocator_test_harness",
+        ":allocator_testing",
+        ":synchronized_allocator",
+        "//pw_random",
+        "//pw_sync:binary_semaphore",
+        "//pw_sync:interrupt_spin_lock",
+        "//pw_sync:mutex",
+        "//pw_sync:virtual_basic_lockable",
+        "//pw_thread:test_thread_context",
+        "//pw_thread:thread",
+        "//pw_thread:thread_core",
+        "//pw_thread:yield",
         "//pw_unit_test",
     ],
 )

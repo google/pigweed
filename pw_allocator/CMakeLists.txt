@@ -196,6 +196,16 @@ pw_add_library(pw_allocator.split_free_list_allocator STATIC
     split_free_list_allocator.cc
 )
 
+pw_add_library(pw_allocator.synchronized_allocator INTERFACE
+  HEADERS
+    public/pw_allocator/synchronized_allocator.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.allocator
+    pw_sync.borrow
+)
+
 pw_add_library(pw_allocator.allocator_testing STATIC
   HEADERS
     public/pw_allocator/allocator_testing.h
@@ -365,6 +375,26 @@ pw_add_test(pw_allocator.split_free_list_allocator_test
     pw_fuzzer.fuzztest
     pw_unit_test
   GROUPS
+    modules
+    pw_allocator
+)
+
+pw_add_test(pw_allocator.synchronized_allocator_test
+  SOURCES
+    synchronized_allocator_test.cc
+  PRIVATE_DEPS
+    pw_allocator.allocator_testing
+    pw_allocator.allocator_test_harness
+    pw_allocator.synchronized_allocator
+    pw_sync.binary_semaphore
+    pw_sync.interrupt_spin_lock
+    pw_sync.mutex
+    pw_thread.test_thread_context
+    pw_thread.thread
+    pw_thread.thread_core
+    pw_thread.yield
+    pw_random
+    GROUPS
     modules
     pw_allocator
 )
