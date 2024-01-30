@@ -37,6 +37,23 @@ pw_cc_test(
 )
 
 cc_library(
+    name = "sibling_cast",
+    hdrs = ["public/pw_toolchain/internal/sibling_cast.h"],
+    includes = ["public"],
+    visibility = ["//:__subpackages__"],  # Restrict to Pigweed
+    deps = ["//pw_compilation_testing:negative_compilation_testing"],
+)
+
+pw_cc_test(
+    name = "sibling_cast_test",
+    srcs = ["sibling_cast_test.cc"],
+    deps = [
+        ":sibling_cast",
+        "//pw_unit_test",
+    ],
+)
+
+cc_library(
     name = "wrap_abort",
     srcs = ["wrap_abort.cc"],
     linkopts = ["-Wl,--wrap=abort"],

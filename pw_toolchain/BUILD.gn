@@ -58,6 +58,18 @@ pw_source_set("no_destructor") {
   public = [ "public/pw_toolchain/no_destructor.h" ]
 }
 
+pw_source_set("sibling_cast") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_toolchain/internal/sibling_cast.h" ]
+  visibility = [ "$dir_pigweed/*" ]
+}
+
+pw_test("sibling_cast_test") {
+  sources = [ "sibling_cast_test.cc" ]
+  deps = [ ":sibling_cast" ]
+  negative_compilation_tests = true
+}
+
 config("wrap_abort_config") {
   ldflags = [ "-Wl,--wrap=abort" ]
   visibility = [ ":*" ]
@@ -70,7 +82,10 @@ pw_source_set("wrap_abort") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":no_destructor_test" ]
+  tests = [
+    ":no_destructor_test",
+    ":sibling_cast_test",
+  ]
 }
 
 pw_test("no_destructor_test") {
