@@ -39,7 +39,7 @@ class AllocatorMetricProxyImpl : public AllocatorWithMetrics<MetricsType> {
   constexpr explicit AllocatorMetricProxyImpl(metric::Token token)
       : allocator_(nullptr), metrics_(token) {}
 
-  /// Non-constexpr constructor that autmatically invokes `Init`.
+  /// Non-constexpr constructor that automatically invokes `Init`.
   AllocatorMetricProxyImpl(metric::Token token, Allocator& allocator)
       : AllocatorMetricProxyImpl(token) {
     Init(allocator);
