@@ -78,7 +78,7 @@ constexpr uint16_t kDefaultTxMaxQueuedCount = 500;
 // Activate().
 class Channel : public WeakSelf<Channel> {
  public:
-  // TODO(fxbug.dev/1022): define a preferred MTU somewhere
+  // TODO(fxbug.dev/42053109): define a preferred MTU somewhere
   Channel(ChannelId id,
           ChannelId remote_id,
           bt::LinkType link_type,

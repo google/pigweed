@@ -70,7 +70,7 @@ class BrEdrDynamicChannelRegistry final : public DynamicChannelRegistry {
       const BrEdrCommandHandler::InformationResponse& rsp);
 
   // Send extended features information request.
-  // TODO(fxbug.dev/929): Send fixed channels information request.
+  // TODO(fxbug.dev/42174624): Send fixed channels information request.
   void SendInformationRequests();
 
   // If an extended features information response has been received, returns the
@@ -235,7 +235,7 @@ class BrEdrDynamicChannel final : public DynamicChannel {
     kDisconnected = (1 << 6),
   };
 
-  // TODO(fxbug.dev/996): Add Extended Flow Specification steps (exchange &
+  // TODO(fxbug.dev/42182060): Add Extended Flow Specification steps (exchange &
   // controller configuration)
 
   BrEdrDynamicChannel(DynamicChannelRegistry* registry,

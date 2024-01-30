@@ -14,7 +14,7 @@
 #pragma once
 
 // todo-check: ignore
-// TODO(fxbug.dev/120998): Once this bug is addressed, this module can likely
+// TODO(fxbug.dev/42072051): Once this bug is addressed, this module can likely
 // be removed and we could just inline the using statements.
 
 #include <atomic>

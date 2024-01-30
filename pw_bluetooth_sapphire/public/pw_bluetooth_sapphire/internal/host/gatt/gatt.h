@@ -132,7 +132,7 @@ class GATT : public WeakSelf<GATT> {
   //   not connected, not configured for indications, or fails to confirm the
   //   indication within the ATT timeout of 30s (v5.3, Vol. 3, Part F 3.3.3)).
   //
-  // TODO(fxbug.dev/809): Revise this API to involve fewer lookups.
+  // TODO(fxbug.dev/42161294): Revise this API to involve fewer lookups.
   virtual void SendUpdate(IdType service_id,
                           IdType chrc_id,
                           PeerId peer_id,

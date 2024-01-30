@@ -67,7 +67,7 @@ void ScoConnection::Close() {
 
 bool ScoConnection::Activate(fit::closure rx_callback,
                              fit::closure closed_callback) {
-  // TODO(fxbug.dev/58458): Handle Activate() called on a connection that has
+  // TODO(fxbug.dev/42136417): Handle Activate() called on a connection that has
   // been closed already.
   BT_ASSERT(closed_callback);
   BT_ASSERT(!active_);

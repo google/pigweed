@@ -28,14 +28,15 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
 
   bool AllowsRandomAddressChange() const override { return !IsAdvertising(); }
 
-  // TODO(fxbug.dev/81470): The maximum length of data that can be advertised.
-  // For backwards compatibility and because supporting it is a much larger
-  // project, we currently only support legacy PDUs. When using legacy PDUs, the
-  // maximum advertising data size is hci_spec::kMaxLEAdvertisingDataLength.
+  // TODO(fxbug.dev/42161929): The maximum length of data that can be
+  // advertised. For backwards compatibility and because supporting it is a much
+  // larger project, we currently only support legacy PDUs. When using legacy
+  // PDUs, the maximum advertising data size is
+  // hci_spec::kMaxLEAdvertisingDataLength.
   //
-  // TODO(fxbug.dev/77476): Extended advertising supports sending larger amounts
-  // of data, but they have to be fragmented across multiple commands to the
-  // controller. This is not yet supported in this implementation. We should
+  // TODO(fxbug.dev/42157495): Extended advertising supports sending larger
+  // amounts of data, but they have to be fragmented across multiple commands to
+  // the controller. This is not yet supported in this implementation. We should
   // support larger than kMaxLEExtendedAdvertisingDataLength advertising data
   // with fragmentation.
   size_t GetSizeLimit() const override {

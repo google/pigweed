@@ -26,9 +26,9 @@ namespace bt::hci {
 // Users shouldn't rely on any particular ordering of the next available
 // mapping. Any available AdvertisingHandle may be used.
 //
-// TODO(fxbug.dev/78081): implement a bidirectional map that can support looking
-// up key to value as well as value to key (two map solution is probably good
-// enough). Makes this clearer, easier to maintain, etc.
+// TODO(fxbug.dev/42158168): implement a bidirectional map that can support
+// looking up key to value as well as value to key (two map solution is probably
+// good enough). Makes this clearer, easier to maintain, etc.
 class AdvertisingHandleMap {
  public:
   // Instantiate an AdvertisingHandleMap. The capacity parameter specifies the

@@ -30,7 +30,7 @@
 namespace bt::l2cap::internal {
 namespace {
 
-// TODO(fxbug.dev/1049): Add integration test with FakeChannelTest and
+// TODO(fxbug.dev/42056068): Add integration test with FakeChannelTest and
 // BrEdrSignalingChannel using snooped connection data to verify signaling
 // channel traffic.
 
@@ -682,7 +682,7 @@ class BrEdrDynamicChannelTest : public pw::async::test::FakeDispatcherFixture {
 
     ext_info_transaction_id_ = EXPECT_OUTBOUND_REQ(
         *sig(), kInformationRequest, kExtendedFeaturesInfoReq.view());
-    // TODO(fxbug.dev/63074): Make these tests not rely on strict ordering of
+    // TODO(fxbug.dev/42141538): Make these tests not rely on strict ordering of
     // channel IDs.
     registry_ = std::make_unique<BrEdrDynamicChannelRegistry>(
         sig(),

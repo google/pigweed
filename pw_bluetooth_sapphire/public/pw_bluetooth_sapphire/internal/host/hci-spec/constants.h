@@ -797,7 +797,7 @@ enum class EncryptionStatus : uint8_t {
 };
 
 // HCI command timeout interval (milliseconds)
-// TODO(fxbug.dev/1196,fxbug.dev/1197) This was increased to handle flaking integration tests.
+// TODO(fxbug.dev/42070690,fxbug.dev/42070801) This was increased to handle flaking integration tests.
 // We may want to reduce this to something lower again once we have a better
 // resolution to this issue.
 constexpr pw::chrono::SystemClock::duration kCommandTimeout = std::chrono::seconds(10);

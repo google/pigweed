@@ -191,7 +191,8 @@ void LogicalLink::OpenChannel(Psm psm,
                               ChannelCallback callback) {
   BT_DEBUG_ASSERT(!closed_);
 
-  // TODO(fxbug.dev/968): Implement channels for LE credit-based connections
+  // TODO(fxbug.dev/42178956): Implement channels for LE credit-based
+  // connections
   if (type_ == bt::LinkType::kLE) {
     bt_log(WARN, "l2cap", "not opening LE channel for PSM %.4x", psm);
     CompleteDynamicOpen(/*dyn_chan=*/nullptr, std::move(callback));
@@ -326,7 +327,7 @@ void LogicalLink::AssignSecurityProperties(
 
 bool LogicalLink::HasAvailablePacket() const {
   for (auto& [_, channel] : channels_) {
-    // TODO(fxbug.dev/123616): Check HasSDUs() after transmission engines are
+    // TODO(fxbug.dev/42074553): Check HasSDUs() after transmission engines are
     // refactored
     if (channel->HasPDUs() || channel->HasFragments()) {
       return true;

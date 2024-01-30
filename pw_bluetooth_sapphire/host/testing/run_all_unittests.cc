@@ -54,7 +54,7 @@ int32_t NormalizeRandomSeed(uint32_t seed) {
 }
 
 int32_t GenerateRandomSeed() {
-  // TODO(fxbug.dev/118898): Get time using pw::chrono for portability.
+  // TODO(fxbug.dev/42069982): Get time using pw::chrono for portability.
   const int64_t time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                               std::chrono::system_clock::now() -
                               std::chrono::system_clock::from_time_t(0))

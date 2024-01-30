@@ -19,7 +19,7 @@
 
 namespace bt::sco {
 
-// TODO(fxbug.dev/110686): This type should be deleted as it duplicates
+// TODO(fxbug.dev/42062077): This type should be deleted as it duplicates
 // `ScoPacketType` in hci-protocol.emb. This may involve migrating
 // `ParameterSet` below to Emboss.
 enum class ScoPacketTypeBits : uint16_t {

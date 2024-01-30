@@ -142,7 +142,7 @@ void LowEnergyAdvertisingManager::StartAdvertising(
 
   auto self = weak_self_.GetWeakPtr();
 
-  // TODO(fxbug.dev/1335): The address used for legacy advertising must be
+  // TODO(fxbug.dev/42083437): The address used for legacy advertising must be
   // coordinated via |local_addr_delegate_| however a unique address can be
   // generated and assigned to each advertising set when the controller
   // supports 5.0 extended advertising. hci::LowEnergyAdvertiser needs to be

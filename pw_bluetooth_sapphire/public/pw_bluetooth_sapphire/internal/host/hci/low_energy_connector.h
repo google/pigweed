@@ -129,8 +129,8 @@ class LowEnergyConnector : public LocalAddressClient {
   //
   // By default the address provided by the LocalAddressDelegate is used.
   //
-  // TODO(fxbug.dev/63123): Remove this temporary fix once we determine the root
-  // cause for authentication failures.
+  // TODO(fxbug.dev/42141593): Remove this temporary fix once we determine the
+  // root cause for authentication failures.
   void UseLocalIdentityAddress() { use_local_identity_address_ = true; }
 
   // LocalAddressClient override:
@@ -202,8 +202,8 @@ class LowEnergyConnector : public LocalAddressClient {
   CommandChannel::EventHandlerId event_handler_id_;
 
   // Use the local public address if true.
-  // TODO(fxbug.dev/63123): Remove this temporary fix once we determine the root
-  // cause for authentication failures.
+  // TODO(fxbug.dev/42141593): Remove this temporary fix once we determine the
+  // root cause for authentication failures.
   bool use_local_identity_address_ = false;
 
   // Keep this as the last member to make sure that all weak pointers are

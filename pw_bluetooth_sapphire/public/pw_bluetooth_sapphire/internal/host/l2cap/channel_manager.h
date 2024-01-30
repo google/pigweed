@@ -174,7 +174,7 @@ class ChannelManager {
   // Inbound connection requests with a PSM that has no registered handler will
   // be rejected.
   //
-  // TODO(fxbug.dev/99390): Dynamic PSMs may need their routing space (ACL or
+  // TODO(fxbug.dev/42181829): Dynamic PSMs may need their routing space (ACL or
   // LE) identified
   virtual bool RegisterService(l2cap::Psm psm,
                                l2cap::ChannelParameters params,

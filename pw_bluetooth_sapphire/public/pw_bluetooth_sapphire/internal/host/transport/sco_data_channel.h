@@ -27,11 +27,11 @@ class Transport;
 // SCO data flow when SCO is not offloaded. ScoDataChannel uses a pull model,
 // where packets are queued in the connections and only read by ScoDataChannel
 // when controller buffer space is available.
-// TODO(fxbug.dev/91560): Only 1 connection's bandwidth is configured with the
-// transport driver at a time, so performance may be poor if multiple
+// TODO(fxbug.dev/42173137): Only 1 connection's bandwidth is configured with
+// the transport driver at a time, so performance may be poor if multiple
 // connections are registered. The connection used for the current configuration
 // is selected randomly.
-// TODO(fxbug.dev/89689): ScoDataChannel assumes that HCI flow control via
+// TODO(fxbug.dev/42171056): ScoDataChannel assumes that HCI flow control via
 // HCI_Number_Of_Completed_Packets events is supported by the controller. Some
 // controllers don't support this form of flow control.
 class ScoDataChannel {

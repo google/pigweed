@@ -82,7 +82,7 @@ struct PacketExpectation {
 
 // Helpers to set an outbound packet expectation with the link type and source
 // location boilerplate prefilled.
-// TODO(fxbug.dev/124457): Remove packet priorities from expectations
+// TODO(fxbug.dev/42075355): Remove packet priorities from expectations
 #define EXPECT_LE_PACKET_OUT(packet_buffer, priority) \
   ExpectOutboundPacket(                               \
       bt::LinkType::kLE, (priority), (packet_buffer), __FILE__, __LINE__)
@@ -497,8 +497,8 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
     acl_data_channel_.set_send_packets_cb(
         fit::bind_member<&ChannelManagerMockAclChannelTest::SendPackets>(this));
 
-    // TODO(fxbug.dev/63074): Make these tests not depend on strict channel ID
-    // ordering.
+    // TODO(fxbug.dev/42141538): Make these tests not depend on strict channel
+    // ID ordering.
     chanmgr_ = ChannelManager::Create(&acl_data_channel_,
                                       transport()->command_channel(),
                                       /*random_channel_ids=*/false,

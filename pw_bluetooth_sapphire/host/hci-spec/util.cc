@@ -187,10 +187,10 @@ std::string ConnectionRoleToString(pw::bluetooth::emboss::ConnectionRole role) {
 
 std::optional<AdvertisingEventBits> AdvertisingTypeToEventBits(
     pw::bluetooth::emboss::LEAdvertisingType type) {
-  // TODO(fxbug.dev/81470): for backwards compatibility and because supporting
-  // extended advertising PDUs is a much larger project, we currently only
-  // support legacy PDUs. Without using legacy PDUs, non-Bluetooth 5 devices
-  // will not be able to discover extended advertisements.
+  // TODO(fxbug.dev/42161929): for backwards compatibility and because
+  // supporting extended advertising PDUs is a much larger project, we currently
+  // only support legacy PDUs. Without using legacy PDUs, non-Bluetooth 5
+  // devices will not be able to discover extended advertisements.
   uint16_t adv_event_properties = kLEAdvEventPropBitUseLegacyPDUs;
 
   // Bluetooth Spec Volume 4, Part E, Section 7.8.53, Table 7.2 defines the

@@ -66,7 +66,7 @@ bool PeerCache::AddBondedPeer(BondingData bd) {
   // |bd.le_pairing_data| must contain either a LTK or CSRK for LE Security Mode
   // 1 or 2.
   //
-  // TODO(fxbug.dev/2761): the address type checks here don't add much value
+  // TODO(fxbug.dev/42102158): the address type checks here don't add much value
   // because the address type is derived from the presence of FIDL bredr_bond
   // and le_bond fields, so the check really should be whether at least one of
   // the mandatory bond secrets is present.
@@ -187,8 +187,8 @@ bool PeerCache::StoreLowEnergyBond(PeerId identifier,
     // maps to this peer.
   }
 
-  // TODO(fxbug.dev/1212): Check that we're not downgrading the security level
-  // before overwriting the bond.
+  // TODO(fxbug.dev/42072204): Check that we're not downgrading the security
+  // level before overwriting the bond.
   peer->MutLe().SetBondData(bond_data);
   BT_DEBUG_ASSERT(!peer->temporary());
   BT_DEBUG_ASSERT(peer->le()->bonded());
@@ -224,8 +224,8 @@ bool PeerCache::StoreBrEdrBond(const DeviceAddress& address,
     return false;
   }
 
-  // TODO(fxbug.dev/1212): Check that we're not downgrading the security level
-  // before overwriting the bond.
+  // TODO(fxbug.dev/42072204): Check that we're not downgrading the security
+  // level before overwriting the bond.
   peer->MutBrEdr().SetBondData(link_key);
   BT_DEBUG_ASSERT(!peer->temporary());
   BT_DEBUG_ASSERT(peer->bredr()->bonded());
@@ -254,10 +254,10 @@ bool PeerCache::SetAutoConnectBehaviorForIntentionalDisconnect(PeerId peer_id) {
   peer->MutLe().set_auto_connect_behavior(
       Peer::AutoConnectBehavior::kSkipUntilNextConnection);
 
-  // TODO(fxbug.dev/37584): When implementing auto-connect behavior tracking for
-  // classic bluetooth, consider tracking this policy for the peer as a whole
-  // unless we think this policy should be applied separately for each transport
-  // (per armansito@).
+  // TODO(fxbug.dev/42113239): When implementing auto-connect behavior tracking
+  // for classic bluetooth, consider tracking this policy for the peer as a
+  // whole unless we think this policy should be applied separately for each
+  // transport (per armansito@).
 
   return true;
 }
@@ -280,8 +280,8 @@ bool PeerCache::SetAutoConnectBehaviorForSuccessfulConnection(PeerId peer_id) {
 
   peer->MutLe().set_auto_connect_behavior(Peer::AutoConnectBehavior::kAlways);
 
-  // TODO(fxbug.dev/37584): Implement auto-connect behavior tracking for classic
-  // bluetooth.
+  // TODO(fxbug.dev/42113239): Implement auto-connect behavior tracking for
+  // classic bluetooth.
 
   return true;
 }

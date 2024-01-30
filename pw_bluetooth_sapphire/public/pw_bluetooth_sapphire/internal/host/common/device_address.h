@@ -81,10 +81,10 @@ static_assert(sizeof(DeviceAddressBytes) == 6,
 // device address and the address type. A DeviceAddress is comparable and can be
 // used as a key in ordered and unordered associative STL containers.
 //
-// TODO(fxbug.dev/2761): Using the underlying DeviceAddressBytes for equality,
-// comparison, and hashing effectively obsoletes DeviceAddressBytes as a
-// separate class. Removing the |type_| field (see bug for rationale) will make
-// this class compatible with serialization.
+// TODO(fxbug.dev/42102158): Using the underlying DeviceAddressBytes for
+// equality, comparison, and hashing effectively obsoletes DeviceAddressBytes as
+// a separate class. Removing the |type_| field (see bug for rationale) will
+// make this class compatible with serialization.
 class DeviceAddress {
  public:
   // Bluetooth device address types.

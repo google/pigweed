@@ -412,7 +412,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerRequestTimeout) {
 TEST_F(LowEnergyConnectionManagerTest, PeerDoesNotExpireDuringTimeout) {
   // Set a connection timeout that is longer than the PeerCache expiry
   // timeout.
-  // TODO(fxbug.dev/1418): Consider configuring the cache timeout explicitly
+  // TODO(fxbug.dev/42087236): Consider configuring the cache timeout explicitly
   // rather than relying on the kCacheTimeout constant.
   constexpr pw::chrono::SystemClock::duration kTestRequestTimeout =
       kCacheTimeout + std::chrono::seconds(1);
@@ -1438,7 +1438,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   // connection to peer already exists.
   RunFor(kLECreateConnectionTimeout);
   // An error should be returned if the connection complete was incorrectly not
-  // matched to the pending connection request (see fxbug.dev/68969). In the
+  // matched to the pending connection request (see fxbug.dev/42148050). In the
   // future it may make sense to return success because a link to the peer
   // already exists.
   ASSERT_TRUE(result.is_error());
@@ -1512,7 +1512,7 @@ TEST_F(LowEnergyConnectionManagerTest,
 }
 
 // Successful connection to a peer whose address type is kBREDR.
-// TODO(fxbug.dev/2761): This test will likely become obsolete when LE
+// TODO(fxbug.dev/42102158): This test will likely become obsolete when LE
 // connections are based on the presence of LowEnergyData in a Peer and no
 // address type enum exists.
 TEST_F(LowEnergyConnectionManagerTest,
@@ -2151,8 +2151,9 @@ TEST_F(
       kPeripheralPreferredConnectionParametersCharacteristic);
   service_client->set_characteristics({char_data});
 
-  // TODO(fxbug.dev/123377): These parameters are invalid, but this test passes
-  // because we fail to validate them before sending them to the controller.
+  // TODO(fxbug.dev/42074287): These parameters are invalid, but this test
+  // passes because we fail to validate them before sending them to the
+  // controller.
   StaticByteBuffer char_value(0x01,
                               0x00,  // min interval
                               0x02,

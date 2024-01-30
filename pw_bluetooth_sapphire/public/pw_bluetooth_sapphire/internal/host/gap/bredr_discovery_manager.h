@@ -43,7 +43,7 @@ class BrEdrDiscoverableSession;
 // Ownership of this session is passed to the caller; when no sessions exist,
 // discovery is halted.
 //
-// TODO(jamuraa): Name resolution should also happen here. (fxbug.dev/851)
+// TODO(jamuraa): Name resolution should also happen here. (fxbug.dev/42165961)
 //
 // This class is not thread-safe, BrEdrDiscoverySessions should be created and
 // accessed on the same thread the BrEdrDiscoveryManager is created.
@@ -196,7 +196,8 @@ class BrEdrDiscoveryManager final {
   std::unordered_set<BrEdrDiscoverySession*> discovering_;
   // Sessions that have been removed but are still active.
   // Inquiry persists until we receive a Inquiry Complete event.
-  // TODO(fxbug.dev/668): we should not need these once we can Inquiry Cancel.
+  // TODO(fxbug.dev/42145646): we should not need these once we can Inquiry
+  // Cancel.
   std::unordered_set<BrEdrDiscoverySession*> zombie_discovering_;
 
   // The set of peers that we have pending name requests for.

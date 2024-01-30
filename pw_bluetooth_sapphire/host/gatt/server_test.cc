@@ -119,7 +119,7 @@ class ServerTest : public l2cap::testing::MockChannelTest {
   att::Database::WeakPtr db() const { return local_services_->database(); }
 
   // TODO(armansito): Consider introducing a FakeBearer for testing
-  // (fxbug.dev/642).
+  // (fxbug.dev/42142784).
   att::Bearer* att() const { return att_.get(); }
 
  private:
@@ -1665,7 +1665,7 @@ TEST_F(ServerTest, WriteRequestSuccess) {
 }
 
 // TODO(bwb): Add test cases for the error conditions involved in a Write
-// Command (fxbug.dev/675)
+// Command (fxbug.dev/42146420)
 
 TEST_F(ServerTest, WriteCommandSuccess) {
   const StaticByteBuffer kTestValue('f', 'o', 'o');

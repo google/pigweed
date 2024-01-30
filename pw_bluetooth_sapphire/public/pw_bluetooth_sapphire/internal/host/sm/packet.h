@@ -22,8 +22,8 @@
 namespace bt::sm {
 
 // Utilities for processing SMP packets.
-// TODO(fxbug.dev/48978): Merge PacketReader & ValidPacketReader types into one
-// type for validating & accessing SM packets once PacketReader is no longer
+// TODO(fxbug.dev/42125894): Merge PacketReader & ValidPacketReader types into
+// one type for validating & accessing SM packets once PacketReader is no longer
 // used.
 class PacketReader : public PacketView<Header> {
  public:

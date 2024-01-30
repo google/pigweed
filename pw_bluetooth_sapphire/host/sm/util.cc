@@ -171,7 +171,7 @@ std::string DisplayMethodToString(Delegate::DisplayMethod method) {
 }
 
 MutableByteBufferPtr NewPdu(size_t param_size) {
-  // TODO(fxbug.dev/1338): Remove unique_ptr->DynamicByteBuffer double
+  // TODO(fxbug.dev/42083692): Remove unique_ptr->DynamicByteBuffer double
   // indirection once sufficient progress has been made on the attached bug
   // (specifically re:l2cap::Channel::Send).
   return std::make_unique<DynamicByteBuffer>(sizeof(Header) + param_size);
@@ -382,7 +382,7 @@ DeviceAddress GenerateRpa(const UInt128& irk) {
   // The specification requires that at least one bit of the address is 1 and at
   // least one bit is 0. We expect that zx_cprng_draw() satisfies these
   // requirements.
-  // TODO(fxbug.dev/24810): Maybe generate within a range to enforce this?
+  // TODO(fxbug.dev/42099048): Maybe generate within a range to enforce this?
   random_generator()->Get(prand_bytes.mutable_subspan());
 
   // Make sure that the highest two bits are 0 and 1 respectively.
@@ -409,7 +409,7 @@ DeviceAddress GenerateRandomAddress(bool is_static) {
   // The specification requires that at least one bit of the address is 1 and at
   // least one bit is 0. We expect that zx_cprng_draw() satisfies these
   // requirements.
-  // TODO(fxbug.dev/24810): Maybe generate within a range to enforce this?
+  // TODO(fxbug.dev/42099048): Maybe generate within a range to enforce this?
   random_generator()->Get(addr_bytes.mutable_subspan());
 
   if (is_static) {

@@ -14,7 +14,7 @@
 
 #include <new>
 
-// fxbug.dev/132869: We should look into compiler changes to avoid emitting
+// fxbug.dev/42082880: We should look into compiler changes to avoid emitting
 // references to these symbols.
 // These operator delete implementations are provided to satisfy references from
 // the vtable for the deleting destructor. In practice, these will never be

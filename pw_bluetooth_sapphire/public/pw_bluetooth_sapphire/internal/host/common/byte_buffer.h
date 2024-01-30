@@ -121,8 +121,8 @@ class ByteBuffer {
   //
   // This or ReadMember should always be used in place of reinterpret_cast on
   // raw pointers because of dangerous UB related to object lifetimes and
-  // alignment issues (see fxbug.dev/46637). Moreover, this will perform bounds
-  // checking on the data being read.
+  // alignment issues (see fxbug.dev/42123294). Moreover, this will perform
+  // bounds checking on the data being read.
   template <typename T>
   [[nodiscard]] auto To() const {
     static_assert(std::is_trivially_copyable_v<T>,

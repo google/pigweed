@@ -44,8 +44,8 @@ void LowEnergyInterrogator::Start(ResultCallback callback) {
   // Always read remote version information as a test of whether the connection
   // was *actually* successfully established. If the connection failed to be
   // established, the command status of the Read Remote Version Information
-  // command will be "Connection Failed to be Established". See fxbug.dev/60517
-  // for details.
+  // command will be "Connection Failed to be Established". See
+  // fxbug.dev/42138706 for details.
   QueueReadRemoteVersionInformation();
 
   if (!peer_->le()->features().has_value()) {

@@ -120,7 +120,7 @@ void Phase2Legacy::MakeTemporaryKeyRequest() {
     return;
   }
 
-  // TODO(fxbug.dev/601): Support providing a TK out of band.
+  // TODO(fxbug.dev/42138242): Support providing a TK out of band.
   BT_ASSERT(features_.method == sm::PairingMethod::kJustWorks);
   listener()->ConfirmPairing([self](bool confirm) {
     if (!self.is_alive()) {

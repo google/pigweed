@@ -144,7 +144,7 @@ void Peer::LowEnergyData::SetAdvertisingData(
 
     // Do not update the name of bonded peers because advertisements are
     // unauthenticated.
-    // TODO(fxbug.dev/85365): Populate more Peer fields with relevant fields
+    // TODO(fxbug.dev/42166256): Populate more Peer fields with relevant fields
     // from parsed_adv_data_.
     if (!peer_->bonded() && parsed_adv_data_->local_name().has_value()) {
       peer_->RegisterNameInternal(
@@ -465,8 +465,8 @@ bool Peer::BrEdrData::SetEirData(const ByteBuffer& eir) {
       }
     } else if (type == DataType::kIncomplete16BitServiceUuids ||
                type == DataType::kComplete16BitServiceUuids) {
-      // TODO(fxbug.dev/131973): Consider adding 32-bit and 128-bit UUIDs to the
-      // list
+      // TODO(fxbug.dev/42082102): Consider adding 32-bit and 128-bit UUIDs to
+      // the list
       ParseUuids(
           data, UUIDElemSize::k16Bit, [this, &changed](const UUID& uuid) {
             auto [_, inserted] = services_.Mutable()->insert(uuid);
@@ -628,7 +628,7 @@ std::string Peer::ToString() const {
 bool Peer::RegisterName(const std::string& name, Peer::NameSource source) {
   if (RegisterNameInternal(name, source)) {
     UpdateExpiry();
-    // TODO(fxbug.dev/61739): Update the bond when this happens
+    // TODO(fxbug.dev/42140058): Update the bond when this happens
     UpdatePeerAndNotifyListeners(NotifyListenersChange::kBondNotUpdated);
     return true;
   }

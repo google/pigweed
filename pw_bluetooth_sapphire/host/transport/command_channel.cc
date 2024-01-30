@@ -663,7 +663,7 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
     return;
   }
 
-  // TODO(fxbug.dev/1109): Do not allow asynchronous commands to finish with
+  // TODO(fxbug.dev/42062242): Do not allow asynchronous commands to finish with
   // Command Complete.
   if (event_code == hci_spec::kCommandCompleteEventCode) {
     bt_log(WARN, "hci", "async command received CommandComplete");
@@ -792,7 +792,7 @@ void CommandChannel::OnEvent(pw::span<const std::byte> buffer) {
   }
 
   if (buffer.size() < sizeof(hci_spec::EventHeader)) {
-    // TODO(fxbug.dev/97362): Handle these types of errors by signaling
+    // TODO(fxbug.dev/42179582): Handle these types of errors by signaling
     // Transport.
     bt_log(ERROR,
            "hci",
@@ -810,7 +810,7 @@ void CommandChannel::OnEvent(pw::span<const std::byte> buffer) {
   event->InitializeFromBuffer();
 
   if (event->view().header().parameter_total_size != payload_size) {
-    // TODO(fxbug.dev/97362): Handle these types of errors by signaling
+    // TODO(fxbug.dev/42179582): Handle these types of errors by signaling
     // Transport.
     bt_log(ERROR,
            "hci",

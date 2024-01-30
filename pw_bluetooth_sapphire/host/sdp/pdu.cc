@@ -63,7 +63,7 @@ bool ValidContinuationState(const ByteBuffer& buf, BufferView* out) {
 }
 
 MutableByteBufferPtr NewSdpBuffer(size_t buffer_size) {
-  // TODO(fxbug.dev/1338): Remove unique_ptr->DynamicByteBuffer double
+  // TODO(fxbug.dev/42083692): Remove unique_ptr->DynamicByteBuffer double
   // indirection once sufficient progress has been made on the attached bug
   // (specifically re:l2cap::Channel::Send).
   return std::make_unique<DynamicByteBuffer>(buffer_size);

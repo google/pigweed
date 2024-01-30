@@ -142,12 +142,12 @@ class SecurityProperties final {
   // Part C, Section 5. Furthermore, the last Core Spec with only legacy pairing
   // (v2.0 + EDR) was withdrawn by Bluetooth SIG on 2019-01-28.
   //
-  // TODO(fxbug.dev/36360): SecurityProperties will treat kDebugCombination keys
-  // as "encrypted, unauthenticated, and no Secure Connections" to potentially
-  // allow their use as valid link keys, but does not store the fact that they
-  // originate from a controller in pairing debug mode, a potential hazard. Care
-  // should be taken at the controller interface to enforce particular policies
-  // regarding debug keys.
+  // TODO(fxbug.dev/42111880): SecurityProperties will treat kDebugCombination
+  // keys as "encrypted, unauthenticated, and no Secure Connections" to
+  // potentially allow their use as valid link keys, but does not store the fact
+  // that they originate from a controller in pairing debug mode, a potential
+  // hazard. Care should be taken at the controller interface to enforce
+  // particular policies regarding debug keys.
   explicit SecurityProperties(hci_spec::LinkKeyType lk_type);
 
   ~SecurityProperties() = default;

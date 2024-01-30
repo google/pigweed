@@ -25,7 +25,8 @@ namespace bt::hci {
 // CommandHandler is a wrapper around CommandChannel that abstracts serializing
 // & deserializing of command and event packets. Command and event types must
 // implement methods and fields documented above each method.
-// TODO(fxbug.dev/57720): Types should match PDL generated packet definitions.
+// TODO(fxbug.dev/42135598): Types should match PDL generated packet
+// definitions.
 //
 // This class does not track state regarding commands and events, so it may be
 // used as either a temporary or saved object.

@@ -234,7 +234,7 @@ class PairingState final {
   // Returns value for IO Capability Request Reply, else std::nullopt for IO
   // Capability Negative Reply.
   //
-  // TODO(fxbug.dev/601): Indicate presence of out-of-band (OOB) data.
+  // TODO(fxbug.dev/42138242): Indicate presence of out-of-band (OOB) data.
   [[nodiscard]] std::optional<pw::bluetooth::emboss::IoCapability>
   OnIoCapabilityRequest();
 

@@ -53,7 +53,7 @@ AndroidExtendedLowEnergyAdvertiser::~AndroidExtendedLowEnergyAdvertiser() {
     return;
   }
   hci()->command_channel()->RemoveEventHandler(state_changed_event_handler_id_);
-  // TODO(fxbug.dev/112157): This will only cancel one advertisement, after
+  // TODO(fxbug.dev/42063496): This will only cancel one advertisement, after
   // which the SequentialCommandRunner will have been destroyed and no further
   // commands will be sent.
   StopAdvertising();

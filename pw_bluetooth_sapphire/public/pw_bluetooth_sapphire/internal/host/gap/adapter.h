@@ -54,7 +54,7 @@ class BrEdrDiscoveryManager;
 class PairingDelegate;
 class LowEnergyAddressManager;
 
-// TODO(fxbug.dev/1327): Consider removing this identifier from the bt-host
+// TODO(fxbug.dev/42082764): Consider removing this identifier from the bt-host
 // layer.
 class AdapterId : public Identifier<uint64_t> {
  public:

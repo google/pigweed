@@ -225,7 +225,7 @@ class LogicalLink : public hci::AclDataChannel::ConnectionInterface {
   // fixed channels the peer supports (Core Spec v5.1, Vol 3, Part A, Sec 4.13).
   // Except for the signaling channels, fixed channels may not be created until
   // this response has been received.
-  // TODO(fxbug.dev/43668): save fixed channels mask and use to verify opened
+  // TODO(fxbug.dev/42119997): save fixed channels mask and use to verify opened
   // fixed channel ids are supported
   void OnRxFixedChannelsSupportedInfoRsp(
       const BrEdrCommandHandler::InformationResponse& rsp);

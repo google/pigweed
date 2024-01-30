@@ -199,7 +199,7 @@ class CommandHandler {
   //    expected, and the user response handler will not be called.
   //  - |kName| string literal
   //
-  // TODO(fxbug.dev/36062): Name the return type of CallbackT to make parsing
+  // TODO(fxbug.dev/42111549): Name the return type of CallbackT to make parsing
   // code more readable.
   template <class ResponseT, typename CallbackT>
   SignalingChannel::ResponseHandler BuildResponseHandler(CallbackT rsp_cb) {
