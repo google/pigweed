@@ -15,6 +15,8 @@
 
 #include <type_traits>
 
+#include "pw_toolchain/internal/sibling_cast.h"
+
 namespace pw::digital_io {
 namespace internal {
 
@@ -80,13 +82,14 @@ class Conversions {
 
   template <typename T, typename = Enabled<T>>
   constexpr T& as() {
-    return static_cast<T&>(static_cast<CommonBase&>(static_cast<Self&>(*this)));
+    return pw::internal::SiblingCast<T&, CommonBase>(static_cast<Self&>(*this));
   }
 
   template <typename T, typename = Enabled<T>>
   constexpr const T& as() const {
     return static_cast<const T&>(
-        static_cast<const CommonBase&>(static_cast<const Self&>(*this)));
+        pw::internal::SiblingCast<const T&, CommonBase>(
+            static_cast<const Self&>(*this)));
   }
 };
 

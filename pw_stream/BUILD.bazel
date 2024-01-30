@@ -40,6 +40,7 @@ cc_library(
         "//pw_result",
         "//pw_span",
         "//pw_status",
+        "//pw_toolchain:sibling_cast",
     ],
 )
 

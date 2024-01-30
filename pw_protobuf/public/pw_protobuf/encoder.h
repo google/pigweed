@@ -32,6 +32,7 @@
 #include "pw_status/try.h"
 #include "pw_stream/memory_stream.h"
 #include "pw_stream/stream.h"
+#include "pw_toolchain/internal/sibling_cast.h"
 #include "pw_varint/varint.h"
 
 namespace pw::protobuf {
@@ -910,7 +911,7 @@ inline ToStreamEncoder& StreamEncoderCast(FromStreamEncoder& encoder) {
   static_assert(std::is_base_of<StreamEncoder, ToStreamEncoder>::value,
                 "Cannot cast to a type that is not a derived class of "
                 "pw::protobuf::StreamEncoder");
-  return static_cast<ToStreamEncoder&>(static_cast<StreamEncoder&>(encoder));
+  return pw::internal::SiblingCast<ToStreamEncoder&, StreamEncoder>(encoder);
 }
 
 }  // namespace pw::protobuf

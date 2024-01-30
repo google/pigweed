@@ -28,6 +28,7 @@ pw_add_library(pw_digital_io STATIC
     pw_function
     pw_result
     pw_status
+    pw_toolchain._sibling_cast
 )
 
 pw_add_test(pw_digital_io.stream_test

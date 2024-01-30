@@ -75,6 +75,7 @@ cc_library(
         "//pw_stream",
         "//pw_stream:interval_reader",
         "//pw_string:string",
+        "//pw_toolchain:sibling_cast",
         "//pw_varint",
         "//pw_varint:stream",
     ],

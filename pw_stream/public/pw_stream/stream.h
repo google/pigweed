@@ -24,6 +24,7 @@
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
+#include "pw_toolchain/internal/sibling_cast.h"
 
 namespace pw::stream {
 
@@ -471,18 +472,18 @@ class NonSeekableWriter : public Writer {
 class ReaderWriter : public Stream {
  public:
   // ReaderWriters may be used as Readers.
-  Reader& as_reader() { return *std::launder(reinterpret_cast<Reader*>(this)); }
+  Reader& as_reader() { return internal::SiblingCast<Reader&, Stream>(*this); }
   const Reader& as_reader() const {
-    return *std::launder(reinterpret_cast<const Reader*>(this));
+    return internal::SiblingCast<const Reader&, Stream>(*this);
   }
 
   operator Reader&() { return as_reader(); }
   operator const Reader&() const { return as_reader(); }
 
   // ReaderWriters may be used as Writers.
-  Writer& as_writer() { return *std::launder(reinterpret_cast<Writer*>(this)); }
+  Writer& as_writer() { return internal::SiblingCast<Writer&, Stream>(*this); }
   const Writer& as_writer() const {
-    return *std::launder(reinterpret_cast<const Writer*>(this));
+    return internal::SiblingCast<const Writer&, Stream>(*this);
   }
 
   operator Writer&() { return as_writer(); }
@@ -516,16 +517,16 @@ class RelativeSeekableReaderWriter : public ReaderWriter {
   // RelativeSeekableReaderWriters may be used as RelativeSeekableReaders or
   // RelativeSeekableWriters.
   operator RelativeSeekableReader&() {
-    return *std::launder(reinterpret_cast<RelativeSeekableReader*>(this));
+    return internal::SiblingCast<RelativeSeekableReader&, Stream>(*this);
   }
   operator const RelativeSeekableReader&() const {
-    return *std::launder(reinterpret_cast<const RelativeSeekableReader*>(this));
+    return internal::SiblingCast<const RelativeSeekableReader&, Stream>(*this);
   }
   operator RelativeSeekableWriter&() {
-    return *std::launder(reinterpret_cast<RelativeSeekableWriter*>(this));
+    return internal::SiblingCast<RelativeSeekableWriter&, Stream>(*this);
   }
   operator const RelativeSeekableWriter&() const {
-    return *std::launder(reinterpret_cast<const RelativeSeekableWriter*>(this));
+    return internal::SiblingCast<const RelativeSeekableWriter&, Stream>(*this);
   }
 
  protected:
@@ -552,10 +553,10 @@ class SeekableReaderWriter : public RelativeSeekableReaderWriter {
  public:
   // SeekableReaderWriters may be used as SeekableReaders.
   SeekableReader& as_seekable_reader() {
-    return *std::launder(reinterpret_cast<SeekableReader*>(this));
+    return internal::SiblingCast<SeekableReader&, Stream>(*this);
   }
   const SeekableReader& as_seekable_reader() const {
-    return *std::launder(reinterpret_cast<const SeekableReader*>(this));
+    return internal::SiblingCast<const SeekableReader&, Stream>(*this);
   }
 
   operator SeekableReader&() { return as_seekable_reader(); }
@@ -563,10 +564,10 @@ class SeekableReaderWriter : public RelativeSeekableReaderWriter {
 
   // SeekableReaderWriters may be used as SeekableWriters.
   SeekableWriter& as_seekable_writer() {
-    return *std::launder(reinterpret_cast<SeekableWriter*>(this));
+    return internal::SiblingCast<SeekableWriter&, Stream>(*this);
   }
   const SeekableWriter& as_seekable_writer() const {
-    return *std::launder(reinterpret_cast<const SeekableWriter*>(this));
+    return internal::SiblingCast<const SeekableWriter&, Stream>(*this);
   }
 
   operator SeekableWriter&() { return as_seekable_writer(); }
@@ -592,16 +593,16 @@ class NonSeekableReaderWriter : public ReaderWriter {
   // NonSeekableWriters. Note that NonSeekableReaderWriter& generally should not
   // be used in APIs, which should accept ReaderWriter& instead.
   operator NonSeekableReader&() {
-    return *std::launder(reinterpret_cast<NonSeekableReader*>(this));
+    return internal::SiblingCast<NonSeekableReader&, Stream>(*this);
   }
   operator const NonSeekableReader&() const {
-    return *std::launder(reinterpret_cast<const NonSeekableReader*>(this));
+    return internal::SiblingCast<const NonSeekableReader&, Stream>(*this);
   }
   operator NonSeekableWriter&() {
-    return *std::launder(reinterpret_cast<NonSeekableWriter*>(this));
+    return internal::SiblingCast<NonSeekableWriter&, Stream>(*this);
   }
   operator const NonSeekableWriter&() const {
-    return *std::launder(reinterpret_cast<const NonSeekableWriter*>(this));
+    return internal::SiblingCast<const NonSeekableWriter&, Stream>(*this);
   }
 
  protected:

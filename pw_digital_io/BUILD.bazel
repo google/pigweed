@@ -39,6 +39,7 @@ cc_library(
         "//pw_function",
         "//pw_result",
         "//pw_status",
+        "//pw_toolchain:sibling_cast",
     ],
 )
 

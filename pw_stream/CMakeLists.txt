@@ -31,6 +31,7 @@ pw_add_library(pw_stream STATIC
     pw_result
     pw_span
     pw_status
+    pw_toolchain._sibling_cast
 )
 
 pw_add_library(pw_stream.socket_stream STATIC
