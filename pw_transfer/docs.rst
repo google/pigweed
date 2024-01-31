@@ -196,9 +196,19 @@ The transfer client provides the following APIs for managing data transfers:
   return a non-OK status if it is called with bad arguments. Otherwise, it will
   return OK and errors will be reported through the completion callback.
 
-.. cpp:function:: void pw::transfer::Client::CancelTransfer(pw::transfer::Client::TransferHandle handle)
+Transfer handles
+^^^^^^^^^^^^^^^^
+Each transfer session initiated by a client returns a ``TransferHandle`` object
+which is used to manage the transfer. These handles support the following
+operations:
 
-  Cancels a previously started transfer if it is active.
+.. cpp:function:: pw::Transfer::Client::TransferHandle::Cancel()
+
+   Terminates the ongoing transfer.
+
+.. cpp:function:: pw::Transfer::Client::TransferHandle::SetTransferSize(size_t size_bytes)
+
+   In a write transfer, indicates the total size of the transfer resource.
 
 **Example client setup**
 

@@ -925,7 +925,7 @@ TEST_F(ReadTransfer, Timeout_ReceivingDataResetsRetryCount) {
   EXPECT_EQ(c.window_end_offset(), 64u);
 
   // Ensure we don't leave a dangling reference to transfer_status.
-  legacy_client_.CancelTransfer(*handle);
+  handle->Cancel();
   transfer_thread_.WaitUntilEventIsProcessed();
 }
 
@@ -1360,7 +1360,7 @@ TEST_F(WriteTransfer, Timeout_RetriesWithInitialChunk) {
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   // Ensure we don't leave a dangling reference to transfer_status.
-  legacy_client_.CancelTransfer(*handle);
+  handle->Cancel();
   transfer_thread_.WaitUntilEventIsProcessed();
 }
 
@@ -1433,7 +1433,7 @@ TEST_F(WriteTransfer, Timeout_RetriesWithMostRecentChunk) {
   EXPECT_EQ(transfer_status, Status::Unknown());
 
   // Ensure we don't leave a dangling reference to transfer_status.
-  legacy_client_.CancelTransfer(*handle);
+  handle->Cancel();
   transfer_thread_.WaitUntilEventIsProcessed();
 }
 
@@ -1575,7 +1575,7 @@ TEST_F(WriteTransfer, Timeout_EndsTransferAfterMaxRetries) {
   ASSERT_EQ(payloads.size(), 4u);
 
   // Ensure we don't leave a dangling reference to transfer_status.
-  legacy_client_.CancelTransfer(*handle);
+  handle->Cancel();
   transfer_thread_.WaitUntilEventIsProcessed();
 }
 
@@ -1647,7 +1647,7 @@ TEST_F(WriteTransfer, Timeout_NonSeekableReaderEndsTransfer) {
   EXPECT_EQ(transfer_status, Status::DeadlineExceeded());
 
   // Ensure we don't leave a dangling reference to transfer_status.
-  legacy_client_.CancelTransfer(*handle);
+  handle->Cancel();
   transfer_thread_.WaitUntilEventIsProcessed();
 }
 
@@ -1686,7 +1686,7 @@ TEST_F(WriteTransfer, ManualCancel) {
   transfer_thread_.WaitUntilEventIsProcessed();
   ASSERT_EQ(payloads.size(), 2u);
 
-  legacy_client_.CancelTransfer(*handle);
+  handle->Cancel();
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // Client should send a cancellation chunk to the server.
@@ -1724,7 +1724,7 @@ TEST_F(WriteTransfer, ManualCancel_NoContact) {
   EXPECT_EQ(chunk.type(), Chunk::Type::kStart);
 
   // Cancel transfer without a server response. No final chunk should be sent.
-  legacy_client_.CancelTransfer(*handle);
+  handle->Cancel();
   transfer_thread_.WaitUntilEventIsProcessed();
 
   ASSERT_EQ(payloads.size(), 1u);
@@ -1765,7 +1765,7 @@ TEST_F(WriteTransfer, ManualCancel_Duplicate) {
   transfer_thread_.WaitUntilEventIsProcessed();
   ASSERT_EQ(payloads.size(), 2u);
 
-  client_.CancelTransfer(*handle);
+  handle->Cancel();
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // Client should send a cancellation chunk to the server.
@@ -1779,7 +1779,7 @@ TEST_F(WriteTransfer, ManualCancel_Duplicate) {
 
   // Attempt to cancel the transfer again.
   transfer_status = Status::Unknown();
-  client_.CancelTransfer(*handle);
+  handle->Cancel();
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // No further chunks should be sent.
@@ -2877,7 +2877,7 @@ TEST_F(WriteTransfer, Write_UpdateTransferSize) {
   EXPECT_EQ(transfer_status, OkStatus());
 
   // Ensure we don't leave a dangling reference to transfer_status.
-  client_.CancelTransfer(handle);
+  handle.Cancel();
   transfer_thread_.WaitUntilEventIsProcessed();
 }
 

@@ -26,14 +26,21 @@ namespace pw::transfer {
 
 class Client {
  public:
-  // A handle to an active transfer. Used to manage the transfer during its
-  // operation.
+  /// A handle to an active transfer. Used to manage the transfer during its
+  /// operation.
   class TransferHandle {
    public:
     constexpr TransferHandle() : client_(nullptr), id_(kUnassignedHandleId) {}
 
-    // In a Write() transfer, updates the size of the resource being
-    // transferred. This size will be indicated to the server.
+    /// Terminates the transfer.
+    void Cancel() {
+      if (client_ != nullptr) {
+        client_->CancelTransfer(*this);
+      }
+    }
+
+    /// In a `Write()` transfer, updates the size of the resource being
+    /// transferred. This size will be indicated to the server.
     void SetTransferSize(size_t size_bytes) {
       if (client_ != nullptr) {
         client_->UpdateTransferSize(*this, size_bytes);
