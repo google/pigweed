@@ -13,6 +13,8 @@
 // the License.
 #include "pw_async_basic/dispatcher.h"
 
+#include <vector>
+
 #include "pw_chrono/system_clock.h"
 #include "pw_log/log.h"
 #include "pw_sync/thread_notification.h"
@@ -64,13 +66,6 @@ TEST(DispatcherBasic, PostTasks) {
   ASSERT_EQ(tp.count, 3);
 }
 
-struct TaskPair {
-  Task task_a;
-  Task task_b;
-  int count = 0;
-  sync::ThreadNotification notification;
-};
-
 TEST(DispatcherBasic, ChainedTasks) {
   BasicDispatcher dispatcher;
   thread::Thread work_thread(thread::stl::Options(), dispatcher);
@@ -95,6 +90,42 @@ TEST(DispatcherBasic, ChainedTasks) {
   notification.acquire();
   dispatcher.RequestStop();
   work_thread.join();
+}
+
+TEST(DispatcherBasic, TaskOrdering) {
+  struct TestState {
+    std::vector<int> tasks;
+    sync::ThreadNotification notification;
+  };
+
+  BasicDispatcher dispatcher;
+  thread::Thread work_thread(thread::stl::Options(), dispatcher);
+  TestState state;
+
+  Task task1([&state](Context&, Status status) {
+    ASSERT_OK(status);
+    state.tasks.push_back(1);
+  });
+
+  Task task2([&state](Context&, Status status) {
+    ASSERT_OK(status);
+    state.tasks.push_back(2);
+    state.notification.release();
+  });
+
+  // Task posted at same time should be ordered FIFO.
+  auto due_time = chrono::SystemClock::now();
+  dispatcher.PostAt(task1, due_time);
+  dispatcher.PostAt(task2, due_time);
+
+  dispatcher.RunUntilIdle();
+  dispatcher.RequestStop();
+  work_thread.join();
+  state.notification.acquire();
+
+  ASSERT_EQ(state.tasks.size(), 2U);
+  EXPECT_EQ(state.tasks[0], 1);
+  EXPECT_EQ(state.tasks[1], 2);
 }
 
 // Test RequestStop() from inside task.

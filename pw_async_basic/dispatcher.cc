@@ -128,9 +128,11 @@ void BasicDispatcher::PostTaskInternal(
     backend::NativeTask& task, chrono::SystemClock::time_point time_due) {
   lock_.lock();
   task.due_time_ = time_due;
+  // Insert the new task in the queue after all tasks with the same or earlier
+  // deadline to ensure FIFO execution order.
   auto it_front = task_queue_.begin();
   auto it_behind = task_queue_.before_begin();
-  while (it_front != task_queue_.end() && time_due > it_front->due_time_) {
+  while (it_front != task_queue_.end() && time_due >= it_front->due_time_) {
     ++it_front;
     ++it_behind;
   }
