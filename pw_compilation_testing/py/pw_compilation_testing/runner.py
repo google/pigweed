@@ -125,6 +125,7 @@ def _check_results(
         _start_failure(test, command)
         _LOG.error('Compilation succeeded, but it should have failed!')
         _LOG.error('Update the test code so that is fails to compile.')
+        _LOG.error('Compilation command:\n%s', command)
         raise _TestFailure
 
     compiler_str = command.split(' ', 1)[0]
