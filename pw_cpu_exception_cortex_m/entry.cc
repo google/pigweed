@@ -242,7 +242,7 @@ void pw_cpu_exception_Entry(void) {
       // Store special registers to stack.
       " stmdb r0!, {r1-r4}                                    \n"
 
-#elif _PW_ARCH_ARM_V8M_MAINLINE
+#elif _PW_ARCH_ARM_V8M_MAINLINE || _PW_ARCH_ARM_V8_1M_MAINLINE
       // Load ARMv8-M specific special registers.
       " mrs r5, msplim                                        \n"
       " mrs r6, psplim                                        \n"
