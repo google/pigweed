@@ -227,7 +227,24 @@ def fix_bazel_format(ctx: _Context) -> Dict[Path, str]:
     """Fixes formatting for the provided files in place."""
     errors = {}
     for path in ctx.paths:
-        proc = log_run(['buildifier', path], capture_output=True)
+        proc = log_run(
+            [
+                'buildifier',
+                '--lint=fix',
+                # These warnings are safe to enable because they can always be
+                # auto-fixed.
+                (
+                    '--warnings='
+                    'load,'
+                    'load-on-top,'
+                    'native-build,'
+                    'same-origin-load,'
+                    'out-of-order-load'
+                ),
+                path,
+            ],
+            capture_output=True,
+        )
         if proc.returncode:
             errors[path] = proc.stderr.decode()
     return errors
