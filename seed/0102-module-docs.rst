@@ -9,6 +9,7 @@
    :status: Accepted
    :proposal_date: 2023-02-10
    :cl: 128811, 130410
+   :authors: Chad Norvell
    :facilitator: Kayce Basques
 
 ---------------------

@@ -9,6 +9,7 @@
    :status: Accepted
    :proposal_date: 2023-10-18
    :cl: 175479
+   :authors: Yuval Peress
    :facilitator: Taylor Cramer
 
 -------

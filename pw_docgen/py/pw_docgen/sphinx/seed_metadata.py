@@ -81,6 +81,7 @@ class PigweedSeedDirective(SphinxDirective):
         'status': parse_status,
         'proposal_date': directives.unchanged_required,
         'cl': directives.positive_int_list,
+        'authors': directives.unchanged_required,
         'facilitator': directives.unchanged_required,
     }
 
@@ -98,12 +99,15 @@ class PigweedSeedDirective(SphinxDirective):
         status = self._try_get_option('status')
         proposal_date = self._try_get_option('proposal_date')
         cl_nums = self._try_get_option('cl')
+        authors = self._try_get_option('authors')
         facilitator = self._try_get_option('facilitator')
 
         title = (
             f':fas:`seedling` SEED-{seed_number}: :ref:'
             f'`{seed_name}<seed-{seed_number}>`\n'
         )
+
+        authors_heading = 'Authors' if len(authors.split(',')) > 1 else 'Author'
 
         self.content = docutils.statemachine.StringList(
             [
@@ -124,6 +128,8 @@ class PigweedSeedDirective(SphinxDirective):
                 '\n',
                 ':octicon:`code-review` CL: ',
                 ', '.join([cl_link(cl_num) for cl_num in cl_nums]),
+                '\n',
+                f':octicon:`person` {authors_heading}: {authors}',
                 '\n',
                 f':octicon:`person` Facilitator: {facilitator}',
             ]

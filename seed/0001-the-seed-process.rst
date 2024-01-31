@@ -9,6 +9,7 @@
    :status: Accepted
    :proposal_date: 2022-10-31
    :cl: 116577
+   :authors: The Pigweed Team
    :facilitator: Unassigned
 
 -------

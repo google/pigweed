@@ -9,6 +9,7 @@
    :status: Accepted
    :proposal_date: 2023-09-28
    :cl: 173453
+   :authors: Armando Montanez
    :facilitator: Ted Pudlik
 
 -------

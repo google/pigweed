@@ -9,6 +9,7 @@
    :status: Accepted
    :proposal_date: 2023-06-12
    :cl: 150793
+   :authors: Chris Mumford
    :facilitator: Anthony DiGirolamo
 
 -------
