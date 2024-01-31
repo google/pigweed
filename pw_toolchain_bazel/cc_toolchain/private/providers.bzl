@@ -21,13 +21,12 @@ load(
     "FeatureInfo",
     "FeatureSetInfo",
     "FlagGroupInfo",
-    "FlagSetInfo",
     "ToolInfo",
     "WithFeatureSetInfo",
 )
 load("//actions:providers.bzl", "ActionNameInfo", "ActionNameSetInfo")
 
-visibility(["//cc_toolchain", "//tests/..."])
+visibility(["//cc_toolchain", "//cc_toolchain/tests/..."])
 
 # Note that throughout this file, we never use a list. This is because mutable
 # types cannot be stored in depsets. Thus, we type them as a sequence in the
@@ -48,7 +47,15 @@ PwActionNameInfo = ActionNameInfo
 PwActionNameSetInfo = ActionNameSetInfo
 
 PwFlagGroupInfo = FlagGroupInfo
-PwFlagSetInfo = FlagSetInfo
+PwFlagSetInfo = provider(
+    doc = "A type-safe version of @bazel_tools's FlagSetInfo",
+    fields = {
+        "label": "Label: The label that defined this flag set. Put this in error messages for easy debugging",
+        "actions": "Sequence[str]: The set of actions this is associated with",
+        "implied_by_any": "Sequence[FeatureConstraintInfo]: This will be enabled if any of the listed predicates are met. Equivalent to with_features",
+        "flag_groups": "Sequence[FlagGroupInfo]: Set of flag groups to include.",
+    },
+)
 
 PwEnvEntryInfo = EnvEntryInfo
 PwEnvSetInfo = EnvSetInfo

@@ -1,0 +1,64 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("//cc_toolchain:defs.bzl", "pw_cc_flag_group", "pw_cc_flag_set")
+load(":test_flag_sets.bzl", "test_flag_sets")
+
+package(default_visibility = ["//cc_toolchain/tests:__subpackages__"])
+
+pw_cc_flag_set(
+    name = "foo",
+    actions = ["//actions:c_compile"],
+    flags = ["--foo"],
+)
+
+pw_cc_flag_set(
+    name = "bar",
+    actions = ["//actions:c_compile"],
+    flags = ["--bar"],
+)
+
+pw_cc_flag_set(
+    name = "baz",
+    actions = ["//actions:c_compile"],
+    flags = ["--baz"],
+)
+
+pw_cc_flag_set(
+    name = "multiple_actions",
+    actions = [
+        "//actions:all_c_compiler_actions",
+        "//actions:all_cpp_compiler_actions",
+    ],
+    flags = ["--foo"],
+)
+
+pw_cc_flag_group(
+    name = "flag_group",
+    flags = [
+        "-bar",
+        "%{bar}",
+    ],
+    iterate_over = "bar",
+)
+
+pw_cc_flag_set(
+    name = "wraps_flag_group",
+    actions = ["//actions:c_compile"],
+    flag_groups = [":flag_group"],
+)
+
+test_flag_sets(
+    name = "test_flag_sets",
+)

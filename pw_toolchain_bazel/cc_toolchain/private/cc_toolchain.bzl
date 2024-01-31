@@ -37,6 +37,7 @@ load(
     ":utils.bzl",
     "ALL_FILE_GROUPS",
     "actionless_flag_set",
+    "to_untyped_flag_set",
 )
 
 # These attributes of pw_cc_toolchain are deprecated.
@@ -237,7 +238,10 @@ def _pw_cc_toolchain_config_impl(ctx):
     Returns:
         CcToolchainConfigInfo
     """
-    flag_sets_by_action = _create_action_flag_set_map([dep[PwFlagSetInfo] for dep in ctx.attr.action_config_flag_sets])
+    flag_sets_by_action = _create_action_flag_set_map([
+        to_untyped_flag_set(dep[PwFlagSetInfo])
+        for dep in ctx.attr.action_config_flag_sets
+    ])
     all_actions = _collect_action_configs(ctx, flag_sets_by_action)
     builtin_include_dirs = ctx.attr.cxx_builtin_include_directories if ctx.attr.cxx_builtin_include_directories else []
     sysroot_dir = ctx.attr.builtin_sysroot if ctx.attr.builtin_sysroot else None

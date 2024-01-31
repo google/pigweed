@@ -15,7 +15,7 @@
 
 load(
     "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
-    "flag_set",
+    rules_cc_flag_set = "flag_set",
 )
 
 ALL_FILE_GROUPS = {
@@ -37,7 +37,13 @@ def actionless_flag_set(flag_set_to_copy):
     Returns:
         flag_set with empty `actions` list.
     """
-    return flag_set(
+    return rules_cc_flag_set(
         with_features = flag_set_to_copy.with_features,
         flag_groups = flag_set_to_copy.flag_groups,
+    )
+
+def to_untyped_flag_set(flag_set):
+    return rules_cc_flag_set(
+        actions = list(flag_set.actions),
+        flag_groups = list(flag_set.flag_groups),
     )

@@ -24,6 +24,7 @@ load(
     "PwFeatureSetInfo",
     "PwFlagSetInfo",
 )
+load(":utils.bzl", "to_untyped_flag_set")
 
 def _pw_cc_feature_set_impl(ctx):
     if not ctx.attr.feature_names:
@@ -67,7 +68,11 @@ def _pw_cc_feature_impl(ctx):
     return feature(
         name = ctx.attr.feature_name,
         enabled = ctx.attr.enabled,
-        flag_sets = [fs[PwFlagSetInfo] for fs in ctx.attr.flag_sets],  # TODO: b/311679764 - Add label propagation for deduping.
+        flag_sets = [
+            # TODO: b/311679764 - Add label propagation for deduping.
+            to_untyped_flag_set(fs[PwFlagSetInfo])
+            for fs in ctx.attr.flag_sets
+        ],
         requires = [req[PwFeatureSetInfo] for req in ctx.attr.requires],
         implies = ctx.attr.implies,
         provides = ctx.attr.provides,

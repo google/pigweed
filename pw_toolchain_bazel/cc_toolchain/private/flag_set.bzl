@@ -16,7 +16,6 @@
 load(
     "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
     "flag_group",
-    "flag_set",
 )
 load(
     ":providers.bzl",
@@ -160,12 +159,18 @@ def _pw_cc_flag_set_impl(ctx):
     actions = depset(transitive = [
         action[PwActionNameSetInfo].actions
         for action in ctx.attr.actions
-    ])
+    ]).to_list()
+    if not actions:
+        fail("Each pw_cc_flag_set must specify at least one action")
 
-    return flag_set(
-        actions = actions.to_list(),
-        flag_groups = flag_groups,
-    )
+    return [
+        PwFlagSetInfo(
+            label = ctx.label,
+            actions = tuple(actions),
+            implied_by_any = (),
+            flag_groups = tuple(flag_groups),
+        ),
+    ]
 
 pw_cc_flag_set = rule(
     implementation = _pw_cc_flag_set_impl,

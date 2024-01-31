@@ -25,7 +25,7 @@ load(
     "PwFlagSetInfo",
     "PwToolInfo",
 )
-load(":utils.bzl", "actionless_flag_set")
+load(":utils.bzl", "actionless_flag_set", "to_untyped_flag_set")
 
 def _pw_cc_tool_impl(ctx):
     """Implementation for pw_cc_tool."""
@@ -117,7 +117,7 @@ Example:
 def _generate_action_config(ctx, action_name):
     flag_sets = []
     for fs in ctx.attr.flag_sets:
-        provided_fs = fs[PwFlagSetInfo]
+        provided_fs = to_untyped_flag_set(fs[PwFlagSetInfo])
         if action_name in provided_fs.actions:
             flag_sets.append(actionless_flag_set(provided_fs))
     return action_config(
@@ -143,7 +143,7 @@ def _pw_cc_action_config_impl(ctx):
     # Check that the listed flag sets apply to at least one action in this group
     # of action configs.
     for fs in ctx.attr.flag_sets:
-        provided_fs = fs[PwFlagSetInfo]
+        provided_fs = to_untyped_flag_set(fs[PwFlagSetInfo])
         flag_set_applies = False
         for action in action_names:
             if action in provided_fs.actions:
