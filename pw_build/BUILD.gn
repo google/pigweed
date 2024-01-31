@@ -337,8 +337,13 @@ config("relative_paths") {
 # pw_assert relies on pw_build_LINK_DEPS to avoid circular dependencies
 # in GN. In almost all other cases, build targets should explicitly depend on
 # the other targets they use.
+#
+# pw_build_TOOLCHAIN_LINK_DEPS is used to define dependencies introduced by
+# the various toolchains created under pw_toolchain module in GN. For example,
+# LLVM compiler-rt builtin libraries, or the arm-none-eabi newlib interface
+# stubs.
 group("link_deps") {
-  deps = pw_build_LINK_DEPS
+  deps = pw_build_LINK_DEPS + pw_build_TOOLCHAIN_LINK_DEPS
 }
 
 # This empty target is used as the default value for module configurations.

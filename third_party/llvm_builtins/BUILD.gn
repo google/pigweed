@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/error.gni")
 import("$dir_pw_build/target_types.gni")
+import("$dir_pw_docgen/docs.gni")
 
 declare_args() {
   # This should be set to the path of the llvm compiler-rt/builtins directory.
@@ -24,6 +25,9 @@ declare_args() {
   # Points to a pw_source_set that enumerates builtins specific to
   # the current toolchain.
   pw_third_party_llvm_builtins_TARGET_BUILTINS = ""
+
+  # List of files to be excluded from the builtins repo.
+  pw_third_party_llvm_builtins_ignore_list = []
 }
 
 config("no-warnings") {
@@ -149,6 +153,9 @@ files = [
   "umodti3.c",
 ]
 
+# Because this is unconditionally added to all clang-based ARM toolchains,
+# this library should be a no-op if `dir_pw_third_party_llvm_builtins` is
+# not configured.
 pw_source_set("arm_builtins") {
   configs = [ ":no-warnings" ]
   remove_configs = [ "//pw_build:extra_strict_warnings" ]
@@ -213,7 +220,9 @@ pw_source_set("arm_builtins") {
   ]
 
   if (dir_pw_third_party_llvm_builtins != "") {
-    foreach(file, arm_files) {
+    effective_arm_files =
+        filter_exclude(arm_files, pw_third_party_llvm_builtins_ignore_list)
+    foreach(file, effective_arm_files) {
       sources += [ "$dir_pw_third_party_llvm_builtins/$file" ]
     }
   } else {
@@ -221,12 +230,9 @@ pw_source_set("arm_builtins") {
   }
 }
 
-# This list includes the cpu's for which their is a `:${current_cpu}_builtins`
-# target.
-_default_supported_cpus = [ "arm" ]
-_current_cpu_is_known = _default_supported_cpus + [ current_cpu ] -
-                        [ current_cpu ] != _default_supported_cpus
-
+# Because this is unconditionally added to all clang-based ARM toolchains,
+# this library should be a no-op if `dir_pw_third_party_llvm_builtins` is
+# not configured.
 pw_static_library("llvm_builtins") {
   add_global_link_deps = false
 
@@ -236,25 +242,23 @@ pw_static_library("llvm_builtins") {
   sources = []
 
   if (dir_pw_third_party_llvm_builtins != "") {
-    foreach(file, files) {
+    effective_files =
+        filter_exclude(files, pw_third_party_llvm_builtins_ignore_list)
+    foreach(file, effective_files) {
       sources += [ "$dir_pw_third_party_llvm_builtins/$file" ]
     }
   } else {
     not_needed([ "files" ])
   }
 
+  # Architecture specific pw_source_set created from LLVM builtins
+  # source files. e.g. arm_builtins. If this property is not set, no
+  # architecture specific builtin functions will be included from the repo.
   if (pw_third_party_llvm_builtins_TARGET_BUILTINS != "") {
     deps = [ pw_third_party_llvm_builtins_TARGET_BUILTINS ]
-  } else if (_current_cpu_is_known) {
-    deps = [ ":${current_cpu}_builtins" ]
-  } else {
-    deps = [ ":unknown_cpu" ]
   }
 }
 
-if (pw_third_party_llvm_builtins_TARGET_BUILTINS == "" &&
-    !_current_cpu_is_known) {
-  pw_error("unknown_cpu") {
-    message = "Tried to build $dir_pw_third_party_llvm_builtins:llvm_builtins, but pw_third_party_llvm_builtins_TARGET_BUILTINS was not set and `current_cpu=\"$current_cpu\"` does not have well-known builtins set up."
-  }
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
 }
