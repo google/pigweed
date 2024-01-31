@@ -362,6 +362,58 @@ def setup_parse_body(_app, _pagename, _templatename, context, _doctree):
     context['parse_body'] = parse_body
 
 
+def fix_canonical_url(docname: str, canonical_url: str) -> str:
+    """Rewrites the canonical URL for a module homepage.
+
+    Sphinx assumes that the canonical URL for a module homepage is
+    `https://pigweed.dev/pw_*/docs.html` whereas we need it to actually be
+    `https://pigweed.dev/pw_*/` because this is how our server is configured.
+    Context: b/323077749
+
+    Args:
+        docname:
+            Basically the relative path to the doc, except `.rst` is omitted
+            from the filename. E.g. `pw_string/docs`.
+        canonical_url:
+            The default canonical URL that Sphinx has generated for the doc.
+
+    Returns:
+        The corrected canonical URL if `docname` is a module homepage,
+        otherwise the original canonical URL is returned without modification.
+    """
+    if not is_module_homepage(docname):
+        return canonical_url
+    module_name = parse_module_name(docname)
+    return f'https://pigweed.dev/{module_name}/'
+
+
+def on_html_page_context(
+    app: Sphinx,  # pylint: disable=unused-argument
+    docname: str,
+    templatename: str,  # pylint: disable=unused-argument
+    context: Dict[str, str],
+    doctree: Document,  # pylint: disable=unused-argument
+) -> None:
+    """Handles modifications to HTML page metadata, e.g. canonical URLs.
+
+    Args:
+        docname:
+            Basically the relative path to the doc, except `.rst` is omitted
+            from the filename. E.g. `pw_string/docs`.
+        context:
+            A dict containing the HTML page's metadata.
+
+    Returns:
+        None. Modifications happen to the HTML metadata in-place.
+    """
+    canonical_url_key = 'pageurl'
+    if canonical_url_key not in context:
+        return
+    context[canonical_url_key] = fix_canonical_url(
+        docname, context[canonical_url_key]
+    )
+
+
 def add_links(module_name: str, toctree: Element) -> None:
     """Adds source code and issues URLs to a module's table of contents tree.
 
@@ -599,6 +651,7 @@ def setup(app: Sphinx) -> Dict[str, bool]:
     # inclusive-language: enable
     app.connect('source-read', on_source_read)
     app.connect('doctree-read', on_doctree_read)
+    app.connect('html-page-context', on_html_page_context)
     return {
         'parallel_read_safe': True,
         'parallel_write_safe': True,

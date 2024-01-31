@@ -220,6 +220,14 @@ _________________
   the language has API docs (Rust), they will be linked from the metadata block.
 - ``code-size-impact``: A summarize of the average code size impact
 
+Canonical URL configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``module_metadata`` fixes the canonical URLs for module homepages. Sphinx
+outputs the canonical URL as ``https://pigweed.dev/pw_*/docs.html`` whereas we
+actually need it to be ``https://pigweed.dev/pw_*/`` because that's how our
+server is configured. Context: `b/323077749
+<https://issues.pigweed.dev/323077749>`_
+
 google_analytics
 ----------------
 When this extension is included and a ``google_analytics_id`` is set in the
