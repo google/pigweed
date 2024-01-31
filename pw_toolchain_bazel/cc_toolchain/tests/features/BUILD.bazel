@@ -1,0 +1,74 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("//cc_toolchain:defs.bzl", "pw_cc_feature", "pw_cc_feature_set")
+load(":test_features.bzl", "test_features")
+
+package(default_visibility = ["//cc_toolchain/tests:__subpackages__"])
+
+pw_cc_feature(
+    name = "foo",
+    enabled = True,
+    feature_name = "foo",
+    flag_sets = ["//cc_toolchain/tests/flag_sets:foo"],
+)
+
+pw_cc_feature(
+    name = "bar",
+    enabled = True,
+    feature_name = "bar",
+    flag_sets = ["//cc_toolchain/tests/flag_sets:bar"],
+)
+
+pw_cc_feature(
+    name = "baz",
+    enabled = True,
+    feature_name = "baz",
+    flag_sets = ["//cc_toolchain/tests/flag_sets:baz"],
+)
+
+pw_cc_feature(
+    name = "conflict",
+    enabled = True,
+    feature_name = "foo",
+)
+
+pw_cc_feature_set(
+    name = "foobar",
+    all_of = [
+        ":foo",
+        ":bar",
+    ],
+)
+
+pw_cc_feature(
+    name = "implies",
+    enabled = True,
+    feature_name = "implies",
+    implies = [":foobar"],
+)
+
+pw_cc_feature(
+    name = "requires",
+    enabled = True,
+    feature_name = "requires",
+    requires_any_of = [
+        ":foobar",
+        ":baz",
+    ],
+)
+
+test_features(
+    name = "test_features",
+)

@@ -15,8 +15,14 @@
 
 load(
     "//cc_toolchain/private:providers.bzl",
+    "PwFeatureInfo",
+    "PwFeatureSetInfo",
     "PwFlagGroupInfo",
     "PwFlagSetInfo",
+)
+load(
+    "//cc_toolchain/private:utils.bzl",
+    _to_untyped_config = "to_untyped_config",
 )
 
 visibility("//cc_toolchain/tests/...")
@@ -39,17 +45,65 @@ def assert_not_none(got, msg = "Got None, wanted a non-None value"):
     if got == None:
         fail(msg)
 
+def assert_fail(fn, *args, want = None, **kwargs):
+    """Asserts that a function threw an exception
+
+    Args:
+        fn: A function that can take in a parameter "fail"
+        *args: Arguments to be passed to fn
+        **kwargs: Arguments to be papssed to fn
+        want: Option[str]: The expected error message.
+          If not provided, any error message is allowed.
+    """
+
+    # Use a mutable type so that the inner function can modify the outer scope.
+    fails = []
+
+    def set_fail_msg(msg):
+        fails.append(msg)
+
+    fn(fail = set_fail_msg, *args, **kwargs)
+    if want == None:
+        assert_ne(fails, [], msg = "Expected %r(**%r) to fail. Unexpectedly passed and got %%r" % (fn, kwargs))
+    else:
+        assert_ne(fails, [], msg = "Expected %r(**%r) to fail with msg %r. Unexpectedly passed and got %%r" % (fn, want, kwargs))
+        assert_eq(fails[0], want, msg = "\n\nGot failure message  %r\n\nWant failure message %r")
+
+def assert_labels_eq(got, want):
+    """Asserts that two lists of providers with the label attribute are equal
+
+    Args:
+        got: A list or depset of providers containing the attribute "label"
+        want: A list or depset of providers containing the attribute "label"
+    """
+    if type(got) == "depset":
+        got = got.to_list()
+    if type(want) == "depset":
+        want = want.to_list()
+    got = sorted([entry.label for entry in got])
+    want = sorted([entry.label for entry in want])
+    assert_eq(got, want)
+
 _RULES = {
     PwFlagSetInfo: "flag_sets",
     PwFlagGroupInfo: "flag_groups",
+    PwFeatureInfo: "features",
+    PwFeatureSetInfo: "feature_sets",
 }
 
 _PROVIDERS = {
-    "//cc_toolchain/tests/flag_sets:foo": [PwFlagSetInfo],
+    "//cc_toolchain/tests/features:bar": [PwFeatureInfo, PwFeatureSetInfo],
+    "//cc_toolchain/tests/features:baz": [PwFeatureInfo, PwFeatureSetInfo],
+    "//cc_toolchain/tests/features:conflict": [PwFeatureInfo, PwFeatureSetInfo],
+    "//cc_toolchain/tests/features:foo": [PwFeatureInfo, PwFeatureSetInfo],
+    "//cc_toolchain/tests/features:foobar": [PwFeatureSetInfo],
+    "//cc_toolchain/tests/features:implies": [PwFeatureInfo, PwFeatureSetInfo],
+    "//cc_toolchain/tests/features:requires": [PwFeatureInfo, PwFeatureSetInfo],
     "//cc_toolchain/tests/flag_sets:bar": [PwFlagSetInfo],
     "//cc_toolchain/tests/flag_sets:baz": [PwFlagSetInfo],
-    "//cc_toolchain/tests/flag_sets:multiple_actions": [PwFlagSetInfo],
     "//cc_toolchain/tests/flag_sets:flag_group": [PwFlagGroupInfo],
+    "//cc_toolchain/tests/flag_sets:foo": [PwFlagSetInfo],
+    "//cc_toolchain/tests/flag_sets:multiple_actions": [PwFlagSetInfo],
     "//cc_toolchain/tests/flag_sets:wraps_flag_group": [PwFlagSetInfo],
 }
 
@@ -68,8 +122,15 @@ def generate_test_rule(implementation):
             for provider in _PROVIDERS["//%s:%s" % (pkg, name)]:
                 providers[_RULES[provider]][name] = target[provider]
 
+        def to_untyped_config(features = [], feature_sets = [], fail = fail):
+            feature_set = PwFeatureSetInfo(features = depset(
+                features,
+                transitive = [fs.features for fs in feature_sets],
+            ))
+            return _to_untyped_config(feature_set, fail = fail)
+
         kwargs = {k: struct(**v) for k, v in providers.items()}
-        return implementation(ctx, **kwargs)
+        return implementation(ctx, to_untyped_config = to_untyped_config, **kwargs)
 
     return rule(
         implementation = wrapper,

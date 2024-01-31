@@ -30,13 +30,14 @@ load(
     ":providers.bzl",
     "PwActionConfigInfo",
     "PwActionConfigListInfo",
-    "PwFeatureInfo",
+    "PwFeatureSetInfo",
     "PwFlagSetInfo",
 )
 load(
     ":utils.bzl",
     "ALL_FILE_GROUPS",
     "actionless_flag_set",
+    "to_untyped_config",
     "to_untyped_flag_set",
 )
 
@@ -245,15 +246,22 @@ def _pw_cc_toolchain_config_impl(ctx):
     all_actions = _collect_action_configs(ctx, flag_sets_by_action)
     builtin_include_dirs = ctx.attr.cxx_builtin_include_directories if ctx.attr.cxx_builtin_include_directories else []
     sysroot_dir = ctx.attr.builtin_sysroot if ctx.attr.builtin_sysroot else None
-    features = [dep[PwFeatureInfo] for dep in ctx.attr.toolchain_features]
+
+    feature_set = PwFeatureSetInfo(features = depset(
+        transitive = [
+            feature_set[PwFeatureSetInfo].features
+            for feature_set in ctx.attr.toolchain_features
+        ],
+    ))
+    out = to_untyped_config(feature_set)
 
     # TODO: b/297413805 - This could be externalized.
-    features.append(_archiver_flags_feature(ctx.attr.target_libc == "macosx"))
+    out.features.append(_archiver_flags_feature(ctx.attr.target_libc == "macosx"))
 
     return cc_common.create_cc_toolchain_config_info(
         ctx = ctx,
         action_configs = all_actions,
-        features = features,
+        features = out.features,
         cxx_builtin_include_directories = builtin_include_dirs,
         toolchain_identifier = ctx.attr.toolchain_identifier,
         host_system_name = ctx.attr.host_system_name,
@@ -273,7 +281,7 @@ pw_cc_toolchain_config = rule(
         # Attributes new to this rule.
         "action_configs": attr.label_list(),
         "action_config_flag_sets": attr.label_list(providers = [PwFlagSetInfo]),
-        "toolchain_features": attr.label_list(providers = [PwFeatureInfo]),
+        "toolchain_features": attr.label_list(providers = [PwFeatureSetInfo]),
 
         # Attributes from create_cc_toolchain_config_info.
         "toolchain_identifier": attr.string(),

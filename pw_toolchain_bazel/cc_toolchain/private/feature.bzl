@@ -14,69 +14,70 @@
 """Implementation of the pw_cc_feature and pw_cc_feature_set rules."""
 
 load(
-    "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
-    "feature",
-    "feature_set",
-)
-load(
     ":providers.bzl",
     "PwFeatureInfo",
     "PwFeatureSetInfo",
     "PwFlagSetInfo",
 )
-load(":utils.bzl", "to_untyped_flag_set")
 
 def _pw_cc_feature_set_impl(ctx):
-    if not ctx.attr.feature_names:
-        fail("At least one feature name must be specified in `feature_names`")
-    return feature_set(
-        feature_names = ctx.attr.features,
-    )
+    if not ctx.attr.all_of:
+        fail("At least one feature must be specified in `all_of`")
+    features = depset(transitive = [attr[PwFeatureSetInfo].features for attr in ctx.attr.all_of])
+
+    return [
+        PwFeatureSetInfo(features = features),
+    ]
 
 pw_cc_feature_set = rule(
     implementation = _pw_cc_feature_set_impl,
     attrs = {
-        "feature_names": attr.string_list(
+        "all_of": attr.label_list(
+            providers = [PwFeatureSetInfo],
             doc = """Features that must be enabled for this feature set to be deemed compatible with the current toolchain configuration.""",
         ),
     },
     provides = [PwFeatureSetInfo],
-    doc = """Defines a set of required features.
-
-This rule is effectively a wrapper for the `feature_set` constructor in
-@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl.
-
-This rule is used to express a group of features that may satisfy a
-`pw_cc_feature`'s' `requires` list. If all of the specified features in a
-`pw_cc_feature_set` are enabled, the `pw_cc_feature` that lists the feature
-set *can* also be enabled. Note that this does cause the feature to be enabled;
-it only means it is possible for the feature to be enabled.
+    doc = """Defines a set of features.
 
 Example:
 
     pw_cc_feature_set(
         name = "thin_lto_requirements",
-        feature_names = [
-            "thin_lto",
-            "opt",
+        all_of = [
+            ":thin_lto",
+            ":opt",
         ],
     )
 """,
 )
 
 def _pw_cc_feature_impl(ctx):
-    return feature(
+    implies_features = depset(transitive = [
+        attr[PwFeatureSetInfo].features
+        for attr in ctx.attr.implies
+    ])
+    requires = [req[PwFeatureSetInfo] for req in ctx.attr.requires_any_of]
+
+    feature = PwFeatureInfo(
+        label = ctx.label,
         name = ctx.attr.feature_name,
         enabled = ctx.attr.enabled,
-        flag_sets = [
-            # TODO: b/311679764 - Add label propagation for deduping.
-            to_untyped_flag_set(fs[PwFlagSetInfo])
+        env_sets = depset([]),
+        flag_sets = depset([
+            fs[PwFlagSetInfo]
             for fs in ctx.attr.flag_sets
-        ],
-        requires = [req[PwFeatureSetInfo] for req in ctx.attr.requires],
-        implies = ctx.attr.implies,
+        ]),
+        implies_features = implies_features,
+        implies_action_configs = depset([]),
+        requires_any_of = tuple(requires),
         provides = ctx.attr.provides,
     )
+
+    return [
+        feature,
+        PwFeatureSetInfo(features = depset([feature])),
+    ]
 
 pw_cc_feature = rule(
     implementation = _pw_cc_feature_impl,
@@ -120,21 +121,23 @@ toolchain, they can happily live alongside each other in the same BUILD file.
             doc = """Flag sets that, when expanded, implement this feature.""",
             providers = [PwFlagSetInfo],
         ),
-        "requires": attr.label_list(
+        "requires_any_of": attr.label_list(
             doc = """A list of feature sets that define toolchain compatibility.
 
 If *at least one* of the listed `pw_cc_feature_set`s are fully satisfied (all
 features exist in the toolchain AND are currently enabled), this feature is
 deemed compatible and may be enabled.
 
-Note: Even if `pw_cc_feature.requires` is satisfied, a feature is not enabled
-unless another mechanism (e.g. command-line flags, `pw_cc_feature.implies`,
-`pw_cc_feature.enabled`) signals that the feature should actually be enabled.
+Note: Even if `pw_cc_feature.requires_any_of` is satisfied, a feature is not
+enabled unless another mechanism (e.g. command-line flags,
+`pw_cc_feature.implies`,`pw_cc_feature.enabled`) signals that the feature should
+actually be enabled.
 """,
             providers = [PwFeatureSetInfo],
         ),
-        "implies": attr.string_list(
-            doc = """Names of features enabled along with this feature.
+        "implies": attr.label_list(
+            providers = [PwFeatureSetInfo],
+            doc = """List of features enabled along with this feature.
 
 Warning: If any of the named features cannot be enabled, this feature is
 silently disabled.
@@ -151,7 +154,7 @@ feature names.
 """,
         ),
     },
-    provides = [PwFeatureInfo],
+    provides = [PwFeatureInfo, PwFeatureSetInfo],
     doc = """Defines the implemented behavior of a C/C++ toolchain feature.
 
 This rule is effectively a wrapper for the `feature` constructor in

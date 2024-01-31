@@ -700,26 +700,45 @@ API reference
 
       Flag sets that, when expanded, implement this feature.
 
-   .. py:attribute:: requires
+   .. py:attribute:: requires_any_of
       :type: List[label]
 
       A list of feature sets that define toolchain compatibility.
 
-      If **at least one** of the listed :py:class:`pw_cc_feature_set`\s are
-      satisfied (all features exist in the toolchain AND are currently enabled),
-      this feature is deemed compatible and may be enabled.
+      If **at least one** of the listed :py:class:`pw_cc_feature`\s or
+      :py:class:`pw_cc_feature_set`\s are satisfied (all features exist in the
+      toolchain AND are currently enabled), this feature is deemed compatible
+      and may be enabled.
+
+      If this feature **cannot** be enabled (such as if, in the first example
+      below, thin_lto didn't exist in the toolchain), it will throw an error.
+
+      .. code-block:: py
+
+        pw_cc_feature(
+            name = "requires_thin_lto_and_opt",
+            feature_name = "requires_thin_lto_and_opt",
+            requires_any_of = [":thin_lto_requirements"]
+        )
+
+        pw_cc_feature(
+            name = "requires_thin_lto_or_opt",
+            feature_name = "requires_thin_lto_or_opt",
+            requires_any_of = [":thin_lto", ":opt"]
+        )
 
       .. admonition:: Note
 
-         Even if :py:attr:`pw_cc_feature.requires` is satisfied, a feature is
-         not enabled unless another mechanism (e.g. command-line flags,
-         :py:attr:`pw_cc_feature.implies`, or :py:attr:`pw_cc_feature.enabled`\)
-         signals that the feature should actually be enabled.
+         Even if :py:attr:`pw_cc_feature.requires_any_of` is satisfied, a
+         feature is not enabled unless another mechanism (e.g. command-line
+         flags, :py:attr:`pw_cc_feature.implies`, or
+         :py:attr:`pw_cc_feature.enabled`\) signals that the feature should
+         actually be enabled.
 
    .. py:attribute:: implies
-      :type: List[str]
+      :type: List[label]
 
-      Names of features enabled along with this feature.
+      List of features or action configs enabled along with this feature.
 
       .. admonition:: Note
          :class: warning
@@ -740,17 +759,10 @@ API reference
 
 .. py:class:: pw_cc_feature_set
 
-   Defines a set of required features.
+   Defines a group of features.
 
-   This rule is effectively a wrapper for the ``feature_set`` constructor in
-   `@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl <https://github.com/bazelbuild/rules_cc/blob/main/cc/cc_toolchain_config_lib.bzl>`_.
-
-   This rule is used to express a group of features that may satisfy a
-   :py:attr:`pw_cc_feature.requires` list. If **all** of the specified features
-   in a :py:class:`pw_cc_feature_set` are enabled, the :py:class:`pw_cc_feature`
-   that lists the feature set *can* also be enabled. Note that **this does cause
-   the feature to be enabled**; it only means it is possible for the feature to
-   be enabled.
+   Semantically equivalent to "all of the specified features", and may be used
+   wherever you can provide multiple features.
 
    Example:
 
@@ -758,14 +770,14 @@ API reference
 
       pw_cc_feature_set(
           name = "thin_lto_requirements",
-          feature_names = [
-              "thin_lto",
-              "opt",
+          all_of = [
+              ":thin_lto",
+              ":opt",
           ],
       )
 
-   .. py:attribute:: feature_names
-      :type: List[str]
+   .. py:attribute:: features
+      :type: List[label]
 
       Features that must be enabled for this feature set to be deemed compatible
       with the current toolchain configuration.

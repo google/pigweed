@@ -18,8 +18,6 @@ load(
     "ActionConfigInfo",
     "EnvEntryInfo",
     "EnvSetInfo",
-    "FeatureInfo",
-    "FeatureSetInfo",
     "FlagGroupInfo",
     "ToolInfo",
     "WithFeatureSetInfo",
@@ -60,8 +58,26 @@ PwFlagSetInfo = provider(
 PwEnvEntryInfo = EnvEntryInfo
 PwEnvSetInfo = EnvSetInfo
 
-PwFeatureInfo = FeatureInfo
-PwFeatureSetInfo = FeatureSetInfo
+PwFeatureInfo = provider(
+    doc = "A type-safe version of @bazel_tools's FeatureInfo",
+    fields = {
+        "label": "Label: The label that defined this feature. Put this in error messages for easy debugging",
+        "name": "str: The name of the feature",
+        "enabled": "bool: Whether this feature is enabled by default",
+        "flag_sets": "depset[FlagSetInfo]: Flag sets enabled by this feature",
+        "env_sets": "depset[EnvSetInfo]: Env sets enabled by this feature",
+        "implies_features": "depset[FeatureInfo]: Set of features implied by this feature",
+        "implies_action_configs": "depset[ActionConfigInfo]: Set of action configs enabled by this feature",
+        "requires_any_of": "Sequence[FeatureSetInfo]: A list of feature sets, at least one of which is required to enable this feature. This is semantically equivalent to the requires attribute of rules_cc's FeatureInfo",
+        "provides": "Sequence[str]: Indicates that this feature is one of several mutually exclusive alternate features.",
+    },
+)
+PwFeatureSetInfo = provider(
+    doc = "A type-safe version of @bazel_tools's FeatureSetInfo",
+    fields = {
+        "features": "depset[FeatureInfo]: The set of features this corresponds to",
+    },
+)
 PwFeatureConstraintInfo = WithFeatureSetInfo
 
 PwActionConfigInfo = ActionConfigInfo
