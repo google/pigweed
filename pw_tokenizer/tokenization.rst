@@ -511,6 +511,29 @@ the ``database.py`` command line tool.
 Limitations, bugs, and future work
 ==================================
 
+GCC bug: tokenization in template functions
+-------------------------------------------
+GCC releases prior to 14 incorrectly ignore the section attribute for template
+`functions <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70435>`_ and `variables
+<https://gcc.gnu.org/bugzilla/show_bug.cgi?id=88061>`_. The bug causes tokenized
+strings in template functions to be emitted into ``.rodata`` instead of the
+tokenized string section, so they cannot be extracted for detokenization.
+
+Fortunately, this is simple to work around in the linker script.
+``pw_tokenizer_linker_sections.ld`` includes a statement that pulls tokenized
+string entries from ``.rodata`` into the tokenized string section. See
+`b/321306079 <https://issues.pigweed.dev/issues/321306079>`_ for details.
+
+If tokenization is working, but strings in templates are not appearing in token
+databases, check the following:
+
+- The full contents of the latest version of ``pw_tokenizer_linker_sections.ld``
+  are included with the linker script. The linker script was updated in
+  `pwrev.dev/188424 <http://pwrev.dev/188424>`_.
+- The ``-fdata-sections`` compilation option is in use. This places each
+  variable in its own section, which is necessary for pulling tokenized string
+  entries from ``.rodata`` into the proper section.
+
 64-bit tokenization
 -------------------
 The Python and C++ detokenizing libraries currently assume that strings were
