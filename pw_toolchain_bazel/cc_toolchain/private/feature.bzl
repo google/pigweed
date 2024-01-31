@@ -15,11 +15,14 @@
 
 load(
     "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
-    "FeatureInfo",
-    "FeatureSetInfo",
-    "FlagSetInfo",
     "feature",
     "feature_set",
+)
+load(
+    ":providers.bzl",
+    "PwFeatureInfo",
+    "PwFeatureSetInfo",
+    "PwFlagSetInfo",
 )
 
 def _pw_cc_feature_set_impl(ctx):
@@ -36,7 +39,7 @@ pw_cc_feature_set = rule(
             doc = """Features that must be enabled for this feature set to be deemed compatible with the current toolchain configuration.""",
         ),
     },
-    provides = [FeatureSetInfo],
+    provides = [PwFeatureSetInfo],
     doc = """Defines a set of required features.
 
 This rule is effectively a wrapper for the `feature_set` constructor in
@@ -64,8 +67,8 @@ def _pw_cc_feature_impl(ctx):
     return feature(
         name = ctx.attr.feature_name,
         enabled = ctx.attr.enabled,
-        flag_sets = [fs[FlagSetInfo] for fs in ctx.attr.flag_sets],  # TODO: b/311679764 - Add label propagation for deduping.
-        requires = [req[FeatureSetInfo] for req in ctx.attr.requires],
+        flag_sets = [fs[PwFlagSetInfo] for fs in ctx.attr.flag_sets],  # TODO: b/311679764 - Add label propagation for deduping.
+        requires = [req[PwFeatureSetInfo] for req in ctx.attr.requires],
         implies = ctx.attr.implies,
         provides = ctx.attr.provides,
     )
@@ -110,7 +113,7 @@ toolchain, they can happily live alongside each other in the same BUILD file.
         ),
         "flag_sets": attr.label_list(
             doc = """Flag sets that, when expanded, implement this feature.""",
-            providers = [FlagSetInfo],
+            providers = [PwFlagSetInfo],
         ),
         "requires": attr.label_list(
             doc = """A list of feature sets that define toolchain compatibility.
@@ -123,7 +126,7 @@ Note: Even if `pw_cc_feature.requires` is satisfied, a feature is not enabled
 unless another mechanism (e.g. command-line flags, `pw_cc_feature.implies`,
 `pw_cc_feature.enabled`) signals that the feature should actually be enabled.
 """,
-            providers = [FeatureSetInfo],
+            providers = [PwFeatureSetInfo],
         ),
         "implies": attr.string_list(
             doc = """Names of features enabled along with this feature.
@@ -143,7 +146,7 @@ feature names.
 """,
         ),
     },
-    provides = [FeatureInfo],
+    provides = [PwFeatureInfo],
     doc = """Defines the implemented behavior of a C/C++ toolchain feature.
 
 This rule is effectively a wrapper for the `feature` constructor in

@@ -17,13 +17,16 @@ This library is intended to be a private implementation detail of
 pw_toolchain_bazel, DO NOT export the contents of this file to be used publicly.
 """
 
-load("@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl", "ActionConfigInfo")
-load("//actions:providers.bzl", "ActionNameSetInfo")
-load(":providers.bzl", "ActionConfigListInfo")
+load(
+    ":providers.bzl",
+    "PwActionConfigInfo",
+    "PwActionConfigListInfo",
+    "PwActionNameSetInfo",
+)
 
 def _get_action_names(action_sets):
     return depset(transitive = [
-        action_set[ActionNameSetInfo].actions
+        action_set[PwActionNameSetInfo].actions
         for action_set in action_sets
     ]).to_list()
 
@@ -36,10 +39,10 @@ def _pw_cc_action_config_file_collector_impl(ctx):
     all_file_depsets = []
     for dep in ctx.attr.all_action_configs:
         action_names = []
-        if ActionConfigInfo in dep:
-            action_names.append(dep[ActionConfigInfo].action_name)
-        if ActionConfigListInfo in dep:
-            action_names.extend([ac.action_name for ac in dep[ActionConfigListInfo].action_configs])
+        if PwActionConfigInfo in dep:
+            action_names.append(dep[PwActionConfigInfo].action_name)
+        if PwActionConfigListInfo in dep:
+            action_names.extend([ac.action_name for ac in dep[PwActionConfigListInfo].action_configs])
 
         # NOTE: This intentionally doesn't do a check to ensure that the
         # items in `action_names` are `pw_cc_action_config`s because the
@@ -73,7 +76,7 @@ pw_cc_action_config_file_collector = rule(
     attrs = {
         "all_action_configs": attr.label_list(default = []),
         "collect_files_from_actions": attr.label_list(
-            providers = [ActionNameSetInfo],
+            providers = [PwActionNameSetInfo],
             doc = """Collects files from tools that apply to the listed action names.
 
 Note: `collect_files_from_actions` and `collect_files_not_from_actions` are
@@ -81,7 +84,7 @@ mutually exclusive.
 """,
         ),
         "collect_files_not_from_actions": attr.label_list(
-            providers = [ActionNameSetInfo],
+            providers = [PwActionNameSetInfo],
             doc = """Collects files from tools that DO NOT apply to the listed action names.
 
 Note: `collect_files_from_actions` and `collect_files_not_from_actions` are

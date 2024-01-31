@@ -15,13 +15,16 @@
 
 load(
     "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
-    "FlagSetInfo",
-    "ToolInfo",
     "action_config",
     config_lib_tool = "tool",  # This is renamed to reduce name aliasing.
 )
-load("//actions:providers.bzl", "ActionNameSetInfo")
-load(":providers.bzl", "ActionConfigListInfo")
+load(
+    ":providers.bzl",
+    "PwActionConfigListInfo",
+    "PwActionNameSetInfo",
+    "PwFlagSetInfo",
+    "PwToolInfo",
+)
 load(":utils.bzl", "actionless_flag_set")
 
 def _pw_cc_tool_impl(ctx):
@@ -86,7 +89,7 @@ need to explicitly specify the `*_files` attributes on a `pw_cc_toolchain`.
 """,
         ),
     },
-    provides = [ToolInfo, DefaultInfo],
+    provides = [PwToolInfo, DefaultInfo],
     doc = """Declares a singular tool that can be bound to action configs.
 
 `pw_cc_tool` rules are intended to be consumed exclusively by
@@ -114,13 +117,13 @@ Example:
 def _generate_action_config(ctx, action_name):
     flag_sets = []
     for fs in ctx.attr.flag_sets:
-        provided_fs = fs[FlagSetInfo]
+        provided_fs = fs[PwFlagSetInfo]
         if action_name in provided_fs.actions:
             flag_sets.append(actionless_flag_set(provided_fs))
     return action_config(
         action_name = action_name,
         enabled = ctx.attr.enabled,
-        tools = [tool[ToolInfo] for tool in ctx.attr.tools],
+        tools = [tool[PwToolInfo] for tool in ctx.attr.tools],
         flag_sets = flag_sets,
         implies = ctx.attr.implies,
     )
@@ -131,7 +134,7 @@ def _pw_cc_action_config_impl(ctx):
         fail("Action configs are not valid unless they specify at least one `pw_cc_tool` in `tools`")
 
     action_names = depset(transitive = [
-        action[ActionNameSetInfo].actions
+        action[PwActionNameSetInfo].actions
         for action in ctx.attr.action_names
     ]).to_list()
     if not action_names:
@@ -140,7 +143,7 @@ def _pw_cc_action_config_impl(ctx):
     # Check that the listed flag sets apply to at least one action in this group
     # of action configs.
     for fs in ctx.attr.flag_sets:
-        provided_fs = fs[FlagSetInfo]
+        provided_fs = fs[PwFlagSetInfo]
         flag_set_applies = False
         for action in action_names:
             if action in provided_fs.actions:
@@ -152,7 +155,7 @@ def _pw_cc_action_config_impl(ctx):
             ))
 
     return [
-        ActionConfigListInfo(
+        PwActionConfigListInfo(
             action_configs = [_generate_action_config(ctx, action) for action in action_names],
         ),
         DefaultInfo(
@@ -164,7 +167,7 @@ pw_cc_action_config = rule(
     implementation = _pw_cc_action_config_impl,
     attrs = {
         "action_names": attr.label_list(
-            providers = [ActionNameSetInfo],
+            providers = [PwActionNameSetInfo],
             mandatory = True,
             doc = """A list of action names to apply this action to.
 
@@ -182,7 +185,7 @@ default.
         ),
         "tools": attr.label_list(
             mandatory = True,
-            providers = [ToolInfo],
+            providers = [PwToolInfo],
             doc = """The `pw_cc_tool` to use for the specified actions.
 
 If multiple tools are specified, the first tool that has `with_features` that
@@ -190,7 +193,7 @@ satisfy the currently enabled feature set is used.
 """,
         ),
         "flag_sets": attr.label_list(
-            providers = [FlagSetInfo],
+            providers = [PwFlagSetInfo],
             doc = """Labels that point to `pw_cc_flag_set`s that are
 unconditionally bound to the specified actions.
 
@@ -210,7 +213,7 @@ cautious when listing implied features!
 """,
         ),
     },
-    provides = [ActionConfigListInfo],
+    provides = [PwActionConfigListInfo],
     doc = """Declares the configuration and selection of `pw_cc_tool` rules.
 
 Action configs are bound to a toolchain through `action_configs`, and are the

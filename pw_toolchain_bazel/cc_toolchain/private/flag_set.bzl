@@ -15,12 +15,15 @@
 
 load(
     "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
-    "FlagGroupInfo",
-    "FlagSetInfo",
     "flag_group",
     "flag_set",
 )
-load("//actions:providers.bzl", "ActionNameSetInfo")
+load(
+    ":providers.bzl",
+    "PwActionNameSetInfo",
+    "PwFlagGroupInfo",
+    "PwFlagSetInfo",
+)
 
 def _pw_cc_flag_group_impl(ctx):
     """Implementation for pw_cc_flag_group."""
@@ -53,7 +56,7 @@ pw_cc_flag_group = rule(
 
 For extremely complex expressions of flags that require nested flag groups with
 multiple layers of expansion, prefer creating a custom rule in Starlark that
-provides `FlagGroupInfo` or `FlagSetInfo`.
+provides `PwFlagGroupInfo` or `PwFlagSetInfo`.
 """,
         ),
         "iterate_over": attr.string(
@@ -95,7 +98,7 @@ Example:
             doc = "Expands the expression in `flags` if the specified build variable is NOT set.",
         ),
     },
-    provides = [FlagGroupInfo],
+    provides = [PwFlagGroupInfo],
     doc = """Declares an (optionally parametric) ordered set of flags.
 
 `pw_cc_flag_group` rules are expected to be consumed exclusively by
@@ -149,13 +152,13 @@ def _pw_cc_flag_set_impl(ctx):
         flag_groups.append(flag_group(flags = ctx.attr.flags))
     elif ctx.attr.flag_groups:
         for dep in ctx.attr.flag_groups:
-            if not dep[FlagGroupInfo]:
-                fail("{} in `flag_groups` of {} does not provide FlagGroupInfo".format(dep.label, ctx.label))
+            if not dep[PwFlagGroupInfo]:
+                fail("{} in `flag_groups` of {} does not provide PwFlagGroupInfo".format(dep.label, ctx.label))
 
-        flag_groups = [dep[FlagGroupInfo] for dep in ctx.attr.flag_groups]
+        flag_groups = [dep[PwFlagGroupInfo] for dep in ctx.attr.flag_groups]
 
     actions = depset(transitive = [
-        action[ActionNameSetInfo].actions
+        action[PwActionNameSetInfo].actions
         for action in ctx.attr.actions
     ])
 
@@ -168,7 +171,7 @@ pw_cc_flag_set = rule(
     implementation = _pw_cc_flag_set_impl,
     attrs = {
         "actions": attr.label_list(
-            providers = [ActionNameSetInfo],
+            providers = [PwActionNameSetInfo],
             mandatory = True,
             doc = """A list of action names that this flag set applies to.
 
@@ -179,7 +182,7 @@ See @pw_toolchain//actions:all for valid options.
             doc = """Labels pointing to `pw_cc_flag_group` rules.
 
 This is intended to be compatible with any other rules that provide
-`FlagGroupInfo`. These are evaluated in order, with earlier flag groups
+`PwFlagGroupInfo`. These are evaluated in order, with earlier flag groups
 appearing earlier in the invocation of the underlying tool.
 
 Note: `flag_groups` and `flags` are mutually exclusive.
@@ -191,13 +194,13 @@ Note: `flag_groups` and `flags` are mutually exclusive.
 These are evaluated in order, with earlier flags appearing earlier in the
 invocation of the underlying tool. If you need expansion logic, prefer
 enumerating flags in a `pw_cc_flag_group` or create a custom rule that provides
-`FlagGroupInfo`.
+`PwFlagGroupInfo`.
 
 Note: `flags` and `flag_groups` are mutually exclusive.
 """,
         ),
     },
-    provides = [FlagSetInfo],
+    provides = [PwFlagSetInfo],
     doc = """Declares an ordered set of flags bound to a set of actions.
 
 Flag sets can be attached to a `pw_cc_toolchain` via `action_config_flag_sets`.

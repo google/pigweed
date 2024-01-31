@@ -16,9 +16,6 @@
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 load(
     "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
-    "ActionConfigInfo",
-    "FeatureInfo",
-    "FlagSetInfo",
     "action_config",
     "feature",
     "flag_group",
@@ -30,11 +27,14 @@ load(
     "pw_cc_action_config_file_collector",
 )
 load(
-    "//cc_toolchain/private:providers.bzl",
-    "ActionConfigListInfo",
+    ":providers.bzl",
+    "PwActionConfigInfo",
+    "PwActionConfigListInfo",
+    "PwFeatureInfo",
+    "PwFlagSetInfo",
 )
 load(
-    "//cc_toolchain/private:utils.bzl",
+    ":utils.bzl",
     "ALL_FILE_GROUPS",
     "actionless_flag_set",
 )
@@ -174,11 +174,11 @@ def _collect_action_configs(ctx, flag_sets_by_action):
     action_configs = []
     for ac_dep in ctx.attr.action_configs:
         temp_actions = []
-        if ActionConfigInfo in ac_dep:
-            temp_actions.append(ac_dep[ActionConfigInfo])
-        if ActionConfigListInfo in ac_dep:
-            temp_actions.extend([ac for ac in ac_dep[ActionConfigListInfo].action_configs])
-        if ActionConfigListInfo not in ac_dep and ActionConfigInfo not in ac_dep:
+        if PwActionConfigInfo in ac_dep:
+            temp_actions.append(ac_dep[PwActionConfigInfo])
+        if PwActionConfigListInfo in ac_dep:
+            temp_actions.extend([ac for ac in ac_dep[PwActionConfigListInfo].action_configs])
+        if PwActionConfigListInfo not in ac_dep and PwActionConfigInfo not in ac_dep:
             fail(
                 "{} in `action_configs` is not a `pw_cc_action_config`".format(
                     ac_dep.label,
@@ -213,7 +213,7 @@ def _create_action_flag_set_map(flag_sets):
         flag_sets: the flag sets to expand.
 
     Returns:
-        Dictionary mapping action names to lists of FlagSetInfo providers.
+        Dictionary mapping action names to lists of PwFlagSetInfo providers.
     """
     flag_sets_by_action = {}
     for fs in flag_sets:
@@ -237,11 +237,11 @@ def _pw_cc_toolchain_config_impl(ctx):
     Returns:
         CcToolchainConfigInfo
     """
-    flag_sets_by_action = _create_action_flag_set_map([dep[FlagSetInfo] for dep in ctx.attr.action_config_flag_sets])
+    flag_sets_by_action = _create_action_flag_set_map([dep[PwFlagSetInfo] for dep in ctx.attr.action_config_flag_sets])
     all_actions = _collect_action_configs(ctx, flag_sets_by_action)
     builtin_include_dirs = ctx.attr.cxx_builtin_include_directories if ctx.attr.cxx_builtin_include_directories else []
     sysroot_dir = ctx.attr.builtin_sysroot if ctx.attr.builtin_sysroot else None
-    features = [dep[FeatureInfo] for dep in ctx.attr.toolchain_features]
+    features = [dep[PwFeatureInfo] for dep in ctx.attr.toolchain_features]
 
     # TODO: b/297413805 - This could be externalized.
     features.append(_archiver_flags_feature(ctx.attr.target_libc == "macosx"))
@@ -268,8 +268,8 @@ pw_cc_toolchain_config = rule(
     attrs = {
         # Attributes new to this rule.
         "action_configs": attr.label_list(),
-        "action_config_flag_sets": attr.label_list(providers = [FlagSetInfo]),
-        "toolchain_features": attr.label_list(providers = [FeatureInfo]),
+        "action_config_flag_sets": attr.label_list(providers = [PwFlagSetInfo]),
+        "toolchain_features": attr.label_list(providers = [PwFeatureInfo]),
 
         # Attributes from create_cc_toolchain_config_info.
         "toolchain_identifier": attr.string(),
