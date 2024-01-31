@@ -18,13 +18,16 @@
 // be removed and we could just inline the using statements.
 
 #include <atomic>
+#if __cplusplus >= 202002L
+#include <bit>
+#endif  // __cplusplus >= 202002L
 #include <limits>
 #include <type_traits>
 
 namespace pw {
 
-#if __cplusplus >= 202002L
-using bit_ceil = std::bit_ceil;
+#if defined(__cpp_lib_int_pow2) && __cpp_lib_int_pow2 >= 202002L
+using std::bit_ceil;
 #else
 constexpr size_t countl_zero(size_t x) noexcept {
   size_t size_digits = std::numeric_limits<size_t>::digits;
@@ -51,7 +54,7 @@ constexpr size_t bit_ceil(size_t x) noexcept {
     return 1;
   return size_t{1} << bit_width(size_t{x - 1});
 }
-#endif
+#endif  // defined(__cpp_lib_int_pow2) && __cpp_lib_int_pow2 >= 202002L
 
 /// @defgroup pw_alignment
 
@@ -73,7 +76,7 @@ struct [[gnu::aligned(bit_ceil(sizeof(T)))]] NaturallyAligned : public T {
   NaturallyAligned(const T& t) : T(t) {}
   template <class U>
   NaturallyAligned(const U& u) : T(u) {}
-  NaturallyAligned operator=(T other) {
+  NaturallyAligned& operator=(T other) {
     return T::operator=(other);
   }  // namespace pw
 };

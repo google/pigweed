@@ -39,6 +39,12 @@ compiler sometimes can't determine that the size of the object is the same
 as the size of its alignment. ``pw_alignment`` ensures that an object aligns to
 its size so that compilers can always make this optimization.
 
+.. warning::
+   Using ``std::optional<bool>`` is only a workaround that may not work with all
+   compilers. This specifically does not work when targetting ARM cortex M0.
+   Additionally, ``std::optional<bool>`` is not the recommended way to represent
+   a ternary variable.
+
 .. grid:: 2
 
    .. grid-item-card:: :octicon:`rocket` Get Started
