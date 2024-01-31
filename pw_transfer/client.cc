@@ -107,7 +107,7 @@ Client::TransferHandle Client::AssignHandle() {
     handle_id = next_handle_id_++;
   }
 
-  return TransferHandle(handle_id);
+  return TransferHandle(this, handle_id);
 }
 
 void Client::OnRpcError(Status status, internal::TransferType type) {

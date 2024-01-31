@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -17,6 +17,7 @@
 #include "pw_transfer/internal/context.h"
 
 #include <chrono>
+#include <limits>
 
 #include "pw_assert/check.h"
 #include "pw_chrono/system_clock.h"
@@ -87,6 +88,7 @@ void Context::HandleEvent(const Event& event) {
     case EventType::kAddTransferHandler:
     case EventType::kRemoveTransferHandler:
     case EventType::kTerminate:
+    case EventType::kUpdateClientTransfer:
       // These events are intended for the transfer thread and should never be
       // forwarded through to a context.
       PW_CRASH("Transfer context received a transfer thread event");
@@ -603,6 +605,11 @@ void Context::TransmitNextChunk(bool retransmit_requested) {
     chunk.set_payload(data.value());
     last_chunk_offset_ = offset_;
     offset_ += data.value().size();
+
+    size_t total_size = TransferSizeBytes();
+    if (total_size != std::numeric_limits<size_t>::max()) {
+      chunk.set_remaining_bytes(total_size - offset_);
+    }
   } else {
     PW_LOG_ERROR("Transfer %u Read() failed with status %u",
                  static_cast<unsigned>(session_id_),

@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -31,6 +31,9 @@
 #include "pw_transfer/internal/server_context.h"
 
 namespace pw::transfer {
+
+class Client;
+
 namespace internal {
 
 class TransferThread : public thread::ThreadCore {
@@ -195,11 +198,14 @@ class TransferThread : public thread::ThreadCore {
   }
 
  private:
+  friend class transfer::Client;
   friend class Context;
 
   // Maximum amount of time between transfer thread runs.
   static constexpr chrono::SystemClock::duration kMaxTimeout =
       std::chrono::seconds(2);
+
+  void UpdateClientTransfer(uint32_t handle_id, size_t transfer_size_bytes);
 
   // Finds an active server or client transfer, matching against its legacy ID.
   template <typename T>

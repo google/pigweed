@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 #pragma once
+
+#include <limits>
 
 #include "pw_assert/assert.h"
 #include "pw_containers/intrusive_list.h"
@@ -62,6 +64,12 @@ class Handler : public IntrusiveList<Handler>::Item {
   // Returning an error signals that the transfer failed, even if it had
   // succeeded up to this point.
   virtual Status FinalizeWrite(Status) { return OkStatus(); }
+
+  /// The total size of the transfer resource, if known. If unknown, returns
+  /// `std::numeric_limits<size_t>::max()`.
+  virtual size_t ResourceSize() const {
+    return std::numeric_limits<size_t>::max();
+  }
 
  protected:
   constexpr Handler(uint32_t resource_id, stream::Reader* reader)

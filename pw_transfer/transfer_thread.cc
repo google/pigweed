@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -19,6 +19,8 @@
 #include "pw_assert/check.h"
 #include "pw_log/log.h"
 #include "pw_transfer/internal/chunk.h"
+#include "pw_transfer/internal/client_context.h"
+#include "pw_transfer/internal/event.h"
 
 PW_MODIFY_DIAGNOSTICS_PUSH();
 PW_MODIFY_DIAGNOSTIC(ignored, "-Wmissing-field-initializers");
@@ -252,6 +254,18 @@ void TransferThread::EndTransfer(EventType type,
   event_notification_.release();
 }
 
+void TransferThread::UpdateClientTransfer(uint32_t handle_id,
+                                          size_t transfer_size_bytes) {
+  // Block until the last event has been processed.
+  next_event_ownership_.acquire();
+
+  next_event_.type = EventType::kUpdateClientTransfer;
+  next_event_.update_transfer.handle_id = handle_id;
+  next_event_.update_transfer.transfer_size_bytes = transfer_size_bytes;
+
+  event_notification_.release();
+}
+
 void TransferThread::TransferHandlerEvent(EventType type, Handler& handler) {
   // Block until the last event has been processed.
   next_event_ownership_.acquire();
@@ -338,6 +352,7 @@ void TransferThread::HandleEvent(const internal::Event& event) {
     case EventType::kServerTimeout:
     case EventType::kClientEndTransfer:
     case EventType::kServerEndTransfer:
+    case EventType::kUpdateClientTransfer:
     default:
       // Other events are handled by individual transfer contexts.
       break;
@@ -368,6 +383,12 @@ void TransferThread::HandleEvent(const internal::Event& event) {
     ClientContext* cctx = static_cast<ClientContext*>(ctx);
     cctx->set_on_completion(std::move(staged_on_completion_));
     cctx->set_handle_id(event.new_transfer.handle_id);
+  }
+
+  if (event.type == EventType::kUpdateClientTransfer) {
+    static_cast<ClientContext&>(*ctx).set_transfer_size_bytes(
+        event.update_transfer.transfer_size_bytes);
+    return;
   }
 
   ctx->HandleEvent(event);
@@ -414,6 +435,9 @@ Context* TransferThread::FindContextForEvent(
       PW_DCHECK(event.end_transfer.id_type != IdentifierType::Handle);
       return FindActiveTransferByLegacyId(server_transfers_,
                                           event.end_transfer.id);
+
+    case EventType::kUpdateClientTransfer:
+      return FindClientTransferByHandleId(event.update_transfer.handle_id);
 
     case EventType::kSendStatusChunk:
     case EventType::kAddTransferHandler:

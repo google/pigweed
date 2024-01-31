@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -30,17 +30,27 @@ class Client {
   // operation.
   class TransferHandle {
    public:
-    constexpr TransferHandle() : id_(kUnassignedHandleId) {}
+    constexpr TransferHandle() : client_(nullptr), id_(kUnassignedHandleId) {}
+
+    // In a Write() transfer, updates the size of the resource being
+    // transferred. This size will be indicated to the server.
+    void SetTransferSize(size_t size_bytes) {
+      if (client_ != nullptr) {
+        client_->UpdateTransferSize(*this, size_bytes);
+      }
+    }
 
    private:
     friend class Client;
 
     static constexpr uint32_t kUnassignedHandleId = 0;
 
-    explicit constexpr TransferHandle(uint32_t id) : id_(id) {}
+    explicit constexpr TransferHandle(Client* client, uint32_t id)
+        : client_(client), id_(id) {}
     constexpr uint32_t id() const { return id_; }
     constexpr bool is_unassigned() const { return id_ == kUnassignedHandleId; }
 
+    Client* client_;
     uint32_t id_;
   };
 
@@ -181,6 +191,12 @@ class Client {
   }
 
  private:
+  void UpdateTransferSize(TransferHandle handle, size_t transfer_size_bytes) {
+    if (!handle.is_unassigned()) {
+      transfer_thread_.UpdateClientTransfer(handle.id(), transfer_size_bytes);
+    }
+  }
+
   ProtocolVersion default_protocol_version;
 
   using Transfer = pw_rpc::raw::Transfer;

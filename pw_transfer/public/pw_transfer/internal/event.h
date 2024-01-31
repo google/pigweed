@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -60,6 +60,9 @@ enum class EventType {
   // Sends a status chunk to terminate a transfer. This does not call into the
   // transfer context's completion handler; it is for out-of-band termination.
   kSendStatusChunk,
+
+  // Changes parameters of an ongoing client transfer.
+  kUpdateClientTransfer,
 
   // Manages the list of transfer handlers for a transfer service.
   kAddTransferHandler,
@@ -123,6 +126,11 @@ struct SendStatusChunkEvent {
   TransferStream stream;
 };
 
+struct UpdateTransferEvent {
+  uint32_t handle_id;
+  uint32_t transfer_size_bytes;
+};
+
 struct Event {
   EventType type;
 
@@ -131,6 +139,7 @@ struct Event {
     ChunkEvent chunk;
     EndTransferEvent end_transfer;
     SendStatusChunkEvent send_status_chunk;
+    UpdateTransferEvent update_transfer;
     Handler* add_transfer_handler;
     Handler* remove_transfer_handler;
   };

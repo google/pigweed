@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -43,6 +43,8 @@ class ServerContext final : public Context {
   //
   // Precondition: Transfer context is active.
   Status FinalCleanup(Status status) override;
+
+  size_t TransferSizeBytes() const override { return handler_->ResourceSize(); }
 
   Handler* handler_;
 };

@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -253,6 +253,10 @@ class Context {
   // cleanup succeeded. An error in cleanup indicates that the transfer
   // failed.
   virtual Status FinalCleanup(Status status) = 0;
+
+  // Returns the total size of the transfer resource, or
+  // `std::numeric_limits<size_t>::max()` if unbounded.
+  virtual size_t TransferSizeBytes() const = 0;
 
   // Processes a chunk in either a transfer or receive transfer.
   void HandleChunkEvent(const ChunkEvent& event);

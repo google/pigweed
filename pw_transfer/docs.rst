@@ -200,7 +200,6 @@ The transfer client provides the following APIs for managing data transfers:
 
   Cancels a previously started transfer if it is active.
 
-
 **Example client setup**
 
 .. code-block:: cpp
@@ -240,6 +239,43 @@ The transfer client provides the following APIs for managing data transfers:
      transfer_state.notification.acquire();
      return transfer_state.status;
    }
+
+Specifying Resource Sizes
+-------------------------
+Transfer data is sent and received through the ``pw::Stream`` interface, which
+does not have a concept of overall stream size. Users of transfers that are
+fixed-size may optionally indicate this to the transfer client and server,
+which will be shared with the transfer peer to enable features such as progress
+reporting.
+
+The transfer size can only be set on the transmitting side of the transfer;
+that is, the client in a ``Write`` transfer or the server in a ``Read``
+transfer.
+
+**Setting a transfer size from a transmitting client**
+
+.. code-block:: c++
+
+   Result<pw::transfer::Client::TransferHandle> handle = client.Write(...);
+   if (handle.ok()) {
+     handle->SetTransferSize(kMyResourceSize);
+   }
+
+**Setting a transfer size on a server resource**
+
+  The ``TransferHandler`` interface allows overriding its ``ResourceSize``
+  function to return the size of its transfer resource.
+
+.. code-block:: c++
+
+   class MyResourceHandler : public pw::transfer::ReadOnlyHandler {
+    public:
+     Status PrepareRead() final;
+
+     virtual size_t ResourceSize() const final {
+       return kMyResourceSize;
+     }
+  };
 
 Atomic File Transfer Handler
 ----------------------------

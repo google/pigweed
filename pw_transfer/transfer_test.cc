@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -13,6 +13,8 @@
 // the License.
 
 #include "pw_transfer/transfer.h"
+
+#include <limits>
 
 #include "pw_assert/check.h"
 #include "pw_bytes/array.h"
@@ -74,6 +76,7 @@ class SimpleReadTransfer final : public ReadOnlyHandler {
         prepare_read_called(false),
         finalize_read_called(false),
         finalize_read_status(Status::Unknown()),
+        resource_size_(std::numeric_limits<size_t>::max()),
         reader_(data) {}
 
   Status PrepareRead() final {
@@ -93,6 +96,11 @@ class SimpleReadTransfer final : public ReadOnlyHandler {
     finalize_read_status = status;
   }
 
+  size_t ResourceSize() const final { return resource_size_; }
+
+  void set_resource_size(size_t resource_size) {
+    resource_size_ = resource_size;
+  }
   void set_seek_status(Status status) { reader_.seek_status = status; }
   void set_read_status(Status status) { reader_.read_status = status; }
 
@@ -100,6 +108,7 @@ class SimpleReadTransfer final : public ReadOnlyHandler {
   bool finalize_read_called;
   Status prepare_read_return_status;
   Status finalize_read_status;
+  size_t resource_size_;
 
  private:
   TestMemoryReader reader_;
@@ -135,7 +144,7 @@ class ReadTransfer : public ::testing::Test {
 
   SimpleReadTransfer handler_;
   Thread<1, 1> transfer_thread_;
-  PW_RAW_TEST_METHOD_CONTEXT(TransferService, Read) ctx_;
+  PW_RAW_TEST_METHOD_CONTEXT(TransferService, Read, 8) ctx_;
   thread::Thread system_thread_;
   std::array<std::byte, 64> data_buffer_;
   std::array<std::byte, 64> encode_buffer_;
@@ -1989,6 +1998,84 @@ TEST_F(ReadTransfer, Version2_PrepareError) {
   EXPECT_EQ(chunk.session_id(), kArbitrarySessionId);
   EXPECT_EQ(chunk.resource_id(), 99u);
   EXPECT_EQ(chunk.status().value(), Status::DataLoss());
+}
+
+TEST_F(ReadTransfer, Version2_HandlerSetsTransferSize) {
+  handler_.set_resource_size(kData.size());
+
+  ctx_.SendClientStream(
+      EncodeChunk(Chunk(ProtocolVersion::kVersionTwo, Chunk::Type::kStart)
+                      .set_desired_session_id(kArbitrarySessionId)
+                      .set_resource_id(3)));
+
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  EXPECT_TRUE(handler_.prepare_read_called);
+  EXPECT_FALSE(handler_.finalize_read_called);
+
+  // First, the server responds with a START_ACK, accepting the session ID and
+  // confirming the protocol version.
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+  Chunk chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.protocol_version(), ProtocolVersion::kVersionTwo);
+  EXPECT_EQ(chunk.type(), Chunk::Type::kStartAck);
+  EXPECT_EQ(chunk.session_id(), kArbitrarySessionId);
+  EXPECT_EQ(chunk.resource_id(), 3u);
+
+  // Complete the handshake by confirming the server's ACK and sending the first
+  // read transfer parameters.
+  rpc::test::WaitForPackets(ctx_.output(), 5, [this] {
+    ctx_.SendClientStream(EncodeChunk(
+        Chunk(ProtocolVersion::kVersionTwo, Chunk::Type::kStartAckConfirmation)
+            .set_session_id(kArbitrarySessionId)
+            .set_window_end_offset(64)
+            .set_max_chunk_size_bytes(8)
+            .set_offset(0)));
+
+    transfer_thread_.WaitUntilEventIsProcessed();
+  });
+
+  ASSERT_EQ(ctx_.total_responses(), 6u);
+
+  // Each of the sent chunks should have a remaining_bytes value set.
+  Chunk c1 = DecodeChunk(ctx_.responses()[1]);
+  EXPECT_EQ(c1.protocol_version(), ProtocolVersion::kVersionTwo);
+  EXPECT_EQ(c1.type(), Chunk::Type::kData);
+  EXPECT_EQ(c1.session_id(), kArbitrarySessionId);
+  EXPECT_EQ(c1.offset(), 0u);
+  ASSERT_TRUE(c1.remaining_bytes().has_value());
+  EXPECT_EQ(c1.remaining_bytes().value(), 24u);
+
+  Chunk c2 = DecodeChunk(ctx_.responses()[2]);
+  EXPECT_EQ(c2.protocol_version(), ProtocolVersion::kVersionTwo);
+  EXPECT_EQ(c2.type(), Chunk::Type::kData);
+  EXPECT_EQ(c2.session_id(), kArbitrarySessionId);
+  EXPECT_EQ(c2.offset(), 8u);
+  ASSERT_TRUE(c2.remaining_bytes().has_value());
+  EXPECT_EQ(c2.remaining_bytes().value(), 16u);
+
+  Chunk c3 = DecodeChunk(ctx_.responses()[3]);
+  EXPECT_EQ(c3.protocol_version(), ProtocolVersion::kVersionTwo);
+  EXPECT_EQ(c3.type(), Chunk::Type::kData);
+  EXPECT_EQ(c3.session_id(), kArbitrarySessionId);
+  EXPECT_EQ(c3.offset(), 16u);
+  ASSERT_TRUE(c3.remaining_bytes().has_value());
+  EXPECT_EQ(c3.remaining_bytes().value(), 8u);
+
+  Chunk c4 = DecodeChunk(ctx_.responses()[4]);
+  EXPECT_EQ(c4.protocol_version(), ProtocolVersion::kVersionTwo);
+  EXPECT_EQ(c4.type(), Chunk::Type::kData);
+  EXPECT_EQ(c4.session_id(), kArbitrarySessionId);
+  EXPECT_EQ(c4.offset(), 24u);
+  ASSERT_TRUE(c4.remaining_bytes().has_value());
+  EXPECT_EQ(c4.remaining_bytes().value(), 0u);
+
+  ctx_.SendClientStream(EncodeChunk(Chunk::Final(
+      ProtocolVersion::kVersionTwo, kArbitrarySessionId, OkStatus())));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  EXPECT_TRUE(handler_.finalize_read_called);
+  EXPECT_EQ(handler_.finalize_read_status, OkStatus());
 }
 
 TEST_F(WriteTransfer, Version2_SimpleTransfer) {
