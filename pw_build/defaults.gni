@@ -56,6 +56,9 @@ declare_args() {
   #
   # Explicitly setting a target's visibility overrides this default.
   pw_build_DEFAULT_VISIBILITY = [ "*" ]
+
+  # Controls whether compilers and other tools are told to use colorized output.
+  pw_build_COLORIZE_OUTPUT = true
 }
 
 # These are the default configs automatically applied to every pw_* C/C++ build

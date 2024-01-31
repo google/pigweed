@@ -27,11 +27,13 @@ import("target_types.gni")
 #            the CMake flags pw_build/CMakeLists.txt.
 
 config("colorize_output") {
-  cflags = [
-    # Colorize output. Ninja's Clang invocation disables color by default.
-    "-fdiagnostics-color",
-  ]
-  ldflags = cflags
+  if (pw_build_COLORIZE_OUTPUT) {
+    cflags = [
+      # Colorize output. Ninja's Clang invocation disables color by default.
+      "-fdiagnostics-color",
+    ]
+    ldflags = cflags
+  }
 }
 
 config("debugging") {

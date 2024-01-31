@@ -45,6 +45,7 @@ from typing import (
     Union,
 )
 
+import pw_cli.color
 from pw_presubmit.presubmit import (
     call,
     Check,
@@ -1028,12 +1029,14 @@ class GnGenNinja(_NinjaBase):
         if self._coverage_options is not None:
             args['pw_toolchain_COVERAGE_ENABLED'] = True
             args['pw_build_PYTHON_TEST_COVERAGE'] = True
-            self.add_default_gn_args(args)
 
             if ctx.incremental:
                 args['pw_toolchain_PROFILE_SOURCE_FILES'] = [
                     f'//{x.relative_to(ctx.root)}' for x in ctx.paths
                 ]
+
+        args['pw_build_COLORIZE_OUTPUT'] = pw_cli.color.is_enabled()
+        self.add_default_gn_args(args)
 
         args.update({k: _value(ctx, v) for k, v in self._gn_args.items()})
         gn_gen(ctx, gn_check=False, **args)  # type: ignore

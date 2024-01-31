@@ -61,28 +61,34 @@ class _NoColor:
         return str
 
 
+def is_enabled():
+    env = pw_cli.env.pigweed_environment()
+    # Checking if PW_USE_COLOR is in os.environ and not env since it's always
+    # in env. If it's in os.environ then use the value retrieved in env.
+    if 'PW_USE_COLOR' in os.environ:
+        return env.PW_USE_COLOR
+
+    # These are semi-standard ways to turn colors off or on for many projects.
+    # See https://bixense.com/clicolors/ and https://no-color.org/ for more.
+    if 'NO_COLOR' in os.environ:
+        return False
+    if 'CLICOLOR_FORCE' in os.environ:
+        return os.environ['CLICOLOR_FORCE'] != '0'
+
+    return sys.stdout.isatty() and sys.stderr.isatty()
+
+
 def colors(enabled: Optional[bool] = None) -> Union[_Color, _NoColor]:
     """Returns an object for colorizing strings.
 
     By default, the object only colorizes if both stderr and stdout are TTYs.
     """
     if enabled is None:
-        env = pw_cli.env.pigweed_environment()
-        if 'PW_USE_COLOR' in os.environ:
-            enabled = env.PW_USE_COLOR
-        else:
-            enabled = sys.stdout.isatty() and sys.stderr.isatty()
+        enabled = is_enabled()
 
     if enabled and os.name == 'nt':
         # Enable ANSI color codes in Windows cmd.exe.
         kernel32 = ctypes.windll.kernel32  # type: ignore
         kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
-
-    # These are semi-standard ways to turn colors off or on for many projects.
-    # See https://bixense.com/clicolors/ and https://no-color.org/ for more.
-    if 'NO_COLOR' in os.environ:
-        enabled = False
-    elif 'CLICOLOR_FORCE' in os.environ:
-        enabled = True
 
     return _Color() if enabled else _NoColor()
