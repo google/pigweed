@@ -122,10 +122,9 @@ TEST(DispatcherBasic, TaskOrdering) {
   dispatcher.PostAt(task1, due_time);
   dispatcher.PostAt(task2, due_time);
 
-  dispatcher.RunUntilIdle();
+  state.notification.acquire();
   dispatcher.RequestStop();
   work_thread.join();
-  state.notification.acquire();
 
   std::lock_guard lock(state.lock);
   ASSERT_EQ(state.tasks.size(), 2U);
