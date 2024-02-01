@@ -1,0 +1,225 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("@io_bazel_rules_go//go:def.bzl", "go_test")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_test",
+)
+load(
+    "//pw_protobuf_compiler:pw_proto_library.bzl",
+    "pw_proto_filegroup",
+    "pw_proto_library",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "connection",
+    srcs = [
+        "connection.cc",
+    ],
+    hdrs = [
+        "public/pw_grpc/connection.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":hpack",
+        ":send_queue",
+        "//pw_assert",
+        "//pw_async:dispatcher",
+        "//pw_async_basic:dispatcher",
+        "//pw_bytes",
+        "//pw_function",
+        "//pw_log",
+        "//pw_result",
+        "//pw_span",
+        "//pw_status",
+        "//pw_stream",
+        "//pw_string",
+        "//pw_sync:inline_borrowable",
+        "//pw_thread:thread",
+        "//pw_thread:thread_core",
+    ],
+)
+
+cc_library(
+    name = "send_queue",
+    srcs = ["send_queue.cc"],
+    hdrs = ["public/pw_grpc/send_queue.h"],
+    includes = ["public"],
+    deps = [
+        "//pw_async:dispatcher",
+        "//pw_async_basic:dispatcher",
+        "//pw_bytes",
+        "//pw_chrono:system_clock",
+        "//pw_function",
+        "//pw_log",
+        "//pw_result",
+        "//pw_span",
+        "//pw_status",
+        "//pw_stream",
+        "//pw_string",
+        "//pw_sync:lock_annotations",
+        "//pw_sync:mutex",
+        "//pw_thread:thread",
+        "//pw_thread:thread_core",
+    ],
+)
+
+cc_library(
+    name = "grpc_channel_output",
+    hdrs = ["public/pw_grpc/grpc_channel_output.h"],
+    includes = ["public"],
+    deps = [
+        ":connection",
+        "//pw_bytes",
+        "//pw_rpc",
+    ],
+)
+
+cc_library(
+    name = "pw_rpc_handler",
+    srcs = ["pw_rpc_handler.cc"],
+    hdrs = ["public/pw_grpc/pw_rpc_handler.h"],
+    includes = ["public"],
+    target_compatible_with = select({
+        ":pw_rpc_config_setting": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        ":connection",
+        ":grpc_channel_output",
+        "//pw_bytes",
+        "//pw_log",
+        "//pw_rpc",
+        "//pw_rpc_transport:rpc_transport",
+        "//pw_string",
+    ],
+)
+
+cc_library(
+    name = "hpack",
+    srcs = [
+        "hpack.autogen.inc",
+        "hpack.cc",
+    ],
+    hdrs = [
+        "pw_grpc_private/hpack.h",
+    ],
+    deps = [
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_log",
+        "//pw_result",
+        "//pw_span",
+        "//pw_status",
+        "//pw_string",
+    ],
+)
+
+pw_cc_test(
+    name = "hpack_test",
+    srcs = ["hpack_test.cc"],
+    deps = [
+        ":hpack",
+    ],
+)
+
+cc_binary(
+    name = "test_pw_rpc_server",
+    srcs = ["test_pw_rpc_server.cc"],
+    target_compatible_with = select({
+        ":pw_rpc_config_setting": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        ":connection",
+        ":echo_cc.pwpb_rpc",
+        ":grpc_channel_output",
+        ":pw_rpc_handler",
+        "//pw_assert_basic:pw_assert_basic_handler",
+        "//pw_assert_log:assert_backend",
+        "//pw_assert_log:check_backend",
+        "//pw_bytes",
+        "//pw_log",
+        "//pw_result",
+        "//pw_rpc",
+        "//pw_rpc_transport:service_registry",
+        "//pw_span",
+        "//pw_status",
+        "//pw_stream",
+        "//pw_stream:socket_stream",
+        "//pw_string",
+        "//pw_thread:test_thread_context",
+        "//pw_thread:thread",
+    ],
+)
+
+pw_proto_filegroup(
+    name = "echo_proto_and_options",
+    srcs = ["examples/echo/echo.proto"],
+    options_files = ["examples/echo/echo.options"],
+)
+
+proto_library(
+    name = "echo_proto",
+    srcs = [":echo_proto_and_options"],
+)
+
+pw_proto_library(
+    name = "echo_cc",
+    deps = [":echo_proto"],
+)
+
+# Required config options to apply to //pw_rpc:config_override
+cc_library(
+    name = "pw_rpc_config",
+    defines = [
+        "PW_RPC_COMPLETION_REQUEST_CALLBACK=1",
+        "PW_RPC_METHOD_STORES_TYPE=1",
+    ],
+)
+
+config_setting(
+    name = "pw_rpc_config_setting",
+    flag_values = {
+        "//pw_rpc:config_override": ":pw_rpc_config",
+    },
+)
+
+# This test requires a special configuration. It's run in CI, and can be
+# run manually via:
+#
+#   bazel test --//pw_rpc:config_override=//pw_grpc:pw_rpc_config //pw_grpc:integration_test
+#
+# deps.bzl contains the bazel repositories used in deps for this integration test.
+# It is generated from go.mod using gazelle:
+#   gazelle update-repos -from_file=go.mod -to_macro=deps.bzl%pw_grpc_deps -prune
+# See https://github.com/bazelbuild/bazel-gazelle?tab=readme-ov-file#update-repos
+go_test(
+    name = "integration_test",
+    srcs = ["integration_test.go"],
+    data = [
+        ":test_pw_rpc_server",
+    ],
+    deps = [
+        "@org_golang_google_grpc//:grpc",
+        "@org_golang_google_grpc//codes",
+        "@org_golang_google_grpc//credentials/insecure",
+        "@org_golang_google_grpc//status",
+        "@org_golang_google_grpc_examples//features/proto/echo",
+    ],
+)

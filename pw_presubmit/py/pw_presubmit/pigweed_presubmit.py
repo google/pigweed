@@ -674,20 +674,29 @@ def bazel_test(ctx: PresubmitContext) -> None:
     build.bazel(
         ctx,
         'test',
-        '--test_output=errors',
         '--',
         '//...',
     )
 
     # Run tests for non-default config options
+
+    # pw_rpc
     build.bazel(
         ctx,
         'test',
-        '--test_output=errors',
         '--//pw_rpc:config_override='
         '//pw_rpc:completion_request_callback_config_enabled',
         '--',
         '//pw_rpc/...',
+    )
+
+    # pw_grpc
+    build.bazel(
+        ctx,
+        'test',
+        '--//pw_rpc:config_override=//pw_grpc:pw_rpc_config',
+        '--',
+        '//pw_grpc/...',
     )
 
 

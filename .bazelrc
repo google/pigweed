@@ -22,6 +22,14 @@ common --verbose_failures
 # with arm toolchain.
 build --noincompatible_sandbox_hermetic_tmp
 
+# TODO: https://pwbug.dev/319664275: Go binaries fail at runtime with "fatal
+# error: invalid function symbol table" unless we disable cgo via the below
+# flag. This error is resolved when enabling --incompatible_sandbox_hermetic_tmp
+# but that can't be turned on until this bug is resolved.
+# Reference:
+# https://github.com/bazelbuild/rules_go/blob/release-0.45/go/modes.rst#build-settings
+build --@io_bazel_rules_go//go/config:pure
+
 # Silence all C/C++ warnings in external code.
 #
 # Note that this will not silence warnings from external headers #include'd in

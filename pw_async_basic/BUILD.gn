@@ -107,6 +107,7 @@ pw_source_set("dispatcher") {
   ]
   visibility = [
                  ":*",
+                 "$dir_pw_grpc/*",
                  "size_report:*",
                ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
 }

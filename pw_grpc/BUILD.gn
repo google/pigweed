@@ -1,0 +1,152 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/error.gni")
+import("$dir_pw_build/target_types.gni")
+import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_unit_test/test.gni")
+
+config("public_include_path") {
+  include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("connection") {
+  sources = [ "connection.cc" ]
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_grpc/connection.h" ]
+  deps = [
+    ":hpack",
+    ":send_queue",
+    "$dir_pw_assert",
+    "$dir_pw_async:dispatcher",
+    "$dir_pw_async_basic:dispatcher",
+    "$dir_pw_bytes",
+    "$dir_pw_function",
+    "$dir_pw_log",
+    "$dir_pw_result",
+    "$dir_pw_span",
+    "$dir_pw_status",
+    "$dir_pw_stream",
+    "$dir_pw_string",
+    "$dir_pw_sync:inline_borrowable",
+    "$dir_pw_thread:thread",
+    "$dir_pw_thread:thread_core",
+  ]
+}
+
+pw_source_set("send_queue") {
+  sources = [ "send_queue.cc" ]
+  public = [ "public/pw_grpc/send_queue.h" ]
+  public_configs = [ ":public_include_path" ]
+  deps = [
+    "$dir_pw_async:dispatcher",
+    "$dir_pw_async_basic:dispatcher",
+    "$dir_pw_bytes",
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_function",
+    "$dir_pw_log",
+    "$dir_pw_result",
+    "$dir_pw_span",
+    "$dir_pw_status",
+    "$dir_pw_stream",
+    "$dir_pw_string",
+    "$dir_pw_sync:lock_annotations",
+    "$dir_pw_sync:mutex",
+    "$dir_pw_thread:thread",
+    "$dir_pw_thread:thread_core",
+  ]
+}
+
+pw_source_set("grpc_channel_output") {
+  public = [ "public/pw_grpc/grpc_channel_output.h" ]
+  public_configs = [ ":public_include_path" ]
+  deps = [
+    ":connection",
+    "$dir_pw_bytes",
+    "$dir_pw_rpc",
+  ]
+}
+
+pw_source_set("pw_rpc_handler") {
+  public = [ "public/pw_grpc/pw_rpc_handler.h" ]
+  sources = [ "pw_rpc_handler.cc" ]
+  public_configs = [ ":public_include_path" ]
+  deps = [
+    ":connection",
+    ":grpc_channel_output",
+    "$dir_pw_bytes",
+    "$dir_pw_log",
+    "$dir_pw_rpc",
+    "$dir_pw_rpc_transport:rpc_transport",
+    "$dir_pw_string",
+  ]
+}
+
+pw_source_set("hpack") {
+  sources = [
+    "hpack.autogen.inc",
+    "hpack.cc",
+    "pw_grpc_private/hpack.h",
+  ]
+  deps = [
+    "$dir_pw_assert",
+    "$dir_pw_bytes",
+    "$dir_pw_log",
+    "$dir_pw_result",
+    "$dir_pw_span",
+    "$dir_pw_status",
+    "$dir_pw_string",
+  ]
+}
+
+pw_test("hpack_test") {
+  sources = [ "hpack_test.cc" ]
+  deps = [ ":hpack" ]
+}
+
+pw_executable("test_pw_rpc_server") {
+  sources = [ "test_pw_rpc_server.cc" ]
+  deps = [
+    ":connection",
+    ":echo_cc.pwpb_rpc",
+    ":grpc_channel_output",
+    ":pw_rpc_handler",
+    "$dir_pw_assert_basic:pw_assert_basic_handler",
+    "$dir_pw_assert_log:assert_backend",
+    "$dir_pw_assert_log:check_backend",
+    "$dir_pw_bytes",
+    "$dir_pw_log",
+    "$dir_pw_result",
+    "$dir_pw_rpc",
+    "$dir_pw_rpc_transport:service_registry",
+    "$dir_pw_span",
+    "$dir_pw_status",
+    "$dir_pw_stream",
+    "$dir_pw_stream:socket_stream",
+    "$dir_pw_string",
+    "$dir_pw_thread:test_thread_context",
+    "$dir_pw_thread:thread",
+  ]
+}
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
+}
+
+pw_test_group("tests") {
+  group_deps = []
+}

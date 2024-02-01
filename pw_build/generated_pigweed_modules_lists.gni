@@ -87,6 +87,7 @@ declare_args() {
   dir_pw_format = get_path_info("../pw_format", "abspath")
   dir_pw_function = get_path_info("../pw_function", "abspath")
   dir_pw_fuzzer = get_path_info("../pw_fuzzer", "abspath")
+  dir_pw_grpc = get_path_info("../pw_grpc", "abspath")
   dir_pw_hdlc = get_path_info("../pw_hdlc", "abspath")
   dir_pw_hex_dump = get_path_info("../pw_hex_dump", "abspath")
   dir_pw_i2c = get_path_info("../pw_i2c", "abspath")
@@ -257,6 +258,7 @@ declare_args() {
     dir_pw_format,
     dir_pw_function,
     dir_pw_fuzzer,
+    dir_pw_grpc,
     dir_pw_hdlc,
     dir_pw_hex_dump,
     dir_pw_i2c,
@@ -415,6 +417,7 @@ declare_args() {
     "$dir_pw_format:tests",
     "$dir_pw_function:tests",
     "$dir_pw_fuzzer:tests",
+    "$dir_pw_grpc:tests",
     "$dir_pw_hdlc:tests",
     "$dir_pw_hex_dump:tests",
     "$dir_pw_i2c:tests",
@@ -573,6 +576,7 @@ declare_args() {
     "$dir_pw_format:docs",
     "$dir_pw_function:docs",
     "$dir_pw_fuzzer:docs",
+    "$dir_pw_grpc:docs",
     "$dir_pw_hdlc:docs",
     "$dir_pw_hex_dump:docs",
     "$dir_pw_i2c:docs",

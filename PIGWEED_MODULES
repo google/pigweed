@@ -53,6 +53,7 @@ pw_file
 pw_format
 pw_function
 pw_fuzzer
+pw_grpc
 pw_hdlc
 pw_hex_dump
 pw_i2c

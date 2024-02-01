@@ -81,6 +81,7 @@ cc_library(
         "public/pw_rpc/internal/config.h",
         "public/pw_rpc/internal/encoding_buffer.h",
         "public/pw_rpc/internal/endpoint.h",
+        "public/pw_rpc/internal/grpc.h",
         "public/pw_rpc/internal/hash.h",
         "public/pw_rpc/internal/lock.h",
         "public/pw_rpc/internal/log_config.h",

@@ -21,6 +21,7 @@
 #include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/endpoint.h"
+#include "pw_rpc/internal/grpc.h"
 #include "pw_rpc/internal/lock.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/method_info.h"
@@ -100,6 +101,9 @@ class Server : public internal::Endpoint {
  private:
   friend class internal::Call;
   friend class ServerTestHelper;
+
+  // Give gRPC integration access to FindMethod
+  friend class pw::grpc::PwRpcHandler;
 
   // Give call classes access to OpenCall.
   friend class RawServerReaderWriter;
