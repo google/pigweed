@@ -15,6 +15,7 @@
 
 load(
     ":providers.bzl",
+    "PwFeatureConstraintInfo",
     "PwFeatureInfo",
     "PwFeatureSetInfo",
     "PwFlagSetInfo",
@@ -27,6 +28,7 @@ def _pw_cc_feature_set_impl(ctx):
 
     return [
         PwFeatureSetInfo(features = features),
+        PwFeatureConstraintInfo(all_of = features, none_of = depset([])),
     ]
 
 pw_cc_feature_set = rule(
@@ -77,6 +79,7 @@ def _pw_cc_feature_impl(ctx):
     return [
         feature,
         PwFeatureSetInfo(features = depset([feature])),
+        PwFeatureConstraintInfo(all_of = depset([feature]), none_of = depset([])),
     ]
 
 pw_cc_feature = rule(

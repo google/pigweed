@@ -20,6 +20,7 @@ load(
 load(
     ":providers.bzl",
     "PwActionNameSetInfo",
+    "PwFeatureConstraintInfo",
     "PwFlagGroupInfo",
     "PwFlagSetInfo",
 )
@@ -163,11 +164,12 @@ def _pw_cc_flag_set_impl(ctx):
     if not actions:
         fail("Each pw_cc_flag_set must specify at least one action")
 
+    requires = [fc[PwFeatureConstraintInfo] for fc in ctx.attr.requires_any_of]
     return [
         PwFlagSetInfo(
             label = ctx.label,
             actions = tuple(actions),
-            implied_by_any = (),
+            requires_any_of = tuple(requires),
             flag_groups = tuple(flag_groups),
         ),
     ]
@@ -202,6 +204,13 @@ enumerating flags in a `pw_cc_flag_group` or create a custom rule that provides
 `PwFlagGroupInfo`.
 
 Note: `flags` and `flag_groups` are mutually exclusive.
+""",
+        ),
+        "requires_any_of": attr.label_list(
+            providers = [PwFeatureConstraintInfo],
+            doc = """This will be enabled when any of the constraints are met.
+
+If omitted, this flag set will be enabled unconditionally.
 """,
         ),
     },

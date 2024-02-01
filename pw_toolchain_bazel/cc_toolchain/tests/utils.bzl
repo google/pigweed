@@ -15,6 +15,7 @@
 
 load(
     "//cc_toolchain/private:providers.bzl",
+    "PwFeatureConstraintInfo",
     "PwFeatureInfo",
     "PwFeatureSetInfo",
     "PwFlagGroupInfo",
@@ -87,6 +88,7 @@ def assert_labels_eq(got, want):
 _RULES = {
     PwFlagSetInfo: "flag_sets",
     PwFlagGroupInfo: "flag_groups",
+    PwFeatureConstraintInfo: "feature_constraints",
     PwFeatureInfo: "features",
     PwFeatureSetInfo: "feature_sets",
 }
@@ -95,7 +97,10 @@ _PROVIDERS = {
     "//cc_toolchain/tests/features:bar": [PwFeatureInfo, PwFeatureSetInfo],
     "//cc_toolchain/tests/features:baz": [PwFeatureInfo, PwFeatureSetInfo],
     "//cc_toolchain/tests/features:conflict": [PwFeatureInfo, PwFeatureSetInfo],
+    "//cc_toolchain/tests/features:constrained": [PwFeatureInfo, PwFeatureSetInfo],
     "//cc_toolchain/tests/features:foo": [PwFeatureInfo, PwFeatureSetInfo],
+    "//cc_toolchain/tests/features:foo_not_baz": [PwFeatureConstraintInfo],
+    "//cc_toolchain/tests/features:foo_only": [PwFeatureConstraintInfo],
     "//cc_toolchain/tests/features:foobar": [PwFeatureSetInfo],
     "//cc_toolchain/tests/features:implies": [PwFeatureInfo, PwFeatureSetInfo],
     "//cc_toolchain/tests/features:requires": [PwFeatureInfo, PwFeatureSetInfo],

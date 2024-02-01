@@ -29,6 +29,10 @@ load(
     _pw_cc_feature_set = "pw_cc_feature_set",
 )
 load(
+    "//cc_toolchain/private:feature_constraint.bzl",
+    _pw_cc_feature_constraint = "pw_cc_feature_constraint",
+)
+load(
     "//cc_toolchain/private:flag_set.bzl",
     _pw_cc_flag_group = "pw_cc_flag_group",
     _pw_cc_flag_set = "pw_cc_flag_set",
@@ -40,6 +44,7 @@ pw_cc_action_config = _pw_cc_action_config
 pw_cc_tool = _pw_cc_tool
 
 pw_cc_feature = _pw_cc_feature
+pw_cc_feature_constraint = _pw_cc_feature_constraint
 pw_cc_feature_set = _pw_cc_feature_set
 
 pw_cc_flag_group = _pw_cc_flag_group

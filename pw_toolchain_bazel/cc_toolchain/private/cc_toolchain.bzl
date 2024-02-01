@@ -240,7 +240,7 @@ def _pw_cc_toolchain_config_impl(ctx):
         CcToolchainConfigInfo
     """
     flag_sets_by_action = _create_action_flag_set_map([
-        to_untyped_flag_set(dep[PwFlagSetInfo])
+        to_untyped_flag_set(dep[PwFlagSetInfo], known = {})
         for dep in ctx.attr.action_config_flag_sets
     ])
     all_actions = _collect_action_configs(ctx, flag_sets_by_action)

@@ -23,7 +23,7 @@ load(
 
 visibility("private")
 
-def _test_features_impl(_ctx, features, feature_sets, flag_sets, to_untyped_config, **_):
+def _test_features_impl(_ctx, features, feature_sets, flag_sets, to_untyped_config, feature_constraints, **_):
     # Verify that we the builtin features don't generate any configs.
     assert_eq(to_untyped_config(features = []).features, [])
 
@@ -67,5 +67,30 @@ def _test_features_impl(_ctx, features, feature_sets, flag_sets, to_untyped_conf
         to_untyped_config,
         features = [features.requires, features.foo],
     )
+
+    assert_labels_eq(
+        feature_constraints.foo_not_baz.all_of,
+        [features.foo],
+    )
+    assert_labels_eq(
+        feature_constraints.foo_not_baz.none_of,
+        [features.baz],
+    )
+
+    assert_labels_eq(
+        feature_constraints.foo_only.all_of,
+        [features.foo],
+    )
+    assert_labels_eq(
+        feature_constraints.foo_only.none_of,
+        [features.baz, features.bar],
+    )
+
+    # Constrained requires either (foo AND not baz) OR bar.
+    to_untyped_config(features = [features.constrained, features.bar])
+
+    # Validate that we don't require baz to exist.
+    to_untyped_config(features = [features.constrained, features.foo])
+    assert_fail(to_untyped_config, features = [features.constrained])
 
 test_features = generate_test_rule(_test_features_impl)

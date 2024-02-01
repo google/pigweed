@@ -18,6 +18,7 @@ load(
     rules_cc_feature = "feature",
     rules_cc_feature_set = "feature_set",
     rules_cc_flag_set = "flag_set",
+    rules_cc_with_feature_set = "with_feature_set",
 )
 
 visibility(["//cc_toolchain/tests/..."])
@@ -62,11 +63,21 @@ def _ensure_fulfillable(any_of, known, label, fail = fail):
     if not fulfillable:
         fail("%s cannot possibly be enabled (none of the constraints it requires fully exist). Either remove it from your toolchain, or add the requirements." % label)
 
-def to_untyped_flag_set(flag_set):
+def to_untyped_flag_set(flag_set, known, fail = fail):
     """Converts a PwFlagSet to rules_cc's flag set."""
+    _ensure_fulfillable(
+        any_of = [constraint.all_of for constraint in flag_set.requires_any_of],
+        known = known,
+        label = flag_set.label,
+        fail = fail,
+    )
     return rules_cc_flag_set(
         actions = list(flag_set.actions),
         flag_groups = list(flag_set.flag_groups),
+        with_features = [
+            _to_untyped_feature_constraint(fc)
+            for fc in flag_set.requires_any_of
+        ],
     )
 
 def _to_untyped_env_set(env_set):
@@ -77,6 +88,12 @@ def _to_untyped_feature_set(feature_set):
         feature.name
         for feature in feature_set.features.to_list()
     ])
+
+def _to_untyped_feature_constraint(feature_constraint):
+    return rules_cc_with_feature_set(
+        features = [ft.name for ft in feature_constraint.all_of.to_list()],
+        not_features = [ft.name for ft in feature_constraint.none_of.to_list()],
+    )
 
 def _to_untyped_implies(provider, known, fail = fail):
     implies = []
@@ -102,7 +119,7 @@ def _to_untyped_feature(feature, known, fail = fail):
         name = feature.name,
         enabled = feature.enabled,
         flag_sets = [
-            to_untyped_flag_set(flag_set)
+            to_untyped_flag_set(flag_set, known, fail = fail)
             for flag_set in feature.flag_sets.to_list()
         ],
         env_sets = [

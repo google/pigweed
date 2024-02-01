@@ -20,7 +20,6 @@ load(
     "EnvSetInfo",
     "FlagGroupInfo",
     "ToolInfo",
-    "WithFeatureSetInfo",
 )
 load("//actions:providers.bzl", "ActionNameInfo", "ActionNameSetInfo")
 
@@ -50,7 +49,7 @@ PwFlagSetInfo = provider(
     fields = {
         "label": "Label: The label that defined this flag set. Put this in error messages for easy debugging",
         "actions": "Sequence[str]: The set of actions this is associated with",
-        "implied_by_any": "Sequence[FeatureConstraintInfo]: This will be enabled if any of the listed predicates are met. Equivalent to with_features",
+        "requires_any_of": "Sequence[FeatureConstraintInfo]: This will be enabled if any of the listed predicates are met. Equivalent to with_features",
         "flag_groups": "Sequence[FlagGroupInfo]: Set of flag groups to include.",
     },
 )
@@ -78,7 +77,14 @@ PwFeatureSetInfo = provider(
         "features": "depset[FeatureInfo]: The set of features this corresponds to",
     },
 )
-PwFeatureConstraintInfo = WithFeatureSetInfo
+PwFeatureConstraintInfo = provider(
+    doc = "A type-safe version of @bazel_tools's WithFeatureSetInfo",
+    fields = {
+        "label": "Label: The label that defined this predicate. Put this in error messages for easy debugging",
+        "all_of": "depset[FeatureInfo]: A set of features which must be enabled",
+        "none_of": "depset[FeatureInfo]: A set of features, none of which can be enabled",
+    },
+)
 
 PwActionConfigInfo = ActionConfigInfo
 PwToolInfo = ToolInfo

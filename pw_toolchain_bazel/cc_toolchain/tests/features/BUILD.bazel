@@ -12,7 +12,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("//cc_toolchain:defs.bzl", "pw_cc_feature", "pw_cc_feature_set")
+load(
+    "//cc_toolchain:defs.bzl",
+    "pw_cc_feature",
+    "pw_cc_feature_constraint",
+    "pw_cc_feature_set",
+    "pw_cc_flag_set",
+)
 load(":test_features.bzl", "test_features")
 
 package(default_visibility = ["//cc_toolchain/tests:__subpackages__"])
@@ -67,6 +73,35 @@ pw_cc_feature(
         ":foobar",
         ":baz",
     ],
+)
+
+pw_cc_feature_constraint(
+    name = "foo_not_baz",
+    all_of = [":foo"],
+    none_of = [":baz"],
+)
+
+pw_cc_feature_constraint(
+    name = "foo_only",
+    all_of = [":foo_not_baz"],
+    none_of = [":bar"],
+)
+
+pw_cc_flag_set(
+    name = "constrained_flags",
+    actions = ["//actions:c_compile"],
+    flags = ["blah"],
+    requires_any_of = [
+        ":foo_not_baz",
+        ":bar",
+    ],
+)
+
+pw_cc_feature(
+    name = "constrained",
+    enabled = True,
+    feature_name = "constrained",
+    flag_sets = [":constrained_flags"],
 )
 
 test_features(
