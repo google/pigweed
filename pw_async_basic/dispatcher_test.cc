@@ -17,6 +17,7 @@
 
 #include "pw_chrono/system_clock.h"
 #include "pw_log/log.h"
+#include "pw_sync/lock_annotations.h"
 #include "pw_sync/thread_notification.h"
 #include "pw_thread/thread.h"
 #include "pw_thread_stl/options.h"
@@ -94,7 +95,8 @@ TEST(DispatcherBasic, ChainedTasks) {
 
 TEST(DispatcherBasic, TaskOrdering) {
   struct TestState {
-    std::vector<int> tasks;
+    std::mutex lock;
+    std::vector<int> tasks PW_GUARDED_BY(lock);
     sync::ThreadNotification notification;
   };
 
@@ -104,11 +106,13 @@ TEST(DispatcherBasic, TaskOrdering) {
 
   Task task1([&state](Context&, Status status) {
     ASSERT_OK(status);
+    std::lock_guard lock(state.lock);
     state.tasks.push_back(1);
   });
 
   Task task2([&state](Context&, Status status) {
     ASSERT_OK(status);
+    std::lock_guard lock(state.lock);
     state.tasks.push_back(2);
     state.notification.release();
   });
@@ -123,6 +127,7 @@ TEST(DispatcherBasic, TaskOrdering) {
   work_thread.join();
   state.notification.acquire();
 
+  std::lock_guard lock(state.lock);
   ASSERT_EQ(state.tasks.size(), 2U);
   EXPECT_EQ(state.tasks[0], 1);
   EXPECT_EQ(state.tasks[1], 2);
