@@ -83,14 +83,17 @@ template <typename Dest, typename BaseType, typename Source>
 
   // Incrementally add the destination's qualifiers and */&/&& to the base type
   // for the intermediate static_cast.
-  using B1 =
+  using Base1 =
       std::conditional_t<std::is_const_v<DestType>, const BaseType, BaseType>;
-  using B2 = std::conditional_t<std::is_volatile_v<DestType>, volatile B1, B1>;
-  using B3 = std::conditional_t<std::is_pointer_v<Dest>, B2*, B2>;
-  using B4 = std::conditional_t<std::is_lvalue_reference_v<Dest>, B3&, B3>;
-  using B5 = std::conditional_t<std::is_rvalue_reference_v<Dest>, B4&&, B4>;
+  using Base2 =
+      std::conditional_t<std::is_volatile_v<DestType>, volatile Base1, Base1>;
+  using Base3 = std::conditional_t<std::is_pointer_v<Dest>, Base2*, Base2>;
+  using Base4 =
+      std::conditional_t<std::is_lvalue_reference_v<Dest>, Base3&, Base3>;
+  using Base5 =
+      std::conditional_t<std::is_rvalue_reference_v<Dest>, Base4&&, Base4>;
 
-  return static_cast<Dest>(static_cast<B5>(source));
+  return static_cast<Dest>(static_cast<Base5>(source));
 #endif  // __clang__
 }
 
