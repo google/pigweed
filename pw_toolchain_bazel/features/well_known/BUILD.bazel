@@ -1,0 +1,84 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("//cc_toolchain:defs.bzl", "pw_cc_unsafe_feature")
+
+# See https://bazel.build/docs/cc-toolchain-config-reference#wellknown-features
+package(default_visibility = ["//visibility:public"])
+
+pw_cc_unsafe_feature(
+    name = "opt",
+    builtin = True,
+    feature_name = "opt",
+)
+
+pw_cc_unsafe_feature(
+    name = "dbg",
+    builtin = True,
+    feature_name = "dbg",
+)
+
+pw_cc_unsafe_feature(
+    name = "fastbuild",
+    builtin = True,
+    feature_name = "fastbuild",
+)
+
+pw_cc_unsafe_feature(
+    name = "static_linking_mode",
+    builtin = True,
+    feature_name = "static_linking_mode",
+)
+
+pw_cc_unsafe_feature(
+    name = "dynamic_linking_mode",
+    builtin = True,
+    feature_name = "dynamic_linking_mode",
+)
+
+pw_cc_unsafe_feature(
+    name = "per_object_debug_info",
+    builtin = True,
+    feature_name = "per_object_debug_info",
+)
+
+pw_cc_unsafe_feature(
+    name = "supports_start_end_lib",
+    builtin = True,
+    feature_name = "supports_start_end_lib",
+)
+
+pw_cc_unsafe_feature(
+    name = "supports_interface_shared_libraries",
+    builtin = True,
+    feature_name = "supports_interface_shared_libraries",
+)
+
+pw_cc_unsafe_feature(
+    name = "supports_dynamic_linker",
+    builtin = True,
+    feature_name = "supports_dynamic_linker",
+)
+
+pw_cc_unsafe_feature(
+    name = "static_link_cpp_runtimes",
+    builtin = True,
+    feature_name = "static_link_cpp_runtimes",
+)
+
+pw_cc_unsafe_feature(
+    name = "supports_pic",
+    builtin = True,
+    feature_name = "supports_pic",
+)

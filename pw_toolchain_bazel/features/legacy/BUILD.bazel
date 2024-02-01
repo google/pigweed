@@ -1,0 +1,246 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("//cc_toolchain:defs.bzl", "pw_cc_unsafe_feature")
+
+# See https://bazel.build/docs/cc-toolchain-config-reference#wellknown-features.
+package(default_visibility = ["//visibility:public"])
+
+pw_cc_unsafe_feature(
+    name = "legacy_compile_flags",
+    builtin = True,
+    feature_name = "legacy_compile_flags",
+)
+
+pw_cc_unsafe_feature(
+    name = "default_compile_flags",
+    builtin = True,
+    feature_name = "default_compile_flags",
+)
+
+pw_cc_unsafe_feature(
+    name = "dependency_file",
+    builtin = True,
+    feature_name = "dependency_file",
+)
+
+pw_cc_unsafe_feature(
+    name = "pic",
+    builtin = True,
+    feature_name = "pic",
+)
+
+pw_cc_unsafe_feature(
+    name = "preprocessor_defines",
+    builtin = True,
+    feature_name = "preprocessor_defines",
+)
+
+pw_cc_unsafe_feature(
+    name = "includes",
+    builtin = True,
+    feature_name = "includes",
+)
+
+pw_cc_unsafe_feature(
+    name = "include_paths",
+    builtin = True,
+    feature_name = "include_paths",
+)
+
+pw_cc_unsafe_feature(
+    name = "fdo_instrument",
+    builtin = True,
+    feature_name = "fdo_instrument",
+)
+
+pw_cc_unsafe_feature(
+    name = "fdo_optimize",
+    builtin = True,
+    feature_name = "fdo_optimize",
+)
+
+pw_cc_unsafe_feature(
+    name = "cs_fdo_instrument",
+    builtin = True,
+    feature_name = "cs_fdo_instrument",
+)
+
+pw_cc_unsafe_feature(
+    name = "cs_fdo_optimize",
+    builtin = True,
+    feature_name = "cs_fdo_optimize",
+)
+
+pw_cc_unsafe_feature(
+    name = "fdo_prefetch_hints",
+    builtin = True,
+    feature_name = "fdo_prefetch_hints",
+)
+
+pw_cc_unsafe_feature(
+    name = "autofdo",
+    builtin = True,
+    feature_name = "autofdo",
+)
+
+pw_cc_unsafe_feature(
+    name = "build_interface_libraries",
+    builtin = True,
+    feature_name = "build_interface_libraries",
+)
+
+pw_cc_unsafe_feature(
+    name = "dynamic_library_linker_tool",
+    builtin = True,
+    feature_name = "dynamic_library_linker_tool",
+)
+
+pw_cc_unsafe_feature(
+    name = "shared_flag",
+    builtin = True,
+    feature_name = "shared_flag",
+)
+
+pw_cc_unsafe_feature(
+    name = "linkstamps",
+    builtin = True,
+    feature_name = "linkstamps",
+)
+
+pw_cc_unsafe_feature(
+    name = "output_execpath_flags",
+    builtin = True,
+    feature_name = "output_execpath_flags",
+)
+
+pw_cc_unsafe_feature(
+    name = "runtime_library_search_directories",
+    builtin = True,
+    feature_name = "runtime_library_search_directories",
+)
+
+pw_cc_unsafe_feature(
+    name = "library_search_directories",
+    builtin = True,
+    feature_name = "library_search_directories",
+)
+
+pw_cc_unsafe_feature(
+    name = "archiver_flags",
+    builtin = True,
+    feature_name = "archiver_flags",
+)
+
+pw_cc_unsafe_feature(
+    name = "libraries_to_link",
+    builtin = True,
+    feature_name = "libraries_to_link",
+)
+
+pw_cc_unsafe_feature(
+    name = "force_pic_flags",
+    builtin = True,
+    feature_name = "force_pic_flags",
+)
+
+pw_cc_unsafe_feature(
+    name = "user_link_flags",
+    builtin = True,
+    feature_name = "user_link_flags",
+)
+
+pw_cc_unsafe_feature(
+    name = "legacy_link_flags",
+    builtin = True,
+    feature_name = "legacy_link_flags",
+)
+
+pw_cc_unsafe_feature(
+    name = "static_libgcc",
+    builtin = True,
+    feature_name = "static_libgcc",
+)
+
+pw_cc_unsafe_feature(
+    name = "fission_support",
+    builtin = True,
+    feature_name = "fission_support",
+)
+
+pw_cc_unsafe_feature(
+    name = "strip_debug_symbols",
+    builtin = True,
+    feature_name = "strip_debug_symbols",
+)
+
+pw_cc_unsafe_feature(
+    name = "coverage",
+    builtin = True,
+    feature_name = "coverage",
+)
+
+pw_cc_unsafe_feature(
+    name = "llvm_coverage_map_format",
+    builtin = True,
+    feature_name = "llvm_coverage_map_format",
+)
+
+pw_cc_unsafe_feature(
+    name = "gcc_coverage_map_format",
+    builtin = True,
+    feature_name = "gcc_coverage_map_format",
+)
+
+pw_cc_unsafe_feature(
+    name = "fully_static_link",
+    builtin = True,
+    feature_name = "fully_static_link",
+)
+
+pw_cc_unsafe_feature(
+    name = "user_compile_flags",
+    builtin = True,
+    feature_name = "user_compile_flags",
+)
+
+pw_cc_unsafe_feature(
+    name = "sysroot",
+    builtin = True,
+    feature_name = "sysroot",
+)
+
+pw_cc_unsafe_feature(
+    name = "unfiltered_compile_flags",
+    builtin = True,
+    feature_name = "unfiltered_compile_flags",
+)
+
+pw_cc_unsafe_feature(
+    name = "linker_param_file",
+    builtin = True,
+    feature_name = "linker_param_file",
+)
+
+pw_cc_unsafe_feature(
+    name = "compiler_input_flags",
+    builtin = True,
+    feature_name = "compiler_input_flags",
+)
+
+pw_cc_unsafe_feature(
+    name = "compiler_output_flags",
+    builtin = True,
+    feature_name = "compiler_output_flags",
+)

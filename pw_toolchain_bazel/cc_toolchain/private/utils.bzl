@@ -108,6 +108,9 @@ def _to_untyped_implies(provider, known, fail = fail):
     return implies
 
 def _to_untyped_feature(feature, known, fail = fail):
+    if feature.known:
+        return None
+
     _ensure_fulfillable(
         any_of = [fs.features for fs in feature.requires_any_of],
         known = known,
@@ -147,7 +150,7 @@ def to_untyped_config(feature_set, fail = fail):
     for feature in feature_list:
         known_labels[feature.label] = None
         existing_feature = known_feature_names.get(feature.name, None)
-        if existing_feature != None:
+        if existing_feature != None and feature.overrides != existing_feature and existing_feature.overrides != feature:
             fail("Conflicting features: %s and %s both have feature name %s" % (feature.label, existing_feature.label, feature.name))
 
         known_feature_names[feature.name] = feature

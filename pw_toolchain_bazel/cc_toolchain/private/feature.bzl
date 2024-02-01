@@ -15,6 +15,7 @@
 
 load(
     ":providers.bzl",
+    "PwBuiltinFeatureInfo",
     "PwFeatureConstraintInfo",
     "PwFeatureInfo",
     "PwFeatureSetInfo",
@@ -55,15 +56,22 @@ Example:
 )
 
 def _pw_cc_feature_impl(ctx):
+    name = ctx.attr.feature_name
     implies_features = depset(transitive = [
         attr[PwFeatureSetInfo].features
         for attr in ctx.attr.implies
     ])
     requires = [req[PwFeatureSetInfo] for req in ctx.attr.requires_any_of]
 
+    overrides = None
+    if ctx.attr.overrides != None:
+        overrides = ctx.attr.overrides[PwFeatureInfo]
+        if overrides.name != name:
+            fail("%s is supposed to override %s, but they have different feature names" % (ctx.label, overrides.label))
+
     feature = PwFeatureInfo(
         label = ctx.label,
-        name = ctx.attr.feature_name,
+        name = name,
         enabled = ctx.attr.enabled,
         env_sets = depset([]),
         flag_sets = depset([
@@ -74,6 +82,8 @@ def _pw_cc_feature_impl(ctx):
         implies_action_configs = depset([]),
         requires_any_of = tuple(requires),
         provides = ctx.attr.provides,
+        known = False,
+        overrides = overrides,
     )
 
     return [
@@ -154,6 +164,24 @@ same time.
 
 Note: This feature cannot be enabled if another feature also provides the listed
 feature names.
+""",
+        ),
+        "overrides": attr.label(
+            providers = [PwBuiltinFeatureInfo, PwFeatureInfo],
+            doc = """A declaration that this feature overrides a known feature.
+
+In the example below, if you missed the "overrides" attribute, it would complain
+that the feature "opt" was defined twice.
+
+Example:
+
+    pw_cc_feature(
+      name = "opt",
+      feature_name = "opt",
+      ...
+      overrides = "@pw_toolchain//features/well_known:opt",
+    )
+
 """,
         ),
     },

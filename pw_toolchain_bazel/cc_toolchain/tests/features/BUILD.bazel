@@ -75,6 +75,26 @@ pw_cc_feature(
     ],
 )
 
+pw_cc_feature(
+    name = "supports_pic",
+    enabled = True,
+    feature_name = "supports_pic",
+    overrides = "//features/well_known:supports_pic",
+)
+
+pw_cc_feature(
+    name = "supports_pic_no_override",
+    enabled = True,
+    feature_name = "supports_pic",
+)
+
+pw_cc_feature(
+    name = "implies_supports_pic",
+    enabled = True,
+    feature_name = "implies_supports_pic",
+    implies = ["//features/well_known:supports_pic"],
+)
+
 pw_cc_feature_constraint(
     name = "foo_not_baz",
     all_of = [":foo"],

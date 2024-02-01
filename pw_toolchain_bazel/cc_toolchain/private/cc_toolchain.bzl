@@ -26,10 +26,12 @@ load(
     "//cc_toolchain/private:action_config_files.bzl",
     "pw_cc_action_config_file_collector",
 )
+load("//features:builtin_features.bzl", "BUILTIN_FEATURES")
 load(
     ":providers.bzl",
     "PwActionConfigInfo",
     "PwActionConfigListInfo",
+    "PwFeatureInfo",
     "PwFeatureSetInfo",
     "PwFlagSetInfo",
 )
@@ -248,6 +250,7 @@ def _pw_cc_toolchain_config_impl(ctx):
     sysroot_dir = ctx.attr.builtin_sysroot if ctx.attr.builtin_sysroot else None
 
     feature_set = PwFeatureSetInfo(features = depset(
+        [ft[PwFeatureInfo] for ft in ctx.attr._builtin_features],
         transitive = [
             feature_set[PwFeatureSetInfo].features
             for feature_set in ctx.attr.toolchain_features
@@ -295,6 +298,7 @@ pw_cc_toolchain_config = rule(
         "cc_target_os": attr.string(),
         "builtin_sysroot": attr.string(),
         "cxx_builtin_include_directories": attr.string_list(),
+        "_builtin_features": attr.label_list(default = BUILTIN_FEATURES),
     },
     provides = [CcToolchainConfigInfo],
 )

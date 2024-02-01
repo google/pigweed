@@ -69,6 +69,8 @@ PwFeatureInfo = provider(
         "implies_action_configs": "depset[ActionConfigInfo]: Set of action configs enabled by this feature",
         "requires_any_of": "Sequence[FeatureSetInfo]: A list of feature sets, at least one of which is required to enable this feature. This is semantically equivalent to the requires attribute of rules_cc's FeatureInfo",
         "provides": "Sequence[str]: Indicates that this feature is one of several mutually exclusive alternate features.",
+        "known": "bool: Whether the feature is a known feature. Known features are assumed to be defined elsewhere.",
+        "overrides": "Optional[FeatureInfo]: The feature that this overrides",
     },
 )
 PwFeatureSetInfo = provider(
@@ -84,6 +86,10 @@ PwFeatureConstraintInfo = provider(
         "all_of": "depset[FeatureInfo]: A set of features which must be enabled",
         "none_of": "depset[FeatureInfo]: A set of features, none of which can be enabled",
     },
+)
+PwBuiltinFeatureInfo = provider(
+    doc = "A tag marking something as a known feature. The only use of this is to ensure that pw_cc_feature disallows override = <non known feature>.",
+    fields = {},
 )
 
 PwActionConfigInfo = ActionConfigInfo

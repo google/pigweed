@@ -25,6 +25,7 @@ load(
     "//cc_toolchain/private:utils.bzl",
     _to_untyped_config = "to_untyped_config",
 )
+load("//features:builtin_features.bzl", "BUILTIN_FEATURES")
 
 visibility("//cc_toolchain/tests/...")
 
@@ -104,6 +105,9 @@ _PROVIDERS = {
     "//cc_toolchain/tests/features:foobar": [PwFeatureSetInfo],
     "//cc_toolchain/tests/features:implies": [PwFeatureInfo, PwFeatureSetInfo],
     "//cc_toolchain/tests/features:requires": [PwFeatureInfo, PwFeatureSetInfo],
+    "//cc_toolchain/tests/features:supports_pic": [PwFeatureInfo, PwFeatureSetInfo],
+    "//cc_toolchain/tests/features:supports_pic_no_override": [PwFeatureInfo, PwFeatureSetInfo],
+    "//cc_toolchain/tests/features:implies_supports_pic": [PwFeatureInfo, PwFeatureSetInfo],
     "//cc_toolchain/tests/flag_sets:bar": [PwFlagSetInfo],
     "//cc_toolchain/tests/flag_sets:baz": [PwFlagSetInfo],
     "//cc_toolchain/tests/flag_sets:flag_group": [PwFlagGroupInfo],
@@ -129,7 +133,7 @@ def generate_test_rule(implementation):
 
         def to_untyped_config(features = [], feature_sets = [], fail = fail):
             feature_set = PwFeatureSetInfo(features = depset(
-                features,
+                features + [ft[PwFeatureInfo] for ft in ctx.attr.builtin_features],
                 transitive = [fs.features for fs in feature_sets],
             ))
             return _to_untyped_config(feature_set, fail = fail)
@@ -141,5 +145,6 @@ def generate_test_rule(implementation):
         implementation = wrapper,
         attrs = {
             "test_cases": attr.label_list(default = _PROVIDERS.keys()),
+            "builtin_features": attr.label_list(default = BUILTIN_FEATURES),
         },
     )

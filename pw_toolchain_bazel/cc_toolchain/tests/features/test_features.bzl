@@ -14,6 +14,10 @@
 """Tests for pw_cc_feature and pw_cc_feature_set."""
 
 load(
+    "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
+    rules_cc_feature = "feature",
+)
+load(
     "//cc_toolchain/tests:utils.bzl",
     "assert_eq",
     "assert_fail",
@@ -66,6 +70,23 @@ def _test_features_impl(_ctx, features, feature_sets, flag_sets, to_untyped_conf
     assert_fail(
         to_untyped_config,
         features = [features.requires, features.foo],
+    )
+
+    # Verify that we fail iff the duplicate was not an override.
+    assert_eq(
+        to_untyped_config(
+            features = [features.supports_pic],
+        ).features,
+        [rules_cc_feature(name = "supports_pic", enabled = True)],
+    )
+    assert_fail(
+        to_untyped_config,
+        features = [features.supports_pic_no_override],
+    )
+
+    # Verify that you can imply a "known" feature.
+    to_untyped_config(
+        features = [features.implies_supports_pic],
     )
 
     assert_labels_eq(
