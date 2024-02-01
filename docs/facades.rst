@@ -6,6 +6,8 @@ Facades and backends
 This page explains what "facades" and "backends" mean in the context of Pigweed
 and provides guidelines on when to use them.
 
+.. _docs-facades-definition:
+
 ------------------------------
 What are facades and backends?
 ------------------------------
