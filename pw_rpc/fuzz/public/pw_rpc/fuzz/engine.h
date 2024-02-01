@@ -328,8 +328,8 @@ class Fuzzer {
   Vector<CallbackContext, kMaxConcurrentCalls> contexts_ PW_GUARDED_BY(mutex_);
 
   /// Set of actions performed as callbacks from other calls.
-  Vector<uint32_t, kMaxActionsPerThread> callback_actions_ PW_GUARDED_BY(
-      mutex_);
+  Vector<uint32_t, kMaxActionsPerThread> callback_actions_
+      PW_GUARDED_BY(mutex_);
   Vector<uint32_t>::iterator callback_iterator_ PW_GUARDED_BY(mutex_);
 
   /// Total actions performed by all workers.

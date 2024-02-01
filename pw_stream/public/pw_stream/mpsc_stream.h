@@ -358,8 +358,8 @@ class MpscReader : public NonSeekableReader {
   mutable sync::Mutex mutex_;
   IntrusiveList<MpscWriter> writers_ PW_GUARDED_BY(mutex_);
   IntrusiveList<MpscWriter::Request> write_requests_ PW_GUARDED_BY(mutex_);
-  IntrusiveList<MpscWriter::Request>::iterator last_request_ PW_GUARDED_BY(
-      mutex_);
+  IntrusiveList<MpscWriter::Request>::iterator last_request_
+      PW_GUARDED_BY(mutex_);
 
   size_t num_unlimited_ PW_GUARDED_BY(mutex_) = 0;
   size_t limit_ PW_GUARDED_BY(mutex_) = 0;
