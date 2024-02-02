@@ -18,7 +18,7 @@
 #include <cstdint>
 #include <limits>
 
-#include "pw_assert/check.h"
+#include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
 #include "pw_span/span.h"
 #include "pw_status/status_with_size.h"
@@ -57,7 +57,7 @@ class RandomGenerator {
   template <class T>
   void GetInt(T& dest, const T& exclusive_upper_bound) {
     static_assert(std::is_unsigned_v<T>, "T must be an unsigned integer");
-    PW_DCHECK(exclusive_upper_bound != 0);
+    PW_ASSERT(exclusive_upper_bound != 0);
 
     if (exclusive_upper_bound < 2) {
       dest = 0;

@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <cstring>
 
+#include "pw_assert/check.h"
 #include "pw_bytes/span.h"
 #include "pw_random/random.h"
 #include "pw_span/span.h"

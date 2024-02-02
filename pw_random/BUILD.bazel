@@ -30,6 +30,20 @@ cc_library(
     includes = ["public"],
     deps = [
         "//pw_assert",
+        "//pw_bytes",
+        "//pw_span",
+        "//pw_status",
+    ],
+)
+
+cc_library(
+    name = "fuzzer_generator",
+    hdrs = ["public/pw_random/fuzzer.h"],
+    includes = ["public"],
+    deps = [
+        ":pw_random",
+        "//pw_bytes",
+        "//pw_fuzzer:libfuzzer",
     ],
 )
 

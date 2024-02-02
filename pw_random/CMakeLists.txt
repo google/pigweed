@@ -21,11 +21,10 @@ pw_add_library(pw_random INTERFACE
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_assert
     pw_bytes
     pw_span
     pw_status
-  PRIVATE_DEPS
-    pw_assert
 )
 
 pw_add_test(pw_random.xor_shift_star_test

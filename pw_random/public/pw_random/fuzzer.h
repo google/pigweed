@@ -13,6 +13,9 @@
 // the License.
 #pragma once
 
+#include <cstdint>
+
+#include "pw_bytes/span.h"
 #include "pw_fuzzer/fuzzed_data_provider.h"
 #include "pw_random/random.h"
 

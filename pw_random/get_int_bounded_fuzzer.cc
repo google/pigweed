@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <limits>
 
+#include "pw_assert/check.h"
 #include "pw_fuzzer/fuzzed_data_provider.h"
 #include "pw_random/fuzzer.h"
 

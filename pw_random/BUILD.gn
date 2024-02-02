@@ -42,6 +42,7 @@ pw_source_set("fuzzer_generator") {
   public_deps = [
     ":pw_random",
     "$dir_pw_fuzzer:libfuzzer",
+    dir_pw_bytes,
   ]
 }
 
@@ -67,6 +68,7 @@ pw_fuzzer("get_int_bounded_fuzzer") {
   deps = [
     ":fuzzer_generator",
     ":pw_random",
+    dir_pw_assert,
   ]
 }
 
