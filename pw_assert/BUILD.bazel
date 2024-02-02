@@ -25,14 +25,12 @@ licenses(["notice"])
 pw_cc_facade(
     name = "facade",
     hdrs = [
-        "assert_compatibility_public_overrides/pw_assert_backend/assert_backend.h",
         "public/pw_assert/assert.h",
         "public/pw_assert/check.h",
         "public/pw_assert/internal/check_impl.h",
         "public/pw_assert/short.h",
     ],
     includes = [
-        "assert_compatibility_public_overrides",
         "public",
     ],
     deps = [
@@ -44,14 +42,12 @@ pw_cc_facade(
 cc_library(
     name = "pw_assert",
     hdrs = [
-        "assert_compatibility_public_overrides/pw_assert_backend/assert_backend.h",
         "public/pw_assert/assert.h",
         "public/pw_assert/check.h",
         "public/pw_assert/internal/check_impl.h",
         "public/pw_assert/short.h",
     ],
     includes = [
-        "assert_compatibility_public_overrides",
         "public",
     ],
     deps = [
@@ -88,6 +84,15 @@ cc_library(
         "//pw_assert",
         "//pw_preprocessor",
     ],
+)
+
+cc_library(
+    name = "assert_compatibility_backend",
+    hdrs = [
+        "assert_compatibility_public_overrides/pw_assert_backend/assert_backend.h",
+    ],
+    includes = ["assert_compatibility_public_overrides"],
+    deps = ["//pw_preprocessor"],
 )
 
 cc_library(

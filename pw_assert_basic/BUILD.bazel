@@ -40,6 +40,7 @@ cc_library(
     ],
     deps = [
         ":handler_facade",
+        "//pw_assert:assert_compatibility_backend",
         "//pw_preprocessor",
     ],
 )

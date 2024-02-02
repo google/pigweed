@@ -30,6 +30,7 @@ cc_library(
         "public",
     ],
     deps = [
+        "//pw_assert:assert_compatibility_backend",
         "//pw_assert:facade",
         "//pw_log",
         "//pw_preprocessor",
