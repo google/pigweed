@@ -113,7 +113,8 @@ void TransferThread::StartTransfer(
     chrono::SystemClock::duration timeout,
     chrono::SystemClock::duration initial_timeout,
     uint8_t max_retries,
-    uint32_t max_lifetime_retries) {
+    uint32_t max_lifetime_retries,
+    uint32_t initial_offset) {
   // Block until the last event has been processed.
   next_event_ownership_.acquire();
 
@@ -148,6 +149,7 @@ void TransferThread::StartTransfer(
       .transfer_thread = this,
       .raw_chunk_data = chunk_buffer_.data(),
       .raw_chunk_size = raw_chunk.size(),
+      .initial_offset = initial_offset,
   };
 
   staged_on_completion_ = std::move(on_completion);
@@ -344,6 +346,10 @@ void TransferThread::HandleEvent(const internal::Event& event) {
       handlers_.remove(*event.remove_transfer_handler);
       return;
 
+    case EventType::kGetResourceStatus:
+      GetResourceState(event.resource_status.resource_id);
+      return;
+
     case EventType::kNewClientTransfer:
     case EventType::kNewServerTransfer:
     case EventType::kClientChunk:
@@ -443,6 +449,7 @@ Context* TransferThread::FindContextForEvent(
     case EventType::kAddTransferHandler:
     case EventType::kRemoveTransferHandler:
     case EventType::kTerminate:
+    case EventType::kGetResourceStatus:
     default:
       return nullptr;
   }
@@ -476,6 +483,45 @@ uint32_t TransferThread::AssignSessionId() {
     session_id = next_session_id_++;
   }
   return session_id;
+}
+
+// Adds GetResourceStatusEvent to the queue. Will fail if there is already a
+// GetResourceStatusEvent in process.
+void TransferThread::EnqueueResourceEvent(uint32_t resource_id,
+                                          ResourceStatusCallback&& callback) {
+  // Block until the last event has been processed.
+  next_event_ownership_.acquire();
+
+  next_event_.type = EventType::kGetResourceStatus;
+
+  resource_status_callback_ = std::move(callback);
+
+  next_event_.resource_status.resource_id = resource_id;
+
+  event_notification_.release();
+}
+
+// Should only be called when we got a valid callback and RPC responder from
+// GetResourceStatus transfer RPC.
+void TransferThread::GetResourceState(uint32_t resource_id) {
+  PW_ASSERT(resource_status_callback_ != nullptr);
+
+  auto handler = std::find_if(handlers_.begin(), handlers_.end(), [&](auto& h) {
+    return h.id() == resource_id;
+  });
+  internal::ResourceStatus stats;
+  stats.resource_id = resource_id;
+
+  if (handler != handlers_.end()) {
+    Status status = handler->GetStatus(stats.readable_offset,
+                                       stats.writeable_offset,
+                                       stats.read_checksum,
+                                       stats.write_checksum);
+
+    resource_status_callback_(status, stats);
+  } else {
+    resource_status_callback_(Status::NotFound(), stats);
+  }
 }
 
 }  // namespace pw::transfer::internal

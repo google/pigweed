@@ -135,6 +135,52 @@ class SmallTransferIntegrationTest(test_fixture.TransferIntegrationTest):
             client_type, config, resource_id, payload, protocol_version
         )
 
+    @parameterized.expand(
+        [
+            ("cpp"),
+            ("java"),
+            ("python"),
+        ]
+    )
+    def test_offset_read_offset_to_end(self, client_type):
+        payload = b"Rabbits are the best pets"
+        config = self.default_config()
+        resource_id = 6
+
+        config = self.default_config()
+
+        self.do_single_read(
+            client_type,
+            config,
+            resource_id,
+            payload,
+            initial_offset=len(payload),
+            offsettable_resources=True,
+        )
+
+    @parameterized.expand(
+        [
+            ("cpp"),
+            ("java"),
+            ("python"),
+        ]
+    )
+    def test_offset_write_offset_to_end(self, client_type):
+        payload = b"Rabbits are the best pets"
+        config = self.default_config()
+        resource_id = 6
+
+        config = self.default_config()
+
+        self.do_single_write(
+            client_type,
+            config,
+            resource_id,
+            payload,
+            initial_offset=len(payload) + 1,
+            offsettable_resources=True,
+        )
+
 
 if __name__ == '__main__':
     test_fixture.run_tests_for(SmallTransferIntegrationTest)

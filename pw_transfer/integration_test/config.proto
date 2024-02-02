@@ -54,6 +54,9 @@ message TransferAction {
 
   // Protocol version to initiate the transfer with.
   ProtocolVersion protocol_version = 5;
+
+  // Initial offset to start transfer with. Defaults to 0.
+  uint32 initial_offset = 6;
 }
 
 // Configuration for the integration test client.
@@ -106,6 +109,9 @@ message ServerResourceLocations {
   // If destination_paths is exhausted or empty, this destination path can be
   // reused as a fallback indefinitely.
   string default_destination_path = 6;
+
+  // Defines whether or not the resource can be read from an offset
+  bool offsettable = 7;
 }
 
 // Configuration for the integration test server.

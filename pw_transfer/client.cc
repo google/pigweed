@@ -26,9 +26,14 @@ Result<Client::TransferHandle> Client::Read(
     CompletionFunc&& on_completion,
     ProtocolVersion protocol_version,
     chrono::SystemClock::duration timeout,
-    chrono::SystemClock::duration initial_chunk_timeout) {
+    chrono::SystemClock::duration initial_chunk_timeout,
+    uint32_t initial_offset) {
   if (on_completion == nullptr ||
       protocol_version == ProtocolVersion::kUnknown) {
+    return Status::InvalidArgument();
+  }
+
+  if (protocol_version < ProtocolVersion::kVersionTwo && initial_offset != 0) {
     return Status::InvalidArgument();
   }
 
@@ -56,7 +61,8 @@ Result<Client::TransferHandle> Client::Read(
                                        timeout,
                                        initial_chunk_timeout,
                                        max_retries_,
-                                       max_lifetime_retries_);
+                                       max_lifetime_retries_,
+                                       initial_offset);
   return handle;
 }
 
@@ -66,9 +72,14 @@ Result<Client::TransferHandle> Client::Write(
     CompletionFunc&& on_completion,
     ProtocolVersion protocol_version,
     chrono::SystemClock::duration timeout,
-    chrono::SystemClock::duration initial_chunk_timeout) {
+    chrono::SystemClock::duration initial_chunk_timeout,
+    uint32_t initial_offset) {
   if (on_completion == nullptr ||
       protocol_version == ProtocolVersion::kUnknown) {
+    return Status::InvalidArgument();
+  }
+
+  if (protocol_version < ProtocolVersion::kVersionTwo && initial_offset != 0) {
     return Status::InvalidArgument();
   }
 
@@ -96,7 +107,8 @@ Result<Client::TransferHandle> Client::Write(
                                        timeout,
                                        initial_chunk_timeout,
                                        max_retries_,
-                                       max_lifetime_retries_);
+                                       max_lifetime_retries_,
+                                       initial_offset);
 
   return handle;
 }

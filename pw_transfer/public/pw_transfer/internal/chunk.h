@@ -140,6 +140,11 @@ class Chunk {
     return *this;
   }
 
+  constexpr Chunk& set_initial_offset(uint32_t offset) {
+    initial_offset_ = offset;
+    return *this;
+  }
+
   // TODO(frolv): For some reason, the compiler complains if this setter is
   // marked constexpr. Leaving it off for now, but this should be investigated
   // and fixed.
@@ -215,6 +220,8 @@ class Chunk {
     return Type::kParametersRetransmit;
   }
 
+  constexpr uint32_t initial_offset() const { return initial_offset_; }
+
   // Returns true if this parameters chunk is requesting that the transmitter
   // transmit from its set offset instead of simply ACKing.
   constexpr bool RequestsTransmissionFromOffset() const {
@@ -262,6 +269,7 @@ class Chunk {
         max_chunk_size_bytes_(std::nullopt),
         min_delay_microseconds_(std::nullopt),
         offset_(0),
+        initial_offset_(0),
         payload_({}),
         remaining_bytes_(std::nullopt),
         status_(std::nullopt),
@@ -289,6 +297,7 @@ class Chunk {
   std::optional<uint32_t> max_chunk_size_bytes_;
   std::optional<uint32_t> min_delay_microseconds_;
   uint32_t offset_;
+  uint32_t initial_offset_;
   ConstByteSpan payload_;
   std::optional<uint64_t> remaining_bytes_;
   std::optional<Status> status_;

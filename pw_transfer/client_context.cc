@@ -27,4 +27,8 @@ Status ClientContext::FinalCleanup(Status status) {
   return OkStatus();
 }
 
+Status ClientContext::SeekReader(uint32_t offset) {
+  return reader().Seek(offset - initial_offset_);
+}
+
 }  // namespace pw::transfer::internal

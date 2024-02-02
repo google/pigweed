@@ -46,6 +46,10 @@ class ServerContext final : public Context {
 
   size_t TransferSizeBytes() const override { return handler_->ResourceSize(); }
 
+  // Seeks the reader to the given offset. Does not incorporate any initial
+  // offset
+  Status SeekReader(uint32_t offset) override;
+
   Handler* handler_;
 };
 

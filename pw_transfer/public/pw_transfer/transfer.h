@@ -87,6 +87,9 @@ class TransferService : public pw_rpc::raw::Transfer::Service<TransferService> {
     thread_.SetServerWriteStream(reader_writer);
   }
 
+  void GetResourceStatus(ConstByteSpan request,
+                         rpc::RawUnaryResponder& responder);
+
   void RegisterHandler(Handler& handler) {
     thread_.AddTransferHandler(handler);
   }
@@ -120,8 +123,12 @@ class TransferService : public pw_rpc::raw::Transfer::Service<TransferService> {
     return OkStatus();
   }
 
+  rpc::RawUnaryResponder resource_responder_;
+
  private:
   void HandleChunk(ConstByteSpan message, internal::TransferType type);
+  void ResourceStatusCallback(Status status,
+                              const internal::ResourceStatus& stats);
 
   internal::TransferParameters max_parameters_;
   TransferThread& thread_;

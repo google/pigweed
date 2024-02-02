@@ -73,12 +73,14 @@ class FileTransferHandler final : public ReadWriteHandler {
                       std::deque<std::string>&& sources,
                       std::deque<std::string>&& destinations,
                       std::string default_source_path,
-                      std::string default_destination_path)
+                      std::string default_destination_path,
+                      bool offsettable)
       : ReadWriteHandler(resource_id),
         sources_(sources),
         destinations_(destinations),
         default_source_path_(default_source_path),
-        default_destination_path_(default_destination_path) {}
+        default_destination_path_(default_destination_path),
+        offsettable(offsettable) {}
 
   ~FileTransferHandler() = default;
 
@@ -99,6 +101,23 @@ class FileTransferHandler final : public ReadWriteHandler {
     PW_LOG_DEBUG("Preparing read for file %s", path.c_str());
     set_reader(stream_.emplace<stream::StdFileReader>(path.c_str()));
     return OkStatus();
+  }
+
+  Status PrepareRead(uint32_t offset) final {
+    if (!offsettable) {
+      return Status::Unimplemented();
+    }
+
+    if (Status status = PrepareRead(); !status.ok()) {
+      return status;
+    }
+
+    if (offset >
+        std::get<stream::StdFileReader>(stream_).ConservativeReadLimit()) {
+      return Status::ResourceExhausted();
+    }
+
+    return std::get<stream::StdFileReader>(stream_).Seek(offset);
   }
 
   void FinalizeRead(Status) final {
@@ -124,6 +143,24 @@ class FileTransferHandler final : public ReadWriteHandler {
     return OkStatus();
   }
 
+  Status PrepareWrite(uint32_t offset) final {
+    if (!offsettable) {
+      return Status::Unimplemented();
+    }
+
+    if (Status status = PrepareWrite(); !status.ok()) {
+      return status;
+    }
+
+    // It does not appear possible to hit this limit
+    if (offset >
+        std::get<stream::StdFileWriter>(stream_).ConservativeWriteLimit()) {
+      return Status::ResourceExhausted();
+    }
+
+    return std::get<stream::StdFileWriter>(stream_).Seek(offset);
+  }
+
   Status FinalizeWrite(Status) final {
     std::get<stream::StdFileWriter>(stream_).Close();
     return OkStatus();
@@ -136,6 +173,7 @@ class FileTransferHandler final : public ReadWriteHandler {
   std::string default_destination_path_;
   std::variant<std::monostate, stream::StdFileReader, stream::StdFileWriter>
       stream_;
+  bool offsettable;
 };
 
 void RunServer(int socket_port, ServerConfig config) {
@@ -183,7 +221,8 @@ void RunServer(int socket_port, ServerConfig config) {
         std::move(source_paths),
         std::move(destination_paths),
         resource.second.default_source_path(),
-        resource.second.default_destination_path());
+        resource.second.default_destination_path(),
+        resource.second.offsettable());
 
     transfer_service.RegisterHandler(*handler);
     handlers.push_back(std::move(handler));

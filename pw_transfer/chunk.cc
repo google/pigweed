@@ -182,6 +182,11 @@ Result<Chunk> Chunk::Parse(ConstByteSpan message) {
         chunk.desired_session_id_ = value;
         break;
 
+      case ProtoChunk::Fields::kInitialOffset:
+        PW_TRY(decoder.ReadUint32(&value));
+        chunk.set_initial_offset(value);
+        break;
+
         // Silently ignore any unrecognized fields.
     }
   }
@@ -281,6 +286,10 @@ Result<ConstByteSpan> Chunk::Encode(ByteSpan buffer) const {
 
   if (offset_ != 0) {
     encoder.WriteOffset(offset_).IgnoreError();
+  }
+
+  if (initial_offset_ != 0) {
+    encoder.WriteInitialOffset(initial_offset_).IgnoreError();
   }
 
   if (remaining_bytes_.has_value()) {

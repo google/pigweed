@@ -58,7 +58,8 @@ class TransferThread : public thread::ThreadCore {
                            chrono::SystemClock::duration timeout,
                            chrono::SystemClock::duration initial_timeout,
                            uint8_t max_retries,
-                           uint32_t max_lifetime_retries) {
+                           uint32_t max_lifetime_retries,
+                           uint32_t initial_offset = 0) {
     StartTransfer(type,
                   version,
                   Context::kUnassignedSessionId,  // Assigned later.
@@ -71,7 +72,8 @@ class TransferThread : public thread::ThreadCore {
                   timeout,
                   initial_timeout,
                   max_retries,
-                  max_lifetime_retries);
+                  max_lifetime_retries,
+                  initial_offset);
   }
 
   void StartServerTransfer(TransferType type,
@@ -82,7 +84,8 @@ class TransferThread : public thread::ThreadCore {
                            const TransferParameters& max_parameters,
                            chrono::SystemClock::duration timeout,
                            uint8_t max_retries,
-                           uint32_t max_lifetime_retries) {
+                           uint32_t max_lifetime_retries,
+                           uint32_t initial_offset = 0) {
     StartTransfer(type,
                   version,
                   session_id,
@@ -95,7 +98,8 @@ class TransferThread : public thread::ThreadCore {
                   timeout,
                   timeout,
                   max_retries,
-                  max_lifetime_retries);
+                  max_lifetime_retries,
+                  initial_offset);
   }
 
   void ProcessClientChunk(ConstByteSpan chunk) {
@@ -196,6 +200,9 @@ class TransferThread : public thread::ThreadCore {
   void SimulateServerTimeout(uint32_t session_id) {
     SimulateTimeout(EventType::kServerTimeout, session_id);
   }
+
+  void EnqueueResourceEvent(uint32_t resource_id,
+                            ResourceStatusCallback&& callback);
 
  private:
   friend class transfer::Client;
@@ -302,7 +309,8 @@ class TransferThread : public thread::ThreadCore {
                      chrono::SystemClock::duration timeout,
                      chrono::SystemClock::duration initial_timeout,
                      uint8_t max_retries,
-                     uint32_t max_lifetime_retries);
+                     uint32_t max_lifetime_retries,
+                     uint32_t initial_offset);
 
   void ProcessChunk(EventType type, ConstByteSpan chunk);
 
@@ -323,6 +331,8 @@ class TransferThread : public thread::ThreadCore {
   Context* FindContextForEvent(const Event& event) const;
 
   void SendStatusChunk(const SendStatusChunkEvent& event);
+
+  void GetResourceState(uint32_t resource_id);
 
   sync::TimedThreadNotification event_notification_;
   sync::BinarySemaphore next_event_ownership_;
@@ -354,6 +364,8 @@ class TransferThread : public thread::ThreadCore {
   // Buffer into which responses are encoded. Only ever used from within the
   // transfer thread, so no locking is required.
   ByteSpan encode_buffer_;
+
+  ResourceStatusCallback resource_status_callback_ = nullptr;
 };
 
 }  // namespace internal

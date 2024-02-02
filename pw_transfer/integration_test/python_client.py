@@ -58,6 +58,7 @@ def _perform_transfer_action(
                 action.resource_id,
                 data,
                 protocol_version=protocol_version,
+                initial_offset=action.initial_offset,
             )
         except pw_transfer.client.Error as e:
             if e.status != Status(action.expected_status):
@@ -65,6 +66,7 @@ def _perform_transfer_action(
                     "Unexpected error encountered during write transfer"
                 )
                 return False
+            return True
         except:
             _LOG.exception("Transfer (write to server) failed")
             return False
@@ -76,6 +78,7 @@ def _perform_transfer_action(
             data = transfer_manager.read(
                 action.resource_id,
                 protocol_version=protocol_version,
+                initial_offset=action.initial_offset,
             )
         except pw_transfer.client.Error as e:
             if e.status != Status(action.expected_status):
@@ -96,6 +99,9 @@ def _perform_transfer_action(
             return False
     else:
         _LOG.critical("Unknown transfer type: %d", action.transfer_type)
+        return False
+    if Status(action.expected_status) != Status.OK:
+        _LOG.error("Transfer was not expected to succeed")
         return False
     return True
 

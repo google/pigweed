@@ -113,10 +113,11 @@ class Client {
       uint32_t resource_id,
       stream::Writer& output,
       CompletionFunc&& on_completion,
-      ProtocolVersion version,
+      ProtocolVersion protocol_version,
       chrono::SystemClock::duration timeout = cfg::kDefaultClientTimeout,
       chrono::SystemClock::duration initial_chunk_timeout =
-          cfg::kDefaultInitialChunkTimeout);
+          cfg::kDefaultInitialChunkTimeout,
+      uint32_t initial_offset = 0u);
 
   Result<TransferHandle> Read(
       uint32_t resource_id,
@@ -124,13 +125,15 @@ class Client {
       CompletionFunc&& on_completion,
       chrono::SystemClock::duration timeout = cfg::kDefaultClientTimeout,
       chrono::SystemClock::duration initial_chunk_timeout =
-          cfg::kDefaultInitialChunkTimeout) {
+          cfg::kDefaultInitialChunkTimeout,
+      uint32_t initial_offset = 0u) {
     return Read(resource_id,
                 output,
                 std::move(on_completion),
                 default_protocol_version,
                 timeout,
-                initial_chunk_timeout);
+                initial_chunk_timeout,
+                initial_offset);
   }
 
   // Begins a new write transfer for the given resource ID. Data from the
@@ -141,10 +144,11 @@ class Client {
       uint32_t resource_id,
       stream::Reader& input,
       CompletionFunc&& on_completion,
-      ProtocolVersion version,
+      ProtocolVersion protocol_version,
       chrono::SystemClock::duration timeout = cfg::kDefaultClientTimeout,
       chrono::SystemClock::duration initial_chunk_timeout =
-          cfg::kDefaultInitialChunkTimeout);
+          cfg::kDefaultInitialChunkTimeout,
+      uint32_t initial_offset = 0u);
 
   Result<TransferHandle> Write(
       uint32_t resource_id,
@@ -152,13 +156,15 @@ class Client {
       CompletionFunc&& on_completion,
       chrono::SystemClock::duration timeout = cfg::kDefaultClientTimeout,
       chrono::SystemClock::duration initial_chunk_timeout =
-          cfg::kDefaultInitialChunkTimeout) {
+          cfg::kDefaultInitialChunkTimeout,
+      uint32_t initial_offset = 0u) {
     return Write(resource_id,
                  input,
                  std::move(on_completion),
                  default_protocol_version,
                  timeout,
-                 initial_chunk_timeout);
+                 initial_chunk_timeout,
+                 initial_offset);
   }
 
   // Terminates an ongoing transfer.

@@ -88,6 +88,7 @@ for additional information.
      return transfer_thread;
    }
 
+.. _pw_transfer-transfer-server:
 
 Transfer server
 ---------------
@@ -128,6 +129,28 @@ support ephemeral transfer resources.
    private:
     pw::stream::MemoryReader reader_;
   };
+
+Handlers may optionally implement a `GetStatus` method, which allows clients to
+query the status of a resource with a handler registered. The application layer
+above transfer can choose how to fill and interpret this information. The status
+information is `readable_offset`, `writeable_offset`, `read_checksum`, and
+`write_checksum`.
+
+**Example GetStatus implementation**
+
+.. code-block:: cpp
+
+  Status GetStatus(uint64_t& readable_offset,
+                   uint64_t& writeable_offset,
+                   uint64_t& read_checksum,
+                   uint64_t& write_checksum) {
+    readable_offset = resource.get_size();
+    writeable_offset = resource.get_writeable_offset();
+    read_checksum = resource.get_crc();
+    write_checksum = resource.calculate_crc(0, writeable_offset);
+
+    return pw::OkStatus();
+  }
 
 The transfer service is instantiated with a reference to the system's transfer
 thread and registered with the system's RPC server.
@@ -176,7 +199,7 @@ an RPC client.
 
 The transfer client provides the following APIs for managing data transfers:
 
-.. cpp:function:: Result<pw::Transfer::Client::TransferHandle> pw::transfer::Client::Read(uint32_t resource_id, pw::stream::Writer& output, CompletionFunc&& on_completion, pw::chrono::SystemClock::duration timeout = cfg::kDefaultClientTimeout, pw::transfer::ProtocolVersion version = kDefaultProtocolVersion)
+.. cpp:function:: Result<pw::Transfer::Client::TransferHandle> pw::transfer::Client::Read(uint32_t resource_id, pw::stream::Writer& output, CompletionFunc&& on_completion, pw::transfer::ProtocolVersion version = kDefaultProtocolVersion, pw::chrono::SystemClock::duration timeout = cfg::kDefaultClientTimeout, pw::chrono::SystemClock::duration initial_chunk_timeout = cfg::kDefaultInitialChunkTimeout, uint32_t initial_offset = 0u)
 
   Reads data from a transfer server to the specified ``pw::stream::Writer``.
   Invokes the provided callback function with the overall status of the
@@ -186,7 +209,9 @@ The transfer client provides the following APIs for managing data transfers:
   return a non-OK status if it is called with bad arguments. Otherwise, it will
   return OK and errors will be reported through the completion callback.
 
-.. cpp:function:: Result<pw::Transfer::Client::TransferHandle> pw::transfer::Client::Write(uint32_t resource_id, pw::stream::Reader& input, CompletionFunc&& on_completion, pw::chrono::SystemClock::duration timeout = cfg::kDefaultClientTimeout, pw::transfer::ProtocolVersion version = kDefaultProtocolVersion)
+  For using the offset parameter, please see :ref:`pw_transfer-nonzero-transfers`.
+
+.. cpp:function:: Result<pw::Transfer::Client::TransferHandle> pw::transfer::Client::Write(uint32_t resource_id, pw::stream::Reader& input, CompletionFunc&& on_completion, pw::transfer::ProtocolVersion version = kDefaultProtocolVersion, pw::chrono::SystemClock::duration timeout = cfg::kDefaultClientTimeout, pw::chrono::SystemClock::duration initial_chunk_timeout = cfg::kDefaultInitialChunkTimeout, uint32_t initial_offset = 0u)
 
   Writes data from a source ``pw::stream::Reader`` to a transfer server.
   Invokes the provided callback function with the overall status of the
@@ -196,11 +221,15 @@ The transfer client provides the following APIs for managing data transfers:
   return a non-OK status if it is called with bad arguments. Otherwise, it will
   return OK and errors will be reported through the completion callback.
 
+  For using the offset parameter, please see :ref:`pw_transfer-nonzero-transfers`.
+
 Transfer handles
 ^^^^^^^^^^^^^^^^
 Each transfer session initiated by a client returns a ``TransferHandle`` object
 which is used to manage the transfer. These handles support the following
 operations:
+
+.. cpp:function:: void pw::transfer::Client::CancelTransfer(pw::transfer::Client::TransferHandle handle)
 
 .. cpp:function:: pw::Transfer::Client::TransferHandle::Cancel()
 
@@ -358,6 +387,44 @@ more details.
   For example, a divisor of 2 will extend the window when half of the
   requested data has been received, a divisor of three will extend at a third
   of the window, and so on.
+
+.. _pw_transfer-nonzero-transfers:
+
+Non-zero Starting Offset Transfers
+----------------------------------
+`pw_transfer` provides for transfers which read from or
+write to a server resource starting from a point after the beginning.
+Handling of read/write/erase boundaries of the resource storage backend must
+be handled by the user through the transfer handler interfaces of `GetStatus`
+and `PrepareRead/Write(uint32_t offset)`.
+
+A resource can be read or written from a non-zero starting offset simply by
+having the transfer client calling `read()` or `write()` with an offset
+parameter. The offset gets included in the starting handshake.
+
+.. note::
+  The data or stream passed to `read()` or `write()` will be used as-is. I.e.
+  no seeking will be applied; the user is expected to seek to the desired
+  location.
+
+On the server side, the offset is accepted, and passed to the transfer
+handler's `Prepare(uint32_t)` method. This method must be implemented
+specifically by the handler in order to support the offset transfer. The
+transfer handler confirms that the start offset is valid for the read/write
+operation, and the server responds with the offset to confirm the non-zero
+transfer operation. Older server sw will ignore the offset, so the clients
+check that the server has accepted the non-zero offset during the handshake, so
+users may elect to catch such errors. Clients return `Status.UNIMPLEMENTED` in
+such cases.
+
+Due to the need to seek streams by the handler to support the non-zero offset,
+it is recommended to return `Status.RESOURCE_EXHAUSTED` if a seek is requested
+past the end of the stream.
+
+See the :ref:`transfer handler <pw_transfer-transfer-server>` documentation for
+further information about configuring resources for non-zero transfers and the
+interface documentation in
+``pw/transfer/public/pw_transfer/handler.h``
 
 Python
 ======

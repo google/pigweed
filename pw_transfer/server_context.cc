@@ -53,4 +53,8 @@ Status ServerContext::FinalCleanup(const Status status) {
   return OkStatus();
 }
 
+Status ServerContext::SeekReader(uint32_t offset) {
+  return reader().Seek(offset);
+}
+
 }  // namespace pw::transfer::internal

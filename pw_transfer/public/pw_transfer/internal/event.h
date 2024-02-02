@@ -14,6 +14,8 @@
 #pragma once
 
 #include "pw_chrono/system_clock.h"
+#include "pw_function/function.h"
+#include "pw_rpc/raw/server_reader_writer.h"
 #include "pw_rpc/writer.h"
 #include "pw_stream/stream.h"
 #include "pw_transfer/internal/protocol.h"
@@ -70,6 +72,9 @@ enum class EventType {
 
   // For testing only: aborts the transfer thread.
   kTerminate,
+
+  // Gets the status of a resource, if there is a handler registered for it.
+  kGetResourceStatus,
 };
 
 // Forward declarations required for events.
@@ -97,6 +102,8 @@ struct NewTransferEvent {
 
   const std::byte* raw_chunk_data;
   size_t raw_chunk_size;
+
+  uint64_t initial_offset;
 };
 
 // A chunk received by a transfer client / server.
@@ -131,6 +138,20 @@ struct UpdateTransferEvent {
   uint32_t transfer_size_bytes;
 };
 
+struct ResourceStatus {
+  uint32_t resource_id;
+  uint64_t readable_offset;
+  uint64_t writeable_offset;
+  uint64_t read_checksum;
+  uint64_t write_checksum;
+};
+
+using ResourceStatusCallback = Callback<void(Status, const ResourceStatus&)>;
+
+struct GetResourceStatusEvent {
+  uint32_t resource_id;
+};
+
 struct Event {
   EventType type;
 
@@ -142,6 +163,7 @@ struct Event {
     UpdateTransferEvent update_transfer;
     Handler* add_transfer_handler;
     Handler* remove_transfer_handler;
+    GetResourceStatusEvent resource_status;
   };
 };
 

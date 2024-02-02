@@ -40,6 +40,7 @@ abstract class Transfer<T> extends AbstractFuture<T> {
 
   private final int resourceId;
   private final int sessionId;
+  private int offset;
   private final ProtocolVersion desiredProtocolVersion;
   private final TransferEventHandler.TransferInterface eventHandler;
   private final TransferTimeoutSettings timeoutSettings;
@@ -73,9 +74,11 @@ abstract class Transfer<T> extends AbstractFuture<T> {
       TransferInterface eventHandler,
       TransferTimeoutSettings timeoutSettings,
       Consumer<TransferProgress> progressCallback,
-      BooleanSupplier shouldAbortCallback) {
+      BooleanSupplier shouldAbortCallback,
+      int initial_offset) {
     this.resourceId = resourceId;
     this.sessionId = sessionId;
+    this.offset = initial_offset;
     this.desiredProtocolVersion = desiredProtocolVersion;
     this.eventHandler = eventHandler;
 
@@ -119,7 +122,11 @@ abstract class Transfer<T> extends AbstractFuture<T> {
     return sessionId;
   }
 
-  final ProtocolVersion getDesiredProtocolVersionForTest() {
+  public final int getOffset() {
+    return offset;
+  }
+
+  final ProtocolVersion getDesiredProtocolVersion() {
     return desiredProtocolVersion;
   }
 
@@ -130,6 +137,10 @@ abstract class Transfer<T> extends AbstractFuture<T> {
 
   final Instant getDeadline() {
     return deadline;
+  }
+
+  final void setOffset(int offset) {
+    this.offset = offset;
   }
 
   final void setNextChunkTimeout() {
@@ -399,6 +410,12 @@ abstract class Transfer<T> extends AbstractFuture<T> {
       changeState(getWaitingForDataState());
 
       if (chunk.type() != Chunk.Type.START_ACK) {
+        if (offset != 0) {
+          logger.atWarning().log(
+              "%s aborting due to unsupported non-zero offset transfer: %s", Transfer.this, chunk);
+          setStateTerminatingAndSendFinalChunk(Status.INTERNAL);
+          return;
+        }
         logger.atFine().log(
             "%s got non-handshake chunk; reverting to legacy protocol", Transfer.this);
         configuredProtocolVersion = ProtocolVersion.LEGACY;
@@ -417,6 +434,13 @@ abstract class Transfer<T> extends AbstractFuture<T> {
           configuredProtocolVersion,
           desiredProtocolVersion,
           chunk.version());
+
+      if (offset != chunk.initialOffset()) {
+        logger.atWarning().log(
+            "%s aborting due to unconfirmed non-zero offset transfer: %s", Transfer.this, chunk);
+        setStateTerminatingAndSendFinalChunk(Status.UNIMPLEMENTED);
+        return;
+      }
 
       VersionedChunk.Builder startAckConfirmation = newChunk(Chunk.Type.START_ACK_CONFIRMATION);
       prepareInitialChunk(startAckConfirmation);

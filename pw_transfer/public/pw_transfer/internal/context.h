@@ -108,7 +108,8 @@ class Context {
   ~Context() = default;
 
   constexpr Context()
-      : session_id_(kUnassignedSessionId),
+      : initial_offset_(0),
+        session_id_(kUnassignedSessionId),
         resource_id_(0),
         desired_protocol_version_(ProtocolVersion::kUnknown),
         configured_protocol_version_(ProtocolVersion::kUnknown),
@@ -137,6 +138,13 @@ class Context {
   constexpr TransferType type() const {
     return static_cast<TransferType>(flags_ & kFlagsType);
   }
+
+  stream::Reader& reader() {
+    PW_DASSERT(active() && type() == TransferType::kTransmit);
+    return static_cast<stream::Reader&>(*stream_);
+  }
+
+  uint32_t initial_offset_;
 
  private:
   enum class TransferState : uint8_t {
@@ -192,11 +200,6 @@ class Context {
   unsigned id_for_log() const {
     static_assert(sizeof(unsigned) >= sizeof(session_id_));
     return static_cast<unsigned>(session_id_);
-  }
-
-  stream::Reader& reader() {
-    PW_DASSERT(active() && type() == TransferType::kTransmit);
-    return static_cast<stream::Reader&>(*stream_);
   }
 
   stream::Writer& writer() {
@@ -257,6 +260,11 @@ class Context {
   // Returns the total size of the transfer resource, or
   // `std::numeric_limits<size_t>::max()` if unbounded.
   virtual size_t TransferSizeBytes() const = 0;
+
+  // Seeks the reader source. Client may need to seek with reference to the
+  // initial offset, where the server shouldn't, so each context needs its own
+  // seek method.
+  virtual Status SeekReader(uint32_t offset) = 0;
 
   // Processes a chunk in either a transfer or receive transfer.
   void HandleChunkEvent(const ChunkEvent& event);

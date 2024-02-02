@@ -43,6 +43,10 @@ class ClientContext final : public Context {
 
   size_t TransferSizeBytes() const override { return transfer_size_bytes_; }
 
+  // Seeks the reader to the offset, taking into account the client side reader
+  // needs to be shifted back for the initial offset.
+  Status SeekReader(uint32_t offset) override;
+
   // Transfer clients assign a unique handle_id to all active transfer sessions.
   // Unlike session or transfer IDs, this value is local to the client, not
   // requiring any coordination with the transfer server, allowing users of the

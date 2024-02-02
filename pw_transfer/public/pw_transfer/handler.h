@@ -47,6 +47,17 @@ class Handler : public IntrusiveList<Handler>::Item {
   // Status::Unimplemented() indicates that reads are not supported.
   virtual Status PrepareRead() = 0;
 
+  // Called at the beginning of a non-zero read transfer. The stream::Reader
+  // must be ready to read at the given offset after a successful PrepareRead()
+  // call. Returning a non-OK status aborts the read.
+  // The read handler should verify that the offset is a valid read point for
+  // the resource.
+  //
+  // Status::Unimplemented() indicates that non-zero reads are not supported.
+  virtual Status PrepareRead([[maybe_unused]] uint32_t offset) {
+    return Status::Unimplemented();
+  }
+
   // FinalizeRead() is called at the end of a read transfer. The status argument
   // indicates whether the data transfer was successful or not.
   virtual void FinalizeRead(Status) {}
@@ -57,6 +68,17 @@ class Handler : public IntrusiveList<Handler>::Item {
   //
   // Status::Unimplemented() indicates that writes are not supported.
   virtual Status PrepareWrite() = 0;
+
+  // Called at the beginning of a non-zero write transfer. The stream::writer
+  // must be ready to write at the given offset after a successful
+  // PrepareWrite() call. Returning a non-OK status aborts the write. The write
+  // handler should verify that the offset is a valid write point for the
+  // resource, and that the resource is prepared to write at that offset.
+  //
+  // Status::Unimplemented() indicates that non-zero writes are not supported.
+  virtual Status PrepareWrite([[maybe_unused]] uint32_t offset) {
+    return Status::Unimplemented();
+  }
 
   // FinalizeWrite() is called at the end of a write transfer. The status
   // argument indicates whether the data transfer was successful or not.
@@ -69,6 +91,23 @@ class Handler : public IntrusiveList<Handler>::Item {
   /// `std::numeric_limits<size_t>::max()`.
   virtual size_t ResourceSize() const {
     return std::numeric_limits<size_t>::max();
+  }
+
+  // GetStatus() is called to Transfer.GetResourceStatus RPC. The application
+  // layer invoking transfers should define the contents of these status
+  // variables for proper interpretation.
+  //
+  // Status::Unimplemented() indicates that the values have not been modifed by
+  // a handler.
+  virtual Status GetStatus(uint64_t& readable_offset,
+                           uint64_t& writeable_offset,
+                           uint64_t& read_checksum,
+                           uint64_t& write_checksum) {
+    readable_offset = 0;
+    writeable_offset = 0;
+    read_checksum = 0;
+    write_checksum = 0;
+    return Status::Unimplemented();
   }
 
  protected:
@@ -85,9 +124,14 @@ class Handler : public IntrusiveList<Handler>::Item {
   friend class internal::Context;
 
   // Prepares for either a read or write transfer.
-  Status Prepare(internal::TransferType type) {
-    return type == internal::TransferType::kTransmit ? PrepareRead()
-                                                     : PrepareWrite();
+  Status Prepare(internal::TransferType type, uint32_t offset = 0) {
+    if (offset == 0) {
+      return type == internal::TransferType::kTransmit ? PrepareRead()
+                                                       : PrepareWrite();
+    }
+
+    return type == internal::TransferType::kTransmit ? PrepareRead(offset)
+                                                     : PrepareWrite(offset);
   }
 
   // Only valid after a PrepareRead() or PrepareWrite() call that returns OK.

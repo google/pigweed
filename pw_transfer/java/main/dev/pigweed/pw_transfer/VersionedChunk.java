@@ -39,6 +39,8 @@ abstract class VersionedChunk {
 
   public abstract int offset();
 
+  public abstract int initialOffset();
+
   public abstract int windowEndOffset();
 
   public abstract ByteString data();
@@ -58,7 +60,8 @@ abstract class VersionedChunk {
         .setSessionId(UNKNOWN_SESSION_ID)
         .setOffset(0)
         .setWindowEndOffset(0)
-        .setData(ByteString.EMPTY);
+        .setData(ByteString.EMPTY)
+        .setInitialOffset(0);
   }
 
   @AutoValue.Builder
@@ -72,6 +75,8 @@ abstract class VersionedChunk {
     public abstract Builder setResourceId(int resourceId);
 
     public abstract Builder setOffset(int offset);
+
+    public abstract Builder setInitialOffset(int initialOffset);
 
     public abstract Builder setWindowEndOffset(int windowEndOffset);
 
@@ -141,6 +146,8 @@ abstract class VersionedChunk {
 
     builder.setOffset((int) chunk.getOffset()).setData(chunk.getData());
 
+    builder.setInitialOffset((int) chunk.getInitialOffset());
+
     if (chunk.hasResourceId()) {
       builder.setResourceId(chunk.getResourceId());
     }
@@ -181,7 +188,8 @@ abstract class VersionedChunk {
                               .setType(type())
                               .setOffset(offset())
                               .setWindowEndOffset(windowEndOffset())
-                              .setData(data());
+                              .setData(data())
+                              .setInitialOffset(initialOffset());
 
     remainingBytes().ifPresent(chunk::setRemainingBytes);
     maxChunkSizeBytes().ifPresent(chunk::setMaxChunkSizeBytes);

@@ -163,7 +163,7 @@ py_test(
 # Uses ports 3304 and 3305.
 py_test(
     name = "cross_language_medium_read_test",
-    timeout = "long",
+    timeout = "moderate",
     srcs = [
         "cross_language_medium_read_test.py",
     ],
@@ -233,7 +233,7 @@ py_test(
 # Uses ports 3312 and 3313.
 py_test(
     name = "expected_errors_test",
-    timeout = "moderate",
+    timeout = "long",
     srcs = ["expected_errors_test.py"],
     tags = [
         "integration",

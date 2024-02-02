@@ -32,7 +32,7 @@ class WriteTransfer extends Transfer<Void> {
 
   private int maxChunkSizeBytes = 0;
   private int minChunkDelayMicros = 0;
-  private int sentOffset;
+  private int initialOffset;
   private long totalDroppedBytes;
 
   private final byte[] data;
@@ -44,19 +44,23 @@ class WriteTransfer extends Transfer<Void> {
       TransferTimeoutSettings timeoutSettings,
       byte[] data,
       Consumer<TransferProgress> progressCallback,
-      BooleanSupplier shouldAbortCallback) {
+      BooleanSupplier shouldAbortCallback,
+      int initialOffset) {
     super(resourceId,
         sessionId,
         desiredProtocolVersion,
         transferManager,
         timeoutSettings,
         progressCallback,
-        shouldAbortCallback);
+        shouldAbortCallback,
+        initialOffset);
     this.data = data;
+    this.initialOffset = initialOffset;
   }
 
   @Override
   void prepareInitialChunk(VersionedChunk.Builder chunk) {
+    chunk.setInitialOffset(getOffset());
     chunk.setRemainingBytes(data.length);
   }
 
@@ -90,23 +94,23 @@ class WriteTransfer extends Transfer<Void> {
     @Override
     public void handleTimeout() throws TransferAbortedException {
       ByteString chunkData = ByteString.copyFrom(
-          data, sentOffset, min(windowEndOffset - sentOffset, maxChunkSizeBytes));
+          data, getOffset() - initialOffset, min(windowEndOffset - getOffset(), maxChunkSizeBytes));
 
       if (VERBOSE_LOGGING) {
         logger.atFinest().log("%s sending bytes %d-%d (%d B chunk, max size %d B)",
             WriteTransfer.this,
-            sentOffset,
-            sentOffset + chunkData.size() - 1,
+            getOffset(),
+            getOffset() + chunkData.size() - 1,
             chunkData.size(),
             maxChunkSizeBytes);
       }
 
       sendChunk(buildDataChunk(chunkData));
 
-      sentOffset += chunkData.size();
-      updateProgress(sentOffset, windowStartOffset, data.length);
+      setOffset(getOffset() + chunkData.size());
+      updateProgress(getOffset(), windowStartOffset, data.length + initialOffset);
 
-      if (sentOffset < windowEndOffset) {
+      if (getOffset() < windowEndOffset) {
         setTimeoutMicros(minChunkDelayMicros);
         return; // Keep transmitting packets
       }
@@ -132,24 +136,24 @@ class WriteTransfer extends Transfer<Void> {
   private void updateTransferParameters(VersionedChunk chunk) throws TransferAbortedException {
     logger.atFiner().log("%s received new chunk %s", this, chunk);
 
-    if (chunk.offset() > data.length) {
+    if (chunk.offset() > data.length + initialOffset) {
       setStateTerminatingAndSendFinalChunk(Status.OUT_OF_RANGE);
       return;
     }
 
-    int windowEndOffset = min(chunk.windowEndOffset(), data.length);
+    int windowEndOffset = min(chunk.windowEndOffset(), data.length + initialOffset);
     if (chunk.requestsTransmissionFromOffset()) {
-      long droppedBytes = sentOffset - chunk.offset();
+      long droppedBytes = getOffset() - chunk.offset();
       if (droppedBytes > 0) {
         totalDroppedBytes += droppedBytes;
         logger.atFine().log("%s retransmitting %d B (%d retransmitted of %d sent)",
             this,
             droppedBytes,
             totalDroppedBytes,
-            sentOffset);
+            getOffset());
       }
-      sentOffset = chunk.offset();
-    } else if (windowEndOffset <= sentOffset) {
+      setOffset(chunk.offset());
+    } else if (windowEndOffset <= getOffset()) {
       logger.atFiner().log("%s ignoring old rolling window packet", this);
       setNextChunkTimeout();
       return; // Received an old rolling window packet, ignore it.
@@ -164,13 +168,13 @@ class WriteTransfer extends Transfer<Void> {
     });
 
     if (maxChunkSizeBytes == 0) {
-      if (windowEndOffset == sentOffset) {
+      if (windowEndOffset == getOffset()) {
         logger.atWarning().log("%s server requested 0 bytes; aborting", this);
         setStateTerminatingAndSendFinalChunk(Status.INVALID_ARGUMENT);
         return;
       }
       // Default to sending the entire window if the max chunk size is not specified (or is 0).
-      maxChunkSizeBytes = windowEndOffset - sentOffset;
+      maxChunkSizeBytes = windowEndOffset - getOffset();
     }
 
     // Enter the transmitting state and immediately send the first packet
@@ -179,10 +183,10 @@ class WriteTransfer extends Transfer<Void> {
 
   private VersionedChunk buildDataChunk(ByteString chunkData) {
     VersionedChunk.Builder chunk =
-        newChunk(Chunk.Type.DATA).setOffset(sentOffset).setData(chunkData);
+        newChunk(Chunk.Type.DATA).setOffset(getOffset()).setData(chunkData);
 
     // If this is the last data chunk, setRemainingBytes to 0.
-    if (sentOffset + chunkData.size() == data.length) {
+    if (getOffset() + chunkData.size() == data.length + initialOffset) {
       logger.atFiner().log("%s sending final chunk with %d B", this, chunkData.size());
       chunk.setRemainingBytes(0);
     }

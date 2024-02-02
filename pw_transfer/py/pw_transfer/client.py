@@ -135,6 +135,8 @@ class Manager:  # pylint: disable=too-many-instance-attributes
           max_retires: number of times to retry a single package after a timeout
           max_lifetime_retires: Cumulative maximum number of times to retry over
               the course of the transfer before giving up.
+          default_protocol_version: Defaults to V2, can be set to legacy for
+              projects which use legacy devices.
         """
         self._service: Any = rpc_transfer_service
         self._default_response_timeout_s = default_response_timeout_s
@@ -196,6 +198,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         protocol_version: Optional[ProtocolVersion] = None,
         chunk_timeout_s: Optional[float] = None,
         initial_timeout_s: Optional[float] = None,
+        initial_offset: int = 0,
     ) -> bytes:
         """Receives ("downloads") data from the server.
 
@@ -204,6 +207,17 @@ class Manager:  # pylint: disable=too-many-instance-attributes
           progress_callback: Optional callback periodically invoked throughout
               the transfer with the transfer state. Can be used to provide user-
               facing status updates such as progress bars.
+          protocol_version: The desired protocol version to use for this
+              transfer. Defaults to the version the manager was initialized
+              (typically VERSION_TWO).
+          chunk_timeout_s: Timeout for any individual chunk.
+          initial_timeout_s: Timeout for the first chunk, overrides
+              chunk_timeout_s.
+          initial_offset: Initial offset to start reading from. Must be
+              supported by the transfer handler. All transfers support starting
+              from 0, the default. Returned bytes will not have any padding
+              related to this initial offset. No seeking is done in the transfer
+              operation on the client side.
 
         Raises:
           Error: the transfer failed to complete
@@ -216,6 +230,12 @@ class Manager:  # pylint: disable=too-many-instance-attributes
 
         if protocol_version is None:
             protocol_version = self._default_protocol_version
+
+        if protocol_version == ProtocolVersion.LEGACY and initial_offset != 0:
+            raise ValueError(
+                f'Unsupported transfer with offset {initial_offset} started '
+                + 'with legacy protocol'
+            )
 
         session_id = (
             resource_id
@@ -240,6 +260,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
             self.max_lifetime_retries,
             protocol_version,
             progress_callback=progress_callback,
+            initial_offset=initial_offset,
         )
         self._start_read_transfer(transfer)
 
@@ -258,6 +279,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         protocol_version: Optional[ProtocolVersion] = None,
         chunk_timeout_s: Optional[Any] = None,
         initial_timeout_s: Optional[Any] = None,
+        initial_offset: int = 0,
     ) -> None:
         """Transmits ("uploads") data to the server.
 
@@ -267,6 +289,17 @@ class Manager:  # pylint: disable=too-many-instance-attributes
           progress_callback: Optional callback periodically invoked throughout
               the transfer with the transfer state. Can be used to provide user-
               facing status updates such as progress bars.
+          protocol_version: The desired protocol version to use for this
+              transfer. Defaults to the version the manager was initialized
+              (defaults to LATEST).
+          chunk_timeout_s: Timeout for any individual chunk.
+          initial_timeout_s: Timeout for the first chunk, overrides
+              chunk_timeout_s.
+          initial_offset: Initial offset to start writing to. Must be supported
+              by the transfer handler. All transfers support starting from 0,
+              the default. data arg should start with the data you want to see
+              starting at this initial offset on the server. No seeking is done
+              in the transfer operation on the client side.
 
         Raises:
           Error: the transfer failed to complete
@@ -282,6 +315,15 @@ class Manager:  # pylint: disable=too-many-instance-attributes
 
         if protocol_version is None:
             protocol_version = self._default_protocol_version
+
+        if (
+            protocol_version != ProtocolVersion.VERSION_TWO
+            and initial_offset != 0
+        ):
+            raise ValueError(
+                f'Unsupported transfer with offset {initial_offset} started '
+                + 'with legacy protocol'
+            )
 
         session_id = (
             resource_id
@@ -307,6 +349,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
             self.max_lifetime_retries,
             protocol_version,
             progress_callback=progress_callback,
+            initial_offset=initial_offset,
         )
         self._start_write_transfer(transfer)
 

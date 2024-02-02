@@ -48,6 +48,11 @@ _ALL_VERSIONS = (
 _ALL_LANGUAGES_AND_VERSIONS = tuple(
     itertools.product(_ALL_LANGUAGES, _ALL_VERSIONS)
 )
+_ALL_LANGUAGES_V2 = tuple(
+    itertools.product(
+        _ALL_LANGUAGES, [config_pb2.TransferAction.ProtocolVersion.V2]
+    )
+)
 
 
 class MediumTransferWriteIntegrationTest(test_fixture.TransferIntegrationTest):
@@ -143,6 +148,56 @@ class MediumTransferWriteIntegrationTest(test_fixture.TransferIntegrationTest):
         resource_id = 597419
         self.do_single_write(
             client_type, config, resource_id, payload, protocol_version
+        )
+
+    @parameterized.expand(_ALL_LANGUAGES_V2)
+    def test_medium_client_write_offset(self, client_type, protocol_version):
+        """Runs a non-zero starting offset transfer."""
+        payload = random.Random(67336391945).randbytes(512)
+        config = self.default_config()
+        resource_id = 6
+        self.do_single_write(
+            client_type,
+            config,
+            resource_id,
+            payload,
+            protocol_version,
+            initial_offset=100,
+            offsettable_resources=True,
+        )
+
+    @parameterized.expand(_ALL_LANGUAGES_V2)
+    def test_medium_client_write_offset_with_drops(
+        self, client_type, protocol_version
+    ):
+        """Tests a non-zero starting offset transfer with periodic drops."""
+        payload = random.Random(67336391945).randbytes(1024)
+        config = TransferConfig(
+            self.default_server_config(),
+            self.default_client_config(),
+            text_format.Parse(
+                """
+                client_filter_stack: [
+                    { hdlc_packetizer: {} },
+                    { keep_drop_queue: {keep_drop_queue: [5, 1]} }
+                ]
+
+                server_filter_stack: [
+                    { hdlc_packetizer: {} },
+                    { keep_drop_queue: {keep_drop_queue: [5, 1]} }
+            ]""",
+                config_pb2.ProxyConfig(),
+            ),
+        )
+        resource_id = 6
+        self.do_single_write(
+            client_type,
+            config,
+            resource_id,
+            payload,
+            protocol_version,
+            initial_offset=100,
+            offsettable_resources=True,
         )
 
 

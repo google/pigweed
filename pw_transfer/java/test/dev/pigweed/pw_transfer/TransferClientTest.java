@@ -2461,8 +2461,8 @@ public final class TransferClientTest {
             .setWindowEndOffset(transfer.getParametersForTest().maxPendingBytes())
             .setMaxChunkSizeBytes(transfer.getParametersForTest().maxChunkSizeBytes())
             .setOffset(0);
-    if (transfer.getDesiredProtocolVersionForTest() != ProtocolVersion.LEGACY) {
-      chunk.setProtocolVersion(transfer.getDesiredProtocolVersionForTest().ordinal());
+    if (transfer.getDesiredProtocolVersion() != ProtocolVersion.LEGACY) {
+      chunk.setProtocolVersion(transfer.getDesiredProtocolVersion().ordinal());
       chunk.setDesiredSessionId(transfer.getSessionId());
     }
     if (transfer.getParametersForTest().chunkDelayMicroseconds() > 0) {
@@ -2511,7 +2511,7 @@ public final class TransferClientTest {
     Chunk.Builder chunk = newLegacyChunk(Chunk.Type.START, transfer.getResourceId())
                               .setResourceId(transfer.getResourceId())
                               .setRemainingBytes(size);
-    if (transfer.getDesiredProtocolVersionForTest() != ProtocolVersion.LEGACY) {
+    if (transfer.getDesiredProtocolVersion() != ProtocolVersion.LEGACY) {
       chunk.setProtocolVersion(ProtocolVersion.VERSION_TWO.ordinal());
       chunk.setDesiredSessionId(transfer.getSessionId());
     }

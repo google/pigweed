@@ -92,6 +92,7 @@ class Chunk:
         max_chunk_size_bytes: Optional[int] = None,
         min_delay_microseconds: Optional[int] = None,
         status: Optional[Status] = None,
+        initial_offset: int = 0,
     ):
         """Creates a new transfer chunk.
 
@@ -113,6 +114,8 @@ class Chunk:
                 data chunk.
             min_delay_microseconds: Delay between data chunks to be sent.
             status: In a COMPLETION chunk, final status of the transfer.
+            initial_offset: Initial offset for non-zero starting offset
+            transfers
         """
         self.protocol_version = protocol_version
         self.type = chunk_type
@@ -126,6 +129,7 @@ class Chunk:
         self.max_chunk_size_bytes = max_chunk_size_bytes
         self.min_delay_microseconds = min_delay_microseconds
         self.status = status
+        self.initial_offset = initial_offset
 
     @classmethod
     def from_message(cls, message: transfer_pb2.Chunk) -> 'Chunk':
@@ -156,6 +160,7 @@ class Chunk:
             offset=message.offset,
             window_end_offset=message.window_end_offset,
             data=message.data,
+            initial_offset=message.initial_offset,
         )
 
         if message.HasField('session_id'):
@@ -250,6 +255,8 @@ class Chunk:
             # During the initial handshake, the desired protocol version is
             # explictly encoded.
             message.protocol_version = self.protocol_version.value
+
+        message.initial_offset = self.initial_offset
 
         return message
 

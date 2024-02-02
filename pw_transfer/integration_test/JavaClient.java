@@ -162,11 +162,14 @@ public class JavaClient {
     return config_builder.build();
   }
 
-  public static void ReadFromServer(
-      int resourceId, Path fileName, TransferClient client, Status expected_status) {
+  public static void ReadFromServer(int resourceId,
+      Path fileName,
+      TransferClient client,
+      Status expected_status,
+      int initial_offset) {
     byte[] data;
     try {
-      data = client.read(resourceId).get();
+      data = client.read(resourceId, initial_offset).get();
     } catch (ExecutionException e) {
       if (((TransferError) e.getCause()).status() != expected_status) {
         throw new AssertionError("Unexpected transfer read failure", e);
@@ -178,6 +181,10 @@ public class JavaClient {
       throw new AssertionError("Read from server failed", e);
     }
 
+    if (expected_status != Status.OK) {
+      throw new AssertionError("Transfer succeeded unexpectedly");
+    }
+
     try {
       Files.write(fileName, data);
     } catch (IOException e) {
@@ -186,8 +193,11 @@ public class JavaClient {
     }
   }
 
-  public static void WriteToServer(
-      int resourceId, Path fileName, TransferClient client, Status expected_status) {
+  public static void WriteToServer(int resourceId,
+      Path fileName,
+      TransferClient client,
+      Status expected_status,
+      int initial_offset) {
     if (Files.notExists(fileName)) {
       logger.atSevere().log("Input file `%s` does not exist", fileName);
     }
@@ -201,13 +211,18 @@ public class JavaClient {
     }
 
     try {
-      client.write(resourceId, data).get();
+      client.write(resourceId, data, initial_offset).get();
     } catch (ExecutionException e) {
       if (((TransferError) e.getCause()).status() != expected_status) {
         throw new AssertionError("Unexpected transfer write failure", e);
       }
+      return;
     } catch (InterruptedException e) {
       throw new AssertionError("Write to server failed", e);
+    }
+
+    if (expected_status != Status.OK) {
+      throw new AssertionError("Transfer succeeded unexpectedly");
     }
   }
 
@@ -273,16 +288,25 @@ public class JavaClient {
       } else {
         client.setProtocolVersion(ProtocolVersion.latest());
       }
-
-      if (action.getTransferType() == ConfigProtos.TransferAction.TransferType.WRITE_TO_SERVER) {
-        WriteToServer(
-            resourceId, fileName, client, Status.fromCode(action.getExpectedStatus().getNumber()));
-      } else if (action.getTransferType()
-          == ConfigProtos.TransferAction.TransferType.READ_FROM_SERVER) {
-        ReadFromServer(
-            resourceId, fileName, client, Status.fromCode(action.getExpectedStatus().getNumber()));
-      } else {
-        throw new AssertionError("Unknown transfer action type");
+      try {
+        if (action.getTransferType() == ConfigProtos.TransferAction.TransferType.WRITE_TO_SERVER) {
+          WriteToServer(resourceId,
+              fileName,
+              client,
+              Status.fromCode(action.getExpectedStatus().getNumber()),
+              action.getInitialOffset());
+        } else if (action.getTransferType()
+            == ConfigProtos.TransferAction.TransferType.READ_FROM_SERVER) {
+          ReadFromServer(resourceId,
+              fileName,
+              client,
+              Status.fromCode(action.getExpectedStatus().getNumber()),
+              action.getInitialOffset());
+        } else {
+          throw new AssertionError("Unknown transfer action type");
+        }
+      } catch (AssertionError e) {
+        System.exit(1);
       }
     }
 

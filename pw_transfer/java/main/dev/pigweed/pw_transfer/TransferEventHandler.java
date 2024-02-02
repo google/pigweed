@@ -73,7 +73,8 @@ class TransferEventHandler {
       TransferTimeoutSettings settings,
       byte[] data,
       Consumer<TransferProgress> progressCallback,
-      BooleanSupplier shouldAbortCallback) {
+      BooleanSupplier shouldAbortCallback,
+      int initialOffset) {
     WriteTransfer transfer = new WriteTransfer(
         resourceId, assignSessionId(), desiredProtocolVersion, new TransferInterface() {
           @Override
@@ -88,7 +89,7 @@ class TransferEventHandler {
             }
             return writeStream;
           }
-        }, settings, data, progressCallback, shouldAbortCallback);
+        }, settings, data, progressCallback, shouldAbortCallback, initialOffset);
     startTransferAsClient(transfer);
     return transfer;
   }
@@ -98,7 +99,8 @@ class TransferEventHandler {
       TransferTimeoutSettings settings,
       TransferParameters parameters,
       Consumer<TransferProgress> progressCallback,
-      BooleanSupplier shouldAbortCallback) {
+      BooleanSupplier shouldAbortCallback,
+      int initialOffset) {
     ReadTransfer transfer = new ReadTransfer(
         resourceId, assignSessionId(), desiredProtocolVersion, new TransferInterface() {
           @Override
@@ -113,7 +115,7 @@ class TransferEventHandler {
             }
             return readStream;
           }
-        }, settings, parameters, progressCallback, shouldAbortCallback);
+        }, settings, parameters, progressCallback, shouldAbortCallback, initialOffset);
     startTransferAsClient(transfer);
     return transfer;
   }
@@ -122,6 +124,11 @@ class TransferEventHandler {
     enqueueEvent(() -> {
       if (sessionIdToTransfer.containsKey(transfer.getSessionId())) {
         throw new AssertionError("Duplicate session ID " + transfer.getSessionId());
+      }
+
+      if (transfer.getDesiredProtocolVersion() == ProtocolVersion.LEGACY
+          && transfer.getOffset() != 0) {
+        throw new AssertionError("Cannot start non-zero offset transfer with legacy version");
       }
 
       // The v2 protocol supports multiple transfers for a single resource. For simplicity while

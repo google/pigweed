@@ -87,7 +87,23 @@ public class TransferClient {
 
   /** Writes the provided data to the given transfer resource. */
   public ListenableFuture<Void> write(int resourceId, byte[] data) {
-    return write(resourceId, data, transferProgress -> {});
+    return write(resourceId, data, transferProgress -> {}, 0);
+  }
+
+  /**
+   * Writes the provided data to the given transfer resource, calling the progress callback as data
+   * is sent
+   */
+  public ListenableFuture<Void> write(
+      int resourceId, byte[] data, Consumer<TransferProgress> progressCallback) {
+    return write(resourceId, data, progressCallback, 0);
+  }
+
+  /**
+   * Writes the provided data to the given transfer resource, starting at the given initial offset
+   */
+  public ListenableFuture<Void> write(int resourceId, byte[] data, int initialOffset) {
+    return write(resourceId, data, transferProgress -> {}, initialOffset);
   }
 
   /**
@@ -97,27 +113,33 @@ public class TransferClient {
    * @param resourceId The ID of the resource to which to write
    * @param data the data to write
    * @param progressCallback called each time a packet is sent
+   * @param initialOffset The offset to start writing to on the server side
    */
   public ListenableFuture<Void> write(
-      int resourceId, byte[] data, Consumer<TransferProgress> progressCallback) {
-    return transferEventHandler.startWriteTransferAsClient(
-        resourceId, desiredProtocolVersion, settings, data, progressCallback, shouldAbortCallback);
+      int resourceId, byte[] data, Consumer<TransferProgress> progressCallback, int initialOffset) {
+    return transferEventHandler.startWriteTransferAsClient(resourceId,
+        desiredProtocolVersion,
+        settings,
+        data,
+        progressCallback,
+        shouldAbortCallback,
+        initialOffset);
   }
 
   /** Reads the data from the given transfer resource ID. */
   public ListenableFuture<byte[]> read(int resourceId) {
-    return read(resourceId, DEFAULT_READ_TRANSFER_PARAMETERS, progressCallback -> {});
+    return read(resourceId, DEFAULT_READ_TRANSFER_PARAMETERS, progressCallback -> {}, 0);
   }
 
   /** Reads the data for a transfer resource, calling the progress callback as data is received. */
   public ListenableFuture<byte[]> read(
       int resourceId, Consumer<TransferProgress> progressCallback) {
-    return read(resourceId, DEFAULT_READ_TRANSFER_PARAMETERS, progressCallback);
+    return read(resourceId, DEFAULT_READ_TRANSFER_PARAMETERS, progressCallback, 0);
   }
 
   /** Reads the data for a transfer resource, using the specified transfer parameters. */
   public ListenableFuture<byte[]> read(int resourceId, TransferParameters parameters) {
-    return read(resourceId, parameters, (progressCallback) -> {});
+    return read(resourceId, parameters, (progressCallback) -> {}, 0);
   }
 
   /**
@@ -125,12 +147,46 @@ public class TransferClient {
    */
   public ListenableFuture<byte[]> read(
       int resourceId, TransferParameters parameters, Consumer<TransferProgress> progressCallback) {
+    return read(resourceId, parameters, progressCallback, 0);
+  }
+
+  /** Reads the data from the given transfer resource ID. */
+  public ListenableFuture<byte[]> read(int resourceId, int initialOffset) {
+    return read(
+        resourceId, DEFAULT_READ_TRANSFER_PARAMETERS, progressCallback -> {}, initialOffset);
+  }
+
+  /** Reads the data for a transfer resource, calling the progress callback as data is received. */
+  public ListenableFuture<byte[]> read(
+      int resourceId, Consumer<TransferProgress> progressCallback, int initialOffset) {
+    return read(resourceId, DEFAULT_READ_TRANSFER_PARAMETERS, progressCallback, initialOffset);
+  }
+
+  /** Reads the data for a transfer resource, using the specified transfer parameters. */
+  public ListenableFuture<byte[]> read(
+      int resourceId, TransferParameters parameters, int initialOffset) {
+    return read(resourceId, parameters, (progressCallback) -> {}, initialOffset);
+  }
+
+  /**
+   * Reads the data for a transfer resource, using the specified parameters and progress callback.
+   *
+   * @param resourceId The ID of the resource to which to read
+   * @param parameters The transfer parameters to use
+   * @param progressCallback called each time a packet is sent
+   * @param initialOffset The offset to start reading from on the server side
+   */
+  public ListenableFuture<byte[]> read(int resourceId,
+      TransferParameters parameters,
+      Consumer<TransferProgress> progressCallback,
+      int initialOffset) {
     return transferEventHandler.startReadTransferAsClient(resourceId,
         desiredProtocolVersion,
         settings,
         parameters,
         progressCallback,
-        shouldAbortCallback);
+        shouldAbortCallback,
+        initialOffset);
   }
 
   /**

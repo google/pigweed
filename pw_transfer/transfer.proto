@@ -28,6 +28,10 @@ service Transfer {
   // Transfer data from the client to the server; an "upload" from the client's
   // perspective.
   rpc Write(stream Chunk) returns (stream Chunk);
+
+  // Query the status of a resource. Can be used for partially completed
+  // transfers
+  rpc GetResourceStatus(ResourceStatusRequest) returns (ResourceStatus);
 }
 
 // Represents a chunk of data sent by the transfer service. Includes fields for
@@ -224,4 +228,37 @@ message Chunk {
   // Write → Requested ID of transfer session
   // Write ← N/A
   optional uint32 desired_session_id = 14;
+
+  // The initial offset to start the transfer from. Can be used for read or
+  // write transfers. Set by the client during start handshake.
+  // Needs to be accepted by the resource transfer handler in order for the
+  // non-zero offset transfer to start from the initial_offset.
+  //
+  //  Read → Requested initial offset for the session
+  //  Read ← Confirmed (matches) or denied (zero) initial offset
+  // Write → Requested initial offset for the session
+  // Write ← Confirmed (matches) or denied (zero) initial offset
+  uint64 initial_offset = 15;
+}
+
+// Request for GetResourceStatus, indicating the resource to get status from.
+message ResourceStatusRequest {
+  uint32 resource_id = 1;
+}
+
+// Response for GetResourceStatus
+message ResourceStatus {
+  // Resource id, matching request
+  uint32 resource_id = 1;
+
+  // Status of the resource, returns Unimplemented by default.
+  uint32 status = 2;
+  // The offset that can be written to (other than 0).
+  uint64 writeable_offset = 3;
+  // The offset that can be read from (other than 0).
+  uint64 readable_offset = 4;
+  // The checksum at the given write offset.
+  optional uint64 write_checksum = 5;
+  // The checksum at the given read offset.
+  optional uint64 read_checksum = 6;
 }
