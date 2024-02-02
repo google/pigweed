@@ -173,9 +173,27 @@ def _pw_cc_action_config_impl(ctx):
                 fs.label,
                 ctx.label,
             ))
-    tools = tuple([tool[PwToolInfo] for tool in ctx.attr.tools])
 
-    files = depset(transitive = [dep[DefaultInfo].files for dep in ctx.attr.tools])
+    tools = []
+    for tool in ctx.attr.tools:
+        exe = tool[DefaultInfo].files_to_run.executable
+        if PwToolInfo in tool:
+            tools.append(tool[PwToolInfo])
+        elif exe != None:
+            tools.append(PwToolInfo(
+                label = ctx.label,
+                exe = exe,
+                path = None,
+                files = _bin_to_files(tool),
+                requires_any_of = tuple(),
+                execution_requirements = tuple(),
+            ))
+        else:
+            fail("Expected either a pw_cc_tool or a binary, but %s is neither" % tool.label)
+
+    tools = tuple(tools)
+    files = depset(transitive = [tool.files for tool in tools])
+
     common_kwargs = dict(
         label = ctx.label,
         tools = tools,
@@ -222,8 +240,10 @@ default.
         ),
         "tools": attr.label_list(
             mandatory = True,
-            providers = [PwToolInfo],
-            doc = """The `pw_cc_tool` to use for the specified actions.
+            cfg = "exec",
+            doc = """The tool to use for the specified actions.
+
+A tool can be a `pw_cc_tool`, or a binary.
 
 If multiple tools are specified, the first tool that has `with_features` that
 satisfy the currently enabled feature set is used.

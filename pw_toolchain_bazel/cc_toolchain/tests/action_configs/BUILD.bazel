@@ -59,6 +59,13 @@ pw_cc_action_config(
     tools = [":clang_wrapper_tool"],
 )
 
+pw_cc_action_config(
+    name = "assemble_from_bin",
+    action_names = ["//actions:assemble"],
+    implies = [],
+    tools = [":clang_wrapper"],
+)
+
 pw_cc_tool(
     name = "requires_foo_tool",
     requires_any_of = ["//cc_toolchain/tests/features:foo_only"],

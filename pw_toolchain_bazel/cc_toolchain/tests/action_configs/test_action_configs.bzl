@@ -76,11 +76,13 @@ def _test_action_configs_impl(_ctx, action_configs, features, flag_sets, to_unty
             action_configs = [
                 action_configs.c_compile,
                 action_configs.cpp_compile_from_tool,
+                action_configs.assemble_from_bin,
             ],
         ),
         {
             "c-compile": [],
             "c++-compile": ["clang_wrapper", "data.txt", "real_clang"],
+            "assemble": ["clang_wrapper", "real_clang"],
         },
     )
 

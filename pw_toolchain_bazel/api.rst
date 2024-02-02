@@ -557,7 +557,9 @@ API reference
    .. py:attribute:: tools
       :type: List[label]
 
-      The :py:class:`pw_cc_tool` to use for the specified actions.
+      The tool to use for the specified actions.
+
+      A tool can be a :py:class:`pw_cc_tool`, or a binary.
 
       If multiple tools are specified, the first tool that has ``with_features``
       that satisfy the currently enabled feature set is used.
