@@ -26,6 +26,10 @@ import("target_types.gni")
 # IMPORTANT: The compilation flags in this file must be kept in sync with
 #            the CMake flags pw_build/CMakeLists.txt.
 
+# TODO: b/301262374 - Provide a better way to detect the compiler type.
+is_clang = defined(pw_toolchain_SCOPE.cc) &&
+           get_path_info(pw_toolchain_SCOPE.cc, "file") == "clang"
+
 config("colorize_output") {
   if (pw_build_COLORIZE_OUTPUT) {
     cflags = [
@@ -65,6 +69,12 @@ config("optimize_more_speed") {
 config("optimize_size") {
   cflags = [ "-Os" ]
   ldflags = cflags
+}
+
+config("enable_clang_fixed_point_types") {
+  if (is_clang) {
+    cflags = [ "-ffixed-point" ]
+  }
 }
 
 config("enable_clang_mlinliner") {
@@ -169,9 +179,7 @@ config("extra_strict_warnings") {
 config("internal_strict_warnings") {
   cflags = [ "-Wswitch-enum" ]
 
-  # TODO: b/301262374 - Provide a better way to detect the compiler type.
-  if (defined(pw_toolchain_SCOPE.cc) &&
-      get_path_info(pw_toolchain_SCOPE.cc, "file") == "clang") {
+  if (is_clang) {
     cflags += [ "-Wextra-semi" ]
   } else {
     # TODO: b/306734552 - On GCC, this only works as a C++ flag.

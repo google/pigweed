@@ -74,6 +74,7 @@ pigweed_default_configs = [
   "$dir_pw_build:strict_warnings",
   "$dir_pw_build:toolchain_cpp_standard",
   "$dir_pw_build:relative_paths",
+  "$dir_pw_build:enable_clang_fixed_point_types",
 ]
 
 # Some Projects rely on this, so it is being retained for backwards
