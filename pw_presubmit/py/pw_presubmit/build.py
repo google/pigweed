@@ -207,7 +207,8 @@ def gn_gen(
     Runs with --check=system if gn_check=True. Note that this does not cover
     generated files. Run gn_check() after building to check generated files.
     """
-    all_gn_args = dict(gn_arguments)
+    all_gn_args = {'pw_build_COLORIZE_OUTPUT': pw_cli.color.is_enabled()}
+    all_gn_args.update(gn_arguments)
     all_gn_args.update(ctx.override_gn_args)
     _LOG.debug('%r', all_gn_args)
     args_option = gn_args(**all_gn_args)
@@ -1035,7 +1036,6 @@ class GnGenNinja(_NinjaBase):
                     f'//{x.relative_to(ctx.root)}' for x in ctx.paths
                 ]
 
-        args['pw_build_COLORIZE_OUTPUT'] = pw_cli.color.is_enabled()
         self.add_default_gn_args(args)
 
         args.update({k: _value(ctx, v) for k, v in self._gn_args.items()})
