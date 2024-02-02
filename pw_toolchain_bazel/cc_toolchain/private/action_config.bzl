@@ -15,33 +15,36 @@
 
 load(
     "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
-    "action_config",
     config_lib_tool = "tool",  # This is renamed to reduce name aliasing.
 )
 load(
     ":providers.bzl",
-    "PwActionConfigListInfo",
+    "PwActionConfigInfo",
+    "PwActionConfigSetInfo",
     "PwActionNameSetInfo",
+    "PwFeatureSetInfo",
     "PwFlagSetInfo",
     "PwToolInfo",
 )
-load(":utils.bzl", "actionless_flag_set", "to_untyped_flag_set")
 
 def _pw_cc_tool_impl(ctx):
     """Implementation for pw_cc_tool."""
 
     # Remaps empty strings to `None` to match behavior of the default values.
-    tool = ctx.executable.tool if ctx.executable.tool else None
-    path = ctx.attr.path if ctx.attr.path else None
+    tool = ctx.executable.tool or None
+    path = ctx.attr.path or None
+
+    files = ctx.files.additional_files
+    if tool != None:
+        files = files + [tool]
+
     return [
         config_lib_tool(
             tool = tool,
             path = path,
             execution_requirements = ctx.attr.execution_requirements,
         ),
-        DefaultInfo(
-            files = depset(ctx.files.additional_files + [tool]),
-        ),
+        DefaultInfo(files = depset(files)),
     ]
 
 pw_cc_tool = rule(
@@ -114,18 +117,17 @@ Example:
 """,
 )
 
-def _generate_action_config(ctx, action_name):
+def _generate_action_config(ctx, action_name, **kwargs):
     flag_sets = []
     for fs in ctx.attr.flag_sets:
-        provided_fs = to_untyped_flag_set(fs[PwFlagSetInfo])
+        provided_fs = fs[PwFlagSetInfo]
         if action_name in provided_fs.actions:
-            flag_sets.append(actionless_flag_set(provided_fs))
-    return action_config(
+            flag_sets.append(provided_fs)
+
+    return PwActionConfigInfo(
         action_name = action_name,
-        enabled = ctx.attr.enabled,
-        tools = [tool[PwToolInfo] for tool in ctx.attr.tools],
-        flag_sets = flag_sets,
-        implies = ctx.attr.implies,
+        flag_sets = tuple(flag_sets),
+        **kwargs
     )
 
 def _pw_cc_action_config_impl(ctx):
@@ -143,7 +145,7 @@ def _pw_cc_action_config_impl(ctx):
     # Check that the listed flag sets apply to at least one action in this group
     # of action configs.
     for fs in ctx.attr.flag_sets:
-        provided_fs = to_untyped_flag_set(fs[PwFlagSetInfo])
+        provided_fs = fs[PwFlagSetInfo]
         flag_set_applies = False
         for action in action_names:
             if action in provided_fs.actions:
@@ -153,10 +155,27 @@ def _pw_cc_action_config_impl(ctx):
                 fs.label,
                 ctx.label,
             ))
+    tools = tuple([tool[PwToolInfo] for tool in ctx.attr.tools])
+
+    common_kwargs = dict(
+        label = ctx.label,
+        tools = tools,
+        implies_features = depset(transitive = [
+            ft_set[PwFeatureSetInfo].features
+            for ft_set in ctx.attr.implies
+        ]),
+        implies_action_configs = depset([]),
+        enabled = ctx.attr.enabled,
+    )
+    action_configs = [
+        _generate_action_config(ctx, action, **common_kwargs)
+        for action in action_names
+    ]
 
     return [
-        PwActionConfigListInfo(
-            action_configs = [_generate_action_config(ctx, action) for action in action_names],
+        PwActionConfigSetInfo(
+            label = ctx.label,
+            action_configs = depset(action_configs),
         ),
         DefaultInfo(
             files = depset(None, transitive = [dep[DefaultInfo].files for dep in ctx.attr.tools]),
@@ -202,18 +221,12 @@ If an action is listed in this rule's `action_names`, but is NOT listed in the
 `pw_cc_flag_set`'s `actions`, the flag will not be applied to that action.
 """,
         ),
-        "implies": attr.string_list(
-            doc = """Names of features that should be automatically enabled when
-this tool is used.
-
-WARNING: If this action config implies an unknown feature, this action config
-will silently be disabled. This behavior is native to Bazel itself, and there's
-no way to detect this and emit an error instead. For this reason, be very
-cautious when listing implied features!
-""",
+        "implies": attr.label_list(
+            providers = [PwFeatureSetInfo],
+            doc = "Features that should be enabled when this action is used.",
         ),
     },
-    provides = [PwActionConfigListInfo],
+    provides = [PwActionConfigSetInfo],
     doc = """Declares the configuration and selection of `pw_cc_tool` rules.
 
 Action configs are bound to a toolchain through `action_configs`, and are the
@@ -231,8 +244,8 @@ Examples:
         name = "ar",
         action_names = ["@pw_toolchain//actions:all_ar_actions"],
         implies = [
-            "archiver_flags",
-            "linker_param_file",
+            "@pw_toolchain//features/legacy:archiver_flags",
+            "@pw_toolchain//features/legacy:linker_param_file",
         ],
         tools = [":ar_tool"],
     )

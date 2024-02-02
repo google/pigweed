@@ -19,8 +19,7 @@ pw_toolchain_bazel, DO NOT export the contents of this file to be used publicly.
 
 load(
     ":providers.bzl",
-    "PwActionConfigInfo",
-    "PwActionConfigListInfo",
+    "PwActionConfigSetInfo",
     "PwActionNameSetInfo",
 )
 
@@ -38,11 +37,7 @@ def _pw_cc_action_config_file_collector_impl(ctx):
 
     all_file_depsets = []
     for dep in ctx.attr.all_action_configs:
-        action_names = []
-        if PwActionConfigInfo in dep:
-            action_names.append(dep[PwActionConfigInfo].action_name)
-        if PwActionConfigListInfo in dep:
-            action_names.extend([ac.action_name for ac in dep[PwActionConfigListInfo].action_configs])
+        action_names = [ac.action_name for ac in dep[PwActionConfigSetInfo].action_configs.to_list()]
 
         # NOTE: This intentionally doesn't do a check to ensure that the
         # items in `action_names` are `pw_cc_action_config`s because the
@@ -74,7 +69,7 @@ def _pw_cc_action_config_file_collector_impl(ctx):
 pw_cc_action_config_file_collector = rule(
     implementation = _pw_cc_action_config_file_collector_impl,
     attrs = {
-        "all_action_configs": attr.label_list(default = []),
+        "all_action_configs": attr.label_list(default = [], providers = [PwActionConfigSetInfo]),
         "collect_files_from_actions": attr.label_list(
             providers = [PwActionNameSetInfo],
             doc = """Collects files from tools that apply to the listed action names.

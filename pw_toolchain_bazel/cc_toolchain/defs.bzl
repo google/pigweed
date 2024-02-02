@@ -60,5 +60,5 @@ pw_cc_toolchain = _pw_cc_toolchain
 # TODO(b/322872628): Remove this.
 # DO NOT USE. This is a temporary variable to allow users to migrate to
 # action_config implies labels without breaking their build.
-ARCHIVER_FLAGS = "archiver_flags"
-LINKER_PARAM_FILE = "linker_param_file"
+ARCHIVER_FLAGS = "@pw_toolchain//features/legacy:archiver_flags"
+LINKER_PARAM_FILE = "@pw_toolchain//features/legacy:linker_param_file"

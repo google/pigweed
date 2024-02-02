@@ -506,8 +506,8 @@ API reference
           name = "ar",
           action_names = ["@pw_toolchain//actions:all_ar_actions"],
           implies = [
-              "archiver_flags",
-              "linker_param_file",
+              "@pw_toolchain//features/legacy:archiver_flags",
+              "@pw_toolchain//features/legacy:linker_param_file",
           ],
           tools = [":ar_tool"],
       )

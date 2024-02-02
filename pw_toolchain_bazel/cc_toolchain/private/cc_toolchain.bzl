@@ -16,7 +16,6 @@
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 load(
     "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
-    "action_config",
     "feature",
     "flag_group",
     "flag_set",
@@ -29,8 +28,7 @@ load(
 load("//features:builtin_features.bzl", "BUILTIN_FEATURES")
 load(
     ":providers.bzl",
-    "PwActionConfigInfo",
-    "PwActionConfigListInfo",
+    "PwActionConfigSetInfo",
     "PwFeatureInfo",
     "PwFeatureSetInfo",
     "PwFlagSetInfo",
@@ -38,9 +36,7 @@ load(
 load(
     ":utils.bzl",
     "ALL_FILE_GROUPS",
-    "actionless_flag_set",
     "to_untyped_config",
-    "to_untyped_flag_set",
 )
 
 # These attributes of pw_cc_toolchain are deprecated.
@@ -57,7 +53,7 @@ PW_CC_TOOLCHAIN_DEPRECATED_TOOL_ATTRS = {
 
 PW_CC_TOOLCHAIN_CONFIG_ATTRS = {
     "action_configs": "List of `pw_cc_action_config` labels that bind tools to the appropriate actions",
-    "action_config_flag_sets": "List of `pw_cc_flag_set`s to apply to their respective action configs",
+    "unconditional_flag_sets": "List of `pw_cc_flag_set`s to apply to their respective action configs",
     "toolchain_features": "List of `pw_cc_feature`s that this toolchain supports",
 
     # Attributes originally part of create_cc_toolchain_config_info.
@@ -157,80 +153,12 @@ def _archiver_flags_feature(is_mac):
         ],
     )
 
-def _extend_action_set_flags(action, flag_sets_by_action):
-    extended_flags = flag_sets_by_action.get(action.action_name, default = [])
-    for x in extended_flags:
-        for y in action.flag_sets:
-            if x == y:
-                # TODO: b/311679764 - Propagate labels so we can raise the label
-                # as part of the warning.
-                fail("Flag set in `action_config_flag_sets` is already bound to the `{}` tool".format(action.action_name))
-    return action_config(
-        action_name = action.action_name,
-        enabled = action.enabled,
-        tools = action.tools,
-        flag_sets = action.flag_sets + extended_flags,
-        implies = action.implies,
-    )
-
-def _collect_action_configs(ctx, flag_sets_by_action):
-    known_actions = {}
-    action_configs = []
-    for ac_dep in ctx.attr.action_configs:
-        temp_actions = []
-        if PwActionConfigInfo in ac_dep:
-            temp_actions.append(ac_dep[PwActionConfigInfo])
-        if PwActionConfigListInfo in ac_dep:
-            temp_actions.extend([ac for ac in ac_dep[PwActionConfigListInfo].action_configs])
-        if PwActionConfigListInfo not in ac_dep and PwActionConfigInfo not in ac_dep:
-            fail(
-                "{} in `action_configs` is not a `pw_cc_action_config`".format(
-                    ac_dep.label,
-                ),
-            )
-        for action in temp_actions:
-            if action.action_name in known_actions:
-                fail("In {} both {} and {} implement `{}`".format(
-                    ctx.label,
-                    ac_dep.label,
-                    known_actions[action.action_name],
-                    action.action_name,
-                ))
-
-            # Track which labels implement each action name for better error
-            # reporting.
-            known_actions[action.action_name] = ac_dep.label
-            action_configs.append(_extend_action_set_flags(action, flag_sets_by_action))
-    return action_configs
-
 def _archiver_flags(is_mac):
     """Returns flags for llvm-ar."""
     if is_mac:
         return ["--format=darwin", "rcs"]
     else:
         return ["rcsD"]
-
-def _create_action_flag_set_map(flag_sets):
-    """Creates a mapping of action names to flag sets.
-
-    Args:
-        flag_sets: the flag sets to expand.
-
-    Returns:
-        Dictionary mapping action names to lists of PwFlagSetInfo providers.
-    """
-    flag_sets_by_action = {}
-    for fs in flag_sets:
-        handled_actions = {}
-        for action in fs.actions:
-            if action not in flag_sets_by_action:
-                flag_sets_by_action[action] = []
-
-            # Dedupe action set list.
-            if action not in handled_actions:
-                handled_actions[action] = True
-                flag_sets_by_action[action].append(actionless_flag_set(fs))
-    return flag_sets_by_action
 
 def _pw_cc_toolchain_config_impl(ctx):
     """Rule that provides a CcToolchainConfigInfo.
@@ -241,11 +169,6 @@ def _pw_cc_toolchain_config_impl(ctx):
     Returns:
         CcToolchainConfigInfo
     """
-    flag_sets_by_action = _create_action_flag_set_map([
-        to_untyped_flag_set(dep[PwFlagSetInfo], known = {})
-        for dep in ctx.attr.action_config_flag_sets
-    ])
-    all_actions = _collect_action_configs(ctx, flag_sets_by_action)
     builtin_include_dirs = ctx.attr.cxx_builtin_include_directories if ctx.attr.cxx_builtin_include_directories else []
     sysroot_dir = ctx.attr.builtin_sysroot if ctx.attr.builtin_sysroot else None
 
@@ -256,14 +179,22 @@ def _pw_cc_toolchain_config_impl(ctx):
             for feature_set in ctx.attr.toolchain_features
         ],
     ))
-    out = to_untyped_config(feature_set)
+    action_config_set = PwActionConfigSetInfo(
+        label = ctx.label,
+        action_configs = depset(transitive = [
+            acs[PwActionConfigSetInfo].action_configs
+            for acs in ctx.attr.action_configs
+        ]),
+    )
+    flag_sets = [fs[PwFlagSetInfo] for fs in ctx.attr.unconditional_flag_sets]
+    out = to_untyped_config(feature_set, action_config_set, flag_sets)
 
     # TODO: b/297413805 - This could be externalized.
     out.features.append(_archiver_flags_feature(ctx.attr.target_libc == "macosx"))
 
     return cc_common.create_cc_toolchain_config_info(
         ctx = ctx,
-        action_configs = all_actions,
+        action_configs = out.action_configs,
         features = out.features,
         cxx_builtin_include_directories = builtin_include_dirs,
         toolchain_identifier = ctx.attr.toolchain_identifier,
@@ -282,8 +213,8 @@ pw_cc_toolchain_config = rule(
     implementation = _pw_cc_toolchain_config_impl,
     attrs = {
         # Attributes new to this rule.
-        "action_configs": attr.label_list(),
-        "action_config_flag_sets": attr.label_list(providers = [PwFlagSetInfo]),
+        "action_configs": attr.label_list(providers = [PwActionConfigSetInfo]),
+        "unconditional_flag_sets": attr.label_list(providers = [PwFlagSetInfo]),
         "toolchain_features": attr.label_list(providers = [PwFeatureSetInfo]),
 
         # Attributes from create_cc_toolchain_config_info.
@@ -403,7 +334,7 @@ def _generate_misc_file_group(kwargs):
     )
     return file_group_name
 
-def pw_cc_toolchain(**kwargs):
+def pw_cc_toolchain(action_config_flag_sets = None, **kwargs):
     """A suite of cc_toolchain, pw_cc_toolchain_config, and *_files rules.
 
     Generated rules:
@@ -418,8 +349,13 @@ def pw_cc_toolchain(**kwargs):
             configs not associated with any other *_files group.
 
     Args:
+        action_config_flag_sets: Deprecated. Do not use.
         **kwargs: All attributes supported by either cc_toolchain or pw_cc_toolchain_config.
     """
+
+    # TODO(b/322872628): Remove this once it's no longer in use.
+    if action_config_flag_sets != None:
+        kwargs["unconditional_flag_sets"] = action_config_flag_sets
 
     _check_args(native.package_relative_label(kwargs["name"]), kwargs)
 

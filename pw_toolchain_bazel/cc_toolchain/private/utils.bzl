@@ -15,11 +15,13 @@
 
 load(
     "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
+    rules_cc_action_config = "action_config",
     rules_cc_feature = "feature",
     rules_cc_feature_set = "feature_set",
     rules_cc_flag_set = "flag_set",
     rules_cc_with_feature_set = "with_feature_set",
 )
+load(":providers.bzl", "PwFlagSetInfo")
 
 visibility(["//cc_toolchain/tests/..."])
 
@@ -33,19 +35,6 @@ ALL_FILE_GROUPS = {
     "objcopy_files": ["@pw_toolchain//actions:objcopy_embed_data"],
     "strip_files": ["@pw_toolchain//actions:strip"],
 }
-
-def actionless_flag_set(flag_set_to_copy):
-    """Copies a flag_set, stripping `actions`.
-
-    Args:
-        flag_set_to_copy: The base flag_set to copy.
-    Returns:
-        flag_set with empty `actions` list.
-    """
-    return rules_cc_flag_set(
-        with_features = flag_set_to_copy.with_features,
-        flag_groups = flag_set_to_copy.flag_groups,
-    )
 
 def _ensure_fulfillable(any_of, known, label, fail = fail):
     # Requirements can be fulfilled if there are no requirements.
@@ -63,7 +52,7 @@ def _ensure_fulfillable(any_of, known, label, fail = fail):
     if not fulfillable:
         fail("%s cannot possibly be enabled (none of the constraints it requires fully exist). Either remove it from your toolchain, or add the requirements." % label)
 
-def to_untyped_flag_set(flag_set, known, fail = fail):
+def _to_untyped_flag_set(flag_set, known, fail = fail):
     """Converts a PwFlagSet to rules_cc's flag set."""
     _ensure_fulfillable(
         any_of = [constraint.all_of for constraint in flag_set.requires_any_of],
@@ -122,7 +111,7 @@ def _to_untyped_feature(feature, known, fail = fail):
         name = feature.name,
         enabled = feature.enabled,
         flag_sets = [
-            to_untyped_flag_set(flag_set, known, fail = fail)
+            _to_untyped_flag_set(flag_set, known, fail = fail)
             for flag_set in feature.flag_sets.to_list()
         ],
         env_sets = [
@@ -134,16 +123,51 @@ def _to_untyped_feature(feature, known, fail = fail):
         provides = list(feature.provides),
     )
 
-def to_untyped_config(feature_set, fail = fail):
+def _to_untyped_action_config(action_config, extra_flag_sets, known, fail = fail):
+    # De-dupe, in case the same flag set was specified for both unconditional
+    # and for a specific action config.
+    flag_sets = depset(
+        list(action_config.flag_sets) + extra_flag_sets,
+        order = "preorder",
+    ).to_list()
+    return rules_cc_action_config(
+        action_name = action_config.action_name,
+        enabled = action_config.enabled,
+        tools = list(action_config.tools),
+        flag_sets = [
+            _to_untyped_flag_set(
+                # Make the flag sets actionless.
+                PwFlagSetInfo(
+                    label = flag_set.label,
+                    actions = tuple(),
+                    requires_any_of = flag_set.requires_any_of,
+                    flag_groups = flag_set.flag_groups,
+                ),
+                known = known,
+                fail = fail,
+            )
+            for flag_set in flag_sets
+        ],
+        implies = _to_untyped_implies(action_config, known, fail = fail),
+    )
+
+def to_untyped_config(feature_set, action_config_set, flag_sets, fail = fail):
     """Converts Pigweed providers into a format suitable for rules_cc.
 
     Args:
         feature_set: PwFeatureSetInfo: Features available in the toolchain
+        action_config_set: ActionConfigSetInfo: Set of defined action configs
+        flag_sets: Flag sets that are unconditionally applied
         fail: The fail function. Only change this during testing.
     Returns:
         A struct containing parameters suitable to pass to
           cc_common.create_cc_toolchain_config_info.
     """
+    flag_sets_by_action = {}
+    for flag_set in flag_sets:
+        for action in flag_set.actions:
+            flag_sets_by_action.setdefault(action, []).append(flag_set)
+
     known_labels = {}
     known_feature_names = {}
     feature_list = feature_set.features.to_list()
@@ -160,6 +184,27 @@ def to_untyped_config(feature_set, fail = fail):
         untyped_feature = _to_untyped_feature(feature, known = known_labels, fail = fail)
         if untyped_feature != None:
             untyped_features.append(untyped_feature)
+
+    acs = action_config_set.action_configs.to_list()
+    known_actions = {}
+    untyped_acs = []
+    for ac in acs:
+        if ac.action_name in known_actions:
+            fail("In %s, both %s and %s implement %s" % (
+                action_config_set.label,
+                ac.label,
+                known_actions[ac.action_name],
+                ac.action_name,
+            ))
+        known_actions[ac.action_name] = ac.label
+        untyped_acs.append(_to_untyped_action_config(
+            ac,
+            extra_flag_sets = flag_sets_by_action.get(ac.action_name, []),
+            known = known_labels,
+            fail = fail,
+        ))
+
     return struct(
         features = untyped_features,
+        action_configs = untyped_acs,
     )

@@ -15,7 +15,6 @@
 
 load(
     "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
-    "ActionConfigInfo",
     "EnvEntryInfo",
     "EnvSetInfo",
     "FlagGroupInfo",
@@ -29,16 +28,6 @@ visibility(["//cc_toolchain", "//cc_toolchain/tests/..."])
 # types cannot be stored in depsets. Thus, we type them as a sequence in the
 # provider, and convert them to a tuple in the constructor to ensure
 # immutability.
-
-# To reduce the number of require pw_cc_action_config rules, a
-# pw_cc_action_config provides a list of ActionConfigInfo providers rather than
-# a simpler 1:1 mapping.
-PwActionConfigListInfo = provider(
-    doc = "A provider containing a list of ActionConfigInfo providers.",
-    fields = {
-        "action_configs": "List[ActionConfigInfo]: A list of ActionConfigInfo providers.",
-    },
-)
 
 PwActionNameInfo = ActionNameInfo
 PwActionNameSetInfo = ActionNameSetInfo
@@ -92,5 +81,24 @@ PwBuiltinFeatureInfo = provider(
     fields = {},
 )
 
-PwActionConfigInfo = ActionConfigInfo
+PwActionConfigInfo = provider(
+    doc = "A type-safe version of @bazel_tools's ActionConfigInfo",
+    fields = {
+        "label": "Label: The label that defined this action config. Put this in error messages for easy debugging",
+        "action_name": "str: The name of the action",
+        "enabled": "bool: If True, this action is enabled unless a rule type explicitly marks it as unsupported",
+        "tools": "Sequence[ToolInfo]: The tool applied to the action will be the first tool in the sequence with a feature set that matches the feature configuration",
+        "flag_sets": "Sequence[FlagSetInfo]: Set of flag sets the action sets",
+        "implies_features": "depset[FeatureInfo]: Set of features implied by this action config",
+        "implies_action_configs": "depset[ActionConfigInfo]: Set of action configs enabled by this action config",
+    },
+)
+
+PwActionConfigSetInfo = provider(
+    doc = "A set of action configs",
+    fields = {
+        "label": "Label: The label that defined this action config set. Put this in error messages for easy debugging",
+        "action_configs": "depset[ActionConfigInfo]: A set of action configs",
+    },
+)
 PwToolInfo = ToolInfo

@@ -15,6 +15,7 @@
 
 load(
     "//cc_toolchain/private:providers.bzl",
+    "PwActionConfigSetInfo",
     "PwFeatureConstraintInfo",
     "PwFeatureInfo",
     "PwFeatureSetInfo",
@@ -92,9 +93,12 @@ _RULES = {
     PwFeatureConstraintInfo: "feature_constraints",
     PwFeatureInfo: "features",
     PwFeatureSetInfo: "feature_sets",
+    PwActionConfigSetInfo: "action_configs",
 }
 
 _PROVIDERS = {
+    "//cc_toolchain/tests/action_configs:all_c_compile": [PwActionConfigSetInfo],
+    "//cc_toolchain/tests/action_configs:c_compile": [PwActionConfigSetInfo],
     "//cc_toolchain/tests/features:bar": [PwFeatureInfo, PwFeatureSetInfo],
     "//cc_toolchain/tests/features:baz": [PwFeatureInfo, PwFeatureSetInfo],
     "//cc_toolchain/tests/features:conflict": [PwFeatureInfo, PwFeatureSetInfo],
@@ -131,12 +135,19 @@ def generate_test_rule(implementation):
             for provider in _PROVIDERS["//%s:%s" % (pkg, name)]:
                 providers[_RULES[provider]][name] = target[provider]
 
-        def to_untyped_config(features = [], feature_sets = [], fail = fail):
+        def to_untyped_config(features = [], feature_sets = [], action_configs = [], flag_sets = [], fail = fail):
             feature_set = PwFeatureSetInfo(features = depset(
                 features + [ft[PwFeatureInfo] for ft in ctx.attr.builtin_features],
                 transitive = [fs.features for fs in feature_sets],
             ))
-            return _to_untyped_config(feature_set, fail = fail)
+            action_config_set = PwActionConfigSetInfo(
+                label = ctx.label,
+                action_configs = depset(transitive = [
+                    acs.action_configs
+                    for acs in action_configs
+                ]),
+            )
+            return _to_untyped_config(feature_set, action_config_set, flag_sets, fail = fail)
 
         kwargs = {k: struct(**v) for k, v in providers.items()}
         return implementation(ctx, to_untyped_config = to_untyped_config, **kwargs)
