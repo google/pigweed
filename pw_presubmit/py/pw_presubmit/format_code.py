@@ -156,10 +156,21 @@ def clang_format_fix(ctx: _Context) -> Dict[Path, str]:
 
 
 def _typescript_format(*args: Union[Path, str], **kwargs) -> bytes:
+    # TODO: b/323378974 - Better integrate NPM actions with pw_env_setup so
+    # we don't have to manually set `npm_config_cache` every time we run npm.
+    # Force npm cache to live inside the environment directory.
+    npm_env = os.environ.copy()
+    npm_env['npm_config_cache'] = str(
+        Path(npm_env['_PW_ACTUAL_ENVIRONMENT_ROOT']) / 'npm-cache'
+    )
+
+    npm = shutil.which('npm.cmd' if os.name == 'nt' else 'npm')
     return log_run(
-        ['npm', 'exec', 'prettier', *args],
+        [npm, 'exec', 'prettier', *args],
         stdout=subprocess.PIPE,
+        stdin=subprocess.DEVNULL,
         check=True,
+        env=npm_env,
         **kwargs,
     ).stdout
 

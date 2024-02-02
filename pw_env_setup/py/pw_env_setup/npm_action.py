@@ -15,9 +15,9 @@
 
 This action triggers `npm install` after CIPD setup.
 """
-import subprocess
 import os
 import shutil
+import subprocess
 
 
 def run_action(env=None):
@@ -26,10 +26,21 @@ def run_action(env=None):
         raise ValueError(f"Missing 'env', got %{env}")
 
     with env():
-        npm = shutil.which('npm')
+        npm = shutil.which('npm.cmd' if os.name == 'nt' else 'npm')
+
         repo_root = os.environ.get('PW_PROJECT_ROOT') or os.environ.get(
             'PW_ROOT'
         )
+
+        # TODO: b/323378974 - Better integrate NPM actions with pw_env_setup so
+        # we don't have to manually set `npm_config_cache` every time we run
+        # npm.
+        # Force npm cache to live inside the environment directory.
+        npm_env = os.environ.copy()
+        npm_env['npm_config_cache'] = os.path.join(
+            npm_env['_PW_ACTUAL_ENVIRONMENT_ROOT'], 'npm-cache'
+        )
+
         subprocess.run(
             [
                 npm,
@@ -40,5 +51,7 @@ def run_action(env=None):
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            stdin=subprocess.DEVNULL,
             cwd=repo_root,
+            env=npm_env,
         )
