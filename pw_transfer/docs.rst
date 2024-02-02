@@ -199,7 +199,7 @@ an RPC client.
 
 The transfer client provides the following APIs for managing data transfers:
 
-.. cpp:function:: Result<pw::Transfer::Client::TransferHandle> pw::transfer::Client::Read(uint32_t resource_id, pw::stream::Writer& output, CompletionFunc&& on_completion, pw::transfer::ProtocolVersion version = kDefaultProtocolVersion, pw::chrono::SystemClock::duration timeout = cfg::kDefaultClientTimeout, pw::chrono::SystemClock::duration initial_chunk_timeout = cfg::kDefaultInitialChunkTimeout, uint32_t initial_offset = 0u)
+.. cpp:function:: Result<pw::Transfer::Client::Handle> pw::transfer::Client::Read(uint32_t resource_id, pw::stream::Writer& output, CompletionFunc&& on_completion, pw::transfer::ProtocolVersion version = kDefaultProtocolVersion, pw::chrono::SystemClock::duration timeout = cfg::kDefaultClientTimeout, pw::chrono::SystemClock::duration initial_chunk_timeout = cfg::kDefaultInitialChunkTimeout, uint32_t initial_offset = 0u)
 
   Reads data from a transfer server to the specified ``pw::stream::Writer``.
   Invokes the provided callback function with the overall status of the
@@ -211,7 +211,7 @@ The transfer client provides the following APIs for managing data transfers:
 
   For using the offset parameter, please see :ref:`pw_transfer-nonzero-transfers`.
 
-.. cpp:function:: Result<pw::Transfer::Client::TransferHandle> pw::transfer::Client::Write(uint32_t resource_id, pw::stream::Reader& input, CompletionFunc&& on_completion, pw::transfer::ProtocolVersion version = kDefaultProtocolVersion, pw::chrono::SystemClock::duration timeout = cfg::kDefaultClientTimeout, pw::chrono::SystemClock::duration initial_chunk_timeout = cfg::kDefaultInitialChunkTimeout, uint32_t initial_offset = 0u)
+.. cpp:function:: Result<pw::Transfer::Client::Handle> pw::transfer::Client::Write(uint32_t resource_id, pw::stream::Reader& input, CompletionFunc&& on_completion, pw::transfer::ProtocolVersion version = kDefaultProtocolVersion, pw::chrono::SystemClock::duration timeout = cfg::kDefaultClientTimeout, pw::chrono::SystemClock::duration initial_chunk_timeout = cfg::kDefaultInitialChunkTimeout, uint32_t initial_offset = 0u)
 
   Writes data from a source ``pw::stream::Reader`` to a transfer server.
   Invokes the provided callback function with the overall status of the
@@ -225,17 +225,14 @@ The transfer client provides the following APIs for managing data transfers:
 
 Transfer handles
 ^^^^^^^^^^^^^^^^
-Each transfer session initiated by a client returns a ``TransferHandle`` object
-which is used to manage the transfer. These handles support the following
-operations:
+Each transfer session initiated by a client returns a ``Handle`` object which
+is used to manage the transfer. These handles support the following operations:
 
-.. cpp:function:: void pw::transfer::Client::CancelTransfer(pw::transfer::Client::TransferHandle handle)
-
-.. cpp:function:: pw::Transfer::Client::TransferHandle::Cancel()
+.. cpp:function:: pw::Transfer::Client::Handle::Cancel()
 
    Terminates the ongoing transfer.
 
-.. cpp:function:: pw::Transfer::Client::TransferHandle::SetTransferSize(size_t size_bytes)
+.. cpp:function:: pw::Transfer::Client::Handle::SetTransferSize(size_t size_bytes)
 
    In a write transfer, indicates the total size of the transfer resource.
 
@@ -263,7 +260,7 @@ operations:
        pw::Status status;
      } transfer_state;
 
-     Result<pw::transfer::Client::TransferHandle> handle = transfer_client.Read(
+     Result<pw::transfer::Client::Handle> handle = transfer_client.Read(
          kMagicBufferResourceId,
          writer,
          [&transfer_state](pw::Status status) {
@@ -295,7 +292,7 @@ transfer.
 
 .. code-block:: c++
 
-   Result<pw::transfer::Client::TransferHandle> handle = client.Write(...);
+   Result<pw::transfer::Client::Handle> handle = client.Write(...);
    if (handle.ok()) {
      handle->SetTransferSize(kMyResourceSize);
    }

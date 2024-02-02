@@ -801,7 +801,7 @@ TEST_F(ReadTransfer, Timeout_EndsTransferAfterMaxRetries) {
   stream::MemoryWriterBuffer<64> writer;
   Status transfer_status = Status::Unknown();
 
-  Result<Client::TransferHandle> handle = legacy_client_.Read(
+  Result<Client::Handle> handle = legacy_client_.Read(
       14,
       writer,
       [&transfer_status](Status status) { transfer_status = status; },
@@ -859,7 +859,7 @@ TEST_F(ReadTransfer, Timeout_ReceivingDataResetsRetryCount) {
 
   constexpr ConstByteSpan data(kData32);
 
-  Result<Client::TransferHandle> handle = legacy_client_.Read(
+  Result<Client::Handle> handle = legacy_client_.Read(
       14,
       writer,
       [&transfer_status](Status status) { transfer_status = status; },
@@ -1326,7 +1326,7 @@ TEST_F(WriteTransfer, Timeout_RetriesWithInitialChunk) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  Result<Client::TransferHandle> handle = legacy_client_.Write(
+  Result<Client::Handle> handle = legacy_client_.Write(
       10,
       reader,
       [&transfer_status](Status status) { transfer_status = status; },
@@ -1368,7 +1368,7 @@ TEST_F(WriteTransfer, Timeout_RetriesWithMostRecentChunk) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  Result<Client::TransferHandle> handle = legacy_client_.Write(
+  Result<Client::Handle> handle = legacy_client_.Write(
       11,
       reader,
       [&transfer_status](Status status) { transfer_status = status; },
@@ -1441,7 +1441,7 @@ TEST_F(WriteTransfer, Timeout_RetriesWithSingleChunkTransfer) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  Result<Client::TransferHandle> handle = legacy_client_.Write(
+  Result<Client::Handle> handle = legacy_client_.Write(
       12,
       reader,
       [&transfer_status](Status status) { transfer_status = status; },
@@ -1525,7 +1525,7 @@ TEST_F(WriteTransfer, Timeout_EndsTransferAfterMaxRetries) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  Result<Client::TransferHandle> handle = legacy_client_.Write(
+  Result<Client::Handle> handle = legacy_client_.Write(
       13,
       reader,
       [&transfer_status](Status status) { transfer_status = status; },
@@ -1583,7 +1583,7 @@ TEST_F(WriteTransfer, Timeout_NonSeekableReaderEndsTransfer) {
   FakeNonSeekableReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  Result<Client::TransferHandle> handle = legacy_client_.Write(
+  Result<Client::Handle> handle = legacy_client_.Write(
       14,
       reader,
       [&transfer_status](Status status) { transfer_status = status; },
@@ -1655,7 +1655,7 @@ TEST_F(WriteTransfer, ManualCancel) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  Result<Client::TransferHandle> handle = legacy_client_.Write(
+  Result<Client::Handle> handle = legacy_client_.Write(
       15,
       reader,
       [&transfer_status](Status status) { transfer_status = status; },
@@ -1703,7 +1703,7 @@ TEST_F(WriteTransfer, ManualCancel_NoContact) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  Result<Client::TransferHandle> handle = legacy_client_.Write(
+  Result<Client::Handle> handle = legacy_client_.Write(
       15,
       reader,
       [&transfer_status](Status status) { transfer_status = status; },
@@ -1736,7 +1736,7 @@ TEST_F(WriteTransfer, ManualCancel_Duplicate) {
   stream::MemoryReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  Result<Client::TransferHandle> handle = legacy_client_.Write(
+  Result<Client::Handle> handle = legacy_client_.Write(
       16,
       reader,
       [&transfer_status](Status status) { transfer_status = status; },
@@ -2769,7 +2769,7 @@ TEST_F(WriteTransfer, Write_UpdateTransferSize) {
   FakeNonSeekableReader reader(kData32);
   Status transfer_status = Status::Unknown();
 
-  Result<Client::TransferHandle> result = client_.Write(
+  Result<Client::Handle> result = client_.Write(
       91,
       reader,
       [&transfer_status](Status status) { transfer_status = status; },
@@ -2777,7 +2777,7 @@ TEST_F(WriteTransfer, Write_UpdateTransferSize) {
   ASSERT_EQ(OkStatus(), result.status());
   transfer_thread_.WaitUntilEventIsProcessed();
 
-  Client::TransferHandle handle = *result;
+  Client::Handle handle = *result;
   handle.SetTransferSize(kData32.size());
   transfer_thread_.WaitUntilEventIsProcessed();
 

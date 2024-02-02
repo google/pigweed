@@ -28,9 +28,9 @@ class Client {
  public:
   /// A handle to an active transfer. Used to manage the transfer during its
   /// operation.
-  class TransferHandle {
+  class Handle {
    public:
-    constexpr TransferHandle() : client_(nullptr), id_(kUnassignedHandleId) {}
+    constexpr Handle() : client_(nullptr), id_(kUnassignedHandleId) {}
 
     /// Terminates the transfer.
     void Cancel() {
@@ -52,7 +52,7 @@ class Client {
 
     static constexpr uint32_t kUnassignedHandleId = 0;
 
-    explicit constexpr TransferHandle(Client* client, uint32_t id)
+    explicit constexpr Handle(Client* client, uint32_t id)
         : client_(client), id_(id) {}
     constexpr uint32_t id() const { return id_; }
     constexpr bool is_unassigned() const { return id_ == kUnassignedHandleId; }
@@ -61,6 +61,7 @@ class Client {
     uint32_t id_;
   };
 
+  using TransferHandle = Handle;
   using CompletionFunc = Function<void(Status)>;
 
   // Initializes a transfer client on a specified RPC client and channel.
@@ -109,7 +110,7 @@ class Client {
   // the server is written to the provided writer. Returns OK if the transfer is
   // successfully started. When the transfer finishes (successfully or not), the
   // completion callback is invoked with the overall status.
-  Result<TransferHandle> Read(
+  Result<Handle> Read(
       uint32_t resource_id,
       stream::Writer& output,
       CompletionFunc&& on_completion,
@@ -119,7 +120,7 @@ class Client {
           cfg::kDefaultInitialChunkTimeout,
       uint32_t initial_offset = 0u);
 
-  Result<TransferHandle> Read(
+  Result<Handle> Read(
       uint32_t resource_id,
       stream::Writer& output,
       CompletionFunc&& on_completion,
@@ -140,7 +141,7 @@ class Client {
   // provided reader is sent to the server. When the transfer finishes
   // (successfully or not), the completion callback is invoked with the overall
   // status.
-  Result<TransferHandle> Write(
+  Result<Handle> Write(
       uint32_t resource_id,
       stream::Reader& input,
       CompletionFunc&& on_completion,
@@ -150,7 +151,7 @@ class Client {
           cfg::kDefaultInitialChunkTimeout,
       uint32_t initial_offset = 0u);
 
-  Result<TransferHandle> Write(
+  Result<Handle> Write(
       uint32_t resource_id,
       stream::Reader& input,
       CompletionFunc&& on_completion,
@@ -168,7 +169,7 @@ class Client {
   }
 
   // Terminates an ongoing transfer.
-  void CancelTransfer(TransferHandle handle) {
+  void CancelTransfer(Handle handle) {
     if (!handle.is_unassigned()) {
       transfer_thread_.CancelClientTransfer(handle.id());
     }
@@ -204,7 +205,7 @@ class Client {
   }
 
  private:
-  void UpdateTransferSize(TransferHandle handle, size_t transfer_size_bytes) {
+  void UpdateTransferSize(Handle handle, size_t transfer_size_bytes) {
     if (!handle.is_unassigned()) {
       transfer_thread_.UpdateClientTransfer(handle.id(), transfer_size_bytes);
     }
@@ -216,7 +217,7 @@ class Client {
 
   void OnRpcError(Status status, internal::TransferType type);
 
-  TransferHandle AssignHandle();
+  Handle AssignHandle();
 
   Transfer::Client client_;
   TransferThread& transfer_thread_;

@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2024 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -20,7 +20,7 @@
 
 namespace pw::transfer {
 
-Result<Client::TransferHandle> Client::Read(
+Result<Client::Handle> Client::Read(
     uint32_t resource_id,
     stream::Writer& output,
     CompletionFunc&& on_completion,
@@ -49,7 +49,7 @@ Result<Client::TransferHandle> Client::Read(
     has_read_stream_ = true;
   }
 
-  TransferHandle handle = AssignHandle();
+  Handle handle = AssignHandle();
 
   transfer_thread_.StartClientTransfer(internal::TransferType::kReceive,
                                        protocol_version,
@@ -66,7 +66,7 @@ Result<Client::TransferHandle> Client::Read(
   return handle;
 }
 
-Result<Client::TransferHandle> Client::Write(
+Result<Client::Handle> Client::Write(
     uint32_t resource_id,
     stream::Reader& input,
     CompletionFunc&& on_completion,
@@ -95,7 +95,7 @@ Result<Client::TransferHandle> Client::Write(
     has_write_stream_ = true;
   }
 
-  TransferHandle handle = AssignHandle();
+  Handle handle = AssignHandle();
 
   transfer_thread_.StartClientTransfer(internal::TransferType::kTransmit,
                                        protocol_version,
@@ -113,13 +113,13 @@ Result<Client::TransferHandle> Client::Write(
   return handle;
 }
 
-Client::TransferHandle Client::AssignHandle() {
+Client::Handle Client::AssignHandle() {
   uint32_t handle_id = next_handle_id_++;
-  if (handle_id == TransferHandle::kUnassignedHandleId) {
+  if (handle_id == Handle::kUnassignedHandleId) {
     handle_id = next_handle_id_++;
   }
 
-  return TransferHandle(this, handle_id);
+  return Handle(this, handle_id);
 }
 
 void Client::OnRpcError(Status status, internal::TransferType type) {
