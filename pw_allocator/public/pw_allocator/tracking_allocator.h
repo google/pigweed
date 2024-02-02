@@ -27,21 +27,21 @@ namespace pw::allocator {
 /// Metric collection is performed using the provided template parameter type.
 /// Callers can not instantiate this class directly, as it lacks a public
 /// constructor. Instead, callers should use derived classes which provide the
-/// template parameter type, such as `AllocatorMetricProxy` which uses the
-/// default metrics implementation, or `AllocatorMetricProxyForTest` which
+/// template parameter type, such as `TrackingAllocator` which uses the
+/// default metrics implementation, or `TrackingAllocatorForTest` which
 /// always uses the real metrics implementation.
 template <typename MetricsType>
-class AllocatorMetricProxyImpl : public AllocatorWithMetrics<MetricsType> {
+class TrackingAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
  public:
   using metrics_type = MetricsType;
 
   /// Constexpr constructor. Callers must explicitly call `Init`.
-  constexpr explicit AllocatorMetricProxyImpl(metric::Token token)
+  constexpr explicit TrackingAllocatorImpl(metric::Token token)
       : allocator_(nullptr), metrics_(token) {}
 
   /// Non-constexpr constructor that automatically invokes `Init`.
-  AllocatorMetricProxyImpl(metric::Token token, Allocator& allocator)
-      : AllocatorMetricProxyImpl(token) {
+  TrackingAllocatorImpl(metric::Token token, Allocator& allocator)
+      : TrackingAllocatorImpl(token) {
     Init(allocator);
   }
 
@@ -103,6 +103,6 @@ class AllocatorMetricProxyImpl : public AllocatorWithMetrics<MetricsType> {
 /// Depending on the value of the `pw_allocator_COLLECT_METRICS` build argument,
 /// the `internal::DefaultMetrics` type is an alias for either the real or stub
 /// metrics implementation.
-using AllocatorMetricProxy = AllocatorMetricProxyImpl<internal::DefaultMetrics>;
+using TrackingAllocator = TrackingAllocatorImpl<internal::DefaultMetrics>;
 
 }  // namespace pw::allocator

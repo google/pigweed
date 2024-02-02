@@ -23,17 +23,17 @@
 
 #include "pw_bloat/bloat_this_binary.h"
 
-#ifdef SIZE_REPORT_METRIC_PROXY
-#include "pw_allocator/allocator_metric_proxy.h"
-#endif  // SIZE_REPORT_METRIC_PROXY
+#ifdef SIZE_REPORT_WITH_METRICS
+#include "pw_allocator/tracking_allocator.h"
+#endif  // SIZE_REPORT_WITH_METRICS
 
 namespace {
 
 pw::allocator::SplitFreeListAllocator allocator;
 
-#ifdef SIZE_REPORT_METRIC_PROXY
-pw::allocator::AllocatorMetricProxy proxy(0);
-#endif  // SIZE_REPORT_METRIC_PROXY
+#ifdef SIZE_REPORT_WITH_METRICS
+pw::allocator::TrackingAllocator tracker(0);
+#endif  // SIZE_REPORT_WITH_METRICS
 
 constexpr void* kFakeMemoryRegionStart = &allocator;
 constexpr size_t kFakeMemoryRegionSize = 4096;
@@ -113,19 +113,19 @@ int main() {
 
 #endif  // SIZE_REPORT_UNIQUE_PTR
 
-#ifdef SIZE_REPORT_METRIC_PROXY
-  proxy.Init(allocator);
+#ifdef SIZE_REPORT_WITH_METRICS
+  tracker.Init(allocator);
 
   Foo* foo2 =
-      static_cast<Foo*>(proxy.Allocate(pw::allocator::Layout::Of<Foo>()));
+      static_cast<Foo*>(tracker.Allocate(pw::allocator::Layout::Of<Foo>()));
   if (foo2 == nullptr) {
     return 1;
   }
 
   foo2->name[1] = 'a';
 
-  proxy.Deallocate(foo2, pw::allocator::Layout::Of<Foo>());
-#endif  // SIZE_REPORT_METRIC_PROXY
+  tracker.Deallocate(foo2, pw::allocator::Layout::Of<Foo>());
+#endif  // SIZE_REPORT_WITH_METRICS
 
   return 0;
 }

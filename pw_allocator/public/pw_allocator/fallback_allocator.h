@@ -14,8 +14,8 @@
 #pragma once
 
 #include "pw_allocator/allocator.h"
-#include "pw_allocator/allocator_metric_proxy.h"
 #include "pw_allocator/metrics.h"
+#include "pw_allocator/tracking_allocator.h"
 #include "pw_metric/metric.h"
 #include "pw_status/status.h"
 #include "pw_tokenizer/tokenize.h"
@@ -85,7 +85,7 @@ class FallbackAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
   }
 
   Allocator* primary_ = nullptr;
-  AllocatorMetricProxyImpl<metrics_type> secondary_;
+  TrackingAllocatorImpl<metrics_type> secondary_;
 };
 
 /// Fallback allocator that uses the default metrics implementation.

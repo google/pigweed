@@ -44,9 +44,6 @@ Other Implemetations
 --------------------
 Provided implementations of the ``Allocator`` interface include:
 
-- ``AllocatorMetricProxy``: Wraps another allocator and records its usage.
-- ``AllocatorSyncProxy``: Synchronizes access to another allocator, allowing it
-  to be used by multiple threads.
 - ``FallbackAllocator``: Dispatches first to a primary allocator, and, if that
   fails, to a secondary alloator.
 - ``LibCAllocator``: Uses ``malloc``, ``realloc``, and ``free``. This should
@@ -58,6 +55,9 @@ Provided implementations of the ``Allocator`` interface include:
 - ``SplitFreeListAllocator``: Tracks memory using ``Block``, and splits large
   and small allocations between the front and back, respectively, of it memory
   region in order to reduce fragmentation.
+- ``SynchronizedAllocator``: Synchronizes access to another allocator, allowing it
+  to be used by multiple threads.
+- ``TrackingAllocator``: Wraps another allocator and records its usage.
 
 UniquePtr
 =========
@@ -187,21 +187,17 @@ interface, whos costs are shown below.
 
 Metric collection
 =================
-Consumers can use an ``AllocatorMetricProxy`` to wrap an allocator and collect
+Consumers can use an ``TrackingAllocator`` to wrap an allocator and collect
 usage statistics. These statistics are implemented using
 :ref:`module-pw_metric`.
 
 .. code-block:: cpp
 
   MyAllocator allocator;
-  AllocatorMetricProxy proxy(PW_TOKENIZE_STRING_EXPR("my allocator"));
-  proxy.Init(allocator);
+  TrackingAllocator tracker(PW_TOKENIZE_STRING_EXPR("my allocator"));
+  tracker.Init(allocator);
   // ...Perform various allocations and deallocations...
-  proxy.Dump();
+  tracker.Dump();
 
 Metric collection is controlled using the ``pw_allocator_COLLECT_METRICS`` build
 argument. If this is unset or ``false``, metric collection is skipped.
-
-To force metric collection regardless of the build argument, tests may include
-the ``"pw_allocator/allocator_metric_proxy_for_tests.h"`` header file and depend
-on the ``//pw_allocator:allocator_metric_proxy_for_tests`` target.

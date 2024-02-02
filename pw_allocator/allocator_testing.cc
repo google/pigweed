@@ -27,14 +27,14 @@ Status AllocatorForTestImpl::Init(ByteSpan bytes) {
   if (auto status = allocator_.Init(bytes); !status.ok()) {
     return status;
   }
-  proxy_.Init(allocator_);
+  tracker_.Init(allocator_);
   return OkStatus();
 }
 
 void AllocatorForTestImpl::Exhaust() {
   for (auto* block : allocator_.blocks()) {
     block->MarkUsed();
-    proxy_.metric_group().Update(0, block->InnerSize());
+    tracker_.metric_group().Update(0, block->InnerSize());
   }
 }
 
@@ -57,25 +57,25 @@ void AllocatorForTestImpl::Reset() {
 }
 
 Status AllocatorForTestImpl::DoQuery(const void* ptr, Layout layout) const {
-  return proxy_.Query(ptr, layout);
+  return tracker_.Query(ptr, layout);
 }
 
 void* AllocatorForTestImpl::DoAllocate(Layout layout) {
   allocate_size_ = layout.size();
-  return proxy_.Allocate(layout);
+  return tracker_.Allocate(layout);
 }
 
 void AllocatorForTestImpl::DoDeallocate(void* ptr, Layout layout) {
   deallocate_ptr_ = ptr;
   deallocate_size_ = layout.size();
-  return proxy_.Deallocate(ptr, layout);
+  return tracker_.Deallocate(ptr, layout);
 }
 
 bool AllocatorForTestImpl::DoResize(void* ptr, Layout layout, size_t new_size) {
   resize_ptr_ = ptr;
   resize_old_size_ = layout.size();
   resize_new_size_ = new_size;
-  return proxy_.Resize(ptr, layout, new_size);
+  return tracker_.Resize(ptr, layout, new_size);
 }
 
 }  // namespace internal

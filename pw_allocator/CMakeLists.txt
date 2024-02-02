@@ -37,18 +37,6 @@ pw_add_library(pw_allocator.allocator STATIC
     allocator.cc
 )
 
-pw_add_library(pw_allocator.allocator_metric_proxy INTERFACE
-  HEADERS
-    public/pw_allocator/allocator_metric_proxy.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    pw_allocator.allocator
-    pw_allocator.metrics
-    pw_metric
-    pw_status
-)
-
 pw_add_library(pw_allocator.block STATIC
   PUBLIC_DEFINES
     ${enable_heap_poison}
@@ -82,8 +70,8 @@ pw_add_library(pw_allocator.fallback_allocator INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.allocator
-    pw_allocator.allocator_metric_proxy
     pw_allocator.metrics
+    pw_allocator.tracking_allocator
     pw_metric
     pw_status
     pw_tokenizer
@@ -206,6 +194,18 @@ pw_add_library(pw_allocator.synchronized_allocator INTERFACE
     pw_sync.borrow
 )
 
+pw_add_library(pw_allocator.tracking_allocator INTERFACE
+  HEADERS
+    public/pw_allocator/tracking_allocator.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.allocator
+    pw_allocator.metrics
+    pw_metric
+    pw_status
+)
+
 pw_add_library(pw_allocator.allocator_testing STATIC
   HEADERS
     public/pw_allocator/allocator_testing.h
@@ -213,10 +213,10 @@ pw_add_library(pw_allocator.allocator_testing STATIC
     public
   PUBLIC_DEPS
     pw_allocator.allocator
-    pw_allocator.allocator_metric_proxy
     pw_allocator.block
     pw_allocator.buffer
     pw_allocator.simple_allocator
+    pw_allocator.tracking_allocator
     pw_bytes
     pw_status
     pw_unit_test
@@ -261,16 +261,6 @@ pw_add_test(pw_allocator.allocator_test
     pw_allocator.allocator
     pw_allocator.allocator_testing
     pw_bytes
-  GROUPS
-    modules
-    pw_allocator
-)
-
-pw_add_test(pw_allocator.allocator_metric_proxy_test
-  SOURCES
-    allocator_metric_proxy_test.cc
-  PRIVATE_DEPS
-    pw_allocator.allocator_testing
   GROUPS
     modules
     pw_allocator
@@ -395,6 +385,16 @@ pw_add_test(pw_allocator.synchronized_allocator_test
     pw_thread.yield
     pw_random
     GROUPS
+    modules
+    pw_allocator
+)
+
+pw_add_test(pw_allocator.tracking_allocator_test
+  SOURCES
+    tracking_allocator_test.cc
+  PRIVATE_DEPS
+    pw_allocator.allocator_testing
+  GROUPS
     modules
     pw_allocator
 )

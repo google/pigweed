@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/allocator_metric_proxy.h"
+#include "pw_allocator/tracking_allocator.h"
 
 #include "pw_allocator/allocator_testing.h"
 #include "pw_unit_test/framework.h"
@@ -22,41 +22,41 @@ namespace {
 
 // These unit tests below use `AllocatorForTest<kBufferSize>`, which forwards
 // `Allocator` calls to a field of type
-// `AllocatorMetricProxyImpl<internal::Metrics>`. This is the same type as
-// `AllocatorMetricProxy`, except that metrics are explicitly enabled. As a
-// result, these unit tests do validate `AllocatorMetricProxy`, even when that
+// `TrackingAllocatorImpl<internal::Metrics>`. This is the same type as
+// `TrackingAllocator`, except that metrics are explicitly enabled. As a
+// result, these unit tests do validate `TrackingAllocator`, even when that
 // type never appears directly in a test.
 
-TEST(AllocatorMetricProxyTest, ExplicitlyInitialized) {
+TEST(TrackingAllocatorTest, ExplicitlyInitialized) {
   WithBuffer<SimpleAllocator, 256> allocator;
-  AllocatorMetricProxyImpl<internal::Metrics> proxy(test::kToken);
+  TrackingAllocatorImpl<internal::Metrics> tracker(test::kToken);
 
-  metric::Group& group = proxy.metric_group();
+  metric::Group& group = tracker.metric_group();
   EXPECT_EQ(group.metrics().size(), 0U);
   EXPECT_EQ(group.children().size(), 0U);
 
-  proxy.Init(*allocator);
+  tracker.Init(*allocator);
   EXPECT_EQ(group.metrics().size(), 3U);
   EXPECT_EQ(group.children().size(), 0U);
 }
 
-TEST(AllocatorMetricProxyTest, AutomaticallyInitialized) {
+TEST(TrackingAllocatorTest, AutomaticallyInitialized) {
   WithBuffer<SimpleAllocator, 256> allocator;
-  AllocatorMetricProxyImpl<internal::Metrics> proxy(test::kToken, *allocator);
+  TrackingAllocatorImpl<internal::Metrics> tracker(test::kToken, *allocator);
 
-  metric::Group& group = proxy.metric_group();
+  metric::Group& group = tracker.metric_group();
   EXPECT_EQ(group.metrics().size(), 3U);
   EXPECT_EQ(group.children().size(), 0U);
 }
 
-TEST(AllocatorMetricProxyTest, InitiallyZero) {
+TEST(TrackingAllocatorTest, InitiallyZero) {
   test::AllocatorForTest<256> allocator;
   EXPECT_EQ(allocator->used(), 0U);
   EXPECT_EQ(allocator->peak(), 0U);
   EXPECT_EQ(allocator->count(), 0U);
 }
 
-TEST(AllocatorMetricProxyTest, AllocateDeallocate) {
+TEST(TrackingAllocatorTest, AllocateDeallocate) {
   test::AllocatorForTest<256> allocator;
   constexpr Layout layout = Layout::Of<uint32_t[2]>();
   void* ptr = allocator->Allocate(layout);
@@ -71,7 +71,7 @@ TEST(AllocatorMetricProxyTest, AllocateDeallocate) {
   EXPECT_EQ(allocator->count(), 0U);
 }
 
-TEST(AllocatorMetricProxyTest, AllocateFailure) {
+TEST(TrackingAllocatorTest, AllocateFailure) {
   test::AllocatorForTest<256> allocator;
   constexpr Layout layout = Layout::Of<uint32_t[0x10000000U]>();
   void* ptr = allocator->Allocate(layout);
@@ -81,7 +81,7 @@ TEST(AllocatorMetricProxyTest, AllocateFailure) {
   EXPECT_EQ(allocator->count(), 0U);
 }
 
-TEST(AllocatorMetricProxyTest, AllocateDeallocateMultiple) {
+TEST(TrackingAllocatorTest, AllocateDeallocateMultiple) {
   test::AllocatorForTest<256> allocator;
   constexpr Layout layout1 = Layout::Of<uint32_t[3]>();
   void* ptr1 = allocator->Allocate(layout1);
@@ -108,7 +108,7 @@ TEST(AllocatorMetricProxyTest, AllocateDeallocateMultiple) {
   EXPECT_EQ(allocator->count(), 0U);
 }
 
-TEST(AllocatorMetricProxyTest, ResizeLarger) {
+TEST(TrackingAllocatorTest, ResizeLarger) {
   test::AllocatorForTest<256> allocator;
   constexpr Layout old_layout = Layout::Of<uint32_t[3]>();
   void* ptr = allocator->Allocate(old_layout);
@@ -129,7 +129,7 @@ TEST(AllocatorMetricProxyTest, ResizeLarger) {
   EXPECT_EQ(allocator->count(), 0U);
 }
 
-TEST(AllocatorMetricProxyTest, ResizeSmaller) {
+TEST(TrackingAllocatorTest, ResizeSmaller) {
   test::AllocatorForTest<256> allocator;
   constexpr Layout old_layout = Layout::Of<uint32_t[2]>();
   void* ptr = allocator->Allocate(old_layout);
@@ -150,7 +150,7 @@ TEST(AllocatorMetricProxyTest, ResizeSmaller) {
   EXPECT_EQ(allocator->count(), 0U);
 }
 
-TEST(AllocatorMetricProxyTest, Reallocate) {
+TEST(TrackingAllocatorTest, Reallocate) {
   test::AllocatorForTest<256> allocator;
   constexpr Layout old_layout = Layout::Of<uint32_t[2]>();
   void* ptr1 = allocator->Allocate(old_layout);

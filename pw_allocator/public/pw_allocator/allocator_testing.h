@@ -16,11 +16,11 @@
 #include <cstddef>
 
 #include "pw_allocator/allocator.h"
-#include "pw_allocator/allocator_metric_proxy.h"
 #include "pw_allocator/block.h"
 #include "pw_allocator/buffer.h"
 #include "pw_allocator/metrics.h"
 #include "pw_allocator/simple_allocator.h"
+#include "pw_allocator/tracking_allocator.h"
 #include "pw_bytes/span.h"
 #include "pw_status/status.h"
 #include "pw_tokenizer/tokenize.h"
@@ -39,12 +39,12 @@ class AllocatorForTestImpl : public AllocatorWithMetrics<Metrics> {
  public:
   using metrics_type = Metrics;
 
-  AllocatorForTestImpl() : proxy_(PW_TOKENIZE_STRING_EXPR("test")) {}
+  AllocatorForTestImpl() : tracker_(PW_TOKENIZE_STRING_EXPR("test")) {}
   ~AllocatorForTestImpl() override;
 
-  metrics_type& metric_group() override { return proxy_.metric_group(); }
+  metrics_type& metric_group() override { return tracker_.metric_group(); }
   const metrics_type& metric_group() const override {
-    return proxy_.metric_group();
+    return tracker_.metric_group();
   }
 
   size_t allocate_size() const { return allocate_size_; }
@@ -89,7 +89,7 @@ class AllocatorForTestImpl : public AllocatorWithMetrics<Metrics> {
   bool DoResize(void* ptr, Layout layout, size_t new_size) override;
 
   SimpleAllocator allocator_;
-  AllocatorMetricProxyImpl<metrics_type> proxy_;
+  TrackingAllocatorImpl<metrics_type> tracker_;
 
   bool initialized_ = false;
   size_t allocate_size_ = 0;

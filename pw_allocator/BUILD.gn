@@ -59,18 +59,6 @@ pw_source_set("allocator") {
   sources = [ "allocator.cc" ]
 }
 
-pw_source_set("allocator_metric_proxy") {
-  public_configs = [ ":default_config" ]
-  public = [ "public/pw_allocator/allocator_metric_proxy.h" ]
-  public_deps = [
-    ":allocator",
-    ":metrics",
-    dir_pw_metric,
-    dir_pw_status,
-  ]
-  deps = [ dir_pw_assert ]
-}
-
 pw_source_set("block") {
   public_configs = [
     ":default_config",
@@ -98,8 +86,8 @@ pw_source_set("fallback_allocator") {
   public = [ "public/pw_allocator/fallback_allocator.h" ]
   public_deps = [
     ":allocator",
-    ":allocator_metric_proxy",
     ":metrics",
+    ":tracking_allocator",
     dir_pw_metric,
     dir_pw_status,
     dir_pw_tokenizer,
@@ -207,6 +195,18 @@ pw_source_set("synchronized_allocator") {
   ]
 }
 
+pw_source_set("tracking_allocator") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_allocator/tracking_allocator.h" ]
+  public_deps = [
+    ":allocator",
+    ":metrics",
+    dir_pw_metric,
+    dir_pw_status,
+  ]
+  deps = [ dir_pw_assert ]
+}
+
 pw_size_diff("allocator_size_report") {
   title = "Sizes of various pw_allocator implementations"
   binaries = [
@@ -231,7 +231,6 @@ pw_size_diff("allocator_size_report") {
 pw_test_group("tests") {
   tests = [
     ":allocator_test",
-    ":allocator_metric_proxy_test",
     ":synchronized_allocator_test",
     ":block_test",
     ":fallback_allocator_test",
@@ -242,6 +241,7 @@ pw_test_group("tests") {
     ":null_allocator_test",
     ":simple_allocator_test",
     ":split_free_list_allocator_test",
+    ":tracking_allocator_test",
     ":unique_ptr_test",
   ]
 }
@@ -250,11 +250,11 @@ pw_source_set("allocator_testing") {
   public = [ "public/pw_allocator/allocator_testing.h" ]
   public_deps = [
     ":allocator",
-    ":allocator_metric_proxy",
     ":block",
     ":buffer",
     ":metrics",
     ":simple_allocator",
+    ":tracking_allocator",
     dir_pw_bytes,
     dir_pw_status,
     dir_pw_unit_test,
@@ -293,11 +293,6 @@ pw_test("allocator_test") {
     dir_pw_bytes,
   ]
   sources = [ "allocator_test.cc" ]
-}
-
-pw_test("allocator_metric_proxy_test") {
-  deps = [ ":allocator_testing" ]
-  sources = [ "allocator_metric_proxy_test.cc" ]
 }
 
 pw_test("block_test") {
@@ -393,6 +388,11 @@ pw_test("synchronized_allocator_test") {
     dir_pw_random,
   ]
   sources = [ "synchronized_allocator_test.cc" ]
+}
+
+pw_test("tracking_allocator_test") {
+  deps = [ ":allocator_testing" ]
+  sources = [ "tracking_allocator_test.cc" ]
 }
 
 pw_test("unique_ptr_test") {

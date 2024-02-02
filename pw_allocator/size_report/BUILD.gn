@@ -17,19 +17,19 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/target_types.gni")
 
 pw_executable("split_free_list_allocator") {
+  check_includes = false
   sources = [ "split_free_list_allocator.cc" ]
   deps = [
     "$dir_pw_bloat:bloat_this_binary",
-    "..:allocator_metric_proxy",
     "..:split_free_list_allocator",
   ]
 }
 
 pw_executable("split_free_list_allocator_with_unique_ptr") {
+  check_includes = false
   sources = [ "split_free_list_allocator.cc" ]
   deps = [
     "$dir_pw_bloat:bloat_this_binary",
-    "..:allocator_metric_proxy",
     "..:split_free_list_allocator",
   ]
   defines = [ "SIZE_REPORT_UNIQUE_PTR=1" ]
@@ -39,8 +39,8 @@ pw_executable("split_free_list_allocator_with_metric_proxy") {
   sources = [ "split_free_list_allocator.cc" ]
   deps = [
     "$dir_pw_bloat:bloat_this_binary",
-    "..:allocator_metric_proxy",
     "..:split_free_list_allocator",
+    "..:tracking_allocator",
   ]
-  defines = [ "SIZE_REPORT_METRIC_PROXY=1" ]
+  defines = [ "SIZE_REPORT_WITH_METRICS=1" ]
 }

@@ -40,21 +40,6 @@ cc_library(
 )
 
 cc_library(
-    name = "allocator_metric_proxy",
-    hdrs = [
-        "public/pw_allocator/allocator_metric_proxy.h",
-    ],
-    includes = ["public"],
-    deps = [
-        ":allocator",
-        ":metrics",
-        "//pw_assert",
-        "//pw_metric:metric",
-        "//pw_status",
-    ],
-)
-
-cc_library(
     name = "block",
     srcs = ["block.cc"],
     hdrs = [
@@ -87,8 +72,8 @@ cc_library(
     includes = ["public"],
     deps = [
         ":allocator",
-        ":allocator_metric_proxy",
         ":metrics",
+        ":tracking_allocator",
         "//pw_metric:metric",
         "//pw_status",
         "//pw_tokenizer",
@@ -230,6 +215,21 @@ cc_library(
 )
 
 cc_library(
+    name = "tracking_allocator",
+    hdrs = [
+        "public/pw_allocator/tracking_allocator.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":allocator",
+        ":metrics",
+        "//pw_assert",
+        "//pw_metric:metric",
+        "//pw_status",
+    ],
+)
+
+cc_library(
     name = "allocator_testing",
     testonly = True,
     srcs = [
@@ -241,10 +241,10 @@ cc_library(
     includes = ["public"],
     deps = [
         ":allocator",
-        ":allocator_metric_proxy",
         ":block",
         ":buffer",
         ":simple_allocator",
+        ":tracking_allocator",
         "//pw_assert",
         "//pw_bytes",
         "//pw_status",
@@ -296,18 +296,6 @@ pw_cc_test(
         ":allocator",
         ":allocator_testing",
         "//pw_bytes",
-        "//pw_unit_test",
-    ],
-)
-
-pw_cc_test(
-    name = "allocator_metric_proxy_test",
-    srcs = [
-        "allocator_metric_proxy_test.cc",
-    ],
-    deps = [
-        ":allocator_metric_proxy",
-        ":allocator_testing",
         "//pw_unit_test",
     ],
 )
@@ -440,6 +428,18 @@ pw_cc_test(
         "//pw_thread:thread",
         "//pw_thread:thread_core",
         "//pw_thread:yield",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "tracking_allocator_test",
+    srcs = [
+        "tracking_allocator_test.cc",
+    ],
+    deps = [
+        ":allocator_testing",
+        ":tracking_allocator",
         "//pw_unit_test",
     ],
 )
