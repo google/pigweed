@@ -402,6 +402,12 @@ def update(  # pylint: disable=too-many-locals
             name = package_file_name(package_file)
             file_install_dir = os.path.join(install_dir, name)
 
+            # The MinGW package isn't always structured correctly, and might
+            # live nested in a `mingw64` subdirectory.
+            maybe_mingw = os.path.join(file_install_dir, 'mingw64', 'bin')
+            if os.name == 'nt' and os.path.isdir(maybe_mingw):
+                env_vars.prepend('PATH', maybe_mingw)
+
             # If this package file has no packages and just includes one other
             # file, there won't be any contents of the folder for this package.
             # In that case, point the variable that would point to this folder
@@ -430,11 +436,5 @@ def update(  # pylint: disable=too-many-locals
                 'PW_{}_CIPD_INSTALL_DIR'.format(name.upper().replace('-', '_')),
                 file_install_dir,
             )
-
-            # Windows has its own special toolchain.
-            if os.name == 'nt':
-                env_vars.prepend(
-                    'PATH', os.path.join(file_install_dir, 'mingw64', 'bin')
-                )
 
     return True
