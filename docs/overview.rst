@@ -84,8 +84,8 @@ build system you can integrate your own code into that works out of the box.
 
 .. _docs-concepts-full-framework:
 
-Full Framework (coming in 2022)
--------------------------------
+Full Framework
+--------------
 For those who want a fully-integrated solution that provides everything Pigweed
 has to offer with an opinionated project structure, we are working diligently
 on a :ref:`Pigweed framework<module-pw_system>`. Stay tuned for more news to

@@ -27,23 +27,6 @@ Highlights (Jan 12, 2024 to Jan 26, 2024):
   :ref:`module-pw_toolchain_bazel`.
 * A longstanding GCC bug that caused tokenized logging within a function
   template to not work has been fixed.
-* The new :ref:`module-pw_build-bazel-pw_cc_binary_with_map` Bazel rule enables
-  generating a ``.map`` file when building a binary.
-* The new :cpp:func:`pw::bytes::SignExtend` template enables expanding the nth
-  bit to the left up to the size of the destination type.
-* The new ``pw::kvs::FlashMemory::EndOfWrittenData()`` method returns the first
-  byte of erased flash that has no more written bytes.
-* ``pw_polyfill/static_assert.h`` now provides a C23-style ``static_assert()``.
-  See :ref:`module-pw_polyfill-static_assert`.
-* The new ``PW_ADD_OVERFLOW``, ``PW_SUB_OVERFLOW``, and ``PW_MUL_OVERFLOW``
-  macros can be used to `check for integer overflows
-  <module-pw_preprocessor-integer-overflow>`_.
-* The ``//pw_toolchain_bazel`` directory is now configured to be compiled as a
-  standalone Bazel module.
-* The C++ client for :ref:`module-pw_transfer` now uses handles for
-  cancellation.
-* A link to each module's source code and issues is now auto-generated in the
-  ``pigweed.dev`` site nav.
 
 .. changelog_highlights_end
 
