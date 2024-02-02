@@ -14,39 +14,50 @@
 """Implementation of pw_cc_action_config and pw_cc_tool."""
 
 load(
-    "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
-    config_lib_tool = "tool",  # This is renamed to reduce name aliasing.
-)
-load(
     ":providers.bzl",
     "PwActionConfigInfo",
     "PwActionConfigSetInfo",
     "PwActionNameSetInfo",
+    "PwFeatureConstraintInfo",
     "PwFeatureSetInfo",
     "PwFlagSetInfo",
     "PwToolInfo",
 )
 
+def _bin_to_files(target, extra_files = []):
+    if not target:
+        return depset(extra_files)
+    info = target[DefaultInfo]
+    exe = info.files_to_run.executable
+    if not exe:
+        return depset(extra_files)
+    return depset(
+        [exe] + extra_files,
+        transitive = [info.files, info.data_runfiles.files],
+    )
+
 def _pw_cc_tool_impl(ctx):
     """Implementation for pw_cc_tool."""
 
     # Remaps empty strings to `None` to match behavior of the default values.
-    tool = ctx.executable.tool or None
+    exe = ctx.executable.tool or None
     path = ctx.attr.path or None
 
-    files = ctx.files.additional_files
-    transitive_files = []
-    if tool != None:
-        files = files + [tool]
-        transitive_files = [ctx.attr.tool[DefaultInfo].data_runfiles.files]
+    if (exe == None) == (path == None):
+        fail("Exactly one of tool and path must be provided. Prefer tool")
+
+    tool = PwToolInfo(
+        label = ctx.label,
+        exe = exe,
+        path = path,
+        files = _bin_to_files(ctx.attr.tool, ctx.files.additional_files),
+        requires_any_of = tuple([fc[PwFeatureConstraintInfo] for fc in ctx.attr.requires_any_of]),
+        execution_requirements = tuple(ctx.attr.execution_requirements),
+    )
 
     return [
-        config_lib_tool(
-            tool = tool,
-            path = path,
-            execution_requirements = ctx.attr.execution_requirements,
-        ),
-        DefaultInfo(files = depset(files, transitive = transitive_files)),
+        tool,
+        DefaultInfo(files = tool.files),
     ]
 
 pw_cc_tool = rule(
@@ -85,6 +96,13 @@ escape hatch for edge cases. Prefer using `tool` whenever possible.
         "execution_requirements": attr.string_list(
             doc = "A list of strings that provide hints for execution environment compatibility (e.g. `requires-darwin`).",
         ),
+        "requires_any_of": attr.label_list(
+            providers = [PwFeatureConstraintInfo],
+            doc = """This will be enabled when any of the constraints are met.
+
+If omitted, this tool will be enabled unconditionally.
+""",
+        ),
         "additional_files": attr.label_list(
             allow_files = True,
             doc = """Additional files that are required for this tool to correctly operate.
@@ -100,8 +118,6 @@ need to explicitly specify the `*_files` attributes on a `pw_cc_toolchain`.
 `pw_cc_tool` rules are intended to be consumed exclusively by
 `pw_cc_action_config` rules. These rules declare an underlying tool that can
 be used to fulfill various actions. Many actions may reuse a shared tool.
-
-Note: `with_features` is not yet supported.
 
 Example:
 

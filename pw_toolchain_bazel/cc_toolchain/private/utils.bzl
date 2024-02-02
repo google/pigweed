@@ -19,6 +19,7 @@ load(
     rules_cc_feature = "feature",
     rules_cc_feature_set = "feature_set",
     rules_cc_flag_set = "flag_set",
+    rules_cc_tool = "tool",
     rules_cc_with_feature_set = "with_feature_set",
 )
 load(":providers.bzl", "PwFlagSetInfo")
@@ -123,6 +124,24 @@ def _to_untyped_feature(feature, known, fail = fail):
         provides = list(feature.provides),
     )
 
+def _to_untyped_tool(tool, known, fail = fail):
+    _ensure_fulfillable(
+        any_of = [constraint.all_of for constraint in tool.requires_any_of],
+        known = known,
+        label = tool.label,
+        fail = fail,
+    )
+
+    return rules_cc_tool(
+        path = tool.path,
+        tool = tool.exe,
+        execution_requirements = list(tool.execution_requirements),
+        with_features = [
+            _to_untyped_feature_constraint(fc)
+            for fc in tool.requires_any_of
+        ],
+    )
+
 def _to_untyped_action_config(action_config, extra_flag_sets, known, fail = fail):
     # De-dupe, in case the same flag set was specified for both unconditional
     # and for a specific action config.
@@ -130,10 +149,14 @@ def _to_untyped_action_config(action_config, extra_flag_sets, known, fail = fail
         list(action_config.flag_sets) + extra_flag_sets,
         order = "preorder",
     ).to_list()
+
     return rules_cc_action_config(
         action_name = action_config.action_name,
         enabled = action_config.enabled,
-        tools = list(action_config.tools),
+        tools = [
+            _to_untyped_tool(tool, known, fail = fail)
+            for tool in action_config.tools
+        ],
         flag_sets = [
             _to_untyped_flag_set(
                 # Make the flag sets actionless.

@@ -18,7 +18,6 @@ load(
     "EnvEntryInfo",
     "EnvSetInfo",
     "FlagGroupInfo",
-    "ToolInfo",
 )
 load("//actions:providers.bzl", "ActionNameInfo", "ActionNameSetInfo")
 
@@ -109,7 +108,17 @@ PwActionConfigSetInfo = provider(
     },
 )
 
-PwToolInfo = ToolInfo
+PwToolInfo = provider(
+    doc = "A type-safe version of @bazel_tool's ToolInfo",
+    fields = {
+        "label": "Label: The label that defined this tool",
+        "exe": "Optional[File]: The file corresponding to the tool",
+        "path": "Optional[str]: The path to the tool. Prefer tool (mutually exclusive with tool).",
+        "files": "Depset[File]: The files associated with the tool",
+        "requires_any_of": "Sequence[PwFeatureConstraintInfo]: A set of constraints required to enable the tool. Equivalent to with_features",
+        "execution_requirements": "Sequence[str]: A set of execution requirements of the tool",
+    },
+)
 
 PwToolchainConfigInfo = provider(
     doc = "Additional metadata about the config of the pigweed toolchain.",

@@ -407,8 +407,6 @@ API reference
    that can be used to fulfill various actions. Many actions may reuse a shared
    tool.
 
-   Note: ``with_features`` is not yet supported.
-
    Examples:
 
    .. code-block:: py
@@ -474,6 +472,14 @@ API reference
 
       A list of strings that provide hints for execution environment
       compatibility (e.g. ``requires-darwin``).
+
+   .. py:attribute:: requires_any_of
+      :type: List[label]
+
+      This tool may only be enabled when at least one of the constraints are
+      met.
+
+      If omitted, this tool will be enabled unconditionally.
 
    .. py:attribute:: additional_files
       :type: List[label]

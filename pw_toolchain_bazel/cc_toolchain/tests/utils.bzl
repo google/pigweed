@@ -100,6 +100,7 @@ _PROVIDERS = {
     "//cc_toolchain/tests/action_configs:all_c_compile": [PwActionConfigSetInfo],
     "//cc_toolchain/tests/action_configs:c_compile": [PwActionConfigSetInfo],
     "//cc_toolchain/tests/action_configs:cpp_compile_from_tool": [PwActionConfigSetInfo],
+    "//cc_toolchain/tests/action_configs:requires_foo": [PwActionConfigSetInfo],
     "//cc_toolchain/tests/features:bar": [PwFeatureInfo, PwFeatureSetInfo],
     "//cc_toolchain/tests/features:baz": [PwFeatureInfo, PwFeatureSetInfo],
     "//cc_toolchain/tests/features:conflict": [PwFeatureInfo, PwFeatureSetInfo],

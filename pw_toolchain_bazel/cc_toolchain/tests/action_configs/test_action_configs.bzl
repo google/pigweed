@@ -84,4 +84,18 @@ def _test_action_configs_impl(_ctx, action_configs, features, flag_sets, to_unty
         },
     )
 
+    assert_fail(
+        to_untyped_config,
+        action_configs = [action_configs.requires_foo],
+    )
+
+    tools = get_action_configs(
+        action_configs = [action_configs.requires_foo],
+        features = [features.foo],
+    )["c-compile"].tools
+    assert_eq(len(tools), 1)
+    assert_eq(len(tools[0].with_features), 1)
+    assert_eq(tools[0].with_features[0].features, ["foo"])
+    assert_eq(sorted(tools[0].with_features[0].not_features), ["bar", "baz"])
+
 test_action_configs = generate_test_rule(_test_action_configs_impl)
