@@ -227,7 +227,7 @@ def gn_gen(
 
     call(
         'gn',
-        *(['--color'] if pw_cli.color.is_enabled() else ['--nocolor']),
+        '--color' if pw_cli.color.is_enabled() else '--nocolor',
         'gen',
         ctx.output_dir,
         *(['--check=system'] if gn_check else []),
