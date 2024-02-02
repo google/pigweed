@@ -18,6 +18,7 @@
 
 #include "pw_assert/check.h"
 #include "pw_log/log.h"
+#include "pw_preprocessor/compiler.h"
 #include "pw_span/span.h"
 #include "pw_tokenizer/base64.h"
 
@@ -72,7 +73,16 @@ uint32_t Metric::as_int() const {
 
 void Metric::Increment(uint32_t amount) {
   PW_DCHECK(is_int());
-  uint_ += amount;
+  if (PW_ADD_OVERFLOW(uint_, amount, &uint_)) {
+    uint_ = std::numeric_limits<uint32_t>::max();
+  }
+}
+
+void Metric::Decrement(uint32_t amount) {
+  PW_DCHECK(is_int());
+  if (PW_SUB_OVERFLOW(uint_, amount, &uint_)) {
+    uint_ = 0;
+  }
 }
 
 void Metric::SetInt(uint32_t value) {

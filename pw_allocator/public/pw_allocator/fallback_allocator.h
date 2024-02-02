@@ -48,9 +48,9 @@ class FallbackAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
   /// Sets the primary and secondary allocators.
   ///
   /// It is an error to call any method without calling this method first.
-  void Init(Allocator& primary, Allocator& secondary) {
+  void Init(Allocator& primary, Allocator& secondary, size_t capacity = 0) {
     primary_ = &primary;
-    secondary_.Init(secondary);
+    secondary_.Init(secondary, capacity);
   }
 
  private:

@@ -55,8 +55,8 @@ Provided implementations of the ``Allocator`` interface include:
 - ``SplitFreeListAllocator``: Tracks memory using ``Block``, and splits large
   and small allocations between the front and back, respectively, of it memory
   region in order to reduce fragmentation.
-- ``SynchronizedAllocator``: Synchronizes access to another allocator, allowing it
-  to be used by multiple threads.
+- ``SynchronizedAllocator``: Synchronizes access to another allocator, allowing
+  it to be used by multiple threads.
 - ``TrackingAllocator``: Wraps another allocator and records its usage.
 
 UniquePtr
@@ -187,7 +187,7 @@ interface, whos costs are shown below.
 
 Metric collection
 =================
-Consumers can use an ``TrackingAllocator`` to wrap an allocator and collect
+Consumers can use a ``TrackingAllocator`` to wrap an allocator and collect
 usage statistics. These statistics are implemented using
 :ref:`module-pw_metric`.
 

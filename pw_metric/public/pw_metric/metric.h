@@ -77,7 +77,12 @@ class Metric : public IntrusiveList<Metric>::Item {
   // Hide mutation methods, and only offer write access through the specialized
   // TypedMetric below. This makes it impossible to call metric.Increment() on
   // a float metric at compile time.
+
+  // Saturating add. Results in the max value if the addition would overflow.
   void Increment(uint32_t amount = 1);
+
+  // Saturating subtract. Results in 0 if the subtraction would overflow.
+  void Decrement(uint32_t amount = 1);
 
   void SetInt(uint32_t value);
 
@@ -134,6 +139,7 @@ class TypedMetric<uint32_t> : public Metric {
       : Metric(name, value, metrics) {}
 
   void Increment(uint32_t amount = 1u) { Metric::Increment(amount); }
+  void Decrement(uint32_t amount = 1u) { Metric::Decrement(amount); }
   void Set(uint32_t value) { SetInt(value); }
   uint32_t value() const { return Metric::as_int(); }
 

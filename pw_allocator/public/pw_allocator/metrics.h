@@ -33,22 +33,71 @@ class Metrics : public metric::Group {
   /// Add the metrics to the group.
   ///
   /// A separate `Init` method allows the constructor to remain constexpr.
-  void Init();
+  void Init(size_t capacity);
 
-  /// Updates the allocation statistics.
+  /// Records the details of allocating memory and updates metrics accordingly.
   ///
-  /// An `old_size` of 0 represents an allocation.
-  /// A `new_size` of 0 represents a deallocation.
-  void Update(size_t old_size, size_t new_size);
+  /// @param  new_size          Size of the allocated memory.
+  void RecordAllocation(size_t new_size);
 
-  uint32_t used() const { return used_.value(); }
-  uint32_t peak() const { return peak_.value(); }
-  uint32_t count() const { return count_.value(); }
+  /// Records the details of deallocating memory and updates metrics
+  /// accordingly.
+  ///
+  /// @param  old_size          Size of the previously allocated memory.
+  void RecordDeallocation(size_t old_size);
+
+  /// Records the details of resizing an allocation and updates metrics
+  /// accordingly.
+  ///
+  /// @param  old_size          Previous size of the allocated memory.
+  /// @param  new_size          Size of the allocated memory.
+  void RecordResize(size_t old_size, size_t new_size);
+
+  /// Records the details of reallocating memory and updates metrics
+  /// accordingly.
+  ///
+  /// @param  old_size          Previous size of the allocated memory.
+  /// @param  new_size          Size of the allocated memory.
+  /// @param  moved             True if the memory was copied to a new location.
+  void RecordReallocation(size_t old_size, size_t new_size, bool moved);
+
+  /// Records that a call to `Allocate`, `Resize`, or `Reallocate` failed. This
+  /// may indicated memory becoming exhausted and/or high fragmentation.
+  void RecordFailure();
+
+  uint32_t total_bytes() const { return total_bytes_.value(); }
+  uint32_t allocated_bytes() const { return allocated_bytes_.value(); }
+  uint32_t peak_allocated_bytes() const {
+    return peak_allocated_bytes_.value();
+  }
+  uint32_t cumulative_allocated_bytes() const {
+    return cumulative_allocated_bytes_.value();
+  }
+  uint32_t num_allocations() const { return num_allocations_.value(); }
+  uint32_t num_deallocations() const { return num_deallocations_.value(); }
+  uint32_t num_resizes() const { return num_resizes_.value(); }
+  uint32_t num_reallocations() const { return num_reallocations_.value(); }
+  uint32_t num_failures() const { return num_failures_.value(); }
 
  private:
-  PW_METRIC(used_, "used", 0U);
-  PW_METRIC(peak_, "peak", 0U);
-  PW_METRIC(count_, "count", 0U);
+  /// @copydoc RecordAllocation
+  void RecordAllocationImpl(uint32_t new_size);
+
+  /// @copydoc RecordDeallocation
+  void RecordDeallocationImpl(uint32_t old_size);
+
+  /// @copydoc RecordResize
+  void RecordResizeImpl(uint32_t old_size, uint32_t new_size);
+
+  PW_METRIC(total_bytes_, "total_bytes", 0U);
+  PW_METRIC(allocated_bytes_, "allocated_bytes", 0U);
+  PW_METRIC(peak_allocated_bytes_, "peak_allocated_bytes", 0U);
+  PW_METRIC(cumulative_allocated_bytes_, "cumulative_allocated_bytes", 0U);
+  PW_METRIC(num_allocations_, "num_allocations", 0U);
+  PW_METRIC(num_deallocations_, "num_deallocations", 0U);
+  PW_METRIC(num_resizes_, "num_resizes", 0U);
+  PW_METRIC(num_reallocations_, "num_reallocations", 0U);
+  PW_METRIC(num_failures_, "num_failures", 0U);
 };
 
 /// Stub implementation of the `Metrics` class above.
@@ -60,17 +109,35 @@ class MetricsStub {
   constexpr MetricsStub(metric::Token) {}
 
   /// @copydoc `Metrics::Init`.
-  void Init() {}
+  void Init(size_t) {}
 
   /// Like `pw::metric::Group::Add`, but for this stub object.
   void Add(MetricsStub&) {}
 
-  /// @copydoc `Metrics::Update`.
-  void Update(size_t, size_t) {}
+  /// @copydoc `Metrics::RecordAllocation`.
+  void RecordAllocation(size_t) {}
 
-  uint32_t used() const { return 0; }
-  uint32_t peak() const { return 0; }
-  uint32_t count() const { return 0; }
+  /// @copydoc `Metrics::RecordDeallocation`.
+  void RecordDeallocation(size_t) {}
+
+  /// @copydoc `Metrics::RecordResize`.
+  void RecordResize(size_t, size_t) {}
+
+  /// @copydoc `Metrics::RecordReallocation`.
+  void RecordReallocation(size_t, size_t, bool) {}
+
+  /// @copydoc `Metrics::RecordFailure`.
+  void RecordFailure() {}
+
+  uint32_t total_bytes() const { return 0; }
+  uint32_t allocated_bytes() const { return 0; }
+  uint32_t peak_allocated_bytes() const { return 0; }
+  uint32_t cumulative_allocated_bytes() const { return 0; }
+  uint32_t num_allocations() const { return 0; }
+  uint32_t num_deallocations() const { return 0; }
+  uint32_t num_resizes() const { return 0; }
+  uint32_t num_reallocations() const { return 0; }
+  uint32_t num_failures() const { return 0; }
 
   /// @copydoc pw::metric::Group::Dump.
   void Dump() {}
@@ -105,9 +172,47 @@ class WithMetrics {
   virtual metrics_type& metric_group() = 0;
   virtual const metrics_type& metric_group() const = 0;
 
-  uint32_t used() const { return metric_group().used(); }
-  uint32_t peak() const { return metric_group().peak(); }
-  uint32_t count() const { return metric_group().count(); }
+  uint32_t total_bytes() const { return metric_group().total_bytes(); }
+  uint32_t allocated_bytes() const { return metric_group().allocated_bytes(); }
+  uint32_t peak_allocated_bytes() const {
+    return metric_group().peak_allocated_bytes();
+  }
+  uint32_t cumulative_allocated_bytes() const {
+    return metric_group().cumulative_allocated_bytes();
+  }
+  uint32_t num_allocations() const { return metric_group().num_allocations(); }
+  uint32_t num_deallocations() const {
+    return metric_group().num_deallocations();
+  }
+  uint32_t num_resizes() const { return metric_group().num_resizes(); }
+  uint32_t num_reallocations() const {
+    return metric_group().num_reallocations();
+  }
+  uint32_t num_failures() const { return metric_group().num_failures(); }
+
+ protected:
+  /// @copydoc `Metrics::RecordAllocation`.
+  void RecordAllocation(size_t new_size) {
+    metric_group().RecordAllocation(new_size);
+  }
+
+  /// @copydoc `Metrics::RecordDeallocation`.
+  void RecordDeallocation(size_t old_size) {
+    metric_group().RecordDeallocation(old_size);
+  }
+
+  /// @copydoc `Metrics::RecordResize`.
+  void RecordResize(size_t old_size, size_t new_size) {
+    metric_group().RecordResize(old_size, new_size);
+  }
+
+  /// @copydoc `Metrics::RecordReallocation`.
+  void RecordReallocation(size_t old_size, size_t new_size, bool moved) {
+    metric_group().RecordReallocation(old_size, new_size, moved);
+  }
+
+  /// @copydoc `Metrics::RecordFailure`.
+  void RecordFailure() { metric_group().RecordFailure(); }
 };
 
 /// Pure virtual base class that combines the allocator and metrics interfaces.

@@ -27,14 +27,13 @@ Status AllocatorForTestImpl::Init(ByteSpan bytes) {
   if (auto status = allocator_.Init(bytes); !status.ok()) {
     return status;
   }
-  tracker_.Init(allocator_);
+  tracker_.Init(allocator_, bytes.size());
   return OkStatus();
 }
 
 void AllocatorForTestImpl::Exhaust() {
   for (auto* block : allocator_.blocks()) {
     block->MarkUsed();
-    tracker_.metric_group().Update(0, block->InnerSize());
   }
 }
 

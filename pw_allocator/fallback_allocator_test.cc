@@ -42,7 +42,7 @@ TEST_F(FallbackAllocatorTest, ExplicitlyInitialized) {
   EXPECT_EQ(group.children().size(), 0U);
 
   fallback.Init(*primary_, *secondary_);
-  EXPECT_EQ(group.metrics().size(), 3U);
+  EXPECT_EQ(group.metrics().size(), 9U);
   EXPECT_EQ(group.children().size(), 0U);
 }
 
@@ -50,7 +50,7 @@ TEST_F(FallbackAllocatorTest, AutomaticallyInitialized) {
   FallbackAllocatorImpl<internal::Metrics> fallback(*primary_, *secondary_);
 
   metric::Group& group = fallback.metric_group();
-  EXPECT_EQ(group.metrics().size(), 3U);
+  EXPECT_EQ(group.metrics().size(), 9U);
   EXPECT_EQ(group.children().size(), 0U);
 }
 
@@ -234,17 +234,18 @@ TEST_F(FallbackAllocatorTest, GetMetrics) {
   Layout layout = Layout::Of<uint32_t>();
   allocator_.Allocate(layout);
 
-  EXPECT_NE(primary_->used(), 0U);
-  EXPECT_EQ(primary_->peak(), primary_->used());
-  EXPECT_EQ(primary_->count(), 1U);
+  EXPECT_EQ(primary_->allocated_bytes(), 0U);
+  EXPECT_EQ(primary_->peak_allocated_bytes(), 0U);
+  EXPECT_EQ(primary_->num_allocations(), 0U);
 
-  EXPECT_EQ(secondary_->used(), layout.size());
-  EXPECT_EQ(secondary_->peak(), layout.size());
-  EXPECT_EQ(secondary_->count(), 1U);
+  EXPECT_EQ(secondary_->allocated_bytes(), layout.size());
+  EXPECT_EQ(secondary_->peak_allocated_bytes(), layout.size());
+  EXPECT_EQ(secondary_->num_allocations(), 1U);
 
-  EXPECT_EQ(allocator_.used(), secondary_->used());
-  EXPECT_EQ(allocator_.peak(), secondary_->peak());
-  EXPECT_EQ(allocator_.count(), secondary_->count());
+  EXPECT_EQ(allocator_.allocated_bytes(), secondary_->allocated_bytes());
+  EXPECT_EQ(allocator_.peak_allocated_bytes(),
+            secondary_->peak_allocated_bytes());
+  EXPECT_EQ(allocator_.num_allocations(), secondary_->num_allocations());
 }
 
 }  // namespace

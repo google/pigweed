@@ -387,18 +387,21 @@ void UpdateMetrics(MultiplexAllocatorType& allocator) {
       allocator.Resize(kBarToken, bar_ptr, kBarLayout, kBarLayout.size() / 2));
 
   auto* foo = GetSuballocator(allocator, kFooToken);
-  EXPECT_EQ(foo->used(), kFooLayout.size() * 2);
-  EXPECT_EQ(foo->peak(), kFooLayout.size() * 2);
-  EXPECT_EQ(foo->count(), 1U);
+  EXPECT_EQ(foo->allocated_bytes(), kFooLayout.size() * 2);
+  EXPECT_EQ(foo->peak_allocated_bytes(), kFooLayout.size() * 2);
+  EXPECT_EQ(foo->num_allocations(), 1U);
 
   auto* bar = GetSuballocator(allocator, kBarToken);
-  EXPECT_EQ(bar->used(), kBarLayout.size() / 2);
-  EXPECT_EQ(bar->peak(), kBarLayout.size());
-  EXPECT_EQ(bar->count(), 1U);
+  EXPECT_EQ(bar->allocated_bytes(), kBarLayout.size() / 2);
+  EXPECT_EQ(bar->peak_allocated_bytes(), kBarLayout.size());
+  EXPECT_EQ(bar->num_allocations(), 1U);
 
-  EXPECT_EQ(allocator.used(), foo->used() + bar->used());
-  EXPECT_EQ(allocator.peak(), foo->peak() + bar->peak());
-  EXPECT_EQ(allocator.count(), foo->count() + bar->count());
+  EXPECT_EQ(allocator.allocated_bytes(),
+            foo->allocated_bytes() + bar->allocated_bytes());
+  EXPECT_EQ(allocator.peak_allocated_bytes(),
+            foo->peak_allocated_bytes() + bar->peak_allocated_bytes());
+  EXPECT_EQ(allocator.num_allocations(),
+            foo->num_allocations() + bar->num_allocations());
 }
 TEST(MultiplexAllocatorTest, UpdateMetrics) {
   Suballocator foo, bar;

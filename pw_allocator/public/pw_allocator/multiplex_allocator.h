@@ -69,7 +69,7 @@ class MultiplexAllocatorImpl : public WithMetrics<MetricsType> {
     allocator_type* allocator = GetAllocator(token);
     void* ptr = allocator == nullptr ? nullptr : allocator->Allocate(layout);
     if (ptr != nullptr) {
-      metrics_.Update(0, layout.size());
+      metrics_.RecordAllocation(layout.size());
     }
     return ptr;
   }
@@ -80,7 +80,7 @@ class MultiplexAllocatorImpl : public WithMetrics<MetricsType> {
     allocator_type* allocator = ptr == nullptr ? nullptr : GetAllocator(token);
     if (allocator != nullptr) {
       allocator->Deallocate(ptr, layout);
-      metrics_.Update(layout.size(), 0);
+      metrics_.RecordDeallocation(layout.size());
     }
   }
 
@@ -92,7 +92,7 @@ class MultiplexAllocatorImpl : public WithMetrics<MetricsType> {
                        ? false
                        : allocator->Resize(ptr, old_layout, new_size);
     if (resized) {
-      metrics_.Update(old_layout.size(), new_size);
+      metrics_.RecordResize(old_layout.size(), new_size);
     }
     return resized;
   }
@@ -105,7 +105,7 @@ class MultiplexAllocatorImpl : public WithMetrics<MetricsType> {
                         ? nullptr
                         : allocator->Reallocate(ptr, old_layout, new_size);
     if (new_ptr != nullptr) {
-      metrics_.Update(old_layout.size(), new_size);
+      metrics_.RecordReallocation(old_layout.size(), new_size, new_ptr != ptr);
     }
     return new_ptr;
   }

@@ -48,9 +48,9 @@ TEST(MultiBuf, WithOneChunkReleases) {
   AllocatorForTest<kArbitraryAllocatorSize> allocator;
   MultiBuf buf;
   buf.PushFrontChunk(MakeChunk(allocator.get(), kArbitraryChunkSize));
-  EXPECT_EQ(allocator->count(), 2U);
+  EXPECT_EQ(allocator->num_allocations(), 2U);
   buf.Release();
-  EXPECT_EQ(allocator->count(), 0U);
+  EXPECT_EQ(allocator->num_deallocations(), 2U);
 }
 
 TEST(MultiBuf, WithOneChunkReleasesOnDestruction) {
@@ -58,9 +58,9 @@ TEST(MultiBuf, WithOneChunkReleasesOnDestruction) {
   {
     MultiBuf buf;
     buf.PushFrontChunk(MakeChunk(allocator.get(), kArbitraryChunkSize));
-    EXPECT_EQ(allocator->count(), 2U);
+    EXPECT_EQ(allocator->num_allocations(), 2U);
   }
-  EXPECT_EQ(allocator->count(), 0U);
+  EXPECT_EQ(allocator->num_deallocations(), 2U);
 }
 
 TEST(MultiBuf, WithMultipleChunksReleasesAllOnDestruction) {
@@ -69,9 +69,9 @@ TEST(MultiBuf, WithMultipleChunksReleasesAllOnDestruction) {
     MultiBuf buf;
     buf.PushFrontChunk(MakeChunk(allocator.get(), kArbitraryChunkSize));
     buf.PushFrontChunk(MakeChunk(allocator.get(), kArbitraryChunkSize));
-    EXPECT_EQ(allocator->count(), 4U);
+    EXPECT_EQ(allocator->num_allocations(), 4U);
   }
-  EXPECT_EQ(allocator->count(), 0U);
+  EXPECT_EQ(allocator->num_deallocations(), 4U);
 }
 
 TEST(MultiBuf, SizeReturnsNumberOfBytes) {
