@@ -204,7 +204,13 @@ def to_untyped_config(feature_set, action_config_set, flag_sets, fail = fail):
             fail = fail,
         ))
 
+    action_to_files = {
+        ac.action_name: ac.files
+        for ac in acs
+    }
+
     return struct(
         features = untyped_features,
         action_configs = untyped_acs,
+        action_to_files = action_to_files,
     )

@@ -32,6 +32,12 @@ def _test_action_configs_impl(_ctx, action_configs, features, flag_sets, to_unty
         assert_eq(sorted([x[0] for x in actions]), sorted(deduped_actions))
         return deduped_actions
 
+    def get_files(**kwargs):
+        return {
+            k: sorted([f.basename for f in v.to_list()])
+            for k, v in to_untyped_config(**kwargs).action_to_files.items()
+        }
+
     # Verify that we validate that features with duplicate action names are not
     # permitted
     assert_fail(
@@ -62,6 +68,19 @@ def _test_action_configs_impl(_ctx, action_configs, features, flag_sets, to_unty
         {
             "c-compile": [list(flag_sets.bar.flag_groups)],
             "cc-flags-make-variable": [],
+        },
+    )
+
+    assert_eq(
+        get_files(
+            action_configs = [
+                action_configs.c_compile,
+                action_configs.cpp_compile_from_tool,
+            ],
+        ),
+        {
+            "c-compile": [],
+            "c++-compile": ["clang_wrapper", "data.txt", "real_clang"],
         },
     )
 

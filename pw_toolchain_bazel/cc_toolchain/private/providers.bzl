@@ -97,6 +97,7 @@ PwActionConfigInfo = provider(
         "flag_sets": "Sequence[FlagSetInfo]: Set of flag sets the action sets",
         "implies_features": "depset[FeatureInfo]: Set of features implied by this action config",
         "implies_action_configs": "depset[ActionConfigInfo]: Set of action configs enabled by this action config",
+        "files": "depset[File]: The files required to run these actions",
     },
 )
 
@@ -107,4 +108,12 @@ PwActionConfigSetInfo = provider(
         "action_configs": "depset[ActionConfigInfo]: A set of action configs",
     },
 )
+
 PwToolInfo = ToolInfo
+
+PwToolchainConfigInfo = provider(
+    doc = "Additional metadata about the config of the pigweed toolchain.",
+    fields = {
+        "action_to_files": "Dict[str, depset[File]]: A set of files required to execute a given action",
+    },
+)

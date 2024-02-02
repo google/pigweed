@@ -35,8 +35,10 @@ def _pw_cc_tool_impl(ctx):
     path = ctx.attr.path or None
 
     files = ctx.files.additional_files
+    transitive_files = []
     if tool != None:
         files = files + [tool]
+        transitive_files = [ctx.attr.tool[DefaultInfo].data_runfiles.files]
 
     return [
         config_lib_tool(
@@ -44,14 +46,14 @@ def _pw_cc_tool_impl(ctx):
             path = path,
             execution_requirements = ctx.attr.execution_requirements,
         ),
-        DefaultInfo(files = depset(files)),
+        DefaultInfo(files = depset(files, transitive = transitive_files)),
     ]
 
 pw_cc_tool = rule(
     implementation = _pw_cc_tool_impl,
     attrs = {
         "tool": attr.label(
-            allow_single_file = True,
+            allow_files = True,
             executable = True,
             cfg = "exec",
             doc = """The underlying tool that this rule represents.
@@ -157,6 +159,7 @@ def _pw_cc_action_config_impl(ctx):
             ))
     tools = tuple([tool[PwToolInfo] for tool in ctx.attr.tools])
 
+    files = depset(transitive = [dep[DefaultInfo].files for dep in ctx.attr.tools])
     common_kwargs = dict(
         label = ctx.label,
         tools = tools,
@@ -166,6 +169,7 @@ def _pw_cc_action_config_impl(ctx):
         ]),
         implies_action_configs = depset([]),
         enabled = ctx.attr.enabled,
+        files = files,
     )
     action_configs = [
         _generate_action_config(ctx, action, **common_kwargs)
@@ -177,9 +181,7 @@ def _pw_cc_action_config_impl(ctx):
             label = ctx.label,
             action_configs = depset(action_configs),
         ),
-        DefaultInfo(
-            files = depset(None, transitive = [dep[DefaultInfo].files for dep in ctx.attr.tools]),
-        ),
+        DefaultInfo(files = files),
     ]
 
 pw_cc_action_config = rule(

@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
 load(
     "//cc_toolchain:defs.bzl",
     "pw_cc_action_config",
@@ -26,6 +27,19 @@ pw_cc_tool(
     path = "/usr/bin/clang",
 )
 
+native_binary(
+    name = "clang_wrapper",
+    src = "clang_wrapper.sh",
+    out = "clang_wrapper",
+    data = [":real_clang"],
+)
+
+pw_cc_tool(
+    name = "clang_wrapper_tool",
+    additional_files = ["data.txt"],
+    tool = ":clang_wrapper",
+)
+
 pw_cc_action_config(
     name = "all_c_compile",
     action_names = ["//actions:all_c_compiler_actions"],
@@ -37,6 +51,12 @@ pw_cc_action_config(
     name = "c_compile",
     action_names = ["//actions:c_compile"],
     tools = [":system_clang"],
+)
+
+pw_cc_action_config(
+    name = "cpp_compile_from_tool",
+    action_names = ["//actions:cpp_compile"],
+    tools = [":clang_wrapper_tool"],
 )
 
 test_action_configs(
