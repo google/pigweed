@@ -18,6 +18,7 @@ load(
     "pw_cc_feature_constraint",
     "pw_cc_feature_set",
     "pw_cc_flag_set",
+    "pw_cc_mutually_exclusive_category",
 )
 load(":test_features.bzl", "test_features")
 
@@ -122,6 +123,31 @@ pw_cc_feature(
     enabled = True,
     feature_name = "constrained",
     flag_sets = [":constrained_flags"],
+)
+
+pw_cc_mutually_exclusive_category(
+    name = "category",
+)
+
+pw_cc_feature(
+    name = "primary_feature",
+    enabled = True,
+    feature_name = "primary_feature",
+    mutually_exclusive = [":category"],
+)
+
+pw_cc_feature(
+    name = "mutex_provider",
+    enabled = True,
+    feature_name = "mutex_provider",
+    mutually_exclusive = [":category"],
+)
+
+pw_cc_feature(
+    name = "mutex_label",
+    enabled = True,
+    feature_name = "mutex_label",
+    mutually_exclusive = [":primary_feature"],
 )
 
 test_features(

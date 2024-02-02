@@ -80,6 +80,12 @@ PwBuiltinFeatureInfo = provider(
     doc = "A tag marking something as a known feature. The only use of this is to ensure that pw_cc_feature disallows override = <non known feature>.",
     fields = {},
 )
+PwMutuallyExclusiveCategoryInfo = provider(
+    doc = "Multiple features with the category will be mutally exclusive",
+    fields = {
+        "name": "str: The name of the provider",
+    },
+)
 
 PwActionConfigInfo = provider(
     doc = "A type-safe version of @bazel_tools's ActionConfigInfo",

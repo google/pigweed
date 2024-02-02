@@ -27,6 +27,7 @@ load(
     "//cc_toolchain/private:feature.bzl",
     _pw_cc_feature = "pw_cc_feature",
     _pw_cc_feature_set = "pw_cc_feature_set",
+    _pw_cc_mutually_exclusive_category = "pw_cc_mutually_exclusive_category",
 )
 load(
     "//cc_toolchain/private:feature_constraint.bzl",
@@ -50,6 +51,7 @@ pw_cc_tool = _pw_cc_tool
 pw_cc_feature = _pw_cc_feature
 pw_cc_unsafe_feature = _pw_cc_unsafe_feature
 pw_cc_feature_constraint = _pw_cc_feature_constraint
+pw_cc_mutually_exclusive_category = _pw_cc_mutually_exclusive_category
 pw_cc_feature_set = _pw_cc_feature_set
 
 pw_cc_flag_group = _pw_cc_flag_group

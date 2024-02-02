@@ -20,6 +20,38 @@ load(
     "PwFeatureInfo",
     "PwFeatureSetInfo",
     "PwFlagSetInfo",
+    "PwMutuallyExclusiveCategoryInfo",
+)
+
+def _pw_cc_mutually_exclusive_category_impl(ctx):
+    return [PwMutuallyExclusiveCategoryInfo(
+        name = ctx.attr.category_name or str(ctx.label),
+    )]
+
+pw_cc_mutually_exclusive_category = rule(
+    implementation = _pw_cc_mutually_exclusive_category_impl,
+    provides = [PwMutuallyExclusiveCategoryInfo],
+    doc = """Creates a category of mutually exclusive features.
+
+Example:
+
+    pw_cc_mutually_exclusive_category(
+        name = "compilation_mode",
+    )
+
+    pw_cc_feature(name = "opt", mutually_exclusive = [":compilation_mode"], ...)
+    pw_cc_feature(name = "dbg", mutually_exclusive = [":compilation_mode"], ...)
+    pw_cc_feature(name = "fastbuild", mutually_exclusive = [":compilation_mode"], ...)
+
+""",
+    attrs = {
+        "category_name": attr.string(
+            doc = """A backdoor to support old-style provides
+
+Not recommended to be used, as it can clash with other provides.
+""",
+        ),
+    },
 )
 
 def _pw_cc_feature_set_impl(ctx):
@@ -81,7 +113,10 @@ def _pw_cc_feature_impl(ctx):
         implies_features = implies_features,
         implies_action_configs = depset([]),
         requires_any_of = tuple(requires),
-        provides = ctx.attr.provides,
+        provides = tuple([
+            p[PwMutuallyExclusiveCategoryInfo].name
+            for p in ctx.attr.mutually_exclusive
+        ]),
         known = False,
         overrides = overrides,
     )
@@ -90,6 +125,7 @@ def _pw_cc_feature_impl(ctx):
         feature,
         PwFeatureSetInfo(features = depset([feature])),
         PwFeatureConstraintInfo(all_of = depset([feature]), none_of = depset([])),
+        PwMutuallyExclusiveCategoryInfo(name = name),
     ]
 
 pw_cc_feature = rule(
@@ -156,14 +192,18 @@ Warning: If any of the named features cannot be enabled, this feature is
 silently disabled.
 """,
         ),
-        "provides": attr.string_list(
-            doc = """A list of additional feature names this feature fulfills.
-If this feature has a side-effect of implementing another feature, it can be
-useful to list that feature's name here to ensure they aren't enabled at the
-same time.
+        "mutually_exclusive": attr.label_list(
+            providers = [PwMutuallyExclusiveCategoryInfo],
+            doc = """A list of things that this is mutually exclusive with.
 
-Note: This feature cannot be enabled if another feature also provides the listed
-feature names.
+It can be either:
+* A feature, in which case the two features are mutually exclusive.
+* A `pw_cc_mutually_exclusive_category`, in which case all features that write
+    `mutually_exclusive = [":category"]` are mutually exclusive with each other.
+
+If this feature has a side-effect of implementing another feature, it can be
+useful to list that feature here to ensure they aren't enabled at the
+same time.
 """,
         ),
         "overrides": attr.label(
@@ -185,7 +225,12 @@ Example:
 """,
         ),
     },
-    provides = [PwFeatureInfo, PwFeatureSetInfo],
+    provides = [
+        PwFeatureInfo,
+        PwFeatureSetInfo,
+        PwFeatureConstraintInfo,
+        PwMutuallyExclusiveCategoryInfo,
+    ],
     doc = """Defines the implemented behavior of a C/C++ toolchain feature.
 
 This rule is effectively a wrapper for the `feature` constructor in

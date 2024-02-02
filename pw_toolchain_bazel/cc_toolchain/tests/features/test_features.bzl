@@ -114,4 +114,19 @@ def _test_features_impl(_ctx, features, feature_sets, flag_sets, to_untyped_conf
     to_untyped_config(features = [features.constrained, features.foo])
     assert_fail(to_untyped_config, features = [features.constrained])
 
+    # You should be able to do mutual exclusion without all the features being
+    # defined
+    assert_eq(
+        to_untyped_config(features = [features.primary_feature]).features[0].provides,
+        ["@@//cc_toolchain/tests/features:category"],
+    )
+    assert_eq(
+        to_untyped_config(features = [features.mutex_provider]).features[0].provides,
+        ["@@//cc_toolchain/tests/features:category"],
+    )
+    assert_eq(
+        to_untyped_config(features = [features.mutex_label]).features[0].provides,
+        ["primary_feature"],
+    )
+
 test_features = generate_test_rule(_test_features_impl)

@@ -746,15 +746,16 @@ API reference
          If any of the named features cannot be enabled, this feature is
          silently disabled.
 
-   .. py:attribute:: provides
-      :type: List[str]
+   .. py:attribute:: mutually_exclusive
+      :type: List[Label]
 
-      A list of additional feature names this feature fulfills.
+      A list of feature or mutually exclusive categories that this feature is
+      mutually exclusive with.
 
       .. admonition:: Note
 
          This feature cannot be enabled if another feature also provides the
-         listed feature names.
+         listed feature.
 
 
 .. py:class:: pw_cc_feature_set
