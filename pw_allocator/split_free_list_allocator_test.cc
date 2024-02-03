@@ -17,7 +17,6 @@
 #include "pw_allocator/allocator_fuzzing.h"
 #include "pw_allocator/block.h"
 #include "pw_allocator/buffer.h"
-#include "pw_bytes/alignment.h"
 #include "pw_bytes/span.h"
 #include "pw_containers/vector.h"
 #include "pw_fuzzer/fuzztest.h"

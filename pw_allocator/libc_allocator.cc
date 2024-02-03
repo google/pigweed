@@ -19,9 +19,6 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "pw_assert/check.h"
-#include "pw_bytes/alignment.h"
-
 namespace pw::allocator {
 
 void* LibCAllocator::DoAllocate(Layout layout) {

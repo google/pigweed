@@ -20,7 +20,6 @@
 
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/block.h"
-#include "pw_bytes/alignment.h"
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"

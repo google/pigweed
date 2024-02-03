@@ -55,6 +55,7 @@ cc_library(
         ":config_override",
         "//pw_assert",
         "//pw_bytes",
+        "//pw_bytes:alignment",
         "//pw_checksum",
         "//pw_containers",
         "//pw_log",

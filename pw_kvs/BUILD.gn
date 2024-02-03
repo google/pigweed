@@ -62,6 +62,7 @@ pw_source_set("pw_kvs") {
     "sectors.cc",
   ]
   public_deps = [
+    "$dir_pw_bytes:alignment",
     dir_pw_assert,
     dir_pw_bytes,
     dir_pw_containers,

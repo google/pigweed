@@ -44,6 +44,7 @@ pw_add_library(pw_kvs STATIC
   PUBLIC_DEPS
     pw_assert
     pw_bytes
+    pw_bytes.alignment
     pw_containers
     pw_span
     pw_status

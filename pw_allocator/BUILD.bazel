@@ -34,7 +34,7 @@ cc_library(
     includes = ["public"],
     deps = [
         "//pw_assert",
-        "//pw_bytes",
+        "//pw_bytes:alignment",
         "//pw_status",
     ],
 )
@@ -49,10 +49,10 @@ cc_library(
     deps = [
         "//pw_assert",
         "//pw_bytes",
+        "//pw_bytes:alignment",
         "//pw_result",
         "//pw_span",
         "//pw_status",
-        "//third_party/fuchsia:stdcompat",
     ],
 )
 
@@ -123,8 +123,6 @@ cc_library(
     includes = ["public"],
     deps = [
         ":allocator",
-        "//pw_assert",
-        "//pw_bytes",
         "//pw_status",
     ],
 )
@@ -295,7 +293,6 @@ pw_cc_test(
     deps = [
         ":allocator",
         ":allocator_testing",
-        "//pw_bytes",
         "//pw_unit_test",
     ],
 )

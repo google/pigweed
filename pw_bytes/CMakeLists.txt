@@ -16,7 +16,6 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 pw_add_library(pw_bytes STATIC
   HEADERS
-    public/pw_bytes/alignment.h
     public/pw_bytes/array.h
     public/pw_bytes/byte_builder.h
     public/pw_bytes/endian.h
@@ -36,6 +35,16 @@ pw_add_library(pw_bytes STATIC
     byte_builder.cc
 )
 
+pw_add_library(pw_bytes.alignment INTERFACE
+  HEADERS
+    public/pw_bytes/alignment.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_assert
+    pw_preprocessor
+)
+
 pw_add_library(pw_bytes.bit INTERFACE
   HEADERS
     public/pw_bytes/bit.h
@@ -49,7 +58,7 @@ pw_add_test(pw_bytes.alignment_test
   SOURCES
     alignment_test.cc
   PRIVATE_DEPS
-    pw_bytes
+    pw_bytes.alignment
   GROUPS
     modules
     pw_bytes

@@ -27,7 +27,6 @@ cc_library(
         "byte_builder.cc",
     ],
     hdrs = [
-        "public/pw_bytes/alignment.h",
         "public/pw_bytes/array.h",
         "public/pw_bytes/byte_builder.h",
         "public/pw_bytes/endian.h",
@@ -47,6 +46,16 @@ cc_library(
 )
 
 cc_library(
+    name = "alignment",
+    hdrs = ["public/pw_bytes/alignment.h"],
+    includes = ["public"],
+    deps = [
+        "//pw_assert",
+        "//pw_preprocessor",
+    ],
+)
+
+cc_library(
     name = "bit",
     hdrs = ["public/pw_bytes/bit.h"],
     includes = ["public"],
@@ -57,7 +66,7 @@ pw_cc_test(
     name = "alignment_test",
     srcs = ["alignment_test.cc"],
     deps = [
-        ":pw_bytes",
+        ":alignment",
         "//pw_unit_test",
     ],
 )

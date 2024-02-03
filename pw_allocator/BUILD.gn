@@ -53,8 +53,8 @@ pw_source_set("allocator") {
   public = [ "public/pw_allocator/allocator.h" ]
   public_deps = [ dir_pw_status ]
   deps = [
+    "$dir_pw_bytes:alignment",
     dir_pw_assert,
-    dir_pw_bytes,
   ]
   sources = [ "allocator.cc" ]
 }
@@ -66,7 +66,7 @@ pw_source_set("block") {
   ]
   public = [ "public/pw_allocator/block.h" ]
   public_deps = [
-    "$dir_pw_third_party/fuchsia:stdcompat",
+    "$dir_pw_bytes:alignment",
     dir_pw_bytes,
     dir_pw_result,
     dir_pw_span,
@@ -124,10 +124,6 @@ pw_source_set("libc_allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/libc_allocator.h" ]
   public_deps = [ ":allocator" ]
-  deps = [
-    dir_pw_assert,
-    dir_pw_bytes,
-  ]
   sources = [ "libc_allocator.cc" ]
 }
 
@@ -290,7 +286,6 @@ pw_test("allocator_test") {
   deps = [
     ":allocator",
     ":allocator_testing",
-    dir_pw_bytes,
   ]
   sources = [ "allocator_test.cc" ]
 }

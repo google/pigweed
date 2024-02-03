@@ -32,7 +32,7 @@ pw_add_library(pw_allocator.allocator STATIC
     pw_status
   PRIVATE_DEPS
     pw_assert
-    pw_bytes
+    pw_bytes.alignment
   SOURCES
     allocator.cc
 )
@@ -46,10 +46,10 @@ pw_add_library(pw_allocator.block STATIC
     public
   PUBLIC_DEPS
     pw_bytes
+    pw_bytes.alignment
     pw_result
     pw_span
     pw_status
-    pw_third_party.fuchsia.stdcompat
   PRIVATE_DEPS
     pw_assert
   SOURCES
@@ -116,9 +116,6 @@ pw_add_library(pw_allocator.libc_allocator STATIC
   PUBLIC_DEPS
     pw_allocator.allocator
     pw_status
-  PRIVATE_DEPS
-    pw_assert
-    pw_bytes
 )
 
 pw_add_library(pw_allocator.metrics STATIC
@@ -260,7 +257,6 @@ pw_add_test(pw_allocator.allocator_test
   PRIVATE_DEPS
     pw_allocator.allocator
     pw_allocator.allocator_testing
-    pw_bytes
   GROUPS
     modules
     pw_allocator

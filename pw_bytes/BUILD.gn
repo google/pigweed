@@ -27,7 +27,6 @@ config("public_include_path") {
 pw_source_set("pw_bytes") {
   public_configs = [ ":public_include_path" ]
   public = [
-    "public/pw_bytes/alignment.h",
     "public/pw_bytes/array.h",
     "public/pw_bytes/byte_builder.h",
     "public/pw_bytes/endian.h",
@@ -42,6 +41,15 @@ pw_source_set("pw_bytes") {
     dir_pw_preprocessor,
     dir_pw_span,
     dir_pw_status,
+  ]
+}
+
+pw_source_set("alignment") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_bytes/alignment.h" ]
+  public_deps = [
+    dir_pw_assert,
+    dir_pw_preprocessor,
   ]
 }
 
@@ -68,7 +76,7 @@ pw_test_group("tests") {
 }
 
 pw_test("alignment_test") {
-  deps = [ ":pw_bytes" ]
+  deps = [ ":alignment" ]
   sources = [ "alignment_test.cc" ]
 }
 
