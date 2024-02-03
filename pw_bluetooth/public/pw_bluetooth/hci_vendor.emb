@@ -181,8 +181,8 @@ enum SbcSubBands:
 
 enum SbcAllocationMethod:
   [maximum_bits: 2]
-  LOUNDNESS = 0x01
-  SNR       = 0x02
+  LOUDNESS = 0x01
+  SNR      = 0x02
 
 
 enum AacEnableVariableBitRate:
