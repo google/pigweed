@@ -81,12 +81,12 @@ class Conversions {
   }
 
   template <typename T, typename = Enabled<T>>
-  constexpr T& as() {
+  [[nodiscard]] constexpr T& as() {
     return pw::internal::SiblingCast<T&, CommonBase>(static_cast<Self&>(*this));
   }
 
   template <typename T, typename = Enabled<T>>
-  constexpr const T& as() const {
+  [[nodiscard]] constexpr const T& as() const {
     return static_cast<const T&>(
         pw::internal::SiblingCast<const T&, CommonBase>(
             static_cast<const Self&>(*this)));
