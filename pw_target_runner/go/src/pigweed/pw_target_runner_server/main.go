@@ -21,9 +21,9 @@ import (
 	"log"
 
 	"github.com/golang/protobuf/proto"
-	"pigweed.dev/pw_target_runner"
+	"pigweed/pw_target_runner"
 
-	pb "pigweed.dev/proto/pw_target_runner/exec_server_config_pb"
+	pb "pigweed/proto/pw_target_runner/exec_server_config_pb"
 )
 
 // ServerOptions contains command-line options for the server.

@@ -15,7 +15,7 @@ syntax = "proto3";
 
 package pw.target_runner;
 
-option go_package = "pigweed.dev/proto/pw_target_runner/target_runner_pb";
+option go_package = "pigweed/proto/pw_target_runner/target_runner_pb";
 
 service TargetRunner {
   // Queues a single executable, blocking until it has run.

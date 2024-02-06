@@ -23,13 +23,13 @@ pw_doc_group("docs") {
 }
 
 pw_go_executable("pw_target_runner_client") {
-  deps = [ "src/pigweed.dev/pw_target_runner_client" ]
-  package = "pigweed.dev/pw_target_runner_client"
+  deps = [ "src/pigweed/pw_target_runner_client" ]
+  package = "pigweed/pw_target_runner_client"
 }
 
 pw_go_executable("pw_target_runner_server") {
-  deps = [ "src/pigweed.dev/pw_target_runner_server" ]
-  package = "pigweed.dev/pw_target_runner_server"
+  deps = [ "src/pigweed/pw_target_runner_server" ]
+  package = "pigweed/pw_target_runner_server"
 }
 
 pw_host_tool("simple_client") {

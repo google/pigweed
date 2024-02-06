@@ -29,7 +29,7 @@ import (
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 
-	pb "pigweed.dev/proto/pw_target_runner/target_runner_pb"
+	pb "pigweed/proto/pw_target_runner/target_runner_pb"
 )
 
 var (

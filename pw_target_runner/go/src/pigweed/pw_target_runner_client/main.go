@@ -26,7 +26,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "pigweed.dev/proto/pw_target_runner/target_runner_pb"
+	pb "pigweed/proto/pw_target_runner/target_runner_pb"
 )
 
 // Client is a gRPC client that communicates with a TargetRunner service.

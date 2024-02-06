@@ -20,7 +20,7 @@ import (
 	"os"
 	"os/exec"
 
-	pb "pigweed.dev/proto/pw_target_runner/target_runner_pb"
+	pb "pigweed/proto/pw_target_runner/target_runner_pb"
 )
 
 // ExecDeviceRunner is a struct that implements the DeviceRunner interface,

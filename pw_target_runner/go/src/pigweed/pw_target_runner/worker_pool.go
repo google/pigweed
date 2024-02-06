@@ -23,7 +23,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	pb "pigweed.dev/proto/pw_target_runner/target_runner_pb"
+	pb "pigweed/proto/pw_target_runner/target_runner_pb"
 )
 
 // RunRequest represents a client request to run a single executable on-device.

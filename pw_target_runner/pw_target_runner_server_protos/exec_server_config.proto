@@ -15,7 +15,7 @@ syntax = "proto3";
 
 package pw.target_runner;
 
-option go_package = "pigweed.dev/proto/pw_target_runner/exec_server_config_pb";
+option go_package = "pigweed/proto/pw_target_runner/exec_server_config_pb";
 
 // Configuration options for running a test server.
 message ServerConfig {
