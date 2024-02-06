@@ -22,7 +22,22 @@ namespace {
 
 constexpr static size_t kCapacity = 256;
 
-TEST(TrackingAllocatorTest, Init_Metrics) {
+TEST(TrackingAllocatorTest, AutomaticInit_Metrics) {
+  WithBuffer<SimpleAllocator, kCapacity> allocator;
+  TrackingAllocatorImpl<internal::Metrics> tracker(
+      test::kToken, *allocator, kCapacity);
+  internal::Metrics& group = tracker.metric_group();
+  EXPECT_EQ(group.metrics().size(), 9U);
+  EXPECT_EQ(group.children().size(), 0U);
+}
+
+TEST(TrackingAllocatorTest, AutomaticInit_MetricsStub) {
+  WithBuffer<SimpleAllocator, kCapacity> allocator;
+  TrackingAllocatorImpl<internal::MetricsStub> tracker(
+      test::kToken, *allocator, kCapacity);
+}
+
+TEST(TrackingAllocatorTest, ManualInit_Metrics) {
   WithBuffer<SimpleAllocator, kCapacity> allocator;
   TrackingAllocatorImpl<internal::Metrics> tracker(test::kToken);
 
@@ -35,10 +50,30 @@ TEST(TrackingAllocatorTest, Init_Metrics) {
   EXPECT_EQ(group.children().size(), 0U);
 }
 
-TEST(TrackingAllocatorTest, Init_MetricsStub) {
+TEST(TrackingAllocatorTest, ManualInit_MetricsStub) {
   WithBuffer<SimpleAllocator, kCapacity> allocator;
   TrackingAllocatorImpl<internal::MetricsStub> tracker(test::kToken);
   tracker.Init(*allocator, kCapacity);
+}
+
+TEST(TrackingAllocatorTest, NoInit_Metrics) {
+  WithBuffer<SimpleAllocator, kCapacity> allocator;
+  TrackingAllocatorImpl<internal::Metrics> tracker(test::kToken);
+  Layout layout = Layout::Of<std::byte>();
+  EXPECT_EQ(tracker.Allocate(layout), nullptr);
+  tracker.Deallocate(nullptr, layout);
+  EXPECT_FALSE(tracker.Resize(nullptr, layout, 2));
+  EXPECT_EQ(tracker.Reallocate(nullptr, layout, 2), nullptr);
+}
+
+TEST(TrackingAllocatorTest, NoInit_MetricsStub) {
+  WithBuffer<SimpleAllocator, kCapacity> allocator;
+  TrackingAllocatorImpl<internal::MetricsStub> tracker(test::kToken);
+  Layout layout = Layout::Of<std::byte>();
+  EXPECT_EQ(tracker.Allocate(layout), nullptr);
+  tracker.Deallocate(nullptr, layout);
+  EXPECT_FALSE(tracker.Resize(nullptr, layout, 2));
+  EXPECT_EQ(tracker.Reallocate(nullptr, layout, 2), nullptr);
 }
 
 // These unit tests below use `AllocatorForTest<kBufferSize>`, which forwards

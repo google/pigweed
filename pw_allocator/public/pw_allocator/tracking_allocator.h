@@ -40,12 +40,20 @@ class TrackingAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
   constexpr explicit TrackingAllocatorImpl(metric::Token token)
       : metrics_(token) {}
 
+  /// Non-constexpr constructor that autmatically invokes `Init`.
+  TrackingAllocatorImpl(metric::Token token,
+                        Allocator& allocator,
+                        size_t capacity)
+      : TrackingAllocatorImpl(token) {
+    Init(allocator, capacity);
+  }
+
   metrics_type& metric_group() override { return metrics_; }
   const metrics_type& metric_group() const override { return metrics_; }
 
   /// Sets the wrapped allocator.
   ///
-  /// This must be called exactly once and before any other method.
+  /// All other methods will fail until this method is called.
   ///
   /// @param[in]  allocator   The allocator to wrap and record.
   void Init(Allocator& allocator, size_t capacity) {
@@ -61,6 +69,9 @@ class TrackingAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
 
   /// @copydoc Allocator::Allocate
   void* DoAllocate(Layout layout) override {
+    if (allocator_ == nullptr) {
+      return nullptr;
+    }
     void* ptr = allocator_->Allocate(layout);
     if (ptr == nullptr) {
       metrics_.RecordFailure();
@@ -72,7 +83,7 @@ class TrackingAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
 
   /// @copydoc Allocator::Deallocate
   void DoDeallocate(void* ptr, Layout layout) override {
-    if (ptr != nullptr) {
+    if (allocator_ != nullptr && ptr != nullptr) {
       allocator_->Deallocate(ptr, layout);
       metrics_.RecordDeallocation(layout.size());
     }
@@ -80,6 +91,9 @@ class TrackingAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
 
   /// @copydoc Allocator::Resize
   bool DoResize(void* ptr, Layout layout, size_t new_size) override {
+    if (allocator_ == nullptr) {
+      return false;
+    }
     if (!allocator_->Resize(ptr, layout, new_size)) {
       metrics_.RecordFailure();
       return false;
@@ -90,6 +104,9 @@ class TrackingAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
 
   /// @copydoc Allocator::Reallocate
   void* DoReallocate(void* ptr, Layout layout, size_t new_size) override {
+    if (allocator_ == nullptr) {
+      return nullptr;
+    }
     void* new_ptr = allocator_->Reallocate(ptr, layout, new_size);
     if (new_ptr == nullptr) {
       metrics_.RecordFailure();
