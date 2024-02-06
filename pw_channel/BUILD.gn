@@ -1,0 +1,57 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_async2/backend.gni")
+import("$dir_pw_build/target_types.gni")
+import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_unit_test/test.gni")
+
+config("public_include_path") {
+  include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("pw_channel") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_channel/channel.h" ]
+  public_deps = [
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_async2:poll",
+    "$dir_pw_toolchain:sibling_cast",
+    dir_pw_assert,
+    dir_pw_bytes,
+    dir_pw_multibuf,
+    dir_pw_result,
+    dir_pw_span,
+    dir_pw_status,
+  ]
+  sources = [ "public/pw_channel/internal/channel_specializations.h" ]
+}
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
+}
+
+pw_test_group("tests") {
+  tests = [ ":channel_test" ]
+}
+
+pw_test("channel_test") {
+  sources = [ "channel_test.cc" ]
+  deps = [ ":pw_channel" ]
+  enable_if = pw_async2_DISPATCHER_BACKEND != ""
+  negative_compilation_tests = true
+}
