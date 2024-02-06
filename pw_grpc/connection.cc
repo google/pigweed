@@ -1058,7 +1058,7 @@ Result<ByteSpan> Connection::Reader::ReadFramePayload(
   if (frame.payload_length == 0) {
     return ByteSpan();
   }
-  if (frame.payload_length >= payload_scratch_.size()) {
+  if (frame.payload_length > payload_scratch_.size()) {
     PW_LOG_ERROR("Frame type=%d payload too large: %" PRIu32 " > %" PRIu32,
                  static_cast<int>(frame.type),
                  frame.payload_length,
