@@ -2881,5 +2881,101 @@ TEST_F(WriteTransfer, Write_UpdateTransferSize) {
   transfer_thread_.WaitUntilEventIsProcessed();
 }
 
+TEST_F(WriteTransfer, Write_TransferSize_Large) {
+  FakeNonSeekableReader reader(kData64);
+  Status transfer_status = Status::Unknown();
+
+  Result<Client::Handle> result = client_.Write(
+      91,
+      reader,
+      [&transfer_status](Status status) { transfer_status = status; },
+      kTestTimeout);
+  ASSERT_EQ(OkStatus(), result.status());
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  // Set a large transfer size that will encode to a multibyte varint.
+  constexpr size_t kLargeRemainingBytes = 1u << 28;
+  Client::Handle handle = *result;
+  handle.SetTransferSize(kLargeRemainingBytes);
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  // Initial chunk of the transfer is sent. This chunk should contain all the
+  // fields from both legacy and version 2 protocols for backwards
+  // compatibility.
+  rpc::PayloadsView payloads =
+      context_.output().payloads<Transfer::Write>(context_.channel().id());
+  ASSERT_EQ(payloads.size(), 1u);
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  Chunk chunk = DecodeChunk(payloads[0]);
+  EXPECT_EQ(chunk.type(), Chunk::Type::kStart);
+  EXPECT_EQ(chunk.protocol_version(), ProtocolVersion::kVersionTwo);
+  EXPECT_EQ(chunk.desired_session_id(), 1u);
+  EXPECT_EQ(chunk.resource_id(), 91u);
+  EXPECT_EQ(chunk.offset(), 0u);
+
+  // The server responds with a START_ACK, continuing the version 2 handshake.
+  context_.server().SendServerStream<Transfer::Write>(
+      EncodeChunk(Chunk(ProtocolVersion::kVersionTwo, Chunk::Type::kStartAck)
+                      .set_session_id(1)
+                      .set_resource_id(91)));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  ASSERT_EQ(payloads.size(), 2u);
+
+  // Client should accept the session_id with a START_ACK_CONFIRMATION.
+  chunk = DecodeChunk(payloads.back());
+  EXPECT_EQ(chunk.type(), Chunk::Type::kStartAckConfirmation);
+  EXPECT_EQ(chunk.protocol_version(), ProtocolVersion::kVersionTwo);
+  EXPECT_EQ(chunk.session_id(), 1u);
+  EXPECT_FALSE(chunk.resource_id().has_value());
+
+  // The server can then begin the data transfer by sending its transfer
+  // parameters. Client should respond with data chunks.
+  rpc::test::WaitForPackets(context_.output(), 2, [this] {
+    context_.server().SendServerStream<Transfer::Write>(EncodeChunk(
+        Chunk(ProtocolVersion::kVersionTwo, Chunk::Type::kParametersRetransmit)
+            .set_session_id(1)
+            .set_offset(0)
+            .set_window_end_offset(1024)
+            .set_max_chunk_size_bytes(64)));
+  });
+
+  ASSERT_EQ(payloads.size(), 4u);
+
+  // The transfer should reserve appropriate space for the `remaining_bytes`
+  // value and not fail to encode.
+  chunk = DecodeChunk(payloads[2]);
+  EXPECT_EQ(chunk.type(), Chunk::Type::kData);
+  EXPECT_EQ(chunk.protocol_version(), ProtocolVersion::kVersionTwo);
+  EXPECT_EQ(chunk.session_id(), 1u);
+  EXPECT_EQ(chunk.offset(), 0u);
+  EXPECT_EQ(chunk.payload().size_bytes(), 48u);
+  ASSERT_TRUE(chunk.remaining_bytes().has_value());
+  EXPECT_EQ(chunk.remaining_bytes().value(),
+            kLargeRemainingBytes - chunk.payload().size_bytes());
+
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  // Send the final status chunk to complete the transfer.
+  context_.server().SendServerStream<Transfer::Write>(
+      EncodeChunk(Chunk::Final(ProtocolVersion::kVersionTwo, 1, OkStatus())));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  // Client should acknowledge the completion of the transfer.
+  EXPECT_EQ(payloads.size(), 5u);
+
+  chunk = DecodeChunk(payloads[4]);
+  EXPECT_EQ(chunk.type(), Chunk::Type::kCompletionAck);
+  EXPECT_EQ(chunk.protocol_version(), ProtocolVersion::kVersionTwo);
+  EXPECT_EQ(chunk.session_id(), 1u);
+
+  EXPECT_EQ(transfer_status, OkStatus());
+
+  // Ensure we don't leave a dangling reference to transfer_status.
+  handle.Cancel();
+  transfer_thread_.WaitUntilEventIsProcessed();
+}
+
 }  // namespace
 }  // namespace pw::transfer::test

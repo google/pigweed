@@ -23,7 +23,7 @@
 #include "pw_assert/check.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_log/log.h"
-#include "pw_status/try.h"
+#include "pw_protobuf/serialized_size.h"
 #include "pw_transfer/transfer.pwpb.h"
 #include "pw_transfer/transfer_thread.h"
 #include "pw_varint/varint.h"
@@ -595,6 +595,12 @@ void Context::TransmitNextChunk(bool retransmit_requested) {
   size_t reserved_size =
       chunk.EncodedSize() + 1 /* data key */ + 5 /* data size */;
 
+  size_t total_size = TransferSizeBytes();
+  if (total_size != std::numeric_limits<size_t>::max()) {
+    reserved_size += protobuf::SizeOfVarintField(
+        pwpb::Chunk::Fields::kRemainingBytes, total_size);
+  }
+
   ByteSpan buffer = thread_->encode_buffer();
 
   ByteSpan data_buffer = buffer.subspan(reserved_size);
@@ -640,7 +646,6 @@ void Context::TransmitNextChunk(bool retransmit_requested) {
     last_chunk_offset_ = offset_;
     offset_ += data.value().size();
 
-    size_t total_size = TransferSizeBytes();
     if (total_size != std::numeric_limits<size_t>::max()) {
       chunk.set_remaining_bytes(total_size - offset_);
     }
