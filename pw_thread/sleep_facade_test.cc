@@ -36,19 +36,23 @@ void pw_this_thread_CallSleepUntil(pw_chrono_SystemClock_TimePoint wakeup_time);
 // We can't control the SystemClock's period configuration, so just in case
 // duration cannot be accurately expressed in integer ticks, round the
 // duration up.
-constexpr SystemClock::duration kRoundedArbitraryDuration =
+constexpr SystemClock::duration kRoundedArbitraryShortDuration =
     SystemClock::for_at_least(42ms);
-constexpr pw_chrono_SystemClock_Duration kRoundedArbitraryDurationInC =
+constexpr SystemClock::duration kRoundedArbitraryLongDuration =
+    SystemClock::for_at_least(1s);
+constexpr pw_chrono_SystemClock_Duration kRoundedArbitraryShortDurationInC =
     PW_SYSTEM_CLOCK_MS(42);
+constexpr pw_chrono_SystemClock_Duration kRoundedArbitraryLongDurationInC =
+    PW_SYSTEM_CLOCK_S(1);
 
 TEST(Sleep, SleepForPositiveDuration) {
   // Ensure we are in a thread context, meaning we are permitted to sleep.
   ASSERT_NE(get_id(), thread::Id());
 
   SystemClock::time_point before = SystemClock::now();
-  sleep_for(kRoundedArbitraryDuration);
+  sleep_for(kRoundedArbitraryShortDuration);
   SystemClock::duration time_elapsed = SystemClock::now() - before;
-  EXPECT_GE(time_elapsed, kRoundedArbitraryDuration);
+  EXPECT_GE(time_elapsed, kRoundedArbitraryShortDuration);
 }
 
 TEST(Sleep, SleepForZeroLengthDuration) {
@@ -59,7 +63,7 @@ TEST(Sleep, SleepForZeroLengthDuration) {
   SystemClock::time_point before = SystemClock::now();
   sleep_for(SystemClock::duration::zero());
   SystemClock::duration time_elapsed = SystemClock::now() - before;
-  EXPECT_LT(time_elapsed, kRoundedArbitraryDuration);
+  EXPECT_LT(time_elapsed, kRoundedArbitraryLongDuration);
 }
 
 TEST(Sleep, SleepForNegativeDuration) {
@@ -68,9 +72,9 @@ TEST(Sleep, SleepForNegativeDuration) {
 
   // Ensure it doesn't sleep when a negative duration is used.
   SystemClock::time_point before = SystemClock::now();
-  sleep_for(-kRoundedArbitraryDuration);
+  sleep_for(-kRoundedArbitraryLongDuration);
   SystemClock::duration time_elapsed = SystemClock::now() - before;
-  EXPECT_LT(time_elapsed, kRoundedArbitraryDuration);
+  EXPECT_LT(time_elapsed, kRoundedArbitraryLongDuration);
 }
 
 TEST(Sleep, SleepUntilFutureWakeupTime) {
@@ -78,7 +82,7 @@ TEST(Sleep, SleepUntilFutureWakeupTime) {
   ASSERT_NE(get_id(), thread::Id());
 
   SystemClock::time_point deadline =
-      SystemClock::now() + kRoundedArbitraryDuration;
+      SystemClock::now() + kRoundedArbitraryShortDuration;
   sleep_until(deadline);
   EXPECT_GE(SystemClock::now(), deadline);
 }
@@ -89,7 +93,7 @@ TEST(Sleep, SleepUntilCurrentWakeupTime) {
 
   // Ensure it doesn't sleep when now is used.
   SystemClock::time_point deadline =
-      SystemClock::now() + kRoundedArbitraryDuration;
+      SystemClock::now() + kRoundedArbitraryLongDuration;
   sleep_until(SystemClock::now());
   EXPECT_LT(SystemClock::now(), deadline);
 }
@@ -100,8 +104,8 @@ TEST(Sleep, SleepUntilPastWakeupTime) {
 
   // Ensure it doesn't sleep when a timestamp in the past is used.
   SystemClock::time_point deadline =
-      SystemClock::now() + kRoundedArbitraryDuration;
-  sleep_until(SystemClock::now() - kRoundedArbitraryDuration);
+      SystemClock::now() + kRoundedArbitraryLongDuration;
+  sleep_until(SystemClock::now() - kRoundedArbitraryLongDuration);
   EXPECT_LT(SystemClock::now(), deadline);
 }
 
@@ -110,10 +114,10 @@ TEST(Sleep, SleepForPositiveDurationInC) {
   ASSERT_NE(get_id(), thread::Id());
 
   pw_chrono_SystemClock_TimePoint before = pw_chrono_SystemClock_Now();
-  pw_this_thread_SleepFor(kRoundedArbitraryDurationInC);
+  pw_this_thread_SleepFor(kRoundedArbitraryShortDurationInC);
   pw_chrono_SystemClock_Duration time_elapsed =
       pw_chrono_SystemClock_TimeElapsed(before, pw_chrono_SystemClock_Now());
-  EXPECT_GE(time_elapsed.ticks, kRoundedArbitraryDurationInC.ticks);
+  EXPECT_GE(time_elapsed.ticks, kRoundedArbitraryShortDurationInC.ticks);
 }
 
 TEST(Sleep, SleepForZeroLengthDurationInC) {
@@ -125,7 +129,7 @@ TEST(Sleep, SleepForZeroLengthDurationInC) {
   pw_this_thread_SleepFor(PW_SYSTEM_CLOCK_MS(0));
   pw_chrono_SystemClock_Duration time_elapsed =
       pw_chrono_SystemClock_TimeElapsed(before, pw_chrono_SystemClock_Now());
-  EXPECT_LT(time_elapsed.ticks, kRoundedArbitraryDurationInC.ticks);
+  EXPECT_LT(time_elapsed.ticks, kRoundedArbitraryLongDurationInC.ticks);
 }
 
 TEST(Sleep, SleepForNegativeDurationInC) {
@@ -135,10 +139,10 @@ TEST(Sleep, SleepForNegativeDurationInC) {
   // Ensure it doesn't sleep when a negative duration is used.
   pw_chrono_SystemClock_TimePoint before = pw_chrono_SystemClock_Now();
   pw_this_thread_SleepFor(
-      PW_SYSTEM_CLOCK_MS(-kRoundedArbitraryDurationInC.ticks));
+      PW_SYSTEM_CLOCK_MS(-kRoundedArbitraryLongDurationInC.ticks));
   pw_chrono_SystemClock_Duration time_elapsed =
       pw_chrono_SystemClock_TimeElapsed(before, pw_chrono_SystemClock_Now());
-  EXPECT_LT(time_elapsed.ticks, kRoundedArbitraryDurationInC.ticks);
+  EXPECT_LT(time_elapsed.ticks, kRoundedArbitraryLongDurationInC.ticks);
 }
 
 TEST(Sleep, SleepUntilFutureWakeupTimeInC) {
@@ -148,7 +152,7 @@ TEST(Sleep, SleepUntilFutureWakeupTimeInC) {
   pw_chrono_SystemClock_TimePoint deadline;
   deadline.duration_since_epoch.ticks =
       pw_chrono_SystemClock_Now().duration_since_epoch.ticks +
-      kRoundedArbitraryDurationInC.ticks;
+      kRoundedArbitraryShortDurationInC.ticks;
   pw_this_thread_CallSleepUntil(deadline);
   EXPECT_GE(pw_chrono_SystemClock_Now().duration_since_epoch.ticks,
             deadline.duration_since_epoch.ticks);
@@ -162,7 +166,7 @@ TEST(Sleep, SleepUntilCurrentWakeupTimeInC) {
   pw_chrono_SystemClock_TimePoint deadline;
   deadline.duration_since_epoch.ticks =
       pw_chrono_SystemClock_Now().duration_since_epoch.ticks +
-      kRoundedArbitraryDurationInC.ticks;
+      kRoundedArbitraryLongDurationInC.ticks;
   pw_this_thread_CallSleepUntil(pw_chrono_SystemClock_Now());
   EXPECT_LT(pw_chrono_SystemClock_Now().duration_since_epoch.ticks,
             deadline.duration_since_epoch.ticks);
@@ -176,11 +180,11 @@ TEST(Sleep, SleepUntilPastWakeupTimeInC) {
   pw_chrono_SystemClock_TimePoint deadline;
   deadline.duration_since_epoch.ticks =
       pw_chrono_SystemClock_Now().duration_since_epoch.ticks +
-      kRoundedArbitraryDurationInC.ticks;
+      kRoundedArbitraryLongDurationInC.ticks;
   pw_chrono_SystemClock_TimePoint old_timestamp;
   old_timestamp.duration_since_epoch.ticks =
       pw_chrono_SystemClock_Now().duration_since_epoch.ticks -
-      kRoundedArbitraryDurationInC.ticks;
+      kRoundedArbitraryLongDurationInC.ticks;
   pw_this_thread_CallSleepUntil(old_timestamp);
   EXPECT_LT(pw_chrono_SystemClock_Now().duration_since_epoch.ticks,
             deadline.duration_since_epoch.ticks);
