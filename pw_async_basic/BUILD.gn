@@ -117,7 +117,6 @@ pw_test("dispatcher_test") {
               pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread"
   public_deps = [
     ":dispatcher",
-    "$dir_pw_sync:lock_annotations",
     "$dir_pw_thread:thread",
     dir_pw_log,
   ]
