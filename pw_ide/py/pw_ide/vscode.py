@@ -151,6 +151,7 @@ _DEFAULT_SETTINGS: EditorSettingsDict = OrderedDict(
         ),
         # The "strict" mode is much more strict than what we currently enforce.
         "python.analysis.typeCheckingMode": "basic",
+        "python.terminal.activateEnvironment": False,
         "python.testing.unittestEnabled": True,
         "[python]": OrderedDict({"editor.tabSize": 4}),
         "typescript.tsc.autoDetect": "off",
