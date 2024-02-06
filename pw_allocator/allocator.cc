@@ -17,9 +17,6 @@
 #include <algorithm>
 #include <cstring>
 
-#include "pw_assert/check.h"
-#include "pw_bytes/alignment.h"
-
 namespace pw::allocator {
 
 void* Allocator::DoReallocate(void* ptr, Layout layout, size_t new_size) {

@@ -29,10 +29,9 @@ pw_add_library(pw_allocator.allocator STATIC
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_status
-  PRIVATE_DEPS
     pw_assert
-    pw_bytes.alignment
+    pw_preprocessor
+    pw_status
   SOURCES
     allocator.cc
 )

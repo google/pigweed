@@ -51,10 +51,10 @@ group("pw_allocator") {
 pw_source_set("allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/allocator.h" ]
-  public_deps = [ dir_pw_status ]
-  deps = [
-    "$dir_pw_bytes:alignment",
+  public_deps = [
     dir_pw_assert,
+    dir_pw_preprocessor,
+    dir_pw_status,
   ]
   sources = [ "allocator.cc" ]
 }
