@@ -220,9 +220,6 @@ pw_target_toolchain_host = {
       forward_variables_from(_host_common, "*")
       forward_variables_from(_os_specific_config, "*")
       default_configs += _clang_default_configs
-
-      # Also poison dynamic allocations using Pigweed.
-      pw_allocator_POISON_HEAP = true
     }
   }
 

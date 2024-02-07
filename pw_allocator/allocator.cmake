@@ -15,11 +15,6 @@ include_guard(GLOBAL)
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-set(pw_allocator_POISON_HEAP OFF CACHE STRING
-    "When heap poisoning is enabled, a hard-coded randomized pattern will be \
-    added before and after the usable space of each Block. The allocator will \
-    check that the pattern is unchanged when freeing a block.")
-
 set(pw_allocator_COLLECT_METRICS OFF CACHE STRING
     "Adds a `pw::metric::MerticAccumulation` to `AllocatorProxy`. This \
     increases the code size a non-trivial amount, but allows tracking how much \

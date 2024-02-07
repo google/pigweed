@@ -30,7 +30,7 @@ TEST(FreeListHeap, CanAllocate) {
 
   ASSERT_NE(ptr, nullptr);
   // In this case, the allocator should be returning us the start of the chunk.
-  EXPECT_EQ(ptr, &buf[0] + FreeListHeap::BlockType::kHeaderSize);
+  EXPECT_EQ(ptr, &buf[0] + FreeListHeap::BlockType::kBlockOverhead);
 }
 
 TEST(FreeListHeap, AllocationsDontOverlap) {

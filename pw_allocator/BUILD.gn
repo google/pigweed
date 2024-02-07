@@ -27,12 +27,6 @@ config("default_config") {
   include_dirs = [ "public" ]
 }
 
-config("enable_heap_poison") {
-  if (pw_allocator_POISON_HEAP) {
-    defines = [ "PW_ALLOCATOR_POISON_ENABLE=1" ]
-  }
-}
-
 config("collect_metrics") {
   if (pw_allocator_COLLECT_METRICS) {
     defines = [ "PW_ALLOCATOR_COLLECT_METRICS=1" ]
@@ -54,22 +48,20 @@ pw_source_set("allocator") {
   public_deps = [
     dir_pw_assert,
     dir_pw_preprocessor,
+    dir_pw_result,
     dir_pw_status,
   ]
   sources = [ "allocator.cc" ]
 }
 
 pw_source_set("block") {
-  public_configs = [
-    ":default_config",
-    ":enable_heap_poison",
-  ]
+  public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/block.h" ]
   public_deps = [
+    ":allocator",
     "$dir_pw_bytes:alignment",
     dir_pw_bytes,
     dir_pw_result,
-    dir_pw_span,
     dir_pw_status,
   ]
   deps = [ dir_pw_assert ]
@@ -89,6 +81,7 @@ pw_source_set("fallback_allocator") {
     ":metrics",
     ":tracking_allocator",
     dir_pw_metric,
+    dir_pw_result,
     dir_pw_status,
     dir_pw_tokenizer,
   ]
@@ -148,6 +141,8 @@ pw_source_set("multiplex_allocator") {
     ":allocator",
     ":metrics",
     "$dir_pw_containers:flat_map",
+    dir_pw_result,
+    dir_pw_status,
     dir_pw_tokenizer,
   ]
 }
@@ -165,6 +160,8 @@ pw_source_set("simple_allocator") {
     ":allocator",
     ":block",
     dir_pw_bytes,
+    dir_pw_result,
+    dir_pw_status,
   ]
 }
 
@@ -252,6 +249,7 @@ pw_source_set("allocator_testing") {
     ":simple_allocator",
     ":tracking_allocator",
     dir_pw_bytes,
+    dir_pw_result,
     dir_pw_status,
     dir_pw_unit_test,
   ]
@@ -291,7 +289,6 @@ pw_test("allocator_test") {
 }
 
 pw_test("block_test") {
-  configs = [ ":enable_heap_poison" ]
   deps = [
     ":block",
     dir_pw_span,
@@ -351,7 +348,6 @@ pw_test("simple_allocator_test") {
 }
 
 pw_fuzz_test("split_free_list_allocator_test") {
-  configs = [ ":enable_heap_poison" ]
   deps = [
     ":allocator_fuzzing",
     ":buffer",

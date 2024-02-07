@@ -21,8 +21,6 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-# TODO(b/310035978): Support heap poisoning.
-
 cc_library(
     name = "allocator",
     srcs = [
@@ -35,6 +33,7 @@ cc_library(
     deps = [
         "//pw_assert",
         "//pw_preprocessor",
+        "//pw_result",
         "//pw_status",
     ],
 )
@@ -47,11 +46,10 @@ cc_library(
     ],
     includes = ["public"],
     deps = [
-        "//pw_assert",
+        ":allocator",
         "//pw_bytes",
         "//pw_bytes:alignment",
         "//pw_result",
-        "//pw_span",
         "//pw_status",
     ],
 )
@@ -75,6 +73,7 @@ cc_library(
         ":metrics",
         ":tracking_allocator",
         "//pw_metric:metric",
+        "//pw_result",
         "//pw_status",
         "//pw_tokenizer",
     ],
@@ -123,7 +122,6 @@ cc_library(
     includes = ["public"],
     deps = [
         ":allocator",
-        "//pw_status",
     ],
 )
 
@@ -153,6 +151,8 @@ cc_library(
         ":allocator",
         ":metrics",
         "//pw_containers:flat_map",
+        "//pw_result",
+        "//pw_status",
         "//pw_tokenizer",
     ],
 )
@@ -178,6 +178,8 @@ cc_library(
         ":allocator",
         ":block",
         "//pw_bytes",
+        "//pw_result",
+        "//pw_status",
     ],
 )
 
@@ -245,6 +247,7 @@ cc_library(
         ":tracking_allocator",
         "//pw_assert",
         "//pw_bytes",
+        "//pw_result",
         "//pw_status",
         "//pw_unit_test",
     ],

@@ -15,10 +15,6 @@
 include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
 include("$ENV{PW_ROOT}/pw_allocator/allocator.cmake")
 
-if(pw_allocator_POISON_HEAP)
-  set(enable_heap_poison "PW_ALLOCATOR_POISON_ENABLE=1")
-endif()
-
 if(pw_allocator_COLLECT_METRICS)
   set(collect_metrics "PW_ALLOCATOR_COLLECT_METRICS=1")
 endif()
@@ -31,23 +27,22 @@ pw_add_library(pw_allocator.allocator STATIC
   PUBLIC_DEPS
     pw_assert
     pw_preprocessor
+    pw_result
     pw_status
   SOURCES
     allocator.cc
 )
 
 pw_add_library(pw_allocator.block STATIC
-  PUBLIC_DEFINES
-    ${enable_heap_poison}
   HEADERS
     public/pw_allocator/block.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_allocator.allocator
     pw_bytes
     pw_bytes.alignment
     pw_result
-    pw_span
     pw_status
   PRIVATE_DEPS
     pw_assert
@@ -72,6 +67,7 @@ pw_add_library(pw_allocator.fallback_allocator INTERFACE
     pw_allocator.metrics
     pw_allocator.tracking_allocator
     pw_metric
+    pw_result
     pw_status
     pw_tokenizer
 )
@@ -114,7 +110,6 @@ pw_add_library(pw_allocator.libc_allocator STATIC
     public
   PUBLIC_DEPS
     pw_allocator.allocator
-    pw_status
 )
 
 pw_add_library(pw_allocator.metrics STATIC
@@ -142,6 +137,8 @@ pw_add_library(pw_allocator.multiplex_allocator INTERFACE
     pw_allocator.allocator
     pw_allocator.metrics
     pw_containers.flat_map
+    pw_result
+    pw_status
     pw_tokenizer
 )
 
@@ -161,6 +158,8 @@ pw_add_library(pw_allocator.simple_allocator INTERFACE
     pw_allocator.allocator
     pw_allocator.block
     pw_bytes
+    pw_result
+    pw_status
 )
 
 pw_add_library(pw_allocator.split_free_list_allocator STATIC
@@ -214,6 +213,7 @@ pw_add_library(pw_allocator.allocator_testing STATIC
     pw_allocator.simple_allocator
     pw_allocator.tracking_allocator
     pw_bytes
+    pw_result
     pw_status
     pw_unit_test
   PRIVATE_DEPS

@@ -148,8 +148,9 @@ TEST_F(SplitFreeListAllocatorTest, AllocateLargeAlignment) {
 }
 
 TEST_F(SplitFreeListAllocatorTest, AllocateFromUnaligned) {
-  SplitFreeListAllocator<Block<>> unaligned;
-  ByteSpan bytes(allocator_.data(), allocator_.size());
+  alignas(BlockType) std::array<std::byte, kCapacity> buffer;
+  SplitFreeListAllocator<BlockType> unaligned;
+  ByteSpan bytes(buffer);
   ASSERT_EQ(unaligned.Init(bytes.subspan(1), kThreshold), OkStatus());
 
   constexpr Layout layout = Layout::Of<std::byte[kThreshold + 8]>();
