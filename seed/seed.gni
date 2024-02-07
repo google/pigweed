@@ -49,6 +49,7 @@ template("pw_seed_index") {
     script = "$dir_pw_docgen/py/pw_docgen/seed.py"
     args = _script_args
     outputs = [ _index_rst_output ]
+    deps = invoker.seeds
   }
 
   pw_doc_group(target_name) {
