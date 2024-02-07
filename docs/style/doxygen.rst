@@ -26,6 +26,41 @@ Breathe provides various `directives
 <https://breathe.readthedocs.io/en/latest/directives.html>`_ for bringing
 Doxygen comments into Sphinx. These include the following:
 
+- `doxygengroup
+  <https://breathe.readthedocs.io/en/latest/directives.html#doxygengroup>`_ --
+  Documents features within a `Doxygen group
+  <https://www.doxygen.nl/manual/grouping.html>`_. Doxygen groups are created
+  with `@defgroup <https://www.doxygen.nl/manual/commands.html#cmddefgroup>`_ or
+  `@addtogroup <https://www.doxygen.nl/manual/commands.html#cmdaddtogroup>`_ and
+  ``@{`` / ``@}``. Inidividual items can be grouped with `@ingroup
+  <https://www.doxygen.nl/manual/commands.html#cmdingroup>`_.
+
+  .. code-block:: cpp
+
+     namespace the_namespace {
+
+     /// @defgroup your_group_name Optional group title
+     /// @{
+
+     // ... everything is added to the group
+
+     // @}
+
+     }  // namespace the_namespace
+
+  Do not include namespaces in groups since Breathe does not handle them
+  properly (see `GitHub issue 772
+  <https://github.com/breathe-doc/breathe/issues/772>`_). The namespace must be
+  specified in Sphinx instead.
+
+  .. code-block:: rst
+
+     .. cpp:namespace:: the_namespace
+
+     .. doxygengroup:: your_group_name
+        :content-only:
+        :members:
+
 - `doxygenfile
   <https://breathe.readthedocs.io/en/latest/directives.html#doxygenfile>`_ --
   Documents a source file. May limit to specific types of symbols with
@@ -35,6 +70,15 @@ Doxygen comments into Sphinx. These include the following:
 
      .. doxygenfile:: pw_rpc/internal/config.h
         :sections: define, func
+
+  .. note::
+
+     Breathe currently treats C++ namespaces like typedefs, resulting in
+     duplicate definition errors (see `GitHub issue 772
+     <https://github.com/breathe-doc/breathe/issues/772>`_). Because of this,
+     ``:sections:`` must be specified for files that define commonly used
+     namespaces (such as ``pw``). Consider grouping symbols with a
+     ``doxygengroup`` instead.
 
 - `doxygenclass
   <https://breathe.readthedocs.io/en/latest/directives.html#doxygenclass>`_ --
@@ -70,9 +114,14 @@ Doxygen comments into Sphinx. These include the following:
 
      .. doxygendefine:: PW_TOKENIZE_STRING
 
-.. admonition:: See also
+.. tip::
 
-  `All Breathe directives for use in RST files <https://breathe.readthedocs.io/en/latest/directives.html>`_
+   Prefer `doxygengroup
+   <https://breathe.readthedocs.io/en/latest/directives.html#doxygengroup>`_ or
+   `doxygenfile
+   <https://breathe.readthedocs.io/en/latest/directives.html#doxygenfile>`_
+   over listing symbols individually, which is error prone and harder to
+   maintain.
 
 -----------------------------
 Example Doxygen comment block
