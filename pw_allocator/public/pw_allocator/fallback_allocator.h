@@ -14,11 +14,7 @@
 #pragma once
 
 #include "pw_allocator/allocator.h"
-#include "pw_allocator/metrics.h"
-#include "pw_allocator/tracking_allocator.h"
-#include "pw_metric/metric.h"
 #include "pw_status/status.h"
-#include "pw_tokenizer/tokenize.h"
 
 namespace pw::allocator {
 
@@ -26,46 +22,36 @@ namespace pw::allocator {
 /// attempt to allocate memory will first be handled by the primary allocator.
 /// If it cannot allocate memory, e.g. because it is out of memory, the
 /// secondary alloator will try to allocate memory instead.
-template <typename MetricsType>
-class FallbackAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
+class FallbackAllocator : public Allocator {
  public:
-  using metrics_type = MetricsType;
-
   /// Constexpr constructor. Callers must explicitly call `Init`.
-  constexpr FallbackAllocatorImpl() : secondary_(kSecondary) {}
+  constexpr FallbackAllocator() = default;
 
   /// Non-constexpr constructor that autmatically invokes `Init`.
-  FallbackAllocatorImpl(Allocator& primary, Allocator& secondary)
-      : FallbackAllocatorImpl() {
+  FallbackAllocator(Allocator& primary, Allocator& secondary)
+      : FallbackAllocator() {
     Init(primary, secondary);
-  }
-
-  metrics_type& metric_group() override { return secondary_.metric_group(); }
-  const metrics_type& metric_group() const override {
-    return secondary_.metric_group();
   }
 
   /// Sets the primary and secondary allocators.
   ///
   /// It is an error to call any method without calling this method first.
-  void Init(Allocator& primary, Allocator& secondary, size_t capacity = 0) {
+  void Init(Allocator& primary, Allocator& secondary) {
     primary_ = &primary;
-    secondary_.Init(secondary, capacity);
+    secondary_ = &secondary;
   }
 
  private:
-  static constexpr metric::Token kSecondary = PW_TOKENIZE_STRING("fallback");
-
   /// @copydoc Allocator::Query
   Status DoQuery(const void* ptr, Layout layout) const override {
     auto status = primary_->Query(ptr, layout);
-    return status.ok() ? status : secondary_.Query(ptr, layout);
+    return status.ok() ? status : secondary_->Query(ptr, layout);
   }
 
   /// @copydoc Allocator::Allocate
   void* DoAllocate(Layout layout) override {
     void* ptr = primary_->Allocate(layout);
-    return ptr != nullptr ? ptr : secondary_.Allocate(layout);
+    return ptr != nullptr ? ptr : secondary_->Allocate(layout);
   }
 
   /// @copydoc Allocator::Deallocate
@@ -73,7 +59,7 @@ class FallbackAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
     if (primary_->Query(ptr, layout).ok()) {
       primary_->Deallocate(ptr, layout);
     } else {
-      secondary_.Deallocate(ptr, layout);
+      secondary_->Deallocate(ptr, layout);
     }
   }
 
@@ -81,18 +67,11 @@ class FallbackAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
   bool DoResize(void* ptr, Layout layout, size_t new_size) override {
     return primary_->Query(ptr, layout).ok()
                ? primary_->Resize(ptr, layout, new_size)
-               : secondary_.Resize(ptr, layout, new_size);
+               : secondary_->Resize(ptr, layout, new_size);
   }
 
   Allocator* primary_ = nullptr;
-  TrackingAllocatorImpl<metrics_type> secondary_;
+  Allocator* secondary_ = nullptr;
 };
-
-/// Fallback allocator that uses the default metrics implementation.
-///
-/// Depending on the value of the `pw_allocator_COLLECT_METRICS` build argument,
-/// the `internal::DefaultMetrics` type is an alias for either the real or stub
-/// metrics implementation.
-using FallbackAllocator = FallbackAllocatorImpl<internal::DefaultMetrics>;
 
 }  // namespace pw::allocator

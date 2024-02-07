@@ -29,29 +29,18 @@ class FallbackAllocatorTest : public ::testing::Test {
 
   test::AllocatorForTest<128> primary_;
   test::AllocatorForTest<128> secondary_;
-  FallbackAllocatorImpl<internal::Metrics> allocator_;
+  FallbackAllocator allocator_;
 };
 
 // Unit tests.
 
 TEST_F(FallbackAllocatorTest, ExplicitlyInitialized) {
-  FallbackAllocatorImpl<internal::Metrics> fallback;
-
-  metric::Group& group = fallback.metric_group();
-  EXPECT_EQ(group.metrics().size(), 0U);
-  EXPECT_EQ(group.children().size(), 0U);
-
+  FallbackAllocator fallback;
   fallback.Init(*primary_, *secondary_);
-  EXPECT_EQ(group.metrics().size(), 9U);
-  EXPECT_EQ(group.children().size(), 0U);
 }
 
 TEST_F(FallbackAllocatorTest, AutomaticallyInitialized) {
-  FallbackAllocatorImpl<internal::Metrics> fallback(*primary_, *secondary_);
-
-  metric::Group& group = fallback.metric_group();
-  EXPECT_EQ(group.metrics().size(), 9U);
-  EXPECT_EQ(group.children().size(), 0U);
+  FallbackAllocator fallback(*primary_, *secondary_);
 }
 
 TEST_F(FallbackAllocatorTest, QueryValidPrimary) {
@@ -227,25 +216,6 @@ TEST_F(FallbackAllocatorTest, ReallocateDifferentAllocator) {
   EXPECT_EQ(primary_->deallocate_ptr(), ptr);
   EXPECT_EQ(primary_->deallocate_size(), old_layout.size());
   EXPECT_EQ(secondary_->allocate_size(), new_size);
-}
-
-TEST_F(FallbackAllocatorTest, GetMetrics) {
-  primary_->Exhaust();
-  Layout layout = Layout::Of<uint32_t>();
-  allocator_.Allocate(layout);
-
-  EXPECT_EQ(primary_->allocated_bytes(), 0U);
-  EXPECT_EQ(primary_->peak_allocated_bytes(), 0U);
-  EXPECT_EQ(primary_->num_allocations(), 0U);
-
-  EXPECT_EQ(secondary_->allocated_bytes(), layout.size());
-  EXPECT_EQ(secondary_->peak_allocated_bytes(), layout.size());
-  EXPECT_EQ(secondary_->num_allocations(), 1U);
-
-  EXPECT_EQ(allocator_.allocated_bytes(), secondary_->allocated_bytes());
-  EXPECT_EQ(allocator_.peak_allocated_bytes(),
-            secondary_->peak_allocated_bytes());
-  EXPECT_EQ(allocator_.num_allocations(), secondary_->num_allocations());
 }
 
 }  // namespace
