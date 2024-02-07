@@ -31,5 +31,6 @@ TARGET_COMPATIBLE_WITH_HOST_SELECT = {
     "@platforms//os:linux": [_RTOS_NONE],
     "@platforms//os:chromiumos": [_RTOS_NONE],
     "@platforms//os:android": [_RTOS_NONE],
+    "@platforms//os:fuchsia": [_RTOS_NONE],
     "//conditions:default": ["@platforms//:incompatible"],
 }
