@@ -10,5 +10,8 @@ pw_channel
 -------------
 API reference
 -------------
+.. cpp:namespace:: pw::channel
+
 .. doxygengroup:: pw_channel
    :content-only:
+   :members:

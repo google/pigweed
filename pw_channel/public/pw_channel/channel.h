@@ -62,18 +62,18 @@ enum class DataType : uint8_t { kByte = 0, kDatagram = 1 << 4 };
 enum Whence : uint8_t {
   /// Seek from the beginning of the channel. The offset is a direct offset
   /// into the data.
-  kBeginning = 0b001,
+  kBeginning,
 
   /// Seek from the current position in the channel. The offset is added to
   /// the current position. Use a negative offset to seek backwards.
   ///
   /// Implementations may only support seeking within a limited range from the
   /// current position.
-  kCurrent = 0b010,
+  kCurrent,
 
   /// Seek from the end of the channel. The offset is added to the end
   /// position. Use a negative offset to seek backwards from the end.
-  kEnd = 0b100,
+  kEnd,
 };
 
 /// Represents a write operation. `WriteToken` can be used to track whether a
@@ -152,8 +152,8 @@ class Channel {
 
   /// Read API
 
-  /// Returns a MultiBuf read data, if available. If data is not available,
-  /// invokes cx.waker() when it becomes available.
+  /// Returns a `pw::multibuf::MultiBuf` with read data, if available. If data
+  /// is not available, invokes `cx.waker()` when it becomes available.
   ///
   /// For datagram channels, each successful read yields one complete
   /// datagram. For byte stream channels, each successful read yields some
