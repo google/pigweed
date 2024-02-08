@@ -125,7 +125,7 @@ class Background final {
 template <typename LockType>
 void TestAllocate() {
   test::AllocatorForTest<kCapacity> allocator;
-  AllocatorSyncProxy<LockType> sync_proxy(*(allocator.get()));
+  SynchronizedAllocator<LockType> sync_proxy(*(allocator.get()));
   Background background(sync_proxy);
 
   Vector<Allocation, kNumAllocations> allocations;
@@ -144,18 +144,18 @@ void TestAllocate() {
   }
 }
 
-TEST(AllocatorSyncProxyTest, AllocateDeallocateInterruptSpinLock) {
+TEST(SynchronizedAllocatorTest, AllocateDeallocateInterruptSpinLock) {
   TestAllocate<sync::InterruptSpinLock>();
 }
 
-TEST(AllocatorSyncProxyTest, AllocateDeallocateMutex) {
+TEST(SynchronizedAllocatorTest, AllocateDeallocateMutex) {
   TestAllocate<sync::Mutex>();
 }
 
 template <typename LockType>
 void TestQuery() {
   test::AllocatorForTest<kCapacity> allocator;
-  AllocatorSyncProxy<LockType> sync_proxy(*(allocator.get()));
+  SynchronizedAllocator<LockType> sync_proxy(*(allocator.get()));
   Background background(sync_proxy);
 
   Vector<Allocation, kNumAllocations> allocations;
@@ -177,16 +177,16 @@ void TestQuery() {
   }
 }
 
-TEST(AllocatorSyncProxyTest, QueryInterruptSpinLock) {
+TEST(SynchronizedAllocatorTest, QueryInterruptSpinLock) {
   TestQuery<sync::InterruptSpinLock>();
 }
 
-TEST(AllocatorSyncProxyTest, QueryMutex) { TestQuery<sync::Mutex>(); }
+TEST(SynchronizedAllocatorTest, QueryMutex) { TestQuery<sync::Mutex>(); }
 
 template <typename LockType>
 void TestResize() {
   test::AllocatorForTest<kCapacity> allocator;
-  AllocatorSyncProxy<LockType> sync_proxy(*(allocator.get()));
+  SynchronizedAllocator<LockType> sync_proxy(*(allocator.get()));
   Background background(sync_proxy);
 
   Vector<Allocation, kNumAllocations> allocations;
@@ -224,11 +224,11 @@ void TestResize() {
   }
 }
 
-TEST(AllocatorSyncProxyTest, ResizeInterruptSpinLock) {
+TEST(SynchronizedAllocatorTest, ResizeInterruptSpinLock) {
   TestResize<sync::InterruptSpinLock>();
 }
 
-TEST(AllocatorSyncProxyTest, ResizeMutex) { TestResize<sync::Mutex>(); }
+TEST(SynchronizedAllocatorTest, ResizeMutex) { TestResize<sync::Mutex>(); }
 
 }  // namespace
 }  // namespace pw::allocator

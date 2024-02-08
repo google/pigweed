@@ -23,16 +23,16 @@ namespace pw::allocator {
 /// Wraps an `Allocator` with a lock to synchronize access.
 ///
 /// Depending on the `LockType`, this object may be thread- and/or interrupt-
-/// safe. For example, `AllocatorSyncProxy<pw::sync::Mutex>` is thread-safe,
-/// while `AllocatorSyncProxy<pw::sync::InterruptSpinLock>` is thread- and
+/// safe. For example, `SynchronizedAllocator<pw::sync::Mutex>` is thread-safe,
+/// while `SynchronizedAllocator<pw::sync::InterruptSpinLock>` is thread- and
 /// interrupt-safe.
 ///
 /// @tparam LockType  The type of the lock used to synchronize allocator access.
 ///                   Must be default-constructible.
 template <typename LockType>
-class AllocatorSyncProxy : public Allocator {
+class SynchronizedAllocator : public Allocator {
  public:
-  constexpr AllocatorSyncProxy(Allocator& allocator) noexcept
+  constexpr SynchronizedAllocator(Allocator& allocator) noexcept
       : borrowable_(allocator, lock_) {}
 
  private:
