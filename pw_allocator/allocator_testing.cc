@@ -16,70 +16,48 @@
 
 #include "pw_assert/check.h"
 
-namespace pw::allocator::test {
-namespace internal {
+namespace pw::allocator::internal {
 
-AllocatorForTestImpl::~AllocatorForTestImpl() { PW_DCHECK(!initialized_); }
-
-Status AllocatorForTestImpl::Init(ByteSpan bytes) {
-  ResetParameters();
-  initialized_ = true;
-  if (auto status = allocator_.Init(bytes); !status.ok()) {
-    return status;
-  }
-  tracker_.Init(allocator_, bytes.size());
-  return OkStatus();
+AllocatorForTestImpl::~AllocatorForTestImpl() {
+  PW_DCHECK(allocator_ == nullptr);
+  PW_DCHECK(params_ == nullptr);
 }
 
-void AllocatorForTestImpl::Exhaust() {
-  for (auto* block : allocator_.blocks()) {
-    block->MarkUsed();
-  }
-}
-
-void AllocatorForTestImpl::ResetParameters() {
-  allocate_size_ = 0;
-  deallocate_ptr_ = nullptr;
-  deallocate_size_ = 0;
-  resize_ptr_ = nullptr;
-  resize_old_size_ = 0;
-  resize_new_size_ = 0;
+void AllocatorForTestImpl::Init(Allocator& allocator,
+                                RecordedParameters& params) {
+  allocator_ = &allocator;
+  params_ = &params;
 }
 
 void AllocatorForTestImpl::Reset() {
-  for (auto* block : allocator_.blocks()) {
-    BlockType::Free(block);
-  }
-  ResetParameters();
-  allocator_.Reset();
-  initialized_ = false;
+  allocator_ = nullptr;
+  params_ = nullptr;
 }
 
 void* AllocatorForTestImpl::DoAllocate(Layout layout) {
-  allocate_size_ = layout.size();
-  return tracker_.Allocate(layout);
+  params_->allocate_size = layout.size();
+  return allocator_->Allocate(layout);
 }
 
 void AllocatorForTestImpl::DoDeallocate(void* ptr, Layout layout) {
-  deallocate_ptr_ = ptr;
-  deallocate_size_ = layout.size();
-  return tracker_.Deallocate(ptr, layout);
+  params_->deallocate_ptr = ptr;
+  params_->deallocate_size = layout.size();
+  return allocator_->Deallocate(ptr, layout);
 }
 
 bool AllocatorForTestImpl::DoResize(void* ptr, Layout layout, size_t new_size) {
-  resize_ptr_ = ptr;
-  resize_old_size_ = layout.size();
-  resize_new_size_ = new_size;
-  return tracker_.Resize(ptr, layout, new_size);
+  params_->resize_ptr = ptr;
+  params_->resize_old_size = layout.size();
+  params_->resize_new_size = new_size;
+  return allocator_->Resize(ptr, layout, new_size);
 }
 
 Result<Layout> AllocatorForTestImpl::DoGetLayout(const void* ptr) const {
-  return tracker_.GetLayout(ptr);
+  return allocator_->GetLayout(ptr);
 }
 
 Status AllocatorForTestImpl::DoQuery(const void* ptr, Layout layout) const {
-  return tracker_.Query(ptr, layout);
+  return allocator_->Query(ptr, layout);
 }
 
-}  // namespace internal
-}  // namespace pw::allocator::test
+}  // namespace pw::allocator::internal

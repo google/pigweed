@@ -48,10 +48,9 @@ using Suballocator = test::AllocatorForTest<kHeapSize>;
 /// Helper method to restore suballocator type, in order to make test methods
 /// easier to access.
 template <typename MultiplexAllocatorType>
-Suballocator::allocator_type* GetSuballocator(MultiplexAllocatorType& allocator,
-                                              tokenizer::Token token) {
-  return static_cast<Suballocator::allocator_type*>(
-      allocator.GetAllocator(token));
+Suballocator* GetSuballocator(MultiplexAllocatorType& allocator,
+                              tokenizer::Token token) {
+  return static_cast<Suballocator*>(allocator.GetAllocator(token));
 }
 
 /// Represents a MultiplexAllocator with custom logic.
@@ -92,16 +91,16 @@ void GetAllocator(MultiplexAllocatorType& allocator,
 }
 TEST(MultiplexAllocatorTest, GetAllocator) {
   Suballocator foo, bar;
-  FlatMapMultiplexAllocator<4> allocator({{{kFooToken, foo.get()},
-                                           {kBarToken, bar.get()},
-                                           {kBazToken, bar.get()},
+  FlatMapMultiplexAllocator<4> allocator({{{kFooToken, &foo},
+                                           {kBarToken, &bar},
+                                           {kBazToken, &bar},
                                            {kQuxToken, nullptr}}});
-  GetAllocator(allocator, foo.get(), bar.get());
+  GetAllocator(allocator, &foo, &bar);
 }
 TEST(MultiplexAllocatorTest, GetAllocatorCustom) {
   Suballocator foo, bar;
-  CustomMultiplexAllocator allocator(foo.get(), bar.get());
-  GetAllocator(allocator, foo.get(), bar.get());
+  CustomMultiplexAllocator allocator(&foo, &bar);
+  GetAllocator(allocator, &foo, &bar);
 }
 
 template <typename MultiplexAllocatorType>
@@ -116,15 +115,15 @@ void AllocateValidToken(MultiplexAllocatorType& allocator) {
 }
 TEST(MultiplexAllocatorTest, AllocateValidToken) {
   Suballocator foo, bar;
-  FlatMapMultiplexAllocator<4> allocator({{{kFooToken, foo.get()},
-                                           {kBarToken, bar.get()},
-                                           {kBazToken, bar.get()},
+  FlatMapMultiplexAllocator<4> allocator({{{kFooToken, &foo},
+                                           {kBarToken, &bar},
+                                           {kBazToken, &bar},
                                            {kQuxToken, nullptr}}});
   AllocateValidToken(allocator);
 }
 TEST(MultiplexAllocatorTest, AllocateValidTokenCustom) {
   Suballocator foo, bar;
-  CustomMultiplexAllocator allocator(foo.get(), bar.get());
+  CustomMultiplexAllocator allocator(&foo, &bar);
   AllocateValidToken(allocator);
 }
 
@@ -141,15 +140,15 @@ void AllocateInvalidToken(MultiplexAllocatorType& allocator) {
 }
 TEST(MultiplexAllocatorTest, AllocateInvalidToken) {
   Suballocator foo, bar;
-  FlatMapMultiplexAllocator<4> allocator({{{kFooToken, foo.get()},
-                                           {kBarToken, bar.get()},
-                                           {kBazToken, bar.get()},
+  FlatMapMultiplexAllocator<4> allocator({{{kFooToken, &foo},
+                                           {kBarToken, &bar},
+                                           {kBazToken, &bar},
                                            {kQuxToken, nullptr}}});
   AllocateInvalidToken(allocator);
 }
 TEST(MultiplexAllocatorTest, AllocateInvalidTokenCustom) {
   Suballocator foo, bar;
-  CustomMultiplexAllocator allocator(foo.get(), bar.get());
+  CustomMultiplexAllocator allocator(&foo, &bar);
   AllocateInvalidToken(allocator);
 }
 
@@ -170,15 +169,15 @@ void DeallocateValidToken(MultiplexAllocatorType& allocator) {
 }
 TEST(MultiplexAllocatorTest, DeallocateValidToken) {
   Suballocator foo, bar;
-  FlatMapMultiplexAllocator<4> allocator({{{kFooToken, foo.get()},
-                                           {kBarToken, bar.get()},
-                                           {kBazToken, bar.get()},
+  FlatMapMultiplexAllocator<4> allocator({{{kFooToken, &foo},
+                                           {kBarToken, &bar},
+                                           {kBazToken, &bar},
                                            {kQuxToken, nullptr}}});
   DeallocateValidToken(allocator);
 }
 TEST(MultiplexAllocatorTest, DeallocateValidTokenCustom) {
   Suballocator foo, bar;
-  CustomMultiplexAllocator allocator(foo.get(), bar.get());
+  CustomMultiplexAllocator allocator(&foo, &bar);
   DeallocateValidToken(allocator);
 }
 
@@ -199,15 +198,15 @@ void DeallocateInvalidToken(MultiplexAllocatorType& allocator) {
 }
 TEST(MultiplexAllocatorTest, DeallocateInvalidToken) {
   Suballocator foo, bar;
-  FlatMapMultiplexAllocator<4> allocator({{{kFooToken, foo.get()},
-                                           {kBarToken, bar.get()},
-                                           {kBazToken, bar.get()},
+  FlatMapMultiplexAllocator<4> allocator({{{kFooToken, &foo},
+                                           {kBarToken, &bar},
+                                           {kBazToken, &bar},
                                            {kQuxToken, nullptr}}});
   DeallocateInvalidToken(allocator);
 }
 TEST(MultiplexAllocatorTest, DeallocateInvalidTokenCustom) {
   Suballocator foo, bar;
-  CustomMultiplexAllocator allocator(foo.get(), bar.get());
+  CustomMultiplexAllocator allocator(&foo, &bar);
   DeallocateInvalidToken(allocator);
 }
 
@@ -232,15 +231,15 @@ void ResizeValidToken(MultiplexAllocatorType& allocator) {
 }
 TEST(MultiplexAllocatorTest, ResizeValidToken) {
   Suballocator foo, bar;
-  FlatMapMultiplexAllocator<4> allocator({{{kFooToken, foo.get()},
-                                           {kBarToken, bar.get()},
-                                           {kBazToken, bar.get()},
+  FlatMapMultiplexAllocator<4> allocator({{{kFooToken, &foo},
+                                           {kBarToken, &bar},
+                                           {kBazToken, &bar},
                                            {kQuxToken, nullptr}}});
   ResizeValidToken(allocator);
 }
 TEST(MultiplexAllocatorTest, ResizeValidTokenCustom) {
   Suballocator foo, bar;
-  CustomMultiplexAllocator allocator(foo.get(), bar.get());
+  CustomMultiplexAllocator allocator(&foo, &bar);
   ResizeValidToken(allocator);
 }
 
@@ -265,15 +264,15 @@ void ResizeInvalidToken(MultiplexAllocatorType& allocator) {
 }
 TEST(MultiplexAllocatorTest, ResizeInvalidToken) {
   Suballocator foo, bar;
-  FlatMapMultiplexAllocator<4> allocator({{{kFooToken, foo.get()},
-                                           {kBarToken, bar.get()},
-                                           {kBazToken, bar.get()},
+  FlatMapMultiplexAllocator<4> allocator({{{kFooToken, &foo},
+                                           {kBarToken, &bar},
+                                           {kBazToken, &bar},
                                            {kQuxToken, nullptr}}});
   ResizeInvalidToken(allocator);
 }
 TEST(MultiplexAllocatorTest, ResizeInvalidTokenCustom) {
   Suballocator foo, bar;
-  CustomMultiplexAllocator allocator(foo.get(), bar.get());
+  CustomMultiplexAllocator allocator(&foo, &bar);
   ResizeInvalidToken(allocator);
 }
 
@@ -300,15 +299,15 @@ void ReallocateValidToken(MultiplexAllocatorType& allocator) {
 }
 TEST(MultiplexAllocatorTest, ReallocateValidToken) {
   Suballocator foo, bar;
-  FlatMapMultiplexAllocator<4> allocator({{{kFooToken, foo.get()},
-                                           {kBarToken, bar.get()},
-                                           {kBazToken, bar.get()},
+  FlatMapMultiplexAllocator<4> allocator({{{kFooToken, &foo},
+                                           {kBarToken, &bar},
+                                           {kBazToken, &bar},
                                            {kQuxToken, nullptr}}});
   ReallocateValidToken(allocator);
 }
 TEST(MultiplexAllocatorTest, ReallocateValidTokenCustom) {
   Suballocator foo, bar;
-  CustomMultiplexAllocator allocator(foo.get(), bar.get());
+  CustomMultiplexAllocator allocator(&foo, &bar);
   ReallocateValidToken(allocator);
 }
 
@@ -341,15 +340,15 @@ void ReallocateInvalidToken(MultiplexAllocatorType& allocator) {
 }
 TEST(MultiplexAllocatorTest, ReallocateInvalidToken) {
   Suballocator foo, bar;
-  FlatMapMultiplexAllocator<4> allocator({{{kFooToken, foo.get()},
-                                           {kBarToken, bar.get()},
-                                           {kBazToken, bar.get()},
+  FlatMapMultiplexAllocator<4> allocator({{{kFooToken, &foo},
+                                           {kBarToken, &bar},
+                                           {kBazToken, &bar},
                                            {kQuxToken, nullptr}}});
   ReallocateInvalidToken(allocator);
 }
 TEST(MultiplexAllocatorTest, ReallocateInvalidTokenCustom) {
   Suballocator foo, bar;
-  CustomMultiplexAllocator allocator(foo.get(), bar.get());
+  CustomMultiplexAllocator allocator(&foo, &bar);
   ReallocateInvalidToken(allocator);
 }
 

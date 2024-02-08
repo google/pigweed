@@ -97,6 +97,7 @@ class TrackingAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
     metrics_.RecordResize(layout.size(), new_size);
     return true;
   }
+
   /// @copydoc Allocator::GetLayout
   Result<Layout> DoGetLayout(const void* ptr) const override {
     return allocator_->GetLayout(ptr);

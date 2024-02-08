@@ -26,15 +26,15 @@ namespace pw::allocator {
 /// Simple allocator that uses a list of `Block`s.
 class SimpleAllocator : public Allocator {
  public:
-  using Block = pw::allocator::Block<>;
-  using Range = typename Block::Range;
+  using BlockType = pw::allocator::Block<>;
+  using Range = typename BlockType::Range;
 
   /// Constexpr constructor. Callers must explicitly call `Init`.
   constexpr SimpleAllocator() = default;
 
   /// Initialize this allocator to allocate memory from `region`.
   Status Init(ByteSpan region) {
-    auto result = Block::Init(region);
+    auto result = BlockType::Init(region);
     if (result.ok()) {
       blocks_ = *result;
     }
@@ -51,7 +51,8 @@ class SimpleAllocator : public Allocator {
   /// @copydoc Allocator::Allocate
   void* DoAllocate(Layout layout) override {
     for (auto* block : Range(blocks_)) {
-      if (Block::AllocFirst(block, layout.size(), layout.alignment()).ok()) {
+      if (BlockType::AllocFirst(block, layout.size(), layout.alignment())
+              .ok()) {
         return block->UsableSpace();
       }
     }
@@ -64,8 +65,8 @@ class SimpleAllocator : public Allocator {
       return;
     }
     auto* bytes = static_cast<std::byte*>(ptr);
-    Block* block = Block::FromUsableSpace(bytes);
-    Block::Free(block);
+    BlockType* block = BlockType::FromUsableSpace(bytes);
+    BlockType::Free(block);
   }
 
   /// @copydoc Allocator::Resize
@@ -74,8 +75,8 @@ class SimpleAllocator : public Allocator {
       return false;
     }
     auto* bytes = static_cast<std::byte*>(ptr);
-    Block* block = Block::FromUsableSpace(bytes);
-    return Block::Resize(block, new_size).ok();
+    BlockType* block = BlockType::FromUsableSpace(bytes);
+    return BlockType::Resize(block, new_size).ok();
   }
 
   /// @copydoc Allocator::GetLayout
@@ -98,7 +99,7 @@ class SimpleAllocator : public Allocator {
     return Status::OutOfRange();
   }
 
-  Block* blocks_ = nullptr;
+  BlockType* blocks_ = nullptr;
 };
 // DOCSTAG: [pw_allocator_examples_simple_allocator]
 

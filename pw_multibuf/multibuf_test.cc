@@ -47,40 +47,40 @@ TEST(MultiBuf, IsDefaultConstructible) { [[maybe_unused]] MultiBuf buf; }
 TEST(MultiBuf, WithOneChunkReleases) {
   AllocatorForTest<kArbitraryAllocatorSize> allocator;
   MultiBuf buf;
-  buf.PushFrontChunk(MakeChunk(allocator.get(), kArbitraryChunkSize));
-  EXPECT_EQ(allocator->num_allocations(), 2U);
+  buf.PushFrontChunk(MakeChunk(&allocator, kArbitraryChunkSize));
+  EXPECT_EQ(allocator.num_allocations(), 2U);
   buf.Release();
-  EXPECT_EQ(allocator->num_deallocations(), 2U);
+  EXPECT_EQ(allocator.num_deallocations(), 2U);
 }
 
 TEST(MultiBuf, WithOneChunkReleasesOnDestruction) {
   AllocatorForTest<kArbitraryAllocatorSize> allocator;
   {
     MultiBuf buf;
-    buf.PushFrontChunk(MakeChunk(allocator.get(), kArbitraryChunkSize));
-    EXPECT_EQ(allocator->num_allocations(), 2U);
+    buf.PushFrontChunk(MakeChunk(&allocator, kArbitraryChunkSize));
+    EXPECT_EQ(allocator.num_allocations(), 2U);
   }
-  EXPECT_EQ(allocator->num_deallocations(), 2U);
+  EXPECT_EQ(allocator.num_deallocations(), 2U);
 }
 
 TEST(MultiBuf, WithMultipleChunksReleasesAllOnDestruction) {
   AllocatorForTest<kArbitraryAllocatorSize> allocator;
   {
     MultiBuf buf;
-    buf.PushFrontChunk(MakeChunk(allocator.get(), kArbitraryChunkSize));
-    buf.PushFrontChunk(MakeChunk(allocator.get(), kArbitraryChunkSize));
-    EXPECT_EQ(allocator->num_allocations(), 4U);
+    buf.PushFrontChunk(MakeChunk(&allocator, kArbitraryChunkSize));
+    buf.PushFrontChunk(MakeChunk(&allocator, kArbitraryChunkSize));
+    EXPECT_EQ(allocator.num_allocations(), 4U);
   }
-  EXPECT_EQ(allocator->num_deallocations(), 4U);
+  EXPECT_EQ(allocator.num_deallocations(), 4U);
 }
 
 TEST(MultiBuf, SizeReturnsNumberOfBytes) {
   AllocatorForTest<kArbitraryAllocatorSize> allocator;
   MultiBuf buf;
   EXPECT_EQ(buf.size(), 0U);
-  buf.PushFrontChunk(MakeChunk(allocator.get(), kArbitraryChunkSize));
+  buf.PushFrontChunk(MakeChunk(&allocator, kArbitraryChunkSize));
   EXPECT_EQ(buf.size(), kArbitraryChunkSize);
-  buf.PushFrontChunk(MakeChunk(allocator.get(), kArbitraryChunkSize));
+  buf.PushFrontChunk(MakeChunk(&allocator, kArbitraryChunkSize));
   EXPECT_EQ(buf.size(), kArbitraryChunkSize * 2);
 }
 
@@ -89,7 +89,7 @@ TEST(MultiBuf, PushFrontChunkAddsBytesToFront) {
   MultiBuf buf;
 
   const std::array<std::byte, 3> kBytesOne = {0_b, 1_b, 2_b};
-  auto chunk_one = MakeChunk(allocator.get(), kBytesOne.size());
+  auto chunk_one = MakeChunk(&allocator, kBytesOne.size());
   std::copy(kBytesOne.begin(), kBytesOne.end(), chunk_one->begin());
   buf.PushFrontChunk(std::move(chunk_one));
 
@@ -101,7 +101,7 @@ TEST(MultiBuf, PushFrontChunkAddsBytesToFront) {
   }
 
   const std::array<std::byte, 4> kBytesTwo = {9_b, 10_b, 11_b, 12_b};
-  auto chunk_two = MakeChunk(allocator.get(), kBytesTwo.size());
+  auto chunk_two = MakeChunk(&allocator, kBytesTwo.size());
   std::copy(kBytesTwo.begin(), kBytesTwo.end(), chunk_two->begin());
   buf.PushFrontChunk(std::move(chunk_two));
 
@@ -127,7 +127,7 @@ TEST(MultiBuf, InsertChunkOnEmptyBufAddsFirstChunk) {
   MultiBuf buf;
 
   const std::array<std::byte, 3> kBytes = {0_b, 1_b, 2_b};
-  auto chunk = MakeChunk(allocator.get(), kBytes.size());
+  auto chunk = MakeChunk(&allocator, kBytes.size());
   std::copy(kBytes.begin(), kBytes.end(), chunk->begin());
   auto inserted_iter = buf.InsertChunk(buf.Chunks().begin(), std::move(chunk));
   EXPECT_EQ(inserted_iter, buf.Chunks().begin());
@@ -147,10 +147,10 @@ TEST(MultiBuf, InsertChunkAtEndOfBufAddsLastChunk) {
   MultiBuf buf;
 
   // Add a chunk to the beginning
-  buf.PushFrontChunk(MakeChunk(allocator.get(), kArbitraryChunkSize));
+  buf.PushFrontChunk(MakeChunk(&allocator, kArbitraryChunkSize));
 
   const std::array<std::byte, 3> kBytes = {0_b, 1_b, 2_b};
-  auto chunk = MakeChunk(allocator.get(), kBytes.size());
+  auto chunk = MakeChunk(&allocator, kBytes.size());
   std::copy(kBytes.begin(), kBytes.end(), chunk->begin());
   auto inserted_iter = buf.InsertChunk(buf.Chunks().end(), std::move(chunk));
   EXPECT_EQ(inserted_iter, ++buf.Chunks().begin());
@@ -170,8 +170,8 @@ TEST(MultiBuf, TakeChunkAtBeginRemovesAndReturnsFirstChunk) {
   AllocatorForTest<kArbitraryAllocatorSize> allocator;
   MultiBuf buf;
   auto insert_iter = buf.Chunks().begin();
-  insert_iter = buf.InsertChunk(insert_iter, MakeChunk(allocator.get(), 2));
-  insert_iter = buf.InsertChunk(++insert_iter, MakeChunk(allocator.get(), 4));
+  insert_iter = buf.InsertChunk(insert_iter, MakeChunk(&allocator, 2));
+  insert_iter = buf.InsertChunk(++insert_iter, MakeChunk(&allocator, 4));
 
   auto [chunk_iter, chunk] = buf.TakeChunk(buf.Chunks().begin());
   EXPECT_EQ(chunk.size(), 2U);
@@ -184,9 +184,9 @@ TEST(MultiBuf, TakeChunkOnLastInsertedIterReturnsLastInserted) {
   AllocatorForTest<kArbitraryAllocatorSize> allocator;
   MultiBuf buf;
   auto iter = buf.Chunks().begin();
-  iter = buf.InsertChunk(iter, MakeChunk(allocator.get(), 42));
-  iter = buf.InsertChunk(++iter, MakeChunk(allocator.get(), 11));
-  iter = buf.InsertChunk(++iter, MakeChunk(allocator.get(), 65));
+  iter = buf.InsertChunk(iter, MakeChunk(&allocator, 42));
+  iter = buf.InsertChunk(++iter, MakeChunk(&allocator, 11));
+  iter = buf.InsertChunk(++iter, MakeChunk(&allocator, 65));
   OwnedChunk chunk;
   std::tie(iter, chunk) = buf.TakeChunk(iter);
   EXPECT_EQ(iter, buf.Chunks().end());

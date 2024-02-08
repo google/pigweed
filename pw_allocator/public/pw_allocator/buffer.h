@@ -52,14 +52,15 @@ class WithBuffer {
  public:
   static constexpr size_t kCapacity = kBufferSize;
 
-  constexpr WithBuffer() = default;
-
   ByteSpan as_bytes() { return buffer_; }
   std::byte* data() { return buffer_.data(); }
   size_t size() const { return buffer_.size(); }
 
   T& operator*() { return obj_; }
+  const T& operator*() const { return obj_; }
+
   T* operator->() { return &obj_; }
+  const T* operator->() const { return &obj_; }
 
  private:
   alignas(AlignType) std::array<std::byte, kBufferSize> buffer_;

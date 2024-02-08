@@ -27,56 +27,32 @@
 #include "pw_tokenizer/tokenize.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::allocator::test {
+namespace pw::allocator {
 namespace internal {
 
-using pw::allocator::internal::Metrics;
+struct RecordedParameters {
+  size_t allocate_size = 0;
+  void* deallocate_ptr = nullptr;
+  size_t deallocate_size = 0;
+  void* resize_ptr = nullptr;
+  size_t resize_old_size = 0;
+  size_t resize_new_size = 0;
+};
 
 /// Simple memory allocator for testing.
 ///
 /// This allocator records the most recent parameters passed to the `Allocator`
 /// interface methods, and returns them via accessors.
-class AllocatorForTestImpl : public AllocatorWithMetrics<Metrics> {
+class AllocatorForTestImpl : public Allocator {
  public:
-  using metrics_type = Metrics;
-
-  AllocatorForTestImpl() : tracker_(PW_TOKENIZE_STRING_EXPR("test")) {}
   ~AllocatorForTestImpl() override;
 
-  metrics_type& metric_group() override { return tracker_.metric_group(); }
-  const metrics_type& metric_group() const override {
-    return tracker_.metric_group();
-  }
-
-  size_t allocate_size() const { return allocate_size_; }
-  void* deallocate_ptr() const { return deallocate_ptr_; }
-  size_t deallocate_size() const { return deallocate_size_; }
-  void* resize_ptr() const { return resize_ptr_; }
-  size_t resize_old_size() const { return resize_old_size_; }
-  size_t resize_new_size() const { return resize_new_size_; }
-
-  /// Provides memory for the allocator to allocate from.
-  ///
-  /// If this method is called, then `Reset` MUST be called before the object is
-  /// destroyed.
-  Status Init(ByteSpan bytes);
-
-  /// Allocates all the memory from this object.
-  void Exhaust();
+  void Init(Allocator& allocator, RecordedParameters& params);
 
   /// Resets the recorded parameters to an initial state.
-  void ResetParameters();
-
-  /// Resets the object to an initial state.
-  ///
-  /// This frees all memory associated with this allocator and disassociates the
-  /// allocator from its memory region. If `Init` is called, then this method
-  /// MUST be called before the object is destroyed.
   void Reset();
 
  private:
-  using BlockType = Block<>;
-
   /// @copydoc Allocator::Allocate
   void* DoAllocate(Layout layout) override;
 
@@ -92,38 +68,61 @@ class AllocatorForTestImpl : public AllocatorWithMetrics<Metrics> {
   /// @copydoc Allocator::Query
   Status DoQuery(const void* ptr, Layout layout) const override;
 
-  SimpleAllocator allocator_;
-  TrackingAllocatorImpl<metrics_type> tracker_;
-
-  bool initialized_ = false;
-  size_t allocate_size_ = 0;
-  void* deallocate_ptr_ = nullptr;
-  size_t deallocate_size_ = 0;
-  void* resize_ptr_ = nullptr;
-  size_t resize_old_size_ = 0;
-  size_t resize_new_size_ = 0;
+  Allocator* allocator_ = nullptr;
+  RecordedParameters* params_ = nullptr;
 };
 
 }  // namespace internal
+namespace test {
 
-/// Token that can be used in tests.
-constexpr tokenizer::Token kToken = PW_TOKENIZE_STRING("test");
+using Metrics = pw::allocator::internal::Metrics;
+
+// A token that can be used in tests.
+constexpr pw::tokenizer::Token kToken = PW_TOKENIZE_STRING("test");
 
 /// An `AllocatorForTest` that is automatically initialized on construction.
 template <size_t kBufferSize>
-class AllocatorForTest
-    : public WithBuffer<internal::AllocatorForTestImpl, kBufferSize> {
+class AllocatorForTest : public TrackingAllocatorImpl<Metrics> {
  public:
-  using allocator_type = internal::AllocatorForTestImpl;
-  using metrics_type = allocator_type::metrics_type;
+  using Base = TrackingAllocatorImpl<Metrics>;
+  using BlockType = SimpleAllocator::BlockType;
 
-  AllocatorForTest() {
-    EXPECT_EQ((*this)->Init(ByteSpan(this->data(), this->size())), OkStatus());
+  AllocatorForTest() : Base(kToken) {
+    EXPECT_EQ(allocator_->Init(allocator_.as_bytes()), OkStatus());
+    recorder_.Init(*allocator_, params_);
+    Init(recorder_, kBufferSize);
   }
-  ~AllocatorForTest() { (*this)->Reset(); }
 
-  /// Helper method to get a pointer to underlying allocator.
-  AllocatorWithMetrics<metrics_type>* get() { return &**this; }
+  ~AllocatorForTest() override {
+    recorder_.Reset();
+    for (auto* block : allocator_->blocks()) {
+      BlockType::Free(block);
+    }
+    allocator_->Reset();
+  }
+
+  size_t allocate_size() const { return params_.allocate_size; }
+  void* deallocate_ptr() const { return params_.deallocate_ptr; }
+  size_t deallocate_size() const { return params_.deallocate_size; }
+  void* resize_ptr() const { return params_.resize_ptr; }
+  size_t resize_old_size() const { return params_.resize_old_size; }
+  size_t resize_new_size() const { return params_.resize_new_size; }
+
+  /// Resets the recorded parameters to an initial state.
+  void ResetParameters() { params_ = internal::RecordedParameters{}; }
+
+  /// Allocates all the memory from this object.
+  void Exhaust() {
+    for (auto* block : allocator_->blocks()) {
+      block->MarkUsed();
+    }
+  }
+
+ private:
+  internal::AllocatorForTestImpl recorder_;
+  internal::RecordedParameters params_;
+  WithBuffer<SimpleAllocator, kBufferSize> allocator_;
 };
 
-}  // namespace pw::allocator::test
+}  // namespace test
+}  // namespace pw::allocator
