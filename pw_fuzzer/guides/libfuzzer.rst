@@ -304,14 +304,15 @@ Step 5: Running the fuzzer locally
 
       Specify the `AddressSanitizer`_
       :ref:`fuzzing toolchain<module-pw_fuzzer-guides-using_libfuzzer-toolchain>`
-      via a ``--config`` when building and running fuzzers. Additional
+      via a ``--config`` when building and running fuzzers. For a fuzz test with
+      a ``<name>``, use the generated launcher tool ``<name>_run``. Additional
       `libFuzzer options`_ and `corpus`_ arguments can be passed on the command
       line. For example:
 
       .. code-block:: sh
 
-        $ bazel run //my_module:my_fuzzer --config=asan-libfuzzer -- \
-          -seed=1 path/to/corpus
+        $ bazel run //my_module:my_fuzzer_run --config=asan-libfuzzer -- \
+          -seed=1 path/to/corpus -max_total_time=5
 
 Running the fuzzer should produce output similar to the following:
 
