@@ -38,6 +38,7 @@ pw_chrono_threadx
 pw_chrono_zephyr
 pw_cli
 pw_compilation_testing
+pw_config_loader
 pw_console
 pw_containers
 pw_cpu_exception

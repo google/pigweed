@@ -17,7 +17,7 @@ from typing import Any, Dict, List
 
 import json
 
-from pw_cli.yaml_config_loader_mixin import YamlConfigLoaderMixin
+from pw_config_loader.yaml_config_loader_mixin import YamlConfigLoaderMixin
 
 
 class JsonConfigLoaderMixin(YamlConfigLoaderMixin):

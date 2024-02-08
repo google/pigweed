@@ -31,7 +31,6 @@ pw_python_package("py") {
     "pw_cli/color.py",
     "pw_cli/env.py",
     "pw_cli/envparse.py",
-    "pw_cli/json_config_loader_mixin.py",
     "pw_cli/log.py",
     "pw_cli/plugins.py",
     "pw_cli/process.py",
@@ -41,8 +40,6 @@ pw_python_package("py") {
     "pw_cli/shell_completion/zsh/__init__.py",
     "pw_cli/shell_completion/zsh/pw/__init__.py",
     "pw_cli/shell_completion/zsh/pw_build/__init__.py",
-    "pw_cli/toml_config_loader_mixin.py",
-    "pw_cli/yaml_config_loader_mixin.py",
   ]
   tests = [
     "envparse_test.py",

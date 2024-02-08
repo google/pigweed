@@ -80,6 +80,7 @@ pw_python_package("py") {
   ]
   python_deps = [
     "$dir_pw_cli/py",
+    "$dir_pw_config_loader/py",
     "$dir_pw_env_setup/py",
     "$dir_pw_presubmit/py",
   ]

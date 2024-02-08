@@ -21,7 +21,7 @@ from typing import Any, cast, Dict, List, Literal, Optional, Tuple, Union
 import yaml
 
 from pw_cli.env import pigweed_environment
-from pw_cli.yaml_config_loader_mixin import YamlConfigLoaderMixin
+from pw_config_loader.yaml_config_loader_mixin import YamlConfigLoaderMixin
 
 env = pigweed_environment()
 env_vars = vars(env)

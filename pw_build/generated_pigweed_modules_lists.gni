@@ -70,6 +70,7 @@ declare_args() {
   dir_pw_cli = get_path_info("../pw_cli", "abspath")
   dir_pw_compilation_testing =
       get_path_info("../pw_compilation_testing", "abspath")
+  dir_pw_config_loader = get_path_info("../pw_config_loader", "abspath")
   dir_pw_console = get_path_info("../pw_console", "abspath")
   dir_pw_containers = get_path_info("../pw_containers", "abspath")
   dir_pw_cpu_exception = get_path_info("../pw_cpu_exception", "abspath")
@@ -244,6 +245,7 @@ declare_args() {
     dir_pw_chrono_zephyr,
     dir_pw_cli,
     dir_pw_compilation_testing,
+    dir_pw_config_loader,
     dir_pw_console,
     dir_pw_containers,
     dir_pw_cpu_exception,
@@ -404,6 +406,7 @@ declare_args() {
     "$dir_pw_chrono_zephyr:tests",
     "$dir_pw_cli:tests",
     "$dir_pw_compilation_testing:tests",
+    "$dir_pw_config_loader:tests",
     "$dir_pw_console:tests",
     "$dir_pw_containers:tests",
     "$dir_pw_cpu_exception:tests",
@@ -564,6 +567,7 @@ declare_args() {
     "$dir_pw_chrono_zephyr:docs",
     "$dir_pw_cli:docs",
     "$dir_pw_compilation_testing:docs",
+    "$dir_pw_config_loader:docs",
     "$dir_pw_console:docs",
     "$dir_pw_containers:docs",
     "$dir_pw_cpu_exception:docs",

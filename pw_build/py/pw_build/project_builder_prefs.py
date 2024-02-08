@@ -19,7 +19,7 @@ import shlex
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Tuple, Union
 
-from pw_cli.toml_config_loader_mixin import YamlConfigLoaderMixin
+from pw_config_loader.toml_config_loader_mixin import YamlConfigLoaderMixin
 
 _DEFAULT_CONFIG: Dict[Any, Any] = {
     # Config settings not available as a command line options go here.

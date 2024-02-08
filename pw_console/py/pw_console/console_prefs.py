@@ -21,7 +21,7 @@ from typing import Dict, Callable, List, Optional, Union
 from prompt_toolkit.key_binding import KeyBindings
 import yaml
 
-from pw_cli.yaml_config_loader_mixin import YamlConfigLoaderMixin
+from pw_config_loader.yaml_config_loader_mixin import YamlConfigLoaderMixin
 
 from pw_console.style import get_theme_colors, generate_styles
 from pw_console.key_bindings import DEFAULT_KEY_BINDINGS
