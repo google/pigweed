@@ -68,6 +68,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help='Include all levels of data sources in json binary report',
     )
+    parser.add_argument(
+        '--ignore-unused-labels',
+        action="store_true",
+        help='Do not include labels with size equal to zero in report',
+    )
 
     return parser.parse_args()
 
@@ -181,6 +186,7 @@ def create_binary_sizes_json(
     key_prefix: str,
     data_source_map: DataSourceMap,
     full_json: bool,
+    ignore_unused_labels: bool,
 ) -> str:
     """Creates a binary_sizes.json file content from a list of labels.
 
@@ -188,24 +194,25 @@ def create_binary_sizes_json(
       key_prefix: Prefix for the json keys.
       data_source_map: Hierarchical structure containing size of sources.
       full_json: Report contains all sources, otherwise just top level.
+      ignore_unused_labels: Doesn't include labels of size zero in json.
 
     Returns:
       A string of content to write to binary_sizes.json file.
     """
+    json_content = {}
     if full_json:
         *ds_parents, last = data_source_map.get_ds_names()
-        json_content = {}
         for label in data_source_map.labels():
             key = f'{key_prefix}.'
             for ds_parent, label_parent in zip(ds_parents, label.parents):
                 key += f'{ds_parent}.{label_parent}.'
             key += f'{last}.{label.name}'
-            json_content[key] = label.size
+            if label.size != 0 or not ignore_unused_labels:
+                json_content[key] = label.size
     else:
-        json_content = {
-            f'{key_prefix}.{label.name}': label.size
-            for label in data_source_map.labels(ds_index=0)
-        }
+        for label in data_source_map.labels(ds_index=0):
+            if label.size != 0 or not ignore_unused_labels:
+                json_content[f'{key_prefix}.{label.name}'] = label.size
     return json.dumps(json_content, sort_keys=True, indent=2)
 
 
@@ -218,6 +225,7 @@ def single_target_output(
     extra_args: Iterable[str],
     json_key_prefix: str,
     full_json: bool,
+    ignore_unused_labels: bool,
 ) -> int:
     """Generates size report for a single target.
 
@@ -267,7 +275,7 @@ def single_target_output(
 
     # Generates contents for summary printed to binary_sizes.json
     binary_json_content = create_binary_sizes_json(
-        json_key_prefix, data_source_map, full_json
+        json_key_prefix, data_source_map, full_json, ignore_unused_labels
     )
 
     print(single_report_table)
@@ -315,6 +323,7 @@ def main() -> int:
             extra_args,
             json_key_prefix,
             args.full_json_summary,
+            args.ignore_unused_labels,
         )
 
     default_data_sources = ['segment_names', 'symbols']

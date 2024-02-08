@@ -54,6 +54,8 @@ declare_args() {
 #   full_json_summary: If true, json report includes size breakdown per source
 #     hierarchy. Otherwise, defaults to only include the top-level data source
 #     type in size report. Optional.
+#   ignore_unused_labels: If true, json report won't include labels that have
+#     size equal to zero. Optional.
 #
 # Example:
 #   pw_size_report("foo_bloat") {
@@ -62,6 +64,7 @@ declare_args() {
 #      source_filter = "foo"
 #      json_key_prefix = "foo"
 #      full_json_summary = true
+#      ignore_unused_labels = true
 #   }
 #
 template("pw_size_report") {
@@ -134,6 +137,12 @@ template("pw_size_report") {
     if (defined(invoker.full_json_summary)) {
       if (invoker.full_json_summary) {
         _bloat_script_args += [ "--full-json-summary" ]
+      }
+    }
+
+    if (defined(invoker.ignore_unused_labels)) {
+      if (invoker.ignore_unused_labels) {
+        _bloat_script_args += [ "--ignore-unused-labels" ]
       }
     }
 

@@ -171,6 +171,8 @@ a size report for a single binary. The template requires a target binary.
 * ``json_key_prefix``: Optional prefix for key names in json size report.
 * ``full_json_summary``: Optional boolean to print json size report by label
 *  level hierarchy. Defaults to only use top-level label in size report.
+* ``ignore_unused_labels``: Optional boolean to remove labels that have size of
+*  zero in json size report.
 
 .. code-block::
 
@@ -186,6 +188,7 @@ a size report for a single binary. The template requires a target binary.
     source_filter = "pw::hello"
     json_key_prefix = "hello_world_iostream"
     full_json_summary = true
+    ignore_unused_labels = true
   }
 
 Sample Single Binary ASCII Table Generated
