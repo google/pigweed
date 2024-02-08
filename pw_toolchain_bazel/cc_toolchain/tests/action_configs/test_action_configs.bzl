@@ -22,7 +22,7 @@ load(
 
 visibility("private")
 
-def _test_action_configs_impl(_ctx, action_configs, features, flag_sets, to_untyped_config, **_):
+def _test_action_configs_impl(_ctx, action_configs, features, flag_sets, extra_action_files, to_untyped_config, **_):
     def get_action_configs(**kwargs):
         action_configs = to_untyped_config(**kwargs).action_configs
         actions = [(action.action_name, action) for action in action_configs]
@@ -99,5 +99,17 @@ def _test_action_configs_impl(_ctx, action_configs, features, flag_sets, to_unty
     assert_eq(len(tools[0].with_features), 1)
     assert_eq(tools[0].with_features[0].features, ["foo"])
     assert_eq(sorted(tools[0].with_features[0].not_features), ["bar", "baz"])
+
+    want_files = {
+        "assemble": ["clang_wrapper.sh", "data.txt"],
+        "c-compile": ["data.txt"],
+        "c++-compile": ["clang_wrapper.sh"],
+    }
+    assert_eq(get_files(extra_action_files = [
+        extra_action_files.c_compiler_data,
+        extra_action_files.cpp_compiler_data,
+    ]), want_files)
+
+    assert_eq(get_files(extra_action_files = [extra_action_files.data]), want_files)
 
 test_action_configs = generate_test_rule(_test_action_configs_impl)

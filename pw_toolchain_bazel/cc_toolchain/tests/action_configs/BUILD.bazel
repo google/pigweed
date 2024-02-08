@@ -16,6 +16,8 @@ load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
 load(
     "//cc_toolchain:defs.bzl",
     "pw_cc_action_config",
+    "pw_cc_action_files",
+    "pw_cc_action_files_set",
     "pw_cc_tool",
 )
 load(":test_action_configs.bzl", "test_action_configs")
@@ -76,6 +78,32 @@ pw_cc_action_config(
     name = "requires_foo",
     action_names = ["//actions:c_compile"],
     tools = [":requires_foo_tool"],
+)
+
+pw_cc_action_files(
+    name = "c_compiler_data",
+    srcs = ["data.txt"],
+    actions = [
+        "//actions:c_compile",
+        "//actions:assemble",
+    ],
+)
+
+pw_cc_action_files(
+    name = "cpp_compiler_data",
+    srcs = ["clang_wrapper.sh"],
+    actions = [
+        "//actions:cpp_compile",
+        "//actions:assemble",
+    ],
+)
+
+pw_cc_action_files_set(
+    name = "data",
+    srcs = [
+        ":c_compiler_data",
+        ":cpp_compiler_data",
+    ],
 )
 
 test_action_configs(

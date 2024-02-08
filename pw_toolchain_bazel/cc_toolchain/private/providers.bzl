@@ -120,6 +120,20 @@ PwToolInfo = provider(
     },
 )
 
+PwExtraActionFilesInfo = provider(
+    doc = "Extra files to provide to an action",
+    fields = {
+        "action": "str: The action to associate with",
+        "files": "depset[File]: Files to add to this action",
+    },
+)
+PwExtraActionFilesSetInfo = provider(
+    doc = "Set of PwExtraActionFilesInfo",
+    fields = {
+        "srcs": "depset[PwExtraActionFilesInfo]: Sets of action files",
+    },
+)
+
 PwToolchainConfigInfo = provider(
     doc = "Additional metadata about the config of the pigweed toolchain.",
     fields = {

@@ -26,6 +26,7 @@ load(
     ":providers.bzl",
     "PwActionConfigSetInfo",
     "PwActionNameSetInfo",
+    "PwExtraActionFilesSetInfo",
     "PwFeatureInfo",
     "PwFeatureSetInfo",
     "PwFlagSetInfo",
@@ -53,6 +54,7 @@ PW_CC_TOOLCHAIN_CONFIG_ATTRS = {
     "action_configs": "List of `pw_cc_action_config` labels that bind tools to the appropriate actions",
     "unconditional_flag_sets": "List of `pw_cc_flag_set`s to apply to their respective action configs",
     "toolchain_features": "List of `pw_cc_feature`s that this toolchain supports",
+    "extra_action_files": "Files that are required to run specific actions.",
 
     # Attributes originally part of create_cc_toolchain_config_info.
     "toolchain_identifier": "See documentation for cc_common.create_cc_toolchain_config_info()",
@@ -184,8 +186,12 @@ def _pw_cc_toolchain_config_impl(ctx):
             for acs in ctx.attr.action_configs
         ]),
     )
+    extra_action_files = PwExtraActionFilesSetInfo(srcs = depset(transitive = [
+        ffa[PwExtraActionFilesSetInfo].srcs
+        for ffa in ctx.attr.extra_action_files
+    ]))
     flag_sets = [fs[PwFlagSetInfo] for fs in ctx.attr.unconditional_flag_sets]
-    out = to_untyped_config(feature_set, action_config_set, flag_sets)
+    out = to_untyped_config(feature_set, action_config_set, flag_sets, extra_action_files)
 
     # TODO: b/297413805 - This could be externalized.
     out.features.append(_archiver_flags_feature(ctx.attr.target_libc == "macosx"))
@@ -221,6 +227,7 @@ pw_cc_toolchain_config = rule(
         "action_configs": attr.label_list(providers = [PwActionConfigSetInfo]),
         "unconditional_flag_sets": attr.label_list(providers = [PwFlagSetInfo]),
         "toolchain_features": attr.label_list(providers = [PwFeatureSetInfo]),
+        "extra_action_files": attr.label_list(providers = [PwExtraActionFilesSetInfo]),
         "extra_files": attr.label(),
 
         # Attributes from create_cc_toolchain_config_info.

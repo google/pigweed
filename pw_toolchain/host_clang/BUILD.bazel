@@ -14,6 +14,7 @@
 
 load(
     "@pw_toolchain//cc_toolchain:defs.bzl",
+    "pw_cc_action_files",
     "pw_cc_feature",
     "pw_cc_flag_set",
     "pw_cc_toolchain",
@@ -111,7 +112,7 @@ pw_cc_flag_set(
     ],
 )
 
-filegroup(
+pw_cc_action_files(
     name = "sysroot_files",
     srcs = select({
         "@platforms//os:linux": [
@@ -119,6 +120,10 @@ filegroup(
         ],
         "//conditions:default": [],
     }),
+    actions = [
+        "@pw_toolchain//actions:all_compiler_actions",
+        "@pw_toolchain//actions:all_link_actions",
+    ],
 )
 
 pw_cc_toolchain(
@@ -159,7 +164,6 @@ pw_cc_toolchain(
         "@platforms//os:macos": XCODE_SDK_PATH,
         "@platforms//os:linux": "external/linux_sysroot",
     }),
-    compiler_files = ":sysroot_files",
     cxx_builtin_include_directories = select({
         "@platforms//os:macos": [
             "%sysroot%/usr/include",
@@ -175,7 +179,7 @@ pw_cc_toolchain(
             "%sysroot%/usr/include",
         ],
     }),
-    linker_files = ":sysroot_files",
+    extra_action_files = [":sysroot_files"],
     supports_param_files = 0,
     # The implementations of some "legacy features" built into Bazel use
     # `target_libc` to determine if a toolchain targets MacOS,

@@ -174,13 +174,14 @@ def _to_untyped_action_config(action_config, extra_flag_sets, known, fail = fail
         implies = _to_untyped_implies(action_config, known, fail = fail),
     )
 
-def to_untyped_config(feature_set, action_config_set, flag_sets, fail = fail):
+def to_untyped_config(feature_set, action_config_set, flag_sets, extra_action_files, fail = fail):
     """Converts Pigweed providers into a format suitable for rules_cc.
 
     Args:
         feature_set: PwFeatureSetInfo: Features available in the toolchain
         action_config_set: ActionConfigSetInfo: Set of defined action configs
         flag_sets: Flag sets that are unconditionally applied
+        extra_action_files: Files to be added to actions
         fail: The fail function. Only change this during testing.
     Returns:
         A struct containing parameters suitable to pass to
@@ -228,12 +229,14 @@ def to_untyped_config(feature_set, action_config_set, flag_sets, fail = fail):
         ))
 
     action_to_files = {
-        ac.action_name: ac.files
+        ac.action_name: [ac.files]
         for ac in acs
     }
+    for ffa in extra_action_files.srcs.to_list():
+        action_to_files.setdefault(ffa.action, []).append(ffa.files)
 
     return struct(
         features = untyped_features,
         action_configs = untyped_acs,
-        action_to_files = action_to_files,
+        action_to_files = {k: depset(transitive = v) for k, v in action_to_files.items()},
     )

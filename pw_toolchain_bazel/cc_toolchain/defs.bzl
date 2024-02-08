@@ -20,6 +20,11 @@ load(
     _pw_cc_tool = "pw_cc_tool",
 )
 load(
+    "//cc_toolchain/private:action_files.bzl",
+    _pw_cc_action_files = "pw_cc_action_files",
+    _pw_cc_action_files_set = "pw_cc_action_files_set",
+)
+load(
     "//cc_toolchain/private:cc_toolchain.bzl",
     _pw_cc_toolchain = "pw_cc_toolchain",
 )
@@ -45,6 +50,8 @@ load(
 
 pw_cc_action_name_set = _pw_cc_action_name_set
 
+pw_cc_action_files = _pw_cc_action_files
+pw_cc_action_files_set = _pw_cc_action_files_set
 pw_cc_action_config = _pw_cc_action_config
 pw_cc_tool = _pw_cc_tool
 

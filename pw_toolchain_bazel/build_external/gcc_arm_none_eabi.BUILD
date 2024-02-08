@@ -15,6 +15,7 @@
 load(
     "@pw_toolchain//cc_toolchain:defs.bzl",
     "pw_cc_action_config",
+    "pw_cc_action_files",
     "pw_cc_tool",
 )
 
@@ -27,8 +28,9 @@ licenses(["notice"])
 
 exports_files(glob(["**"]))
 
-filegroup(
+pw_cc_action_files(
     name = "all",
+    actions = ["@pw_toolchain//actions:all_actions"],
     srcs = glob(["**"]),
     visibility = ["//visibility:public"],
 )
