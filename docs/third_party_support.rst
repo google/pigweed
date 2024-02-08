@@ -12,3 +12,4 @@ set of third party modules with toolchain support and other helpers.
   :glob:
 
   third_party/*/docs
+  docker/docs

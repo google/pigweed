@@ -357,3 +357,10 @@ Future work will look to add:
 - Config options to customize output.
 - A method of providing custom data formatters.
 - Perfetto support.
+
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   Backends <backends>

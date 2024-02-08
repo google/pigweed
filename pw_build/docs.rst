@@ -25,6 +25,7 @@ Beyond just compiling code, Pigweed’s GN build system can also:
 These are only supported in the GN build, so we recommend using it if possible.
 
 .. toctree::
+   :hidden:
    :maxdepth: 1
 
    gn

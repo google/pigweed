@@ -40,7 +40,10 @@ pw_source_set("default_putget_bytes") {
 }
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "backends.rst",
+    "docs.rst",
+  ]
 }
 
 pw_test_group("tests") {

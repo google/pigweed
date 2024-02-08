@@ -58,7 +58,10 @@ pw_proto_library("protos") {
 }
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "backends.rst",
+    "docs.rst",
+  ]
 }
 
 pw_test_group("tests") {

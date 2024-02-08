@@ -174,5 +174,8 @@ pw_test("i2c_service_test") {
 }
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "backends.rst",
+    "docs.rst",
+  ]
 }

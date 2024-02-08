@@ -391,5 +391,8 @@ pw_source_set("condition_variable_test") {
 }
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "backends.rst",
+    "docs.rst",
+  ]
 }

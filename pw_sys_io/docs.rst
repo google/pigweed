@@ -54,3 +54,8 @@ Dependencies
 - :ref:`module-pw_span`
 - :ref:`module-pw_status`
 
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   Backends <backends>

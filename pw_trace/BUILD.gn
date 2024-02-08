@@ -124,7 +124,10 @@ pw_test("trace_null_test") {
 }
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "backends.rst",
+    "docs.rst",
+  ]
 }
 
 config("trace_sample_app_config") {

@@ -142,8 +142,7 @@ Talk to us
    docs/get_started/index
    docs/concepts/index
    targets
-   Modules <module_guides>
-   docs/module_structure
+   modules
    changelog
    Mailing List <https://groups.google.com/forum/#!forum/pigweed>
    Chat Room <https://discord.gg/M9NSeTA>

@@ -151,3 +151,9 @@ C++ API reference
 
 .. doxygenclass:: pw::async2::Dispatcher
   :members:
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   Backends <backends>

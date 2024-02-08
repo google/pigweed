@@ -116,7 +116,10 @@ pw_test_group("tests") {
 }
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "backends.rst",
+    "docs.rst",
+  ]
 }
 
 # Satisfy source_is_in_build_files presubmit step

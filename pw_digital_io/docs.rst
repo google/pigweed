@@ -323,3 +323,10 @@ Zephyr
 ======
 To enable ``pw_digital_io`` for Zephyr add ``CONFIG_PIGWEED_DIGITAL_IO=y`` to
 the project's configuration.
+
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   Backends <backends>

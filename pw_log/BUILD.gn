@@ -173,6 +173,7 @@ pw_proto_library("protos") {
 
 pw_doc_group("docs") {
   sources = [
+    "backends.rst",
     "docs.rst",
     "protobuf.rst",
     "tokenized_args.rst",

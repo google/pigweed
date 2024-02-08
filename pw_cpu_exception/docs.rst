@@ -143,3 +143,9 @@ Dependencies
 ------------
 - :ref:`module-pw_span`
 - :ref:`module-pw_preprocessor`
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   Backends <backends>

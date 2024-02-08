@@ -265,5 +265,8 @@ pw_proto_library("protos") {
 pw_doc_group("docs") {
   inputs =
       [ "$dir_pw_thread_stl/public/pw_thread_stl/test_thread_context_native.h" ]
-  sources = [ "docs.rst" ]
+  sources = [
+    "backends.rst",
+    "docs.rst",
+  ]
 }

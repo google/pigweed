@@ -28,3 +28,10 @@ Module usage
 ============
 See backend docs for how to interact with the underlying dynamic memory
 operations implementation.
+
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Backends <backends>

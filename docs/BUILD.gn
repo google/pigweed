@@ -249,7 +249,7 @@ pw_doc_gen("docs") {
     "build_system.rst",
     "changelog.rst",
     "index.rst",
-    "module_guides.rst",
+    "modules.rst",
     "python_build.rst",
     "targets.rst",
     "third_party_support.rst",

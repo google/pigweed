@@ -807,29 +807,7 @@ Below is a brief summary of what modules are ready for use:
 
 Available Assert Backends
 =========================
-- ``pw_assert`` - **Stable** - The assert facade (this module). This module is
-  stable, and in production use. The documentation is comprehensive and covers
-  the functionality. There are (a) tests for the facade macro processing logic,
-  using a fake assert backend; and (b) compile tests to verify that the
-  selected backend compiles with all supported assert constructions and types.
-- ``pw_assert:print_and_abort_backend`` - **Stable** - Uses the ``printf`` and
-  ``abort`` standard library functions to implement the assert facade. Prints
-  the assert expression, evaluated arguments if any, file/line, function name,
-  and user message, then aborts. Only suitable for targets that support these
-  standard library functions.
-- ``pw_assert_basic`` - **Stable** - The assert basic module is a simple assert
-  handler that displays the failed assert line and the values of captured
-  arguments. Output is directed to ``pw_sys_io``. This module is a great
-  ready-to-roll module when bringing up a system, but is likely not the best
-  choice for production.
-- ``pw_assert_log`` - **Stable** - This assert backend redirects to logging,
-  but with a logging flag set that indicates an assert failure. This is our
-  advised approach to get **tokenized asserts**--by using tokenized logging,
-  then using the ``pw_assert_log`` backend.
-
-Note: If one desires a null assert module (where asserts are removed), use
-``pw_assert_log`` in combination with ``pw_log_null``. This will direct asserts
-to logs, then the logs are removed due to the null backend.
+See :ref:`module-pw_assert-backends`.
 
 Missing Functionality
 =====================
@@ -839,3 +817,8 @@ Missing Functionality
   capture system that can capture state like number of tasks, available memory,
   and so on. Snapshot facilities are the obvious ones to run inside an assert
   handler. It'll happen someday.
+
+.. toctree::
+   :maxdepth: 1
+
+   Backends <backends>

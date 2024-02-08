@@ -156,3 +156,9 @@ call the :ref:`module-pw_boot-user` in the correct
 Dependencies
 ------------
 - :bdg-ref-primary-line:`module-pw_preprocessor`
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   Backends <backends>

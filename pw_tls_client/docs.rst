@@ -228,3 +228,10 @@ A list of other demos will be provided in ``//pw_tls_client/examples/``
 .. warning::
    Open()/Read() APIs are synchronous for now. Support for
    non-blocking/asynchronous usage will be added in the future.
+
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   Backends <backends>

@@ -125,3 +125,10 @@ I2C responders that require multi-byte access may expect a specific endianness.
 The order of bytes specified in the bytes field will match the order of bytes
 sent/received on the bus. Maximum supported value for multi-byte access is
 4 bytes.
+
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   Backends <backends>

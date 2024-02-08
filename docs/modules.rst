@@ -1,0 +1,111 @@
+.. _docs-module-guides:
+
+=======
+Modules
+=======
+Pigweed is a collection of embedded-focused and embedded-related :ref:`modules
+<docs-glossary-module>`. Modules may contain code from multiple languages,
+including C, C++, Go, Rust, Shell, Batch and Python.
+
+.. toctree::
+   :maxdepth: 1
+
+   docs/module_structure
+   pw_alignment/docs
+   pw_allocator/docs
+   pw_analog/docs
+   pw_android_toolchain/docs
+   pw_arduino_build/docs
+   pw_assert/docs
+   pw_async/docs
+   pw_async2/docs
+   pw_base64/docs
+   pw_bloat/docs
+   pw_blob_store/docs
+   pw_bluetooth/docs
+   pw_bluetooth_hci/docs
+   pw_bluetooth_profiles/docs
+   pw_bluetooth_sapphire/docs
+   pw_boot/docs
+   pw_build/docs
+   pw_build_info/docs
+   pw_build_mcuxpresso/docs
+   pw_bytes/docs
+   pw_channel/docs
+   pw_checksum/docs
+   pw_chre/docs
+   pw_chrono/docs
+   pw_cli/docs
+   pw_compilation_testing/docs
+   pw_config_loader/docs
+   pw_console/docs
+   pw_containers/docs
+   pw_cpu_exception/docs
+   pw_crypto/docs
+   pw_digital_io/docs
+   pw_docgen/docs
+   pw_doctor/docs
+   pw_emu/docs
+   pw_env_setup/docs
+   pw_file/docs
+   pw_format/docs
+   pw_function/docs
+   pw_fuzzer/docs
+   pw_grpc/docs
+   pw_hdlc/docs
+   pw_hex_dump/docs
+   pw_i2c/docs
+   pw_ide/docs
+   pw_interrupt/docs
+   pw_intrusive_ptr/docs
+   pw_kvs/docs
+   pw_libc/docs
+   pw_libcxx/docs
+   pw_log/docs
+   pw_malloc/docs
+   pw_metric/docs
+   pw_minimal_cpp_stdlib/docs
+   pw_module/docs
+   pw_multibuf/docs
+   pw_multisink/docs
+   pw_package/docs
+   pw_perf_test/docs
+   pw_persistent_ram/docs
+   pw_polyfill/docs
+   pw_preprocessor/docs
+   pw_presubmit/docs
+   pw_protobuf/docs
+   pw_protobuf_compiler/docs
+   pw_random/docs
+   pw_result/docs
+   pw_ring_buffer/docs
+   pw_router/docs
+   pw_rpc/docs
+   pw_rpc_transport/docs
+   pw_rust/docs
+   pw_snapshot/docs
+   pw_software_update/docs
+   pw_span/docs
+   pw_spi/docs
+   pw_status/docs
+   pw_stm32cube_build/docs
+   pw_stream/docs
+   pw_string/docs
+   pw_symbolizer/docs
+   pw_sync/docs
+   pw_sys_io/docs
+   pw_system/docs
+   pw_target_runner/docs
+   pw_thread/docs
+   pw_tls_client/docs
+   pw_tokenizer/docs
+   pw_toolchain/docs
+   pw_toolchain_bazel/docs
+   pw_trace/docs
+   pw_transfer/docs
+   pw_unit_test/docs
+   pw_unit_test_zephyr/docs
+   pw_varint/docs
+   pw_watch/docs
+   pw_web/docs
+   pw_work_queue/docs
