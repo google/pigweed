@@ -15,6 +15,7 @@
 #include "pw_bluetooth/hci_events.emb.h"
 #include "pw_bluetooth/hci_test.emb.h"
 #include "pw_bluetooth/hci_vendor.emb.h"
+#include "pw_bluetooth/l2cap_frames.emb.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::bluetooth {
