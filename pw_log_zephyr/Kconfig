@@ -16,9 +16,16 @@ menu "pw_log"
 
 choice PIGWEED_LOG
     prompt "Logging backend used"
+    default PIGWEED_LOG_ZEPHYR if CPP
+    default PIGWEED_LOG_NONE
     help
       The type of Zephyr pw_log backend to use. See :ref:`module-pw_log` for
       module details
+
+config PIGWEED_LOG_NONE
+    bool "Do not use Pigweed logging"
+    help
+      PW_LOG_ statements will not work.
 
 config PIGWEED_LOG_ZEPHYR
     bool "Zephyr logging for PW_LOG_* statements"
