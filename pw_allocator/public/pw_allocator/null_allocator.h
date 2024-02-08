@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <cstddef>
+
 #include "pw_allocator/allocator.h"
 
 namespace pw::allocator {

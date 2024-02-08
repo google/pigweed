@@ -13,10 +13,13 @@
 // the License.
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 
 #include "pw_allocator/allocator.h"
 #include "pw_containers/flat_map.h"
+#include "pw_result/result.h"
+#include "pw_status/status.h"
 #include "pw_tokenizer/tokenize.h"
 
 namespace pw::allocator {
@@ -49,17 +52,17 @@ class MultiplexAllocator {
   virtual ~MultiplexAllocator() = default;
 
   /// Returns the allocator for a given application-specific type identifier.
-  Allocator* GetAllocator(Token token) { return DoGetAllocator(token); }
+  Allocator* GetAllocator(Token token) const { return DoGetAllocator(token); }
 
   /// Returns the result of calling `Allocate` on the allocator associated with
-  /// the given `type_id`, if any; otherwise returns null.
+  /// the given `token`, if any; otherwise returns null.
   void* Allocate(Token token, Layout layout) {
     Allocator* allocator = GetAllocator(token);
     return allocator == nullptr ? nullptr : allocator->Allocate(layout);
   }
 
   /// Dispatches to the `Deallocate` method on the allocator associated with
-  /// the given `type_id`, if any.
+  /// the given `token`, if any.
   void Deallocate(Token token, void* ptr, Layout layout) {
     Allocator* allocator = GetAllocator(token);
     if (allocator != nullptr) {
@@ -68,19 +71,39 @@ class MultiplexAllocator {
   }
 
   /// Returns the result of calling `Resize` on the allocator associated with
-  /// the given `type_id`, if any; otherwise returns false.
+  /// the given `token`, if any; otherwise returns false.
   bool Resize(Token token, void* ptr, Layout old_layout, size_t new_size) {
     Allocator* allocator = GetAllocator(token);
     return allocator != nullptr && allocator->Resize(ptr, old_layout, new_size);
   }
 
   /// Returns the result of calling `Reallocate` on the allocator associated
-  /// with the given `type_id`, if any; otherwise returns null.
+  /// with the given `token`, if any; otherwise returns null.
   void* Reallocate(Token token, void* ptr, Layout old_layout, size_t new_size) {
     Allocator* allocator = GetAllocator(token);
     return allocator == nullptr
                ? nullptr
                : allocator->Reallocate(ptr, old_layout, new_size);
+  }
+
+  /// Returns the result of calling `GetLayout` on the allocator associated
+  /// with the given `token`, if any; otherwise returns INVALID_ARGUMENT.
+  Result<Layout> GetLayout(Token token, const void* ptr) const {
+    Allocator* allocator = GetAllocator(token);
+    if (allocator == nullptr) {
+      return Status::InvalidArgument();
+    }
+    return allocator->GetLayout(ptr);
+  }
+
+  /// Returns the result of calling `Query` on the allocator associated
+  /// with the given `token`, if any; otherwise returns INVALID_ARGUMENT.
+  Status Query(Token token, const void* ptr, Layout layout) const {
+    Allocator* allocator = GetAllocator(token);
+    if (allocator == nullptr) {
+      return Status::InvalidArgument();
+    }
+    return allocator->Query(ptr, layout);
   }
 
  private:
@@ -92,7 +115,7 @@ class MultiplexAllocator {
   ///
   /// If the requested type identifier is unrecognized, this method should
   /// return null.
-  virtual Allocator* DoGetAllocator(Token token) = 0;
+  virtual Allocator* DoGetAllocator(Token token) const = 0;
 };
 
 /// Allocator multiplexer backed by a flat map.
@@ -117,7 +140,7 @@ class FlatMapMultiplexAllocator : public MultiplexAllocator {
       : MultiplexAllocator(), map_(pairs) {}
 
  private:
-  Allocator* DoGetAllocator(Token token) override {
+  Allocator* DoGetAllocator(Token token) const override {
     auto pair = map_.find(token);
     return pair == map_.end() ? nullptr : pair->second;
   }

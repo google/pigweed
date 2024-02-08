@@ -55,10 +55,6 @@ void AllocatorForTestImpl::Reset() {
   initialized_ = false;
 }
 
-Status AllocatorForTestImpl::DoQuery(const void* ptr, Layout layout) const {
-  return tracker_.Query(ptr, layout);
-}
-
 void* AllocatorForTestImpl::DoAllocate(Layout layout) {
   allocate_size_ = layout.size();
   return tracker_.Allocate(layout);
@@ -75,6 +71,14 @@ bool AllocatorForTestImpl::DoResize(void* ptr, Layout layout, size_t new_size) {
   resize_old_size_ = layout.size();
   resize_new_size_ = new_size;
   return tracker_.Resize(ptr, layout, new_size);
+}
+
+Result<Layout> AllocatorForTestImpl::DoGetLayout(const void* ptr) const {
+  return tracker_.GetLayout(ptr);
+}
+
+Status AllocatorForTestImpl::DoQuery(const void* ptr, Layout layout) const {
+  return tracker_.Query(ptr, layout);
 }
 
 }  // namespace internal

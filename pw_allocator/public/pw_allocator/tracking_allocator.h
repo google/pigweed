@@ -18,6 +18,7 @@
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/metrics.h"
 #include "pw_metric/metric.h"
+#include "pw_result/result.h"
 #include "pw_status/status.h"
 
 namespace pw::allocator {
@@ -62,11 +63,6 @@ class TrackingAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
   }
 
  private:
-  /// @copydoc Allocator::Query
-  Status DoQuery(const void* ptr, Layout layout) const override {
-    return allocator_->Query(ptr, layout);
-  }
-
   /// @copydoc Allocator::Allocate
   void* DoAllocate(Layout layout) override {
     if (allocator_ == nullptr) {
@@ -100,6 +96,15 @@ class TrackingAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
     }
     metrics_.RecordResize(layout.size(), new_size);
     return true;
+  }
+  /// @copydoc Allocator::GetLayout
+  Result<Layout> DoGetLayout(const void* ptr) const override {
+    return allocator_->GetLayout(ptr);
+  }
+
+  /// @copydoc Allocator::Query
+  Status DoQuery(const void* ptr, Layout layout) const override {
+    return allocator_->Query(ptr, layout);
   }
 
   /// @copydoc Allocator::Reallocate

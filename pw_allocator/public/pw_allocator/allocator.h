@@ -19,6 +19,7 @@
 
 #include "pw_assert/assert.h"
 #include "pw_preprocessor/compiler.h"
+#include "pw_result/result.h"
 #include "pw_status/status.h"
 
 namespace pw::allocator {
@@ -82,33 +83,6 @@ class Allocator {
   constexpr Allocator() = default;
   virtual ~Allocator() = default;
 
-  /// Asks the allocator if it is capable of realloating or deallocating a given
-  /// pointer.
-  ///
-  /// NOTE: This method is in development and should not be considered stable.
-  /// Do NOT use it in its current form to determine if this allocator can
-  /// deallocate pointers. Callers MUST only `Deallocate` memory using the same
-  /// `Allocator` they used to `Allocate` it. This method is currently for
-  /// internal use only.
-  ///
-  /// TODO: b/301677395 - Add dynamic type information to support a
-  /// `std::pmr`-style `do_is_equal`. Without this information, it is not
-  /// possible to determine whether another allocator has applied additional
-  /// constraints to memory that otherwise may appear to be associated with this
-  /// allocator.
-  ///
-  /// @param[in]  ptr         The pointer to be queried.
-  /// @param[in]  layout      Describes the memory pointed at by `ptr`.
-  ///
-  /// @retval UNIMPLEMENTED         This object cannot recognize allocated
-  ///                               pointers.
-  /// @retval OUT_OF_RANGE          Pointer cannot be re/deallocated by this
-  ///                               object.
-  /// @retval OK                    This object can re/deallocate the pointer.
-  Status Query(const void* ptr, Layout layout) const {
-    return DoQuery(ptr, layout);
-  }
-
   /// Allocates a block of memory with the specified size and alignment.
   ///
   /// Returns `nullptr` if the allocation cannot be made, or the `layout` has a
@@ -117,6 +91,13 @@ class Allocator {
   /// @param[in]  layout      Describes the memory to be allocated.
   void* Allocate(Layout layout) { return DoAllocate(layout); }
 
+  /// Constructs and object of type `T` from the given `args`, and wraps it in a
+  /// `UniquePtr`
+  ///
+  /// The return value is optional, as allocating memory for the object may
+  /// fail. Callers must check for this error before using the `UniquePtr`.
+  ///
+  /// @param[in]  args...     Arguments passed to the object constructor.
   template <typename T, typename... Args>
   std::optional<UniquePtr<T>> MakeUnique(Args&&... args) {
     static constexpr Layout kStaticLayout = Layout::Of<T>();
@@ -183,17 +164,54 @@ class Allocator {
     return DoReallocate(ptr, layout, new_size);
   }
 
- private:
-  /// Virtual `Query` function that can be overridden by derived classes.
+  /// Returns the layout used to allocate a given pointer.
   ///
-  /// The default implementation of this method simply returns `UNIMPLEMENTED`.
-  /// Allocators which dispatch to other allocators need to override this method
-  /// in order to be able to direct reallocations and deallocations to
-  /// appropriate allocator.
-  virtual Status DoQuery(const void*, Layout) const {
-    return Status::Unimplemented();
+  /// Some allocators may be designed to integrate with a `malloc`-style
+  /// interface, wherein `Layout` details can be recovered from an allocated
+  /// pointer. This can facilitate calling `Deallocate`, `Resize`, and
+  /// `Reallocate` insituations where only an allocated `void*` is available.
+  ///
+  /// The returned layout for a given allocated pointer is not required to
+  /// be identical to the one provided to the call to `Allocate` that produced
+  /// that pointer. Instead, the layout is merely guaranteed to be valid for
+  /// passing to `Deallocate`, `Resize`, and `Reallocate` with the same pointer.
+  ///
+  /// For example, an allocator that uses `Block`s to track allocations may
+  /// return a layout describing the correct alignment, but a larger size
+  /// corresponding to the block used.
+  ///
+  /// @retval UNIMPLEMENTED   This allocator cannot recover layouts.
+  /// @retval NOT_FOUND       The allocator does not recognize the pointer
+  ///                         as one of its allocations.
+  /// @retval OK              This result contains the requested layout.
+  Result<Layout> GetLayout(const void* ptr) const { return DoGetLayout(ptr); }
+
+  /// Asks the allocator if it is capable of realloating or deallocating a given
+  /// pointer.
+  ///
+  /// NOTE: This method is in development and should not be considered stable.
+  /// Do NOT use it in its current form to determine if this allocator can
+  /// deallocate pointers. Callers MUST only `Deallocate` memory using the same
+  /// `Allocator` they used to `Allocate` it. This method is currently for
+  /// internal use only.
+  ///
+  /// TODO: b/301677395 - Add dynamic type information to support a
+  /// `std::pmr`-style `do_is_equal`. Without this information, it is not
+  /// possible to determine whether another allocator has applied additional
+  /// constraints to memory that otherwise may appear to be associated with this
+  /// allocator.
+  ///
+  /// @param[in]  ptr         The pointer to be queried.
+  /// @param[in]  layout      Describes the memory pointed at by `ptr`.
+  ///
+  /// @retval UNIMPLEMENTED   This object cannot recognize allocated pointers.
+  /// @retval OUT_OF_RANGE    Pointer cannot be re/deallocated by this object.
+  /// @retval OK              This object can re/deallocate the pointer.
+  Status Query(const void* ptr, Layout layout) const {
+    return DoQuery(ptr, layout);
   }
 
+ private:
   /// Virtual `Allocate` function implemented by derived classes.
   virtual void* DoAllocate(Layout layout) = 0;
 
@@ -214,6 +232,24 @@ class Allocator {
   /// unsuccessful, it will allocate an entirely new block, copy existing data,
   /// and deallocate the given block.
   virtual void* DoReallocate(void* ptr, Layout layout, size_t new_size);
+
+  /// Virtual `Query` function that can be overridden by derived classes.
+  ///
+  /// The default implementation of this method simply returns `UNIMPLEMENTED`,
+  /// indicating the allocator cannot recover layouts from allocated pointers.
+  virtual Result<Layout> DoGetLayout(const void*) const {
+    return Status::Unimplemented();
+  }
+
+  /// Virtual `Query` function that can be overridden by derived classes.
+  ///
+  /// The default implementation of this method simply returns `UNIMPLEMENTED`.
+  /// Allocators which dispatch to other allocators need to override this method
+  /// in order to be able to direct reallocations and deallocations to
+  /// appropriate allocator.
+  virtual Status DoQuery(const void*, Layout) const {
+    return Status::Unimplemented();
+  }
 };
 
 /// An RAII pointer to a value of type ``T`` stored within an ``Allocator``.

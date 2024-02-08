@@ -783,5 +783,51 @@ TEST(DualFirstFit, ResizeSmallLargerAcrossThreshold) {
   UseMemory(test_fixture[1], kDualFitThreshold * 2);
 }
 
+template <typename TestFixtureType>
+void CanGetLayoutFromValidPointer(TestFixtureType& test_fixture) {
+  auto& allocator = test_fixture.GetAllocator();
+  constexpr size_t kAlignment = 64;
+  test_fixture[0] = allocator.Allocate(Layout(kLargeInnerSize, kAlignment * 2));
+  ASSERT_NE(test_fixture[0], nullptr);
+
+  test_fixture[1] = allocator.Allocate(Layout(kSmallInnerSize, kAlignment / 2));
+  ASSERT_NE(test_fixture[1], nullptr);
+
+  Result<Layout> result0 = allocator.GetLayout(test_fixture[0]);
+  ASSERT_EQ(result0.status(), OkStatus());
+  EXPECT_GE(result0->size(), kLargeInnerSize);
+  EXPECT_EQ(result0->alignment(), kAlignment * 2);
+
+  Result<Layout> result1 = allocator.GetLayout(test_fixture[1]);
+  ASSERT_EQ(result1.status(), OkStatus());
+  EXPECT_GE(result1->size(), kSmallInnerSize);
+  EXPECT_EQ(result1->alignment(), kAlignment / 2);
+}
+TEST_FOREACH_STRATEGY(CanGetLayoutFromValidPointer)
+
+template <typename TestFixtureType>
+void CannotGetLayoutFromInvalidPointer(TestFixtureType& test_fixture) {
+  auto& allocator = test_fixture.GetAllocator({
+      {kLargerOuterSize, 0},
+      {kLargeOuterSize, Preallocation::kIndexFree},
+      {kSmallOuterSize, 2},
+      {kSmallerOuterSize, Preallocation::kIndexFree},
+      {kSmallOuterSize, 4},
+      {kLargeOuterSize, Preallocation::kIndexFree},
+      {kLargerOuterSize, 6},
+  });
+
+  Result<Layout> result0 = allocator.GetLayout(nullptr);
+  EXPECT_EQ(result0.status(), Status::OutOfRange());
+
+  for (const auto& block : allocator.blocks()) {
+    if (!block->Used()) {
+      Result<Layout> result1 = allocator.GetLayout(block->UsableSpace());
+      EXPECT_EQ(result1.status(), Status::FailedPrecondition());
+    }
+  }
+}
+TEST_FOREACH_STRATEGY(CannotGetLayoutFromInvalidPointer)
+
 }  // namespace
 }  // namespace pw::allocator

@@ -438,6 +438,41 @@ TEST_F(SplitFreeListAllocatorTest, ResizeSmallLargerAcrossThreshold) {
   UseMemory(ptrs_[2], new_layout.size());
 }
 
+TEST_F(SplitFreeListAllocatorTest, CanGetLayoutFromValidPointer) {
+  constexpr size_t kAlignment = 32;
+  ptrs_[0] = allocator_->Allocate(Layout(kThreshold * 2, kAlignment * 2));
+  ASSERT_NE(ptrs_[0], nullptr);
+
+  ptrs_[1] = allocator_->Allocate(Layout(kThreshold / 4, kAlignment / 2));
+  ASSERT_NE(ptrs_[1], nullptr);
+
+  Result<Layout> result0 = allocator_->GetLayout(ptrs_[0]);
+  ASSERT_EQ(result0.status(), OkStatus());
+  EXPECT_GE(result0->size(), kThreshold * 2);
+  EXPECT_EQ(result0->alignment(), kAlignment * 2);
+
+  Result<Layout> result1 = allocator_->GetLayout(ptrs_[1]);
+  ASSERT_EQ(result1.status(), OkStatus());
+  EXPECT_GE(result1->size(), kThreshold / 4);
+  EXPECT_EQ(result1->alignment(), kAlignment / 2);
+}
+
+TEST_F(SplitFreeListAllocatorTest, CannotGetLayoutFromInvalidPointer) {
+  Result<Layout> result0 = allocator_->GetLayout(nullptr);
+  EXPECT_EQ(result0.status(), Status::NotFound());
+
+  Layout layout(kThreshold * 2, 1);
+  ptrs_[0] = allocator_->Allocate(layout);
+  ASSERT_NE(ptrs_[0], nullptr);
+
+  ptrs_[1] = allocator_->Allocate(layout);
+  ASSERT_NE(ptrs_[1], nullptr);
+
+  allocator_->Deallocate(ptrs_[0], layout);
+  Result<Layout> result1 = allocator_->GetLayout(ptrs_[0]);
+  EXPECT_EQ(result1.status(), Status::FailedPrecondition());
+}
+
 // Fuzz tests.
 
 constexpr size_t kFuzzMaxRequests = 256;
@@ -469,6 +504,5 @@ void NeverCrashesU32(const Vector<test::AllocatorRequest>& requests) {
 FUZZ_TEST(SplitFreeListAllocatorFuzzTest, NeverCrashesU32)
     .WithDomains(
         test::ArbitraryAllocatorRequests<kFuzzMaxRequests, kFuzzU32MaxSize>());
-
 }  // namespace
 }  // namespace pw::allocator

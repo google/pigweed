@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <cstddef>
+
 #include "pw_allocator/allocator.h"
 #include "pw_status/status.h"
 
@@ -42,12 +44,6 @@ class FallbackAllocator : public Allocator {
   }
 
  private:
-  /// @copydoc Allocator::Query
-  Status DoQuery(const void* ptr, Layout layout) const override {
-    auto status = primary_->Query(ptr, layout);
-    return status.ok() ? status : secondary_->Query(ptr, layout);
-  }
-
   /// @copydoc Allocator::Allocate
   void* DoAllocate(Layout layout) override {
     void* ptr = primary_->Allocate(layout);
@@ -68,6 +64,29 @@ class FallbackAllocator : public Allocator {
     return primary_->Query(ptr, layout).ok()
                ? primary_->Resize(ptr, layout, new_size)
                : secondary_->Resize(ptr, layout, new_size);
+  }
+
+  /// @copydoc Allocator::GetLayout
+  Result<Layout> DoGetLayout(const void* ptr) const override {
+    Result<Layout> primary_result = primary_->GetLayout(ptr);
+    if (primary_result.ok()) {
+      return primary_result;
+    }
+    Result<Layout> secondary_result = secondary_->GetLayout(ptr);
+    if (secondary_result.ok()) {
+      return secondary_result;
+    }
+    if (primary_result.status().IsNotFound() ||
+        secondary_result.status().IsNotFound()) {
+      return Status::NotFound();
+    }
+    return Status::Unimplemented();
+  }
+
+  /// @copydoc Allocator::Query
+  Status DoQuery(const void* ptr, Layout layout) const override {
+    Status status = primary_->Query(ptr, layout);
+    return status.ok() ? status : secondary_->Query(ptr, layout);
   }
 
   Allocator* primary_ = nullptr;

@@ -13,8 +13,12 @@
 // the License.
 #pragma once
 
+#include <cstddef>
+
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/block.h"
+#include "pw_result/result.h"
+#include "pw_status/status.h"
 
 namespace pw::allocator {
 
@@ -44,16 +48,6 @@ class SimpleAllocator : public Allocator {
   void Reset() { blocks_ = nullptr; }
 
  private:
-  /// @copydoc Allocator::Query
-  Status DoQuery(const void* ptr, Layout) const override {
-    for (auto* block : Range(blocks_)) {
-      if (block->UsableSpace() == ptr) {
-        return OkStatus();
-      }
-    }
-    return Status::OutOfRange();
-  }
-
   /// @copydoc Allocator::Allocate
   void* DoAllocate(Layout layout) override {
     for (auto* block : Range(blocks_)) {
@@ -82,6 +76,26 @@ class SimpleAllocator : public Allocator {
     auto* bytes = static_cast<std::byte*>(ptr);
     Block* block = Block::FromUsableSpace(bytes);
     return Block::Resize(block, new_size).ok();
+  }
+
+  /// @copydoc Allocator::GetLayout
+  Result<Layout> DoGetLayout(const void* ptr) const override {
+    for (auto* block : Range(blocks_)) {
+      if (block->UsableSpace() == ptr) {
+        return block->GetLayout();
+      }
+    }
+    return Status::NotFound();
+  }
+
+  /// @copydoc Allocator::Query
+  Status DoQuery(const void* ptr, Layout) const override {
+    for (auto* block : Range(blocks_)) {
+      if (block->UsableSpace() == ptr) {
+        return OkStatus();
+      }
+    }
+    return Status::OutOfRange();
   }
 
   Block* blocks_ = nullptr;

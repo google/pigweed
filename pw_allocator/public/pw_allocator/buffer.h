@@ -39,7 +39,7 @@ namespace pw::allocator {
 ///
 /// Note that this class does NOT initialize the allocator, since initialization
 /// is not specified as part of the `Allocator` interface and may vary from
-/// allocator to allocator. As a result, typical usgae includes deriving a class
+/// allocator to allocator. As a result, typical usage includes deriving a class
 /// that initializes the wrapped allocator with the buffer in a constructor. See
 /// `AllocatorForTest` for an example.
 ///

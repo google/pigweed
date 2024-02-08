@@ -22,6 +22,7 @@
 #include "pw_allocator/simple_allocator.h"
 #include "pw_allocator/tracking_allocator.h"
 #include "pw_bytes/span.h"
+#include "pw_result/result.h"
 #include "pw_status/status.h"
 #include "pw_tokenizer/tokenize.h"
 #include "pw_unit_test/framework.h"
@@ -76,9 +77,6 @@ class AllocatorForTestImpl : public AllocatorWithMetrics<Metrics> {
  private:
   using BlockType = Block<>;
 
-  /// @copydoc Allocator::Query
-  Status DoQuery(const void* ptr, Layout layout) const override;
-
   /// @copydoc Allocator::Allocate
   void* DoAllocate(Layout layout) override;
 
@@ -87,6 +85,12 @@ class AllocatorForTestImpl : public AllocatorWithMetrics<Metrics> {
 
   /// @copydoc Allocator::Resize
   bool DoResize(void* ptr, Layout layout, size_t new_size) override;
+
+  /// @copydoc Allocator::GetLayout
+  Result<Layout> DoGetLayout(const void* ptr) const override;
+
+  /// @copydoc Allocator::Query
+  Status DoQuery(const void* ptr, Layout layout) const override;
 
   SimpleAllocator allocator_;
   TrackingAllocatorImpl<metrics_type> tracker_;

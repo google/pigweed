@@ -61,7 +61,7 @@ class CustomMultiplexAllocator : public MultiplexAllocator {
       : MultiplexAllocator(), foo_(foo), bar_(bar) {}
 
  private:
-  Allocator* DoGetAllocator(Token token) override {
+  Allocator* DoGetAllocator(Token token) const override {
     switch (token) {
       case kFooToken:
         return foo_;

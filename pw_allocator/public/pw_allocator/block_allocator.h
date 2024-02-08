@@ -133,6 +133,9 @@ class BlockAllocator : public GenericBlockAllocator {
   /// @copydoc Allocator::Resize
   bool DoResize(void* ptr, Layout layout, size_t new_size) override;
 
+  /// @copydoc Allocator::GetLayout
+  Result<Layout> DoGetLayout(const void* ptr) const override;
+
   /// @copydoc Allocator::Query
   Status DoQuery(const void* ptr, Layout layout) const override;
 
@@ -485,6 +488,16 @@ bool BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoResize(
   }
   UpdateLast(block);
   return true;
+}
+
+template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
+Result<Layout> BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoGetLayout(
+    const void* ptr) const {
+  auto result = FromUsableSpace(ptr);
+  if (!result.ok()) {
+    return result.status();
+  }
+  return (*result)->GetLayout();
 }
 
 template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>

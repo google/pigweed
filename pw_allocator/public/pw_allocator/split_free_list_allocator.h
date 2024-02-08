@@ -102,9 +102,6 @@ class SplitFreeListAllocator : public BaseSplitFreeListAllocator {
  private:
   using ReverseRange = typename BlockType::ReverseRange;
 
-  /// @copydoc Allocator::Dispatch
-  Status DoQuery(const void* ptr, Layout layout) const override;
-
   /// @copydoc Allocator::Allocate
   void* DoAllocate(Layout layout) override;
 
@@ -131,6 +128,12 @@ class SplitFreeListAllocator : public BaseSplitFreeListAllocator {
 
   /// @copydoc Allocator::Resize
   bool DoResize(void* ptr, Layout layout, size_t new_size) override;
+
+  /// @copydoc Allocator::GetLayout
+  Result<Layout> DoGetLayout(const void* ptr) const override;
+
+  /// @copydoc Allocator::Query
+  Status DoQuery(const void* ptr, Layout layout) const override;
 
   // Represents the entire memory region for this allocator.
   void* begin_ = nullptr;
@@ -184,12 +187,6 @@ Status SplitFreeListAllocator<BlockType>::Init(ByteSpan region,
 
   threshold_ = threshold;
   return OkStatus();
-}
-
-template <typename BlockType>
-Status SplitFreeListAllocator<BlockType>::DoQuery(const void* ptr,
-                                                  Layout) const {
-  return (ptr < begin_ || end_ <= ptr) ? Status::OutOfRange() : OkStatus();
 }
 
 template <typename BlockType>
@@ -287,6 +284,26 @@ bool SplitFreeListAllocator<BlockType>::DoResize(void* ptr,
     last_free_ = block->Last() ? block : block->Next();
   }
   return true;
+}
+
+template <typename BlockType>
+Result<Layout> SplitFreeListAllocator<BlockType>::DoGetLayout(
+    const void* ptr) const {
+  if (ptr < begin_ || end_ <= ptr) {
+    return Status::NotFound();
+  }
+  const auto* block =
+      BlockType::FromUsableSpace(static_cast<const std::byte*>(ptr));
+  if (!block->IsValid()) {
+    return Status::NotFound();
+  }
+  return block->GetLayout();
+}
+
+template <typename BlockType>
+Status SplitFreeListAllocator<BlockType>::DoQuery(const void* ptr,
+                                                  Layout) const {
+  return (ptr < begin_ || end_ <= ptr) ? Status::OutOfRange() : OkStatus();
 }
 
 }  // namespace pw::allocator
