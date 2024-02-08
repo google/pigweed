@@ -52,9 +52,28 @@ Provided implementations of the ``Allocator`` interface include:
   between allocators based on an application-specific request type identifier.
 - ``NullAllocator``: Always fails. This may be useful if allocations should be
   disallowed under specific circumstances.
-- ``SplitFreeListAllocator``: Tracks memory using ``Block``, and splits large
-  and small allocations between the front and back, respectively, of it memory
-  region in order to reduce fragmentation.
+- ``BlockAllocator``: Tracks memory using ``Block``. Derived types use
+  specific strategies for how to choose a block to use to satisfy a request.
+  Derived types include:
+
+  - ``FirstFitBlockAllocator``: Chooses the first block that is large enough to
+    satisfy a request. This strategy is very fast, but may increase
+    fragmentation.
+  - ``LastFitBlockAllocator``: Chooses the last block that is large enough to
+    satisfy a request. This strategy is fast, and may fragment memory less than
+    ``FirstFitBlockAllocator`` when satisfying aligned memory requests.
+  - ``BestFitBlockAllocator``: Chooses the smallest block that is large enough
+    to satisfy a request. This strategy maximizes the avilable space for large
+    allocations, but may increase fragmentation and is slower.
+  - ``WorstFitBlockAllocator``: Chooses the largest block if it is large enough
+    to satisfy a request. This strategy minimizes the amount of memory in
+    unusably small blocks, but is slower.
+  - ``DualFirstFitBlockAllocator``: Acts like ``FirstFitBlockAllocator`` or
+    ``LastFitBlockAllocator`` depending on whether a request is larger or
+    smaller, respectively, than a given threshold value. This strategy preserves
+    the speed of the two other strategies, while fragmenting memory less by
+    co-locating allocations of similar sizes.
+
 - ``SynchronizedAllocator``: Synchronizes access to another allocator, allowing
   it to be used by multiple threads.
 - ``TrackingAllocator``: Wraps another allocator and records its usage.

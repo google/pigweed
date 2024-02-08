@@ -17,6 +17,8 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "pw_bytes/span.h"
+
 namespace pw::allocator {
 
 /// Associates a default-constructed type with a memory buffer.
@@ -39,7 +41,7 @@ namespace pw::allocator {
 /// is not specified as part of the `Allocator` interface and may vary from
 /// allocator to allocator. As a result, typical usgae includes deriving a class
 /// that initializes the wrapped allocator with the buffer in a constructor. See
-/// `AllocatorForTestWithBuffer` for an example.
+/// `AllocatorForTest` for an example.
 ///
 /// @tparam   T             The wrapped object.
 /// @tparam   kBufferSize   The size of the backing memory, in bytes.
@@ -50,6 +52,9 @@ class WithBuffer {
  public:
   static constexpr size_t kCapacity = kBufferSize;
 
+  constexpr WithBuffer() = default;
+
+  ByteSpan as_bytes() { return buffer_; }
   std::byte* data() { return buffer_.data(); }
   size_t size() const { return buffer_.size(); }
 

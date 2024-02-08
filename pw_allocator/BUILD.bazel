@@ -55,6 +55,22 @@ cc_library(
 )
 
 cc_library(
+    name = "block_allocator",
+    srcs = ["block_allocator.cc"],
+    hdrs = [
+        "public/pw_allocator/block_allocator.h",
+    ],
+    deps = [
+        ":allocator",
+        ":block",
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_result",
+        "//pw_status",
+    ],
+)
+
+cc_library(
     name = "buffer",
     hdrs = [
         "public/pw_allocator/buffer.h",
@@ -308,6 +324,20 @@ pw_cc_test(
     deps = [
         ":block",
         "//pw_span",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "block_allocator_test",
+    srcs = [
+        "block_allocator_test.cc",
+    ],
+    deps = [
+        ":block",
+        ":block_allocator",
+        ":buffer",
+        "//pw_bytes",
         "//pw_unit_test",
     ],
 )

@@ -68,6 +68,20 @@ pw_source_set("block") {
   sources = [ "block.cc" ]
 }
 
+pw_source_set("block_allocator") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_allocator/block_allocator.h" ]
+  public_deps = [
+    ":allocator",
+    ":block",
+    dir_pw_bytes,
+    dir_pw_result,
+    dir_pw_status,
+  ]
+  deps = [ dir_pw_assert ]
+  sources = [ "block_allocator.cc" ]
+}
+
 pw_source_set("buffer") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/buffer.h" ]
@@ -224,7 +238,7 @@ pw_size_diff("allocator_size_report") {
 pw_test_group("tests") {
   tests = [
     ":allocator_test",
-    ":synchronized_allocator_test",
+    ":block_allocator_test",
     ":block_test",
     ":fallback_allocator_test",
     ":freelist_test",
@@ -234,6 +248,7 @@ pw_test_group("tests") {
     ":null_allocator_test",
     ":simple_allocator_test",
     ":split_free_list_allocator_test",
+    ":synchronized_allocator_test",
     ":tracking_allocator_test",
     ":unique_ptr_test",
   ]
@@ -294,6 +309,16 @@ pw_test("block_test") {
     dir_pw_span,
   ]
   sources = [ "block_test.cc" ]
+}
+
+pw_test("block_allocator_test") {
+  deps = [
+    ":block",
+    ":block_allocator",
+    ":buffer",
+    dir_pw_bytes,
+  ]
+  sources = [ "block_allocator_test.cc" ]
 }
 
 pw_test("fallback_allocator_test") {

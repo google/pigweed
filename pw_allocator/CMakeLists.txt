@@ -50,6 +50,23 @@ pw_add_library(pw_allocator.block STATIC
     block.cc
 )
 
+pw_add_library(pw_allocator.block_allocator STATIC
+  HEADERS
+    public/pw_allocator/block_allocator.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.allocator
+    pw_allocator.block
+    pw_bytes
+    pw_result
+    pw_status
+  PRIVATE_DEPS
+    pw_assert
+  SOURCES
+    block_allocator.cc
+)
+
 pw_add_library(pw_allocator.buffer INTERFACE
   HEADERS
     public/pw_allocator/buffer.h
@@ -267,6 +284,19 @@ pw_add_test(pw_allocator.block_test
   PRIVATE_DEPS
     pw_allocator.block
     pw_span
+  GROUPS
+    modules
+    pw_allocator
+)
+
+pw_add_test(pw_allocator.block_allocator_test
+  SOURCES
+    block_allocator_test.cc
+  PRIVATE_DEPS
+    pw_allocator.block
+    pw_allocator.block_allocator
+    pw_allocator.buffer
+    pw_bytes
   GROUPS
     modules
     pw_allocator
