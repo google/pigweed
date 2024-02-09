@@ -173,6 +173,12 @@ def _pw_rust_toolchain(
         stdlib_linkflags = [],
         target_compatible_with = target_compatible_with,
         target_triple = target_triple,
+        # In order to approximate a stable toolchain with our nightly one, we
+        # disable experimental features with the exception of `proc_macro_span`
+        # because the `proc-marcro2` automatically detects the toolchain
+        # as nightly and dynamically uses this feature.
+        extra_rustc_flags = ["-Zallow-features=proc_macro_span"],
+        extra_exec_rustc_flags = ["-Zallow-features=proc_macro_span"],
     )
     native.toolchain(
         name = name,
