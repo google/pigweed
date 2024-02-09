@@ -511,6 +511,8 @@ the ``database.py`` command line tool.
 Limitations, bugs, and future work
 ==================================
 
+.. _module-pw_tokenizer-gcc-template-bug:
+
 GCC bug: tokenization in template functions
 -------------------------------------------
 GCC releases prior to 14 incorrectly ignore the section attribute for template

@@ -40,6 +40,8 @@ using ``Block``.
    :start-after: [pw_allocator_examples_simple_allocator]
    :end-before: [pw_allocator_examples_simple_allocator]
 
+.. _module-pw_allocator-other-impls:
+
 Other Implemetations
 --------------------
 Provided implementations of the ``Allocator`` interface include:
