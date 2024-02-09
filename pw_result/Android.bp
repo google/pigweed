@@ -20,8 +20,20 @@ cc_library_headers {
     name: "pw_result_headers",
     cpp_std: "c++20",
     vendor_available: true,
+    host_supported: true,
     export_include_dirs: [
         "public",
     ],
-    host_supported: true,
+    static_libs: [
+      "pw_status",
+    ],
+    export_static_lib_headers: [
+      "pw_status",
+    ],
+    header_libs: [
+        "pw_preprocessor_headers",
+    ],
+    export_header_lib_headers: [
+        "pw_preprocessor_headers",
+    ],
 }
