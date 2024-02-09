@@ -90,19 +90,31 @@ TEST(Digits, HexDigits_16) {
   }
 }
 
+constexpr char kStartingString[] = "!@#$%^&*()!@#$%^&*()";
+constexpr char kUint64Max[] = "18446744073709551615";
+constexpr char kInt64Min[] = "-9223372036854775808";
+constexpr char kInt64Max[] = "9223372036854775807";
+
 class TestWithBuffer : public ::testing::Test {
  protected:
-  static constexpr char kStartingString[] = "!@#$%^&*()!@#$%^&*()";
-  static constexpr char kUint64Max[] = "18446744073709551615";
-  static constexpr char kInt64Min[] = "-9223372036854775808";
-  static constexpr char kInt64Max[] = "9223372036854775807";
-
   static_assert(sizeof(kStartingString) == sizeof(kUint64Max));
 
   TestWithBuffer() { std::memcpy(buffer_, kStartingString, sizeof(buffer_)); }
 
   char buffer_[sizeof(kUint64Max)];
 };
+
+static_assert([] {
+  char buffer[sizeof(kUint64Max)] = {};
+  auto result = IntToString(std::numeric_limits<uint64_t>::max(), buffer);
+  return result.ok() && std::string_view(buffer, result.size()) == kUint64Max;
+}());
+
+static_assert([] {
+  char buffer[sizeof(kInt64Min)] = {};
+  auto result = IntToString(std::numeric_limits<int64_t>::min(), buffer);
+  return result.ok() && std::string_view(buffer, result.size()) == kInt64Min;
+}());
 
 class IntToStringTest : public TestWithBuffer {};
 

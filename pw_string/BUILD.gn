@@ -113,10 +113,10 @@ pw_source_set("to_string") {
     ":config",
     ":format",
     ":util",
+    "$dir_pw_third_party/fuchsia:stdcompat",
     dir_pw_span,
     dir_pw_status,
   ]
-  deps = [ "$dir_pw_third_party/fuchsia:stdcompat" ]
 
   # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
