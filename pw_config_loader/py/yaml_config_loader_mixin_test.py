@@ -31,7 +31,7 @@ class YamlConfigLoader(yaml_config_loader_mixin.YamlConfigLoaderMixin):
 
 
 class TestOneFile(unittest.TestCase):
-    """Tests for envparse.EnvironmentParser."""
+    """Tests for loading a config section from one file."""
 
     def setUp(self):
         self._title = 'title'
@@ -61,7 +61,7 @@ class TestOneFile(unittest.TestCase):
 
 
 class TestMultipleFiles(unittest.TestCase):
-    """Tests for envparse.EnvironmentParser."""
+    """Tests for loading config sections from multiple files."""
 
     def init(
         self,
@@ -130,6 +130,38 @@ class TestMultipleFiles(unittest.TestCase):
         self.assertEqual(config['a'], 1)
         self.assertEqual(config['b'], 2)
         self.assertEqual(config['c'], 3)
+
+
+class TestNestedTitle(unittest.TestCase):
+    """Tests for nested config section loading."""
+
+    def setUp(self):
+        self._title = ('title', 'subtitle', 'subsubtitle', 'subsubsubtitle')
+
+    def init(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        loader = YamlConfigLoader()
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder, 'foo.yaml')
+            path.write_bytes(yaml.safe_dump(config).encode())
+            loader.config_init(
+                user_file=path,
+                config_section_title=self._title,
+            )
+            return loader.config
+
+    def test_normal(self):
+        content = {'a': 1, 'b': 2}
+        for part in reversed(self._title):
+            content = {part: content}
+        config = self.init(content)
+        self.assertEqual(config['a'], 1)
+        self.assertEqual(config['b'], 2)
+
+    def test_config_title(self):
+        content = {'a': 1, 'b': 2, 'config_title': '.'.join(self._title)}
+        config = self.init(content)
+        self.assertEqual(config['a'], 1)
+        self.assertEqual(config['b'], 2)
 
 
 if __name__ == '__main__':

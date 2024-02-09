@@ -16,7 +16,7 @@
 import os
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import yaml
 
@@ -50,7 +50,7 @@ class YamlConfigLoaderMixin:
 
     def config_init(
         self,
-        config_section_title: str,
+        config_section_title: Union[str, Sequence[str]],
         project_file: Optional[Union[Path, bool]] = None,
         project_user_file: Optional[Union[Path, bool]] = None,
         user_file: Optional[Union[Path, bool]] = None,
@@ -96,7 +96,15 @@ class YamlConfigLoaderMixin:
                 top of the default_config ignoring project and user files.
         """
 
-        self._config_section_title: str = config_section_title
+        self._config_section_title: Tuple[str, ...]
+        if isinstance(config_section_title, (list, tuple)):
+            self._config_section_title = tuple(config_section_title)
+        elif isinstance(config_section_title, str):
+            self._config_section_title = (config_section_title,)
+        else:
+            raise TypeError(
+                f'unexpected config section title {config_section_title!r}'
+            )
         self.default_config = default_config if default_config else {}
         self.reset_config()
 
@@ -146,21 +154,30 @@ class YamlConfigLoaderMixin:
         return list(yaml.safe_load_all(file_contents))
 
     def load_config_file(self, file_path: Path) -> None:
+        """Load a config file and extract the appropriate section."""
         if not file_path.is_file():
             return
 
         cfgs = self._load_config_from_string(file_path.read_text())
 
         for cfg in cfgs:
-            if self._config_section_title in cfg:
-                self._update_config(cfg[self._config_section_title])
-
-            elif cfg.get('config_title', False) == self._config_section_title:
-                self._update_config(cfg)
+            cfg_copy = cfg
+            for config_section_title in self._config_section_title:
+                if config_section_title in cfg_copy:
+                    cfg_copy = cfg_copy[config_section_title]
+                else:
+                    break
             else:
-                raise MissingConfigTitle(
-                    '\n\nThe config file "{}" is missing the expected '
-                    '"config_title: {}" setting.'.format(
-                        str(file_path), self._config_section_title
-                    )
-                )
+                self._update_config(cfg_copy)
+                continue
+
+            config_title_value = '.'.join(self._config_section_title)
+            if cfg.get('config_title', False) == config_title_value:
+                self._update_config(cfg)
+                continue
+
+            raise MissingConfigTitle(
+                f'\n\nThe config file "{file_path}" is missing the '
+                f'expected "config_title: {config_title_value}" '
+                'setting.'
+            )
