@@ -14,9 +14,7 @@
 """All shared providers that act as an API between toolchain-related rules."""
 
 load(
-    "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
-    "EnvEntryInfo",
-    "EnvSetInfo",
+    "@rules_cc//cc:cc_toolchain_config_lib.bzl",
     "FlagGroupInfo",
 )
 load("//actions:providers.bzl", "ActionNameInfo", "ActionNameSetInfo")
@@ -39,11 +37,10 @@ PwFlagSetInfo = provider(
         "actions": "Sequence[str]: The set of actions this is associated with",
         "requires_any_of": "Sequence[FeatureConstraintInfo]: This will be enabled if any of the listed predicates are met. Equivalent to with_features",
         "flag_groups": "Sequence[FlagGroupInfo]: Set of flag groups to include.",
+        "env": "Mapping[str, str]: Environment variables to apply with the flags",
+        "env_expand_if_available": "Option[str]: The build variable that needs to be available in order to expand the env entry.",
     },
 )
-
-PwEnvEntryInfo = EnvEntryInfo
-PwEnvSetInfo = EnvSetInfo
 
 PwFeatureInfo = provider(
     doc = "A type-safe version of @bazel_tools's FeatureInfo",
@@ -52,7 +49,6 @@ PwFeatureInfo = provider(
         "name": "str: The name of the feature",
         "enabled": "bool: Whether this feature is enabled by default",
         "flag_sets": "depset[FlagSetInfo]: Flag sets enabled by this feature",
-        "env_sets": "depset[EnvSetInfo]: Env sets enabled by this feature",
         "implies_features": "depset[FeatureInfo]: Set of features implied by this feature",
         "implies_action_configs": "depset[ActionConfigInfo]: Set of action configs enabled by this feature",
         "requires_any_of": "Sequence[FeatureSetInfo]: A list of feature sets, at least one of which is required to enable this feature. This is semantically equivalent to the requires attribute of rules_cc's FeatureInfo",

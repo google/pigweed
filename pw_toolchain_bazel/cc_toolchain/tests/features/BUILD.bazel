@@ -35,7 +35,10 @@ pw_cc_feature(
     name = "bar",
     enabled = True,
     feature_name = "bar",
-    flag_sets = ["//cc_toolchain/tests/flag_sets:bar"],
+    flag_sets = [
+        "//cc_toolchain/tests/flag_sets:bar",
+        "//cc_toolchain/tests/flag_sets:env",
+    ],
 )
 
 pw_cc_feature(

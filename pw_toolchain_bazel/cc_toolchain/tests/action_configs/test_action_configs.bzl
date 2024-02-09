@@ -112,4 +112,15 @@ def _test_action_configs_impl(_ctx, action_configs, features, flag_sets, extra_a
 
     assert_eq(get_files(extra_action_files = [extra_action_files.data]), want_files)
 
+    config = to_untyped_config(
+        action_configs = [action_configs.c_compile],
+    )
+    assert_eq(config.action_configs[0].implies, ["implied_by_c-compile"])
+    assert_eq(len(config.features), 1)
+    assert_eq(config.features[0].name, "implied_by_c-compile")
+    assert_eq(config.features[0].flag_sets, [])
+    assert_eq(len(config.features[0].env_sets), 1)
+    assert_eq(config.features[0].env_sets[0].env_entries[0].key, "foo")
+    assert_eq(config.features[0].env_sets[0].env_entries[0].value, "%{bar}")
+
 test_action_configs = generate_test_rule(_test_action_configs_impl)

@@ -89,6 +89,9 @@ Example:
 
 def _pw_cc_feature_impl(ctx):
     name = ctx.attr.feature_name
+    if name.startswith("implied_by_"):
+        fail("Feature names starting with 'implied_by' are reserved")
+
     implies_features = depset(transitive = [
         attr[PwFeatureSetInfo].features
         for attr in ctx.attr.implies
@@ -105,7 +108,6 @@ def _pw_cc_feature_impl(ctx):
         label = ctx.label,
         name = name,
         enabled = ctx.attr.enabled,
-        env_sets = depset([]),
         flag_sets = depset([
             fs[PwFlagSetInfo]
             for fs in ctx.attr.flag_sets
@@ -234,7 +236,7 @@ Example:
     doc = """Defines the implemented behavior of a C/C++ toolchain feature.
 
 This rule is effectively a wrapper for the `feature` constructor in
-@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl.
+@rules_cc//cc:cc_toolchain_config_lib.bzl.
 
 A feature is basically a dynamic flag set. There are a variety of dependencies
 and compatibility requirements that must be satisfied for the listed flag sets
@@ -262,8 +264,6 @@ exceptions:
 For more details about how Bazel handles features, see the official Bazel
 documentation at
 https://bazel.build/docs/cc-toolchain-config-reference#features.
-
-Note: `env_sets` are not yet supported.
 
 Examples:
 

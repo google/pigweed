@@ -14,7 +14,7 @@
 """Tests for pw_cc_feature and pw_cc_feature_set."""
 
 load(
-    "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
+    "@rules_cc//cc:cc_toolchain_config_lib.bzl",
     rules_cc_feature = "feature",
 )
 load(
@@ -128,5 +128,12 @@ def _test_features_impl(_ctx, features, feature_sets, flag_sets, to_untyped_conf
         to_untyped_config(features = [features.mutex_label]).features[0].provides,
         ["primary_feature"],
     )
+
+    ft = to_untyped_config(features = [features.bar]).features[0]
+    assert_eq(len(ft.flag_sets), 1)
+    assert_eq(ft.flag_sets[0].flag_groups[0].flags, ["--bar"])
+    assert_eq(ft.env_sets[0].env_entries[0].key, "foo")
+    assert_eq(ft.env_sets[0].env_entries[0].value, "%{bar}")
+    assert_eq(ft.env_sets[0].env_entries[0].expand_if_available, "bar")
 
 test_features = generate_test_rule(_test_features_impl)

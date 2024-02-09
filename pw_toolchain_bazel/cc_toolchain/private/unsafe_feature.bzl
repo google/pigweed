@@ -26,7 +26,6 @@ def _pw_cc_unsafe_feature_impl(ctx):
         label = ctx.label,
         name = ctx.attr.feature_name,
         enabled = False,
-        env_sets = depset([]),
         flag_sets = depset([]),
         implies_features = depset([]),
         implies_action_configs = depset([]),

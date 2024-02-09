@@ -125,6 +125,7 @@ _PROVIDERS = {
     "//cc_toolchain/tests/features:mutex_label": [PwFeatureInfo],
     "//cc_toolchain/tests/flag_sets:bar": [PwFlagSetInfo],
     "//cc_toolchain/tests/flag_sets:baz": [PwFlagSetInfo],
+    "//cc_toolchain/tests/flag_sets:env": [PwFlagSetInfo],
     "//cc_toolchain/tests/flag_sets:flag_group": [PwFlagGroupInfo],
     "//cc_toolchain/tests/flag_sets:foo": [PwFlagSetInfo],
     "//cc_toolchain/tests/flag_sets:multiple_actions": [PwFlagSetInfo],

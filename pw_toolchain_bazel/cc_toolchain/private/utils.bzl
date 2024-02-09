@@ -14,15 +14,15 @@
 """Private utilities and global variables."""
 
 load(
-    "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
+    "@rules_cc//cc:cc_toolchain_config_lib.bzl",
     rules_cc_action_config = "action_config",
+    rules_cc_env_entry = "env_entry",
+    rules_cc_env_set = "env_set",
     rules_cc_feature = "feature",
     rules_cc_feature_set = "feature_set",
     rules_cc_flag_set = "flag_set",
-    rules_cc_tool = "tool",
     rules_cc_with_feature_set = "with_feature_set",
 )
-load(":providers.bzl", "PwFlagSetInfo")
 
 visibility(["//cc_toolchain/tests/..."])
 
@@ -61,17 +61,49 @@ def _to_untyped_flag_set(flag_set, known, fail = fail):
         label = flag_set.label,
         fail = fail,
     )
-    return rules_cc_flag_set(
-        actions = list(flag_set.actions),
-        flag_groups = list(flag_set.flag_groups),
-        with_features = [
-            _to_untyped_feature_constraint(fc)
-            for fc in flag_set.requires_any_of
-        ],
+    actions = list(flag_set.actions)
+    with_features = [
+        _to_untyped_feature_constraint(fc)
+        for fc in flag_set.requires_any_of
+    ]
+
+    out_flag_set = None
+    if flag_set.flag_groups:
+        out_flag_set = rules_cc_flag_set(
+            flag_groups = list(flag_set.flag_groups),
+            actions = actions,
+            with_features = with_features,
+        )
+
+    out_env_set = None
+    if flag_set.env:
+        out_env_set = rules_cc_env_set(
+            env_entries = [
+                rules_cc_env_entry(
+                    key = key,
+                    value = value,
+                    expand_if_available = flag_set.env_expand_if_available,
+                )
+                for key, value in flag_set.env.items()
+            ],
+            actions = actions,
+            with_features = with_features,
+        )
+    return struct(
+        flag_set = out_flag_set,
+        env_set = out_env_set,
     )
 
-def _to_untyped_env_set(env_set):
-    return env_set
+def _to_untyped_flag_sets(flag_sets, known, fail):
+    out_flag_sets = []
+    out_env_sets = []
+    out = [_to_untyped_flag_set(flag_set, known, fail) for flag_set in flag_sets]
+    for entry in out:
+        if entry.flag_set != None:
+            out_flag_sets.append(entry.flag_set)
+        if entry.env_set != None:
+            out_env_sets.append(entry.env_set)
+    return struct(flag_sets = out_flag_sets, env_sets = out_env_sets)
 
 def _to_untyped_feature_set(feature_set):
     return rules_cc_feature_set([
@@ -108,17 +140,13 @@ def _to_untyped_feature(feature, known, fail = fail):
         fail = fail,
     )
 
+    flags = _to_untyped_flag_sets(feature.flag_sets.to_list(), known, fail = fail)
+
     return rules_cc_feature(
         name = feature.name,
         enabled = feature.enabled,
-        flag_sets = [
-            _to_untyped_flag_set(flag_set, known, fail = fail)
-            for flag_set in feature.flag_sets.to_list()
-        ],
-        env_sets = [
-            _to_untyped_env_set(env_set)
-            for env_set in feature.env_sets.to_list()
-        ],
+        flag_sets = flags.flag_sets,
+        env_sets = flags.env_sets,
         implies = _to_untyped_implies(feature, known, fail = fail),
         requires = [_to_untyped_feature_set(requirement) for requirement in feature.requires_any_of],
         provides = list(feature.provides),
@@ -132,7 +160,8 @@ def _to_untyped_tool(tool, known, fail = fail):
         fail = fail,
     )
 
-    return rules_cc_tool(
+    # Rules_cc is missing the "tool" parameter.
+    return struct(
         path = tool.path,
         tool = tool.exe,
         execution_requirements = list(tool.execution_requirements),
@@ -140,6 +169,7 @@ def _to_untyped_tool(tool, known, fail = fail):
             _to_untyped_feature_constraint(fc)
             for fc in tool.requires_any_of
         ],
+        type_name = "tool",
     )
 
 def _to_untyped_action_config(action_config, extra_flag_sets, known, fail = fail):
@@ -149,29 +179,40 @@ def _to_untyped_action_config(action_config, extra_flag_sets, known, fail = fail
         list(action_config.flag_sets) + extra_flag_sets,
         order = "preorder",
     ).to_list()
+    untyped_flags = _to_untyped_flag_sets(flag_sets, known = known, fail = fail)
+    implies = _to_untyped_implies(action_config, known, fail = fail)
 
-    return rules_cc_action_config(
-        action_name = action_config.action_name,
-        enabled = action_config.enabled,
-        tools = [
-            _to_untyped_tool(tool, known, fail = fail)
-            for tool in action_config.tools
-        ],
-        flag_sets = [
-            _to_untyped_flag_set(
+    # Action configs don't take in an env like they do a flag set.
+    # In order to support them, we create a feature with the env that the action
+    # config will enable, and imply it in the action config.
+    feature = None
+    if untyped_flags.env_sets:
+        feature = rules_cc_feature(
+            name = "implied_by_%s" % action_config.action_name,
+            env_sets = untyped_flags.env_sets,
+        )
+        implies.append(feature.name)
+
+    return struct(
+        action_config = rules_cc_action_config(
+            action_name = action_config.action_name,
+            enabled = action_config.enabled,
+            tools = [
+                _to_untyped_tool(tool, known, fail = fail)
+                for tool in action_config.tools
+            ],
+            flag_sets = [
                 # Make the flag sets actionless.
-                PwFlagSetInfo(
-                    label = flag_set.label,
-                    actions = tuple(),
-                    requires_any_of = flag_set.requires_any_of,
-                    flag_groups = flag_set.flag_groups,
-                ),
-                known = known,
-                fail = fail,
-            )
-            for flag_set in flag_sets
-        ],
-        implies = _to_untyped_implies(action_config, known, fail = fail),
+                rules_cc_flag_set(
+                    actions = [],
+                    with_features = fs.with_features,
+                    flag_groups = fs.flag_groups,
+                )
+                for fs in untyped_flags.flag_sets
+            ],
+            implies = implies,
+        ),
+        features = [feature] if feature else [],
     )
 
 def to_untyped_config(feature_set, action_config_set, flag_sets, extra_action_files, fail = fail):
@@ -221,12 +262,14 @@ def to_untyped_config(feature_set, action_config_set, flag_sets, extra_action_fi
                 ac.action_name,
             ))
         known_actions[ac.action_name] = ac.label
-        untyped_acs.append(_to_untyped_action_config(
+        out_ac = _to_untyped_action_config(
             ac,
             extra_flag_sets = flag_sets_by_action.get(ac.action_name, []),
             known = known_labels,
             fail = fail,
-        ))
+        )
+        untyped_acs.append(out_ac.action_config)
+        untyped_features.extend(out_ac.features)
 
     action_to_files = {
         ac.action_name: [ac.files]

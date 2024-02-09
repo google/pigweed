@@ -599,7 +599,7 @@ API reference
 
 
    This rule is effectively a wrapper for the ``feature`` constructor in
-   `@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl <https://github.com/bazelbuild/rules_cc/blob/main/cc/cc_toolchain_config_lib.bzl>`_.
+   `@rules_cc//cc:cc_toolchain_config_lib.bzl <https://github.com/bazelbuild/rules_cc/blob/main/cc/cc_toolchain_config_lib.bzl>`_.
 
    A feature is basically a dynamic flag set. There are a variety of
    dependencies and compatibility requirements that must be satisfied for the

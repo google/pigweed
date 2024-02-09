@@ -44,6 +44,13 @@ pw_cc_flag_set(
     flags = ["--foo"],
 )
 
+pw_cc_flag_set(
+    name = "env",
+    actions = ["//actions:c_compile"],
+    env = {"foo": "%{bar}"},
+    env_expand_if_available = "bar",
+)
+
 pw_cc_flag_group(
     name = "flag_group",
     flags = [

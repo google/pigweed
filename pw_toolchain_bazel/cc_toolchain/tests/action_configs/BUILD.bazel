@@ -52,6 +52,7 @@ pw_cc_action_config(
 pw_cc_action_config(
     name = "c_compile",
     action_names = ["//actions:c_compile"],
+    flag_sets = ["//cc_toolchain/tests/flag_sets:env"],
     tools = [":system_clang"],
 )
 

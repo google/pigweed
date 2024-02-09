@@ -13,7 +13,7 @@
 # the License.
 """Tests for pw_cc_flag_set."""
 
-load("@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl", "flag_group")
+load("@rules_cc//cc:cc_toolchain_config_lib.bzl", "flag_group")
 load("//cc_toolchain/tests:utils.bzl", "assert_eq", "generate_test_rule")
 
 visibility("private")
