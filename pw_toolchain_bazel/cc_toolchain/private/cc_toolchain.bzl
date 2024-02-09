@@ -197,8 +197,6 @@ def _pw_cc_toolchain_config_impl(ctx):
     out.features.append(_archiver_flags_feature(ctx.attr.target_libc == "macosx"))
 
     extra = []
-    if ctx.attr.extra_files:
-        extra.append(ctx.attr.extra_files[DefaultInfo].files)
     return [
         cc_common.create_cc_toolchain_config_info(
             ctx = ctx,
@@ -228,7 +226,6 @@ pw_cc_toolchain_config = rule(
         "unconditional_flag_sets": attr.label_list(providers = [PwFlagSetInfo]),
         "toolchain_features": attr.label_list(providers = [PwFeatureSetInfo]),
         "extra_action_files": attr.label_list(providers = [PwExtraActionFilesSetInfo]),
-        "extra_files": attr.label(),
 
         # Attributes from create_cc_toolchain_config_info.
         "toolchain_identifier": attr.string(),
@@ -286,7 +283,9 @@ def _split_args(kwargs, filter_dict):
     remainder = {}
 
     for attr_name, val in kwargs.items():
-        if attr_name in filter_dict:
+        if attr_name in ALL_FILE_GROUPS:
+            fail("Don't use %s. Instead, use pw_cc_action_files" % attr_name)
+        elif attr_name in filter_dict:
             filtered_args[attr_name] = val
         else:
             remainder[attr_name] = val
@@ -301,8 +300,6 @@ def _cc_file_collector_impl(ctx):
     action_to_files = ctx.attr.config[PwToolchainConfigInfo].action_to_files
 
     extra = []
-    if ctx.attr.extra_files:
-        extra.append(ctx.attr.extra_files[DefaultInfo].files)
     return [DefaultInfo(files = depset(transitive = [
         action_to_files[action]
         for action in actions
@@ -313,7 +310,6 @@ _cc_file_collector = rule(
     attrs = {
         "config": attr.label(providers = [PwToolchainConfigInfo], mandatory = True),
         "actions": attr.label_list(providers = [PwActionNameSetInfo], mandatory = True),
-        "extra_files": attr.label(),
     },
 )
 
@@ -347,43 +343,30 @@ def pw_cc_toolchain(name, action_config_flag_sets = None, **kwargs):
     config_name = "_{}_config".format(name)
     pw_cc_toolchain_config(
         name = config_name,
-        extra_files = cc_toolchain_args.pop("all_files", None),
         visibility = ["//visibility:private"],
         **cc_toolchain_config_args
     )
 
-    all_files_srcs = [config_name]
     for group, actions in ALL_FILE_GROUPS.items():
         group_name = "_{}_{}".format(name, group)
         _cc_file_collector(
             name = group_name,
             config = config_name,
             actions = actions,
-            extra_files = cc_toolchain_args.pop(group, None),
             visibility = ["//visibility:private"],
         )
         cc_toolchain_args[group] = group_name
-        all_files_srcs.append(group_name)
 
     # Copy over arguments that should be shared by both rules.
     for arg_name in PW_CC_TOOLCHAIN_SHARED_ATTRS:
         if arg_name in cc_toolchain_config_args:
             cc_toolchain_args[arg_name] = cc_toolchain_config_args[arg_name]
 
-    all_files_name = "_{}_all_files".format(name)
-    native.filegroup(
-        name = all_files_name,
-        srcs = all_files_srcs,
-    )
-
     native.cc_toolchain(
         name = name,
         toolchain_config = config_name,
         # TODO: b/321268080 - Remove after transition of this option is complete.
         exec_transition_for_inputs = False,
-        # TODO(b/323448214): Replace with `all_files = config_name`.
-        # This is currently required in case the user passes in compiler_files,
-        # for example (since it won't propagate to the config.
-        all_files = all_files_name,
+        all_files = config_name,
         **cc_toolchain_args
     )
