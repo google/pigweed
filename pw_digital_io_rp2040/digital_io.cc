@@ -15,50 +15,67 @@
 #include "pw_digital_io_rp2040/digital_io.h"
 
 #include "hardware/gpio.h"
-#include "pico/stdlib.h"
+#include "pw_digital_io/digital_io.h"
 #include "pw_status/status.h"
 
 namespace pw::digital_io {
 
-Rp2040DigitalIn::Rp2040DigitalIn(uint32_t pin) : pin_(pin) {}
+Rp2040DigitalIn::Rp2040DigitalIn(Rp2040Config config) : config_(config) {}
 
 Status Rp2040DigitalIn::DoEnable(bool enable) {
   if (!enable) {
-    gpio_deinit(pin_);
+    gpio_deinit(config_.pin);
     return OkStatus();
   }
 
-  gpio_init(pin_);
-  gpio_set_dir(pin_, GPIO_IN);
+  gpio_init(config_.pin);
+  gpio_set_dir(config_.pin, GPIO_IN);
   return OkStatus();
 }
 
 Result<State> Rp2040DigitalIn::DoGetState() {
-  const pw::Result<State> result(State(gpio_get(pin_)));
-  return result;
+  if (gpio_get_function(config_.pin) != GPIO_FUNC_SIO ||
+      gpio_get_dir(config_.pin) != GPIO_IN) {
+    return Status::FailedPrecondition();
+  }
+
+  const bool pin_value = gpio_get(config_.pin);
+  const State state = config_.PhysicalToLogical(pin_value);
+  return pw::Result<State>(state);
 }
 
-Rp2040DigitalInOut::Rp2040DigitalInOut(uint32_t pin) : pin_(pin) {}
+Rp2040DigitalInOut::Rp2040DigitalInOut(Rp2040Config config) : config_(config) {}
 
 Status Rp2040DigitalInOut::DoEnable(bool enable) {
   if (!enable) {
-    gpio_deinit(pin_);
+    gpio_deinit(config_.pin);
     return OkStatus();
   }
 
-  gpio_init(pin_);
-  gpio_set_dir(pin_, GPIO_OUT);
+  gpio_init(config_.pin);
+  gpio_set_dir(config_.pin, GPIO_OUT);
   return OkStatus();
 }
 
 Status Rp2040DigitalInOut::DoSetState(State level) {
-  gpio_put(pin_, level == State::kActive);
+  if (gpio_get_function(config_.pin) != GPIO_FUNC_SIO ||
+      gpio_get_dir(config_.pin) != GPIO_OUT) {
+    return Status::FailedPrecondition();
+  }
+
+  gpio_put(config_.pin, config_.LogicalToPhysical(level));
   return OkStatus();
 }
 
 Result<State> Rp2040DigitalInOut::DoGetState() {
-  const pw::Result<State> result(State(gpio_get(pin_)));
-  return result;
+  if (gpio_get_function(config_.pin) != GPIO_FUNC_SIO ||
+      gpio_get_dir(config_.pin) != GPIO_OUT) {
+    return Status::FailedPrecondition();
+  }
+
+  const bool pin_value = gpio_get(config_.pin);
+  const State state = config_.PhysicalToLogical(pin_value);
+  return pw::Result<State>(state);
 }
 
 }  // namespace pw::digital_io
