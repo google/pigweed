@@ -41,10 +41,12 @@ EXCLUDE: Sequence[str] = (
 )
 
 # todo-check: disable
+# pylint: disable=line-too-long
 BUGS_ONLY = re.compile(
     r'(?:\bTODO\(b/\d+(?:, ?b/\d+)*\).*\w)|'
     r'(?:\bTODO: b/\d+(?:, ?b/\d+)* - )|'
-    r'(?:\bTODO: https://issues.pigweed.dev/issues/\d+ - )'
+    r'(?:\bTODO: https://issues.pigweed.dev/issues/\d+ - )|'
+    r'(?:\bTODO: https://github\.com/bazelbuild/[a-z][-_a-z0-9]*/issues/\d+[ ]-[ ])'
 )
 BUGS_OR_USERNAMES = re.compile(
     r"""
@@ -78,11 +80,19 @@ BUGS_OR_USERNAMES = re.compile(
         (?:,[ ]?(?:fxbug\.dev/\d+|[a-z]+))*  # Additional usernames or bugs.
     \)
 .*\w  # Explanation.
+)|
+(?:  # Bazel GitHub issues. No usernames allowed.
+    \bTODO:[ ]
+    (?:
+        https://github\.com/bazelbuild/[a-z][-_a-z0-9]*/issues/\d+
+    )
+[ ]-[ ].*\w  # Explanation.
 )
     """,
     re.VERBOSE,
 )
 _TODO = re.compile(r'\bTODO\b')
+# pylint: enable=line-too-long
 # todo-check: enable
 
 # If seen, ignore this line and the next.

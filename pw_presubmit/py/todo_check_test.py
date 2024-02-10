@@ -286,6 +286,26 @@ class TestTodoCheck(unittest.TestCase):
         self._run_bugs_users('TODO(fxbug.dev/123,fxbug.dev/321): bar\n')
         self.ctx.fail.assert_not_called()
 
+    def test_bazel_gh_issue(self) -> None:
+        contents = (
+            'TODO: https://github.com/bazelbuild/bazel/issues/12345 - '
+            'Bazel sometimes works\n'
+        )
+        self._run_bugs_users(contents)
+        self.ctx.fail.assert_not_called()
+        self._run_bugs(contents)
+        self.ctx.fail.assert_not_called()
+
+    def test_bazel_gh_issue_underscore(self) -> None:
+        contents = (
+            'TODO: https://github.com/bazelbuild/rules_cc/issues/678910 - '
+            'Sometimes it does not work\n'
+        )
+        self._run_bugs_users(contents)
+        self.ctx.fail.assert_not_called()
+        self._run_bugs(contents)
+        self.ctx.fail.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()
