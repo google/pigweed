@@ -16,3 +16,9 @@ module(
     name = "pw_toolchain",
     version = "0.1",
 )
+
+# Note: rules_cc is special-cased repository; a dependency on rules_cc in a
+# module will not ensure that the root Bazel module has that same version of
+# rules_cc. For that reason, this primarily acts as a FYI. You'll still need
+# to explicitly list this dependency in your own project's MODULE.bazel file.
+bazel_dep(name = "rules_cc", version = "0.0.9")
