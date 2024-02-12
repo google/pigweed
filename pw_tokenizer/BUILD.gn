@@ -309,6 +309,11 @@ pw_proto_library("proto") {
   python_package = "py"
 }
 
+pw_proto_library("new_proto") {
+  sources = [ "pw_tokenizer_proto/options.proto" ]
+  python_package = "py"
+}
+
 declare_args() {
   # pw_JAVA_NATIVE_INTERFACE_INCLUDE_DIRS specifies the paths to use for
   # building Java Native Interface libraries. If no paths are provided, targets

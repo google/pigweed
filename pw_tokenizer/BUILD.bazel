@@ -125,6 +125,17 @@ proto_library(
     ],
 )
 
+proto_library(
+    name = "new_tokenizer_proto",
+    srcs = [
+        "pw_tokenizer_proto/options.proto",
+    ],
+    strip_import_prefix = "/pw_tokenizer",
+    deps = [
+        "@com_google_protobuf//:descriptor_proto",
+    ],
+)
+
 py_proto_library(
     name = "tokenizer_proto_py_pb2",
     deps = [":tokenizer_proto"],
