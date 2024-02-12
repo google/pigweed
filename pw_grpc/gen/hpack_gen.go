@@ -123,13 +123,12 @@ func updateTree(out int, code string) {
 		// End of the code: create a leaf node.
 		// Each code should lead to a unique leaf node.
 		if curr.child[bit] != nil {
-			panic(fmt.Sprintf("code for byte %v reached a duplicate leaf node"))
+			panic(fmt.Sprintf("code for byte %v reached a duplicate leaf node", out))
 		}
 
 		switch {
 		case out == EOS:
 			curr.child[bit] = &Node{t: EOSNode}
-			break
 		case out < 32 || 127 < out:
 			// Unprintable characters are allowed by the Huffman code but not in gRPC.
 			// See: https://github.com/grpc/grpc/blob/v1.60.x/doc/PROTOCOL-HTTP2.md#requests.
@@ -287,7 +286,7 @@ func printStaticResponses() {
 	respHeaderFields := buildResponseHeaderFields()
 	fmt.Printf(responseHeaderFieldsPrefix, len(respHeaderFields))
 	fmt.Printf("  %s", fmtBytes(respHeaderFields))
-	fmt.Printf(responseHeaderFieldsSuffix)
+	fmt.Printf("%s", responseHeaderFieldsSuffix)
 
 	maxLen := len(buildResponseTrailerFields(maxStatusCode))
 	fmt.Printf(responseTrailerFieldsPrefix, maxLen, maxStatusCode+1)
@@ -295,7 +294,7 @@ func printStaticResponses() {
 		payload := buildResponseTrailerFields(code)
 		fmt.Printf("  {.size=%d, .bytes={%s}},\n", len(payload), fmtBytes(payload))
 	}
-	fmt.Printf(responseTrailerFieldsSuffix)
+	fmt.Printf("%s", responseTrailerFieldsSuffix)
 }
 
 func fmtBytes(bytes []byte) string {
