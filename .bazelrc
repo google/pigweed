@@ -67,6 +67,8 @@ build --ui_event_filters=-debug
 build --incompatible_strict_action_env
 
 # Workaround for https://github.com/bazelbuild/rules_jvm_external/issues/445.
+build --java_language_version=11
+build --tool_java_language_version=11
 build --java_runtime_version=remotejdk_11
 build --repo_env=JAVA_HOME=../bazel_tools/jdk
 
