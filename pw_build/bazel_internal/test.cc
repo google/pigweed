@@ -22,3 +22,6 @@ int main() {
   volatile int linker_defined_pointer = _linker_defined_symbol;
   return 0;
 }
+
+// Stub to silence linker warning about this symbol missing.
+extern "C" void pw_boot_Entry() { main(); }
