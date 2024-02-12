@@ -46,6 +46,8 @@ BUGS_ONLY = re.compile(
     r'(?:\bTODO\(b/\d+(?:, ?b/\d+)*\).*\w)|'
     r'(?:\bTODO: b/\d+(?:, ?b/\d+)* - )|'
     r'(?:\bTODO: https://issues.pigweed.dev/issues/\d+ - )|'
+    r'(?:\bTODO: https://pwbug.dev/\d+ - )|'
+    r'(?:\bTODO: pwbug.dev/\d+ - )|'
     r'(?:\bTODO: https://github\.com/bazelbuild/[a-z][-_a-z0-9]*/issues/\d+[ ]-[ ])'
 )
 BUGS_OR_USERNAMES = re.compile(
@@ -61,6 +63,8 @@ BUGS_OR_USERNAMES = re.compile(
     \bTODO:[ ]
     (?:
         b/\d+|  # Bug.
+        https://pwbug.dev/\d+| # Short URL
+        pwbug.dev/\d+| # Even shorter URL
         https://issues.pigweed.dev/issues/\d+| # Fully qualified bug for rustdoc
         # Username@ with optional domain.
         [a-z]+@(?:[a-z][-a-z0-9]*(?:\.[a-z][-a-z0-9]*)+)?

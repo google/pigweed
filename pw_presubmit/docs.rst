@@ -342,8 +342,9 @@ Pigweed.
 TODO(b/###) Formatting
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 There's a check that confirms ``TODO`` lines match a given format. Upstream
-Pigweed expects these to look like ``TODO: b/### - Explanation``, but makes it
-easy for projects to define their own pattern instead.
+Pigweed expects these to look like ``TODO: https://pwbug.dev/### -
+Explanation``, but makes it easy for projects to define their own pattern
+instead.
 
 Some older forms are still allowed but discouraged. In order of preference we
 allow the following formats by default.
@@ -352,6 +353,7 @@ allow the following formats by default.
 
 .. code-block::
 
+   # TODO: https://pwbug.dev/1234 - Explanation.
    # TODO: b/1234 - Explanation.
    # TODO: username@ - Explanation.
    # TODO: username@example.com - Explanation.
