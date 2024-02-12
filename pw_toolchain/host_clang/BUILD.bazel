@@ -46,6 +46,12 @@ pw_cc_flag_set(
     target_compatible_with = ["@platforms//os:linux"],
 )
 
+pw_cc_flag_set(
+    name = "libtool_darwin_flags",
+    actions = ["@pw_toolchain//actions:cpp_link_static_library"],
+    flags = ["-no_warning_for_no_symbols"],
+)
+
 # Although we use similar warnings for clang and arm_gcc, we don't have one
 # centralized list, since we might want to use different warnings based on the
 # compiler in the future.
@@ -132,6 +138,7 @@ pw_cc_toolchain(
         "@platforms//os:macos": [
             "@pw_toolchain//flag_sets:no_default_cpp_stdlib",
             ":macos_stdlib",
+            ":libtool_darwin_flags",
         ],
         "@platforms//os:linux": [
             ":linux_link_libs",

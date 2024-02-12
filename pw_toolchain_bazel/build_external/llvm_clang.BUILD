@@ -37,14 +37,26 @@ pw_cc_tool(
     tool = "//:bin/llvm-ar",
 )
 
+pw_cc_tool(
+    name = "llvm_libtool_darwin_tool",
+    tool = "//:bin/llvm-libtool-darwin",
+)
+
 pw_cc_action_config(
     name = "ar",
     action_names = ["@pw_toolchain//actions:all_ar_actions"],
+    # Unlike most legacy features required to compile code, these features
+    # aren't enabled by default, and are instead only implied by the built-in
+    # action configs. We imply the features here to match the behavior of the
+    # built-in action configs so flags are actually passed to `ar`.
     implies = [
         "@pw_toolchain//features/legacy:archiver_flags",
         "@pw_toolchain//features/legacy:linker_param_file",
     ],
-    tools = [":ar_tool"],
+    tools = select({
+        "@platforms//os:macos": [":llvm_libtool_darwin_tool"],
+        "//conditions:default": [":ar_tool"],
+    }),
 )
 
 pw_cc_tool(

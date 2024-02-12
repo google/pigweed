@@ -40,6 +40,13 @@ print_platform = aspect(
     """,
 )
 
+# TODO: https://github.com/bazelbuild/bazel/issues/16546 - Use
+# cc_helper.is_compilation_outputs_empty() if/when it's available for
+# end-users.
+def _is_compilation_outputs_empty(compilation_outputs):
+    return (len(compilation_outputs.pic_objects) == 0 and
+            len(compilation_outputs.objects) == 0)
+
 def compile_cc(
         ctx,
         srcs,
@@ -88,25 +95,35 @@ def compile_cc(
     )
 
     linking_contexts = [dep[CcInfo].linking_context for dep in deps]
-    linking_context, _ = cc_common.create_linking_context_from_compilation_outputs(
-        actions = ctx.actions,
-        feature_configuration = feature_configuration,
-        cc_toolchain = cc_toolchain,
-        compilation_outputs = compilation_outputs,
-        linking_contexts = linking_contexts,
-        disallow_dynamic_library = True,
-        name = ctx.label.name,
-    )
 
-    transitive_output_files = [dep[DefaultInfo].files for dep in deps]
-    output_files = depset(
-        compilation_outputs.pic_objects + compilation_outputs.objects,
-        transitive = transitive_output_files,
-    )
-    return [DefaultInfo(files = output_files), CcInfo(
-        compilation_context = compilation_context,
-        linking_context = linking_context,
-    )]
+    # If there's no compiled artifacts (i.e. the library is header-only), don't
+    # try and link a library.
+    #
+    # TODO: https://github.com/bazelbuild/bazel/issues/18095 - Remove this
+    # if create_linking_context_from_compilation_outputs() is changed to no
+    # longer require this workaround.
+    if not _is_compilation_outputs_empty(compilation_outputs):
+        linking_context, link_outputs = cc_common.create_linking_context_from_compilation_outputs(
+            actions = ctx.actions,
+            feature_configuration = feature_configuration,
+            cc_toolchain = cc_toolchain,
+            compilation_outputs = compilation_outputs,
+            linking_contexts = linking_contexts,
+            disallow_dynamic_library = True,
+            name = ctx.label.name,
+        )
+
+        if link_outputs.library_to_link != None:
+            linking_contexts.append(linking_context)
+
+    return [
+        CcInfo(
+            compilation_context = compilation_context,
+            linking_context = cc_common.merge_linking_contexts(
+                linking_contexts = linking_contexts,
+            ),
+        ),
+    ]
 
 # From cc_helper.bzl. Feature names for static/dynamic linking.
 linker_mode = struct(

@@ -284,7 +284,7 @@ pw_cc_blob_library = rule(
 )
 
 def _pw_cc_binary_with_map_impl(ctx):
-    [_, cc_info] = _compile_cc(
+    [cc_info] = _compile_cc(
         ctx,
         ctx.files.srcs,
         [],
