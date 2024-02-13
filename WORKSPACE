@@ -192,11 +192,12 @@ git_repository(
 # Set up Protobuf rules.
 # Required by: pigweed.
 # Used in modules: //pw_protobuf.
+# TODO: pwbug.dev/319717451 - Keep this in sync with the pip requirements.
 http_archive(
     name = "com_google_protobuf",
-    sha256 = "c6003e1d2e7fefa78a3039f19f383b4f3a61e81be8c19356f85b6461998ad3db",
-    strip_prefix = "protobuf-3.17.3",
-    url = "https://github.com/protocolbuffers/protobuf/archive/v3.17.3.tar.gz",
+    sha256 = "616bb3536ac1fff3fb1a141450fa28b875e985712170ea7f1bfe5e5fc41e2cd8",
+    strip_prefix = "protobuf-24.4",
+    url = "https://github.com/protocolbuffers/protobuf/releases/download/v24.4/protobuf-24.4.tar.gz",
 )
 
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
