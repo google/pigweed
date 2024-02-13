@@ -56,6 +56,7 @@ class YamlConfigLoaderMixin:
         user_file: Optional[Union[Path, bool]] = None,
         default_config: Optional[Dict[Any, Any]] = None,
         environment_var: Optional[str] = None,
+        skip_files_without_sections: bool = False,
     ) -> None:
         """Call this to load YAML config files in order of precedence.
 
@@ -94,6 +95,9 @@ class YamlConfigLoaderMixin:
             environment_var: The name of an environment variable to check for a
                 config file. If a config file exists there it will be loaded on
                 top of the default_config ignoring project and user files.
+            skip_files_without_sections: Don't produce an exception if a
+                config file doesn't include the relevant section. Instead, just
+                move on to the next file.
         """
 
         self._config_section_title: Tuple[str, ...]
@@ -112,19 +116,28 @@ class YamlConfigLoaderMixin:
             self.project_file = Path(
                 os.path.expandvars(str(project_file.expanduser()))
             )
-            self.load_config_file(self.project_file)
+            self.load_config_file(
+                self.project_file,
+                skip_files_without_sections=skip_files_without_sections,
+            )
 
         if project_user_file and isinstance(project_user_file, Path):
             self.project_user_file = Path(
                 os.path.expandvars(str(project_user_file.expanduser()))
             )
-            self.load_config_file(self.project_user_file)
+            self.load_config_file(
+                self.project_user_file,
+                skip_files_without_sections=skip_files_without_sections,
+            )
 
         if user_file and isinstance(user_file, Path):
             self.user_file = Path(
                 os.path.expandvars(str(user_file.expanduser()))
             )
-            self.load_config_file(self.user_file)
+            self.load_config_file(
+                self.user_file,
+                skip_files_without_sections=skip_files_without_sections,
+            )
 
         # Check for a config file specified by an environment variable.
         if environment_var is None:
@@ -137,7 +150,10 @@ class YamlConfigLoaderMixin:
                     f'Cannot load config file: {env_file_path}'
                 )
             self.reset_config()
-            self.load_config_file(env_file_path)
+            self.load_config_file(
+                env_file_path,
+                skip_files_without_sections=skip_files_without_sections,
+            )
 
     def _update_config(self, cfg: Dict[Any, Any]) -> None:
         if cfg is None:
@@ -153,7 +169,11 @@ class YamlConfigLoaderMixin:
     ) -> List[Dict[Any, Any]]:
         return list(yaml.safe_load_all(file_contents))
 
-    def load_config_file(self, file_path: Path) -> None:
+    def load_config_file(
+        self,
+        file_path: Path,
+        skip_files_without_sections: bool = False,
+    ) -> None:
         """Load a config file and extract the appropriate section."""
         if not file_path.is_file():
             return
@@ -176,8 +196,11 @@ class YamlConfigLoaderMixin:
                 self._update_config(cfg)
                 continue
 
-            raise MissingConfigTitle(
-                f'\n\nThe config file "{file_path}" is missing the '
-                f'expected "config_title: {config_title_value}" '
-                'setting.'
-            )
+            if skip_files_without_sections:
+                pass
+            else:
+                raise MissingConfigTitle(
+                    f'\n\nThe config file "{file_path}" is missing the '
+                    f'expected "config_title: {config_title_value}" '
+                    'setting.'
+                )
