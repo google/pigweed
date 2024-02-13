@@ -224,6 +224,13 @@ pw_seed("0124") {
   facilitator = "Carlos Chinchilla"
 }
 
+pw_seed("0125") {
+  changelist = 192090
+  title = "Statistics Database"
+  status = "Draft"
+  author = "Erik Staats"
+}
+
 # This must be defined after all `pw_seed` targets, as it relies on information
 # exposed by them.
 pw_seed_index("seeds") {
@@ -255,5 +262,6 @@ pw_seed_index("seeds") {
     ":0122",
     ":0123",
     ":0124",
+    ":0125",
   ]
 }
