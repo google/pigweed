@@ -116,9 +116,8 @@ cc_library(
 proto_library(
     name = "tokenizer_proto",
     srcs = [
-        "options.proto",
+        "pw_tokenizer_proto/options.proto",
     ],
-    import_prefix = "pw_tokenizer/proto",
     strip_import_prefix = "/pw_tokenizer",
     deps = [
         "@com_google_protobuf//:descriptor_proto",

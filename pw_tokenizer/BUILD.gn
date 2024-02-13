@@ -304,8 +304,7 @@ pw_fuzzer("detokenize_fuzzer") {
 }
 
 pw_proto_library("proto") {
-  sources = [ "options.proto" ]
-  prefix = "pw_tokenizer/proto"
+  sources = [ "pw_tokenizer_proto/options.proto" ]
   python_package = "py"
 }
 

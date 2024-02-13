@@ -15,7 +15,7 @@ syntax = "proto3";
 
 package pw.thread.proto;
 
-import "pw_tokenizer/proto/options.proto";
+import "pw_tokenizer_proto/options.proto";
 
 option java_package = "pw.thread.proto";
 option java_outer_classname = "Thread";

@@ -13,6 +13,7 @@
 # the License.
 
 load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
+load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -64,35 +65,31 @@ py_test(
     deps = [":pw_tokenizer"],
 )
 
-# This test can't be built in bazel because it depends on detokenize_proto_test_pb2.
-filegroup(
+py_test(
     name = "detokenize_proto_test",
     srcs = [
         "detokenize_proto_test.py",
     ],
-    # deps = [
-    #   ":pw_tokenizer",
-    #   ":detokenize_proto_test_pb2",
-    # ],
+    deps = [
+        ":detokenize_proto_test_pb2",
+        ":pw_tokenizer",
+    ],
 )
 
 proto_library(
     name = "detokenize_proto_test_proto",
     srcs = ["detokenize_proto_test.proto"],
+    import_prefix = "pw_tokenizer_tests",
+    strip_import_prefix = "/pw_tokenizer/py",
     deps = [
         "//pw_tokenizer:tokenizer_proto",
     ],
 )
 
-# TODO: b/241456982 - This target can't be built due to limitations of
-# py_proto_library.
-# py_proto_library(
-#  name = "detokenize_proto_test_pb2",
-#  srcs = ["detokenize_proto_test.proto"],
-#  deps = [
-#    "//pw_tokenizer:tokenizer_pb2",
-#  ],
-#)
+py_proto_library(
+    name = "detokenize_proto_test_pb2",
+    deps = [":detokenize_proto_test_proto"],
+)
 
 py_test(
     name = "detokenize_test",

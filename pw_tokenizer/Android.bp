@@ -137,52 +137,24 @@ cc_library_headers {
     ],
 }
 
-// Copies the proto files to a prefix directory to add the prefix to the
-// compiled proto. The prefix is taken from the directory name of the first
-// item listen in out.
-genrule_defaults {
-    name: "pw_tokenizer_add_prefix_to_proto",
-    cmd: "out_files=($(out)); prefix=$$(dirname $${out_files[0]}); " +
-         "mkdir -p $${prefix}; cp -t $${prefix} $(in);"
-}
-
-// The proto subdirectory is added to support the desired options.proto
-// filepath.
-genrule {
-    name: "pw_tokenizer_options_proto_with_prefix",
-    defaults: ["pw_tokenizer_add_prefix_to_proto"],
-    srcs: [
-        "options.proto",
-    ],
-    out: [
-        "pw_tokenizer/proto/options.proto",
-    ],
-}
-
-// Expose the generated pw_tokenizer/proto/options.proto.
-filegroup {
-    name: "pw_tokenizer_proto_options_proto",
-    srcs: [":pw_tokenizer_options_proto_with_prefix"],
-}
-
 genrule {
     name: "pw_tokenizer_proto_options_pwpb_h",
     srcs: [
         ":libprotobuf-internal-protos",
-        ":pw_tokenizer_options_proto_with_prefix",
+        "pw_tokenizer_proto/options.proto",
     ],
     cmd: "python3 $(location pw_protobuf_compiler_py) " +
          "--proto-path=external/pigweed/pw_tokenizer/ " +
          "--proto-path=external/protobuf/src/ " +
-         "--out-dir=$$(dirname $(location pw_tokenizer/proto/options.pwpb.h)) " +
+         "--out-dir=$$(dirname $(location pw_tokenizer_proto/options.pwpb.h)) " +
          "--plugin-path=$(location pw_protobuf_plugin_py) " +
-         "--compile-dir=$$(dirname $(location :pw_tokenizer_options_proto_with_prefix)) " +
-         "--sources $(location :pw_tokenizer_options_proto_with_prefix) " +
+         "--compile-dir=$$(dirname $(location pw_tokenizer_proto/options.proto)) " +
+         "--sources $(location pw_tokenizer_proto/options.proto) " +
          "--language pwpb " +
          "--no-experimental-proto3-optional " +
          "--protoc=$(location aprotoc) ",
     out: [
-        "pw_tokenizer/proto/options.pwpb.h",
+        "pw_tokenizer_proto/options.pwpb.h",
     ],
     tools: [
         "aprotoc",

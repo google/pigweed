@@ -14,15 +14,13 @@
 
 package(default_visibility = ["//visibility:public"])
 
-# TODO: b/241456982 - Not expected to build yet due to the dependency on
-# snapshot_proto_py_pb2.
 py_library(
     name = "pw_snapshot",
     srcs = [
         "pw_snapshot/__init__.py",
         "pw_snapshot/processor.py",
     ],
-    tags = ["manual"],
+    imports = ["."],
     deps = [
         ":pw_snapshot_metadata",
         "//pw_build_info/py:pw_build_info",
@@ -35,15 +33,13 @@ py_library(
     ],
 )
 
-# TODO: b/241456982 - Not expected to build yet due to the dependency on
-# metadata_proto_py_pb2.
 py_library(
     name = "pw_snapshot_metadata",
     srcs = [
         "pw_snapshot_metadata/__init__.py",
         "pw_snapshot_metadata/metadata.py",
     ],
-    tags = ["manual"],
+    imports = ["."],
     deps = [
         "//pw_log_tokenized/py:pw_log_tokenized",
         "//pw_snapshot:metadata_proto_py_pb2",
@@ -51,12 +47,9 @@ py_library(
     ],
 )
 
-# TODO: b/241456982 - Not expected to build yet due to the dependency on
-# snapshot_proto_py_pb2.
 py_test(
     name = "metadata_test",
     srcs = ["metadata_test.py"],
-    tags = ["manual"],
     deps = [
         ":pw_snapshot_metadata",
         "//pw_snapshot:snapshot_proto_py_pb2",

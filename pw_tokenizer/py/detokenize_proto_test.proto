@@ -16,7 +16,7 @@ syntax = "proto3";
 
 package this_pigweed_test;
 
-import "pw_tokenizer/proto/options.proto";
+import "pw_tokenizer_proto/options.proto";
 
 message TheMessage {
   bytes just_bytes = 1;

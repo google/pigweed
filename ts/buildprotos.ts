@@ -39,7 +39,7 @@ const protos = [
   'pw_rpc/echo.proto',
   'pw_protobuf/pw_protobuf_protos/status.proto',
   'pw_protobuf/pw_protobuf_protos/common.proto',
-  'pw_tokenizer/options.proto',
+  'pw_tokenizer/pw_tokenizer_proto/options.proto',
   'pw_log/log.proto',
   'pw_rpc/ts/test2.proto',
   'pw_rpc/internal/packet.proto',
@@ -51,7 +51,8 @@ const protos = [
 const remapImports = {
   'pw_protobuf_protos/common.proto':
     'pw_protobuf/pw_protobuf_protos/common.proto',
-  'pw_tokenizer/proto/options.proto': 'pw_tokenizer/options.proto',
+  'pw_tokenizer_proto/options.proto':
+    'pw_tokenizer/pw_tokenizer_proto/options.proto',
 };
 
 // Only modify the .proto files when running this builder and then restore any

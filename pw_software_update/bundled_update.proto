@@ -16,7 +16,7 @@ syntax = "proto3";
 package pw.software_update;
 
 import "pw_protobuf_protos/common.proto";
-import "pw_tokenizer/proto/options.proto";
+import "pw_tokenizer_proto/options.proto";
 import "google/protobuf/any.proto";
 
 message BundledUpdateState {

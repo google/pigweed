@@ -18,7 +18,7 @@ from typing import Iterator
 from google.protobuf.descriptor import FieldDescriptor
 from google.protobuf.message import Message
 
-from pw_tokenizer.proto import options_pb2
+from pw_tokenizer_proto import options_pb2
 from pw_tokenizer import detokenize, encode
 
 

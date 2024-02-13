@@ -17,7 +17,7 @@ syntax = "proto3";
 package pw.log;
 
 import "pw_protobuf_protos/common.proto";
-import "pw_tokenizer/proto/options.proto";
+import "pw_tokenizer_proto/options.proto";
 
 option java_outer_classname = "Log";
 
