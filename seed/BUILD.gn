@@ -148,7 +148,7 @@ pw_seed("0114") {
 pw_seed("0115") {
   changelist = 176760
   title = "pw_sensor: Sensors"
-  status = "Open for Comments"
+  status = "Rejected"
   author = "Yuval Peress"
   facilitator = "Taylor Cramer"
 }
