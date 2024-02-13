@@ -46,7 +46,9 @@ extern "C" void Reset_Handler(void);
 
 // Functions needed when configGENERATE_RUN_TIME_STATS is on.
 extern "C" void configureTimerForRunTimeStats(void) {}
-extern "C" unsigned long getRunTimeCounterValue(void) { return 10 /* FIXME */; }
+extern "C" unsigned long getRunTimeCounterValue(void) {
+  return 10 /* TODO: b/325107250 - properly implement this function */;
+}
 // uwTick is an uint32_t incremented each Systick interrupt 1ms. uwTick is used
 // to execute HAL_Delay function.
 

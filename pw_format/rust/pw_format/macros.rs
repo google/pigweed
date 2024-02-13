@@ -409,7 +409,6 @@ pub trait PrintfFormatMacroGenerator {
     ///
     /// See [`FormatMacroGenerator::string_fragment`] for a disambiguation
     /// between a string fragment and string conversion.
-    /// FIXME: docs
     fn string_conversion(&mut self, expression: Expr) -> Result<Option<String>>;
 
     /// Process a character conversion.

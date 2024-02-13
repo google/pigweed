@@ -95,8 +95,9 @@ BUGS_OR_USERNAMES = re.compile(
     """,
     re.VERBOSE,
 )
-_TODO = re.compile(r'\bTODO\b')
 # pylint: enable=line-too-long
+
+_TODO_OR_FIXME = re.compile(r'(\bTODO\b)|(\bFIXME\b)')
 # todo-check: enable
 
 # If seen, ignore this line and the next.
@@ -125,11 +126,14 @@ def _process_file(ctx: PresubmitContext, todo_pattern: re.Pattern, path: Path):
                     prev = line
                     continue
 
-                if _TODO.search(line):
+                if _TODO_OR_FIXME.search(line):
                     if not todo_pattern.search(line):
                         # todo-check: ignore
                         ctx.fail(f'Bad TODO on line {i}:', path)
                         ctx.fail(f'    {line.strip()}')
+                        ctx.fail('Prefer this format in new code:')
+                        # todo-check: ignore
+                        ctx.fail('    TODO: b/XXXXX - info here')
                         summary.append(f'{i}:{line.strip()}')
 
                 prev = line
