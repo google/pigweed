@@ -113,6 +113,11 @@ pw_proto_library(pw_tokenizer.proto
     pw_tokenizer/proto
 )
 
+pw_proto_library(pw_tokenizer.new_proto
+  SOURCES
+    pw_tokenizer_proto/options.proto
+)
+
 # Executable for generating test data for the C++ and Python detokenizers. This
 # target should only be built for the host.
 add_executable(pw_tokenizer.generate_decoding_test_data EXCLUDE_FROM_ALL
