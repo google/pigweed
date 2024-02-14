@@ -14,6 +14,7 @@
 """Install and check status of the Raspberry Pi Pico SDK."""
 
 from contextlib import contextmanager
+import logging
 import os
 from pathlib import Path
 from typing import Sequence
@@ -21,6 +22,8 @@ import subprocess
 
 import pw_package.git_repo
 import pw_package.package_manager
+
+_LOG = logging.getLogger(__package__)
 
 
 @contextmanager
@@ -52,9 +55,9 @@ class PiPicoSdk(pw_package.package_manager.Package):
 
         # Run submodule update --init to fetch tinyusb.
         with change_working_dir(path) as _pico_sdk_repo:
-            subprocess.run(
-                ['git', 'submodule', 'update', '--init'], capture_output=True
-            )
+            command = ['git', 'submodule', 'update', '--init']
+            _LOG.info('==> %s', ' '.join(command))
+            subprocess.run(command)
 
     def info(self, path: Path) -> Sequence[str]:
         return (

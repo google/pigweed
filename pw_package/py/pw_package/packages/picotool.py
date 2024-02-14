@@ -71,7 +71,6 @@ class Picotool(pw_package.package_manager.Package):
                 subprocess.run(
                     command,
                     env=env,
-                    capture_output=True,
                     check=True,
                 )
 
