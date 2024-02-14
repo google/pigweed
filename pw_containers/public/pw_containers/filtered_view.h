@@ -118,6 +118,9 @@ class FilteredView {
   constexpr explicit FilteredView(const Container& container, Filter&& filter)
       : container_(container), filter_(std::move(filter)) {}
 
+  constexpr FilteredView(FilteredView&& other)
+      : container_(other.container_), filter_(std::move(other.filter_)) {}
+
   constexpr FilteredView(const FilteredView&) = delete;
   constexpr FilteredView& operator=(const FilteredView&) = delete;
 
