@@ -1760,8 +1760,8 @@ TEST_F(WriteTransfer, ManualCancel_Duplicate) {
       Chunk(ProtocolVersion::kLegacy, Chunk::Type::kParametersRetransmit)
           .set_session_id(16)
           .set_offset(0)
-          .set_window_end_offset(64)
-          .set_max_chunk_size_bytes(32)));
+          .set_window_end_offset(16)  // Request only a single chunk.
+          .set_max_chunk_size_bytes(16)));
   transfer_thread_.WaitUntilEventIsProcessed();
   ASSERT_EQ(payloads.size(), 2u);
 
