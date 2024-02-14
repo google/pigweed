@@ -29,6 +29,7 @@ cc_library_static {
     ],
     export_header_lib_headers: [
         "fuchsia_sdk_lib_stdcompat",
+        "pw_span_headers",
     ],
     host_supported: true,
     srcs: [
