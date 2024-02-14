@@ -20,6 +20,7 @@ cc_library {
     name: "libpw_log_android",
     cpp_std: "c++20",
     vendor_available: true,
+    host_supported: true,
     export_include_dirs: [
         "public",
         "public_overrides",
@@ -29,5 +30,11 @@ cc_library {
     ],
     header_libs: [
         "pw_log_headers",
+    ],
+    shared_libs: [
+        "liblog",
+    ],
+    export_shared_lib_headers: [
+        "liblog",
     ],
 }
