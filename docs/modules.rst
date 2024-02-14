@@ -47,6 +47,7 @@ including C, C++, Go, Rust, Shell, Batch and Python.
    pw_doctor/docs
    pw_emu/docs
    pw_env_setup/docs
+   pw_env_setup_zephyr/docs
    pw_file/docs
    pw_format/docs
    pw_function/docs

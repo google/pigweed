@@ -51,6 +51,7 @@ pw_docgen
 pw_doctor
 pw_emu
 pw_env_setup
+pw_env_setup_zephyr
 pw_file
 pw_format
 pw_function

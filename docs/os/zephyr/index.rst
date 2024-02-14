@@ -19,27 +19,25 @@ See the docs for these modules for more information:
 -----------------------------------
 Get started with Zephyr and Pigweed
 -----------------------------------
-1. Complete the `Zephyr Getting Started Guide`_.
-2. Check out the `zds2023`_ repository for an example of a Zephyr starter
+1. Check out the `zephyr_pigweed`_ repository for an example of a Zephyr starter
    project that has been set up to use Pigweed.
-3. See :ref:`docs-os-zephyr-kconfig` to find the Kconfig options for
+2. See :ref:`docs-os-zephyr-kconfig` to find the Kconfig options for
    enabling individual Pigweed modules and features.
 
 -------
 Testing
 -------
-To test against Zephyr, first go through the `Zephyr Getting Started Guide`_.
+To test against Zephyr, first go through the `zephyr_pigweed`_ tutorial.
 Once set up, simply invoke:
 
 .. code-block:: bash
 
-   $ . ${PW_ROOT}/activate.sh
-   $ ${ZEPHYR_BASE}/scripts/twister -T ${PW_ROOT}
+   $ source ${PW_ROOT}/activate.sh
+   $ west twister -T ${PW_ROOT}
 
 .. attention:: Testing has only been verified with `-p native_posix`. Proceed with caution.
 
-.. _Zephyr Getting Started Guide: https://docs.zephyrproject.org/latest/develop/getting_started/index.html#getting-started-guide
-.. _zds2023: https://github.com/yperess/zds2023
+.. _zephyr_pigweed: https://github.com/yperess/zephyr-pigweed/
 
 .. toctree::
    :hidden:

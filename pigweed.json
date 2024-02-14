@@ -59,6 +59,10 @@
         "update": {
           "module": "pw_software_update.cli",
           "function": "main"
+        },
+        "west": {
+          "module": "pw_env_setup_zephyr.zephyr",
+          "function": "main"
         }
       }
     },
