@@ -29,12 +29,14 @@ TEST(TrackingAllocatorTest, AutomaticInit_Metrics) {
   internal::Metrics& group = tracker.metric_group();
   EXPECT_EQ(group.metrics().size(), 9U);
   EXPECT_EQ(group.children().size(), 0U);
+  EXPECT_TRUE(tracker.initialized());
 }
 
 TEST(TrackingAllocatorTest, AutomaticInit_MetricsStub) {
   WithBuffer<SimpleAllocator, kCapacity> allocator;
   TrackingAllocatorImpl<internal::MetricsStub> tracker(
       test::kToken, *allocator, kCapacity);
+  EXPECT_TRUE(tracker.initialized());
 }
 
 TEST(TrackingAllocatorTest, ManualInit_Metrics) {
@@ -44,16 +46,21 @@ TEST(TrackingAllocatorTest, ManualInit_Metrics) {
   internal::Metrics& group = tracker.metric_group();
   EXPECT_EQ(group.metrics().size(), 0U);
   EXPECT_EQ(group.children().size(), 0U);
+  EXPECT_FALSE(tracker.initialized());
 
   tracker.Init(*allocator, kCapacity);
   EXPECT_EQ(group.metrics().size(), 9U);
   EXPECT_EQ(group.children().size(), 0U);
+  EXPECT_TRUE(tracker.initialized());
 }
 
 TEST(TrackingAllocatorTest, ManualInit_MetricsStub) {
   WithBuffer<SimpleAllocator, kCapacity> allocator;
   TrackingAllocatorImpl<internal::MetricsStub> tracker(test::kToken);
+  EXPECT_FALSE(tracker.initialized());
+
   tracker.Init(*allocator, kCapacity);
+  EXPECT_TRUE(tracker.initialized());
 }
 
 TEST(TrackingAllocatorTest, NoInit_Metrics) {

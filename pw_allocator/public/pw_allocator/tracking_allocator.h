@@ -49,6 +49,8 @@ class TrackingAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
     Init(allocator, capacity);
   }
 
+  bool initialized() const { return allocator_ != nullptr; }
+
   metrics_type& metric_group() override { return metrics_; }
   const metrics_type& metric_group() const override { return metrics_; }
 
