@@ -18,8 +18,7 @@
 //!
 //! *Note*: This modules requires `std`.
 //!
-//! TODO: https://issues.pigweed.dev/issues/311232605 - Document
-//! how to configure facade backends.
+//! TODO: <pwbug.dev/311232605> - Document how to configure facade backends.
 use pw_log_backend_api::LogLevel;
 pub use pw_log_backend_println_macro::pw_logf_backend;
 

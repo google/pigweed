@@ -20,8 +20,8 @@
 /// levels from Python's logging library, but have different values.  The
 /// values match the C/C++ implementation of the `pw_log` module.
 ///
-/// TODO: https://issues.pigweed.dev/issues/314168783 - Add documentation on
-/// the meaning of the log levels once it is written for Pigweed in general.
+/// TODO: <pwbug.dev/314168783> - Add documentation on the meaning of the
+/// log levels once it is written for Pigweed in general.
 #[repr(u8)]
 pub enum LogLevel {
     Debug = 1,

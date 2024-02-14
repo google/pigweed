@@ -23,8 +23,7 @@
 //!    such as bounding the length of strings explicitly but this is still an
 //!    off-ramp from Rust's safety guarantees.
 //!
-//! TODO: https://issues.pigweed.dev/issues/311232605 - Document how to
-//! configure facade backends.
+//! TODO: <pwbug.dev/311232605> - Document how to configure facade backends.
 use pw_log_backend_api::LogLevel;
 pub use pw_log_backend_printf_macro::pw_logf_backend;
 

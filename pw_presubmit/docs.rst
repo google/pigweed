@@ -346,6 +346,17 @@ Pigweed expects these to look like ``TODO: https://pwbug.dev/### -
 Explanation``, but makes it easy for projects to define their own pattern
 instead.
 
+In markdown docs like `Rustdoc <https://doc.rust-lang.org/rustdoc/what-is-rustdoc.html>`_
+the following format is preferred.
+
+.. todo-check: disable
+
+.. code-block::
+
+   //! TODO: <pwbug.dev/1234> - Explanation.
+
+.. todo-check: enable
+
 Some older forms are still allowed but discouraged. In order of preference we
 allow the following formats by default.
 

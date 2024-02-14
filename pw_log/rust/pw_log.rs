@@ -35,11 +35,9 @@
 //! [`core::fmt`]/`println!()` style strings planned
 //! ([b/311232607](https://issues.pigweed.dev/issues/311232607)).
 //!
-//! TODO: https://issues.pigweed.dev/issues/311266298 - Document `pw_log`'s
-//! backend API.
+//! TODO: <pwbug.dev/311266298> - Document `pw_log`'s backend API.
 //!
-//! TODO: https://issues.pigweed.dev/issues/311232605 - Document how to
-//! configure facade backends.
+//! TODO: <pwbug.dev/311232605> - Document how to configure facade backends.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![deny(missing_docs)]
 
