@@ -204,8 +204,8 @@ pw_env_setup
 * `Make npm actions more robust
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/189358>`__
   (issues `#323378974 <https://issues.pigweed.dev/issues/305042957>`__,
-  `#322437881 <https://issues.pigweed.dev/issues/b/322437881>`__,
-  `#323378974 <https://issues.pigweed.dev/issues/b/323378974>`__)
+  `#322437881 <https://issues.pigweed.dev/issues/322437881>`__,
+  `#323378974 <https://issues.pigweed.dev/issues/323378974>`__)
 * `Only add mingw to PATH once
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/190030>`__
   (issue `#322437881 <https://issues.pigweed.dev/issues/322437881>`__)
@@ -600,8 +600,8 @@ See :ref:`module-pw_polyfill-static_assert`.
 pw_preprocessor
 ---------------
 The new ``PW_ADD_OVERFLOW``, ``PW_SUB_OVERFLOW``, and ``PW_MUL_OVERFLOW``
-macros can be used to `check for integer overflows
-<module-pw_preprocessor-integer-overflow>`_.
+macros can be used to :ref:`check for integer overflows
+<module-pw_preprocessor-integer-overflow>`.
 
 * `Add integer-overflow macros
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/187653>`__
@@ -1296,7 +1296,7 @@ pw_bluetooth_sapphire
   (issue `#311639040 <https://issues.pigweed.dev/issues/311639040>`__)
 * `Fix BrEdrConnectionManager.Inspect test
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/183304>`__
-  (issue `#136961 <https://issues.pigweed.dev/issues/136961>`__)
+  (issue `#42086629 <https://issues.fuchsia.dev/issues/42086629>`__)
 
 pw_build
 --------
@@ -1615,7 +1615,7 @@ See ``PW_TRANSFER_DEFAULT_MAX_CLIENT_RETRIES`` and
 
 * `Remove small hardcoded timeout in proxy_test
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/184638>`__
-  (issue `#315459788 <https://issues.pigweed.dev/issues/pwbug.dev/315459788>`__)
+  (issue `#315459788 <https://issues.pigweed.dev/issues/315459788>`__)
 * `Allow setting different timeouts for client and server
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/184210>`__
 * `Update integration test documentation
@@ -1799,7 +1799,7 @@ Migration of :ref:`module-pw_bluetooth_sapphire` into Pigweed has begun.
   (issue `#312287470 <https://issues.pigweed.dev/issues/312287470>`__)
 * `Add testonly to testing targets
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/182890>`__
-  (issue `#fuchsia:136961 <https://issues.pigweed.dev/issues/fuchsia:136961>`__)
+  (issue `#136961 <https://issues.fuchsia.dev/issues/136961>`__)
 * `Revert commits to get to a known working state
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/183014>`__
 * `Use Write instead of UncheckedWrite
@@ -1842,7 +1842,7 @@ Migration of :ref:`module-pw_bluetooth_sapphire` into Pigweed has begun.
   (issue `#311449154 <https://issues.pigweed.dev/issues/311449154>`__)
 * `Refactor pw_bluetooth_sapphire & fix errors
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/173484>`__
-  (issue `#100593 <https://issues.pigweed.dev/issues/fxb/100593>`__)
+  (issue `#42051324 <https://issues.fuchsia.dev/issues/42051324>`__)
 * `Update copyright headers
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/177800>`__
 
@@ -1942,7 +1942,7 @@ pw_presubmit
   (issue `#307951383 <https://issues.pigweed.dev/issues/307951383>`__)
 * `Create Sapphire presubmit step
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/177453>`__
-  (issue `#100593 <https://issues.pigweed.dev/issues/fxb/100593>`__)
+  (issue `#42051324 <https://issues.fuchsia.dev/issues/42051324>`__)
 
 .. todo-check: enable
 
@@ -2579,7 +2579,8 @@ The :ref:`module-pw_build-bazel-empty_cc_library` Bazel utility was added.
   (issue `#260111641 <https://issues.pigweed.dev/issues/260111641>`__)
 * `Fix blob attribute ordering <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/177458>`__
 * `Only use -Wextra-semi on C++ files with GCC <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/177171>`__
-  (issue `#301262374 <https://issues.pigweed.dev/issues/306734552, b/301262374>`__)
+  (issues `#301262374 <https://issues.pigweed.dev/issues/306734552>`__,
+  `#301262374 <https://issues.pigweed.dev/issues/301262374>`__)
 * `Silence Windows-specific warnings <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/177172>`__
 
 pw_bytes
