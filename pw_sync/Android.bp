@@ -25,10 +25,12 @@ cc_library_headers {
     header_libs: [
         "pw_chrono_include_dirs",
         "pw_polyfill_headers",
+        "pw_preprocessor_headers",
     ],
     export_header_lib_headers: [
         "pw_chrono_include_dirs",
         "pw_polyfill_headers",
+        "pw_preprocessor_headers",
     ],
 }
 
