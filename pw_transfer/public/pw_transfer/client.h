@@ -61,7 +61,6 @@ class Client {
     uint32_t id_;
   };
 
-  using TransferHandle = Handle;
   using CompletionFunc = Function<void(Status)>;
 
   // Initializes a transfer client on a specified RPC client and channel.
@@ -168,13 +167,6 @@ class Client {
                  initial_offset);
   }
 
-  // Terminates an ongoing transfer.
-  void CancelTransfer(Handle handle) {
-    if (!handle.is_unassigned()) {
-      transfer_thread_.CancelClientTransfer(handle.id());
-    }
-  }
-
   Status set_extend_window_divisor(uint32_t extend_window_divisor) {
     if (extend_window_divisor <= 1) {
       return Status::InvalidArgument();
@@ -205,6 +197,13 @@ class Client {
   }
 
  private:
+  // Terminates an ongoing transfer.
+  void CancelTransfer(Handle handle) {
+    if (!handle.is_unassigned()) {
+      transfer_thread_.CancelClientTransfer(handle.id());
+    }
+  }
+
   void UpdateTransferSize(Handle handle, size_t transfer_size_bytes) {
     if (!handle.is_unassigned()) {
       transfer_thread_.UpdateClientTransfer(handle.id(), transfer_size_bytes);

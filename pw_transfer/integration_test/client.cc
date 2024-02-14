@@ -112,7 +112,7 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
         pw::transfer::TransferAction::TransferType::
             TransferAction_TransferType_WRITE_TO_SERVER) {
       pw::stream::StdFileReader input(action.file_path().c_str());
-      pw::Result<pw::transfer::Client::TransferHandle> handle = client.Write(
+      pw::Result<pw::transfer::Client::Handle> handle = client.Write(
           action.resource_id(),
           input,
           [&result](Status status) {
@@ -137,7 +137,7 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
                pw::transfer::TransferAction::TransferType::
                    TransferAction_TransferType_READ_FROM_SERVER) {
       pw::stream::StdFileWriter output(action.file_path().c_str());
-      pw::Result<pw::transfer::Client::TransferHandle> handle = client.Read(
+      pw::Result<pw::transfer::Client::Handle> handle = client.Read(
           action.resource_id(),
           output,
           [&result](Status status) {
