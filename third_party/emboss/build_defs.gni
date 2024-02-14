@@ -67,11 +67,6 @@ template("emboss_cc_library") {
   }
   output_path = root_gen_dir + path_sep + string_join(path_sep, fakedirs)
 
-  # Look for imports in the same directory as invoker.source by default.
-  default_import_dir = get_path_info(invoker.source, "abspath")
-  default_import_dir = get_path_info(default_import_dir, "dir")
-  default_import_dir = rebase_path(default_import_dir, root_build_dir)
-
   action("${target_name}_header") {
     script = "$dir_pw_third_party/emboss/embossc_runner.py"
 
@@ -79,12 +74,24 @@ template("emboss_cc_library") {
       rebase_path("$dir_pw_third_party_emboss/embossc", root_build_dir),
       "--generate",
       "cc",
-      "--import-dir",
-      default_import_dir,
       "--output-path",
       rebase_path(output_path, root_build_dir),
       rebase_path(invoker.source, root_build_dir),
     ]
+
+    # Look for imports in the root directory and Pigweed root by default.
+    # This is intended to match the official Bazel rule.
+    default_import_dirs = [
+      rebase_path("//", root_build_dir),
+      "$dir_pigweed",
+    ]
+    foreach(dir, default_import_dirs) {
+      args += [
+        "--import-dir",
+        rebase_path(dir, root_build_dir),
+      ]
+    }
+
     if (defined(invoker.import_dirs)) {
       foreach(dir, invoker.import_dirs) {
         args += [

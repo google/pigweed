@@ -16,7 +16,7 @@
 # and types found in the Bluetooth Core Specification. The Emboss compiler is
 # used to generate a C++ header from this file.
 
-import "hci_common.emb" as hci
+import "pw_bluetooth/public/pw_bluetooth/hci_common.emb" as hci
 
 [$default byte_order: "LittleEndian"]
 [(cpp) namespace: "pw::bluetooth::emboss"]
