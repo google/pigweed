@@ -186,7 +186,7 @@ def typescript_format_check(ctx: _Context) -> Dict[Path, str]:
 
 def typescript_format_fix(ctx: _Context) -> Dict[Path, str]:
     """Fixes formatting for the provided files in place."""
-    _typescript_format('--write', *ctx.paths)
+    _typescript_format(*ctx.paths, '--', '--write')
     return {}
 
 
