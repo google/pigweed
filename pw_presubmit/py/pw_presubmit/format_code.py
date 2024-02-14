@@ -151,7 +151,7 @@ def clang_format_check(ctx: _Context) -> Dict[Path, str]:
 
 def clang_format_fix(ctx: _Context) -> Dict[Path, str]:
     """Fixes formatting for the provided files in place."""
-    _clang_format('-i', *ctx.paths)
+    print_format_fix(_clang_format('-i', *ctx.paths))
     return {}
 
 
@@ -186,7 +186,7 @@ def typescript_format_check(ctx: _Context) -> Dict[Path, str]:
 
 def typescript_format_fix(ctx: _Context) -> Dict[Path, str]:
     """Fixes formatting for the provided files in place."""
-    _typescript_format(*ctx.paths, '--', '--write')
+    print_format_fix(_typescript_format(*ctx.paths, '--', '--write'))
     return {}
 
 
@@ -325,7 +325,7 @@ def check_py_format_yapf(ctx: _Context) -> Dict[Path, str]:
 
 def fix_py_format_yapf(ctx: _Context) -> Dict[Path, str]:
     """Fixes formatting for the provided files in place."""
-    _yapf('--in-place', *ctx.paths, check=True)
+    print_format_fix(_yapf('--in-place', *ctx.paths, check=True).stdout)
     return {}
 
 
@@ -433,6 +433,7 @@ def fix_py_format_black(ctx: _Context) -> Dict[Path, str]:
             [ctx.format_options.black_path, *_black_config_args(), path],
             capture_output=True,
         )
+        print_format_fix(proc.stdout)
         if proc.returncode:
             errors[path] = proc.stderr.decode()
     return errors
@@ -583,6 +584,12 @@ def print_format_check(
             f'  pw format --fix {path_relative_to_cwd(path)}' for path in errors
         )
         _LOG.warning('To fix formatting, run:\n\n%s\n', '\n'.join(message))
+
+
+def print_format_fix(stdout: bytes):
+    """Prints the output of a format --fix call."""
+    for line in stdout.splitlines():
+        _LOG.info('Fix cmd stdout: %r', line.decode('utf-8'))
 
 
 class CodeFormat(NamedTuple):
