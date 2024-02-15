@@ -88,12 +88,12 @@ class FilteredView {
     enum EndIterator { kEnd };
 
     explicit iterator(const FilteredView& view)
-        : view_(&view), it_(view.container_.begin()) {
+        : view_(&view), it_(view.container_->begin()) {
       FindMatch();
     }
 
     iterator(const FilteredView& view, EndIterator)
-        : view_(&view), it_(view.container_.end()) {}
+        : view_(&view), it_(view.container_->end()) {}
 
     // Accesses the value referred to by this iterator.
     const auto& value() const { return *it_; }
@@ -113,13 +113,13 @@ class FilteredView {
 
   constexpr explicit FilteredView(const Container& container,
                                   const Filter& filter)
-      : container_(container), filter_(filter) {}
+      : container_(&container), filter_(filter) {}
 
   constexpr explicit FilteredView(const Container& container, Filter&& filter)
-      : container_(container), filter_(std::move(filter)) {}
+      : container_(&container), filter_(std::move(filter)) {}
 
-  constexpr FilteredView(FilteredView&& other)
-      : container_(other.container_), filter_(std::move(other.filter_)) {}
+  constexpr FilteredView(FilteredView&&) = default;
+  constexpr FilteredView& operator=(FilteredView&&) = default;
 
   constexpr FilteredView(const FilteredView&) = delete;
   constexpr FilteredView& operator=(const FilteredView&) = delete;
@@ -147,13 +147,13 @@ class FilteredView {
   iterator end() const { return iterator(*this, iterator::kEnd); }
 
  private:
-  const Container& container_;
+  const Container* container_;
   Filter filter_;
 };
 
 template <typename Container, typename Filter>
 void FilteredView<Container, Filter>::iterator::FindMatch() {
-  for (; it_ != view_->container_.end(); ++it_) {
+  for (; it_ != view_->container_->end(); ++it_) {
     if (MatchesItem(*it_)) {
       break;
     }
@@ -163,7 +163,7 @@ void FilteredView<Container, Filter>::iterator::FindMatch() {
 template <typename Container, typename Filter>
 typename FilteredView<Container, Filter>::iterator&
 FilteredView<Container, Filter>::iterator::operator++() {
-  PW_ASSERT(it_ != view_->container_.end());
+  PW_ASSERT(it_ != view_->container_->end());
 
   ++it_;
   FindMatch();
@@ -173,8 +173,8 @@ FilteredView<Container, Filter>::iterator::operator++() {
 template <typename Container, typename Filter>
 typename FilteredView<Container, Filter>::iterator&
 FilteredView<Container, Filter>::iterator::operator--() {
-  decltype(it_) new_it = view_->container_.end();
-  while (new_it != view_->container_.begin()) {
+  decltype(it_) new_it = view_->container_->end();
+  while (new_it != view_->container_->begin()) {
     --new_it;
     if (MatchesItem(*new_it)) {
       it_ = new_it;

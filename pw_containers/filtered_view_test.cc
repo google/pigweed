@@ -45,6 +45,20 @@ TEST(FilteredView, MoveConstructor) {
   EXPECT_EQ(it, moved.end());
 }
 
+TEST(FilteredView, MoveOperator) {
+  // Force lambda to function pointer with `+` so the FilteredView types match.
+  FilteredView original(kArray, +[](int x) { return x == 3 || x == 5; });
+  FilteredView moved(kArray, +[](int x) { return x == 4; });
+  moved = std::move(original);
+
+  auto it = moved.begin();
+  ASSERT_EQ(*it, 3);
+  ++it;
+  ASSERT_EQ(*it, 5);
+  ++it;
+  EXPECT_EQ(it, moved.end());
+}
+
 TEST(FilteredView, Array_MatchSubset) {
   FilteredView view(kArray, [](int x) { return x == 3 || x == 5; });
 
