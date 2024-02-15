@@ -17,7 +17,7 @@ load(
     "//pw_build:pigweed.bzl",
     "pw_cc_test",
 )
-load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
+load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_filegroup", "pw_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -69,8 +69,6 @@ cc_library(
     name = "metric_service_nanopb",
     srcs = ["metric_service_nanopb.cc"],
     hdrs = ["public/pw_metric/metric_service_nanopb.h"],
-    # TODO: b/258078909 - Get this target to build.
-    tags = ["manual"],
     deps = [
         ":metric",
         ":metric_proto_cc.nanopb_rpc",
@@ -102,11 +100,17 @@ cc_library(
     ],
 )
 
-proto_library(
-    name = "metric_proto",
+pw_proto_filegroup(
+    name = "metric_proto_and_options",
     srcs = [
         "pw_metric_proto/metric_service.proto",
     ],
+    options_files = ["pw_metric_proto/metric_service.options"],
+)
+
+proto_library(
+    name = "metric_proto",
+    srcs = [":metric_proto_and_options"],
 )
 
 py_proto_library(
@@ -144,10 +148,9 @@ pw_cc_test(
     srcs = [
         "metric_service_nanopb_test.cc",
     ],
-    # TODO: b/258078909 - Get this target to build.
-    tags = ["manual"],
     deps = [
         ":metric_service_nanopb",
+        "//pw_rpc/nanopb:test_method_context",
     ],
 )
 
