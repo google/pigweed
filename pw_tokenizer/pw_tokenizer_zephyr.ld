@@ -37,4 +37,19 @@
 .pw_tokenizer.entries ADDR (INFO) :
 {
   KEEP(*(.pw_tokenizer.entries.*))
+  /* GCC has a known bug (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=88061)
+   * that causes it to ignore any user-specified section placement for
+   * variables declared inside function templates. The symbols for these
+   * variables instead end up in a .rodata.* subsection. The subsection names
+   * for these symbols all contain the string "_pw_tokenizer_string_entry_"
+   * (as long as -fdata-sections was used when compiling). Thus we can pick
+   * the relevant sections by using an appropriate wildcard.
+   *
+   * Note that this technique only works because nothing in the source code
+   * references the *_pw_tokenizer_string_entry_* symbols. This ensures the
+   * linker will never place such symbols in the final .data (aka .rodata)
+   * output section, meaning such symbols remain available for us to place
+   * into the  .pw_tokenizer_entries section.
+   */
+  KEEP(*(.rodata.*_pw_tokenizer_string_entry_*))
 }

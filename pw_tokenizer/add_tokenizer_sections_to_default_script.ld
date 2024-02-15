@@ -21,7 +21,7 @@ INCLUDE pw_tokenizer_linker_sections.ld
  * script with the default linker script, rather than replace the default with
  * this script. The tokenized sections need to appear in the merged script
  * before the .rodata section, to ensure that all of the correct symbols end up
- * in the tokenized section. Here we insert them just before the .rodata
+ * in the tokenized section. Here we insert them just after the .debug_info
  * section, which both clang and GCC use.
  */
-INSERT BEFORE .rodata
+INSERT AFTER .debug_info
