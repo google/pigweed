@@ -43,6 +43,7 @@ pw_test("alarm_timer_test") {
   sources = [ "alarm_timer_test.cc" ]
   deps = [
     ":alarm_timer",
+    "$dir_pw_chrono:system_clock",
     "$dir_pw_sync:binary_semaphore",
   ]
 }

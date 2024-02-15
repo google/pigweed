@@ -139,6 +139,7 @@ pw_test("device_test") {
   deps = [
     ":device",
     ":mock",
+    "$dir_pw_chrono:system_clock",
     "$dir_pw_containers",
   ]
 }
@@ -157,6 +158,7 @@ pw_test("initiator_mock_test") {
   sources = [ "initiator_mock_test.cc" ]
   deps = [
     ":mock",
+    "$dir_pw_chrono:system_clock",
     "$dir_pw_containers",
   ]
 }
@@ -166,6 +168,7 @@ pw_test("i2c_service_test") {
   sources = [ "i2c_service_test.cc" ]
   deps = [
     ":i2c_service",
+    "$dir_pw_chrono:system_clock",
     "$dir_pw_containers:vector",
     "$dir_pw_i2c:mock",
     "$dir_pw_rpc/pwpb:test_method_context",

@@ -13,6 +13,7 @@
 // the License.
 #include "pw_async/fake_dispatcher.h"
 
+#include "pw_chrono/system_clock.h"
 #include "pw_containers/vector.h"
 #include "pw_string/to_string.h"
 #include "pw_unit_test/framework.h"
@@ -148,7 +149,7 @@ TEST(FakeDispatcher, RunUntilIdleDoesNotRunFutureTask) {
   CallCounter counter;
   // Should not run; RunUntilIdle() does not advance time.
   Task task(counter.fn());
-  dispatcher.PostAfter(task, 1ms);
+  dispatcher.PostAfter(task, chrono::SystemClock::for_at_least(1ms));
   dispatcher.RunUntilIdle();
   EXPECT_EQ(counter.counts, CallCounts{});
 }
@@ -159,10 +160,10 @@ TEST(FakeDispatcher, PostAfterRunsTasksInSequence) {
   Task task_1([&task_run_order](auto...) { task_run_order.push_back(1); });
   Task task_2([&task_run_order](auto...) { task_run_order.push_back(2); });
   Task task_3([&task_run_order](auto...) { task_run_order.push_back(3); });
-  dispatcher.PostAfter(task_1, 50ms);
-  dispatcher.PostAfter(task_2, 25ms);
-  dispatcher.PostAfter(task_3, 100ms);
-  dispatcher.RunFor(125ms);
+  dispatcher.PostAfter(task_1, chrono::SystemClock::for_at_least(50ms));
+  dispatcher.PostAfter(task_2, chrono::SystemClock::for_at_least(25ms));
+  dispatcher.PostAfter(task_3, chrono::SystemClock::for_at_least(100ms));
+  dispatcher.RunFor(chrono::SystemClock::for_at_least(125ms));
   pw::Vector<uint8_t, 3> expected_run_order({2, 1, 3});
   EXPECT_EQ(task_run_order, expected_run_order);
 }
@@ -171,9 +172,9 @@ TEST(FakeDispatcher, PostAfterWithEarlierTimeRunsSooner) {
   FakeDispatcher dispatcher;
   CallCounter counter;
   Task task(counter.fn());
-  dispatcher.PostAfter(task, 100ms);
-  dispatcher.PostAfter(task, 50ms);
-  dispatcher.RunFor(60ms);
+  dispatcher.PostAfter(task, chrono::SystemClock::for_at_least(100ms));
+  dispatcher.PostAfter(task, chrono::SystemClock::for_at_least(50ms));
+  dispatcher.RunFor(chrono::SystemClock::for_at_least(60ms));
   EXPECT_EQ(counter.counts, CallCounts{.ok = 1});
 }
 
@@ -181,9 +182,9 @@ TEST(FakeDispatcher, PostAfterWithLaterTimeRunsSooner) {
   FakeDispatcher dispatcher;
   CallCounter counter;
   Task task(counter.fn());
-  dispatcher.PostAfter(task, 50ms);
-  dispatcher.PostAfter(task, 100ms);
-  dispatcher.RunFor(60ms);
+  dispatcher.PostAfter(task, chrono::SystemClock::for_at_least(50ms));
+  dispatcher.PostAfter(task, chrono::SystemClock::for_at_least(100ms));
+  dispatcher.RunFor(chrono::SystemClock::for_at_least(60ms));
   EXPECT_EQ(counter.counts, CallCounts{.ok = 1});
 }
 
@@ -192,7 +193,7 @@ TEST(FakeDispatcher, PostThenPostAfterRunsImmediately) {
   CallCounter counter;
   Task task(counter.fn());
   dispatcher.Post(task);
-  dispatcher.PostAfter(task, 50ms);
+  dispatcher.PostAfter(task, chrono::SystemClock::for_at_least(50ms));
   dispatcher.RunUntilIdle();
   EXPECT_EQ(counter.counts, CallCounts{.ok = 1});
 }
@@ -201,7 +202,7 @@ TEST(FakeDispatcher, PostAfterThenPostRunsImmediately) {
   FakeDispatcher dispatcher;
   CallCounter counter;
   Task task(counter.fn());
-  dispatcher.PostAfter(task, 50ms);
+  dispatcher.PostAfter(task, chrono::SystemClock::for_at_least(50ms));
   dispatcher.Post(task);
   dispatcher.RunUntilIdle();
   EXPECT_EQ(counter.counts, CallCounts{.ok = 1});
@@ -221,9 +222,9 @@ TEST(FakeDispatcher, CancelAfterPostAfterStopsTaskFromRunning) {
   FakeDispatcher dispatcher;
   CallCounter counter;
   Task task(counter.fn());
-  dispatcher.PostAfter(task, 50ms);
+  dispatcher.PostAfter(task, chrono::SystemClock::for_at_least(50ms));
   EXPECT_TRUE(dispatcher.Cancel(task));
-  dispatcher.RunFor(60ms);
+  dispatcher.RunFor(chrono::SystemClock::for_at_least(60ms));
   EXPECT_EQ(counter.counts, CallCounts{});
 }
 
@@ -232,9 +233,9 @@ TEST(FakeDispatcher, CancelAfterPostAndPostAfterStopsTaskFromRunning) {
   CallCounter counter;
   Task task(counter.fn());
   dispatcher.Post(task);
-  dispatcher.PostAfter(task, 50ms);
+  dispatcher.PostAfter(task, chrono::SystemClock::for_at_least(50ms));
   EXPECT_TRUE(dispatcher.Cancel(task));
-  dispatcher.RunFor(60ms);
+  dispatcher.RunFor(chrono::SystemClock::for_at_least(60ms));
   EXPECT_EQ(counter.counts, CallCounts{});
 }
 
@@ -327,9 +328,9 @@ TEST(FakeDispatcher, TasksCancelledByDispatcherDestructor) {
 
   {
     FakeDispatcher dispatcher;
-    dispatcher.PostAfter(task0, 10s);
-    dispatcher.PostAfter(task1, 10s);
-    dispatcher.PostAfter(task2, 10s);
+    dispatcher.PostAfter(task0, chrono::SystemClock::for_at_least(10s));
+    dispatcher.PostAfter(task1, chrono::SystemClock::for_at_least(10s));
+    dispatcher.PostAfter(task2, chrono::SystemClock::for_at_least(10s));
   }
 
   ASSERT_EQ(counter.counts, CallCounts{.cancelled = 3});
@@ -339,12 +340,12 @@ TEST(DispatcherBasic, TasksCancelledByRunFor) {
   FakeDispatcher dispatcher;
   CallCounter counter;
   Task task0(counter.fn()), task1(counter.fn()), task2(counter.fn());
-  dispatcher.PostAfter(task0, 10s);
-  dispatcher.PostAfter(task1, 10s);
-  dispatcher.PostAfter(task2, 10s);
+  dispatcher.PostAfter(task0, chrono::SystemClock::for_at_least(10s));
+  dispatcher.PostAfter(task1, chrono::SystemClock::for_at_least(10s));
+  dispatcher.PostAfter(task2, chrono::SystemClock::for_at_least(10s));
 
   dispatcher.RequestStop();
-  dispatcher.RunFor(5s);
+  dispatcher.RunFor(chrono::SystemClock::for_at_least(5s));
   ASSERT_EQ(counter.counts, CallCounts{.cancelled = 3});
 }
 

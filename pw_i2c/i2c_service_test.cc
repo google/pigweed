@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <chrono>
 
+#include "pw_chrono/system_clock.h"
 #include "pw_i2c/address.h"
 #include "pw_i2c/initiator.h"
 #include "pw_i2c/initiator_mock.h"
@@ -30,18 +31,17 @@ auto MakeSingletonSelector(Initiator* initiator) {
   return [initiator](size_t pos) { return pos == 0 ? initiator : nullptr; };
 }
 
+constexpr auto kI2cTransactionTimeout =
+    chrono::SystemClock::for_at_least(std::chrono::milliseconds(100));
+
 TEST(I2cServiceTest, I2cWriteSingleByteOk) {
   Vector<std::byte, 4> register_addr{};
   Vector<std::byte, 4> register_value{};
   constexpr auto kExpectWrite = bytes::Array<0x02, 0x03>();
   register_addr.push_back(kExpectWrite[0]);
   register_value.push_back(kExpectWrite[1]);
-  auto transactions = MakeExpectedTransactionArray(
-      {Transaction(OkStatus(),
-                   Address{0x01},
-                   kExpectWrite,
-                   {},
-                   std::chrono::milliseconds(100))});
+  auto transactions = MakeExpectedTransactionArray({Transaction(
+      OkStatus(), Address{0x01}, kExpectWrite, {}, kI2cTransactionTimeout)});
   MockInitiator i2c_initiator(transactions);
 
   PW_PWPB_TEST_METHOD_CONTEXT(I2cService, I2cWrite)
@@ -68,12 +68,8 @@ TEST(I2cServiceTest, I2cWriteMultiByteOk) {
   std::copy(kExpectWrite.begin() + kWriteSize,
             kExpectWrite.end(),
             std::back_inserter(register_value));
-  auto transactions = MakeExpectedTransactionArray(
-      {Transaction(OkStatus(),
-                   Address{0x01},
-                   kExpectWrite,
-                   {},
-                   std::chrono::milliseconds(100))});
+  auto transactions = MakeExpectedTransactionArray({Transaction(
+      OkStatus(), Address{0x01}, kExpectWrite, {}, kI2cTransactionTimeout)});
   MockInitiator i2c_initiator(transactions);
 
   PW_PWPB_TEST_METHOD_CONTEXT(I2cService, I2cWrite)
@@ -112,12 +108,12 @@ TEST(I2cServiceTest, I2cReadSingleByteOk) {
   Vector<std::byte, 4> register_addr{};
   register_addr.push_back(kExpectWrite[0]);
 
-  auto transactions = MakeExpectedTransactionArray(
-      {Transaction(OkStatus(),
-                   Address{0x01},
-                   kExpectWrite,
-                   kExpectRead,
-                   std::chrono::milliseconds(100))});
+  auto transactions =
+      MakeExpectedTransactionArray({Transaction(OkStatus(),
+                                                Address{0x01},
+                                                kExpectWrite,
+                                                kExpectRead,
+                                                kI2cTransactionTimeout)});
   MockInitiator i2c_initiator(transactions);
 
   PW_PWPB_TEST_METHOD_CONTEXT(I2cService, I2cRead)
@@ -143,12 +139,12 @@ TEST(I2cServiceTest, I2cReadMultiByteOk) {
   std::copy(kExpectWrite.begin(),
             kExpectWrite.end(),
             std::back_inserter(register_addr));
-  auto transactions = MakeExpectedTransactionArray(
-      {Transaction(OkStatus(),
-                   Address{0x01},
-                   kExpectWrite,
-                   kExpectRead,
-                   std::chrono::milliseconds(100))});
+  auto transactions =
+      MakeExpectedTransactionArray({Transaction(OkStatus(),
+                                                Address{0x01},
+                                                kExpectWrite,
+                                                kExpectRead,
+                                                kI2cTransactionTimeout)});
   MockInitiator i2c_initiator(transactions);
 
   PW_PWPB_TEST_METHOD_CONTEXT(I2cService, I2cRead)
@@ -176,12 +172,12 @@ TEST(I2cServiceTest, I2cReadMaxByteOk) {
   std::copy(kExpectWrite.begin(),
             kExpectWrite.end(),
             std::back_inserter(register_addr));
-  auto transactions = MakeExpectedTransactionArray(
-      {Transaction(OkStatus(),
-                   Address{0x01},
-                   kExpectWrite,
-                   kExpectRead,
-                   std::chrono::milliseconds(100))});
+  auto transactions =
+      MakeExpectedTransactionArray({Transaction(OkStatus(),
+                                                Address{0x01},
+                                                kExpectWrite,
+                                                kExpectRead,
+                                                kI2cTransactionTimeout)});
   MockInitiator i2c_initiator(transactions);
 
   PW_PWPB_TEST_METHOD_CONTEXT(I2cService, I2cRead)

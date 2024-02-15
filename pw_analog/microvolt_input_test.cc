@@ -25,7 +25,8 @@ constexpr int32_t kLimitsMax = 4096;
 constexpr int32_t kLimitsMin = 0;
 constexpr int32_t kReferenceMaxVoltageUv = 1800000;
 constexpr int32_t kReferenceMinVoltageUv = 0;
-constexpr chrono::SystemClock::duration kTimeout = 1ms;
+constexpr chrono::SystemClock::duration kTimeout =
+    chrono::SystemClock::for_at_least(1ms);
 
 constexpr int32_t kBipolarLimitsMax = 4096;
 constexpr int32_t kBipolarLimitsMin = -4096;

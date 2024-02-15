@@ -33,6 +33,7 @@ template("fake_dispatcher_test") {
                 pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND != "" &&
                 pw_thread_THREAD_BACKEND != ""
     deps = [
+      "$dir_pw_chrono:system_clock",
       "$dir_pw_containers:vector",
       "$dir_pw_string:to_string",
       "$dir_pw_sync:timed_thread_notification",

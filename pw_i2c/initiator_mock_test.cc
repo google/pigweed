@@ -19,6 +19,7 @@
 
 #include "pw_bytes/array.h"
 #include "pw_bytes/span.h"
+#include "pw_chrono/system_clock.h"
 #include "pw_containers/algorithm.h"
 #include "pw_i2c/address.h"
 #include "pw_span/span.h"
@@ -29,6 +30,8 @@ using namespace std::literals::chrono_literals;
 namespace pw::i2c {
 namespace {
 
+constexpr auto kI2cTransactionTimeout = chrono::SystemClock::for_at_least(2ms);
+
 TEST(Transaction, Read) {
   static constexpr Address kAddress1 = Address::SevenBit<0x01>();
   constexpr auto kExpectRead1 = bytes::Array<1, 2, 3, 4, 5>();
@@ -37,17 +40,21 @@ TEST(Transaction, Read) {
   constexpr auto kExpectRead2 = bytes::Array<3, 4, 5>();
 
   auto expected_transactions = MakeExpectedTransactionArray(
-      {ReadTransaction(OkStatus(), kAddress1, kExpectRead1, 2ms),
-       ReadTransaction(OkStatus(), kAddress2, kExpectRead2, 2ms)});
+      {ReadTransaction(
+           OkStatus(), kAddress1, kExpectRead1, kI2cTransactionTimeout),
+       ReadTransaction(
+           OkStatus(), kAddress2, kExpectRead2, kI2cTransactionTimeout)});
 
   MockInitiator mocked_i2c(expected_transactions);
 
   std::array<std::byte, kExpectRead1.size()> read1;
-  EXPECT_EQ(mocked_i2c.ReadFor(kAddress1, read1, 2ms), OkStatus());
+  EXPECT_EQ(mocked_i2c.ReadFor(kAddress1, read1, kI2cTransactionTimeout),
+            OkStatus());
   EXPECT_TRUE(pw::containers::Equal(read1, kExpectRead1));
 
   std::array<std::byte, kExpectRead2.size()> read2;
-  EXPECT_EQ(mocked_i2c.ReadFor(kAddress2, read2, 2ms), OkStatus());
+  EXPECT_EQ(mocked_i2c.ReadFor(kAddress2, read2, kI2cTransactionTimeout),
+            OkStatus());
   EXPECT_TRUE(pw::containers::Equal(read2, kExpectRead2));
 
   EXPECT_EQ(mocked_i2c.Finalize(), OkStatus());
@@ -61,14 +68,20 @@ TEST(Transaction, Write) {
   constexpr auto kExpectWrite2 = bytes::Array<3, 4, 5>();
 
   auto expected_transactions = MakeExpectedTransactionArray(
-      {WriteTransaction(OkStatus(), kAddress1, kExpectWrite1, 2ms),
-       WriteTransaction(OkStatus(), kAddress2, kExpectWrite2, 2ms)});
+      {WriteTransaction(
+           OkStatus(), kAddress1, kExpectWrite1, kI2cTransactionTimeout),
+       WriteTransaction(
+           OkStatus(), kAddress2, kExpectWrite2, kI2cTransactionTimeout)});
 
   MockInitiator mocked_i2c(expected_transactions);
 
-  EXPECT_EQ(mocked_i2c.WriteFor(kAddress1, kExpectWrite1, 2ms), OkStatus());
+  EXPECT_EQ(
+      mocked_i2c.WriteFor(kAddress1, kExpectWrite1, kI2cTransactionTimeout),
+      OkStatus());
 
-  EXPECT_EQ(mocked_i2c.WriteFor(kAddress2, kExpectWrite2, 2ms), OkStatus());
+  EXPECT_EQ(
+      mocked_i2c.WriteFor(kAddress2, kExpectWrite2, kI2cTransactionTimeout),
+      OkStatus());
 
   EXPECT_EQ(mocked_i2c.Finalize(), OkStatus());
 }
@@ -83,19 +96,29 @@ TEST(Transaction, WriteRead) {
   constexpr const auto kExpectRead2 = bytes::Array<3, 4>();
 
   auto expected_transactions = MakeExpectedTransactionArray({
-      Transaction(OkStatus(), kAddress1, kExpectWrite1, kExpectRead1, 2ms),
-      Transaction(OkStatus(), kAddress2, kExpectWrite2, kExpectRead2, 2ms),
+      Transaction(OkStatus(),
+                  kAddress1,
+                  kExpectWrite1,
+                  kExpectRead1,
+                  kI2cTransactionTimeout),
+      Transaction(OkStatus(),
+                  kAddress2,
+                  kExpectWrite2,
+                  kExpectRead2,
+                  kI2cTransactionTimeout),
   });
 
   MockInitiator mocked_i2c(expected_transactions);
 
   std::array<std::byte, kExpectRead1.size()> read1;
-  EXPECT_EQ(mocked_i2c.WriteReadFor(kAddress1, kExpectWrite1, read1, 2ms),
+  EXPECT_EQ(mocked_i2c.WriteReadFor(
+                kAddress1, kExpectWrite1, read1, kI2cTransactionTimeout),
             OkStatus());
   EXPECT_TRUE(pw::containers::Equal(read1, kExpectRead1));
 
   std::array<std::byte, kExpectRead1.size()> read2;
-  EXPECT_EQ(mocked_i2c.WriteReadFor(kAddress2, kExpectWrite2, read2, 2ms),
+  EXPECT_EQ(mocked_i2c.WriteReadFor(
+                kAddress2, kExpectWrite2, read2, kI2cTransactionTimeout),
             OkStatus());
   EXPECT_TRUE(pw::containers::Equal(read2, kExpectRead2));
 
@@ -106,12 +129,13 @@ TEST(Transaction, Probe) {
   static constexpr Address kAddress1 = Address::SevenBit<0x01>();
 
   auto expected_transactions = MakeExpectedTransactionArray({
-      ProbeTransaction(OkStatus(), kAddress1, 2ms),
+      ProbeTransaction(OkStatus(), kAddress1, kI2cTransactionTimeout),
   });
 
   MockInitiator mock_initiator(expected_transactions);
 
-  EXPECT_EQ(mock_initiator.ProbeDeviceFor(kAddress1, 2ms), OkStatus());
+  EXPECT_EQ(mock_initiator.ProbeDeviceFor(kAddress1, kI2cTransactionTimeout),
+            OkStatus());
   EXPECT_EQ(mock_initiator.Finalize(), OkStatus());
 }
 

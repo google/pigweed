@@ -16,6 +16,7 @@
 
 #include <chrono>
 
+#include "pw_chrono/system_clock.h"
 #include "pw_sync/binary_semaphore.h"
 #include "pw_unit_test/framework.h"
 
@@ -27,7 +28,7 @@ using namespace std::chrono_literals;
 TEST(AlarmTimerTest, Start) {
   sync::BinarySemaphore sem;
   AlarmTimer timer([&sem](chrono::SystemClock::time_point) { sem.release(); });
-  timer.Start(10ms);
+  timer.Start(chrono::SystemClock::for_at_least(10ms));
   sem.acquire();
 }
 
@@ -76,7 +77,7 @@ TEST(AlarmTimerTest, Restart) {
 TEST(AlarmTimerTest, Cancel) {
   sync::BinarySemaphore sem;
   AlarmTimer timer([&sem](chrono::SystemClock::time_point) { sem.release(); });
-  timer.Start(50ms);
+  timer.Start(chrono::SystemClock::for_at_least(50ms));
   timer.Cancel();
   EXPECT_FALSE(sem.try_acquire_for(chrono::SystemClock::for_at_least(100us)));
 }
@@ -86,7 +87,7 @@ TEST(AlarmTimerTest, Destroy) {
   {
     AlarmTimer timer(
         [&sem](chrono::SystemClock::time_point) { sem.release(); });
-    timer.Start(50ms);
+    timer.Start(chrono::SystemClock::for_at_least(50ms));
   }
   EXPECT_FALSE(sem.try_acquire_for(chrono::SystemClock::for_at_least(100us)));
 }
