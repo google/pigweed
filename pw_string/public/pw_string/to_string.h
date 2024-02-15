@@ -52,6 +52,7 @@
 // StringBuilder may be easier to work with. StringBuilder's operator<< may be
 // overloaded for custom types.
 
+#include <optional>
 #include <string_view>
 #include <type_traits>
 
@@ -63,6 +64,15 @@
 #include "pw_string/type_to_string.h"
 
 namespace pw {
+namespace internal {
+
+template <typename T>
+struct is_std_optional : std::false_type {};
+
+template <typename T>
+struct is_std_optional<std::optional<T>> : std::true_type {};
+
+}  // namespace internal
 
 // This function provides string printing numeric types, enums, and anything
 // that convertible to a std::string_view, such as std::string.
@@ -89,6 +99,21 @@ StatusWithSize ToString(const T& value, span<char> buffer) {
   } else if constexpr (std::is_pointer_v<std::remove_cv_t<T>> ||
                        std::is_null_pointer_v<T>) {
     return string::PointerToString(value, buffer);
+  } else if constexpr (internal::is_std_optional<std::remove_cv_t<T>>::value) {
+    if (value.has_value()) {
+      // NOTE: `*value`'s `ToString` is not wrapped for simplicity in the
+      // output.
+      //
+      // This is simpler, but may cause confusion in the rare case that folks
+      // are comparing nested optionals. For example,
+      // std::optional(std::nullopt) != std::nullopt will display as
+      // `std::nullopt != std::nullopt`.
+      return ToString(*value, buffer);
+    } else {
+      return ToString(std::nullopt, buffer);
+    }
+  } else if constexpr (std::is_same_v<std::remove_cv_t<T>, std::nullopt_t>) {
+    return string::CopyStringOrNull("std::nullopt", buffer);
   } else {
     // By default, no definition of UnknownTypeToString is provided.
     return string::UnknownTypeToString(value, buffer);

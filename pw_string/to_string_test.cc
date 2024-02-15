@@ -276,5 +276,22 @@ TEST(ToString, StdString) {
   EXPECT_STREQ("", buffer);
 }
 
+TEST(ToString, StdNullopt) {
+  EXPECT_EQ(12u, ToString(std::nullopt, buffer).size());
+  EXPECT_STREQ("std::nullopt", buffer);
+}
+
+TEST(ToString, StdOptionalWithoutValue) {
+  std::optional<uint16_t> v = std::nullopt;
+  EXPECT_EQ(12u, ToString(v, buffer).size());
+  EXPECT_STREQ("std::nullopt", buffer);
+}
+
+TEST(ToString, StdOptionalWithValue) {
+  std::optional<uint16_t> v = 5;
+  EXPECT_EQ(1u, ToString(v, buffer).size());
+  EXPECT_STREQ("5", buffer);
+}
+
 }  // namespace
 }  // namespace pw
