@@ -14,16 +14,11 @@
 
 #pragma once
 
-#include <fcntl.h>
-#include <linux/spi/spidev.h>
-#include <linux/types.h>
-#include <sys/ioctl.h>
-#include <unistd.h>
+#include <cstdint>
 
-#include "pw_log/log.h"
 #include "pw_spi/chip_selector.h"
-#include "pw_spi/device.h"
 #include "pw_spi/initiator.h"
+
 namespace pw::spi {
 
 // Linux userspace implementation of the SPI Initiator
@@ -33,7 +28,7 @@ class LinuxInitiator : public Initiator {
   // and maximum bus-speed (in hz).
   constexpr LinuxInitiator(int fd, uint32_t max_speed_hz)
       : max_speed_hz_(max_speed_hz), fd_(fd) {}
-  ~LinuxInitiator();
+  ~LinuxInitiator() override;
 
   // Implements pw::spi::Initiator
   Status Configure(const Config& config) override;

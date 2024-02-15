@@ -79,15 +79,29 @@ Status LinuxInitiator::Configure(const Config& config) {
 Status LinuxInitiator::WriteRead(ConstByteSpan write_buffer,
                                  ByteSpan read_buffer) {
   // Configure a full-duplex transfer using ioctl()
-  struct spi_ioc_transfer transaction[2];
-  memset(transaction, 0, sizeof(transaction));
+
+  struct spi_ioc_transfer transaction[2] = {};
+  unsigned long request = SPI_IOC_MESSAGE(1);  // macro arg must be constant
+  const size_t common_len = std::min(write_buffer.size(), read_buffer.size());
+
   transaction[0].tx_buf = reinterpret_cast<uintptr_t>(write_buffer.data());
-  transaction[0].len = write_buffer.size();
+  transaction[0].rx_buf = reinterpret_cast<uintptr_t>(read_buffer.data());
+  transaction[0].len = common_len;
 
-  transaction[1].rx_buf = reinterpret_cast<uintptr_t>(read_buffer.data());
-  transaction[1].len = read_buffer.size();
+  // Handle different-sized buffers with a compound transaction
+  if (write_buffer.size() > common_len) {
+    auto write_remainder = write_buffer.subspan(common_len);
+    transaction[1].tx_buf = reinterpret_cast<uintptr_t>(write_remainder.data());
+    transaction[1].len = write_remainder.size();
+    request = SPI_IOC_MESSAGE(2);
+  } else if (read_buffer.size() > common_len) {
+    auto read_remainder = read_buffer.subspan(common_len);
+    transaction[1].rx_buf = reinterpret_cast<uintptr_t>(read_remainder.data());
+    transaction[1].len = read_remainder.size();
+    request = SPI_IOC_MESSAGE(2);
+  }
 
-  if (ioctl(fd_, SPI_IOC_MESSAGE(2), transaction) < 0) {
+  if (ioctl(fd_, request, transaction) < 0) {
     PW_LOG_ERROR("Unable to perform SPI transfer");
     return Status::Unknown();
   }

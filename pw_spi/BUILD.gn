@@ -111,6 +111,13 @@ pw_test_group("tests") {
     ":spi_test",
     ":initiator_mock_test",
   ]
+  if (current_os == "linux") {
+    tests += [ ":linux_spi_test" ]
+  }
+}
+pw_test("linux_spi_test") {
+  sources = [ "linux_spi_test.cc" ]
+  deps = [ ":linux_spi" ]
 }
 
 pw_test("spi_test") {

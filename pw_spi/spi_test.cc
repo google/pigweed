@@ -11,10 +11,6 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-
-#include <array>
-#include <optional>
-
 #include "pw_spi/chip_selector.h"
 #include "pw_spi/device.h"
 #include "pw_spi/initiator.h"
