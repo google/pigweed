@@ -26,6 +26,10 @@ import pw_env_setup.virtualenv_setup
 import pw_package.git_repo
 import pw_package.package_manager
 
+# Main branch, this commit is close to the v3.6 RC3 tag which contains some
+# bug fixes for Twister and support for GTEST_SKIP()
+_ZEPHYR_COMMIT_SHA = 'f9778472105d756fff7d1e5b54353421d356ed43'
+
 
 class Zephyr(pw_package.git_repo.GitRepo):
     """Install and check status of Zephyr."""
@@ -38,7 +42,7 @@ class Zephyr(pw_package.git_repo.GitRepo):
                 'https://pigweed.googlesource.com/third_party/'
                 'github/zephyrproject-rtos/zephyr'
             ),
-            commit='04fd1c40cc9f72648f2607be8a18a166242484e5',  # v3.5-branch
+            commit=_ZEPHYR_COMMIT_SHA,
             **kwargs,
         )
 

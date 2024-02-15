@@ -14,6 +14,9 @@ See the docs for these modules for more information:
 - :ref:`pw_sys_io_zephyr <module-pw_sys_io_zephyr>`
 - :ref:`pw_thread_zephyr <module-pw_thread_zephyr>`
 
+.. note:: The version of Zephyr bundled with `pw package install zephyr` is
+   being migrated to v3.6 as we near the latest release.
+
 .. _docs-os-zephyr-get-started:
 
 -----------------------------------
