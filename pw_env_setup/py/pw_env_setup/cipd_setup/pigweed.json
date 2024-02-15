@@ -128,7 +128,7 @@
         "linux-amd64"
       ],
       "tags": [
-        "version:2@renode-1.14.0"
+        "version:2@1.14.0+20240213git9ffe8a98a"
       ]
     }
   ]
