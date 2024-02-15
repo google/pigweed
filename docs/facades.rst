@@ -100,8 +100,8 @@ a facade is implemented.
 Why does Pigweed have facades?
 ------------------------------
 Pigweed's facades are basically a pattern that builds off the ideas of
-`link-time subsitution <https://bramtertoolen.medium.com/91ffd4ef8687>`_.
-Link-time subsitution only allows you to replace one source file with another,
+`link-time substitution <https://bramtertoolen.medium.com/91ffd4ef8687>`_.
+Link-time substitution only allows you to replace one source file with another,
 whereas facades enable substituting program elements defined in *header files*.
 
 Pigweed facades enable implementation flexibility with zero performance cost.
