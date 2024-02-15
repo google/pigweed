@@ -32,38 +32,28 @@ enum class RegisterAddressSize {
   k4Bytes = 4,
 };
 
-// RegisterDevice is used to write/read registers, chunks of data
-// or just an array of bytes over a bus to a device.
-//
-// DISCLAIMER:
-// It is important to note that bulk write/read may not be supported for every
-// device and that it's up to the user to know the capabilities of their device.
-// Users should also be aware of the register and address size and use the
-// appropriate methods for their device.
-//
-//  - WriteRegisters*
-//       Write to a set of registers starting at a specific address/offset.
-//       Endianness will be applied to data that's read or written.
-//
-//  - WriteRegister*
-//       Write data to a register where the max register size is 4 bytes.
-//       Endianness will be applied to data that's read or written.
-//
-//  - ReadRegisters*
-//       Read a set of registers starting at a specific address/offset.
-//       Endianness will be applied to data that's read or written.
-//
-//  - ReadRegister*
-//       Read data to a register where the max register size is 4 bytes.
-//       Endianness will be applied to data that's read or written.
+/// The common interface for I2C register devices. Contains methods to help
+/// read and write the device's registers.
+///
+/// @warning This interface assumes that you know how to consult your device's
+/// datasheet to determine correct address sizes, data sizes, endianness, etc.
 class RegisterDevice : public Device {
  public:
-  // Args:
-  //   initiator: I2C initiator for the bus the device is on.
-  //   address: I2C device address.
-  //   register_address_order: Endianness of the register address.
-  //   data_order: Endianness of the data.
-  //   register_address_size: Size of the register address.
+  /// This constructor specifies the endianness of the register address and
+  /// data separately. If your register address and data have the same
+  /// endianness and you'd like to specify them both with a single argument,
+  /// see the other `pw::i2c::RegisterDevice` constructor.
+  ///
+  /// @param[in] initiator A `pw::i2c::Initiator` instance for the bus that the
+  /// device is on.
+  ///
+  /// @param[in] address The address of the I2C device.
+  ///
+  /// @param[in] register_address_order The endianness of the register address.
+  ///
+  /// @param[in] data_order The endianness of the data.
+  ///
+  /// @param[in] register_address_size The size of the register address.
   constexpr RegisterDevice(Initiator& initiator,
                            Address address,
                            endian register_address_order,
@@ -74,11 +64,20 @@ class RegisterDevice : public Device {
         data_order_(data_order),
         register_address_size_(register_address_size) {}
 
-  // Args:
-  //   initiator: I2C initiator for the bus the device is on.
-  //   address: I2C device address.
-  //   order: Endianness of the register address and data.
-  //   register_address_size: Size of the register address.
+  /// This constructor specifies the endianness of the register address and
+  /// data with a single argument. If your register address and data have
+  /// different endianness, use the other `pw::i2c::RegisterDevice`
+  /// constructor.
+  ///
+  /// @param[in] initiator A `pw::i2c::Initiator` instance for the bus that the
+  /// device is on.
+  ///
+  /// @param[in] address The address of the I2C device.
+  ///
+  /// @param[in] order The endianness of both the register address and register
+  /// data.
+  ///
+  /// @param[in] register_address_size The size of the register address.
   constexpr RegisterDevice(Initiator& initiator,
                            Address address,
                            endian order,
@@ -88,148 +87,208 @@ class RegisterDevice : public Device {
         data_order_(order),
         register_address_size_(register_address_size) {}
 
-  // Writes data to multiple contiguous registers starting at specific register.
-  // WriteRegisters has byte addressable capabilities and it is up to the user
-  // to determine the appropriate size based on the features of the device. The
-  // amount of data to write is the size of the span. Endianness is taken into
-  // account if register_data_size is 2 bytes or 4 bytes. Both address and
-  // data will use the same endianness provided by the constructor.
-  //
-  // It is important to note that bulk write may not be supported for every
-  // device and that it's up to the user to know the capabilities of their
-  // device. Args:
-  //   register_address: Register address to send.
-  //   register_data: Data to write.
-  //   buffer: Since we need a buffer to construct the write data that consists
-  //           of the register address and the register data, the buffer should
-  //           be big enough such that the two can be concatenated.
-  //   timeout: timeout that's used for both lock and transaction.
-  // Returns:
-  //   Ok: Successful.
-  //   DeadlineExceeded: Unable to acquire exclusive Initiator access and
-  //                     complete the I2C transaction in time.
-  //   FailedPrecondition: Interface is not initialized and/or enabled.
-  //   Internal: Building data for the write buffer has an issue.
-  //   InvalidArgument: Device_address is larger than the 10 bit address space.
-  //   OutOfRange: if buffer size is too small for data and register_address.
-  //   Unavailable: if NACK and device did not respond in time.
+  /// Writes data to multiple contiguous registers starting at a specific
+  /// register. This method is byte-addressable.
+  ///
+  /// `register_address` and `register_data` use the endianness that was
+  /// provided when this `pw::i2c::RegisterDevice` instance was constructed.
+  ///
+  /// @pre This method assumes that you've verified that your device supports
+  /// bulk writes and that `register_data` is a correct size for your device.
+  ///
+  /// @param[in] register_address The register address to begin writing at.
+  ///
+  /// @param[in] register_data The data to write. Endianness is taken into
+  /// account if the data is 2 or 4 bytes.
+  ///
+  /// @param[in] buffer A buffer for constructing the write data. The size of
+  /// this buffer must be at least as large as the size of `register_address`
+  /// plus the size of `register_data`.
+  ///
+  /// @param[in] timeout The maximum duration to block waiting for both
+  /// exclusive bus access and the completion of the I2C transaction.
+  ///
+  /// @returns A `pw::Status` object with one of the following statuses:
+  /// * @pw_status{OK} - The bulk write was successful.
+  /// * @pw_status{DEADLINE_EXCEEDED} - Unable to acquire exclusive bus access
+  ///   and complete the transaction in time.
+  /// * @pw_status{FAILED_PRECONDITION} - The interface is not initialized or
+  ///   enabled.
+  /// * @pw_status{INTERNAL} - An issue occurred while building
+  ///   `register_data`.
+  /// * @pw_status{INVALID_ARGUMENT} - `register_address` is larger than the
+  ///   10-bit address space.
+  /// * @pw_status{OUT_OF_RANGE} - The size of `buffer` is less than the size
+  ///   of `register_address` plus the size of `register_data`.
+  /// * @pw_status{UNAVAILABLE} - The device took too long to respond to the
+  ///   NACK.
   Status WriteRegisters(uint32_t register_address,
                         ConstByteSpan register_data,
                         ByteSpan buffer,
                         chrono::SystemClock::duration timeout);
 
+  /// Variant of `pw::i2c::RegisterDevice::WriteRegisters()` that requires
+  /// `register_data` to be exactly 8 bits.
   Status WriteRegisters8(uint32_t register_address,
                          span<const uint8_t> register_data,
                          ByteSpan buffer,
                          chrono::SystemClock::duration timeout);
 
+  /// Variant of `pw::i2c::RegisterDevice::WriteRegisters()` that requires
+  /// `register_data` to be exactly 16 bits.
   Status WriteRegisters16(uint32_t register_address,
                           span<const uint16_t> register_data,
                           ByteSpan buffer,
                           chrono::SystemClock::duration timeout);
 
+  /// Variant of `pw::i2c::RegisterDevice::WriteRegisters()` that requires
+  /// `register_data` to be exactly 32 bits.
   Status WriteRegisters32(uint32_t register_address,
                           span<const uint32_t> register_data,
                           ByteSpan buffer,
                           chrono::SystemClock::duration timeout);
 
-  // Reads data chunk starting at specific offset or register.
-  // ReadRegisters has byte addressable capabilities and it is up to the user
-  // to determine the appropriate size based on the features of the device. The
-  // amount of data to read is the size of the span. Endianness is taken into
-  // account for the *16 and *32 bit methods.  Both address and data will use
-  // the same endianness provided by the constructor.
-  //
-  // It is important to note that bulk read may not be supported for every
-  // device and that it's up to the user to know the capabilities of their
-  // device. Args:
-  //   register_address: Register address to send.
-  //   return_data: Area to read data to.
-  //   timeout: Timeout that's used for both lock and transaction.
-  // Returns:
-  //   Ok: Successful.
-  //   DeadlineExceeded: Unable to acquire exclusive Initiator access and
-  //                     complete the I2C transaction in time.
-  //   FailedPrecondition: Interface is not initialized and/or enabled.
-  //   Internal: Building data for the write buffer has an issue.
-  //   InvalidArgument: Device_address is larger than the 10 bit address space.
-  //   Unavailable: if NACK and device did not respond in time.
+  /// Reads data from multiple contiguous registers starting from a specific
+  /// offset or register. This method is byte-addressable.
+  ///
+  /// `register_address` and `return_data` use the endianness that was
+  /// provided when this `pw::i2c::RegisterDevice` instance was constructed.
+  ///
+  /// @pre This method assumes that you've verified that your device supports
+  /// bulk reads and that `return_data` is a correct size for your device.
+  ///
+  /// @param[in] register_address The register address to begin reading at.
+  ///
+  /// @param[out] return_data The area to read the data into. The amount of
+  /// data that will be read is equal to the size of this span. Endianness is
+  /// taken into account if this span is 2 or 4 bytes.
+  ///
+  /// @param[in] timeout The maximum duration to block waiting for both
+  /// exclusive bus access and the completion of the I2C transaction.
+  ///
+  /// @returns A `pw::Status` object with one of the following statuses:
+  /// * @pw_status{OK} - The bulk read was successful.
+  /// * @pw_status{DEADLINE_EXCEEDED} - Unable to acquire exclusive bus access
+  ///   and complete the transaction in time.
+  /// * @pw_status{FAILED_PRECONDITION} - The interface is not initialized or
+  ///   enabled.
+  /// * @pw_status{INTERNAL} - An issue occurred while building `return_data`.
+  /// * @pw_status{INVALID_ARGUMENT} - `register_address` is larger than the
+  ///   10-bit address space.
+  /// * @pw_status{UNAVAILABLE} - The device took too long to respond to the
+  ///   NACK.
   Status ReadRegisters(uint32_t register_address,
                        ByteSpan return_data,
                        chrono::SystemClock::duration timeout);
 
+  /// Variant of `pw::i2c::RegisterDevice::ReadRegisters()` that requires
+  /// `return_data` to be exactly 8 bits.
   Status ReadRegisters8(uint32_t register_address,
                         span<uint8_t> return_data,
                         chrono::SystemClock::duration timeout);
 
+  /// Variant of `pw::i2c::RegisterDevice::ReadRegisters()` that requires
+  /// `return_data` to be exactly 16 bits.
   Status ReadRegisters16(uint32_t register_address,
                          span<uint16_t> return_data,
                          chrono::SystemClock::duration timeout);
 
+  /// Variant of `pw::i2c::RegisterDevice::ReadRegisters()` that requires
+  /// `return_data` to be exactly 32 bits.
   Status ReadRegisters32(uint32_t register_address,
                          span<uint32_t> return_data,
                          chrono::SystemClock::duration timeout);
 
-  // Writes the register address first before data.
-  // User should be careful which WriteRegister* API is used and should use
-  // the one that matches their register data size if not byte addressable.
-  //
-  // Both address and data will use the same endianness provided by the
-  // constructor.
-  // Args:
-  //   register_address: Register address to send.
-  //   register_data: Data to write.
-  //   timeout: Timeout that's used for both lock and transaction.
-  // Returns:
-  //   Ok: Successful.
-  //   DeadlineExceeded: Unable to acquire exclusive Initiator access and
-  //                     complete the I2C transaction in time.
-  //   FailedPrecondition: Interface is not initialized and/or enabled.
-  //   Internal: Building data for the write buffer has an issue.
-  //   InvalidArgument: Device_address is larger than the 10 bit address space.
-  //   Unavailable: if NACK and device did not respond in time.
+  /// Sends a register address to write to and then writes to that address.
+  ///
+  /// `register_address` and `register_data` use the endianness that was
+  /// provided when this `pw::i2c::RegisterDevice` instance was constructed.
+  ///
+  /// @pre This method assumes that you've verified that `register_data` is a
+  /// correct size for your device.
+  ///
+  /// @param[in] register_address The register address to write to.
+  ///
+  /// @param[in] register_data The data that should be written at the address.
+  /// The maximum allowed size is 4 bytes.
+  ///
+  /// @param[in] timeout The maximum duration to block waiting for both
+  /// exclusive bus access and the completion of the I2C transaction.
+  ///
+  /// @returns A `pw::Status` object with one of the following statuses:
+  /// * @pw_status{OK} - The write was successful.
+  /// * @pw_status{DEADLINE_EXCEEDED} - Unable to acquire exclusive bus access
+  ///   and complete the transaction in time.
+  /// * @pw_status{FAILED_PRECONDITION} - The interface is not initialized or
+  ///   enabled.
+  /// * @pw_status{INTERNAL} - An issue occurred while writing the data.
+  /// * @pw_status{INVALID_ARGUMENT} - `register_address` is larger than the
+  ///   10-bit address space.
+  /// * @pw_status{UNAVAILABLE} - The device took too long to respond to the
+  ///   NACK.
   Status WriteRegister(uint32_t register_address,
                        std::byte register_data,
                        chrono::SystemClock::duration timeout);
 
+  /// Variant of `pw::i2c::RegisterDevice::WriteRegister()` that writes exactly
+  /// 8 bits.
   Status WriteRegister8(uint32_t register_address,
                         uint8_t register_data,
                         chrono::SystemClock::duration timeout);
 
+  /// Variant of `pw::i2c::RegisterDevince::WriteRegister()` that writes exactly
+  /// 16 bits.
   Status WriteRegister16(uint32_t register_address,
                          uint16_t register_data,
                          chrono::SystemClock::duration timeout);
 
+  /// Variant of `pw::i2c::RegisterDevice::WriteRegister()` that writes exactly
+  /// 32 bits.
   Status WriteRegister32(uint32_t register_address,
                          uint32_t register_data,
                          chrono::SystemClock::duration timeout);
 
-  // Reads data from the device after sending the register address first.
-  // User should be careful which ReadRegister* API is used and should use
-  // the one that matches their register data size if not byte addressable.
-  //
-  // Both address and data will use the same endianness provided by the
-  // constructor.
-  // Args:
-  //   register_address: Register address to send.
-  //   timeout: Timeout that's used for both lock and transaction.
-  // Returns:
-  //   Ok: Successful.
-  //   DeadlineExceeded: Unable to acquire exclusive Initiator access and
-  //                     complete the I2C transaction in time.
-  //   FailedPrecondition: Interface is not initialized and/or enabled.
-  //   Internal: Building data for the write buffer has an issue.
-  //   InvalidArgument: Device_address is larger than the 10 bit address space.
-  //   Unavailable: if NACK and device did not respond in time.
+  /// Sends a register address to read from and then reads from that address.
+  ///
+  /// `register_address` and the return data use the endianness that was
+  /// provided when this `pw::i2c::RegisterDevice` instance was constructed.
+  ///
+  /// @pre This method assumes that you've verified that the return data size
+  /// is a correct size for your device.
+  ///
+  /// @param[in] register_address The register address to read.
+  ///
+  /// @param[in] timeout The maximum duration to block waiting for both
+  /// exclusive bus access and the completion of the I2C transaction.
+  ///
+  /// @returns On success, a `pw::Result` object with a value representing the
+  /// register data and a status of @pw_status{OK}. On error, a `pw::Result`
+  /// object with no value and one of the following statuses:
+  /// * @pw_status{DEADLINE_EXCEEDED} - Unable to acquire exclusive bus access
+  ///   and complete the transaction in time.
+  /// * @pw_status{FAILED_PRECONDITION} - The interface is not initialized or
+  ///   enabled.
+  /// * @pw_status{INTERNAL} - An issue occurred while building the return
+  ///   data.
+  /// * @pw_status{INVALID_ARGUMENT} - `register_address` is larger than the
+  ///   10-bit address space.
+  /// * @pw_status{UNAVAILABLE} - The device took too long to respond to the
+  ///   NACK.
   Result<std::byte> ReadRegister(uint32_t register_address,
                                  chrono::SystemClock::duration timeout);
 
+  /// Variant of `pw::i2c::RegisterDevice::ReadRegister()` that returns exactly
+  /// 8 bits.
   Result<uint8_t> ReadRegister8(uint32_t register_address,
                                 chrono::SystemClock::duration timeout);
 
+  /// Variant of `pw::i2c::RegisterDevice::ReadRegister()` that returns exactly
+  /// 16 bits.
   Result<uint16_t> ReadRegister16(uint32_t register_address,
                                   chrono::SystemClock::duration timeout);
 
+  /// Variant of `pw::i2c::RegisterDevice::ReadRegister()` that returns exactly
+  /// 32 bits.
   Result<uint32_t> ReadRegister32(uint32_t register_address,
                                   chrono::SystemClock::duration timeout);
 

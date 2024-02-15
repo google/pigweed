@@ -1,24 +1,109 @@
 .. _module-pw_i2c:
 
-------
+======
 pw_i2c
-------
-.. warning::
-   This module is under construction, not ready for use, and the documentation
-   is incomplete.
-
+======
 pw_i2c contains interfaces and utility functions for using I2C.
 
-Features
-========
+------
+Guides
+------
 
-pw::i2c::Initiator
-------------------
+.. _module-pw_i2c-guides-registerdevice:
+
+Configure and read an I2C register device
+=========================================
+The following code example is adapted from :ref:`docs-kudzu`. See the following
+files for real ``pw::i2c::RegisterDevice`` usage:
+
+* `//lib/pi4ioe5v6416/device.cc <https://pigweed.googlesource.com/pigweed/kudzu/+/refs/heads/main/lib/pi4ioe5v6416/device.cc>`_
+* `//lib/pi4ioe5v6416/public/pi4ioe5v6416/device.h <https://pigweed.googlesource.com/pigweed/kudzu/+/refs/heads/main/lib/pi4ioe5v6416/public/pi4ioe5v6416/device.h>`_
+
+.. code-block:: c++
+
+   // WARNING: Don't rely on any values from this example. Consult your
+   // datasheet to determine what values make sense for your device.
+
+   #include <chrono>
+   #include <cstddef>
+   #include <cstdint>
+
+   #include "pw_bytes/bit.h"
+   #include "pw_i2c/address.h"
+   #include "pw_i2c/register_device.h"
+   #include "pw_log/log.h"
+   #include "pw_status/status.h"
+
+   using ::pw::Status;
+   using namespace std::chrono_literals;
+
+   // Search for `pi4ioe5v6416` in the Kudzu codebase to see real usage of
+   // pw::i2c::RegisterDevice
+   namespace pw::pi4ioe5v6416 {
+
+   namespace {
+
+   constexpr pw::i2c::Address kAddress = pw::i2c::Address::SevenBit<0x20>();
+   enum Register : uint32_t {
+     InputPort0 = 0x0,
+     ConfigPort0 = 0x6,
+     PullUpDownEnablePort0 = 0x46,
+     PullUpDownSelectionPort0 = 0x48,
+   };
+
+   }  // namespace
+
+   // This particular example instantiates `pw::i2c::RegisterDevice`
+   // as part of a higher-level general "device" interface.
+   // See ///lib/pi4ioe5v6416/public/pi4ioe5v6416/device.h in Kudzu.
+   Device::Device(pw::i2c::Initiator& initiator)
+       : initiator_(initiator),
+         register_device_(initiator,
+                          kAddress,
+                          endian::little,
+                          pw::i2c::RegisterAddressSize::k1Byte) {}
+
+   Status Device::Enable() {
+     // Set port 0 as inputs for buttons (1=input)
+     device_.WriteRegister8(Register::ConfigPort0,
+                            0xff,
+                            pw::chrono::SystemClock::for_at_least(10ms));
+     // Select pullup resistors for button input (1=pullup)
+     device_.WriteRegister8(Register::PullUpDownSelectionPort0,
+                            0xff,
+                            pw::chrono::SystemClock::for_at_least(10ms));
+     // Enable pullup/down resistors for button input (1=enable)
+     device_.WriteRegister8(Register::PullUpDownEnablePort0,
+                            0xff,
+                            pw::chrono::SystemClock::for_at_least(10ms));
+     return OkStatus();
+   }
+
+   pw::Result<uint8_t> Device::ReadPort0() {
+     return device_.ReadRegister8(Register::InputPort0,
+                                  pw::chrono::SystemClock::for_at_least(10ms));
+   }
+
+   }  // namespace pw::pi4ioe5v6416
+
+
+---------
+Reference
+---------
+.. _//pw_i2c/public/pw_i2c/: https://cs.opensource.google/pigweed/pigweed/+/main:pw_i2c/public/pw_i2c/
+
+.. note::
+
+   This reference is incomplete. See `//pw_i2c/public/pw_i2c/`_ for the
+   complete interface.
+
+``pw::i2c::Initiator``
+======================
 .. doxygenclass:: pw::i2c::Initiator
    :members:
 
-pw::i2c::Device
----------------
+``pw::i2c::Device``
+===================
 The common interface for interfacing with generic I2C devices. This object
 contains ``pw::i2c::Address`` and wraps the ``pw::i2c::Initiator`` API.
 Common use case includes streaming arbitrary data (Read/Write). Only works
@@ -31,16 +116,16 @@ with devices with a single device address.
    access should be faciliated with higher level application abstractions. To
    help enforce this, the ``Device`` object is only movable and not copyable.
 
-pw::i2c::RegisterDevice
------------------------
-The common interface for interfacing with register devices. Contains methods
-to help read and write registers from and to the device. Users should have a
-understanding of the capabilities of their device such as register address
-sizes, register data sizes, byte addressability, bulk transactions, etc in
-order to effectively use this interface.
+``pw::i2c::RegisterDevice``
+===========================
+See :ref:`module-pw_i2c-guides-registerdevice` for example usage of
+``pw::i2c::RegisterDevice``.
 
-pw::i2c::MockInitiator
-----------------------
+.. doxygenclass:: pw::i2c::RegisterDevice
+   :members:
+
+``pw::i2c::MockInitiator``
+==========================
 A generic mocked backend for for pw::i2c::Initiator. This is specifically
 intended for use when developing drivers for i2c devices. This is structured
 around a set of 'transactions' where each transaction contains a write, read and
@@ -83,18 +168,19 @@ list. An example of this is shown below:
   // Alternatively this is also called from MockInitiator::~MockInitiator().
   EXPECT_EQ(mocked_i2c.Finalize(), OkStatus());
 
-pw::i2c::GmockInitiator
------------------------
+``pw::i2c::GmockInitiator``
+===========================
 gMock of Initiator used for testing and mocking out the Initiator.
 
-I2c Debug Service
-=================
-This module implements an I2C register access service for debugging and bringup.
-To use, provide it with a callback function that returns an ``Initiator`` for
-the specified ``bus_index``.
+-----------------
+I2C debug service
+-----------------
+This module implements an I2C register access service for debugging and
+bringup. To use, provide it with a callback function that returns an
+``Initiator`` for the specified ``bus_index``.
 
 Example invocations
--------------------
+===================
 Using the pigweed console, you can invoke the service to perform an I2C read:
 
 .. code-block:: python
@@ -125,7 +211,6 @@ I2C responders that require multi-byte access may expect a specific endianness.
 The order of bytes specified in the bytes field will match the order of bytes
 sent/received on the bus. Maximum supported value for multi-byte access is
 4 bytes.
-
 
 .. toctree::
    :hidden:
