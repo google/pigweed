@@ -103,6 +103,12 @@ if (dir_pw_third_party_nanopb != "") {
       "$dir_pw_rpc/nanopb:test_method_context",
     ]
     sources = [ "metric_service_nanopb_test.cc" ]
+
+    # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+    # indefinitely.
+    if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+      enable_if = false
+    }
   }
 }
 
@@ -138,6 +144,12 @@ pw_test("metric_service_pwpb_test") {
     "$dir_pw_rpc/raw:test_method_context",
   ]
   sources = [ "metric_service_pwpb_test.cc" ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 ################################################################################
@@ -161,6 +173,12 @@ pw_test("metric_test") {
 pw_test("global_test") {
   sources = [ "global_test.cc" ]
   deps = [ ":global" ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; has test
+  # failures.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_size_diff("metric_size_report") {

@@ -309,6 +309,12 @@ pw_test("block_test") {
     dir_pw_span,
   ]
   sources = [ "block_test.cc" ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_test("block_allocator_test") {
@@ -319,6 +325,12 @@ pw_test("block_allocator_test") {
     dir_pw_bytes,
   ]
   sources = [ "block_allocator_test.cc" ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_test("fallback_allocator_test") {
@@ -337,11 +349,23 @@ pw_test("freelist_test") {
     dir_pw_status,
   ]
   sources = [ "freelist_test.cc" ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_test("freelist_heap_test") {
   deps = [ ":freelist_heap" ]
   sources = [ "freelist_heap_test.cc" ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; after test
+  # finishes device locks up.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_test("libc_allocator_test") {
@@ -356,6 +380,12 @@ pw_test("multiplex_allocator_test") {
     dir_pw_tokenizer,
   ]
   sources = [ "multiplex_allocator_test.cc" ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_test("null_allocator_test") {
@@ -409,6 +439,12 @@ pw_test("synchronized_allocator_test") {
 pw_test("tracking_allocator_test") {
   deps = [ ":allocator_testing" ]
   sources = [ "tracking_allocator_test.cc" ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_test("unique_ptr_test") {

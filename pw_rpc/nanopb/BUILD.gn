@@ -199,6 +199,12 @@ pw_test("client_call_test") {
   ]
   sources = [ "client_call_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != ""
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_test("client_reader_writer_test") {
@@ -209,6 +215,12 @@ pw_test("client_reader_writer_test") {
   ]
   sources = [ "client_reader_writer_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != ""
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_test("client_server_context_test") {
@@ -220,6 +232,12 @@ pw_test("client_server_context_test") {
   ]
   sources = [ "client_server_context_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != "" && pw_sync_MUTEX_BACKEND != ""
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 _stl_threading_and_nanopb_enabled =
@@ -252,6 +270,12 @@ pw_test("codegen_test") {
   ]
   sources = [ "codegen_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != ""
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_test("fake_channel_output_test") {
@@ -274,6 +298,12 @@ pw_test("method_test") {
   ]
   sources = [ "method_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != ""
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_test("method_info_test") {
@@ -296,6 +326,12 @@ pw_test("method_lookup_test") {
   ]
   sources = [ "method_lookup_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != ""
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_test("method_union_test") {
@@ -307,6 +343,12 @@ pw_test("method_union_test") {
   ]
   sources = [ "method_union_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != ""
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_test("echo_service_test") {
@@ -346,6 +388,12 @@ pw_test("server_reader_writer_test") {
   ]
   sources = [ "server_reader_writer_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != ""
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_test("stub_generation_test") {
@@ -366,4 +414,10 @@ pw_test("synchronous_call_test") {
   sources = [ "synchronous_call_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != "" &&
               pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND != ""
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }

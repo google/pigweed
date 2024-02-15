@@ -163,6 +163,12 @@ pw_test("hdlc_framing_test") {
     "$dir_pw_bytes",
     "$dir_pw_status",
   ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_source_set("simple_framing") {
@@ -186,6 +192,12 @@ pw_test("simple_framing_test") {
     "$dir_pw_log",
     "$dir_pw_status",
   ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_source_set("egress_ingress") {
@@ -216,6 +228,12 @@ pw_test("egress_ingress_test") {
     "$dir_pw_status",
     "$dir_pw_sync:thread_notification",
   ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_source_set("socket_rpc_transport") {

@@ -83,6 +83,12 @@ pw_test("blob_store_test_1_alignment") {
     dir_pw_random,
   ]
   sources = [ "blob_store_test.cc" ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_test("blob_store_test_16_alignment") {
@@ -97,6 +103,12 @@ pw_test("blob_store_test_16_alignment") {
   ]
   sources = [ "blob_store_test.cc" ]
   defines = [ "PW_FLASH_TEST_ALIGNMENT=16U" ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_test("blob_store_chunk_write_test") {
@@ -109,6 +121,12 @@ pw_test("blob_store_chunk_write_test") {
     dir_pw_random,
   ]
   sources = [ "blob_store_chunk_write_test.cc" ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_test("blob_store_deferred_write_test") {
@@ -121,6 +139,12 @@ pw_test("blob_store_deferred_write_test") {
     dir_pw_random,
   ]
   sources = [ "blob_store_deferred_write_test.cc" ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_test("flat_file_system_entry_test") {
@@ -135,6 +159,12 @@ pw_test("flat_file_system_entry_test") {
     dir_pw_random,
   ]
   sources = [ "flat_file_system_entry_test.cc" ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_doc_group("docs") {

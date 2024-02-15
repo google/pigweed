@@ -311,6 +311,13 @@ pw_test("dynamic_thread_backend_test") {
     ":dynamic_test_threads",
     "$dir_pw_thread:thread_facade_test",
   ]
+
+  # Doesn't work on the Pico yet;
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely (on join() test).
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_source_set("static_test_threads") {

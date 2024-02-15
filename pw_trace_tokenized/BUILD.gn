@@ -165,6 +165,12 @@ pw_test("trace_service_pwpb_test") {
     "$dir_pw_trace",
   ]
   sources = [ "trace_service_pwpb_test.cc" ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_source_set("tokenized_trace_buffer") {

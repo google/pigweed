@@ -99,6 +99,12 @@ pw_test("system_timer_facade_test") {
     "$dir_pw_sync:thread_notification",
     pw_chrono_SYSTEM_TIMER_BACKEND,
   ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_proto_library("protos") {

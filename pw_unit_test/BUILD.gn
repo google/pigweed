@@ -358,6 +358,11 @@ pw_test("framework_test") {
     dir_pw_assert,
     dir_pw_status,
   ]
+
+  # TODO: https://pwbug.dev/325509758 - Passes but hangs on cleanup.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_test("framework_light_test") {

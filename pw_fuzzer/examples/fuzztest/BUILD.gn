@@ -39,6 +39,12 @@ pw_source_set("metrics_lib") {
 pw_test("metrics_unittest") {
   sources = [ "metrics_unittest.cc" ]
   deps = [ ":metrics_lib" ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 # DOCSTAG: [pwfuzzer_examples_fuzztest-gn]

@@ -352,6 +352,12 @@ pw_test("interrupt_spin_lock_facade_test") {
     "$dir_pw_preprocessor",
     pw_sync_INTERRUPT_SPIN_LOCK_BACKEND,
   ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_test("thread_notification_facade_test") {

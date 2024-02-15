@@ -151,6 +151,12 @@ pw_test("register_device_test") {
     ":register_device",
     "$dir_pw_assert",
   ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_test("initiator_mock_test") {
@@ -174,6 +180,12 @@ pw_test("i2c_service_test") {
     "$dir_pw_rpc/pwpb:test_method_context",
     "$dir_pw_status",
   ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 pw_doc_group("docs") {

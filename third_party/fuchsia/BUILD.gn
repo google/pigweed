@@ -40,6 +40,12 @@ pw_test("function_tests") {
 
   # This test does not build with strict warnings, so disable them.
   remove_configs = [ "$dir_pw_build:strict_warnings" ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
 }
 
 group("stdcompat") {
