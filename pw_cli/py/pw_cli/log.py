@@ -58,7 +58,7 @@ def c_to_py_log_level(c_level: int) -> int:
     return c_level * 10
 
 
-def main() -> None:
+def main() -> int:
     """Shows how logs look at various levels."""
 
     # Force the log level to make sure all logs are shown.
@@ -72,6 +72,8 @@ def main() -> None:
     _LOG.info('The operation went as expected')
     _LOG.log(LOGLEVEL_STDOUT, 'Standard output of subprocess')
     _LOG.debug('Adding 1 to i')
+
+    return 0
 
 
 def _setup_handler(

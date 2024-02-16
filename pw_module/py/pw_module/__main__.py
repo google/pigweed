@@ -19,7 +19,7 @@ import pw_module.check
 import pw_module.create
 
 
-def main() -> None:
+def main() -> int:
     """Entrypoint for the `pw module` plugin."""
 
     parser = argparse.ArgumentParser(description=__doc__)
@@ -38,6 +38,8 @@ def main() -> None:
     func = args['func']
     del args['func']
     func(**args)
+
+    return 0
 
 
 if __name__ == '__main__':

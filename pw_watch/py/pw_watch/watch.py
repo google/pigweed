@@ -955,7 +955,7 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main() -> None:
+def main() -> int:
     """Watch files for changes and rebuild."""
     parser = get_parser()
     args = parser.parse_args()
@@ -1000,6 +1000,8 @@ def main() -> None:
         prefs=prefs,
         fullscreen=args.fullscreen,
     )
+
+    return 0
 
 
 if __name__ == '__main__':
