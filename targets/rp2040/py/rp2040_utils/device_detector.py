@@ -16,12 +16,22 @@
 
 from dataclasses import dataclass
 import logging
-from typing import Dict, List
+import os
+from pathlib import Path
+import platform
+import shutil
+import subprocess
+from typing import Dict, Iterable, List, Optional
 
-import serial.tools.list_ports  # type: ignore
+from ctypes.util import find_library as ctypes_find_library
+import serial.tools.list_ports
 import usb  # type: ignore
+from usb.backend import libusb1  # type: ignore
 
 import pw_cli.log
+from pw_cli.env import pigweed_environment
+
+_LOG = logging.getLogger('pi_pico_detector')
 
 # Vendor/device ID to search for in USB devices.
 _RASPBERRY_PI_VENDOR_ID = 0x2E8A
@@ -32,7 +42,89 @@ _PICO_DEVICE_IDS = (
     _PICO_BOOTLOADER_DEVICE_ID,
 )
 
-_LOG = logging.getLogger('pi_pico_detector')
+_LIBUSB_CIPD_INSTALL_ENV_VAR = 'PW_PIGWEED_CIPD_INSTALL_DIR'
+_LIBUSB_CIPD_SUBDIR = 'libexec'
+
+if platform.system() == 'Linux':
+    _LIB_SUFFIX = '.so'
+elif platform.system() == 'Darwin':
+    _LIB_SUFFIX = '.dylib'
+elif platform.system() == 'Windows':
+    _LIB_SUFFIX = '.dll'
+else:
+    raise RuntimeError(f'Unsupported platform.system(): {platform.system()}')
+
+
+def custom_find_library(name: str) -> Optional[str]:
+    """Search for shared libraries in non-standard locations."""
+    search_paths: List[Path] = []
+
+    # Add to search_paths starting with lowest priority locations.
+
+    if platform.system() == 'Darwin':
+        # libusb from homebrew
+        homebrew_prefix = os.environ.get('HOMEBREW_PREFIX', '')
+        if homebrew_prefix:
+            homebrew_lib = Path(homebrew_prefix) / 'lib'
+            homebrew_lib = homebrew_lib.expanduser().resolve()
+            if homebrew_lib.is_dir():
+                search_paths.append(homebrew_lib)
+
+    # libusb from pkg-config
+    pkg_config_bin = shutil.which('pkg-config')
+    if pkg_config_bin:
+        # pkg-config often prefixes libraries with 'lib', check both.
+        for pkg_name in [f'lib{name}', name]:
+            pkg_config_command = [pkg_config_bin, '--variable=libdir', pkg_name]
+            process = subprocess.run(
+                pkg_config_command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+            if process.returncode == 0:
+                pkg_config_libdir = Path(
+                    process.stdout.decode('utf-8', errors='ignore').strip()
+                )
+                if pkg_config_libdir.is_dir():
+                    search_paths.append(pkg_config_libdir)
+                    break
+
+    # libusb provided by CIPD:
+    pw_env = pigweed_environment()
+    if _LIBUSB_CIPD_INSTALL_ENV_VAR in pw_env:
+        cipd_lib = (
+            Path(getattr(pw_env, _LIBUSB_CIPD_INSTALL_ENV_VAR))
+            / _LIBUSB_CIPD_SUBDIR
+        )
+        if cipd_lib.is_dir():
+            search_paths.append(cipd_lib)
+
+    _LOG.debug('Potential shared library search paths:')
+    for path in search_paths:
+        _LOG.debug(path)
+
+    # Search for shared libraries in search_paths
+    for libdir in reversed(search_paths):
+        lib_results = sorted(
+            str(lib.resolve())
+            for lib in libdir.iterdir()
+            if name in lib.name and _LIB_SUFFIX in lib.suffixes
+        )
+        if lib_results:
+            _LOG.info('Using %s located at: %s', name, lib_results[-1])
+            # Return the highest lexigraphically sorted lib version
+            return lib_results[-1]
+
+    # Fallback to pyusb default of calling ctypes.util.find_library.
+    return ctypes_find_library(name)
+
+
+def libusb_raspberry_pi_devices() -> Iterable[usb.core.Device]:
+    return usb.core.find(
+        find_all=True,
+        idVendor=_RASPBERRY_PI_VENDOR_ID,
+        backend=libusb1.get_backend(find_library=custom_find_library),
+    )
 
 
 @dataclass
@@ -48,11 +140,7 @@ class BoardInfo:
     # serial number sounds appealing, but unfortunately the application's serial
     # number is different from the bootloader's.
     def address(self) -> int:
-        devices = usb.core.find(
-            find_all=True,
-            idVendor=_RASPBERRY_PI_VENDOR_ID,
-        )
-        for device in devices:
+        for device in libusb_raspberry_pi_devices():
             if device.idProduct not in _PICO_DEVICE_IDS:
                 raise ValueError(
                     'Unknown device type on bus %d port %d'
@@ -88,10 +176,7 @@ class _BoardUsbInfo:
 def _detect_pico_usb_info() -> Dict[str, _BoardUsbInfo]:
     """Finds Raspberry Pi Pico devices and retrieves USB info for each one."""
     boards: Dict[str, _BoardUsbInfo] = {}
-    devices = usb.core.find(
-        find_all=True,
-        idVendor=_RASPBERRY_PI_VENDOR_ID,
-    )
+    devices = libusb_raspberry_pi_devices()
 
     if not devices:
         return boards
@@ -169,7 +254,9 @@ def detect_boards() -> List[BoardInfo]:
 
 def main():
     """Detects and then prints all attached Raspberry Pi Picos."""
-    pw_cli.log.install()
+    pw_cli.log.install(
+        level=logging.DEBUG, use_color=True, hide_timestamp=False
+    )
 
     boards = detect_boards()
     if not boards:
