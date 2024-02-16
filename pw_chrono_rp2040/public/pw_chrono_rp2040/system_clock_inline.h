@@ -20,7 +20,9 @@ namespace pw::chrono::backend {
 
 inline int64_t GetSystemClockTickCount() {
   // While it's probably possible to get a more granular clock, the 64-bit
-  // microsecond hardware timer is sufficient.
+  // microsecond hardware timer is sufficient. Additionally, the peripheral API
+  // for the Pico SDK all expect microseconds from boot, so this is the most
+  // appropriate clock to use for that purpose.
   return time_us_64();
 }
 

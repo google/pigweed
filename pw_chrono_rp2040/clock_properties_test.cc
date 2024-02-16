@@ -12,8 +12,6 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include <cmath>
-
 #include "pico/critical_section.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_unit_test/framework.h"
@@ -31,21 +29,21 @@ TEST(ClockProperties, IsFreeRunning) {
 
   // Check initial clock value.
   auto start = pw::chrono::SystemClock::now();
+  auto end = start;
 
-  // Do some work.
-  volatile float num = 4;
-  for (int i = 0; i < 100; i++) {
-    float tmp = std::pow(num, 4);
-    num = tmp;
+  // Poll pw::chrono::SystemClock::now() until a change is detected. If no
+  // change is detected after kMaxAttempts, give up.
+  constexpr int kMaxAttempts = 100000;
+  for (int i = 0; i < kMaxAttempts; ++i) {
+    end = pw::chrono::SystemClock::now();
+    if (end != start) {
+      break;
+    }
   }
-
-  // Check final clock value.
-  auto end = pw::chrono::SystemClock::now();
 
   // Exit critical section.
   critical_section_exit(&state);
 
-  EXPECT_GT(num, 4);
   EXPECT_GT(end, start);
 }
 
