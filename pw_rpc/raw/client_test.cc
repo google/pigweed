@@ -157,12 +157,14 @@ TEST(Client, ProcessPacket_UnassignedChannelId_ReturnsDataLoss) {
   auto call_cts = StartStreamCall<BidirectionalStreamMethod>(context);
 
   std::byte encoded[64];
+  uint32_t arbitrary_call_id = 24602;
   Result<span<const std::byte>> result =
       internal::Packet(
           internal::pwpb::PacketType::kResponse,
           Channel::kUnassignedChannelId,
           internal::MethodInfo<BidirectionalStreamMethod>::kServiceId,
-          internal::MethodInfo<BidirectionalStreamMethod>::kMethodId)
+          internal::MethodInfo<BidirectionalStreamMethod>::kMethodId,
+          arbitrary_call_id)
           .Encode(encoded);
   ASSERT_TRUE(result.ok());
 
@@ -210,7 +212,7 @@ TEST(Client, ProcessPacket_ReturnsInvalidArgumentOnServerPacket) {
 
   std::byte encoded[64];
   Result<span<const std::byte>> result =
-      internal::Packet(internal::pwpb::PacketType::REQUEST, 1, 2, 3)
+      internal::Packet(internal::pwpb::PacketType::REQUEST, 1, 2, 3, 4)
           .Encode(encoded);
   ASSERT_TRUE(result.ok());
 

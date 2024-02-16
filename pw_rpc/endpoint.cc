@@ -131,12 +131,17 @@ Endpoint::FindIteratorsForCall(uint32_t channel_id,
   while (call != calls_.end()) {
     if (channel_id == call->channel_id_locked() &&
         service_id == call->service_id() && method_id == call->method_id()) {
-      if (call_id == call->id() || call_id == kOpenCallId) {
+      if (call_id == call->id() || call_id == kOpenCallId ||
+          call_id == kLegacyOpenCallId) {
         break;
       }
-      if (call->id() == kOpenCallId) {
+      if (call->id() == kOpenCallId || call->id() == kLegacyOpenCallId) {
         // Calls with ID of `kOpenCallId` were unrequested, and
         // are updated to have the call ID of the first matching request.
+        //
+        // kLegacyOpenCallId is used for compatibility with old servers
+        // which do not specify a Call ID but expect to be able to send
+        // unrequested responses.
         call->set_id(call_id);
         break;
       }

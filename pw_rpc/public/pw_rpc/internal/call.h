@@ -92,6 +92,10 @@ class CallProperties {
 // it will match a calls with this ID if one exists.
 inline constexpr uint32_t kOpenCallId = std::numeric_limits<uint32_t>::max();
 
+// Legacy clients and servers didn't make use of call IDs at all, and will send
+// unrequested responses with an "empty" (zero) call ID.
+inline constexpr uint32_t kLegacyOpenCallId = 0;
+
 // Internal RPC Call class. The Call is used to respond to any type of RPC.
 // Public classes like ServerWriters inherit from it with private inheritance
 // and provide a public API for their use case. The Call's public API is used by

@@ -37,6 +37,7 @@ _LOG = logging.getLogger(__package__)
 
 # Calls with ID of `kOpenCallId` were unrequested, and are updated to have the
 # call ID of the first matching request.
+LEGACY_OPEN_CALL_ID: int = 0
 OPEN_CALL_ID: int = (2**32) - 1
 
 _MAX_CALL_ID: int = 1 << 14
@@ -82,11 +83,15 @@ class PendingRpcs:
 
     def __init__(self) -> None:
         self._pending: Dict[PendingRpc, _PendingRpcMetadata] = {}
-        self._next_call_id: int = 0
+        # We skip call_id = 0 in order to avoid LEGACY_OPEN_CALL_ID.
+        self._next_call_id: int = 1
 
     def allocate_call_id(self) -> int:
         call_id = self._next_call_id
         self._next_call_id = (self._next_call_id + 1) % _MAX_CALL_ID
+        # We skip call_id = 0 in order to avoid LEGACY_OPEN_CALL_ID.
+        if self._next_call_id == 0:
+            self._next_call_id = 1
         return call_id
 
     def request(
@@ -205,7 +210,7 @@ class PendingRpcs:
 
     def get_pending(self, rpc: PendingRpc, status: Optional[Status]):
         """Gets the pending RPC's context. If status is set, clears the RPC."""
-        if rpc.call_id == OPEN_CALL_ID:
+        if rpc.call_id == OPEN_CALL_ID or rpc.call_id == LEGACY_OPEN_CALL_ID:
             # Calls with ID `OPEN_CALL_ID` were unrequested, and are updated to
             # have the call ID of the first matching request.
             for pending in self._pending:

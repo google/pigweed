@@ -27,6 +27,7 @@ namespace {
 constexpr uint32_t kFakeChannelId = 1;
 constexpr uint32_t kFakeServiceId = 3;
 constexpr uint32_t kFakeMethodId = 10;
+constexpr uint32_t kFakeCallId = 239;
 
 RawFakeChannelOutput<1> output;
 rpc::Channel channels[] = {Channel::Create<kFakeChannelId>(&output)};
@@ -50,8 +51,11 @@ TEST(ClientServer, ProcessPacket_CallsServer) {
   ClientServer client_server(channels);
   client_server.server().RegisterService(service);
 
-  Packet packet(
-      pwpb::PacketType::REQUEST, kFakeChannelId, kFakeServiceId, kFakeMethodId);
+  Packet packet(pwpb::PacketType::REQUEST,
+                kFakeChannelId,
+                kFakeServiceId,
+                kFakeMethodId,
+                kFakeCallId);
   std::array<std::byte, 32> buffer;
   Result result = packet.Encode(buffer);
   EXPECT_EQ(result.status(), OkStatus());
@@ -68,7 +72,8 @@ TEST(ClientServer, ProcessPacket_CallsClient) {
   Packet packet(pwpb::PacketType::RESPONSE,
                 kFakeChannelId,
                 kFakeServiceId,
-                kFakeMethodId);
+                kFakeMethodId,
+                kFakeCallId);
   std::array<std::byte, 32> buffer;
   Result result = packet.Encode(buffer);
   EXPECT_EQ(result.status(), OkStatus());

@@ -23,6 +23,7 @@ import * as packets from './packets';
 const MAX_CALL_ID = 1 << 14;
 /** Calls with ID of `kOpenCallId` were unrequested, and are updated to have the
     call ID of the first matching request. */
+const LEGACY_OPEN_CALL_ID = 0;
 const OPEN_CALL_ID = 2 ** 32 - 1;
 
 /** Data class for a pending RPC call. */
@@ -63,7 +64,8 @@ export class Rpc {
 /** Tracks pending RPCs and encodes outgoing RPC packets. */
 export class PendingCalls {
   pending: Map<string, Call> = new Map();
-  nextCallId: number = 0;
+  // We skip callId zero to avoid LEGACY_OPEN_CALL_ID.
+  nextCallId: number = 1;
 
   /** Starts the provided RPC and returns the encoded packet to send. */
   request(rpc: Rpc, request: Message, call: Call): Uint8Array {
@@ -75,6 +77,10 @@ export class PendingCalls {
   allocateCallId(): number {
     const callId = this.nextCallId;
     this.nextCallId = (this.nextCallId + 1) % MAX_CALL_ID;
+    // We skip callId zero to avoid LEGACY_OPEN_CALL_ID.
+    if (this.nextCallId == 0) {
+      this.nextCallId = 1;
+    }
     return callId;
   }
 
@@ -150,7 +156,7 @@ export class PendingCalls {
   /** Gets the pending RPC's call. If status is set, clears the RPC. */
   getPending(rpc: Rpc, callId: number, status?: Status): Call | undefined {
     let call: Call | undefined = this.pending.get(rpc.getIdString(callId));
-    if (callId === OPEN_CALL_ID) {
+    if (callId === LEGACY_OPEN_CALL_ID || callId === OPEN_CALL_ID) {
       // Calls with ID `OPEN_CALL_ID` were unrequested, and are updated to
       // have the call ID of the first matching request.
       const allPendingCalls = Array.from(this.pending.values());

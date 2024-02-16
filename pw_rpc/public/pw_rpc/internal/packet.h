@@ -86,14 +86,17 @@ class Packet {
 
   // Creates an empty packet.
   constexpr Packet()
-      : Packet(
-            pwpb::PacketType{}, kUnassignedId, kUnassignedId, kUnassignedId) {}
+      : Packet(pwpb::PacketType{},
+               kUnassignedId,
+               kUnassignedId,
+               kUnassignedId,
+               kUnassignedId) {}
 
   constexpr Packet(pwpb::PacketType type,
                    uint32_t channel_id,
                    uint32_t service_id,
                    uint32_t method_id,
-                   uint32_t call_id = kUnassignedId,
+                   uint32_t call_id,
                    ConstByteSpan payload = {},
                    Status status = OkStatus())
       : type_(type),

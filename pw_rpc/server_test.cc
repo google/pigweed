@@ -611,6 +611,20 @@ TEST_F(BidiMethod, ClientStream_CallsCallbackOnCallWithOpenId) {
   EXPECT_STREQ(span_as_cstr(data), "hello");
 }
 
+TEST_F(BidiMethod, ClientStream_CallsCallbackOnCallWithLegacyOpenId) {
+  ConstByteSpan data = as_bytes(span("?"));
+  responder_.set_on_next([&data](ConstByteSpan payload) { data = payload; });
+
+  ASSERT_EQ(OkStatus(),
+            server_.ProcessPacket(PacketForRpc(PacketType::CLIENT_STREAM,
+                                               {},
+                                               "hello",
+                                               internal::kLegacyOpenCallId)));
+
+  EXPECT_EQ(output_.total_packets(), 0u);
+  EXPECT_STREQ(span_as_cstr(data), "hello");
+}
+
 TEST_F(BidiMethod, ClientStream_CallsOpenIdOnCallWithDifferentId) {
   const uint32_t kSecondCallId = 1625;
   internal::CallContext context(server_,
@@ -618,6 +632,33 @@ TEST_F(BidiMethod, ClientStream_CallsOpenIdOnCallWithDifferentId) {
                                 service_42_,
                                 service_42_.method(100),
                                 internal::kOpenCallId);
+  internal::rpc_lock().lock();
+  auto temp_responder =
+      internal::test::FakeServerReaderWriter(context.ClaimLocked());
+  internal::rpc_lock().unlock();
+  responder_ = std::move(temp_responder);
+
+  ConstByteSpan data = as_bytes(span("?"));
+  responder_.set_on_next([&data](ConstByteSpan payload) { data = payload; });
+
+  ASSERT_EQ(OkStatus(),
+            server_.ProcessPacket(PacketForRpc(
+                PacketType::CLIENT_STREAM, {}, "hello", kSecondCallId)));
+
+  EXPECT_EQ(output_.total_packets(), 0u);
+  EXPECT_STREQ(span_as_cstr(data), "hello");
+
+  internal::RpcLockGuard lock;
+  EXPECT_EQ(responder_.as_server_call().id(), kSecondCallId);
+}
+
+TEST_F(BidiMethod, ClientStream_CallsLegacyOpenIdOnCallWithDifferentId) {
+  const uint32_t kSecondCallId = 1625;
+  internal::CallContext context(server_,
+                                channels_[0].id(),
+                                service_42_,
+                                service_42_.method(100),
+                                internal::kLegacyOpenCallId);
   internal::rpc_lock().lock();
   auto temp_responder =
       internal::test::FakeServerReaderWriter(context.ClaimLocked());

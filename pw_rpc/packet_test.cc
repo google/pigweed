@@ -91,7 +91,7 @@ TEST(Packet, Encode) {
 TEST(Packet, Encode_BufferTooSmall) {
   byte buffer[2];
 
-  Packet packet(PacketType::RESPONSE, 1, 42, 100, 0, kPayload);
+  Packet packet(PacketType::RESPONSE, 1, 42, 100, 12, kPayload);
 
   auto result = packet.Encode(buffer);
   EXPECT_EQ(Status::ResourceExhausted(), result.status());
@@ -172,14 +172,15 @@ constexpr size_t kReservedSize = 2 /* type */ + 2 /* channel */ +
                                  2 /* payload key */ + 2 /* status */;
 
 TEST(Packet, PayloadUsableSpace_ExactFit) {
-  EXPECT_EQ(kReservedSize,
-            Packet(PacketType::RESPONSE, 1, 42, 100).MinEncodedSizeBytes());
+  EXPECT_EQ(
+      kReservedSize,
+      Packet(PacketType::RESPONSE, 1, 42, 100, 28282).MinEncodedSizeBytes());
 }
 
 TEST(Packet, PayloadUsableSpace_LargerVarints) {
-  EXPECT_EQ(
-      kReservedSize + 2 /* channel */,  // service and method are Fixed32
-      Packet(PacketType::RESPONSE, 17000, 200, 200).MinEncodedSizeBytes());
+  EXPECT_EQ(kReservedSize + 2 /* channel */,  // service and method are Fixed32
+            Packet(PacketType::RESPONSE, 17000, 200, 200, 28282)
+                .MinEncodedSizeBytes());
 }
 
 }  // namespace

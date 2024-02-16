@@ -34,6 +34,7 @@ import {
 } from './method';
 import * as packets from './packets';
 
+const LEGACY_OPEN_CALL_ID = 0;
 const OPEN_CALL_ID = 2 ** 32 - 1;
 
 describe('Client', () => {
@@ -294,22 +295,28 @@ describe('RPC', () => {
         ) as UnaryMethodStub;
     });
 
-    it('unrequested response', async () => {
-      const promisedResponse = unaryStub.call(newRequest(6));
-      enqueueResponse(
-        1,
-        unaryStub.method,
-        Status.ABORTED,
-        OPEN_CALL_ID,
-        newResponse('is unrequested'),
-      );
+    const openCallIds = [
+      ['OPEN_CALL_ID', OPEN_CALL_ID],
+      ['LEGACY_OPEN_CALL_ID', LEGACY_OPEN_CALL_ID],
+    ];
+    openCallIds.forEach(([idName, callId]) => {
+      it(`matches responses with ${idName} to requests with arbitrary IDs`, async () => {
+        const promisedResponse = unaryStub.call(newRequest(6));
+        enqueueResponse(
+          1,
+          unaryStub.method,
+          Status.ABORTED,
+          OPEN_CALL_ID,
+          newResponse('is unrequested'),
+        );
 
-      processEnqueuedPackets();
-      const [status, response] = await promisedResponse;
+        processEnqueuedPackets();
+        const [status, response] = await promisedResponse;
 
-      expect(sentPayload(Request).getMagicNumber()).toEqual(6);
-      expect(status).toEqual(Status.ABORTED);
-      expect(response).toEqual(newResponse('is unrequested'));
+        expect(sentPayload(Request).getMagicNumber()).toEqual(6);
+        expect(status).toEqual(Status.ABORTED);
+        expect(response).toEqual(newResponse('is unrequested'));
+      });
     });
 
     it('blocking call', async () => {

@@ -180,7 +180,16 @@ class Endpoint {
     // Call IDs are varint encoded. Limit the varint size to 2 bytes (14 usable
     // bits).
     constexpr uint32_t kMaxCallId = 1 << 14;
-    return (++next_call_id_) % kMaxCallId;
+    auto call_id = next_call_id_;
+    next_call_id_ = (next_call_id_ + 1) % kMaxCallId;
+
+    // Skip call_id `0` to avoid confusion with legacy servers which use
+    // call_id `0` as `kOpenCallId` or which do not provide call_id at all.
+    if (next_call_id_ == 0) {
+      next_call_id_ = 1;
+    }
+
+    return call_id;
   }
 
   // Adds a call to the internal call registry. If a matching call already
@@ -245,7 +254,9 @@ class Endpoint {
   // problematic.
   IntrusiveList<Call> to_cleanup_ PW_GUARDED_BY(rpc_lock());
 
-  uint32_t next_call_id_ PW_GUARDED_BY(rpc_lock()) = 0;
+  // Skip call_id `0` to avoid confusion with legacy servers which use
+  // call_id `0` as `kOpenCallId` or which do not provide call_id at all.
+  uint32_t next_call_id_ PW_GUARDED_BY(rpc_lock()) = 1;
 };
 
 // An `Endpoint` indicating that `rpc_lock()` is held.

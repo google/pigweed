@@ -76,7 +76,9 @@ In ``pw_rpc``, an RPC begins when the client sends an initial packet. The server
 receives the packet, looks up the relevant service method, then calls into the
 RPC function. The RPC is considered active until the server sends a status to
 finish the RPC. The client may terminate an ongoing RPC by cancelling it.
-Multiple RPC requests to the same method may be made simultaneously.
+Multiple concurrent RPC requests to the same method may be made simultaneously
+(Note: Concurrent requests are not yet possible using the Java client. See
+`Issue 237418397 <https://issues.pigweed.dev/issues/237418397>`_).
 
 Depending the type of RPC, the client and server exchange zero or more protobuf
 request or response payloads. There are four RPC types:
@@ -146,6 +148,26 @@ appropriate reader/writer class must be used.
 
   // Finish the RPC.
   CHECK_OK(writer.Finish(OkStatus()));
+
+Errata
+------
+Prior to support for concurrent requests to a single method, no identifier was
+present to distinguish different calls to the same method. When a "call ID"
+feature was first introduced to solve this issue, existing clients and servers
+(1) set this value to zero and (2) ignored this value.
+
+When initial support for concurrent methods was added, a separate
+"open call ID" was introduced to distinguish unrequested responses. However,
+legacy servers built prior to this change continue to send unrequested
+responses with call ID zero. Prior to
+`this fix <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/192311>`,
+clients which used "open call ID" would not accept unrequested responses from
+legacy servers. Clients built after that change will accept unrequested
+responses which use both "open call ID" and call ID zero.
+
+See
+`Issue 237418397 <https://issues.pigweed.dev/issues/237418397>`_
+for more details and discussion.
 
 ---------------
 Creating an RPC
@@ -748,7 +770,7 @@ status field indicates the type of error.
   unrecoverable internal error.
 * ``UNAVAILABLE`` -- Received a packet for an unknown channel.
 
-Inovking a service method
+Invoking a service method
 =========================
 Calling an RPC requires a specific sequence of packets. This section describes
 the protocol for calling service methods of each type: unary, server streaming,
@@ -1826,7 +1848,7 @@ interface.
          No ``pw_rpc`` APIs may be accessed in this function! Implementations
          MUST NOT access any RPC endpoints (:cpp:class:`pw::rpc::Client`,
          :cpp:class:`pw::rpc::Server`) or call objects
-         (:cpp:class:`pw::rpc::ServerReaderWriter`,
+         (:cpp:class:`pw::rpc::ServerReaderWriter`
          :cpp:class:`pw::rpc::ClientReaderWriter`, etc.) inside the
          :cpp:func:`Send` function or any descendent calls. Doing so will result
          in deadlock! RPC APIs may be used by other threads, just not within
@@ -1835,3 +1857,13 @@ interface.
          The buffer provided in ``packet`` must NOT be accessed outside of this
          function. It must be sent immediately or copied elsewhere before the
          function returns.
+
+Evolution
+=========
+Concurrent requests were not initially supported in pw_rpc (added in
+`C++ <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/109077>`,
+`Python <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/139610>`,
+and
+`TypeScript <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/160792>`).
+As a result, some user-written service implementations may not expect or
+correctly support concurrent requests.

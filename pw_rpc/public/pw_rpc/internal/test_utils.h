@@ -40,7 +40,10 @@ class TestServer : public Server {
   using Server::FindCall;
 };
 
-template <typename Service, uint32_t kChannelId = 99, uint32_t kServiceId = 16>
+template <typename Service,
+          uint32_t kChannelId = 99,
+          uint32_t kServiceId = 16,
+          uint32_t kDefaultCallId = 437>
 class ServerContextForTest {
  public:
   static constexpr uint32_t channel_id() { return kChannelId; }
@@ -50,7 +53,7 @@ class ServerContextForTest {
       : channel_(Channel::Create<kChannelId>(&output_)),
         server_(span(&channel_, 1)),
         service_(kServiceId),
-        context_(server_, channel_.id(), service_, method, 0) {
+        context_(server_, channel_.id(), service_, method, kDefaultCallId) {
     server_.RegisterService(service_);
   }
 
@@ -60,7 +63,7 @@ class ServerContextForTest {
                             kChannelId,
                             kServiceId,
                             context_.method().id(),
-                            0,
+                            kDefaultCallId,
                             payload);
   }
 
@@ -70,7 +73,7 @@ class ServerContextForTest {
                             kChannelId,
                             kServiceId,
                             context_.method().id(),
-                            0,
+                            kDefaultCallId,
                             payload,
                             status);
   }
@@ -80,7 +83,7 @@ class ServerContextForTest {
                             kChannelId,
                             kServiceId,
                             context_.method().id(),
-                            0,
+                            kDefaultCallId,
                             payload);
   }
 
@@ -89,11 +92,11 @@ class ServerContextForTest {
                             kChannelId,
                             kServiceId,
                             context_.method().id(),
-                            0,
+                            kDefaultCallId,
                             payload);
   }
 
-  CallContext get(uint32_t id = 0) const {
+  CallContext get(uint32_t id = kDefaultCallId) const {
     return CallContext(context_.server(),
                        context_.channel_id(),
                        context_.service(),
