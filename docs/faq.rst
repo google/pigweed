@@ -114,6 +114,10 @@ We support the following platforms:
 | Linux on x86-64               | Most recent Linux distributions       |
 |                               | will work.                            |
 +-------------------------------+---------------------------------------+
+| macOS on arm64                | Support in progress, file bugs for    |
+|                               | any issues. Control whether Rosetta   |
+|                               | is used via ``pigweed.json``.         |
++-------------------------------+---------------------------------------+
 | macOS on x86-64               | Mojave or newer should work.          |
 +-------------------------------+---------------------------------------+
 | Windows 10 on x86-64          | Native Windows only; WSL1 or 2 not    |
@@ -158,14 +162,9 @@ to provide equivalent binaries, which is some effort.
 Host platforms that we are likely to support in the future
 ..........................................................
 
-- **Mac on ARM (M1)** - This is currently experimentally supported through
-  Rosetta, and this support is enabled by default. To explicitly choose to use
-  or not use Rosetta set add ``"rosetta": "force"`` to your environment setup
-  config file. Other possible values are ``"never"`` and ``"allow"``. For now,
-  ``"allow"`` means ``"force"`` but at some point in the future it will change
-  to ``"never"``.
 - **Linux on ARM** - We do not support ARM-based Linux host platforms. However,
-  we would like to support this eventually.
+  we would like to support this eventually. In many cases we have configured
+  things so packages are downloaded correctly when on this platform
 - **Windows on WSL2 x86-64** - There are some minor issues preventing WSL2 on
   Windows from being a smooth experience, but we are working on them.
 
