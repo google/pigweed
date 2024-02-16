@@ -48,6 +48,7 @@ pw_cc_test(
     deps = [
         ":metrics_lib",
         "//pw_fuzzer:fuzztest",  # <- Added!
+        "//pw_unit_test",
     ],
 )
 # DOCSTAG: [pwfuzzer_examples_fuzztest-bazel]

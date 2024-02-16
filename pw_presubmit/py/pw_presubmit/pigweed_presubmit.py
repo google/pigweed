@@ -784,6 +784,17 @@ def bazel_build(ctx: PresubmitContext) -> None:
         '//pw_system:system_example',
     )
 
+    # Build the fuzztest example.
+    #
+    # TODO: b/324652164 - This doesn't work on MacOS yet.
+    if sys.platform != 'darwin':
+        build.bazel(
+            ctx,
+            'build',
+            '--config=fuzztest',
+            '//pw_fuzzer/examples/fuzztest:metrics_fuzztest',
+        )
+
 
 def pw_transfer_integration_test(ctx: PresubmitContext) -> None:
     """Runs the pw_transfer cross-language integration test only.
