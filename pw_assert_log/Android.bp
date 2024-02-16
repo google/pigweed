@@ -41,13 +41,11 @@ cc_defaults {
     header_libs: [
       "pw_assert_log_headers",
       "pw_log_headers",
-      "pw_log_null_headers",
       "pw_preprocessor_headers",
     ],
     export_header_lib_headers: [
       "pw_assert_log_headers",
       "pw_log_headers",
-      "pw_log_null_headers",
       "pw_preprocessor_headers",
     ],
     srcs: [
