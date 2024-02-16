@@ -15,6 +15,7 @@
 package dev.pigweed.pw_transfer;
 
 import static dev.pigweed.pw_rpc.Service.bidirectionalStreamingMethod;
+import static dev.pigweed.pw_rpc.Service.unaryMethod;
 
 import dev.pigweed.pw_rpc.Service;
 
@@ -22,7 +23,8 @@ import dev.pigweed.pw_rpc.Service;
 public class TransferService {
   private static final Service SERVICE = new Service("pw.transfer.Transfer",
       bidirectionalStreamingMethod("Read", Chunk.parser(), Chunk.parser()),
-      bidirectionalStreamingMethod("Write", Chunk.parser(), Chunk.parser()));
+      bidirectionalStreamingMethod("Write", Chunk.parser(), Chunk.parser()),
+      unaryMethod("GetResourceStatus", ResourceStatusRequest.class, ResourceStatus.class));
 
   public static Service get() {
     return SERVICE;
