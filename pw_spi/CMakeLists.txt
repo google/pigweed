@@ -45,6 +45,16 @@ pw_add_library(pw_spi.chip_selector INTERFACE
     pw_status
 )
 
+pw_add_library(pw_spi.chip_selector_digital_out INTERFACE
+  HEADERS
+    public/pw_spi/chip_selector_digital_out.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_digital_io
+    pw_status
+)
+
 pw_add_library(pw_spi.device INTERFACE
   HEADERS
     public/pw_spi/device.h

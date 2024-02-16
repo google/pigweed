@@ -25,6 +25,7 @@ config("public_include_path") {
 group("pw_spi") {
   deps = [
     ":chip_selector",
+    ":chip_selector_digital_out",
     ":device",
     ":initiator",
   ]
@@ -57,6 +58,16 @@ pw_source_set("chip_selector") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_spi/chip_selector.h" ]
   public_deps = [ "$dir_pw_status" ]
+}
+
+pw_source_set("chip_selector_digital_out") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_spi/chip_selector_digital_out.h" ]
+  public_deps = [
+    ":chip_selector",
+    "$dir_pw_digital_io",
+    "$dir_pw_status",
+  ]
 }
 
 pw_source_set("device") {

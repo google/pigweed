@@ -178,48 +178,13 @@ method.
 
 pw::spi::ChipSelector
 ---------------------
-The ChipSelector class provides an abstract interface for controlling the
-chip-select signal associated with a specific SPI responder.
+.. doxygenclass:: pw::spi::ChipSelector
+   :members:
 
-This interface provides a ``SetActive()`` method, which activates/deactivates
-the device based on the value of the `active` parameter.  The associated
-``Activate()`` and ``Deactivate()`` methods are utility wrappers for
-``SetActive(true)`` and ``SetActive(false)``, respectively.
-
-A concrete implementation of this interface class must be provided in order to
-use the SPI HAL to communicate with a responder.
-
-.. Note::
-
-   `Active` does not imply a specific logic-level; it is left to the
-   implementor to correctly map logic-levels to the device's active/inactive
-   states.
-
-.. cpp:class:: pw::spi::ChipSelector
-
-   .. cpp:function:: Status SetActive(bool active)
-
-      SetActive sets the state of the chip-select signal to the value
-      represented by the `active` parameter.  Passing a value of `true` will
-      activate the chip-select signal, and `false` will deactivate the
-      chip-select signal.
-
-      Returns OkStatus() on success, and implementation-specific values on
-      failure.
-
-   .. cpp:function:: Status Activate()
-
-      Helper method to activate the chip-select signal
-
-      Returns OkStatus() on success, and implementation-specific values on
-      failure.
-
-   .. cpp:function:: Status Deactivate()
-
-      Helper method to deactivate the chip-select signal
-
-      Returns OkStatus() on success, and implementation-specific values on
-      failure.
+pw::spi::DigitalOutChipSelector
+-------------------------------
+.. doxygenclass:: pw::spi::DigitalOutChipSelector
+   :members:
 
 pw::spi::Device
 ---------------
