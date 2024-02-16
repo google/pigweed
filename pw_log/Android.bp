@@ -28,6 +28,12 @@ cc_library_headers {
     name: "pw_log_pwpb_headers",
     cpp_std: "c++20",
     vendor_available: true,
+    header_libs: [
+        "pw_toolchain",
+    ],
+    export_header_lib_headers: [
+        "pw_toolchain",
+    ],
     host_supported: true,
     generated_headers: [
         "google_protobuf_descriptor_pwpb_h",

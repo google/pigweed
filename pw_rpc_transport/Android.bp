@@ -46,6 +46,7 @@ cc_library_static {
     header_libs: [
         "pw_log_headers",
         "pw_log_null_headers",
+        "pw_polyfill_headers",
         "pw_preprocessor_headers",
         "pw_result_headers",
         "pw_rpc_transport_rpc_transport_headers",
@@ -76,6 +77,7 @@ cc_library_static {
         "pw_assert_log_headers",
         "pw_log_headers",
         "pw_log_null_headers",
+        "pw_polyfill_headers",
         "pw_preprocessor_headers",
         "pw_result_headers",
         "pw_rpc_transport_rpc_transport_headers",
