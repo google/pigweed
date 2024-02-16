@@ -180,7 +180,6 @@ A simplified example is provided below.
            "%package(@linux_clang_toolchain//)%/include/c++/v1",
            "%package(@linux_clang_toolchain//)%/lib/clang/17/include",
        ],
-       supports_param_files = 0,
        toolchain_identifier = "host-linux-toolchain",
    )
 
@@ -376,12 +375,10 @@ your toolchain definition by listing them in
 :py:attr:`pw_cc_toolchain.action_config_flag_sets`\:
 
 .. code-block:: py
-   :emphasize-lines: 9,10,11,12
+   :emphasize-lines: 7,8,9,10
 
    pw_cc_toolchain(
        name = "host_toolchain",
-       abi_libc_version = "unknown",
-       abi_version = "unknown",
        action_config_flag_sets = [
            "@pw_toolchain//flag_sets:c++17",
            "@pw_toolchain//flag_sets:debugging",

@@ -249,7 +249,6 @@ pw_cc_toolchain(
         "%sysroot%/lib/gcc/arm-none-eabi/12.2.1/include-fixed",
         "%sysroot%/arm-none-eabi/include",
     ],
-    supports_param_files = 0,
     target_compatible_with = select({
         "@pw_toolchain//constraints/arm_mcpu:cortex-m0": [],
         "@pw_toolchain//constraints/arm_mcpu:cortex-m3": [],

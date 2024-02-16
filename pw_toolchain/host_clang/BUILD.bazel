@@ -188,19 +188,16 @@ pw_cc_toolchain(
         ],
     }),
     extra_action_files = [":sysroot_files"],
-    supports_param_files = 0,
     # The implementations of some "legacy features" built into Bazel use
     # `target_libc` to determine if a toolchain targets MacOS,
     # https://github.com/bazelbuild/bazel/blob/release-7.0.0-pre.20230816.3rc1/src/main/java/com/google/devtools/build/lib/rules/cpp/CcModule.java#L1301-L1304
-    target_cpu = select({
-        "@platforms//os:macos": "darwin",
-        "//conditions:default": None,
-    }),
+    #
+    # `target_cpu` appears to only potentially do magic things for the Android
+    # NDK, so it's omitted here.
     target_libc = select({
         "@platforms//os:macos": "macosx",
         "//conditions:default": None,
     }),
-    target_system_name = "unknown",
     toolchain_features = [
         ":verbose_compiler_output",
     ],
