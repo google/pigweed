@@ -32,14 +32,6 @@ pw_cc_flag_set(
     flags = ["-O2"],
 )
 
-# Disables linking of the default C++ standard library to allow linking of a
-# different version.
-pw_cc_flag_set(
-    name = "no_default_cpp_stdlib",
-    actions = ["@pw_toolchain//actions:all_link_actions"],
-    flags = ["-nostdlib++"],
-)
-
 # Prevent relative paths from being converted to absolute paths.
 pw_cc_flag_set(
     name = "no_canonical_prefixes",

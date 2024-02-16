@@ -28,9 +28,14 @@ licenses(["notice"])
 filegroup(name = "empty")
 
 pw_cc_flag_set(
-    name = "macos_stdlib",
+    name = "macos_link_libs",
     actions = ["@pw_toolchain//actions:all_link_actions"],
-    flags = ["external/llvm_toolchain/lib/libc++.a"],
+    flags = [
+        # Force dropping the system libc++.
+        "-nostdlib++",
+        # Use libc++ provided by the toolchain.
+        "external/llvm_toolchain/lib/libc++.a",
+    ],
     target_compatible_with = ["@platforms//os:macos"],
 )
 
@@ -136,8 +141,7 @@ pw_cc_toolchain(
     name = "host_toolchain",
     action_config_flag_sets = select({
         "@platforms//os:macos": [
-            "@pw_toolchain//flag_sets:no_default_cpp_stdlib",
-            ":macos_stdlib",
+            ":macos_link_libs",
             ":libtool_darwin_flags",
         ],
         "@platforms//os:linux": [
