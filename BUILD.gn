@@ -95,6 +95,7 @@ assert(pw_toolchain_SUPPORTED_C_OPTIMIZATION_LEVELS +
 # exclusively to facilitate easy upstream development and testing.
 group("default") {
   deps = [
+    ":docs",
     ":host",
     ":pi_pico",
     ":python.lint",
@@ -103,11 +104,6 @@ group("default") {
     ":stm32f429i",
     ":warn_if_modules_out_of_date",
   ]
-
-  # TODO: b/315998985 - Support docs build on Arm Macs.
-  if (host_os != "mac" || host_cpu != "arm64") {
-    deps += [ ":docs" ]
-  }
 }
 
 # This group tries to collect together most build steps in Pigweed's build.
