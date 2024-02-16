@@ -16,58 +16,43 @@ package {
     default_applicable_licenses: ["external_pigweed_license"],
 }
 
-cc_library_static {
-    name: "pw_multibuf",
-    cpp_std: "c++20",
-    host_supported: true,
-    vendor_available: true,
-    export_include_dirs: ["public"],
+filegroup {
+    name: "pw_multibuf_src_files",
     srcs: [
         "chunk.cc",
         "multibuf.cc",
     ],
-    header_libs: [
-        "pw_assert_headers",
-        "pw_assert_log_headers",
-        "pw_span_headers",
-        "pw_sync_headers",
-    ],
-    export_header_lib_headers: [
-        "pw_assert_headers",
-        "pw_assert_log_headers",
-        "pw_span_headers",
-        "pw_sync_headers",
-    ],
-    defaults: [
-        "pw_assert_log_defaults",
-        "pw_chrono_stl_defaults",
-        "pw_sync_stl_defaults",
-    ],
-    static_libs: [
-        "pw_bytes",
-    ],
-    export_static_lib_headers: [
-        "pw_bytes",
-    ],
 }
 
-cc_library_static {
-    name: "pw_multibuf_single_chunk_region_tracker",
+cc_library_headers {
+    name: "pw_multibuf_headers",
     cpp_std: "c++20",
-    host_supported: true,
+    export_include_dirs: [
+        "public",
+    ],
     vendor_available: true,
-    export_include_dirs: ["public"],
+    host_supported: true,
+}
+
+cc_defaults {
+    name: "pw_multibuf_defaults",
+    cpp_std: "c++20",
+    srcs: [
+        ":pw_multibuf_src_files",
+    ],
     header_libs: [
         "pw_assert_headers",
-        "pw_assert_log_headers",
+        "pw_log_headers",
+        "pw_multibuf_headers",
+        "pw_span_headers",
+        "pw_sync_headers",
     ],
     export_header_lib_headers: [
         "pw_assert_headers",
-        "pw_assert_log_headers",
-    ],
-    defaults: [
-        "pw_assert_log_defaults",
-        "pw_chrono_stl_defaults",
+        "pw_log_headers",
+        "pw_multibuf_headers",
+        "pw_span_headers",
+        "pw_sync_headers",
     ],
     static_libs: [
         "pw_bytes",
