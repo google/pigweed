@@ -88,6 +88,7 @@ including C, C++, Go, Rust, Shell, Batch and Python.
    pw_software_update/docs
    pw_span/docs
    pw_spi/docs
+   pw_spi_rp2040/docs
    pw_status/docs
    pw_stm32cube_build/docs
    pw_stream/docs

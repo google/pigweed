@@ -107,6 +107,7 @@ pw_software_update
 pw_span
 pw_spi
 pw_spi_mcuxpresso
+pw_spi_rp2040
 pw_status
 pw_stm32cube_build
 pw_stream
