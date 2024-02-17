@@ -348,8 +348,8 @@ group("system_examples") {
   }
   if (PICO_SRC_DIR != "" && dir_pw_third_party_freertos != "") {
     deps += [
-      ":system_example($dir_pigweed/targets/rp2040_pw_system:rp2040_pw_system.debug)",
-      ":system_example($dir_pigweed/targets/rp2040_pw_system:rp2040_pw_system.size_optimized)",
+      ":system_example($dir_pigweed/targets/rp2040:rp2040.debug)",
+      ":system_example($dir_pigweed/targets/rp2040:rp2040.size_optimized)",
     ]
   }
   if (dir_pw_third_party_ambiq_SDK != "" && dir_pw_third_party_freertos != "") {

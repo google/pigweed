@@ -333,8 +333,11 @@ gn_teensy_build = PigweedGnGenNinja(
 gn_pico_build = PigweedGnGenNinja(
     name='gn_pico_build',
     path_filter=_BUILD_FILE_FILTER,
-    packages=('pico_sdk',),
+    packages=('pico_sdk', 'freertos'),
     gn_args={
+        'dir_pw_third_party_freertos': lambda ctx: '"{}"'.format(
+            str(ctx.package_root / 'freertos')
+        ),
         'PICO_SRC_DIR': lambda ctx: '"{}"'.format(
             str(ctx.package_root / 'pico_sdk')
         ),

@@ -218,7 +218,7 @@ group("pw_system_demo") {
 
 group("pi_pico") {
   if (PICO_SRC_DIR != "") {
-    deps = [ ":pigweed_default(targets/rp2040)" ]
+    deps = [ ":pigweed_default(targets/rp2040:rp2040.size_optimized)" ]
   }
 }
 

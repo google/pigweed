@@ -172,7 +172,7 @@ Invoke RPCs from the interactive console on the client side.
    - The target docs for other RPC-enabled application examples:
 
      - :bdg-ref-primary-line:`target-host-device-simulator`
-     - :bdg-ref-primary-line:`target-raspberry-pi-pico-pw-system`
+     - :bdg-ref-primary-line:`target-raspberry-pi-pico`
      - :bdg-ref-primary-line:`target-stm32f429i-disc1-stm32cube`
 
 -----------------

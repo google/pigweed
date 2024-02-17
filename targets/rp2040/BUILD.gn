@@ -17,6 +17,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_system/system_target.gni")
 import("$dir_pw_toolchain/arm_gcc/toolchains.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
 
@@ -25,14 +26,55 @@ declare_args() {
 }
 
 if (current_toolchain != default_toolchain) {
-  pw_source_set("pico_logging_test_main") {
+  pw_source_set("pre_init") {
+    remove_configs = [ "$dir_pw_build:strict_warnings" ]
+
     deps = [
-      "$dir_pw_log",
-      "$dir_pw_sys_io",
-      "$dir_pw_unit_test:logging_event_handler",
-      "$dir_pw_unit_test:pw_unit_test",
+      "$PICO_ROOT/src/common/pico_base",
+      "$PICO_ROOT/src/common/pico_stdlib",
+      "$PICO_ROOT/src/rp2_common/pico_malloc",
+      "$dir_pw_string",
+      "$dir_pw_system",
+      "$dir_pw_third_party/freertos",
     ]
-    sources = [ "pico_logging_test_main.cc" ]
+    sources = [ "boot.cc" ]
+  }
+
+  config("config_includes") {
+    include_dirs = [ "config" ]
+  }
+
+  config("module_config_include") {
+    cflags = [
+      "-include",
+      rebase_path("config/pigweed_module_config.h", root_build_dir),
+    ]
+    visibility = [ ":*" ]
+  }
+
+  pw_source_set("module_config") {
+    public_configs = [ ":module_config_include" ]
+  }
+
+  config("rp2040_hal_config") {
+    inputs = [ "config/rp2040_hal_config.h" ]
+    cflags = [ "-include" +
+               rebase_path("config/rp2040_hal_config.h", root_build_dir) ]
+  }
+
+  pw_source_set("rp2040_freertos_config") {
+    public_configs = [ ":config_includes" ]
+    public_deps = [ "$dir_pw_third_party/freertos:config_assert" ]
+    public = [ "config/FreeRTOSConfig.h" ]
+  }
+
+  pw_source_set("unit_test_app") {
+    sources = [ "unit_test_app.cc" ]
+    deps = [
+      "$dir_pw_status",
+      "$dir_pw_system",
+      "$dir_pw_unit_test:rpc_service",
+    ]
   }
 
   # We don't want this linked into the boot_stage2 binary, so make the printf
@@ -43,51 +85,42 @@ if (current_toolchain != default_toolchain) {
   }
 }
 
-generate_toolchain("rp2040") {
-  _excluded_members = [
-    "defaults",
-    "name",
-  ]
-  _toolchain_base = pw_toolchain_arm_gcc.cortex_m0plus_size_optimized
-  forward_variables_from(_toolchain_base, "*", _excluded_members)
+pw_system_target("rp2040") {
+  cpu = PW_SYSTEM_CPU.CORTEX_M0PLUS
+  scheduler = PW_SYSTEM_SCHEDULER.FREERTOS
+  use_pw_malloc = false
+  global_configs = [ ":rp2040_hal_config" ]
 
-  # For now, no Pigweed configurations set up.
-  defaults = {
-    forward_variables_from(_toolchain_base.defaults, "*")
-
+  build_args = {
+    pw_build_DEFAULT_MODULE_CONFIG = get_path_info(":module_config", "abspath")
     pw_build_EXECUTABLE_TARGET_TYPE = "pico_executable"
     pw_build_EXECUTABLE_TARGET_TYPE_FILE =
-        get_path_info("pico_executable.gni", "abspath")
-    if (pw_targets_ENABLE_RP2040_TEST_RUNNER) {
-      _test_runner_script = "py/rp2040_utils/unit_test_client.py"
-      pw_unit_test_AUTOMATIC_RUNNER =
-          get_path_info(_test_runner_script, "abspath")
-    }
-    pw_unit_test_MAIN = "$dir_pigweed/targets/rp2040:pico_logging_test_main"
-    pw_assert_BACKEND = dir_pw_assert_basic
-    pw_log_BACKEND = dir_pw_log_basic
-    pw_sys_io_BACKEND = dir_pw_sys_io_rp2040
-    pw_rpc_system_server_BACKEND = "$dir_pw_hdlc:hdlc_sys_io_system_server"
+        get_path_info("$dir_pigweed/targets/rp2040/pico_executable.gni",
+                      "abspath")
 
-    pw_sync_INTERRUPT_SPIN_LOCK_BACKEND =
-        "$dir_pw_sync_baremetal:interrupt_spin_lock"
-    pw_chrono_SYSTEM_CLOCK_BACKEND = "$dir_pw_chrono_rp2040:system_clock"
-    pw_sync_MUTEX_BACKEND = "$dir_pw_sync_baremetal:mutex"
-    pw_rpc_CONFIG = "$dir_pw_rpc:disable_global_mutex"
+    pw_log_BACKEND = dir_pw_log_tokenized
+    pw_log_tokenized_HANDLER_BACKEND = "$dir_pw_system:log_backend.impl"
 
-    # Silence GN variable overwrite warning.
-    pw_build_LINK_DEPS = []
+    pw_third_party_freertos_CONFIG =
+        "$dir_pigweed/targets/rp2040:rp2040_freertos_config"
+    pw_third_party_freertos_PORT = "$dir_pw_third_party/freertos:arm_cm0"
 
-    pw_build_LINK_DEPS = [
+    pw_sys_io_BACKEND = dir_pw_sys_io_stdio
+    pw_build_LINK_DEPS += [
+      "$dir_pigweed/targets/rp2040:pre_init",
       "$dir_pw_assert:impl",
       "$dir_pw_log:impl",
       get_path_info(":float_printf_adapter", "abspath"),
     ]
 
-    default_configs += [ "$dir_pw_build:extra_strict_warnings" ]
-
-    current_cpu = "arm"
-    current_os = ""
+    # ONLY RELEVANT FOR UNIT TESTS.
+    if (pw_targets_ENABLE_RP2040_TEST_RUNNER) {
+      _test_runner_script =
+          "//targets/rp2040/py/rp2040_utils/unit_test_client.py"
+      pw_unit_test_AUTOMATIC_RUNNER =
+          get_path_info(_test_runner_script, "abspath")
+    }
+    pw_unit_test_MAIN = "$dir_pigweed/targets/rp2040:unit_test_app"
   }
 }
 

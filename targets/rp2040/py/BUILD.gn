@@ -24,6 +24,7 @@ pw_python_package("py") {
   sources = [
     "rp2040_utils/__init__.py",
     "rp2040_utils/device_detector.py",
+    "rp2040_utils/rpc_unit_test_runner.py",
     "rp2040_utils/unit_test_client.py",
     "rp2040_utils/unit_test_runner.py",
     "rp2040_utils/unit_test_server.py",
@@ -32,6 +33,11 @@ pw_python_package("py") {
   mypy_ini = "$dir_pigweed/.mypy.ini"
   python_deps = [
     "$dir_pw_cli/py",
+    "$dir_pw_hdlc/py",
+    "$dir_pw_log:protos.python",
+    "$dir_pw_system/py",
+    "$dir_pw_tokenizer/py",
+    "$dir_pw_unit_test:unit_test_proto.python",
     "$dir_pw_unit_test/py",
   ]
 }
