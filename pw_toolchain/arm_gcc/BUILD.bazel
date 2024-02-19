@@ -205,7 +205,27 @@ pw_cc_flag_set(
 
 pw_cc_toolchain(
     name = "arm_gcc_toolchain_cortex-m",
-    action_config_flag_sets = [
+    action_configs = [
+        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-ar",
+        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-gcc",
+        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-g++",
+        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-gcov",
+        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-ld",
+        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-objcopy",
+        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-objdump",
+        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-strip",
+    ],
+    builtin_sysroot = "external/gcc_arm_none_eabi_toolchain",
+    cxx_builtin_include_directories = [
+        "%sysroot%/arm-none-eabi/include/newlib-nano",
+        "%sysroot%/arm-none-eabi/include/c++/12.2.1",
+        "%sysroot%/arm-none-eabi/include/c++/12.2.1/arm-none-eabi",
+        "%sysroot%/arm-none-eabi/include/c++/12.2.1/backward",
+        "%sysroot%/lib/gcc/arm-none-eabi/12.2.1/include",
+        "%sysroot%/lib/gcc/arm-none-eabi/12.2.1/include-fixed",
+        "%sysroot%/arm-none-eabi/include",
+    ],
+    flag_sets = [
         "@pw_toolchain//flag_sets:o2",
         "@pw_toolchain//flag_sets:c++17",
         "@pw_toolchain//flag_sets:debugging",
@@ -228,26 +248,6 @@ pw_cc_toolchain(
         ":cortex_common",
         ":cortex_common_link",
         ":warnings",
-    ],
-    action_configs = [
-        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-ar",
-        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-gcc",
-        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-g++",
-        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-gcov",
-        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-ld",
-        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-objcopy",
-        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-objdump",
-        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-strip",
-    ],
-    builtin_sysroot = "external/gcc_arm_none_eabi_toolchain",
-    cxx_builtin_include_directories = [
-        "%sysroot%/arm-none-eabi/include/newlib-nano",
-        "%sysroot%/arm-none-eabi/include/c++/12.2.1",
-        "%sysroot%/arm-none-eabi/include/c++/12.2.1/arm-none-eabi",
-        "%sysroot%/arm-none-eabi/include/c++/12.2.1/backward",
-        "%sysroot%/lib/gcc/arm-none-eabi/12.2.1/include",
-        "%sysroot%/lib/gcc/arm-none-eabi/12.2.1/include-fixed",
-        "%sysroot%/arm-none-eabi/include",
     ],
     target_compatible_with = select({
         "@pw_toolchain//constraints/arm_mcpu:cortex-m0": [],

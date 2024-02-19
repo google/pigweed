@@ -225,7 +225,7 @@ If omitted, this flag set will be enabled unconditionally.
     provides = [PwFlagSetInfo],
     doc = """Declares an ordered set of flags bound to a set of actions.
 
-Flag sets can be attached to a `pw_cc_toolchain` via `action_config_flag_sets`.
+Flag sets can be attached to a `pw_cc_toolchain` via `flag_sets`.
 
 Examples:
 

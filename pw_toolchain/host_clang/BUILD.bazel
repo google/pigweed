@@ -139,28 +139,6 @@ pw_cc_action_files(
 
 pw_cc_toolchain(
     name = "host_toolchain",
-    action_config_flag_sets = select({
-        "@platforms//os:macos": [
-            ":macos_link_libs",
-            ":libtool_darwin_flags",
-        ],
-        "@platforms//os:linux": [
-            ":linux_link_libs",
-        ],
-    }) + [
-        ":warnings",
-        ":thread_safety_warnings",
-        "@pw_toolchain//flag_sets:c++17",
-        "@pw_toolchain//flag_sets:debugging",
-        "@pw_toolchain//flag_sets:reduced_size",
-        "@pw_toolchain//flag_sets:no_canonical_prefixes",
-        "@pw_toolchain//flag_sets:no_rtti",
-        "@pw_toolchain//flag_sets:wno_register",
-        "@pw_toolchain//flag_sets:wnon_virtual_dtor",
-    ] + select({
-        "//pw_build:kythe": [":no_unknown_warning_option"],
-        "//conditions:default": [],
-    }),
     action_configs = [
         "@llvm_toolchain//:ar",
         "@llvm_toolchain//:clang",
@@ -192,6 +170,28 @@ pw_cc_toolchain(
         ],
     }),
     extra_action_files = [":sysroot_files"],
+    flag_sets = select({
+        "@platforms//os:macos": [
+            ":macos_link_libs",
+            ":libtool_darwin_flags",
+        ],
+        "@platforms//os:linux": [
+            ":linux_link_libs",
+        ],
+    }) + [
+        ":warnings",
+        ":thread_safety_warnings",
+        "@pw_toolchain//flag_sets:c++17",
+        "@pw_toolchain//flag_sets:debugging",
+        "@pw_toolchain//flag_sets:reduced_size",
+        "@pw_toolchain//flag_sets:no_canonical_prefixes",
+        "@pw_toolchain//flag_sets:no_rtti",
+        "@pw_toolchain//flag_sets:wno_register",
+        "@pw_toolchain//flag_sets:wnon_virtual_dtor",
+    ] + select({
+        "//pw_build:kythe": [":no_unknown_warning_option"],
+        "//conditions:default": [],
+    }),
     # The implementations of some "legacy features" built into Bazel use
     # `target_libc` to determine if a toolchain targets MacOS,
     # https://github.com/bazelbuild/bazel/blob/release-7.0.0-pre.20230816.3rc1/src/main/java/com/google/devtools/build/lib/rules/cpp/CcModule.java#L1301-L1304

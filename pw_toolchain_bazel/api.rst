@@ -25,12 +25,12 @@ API reference
       compiling, linking, or taking other actions like embedding data using
       objcopy.
 
-   .. py:attribute:: action_config_flag_sets
+   .. py:attribute:: flag_sets
       :type: List[label]
 
-      List of flag sets to apply to the respective ``action_config``\s. The vast
-      majority of labels listed here will point to :py:class:`pw_cc_flag_set`
-      rules.
+      List of flag sets to unconditionally apply to the respective
+      :py:class:`pw_cc_action_config`\s. The labels listed here will point to
+      :py:class:`pw_cc_flag_set` rules.
 
    .. py:attribute:: extra_action_files
       :type: List[label]
@@ -99,7 +99,7 @@ API reference
    Declares an ordered set of flags bound to a set of actions.
 
    Flag sets can be attached to a :py:class:`pw_cc_toolchain` via
-   :py:attr:`pw_cc_toolchain.action_config_flag_sets`\.
+   :py:attr:`pw_cc_toolchain.flag_sets`\.
 
    Examples:
 

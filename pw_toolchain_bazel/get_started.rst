@@ -160,11 +160,6 @@ A simplified example is provided below.
 
    pw_cc_toolchain(
        name = "host_toolchain",
-       action_config_flag_sets = [
-           "@pw_toolchain//flag_sets:c++17",
-           "@pw_toolchain//flag_sets:debugging",
-           "@pw_toolchain//flag_sets:no_canonical_prefixes",
-       ],
        action_configs = [
            "@linux_clang_toolchain//:ar",
            "@linux_clang_toolchain//:clang",
@@ -181,6 +176,11 @@ A simplified example is provided below.
            "%package(@linux_clang_toolchain//)%/lib/clang/17/include",
        ],
        toolchain_identifier = "host-linux-toolchain",
+       flag_sets = [
+           "@pw_toolchain//flag_sets:c++17",
+           "@pw_toolchain//flag_sets:debugging",
+           "@pw_toolchain//flag_sets:no_canonical_prefixes",
+       ],
    )
 
    toolchain(
@@ -243,7 +243,7 @@ configuration surfaces of interest.
   :ref:`module-pw_toolchain_bazel-assemble-a-tool-suite`. If you need to swap
   out a particular tool, you can just create a custom
   :py:class:`pw_cc_tool` and :py:class:`pw_cc_action_config` and list it here.
-- :py:attr:`pw_cc_toolchain.action_config_flag_sets`\: This lists all the flags
+- :py:attr:`pw_cc_toolchain.flag_sets`\: This lists all the flags
   that are applied when compiling with this toolchain. Each
   :py:class:`pw_cc_flag_set` listed here includes at least one flag that applies
   to at least one kind of action.
@@ -372,14 +372,19 @@ Bind custom flags to a toolchain
 ================================
 After you've assembled a selection of custom flag sets, you can bind them to
 your toolchain definition by listing them in
-:py:attr:`pw_cc_toolchain.action_config_flag_sets`\:
+:py:attr:`pw_cc_toolchain.flag_sets`\:
 
 .. code-block:: py
-   :emphasize-lines: 7,8,9,10
+   :emphasize-lines: 12,13,14,15
 
    pw_cc_toolchain(
        name = "host_toolchain",
-       action_config_flag_sets = [
+       action_configs = [
+           "@linux_clang_toolchain//:ar",
+           "@linux_clang_toolchain//:clang",
+           "@linux_clang_toolchain//:clang++",
+       ...
+       flag_sets = [
            "@pw_toolchain//flag_sets:c++17",
            "@pw_toolchain//flag_sets:debugging",
            "@pw_toolchain//flag_sets:no_canonical_prefixes",
@@ -388,17 +393,12 @@ your toolchain definition by listing them in
            ":omit_unused_sections",  # Newly added pw_cc_flag_set from above.
            ":global_defines",  # Newly added pw_cc_flag_set from above.
        ],
-       action_configs = [
-           "@linux_clang_toolchain//:ar",
-           "@linux_clang_toolchain//:clang",
-           "@linux_clang_toolchain//:clang++",
-       ...
    )
 
 .. admonition:: Note
 
    Flags appear in the tool invocations in the order as they are listed
-   in :py:attr:`pw_cc_toolchain.action_config_flag_sets`\, so if you need a flag
+   in :py:attr:`pw_cc_toolchain.flag_sets`\, so if you need a flag
    to appear earlier in the command-line invocation of the tool just move it to
    towards the beginning of the list.
 

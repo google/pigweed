@@ -44,7 +44,7 @@ PW_CC_TOOLCHAIN_DEPRECATED_TOOL_ATTRS = {
 
 PW_CC_TOOLCHAIN_CONFIG_ATTRS = {
     "action_configs": "List of `pw_cc_action_config` labels that bind tools to the appropriate actions",
-    "unconditional_flag_sets": "List of `pw_cc_flag_set`s to apply to their respective action configs",
+    "flag_sets": "List of `pw_cc_flag_set`s to unconditionally apply to their respective action configs",
     "toolchain_features": "List of `pw_cc_feature`s that this toolchain supports",
     "extra_action_files": "Files that are required to run specific actions.",
 
@@ -102,7 +102,7 @@ def _pw_cc_toolchain_config_impl(ctx):
         ffa[PwExtraActionFilesSetInfo].srcs
         for ffa in ctx.attr.extra_action_files
     ]))
-    flag_sets = [fs[PwFlagSetInfo] for fs in ctx.attr.unconditional_flag_sets]
+    flag_sets = [fs[PwFlagSetInfo] for fs in ctx.attr.flag_sets]
     out = to_untyped_config(feature_set, action_config_set, flag_sets, extra_action_files)
 
     extra = []
@@ -132,7 +132,7 @@ pw_cc_toolchain_config = rule(
     attrs = {
         # Attributes new to this rule.
         "action_configs": attr.label_list(providers = [PwActionConfigSetInfo]),
-        "unconditional_flag_sets": attr.label_list(providers = [PwFlagSetInfo]),
+        "flag_sets": attr.label_list(providers = [PwFlagSetInfo]),
         "toolchain_features": attr.label_list(providers = [PwFeatureSetInfo]),
         "extra_action_files": attr.label_list(providers = [PwExtraActionFilesSetInfo]),
 
@@ -241,7 +241,7 @@ def pw_cc_toolchain(name, action_config_flag_sets = None, **kwargs):
 
     # TODO(b/322872628): Remove this once it's no longer in use.
     if action_config_flag_sets != None:
-        kwargs["unconditional_flag_sets"] = action_config_flag_sets
+        kwargs["flag_sets"] = action_config_flag_sets
 
     _check_args(native.package_relative_label(name), kwargs)
 
