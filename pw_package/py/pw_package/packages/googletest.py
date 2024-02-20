@@ -31,7 +31,7 @@ class Googletest(pw_package.git_repo.GitRepo):
                 'https://pigweed.googlesource.com/'
                 'third_party/github/google/googletest'
             ),
-            commit="dea0484e4d3b6a2c50055c24c5617cd662a50c5f",
+            commit="f8d7d77c06936315286eb55f8de22cd23c188571",
             **kwargs,
         )
 
