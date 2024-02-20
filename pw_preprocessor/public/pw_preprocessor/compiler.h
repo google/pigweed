@@ -241,3 +241,11 @@
 ///
 /// See also `PW_CHECK_MUL`.
 #define PW_MUL_OVERFLOW(a, b, out) __builtin_mul_overflow(a, b, out)
+
+// Evaluates to 1 if __VA_OPT__ is supported, regardless of the C or C++
+// standard in use.
+#define PW_VA_OPT_SUPPORTED() _PW_VA_OPT_SUPPORTED()
+
+#define _PW_VA_OPT_SUPPORTED(...) _PW_VA_OPT_SUPPORTED_##__VA_OPT__()
+#define _PW_VA_OPT_SUPPORTED_ 1
+#define _PW_VA_OPT_SUPPORTED___VA_OPT__() 0

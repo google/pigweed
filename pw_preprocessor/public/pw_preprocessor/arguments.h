@@ -16,6 +16,7 @@
 #pragma once
 
 #include "pw_preprocessor/boolean.h"
+#include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/internal/arg_count_impl.h"
 
 // Expands to a comma followed by __VA_ARGS__, if __VA_ARGS__ is non-empty.
@@ -103,6 +104,18 @@
                      24, 23, 22, 21, 20, 19, 18, 17, \
                      16, 15, 14, 13, 12, 11, 10,  9, \
                       8,  7,  6,  5, 4,  3,  2,  PW_HAS_ARGS(__VA_ARGS__))
+
+#define _PW_MACRO_ARG_COUNT_IMPL(a64, a63, a62, a61, a60, a59, a58, a57, \
+                                 a56, a55, a54, a53, a52, a51, a50, a49, \
+                                 a48, a47, a46, a45, a44, a43, a42, a41, \
+                                 a40, a39, a38, a37, a36, a35, a34, a33, \
+                                 a32, a31, a30, a29, a28, a27, a26, a25, \
+                                 a24, a23, a22, a21, a20, a19, a18, a17, \
+                                 a16, a15, a14, a13, a12, a11, a10, a09, \
+                                 a08, a07, a06, a05, a04, a03, a02, a01, \
+                                 count, ...)                             \
+  count
+
 // clang-format on
 
 // Argument count for using with a C/C++ function or template parameter list.
@@ -136,7 +149,16 @@
 // Expands to 1 if one or more arguments are provided, 0 otherwise.
 #define PW_HAS_ARGS(...) PW_NOT(PW_EMPTY_ARGS(__VA_ARGS__))
 
-// Expands to 0 if one or more arguments are provided, 1 otherwise. This
+#if PW_VA_OPT_SUPPORTED()
+
+// Expands to 0 if one or more arguments are provided, 1 otherwise.
+#define PW_EMPTY_ARGS(...) _PW_EMPTY_ARGS_##__VA_OPT__(0)
+#define _PW_EMPTY_ARGS_ 1
+#define _PW_EMPTY_ARGS_0 0
+
+#else
+
+// If __VA_OPT__ is not available, use a complicated fallback mechanism. This
 // approach is from Jens Gustedt's blog:
 //   https://gustedt.wordpress.com/2010/06/08/detect-empty-macro-arguments/
 //
@@ -157,8 +179,6 @@
 // is empty. For this case (0001), and only this case, a corresponding macro
 // that expands to a comma is defined. The presence of this comma determines
 // whether any arguments were passed in.
-//
-// C++20 introduces __VA_OPT__, which would greatly simplify this macro.
 #define PW_EMPTY_ARGS(...)                                             \
   _PW_HAS_NO_ARGS(_PW_HAS_COMMA(__VA_ARGS__),                          \
                   _PW_HAS_COMMA(_PW_MAKE_COMMA_IF_CALLED __VA_ARGS__), \
@@ -166,25 +186,12 @@
                   _PW_HAS_COMMA(_PW_MAKE_COMMA_IF_CALLED __VA_ARGS__()))
 
 // clang-format off
-
 #define _PW_HAS_COMMA(...)                                           \
   _PW_MACRO_ARG_COUNT_IMPL(__VA_ARGS__,                              \
                      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, \
                      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, \
                      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, \
                      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
-
-#define _PW_MACRO_ARG_COUNT_IMPL(a64, a63, a62, a61, a60, a59, a58, a57, \
-                                 a56, a55, a54, a53, a52, a51, a50, a49, \
-                                 a48, a47, a46, a45, a44, a43, a42, a41, \
-                                 a40, a39, a38, a37, a36, a35, a34, a33, \
-                                 a32, a31, a30, a29, a28, a27, a26, a25, \
-                                 a24, a23, a22, a21, a20, a19, a18, a17, \
-                                 a16, a15, a14, a13, a12, a11, a10, a09, \
-                                 a08, a07, a06, a05, a04, a03, a02, a01, \
-                                 count, ...)                             \
-  count
-
 // clang-format on
 
 #define _PW_HAS_NO_ARGS(a1, a2, a3, a4) \
@@ -192,3 +199,5 @@
 #define _PW_PASTE_RESULTS(a1, a2, a3, a4) _PW_HAS_COMMA_CASE_##a1##a2##a3##a4
 #define _PW_HAS_COMMA_CASE_0001 ,
 #define _PW_MAKE_COMMA_IF_CALLED(...) ,
+
+#endif  // PW_VA_OPT_SUPPORTED()
