@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include <memory>
 #include <new>
 #include <type_traits>
 #include <utility>
