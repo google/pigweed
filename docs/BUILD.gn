@@ -178,6 +178,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_multibuf/public/pw_multibuf/single_chunk_region_tracker.h",
   "$dir_pw_perf_test/public/pw_perf_test/event_handler.h",
   "$dir_pw_perf_test/public/pw_perf_test/perf_test.h",
+  "$dir_pw_preprocessor/public/pw_preprocessor/compiler.h",
   "$dir_pw_protobuf/public/pw_protobuf/find.h",
   "$dir_pw_random/public/pw_random/random.h",
   "$dir_pw_random/public/pw_random/xor_shift.h",
