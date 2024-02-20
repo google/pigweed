@@ -66,12 +66,8 @@ import subprocess
 import sys
 from typing import cast, Dict, Optional
 
-# This expects this file to be in the Python module. If it ever moves
-# (e.g. to the root of the repository), this will need to change.
 _PW_PROJECT_PATH = Path(
-    os.environ.get(
-        'PW_PROJECT_ROOT', os.environ.get('PW_ROOT', Path(__file__).parents[3])
-    )
+    os.environ.get('PW_PROJECT_ROOT', os.environ.get('PW_ROOT', os.getcwd()))
 )
 
 
