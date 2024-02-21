@@ -100,21 +100,38 @@ Emboss Packet Definitions
 definitions. So far, packets from the following protocols are defined:
 
 - HCI
+- L2CAP
 
 Usage
 =====
-1. Set the `dir_pw_third_party_emboss` GN variable to the path of your Emboss
-checkout.
 
-2. Add `$dir_pw_bluetooth/emboss_hci` (for HCI packets) or
-`$dir_pw_bluetooth/emboss_vendor` (for vendor packets) to your dependency list.
+.. tab-set::
+
+   .. tab-item:: GN
+      :sync: gn
+
+      1. Set the `dir_pw_third_party_emboss` GN variable to the path of your
+      Emboss checkout.
+
+      2. Add `$dir_pw_bluetooth/emboss_hci` (for HCI packets) or
+      `$dir_pw_bluetooth/emboss_vendor` (for vendor packets) to your dependency
+      list.
+
+   .. tab-item:: Bazel
+      :sync: bazel
+
+      1. Add Emboss to your Bazel workspace as `@com_google_emboss`.
+
+      2. Add `@pigweed//pw_bluetooth:emboss_hci` to your deps.
+
 
 3. Include the generated header files.
 
 .. code-block:: cpp
 
-   #include "pw_bluetooth/hci.emb.h"
-   #include "pw_bluetooth/vendor.emb.h"
+   #include "pw_bluetooth/hci_commands.emb.h"
+   #include "pw_bluetooth/hci_test.emb.h"
+   #include "pw_bluetooth/hci_vendor.emb.h"
 
 4. Construct an Emboss view over a buffer.
 

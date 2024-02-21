@@ -385,6 +385,12 @@ git_repository(
     remote = "https://pigweed.googlesource.com/third_party/github/ARMmbed/mbedtls",
 )
 
+git_repository(
+    name = "com_google_emboss",
+    commit = "69bb1372053fc3cb8a16180497970465ae2ed66d",
+    remote = "https://pigweed.googlesource.com/third_party/github/google/emboss",
+)
+
 http_archive(
     name = "freertos",
     build_file = "//:third_party/freertos/BUILD.bazel",
