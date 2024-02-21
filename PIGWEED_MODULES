@@ -68,6 +68,7 @@ pw_interrupt_cortex_m
 pw_interrupt_xtensa
 pw_interrupt_zephyr
 pw_intrusive_ptr
+pw_json
 pw_kvs
 pw_libc
 pw_libcxx

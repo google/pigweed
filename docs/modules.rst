@@ -59,6 +59,7 @@ including C, C++, Go, Rust, Shell, Batch and Python.
    pw_ide/docs
    pw_interrupt/docs
    pw_intrusive_ptr/docs
+   pw_json/docs
    pw_kvs/docs
    pw_libc/docs
    pw_libcxx/docs
