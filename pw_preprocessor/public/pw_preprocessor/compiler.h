@@ -262,9 +262,15 @@
 
 /// Evaluates to 1 if `__VA_OPT__` is supported, regardless of the C or C++
 /// standard in use.
+#if (defined(__clang_major__) && __clang_major__ < 9) || \
+    (defined(__GNUC__) && __GNUC__ < 12)
+#define PW_VA_OPT_SUPPORTED() 0  // Don't bother checking on old compilers.
+#else
 #define PW_VA_OPT_SUPPORTED() _PW_VA_OPT_SUPPORTED()
 /// @}
 
 #define _PW_VA_OPT_SUPPORTED(...) _PW_VA_OPT_SUPPORTED_##__VA_OPT__()
 #define _PW_VA_OPT_SUPPORTED_ 1
 #define _PW_VA_OPT_SUPPORTED___VA_OPT__() 0
+
+#endif  // __clang_major__ < 9 || __GNUC__ < 12
