@@ -26,7 +26,7 @@ describe('log-list', () => {
 
     // Initialize the log viewer component with a mock log source
     mockLogSource = new MockLogSource();
-    logViewer = createLogViewer(mockLogSource, document.body);
+    logViewer = createLogViewer(document.body, undefined, mockLogSource);
 
     // Handle benign error caused by custom log viewer initialization
     // See: https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver#observation_errors
@@ -64,7 +64,7 @@ describe('log-list', () => {
 
     // Wait for components to load
     await logViewer.updateComplete;
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
     const logView = logViewer.shadowRoot.querySelector('log-view');
     const logList = logView.shadowRoot.querySelector('log-list');

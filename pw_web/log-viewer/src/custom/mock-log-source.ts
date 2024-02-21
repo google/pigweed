@@ -18,8 +18,8 @@ import { LogEntry, Severity } from '../shared/interfaces';
 export class MockLogSource extends LogSource {
   private intervalId: NodeJS.Timeout | null = null;
 
-  constructor() {
-    super();
+  constructor(sourceName: string = 'Mock Log Source') {
+    super(sourceName);
   }
 
   start(): void {
@@ -29,7 +29,7 @@ export class MockLogSource extends LogSource {
 
     const readLogEntry = () => {
       const logEntry = this.readLogEntryFromHost();
-      this.emitEvent('logEntry', logEntry);
+      this.publishLogEntry(logEntry);
 
       const nextInterval = getRandomInterval();
       setTimeout(readLogEntry, nextInterval);

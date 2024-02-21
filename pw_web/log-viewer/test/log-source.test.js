@@ -16,7 +16,7 @@ import { expect } from '@open-wc/testing';
 import { LogSource } from '../src/log-source';
 
 describe('log-source', () => {
-  let logSource;
+  let logSourceA, logSourceB;
   const logEntry = {
     severity: 'INFO',
     timestamp: new Date(Date.now()),
@@ -24,23 +24,25 @@ describe('log-source', () => {
   };
 
   beforeEach(() => {
-    logSource = new LogSource();
+    logSourceA = new LogSource('Log Source A');
+    logSourceB = new LogSource('Log Source B');
   });
 
   afterEach(() => {
-    logSource = null;
+    logSourceA = null;
+    logSourceB = null;
   });
 
   it('emits events to registered listeners', () => {
     const eventType = 'log-entry';
     let receivedData = null;
 
-    const listener = (data) => {
-      receivedData = data;
+    const listener = (event) => {
+      receivedData = event.data;
     };
 
-    logSource.addEventListener(eventType, listener);
-    logSource.emitEvent(eventType, logEntry);
+    logSourceA.addEventListener(eventType, listener);
+    logSourceA.publishLogEntry(logEntry);
 
     expect(receivedData).to.equal(logEntry);
   });
@@ -58,14 +60,14 @@ describe('log-source', () => {
       });
     };
 
-    logSource.addEventListener(eventType, listener);
+    logSourceA.addEventListener(eventType, listener);
 
     const emittedLogs = [];
 
     for (let i = 0; i < numLogs; i++) {
       logEntries.push(logEntry);
 
-      await logSource.emitEvent(eventType, logEntry);
+      await logSourceA.publishLogEntry(logEntry);
       emittedLogs.push(logEntry);
     }
 
@@ -80,7 +82,7 @@ describe('log-source', () => {
     };
 
     try {
-      await logSource.emitEvent('log-entry', incorrectLogEntry);
+      await logSourceA.publishLogEntry(incorrectLogEntry);
     } catch (error) {
       expect(error.message).to.equal('Invalid log entry structure');
     }

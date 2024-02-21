@@ -12,28 +12,43 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { LogEntry } from './shared/interfaces';
+import {
+  Field,
+  LogEntry,
+  LogSourceEvent,
+  SourceData,
+} from './shared/interfaces';
 
 export abstract class LogSource {
   private eventListeners: {
     eventType: string;
-    listener: (data: LogEntry) => void;
+    listener: (event: LogSourceEvent) => void;
   }[];
 
-  constructor() {
+  protected sourceId: string;
+
+  protected sourceName: string;
+
+  constructor(sourceName: string) {
     this.eventListeners = [];
+    this.sourceId = crypto.randomUUID();
+    this.sourceName = sourceName;
   }
+
+  abstract start(): void;
+
+  abstract stop(): void;
 
   addEventListener(
     eventType: string,
-    listener: (data: LogEntry) => void,
+    listener: (event: LogSourceEvent) => void,
   ): void {
     this.eventListeners.push({ eventType, listener });
   }
 
   removeEventListener(
     eventType: string,
-    listener: (data: LogEntry) => void,
+    listener: (event: LogSourceEvent) => void,
   ): void {
     this.eventListeners = this.eventListeners.filter(
       (eventListener) =>
@@ -42,18 +57,30 @@ export abstract class LogSource {
     );
   }
 
-  emitEvent(eventType: string, data: LogEntry): void {
-    const validationResult = this.validateLogEntry(data);
+  emitEvent(event: LogSourceEvent): void {
+    this.eventListeners.forEach((eventListener) => {
+      if (eventListener.eventType === event.type) {
+        eventListener.listener(event);
+      }
+    });
+  }
+
+  publishLogEntry(logEntry: LogEntry): void {
+    // Validate the log entry
+    const validationResult = this.validateLogEntry(logEntry);
     if (validationResult !== null) {
       console.error('Validation error:', validationResult);
       return;
     }
 
-    this.eventListeners.forEach((eventListener) => {
-      if (eventListener.eventType === eventType) {
-        eventListener.listener(data);
-      }
-    });
+    const sourceData: SourceData = { id: this.sourceId, name: this.sourceName };
+    logEntry.sourceData = sourceData;
+
+    // Add the name of the log source as a field in the log entry
+    const logSourceField: Field = { key: 'log_source', value: this.sourceName };
+    logEntry.fields.splice(1, 0, logSourceField);
+
+    this.emitEvent({ type: 'log-entry', data: logEntry });
   }
 
   validateLogEntry(logEntry: LogEntry): string | null {

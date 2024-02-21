@@ -20,6 +20,7 @@ import {
   LogEntry,
   LogViewConfig,
   State,
+  SourceData,
 } from '../shared/interfaces';
 import { LocalStorageState, StateStore } from '../shared/state';
 import { styles } from './log-viewer.styles';
@@ -54,6 +55,9 @@ export class LogViewer extends LitElement {
   /** An object that stores the state of log views */
   @state()
   _stateStore: StateStore;
+
+  /** A map containing data from present log sources */
+  private _sources: Map<string, SourceData> = new Map();
 
   private _state: State;
 
@@ -106,6 +110,14 @@ export class LogViewer extends LitElement {
         localStorage.removeItem('colorScheme');
       }
     }
+
+    if (changedProperties.has('logs')) {
+      this.logs.forEach((logEntry) => {
+        if (logEntry.sourceData && !this._sources.has(logEntry.sourceData.id)) {
+          this._sources.set(logEntry.sourceData.id, logEntry.sourceData);
+        }
+      });
+    }
   }
 
   disconnectedCallback() {
@@ -143,7 +155,7 @@ export class LogViewer extends LitElement {
       columnData: fieldColumns,
       search: '',
       viewID: view.id,
-      viewTitle: 'Log View',
+      viewTitle: '',
     };
 
     return obj as LogViewConfig;
@@ -175,6 +187,7 @@ export class LogViewer extends LitElement {
             <log-view
               id=${view.id}
               .logs=${this.logs}
+              .sources=${this._sources}
               .isOneOfMany=${this._logViews.length > 1}
               .stateStore=${this._stateStore}
               @add-view="${this.addLogView}"

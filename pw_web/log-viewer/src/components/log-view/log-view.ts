@@ -16,7 +16,12 @@ import { LitElement, PropertyValues, html } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { styles } from './log-view.styles';
 import { LogList } from '../log-list/log-list';
-import { TableColumn, LogEntry, State } from '../../shared/interfaces';
+import {
+  TableColumn,
+  LogEntry,
+  State,
+  SourceData,
+} from '../../shared/interfaces';
 import { LocalStorageState, StateStore } from '../../shared/state';
 import { LogFilter } from '../../utils/log-filter/log-filter';
 import '../log-list/log-list';
@@ -51,6 +56,10 @@ export class LogView extends LitElement {
   @property({ type: Boolean })
   isOneOfMany = false;
 
+  /** The title of the log view, to be displayed on the log view toolbar */
+  @property()
+  viewTitle = '';
+
   /** Whether line wrapping in table cells should be used. */
   @state()
   _lineWrap = false;
@@ -68,6 +77,9 @@ export class LogView extends LitElement {
   _stateStore: StateStore = new LocalStorageState();
 
   @query('log-list') _logList!: LogList;
+
+  /** A map containing data from present log sources */
+  sources: Map<string, SourceData> = new Map();
 
   /**
    * An array containing the logs that remain after the current filter has been
@@ -107,6 +119,14 @@ export class LogView extends LitElement {
     if (index !== -1) {
       const storedColumnData = viewConfigArr[index].columnData;
       this._columnData = storedColumnData;
+    }
+
+    // Update view title with log source names if a view title isn't already provided
+    if (!this.viewTitle) {
+      const sourceNames = Array.from(this.sources.values())?.map(
+        (tag: SourceData) => tag.name,
+      );
+      this.viewTitle = sourceNames.join(', ');
     }
   }
 
@@ -328,6 +348,7 @@ export class LogView extends LitElement {
     return html` <log-view-controls
         .columnData=${this._columnData}
         .viewId=${this.id}
+        .viewTitle=${this.viewTitle}
         .hideCloseButton=${!this.isOneOfMany}
         .stateStore=${this._stateStore}
         @input-change="${this.updateFilter}"

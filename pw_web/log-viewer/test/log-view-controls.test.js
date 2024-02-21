@@ -19,7 +19,11 @@ import { expect } from '@open-wc/testing';
 
 function setUpLogViewer() {
   const mockLogSource = new MockLogSource();
-  const destroyLogViewer = createLogViewer(mockLogSource, document.body);
+  const destroyLogViewer = createLogViewer(
+    document.body,
+    undefined,
+    mockLogSource,
+  );
   const logViewer = document.querySelector('log-viewer');
   return { mockLogSource, destroyLogViewer, logViewer };
 }

@@ -44,7 +44,6 @@ export const styles = css`
     display: table;
     height: 100%;
     table-layout: fixed;
-    width: 100%;
   }
 
   thead,

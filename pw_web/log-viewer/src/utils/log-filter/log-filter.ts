@@ -190,15 +190,15 @@ export class LogFilter {
     column: string,
     value?: string,
   ): boolean {
-    const fieldData = logEntry.fields.find((field) => field.key === column);
-    if (!fieldData) return false;
+    const field = logEntry.fields.find((field) => field.key === column);
+    if (!field) return false;
 
     if (value === undefined) {
       return true;
     }
 
     const searchRegex = new RegExp(value, 'i');
-    return searchRegex.test(fieldData.value.toString());
+    return searchRegex.test(field.value.toString());
   }
 
   /**

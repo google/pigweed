@@ -20,7 +20,7 @@ export { LogViewer } from '../pw_web/log-viewer/src/components/log-viewer';
 export { createLogViewer } from '../pw_web/log-viewer/src/createLogViewer';
 export {
   LogEntry,
-  FieldData,
+  Field,
   Severity,
 } from '../pw_web/log-viewer/src/shared/interfaces';
 export { PigweedRPCLogSource } from './logging_source_rpc';

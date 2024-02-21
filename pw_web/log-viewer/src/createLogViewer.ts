@@ -14,7 +14,7 @@
 
 import { LogViewer as RootComponent } from './components/log-viewer';
 import { StateStore, LocalStorageState } from './shared/state';
-import { LogEntry } from '../src/shared/interfaces';
+import { LogEntry, LogSourceEvent } from '../src/shared/interfaces';
 import { LogSource } from '../src/log-source';
 
 import '@material/web/button/filled-button.js';
@@ -29,9 +29,9 @@ import '@material/web/menu/menu.js';
 import '@material/web/menu/menu-item.js';
 
 export function createLogViewer(
-  logSource: LogSource,
   root: HTMLElement,
   state: StateStore = new LocalStorageState(),
+  ...logSources: LogSource[]
 ) {
   const logViewer = new RootComponent(state);
   const logs: LogEntry[] = [];
@@ -39,28 +39,36 @@ export function createLogViewer(
   let lastUpdateTimeoutId: NodeJS.Timeout;
 
   // Define an event listener for the 'logEntry' event
-  const logEntryListener = (logEntry: LogEntry) => {
-    logs.push(logEntry);
-    logViewer.logs = logs;
-    if (lastUpdateTimeoutId) {
-      clearTimeout(lastUpdateTimeoutId);
-    }
+  const logEntryListener = (event: LogSourceEvent) => {
+    if (event.type === 'log-entry') {
+      const logEntry = event.data;
+      logs.push(logEntry);
+      logViewer.logs = logs;
+      if (lastUpdateTimeoutId) {
+        clearTimeout(lastUpdateTimeoutId);
+      }
 
-    // Call requestUpdate at most once every 100 milliseconds.
-    lastUpdateTimeoutId = setTimeout(() => {
-      const updatedLogs = [...logs];
-      logViewer.logs = updatedLogs;
-    }, 100);
+      // Call requestUpdate at most once every 100 milliseconds.
+      lastUpdateTimeoutId = setTimeout(() => {
+        const updatedLogs = [...logs];
+        logViewer.logs = updatedLogs;
+      }, 100);
+    }
   };
 
-  // Add the event listener to the LogSource instance
-  logSource.addEventListener('logEntry', logEntryListener);
+  logSources.forEach((logSource: LogSource) => {
+    // Add the event listener to the LogSource instance
+    logSource.addEventListener('log-entry', logEntryListener);
+  });
 
   // Method to destroy and unsubscribe
   return () => {
     if (logViewer.parentNode) {
       logViewer.parentNode.removeChild(logViewer);
     }
-    logSource.removeEventListener('logEntry', logEntryListener);
+
+    logSources.forEach((logSource: LogSource) => {
+      logSource.removeEventListener('log-entry', logEntryListener);
+    });
   };
 }

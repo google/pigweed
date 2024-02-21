@@ -13,7 +13,7 @@
 // the License.
 
 import { LogSource } from '../log-source';
-import { LogEntry, FieldData, Severity } from '../shared/interfaces';
+import { LogEntry, Field, Severity } from '../shared/interfaces';
 
 import log_data from './log_data.json';
 
@@ -46,8 +46,8 @@ export class JsonLogSource extends LogSource {
     'time',
   ];
 
-  constructor() {
-    super();
+  constructor(sourceName: string = 'JSON Log Source') {
+    super(sourceName);
   }
 
   start(): void {
@@ -64,7 +64,7 @@ export class JsonLogSource extends LogSource {
 
     const readLogEntry = () => {
       const logEntry = this.readLogEntryFromJson();
-      this.emitEvent('logEntry', logEntry);
+      this.publishLogEntry(logEntry);
 
       const nextInterval = getInterval();
       setTimeout(readLogEntry, nextInterval);
@@ -102,7 +102,7 @@ export class JsonLogSource extends LogSource {
     );
     host_log_time.setUTCMilliseconds(host_log_epoch_milliseconds);
 
-    const fields: Array<FieldData> = [
+    const fields: Array<Field> = [
       { key: 'severity', value: this.logLevelToSeverity[data.levelno] },
       { key: 'time', value: host_log_time },
     ];

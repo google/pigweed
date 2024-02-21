@@ -47,7 +47,7 @@ export class PigweedRPCLogSource extends LogSource {
       entry = this.parseLogMsg(decoded);
     }
     this.logs = [...this.logs, entry];
-    this.emitEvent('logEntry', entry);
+    this.publishLogEntry(entry);
   }
 
   private parseLogMsg(msg: string): LogEntry {

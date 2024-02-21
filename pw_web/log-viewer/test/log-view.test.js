@@ -17,11 +17,16 @@ import { MockLogSource } from '../src/custom/mock-log-source';
 import { createLogViewer } from '../src/createLogViewer';
 import { LocalStorageState } from '../src/shared/state';
 
-function setUpLogViewer() {
-  const mockLogSource = new MockLogSource();
-  const destroyLogViewer = createLogViewer(mockLogSource, document.body);
+function setUpLogViewer(logSources) {
+  const destroyLogViewer = createLogViewer(
+    document.body,
+    undefined,
+    ...logSources,
+  );
   const logViewer = document.querySelector('log-viewer');
-  return { mockLogSource, destroyLogViewer, logViewer };
+
+  handleResizeObserverError();
+  return { logSources, destroyLogViewer, logViewer };
 }
 
 // Handle benign ResizeObserver error caused by custom log viewer initialization
@@ -43,31 +48,45 @@ function handleResizeObserverError() {
 }
 
 describe('log-view', () => {
-  let mockLogSource;
+  let logSources;
   let destroyLogViewer;
   let logViewer;
   let stateStore;
 
-  beforeEach(() => {
-    stateStore = new LocalStorageState();
-    handleResizeObserverError();
-  });
+  async function getLogViews() {
+    const logViewerEl = document.querySelector('log-viewer');
 
-  afterEach(() => {
-    mockLogSource.stop();
-    destroyLogViewer();
-  });
+    await logViewerEl.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const logViews = logViewerEl.shadowRoot.querySelectorAll('log-view');
+    return logViews;
+  }
 
   describe('state', () => {
-    it('should default to single view when state is cleared', async () => {
+    beforeEach(() => {
       window.localStorage.clear();
-      ({ mockLogSource, destroyLogViewer, logViewer } = setUpLogViewer());
+      ({ logSources, destroyLogViewer, logViewer } = setUpLogViewer([
+        new MockLogSource(),
+      ]));
+      stateStore = new LocalStorageState();
+    });
+
+    afterEach(() => {
+      destroyLogViewer();
+      window.localStorage.clear();
+    });
+
+    it('should default to single view when state is cleared', async () => {
       const logViews = await getLogViews();
       assert.lengthOf(logViews, 1);
     });
 
     it('should populate correct number of views from state', async () => {
-      const viewState = {
+      // Destroy log viewer created by beforeEach()
+      destroyLogViewer();
+
+      const viewState1 = {
         columnData: [
           {
             fieldName: 'test',
@@ -80,24 +99,84 @@ describe('log-view', () => {
         viewID: 'abc',
         viewTitle: 'Log View',
       };
+      const viewState2 = structuredClone(viewState1);
+      viewState2.viewID = 'def';
+
       const state = stateStore.getState();
-      state.logViewConfig.push(viewState);
+      state.logViewConfig = [viewState1, viewState2];
       stateStore.setState(state);
 
-      ({ mockLogSource, destroyLogViewer, logViewer } = setUpLogViewer());
+      // Create a new log viewer with an existing state
+      ({ logSources, destroyLogViewer, logViewer } = setUpLogViewer([
+        new MockLogSource(),
+      ]));
       const logViews = await getLogViews();
       assert.lengthOf(logViews, 2);
       window.localStorage.clear();
     });
+  });
 
-    async function getLogViews() {
-      const logViewerEl = document.querySelector('log-viewer');
+  describe('sources', () => {
+    before(() => {
+      window.localStorage.clear();
+      ({ logSources, destroyLogViewer, logViewer } = setUpLogViewer([
+        new MockLogSource('Source 1'),
+        new MockLogSource('Source 2'),
+      ]));
+      stateStore = new LocalStorageState();
+    });
 
-      await logViewerEl.updateComplete;
+    after(() => {
+      destroyLogViewer();
+      window.localStorage.clear();
+    });
+
+    it('registers a new source upon receiving its first log entry', async () => {
+      const logSource1 = logSources[0];
+
+      logSource1.publishLogEntry({
+        timestamp: new Date(),
+        fields: [{ key: 'message', value: 'Message from Source 1' }],
+      });
+
+      await logViewer.updateComplete;
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const logViews = logViewerEl.shadowRoot.querySelectorAll('log-view');
-      return logViews;
-    }
+      const logViews = await getLogViews();
+      const sources = logViews[0]?.sources;
+      const sourceNames = Array.from(sources.values()).map(
+        (source) => source.name,
+      );
+
+      assert.include(
+        sourceNames,
+        'Source 1',
+        'New source should be registered after emitting its first log entry',
+      );
+    });
+
+    it('keeps a record of multiple log sources', async () => {
+      const logSource2 = logSources[1];
+
+      logSource2.publishLogEntry({
+        timestamp: new Date(),
+        fields: [{ key: 'message', value: 'Message from Source 2' }],
+      });
+
+      await logViewer.updateComplete;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const logViews = await getLogViews();
+      const sources = logViews[0]?.sources;
+      const sourceNames = Array.from(sources.values()).map(
+        (source) => source.name,
+      );
+
+      assert.includeMembers(
+        sourceNames,
+        ['Source 1', 'Source 2'],
+        'Both sources should be present',
+      );
+    });
   });
 });

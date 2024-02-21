@@ -73,7 +73,7 @@ class PwConsoleLogSource extends LogSource {
     fields.push({ key: 'message', value: data.message });
     fields.push({ key: 'py_file', value: data.py_file });
     fields.push({ key: 'py_logger', value: data.py_logger });
-    this.emitEvent('logEntry', {
+    this.publishLogEntry({
       severity: logLevelToSeverity[data.levelno],
       timestamp: new Date(),
       fields: fields,

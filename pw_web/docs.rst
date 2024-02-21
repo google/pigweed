@@ -272,7 +272,7 @@ like this:
        const log1: LogEntry = {
 
        }
-       this.emitEvent('logEntry', {
+       this.publishLogEntry({
          severity: Severity.INFO,
          timestamp: new Date(),
          fields: [

@@ -49,8 +49,9 @@ export class LogViewControls extends LitElement {
   @state()
   _stateStore: StateStore = new LocalStorageState();
 
-  @state()
-  _viewTitle = 'Log View';
+  /** The title of the parent log view, to be displayed on the log view toolbar */
+  @property()
+  viewTitle = '';
 
   @state()
   _moreActionsMenuOpen = false;
@@ -85,9 +86,9 @@ export class LogViewControls extends LitElement {
       for (const i in viewConfigArr) {
         if (viewConfigArr[i].viewID === this.viewId) {
           searchText = viewConfigArr[i].search as string;
-          this._viewTitle = viewConfigArr[i].viewTitle
+          this.viewTitle = viewConfigArr[i].viewTitle
             ? viewConfigArr[i].viewTitle
-            : this._viewTitle;
+            : this.viewTitle;
         }
       }
     }
@@ -231,7 +232,7 @@ export class LogViewControls extends LitElement {
       composed: true,
       detail: {
         format: 'plaintext',
-        viewTitle: this._viewTitle,
+        viewTitle: this.viewTitle,
       },
     });
 
@@ -250,7 +251,7 @@ export class LogViewControls extends LitElement {
 
   render() {
     return html`
-      <p class="host-name">${this._viewTitle}</p>
+      <p class="host-name">${this.viewTitle}</p>
 
       <div class="input-container">
         <div class="input-facade" contenteditable="plaintext-only" @input="${

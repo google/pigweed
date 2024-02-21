@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-export interface FieldData {
+export interface Field {
   key: string;
   value: string | boolean | number | object;
 }
@@ -27,7 +27,8 @@ export interface TableColumn {
 export interface LogEntry {
   severity?: Severity;
   timestamp: Date;
-  fields: FieldData[];
+  fields: Field[];
+  sourceData?: SourceData;
 }
 
 export interface LogViewConfig {
@@ -47,4 +48,17 @@ export enum Severity {
 
 export interface State {
   logViewConfig: LogViewConfig[];
+}
+
+export interface LogEntryEvent {
+  type: 'log-entry';
+  data: LogEntry;
+}
+
+// Union type for all log source event types
+export type LogSourceEvent = LogEntryEvent /* | ... */;
+
+export interface SourceData {
+  id: string;
+  name: string;
 }

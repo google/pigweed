@@ -14,15 +14,22 @@
 
 import { JsonLogSource } from './custom/json-log-source';
 import { createLogViewer } from './createLogViewer';
+import { MockLogSource } from './custom/mock-log-source';
+import { LocalStorageState } from './shared/state';
+import { LogSource } from './log-source';
 
-const logSource = new JsonLogSource();
+const logSources = [new MockLogSource(), new JsonLogSource()] as LogSource[];
+const state = new LocalStorageState();
+
 const containerEl = document.querySelector(
   '#log-viewer-container',
 ) as HTMLElement;
 
 if (containerEl) {
-  createLogViewer(logSource, containerEl);
+  createLogViewer(containerEl, state, ...logSources);
 }
 
 // Start reading log data
-logSource.start();
+logSources.forEach((logSource: LogSource) => {
+  logSource.start();
+});
