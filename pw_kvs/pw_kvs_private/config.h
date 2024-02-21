@@ -17,12 +17,16 @@
 
 #include <cstddef>
 
-// Which log level to use for pw_kvs logs.
+/// @def PW_KVS_LOG_LEVEL
+///
+/// Which log level to use for `pw_kvs` logs.
 #ifndef PW_KVS_LOG_LEVEL
 #define PW_KVS_LOG_LEVEL PW_LOG_LEVEL_INFO
 #endif  // PW_KVS_LOG_LEVEL
 
-// The maximum flash alignment supported.
+/// @def PW_KVS_MAX_FLASH_ALIGNMENT
+///
+/// The maximum flash alignment supported.
 #ifndef PW_KVS_MAX_FLASH_ALIGNMENT
 #define PW_KVS_MAX_FLASH_ALIGNMENT 256UL
 #endif  // PW_KVS_MAX_FLASH_ALIGNMENT
@@ -30,10 +34,12 @@
 static_assert((PW_KVS_MAX_FLASH_ALIGNMENT >= 16UL),
               "Max flash alignment is required to be at least 16");
 
-//  Whether to remove deleted keys in heavy maintanence. This feature costs some
-//  code size (>1KB) and is only necessary if arbitrary key names are used.
-//  Without this feature, deleted key entries can fill the KVS, making it
-//  impossible to add more keys, even though most keys are deleted.
+/// @def PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE
+///
+/// Whether to remove deleted keys in heavy maintanence. This feature costs
+/// some code size (>1KB) and is only necessary if arbitrary key names are
+/// used. Without this feature, deleted key entries can fill the KVS, making it
+/// impossible to add more keys, even though most keys are deleted.
 #ifndef PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE
 #define PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE 1
 #endif  // PW_KVS_REMOVE_DELETED_KEYS_IN_HEAVY_MAINTENANCE

@@ -80,51 +80,77 @@ struct Options {
   bool verify_on_write = true;
 };
 
+/// Flash-backed persistent key-value store (KVS) with integrated
+/// wear-leveling.
+///
+/// Instances are declared as instances of
+/// `pw::kvs::KeyValueStoreBuffer<MAX_ENTRIES, MAX_SECTORS>`, which allocates
+/// buffers for tracking entries and flash sectors.
+///
+/// @code{.cpp}
+///   #include "pw_kvs/key_value_store.h"
+///   #include "pw_kvs/flash_test_partition.h"
+///
+///   constexpr size_t kMaxSectors = 6;
+///   constexpr size_t kMaxEntries = 64;
+///   static constexpr pw::kvs::EntryFormat kvs_format = {
+///     .magic = 0xd253a8a9,  // Prod apps should use a random number here
+///     .checksum = nullptr
+///   };
+///   pw::kvs::KeyValueStoreBuffer<kMaxEntries, kMaxSectors> kvs(
+///     &pw::kvs::FlashTestPartition(),
+///     kvs_format
+///   );
+///
+///   kvs.Init();
+/// @endcode
 class KeyValueStore {
  public:
-  // KeyValueStores are declared as instances of
-  // KeyValueStoreBuffer<MAX_ENTRIES, MAX_SECTORS>, which allocates buffers for
-  // tracking entries and flash sectors.
-
-  // Initializes the key-value store. Must be called before calling other
-  // functions.
-  //
-  // Return values:
-  //
-  //          OK: KVS successfully initialized.
-  //   DATA_LOSS: KVS initialized and is usable, but contains corrupt data.
-  //     UNKNOWN: Unknown error. KVS is not initialized.
-  //
+  /// Initializes the KVS. Must be called before calling other functions.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - The KVS successfully initialized.
+  /// * @pw_status{DATA_LOSS} - The KVS initialized and is usable, but contains
+  ///   corrupt data.
+  /// * @pw_status{UNKNOWN} - Unknown error. The KVS is not initialized.
   Status Init();
 
   bool initialized() const {
     return initialized_ == InitializationState::kReady;
   }
 
-  // Reads the value of an entry in the KVS. The value is read into the provided
-  // buffer and the number of bytes read is returned. If desired, the read can
-  // be started at an offset.
-  //
-  // If the output buffer is too small for the value, Get returns
-  // RESOURCE_EXHAUSTED with the number of bytes read. The remainder of the
-  // value can be read by calling get with an offset.
-  //
-  //                    OK: the entry was successfully read
-  //             NOT_FOUND: the key is not present in the KVS
-  //             DATA_LOSS: found the entry, but the data was corrupted
-  //    RESOURCE_EXHAUSTED: the buffer could not fit the entire value, but as
-  //                        many bytes as possible were written to it
-  //   FAILED_PRECONDITION: the KVS is not initialized
-  //      INVALID_ARGUMENT: key is empty or too long or value is too large
-  //
+  /// Reads the value of an entry in the KVS. The value is read into the
+  /// provided buffer and the number of bytes read is returned. Reads can be
+  /// started at an offset.
+  ///
+  /// @param[in] key The name of the key.
+  ///
+  /// @param[out] value The buffer to read the key's value into.
+  ///
+  /// @param[in] offset_bytes The byte offset to start the read at. Optional.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - The entry was successfully read.
+  /// * @pw_status{NOT_FOUND} - The key is not present in the KVS.
+  /// * @pw_status{DATA_LOSS} - Found the entry, but the data was corrupted.
+  /// * @pw_status{RESOURCE_EXHAUSTED} - The buffer could not fit the entire
+  ///   value, but as many bytes as possible were written to it. The number of
+  ///   of bytes read is returned. The remainder of the value can be read by
+  ///   calling `Get()` again with an offset.
+  /// * @pw_status{FAILED_PRECONDITION} - The KVS is not initialized. Call
+  ///   `Init()` before calling this method.
+  /// * @pw_status{INVALID_ARGUMENT} - `key` is empty or too long, or `value`
+  ///   is too large.
   StatusWithSize Get(Key key,
                      span<std::byte> value,
                      size_t offset_bytes = 0) const;
 
-  // This overload of Get accepts a pointer to a trivially copyable object.
-  // If the value is an array, call Get with
-  // as_writable_bytes(span(array)), or pass a pointer to the array
-  // instead of the array itself.
+  /// Overload of `Get()` that accepts a pointer to a trivially copyable
+  /// object.
+  ///
+  /// If `value` is an array, call `Get()` with
+  /// `as_writable_bytes(span(array))`, or pass a pointer to the array
+  /// instead of the array itself.
   template <typename Pointer,
             typename = std::enable_if_t<std::is_pointer<Pointer>::value>>
   Status Get(const Key& key, const Pointer& pointer) const {
@@ -133,23 +159,26 @@ class KeyValueStore {
     return FixedSizeGet(key, pointer, sizeof(T));
   }
 
-  // Adds a key-value entry to the KVS. If the key was already present, its
-  // value is overwritten.
-  //
-  // The value may be a span of bytes or a trivially copyable object.
-  //
-  // In the current implementation, all keys in the KVS must have a unique hash.
-  // If Put is called with a key whose hash matches an existing key, nothing
-  // is added and ALREADY_EXISTS is returned.
-  //
-  //                    OK: the entry was successfully added or updated
-  //             DATA_LOSS: checksum validation failed after writing the data
-  //    RESOURCE_EXHAUSTED: there is not enough space to add the entry
-  //        ALREADY_EXISTS: the entry could not be added because a different key
-  //                        with the same hash is already in the KVS
-  //   FAILED_PRECONDITION: the KVS is not initialized
-  //      INVALID_ARGUMENT: key is empty or too long or value is too large
-  //
+  /// Adds a key-value entry to the KVS. If the key was already present, its
+  /// value is overwritten.
+  ///
+  /// @param[in] key The name of the key. All keys in the KVS must have a
+  /// unique hash. If the hash of your key matches an existing key, nothing is
+  /// added and @pw_status{ALREADY_EXISTS} is returned.
+  ///
+  /// @param[in] value The value for the key. This can be a span of bytes or a
+  /// trivially copyable object.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - The entry was successfully added or updated.
+  /// * @pw_status{DATA_LOSS} - Checksum validation failed after writing data.
+  /// * @pw_status{RESOURCE_EXHAUSTED} - Not enough space to add the entry.
+  /// * @pw_status{ALREADY_EXISTS} - The entry could not be added because a
+  ///   different key with the same hash is already in the KVS.
+  /// * @pw_status{FAILED_PRECONDITION} - The KVS is not initialized. Call
+  ///   `Init()` before calling this method.
+  /// * @pw_status{INVALID_ARGUMENT} - `key` is empty or too long, or `value`
+  ///   is too large.
   template <typename T,
             typename std::enable_if_t<ConvertsToSpan<T>::value>* = nullptr>
   Status Put(const Key& key, const T& value) {
@@ -163,53 +192,63 @@ class KeyValueStore {
     return PutBytes(key, as_bytes(span<const T>(&value, 1)));
   }
 
-  // Removes a key-value entry from the KVS.
-  //
-  //                    OK: the entry was successfully added or updated
-  //             NOT_FOUND: the key is not present in the KVS
-  //             DATA_LOSS: checksum validation failed after recording the erase
-  //    RESOURCE_EXHAUSTED: insufficient space to mark the entry as deleted
-  //   FAILED_PRECONDITION: the KVS is not initialized
-  //      INVALID_ARGUMENT: key is empty or too long
-  //
+  /// Removes a key-value entry from the KVS.
+  ///
+  /// @param[in] key - The name of the key-value entry to delete.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - The entry was successfully deleted.
+  /// * @pw_status{NOT_FOUND} - `key` is not present in the KVS.
+  /// * @pw_status{DATA_LOSS} - Checksum validation failed after recording the
+  ///   erase.
+  /// * @pw_status{RESOURCE_EXHAUSTED} - Insufficient space to mark the entry
+  ///   as deleted.
+  /// * @pw_status{FAILED_PRECONDITION} - The KVS is not initialized. Call
+  ///   `Init()` before calling this method.
+  /// * @pw_status{INVALID_ARGUMENT} - `key` is empty or too long.
   Status Delete(Key key);
 
-  // Returns the size of the value corresponding to the key.
-  //
-  //                    OK: the size was returned successfully
-  //             NOT_FOUND: the key is not present in the KVS
-  //             DATA_LOSS: checksum validation failed after reading the entry
-  //   FAILED_PRECONDITION: the KVS is not initialized
-  //      INVALID_ARGUMENT: key is empty or too long
-  //
+  /// Returns the size of the value corresponding to the key.
+  ///
+  /// @param[in] key - The name of the key.
+  ///
+  /// @returns
+  /// * @pw_status{OK} - The size was returned successfully.
+  /// * @pw_status{NOT_FOUND} - `key` is not present in the KVS.
+  /// * @pw_status{DATA_LOSS} - Checksum validation failed after reading the
+  ///   entry.
+  /// * @pw_status{FAILED_PRECONDITION} - The KVS is not initialized. Call
+  ///   `Init()` before calling this method.
+  /// * @pw_status{INVALID_ARGUMENT} - `key` is empty or too long.
   StatusWithSize ValueSize(Key key) const;
 
-  // Perform all maintenance possible, including all neeeded repairing of
-  // corruption and garbage collection of reclaimable space in the KVS. When
-  // configured for manual recovery, this (along with FullMaintenance) is the
-  // only way KVS repair is triggered.
-  //
-  // - Heavy garbage collection of all reclaimable space, regardless of valid
-  //   data in the sector.
+  /// Performs all maintenance possible, including all needed repairing of
+  /// corruption and garbage collection of reclaimable space in the KVS. When
+  /// configured for manual recovery, this (along with `FullMaintenance()`) is
+  /// the only way KVS repair is triggered.
+  ///
+  /// @warning Performs heavy garbage collection of all reclaimable space,
+  /// regardless of whether there's other valid data in the sector. This
+  /// method may cause a significant amount of moving of valid entries.
   Status HeavyMaintenance() {
     return FullMaintenanceHelper(MaintenanceType::kHeavy);
   }
 
-  // Perform all maintenance possible, including all neeeded repairing of
-  // corruption and garbage collection of reclaimable space in the KVS. When
-  // configured for manual recovery, this (along with HeavyMaintenance) is the
-  // only way KVS repair is triggered.
-  //
-  // - Regular will not garbage collect sectors with valid data unless the KVS
-  //   is mostly full.
+  /// Perform all maintenance possible, including all needed repairing of
+  /// corruption and garbage collection of reclaimable space in the KVS. When
+  /// configured for manual recovery, this (along with `HeavyMaintenance()`) is
+  /// the only way KVS repair is triggered.
+  ///
+  /// Does not garbage collect sectors with valid data unless the KVS is mostly
+  /// full.
   Status FullMaintenance() {
     return FullMaintenanceHelper(MaintenanceType::kRegular);
   }
 
-  // Perform a portion of KVS maintenance. If configured for at least lazy
-  // recovery, will do any needed repairing of corruption. Does garbage
-  // collection of part of the KVS, typically a single sector or similar unit
-  // that makes sense for the KVS implementation.
+  /// Performs a portion of KVS maintenance. If configured for at least lazy
+  /// recovery, will do any needed repairing of corruption. Does garbage
+  /// collection of part of the KVS, typically a single sector or similar unit
+  /// that makes sense for the KVS implementation.
   Status PartialMaintenance();
 
   void LogDebugInfo() const;
@@ -217,13 +256,14 @@ class KeyValueStore {
   // Classes and functions to support STL-style iteration.
   class iterator;
 
+  /// Representation of a key-value entry during iteration.
   class Item {
    public:
-    // The key as a null-terminated string.
+    /// @returns The key as a null-terminated string.
     const char* key() const { return key_buffer_.data(); }
 
-    // Gets the value referred to by this iterator. Equivalent to
-    // KeyValueStore::Get.
+    /// @returns The value referred to by this iterator. Equivalent to
+    /// `pw::kvs::KeyValueStore::Get()`.
     StatusWithSize Get(span<std::byte> value_buffer,
                        size_t offset_bytes = 0) const {
       return kvs_.Get(key(), *iterator_, value_buffer, offset_bytes);
@@ -257,30 +297,34 @@ class KeyValueStore {
     std::array<char, internal::Entry::kMaxKeyLength + 1> key_buffer_;
   };
 
+  /// Supported iteration methods.
   class iterator {
    public:
+    /// Increments to the next key-value entry in the container.
     iterator& operator++();
 
+    /// Increments to the next key-value entry in the container.
     iterator operator++(int) {
       const iterator original(item_.kvs_, item_.iterator_);
       operator++();
       return original;
     }
 
-    // Reads the entry's key from flash.
+    /// Reads the entry's key from flash.
     const Item& operator*() {
       item_.ReadKey();
       return item_;
     }
 
-    const Item* operator->() {
-      return &operator*();  // Read the key into the Item object.
-    }
+    /// Reads the entry into the `Item` object.
+    const Item* operator->() { return &operator*(); }
 
+    /// Equality comparison of two entries.
     constexpr bool operator==(const iterator& rhs) const {
       return item_.iterator_ == rhs.item_.iterator_;
     }
 
+    /// Inequality comparison of two entries.
     constexpr bool operator!=(const iterator& rhs) const {
       return item_.iterator_ != rhs.item_.iterator_;
     }
@@ -298,56 +342,78 @@ class KeyValueStore {
 
   using const_iterator = iterator;  // Standard alias for iterable types.
 
+  /// @returns The first key-value entry in the container. Used for iteration.
   iterator begin() const;
+  /// @returns The last key-value entry in the container. Used for iteration.
   iterator end() const { return iterator(*this, entry_cache_.end()); }
 
-  // Returns the number of valid entries in the KeyValueStore.
+  /// @returns The number of valid entries in the KVS.
   size_t size() const { return entry_cache_.present_entries(); }
 
-  // Returns the number of valid entries and deleted entries yet to be collected
+  /// @returns The number of valid entries and deleted entries yet to be
+  /// collected.
   size_t total_entries_with_deleted() const {
     return entry_cache_.total_entries();
   }
 
+  /// @returns The maximum number of KV entries that's possible in the KVS.
   size_t max_size() const { return entry_cache_.max_entries(); }
 
+  /// @returns `true` if the KVS is empty.
   size_t empty() const { return size() == 0u; }
 
-  // Returns the number of transactions that have occurred since the KVS was
-  // first used. This value is retained across initializations, but is reset if
-  // the underlying flash is erased.
+  /// @returns The number of transactions that have occurred since the KVS was
+  /// first used. This value is retained across initializations, but is reset
+  /// if the underlying flash is erased.
   uint32_t transaction_count() const { return last_transaction_id_; }
 
+  /// Statistics about the KVS.
+  ///
+  /// Statistics are since the KVS init. They're not retained across reboots.
   struct StorageStats {
+    /// The number of writeable bytes remaining in the KVS. This number doesn't
+    /// include the one empty sector required for KVS garbage collection.
     size_t writable_bytes;
+    /// The number of bytes in the KVS that are already in use.
     size_t in_use_bytes;
+    /// The maximum number of bytes possible to reclaim by garbage collection.
+    /// The number of bytes actually reclaimed by maintenance depends on the
+    /// type of maintenance that's performed.
     size_t reclaimable_bytes;
+    /// The total count of individual sector erases that have been performed.
     size_t sector_erase_count;
+    /// The number of corrupt sectors that have been recovered.
     size_t corrupt_sectors_recovered;
+    /// The number of missing redundant copies of entries that have been
+    /// recovered.
     size_t missing_redundant_entries_recovered;
   };
 
+  /// @returns A `StorageStats` struct with details about the current and past
+  /// state of the KVS.
   StorageStats GetStorageStats() const;
 
-  // Level of redundancy to use for writing entries.
+  /// @returns The number of identical copies written for each entry. A
+  /// redundancy of 1 means that only a single copy is written for each entry.
   size_t redundancy() const { return entry_cache_.redundancy(); }
 
+  /// @returns `true` if the KVS has any unrepaired errors.
   bool error_detected() const { return error_detected_; }
 
-  // Maximum number of bytes allowed for a key-value combination.
+  /// @returns The maximum number of bytes allowed for a key-value combination.
   size_t max_key_value_size_bytes() const {
     return max_key_value_size_bytes(partition_.sector_size_bytes());
   }
 
-  // Maximum number of bytes allowed for a given sector size for a key-value
-  // combination.
+  /// @returns The maximum number of bytes allowed for a given sector size for
+  /// a key-value combination.
   static constexpr size_t max_key_value_size_bytes(
       size_t partition_sector_size_bytes) {
     return partition_sector_size_bytes - Entry::entry_overhead();
   }
 
-  // Check KVS for any error conditions. Primarily intended for test and
-  // internal use.
+  /// Checks the KVS for any error conditions and returns `true` if any errors
+  /// are present. Primarily intended for test and internal use.
   bool CheckForErrors();
 
  protected:

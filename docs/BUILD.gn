@@ -168,6 +168,8 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_i2c_linux/public/pw_i2c_linux/initiator.h",
   "$dir_pw_interrupt/public/pw_interrupt/context.h",
   "$dir_pw_json/public/pw_json/builder.h",
+  "$dir_pw_kvs/public/pw_kvs/key_value_store.h",
+  "$dir_pw_kvs/pw_kvs_private/config.h",
   "$dir_pw_log/public/pw_log/tokenized_args.h",
   "$dir_pw_log_string/public/pw_log_string/handler.h",
   "$dir_pw_log_tokenized/public/pw_log_tokenized/base64.h",
