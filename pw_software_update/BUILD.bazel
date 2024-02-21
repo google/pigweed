@@ -49,6 +49,11 @@ pw_proto_library(
     deps = [":update_bundle_proto"],
 )
 
+java_lite_proto_library(
+    name = "update_bundle_java_proto_lite",
+    deps = [":update_bundle_proto"],
+)
+
 proto_library(
     name = "bundled_update_proto",
     srcs = [
@@ -63,6 +68,11 @@ proto_library(
 
 py_proto_library(
     name = "bundled_update_py_pb2",
+    deps = [":bundled_update_proto"],
+)
+
+java_lite_proto_library(
+    name = "bundled_update_java_proto_lite",
     deps = [":bundled_update_proto"],
 )
 

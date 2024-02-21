@@ -18,6 +18,9 @@ package pw.software_update;
 
 import "pw_software_update/tuf.proto";
 
+option java_multiple_files = true;
+option java_package = "dev.pigweed.pw_software_update";
+
 message UpdateBundle {
   // The timestamp role is used for freshness check of the snapshot. Any
   // project-specific update metadata should go in the top-level
