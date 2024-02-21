@@ -1,0 +1,4 @@
+{
+  "repo": "com_google_fuzztest",
+  "targets": [ "//fuzztest:fuzztest_core", "//fuzztest:fuzztest_gtest_main" ]
+}

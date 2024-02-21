@@ -65,6 +65,12 @@ if (dir_pw_third_party_googletest != "") {
     public_deps = [ ":googletest" ]
     sources = [ "$dir_pw_third_party_googletest/googlemock/src/gmock_main.cc" ]
   }
+
+  # Alias that matches the Bazel target, i.e. "@com_google_googletest//:gtest".
+  # This is needed by some third party deps generated from Bazel, e.g. FuzzTest.
+  group("gtest") {
+    public_deps = [ ":googletest" ]
+  }
 } else {
   group("googletest") {
   }

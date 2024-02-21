@@ -36,7 +36,7 @@ endif()
 add_library(pw_third_party.fuzztest INTERFACE)
 target_link_libraries(pw_third_party.fuzztest
   INTERFACE
-    fuzztest_fuzztest
+    fuzztest_core
     pw_unit_test
     pw_unit_test.googletest
 )

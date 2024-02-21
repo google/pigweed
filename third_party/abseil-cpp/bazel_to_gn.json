@@ -1,0 +1,24 @@
+{
+  "repo": "com_google_absl",
+  "defaults": {
+    "linux": {
+      "copts": [
+        "-Wall",
+        "-Wextra",
+        "-Wcast-qual",
+        "-Wconversion-null",
+        "-Wformat-security",
+        "-Wmissing-declarations",
+        "-Woverlength-strings",
+        "-Wpointer-arith",
+        "-Wundef",
+        "-Wunused-local-typedefs",
+        "-Wunused-result",
+        "-Wvarargs",
+        "-Wvla",
+        "-Wwrite-strings",
+        "-DNOMINMAX"
+      ]
+    }
+  }
+}

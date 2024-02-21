@@ -95,7 +95,7 @@ build:asan-libfuzzer --@rules_fuzzing//fuzzing:cc_engine_sanitizer=asan
 # Include FuzzTest build configurations.
 try-import %workspace%/third_party/fuzztest/fuzztest.bazelrc
 build:fuzztest \
-    --@pigweed//targets:pw_fuzzer_fuzztest_backend=@com_google_fuzztest//fuzztest
+    --@pigweed//targets:pw_fuzzer_fuzztest_backend=@com_google_fuzztest//fuzztest:fuzztest_core
 build:fuzztest \
     --@pigweed//targets:pw_unit_test_main=@com_google_fuzztest//fuzztest:fuzztest_gtest_main
 

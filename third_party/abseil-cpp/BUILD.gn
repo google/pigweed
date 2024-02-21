@@ -17,38 +17,18 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_third_party/abseil-cpp/abseil-cpp.gni")
 
-if (dir_pw_third_party_abseil_cpp != "") {
-  config("abseil_cpp_public_config1") {
-    include_dirs = [ "$dir_pw_third_party_abseil_cpp" ]
+config("absl_public_config") {
+  cflags = [ "-Wno-gcc-compat" ]
+  if (dir_pw_third_party_abseil_cpp != "") {
+    include_dirs = [ dir_pw_third_party_abseil_cpp ]
   }
+}
 
-  config("abseil_cpp_config1") {
-    cflags = [
-      "-DNOMINMAX",
-      "-Wall",
-      "-Wcast-qual",
-      "-Wconversion-null",
-      "-Wextra",
-      "-Wformat-security",
-      "-Wmissing-declarations",
-      "-Woverlength-strings",
-      "-Wpointer-arith",
-      "-Wundef",
-      "-Wunused-local-typedefs",
-      "-Wunused-result",
-      "-Wvarargs",
-      "-Wvla",
-      "-Wwrite-strings",
-    ]
-  }
-
-  config("abseil_cpp_config2") {
-    ldflags = [ "-pthread" ]
-  }
+config("absl_config") {
+  cflags = [ "-Wno-switch-enum" ]
 }
 
 pw_doc_group("docs") {

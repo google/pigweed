@@ -96,10 +96,17 @@ the ``-w`` option, e.g.
    python pw_build/py/pw_build/generate_3p_gn.py \
      -w third_party/fuzztest/src
 
+Additionally, the ``fuzztest.bazelrc`` file should regenerated. From this
+directory, run:
+
+.. code-block:: sh
+
+   bazel run @com_google_fuzztest//bazel:setup_configs > fuzztest.bazelrc
+
 .. DO NOT EDIT BELOW THIS LINE. Generated section.
 
 Version
 =======
-The update script was last run for revision `3c77f971`_.
+The update script was last run for revision `6eb010c7`_.
 
-.. _3c77f971: https://github.com/google/fuzztes/tree/3c77f97183a1270796d25db1a8956706a25af238
+.. _6eb010c7: https://github.com/google/fuzztes/tree/6eb010c7223a6aa609b94d49bfc06ac88f922961

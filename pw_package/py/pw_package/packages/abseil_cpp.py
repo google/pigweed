@@ -31,7 +31,7 @@ class AbseilCPP(pw_package.git_repo.GitRepo):
                 'https://pigweed.googlesource.com/'
                 'third_party/github/abseil/abseil-cpp'
             ),
-            commit='65109ecdf01a829bdb5e428174b3abb181e75826',
+            commit='3ab97e7212bff931a201c794fa1331960158bbfa',
             **kwargs,
         )
 

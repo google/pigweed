@@ -22,4 +22,4 @@
 /// enabled.
 /// @endrst
 
-#include "fuzztest/fuzztest.h"
+#include "fuzztest/fuzztest_core.h"

@@ -54,3 +54,10 @@ Version
 The update script was last run for revision `67f9650`_.
 
 .. _67f9650: https://github.com/abseil/abseil-cpp/tree/67f9650c93a4fa04728a5b754ae8297d2c55d898
+.. DO NOT EDIT BELOW THIS LINE. Generated section.
+
+Version
+=======
+The update script was last run for revision `3ab97e72`_.
+
+.. _3ab97e72: https://github.com/abseil/abseil-cpp/tree/3ab97e7212bff931a201c794fa1331960158bbfa

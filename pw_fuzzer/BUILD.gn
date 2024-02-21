@@ -96,15 +96,9 @@ if (dir_pw_third_party_fuzztest != "" && pw_toolchain_FUZZING_ENABLED) {
     public_configs = [
       ":public_include_path",
       ":private_include_path",
-      "$dir_pw_third_party/abseil-cpp/configs:disabled_warnings",
-      "$dir_pw_third_party/abseil-cpp/configs:public_include_path",
-      "$dir_pw_third_party/fuzztest/configs:disabled_warnings",
-      "$dir_pw_third_party/fuzztest/configs:public_include_path",
-      "$dir_pw_third_party/re2/configs:disabled_warnings",
-      "$dir_pw_third_party/re2/configs:public_include_path",
     ]
     public_deps = [
-      "$dir_pw_third_party/fuzztest/fuzztest",
+      "$dir_pw_third_party/fuzztest/fuzztest:fuzztest_core",
       dir_pw_containers,
       dir_pw_result,
       dir_pw_status,
