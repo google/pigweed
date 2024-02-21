@@ -186,7 +186,6 @@ git_repository(
     name = "io_bazel_stardoc",
     commit = "2b801dc9b93f73812948ee4e505805511b0f55dc",
     remote = "https://github.com/bazelbuild/stardoc.git",
-    shallow_since = "1651081130 -0400",
 )
 
 # Set up Protobuf rules.
@@ -275,7 +274,6 @@ git_repository(
     name = "rust_crates",
     commit = "6d975531f7672cc6aa54bdd7517e1beeffa578da",
     remote = "https://pigweed.googlesource.com/third_party/rust_crates",
-    shallow_since = "1675359057 +0000",
 )
 
 # Registers platforms for use with toolchain resolution
@@ -371,14 +369,12 @@ new_git_repository(
     build_file = "//:third_party/micro_ecc/BUILD.micro_ecc",
     commit = "b335ee812bfcca4cd3fb0e2a436aab39553a555a",
     remote = "https://github.com/kmackay/micro-ecc.git",
-    shallow_since = "1648504566 -0700",
 )
 
 git_repository(
     name = "boringssl",
     commit = "0fd67c76fc4bfb05a665c087ebfead77a3267f6d",
     remote = "https://boringssl.googlesource.com/boringssl",
-    shallow_since = "1637714942 +0000",
 )
 
 git_repository(
@@ -387,7 +383,6 @@ git_repository(
     # mbedtls-3.2.1 released 2022-07-12
     commit = "869298bffeea13b205343361b7a7daf2b210e33d",
     remote = "https://pigweed.googlesource.com/third_party/github/ARMmbed/mbedtls",
-    shallow_since = "1648504566 -0700",
 )
 
 http_archive(
