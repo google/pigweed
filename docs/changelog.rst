@@ -103,12 +103,6 @@ pw_async_basic
 * `Fix ordering of tasks posted at same time
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/189784>`__
 
-pw_bazel_toolchain
-------------------
-* `Support regular binaries as tools
-  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/190151>`__
-  (issue `#322872628 <https://issues.pigweed.dev/issues/322872628>`__)
-
 pw_bloat
 --------
 The new boolean argument ``ignore_unused_labels`` for ``pw_size_report()``
@@ -367,6 +361,9 @@ A lot of the remaining ``pw_toolchain_bazel`` feature work from
   (issue `#322872628 <https://issues.pigweed.dev/issues/322872628>`__)
 * `Replace bazel_tools providers with PW providers
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/189110>`__
+  (issue `#322872628 <https://issues.pigweed.dev/issues/322872628>`__)
+* `Support regular binaries as tools
+  <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/190151>`__
   (issue `#322872628 <https://issues.pigweed.dev/issues/322872628>`__)
 
 pw_transfer
