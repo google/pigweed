@@ -24,7 +24,7 @@ public class TransferService {
   private static final Service SERVICE = new Service("pw.transfer.Transfer",
       bidirectionalStreamingMethod("Read", Chunk.parser(), Chunk.parser()),
       bidirectionalStreamingMethod("Write", Chunk.parser(), Chunk.parser()),
-      unaryMethod("GetResourceStatus", ResourceStatusRequest.class, ResourceStatus.class));
+      unaryMethod("GetResourceStatus", ResourceStatusRequest.parser(), ResourceStatus.parser()));
 
   public static Service get() {
     return SERVICE;
