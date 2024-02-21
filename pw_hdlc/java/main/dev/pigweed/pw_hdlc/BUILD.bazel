@@ -12,18 +12,34 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+PW_HDLC_SOURCES = [
+    "CustomVarInt.java",
+    "Decoder.java",
+    "Encoder.java",
+    "Frame.java",
+    "Protocol.java",
+]
+
 java_library(
     name = "pw_hdlc",
-    srcs = [
-        "CustomVarInt.java",
-        "Decoder.java",
-        "Encoder.java",
-        "Frame.java",
-        "Protocol.java",
-    ],
+    srcs = PW_HDLC_SOURCES,
     visibility = ["//visibility:public"],
     deps = [
         "//pw_log/java/main/dev/pigweed/pw_log",
+        "//third_party/google_auto:value",
+        "@com_google_protobuf//java/lite",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+android_library(
+    name = "android",
+    srcs = PW_HDLC_SOURCES,
+    tags = ["manual"],  # TODO: b/227771184 - support Android in the Bazel build
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pw_log/java/android_main/dev/pigweed/pw_log",
         "//third_party/google_auto:value",
         "@com_google_protobuf//java/lite",
         "@maven//:com_google_code_findbugs_jsr305",

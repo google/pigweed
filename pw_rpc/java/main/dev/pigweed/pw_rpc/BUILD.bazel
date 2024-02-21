@@ -14,36 +14,53 @@
 
 # Generic client for pw_rpc, Pigweed's RPC system.
 
+RPC_CLIENT_SOURCES = [
+    "AbstractCall.java",
+    "Call.java",
+    "Channel.java",
+    "ChannelOutputException.java",
+    "Client.java",
+    "Endpoint.java",
+    "FutureCall.java",
+    "Ids.java",
+    "InvalidRpcChannelException.java",
+    "InvalidRpcServiceException.java",
+    "InvalidRpcServiceMethodException.java",
+    "InvalidRpcStateException.java",
+    "Method.java",
+    "MethodClient.java",
+    "Packets.java",
+    "PendingRpc.java",
+    "RpcError.java",
+    "RpcKey.java",
+    "Service.java",
+    "Status.java",
+    "StreamObserver.java",
+    "StreamObserverCall.java",
+    "UnaryResult.java",
+]
+
 java_library(
     name = "client",
-    srcs = [
-        "AbstractCall.java",
-        "Call.java",
-        "Channel.java",
-        "ChannelOutputException.java",
-        "Client.java",
-        "Endpoint.java",
-        "FutureCall.java",
-        "Ids.java",
-        "InvalidRpcChannelException.java",
-        "InvalidRpcServiceException.java",
-        "InvalidRpcServiceMethodException.java",
-        "InvalidRpcStateException.java",
-        "Method.java",
-        "MethodClient.java",
-        "Packets.java",
-        "PendingRpc.java",
-        "RpcError.java",
-        "RpcKey.java",
-        "Service.java",
-        "Status.java",
-        "StreamObserver.java",
-        "StreamObserverCall.java",
-        "UnaryResult.java",
-    ],
+    srcs = RPC_CLIENT_SOURCES,
     visibility = ["//visibility:public"],
     deps = [
         "//pw_log/java/main/dev/pigweed/pw_log",
+        "//pw_rpc:packet_proto_java_lite",
+        "//third_party/google_auto:value",
+        "@com_google_protobuf//java/lite",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+android_library(
+    name = "client_android",
+    srcs = RPC_CLIENT_SOURCES,
+    tags = ["manual"],  # TODO: b/227771184 - support Android in the Bazel build
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pw_log/java/android_main/dev/pigweed/pw_log",
         "//pw_rpc:packet_proto_java_lite",
         "//third_party/google_auto:value",
         "@com_google_protobuf//java/lite",
