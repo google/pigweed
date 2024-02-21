@@ -199,6 +199,12 @@ message ServerFailureConfig {
   // repeated for each element in packets_before_failure.  After that list
   // is exhausted, ServerFailure will send all packets.
   repeated uint32 packets_before_failure = 1;
+
+  // By default, the ServerFailure starts counting packets after receiving a
+  // transfer START packet. If `start_immediately` is set to `true`, the filter
+  // will begin counting packets as soon as it is initialized, before the first
+  // START is seen.
+  bool start_immediately = 2;
 }
 
 // Configuration for the WindowPacketDropper proxy filter.

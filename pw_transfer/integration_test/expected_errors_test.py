@@ -105,7 +105,12 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
                 """
                 client_filter_stack: [
                     { hdlc_packetizer: {} },
-                    { server_failure: {packets_before_failure: [5]} }
+                    {
+                        server_failure: {
+                            packets_before_failure: [5],
+                            start_immediately: true
+                        }
+                    }
                 ]
 
                 server_filter_stack: [
@@ -140,10 +145,6 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
         config = TransferConfig(
             self.default_server_config(),
             self.default_client_config(),
-            # multiple packets before failure because there are many start
-            # packets sent during the transfer
-            # TODO(b/322497491): Remove duplicate packets_before_failure after
-            # fixing the proxy server_failure behavior.
             text_format.Parse(
                 """
                 client_filter_stack: [
@@ -152,7 +153,7 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
 
                 server_filter_stack: [
                     { hdlc_packetizer: {} },
-                    { server_failure: {packets_before_failure: [5,5,5,5]} }
+                    { server_failure: {packets_before_failure: [5]} }
             ]""",
                 config_pb2.ProxyConfig(),
             ),
@@ -226,7 +227,12 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
                 """
                 client_filter_stack: [
                     { hdlc_packetizer: {} },
-                    { server_failure: {packets_before_failure: [5]} }
+                    {
+                        server_failure: {
+                            packets_before_failure: [5],
+                            start_immediately: true
+                        }
+                    }
                 ]
 
                 server_filter_stack: [
@@ -261,10 +267,6 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
         config = TransferConfig(
             self.default_server_config(),
             self.default_client_config(),
-            # multiple packets before failure because there are many start
-            # packets sent during the transfer
-            # TODO(b/322497491): Remove duplicate packets_before_failure after
-            # fixing the proxy server_failure behavior.
             text_format.Parse(
                 """
                 client_filter_stack: [
@@ -273,7 +275,7 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
 
                 server_filter_stack: [
                     { hdlc_packetizer: {} },
-                    { server_failure: {packets_before_failure: [5,5,5,5]} }
+                    { server_failure: {packets_before_failure: [5]} }
             ]""",
                 config_pb2.ProxyConfig(),
             ),

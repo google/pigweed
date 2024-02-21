@@ -117,6 +117,7 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
             lambda data: append(sent_packets, data),
             name="test",
             packets_before_failure_list=packets_before_failure.copy(),
+            start_immediately=True,
         )
 
         # After passing the list to ServerFailure, add a test for no
@@ -257,6 +258,94 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
                 await window_packet_dropper.process(packet)
             self.assertEqual(sent_packets, expected_packets)
             window_packet_dropper.handle_event(event)
+
+    async def test_event_filter(self):
+        sent_packets: List[bytes] = []
+
+        # Async helper so EventFilter can await on it.
+        async def append(list: List[bytes], data: bytes):
+            list.append(data)
+
+        queue = asyncio.Queue()
+
+        event_filter = proxy.EventFilter(
+            lambda data: append(sent_packets, data),
+            name="test",
+            event_queue=queue,
+        )
+
+        request = packet_pb2.RpcPacket(
+            type=packet_pb2.PacketType.REQUEST,
+            channel_id=101,
+            service_id=1001,
+            method_id=100001,
+        ).SerializeToString()
+
+        packets = [
+            request,
+            _encode_rpc_frame(
+                Chunk(
+                    ProtocolVersion.VERSION_TWO, Chunk.Type.START, session_id=1
+                )
+            ),
+            _encode_rpc_frame(
+                Chunk(
+                    ProtocolVersion.VERSION_TWO,
+                    Chunk.Type.DATA,
+                    session_id=1,
+                    data=b'3',
+                )
+            ),
+            _encode_rpc_frame(
+                Chunk(
+                    ProtocolVersion.VERSION_TWO,
+                    Chunk.Type.DATA,
+                    session_id=1,
+                    data=b'3',
+                )
+            ),
+            request,
+            _encode_rpc_frame(
+                Chunk(
+                    ProtocolVersion.VERSION_TWO, Chunk.Type.START, session_id=2
+                )
+            ),
+            _encode_rpc_frame(
+                Chunk(
+                    ProtocolVersion.VERSION_TWO,
+                    Chunk.Type.DATA,
+                    session_id=2,
+                    data=b'4',
+                )
+            ),
+            _encode_rpc_frame(
+                Chunk(
+                    ProtocolVersion.VERSION_TWO,
+                    Chunk.Type.DATA,
+                    session_id=2,
+                    data=b'5',
+                )
+            ),
+        ]
+
+        expected_events = [
+            None,  # request
+            proxy.Event.TRANSFER_START,  # start chunk
+            None,  # data chunk
+            None,  # data chunk
+            None,  # request
+            proxy.Event.TRANSFER_START,  # start chunk
+            None,  # data chunk
+            None,  # data chunk
+        ]
+
+        for packet, expected_event in zip(packets, expected_events):
+            await event_filter.process(packet)
+            try:
+                event = queue.get_nowait()
+            except asyncio.QueueEmpty:
+                event = None
+            self.assertEqual(event, expected_event)
 
 
 def _encode_rpc_frame(chunk: Chunk) -> bytes:

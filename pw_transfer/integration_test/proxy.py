@@ -76,7 +76,6 @@ class Filter(abc.ABC):
 
     def __init__(self, send_data: Callable[[bytes], Awaitable[None]]):
         self.send_data = send_data
-        pass
 
     @abc.abstractmethod
     async def process(self, data: bytes) -> None:
@@ -144,7 +143,7 @@ class KeepDropQueue(Filter):
     queue is looped over unless a negative element is found. A negative number
     is effectively the same as a value of infinity.
 
-     This filter is typically most pratical when used with a packetizer so data
+     This filter is typically most practical when used with a packetizer so data
      can be dropped as distinct packets.
 
     Examples:
@@ -177,7 +176,7 @@ class KeepDropQueue(Filter):
         self._name = name
 
     async def process(self, data: bytes) -> None:
-        # Move forward through the queue if neeeded.
+        # Move forward through the queue if needed.
         while self._current_count == 0:
             self._loop_idx += 1
             self._current_count = self._keep_drop_queue[
@@ -297,12 +296,15 @@ class ServerFailure(Filter):
         send_data: Callable[[bytes], Awaitable[None]],
         name: str,
         packets_before_failure_list: List[int],
+        start_immediately: bool = False,
     ):
         super().__init__(send_data)
         self._name = name
         self._relay_packets = True
         self._packets_before_failure_list = packets_before_failure_list
-        self.advance_packets_before_failure()
+        self._packets_before_failure = None
+        if start_immediately:
+            self.advance_packets_before_failure()
 
     def advance_packets_before_failure(self):
         if len(self._packets_before_failure_list) > 0:
@@ -388,6 +390,7 @@ class EventFilter(Filter):
         event_queue: asyncio.Queue,
     ):
         super().__init__(send_data)
+        self._name = name
         self._queue = event_queue
 
     async def process(self, data: bytes) -> None:
@@ -418,11 +421,17 @@ def _extract_transfer_chunk(data: bytes) -> Chunk:
     for frame in decoder.process(data):
         packet = packet_pb2.RpcPacket()
         packet.ParseFromString(frame.data)
-        raw_chunk = transfer_pb2.Chunk()
-        raw_chunk.ParseFromString(packet.payload)
-        return Chunk.from_message(raw_chunk)
 
-    raise ValueError("Invalid transfer frame")
+        if packet.payload:
+            raw_chunk = transfer_pb2.Chunk()
+            raw_chunk.ParseFromString(packet.payload)
+            return Chunk.from_message(raw_chunk)
+
+        # The incoming data is expected to be HDLC-packetized, so only one
+        # frame should exist.
+        break
+
+    raise ValueError("Invalid transfer chunk frame")
 
 
 async def _handle_simplex_events(
@@ -477,7 +486,10 @@ async def _handle_simplex_connection(
         elif filter_name == "server_failure":
             server_failure = config.server_failure
             filter_stack = ServerFailure(
-                filter_stack, name, server_failure.packets_before_failure
+                filter_stack,
+                name,
+                server_failure.packets_before_failure,
+                server_failure.start_immediately,
             )
             event_handlers.append(filter_stack.handle_event)
         elif filter_name == "keep_drop_queue":
