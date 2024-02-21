@@ -222,11 +222,26 @@ _________________
 
 Canonical URL configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-``module_metadata`` fixes the canonical URLs for module homepages. Sphinx
-outputs the canonical URL as ``https://pigweed.dev/pw_*/docs.html`` whereas we
-actually need it to be ``https://pigweed.dev/pw_*/`` because that's how our
-server is configured. Context: `b/323077749
-<https://issues.pigweed.dev/323077749>`_
+``module_metadata`` fixes the canonical URLs for ``*/docs.html`` pages. By
+default Sphinx assumes that a page's canonical URL is its full URL. E.g. the
+default canonical URL for ``//pw_string/docs.rst`` is
+``https://pigweed.dev/pw_string/docs.html``.  The ``pigweed.dev``
+server treats ``https://pigweed.dev/pw_string/`` as the canonical URL however.
+This problem is not limited to module homepages; it occurs on any page that
+ends in ``/docs.html`` such as
+``https://pigweed.dev/third_party/emboss/docs.html``. ``module_metadata`` fixes
+this problem by ensuring that the ``<link rel="canonical" href="..."/>`` tag
+generated in the HTML is aligned with the server's configuration.
+
+After building the docs, the canonical URLs for all HTML pages can be verified
+by running the following command in a terminal from the root directory of the
+upstream Pigweed repo:
+
+.. code-block:: console
+
+   grep '<link rel="canonical' out/docs/gen/docs/html/* -R
+
+Context: `b/323077749 <https://issues.pigweed.dev/323077749>`_
 
 google_analytics
 ----------------

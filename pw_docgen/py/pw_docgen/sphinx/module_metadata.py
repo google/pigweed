@@ -362,13 +362,13 @@ def setup_parse_body(_app, _pagename, _templatename, context, _doctree):
     context['parse_body'] = parse_body
 
 
-def fix_canonical_url(docname: str, canonical_url: str) -> str:
-    """Rewrites the canonical URL for a module homepage.
+def fix_canonical_url(canonical_url: Optional[str]) -> Optional[str]:
+    """Rewrites the canonical URL for `pigweed.dev/*/docs.html` pages.
 
-    Sphinx assumes that the canonical URL for a module homepage is
-    `https://pigweed.dev/pw_*/docs.html` whereas we need it to actually be
-    `https://pigweed.dev/pw_*/` because this is how our server is configured.
-    Context: b/323077749
+    Our server is configured to remove `docs.html` from URLs. E.g.
+    pigweed.dev/pw_string/docs.html` redirects to `pigweed.dev/pw_string`.
+    To improve our SEO, the `<link rel="canonical" href="..."/>` tag in our
+    HTML should match the URL that the server provides.
 
     Args:
         docname:
@@ -378,20 +378,20 @@ def fix_canonical_url(docname: str, canonical_url: str) -> str:
             The default canonical URL that Sphinx has generated for the doc.
 
     Returns:
-        The corrected canonical URL if `docname` is a module homepage,
-        otherwise the original canonical URL is returned without modification.
+        The corrected canonical URL if the page would normally end with
+        `docs.html`, otherwise the original canonical URL value unmodified.
     """
-    if not is_module_homepage(docname):
+    if canonical_url is None or not canonical_url.endswith('/docs.html'):
         return canonical_url
-    module_name = parse_module_name(docname)
-    return f'https://pigweed.dev/{module_name}/'
+    canonical_url = canonical_url.replace('/docs.html', '/')
+    return canonical_url
 
 
 def on_html_page_context(
     app: Sphinx,  # pylint: disable=unused-argument
-    docname: str,
+    docname: str,  # pylint: disable=unused-argument
     templatename: str,  # pylint: disable=unused-argument
-    context: Dict[str, str],
+    context: Optional[Dict[str, Optional[str]]],
     doctree: Document,  # pylint: disable=unused-argument
 ) -> None:
     """Handles modifications to HTML page metadata, e.g. canonical URLs.
@@ -407,11 +407,10 @@ def on_html_page_context(
         None. Modifications happen to the HTML metadata in-place.
     """
     canonical_url_key = 'pageurl'
-    if canonical_url_key not in context:
+    if context is None or canonical_url_key not in context:
         return
-    context[canonical_url_key] = fix_canonical_url(
-        docname, context[canonical_url_key]
-    )
+    canonical_url = context[canonical_url_key]
+    context[canonical_url_key] = fix_canonical_url(canonical_url)
 
 
 def add_links(module_name: str, toctree: Element) -> None:
