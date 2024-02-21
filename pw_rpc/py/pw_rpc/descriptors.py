@@ -194,9 +194,7 @@ _PROTO_FIELD_TYPES = {
 def _field_type_annotation(field: FieldDescriptor):
     """Creates a field type annotation to use in the help message only."""
     if field.type == FieldDescriptor.TYPE_MESSAGE:
-        annotation = message_factory.MessageFactory(
-            field.message_type.file.pool
-        ).GetPrototype(field.message_type)
+        annotation = message_factory.GetMessageClass(field.message_type)
     else:
         annotation = _PROTO_FIELD_TYPES.get(field.type, Parameter.empty)
 
@@ -223,18 +221,6 @@ def field_help(proto_message, *, annotations: bool = False) -> Iterator[str]:
             yield f'{field.name}={value}'
 
 
-def _message_is_type(proto, expected_type) -> bool:
-    """Returns true if the protobuf instance is the expected type."""
-    # Getting protobuf classes from google.protobuf.message_factory may create a
-    # new, unique generated proto class. Any generated classes for a particular
-    # proto message share the same MessageDescriptor instance and are
-    # interchangeable, so check the descriptors in addition to the types.
-    return isinstance(proto, expected_type) or (
-        isinstance(proto, Message)
-        and proto.DESCRIPTOR is expected_type.DESCRIPTOR
-    )
-
-
 @dataclass(frozen=True, eq=False)
 class Method:
     """Describes a method in a service."""
@@ -248,20 +234,16 @@ class Method:
     response_type: Any
 
     @classmethod
-    def from_descriptor(cls, descriptor: MethodDescriptor, service: Service):
-        input_factory = message_factory.MessageFactory(
-            descriptor.input_type.file.pool
-        )
-        output_factory = message_factory.MessageFactory(
-            descriptor.output_type.file.pool
-        )
+    def from_descriptor(
+        cls, descriptor: MethodDescriptor, service: Service
+    ) -> 'Method':
         return Method(
             descriptor,
             service,
             ids.calculate(descriptor.name),
             *_streaming_attributes(descriptor),
-            input_factory.GetPrototype(descriptor.input_type),
-            output_factory.GetPrototype(descriptor.output_type),
+            message_factory.GetMessageClass(descriptor.input_type),
+            message_factory.GetMessageClass(descriptor.output_type),
         )
 
     class Type(enum.Enum):
@@ -323,7 +305,7 @@ class Method:
         if proto is None:
             return self.request_type(**proto_kwargs)
 
-        if not _message_is_type(proto, self.request_type):
+        if not isinstance(proto, self.request_type):
             try:
                 bad_type = proto.DESCRIPTOR.full_name
             except AttributeError:

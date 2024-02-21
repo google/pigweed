@@ -15,7 +15,7 @@
 
 import unittest
 
-from google.protobuf.message_factory import MessageFactory
+from google.protobuf.message_factory import GetMessageClass
 
 from pw_protobuf_compiler import python_protos
 from pw_rpc import descriptors
@@ -80,15 +80,12 @@ class MethodTest(unittest.TestCase):
             self._method.get_request(msg, {})
 
     def test_get_request_with_different_copy_of_same_message_class(self):
-        some_message_clone = MessageFactory(
-            self._method.request_type.DESCRIPTOR.file.pool
-        ).GetPrototype(self._method.request_type.DESCRIPTOR)
-
+        some_message_clone = GetMessageClass(
+            self._method.request_type.DESCRIPTOR
+        )
         msg = some_message_clone()
 
-        # Protobuf classes obtained with a MessageFactory may or may not be a
-        # unique type, but will always use the same descriptor instance.
-        self.assertIsInstance(msg, some_message_clone)
+        self.assertIsInstance(msg, self._method.request_type)
         self.assertIs(msg.DESCRIPTOR, self._method.request_type.DESCRIPTOR)
 
         result = self._method.get_request(msg, {})
