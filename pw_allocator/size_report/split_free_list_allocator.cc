@@ -114,7 +114,7 @@ int main() {
 #endif  // SIZE_REPORT_UNIQUE_PTR
 
 #ifdef SIZE_REPORT_WITH_METRICS
-  tracker.Init(allocator, kFakeMemoryRegionSize);
+  tracker.Init(allocator);
 
   Foo* foo2 =
       static_cast<Foo*>(tracker.Allocate(pw::allocator::Layout::Of<Foo>()));

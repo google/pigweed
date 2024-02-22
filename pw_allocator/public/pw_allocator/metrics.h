@@ -28,12 +28,7 @@ namespace internal {
 /// reduce the number of preprocessor statements for conditional compilation.
 class Metrics : public metric::Group {
  public:
-  constexpr Metrics(metric::Token token) : metric::Group(token) {}
-
-  /// Add the metrics to the group.
-  ///
-  /// A separate `Init` method allows the constructor to remain constexpr.
-  void Init(size_t capacity);
+  explicit Metrics(metric::Token token);
 
   /// Records the details of allocating memory and updates metrics accordingly.
   ///
@@ -65,7 +60,6 @@ class Metrics : public metric::Group {
   /// may indicated memory becoming exhausted and/or high fragmentation.
   void RecordFailure();
 
-  uint32_t total_bytes() const { return total_bytes_.value(); }
   uint32_t allocated_bytes() const { return allocated_bytes_.value(); }
   uint32_t peak_allocated_bytes() const {
     return peak_allocated_bytes_.value();
@@ -89,7 +83,6 @@ class Metrics : public metric::Group {
   /// @copydoc RecordResize
   void RecordResizeImpl(uint32_t old_size, uint32_t new_size);
 
-  PW_METRIC(total_bytes_, "total_bytes", 0U);
   PW_METRIC(allocated_bytes_, "allocated_bytes", 0U);
   PW_METRIC(peak_allocated_bytes_, "peak_allocated_bytes", 0U);
   PW_METRIC(cumulative_allocated_bytes_, "cumulative_allocated_bytes", 0U);
@@ -129,7 +122,6 @@ class MetricsStub {
   /// @copydoc `Metrics::RecordFailure`.
   void RecordFailure() {}
 
-  uint32_t total_bytes() const { return 0; }
   uint32_t allocated_bytes() const { return 0; }
   uint32_t peak_allocated_bytes() const { return 0; }
   uint32_t cumulative_allocated_bytes() const { return 0; }
@@ -172,7 +164,6 @@ class WithMetrics {
   virtual metrics_type& metric_group() = 0;
   virtual const metrics_type& metric_group() const = 0;
 
-  uint32_t total_bytes() const { return metric_group().total_bytes(); }
   uint32_t allocated_bytes() const { return metric_group().allocated_bytes(); }
   uint32_t peak_allocated_bytes() const {
     return metric_group().peak_allocated_bytes();

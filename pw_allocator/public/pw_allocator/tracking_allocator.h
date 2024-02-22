@@ -42,12 +42,15 @@ class TrackingAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
       : metrics_(token) {}
 
   /// Non-constexpr constructor that autmatically invokes `Init`.
-  TrackingAllocatorImpl(metric::Token token,
-                        Allocator& allocator,
-                        size_t capacity)
+  TrackingAllocatorImpl(metric::Token token, Allocator& allocator)
       : TrackingAllocatorImpl(token) {
-    Init(allocator, capacity);
+    Init(allocator);
   }
+
+  [[deprecated]] TrackingAllocatorImpl(metric::Token token,
+                                       Allocator& allocator,
+                                       size_t /* capcacity */)
+      : TrackingAllocatorImpl(token, allocator) {}
 
   bool initialized() const { return allocator_ != nullptr; }
 
@@ -59,9 +62,10 @@ class TrackingAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
   /// All other methods will fail until this method is called.
   ///
   /// @param[in]  allocator   The allocator to wrap and record.
-  void Init(Allocator& allocator, size_t capacity) {
-    allocator_ = &allocator;
-    metrics_.Init(capacity);
+  void Init(Allocator& allocator) { allocator_ = &allocator; }
+
+  [[deprecated]] void Init(Allocator& allocator, size_t /* capacity */) {
+    Init(allocator);
   }
 
  private:

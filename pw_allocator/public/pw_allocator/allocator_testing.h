@@ -90,7 +90,7 @@ class AllocatorForTest : public TrackingAllocatorImpl<Metrics> {
   AllocatorForTest() : Base(kToken) {
     EXPECT_EQ(allocator_->Init(allocator_.as_bytes()), OkStatus());
     recorder_.Init(*allocator_, params_);
-    Init(recorder_, kBufferSize);
+    Init(recorder_);
   }
 
   ~AllocatorForTest() override {

@@ -26,18 +26,7 @@ static uint32_t ClampU32(size_t size) {
       size, static_cast<size_t>(std::numeric_limits<uint32_t>::max())));
 }
 
-void Metrics::Init(size_t capacity) {
-  children().clear();
-  metrics().clear();
-  total_bytes_.Set(capacity);
-  allocated_bytes_.Set(0);
-  peak_allocated_bytes_.Set(0);
-  cumulative_allocated_bytes_.Set(0);
-  num_allocations_.Set(0);
-  num_deallocations_.Set(0);
-  num_resizes_.Set(0);
-  num_reallocations_.Set(0);
-  Add(total_bytes_);
+Metrics::Metrics(metric::Token token) : metric::Group(token) {
   Add(allocated_bytes_);
   Add(peak_allocated_bytes_);
   Add(cumulative_allocated_bytes_);
