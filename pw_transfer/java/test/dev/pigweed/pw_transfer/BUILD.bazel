@@ -23,7 +23,6 @@ java_test(
     test_class = "dev.pigweed.pw_transfer.TransferClientTest",
     visibility = ["//visibility:public"],
     deps = [
-        "//pw_log/java/main/dev/pigweed/pw_log",
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client",
         "//pw_rpc/java/test/dev/pigweed/pw_rpc:test_client",
         "//pw_transfer:transfer_proto_java_lite",
