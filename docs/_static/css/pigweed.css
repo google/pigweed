@@ -48,6 +48,22 @@ blockquote {
   font-style: normal;
 }
 
+.breadcrumbs {
+  margin: 1.5rem 0 0 0;
+  padding: 0;
+}
+
+.breadcrumb {
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+}
+
+/* Tweak the spacing of the page's H1 if it's preceded by breadcrumbs. */
+.breadcrumbs ~ section h1 {
+  margin-top: 1rem;
+}
+
 /* Update description list (dl) > description titles (dt) styles for autodoc */
 
 /* Function signatures are gray */

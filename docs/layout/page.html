@@ -1,5 +1,5 @@
 <!--
-Copyright 2023 The Pigweed Authors
+Copyright 2024 The Pigweed Authors
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not
 use this file except in compliance with the License. You may obtain a copy of
@@ -15,11 +15,33 @@ the License.
 -->
 {% extends "furo/page.html" %}
 
-{% block supermain %}
-  <div class="pw-main">
-    <div class="pw-content">
-      {{ super() }}
-    </div>
-  </div>
-{% endblock supermain %}
+
+{# Extend the "content" block that's found in "furo/page.html". #}
+{% block content %}
+  {% if pagename == 'index' %}
+    {# Don't render breadcrumbs on the homepage. #}
+  {% else %}
+    {# The marker used between breadcrumbs. #}
+    {%- set delimiter = ' /' %}
+    {# Add breadcrumbs as the first thing in the "content" block. #}
+    <ul class="breadcrumbs">
+      {# Hardcode the homepage to ensure it's always the first breadcrumb. #}
+      <li class="breadcrumb">
+        <a href="{{ pathto('index.html', 1) }}">Home</a>
+      </li>
+      {{ delimiter }}
+      {# Add a breadcrumb for each true "parent" of the current doc. #}
+      {%- for parent in parents %}
+        <li class="breadcrumb">
+          <a href="{{ parent.link|e }}">{{ parent.title }}</a>
+          {{ delimiter }}
+        </li>
+      {%- endfor %}
+      {# Hardcode the current page as the last breadcrumb. #}
+      <li class="breadcrumb">{{ title }}</li>
+    </ul>
+  {% endif %}
+  {# Let Furo proceed with it's usual rendering of the "content" block. #}
+  {{ super() }}
+{% endblock content %}
 
