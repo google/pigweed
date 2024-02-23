@@ -14,8 +14,9 @@
 
 import { LogViewer as RootComponent } from './components/log-viewer';
 import { StateStore, LocalStorageState } from './shared/state';
-import { LogEntry, LogSourceEvent } from '../src/shared/interfaces';
+import { LogSourceEvent } from '../src/shared/interfaces';
 import { LogSource } from '../src/log-source';
+import { LogStore } from './log-store';
 
 import '@material/web/button/filled-button.js';
 import '@material/web/button/outlined-button.js';
@@ -31,26 +32,25 @@ import '@material/web/menu/menu-item.js';
 export function createLogViewer(
   root: HTMLElement,
   state: StateStore = new LocalStorageState(),
+  logStore: LogStore,
   ...logSources: LogSource[]
 ) {
   const logViewer = new RootComponent(state);
-  const logs: LogEntry[] = [];
   root.appendChild(logViewer);
   let lastUpdateTimeoutId: NodeJS.Timeout;
 
-  // Define an event listener for the 'logEntry' event
   const logEntryListener = (event: LogSourceEvent) => {
     if (event.type === 'log-entry') {
       const logEntry = event.data;
-      logs.push(logEntry);
-      logViewer.logs = logs;
+      logStore.addLogEntry(logEntry);
+      logViewer.logs = logStore.getLogs();
       if (lastUpdateTimeoutId) {
         clearTimeout(lastUpdateTimeoutId);
       }
 
       // Call requestUpdate at most once every 100 milliseconds.
       lastUpdateTimeoutId = setTimeout(() => {
-        const updatedLogs = [...logs];
+        const updatedLogs = [...logStore.getLogs()];
         logViewer.logs = updatedLogs;
       }, 100);
     }

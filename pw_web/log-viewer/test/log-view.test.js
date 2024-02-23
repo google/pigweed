@@ -16,17 +16,20 @@ import { assert } from '@open-wc/testing';
 import { MockLogSource } from '../src/custom/mock-log-source';
 import { createLogViewer } from '../src/createLogViewer';
 import { LocalStorageState } from '../src/shared/state';
+import { LogStore } from '../src/log-store';
 
 function setUpLogViewer(logSources) {
+  const logStore = new LogStore();
   const destroyLogViewer = createLogViewer(
     document.body,
     undefined,
+    logStore,
     ...logSources,
   );
   const logViewer = document.querySelector('log-viewer');
 
   handleResizeObserverError();
-  return { logSources, destroyLogViewer, logViewer };
+  return { logSources, destroyLogViewer, logViewer, logStore };
 }
 
 // Handle benign ResizeObserver error caused by custom log viewer initialization
@@ -49,6 +52,7 @@ function handleResizeObserverError() {
 
 describe('log-view', () => {
   let logSources;
+  let logStore;
   let destroyLogViewer;
   let logViewer;
   let stateStore;
@@ -66,7 +70,7 @@ describe('log-view', () => {
   describe('state', () => {
     beforeEach(() => {
       window.localStorage.clear();
-      ({ logSources, destroyLogViewer, logViewer } = setUpLogViewer([
+      ({ logSources, destroyLogViewer, logViewer, logStore } = setUpLogViewer([
         new MockLogSource(),
       ]));
       stateStore = new LocalStorageState();
@@ -107,7 +111,7 @@ describe('log-view', () => {
       stateStore.setState(state);
 
       // Create a new log viewer with an existing state
-      ({ logSources, destroyLogViewer, logViewer } = setUpLogViewer([
+      ({ logSources, destroyLogViewer, logViewer, logStore } = setUpLogViewer([
         new MockLogSource(),
       ]));
       const logViews = await getLogViews();
@@ -119,7 +123,7 @@ describe('log-view', () => {
   describe('sources', () => {
     before(() => {
       window.localStorage.clear();
-      ({ logSources, destroyLogViewer, logViewer } = setUpLogViewer([
+      ({ logSources, destroyLogViewer, logViewer, logStore } = setUpLogViewer([
         new MockLogSource('Source 1'),
         new MockLogSource('Source 2'),
       ]));

@@ -16,13 +16,16 @@ import { expect } from '@open-wc/testing';
 import '../src/components/log-viewer';
 import { MockLogSource } from '../src/custom/mock-log-source';
 import { createLogViewer } from '../src/createLogViewer';
+import { LogStore } from '../src/log-store';
 
 // Initialize the log viewer component with a mock log source
 function setUpLogViewer() {
   const mockLogSource = new MockLogSource();
+  const logStore = new LogStore();
   const destroyLogViewer = createLogViewer(
     document.body,
     undefined,
+    logStore,
     mockLogSource,
   );
   const logViewer = document.querySelector('log-viewer');
