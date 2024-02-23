@@ -328,6 +328,7 @@ cc_library(
 # //pw_thread_stl:thread_backend_test as an example.
 cc_library(
     name = "thread_facade_test",
+    testonly = True,
     srcs = [
         "thread_facade_test.cc",
     ],

@@ -247,6 +247,7 @@ cc_library(
 
 cc_library(
     name = "integration_testing",
+    testonly = True,
     srcs = [
         "integration_testing.cc",
     ],

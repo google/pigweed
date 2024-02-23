@@ -121,6 +121,7 @@ pw_cc_test(
 
 cc_library(
     name = "trace_null_test",
+    testonly = True,
     srcs = [
         "trace_null_test.cc",
         "trace_null_test_c.c",

@@ -368,6 +368,10 @@ cc_library(
 
 pw_cc_binary(
     name = "system_example",
+    # This is marked as testonly because the example app pulls in the RPC unit
+    # test runner. In a real production binary, you wouldn't want to have any
+    # testonly dependencies.
+    testonly = True,
     srcs = ["example_user_app_init.cc"],
     deps = [
         ":init",

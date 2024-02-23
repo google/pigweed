@@ -46,12 +46,14 @@ alias(
 
 cc_library(
     name = "framework",
+    testonly = True,
     hdrs = ["public/pw_unit_test/framework.h"],
     includes = ["public"],
 )
 
 cc_library(
     name = "light",
+    testonly = True,
     srcs = ["framework_light.cc"],
     hdrs = [
         "light_public_overrides/pw_unit_test/framework_backend.h",
@@ -80,6 +82,7 @@ cc_library(
 
 cc_library(
     name = "googletest",
+    testonly = True,
     hdrs = [
         "googletest_public_overrides/pw_unit_test/framework_backend.h",
     ],
@@ -93,6 +96,7 @@ cc_library(
 # Identifies when the light framework is being used.
 config_setting(
     name = "light_setting",
+    testonly = True,
     flag_values = {
         "@pigweed//targets:pw_unit_test_backend": "@pigweed//pw_unit_test:light",
     },
@@ -100,6 +104,7 @@ config_setting(
 
 config_setting(
     name = "gtest_setting",
+    testonly = True,
     flag_values = {
         "@pigweed//targets:pw_unit_test_backend": "@pigweed//pw_unit_test:googletest",
     },
@@ -168,6 +173,7 @@ pw_cc_test(
 
 cc_library(
     name = "simple_printing_event_handler",
+    testonly = True,
     srcs = ["simple_printing_event_handler.cc"],
     hdrs = [
         "public/pw_unit_test/simple_printing_event_handler.h",
@@ -183,6 +189,7 @@ cc_library(
 
 cc_library(
     name = "simple_printing_main",
+    testonly = True,
     srcs = [
         "simple_printing_main.cc",
     ],
@@ -196,6 +203,7 @@ cc_library(
 
 cc_library(
     name = "printf_event_handler",
+    testonly = True,
     hdrs = ["public/pw_unit_test/printf_event_handler.h"],
     deps = [
         ":googletest_style_event_handler",
@@ -205,6 +213,7 @@ cc_library(
 
 cc_library(
     name = "printf_main",
+    testonly = True,
     srcs = ["printf_main.cc"],
     deps = [
         ":printf_event_handler",
@@ -214,6 +223,7 @@ cc_library(
 
 cc_library(
     name = "logging_event_handler",
+    testonly = True,
     srcs = [
         "logging_event_handler.cc",
     ],
@@ -232,6 +242,7 @@ cc_library(
 # Provides logging to either the light framework or an external GoogleTest.
 cc_library(
     name = "logging",
+    testonly = True,
     deps = [":logging_event_handler"] + select({
         ":gtest_setting": [":googletest_handler_adapter"],
         "//conditions:default": [],
@@ -240,6 +251,7 @@ cc_library(
 
 pw_cc_binary(
     name = "logging_main",
+    testonly = True,
     srcs = [
         "logging_main.cc",
     ],
@@ -251,6 +263,7 @@ pw_cc_binary(
 
 cc_library(
     name = "multi_event_handler",
+    testonly = True,
     hdrs = [
         "public/pw_unit_test/multi_event_handler.h",
     ],
@@ -289,6 +302,7 @@ pw_proto_library(
 
 cc_library(
     name = "rpc_service",
+    testonly = True,
     srcs = ["unit_test_service.cc"] + select({
         ":light_setting": ["rpc_light_event_handler.cc"],
         "//conditions:default": [":rpc_gtest_event_handler.cc"],
@@ -319,6 +333,7 @@ cc_library(
 
 cc_library(
     name = "rpc_main",
+    testonly = True,
     srcs = [
         "rpc_main.cc",
     ],
@@ -334,6 +349,7 @@ cc_library(
 
 cc_library(
     name = "static_library_support",
+    testonly = True,
     srcs = ["static_library_support.cc"],
     hdrs = ["public/pw_unit_test/static_library_support.h"],
     includes = ["public"],
@@ -342,6 +358,7 @@ cc_library(
 
 cc_library(
     name = "tests_in_archive",
+    testonly = True,
     srcs = [
         "static_library_archived_tests.cc",
         "static_library_missing_archived_tests.cc",

@@ -96,6 +96,7 @@ pw_cc_test(
 
 cc_library(
     name = "multisink_threaded_test",
+    testonly = True,
     srcs = [
         "multisink_threaded_test.cc",
     ],
