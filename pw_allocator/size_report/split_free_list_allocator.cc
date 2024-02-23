@@ -32,7 +32,7 @@ namespace {
 pw::allocator::SplitFreeListAllocator allocator;
 
 #ifdef SIZE_REPORT_WITH_METRICS
-pw::allocator::TrackingAllocator tracker(0);
+pw::allocator::TrackingAllocator tracker(0, allocator);
 #endif  // SIZE_REPORT_WITH_METRICS
 
 constexpr void* kFakeMemoryRegionStart = &allocator;
@@ -114,8 +114,6 @@ int main() {
 #endif  // SIZE_REPORT_UNIQUE_PTR
 
 #ifdef SIZE_REPORT_WITH_METRICS
-  tracker.Init(allocator);
-
   Foo* foo2 =
       static_cast<Foo*>(tracker.Allocate(pw::allocator::Layout::Of<Foo>()));
   if (foo2 == nullptr) {

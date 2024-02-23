@@ -22,57 +22,6 @@ namespace {
 
 constexpr static size_t kCapacity = 256;
 
-TEST(TrackingAllocatorTest, AutomaticInit_Metrics) {
-  WithBuffer<SimpleAllocator, kCapacity> allocator;
-  TrackingAllocatorImpl<internal::Metrics> tracker(test::kToken, *allocator);
-  EXPECT_TRUE(tracker.initialized());
-}
-
-TEST(TrackingAllocatorTest, AutomaticInit_MetricsStub) {
-  WithBuffer<SimpleAllocator, kCapacity> allocator;
-  TrackingAllocatorImpl<internal::MetricsStub> tracker(test::kToken,
-                                                       *allocator);
-  EXPECT_TRUE(tracker.initialized());
-}
-
-TEST(TrackingAllocatorTest, ManualInit_Metrics) {
-  WithBuffer<SimpleAllocator, kCapacity> allocator;
-  TrackingAllocatorImpl<internal::Metrics> tracker(test::kToken);
-  EXPECT_FALSE(tracker.initialized());
-
-  tracker.Init(*allocator);
-  EXPECT_TRUE(tracker.initialized());
-}
-
-TEST(TrackingAllocatorTest, ManualInit_MetricsStub) {
-  WithBuffer<SimpleAllocator, kCapacity> allocator;
-  TrackingAllocatorImpl<internal::MetricsStub> tracker(test::kToken);
-  EXPECT_FALSE(tracker.initialized());
-
-  tracker.Init(*allocator);
-  EXPECT_TRUE(tracker.initialized());
-}
-
-TEST(TrackingAllocatorTest, NoInit_Metrics) {
-  WithBuffer<SimpleAllocator, kCapacity> allocator;
-  TrackingAllocatorImpl<internal::Metrics> tracker(test::kToken);
-  Layout layout = Layout::Of<std::byte>();
-  EXPECT_EQ(tracker.Allocate(layout), nullptr);
-  tracker.Deallocate(nullptr, layout);
-  EXPECT_FALSE(tracker.Resize(nullptr, layout, 2));
-  EXPECT_EQ(tracker.Reallocate(nullptr, layout, 2), nullptr);
-}
-
-TEST(TrackingAllocatorTest, NoInit_MetricsStub) {
-  WithBuffer<SimpleAllocator, kCapacity> allocator;
-  TrackingAllocatorImpl<internal::MetricsStub> tracker(test::kToken);
-  Layout layout = Layout::Of<std::byte>();
-  EXPECT_EQ(tracker.Allocate(layout), nullptr);
-  tracker.Deallocate(nullptr, layout);
-  EXPECT_FALSE(tracker.Resize(nullptr, layout, 2));
-  EXPECT_EQ(tracker.Reallocate(nullptr, layout, 2), nullptr);
-}
-
 // These unit tests below use `AllocatorForTest<kBufferSize>`, which forwards
 // `Allocator` calls to a `TrackingAllocatorImpl<internal::Metrics>` field. This
 // is the same type as `TrackingAllocator`, except that metrics are explicitly

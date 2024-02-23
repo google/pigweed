@@ -18,46 +18,30 @@
 
 namespace pw::allocator::internal {
 
-AllocatorForTestImpl::~AllocatorForTestImpl() {
-  PW_DCHECK(allocator_ == nullptr);
-  PW_DCHECK(params_ == nullptr);
-}
-
-void AllocatorForTestImpl::Init(Allocator& allocator,
-                                RecordedParameters& params) {
-  allocator_ = &allocator;
-  params_ = &params;
-}
-
-void AllocatorForTestImpl::Reset() {
-  allocator_ = nullptr;
-  params_ = nullptr;
-}
-
 void* AllocatorForTestImpl::DoAllocate(Layout layout) {
-  params_->allocate_size = layout.size();
-  return allocator_->Allocate(layout);
+  params_.allocate_size = layout.size();
+  return allocator_.Allocate(layout);
 }
 
 void AllocatorForTestImpl::DoDeallocate(void* ptr, Layout layout) {
-  params_->deallocate_ptr = ptr;
-  params_->deallocate_size = layout.size();
-  return allocator_->Deallocate(ptr, layout);
+  params_.deallocate_ptr = ptr;
+  params_.deallocate_size = layout.size();
+  return allocator_.Deallocate(ptr, layout);
 }
 
 bool AllocatorForTestImpl::DoResize(void* ptr, Layout layout, size_t new_size) {
-  params_->resize_ptr = ptr;
-  params_->resize_old_size = layout.size();
-  params_->resize_new_size = new_size;
-  return allocator_->Resize(ptr, layout, new_size);
+  params_.resize_ptr = ptr;
+  params_.resize_old_size = layout.size();
+  params_.resize_new_size = new_size;
+  return allocator_.Resize(ptr, layout, new_size);
 }
 
 Result<Layout> AllocatorForTestImpl::DoGetLayout(const void* ptr) const {
-  return allocator_->GetLayout(ptr);
+  return allocator_.GetLayout(ptr);
 }
 
 Status AllocatorForTestImpl::DoQuery(const void* ptr, Layout layout) const {
-  return allocator_->Query(ptr, layout);
+  return allocator_.Query(ptr, layout);
 }
 
 }  // namespace pw::allocator::internal

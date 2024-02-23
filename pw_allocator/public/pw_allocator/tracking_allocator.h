@@ -37,44 +37,16 @@ class TrackingAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
   using metrics_type = MetricsType;
   using Base = AllocatorWithMetrics<MetricsType>;
 
-  /// Constexpr constructor. Callers must explicitly call `Init`.
-  constexpr explicit TrackingAllocatorImpl(metric::Token token)
-      : metrics_(token) {}
-
-  /// Non-constexpr constructor that autmatically invokes `Init`.
   TrackingAllocatorImpl(metric::Token token, Allocator& allocator)
-      : TrackingAllocatorImpl(token) {
-    Init(allocator);
-  }
-
-  [[deprecated]] TrackingAllocatorImpl(metric::Token token,
-                                       Allocator& allocator,
-                                       size_t /* capcacity */)
-      : TrackingAllocatorImpl(token, allocator) {}
-
-  bool initialized() const { return allocator_ != nullptr; }
+      : allocator_(allocator), metrics_(token) {}
 
   metrics_type& metric_group() override { return metrics_; }
   const metrics_type& metric_group() const override { return metrics_; }
 
-  /// Sets the wrapped allocator.
-  ///
-  /// All other methods will fail until this method is called.
-  ///
-  /// @param[in]  allocator   The allocator to wrap and record.
-  void Init(Allocator& allocator) { allocator_ = &allocator; }
-
-  [[deprecated]] void Init(Allocator& allocator, size_t /* capacity */) {
-    Init(allocator);
-  }
-
  private:
   /// @copydoc Allocator::Allocate
   void* DoAllocate(Layout layout) override {
-    if (allocator_ == nullptr) {
-      return nullptr;
-    }
-    void* ptr = allocator_->Allocate(layout);
+    void* ptr = allocator_.Allocate(layout);
     if (ptr == nullptr) {
       metrics_.RecordFailure();
       return nullptr;
@@ -85,18 +57,15 @@ class TrackingAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
 
   /// @copydoc Allocator::Deallocate
   void DoDeallocate(void* ptr, Layout layout) override {
-    if (allocator_ != nullptr && ptr != nullptr) {
-      allocator_->Deallocate(ptr, layout);
+    if (ptr != nullptr) {
+      allocator_.Deallocate(ptr, layout);
       metrics_.RecordDeallocation(layout.size());
     }
   }
 
   /// @copydoc Allocator::Resize
   bool DoResize(void* ptr, Layout layout, size_t new_size) override {
-    if (allocator_ == nullptr) {
-      return false;
-    }
-    if (!allocator_->Resize(ptr, layout, new_size)) {
+    if (!allocator_.Resize(ptr, layout, new_size)) {
       metrics_.RecordFailure();
       return false;
     }
@@ -106,20 +75,17 @@ class TrackingAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
 
   /// @copydoc Allocator::GetLayout
   Result<Layout> DoGetLayout(const void* ptr) const override {
-    return allocator_->GetLayout(ptr);
+    return allocator_.GetLayout(ptr);
   }
 
   /// @copydoc Allocator::Query
   Status DoQuery(const void* ptr, Layout layout) const override {
-    return allocator_->Query(ptr, layout);
+    return allocator_.Query(ptr, layout);
   }
 
   /// @copydoc Allocator::Reallocate
   void* DoReallocate(void* ptr, Layout layout, size_t new_size) override {
-    if (allocator_ == nullptr) {
-      return nullptr;
-    }
-    void* new_ptr = allocator_->Reallocate(ptr, layout, new_size);
+    void* new_ptr = allocator_.Reallocate(ptr, layout, new_size);
     if (new_ptr == nullptr) {
       metrics_.RecordFailure();
       return nullptr;
@@ -128,7 +94,7 @@ class TrackingAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
     return new_ptr;
   }
 
-  Allocator* allocator_ = nullptr;
+  Allocator& allocator_;
   metrics_type metrics_;
 };
 

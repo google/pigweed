@@ -45,12 +45,8 @@ struct RecordedParameters {
 /// interface methods, and returns them via accessors.
 class AllocatorForTestImpl : public Allocator {
  public:
-  ~AllocatorForTestImpl() override;
-
-  void Init(Allocator& allocator, RecordedParameters& params);
-
-  /// Resets the recorded parameters to an initial state.
-  void Reset();
+  AllocatorForTestImpl(Allocator& allocator, RecordedParameters& params)
+      : allocator_(allocator), params_(params) {}
 
  private:
   /// @copydoc Allocator::Allocate
@@ -68,8 +64,8 @@ class AllocatorForTestImpl : public Allocator {
   /// @copydoc Allocator::Query
   Status DoQuery(const void* ptr, Layout layout) const override;
 
-  Allocator* allocator_ = nullptr;
-  RecordedParameters* params_ = nullptr;
+  Allocator& allocator_;
+  RecordedParameters& params_;
 };
 
 }  // namespace internal
@@ -82,23 +78,26 @@ constexpr pw::tokenizer::Token kToken = PW_TOKENIZE_STRING("test");
 
 /// An `AllocatorForTest` that is automatically initialized on construction.
 template <size_t kBufferSize>
-class AllocatorForTest : public TrackingAllocatorImpl<Metrics> {
+class AllocatorForTest : public AllocatorWithMetrics<Metrics> {
  public:
   using Base = TrackingAllocatorImpl<Metrics>;
   using BlockType = SimpleAllocator::BlockType;
 
-  AllocatorForTest() : Base(kToken) {
+  AllocatorForTest()
+      : recorder_(*allocator_, params_), tracker_(kToken, recorder_) {
     EXPECT_EQ(allocator_->Init(allocator_.as_bytes()), OkStatus());
-    recorder_.Init(*allocator_, params_);
-    Init(recorder_);
   }
 
   ~AllocatorForTest() override {
-    recorder_.Reset();
     for (auto* block : allocator_->blocks()) {
       BlockType::Free(block);
     }
     allocator_->Reset();
+  }
+
+  metrics_type& metric_group() override { return tracker_.metric_group(); }
+  const metrics_type& metric_group() const override {
+    return tracker_.metric_group();
   }
 
   size_t allocate_size() const { return params_.allocate_size; }
@@ -119,9 +118,27 @@ class AllocatorForTest : public TrackingAllocatorImpl<Metrics> {
   }
 
  private:
-  internal::AllocatorForTestImpl recorder_;
-  internal::RecordedParameters params_;
+  void* DoAllocate(Layout layout) override { return tracker_.Allocate(layout); }
+  void DoDeallocate(void* ptr, Layout layout) override {
+    tracker_.Deallocate(ptr, layout);
+  }
+  void* DoReallocate(void* ptr, Layout layout, size_t new_size) override {
+    return tracker_.Reallocate(ptr, layout, new_size);
+  }
+  bool DoResize(void* ptr, Layout layout, size_t new_size) override {
+    return tracker_.Resize(ptr, layout, new_size);
+  }
+  Result<Layout> DoGetLayout(const void* ptr) const override {
+    return tracker_.GetLayout(ptr);
+  }
+  Status DoQuery(const void* ptr, Layout layout) const override {
+    return tracker_.Query(ptr, layout);
+  }
+
   WithBuffer<SimpleAllocator, kBufferSize> allocator_;
+  internal::RecordedParameters params_;
+  internal::AllocatorForTestImpl recorder_;
+  TrackingAllocatorImpl<Metrics> tracker_;
 };
 
 }  // namespace test
