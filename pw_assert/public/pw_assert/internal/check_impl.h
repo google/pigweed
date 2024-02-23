@@ -257,7 +257,7 @@ constexpr T ConvertToType(const U& value) {
   do {                                                                    \
     PW_CHECK_FLOAT_EXACT_GE(abs_tolerance, 0.0f);                         \
     float evaluated_argument_a = (float)(argument_a);                     \
-    float evaluated_argument_b_min = (float)(argument_b) - abs_tolerance; \
+    float evaluated_argument_b_min = (float)(argument_b)-abs_tolerance;   \
     float evaluated_argument_b_max = (float)(argument_b) + abs_tolerance; \
     if (!(evaluated_argument_a >= evaluated_argument_b_min)) {            \
       _PW_CHECK_BINARY_ARG_HANDLER(#argument_a,                           \

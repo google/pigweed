@@ -30,6 +30,18 @@ cc_library_headers {
     export_include_dirs: [
         "public",
     ],
+    header_libs: [
+        "pw_assert_headers",
+        "pw_log_headers",
+        "pw_span_headers",
+        "pw_sync_headers",
+    ],
+    export_header_lib_headers: [
+        "pw_assert_headers",
+        "pw_log_headers",
+        "pw_span_headers",
+        "pw_sync_headers",
+    ],
     vendor_available: true,
     host_supported: true,
 }
@@ -41,18 +53,10 @@ cc_defaults {
         ":pw_multibuf_src_files",
     ],
     header_libs: [
-        "pw_assert_headers",
-        "pw_log_headers",
         "pw_multibuf_headers",
-        "pw_span_headers",
-        "pw_sync_headers",
     ],
     export_header_lib_headers: [
-        "pw_assert_headers",
-        "pw_log_headers",
         "pw_multibuf_headers",
-        "pw_span_headers",
-        "pw_sync_headers",
     ],
     static_libs: [
         "pw_bytes",

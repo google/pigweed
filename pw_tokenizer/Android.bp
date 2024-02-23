@@ -72,11 +72,19 @@ cc_library_static {
         "tokenize.cc",
     ],
     header_libs: [
+        "pw_assert_headers",
+        "pw_log_headers",
+        "pw_log_null_headers",
+        "pw_log_tokenized_headers",
         "pw_polyfill_headers",
         "pw_preprocessor_headers",
         "pw_span_headers",
     ],
     export_header_lib_headers: [
+        "pw_assert_headers",
+        "pw_log_headers",
+        "pw_log_null_headers",
+        "pw_log_tokenized_headers",
         "pw_polyfill_headers",
         "pw_preprocessor_headers",
         "pw_span_headers",
@@ -134,6 +142,14 @@ cc_library_headers {
     export_generated_headers: [
         "google_protobuf_descriptor_pwpb_h",
         "pw_tokenizer_proto_options_pwpb_h",
+    ],
+}
+
+// Expose pw_tokenizer_proto/options.proto.
+filegroup {
+    name: "pw_tokenizer_proto_options_proto",
+    srcs: [
+        "pw_tokenizer_proto/options.proto",
     ],
 }
 

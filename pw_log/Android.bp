@@ -79,11 +79,11 @@ genrule {
         ":libprotobuf-internal-protos",
         ":pw_log_log_proto_with_prefix",
         ":pw_protobuf_common_proto",
+        ":pw_tokenizer_proto_options_proto",
     ],
     cmd: "python3 $(location pw_protobuf_compiler_py) " +
          "--proto-path=external/pigweed/pw_protobuf/ " +
-         // Requires the generated pw_tokenizer/proto/options.proto filepath.
-         "--proto-path=$$(dirname $$(dirname $$(dirname $(location :pw_tokenizer_proto_options_proto)))) " +
+         "--proto-path=external/pigweed/pw_tokenizer/ " +
          "--proto-path=$$(dirname $$(dirname $$(dirname $(location :pw_log_log_proto_with_prefix)))) " +
          "--proto-path=external/protobuf/src/ " +
          "--out-dir=$(genDir) " +
@@ -100,9 +100,6 @@ genrule {
     out: [
         "pw_log/proto/log.pwpb.h",
     ],
-    tool_files: [
-      ":pw_tokenizer_proto_options_proto",
-    ],
     tools: [
         "aprotoc",
         "pw_protobuf_plugin_py",
@@ -116,11 +113,11 @@ genrule {
         ":libprotobuf-internal-protos",
         ":pw_log_log_proto_with_prefix",
         ":pw_protobuf_common_proto",
+        ":pw_tokenizer_proto_options_proto",
     ],
     cmd: "python3 $(location pw_protobuf_compiler_py) " +
          "--proto-path=external/pigweed/pw_protobuf/ " +
-         // Requires the generated pw_tokenizer/proto/options.proto filepath.
-         "--proto-path=$$(dirname $$(dirname $$(dirname $(location :pw_tokenizer_proto_options_proto)))) " +
+         "--proto-path=external/pigweed/pw_tokenizer/ " +
          "--proto-path=$$(dirname $$(dirname $$(dirname $(location :pw_log_log_proto_with_prefix)))) " +
          "--proto-path=external/protobuf/src/ " +
          "--out-dir=$(genDir) " +
@@ -137,9 +134,6 @@ genrule {
     out: [
         "pw_log/proto/log.rpc.pwpb.h",
     ],
-    tool_files: [
-      ":pw_tokenizer_proto_options_proto",
-    ],
     tools: [
         "aprotoc",
         "pw_protobuf_compiler_py",
@@ -153,11 +147,11 @@ genrule {
         ":libprotobuf-internal-protos",
         ":pw_log_log_proto_with_prefix",
         ":pw_protobuf_common_proto",
+        ":pw_tokenizer_proto_options_proto",
     ],
     cmd: "python3 $(location pw_protobuf_compiler_py) " +
          "--proto-path=external/pigweed/pw_protobuf/ " +
-         // Requires the generated pw_tokenizer/proto/options.proto filepath.
-         "--proto-path=$$(dirname $$(dirname $$(dirname $(location :pw_tokenizer_proto_options_proto)))) " +
+         "--proto-path=external/pigweed/pw_tokenizer/ " +
          "--proto-path=$$(dirname $$(dirname $$(dirname $(location :pw_log_log_proto_with_prefix)))) " +
          "--proto-path=external/protobuf/src/ " +
          "--out-dir=$(genDir) " +
@@ -173,9 +167,6 @@ genrule {
          "shutil.copy2(os.path.splitext('$(location :pw_log_log_proto_with_prefix)')[0]+'.raw_rpc.pb.h', '$(out)')\"",
     out: [
         "pw_log/proto/log.raw_rpc.pb.h",
-    ],
-    tool_files: [
-      ":pw_tokenizer_proto_options_proto",
     ],
     tools: [
         "aprotoc",
