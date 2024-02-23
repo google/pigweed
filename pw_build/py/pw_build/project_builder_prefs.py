@@ -19,7 +19,7 @@ import shlex
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Tuple, Union
 
-from pw_config_loader.toml_config_loader_mixin import YamlConfigLoaderMixin
+from pw_config_loader import yaml_config_loader_mixin
 
 _DEFAULT_CONFIG: Dict[Any, Any] = {
     # Config settings not available as a command line options go here.
@@ -56,7 +56,7 @@ def load_defaults_from_argparse(
     return defaults_flags
 
 
-class ProjectBuilderPrefs(YamlConfigLoaderMixin):
+class ProjectBuilderPrefs(yaml_config_loader_mixin.YamlConfigLoaderMixin):
     """Pigweed Watch preferences storage class."""
 
     def __init__(
@@ -82,7 +82,8 @@ class ProjectBuilderPrefs(YamlConfigLoaderMixin):
     def reset_config(self) -> None:
         super().reset_config()
         self._update_config(
-            load_defaults_from_argparse(self.load_argparse_arguments)
+            load_defaults_from_argparse(self.load_argparse_arguments),
+            yaml_config_loader_mixin.Stage.DEFAULT,
         )
 
     def _argparse_build_system_commands_to_prefs(  # pylint: disable=no-self-use
@@ -118,7 +119,10 @@ class ProjectBuilderPrefs(YamlConfigLoaderMixin):
                     value = self._argparse_build_system_commands_to_prefs(value)
                 changed_settings[key] = value
 
-        self._update_config(changed_settings)
+        self._update_config(
+            changed_settings,
+            yaml_config_loader_mixin.Stage.DEFAULT,
+        )
 
     @property
     def run_commands(self) -> List[str]:

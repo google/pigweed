@@ -28,6 +28,8 @@ from pw_build.project_builder_prefs import (
     load_defaults_from_argparse,
 )
 
+from pw_config_loader import yaml_config_loader_mixin
+
 
 def _create_tempfile(content: str) -> Path:
     with tempfile.NamedTemporaryFile(
@@ -114,7 +116,10 @@ class TestProjectBuilderPrefs(unittest.TestCase):
 
         # Check that only args changed from their defaults are applied.
         # pylint: disable=protected-access
-        prefs._update_config.assert_called_once_with(changed_args)
+        prefs._update_config.assert_called_once_with(
+            changed_args,
+            yaml_config_loader_mixin.Stage.DEFAULT,
+        )
         # pylint: enable=protected-access
 
         # Check the result includes the project_config settings and the

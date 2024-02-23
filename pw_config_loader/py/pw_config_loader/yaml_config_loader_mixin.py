@@ -13,6 +13,7 @@
 # the License.
 """Yaml config file loader mixin."""
 
+import enum
 import os
 import logging
 from pathlib import Path
@@ -25,6 +26,15 @@ _LOG = logging.getLogger(__package__)
 
 class MissingConfigTitle(Exception):
     """Exception for when an existing YAML file is missing config_title."""
+
+
+class Stage(enum.Enum):
+    DEFAULT = 1
+    PROJECT_FILE = 1
+    USER_PROJECT_FILE = 2
+    USER_FILE = 3
+    ENVIRONMENT_VAR_FILE = 4
+    OUT_OF_BAND = 5
 
 
 class YamlConfigLoaderMixin:
@@ -119,6 +129,7 @@ class YamlConfigLoaderMixin:
             self.load_config_file(
                 self.project_file,
                 skip_files_without_sections=skip_files_without_sections,
+                stage=Stage.PROJECT_FILE,
             )
 
         if project_user_file and isinstance(project_user_file, Path):
@@ -128,6 +139,7 @@ class YamlConfigLoaderMixin:
             self.load_config_file(
                 self.project_user_file,
                 skip_files_without_sections=skip_files_without_sections,
+                stage=Stage.USER_PROJECT_FILE,
             )
 
         if user_file and isinstance(user_file, Path):
@@ -137,6 +149,7 @@ class YamlConfigLoaderMixin:
             self.load_config_file(
                 self.user_file,
                 skip_files_without_sections=skip_files_without_sections,
+                stage=Stage.USER_FILE,
             )
 
         # Check for a config file specified by an environment variable.
@@ -153,16 +166,36 @@ class YamlConfigLoaderMixin:
             self.load_config_file(
                 env_file_path,
                 skip_files_without_sections=skip_files_without_sections,
+                stage=Stage.ENVIRONMENT_VAR_FILE,
             )
 
-    def _update_config(self, cfg: Dict[Any, Any]) -> None:
+    def _update_config(self, cfg: Dict[Any, Any], stage: Stage) -> None:
         if cfg is None:
             cfg = {}
-        self._config.update(cfg)
+        for key, value in cfg.items():
+            if stage != Stage.DEFAULT:
+                self._config[key] = self.handle_overloaded_value(
+                    key=key,
+                    stage=stage,
+                    original_value=self._config.get(key),
+                    overriding_value=value,
+                )
+            else:
+                self._config[key] = value
+
+    def handle_overloaded_value(  # pylint: disable=no-self-use
+        self,
+        key: str,  # pylint: disable=unused-argument
+        stage: Stage,  # pylint: disable=unused-argument
+        original_value: Any,  # pylint: disable=unused-argument
+        overriding_value: Any,
+    ) -> Any:
+        """Overload this in subclasses to handle of overloaded values."""
+        return overriding_value
 
     def reset_config(self) -> None:
         self._config: Dict[Any, Any] = {}
-        self._update_config(self.default_config)
+        self._update_config(self.default_config, Stage.DEFAULT)
 
     def _load_config_from_string(  # pylint: disable=no-self-use
         self, file_contents: str
@@ -173,6 +206,7 @@ class YamlConfigLoaderMixin:
         self,
         file_path: Path,
         skip_files_without_sections: bool = False,
+        stage: Stage = Stage.OUT_OF_BAND,
     ) -> None:
         """Load a config file and extract the appropriate section."""
         if not file_path.is_file():
@@ -188,12 +222,12 @@ class YamlConfigLoaderMixin:
                 else:
                     break
             else:
-                self._update_config(cfg_copy)
+                self._update_config(cfg_copy, stage)
                 continue
 
             config_title_value = '.'.join(self._config_section_title)
             if cfg.get('config_title', False) == config_title_value:
-                self._update_config(cfg)
+                self._update_config(cfg, stage)
                 continue
 
             if skip_files_without_sections:
