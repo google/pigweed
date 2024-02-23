@@ -111,6 +111,8 @@ pw_proto_filegroup(
 proto_library(
     name = "metric_proto",
     srcs = [":metric_proto_and_options"],
+    # TODO: b/326636665 - Stripping the import prefix breaks nanopb compilation.
+    # strip_import_prefix = "/pw_metric",
 )
 
 py_proto_library(

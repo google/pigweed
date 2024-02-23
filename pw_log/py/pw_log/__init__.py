@@ -11,3 +11,10 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""pw_log Python libraries."""
+
+# The generated protos for this module overlap this `__init__.py` file's import
+# namespace, so we need to use extend_path() for them to be discoverable.
+# Note: this needs to be done in every nested `__init__.py` file as well (if
+# any exist).
+__path__ = __import__('pkgutil').extend_path(__path__, __name__)

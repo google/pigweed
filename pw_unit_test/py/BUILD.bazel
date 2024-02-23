@@ -17,12 +17,13 @@ load("@rules_python//python:defs.bzl", "py_library")
 package(default_visibility = ["//visibility:public"])
 
 py_library(
-    name = "pw_unit_test_lib",
+    name = "pw_unit_test",
     srcs = [
         "pw_unit_test/__init__.py",
         "pw_unit_test/rpc.py",
         "pw_unit_test/test_runner.py",
     ],
+    imports = ["."],
     deps = [
         "//pw_cli/py:pw_cli",
         "//pw_rpc/py:pw_rpc",

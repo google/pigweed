@@ -13,6 +13,12 @@
 # the License.
 """Provides a simple interface for transferring bulk data over pw_rpc."""
 
+# The generated protos for this module overlap this `__init__.py` file's import
+# namespace, so we need to use extend_path() for them to be discoverable.
+# Note: this needs to be done in every nested `__init__.py` file as well (if
+# any exist).
+__path__ = __import__('pkgutil').extend_path(__path__, __name__)
+
 from pw_transfer.transfer import (
     ProgressCallback,
     ProgressStats,

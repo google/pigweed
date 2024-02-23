@@ -12,18 +12,17 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+
 package(default_visibility = ["//visibility:public"])
 
-# TODO: b/241456982 - Not expected to build. We need a dependency on a
-# py_proto_library built from thread_proto, but that in turn depends on
-# creating a py_proto_library for tokenizer_proto.
 py_library(
     name = "pw_thread",
     srcs = [
         "pw_thread/__init__.py",
         "pw_thread/thread_analyzer.py",
     ],
-    tags = ["manual"],
+    imports = ["."],
     deps = [
         "//pw_symbolizer/py:pw_symbolizer",
         "//pw_thread:thread_proto_py_pb2",
@@ -31,9 +30,7 @@ py_library(
     ],
 )
 
-# TODO: b/241456982 - Not expected to build. We need a dependency on a
-# py_proto_library built from thread_proto, but that in turn depends on
-# creating a py_proto_library for tokenizer_proto.
+# TODO: b/241307309 - Requires injection of a `llvm-symbolizer` tool to pass.
 py_test(
     name = "thread_analyzer_test",
     srcs = [

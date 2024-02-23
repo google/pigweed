@@ -22,4 +22,5 @@ py_library(
         "pw_trace/__init__.py",
         "pw_trace/trace.py",
     ],
+    imports = ["."],
 )

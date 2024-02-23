@@ -22,6 +22,7 @@ py_library(
         "pw_trace_tokenized/get_trace.py",
         "pw_trace_tokenized/trace_tokenized.py",
     ],
+    imports = ["."],
     deps = [
         "//pw_hdlc/py:pw_hdlc",
         "//pw_tokenizer/py:pw_tokenizer",

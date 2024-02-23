@@ -163,6 +163,8 @@ cc_library(
     ],
 )
 
+# TODO: b/326636665 - Needs stripped import prefix, but prefix modification
+# doesn't work with nanopb.
 proto_library(
     name = "protos",
     srcs = [

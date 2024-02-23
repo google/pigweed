@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+
 package(default_visibility = ["//visibility:public"])
 
 py_library(
@@ -22,22 +24,20 @@ py_library(
     ],
     imports = ["."],
     deps = [
-        # TODO: b/241456982 - Add this dep back in
-        # "//pw_log:log_proto_py_pb2",
+        "//pw_log:log_proto_py_pb2",
         "//pw_log_tokenized/py:pw_log_tokenized",
         "//pw_rpc/py:pw_rpc",
         "//pw_status/py:pw_status",
+        "//pw_tokenizer:tokenizer_proto_py_pb2",
         "//pw_tokenizer/py:pw_tokenizer",
     ],
 )
 
-# TODO: b/241456982 - Not expected to build yet.
 py_test(
     name = "log_decoder_test",
     srcs = [
         "log_decoder_test.py",
     ],
-    tags = ["manual"],
     deps = [
         ":pw_log",
     ],
