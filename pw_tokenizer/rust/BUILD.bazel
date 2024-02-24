@@ -73,14 +73,19 @@ rust_library(
         "pw_tokenizer/internal.rs",
         "pw_tokenizer/lib.rs",
     ],
+    crate_features = select({
+        "@rust_crates//:std": ["std"],
+        "//conditions:default": [""],
+    }),
     proc_macro_deps = [":pw_tokenizer_macro"],
     visibility = ["//visibility:public"],
     deps = [
+        ":pw_tokenizer_core",
         "//pw_status/rust:pw_status",
         "//pw_stream/rust:pw_stream",
+        "//pw_varint/rust:pw_varint",
     ] + select({
         "@rust_crates//:std": [
-            ":pw_tokenizer_core",  # Added for rustdoc linking support.
             "//pw_format/rust:pw_format",  # Added for rustdoc linking support.
         ],
         "//conditions:default": [],
@@ -90,6 +95,10 @@ rust_library(
 rust_test(
     name = "pw_tokenizer_test",
     crate = ":pw_tokenizer",
+    crate_features = select({
+        "@rust_crates//:std": ["std"],
+        "//conditions:default": [""],
+    }),
 )
 
 rust_doc_test(

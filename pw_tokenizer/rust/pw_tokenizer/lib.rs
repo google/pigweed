@@ -40,8 +40,10 @@
 //! # doctest().unwrap();
 //! ```
 
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 #![deny(missing_docs)]
+
+use pw_status::Result;
 
 #[doc(hidden)]
 pub mod internal;
@@ -58,7 +60,7 @@ pub mod __private {
     pub use crate::*;
     pub use pw_status::Result;
     pub use pw_stream::{Cursor, Seek, WriteInteger, WriteVarint};
-    pub use pw_tokenizer_macro::{_token, _tokenize_to_buffer};
+    pub use pw_tokenizer_macro::{_token, _tokenize_to_buffer, _tokenize_to_writer};
 }
 
 /// Return the [`u32`] token for the specified string and add it to the token
@@ -116,7 +118,6 @@ macro_rules! token {
 /// ```
 /// use pw_tokenizer::tokenize_to_buffer;
 ///
-/// # fn doctest() -> pw_status::Result<()> {
 /// // Tokenize a format string and argument into a buffer.
 /// let mut buffer = [0u8; 1024];
 /// let len = tokenize_to_buffer!(&mut buffer, "The answer is %d", 42)?;
@@ -131,28 +132,127 @@ macro_rules! token {
 /// // Only a single 4 byte token is emitted after concatenation of the string
 /// // literals above.
 /// assert_eq!(len, 4);
-/// # Ok(())
-/// # }
-/// # doctest().unwrap();
+/// # Ok::<(), pw_status::Error>(())
 /// ```
-
 #[macro_export]
 macro_rules! tokenize_to_buffer {
-    ($buffer:expr,  $($format_string:literal)PW_FMT_CONCAT+) => {{
-      use $crate::__private as __pw_tokenizer_crate;
-      __pw_tokenizer_crate::_tokenize_to_buffer!($buffer,  $($format_string)PW_FMT_CONCAT+)
-    }};
-
-    ($buffer:expr, $($format_string:literal)PW_FMT_CONCAT+, $($args:expr),*) => {{
+    ($buffer:expr, $($format_string:literal)PW_FMT_CONCAT+ $(, $args:expr)* $(,)?) => {{
       use $crate::__private as __pw_tokenizer_crate;
       __pw_tokenizer_crate::_tokenize_to_buffer!($buffer, $($format_string)PW_FMT_CONCAT+, $($args),*)
     }};
+}
+
+/// Tokenize a format string and arguments to a [`MessageWriter`] and add the
+/// format string's token to the token database.
+///
+/// `tokenize_to_writer!` and the accompanying [`MessageWriter`] trait provide
+/// an optimized API for use cases like logging where the output of the
+/// tokenization will be written to a shared/ambient resource like stdio, a
+/// UART, or a shared buffer.
+///
+/// See [`token`] for an explanation on how strings are tokenized and entries
+/// are added to the token database.
+///
+/// Returns a [`pw_status::Result<()>`].
+///
+/// `tokenize_to_writer!` supports concatenation of format strings as described
+/// in [`pw_format::macros::FormatAndArgs`].
+///
+/// # Errors
+/// - [`pw_status::Error::OutOfRange`] - [`MessageWriter`] does not have enough
+///   space to fit tokenized data.
+/// - others - `tokenize_to_write!` will pass on any errors returned by the
+///   [`MessageWriter`].
+///
+/// # Code Size
+///
+/// This data was collected by examining the disassembly of a test program
+/// built for an Cortex M0.
+///
+/// | Tokenized Message   | Per Call-site Cost (bytes) |
+/// | --------------------| -------------------------- |
+/// | no arguments        | 10                         |
+/// | one `i32` argument  | 18                         |
+///
+/// # Example
+///
+/// ```
+/// use pw_status::Result;
+/// use pw_stream::{Cursor, Write};
+/// use pw_tokenizer::{MessageWriter, tokenize_to_writer};
+///
+/// const BUFFER_LEN: usize = 32;
+///
+/// // Declare a simple MessageWriter that uses a [`pw_status::Cursor`] to
+/// // maintain an internal buffer.
+/// struct TestMessageWriter {
+///   cursor: Cursor<[u8; BUFFER_LEN]>,
+/// }
+///
+/// impl MessageWriter for TestMessageWriter {
+///   fn new() -> Self {
+///       Self {
+///           cursor: Cursor::new([0u8; BUFFER_LEN]),
+///       }
+///   }
+///
+///   fn write(&mut self, data: &[u8]) -> Result<()> {
+///       self.cursor.write_all(data)
+///   }
+///
+///   fn remaining(&self) -> usize {
+///       self.cursor.remaining()
+///   }
+///
+///   fn finalize(self) -> Result<()> {
+///       let len = self.cursor.position();
+///       // 4 bytes used to encode the token and one to encode the value 42.
+///       assert_eq!(len, 5);
+///       Ok(())
+///   }
+/// }
+///
+/// // Tokenize a format string and argument into the writer.  Note how we
+/// // pass in the message writer's type, not an instance of it.
+/// let len = tokenize_to_writer!(TestMessageWriter, "The answer is %d", 42)?;
+/// # Ok::<(), pw_status::Error>(())
+/// ```
+#[macro_export]
+macro_rules! tokenize_to_writer {
+    ($ty:ty, $($format_string:literal)PW_FMT_CONCAT+ $(, $args:expr)* $(,)?) => {{
+      use $crate::__private as __pw_tokenizer_crate;
+      __pw_tokenizer_crate::_tokenize_to_writer!($ty, $($format_string)PW_FMT_CONCAT+, $($args),*)
+    }};
+}
+
+/// A trait used by [`tokenize_to_writer!`] to output tokenized messages.
+///
+/// For more details on how this type is used, see the [`tokenize_to_writer!`]
+/// documentation.
+pub trait MessageWriter {
+    /// Returns a new instance of a `MessageWriter`.
+    fn new() -> Self;
+
+    /// Append `data` to the message.
+    fn write(&mut self, data: &[u8]) -> Result<()>;
+
+    /// Return the remaining space in this message instance.
+    ///
+    /// If there are no space constraints, return `usize::MAX`.
+    fn remaining(&self) -> usize;
+
+    /// Finalize message.
+    ///
+    /// `finalize()` is called when the tokenized message is complete.
+    fn finalize(self) -> Result<()>;
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     extern crate self as pw_tokenizer;
+    use pw_stream::{Cursor, Write};
+    use std::cell::RefCell;
 
     // This is not meant to be an exhaustive test of tokenization which is
     // covered by `pw_tokenizer_core`'s unit tests.  Rather, this is testing
@@ -161,32 +261,76 @@ mod tests {
     fn test_token() {}
 
     macro_rules! tokenize_to_buffer_test {
-      ($expected_data:expr, $buffer_len:expr, $fmt:expr) => {
-        {
-          let mut orig_buffer = [0u8; $buffer_len];
-          let len = tokenize_to_buffer!(&mut orig_buffer, $fmt).unwrap();
-          assert_eq!(
-            &orig_buffer[..len],
+      ($expected_data:expr, $buffer_len:expr, $fmt:expr $(, $args:expr)* $(,)?) => {{
+        let mut buffer = [0u8; $buffer_len];
+        let len = tokenize_to_buffer!(&mut buffer, $fmt, $($args),*).unwrap();
+        assert_eq!(
+            &buffer[..len],
             $expected_data,
-          );
-        }
-      };
+        );
+      }}
+    }
 
-      ($expected_data:expr, $buffer_len:expr, $fmt:expr, $($args:expr),*) => {
-        {
-          let mut buffer = [0u8; $buffer_len];
-          let len = tokenize_to_buffer!(&mut buffer, $fmt, $($args),*).unwrap();
-          assert_eq!(
-              &buffer[..len],
-              $expected_data,
-          );
+    macro_rules! tokenize_to_writer_test {
+      ($expected_data:expr, $buffer_len:expr, $fmt:expr $(, $args:expr)* $(,)?) => {{
+        // The `MessageWriter` API is used in places like logging where it
+        // accesses an shared/ambient resource (like stdio or an UART).  To test
+        // it in a hermetic way we declare test specific `MessageWriter` that
+        // writes it's output to a scoped static variable that can be checked
+        // after the test is run.
+
+        // Since these tests are not multi-threaded, we can use a thread_local!
+        // instead of a mutex.
+        thread_local!(static TEST_OUTPUT: RefCell<Option<Vec<u8>>> = RefCell::new(None));
+
+        struct TestMessageWriter {
+            cursor: Cursor<[u8; $buffer_len]>,
         }
-      };
+
+        impl MessageWriter for TestMessageWriter {
+          fn new() -> Self {
+              Self {
+                  cursor: Cursor::new([0u8; $buffer_len]),
+              }
+          }
+
+          fn write(&mut self, data: &[u8]) -> Result<()> {
+              self.cursor.write_all(data)
+          }
+
+          fn remaining(&self) -> usize {
+              self.cursor.remaining()
+          }
+
+          fn finalize(self) -> Result<()> {
+              let write_len = self.cursor.position();
+              let data = self.cursor.into_inner();
+              TEST_OUTPUT.with(|output| *output.borrow_mut() = Some(data[..write_len].to_vec()));
+
+              Ok(())
+          }
+        }
+
+        tokenize_to_writer!(TestMessageWriter, $fmt, $($args),*).unwrap();
+        TEST_OUTPUT.with(|output| {
+            assert_eq!(
+                *output.borrow(),
+                Some($expected_data.to_vec()),
+            )
+        });
+      }}
+    }
+
+    macro_rules! tokenize_test {
+        ($expected_data:expr, $buffer_len:expr, $fmt:expr $(, $args:expr)* $(,)?) => {{
+            tokenize_to_buffer_test!($expected_data, $buffer_len, $fmt, $($args),*);
+            tokenize_to_writer_test!($expected_data, $buffer_len, $fmt, $($args),*);
+        }};
     }
 
     #[test]
     fn bare_string_encodes_correctly() {
-        tokenize_to_buffer_test!(
+        tokenize_test!(
             &[0xe0, 0x92, 0xe0, 0xa], // expected buffer
             64,                       // buffer size
             "Hello Pigweed",
@@ -194,21 +338,21 @@ mod tests {
     }
     #[test]
     fn test_decimal_format() {
-        tokenize_to_buffer_test!(
+        tokenize_test!(
             &[0x52, 0x1c, 0xb0, 0x4c, 0x2], // expected buffer
             64,                             // buffer size
             "The answer is %d!",
             1
         );
 
-        tokenize_to_buffer_test!(
+        tokenize_test!(
             &[0x36, 0xd0, 0xfb, 0x69, 0x1], // expected buffer
             64,                             // buffer size
             "No! The answer is %d!",
             -1
         );
 
-        tokenize_to_buffer_test!(
+        tokenize_test!(
             &[0xa4, 0xad, 0x50, 0x54, 0x0], // expected buffer
             64,                             // buffer size
             "I think you'll find that the answer is %d!",
@@ -219,7 +363,7 @@ mod tests {
     #[test]
     fn test_misc_integer_format() {
         // %d, %i, %o, %u, %x, %X all encode integers the same.
-        tokenize_to_buffer_test!(
+        tokenize_test!(
             &[0x52, 0x1c, 0xb0, 0x4c, 0x2], // expected buffer
             64,                             // buffer size
             "The answer is %d!",
@@ -228,35 +372,35 @@ mod tests {
 
         // Because %i is an alias for %d, it gets converted to a %d by the
         // `pw_format` macro infrastructure.
-        tokenize_to_buffer_test!(
+        tokenize_test!(
             &[0x52, 0x1c, 0xb0, 0x4c, 0x2], // expected buffer
             64,                             // buffer size
             "The answer is %i!",
             1
         );
 
-        tokenize_to_buffer_test!(
+        tokenize_test!(
             &[0x5d, 0x70, 0x12, 0xb4, 0x2], // expected buffer
             64,                             // buffer size
             "The answer is %o!",
             1u32
         );
 
-        tokenize_to_buffer_test!(
+        tokenize_test!(
             &[0x63, 0x58, 0x5f, 0x8f, 0x2], // expected buffer
             64,                             // buffer size
             "The answer is %u!",
             1u32
         );
 
-        tokenize_to_buffer_test!(
+        tokenize_test!(
             &[0x66, 0xcc, 0x05, 0x7d, 0x2], // expected buffer
             64,                             // buffer size
             "The answer is %x!",
             1u32
         );
 
-        tokenize_to_buffer_test!(
+        tokenize_test!(
             &[0x46, 0x4c, 0x16, 0x96, 0x2], // expected buffer
             64,                             // buffer size
             "The answer is %X!",
@@ -266,7 +410,7 @@ mod tests {
 
     #[test]
     fn test_string_format() {
-        tokenize_to_buffer_test!(
+        tokenize_test!(
             b"\x25\xf6\x2e\x66\x07Pigweed", // expected buffer
             64,                             // buffer size
             "Hello: %s!",
@@ -276,7 +420,7 @@ mod tests {
 
     #[test]
     fn test_string_format_overflow() {
-        tokenize_to_buffer_test!(
+        tokenize_test!(
             b"\x25\xf6\x2e\x66\x83Pig", // expected buffer
             8,                          // buffer size
             "Hello: %s!",
@@ -286,7 +430,7 @@ mod tests {
 
     #[test]
     fn test_char_format() {
-        tokenize_to_buffer_test!(
+        tokenize_test!(
             &[0x2e, 0x52, 0xac, 0xe4, 0x50], // expected buffer
             64,                              // buffer size
             "Hello: %cigweed",

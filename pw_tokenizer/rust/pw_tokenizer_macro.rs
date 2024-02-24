@@ -22,7 +22,7 @@ use proc_macro2::Ident;
 use quote::{format_ident, quote};
 use syn::{
     parse::{Parse, ParseStream},
-    parse_macro_input, Expr, LitStr, Token,
+    parse_macro_input, Expr, LitStr, Token, Type,
 };
 
 use pw_format::macros::{generate_printf, FormatAndArgs, PrintfFormatMacroGenerator, Result};
@@ -116,6 +116,8 @@ impl Parse for TokenizeToBufferArgs {
     }
 }
 
+// A PrintfFormatMacroGenerator that provides the code generation backend for
+// the `tokenize_to_buffer!` macro.
 struct TokenizeToBufferGenerator<'a> {
     domain: &'a str,
     buffer: &'a Expr,
@@ -142,25 +144,24 @@ impl<'a> PrintfFormatMacroGenerator for TokenizeToBufferGenerator<'a> {
         // string into the token database and returns the hash value.
         let token = token_backend(self.domain, &format_string);
 
-        Ok(quote! {
-          {
-            // Wrapping code in an internal function to allow `?` to work in
-            // functions that don't return Results.
-            fn _pw_tokenizer_internal_encode(
-                buffer: &mut [u8],
-                token: u32
-            ) -> __pw_tokenizer_crate::Result<usize> {
-              // use pw_tokenizer's private re-export of these pw_stream bits to
-              // allow referencing with needing `pw_stream` in scope.
-              use __pw_tokenizer_crate::{Cursor, Seek, WriteInteger, WriteVarint};
-              let mut cursor = Cursor::new(buffer);
-              cursor.write_u32_le(&token)?;
-              #(#encoding_fragments);*;
-              Ok(cursor.stream_position()? as usize)
-            }
-            _pw_tokenizer_internal_encode(#buffer, #token)
-          }
-        })
+        if encoding_fragments.is_empty() {
+            Ok(quote! {
+              {
+                __pw_tokenizer_crate::internal::tokenize_to_buffer_no_args(#buffer, #token)
+              }
+            })
+        } else {
+            Ok(quote! {
+              {
+                use __pw_tokenizer_crate::internal::Argument;
+                __pw_tokenizer_crate::internal::tokenize_to_buffer(
+                  #buffer,
+                  #token,
+                  &[#(#encoding_fragments),*]
+                )
+              }
+            })
+        }
     }
 
     fn string_fragment(&mut self, _string: &str) -> Result<()> {
@@ -170,8 +171,7 @@ impl<'a> PrintfFormatMacroGenerator for TokenizeToBufferGenerator<'a> {
 
     fn integer_conversion(&mut self, ty: Ident, expression: Expr) -> Result<Option<String>> {
         self.encoding_fragments.push(quote! {
-          // pw_tokenizer always uses signed packing for all integers.
-          cursor.write_signed_varint(#ty::from(#expression) as i64)?;
+          Argument::Varint(#ty::from(#expression) as i32)
         });
 
         Ok(None)
@@ -179,14 +179,14 @@ impl<'a> PrintfFormatMacroGenerator for TokenizeToBufferGenerator<'a> {
 
     fn string_conversion(&mut self, expression: Expr) -> Result<Option<String>> {
         self.encoding_fragments.push(quote! {
-          __pw_tokenizer_crate::internal::encode_string(&mut cursor, #expression)?;
+          Argument::String(#expression)
         });
         Ok(None)
     }
 
     fn char_conversion(&mut self, expression: Expr) -> Result<Option<String>> {
         self.encoding_fragments.push(quote! {
-          cursor.write_u8_le(&u8::from(#expression))?;
+          Argument::Char(u8::from(#expression))
         });
         Ok(None)
     }
@@ -203,6 +203,115 @@ pub fn _tokenize_to_buffer(tokens: TokenStream) -> TokenStream {
 
     // Hard codes domain to "".
     let generator = TokenizeToBufferGenerator::new("", &input.buffer);
+
+    match generate_printf(generator, input.format_and_args) {
+        Ok(token_stream) => token_stream.into(),
+        Err(e) => e.to_compile_error().into(),
+    }
+}
+
+// Args to tokenize to buffer that are parsed according to the pattern:
+//   ($ty:ty, $format_string:literal, $($args:expr),*)
+#[derive(Debug)]
+struct TokenizeToWriterArgs {
+    ty: Type,
+    format_and_args: FormatAndArgs,
+}
+
+impl Parse for TokenizeToWriterArgs {
+    fn parse(input: ParseStream) -> syn::parse::Result<Self> {
+        let ty: Type = input.parse()?;
+        input.parse::<Token![,]>()?;
+        let format_and_args: FormatAndArgs = input.parse()?;
+
+        Ok(Self {
+            ty,
+            format_and_args,
+        })
+    }
+}
+
+// A PrintfFormatMacroGenerator that provides the code generation backend for
+// the `tokenize_to_writer!` macro.
+struct TokenizeToWriterGenerator<'a> {
+    domain: &'a str,
+    ty: &'a Type,
+    encoding_fragments: Vec<TokenStream2>,
+}
+
+impl<'a> TokenizeToWriterGenerator<'a> {
+    fn new(domain: &'a str, ty: &'a Type) -> Self {
+        Self {
+            domain,
+            ty,
+            encoding_fragments: Vec::new(),
+        }
+    }
+}
+
+impl<'a> PrintfFormatMacroGenerator for TokenizeToWriterGenerator<'a> {
+    fn finalize(self, format_string: String) -> Result<TokenStream2> {
+        // Locally scoped aliases so we can refer to them in `quote!()`
+        let ty = self.ty;
+        let encoding_fragments = self.encoding_fragments;
+
+        // `token_backend` returns a `TokenStream2` which both inserts the
+        // string into the token database and returns the hash value.
+        let token = token_backend(self.domain, &format_string);
+
+        if encoding_fragments.is_empty() {
+            Ok(quote! {
+              {
+                __pw_tokenizer_crate::internal::tokenize_to_writer_no_args::<#ty>(#token)
+              }
+            })
+        } else {
+            Ok(quote! {
+              {
+                use __pw_tokenizer_crate::internal::Argument;
+                __pw_tokenizer_crate::internal::tokenize_to_writer::<#ty>(
+                  #token,
+                  &[#(#encoding_fragments),*]
+                )
+              }
+            })
+        }
+    }
+
+    fn string_fragment(&mut self, _string: &str) -> Result<()> {
+        // String fragments are encoded directly into the format string.
+        Ok(())
+    }
+
+    fn integer_conversion(&mut self, ty: Ident, expression: Expr) -> Result<Option<String>> {
+        self.encoding_fragments.push(quote! {
+          Argument::Varint(#ty::from(#expression) as i32)
+        });
+
+        Ok(None)
+    }
+
+    fn string_conversion(&mut self, expression: Expr) -> Result<Option<String>> {
+        self.encoding_fragments.push(quote! {
+          Argument::String(#expression)
+        });
+        Ok(None)
+    }
+
+    fn char_conversion(&mut self, expression: Expr) -> Result<Option<String>> {
+        self.encoding_fragments.push(quote! {
+          Argument::Char(u8::from(#expression))
+        });
+        Ok(None)
+    }
+}
+
+#[proc_macro]
+pub fn _tokenize_to_writer(tokens: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(tokens as TokenizeToWriterArgs);
+
+    // Hard codes domain to "".
+    let generator = TokenizeToWriterGenerator::new("", &input.ty);
 
     match generate_printf(generator, input.format_and_args) {
         Ok(token_stream) => token_stream.into(),
