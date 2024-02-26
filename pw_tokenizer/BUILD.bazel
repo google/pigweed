@@ -16,6 +16,8 @@ load("@rules_python//python:proto.bzl", "py_proto_library")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
+    "pw_cc_blob_info",
+    "pw_cc_blob_library",
     "pw_cc_test",
     "pw_linker_script",
 )
@@ -108,6 +110,7 @@ cc_library(
     deps = [
         ":base64",
         "//pw_bytes",
+        "//pw_result",
         "//pw_span",
         "//pw_varint",
     ],
@@ -193,6 +196,21 @@ pw_cc_test(
     ],
 )
 
+pw_cc_blob_info(
+    name = "detokenizer_example_elf_blob",
+    file_path = "//pw_tokenizer/py:example_binary_with_tokenized_strings.elf",
+    symbol_name = "kElfSection",
+)
+
+pw_cc_blob_library(
+    name = "detokenizer_elf_test_blob",
+    blobs = [
+        ":detokenizer_example_elf_blob",
+    ],
+    namespace = "test::ns",
+    out_header = "pw_tokenizer/example_binary_with_tokenized_strings.h",
+)
+
 pw_cc_test(
     name = "detokenize_test",
     srcs = [
@@ -200,6 +218,7 @@ pw_cc_test(
     ],
     deps = [
         ":decoder",
+        ":detokenizer_elf_test_blob",
         "//pw_unit_test",
     ],
 )

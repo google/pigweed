@@ -16,6 +16,7 @@
 
 #include <string_view>
 
+#include "pw_tokenizer/example_binary_with_tokenized_strings.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::tokenizer {
@@ -64,6 +65,24 @@ TEST_F(Detokenize, NoFormatting) {
   EXPECT_EQ(detok_.Detokenize("\5\0\0\0"sv).BestString(), "TWO");
   EXPECT_EQ(detok_.Detokenize("\xff\x00\x00\x00"sv).BestString(), "333");
   EXPECT_EQ(detok_.Detokenize("\xff\xee\xee\xdd"sv).BestString(), "FOUR");
+}
+
+TEST_F(Detokenize, FromElfSection) {
+  // Create a detokenizer from an ELF file with only the pw_tokenizer sections.
+  // See py/detokenize_test.py.
+  // Offset and size of the .pw_tokenizer.entries section in bytes.
+  constexpr uint32_t database_offset_ = 0x00000174;
+  constexpr size_t database_size_ = 0x000004C2;
+
+  pw::span<const uint8_t> tokenEntries(
+      reinterpret_cast<const uint8_t*>(test::ns::kElfSection.data() +
+                                       database_offset_),
+      database_size_);
+  pw::Result<Detokenizer> detok_from_elf_ =
+      Detokenizer::FromElfSection(tokenEntries);
+  ASSERT_TRUE(detok_from_elf_.ok());
+  EXPECT_EQ(detok_from_elf_->Detokenize("\xd6\x8c\x66\x2e").BestString(),
+            "Jello, world!");
 }
 
 TEST_F(Detokenize, BestString_MissingToken_IsEmpty) {

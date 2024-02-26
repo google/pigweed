@@ -19,6 +19,7 @@
 
 #include "pw_bytes/bit.h"
 #include "pw_bytes/endian.h"
+#include "pw_result/result.h"
 #include "pw_tokenizer/base64.h"
 #include "pw_tokenizer/internal/decode.h"
 #include "pw_tokenizer/nested_tokenization.h"
@@ -169,6 +170,36 @@ Detokenizer::Detokenizer(const TokenDatabase& database) {
   for (const auto& entry : database) {
     database_[entry.token].emplace_back(entry.string, entry.date_removed);
   }
+}
+
+Result<Detokenizer> Detokenizer::FromElfSection(
+    span<const uint8_t> elf_section) {
+  size_t index = 0;
+  std::unordered_map<uint32_t, std::vector<TokenizedStringEntry>> database;
+
+  while (index + sizeof(_pw_tokenizer_EntryHeader) < elf_section.size()) {
+    _pw_tokenizer_EntryHeader header;
+    std::memcpy(
+        &header, elf_section.data() + index, sizeof(_pw_tokenizer_EntryHeader));
+    index += sizeof(_pw_tokenizer_EntryHeader);
+
+    if (header.magic != _PW_TOKENIZER_ENTRY_MAGIC) {
+      return Status::DataLoss();
+    }
+
+    index += header.domain_length;
+    if (index + header.string_length <= elf_section.size()) {
+      // TODO(b/326365218): Construct FormatString with string_view to avoid
+      // creating a copy here.
+      std::string entry(
+          reinterpret_cast<const char*>(elf_section.data() + index),
+          header.string_length);
+      index += header.string_length;
+      database[header.token].emplace_back(entry.c_str(),
+                                          TokenDatabase::kDateRemovedNever);
+    }
+  }
+  return Detokenizer(std::move(database));
 }
 
 DetokenizedString Detokenizer::Detokenize(

@@ -31,6 +31,7 @@
 #include <utility>
 #include <vector>
 
+#include "pw_result/result.h"
 #include "pw_span/span.h"
 #include "pw_tokenizer/internal/decode.h"
 #include "pw_tokenizer/token_database.h"
@@ -79,6 +80,16 @@ class Detokenizer {
   // Constructs a detokenizer from a TokenDatabase. The TokenDatabase is not
   // referenced by the Detokenizer after construction; its memory can be freed.
   Detokenizer(const TokenDatabase& database);
+
+  // Constructs a detokenier by directly passing the parsed database.
+  explicit Detokenizer(
+      std::unordered_map<uint32_t, std::vector<TokenizedStringEntry>>&&
+          database)
+      : database_(std::move(database)) {}
+
+  // Factory method which returns a detokenizer instance from the
+  // .pw_tokenizer.entries section of an ELF binary.
+  static Result<Detokenizer> FromElfSection(span<const uint8_t> elf_section);
 
   // Decodes and detokenizes the encoded message. Returns a DetokenizedString
   // that stores all possible detokenized string results.

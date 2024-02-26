@@ -14,6 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
+include($ENV{PW_ROOT}/pw_build/cc_blob_library.cmake)
 
 pw_add_module_config(pw_tokenizer_CONFIG)
 
@@ -36,6 +37,7 @@ pw_add_library(pw_tokenizer STATIC
     public
   PUBLIC_DEPS
     pw_containers
+    pw_result
     pw_span
     pw_preprocessor
     pw_tokenizer.config
@@ -166,6 +168,7 @@ pw_add_test(pw_tokenizer.detokenize_test
     detokenize_test.cc
   PRIVATE_DEPS
     pw_tokenizer.decoder
+    pw_build.detokenizer_elf_test_blob
   GROUPS
     modules
     pw_tokenizer
@@ -211,6 +214,16 @@ pw_add_test(pw_tokenizer.tokenize_test
   GROUPS
     modules
     pw_tokenizer
+)
+
+pw_cc_blob_library(pw_build.detokenizer_elf_test_blob
+  HEADER
+    pw_tokenizer/example_binary_with_tokenized_strings.h
+  NAMESPACE
+    test::ns
+  BLOB
+    SYMBOL_NAME kElfSection
+    PATH py/example_binary_with_tokenized_strings.elf
 )
 
 if(Zephyr_FOUND)

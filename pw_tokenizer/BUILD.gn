@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_arduino_build/arduino.gni")
 import("$dir_pw_bloat/bloat.gni")
+import("$dir_pw_build/cc_blob_library.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
@@ -117,6 +118,7 @@ pw_source_set("decoder") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     dir_pw_preprocessor,
+    dir_pw_result,
     dir_pw_span,
   ]
   deps = [
@@ -226,7 +228,10 @@ pw_test("decode_test") {
 
 pw_test("detokenize_test") {
   sources = [ "detokenize_test.cc" ]
-  deps = [ ":decoder" ]
+  deps = [
+    ":decoder",
+    ":detokenizer_elf_test_blob",
+  ]
 
   # TODO(tonymd): This fails on Teensyduino 1.54 beta core. It may be related to
   # linking in stl functions. Will debug when 1.54 is released.
@@ -365,4 +370,16 @@ pw_size_diff("tokenizer_size_report") {
       label = "tokenize a string expression"
     },
   ]
+}
+
+pw_cc_blob_library("detokenizer_elf_test_blob") {
+  out_header = "pw_tokenizer/example_binary_with_tokenized_strings.h"
+  namespace = "test::ns"
+  blobs = [
+    {
+      file_path = "py/example_binary_with_tokenized_strings.elf"
+      symbol_name = "kElfSection"
+    },
+  ]
+  visibility = [ ":*" ]
 }

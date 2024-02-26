@@ -30,6 +30,7 @@ cc_library_static {
         "pw_log_null_headers",
         "pw_polyfill_headers",
         "pw_preprocessor_headers",
+        "pw_result_headers",
         "pw_span_headers",
     ],
     export_header_lib_headers: [
@@ -39,6 +40,7 @@ cc_library_static {
         "pw_log_null_headers",
         "pw_polyfill_headers",
         "pw_preprocessor_headers",
+        "pw_result_headers",
         "pw_span_headers",
     ],
     srcs: [

@@ -93,13 +93,17 @@ class TokenDatabase {
   }
 
  public:
+  /// Default date_removed for an entry in the token datase if it was never
+  /// removed.
+  static constexpr uint32_t kDateRemovedNever = 0xFFFFFFFF;
+
   /// An entry in the token database.
   struct Entry {
     /// The token that represents this string.
     uint32_t token;
 
     /// The date the token and string was removed from the database, or
-    /// `0xFFFFFFFF` if it was never removed. Dates are encoded such that
+    /// kDateRemovedNever if it was never removed. Dates are encoded such that
     /// natural integer sorting sorts from oldest to newest dates. The day is
     /// stored an an 8-bit day, 8-bit month, and 16-bit year, packed into a
     /// little-endian `uint32_t`.
