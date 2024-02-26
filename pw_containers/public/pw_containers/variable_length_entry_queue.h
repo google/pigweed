@@ -22,8 +22,8 @@
 
 /// @file pw_containers/variable_length_entry_queue.h
 ///
-/// A `VariableLengthEntryQueue` is a ended queue of inline variable-length
-/// binary entries. It is implemented as a ring (circular) buffer and supports
+/// A `VariableLengthEntryQueue` is a queue of inline variable-length binary
+/// entries. It is implemented as a ring (circular) buffer and supports
 /// operations to append entries and overwrite if necessary. Entries may be zero
 /// bytes up to the maximum size supported by the queue.
 ///
@@ -41,46 +41,13 @@
 /// - A simple ring buffer of variable-length entries is needed. Advanced
 ///   features like multiple readers and a user-defined preamble are not
 ///   required.
-/// - C support is required.
 /// - A consistent, parsable, in-memory representation is required (e.g. to
 ///   decode the buffer from a block of memory).
+/// - C support is required.
 ///
-/// A `VariableLengthEntryQueue` may be declared and initialized in C with the
-/// @c_macro{PW_VARIABLE_LENGTH_ENTRY_QUEUE_DECLARE} macro.
-///
-/// @code{c}
-///
-///   // Declares a queue with a maximum single entry size of 10 bytes.
-///   PW_VARIABLE_LENGTH_ENTRY_QUEUE_DECLARE(queue, 10);
-///
-///   // Write some data
-///   pw_VariableLengthEntryQueue_PushOverwrite(queue, "123", 3);
-///   pw_VariableLengthEntryQueue_PushOverwrite(queue, "456", 3);
-///
-///   assert(pw_VariableLengthEntryQueue_Size(queue) == 2u);
-///
-///   // Remove the entries
-///   pw_VariableLengthEntryQueue_Pop(queue);
-///   pw_VariableLengthEntryQueue_Pop(queue);
-///
-/// @endcode
-///
-/// Alternately, a `VariableLengthEntryQueue` may also be initialized in an
-/// existing ``uint32_t`` array.
-///
-/// @code{c}
-///
-///   // Initialize a VariableLengthEntryQueue.
-///   uint32_t buffer[32];
-///   pw_VariableLengthEntryQueue_Init(buffer, 32);
-///
-///   // Largest supported entry works out to 114 B (13 B overhead + 1 B prefix)
-///   assert(pw_VariableLengthEntryQueue_MaxEntrySizeBytes(buffer) == 114u);
-///
-///   // Write some data
-///   pw_VariableLengthEntryQueue_PushOverwrite(buffer, "123", 3);
-///
-/// @endcode
+/// `VariableLengthEntryQueue` is implemented in C and provides complete C and
+/// C++ APIs. The `VariableLengthEntryQueue` C++ class is structured similarly
+/// to `pw::InlineQueue` and `pw::Vector`.
 
 #ifdef __cplusplus
 extern "C" {
@@ -327,4 +294,354 @@ static inline bool pw_VariableLengthEntryQueue_Empty(
 
 #ifdef __cplusplus
 }  // extern "C"
+
+#include <cstddef>
+#include <limits>
+#include <type_traits>
+#include <utility>
+
+#include "pw_containers/internal/raw_storage.h"
+#include "pw_span/span.h"
+
+namespace pw {
+
+// A`BasicVariableLengthEntryQueue` with a known maximum size of a single entry.
+// The member functions are immplemented in the generic-capacity base.
+// TODO: b/303056683 - Add helper for calculating kMaxSizeBytes for N entries of
+//     a particular size.
+template <typename T,
+          size_t kMaxSizeBytes = containers::internal::kGenericSized>
+class BasicVariableLengthEntryQueue : public BasicVariableLengthEntryQueue<
+                                          T,
+                                          containers::internal::kGenericSized> {
+ private:
+  using Base =
+      BasicVariableLengthEntryQueue<T, containers::internal::kGenericSized>;
+
+ public:
+  constexpr BasicVariableLengthEntryQueue() : Base(kMaxSizeBytes) {}
+
+  // `BasicVariableLengthEntryQueue` is trivially copyable.
+  BasicVariableLengthEntryQueue(const BasicVariableLengthEntryQueue&) = default;
+  BasicVariableLengthEntryQueue& operator=(
+      const BasicVariableLengthEntryQueue&) = default;
+
+ private:
+  static_assert(kMaxSizeBytes <=
+                std::numeric_limits<typename Base::size_type>::max());
+
+  using Base::Init;  // Disallow Init since the size template param is not used.
+
+  uint32_t data_[_PW_VAR_QUEUE_DATA_SIZE_UINT32(kMaxSizeBytes)];
+};
+
+/// @defgroup variable_length_entry_queue_cpp_api
+/// @{
+
+/// Variable-length entry queue class template for any byte type (e.g.
+/// ``std::byte`` or ``uint8_t``).
+///
+/// ``BasicVariableLengthEntryQueue`` instances are declared with their capacity
+/// / max single entry size (``BasicVariableLengthEntryQueue<char, 64>``), but
+/// may be referred to without the size
+/// (``BasicVariableLengthEntryQueue<char>&``).
+template <typename T>
+class BasicVariableLengthEntryQueue<T, containers::internal::kGenericSized> {
+ public:
+  class Entry;
+
+  using value_type = Entry;
+  using size_type = std::uint32_t;
+  using pointer = const value_type*;
+  using const_pointer = pointer;
+  using reference = const value_type&;
+  using const_reference = reference;
+
+  // Refers to an entry in-place in the queue. Entries may not be contiguous.
+  class iterator;
+
+  // Currently, iterators provide read-only access.
+  // TODO: b/303046109 - Provide a non-const iterator.
+  using const_iterator = iterator;
+
+  /// @copydoc pw_VariableLengthEntryQueue_Init
+  template <size_t kArraySize>
+  static BasicVariableLengthEntryQueue& Init(uint32_t (&array)[kArraySize]) {
+    static_assert(
+        kArraySize > PW_VARIABLE_LENGTH_ENTRY_QUEUE_HEADER_SIZE_UINT32,
+        "VariableLengthEntryQueue must be backed by an array with more than "
+        "PW_VARIABLE_LENGTH_ENTRY_QUEUE_HEADER_SIZE_UINT32 (3) elements");
+    return Init(array, kArraySize);
+  }
+
+  /// @copydoc pw_VariableLengthEntryQueue_Init
+  static BasicVariableLengthEntryQueue& Init(uint32_t array[],
+                                             size_t array_size_uint32) {
+    pw_VariableLengthEntryQueue_Init(array, array_size_uint32);
+    return *std::launder(
+        reinterpret_cast<BasicVariableLengthEntryQueue*>(array));
+  }
+
+  /// Returns the first entry in the queue.
+  Entry front() const { return *begin(); }
+
+  /// @copydoc pw_VariableLengthEntryQueue_Begin
+  const_iterator begin() const {
+    return const_iterator(pw_VariableLengthEntryQueue_Begin(array_));
+  }
+  const_iterator cbegin() const { return begin(); }
+
+  /// @copydoc pw_VariableLengthEntryQueue_End
+  const_iterator end() const {
+    return const_iterator(pw_VariableLengthEntryQueue_End(array_));
+  }
+  const_iterator cend() const { return end(); }
+
+  /// @copydoc pw_VariableLengthEntryQueue_Empty
+  [[nodiscard]] bool empty() const {
+    return pw_VariableLengthEntryQueue_Empty(array_);
+  }
+
+  /// @copydoc pw_VariableLengthEntryQueue_Size
+  size_type size() const { return pw_VariableLengthEntryQueue_Size(array_); }
+
+  /// @copydoc pw_VariableLengthEntryQueue_SizeBytes
+  size_type size_bytes() const {
+    return pw_VariableLengthEntryQueue_SizeBytes(array_);
+  }
+
+  /// @copydoc pw_VariableLengthEntryQueue_MaxSizeBytes
+  size_type max_size_bytes() const {
+    return pw_VariableLengthEntryQueue_MaxSizeBytes(array_);
+  }
+
+  /// Underlying storage of the variable-length entry queue. May be used to
+  /// memcpy the queue.
+  span<const T> raw_storage() const {
+    return span<const T>(
+        reinterpret_cast<const T*>(array_),
+        pw_VariableLengthEntryQueue_RawStorageSizeBytes(array_));
+  }
+
+  /// @copydoc pw_VariableLengthEntryQueue_Clear
+  void clear() { pw_VariableLengthEntryQueue_Clear(array_); }
+
+  /// @copydoc pw_VariableLengthEntryQueue_Push
+  void push(span<const T> value) {
+    pw_VariableLengthEntryQueue_Push(
+        array_, value.data(), static_cast<size_type>(value.size()));
+  }
+
+  /// @copydoc pw_VariableLengthEntryQueue_PushOverwrite
+  void push_overwrite(span<const T> value) {
+    pw_VariableLengthEntryQueue_PushOverwrite(
+        array_, value.data(), static_cast<size_type>(value.size()));
+  }
+
+  /// @copydoc pw_VariableLengthEntryQueue_Pop
+  void pop() { pw_VariableLengthEntryQueue_Pop(array_); }
+
+ protected:
+  constexpr BasicVariableLengthEntryQueue(uint32_t max_size_bytes)
+      : array_{_PW_VAR_QUEUE_DATA_SIZE_BYTES(max_size_bytes), 0, 0} {}
+
+  BasicVariableLengthEntryQueue(const BasicVariableLengthEntryQueue&) = default;
+  BasicVariableLengthEntryQueue& operator=(
+      const BasicVariableLengthEntryQueue&) = default;
+
+ private:
+  static_assert(std::is_integral_v<T> || std::is_same_v<T, std::byte>);
+  static_assert(sizeof(T) == sizeof(std::byte));
+
+  uint32_t array_[PW_VARIABLE_LENGTH_ENTRY_QUEUE_HEADER_SIZE_UINT32];
+};
+
+/// Refers to an entry in-place in the queue. Entries may be discontiguous.
+template <typename T>
+class BasicVariableLengthEntryQueue<T>::Entry {
+ public:
+  using value_type = T;
+  using size_type = std::uint32_t;
+  using pointer = const T*;
+  using const_pointer = pointer;
+  using reference = const T&;
+  using const_reference = reference;
+
+  /// Iterator for the bytes in an Entry. Entries may be discontiguous, so a
+  /// pointer cannot serve as an iterator.
+  class iterator {
+   public:
+    using difference_type = std::ptrdiff_t;
+    using value_type = T;
+    using pointer = const T*;
+    using reference = const T&;
+    using iterator_category = std::forward_iterator_tag;
+
+    constexpr iterator() : entry_(nullptr), index_(0) {}
+
+    constexpr iterator(const iterator&) = default;
+    constexpr iterator& operator=(const iterator&) = default;
+
+    constexpr iterator& operator++() {
+      index_ += 1;
+      return *this;
+    }
+    constexpr iterator operator++(int) {
+      iterator previous_value(*this);
+      operator++();
+      return previous_value;
+    }
+
+    reference operator*() const { return *GetIndex(*entry_, index_); }
+    pointer operator->() const { return GetIndex(*entry_, index_); }
+
+    bool operator==(const iterator& rhs) const {
+      return entry_->data_1 == rhs.entry_->data_1 && index_ == rhs.index_;
+    }
+    bool operator!=(const iterator& rhs) const { return !(*this == rhs); }
+
+   private:
+    friend class Entry;
+
+    constexpr iterator(const pw_VariableLengthEntryQueue_Entry& entry,
+                       size_t index)
+        : entry_(&entry), index_(index) {}
+
+    const pw_VariableLengthEntryQueue_Entry* entry_;
+    size_t index_;
+  };
+
+  // TODO: b/303046109 - Provide mutable access to Entry contents.
+  using const_iterator = iterator;
+
+  constexpr Entry(const Entry&) = default;
+  constexpr Entry& operator=(const Entry&) = default;
+
+  const_reference at(size_t index) const {
+    return *reinterpret_cast<const T*>(
+        _pw_VariableLengthEntryQueue_Entry_GetPointerChecked(&entry_, index));
+  }
+
+  const_reference operator[](size_t index) const {
+    return *GetIndex(entry_, index);
+  }
+
+  const_reference front() const { return *entry_.data_1; }
+  const_reference back() const { *GetIndex(entry_, size() - 1); }
+
+  /// Entries may be stored in up to two segments, so this returns spans
+  /// refering to both portions of the entry. If the entry is contiguous, the
+  /// second span is empty.
+  std::pair<span<const value_type>, span<const value_type>> contiguous_data()
+      const {
+    return std::make_pair(
+        span(reinterpret_cast<const_pointer>(entry_.data_1), entry_.size_1),
+        span(reinterpret_cast<const_pointer>(entry_.data_2), entry_.size_2));
+  }
+
+  /// @copydoc pw_VariableLengthEntryQueue_Entry_Copy
+  ///
+  /// Copying with `copy()` is likely more efficient than an iterator-based copy
+  /// with `std::copy()`, since `copy()` uses one or two `memcpy` calls instead
+  /// of copying byte-by-byte.
+  size_type copy(T* dest, size_type count) const {
+    return pw_VariableLengthEntryQueue_Entry_Copy(&entry_, dest, count);
+  }
+
+  const_iterator begin() const { return const_iterator(entry_, 0); }
+  const_iterator cbegin() const { return begin(); }
+
+  const_iterator end() const { return const_iterator(entry_, size()); }
+  const_iterator cend() const { return cend(); }
+
+  [[nodiscard]] bool empty() const { return size() == 0; }
+
+  size_type size() const { return entry_.size_1 + entry_.size_2; }
+
+ private:
+  friend class BasicVariableLengthEntryQueue;
+
+  static const T* GetIndex(const pw_VariableLengthEntryQueue_Entry& entry,
+                           size_t index) {
+    return reinterpret_cast<const T*>(
+        _pw_VariableLengthEntryQueue_Entry_GetPointer(&entry, index));
+  }
+
+  explicit constexpr Entry(const pw_VariableLengthEntryQueue_Entry& entry)
+      : entry_(entry) {}
+
+  constexpr Entry() : entry_{} {}
+
+  pw_VariableLengthEntryQueue_Entry entry_;
+};
+
+/// Iterator object for a `VariableLengthEntryQueue`.
+///
+/// Iterators are invalidated by any operations that change the container or
+/// its underlying data (push/pop/init).
+template <typename T>
+class BasicVariableLengthEntryQueue<T>::iterator {
+ public:
+  using difference_type = std::ptrdiff_t;
+  using value_type = Entry;
+  using pointer = const Entry*;
+  using reference = const Entry&;
+  using iterator_category = std::forward_iterator_tag;
+
+  constexpr iterator() : iterator_{}, entry_{} {}
+
+  constexpr iterator(const iterator&) = default;
+  constexpr iterator& operator=(const iterator&) = default;
+
+  iterator& operator++() {
+    pw_VariableLengthEntryQueue_Iterator_Advance(&iterator_);
+    entry_.entry_.data_1 = nullptr;  // mark the entry as unloaded
+    return *this;
+  }
+  iterator operator++(int) {
+    iterator previous_value(*this);
+    operator++();
+    return previous_value;
+  }
+
+  reference operator*() const {
+    LoadEntry();
+    return entry_;
+  }
+  pointer operator->() const {
+    LoadEntry();
+    return &entry_;
+  }
+
+  bool operator==(const iterator& rhs) const {
+    return pw_VariableLengthEntryQueue_Iterator_Equal(&iterator_,
+                                                      &rhs.iterator_);
+  }
+  bool operator!=(const iterator& rhs) const { return !(*this == rhs); }
+
+ private:
+  friend class BasicVariableLengthEntryQueue;
+
+  explicit constexpr iterator(const pw_VariableLengthEntryQueue_Iterator& it)
+      : iterator_(it) {}
+
+  void LoadEntry() const {
+    if (entry_.entry_.data_1 == nullptr) {
+      entry_.entry_ = pw_VariableLengthEntryQueue_GetEntry(&iterator_);
+    }
+  }
+
+  pw_VariableLengthEntryQueue_Iterator iterator_;
+  mutable Entry entry_;
+};
+
+/// Variable-length entry queue that uses ``std::byte`` for the byte type.
+template <size_t kMaxSizeBytes = containers::internal::kGenericSized>
+using VariableLengthEntryQueue =
+    BasicVariableLengthEntryQueue<std::byte, kMaxSizeBytes>;
+
+/// @}
+
+}  // namespace pw
+
 #endif  // __cplusplus

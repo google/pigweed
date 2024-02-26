@@ -95,6 +95,7 @@ cc_library(
     hdrs = ["public/pw_containers/variable_length_entry_queue.h"],
     includes = ["public"],
     deps = [
+        ":raw_storage",
         "//pw_assert",
         "//pw_varint",
     ],

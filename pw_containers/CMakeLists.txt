@@ -106,6 +106,7 @@ pw_add_library(pw_containers.variable_length_entry_queue STATIC
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_containers._raw_storage
     pw_varint
   PRIVATE_DEPS
     pw_assert
