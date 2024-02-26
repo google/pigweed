@@ -137,7 +137,12 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
             for packet in packets:
                 await server_failure.process(packet)
             self.assertEqual(len(sent_packets), num_packets)
-            server_failure.handle_event(proxy.Event.TRANSFER_START)
+            server_failure.handle_event(
+                proxy.Event(
+                    proxy.EventType.TRANSFER_START,
+                    Chunk(ProtocolVersion.VERSION_TWO, Chunk.Type.START),
+                )
+            )
 
     async def test_keep_drop_queue_loop(self):
         sent_packets: List[bytes] = []
@@ -246,10 +251,32 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
         # Test each even twice to assure the filter does not have issues
         # on new window bondaries.
         events = [
-            proxy.Event.PARAMETERS_RETRANSMIT,
-            proxy.Event.PARAMETERS_CONTINUE,
-            proxy.Event.PARAMETERS_RETRANSMIT,
-            proxy.Event.PARAMETERS_CONTINUE,
+            proxy.Event(
+                proxy.EventType.PARAMETERS_RETRANSMIT,
+                Chunk(
+                    ProtocolVersion.VERSION_TWO,
+                    Chunk.Type.PARAMETERS_RETRANSMIT,
+                ),
+            ),
+            proxy.Event(
+                proxy.EventType.PARAMETERS_CONTINUE,
+                Chunk(
+                    ProtocolVersion.VERSION_TWO, Chunk.Type.PARAMETERS_CONTINUE
+                ),
+            ),
+            proxy.Event(
+                proxy.EventType.PARAMETERS_RETRANSMIT,
+                Chunk(
+                    ProtocolVersion.VERSION_TWO,
+                    Chunk.Type.PARAMETERS_RETRANSMIT,
+                ),
+            ),
+            proxy.Event(
+                proxy.EventType.PARAMETERS_CONTINUE,
+                Chunk(
+                    ProtocolVersion.VERSION_TWO, Chunk.Type.PARAMETERS_CONTINUE
+                ),
+            ),
         ]
 
         for event in events:
@@ -258,6 +285,98 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
                 await window_packet_dropper.process(packet)
             self.assertEqual(sent_packets, expected_packets)
             window_packet_dropper.handle_event(event)
+
+    async def test_window_packet_dropper_extra_in_flight_packets(self):
+        sent_packets: List[bytes] = []
+
+        # Async helper so DataTransposer can await on it.
+        async def append(list: List[bytes], data: bytes):
+            list.append(data)
+
+        window_packet_dropper = proxy.WindowPacketDropper(
+            lambda data: append(sent_packets, data),
+            name="test",
+            window_packet_to_drop=1,
+        )
+
+        packets = [
+            _encode_rpc_frame(
+                Chunk(
+                    ProtocolVersion.VERSION_TWO,
+                    Chunk.Type.DATA,
+                    data=b'1',
+                    offset=0,
+                )
+            ),
+            _encode_rpc_frame(
+                Chunk(
+                    ProtocolVersion.VERSION_TWO,
+                    Chunk.Type.DATA,
+                    data=b'2',
+                    offset=1,
+                )
+            ),
+            _encode_rpc_frame(
+                Chunk(
+                    ProtocolVersion.VERSION_TWO,
+                    Chunk.Type.DATA,
+                    data=b'3',
+                    offset=2,
+                )
+            ),
+            _encode_rpc_frame(
+                Chunk(
+                    ProtocolVersion.VERSION_TWO,
+                    Chunk.Type.DATA,
+                    data=b'2',
+                    offset=1,
+                )
+            ),
+            _encode_rpc_frame(
+                Chunk(
+                    ProtocolVersion.VERSION_TWO,
+                    Chunk.Type.DATA,
+                    data=b'3',
+                    offset=2,
+                )
+            ),
+            _encode_rpc_frame(
+                Chunk(
+                    ProtocolVersion.VERSION_TWO,
+                    Chunk.Type.DATA,
+                    data=b'4',
+                    offset=3,
+                )
+            ),
+        ]
+
+        expected_packets = packets[1:]
+
+        # Test each even twice to assure the filter does not have issues
+        # on new window bondaries.
+        events = [
+            None,
+            proxy.Event(
+                proxy.EventType.PARAMETERS_RETRANSMIT,
+                Chunk(
+                    ProtocolVersion.VERSION_TWO,
+                    Chunk.Type.PARAMETERS_RETRANSMIT,
+                    offset=1,
+                ),
+            ),
+            None,
+            None,
+            None,
+            None,
+        ]
+
+        for packet, event in zip(packets, events):
+            await window_packet_dropper.process(packet)
+            if event is not None:
+                window_packet_dropper.handle_event(event)
+
+        expected_packets = [packets[0], packets[2], packets[3], packets[5]]
+        self.assertEqual(sent_packets, expected_packets)
 
     async def test_event_filter(self):
         sent_packets: List[bytes] = []
@@ -330,22 +449,22 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
 
         expected_events = [
             None,  # request
-            proxy.Event.TRANSFER_START,  # start chunk
+            proxy.EventType.TRANSFER_START,
             None,  # data chunk
             None,  # data chunk
             None,  # request
-            proxy.Event.TRANSFER_START,  # start chunk
+            proxy.EventType.TRANSFER_START,
             None,  # data chunk
             None,  # data chunk
         ]
 
-        for packet, expected_event in zip(packets, expected_events):
+        for packet, expected_event_type in zip(packets, expected_events):
             await event_filter.process(packet)
             try:
-                event = queue.get_nowait()
+                event_type = queue.get_nowait().type
             except asyncio.QueueEmpty:
-                event = None
-            self.assertEqual(event, expected_event)
+                event_type = None
+            self.assertEqual(event_type, expected_event_type)
 
 
 def _encode_rpc_frame(chunk: Chunk) -> bytes:

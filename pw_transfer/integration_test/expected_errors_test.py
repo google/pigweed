@@ -294,12 +294,11 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
             expected_status=status_pb2.StatusCode.DEADLINE_EXCEEDED,
         )
 
-    # TODO(b/322497823): Re-enable java and python tests when they are fixed.
     @parameterized.expand(
         [
             ("cpp"),
-            # ("java"),
-            # ("python"),
+            ("java"),
+            ("python"),
         ]
     )
     def test_data_drop_client_lifetime_timeout(self, client_type):

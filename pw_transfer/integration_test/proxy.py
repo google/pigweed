@@ -28,7 +28,7 @@ import random
 import socket
 import sys
 import time
-from typing import Any, Awaitable, Callable, Iterable, List, Optional
+from typing import Awaitable, Callable, Iterable, List, NamedTuple, Optional
 
 from google.protobuf import text_format
 
@@ -56,11 +56,16 @@ _LOG = logging.getLogger('pw_transfer_intergration_test_proxy')
 _RECEIVE_BUFFER_SIZE = 2048
 
 
-class Event(Enum):
+class EventType(Enum):
     TRANSFER_START = 1
     PARAMETERS_RETRANSMIT = 2
     PARAMETERS_CONTINUE = 3
     START_ACK_CONFIRMATION = 4
+
+
+class Event(NamedTuple):
+    type: EventType
+    chunk: Chunk
 
 
 class Filter(abc.ABC):
@@ -322,15 +327,15 @@ class ServerFailure(Filter):
             await self.send_data(data)
 
     def handle_event(self, event: Event) -> None:
-        if event is Event.TRANSFER_START:
+        if event.type is EventType.TRANSFER_START:
             self.advance_packets_before_failure()
 
 
 class WindowPacketDropper(Filter):
-    """A filter to allow the same packet in each window to be dropped
+    """A filter to allow the same packet in each window to be dropped.
 
     WindowPacketDropper with drop the nth packet in each window as
-    specified by window_packet_to_drop.  This process will happend
+    specified by window_packet_to_drop.  This process will happen
     indefinitely for each window.
 
     This filter should be instantiated in the same filter stack as an
@@ -347,19 +352,29 @@ class WindowPacketDropper(Filter):
         self._name = name
         self._relay_packets = True
         self._window_packet_to_drop = window_packet_to_drop
+        self._next_window_start_offset: Optional[int] = 0
         self._window_packet = 0
 
     async def process(self, data: bytes) -> None:
+        data_chunk = None
         try:
-            is_data_chunk = (
-                _extract_transfer_chunk(data).type is Chunk.Type.DATA
-            )
+            chunk = _extract_transfer_chunk(data)
+            if chunk.type is Chunk.Type.DATA:
+                data_chunk = chunk
         except Exception:
             # Invalid / non-chunk data (e.g. text logs); ignore.
-            is_data_chunk = False
+            pass
 
         # Only count transfer data chunks as part of a window.
-        if is_data_chunk:
+        if data_chunk is not None:
+            if data_chunk.offset == self._next_window_start_offset:
+                # If a new window has been requested, wait until the first
+                # chunk matching its requested offset to begin counting window
+                # chunks. Any in-flight chunks from the previous window are
+                # allowed through.
+                self._window_packet = 0
+                self._next_window_start_offset = None
+
             if self._window_packet != self._window_packet_to_drop:
                 await self.send_data(data)
 
@@ -368,12 +383,16 @@ class WindowPacketDropper(Filter):
             await self.send_data(data)
 
     def handle_event(self, event: Event) -> None:
-        if event in (
-            Event.PARAMETERS_RETRANSMIT,
-            Event.PARAMETERS_CONTINUE,
-            Event.START_ACK_CONFIRMATION,
+        if event.type in (
+            EventType.PARAMETERS_RETRANSMIT,
+            EventType.PARAMETERS_CONTINUE,
+            EventType.START_ACK_CONFIRMATION,
         ):
-            self._window_packet = 0
+            # A new transmission window has been requested, starting at the
+            # offset specified in the chunk. The receiver may already have data
+            # from the previous window in-flight, so don't immediately reset
+            # the window packet counter.
+            self._next_window_start_offset = event.chunk.offset
 
 
 class EventFilter(Filter):
@@ -397,13 +416,19 @@ class EventFilter(Filter):
         try:
             chunk = _extract_transfer_chunk(data)
             if chunk.type is Chunk.Type.START:
-                await self._queue.put(Event.TRANSFER_START)
+                await self._queue.put(Event(EventType.TRANSFER_START, chunk))
             if chunk.type is Chunk.Type.START_ACK_CONFIRMATION:
-                await self._queue.put(Event.START_ACK_CONFIRMATION)
+                await self._queue.put(
+                    Event(EventType.START_ACK_CONFIRMATION, chunk)
+                )
             elif chunk.type is Chunk.Type.PARAMETERS_RETRANSMIT:
-                await self._queue.put(Event.PARAMETERS_RETRANSMIT)
+                await self._queue.put(
+                    Event(EventType.PARAMETERS_RETRANSMIT, chunk)
+                )
             elif chunk.type is Chunk.Type.PARAMETERS_CONTINUE:
-                await self._queue.put(Event.PARAMETERS_CONTINUE)
+                await self._queue.put(
+                    Event(EventType.PARAMETERS_CONTINUE, chunk)
+                )
         except:
             # Silently ignore invalid packets
             pass
