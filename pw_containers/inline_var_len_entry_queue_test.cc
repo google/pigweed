@@ -12,13 +12,13 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_containers/variable_length_entry_queue.h"
+#include "pw_containers/inline_var_len_entry_queue.h"
 
 #include <cstring>
 #include <string_view>
 #include <variant>
 
-#include "pw_containers_private/variable_length_entry_queue_test_oracle.h"
+#include "pw_containers_private/inline_var_len_entry_queue_test_oracle.h"
 #include "pw_unit_test/framework.h"
 
 namespace {

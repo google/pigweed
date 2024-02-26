@@ -575,7 +575,7 @@ group("build_with_pw_minimal_cpp_stdlib") {
   # This list of supported modules is incomplete.
   deps = [
     "$dir_pw_base64($_toolchain)",
-    "$dir_pw_containers:variable_length_entry_queue($_toolchain)",
+    "$dir_pw_containers:inline_var_len_entry_queue($_toolchain)",
     "$dir_pw_status($_toolchain)",
     "$dir_pw_tokenizer:base64($_toolchain)",
     "$dir_pw_tokenizer($_toolchain)",

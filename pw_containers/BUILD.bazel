@@ -90,9 +90,9 @@ cc_library(
 )
 
 cc_library(
-    name = "variable_length_entry_queue",
-    srcs = ["variable_length_entry_queue.c"],
-    hdrs = ["public/pw_containers/variable_length_entry_queue.h"],
+    name = "inline_var_len_entry_queue",
+    srcs = ["inline_var_len_entry_queue.c"],
+    hdrs = ["public/pw_containers/inline_var_len_entry_queue.h"],
     includes = ["public"],
     deps = [
         ":raw_storage",
@@ -195,13 +195,13 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "variable_length_entry_queue_test",
+    name = "inline_var_len_entry_queue_test",
     srcs = [
-        "pw_containers_private/variable_length_entry_queue_test_oracle.h",
-        "variable_length_entry_queue_test.cc",
+        "inline_var_len_entry_queue_test.cc",
+        "pw_containers_private/inline_var_len_entry_queue_test_oracle.h",
     ],
     deps = [
-        ":variable_length_entry_queue",
+        ":inline_var_len_entry_queue",
         "//pw_bytes",
     ],
 )

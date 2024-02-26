@@ -98,12 +98,12 @@ pw_source_set("to_array") {
   public = [ "public/pw_containers/to_array.h" ]
 }
 
-pw_source_set("variable_length_entry_queue") {
+pw_source_set("inline_var_len_entry_queue") {
   public_configs = [ ":public_include_path" ]
   public_deps = [ dir_pw_varint ]
   deps = [ dir_pw_assert ]
-  public = [ "public/pw_containers/variable_length_entry_queue.h" ]
-  sources = [ "variable_length_entry_queue.c" ]
+  public = [ "public/pw_containers/inline_var_len_entry_queue.h" ]
+  sources = [ "inline_var_len_entry_queue.c" ]
 
   # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
@@ -144,7 +144,7 @@ pw_test_group("tests") {
     ":intrusive_list_test",
     ":raw_storage_test",
     ":to_array_test",
-    ":variable_length_entry_queue_test",
+    ":inline_var_len_entry_queue_test",
     ":vector_test",
     ":wrapped_iterator_test",
   ]
@@ -234,13 +234,13 @@ pw_test("to_array_test") {
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
-pw_test("variable_length_entry_queue_test") {
+pw_test("inline_var_len_entry_queue_test") {
   sources = [
-    "pw_containers_private/variable_length_entry_queue_test_oracle.h",
-    "variable_length_entry_queue_test.cc",
+    "inline_var_len_entry_queue_test.cc",
+    "pw_containers_private/inline_var_len_entry_queue_test_oracle.h",
   ]
   deps = [
-    ":variable_length_entry_queue",
+    ":inline_var_len_entry_queue",
     dir_pw_bytes,
   ]
 

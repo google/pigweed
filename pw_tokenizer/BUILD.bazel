@@ -312,7 +312,7 @@ cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":pw_tokenizer",
-        "//pw_containers:variable_length_entry_queue",
+        "//pw_containers:inline_var_len_entry_queue",
     ],
 )
 

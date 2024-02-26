@@ -38,7 +38,7 @@ pw::InlineQueue
 ----------------------------
 pw::VariableLengthEntryQueue
 ----------------------------
-.. doxygenfile:: pw_containers/variable_length_entry_queue.h
+.. doxygenfile:: pw_containers/inline_var_len_entry_queue.h
    :sections: detaileddescription
 
 Example
@@ -139,18 +139,18 @@ API Reference
 ===============
 C++
 ---
-.. doxygengroup:: variable_length_entry_queue_cpp_api
+.. doxygengroup:: inline_var_len_entry_queue_cpp_api
    :content-only:
    :members:
 
 C
 -
-.. doxygengroup:: variable_length_entry_queue_c_api
+.. doxygengroup:: inline_var_len_entry_queue_c_api
    :content-only:
 
 Python
 ------
-.. automodule:: pw_containers.variable_length_entry_queue
+.. automodule:: pw_containers.inline_var_len_entry_queue
    :members:
 
 -----------------

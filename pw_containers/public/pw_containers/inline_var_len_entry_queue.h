@@ -20,7 +20,7 @@
 #include "pw_preprocessor/util.h"
 #include "pw_varint/varint.h"
 
-/// @file pw_containers/variable_length_entry_queue.h
+/// @file pw_containers/inline_var_len_entry_queue.h
 ///
 /// A `VariableLengthEntryQueue` is a queue of inline variable-length binary
 /// entries. It is implemented as a ring (circular) buffer and supports
@@ -53,7 +53,7 @@
 extern "C" {
 #endif  // __cplusplus
 
-/// @defgroup variable_length_entry_queue_c_api VariableLengthEntryQueue C API
+/// @defgroup inline_var_len_entry_queue_c_api VariableLengthEntryQueue C API
 /// @{
 
 /// Handle that refers to a `VariableLengthEntryQueue`. In memory, the queue
@@ -335,7 +335,7 @@ class BasicVariableLengthEntryQueue : public BasicVariableLengthEntryQueue<
   uint32_t data_[_PW_VAR_QUEUE_DATA_SIZE_UINT32(kMaxSizeBytes)];
 };
 
-/// @defgroup variable_length_entry_queue_cpp_api
+/// @defgroup inline_var_len_entry_queue_cpp_api
 /// @{
 
 /// Variable-length entry queue class template for any byte type (e.g.

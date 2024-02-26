@@ -25,9 +25,9 @@ pw_python_package("py") {
   }
   sources = [
     "pw_containers/__init__.py",
-    "pw_containers/variable_length_entry_queue.py",
+    "pw_containers/inline_var_len_entry_queue.py",
   ]
-  tests = [ "variable_length_entry_queue_test.py" ]
+  tests = [ "inline_var_len_entry_queue_test.py" ]
   pylintrc = "$dir_pigweed/.pylintrc"
   mypy_ini = "$dir_pigweed/.mypy.ini"
 }
