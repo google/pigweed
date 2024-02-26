@@ -35,7 +35,7 @@ static const uint8_t* Data(const uint32_t* queue) {
   return (const uint8_t*)&queue[3];
 }
 
-static uint32_t WrapIndex(pw_VariableLengthEntryQueue_ConstHandle queue,
+static uint32_t WrapIndex(pw_InlineVarLenEntryQueue_ConstHandle queue,
                           uint32_t offset) {
   if (offset >= BufferSize(queue)) {
     offset -= BufferSize(queue);
@@ -49,7 +49,7 @@ typedef struct {
 } EntrySize;
 
 // Returns the size of an entry, including both the prefix length and data size.
-static EntrySize ReadEntrySize(pw_VariableLengthEntryQueue_ConstHandle queue,
+static EntrySize ReadEntrySize(pw_InlineVarLenEntryQueue_ConstHandle queue,
                                uint32_t offset) {
   EntrySize size = {0, 0};
 
@@ -65,7 +65,7 @@ static EntrySize ReadEntrySize(pw_VariableLengthEntryQueue_ConstHandle queue,
   return size;
 }
 
-static uint32_t EncodePrefix(pw_VariableLengthEntryQueue_ConstHandle queue,
+static uint32_t EncodePrefix(pw_InlineVarLenEntryQueue_ConstHandle queue,
                              uint8_t prefix[PW_VARINT_MAX_INT32_SIZE_BYTES],
                              uint32_t data_size_bytes) {
   const uint32_t prefix_size = (uint32_t)pw_varint_Encode32(
@@ -74,25 +74,25 @@ static uint32_t EncodePrefix(pw_VariableLengthEntryQueue_ConstHandle queue,
   // Check that the ring buffer is capable of holding entries of this size.
   PW_CHECK_UINT_LE(prefix_size + data_size_bytes,
                    Capacity(queue),
-                   "Entry is too large for this VariableLengthEntryQueue");
+                   "Entry is too large for this InlineVarLenEntryQueue");
   return prefix_size;
 }
 
 // Returns the total encoded size of an entry.
 static uint32_t ReadEncodedEntrySize(
-    pw_VariableLengthEntryQueue_ConstHandle queue, uint32_t offset) {
+    pw_InlineVarLenEntryQueue_ConstHandle queue, uint32_t offset) {
   const EntrySize entry_size = ReadEntrySize(queue, offset);
   return entry_size.prefix + entry_size.data;
 }
 
-static uint32_t PopNonEmpty(pw_VariableLengthEntryQueue_Handle queue) {
+static uint32_t PopNonEmpty(pw_InlineVarLenEntryQueue_Handle queue) {
   const uint32_t entry_size = ReadEncodedEntrySize(queue, HEAD(queue));
   HEAD(queue) = WrapIndex(queue, HEAD(queue) + entry_size);
   return entry_size;
 }
 
 // Copies data to the buffer, wrapping around the end if needed.
-static uint32_t CopyAndWrap(pw_VariableLengthEntryQueue_Handle queue,
+static uint32_t CopyAndWrap(pw_InlineVarLenEntryQueue_Handle queue,
                             uint32_t tail,
                             const uint8_t* data,
                             uint32_t size) {
@@ -111,7 +111,7 @@ static uint32_t CopyAndWrap(pw_VariableLengthEntryQueue_Handle queue,
   return WrapIndex(queue, tail + size);
 }
 
-static void AppendEntryKnownToFit(pw_VariableLengthEntryQueue_Handle queue,
+static void AppendEntryKnownToFit(pw_InlineVarLenEntryQueue_Handle queue,
                                   const uint8_t* prefix,
                                   uint32_t prefix_size,
                                   const void* data,
@@ -123,7 +123,7 @@ static void AppendEntryKnownToFit(pw_VariableLengthEntryQueue_Handle queue,
 }
 
 static inline uint32_t AvailableBytes(
-    pw_VariableLengthEntryQueue_ConstHandle queue) {
+    pw_InlineVarLenEntryQueue_ConstHandle queue) {
   uint32_t tail = TAIL(queue);
   if (tail < HEAD(queue)) {
     tail += BufferSize(queue);
@@ -131,9 +131,9 @@ static inline uint32_t AvailableBytes(
   return Capacity(queue) - (tail - HEAD(queue));
 }
 
-void pw_VariableLengthEntryQueue_Push(pw_VariableLengthEntryQueue_Handle queue,
-                                      const void* data,
-                                      const uint32_t data_size_bytes) {
+void pw_InlineVarLenEntryQueue_Push(pw_InlineVarLenEntryQueue_Handle queue,
+                                    const void* data,
+                                    const uint32_t data_size_bytes) {
   uint8_t prefix[PW_VARINT_MAX_INT32_SIZE_BYTES];
   uint32_t prefix_size = EncodePrefix(queue, prefix, data_size_bytes);
 
@@ -143,8 +143,8 @@ void pw_VariableLengthEntryQueue_Push(pw_VariableLengthEntryQueue_Handle queue,
   AppendEntryKnownToFit(queue, prefix, prefix_size, data, data_size_bytes);
 }
 
-void pw_VariableLengthEntryQueue_PushOverwrite(
-    pw_VariableLengthEntryQueue_Handle queue,
+void pw_InlineVarLenEntryQueue_PushOverwrite(
+    pw_InlineVarLenEntryQueue_Handle queue,
     const void* data,
     const uint32_t data_size_bytes) {
   uint8_t prefix[PW_VARINT_MAX_INT32_SIZE_BYTES];
@@ -158,24 +158,24 @@ void pw_VariableLengthEntryQueue_PushOverwrite(
   AppendEntryKnownToFit(queue, prefix, prefix_size, data, data_size_bytes);
 }
 
-void pw_VariableLengthEntryQueue_Pop(pw_VariableLengthEntryQueue_Handle queue) {
-  PW_CHECK(!pw_VariableLengthEntryQueue_Empty(queue));
+void pw_InlineVarLenEntryQueue_Pop(pw_InlineVarLenEntryQueue_Handle queue) {
+  PW_CHECK(!pw_InlineVarLenEntryQueue_Empty(queue));
   PopNonEmpty(queue);
 }
 
-void pw_VariableLengthEntryQueue_Iterator_Advance(
-    pw_VariableLengthEntryQueue_Iterator* iterator) {
+void pw_InlineVarLenEntryQueue_Iterator_Advance(
+    pw_InlineVarLenEntryQueue_Iterator* iterator) {
   iterator->_pw_offset = WrapIndex(
       iterator->_pw_queue,
       iterator->_pw_offset +
           ReadEncodedEntrySize(iterator->_pw_queue, iterator->_pw_offset));
 }
 
-pw_VariableLengthEntryQueue_Entry pw_VariableLengthEntryQueue_GetEntry(
-    const pw_VariableLengthEntryQueue_Iterator* iterator) {
-  pw_VariableLengthEntryQueue_ConstHandle queue = iterator->_pw_queue;
+pw_InlineVarLenEntryQueue_Entry pw_InlineVarLenEntryQueue_GetEntry(
+    const pw_InlineVarLenEntryQueue_Iterator* iterator) {
+  pw_InlineVarLenEntryQueue_ConstHandle queue = iterator->_pw_queue;
 
-  pw_VariableLengthEntryQueue_Entry entry;
+  pw_InlineVarLenEntryQueue_Entry entry;
   EntrySize size = ReadEntrySize(queue, iterator->_pw_offset);
   uint32_t offset_1 = WrapIndex(queue, iterator->_pw_offset + size.prefix);
 
@@ -194,10 +194,8 @@ pw_VariableLengthEntryQueue_Entry pw_VariableLengthEntryQueue_GetEntry(
   return entry;
 }
 
-uint32_t pw_VariableLengthEntryQueue_Entry_Copy(
-    const pw_VariableLengthEntryQueue_Entry* entry,
-    void* dest,
-    uint32_t count) {
+uint32_t pw_InlineVarLenEntryQueue_Entry_Copy(
+    const pw_InlineVarLenEntryQueue_Entry* entry, void* dest, uint32_t count) {
   PW_DCHECK(dest != NULL || count == 0u);
 
   const uint32_t entry_size = entry->size_1 + entry->size_2;
@@ -217,14 +215,14 @@ uint32_t pw_VariableLengthEntryQueue_Entry_Copy(
   return to_copy;
 }
 
-const uint8_t* _pw_VariableLengthEntryQueue_Entry_GetPointerChecked(
-    const pw_VariableLengthEntryQueue_Entry* entry, size_t index) {
+const uint8_t* _pw_InlineVarLenEntryQueue_Entry_GetPointerChecked(
+    const pw_InlineVarLenEntryQueue_Entry* entry, size_t index) {
   PW_CHECK_UINT_LT(index, entry->size_1 + entry->size_2);
-  return _pw_VariableLengthEntryQueue_Entry_GetPointer(entry, index);
+  return _pw_InlineVarLenEntryQueue_Entry_GetPointer(entry, index);
 }
 
-uint32_t pw_VariableLengthEntryQueue_Size(
-    pw_VariableLengthEntryQueue_ConstHandle queue) {
+uint32_t pw_InlineVarLenEntryQueue_Size(
+    pw_InlineVarLenEntryQueue_ConstHandle queue) {
   uint32_t entry_count = 0;
   uint32_t offset = HEAD(queue);
 
@@ -235,8 +233,8 @@ uint32_t pw_VariableLengthEntryQueue_Size(
   return entry_count;
 }
 
-uint32_t pw_VariableLengthEntryQueue_SizeBytes(
-    pw_VariableLengthEntryQueue_ConstHandle queue) {
+uint32_t pw_InlineVarLenEntryQueue_SizeBytes(
+    pw_InlineVarLenEntryQueue_ConstHandle queue) {
   uint32_t total_entry_size_bytes = 0;
   uint32_t offset = HEAD(queue);
 

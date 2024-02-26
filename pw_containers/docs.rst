@@ -35,9 +35,9 @@ pw::InlineQueue
 ---------------
 .. doxygentypedef:: pw::InlineQueue
 
-----------------------------
-pw::VariableLengthEntryQueue
-----------------------------
+--------------------------
+pw::InlineVarLenEntryQueue
+--------------------------
 .. doxygenfile:: pw_containers/inline_var_len_entry_queue.h
    :sections: detaileddescription
 
@@ -49,14 +49,14 @@ Example
       :sync: c++
 
       Queues are declared with their max size
-      (``VariableLengthEntryQueue<kMaxSize>``) but may be used without
-      specifying the size (``VariableLengthEntryQueue<>&``).
+      (``InlineVarLenEntryQueue<kMaxSize>``) but may be used without
+      specifying the size (``InlineVarLenEntryQueue<>&``).
 
       .. code-block:: c++
 
          // Declare a queue with capacity sufficient for one 10-byte entry or
          // multiple smaller entries.
-         pw::VariableLengthEntryQueue<10> queue;
+         pw::InlineVarLenEntryQueue<10> queue;
 
          // Push an entry, asserting if the entry does not fit.
          queue.push(queue, data)
@@ -68,14 +68,14 @@ Example
          // Remove an entry.
          queue.pop();
 
-      Alternately, a ``VariableLengthEntryQueue`` may be initialized in an
+      Alternately, a ``InlineVarLenEntryQueue`` may be initialized in an
       existing ``uint32_t`` array.
 
       .. code-block:: c++
 
-         // Initialize a VariableLengthEntryQueue.
+         // Initialize a InlineVarLenEntryQueue.
          uint32_t buffer[32];
-         auto& queue = pw::VariableLengthEntryQueue<>::Init(buffer);
+         auto& queue = pw::InlineVarLenEntryQueue<>::Init(buffer);
 
          // Largest supported entry is 114 B (13 B overhead + 1 B prefix)
          assert(queue.max_size_bytes() == 114u);
@@ -86,8 +86,8 @@ Example
    .. tab-item:: C
       :sync: c
 
-      A ``VariableLengthEntryQueue`` may be declared and initialized in C with
-      the :c:macro:`PW_VARIABLE_LENGTH_ENTRY_QUEUE_DECLARE` macro.
+      A ``InlineVarLenEntryQueue`` may be declared and initialized in C with the
+      :c:macro:`PW_VARIABLE_LENGTH_ENTRY_QUEUE_DECLARE` macro.
 
       .. code-block:: c
 
@@ -96,39 +96,39 @@ Example
          PW_VARIABLE_LENGTH_ENTRY_QUEUE_DECLARE(queue, 10);
 
          // Push an entry, asserting if the entry does not fit.
-         pw_VariableLengthEntryQueue_Push(queue, "12345", 5);
+         pw_InlineVarLenEntryQueue_Push(queue, "12345", 5);
 
          // Use push_overwrite() to push entries, overwriting older entries
          // as needed.
-         pw_VariableLengthEntryQueue_PushOverwrite(queue, "abcdefg", 7);
+         pw_InlineVarLenEntryQueue_PushOverwrite(queue, "abcdefg", 7);
 
          // Remove an entry.
-         pw_VariableLengthEntryQueue_Pop(queue);
+         pw_InlineVarLenEntryQueue_Pop(queue);
 
-      Alternately, a ``VariableLengthEntryQueue`` may be initialized in an
+      Alternately, a ``InlineVarLenEntryQueue`` may be initialized in an
       existing ``uint32_t`` array.
 
       .. code-block:: c
 
-        // Initialize a VariableLengthEntryQueue.
+        // Initialize a InlineVarLenEntryQueue.
         uint32_t buffer[32];
-        pw_VariableLengthEntryQueue_Init(buffer, 32);
+        pw_InlineVarLenEntryQueue_Init(buffer, 32);
 
         // Largest supported entry is 114 B (13 B overhead + 1 B prefix)
-        assert(pw_VariableLengthEntryQueue_MaxSizeBytes(buffer) == 114u);
+        assert(pw_InlineVarLenEntryQueue_MaxSizeBytes(buffer) == 114u);
 
         // Write some data
-        pw_VariableLengthEntryQueue_PushOverwrite(buffer, "123", 3);
+        pw_InlineVarLenEntryQueue_PushOverwrite(buffer, "123", 3);
 
 Queue vs. deque
 ===============
-This module provides :cpp:type:`VariableLengthEntryQueue`, but no corresponding
-``VariableLengthEntryDeque`` class. Following the C++ Standard Library style,
+This module provides :cpp:type:`InlineVarLenEntryQueue`, but no corresponding
+``InlineVarLenEntryDeque`` class. Following the C++ Standard Library style,
 the deque class would provide ``push_front()`` and ``pop_back()`` operations in
 addition to ``push_back()`` and ``pop_front()`` (equivalent to a queue's
 ``push()`` and ``pop()``).
 
-There is no ``VariableLengthEntryDeque`` class because there is no efficient way
+There is no ``InlineVarLenEntryDeque`` class because there is no efficient way
 to implement ``push_front()`` and ``pop_back()``. These operations would
 necessarily be O(n), since each entry knows the position of the next entry, but
 not the previous, as in a single-linked list. Given that these operations would

@@ -65,7 +65,7 @@ static void TokenizeIntegersOnly(uint32_t token, int arg_count, ...) {
   }
 
   // Write the encoded log to the ring buffer
-  pw_VariableLengthEntryQueue_PushOverwrite(buffer, encoded, index);
+  pw_InlineVarLenEntryQueue_PushOverwrite(buffer, encoded, index);
 
   va_end(args);
 }
@@ -99,35 +99,35 @@ const char* RunTestAndReturnPassed(void) {
   TOKENIZE_INTS("One arg, 5 bytes: %ld", (long)INT32_MAX);
   TOKENIZE_INTS("Three args, 4 bytes: %d %d %d", 1, 63, 128);
 
-  ASSERT_EQ(pw_VariableLengthEntryQueue_Size(buffer), 4u);
+  ASSERT_EQ(pw_InlineVarLenEntryQueue_Size(buffer), 4u);
 
-  pw_VariableLengthEntryQueue_Iterator it =
-      pw_VariableLengthEntryQueue_Begin(buffer);
-  pw_VariableLengthEntryQueue_Entry entry =
-      pw_VariableLengthEntryQueue_GetEntry(&it);
+  pw_InlineVarLenEntryQueue_Iterator it =
+      pw_InlineVarLenEntryQueue_Begin(buffer);
+  pw_InlineVarLenEntryQueue_Entry entry =
+      pw_InlineVarLenEntryQueue_GetEntry(&it);
 
   ASSERT_EQ(entry.size_1, sizeof(uint32_t) + 0);
   ASSERT_EQ(entry.size_2, 0u);
 
-  pw_VariableLengthEntryQueue_Iterator_Advance(&it);
-  entry = pw_VariableLengthEntryQueue_GetEntry(&it);
+  pw_InlineVarLenEntryQueue_Iterator_Advance(&it);
+  entry = pw_InlineVarLenEntryQueue_GetEntry(&it);
   ASSERT_EQ(entry.size_1, sizeof(uint32_t) + 1);
   ASSERT_EQ(entry.size_2, 0u);
 
-  pw_VariableLengthEntryQueue_Iterator_Advance(&it);
-  entry = pw_VariableLengthEntryQueue_GetEntry(&it);
+  pw_InlineVarLenEntryQueue_Iterator_Advance(&it);
+  entry = pw_InlineVarLenEntryQueue_GetEntry(&it);
   ASSERT_EQ(entry.size_1, sizeof(uint32_t) + 5);
   ASSERT_EQ(entry.size_2, 0u);
 
-  pw_VariableLengthEntryQueue_Iterator_Advance(&it);
-  entry = pw_VariableLengthEntryQueue_GetEntry(&it);
+  pw_InlineVarLenEntryQueue_Iterator_Advance(&it);
+  entry = pw_InlineVarLenEntryQueue_GetEntry(&it);
   ASSERT_EQ(entry.size_1, sizeof(uint32_t) + 4);
   ASSERT_EQ(entry.size_2, 0u);
 
-  pw_VariableLengthEntryQueue_Iterator_Advance(&it);
-  pw_VariableLengthEntryQueue_Iterator end =
-      pw_VariableLengthEntryQueue_End(buffer);
-  ASSERT_EQ(pw_VariableLengthEntryQueue_Iterator_Equal(&it, &end), true);
+  pw_InlineVarLenEntryQueue_Iterator_Advance(&it);
+  pw_InlineVarLenEntryQueue_Iterator end =
+      pw_InlineVarLenEntryQueue_End(buffer);
+  ASSERT_EQ(pw_InlineVarLenEntryQueue_Iterator_Equal(&it, &end), true);
 
   return "passed";
 }

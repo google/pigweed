@@ -24,11 +24,11 @@
 
 namespace pw::containers {
 
-// Behaves like a VariableLengthEntryQueue should, but with a std::deque-based
+// Behaves like a InlineVarLenEntryQueue should, but with a std::deque-based
 // implementation.
-class VariableLengthEntryQueueTestOracle {
+class InlineVarLenEntryQueueTestOracle {
  public:
-  VariableLengthEntryQueueTestOracle(uint32_t max_size_bytes)
+  InlineVarLenEntryQueueTestOracle(uint32_t max_size_bytes)
       : max_size_bytes_(max_size_bytes),
         raw_size_bytes_(0),
         raw_capacity_bytes_(
