@@ -199,6 +199,26 @@ comment line, even if the blank comment line is the last line in the block.
   //
   bool SomeFunction();
 
+Rvalue references
+=================
+Move-only or expensive-to-copy function arguments should typically be passed
+by reference (``T&``) or const-reference (``const T&&``, preferred). However,
+when a function consumes or moves such an argument, it should accept an rvalue
+reference (``T&&``) rather than taking the argument by-value (``T``). An rvalue
+reference forces the caller to ``std::move`` when passing a preexisting
+variable, which makes the transfer of ownership explicit.
+
+Compared with accepting arguments by-value, rvalue references prevent
+unnecessary object instances and extra calls to move constructors. This has been
+shown to significantly impact code size and stack usage for Pigweed users.
+
+This guidance overrides the standard `Google Style Guide
+<https://google.github.io/styleguide/cppguide.html#Rvalue_references>`.
+
+This is especially important when using ``pw::Function``. For more information
+about accepting ``pw::Function`` arguments, see
+:ref:`module-pw_function-move-semantics`.
+
 Control statements
 ==================
 

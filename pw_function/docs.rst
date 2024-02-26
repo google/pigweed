@@ -208,6 +208,8 @@ place of a function pointer or equivalent callable.
    void DoTheThing(int arg, const pw::Function<void(int result)>& callback);
    // Note the parameter name within the function signature template for clarity.
 
+.. _module-pw_function-move-semantics:
+
 Move semantics
 ==============
 :cpp:type:`pw::Function` is movable, but not copyable, so APIs must accept
