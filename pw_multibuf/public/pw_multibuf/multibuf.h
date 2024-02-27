@@ -255,6 +255,12 @@ class MultiBuf {
       ++(*this);
       return tmp;
     }
+    iterator operator+(size_t rhs) const {
+      iterator tmp = *this;
+      tmp += rhs;
+      return tmp;
+    }
+    iterator& operator+=(size_t);
     constexpr bool operator==(const iterator& other) const {
       return chunk_ == other.chunk_ && byte_index_ == other.byte_index_;
     }
@@ -301,6 +307,12 @@ class MultiBuf {
       ++(*this);
       return tmp;
     }
+    const_iterator operator+(size_t rhs) const {
+      const_iterator tmp = *this;
+      tmp += rhs;
+      return tmp;
+    }
+    const_iterator& operator+=(size_t);
 
     constexpr bool operator==(const const_iterator& other) const {
       return chunk_ == other.chunk_ && byte_index_ == other.byte_index_;

@@ -225,6 +225,19 @@ MultiBuf::iterator& MultiBuf::iterator::operator++() {
   return *this;
 }
 
+MultiBuf::iterator& MultiBuf::iterator::operator+=(size_t advance) {
+  if (advance == 0) {
+    return *this;
+  }
+  while (advance >= (chunk_->size() - byte_index_)) {
+    advance -= (chunk_->size() - byte_index_);
+    chunk_ = chunk_->next_in_buf_;
+    byte_index_ = 0;
+  }
+  byte_index_ += advance;
+  return *this;
+}
+
 void MultiBuf::iterator::AdvanceToData() {
   while (chunk_ != nullptr && chunk_->size() == 0) {
     chunk_ = chunk_->next_in_buf_;
@@ -239,6 +252,19 @@ MultiBuf::const_iterator& MultiBuf::const_iterator::operator++() {
   } else {
     ++byte_index_;
   }
+  return *this;
+}
+
+MultiBuf::const_iterator& MultiBuf::const_iterator::operator+=(size_t advance) {
+  if (advance == 0) {
+    return *this;
+  }
+  while (advance >= (chunk_->size() - byte_index_)) {
+    advance -= (chunk_->size() - byte_index_);
+    chunk_ = chunk_->next_in_buf_;
+    byte_index_ = 0;
+  }
+  byte_index_ += advance;
   return *this;
 }
 

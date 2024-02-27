@@ -407,5 +407,39 @@ TEST(MultiBuf, RangeBasedForLoopsCompile) {
   }
 }
 
+TEST(MultiBuf, IteratorAdvancesNAcrossChunks) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushBackChunk(MakeChunk(&allocator, {1_b, 2_b, 3_b}));
+  buf.PushBackChunk(MakeChunk(&allocator, {4_b, 5_b, 6_b}));
+
+  MultiBuf::iterator iter = buf.begin();
+  iter += 4;
+  EXPECT_EQ(*iter, 5_b);
+}
+
+TEST(MultiBuf, IteratorAdvancesNAcrossZeroLengthChunk) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushBackChunk(MakeChunk(&allocator, {1_b, 2_b, 3_b}));
+  buf.PushBackChunk(MakeChunk(&allocator, 0));
+  buf.PushBackChunk(MakeChunk(&allocator, {4_b, 5_b, 6_b}));
+
+  MultiBuf::iterator iter = buf.begin();
+  iter += 4;
+  EXPECT_EQ(*iter, 5_b);
+}
+
+TEST(MultiBuf, ConstIteratorAdvancesNAcrossChunks) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushBackChunk(MakeChunk(&allocator, {1_b, 2_b, 3_b}));
+  buf.PushBackChunk(MakeChunk(&allocator, {4_b, 5_b, 6_b}));
+
+  MultiBuf::const_iterator iter = buf.cbegin();
+  iter += 4;
+  EXPECT_EQ(*iter, 5_b);
+}
+
 }  // namespace
 }  // namespace pw::multibuf
