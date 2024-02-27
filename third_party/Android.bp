@@ -26,6 +26,9 @@ cc_library_headers {
     header_libs: [
         "fuchsia_sdk_lib_stdcompat",
     ],
+    export_header_lib_headers: [
+        "fuchsia_sdk_lib_stdcompat",
+    ],
     host_supported: true,
 }
 
