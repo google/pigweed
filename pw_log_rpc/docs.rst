@@ -1,6 +1,6 @@
-.. _module-pw_log_rpc:
-
 :tocdepth: 4
+
+.. _module-pw_log_rpc:
 
 ==========
 pw_log_rpc
