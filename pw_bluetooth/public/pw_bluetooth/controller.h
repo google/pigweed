@@ -83,6 +83,12 @@ class Controller {
   // passed to `func` is only guaranteed for the lifetime of the function call.
   virtual void SetReceiveScoFunction(DataFunction func) = 0;
 
+  // Sets a function that will be called with ISO packets received from the
+  // controller. This should be called before an ISO data path is setup or else
+  // incoming packets may be dropped. The lifetime of data passed to `func` is
+  // only guaranteed for the lifetime of the function call.
+  virtual void SetReceiveIsoFunction(DataFunction /*func*/) {}
+
   // Initializes the controller interface and starts processing packets.
   // `complete_callback` will be called with the result of initialization.
   // `error_callback` will be called for fatal errors that occur after
@@ -108,6 +114,9 @@ class Controller {
 
   // Sends a SCO data packet to the controller.
   virtual void SendScoData(span<const std::byte> data) = 0;
+
+  // Sends an ISO data packet to the controller.
+  virtual void SendIsoData(span<const std::byte> /*data*/) {}
 
   // Configure the HCI for a SCO connection with the indicated parameters.
   // `SetReceiveScoFunction` must be called before calling this method.
