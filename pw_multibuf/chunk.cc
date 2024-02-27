@@ -193,7 +193,7 @@ bool Chunk::ClaimSuffix(size_t bytes_to_claim) {
   return true;
 }
 
-void Chunk::DiscardFront(size_t bytes_to_discard) {
+void Chunk::DiscardPrefix(size_t bytes_to_discard) {
   Slice(bytes_to_discard, size());
 }
 
@@ -208,7 +208,7 @@ void Chunk::Slice(size_t begin, size_t end) {
 
 void Chunk::Truncate(size_t len) { Slice(0, len); }
 
-std::optional<OwnedChunk> Chunk::TakeFront(size_t bytes_to_take) {
+std::optional<OwnedChunk> Chunk::TakePrefix(size_t bytes_to_take) {
   void* new_chunk_memory = region_tracker_->AllocateChunkClass();
   if (new_chunk_memory == nullptr) {
     return std::nullopt;
@@ -226,7 +226,7 @@ std::optional<OwnedChunk> Chunk::TakeFront(size_t bytes_to_take) {
   return OwnedChunk(new_chunk);
 }
 
-std::optional<OwnedChunk> Chunk::TakeTail(size_t bytes_to_take) {
+std::optional<OwnedChunk> Chunk::TakeSuffix(size_t bytes_to_take) {
   void* new_chunk_memory = region_tracker_->AllocateChunkClass();
   if (new_chunk_memory == nullptr) {
     return std::nullopt;

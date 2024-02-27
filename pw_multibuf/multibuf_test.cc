@@ -18,6 +18,7 @@
 #include "pw_assert/check.h"
 #include "pw_bytes/suffix.h"
 #include "pw_multibuf/chunk_region_tracker.h"
+#include "pw_span/span.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::multibuf {
@@ -25,7 +26,10 @@ namespace {
 
 using ::pw::allocator::test::AllocatorForTest;
 
-const size_t kArbitraryAllocatorSize = 1024;
+// Arbitrary size intended to be large enough to store the Chunk and data
+// slices. This may be increased if `MakeChunk` or a Chunk-splitting operation
+// fails.
+const size_t kArbitraryAllocatorSize = 2048;
 const size_t kArbitraryChunkSize = 32;
 
 #if __cplusplus >= 202002L
@@ -38,8 +42,48 @@ static_assert(std::forward_iterator<MultiBuf::ConstChunkIterator>);
 OwnedChunk MakeChunk(pw::allocator::Allocator* allocator, size_t size) {
   std::optional<OwnedChunk> chunk =
       HeaderChunkRegionTracker::AllocateRegionAsChunk(allocator, size);
+  // If this check fails, `kArbitraryAllocatorSize` above may need increasing.
   PW_CHECK(chunk.has_value());
   return std::move(*chunk);
+}
+
+OwnedChunk MakeChunk(pw::allocator::Allocator* allocator,
+                     std::initializer_list<std::byte> data) {
+  std::optional<OwnedChunk> chunk =
+      HeaderChunkRegionTracker::AllocateRegionAsChunk(allocator, data.size());
+  // If this check fails, `kArbitraryAllocatorSize` above may need increasing.
+  PW_CHECK(chunk.has_value());
+  std::copy(data.begin(), data.end(), (*chunk)->begin());
+  return std::move(*chunk);
+}
+
+OwnedChunk MakeChunk(pw::allocator::Allocator* allocator,
+                     pw::span<const std::byte> data) {
+  std::optional<OwnedChunk> chunk =
+      HeaderChunkRegionTracker::AllocateRegionAsChunk(allocator, data.size());
+  // If this check fails, `kArbitraryAllocatorSize` above may need increasing.
+  PW_CHECK(chunk.has_value());
+  std::copy(data.begin(), data.end(), (*chunk)->begin());
+  return std::move(*chunk);
+}
+
+template <typename ActualIterable, typename ExpectedIterable>
+void ExpectElementsEqual(const ActualIterable& actual,
+                         const ExpectedIterable& expected) {
+  EXPECT_EQ(actual.size(), expected.size());
+  auto actual_iter = actual.begin();
+  auto expected_iter = expected.begin();
+  for (; expected_iter != expected.end(); ++actual_iter, ++expected_iter) {
+    ASSERT_NE(actual_iter, actual.end());
+    EXPECT_EQ(*actual_iter, *expected_iter);
+  }
+}
+
+template <typename ActualIterable, typename T>
+void ExpectElementsEqual(const ActualIterable& actual,
+                         std::initializer_list<T> expected) {
+  ExpectElementsEqual<ActualIterable, std::initializer_list<T>>(actual,
+                                                                expected);
 }
 
 TEST(MultiBuf, IsDefaultConstructible) { [[maybe_unused]] MultiBuf buf; }
@@ -84,42 +128,210 @@ TEST(MultiBuf, SizeReturnsNumberOfBytes) {
   EXPECT_EQ(buf.size(), kArbitraryChunkSize * 2);
 }
 
+TEST(MultiBuf, ClaimPrefixReclaimsFirstChunkPrefix) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  OwnedChunk chunk = MakeChunk(&allocator, 16);
+  chunk->DiscardPrefix(7);
+  buf.PushFrontChunk(std::move(chunk));
+  EXPECT_EQ(buf.size(), 9U);
+  EXPECT_EQ(buf.ClaimPrefix(7), true);
+  EXPECT_EQ(buf.size(), 16U);
+}
+
+TEST(MultiBuf, ClaimPrefixOnFirstChunkWithoutPrefixReturnsFalse) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushFrontChunk(MakeChunk(&allocator, 16));
+  EXPECT_EQ(buf.size(), 16U);
+  EXPECT_EQ(buf.ClaimPrefix(7), false);
+  EXPECT_EQ(buf.size(), 16U);
+}
+
+TEST(MultiBuf, ClaimPrefixWithoutChunksReturnsFalse) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  EXPECT_EQ(buf.size(), 0U);
+  EXPECT_EQ(buf.ClaimPrefix(7), false);
+  EXPECT_EQ(buf.size(), 0U);
+}
+
+TEST(MultiBuf, ClaimSuffixReclaimsLastChunkSuffix) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  OwnedChunk chunk = MakeChunk(&allocator, 16U);
+  chunk->Truncate(9U);
+  buf.PushFrontChunk(std::move(chunk));
+  buf.PushFrontChunk(MakeChunk(&allocator, 4U));
+  EXPECT_EQ(buf.size(), 13U);
+  EXPECT_EQ(buf.ClaimSuffix(7U), true);
+  EXPECT_EQ(buf.size(), 20U);
+}
+
+TEST(MultiBuf, ClaimSuffixOnLastChunkWithoutSuffixReturnsFalse) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushFrontChunk(MakeChunk(&allocator, 16U));
+  EXPECT_EQ(buf.size(), 16U);
+  EXPECT_EQ(buf.ClaimPrefix(7U), false);
+  EXPECT_EQ(buf.size(), 16U);
+}
+
+TEST(MultiBuf, ClaimSuffixWithoutChunksReturnsFalse) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  EXPECT_EQ(buf.size(), 0U);
+  EXPECT_EQ(buf.ClaimSuffix(7U), false);
+  EXPECT_EQ(buf.size(), 0U);
+}
+
+TEST(MultiBuf, DiscardPrefixWithZeroDoesNothing) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.DiscardPrefix(0);
+  EXPECT_EQ(buf.size(), 0U);
+}
+
+TEST(MultiBuf, DiscardPrefixDiscardsPartialChunk) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushFrontChunk(MakeChunk(&allocator, 16U));
+  buf.DiscardPrefix(5U);
+  EXPECT_EQ(buf.size(), 11U);
+}
+
+TEST(MultiBuf, DiscardPrefixDiscardsWholeChunk) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushFrontChunk(MakeChunk(&allocator, 16U));
+  buf.PushFrontChunk(MakeChunk(&allocator, 3U));
+  buf.DiscardPrefix(16U);
+  EXPECT_EQ(buf.size(), 3U);
+}
+
+TEST(MultiBuf, DiscardPrefixDiscardsMultipleChunks) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushFrontChunk(MakeChunk(&allocator, 16U));
+  buf.PushFrontChunk(MakeChunk(&allocator, 4U));
+  buf.PushFrontChunk(MakeChunk(&allocator, 3U));
+  buf.DiscardPrefix(21U);
+  EXPECT_EQ(buf.size(), 2U);
+}
+
+TEST(MultiBuf, SliceDiscardsPrefixAndSuffixWholeAndPartialChunks) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushBackChunk(MakeChunk(&allocator, {1_b, 1_b, 1_b}));
+  buf.PushBackChunk(MakeChunk(&allocator, {2_b, 2_b, 2_b}));
+  buf.PushBackChunk(MakeChunk(&allocator, {3_b, 3_b, 3_b}));
+  buf.PushBackChunk(MakeChunk(&allocator, {4_b, 4_b, 4_b}));
+  buf.Slice(4, 7);
+  ExpectElementsEqual(buf, {2_b, 2_b, 3_b});
+}
+
+TEST(MultiBuf, SliceDoesNotModifyChunkMemory) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  std::array<std::byte, 4> kBytes = {1_b, 2_b, 3_b, 4_b};
+  OwnedChunk chunk = MakeChunk(&allocator, kBytes);
+  ConstByteSpan span(chunk);
+  buf.PushFrontChunk(std::move(chunk));
+  buf.Slice(2, 3);
+  ExpectElementsEqual(span, kBytes);
+}
+
+TEST(MultiBuf, TruncateRemovesWholeAndPartialChunks) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushFrontChunk(MakeChunk(&allocator, 3U));
+  buf.PushFrontChunk(MakeChunk(&allocator, 3U));
+  buf.Truncate(2U);
+  EXPECT_EQ(buf.size(), 2U);
+}
+
+TEST(MultiBuf, TakePrefixWithNoBytesDoesNothing) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  std::optional<MultiBuf> empty_front = buf.TakePrefix(0);
+  ASSERT_TRUE(empty_front.has_value());
+  EXPECT_EQ(buf.size(), 0U);
+  EXPECT_EQ(empty_front->size(), 0U);
+}
+
+TEST(MultiBuf, TakePrefixReturnsPartialChunk) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushBackChunk(MakeChunk(&allocator, {1_b, 2_b, 3_b}));
+  std::optional<MultiBuf> old_front = buf.TakePrefix(2);
+  ASSERT_TRUE(old_front.has_value());
+  ExpectElementsEqual(*old_front, {1_b, 2_b});
+  ExpectElementsEqual(buf, {3_b});
+}
+
+TEST(MultiBuf, TakePrefixReturnsWholeAndPartialChunks) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushBackChunk(MakeChunk(&allocator, {1_b, 2_b, 3_b}));
+  buf.PushBackChunk(MakeChunk(&allocator, {4_b, 5_b, 6_b}));
+  std::optional<MultiBuf> old_front = buf.TakePrefix(4);
+  ASSERT_TRUE(old_front.has_value());
+  ExpectElementsEqual(*old_front, {1_b, 2_b, 3_b, 4_b});
+  ExpectElementsEqual(buf, {5_b, 6_b});
+}
+
+TEST(MultiBuf, TakeSuffixReturnsWholeAndPartialChunks) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushBackChunk(MakeChunk(&allocator, {1_b, 2_b, 3_b}));
+  buf.PushBackChunk(MakeChunk(&allocator, {4_b, 5_b, 6_b}));
+  std::optional<MultiBuf> old_tail = buf.TakeSuffix(4);
+  ASSERT_TRUE(old_tail.has_value());
+  ExpectElementsEqual(buf, {1_b, 2_b});
+  ExpectElementsEqual(*old_tail, {3_b, 4_b, 5_b, 6_b});
+}
+
+TEST(MultiBuf, PushPrefixPrependsData) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushBackChunk(MakeChunk(&allocator, {1_b, 2_b, 3_b}));
+  buf.PushBackChunk(MakeChunk(&allocator, {4_b, 5_b, 6_b}));
+  MultiBuf buf2;
+  buf2.PushBackChunk(MakeChunk(&allocator, {7_b, 8_b}));
+  buf2.PushPrefix(std::move(buf));
+  ExpectElementsEqual(buf2, {1_b, 2_b, 3_b, 4_b, 5_b, 6_b, 7_b, 8_b});
+}
+
+TEST(MultiBuf, PushSuffixAppendsData) {
+  AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  MultiBuf buf;
+  buf.PushBackChunk(MakeChunk(&allocator, {1_b, 2_b, 3_b}));
+  buf.PushBackChunk(MakeChunk(&allocator, {4_b, 5_b, 6_b}));
+  MultiBuf buf2;
+  buf2.PushBackChunk(MakeChunk(&allocator, {7_b, 8_b}));
+  buf2.PushSuffix(std::move(buf));
+  ExpectElementsEqual(buf2, {7_b, 8_b, 1_b, 2_b, 3_b, 4_b, 5_b, 6_b});
+}
+
 TEST(MultiBuf, PushFrontChunkAddsBytesToFront) {
   AllocatorForTest<kArbitraryAllocatorSize> allocator;
   MultiBuf buf;
 
   const std::array<std::byte, 3> kBytesOne = {0_b, 1_b, 2_b};
-  auto chunk_one = MakeChunk(&allocator, kBytesOne.size());
-  std::copy(kBytesOne.begin(), kBytesOne.end(), chunk_one->begin());
+  auto chunk_one = MakeChunk(&allocator, kBytesOne);
   buf.PushFrontChunk(std::move(chunk_one));
-
-  size_t i = 0;
-  auto buf_iter = buf.begin();
-  for (; i < kBytesOne.size(); i++, buf_iter++) {
-    ASSERT_NE(buf_iter, buf.end());
-    EXPECT_EQ(*buf_iter, kBytesOne[i]);
-  }
+  ExpectElementsEqual(buf, kBytesOne);
 
   const std::array<std::byte, 4> kBytesTwo = {9_b, 10_b, 11_b, 12_b};
-  auto chunk_two = MakeChunk(&allocator, kBytesTwo.size());
-  std::copy(kBytesTwo.begin(), kBytesTwo.end(), chunk_two->begin());
+  auto chunk_two = MakeChunk(&allocator, kBytesTwo);
   buf.PushFrontChunk(std::move(chunk_two));
 
-  std::array<std::byte, 7> expected = {
-      9_b,
-      10_b,
-      11_b,
-      12_b,
-      0_b,
-      1_b,
-      2_b,
-  };
-  i = 0;
-  buf_iter = buf.begin();
-  for (; i < expected.size(); i++, buf_iter++) {
-    ASSERT_NE(buf_iter, buf.end());
-    EXPECT_EQ(*buf_iter, expected[i]);
-  }
+  // clang-format off
+  ExpectElementsEqual(buf, {
+      9_b, 10_b, 11_b, 12_b,
+      0_b, 1_b, 2_b,
+  });
+  // clang-format on
 }
 
 TEST(MultiBuf, InsertChunkOnEmptyBufAddsFirstChunk) {
@@ -127,18 +339,10 @@ TEST(MultiBuf, InsertChunkOnEmptyBufAddsFirstChunk) {
   MultiBuf buf;
 
   const std::array<std::byte, 3> kBytes = {0_b, 1_b, 2_b};
-  auto chunk = MakeChunk(&allocator, kBytes.size());
-  std::copy(kBytes.begin(), kBytes.end(), chunk->begin());
+  auto chunk = MakeChunk(&allocator, kBytes);
   auto inserted_iter = buf.InsertChunk(buf.Chunks().begin(), std::move(chunk));
   EXPECT_EQ(inserted_iter, buf.Chunks().begin());
-
-  size_t i = 0;
-  auto buf_iter = buf.begin();
-  for (; i < kBytes.size(); i++, buf_iter++) {
-    ASSERT_NE(buf_iter, buf.end());
-    EXPECT_EQ(*buf_iter, kBytes[i]);
-  }
-
+  ExpectElementsEqual(buf, kBytes);
   EXPECT_EQ(++inserted_iter, buf.Chunks().end());
 }
 
@@ -150,20 +354,12 @@ TEST(MultiBuf, InsertChunkAtEndOfBufAddsLastChunk) {
   buf.PushFrontChunk(MakeChunk(&allocator, kArbitraryChunkSize));
 
   const std::array<std::byte, 3> kBytes = {0_b, 1_b, 2_b};
-  auto chunk = MakeChunk(&allocator, kBytes.size());
-  std::copy(kBytes.begin(), kBytes.end(), chunk->begin());
+  auto chunk = MakeChunk(&allocator, kBytes);
   auto inserted_iter = buf.InsertChunk(buf.Chunks().end(), std::move(chunk));
   EXPECT_EQ(inserted_iter, ++buf.Chunks().begin());
   EXPECT_EQ(++inserted_iter, buf.Chunks().end());
-
-  size_t i = 0;
-  auto buf_iter = buf.Chunks().begin();
-  buf_iter++;
-  auto chunk_iter = buf_iter->begin();
-  for (; i < kBytes.size(); i++, chunk_iter++) {
-    ASSERT_NE(chunk_iter, buf_iter->end());
-    EXPECT_EQ(*chunk_iter, kBytes[i]);
-  }
+  const Chunk& second_chunk = *(++buf.Chunks().begin());
+  ExpectElementsEqual(second_chunk, kBytes);
 }
 
 TEST(MultiBuf, TakeChunkAtBeginRemovesAndReturnsFirstChunk) {
@@ -176,7 +372,7 @@ TEST(MultiBuf, TakeChunkAtBeginRemovesAndReturnsFirstChunk) {
   auto [chunk_iter, chunk] = buf.TakeChunk(buf.Chunks().begin());
   EXPECT_EQ(chunk.size(), 2U);
   EXPECT_EQ(chunk_iter->size(), 4U);
-  chunk_iter++;
+  ++chunk_iter;
   EXPECT_EQ(chunk_iter, buf.Chunks().end());
 }
 

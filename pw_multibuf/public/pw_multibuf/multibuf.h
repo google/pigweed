@@ -29,9 +29,10 @@ class MultiBuf {
   class ChunkIterator;
   class ConstChunkIterator;
   class ChunkIterable;
-  class ConstChunkIterable;
 
   constexpr MultiBuf() : first_(nullptr) {}
+  MultiBuf(const MultiBuf&) = delete;
+  MultiBuf& operator=(const MultiBuf&) = delete;
   constexpr MultiBuf(MultiBuf&& other) noexcept : first_(other.first_) {
     other.first_ = nullptr;
   }
@@ -61,35 +62,6 @@ class MultiBuf {
   /// This method's complexity is ``O(Chunks().size())``.
   [[nodiscard]] size_t size() const;
 
-  /// Pushes ``Chunk`` onto the front of the ``MultiBuf``.
-  ///
-  /// This operation does not move any data and is ``O(1)``.
-  void PushFrontChunk(OwnedChunk chunk);
-
-  /// Inserts ``chunk`` into the specified position in the ``MultiBuf``.
-  ///
-  /// This operation does not move any data and is ``O(Chunks().size())``.
-  ///
-  /// Returns an iterator pointing to the newly-inserted ``Chunk``.
-  //
-  // Implementation note: ``Chunks().size()`` should be remain relatively
-  // small, but this could be made ``O(1)`` in the future by adding a ``prev``
-  // pointer to the ``ChunkIterator``.
-  ChunkIterator InsertChunk(ChunkIterator position, OwnedChunk chunk);
-
-  /// Removes a ``Chunk`` from the specified position.
-  ///
-  /// This operation does not move any data and is ``O(Chunks().size())``.
-  ///
-  /// Returns an iterator pointing to the ``Chunk`` after the removed
-  /// ``Chunk``, or ``Chunks().end()`` if this was the last ``Chunk`` in the
-  /// ``MultiBuf``.
-  //
-  // Implementation note: ``Chunks().size()`` should be remain relatively
-  // small, but this could be made ``O(1)`` in the future by adding a ``prev``
-  // pointer to the ``ChunkIterator``.
-  std::tuple<ChunkIterator, OwnedChunk> TakeChunk(ChunkIterator position);
-
   /// Returns an iterator pointing to the first byte of this ``MultiBuf`.
   iterator begin() { return iterator(first_, 0); }
   /// Returns a const iterator pointing to the first byte of this ``MultiBuf`.
@@ -103,6 +75,123 @@ class MultiBuf {
   const_iterator end() const { return const_iterator::end(); }
   /// Returns a const iterator pointing to the end of this ``MultiBuf``.
   const_iterator cend() const { return const_iterator::end(); }
+
+  /// Attempts to add ``bytes_to_claim`` to the front of this buffer by
+  /// advancing its range backwards in memory. Returns ``true`` if the operation
+  /// succeeded.
+  ///
+  /// This will only succeed if the first ``Chunk`` in this buffer points to a
+  /// section of a region that has unreferenced bytes preceeding it. See also
+  /// ``Chunk::ClaimPrefix``.
+  ///
+  /// This method will acquire a mutex and is not IRQ safe.
+  [[nodiscard]] bool ClaimPrefix(size_t bytes_to_claim);
+
+  /// Attempts to add ``bytes_to_claim`` to the front of this buffer by
+  /// advancing its range forwards in memory. Returns ``true`` if the operation
+  /// succeeded.
+  ///
+  /// This will only succeed if the last ``Chunk`` in this buffer points to a
+  /// section of a region that has unreferenced bytes following it. See also
+  /// ``Chunk::ClaimSuffix``.
+  ///
+  /// This method will acquire a mutex and is not IRQ safe.
+  [[nodiscard]] bool ClaimSuffix(size_t bytes_to_claim);
+
+  /// Shrinks this handle to refer to the data beginning at offset
+  /// ``bytes_to_discard``.
+  ///
+  /// Does not modify the underlying data.
+  ///
+  /// This method will acquire a mutex and is not IRQ safe.
+  void DiscardPrefix(size_t bytes_to_discard);
+
+  /// Shrinks this handle to refer to data in the range ``begin..<end``.
+  ///
+  /// Does not modify the underlying data.
+  ///
+  /// This method will acquire a mutex and is not IRQ safe.
+  void Slice(size_t begin, size_t end);
+
+  /// Shrinks this handle to refer to only the first ``len`` bytes.
+  ///
+  /// Does not modify the underlying data.
+  ///
+  /// This method will acquire a mutex and is not IRQ safe.
+  void Truncate(size_t len);
+
+  /// Attempts to shrink this handle to refer to the data beginning at
+  /// offset ``bytes_to_take``, returning the first ``bytes_to_take`` bytes as
+  /// a new ``MultiBuf``.
+  ///
+  /// If the inner call to ``AllocateChunkClass`` fails, this function
+  /// will return ``std::nullopt` and this handle's span will not change.
+  ///
+  /// This method will acquire a mutex and is not IRQ safe.
+  std::optional<MultiBuf> TakePrefix(size_t bytes_to_take);
+
+  /// Attempts to shrink this handle to refer only the first
+  /// ``len - bytes_to_take`` bytes, returning the last ``bytes_to_take``
+  /// bytes as a new ``MultiBuf``.
+  ///
+  /// If the inner call to ``AllocateChunkClass`` fails, this function
+  /// will return ``std::nullopt`` and this handle's span will not change.
+  ///
+  /// This method will acquire a mutex and is not IRQ safe.
+  std::optional<MultiBuf> TakeSuffix(size_t bytes_to_take);
+
+  /// Pushes ``front`` onto the front of this ``MultiBuf``.
+  ///
+  /// This operation does not move any data and is ``O(front.Chunks().size())``.
+  void PushPrefix(MultiBuf&& front);
+
+  /// Pushes ``tail`` onto the end of this ``MultiBuf``.
+  ///
+  /// This operation does not move any data and is ``O(Chunks().size())``.
+  void PushSuffix(MultiBuf&& tail);
+
+  ///////////////////////////////////////////////////////////////////
+  //--------------------- Chunk manipulation ----------------------//
+  ///////////////////////////////////////////////////////////////////
+
+  /// Pushes ``Chunk`` onto the front of the ``MultiBuf``.
+  ///
+  /// This operation does not move any data and is ``O(1)``.
+  void PushFrontChunk(OwnedChunk&& chunk);
+
+  /// Pushes ``Chunk`` onto the end of the ``MultiBuf``.
+  ///
+  /// This operation does not move any data and is ``O(Chunks().size())``.
+  void PushBackChunk(OwnedChunk&& chunk);
+
+  /// Removes the first ``Chunk``.
+  ///
+  /// This operation does not move any data and is ``O(1)``.
+  OwnedChunk TakeFrontChunk();
+
+  /// Inserts ``chunk`` into the specified position in the ``MultiBuf``.
+  ///
+  /// This operation does not move any data and is ``O(Chunks().size())``.
+  ///
+  /// Returns an iterator pointing to the newly-inserted ``Chunk``.
+  //
+  // Implementation note: ``Chunks().size()`` should be remain relatively
+  // small, but this could be made ``O(1)`` in the future by adding a ``prev``
+  // pointer to the ``ChunkIterator``.
+  ChunkIterator InsertChunk(ChunkIterator position, OwnedChunk&& chunk);
+
+  /// Removes a ``Chunk`` from the specified position.
+  ///
+  /// This operation does not move any data and is ``O(Chunks().size())``.
+  ///
+  /// Returns an iterator pointing to the ``Chunk`` after the removed
+  /// ``Chunk``, or ``Chunks().end()`` if this was the last ``Chunk`` in the
+  /// ``MultiBuf``.
+  //
+  // Implementation note: ``Chunks().size()`` should be remain relatively
+  // small, but this could be made ``O(1)`` in the future by adding a ``prev``
+  // pointer to the ``ChunkIterator``.
+  std::tuple<ChunkIterator, OwnedChunk> TakeChunk(ChunkIterator position);
 
   /// Returns an iterable container which yields the ``Chunk``s in this
   /// ``MultiBuf``.
@@ -246,6 +335,18 @@ class MultiBuf {
     using difference_type = std::ptrdiff_t;
     using const_reference = const Chunk&;
     using size_type = std::size_t;
+
+    /// Returns a reference to the first chunk.
+    ///
+    /// The behavior of this method is undefined when ``size() == 0``.
+    Chunk& front() { return *first_; }
+
+    /// Returns a reference to the final chunk.
+    ///
+    /// The behavior of this method is undefined when ``size() == 0``.
+    ///
+    /// NOTE: this method is ``O(size())``.
+    Chunk& back();
 
     constexpr ChunkIterator begin() { return ChunkIterator(first_); }
     constexpr ConstChunkIterator begin() const { return cbegin(); }
