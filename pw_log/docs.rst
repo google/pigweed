@@ -1,5 +1,3 @@
-:tocdepth: 4
-
 .. _module-pw_log:
 
 ======
