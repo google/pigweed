@@ -83,7 +83,12 @@ static_assert([] {
             R"({"name": "Crag", "job": "hacker", "skills": [20, 1, 1, 1]})");
 
   // Add an object as the value in a key-value pair.
-  json.AddNestedObject("items").AddNestedArray("misc").Append(nullptr);
+  pw::NestedJsonObject nested_object = json.AddNestedObject("items");
+
+  // Declare another JsonArray, and add it as nested value.
+  pw::JsonBuffer<10> inner_buffer;
+  inner_buffer.StartArray().Append(nullptr);
+  nested_object.Add("misc", inner_buffer);
 
   // Add a value that is too large for the JsonBuffer.
   json.Add("way too big!", huge_string_that_wont_fit);
