@@ -18,6 +18,7 @@
 #include "fsl_dma.h"
 #include "fsl_inputmux.h"
 #include "fsl_usart_dma.h"
+#include "pw_bytes/byte_builder.h"
 #include "pw_bytes/span.h"
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
@@ -88,17 +89,30 @@ class UartDmaStreamMcuxpresso final : public NonSeekableReaderWriter {
   static constexpr size_t kUsartDmaMaxTransferCount =
       DMA_MAX_TRANSFER_COUNT - 1;
 
+  // A reader may at most wait for 25% of the ring buffer size before data
+  // needs to be copied out to the caller.
+  static constexpr size_t kUsartRxRingBufferSplitCount = 4;
+
   StatusWithSize DoRead(ByteSpan) override;
   Status DoWrite(ConstByteSpan) override;
 
   // Helper functions
   static IRQn_Type GetInterrupt(const DMA_Type* base);
   void Deinit();
+  void TriggerReadDma() PW_EXCLUSIVE_LOCKS_REQUIRED(interrupt_lock_);
   void TriggerWriteDma();
+
+  StatusWithSize TransferGetReceiveDMACount()
+      PW_LOCKS_EXCLUDED(interrupt_lock_);
+  StatusWithSize TransferGetReceiveDMACountLockHeld()
+      PW_EXCLUSIVE_LOCKS_REQUIRED(interrupt_lock_);
+  size_t GetReceiveTransferRemainingBytes();
   static void TxRxCompletionCallback(USART_Type* base,
                                      usart_dma_handle_t* state,
                                      status_t status,
                                      void* param);
+  Status WaitForReceiveBytes(size_t bytes_needed);
+  void CopyReceiveData(ByteBuilder& bb, size_t copy_size);
 
   pw::sync::InterruptSpinLock
       interrupt_lock_;  // Lock to synchronize with interrupt handler and to
