@@ -198,7 +198,7 @@ pw_cc_test(
 
 pw_cc_blob_info(
     name = "detokenizer_example_elf_blob",
-    file_path = "//pw_tokenizer/py:example_binary_with_tokenized_strings.elf",
+    file_path = "//pw_tokenizer/py:example_binary_with_tokenized_strings",
     symbol_name = "kElfSection",
 )
 

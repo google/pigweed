@@ -91,6 +91,11 @@ py_proto_library(
     deps = [":detokenize_proto_test_proto"],
 )
 
+filegroup(
+    name = "example_binary_with_tokenized_strings",
+    srcs = ["example_binary_with_tokenized_strings.elf"],
+)
+
 py_test(
     name = "detokenize_test",
     srcs = ["detokenize_test.py"],
