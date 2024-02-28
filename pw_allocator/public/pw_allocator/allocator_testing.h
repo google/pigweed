@@ -17,9 +17,9 @@
 
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/block.h"
+#include "pw_allocator/block_allocator.h"
 #include "pw_allocator/buffer.h"
 #include "pw_allocator/metrics.h"
-#include "pw_allocator/simple_allocator.h"
 #include "pw_allocator/tracking_allocator.h"
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
@@ -80,8 +80,8 @@ constexpr pw::tokenizer::Token kToken = PW_TOKENIZE_STRING("test");
 template <size_t kBufferSize>
 class AllocatorForTest : public AllocatorWithMetrics<Metrics> {
  public:
-  using Base = TrackingAllocatorImpl<Metrics>;
-  using BlockType = SimpleAllocator::BlockType;
+  using AllocatorType = FirstFitBlockAllocator<uint32_t>;
+  using BlockType = AllocatorType::BlockType;
 
   AllocatorForTest()
       : recorder_(*allocator_, params_), tracker_(kToken, recorder_) {
@@ -135,7 +135,7 @@ class AllocatorForTest : public AllocatorWithMetrics<Metrics> {
     return tracker_.Query(ptr, layout);
   }
 
-  WithBuffer<SimpleAllocator, kBufferSize> allocator_;
+  WithBuffer<AllocatorType, kBufferSize> allocator_;
   internal::RecordedParameters params_;
   internal::AllocatorForTestImpl recorder_;
   TrackingAllocatorImpl<Metrics> tracker_;

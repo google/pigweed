@@ -182,15 +182,7 @@ pw_source_set("simple_allocator") {
 pw_source_set("split_free_list_allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/split_free_list_allocator.h" ]
-  public_deps = [
-    ":allocator",
-    ":block",
-    dir_pw_bytes,
-    dir_pw_result,
-    dir_pw_status,
-  ]
-  deps = [ dir_pw_assert ]
-  sources = [ "split_free_list_allocator.cc" ]
+  public_deps = [ ":block_allocator" ]
 }
 
 pw_source_set("synchronized_allocator") {
@@ -247,7 +239,6 @@ pw_test_group("tests") {
     ":multiplex_allocator_test",
     ":null_allocator_test",
     ":simple_allocator_test",
-    ":split_free_list_allocator_test",
     ":synchronized_allocator_test",
     ":tracking_allocator_test",
     ":unique_ptr_test",
@@ -259,9 +250,9 @@ pw_source_set("allocator_testing") {
   public_deps = [
     ":allocator",
     ":block",
+    ":block_allocator",
     ":buffer",
     ":metrics",
-    ":simple_allocator",
     ":tracking_allocator",
     dir_pw_bytes,
     dir_pw_result,
@@ -400,17 +391,6 @@ pw_test("simple_allocator_test") {
     ":simple_allocator",
   ]
   sources = [ "simple_allocator_test.cc" ]
-}
-
-pw_fuzz_test("split_free_list_allocator_test") {
-  deps = [
-    ":allocator_fuzzing",
-    ":buffer",
-    ":split_free_list_allocator",
-    "$dir_pw_containers:vector",
-    dir_pw_bytes,
-  ]
-  sources = [ "split_free_list_allocator_test.cc" ]
 }
 
 pw_test("synchronized_allocator_test") {

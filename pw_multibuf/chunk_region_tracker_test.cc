@@ -17,7 +17,7 @@
 #include <cstddef>
 #include <optional>
 
-#include "pw_allocator/simple_allocator.h"
+#include "pw_allocator/allocator_testing.h"
 #include "pw_multibuf/chunk.h"
 #include "pw_status/status.h"
 #include "pw_unit_test/framework.h"
@@ -25,13 +25,13 @@
 namespace pw::multibuf {
 namespace {
 
+using allocator::test::AllocatorForTest;
+
 const size_t kArbitraryAllocatorSize = 1024;
 const size_t kArbitraryChunkSize = 32;
 
 TEST(HeaderChunkRegionTracker, AllocatesRegionAsChunk) {
-  allocator::SimpleAllocator alloc{};
-  std::array<std::byte, kArbitraryAllocatorSize> alloc_storage{};
-  ASSERT_EQ(alloc.Init(alloc_storage), OkStatus());
+  AllocatorForTest<kArbitraryAllocatorSize> alloc;
   std::optional<OwnedChunk> chunk =
       HeaderChunkRegionTracker::AllocateRegionAsChunk(&alloc,
                                                       kArbitraryChunkSize);
@@ -39,9 +39,7 @@ TEST(HeaderChunkRegionTracker, AllocatesRegionAsChunk) {
 }
 
 TEST(HeaderChunkRegionTracker, AllocatedRegionAsChunkTooLarge) {
-  allocator::SimpleAllocator alloc{};
-  std::array<std::byte, kArbitraryAllocatorSize> alloc_storage{};
-  ASSERT_EQ(alloc.Init(alloc_storage), OkStatus());
+  AllocatorForTest<kArbitraryAllocatorSize> alloc;
   std::optional<OwnedChunk> chunk =
       HeaderChunkRegionTracker::AllocateRegionAsChunk(&alloc,
                                                       kArbitraryAllocatorSize);
@@ -49,18 +47,14 @@ TEST(HeaderChunkRegionTracker, AllocatedRegionAsChunkTooLarge) {
 }
 
 TEST(HeaderChunkRegionTracker, AllocatesRegion) {
-  allocator::SimpleAllocator alloc{};
-  std::array<std::byte, kArbitraryAllocatorSize> alloc_storage{};
-  ASSERT_EQ(alloc.Init(alloc_storage), OkStatus());
+  AllocatorForTest<kArbitraryAllocatorSize> alloc;
   auto tracker =
       HeaderChunkRegionTracker::AllocateRegion(&alloc, kArbitraryChunkSize);
   ASSERT_NE(tracker, nullptr);
 }
 
 TEST(HeaderChunkRegionTracker, AllocatedRegionTooLarge) {
-  allocator::SimpleAllocator alloc{};
-  std::array<std::byte, kArbitraryAllocatorSize> alloc_storage{};
-  ASSERT_EQ(alloc.Init(alloc_storage), OkStatus());
+  AllocatorForTest<kArbitraryAllocatorSize> alloc;
   auto tracker =
       HeaderChunkRegionTracker::AllocateRegion(&alloc, kArbitraryAllocatorSize);
   ASSERT_EQ(tracker, nullptr);

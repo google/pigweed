@@ -74,7 +74,7 @@ pw_cc_test(
     deps = [
         ":chunk",
         ":chunk_region_tracker",
-        "//pw_allocator:simple_allocator",
+        "//pw_allocator:allocator_testing",
         "//pw_status",
     ],
 )

@@ -179,21 +179,13 @@ pw_add_library(pw_allocator.simple_allocator INTERFACE
     pw_status
 )
 
-pw_add_library(pw_allocator.split_free_list_allocator STATIC
+pw_add_library(pw_allocator.split_free_list_allocator INTERFACE
   HEADERS
     public/pw_allocator/split_free_list_allocator.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_allocator.allocator
-    pw_allocator.block
-    pw_bytes
-    pw_result
-    pw_status
-  PRIVATE_DEPS
-    pw_assert
-  SOURCES
-    split_free_list_allocator.cc
+    pw_allocator.block_allocator
 )
 
 pw_add_library(pw_allocator.synchronized_allocator INTERFACE
@@ -226,8 +218,8 @@ pw_add_library(pw_allocator.allocator_testing STATIC
   PUBLIC_DEPS
     pw_allocator.allocator
     pw_allocator.block
+    pw_allocator.block_allocator
     pw_allocator.buffer
-    pw_allocator.simple_allocator
     pw_allocator.tracking_allocator
     pw_bytes
     pw_result
@@ -376,22 +368,6 @@ pw_add_test(pw_allocator.simple_allocator_test
   PRIVATE_DEPS
     pw_allocator.buffer
     pw_allocator.simple_allocator
-)
-
-pw_add_test(pw_allocator.split_free_list_allocator_test
-  SOURCES
-    split_free_list_allocator_test.cc
-  PRIVATE_DEPS
-    pw_allocator.allocator_fuzzing
-    pw_allocator.buffer
-    pw_allocator.split_free_list_allocator
-    pw_containers.vector
-    pw_bytes
-    pw_fuzzer.fuzztest
-    pw_unit_test
-  GROUPS
-    modules
-    pw_allocator
 )
 
 pw_add_test(pw_allocator.synchronized_allocator_test

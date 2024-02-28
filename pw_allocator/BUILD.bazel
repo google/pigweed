@@ -201,20 +201,12 @@ cc_library(
 
 cc_library(
     name = "split_free_list_allocator",
-    srcs = [
-        "split_free_list_allocator.cc",
-    ],
     hdrs = [
         "public/pw_allocator/split_free_list_allocator.h",
     ],
     includes = ["public"],
     deps = [
-        ":allocator",
-        ":block",
-        "//pw_assert",
-        "//pw_bytes",
-        "//pw_result",
-        "//pw_status",
+        ":block_allocator",
     ],
 )
 
@@ -258,8 +250,8 @@ cc_library(
     deps = [
         ":allocator",
         ":block",
+        ":block_allocator",
         ":buffer",
-        ":simple_allocator",
         ":tracking_allocator",
         "//pw_assert",
         "//pw_bytes",
@@ -421,22 +413,6 @@ pw_cc_test(
     deps = [
         ":buffer",
         ":simple_allocator",
-    ],
-)
-
-pw_cc_test(
-    name = "split_free_list_allocator_test",
-    srcs = [
-        "split_free_list_allocator_test.cc",
-    ],
-    deps = [
-        ":allocator_fuzzing",
-        ":buffer",
-        ":split_free_list_allocator",
-        "//pw_bytes",
-        "//pw_containers:vector",
-        "//pw_fuzzer:fuzztest",
-        "//pw_unit_test",
     ],
 )
 

@@ -45,10 +45,9 @@ constexpr size_t kSplitFreeListThreshold = 128;
 int main() {
   pw::bloat::BloatThisBinary();
 
-  allocator.Init(
-      pw::ByteSpan(reinterpret_cast<std::byte*>(kFakeMemoryRegionStart),
-                   kFakeMemoryRegionSize),
-      kSplitFreeListThreshold);
+  auto* buffer = reinterpret_cast<std::byte*>(kFakeMemoryRegionStart);
+  allocator.Init(pw::ByteSpan(buffer, kFakeMemoryRegionSize));
+  allocator.set_threshold(kSplitFreeListThreshold);
 
   struct Foo {
     char name[16];

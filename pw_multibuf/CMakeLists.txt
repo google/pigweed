@@ -69,7 +69,7 @@ pw_add_test(pw_multibuf.chunk_region_tracker_test
   SOURCES
     chunk_region_tracker_test.cc
   PRIVATE_DEPS
-    pw_allocator.simple_allocator
+    pw_allocator.allocator_testing
     pw_multibuf.chunk
     pw_multibuf.chunk_region_tracker
     pw_status
