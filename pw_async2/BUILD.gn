@@ -28,11 +28,18 @@ config("public_include_path") {
 
 pw_source_set("poll") {
   public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_async2/poll.h" ]
+  public = [
+    "public/pw_async2/internal/poll_internal.h",
+    "public/pw_async2/poll.h",
+  ]
+  public_deps = [ "$dir_pw_third_party/fuchsia:stdcompat" ]
 }
 
 pw_test("poll_test") {
-  deps = [ ":poll" ]
+  deps = [
+    ":poll",
+    "$dir_pw_result",
+  ]
   sources = [ "poll_test.cc" ]
 }
 

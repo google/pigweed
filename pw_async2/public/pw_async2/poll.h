@@ -15,6 +15,8 @@
 
 #include <optional>
 
+#include "pw_async2/internal/poll_internal.h"
+
 namespace pw::async2 {
 
 /// A type whose value indicates that an operation was able to complete (or
@@ -39,11 +41,22 @@ struct PW_NODISCARD_STR(
     "return "
     "value should be examined.") PendingType {};
 
+/// A value that may or may not be ready yet.
+///
+/// ``Poll<T>`` most commonly appears as the return type of an function
+/// that checks the current status of an asynchronous operation. If
+/// the operation has completed, it returns with ``Ready(value)``. Otherwise,
+/// it returns ``Pending`` to indicate that the operations has not yet
+/// completed, and the caller should try again in the future.
+///
+/// ``Poll<T>`` itself is "plain old data" and does not change on its own.
+/// To check the current status of an operation, the caller must invoke
+/// the ``Poll<T>`` returning function again and examine the newly returned
+/// ``Poll<T>``.
 template <typename T = ReadyType>
 class PW_NODISCARD_STR(
     "`Poll`-returning functions may or may not have completed. Their "
-    "return "
-    "value should be examined.") Poll {
+    "return value should be examined.") Poll {
  public:
   /// Basic constructors.
   Poll() = delete;
@@ -51,6 +64,46 @@ class PW_NODISCARD_STR(
   constexpr Poll& operator=(const Poll&) = default;
   constexpr Poll(Poll&&) = default;
   constexpr Poll& operator=(Poll&&) = default;
+
+  /// Constructs a new ``Poll<T>`` from a ``Poll<U>`` where ``T`` is
+  /// constructible from ``U``.
+  ///
+  /// To avoid ambiguity, this constructor is disabled if ``T`` is also
+  /// constructible from ``Poll<U>``.
+  ///
+  /// This constructor is explicit if and only if the corresponding construction
+  /// of ``T`` from ``U`` is explicit.
+  template <typename U,
+            internal_poll::EnableIfImplicitlyConvertible<T, const U&> = 0>
+  constexpr Poll(const Poll<U>& other) : value_(other.value_) {}
+  template <typename U,
+            internal_poll::EnableIfExplicitlyConvertible<T, const U&> = 0>
+  explicit constexpr Poll(const Poll<U>& other) : value_(other.value_) {}
+
+  template <typename U,
+            internal_poll::EnableIfImplicitlyConvertible<T, U&&> = 0>
+  constexpr Poll(Poll<U>&& other)  // NOLINT
+      : value_(std::move(other.value_)) {}
+  template <typename U,
+            internal_poll::EnableIfExplicitlyConvertible<T, U&&> = 0>
+  explicit constexpr Poll(Poll<U>&& other) : value_(std::move(other.value_)) {}
+
+  // Constructs the inner value `T` in-place using the provided args, using the
+  // `T(U)` (direct-initialization) constructor. This constructor is only valid
+  // if `T` can be constructed from a `U`. Can accept move or copy constructors.
+  //
+  // This constructor is explicit if `U` is not convertible to `T`. To avoid
+  // ambiguity, this constructor is disabled if `U` is a `Poll<J>`, where
+  // `J` is convertible to `T`.
+  template <typename U = T,
+            internal_poll::EnableIfImplicitlyInitializable<T, U> = 0>
+  constexpr Poll(U&& u)  // NOLINT
+      : Poll(std::in_place, std::forward<U>(u)) {}
+
+  template <typename U = T,
+            internal_poll::EnableIfExplicitlyInitializable<T, U> = 0>
+  explicit constexpr Poll(U&& u)  // NOLINT
+      : Poll(std::in_place, std::forward<U>(u)) {}
 
   // In-place construction of ``Ready`` variant.
   template <typename... Args>
@@ -99,8 +152,33 @@ class PW_NODISCARD_STR(
   constexpr T&& operator*() && noexcept { return std::move(*value_); }
 
  private:
+  template <typename U>
+  friend class Poll;
   std::optional<T> value_;
 };
+
+/// Returns whether two instances of ``Poll<T>`` are equal.
+///
+/// Note that this comparison operator will return ``true`` if both
+/// values are currently ``Pending``, even if the eventual results
+/// of each operation might differ.
+template <typename T>
+constexpr bool operator==(const Poll<T>& lhs, const Poll<T>& rhs) {
+  if (lhs.IsReady() && rhs.IsReady()) {
+    return *lhs == *rhs;
+  }
+  return lhs.IsReady() == rhs.IsReady();
+}
+
+/// Returns whether two instances of ``Poll<T>`` are unequal.
+///
+/// Note that this comparison operator will return ``false`` if both
+/// values are currently ``Pending``, even if the eventual results
+/// of each operation might differ.
+template <typename T>
+constexpr bool operator!=(const Poll<T>& lhs, const Poll<T>& rhs) {
+  return !(lhs == rhs);
+}
 
 /// Returns a value indicating completion.
 inline constexpr Poll<> Ready() { return Poll(ReadyType{}); }

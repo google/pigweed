@@ -24,9 +24,11 @@ licenses(["notice"])
 cc_library(
     name = "poll",
     hdrs = [
+        "public/pw_async2/internal/poll_internal.h",
         "public/pw_async2/poll.h",
     ],
     includes = ["public"],
+    deps = ["//third_party/fuchsia:stdcompat"],
 )
 
 pw_cc_test(
@@ -34,6 +36,7 @@ pw_cc_test(
     srcs = ["poll_test.cc"],
     deps = [
         ":poll",
+        "@pigweed//pw_result",
     ],
 )
 
