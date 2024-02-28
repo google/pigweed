@@ -47,6 +47,7 @@ cc_library(
     deps = [
         "//pw_preprocessor",
         "//pw_stream",
+        "//pw_sync:interrupt_spin_lock",
         "//pw_sync:thread_notification",
         "@pigweed//targets:mcuxpresso_sdk",
     ],

@@ -38,6 +38,7 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     public_deps = [ "$dir_pw_stream" ]
     deps = [
       ":pw_preprocessor",
+      ":pw_sync:interrupt_spin_lock",
       ":pw_sync:thread_notification",
       pw_third_party_mcuxpresso_SDK,
     ]
