@@ -16,20 +16,20 @@
 #include "pw_log/levels.h"
 #include "pw_log/log.h"
 #include "pw_log/options.h"
+#include "pw_preprocessor/arguments.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
 
 // Die with a message with several attributes included. This crash frontend
 // funnels everything into the logger, which must then handle the true crash
 // behaviour.
-#define PW_HANDLE_CRASH(message, ...) \
-  do {                                \
-    PW_HANDLE_LOG(PW_LOG_LEVEL_FATAL, \
-                  PW_LOG_MODULE_NAME, \
-                  PW_LOG_FLAGS,       \
-                  "Crash: " message,  \
-                  __VA_ARGS__);       \
-    PW_UNREACHABLE;                   \
+#define PW_HANDLE_CRASH(...)              \
+  do {                                    \
+    PW_HANDLE_LOG(PW_LOG_LEVEL_FATAL,     \
+                  PW_LOG_MODULE_NAME,     \
+                  PW_LOG_FLAGS,           \
+                  "Crash: " __VA_ARGS__); \
+    PW_UNREACHABLE;                       \
   } while (0)
 
 // Die with a message with several attributes included. This assert frontend
