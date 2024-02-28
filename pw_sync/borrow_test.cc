@@ -21,6 +21,43 @@
 namespace pw::sync::test {
 namespace {
 
+// Test fixtures.
+
+class Base {
+ public:
+  virtual ~Base() = default;
+  int value() const { return value_; }
+
+ protected:
+  Base(int value) : value_(value) {}
+
+ private:
+  int value_ = 0;
+};
+
+class Derived : public Base {
+ public:
+  Derived(int value) : Base(value) {}
+};
+
+// Unit tests.
+
+TEST(BorrowedPointerTest, MoveConstruct) {
+  Derived derived(1);
+  FakeBasicLockable lock;
+  Borrowable<Derived, FakeBasicLockable> borrowable(derived, lock);
+  BorrowedPointer<Base, VirtualBasicLockable> borrowed(borrowable.acquire());
+  EXPECT_EQ(borrowed->value(), 1);
+}
+
+TEST(BorrowedPointerTest, MoveAssign) {
+  Derived derived(2);
+  FakeBasicLockable lock;
+  Borrowable<Derived, FakeBasicLockable> borrowable(derived, lock);
+  BorrowedPointer<Base, VirtualBasicLockable> borrowed = borrowable.acquire();
+  EXPECT_EQ(borrowed->value(), 2);
+}
+
 PW_SYNC_ADD_BORROWABLE_LOCK_TESTS(FakeBasicLockable);
 PW_SYNC_ADD_BORROWABLE_LOCK_TESTS(FakeLockable);
 PW_SYNC_ADD_BORROWABLE_TIMED_LOCK_TESTS(FakeTimedLockable, FakeClock);

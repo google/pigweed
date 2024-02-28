@@ -37,16 +37,49 @@ class BorrowedPointer {
     }
   }
 
-  /// This object is moveable, but not copyable.
+  /// Move-constructs a ``BorrowedPointer<T>`` from a ``BorrowedPointer<U>``.
+  ///
+  /// This allows not only pure move construction where
+  /// ``GuardedType == OtherType`` and ``Lock == OtherLock``, but also
+  /// converting construction where ``GuardedType`` is a base class of
+  /// ``OtherType`` and ``Lock`` is a base class of ``OtherLock``, like
+  /// ``BorrowedPointer<Base> base_ptr(derived_borrowable.acquire());`
   ///
   /// @b Postcondition: The other BorrowedPointer is no longer valid and will
   ///     assert if the GuardedType is accessed.
-  BorrowedPointer(BorrowedPointer&& other)
+  template <typename OtherType, typename OtherLock>
+  BorrowedPointer(BorrowedPointer<OtherType, OtherLock>&& other)
       : lock_(other.lock_), object_(other.object_) {
+    static_assert(
+        std::is_assignable_v<GuardedType*&, OtherType*>,
+        "Attempted to construct a BorrowedPointer from another whose "
+        "GuardedType* is not assignable to this object's GuardedType*.");
+    static_assert(std::is_assignable_v<Lock*&, OtherLock*>,
+                  "Attempted to construct a BorrowedPointer from another whose "
+                  "Lock* is not assignable to this object's Lock*.");
     other.lock_ = nullptr;
     other.object_ = nullptr;
   }
-  BorrowedPointer& operator=(BorrowedPointer&& other) {
+
+  /// Move-assigns a ``BorrowedPointer<T>`` from a ``BorrowedPointer<U>``.
+  ///
+  /// This allows not only pure move construction where
+  /// ``GuardedType == OtherType`` and ``Lock == OtherLock``, but also
+  /// converting construction where ``GuardedType`` is a base class of
+  /// ``OtherType`` and ``Lock`` is a base class of ``OtherLock``, like
+  /// ``BorrowedPointer<Base> base_ptr = derived_borrowable.acquire();`
+  ///
+  /// @b Postcondition: The other BorrowedPointer is no longer valid and will
+  ///     assert if the GuardedType is accessed.
+  template <typename OtherType, typename OtherLock>
+  BorrowedPointer& operator=(BorrowedPointer<OtherType, OtherLock>&& other) {
+    static_assert(
+        std::is_assignable_v<GuardedType*&, OtherType*>,
+        "Attempted to construct a BorrowedPointer from another whose "
+        "GuardedType* is not assignable to this object's GuardedType*.");
+    static_assert(std::is_assignable_v<Lock*&, OtherLock*>,
+                  "Attempted to construct a BorrowedPointer from another whose "
+                  "Lock* is not assignable to this object's Lock*.");
     lock_ = other.lock_;
     object_ = other.object_;
     other.lock_ = nullptr;
@@ -100,6 +133,14 @@ class BorrowedPointer {
 
   Lock* lock_;
   GuardedType* object_;
+
+  /// Allow converting move constructor and assignment to access fields of
+  /// this class.
+  ///
+  /// Without this, ``BorrowedPointer<OtherType, OtherLock>`` would not be able
+  /// to access fields of ``BorrowedPointer<GuardedType, Lock>``.
+  template <typename OtherType, typename OtherLock>
+  friend class BorrowedPointer;
 };
 
 /// The `Borrowable` is a helper construct that enables callers to borrow an
