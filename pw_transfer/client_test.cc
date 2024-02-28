@@ -2937,7 +2937,7 @@ TEST_F(WriteTransfer, Write_TransferSize_Large) {
         Chunk(ProtocolVersion::kVersionTwo, Chunk::Type::kParametersRetransmit)
             .set_session_id(1)
             .set_offset(0)
-            .set_window_end_offset(1024)
+            .set_window_end_offset(64)  // Only request one chunk.
             .set_max_chunk_size_bytes(64)));
   });
 
