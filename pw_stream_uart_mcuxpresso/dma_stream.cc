@@ -120,18 +120,75 @@ Status UartDmaStreamMcuxpresso::Init(uint32_t srcclk) {
   return OkStatus();
 }
 
+// DMA send buffer data
+void UartDmaStreamMcuxpresso::TriggerWriteDma() {
+  const uint8_t* tx_buffer =
+      reinterpret_cast<const uint8_t*>(tx_data_.buffer.data());
+  tx_data_.transfer.txData = &tx_buffer[tx_data_.tx_idx];
+  if (tx_data_.tx_idx + kUsartDmaMaxTransferCount >
+      tx_data_.buffer.size_bytes()) {
+    // Completion callback will be called once this transfer completes.
+    tx_data_.transfer.dataSize = tx_data_.buffer.size_bytes() - tx_data_.tx_idx;
+  } else {
+    tx_data_.transfer.dataSize = kUsartDmaMaxTransferCount;
+  }
+
+  USART_TransferSendDMA(
+      config_.usart_base, &uart_dma_handle_, &tx_data_.transfer);
+}
+
 // Completion callback for TX and RX transactions
 void UartDmaStreamMcuxpresso::TxRxCompletionCallback(USART_Type* base,
                                                      usart_dma_handle_t* state,
                                                      status_t status,
-                                                     void* param) {}
+                                                     void* param) {
+  UartDmaStreamMcuxpresso* stream =
+      reinterpret_cast<UartDmaStreamMcuxpresso*>(param);
+
+  if (status == kStatus_USART_TxIdle) {
+    // Tx transfer
+    UsartDmaTxData* tx_data = &stream->tx_data_;
+    tx_data->tx_idx += tx_data->transfer.dataSize;
+    if (tx_data->tx_idx == tx_data->buffer.size_bytes()) {
+      // We have completed the send request, we must wake up the sender.
+      tx_data->notification.release();
+    } else {
+      PW_CHECK_INT_LT(tx_data->tx_idx, tx_data->buffer.size_bytes());
+      stream->TriggerWriteDma();
+    }
+  }
+}
 
 StatusWithSize UartDmaStreamMcuxpresso::DoRead(ByteSpan data) {
   size_t length = data.size();
   return StatusWithSize(length);
 }
 
+// Write data to USART using DMA transactions
+//
+// Note: Only one thread should be calling this function,
+// otherwise DoWrite calls might fail due to contention for
+// the USART TX channel.
 Status UartDmaStreamMcuxpresso::DoWrite(ConstByteSpan data) {
+  if (data.size() == 0) {
+    return Status::InvalidArgument();
+  }
+
+  bool was_busy = tx_data_.busy.exchange(true);
+  if (was_busy) {
+    // Another thread is already transmitting data.
+    return Status::FailedPrecondition();
+  }
+
+  tx_data_.buffer = data;
+  tx_data_.tx_idx = 0;
+
+  TriggerWriteDma();
+
+  tx_data_.notification.acquire();
+
+  tx_data_.busy.store(false);
+
   return OkStatus();
 }
 

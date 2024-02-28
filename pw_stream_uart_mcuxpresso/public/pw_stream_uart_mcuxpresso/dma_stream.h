@@ -83,12 +83,18 @@ class UartDmaStreamMcuxpresso final : public NonSeekableReaderWriter {
     pw::sync::ThreadNotification notification;  // RX completion notification
   };
 
+  // Since we are calling USART_TransferGetReceiveCountDMA we may only
+  // transfer DMA_MAX_TRANSFER_COUNT - 1 bytes per DMA transfer.
+  static constexpr size_t kUsartDmaMaxTransferCount =
+      DMA_MAX_TRANSFER_COUNT - 1;
+
   StatusWithSize DoRead(ByteSpan) override;
   Status DoWrite(ConstByteSpan) override;
 
   // Helper functions
   static IRQn_Type GetInterrupt(const DMA_Type* base);
   void Deinit();
+  void TriggerWriteDma();
   static void TxRxCompletionCallback(USART_Type* base,
                                      usart_dma_handle_t* state,
                                      status_t status,
