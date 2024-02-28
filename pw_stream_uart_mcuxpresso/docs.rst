@@ -5,7 +5,7 @@ pw_stream_uart_mcuxpresso
 =========================
 ``pw_stream_uart_mcuxpresso`` implements the ``pw_stream`` interface for reading
 and writing to a UART using the NXP MCUXpresso SDK. ``UartStreamMcuxpresso``
-version uses the CPU to read and write to the UART, while ``UartStreamDmaMcuxpresso``
+version uses the CPU to read and write to the UART, while ``UartDmaStreamMcuxpresso``
 uses DMA transfers to read and write to the UART minimizing the CPU utilization.
 
 .. note::
@@ -29,7 +29,8 @@ The name of the SDK source set must be set in the
 Usage
 =====
 
-UartStreamMcuxpresso example:
+``UartStreamMcuxpresso`` example:
+
 .. code-block:: cpp
 
   constexpr uint32_t kFlexcomm = 0;
@@ -48,7 +49,8 @@ UartStreamMcuxpresso example:
   PW_TRY(stream.Write(to_write));
 
 
-UartStreamDmaMcuxpresso example:
+``UartDmaStreamMcuxpresso`` example:
+
 .. code-block:: cpp
 
   constexpr uint32_t kFlexcomm = 0;
