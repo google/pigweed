@@ -36,6 +36,22 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "pw_stream_uart_dma_mcuxpresso",
+    srcs = ["dma_stream.cc"],
+    hdrs = ["public/pw_stream_uart_mcuxpresso/dma_stream.h"],
+    includes = ["public"],
+    target_compatible_with = [
+        "//pw_build/constraints/board:mimxrt595_evk",
+    ],
+    deps = [
+        "//pw_preprocessor",
+        "//pw_stream",
+        "//pw_sync:thread_notification",
+        "@pigweed//targets:mcuxpresso_sdk",
+    ],
+)
+
 pw_cc_test(
     name = "stream_test",
     srcs = ["stream_test.cc"],

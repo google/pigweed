@@ -32,6 +32,18 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     sources = [ "stream.cc" ]
   }
 
+  pw_source_set("pw_stream_uart_dma_mcuxpresso") {
+    public_configs = [ ":default_config" ]
+    public = [ "public/pw_stream_uart_mcuxpresso/dma_stream.h" ]
+    public_deps = [ "$dir_pw_stream" ]
+    deps = [
+      ":pw_preprocessor",
+      ":pw_sync:thread_notification",
+      pw_third_party_mcuxpresso_SDK,
+    ]
+    sources = [ "dma_stream.cc" ]
+  }
+
   pw_test("stream_test") {
     enable_if =
         pw_third_party_mcuxpresso_SDK ==
