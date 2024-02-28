@@ -34,6 +34,7 @@ void LogPacketSizeTooLarge(size_t packet_size, size_t max_packet_size);
 void LogEgressThreadNotRunningError();
 void LogFailedToProcessPacket(Status status);
 void LogFailedToAccessPacket(Status status);
+void LogNoPacketAvailable(Status status);
 }  // namespace internal
 
 // Handles RPC packets destined for the local receiver.
@@ -101,10 +102,15 @@ Status LocalRpcEgress<kPacketQueueSize, kMaxPacketSize>::SendRpcPacket(
 
   // Grab a free packet from the egress' pool, copy incoming frame and
   // push it the queue for processing.
-  PW_TRY_ASSIGN(auto packet_buffer, packet_queue_.Pop());
-  PW_TRY(packet_buffer->CopyPacket(packet));
+  auto packet_buffer = packet_queue_.Pop();
+  if (!packet_buffer.ok()) {
+    internal::LogNoPacketAvailable(packet_buffer.status());
+    return packet_buffer.status();
+  }
 
-  transmit_queue_.Push(*packet_buffer);
+  PW_TRY(packet_buffer.value()->CopyPacket(packet));
+
+  transmit_queue_.Push(**packet_buffer);
 
   process_queue_.release();
 
