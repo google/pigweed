@@ -40,6 +40,7 @@ pw_add_library(pw_allocator.block STATIC
     public
   PUBLIC_DEPS
     pw_allocator.allocator
+    pw_assert
     pw_bytes
     pw_bytes.alignment
     pw_result

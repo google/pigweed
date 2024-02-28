@@ -60,6 +60,7 @@ pw_source_set("block") {
   public_deps = [
     ":allocator",
     "$dir_pw_bytes:alignment",
+    dir_pw_assert,
     dir_pw_bytes,
     dir_pw_result,
     dir_pw_status,
