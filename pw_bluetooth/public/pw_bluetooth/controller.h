@@ -43,7 +43,9 @@ class Controller {
     // at
     // https://source.android.com/docs/core/connect/bluetooth/hci_requirements
     kAndroidVendorExtensions = (1 << 2),
-    // Bits 3-31 reserved.
+    // Indicates support for Isochronous channels over HCI.
+    kHciIso = (1 << 3),
+    // Bits 4-31 reserved.
   };
 
   enum class ScoCodingFormat : uint8_t {
