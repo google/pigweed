@@ -121,7 +121,6 @@ if (dir_pw_third_party_llvm_libc != "") {
     additional_srcs = [
       "printf_core/printf_main.cpp",
       "printf_core/writer.cpp",
-      "printf_core/parser.cpp",
       "printf_core/converter.cpp",
     ]
 

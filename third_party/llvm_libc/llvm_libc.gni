@@ -74,12 +74,16 @@ template("pw_libc_source_set") {
       _additional_srcs = invoker.additional_srcs
     }
 
-    include_dirs = [ dir_pw_third_party_llvm_libc ]
+    include_dirs = [
+      dir_pw_third_party_llvm_libc,
+      "$dir_pw_third_party_llvm_libc/include/",
+    ]
 
     defines = [
       "LIBC_COPT_PUBLIC_PACKAGING=1",
       "LIBC_COPT_USE_C_ASSERT=1",
       "LIBC_INLINE=inline",
+      "LIBC_NAMESPACE=__llvm_libc",
     ]
 
     if (defined(invoker.defines)) {
