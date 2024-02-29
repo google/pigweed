@@ -57,7 +57,7 @@ export class LogView extends LitElement {
   isOneOfMany = false;
 
   /** The title of the log view, to be displayed on the log view toolbar */
-  @property()
+  @property({ type: String })
   viewTitle = '';
 
   /** Whether line wrapping in table cells should be used. */
@@ -123,10 +123,7 @@ export class LogView extends LitElement {
 
     // Update view title with log source names if a view title isn't already provided
     if (!this.viewTitle) {
-      const sourceNames = Array.from(this.sources.values())?.map(
-        (tag: SourceData) => tag.name,
-      );
-      this.viewTitle = sourceNames.join(', ');
+      this.updateTitle();
     }
   }
 
@@ -138,6 +135,7 @@ export class LogView extends LitElement {
       this._lastKnownLogLength = this.logs.length;
 
       this.updateFieldsFromNewLogs(newLogs);
+      this.updateTitle();
     }
 
     if (changedProperties.has('logs') || changedProperties.has('searchText')) {
@@ -301,6 +299,13 @@ export class LogView extends LitElement {
 
   private updateColumnData(event: CustomEvent) {
     this._columnData = event.detail;
+  }
+
+  private updateTitle() {
+    const sourceNames = Array.from(this.sources.values())?.map(
+      (tag: SourceData) => tag.name,
+    );
+    this.viewTitle = sourceNames.join(', ');
   }
 
   /**

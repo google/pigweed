@@ -222,24 +222,24 @@ export class LogList extends LitElement {
   ): string {
     let gridTemplateColumns = '';
 
-    this.columnData.forEach((col, i) => {
-      let columnValue = '';
+    const calculateColumnWidth = (col: TableColumn, i: number) => {
+      if (i === resizingIndex) {
+        return `${newWidth}px`;
+      }
+      if (col.manualWidth !== null) {
+        return `${col.manualWidth}px`;
+      }
+      if (i === 0) {
+        return `3rem`;
+      }
+      const chWidth = col.characterLength;
+      const padding = 34;
+      return `clamp(${this.MIN_COL_WIDTH}px, ${chWidth}ch + ${padding}px, 80ch)`;
+    };
 
-      if (col.isVisible) {
-        if (i === resizingIndex) {
-          columnValue = `${newWidth}px`;
-        } else if (col.manualWidth !== null) {
-          columnValue = `${col.manualWidth}px`;
-        } else {
-          if (i === 0) {
-            columnValue = '3rem';
-          } else {
-            const chWidth = col.characterLength;
-            const padding = 34;
-            columnValue = `clamp(${this.MIN_COL_WIDTH}px, ${chWidth}ch + ${padding}px, 80ch)`;
-          }
-        }
-
+    this.columnData.forEach((column, i) => {
+      if (column.isVisible) {
+        const columnValue = calculateColumnWidth(column, i);
         gridTemplateColumns += columnValue + ' ';
       }
     });
@@ -532,7 +532,11 @@ export class LogList extends LitElement {
         [Severity.DEBUG, 'bug_report'],
       ]);
 
-      const severityValue = field.value as Severity;
+      const severityValue: Severity = field.value
+        ? (field.value as Severity)
+        : log.severity
+          ? log.severity
+          : Severity.INFO;
       const iconId = severityIcons.get(severityValue) || '';
       const toTitleCase = (input: string): string => {
         return input.replace(/\b\w+/g, (match) => {

@@ -13,7 +13,10 @@
 // the License.
 
 import { expect } from '@open-wc/testing';
+import { spy, match } from 'sinon';
 import { LogSource } from '../src/log-source';
+import { BrowserLogSource } from '../src/custom/browser-log-source';
+import { Severity } from '../src/shared/interfaces';
 
 describe('log-source', () => {
   let logSourceA, logSourceB;
@@ -86,5 +89,107 @@ describe('log-source', () => {
     } catch (error) {
       expect(error.message).to.equal('Invalid log entry structure');
     }
+  });
+});
+
+describe('browser-log-source', () => {
+  let browserLogSource;
+  let originalConsoleMethods;
+
+  beforeEach(() => {
+    originalConsoleMethods = {
+      log: console.log,
+      info: console.info,
+      warn: console.warn,
+      error: console.error,
+      debug: console.debug,
+    };
+    browserLogSource = new BrowserLogSource();
+    browserLogSource.start();
+    browserLogSource.publishLogEntry = spy();
+  });
+
+  afterEach(() => {
+    browserLogSource.stop();
+
+    console.log = originalConsoleMethods.log;
+    console.info = originalConsoleMethods.info;
+    console.warn = originalConsoleMethods.warn;
+    console.error = originalConsoleMethods.error;
+    console.debug = originalConsoleMethods.debug;
+  });
+
+  it('captures and formats console.log messages with substitutions correctly', () => {
+    browserLogSource.publishLogEntry.resetHistory();
+
+    console.log("Hello, %s. You've called me %d times.", 'Alice', 5);
+    const expectedMessage = "Hello, Alice. You've called me 5 times.";
+
+    expect(browserLogSource.publishLogEntry.calledOnce).to.be.true;
+
+    const callArgs = browserLogSource.publishLogEntry.getCall(0).args[0];
+    expect(callArgs.severity).to.equal(Severity.INFO);
+
+    const messageField = callArgs.fields.find(
+      (field) => field.key === 'message',
+    );
+    expect(messageField).to.exist;
+    expect(messageField.value).to.equal(expectedMessage);
+  });
+
+  ['log', 'info', 'warn', 'error', 'debug'].forEach((method) => {
+    it(`captures and formats console.${method} messages`, () => {
+      const expectedSeverity = mapMethodToSeverity(method);
+      console[method]('Test message (%s)', method);
+      expect(browserLogSource.publishLogEntry).to.have.been.calledWithMatch({
+        timestamp: match.instanceOf(Date),
+        severity: expectedSeverity,
+        fields: [
+          { key: 'severity', value: expectedSeverity },
+          { key: 'message', value: `Test message (${method})` },
+        ],
+      });
+    });
+  });
+
+  function mapMethodToSeverity(method) {
+    switch (method) {
+      case 'log':
+      case 'info':
+        return Severity.INFO;
+      case 'warn':
+        return Severity.WARNING;
+      case 'error':
+        return Severity.ERROR;
+      case 'debug':
+        return Severity.DEBUG;
+      default:
+        return Severity.INFO;
+    }
+  }
+
+  it('captures and formats multiple arguments correctly', () => {
+    console.log('This is a test', 42, { type: 'answer' });
+
+    const expectedMessage = 'This is a test 42 {"type":"answer"}';
+
+    expect(browserLogSource.publishLogEntry.calledOnce).to.be.true;
+    const callArgs = browserLogSource.publishLogEntry.getCall(0).args[0];
+    expect(callArgs.severity).to.equal(Severity.INFO);
+
+    const messageField = callArgs.fields.find(
+      (field) => field.key === 'message',
+    );
+    expect(messageField).to.exist;
+    expect(messageField.value).to.equal(expectedMessage);
+  });
+
+  it('restores original console methods after stop is called', () => {
+    browserLogSource.stop();
+    expect(console.log).to.equal(originalConsoleMethods.log);
+    expect(console.info).to.equal(originalConsoleMethods.info);
+    expect(console.warn).to.equal(originalConsoleMethods.warn);
+    expect(console.error).to.equal(originalConsoleMethods.error);
+    expect(console.debug).to.equal(originalConsoleMethods.debug);
   });
 });
