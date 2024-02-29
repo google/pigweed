@@ -39,7 +39,6 @@ cc_library {
         "block.cc",
         "libc_allocator.cc",
         "metrics.cc",
-        "split_free_list_allocator.cc",
     ],
     static_libs: [
         "pw_base64",
