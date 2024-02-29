@@ -34,7 +34,10 @@ filegroup(
 
 pw_cc_tool(
     name = "ar_tool",
-    tool = "//:bin/llvm-ar",
+    tool = select({
+        "@platforms//os:windows": "//:bin/llvm-ar.exe",
+        "//conditions:default": "//:bin/llvm-ar",
+    }),
 )
 
 pw_cc_tool(
@@ -61,7 +64,10 @@ pw_cc_action_config(
 
 pw_cc_tool(
     name = "clang++_tool",
-    tool = "//:bin/clang++",
+    tool = select({
+        "@platforms//os:windows": "//:bin/clang++.exe",
+        "//conditions:default": "//:bin/clang++",
+    }),
     additional_files = glob([
         "include/**",
         "lib/clang/**/include/**",
@@ -76,7 +82,10 @@ pw_cc_action_config(
 
 pw_cc_tool(
     name = "clang_tool",
-    tool = "//:bin/clang",
+    tool = select({
+        "@platforms//os:windows": "//:bin/clang.exe",
+        "//conditions:default": "//:bin/clang",
+    }),
     additional_files = glob([
         "include/**",
         "lib/clang/**/include/**",
@@ -96,7 +105,10 @@ pw_cc_action_config(
 # tool differently to specify a different set of additional files.
 pw_cc_tool(
     name = "lld_tool",
-    tool = "//:bin/clang++",
+    tool = select({
+        "@platforms//os:windows": "//:bin/clang++.exe",
+        "//conditions:default": "//:bin/clang++",
+    }),
     additional_files = glob([
         "lib/**/*.a",
         "lib/**/*.so*",
@@ -111,7 +123,10 @@ pw_cc_action_config(
 
 pw_cc_tool(
     name = "llvm_cov_tool",
-    tool = "//:bin/llvm-cov",
+    tool = select({
+        "@platforms//os:windows": "//:bin/llvm-cov.exe",
+        "//conditions:default": "//:bin/llvm-cov",
+    }),
 )
 
 pw_cc_action_config(
@@ -122,7 +137,10 @@ pw_cc_action_config(
 
 pw_cc_tool(
     name = "llvm_objcopy_tool",
-    tool = "//:bin/llvm-objcopy",
+    tool = select({
+        "@platforms//os:windows": "//:bin/llvm-objcopy.exe",
+        "//conditions:default": "//:bin/llvm-objcopy",
+    }),
 )
 
 pw_cc_action_config(
@@ -133,7 +151,10 @@ pw_cc_action_config(
 
 pw_cc_tool(
     name = "llvm_objdump_tool",
-    tool = "//:bin/llvm-objdump",
+    tool = select({
+        "@platforms//os:windows": "//:bin/llvm-objdump.exe",
+        "//conditions:default": "//:bin/llvm-objdump",
+    }),
 )
 
 pw_cc_action_config(
@@ -144,7 +165,10 @@ pw_cc_action_config(
 
 pw_cc_tool(
     name = "llvm_strip_tool",
-    tool = "//:bin/llvm-strip",
+    tool = select({
+        "@platforms//os:windows": "//:bin/llvm-strip.exe",
+        "//conditions:default": "//:bin/llvm-strip",
+    }),
 )
 
 pw_cc_action_config(

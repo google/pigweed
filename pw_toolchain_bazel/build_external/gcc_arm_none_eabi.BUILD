@@ -37,7 +37,10 @@ pw_cc_action_files(
 
 pw_cc_tool(
     name = "arm-none-eabi-ar_tool",
-    tool = "//:bin/arm-none-eabi-ar",
+    tool = select({
+        "@platforms//os:windows": "//:bin/arm-none-eabi-ar.exe",
+        "//conditions:default": "//:bin/arm-none-eabi-ar",
+    }),
 )
 
 pw_cc_action_config(
@@ -56,7 +59,10 @@ pw_cc_action_config(
 
 pw_cc_tool(
     name = "arm-none-eabi-g++_tool",
-    tool = "//:bin/arm-none-eabi-g++",
+    tool = select({
+        "@platforms//os:windows": "//:bin/arm-none-eabi-g++.exe",
+        "//conditions:default": "//:bin/arm-none-eabi-g++",
+    }),
     additional_files = glob([
         "**/*.spec",
         "**/*.specs",
@@ -75,7 +81,10 @@ pw_cc_action_config(
 
 pw_cc_tool(
     name = "arm-none-eabi-gcc_tool",
-    tool = "//:bin/arm-none-eabi-gcc",
+    tool = select({
+        "@platforms//os:windows": "//:bin/arm-none-eabi-gcc.exe",
+        "//conditions:default": "//:bin/arm-none-eabi-gcc",
+    }),
     additional_files = glob([
         "**/*.spec",
         "**/*.specs",
@@ -83,9 +92,14 @@ pw_cc_tool(
         "lib/gcc/arm-none-eabi/*/include/**",
         "lib/gcc/arm-none-eabi/*/include-fixed/**",
         "libexec/**",
-    ]) + [
-        "arm-none-eabi/bin/as",  # The assembler needs to be explicilty added.
-    ],
+    ]) +
+    # The assembler needs to be explicilty added. Note that the path is
+    # intentionally different here as `as` is called from arm-none-eabi-gcc.
+    # `arm-none-eabi-as` will not suffice for this context.
+    select({
+        "@platforms//os:windows": ["//:arm-none-eabi/bin/as.exe"],
+        "//conditions:default": ["//:arm-none-eabi/bin/as"],
+    }),
 )
 
 pw_cc_action_config(
@@ -101,7 +115,10 @@ pw_cc_action_config(
 # tool differently to specify a different set of additional files.
 pw_cc_tool(
     name = "arm-none-eabi-ld_tool",
-    tool = "//:bin/arm-none-eabi-g++",
+    tool = select({
+        "@platforms//os:windows": "//:bin/arm-none-eabi-g++.exe",
+        "//conditions:default": "//:bin/arm-none-eabi-g++",
+    }),
     additional_files = glob([
         "**/*.a",
         "**/*.ld",
@@ -121,7 +138,10 @@ pw_cc_action_config(
 
 pw_cc_tool(
     name = "arm-none-eabi-gcov_tool",
-    tool = "//:bin/arm-none-eabi-gcov",
+    tool = select({
+        "@platforms//os:windows": "//:bin/arm-none-eabi-gcov.exe",
+        "//conditions:default": "//:bin/arm-none-eabi-gcov",
+    }),
 )
 
 pw_cc_action_config(
@@ -132,7 +152,10 @@ pw_cc_action_config(
 
 pw_cc_tool(
     name = "arm-none-eabi-objcopy_tool",
-    tool = "//:bin/arm-none-eabi-objcopy",
+    tool = select({
+        "@platforms//os:windows": "//:bin/arm-none-eabi-objcopy.exe",
+        "//conditions:default": "//:bin/arm-none-eabi-objcopy",
+    }),
 )
 
 pw_cc_action_config(
@@ -143,7 +166,10 @@ pw_cc_action_config(
 
 pw_cc_tool(
     name = "arm-none-eabi-objdump_tool",
-    tool = "//:bin/arm-none-eabi-objdump",
+    tool = select({
+        "@platforms//os:windows": "//:bin/arm-none-eabi-objdump.exe",
+        "//conditions:default": "//:bin/arm-none-eabi-objdump",
+    }),
 )
 
 pw_cc_action_config(
@@ -154,7 +180,10 @@ pw_cc_action_config(
 
 pw_cc_tool(
     name = "arm-none-eabi-strip_tool",
-    tool = "//:bin/arm-none-eabi-strip",
+    tool = select({
+        "@platforms//os:windows": "//:bin/arm-none-eabi-strip.exe",
+        "//conditions:default": "//:bin/arm-none-eabi-strip",
+    }),
 )
 
 pw_cc_action_config(
