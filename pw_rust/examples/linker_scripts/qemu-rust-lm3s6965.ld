@@ -40,7 +40,7 @@ MEMORY
   /* Internal Flash */
   FLASH(rx) : ORIGIN = 0x00000400, LENGTH = 255K
   /* Internal SRAM */
-  RAM(rwx) : ORIGIN = 0x20000000, LENGTH = 16K
+  RAM(rwx) : ORIGIN = 0x20000000, LENGTH = 64K
 
   /* Each memory region above has an associated .*.unused_space section that
    * overlays the unused space at the end of the memory segment. These segments
@@ -269,3 +269,40 @@ pw_bloat_config_memory_region_FLASH_start = ORIGIN(FLASH);
 pw_bloat_config_memory_region_FLASH_end = ORIGIN(FLASH) + LENGTH(FLASH);
 pw_bloat_config_memory_region_RAM_start = ORIGIN(RAM);
 pw_bloat_config_memory_region_RAM_end = ORIGIN(RAM) + LENGTH(RAM);
+
+SECTIONS
+{
+  /*
+   * This section stores metadata that may be used during tokenized string
+   * decoding. This metadata describes properties that may affect how the
+   * tokenized string is encoded or decoded -- the maximum length of the hash
+   * function and the sizes of certain integer types.
+   *
+   * Metadata is declared as key-value pairs. See the metadata variable in
+   * tokenize.cc for further details.
+   */
+  .pw_tokenizer.info 0x0 (INFO) :
+  {
+    KEEP(*(.pw_tokenizer.info))
+  }
+
+  /*
+   * Tokenized string entries are stored in this section. Each entry contains
+   * the original string literal and the calculated token that represents it. In
+   * the compiled code, the token and a compact argument list encoded in a
+   * uint32_t are used in place of the format string. The compiled code
+   * contains no references to the tokenized string entries in this section.
+   *
+   * The tokenized string entry format is specified by the
+   * pw::tokenizer::internal::Entry class in
+   * pw_tokenizer/public/pw_tokenizer/internal/tokenize_string.h.
+   *
+   * The section contents are declared with KEEP so that they are not removed
+   * from the ELF. These are never emitted in the final binary or loaded into
+   * memory.
+   */
+  .pw_tokenizer.entries 0x0 (INFO) :
+  {
+    KEEP(*(.pw_tokenizer.entries.*))
+  }
+}

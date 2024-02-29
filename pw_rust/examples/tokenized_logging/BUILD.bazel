@@ -12,13 +12,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_rust//rust:defs.bzl", "rust_binary")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library")
 
 package(default_visibility = ["//visibility:public"])
 
 rust_binary(
-    name = "hello",
-    srcs = ["src/main.rs"],
+    name = "tokenized_logging",
+    srcs = ["main.rs"],
     edition = "2021",
     linker_script = select({
         "//pw_build/constraints/board:microbit": "//pw_rust/examples/linker_scripts:qemu-rust-nrf51822",
@@ -31,9 +31,27 @@ rust_binary(
         "//pw_build/constraints/chipset:lm3s6965evb": [],
     }),
     deps = [
+        "//pw_log/rust:pw_log",
         "@rust_crates//:cortex-m",
         "@rust_crates//:cortex-m-rt",
         "@rust_crates//:cortex-m-semihosting",
         "@rust_crates//:panic-halt",
+    ],
+)
+
+rust_library(
+    name = "pw_log_backend",
+    srcs = [
+        "pw_log_backend.rs",
+    ],
+    crate_name = "pw_log_backend",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pw_base64/rust:pw_base64",
+        "//pw_log/rust:pw_log_backend_api",
+        "//pw_status/rust:pw_status",
+        "//pw_stream/rust:pw_stream",
+        "//pw_tokenizer/rust:pw_tokenizer",
+        "@rust_crates//:cortex-m-semihosting",
     ],
 )
