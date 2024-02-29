@@ -116,7 +116,10 @@ if (dir_pw_third_party_llvm_libc != "") {
   }
 
   pw_libc_source_set("stdio") {
-    functions = [ "snprintf" ]
+    functions = [
+      "snprintf",
+      "vsnprintf",
+    ]
 
     additional_srcs = [
       "printf_core/printf_main.cpp",
@@ -134,6 +137,13 @@ if (dir_pw_third_party_llvm_libc != "") {
     # arguments which shadow members. This is too pedantic and shouldn't be
     # changed upstream.
     remove_configs = [ "//pw_build:extra_strict_warnings" ]
+  }
+
+  pw_libc_source_set("stdfix") {
+    functions = [
+      "roundlk",
+      "sqrtulr",
+    ]
   }
 
   pw_static_library("pw_libc") {
@@ -159,8 +169,21 @@ if (dir_pw_third_party_llvm_libc != "") {
       ":time_tests",
     ]
   }
+
+  pw_static_library("pw_libc_stdfix") {
+    complete_static_lib = true
+    add_global_link_deps = false
+    deps = [
+      ":stdfix",
+      ":stdio",
+    ]
+  }
 } else {
   pw_static_library("pw_libc") {
+    add_global_link_deps = false
+  }
+
+  pw_static_library("pw_libc_stdfix") {
     add_global_link_deps = false
   }
 
