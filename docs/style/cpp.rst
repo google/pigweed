@@ -199,11 +199,35 @@ comment line, even if the blank comment line is the last line in the block.
   //
   bool SomeFunction();
 
-Rvalue references
-=================
-Move-only or expensive-to-copy function arguments should typically be passed
-by reference (``T&``) or const-reference (``const T&&``, preferred). However,
-when a function consumes or moves such an argument, it should accept an rvalue
+Passing move-only or expensive-to-copy arguments
+================================================
+C++ offers a number of ways to pass arguments arguments to functions.
+When taking move-only or expensive-to-copy arguments, use the following table
+to determine which argument type to use:
+
+.. list-table:: C++ argument type choices
+   :widths: 30 20 10
+   :header-rows: 1
+
+   * - Use-case
+     - Name
+     - Syntax
+   * - If read-only
+     - By const reference
+     - ``const T&``
+   * - If mutating
+     - By reference
+     - ``T&``
+   * - If consuming
+     - By rvalue reference
+     - ``T&&``
+   * - If conditionally consuming
+     - By value
+     - ``T``
+
+Why rvalue references
+---------------------
+When a function consumes or moves such an argument, it should accept an rvalue
 reference (``T&&``) rather than taking the argument by-value (``T``). An rvalue
 reference forces the caller to ``std::move`` when passing a preexisting
 variable, which makes the transfer of ownership explicit.
@@ -212,12 +236,90 @@ Compared with accepting arguments by-value, rvalue references prevent
 unnecessary object instances and extra calls to move constructors. This has been
 shown to significantly impact code size and stack usage for Pigweed users.
 
-This guidance overrides the standard `Google Style Guide
-<https://google.github.io/styleguide/cppguide.html#Rvalue_references>`.
-
 This is especially important when using ``pw::Function``. For more information
 about accepting ``pw::Function`` arguments, see
 :ref:`module-pw_function-move-semantics`.
+
+.. admonition:: **Yes**: Accept move-only or expensive-to-copy values by rvalue:
+   :class: checkmark
+
+   .. code-block:: cpp
+
+      void FrobulateVector(pw::Vector<T>&& vector) {
+        Frobulate(std::move(vector));
+      }
+
+.. admonition:: **No**: Accepts move-only or expensive-to-copy values by value:
+   :class: error
+
+   .. code-block:: cpp
+
+      void FrobulateVector(pw::Vector<T> vector) {
+        Frobulate(std::move(vector));
+      }
+
+This guidance overrides the standard `Google style guidance on rvalues
+<https://google.github.io/styleguide/cppguide.html#Rvalue_references>`_.
+
+Conditionally moving values
+---------------------------
+An exception to the rule above is when a move-only or expensive-to-copy value
+is only conditionally consumed by the body of the function, for example:
+
+.. admonition:: **No**: Conditionally consumes ``vector``:
+   :class: error
+
+   .. code-block:: cpp
+
+      void PossiblyFrobulate(bool should_frob, pw::Vector<T>&& vector) {
+        if (should_frob) {
+          Frobulate(std::move(vector));
+        }
+      }
+
+Because ``PossiblyFrobulate`` above will only consume ``vector`` in some code
+paths, the original ``vector`` passed by the user will outlive the call to
+``PossiblyFrobulate``:
+
+.. code-block:: cpp
+
+   pw::Vector<T> my_vec = ...;
+
+   // ``my_vec`` looks to be moved here, but the resulting ``rvalue`` is never
+   // consumed by ``PossiblyFrobulate``.
+   PossiblyFrobulate(false, std::move(my_vec));
+
+   ... // some other long-running work
+
+   // ``my_vec`` is still alive here, possibly causing excess memory usage,
+   // deadlocks, or even undefined behavior!
+
+When conditionally consuming an argument, prefer instead to either accept
+the argument by-value or ensure that it is consumed by all control paths:
+
+.. admonition:: **Yes**: Conditionally consumes by-value ``vector``:
+   :class: checkmark
+
+   .. code-block:: cpp
+
+      void PossiblyFrobulate(bool should_frob, pw::Vector<T> vector) {
+        if (should_frob) {
+          Frobulate(std::move(vector));
+        }
+      }
+
+.. admonition:: **Yes**: Consumes ``vector`` on all control paths:
+   :class: checkmark
+
+   .. code-block:: cpp
+
+      void PossiblyFrobulate(bool should_frob, pw::Vector<T>&& vector) {
+        if (should_frob) {
+          Frobulate(std::move(vector));
+        } else {
+          [[maybe_unused]] auto to_discard = std::move(vector);
+        }
+      }
 
 Control statements
 ==================
