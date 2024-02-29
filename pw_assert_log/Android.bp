@@ -26,6 +26,12 @@ cc_library_headers {
         "public",
     ],
     host_supported: true,
+    header_libs: [
+      "pw_log_headers",
+    ],
+    export_header_lib_headers: [
+      "pw_log_headers",
+    ],
 }
 
 filegroup {
