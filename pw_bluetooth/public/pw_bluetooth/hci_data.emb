@@ -1,0 +1,107 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# This file contains Emboss definitions for Host Controller Interface packets
+# and types found in the Bluetooth Core Specification. The Emboss compiler is
+# used to generate a C++ header from this file.
+
+[$default byte_order: "LittleEndian"]
+[(cpp) namespace: "pw::bluetooth::emboss"]
+# =========================== HCI Data Definitions ===========================
+
+
+enum IsoDataPbFlag:
+  -- Options for the pb_flag field in an Isochronous Data packet header.
+
+  [maximum_bits: 2]
+
+  FIRST_FRAGMENT        = 0b00
+    -- The ISO_SDU_Fragment field contains the first fragment of a
+    -- fragmented SDU.
+
+  INTERMEDIATE_FRAGMENT = 0b01
+    -- The ISO_SDU_Fragment field contains an intermediate fragment of an
+    -- SDU.
+
+  COMPLETE_SDU          = 0b10
+    -- The ISO_SDU_Fragment field contains a complete SDU.
+
+  LAST_FRAGMENT         = 0b11
+    -- The ISO_SDU_Fragment field contains the last fragment of an SDU.
+
+
+enum IsoDataPacketStatus:
+  -- Options for the packet_status_flag field in an Isochronous Data packet header.
+
+  [maximum_bits: 2]
+
+  VALID_DATA            = 0b00
+    -- Valid data. The complete SDU was received correctly.
+
+  POSSIBLY_INVALID_DATA = 0b01
+    -- The contents of the ISO_SDU_Fragment may contain errors or part of
+    -- the SDU may be missing. This is reported as "data with possible
+    -- errors".
+
+  LOST_DATA             = 0b10
+    -- Part(s) of the SDU were not received correctly. This is reported
+    -- as "lost data".
+
+
+struct IsoDataFrameHeader:
+  -- HCI Iso Data Packets
+  -- Core Spec v5.4, Vol 4, Part E, Section 5.4.5
+  -- Bits 15, 30, and 31 are reserved for future use (RFU)
+
+  0     [+4]  bits:
+
+    0     [+12]        UInt                 connection_handle
+      -- Connection handle to be used for transmitting an ISO SUD or fragment.
+      [requires: 0x0000 <= this <= 0x0EFF]
+
+    12    [+2]         IsoDataPbFlag        pb_flag
+      -- Describes packet fragmentation
+
+    14    [+1]         enum                 ts_flag:
+      TIMESTAMP_NOT_PRESENT = 0
+      TIMESTAMP_PRESENT     = 1
+
+    15    [+1]         UInt                 reserved_15
+      -- Reserved for future use.
+
+    16    [+14]        UInt                 data_total_length
+      -- Length of the packet, excluding the packet header, in octets.
+
+    30    [+2]         UInt                 reserved_30_31
+      -- Reserved for future use.
+
+  if ts_flag == TsFlag.TIMESTAMP_PRESENT:
+    $next [+4]         UInt                 time_stamp
+      -- A time in microseconds.
+
+  if pb_flag == IsoDataPbFlag.FIRST_FRAGMENT || pb_flag == IsoDataPbFlag.COMPLETE_SDU:
+    $next [+4]  bits:
+
+      0     [+16]      UInt                 packet_sequence_number
+        -- The sequence number of the SDU.
+
+      16    [+12]      UInt                 iso_sdu_length
+        -- The total length of the SDU (and not of any individual fragments),
+        -- in octets.
+
+      28    [+2]       UInt                 reserved_28_29
+        -- Reserved for future use.
+
+      30    [+2]       IsoDataPacketStatus  packet_status_flag
+        -- Packet status, only for frames sent by the controller.

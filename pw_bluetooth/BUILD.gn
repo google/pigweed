@@ -99,6 +99,11 @@ if (dir_pw_third_party_emboss != "") {
     deps = [ ":emboss_hci_common" ]
   }
 
+  emboss_cc_library("emboss_hci_data") {
+    public_configs = [ ":emboss_include_path" ]
+    source = "public/pw_bluetooth/hci_data.emb"
+  }
+
   emboss_cc_library("emboss_hci_events") {
     public_configs = [ ":emboss_include_path" ]
     source = "public/pw_bluetooth/hci_events.emb"
@@ -130,6 +135,7 @@ if (dir_pw_third_party_emboss != "") {
     public_deps = [
       ":emboss_hci_commands",
       ":emboss_hci_common",
+      ":emboss_hci_data",
       ":emboss_hci_events",
       ":emboss_hci_vendor",
     ]
@@ -138,6 +144,8 @@ if (dir_pw_third_party_emboss != "") {
   group("emboss_hci_common") {
   }
   group("emboss_hci_commands") {
+  }
+  group("emboss_hci_data") {
   }
   group("emboss_hci_events") {
   }
@@ -187,6 +195,7 @@ pw_test("emboss_test") {
   sources = [ "emboss_test.cc" ]
   deps = [
     ":emboss_hci_commands",
+    ":emboss_hci_data",
     ":emboss_hci_events",
     ":emboss_hci_test",
     ":emboss_hci_vendor",

@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 #include "pw_bluetooth/hci_commands.emb.h"
+#include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth/hci_events.emb.h"
 #include "pw_bluetooth/hci_test.emb.h"
 #include "pw_bluetooth/hci_vendor.emb.h"
@@ -25,6 +26,14 @@ TEST(EmbossTest, MakeView) {
   std::array<uint8_t, 4> buffer = {0x00, 0x01, 0x02, 0x03};
   auto view = emboss::MakeTestCommandPacketView(&buffer);
   EXPECT_EQ(view.payload().Read(), 0x03);
+}
+
+// This definition has a mix of full-width values and bitfields and includes
+// conditional bitfields. Let's add this to verify that the structure itself
+// doesn't get changed incorrectly and that emboss' size calculation matches
+// ours.
+TEST(EmbossTest, CheckIsoHeaderSize) {
+  EXPECT_EQ(emboss::IsoDataFrameHeader::MaxSizeInBytes(), 12);
 }
 
 }  // namespace
