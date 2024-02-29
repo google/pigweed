@@ -14,6 +14,8 @@
 
 #include "pw_async2/poll.h"
 
+#include <type_traits>
+
 #include "gtest/gtest.h"
 #include "pw_result/result.h"
 
@@ -76,6 +78,13 @@ TEST(Poll, ConstructsFromPollWithValueConvertibleToValueType) {
 TEST(Poll, ConstructsPendingFromPendingType) {
   Poll<MoveOnly> mr(Pending());
   EXPECT_FALSE(mr.IsReady());
+}
+
+TEST(Poll, ConstructorInfersValueType) {
+  auto res = Poll("hello");
+  static_assert(std::is_same_v<decltype(res), Poll<const char*>>);
+  EXPECT_TRUE(res.IsReady());
+  EXPECT_STREQ(res.value(), "hello");
 }
 
 TEST(PendingFunction, ReturnsValueConvertibleToPendingPoll) {

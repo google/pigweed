@@ -157,6 +157,10 @@ class PW_NODISCARD_STR(
   std::optional<T> value_;
 };
 
+// Deduction guide to allow ``Poll(v)`` rather than ``Poll<T>(v)``.
+template <typename T>
+Poll(T value) -> Poll<T>;
+
 /// Returns whether two instances of ``Poll<T>`` are equal.
 ///
 /// Note that this comparison operator will return ``true`` if both

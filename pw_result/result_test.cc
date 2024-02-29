@@ -22,6 +22,8 @@
 
 #include "pw_result/result.h"
 
+#include <type_traits>
+
 #include "pw_status/status.h"
 #include "pw_status/try.h"
 #include "pw_unit_test/framework.h"
@@ -34,6 +36,14 @@ TEST(Result, CreateOk) {
   EXPECT_TRUE(res.ok());
   EXPECT_EQ(res.status(), OkStatus());
   EXPECT_EQ(res.value(), "hello");
+}
+
+TEST(Result, CreateOkTypeDeduction) {
+  auto res = Result("hello");
+  static_assert(std::is_same_v<decltype(res), Result<const char*>>);
+  EXPECT_TRUE(res.ok());
+  EXPECT_EQ(res.status(), OkStatus());
+  EXPECT_STREQ(res.value(), "hello");
 }
 
 TEST(Result, CreateNotOk) {
