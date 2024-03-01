@@ -230,58 +230,6 @@ class MultiBuf {
   using difference_type = std::ptrdiff_t;
   using size_type = std::size_t;
 
-  /// An ``std::forward_iterator`` over the bytes of a ``MultiBuf``.
-  class iterator {
-   public:
-    using value_type = std::byte;
-    using difference_type = std::ptrdiff_t;
-    using reference = std::byte&;
-    using pointer = std::byte*;
-    using iterator_category = std::forward_iterator_tag;
-
-    constexpr iterator() = default;
-    iterator(Chunk* chunk, size_t byte_index)
-        : chunk_(chunk), byte_index_(byte_index) {
-      AdvanceToData();
-    }
-    static iterator end() { return iterator(nullptr, 0); }
-
-    reference operator*() const { return (*chunk_)[byte_index_]; }
-    pointer operator->() const { return &(*chunk_)[byte_index_]; }
-
-    iterator& operator++();
-    iterator operator++(int) {
-      iterator tmp = *this;
-      ++(*this);
-      return tmp;
-    }
-    iterator operator+(size_t rhs) const {
-      iterator tmp = *this;
-      tmp += rhs;
-      return tmp;
-    }
-    iterator& operator+=(size_t);
-    constexpr bool operator==(const iterator& other) const {
-      return chunk_ == other.chunk_ && byte_index_ == other.byte_index_;
-    }
-    constexpr bool operator!=(const iterator& other) const {
-      return chunk_ != other.chunk_ || byte_index_ != other.byte_index_;
-    }
-
-    /// Returns the current ``Chunk`` pointed to by this `iterator`.
-    constexpr Chunk* chunk() const { return chunk_; }
-
-    /// Returns the index of the byte pointed to by this `iterator` within the
-    /// current ``Chunk``.
-    constexpr size_t byte_index() const { return byte_index_; }
-
-   private:
-    void AdvanceToData();
-
-    Chunk* chunk_ = nullptr;
-    size_t byte_index_ = 0;
-  };
-
   /// A const ``std::forward_iterator`` over the bytes of a ``MultiBuf``.
   class const_iterator {
    public:
@@ -293,9 +241,7 @@ class MultiBuf {
 
     constexpr const_iterator() = default;
     const_iterator(const Chunk* chunk, size_t byte_index)
-        : chunk_(chunk), byte_index_(byte_index) {
-      AdvanceToData();
-    }
+        : chunk_(chunk), byte_index_(byte_index) {}
     static const_iterator end() { return const_iterator(nullptr, 0); }
 
     reference operator*() const { return (*chunk_)[byte_index_]; }
@@ -312,14 +258,14 @@ class MultiBuf {
       tmp += rhs;
       return tmp;
     }
-    const_iterator& operator+=(size_t);
+    const_iterator& operator+=(size_t advance);
 
     constexpr bool operator==(const const_iterator& other) const {
       return chunk_ == other.chunk_ && byte_index_ == other.byte_index_;
     }
 
     constexpr bool operator!=(const const_iterator& other) const {
-      return chunk_ != other.chunk_ || byte_index_ != other.byte_index_;
+      return !(*this == other);
     }
 
     /// Returns the current ``Chunk`` pointed to by this `iterator`.
@@ -334,6 +280,61 @@ class MultiBuf {
 
     const Chunk* chunk_ = nullptr;
     size_t byte_index_ = 0;
+  };
+
+  /// An ``std::forward_iterator`` over the bytes of a ``MultiBuf``.
+  class iterator {
+   public:
+    using value_type = std::byte;
+    using difference_type = std::ptrdiff_t;
+    using reference = std::byte&;
+    using pointer = std::byte*;
+    using iterator_category = std::forward_iterator_tag;
+
+    constexpr iterator() = default;
+    iterator(Chunk* chunk, size_t byte_index)
+        : const_iter_(chunk, byte_index) {}
+    static iterator end() { return iterator(nullptr, 0); }
+
+    reference operator*() const { return const_cast<std::byte&>(*const_iter_); }
+    pointer operator->() const { return const_cast<std::byte*>(&*const_iter_); }
+
+    iterator& operator++() {
+      const_iter_++;
+      return *this;
+    }
+    iterator operator++(int) {
+      iterator tmp = *this;
+      ++(*this);
+      return tmp;
+    }
+    iterator operator+(size_t rhs) const {
+      iterator tmp = *this;
+      tmp += rhs;
+      return tmp;
+    }
+    iterator& operator+=(size_t rhs) {
+      const_iter_ += rhs;
+      return *this;
+    }
+    constexpr bool operator==(const iterator& other) const {
+      return const_iter_ == other.const_iter_;
+    }
+    constexpr bool operator!=(const iterator& other) const {
+      return const_iter_ != other.const_iter_;
+    }
+
+    /// Returns the current ``Chunk`` pointed to by this `iterator`.
+    constexpr Chunk* chunk() const {
+      return const_cast<Chunk*>(const_iter_.chunk());
+    }
+
+    /// Returns the index of the byte pointed to by this `iterator` within the
+    /// current ``Chunk``.
+    constexpr size_t byte_index() const { return const_iter_.byte_index(); }
+
+   private:
+    const_iterator const_iter_;
   };
 
   /// An iterable containing the ``Chunk`` s of a ``MultiBuf``.
@@ -352,6 +353,7 @@ class MultiBuf {
     ///
     /// The behavior of this method is undefined when ``size() == 0``.
     Chunk& front() { return *first_; }
+    const Chunk& front() const { return *first_; }
 
     /// Returns a reference to the final chunk.
     ///
@@ -359,6 +361,7 @@ class MultiBuf {
     ///
     /// NOTE: this method is ``O(size())``.
     Chunk& back();
+    const Chunk& back() const;
 
     constexpr ChunkIterator begin() { return ChunkIterator(first_); }
     constexpr ConstChunkIterator begin() const { return cbegin(); }
