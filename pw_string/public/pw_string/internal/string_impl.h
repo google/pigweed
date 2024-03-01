@@ -15,63 +15,36 @@
 
 #include <limits>
 #include <string>  // for std::char_traits
-#include <type_traits>
-
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)  // std::string_view is a C++17 feature
 #include <string_view>
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
+#include <type_traits>
 
 #include "pw_assert/assert.h"
 #include "pw_polyfill/language_feature_macros.h"
 
-namespace pw {
-namespace string_impl {
+namespace pw::string_impl {
 
 // pw::InlineString<>::size_type is unsigned short so the capacity and current
 // size fit into a single word.
 using size_type = unsigned short;
 
-template <typename CharType, typename T>
-using EnableIfNonArrayCharPointer = std::enable_if_t<
-    std::is_pointer<T>::value && !std::is_array<T>::value &&
-    std::is_same<CharType, std::remove_cv_t<std::remove_pointer_t<T>>>::value>;
-
-template <typename T>
-using EnableIfInputIterator = std::enable_if_t<
-    std::is_convertible<typename std::iterator_traits<T>::iterator_category,
-                        std::input_iterator_tag>::value>;
-
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)  // std::string_view is a C++17 feature
-template <typename CharType, typename T>
-using EnableIfStringViewLike = std::enable_if_t<
-    std::is_convertible<const T&, std::basic_string_view<CharType>>() &&
-    !std::is_convertible<const T&, const CharType*>()>;
-
-template <typename CharType, typename T>
-using EnableIfStringViewLikeButNotStringView = std::enable_if_t<
-    !std::is_same<T, std::basic_string_view<CharType>>() &&
-    std::is_convertible<const T&, std::basic_string_view<CharType>>() &&
-    !std::is_convertible<const T&, const CharType*>()>;
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
-
 // Reserved capacity that is used to represent a generic-length
 // pw::InlineString.
 PW_INLINE_VARIABLE constexpr size_t kGeneric = size_type(-1);
 
-#if defined(__cpp_lib_constexpr_string) && __cpp_lib_constexpr_string >= 201907L
-
-// Like std::string and std::string_view, pw::InlineString uses std::char_traits
-// for low-level operations.
-using std::char_traits;
-
-#else
-
-// If constexpr std::char_traits is not available, provide a custom traits class
-// with constexpr versions of the necessary functions. Defer to std::char_traits
-// when possible.
 template <typename T>
-class char_traits : private std::char_traits<T> {
- public:
+inline constexpr bool kUseStdCharTraits =
+#if !defined(__cpp_lib_constexpr_string) || __cpp_lib_constexpr_string < 201907L
+    false &&
+#endif  // __cpp_lib_constexpr_string
+    !std::is_same_v<T, std::byte>;
+
+// Provide a minimal custom traits class for use by std::byte and if
+// std::char_traits is not yet fully constexpr (__cpp_lib_constexpr_string).
+template <typename T, bool = kUseStdCharTraits<T>>
+struct char_traits {
+  using char_type = T;
+  using int_type = unsigned int;
+
   static constexpr void assign(T& dest, const T& source) noexcept {
     dest = source;
   }
@@ -83,7 +56,7 @@ class char_traits : private std::char_traits<T> {
     return dest;
   }
 
-  using std::char_traits<T>::eq;
+  static constexpr bool eq(T lhs, T rhs) { return lhs == rhs; }
 
   static constexpr T* move(T* dest, const T* source, size_t count) {
     if (dest < source) {
@@ -103,10 +76,61 @@ class char_traits : private std::char_traits<T> {
     return dest;
   }
 
-  using std::char_traits<T>::compare;
+  static constexpr int compare(const T* lhs, const T* rhs, size_t count) {
+    for (size_t i = 0; i < count; ++i) {
+      if (lhs[i] < rhs[i]) {
+        return -1;
+      }
+      if (rhs[i] < lhs[i]) {
+        return 1;
+      }
+    }
+    return 0;
+  }
 };
 
-#endif  // __cpp_lib_constexpr_string
+// Use std::char_traits for character types when it fully supports constexpr.
+template <typename T>
+struct char_traits<T, true> : public std::char_traits<T> {};
+
+// string_views for byte strings need to use Pigweed's custom char_traits since
+// std::char_traits<std::byte> is not defined. (Alternately, could specialize
+// std::char_traits, but this is simpler.) basic_string_view<byte> won't be
+// commonly used (byte spans are more common), but support it for completeness.
+template <typename T>
+struct StringViewType {
+  using type = std::basic_string_view<T>;
+};
+
+template <>
+struct StringViewType<std::byte> {
+  using type = std::basic_string_view<std::byte, char_traits<std::byte>>;
+};
+
+template <typename T>
+using View = typename StringViewType<T>::type;
+
+// Aliases for disabling overloads with SFINAE.
+template <typename CharType, typename T>
+using EnableIfNonArrayCharPointer = std::enable_if_t<
+    std::is_pointer<T>::value && !std::is_array<T>::value &&
+    std::is_same<CharType, std::remove_cv_t<std::remove_pointer_t<T>>>::value>;
+
+template <typename T>
+using EnableIfInputIterator = std::enable_if_t<
+    std::is_convertible<typename std::iterator_traits<T>::iterator_category,
+                        std::input_iterator_tag>::value>;
+
+template <typename CharType, typename T>
+using EnableIfStringViewLike =
+    std::enable_if_t<std::is_convertible<const T&, View<CharType>>() &&
+                     !std::is_convertible<const T&, const CharType*>()>;
+
+template <typename CharType, typename T>
+using EnableIfStringViewLikeButNotStringView =
+    std::enable_if_t<!std::is_same<T, View<CharType>>() &&
+                     std::is_convertible<const T&, View<CharType>>() &&
+                     !std::is_convertible<const T&, const CharType*>()>;
 
 // Used in static_asserts to check that a C array fits in an InlineString.
 constexpr bool NullTerminatedArrayFitsInString(
@@ -181,7 +205,6 @@ constexpr size_t IteratorCopy(InputIterator begin,
   // If `InputIterator` is a `LegacyRandomAccessIterator`, the bounds check can
   // be done up front, allowing the compiler more flexibility in optimizing the
   // loop.
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)  // constexpr-if is a C++17 feature
   using category =
       typename std::iterator_traits<InputIterator>::iterator_category;
   if constexpr (std::is_same_v<category, std::random_access_iterator_tag>) {
@@ -191,9 +214,6 @@ constexpr size_t IteratorCopy(InputIterator begin,
       char_traits<T>::assign(*current_position++, *it);
     }
   } else {
-#else
-  {
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
     for (InputIterator it = begin; it != end; ++it) {
       PW_ASSERT(current_position != string_end);
       char_traits<T>::assign(*current_position++, *it);
@@ -215,5 +235,4 @@ constexpr int Compare(const T* lhs,
   return lhs_size < rhs_size ? -1 : 1;
 }
 
-}  // namespace string_impl
-}  // namespace pw
+}  // namespace pw::string_impl

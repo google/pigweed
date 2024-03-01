@@ -24,6 +24,9 @@
 _PW_POLYFILL_BEGIN_NAMESPACE_STD
 
 template <typename T>
+class char_traits;
+
+template <typename T, typename = char_traits<T>>
 class basic_string_view {
  public:
   using traits_type = void;  // No traits object is used.

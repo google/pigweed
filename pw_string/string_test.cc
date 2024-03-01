@@ -19,12 +19,9 @@
 #include <type_traits>
 
 #include "pw_compilation_testing/negative_compilation.h"
-#include "pw_polyfill/standard.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw {
-
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)  // std::string_view is a C++17 feature
 
 using namespace std::string_view_literals;
 
@@ -52,8 +49,6 @@ class StringViewLikeButConvertsToPointer : public StringViewLike<T> {
  private:
   std::basic_string_view<T> value_;
 };
-
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 template <typename T>
 class EvenNumberIterator {
@@ -228,15 +223,11 @@ constexpr EvenNumberIterator<char> kEvenNumbers0(0);
 constexpr EvenNumberIterator<char> kEvenNumbers2(2);
 constexpr EvenNumberIterator<char> kEvenNumbers8(8);
 
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)  // std::string_view is a C++17 feature
-
 constexpr std::string_view kView0;
 constexpr std::string_view kView5 = "12345"sv;
 constexpr std::string_view kView10 = "1234567890"sv;
 
 constexpr StringViewLike<char> kStringViewLike10("0123456789", 10);
-
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 //
 // Construction and assignment
@@ -418,7 +409,6 @@ TEST(InlineString, Construct_Array) {
 }
 
 TEST(InlineString, Construct_Iterator) {
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)  // std::string_view is a C++17 feature
   TEST_STRING(InlineString<0>(kView0.begin(), kView0.end()), , "");
   TEST_STRING(InlineString<0>(kView5.end(), kView5.end()), , "");
   TEST_STRING(InlineString<5>(kView0.begin(), kView0.end()), , "");
@@ -427,7 +417,6 @@ TEST(InlineString, Construct_Iterator) {
   TEST_STRING(InlineString<5>(kView5.begin(), kView5.end()), , "12345");
   TEST_STRING(InlineString<10>(kView5.begin(), kView5.end()), , "12345");
   TEST_STRING(InlineString<10>(kView10.begin(), kView10.end()), , "1234567890");
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
   TEST_STRING(InlineString<0>(kEvenNumbers0, kEvenNumbers0), , "");
   TEST_STRING(InlineString<10>(kEvenNumbers2, kEvenNumbers2), , "");
@@ -500,8 +489,6 @@ TEST(InlineString, Construct_InitializerList) {
   [[maybe_unused]] constexpr InlineString<3> bad_string({'1', '2', '3', '\0'});
 #endif  // PW_NC_TEST
 }
-
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 constexpr InlineString<16> TakesInlineString(const InlineString<16>& str) {
   return str;
@@ -592,7 +579,6 @@ TEST(InlineString, Construct_StringViewSubstr) {
   [[maybe_unused]] constexpr InlineString<10> bad_string("12345"sv, 6, 0);
 #endif  // PW_NC_TEST
 }
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 TEST(InlineString, Construct_Nullptr) {
 #if PW_NC_TEST(Construct_Nullptr)
@@ -698,7 +684,6 @@ TEST(InlineString, AssignOperator_InitializerList) {
 #endif  // PW_NC_TEST
 }
 
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)
 TEST(InlineString, AssignOperator_StringView) {
   TEST_STRING(InlineString<1>(), fixed_str = "\0"sv, "\0");
   TEST_STRING(InlineString<1>({'a'}), fixed_str = "\0"sv, "\0");
@@ -712,7 +697,6 @@ TEST(InlineString, AssignOperator_StringView) {
   }();
 #endif  // PW_NC_TEST
 }
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 // assign
 
@@ -959,7 +943,6 @@ TEST(InlineString, Assign_Array) {
 }
 
 TEST(InlineString, Assign_Iterator) {
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)
   TEST_STRING(InlineString<0>(), str.assign(kView0.begin(), kView0.end()), "");
   TEST_STRING(InlineString<0>(), str.assign(kView5.end(), kView5.end()), "");
   TEST_STRING(
@@ -975,7 +958,6 @@ TEST(InlineString, Assign_Iterator) {
   TEST_STRING(InlineString<10>("abc"),
               str.assign(kView10.begin(), kView10.end()),
               "1234567890");
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
   TEST_STRING(InlineString<0>(), str.assign(kEvenNumbers0, kEvenNumbers0), "");
   TEST_STRING(InlineString<10>(), str.assign(kEvenNumbers2, kEvenNumbers2), "");
@@ -1020,7 +1002,6 @@ TEST(InlineString, Assign_InitializerList) {
 #endif  // PW_NC_TEST
 }
 
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)
 TEST(InlineString, Assign_StringView) {
   TEST_STRING(InlineString<0>(), str.assign(""sv), "");
   TEST_STRING(InlineString<10>("abc"), str.assign(""sv), "");
@@ -1093,7 +1074,6 @@ TEST(InlineString, Assign_StringViewSubstr) {
   }();
 #endif  // PW_NC_TEST
 }
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 //
 // Element access
@@ -1156,7 +1136,6 @@ TEST(InlineString, DataCStr) {
   EXPECT_STREQ(kSize10Capacity10.c_str(), "1234567890");
 }
 
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)
 TEST(InlineString, ConvertsToStringView) {
   static_assert(std::string_view(kSize5Capacity10) == "12345"sv);
   EXPECT_EQ(std::string_view(Generic(kSize5Capacity10)), "12345"sv);
@@ -1197,7 +1176,6 @@ TEST(InlineString, Iterators) {
     return true;
   }());
 }
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 //
 // Capacity
@@ -1438,7 +1416,6 @@ PW_NC_EXPECT("PW_ASSERT\(size\(\) - index <= max_size\(\) - new_index\)");
 }();
 #endif  // PW_NC_TEST
 
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)
 TEST(InlineString, Insert_StringViewAtIndex) {
   TEST_STRING(InlineString<0>(), str.insert(0, ""sv), "");
   TEST_STRING(InlineString<10>("a"), str.insert(0, ""sv), "a");
@@ -1477,7 +1454,6 @@ PW_NC_EXPECT("PW_ASSERT\(size\(\) - index <= max_size\(\) - new_index\)");
   return str.insert(1, "34"sv, 1);
 }();
 #endif  // PW_NC_TEST
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 // erase.
 
@@ -1678,7 +1654,6 @@ TEST(InlineString, Append_InitializerList) {
 #endif  // PW_NC_TEST
 }
 
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)
 TEST(InlineString, Append_StringView) {
   TEST_STRING(InlineString<0>(), str.append(""sv), "");
   TEST_STRING(InlineString<10>("a"), str.append(""sv), "a");
@@ -1711,7 +1686,6 @@ TEST(InlineString, Append_StringViewSubstr) {
   }();
 #endif  // PW_NC_TEST
 }
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 // operator+=
 
@@ -1801,7 +1775,6 @@ TEST(InlineString, AppendOperator_InitializerList) {
 #endif  // PW_NC_TEST
 }
 
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)
 TEST(InlineString, AppendOperator_StringView) {
   TEST_STRING(InlineString<0>(), fixed_str += ""sv, "");
   TEST_STRING(InlineString<10>("a"), fixed_str += ""sv, "a");
@@ -1816,14 +1789,12 @@ TEST(InlineString, AppendOperator_StringView) {
   }();
 #endif  // PW_NC_TEST
 }
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 TEST(InlineString, Compare) {
   EXPECT_EQ(InlineString<10>("abb").compare(InlineString<5>("abb")), 0);
   EXPECT_LT(InlineString<10>("abb").compare(InlineString<5>("bbb")), 0);
   EXPECT_LT(InlineString<10>("bb").compare(InlineString<5>("bbb")), 0);
 
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)
   static_assert(InlineString<10>("bbb").compare(InlineString<5>("bbb")) == 0,
                 "equal");
   static_assert(InlineString<10>("abb").compare(InlineString<5>("bbb")) < 0,
@@ -1846,7 +1817,6 @@ TEST(InlineString, Compare) {
                 "less");
   static_assert(InlineString<5>("abc").compare(InlineString<5>("")) > 0,
                 "greater");
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 }
 
 // TODO: b/239996007 - Test other pw::InlineString functions:
@@ -1939,7 +1909,6 @@ TEST(InlineString, ComparisonOperators_InlineString) {
   EXPECT_GT(InlineString<10>("b"), InlineString<10>("a"));
   EXPECT_GE(InlineString<10>("b"), InlineString<10>("a"));
 
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)
   static_assert(InlineString<10>() == InlineString<10>(), "equal");  // NOLINT
   static_assert(InlineString<10>("abc") == InlineString<5>("abc"), "equal");
   static_assert(InlineString<1>({'a'}) == InlineString<10>("a"), "equal");
@@ -1990,7 +1959,6 @@ TEST(InlineString, ComparisonOperators_InlineString) {
                 "greater equal");
   static_assert(!(InlineString<3>("\0\0") >= InlineString<10>("\1\0")),
                 "greater equal");
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 }
 
 TEST(InlineString, ComparisonOperators_NullTerminatedString) {
@@ -2016,7 +1984,6 @@ TEST(InlineString, ComparisonOperators_NullTerminatedString) {
   EXPECT_GE(InlineString<10>("a"), "a");
   EXPECT_GE("a", InlineString<10>("a"));
 
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)
   static_assert(InlineString<10>() == "", "equal");  // NOLINT
   static_assert("" == InlineString<10>(), "equal");  // NOLINT
   static_assert(InlineString<10>("abc") == "abc", "equal");
@@ -2053,7 +2020,6 @@ TEST(InlineString, ComparisonOperators_NullTerminatedString) {
   static_assert("abc" >= InlineString<5>("ab"), "greater equal");
   static_assert(InlineString<10>("abc") >= "abc", "greater equal");
   static_assert("abc" >= InlineString<5>("abc"), "greater equal");
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 }
 
 // Test instantiating an InlineBasicString with different character types.
@@ -2067,31 +2033,20 @@ TEST(InlineString, ComparisonOperators_NullTerminatedString) {
 #define PW_STRING_WRAP_TEST_EXPANSION(expr)
 #endif  // __cpp_constexpr >= 201603L
 
-#define TEST_FOR_TYPES_BASE(test_macro, ...)                    \
-  PW_STRING_WRAP_TEST_EXPANSION(test_macro(char, __VA_ARGS__)); \
-  PW_STRING_WRAP_TEST_EXPANSION(test_macro(wchar_t, __VA_ARGS__));
-
-#if PW_CXX_STANDARD_IS_SUPPORTED(11)
-#define TEST_FOR_TYPES_CXX11(test_macro, ...)                       \
-  TEST_FOR_TYPES_BASE(test_macro, __VA_ARGS__)                      \
+#define TEST_FOR_TYPES_BASE(test_macro, ...)                        \
+  PW_STRING_WRAP_TEST_EXPANSION(test_macro(char, __VA_ARGS__));     \
+  PW_STRING_WRAP_TEST_EXPANSION(test_macro(wchar_t, __VA_ARGS__));  \
   PW_STRING_WRAP_TEST_EXPANSION(test_macro(char16_t, __VA_ARGS__)); \
   PW_STRING_WRAP_TEST_EXPANSION(test_macro(char32_t, __VA_ARGS__));
-#else
-#define TEST_FOR_TYPES_CXX11(test_macro, ...) \
-  TEST_FOR_TYPES_BASE(test_macro, __VA_ARGS__)
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(11)
 
-#if PW_CXX_STANDARD_IS_SUPPORTED(20)
-#define TEST_FOR_TYPES_CXX20(test_macro, ...)   \
-  TEST_FOR_TYPES_CXX11(test_macro, __VA_ARGS__) \
+#ifdef __cpp_char8_t
+#define TEST_FOR_TYPES(test_macro, ...)        \
+  TEST_FOR_TYPES_BASE(test_macro, __VA_ARGS__) \
   PW_STRING_WRAP_TEST_EXPANSION(test_macro(char8_t, __VA_ARGS__));
 #else
-#define TEST_FOR_TYPES_CXX20(test_macro, ...) \
-  TEST_FOR_TYPES_CXX11(test_macro, __VA_ARGS__)
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(20)
-
 #define TEST_FOR_TYPES(test_macro, ...) \
-  TEST_FOR_TYPES_CXX20(test_macro, __VA_ARGS__)
+  TEST_FOR_TYPES_BASE(test_macro, __VA_ARGS__)
+#endif  // __cpp_char8_t
 
 TEST(BasicStrings, Empty) {
 #define BASIC_STRINGS_EMPTY(type, capacity)                         \
@@ -2152,6 +2107,19 @@ TEST(BasicStrings, VariousOperations) {
   TEST_FOR_TYPES(BASIC_STRINGS_VARIOUS_OPERATIONS, 50);
 
 #undef BASIC_STRINGS_VARIOUS_OPERATIONS
+}
+
+TEST(BasicStrings, ByteString) {
+  InlineByteString<5> bytes;
+  bytes.push_back(std::byte{1});
+  bytes.push_back(std::byte{2});
+
+  EXPECT_EQ(bytes.size(), 2u);
+  EXPECT_EQ(bytes[0], std::byte{1});
+  EXPECT_EQ(bytes[1], std::byte{2});
+
+  InlineByteString<5> higher_bytes({std::byte{99}, std::byte{100}});
+  EXPECT_LT(bytes, higher_bytes);
 }
 
 }  // namespace pw

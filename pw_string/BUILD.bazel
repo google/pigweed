@@ -79,10 +79,7 @@ cc_library(
     ],
     hdrs = ["public/pw_string/string.h"],
     includes = ["public"],
-    deps = [
-        "//pw_assert",
-        "//pw_polyfill",
-    ],
+    deps = ["//pw_assert"],
 )
 
 cc_library(

@@ -93,10 +93,7 @@ pw_source_set("string") {
     "public/pw_string/internal/string_common_functions.inc",
     "public/pw_string/internal/string_impl.h",
   ]
-  public_deps = [
-    dir_pw_assert,
-    dir_pw_polyfill,
-  ]
+  public_deps = [ dir_pw_assert ]
 
   # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]

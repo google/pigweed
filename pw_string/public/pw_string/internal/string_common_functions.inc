@@ -88,12 +88,10 @@ constexpr InlineBasicString& assign(std::initializer_list<T> list) {
   return assign(list.begin(), list.size());
 }
 
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)  // std::string_view is a C++17 feature
-
 template <typename StringView,
           typename = string_impl::EnableIfStringViewLike<T, StringView>>
 constexpr InlineBasicString& assign(const StringView& string) {
-  const std::basic_string_view<T> view = string;
+  const string_impl::View<T> view = string;
   PW_ASSERT(view.size() < npos);
   return assign(view.data(), view.size());
 }
@@ -103,13 +101,11 @@ template <typename StringView,
 constexpr InlineBasicString& assign(const StringView& string,
                                     size_t index,
                                     size_t count = npos) {
-  const std::basic_string_view<T> view = string;
+  const string_impl::View<T> view = string;
   PW_ASSERT(view.size() < npos);
   return static_cast<InlineBasicString&>(
       CopySubstr(data(), view.data(), view.size(), index, count));
 }
-
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 constexpr InlineBasicString& assign(std::nullptr_t) = delete;
 
@@ -137,8 +133,8 @@ constexpr const_reference back() const { return data()[size() - 1]; }
 
 constexpr const_pointer c_str() const noexcept { return data(); }
 
-constexpr operator std::basic_string_view<T>() const noexcept {
-  return std::basic_string_view<T>(data(), size());
+constexpr operator string_impl::View<T>() const noexcept {
+  return string_impl::View<T>(data(), size());
 }
 
 // Iterators
@@ -265,15 +261,13 @@ constexpr iterator insert(const U* pos, std::initializer_list<T> list) {
   return insert(pos, list.begin(), list.end());
 }
 
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)  // std::string_view is a C++17 feature
-
 template <typename StringView,
           typename = string_impl::EnableIfStringViewLike<T, StringView>>
 constexpr InlineBasicString& insert(size_t index,
                                     const StringView& string,
                                     size_t string_index,
                                     size_t count = npos) {
-  const std::basic_string_view<T> view = string;
+  const string_impl::View<T> view = string;
   PW_ASSERT(view.size() < npos);
   PW_ASSERT(string_index <= view.size());
   if (count == npos || count > view.size() - string_index) {
@@ -290,8 +284,6 @@ template <typename StringView,
 constexpr InlineBasicString& insert(size_t index, const StringView& string) {
   return insert(index, string, 0);
 }
-
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 constexpr InlineBasicString& erase(size_t index = 0, size_t count = npos) {
   PW_ASSERT(index <= size());
@@ -391,12 +383,10 @@ constexpr InlineBasicString& append(std::initializer_list<T> list) {
   return append(list.begin(), list.size());
 }
 
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)  // std::string_view is a C++17 feature
-
 template <typename StringView,
           typename = string_impl::EnableIfStringViewLike<T, StringView>>
 constexpr InlineBasicString& append(const StringView& string) {
-  const std::basic_string_view<T> view = string;
+  const string_impl::View<T> view = string;
   PW_ASSERT(view.size() < npos);
   return append(view.data(), view.size());
 }
@@ -406,13 +396,11 @@ template <typename StringView,
 constexpr InlineBasicString& append(const StringView& string,
                                     size_t index,
                                     size_t count = npos) {
-  const std::basic_string_view<T> view = string;
+  const string_impl::View<T> view = string;
   PW_ASSERT(view.size() < npos);
   return static_cast<InlineBasicString&>(
       CopyExtendSubstr(data(), size(), view.data(), view.size(), index, count));
 }
-
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 template <size_t kOtherCapacity>
 constexpr int compare(

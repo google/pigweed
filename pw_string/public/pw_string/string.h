@@ -21,9 +21,9 @@
 #include <cstddef>
 #include <initializer_list>
 #include <iterator>
+#include <type_traits>
 
 #include "pw_assert/assert.h"
-#include "pw_polyfill/standard.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_string/internal/string_impl.h"
 
@@ -44,7 +44,7 @@ namespace pw {
 /// @brief `pw::InlineBasicString` is a fixed-capacity version of
 /// `std::basic_string`. In brief:
 ///
-/// - It is C++14-compatible and null-terminated.
+/// - It is always null-terminated.
 /// - It stores the string contents inline and uses no dynamic memory.
 /// - It implements mostly the same API as `std::basic_string`, but the capacity
 ///   of the string is fixed at construction and cannot grow. Attempting to
@@ -139,7 +139,6 @@ class InlineBasicString final
   constexpr InlineBasicString(std::initializer_list<T> list)
       : InlineBasicString(list.begin(), list.size()) {}
 
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)  // std::string_view is a C++17 feature
   // Unlike std::string, pw::InlineString<> supports implicit conversions from
   // std::string_view. However, explicit conversions are still required from
   // types that convert to std::string_view, as with std::string.
@@ -155,14 +154,14 @@ class InlineBasicString final
       string_impl::EnableIfStringViewLikeButNotStringView<T, StringViewLike>* =
           nullptr>
   explicit constexpr InlineBasicString(const StringViewLike& string)
-      : InlineBasicString(std::basic_string_view<T>(string)) {}
+      : InlineBasicString(string_impl::View<T>(string)) {}
 
   // This converting constructor is enabled for std::string_view, but not types
   // that convert to it.
-  template <typename StringView,
-            std::enable_if_t<
-                std::is_same<StringView, std::basic_string_view<T>>::value>* =
-                nullptr>
+  template <
+      typename StringView,
+      std::enable_if_t<std::is_same<StringView, string_impl::View<T>>::value>* =
+          nullptr>
   constexpr InlineBasicString(const StringView& view)
       : InlineBasicString(view.data(), view.size()) {}
 
@@ -172,10 +171,9 @@ class InlineBasicString final
                               size_t index,
                               size_t count)
       : InlineBasicString() {
-    const std::basic_string_view<T> view = string;
+    const string_impl::View<T> view = string;
     CopySubstr(data(), view.data(), view.size(), index, count);
   }
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
   InlineBasicString(std::nullptr_t) = delete;  // Cannot construct from nullptr
 
@@ -213,13 +211,11 @@ class InlineBasicString final
     return assign(list);  // NOLINT
   }
 
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)  // std::string_view is a C++17 feature
   template <typename StringView,
             typename = string_impl::EnableIfStringViewLike<T, StringView>>
   constexpr InlineBasicString& operator=(const StringView& string) {
     return assign(string);  // NOLINT
   }
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
   constexpr InlineBasicString& operator=(std::nullptr_t) = delete;
 
@@ -249,13 +245,11 @@ class InlineBasicString final
     return append(list.begin(), list.size());
   }
 
-#if PW_CXX_STANDARD_IS_SUPPORTED(17)  // std::string_view is a C++17 feature
   template <typename StringView,
             typename = string_impl::EnableIfStringViewLike<T, StringView>>
   constexpr InlineBasicString& operator+=(const StringView& string) {
     return append(string);
   }
-#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
   // The data() and size() functions are defined differently for the generic and
   // known-size specializations. This is to support using pw::InlineBasicString
@@ -405,6 +399,14 @@ class InlineBasicString<T, string_impl::kGeneric> {
   }
 
  private:
+  static_assert(std::is_same_v<char, T> || std::is_same_v<wchar_t, T> ||
+#ifdef __cpp_char8_t
+                    std::is_same_v<char8_t, T> ||
+#endif  // __cpp_char8_t
+                    std::is_same_v<char16_t, T> ||
+                    std::is_same_v<char32_t, T> || std::is_same_v<std::byte, T>,
+                "Only character types and std::byte are supported");
+
   // Allow StringBuilder to directly set length_ when doing string operations.
   friend class StringBuilder;
 
@@ -564,6 +566,12 @@ constexpr bool operator>=(const T* lhs,
 /// is equivalent to `std::string`.
 template <size_t kCapacity = string_impl::kGeneric>
 using InlineString = InlineBasicString<char, kCapacity>;
+
+/// @brief `pw::InlineByteString` is an alias of
+/// `pw::InlineBasicString<std::byte>`. `InlineByteString` may be used as a
+/// simple, efficient byte container.
+template <size_t kCapacity = string_impl::kGeneric>
+using InlineByteString = InlineBasicString<std::byte, kCapacity>;
 
 // Function implementations
 
