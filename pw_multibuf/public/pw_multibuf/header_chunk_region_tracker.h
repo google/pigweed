@@ -43,7 +43,7 @@ class HeaderChunkRegionTracker final : public ChunkRegionTracker {
     if (tracker == nullptr) {
       return std::nullopt;
     }
-    std::optional<OwnedChunk> chunk = Chunk::CreateFirstForRegion(*tracker);
+    std::optional<OwnedChunk> chunk = tracker->CreateFirstChunk();
     if (!chunk.has_value()) {
       tracker->Destroy();
       return std::nullopt;

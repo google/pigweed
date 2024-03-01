@@ -21,7 +21,7 @@
 #endif  // __cplusplus >= 202002L
 
 #include "pw_allocator/allocator_testing.h"
-#include "pw_multibuf/chunk_region_tracker.h"
+#include "pw_multibuf/header_chunk_region_tracker.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::multibuf {
@@ -61,7 +61,7 @@ TEST(OwnedChunk, ReleaseDestroysChunkRegion) {
   ASSERT_NE(tracker, nullptr);
   EXPECT_EQ(allocator.num_allocations(), 1_size);
 
-  std::optional<OwnedChunk> chunk_opt = Chunk::CreateFirstForRegion(*tracker);
+  std::optional<OwnedChunk> chunk_opt = tracker->CreateFirstChunk();
   ASSERT_TRUE(chunk_opt.has_value());
   auto& chunk = *chunk_opt;
   EXPECT_EQ(allocator.num_allocations(), 2_size);
@@ -81,7 +81,7 @@ TEST(OwnedChunk, DestructorDestroysChunkRegion) {
   EXPECT_EQ(allocator.num_allocations(), 1_size);
 
   {
-    std::optional<OwnedChunk> chunk = Chunk::CreateFirstForRegion(*tracker);
+    std::optional<OwnedChunk> chunk = tracker->CreateFirstChunk();
     ASSERT_TRUE(chunk.has_value());
     EXPECT_EQ(allocator.num_allocations(), 2_size);
     EXPECT_EQ(chunk->size(), kArbitraryChunkSize);
@@ -98,7 +98,7 @@ TEST(Chunk, DiscardPrefixDiscardsPrefixOfSpan) {
                                                       kArbitraryChunkSize);
   ASSERT_TRUE(chunk_opt.has_value());
   auto& chunk = *chunk_opt;
-  ConstByteSpan old_span = chunk.span();
+  ConstByteSpan old_span = chunk;
   const size_t kDiscarded = 4;
   chunk->DiscardPrefix(kDiscarded);
   EXPECT_EQ(chunk.size(), old_span.size() - kDiscarded);
@@ -112,7 +112,7 @@ TEST(Chunk, TakePrefixTakesPrefixOfSpan) {
                                                       kArbitraryChunkSize);
   ASSERT_TRUE(chunk_opt.has_value());
   auto& chunk = *chunk_opt;
-  ConstByteSpan old_span = chunk.span();
+  ConstByteSpan old_span = chunk;
   const size_t kTaken = 4;
   std::optional<OwnedChunk> front_opt = chunk->TakePrefix(kTaken);
   ASSERT_TRUE(front_opt.has_value());
@@ -130,7 +130,7 @@ TEST(Chunk, TruncateDiscardsEndOfSpan) {
                                                       kArbitraryChunkSize);
   ASSERT_TRUE(chunk_opt.has_value());
   auto& chunk = *chunk_opt;
-  ConstByteSpan old_span = chunk.span();
+  ConstByteSpan old_span = chunk;
   const size_t kShorter = 5;
   chunk->Truncate(old_span.size() - kShorter);
   EXPECT_EQ(chunk.size(), old_span.size() - kShorter);
@@ -144,7 +144,7 @@ TEST(Chunk, TakeSuffixTakesEndOfSpan) {
                                                       kArbitraryChunkSize);
   ASSERT_TRUE(chunk_opt.has_value());
   auto& chunk = *chunk_opt;
-  ConstByteSpan old_span = chunk.span();
+  ConstByteSpan old_span = chunk;
   const size_t kTaken = 5;
   std::optional<OwnedChunk> tail_opt = chunk->TakeSuffix(kTaken);
   ASSERT_TRUE(tail_opt.has_value());
@@ -162,7 +162,7 @@ TEST(Chunk, SliceRemovesSidesOfSpan) {
                                                       kArbitraryChunkSize);
   ASSERT_TRUE(chunk_opt.has_value());
   auto& chunk = *chunk_opt;
-  ConstByteSpan old_span = chunk.span();
+  ConstByteSpan old_span = chunk;
   const size_t kBegin = 4;
   const size_t kEnd = 9;
   chunk->Slice(kBegin, kEnd);
@@ -198,7 +198,7 @@ TEST(Chunk, ClaimPrefixReclaimsDiscardedPrefix) {
                                                       kArbitraryChunkSize);
   ASSERT_TRUE(chunk_opt.has_value());
   auto& chunk = *chunk_opt;
-  ConstByteSpan old_span = chunk.span();
+  ConstByteSpan old_span = chunk;
   const size_t kDiscarded = 4;
   chunk->DiscardPrefix(kDiscarded);
   EXPECT_TRUE(chunk->ClaimPrefix(kDiscarded));
@@ -268,7 +268,7 @@ TEST(Chunk, ClaimSuffixReclaimsTruncatedEnd) {
                                                       kArbitraryChunkSize);
   ASSERT_TRUE(chunk_opt.has_value());
   auto& chunk = *chunk_opt;
-  ConstByteSpan old_span = chunk->span();
+  ConstByteSpan old_span = *chunk;
   const size_t kDiscarded = 4;
   chunk->Truncate(old_span.size() - kDiscarded);
   EXPECT_TRUE(chunk->ClaimSuffix(kDiscarded));

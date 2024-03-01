@@ -36,8 +36,8 @@ cc_library(
 )
 
 cc_library(
-    name = "chunk_region_tracker",
-    hdrs = ["public/pw_multibuf/chunk_region_tracker.h"],
+    name = "header_chunk_region_tracker",
+    hdrs = ["public/pw_multibuf/header_chunk_region_tracker.h"],
     includes = ["public"],
     deps = [
         ":chunk",
@@ -62,18 +62,18 @@ pw_cc_test(
     srcs = ["chunk_test.cc"],
     deps = [
         ":chunk",
-        ":chunk_region_tracker",
+        ":header_chunk_region_tracker",
         "//pw_allocator:allocator_testing",
         "//pw_unit_test",
     ],
 )
 
 pw_cc_test(
-    name = "chunk_region_tracker_test",
-    srcs = ["chunk_region_tracker_test.cc"],
+    name = "header_chunk_region_tracker_test",
+    srcs = ["header_chunk_region_tracker_test.cc"],
     deps = [
         ":chunk",
-        ":chunk_region_tracker",
+        ":header_chunk_region_tracker",
         "//pw_allocator:allocator_testing",
         "//pw_status",
     ],
@@ -99,7 +99,7 @@ pw_cc_test(
     name = "multibuf_test",
     srcs = ["multibuf_test.cc"],
     deps = [
-        ":chunk_region_tracker",
+        ":header_chunk_region_tracker",
         ":pw_multibuf",
         "//pw_allocator:allocator_testing",
         "//pw_assert",

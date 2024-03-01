@@ -37,9 +37,9 @@ pw_source_set("chunk") {
   deps = [ "$dir_pw_assert:check" ]
 }
 
-pw_source_set("chunk_region_tracker") {
+pw_source_set("header_chunk_region_tracker") {
   public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_multibuf/chunk_region_tracker.h" ]
+  public = [ "public/pw_multibuf/header_chunk_region_tracker.h" ]
   public_deps = [
     ":chunk",
     dir_pw_allocator,
@@ -47,14 +47,14 @@ pw_source_set("chunk_region_tracker") {
   ]
 }
 
-pw_test("chunk_region_tracker_test") {
+pw_test("header_chunk_region_tracker_test") {
   deps = [
     ":chunk",
-    ":chunk_region_tracker",
+    ":header_chunk_region_tracker",
     "$dir_pw_allocator:allocator_testing",
     dir_pw_status,
   ]
-  sources = [ "chunk_region_tracker_test.cc" ]
+  sources = [ "header_chunk_region_tracker_test.cc" ]
 
   # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
   # indefinitely.
@@ -87,7 +87,7 @@ pw_test("single_chunk_region_tracker_test") {
 pw_test("chunk_test") {
   deps = [
     ":chunk",
-    ":chunk_region_tracker",
+    ":header_chunk_region_tracker",
     "$dir_pw_allocator:allocator_testing",
   ]
   sources = [ "chunk_test.cc" ]
@@ -108,7 +108,7 @@ pw_source_set("pw_multibuf") {
 
 pw_test("multibuf_test") {
   deps = [
-    ":chunk_region_tracker",
+    ":header_chunk_region_tracker",
     ":pw_multibuf",
     "$dir_pw_allocator:allocator_testing",
     dir_pw_assert,
@@ -125,7 +125,7 @@ pw_test("multibuf_test") {
 pw_test_group("tests") {
   tests = [
     ":chunk_test",
-    ":chunk_region_tracker_test",
+    ":header_chunk_region_tracker_test",
     ":multibuf_test",
     ":single_chunk_region_tracker_test",
   ]

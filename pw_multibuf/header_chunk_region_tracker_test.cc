@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_multibuf/chunk_region_tracker.h"
+#include "pw_multibuf/header_chunk_region_tracker.h"
 
 #include <cstddef>
 #include <optional>

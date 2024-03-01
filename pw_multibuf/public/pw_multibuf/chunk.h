@@ -50,20 +50,9 @@ class Chunk {
   Chunk(Chunk&&) = delete;
   Chunk& operator=(Chunk&&) = delete;
 
-  /// Creates the first ``Chunk`` referencing a whole region of memory.
-  ///
-  /// This must only be called once per ``ChunkRegionTracker``, when the region
-  /// is first created. Multiple calls will result in undefined behavior.
-  ///
-  /// Returns ``std::nullopt`` if ``AllocateChunkStorage`` returns ``nullptr``.
-  static std::optional<OwnedChunk> CreateFirstForRegion(
-      ChunkRegionTracker& region_tracker);
-
   std::byte* data() { return span_.data(); }
   const std::byte* data() const { return span_.data(); }
   size_t size() const { return span_.size(); }
-  ByteSpan span() { return span_; }
-  ConstByteSpan span() const { return span_; }
 
   std::byte& operator[](size_t index) { return span_[index]; }
   const std::byte& operator[](size_t index) const { return span_[index]; }
@@ -127,7 +116,7 @@ class Chunk {
   /// that has unreferenced bytes following it. For example, a ``Chunk`` which
   /// has been shrunk using ``Truncate`` can be re-expanded using
   ///
-  /// This method will acquire a mutex and is not IRQ safe. /// ``ClaimSuffix``.
+  /// This method will acquire a mutex and is not IRQ safe.
   [[nodiscard]] bool ClaimSuffix(size_t bytes_to_claim);
 
   /// Shrinks this handle to refer to the data beginning at offset
@@ -248,8 +237,9 @@ class Chunk {
   /// acquire ``region_tracker_->lock_`` before changing ``span_``.
   ByteSpan span_;
 
-  friend class OwnedChunk;  // for ``Free``.
-  friend class MultiBuf;    // for ``Free`` and ``next_in_buf_``.
+  friend class ChunkRegionTracker;  // For the constructor
+  friend class OwnedChunk;          // for ``Free``.
+  friend class MultiBuf;            // for ``Free`` and ``next_in_buf_``.
 };
 
 /// An object that manages a single allocated region which is referenced by one
@@ -275,6 +265,15 @@ class Chunk {
 ///   existing generic allocator such as ``malloc`` or a
 ///   ``pw::allocator::Allocator`` implementation.
 class ChunkRegionTracker {
+ public:
+  /// Creates the first ``Chunk`` referencing a whole region of memory.
+  ///
+  /// This must only be called once per ``ChunkRegionTracker``, when the region
+  /// is first created. Multiple calls will result in undefined behavior.
+  ///
+  /// Returns ``std::nullopt`` if ``AllocateChunkStorage`` returns ``nullptr``.
+  std::optional<OwnedChunk> CreateFirstChunk();
+
  protected:
   ChunkRegionTracker() = default;
   virtual ~ChunkRegionTracker() = default;
@@ -290,11 +289,13 @@ class ChunkRegionTracker {
   /// ``Chunk`` s referencing this tracker will not expand beyond this region,
   /// nor into one another's portions of the region.
   ///
+  /// This region does not provide any alignment guarantees by default.
+  ///
   /// This region must not change for the lifetime of this
   /// ``ChunkRegionTracker``.
   virtual ByteSpan Region() const = 0;
 
-  /// Returns a pointer to ``sizeof(Chunk)`` bytes.
+  /// Returns a pointer to ``sizeof(Chunk)`` bytes with `alignas(Chunk)`.
   /// Returns ``nullptr`` on failure.
   virtual void* AllocateChunkClass() = 0;
 
@@ -329,16 +330,17 @@ class OwnedChunk {
   /// This method will acquire a mutex and is not IRQ safe.
   ~OwnedChunk() { Release(); }
 
-  std::byte* data() { return span().data(); }
-  const std::byte* data() const { return span().data(); }
-  size_t size() const { return span().size(); }
-  ByteSpan span() { return inner_ == nullptr ? ByteSpan() : inner_->span(); }
-  ConstByteSpan span() const {
-    return inner_ == nullptr ? ConstByteSpan() : inner_->span();
+  std::byte* data() {
+    return const_cast<std::byte*>(std::as_const(*this).data());
+  }
+  const std::byte* data() const {
+    return inner_ == nullptr ? nullptr : inner_->data();
   }
 
-  std::byte& operator[](size_t index) { return span()[index]; }
-  std::byte operator[](size_t index) const { return span()[index]; }
+  size_t size() const { return inner_ == nullptr ? 0 : inner_->size(); }
+
+  std::byte& operator[](size_t index) { return data()[index]; }
+  std::byte operator[](size_t index) const { return data()[index]; }
 
   // Container declarations
   using element_type = std::byte;
@@ -393,9 +395,10 @@ class OwnedChunk {
   /// A pointer to the owned ``Chunk``.
   Chunk* inner_;
 
-  /// Allow ``Chunk`` and ``MultiBuf`` to create ``OwnedChunk``s using the
-  /// private constructor above.
+  /// Allow ``ChunkRegionTracker`` and ``MultiBuf`` to create ``OwnedChunk``s
+  /// using the private constructor above.
   friend class Chunk;
+  friend class ChunkRegionTracker;
   friend class MultiBuf;
 };
 

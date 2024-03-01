@@ -166,7 +166,7 @@ class TestByteReader : public pw::channel::ByteChannel<kReliable, kReadable> {
     }
 
     // This seems like a lot of steps to get a multibuf of a span.
-    auto chunk = pw::multibuf::Chunk::CreateFirstForRegion(region_);
+    auto chunk = region_.CreateFirstChunk();
     (*chunk)->Truncate(read_size_);
     pw::multibuf::MultiBuf mb;
     mb.PushFrontChunk(std::move(*chunk));
@@ -194,7 +194,7 @@ class TestDatagramWriter : public pw::channel::DatagramWriter {
   }
 
   pw::multibuf::MultiBuf GetMultiBuf() {
-    auto chunk = pw::multibuf::Chunk::CreateFirstForRegion(region_);
+    auto chunk = region_.CreateFirstChunk();
     pw::multibuf::MultiBuf mb;
     mb.PushFrontChunk(std::move(*chunk));
     return mb;
