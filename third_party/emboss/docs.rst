@@ -20,46 +20,107 @@ Git submodule:
 
    git submodule add https://github.com/google/emboss.git third_party/emboss/src
 
-Next, set the GN variable ``dir_pw_third_party_emboss`` to the path of your Emboss
-installation. If using the submodule path from above, add the following to the
-``default_args`` of your project's ``.gn`` file:
+.. tab-set::
 
-.. code-block::
+   .. tab-item:: GN
 
-   dir_pw_third_party_emboss = "//third_party/emboss/src"
+      Next, set the GN variable ``dir_pw_third_party_emboss`` to the path of
+      your Emboss installation. If using the submodule path from above, add the
+      following to the ``default_args`` of your project's ``.gn`` file:
 
-..
-   inclusive-language: disable
+      .. code-block::
 
-Optionally, configure the Emboss defines documented at
-`dir_pw_third_party_emboss/runtime/cpp/emboss_defines.h
-<https://github.com/google/emboss/blob/master/runtime/cpp/emboss_defines.h>`_
-by setting the ``pw_third_party_emboss_CONFIG`` variable to a source set that
-includes a public config overriding the defines. By default, checks will
-use PW_DASSERT.
+         dir_pw_third_party_emboss = "//third_party/emboss/src"
 
-..
-   inclusive-language: enable
+      ..
+         inclusive-language: disable
+
+      Optionally, configure the Emboss defines documented at
+      `dir_pw_third_party_emboss/runtime/cpp/emboss_defines.h
+      <https://github.com/google/emboss/blob/master/runtime/cpp/emboss_defines.h>`_
+      by setting the ``pw_third_party_emboss_CONFIG`` variable to a source set
+      that includes a public config overriding the defines. By default, checks
+      will use PW_DASSERT.
+
+      ..
+         inclusive-language: enable
+
+   .. tab-item:: CMake
+
+      Next, set the CMake variable ``dir_pw_third_party_emboss`` to the path of
+      your Emboss installation. If using the submodule path from above, add the
+      following to your project's ``CMakeLists.txt`` file:
+
+      .. code-block::
+
+         set(dir_pw_third_party_emboss "$ENV{PW_ROOT}/third_party/emboss/src" CACHE PATH "" FORCE)
+
 
 ------------
 Using Emboss
 ------------
-Let's say you've authored an Emboss source file at ``//some/path/to/my-protocol.emb``.
-To generate its bindings, you can add the following to ``//some/path/to/BUILD.gn``:
+.. tab-set::
 
-.. code-block::
+   .. tab-item:: GN
 
-   import("$dir_pw_third_party/emboss/build_defs.gni")
+      Let's say you've authored an Emboss source file at
+      ``//my-project/public/my-project/my-protocol.emb``.
+      To generate its bindings, you can add the following to
+      ``//my-project/BUILD.gn``:
 
-   emboss_cc_library("protocol") {
-     source = "my-protocol.emb"
-   }
+      .. code-block::
 
-This generates a source set of the same name as the target, in this case "protocol".
-To use the bindings, list this target as a dependency in GN and include the generated
-header by adding ``.h`` to the path of your Emboss source file:
+         import("$dir_pw_third_party/emboss/build_defs.gni")
 
-.. code-block::
+         emboss_cc_library("emboss_protocol") {
+            source = "public/my-project/my-protocol.emb"
+         }
 
-   #include <some/path/to/protocol.emb.h>
+      This generates a source set of the same name as the target, in this case
+      "emboss_protocol". To use the bindings, list this target as a dependency
+      in GN:
 
+      .. code-block::
+
+         pw_test("emboss_test") {
+            sources = [ "emboss_test.cc" ]
+            deps = [
+               ":emboss_protocol",
+            ]
+         }
+
+   .. tab-item:: CMake
+
+      Let's say you've authored an Emboss source file at
+      ``my-project/public/my-project/my-protocol.emb``.
+      To generate its bindings, you can add the following to
+      ``my-project/CMakeLists.txt``:
+
+      .. code-block::
+
+         include($ENV{PW_ROOT}/third_party/emboss/emboss.cmake)
+
+         emboss_cc_library(emboss_protocol
+           SOURCES
+             source = "public/my-project/my-protocol.emb"
+         )
+
+      This generates a library of the same name as the target, in this case
+      "emboss_protocol". To use the bindings, list this target as a dependency
+      in CMake:
+
+      .. code-block::
+
+         pw_add_test(emboss_test
+            SOURCES
+               emboss_test.cc
+            PRIVATE_DEPS
+               emboss_protocol
+         )
+
+Now just include the generated header by adding ``.h`` to the path of your
+Emboss source file:
+
+.. code-block:: c++
+
+   #include <my-project/my-protocol.emb.h>

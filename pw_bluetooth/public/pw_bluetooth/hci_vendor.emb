@@ -19,7 +19,7 @@
 # NOTE: The definitions below are incomplete. They get added as needed.
 # This list will grow as we support more vendor features.
 
-import "pw_bluetooth/public/pw_bluetooth/hci_common.emb" as hci
+import "pw_bluetooth/hci_common.emb" as hci
 
 [$default byte_order: "LittleEndian"]
 [(cpp) namespace: "pw::bluetooth::vendor::android_hci"]

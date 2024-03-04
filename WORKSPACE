@@ -386,7 +386,7 @@ git_repository(
 
 git_repository(
     name = "com_google_emboss",
-    commit = "69bb1372053fc3cb8a16180497970465ae2ed66d",
+    commit = "35e21b10019ded9ae14041af9b8e49659d9b327a",
     remote = "https://pigweed.googlesource.com/third_party/github/google/emboss",
 )
 

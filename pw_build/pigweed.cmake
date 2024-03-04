@@ -876,3 +876,53 @@ function(pw_add_error_target NAME)
   )
   add_dependencies("${NAME}" "${NAME}._error_message")
 endfunction(pw_add_error_target)
+
+# Rebases a set of files to a new root path and optionally appends extensions
+# to them. This is particularly useful for file generators.
+#
+# Required Arguments:
+#
+#   <var>        - Variable to store the rebased file list in.
+#   <new_root>   - The new root to rebase file paths onto.
+#   <root>       - The current root to rebase off of.
+#   <files>      - The list of files to rebase.
+#   <extensions> - List of extensions to replace the existing file extensions
+#                  with.
+#
+# Examples:
+#
+# list(APPEND files "public/proj/foo.def" "public/proj/bar.def")
+#
+# pw_rebase_paths(out_files "/tmp" "${CMAKE_CURRENT_SOURCE_DIR}/public"
+#   ${files} "")
+# out_files => [ "/tmp/proj/foo.def", "/tmp/proj/bar.def" ]
+#
+# pw_rebase_paths(out_files "/tmp" "${CMAKE_CURRENT_SOURCE_DIR}/public"
+#   ${files} ".h")
+# out_files => [ "/tmp/proj/foo.h", "/tmp/proj/bar.h" ]
+#
+# list (APPEND exts ".h" ".cc")
+# pw_rebase_paths(out_files "/tmp" "${CMAKE_CURRENT_SOURCE_DIR}/public"
+#   ${files} ${exts})
+# out_files => [ "/tmp/proj/foo.h", "/tmp/proj/bar.h",
+#                "/tmp/proj/foo.cc", "/tmp/proj/bar.cc" ]
+function(pw_rebase_paths VAR NEW_ROOT ROOT FILES EXTENSIONS)
+  foreach(file IN LISTS FILES)
+    get_filename_component(file "${file}" ABSOLUTE)
+    file(RELATIVE_PATH file "${ROOT}" "${file}")
+
+    if("${EXTENSIONS}" STREQUAL "")
+      list(APPEND mirrored_files "${NEW_ROOT}/${file}")
+    else()
+      foreach(ext IN LISTS EXTENSIONS)
+        get_filename_component(dir "${file}" DIRECTORY)
+        get_filename_component(name "${file}" NAME_WE)
+        list(APPEND mirrored_files "${NEW_ROOT}/${dir}/${name}${ext}")
+      endforeach()
+    endif()
+  endforeach()
+
+  set("${VAR}"
+    "${mirrored_files}"
+    PARENT_SCOPE)
+endfunction(pw_rebase_paths)

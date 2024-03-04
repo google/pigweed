@@ -57,6 +57,8 @@ CMake convenience functions are defined in ``pw_build/pigweed.cmake``.
   messages cannot be used to catch problems during the CMake configuration
   phase.
 * ``pw_parse_arguments`` -- Helper to parse CMake function arguments.
+* ``pw_rebase_paths`` -- Helper to update a set of file paths to be rooted on a
+  new directory.
 
 See ``pw_build/pigweed.cmake`` for the complete documentation of these
 functions.

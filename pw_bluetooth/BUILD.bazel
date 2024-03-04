@@ -116,6 +116,7 @@ cc_library(
 emboss_cc_library(
     name = "_emboss_hci_commands",
     srcs = ["public/pw_bluetooth/hci_commands.emb"],
+    import_dirs = ["public"],
     visibility = ["//visibility:private"],
     deps = [":_emboss_hci_common"],
 )
@@ -142,6 +143,7 @@ cc_library(
 emboss_cc_library(
     name = "_emboss_hci_events",
     srcs = ["public/pw_bluetooth/hci_events.emb"],
+    import_dirs = ["public"],
     visibility = ["//visibility:private"],
     deps = [":_emboss_hci_common"],
 )
@@ -155,6 +157,7 @@ cc_library(
 emboss_cc_library(
     name = "_emboss_hci_vendor",
     srcs = ["public/pw_bluetooth/hci_vendor.emb"],
+    import_dirs = ["public"],
     visibility = ["//visibility:private"],
     deps = [":_emboss_hci_common"],
 )
@@ -168,6 +171,7 @@ cc_library(
 emboss_cc_library(
     name = "_emboss_hci_test",
     srcs = ["public/pw_bluetooth/hci_test.emb"],
+    import_dirs = ["public"],
     visibility = ["//visibility:private"],
     deps = [":_emboss_hci_common"],
 )

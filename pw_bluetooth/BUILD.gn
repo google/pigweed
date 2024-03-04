@@ -96,6 +96,7 @@ if (dir_pw_third_party_emboss != "") {
     public_configs = [ ":emboss_include_path" ]
     source = "public/pw_bluetooth/hci_commands.emb"
     imports = [ "public/pw_bluetooth/hci_common.emb" ]
+    import_dirs = [ "public" ]
     deps = [ ":emboss_hci_common" ]
   }
 
@@ -108,6 +109,7 @@ if (dir_pw_third_party_emboss != "") {
     public_configs = [ ":emboss_include_path" ]
     source = "public/pw_bluetooth/hci_events.emb"
     imports = [ "public/pw_bluetooth/hci_common.emb" ]
+    import_dirs = [ "public" ]
     deps = [ ":emboss_hci_common" ]
   }
 
@@ -115,6 +117,7 @@ if (dir_pw_third_party_emboss != "") {
     public_configs = [ ":emboss_include_path" ]
     source = "public/pw_bluetooth/hci_vendor.emb"
     imports = [ "public/pw_bluetooth/hci_common.emb" ]
+    import_dirs = [ "public" ]
     deps = [ ":emboss_hci_common" ]
   }
 
@@ -122,6 +125,7 @@ if (dir_pw_third_party_emboss != "") {
     public_configs = [ ":emboss_include_path" ]
     source = "public/pw_bluetooth/hci_test.emb"
     imports = [ "public/pw_bluetooth/hci_common.emb" ]
+    import_dirs = [ "public" ]
     deps = [ ":emboss_hci_common" ]
   }
 

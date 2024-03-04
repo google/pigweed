@@ -85,10 +85,10 @@ function(pw_proto_library NAME)
   endforeach()
 
   # Mirror the sources to the output directory with the specified prefix.
-  _pw_rebase_paths(
+  pw_rebase_paths(
       sources "${out_dir}/sources/${arg_PREFIX}" "${arg_STRIP_PREFIX}"
       "${arg_SOURCES}" "")
-  _pw_rebase_paths(
+  pw_rebase_paths(
       inputs "${out_dir}/sources/${arg_PREFIX}" "${arg_STRIP_PREFIX}"
       "${arg_INPUTS}" "")
 
@@ -177,25 +177,6 @@ function(pw_proto_library NAME)
   )
 endfunction(pw_proto_library)
 
-function(_pw_rebase_paths VAR OUT_DIR ROOT FILES EXTENSIONS)
-  foreach(file IN LISTS FILES)
-    get_filename_component(file "${file}" ABSOLUTE)
-    file(RELATIVE_PATH file "${ROOT}" "${file}")
-
-    if ("${EXTENSIONS}" STREQUAL "")
-      list(APPEND mirrored_files "${OUT_DIR}/${file}")
-    else()
-      foreach(ext IN LISTS EXTENSIONS)
-        get_filename_component(dir "${file}" DIRECTORY)
-        get_filename_component(name "${file}" NAME_WE)
-        list(APPEND mirrored_files "${OUT_DIR}/${dir}/${name}${ext}")
-      endforeach()
-    endif()
-  endforeach()
-
-  set("${VAR}" "${mirrored_files}" PARENT_SCOPE)
-endfunction(_pw_rebase_paths)
-
 # Internal function that invokes protoc through generate_protos.py.
 function(_pw_generate_protos TARGET LANGUAGE)
   pw_parse_arguments(
@@ -213,7 +194,7 @@ function(_pw_generate_protos TARGET LANGUAGE)
   )
 
   # Determine the names of the compiled output files.
-  _pw_rebase_paths(outputs
+  pw_rebase_paths(outputs
       "${arg_OUT_DIR}/${LANGUAGE}" "${arg_OUT_DIR}/sources" "${arg_SOURCES}"
       "${arg_OUTPUT_EXTS}")
 
