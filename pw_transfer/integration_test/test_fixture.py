@@ -156,7 +156,7 @@ class MonitoredSubprocess:
         """Terminate the process."""
         self._process.terminate()
 
-    async def wait_for_termination(self, timeout: float):
+    async def wait_for_termination(self, timeout: Optional[float]):
         """Wait for the process to terminate."""
         await asyncio.wait_for(
             asyncio.gather(
@@ -231,6 +231,10 @@ class TransferIntegrationTestHarness:
         self._CLIENT_PORT = harness_config.client_port
         self._SERVER_PORT = harness_config.server_port
 
+        self._server: Optional[MonitoredSubprocess] = None
+        self._client: Optional[MonitoredSubprocess] = None
+        self._proxy: Optional[MonitoredSubprocess] = None
+
         # If the harness configuration specifies overrides, use those.
         if harness_config.java_client_binary is not None:
             self._JAVA_CLIENT_BINARY = harness_config.java_client_binary
@@ -248,7 +252,6 @@ class TransferIntegrationTestHarness:
             "java": self._JAVA_CLIENT_BINARY,
             "python": self._PYTHON_CLIENT_BINARY,
         }
-        pass
 
     async def _start_client(
         self, client_type: str, config: config_pb2.ClientConfig
@@ -309,16 +312,19 @@ class TransferIntegrationTestHarness:
 
         try:
             await self._start_proxy(proxy_config)
+            assert self._proxy is not None
             await self._proxy.wait_for_line(
                 "stderr", "Listening for client connection", TIMEOUT
             )
 
             await self._start_server(server_config)
+            assert self._server is not None
             await self._server.wait_for_line(
                 "stderr", "Starting pw_rpc server on port", TIMEOUT
             )
 
             await self._start_client(client_type, client_config)
+            assert self._client is not None
             # No timeout: the client will only exit once the transfer
             # completes, and this can take a long time for large payloads.
             await self._client.wait_for_termination(None)
@@ -329,11 +335,11 @@ class TransferIntegrationTestHarness:
         finally:
             # Stop the server, if still running. (Only expected if the
             # wait_for above timed out.)
-            if self._server:
+            if self._server is not None:
                 await self._server.terminate_and_wait(TIMEOUT)
             # Stop the proxy. Unlike the server, we expect it to still be
             # running at this stage.
-            if self._proxy:
+            if self._proxy is not None:
                 await self._proxy.terminate_and_wait(TIMEOUT)
 
             return self.TransferExitCodes(
