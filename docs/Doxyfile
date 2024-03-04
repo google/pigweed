@@ -2395,6 +2395,7 @@ PREDEFINED             = __cplusplus \
                          PW_EXCLUSIVE_LOCKS_REQUIRED(...)= \
                          PW_GUARDED_BY(...)= \
                          PW_NO_SANITIZE(...)= \
+			 PW_NODISCARD_STR(...)= \
                          PW_EXCLUDE_FROM_DOXYGEN=1
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this

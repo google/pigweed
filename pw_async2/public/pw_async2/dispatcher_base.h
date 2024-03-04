@@ -41,6 +41,7 @@ inline pw::sync::InterruptSpinLock& dispatcher_lock() {
 
 class DispatcherBase;
 class Waker;
+class WaitReason;
 
 // Forward-declare ``Dispatcher``.
 // This concrete type must be provided by a backend.
@@ -66,9 +67,19 @@ class Context {
   /// ``dispatcher().Post(task);``.
   Dispatcher& dispatcher() { return *dispatcher_; }
 
+  /// Queues the current ``Task::Pend`` to run again in the future, possibly
+  /// after other work is performed.
+  ///
+  /// This may be used by ``Task`` implementations that wish to provide
+  /// additional fairness by yielding to the dispatch loop rather than perform
+  /// too much work in a single iteration.
+  ///
+  /// This is semantically equivalent to calling ``GetWaker(...).Wake()``
+  void ReEnqueue();
+
   /// Returns a ``Waker`` which, when awoken, will cause the current task to be
   /// ``Pend``'d by its dispatcher.
-  Waker& waker() { return *waker_; }
+  Waker GetWaker(WaitReason reason);
 
  private:
   Dispatcher* dispatcher_;
@@ -298,11 +309,6 @@ class Waker {
 /// and to prevent build system cycles due to ``Task`` needing to refer
 /// to the ``Dispatcher`` class.
 class DispatcherBase {
-  friend class Task;
-  friend class Waker;
-  template <typename Impl>
-  friend class DispatcherImpl;
-
  public:
   DispatcherBase() = default;
   DispatcherBase(DispatcherBase&) = delete;
@@ -328,6 +334,11 @@ class DispatcherBase {
   void Deregister() PW_LOCKS_EXCLUDED(dispatcher_lock());
 
  private:
+  friend class Task;
+  friend class Waker;
+  template <typename Impl>
+  friend class DispatcherImpl;
+
   /// Sends a wakeup signal to this ``Dispatcher``.
   ///
   /// This method's implementation should ensure that the ``Dispatcher`` comes
@@ -519,7 +530,7 @@ class DispatcherImpl : public DispatcherBase {
     {
       Waker waker(*task);
       Context context(self(), waker);
-      complete = task->DoPend(context).IsReady();
+      complete = task->Pend(context).IsReady();
     }
     if (complete) {
       bool all_complete;

@@ -161,7 +161,7 @@ class TestByteReader : public pw::channel::ByteChannel<kReliable, kReadable> {
   pw::async2::Poll<pw::Result<pw::multibuf::MultiBuf>> DoPollRead(
       pw::async2::Context& cx, size_t) override {
     if (read_size_ == 0) {
-      read_waker_ = cx.waker().Clone(pw::async2::WaitReason::Unspecified());
+      read_waker_ = cx.GetWaker(pw::async2::WaitReason::Unspecified());
       return pw::async2::Pending();
     }
 
@@ -231,7 +231,7 @@ class TestDatagramWriter : public pw::channel::DatagramWriter {
       return pw::async2::Ready();
     }
 
-    write_waker_ = cx.waker().Clone(pw::async2::WaitReason::Unspecified());
+    write_waker_ = cx.GetWaker(pw::async2::WaitReason::Unspecified());
     return pw::async2::Pending();
   }
 
@@ -249,7 +249,7 @@ class TestDatagramWriter : public pw::channel::DatagramWriter {
   pw::async2::Poll<pw::Result<pw::channel::WriteToken>> DoPollFlush(
       pw::async2::Context& cx) override {
     if (state_ != kReadyToFlush) {
-      flush_waker_ = cx.waker().Clone(pw::async2::WaitReason::Unspecified());
+      flush_waker_ = cx.GetWaker(pw::async2::WaitReason::Unspecified());
       return pw::async2::Pending();
     }
     last_flush_ = last_write_;

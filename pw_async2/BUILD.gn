@@ -32,7 +32,10 @@ pw_source_set("poll") {
     "public/pw_async2/internal/poll_internal.h",
     "public/pw_async2/poll.h",
   ]
-  public_deps = [ "$dir_pw_third_party/fuchsia:stdcompat" ]
+  public_deps = [
+    "$dir_pw_third_party/fuchsia:stdcompat",
+    dir_pw_polyfill,
+  ]
 }
 
 pw_test("poll_test") {

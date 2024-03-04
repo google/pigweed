@@ -16,6 +16,7 @@
 #include <optional>
 
 #include "pw_async2/internal/poll_internal.h"
+#include "pw_polyfill/language_feature_macros.h"
 
 namespace pw::async2 {
 
@@ -26,20 +27,12 @@ namespace pw::async2 {
 /// types that do not return a value.
 struct ReadyType {};
 
-// nodiscard with a string literal is only available starting in C++20.
-#if __cplusplus >= 202002L
-#define PW_NODISCARD_STR(str) [[nodiscard(str)]]
-#else
-#define PW_NODISCARD_STR(str) [[nodiscard]]
-#endif
-
 /// A type whose value indicates an operation was not yet able to complete.
 ///
 /// This is analogous to ``std::nullopt_t``, but for ``Poll``.
 struct PW_NODISCARD_STR(
     "`Poll`-returning functions may or may not have completed. Their "
-    "return "
-    "value should be examined.") PendingType {};
+    "return value should be examined.") PendingType {};
 
 /// A value that may or may not be ready yet.
 ///

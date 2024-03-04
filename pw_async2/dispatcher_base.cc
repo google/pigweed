@@ -21,6 +21,10 @@
 
 namespace pw::async2 {
 
+void Context::ReEnqueue() { waker_->Clone(WaitReason::Unspecified()).Wake(); }
+
+Waker Context::GetWaker(WaitReason reason) { return waker_->Clone(reason); }
+
 void Task::RemoveAllWakersLocked() {
   while (wakers_ != nullptr) {
     Waker* current = wakers_;

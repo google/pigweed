@@ -28,7 +28,10 @@ cc_library(
         "public/pw_async2/poll.h",
     ],
     includes = ["public"],
-    deps = ["//third_party/fuchsia:stdcompat"],
+    deps = [
+        "//third_party/fuchsia:stdcompat",
+        "@pigweed//pw_polyfill",
+    ],
 )
 
 pw_cc_test(

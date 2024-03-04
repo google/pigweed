@@ -30,7 +30,7 @@ class MockTask : public Task {
  private:
   Poll<> DoPend(Context& cx) override {
     ++polled;
-    last_waker = cx.waker().Clone(WaitReason::Unspecified());
+    last_waker = cx.GetWaker(WaitReason::Unspecified());
     if (should_complete) {
       return Ready();
     } else {
@@ -99,7 +99,7 @@ TEST(Dispatcher, RunUntilCompletePendsMultipleTasks) {
         }
         return Ready();
       } else {
-        wakers_->push_back(cx.waker().Clone(WaitReason::Unspecified()));
+        wakers_->push_back(cx.GetWaker(WaitReason::Unspecified()));
         return Pending();
       }
     }

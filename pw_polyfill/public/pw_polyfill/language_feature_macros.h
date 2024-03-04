@@ -45,3 +45,10 @@
 #else
 #define PW_CONSTINIT
 #endif  // __cpp_constinit
+
+// nodiscard with a string literal is only available in later versions (~C++20).
+#if __cplusplus >= 202002L
+#define PW_NODISCARD_STR(str) [[nodiscard(str)]]
+#else
+#define PW_NODISCARD_STR(str) [[nodiscard]]
+#endif
