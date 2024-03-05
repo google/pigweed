@@ -1,4 +1,4 @@
-# Copyright 2021 The Pigweed Authors
+# Copyright 2024 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,25 +12,29 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+# This is a BUILD.bazel file template for FreeRTOS.
+#
+# TODO(b/326625641): Contribute this to upstream FreeRTOS.
+
+# buildifier: disable=module-docstring
 package(default_visibility = ["//visibility:public"])
 
-licenses(["notice"])
+# Label flag that points to the cc_library target providing freertos_config.h.
+label_flag(
+    name = "freertos_config",
+    build_setting_default = ":default_freertos_config",
+)
 
 cc_library(
-    name = "config_assert",
-    hdrs = [
-        "public/pw_third_party/freertos/config_assert.h",
-    ],
-    defines = select({
-        "@freertos//:disable_task_statics": [
-            "PW_THIRD_PARTY_FREERTOS_NO_STATICS=1",
-        ],
-        "//conditions:default": [],
-    }),
-    includes = ["public"],
-    deps = [
-        "@pigweed//pw_assert",
-    ],
+    name = "default_freertos_config",
+    # The "default" config is not compatible with any configuration: you can't
+    # build FreeRTOS without choosing a config.
+    target_compatible_with = ["@platforms//:incompatible"],
+)
+
+# Constraint setting used to select the FreeRTOSConfig version.
+constraint_setting(
+    name = "freertos_config_setting",
 )
 
 constraint_setting(
@@ -112,12 +116,12 @@ cc_library(
     deps = [
         ":freertos_malloc",
         ":freertos_port_headers",
-        ":pigweed_tasks_c",
-        "@pigweed//targets:freertos_config",
+        ":tasks_c",
+        ":freertos_config",
     ],
     # Required because breaking out tasks_c results in the dependencies between
-    # the libraries not being quite correct: to link pigweed_tasks_c you
-    # actually need a bunch of the source files from here (e.g., list.c).
+    # the libraries not being quite correct: to link tasks_c you actually need
+    # a bunch of the source files from here (e.g., list.c).
     alwayslink = 1,
 )
 
@@ -171,7 +175,7 @@ cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":freertos_port_headers",
-        "@pigweed//targets:freertos_config",
+        ":freertos_config",
     ],
 )
 
@@ -192,14 +196,8 @@ constraint_value(
 )
 
 cc_library(
-    name = "pigweed_tasks_c",
+    name = "tasks_c",
     srcs = ["tasks.c"],
-    defines = select({
-        ":disable_task_statics": [
-            "PW_THIRD_PARTY_FREERTOS_NO_STATICS=1",
-        ],
-        "//conditions:default": [],
-    }),
     local_defines = select({
         ":disable_task_statics": [
             "static=",
@@ -207,26 +205,6 @@ cc_library(
         "//conditions:default": [],
     }),
     deps = [":freertos_headers"],
-)
-
-# Constraint setting used to select the FreeRTOSConfig version.
-constraint_setting(
-    name = "freertos_config_setting",
-)
-
-alias(
-    name = "freertos_config",
-    actual = select({
-        "@pigweed//targets/stm32f429i_disc1_stm32cube:freertos_config_cv": "@pigweed//targets/stm32f429i_disc1_stm32cube:freertos_config",
-        "//conditions:default": "default_freertos_config",
-    }),
-)
-
-cc_library(
-    name = "default_freertos_config",
-    # The "default" config is not compatible with any configuration: you can't
-    # build FreeRTOS without choosing a config.
-    target_compatible_with = ["@platforms//:incompatible"],
 )
 
 # Constraint setting for malloc implementation.
