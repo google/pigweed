@@ -22,4 +22,9 @@ declare_args() {
   # target for overriding Emboss defines (e.g. EMBOSS_CHECK).
   pw_third_party_emboss_CONFIG =
       "$dir_pigweed/third_party/emboss:default_overrides"
+
+  # If true, use latest `sources` list in emboss_cc_library target.
+  # If false, use old `sources` list (for compatibility with Emboss versions
+  # earlier than v2024.0304.184309).
+  pw_third_party_emboss_USE_NEW_SOURCES = true
 }

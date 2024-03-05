@@ -102,8 +102,10 @@ template("emboss_cc_library") {
     }
 
     sources = [
+      "$dir_pw_third_party_emboss/compiler/__init__.py",
       "$dir_pw_third_party_emboss/compiler/back_end/__init__.py",
       "$dir_pw_third_party_emboss/compiler/back_end/cpp/__init__.py",
+      "$dir_pw_third_party_emboss/compiler/back_end/cpp/attributes.py",
       "$dir_pw_third_party_emboss/compiler/back_end/cpp/emboss_codegen_cpp.py",
       "$dir_pw_third_party_emboss/compiler/back_end/cpp/generated_code_templates",
       "$dir_pw_third_party_emboss/compiler/back_end/cpp/header_generator.py",
@@ -128,6 +130,8 @@ template("emboss_cc_library") {
       "$dir_pw_third_party_emboss/compiler/front_end/tokenizer.py",
       "$dir_pw_third_party_emboss/compiler/front_end/type_check.py",
       "$dir_pw_third_party_emboss/compiler/front_end/write_inference.py",
+      "$dir_pw_third_party_emboss/compiler/util/__init__.py",
+      "$dir_pw_third_party_emboss/compiler/util/attribute_util.py",
       "$dir_pw_third_party_emboss/compiler/util/error.py",
       "$dir_pw_third_party_emboss/compiler/util/expression_parser.py",
       "$dir_pw_third_party_emboss/compiler/util/ir_pb2.py",
@@ -139,6 +143,13 @@ template("emboss_cc_library") {
       "$dir_pw_third_party_emboss/embossc",
       invoker.source,
     ]
+
+    if (pw_third_party_emboss_USE_NEW_SOURCES) {
+      sources += [
+        # Introduced in v2024.0304.184309
+        "$dir_pw_third_party_emboss/compiler/util/resources.py",
+      ]
+    }
 
     # TODO(benlawson): Use a depfile for adding imports to inputs (https://github.com/google/emboss/issues/68).
     if (defined(invoker.imports)) {
