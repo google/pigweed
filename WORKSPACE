@@ -283,7 +283,7 @@ pw_rust_register_toolchains()
 # Vendored third party rust crates.
 git_repository(
     name = "rust_crates",
-    commit = "6d975531f7672cc6aa54bdd7517e1beeffa578da",
+    commit = "de54de1a2683212d8edb4e15ec7393eb013c849c",
     remote = "https://pigweed.googlesource.com/third_party/rust_crates",
 )
 
