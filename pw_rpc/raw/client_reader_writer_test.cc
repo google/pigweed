@@ -307,6 +307,78 @@ TEST(RawClientReaderWriter, Abandon) {
   EXPECT_EQ(ctx.output().total_packets(), 2u);  // request & client stream end
 }
 
+TEST(RawUnaryReceiver, CloseAndWaitForCallbacks) {
+  RawClientTestContext ctx;
+  RawUnaryReceiver call = TestService::TestUnaryRpc(ctx.client(),
+                                                    ctx.channel().id(),
+                                                    {},
+                                                    FailIfOnCompletedCalled,
+                                                    FailIfCalled);
+  call.CloseAndWaitForCallbacks();
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
+
+  EXPECT_EQ(ctx.output().total_packets(), 1u);  // request only
+}
+
+TEST(RawClientWriter, CloseAndWaitForCallbacks) {
+  RawClientTestContext ctx;
+  RawClientWriter call = TestService::TestClientStreamRpc(
+      ctx.client(), ctx.channel().id(), FailIfOnCompletedCalled, FailIfCalled);
+  call.CloseAndWaitForCallbacks();
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
+  EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
+  EXPECT_EQ(Status::FailedPrecondition(), call.RequestCompletion());
+
+  EXPECT_EQ(ctx.output().total_packets(), 2u);  // request & client stream end
+}
+
+TEST(RawClientReader, CloseAndWaitForCallbacks) {
+  RawClientTestContext ctx;
+  RawClientReader call = TestService::TestServerStreamRpc(ctx.client(),
+                                                          ctx.channel().id(),
+                                                          {},
+                                                          FailIfOnNextCalled,
+                                                          FailIfCalled,
+                                                          FailIfCalled);
+  call.CloseAndWaitForCallbacks();
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
+  EXPECT_EQ(Status::FailedPrecondition(), call.RequestCompletion());
+
+  EXPECT_EQ(ctx.output().total_packets(), 1u);  // request only
+}
+
+TEST(RawClientReaderWriter, CloseAndWaitForCallbacks) {
+  RawClientTestContext ctx;
+  RawClientReaderWriter call =
+      TestService::TestBidirectionalStreamRpc(ctx.client(),
+                                              ctx.channel().id(),
+                                              FailIfOnNextCalled,
+                                              FailIfCalled,
+                                              FailIfCalled);
+  call.CloseAndWaitForCallbacks();
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
+  EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
+  EXPECT_EQ(Status::FailedPrecondition(), call.RequestCompletion());
+
+  EXPECT_EQ(ctx.output().total_packets(), 2u);  // request & client stream end
+}
+
 TEST(RawClientReaderWriter, Move_InactiveToActive_EndsClientStream) {
   RawClientTestContext ctx;
 

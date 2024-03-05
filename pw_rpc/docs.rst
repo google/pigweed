@@ -1255,6 +1255,10 @@ Client call objects provide a few common methods.
       packet. Future packets for this RPC are dropped, and the client sends a
       ``FAILED_PRECONDITION`` error in response because the call is not active.
 
+   .. cpp:function:: void CloseAndWaitForCallbacks()
+
+      Abandons this RPC and additionally blocks on completion of any running callbacks.
+
    .. cpp:function:: void set_on_completed(pw::Function<void(ResponseTypeIfUnaryOnly, pw::Status)>)
 
       Sets the callback that is called when the RPC completes normally. The

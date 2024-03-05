@@ -62,6 +62,12 @@ class RawClientReaderWriter : private internal::StreamResponseClientCall {
   // not active.
   using internal::ClientCall::Abandon;
 
+  // Closes this RPC locally and waits for any running callbacks to complete.
+  // Sends a CLIENT_REQUEST_COMPLETION, but no cancellation packet. Future
+  // packets for this RPC are dropped, and the client sends a
+  // FAILED_PRECONDITION error in response because the call is not active.
+  using internal::ClientCall::CloseAndWaitForCallbacks;
+
   // Allow use as a generic RPC Writer.
   using internal::Call::as_writer;
 
@@ -99,6 +105,7 @@ class RawClientReader : private internal::StreamResponseClientCall {
   using internal::Call::Cancel;
   using internal::Call::RequestCompletion;
   using internal::ClientCall::Abandon;
+  using internal::ClientCall::CloseAndWaitForCallbacks;
 
  private:
   friend class internal::StreamResponseClientCall;
@@ -137,6 +144,7 @@ class RawClientWriter : private internal::UnaryResponseClientCall {
   using internal::Call::RequestCompletion;
   using internal::Call::Write;
   using internal::ClientCall::Abandon;
+  using internal::ClientCall::CloseAndWaitForCallbacks;
 
   // Allow use as a generic RPC Writer.
   using internal::Call::as_writer;
@@ -175,6 +183,7 @@ class RawUnaryReceiver : private internal::UnaryResponseClientCall {
   using internal::UnaryResponseClientCall::set_on_error;
 
   using internal::ClientCall::Abandon;
+  using internal::ClientCall::CloseAndWaitForCallbacks;
   using internal::UnaryResponseClientCall::Cancel;
 
  private:

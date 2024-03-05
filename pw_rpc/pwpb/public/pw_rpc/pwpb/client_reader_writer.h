@@ -397,6 +397,12 @@ class PwpbClientReaderWriter
   // not active.
   using internal::ClientCall::Abandon;
 
+  // Closes this RPC locally and waits for any running callbacks to complete.
+  // Sends a CLIENT_REQUEST_COMPLETION, but no cancellation packet. Future
+  // packets for this RPC are dropped, and the client sends a
+  // FAILED_PRECONDITION error in response because the call is not active.
+  using internal::ClientCall::CloseAndWaitForCallbacks;
+
   // Functions for setting RPC event callbacks.
   using internal::PwpbStreamResponseClientCall<Response>::set_on_next;
   using internal::StreamResponseClientCall::set_on_completed;
@@ -442,6 +448,7 @@ class PwpbClientReader
   using internal::Call::Cancel;
   using internal::Call::RequestCompletion;
   using internal::ClientCall::Abandon;
+  using internal::ClientCall::CloseAndWaitForCallbacks;
 
   // Functions for setting RPC event callbacks.
   using internal::PwpbStreamResponseClientCall<Response>::set_on_next;
@@ -501,6 +508,7 @@ class PwpbClientWriter
   using internal::Call::Cancel;
   using internal::Call::RequestCompletion;
   using internal::ClientCall::Abandon;
+  using internal::ClientCall::CloseAndWaitForCallbacks;
 
   // Functions for setting RPC event callbacks.
   using internal::PwpbUnaryResponseClientCall<Response>::set_on_completed;
@@ -550,6 +558,7 @@ class PwpbUnaryReceiver
 
   using internal::Call::Cancel;
   using internal::ClientCall::Abandon;
+  using internal::ClientCall::CloseAndWaitForCallbacks;
 
  private:
   friend class internal::PwpbUnaryResponseClientCall<Response>;

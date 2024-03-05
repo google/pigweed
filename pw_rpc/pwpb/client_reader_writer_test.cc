@@ -16,6 +16,7 @@
 
 #include <optional>
 
+#include "public/pw_rpc/pwpb/client_reader_writer.h"
 #include "pw_rpc/pwpb/client_testing.h"
 #include "pw_rpc_test_protos/test.rpc.pwpb.h"
 #include "pw_unit_test/framework.h"
@@ -238,6 +239,92 @@ TEST(PwpbClientReaderWriter, Closed) {
           FailIfCalled,
           FailIfCalled);
   ASSERT_EQ(OkStatus(), call.Cancel());
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
+  EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
+  EXPECT_EQ(Status::FailedPrecondition(), call.RequestCompletion());
+
+  call.set_on_completed([](Status) {});
+  call.set_on_next([](const TestStreamResponse::Message&) {});
+  call.set_on_error([](Status) {});
+}
+
+TEST(PwpbUnaryReceiver, CloseAndWaitForCallbacks) {
+  PwpbClientTestContext ctx;
+  PwpbUnaryReceiver<TestResponse::Message> call =
+      TestService::TestUnaryRpc(ctx.client(),
+                                ctx.channel().id(),
+                                {},
+                                FailIfOnCompletedCalled<TestResponse::Message>,
+                                FailIfCalled);
+  call.CloseAndWaitForCallbacks();
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
+
+  call.set_on_completed([](const TestResponse::Message&, Status) {});
+  call.set_on_error([](Status) {});
+}
+
+TEST(PwpbClientWriter, CloseAndWaitForCallbacks) {
+  PwpbClientTestContext ctx;
+  PwpbClientWriter<TestRequest::Message, TestStreamResponse::Message> call =
+      TestService::TestClientStreamRpc(
+          ctx.client(),
+          ctx.channel().id(),
+          FailIfOnCompletedCalled<TestStreamResponse::Message>,
+          FailIfCalled);
+  call.CloseAndWaitForCallbacks();
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
+  EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
+  EXPECT_EQ(Status::FailedPrecondition(), call.RequestCompletion());
+
+  call.set_on_completed([](const TestStreamResponse::Message&, Status) {});
+  call.set_on_error([](Status) {});
+}
+
+TEST(PwpbClientReader, CloseAndWaitForCallbacks) {
+  PwpbClientTestContext ctx;
+  PwpbClientReader<TestStreamResponse::Message> call =
+      TestService::TestServerStreamRpc(
+          ctx.client(),
+          ctx.channel().id(),
+          {},
+          FailIfOnNextCalled<TestStreamResponse::Message>,
+          FailIfCalled,
+          FailIfCalled);
+  call.CloseAndWaitForCallbacks();
+
+  ASSERT_FALSE(call.active());
+  EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+
+  EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
+  EXPECT_EQ(Status::FailedPrecondition(), call.RequestCompletion());
+
+  call.set_on_completed([](Status) {});
+  call.set_on_next([](const TestStreamResponse::Message&) {});
+  call.set_on_error([](Status) {});
+}
+
+TEST(PwpbClientReaderWriter, CloseAndWaitForCallbacks) {
+  PwpbClientTestContext ctx;
+  PwpbClientReaderWriter<TestRequest::Message, TestStreamResponse::Message>
+      call = TestService::TestBidirectionalStreamRpc(
+          ctx.client(),
+          ctx.channel().id(),
+          FailIfOnNextCalled<TestStreamResponse::Message>,
+          FailIfCalled,
+          FailIfCalled);
+  call.CloseAndWaitForCallbacks();
 
   ASSERT_FALSE(call.active());
   EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
