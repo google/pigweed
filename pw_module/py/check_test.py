@@ -95,21 +95,15 @@ class TestWithTempDirectory(unittest.TestCase):
         self.create_file('pw_foo/py/foo_test.py')
         self.assert_no_issues(pw_module.check.check_have_python_tests)
 
-    # Have README.md
-    def test_pwck004_have_readme(self):
-        self.assert_issue(pw_module.check.check_has_readme, 'README')
-        self.create_file('README.md')
-        self.assert_no_issues(pw_module.check.check_has_readme)
-
     # Have ReST docs of some kind
-    def test_pwck005_have_rst_docs(self):
+    def test_pwck004_have_rst_docs(self):
         checker = pw_module.check.check_has_rst_docs
         self.assert_issue(checker, 'ReST')
         self.create_file('pw_foo/docs.rst')
         self.assert_no_issues(checker)
 
     # Have ReST docs of some kind
-    def test_pwck006_have_public_or_override_headers(self):
+    def test_pwck005_have_public_or_override_headers(self):
         checker = pw_module.check.check_has_public_or_override_headers
         module_name = 'pw_foo'
 

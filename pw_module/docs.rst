@@ -31,7 +31,7 @@ its own lint:
     ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
 
   20191205 17:05:19 INF Checking module: pw_module
-  20191205 17:05:19 ERR PWCK005: Missing ReST documentation; need at least e.g. "docs.rst"
+  20191205 17:05:19 ERR PWCK004: Missing ReST documentation; need at least e.g. "docs.rst"
   20191205 17:05:19 ERR FAIL: Found errors when checking module pw_module
 
 

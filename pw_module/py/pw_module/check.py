@@ -165,20 +165,14 @@ def check_have_python_tests(directory):
         yield Issue('Python code present but no tests (you monster).')
 
 
-@checker('PWCK004', 'There is a README.md')
-def check_has_readme(directory):
-    if not glob.glob(f'{directory}/README.md'):
-        yield Issue('Missing module top-level README.md')
-
-
-@checker('PWCK005', 'There is ReST documentation (*.rst)')
+@checker('PWCK004', 'There is ReST documentation (*.rst)')
 def check_has_rst_docs(directory):
     if not glob.glob(f'{directory}/**/*.rst', recursive=True):
         yield Issue('Missing ReST documentation; need at least e.g. "docs.rst"')
 
 
 @checker(
-    'PWCK006',
+    'PWCK005',
     'If C++, have <mod>/public/<mod>/*.h or ' '<mod>/public_override/*.h',
 )
 def check_has_public_or_override_headers(directory):
