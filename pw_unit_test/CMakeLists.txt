@@ -63,6 +63,17 @@ pw_add_library(pw_unit_test.light STATIC
     public_overrides
 )
 
+pw_add_library(pw_unit_test.googletest_handler_adapter STATIC
+  SOURCES
+    googletest_handler_adapter.cc
+  PUBLIC_DEPS
+    pw_unit_test.event_handler
+    pw_third_party.googletest
+  PUBLIC_INCLUDES
+    public
+    
+)
+
 pw_add_library(pw_unit_test.googletest STATIC
   SOURCES
     googletest_public_overrides/pw_unit_test/framework_backend.h
