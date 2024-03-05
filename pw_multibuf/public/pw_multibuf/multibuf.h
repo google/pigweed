@@ -16,6 +16,7 @@
 #include <tuple>
 
 #include "pw_multibuf/chunk.h"
+#include "pw_preprocessor/compiler.h"
 
 namespace pw::multibuf {
 
@@ -33,9 +34,15 @@ class MultiBuf {
   constexpr MultiBuf() : first_(nullptr) {}
   MultiBuf(const MultiBuf&) = delete;
   MultiBuf& operator=(const MultiBuf&) = delete;
+
+  // Disable maybe-uninitialized: this check fails erroniously on Windows GCC.
+  PW_MODIFY_DIAGNOSTICS_PUSH();
+  PW_MODIFY_DIAGNOSTIC_GCC(ignored, "-Wmaybe-uninitialized");
   constexpr MultiBuf(MultiBuf&& other) noexcept : first_(other.first_) {
     other.first_ = nullptr;
   }
+  PW_MODIFY_DIAGNOSTICS_POP();
+
   MultiBuf& operator=(MultiBuf&& other) noexcept {
     Release();
     first_ = other.first_;
@@ -483,7 +490,5 @@ class MultiBuf {
 
   Chunk* first_;
 };
-
-class MultiBufAllocator {};
 
 }  // namespace pw::multibuf

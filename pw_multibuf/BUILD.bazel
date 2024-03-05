@@ -92,7 +92,10 @@ cc_library(
     name = "pw_multibuf",
     srcs = ["multibuf.cc"],
     hdrs = ["public/pw_multibuf/multibuf.h"],
-    deps = [":chunk"],
+    deps = [
+        ":chunk",
+        "//pw_preprocessor",
+    ],
 )
 
 pw_cc_test(
@@ -103,6 +106,30 @@ pw_cc_test(
         ":pw_multibuf",
         "//pw_allocator:allocator_testing",
         "//pw_assert",
+        "//pw_unit_test",
+    ],
+)
+
+cc_library(
+    name = "allocator",
+    srcs = ["allocator.cc"],
+    hdrs = ["public/pw_multibuf/allocator.h"],
+    deps = [
+        ":pw_multibuf",
+        "//pw_async2:dispatcher",
+        "//pw_async2:poll",
+        "//pw_result",
+    ],
+)
+
+pw_cc_test(
+    name = "allocator_test",
+    srcs = ["allocator_test.cc"],
+    deps = [
+        ":allocator",
+        "//pw_allocator:allocator_testing",
+        "//pw_async2:dispatcher",
+        "//pw_async2:poll",
         "//pw_unit_test",
     ],
 )

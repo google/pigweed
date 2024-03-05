@@ -21,6 +21,7 @@ pw_add_library(pw_async2_basic.dispatcher_backend STATIC
     dispatcher.cc
   PUBLIC_INCLUDES
     public
+    public_overrides
   PUBLIC_DEPS
     pw_assert.check
     pw_async2.dispatcher_base

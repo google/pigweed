@@ -122,6 +122,9 @@ class PW_NODISCARD_STR(
   /// Returns whether or not this value is ``Ready``.
   constexpr bool IsReady() const noexcept { return value_.has_value(); }
 
+  /// Returns whether or not this value is ``Pending``.
+  constexpr bool IsPending() const noexcept { return !value_.has_value(); }
+
   /// Returns the inner value.
   ///
   /// This must only be called if ``IsReady()`` returned ``true``.
@@ -178,6 +181,39 @@ template <typename T>
 constexpr bool operator!=(const Poll<T>& lhs, const Poll<T>& rhs) {
   return !(lhs == rhs);
 }
+
+/// Returns whether ``lhs`` is pending.
+template <typename T>
+constexpr bool operator==(const Poll<T>& lhs, PendingType) {
+  return lhs.IsPending();
+}
+
+/// Returns whether ``lhs`` is not pending.
+template <typename T>
+constexpr bool operator!=(const Poll<T>& lhs, PendingType) {
+  return !lhs.IsPending();
+}
+
+/// Returns whether ``rhs`` is pending.
+template <typename T>
+constexpr bool operator==(PendingType, const Poll<T>& rhs) {
+  return rhs.IsPending();
+}
+
+/// Returns whether ``rhs`` is not pending.
+template <typename T>
+constexpr bool operator!=(PendingType, const Poll<T>& rhs) {
+  return !rhs.IsPending();
+}
+
+// ``ReadyType`` is the value type for `Poll<T>` and has no value,
+// so it should always compare equal.
+constexpr bool operator==(ReadyType, ReadyType) { return true; }
+constexpr bool operator!=(ReadyType, ReadyType) { return false; }
+
+// The ``Pending`` case holds no value, so is always equal.
+constexpr bool operator==(PendingType, PendingType) { return true; }
+constexpr bool operator!=(PendingType, PendingType) { return false; }
 
 /// Returns a value indicating completion.
 inline constexpr Poll<> Ready() { return Poll(ReadyType{}); }

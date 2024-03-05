@@ -259,7 +259,12 @@ class Waker {
  public:
   Waker() = default;
   Waker(Waker&& other) noexcept PW_LOCKS_EXCLUDED(dispatcher_lock());
+
+  /// Replace this ``Waker`` with another.
+  ///
+  /// This operation is guaranteed to be thread-safe.
   Waker& operator=(Waker&& other) noexcept PW_LOCKS_EXCLUDED(dispatcher_lock());
+
   ~Waker() noexcept { RemoveFromTaskWakerList(); }
 
   /// Wakes up the ``Waker``'s creator, alerting it that an asynchronous
@@ -269,6 +274,8 @@ class Waker {
   /// that the event that was waited on has been complete. This makes it
   /// possible to track the outstanding events that may cause a ``Task`` to
   /// wake up and make progress.
+  ///
+  /// This operation is guaranteed to be thread-safe.
   void Wake() && PW_LOCKS_EXCLUDED(dispatcher_lock());
 
   /// Creates a second ``Waker`` from this ``Waker``.
@@ -279,7 +286,29 @@ class Waker {
   /// The ``WaitReason`` argument can be used to provide information about
   /// what event the ``Waker`` is waiting on. This can be useful for
   /// debugging purposes.
+  ///
+  /// This operation is guaranteed to be thread-safe.
   Waker Clone(WaitReason reason) & PW_LOCKS_EXCLUDED(dispatcher_lock());
+
+  /// Returns whether this ``Waker`` is empty.
+  ///
+  /// Empty wakers are those that perform no action upon wake. These may be
+  /// created either via the default no-argument constructor or by
+  /// calling ``Clear`` or ``std::move`` on a ``Waker``, after which the
+  /// moved-from ``Waker`` will be empty.
+  ///
+  /// This operation is guaranteed to be thread-safe.
+  [[nodiscard]] bool IsEmpty() const PW_LOCKS_EXCLUDED(dispatcher_lock());
+
+  /// Clears this ``Waker``.
+  ///
+  /// After this call, ``Wake`` will no longer perform any action, and
+  /// ``IsEmpty`` will return ``true``.
+  ///
+  /// This operation is guaranteed to be thread-safe.
+  void Clear() PW_LOCKS_EXCLUDED(dispatcher_lock()) {
+    RemoveFromTaskWakerList();
+  }
 
  private:
   Waker(Task& task) PW_LOCKS_EXCLUDED(dispatcher_lock()) : task_(&task) {

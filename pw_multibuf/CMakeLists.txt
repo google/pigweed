@@ -96,6 +96,7 @@ pw_add_library(pw_multibuf STATIC
     public
   PUBLIC_DEPS
     pw_multibuf.chunk
+    pw_preprocessor
   SOURCES
     multibuf.cc
 )
@@ -108,6 +109,32 @@ pw_add_test(pw_multibuf.multibuf_test
     pw_multibuf
     pw_multibuf.header_chunk_region_tracker
     pw_allocator.allocator_testing
+  GROUPS
+    modules
+    pw_multibuf
+)
+
+pw_add_library(pw_multibuf.allocator STATIC
+  HEADERS
+    public/pw_multibuf/allocator.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_async2.dispatcher
+    pw_async2.poll
+    pw_multibuf
+    pw_result
+  SOURCES
+    allocator.cc
+)
+
+pw_add_test(pw_multibuf.allocator_test
+  SOURCES
+    allocator_test.cc
+  PRIVATE_DEPS
+    pw_async2.dispatcher
+    pw_async2.poll
+    pw_multibuf.allocator
   GROUPS
     modules
     pw_multibuf

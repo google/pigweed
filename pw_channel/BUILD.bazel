@@ -32,6 +32,7 @@ cc_library(
         "//pw_async2:poll",
         "//pw_bytes",
         "//pw_multibuf",
+        "//pw_multibuf:allocator",
         "//pw_result",
         "//pw_span",
         "//pw_status",

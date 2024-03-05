@@ -96,6 +96,11 @@ Waker Waker::Clone(WaitReason) & {
   return waker;
 }
 
+bool Waker::IsEmpty() const {
+  std::lock_guard lock(dispatcher_lock());
+  return task_ == nullptr;
+}
+
 void Waker::InsertIntoTaskWakerList() {
   std::lock_guard lock(dispatcher_lock());
   InsertIntoTaskWakerListLocked();
