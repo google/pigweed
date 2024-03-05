@@ -100,14 +100,13 @@ described in this section. For more detail about these sanitizers, see the
 
 * asan: `AddressSanitizer`_ detects memory errors such as out-of-bounds access
   and use-after-free.
-* msan: `MemorySanitizer`_ detects reads of uninitialized memory.
 * tsan: `ThreadSanitizer`_ detects data races.
 * ubsan: `UndefinedBehaviorSanitizer`_ is a fast undefined behavior detector.
   We use the default ``-fsanitize=undefined`` option.
 
 .. note::
-   Pigweed does not currently support msan. See
-   https://issuetracker.google.com/234876100 for details.
+   Pigweed does not currently support `MemorySanitizer`_ (msan). See
+   https://pwbug.dev/234876100 for details.
 
 The exact configurations we use for these sanitizers are in
 `pw_toolchain/host_clang/BUILD.gn <https://cs.pigweed.dev/pigweed/+/main:pw_toolchain/host_clang/BUILD.gn>`_.
