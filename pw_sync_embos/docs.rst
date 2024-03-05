@@ -31,9 +31,10 @@ Signaling Primitives
 
 ThreadNotification & TimedThreadNotification
 ============================================
-The native embOS v4 implementation of its semaphores (``OS_CSEMA``) is very
-efficient, ergo we recommend using the binary semaphore backends for
-ThreadNotifications:
+Prefer using the binary semaphore backends for ThreadNotifications, as the
+native embOS v4 implementation of its semaphores (``OS_CSEMA``) is very
+efficient:
+
 - ``pw_sync:binary_semaphore_thread_notification_backend``
 - ``pw_sync:binary_semaphore_timed_thread_notification_backend``
 

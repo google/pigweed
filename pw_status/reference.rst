@@ -251,10 +251,10 @@ Status codes
    file size.
 
    There is a fair bit of overlap between :c:enumerator:`FAILED_PRECONDITION`
-   and :c:enumerator:`OUT_OF_RANGE`.  We recommend using
-   :c:enumerator:`OUT_OF_RANGE` (the more specific error) when it applies so
-   that callers who are iterating through a space can easily look for an
-   :c:enumerator:`OUT_OF_RANGE` error to detect when they are done.
+   and :c:enumerator:`OUT_OF_RANGE`. Use :c:enumerator:`OUT_OF_RANGE` (the more
+   specific error) when it applies so that callers who are iterating through a
+   space can easily look for an :c:enumerator:`OUT_OF_RANGE` error to detect
+   when they are done.
 
    .. list-table::
 

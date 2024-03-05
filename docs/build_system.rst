@@ -981,9 +981,8 @@ Associating backends with platforms through bazelrc
 As your project grows, you will want to select backends for an increasing
 number of facades. The right backend to choose will depend on the target
 platform (host vs embedded, with potentially multiple target embedded
-platforms). Managing this through command-line flags would be pretty arduous!
-
-What we recommend you do instead is group these flags into configs in your
+platforms). Managing this directly through command-line flags is generally an
+anti-pattern. Instead, group these flags into configs in your
 `bazelrc <https://bazel.build/run/bazelrc>`_. Eventually, your bazelrc may look
 something like this:
 

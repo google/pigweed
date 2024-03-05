@@ -91,8 +91,8 @@
 //   precision and ergo error accumulation into account are not provided on
 //   purpose as this comes with some complexity and requires application
 //   specific tolerances in terms of Units of Least Precision (ULP). Instead,
-//   we recommend developers carefully consider how floating point precision and
-//   error impact the data they are bounding and whether CHECKs are appropriate.
+//   carefully consider how floating point precision and error impact the data
+//   they are bounding and whether CHECKs are appropriate.
 //
 //   Note: PW_CRASH is the equivalent of LOG_FATAL in other systems, where a
 //   device crash is triggered with a message. In Pigweed, logging and

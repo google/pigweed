@@ -248,8 +248,8 @@ Toolchains are typically distributed with their preferred standard C library and
 standard C++ library of choice for the target platform.
 
 Although you do not always have a choice in what standard C library and what
-standard C++ library is used or even how it's compiled, we recommend always
-keeping an eye out for common sources of bloat.
+standard C++ library is used or even how it's compiled, stay vigilant for common
+sources of bloat.
 
 Assert
 ======

@@ -93,8 +93,8 @@ represent the number of ticks for an RTOS API or the number of nanoseconds in
 POSIX.
 
 The ``rep`` should be able to represent the durations of time necessary for the
-application. Pigweed recommends that the duration's ``rep`` used for a clock use
-``int64_t`` in order to trivially avoid integer underflow and overflow risks by
+application. When possible, use ``int64_t`` as the ``rep`` for a clock's
+duration in order to trivially avoid integer underflow and overflow risks by
 covering a range of at least ±292 years. This matches the STL's requirements
 for the duration helper types which are relevant for a clock's tick period:
 
@@ -107,10 +107,10 @@ With this guidance one can avoid common pitfalls like ``uint32_t`` millisecond
 tick rollover bugs when using RTOSes every 49.7 days.
 
 .. warning::
-   We recommend avoiding the ``duration<>::min()`` and ``duration<>::max()``
-   helper member functions where possible as they exceed the ±292 years duration
-   limit assumption. There's an immediate risk of integer underflow or overflow
-   for any arithmetic operations. Consider using ``std::optional`` instead of
+   Avoid the ``duration<>::min()`` and ``duration<>::max()`` helper member
+   functions where possible as they exceed the ±292 years duration limit
+   assumption. There's an immediate risk of integer underflow or overflow for
+   any arithmetic operations. Consider using ``std::optional`` instead of
    priming a variable with a value at the limit.
 
 Helper duration types and literals
@@ -227,13 +227,13 @@ some values like ``0``, ``1000``, etc.
 
 Explicit lossy conversions
 --------------------------
-Although we recommend sticking to implicit lossless conversions, what if for
-some reason a lossy conversion is required? For example what if we're using a
-128Hz RTOS tick clock?
+While code should prefer implicit lossless conversions whenever possible,
+sometimes a lossy conversion is required.
 
-The 128Hz ``period`` can be perfectly represented with a ``std::ratio<1,128>``.
-However you will not be able to implicitly convert any real time unit durations
-to this duration type. Instead explicit lossy conversions must be used. Pigweed
+Consider an example where a RTOS employs a 128Hz tick clock. The 128Hz
+``period`` can be perfectly represented with a ``std::ratio<1,128>``. However
+you will not be able to implicitly convert any real time unit durations to this
+duration type. Instead explicit lossy conversions must be used. Pigweed
 recommends explicitly using:
 
 * `std::chrono::floor <https://en.cppreference.com/w/cpp/chrono/duration/floor>`_
@@ -278,9 +278,10 @@ This code is lossless if the clock period is 1kHz and it's correct using a
 division which rounds up when the clock period is 128Hz.
 
 .. Note::
-   When using ``pw::chrono::SystemClock::duration`` for timeouts we recommend
+   When using ``pw::chrono::SystemClock::duration`` for timeouts, prefer
    using its ``SystemClock::for_at_least()`` to round up timeouts in a more
-   explicit, self documenting manner which uses ``std::chrono::ceil`` internally.
+   explicit, self documenting manner which uses ``std::chrono::ceil``
+   internally.
 
 Use of ``count()`` and ``time_since_epoch()``
 =============================================
@@ -288,8 +289,8 @@ It's easy to escape the typesafe chrono types through the use of
 ``duration<>::count()`` and ``time_point<>::time_since_epoch()``, however this
 increases the risk of accidentally introduce conversion and arithmetic errors.
 
-For this reason, we recommend avoiding these two escape hatches until it's
-absolutely necessary due to I/O such as RPCs or writing to non-volatile storage.
+For this reason, avoid these two escape hatches until it's absolutely necessary
+due to I/O such as RPCs or writing to non-volatile storage.
 
 Discrete Timeouts
 =================
@@ -317,9 +318,8 @@ This same risk exists if a continuously running hardware timer is used for a
 software timer service.
 
 .. Note::
-   When calculating deadlines based on a timeout when using
-   ``pw::chrono::SystemClock::timeout``, we recommend using its
-   ``SystemClock::TimePointAfterAtLeast()`` which adds an extra tick for you
+   When calculating deadlines based on a ``pw::chrono::SystemClock::timeout``,
+   use ``SystemClock::TimePointAfterAtLeast()`` which adds an extra tick for you
    internally.
 
 ------

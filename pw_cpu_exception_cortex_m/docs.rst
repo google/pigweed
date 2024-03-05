@@ -188,10 +188,12 @@ limits must be provided along with a stack processing callback. All of this
 information is captured by a ``pw::thread::Thread`` protobuf encoder.
 
 .. note::
-   We recommend providing the ``pw_cpu_exception_State``, for example through
-   ``pw_cpu_exception_DefaultHandler()`` instead of using the current running
-   context to capture the main stack to minimize how much of the snapshot
-   handling is captured in the stack.
+   To minimize how much of the snapshot handling callstack is captured in the
+   stack trace, provide the ``pw_cpu_exception_State`` collected by the
+   exception entry (For example, as provided by
+   ``pw_cpu_exception_DefaultHandler()``)
+   instead of capturing the stack pointer just before calling into this
+   function.
 
 Python processor
 ================

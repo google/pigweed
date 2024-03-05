@@ -22,7 +22,8 @@ Beyond just compiling code, Pigweed’s GN build system can also:
 * Incrementally run unit tests after code changes (with ``pw_target_runner``)
 * And more!
 
-These are only supported in the GN build, so we recommend using it if possible.
+These are only supported in the GN build, but work is being done to bring
+these to Pigweed's Bazel build integration.
 
 .. toctree::
    :hidden:

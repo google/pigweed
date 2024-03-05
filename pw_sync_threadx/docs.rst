@@ -40,8 +40,9 @@ Signaling Primitives
 
 ThreadNotification & TimedThreadNotification
 ============================================
-The native ThreadX API does cover direct thread signaling and ergo we recommend
-using the binary semaphore backends for ThreadNotifications:
+Prefer using the binary semaphore backends for ThreadNotifications as
+the native ThreadX API covers direct thread signaling:
+
 - ``pw_sync:binary_semaphore_thread_notification_backend``
 - ``pw_sync:binary_semaphore_timed_thread_notification_backend``
 

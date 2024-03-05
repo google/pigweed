@@ -330,8 +330,8 @@ invoke to assert. These macros are found in the ``pw_assert/check.h`` header.
   precision and ergo error accumulation into account are not provided on
   purpose as this comes with some complexity and requires application
   specific tolerances in terms of Units of Least Precision (ULP). Instead,
-  we recommend developers carefully consider how floating point precision and
-  error impact the data they are bounding and whether checks are appropriate.
+  carefully consider how floating point precision and error impact the data
+  they are bounding and whether checks are appropriate.
 
 .. cpp:function:: PW_CHECK_FLOAT_NEAR(a, b, abs_tolerance)
 .. cpp:function:: PW_CHECK_FLOAT_NEAR(a, b, abs_tolerance, format, ...)

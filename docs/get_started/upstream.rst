@@ -190,8 +190,8 @@ Run GN as seen below:
   generating coverage reports. This is due an issue in upstream LLVM reordering
   debug and coverage path mappings (tracked by
   `b/278898014 <https://issuetracker.google.com/278898014>`_ and
-  `b/278906020 <https://issuetracker.google.com/278906020>`_). **We recommend
-  sticking to simple, single directory build directories for the time being.**
+  `b/278906020 <https://issuetracker.google.com/278906020>`_). **Stick to
+  simple, single directory build directories for now.**
 
 Now that we have build files, it's time to build Pigweed!
 

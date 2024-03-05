@@ -27,9 +27,10 @@ Persistent RAM is typically provided through specially carved out linker script
 sections and/or memory ranges which are located in such a way that any
 bootloaders and the application boot code do not clobber it.
 
-1. If persistent linker sections are provided, we recommend using our section
-   placement macro. For example imagine the persistent section name is called
-   `.noinit`, then you could instantiate an object as such:
+1. If persistent linker sections are provided, use the ``PW_PLACE_IN_SECTION()``
+   macro to assign variables to that memory region. For example, if the
+   persistent memory section name is ``.noinit``, then you could instantiate an
+   object as such:
 
    .. code-block:: cpp
 
@@ -40,10 +41,11 @@ bootloaders and the application boot code do not clobber it.
 
       PW_PLACE_IN_SECTION(".noinit") Persistent<bool> persistent_bool;
 
-2. If persistent memory ranges are provided, we recommend using a struct to wrap
-   the different persisted objects. This then could be checked to fit in the
-   provided memory range size, for example by asserting against variables
-   provided through a linker script.
+2. If persistent memory ranges are provided, you can use use a struct to wrap
+   the different persisted objects. This makes it possible to ensure that the
+   data fits in the provided memory range. This must be done via a runtime check
+   against variables provided through the linker script since the addresses
+   of linker script symbols aren't available at compile time.
 
    .. code-block:: cpp
 

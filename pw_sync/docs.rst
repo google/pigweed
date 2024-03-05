@@ -1326,7 +1326,7 @@ tokens.
 The entire API is thread safe, but only a subset is interrupt safe.
 
 .. Note::
-   If there is only a single consuming thread, we recommend using a
+   If there is only a single consuming thread, use a
    :cpp:class:`ThreadNotification` instead which can be much more efficient on
    some RTOSes such as FreeRTOS.
 
@@ -1465,9 +1465,9 @@ tokens.
 The entire API is thread safe, but only a subset is interrupt safe.
 
 .. Note::
-   If there is only a single consuming thread, we recommend using a
-   ThreadNotification instead which can be much more efficient on some RTOSes
-   such as FreeRTOS.
+   If there is only a single consuming thread, use a
+   :cpp:class:`ThreadNotification` instead which can be much more efficient on
+   some RTOSes such as FreeRTOS.
 
 .. list-table::
    :header-rows: 1
