@@ -111,6 +111,7 @@ pw_source_set("to_string") {
     ":format",
     ":util",
     "$dir_pw_third_party/fuchsia:stdcompat",
+    dir_pw_result,
     dir_pw_span,
     dir_pw_status,
   ]

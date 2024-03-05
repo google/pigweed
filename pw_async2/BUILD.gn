@@ -33,6 +33,7 @@ pw_source_set("poll") {
     "public/pw_async2/poll.h",
   ]
   public_deps = [
+    "$dir_pw_string:to_string",
     "$dir_pw_third_party/fuchsia:stdcompat",
     dir_pw_polyfill,
   ]

@@ -31,6 +31,7 @@ cc_library(
     deps = [
         "//third_party/fuchsia:stdcompat",
         "@pigweed//pw_polyfill",
+        "@pigweed//pw_string:to_string",
     ],
 )
 

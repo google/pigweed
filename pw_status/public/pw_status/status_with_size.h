@@ -114,6 +114,31 @@ class _PW_STATUS_NO_DISCARD StatusWithSize {
   constexpr StatusWithSize(const StatusWithSize&) = default;
   constexpr StatusWithSize& operator=(const StatusWithSize&) = default;
 
+  /// ``Update`` s this status and adds to ``size``.
+  ///
+  /// The resulting ``StatusWithSize`` will have a size of
+  /// ``this->size() + new_status_with_size.size()``
+  ///
+  /// The resulting status will be Ok if both statuses are ``Ok``,
+  /// otherwise it will take on the earliest non-``Ok`` status.
+  constexpr void UpdateAndAdd(StatusWithSize new_status_with_size) {
+    Status new_status;
+    if (ok()) {
+      new_status = new_status_with_size.status();
+    } else {
+      new_status = status();
+    }
+    size_t new_size = size() + new_status_with_size.size();
+    *this = StatusWithSize(new_status, new_size);
+  }
+
+  /// Zeros this size if the status is not ``Ok``.
+  constexpr void ZeroIfNotOk() {
+    if (!ok()) {
+      *this = StatusWithSize(status(), 0);
+    }
+  }
+
   // Returns the size. The size is always present, even if status() is an error.
   [[nodiscard]] constexpr size_t size() const { return size_ & kSizeMask; }
 

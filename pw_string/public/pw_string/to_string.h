@@ -56,6 +56,7 @@
 #include <string_view>
 #include <type_traits>
 
+#include "pw_result/result.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
@@ -128,6 +129,19 @@ inline StatusWithSize ToString(Status status, span<char> buffer) {
 
 inline StatusWithSize ToString(pw_Status status, span<char> buffer) {
   return ToString(Status(status), buffer);
+}
+
+template <typename T>
+inline StatusWithSize ToString(const Result<T>& result, span<char> buffer) {
+  if (result.ok()) {
+    StatusWithSize s;
+    s.UpdateAndAdd(ToString("Ok(", buffer));
+    s.UpdateAndAdd(ToString(*result, buffer.subspan(s.size())));
+    s.UpdateAndAdd(ToString(")", buffer.subspan(s.size())));
+    s.ZeroIfNotOk();
+    return s;
+  }
+  return ToString(result.status(), buffer);
 }
 
 inline StatusWithSize ToString(std::byte byte, span<char> buffer) {

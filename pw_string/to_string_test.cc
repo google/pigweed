@@ -20,6 +20,7 @@
 #include <cstring>
 #include <string>
 
+#include "pw_result/result.h"
 #include "pw_status/status.h"
 #include "pw_string/internal/config.h"
 #include "pw_string/type_to_string.h"
@@ -291,6 +292,18 @@ TEST(ToString, StdOptionalWithValue) {
   std::optional<uint16_t> v = 5;
   EXPECT_EQ(1u, ToString(v, buffer).size());
   EXPECT_STREQ("5", buffer);
+}
+
+TEST(ToString, ResultWithNonOkStatus) {
+  Result<int> v = Status::ResourceExhausted();
+  EXPECT_EQ(18u, ToString(v, buffer).size());
+  EXPECT_STREQ("RESOURCE_EXHAUSTED", buffer);
+}
+
+TEST(ToString, ResultWithValue) {
+  Result<int> v = 27;
+  EXPECT_EQ(6u, ToString(v, buffer).size());
+  EXPECT_STREQ("Ok(27)", buffer);
 }
 
 }  // namespace

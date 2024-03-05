@@ -87,6 +87,27 @@ TEST(Poll, ConstructorInfersValueType) {
   EXPECT_STREQ(res.value(), "hello");
 }
 
+TEST(Poll, ReadyToString) {
+  char buffer[128] = {};
+  Poll<> v = Ready();
+  EXPECT_EQ(5u, ToString(v, buffer).size());
+  EXPECT_STREQ("Ready", buffer);
+}
+
+TEST(Poll, ReadyValueToString) {
+  char buffer[128] = {};
+  Poll<uint16_t> v = 5;
+  EXPECT_EQ(8u, ToString(v, buffer).size());
+  EXPECT_STREQ("Ready(5)", buffer);
+}
+
+TEST(Poll, PendingToString) {
+  char buffer[128] = {};
+  Poll<uint16_t> v = Pending();
+  EXPECT_EQ(7u, ToString(v, buffer).size());
+  EXPECT_STREQ("Pending", buffer);
+}
+
 TEST(PendingFunction, ReturnsValueConvertibleToPendingPoll) {
   Poll<MoveOnly> mr = Pending();
   EXPECT_FALSE(mr.IsReady());

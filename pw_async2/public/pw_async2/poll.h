@@ -17,8 +17,10 @@
 
 #include "pw_async2/internal/poll_internal.h"
 #include "pw_polyfill/language_feature_macros.h"
+#include "pw_string/to_string.h"
 
-namespace pw::async2 {
+namespace pw {
+namespace async2 {
 
 /// A type whose value indicates that an operation was able to complete (or
 /// was ready to produce an output).
@@ -198,4 +200,37 @@ inline constexpr PendingType Pending() { return PendingType(); }
 
 #undef PW_NODISCARD_STR
 
-}  // namespace pw::async2
+}  // namespace async2
+
+// --- ToString implementations for ``Poll`` types ---
+
+template <>
+inline StatusWithSize ToString(const async2::ReadyType&, span<char> buffer) {
+  return ToString("Ready", buffer);
+}
+
+template <>
+inline StatusWithSize ToString(const async2::PendingType&, span<char> buffer) {
+  return ToString("Pending", buffer);
+}
+
+// Implement ``ToString`` for ``Poll<T>``.
+template <typename T>
+inline StatusWithSize ToString(const async2::Poll<T>& poll, span<char> buffer) {
+  if (poll.IsReady()) {
+    StatusWithSize s;
+    s.UpdateAndAdd(ToString("Ready(", buffer));
+    s.UpdateAndAdd(ToString(*poll, buffer.subspan(s.size())));
+    s.UpdateAndAdd(ToString(")", buffer.subspan(s.size())));
+    s.ZeroIfNotOk();
+    return s;
+  }
+  return ToString(async2::PendingType{}, buffer);
+}
+
+template <>
+inline StatusWithSize ToString(const async2::Poll<>&, span<char> buffer) {
+  return ToString(async2::ReadyType{}, buffer);
+}
+
+}  // namespace pw
