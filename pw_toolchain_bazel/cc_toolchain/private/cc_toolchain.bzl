@@ -253,6 +253,10 @@ def pw_cc_toolchain(name, action_config_flag_sets = None, **kwargs):
     pw_cc_toolchain_config(
         name = config_name,
         visibility = ["//visibility:private"],
+        compatible_with = kwargs.get("compatible_with", None),
+        target_compatible_with = kwargs.get("target_compatible_with", None),
+        exec_compatible_with = kwargs.get("exec_compatible_with", None),
+        tags = kwargs.get("tags", None),
         **cc_toolchain_config_args
     )
 
@@ -263,6 +267,10 @@ def pw_cc_toolchain(name, action_config_flag_sets = None, **kwargs):
             config = config_name,
             actions = actions,
             visibility = ["//visibility:private"],
+            compatible_with = kwargs.get("compatible_with", None),
+            target_compatible_with = kwargs.get("target_compatible_with", None),
+            exec_compatible_with = kwargs.get("exec_compatible_with", None),
+            tags = kwargs.get("tags", None),
         )
         cc_toolchain_args[group] = group_name
 
