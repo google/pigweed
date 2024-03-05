@@ -71,7 +71,6 @@ pw_add_library(pw_unit_test.googletest_handler_adapter STATIC
     pw_third_party.googletest
   PUBLIC_INCLUDES
     public
-    
 )
 
 pw_add_library(pw_unit_test.googletest STATIC
