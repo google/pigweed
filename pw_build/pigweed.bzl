@@ -22,12 +22,6 @@ load(
     _link_cc = "link_cc",
 )
 
-# Used by `pw_cc_test`.
-FUZZTEST_OPTS = [
-    "-Wno-sign-compare",
-    "-Wno-unused-parameter",
-]
-
 def pw_cc_binary(**kwargs):
     """Wrapper for cc_binary providing some defaults.
 
@@ -69,16 +63,6 @@ def pw_cc_test(**kwargs):
     # way to handle the facades without introducing a circular dependency into
     # the build.
     kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_build:default_link_extra_lib"]
-
-    # Some tests may include FuzzTest, which includes headers that trigger
-    # warnings. This check must be done here and not in `add_defaults`, since
-    # the `use_fuzztest` config setting can refer by label to a library which
-    # itself calls `add_defaults`.
-    extra_copts = select({
-        "@pigweed//pw_fuzzer:use_fuzztest": FUZZTEST_OPTS,
-        "//conditions:default": [],
-    })
-    kwargs["copts"] = kwargs.get("copts", []) + extra_copts
 
     native.cc_test(**kwargs)
 
