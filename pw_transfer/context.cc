@@ -602,16 +602,24 @@ void Context::TransmitNextChunk(bool retransmit_requested) {
   }
 
   ByteSpan buffer = thread_->encode_buffer();
+  Result<ByteSpan> data;
 
-  ByteSpan data_buffer = buffer.subspan(reserved_size);
-  size_t max_bytes_to_send =
-      std::min(window_end_offset_ - offset_, max_chunk_size_bytes_);
+  if (offset_ < total_size) {
+    // Read the next chunk of data into the encode buffer.
+    ByteSpan data_buffer = buffer.subspan(reserved_size);
+    size_t max_bytes_to_send =
+        std::min(window_end_offset_ - offset_, max_chunk_size_bytes_);
 
-  if (max_bytes_to_send < data_buffer.size()) {
-    data_buffer = data_buffer.first(max_bytes_to_send);
+    if (max_bytes_to_send < data_buffer.size()) {
+      data_buffer = data_buffer.first(max_bytes_to_send);
+    }
+
+    data = reader().Read(data_buffer);
+  } else {
+    // The user-specified resource size has been reached: respect it.
+    data = Status::OutOfRange();
   }
 
-  Result<ByteSpan> data = reader().Read(data_buffer);
   if (data.status().IsOutOfRange()) {
     // No more data to read.
     chunk.set_remaining_bytes(0);
@@ -676,7 +684,7 @@ void Context::TransmitNextChunk(bool retransmit_requested) {
   last_chunk_sent_ = chunk.type();
   flags_ |= kFlagsDataSent;
 
-  if (offset_ == window_end_offset_) {
+  if (offset_ == window_end_offset_ || offset_ == total_size) {
     // Sent all requested data. Must now wait for next parameters from the
     // receiver.
     set_transfer_state(TransferState::kWaiting);

@@ -288,6 +288,11 @@ The transfer size can only be set on the transmitting side of the transfer;
 that is, the client in a ``Write`` transfer or the server in a ``Read``
 transfer.
 
+If the specified resource size is smaller than the available transferrable data,
+only a slice of the data up to the resource size will be transferred. If the
+specified size is equal to or larger than the data size, all of the data will
+be sent.
+
 **Setting a transfer size from a transmitting client**
 
 .. code-block:: c++

@@ -2024,7 +2024,7 @@ TEST_F(ReadTransfer, Version2_HandlerSetsTransferSize) {
 
   // Complete the handshake by confirming the server's ACK and sending the first
   // read transfer parameters.
-  rpc::test::WaitForPackets(ctx_.output(), 5, [this] {
+  rpc::test::WaitForPackets(ctx_.output(), 4, [this] {
     ctx_.SendClientStream(EncodeChunk(
         Chunk(ProtocolVersion::kVersionTwo, Chunk::Type::kStartAckConfirmation)
             .set_session_id(kArbitrarySessionId)
@@ -2035,7 +2035,7 @@ TEST_F(ReadTransfer, Version2_HandlerSetsTransferSize) {
     transfer_thread_.WaitUntilEventIsProcessed();
   });
 
-  ASSERT_EQ(ctx_.total_responses(), 6u);
+  ASSERT_EQ(ctx_.total_responses(), 5u);
 
   // Each of the sent chunks should have a remaining_bytes value set.
   Chunk c1 = DecodeChunk(ctx_.responses()[1]);
