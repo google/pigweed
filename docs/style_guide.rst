@@ -13,7 +13,7 @@ Style Guide
       Our C++ style guide: an extension of the Google C++ style with further
       restrictions and guidance for embedded
 
-.. grid:: 3
+.. grid:: 2
 
    .. grid-item-card:: :octicon:`rocket` Commit messages
       :link: docs-pw-style-commit-message
@@ -29,8 +29,17 @@ Style Guide
 
       Our website and module documentation is built with Sphinx
 
+.. grid:: 2
+
    .. grid-item-card:: :octicon:`code-square` Doxygen
       :link: docs-pw-style-doxygen
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      How to structure reference documentation for C++ code
+
+   .. grid-item-card:: :octicon:`code-square` Protobuf
+      :link: docs-pw-style-protobuf
       :link-type: ref
       :class-item: sales-pitch-cta-secondary
 
@@ -200,4 +209,5 @@ This plugin will, by default, act upon any file named "OWNERS".
    C++ <style/cpp>
    Commit message <style/commit_message>
    Doxygen documentation <style/doxygen>
+   Protobuf <style/protobuf>
    Sphinx documentation <style/sphinx>
