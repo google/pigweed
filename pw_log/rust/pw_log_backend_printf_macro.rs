@@ -76,7 +76,7 @@ impl<'a> PrintfFormatMacroGenerator for LogfGenerator<'a> {
                 fn printf(fmt: *const c_uchar, ...) -> c_int;
               }
               printf(#format_string.as_ptr(),
-                __pw_log_crate::pw_log_backend::log_level_tag(#log_level).as_ptr(),
+              __pw_log_backend_crate::log_level_tag(#log_level).as_ptr(),
                 #(#args),*);
             }
           }
@@ -109,7 +109,7 @@ impl<'a> PrintfFormatMacroGenerator for LogfGenerator<'a> {
 }
 
 #[proc_macro]
-pub fn pw_logf_backend(tokens: TokenStream) -> TokenStream {
+pub fn _pw_logf_backend(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input!(tokens as PwLogfArgs);
 
     let generator = LogfGenerator::new(&input.log_level);

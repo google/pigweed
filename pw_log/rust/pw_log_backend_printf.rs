@@ -24,17 +24,28 @@
 //!    off-ramp from Rust's safety guarantees.
 //!
 //! TODO: <pwbug.dev/311232605> - Document how to configure facade backends.
-use pw_log_backend_api::LogLevel;
-pub use pw_log_backend_printf_macro::pw_logf_backend;
+pub use pw_log_backend_printf_macro::_pw_logf_backend;
 
 #[doc(hidden)]
-pub const fn log_level_tag(level: LogLevel) -> &'static str {
-    match level {
-        LogLevel::Debug => "DBG\0",
-        LogLevel::Info => "INF\0",
-        LogLevel::Warn => "WRN\0",
-        LogLevel::Error => "ERR\0",
-        LogLevel::Critical => "CRT\0",
-        LogLevel::Fatal => "FTL\0",
+pub mod __private {
+    use pw_log_backend_api::LogLevel;
+    pub const fn log_level_tag(level: LogLevel) -> &'static str {
+        match level {
+            LogLevel::Debug => "DBG\0",
+            LogLevel::Info => "INF\0",
+            LogLevel::Warn => "WRN\0",
+            LogLevel::Error => "ERR\0",
+            LogLevel::Critical => "CRT\0",
+            LogLevel::Fatal => "FTL\0",
+        }
     }
+}
+
+// Implement the `pw_log` backend API.
+#[macro_export]
+macro_rules! pw_logf_backend {
+  ($log_level:expr, $format_string:literal $(, $args:expr)* $(,)?) => {{
+    use $crate::__private as __pw_log_backend_crate;
+    $crate::_pw_logf_backend!($log_level, $format_string, $($args),*);
+  }};
 }

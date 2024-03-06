@@ -71,8 +71,7 @@ impl<'a> CoreFmtFormatMacroGenerator for LogfGenerator<'a> {
         Ok(quote! {
           {
             use std::println;
-            println!(#format_string, __pw_log_crate::pw_log_backend::log_level_tag(#log_level), #(#args),*);
-            // Todo, return status?
+            println!(#format_string, __pw_log_backend_crate::log_level_tag(#log_level), #(#args),*);
           }
         })
     }
@@ -99,7 +98,7 @@ impl<'a> CoreFmtFormatMacroGenerator for LogfGenerator<'a> {
 }
 
 #[proc_macro]
-pub fn pw_logf_backend(tokens: TokenStream) -> TokenStream {
+pub fn _pw_logf_backend(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input!(tokens as PwLogfArgs);
 
     let generator = LogfGenerator::new(&input.log_level);
