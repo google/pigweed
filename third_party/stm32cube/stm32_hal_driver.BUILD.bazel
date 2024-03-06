@@ -66,11 +66,11 @@ _DISABLED_WARNINGS = [
 
 cc_library(
     name = "hal_driver",
+    copts = _DISABLED_WARNINGS,
     deps = [
         ":hal_driver_without_timebase",
         ":timebase",
     ],
-    copts = _DISABLED_WARNINGS,
 )
 
 cc_library(
@@ -82,12 +82,12 @@ cc_library(
         ],
         exclude = ["Src/*_template.c"],
     ),
+    copts = _DISABLED_WARNINGS,
     deps = [
         ":cmsis_device",
         ":cmsis_init",
         ":hal_headers",
     ],
-    copts = _DISABLED_WARNINGS,
 )
 
 cc_library(
@@ -102,6 +102,10 @@ cc_library(
             "Inc/*_hal_conf_template.h",
         ],
     ),
+    copts = _DISABLED_WARNINGS,
+    defines = [
+        "USE_HAL_DRIVER",
+    ],
     includes = [
         "Inc",
         "Inc/Legacy",
@@ -110,8 +114,4 @@ cc_library(
         ":cmsis_device",
         ":hal_config",
     ],
-    defines = [
-        "USE_HAL_DRIVER",
-    ],
-    copts = _DISABLED_WARNINGS,
 )

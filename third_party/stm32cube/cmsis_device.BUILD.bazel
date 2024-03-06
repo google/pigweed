@@ -36,10 +36,10 @@ cc_library(
             "Include/*.h",
         ],
     ),
-    includes = ["Include"],
     defines = [
         "__ARMCC_VERSION=0",
     ],
+    includes = ["Include"],
     deps = [
         ":cmsis_core",
     ],
