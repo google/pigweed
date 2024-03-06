@@ -16,37 +16,6 @@
 namespace pw {
 namespace unit_test {
 
-// This file defines the interface through which the pw_unit_test framework
-// sends its test data as it runs unit tests. A program wanting to process test
-// events must define a class implementing the EventHandler interface and
-// register it with the framework. When RUN_ALL_TESTS() is called, pw_unit_test
-// will notify the handler of various events which occur in the test process.
-//
-// For example, consider a file containing the following test definitions:
-//
-//   TEST(MyTestSuite, MyFirstCase) {
-//     EXPECT_TRUE(true);
-//   }
-//
-//   TEST(MyTestSuite, MySecondCase) {
-//     EXPECT_TRUE(false);
-//   }
-//
-// In this file, there is one test suite consisting of two test cases.
-//
-// When pw_unit_test starts running the first test case, it dispatches a
-// TestCaseStart event to the event handler. It then runs the body of the test,
-// sequentially checking each assertion within. After each assertion, a
-// TestCaseExpect event is sent to the event handler with the assertion's
-// result. In this case, there is only one, which passes successfully (as
-// `true`, is in fact, true). Finally, after the test is finished, a TestCaseEnd
-// event is dispatched with the overall result of the test case.
-//
-// pw_unit_test then runs MySecondCase, still within the same test suite. The
-// sequence of events dispatched is the same, except that this TestCaseExpect
-// event is marked as a failure. The result passed alongside the TestCaseEnd
-// event also indicates that the test case did not complete successfully.
-
 // The result of a complete test run.
 enum class TestResult {
   kSuccess = 0,
@@ -113,56 +82,85 @@ struct TestSuite {
   int test_to_run_count;
 };
 
-// An event handler is responsible for collecting and processing the results of
-// a unit test run. Its interface is called by the unit test framework as tests
-// are executed and various test events occur.
+/// Collects and processes the results of a unit test run. Its interface is
+/// called by the unit test framework as tests are executed and various test
+/// events occur.
+///
+/// A program wanting to process test events must define a class implementing
+/// the ``pw::unit_test::EventHandler`` interface and register it with the
+/// framework. When ``RUN_ALL_TESTS()`` is called, ``pw_unit_test`` notifies
+/// the handler of various events which occur in the test process.
+/// For example, consider a file containing the following test definitions:
+///
+/// @code{.cpp}
+///   TEST(MyTestSuite, MyFirstCase) {
+///     EXPECT_TRUE(true);
+///   }
+///
+///   TEST(MyTestSuite, MySecondCase) {
+///     EXPECT_TRUE(false);
+///   }
+/// @endcode
+///
+/// There's one test suite consisting of two test cases. When ``pw_unit_test``
+/// starts running the first test case (``MyFirstCase``), it dispatches a
+/// ``TestCaseStart`` event to the event handler. It then runs the body of the
+/// test, sequentially checking each expectation within. After each expectation,
+/// a
+/// ``TestCaseExpect`` event is sent to the event handler with the expectation's
+/// result. In this case, there's only one, which passes successfully. Finally,
+/// after the test is finished, a ``TestCaseEnd`` event is dispatched with the
+/// overall result of the test case. ``pw_unit_test`` then runs ``MySecondCase``
+/// in the same way.
 class EventHandler {
  public:
   virtual ~EventHandler() = default;
 
-  // Called before any test activity starts.
+  /// Called before any test activity starts.
   virtual void TestProgramStart(const ProgramSummary& program_summary) = 0;
 
-  // Called after environment set-up for each iteration of tests ends.
+  /// Called after environment setup for each iteration of tests ends.
   virtual void EnvironmentsSetUpEnd() = 0;
 
-  // Called before the test suite starts.
+  /// Called before the test suite starts.
   virtual void TestSuiteStart(const TestSuite& test_suite) = 0;
 
-  // Called after the test suite ends.
+  /// Called after the test suite ends.
   virtual void TestSuiteEnd(const TestSuite& test_suite) = 0;
 
-  // Called after environment tear-down for each iteration of tests ends.
+  /// Called after environment teardown for each iteration of tests ends.
   virtual void EnvironmentsTearDownEnd() = 0;
 
-  // Called after all test activities have ended.
+  /// Called after all test activities have ended.
   virtual void TestProgramEnd(const ProgramSummary& program_summary) = 0;
 
-  // Called before all tests are run.
+  /// Called before all tests are run.
   virtual void RunAllTestsStart() = 0;
 
-  // Called after all tests are run.
+  /// Called after all tests are run.
   virtual void RunAllTestsEnd(const RunTestsSummary& run_tests_summary) = 0;
 
-  // Called when a new test case is started.
+  /// Called when a new test case is started.
   virtual void TestCaseStart(const TestCase& test_case) = 0;
 
-  // Called when a test case completes. The overall result of the test case is
-  // provided.
+  /// Called when a test case completes. The overall result of the test case is
+  /// provided.
   virtual void TestCaseEnd(const TestCase& test_case, TestResult result) = 0;
 
-  // Called when a disabled test case is encountered.
+  /// Called when a disabled test case is encountered.
   virtual void TestCaseDisabled(const TestCase&) {}
 
-  // Called after each expect/assert statement within a test case with the
-  // result of the expectation.
+  /// Called after each expect or assert statement within a test case with the
+  /// result.
   virtual void TestCaseExpect(const TestCase& test_case,
                               const TestExpectation& expectation) = 0;
 };
 
-// Sets the event handler for a test run. Must be called before RUN_ALL_TESTS()
-// to receive test output. If `event_handler` is null, this will disable event
-// handling. This method is not thread-safe.
+/// Sets the event handler for a test run. Must be called before
+/// `RUN_ALL_TESTS()` to receive test output. Set `event_handler` to null
+/// to disable event handling.
+///
+/// @warning This method is not thread-safe.
 void RegisterEventHandler(EventHandler* event_handler);
 
 }  // namespace unit_test

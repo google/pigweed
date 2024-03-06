@@ -21,8 +21,9 @@
 namespace pw {
 namespace unit_test {
 
-// An event handler implementation that displays GoogleTest-style output using
-// std::printf.
+/// Predefined event handler implementation that produces human-readable
+/// GoogleTest-style test output and logs it via ``std::printf``. See
+/// ``pw::unit_test::EventHandler`` for explanations of emitted events.
 class PrintfEventHandler final : public GoogleTestStyleEventHandler {
  public:
   constexpr PrintfEventHandler(bool verbose = false)

@@ -17,8 +17,9 @@
 
 namespace pw::unit_test {
 
-// An event handler implementation that logs human-readable messages to the
-// standard Pigweed logging system, pw_log.
+/// Predefined event handler implementation that produces human-readable
+/// GoogleTest-style test output and logs it via ``pw_log``. See
+/// ``pw::unit_test::EventHandler`` for explanations of emitted events.
 class LoggingEventHandler : public EventHandler {
  public:
   // If verbose is set, expectations values are always displayed.

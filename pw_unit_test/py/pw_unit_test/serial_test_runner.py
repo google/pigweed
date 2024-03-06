@@ -12,11 +12,11 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""This library facilitates automating unit tests on devices with serial ports.
+"""Facilitates automating unit tests on devices with serial ports.
 
-This library assumes that the on-device test runner will emit the test results
-as plain-text over a serial port, and tests will be triggered by a pre-defined
-input (DEFAULT_TEST_START_CHARACTER) over the same serial port that results
+This library assumes that the on-device test runner emits the test results
+as plain-text over a serial port, and that tests are triggered by a pre-defined
+input (``DEFAULT_TEST_START_CHARACTER``) over the same serial port that results
 are emitted from.
 """
 
@@ -168,13 +168,13 @@ def run_device_test(
 ) -> bool:
     """Runs tests on a device.
 
-    When a unit test run fails, results will be logged as an error.
+    When a unit test run fails, results are logged as an error.
 
     Args:
       device: The device to run tests on.
-      binary: The binary containing tests that will be flashed to the device.
+      binary: The binary containing tests to flash on the device.
       test_timeout: If the device stops producing output longer than this
-        timeout, the test will be considered stuck and the test will be aborted.
+        timeout, the test is considered stuck and is aborted.
 
     Returns:
       True if all tests passed.

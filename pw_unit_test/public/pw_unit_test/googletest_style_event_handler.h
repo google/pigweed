@@ -53,7 +53,11 @@
 namespace pw {
 namespace unit_test {
 
-// Renders the test results in Google Test style.
+/// Provides GoogleTest-style output for ``pw_unit_test:light`` events. Must
+/// be extended to define how to output the results. See
+/// ``pw::unit_test::EventHandler`` for an explanation of each event and
+/// ``pw::unit_test::SimplePrintingEventHandler`` for an example of a
+/// concrete implementation of this interface.
 class GoogleTestStyleEventHandler : public EventHandler {
  public:
   void TestProgramStart(const ProgramSummary& program_summary) override;

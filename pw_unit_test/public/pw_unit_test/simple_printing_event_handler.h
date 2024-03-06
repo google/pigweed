@@ -23,16 +23,44 @@
 
 namespace pw::unit_test {
 
-// An event handler implementation which produces human-readable test output.
-//
-// Example output:
-//
-//   >>> Running MyTestSuite.TestCase1
-//   [SUCCESS] 128 <= 129
-//   [FAILURE] 'a' == 'b'
-//     at ../path/to/my/file_test.cc:4831
-//   <<< Test MyTestSuite.TestCase1 failed
-//
+/// Predefined event handler implementation that produces human-readable
+/// GoogleTest-style test output and sends it to a sink that you define.
+/// See ``pw::unit_test::EventHandler`` for explanations of emitted events.
+///
+/// Example:
+///
+/// @code{.cpp}
+///   #include "pw_unit_test/framework.h"
+///   // pw_unit_test:light requires an event handler to be configured.
+///   #include "pw_unit_test/simple_printing_event_handler.h"
+///
+///   void WriteString(const std::string_view& string, bool newline) {
+///     printf("%s", string.data());
+///     if (newline) {
+///       printf("\n");
+///     }
+///   }
+///
+///   int main() {
+///     // The following line has no effect with pw_unit_test_light, but makes
+///     // this test compatible with upstream GoogleTest.
+///     testing::InitGoogleTest();
+///     // Since we are using pw_unit_test:light, set up an event handler.
+///     pw::unit_test::SimplePrintingEventHandler handler(WriteString);
+///     pw::unit_test::RegisterEventHandler(&handler);
+///     return RUN_ALL_TESTS();
+///   }
+/// @endcode
+///
+/// Example output:
+///
+/// @code{.txt}
+///   >>> Running MyTestSuite.TestCase1
+///   [SUCCESS] 128 <= 129
+///   [FAILURE] 'a' == 'b'
+///     at ../path/to/my/file_test.cc:4831
+///   <<< Test MyTestSuite.TestCase1 failed
+/// @endcode
 class SimplePrintingEventHandler : public GoogleTestStyleEventHandler {
  public:
   // Function for writing output as a string.

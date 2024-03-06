@@ -20,8 +20,8 @@
 
 namespace pw::unit_test {
 
-// An event handler adapter that allows for multiple event handlers to be
-// registered and used during test runs
+/// Event handler adapter that allows for multiple event handlers to be
+/// registered and used during test runs.
 template <size_t kNumHandlers>
 class MultiEventHandler : public EventHandler {
  public:

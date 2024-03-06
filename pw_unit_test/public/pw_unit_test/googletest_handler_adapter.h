@@ -20,6 +20,12 @@
 namespace pw {
 namespace unit_test {
 
+/// Adapts a custom ``main()`` function to work with upstream GoogleTest
+/// without modification. Custom ``main()`` functions are used for complex
+/// testing scenarios, such as on-device testing. Must be paired with a
+/// predefined event handler, such as
+/// ``pw::unit_test::GoogleTestStyleEventHandler``.
+/// See ``pw::unit_test::EventHandler`` for an explanation of each event.
 class GoogleTestHandlerAdapter : public testing::EmptyTestEventListener {
  public:
   GoogleTestHandlerAdapter(EventHandler& handler) : handler_(handler) {}

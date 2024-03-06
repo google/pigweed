@@ -11,7 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Utilities for running unit tests over Pigweed RPC."""
+"""Utilities for running unit tests over :ref:`module-pw_rpc`."""
 
 import enum
 import abc
@@ -94,7 +94,7 @@ class EventHandler(abc.ABC):
     def test_case_expect(
         self, test_case: TestCase, expectation: TestExpectation
     ) -> None:
-        """Called after each expect/assert statement within a test case."""
+        """Called after each expect or assert statement within a test case."""
 
 
 class LoggingEventHandler(EventHandler):
@@ -135,7 +135,7 @@ class LoggingEventHandler(EventHandler):
 
 @dataclass(frozen=True)
 class TestRecord:
-    """Class for recording test results."""
+    """Records test results."""
 
     passing_tests: Tuple[TestCase, ...]
     failing_tests: Tuple[TestCase, ...]
@@ -155,10 +155,10 @@ def run_tests(
     event_handlers: Iterable[EventHandler] = (LoggingEventHandler(),),
     timeout_s: OptionalTimeout = UseDefault.VALUE,
 ) -> TestRecord:
-    """Runs unit tests on a device over Pigweed RPC.
+    """Runs unit tests on a device over :ref:`module-pw_rpc`.
 
     Calls each of the provided event handlers as test events occur, and returns
-    True if all tests pass.
+    ``True`` if all tests pass.
     """
     unit_test_service = rpcs.pw.unit_test.UnitTest  # type: ignore[attr-defined]
     request = unit_test_service.Run.request(

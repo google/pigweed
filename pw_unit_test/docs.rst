@@ -3,163 +3,345 @@
 ============
 pw_unit_test
 ============
-``pw_unit_test`` provides a `GoogleTest`_-compatible unit testing API for
-Pigweed. The default implementation is the embedded-friendly
-``pw_unit_test:light`` backend. Upstream GoogleTest may be used as well using
-the ``pw_unit_test:googletest`` backend after setting up Googletest (see
-`Using upstream GoogleTest`_).
+.. pigweed-module::
+   :name: pw_unit_test
+   :tagline: GoogleTest for embedded
+   :status: stable
+   :languages: C++17
 
-.. _GoogleTest: https://github.com/google/googletest
+.. tab-set::
 
-.. note::
+   .. tab-item:: mylib_test.cpp
 
-   This documentation is currently incomplete.
+      .. code-block:: c++
 
--------------------------------------------
-pw_unit_test:light: GoogleTest for Embedded
--------------------------------------------
-``pw_unit_test:light`` implements a subset of `GoogleTest`_ with lightweight,
-embedded-friendly primitives. It is also highly portable and can run on almost
-any system from bare metal to a full-fledged desktop OS. It does this by
-offloading the responsibility of test reporting and output to the underlying
-system, communicating its results through a common interface. Unit tests can be
-written once and run under many different environments, empowering developers to
-write robust, high quality code.
+         #include "mylib.h"
 
-``pw_unit_test:light`` usage is the same as GoogleTest;
-refer to the `GoogleTest documentation <https://google.github.io/googletest/>`_
-for examples of how to define unit test cases.
+         #include "pw_unit_test/framework.h"
 
-``pw_unit_test:light`` is still under development and lacks many features
-expected in a complete testing framework; nevertheless, it is already used
-heavily within Pigweed.
+         namespace {
 
-GoogleTest compatibility
+         TEST(MyTestSuite, MyTestCase) {
+           pw::InlineString<32> expected = "(╯°□°)╯︵ ┻━┻";
+           pw::InlineString<32> actual = mylib::flip_table();
+           EXPECT_STREQ(expected.c_str(), actual.c_str());
+         }
+
+         }
+
+   .. tab-item:: BUILD.bazel
+
+      .. code-block:: python
+
+         load("@pigweed//pw_build:pigweed.bzl", "pw_cc_test")
+
+         cc_library(
+             name = "mylib",
+             srcs = ["mylib.cc"],
+             hdrs = ["mylib.h"],
+             includes = ["."],
+             deps = ["@pigweed//pw_string"],
+         )
+
+         pw_cc_test(
+             name = "mylib_test",
+             srcs = ["mylib_test.cc"],
+             deps = [
+                 "@pigweed//pw_unit_test",
+                 ":mylib",
+             ],
+         )
+
+   .. tab-item:: mylib.cc
+
+      .. code-block:: c++
+
+         #include "mylib.h"
+
+         #include "pw_string/string.h"
+
+         namespace mylib {
+
+         pw::InlineString<32> flip_table() {
+           pw::InlineString<32> textmoji = "(╯°□°)╯︵ ┻━┻";
+           return textmoji;
+         }
+
+         }
+
+   .. tab-item:: mylib.h
+
+      .. code-block:: c++
+
+         #include "pw_string/string.h"
+
+         namespace mylib {
+
+         pw::InlineString<32> flip_table();
+
+         }
+
+.. _GoogleTest: https://google.github.io/googletest/
+
+``pw_unit_test`` provides a `GoogleTest`_-compatible unit testing framework for
+Pigweed-based projects. The default backend is a lightweight subset of
+GoogleTest that uses embedded-friendly primitives.
+
+.. grid:: 1
+
+   .. grid-item-card:: :octicon:`rocket` Quickstart
+      :link: module-pw_unit_test-quickstart
+      :link-type: ref
+      :class-item: sales-pitch-cta-primary
+
+      Set up your project for testing and learn testing basics.
+
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`list-unordered` Guides
+      :link: module-pw_unit_test-guides
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Learn how to do common tasks.
+
+   .. grid-item-card:: :octicon:`code-square` C++ API reference
+      :link: module-pw_unit_test-cpp
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Get detailed C++ API reference information.
+
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`code-square` Bazel API reference
+      :link: module-pw_unit_test-bazel
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Get detailed Bazel API reference information.
+
+   .. grid-item-card:: :octicon:`code-square` GN API reference
+      :link: module-pw_unit_test-gn
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Get detailed GN API reference information.
+
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`code-square` CMake API reference
+      :link: module-pw_unit_test-cmake
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Get detailed CMake API reference information.
+
+   .. grid-item-card:: :octicon:`code-square` Python API reference
+      :link: module-pw_unit_test-py
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Get detailed Python API reference information.
+
+.. _module-pw_unit_test-quickstart:
+
+----------
+Quickstart
+----------
+
+Set up your build system
 ========================
-pw_unit_test implements a subset of GoogleTest. Supported features include:
+.. tab-set::
 
-* Test and test suite declarations.
-* Most ``EXPECT`` and ``ASSERT`` macros, including ``EXPECT_OK`` and
-  ``ASSERT_OK`` for functions returning a status.
-* ``ASSERT_OK_AND_ASSIGN`` to test assigning a value when status is ``OK`` or
-  fail the test.
-* ``StatusIs`` matcher to expect a specific ``pw::Status`` other that ``OK``.
-* ``IsOkAndHolds`` matcher to expect an object's status is ``OK`` and the value
-  matches an expected value.
-* Stream-style expectation messages, such as
-  ``EXPECT_EQ(val, 5) << "Inputs: " << input``. Messages are currently ignored.
+   .. tab-item:: Bazel
 
-Many of GoogleTest's advanced features are not yet implemented. Missing features
-include:
+      Load the :ref:`module-pw_unit_test-pw_cc_test` rule and create a target
+      that depends on ``@pigweed//pw_unit_test`` as well as the code you want
+      to test:
 
-* Any GoogleMock features (e.g. :c:macro:`EXPECT_THAT`)
-* Floating point comparison macros (e.g. :c:macro:`EXPECT_FLOAT_EQ`)
-* Death tests (e.g. :c:macro:`EXPECT_DEATH`); ``EXPECT_DEATH_IF_SUPPORTED``
-  does nothing but silently passes
-* Value-parameterized tests
+      .. code-block:: python
 
-To request a feature addition, please `let us know
-<mailto:pigweed@googlegroups.com>`_.
+         load("@pigweed//pw_build:pigweed.bzl", "pw_cc_test")
 
-If a test needs to include other GoogleTest functionality not
-included in the ``light`` backend, it must include the GoogleTest headers (e.g.
-``gtest/gtest.h``, ``gmock/gmock.h``) directly and the target definition must be
-guarded to avoid compiling it with the ``light`` backend.
+         cc_library(
+             name = "mylib",
+             srcs = ["mylib.cc"],
+             hdrs = ["mylib.h"],
+             includes = ["."],
+             deps = ["..."],
+         )
 
-See `Using upstream GoogleTest`_ below for information about using upstream
-GoogleTest instead.
+         pw_cc_test(
+             name = "mylib_test",
+             srcs = ["mylib_test.cc"],
+             deps = [
+                 "@pigweed//pw_unit_test",
+                 ":mylib",
+             ],
+         )
 
-API Reference
--------------
-Unit tests that can use either ``pw_unit_test:light`` or
-``pw_unit_test:googletest`` must include ``pw_unit_test/framework.h`` to use the
-following APIs.
+      This assumes that your Bazel ``WORKSPACE`` has a `repository
+      <https://bazel.build/concepts/build-ref#repositories>`_ named ``@pigweed``
+      that points to the upstream Pigweed repository.
 
+      See also :ref:`module-pw_unit_test-bazel`.
 
-Test Declaration
-````````````````
+   .. tab-item:: GN
 
-.. doxygendefine:: TEST
-.. doxygendefine:: GTEST_TEST
-.. doxygendefine:: TEST_F
-.. doxygendefine:: FRIEND_TEST
+      Import ``$dir_pw_unit_test/test.gni`` and create a ``pw_test`` rule that
+      depends on the code you want to test:
 
-Test Control
-````````````
+      .. code-block:: python
 
-.. doxygendefine:: FAIL
-.. doxygendefine:: GTEST_FAIL
-.. doxygendefine:: SUCCEED
-.. doxygendefine:: GTEST_SUCCEED
-.. doxygendefine:: GTEST_SKIP
-.. doxygendefine:: ADD_FAILURE
-.. doxygendefine:: RUN_ALL_TESTS
-.. doxygendefine:: GTEST_HAS_DEATH_TEST
-.. doxygendefine:: EXPECT_DEATH_IF_SUPPORTED
-.. doxygendefine:: ASSERT_DEATH_IF_SUPPORTED
+         import("$dir_pw_unit_test/test.gni")
 
-.. _module-pw_unit_test-api-expect:
+         pw_source_set("mylib") {
+           sources = [ "mylib.cc" ]
+         }
 
-Expectations
-````````````
-Expectations perform a check that when fails continues the test's execution
-while still marking the test as a failure. They're particularly handy when
-verifying multiple dimensions of the same feature so we can see all the errors
-at the same time.
+         pw_test("mylib_test") {
+           sources = [ "mylib_test.cc" ]
+           deps = [ ":mylib" ]
+         }
 
-.. doxygendefine:: EXPECT_TRUE
-.. doxygendefine:: EXPECT_FALSE
-.. doxygendefine:: EXPECT_EQ
-.. doxygendefine:: EXPECT_NE
-.. doxygendefine:: EXPECT_GT
-.. doxygendefine:: EXPECT_GE
-.. doxygendefine:: EXPECT_LT
-.. doxygendefine:: EXPECT_LE
-.. doxygendefine:: EXPECT_NEAR
-.. doxygendefine:: EXPECT_FLOAT_EQ
-.. doxygendefine:: EXPECT_DOUBLE_EQ
-.. doxygendefine:: EXPECT_STREQ
-.. doxygendefine:: EXPECT_STRNE
+      See :ref:`module-pw_unit_test-gn` for more information.
 
-.. _module-pw_unit_test-api-assert:
+``pw_unit_test`` generates a simple ``main`` function for running tests on
+:ref:`target-host`. See :ref:`module-pw_unit_test-main` to learn how to
+create your own ``main`` function for running on-device tests.
 
-Assertions
-``````````
-Assertions work exactly the same as expectations, but stop the execution of the
-test as soon as a failed condition is met.
+Write tests
+===========
+Create test suites and test cases:
 
-.. doxygendefine:: ASSERT_TRUE
-.. doxygendefine:: ASSERT_FALSE
-.. doxygendefine:: ASSERT_EQ
-.. doxygendefine:: ASSERT_NE
-.. doxygendefine:: ASSERT_GT
-.. doxygendefine:: ASSERT_GE
-.. doxygendefine:: ASSERT_LT
-.. doxygendefine:: ASSERT_LE
-.. doxygendefine:: ASSERT_NEAR
-.. doxygendefine:: ASSERT_FLOAT_EQ
-.. doxygendefine:: ASSERT_DOUBLE_EQ
-.. doxygendefine:: ASSERT_STREQ
-.. doxygendefine:: ASSERT_STRNE
+.. code-block:: c++
 
-The EventHandler interface
-==========================
-The ``EventHandler`` class in ``public/pw_unit_test/event_handler.h`` defines
-the interface through which ``pw_unit_test:light`` communicates the results of
-its test runs. A platform using the ``pw_unit_test:light`` backend must register
-an event handler with the unit testing framework to receive test output.
+   #include "mylib.h"
 
-As the framework runs tests, it calls the event handler's callback functions to
-notify the system of various test events. The system can then choose to perform
-any necessary handling or aggregation of these events, and report them back to
-the developer.
+   #include "pw_unit_test/framework.h"
+
+   namespace {
+
+   TEST(MyTestSuite, MyTestCase) {
+     pw::InlineString<32> expected = "(╯°□°)╯︵ ┻━┻";
+     pw::InlineString<32> actual = app::flip_table();
+     EXPECT_STREQ(expected.c_str(), actual.c_str());
+   }
+
+   }
+
+The ``pw_unit_test`` API is the same as the upstream GoogleTest API except the
+default backend (``pw_unit_test:light``) only implements a subset of the
+upstream API. It's possible to access the full upstream API by using the
+``pw_unit_test:googletest`` backend. See :ref:`module-pw_unit_test-backends`.
+
+See `GoogleTest Primer <https://google.github.io/googletest/primer.html>`_ for
+the basics of using GoogleTest.
+
+Run tests
+=========
+.. tab-set::
+
+   .. tab-item:: Bazel
+
+      .. code-block:: console
+
+         $ bazel test //src:mylib_test
+
+   .. tab-item:: GN
+
+      Run the generated test binary:
+
+      .. code-block:: console
+
+         $ ./out/.../mylib_test
+
+.. _module-pw_unit_test-guides:
+
+------
+Guides
+------
+
+.. _module-pw_unit_test-backends:
+
+Choose a backend
+================
+The default backend, ``pw_unit_test:light``, is a lightweight subset of
+GoogleTest that uses embedded-friendly primitives. It's also highly portable
+because it offloads the responsibility of test reporting and output to the
+underlying system, communicating its results through a common interface. This
+lets you write unit tests once and run them under many different environments.
+
+If the :ref:`subset <module-pw_unit_test-compatibility>` of GoogleTest that
+``pw_unit_test:light`` supports doesn't meet your needs, you can access the
+full upstream GoogleTest API through ``pw_unit_test:googletest``. See
+:ref:`module-pw_unit_test-upstream`.
+
+.. _module-pw_unit_test-main:
+
+Create a custom ``main`` function
+=================================
+For simple unit tests that run on :ref:`target-host` the workflow outlined in
+:ref:`module-pw_unit_test-quickstart` is all you need. Pigweed's build templates
+generate a simple ``main`` function to run the tests with.
+
+To do more complex testing, such as on-device testing:
+
+1. Create your own ``main`` function:
+
+   .. code-block:: c++
+
+      #include "pw_unit_test/framework.h"
+      // pw_unit_test:light requires an event handler to be configured.
+      #include "pw_unit_test/simple_printing_event_handler.h"
+
+      void WriteString(const std::string_view& string, bool newline) {
+        printf("%s", string.data());
+        if (newline) {
+          printf("\n");
+        }
+      }
+
+      int main() {
+        // Make the binary compatible with pw_unit_test:googletest. Has no effect
+        // when using pw_unit_test:light.
+        testing::InitGoogleTest();
+        // Set up the event handler for pw_unit_test:light.
+        pw::unit_test::SimplePrintingEventHandler handler(WriteString);
+        pw::unit_test::RegisterEventHandler(&handler);
+        return RUN_ALL_TESTS();
+      }
+
+   See :ref:`module-pw_unit_test-event-handlers` for more information about
+   handling events.
+
+2. Set the build argument that instructs your build system to use your custom
+   ``main`` function:
+
+   * Bazel: :option:`pw_unit_test_main`
+   * GN: :option:`pw_unit_test_MAIN`
+
+.. _module-pw_unit_test-event-handlers:
+
+Create event handlers
+=====================
+.. _//pw_unit_test/public/pw_unit_test/event_handler.h: https://cs.opensource.google/pigweed/pigweed/+/main:pw_unit_test/public/pw_unit_test/event_handler.h
+
+The ``pw::unit_test::EventHandler`` class defines the interface through which
+``pw_unit_test:light`` communicates the results of its test runs. If you're
+using a :ref:`custom main function <module-pw_unit_test-main>` you need to
+register an event handler to receive test output from the framework.
+
+.. _module-pw_unit_test-predefined-event-handlers:
 
 Predefined event handlers
 -------------------------
-Pigweed provides some standard event handlers upstream to simplify the process
-of getting started using ``pw_unit_test:light``. All event handlers provide for
+Pigweed provides some standard event handlers to simplify the process of
+getting started with ``pw_unit_test:light``. All event handlers provide for
 GoogleTest-style output using the shared
-:cpp:class:`pw::unit_test::GoogleTestStyleEventHandler` base.
+:cpp:class:`pw::unit_test::GoogleTestStyleEventHandler` base. Example
+output:
 
 .. code-block::
 
@@ -183,169 +365,474 @@ GoogleTest-style output using the shared
    [==========] Done running all tests.
    [  PASSED  ] 8 test(s).
 
-.. cpp:namespace-push:: pw::unit_test
+.. _module-pw_unit_test-subset:
 
-.. cpp:class:: GoogleTestStyleEventHandler
+Run a subset of test suites
+===========================
+.. note:: This feature is only supported in C++17.
 
-   Provides GoogleTest-style output for ``pw_unit_test:light`` events. Must be
-   extended to define how to output the results.
+.. _//pw_unit_test/light_public_overrides/pw_unit_test/framework_backend.h: https://cs.opensource.google/pigweed/pigweed/+/main:pw_unit_test/light_public_overrides/pw_unit_test/framework_backend.h
 
-.. cpp:class:: SimplePrintingEventHandler : public GoogleTestStyleEventHandler
+To run only a subset of registered test suites, use the
+``pw::unit_test::SetTestSuitesToRun`` function. See
+`//pw_unit_test/light_public_overrides/pw_unit_test/framework_backend.h`_.
 
-   An event handler that writes GoogleTest-style output to a specified sink.
+This is useful when you've got a lot of test suites bundled up into a
+:ref:`single test binary <module-pw_unit_test-main>` and you only need
+to run some of them.
 
-.. cpp:class:: LoggingEventHandler : public GoogleTestStyleEventHandler
+.. _module-pw_unit_test-skip:
 
-   An event handler which uses the ``pw_log`` module to output test results, to
-   integrate with the system's existing logging setup.
-
-.. cpp:class:: PrintfEventHandler : public GoogleTestStyleEventHandler
-
-   Event handler that uses ``std::printf`` to output test results.
-
-.. cpp:class:: MultiEventHandler : public GoogleTestStyleEventHandler
-
-   An event handler adapter that allows you to register multiple event handlers
-   for a test run. To use it, create a MultiEventHandler object by passing
-   in the event handlers you want to use into the constructor. Then, register
-   the MultiEventHandler object as the test run's event handler.
-
-.. cpp:namespace-pop::
-
-Test filtering
-==============
-If using C++17, filters can be set on the test framework to run only a subset of
-the registered unit tests. This is useful when many tests are bundled into a
-single application image.
-
-Currently, only a test suite filter is supported. This is set by calling
-``pw::unit_test::SetTestSuitesToRun`` with a list of suite names.
-
-.. note::
-
-   Test filtering is only supported in C++17.
-
-Tests in static libraries
-=========================
-The linker usually ignores tests linked through a static library (``.a`` file).
-This is because test registration relies on the test instance's static
-constructor adding itself to a global list of tests. When linking against a
-static library, static constructors in an object file will be ignored unless at
-least one entity in that object file is linked.
-
-Pigweed's ``pw_unit_test`` implementation provides the
-:c:macro:`PW_UNIT_TEST_LINK_FILE_CONTAINING_TEST` macro to support running tests
-in a static library.
-
-.. c:macro:: PW_UNIT_TEST_LINK_FILE_CONTAINING_TEST(test_suite_name, test_name)
-
-   Ensures tests in a static library are linked and executed. Provide the test
-   suite name and test name for one test in the file linked into a static
-   library. Any test in the file may be used, but it is recommended to use the
-   first for consistency. The test must be in a static library that is a
-   dependency of this target. Referring to a test that does not exist causes a
-   linker error.
-
-.. _running-tests:
-
--------------
-Running tests
--------------
-To run unit tests, link the tests into a single binary with the unit testing
-framework, configure the backend if needed, and call the ``RUN_ALL_TESTS``
-macro.
-
-The following example shows how to write a main function that runs
-``pw_unit_test`` with the ``light`` backend.
-
-.. code-block:: cpp
-
-   #include "pw_unit_test/framework.h"
-
-   // pw_unit_test:light requires an event handler to be configured.
-   #include "pw_unit_test/simple_printing_event_handler.h"
-
-   void WriteString(const std::string_view& string, bool newline) {
-     printf("%s", string.data());
-     if (newline) {
-       printf("\n");
-     }
-   }
-
-   int main() {
-     // The following line has no effect with pw_unit_test_light, but makes this
-     // test compatible with upstream GoogleTest.
-     testing::InitGoogleTest();
-
-     // Since we are using pw_unit_test:light, set up an event handler.
-     pw::unit_test::SimplePrintingEventHandler handler(WriteString);
-     pw::unit_test::RegisterEventHandler(&handler);
-     return RUN_ALL_TESTS();
-   }
-
-Build system integration
-========================
-``pw_unit_test`` integrates directly into Pigweed's GN and CMake build systems.
-
-The ``pw_unit_test`` module provides a few optional libraries to simplify setup:
-
-- ``simple_printing_event_handler``: When running tests, output test results
-  as plain text over ``pw_sys_io``.
-- ``simple_printing_main``: Implements a ``main()`` function that simply runs
-  tests using the ``simple_printing_event_handler``.
-- ``logging_event_handler``: When running tests, log test results as
-  plain text using pw_log (ensure your target has set a ``pw_log`` backend).
-- ``logging_main``: Implements a ``main()`` function that simply runs tests
-  using the ``logging_event_handler``.
-
-
-GN
---
-To define simple unit tests, set the ``pw_unit_test_MAIN`` build variable to a
-target which configures the test framework as described in the
-:ref:`running-tests` section, and use the ``pw_test`` template to register your
-test code.
+Skip tests in Bazel
+===================
+Use ``target_compatible_with`` in Bazel to skip tests. The following test is
+skipped when :ref:`using upstream GoogleTest <module-pw_unit_test-upstream>`:
 
 .. code-block::
 
-   import("$dir_pw_unit_test/test.gni")
+   load("//pw_build:pigweed.bzl", "pw_cc_test")
 
-   pw_test("foo_test") {
-     sources = [ "foo_test.cc" ]
+   pw_cc_test(
+       name = "no_upstream_test",
+       srcs = ["no_upstream_test.cc"],
+        target_compatible_with = select({
+            "//pw_unit_test:light_setting": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
    }
+
+.. _module-pw_unit_test-static:
+
+Run tests in static libraries
+=============================
+To run tests in a static library, use the
+:c:macro:`PW_UNIT_TEST_LINK_FILE_CONTAINING_TEST` macro.
+
+Linkers usually ignore tests through static libraries (i.e. ``.a`` files)
+because test registration relies on the test instance's static constructor
+adding itself to a global list of tests. When linking against a static library,
+static constructors in an object file are ignored unless at least one entity
+in that object file is linked.
+
+.. _module-pw_unit_test-upstream:
+
+Use upstream GoogleTest
+=======================
+To use the upstream GoogleTest backend (``pw_unit_test:googletest``) instead
+of the default backend:
+
+.. _GoogleTestHandlerAdapter: https://cs.opensource.google/pigweed/pigweed/+/main:pw_unit_test/public/pw_unit_test/googletest_handler_adapter.h
+
+1. Clone the GoogleTest repository into your project. See
+   :ref:`module-pw_third_party_googletest`.
+
+2. :ref:`Create a custom main function <module-pw_unit_test-main>`.
+
+3. Combine `GoogleTestHandlerAdapter`_ with a :ref:`predefined event
+   handler <module-pw_unit_test-predefined-event-handlers>` to enable your
+   ``main`` function to work with upstream GoogleTest without modification.
+
+   .. code-block:: c++
+
+      #include "pw_unit_test/framework.h"
+      #include "pw_unit_test/logging_event_handler.h"
+
+      int main() {
+        testing::InitGoogleTest();
+        pw::unit_test::LoggingEventHandler logger;
+        pw::unit_test::RegisterEventHandler(&logger);
+        return RUN_ALL_TESTS();
+      }
+
+4. If your tests needs GoogleTest functionality not included in the default
+   ``pw_unit_test:light`` backend, include the upstream GoogleTest headers
+   (e.g. ``gtest/gtest.h``) directly and guard your target definition to avoid
+   compiling with ``pw_unit_test:light`` (the default backend).
+
+.. _module-pw_unit_test-serial-runner:
+
+Run tests over serial
+=====================
+To accelerate automated unit test bringup for devices with plain-text logging,
+``pw_unit_test`` provides a serial-based test runner in Python that triggers a
+device flash and evaluates whether the test passed or failed based on the
+produced output.
+
+To set up a serial test runner in Python:
+
+.. _//pw_unit_test/py/pw_unit_test/serial_test_runner.py: https://cs.opensource.google/pigweed/pigweed/+/main:pw_unit_test/py/pw_unit_test/serial_test_runner.py
+
+1. Implement a ``SerialTestingDevice`` class for your device. See
+   `//pw_unit_test/py/pw_unit_test/serial_test_runner.py`_.
+2. Configure your device code to wait to run unit tests until
+   ``DEFAULT_TEST_START_CHARACTER`` is sent over the serial connection.
+
+.. _module-pw_unit_test-rpc:
+
+Run tests over RPC
+==================
+.. _//pw_unit_test/pw_unit_test_proto/unit_test.proto: https://cs.opensource.google/pigweed/pigweed/+/main:pw_unit_test/pw_unit_test_proto/unit_test.proto
+
+``pw_unit_test`` provides an RPC service which runs unit tests on demand and
+streams the results back to the client. The service is defined in
+`//pw_unit_test/pw_unit_test_proto/unit_test.proto`_.
+
+The RPC service is primarily intended for use with the default
+``pw_unit_test:light`` backend. It has some support for the upstream GoogleTest
+backend (``pw_unit_test:googletest``), however some features (such as test suite
+filtering) are missing.
+
+To set up RPC-based unit tests in your application:
+
+1. Depend on the relevant target for your build system:
+
+   * Bazel: ``@pigweed//pw_unit_test:rpc_service``
+   * GN: ``$dir_pw_unit_test:rpc_service``
+
+2. Create a ``pw::unit_test::UnitTestService`` instance.
+
+3. Register the instance with your RPC server.
+
+   .. code-block:: c++
+
+      #include "pw_rpc/server.h"
+      #include "pw_unit_test/unit_test_service.h"
+
+      pw::rpc::Channel channels[] = {
+        pw::rpc::Channel::Create<1>(&my_output),
+      };
+      pw::rpc::Server server(channels);
+
+      pw::unit_test::UnitTestService unit_test_service;
+
+      void RegisterServices() {
+        server.RegisterService(unit_test_services);
+      }
+
+   See :ref:`module-pw_rpc` for more guidance around setting up RPC.
+
+4. Run tests that have been flashed to a device by calling
+   ``pw_unit_test.rpc.run_tests()`` in Python. The argument should be an RPC
+   client services object that has the unit testing RPC service enabled. By
+   default, the results output via logging. The return value is a
+   ``TestRecord`` dataclass instance containing the results of the test run.
+
+   .. code-block:: python
+
+      import serial
+
+      from pw_hdlc import rpc
+      from pw_unit_test.rpc import run_tests
+
+      PROTO = Path(
+          os.environ['PW_ROOT'],
+          'pw_unit_test/pw_unit_test_proto/unit_test.proto'
+      )
+      serial_device = serial.Serial(device, baud)
+      with rpc.SerialReader(serial_device) as reader:
+          with rpc.HdlcRpcClient(
+              reader, PROTO, rpc.default_channels(serial_device.write)
+          ) as client:
+              run_tests(client.rpcs())
+
+.. _module-pw_unit_test-cpp:
+
+-----------------
+C++ API reference
+-----------------
+
+.. _module-pw_unit_test-compatibility:
+
+``pw_unit_test:light`` API compatibility
+========================================
+``pw_unit_test:light`` implements a subset of GoogleTest.
+
+Supported features include:
+
+* Test and test suite declarations.
+* Most ``EXPECT`` and ``ASSERT`` macros, including ``EXPECT_OK`` and
+  ``ASSERT_OK`` for functions returning a status.
+* ``ASSERT_OK_AND_ASSIGN`` to test assigning a value when status is ``OK``.
+* ``StatusIs`` matcher to expect a specific ``pw::Status`` other than ``OK``.
+* ``IsOkAndHolds`` matcher to expect an object's status is ``OK`` and the value
+  matches an expected value.
+* Stream-style expectation messages (e.g.
+  ``EXPECT_EQ(val, 5) << "Inputs: " << input``). Messages are currently
+  ignored.
+
+.. note::
+
+   The ``googletest_test_matchers`` library which provides ``StatusIs`` and
+   ``IsOkAndHolds`` isn't part of the ``pw_unit_test:light`` backend. It's
+   intended to simplify working with common Pigweed objects when using the
+   full upstream GoogleTest backend.
+
+Missing features include:
+
+* GoogleMock (e.g. :c:macro:`EXPECT_THAT`).
+* Death tests (e.g. :c:macro:`EXPECT_DEATH`). ``EXPECT_DEATH_IF_SUPPORTED``
+  does nothing but silently passes.
+* Value-parameterized tests.
+
+See :ref:`module-pw_unit_test-upstream` for guidance on using the
+upstream GoogleTest backend (``pw_unit_test:googletest``) instead of
+``pw_unit_test:light``.
+
+.. _module-pw_unit_test-declare:
+
+Test declaration
+================
+
+.. doxygendefine:: TEST
+.. doxygendefine:: GTEST_TEST
+.. doxygendefine:: TEST_F
+.. doxygendefine:: FRIEND_TEST
+
+.. _module-pw_unit_test-control:
+
+Test control
+============
+
+.. doxygendefine:: FAIL
+.. doxygendefine:: GTEST_FAIL
+.. doxygendefine:: SUCCEED
+.. doxygendefine:: GTEST_SUCCEED
+.. doxygendefine:: GTEST_SKIP
+.. doxygendefine:: ADD_FAILURE
+.. doxygendefine:: RUN_ALL_TESTS
+.. doxygendefine:: GTEST_HAS_DEATH_TEST
+.. doxygendefine:: EXPECT_DEATH_IF_SUPPORTED
+.. doxygendefine:: ASSERT_DEATH_IF_SUPPORTED
+
+.. _module-pw_unit_test-api-expect:
+
+Expectations
+============
+When a test fails an expectation, the framework marks the test as a failure
+and then continues executing the test. They're useful when you want to
+verify multiple dimensions of the same feature and see all the errors at the
+same time.
+
+.. doxygendefine:: EXPECT_TRUE
+.. doxygendefine:: EXPECT_FALSE
+.. doxygendefine:: EXPECT_EQ
+.. doxygendefine:: EXPECT_NE
+.. doxygendefine:: EXPECT_GT
+.. doxygendefine:: EXPECT_GE
+.. doxygendefine:: EXPECT_LT
+.. doxygendefine:: EXPECT_LE
+.. doxygendefine:: EXPECT_NEAR
+.. doxygendefine:: EXPECT_FLOAT_EQ
+.. doxygendefine:: EXPECT_DOUBLE_EQ
+.. doxygendefine:: EXPECT_STREQ
+.. doxygendefine:: EXPECT_STRNE
+
+.. _module-pw_unit_test-api-assert:
+
+Assertions
+==========
+Assertions work the same as expectations except they stop the execution of the
+test as soon as a failed condition is met.
+
+.. doxygendefine:: ASSERT_TRUE
+.. doxygendefine:: ASSERT_FALSE
+.. doxygendefine:: ASSERT_EQ
+.. doxygendefine:: ASSERT_NE
+.. doxygendefine:: ASSERT_GT
+.. doxygendefine:: ASSERT_GE
+.. doxygendefine:: ASSERT_LT
+.. doxygendefine:: ASSERT_LE
+.. doxygendefine:: ASSERT_NEAR
+.. doxygendefine:: ASSERT_FLOAT_EQ
+.. doxygendefine:: ASSERT_DOUBLE_EQ
+.. doxygendefine:: ASSERT_STREQ
+.. doxygendefine:: ASSERT_STRNE
+
+.. _module-pw_unit_test-api-event-handlers:
+
+Event handlers
+==============
+.. doxygenfunction:: pw::unit_test::RegisterEventHandler(EventHandler* event_handler)
+.. doxygenclass:: pw::unit_test::EventHandler
+   :members:
+.. doxygenclass:: pw::unit_test::GoogleTestHandlerAdapter
+.. doxygenclass:: pw::unit_test::GoogleTestStyleEventHandler
+.. doxygenclass:: pw::unit_test::SimplePrintingEventHandler
+.. doxygenclass:: pw::unit_test::LoggingEventHandler
+.. doxygenclass:: pw::unit_test::PrintfEventHandler
+.. doxygenclass:: pw::unit_test::MultiEventHandler
+
+.. _module-pw_unit_test-cpp-config:
+
+Configuration
+=============
+.. doxygendefine:: PW_UNIT_TEST_CONFIG_EVENT_BUFFER_SIZE
+.. doxygendefine:: PW_UNIT_TEST_CONFIG_MEMORY_POOL_SIZE
+
+.. _module-pw_unit_test-cpp-helpers:
+
+Helpers
+=======
+.. doxygendefine:: PW_UNIT_TEST_LINK_FILE_CONTAINING_TEST
+
+.. _module-pw_unit_test-py:
+
+--------------------
+Python API reference
+--------------------
+
+.. _module-pw_unit_test-py-serial_test_runner:
+
+``pw_unit_test.serial_test_runner``
+===================================
+.. automodule:: pw_unit_test.serial_test_runner
+   :members:
+     DEFAULT_TEST_START_CHARACTER,
+     SerialTestingDevice,
+     run_device_test,
+
+.. _module-pw_unit_test-py-rpc:
+
+``pw_unit_test.rpc``
+====================
+.. automodule:: pw_unit_test.rpc
+   :members: EventHandler, run_tests, TestRecord
+
+.. _module-pw_unit_test-helpers:
+
+----------------------
+Build helper libraries
+----------------------
+The following helper libraries can simplify setup and are supported in all
+build systems.
+
+.. object:: simple_printing_event_handler
+
+   When running tests, output test results as plain text over ``pw_sys_io``.
+
+.. object:: simple_printing_main
+
+   Implements a ``main()`` function that simply runs tests using the
+   ``simple_printing_event_handler``.
+
+.. object:: logging_event_handler
+
+   When running tests, log test results as plain text using
+   :ref:`module-pw_log`. Make sure your target has set a ``pw_log`` backend.
+
+.. object:: logging_main
+
+   Implements a ``main()`` function that simply runs tests using the
+   ``logging_event_handler``.
+
+.. _module-pw_unit_test-bazel:
+
+-------------------
+Bazel API reference
+-------------------
+
+See also :ref:`module-pw_unit_test-helpers`.
+
+.. _module-pw_unit_test-pw_cc_test:
+
+``pw_cc_test``
+==============
+.. _cc_test: https://bazel.build/reference/be/c-cpp#cc_test
+
+``pw_cc_test`` is a wrapper for `cc_test`_ that provides some defaults,
+such as a dependency on ``@pigweed//targets:pw_unit_test_main``. It supports and
+passes through all the arguments recognized by ``cc_test``.
+
+.. _module-pw_unit_test-bazel-args:
+
+Bazel build arguments
+=====================
+.. option:: pw_unit_test_backend <target>
+
+   The GoogleTest implementation to use for Pigweed unit tests. This library
+   provides ``gtest/gtest.h`` and related headers. Defaults to
+   ``@pigweed//pw_unit_test:light``, which implements a subset of GoogleTest.
+
+   Type: string (Bazel target label)
+
+   Usage: toolchain-controlled only
+
+.. option:: pw_unit_test_main <target>
+
+   Implementation of a main function for ``pw_cc_test`` unit test binaries.
+
+   Type: string (Bazel target label)
+
+   Usage: toolchain-controlled only
+
+.. _module-pw_unit_test-gn:
+
+------------
+GN reference
+------------
+See also :ref:`module-pw_unit_test-helpers`.
 
 .. _module-pw_unit_test-pw_test:
 
-pw_test template
-````````````````
-``pw_test`` defines a single unit test suite. It creates several sub-targets.
+``pw_test``
+===========
+``pw_test`` defines a single unit test suite.
 
-* ``<target_name>``: The test suite within a single binary. The test code is
-  linked against the target set in the build arg ``pw_unit_test_MAIN``.
-* ``<target_name>.run``: If ``pw_unit_test_AUTOMATIC_RUNNER`` is set, this
-  target runs the test as part of the build.
-* ``<target_name>.lib``: The test sources without ``pw_unit_test_MAIN``.
+Targets
+-------
 
-**Arguments**
+.. object:: <target_name>
 
-* All GN executable arguments are accepted and forwarded to the underlying
-  ``pw_executable``.
-* ``enable_if``: Boolean indicating whether the test should be built. If false,
-  replaces the test with an empty target. Default true.
-* ``source_gen_deps``: List of target labels that generate source files used by
-  this test. The labels must meet the constraints of GN's `get_target_outputs`,
-  namely they must have been previously defined in the current file. This
-  argument is required if a test uses generated source files and `enable_if` can
-  evaluate to false.
-* ``test_main``: Target label to add to the tests's dependencies to provide the
-  ``main()`` function. Defaults to ``pw_unit_test_MAIN``. Set to ``""`` if
-  ``main()`` is implemented in the test's ``sources``.
-* ``test_automatic_runner_args``: Array of args to pass to automatic test
-  runner. Defaults to ``pw_unit_test_AUTOMATIC_RUNNER_ARGS``.
-* ``envvars``: Array of ``"key=value"`` strings representing environment
-  variables to set when invoking the automatic test runner.
+   The test suite within a single binary. The test code is linked against
+   the target set in the build arg ``pw_unit_test_MAIN``.
 
-**Example**
+.. object:: <target_name>.run
+
+   If ``pw_unit_test_AUTOMATIC_RUNNER`` is set, this target runs the test as
+   part of the build.
+
+.. object:: <target_name>.lib
+
+   The test sources without ``pw_unit_test_MAIN``.
+
+Arguments
+---------
+All GN executable arguments are accepted and forwarded to the underlying
+``pw_executable``.
+
+.. option:: enable_if
+
+   Boolean indicating whether the test should be built. If false, replaces the
+   test with an empty target. Default true.
+
+.. _get_target_outputs: https://gn.googlesource.com/gn/+/main/docs/reference.md#func_get_target_outputs
+
+.. option:: source_gen_deps
+
+   List of target labels that generate source files used by this test. The
+   labels must meet the constraints of GN's `get_target_outputs`_, namely they must have been previously defined in the
+   current file. This argument is required if a test uses generated source files
+   and ``enable_if`` can evaluate to false.
+
+.. option:: test_main
+
+   Target label to add to the tests's dependencies to provide the ``main()``
+   function. Defaults to ``pw_unit_test_MAIN``. Set to ``""`` if ``main()``
+   is implemented in the test's ``sources``.
+
+.. option:: test_automatic_runner_args
+
+   Array of args to pass to :ref:`automatic test
+   runner <module-pw_unit_test-serial-runner>`. Defaults to
+   ``pw_unit_test_AUTOMATIC_RUNNER_ARGS``.
+
+.. option:: envvars
+
+   Array of ``key=value`` strings representing environment variables to set
+   when invoking the automatic test runner.
+
+Example
+-------
 
 .. code-block::
 
@@ -358,31 +845,51 @@ pw_test template
 
 .. _module-pw_unit_test-pw_test_group:
 
-pw_test_group template
-``````````````````````
-``pw_test_group`` defines a collection of tests or other test groups. It creates
-several sub-targets:
+``pw_test_group``
+=================
+``pw_test_group`` defines a collection of tests or other test groups.
 
-* ``<target_name>``: The test group itself.
-* ``<target_name>.run``: If ``pw_unit_test_AUTOMATIC_RUNNER`` is set, this
-  target runs all of the tests in the group and all of its group dependencies
-  individually.
-* ``<target_name>.lib``: The sources of all of the tests in this group and its
-  dependencies.
-* ``<target_name>.bundle``: All of the tests in the group and its dependencies
-  bundled into a single binary.
-* ``<target_name>.bundle.run``: Automatic runner for the test bundle.
+Targets
+-------
+.. object:: <target_name>
 
-**Arguments**
+   The test group itself.
 
-* ``tests``: List of the ``pw_test`` targets in the group.
-* ``group_deps``: List of other ``pw_test_group`` targets on which this one
-  depends.
-* ``enable_if``: Boolean indicating whether the group target should be created.
-  If false, an empty GN group is created instead. Default true.
+.. object:: <target_name>.run
 
-**Example**
+   If ``pw_unit_test_AUTOMATIC_RUNNER`` is set, this target runs all of the
+   tests in the group and all of its group dependencies individually. See
+   :ref:`module-pw_unit_test-serial-runner`.
 
+.. object:: <target_name>.lib
+
+   The sources of all of the tests in this group and their dependencies.
+
+.. object:: <target_name>.bundle
+
+   All of the tests in the group and its dependencies bundled into a single binary.
+
+.. object:: <target_name>.bundle.run
+
+   Automatic runner for the test bundle.
+
+Arguments
+---------
+.. option:: tests
+
+   List of the ``pw_test`` targets in the group.
+
+.. option:: group_deps
+
+   List of other ``pw_test_group`` targets on which this one depends.
+
+.. option:: enable_if
+
+   Boolean indicating whether the group target should be created. If false, an
+   empty GN group is created instead. Default true.
+
+Example
+-------
 .. code-block::
 
    import("$dir_pw_unit_test/test.gni")
@@ -402,8 +909,10 @@ several sub-targets:
      # ...
    }
 
-pw_facade_test template
-```````````````````````
+.. _module-pw_unit_test-pw_facade_test:
+
+``pw_facade_test``
+==================
 Pigweed facade test templates allow individual unit tests to build under the
 current device target configuration while overriding specific build arguments.
 This allows these tests to replace a facade's backend for the purpose of testing
@@ -422,46 +931,54 @@ arg :option:`pw_unit_test_FACADE_TESTS_ENABLED` to ``true``.
    careful when running a facade test on a system that heavily depends on the
    facade being tested.
 
-Build arguments
-```````````````
+.. _module-pw_unit_test-gn-args:
+
+GN build arguments
+==================
 .. option:: pw_unit_test_BACKEND <source_set>
 
    The GoogleTest implementation to use for Pigweed unit tests. This library
-   provides "gtest/gtest.h" and related headers. Defaults to pw_unit_test:light,
-   which implements a subset of GoogleTest.
+   provides ``gtest/gtest.h`` and related headers. Defaults to
+   ``pw_unit_test:light``, which implements a subset of GoogleTest.
 
    Type: string (GN path to a source set)
+
    Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_MAIN <source_set>
 
    Implementation of a main function for ``pw_test`` unit test binaries.
+   See :ref:`module-pw_unit_test-main`.
 
    Type: string (GN path to a source set)
+
    Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_AUTOMATIC_RUNNER <executable>
 
    Path to a test runner to automatically run unit tests after they are built.
+   See :ref:`module-pw_unit_test-serial-runner`.
 
-   If set, a ``pw_test`` target's ``<target_name>.run`` action will invoke the
+   If set, a ``pw_test`` target's ``<target_name>.run`` action invokes the
    test runner specified by this argument, passing the path to the unit test to
    run. If this is unset, the ``pw_test`` target's ``<target_name>.run`` step
    will do nothing.
 
-   Targets that don't support parallelized execution of tests (e.g. a on-device
-   test runner that must flash a device and run the test in serial) should set
-   pw_unit_test_POOL_DEPTH to 1.
+   Targets that don't support parallelized execution of tests (e.g. an
+   on-device test runner that must flash a device and run the test in serial)
+   should set ``pw_unit_test_POOL_DEPTH`` to ``1``.
 
-   Type: string (name of an executable on the PATH, or path to an executable)
+   Type: string (name of an executable on ``PATH``, or a path to an executable)
+
    Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_AUTOMATIC_RUNNER_ARGS <args>
 
    An optional list of strings to pass as args to the test runner specified by
-   pw_unit_test_AUTOMATIC_RUNNER.
+   ``pw_unit_test_AUTOMATIC_RUNNER``.
 
-   Type: list of strings (args to pass to pw_unit_test_AUTOMATIC_RUNNER)
+   Type: list of strings (args to pass to ``pw_unit_test_AUTOMATIC_RUNNER``)
+
    Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT <timeout_seconds>
@@ -470,6 +987,7 @@ Build arguments
    in seconds. Defaults to empty which means no timeout.
 
    Type: string (number of seconds to wait before killing test runner)
+
    Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_POOL_DEPTH <pool_depth>
@@ -478,41 +996,46 @@ Build arguments
    current toolchain. Setting this to 0 disables usage of a pool, allowing
    unlimited parallelization.
 
-   Note: A single target with two toolchain configurations (e.g. release/debug)
-         will use two separate test runner pools by default. Set
-         pw_unit_test_POOL_TOOLCHAIN to the same toolchain for both targets to
-         merge the pools and force serialization.
+   Note: A single target with two toolchain configurations (e.g. ``release``
+   and ``debug``) uses two separate test runner pools by default. Set
+   ``pw_unit_test_POOL_TOOLCHAIN`` to the same toolchain for both targets to
+   merge the pools and force serialization.
 
    Type: integer
+
    Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_POOL_TOOLCHAIN <toolchain>
 
-   The toolchain to use when referring to the pw_unit_test runner pool. When
-   this is disabled, the current toolchain is used. This means that every
+   The toolchain to use when referring to the ``pw_unit_test`` runner pool.
+   When this is disabled, the current toolchain is used. This means that every
    toolchain will use its own pool definition. If two toolchains should share
    the same pool, this argument should be by one of the toolchains to the GN
    path of the other toolchain.
 
    Type: string (GN path to a toolchain)
+
    Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_EXECUTABLE_TARGET_TYPE <template name>
 
-   The name of the GN target type used to build pw_unit_test executables.
+   The name of the GN target type used to build ``pw_unit_test`` executables.
 
    Type: string (name of a GN template)
+
    Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_EXECUTABLE_TARGET_TYPE_FILE <gni file path>
 
-   The path to the .gni file that defines pw_unit_test_EXECUTABLE_TARGET_TYPE.
+   The path to the ``.gni`` file that defines
+   ``pw_unit_test_EXECUTABLE_TARGET_TYPE``.
 
-   If pw_unit_test_EXECUTABLE_TARGET_TYPE is not the default of
-   `pw_executable`, this .gni file is imported to provide the template
+   If ``pw_unit_test_EXECUTABLE_TARGET_TYPE`` is not the default of
+   ``pw_executable``, this ``.gni`` file is imported to provide the template
    definition.
 
    Type: string (path to a .gni file)
+
    Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_FACADE_TESTS_ENABLED <boolean>
@@ -522,42 +1045,83 @@ Build arguments
 
 .. option:: pw_unit_test_TESTONLY <boolean>
 
-   Controls the `testonly` variable in pw_test, pw_test_group, and
+   Controls the ``testonly`` variable in ``pw_test``, ``pw_test_group``, and
    miscellaneous testing targets. This is useful if your test libraries (e.g.
-   GoogleTest) used by pw_unit_test have the `testonly` flag set. False by
+   GoogleTest) used by pw_unit_test have the ``testonly`` flag set. False by
    default for backwards compatibility.
 
-CMake
------
-pw_add_test function
-````````````````````
-``pw_add_test`` declares a single unit test suite. It creates several
-sub-targets.
+.. _module-pw_unit_test-cmake:
 
-* ``{NAME}`` depends on ``${NAME}.run`` if ``pw_unit_test_AUTOMATIC_RUNNER`` is
-  set, else it depends on ``${NAME}.bin``
-* ``{NAME}.lib`` contains the provided test sources as a library target, which
-  can then be linked into a test executable.
-* ``{NAME}.bin`` is a standalone executable which contains only the test sources
-  specified in the pw_unit_test_template.
-* ``{NAME}.run`` which runs the unit test executable after building it if
-  ``pw_unit_test_AUTOMATIC_RUNNER`` is set, else it fails to build.
+---------------
+CMake reference
+---------------
+See also :ref:`module-pw_unit_test-helpers`.
 
-**Required Arguments**
+.. _module-pw_unit_test-pw_add_test:
 
-* ``NAME``: name to use for the produced test targets specified above
+``pw_add_test``
+===============
+``pw_add_test`` declares a single unit test suite.
 
-**Optional Arguments**
+Targets
+-------
+.. object:: {NAME}
 
-* ``SOURCES`` - source files for this library
-* ``HEADERS``- header files for this library
-* ``PRIVATE_DEPS``- private pw_target_link_targets arguments
-* ``PRIVATE_INCLUDES``- public target_include_directories argument
-* ``PRIVATE_DEFINES``- private target_compile_definitions arguments
-* ``PRIVATE_COMPILE_OPTIONS``- private target_compile_options arguments
-* ``PRIVATE_LINK_OPTIONS``- private target_link_options arguments
+   Depends on ``${NAME}.run`` if ``pw_unit_test_AUTOMATIC_RUNNER`` is set, else
+   it depends on ``${NAME}.bin``.
 
-**Example**
+.. object:: {NAME}.lib
+
+   Contains the provided test sources as a library target, which can then be
+   linked into a test executable.
+
+.. object:: {NAME}.bin
+
+   A standalone executable which contains only the test sources specified in the
+   ``pw_unit_test`` template.
+
+.. object:: {NAME}.run
+
+   Runs the unit test executable after building it if
+   ``pw_unit_test_AUTOMATIC_RUNNER`` is set, else it fails to build.
+
+Required arguments
+------------------
+.. option:: NAME
+
+   Name to use for the produced test targets specified above.
+
+Optional arguments
+------------------
+.. option:: SOURCES
+
+   Source files for this library.
+
+.. option:: HEADERS
+
+   Header files for this library.
+
+.. option:: PRIVATE_DEPS
+
+   Private ``pw_target_link_targets`` arguments.
+.. option:: PRIVATE_INCLUDES
+
+   Public ``target_include_directories`` argument.
+
+.. option:: PRIVATE_DEFINES
+
+   Private ``target_compile_definitions`` arguments.
+
+.. option:: PRIVATE_COMPILE_OPTIONS
+
+   Private ``target_compile_options`` arguments.
+
+.. option:: PRIVATE_LINK_OPTIONS
+
+   Private ``target_link_options`` arguments.
+
+Example
+-------
 
 .. code-block::
 
@@ -570,35 +1134,64 @@ sub-targets.
        my_module.foo
    )
 
-pw_add_test_group function
-``````````````````````````
-``pw_add_test_group`` defines a collection of tests or other test groups. It
-creates several sub-targets:
+.. _module-pw_unit_test-pw_add_test_group:
 
-* ``{NAME}`` depends on ``${NAME}.run`` if ``pw_unit_test_AUTOMATIC_RUNNER`` is
-  set, else  it depends on ``${NAME}.bin``.
-* ``{NAME}.bundle`` depends on ``${NAME}.bundle.run`` if
-  ``pw_unit_test_AUTOMATIC_RUNNER`` is set, else it depends on
-  ``${NAME}.bundle.bin``.
-* ``{NAME}.lib`` depends on ``${NAME}.bundle.lib``.
-* ``{NAME}.bin`` depends on the provided ``TESTS``'s ``<test_dep>.bin`` targets.
-* ``{NAME}.run`` depends on the provided ``TESTS``'s ``<test_dep>.run`` targets
-  if ``pw_unit_test_AUTOMATIC_RUNNER`` is set, else it fails to build.
-* ``{NAME}.bundle.lib`` contains the provided tests bundled as a library target,
-  which can then be linked into a test executable.
-* ``{NAME}.bundle.bin`` standalone executable which contains the bundled tests.
-* ``{NAME}.bundle.run`` runs the ``{NAME}.bundle.bin`` test bundle executable
-  after building it if ``pw_unit_test_AUTOMATIC_RUNNER`` is set, else it fails
-  to build.
+``pw_add_test_group``
+=====================
+``pw_add_test_group`` defines a collection of tests or other test groups.
 
-**Required Arguments**
+Targets
+-------
+.. object:: {NAME}
 
-* ``NAME`` - The name of the executable target to be created.
-* ``TESTS`` - ``pw_add_test`` targets and ``pw_add_test_group`` bundles to be
-  included in this test bundle
+   Depends on ``${NAME}.run`` if ``pw_unit_test_AUTOMATIC_RUNNER`` is set, else
+   it depends on ``${NAME}.bin``.
 
-**Example**
+.. object:: {NAME}.bundle
 
+   Depends on ``${NAME}.bundle.run`` if ``pw_unit_test_AUTOMATIC_RUNNER`` is
+   set, else it depends on ``${NAME}.bundle.bin``.
+
+.. object:: {NAME}.lib
+
+   Depends on ``${NAME}.bundle.lib``.
+
+.. object:: {NAME}.bin
+
+   Depends on the provided ``TESTS``'s ``<test_dep>.bin`` targets.
+
+.. object:: {NAME}.run
+
+   Depends on the provided ``TESTS``'s ``<test_dep>.run`` targets if
+   ``pw_unit_test_AUTOMATIC_RUNNER`` is set, else it fails to build.
+
+.. object:: {NAME}.bundle.lib
+
+   Contains the provided tests bundled as a library target, which can then be
+   linked into a test executable.
+
+.. object:: {NAME}.bundle.bin
+
+   Standalone executable which contains the bundled tests.
+
+.. object:: {NAME}.bundle.run
+
+   Runs the ``{NAME}.bundle.bin`` test bundle executable after building it if
+   ``pw_unit_test_AUTOMATIC_RUNNER`` is set, else it fails to build.
+
+Required arguments
+------------------
+.. option:: NAME
+
+   The name of the executable target to be created.
+
+.. option:: TESTS
+
+   ``pw_add_test`` targets and ``pw_add_test_group`` bundles to be
+   included in this test bundle.
+
+Example
+-------
 .. code-block::
 
    include($ENV{PW_ROOT}/pw_unit_test/test.cmake)
@@ -617,20 +1210,23 @@ creates several sub-targets:
      # ...
    )
 
-Build arguments
-```````````````
+.. _module-pw_unit_test-cmake-args:
+
+CMake build arguments
+=====================
 .. option:: pw_unit_test_BACKEND <target>
 
    The GoogleTest implementation to use for Pigweed unit tests. This library
-   provides "gtest/gtest.h" and related headers. Defaults to pw_unit_test.light,
-   which implements a subset of GoogleTest.
+   provides ``gtest/gtest.h`` and related headers. Defaults to
+   ``pw_unit_test.light``, which implements a subset of GoogleTest.
 
    Type: string (CMake target name)
+
    Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_AUTOMATIC_RUNNER <executable>
 
-   Path to a test runner to automatically run unit tests after they are built.
+   Path to a test runner to automatically run unit tests after they're built.
 
    If set, a ``pw_test`` target's ``${NAME}`` and ``${NAME}.run`` targets will
    invoke the test runner specified by this argument, passing the path to the
@@ -638,14 +1234,16 @@ Build arguments
    only build the unit test(s) and ``${NAME}.run`` will fail to build.
 
    Type: string (name of an executable on the PATH, or path to an executable)
+
    Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_AUTOMATIC_RUNNER_ARGS <args>
 
    An optional list of strings to pass as args to the test runner specified
-   by pw_unit_test_AUTOMATIC_RUNNER.
+   by ``pw_unit_test_AUTOMATIC_RUNNER``.
 
    Type: list of strings (args to pass to pw_unit_test_AUTOMATIC_RUNNER)
+
    Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT_SECONDS <timeout_seconds>
@@ -654,216 +1252,25 @@ Build arguments
    in seconds. Defaults to empty which means no timeout.
 
    Type: string (number of seconds to wait before killing test runner)
+
    Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_ADD_EXECUTABLE_FUNCTION <function name>
 
-   The name of the CMake function used to build pw_unit_test executables. The
-   provided function must take a ``NAME`` and a ``TEST_LIB`` argument which are
-   the expected name of the executable target and the target which provides the
-   unit test(s).
+   The name of the CMake function used to build ``pw_unit_test`` executables.
+   The provided function must take a ``NAME`` and a ``TEST_LIB`` argument which
+   are the expected name of the executable target and the target which provides
+   the unit test(s).
 
    Type: string (name of a CMake function)
+
    Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_ADD_EXECUTABLE_FUNCTION_FILE <cmake file path>
 
-   The path to the .cmake file that defines pw_unit_test_ADD_EXECUTABLE_FUNCTION.
+   The path to the ``.cmake`` file that defines
+   ``pw_unit_test_ADD_EXECUTABLE_FUNCTION``.
 
-   Type: string (path to a .cmake file)
+   Type: string (path to a ``.cmake`` file)
+
    Usage: toolchain-controlled only
-
-Bazel
------
-To define simple unit tests, set the ``pw_unit_test_MAIN`` build variable to a
-target which configures the test framework as described in the
-:ref:`running-tests` section, and use the ``pw_cc_test`` rule to register your
-test code.
-
-.. code-block::
-
-   load("//pw_build:pigweed.bzl", "pw_cc_test")
-
-   pw_cc_test(
-       name = "foo_test",
-       srcs = ["foo_test.cc"],
-   }
-
-.. _module-pw_unit_test-pw_cc_test:
-
-
-pw_cc_test rule
-```````````````
-``pw_cc_test`` is a wrapper for `cc_test`_ that provides some defaults,
-such as a dep on ``@pigweed//targets:pw_unit_test_main``. It supports and passes
-through all the arguments recognized by ``cc_test``. Notably, tests can be
-enabled or disabled using ``target_compatible_with``. For example, the following
-test is skipped when `using upstream GoogleTest`_:
-
-.. code-block::
-
-   load("//pw_build:pigweed.bzl", "pw_cc_test")
-
-   pw_cc_test(
-       name = "no_upstream_test",
-       srcs = ["no_upstream_test.cc"],
-        target_compatible_with = select({
-            "//pw_unit_test:light_setting": [],
-            "//conditions:default": ["@platforms//:incompatible"],
-        }),
-   }
-
-.. _cc_test: https://bazel.build/reference/be/c-cpp#cc_test
-
-
-Build arguments
-```````````````
-.. option:: pw_unit_test_backend <target>
-
-   The GoogleTest implementation to use for Pigweed unit tests. This library
-   provides "gtest/gtest.h" and related headers. Defaults to
-   ``"@pigweed//pw_unit_test:light"``, which implements a subset of GoogleTest.
-
-   Type: string (Bazel target label)
-   Usage: toolchain-controlled only
-
-.. option:: pw_unit_test_main <target>
-
-   Implementation of a main function for ``pw_cc_test`` unit test binaries.
-
-   Type: string (Bazel target label)
-   Usage: toolchain-controlled only
-
-Serial test runner
-==================
-To accelerate automated unit test bringup for devices with plain-text logging,
-this module provides a serial-based test runner that triggers a device flash
-and evaluates whether the test passed or failed based on the produced output.
-
-pw_unit_test.serial_test_runner
--------------------------------
-.. automodule:: pw_unit_test.serial_test_runner
-   :members:
-     DEFAULT_TEST_START_CHARACTER,
-     SerialTestingDevice,
-     run_device_test,
-
-Setup
------
-To add support for a new device, implement a ``SerialTestingDevice`` class for
-your device, and then configure your on-device firmware to wait to run unit
-tests until ``DEFAULT_TEST_START_CHARACTER`` is sent over the serial connection.
-
-RPC service
-===========
-``pw_unit_test`` provides an RPC service which runs unit tests on demand and
-streams the results back to the client. The service is defined in
-``pw_unit_test_proto/unit_test.proto``, and implemented by the GN target
-``$dir_pw_unit_test:rpc_service``.
-
-The RPC service is primarily intended for use with the default
-``pw_unit_test:light`` backend. It has some support for the GoogleTest backend,
-however some features (such as test suite filtering) are missing.
-
-To set up RPC-based unit tests in your application, instantiate a
-``pw::unit_test::UnitTestService`` and register it with your RPC server.
-
-.. code-block:: c++
-
-   #include "pw_rpc/server.h"
-   #include "pw_unit_test/unit_test_service.h"
-
-   // Server setup; refer to pw_rpc docs for more information.
-   pw::rpc::Channel channels[] = {
-    pw::rpc::Channel::Create<1>(&my_output),
-   };
-   pw::rpc::Server server(channels);
-
-   pw::unit_test::UnitTestService unit_test_service;
-
-   void RegisterServices() {
-     server.RegisterService(unit_test_services);
-   }
-
-All tests flashed to an attached device can be run via python by calling
-``pw_unit_test.rpc.run_tests()`` with a RPC client services object that has
-the unit testing RPC service enabled. By default, the results will output via
-logging. This method returns a ``TestRecord`` dataclass instance, containing
-the results of the test run.
-
-.. code-block:: python
-
-   import serial
-
-   from pw_hdlc import rpc
-   from pw_unit_test.rpc import run_tests
-
-   PROTO = Path(
-       os.environ['PW_ROOT'],
-       'pw_unit_test/pw_unit_test_proto/unit_test.proto'
-   )
-   serial_device = serial.Serial(device, baud)
-   with rpc.SerialReader(serial_device) as reader:
-       with rpc.HdlcRpcClient(
-           reader, PROTO, rpc.default_channels(serial_device.write)
-       ) as client:
-           run_tests(client.rpcs())
-
-pw_unit_test.rpc
-----------------
-.. automodule:: pw_unit_test.rpc
-   :members: EventHandler, run_tests, TestRecord
-
-----------------------------
-Module Configuration Options
-----------------------------
-The following configurations can be adjusted via compile-time configuration of
-this module.
-
-.. c:macro:: PW_UNIT_TEST_CONFIG_EVENT_BUFFER_SIZE
-
-   The size of the event buffer that the UnitTestService contains.
-   This buffer is used to encode events.  By default this is set to
-   128 bytes.
-
-.. c:macro:: PW_UNIT_TEST_CONFIG_MEMORY_POOL_SIZE
-
-   The size of the memory pool to use for test fixture instances. By default this
-   is set to 16K.
-
--------------------------
-Using upstream GoogleTest
--------------------------
-Upstream `GoogleTest`_ may be used as the backend for ``pw_unit_test``. A clone
-of the GoogleTest repository is required. See the
-:ref:`third_party/googletest documentation <module-pw_third_party_googletest>`
-for details.
-
-When using upstream `GoogleTest`_ as the backend, the
-:cpp:class:`pw::unit_test::GoogleTestHandlerAdapter` can be used in conjunction
-with the above mentioned `EventHandler Interface <#the-eventhandler-interface>`_
-and `Predefined event handlers`_. Included with this class is an implementation
-of `RegisterEventHandler` that wraps event handlers in an adapter. This allows
-the `main` functions written for `pw_unit_test:light` to work with upstream
-GoogleTest without modification, as shown below.
-
-.. code-block:: c++
-
-   #include "pw_unit_test/framework.h"
-   #include "pw_unit_test/logging_event_handler.h"
-
-   int main() {
-     testing::InitGoogleTest();
-     pw::unit_test::LoggingEventHandler logger;
-     pw::unit_test::RegisterEventHandler(&logger);
-     return RUN_ALL_TESTS();
-   }
-
-.. cpp:namespace-push:: pw::unit_test
-
-.. cpp:class:: GoogleTestHandlerAdapter
-
-   A GoogleTest Event Listener that fires GoogleTest emitted events to an
-   appropriate ``EventHandler``.
-
-.. cpp::namespace-pop::
