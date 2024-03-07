@@ -12,14 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-use nix::unistd::{dup, dup2, pipe};
-use std::fs::File;
-use std::io::{stdout, Read};
-use std::os::fd::AsRawFd;
-
 mod backend_tests;
 
 #[cfg(not(target_os = "macos"))]
+#[cfg(test)]
 fn flush_stdout() {
     // Safety: Test only.  Calling into a libc function w/o any dependency on
     // data from the Rust side.
@@ -32,6 +28,7 @@ fn flush_stdout() {
 }
 
 #[cfg(target_os = "macos")]
+#[cfg(test)]
 fn flush_stdout() {
     // Safety: Test only.  Calling into a libc function w/o any dependency on
     // data from the Rust side.
@@ -44,8 +41,17 @@ fn flush_stdout() {
         libc::fflush(__stdoutp);
     }
 }
+
 // Runs `action` while capturing stdout and returns the captured output.
+#[cfg(test)]
 fn run_with_capture<F: FnOnce()>(action: F) -> String {
+    // Use statements here instead of at the module level to scope them to the
+    // above #[cfg(test)]
+    use nix::unistd::{dup, dup2, pipe};
+    use std::fs::File;
+    use std::io::{stdout, Read};
+    use std::os::fd::AsRawFd;
+
     // Capture the output of printf by creating a pipe and replacing
     // `STDOUT_FILENO` with the write side of the pipe.  This only works on
     // POSIX platforms (i.e. not Windows).  Because the backend is written
@@ -53,7 +59,11 @@ fn run_with_capture<F: FnOnce()>(action: F) -> String {
     // Windows so there is little incremental benefit from testing on Windows
     // as well.
 
-    let stdout_fd = stdout().as_raw_fd();
+    // Grab a lock on stdout to prevent others (test framework and other tests)
+    // from writing while we capture output.
+    let stdout = stdout().lock();
+
+    let stdout_fd = stdout.as_raw_fd();
 
     // Duplicate the current stdout so we can restore it after the test.  Keep
     // it as an owned fd,

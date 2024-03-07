@@ -15,14 +15,16 @@
 // The Rust test framework uses `set_output_capture()` to redirect stdio output.
 // Since we need to capture stdout in this test, we must use this API as well.
 #![feature(internal_output_capture)]
-
-use std::sync::{Arc, Mutex};
-
 mod backend_tests;
 
 // Runs `action` while capturing `println!` output and returns the
 // captured output.
+#[cfg(test)]
 fn run_with_capture<F: FnOnce()>(action: F) -> String {
+    // Use statements here instead of at the module level to scope them to the
+    // above #[cfg(test)]
+    use std::sync::{Arc, Mutex};
+
     let output = Arc::new(Mutex::new(Vec::new()));
     let old_capture = std::io::set_output_capture(Some(output.clone()));
 
