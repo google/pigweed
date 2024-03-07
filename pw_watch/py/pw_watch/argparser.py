@@ -22,6 +22,8 @@ from pw_build.project_builder_argparse import add_project_builder_arguments
 WATCH_PATTERN_DELIMITER = ','
 
 WATCH_PATTERNS = (
+    '*.bazel',
+    '*.bzl',
     '*.bloaty',
     '*.c',
     '*.cc',
