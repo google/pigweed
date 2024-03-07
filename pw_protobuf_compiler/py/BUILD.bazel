@@ -36,12 +36,11 @@ py_test(
         "compiled_protos_test.py",
     ],
     imports = [
-        # To import pw_protobuf_compiler_protos
-        "..",
+        ".",
     ],
     deps = [
         ":pw_protobuf_compiler",
-        "//pw_protobuf_compiler:pw_protobuf_compiler_protos",
+        "//pw_protobuf_compiler:pw_protobuf_compiler_protos_py_pb2",
     ],
 )
 

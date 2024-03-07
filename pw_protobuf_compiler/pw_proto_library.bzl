@@ -353,15 +353,25 @@ def _proto_compiler_aspect_impl(target, ctx):
     ]
 
     # Local repository options files.
-    options_file_include_paths = ["."]
+    options_file_include_paths = [paths.join(".", ctx.rule.attr.strip_import_prefix.lstrip("/"))]
     for options_file in options_files:
         # Handle .options files residing in external repositories.
         if options_file.owner.workspace_root:
-            options_file_include_paths.append(options_file.owner.workspace_root)
+            options_file_include_paths.append(
+                paths.join(
+                    options_file.owner.workspace_root,
+                    ctx.rule.attr.strip_import_prefix.lstrip("/"),
+                ),
+            )
 
         # Handle generated .options files.
         if options_file.root.path:
-            options_file_include_paths.append(options_file.root.path)
+            options_file_include_paths.append(
+                paths.join(
+                    options_file.root.path,
+                    ctx.rule.attr.strip_import_prefix.lstrip("/"),
+                ),
+            )
 
     args = ctx.actions.args()
     for path in proto_info.transitive_proto_path.to_list():

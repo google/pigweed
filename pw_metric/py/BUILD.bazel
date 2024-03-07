@@ -32,15 +32,12 @@ py_library(
     ],
 )
 
-# TODO: b/326636665 - This test works, but requires strip_import_prefix on
-# the proto library, which breaks the nanopb libraries.
 py_test(
     name = "metric_parser_test",
     size = "small",
     srcs = [
         "metric_parser_test.py",
     ],
-    tags = ["manual"],
     deps = [
         ":pw_metric",
     ],

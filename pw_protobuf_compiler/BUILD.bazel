@@ -14,33 +14,57 @@
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load("//pw_build:pigweed.bzl", "pw_cc_test")
+load("//pw_protobuf_compiler:pw_proto_library.bzl", "nanopb_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-# TODO(frolv): Figure out how to support nanopb and pwpb codegen in Bazel.
-filegroup(
+pw_cc_test(
     name = "nanopb_test",
     srcs = ["nanopb_test.cc"],
+    # TODO: https://pwbug.dev/328311416 - Fix this test.
+    tags = ["manual"],
+    deps = [
+        ":pw_protobuf_compiler_nanopb_protos_nanopb",
+        "//pw_unit_test",
+    ],
 )
 
-filegroup(
+pw_cc_test(
     name = "pwpb_test",
     srcs = ["pwpb_test.cc"],
+    deps = [
+        "//pw_protobuf_compiler/pw_protobuf_compiler_pwpb_protos:pwpb_test_pw_proto.pwpb",
+        "//pw_string",
+        "//pw_unit_test",
+    ],
 )
 
 py_proto_library(
-    name = "pw_protobuf_compiler_protos",
-    deps = [":test_protos"],
+    name = "pw_protobuf_compiler_protos_py_pb2",
+    deps = [":pw_protobuf_compiler_protos"],
 )
 
 proto_library(
-    name = "test_protos",
+    name = "pw_protobuf_compiler_protos",
     srcs = [
         "pw_protobuf_compiler_protos/nested/more_nesting/test.proto",
         "pw_protobuf_compiler_protos/test.proto",
     ],
+    strip_import_prefix = "/pw_protobuf_compiler",
+)
+
+proto_library(
+    name = "pw_protobuf_compiler_nanopb_protos",
+    srcs = ["pw_protobuf_compiler_nanopb_protos/nanopb_test.proto"],
+    strip_import_prefix = "/pw_protobuf_compiler",
+    deps = ["@com_github_nanopb_nanopb//:nanopb_proto"],
+)
+
+nanopb_proto_library(
+    name = "pw_protobuf_compiler_nanopb_protos_nanopb",
+    deps = [":pw_protobuf_compiler_nanopb_protos"],
 )
 
 pw_cc_test(

@@ -49,7 +49,8 @@ TEST(Pwpb, OptionsFilesAreApplied) {
 }
 
 TEST(Pwpb, InlineOptionsAppliedAndOverridden) {
-  pw::protobuf_compiler::InlineOptionsExample::Message inline_options_example;
+  pw::protobuf_compiler::pwpb::InlineOptionsExample::Message
+      inline_options_example;
 
   static_assert(
       std::is_same_v<decltype(inline_options_example.ten_chars_inline),
