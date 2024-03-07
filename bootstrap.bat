@@ -96,23 +96,6 @@ if "%PW_ENVIRONMENT_ROOT%"=="" (
   set "_PW_ACTUAL_ENVIRONMENT_ROOT=%PW_ENVIRONMENT_ROOT%"
 )
 
-:: Check case sensitivity.
-:: TODO: https://pwbug.dev/322437881 - Support case-sensitive filesystems on
-:: Windows.
-fsutil.exe file queryCaseSensitiveInfo "%PW_PROJECT_ROOT%" | findstr disabled > NUL
-if "%ERRORLEVEL%" == "1" (
-  echo.
-  echo Error: Your project's directory has case sensitivity enabled.
-  echo.
-  echo   Pigweed does not yet support case-sensitive file systems on Windows.
-  echo   Please run this command **FROM AN ADMINISTRATOR COMMAND PROMPT** to
-  echo   disable case sensitivity on your checkout:
-  echo.
-  echo     fsutil.exe file setCaseSensitiveInfo "%PW_PROJECT_ROOT%" disable
-  echo.
-  goto finish
-)
-
 set "shell_file=%_PW_ACTUAL_ENVIRONMENT_ROOT%\activate.bat"
 
 set "_pw_start_script=%PW_ROOT%\pw_env_setup\py\pw_env_setup\windows_env_start.py"
