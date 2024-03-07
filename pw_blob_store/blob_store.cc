@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#define PW_LOG_MODULE_NAME "BLOB"
+
 #include "pw_blob_store/blob_store.h"
 
 #include <algorithm>
