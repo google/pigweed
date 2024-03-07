@@ -41,28 +41,27 @@ In order to use this you are expected to set the following variables from
 
 Bazel
 =====
-.. There's a bug in the Bazel docs site which is causing the link to the evergreen
-.. section on constraint settings to 404. So for now, we'll just link to the
-.. v5.4.0 doc on constraint settings. When the Bazel bug is fixed we can return the
-.. URL to https://bazel.build/reference/be/platform#constraint_setting
+Pigweed provides its own BUILD.bazel file for FreeRTOS, at
+``third_party/freertos/freertos.BUILD.bazel``.
 
-In Bazel, the FreeRTOS build is configured through `constraint_settings
-<https://docs.bazel.build/versions/5.4.0/be/platform.html#constraint_setting>`_. The `platform
-<https://bazel.build/extending/platforms>`_ you are building for must specify
-values for the following settings:
+The FreeRTOS build is configured through `constraint_settings
+<https://bazel.build/reference/be/platforms-and-toolchains#constraint_setting>`_.
+The `platform <https://bazel.build/extending/platforms>`_ you are building for
+must specify values for the following settings:
 
-*   ``//third_party/freertos:port``, to set which FreeRTOS port to use. You can
-    select a value from those defined in ``third_party/freertos/BUILD.bazel``.
-*   ``//third_party/freertos:malloc``, to set which FreeRTOS malloc
-    implementation to use. You can select a value from those defined in
+*   ``@freertos//:port``, to set which FreeRTOS port to use. You can
+    select a value from those defined in
+    ``third_party/freertos/freertos.BUILD.bazel``.
+*   ``@freertos//:malloc``, to set which FreeRTOS malloc implementation to use.
+    You can select a value from those defined in
     ``third_party/freertos/BUILD.bazel``.
-*   ``//third_party/freertos:disable_task_statics_setting``, to determine
-    whether statics should be disabled during compilation of the tasks.c source
-    file (see next section). This setting has only two possible values, also
-    defined in ``third_party/freertos/BUILD.bazel``.
+*   ``@freertos//:disable_task_statics_setting``, to determine whether statics
+    should be disabled during compilation of the tasks.c source file (see next
+    section). This setting has only two possible values, also defined in
+    ``third_party/freertos/BUILD.bazel``.
 
-In addition, you need to set the ``@pigweed//targets:freertos_config`` label
-flag to point to the library target providing the FreeRTOS config header.  See
+In addition, you need to set the ``@freertos//:freertos_config`` label flag to
+point to the library target providing the FreeRTOS config header.  See
 :ref:`docs-build_system-bazel_configuration` for a discussion of how to work
 with our label flags.
 
@@ -78,8 +77,9 @@ to enable use of things like pw_thread_freertos/util.h's ``ForEachThread``.
 To facilitate this, Pigweed offers an opt-in option which can be enabled,
 
 *  in GN through ``pw_third_party_freertos_DISABLE_TASKS_STATICS = true``,
-*  in CMake through ``set(pw_third_party_freertos_DISABLE_TASKS_STATICS ON CACHE BOOL "" FORCE)``,
-*  in Bazel through ``//third_party/freertos:disable_task_statics``.
+*  in CMake through ``set(pw_third_party_freertos_DISABLE_TASKS_STATICS ON
+   CACHE BOOL "" FORCE)``,
+*  in Bazel through ``@freertos//:disable_task_statics``.
 
 This redefines ``static`` to nothing for the ``Source/tasks.c`` FreeRTOS source
 file when building through ``$dir_pw_third_party/freertos`` in GN and through

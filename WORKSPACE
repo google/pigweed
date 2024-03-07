@@ -392,7 +392,7 @@ git_repository(
 
 http_archive(
     name = "freertos",
-    build_file = "//:third_party/freertos/BUILD.bazel",
+    build_file = "//third_party/freertos:freertos.BUILD.bazel",
     sha256 = "89af32b7568c504624f712c21fe97f7311c55fccb7ae6163cda7adde1cde7f62",
     strip_prefix = "FreeRTOS-Kernel-10.5.1",
     urls = ["https://github.com/FreeRTOS/FreeRTOS-Kernel/archive/refs/tags/V10.5.1.tar.gz"],

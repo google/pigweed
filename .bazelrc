@@ -83,6 +83,7 @@ build --features=external_include_paths
 # compiler-rt. See https://reviews.llvm.org/D53608.
 # build --features=fully_static_link
 
+build --@freertos//:freertos_config=//third_party/freertos:freertos_config
 build --@mbedtls//:mbedtls_config=//third_party/mbedtls:default_config
 
 # Define the --config=asan-libfuzzer configuration.

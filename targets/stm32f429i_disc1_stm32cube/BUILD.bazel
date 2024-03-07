@@ -41,7 +41,7 @@ cc_library(
 # for platforms that specify this FreeRTOS config.
 constraint_value(
     name = "freertos_config_cv",
-    constraint_setting = "//third_party/freertos:freertos_config_setting",
+    constraint_setting = "@freertos//:freertos_config_setting",
 )
 
 # TODO: b/301334234 - Set the flags currently in the stm32f429i config in

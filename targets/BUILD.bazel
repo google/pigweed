@@ -25,11 +25,6 @@
 package(default_visibility = ["//visibility:public"])
 
 label_flag(
-    name = "freertos_config",
-    build_setting_default = "@pigweed//third_party/freertos:freertos_config",
-)
-
-label_flag(
     name = "mcuxpresso_sdk",
     build_setting_default = "@pigweed//third_party/mcuxpresso:default_mcuxpresso_sdk",
 )
