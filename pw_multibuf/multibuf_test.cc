@@ -90,32 +90,35 @@ TEST(MultiBuf, IsDefaultConstructible) { [[maybe_unused]] MultiBuf buf; }
 
 TEST(MultiBuf, WithOneChunkReleases) {
   AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  const allocator::AllMetrics& metrics = allocator.metrics();
   MultiBuf buf;
   buf.PushFrontChunk(MakeChunk(&allocator, kArbitraryChunkSize));
-  EXPECT_EQ(allocator.num_allocations(), 2U);
+  EXPECT_EQ(metrics.num_allocations.value(), 2U);
   buf.Release();
-  EXPECT_EQ(allocator.num_deallocations(), 2U);
+  EXPECT_EQ(metrics.num_deallocations.value(), 2U);
 }
 
 TEST(MultiBuf, WithOneChunkReleasesOnDestruction) {
   AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  const allocator::AllMetrics& metrics = allocator.metrics();
   {
     MultiBuf buf;
     buf.PushFrontChunk(MakeChunk(&allocator, kArbitraryChunkSize));
-    EXPECT_EQ(allocator.num_allocations(), 2U);
+    EXPECT_EQ(metrics.num_allocations.value(), 2U);
   }
-  EXPECT_EQ(allocator.num_deallocations(), 2U);
+  EXPECT_EQ(metrics.num_deallocations.value(), 2U);
 }
 
 TEST(MultiBuf, WithMultipleChunksReleasesAllOnDestruction) {
   AllocatorForTest<kArbitraryAllocatorSize> allocator;
+  const allocator::AllMetrics& metrics = allocator.metrics();
   {
     MultiBuf buf;
     buf.PushFrontChunk(MakeChunk(&allocator, kArbitraryChunkSize));
     buf.PushFrontChunk(MakeChunk(&allocator, kArbitraryChunkSize));
-    EXPECT_EQ(allocator.num_allocations(), 4U);
+    EXPECT_EQ(metrics.num_allocations.value(), 4U);
   }
-  EXPECT_EQ(allocator.num_deallocations(), 4U);
+  EXPECT_EQ(metrics.num_deallocations.value(), 4U);
 }
 
 TEST(MultiBuf, SizeReturnsNumberOfBytes) {

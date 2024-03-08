@@ -13,11 +13,6 @@
 # the License.
 
 include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
-include("$ENV{PW_ROOT}/pw_allocator/allocator.cmake")
-
-if(pw_allocator_COLLECT_METRICS)
-  set(collect_metrics "PW_ALLOCATOR_COLLECT_METRICS=1")
-endif()
 
 pw_add_library(pw_allocator.allocator STATIC
   HEADERS
@@ -82,7 +77,6 @@ pw_add_library(pw_allocator.fallback_allocator INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.allocator
-    pw_allocator.metrics
     pw_allocator.tracking_allocator
     pw_metric
     pw_result
@@ -130,22 +124,6 @@ pw_add_library(pw_allocator.libc_allocator STATIC
     pw_allocator.allocator
 )
 
-pw_add_library(pw_allocator.metrics STATIC
-  PUBLIC_DEFINES
-    ${collect_metrics}
-  SOURCES
-    metrics.cc
-  HEADERS
-    public/pw_allocator/metrics.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    pw_allocator.allocator
-    pw_metric
-  PRIVATE_DEPS
-    pw_assert
-)
-
 pw_add_library(pw_allocator.multiplex_allocator INTERFACE
   HEADERS
     public/pw_allocator/multiplex_allocator.h
@@ -153,7 +131,6 @@ pw_add_library(pw_allocator.multiplex_allocator INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.allocator
-    pw_allocator.metrics
     pw_containers.flat_map
     pw_result
     pw_status
@@ -201,12 +178,12 @@ pw_add_library(pw_allocator.synchronized_allocator INTERFACE
 
 pw_add_library(pw_allocator.tracking_allocator INTERFACE
   HEADERS
+    public/pw_allocator/metrics.h
     public/pw_allocator/tracking_allocator.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
     pw_allocator.allocator
-    pw_allocator.metrics
     pw_metric
     pw_status
 )
@@ -396,6 +373,7 @@ pw_add_test(pw_allocator.tracking_allocator_test
     tracking_allocator_test.cc
   PRIVATE_DEPS
     pw_allocator.allocator_testing
+    pw_allocator.tracking_allocator
   GROUPS
     modules
     pw_allocator

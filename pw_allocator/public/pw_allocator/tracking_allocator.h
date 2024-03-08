@@ -23,6 +23,12 @@
 
 namespace pw::allocator {
 
+/// This tag type is used to explicitly select the constructor which adds
+/// the tracking allocator's metrics group as a child of the tracking
+/// allocator it is wrapping.
+static constexpr struct AddTrackingAllocatorAsChild {
+} kAddTrackingAllocatorAsChild = {};
+
 /// Wraps an `Allocator` and records details of its usage.
 ///
 /// Metric collection is performed using the provided template parameter type.
@@ -32,16 +38,25 @@ namespace pw::allocator {
 /// default metrics implementation, or `TrackingAllocatorForTest` which
 /// always uses the real metrics implementation.
 template <typename MetricsType>
-class TrackingAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
+class TrackingAllocatorImpl : public Allocator {
  public:
-  using metrics_type = MetricsType;
-  using Base = AllocatorWithMetrics<MetricsType>;
+  using metric_type = MetricsType;
 
   TrackingAllocatorImpl(metric::Token token, Allocator& allocator)
       : allocator_(allocator), metrics_(token) {}
 
-  metrics_type& metric_group() override { return metrics_; }
-  const metrics_type& metric_group() const override { return metrics_; }
+  template <typename OtherMetrics>
+  TrackingAllocatorImpl(metric::Token token,
+                        TrackingAllocatorImpl<OtherMetrics>& parent,
+                        const AddTrackingAllocatorAsChild&)
+      : allocator_(parent), metrics_(token) {
+    parent.metric_group().Add(metric_group());
+  }
+
+  const metric::Group& metric_group() const { return metrics_.group(); }
+  metric::Group& metric_group() { return metrics_.group(); }
+
+  const MetricsType& metrics() const { return metrics_.metrics(); }
 
  private:
   /// @copydoc Allocator::Allocate
@@ -95,14 +110,39 @@ class TrackingAllocatorImpl : public AllocatorWithMetrics<MetricsType> {
   }
 
   Allocator& allocator_;
-  metrics_type metrics_;
+  internal::Metrics<MetricsType> metrics_;
 };
 
-/// Allocator metric proxy that uses the default metrics implementation.
-///
-/// Depending on the value of the `pw_allocator_COLLECT_METRICS` build argument,
-/// the `internal::DefaultMetrics` type is an alias for either the real or stub
-/// metrics implementation.
-using TrackingAllocator = TrackingAllocatorImpl<internal::DefaultMetrics>;
+// TODO(b/326509341): This is an interim class to facilitate refactoring
+// downstream consumers of `TrackingAllocator` to add a template parameter.
+//
+// The migration will be performed as follows:
+// 1. Downstream consumers will be updated to use `TrackingAllocatorImpl<...>`.
+// 2. The iterim `TrackingAllocator` class will be removed.
+// 3. `TrackingAllocatorImpl<...>` will be renamed to `TrackingAllocator<...>`,
+//    with a `TrackingAllocatorImpl<...>` alias pointing to it.
+// 4. Downstream consumers will be updated to use `TrackingAllocator<...>`.
+// 5. The `TrackingAllocatorImpl<...>` alias will be removed.
+class TrackingAllocator : public TrackingAllocatorImpl<AllMetrics> {
+ public:
+  TrackingAllocator(metric::Token token, Allocator& allocator)
+      : TrackingAllocatorImpl<AllMetrics>(token, allocator) {}
+  uint32_t allocated_bytes() const { return metrics().allocated_bytes.value(); }
+  uint32_t peak_allocated_bytes() const {
+    return metrics().peak_allocated_bytes.value();
+  }
+  uint32_t cumulative_allocated_bytes() const {
+    return metrics().cumulative_allocated_bytes.value();
+  }
+  uint32_t num_allocations() const { return metrics().num_allocations.value(); }
+  uint32_t num_deallocations() const {
+    return metrics().num_deallocations.value();
+  }
+  uint32_t num_resizes() const { return metrics().num_resizes.value(); }
+  uint32_t num_reallocations() const {
+    return metrics().num_reallocations.value();
+  }
+  uint32_t num_failures() const { return metrics().num_failures.value(); }
+};
 
 }  // namespace pw::allocator

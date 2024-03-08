@@ -71,14 +71,12 @@ class AllocatorForTestImpl : public Allocator {
 }  // namespace internal
 namespace test {
 
-using Metrics = pw::allocator::internal::Metrics;
-
 // A token that can be used in tests.
 constexpr pw::tokenizer::Token kToken = PW_TOKENIZE_STRING("test");
 
 /// An `AllocatorForTest` that is automatically initialized on construction.
 template <size_t kBufferSize>
-class AllocatorForTest : public AllocatorWithMetrics<Metrics> {
+class AllocatorForTest : public Allocator {
  public:
   using AllocatorType = FirstFitBlockAllocator<uint32_t>;
   using BlockType = AllocatorType::BlockType;
@@ -95,10 +93,10 @@ class AllocatorForTest : public AllocatorWithMetrics<Metrics> {
     allocator_->Reset();
   }
 
-  metrics_type& metric_group() override { return tracker_.metric_group(); }
-  const metrics_type& metric_group() const override {
-    return tracker_.metric_group();
-  }
+  const metric::Group& metric_group() const { return tracker_.metric_group(); }
+  metric::Group& metric_group() { return tracker_.metric_group(); }
+
+  const AllMetrics& metrics() const { return tracker_.metrics(); }
 
   size_t allocate_size() const { return params_.allocate_size; }
   void* deallocate_ptr() const { return params_.deallocate_ptr; }
@@ -138,7 +136,7 @@ class AllocatorForTest : public AllocatorWithMetrics<Metrics> {
   WithBuffer<AllocatorType, kBufferSize> allocator_;
   internal::RecordedParameters params_;
   internal::AllocatorForTestImpl recorder_;
-  TrackingAllocatorImpl<Metrics> tracker_;
+  TrackingAllocatorImpl<AllMetrics> tracker_;
 };
 
 }  // namespace test

@@ -16,6 +16,4 @@ include_guard(GLOBAL)
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 set(pw_allocator_COLLECT_METRICS OFF CACHE STRING
-    "Adds a `pw::metric::MerticAccumulation` to `AllocatorProxy`. This \
-    increases the code size a non-trivial amount, but allows tracking how much \
-    memory each allocator proxy has allocated.")
+    "Deprecated, and to be removed in a future update.")

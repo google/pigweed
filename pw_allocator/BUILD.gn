@@ -14,7 +14,6 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pw_allocator/allocator.gni")
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
@@ -25,12 +24,6 @@ import("$dir_pw_unit_test/test.gni")
 
 config("default_config") {
   include_dirs = [ "public" ]
-}
-
-config("collect_metrics") {
-  if (pw_allocator_COLLECT_METRICS) {
-    defines = [ "PW_ALLOCATOR_COLLECT_METRICS=1" ]
-  }
 }
 
 group("pw_allocator") {
@@ -93,7 +86,6 @@ pw_source_set("fallback_allocator") {
   public = [ "public/pw_allocator/fallback_allocator.h" ]
   public_deps = [
     ":allocator",
-    ":metrics",
     ":tracking_allocator",
     dir_pw_metric,
     dir_pw_result,
@@ -135,26 +127,11 @@ pw_source_set("libc_allocator") {
   sources = [ "libc_allocator.cc" ]
 }
 
-pw_source_set("metrics") {
-  public_configs = [
-    ":default_config",
-    ":collect_metrics",
-  ]
-  public = [ "public/pw_allocator/metrics.h" ]
-  public_deps = [
-    ":allocator",
-    dir_pw_metric,
-  ]
-  deps = [ dir_pw_assert ]
-  sources = [ "metrics.cc" ]
-}
-
 pw_source_set("multiplex_allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/multiplex_allocator.h" ]
   public_deps = [
     ":allocator",
-    ":metrics",
     "$dir_pw_containers:flat_map",
     dir_pw_result,
     dir_pw_status,
@@ -197,10 +174,12 @@ pw_source_set("synchronized_allocator") {
 
 pw_source_set("tracking_allocator") {
   public_configs = [ ":default_config" ]
-  public = [ "public/pw_allocator/tracking_allocator.h" ]
+  public = [
+    "public/pw_allocator/metrics.h",
+    "public/pw_allocator/tracking_allocator.h",
+  ]
   public_deps = [
     ":allocator",
-    ":metrics",
     dir_pw_metric,
     dir_pw_status,
   ]
@@ -253,7 +232,6 @@ pw_source_set("allocator_testing") {
     ":block",
     ":block_allocator",
     ":buffer",
-    ":metrics",
     ":tracking_allocator",
     dir_pw_bytes,
     dir_pw_result,
@@ -418,14 +396,15 @@ pw_test("synchronized_allocator_test") {
 }
 
 pw_test("tracking_allocator_test") {
-  deps = [ ":allocator_testing" ]
+  deps = [
+    ":allocator_testing",
+    ":tracking_allocator",
+  ]
   sources = [ "tracking_allocator_test.cc" ]
 
   # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
   # indefinitely.
-  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
-    enable_if = false
-  }
+  enable_if = pw_build_EXECUTABLE_TARGET_TYPE != "pico_executable"
 }
 
 pw_test("unique_ptr_test") {

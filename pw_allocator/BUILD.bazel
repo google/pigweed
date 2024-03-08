@@ -87,7 +87,6 @@ cc_library(
     includes = ["public"],
     deps = [
         ":allocator",
-        ":metrics",
         ":tracking_allocator",
         "//pw_metric:metric",
         "//pw_result",
@@ -143,22 +142,6 @@ cc_library(
 )
 
 cc_library(
-    name = "metrics",
-    srcs = [
-        "metrics.cc",
-    ],
-    hdrs = [
-        "public/pw_allocator/metrics.h",
-    ],
-    includes = ["public"],
-    deps = [
-        ":allocator",
-        "//pw_assert",
-        "//pw_metric:metric",
-    ],
-)
-
-cc_library(
     name = "multiplex_allocator",
     hdrs = [
         "public/pw_allocator/multiplex_allocator.h",
@@ -166,7 +149,6 @@ cc_library(
     includes = ["public"],
     deps = [
         ":allocator",
-        ":metrics",
         "//pw_containers:flat_map",
         "//pw_result",
         "//pw_status",
@@ -226,12 +208,12 @@ cc_library(
 cc_library(
     name = "tracking_allocator",
     hdrs = [
+        "public/pw_allocator/metrics.h",
         "public/pw_allocator/tracking_allocator.h",
     ],
     includes = ["public"],
     deps = [
         ":allocator",
-        ":metrics",
         "//pw_assert",
         "//pw_metric:metric",
         "//pw_status",
