@@ -818,10 +818,9 @@ pw_alignment
 pw_allocator
 ------------
 The new generic :cpp:class:`pw::allocator::BlockAllocator` interface supports
-:ref:`several derived types <module-pw_allocator-other-impls>` that enable
-fine-grained control over how a block satisfies an allocation request. The new
-:cpp:func:`pw::allocator::GetLayout()` method retrieves the layout that was
-used to allocate a given pointer. The new
+several derived types that enable fine-grained control over how a block
+satisfies an allocation request. The new :cpp:func:`pw::allocator::GetLayout()`
+method retrieves the layout that was used to allocate a given pointer. The new
 :cpp:class:`pw::allocator::AllocatorSyncProxy` interface synchronizes access to
 another allocator, allowing it to be used by multiple threads.
 
@@ -2522,9 +2521,8 @@ The :ref:`docs <module-pw_alignment>` were updated to follow our new
 pw_allocator
 ------------
 Utilities were added that make it easier to write tests for custom allocator
-implementations. See :ref:`module-pw_allocator-test-support`. The
-:ref:`module-pw_allocator-metric-collection` API was refactored.
-CMake support for heap poisoning was added.
+implementations. The metric collection API was refactored. CMake support for
+heap poisoning was added.
 
 * `Fix use-after-free in ~AllocatorForTest
   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/182950>`__
@@ -3284,7 +3282,7 @@ Modules
 
 pw_allocator
 ------------
-The docs now have an auto-generated :ref:`module-pw_allocator-size`.
+The docs now have an auto-generated size report.
 ``pw::allocator::SplitFreeListAllocator`` has a new ``blocks()`` method for getting the
 range of blocks being tracked. The class was also refactored to
 use the existing ``Block`` API. The ``Block`` API itself was refactored to

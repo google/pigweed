@@ -194,6 +194,8 @@ The metric object is 12 bytes on 32-bit platforms.
       Set the metric to the given value. Results in undefined behaviour if the
       metric is not of type float.
 
+.. _module-pw_metric-group:
+
 Group
 -----
 The ``pw::metric::Group`` object is simply:
@@ -621,6 +623,8 @@ Below is an example that **is incorrect**. Don't do what follows!
    **Don't destruct metrics**. Metrics are designed to be registered /
    structured upfront, then manipulated during a device's active phase. They do
    not support destruction.
+
+.. _module-pw_metric-exporting:
 
 -----------------
 Exporting metrics

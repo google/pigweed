@@ -417,6 +417,12 @@ pw_doc_group("docs") {
     "doc_resources/pw_allocator_heap_visualizer_demo.png",
     "public/pw_allocator/simple_allocator.h",
   ]
-  sources = [ "docs.rst" ]
+  sources = [
+    "api.rst",
+    "code_size.rst",
+    "design.rst",
+    "docs.rst",
+    "guide.rst",
+  ]
   report_deps = [ ":allocator_size_report" ]
 }
