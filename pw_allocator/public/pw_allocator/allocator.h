@@ -271,8 +271,7 @@ class UniquePtr {
   ///
   /// NOTE: Instances of this type are most commonly constructed using
   /// ``Allocator::MakeUnique``.
-  constexpr UniquePtr(std::nullptr_t)
-      : value_(nullptr), layout_(nullptr), allocator_(nullptr) {}
+  constexpr UniquePtr(std::nullptr_t) : UniquePtr() {}
 
   /// Move-constructs a ``UniquePtr<T>`` from a ``UniquePtr<U>``.
   ///
@@ -290,6 +289,13 @@ class UniquePtr {
         "U* is not assignable to T*.");
     other.Release();
   }
+
+  // Move-only. These are needed since the templated move-contructor and
+  // move-assignment operator do not exactly match the signature of the default
+  // move-contructor and move-assignment operator, and thus do not implicitly
+  // delete the copy-contructor and copy-assignment operator.
+  UniquePtr(const UniquePtr&) = delete;
+  UniquePtr& operator=(const UniquePtr&) = delete;
 
   /// Move-assigns a ``UniquePtr<T>`` from a ``UniquePtr<U>``.
   ///
@@ -309,6 +315,7 @@ class UniquePtr {
     layout_ = other.layout_;
     allocator_ = other.allocator_;
     other.Release();
+    return *this;
   }
 
   /// Sets this ``UniquePtr`` to null, destructing and deallocating any

@@ -106,7 +106,7 @@ int main() {
       return 1;
     }
 
-    pw::allocator::UniquePtr<Point> point = *maybe_point;
+    pw::allocator::UniquePtr<Point> point = std::move(maybe_point.value());
     point->x = point->y * 2;
   }
 
