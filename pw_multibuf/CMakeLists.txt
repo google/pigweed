@@ -139,3 +139,29 @@ pw_add_test(pw_multibuf.allocator_test
     modules
     pw_multibuf
 )
+
+pw_add_library(pw_multibuf.simple_allocator STATIC
+  HEADERS
+    public/pw_multibuf/simple_allocator.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.allocator
+    pw_containers.intrusive_list
+    pw_multibuf
+    pw_multibuf.allocator
+  SOURCES
+    simple_allocator.cc
+)
+
+pw_add_test(pw_multibuf.simple_allocator_test
+  SOURCES
+    simple_allocator_test.cc
+  PRIVATE_DEPS
+    pw_multibuf.simple_allocator
+    pw_allocator.allocator_testing
+    pw_allocator.null_allocator
+  GROUPS
+    modules
+    pw_multibuf
+)

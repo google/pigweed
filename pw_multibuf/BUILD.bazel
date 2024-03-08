@@ -133,3 +133,28 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+cc_library(
+    name = "simple_allocator",
+    srcs = ["simple_allocator.cc"],
+    hdrs = ["public/pw_multibuf/simple_allocator.h"],
+    deps = [
+        ":allocator",
+        ":pw_multibuf",
+        "//pw_allocator:allocator",
+        "//pw_containers:intrusive_list",
+    ],
+)
+
+pw_cc_test(
+    name = "simple_allocator_test",
+    srcs = ["simple_allocator_test.cc"],
+    deps = [
+        ":simple_allocator",
+        "//pw_allocator:allocator_testing",
+        "//pw_allocator:null_allocator",
+        "//pw_async2:dispatcher",
+        "//pw_async2:poll",
+        "//pw_unit_test",
+    ],
+)

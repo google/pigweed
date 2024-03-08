@@ -91,6 +91,22 @@ class Allocator {
   /// @param[in]  layout      Describes the memory to be allocated.
   void* Allocate(Layout layout) { return DoAllocate(layout); }
 
+  /// Constructs and object of type `T` from the given `args`
+  ///
+  /// The return value is nullable, as allocating memory for the object may
+  /// fail. Callers must check for this error before using the resulting
+  /// pointer.
+  ///
+  /// @param[in]  args...     Arguments passed to the object constructor.
+  template <typename T, typename... Args>
+  T* New(Args&&... args) {
+    void* void_ptr = Allocate(Layout::Of<T>());
+    if (void_ptr == nullptr) {
+      return nullptr;
+    }
+    return new (void_ptr) T(std::forward<Args>(args)...);
+  }
+
   /// Constructs and object of type `T` from the given `args`, and wraps it in a
   /// `UniquePtr`
   ///
@@ -101,13 +117,33 @@ class Allocator {
   template <typename T, typename... Args>
   std::optional<UniquePtr<T>> MakeUnique(Args&&... args) {
     static constexpr Layout kStaticLayout = Layout::Of<T>();
-    void* void_ptr = Allocate(kStaticLayout);
-    if (void_ptr == nullptr) {
+    T* ptr = New<T>(std::forward<Args>(args)...);
+    if (ptr == nullptr) {
       return std::nullopt;
     }
-    T* ptr = new (void_ptr) T(std::forward<Args>(args)...);
     return std::make_optional<UniquePtr<T>>(
         UniquePtr<T>::kPrivateConstructor, ptr, &kStaticLayout, this);
+  }
+
+  /// Destroys the object at ``ptr`` and deallocates the associated memory.
+  ///
+  /// The given pointer must have been previously obtained from a call to
+  /// ``New``; otherwise the behavior is undefined.
+  ///
+  /// This functions is only callable with objects whose type is ``final``.
+  /// This limitation is unfortunately required due to the fact that it is not
+  /// possible to inspect the size of the underlying memory allocation for
+  /// virtual objects.
+  ///
+  /// @param[in] ptr      Pointer to previously-allocated object.
+  template <typename T>
+  void Delete(T* ptr) {
+    static_assert(
+        std::is_final_v<T>,
+        "``pw::allocator::Allocator::Delete`` can only be used with ``final`` "
+        "types, as the allocated size of virtual objects is unknowable.");
+    std::destroy_at(ptr);
+    Deallocate(ptr, Layout::Of<T>());
   }
 
   /// Releases a previously-allocated block of memory.

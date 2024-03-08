@@ -148,12 +148,35 @@ pw_test("allocator_test") {
   sources = [ "allocator_test.cc" ]
 }
 
+pw_source_set("simple_allocator") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_multibuf/simple_allocator.h" ]
+  sources = [ "simple_allocator.cc" ]
+  public_deps = [
+    ":allocator",
+    ":pw_multibuf",
+    "//pw_allocator:allocator",
+    "//pw_containers:intrusive_list",
+  ]
+}
+
+pw_test("simple_allocator_test") {
+  enable_if = pw_async2_DISPATCHER_BACKEND != ""
+  deps = [
+    ":simple_allocator",
+    "$dir_pw_allocator:allocator_testing",
+    "$dir_pw_allocator:null_allocator",
+  ]
+  sources = [ "simple_allocator_test.cc" ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":allocator_test",
     ":chunk_test",
     ":header_chunk_region_tracker_test",
     ":multibuf_test",
+    ":simple_allocator_test",
     ":single_chunk_region_tracker_test",
   ]
 }

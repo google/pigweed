@@ -32,6 +32,11 @@ class MultiBuf {
   class ChunkIterable;
 
   constexpr MultiBuf() : first_(nullptr) {}
+  static MultiBuf FromChunk(OwnedChunk&& chunk) {
+    MultiBuf buf;
+    buf.first_ = std::move(chunk).Take();
+    return buf;
+  }
   MultiBuf(const MultiBuf&) = delete;
   MultiBuf& operator=(const MultiBuf&) = delete;
 

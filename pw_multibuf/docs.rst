@@ -51,7 +51,7 @@ data which are one of the following:
 API Reference
 -------------
 Most users of ``pw_multibuf`` will start by allocating a ``MultiBuf`` using
-a ``MultiBufAllocator`` class.
+a ``MultiBufAllocator`` class, such as the ``SimpleAllocator``.
 
 ``MultiBuf`` s consist of a number of ``Chunk`` s of contiguous memory.
 These ``Chunk`` s can be grown, shrunk, modified, or extracted from the
@@ -71,6 +71,9 @@ An RAII-style ``OwnedChunk`` is also provided, and manages the lifetime of
    :members:
 
 .. doxygenclass:: pw::multibuf::MultiBufAllocator
+   :members:
+
+.. doxygenclass:: pw::multibuf::SimpleAllocator
    :members:
 
 ---------------------------
