@@ -106,3 +106,9 @@ Zephyr
 ------
 To enable ``pw_bytes`` for Zephyr add ``CONFIG_PIGWEED_BYTES=y`` to the
 project's configuration.
+
+--------
+Rust API
+--------
+``pw_bytes``'s Rust API is documented in our
+`rustdoc API docs </rustdoc/pw_bytes>`_.

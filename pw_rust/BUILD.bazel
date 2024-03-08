@@ -23,6 +23,7 @@ rust_docs(
     # TODO: b/295227522 - Add support to `rust_docs` to automatically processs
     # crates in topological order.
     crates = [
+        "//pw_bytes/rust:pw_bytes",
         "//pw_format/rust:pw_format",
         "//pw_status/rust:pw_status",
         "//pw_stream/rust:pw_stream",
