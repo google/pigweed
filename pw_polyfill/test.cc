@@ -40,6 +40,12 @@ static_assert(PW_CXX_STANDARD_IS_SUPPORTED(20), "C++20 must be supported");
 static_assert(!PW_CXX_STANDARD_IS_SUPPORTED(20), "C++20 must not be supported");
 #endif  // __cplusplus >= 202002L
 
+#if __cplusplus >= 202311L
+static_assert(PW_CXX_STANDARD_IS_SUPPORTED(23), "C++23 must be supported");
+#else
+static_assert(!PW_CXX_STANDARD_IS_SUPPORTED(23), "C++23 must not be supported");
+#endif  // __cplusplus >= 202311L
+
 // Check that consteval is at least equivalent to constexpr.
 PW_CONSTEVAL int ConstevalFunction() { return 123; }
 static_assert(ConstevalFunction() == 123,
