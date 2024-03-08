@@ -7,22 +7,25 @@ Code size analysis
    :name: pw_allocator
    :tagline: "pw_allocator: Flexible, safe, and measurable memory allocation"
 
+This module provides several implementations of the
+:ref:`module-pw_allocator-api-allocator` interface. The tables below shows the
+relative code size for each of these allocators' independent implementation of
+the complete allocator interface. Your code size may be smaller if you use a
+subset of the interface or if you use more than one allocator.
+
 ----------------------------------------------------
 Size comparision: concrete allocator implementations
 ----------------------------------------------------
-``pw_allocator`` provides some implementations of the
-``pw::allocator::Allocator`` interface. The relative code size costs for these
-implementations are shown below:
+The following are code size for the provided allocator implementation that
+directly manage the memory they use to fulfill requests:
 
-.. include:: allocator_size_report
-
-.. TODO: b/328076428 - change to "allocator_implementations_size_report"
+.. include:: concrete_allocators_size_report
 
 -------------------------------------------------------
 Size comparision: forwarding allocators implementations
 -------------------------------------------------------
-``pw_allocator`` also provides some "forwarding" allocators that wrap other
-allocators to provides additional capabilities. The relative code size costs for
-these wrappers are shown below:
+The following are code size for the provided "forwarding" allocators as
+described by :ref:`module-pw_allocator-design-forwarding`:
 
-.. TODO: b/328076428 - include "forwarding_allocators_size_report"
+.. include:: forwarding_allocators_size_report
+

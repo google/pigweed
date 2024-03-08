@@ -1,7 +1,7 @@
 .. _module-pw_allocator-design:
 
 ================
-Design & Roadmap
+Design & roadmap
 ================
 .. pigweed-module-subpage::
    :name: pw_allocator

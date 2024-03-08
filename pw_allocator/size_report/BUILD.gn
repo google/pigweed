@@ -16,31 +16,133 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
 
-pw_executable("split_free_list_allocator") {
+pw_executable("base") {
   check_includes = false
-  sources = [ "split_free_list_allocator.cc" ]
+  sources = [ "base.cc" ]
+  deps = [ "..:size_reporter" ]
+}
+
+pw_executable("best_fit_block_allocator") {
+  check_includes = false
+  sources = [ "best_fit_block_allocator.cc" ]
   deps = [
-    "$dir_pw_bloat:bloat_this_binary",
-    "..:split_free_list_allocator",
+    "..:block_allocator",
+    "..:size_reporter",
   ]
 }
 
-pw_executable("split_free_list_allocator_with_unique_ptr") {
+pw_executable("dual_first_fit_block_allocator") {
   check_includes = false
-  sources = [ "split_free_list_allocator.cc" ]
+  sources = [ "dual_first_fit_block_allocator.cc" ]
   deps = [
-    "$dir_pw_bloat:bloat_this_binary",
-    "..:split_free_list_allocator",
+    "..:block_allocator",
+    "..:size_reporter",
   ]
-  defines = [ "SIZE_REPORT_UNIQUE_PTR=1" ]
 }
 
-pw_executable("split_free_list_allocator_with_metric_proxy") {
-  sources = [ "split_free_list_allocator.cc" ]
+pw_executable("fallback_allocator_base") {
+  check_includes = false
+  sources = [ "fallback_allocator_base.cc" ]
   deps = [
-    "$dir_pw_bloat:bloat_this_binary",
-    "..:split_free_list_allocator",
+    "..:block_allocator",
+    "..:fallback_allocator",
+    "..:size_reporter",
+  ]
+}
+
+pw_executable("fallback_allocator") {
+  check_includes = false
+  sources = [ "fallback_allocator.cc" ]
+  deps = [
+    "..:block_allocator",
+    "..:fallback_allocator",
+    "..:size_reporter",
+  ]
+}
+
+pw_executable("first_fit_block_allocator") {
+  check_includes = false
+  sources = [ "first_fit_block_allocator.cc" ]
+  deps = [
+    "..:block_allocator",
+    "..:size_reporter",
+  ]
+}
+
+pw_executable("last_fit_block_allocator") {
+  check_includes = false
+  sources = [ "last_fit_block_allocator.cc" ]
+  deps = [
+    "..:block_allocator",
+    "..:size_reporter",
+  ]
+}
+
+pw_executable("libc_allocator") {
+  check_includes = false
+  sources = [ "libc_allocator.cc" ]
+  deps = [
+    "..:libc_allocator",
+    "..:size_reporter",
+  ]
+}
+
+pw_executable("null_allocator") {
+  check_includes = false
+  sources = [ "null_allocator.cc" ]
+  deps = [
+    "..:null_allocator",
+    "..:size_reporter",
+  ]
+}
+
+pw_executable("synchronized_allocator_isl") {
+  check_includes = false
+  sources = [ "synchronized_allocator_isl.cc" ]
+  deps = [
+    "$dir_pw_sync:interrupt_spin_lock",
+    "..:block_allocator",
+    "..:size_reporter",
+    "..:synchronized_allocator",
+  ]
+}
+
+pw_executable("synchronized_allocator_mutex") {
+  check_includes = false
+  sources = [ "synchronized_allocator_mutex.cc" ]
+  deps = [
+    "$dir_pw_sync:mutex",
+    "..:block_allocator",
+    "..:size_reporter",
+    "..:synchronized_allocator",
+  ]
+}
+
+pw_executable("tracking_allocator_all_metrics") {
+  check_includes = false
+  sources = [ "tracking_allocator_all_metrics.cc" ]
+  deps = [
+    "..:block_allocator",
+    "..:size_reporter",
     "..:tracking_allocator",
   ]
-  defines = [ "SIZE_REPORT_WITH_METRICS=1" ]
+}
+
+pw_executable("tracking_allocator_no_metrics") {
+  check_includes = false
+  sources = [ "tracking_allocator_no_metrics.cc" ]
+  deps = [
+    "..:block_allocator",
+    "..:size_reporter",
+    "..:tracking_allocator",
+  ]
+}
+
+pw_executable("worst_fit_block_allocator") {
+  check_includes = false
+  sources = [ "worst_fit_block_allocator.cc" ]
+  deps = [
+    "..:block_allocator",
+    "..:size_reporter",
+  ]
 }

@@ -532,6 +532,41 @@ provide :ref:`module-pw_allocator-api-fuzzing_support`.
    FUZZ_TEST(MyAllocator, MyAllocatorNeverCrashes)
      .WithDomains(ArbitraryAllocatorRequests<kMaxRequests, kMaxSize>());
 
+-----------------------------
+Measure custom allocator size
+-----------------------------
+If you create your own allocator implementation, you may wish to measure its
+code size, similar to measurements in the module's own
+:ref:`module-pw_allocator-size-reports`. You can use ``pw_bloat`` and
+:ref:`module-pw_allocator-api-size_reporter` to create size reports as described
+in :ref:`bloat-howto`.
+
+For example, the C++ code for a size report binary might look like:
+
+.. code-block:: cpp
+
+   #include "pw_allocator/size_reporter.h"
+
+   namespace pw::allocator {
+
+   void Run() {
+     pw::allocator::SizeReporter size_reporter;
+     FirstFitBlockAllocator<uint16_t> allocator(size_reporter.buffer());
+     MyAllocator my_allocator(allocator);
+     size_reporter.MeasureAllocator<void>(&my_allocator);
+   }
+
+   }  // namespace pw::allocator
+
+   int main() {
+     pw::allocator::Run();
+     return 0;
+   }
+
+The resulting binary could be compared with the binary produced from
+pw_allocator/size_report/first_fit_block_allocator.cc to identify just the code
+added in this case by ``MyAllocator``.
+
 .. _NVI: https://en.wikipedia.org/wiki/Non-virtual_interface_pattern
-.. _repository: https://bazel.build/concepts/build-ref#repositories
 .. _RAII: https://en.cppreference.com/w/cpp/language/raii
+.. _repository: https://bazel.build/concepts/build-ref#repositories

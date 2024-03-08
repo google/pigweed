@@ -186,23 +186,95 @@ pw_source_set("tracking_allocator") {
   deps = [ dir_pw_assert ]
 }
 
-pw_size_diff("allocator_size_report") {
-  title = "Sizes of various pw_allocator implementations"
+pw_source_set("size_reporter") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_allocator/size_reporter.h" ]
+  public_deps = [
+    ":allocator",
+    "$dir_pw_bloat:bloat_this_binary",
+    dir_pw_bytes,
+  ]
+}
+
+pw_size_diff("concrete_allocators_size_report") {
+  title = "Sizes of various concrete allocator implementations"
   binaries = [
     {
-      target = "size_report:split_free_list_allocator"
-      base = "$dir_pw_bloat:bloat_base"
-      label = "SplitFreeListAllocator"
+      target = "size_report:best_fit_block_allocator"
+      base = "size_report:base"
+      label = "BestFitBlockAllocator"
     },
     {
-      target = "size_report:split_free_list_allocator_with_unique_ptr"
-      base = "size_report:split_free_list_allocator"
-      label = "Allocator::MakeUnique and UniquePtr"
+      target = "size_report:dual_first_fit_block_allocator"
+      base = "size_report:base"
+      label = "DualFirstFitBlockAllocator"
     },
     {
-      target = "size_report:split_free_list_allocator_with_metric_proxy"
-      base = "size_report:split_free_list_allocator"
-      label = "AllocatorMetricProxy wrapping another allocator"
+      target = "size_report:first_fit_block_allocator"
+      base = "size_report:base"
+      label = "FirstFitBlockAllocator"
+    },
+    {
+      target = "size_report:last_fit_block_allocator"
+      base = "size_report:base"
+      label = "LastFitBlockAllocator"
+    },
+    {
+      target = "size_report:libc_allocator"
+      base = "size_report:base"
+      label = "LibCAllocator"
+    },
+    {
+      target = "size_report:null_allocator"
+      base = "size_report:base"
+      label = "NullAllocator"
+    },
+    {
+      target = "size_report:worst_fit_block_allocator"
+      base = "size_report:base"
+      label = "WorstFitBlockAllocator"
+    },
+  ]
+}
+
+pw_size_diff("forwarding_allocators_size_report") {
+  title = "Sizes of various forwarding allocator implementations"
+  binaries = [
+    {
+      target = "size_report:fallback_allocator"
+      base = "size_report:fallback_allocator_base"
+      label = "FallbackAllocator"
+    },
+    {
+      target = "size_report:synchronized_allocator_isl"
+      base = "size_report:first_fit_block_allocator"
+      label = "SynchronizedAllocator<sync::InterruptSpinLock>"
+    },
+    {
+      target = "size_report:synchronized_allocator_mutex"
+      base = "size_report:first_fit_block_allocator"
+      label = "SynchronizedAllocator<sync::Mutex>"
+    },
+    {
+      target = "size_report:tracking_allocator_all_metrics"
+      base = "size_report:first_fit_block_allocator"
+      label = "TrackingAllocator<AllMetrics>"
+    },
+    {
+      target = "size_report:tracking_allocator_no_metrics"
+      base = "size_report:first_fit_block_allocator"
+      label = "TrackingAllocator<NoMetrics>"
+    },
+  ]
+}
+
+pw_size_diff("allocator_utilities_size_report") {
+  title = "Sizes of various allocator utility classes"
+  binaries = [
+    {
+      target = "size_report:unique_ptr"
+      base = "size_report:first_fit_block_allocator"
+      label = "UniquePtr"
     },
   ]
 }
@@ -424,5 +496,8 @@ pw_doc_group("docs") {
     "docs.rst",
     "guide.rst",
   ]
-  report_deps = [ ":allocator_size_report" ]
+  report_deps = [
+    ":concrete_allocators_size_report",
+    ":forwarding_allocators_size_report",
+  ]
 }

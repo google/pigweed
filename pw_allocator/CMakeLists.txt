@@ -363,7 +363,7 @@ pw_add_test(pw_allocator.synchronized_allocator_test
     pw_thread.thread_core
     pw_thread.yield
     pw_random
-    GROUPS
+  GROUPS
     modules
     pw_allocator
 )
@@ -374,17 +374,6 @@ pw_add_test(pw_allocator.tracking_allocator_test
   PRIVATE_DEPS
     pw_allocator.allocator_testing
     pw_allocator.tracking_allocator
-  GROUPS
-    modules
-    pw_allocator
-)
-
-pw_add_test(pw_allocator.unique_ptr_test
-  SOURCES
-    unique_ptr_test.cc
-  PRIVATE_DEPS
-    pw_allocator.allocator
-    pw_allocator.allocator_testing
   GROUPS
     modules
     pw_allocator

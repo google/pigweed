@@ -221,6 +221,17 @@ cc_library(
 )
 
 cc_library(
+    name = "size_reporter",
+    hdrs = ["public/pw_allocator/size_reporter.h"],
+    includes = ["public"],
+    deps = [
+        ":allocator",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_bytes",
+    ],
+)
+
+cc_library(
     name = "allocator_testing",
     testonly = True,
     srcs = [
@@ -435,12 +446,6 @@ pw_cc_test(
 
 pw_cc_test(
     name = "unique_ptr_test",
-    srcs = [
-        "unique_ptr_test.cc",
-    ],
-    deps = [
-        ":allocator",
-        ":allocator_testing",
-        "//pw_unit_test",
-    ],
+    srcs = ["unique_ptr_test.cc"],
+    deps = [":allocator_testing"],
 )

@@ -1,7 +1,7 @@
 .. _module-pw_allocator-api:
 
 =============
-API Reference
+API reference
 =============
 .. pigweed-module-subpage::
    :name: pw_allocator
@@ -170,6 +170,13 @@ macros:
 
 .. doxygendefine:: PW_ALLOCATOR_METRICS_DECLARE
 .. doxygendefine:: PW_ALLOCATOR_METRICS_ENABLE
+
+.. _module-pw_allocator-api-size_reporter:
+
+SizeReporter
+============
+.. doxygenclass:: pw::allocator::SizeReporter
+   :members:
 
 WithBuffer
 ==========

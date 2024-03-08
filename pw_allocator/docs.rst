@@ -8,8 +8,7 @@ pw_allocator
    :tagline: Flexible, safe, and measurable memory allocation
    :status: unstable
    :languages: C++17
-
-.. TODO: b/328076428 - Measure and add ":code-size-impact: TODO to TODO bytes"
+   :code-size-impact: 400 to 1800 bytes
 
 - **Flexible**: Simple interface makes it easy to inject specific behaviors.
 - **Safe**: Can detect memory corruption, e.g overflows and use-after-free.
@@ -86,7 +85,7 @@ Pick the metrics you're interested in and track them with a
 
    pw::allocator::TrackingAllocator<MyMetrics> tracker(allocator);
 
-**Need to share the allocator with another thread or an `ISR`_?**
+**Need to share the allocator with another thread or an interrupt handler?**
 
 Use a :cpp:type:`pw::allocator::SynchronizedAllocator` with the lock of your
 choice:
@@ -97,7 +96,7 @@ choice:
    pw::allocator::SynchronizedAllocator<pw::sync::InterruptSpinLock>
       synchronized(tracker, isl);
 
-.. tip:: Check out :ref:`module-pw_allocator-guides` for even more code
+.. tip:: Check out the :ref:`module-pw_allocator-guides` for even more code
    samples!
 
 --------------------
@@ -151,7 +150,7 @@ manage memory.
 
       Integrate pw_allocator into your project and learn common use cases
 
-   .. grid-item-card:: :octicon:`code-square` API Reference
+   .. grid-item-card:: :octicon:`code-square` API reference
       :link: module-pw_allocator-api
       :link-type: ref
       :class-item: sales-pitch-cta-secondary
@@ -160,14 +159,14 @@ manage memory.
 
 .. grid:: 2
 
-   .. grid-item-card:: :octicon:`code-square` Design & Roadmap
+   .. grid-item-card:: :octicon:`code-square` Design & roadmap
       :link: module-pw_allocator-design
       :link-type: ref
       :class-item: sales-pitch-cta-secondary
 
       Learn why pw_allocator is designed the way it is, and upcoming plans
 
-   .. grid-item-card:: :octicon:`code-square` Code Size Analysis
+   .. grid-item-card:: :octicon:`code-square` Code size analysis
       :link: module-pw_allocator-size-reports
       :link-type: ref
       :class-item: sales-pitch-cta-secondary
@@ -175,4 +174,3 @@ manage memory.
       Understand pw_allocator's code footprint and savings potential
 
 .. _dependency injection: https://en.wikipedia.org/wiki/Dependency_injection
-.. _ISR: https://en.wikipedia.org/wiki/Interrupt_handler
