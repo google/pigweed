@@ -14,7 +14,6 @@
 
 [$default byte_order: "LittleEndian"]
 [(cpp) namespace: "pw::bluetooth::emboss"]
-
 # This file contins Emboss definitions for the logical link control and
 # adaptation protocol (l2cap) frames found in the Bluetooth core specification.
 # The Emboss compiler is used to generate a C++ header from this file.
@@ -24,14 +23,15 @@
 #
 # ========== 3.4 Credit-Based Flow Control Frames ==========
 
+
 struct KFrameSduHeader:
   -- 3.4.2
   -- A frame header for a K-Frame (credit based flow control) SDU.
   0 [+2]  UInt  sdu_length
+
 
 struct KFramePduHeader:
   -- 3.4.1
   -- A frame header for a K-Frame (credit based flow control) PDU.
   0     [+2]  UInt  pdu_length
   $next [+2]  UInt  channel_id
-
