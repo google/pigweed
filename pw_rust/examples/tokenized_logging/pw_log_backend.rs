@@ -11,6 +11,10 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+
+//! An example `pw_log` backend that uses `pw_tokenizer`.
+//!
+//! Log output is base64 encoded and printed using ARM semihosting.
 #![no_std]
 
 #[doc(hidden)]

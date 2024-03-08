@@ -15,7 +15,7 @@ and supports a rich set of targets for both host and target builds.
 Building and Running the Embedded Examples
 ==========================================
 The examples can be built for both the ``lm3s6965evb`` and ``microbit``
-QEMU machines.  The example can be built and run using the following commands
+QEMU machines.  The examples can be built and run using the following commands
 where ``PLATFORM`` is one of ``lm3s6965evb`` or ``microbit``.
 
 embedded_hello
