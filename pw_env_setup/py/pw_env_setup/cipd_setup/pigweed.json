@@ -76,7 +76,7 @@
       "version_file": ".versions/clang.cipd_version"
     },
     {
-      "path": "fuchsia/third_party/rust/${platform}",
+      "path": "fuchsia/third_party/rust/host/${platform}",
       "platforms": [
         "linux-amd64",
         "linux-arm64",
@@ -84,7 +84,7 @@
       ],
       "subdir": "rust",
       "tags": [
-        "git_revision:b7b7f2716ee1655a696d3d64c3e12638d0dd19c0"
+        "git_revision:bf9c7a64ad222b85397573668b39e6d1ab9f4a72"
       ]
     },
     {

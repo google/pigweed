@@ -270,7 +270,7 @@ load(
 )
 
 pw_rust_register_toolchain_and_target_repos(
-    cipd_tag = "rust_revision:faee636ebfff793ea9dcff17960a611b580e3cd5",
+    cipd_tag = "rust_revision:bf9c7a64ad222b85397573668b39e6d1ab9f4a72",
 )
 
 # Allows creation of a `rust-project.json` file to allow rust analyzer to work.
