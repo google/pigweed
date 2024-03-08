@@ -33,6 +33,7 @@ WATCH_PATTERNS = (
     'CMakeLists.txt',
     '*.dts',
     '*.dtsi',
+    '*.emb',
     '*.gn',
     '*.gni',
     '*.go',
