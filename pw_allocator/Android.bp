@@ -38,7 +38,6 @@ cc_library {
         "allocator.cc",
         "block.cc",
         "libc_allocator.cc",
-        "metrics.cc",
     ],
     static_libs: [
         "pw_base64",
