@@ -141,8 +141,10 @@ if (dir_pw_third_party_llvm_libc != "") {
 
   pw_libc_source_set("stdfix") {
     functions = [
+      "expk",
       "roundlk",
       "sqrtulr",
+      "sqrtur",
     ]
   }
 
