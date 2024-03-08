@@ -1,4 +1,4 @@
-# Copyright 2022 The Pigweed Authors
+# Copyright 2024 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -229,7 +229,7 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
                     { hdlc_packetizer: {} },
                     {
                         server_failure: {
-                            packets_before_failure: [5],
+                            packets_before_failure: [3],
                             start_immediately: true
                         }
                     }

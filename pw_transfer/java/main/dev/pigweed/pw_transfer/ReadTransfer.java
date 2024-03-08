@@ -38,7 +38,8 @@ class ReadTransfer extends Transfer<byte[]> {
   // of the window, and so on.
   private static final int EXTEND_WINDOW_DIVISOR = 2;
 
-  // To minimize copies, store the ByteBuffers directly from the chunk protos in a list.
+  // To minimize copies, store the ByteBuffers directly from the chunk protos in a
+  // list.
   private final List<ByteBuffer> dataChunks = new ArrayList<>();
   private int totalDataSize = 0;
 
@@ -89,10 +90,11 @@ class ReadTransfer extends Transfer<byte[]> {
   @Override
   VersionedChunk getChunkForRetry() {
     VersionedChunk chunk = getLastChunkSent();
-    // If the last chunk sent was transfer parameters, send an updated RETRANSMIT chunk.
+    // If the last chunk sent was transfer parameters, send an updated RETRANSMIT
+    // chunk.
     if (chunk.type() == Chunk.Type.PARAMETERS_CONTINUE
         || chunk.type() == Chunk.Type.PARAMETERS_RETRANSMIT) {
-      return prepareTransferParameters(/*extend=*/false);
+      return prepareTransferParameters(/* extend= */ false);
     }
     return chunk;
   }
@@ -100,7 +102,8 @@ class ReadTransfer extends Transfer<byte[]> {
   private class ReceivingData extends ActiveState {
     @Override
     public void handleDataChunk(VersionedChunk chunk) throws TransferAbortedException {
-      // Track the last seen offset so the DropRecovery state can detect retried packets.
+      // Track the last seen offset so the DropRecovery state can detect retried
+      // packets.
       lastReceivedOffset = chunk.offset();
 
       if (chunk.offset() != getOffset()) {
@@ -109,9 +112,10 @@ class ReadTransfer extends Transfer<byte[]> {
             getOffset(),
             chunk.offset());
 
-        // For now, only in-order transfers are supported. If data is received out of order,
+        // For now, only in-order transfers are supported. If data is received out of
+        // order,
         // discard this data and retransmit from the last received offset.
-        sendChunk(prepareTransferParameters(/*extend=*/false));
+        sendChunk(prepareTransferParameters(/* extend= */ false));
         changeState(new DropRecovery());
         setNextChunkTimeout();
         return;
@@ -131,7 +135,8 @@ class ReadTransfer extends Transfer<byte[]> {
 
         remainingTransferSize = chunk.remainingBytes().getAsLong();
       } else if (remainingTransferSize != UNKNOWN_TRANSFER_SIZE) {
-        // If remaining size was not specified, update based on the most recent estimate, if any.
+        // If remaining size was not specified, update based on the most recent
+        // estimate, if any.
         remainingTransferSize = max(remainingTransferSize - chunk.data().size(), 0);
       }
 
@@ -148,9 +153,9 @@ class ReadTransfer extends Transfer<byte[]> {
       if (remainingWindowSize == 0) {
         logger.atFinest().log(
             "%s received all pending bytes; sending transfer parameters update", ReadTransfer.this);
-        sendChunk(prepareTransferParameters(/*extend=*/false));
+        sendChunk(prepareTransferParameters(/* extend= */ false));
       } else if (extendWindow) {
-        sendChunk(prepareTransferParameters(/*extend=*/true));
+        sendChunk(prepareTransferParameters(/* extend= */ true));
       }
       setNextChunkTimeout();
     }
@@ -167,13 +172,14 @@ class ReadTransfer extends Transfer<byte[]> {
         return;
       }
 
-      // To avoid a flood of identical parameters packets, only send one if a retry is detected.
+      // To avoid a flood of identical parameters packets, only send one if a retry is
+      // detected.
       if (chunk.offset() == lastReceivedOffset) {
         logger.atFiner().log(
             "%s received repeated offset %d: retry detected, resending transfer parameters",
             ReadTransfer.this,
             lastReceivedOffset);
-        sendChunk(prepareTransferParameters(/*extend=*/false));
+        sendChunk(prepareTransferParameters(/* extend= */ false));
       } else {
         lastReceivedOffset = chunk.offset();
         logger.atFiner().log("%s expecting offset %d, ignoring received offset %d",

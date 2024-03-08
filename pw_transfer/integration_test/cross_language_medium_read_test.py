@@ -177,9 +177,6 @@ class MediumTransferReadIntegrationTest(test_fixture.TransferIntegrationTest):
     def test_medium_client_read_offset_with_drops(
         self, client_type, protocol_version
     ):
-        # TODO: b/323386167 - Re-enable this test once it has been fixed.
-        return
-
         payload = random.Random(67336391945).randbytes(1024)
         config = TransferConfig(
             self.default_server_config(),
