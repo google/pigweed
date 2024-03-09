@@ -18,6 +18,7 @@
 
 [$default byte_order: "LittleEndian"]
 [(cpp) namespace: "pw::bluetooth::emboss"]
+
 # =========================== Common Definitions =================================
 
 
