@@ -5,7 +5,7 @@ Design & roadmap
 ================
 .. pigweed-module-subpage::
    :name: pw_allocator
-   :tagline: "pw_allocator: Flexible, safe, and measurable memory allocation"
+   :tagline: pw_allocator: Flexible, safe, and measurable memory allocation
 
 ----------------------------------
 Design of pw::allocator::Allocator
