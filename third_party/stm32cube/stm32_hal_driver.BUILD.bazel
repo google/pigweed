@@ -49,12 +49,6 @@ cc_library(
     target_compatible_with = ["@platforms//:incompatible"],
 )
 
-cc_library(
-    name = "default_timebase",
-    srcs = glob(["Src/*_hal_timebase_tim_template.c"]),
-    deps = [":hal_driver_without_timebase"],
-)
-
 _DISABLED_WARNINGS = [
     "-Wno-unused-parameter",
     "-Wno-redundant-decls",
@@ -63,6 +57,13 @@ _DISABLED_WARNINGS = [
     "-Wno-implicit-function-declaration",
     "-Wno-switch-enum",
 ]
+
+cc_library(
+    name = "default_timebase",
+    copts = _DISABLED_WARNINGS,
+    srcs = glob(["Src/*_hal_timebase_tim_template.c"]),
+    deps = [":hal_driver_without_timebase"],
+)
 
 cc_library(
     name = "hal_driver",
