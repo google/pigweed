@@ -35,6 +35,8 @@ group("pw_allocator") {
   ]
 }
 
+# Libraries
+
 pw_source_set("allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/allocator.h" ]
@@ -186,6 +188,191 @@ pw_source_set("tracking_allocator") {
   deps = [ dir_pw_assert ]
 }
 
+# Test support
+
+pw_source_set("testing") {
+  public = [ "public/pw_allocator/testing.h" ]
+  public_deps = [
+    ":allocator",
+    ":block",
+    ":block_allocator",
+    ":buffer",
+    ":tracking_allocator",
+    dir_pw_bytes,
+    dir_pw_result,
+    dir_pw_status,
+    dir_pw_unit_test,
+  ]
+  deps = [ dir_pw_assert ]
+  sources = [ "testing.cc" ]
+}
+
+pw_source_set("test_harness") {
+  public = [ "public/pw_allocator/test_harness.h" ]
+  public_deps = [
+    ":allocator",
+    dir_pw_containers,
+    dir_pw_random,
+  ]
+  deps = [
+    "$dir_pw_third_party/fuchsia:stdcompat",
+    dir_pw_assert,
+  ]
+  sources = [ "test_harness.cc" ]
+}
+
+pw_source_set("fuzzing") {
+  public = [ "public/pw_allocator/fuzzing.h" ]
+  public_deps = [
+    ":test_harness",
+    "$dir_pw_fuzzer:fuzztest",
+  ]
+  sources = [ "fuzzing.cc" ]
+}
+
+# Tests
+
+pw_test("allocator_test") {
+  deps = [
+    ":allocator",
+    ":testing",
+  ]
+  sources = [ "allocator_test.cc" ]
+}
+
+pw_test("block_test") {
+  deps = [
+    ":block",
+    dir_pw_span,
+  ]
+  sources = [ "block_test.cc" ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
+}
+
+pw_test("block_allocator_test") {
+  deps = [
+    ":block",
+    ":block_allocator",
+    ":buffer",
+    dir_pw_bytes,
+  ]
+  sources = [ "block_allocator_test.cc" ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
+}
+
+pw_test("fallback_allocator_test") {
+  deps = [
+    ":fallback_allocator",
+    ":testing",
+    dir_pw_status,
+  ]
+  sources = [ "fallback_allocator_test.cc" ]
+}
+
+pw_test("freelist_test") {
+  deps = [
+    ":freelist",
+    dir_pw_span,
+    dir_pw_status,
+  ]
+  sources = [ "freelist_test.cc" ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
+}
+
+pw_test("freelist_heap_test") {
+  deps = [ ":freelist_heap" ]
+  sources = [ "freelist_heap_test.cc" ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; after test
+  # finishes device locks up.
+  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
+    enable_if = false
+  }
+}
+
+pw_test("libc_allocator_test") {
+  deps = [ ":libc_allocator" ]
+  sources = [ "libc_allocator_test.cc" ]
+}
+
+pw_test("null_allocator_test") {
+  deps = [ ":null_allocator" ]
+  sources = [ "null_allocator_test.cc" ]
+}
+
+pw_test("synchronized_allocator_test") {
+  enable_if =
+      pw_sync_BINARY_SEMAPHORE_BACKEND != "" && pw_sync_MUTEX_BACKEND != "" &&
+      pw_sync_INTERRUPT_SPIN_LOCK_BACKEND != "" &&
+      pw_thread_YIELD_BACKEND != "" &&
+      pw_thread_TEST_THREAD_CONTEXT_BACKEND != ""
+  deps = [
+    ":synchronized_allocator",
+    ":test_harness",
+    ":testing",
+    "$dir_pw_sync:binary_semaphore",
+    "$dir_pw_sync:interrupt_spin_lock",
+    "$dir_pw_sync:mutex",
+    "$dir_pw_sync:virtual_basic_lockable",
+    "$dir_pw_thread:test_thread_context",
+    "$dir_pw_thread:thread",
+    "$dir_pw_thread:thread_core",
+    "$dir_pw_thread:yield",
+    dir_pw_random,
+  ]
+  sources = [ "synchronized_allocator_test.cc" ]
+}
+
+pw_test("tracking_allocator_test") {
+  deps = [
+    ":testing",
+    ":tracking_allocator",
+  ]
+  sources = [ "tracking_allocator_test.cc" ]
+
+  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
+  # indefinitely.
+  enable_if = pw_build_EXECUTABLE_TARGET_TYPE != "pico_executable"
+}
+
+pw_test("unique_ptr_test") {
+  deps = [ ":testing" ]
+  sources = [ "unique_ptr_test.cc" ]
+}
+
+pw_test_group("tests") {
+  tests = [
+    ":allocator_test",
+    ":block_allocator_test",
+    ":block_test",
+    ":fallback_allocator_test",
+    ":freelist_test",
+    ":freelist_heap_test",
+    ":libc_allocator_test",
+    ":null_allocator_test",
+    ":synchronized_allocator_test",
+    ":tracking_allocator_test",
+    ":unique_ptr_test",
+  ]
+}
+
+# Docs
+
 pw_source_set("size_reporter") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/size_reporter.h" ]
@@ -279,216 +466,8 @@ pw_size_diff("allocator_utilities_size_report") {
   ]
 }
 
-pw_test_group("tests") {
-  tests = [
-    ":allocator_test",
-    ":block_allocator_test",
-    ":block_test",
-    ":fallback_allocator_test",
-    ":freelist_test",
-    ":freelist_heap_test",
-    ":libc_allocator_test",
-    ":multiplex_allocator_test",
-    ":null_allocator_test",
-    ":simple_allocator_test",
-    ":synchronized_allocator_test",
-    ":tracking_allocator_test",
-    ":unique_ptr_test",
-  ]
-}
-
-pw_source_set("allocator_testing") {
-  public = [ "public/pw_allocator/allocator_testing.h" ]
-  public_deps = [
-    ":allocator",
-    ":block",
-    ":block_allocator",
-    ":buffer",
-    ":tracking_allocator",
-    dir_pw_bytes,
-    dir_pw_result,
-    dir_pw_status,
-    dir_pw_unit_test,
-  ]
-  deps = [ dir_pw_assert ]
-  sources = [ "allocator_testing.cc" ]
-}
-
-pw_source_set("allocator_test_harness") {
-  public = [ "public/pw_allocator/allocator_test_harness.h" ]
-  public_deps = [
-    ":allocator",
-    dir_pw_containers,
-    dir_pw_random,
-  ]
-  deps = [
-    "$dir_pw_third_party/fuchsia:stdcompat",
-    dir_pw_assert,
-  ]
-  sources = [ "allocator_test_harness.cc" ]
-}
-
-pw_source_set("allocator_fuzzing") {
-  public = [ "public/pw_allocator/allocator_fuzzing.h" ]
-  public_deps = [
-    ":allocator_test_harness",
-    "$dir_pw_fuzzer:fuzztest",
-  ]
-  sources = [ "allocator_fuzzing.cc" ]
-}
-
-pw_test("allocator_test") {
-  deps = [
-    ":allocator",
-    ":allocator_testing",
-  ]
-  sources = [ "allocator_test.cc" ]
-}
-
-pw_test("block_test") {
-  deps = [
-    ":block",
-    dir_pw_span,
-  ]
-  sources = [ "block_test.cc" ]
-
-  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
-  # indefinitely.
-  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
-    enable_if = false
-  }
-}
-
-pw_test("block_allocator_test") {
-  deps = [
-    ":block",
-    ":block_allocator",
-    ":buffer",
-    dir_pw_bytes,
-  ]
-  sources = [ "block_allocator_test.cc" ]
-
-  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
-  # indefinitely.
-  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
-    enable_if = false
-  }
-}
-
-pw_test("fallback_allocator_test") {
-  deps = [
-    ":allocator_testing",
-    ":fallback_allocator",
-    dir_pw_status,
-  ]
-  sources = [ "fallback_allocator_test.cc" ]
-}
-
-pw_test("freelist_test") {
-  deps = [
-    ":freelist",
-    dir_pw_span,
-    dir_pw_status,
-  ]
-  sources = [ "freelist_test.cc" ]
-
-  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
-  # indefinitely.
-  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
-    enable_if = false
-  }
-}
-
-pw_test("freelist_heap_test") {
-  deps = [ ":freelist_heap" ]
-  sources = [ "freelist_heap_test.cc" ]
-
-  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; after test
-  # finishes device locks up.
-  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
-    enable_if = false
-  }
-}
-
-pw_test("libc_allocator_test") {
-  deps = [ ":libc_allocator" ]
-  sources = [ "libc_allocator_test.cc" ]
-}
-
-pw_test("multiplex_allocator_test") {
-  deps = [
-    ":allocator_testing",
-    ":multiplex_allocator",
-    dir_pw_tokenizer,
-  ]
-  sources = [ "multiplex_allocator_test.cc" ]
-
-  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
-  # indefinitely.
-  if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
-    enable_if = false
-  }
-}
-
-pw_test("null_allocator_test") {
-  deps = [ ":null_allocator" ]
-  sources = [ "null_allocator_test.cc" ]
-}
-
-pw_test("simple_allocator_test") {
-  deps = [
-    ":allocator_fuzzing",
-    ":allocator_testing",
-    ":simple_allocator",
-  ]
-  sources = [ "simple_allocator_test.cc" ]
-}
-
-pw_test("synchronized_allocator_test") {
-  enable_if =
-      pw_sync_BINARY_SEMAPHORE_BACKEND != "" && pw_sync_MUTEX_BACKEND != "" &&
-      pw_sync_INTERRUPT_SPIN_LOCK_BACKEND != "" &&
-      pw_thread_YIELD_BACKEND != "" &&
-      pw_thread_TEST_THREAD_CONTEXT_BACKEND != ""
-  deps = [
-    ":allocator_test_harness",
-    ":allocator_testing",
-    ":synchronized_allocator",
-    "$dir_pw_sync:binary_semaphore",
-    "$dir_pw_sync:interrupt_spin_lock",
-    "$dir_pw_sync:mutex",
-    "$dir_pw_sync:virtual_basic_lockable",
-    "$dir_pw_thread:test_thread_context",
-    "$dir_pw_thread:thread",
-    "$dir_pw_thread:thread_core",
-    "$dir_pw_thread:yield",
-    dir_pw_random,
-  ]
-  sources = [ "synchronized_allocator_test.cc" ]
-}
-
-pw_test("tracking_allocator_test") {
-  deps = [
-    ":allocator_testing",
-    ":tracking_allocator",
-  ]
-  sources = [ "tracking_allocator_test.cc" ]
-
-  # TODO: https://pwbug.dev/325509758 - Doesn't work on the Pico yet; hangs
-  # indefinitely.
-  enable_if = pw_build_EXECUTABLE_TARGET_TYPE != "pico_executable"
-}
-
-pw_test("unique_ptr_test") {
-  deps = [ ":allocator_testing" ]
-  sources = [ "unique_ptr_test.cc" ]
-}
-
 pw_doc_group("docs") {
-  inputs = [
-    "doc_resources/pw_allocator_heap_visualizer_demo.png",
-    "public/pw_allocator/simple_allocator.h",
-  ]
+  inputs = [ "doc_resources/pw_allocator_heap_visualizer_demo.png" ]
   sources = [
     "api.rst",
     "code_size.rst",

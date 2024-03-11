@@ -16,7 +16,7 @@
 
 #include <cstddef>
 
-#include "pw_allocator/allocator_testing.h"
+#include "pw_allocator/testing.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::allocator {

@@ -52,7 +52,7 @@ pw_test("header_chunk_region_tracker_test") {
   deps = [
     ":chunk",
     ":header_chunk_region_tracker",
-    "$dir_pw_allocator:allocator_testing",
+    "$dir_pw_allocator:testing",
     dir_pw_status,
   ]
   sources = [ "header_chunk_region_tracker_test.cc" ]
@@ -89,7 +89,7 @@ pw_test("chunk_test") {
   deps = [
     ":chunk",
     ":header_chunk_region_tracker",
-    "$dir_pw_allocator:allocator_testing",
+    "$dir_pw_allocator:testing",
   ]
   sources = [ "chunk_test.cc" ]
 
@@ -114,7 +114,7 @@ pw_test("multibuf_test") {
   deps = [
     ":header_chunk_region_tracker",
     ":pw_multibuf",
-    "$dir_pw_allocator:allocator_testing",
+    "$dir_pw_allocator:testing",
     dir_pw_assert,
   ]
   sources = [ "multibuf_test.cc" ]
@@ -141,7 +141,6 @@ pw_test("allocator_test") {
   enable_if = pw_async2_DISPATCHER_BACKEND != ""
   deps = [
     ":allocator",
-    "$dir_pw_allocator:allocator_testing",
     "$dir_pw_async2:dispatcher",
     "$dir_pw_async2:poll",
   ]
@@ -164,8 +163,8 @@ pw_test("simple_allocator_test") {
   enable_if = pw_async2_DISPATCHER_BACKEND != ""
   deps = [
     ":simple_allocator",
-    "$dir_pw_allocator:allocator_testing",
     "$dir_pw_allocator:null_allocator",
+    "$dir_pw_allocator:testing",
   ]
   sources = [ "simple_allocator_test.cc" ]
 }

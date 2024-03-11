@@ -21,6 +21,8 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+# Libraries
+
 cc_library(
     name = "allocator",
     srcs = [
@@ -168,32 +170,6 @@ cc_library(
 )
 
 cc_library(
-    name = "simple_allocator",
-    hdrs = [
-        "public/pw_allocator/simple_allocator.h",
-    ],
-    includes = ["public"],
-    deps = [
-        ":allocator",
-        ":block",
-        "//pw_bytes",
-        "//pw_result",
-        "//pw_status",
-    ],
-)
-
-cc_library(
-    name = "split_free_list_allocator",
-    hdrs = [
-        "public/pw_allocator/split_free_list_allocator.h",
-    ],
-    includes = ["public"],
-    deps = [
-        ":block_allocator",
-    ],
-)
-
-cc_library(
     name = "synchronized_allocator",
     hdrs = [
         "public/pw_allocator/synchronized_allocator.h",
@@ -220,25 +196,16 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "size_reporter",
-    hdrs = ["public/pw_allocator/size_reporter.h"],
-    includes = ["public"],
-    deps = [
-        ":allocator",
-        "//pw_bloat:bloat_this_binary",
-        "//pw_bytes",
-    ],
-)
+# Test support
 
 cc_library(
-    name = "allocator_testing",
+    name = "testing",
     testonly = True,
     srcs = [
-        "allocator_testing.cc",
+        "testing.cc",
     ],
     hdrs = [
-        "public/pw_allocator/allocator_testing.h",
+        "public/pw_allocator/testing.h",
     ],
     includes = ["public"],
     deps = [
@@ -256,13 +223,13 @@ cc_library(
 )
 
 cc_library(
-    name = "allocator_test_harness",
+    name = "test_harness",
     testonly = True,
     srcs = [
-        "allocator_test_harness.cc",
+        "test_harness.cc",
     ],
     hdrs = [
-        "public/pw_allocator/allocator_test_harness.h",
+        "public/pw_allocator/test_harness.h",
     ],
     includes = ["public"],
     deps = [
@@ -275,20 +242,22 @@ cc_library(
 )
 
 cc_library(
-    name = "allocator_fuzzing",
+    name = "fuzzing",
     testonly = True,
     srcs = [
-        "allocator_fuzzing.cc",
+        "fuzzing.cc",
     ],
     hdrs = [
-        "public/pw_allocator/allocator_fuzzing.h",
+        "public/pw_allocator/fuzzing.h",
     ],
     includes = ["public"],
     deps = [
-        ":allocator_test_harness",
+        ":test_harness",
         "//pw_fuzzer:fuzztest",
     ],
 )
+
+# Tests
 
 pw_cc_test(
     name = "allocator_test",
@@ -297,7 +266,7 @@ pw_cc_test(
     ],
     deps = [
         ":allocator",
-        ":allocator_testing",
+        ":testing",
         "//pw_unit_test",
     ],
 )
@@ -334,8 +303,8 @@ pw_cc_test(
         "fallback_allocator_test.cc",
     ],
     deps = [
-        ":allocator_testing",
         ":fallback_allocator",
+        ":testing",
         "//pw_status",
         "//pw_unit_test",
     ],
@@ -376,19 +345,6 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "multiplex_allocator_test",
-    srcs = [
-        "multiplex_allocator_test.cc",
-    ],
-    deps = [
-        ":allocator_testing",
-        ":multiplex_allocator",
-        "//pw_tokenizer",
-        "//pw_unit_test",
-    ],
-)
-
-pw_cc_test(
     name = "null_allocator_test",
     srcs = [
         "null_allocator_test.cc",
@@ -400,25 +356,14 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "simple_allocator_test",
-    srcs = [
-        "simple_allocator_test.cc",
-    ],
-    deps = [
-        ":buffer",
-        ":simple_allocator",
-    ],
-)
-
-pw_cc_test(
     name = "synchronized_allocator_test",
     srcs = [
         "synchronized_allocator_test.cc",
     ],
     deps = [
-        ":allocator_test_harness",
-        ":allocator_testing",
         ":synchronized_allocator",
+        ":test_harness",
+        ":testing",
         "//pw_random",
         "//pw_sync:binary_semaphore",
         "//pw_sync:interrupt_spin_lock",
@@ -438,7 +383,7 @@ pw_cc_test(
         "tracking_allocator_test.cc",
     ],
     deps = [
-        ":allocator_testing",
+        ":testing",
         ":tracking_allocator",
         "//pw_unit_test",
     ],
@@ -447,5 +392,22 @@ pw_cc_test(
 pw_cc_test(
     name = "unique_ptr_test",
     srcs = ["unique_ptr_test.cc"],
-    deps = [":allocator_testing"],
+    deps = [
+        ":allocator",
+        ":testing",
+        "//pw_unit_test",
+    ],
+)
+
+# Docs
+
+cc_library(
+    name = "size_reporter",
+    hdrs = ["public/pw_allocator/size_reporter.h"],
+    includes = ["public"],
+    deps = [
+        ":allocator",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_bytes",
+    ],
 )

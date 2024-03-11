@@ -14,7 +14,7 @@
 
 #include "pw_multibuf/multibuf.h"
 
-#include "pw_allocator/allocator_testing.h"
+#include "pw_allocator/testing.h"
 #include "pw_assert/check.h"
 #include "pw_bytes/suffix.h"
 #include "pw_multibuf/header_chunk_region_tracker.h"

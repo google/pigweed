@@ -15,5 +15,8 @@ include_guard(GLOBAL)
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
+# DO NOT USE! This file is **DEPRECATED**, and will be removed once the
+# remaining downstream project is no longer depending on it.
+
 set(pw_allocator_COLLECT_METRICS OFF CACHE STRING
     "Deprecated, and to be removed in a future update.")

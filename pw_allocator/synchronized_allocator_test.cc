@@ -14,8 +14,8 @@
 
 #include "pw_allocator/synchronized_allocator.h"
 
-#include "pw_allocator/allocator_test_harness.h"
-#include "pw_allocator/allocator_testing.h"
+#include "pw_allocator/test_harness.h"
+#include "pw_allocator/testing.h"
 #include "pw_containers/vector.h"
 #include "pw_random/xor_shift.h"
 #include "pw_status/status_with_size.h"

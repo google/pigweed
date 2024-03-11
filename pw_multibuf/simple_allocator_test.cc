@@ -15,8 +15,8 @@
 #include "pw_multibuf/simple_allocator.h"
 
 #include "gtest/gtest.h"
-#include "pw_allocator/allocator_testing.h"
 #include "pw_allocator/null_allocator.h"
+#include "pw_allocator/testing.h"
 
 namespace pw::multibuf {
 namespace {

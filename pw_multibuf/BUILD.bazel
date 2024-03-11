@@ -63,7 +63,7 @@ pw_cc_test(
     deps = [
         ":chunk",
         ":header_chunk_region_tracker",
-        "//pw_allocator:allocator_testing",
+        "//pw_allocator:testing",
         "//pw_unit_test",
     ],
 )
@@ -74,7 +74,7 @@ pw_cc_test(
     deps = [
         ":chunk",
         ":header_chunk_region_tracker",
-        "//pw_allocator:allocator_testing",
+        "//pw_allocator:testing",
         "//pw_status",
     ],
 )
@@ -104,7 +104,7 @@ pw_cc_test(
     deps = [
         ":header_chunk_region_tracker",
         ":pw_multibuf",
-        "//pw_allocator:allocator_testing",
+        "//pw_allocator:testing",
         "//pw_assert",
         "//pw_unit_test",
     ],
@@ -127,7 +127,6 @@ pw_cc_test(
     srcs = ["allocator_test.cc"],
     deps = [
         ":allocator",
-        "//pw_allocator:allocator_testing",
         "//pw_async2:dispatcher",
         "//pw_async2:poll",
         "//pw_unit_test",
@@ -151,8 +150,8 @@ pw_cc_test(
     srcs = ["simple_allocator_test.cc"],
     deps = [
         ":simple_allocator",
-        "//pw_allocator:allocator_testing",
         "//pw_allocator:null_allocator",
+        "//pw_allocator:testing",
         "//pw_async2:dispatcher",
         "//pw_async2:poll",
         "//pw_unit_test",

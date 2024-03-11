@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/allocator_test_harness.h"
+#include "pw_allocator/test_harness.h"
 
 #include <algorithm>
 #include <climits>

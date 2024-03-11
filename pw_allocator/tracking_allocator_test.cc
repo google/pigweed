@@ -13,8 +13,8 @@
 // the License.
 #include "pw_allocator/tracking_allocator.h"
 
-#include "pw_allocator/allocator_testing.h"
 #include "pw_allocator/block_allocator.h"
+#include "pw_allocator/testing.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::allocator {

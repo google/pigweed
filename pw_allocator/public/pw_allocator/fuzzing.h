@@ -15,7 +15,7 @@
 
 #include <cstddef>
 
-#include "pw_allocator/allocator_test_harness.h"
+#include "pw_allocator/test_harness.h"
 #include "pw_fuzzer/fuzztest.h"
 
 namespace pw::allocator::test {

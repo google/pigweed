@@ -20,7 +20,7 @@
 #include <ranges>
 #endif  // __cplusplus >= 202002L
 
-#include "pw_allocator/allocator_testing.h"
+#include "pw_allocator/testing.h"
 #include "pw_multibuf/header_chunk_region_tracker.h"
 #include "pw_unit_test/framework.h"
 
