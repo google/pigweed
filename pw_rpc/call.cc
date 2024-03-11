@@ -220,6 +220,17 @@ Status Call::CloseAndSendFinalPacketLocked(PacketType type,
   return send_status;
 }
 
+Status Call::TryCloseAndSendFinalPacketLocked(PacketType type,
+                                              ConstByteSpan response,
+                                              Status status) {
+  const Status send_status = SendPacket(type, response, status);
+  // Only close the call if the final packet gets sent out successfully.
+  if (send_status.ok()) {
+    UnregisterAndMarkClosed();
+  }
+  return send_status;
+}
+
 Status Call::WriteLocked(ConstByteSpan payload) {
   return SendPacket(properties_.call_type() == kServerCall
                         ? PacketType::SERVER_STREAM

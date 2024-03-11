@@ -85,6 +85,10 @@ class RawServerReaderWriter : private internal::ServerCall {
     return CloseAndSendResponse(status);
   }
 
+  Status TryFinish(Status status = OkStatus()) {
+    return TryCloseAndSendResponse(status);
+  }
+
   // Allow use as a generic RPC Writer.
   using internal::Call::as_writer;
 
@@ -98,6 +102,7 @@ class RawServerReaderWriter : private internal::ServerCall {
                 type, internal::kServerCall, internal::kRawProto)) {}
 
   using internal::Call::CloseAndSendResponse;
+  using internal::Call::TryCloseAndSendResponse;
 
  private:
   friend class internal::RawMethod;  // Needed to construct
@@ -149,6 +154,10 @@ class RawServerReader : private RawServerReaderWriter {
     return CloseAndSendResponse(response, status);
   }
 
+  Status TryFinish(ConstByteSpan response, Status status = OkStatus()) {
+    return TryCloseAndSendResponse(response, status);
+  }
+
  private:
   friend class internal::RawMethod;  // Needed for conversions from ReaderWriter
   friend class Server;
@@ -194,6 +203,8 @@ class RawServerWriter : private RawServerReaderWriter {
   using RawServerReaderWriter::set_on_error;
 
   using RawServerReaderWriter::Finish;
+  using RawServerReaderWriter::TryFinish;
+
   using RawServerReaderWriter::Write;
 
   // Allow use as a generic RPC Writer.
@@ -242,6 +253,10 @@ class RawUnaryResponder : private RawServerReaderWriter {
 
   Status Finish(ConstByteSpan response, Status status = OkStatus()) {
     return CloseAndSendResponse(response, status);
+  }
+
+  Status TryFinish(ConstByteSpan response, Status status = OkStatus()) {
+    return TryCloseAndSendResponse(response, status);
   }
 
  private:

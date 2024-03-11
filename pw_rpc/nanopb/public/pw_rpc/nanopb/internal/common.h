@@ -107,4 +107,8 @@ Status SendFinalResponse(NanopbServerCall& call,
                          const void* payload,
                          Status status) PW_LOCKS_EXCLUDED(rpc_lock());
 
+Status TrySendFinalResponse(NanopbServerCall& call,
+                            const void* payload,
+                            Status status) PW_LOCKS_EXCLUDED(rpc_lock());
+
 }  // namespace pw::rpc::internal

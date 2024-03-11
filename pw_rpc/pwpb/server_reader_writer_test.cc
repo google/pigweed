@@ -131,6 +131,36 @@ TEST(PwpbUnaryResponder, Closed) {
   call.set_on_error([](Status) {});
 }
 
+TEST(PwpbUnaryResponder, TryClosedFailed) {
+  ReaderWriterTestContext<TestService::TestUnaryRpc> ctx;
+  PwpbUnaryResponder call = PwpbUnaryResponder<TestResponse::Message>::Open<
+      TestService::TestUnaryRpc>(ctx.server, ctx.channel.id(), ctx.service);
+  // Sets ChannelOutput to always return false.
+  ctx.output.set_send_status(Status::Unknown());
+  ASSERT_EQ(Status::Unknown(), call.TryFinish({}, OkStatus()));
+
+  // Call should be still alive.
+  ASSERT_TRUE(call.active());
+}
+
+TEST(PwpbUnaryResponder, TryCloseSuccessful) {
+  ReaderWriterTestContext<TestService::TestUnaryRpc> ctx;
+  PwpbUnaryResponder call = PwpbUnaryResponder<TestResponse::Message>::Open<
+      TestService::TestUnaryRpc>(ctx.server, ctx.channel.id(), ctx.service);
+  // Sets ChannelOutput to always return false.
+  ctx.output.set_send_status(Status::Unknown());
+  ASSERT_EQ(Status::Unknown(), call.TryFinish({}, OkStatus()));
+
+  // Call should be still alive.
+  ASSERT_TRUE(call.active());
+
+  // Tries to close the call again, with ChannelOutput set to return ok.
+  ctx.output.set_send_status(OkStatus());
+  ASSERT_EQ(OkStatus(), call.TryFinish({}, OkStatus()));
+  // Call should be closed.
+  ASSERT_FALSE(call.active());
+}
+
 TEST(PwpbServerWriter, Closed) {
   ReaderWriterTestContext<TestService::TestServerStreamRpc> ctx;
   PwpbServerWriter call = PwpbServerWriter<TestStreamResponse::Message>::Open<
@@ -145,6 +175,38 @@ TEST(PwpbServerWriter, Closed) {
   EXPECT_EQ(Status::FailedPrecondition(), call.Finish(OkStatus()));
 
   call.set_on_error([](Status) {});
+}
+
+TEST(PwpbServerWriter, TryClosedFailed) {
+  ReaderWriterTestContext<TestService::TestServerStreamRpc> ctx;
+  PwpbServerWriter call = PwpbServerWriter<TestStreamResponse::Message>::Open<
+      TestService::TestServerStreamRpc>(
+      ctx.server, ctx.channel.id(), ctx.service);
+  // Sets ChannelOutput to always return false.
+  ctx.output.set_send_status(Status::Unknown());
+  ASSERT_EQ(Status::Unknown(), call.TryFinish(OkStatus()));
+
+  // Call should be still alive.
+  ASSERT_TRUE(call.active());
+}
+
+TEST(PwpbServerWriter, TryCloseSuccessful) {
+  ReaderWriterTestContext<TestService::TestServerStreamRpc> ctx;
+  PwpbServerWriter call = PwpbServerWriter<TestStreamResponse::Message>::Open<
+      TestService::TestServerStreamRpc>(
+      ctx.server, ctx.channel.id(), ctx.service);
+  // Sets ChannelOutput to always return false.
+  ctx.output.set_send_status(Status::Unknown());
+  ASSERT_EQ(Status::Unknown(), call.TryFinish(OkStatus()));
+
+  // Call should be still alive.
+  ASSERT_TRUE(call.active());
+
+  // Tries to close the call again, with ChannelOutput set to return ok.
+  ctx.output.set_send_status(OkStatus());
+  ASSERT_EQ(OkStatus(), call.TryFinish(OkStatus()));
+  // Call should be closed.
+  ASSERT_FALSE(call.active());
 }
 
 TEST(PwpbServerReader, Closed) {
@@ -164,6 +226,40 @@ TEST(PwpbServerReader, Closed) {
   call.set_on_error([](Status) {});
 }
 
+TEST(PwpbServerReader, TryClosedFailed) {
+  ReaderWriterTestContext<TestService::TestClientStreamRpc> ctx;
+  PwpbServerReader call =
+      PwpbServerReader<TestRequest::Message, TestStreamResponse::Message>::Open<
+          TestService::TestClientStreamRpc>(
+          ctx.server, ctx.channel.id(), ctx.service);
+  // Sets ChannelOutput to always return false.
+  ctx.output.set_send_status(Status::Unknown());
+  ASSERT_EQ(Status::Unknown(), call.TryFinish({}, OkStatus()));
+
+  // Call should be still alive.
+  ASSERT_TRUE(call.active());
+}
+
+TEST(PwpbServerReader, TryCloseSuccessful) {
+  ReaderWriterTestContext<TestService::TestClientStreamRpc> ctx;
+  PwpbServerReader call =
+      PwpbServerReader<TestRequest::Message, TestStreamResponse::Message>::Open<
+          TestService::TestClientStreamRpc>(
+          ctx.server, ctx.channel.id(), ctx.service);
+  // Sets ChannelOutput to always return false.
+  ctx.output.set_send_status(Status::Unknown());
+  ASSERT_EQ(Status::Unknown(), call.TryFinish({}, OkStatus()));
+
+  // Call should be still alive.
+  ASSERT_TRUE(call.active());
+
+  // Tries to close the call again, with ChannelOutput set to return ok.
+  ctx.output.set_send_status(OkStatus());
+  ASSERT_EQ(OkStatus(), call.TryFinish({}, OkStatus()));
+  // Call should be closed.
+  ASSERT_FALSE(call.active());
+}
+
 TEST(PwpbServerReaderWriter, Closed) {
   ReaderWriterTestContext<TestService::TestBidirectionalStreamRpc> ctx;
   PwpbServerReaderWriter call =
@@ -181,6 +277,42 @@ TEST(PwpbServerReaderWriter, Closed) {
 
   call.set_on_next([](const TestRequest::Message&) {});
   call.set_on_error([](Status) {});
+}
+
+TEST(PwpbServerReaderWriter, TryClosedFailed) {
+  ReaderWriterTestContext<TestService::TestBidirectionalStreamRpc> ctx;
+  PwpbServerReaderWriter call =
+      PwpbServerReaderWriter<TestRequest::Message,
+                             TestStreamResponse::Message>::
+          Open<TestService::TestBidirectionalStreamRpc>(
+              ctx.server, ctx.channel.id(), ctx.service);
+  // Sets ChannelOutput to always return false.
+  ctx.output.set_send_status(Status::Unknown());
+  ASSERT_EQ(Status::Unknown(), call.TryFinish(OkStatus()));
+
+  // Call should be still alive.
+  ASSERT_TRUE(call.active());
+}
+
+TEST(PwpbServerReaderWriter, TryCloseSuccessful) {
+  ReaderWriterTestContext<TestService::TestBidirectionalStreamRpc> ctx;
+  PwpbServerReaderWriter call =
+      PwpbServerReaderWriter<TestRequest::Message,
+                             TestStreamResponse::Message>::
+          Open<TestService::TestBidirectionalStreamRpc>(
+              ctx.server, ctx.channel.id(), ctx.service);
+  // Sets ChannelOutput to always return false.
+  ctx.output.set_send_status(Status::Unknown());
+  ASSERT_EQ(Status::Unknown(), call.TryFinish(OkStatus()));
+
+  // Call should be still alive.
+  ASSERT_TRUE(call.active());
+
+  // Tries to close the call again, with ChannelOutput set to return ok.
+  ctx.output.set_send_status(OkStatus());
+  ASSERT_EQ(OkStatus(), call.TryFinish(OkStatus()));
+  // Call should be closed.
+  ASSERT_FALSE(call.active());
 }
 
 TEST(PwpbUnaryResponder, Open_ReturnsUsableResponder) {

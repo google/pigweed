@@ -53,6 +53,11 @@ class NanopbServerCall : public ServerCall {
     return SendFinalResponse(*this, payload, status);
   }
 
+  Status TrySendUnaryResponse(const void* payload, Status status)
+      PW_LOCKS_EXCLUDED(rpc_lock()) {
+    return TrySendFinalResponse(*this, payload, status);
+  }
+
   const NanopbMethodSerde& serde() const
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     return *serde_;
@@ -194,6 +199,10 @@ class NanopbServerReaderWriter
     return internal::Call::CloseAndSendResponse(status);
   }
 
+  Status TryFinish(Status status = OkStatus()) {
+    return internal::Call::TryCloseAndSendResponse(status);
+  }
+
   // Functions for setting RPC event callbacks.
   using internal::Call::set_on_error;
   using internal::ServerCall::set_on_completion_requested;
@@ -262,6 +271,10 @@ class NanopbServerReader : private internal::BaseNanopbServerReader<Request> {
     return internal::NanopbServerCall::SendUnaryResponse(&response, status);
   }
 
+  Status TryFinish(const Response& response, Status status = OkStatus()) {
+    return internal::NanopbServerCall::TrySendUnaryResponse(&response, status);
+  }
+
  private:
   friend class internal::NanopbMethod;
   friend class Server;
@@ -325,6 +338,10 @@ class NanopbServerWriter : private internal::NanopbServerCall {
 
   Status Finish(Status status = OkStatus()) {
     return internal::Call::CloseAndSendResponse(status);
+  }
+
+  Status TryFinish(Status status = OkStatus()) {
+    return internal::Call::TryCloseAndSendResponse(status);
   }
 
   using internal::Call::set_on_error;

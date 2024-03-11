@@ -203,6 +203,31 @@ class Call : public IntrusiveList<Call>::Item, private rpc::Writer {
         pwpb::PacketType::SERVER_ERROR, {}, error);
   }
 
+  // Closes the Call and sends a RESPONSE packet, if the RESPONSE packet failed
+  // to send , keep the call alive and return error. This API allows user to
+  // resend RESPONSE packet when transmission failed.
+  Status TryCloseAndSendResponse(ConstByteSpan response, Status status)
+      PW_LOCKS_EXCLUDED(rpc_lock()) {
+    RpcLockGuard lock;
+    return TryCloseAndSendResponseLocked(response, status);
+  }
+
+  Status TryCloseAndSendResponseLocked(ConstByteSpan response, Status status)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    return TryCloseAndSendFinalPacketLocked(
+        pwpb::PacketType::RESPONSE, response, status);
+  }
+
+  Status TryCloseAndSendResponse(Status status) PW_LOCKS_EXCLUDED(rpc_lock()) {
+    return TryCloseAndSendResponse({}, status);
+  }
+
+  Status TryCloseAndSendServerErrorLocked(Status error)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    return TryCloseAndSendFinalPacketLocked(
+        pwpb::PacketType::SERVER_ERROR, {}, error);
+  }
+
   // Public function that indicates that the client requests completion of the
   // RPC, but is still active and listening to responses. For client streaming
   // and bi-directional streaming RPCs, this also closes the client stream. If
@@ -537,6 +562,11 @@ class Call : public IntrusiveList<Call>::Item, private rpc::Writer {
   Status CloseAndSendFinalPacketLocked(pwpb::PacketType type,
                                        ConstByteSpan response,
                                        Status status)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
+
+  Status TryCloseAndSendFinalPacketLocked(pwpb::PacketType type,
+                                          ConstByteSpan response,
+                                          Status status)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   bool CallbacksAreRunning() const PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {

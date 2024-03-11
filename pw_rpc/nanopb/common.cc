@@ -136,4 +136,20 @@ Status SendFinalResponse(NanopbServerCall& call,
   return call.CloseAndSendResponseLocked(*result, status);
 }
 
+Status TrySendFinalResponse(NanopbServerCall& call,
+                            const void* payload,
+                            const Status status) {
+  RpcLockGuard lock;
+  if (!call.active_locked()) {
+    return Status::FailedPrecondition();
+  }
+
+  Result<ByteSpan> result =
+      EncodeToPayloadBuffer(payload, call.serde().response());
+  if (!result.ok()) {
+    return call.TryCloseAndSendServerErrorLocked(Status::Internal());
+  }
+  return call.TryCloseAndSendResponseLocked(*result, status);
+}
+
 }  // namespace pw::rpc::internal

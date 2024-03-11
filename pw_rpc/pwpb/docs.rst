@@ -112,6 +112,11 @@ closed or goes out of scope. The writer has a simple API to return responses:
 
   Closes the stream and sends back the RPC's overall status to the client.
 
+.. cpp:function:: Status PwpbServerWriter::TryFinish(Status status = OkStatus())
+
+  Closes the stream and sends back the RPC's overall status to the client only
+  if the final packet is successfully sent.
+
 Once a ``ServerWriter`` has been closed, all future ``Write`` calls will fail.
 
 .. attention::

@@ -76,6 +76,24 @@ class PwpbServerCall : public ServerCall {
     return CloseAndSendResponseLocked(*buffer, status);
   }
 
+  template <typename Response>
+  Status TrySendUnaryResponse(const Response& response,
+                              Status status = OkStatus())
+      PW_LOCKS_EXCLUDED(rpc_lock()) {
+    RpcLockGuard lock;
+    if (!active_locked()) {
+      return Status::FailedPrecondition();
+    }
+
+    Result<ByteSpan> buffer =
+        EncodeToPayloadBuffer(response, serde_->response());
+    if (!buffer.ok()) {
+      return TryCloseAndSendServerErrorLocked(Status::Internal());
+    }
+
+    return TryCloseAndSendResponseLocked(*buffer, status);
+  }
+
  protected:
   // Derived classes allow default construction so that users can declare a
   // variable into which to move server reader/writers from RPC calls.
@@ -251,6 +269,10 @@ class PwpbServerReaderWriter : private internal::BasePwpbServerReader<Request> {
     return internal::Call::CloseAndSendResponse(status);
   }
 
+  Status TryFinish(Status status = OkStatus()) {
+    return internal::Call::TryCloseAndSendResponse(status);
+  }
+
  private:
   friend class internal::PwpbMethod;
   friend class Server;
@@ -321,6 +343,10 @@ class PwpbServerReader : private internal::BasePwpbServerReader<Request> {
   //
   Status Finish(const Response& response, Status status = OkStatus()) {
     return internal::PwpbServerCall::SendUnaryResponse(response, status);
+  }
+
+  Status TryFinish(const Response& response, Status status = OkStatus()) {
+    return internal::PwpbServerCall::TrySendUnaryResponse(response, status);
   }
 
  private:
@@ -395,6 +421,10 @@ class PwpbServerWriter : private internal::PwpbServerCall {
     return internal::Call::CloseAndSendResponse(status);
   }
 
+  Status TryFinish(Status status = OkStatus()) {
+    return internal::Call::TryCloseAndSendResponse(status);
+  }
+
  private:
   friend class internal::PwpbMethod;
   friend class Server;
@@ -458,6 +488,10 @@ class PwpbUnaryResponder : private internal::PwpbServerCall {
   //
   Status Finish(const Response& response, Status status = OkStatus()) {
     return internal::PwpbServerCall::SendUnaryResponse(response, status);
+  }
+
+  Status TryFinish(const Response& response, Status status = OkStatus()) {
+    return internal::PwpbServerCall::TrySendUnaryResponse(response, status);
   }
 
  private:
