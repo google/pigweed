@@ -72,6 +72,16 @@ pw_add_library(pw_unit_test.googletest STATIC
     pw_third_party.googletest
 )
 
+pw_add_library(pw_unit_test.googletest_handler_adapter STATIC
+  SOURCES
+    googletest_handler_adapter.cc
+  PUBLIC_DEPS
+    pw_unit_test.event_handler
+    pw_third_party.googletest
+  PUBLIC_INCLUDES
+    public
+)
+
 pw_add_test(pw_unit_test.framework_test
     SOURCES
       framework_test.cc
