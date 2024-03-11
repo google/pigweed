@@ -421,3 +421,14 @@ http_archive(
     strip_prefix = "cmsis_core-5.4.0_cm4",
     urls = ["https://github.com/STMicroelectronics/cmsis_core/archive/refs/tags/v5.4.0_cm4.tar.gz"],
 )
+
+# This is a stub repository. The //third_party/stm32cube:hal_driver label_flag
+# by default points to "@hal_driver//:hal_driver". This is intended for use by
+# downstream; in upstream we always override this flag in our .bazelrc. But
+# `bazel query` uses the default build settings. So, to ensure `bazel query`
+# works, add this stub target here.
+new_local_repository(
+    name = "hal_driver",
+    build_file_content = 'cc_library(name="hal_driver")',
+    path = ".",
+)
