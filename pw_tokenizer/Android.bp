@@ -52,7 +52,7 @@ cc_library_static {
         "pw_base64",
         "pw_bytes",
         "pw_containers",
-        "pw_varint"
+        "pw_varint",
     ],
     export_static_lib_headers: [
         "pw_base64",
@@ -162,15 +162,15 @@ genrule {
         "pw_tokenizer_proto/options.proto",
     ],
     cmd: "python3 $(location pw_protobuf_compiler_py) " +
-         "--proto-path=external/pigweed/pw_tokenizer/ " +
-         "--proto-path=external/protobuf/src/ " +
-         "--out-dir=$$(dirname $(location pw_tokenizer_proto/options.pwpb.h)) " +
-         "--plugin-path=$(location pw_protobuf_plugin_py) " +
-         "--compile-dir=$$(dirname $(location pw_tokenizer_proto/options.proto)) " +
-         "--sources $(location pw_tokenizer_proto/options.proto) " +
-         "--language pwpb " +
-         "--no-experimental-proto3-optional " +
-         "--protoc=$(location aprotoc) ",
+        "--proto-path=external/pigweed/pw_tokenizer/ " +
+        "--proto-path=external/protobuf/src/ " +
+        "--out-dir=$$(dirname $(location pw_tokenizer_proto/options.pwpb.h)) " +
+        "--plugin-path=$(location pw_protobuf_plugin_py) " +
+        "--compile-dir=$$(dirname $(location pw_tokenizer_proto/options.proto)) " +
+        "--sources $(location pw_tokenizer_proto/options.proto) " +
+        "--language pwpb " +
+        "--no-experimental-proto3-optional " +
+        "--protoc=$(location aprotoc) ",
     out: [
         "pw_tokenizer_proto/options.pwpb.h",
     ],

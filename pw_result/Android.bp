@@ -25,10 +25,10 @@ cc_library_headers {
         "public",
     ],
     static_libs: [
-      "pw_status",
+        "pw_status",
     ],
     export_static_lib_headers: [
-      "pw_status",
+        "pw_status",
     ],
     header_libs: [
         "pw_preprocessor_headers",

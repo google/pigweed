@@ -92,7 +92,7 @@ cc_library_headers {
 genrule_defaults {
     name: "pw_protobuf_add_prefix_to_proto",
     cmd: "out_files=($(out)); prefix=$$(dirname $${out_files[0]}); " +
-         "mkdir -p $${prefix}; cp -t $${prefix} $(in);"
+        "mkdir -p $${prefix}; cp -t $${prefix} $(in);",
 }
 
 filegroup {
@@ -115,17 +115,17 @@ genrule {
 
 genrule {
     name: "pw_protobuf_protos_common_pwpb_h",
-    srcs: [":pw_protobuf_common_proto_with_prefix",],
+    srcs: [":pw_protobuf_common_proto_with_prefix"],
     cmd: "python3 $(location pw_protobuf_compiler_py) " +
-         "--proto-path=external/pigweed/pw_protobuf/ " +
-         "--proto-path=external/protobuf/src/ " +
-         "--out-dir=$$(dirname $(location pw_protobuf_protos/common.pwpb.h)) " +
-         "--plugin-path=$(location pw_protobuf_plugin_py) " +
-         "--compile-dir=$$(dirname $(in)) " +
-         "--sources $(in) " +
-         "--language pwpb " +
-         "--no-experimental-proto3-optional " +
-         "--protoc=$(location aprotoc) ",
+        "--proto-path=external/pigweed/pw_protobuf/ " +
+        "--proto-path=external/protobuf/src/ " +
+        "--out-dir=$$(dirname $(location pw_protobuf_protos/common.pwpb.h)) " +
+        "--plugin-path=$(location pw_protobuf_plugin_py) " +
+        "--compile-dir=$$(dirname $(in)) " +
+        "--sources $(in) " +
+        "--language pwpb " +
+        "--no-experimental-proto3-optional " +
+        "--protoc=$(location aprotoc) ",
     out: [
         "pw_protobuf_protos/common.pwpb.h",
     ],
@@ -141,21 +141,21 @@ genrule {
     name: "google_protobuf_descriptor_pwpb_h",
     // The libprotobuf-internal-descriptor-proto filegroup is unavailable so
     // instead filter for just the descriptor.proto.
-    srcs: [":libprotobuf-internal-protos",],
+    srcs: [":libprotobuf-internal-protos"],
     cmd: "in_files=($(in)); compile_dir=$$(dirname $${in_files[0]}); " +
-         "proto_files=(); " +
-         "for f in \"$${in_files[@]}\"; do " +
-         "if [[ \"$${f##*descriptor.}\" == \"proto\" ]]; then " +
-         "proto_files+=(\"$${f}\"); fi; done; " +
-         "python3 $(location pw_protobuf_compiler_py) " +
-         "--proto-path=external/protobuf/src/ " +
-         "--out-dir=$$(dirname $(location google/protobuf/descriptor.pwpb.h)) " +
-         "--plugin-path=$(location pw_protobuf_plugin_py) " +
-         "--compile-dir=$${compile_dir} " +
-         "--sources $${proto_files} " +
-         "--language pwpb " +
-         "--no-experimental-proto3-optional " +
-         "--protoc=$(location aprotoc) ",
+        "proto_files=(); " +
+        "for f in \"$${in_files[@]}\"; do " +
+        "if [[ \"$${f##*descriptor.}\" == \"proto\" ]]; then " +
+        "proto_files+=(\"$${f}\"); fi; done; " +
+        "python3 $(location pw_protobuf_compiler_py) " +
+        "--proto-path=external/protobuf/src/ " +
+        "--out-dir=$$(dirname $(location google/protobuf/descriptor.pwpb.h)) " +
+        "--plugin-path=$(location pw_protobuf_plugin_py) " +
+        "--compile-dir=$${compile_dir} " +
+        "--sources $${proto_files} " +
+        "--language pwpb " +
+        "--no-experimental-proto3-optional " +
+        "--protoc=$(location aprotoc) ",
     out: [
         "google/protobuf/descriptor.pwpb.h",
     ],
@@ -170,9 +170,9 @@ genrule {
     name: "pw_protobuf_codegen_protos_py",
     srcs: ["pw_protobuf_codegen_protos/codegen_options.proto"],
     cmd: "$(location aprotoc) " +
-         "-I$$(dirname $(in)) " +
-         "--python_out=$(genDir) " +
-         "$(in)",
+        "-I$$(dirname $(in)) " +
+        "--python_out=$(genDir) " +
+        "$(in)",
     out: [
         "codegen_options_pb2.py",
     ],
@@ -198,10 +198,10 @@ genrule {
         ":libprotobuf-internal-protos",
     ],
     cmd: "$(location aprotoc) " +
-         "-I$$(dirname $(location pw_protobuf_protos/common.proto)) " +
-         "-Iexternal/protobuf/src/ " +
-         "--python_out=$(genDir) " +
-         "$(in)",
+        "-I$$(dirname $(location pw_protobuf_protos/common.proto)) " +
+        "-Iexternal/protobuf/src/ " +
+        "--python_out=$(genDir) " +
+        "$(in)",
     out: [
         "common_pb2.py",
         "field_options_pb2.py",

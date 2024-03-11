@@ -19,8 +19,8 @@ package {
 genrule {
     name: "pw_digital_io_proto_with_prefix",
     defaults: ["pw_rpc_add_prefix_to_proto"],
-    srcs: [ "digital_io.proto" ],
-    out: [ "pw_digital_io/digital_io.proto" ],
+    srcs: ["digital_io.proto"],
+    out: ["pw_digital_io/digital_io.proto"],
 }
 
 genrule {

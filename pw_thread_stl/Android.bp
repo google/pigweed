@@ -34,10 +34,10 @@ cc_defaults {
     name: "pw_thread_stl_defaults",
     cpp_std: "c++20",
     header_libs: [
-      "pw_thread_stl_include_dirs",
+        "pw_thread_stl_include_dirs",
     ],
 
     export_header_lib_headers: [
-      "pw_thread_stl_include_dirs",
+        "pw_thread_stl_include_dirs",
     ],
 }

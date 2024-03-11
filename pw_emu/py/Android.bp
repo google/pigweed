@@ -23,8 +23,8 @@ python_binary_host {
         "pw_emu/*.py",
     ],
     libs: [
-          "pw_env_setup_py_lib",
-          "pyserial",
+        "pw_env_setup_py_lib",
+        "pyserial",
     ],
 }
 

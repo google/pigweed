@@ -30,10 +30,10 @@ cc_defaults {
     name: "pw_chrono_defaults",
     cpp_std: "c++20",
     header_libs: [
-      "pw_chrono_include_dirs",
+        "pw_chrono_include_dirs",
     ],
 
     export_header_lib_headers: [
-      "pw_chrono_include_dirs",
+        "pw_chrono_include_dirs",
     ],
 }

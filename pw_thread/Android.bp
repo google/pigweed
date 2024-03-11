@@ -39,17 +39,17 @@ cc_defaults {
     name: "pw_thread_defaults",
     cpp_std: "c++20",
     header_libs: [
-      "pw_thread_include_dirs",
-      "pw_function_headers",
-      "pw_preprocessor_headers",
+        "pw_thread_include_dirs",
+        "pw_function_headers",
+        "pw_preprocessor_headers",
     ],
     export_header_lib_headers: [
-      "pw_thread_include_dirs",
+        "pw_thread_include_dirs",
     ],
     static_libs: [
-      "pw_status",
+        "pw_status",
     ],
     srcs: [
-        ":pw_thread_src_files"
+        ":pw_thread_src_files",
     ],
 }
