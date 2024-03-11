@@ -41,12 +41,11 @@ namespace pw::allocator {
 class SizeReporter final {
  public:
   /// Nested type used for exercising an allocator.
-  class Foo {
+  class Foo final {
    public:
     explicit Foo(const char* name) {
       std::snprintf(name_.data(), name_.size(), "%s", name);
     }
-    virtual ~Foo() = default;
     const char* name() const { return name_.data(); }
 
    private:
@@ -54,12 +53,14 @@ class SizeReporter final {
   };
 
   /// Nested type used for exercising an allocator.
-  struct Bar : public Foo {
+  struct Bar {
+    Foo foo;
     size_t number;
   };
 
   /// Nested type used for exercising an allocator.
-  struct Baz : public Bar {
+  struct Baz {
+    Foo foo;
     uint16_t id;
   };
 
@@ -84,7 +85,6 @@ class SizeReporter final {
       ptr = buffer_.data();
     }
     if (ptr != nullptr) {
-      new (ptr) Foo("foo");
     }
 
     // Measure `Reallocate`.
@@ -108,19 +108,29 @@ class SizeReporter final {
     }
 
     // Measure `Query`.
-    if (ptr != nullptr) {
-      auto* bar = std::launder(reinterpret_cast<Bar*>(ptr));
-      bar->number = 1;
-      PW_ASSERT(std::strcmp(bar->name(), "foo") == 0);
-      if constexpr (std::is_base_of_v<Allocator, Derived>) {
-        Status status = allocator->Query(bar, layout);
-        PW_ASSERT(status.ok() || status.IsUnimplemented());
-      }
+    if constexpr (std::is_base_of_v<Allocator, Derived>) {
+      Status status = allocator->Query(ptr, layout);
+      PW_ASSERT(ptr == nullptr || status.ok() || status.IsUnimplemented());
     }
 
     // Measure `Deallocate`.
     if constexpr (std::is_base_of_v<Allocator, Derived>) {
       allocator->Deallocate(ptr, layout);
+    }
+
+    // Measure `New`.
+    Foo* foo = nullptr;
+    if constexpr (std::is_base_of_v<Allocator, Derived>) {
+      foo = allocator->template New<Foo>("foo");
+    } else {
+      foo = new (buffer_.data()) Foo("foo");
+    }
+
+    // Measure `Delete`.
+    if constexpr (std::is_base_of_v<Allocator, Derived>) {
+      allocator->template Delete(foo);
+    } else {
+      std::destroy_at(foo);
     }
 
     // Measure `MakeUnique`.

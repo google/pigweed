@@ -65,11 +65,19 @@ class AllocatorTestHarnessGeneric {
 
   /// Generates and handles a sequence of allocation requests.
   ///
-  /// This method will use the given PRNG to generate a `num_requests` and pass
-  /// each in turn to `HandleRequest`. It will call `Reset` before returning.
+  /// This method will use the given PRNG to generate `num_requests` allocation
+  /// requests and pass each in turn to `HandleRequest`. It will call `Reset`
+  /// before returning.
   void GenerateRequests(random::RandomGenerator& prng,
                         size_t max_size,
                         size_t num_requests);
+
+  /// Generate and handle an allocation requests.
+  ///
+  /// This method will use the given PRNG to generate an allocation request
+  /// and pass it to `HandleRequest`. Callers *MUST* call `Reset` when no more
+  /// requests remain to be generated.
+  void GenerateRequest(random::RandomGenerator& prng, size_t max_size);
 
   /// Handles a sequence of allocation requests.
   ///

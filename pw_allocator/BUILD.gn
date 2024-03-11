@@ -369,6 +369,7 @@ pw_test_group("tests") {
     ":tracking_allocator_test",
     ":unique_ptr_test",
   ]
+  group_deps = [ "examples" ]
 }
 
 # Docs
@@ -467,7 +468,20 @@ pw_size_diff("allocator_utilities_size_report") {
 }
 
 pw_doc_group("docs") {
-  inputs = [ "doc_resources/pw_allocator_heap_visualizer_demo.png" ]
+  inputs = [
+    "doc_resources/pw_allocator_heap_visualizer_demo.png",
+    "examples/basic.cc",
+    "examples/block_allocator.cc",
+    "examples/custom_allocator_perf_test.cc",
+    "examples/custom_allocator_test_harness.h",
+    "examples/custom_allocator_test.cc",
+    "examples/custom_allocator.cc",
+    "examples/custom_allocator.h",
+    "examples/linker_sections.cc",
+    "examples/metrics.cc",
+    "examples/size_report.cc",
+    "examples/spin_lock.cc",
+  ]
   sources = [
     "api.rst",
     "code_size.rst",
@@ -478,5 +492,6 @@ pw_doc_group("docs") {
   report_deps = [
     ":concrete_allocators_size_report",
     ":forwarding_allocators_size_report",
+    "examples:custom_allocator_size_report",
   ]
 }

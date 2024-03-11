@@ -16,8 +16,6 @@ Get started
 
    .. tab-item:: Bazel
 
-      .. TODO: b/328076428 - Move to compiled example and inline.
-
       Add ``@pigweed//pw_allocator`` to the ``deps`` list in your Bazel target:
 
       .. code-block::
@@ -42,8 +40,6 @@ Get started
 
    .. tab-item:: GN
 
-      .. TODO: b/328076428 - Move to compiled example and inline.
-
       Add ``dir_pw_allocator`` to the ``deps`` list in your build target:
 
       .. code-block::
@@ -65,8 +61,6 @@ Get started
       ``public_deps`` instead of ``deps``.
 
    .. tab-item:: CMake
-
-      .. TODO: b/328076428 - Move to compiled example and inline.
 
       Add ``pw_allocator`` to your ``pw_add_library`` or similar CMake target:
 
@@ -104,36 +98,17 @@ a pointer or reference to such an object and use the ``Allocate``,
 ``Deallocate``, ``Reallocate``, and ``Resize`` methods to manage memory. For
 example:
 
-.. TODO: b/328076428 - Move to compiled example and inline.
+.. literalinclude:: examples/basic.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-basic-allocate]
+   :end-before: [pw_allocator-examples-basic-allocate]
 
-.. code-block:: cpp
-
-   class HeapBuffer final {
-    public:
-     HeapBuffer(Allocator& allocator) : allocator_(allocator) {}
-     ~HeapBuffer() {
-       allocator_.Reallocate(buffer_.data(), Layout(buffer_.size(), 1));
-     }
-
-     const std::byte* data() const { return buffer_.data(); }
-     size_t size() const { return buffer_.size(); }
-
-     Status CopyFrom(ByteSpan bytes) {
-       void* new_ptr = allocator_.Reallocate(
-         buffer_.data(),
-         Layout(buffer_.size(), 1),
-         bytes.size());
-       if (new_ptr == nullptr) {
-         return Status::ResourceExhausted;
-       }
-       buffer_ = ByteSpan(reinterpret_cast<std::byte*>(new_ptr), bytes.size());
-       return OkStatus();
-     }
-
-    private:
-     Allocator allocator_
-     ByteSpan buffer_;
-   };
+.. literalinclude:: examples/basic.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-basic-deallocate]
+   :end-before: [pw_allocator-examples-basic-deallocate]
 
 To invoke methods or objects that inject allocators now requires an allocator to
 have been constructed. The exact location where allocators should be
@@ -144,6 +119,17 @@ For initial testing on :ref:`target-host`, a simple allocator such as
 :ref:`module-pw_allocator-api-libc_allocator` can be used. This allocator is
 trivally constructed and simply wraps ``malloc`` and ``free``.
 
+Use New and Delete
+==================
+In addition to managing raw memory, an ``Allocator`` can also be used to create
+and destroy objects:
+
+.. literalinclude:: examples/basic.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-basic-new_delete]
+   :end-before: [pw_allocator-examples-basic-new_delete]
+
 Use UniquePtr<T>
 ================
 Where possible, using `RAII`_ is a recommended approach for making memory
@@ -151,19 +137,11 @@ management easier and less error-prone.
 :ref:`module-pw_allocator-api-unique_ptr` is a smart pointer that makes
 allocating and deallocating memory more transparent:
 
-.. TODO: b/328076428 - Move to compiled example and inline.
-
-.. code-block:: cpp
-
-   class MyObjectFactory {
-    public:
-     MyObjectFactory(Allocator& allocator) : allocator_(allocator) {}
-     UniquePtr<MyObject> MakeMyObject(ByteSpan foo, Vector<uint32_t> bar) {
-       return allocator_.MakeUniquePtr<MyObject>(foo, std::move(bar));
-     }
-    private:
-     Allocator& allocator_;
-   };
+.. literalinclude:: examples/basic.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-basic-make_unique]
+   :end-before: [pw_allocator-examples-basic-make_unique]
 
 Determine an allocation's Layout
 ================================
@@ -172,9 +150,11 @@ of the :ref:`module-pw_allocator-api-layout` type. This type combines the size
 and alignment requirements of an allocation. It can be constructed directly, or
 if allocating memory for a specific type, by using a templated static method:
 
-.. code-block:: cpp
-
-   Layout my_object_layout = Layout::Of<MyObject>();
+.. literalinclude:: examples/block_allocator.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-block_allocator-layout_of]
+   :end-before: [pw_allocator-examples-block_allocator-layout_of]
 
 As stated above, you should generally try to keep allocator implementation
 details abstracted behind the :ref:`module-pw_allocator-api-allocator`
@@ -185,28 +165,11 @@ To implement such a method using ``Deallocate``, you may need to violate the
 abstraction and only use allocators that implement the optional ``GetLayout``
 method:
 
-.. TODO: b/328076428 - Move to compiled example and inline.
-
-.. code-block:: cpp
-
-   static Allocator* allocator = nullptr;
-   static constexpr size_t kAlignment = alignof(uintptr_t);
-
-   void SetAllocator(Allocator& allocator_) { allocator = &allocator_; }
-
-   void* pvPortMalloc(size_t size) {
-     PW_CHECK_NOTNULL(allocator);
-     return allocator->Allocator(Layout(size, kAlignment));
-   }
-
-   void pvPortFree(void* ptr) {
-     PW_CHECK_NOTNULL(allocator);
-     Result<Layout> old_layout = allocator->GetLayout();
-
-     // Asserts if the allocator provided to ``SetAllocator`` does not implement
-     // ``GetLayout``.
-     allocator->Deallocate(ptr, old_layout.value());
-   }
+.. literalinclude:: examples/block_allocator.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-block_allocator-malloc_free]
+   :end-before: [pw_allocator-examples-block_allocator-malloc_free]
 
 --------------------------
 Choose the right allocator
@@ -273,6 +236,8 @@ Consult the :ref:`module-pw_allocator-api` for additional details.
 
 .. TODO: b/328076428 - Add MemoryResource.
 
+.. _module-pw_allocator-guide-custom_allocator:
+
 Custom allocator implementations
 ================================
 If none of the allocator implementations provided by this module meet your
@@ -282,6 +247,19 @@ the generic interface.
 :ref:`module-pw_allocator-api-allocator` uses an `NVI`_ pattern. A custom
 allocator implementation must at a miniumum implement the ``DoAllocate`` and
 ``DoDeallocate`` methods.
+
+For example, the following is a forwarding allocator that simply writes to the
+log whenever a threshold is exceeded:
+
+.. literalinclude:: examples/custom_allocator.h
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-custom_allocator]
+
+.. literalinclude:: examples/custom_allocator.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-custom_allocator]
 
 There are also several optional methods you can provide:
 
@@ -304,21 +282,22 @@ Measure memory usage
 You can observe how much memory is being used for a particular use case using a
 :ref:`module-pw_allocator-api-tracking_allocator`.
 
-.. TODO: b/328076428 - Move to compiled example and inline.
-
-.. code-block:: cpp
-
-   static LibCAllocator my_allocator;
-   static TrackingAllocator<AllMetrics> tracker(my_allocator);
-
-   int main() {
-      Run(tracker);
-      tracker.Dump();
-   }
+.. literalinclude:: examples/metrics.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-metrics-all_metrics]
+   :end-before: [pw_allocator-examples-metrics-all_metrics]
 
 Metric data can be retrieved according to the steps described in
 :ref:`module-pw_metric-exporting`, or by using the ``Dump`` method of
-:ref:`module-pw_metric-group`.
+:ref:`module-pw_metric-group`:
+
+.. literalinclude:: examples/metrics.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-metrics-dump]
+   :end-before: [pw_allocator-examples-metrics-dump]
+
 
 The ``AllMetrics`` type used in the example above enables the following metrics:
 
@@ -342,30 +321,21 @@ The ``AllMetrics`` type used in the example above enables the following metrics:
 If you only want a subset of these metrics, you can implement your own metrics
 struct. For example:
 
-.. TODO: b/328076428 - Move to compiled example and inline.
-
-.. code-block:: cpp
-
-   struct MyMetrics {
-     PW_ALLOCATOR_METRICS_ENABLE(allocated_bytes);
-     PW_ALLOCATOR_METRICS_ENABLE(peak_allocated_bytes);
-     PW_ALLOCATOR_METRICS_ENABLE(num_failures);
-   };
+.. literalinclude:: examples/metrics.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-metrics-custom_metrics1]
+   :end-before: [pw_allocator-examples-metrics-custom_metrics1]
 
 If you have multiple routines that share an underlying allocator that you want
 to track separately, you can create multiple tracking allocators that forward to
 the same underlying allocator:
 
-.. TODO: b/328076428 - Move to compiled example and inline.
-
-.. code-block:: cpp
-
-   constexpr size_t kSramSize = 0x10000;
-   PW_PLACE_IN_SECTION("sram") std::array<std::byte, kSramSize> sram_buffer;
-   BestFitBlockAllocator<uint32_t> sram_allocator(sram_buffer);
-
-   TrackingAllocator use_case1_tracker(sram_allocator);
-   TrackingAllocator use_case2_tracker(sram_allocator);
+.. literalinclude:: examples/metrics.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-metrics-multiple_trackers]
+   :end-before: [pw_allocator-examples-metrics-multiple_trackers]
 
 Visualize the heap
 ==================
@@ -442,12 +412,11 @@ The :ref:`module-pw_allocator-api-block_allocator` class has a
 poisoned on deallocation. This allows projects to stochiastically sample
 allocations for memory corruptions while mitigating the performance impact.
 
-.. TODO: b/328076428 - Move to compiled example and inline.
-
-.. code-block:: cpp
-
-   // Poisons every 2048th deallocation.
-   LastFitBlockAllocator<uint32_t, 2048> allocator;
+.. literalinclude:: examples/block_allocator.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-block_allocator-poison]
+   :end-before: [pw_allocator-examples-block_allocator-poison]
 
 ----------------------
 Test custom allocators
@@ -459,78 +428,38 @@ provides its own backing storage and automatically frees any outstanding
 allocations when it goes out of scope. It also tracks the most recent values
 provided as parameters to the interface methods.
 
-.. code-block:: cpp
+For example, the following tests the custom allocator from
+:ref:`module-pw_allocator-guide-custom_allocator`:
 
-   // Class being tested.
-   class MyAllocator {
-    public:
-     MyAllocator(Allocator& allocator) : allocator_(allocator) {}
-    private:
-     void* DoAllocate(Layout layout) {
-       // Perform some side effects here...
-       return allocator_.Allocate(layout);
-     }
-
-     void DoDeallocate(void* ptr, Layout layout) {
-       allocator_.Deallocate(ptr, layout);
-     }
-
-     Allocator& allocator_;
-   };
-
-   TEST(MyAllocatorTest, SomeBehaviorOnAllocate) {
-     AllocatorForTest<256> allocator;
-     MyAllocator my_allocator(allocator);
-     auto result = my_allocator.MakeUnique<MyObject>();
-     ASSERT_TRUE(result.has_value());
-     EXPECT_EQ(allocator.allocate_size(), sizeof(MyObject));
-     // Check some other side effects here...
-   }
+.. literalinclude:: examples/custom_allocator_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-custom_allocator-unit_test]
+   :end-before: [pw_allocator-examples-custom_allocator-unit_test]
 
 You can also extend the :ref:`module-pw_allocator-api-allocator_test_harness` to
 perform pseudorandom sequences of allocations and deallocations, e.g. as part of
 a performance test:
 
-.. code-block:: cpp
+.. literalinclude:: examples/custom_allocator_test_harness.h
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-custom_allocator-test_harness]
 
-   class MyAllocatorTestHarness : public AllocatorTestHarness {
-    public:
-     static constexpr size_t kCapacity = 0x4000;
-
-     MyAllocatorTestHarness() : my_allocator_(allocator_) {}
-     ~MyAllocatorTestHarness() override = default;
-
-     Allocator* Init() override { return &my_allocator_; }
-
-    private:
-     AllocatorForTest<kCapacity> allocator_;
-     MyAllocator my_allocator_;
-   };
-
-   void PerformAllocations(pw::perf_test::State& state, uint64_t seed) {
-     static MyAllocatorTestHarness harness;
-     random::XorShiftStarRng64 prng(seed);
-     while(state.KeepRunning()) {
-       harness.GenerateRequest(prng, MyAllocatorTestHarness::kCapacity);
-     }
-     harness.Reset();
-   }
-
-   PW_PERF_TEST(MyAllocatorPerfTest, PerformAllocations, 1);
+.. literalinclude:: examples/custom_allocator_perf_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-custom_allocator-perf_test]
 
 Even better, you can easily add fuzz tests for your allocator. This module
 uses the ``AllocatorTestHarness`` to integrate with :ref:`module-pw_fuzzer` and
 provide :ref:`module-pw_allocator-api-fuzzing_support`.
 
-.. code-block:: cpp
-
-   void MyAllocatorNeverCrashes(const Vector<AllocatorRequest>& requests) {
-     static MyAllocatorTestHarness harness;
-     harness.HandleRequests(requests);
-   }
-
-   FUZZ_TEST(MyAllocator, MyAllocatorNeverCrashes)
-     .WithDomains(ArbitraryAllocatorRequests<kMaxRequests, kMaxSize>());
+.. literalinclude:: examples/custom_allocator_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-custom_allocator-fuzz_test]
+   :end-before: [pw_allocator-examples-custom_allocator-fuzz_test]
 
 -----------------------------
 Measure custom allocator size
@@ -543,29 +472,33 @@ in :ref:`bloat-howto`.
 
 For example, the C++ code for a size report binary might look like:
 
-.. code-block:: cpp
-
-   #include "pw_allocator/size_reporter.h"
-
-   namespace pw::allocator {
-
-   void Run() {
-     pw::allocator::SizeReporter size_reporter;
-     FirstFitBlockAllocator<uint16_t> allocator(size_reporter.buffer());
-     MyAllocator my_allocator(allocator);
-     size_reporter.MeasureAllocator<void>(&my_allocator);
-   }
-
-   }  // namespace pw::allocator
-
-   int main() {
-     pw::allocator::Run();
-     return 0;
-   }
+.. literalinclude:: examples/size_report.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-size_report]
 
 The resulting binary could be compared with the binary produced from
 pw_allocator/size_report/first_fit_block_allocator.cc to identify just the code
-added in this case by ``MyAllocator``.
+added in this case by ``CustomAllocator``.
+
+For example, the GN build rule to generate a size report might look liek:
+
+.. code-block::
+
+   pw_size_diff("size_report") {
+     title = "Example size report"
+     binaries = [
+       {
+         target = ":size_report"
+         base = "$dir_pw_allocator/size_report:first_fit_block_allocator"
+         label = "CustomAllocator"
+       },
+     ]
+   }
+
+The size report produced by this rule would render as:
+
+.. include:: examples/custom_allocator_size_report
 
 .. _NVI: https://en.wikipedia.org/wiki/Non-virtual_interface_pattern
 .. _RAII: https://en.cppreference.com/w/cpp/language/raii

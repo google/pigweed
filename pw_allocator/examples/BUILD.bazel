@@ -1,0 +1,152 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_binary",
+    "pw_cc_test",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+# Libraries
+
+cc_library(
+    name = "named_u32",
+    testonly = True,
+    hdrs = ["named_u32.h"],
+    includes = [".."],
+    deps = [
+        "//pw_bytes",
+        "//pw_string",
+    ],
+)
+
+pw_cc_test(
+    name = "block_allocator",
+    srcs = ["block_allocator.cc"],
+    deps = [
+        ":named_u32",
+        "//pw_allocator:block_allocator",
+    ],
+)
+
+cc_library(
+    name = "custom_allocator",
+    testonly = True,
+    srcs = ["custom_allocator.cc"],
+    hdrs = ["custom_allocator.h"],
+    includes = [".."],
+    deps = [
+        "//pw_allocator:allocator",
+        "//pw_log",
+    ],
+)
+
+cc_library(
+    name = "custom_allocator_test_harness",
+    testonly = True,
+    hdrs = ["custom_allocator_test_harness.h"],
+    includes = [".."],
+    deps = [
+        ":custom_allocator",
+        "//pw_allocator:test_harness",
+        "//pw_allocator:testing",
+    ],
+)
+
+# Examples
+
+pw_cc_test(
+    name = "basic",
+    srcs = ["basic.cc"],
+    deps = [
+        ":named_u32",
+        "//pw_allocator:allocator",
+        "//pw_allocator:testing",
+    ],
+)
+
+pw_cc_test(
+    name = "custom_allocator_perf_test",
+    srcs = ["custom_allocator_perf_test.cc"],
+    deps = [
+        ":custom_allocator_test_harness",
+        "//pw_perf_test",
+        "//pw_random",
+    ],
+)
+
+pw_cc_test(
+    name = "custom_allocator_test",
+    srcs = ["custom_allocator_test.cc"],
+    deps = [
+        ":custom_allocator",
+        ":custom_allocator_test_harness",
+        ":named_u32",
+        "//pw_allocator:fuzzing",
+        "//pw_allocator:testing",
+        "//pw_containers:vector",
+        "//pw_fuzzer:fuzztest",
+    ],
+)
+
+pw_cc_test(
+    name = "linker_sections",
+    srcs = ["linker_sections.cc"],
+    deps = [
+        ":named_u32",
+        "//pw_allocator:allocator",
+        "//pw_allocator:block_allocator",
+    ],
+)
+
+pw_cc_test(
+    name = "metrics",
+    srcs = ["metrics.cc"],
+    deps = [
+        ":named_u32",
+        "//pw_allocator:testing",
+        "//pw_allocator:tracking_allocator",
+        "//pw_tokenizer",
+    ],
+)
+
+pw_cc_binary(
+    name = "size_report",
+    testonly = True,
+    srcs = ["size_report.cc"],
+    deps = [
+        ":custom_allocator",
+        "//pw_allocator:block_allocator",
+        "//pw_allocator:size_reporter",
+    ],
+)
+
+pw_cc_test(
+    name = "spin_lock",
+    srcs = ["spin_lock.cc"],
+    deps = [
+        ":named_u32",
+        "//pw_allocator:synchronized_allocator",
+        "//pw_allocator:testing",
+        "//pw_assert",
+        "//pw_sync:interrupt_spin_lock",
+        "//pw_thread:test_thread_context",
+        "//pw_thread:thread",
+        "//pw_thread:thread_core",
+    ],
+)

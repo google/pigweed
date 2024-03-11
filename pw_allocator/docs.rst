@@ -14,12 +14,13 @@ pw_allocator
 - **Safe**: Can detect memory corruption, e.g overflows and use-after-free.
 - **Measurable**: Pick what allocations you want to track and measure.
 
-.. code-block:: cpp
+.. literalinclude:: examples/basic.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-basic-allocate]
+   :end-before: [pw_allocator-examples-basic-allocate]
 
-   MyObject* Create(pw::allocator::Allocator& allocator) {
-      void* buf = allocator.Allocate(pw::allocator::Layout::Of<MyObject>());
-      return buf != nullptr ? new (buf) MyObject() : nullptr;
-   }
+.. code-block:: cpp
 
    // Any of these allocators can be passed to the routine above.
    WithBuffer<LastFitBlockAllocator<uint32_t>, 0x1000> block_allocator;
@@ -39,62 +40,60 @@ increased shared memory, and reduced large reservations.
 Use `dependency injection`_! Write your code to take
 :ref:`module-pw_allocator-api-allocator` parameters, and you can quickly and
 easily change where memory comes from or what additional features are provided
-simply by changing what allocator is passed.
+simply by changing what allocator is passed:
 
-.. code-block:: cpp
+.. literalinclude:: examples/linker_sections.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-linker_sections-injection]
+   :end-before: [pw_allocator-examples-linker_sections-injection]
 
-   // Set up allocators that allocate from SRAM or PSRAM memory.
-   PW_PLACE_IN_SECTION(".sram")
-   alignas(SmallFastObj) std::array<std::byte, 0x4000> sram_buffer;
-   pw::allocator::FirstFitBlockAllocator<uint16_t> sram_allocator(sram_buffer);
+Now you can easily allocate objects in the example above using SRAM, PSRAM, or
+both:
 
-   PW_PLACE_IN_SECTION(".psram")
-   std::array<std::byte, 0x40000> psram_buffer;
-   pw::allocator::WorstFitBlockAllocator<uint32_t>
-     psram_allocator(psram_buffer);
-
-   // Allocate objects from SRAM and PSRAM. Except for the name, the call sites
-   // are agnostic about the kind of memory used.
-   Layout small_fast_layout = pw::allocator::Layout::Of<SmallFastObj>();
-   void* small_fast_buf = sram_allocator.Allocate(small_fast_layout);
-   SmallFastObj* small_fast_obj = new (small_fast_buf) SmallFastObj();
-
-   Layout big_slow_layout = pw::allocator::Layout::Of<BigSlowObj>();
-   void* big_slow_buf = sram_allocator.Allocate(big_slow_layout);
-   BigSlowObj* big_slow_obj = new (big_slow_buf) BigSlowObj();
+.. literalinclude:: examples/linker_sections.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-linker_sections-placement]
+   :end-before: [pw_allocator-examples-linker_sections-placement]
 
 **Worried about forgetting to deallocate?**
 
 Use a smart pointer!
 
-.. code-block:: cpp
-
-   pw::allocator::UniquePtr<MyObject> ptr = allocator.MakeUnique<MyObject>();
+.. literalinclude:: examples/basic.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-basic-make_unique]
+   :end-before: [pw_allocator-examples-basic-make_unique]
 
 **Want to know how much memory has been allocated?**
 
 Pick the metrics you're interested in and track them with a
-:cpp:type:`pw::allocator::TrackingAllocator`:
+:ref:`module-pw_allocator-api-tracking_allocator`:
 
-.. code-block:: cpp
+.. literalinclude:: examples/metrics.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-metrics-custom_metrics1]
+   :end-before: [pw_allocator-examples-metrics-custom_metrics1]
 
-   struct MyMetrics {
-      PW_ALLOCATOR_METRICS_ENABLE(allocated_bytes);
-      PW_ALLOCATOR_METRICS_ENABLE(peak_allocated_bytes);
-   };
-
-   pw::allocator::TrackingAllocator<MyMetrics> tracker(allocator);
+.. literalinclude:: examples/metrics.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-metrics-custom_metrics2]
+   :end-before: [pw_allocator-examples-metrics-custom_metrics2]
 
 **Need to share the allocator with another thread or an interrupt handler?**
 
-Use a :cpp:type:`pw::allocator::SynchronizedAllocator` with the lock of your
-choice:
+Use a :ref:`module-pw_allocator-api-synchronized_allocator` with the lock of
+your choice:
 
-.. code-block:: cpp
-
-   pw::sync::InterruptSpinLock isl;
-   pw::allocator::SynchronizedAllocator<pw::sync::InterruptSpinLock>
-      synchronized(tracker, isl);
+.. literalinclude:: examples/spin_lock.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-spin_lock]
+   :end-before: [pw_allocator-examples-spin_lock]
 
 .. tip:: Check out the :ref:`module-pw_allocator-guides` for even more code
    samples!

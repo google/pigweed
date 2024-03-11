@@ -1,0 +1,164 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_bloat/bloat.gni")
+import("$dir_pw_perf_test/perf_test.gni")
+import("$dir_pw_sync/backend.gni")
+import("$dir_pw_thread/backend.gni")
+import("$dir_pw_unit_test/test.gni")
+
+# Libraries
+
+config("default_config") {
+  include_dirs = [ dir_pw_allocator ]
+}
+
+pw_source_set("named_u32") {
+  public_configs = [ ":default_config" ]
+  public = [ "named_u32.h" ]
+  public_deps = [
+    dir_pw_bytes,
+    dir_pw_string,
+  ]
+}
+
+pw_test("block_allocator") {
+  deps = [
+    ":named_u32",
+    "$dir_pw_allocator:block_allocator",
+  ]
+  sources = [ "block_allocator.cc" ]
+}
+
+pw_source_set("custom_allocator") {
+  public_configs = [ ":default_config" ]
+  public = [ "custom_allocator.h" ]
+  public_deps = [ "$dir_pw_allocator:allocator" ]
+  sources = [ "custom_allocator.cc" ]
+  deps = [ dir_pw_log ]
+}
+
+pw_source_set("custom_allocator_test_harness") {
+  public_configs = [ ":default_config" ]
+  public = [ "custom_allocator_test_harness.h" ]
+  public_deps = [
+    ":custom_allocator",
+    "$dir_pw_allocator:test_harness",
+    "$dir_pw_allocator:testing",
+  ]
+}
+
+# Examples
+
+pw_test("basic") {
+  deps = [
+    ":named_u32",
+    "$dir_pw_allocator:allocator",
+    "$dir_pw_allocator:testing",
+  ]
+  sources = [ "basic.cc" ]
+}
+
+pw_test("custom_allocator_perf_test") {
+  enable_if = pw_perf_test_TIMER_INTERFACE_BACKEND != ""
+  deps = [
+    ":custom_allocator_test_harness",
+    dir_pw_perf_test,
+    dir_pw_random,
+  ]
+  sources = [ "custom_allocator_perf_test.cc" ]
+}
+
+pw_test("custom_allocator_test") {
+  deps = [
+    ":custom_allocator",
+    ":custom_allocator_test_harness",
+    ":named_u32",
+    "$dir_pw_allocator:fuzzing",
+    "$dir_pw_allocator:testing",
+    "$dir_pw_containers:vector",
+    "$dir_pw_fuzzer:fuzztest",
+  ]
+  sources = [ "custom_allocator_test.cc" ]
+}
+
+pw_test("linker_sections") {
+  deps = [
+    ":named_u32",
+    "$dir_pw_allocator:allocator",
+    "$dir_pw_allocator:block_allocator",
+  ]
+  sources = [ "linker_sections.cc" ]
+}
+
+pw_test("metrics") {
+  deps = [
+    ":named_u32",
+    "$dir_pw_allocator:testing",
+    "$dir_pw_allocator:tracking_allocator",
+    dir_pw_tokenizer,
+  ]
+  sources = [ "metrics.cc" ]
+}
+
+pw_executable("size_report") {
+  check_includes = false
+  sources = [ "size_report.cc" ]
+  deps = [
+    ":custom_allocator",
+    "$dir_pw_allocator:block_allocator",
+    "$dir_pw_allocator:size_reporter",
+  ]
+}
+
+pw_test("spin_lock") {
+  enable_if = pw_sync_INTERRUPT_SPIN_LOCK_BACKEND != "" &&
+              pw_thread_TEST_THREAD_CONTEXT_BACKEND != ""
+  deps = [
+    ":named_u32",
+    "$dir_pw_allocator:synchronized_allocator",
+    "$dir_pw_allocator:testing",
+    "$dir_pw_sync:interrupt_spin_lock",
+    "$dir_pw_thread:test_thread_context",
+    "$dir_pw_thread:thread",
+    "$dir_pw_thread:thread_core",
+    dir_pw_assert,
+  ]
+  sources = [ "spin_lock.cc" ]
+}
+
+pw_test_group("examples") {
+  tests = [
+    ":basic",
+    ":block_allocator",
+    ":custom_allocator_test",
+    ":custom_allocator_perf_test",
+    ":linker_sections",
+    ":metrics",
+    ":spin_lock",
+  ]
+}
+
+pw_size_diff("custom_allocator_size_report") {
+  title = "Example size report"
+  binaries = [
+    {
+      target = ":size_report"
+      base = "$dir_pw_allocator/size_report:first_fit_block_allocator"
+      label = "CustomAllocator"
+    },
+  ]
+}
