@@ -71,14 +71,22 @@ extern "C" void pw_sys_io_Init() {
   GPIO_InitStruct.Pin = USART_GPIO_TX_PIN;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
+#if defined(STM32F0) || defined(STM32F1) || defined(STM32F3)
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+#else
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+#endif
   GPIO_InitStruct.Alternate = USART_GPIO_ALTERNATE_FUNC;
   HAL_GPIO_Init(USART_GPIO_TX_PORT, &GPIO_InitStruct);
 
   GPIO_InitStruct.Pin = USART_GPIO_RX_PIN;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
+#if defined(STM32F0) || defined(STM32F1) || defined(STM32F3)
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+#else
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+#endif
   GPIO_InitStruct.Alternate = USART_GPIO_ALTERNATE_FUNC;
   HAL_GPIO_Init(USART_GPIO_RX_PORT, &GPIO_InitStruct);
 
