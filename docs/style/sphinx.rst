@@ -258,6 +258,11 @@ Whenever possible, document APIs in the source code and use Sphinx to generate
 documentation for them. This keeps the documentation in sync with the code and
 reduces duplication.
 
+C/C++
+-----
+Doxygen comments in C and C++ are surfaced in Sphinx using the Breathe
+extension. See :ref:`docs-pw-style-doxygen` for usage.
+
 Python
 ------
 Include Python API documentation from docstrings with `autodoc directives`_.
