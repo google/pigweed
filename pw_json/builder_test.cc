@@ -22,7 +22,6 @@
 #include "pw_compilation_testing/negative_compilation.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw {
 namespace {
 
 using namespace std::string_view_literals;
@@ -35,14 +34,14 @@ static_assert([] {
   std::string_view features[] = {"values", "arrays", "objects", "nesting!"};
 
   // DOCTSAG: [pw-json-builder-example-1]
-  JsonBuffer<256> json_buffer;
-  JsonObject& object = json_buffer.StartObject();
+  pw::JsonBuffer<256> json_buffer;
+  pw::JsonObject& object = json_buffer.StartObject();
   object.Add("tagline", "Easy, efficient JSON serialization!")
       .Add("simple", is_simple)
       .Add("safe", safety_percentage)
       .Add("dynamic allocation", false);
 
-  NestedJsonArray nested_array = object.AddNestedArray("features");
+  pw::NestedJsonArray nested_array = object.AddNestedArray("features");
   for (const std::string_view& feature : features) {
     nested_array.Append(feature);
   }
@@ -60,8 +59,8 @@ static_assert([] {
   // DOCTSAG: [pw-json-builder-example-2]
   // Declare a JsonBuffer (JsonBuilder with included buffer) and start a JSON
   // object in it.
-  JsonBuffer<128> json_buffer;
-  JsonObject& json = json_buffer.StartObject();
+  pw::JsonBuffer<128> json_buffer;
+  pw::JsonObject& json = json_buffer.StartObject();
 
   const char* name = "Crag";
   constexpr const char* kOccupationKey = "job";
@@ -103,6 +102,11 @@ static_assert([] {
   return json_buffer;
 }() == R"({"name": "Crag", "job": "hacker", "skills": [20, 1, 1, 1],)"
        R"( "items": {"misc": [null]}})"sv);
+
+}  // namespace
+
+namespace pw {
+namespace {
 
 class JsonOverflowTest : public ::testing::Test {
  public:
