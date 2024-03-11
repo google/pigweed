@@ -84,17 +84,6 @@ public class Service {
   }
 
   /**
-   * Declares a unary service method.
-   *
-   * @deprecated Pass `ProtobufType.parser()` instead of `ProtobufType.class`.
-   */
-  @Deprecated
-  public static Method.Builder unaryMethod(
-      String name, Class<? extends MessageLite> request, Class<? extends MessageLite> response) {
-    return unaryMethod(name, getParser(request), getParser(response));
-  }
-
-  /**
    * Declares a server streaming service method.
    *
    * @param name The method name within the service, e.g. "MyMethod" for my_pkg.MyService.MyMethod.
@@ -109,17 +98,6 @@ public class Service {
         .setName(name)
         .setRequestParser(request)
         .setResponseParser(response);
-  }
-
-  /**
-   * Declares a server streaming service method.
-   *
-   * @deprecated Pass `ProtobufType.parser()` instead of `ProtobufType.class`.
-   */
-  @Deprecated
-  public static Method.Builder serverStreamingMethod(
-      String name, Class<? extends MessageLite> request, Class<? extends MessageLite> response) {
-    return serverStreamingMethod(name, getParser(request), getParser(response));
   }
 
   /**
@@ -140,17 +118,6 @@ public class Service {
   }
 
   /**
-   * Declares a client streaming service method.
-   *
-   * @deprecated Pass `ProtobufType.parser()` instead of `ProtobufType.class`.
-   */
-  @Deprecated
-  public static Method.Builder clientStreamingMethod(
-      String name, Class<? extends MessageLite> request, Class<? extends MessageLite> response) {
-    return clientStreamingMethod(name, getParser(request), getParser(response));
-  }
-
-  /**
    * Declares a bidirectional streaming service method.
    *
    * @param name The method name within the service, e.g. "MyMethod" for my_pkg.MyService.MyMethod.
@@ -165,17 +132,6 @@ public class Service {
         .setName(name)
         .setRequestParser(request)
         .setResponseParser(response);
-  }
-
-  /**
-   * Declares a bidirectional streaming service method.
-   *
-   * @deprecated Pass `ProtobufType.parser()` instead of `ProtobufType.class`.
-   */
-  @Deprecated
-  public static Method.Builder bidirectionalStreamingMethod(
-      String name, Class<? extends MessageLite> request, Class<? extends MessageLite> response) {
-    return bidirectionalStreamingMethod(name, getParser(request), getParser(response));
   }
 
   /**

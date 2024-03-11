@@ -75,16 +75,6 @@ public interface Call {
     boolean write(RequestT request) throws ChannelOutputException;
 
     /**
-     * send() was renamed to write() for consistency with other pw_rpc clients.
-     *
-     * @deprecated Renamed to write(); call write() instead
-     */
-    @Deprecated
-    default void send(RequestT request) throws ChannelOutputException {
-      write(request);
-    }
-
-    /**
      * Signals to the server that the client stream has completed.
      *
      * Sends a client stream end packet to the server. Does nothing if the call is inactive.

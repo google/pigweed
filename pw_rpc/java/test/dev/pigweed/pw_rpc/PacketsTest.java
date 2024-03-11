@@ -22,8 +22,8 @@ import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
 import org.junit.Test;
 
 public final class PacketsTest {
-  private static final Service SERVICE =
-      new Service("Greetings", Service.unaryMethod("Hello", RpcPacket.class, RpcPacket.class));
+  private static final Service SERVICE = new Service(
+      "Greetings", Service.unaryMethod("Hello", RpcPacket.parser(), RpcPacket.parser()));
 
   private static final PendingRpc RPC =
       PendingRpc.create(new Channel(123, null), SERVICE.method("Hello"));
