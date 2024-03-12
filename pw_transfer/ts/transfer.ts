@@ -128,24 +128,14 @@ export abstract class Transfer {
     this.responseTimer?.start();
   };
 
-  /** Sends an error chunk to the server and finishes the transfer. */
-  protected sendError(error: Status): void {
-    const chunk = new Chunk();
-    chunk.setStatus(error);
-    chunk.setTransferId(this.id);
-    chunk.setType(Chunk.Type.COMPLETION);
-    this.sendChunk(chunk);
-    this.finish(error);
-  }
-
   /** Sends the initial chunk of the transfer. */
   begin(): void {
     this.sendChunk(this.initialChunk as any);
     this.responseTimer?.start();
   }
 
-  /** Ends the transfer with the specified status. */
-  finish(status: Status): void {
+  /** Ends the transfer with the specified status */
+  protected finish(status: Status): void {
     this.responseTimer?.stop();
     this.responseTimer = undefined;
     this.status = status;
@@ -156,6 +146,21 @@ export abstract class Transfer {
     }
 
     this.resolve!(this.status);
+  }
+
+  /** Ends the transfer without sending a completion chunk */
+  abort(status: Status): void {
+    this.finish(status);
+  }
+
+  /** Ends the transfer and sends a completion chunk */
+  terminate(status: Status): void {
+    const chunk = new Chunk();
+    chunk.setStatus(status);
+    chunk.setTransferId(this.id);
+    chunk.setType(Chunk.Type.COMPLETION);
+    this.sendChunk(chunk);
+    this.abort(status);
   }
 
   /** Invokes the provided progress callback, if any, with the progress */
@@ -295,12 +300,7 @@ export class ReadTransfer extends Transfer {
     if (chunk.hasRemainingBytes()) {
       if (chunk.getRemainingBytes() === 0) {
         // No more data to read. Acknowledge receipt and finish.
-        const endChunk = new Chunk();
-        endChunk.setTransferId(this.id);
-        endChunk.setStatus(Status.OK);
-        endChunk.setType(Chunk.Type.COMPLETION);
-        this.sendChunk(endChunk);
-        this.finish(Status.OK);
+        this.terminate(Status.OK);
         return;
       }
 
@@ -323,7 +323,7 @@ export class ReadTransfer extends Transfer {
             this.offset
           })`,
         );
-        this.sendError(Status.INTERNAL);
+        this.terminate(Status.INTERNAL);
         return;
       }
 
@@ -335,7 +335,7 @@ export class ReadTransfer extends Transfer {
             this.windowEndOffset
           })`,
         );
-        this.sendError(Status.INTERNAL);
+        this.terminate(Status.INTERNAL);
         return;
       }
 
@@ -455,7 +455,7 @@ export class WriteTransfer extends Transfer {
         })`,
       );
 
-      this.sendError(Status.OUT_OF_RANGE);
+      this.terminate(Status.OUT_OF_RANGE);
       return false;
     }
 
@@ -463,7 +463,7 @@ export class WriteTransfer extends Transfer {
       console.error(
         `Transfer ${this.id}: service requested 0 bytes (invalid); aborting`,
       );
-      this.sendError(Status.INTERNAL);
+      this.terminate(Status.INTERNAL);
       return false;
     }
 

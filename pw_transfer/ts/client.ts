@@ -220,7 +220,7 @@ export class Manager {
 
     for (const key in this.readTransfers) {
       const transfer = this.readTransfers[key];
-      transfer.finish(Status.INTERNAL);
+      transfer.abort(Status.INTERNAL);
     }
     this.readTransfers = {};
     console.error(`Read stream shut down ${Status[status]}`);
@@ -241,7 +241,7 @@ export class Manager {
 
       for (const key in this.writeTransfers) {
         const transfer = this.writeTransfers[key];
-        transfer.finish(Status.INTERNAL);
+        transfer.abort(Status.INTERNAL);
       }
       this.writeTransfers = {};
       console.error(`Write stream shut down: ${Status[status]}`);
