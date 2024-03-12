@@ -40,15 +40,15 @@ Create a Pigweed-based project
 
 .. grid:: 2
 
-   .. grid-item-card:: :octicon:`code` Sample Project
-      :link: https://pigweed.googlesource.com/pigweed/sample_project/+/main/README.md
+   .. grid-item-card:: :octicon:`code` Examples
+      :link: https://pigweed.googlesource.com/pigweed/examples/+/main/README.md
       :link-type: url
       :class-item: sales-pitch-cta-secondary
 
-      Fork the Sample Project, a repository that outlines the recommended way to use
-      Pigweed in a broader GN-based project. Note that Bazel is the recommended
-      build system for new projects using Pigweed, whereas this sample project uses
-      GN.
+      Check out the examples repo, a repository that outlines the recommended
+      way to use Pigweed in a broader GN-based project. Note that Bazel is the
+      recommended build system for new projects using Pigweed, whereas the
+      examples repo uses GN.
 
    .. grid-item-card:: :octicon:`code` Kudzu
       :link: docs-kudzu

@@ -247,8 +247,8 @@ In addition to Pigweed's presubmit checks, some projects that use Pigweed run
 their presubmit checks in Pigweed's infrastructure. This supports a development
 flow where projects automatically update their Pigweed submodule if their tests
 pass. If a project cannot build against Pigweed's tip-of-tree, it will stay on
-a fixed Pigweed revision until the issues are fixed. See the `sample project
-<https://pigweed.googlesource.com/pigweed/sample_project/>`_ for an example of
+a fixed Pigweed revision until the issues are fixed. See the `examples
+<https://pigweed.googlesource.com/pigweed/examples/>`_ repo for an example of
 this.
 
 Pigweed does its best to keep builds passing for dependent projects. In some

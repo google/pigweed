@@ -1,21 +1,13 @@
 .. _docs-get-started-upstream:
 
 =============================================
-Get Started With Upstream Pigweed Development
+Get started With upstream Pigweed development
 =============================================
 This guide will walk you through the typical upstream development workflow.
-
-.. note::
-
-  This documentation and the `sample project
-  <https://pigweed.googlesource.com/pigweed/sample_project/+/main/README.md>`_
-  show how to use Pigweed as a library in your existing project. Using Pigweed
-  as the foundation for *new* projects is our intended use case, but you may
-  need more guidance than this documentation provides to do that right now.
-
-  We're happy to help you get your project setup; just drop in our `chat room
-  <https://discord.gg/M9NSeTA>`_ or send a note to the `mailing list
-  <https://groups.google.com/forum/#!forum/pigweed>`_.
+"Upstream development" means that you're contributing to the main Pigweed
+repository, ``https://pigweed.googlesource.com/pigweed/pigweed``. See
+:ref:`docs-get-started` if you're looking for instructions on how to use
+Pigweed in your own project.
 
 .. _prerequisites:
 
@@ -136,7 +128,7 @@ Congratulations, you are now set up to start using Pigweed!
 .. _activate-pigweed-environment:
 
 ---------------------------------
-Activate your Pigweed Environment
+Activate your Pigweed environment
 ---------------------------------
 After going through the initial setup process, your current terminal will be in
 the Pigweed development environment that provides all the tools you should need
@@ -159,7 +151,7 @@ Some major changes may require triggering the bootstrap again, so if you run
 into host tooling changes after a pull it may be worth re-running bootstrap.
 
 ----------------------
-Build Pigweed for Host
+Build Pigweed for host
 ----------------------
 Pigweed's primary build system is GN/Ninja based. There are CMake and Bazel
 builds in-development, but they are incomplete and don't have feature parity
@@ -220,7 +212,7 @@ See below for a demo of this in action:
   :alt: build example using pw watch
 
 ------------------
-Running Unit Tests
+Running unit tests
 ------------------
 Fun fact, you've been running the unit tests already! Ninja builds targeting
 the host automatically build and run the unit tests. Unit tests err on the side
@@ -249,7 +241,7 @@ Depending on your host OS, the compiler will default to either ``clang`` or
 ``gcc``.
 
 ---------------------
-Building for a Device
+Building for a device
 ---------------------
 A Pigweed "target" is a build configuration that includes a toolchain, default
 library configurations, and more to result in binaries that run natively on the
@@ -270,7 +262,7 @@ This is equivalent to the following Ninja invocation:
   $ ninja -C out stm32f429i
 
 -------------------------
-Running Tests on a Device
+Running tests on a device
 -------------------------
 While tests run automatically on the host, it takes a few more steps to get
 tests to run automatically on a device, too. Even though we've verified tests
@@ -278,7 +270,7 @@ pass on the host, it's crucial to verify the same with on-device testing. We've
 encountered some unexpected bugs that can only be found by running the unit
 tests directly on the device.
 
-1. Connect Device(s)
+1. Connect device(s)
 ====================
 Connect any number of STM32F429I-DISC1 boards to your computer using the mini
 USB port on the board (**not** the micro USB). Pigweed will automatically
@@ -292,7 +284,7 @@ and dialout groups.
   :width: 800
   :alt: development boards connected via USB
 
-2. Launch Test Server
+2. Launch test server
 =====================
 To allow Ninja to run tests on an arbitrary number of devices, Ninja will send
 test requests to a server running in the background. Launch the server in
@@ -330,7 +322,7 @@ See the demo below for an example of what this all looks like put together:
   :alt: pw watch running on-device tests
 
 --------------------------
-Building the Documentation
+Building the documentation
 --------------------------
 In addition to the markdown documentation, Pigweed has a collection of
 information-rich RST files that are used to generate HTML documentation. All
@@ -348,7 +340,7 @@ You can explicitly build just the documentation with the command below.
 This concludes the introduction to developing for upstream Pigweed.
 
 ---------------------------
-Building Tests Individually
+Building tests individually
 ---------------------------
 Sometimes it's faster to incrementally build a single test target rather than
 waiting for the whole world to build and all tests to run. GN has a built-in
@@ -380,6 +372,21 @@ In macOS and Linux, ``xargs`` can be used to turn this into a single command:
 ----------
 Next steps
 ----------
+
+Quickstarts
+===========
+Visit :ref:`docs-get-started` to learn how to set up a new Bazel-based
+project, how to add Pigweed to an existing Bazel-based project, and more.
+
+Other modules
+=============
+If you'd like to see more of what Pigweed has to offer, dive into the
+:ref:`docs-module-guides`.
+
+The :ref:`docs-kudzu` repo demonstrates how to use Pigweed in your own project.
+Note that there are many ways to leverage Pigweed and Kudzu is just one
+approach.
+
 Editor setup
 ============
 Check out the :ref:`module-pw_ide` for setting up editor configurations or run
@@ -389,34 +396,15 @@ the following for a quick setup:
 
   pw ide sync
 
-Check out other modules
-=======================
-If you'd like to see more of what Pigweed has to offer, dive into the
-:ref:`docs-module-guides`.
-
-Check out the sample project
-============================
-We have a `sample project
-<https://pigweed.googlesource.com/pigweed/sample_project/+/main/README.md>`_
-that demonstrates how to use Pigweed in your own project. Note that there are
-many ways to leverage Pigweed and the sample project is one approach.
-
-Check out the Hackaday Supercon talk about Pigweed
-==================================================
+Hackaday Supercon talk about Pigweed
+====================================
 We gave a talk at Hackaday's 2021 supercon, `Give Pigweed a Whirl
 <https://hackaday.com/2021/01/13/remoticon-video-pigweed-brings-embedded-unit-testing-library-integration-to-commandline/>`_
 
 We've made improvements since we gave the talk; for example, we now have RTOS
 primitives.
 
-Set up Pigweed for your own project
-===================================
-We don't yet have thorough documentation for leveraging Pigweed in a separate
-project (our intended use case!). The `sample project
-<https://pigweed.googlesource.com/pigweed/sample_project/+/main/README.md>`_
-shows how to use Pigweed as a library in your broader project, but you may need
-further guidance.
-
+Get help
+========
 Dropping into our `chat room <https://discord.gg/M9NSeTA>`_ is the most
-immediate way to get help. Alternatively, you can send a note to the `mailing
-list <https://groups.google.com/forum/#!forum/pigweed>`_.
+immediate way to get help from the Pigweed team.
