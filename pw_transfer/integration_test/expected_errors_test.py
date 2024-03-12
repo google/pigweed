@@ -108,7 +108,8 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
                     {
                         server_failure: {
                             packets_before_failure: [5],
-                            start_immediately: true
+                            start_immediately: true,
+                            only_consider_transfer_chunks: true,
                         }
                     }
                 ]
@@ -142,8 +143,14 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
     )
     def test_server_write_timeout(self, client_type):
         payload = random.Random(67336391945).randbytes(4321)
+
+        # Set pending_bytes to a low value so the server sends multiple
+        # parameters chunks for the proxy to drop.
+        server_config = self.default_server_config()
+        server_config.pending_bytes = 1024
+
         config = TransferConfig(
-            self.default_server_config(),
+            server_config,
             self.default_client_config(),
             text_format.Parse(
                 """
@@ -153,7 +160,12 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
 
                 server_filter_stack: [
                     { hdlc_packetizer: {} },
-                    { server_failure: {packets_before_failure: [5]} }
+                    {
+                        server_failure: {
+                            packets_before_failure: [3],
+                            only_consider_transfer_chunks: true,
+                        }
+                    }
             ]""",
                 config_pb2.ProxyConfig(),
             ),
@@ -220,6 +232,7 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
         # This must be > 8192 in order to exceed the window_end default and
         # cause a timeout on python client
         payload = random.Random(67336391945).randbytes(10321)
+
         config = TransferConfig(
             self.default_server_config(),
             self.default_client_config(),
@@ -229,8 +242,9 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
                     { hdlc_packetizer: {} },
                     {
                         server_failure: {
-                            packets_before_failure: [3],
-                            start_immediately: true
+                            packets_before_failure: [2],
+                            start_immediately: true,
+                            only_consider_transfer_chunks: true,
                         }
                     }
                 ]
@@ -275,7 +289,12 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
 
                 server_filter_stack: [
                     { hdlc_packetizer: {} },
-                    { server_failure: {packets_before_failure: [5]} }
+                    {
+                        server_failure: {
+                            packets_before_failure: [5],
+                            only_consider_transfer_chunks: true,
+                        }
+                    }
             ]""",
                 config_pb2.ProxyConfig(),
             ),

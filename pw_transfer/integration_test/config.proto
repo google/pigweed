@@ -169,6 +169,11 @@ message KeepDropQueueConfig {
   //     Keeps 1 packet,
   //     Drops all further packets.
   repeated int32 keep_drop_queue = 1;
+
+  // If true, only transfer chunks will be counted as part of the keep/drop
+  // cycle. All other types of data received will always be forwarded.
+  // Useful for testing specific transfer failure modes. Defaults to false.
+  bool only_consider_transfer_chunks = 2;
 }
 
 // Configuration for the RateLimiter proxy filter.
@@ -205,6 +210,12 @@ message ServerFailureConfig {
   // will begin counting packets as soon as it is initialized, before the first
   // START is seen.
   bool start_immediately = 2;
+
+  // If true, `packets_before_failure` will only be incremented when a transfer
+  // chunk is processed, and only transfer chunks will be dropped once the limit
+  // is reached. All other types of data received will always be forwarded.
+  // Useful for testing specific transfer failure modes. Defaults to false.
+  bool only_consider_transfer_chunks = 3;
 }
 
 // Configuration for the WindowPacketDropper proxy filter.

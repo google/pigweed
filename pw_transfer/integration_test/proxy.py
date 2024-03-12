@@ -172,6 +172,7 @@ class KeepDropQueue(Filter):
         send_data: Callable[[bytes], Awaitable[None]],
         name: str,
         keep_drop_queue: Iterable[int],
+        only_consider_transfer_chunks: bool = False,
     ):
         super().__init__(send_data)
         self._keep_drop_queue = list(keep_drop_queue)
@@ -179,8 +180,16 @@ class KeepDropQueue(Filter):
         self._current_count = self._keep_drop_queue[0]
         self._keep = True
         self._name = name
+        self._only_consider_transfer_chunks = only_consider_transfer_chunks
 
     async def process(self, data: bytes) -> None:
+        if self._only_consider_transfer_chunks:
+            try:
+                _extract_transfer_chunk(data)
+            except Exception:
+                await self.send_data(data)
+                return
+
         # Move forward through the queue if needed.
         while self._current_count == 0:
             self._loop_idx += 1
@@ -302,12 +311,14 @@ class ServerFailure(Filter):
         name: str,
         packets_before_failure_list: List[int],
         start_immediately: bool = False,
+        only_consider_transfer_chunks: bool = False,
     ):
         super().__init__(send_data)
         self._name = name
         self._relay_packets = True
         self._packets_before_failure_list = packets_before_failure_list
         self._packets_before_failure = None
+        self._only_consider_transfer_chunks = only_consider_transfer_chunks
         if start_immediately:
             self.advance_packets_before_failure()
 
@@ -320,6 +331,13 @@ class ServerFailure(Filter):
             self._packets_before_failure = None
 
     async def process(self, data: bytes) -> None:
+        if self._only_consider_transfer_chunks:
+            try:
+                _extract_transfer_chunk(data)
+            except Exception:
+                await self.send_data(data)
+                return
+
         if self._packets_before_failure is None:
             await self.send_data(data)
         elif self._packets_before_failure > 0:
@@ -515,12 +533,16 @@ async def _handle_simplex_connection(
                 name,
                 server_failure.packets_before_failure,
                 server_failure.start_immediately,
+                server_failure.only_consider_transfer_chunks,
             )
             event_handlers.append(filter_stack.handle_event)
         elif filter_name == "keep_drop_queue":
             keep_drop_queue = config.keep_drop_queue
             filter_stack = KeepDropQueue(
-                filter_stack, name, keep_drop_queue.keep_drop_queue
+                filter_stack,
+                name,
+                keep_drop_queue.keep_drop_queue,
+                keep_drop_queue.only_consider_transfer_chunks,
             )
         elif filter_name == "window_packet_dropper":
             window_packet_dropper = config.window_packet_dropper

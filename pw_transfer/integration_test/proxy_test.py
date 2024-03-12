@@ -144,6 +144,57 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
                 )
             )
 
+    async def test_server_failure_transfer_chunks_only(self):
+        sent_packets = []
+
+        # Async helper so DataTransposer can await on it.
+        async def append(list: List[bytes], data: bytes):
+            list.append(data)
+
+        packets_before_failure = [2]
+        server_failure = proxy.ServerFailure(
+            lambda data: append(sent_packets, data),
+            name="test",
+            packets_before_failure_list=packets_before_failure.copy(),
+            start_immediately=True,
+            only_consider_transfer_chunks=True,
+        )
+
+        transfer_chunk = _encode_rpc_frame(
+            Chunk(ProtocolVersion.VERSION_TWO, Chunk.Type.DATA, data=b'1')
+        )
+
+        packets = [
+            b'1',
+            b'2',
+            transfer_chunk,  # 1
+            b'3',
+            transfer_chunk,  # 2
+            b'4',
+            b'5',
+            transfer_chunk,  # Transfer chunks should be dropped starting here.
+            transfer_chunk,
+            b'6',
+            b'7',
+            transfer_chunk,
+        ]
+
+        for packet in packets:
+            await server_failure.process(packet)
+
+        expected_result = [
+            b'1',
+            b'2',
+            transfer_chunk,
+            b'3',
+            transfer_chunk,
+            b'4',
+            b'5',
+            b'6',
+            b'7',
+        ]
+        self.assertEqual(sent_packets, expected_result)
+
     async def test_keep_drop_queue_loop(self):
         sent_packets: List[bytes] = []
 
@@ -215,6 +266,64 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
             await keep_drop_queue.process(packet)
         self.assertEqual(sent_packets, expected_sequence)
 
+    async def test_keep_drop_queue_transfer_chunks_only(self):
+        sent_packets: List[bytes] = []
+
+        # Async helper so DataTransposer can await on it.
+        async def append(list: List[bytes], data: bytes):
+            list.append(data)
+
+        keep_drop_queue = proxy.KeepDropQueue(
+            lambda data: append(sent_packets, data),
+            name="test",
+            keep_drop_queue=[2, 1, 1, -1],
+            only_consider_transfer_chunks=True,
+        )
+
+        transfer_chunk = _encode_rpc_frame(
+            Chunk(ProtocolVersion.VERSION_TWO, Chunk.Type.DATA, data=b'1')
+        )
+
+        expected_sequence = [
+            b'1',
+            transfer_chunk,
+            b'2',
+            transfer_chunk,
+            b'3',
+            b'4',
+            b'5',
+            b'6',
+            b'7',
+            transfer_chunk,
+            b'8',
+            b'9',
+            b'10',
+        ]
+        input_packets = [
+            b'1',
+            transfer_chunk,  # keep
+            b'2',
+            transfer_chunk,  # keep
+            b'3',
+            b'4',
+            b'5',
+            transfer_chunk,  # drop
+            b'6',
+            b'7',
+            transfer_chunk,  # keep
+            transfer_chunk,  # drop
+            b'8',
+            transfer_chunk,  # drop
+            b'9',
+            transfer_chunk,  # drop
+            transfer_chunk,  # drop
+            b'10',
+        ]
+
+        for packet in input_packets:
+            await keep_drop_queue.process(packet)
+        self.assertEqual(sent_packets, expected_sequence)
+
     async def test_window_packet_dropper(self):
         sent_packets: List[bytes] = []
 
@@ -230,19 +339,44 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
 
         packets = [
             _encode_rpc_frame(
-                Chunk(ProtocolVersion.VERSION_TWO, Chunk.Type.DATA, data=b'1')
+                Chunk(
+                    ProtocolVersion.VERSION_TWO,
+                    Chunk.Type.DATA,
+                    data=b'1',
+                    session_id=1,
+                )
             ),
             _encode_rpc_frame(
-                Chunk(ProtocolVersion.VERSION_TWO, Chunk.Type.DATA, data=b'2')
+                Chunk(
+                    ProtocolVersion.VERSION_TWO,
+                    Chunk.Type.DATA,
+                    data=b'2',
+                    session_id=1,
+                )
             ),
             _encode_rpc_frame(
-                Chunk(ProtocolVersion.VERSION_TWO, Chunk.Type.DATA, data=b'3')
+                Chunk(
+                    ProtocolVersion.VERSION_TWO,
+                    Chunk.Type.DATA,
+                    data=b'3',
+                    session_id=1,
+                )
             ),
             _encode_rpc_frame(
-                Chunk(ProtocolVersion.VERSION_TWO, Chunk.Type.DATA, data=b'4')
+                Chunk(
+                    ProtocolVersion.VERSION_TWO,
+                    Chunk.Type.DATA,
+                    data=b'4',
+                    session_id=1,
+                )
             ),
             _encode_rpc_frame(
-                Chunk(ProtocolVersion.VERSION_TWO, Chunk.Type.DATA, data=b'5')
+                Chunk(
+                    ProtocolVersion.VERSION_TWO,
+                    Chunk.Type.DATA,
+                    data=b'5',
+                    session_id=1,
+                )
             ),
         ]
 
