@@ -145,6 +145,7 @@ if (dir_pw_third_party_llvm_libc != "") {
       "roundlk",
       "sqrtulr",
       "sqrtur",
+      "uksqrtui",
     ]
   }
 
