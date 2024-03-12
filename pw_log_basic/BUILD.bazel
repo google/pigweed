@@ -40,7 +40,7 @@ cc_library(
     deps = [
         ":config_override",
         ":headers",
-        "//pw_log:facade",
+        "//pw_log:pw_log.facade",
         "//pw_string",
         "//pw_sys_io",
     ],

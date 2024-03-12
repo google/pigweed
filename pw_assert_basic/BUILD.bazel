@@ -14,7 +14,7 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_facade",
+    "pw_facade",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -61,27 +61,28 @@ cc_library(
     alwayslink = 1,
 )
 
-pw_cc_facade(
+# TODO: pwbug.dev/328679085 - Remove this alias.
+alias(
     name = "handler_facade",
-    hdrs = [
-        "public/pw_assert_basic/handler.h",
-    ],
-    deps = [
-        "//pw_preprocessor",
-    ],
+    actual = ":pw_assert_basic_handler.facade",
 )
 
-cc_library(
+pw_facade(
     name = "pw_assert_basic_handler",
     srcs = [
         "basic_handler.cc",
     ],
-    deps = [
-        ":handler_facade",
+    hdrs = [
+        "public/pw_assert_basic/handler.h",
+    ],
+    backend = ":pw_assert_basic",
+    implementation_deps = [
         ":pw_assert_basic",
-        "//pw_preprocessor",
         "//pw_string:builder",
         "//pw_sys_io",
+    ],
+    deps = [
+        "//pw_preprocessor",
     ],
     # Other libraries may not always depend on this library, even if it is
     # necessary at link time.

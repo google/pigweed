@@ -15,8 +15,8 @@
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_facade",
     "pw_cc_test",
+    "pw_facade",
 )
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
 
@@ -32,20 +32,7 @@ cc_library(
     includes = ["public"],
 )
 
-pw_cc_facade(
-    name = "system_clock_facade",
-    hdrs = [
-        "public/pw_chrono/internal/system_clock_macros.h",
-        "public/pw_chrono/system_clock.h",
-    ],
-    includes = ["public"],
-    deps = [
-        ":epoch",
-        "//pw_preprocessor",
-    ],
-)
-
-cc_library(
+pw_facade(
     name = "system_clock",
     srcs = [
         "system_clock.cc",
@@ -54,11 +41,11 @@ cc_library(
         "public/pw_chrono/internal/system_clock_macros.h",
         "public/pw_chrono/system_clock.h",
     ],
+    backend = "@pigweed//targets:pw_chrono_system_clock_backend",
     includes = ["public"],
     deps = [
         ":epoch",
         "//pw_preprocessor",
-        "@pigweed//targets:pw_chrono_system_clock_backend",
     ],
 )
 
@@ -73,23 +60,15 @@ cc_library(
     }),
 )
 
-cc_library(
-    name = "system_timer_facade",
+pw_facade(
+    name = "system_timer",
     hdrs = [
         "public/pw_chrono/system_timer.h",
     ],
+    backend = "@pigweed//targets:pw_chrono_system_timer_backend",
     includes = ["public"],
     deps = [
         ":system_clock",
-        "//pw_function",
-    ],
-)
-
-cc_library(
-    name = "system_timer",
-    deps = [
-        ":system_timer_facade",
-        "@pigweed//targets:pw_chrono_system_timer_backend",
     ],
 )
 

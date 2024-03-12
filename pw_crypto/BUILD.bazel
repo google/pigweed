@@ -14,34 +14,20 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_facade",
     "pw_cc_test",
+    "pw_facade",
 )
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_facade(
-    name = "sha256_facade",
-    hdrs = [
-        "public/pw_crypto/sha256.h",
-    ],
-    includes = ["public"],
-    deps = [
-        "//pw_assert",
-        "//pw_bytes",
-        "//pw_log",
-        "//pw_status",
-        "//pw_stream",
-    ],
-)
-
-cc_library(
+pw_facade(
     name = "sha256",
     hdrs = [
         "public/pw_crypto/sha256.h",
     ],
+    backend = "@pigweed//targets:pw_crypto_sha256_backend",
     includes = ["public"],
     deps = [
         "//pw_assert",
@@ -49,7 +35,6 @@ cc_library(
         "//pw_log",
         "//pw_status",
         "//pw_stream",
-        "@pigweed//targets:pw_crypto_sha256_backend",
     ],
 )
 
@@ -116,28 +101,16 @@ pw_cc_test(
     ],
 )
 
-pw_cc_facade(
-    name = "ecdsa_facade",
-    hdrs = [
-        "public/pw_crypto/ecdsa.h",
-    ],
-    includes = ["public"],
-    deps = [
-        "//pw_bytes",
-        "//pw_status",
-    ],
-)
-
-cc_library(
+pw_facade(
     name = "ecdsa",
     hdrs = [
         "public/pw_crypto/ecdsa.h",
     ],
+    backend = "@pigweed//targets:pw_crypto_ecdsa_backend",
     includes = ["public"],
     deps = [
         "//pw_bytes",
         "//pw_status",
-        "@pigweed//targets:pw_crypto_ecdsa_backend",
     ],
 )
 

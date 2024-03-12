@@ -41,7 +41,7 @@ cc_library(
 cc_library(
     name = "pw_log_null",
     deps = [
-        "//pw_log:facade",
+        "//pw_log:pw_log.facade",
         "//pw_log_null:headers",
     ],
 )

@@ -32,6 +32,6 @@ cc_library(
     target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         "//pw_sys_io:default_putget_bytes",
-        "//pw_sys_io:facade",
+        "//pw_sys_io:pw_sys_io.facade",
     ],
 )

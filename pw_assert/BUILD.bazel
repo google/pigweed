@@ -14,32 +14,21 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_facade",
     "pw_cc_test",
+    "pw_facade",
 )
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_facade(
+# TODO: pwbug.dev/328679085 - Remove this alias.
+alias(
     name = "facade",
-    hdrs = [
-        "public/pw_assert/assert.h",
-        "public/pw_assert/check.h",
-        "public/pw_assert/internal/check_impl.h",
-        "public/pw_assert/short.h",
-    ],
-    includes = [
-        "public",
-    ],
-    deps = [
-        ":config",
-        "//pw_preprocessor",
-    ],
+    actual = ":pw_assert.facade",
 )
 
-cc_library(
+pw_facade(
     name = "pw_assert",
     hdrs = [
         "public/pw_assert/assert.h",
@@ -47,13 +36,13 @@ cc_library(
         "public/pw_assert/internal/check_impl.h",
         "public/pw_assert/short.h",
     ],
+    backend = "@pigweed//targets:pw_assert_backend",
     includes = [
         "public",
     ],
     deps = [
         ":config",
         "//pw_preprocessor",
-        "@pigweed//targets:pw_assert_backend",
     ],
 )
 

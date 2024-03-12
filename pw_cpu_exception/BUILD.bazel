@@ -14,7 +14,7 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_facade",
+    "pw_facade",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -48,61 +48,38 @@ constraint_setting(
     name = "support_constraint_setting",
 )
 
-pw_cc_facade(
-    name = "entry_facade",
-    hdrs = [
-        "public/pw_cpu_exception/entry.h",
-        "public/pw_cpu_exception/state.h",
-    ],
-    includes = ["public"],
-    deps = ["//pw_preprocessor"],
-)
-
-cc_library(
+pw_facade(
     name = "entry",
     hdrs = [
         "public/pw_cpu_exception/entry.h",
         "public/pw_cpu_exception/state.h",
     ],
+    backend = ":entry_backend",
     includes = ["public"],
     deps = [
-        ":entry_backend",
         "//pw_preprocessor",
     ],
 )
 
-pw_cc_facade(
-    name = "handler_facade",
-    hdrs = ["public/pw_cpu_exception/handler.h"],
-    includes = ["public"],
-    deps = [":entry"],
-)
-
-cc_library(
+pw_facade(
     name = "handler",
     srcs = ["start_exception_handler.cc"],
     hdrs = ["public/pw_cpu_exception/handler.h"],
-    includes = ["public"],
-    deps = [
-        ":handler_backend",
+    backend = ":handler_backend",
+    implementation_deps = [
         "//pw_preprocessor",
     ],
-)
-
-pw_cc_facade(
-    name = "support_facade",
-    hdrs = ["public/pw_cpu_exception/support.h"],
     includes = ["public"],
     deps = [":entry"],
 )
 
-cc_library(
+pw_facade(
     name = "support",
     hdrs = ["public/pw_cpu_exception/support.h"],
+    backend = ":support_backend",
     includes = ["public"],
     deps = [
         ":entry",
-        ":support_backend",
     ],
 )
 

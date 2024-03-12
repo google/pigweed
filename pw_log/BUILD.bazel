@@ -15,8 +15,8 @@
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_facade",
     "pw_cc_test",
+    "pw_facade",
 )
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
 
@@ -24,25 +24,17 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_facade(
+# TODO: pwbug.dev/328679085 - Remove this alias once no-one uses it.
+alias(
     name = "facade",
-    hdrs = [
-        "public/pw_log/config.h",
-        "public/pw_log/levels.h",
-        "public/pw_log/log.h",
-        "public/pw_log/options.h",
-        "public/pw_log/short.h",
-        "public/pw_log/shorter.h",
-    ],
-    includes = ["public"],
-    deps = [
-        ":config_override",
-        "//pw_preprocessor",
-    ],
+    actual = "pw_log.facade",
 )
 
-cc_library(
+pw_facade(
     name = "pw_log",
+    srcs = [
+        "public/pw_log/tokenized_args.h",
+    ],
     hdrs = [
         "public/pw_log/config.h",
         "public/pw_log/levels.h",
@@ -50,13 +42,12 @@ cc_library(
         "public/pw_log/options.h",
         "public/pw_log/short.h",
         "public/pw_log/shorter.h",
-        "public/pw_log/tokenized_args.h",
     ],
+    backend = "@pigweed//targets:pw_log_backend",
     includes = ["public"],
     deps = [
         ":config_override",
         "//pw_preprocessor",
-        "@pigweed//targets:pw_log_backend",
     ],
 )
 
@@ -101,8 +92,8 @@ cc_library(
         "public/pw_log/proto_utils.h",
     ],
     deps = [
-        ":facade",
         ":log_proto_cc.pwpb",
+        ":pw_log.facade",
         "//pw_bytes",
         "//pw_log_tokenized:headers",
         "//pw_protobuf",
@@ -151,8 +142,8 @@ pw_cc_test(
         "basic_log_test_plain_c.c",
     ],
     deps = [
-        ":facade",
         ":pw_log",
+        ":pw_log.facade",
         "//pw_preprocessor",
         "//pw_unit_test",
     ],
@@ -175,9 +166,9 @@ pw_cc_test(
         "proto_utils_test.cc",
     ],
     deps = [
-        ":facade",
         ":log_proto_cc.pwpb",
         ":proto_utils",
+        ":pw_log.facade",
         "//pw_containers",
         "//pw_preprocessor",
         "//pw_protobuf",

@@ -14,7 +14,7 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_facade",
+    "pw_facade",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -25,23 +25,19 @@ constraint_setting(
     name = "backend_constraint_setting",
 )
 
-pw_cc_facade(
+# TODO: pwbug.dev/328679085 - Remove this alias once no-one uses it.
+alias(
     name = "facade",
-    hdrs = [
-        "public/pw_malloc/malloc.h",
-    ],
-    includes = ["public"],
+    actual = "pw_malloc.facade",
 )
 
-cc_library(
+pw_facade(
     name = "pw_malloc",
     hdrs = [
         "public/pw_malloc/malloc.h",
     ],
+    backend = "@pigweed//targets:pw_malloc_backend",
     includes = ["public"],
-    deps = [
-        "@pigweed//targets:pw_malloc_backend",
-    ],
 )
 
 alias(

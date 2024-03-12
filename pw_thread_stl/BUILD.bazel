@@ -87,7 +87,7 @@ cc_library(
     srcs = ["thread_iteration.cc"],
     deps = [
         "//pw_status",
-        "//pw_thread:thread_iteration_facade",
+        "//pw_thread:thread_iteration.facade",
     ],
 )
 

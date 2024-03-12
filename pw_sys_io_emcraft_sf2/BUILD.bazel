@@ -36,7 +36,7 @@ cc_library(
         "//pw_boot_cortex_m:armv7m",
         "//pw_preprocessor",
         "//pw_sys_io:default_putget_bytes",
-        "//pw_sys_io:facade",
+        "//pw_sys_io:pw_sys_io.facade",
     ],
 )
 

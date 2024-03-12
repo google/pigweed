@@ -14,33 +14,28 @@
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_facade",
+    "pw_facade",
 )
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_facade(
+# TODO: pwbug.dev/328679085 - Remove this alias.
+alias(
     name = "facade",
-    hdrs = [
-        "public/pw_boot/boot.h",
-    ],
-    includes = ["public"],
-    deps = [
-        "//pw_preprocessor",
-    ],
+    actual = ":pw_boot.facade",
 )
 
-cc_library(
+pw_facade(
     name = "pw_boot",
     hdrs = [
         "public/pw_boot/boot.h",
     ],
+    backend = "@pigweed//targets:pw_boot_backend",
     includes = ["public"],
     deps = [
         "//pw_preprocessor",
-        "@pigweed//targets:pw_boot_backend",
     ],
 )
 

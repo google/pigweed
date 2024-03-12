@@ -15,7 +15,7 @@
 load(
     "//pw_build:pigweed.bzl",
     "host_backend_alias",
-    "pw_cc_facade",
+    "pw_facade",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -26,9 +26,16 @@ constraint_setting(
     name = "backend_constraint_setting",
 )
 
-pw_cc_facade(
+# TODO: pwbug.dev/328679085 - Remove this alias once no-one uses it.
+alias(
     name = "facade",
+    actual = ":pw_sys_io.facade",
+)
+
+pw_facade(
+    name = "pw_sys_io",
     hdrs = ["public/pw_sys_io/sys_io.h"],
+    backend = "@pigweed//targets:pw_sys_io_backend",
     includes = ["public"],
     deps = [
         "//pw_bytes",
@@ -43,17 +50,6 @@ cc_library(
         ":facade",
         "//pw_span",
         "//pw_status",
-    ],
-)
-
-cc_library(
-    name = "pw_sys_io",
-    hdrs = ["public/pw_sys_io/sys_io.h"],
-    includes = ["public"],
-    deps = [
-        "//pw_bytes",
-        "//pw_status",
-        "@pigweed//targets:pw_sys_io_backend",
     ],
 )
 

@@ -15,8 +15,8 @@
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load(
     "//pw_build:pigweed.bzl",
-    "pw_cc_facade",
     "pw_cc_test",
+    "pw_facade",
 )
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
 
@@ -24,23 +24,13 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_facade(
-    name = "id_facade",
-    hdrs = [
-        "public/pw_thread/id.h",
-    ],
-    includes = ["public"],
-)
-
-cc_library(
+pw_facade(
     name = "id",
     hdrs = [
         "public/pw_thread/id.h",
     ],
+    backend = "@pigweed//targets:pw_thread_id_backend",
     includes = ["public"],
-    deps = [
-        "@pigweed//targets:pw_thread_id_backend",
-    ],
 )
 
 cc_library(
@@ -73,30 +63,17 @@ cc_library(
     deps = ["//pw_span"],
 )
 
-pw_cc_facade(
-    name = "thread_iteration_facade",
-    hdrs = [
-        "public/pw_thread/thread_iteration.h",
-    ],
-    includes = ["public"],
-    deps = [
-        ":thread_info",
-        "//pw_function",
-        "//pw_status",
-    ],
-)
-
-cc_library(
+pw_facade(
     name = "thread_iteration",
     hdrs = [
         "public/pw_thread/thread_iteration.h",
     ],
+    backend = "@pigweed//targets:pw_thread_iteration_backend",
     includes = ["public"],
     deps = [
         ":thread_info",
         "//pw_function",
         "//pw_status",
-        "@pigweed//targets:pw_thread_iteration_backend",
     ],
 )
 
@@ -111,19 +88,7 @@ cc_library(
     }),
 )
 
-pw_cc_facade(
-    name = "sleep_facade",
-    hdrs = [
-        "public/pw_thread/sleep.h",
-    ],
-    includes = ["public"],
-    deps = [
-        "//pw_chrono:system_clock",
-        "//pw_preprocessor",
-    ],
-)
-
-cc_library(
+pw_facade(
     name = "sleep",
     srcs = [
         "sleep.cc",
@@ -131,12 +96,14 @@ cc_library(
     hdrs = [
         "public/pw_thread/sleep.h",
     ],
+    backend = "@pigweed//targets:pw_thread_sleep_backend",
+    implementation_deps = [
+        ":id",
+    ],
     includes = ["public"],
     deps = [
-        ":id",
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
-        "@pigweed//targets:pw_thread_sleep_backend",
     ],
 )
 
@@ -151,34 +118,21 @@ cc_library(
     }),
 )
 
-pw_cc_facade(
-    name = "thread_facade",
-    hdrs = [
-        "public/pw_thread/detached_thread.h",
-        "public/pw_thread/thread.h",
-    ],
-    includes = ["public"],
-    deps = [
-        ":id_facade",
-        ":thread_core",
-    ],
-)
-
-cc_library(
+pw_facade(
     name = "thread",
     srcs = [
+        "public/pw_thread/config.h",
         "thread.cc",
     ],
     hdrs = [
-        "public/pw_thread/config.h",
         "public/pw_thread/detached_thread.h",
         "public/pw_thread/thread.h",
     ],
+    backend = "@pigweed//targets:pw_thread_thread_backend",
     includes = ["public"],
     deps = [
         ":id",
         ":thread_core",
-        "@pigweed//targets:pw_thread_thread_backend",
     ],
 )
 
@@ -237,37 +191,16 @@ cc_library(
     }),
 )
 
-pw_cc_facade(
-    name = "test_thread_context_facade",
-    hdrs = [
-        "public/pw_thread/test_thread_context.h",
-    ],
-    includes = ["public"],
-)
-
-cc_library(
+pw_facade(
     name = "test_thread_context",
     hdrs = [
         "public/pw_thread/test_thread_context.h",
     ],
+    backend = "@pigweed//targets:pw_thread_test_thread_context_backend",
     includes = ["public"],
-    deps = [
-        "@pigweed//targets:pw_thread_test_thread_context_backend",
-    ],
 )
 
-pw_cc_facade(
-    name = "yield_facade",
-    hdrs = [
-        "public/pw_thread/yield.h",
-    ],
-    includes = ["public"],
-    deps = [
-        "//pw_preprocessor",
-    ],
-)
-
-cc_library(
+pw_facade(
     name = "yield",
     srcs = [
         "yield.cc",
@@ -275,11 +208,13 @@ cc_library(
     hdrs = [
         "public/pw_thread/yield.h",
     ],
+    backend = "@pigweed//targets:pw_thread_yield_backend",
+    implementation_deps = [
+        ":id",
+    ],
     includes = ["public"],
     deps = [
-        ":id",
         "//pw_preprocessor",
-        "@pigweed//targets:pw_thread_yield_backend",
     ],
 )
 
@@ -380,6 +315,7 @@ pw_cc_test(
         "sleep_facade_test_c.c",
     ],
     deps = [
+        ":id",
         ":sleep",
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
@@ -423,6 +359,7 @@ pw_cc_test(
         "yield_facade_test_c.c",
     ],
     deps = [
+        ":id",
         ":yield",
         "//pw_preprocessor",
         "//pw_unit_test",
