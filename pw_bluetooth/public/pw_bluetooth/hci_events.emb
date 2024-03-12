@@ -1006,6 +1006,15 @@ struct ReadBdAddrCommandCompleteEvent:
   $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr                bd_addr
 
 
+struct ReadLocalSupportedControllerDelayCommandCompleteEvent:
+  -- 7.7.14 Command Complete event (7.4.11 Read Local Supported Controller Delay command)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  $next [+1]         hci.StatusCode            status
+  $next [+3]         UInt                      min_controller_delay
+  $next [+3]         UInt                      max_controller_delay
+
+
 struct LEReadBufferSizeV2CommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.8.2 LE Read Buffer Size [v2] command)
 
