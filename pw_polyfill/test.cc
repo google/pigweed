@@ -20,10 +20,6 @@ namespace pw {
 namespace polyfill {
 namespace {
 
-PW_INLINE_VARIABLE constexpr int foo = 42;
-
-static_assert(foo == 42, "Error!");
-
 static_assert(PW_CXX_STANDARD_IS_SUPPORTED(98), "C++98 must be supported");
 static_assert(PW_CXX_STANDARD_IS_SUPPORTED(11), "C++11 must be supported");
 static_assert(PW_CXX_STANDARD_IS_SUPPORTED(14), "C++14 must be supported");

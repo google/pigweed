@@ -174,19 +174,16 @@ size_t pw_varint_DecodeCustom(const void* input,
 #include <type_traits>
 
 #include "lib/stdcompat/bit.h"
-#include "pw_polyfill/language_feature_macros.h"
 #include "pw_span/span.h"
 
 namespace pw {
 namespace varint {
 
 /// Maximum size of a varint (LEB128) encoded `uint32_t`.
-PW_INLINE_VARIABLE constexpr size_t kMaxVarint32SizeBytes =
-    PW_VARINT_MAX_INT32_SIZE_BYTES;
+inline constexpr size_t kMaxVarint32SizeBytes = PW_VARINT_MAX_INT32_SIZE_BYTES;
 
 /// Maximum size of a varint (LEB128) encoded `uint64_t`.
-PW_INLINE_VARIABLE constexpr size_t kMaxVarint64SizeBytes =
-    PW_VARINT_MAX_INT64_SIZE_BYTES;
+inline constexpr size_t kMaxVarint64SizeBytes = PW_VARINT_MAX_INT64_SIZE_BYTES;
 
 /// ZigZag encodes a signed integer. This maps small negative numbers to small,
 /// unsigned positive numbers, which improves their density for LEB128 encoding.

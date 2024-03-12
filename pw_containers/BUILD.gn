@@ -113,7 +113,6 @@ pw_source_set("vector") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     dir_pw_assert,
-    dir_pw_polyfill,
     dir_pw_preprocessor,
   ]
   public = [ "public/pw_containers/vector.h" ]

@@ -15,12 +15,6 @@
 // Macros for using C++ features in older standards.
 #pragma once
 
-#ifdef __cpp_inline_variables
-#define PW_INLINE_VARIABLE inline
-#else
-#define PW_INLINE_VARIABLE
-#endif  // __cpp_inline_variables
-
 // Mark functions as constexpr if C++20 or newer
 #if __cplusplus >= 202002L
 #define PW_CONSTEXPR_CPP20 constexpr

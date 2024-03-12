@@ -19,7 +19,6 @@
 #include <type_traits>
 
 #include "pw_assert/assert.h"
-#include "pw_polyfill/language_feature_macros.h"
 
 namespace pw::string_impl {
 
@@ -29,7 +28,7 @@ using size_type = unsigned short;
 
 // Reserved capacity that is used to represent a generic-length
 // pw::InlineString.
-PW_INLINE_VARIABLE constexpr size_t kGeneric = size_type(-1);
+inline constexpr size_t kGeneric = size_type(-1);
 
 template <typename T>
 inline constexpr bool kUseStdCharTraits =

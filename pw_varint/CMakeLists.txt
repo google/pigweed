@@ -21,7 +21,6 @@ pw_add_library(pw_varint STATIC
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_polyfill
     pw_preprocessor
     pw_span
     pw_third_party.fuchsia.stdcompat

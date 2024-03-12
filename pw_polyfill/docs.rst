@@ -33,10 +33,6 @@ work with or without C++ language features.
     - Feature
     - Description
     - Feature test macro
-  * - ``PW_INLINE_VARIABLE``
-    - inline variables
-    - inline if supported by the compiler
-    - ``__cpp_inline_variables``
   * - ``PW_CONSTEXPR_CPP20``
     - ``constexpr``
     - ``constexpr`` if compiling for C++20
