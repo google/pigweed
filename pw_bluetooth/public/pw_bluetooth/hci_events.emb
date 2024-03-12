@@ -1042,6 +1042,14 @@ struct LEReadLocalSupportedFeaturesCommandCompleteEvent:
     0     [+LEFeatureSet.$size_in_bits]  LEFeatureSet              le_features
 
 
+struct LESetupISODataPathCommandCompleteEvent:
+  -- 7.7.14 Command Complete event (7.8.109 LE Setup ISO Data Path command)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  $next [+1]         hci.StatusCode            status
+  $next [+2]         UInt                      connection_handle
+
+
 struct CommandStatusEvent:
   -- 7.7.15 Command Status event
   -- HCI_Command_Status
