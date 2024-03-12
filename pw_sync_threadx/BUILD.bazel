@@ -38,7 +38,7 @@ cc_library(
     deps = [
         "//pw_chrono:system_clock",
         "//pw_interrupt:context",
-        "//pw_sync:binary_semaphore_facade",
+        "//pw_sync:binary_semaphore.facade",
     ],
 )
 

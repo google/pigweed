@@ -22,6 +22,58 @@ load(
     _link_cc = "link_cc",
 )
 
+def pw_facade(name, srcs = None, backend = None, **kwargs):
+    """Create a cc_library with a facade.
+
+    This macro simplifies instantiating Pigweed's facade pattern. It generates
+    two targets:
+
+    * cc_library with the label "name". This is the complete library target.
+      Users of the functionality provided by this library should depend on this
+      target.  It has a public dependency on the "backend".
+    * cc_library with the label "name.facade". This library exposes only the
+      headers. Implementations of the backend should depend on it.
+
+    Args:
+      name: The name of the cc_library.
+      srcs: The source files of the cc_library.
+      backend: The backend for the facade. This should be a label_flag or other
+        target that allows swapping out the backend implementation at build
+        time. (In a downstream project an alias with an "actual = select(...)"
+        attribute may also be appropriate, but in upstream Pigweed use only a
+        label_flag.).
+      **kwargs: Passed on to cc_library.
+    """
+    if type(backend) != "string":
+        fail(
+            "The 'backend' attribute must be a single label, " +
+            "got {} of type {}".format(backend, type(backend)),
+        )
+
+    facade_kwargs = dict(**kwargs)
+
+    # A facade has no srcs, so it can only have public deps. Don't specify any
+    # implementation_deps on the facade target.
+    facade_kwargs.pop("implementation_deps", [])
+    native.cc_library(
+        name = name + ".facade",
+        **facade_kwargs
+    )
+
+    kwargs["deps"] = kwargs.get("deps", []) + [backend]
+    native.cc_library(
+        name = name,
+        srcs = srcs,
+        **kwargs
+    )
+
+    # For simplifying the migration to this macro only. Do not depend on this
+    # target from new code: depend directly on the .facade target instead.
+    native.alias(
+        name = name + "_facade",
+        actual = ":" + name + ".facade",
+    )
+
 def pw_cc_binary(**kwargs):
     """Wrapper for cc_binary providing some defaults.
 

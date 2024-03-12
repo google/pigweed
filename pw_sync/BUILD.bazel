@@ -16,6 +16,7 @@ load(
     "//pw_build:pigweed.bzl",
     "pw_cc_facade",
     "pw_cc_test",
+    "pw_facade",
 )
 load(
     "//pw_build:selects.bzl",
@@ -26,19 +27,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_facade(
-    name = "binary_semaphore_facade",
-    hdrs = [
-        "public/pw_sync/binary_semaphore.h",
-    ],
-    includes = ["public"],
-    deps = [
-        "//pw_chrono:system_clock",
-        "//pw_preprocessor",
-    ],
-)
-
-cc_library(
+pw_facade(
     name = "binary_semaphore",
     srcs = [
         "binary_semaphore.cc",
@@ -46,10 +35,11 @@ cc_library(
     hdrs = [
         "public/pw_sync/binary_semaphore.h",
     ],
+    backend = "@pigweed//targets:pw_sync_binary_semaphore_backend",
+    includes = ["public"],
     deps = [
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
-        "@pigweed//targets:pw_sync_binary_semaphore_backend",
     ],
 )
 

@@ -837,7 +837,8 @@ however it is possible to override this from the command line. e.g.
 Facades and backends tutorial
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This section walks you through an example of configuring :ref:`facade
-<module-pw_build-bazel-pw_cc_facade>` backends in a Pigweed Bazel project.
+<module-pw_build-bazel-pw_facade>` backends in a Pigweed Bazel
+project.
 
 Consider a scenario that you are building a flight controller for a spacecraft.
 But you have very little experience with Pigweed and have just landed here.
@@ -896,7 +897,7 @@ target:
     |                                         @pigweed//pw_chrono_freertos:system_clock
     |                                                   (Actual backend)
     v                                                         |
-   @pigweed//pw_chrono:system_clock_facade <------------------.
+   @pigweed//pw_chrono:system_clock.facade <------------------.
 
 When building ``//:time_is_relative``, Bazel checks the dependencies of
 ``@pigweed//pw_chrono:system_clock`` and finds that it depends on
@@ -949,7 +950,7 @@ files and a BUILD file like,
            "public_overrides",
        ],
        deps = [
-           "//pw_chrono:system_clock_facade",
+           "//pw_chrono:system_clock.facade",
        ],
    )
 
@@ -974,7 +975,7 @@ This modifies the build graph to look something like this:
     |                                         //pw_chrono_my_hardware_rtc:system_clock
     |                                                   (Actual backend)
     v                                                         |
-   @pigweed//pw_chrono:system_clock_facade <------------------.
+   @pigweed//pw_chrono:system_clock.facade <------------------.
 
 Associating backends with platforms through bazelrc
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1112,5 +1113,5 @@ Will result in a build graph that looks like;
     |                     //pw_chrono_my_hardware_rtc:system_clock
     |                     (Actual backend)
     v                                        |
-   @pigweed//pw_chrono:pw_chrono_facade <---.
+   @pigweed//pw_chrono:pw_chrono.facade <---.
 

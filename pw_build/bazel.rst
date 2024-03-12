@@ -54,79 +54,56 @@ rule for handling linker scripts with Bazel. e.g.
     linkopts = ["-T $(location :some_linker_script)"],
   )
 
-.. _module-pw_build-bazel-pw_cc_facade:
+.. _module-pw_build-bazel-pw_facade:
 
-pw_cc_facade
-------------
+pw_facade
+---------
 In Bazel, a :ref:`facade <docs-module-structure-facades>` module has a few
 components:
 
 #. The **facade target**, i.e. the interface to the module. This is what
    *backend implementations* depend on to know what interface they're supposed
-   to implement.  The facade is declared by creating a ``pw_cc_facade`` target,
-   which is just a thin wrapper for ``cc_library``. For example,
-
-   .. code-block:: python
-
-     pw_cc_facade(
-         name = "binary_semaphore_facade",
-         # The header that constitues the facade.
-         hdrs = [
-             "public/pw_sync/binary_semaphore.h",
-         ],
-         includes = ["public"],
-         # Dependencies of this header.
-         deps = [
-             "//pw_chrono:system_clock",
-             "//pw_preprocessor",
-         ],
-     )
-
-   .. note::
-     As pure interfaces, ``pw_cc_facade`` targets should not include any source
-     files. Backend-independent source files should be placed in the "library
-     target" instead.
+   to implement.
 
 #. The **library target**, i.e. both the facade (interface) and backend
    (implementation). This is what *users of the module* depend on. It's a
    regular ``cc_library`` that exposes the same headers as the facade, but
    has a dependency on the "backend label flag" (discussed next). It may also
-   include some source files (if these are backend-independent). For example,
+   include some source files (if these are backend-independent).
+
+   Both the facade and library targets are created using the
+   ``pw_facade`` macro. For example, consider the following
+   macro invocation:
 
    .. code-block:: python
 
-     cc_library(
+     pw_facade(
          name = "binary_semaphore",
          # A backend-independent source file.
          srcs = [
              "binary_semaphore.cc",
          ],
-         # The same header as exposed by the facade.
+         # The facade header.
          hdrs = [
              "public/pw_sync/binary_semaphore.h",
          ],
+         # Dependencies of this header.
          deps = [
-             # Dependencies of this header
              "//pw_chrono:system_clock",
              "//pw_preprocessor",
-             # The backend, hidden behind a label_flag.
+         ],
+         # The backend, hidden behind a label_flag; see below.
+         backend = [
              "@pigweed//targets:pw_sync_binary_semaphore_backend",
          ],
      )
 
-   .. note::
-     You may be tempted to reduce duplication in the BUILD.bazel files and
-     simply add the facade target to the ``deps`` of the library target,
-     instead of re-declaring the facade's ``hdrs`` and ``deps``. *Do not do
-     this!* It's a layering check violation: the facade headers provide the
-     module's interface, and should be directly exposed by the target the users
-     depend on.
+   This macro expands to both the library target, named ``binary_semaphore``,
+   and the facade target, named ``binary_semaphore.facade``.
 
 #. The **backend label flag**. This is a `label_flag
    <https://bazel.build/extending/config#label-typed-build-settings>`_: a
    dependency edge in the build graph that can be overridden by downstream projects.
-   For facades defined in upstream Pigweed, the ``label_flags`` are collected in
-   ``//targets/BUILD.bazel``.
 
 #. The **backend target** implements a particular backend for a facade. It's
    just a plain ``cc_library``, with a dependency on the facade target. For example,
@@ -154,7 +131,7 @@ components:
              "//pw_chrono:system_clock",
              # A dependency on the facade target, which defines the interface
              # this backend target implements.
-             "//pw_sync:binary_semaphore_facade",
+             "//pw_sync:binary_semaphore.facade",
          ],
      )
 
