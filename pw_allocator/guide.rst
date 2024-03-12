@@ -244,9 +244,9 @@ If none of the allocator implementations provided by this module meet your
 needs, you can implement your allocator and pass it into any routine that uses
 the generic interface.
 
-:ref:`module-pw_allocator-api-allocator` uses an `NVI`_ pattern. A custom
-allocator implementation must at a miniumum implement the ``DoAllocate`` and
-``DoDeallocate`` methods.
+:ref:`module-pw_allocator-api-allocator` uses an `NVI`_ pattern. To add a custom
+allocator implementation, you must at a miniumum implement the ``DoAllocate``
+and ``DoDeallocate`` methods.
 
 For example, the following is a forwarding allocator that simply writes to the
 log whenever a threshold is exceeded:

@@ -151,5 +151,49 @@ TEST(AllocatorTest, ReallocateLarger) {
   EXPECT_NE(new_ptr, ptr);
 }
 
+// Test fixture for IsEqual tests.
+class BaseAllocator : public Allocator {
+ public:
+  BaseAllocator(void* ptr) : ptr_(ptr) {}
+
+ private:
+  void* DoAllocate(Layout) override {
+    void* ptr = ptr_;
+    ptr_ = nullptr;
+    return ptr;
+  }
+
+  void DoDeallocate(void*, Layout) override {}
+
+  void* ptr_;
+};
+
+// Test fixture for IsEqual tests.
+class DerivedAllocator : public BaseAllocator {
+ public:
+  DerivedAllocator(size_t value, void* ptr)
+      : BaseAllocator(ptr), value_(value) {}
+  size_t value() const { return value_; }
+
+ private:
+  size_t value_;
+};
+
+TEST(AllocatorTest, IsEqualFailsWithDifferentObjects) {
+  std::array<std::byte, 8> buffer;
+  DerivedAllocator derived1(1, buffer.data());
+  DerivedAllocator derived2(2, buffer.data());
+  EXPECT_FALSE(derived1.IsEqual(derived2));
+  EXPECT_FALSE(derived2.IsEqual(derived1));
+}
+
+TEST(AllocatorTest, IsEqualSucceedsWithSameObject) {
+  std::array<std::byte, 8> buffer;
+  DerivedAllocator derived(1, buffer.data());
+  BaseAllocator* base = &derived;
+  EXPECT_TRUE(derived.IsEqual(*base));
+  EXPECT_TRUE(base->IsEqual(derived));
+}
+
 }  // namespace
 }  // namespace pw::allocator

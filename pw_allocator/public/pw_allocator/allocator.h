@@ -247,6 +247,18 @@ class Allocator {
     return DoQuery(ptr, layout);
   }
 
+  /// Returns whether the given allocator is the same as this one.
+  ///
+  /// This method is used instead of ``operator==`` in keeping with
+  /// ``std::pmr::memory_resource::is_equal``. There currently is no
+  /// corresponding virtual ``DoIsEqual``, as allocators that would require
+  /// ``dynamic_cast`` to properly determine equality are not supported.
+  /// This method will allow the interface to remain unchanged should a future
+  /// need for such allocators arise.
+  ///
+  /// @param[in]  other       Allocator to compare with this object.
+  bool IsEqual(const Allocator& other) const { return this == &other; }
+
  private:
   /// Virtual `Allocate` function implemented by derived classes.
   virtual void* DoAllocate(Layout layout) = 0;

@@ -116,19 +116,30 @@ class AllocatorForTest : public Allocator {
   }
 
  private:
+  /// @copydoc Allocator::Allocate
   void* DoAllocate(Layout layout) override { return tracker_.Allocate(layout); }
+
+  /// @copydoc Allocator::Deallocate
   void DoDeallocate(void* ptr, Layout layout) override {
     tracker_.Deallocate(ptr, layout);
   }
+
+  /// @copydoc Allocator::Reallocate
   void* DoReallocate(void* ptr, Layout layout, size_t new_size) override {
     return tracker_.Reallocate(ptr, layout, new_size);
   }
+
+  /// @copydoc Allocator::Resize
   bool DoResize(void* ptr, Layout layout, size_t new_size) override {
     return tracker_.Resize(ptr, layout, new_size);
   }
+
+  /// @copydoc Allocator::GetLayout
   Result<Layout> DoGetLayout(const void* ptr) const override {
     return tracker_.GetLayout(ptr);
   }
+
+  /// @copydoc Allocator::Query
   Status DoQuery(const void* ptr, Layout layout) const override {
     return tracker_.Query(ptr, layout);
   }
