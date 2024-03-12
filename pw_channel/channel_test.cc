@@ -59,9 +59,40 @@ class Stub : public pw::channel::ByteChannel<kReliable, kReadable, kWritable> {
 
   // Common functions
   pw::async2::Poll<pw::Status> DoPollClose(pw::async2::Context&) override {
-    return pw::Status::Unimplemented();
+    return pw::OkStatus();
   }
 };
+
+TEST(Channel, MethodsShortCircuitAfterCloseReturnsReady) {
+  pw::async2::Dispatcher dispatcher;
+
+  class : public pw::async2::Task {
+   public:
+    Stub channel;
+
+   private:
+    pw::async2::Poll<> DoPend(pw::async2::Context& cx) override {
+      EXPECT_TRUE(channel.is_open());
+      EXPECT_EQ(pw::async2::Ready(pw::OkStatus()), channel.PollClose(cx));
+      EXPECT_FALSE(channel.is_open());
+
+      EXPECT_EQ(pw::Status::FailedPrecondition(),
+                channel.PollRead(cx)->status());
+      EXPECT_EQ(pw::async2::Ready(), channel.PollReadyToWrite(cx));
+      EXPECT_EQ(pw::Status::FailedPrecondition(),
+                channel.Write(pw::multibuf::MultiBuf()).status());
+      EXPECT_EQ(pw::Status::FailedPrecondition(),
+                channel.PollFlush(cx)->status());
+      EXPECT_EQ(pw::async2::Ready(pw::Status::FailedPrecondition()),
+                channel.PollClose(cx));
+
+      return pw::async2::Ready();
+    }
+  } test_task;
+  dispatcher.Post(test_task);
+
+  EXPECT_TRUE(dispatcher.RunUntilStalled().IsReady());
+}
 
 #if PW_NC_TEST(InvalidOrdering)
 PW_NC_EXPECT("Properties must be specified in the following order");

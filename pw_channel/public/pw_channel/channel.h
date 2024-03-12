@@ -170,6 +170,9 @@ class Channel {
   ///   ``Seek`` ing backwards, but no more new data will be produced. The
   ///   channel is still open; writes and seeks may succeed.
   async2::Poll<Result<multibuf::MultiBuf>> PollRead(async2::Context& cx) {
+    if (!is_open()) {
+      return Status::FailedPrecondition();
+    }
     return PollRead(cx, std::numeric_limits<size_t>::max());
   }
 
@@ -177,6 +180,9 @@ class Channel {
   /// This function is hidden on datagram-oriented channels.
   async2::Poll<Result<multibuf::MultiBuf>> PollRead(async2::Context& cx,
                                                     size_t max_bytes) {
+    if (!is_open()) {
+      return Status::FailedPrecondition();
+    }
     return DoPollRead(cx, max_bytes);
   }
 
@@ -195,6 +201,9 @@ class Channel {
   /// Note: this method will always return ``Ready`` for non-writeable
   /// channels.
   async2::Poll<> PollReadyToWrite(pw::async2::Context& cx) {
+    if (!is_open()) {
+      return async2::Ready();
+    }
     return DoPollReadyToWrite(cx);
   }
 
@@ -234,6 +243,9 @@ class Channel {
   ///   to unreliable channels).
   /// * FAILED_PRECONDITION - The channel is closed.
   Result<WriteToken> Write(multibuf::MultiBuf&& data) {
+    if (!is_open()) {
+      return Status::FailedPrecondition();
+    }
     return DoWrite(std::move(data));
   }
 
@@ -247,6 +259,9 @@ class Channel {
   /// * Ready(FAILED_PRECONDITION) - The channel is closed.
   /// * Pending - Data remains to be flushed.
   async2::Poll<Result<WriteToken>> PollFlush(async2::Context& cx) {
+    if (!is_open()) {
+      return Status::FailedPrecondition();
+    }
     return DoPollFlush(cx);
   }
 
@@ -283,8 +298,13 @@ class Channel {
   /// * FAILED_PRECONDITION - Channel was already closed, which can happen
   ///   out-of-band due to errors.
   async2::Poll<pw::Status> PollClose(async2::Context& cx) {
+    if (!is_open()) {
+      return Status::FailedPrecondition();
+    }
     auto result = DoPollClose(cx);
-    open_ = false;
+    if (result.IsReady()) {
+      set_closed();
+    }
     return result;
   }
 
@@ -292,6 +312,11 @@ class Channel {
   static constexpr WriteToken CreateWriteToken(uint32_t value) {
     return WriteToken(value);
   }
+
+  // Marks the channel as closed, but does nothing else. PollClose() always
+  // marks the channel closed when DoPollClose() returns Ready(), regardless of
+  // the status.
+  void set_closed() { open_ = false; }
 
  private:
   template <Property...>
