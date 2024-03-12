@@ -47,7 +47,7 @@ class Context {
  protected:
   // We can't use `= default` here, because it allows to create an Context
   // instance in C++17 with `pw::thread::zephyr::Context{}` syntax.
-  Context(){};
+  Context() {};
 
  private:
   friend Thread;
